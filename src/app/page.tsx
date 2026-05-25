@@ -112,11 +112,19 @@ const adminItems = [
   "Kunden verwalten", "Aufträge prüfen", "Originaldateien downloaden", "Modifizierte Dateien hochladen", "Status ändern", "Credits manuell buchen", "Preise bearbeiten", "Credit-Pakete verwalten", "Rechnungen verwalten", "Zahlungen prüfen", "Support-Tickets", "Mehrsprachige Inhalte", "Interne Notizen", "Kunden-Notizen", "Datei-Logs", "Partnerkonten"
 ];
 
-function Pill({ children }) {
+function Pill({ children }: { children: React.ReactNode }) {
   return <span className="rounded-full border border-blue-400/30 bg-blue-500/10 px-3 py-1 text-xs text-blue-100">{children}</span>;
 }
 
-function SectionTitle({ eyebrow, title, text }) {
+function SectionTitle({
+  eyebrow,
+  title,
+  text,
+}: {
+  eyebrow: string;
+  title: string;
+  text?: string;
+}) {
   return (
     <div className="mx-auto mb-10 max-w-3xl text-center">
       <div className="mb-3 text-sm font-semibold uppercase tracking-[0.25em] text-blue-300">{eyebrow}</div>
@@ -126,7 +134,13 @@ function SectionTitle({ eyebrow, title, text }) {
   );
 }
 
-function Card({ children, className = "" }) {
+function Card({
+  children,
+  className = "",
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
   return <div className={`rounded-3xl border border-white/10 bg-white/[0.045] p-6 shadow-2xl shadow-black/20 backdrop-blur ${className}`}>{children}</div>;
 }
 
@@ -142,7 +156,7 @@ export default function MGAutoTechFileService() {
 
   const creditEstimate = selectedServices.includes("Stage 1 Tuning File") ? 35 : 10;
 
-  const toggleService = (service) => {
+  const toggleService = (service: string) => {
     setSelectedServices((prev) =>
       prev.includes(service) ? prev.filter((x) => x !== service) : [...prev, service]
     );
@@ -231,12 +245,41 @@ export default function MGAutoTechFileService() {
             <SectionTitle eyebrow="File Service Workflow" title="From original file to completed download" text="Customers upload original ECU/TCU files, choose the requested solution and track every step transparently in their dashboard." />
             <div className="grid gap-5 md:grid-cols-4">
               {[
-                [User, 'Create Account', 'The customer registers with private or company details.'],
-                [ShoppingCart, 'Buy Credits', 'Credit packages via PayPal, card, bank transfer, Stripe or Klarna.'],
-                [Upload, 'Upload File', 'Original ECU/TCU file, logs, diagnostic report and vehicle data.'],
-                [Download, 'Download Completed File', 'Check status, read logs and download the modified file.']
-              ].map(([Icon, title, text], i) => <Card key={title}><div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-600/20 text-blue-300"><Icon /></div><div className="mb-2 text-lg font-bold">{i+1}. {title}</div><p className="text-sm leading-6 text-slate-400">{text}</p></Card>)}
-            </div>
+  {
+    icon: User,
+    title: "Create Account",
+    text: "The customer registers with private or company details.",
+  },
+  {
+    icon: ShoppingCart,
+    title: "Buy Credits",
+    text: "Credit packages via PayPal, card, bank transfer, Stripe or Klarna.",
+  },
+  {
+    icon: Upload,
+    title: "Upload File",
+    text: "Original ECU/TCU file, logs, diagnostic report and vehicle data.",
+  },
+  {
+    icon: Download,
+    title: "Download Completed File",
+    text: "Check status, read logs and download the modified file.",
+  },
+].map((step, i) => {
+  const Icon = step.icon;
+
+  return (
+    <Card key={step.title}>
+      <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-600/20 text-blue-300">
+        <Icon />
+      </div>
+      <div className="mb-2 text-lg font-bold">
+        {i + 1}. {step.title}
+      </div>
+      <p className="text-sm leading-6 text-slate-400">{step.text}</p>
+    </Card>
+  );
+})}</div>
           </div>
         </section>
 
