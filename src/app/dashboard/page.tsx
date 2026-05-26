@@ -10,6 +10,7 @@ import {
   CheckCircle2,
   Clock3,
   CreditCard,
+  Download,
   FileText,
   Gauge,
   History,
@@ -35,6 +36,7 @@ type Order = {
   credits_required: number | string | null;
   status: string | null;
   notes: string | null;
+  modified_file_path: string | null;
   created_at: string;
 };
 
@@ -118,7 +120,7 @@ export default function DashboardPage() {
       const { data: recentOrders } = await supabase
         .from("orders")
         .select(
-          "id, customer_id, customer_email, vehicle_brand, vehicle_model, vehicle_generation, vehicle_engine, service_type, credits_required, status, notes, created_at"
+          "id, customer_id, customer_email, vehicle_brand, vehicle_model, vehicle_generation, vehicle_engine, service_type, credits_required, status, notes, modified_file_path, created_at"
         )
         .eq("customer_id", user.id)
         .order("created_at", { ascending: false })
@@ -175,6 +177,24 @@ export default function DashboardPage() {
   const handleLogout = async () => {
     await supabase.auth.signOut();
     router.push("/login");
+  };
+
+  const downloadCompletedFile = async (filePath: string | null) => {
+    if (!filePath) {
+      alert("Completed file is not available yet.");
+      return;
+    }
+
+    const { data, error } = await supabase.storage
+      .from("customer-files")
+      .createSignedUrl(filePath, 60);
+
+    if (error) {
+      alert(error.message);
+      return;
+    }
+
+    window.open(data.signedUrl, "_blank");
   };
 
   if (loading) {
@@ -330,6 +350,55 @@ export default function DashboardPage() {
               </div>
             </div>
 
+            {orders.some(
+              (order) => order.status === "completed" && order.modified_file_path
+            ) && (
+              <div className="mb-8 rounded-[2rem] border border-emerald-700/30 bg-emerald-950/20 p-6">
+                <div className="mb-4 flex items-center gap-3">
+                  <Download className="h-7 w-7 text-emerald-400" />
+                  <div>
+                    <div className="text-sm font-black uppercase tracking-[0.25em] text-emerald-400">
+                      Completed Files
+                    </div>
+                    <h2 className="mt-1 text-2xl font-black">
+                      Your modified file is ready to download
+                    </h2>
+                  </div>
+                </div>
+
+                <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                  {orders
+                    .filter(
+                      (order) =>
+                        order.status === "completed" && order.modified_file_path
+                    )
+                    .map((order) => (
+                      <div
+                        key={order.id}
+                        className="rounded-2xl border border-emerald-700/30 bg-black/30 p-4"
+                      >
+                        <div className="font-black">
+                          {order.vehicle_brand || "Vehicle"}{" "}
+                          {order.vehicle_model || ""}
+                        </div>
+                        <div className="mt-1 text-sm text-zinc-400">
+                          {order.service_type || "Service not set"}
+                        </div>
+                        <button
+                          onClick={() =>
+                            downloadCompletedFile(order.modified_file_path)
+                          }
+                          className="mt-4 w-full rounded-xl bg-emerald-600 px-4 py-3 text-sm font-black text-white transition hover:bg-emerald-500"
+                        >
+                          <Download className="mr-2 inline h-4 w-4" />
+                          Download Completed File
+                        </button>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            )}
+
             <div className="mb-8 grid gap-6 xl:grid-cols-[1.25fr_.75fr]">
               <div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6">
                 <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -367,18 +436,19 @@ export default function DashboardPage() {
                   </div>
                 ) : (
                   <div className="overflow-hidden rounded-3xl border border-white/10">
-                    <div className="grid grid-cols-[1.4fr_.8fr_.7fr_.7fr] gap-4 bg-black/40 px-5 py-4 text-xs font-black uppercase tracking-[0.18em] text-zinc-500">
+                    <div className="grid grid-cols-[1.4fr_.8fr_.7fr_.7fr_.9fr] gap-4 bg-black/40 px-5 py-4 text-xs font-black uppercase tracking-[0.18em] text-zinc-500">
                       <div>Vehicle / Request</div>
                       <div>Status</div>
                       <div>Credit</div>
-                      <div className="text-right">Date</div>
+                      <div>Date</div>
+                      <div className="text-right">File</div>
                     </div>
 
                     <div className="divide-y divide-white/10">
                       {orders.map((order) => (
                         <div
                           key={order.id}
-                          className="grid grid-cols-1 gap-4 bg-black/20 px-5 py-4 transition hover:bg-white/[0.04] md:grid-cols-[1.4fr_.8fr_.7fr_.7fr] md:items-center"
+                          className="grid grid-cols-1 gap-4 bg-black/20 px-5 py-4 transition hover:bg-white/[0.04] md:grid-cols-[1.4fr_.8fr_.7fr_.7fr_.9fr] md:items-center"
                         >
                           <div>
                             <div className="font-black">
@@ -408,8 +478,24 @@ export default function DashboardPage() {
                             {Number(order.credits_required ?? 0)}
                           </div>
 
-                          <div className="text-left text-sm text-zinc-400 md:text-right">
+                          <div className="text-left text-sm text-zinc-400">
                             {formatDate(order.created_at)}
+                          </div>
+
+                          <div className="text-left md:text-right">
+                            {order.status === "completed" && order.modified_file_path ? (
+                              <button
+                                onClick={() => downloadCompletedFile(order.modified_file_path)}
+                                className="rounded-xl border border-emerald-700/40 bg-emerald-950/30 px-4 py-3 text-xs font-black text-emerald-300 transition hover:bg-emerald-900/40"
+                              >
+                                <Download className="mr-2 inline h-4 w-4" />
+                                Download File
+                              </button>
+                            ) : (
+                              <span className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-xs font-bold text-zinc-500">
+                                Not Ready
+                              </span>
+                            )}
                           </div>
                         </div>
                       ))}

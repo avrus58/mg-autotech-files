@@ -131,6 +131,7 @@ export default function AdminPage() {
   const [onlyWithFile, setOnlyWithFile] = useState(false);
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [uploadingModifiedId, setUploadingModifiedId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
 
   const loadAdminData = async () => {
@@ -284,6 +285,72 @@ export default function AdminPage() {
     }
 
     window.open(data.signedUrl, "_blank");
+  };
+
+  const uploadModifiedFile = async (order: Order, file: File | null) => {
+    if (!file) return;
+
+    setUploadingModifiedId(order.id);
+    setMessage("");
+
+    const safeFileName = file.name
+      .replaceAll(" ", "_")
+      .replace(/[^a-zA-Z0-9._-]/g, "");
+
+    const customerFolder = order.customer_id ?? "unknown-customer";
+    const filePath = `${customerFolder}/modified/${order.id}/${Date.now()}-${safeFileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("customer-files")
+      .upload(filePath, file, {
+        cacheControl: "3600",
+        upsert: false,
+      });
+
+    if (uploadError) {
+      setUploadingModifiedId(null);
+      setMessage(uploadError.message);
+      return;
+    }
+
+    const { error: updateError } = await supabase
+      .from("orders")
+      .update({
+        modified_file_path: filePath,
+        status: "completed",
+      })
+      .eq("id", order.id);
+
+    setUploadingModifiedId(null);
+
+    if (updateError) {
+      setMessage(updateError.message);
+      return;
+    }
+
+    setOrders((current) =>
+      current.map((item) =>
+        item.id === order.id
+          ? {
+              ...item,
+              modified_file_path: filePath,
+              status: "completed",
+            }
+          : item
+      )
+    );
+
+    setSelectedOrder((current) =>
+      current?.id === order.id
+        ? {
+            ...current,
+            modified_file_path: filePath,
+            status: "completed",
+          }
+        : current
+    );
+
+    setMessage("Modified file uploaded and order marked as completed.");
   };
 
   const copyOrderId = async (id: string) => {
@@ -546,11 +613,17 @@ export default function AdminPage() {
                       <td className="px-4 py-4 align-top">
                         {order.original_file_path ? (
                           <div className="rounded-xl border border-emerald-700/40 bg-emerald-950/25 px-3 py-2 text-xs font-bold text-emerald-300">
-                            File Ready
+                            Original Ready
                           </div>
                         ) : (
                           <div className="rounded-xl border border-zinc-700/40 bg-zinc-900/40 px-3 py-2 text-xs font-bold text-zinc-500">
-                            No File
+                            No Original
+                          </div>
+                        )}
+
+                        {order.modified_file_path && (
+                          <div className="mt-1 rounded-xl border border-blue-700/40 bg-blue-950/25 px-3 py-2 text-xs font-bold text-blue-300">
+                            Modified Ready
                           </div>
                         )}
 
@@ -567,8 +640,33 @@ export default function AdminPage() {
                             className="rounded-xl bg-[#b1121b] px-3 py-2 text-xs font-black text-white transition hover:bg-[#c91824] disabled:cursor-not-allowed disabled:opacity-40"
                           >
                             <Download className="mr-1 inline h-4 w-4" />
-                            Download
+                            Original
                           </button>
+
+                          <label className="cursor-pointer rounded-xl border border-emerald-700/40 bg-emerald-950/30 px-3 py-2 text-xs font-black text-emerald-300 transition hover:bg-emerald-900/40">
+                            {uploadingModifiedId === order.id ? (
+                              <>
+                                <Loader2 className="mr-1 inline h-4 w-4 animate-spin" />
+                                Uploading
+                              </>
+                            ) : (
+                              <>
+                                <Upload className="mr-1 inline h-4 w-4" />
+                                Upload Mod
+                              </>
+                            )}
+
+                            <input
+                              type="file"
+                              className="hidden"
+                              disabled={uploadingModifiedId === order.id}
+                              onChange={(event) => {
+                                const file = event.target.files?.[0] ?? null;
+                                uploadModifiedFile(order, file);
+                                event.target.value = "";
+                              }}
+                            />
+                          </label>
 
                           <button
                             onClick={() => setSelectedOrder(order)}
@@ -645,8 +743,33 @@ export default function AdminPage() {
                       className="h-11 rounded-xl bg-[#b1121b] px-4 text-sm font-black text-white disabled:opacity-40"
                     >
                       <Download className="mr-2 inline h-4 w-4" />
-                      Download
+                      Original
                     </button>
+
+                    <label className="flex h-11 cursor-pointer items-center justify-center rounded-xl border border-emerald-700/40 bg-emerald-950/30 px-4 text-sm font-black text-emerald-300">
+                      {uploadingModifiedId === order.id ? (
+                        <>
+                          <Loader2 className="mr-2 inline h-4 w-4 animate-spin" />
+                          Uploading
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="mr-2 inline h-4 w-4" />
+                          Upload Mod
+                        </>
+                      )}
+
+                      <input
+                        type="file"
+                        className="hidden"
+                        disabled={uploadingModifiedId === order.id}
+                        onChange={(event) => {
+                          const file = event.target.files?.[0] ?? null;
+                          uploadModifiedFile(order, file);
+                          event.target.value = "";
+                        }}
+                      />
+                    </label>
 
                     <button
                       onClick={() => setSelectedOrder(order)}
@@ -670,7 +793,9 @@ export default function AdminPage() {
           onDownload={() => downloadOriginalFile(selectedOrder)}
           onCopy={() => copyOrderId(selectedOrder.id)}
           onStatusChange={(status) => updateStatus(selectedOrder.id, status)}
+          onUploadModified={(file) => uploadModifiedFile(selectedOrder, file)}
           updating={updatingId === selectedOrder.id}
+          uploadingModified={uploadingModifiedId === selectedOrder.id}
         />
       )}
     </main>
@@ -752,14 +877,18 @@ function OrderDetailModal({
   onDownload,
   onCopy,
   onStatusChange,
+  onUploadModified,
   updating,
+  uploadingModified,
 }: {
   order: Order;
   onClose: () => void;
   onDownload: () => void;
   onCopy: () => void;
   onStatusChange: (status: string) => void;
+  onUploadModified: (file: File | null) => void;
   updating: boolean;
+  uploadingModified: boolean;
 }) {
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/75 px-4 py-6 backdrop-blur-sm">
@@ -807,6 +936,31 @@ function OrderDetailModal({
                 <Download className="mr-2 inline h-4 w-4" />
                 Download Original
               </button>
+
+              <label className="cursor-pointer rounded-xl border border-emerald-700/40 bg-emerald-950/30 px-4 py-3 text-sm font-black text-emerald-300 transition hover:bg-emerald-900/40">
+                {uploadingModified ? (
+                  <>
+                    <Loader2 className="mr-2 inline h-4 w-4 animate-spin" />
+                    Uploading Modified
+                  </>
+                ) : (
+                  <>
+                    <Upload className="mr-2 inline h-4 w-4" />
+                    Upload Modified
+                  </>
+                )}
+
+                <input
+                  type="file"
+                  className="hidden"
+                  disabled={uploadingModified}
+                  onChange={(event) => {
+                    const file = event.target.files?.[0] ?? null;
+                    onUploadModified(file);
+                    event.target.value = "";
+                  }}
+                />
+              </label>
 
               <button
                 onClick={onClose}
