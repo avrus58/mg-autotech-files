@@ -257,18 +257,16 @@ Customer Notes:
 ${notes || "-"}
 `.trim();
 
-    const { error } = await supabase.from("orders").insert({
-      customer_id: userData.user.id,
-      customer_email: customerEmail,
-      vehicle_brand: vehicleBrand,
-      vehicle_model: vehicleModel,
-      vehicle_generation: vehicleGeneration,
-      vehicle_engine: vehicleEngine,
-      service_type: serviceSummary,
-      credits_required: totalCredits,
-      status: "new_request",
-      notes: fullNotes,
-    });
+    const { error } = await supabase.rpc("create_order_with_credit_deduction", {
+  p_customer_email: customerEmail,
+  p_vehicle_brand: vehicleBrand,
+  p_vehicle_model: vehicleModel,
+  p_vehicle_generation: vehicleGeneration,
+  p_vehicle_engine: vehicleEngine,
+  p_service_type: serviceSummary,
+  p_credits_required: totalCredits,
+  p_notes: fullNotes,
+});
 
     setSubmitting(false);
 
