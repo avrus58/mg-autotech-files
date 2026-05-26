@@ -265,7 +265,15 @@ ${notes || "-"}
   p_vehicle_engine: vehicleEngine,
   p_service_type: serviceSummary,
   p_credits_required: totalCredits,
-  p_notes: fullNotes,
+  p_notes: notes || "-",
+  p_ecu: ecu || null,
+  p_gearbox: gearbox || null,
+  p_vehicle_year: year || null,
+  p_read_method: readMethod || null,
+  p_license_plate: licensePlate || null,
+  p_hw_sw: hwSw || null,
+  p_master_slave: masterSlave,
+  p_uploaded_file_name: fileName || null,
 });
 
     setSubmitting(false);
