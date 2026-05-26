@@ -27,6 +27,7 @@ import {
   ShieldCheck,
   Upload,
   User,
+  Users,
   Wrench,
   X,
 } from "lucide-react";
@@ -53,6 +54,15 @@ type Order = {
   uploaded_file_name: string | null;
   original_file_path: string | null;
   modified_file_path: string | null;
+  created_at: string | null;
+};
+
+type Profile = {
+  id: string;
+  email: string | null;
+  full_name: string | null;
+  role: string | null;
+  credit_balance: number | string | null;
   created_at: string | null;
 };
 
@@ -125,12 +135,16 @@ export default function AdminPage() {
   const router = useRouter();
 
   const [orders, setOrders] = useState<Order[]>([]);
+  const [customers, setCustomers] = useState<Profile[]>([]);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [search, setSearch] = useState("");
+  const [customerSearch, setCustomerSearch] = useState("");
   const [onlyWithFile, setOnlyWithFile] = useState(false);
+  const [creditInputs, setCreditInputs] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [creditUpdatingId, setCreditUpdatingId] = useState<string | null>(null);
   const [uploadingModifiedId, setUploadingModifiedId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
 
@@ -168,7 +182,19 @@ export default function AdminPage() {
       return;
     }
 
+    const { data: profileList, error: customerError } = await supabase
+      .from("profiles")
+      .select("id, email, full_name, role, credit_balance, created_at")
+      .order("created_at", { ascending: false });
+
+    if (customerError) {
+      setMessage(customerError.message);
+      setLoading(false);
+      return;
+    }
+
     setOrders((data ?? []) as Order[]);
+    setCustomers((profileList ?? []) as Profile[]);
     setLoading(false);
   };
 
@@ -190,6 +216,7 @@ export default function AdminPage() {
 
     return {
       total,
+      customers: customers.length,
       newRequests,
       fileCheck,
       inProgress,
@@ -197,7 +224,7 @@ export default function AdminPage() {
       withFile,
       totalCredits,
     };
-  }, [orders]);
+  }, [orders, customers]);
 
   const filteredOrders = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -239,6 +266,74 @@ export default function AdminPage() {
       return fullText.includes(term);
     });
   }, [orders, search, selectedStatus, onlyWithFile]);
+
+  const filteredCustomers = useMemo(() => {
+    const term = customerSearch.trim().toLowerCase();
+
+    if (!term) return customers;
+
+    return customers.filter((customer) => {
+      const fullText = [
+        customer.email,
+        customer.full_name,
+        customer.role,
+        customer.id,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+
+      return fullText.includes(term);
+    });
+  }, [customers, customerSearch]);
+
+  const addCreditsToCustomer = async (customer: Profile, amountToAdd: number) => {
+    if (!Number.isFinite(amountToAdd) || amountToAdd <= 0) {
+      setMessage("Please enter a valid credit amount.");
+      return;
+    }
+
+    setCreditUpdatingId(customer.id);
+    setMessage("");
+
+    const currentBalance = Number(customer.credit_balance ?? 0);
+    const newBalance = currentBalance + amountToAdd;
+
+    const { error } = await supabase
+      .from("profiles")
+      .update({ credit_balance: newBalance })
+      .eq("id", customer.id);
+
+    setCreditUpdatingId(null);
+
+    if (error) {
+      setMessage(error.message);
+      return;
+    }
+
+    setCustomers((current) =>
+      current.map((item) =>
+        item.id === customer.id
+          ? {
+              ...item,
+              credit_balance: newBalance,
+            }
+          : item
+      )
+    );
+
+    setCreditInputs((current) => ({
+      ...current,
+      [customer.id]: "",
+    }));
+
+    setMessage(`${amountToAdd} credits added to ${customer.email ?? "customer"}.`);
+  };
+
+  const handleCustomCreditAdd = (customer: Profile) => {
+    const amount = Number(creditInputs[customer.id] ?? 0);
+    addCreditsToCustomer(customer, amount);
+  };
 
   const updateStatus = async (orderId: string, newStatus: string) => {
     setUpdatingId(orderId);
@@ -445,8 +540,9 @@ export default function AdminPage() {
           </p>
         </div>
 
-        <div className="mb-8 grid gap-4 md:grid-cols-2 xl:grid-cols-7">
+        <div className="mb-8 grid gap-4 md:grid-cols-2 xl:grid-cols-8">
           <StatCard icon={<FileCode2 />} label="Total Orders" value={stats.total} />
+          <StatCard icon={<Users />} label="Customers" value={stats.customers} />
           <StatCard icon={<Upload />} label="New" value={stats.newRequests} />
           <StatCard icon={<Search />} label="File Check" value={stats.fileCheck} />
           <StatCard icon={<Wrench />} label="In Progress" value={stats.inProgress} />
@@ -460,6 +556,200 @@ export default function AdminPage() {
             {message}
           </div>
         )}
+
+        <section className="mb-8 rounded-[2rem] border border-white/10 bg-white/[0.04] p-5 shadow-2xl shadow-black/20">
+          <div className="mb-5 flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+            <div>
+              <h2 className="text-2xl font-black">Customers & Credits</h2>
+              <p className="mt-1 text-sm text-zinc-500">
+                Manage customer credit balances after payment confirmation.
+              </p>
+            </div>
+
+            <div className="relative">
+              <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
+              <input
+                value={customerSearch}
+                onChange={(event) => setCustomerSearch(event.target.value)}
+                placeholder="Search customer email, name or role..."
+                className="h-12 w-full rounded-xl border border-white/10 bg-black/35 pl-11 pr-4 text-sm font-bold text-white outline-none transition placeholder:text-zinc-600 focus:border-red-700 md:w-96"
+              />
+            </div>
+          </div>
+
+          <div className="hidden overflow-hidden rounded-2xl border border-white/10 xl:block">
+            <table className="w-full border-collapse text-left text-sm">
+              <thead className="bg-black/50 text-xs uppercase tracking-[0.14em] text-zinc-500">
+                <tr>
+                  <th className="px-4 py-4">Customer</th>
+                  <th className="px-4 py-4">Role</th>
+                  <th className="px-4 py-4">Balance</th>
+                  <th className="px-4 py-4">Quick Add</th>
+                  <th className="px-4 py-4">Custom Add</th>
+                  <th className="px-4 py-4 text-right">Created</th>
+                </tr>
+              </thead>
+
+              <tbody className="divide-y divide-white/10">
+                {filteredCustomers.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="px-4 py-12 text-center text-zinc-500">
+                      No customers found.
+                    </td>
+                  </tr>
+                ) : (
+                  filteredCustomers.map((customer) => (
+                    <tr
+                      key={customer.id}
+                      className="bg-black/20 transition hover:bg-white/[0.04]"
+                    >
+                      <td className="px-4 py-4 align-top">
+                        <div className="font-black text-white">
+                          {customer.email || "-"}
+                        </div>
+                        <div className="mt-1 text-xs text-zinc-500">
+                          {customer.full_name || customer.id}
+                        </div>
+                      </td>
+
+                      <td className="px-4 py-4 align-top">
+                        <span
+                          className={`rounded-xl border px-3 py-2 text-xs font-black ${
+                            customer.role === "admin"
+                              ? "border-red-700/40 bg-red-950/30 text-red-300"
+                              : "border-white/10 bg-white/[0.04] text-zinc-300"
+                          }`}
+                        >
+                          {customer.role || "customer"}
+                        </span>
+                      </td>
+
+                      <td className="px-4 py-4 align-top">
+                        <div className="w-28 rounded-xl bg-red-950/30 px-3 py-2 text-center font-black text-red-300">
+                          {Number(customer.credit_balance ?? 0)}
+                        </div>
+                      </td>
+
+                      <td className="px-4 py-4 align-top">
+                        <div className="flex flex-wrap gap-2">
+                          {[10, 25, 50, 100].map((amount) => (
+                            <button
+                              key={amount}
+                              onClick={() => addCreditsToCustomer(customer, amount)}
+                              disabled={creditUpdatingId === customer.id}
+                              className="rounded-xl border border-emerald-700/40 bg-emerald-950/30 px-3 py-2 text-xs font-black text-emerald-300 transition hover:bg-emerald-900/40 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                              +{amount}
+                            </button>
+                          ))}
+                        </div>
+                      </td>
+
+                      <td className="px-4 py-4 align-top">
+                        <div className="flex gap-2">
+                          <input
+                            type="number"
+                            min="1"
+                            value={creditInputs[customer.id] ?? ""}
+                            onChange={(event) =>
+                              setCreditInputs((current) => ({
+                                ...current,
+                                [customer.id]: event.target.value,
+                              }))
+                            }
+                            placeholder="Amount"
+                            className="h-10 w-28 rounded-xl border border-white/10 bg-black/35 px-3 text-sm font-bold text-white outline-none placeholder:text-zinc-600 focus:border-red-700"
+                          />
+
+                          <button
+                            onClick={() => handleCustomCreditAdd(customer)}
+                            disabled={creditUpdatingId === customer.id}
+                            className="h-10 rounded-xl bg-[#b1121b] px-4 text-xs font-black text-white transition hover:bg-[#c91824] disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            {creditUpdatingId === customer.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              "Add"
+                            )}
+                          </button>
+                        </div>
+                      </td>
+
+                      <td className="px-4 py-4 text-right align-top text-sm text-zinc-500">
+                        {formatDate(customer.created_at)}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="space-y-4 xl:hidden">
+            {filteredCustomers.length === 0 ? (
+              <div className="rounded-2xl border border-white/10 bg-black/30 p-8 text-center text-zinc-500">
+                No customers found.
+              </div>
+            ) : (
+              filteredCustomers.map((customer) => (
+                <div
+                  key={customer.id}
+                  className="rounded-2xl border border-white/10 bg-black/30 p-5"
+                >
+                  <div className="mb-4 flex items-start justify-between gap-4">
+                    <div>
+                      <div className="font-black">{customer.email || "-"}</div>
+                      <div className="mt-1 text-sm text-zinc-500">
+                        {customer.full_name || customer.id}
+                      </div>
+                    </div>
+
+                    <div className="rounded-xl bg-red-950/30 px-3 py-2 text-center font-black text-red-300">
+                      {Number(customer.credit_balance ?? 0)}
+                    </div>
+                  </div>
+
+                  <div className="mb-4 flex flex-wrap gap-2">
+                    {[10, 25, 50, 100].map((amount) => (
+                      <button
+                        key={amount}
+                        onClick={() => addCreditsToCustomer(customer, amount)}
+                        disabled={creditUpdatingId === customer.id}
+                        className="rounded-xl border border-emerald-700/40 bg-emerald-950/30 px-3 py-2 text-xs font-black text-emerald-300 disabled:opacity-50"
+                      >
+                        +{amount}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="flex gap-2">
+                    <input
+                      type="number"
+                      min="1"
+                      value={creditInputs[customer.id] ?? ""}
+                      onChange={(event) =>
+                        setCreditInputs((current) => ({
+                          ...current,
+                          [customer.id]: event.target.value,
+                        }))
+                      }
+                      placeholder="Custom amount"
+                      className="h-11 min-w-0 flex-1 rounded-xl border border-white/10 bg-black/35 px-3 text-sm font-bold text-white outline-none placeholder:text-zinc-600 focus:border-red-700"
+                    />
+
+                    <button
+                      onClick={() => handleCustomCreditAdd(customer)}
+                      disabled={creditUpdatingId === customer.id}
+                      className="h-11 rounded-xl bg-[#b1121b] px-4 text-sm font-black text-white disabled:opacity-50"
+                    >
+                      Add
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </section>
 
         <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5 shadow-2xl shadow-black/20">
           <div className="mb-5 flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
