@@ -182,6 +182,7 @@ export default function NewRequestPage() {
   const [masterSlave, setMasterSlave] = useState<"master" | "slave">("master");
   const [notes, setNotes] = useState("");
   const [fileName, setFileName] = useState("");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [paymentAccepted, setPaymentAccepted] = useState(false);
   const [responsibilityAccepted, setResponsibilityAccepted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -227,6 +228,11 @@ export default function NewRequestPage() {
       return;
     }
 
+    if (!selectedFile) {
+      setMessage("Please upload your original ECU / TCU file.");
+      return;
+    }
+
     if (!paymentAccepted || !responsibilityAccepted) {
       setMessage("Please accept payment and responsibility confirmation.");
       return;
@@ -243,38 +249,50 @@ export default function NewRequestPage() {
 
     const customerEmail = userData.user.email ?? "";
 
-    const fullNotes = `
-ECU: ${ecu || "-"}
-Gearbox: ${gearbox || "-"}
-Year: ${year || "-"}
-Read Method: ${readMethod || "-"}
-Vehicle License Plate: ${licensePlate || "-"}
-HW / SW: ${hwSw || "-"}
-Master / Slave: ${masterSlave}
-Uploaded File Name: ${fileName || "No file selected yet"}
+    let originalFilePath: string | null = null;
 
-Customer Notes:
-${notes || "-"}
-`.trim();
+    if (selectedFile) {
+      const safeFileName = selectedFile.name
+        .replaceAll(" ", "_")
+        .replace(/[^a-zA-Z0-9._-]/g, "");
+
+      const filePath = `${userData.user.id}/${Date.now()}-${safeFileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("customer-files")
+        .upload(filePath, selectedFile, {
+          cacheControl: "3600",
+          upsert: false,
+        });
+
+      if (uploadError) {
+        setSubmitting(false);
+        setMessage(uploadError.message);
+        return;
+      }
+
+      originalFilePath = filePath;
+    }
 
     const { error } = await supabase.rpc("create_order_with_credit_deduction", {
-  p_customer_email: customerEmail,
-  p_vehicle_brand: vehicleBrand,
-  p_vehicle_model: vehicleModel,
-  p_vehicle_generation: vehicleGeneration,
-  p_vehicle_engine: vehicleEngine,
-  p_service_type: serviceSummary,
-  p_credits_required: totalCredits,
-  p_notes: notes || "-",
-  p_ecu: ecu || null,
-  p_gearbox: gearbox || null,
-  p_vehicle_year: year || null,
-  p_read_method: readMethod || null,
-  p_license_plate: licensePlate || null,
-  p_hw_sw: hwSw || null,
-  p_master_slave: masterSlave,
-  p_uploaded_file_name: fileName || null,
-});
+      p_customer_email: customerEmail,
+      p_vehicle_brand: vehicleBrand,
+      p_vehicle_model: vehicleModel,
+      p_vehicle_generation: vehicleGeneration,
+      p_vehicle_engine: vehicleEngine,
+      p_service_type: serviceSummary,
+      p_credits_required: totalCredits,
+      p_notes: notes || "-",
+      p_ecu: ecu || null,
+      p_gearbox: gearbox || null,
+      p_vehicle_year: year || null,
+      p_read_method: readMethod || null,
+      p_license_plate: licensePlate || null,
+      p_hw_sw: hwSw || null,
+      p_master_slave: masterSlave,
+      p_uploaded_file_name: fileName || null,
+      p_original_file_path: originalFilePath,
+    });
 
     setSubmitting(false);
 
@@ -613,9 +631,11 @@ ${notes || "-"}
                 <input
                   type="file"
                   className="hidden"
-                  onChange={(event) =>
-                    setFileName(event.target.files?.[0]?.name ?? "")
-                  }
+                  onChange={(event) => {
+                    const file = event.target.files?.[0] ?? null;
+                    setSelectedFile(file);
+                    setFileName(file?.name ?? "");
+                  }}
                 />
               </label>
 
@@ -747,8 +767,8 @@ ${notes || "-"}
               </button>
 
               <p className="mt-4 text-center text-xs leading-5 text-zinc-500">
-                File upload storage will be connected in the next step. For now,
-                the request data is saved to the database.
+                Your original file will be uploaded privately and connected to
+                this order.
               </p>
             </div>
           </aside>
