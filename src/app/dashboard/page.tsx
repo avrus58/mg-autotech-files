@@ -11,6 +11,7 @@ import {
   Clock3,
   CreditCard,
   Download,
+  Eye,
   FileText,
   Gauge,
   History,
@@ -441,7 +442,7 @@ export default function DashboardPage() {
                       <div>Status</div>
                       <div>Credit</div>
                       <div>Date</div>
-                      <div className="text-right">File</div>
+                      <div className="text-right">Actions</div>
                     </div>
 
                     <div className="divide-y divide-white/10">
@@ -482,7 +483,7 @@ export default function DashboardPage() {
                             {formatDate(order.created_at)}
                           </div>
 
-                          <div className="text-left md:text-right">
+                          <div className="flex flex-col gap-2 text-left md:items-end md:text-right">
                             {order.status === "completed" && order.modified_file_path ? (
                               <button
                                 onClick={() => downloadCompletedFile(order.modified_file_path)}
@@ -496,6 +497,14 @@ export default function DashboardPage() {
                                 Not Ready
                               </span>
                             )}
+
+                            <Link
+                              href={`/dashboard/orders/${order.id}`}
+                              className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-xs font-black text-white transition hover:bg-white/10"
+                            >
+                              <Eye className="mr-2 inline h-4 w-4" />
+                              Details
+                            </Link>
                           </div>
                         </div>
                       ))}
