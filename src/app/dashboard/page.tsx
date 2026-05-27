@@ -248,7 +248,7 @@ export default function DashboardPage() {
               </Link>
 
               <Link
-                href="/dashboard"
+                href="/dashboard/credits"
                 className="flex items-center gap-3 rounded-2xl px-4 py-3 font-bold text-zinc-400 transition hover:bg-white/[0.06] hover:text-white"
               >
                 <CreditCard className="h-5 w-5" />
@@ -532,7 +532,7 @@ export default function DashboardPage() {
                     </Link>
 
                     <Link
-                      href="/dashboard"
+                      href="/dashboard/credits"
                       className="flex items-center justify-between rounded-2xl border border-white/10 bg-black/30 p-5 transition hover:-translate-y-1 hover:border-red-800/60"
                     >
                       <span className="flex items-center gap-3 font-black">
