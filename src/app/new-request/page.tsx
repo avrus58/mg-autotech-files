@@ -1,16 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { ReactNode, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import {
+  Activity,
   ArrowLeft,
   BadgeCheck,
   Car,
+  CarFront,
   CheckCircle2,
   ChevronDown,
   CreditCard,
+  Cpu,
+  Database,
   FileCode2,
   Gauge,
   Home,
@@ -18,7 +22,46 @@ import {
   ShieldCheck,
   Upload,
   Wrench,
+  Zap,
 } from "lucide-react";
+
+type Option = {
+  id: string;
+  name: string;
+  fuelType?: string | null;
+};
+
+type VehicleData = {
+  brand: string;
+  brandId: string;
+  model: string;
+  modelId: string;
+  generation: string;
+  generationId: string;
+  engine: string;
+  engineId: string;
+  fuelType?: string | null;
+  ecu?: string[];
+  stage1?: {
+    stockHp: number;
+    tunedHp: number;
+    gainHp: number;
+    stockNm: number;
+    tunedNm: number;
+    gainNm: number;
+  };
+  stage2?: {
+    stockHp: number;
+    tunedHp: number;
+    gainHp: number;
+    stockNm: number;
+    tunedNm: number;
+    gainNm: number;
+  };
+  readMethods?: string[];
+  services?: string[];
+  imageUrl?: string;
+};
 
 type MainService = {
   id: string;
@@ -102,12 +145,14 @@ function SelectBox({
   onChange,
   options,
   required = false,
+  disabled = false,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
-  options: string[];
+  options: Option[];
   required?: boolean;
+  disabled?: boolean;
 }) {
   return (
     <label className="block">
@@ -119,12 +164,13 @@ function SelectBox({
         <select
           value={value}
           onChange={(event) => onChange(event.target.value)}
-          className="h-12 w-full appearance-none rounded-xl border border-white/10 bg-black/35 px-4 text-sm font-bold text-white outline-none transition focus:border-red-700"
+          disabled={disabled}
+          className="h-12 w-full appearance-none rounded-xl border border-white/10 bg-black/35 px-4 text-sm font-bold text-white outline-none transition focus:border-red-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
           <option value="">Select</option>
           {options.map((option) => (
-            <option key={option} value={option} className="bg-[#111]">
-              {option}
+            <option key={option.id} value={option.id} className="bg-[#111]">
+              {option.name}
             </option>
           ))}
         </select>
@@ -164,13 +210,262 @@ function InputBox({
   );
 }
 
+function AnimatedBar({
+  label,
+  stock,
+  tuned,
+  unit,
+}: {
+  label: string;
+  stock: number;
+  tuned: number;
+  unit: string;
+}) {
+  const max = Math.max(stock, tuned, 1);
+  const stockPercent = Math.min((stock / max) * 100, 100);
+  const tunedPercent = Math.min((tuned / max) * 100, 100);
+
+  return (
+    <div className="space-y-3">
+      <div className="flex justify-between gap-4 text-sm">
+        <span className="font-bold text-zinc-400">{label}</span>
+        <span className="text-right font-black text-white">
+          {stock} → <span className="text-red-400">{tuned}</span> {unit}
+        </span>
+      </div>
+
+      <div className="space-y-2">
+        <div className="h-3 overflow-hidden rounded-full bg-white/10">
+          <div
+            className="h-full rounded-full bg-zinc-500 transition-all duration-700"
+            style={{ width: `${stockPercent}%` }}
+          />
+        </div>
+
+        <div className="h-4 overflow-hidden rounded-full bg-red-950/50 shadow-inner shadow-red-950">
+          <div
+            className="h-full rounded-full bg-gradient-to-r from-red-900 via-red-700 to-red-500 transition-all duration-1000"
+            style={{ width: `${tunedPercent}%` }}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PowerBox({
+  title,
+  data,
+}: {
+  title: string;
+  data?: VehicleData["stage1"];
+}) {
+  if (!data) return null;
+
+  return (
+    <div className="group relative overflow-hidden rounded-[1.7rem] border border-red-900/40 bg-gradient-to-br from-black/85 via-[#140507] to-black p-6 shadow-2xl shadow-black/40 transition duration-300 hover:-translate-y-1 hover:border-red-700/70">
+      <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-red-700/20 blur-3xl transition group-hover:bg-red-600/30" />
+      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-red-500/50 to-transparent" />
+
+      <div className="relative mb-6 flex items-center justify-between">
+        <div>
+          <div className="text-xs font-black uppercase tracking-[0.2em] text-red-400">
+            Performance Map
+          </div>
+          <div className="mt-1 text-2xl font-black text-white">{title}</div>
+        </div>
+
+        <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-red-800/50 bg-red-950/40 shadow-lg shadow-red-950/30">
+          <Zap className="h-6 w-6 text-red-500" />
+        </div>
+      </div>
+
+      <div className="relative space-y-4">
+        <AnimatedBar
+          label="Power"
+          stock={data.stockHp}
+          tuned={data.tunedHp}
+          unit="HP"
+        />
+
+        <AnimatedBar
+          label="Torque"
+          stock={data.stockNm}
+          tuned={data.tunedNm}
+          unit="Nm"
+        />
+
+        <div className="grid grid-cols-2 gap-3 pt-2">
+          <div className="rounded-2xl border border-red-900/50 bg-red-950/25 p-4 text-center">
+            <div className="text-xs font-bold uppercase tracking-[0.16em] text-zinc-500">
+              HP Gain
+            </div>
+            <div className="mt-1 text-3xl font-black text-red-400">
+              +{data.gainHp}
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-red-900/50 bg-red-950/25 p-4 text-center">
+            <div className="text-xs font-bold uppercase tracking-[0.16em] text-zinc-500">
+              Nm Gain
+            </div>
+            <div className="mt-1 text-3xl font-black text-red-400">
+              +{data.gainNm}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function InfoChip({ icon, label }: { icon: ReactNode; label: string }) {
+  return (
+    <div className="flex items-center gap-2 rounded-full border border-white/10 bg-black/35 px-3 py-1.5 text-xs font-bold text-zinc-200 shadow-lg shadow-black/20">
+      <span className="text-red-500">{icon}</span>
+      {label}
+    </div>
+  );
+}
+
+function StatCard({
+  label,
+  value,
+  icon,
+}: {
+  label: string;
+  value: string;
+  icon: ReactNode;
+}) {
+  return (
+    <div className="group rounded-2xl border border-white/10 bg-black/40 p-4 transition hover:-translate-y-0.5 hover:border-red-800/60">
+      <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-2xl border border-red-900/40 bg-red-950/25 text-red-500">
+        {icon}
+      </div>
+      <div className="text-xs font-black uppercase tracking-[0.18em] text-zinc-500">
+        {label}
+      </div>
+      <div className="mt-3 break-words text-lg font-black">{value}</div>
+    </div>
+  );
+}
+
+
+function VehicleHeroCard({
+  brand,
+  model,
+  generation,
+  engine,
+}: {
+  brand: string;
+  model: string;
+  generation: string;
+  engine: string;
+}) {
+  const gradients: Record<string, string> = {
+    BMW: "from-sky-950/40 via-black to-blue-950/30",
+    Audi: "from-red-950/45 via-black to-zinc-950",
+    "Mercedes-Benz": "from-zinc-700/35 via-black to-zinc-950",
+    Volkswagen: "from-blue-950/40 via-black to-zinc-950",
+    Porsche: "from-yellow-900/25 via-black to-red-950/25",
+    Mini: "from-emerald-950/25 via-black to-zinc-950",
+    Opel: "from-yellow-950/25 via-black to-zinc-950",
+    Peugeot: "from-blue-950/25 via-black to-zinc-950",
+    Renault: "from-yellow-950/20 via-black to-red-950/20",
+    Volvo: "from-sky-950/25 via-black to-zinc-950",
+    Toyota: "from-red-950/25 via-black to-zinc-950",
+  };
+
+  const gradient =
+    gradients[brand] || "from-red-950/30 via-black to-zinc-950";
+
+  return (
+    <div
+      className={`relative overflow-hidden rounded-[2rem] border border-white/10 bg-gradient-to-br ${gradient} p-7 shadow-2xl shadow-black/50`}
+    >
+      <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-red-600/10 blur-3xl" />
+      <div className="absolute -left-20 bottom-0 h-52 w-52 rounded-full bg-white/5 blur-3xl" />
+      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-red-500/70 to-transparent" />
+      <div className="absolute bottom-0 left-0 right-0 h-28 bg-gradient-to-t from-black/80 to-transparent" />
+
+      <div className="relative grid gap-7 lg:grid-cols-[1fr_220px] lg:items-center">
+        <div>
+          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-red-800/50 bg-red-950/30 px-4 py-2 text-xs font-black uppercase tracking-[0.18em] text-red-100">
+            <Zap className="h-4 w-4 text-red-500" />
+            MG AutoTech Vehicle Intelligence
+          </div>
+
+          <h2 className="text-4xl font-black leading-tight md:text-5xl">
+            {brand} <span className="text-red-500">{model}</span>
+          </h2>
+
+          <div className="mt-5 flex flex-wrap gap-2">
+            <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-bold text-zinc-200">
+              {generation || "Generation not specified"}
+            </span>
+
+            <span className="rounded-full border border-red-800/40 bg-red-950/30 px-3 py-1.5 text-xs font-bold text-red-100">
+              {engine}
+            </span>
+          </div>
+
+          <div className="mt-7 grid gap-3 sm:grid-cols-3">
+            <div className="rounded-2xl border border-white/10 bg-black/35 p-4 backdrop-blur-xl">
+              <div className="text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">
+                Platform
+              </div>
+              <div className="mt-2 text-lg font-black">ECU Tuning</div>
+            </div>
+
+            <div className="rounded-2xl border border-white/10 bg-black/35 p-4 backdrop-blur-xl">
+              <div className="text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">
+                Workflow
+              </div>
+              <div className="mt-2 text-lg font-black">File Service</div>
+            </div>
+
+            <div className="rounded-2xl border border-white/10 bg-black/35 p-4 backdrop-blur-xl">
+              <div className="text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">
+                Methods
+              </div>
+              <div className="mt-2 text-lg font-black">OBD · Bench · Boot</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="hidden lg:flex lg:justify-end">
+          <div className="relative flex h-52 w-52 items-center justify-center">
+            <div className="absolute inset-0 rounded-full bg-red-600/10 blur-3xl" />
+            <div className="absolute h-44 w-44 rounded-full border border-red-800/20" />
+            <div className="absolute h-32 w-32 rounded-full border border-white/10" />
+
+            <div className="relative flex h-40 w-40 items-center justify-center rounded-[2rem] border border-white/10 bg-black/45 shadow-2xl shadow-black/40 backdrop-blur-xl">
+              <CarFront className="h-24 w-24 text-white/90" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
 export default function NewRequestPage() {
   const router = useRouter();
 
-  const [vehicleBrand, setVehicleBrand] = useState("");
-  const [vehicleModel, setVehicleModel] = useState("");
-  const [vehicleGeneration, setVehicleGeneration] = useState("");
-  const [vehicleEngine, setVehicleEngine] = useState("");
+  const [brands, setBrands] = useState<Option[]>([]);
+  const [models, setModels] = useState<Option[]>([]);
+  const [generations, setGenerations] = useState<Option[]>([]);
+  const [engines, setEngines] = useState<Option[]>([]);
+  const [selectedVehicle, setSelectedVehicle] = useState<VehicleData | null>(
+    null
+  );
+
+  const [vehicleBrandId, setVehicleBrandId] = useState("");
+  const [vehicleModelId, setVehicleModelId] = useState("");
+  const [vehicleGenerationId, setVehicleGenerationId] = useState("");
+  const [vehicleEngineId, setVehicleEngineId] = useState("");
+
   const [ecu, setEcu] = useState("");
   const [gearbox, setGearbox] = useState("");
   const [year, setYear] = useState("");
@@ -187,6 +482,101 @@ export default function NewRequestPage() {
   const [responsibilityAccepted, setResponsibilityAccepted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState("");
+
+  const selectedBrandName =
+    brands.find((item) => item.id === vehicleBrandId)?.name ?? "";
+  const selectedModelName =
+    models.find((item) => item.id === vehicleModelId)?.name ?? "";
+  const selectedGenerationName =
+    generations.find((item) => item.id === vehicleGenerationId)?.name ?? "";
+  const selectedEngineName =
+    engines.find((item) => item.id === vehicleEngineId)?.name ?? "";
+
+  useEffect(() => {
+    fetch("/api/vehicles?type=brands")
+      .then((res) => res.json())
+      .then(setBrands)
+      .catch(console.error);
+  }, []);
+
+  useEffect(() => {
+    setVehicleModelId("");
+    setVehicleGenerationId("");
+    setVehicleEngineId("");
+    setModels([]);
+    setGenerations([]);
+    setEngines([]);
+    setSelectedVehicle(null);
+
+    if (!vehicleBrandId) return;
+
+    fetch(`/api/vehicles?type=models&brandId=${vehicleBrandId}`)
+      .then((res) => res.json())
+      .then(setModels)
+      .catch(console.error);
+  }, [vehicleBrandId]);
+
+  useEffect(() => {
+    setVehicleGenerationId("");
+    setVehicleEngineId("");
+    setGenerations([]);
+    setEngines([]);
+    setSelectedVehicle(null);
+
+    if (!vehicleBrandId || !vehicleModelId) return;
+
+    fetch(
+      `/api/vehicles?type=generations&brandId=${vehicleBrandId}&modelId=${vehicleModelId}`
+    )
+      .then((res) => res.json())
+      .then(setGenerations)
+      .catch(console.error);
+  }, [vehicleBrandId, vehicleModelId]);
+
+  useEffect(() => {
+    setVehicleEngineId("");
+    setEngines([]);
+    setSelectedVehicle(null);
+
+    if (!vehicleBrandId || !vehicleModelId || !vehicleGenerationId) return;
+
+    fetch(
+      `/api/vehicles?type=engines&brandId=${vehicleBrandId}&modelId=${vehicleModelId}&generationId=${vehicleGenerationId}`
+    )
+      .then((res) => res.json())
+      .then(setEngines)
+      .catch(console.error);
+  }, [vehicleBrandId, vehicleModelId, vehicleGenerationId]);
+
+  useEffect(() => {
+    setSelectedVehicle(null);
+
+    if (
+      !vehicleBrandId ||
+      !vehicleModelId ||
+      !vehicleGenerationId ||
+      !vehicleEngineId
+    ) {
+      return;
+    }
+
+    fetch(
+      `/api/vehicles?type=vehicle&brandId=${vehicleBrandId}&modelId=${vehicleModelId}&generationId=${vehicleGenerationId}&engineId=${vehicleEngineId}`
+    )
+      .then((res) => res.json())
+      .then((vehicle: VehicleData | null) => {
+        setSelectedVehicle(vehicle);
+
+        if (vehicle?.ecu?.length) {
+          setEcu(vehicle.ecu.join(", "));
+        }
+
+        if (vehicle?.readMethods?.length) {
+          setReadMethod(vehicle.readMethods[0]);
+        }
+      })
+      .catch(console.error);
+  }, [vehicleBrandId, vehicleModelId, vehicleGenerationId, vehicleEngineId]);
 
   const selectedMainService = mainServices.find(
     (service) => service.id === mainService
@@ -223,7 +613,7 @@ export default function NewRequestPage() {
   const handleSubmit = async () => {
     setMessage("");
 
-    if (!vehicleBrand || !vehicleModel || !vehicleEngine) {
+    if (!selectedBrandName || !selectedModelName || !selectedEngineName) {
       setMessage("Please fill in brand, model and engine.");
       return;
     }
@@ -276,10 +666,10 @@ export default function NewRequestPage() {
 
     const { error } = await supabase.rpc("create_order_with_credit_deduction", {
       p_customer_email: customerEmail,
-      p_vehicle_brand: vehicleBrand,
-      p_vehicle_model: vehicleModel,
-      p_vehicle_generation: vehicleGeneration,
-      p_vehicle_engine: vehicleEngine,
+      p_vehicle_brand: selectedBrandName,
+      p_vehicle_model: selectedModelName,
+      p_vehicle_generation: selectedGenerationName,
+      p_vehicle_engine: selectedEngineName,
       p_service_type: serviceSummary,
       p_credits_required: totalCredits,
       p_notes: notes || "-",
@@ -386,94 +776,36 @@ export default function NewRequestPage() {
               <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
                 <SelectBox
                   label="Brand"
-                  value={vehicleBrand}
-                  onChange={setVehicleBrand}
+                  value={vehicleBrandId}
+                  onChange={setVehicleBrandId}
                   required
-                  options={[
-  "Mercedes-Benz",
-  "BMW",
-  "Audi",
-  "Volkswagen",
-  "Skoda",
-  "Seat",
-  "Cupra",
-  "Porsche",
-  "Opel",
-  "Ford",
-  "Peugeot",
-  "Citroen",
-  "DS Automobiles",
-  "Renault",
-  "Dacia",
-  "Fiat",
-  "Abarth",
-  "Alfa Romeo",
-  "Lancia",
-  "Jeep",
-  "Chrysler",
-  "Dodge",
-  "Toyota",
-  "Lexus",
-  "Nissan",
-  "Infiniti",
-  "Honda",
-  "Acura",
-  "Mazda",
-  "Mitsubishi",
-  "Subaru",
-  "Suzuki",
-  "Hyundai",
-  "Kia",
-  "Genesis",
-  "Volvo",
-  "Polestar",
-  "Mini",
-  "Smart",
-  "Land Rover",
-  "Range Rover",
-  "Jaguar",
-  "Maserati",
-  "Bentley",
-  "Lamborghini",
-  "Ferrari",
-  "Aston Martin",
-  "McLaren",
-  "Rolls-Royce",
-  "Tesla",
-  "BYD",
-  "MG",
-  "Lynk & Co",
-  "Iveco",
-  "MAN",
-  "DAF",
-  "Scania",
-  "Volvo Trucks",
-  "Mercedes-Benz Trucks",
-  "Other",
-]}
+                  options={brands}
                 />
 
-                <InputBox
+                <SelectBox
                   label="Model"
-                  value={vehicleModel}
-                  onChange={setVehicleModel}
+                  value={vehicleModelId}
+                  onChange={setVehicleModelId}
                   required
-                  placeholder="e.g. E-Class, Golf 7, A6"
+                  options={models}
+                  disabled={!vehicleBrandId}
                 />
 
-                <InputBox
+                <SelectBox
                   label="Generation"
-                  value={vehicleGeneration}
-                  onChange={setVehicleGeneration}
-                  placeholder="e.g. W212, F30, 4G"
+                  value={vehicleGenerationId}
+                  onChange={setVehicleGenerationId}
+                  options={generations}
+                  disabled={!vehicleModelId}
                 />
 
-                <InputBox
+                <SelectBox
                   label="Engine"
-                  value={vehicleEngine}
-                  onChange={setVehicleEngine}
+                  value={vehicleEngineId}
+                  onChange={setVehicleEngineId}
                   required
-                  placeholder="e.g. 2.0 TDI 150HP"
+                  options={engines}
+                  disabled={!vehicleGenerationId}
                 />
 
                 <InputBox
@@ -491,6 +823,121 @@ export default function NewRequestPage() {
                 />
               </div>
             </section>
+
+            {selectedVehicle && (
+              <section className="relative overflow-hidden rounded-[2rem] border border-red-900/50 bg-gradient-to-br from-red-950/20 via-white/[0.04] to-black p-5 shadow-2xl shadow-black/40">
+                <div className="absolute -right-24 -top-24 h-64 w-64 rounded-full bg-red-700/20 blur-3xl" />
+                <div className="absolute -bottom-24 -left-24 h-64 w-64 rounded-full bg-red-950/30 blur-3xl" />
+                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-red-500/60 to-transparent" />
+
+                <div className="relative mb-6">
+                  <VehicleHeroCard
+                    brand={selectedBrandName}
+                    model={selectedModelName}
+                    generation={selectedGenerationName}
+                    engine={selectedEngineName}
+                  />
+                </div>
+
+                <div className="relative mb-5 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+                  <div>
+                    <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-red-800/50 bg-red-950/30 px-3 py-1.5 text-xs font-bold text-red-100">
+                      <Activity className="h-4 w-4 text-red-500" />
+                      Live Vehicle Intelligence
+                    </div>
+
+                    <h2 className="text-3xl font-black md:text-4xl">
+                      {selectedBrandName} {selectedModelName}
+                    </h2>
+
+                    <p className="mt-2 text-sm font-bold text-zinc-400">
+                      {selectedGenerationName || "Generation not specified"} ·{" "}
+                      {selectedEngineName}
+                    </p>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2">
+                    {selectedVehicle.ecu?.map((item) => (
+                      <InfoChip
+                        key={item}
+                        icon={<Cpu className="h-4 w-4" />}
+                        label={item}
+                      />
+                    ))}
+
+                    {selectedVehicle.readMethods?.map((item) => (
+                      <InfoChip
+                        key={item}
+                        icon={<Database className="h-4 w-4" />}
+                        label={item}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                <div className="relative mb-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                  <StatCard
+                    label="ECU / TCU"
+                    icon={<Cpu className="h-5 w-5" />}
+                    value={
+                      selectedVehicle.ecu?.length
+                        ? selectedVehicle.ecu.join(", ")
+                        : "Not available"
+                    }
+                  />
+
+                  <StatCard
+                    label="Fuel Type"
+                    icon={<Gauge className="h-5 w-5" />}
+                    value={selectedVehicle.fuelType || "Not available"}
+                  />
+
+                  <StatCard
+                    label="Read Method"
+                    icon={<Database className="h-5 w-5" />}
+                    value={
+                      selectedVehicle.readMethods?.length
+                        ? selectedVehicle.readMethods.join(", ")
+                        : "Not available"
+                    }
+                  />
+
+                  <StatCard
+                    label="Services"
+                    icon={<Wrench className="h-5 w-5" />}
+                    value={
+                      selectedVehicle.services?.length
+                        ? `${selectedVehicle.services.length} supported`
+                        : "Not available"
+                    }
+                  />
+                </div>
+
+                <div className="relative grid gap-4 lg:grid-cols-2">
+                  <PowerBox title="Stage 1" data={selectedVehicle.stage1} />
+                  <PowerBox title="Stage 2" data={selectedVehicle.stage2} />
+                </div>
+
+                {selectedVehicle.services?.length ? (
+                  <div className="relative mt-6">
+                    <div className="mb-3 text-xs font-black uppercase tracking-[0.18em] text-zinc-500">
+                      Supported Software Options
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                      {selectedVehicle.services.map((service) => (
+                        <span
+                          key={service}
+                          className="rounded-full border border-red-800/50 bg-red-950/30 px-3 py-1.5 text-xs font-bold text-red-100"
+                        >
+                          {service}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+              </section>
+            )}
 
             <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6">
               <div className="mb-6 flex items-center gap-3">
@@ -511,13 +958,13 @@ export default function NewRequestPage() {
                   value={gearbox}
                   onChange={setGearbox}
                   options={[
-                    "Manual",
-                    "Automatic",
-                    "DSG",
-                    "ZF 8HP",
-                    "Mercedes 7G",
-                    "Mercedes 9G",
-                    "Other",
+                    { id: "Manual", name: "Manual" },
+                    { id: "Automatic", name: "Automatic" },
+                    { id: "DSG", name: "DSG" },
+                    { id: "ZF 8HP", name: "ZF 8HP" },
+                    { id: "Mercedes 7G", name: "Mercedes 7G" },
+                    { id: "Mercedes 9G", name: "Mercedes 9G" },
+                    { id: "Other", name: "Other" },
                   ]}
                 />
 
@@ -532,7 +979,13 @@ export default function NewRequestPage() {
                   label="Read Method"
                   value={readMethod}
                   onChange={setReadMethod}
-                  options={["OBD", "Bench", "Boot", "Virtual Read", "Other"]}
+                  options={[
+                    { id: "OBD", name: "OBD" },
+                    { id: "Bench", name: "Bench" },
+                    { id: "Boot", name: "Boot" },
+                    { id: "Virtual Read", name: "Virtual Read" },
+                    { id: "Other", name: "Other" },
+                  ]}
                 />
               </div>
             </section>
@@ -679,7 +1132,7 @@ export default function NewRequestPage() {
             </section>
           </div>
 
-          <aside className="space-y-6">
+          <aside className="space-y-4">
             <div className="sticky top-28 rounded-[2rem] border border-white/10 bg-black/55 p-6 shadow-2xl shadow-black/30 backdrop-blur-xl">
               <ShieldCheck className="mb-5 h-9 w-9 text-red-500" />
               <h3 className="text-2xl font-black">Request Summary</h3>
@@ -688,7 +1141,14 @@ export default function NewRequestPage() {
                 <div className="flex justify-between gap-4 rounded-2xl bg-white/[0.04] p-4">
                   <span className="text-zinc-400">Vehicle</span>
                   <span className="text-right font-bold">
-                    {vehicleBrand || "-"} {vehicleModel || ""}
+                    {selectedBrandName || "-"} {selectedModelName || ""}
+                  </span>
+                </div>
+
+                <div className="flex justify-between gap-4 rounded-2xl bg-white/[0.04] p-4">
+                  <span className="text-zinc-400">Engine</span>
+                  <span className="text-right font-bold">
+                    {selectedEngineName || "-"}
                   </span>
                 </div>
 

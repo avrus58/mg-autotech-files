@@ -26,6 +26,8 @@ import {
   UserPlus,
   Wrench,
 } from "lucide-react";
+import { Footer } from "@/components/Footer";
+import { OnlineStatus } from "@/components/OnlineStatus";
 
 const services = [
   {
@@ -357,64 +359,136 @@ export default function HomePage() {
           </motion.div>
 
           <motion.div
-            initial={{ opacity: 0, scale: 0.96 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.55, delay: 0.1 }}
+            initial={{ opacity: 0, scale: 0.96, x: 24 }}
+            animate={{ opacity: 1, scale: 1, x: 0 }}
+            transition={{ duration: 0.6, delay: 0.12 }}
             className="hidden lg:block"
           >
             <motion.div
-              animate={{ y: [0, -10, 0] }}
-              transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
-              className="relative rounded-[2rem] border border-white/10 bg-black/45 p-6 shadow-2xl shadow-black backdrop-blur"
+              animate={{ y: [0, -9, 0] }}
+              transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut" }}
+              className="relative"
             >
-              <div className="mb-5 flex items-center justify-between">
-                <div>
-                  <div className="text-sm text-zinc-400">
-                    Live Portal Preview
+              <div className="absolute -inset-8 -z-10 rounded-[3rem] bg-red-700/20 blur-3xl" />
+              <div className="absolute -right-6 -top-6 z-10 rounded-2xl border border-red-800/50 bg-black/80 px-4 py-3 shadow-2xl shadow-black backdrop-blur-xl">
+                <div className="flex items-center gap-3">
+                  <span className="flex h-3 w-3 rounded-full bg-emerald-400 shadow-lg shadow-emerald-500/40" />
+                  <div>
+                    <div className="text-xs font-black uppercase tracking-[0.18em] text-emerald-300">
+                      Live Workflow
+                    </div>
+                    <div className="text-xs text-zinc-400">Secure file processing</div>
                   </div>
-                  <div className="text-2xl font-black">Order #MGA-001</div>
-                </div>
-                <div className="rounded-full bg-emerald-500/15 px-3 py-1 text-xs font-bold text-emerald-300">
-                  Completed
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
-                <div className="rounded-2xl bg-red-950/35 p-4">
-                  <CreditCard className="mb-3 h-5 w-5 text-red-500" />
-                  <div className="text-3xl font-black">50</div>
-                  <div className="text-xs text-zinc-400">Credits</div>
-                </div>
-                <div className="rounded-2xl bg-white/[0.05] p-4">
-                  <Clock3 className="mb-3 h-5 w-5 text-zinc-300" />
-                  <div className="text-3xl font-black">1</div>
-                  <div className="text-xs text-zinc-400">Open</div>
-                </div>
-                <div className="rounded-2xl bg-white/[0.05] p-4">
-                  <Download className="mb-3 h-5 w-5 text-zinc-300" />
-                  <div className="text-3xl font-black">12</div>
-                  <div className="text-xs text-zinc-400">Done</div>
-                </div>
-              </div>
+              <div className="overflow-hidden rounded-[2.25rem] border border-white/10 bg-[#08090c]/80 shadow-2xl shadow-black backdrop-blur-xl">
+                <div className="border-b border-white/10 bg-white/[0.035] px-6 py-5">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-xs font-black uppercase tracking-[0.22em] text-red-500">
+                        MG AutoTech Portal
+                      </div>
+                      <div className="mt-1 text-2xl font-black">
+                        File Request Console
+                      </div>
+                    </div>
 
-              <div className="mt-4 rounded-2xl border border-white/10 bg-black/50 p-5">
-                <div className="mb-4 flex items-center justify-between">
-                  <div className="font-black">Mercedes-Benz E-Class</div>
-                  <div className="text-sm font-black text-red-500">Stage 1</div>
+                    <div className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-4 py-2 text-xs font-black text-emerald-300">
+                      Ready
+                    </div>
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-3 text-center">
-                  <div className="rounded-xl bg-white/[0.05] p-3">
-                    <div className="text-xs text-zinc-400">Stock</div>
-                    <div className="font-black">136 HP</div>
+                <div className="grid gap-4 p-6">
+                  <div className="rounded-3xl border border-white/10 bg-black/45 p-5">
+                    <div className="mb-4 flex items-start justify-between gap-4">
+                      <div>
+                        <div className="text-sm text-zinc-400">Vehicle</div>
+                        <div className="mt-1 text-xl font-black">
+                          Mercedes-Benz E-Class
+                        </div>
+                        <div className="mt-1 text-sm text-zinc-500">
+                          2.2 CDI · Bosch EDC17 · OBD Read
+                        </div>
+                      </div>
+
+                      <div className="rounded-2xl bg-red-950/35 p-3 text-right">
+                        <div className="text-xs text-zinc-400">Order</div>
+                        <div className="font-black text-red-400">#MGA-2405</div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+                        <Gauge className="mb-3 h-5 w-5 text-red-500" />
+                        <div className="text-xs text-zinc-500">Service</div>
+                        <div className="mt-1 font-black">Stage 1</div>
+                      </div>
+
+                      <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+                        <CreditCard className="mb-3 h-5 w-5 text-red-500" />
+                        <div className="text-xs text-zinc-500">Credits</div>
+                        <div className="mt-1 font-black">25 Used</div>
+                      </div>
+
+                      <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+                        <Download className="mb-3 h-5 w-5 text-emerald-400" />
+                        <div className="text-xs text-zinc-500">Status</div>
+                        <div className="mt-1 font-black text-emerald-300">Done</div>
+                      </div>
+                    </div>
                   </div>
-                  <div className="rounded-xl bg-red-950/35 p-3">
-                    <div className="text-xs text-zinc-400">Tuned</div>
-                    <div className="font-black">200 HP</div>
+
+                  <div className="rounded-3xl border border-red-900/40 bg-red-950/15 p-5">
+                    <div className="mb-4 flex items-center justify-between">
+                      <div className="font-black">Calibration Summary</div>
+                      <div className="rounded-full bg-black/35 px-3 py-1 text-xs font-bold text-zinc-300">
+                        Verified
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-3 text-center">
+                      <div className="rounded-2xl bg-black/35 p-4">
+                        <div className="text-xs text-zinc-500">Stock</div>
+                        <div className="mt-1 text-xl font-black">136 HP</div>
+                        <div className="mt-1 text-xs text-zinc-500">360 Nm</div>
+                      </div>
+
+                      <div className="rounded-2xl border border-red-800/50 bg-red-950/35 p-4">
+                        <div className="text-xs text-zinc-500">Optimized</div>
+                        <div className="mt-1 text-xl font-black">200 HP</div>
+                        <div className="mt-1 text-xs text-zinc-500">430 Nm</div>
+                      </div>
+
+                      <div className="rounded-2xl bg-black/35 p-4">
+                        <div className="text-xs text-zinc-500">Gain</div>
+                        <div className="mt-1 text-xl font-black text-red-500">+64 HP</div>
+                        <div className="mt-1 text-xs text-red-400">+70 Nm</div>
+                      </div>
+                    </div>
                   </div>
-                  <div className="rounded-xl bg-white/[0.05] p-3">
-                    <div className="text-xs text-zinc-400">Gain</div>
-                    <div className="font-black text-red-500">+64 HP</div>
+
+                  <div className="rounded-3xl border border-white/10 bg-black/45 p-5">
+                    <div className="mb-4 flex items-center justify-between">
+                      <div className="font-black">Processing Timeline</div>
+                      <Clock3 className="h-5 w-5 text-zinc-500" />
+                    </div>
+
+                    <div className="space-y-3">
+                      {[
+                        "Original file uploaded",
+                        "ECU data checked",
+                        "Custom file prepared",
+                        "Modified file ready",
+                      ].map((item) => (
+                        <div key={item} className="flex items-center gap-3 text-sm">
+                          <CheckCircle2 className="h-5 w-5 text-emerald-400" />
+                          <span className="text-zinc-300">{item}</span>
+                          <span className="ml-auto h-px w-12 bg-gradient-to-r from-red-700 to-transparent" />
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -617,7 +691,7 @@ export default function HomePage() {
                 <div className="mt-4 text-4xl font-black">{pack.price}</div>
                 <div className="mt-3 text-sm text-zinc-400">{pack.each}</div>
                 <Link
-                  href="/dashboard"
+                  href="/dashboard/credits"
                   className="mt-7 block rounded-xl border border-red-800/70 px-5 py-3 text-center font-black text-white transition duration-300 hover:bg-red-950/30"
                 >
                   Buy
@@ -697,9 +771,8 @@ export default function HomePage() {
         </div>
       </section>
 
-      <footer className="border-t border-white/10 bg-black px-4 py-8 text-center text-sm text-zinc-500">
-        © 2026 MG AutoTech. Professional ECU / TCU File Service Platform.
-      </footer>
+      <Footer />
+      <OnlineStatus />
     </main>
   );
 }

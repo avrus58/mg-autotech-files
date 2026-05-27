@@ -1,0 +1,1314 @@
+[
+  {
+    "level": "models",
+    "brand": {
+      "id": "61",
+      "name": "Mack"
+    },
+    "error": "No options returned. Payload={\"aracmarka\":\"61\",\"dilNe\":\"en\"} Response=Select"
+  },
+  {
+    "level": "engines",
+    "brand": {
+      "id": "64",
+      "name": "Massey"
+    },
+    "model": {
+      "id": "954",
+      "name": "Beta 7260"
+    },
+    "generation": {
+      "id": "1386",
+      "name": "All"
+    },
+    "error": "No options returned. Payload={\"aracgen\":\"1386\",\"aracmarkacek2\":\"64\",\"aracmodelcek\":\"954\",\"dilNe\":\"en\"} Response=Select"
+  },
+  {
+    "level": "engines",
+    "brand": {
+      "id": "64",
+      "name": "Massey"
+    },
+    "model": {
+      "id": "994",
+      "name": "MF 9695"
+    },
+    "generation": {
+      "id": "1426",
+      "name": "All"
+    },
+    "error": "No options returned. Payload={\"aracgen\":\"1426\",\"aracmarkacek2\":\"64\",\"aracmodelcek\":\"994\",\"dilNe\":\"en\"} Response=Select"
+  },
+  {
+    "level": "engines",
+    "brand": {
+      "id": "64",
+      "name": "Massey"
+    },
+    "model": {
+      "id": "995",
+      "name": "MF 9795"
+    },
+    "generation": {
+      "id": "1427",
+      "name": "All"
+    },
+    "error": "No options returned. Payload={\"aracgen\":\"1427\",\"aracmarkacek2\":\"64\",\"aracmodelcek\":\"995\",\"dilNe\":\"en\"} Response=Select"
+  },
+  {
+    "level": "engines",
+    "brand": {
+      "id": "64",
+      "name": "Massey"
+    },
+    "model": {
+      "id": "996",
+      "name": "MF 9895"
+    },
+    "generation": {
+      "id": "1428",
+      "name": "All"
+    },
+    "error": "No options returned. Payload={\"aracgen\":\"1428\",\"aracmarkacek2\":\"64\",\"aracmodelcek\":\"996\",\"dilNe\":\"en\"} Response=Select"
+  },
+  {
+    "level": "engines",
+    "brand": {
+      "id": "66",
+      "name": "McCormick"
+    },
+    "model": {
+      "id": "1027",
+      "name": "MTX 200"
+    },
+    "generation": {
+      "id": "1012",
+      "name": "CX 60L"
+    },
+    "error": "No options returned. Payload={\"aracgen\":\"1012\",\"aracmarkacek2\":\"66\",\"aracmodelcek\":\"1027\",\"dilNe\":\"en\"} Response=Select"
+  },
+  {
+    "level": "engines",
+    "brand": {
+      "id": "66",
+      "name": "McCormick"
+    },
+    "model": {
+      "id": "1027",
+      "name": "MTX 200"
+    },
+    "generation": {
+      "id": "1013",
+      "name": "CX 70L"
+    },
+    "error": "No options returned. Payload={\"aracgen\":\"1013\",\"aracmarkacek2\":\"66\",\"aracmodelcek\":\"1027\",\"dilNe\":\"en\"} Response=Select"
+  },
+  {
+    "level": "engines",
+    "brand": {
+      "id": "66",
+      "name": "McCormick"
+    },
+    "model": {
+      "id": "1027",
+      "name": "MTX 200"
+    },
+    "generation": {
+      "id": "1014",
+      "name": "CX 80L"
+    },
+    "error": "No options returned. Payload={\"aracgen\":\"1014\",\"aracmarkacek2\":\"66\",\"aracmodelcek\":\"1027\",\"dilNe\":\"en\"} Response=Select"
+  },
+  {
+    "level": "engines",
+    "brand": {
+      "id": "66",
+      "name": "McCormick"
+    },
+    "model": {
+      "id": "1027",
+      "name": "MTX 200"
+    },
+    "generation": {
+      "id": "1015",
+      "name": "CX 85L"
+    },
+    "error": "No options returned. Payload={\"aracgen\":\"1015\",\"aracmarkacek2\":\"66\",\"aracmodelcek\":\"1027\",\"dilNe\":\"en\"} Response=Select"
+  },
+  {
+    "level": "engines",
+    "brand": {
+      "id": "66",
+      "name": "McCormick"
+    },
+    "model": {
+      "id": "1027",
+      "name": "MTX 200"
+    },
+    "generation": {
+      "id": "1016",
+      "name": "MC 105"
+    },
+    "error": "No options returned. Payload={\"aracgen\":\"1016\",\"aracmarkacek2\":\"66\",\"aracmodelcek\":\"1027\",\"dilNe\":\"en\"} Response=Select"
+  },
+  {
+    "level": "engines",
+    "brand": {
+      "id": "66",
+      "name": "McCormick"
+    },
+    "model": {
+      "id": "1027",
+      "name": "MTX 200"
+    },
+    "generation": {
+      "id": "1017",
+      "name": "MC 115"
+    },
+    "error": "No options returned. Payload={\"aracgen\":\"1017\",\"aracmarkacek2\":\"66\",\"aracmodelcek\":\"1027\",\"dilNe\":\"en\"} Response=Select"
+  },
+  {
+    "level": "engines",
+    "brand": {
+      "id": "66",
+      "name": "McCormick"
+    },
+    "model": {
+      "id": "1027",
+      "name": "MTX 200"
+    },
+    "generation": {
+      "id": "1018",
+      "name": "MC 120"
+    },
+    "error": "No options returned. Payload={\"aracgen\":\"1018\",\"aracmarkacek2\":\"66\",\"aracmodelcek\":\"1027\",\"dilNe\":\"en\"} Response=Select"
+  },
+  {
+    "level": "engines",
+    "brand": {
+      "id": "66",
+      "name": "McCormick"
+    },
+    "model": {
+      "id": "1027",
+      "name": "MTX 200"
+    },
+    "generation": {
+      "id": "1019",
+      "name": "MC 130"
+    },
+    "error": "No options returned. Payload={\"aracgen\":\"1019\",\"aracmarkacek2\":\"66\",\"aracmodelcek\":\"1027\",\"dilNe\":\"en\"} Response=Select"
+  },
+  {
+    "level": "engines",
+    "brand": {
+      "id": "66",
+      "name": "McCormick"
+    },
+    "model": {
+      "id": "1027",
+      "name": "MTX 200"
+    },
+    "generation": {
+      "id": "1020",
+      "name": "MC 135"
+    },
+    "error": "No options returned. Payload={\"aracgen\":\"1020\",\"aracmarkacek2\":\"66\",\"aracmodelcek\":\"1027\",\"dilNe\":\"en\"} Response=Select"
+  },
+  {
+    "level": "engines",
+    "brand": {
+      "id": "66",
+      "name": "McCormick"
+    },
+    "model": {
+      "id": "1027",
+      "name": "MTX 200"
+    },
+    "generation": {
+      "id": "1021",
+      "name": "MC 95"
+    },
+    "error": "No options returned. Payload={\"aracgen\":\"1021\",\"aracmarkacek2\":\"66\",\"aracmodelcek\":\"1027\",\"dilNe\":\"en\"} Response=Select"
+  },
+  {
+    "level": "engines",
+    "brand": {
+      "id": "66",
+      "name": "McCormick"
+    },
+    "model": {
+      "id": "1027",
+      "name": "MTX 200"
+    },
+    "generation": {
+      "id": "1022",
+      "name": "MTX 120"
+    },
+    "error": "No options returned. Payload={\"aracgen\":\"1022\",\"aracmarkacek2\":\"66\",\"aracmodelcek\":\"1027\",\"dilNe\":\"en\"} Response=Select"
+  },
+  {
+    "level": "engines",
+    "brand": {
+      "id": "66",
+      "name": "McCormick"
+    },
+    "model": {
+      "id": "1027",
+      "name": "MTX 200"
+    },
+    "generation": {
+      "id": "1023",
+      "name": "MTX 135"
+    },
+    "error": "No options returned. Payload={\"aracgen\":\"1023\",\"aracmarkacek2\":\"66\",\"aracmodelcek\":\"1027\",\"dilNe\":\"en\"} Response=Select"
+  },
+  {
+    "level": "engines",
+    "brand": {
+      "id": "66",
+      "name": "McCormick"
+    },
+    "model": {
+      "id": "1027",
+      "name": "MTX 200"
+    },
+    "generation": {
+      "id": "1024",
+      "name": "MTX 150"
+    },
+    "error": "No options returned. Payload={\"aracgen\":\"1024\",\"aracmarkacek2\":\"66\",\"aracmodelcek\":\"1027\",\"dilNe\":\"en\"} Response=Select"
+  },
+  {
+    "level": "engines",
+    "brand": {
+      "id": "66",
+      "name": "McCormick"
+    },
+    "model": {
+      "id": "1027",
+      "name": "MTX 200"
+    },
+    "generation": {
+      "id": "1025",
+      "name": "MTX 165"
+    },
+    "error": "No options returned. Payload={\"aracgen\":\"1025\",\"aracmarkacek2\":\"66\",\"aracmodelcek\":\"1027\",\"dilNe\":\"en\"} Response=Select"
+  },
+  {
+    "level": "engines",
+    "brand": {
+      "id": "66",
+      "name": "McCormick"
+    },
+    "model": {
+      "id": "1027",
+      "name": "MTX 200"
+    },
+    "generation": {
+      "id": "1026",
+      "name": "MTX 185"
+    },
+    "error": "No options returned. Payload={\"aracgen\":\"1026\",\"aracmarkacek2\":\"66\",\"aracmodelcek\":\"1027\",\"dilNe\":\"en\"} Response=Select"
+  },
+  {
+    "level": "engines",
+    "brand": {
+      "id": "66",
+      "name": "McCormick"
+    },
+    "model": {
+      "id": "1027",
+      "name": "MTX 200"
+    },
+    "generation": {
+      "id": "1027",
+      "name": "MTX 200"
+    },
+    "error": "No options returned. Payload={\"aracgen\":\"1027\",\"aracmarkacek2\":\"66\",\"aracmodelcek\":\"1027\",\"dilNe\":\"en\"} Response=Select"
+  },
+  {
+    "level": "engines",
+    "brand": {
+      "id": "66",
+      "name": "McCormick"
+    },
+    "model": {
+      "id": "1027",
+      "name": "MTX 200"
+    },
+    "generation": {
+      "id": "1028",
+      "name": "TTX 190"
+    },
+    "error": "No options returned. Payload={\"aracgen\":\"1028\",\"aracmarkacek2\":\"66\",\"aracmodelcek\":\"1027\",\"dilNe\":\"en\"} Response=Select"
+  },
+  {
+    "level": "engines",
+    "brand": {
+      "id": "66",
+      "name": "McCormick"
+    },
+    "model": {
+      "id": "1027",
+      "name": "MTX 200"
+    },
+    "generation": {
+      "id": "1029",
+      "name": "TTX 210"
+    },
+    "error": "No options returned. Payload={\"aracgen\":\"1029\",\"aracmarkacek2\":\"66\",\"aracmodelcek\":\"1027\",\"dilNe\":\"en\"} Response=Select"
+  },
+  {
+    "level": "engines",
+    "brand": {
+      "id": "66",
+      "name": "McCormick"
+    },
+    "model": {
+      "id": "1027",
+      "name": "MTX 200"
+    },
+    "generation": {
+      "id": "1030",
+      "name": "TTX 230"
+    },
+    "error": "No options returned. Payload={\"aracgen\":\"1030\",\"aracmarkacek2\":\"66\",\"aracmodelcek\":\"1027\",\"dilNe\":\"en\"} Response=Select"
+  },
+  {
+    "level": "engines",
+    "brand": {
+      "id": "66",
+      "name": "McCormick"
+    },
+    "model": {
+      "id": "1027",
+      "name": "MTX 200"
+    },
+    "generation": {
+      "id": "1031",
+      "name": "XTX 145"
+    },
+    "error": "No options returned. Payload={\"aracgen\":\"1031\",\"aracmarkacek2\":\"66\",\"aracmodelcek\":\"1027\",\"dilNe\":\"en\"} Response=Select"
+  },
+  {
+    "level": "engines",
+    "brand": {
+      "id": "66",
+      "name": "McCormick"
+    },
+    "model": {
+      "id": "1027",
+      "name": "MTX 200"
+    },
+    "generation": {
+      "id": "1032",
+      "name": "XTX 165"
+    },
+    "error": "No options returned. Payload={\"aracgen\":\"1032\",\"aracmarkacek2\":\"66\",\"aracmodelcek\":\"1027\",\"dilNe\":\"en\"} Response=Select"
+  },
+  {
+    "level": "engines",
+    "brand": {
+      "id": "66",
+      "name": "McCormick"
+    },
+    "model": {
+      "id": "1027",
+      "name": "MTX 200"
+    },
+    "generation": {
+      "id": "1033",
+      "name": "XTX 185"
+    },
+    "error": "No options returned. Payload={\"aracgen\":\"1033\",\"aracmarkacek2\":\"66\",\"aracmodelcek\":\"1027\",\"dilNe\":\"en\"} Response=Select"
+  },
+  {
+    "level": "engines",
+    "brand": {
+      "id": "66",
+      "name": "McCormick"
+    },
+    "model": {
+      "id": "1027",
+      "name": "MTX 200"
+    },
+    "generation": {
+      "id": "1034",
+      "name": "XTX 185E"
+    },
+    "error": "No options returned. Payload={\"aracgen\":\"1034\",\"aracmarkacek2\":\"66\",\"aracmodelcek\":\"1027\",\"dilNe\":\"en\"} Response=Select"
+  },
+  {
+    "level": "engines",
+    "brand": {
+      "id": "66",
+      "name": "McCormick"
+    },
+    "model": {
+      "id": "1027",
+      "name": "MTX 200"
+    },
+    "generation": {
+      "id": "1035",
+      "name": "XTX 200"
+    },
+    "error": "No options returned. Payload={\"aracgen\":\"1035\",\"aracmarkacek2\":\"66\",\"aracmodelcek\":\"1027\",\"dilNe\":\"en\"} Response=Select"
+  },
+  {
+    "level": "engines",
+    "brand": {
+      "id": "66",
+      "name": "McCormick"
+    },
+    "model": {
+      "id": "1027",
+      "name": "MTX 200"
+    },
+    "generation": {
+      "id": "1036",
+      "name": "XTX 200E"
+    },
+    "error": "No options returned. Payload={\"aracgen\":\"1036\",\"aracmarkacek2\":\"66\",\"aracmodelcek\":\"1027\",\"dilNe\":\"en\"} Response=Select"
+  },
+  {
+    "level": "engines",
+    "brand": {
+      "id": "66",
+      "name": "McCormick"
+    },
+    "model": {
+      "id": "1027",
+      "name": "MTX 200"
+    },
+    "generation": {
+      "id": "1037",
+      "name": "XTX 215"
+    },
+    "error": "No options returned. Payload={\"aracgen\":\"1037\",\"aracmarkacek2\":\"66\",\"aracmodelcek\":\"1027\",\"dilNe\":\"en\"} Response=Select"
+  },
+  {
+    "level": "engines",
+    "brand": {
+      "id": "66",
+      "name": "McCormick"
+    },
+    "model": {
+      "id": "1027",
+      "name": "MTX 200"
+    },
+    "generation": {
+      "id": "1038",
+      "name": "XTX 215E"
+    },
+    "error": "No options returned. Payload={\"aracgen\":\"1038\",\"aracmarkacek2\":\"66\",\"aracmodelcek\":\"1027\",\"dilNe\":\"en\"} Response=Select"
+  },
+  {
+    "level": "engines",
+    "brand": {
+      "id": "66",
+      "name": "McCormick"
+    },
+    "model": {
+      "id": "1027",
+      "name": "MTX 200"
+    },
+    "generation": {
+      "id": "1039",
+      "name": "ZTX 230"
+    },
+    "error": "No options returned. Payload={\"aracgen\":\"1039\",\"aracmarkacek2\":\"66\",\"aracmodelcek\":\"1027\",\"dilNe\":\"en\"} Response=Select"
+  },
+  {
+    "level": "engines",
+    "brand": {
+      "id": "66",
+      "name": "McCormick"
+    },
+    "model": {
+      "id": "1027",
+      "name": "MTX 200"
+    },
+    "generation": {
+      "id": "1040",
+      "name": "ZTX 260"
+    },
+    "error": "No options returned. Payload={\"aracgen\":\"1040\",\"aracmarkacek2\":\"66\",\"aracmodelcek\":\"1027\",\"dilNe\":\"en\"} Response=Select"
+  },
+  {
+    "level": "engines",
+    "brand": {
+      "id": "66",
+      "name": "McCormick"
+    },
+    "model": {
+      "id": "1027",
+      "name": "MTX 200"
+    },
+    "generation": {
+      "id": "1041",
+      "name": "ZTX 280"
+    },
+    "error": "No options returned. Payload={\"aracgen\":\"1041\",\"aracmarkacek2\":\"66\",\"aracmodelcek\":\"1027\",\"dilNe\":\"en\"} Response=Select"
+  },
+  {
+    "level": "engines",
+    "brand": {
+      "id": "67",
+      "name": "McLaren"
+    },
+    "model": {
+      "id": "1052",
+      "name": "Artura"
+    },
+    "generation": {
+      "id": "1042",
+      "name": "540C"
+    },
+    "error": "No options returned. Payload={\"aracgen\":\"1042\",\"aracmarkacek2\":\"67\",\"aracmodelcek\":\"1052\",\"dilNe\":\"en\"} Response=Select"
+  },
+  {
+    "level": "engines",
+    "brand": {
+      "id": "67",
+      "name": "McLaren"
+    },
+    "model": {
+      "id": "1052",
+      "name": "Artura"
+    },
+    "generation": {
+      "id": "1043",
+      "name": "570 S / Sprint / GT4"
+    },
+    "error": "No options returned. Payload={\"aracgen\":\"1043\",\"aracmarkacek2\":\"67\",\"aracmodelcek\":\"1052\",\"dilNe\":\"en\"} Response=Select"
+  },
+  {
+    "level": "engines",
+    "brand": {
+      "id": "67",
+      "name": "McLaren"
+    },
+    "model": {
+      "id": "1052",
+      "name": "Artura"
+    },
+    "generation": {
+      "id": "1044",
+      "name": "570GT"
+    },
+    "error": "No options returned. Payload={\"aracgen\":\"1044\",\"aracmarkacek2\":\"67\",\"aracmodelcek\":\"1052\",\"dilNe\":\"en\"} Response=Select"
+  },
+  {
+    "level": "engines",
+    "brand": {
+      "id": "67",
+      "name": "McLaren"
+    },
+    "model": {
+      "id": "1052",
+      "name": "Artura"
+    },
+    "generation": {
+      "id": "1045",
+      "name": "600LT"
+    },
+    "error": "No options returned. Payload={\"aracgen\":\"1045\",\"aracmarkacek2\":\"67\",\"aracmodelcek\":\"1052\",\"dilNe\":\"en\"} Response=Select"
+  },
+  {
+    "level": "engines",
+    "brand": {
+      "id": "67",
+      "name": "McLaren"
+    },
+    "model": {
+      "id": "1052",
+      "name": "Artura"
+    },
+    "generation": {
+      "id": "1046",
+      "name": "620R"
+    },
+    "error": "No options returned. Payload={\"aracgen\":\"1046\",\"aracmarkacek2\":\"67\",\"aracmodelcek\":\"1052\",\"dilNe\":\"en\"} Response=Select"
+  },
+  {
+    "level": "engines",
+    "brand": {
+      "id": "67",
+      "name": "McLaren"
+    },
+    "model": {
+      "id": "1052",
+      "name": "Artura"
+    },
+    "generation": {
+      "id": "1047",
+      "name": "625C"
+    },
+    "error": "No options returned. Payload={\"aracgen\":\"1047\",\"aracmarkacek2\":\"67\",\"aracmodelcek\":\"1052\",\"dilNe\":\"en\"} Response=Select"
+  },
+  {
+    "level": "engines",
+    "brand": {
+      "id": "67",
+      "name": "McLaren"
+    },
+    "model": {
+      "id": "1052",
+      "name": "Artura"
+    },
+    "generation": {
+      "id": "1048",
+      "name": "650S"
+    },
+    "error": "No options returned. Payload={\"aracgen\":\"1048\",\"aracmarkacek2\":\"67\",\"aracmodelcek\":\"1052\",\"dilNe\":\"en\"} Response=Select"
+  },
+  {
+    "level": "engines",
+    "brand": {
+      "id": "67",
+      "name": "McLaren"
+    },
+    "model": {
+      "id": "1052",
+      "name": "Artura"
+    },
+    "generation": {
+      "id": "1049",
+      "name": "675LT"
+    },
+    "error": "No options returned. Payload={\"aracgen\":\"1049\",\"aracmarkacek2\":\"67\",\"aracmodelcek\":\"1052\",\"dilNe\":\"en\"} Response=Select"
+  },
+  {
+    "level": "engines",
+    "brand": {
+      "id": "67",
+      "name": "McLaren"
+    },
+    "model": {
+      "id": "1052",
+      "name": "Artura"
+    },
+    "generation": {
+      "id": "1050",
+      "name": "720S"
+    },
+    "error": "No options returned. Payload={\"aracgen\":\"1050\",\"aracmarkacek2\":\"67\",\"aracmodelcek\":\"1052\",\"dilNe\":\"en\"} Response=Select"
+  },
+  {
+    "level": "engines",
+    "brand": {
+      "id": "67",
+      "name": "McLaren"
+    },
+    "model": {
+      "id": "1052",
+      "name": "Artura"
+    },
+    "generation": {
+      "id": "1051",
+      "name": "765LT"
+    },
+    "error": "No options returned. Payload={\"aracgen\":\"1051\",\"aracmarkacek2\":\"67\",\"aracmodelcek\":\"1052\",\"dilNe\":\"en\"} Response=Select"
+  },
+  {
+    "level": "engines",
+    "brand": {
+      "id": "67",
+      "name": "McLaren"
+    },
+    "model": {
+      "id": "1052",
+      "name": "Artura"
+    },
+    "generation": {
+      "id": "1052",
+      "name": "Artura"
+    },
+    "error": "No options returned. Payload={\"aracgen\":\"1052\",\"aracmarkacek2\":\"67\",\"aracmodelcek\":\"1052\",\"dilNe\":\"en\"} Response=Select"
+  },
+  {
+    "level": "engines",
+    "brand": {
+      "id": "67",
+      "name": "McLaren"
+    },
+    "model": {
+      "id": "1052",
+      "name": "Artura"
+    },
+    "generation": {
+      "id": "1053",
+      "name": "GT"
+    },
+    "error": "No options returned. Payload={\"aracgen\":\"1053\",\"aracmarkacek2\":\"67\",\"aracmodelcek\":\"1052\",\"dilNe\":\"en\"} Response=Select"
+  },
+  {
+    "level": "engines",
+    "brand": {
+      "id": "67",
+      "name": "McLaren"
+    },
+    "model": {
+      "id": "1052",
+      "name": "Artura"
+    },
+    "generation": {
+      "id": "1054",
+      "name": "MP4-12C"
+    },
+    "error": "No options returned. Payload={\"aracgen\":\"1054\",\"aracmarkacek2\":\"67\",\"aracmodelcek\":\"1052\",\"dilNe\":\"en\"} Response=Select"
+  },
+  {
+    "level": "engines",
+    "brand": {
+      "id": "67",
+      "name": "McLaren"
+    },
+    "model": {
+      "id": "1052",
+      "name": "Artura"
+    },
+    "generation": {
+      "id": "1055",
+      "name": "P1"
+    },
+    "error": "No options returned. Payload={\"aracgen\":\"1055\",\"aracmarkacek2\":\"67\",\"aracmodelcek\":\"1052\",\"dilNe\":\"en\"} Response=Select"
+  },
+  {
+    "level": "engines",
+    "brand": {
+      "id": "67",
+      "name": "McLaren"
+    },
+    "model": {
+      "id": "1052",
+      "name": "Artura"
+    },
+    "generation": {
+      "id": "1056",
+      "name": "Senna"
+    },
+    "error": "No options returned. Payload={\"aracgen\":\"1056\",\"aracmarkacek2\":\"67\",\"aracmodelcek\":\"1052\",\"dilNe\":\"en\"} Response=Select"
+  },
+  {
+    "level": "engines",
+    "brand": {
+      "id": "73",
+      "name": "New"
+    },
+    "model": {
+      "id": "1123",
+      "name": "CR9060 Cursor Elevation 2011 Tier 3"
+    },
+    "generation": {
+      "id": "1652",
+      "name": "All"
+    },
+    "error": "No options returned. Payload={\"aracgen\":\"1652\",\"aracmarkacek2\":\"73\",\"aracmodelcek\":\"1123\",\"dilNe\":\"en\"} Response=Select"
+  },
+  {
+    "level": "engines",
+    "brand": {
+      "id": "73",
+      "name": "New"
+    },
+    "model": {
+      "id": "1129",
+      "name": "CR9090"
+    },
+    "generation": {
+      "id": "1658",
+      "name": "All"
+    },
+    "error": "No options returned. Payload={\"aracgen\":\"1658\",\"aracmarkacek2\":\"73\",\"aracmodelcek\":\"1129\",\"dilNe\":\"en\"} Response=Select"
+  },
+  {
+    "level": "engines",
+    "brand": {
+      "id": "73",
+      "name": "New"
+    },
+    "model": {
+      "id": "1132",
+      "name": "CX5090"
+    },
+    "generation": {
+      "id": "1661",
+      "name": "All"
+    },
+    "error": "No options returned. Payload={\"aracgen\":\"1661\",\"aracmarkacek2\":\"73\",\"aracmodelcek\":\"1132\",\"dilNe\":\"en\"} Response=Select"
+  },
+  {
+    "level": "engines",
+    "brand": {
+      "id": "73",
+      "name": "New"
+    },
+    "model": {
+      "id": "1138",
+      "name": "CX8040"
+    },
+    "generation": {
+      "id": "1667",
+      "name": "All"
+    },
+    "error": "No options returned. Payload={\"aracgen\":\"1667\",\"aracmarkacek2\":\"73\",\"aracmodelcek\":\"1138\",\"dilNe\":\"en\"} Response=Select"
+  },
+  {
+    "level": "engines",
+    "brand": {
+      "id": "73",
+      "name": "New"
+    },
+    "model": {
+      "id": "1152",
+      "name": "FR9090"
+    },
+    "generation": {
+      "id": "1681",
+      "name": "All"
+    },
+    "error": "No options returned. Payload={\"aracgen\":\"1681\",\"aracmarkacek2\":\"73\",\"aracmodelcek\":\"1152\",\"dilNe\":\"en\"} Response=Select"
+  },
+  {
+    "level": "engines",
+    "brand": {
+      "id": "73",
+      "name": "New"
+    },
+    "model": {
+      "id": "1213",
+      "name": "TC5080"
+    },
+    "generation": {
+      "id": "1742",
+      "name": "All"
+    },
+    "error": "No options returned. Payload={\"aracgen\":\"1742\",\"aracmarkacek2\":\"73\",\"aracmodelcek\":\"1213\",\"dilNe\":\"en\"} Response=Select"
+  },
+  {
+    "level": "models",
+    "brand": {
+      "id": "86",
+      "name": "Same"
+    },
+    "error": "No options returned. Payload={\"aracmarka\":\"86\",\"dilNe\":\"en\"} Response=Select"
+  },
+  {
+    "level": "engines",
+    "brand": {
+      "id": "93",
+      "name": "Steyr"
+    },
+    "model": {
+      "id": "1457",
+      "name": "6225"
+    },
+    "generation": {
+      "id": "1433",
+      "name": "4100"
+    },
+    "error": "No options returned. Payload={\"aracgen\":\"1433\",\"aracmarkacek2\":\"93\",\"aracmodelcek\":\"1457\",\"dilNe\":\"en\"} Response=Select"
+  },
+  {
+    "level": "engines",
+    "brand": {
+      "id": "93",
+      "name": "Steyr"
+    },
+    "model": {
+      "id": "1457",
+      "name": "6225"
+    },
+    "generation": {
+      "id": "1434",
+      "name": "4110"
+    },
+    "error": "No options returned. Payload={\"aracgen\":\"1434\",\"aracmarkacek2\":\"93\",\"aracmodelcek\":\"1457\",\"dilNe\":\"en\"} Response=Select"
+  },
+  {
+    "level": "engines",
+    "brand": {
+      "id": "93",
+      "name": "Steyr"
+    },
+    "model": {
+      "id": "1457",
+      "name": "6225"
+    },
+    "generation": {
+      "id": "1435",
+      "name": "4115"
+    },
+    "error": "No options returned. Payload={\"aracgen\":\"1435\",\"aracmarkacek2\":\"93\",\"aracmodelcek\":\"1457\",\"dilNe\":\"en\"} Response=Select"
+  },
+  {
+    "level": "engines",
+    "brand": {
+      "id": "93",
+      "name": "Steyr"
+    },
+    "model": {
+      "id": "1457",
+      "name": "6225"
+    },
+    "generation": {
+      "id": "1436",
+      "name": "4120"
+    },
+    "error": "No options returned. Payload={\"aracgen\":\"1436\",\"aracmarkacek2\":\"93\",\"aracmodelcek\":\"1457\",\"dilNe\":\"en\"} Response=Select"
+  },
+  {
+    "level": "engines",
+    "brand": {
+      "id": "93",
+      "name": "Steyr"
+    },
+    "model": {
+      "id": "1457",
+      "name": "6225"
+    },
+    "generation": {
+      "id": "1437",
+      "name": "4130"
+    },
+    "error": "No options returned. Payload={\"aracgen\":\"1437\",\"aracmarkacek2\":\"93\",\"aracmodelcek\":\"1457\",\"dilNe\":\"en\"} Response=Select"
+  },
+  {
+    "level": "engines",
+    "brand": {
+      "id": "93",
+      "name": "Steyr"
+    },
+    "model": {
+      "id": "1457",
+      "name": "6225"
+    },
+    "generation": {
+      "id": "1438",
+      "name": "6115"
+    },
+    "error": "No options returned. Payload={\"aracgen\":\"1438\",\"aracmarkacek2\":\"93\",\"aracmodelcek\":\"1457\",\"dilNe\":\"en\"} Response=Select"
+  },
+  {
+    "level": "engines",
+    "brand": {
+      "id": "93",
+      "name": "Steyr"
+    },
+    "model": {
+      "id": "1457",
+      "name": "6225"
+    },
+    "generation": {
+      "id": "1439",
+      "name": "6125"
+    },
+    "error": "No options returned. Payload={\"aracgen\":\"1439\",\"aracmarkacek2\":\"93\",\"aracmodelcek\":\"1457\",\"dilNe\":\"en\"} Response=Select"
+  },
+  {
+    "level": "engines",
+    "brand": {
+      "id": "93",
+      "name": "Steyr"
+    },
+    "model": {
+      "id": "1457",
+      "name": "6225"
+    },
+    "generation": {
+      "id": "1440",
+      "name": "6130"
+    },
+    "error": "No options returned. Payload={\"aracgen\":\"1440\",\"aracmarkacek2\":\"93\",\"aracmodelcek\":\"1457\",\"dilNe\":\"en\"} Response=Select"
+  },
+  {
+    "level": "engines",
+    "brand": {
+      "id": "93",
+      "name": "Steyr"
+    },
+    "model": {
+      "id": "1457",
+      "name": "6225"
+    },
+    "generation": {
+      "id": "1441",
+      "name": "6135"
+    },
+    "error": "No options returned. Payload={\"aracgen\":\"1441\",\"aracmarkacek2\":\"93\",\"aracmodelcek\":\"1457\",\"dilNe\":\"en\"} Response=Select"
+  },
+  {
+    "level": "engines",
+    "brand": {
+      "id": "93",
+      "name": "Steyr"
+    },
+    "model": {
+      "id": "1457",
+      "name": "6225"
+    },
+    "generation": {
+      "id": "1442",
+      "name": "6140"
+    },
+    "error": "No options returned. Payload={\"aracgen\":\"1442\",\"aracmarkacek2\":\"93\",\"aracmodelcek\":\"1457\",\"dilNe\":\"en\"} Response=Select"
+  },
+  {
+    "level": "engines",
+    "brand": {
+      "id": "93",
+      "name": "Steyr"
+    },
+    "model": {
+      "id": "1457",
+      "name": "6225"
+    },
+    "generation": {
+      "id": "1443",
+      "name": "6145"
+    },
+    "error": "No options returned. Payload={\"aracgen\":\"1443\",\"aracmarkacek2\":\"93\",\"aracmodelcek\":\"1457\",\"dilNe\":\"en\"} Response=Select"
+  },
+  {
+    "level": "engines",
+    "brand": {
+      "id": "93",
+      "name": "Steyr"
+    },
+    "model": {
+      "id": "1457",
+      "name": "6225"
+    },
+    "generation": {
+      "id": "1444",
+      "name": "6150"
+    },
+    "error": "No options returned. Payload={\"aracgen\":\"1444\",\"aracmarkacek2\":\"93\",\"aracmodelcek\":\"1457\",\"dilNe\":\"en\"} Response=Select"
+  },
+  {
+    "level": "engines",
+    "brand": {
+      "id": "93",
+      "name": "Steyr"
+    },
+    "model": {
+      "id": "1457",
+      "name": "6225"
+    },
+    "generation": {
+      "id": "1445",
+      "name": "6155"
+    },
+    "error": "No options returned. Payload={\"aracgen\":\"1445\",\"aracmarkacek2\":\"93\",\"aracmodelcek\":\"1457\",\"dilNe\":\"en\"} Response=Select"
+  },
+  {
+    "level": "engines",
+    "brand": {
+      "id": "93",
+      "name": "Steyr"
+    },
+    "model": {
+      "id": "1457",
+      "name": "6225"
+    },
+    "generation": {
+      "id": "1446",
+      "name": "6160"
+    },
+    "error": "No options returned. Payload={\"aracgen\":\"1446\",\"aracmarkacek2\":\"93\",\"aracmodelcek\":\"1457\",\"dilNe\":\"en\"} Response=Select"
+  },
+  {
+    "level": "engines",
+    "brand": {
+      "id": "93",
+      "name": "Steyr"
+    },
+    "model": {
+      "id": "1457",
+      "name": "6225"
+    },
+    "generation": {
+      "id": "1447",
+      "name": "6165"
+    },
+    "error": "No options returned. Payload={\"aracgen\":\"1447\",\"aracmarkacek2\":\"93\",\"aracmodelcek\":\"1457\",\"dilNe\":\"en\"} Response=Select"
+  },
+  {
+    "level": "engines",
+    "brand": {
+      "id": "93",
+      "name": "Steyr"
+    },
+    "model": {
+      "id": "1457",
+      "name": "6225"
+    },
+    "generation": {
+      "id": "1448",
+      "name": "6170"
+    },
+    "error": "No options returned. Payload={\"aracgen\":\"1448\",\"aracmarkacek2\":\"93\",\"aracmodelcek\":\"1457\",\"dilNe\":\"en\"} Response=Select"
+  },
+  {
+    "level": "engines",
+    "brand": {
+      "id": "93",
+      "name": "Steyr"
+    },
+    "model": {
+      "id": "1457",
+      "name": "6225"
+    },
+    "generation": {
+      "id": "1449",
+      "name": "6175"
+    },
+    "error": "No options returned. Payload={\"aracgen\":\"1449\",\"aracmarkacek2\":\"93\",\"aracmodelcek\":\"1457\",\"dilNe\":\"en\"} Response=Select"
+  },
+  {
+    "level": "engines",
+    "brand": {
+      "id": "93",
+      "name": "Steyr"
+    },
+    "model": {
+      "id": "1457",
+      "name": "6225"
+    },
+    "generation": {
+      "id": "1450",
+      "name": "6180"
+    },
+    "error": "No options returned. Payload={\"aracgen\":\"1450\",\"aracmarkacek2\":\"93\",\"aracmodelcek\":\"1457\",\"dilNe\":\"en\"} Response=Select"
+  },
+  {
+    "level": "engines",
+    "brand": {
+      "id": "93",
+      "name": "Steyr"
+    },
+    "model": {
+      "id": "1457",
+      "name": "6225"
+    },
+    "generation": {
+      "id": "1451",
+      "name": "6185"
+    },
+    "error": "No options returned. Payload={\"aracgen\":\"1451\",\"aracmarkacek2\":\"93\",\"aracmodelcek\":\"1457\",\"dilNe\":\"en\"} Response=Select"
+  },
+  {
+    "level": "engines",
+    "brand": {
+      "id": "93",
+      "name": "Steyr"
+    },
+    "model": {
+      "id": "1457",
+      "name": "6225"
+    },
+    "generation": {
+      "id": "1452",
+      "name": "6190"
+    },
+    "error": "No options returned. Payload={\"aracgen\":\"1452\",\"aracmarkacek2\":\"93\",\"aracmodelcek\":\"1457\",\"dilNe\":\"en\"} Response=Select"
+  },
+  {
+    "level": "engines",
+    "brand": {
+      "id": "93",
+      "name": "Steyr"
+    },
+    "model": {
+      "id": "1457",
+      "name": "6225"
+    },
+    "generation": {
+      "id": "1453",
+      "name": "6195"
+    },
+    "error": "No options returned. Payload={\"aracgen\":\"1453\",\"aracmarkacek2\":\"93\",\"aracmodelcek\":\"1457\",\"dilNe\":\"en\"} Response=Select"
+  },
+  {
+    "level": "engines",
+    "brand": {
+      "id": "93",
+      "name": "Steyr"
+    },
+    "model": {
+      "id": "1457",
+      "name": "6225"
+    },
+    "generation": {
+      "id": "1454",
+      "name": "6200"
+    },
+    "error": "No options returned. Payload={\"aracgen\":\"1454\",\"aracmarkacek2\":\"93\",\"aracmodelcek\":\"1457\",\"dilNe\":\"en\"} Response=Select"
+  },
+  {
+    "level": "engines",
+    "brand": {
+      "id": "93",
+      "name": "Steyr"
+    },
+    "model": {
+      "id": "1457",
+      "name": "6225"
+    },
+    "generation": {
+      "id": "1455",
+      "name": "6205"
+    },
+    "error": "No options returned. Payload={\"aracgen\":\"1455\",\"aracmarkacek2\":\"93\",\"aracmodelcek\":\"1457\",\"dilNe\":\"en\"} Response=Select"
+  },
+  {
+    "level": "engines",
+    "brand": {
+      "id": "93",
+      "name": "Steyr"
+    },
+    "model": {
+      "id": "1457",
+      "name": "6225"
+    },
+    "generation": {
+      "id": "1456",
+      "name": "6215"
+    },
+    "error": "No options returned. Payload={\"aracgen\":\"1456\",\"aracmarkacek2\":\"93\",\"aracmodelcek\":\"1457\",\"dilNe\":\"en\"} Response=Select"
+  },
+  {
+    "level": "engines",
+    "brand": {
+      "id": "93",
+      "name": "Steyr"
+    },
+    "model": {
+      "id": "1457",
+      "name": "6225"
+    },
+    "generation": {
+      "id": "1457",
+      "name": "6225"
+    },
+    "error": "No options returned. Payload={\"aracgen\":\"1457\",\"aracmarkacek2\":\"93\",\"aracmodelcek\":\"1457\",\"dilNe\":\"en\"} Response=Select"
+  },
+  {
+    "level": "engines",
+    "brand": {
+      "id": "93",
+      "name": "Steyr"
+    },
+    "model": {
+      "id": "1457",
+      "name": "6225"
+    },
+    "generation": {
+      "id": "1458",
+      "name": "6230"
+    },
+    "error": "No options returned. Payload={\"aracgen\":\"1458\",\"aracmarkacek2\":\"93\",\"aracmodelcek\":\"1457\",\"dilNe\":\"en\"} Response=Select"
+  }
+]

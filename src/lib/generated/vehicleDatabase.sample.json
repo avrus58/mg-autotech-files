@@ -1,0 +1,59 @@
+[
+  {
+    "source": "carecufile",
+    "sourceUrl": "https://carecufile.com/en/Performance?b=7&m=82&g=187&mt=1162",
+    "brand": "BMW",
+    "brandId": "7",
+    "model": "5 serie",
+    "modelId": "82",
+    "generation": "F10/11 - 2010 - 2016",
+    "generationId": "187",
+    "engine": "520D 163hp",
+    "engineId": "1162",
+    "fuelType": "2.0 - Turbo-Diesel",
+    "ecu": [
+      "Bosch MD1",
+      "Bosch EDC17C50",
+      "Bosch EDC17C41",
+      "ZF 8HP50",
+      "Bosch EDC17C56"
+    ],
+    "stage1": {
+      "stockHp": 163,
+      "tunedHp": 220,
+      "gainHp": 57,
+      "stockNm": 380,
+      "tunedNm": 440,
+      "gainNm": 60
+    },
+    "stage2": {
+      "stockHp": 163,
+      "tunedHp": 248,
+      "gainHp": 85,
+      "stockNm": 380,
+      "tunedNm": 530,
+      "gainNm": 150
+    },
+    "readMethods": [
+      "Alientech Kess",
+      "Alientech KTAG",
+      "Autotuner Bench",
+      "Autotuner OBD",
+      "CMD OBD",
+      "CMD Tricore Boottool",
+      "Dimsport Genius",
+      "Dimsport New Trasdata",
+      "Magic Motorsport Bench / Flex",
+      "Magic Motorsport MAGPRO OBD"
+    ],
+    "services": [
+      "AdBlue OFF",
+      "Stage 1",
+      "DPF OFF",
+      "DTC OFF",
+      "EGR OFF",
+      "Pops & Bangs",
+      "VMAX OFF"
+    ]
+  }
+]
