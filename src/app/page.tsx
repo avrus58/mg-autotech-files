@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion, type Variants } from "framer-motion";
 import {
@@ -22,6 +23,7 @@ import {
   Search,
   ShieldCheck,
   Star,
+  Zap,
   Upload,
   UserPlus,
   Wrench,
@@ -107,6 +109,44 @@ const securityItems = [
   { title: "Secure Login", icon: ShieldCheck },
   { title: "File Workflow", icon: Upload },
 ];
+
+type VehicleOption = {
+  id: string;
+  name: string;
+  fuelType?: string | null;
+};
+
+type PublicVehicleData = {
+  brand: string;
+  brandId: string;
+  model: string;
+  modelId: string;
+  generation: string;
+  generationId: string;
+  engine: string;
+  engineId: string;
+  fuelType?: string | null;
+  ecu?: string[];
+  stage1?: {
+    stockHp: number;
+    tunedHp: number;
+    gainHp: number;
+    stockNm: number;
+    tunedNm: number;
+    gainNm: number;
+  };
+  stage2?: {
+    stockHp: number;
+    tunedHp: number;
+    gainHp: number;
+    stockNm: number;
+    tunedNm: number;
+    gainNm: number;
+  };
+  readMethods?: string[];
+  services?: string[];
+};
+
 
 const fadeUp: Variants = {
   hidden: { opacity: 0, y: 34 },
@@ -198,6 +238,340 @@ function RatingStars() {
       {[1, 2, 3, 4, 5].map((item) => (
         <Star key={item} className="h-3 w-3 fill-current" />
       ))}
+    </div>
+  );
+}
+
+
+function PublicVehicleSelect({
+  value,
+  onChange,
+  options,
+  placeholder,
+  disabled = false,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  options: VehicleOption[];
+  placeholder: string;
+  disabled?: boolean;
+}) {
+  return (
+    <div className="relative">
+      <select
+        value={value}
+        disabled={disabled}
+        onChange={(event) => onChange(event.target.value)}
+        className="h-14 w-full appearance-none rounded-xl border border-white/15 bg-white/10 px-4 pr-10 text-sm font-black text-white outline-none backdrop-blur transition hover:bg-white/15 focus:border-white/40 disabled:cursor-not-allowed disabled:opacity-45"
+      >
+        <option value="" className="bg-[#111]">
+          {placeholder}
+        </option>
+        {options.map((option) => (
+          <option key={option.id} value={option.id} className="bg-[#111]">
+            {option.name}
+          </option>
+        ))}
+      </select>
+
+      <ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-white/80" />
+    </div>
+  );
+}
+
+function PublicStageCard({
+  title,
+  data,
+}: {
+  title: string;
+  data?: PublicVehicleData["stage1"];
+}) {
+  if (!data) return null;
+
+  return (
+    <div className="rounded-2xl border border-white/15 bg-black/35 p-4 backdrop-blur">
+      <div className="mb-3 flex items-center justify-between">
+        <div className="text-sm font-black">{title}</div>
+        <Zap className="h-4 w-4 text-red-300" />
+      </div>
+
+      <div className="grid gap-2 text-xs">
+        <div className="flex justify-between rounded-xl bg-white/10 px-3 py-2">
+          <span className="text-red-100/80">Power</span>
+          <span className="font-black">
+            {data.stockHp} → {data.tunedHp} HP
+          </span>
+        </div>
+
+        <div className="flex justify-between rounded-xl bg-white/10 px-3 py-2">
+          <span className="text-red-100/80">Torque</span>
+          <span className="font-black">
+            {data.stockNm} → {data.tunedNm} Nm
+          </span>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2 pt-1">
+          <div className="rounded-xl border border-white/15 bg-white/10 p-2 text-center">
+            <div className="text-[10px] uppercase tracking-[0.12em] text-red-100/70">
+              HP Gain
+            </div>
+            <div className="text-lg font-black">+{data.gainHp}</div>
+          </div>
+
+          <div className="rounded-xl border border-white/15 bg-white/10 p-2 text-center">
+            <div className="text-[10px] uppercase tracking-[0.12em] text-red-100/70">
+              Nm Gain
+            </div>
+            <div className="text-lg font-black">+{data.gainNm}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PublicVehicleChecker() {
+  const [brands, setBrands] = useState<VehicleOption[]>([]);
+  const [models, setModels] = useState<VehicleOption[]>([]);
+  const [generations, setGenerations] = useState<VehicleOption[]>([]);
+  const [engines, setEngines] = useState<VehicleOption[]>([]);
+
+  const [brandId, setBrandId] = useState("");
+  const [modelId, setModelId] = useState("");
+  const [generationId, setGenerationId] = useState("");
+  const [engineId, setEngineId] = useState("");
+
+  const [vehicle, setVehicle] = useState<PublicVehicleData | null>(null);
+  const [loadingVehicle, setLoadingVehicle] = useState(false);
+
+  const selectedBrandName =
+    brands.find((item) => item.id === brandId)?.name ?? "";
+  const selectedModelName =
+    models.find((item) => item.id === modelId)?.name ?? "";
+  const selectedGenerationName =
+    generations.find((item) => item.id === generationId)?.name ?? "";
+  const selectedEngineName =
+    engines.find((item) => item.id === engineId)?.name ?? "";
+
+  useEffect(() => {
+    fetch("/api/vehicles?type=brands")
+      .then((res) => res.json())
+      .then(setBrands)
+      .catch(console.error);
+  }, []);
+
+  useEffect(() => {
+    setModelId("");
+    setGenerationId("");
+    setEngineId("");
+    setModels([]);
+    setGenerations([]);
+    setEngines([]);
+    setVehicle(null);
+
+    if (!brandId) return;
+
+    fetch(`/api/vehicles?type=models&brandId=${brandId}`)
+      .then((res) => res.json())
+      .then(setModels)
+      .catch(console.error);
+  }, [brandId]);
+
+  useEffect(() => {
+    setGenerationId("");
+    setEngineId("");
+    setGenerations([]);
+    setEngines([]);
+    setVehicle(null);
+
+    if (!brandId || !modelId) return;
+
+    fetch(`/api/vehicles?type=generations&brandId=${brandId}&modelId=${modelId}`)
+      .then((res) => res.json())
+      .then(setGenerations)
+      .catch(console.error);
+  }, [brandId, modelId]);
+
+  useEffect(() => {
+    setEngineId("");
+    setEngines([]);
+    setVehicle(null);
+
+    if (!brandId || !modelId || !generationId) return;
+
+    fetch(
+      `/api/vehicles?type=engines&brandId=${brandId}&modelId=${modelId}&generationId=${generationId}`
+    )
+      .then((res) => res.json())
+      .then(setEngines)
+      .catch(console.error);
+  }, [brandId, modelId, generationId]);
+
+  const handleSearch = async () => {
+    if (!brandId || !modelId || !generationId || !engineId) return;
+
+    setLoadingVehicle(true);
+
+    try {
+      const res = await fetch(
+        `/api/vehicles?type=vehicle&brandId=${brandId}&modelId=${modelId}&generationId=${generationId}&engineId=${engineId}`
+      );
+
+      const data = (await res.json()) as PublicVehicleData | null;
+
+      setVehicle(data);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoadingVehicle(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!brandId || !modelId || !generationId || !engineId) return;
+
+    handleSearch();
+  }, [brandId, modelId, generationId, engineId]);
+
+  const requestUrl =
+    brandId && modelId && generationId && engineId
+      ? `/login?redirect=${encodeURIComponent(
+          `/new-request?brandId=${brandId}&modelId=${modelId}&generationId=${generationId}&engineId=${engineId}`
+        )}`
+      : "/login";
+
+  return (
+    <div className="relative bg-[#b1121b] py-10">
+      <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_70%_0%,white,transparent_28%)]" />
+      <div className="mx-auto max-w-7xl px-4">
+        <h2 className="text-2xl font-black md:text-3xl">
+          View tuning data and create your file request online.
+        </h2>
+
+        <div className="mt-7 grid gap-4 md:grid-cols-5">
+          <PublicVehicleSelect
+            value={brandId}
+            onChange={setBrandId}
+            options={brands}
+            placeholder="Select Vehicle Brand"
+          />
+
+          <PublicVehicleSelect
+            value={modelId}
+            onChange={setModelId}
+            options={models}
+            placeholder="Choose Model"
+            disabled={!brandId}
+          />
+
+          <PublicVehicleSelect
+            value={generationId}
+            onChange={setGenerationId}
+            options={generations}
+            placeholder="Select Generation"
+            disabled={!modelId}
+          />
+
+          <PublicVehicleSelect
+            value={engineId}
+            onChange={setEngineId}
+            options={engines}
+            placeholder="Select Engine"
+            disabled={!generationId}
+          />
+
+          <button
+            onClick={handleSearch}
+            disabled={!brandId || !modelId || !generationId || !engineId || loadingVehicle}
+            className="flex h-14 items-center justify-center rounded-xl bg-white px-4 text-sm font-black text-[#b1121b] transition duration-300 hover:-translate-y-1 hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <Search className="mr-2 h-4 w-4" />
+            {loadingVehicle ? "Checking..." : "Search"}
+          </button>
+        </div>
+
+        {vehicle && (
+          <motion.div
+            initial={{ opacity: 0, y: 22 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45 }}
+            className="mt-8 overflow-hidden rounded-[2rem] border border-white/20 bg-black/35 p-5 shadow-2xl shadow-black/30 backdrop-blur-xl"
+          >
+            <div className="grid gap-5 lg:grid-cols-[0.95fr_1.05fr]">
+              <div className="rounded-[1.5rem] border border-white/15 bg-gradient-to-br from-black/60 via-red-950/20 to-black/60 p-6">
+                <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-black uppercase tracking-[0.14em] text-red-50">
+                  <Cpu className="h-4 w-4" />
+                  Public Vehicle Intelligence
+                </div>
+
+                <h3 className="text-3xl font-black">
+                  {selectedBrandName}{" "}
+                  <span className="text-white/80">{selectedModelName}</span>
+                </h3>
+
+                <p className="mt-2 text-sm font-bold text-red-100/80">
+                  {selectedGenerationName} · {selectedEngineName}
+                </p>
+
+                <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                  <div className="rounded-2xl border border-white/15 bg-white/10 p-4">
+                    <div className="text-xs font-black uppercase tracking-[0.16em] text-red-100/60">
+                      ECU / TCU
+                    </div>
+                    <div className="mt-2 text-sm font-black">
+                      {vehicle.ecu?.length ? vehicle.ecu.join(", ") : "Not available"}
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl border border-white/15 bg-white/10 p-4">
+                    <div className="text-xs font-black uppercase tracking-[0.16em] text-red-100/60">
+                      Read Method
+                    </div>
+                    <div className="mt-2 text-sm font-black">
+                      {vehicle.readMethods?.length
+                        ? vehicle.readMethods.slice(0, 4).join(", ")
+                        : "Not available"}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {vehicle.services?.slice(0, 8).map((service) => (
+                    <span
+                      key={service}
+                      className="rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-black"
+                    >
+                      {service}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <PublicStageCard title="Stage 1" data={vehicle.stage1} />
+                <PublicStageCard title="Stage 2" data={vehicle.stage2} />
+              </div>
+            </div>
+
+            <div className="mt-5 flex flex-col gap-3 rounded-2xl border border-white/15 bg-white/10 p-4 md:flex-row md:items-center md:justify-between">
+              <div>
+                <div className="font-black">Ready to request a custom file?</div>
+                <p className="mt-1 text-sm text-red-100/80">
+                  Login or register to upload your original file and create a real order.
+                </p>
+              </div>
+
+              <Link
+                href={requestUrl}
+                className="flex items-center justify-center rounded-xl bg-white px-5 py-3 text-sm font-black text-[#b1121b] transition hover:-translate-y-0.5 hover:bg-zinc-100"
+              >
+                Create File Request
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+            </div>
+          </motion.div>
+        )}
+      </div>
     </div>
   );
 }
@@ -496,39 +870,7 @@ export default function HomePage() {
           </motion.div>
         </div>
 
-        <div className="relative bg-[#b1121b] py-10">
-          <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_70%_0%,white,transparent_28%)]" />
-          <div className="mx-auto max-w-7xl px-4">
-            <h2 className="text-2xl font-black md:text-3xl">
-              View tuning data and create your file request online.
-            </h2>
-
-            <div className="mt-7 grid gap-4 md:grid-cols-5">
-              {[
-                "Select Vehicle Brand",
-                "Choose Model",
-                "Select Generation",
-                "Select Engine",
-              ].map((item) => (
-                <button
-                  key={item}
-                  className="flex items-center justify-between rounded-md bg-white/10 px-4 py-4 text-left text-sm font-bold text-white backdrop-blur transition duration-300 hover:-translate-y-1 hover:bg-white/15"
-                >
-                  {item}
-                  <ChevronDown className="h-4 w-4" />
-                </button>
-              ))}
-
-              <Link
-                href="/new-request"
-                className="flex items-center justify-center rounded-md bg-white px-4 py-4 text-sm font-black text-[#b1121b] transition duration-300 hover:-translate-y-1 hover:bg-zinc-100"
-              >
-                <Search className="mr-2 h-4 w-4" />
-                Search
-              </Link>
-            </div>
-          </div>
-        </div>
+        <PublicVehicleChecker />
       </section>
 
       <AnimatedSection id="workflow" className="bg-[#0b1226] py-20">
