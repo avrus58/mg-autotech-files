@@ -256,7 +256,7 @@ export default function DashboardPage() {
               </Link>
 
               <Link
-                href="/dashboard"
+                href="/dashboard/credits/history"
                 className="flex items-center gap-3 rounded-2xl px-4 py-3 font-bold text-zinc-400 transition hover:bg-white/[0.06] hover:text-white"
               >
                 <History className="h-5 w-5" />
@@ -568,8 +568,16 @@ export default function DashboardPage() {
 
             <div className="grid gap-6 xl:grid-cols-[.9fr_1.1fr]">
               <div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6">
-                <div className="mb-5 text-sm font-black uppercase tracking-[0.25em] text-red-600">
-                  Credit History
+                <div className="mb-5 flex items-center justify-between gap-3">
+                  <div className="text-sm font-black uppercase tracking-[0.25em] text-red-600">
+                    Credit History
+                  </div>
+                  <Link
+                    href="/dashboard/credits/history"
+                    className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-black text-white transition hover:bg-white/10"
+                  >
+                    View All
+                  </Link>
                 </div>
 
                 {creditHistory.length === 0 ? (
