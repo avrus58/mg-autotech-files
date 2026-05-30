@@ -8,6 +8,7 @@ import {
   ArrowRight,
   Car,
   CheckCircle2,
+  Clipboard,
   Clock3,
   CreditCard,
   Download,
@@ -95,6 +96,7 @@ export default function DashboardPage() {
   const [pendingCount, setPendingCount] = useState<number>(0);
   const [inProgressCount, setInProgressCount] = useState<number>(0);
   const [loading, setLoading] = useState(true);
+  const [copiedReference, setCopiedReference] = useState(false);
 
   useEffect(() => {
     const loadDashboard = async () => {
@@ -174,6 +176,22 @@ export default function DashboardPage() {
       .filter((order) => Number(order.credits_required ?? 0) > 0)
       .slice(0, 6);
   }, [orders]);
+
+  const customerReference = email ?? "Customer account";
+
+  const firstName =
+    email?.split("@")[0]?.replace(/[._-]/g, " ").split(" ")[0] ?? "Customer";
+
+  const copyReference = async () => {
+    if (!customerReference) return;
+
+    await navigator.clipboard.writeText(customerReference);
+    setCopiedReference(true);
+
+    window.setTimeout(() => {
+      setCopiedReference(false);
+    }, 1600);
+  };
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -319,6 +337,98 @@ export default function DashboardPage() {
           </header>
 
           <div className="px-4 py-8 lg:px-8">
+            <div className="mb-8 grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
+              <div className="relative overflow-hidden rounded-[2rem] border border-red-900/50 bg-gradient-to-br from-red-950/30 via-white/[0.04] to-black p-7 shadow-2xl shadow-black/30">
+                <div className="absolute -right-24 -top-24 h-64 w-64 rounded-full bg-red-700/20 blur-3xl" />
+                <div className="absolute -bottom-24 -left-24 h-64 w-64 rounded-full bg-red-950/30 blur-3xl" />
+                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-red-500/60 to-transparent" />
+
+                <div className="relative">
+                  <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-red-800/50 bg-red-950/30 px-4 py-2 text-sm font-bold text-red-100">
+                    <ShieldCheck className="h-4 w-4 text-red-500" />
+                    Secure MG AutoTech customer workspace
+                  </div>
+
+                  <h2 className="text-4xl font-black md:text-5xl">
+                    Welcome back,{" "}
+                    <span className="text-red-500">
+                      {firstName.charAt(0).toUpperCase() + firstName.slice(1)}
+                    </span>
+                  </h2>
+
+                  <p className="mt-4 max-w-3xl leading-8 text-zinc-400">
+                    Manage file requests, credits, completed files and support
+                    communication from your private MG AutoTech dashboard.
+                  </p>
+
+                  <div className="mt-7 grid gap-3 md:grid-cols-3">
+                    <Link
+                      href="/new-request"
+                      className="rounded-2xl bg-[#b1121b] px-5 py-4 text-center font-black text-white shadow-xl shadow-red-950/40 transition hover:-translate-y-1 hover:bg-[#c91824]"
+                    >
+                      <Upload className="mr-2 inline h-5 w-5" />
+                      New Request
+                    </Link>
+
+                    <Link
+                      href="/dashboard/credits"
+                      className="rounded-2xl border border-white/10 bg-white/[0.06] px-5 py-4 text-center font-black text-white transition hover:-translate-y-1 hover:bg-white/10"
+                    >
+                      <CreditCard className="mr-2 inline h-5 w-5" />
+                      Buy Credits
+                    </Link>
+
+                    <a
+                      href="mailto:info@mgautotech.de"
+                      className="rounded-2xl border border-white/10 bg-white/[0.06] px-5 py-4 text-center font-black text-white transition hover:-translate-y-1 hover:bg-white/10"
+                    >
+                      <Wrench className="mr-2 inline h-5 w-5" />
+                      Support
+                    </a>
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 shadow-2xl shadow-black/20">
+                <div className="mb-5 flex items-center justify-between">
+                  <div>
+                    <div className="text-sm font-black uppercase tracking-[0.22em] text-red-600">
+                      Account Reference
+                    </div>
+                    <h3 className="mt-2 text-2xl font-black">
+                      Payment / Support ID
+                    </h3>
+                  </div>
+
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-red-900/40 bg-red-950/25">
+                    <User className="h-6 w-6 text-red-500" />
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-white/10 bg-black/35 p-4">
+                  <div className="text-xs font-black uppercase tracking-[0.18em] text-zinc-500">
+                    Current Reference
+                  </div>
+                  <div className="mt-2 break-words text-lg font-black">
+                    {customerReference}
+                  </div>
+                </div>
+
+                <button
+                  onClick={copyReference}
+                  className="mt-4 flex w-full items-center justify-center rounded-xl border border-white/10 bg-white/[0.06] px-4 py-3 text-sm font-black text-white transition hover:bg-white/10"
+                >
+                  <Clipboard className="mr-2 h-4 w-4" />
+                  {copiedReference ? "Copied" : "Copy Reference"}
+                </button>
+
+                <p className="mt-4 text-xs leading-5 text-zinc-500">
+                  Later this area can display the permanent Customer ID such as
+                  MGA-10001 for bank transfer payments and support messages.
+                </p>
+              </div>
+            </div>
+
             <div className="mb-8 grid gap-5 md:grid-cols-2 xl:grid-cols-5">
               <div className="rounded-3xl border border-red-900/50 bg-red-950/25 p-6 shadow-2xl shadow-black/20">
                 <CreditCard className="mb-4 h-8 w-8 text-red-500" />

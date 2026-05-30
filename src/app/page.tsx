@@ -27,6 +27,9 @@ import {
   Upload,
   UserPlus,
   Wrench,
+  Activity,
+  BarChart3,
+  Sparkles,
 } from "lucide-react";
 import { Footer } from "@/components/Footer";
 import { OnlineStatus } from "@/components/OnlineStatus";
@@ -148,6 +151,61 @@ type PublicVehicleData = {
 };
 
 
+const heroSlides = [
+  {
+    index: "01",
+    title: "BMW G20 320d",
+    subtitle: "2.0 Diesel · Bosch MD1 · OBD / Bench",
+    badge: "Stage 1 Ready",
+    stockHp: "190 HP",
+    tunedHp: "220 HP",
+    gain: "+30 HP",
+    torque: "+70 Nm",
+    ecu: "Bosch MD1",
+    service: "Stage 1",
+    status: "Fast",
+  },
+  {
+    index: "02",
+    title: "BMW F30 320d",
+    subtitle: "2.0 Diesel · Bosch EDC17 · OBD / Bench",
+    badge: "Workshop Popular",
+    stockHp: "184 HP",
+    tunedHp: "220 HP",
+    gain: "+36 HP",
+    torque: "+80 Nm",
+    ecu: "Bosch EDC17",
+    service: "Stage 1 + EGR",
+    status: "Popular",
+  },
+  {
+    index: "03",
+    title: "BMW G30 530d",
+    subtitle: "3.0 Diesel · Bosch MD1CP002 · Bench",
+    badge: "High Torque",
+    stockHp: "265 HP",
+    tunedHp: "320 HP",
+    gain: "+55 HP",
+    torque: "+120 Nm",
+    ecu: "Bosch MD1CP002",
+    service: "Stage 1",
+    status: "Premium",
+  },
+  {
+    index: "04",
+    title: "BMW F10 530d",
+    subtitle: "3.0 Diesel · Bosch EDC17CP45 · OBD / Bench",
+    badge: "ECU Verified",
+    stockHp: "258 HP",
+    tunedHp: "310 HP",
+    gain: "+52 HP",
+    torque: "+110 Nm",
+    ecu: "Bosch EDC17CP45",
+    service: "Stage 1 + DTC",
+    status: "Verified",
+  },
+];
+
 const fadeUp: Variants = {
   hidden: { opacity: 0, y: 34 },
   show: {
@@ -242,6 +300,208 @@ function RatingStars() {
   );
 }
 
+
+
+function HeroShowcase() {
+  const [activeSlide, setActiveSlide] = useState(0);
+  const slide = heroSlides[activeSlide];
+
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      setActiveSlide((current) => (current + 1) % heroSlides.length);
+    }, 4200);
+
+    return () => window.clearInterval(interval);
+  }, []);
+
+  const nextSlide = () => {
+    setActiveSlide((current) => (current + 1) % heroSlides.length);
+  };
+
+  const previousSlide = () => {
+    setActiveSlide((current) =>
+      current === 0 ? heroSlides.length - 1 : current - 1
+    );
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.96, x: 24 }}
+      animate={{ opacity: 1, scale: 1, x: 0 }}
+      transition={{ duration: 0.55, delay: 0.12 }}
+      className="hidden lg:block"
+    >
+      <div className="relative overflow-hidden rounded-[2.25rem] border border-white/10 bg-[#08090c]/80 p-5 shadow-2xl shadow-black backdrop-blur-xl">
+        <div className="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-red-700/20 blur-3xl" />
+        <div className="absolute -bottom-24 -left-24 h-72 w-72 rounded-full bg-red-950/30 blur-3xl" />
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-red-500/70 to-transparent" />
+
+        <div className="relative mb-5 flex items-center justify-between">
+          <div>
+            <div className="text-xs font-black uppercase tracking-[0.22em] text-red-500">
+              MG AutoTech Live Showcase
+            </div>
+            <div className="mt-1 text-2xl font-black">
+              Vehicle Intelligence Preview
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={previousSlide}
+              className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] transition hover:bg-white/10"
+              aria-label="Previous showcase"
+            >
+              <ChevronDown className="h-4 w-4 rotate-90" />
+            </button>
+
+            <button
+              onClick={nextSlide}
+              className="flex h-10 w-10 items-center justify-center rounded-xl border border-red-800/50 bg-red-950/25 transition hover:bg-red-900/30"
+              aria-label="Next showcase"
+            >
+              <ChevronDown className="h-4 w-4 -rotate-90" />
+            </button>
+          </div>
+        </div>
+
+        <div className="relative overflow-hidden rounded-[1.8rem] border border-white/10 bg-black/45 p-5">
+          <motion.div
+            key={slide.index}
+            initial={{ opacity: 0, x: 26 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.35 }}
+            className="grid gap-5 xl:grid-cols-[1fr_0.85fr]"
+          >
+            <div>
+              <div className="mb-5 flex items-center gap-3">
+                <span className="rounded-full border border-red-800/50 bg-red-950/35 px-3 py-1 text-xs font-black text-red-100">
+                  {slide.index} / 04
+                </span>
+                <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-black text-emerald-300">
+                  {slide.badge}
+                </span>
+              </div>
+
+              <h3 className="text-3xl font-black leading-tight">
+                {slide.title}
+              </h3>
+
+              <p className="mt-2 text-sm font-bold text-zinc-400">
+                {slide.subtitle}
+              </p>
+
+              <div className="mt-5 grid grid-cols-3 gap-3">
+                <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+                  <Gauge className="mb-3 h-5 w-5 text-red-500" />
+                  <div className="text-xs text-zinc-500">Stock</div>
+                  <div className="mt-1 font-black">{slide.stockHp}</div>
+                </div>
+
+                <div className="rounded-2xl border border-red-800/50 bg-red-950/25 p-4">
+                  <BarChart3 className="mb-3 h-5 w-5 text-red-400" />
+                  <div className="text-xs text-zinc-500">Tuned</div>
+                  <div className="mt-1 font-black">{slide.tunedHp}</div>
+                </div>
+
+                <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+                  <Sparkles className="mb-3 h-5 w-5 text-red-500" />
+                  <div className="text-xs text-zinc-500">Gain</div>
+                  <div className="mt-1 font-black text-red-400">
+                    {slide.gain}
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-5 grid grid-cols-2 gap-3">
+                <div className="rounded-2xl border border-white/10 bg-black/35 p-4">
+                  <div className="text-xs font-black uppercase tracking-[0.16em] text-zinc-500">
+                    ECU
+                  </div>
+                  <div className="mt-2 font-black">{slide.ecu}</div>
+                </div>
+
+                <div className="rounded-2xl border border-white/10 bg-black/35 p-4">
+                  <div className="text-xs font-black uppercase tracking-[0.16em] text-zinc-500">
+                    Service
+                  </div>
+                  <div className="mt-2 font-black">{slide.service}</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="relative flex min-h-[300px] items-center justify-center overflow-hidden rounded-[1.6rem] border border-white/10 bg-gradient-to-br from-red-950/25 via-black to-zinc-950 p-5">
+              <div className="absolute h-64 w-64 rounded-full border-[22px] border-red-700/25" />
+              <div className="absolute h-44 w-44 rounded-full bg-red-700/15 blur-3xl" />
+
+              <motion.div
+                key={`${slide.index}-chip`}
+                animate={{ y: [0, -8, 0], rotate: [0, 1.5, 0] }}
+                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                className="relative flex h-44 w-44 items-center justify-center rounded-[2.2rem] border border-red-800/50 bg-black/70 shadow-2xl shadow-red-950/40"
+              >
+                <div className="absolute inset-4 rounded-[1.7rem] border border-red-700/30" />
+                <Cpu className="h-20 w-20 text-red-500" />
+              </motion.div>
+
+              <div className="absolute bottom-5 left-5 right-5 rounded-2xl border border-white/10 bg-black/50 p-4 backdrop-blur">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-xs text-zinc-500">Workflow</div>
+                    <div className="mt-1 font-black">Secure File Service</div>
+                  </div>
+
+                  <div className="rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-black text-emerald-300">
+                    {slide.status}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+
+        <div className="relative mt-5 grid grid-cols-4 gap-2">
+          {heroSlides.map((item, index) => (
+            <button
+              key={item.index}
+              onClick={() => setActiveSlide(index)}
+              className={`h-2 rounded-full transition ${
+                index === activeSlide
+                  ? "bg-red-600"
+                  : "bg-white/15 hover:bg-white/30"
+              }`}
+              aria-label={`Show slide ${item.index}`}
+            />
+          ))}
+        </div>
+
+        <div className="relative mt-5 grid gap-3 md:grid-cols-4">
+          {[
+            ["Fast Processing", "Quick turnaround", Zap],
+            ["Secure Files", "Private workflow", ShieldCheck],
+            ["BMW Ready", "Modern ECU support", Car],
+            ["Expert Tuning", "Professional review", Wrench],
+          ].map(([title, description, Icon]) => {
+            const LucideIcon = Icon as typeof Zap;
+
+            return (
+              <div
+                key={String(title)}
+                className="rounded-2xl border border-white/10 bg-white/[0.04] p-4"
+              >
+                <LucideIcon className="mb-3 h-5 w-5 text-red-500" />
+                <div className="text-sm font-black">{String(title)}</div>
+                <div className="mt-1 text-xs text-zinc-500">
+                  {String(description)}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </motion.div>
+  );
+}
 
 function PublicVehicleSelect({
   value,
@@ -732,142 +992,7 @@ export default function HomePage() {
             </div>
           </motion.div>
 
-          <motion.div
-            initial={{ opacity: 0, scale: 0.96, x: 24 }}
-            animate={{ opacity: 1, scale: 1, x: 0 }}
-            transition={{ duration: 0.6, delay: 0.12 }}
-            className="hidden lg:block"
-          >
-            <motion.div
-              animate={{ y: [0, -9, 0] }}
-              transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut" }}
-              className="relative"
-            >
-              <div className="absolute -inset-8 -z-10 rounded-[3rem] bg-red-700/20 blur-3xl" />
-              <div className="absolute -right-6 -top-6 z-10 rounded-2xl border border-red-800/50 bg-black/80 px-4 py-3 shadow-2xl shadow-black backdrop-blur-xl">
-                <div className="flex items-center gap-3">
-                  <span className="flex h-3 w-3 rounded-full bg-emerald-400 shadow-lg shadow-emerald-500/40" />
-                  <div>
-                    <div className="text-xs font-black uppercase tracking-[0.18em] text-emerald-300">
-                      Live Workflow
-                    </div>
-                    <div className="text-xs text-zinc-400">Secure file processing</div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="overflow-hidden rounded-[2.25rem] border border-white/10 bg-[#08090c]/80 shadow-2xl shadow-black backdrop-blur-xl">
-                <div className="border-b border-white/10 bg-white/[0.035] px-6 py-5">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="text-xs font-black uppercase tracking-[0.22em] text-red-500">
-                        MG AutoTech Portal
-                      </div>
-                      <div className="mt-1 text-2xl font-black">
-                        File Request Console
-                      </div>
-                    </div>
-
-                    <div className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-4 py-2 text-xs font-black text-emerald-300">
-                      Ready
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid gap-4 p-6">
-                  <div className="rounded-3xl border border-white/10 bg-black/45 p-5">
-                    <div className="mb-4 flex items-start justify-between gap-4">
-                      <div>
-                        <div className="text-sm text-zinc-400">Vehicle</div>
-                        <div className="mt-1 text-xl font-black">
-                          Mercedes-Benz E-Class
-                        </div>
-                        <div className="mt-1 text-sm text-zinc-500">
-                          2.2 CDI · Bosch EDC17 · OBD Read
-                        </div>
-                      </div>
-
-                      <div className="rounded-2xl bg-red-950/35 p-3 text-right">
-                        <div className="text-xs text-zinc-400">Order</div>
-                        <div className="font-black text-red-400">#MGA-2405</div>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-3">
-                      <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-                        <Gauge className="mb-3 h-5 w-5 text-red-500" />
-                        <div className="text-xs text-zinc-500">Service</div>
-                        <div className="mt-1 font-black">Stage 1</div>
-                      </div>
-
-                      <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-                        <CreditCard className="mb-3 h-5 w-5 text-red-500" />
-                        <div className="text-xs text-zinc-500">Credits</div>
-                        <div className="mt-1 font-black">25 Used</div>
-                      </div>
-
-                      <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-                        <Download className="mb-3 h-5 w-5 text-emerald-400" />
-                        <div className="text-xs text-zinc-500">Status</div>
-                        <div className="mt-1 font-black text-emerald-300">Done</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="rounded-3xl border border-red-900/40 bg-red-950/15 p-5">
-                    <div className="mb-4 flex items-center justify-between">
-                      <div className="font-black">Calibration Summary</div>
-                      <div className="rounded-full bg-black/35 px-3 py-1 text-xs font-bold text-zinc-300">
-                        Verified
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-3 text-center">
-                      <div className="rounded-2xl bg-black/35 p-4">
-                        <div className="text-xs text-zinc-500">Stock</div>
-                        <div className="mt-1 text-xl font-black">136 HP</div>
-                        <div className="mt-1 text-xs text-zinc-500">360 Nm</div>
-                      </div>
-
-                      <div className="rounded-2xl border border-red-800/50 bg-red-950/35 p-4">
-                        <div className="text-xs text-zinc-500">Optimized</div>
-                        <div className="mt-1 text-xl font-black">200 HP</div>
-                        <div className="mt-1 text-xs text-zinc-500">430 Nm</div>
-                      </div>
-
-                      <div className="rounded-2xl bg-black/35 p-4">
-                        <div className="text-xs text-zinc-500">Gain</div>
-                        <div className="mt-1 text-xl font-black text-red-500">+64 HP</div>
-                        <div className="mt-1 text-xs text-red-400">+70 Nm</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="rounded-3xl border border-white/10 bg-black/45 p-5">
-                    <div className="mb-4 flex items-center justify-between">
-                      <div className="font-black">Processing Timeline</div>
-                      <Clock3 className="h-5 w-5 text-zinc-500" />
-                    </div>
-
-                    <div className="space-y-3">
-                      {[
-                        "Original file uploaded",
-                        "ECU data checked",
-                        "Custom file prepared",
-                        "Modified file ready",
-                      ].map((item) => (
-                        <div key={item} className="flex items-center gap-3 text-sm">
-                          <CheckCircle2 className="h-5 w-5 text-emerald-400" />
-                          <span className="text-zinc-300">{item}</span>
-                          <span className="ml-auto h-px w-12 bg-gradient-to-r from-red-700 to-transparent" />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
+          <HeroShowcase />
         </div>
 
         <PublicVehicleChecker />
