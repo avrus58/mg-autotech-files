@@ -19,6 +19,7 @@ import {
   Mail,
   PackageCheck,
   ShieldCheck,
+  Sparkles,
   Upload,
   User,
   Wrench,
@@ -104,6 +105,40 @@ function formatDate(date: string | null) {
 function shortId(id: string) {
   return id.slice(0, 8).toUpperCase();
 }
+
+const timelineSteps = [
+  {
+    key: "new_request",
+    label: "Request Created",
+    description: "Your file request has been created.",
+  },
+  {
+    key: "file_check",
+    label: "File Check",
+    description: "MG AutoTech checks your original file and vehicle data.",
+  },
+  {
+    key: "in_progress",
+    label: "Processing",
+    description: "Your file is being prepared by MG AutoTech.",
+  },
+  {
+    key: "completed",
+    label: "Completed",
+    description: "Your modified file is ready to download.",
+  },
+];
+
+function getTimelineIndex(order: Order) {
+  const status = order.status ?? "new_request";
+
+  if (status === "completed" || order.modified_file_path) return 3;
+  if (status === "in_progress" || status === "revision") return 2;
+  if (status === "file_check" || status === "customer_info_needed") return 1;
+
+  return 0;
+}
+
 
 export default function OrderDetailPage() {
   const router = useRouter();
@@ -372,22 +407,46 @@ export default function OrderDetailPage() {
               </div>
             </section>
 
-            <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6">
-              <h2 className="mb-5 text-2xl font-black">Order Timeline</h2>
+            <section className="overflow-hidden rounded-[2rem] border border-white/10 bg-white/[0.04] p-6">
+              <div className="mb-5 flex items-center justify-between gap-4">
+                <div>
+                  <h2 className="text-2xl font-black">Order Timeline</h2>
+                  <p className="mt-1 text-sm text-zinc-500">
+                    Live status overview for your request.
+                  </p>
+                </div>
 
-              <div className="space-y-3">
-                <TimelineItem done label="Request created" />
-                <TimelineItem done={Boolean(order.original_file_path)} label="Original file uploaded" />
-                <TimelineItem done={order.status !== "new_request"} label="File check started" />
-                <TimelineItem
-                  done={
-                    order.status === "in_progress" ||
-                    order.status === "completed" ||
-                    Boolean(order.modified_file_path)
-                  }
-                  label="Processing"
-                />
-                <TimelineItem done={completedFileReady} label="Completed file ready" />
+                <div
+                  className={`rounded-full border px-3 py-1 text-xs font-black ${getStatusStyle(
+                    order.status
+                  )}`}
+                >
+                  {formatStatus(order.status)}
+                </div>
+              </div>
+
+              <ProgressTimeline order={order} />
+
+              <div className="mt-5 rounded-2xl border border-white/10 bg-black/30 p-4">
+                <div className="flex items-start gap-3">
+                  <Sparkles className="mt-0.5 h-5 w-5 shrink-0 text-red-400" />
+                  <div>
+                    <div className="text-sm font-black text-white">
+                      Current step
+                    </div>
+                    <p className="mt-1 text-sm leading-6 text-zinc-400">
+                      {completedFileReady
+                        ? "Your modified file is ready. You can download it securely from this page."
+                        : order.status === "customer_info_needed"
+                        ? "MG AutoTech needs additional information from you to continue this request."
+                        : order.status === "in_progress"
+                        ? "Your file is currently being processed."
+                        : order.status === "file_check"
+                        ? "Your original file and vehicle data are being checked."
+                        : "Your request has been received and is waiting for review."}
+                    </p>
+                  </div>
+                </div>
               </div>
             </section>
 
@@ -442,20 +501,84 @@ function Detail({
   );
 }
 
-function TimelineItem({ done, label }: { done: boolean; label: string }) {
+function ProgressTimeline({ order }: { order: Order }) {
+  const activeIndex = getTimelineIndex(order);
+
   return (
-    <div className="flex items-center gap-3 rounded-2xl bg-black/30 p-4">
+    <div className="space-y-3">
+      <div className="mb-5 h-2 overflow-hidden rounded-full bg-white/10">
+        <div
+          className="h-full rounded-full bg-gradient-to-r from-red-800 via-red-600 to-emerald-500 transition-all duration-700"
+          style={{
+            width: `${((activeIndex + 1) / timelineSteps.length) * 100}%`,
+          }}
+        />
+      </div>
+
+      {timelineSteps.map((step, index) => {
+        const done = index <= activeIndex;
+        const current = index === activeIndex;
+
+        return (
+          <TimelineItem
+            key={step.key}
+            done={done}
+            current={current}
+            label={step.label}
+            description={step.description}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
+function TimelineItem({
+  done,
+  current,
+  label,
+  description,
+}: {
+  done: boolean;
+  current: boolean;
+  label: string;
+  description: string;
+}) {
+  return (
+    <div
+      className={`flex items-start gap-3 rounded-2xl border p-4 transition ${
+        current
+          ? "border-red-800/50 bg-red-950/25"
+          : done
+          ? "border-emerald-700/30 bg-emerald-950/10"
+          : "border-white/10 bg-black/30"
+      }`}
+    >
       <div
-        className={`flex h-8 w-8 items-center justify-center rounded-full border ${
+        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border ${
           done
             ? "border-emerald-700/40 bg-emerald-950/40 text-emerald-300"
             : "border-zinc-700/40 bg-zinc-900/40 text-zinc-500"
         }`}
       >
-        {done ? <CheckCircle2 className="h-4 w-4" /> : <Clock3 className="h-4 w-4" />}
+        {done ? (
+          <CheckCircle2 className="h-4 w-4" />
+        ) : (
+          <Clock3 className="h-4 w-4" />
+        )}
       </div>
-      <div className={done ? "font-bold text-white" : "font-bold text-zinc-500"}>
-        {label}
+
+      <div>
+        <div
+          className={
+            done ? "font-black text-white" : "font-black text-zinc-500"
+          }
+        >
+          {label}
+        </div>
+        <div className="mt-1 text-sm leading-5 text-zinc-500">
+          {description}
+        </div>
       </div>
     </div>
   );
