@@ -23,10 +23,10 @@ import {
   Search,
   ShieldCheck,
   Star,
-  Zap,
   Upload,
   UserPlus,
   Wrench,
+  Zap,
   Activity,
   BarChart3,
   Sparkles,
@@ -309,7 +309,7 @@ function HeroShowcase() {
   useEffect(() => {
     const interval = window.setInterval(() => {
       setActiveSlide((current) => (current + 1) % heroSlides.length);
-    }, 4200);
+    }, 6500);
 
     return () => window.clearInterval(interval);
   }, []);
@@ -328,10 +328,10 @@ function HeroShowcase() {
     <motion.div
       initial={{ opacity: 0, scale: 0.96, x: 24 }}
       animate={{ opacity: 1, scale: 1, x: 0 }}
-      transition={{ duration: 0.55, delay: 0.12 }}
-      className="hidden lg:block"
+      transition={{ duration: 0.75, delay: 0.12, ease: [0.16, 1, 0.3, 1] }}
+      className="hidden h-[685px] lg:block"
     >
-      <div className="relative overflow-hidden rounded-[2.25rem] border border-white/10 bg-[#08090c]/80 p-5 shadow-2xl shadow-black backdrop-blur-xl">
+      <div className="relative h-[685px] overflow-hidden rounded-[2.25rem] border border-white/10 bg-[#08090c]/80 p-5 shadow-2xl shadow-black backdrop-blur-xl">
         <div className="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-red-700/20 blur-3xl" />
         <div className="absolute -bottom-24 -left-24 h-72 w-72 rounded-full bg-red-950/30 blur-3xl" />
         <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-red-500/70 to-transparent" />
@@ -365,13 +365,13 @@ function HeroShowcase() {
           </div>
         </div>
 
-        <div className="relative overflow-hidden rounded-[1.8rem] border border-white/10 bg-black/45 p-5">
+        <div className="relative h-[435px] overflow-hidden rounded-[1.8rem] border border-white/10 bg-black/45 p-5">
           <motion.div
             key={slide.index}
-            initial={{ opacity: 0, x: 26 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.35 }}
-            className="grid gap-5 xl:grid-cols-[1fr_0.85fr]"
+            initial={{ opacity: 0, x: 18, scale: 0.985 }}
+            animate={{ opacity: 1, x: 0, scale: 1 }}
+            transition={{ duration: 0.75, ease: [0.16, 1, 0.3, 1] }}
+            className="grid h-[395px] gap-5 xl:grid-cols-[1fr_0.85fr]"
           >
             <div>
               <div className="mb-5 flex items-center gap-3">
@@ -430,14 +430,14 @@ function HeroShowcase() {
               </div>
             </div>
 
-            <div className="relative flex min-h-[300px] items-center justify-center overflow-hidden rounded-[1.6rem] border border-white/10 bg-gradient-to-br from-red-950/25 via-black to-zinc-950 p-5">
+            <div className="relative flex h-[395px] items-center justify-center overflow-hidden rounded-[1.6rem] border border-white/10 bg-gradient-to-br from-red-950/25 via-black to-zinc-950 p-5">
               <div className="absolute h-64 w-64 rounded-full border-[22px] border-red-700/25" />
               <div className="absolute h-44 w-44 rounded-full bg-red-700/15 blur-3xl" />
 
               <motion.div
                 key={`${slide.index}-chip`}
                 animate={{ y: [0, -8, 0], rotate: [0, 1.5, 0] }}
-                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut" }}
                 className="relative flex h-44 w-44 items-center justify-center rounded-[2.2rem] border border-red-800/50 bg-black/70 shadow-2xl shadow-red-950/40"
               >
                 <div className="absolute inset-4 rounded-[1.7rem] border border-red-700/30" />
@@ -475,7 +475,7 @@ function HeroShowcase() {
           ))}
         </div>
 
-        <div className="relative mt-5 grid gap-3 md:grid-cols-4">
+        <div className="relative mt-5 grid h-[150px] gap-3 md:grid-cols-4">
           {[
             ["Fast Processing", "Quick turnaround", Zap],
             ["Secure Files", "Private workflow", ShieldCheck],
@@ -701,7 +701,7 @@ function PublicVehicleChecker() {
       : "/login";
 
   return (
-    <div className="relative bg-[#b1121b] py-10">
+    <div className="relative border-t border-red-500/20 bg-[#b1121b] py-10">
       <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_70%_0%,white,transparent_28%)]" />
       <div className="mx-auto max-w-7xl px-4">
         <h2 className="text-2xl font-black md:text-3xl">
@@ -946,8 +946,9 @@ export default function HomePage() {
           className="absolute right-32 top-52 -z-10 hidden h-1 w-[480px] rounded-full bg-red-500 lg:block"
         />
 
-        <div className="mx-auto grid max-w-7xl gap-12 px-4 py-20 lg:grid-cols-[1.05fr_.95fr] lg:items-center">
+        <div className="mx-auto grid h-[825px] max-w-7xl gap-12 px-4 py-20 lg:grid-cols-[1.05fr_.95fr] lg:items-center">
           <motion.div
+            className="lg:min-h-[520px]"
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.55 }}
