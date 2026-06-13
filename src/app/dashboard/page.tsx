@@ -88,6 +88,7 @@ export default function DashboardPage() {
   const router = useRouter();
 
   const [email, setEmail] = useState<string | null>(null);
+  const [customerId, setCustomerId] = useState<string | null>(null);
   const [credits, setCredits] = useState<number>(0);
   const [orders, setOrders] = useState<Order[]>([]);
   const [ordersCount, setOrdersCount] = useState<number>(0);
@@ -112,12 +113,13 @@ export default function DashboardPage() {
 
       const { data: profile } = await supabase
         .from("profiles")
-        .select("credit_balance")
+        .select("credit_balance, customer_id")
         .eq("id", user.id)
         .single();
 
       if (profile) {
         setCredits(Number(profile.credit_balance ?? 0));
+        setCustomerId(profile.customer_id ?? null);
       }
 
       const { data: recentOrders } = await supabase
@@ -177,7 +179,7 @@ export default function DashboardPage() {
       .slice(0, 6);
   }, [orders]);
 
-  const customerReference = email ?? "Customer account";
+  const customerReference = customerId ?? email ?? "Customer account";
 
   const firstName =
     email?.split("@")[0]?.replace(/[._-]/g, " ").split(" ")[0] ?? "Customer";
@@ -318,6 +320,11 @@ export default function DashboardPage() {
                   <div className="max-w-[220px] truncate text-sm font-bold">
                     {email}
                   </div>
+                  {customerId && (
+                    <div className="mt-1 text-xs font-black text-red-400">
+                      {customerId}
+                    </div>
+                  )}
                 </div>
 
                 <div className="rounded-2xl border border-red-900/40 bg-red-950/25 px-4 py-3">
@@ -393,10 +400,10 @@ export default function DashboardPage() {
                 <div className="mb-5 flex items-center justify-between">
                   <div>
                     <div className="text-sm font-black uppercase tracking-[0.22em] text-red-600">
-                      Account Reference
+                      Customer ID
                     </div>
                     <h3 className="mt-2 text-2xl font-black">
-                      Payment / Support ID
+                      Payment / Support Reference
                     </h3>
                   </div>
 
@@ -407,7 +414,7 @@ export default function DashboardPage() {
 
                 <div className="rounded-2xl border border-white/10 bg-black/35 p-4">
                   <div className="text-xs font-black uppercase tracking-[0.18em] text-zinc-500">
-                    Current Reference
+                    Bank Transfer Reference
                   </div>
                   <div className="mt-2 break-words text-lg font-black">
                     {customerReference}
@@ -423,8 +430,8 @@ export default function DashboardPage() {
                 </button>
 
                 <p className="mt-4 text-xs leading-5 text-zinc-500">
-                  Later this area can display the permanent Customer ID such as
-                  MGA-10001 for bank transfer payments and support messages.
+                  Use this Customer ID as payment reference for bank transfer
+                  top-ups and support messages. Example: MGA-24817
                 </p>
               </div>
             </div>

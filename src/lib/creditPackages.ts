@@ -1,5 +1,5 @@
 export type CreditPackage = {
-  id: "starter" | "workshop" | "professional" | "partner";
+  id: string;
   name: string;
   credits: number;
   priceEuro: number;
@@ -9,33 +9,40 @@ export type CreditPackage = {
 
 export const creditPackages: CreditPackage[] = [
   {
-    id: "starter",
+    id: "credits_10",
     name: "Starter",
-    credits: 25,
-    priceEuro: 49,
-    description: "For single ECU/TCU file requests and first platform usage.",
+    credits: 10,
+    priceEuro: 50,
+    description: "Perfect for testing the platform or a small single request.",
   },
   {
-    id: "workshop",
+    id: "credits_50",
     name: "Workshop",
     credits: 50,
-    priceEuro: 89,
-    description: "For workshops with regular customer file requests.",
+    priceEuro: 225,
+    description: "Better price for regular customers and workshops.",
+  },
+  {
+    id: "credits_100",
+    name: "Professional",
+    credits: 100,
+    priceEuro: 400,
+    description: "Strong value for recurring file service requests.",
     highlight: true,
   },
   {
-    id: "professional",
-    name: "Professional",
-    credits: 100,
-    priceEuro: 169,
-    description: "For active tuning work and recurring file service orders.",
-  },
-  {
-    id: "partner",
+    id: "credits_250",
     name: "Partner",
     credits: 250,
-    priceEuro: 399,
-    description: "For high-volume partners and professional service providers.",
+    priceEuro: 875,
+    description: "High-volume package for workshops and partners.",
+  },
+  {
+    id: "credits_500",
+    name: "Enterprise",
+    credits: 500,
+    priceEuro: 1500,
+    description: "Best value package for professional users.",
   },
 ];
 
