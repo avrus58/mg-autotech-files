@@ -2,15 +2,18 @@
 
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import RequestChat from "@/components/RequestChat";
 import {
   ArrowLeft,
+  BellRing,
   Building2,
   CalendarDays,
+  Car,
   CheckCircle2,
+  Clipboard,
   Clock3,
   Copy,
   CreditCard,
@@ -24,19 +27,22 @@ import {
   Lock,
   Mail,
   MapPin,
+  MinusCircle,
   PackageCheck,
+  Phone,
   RefreshCcw,
-  Clipboard,
-  Car,
+  Save,
   Search,
+  Settings,
   ShieldCheck,
   Upload,
   User,
   Users,
-  Phone,
   Wrench,
   X,
 } from "lucide-react";
+
+type AdminTab = "orders" | "customers";
 
 type Order = {
   id: string;
@@ -80,7 +86,29 @@ type Profile = {
   vat_id: string | null;
   invoice_email: string | null;
   preferred_contact: string | null;
+  allow_negative_credits: boolean | null;
+  negative_credit_limit: number | string | null;
+  account_status: string | null;
+  internal_admin_note: string | null;
   created_at: string | null;
+};
+
+type CustomerForm = {
+  full_name: string;
+  account_type: string;
+  company_name: string;
+  phone: string;
+  street: string;
+  postal_code: string;
+  city: string;
+  country: string;
+  vat_id: string;
+  invoice_email: string;
+  preferred_contact: string;
+  allow_negative_credits: boolean;
+  negative_credit_limit: string;
+  account_status: string;
+  internal_admin_note: string;
 };
 
 const statusOptions = [
@@ -95,46 +123,31 @@ const statusOptions = [
 ];
 
 const editableStatusOptions = statusOptions.filter((status) => status !== "all");
+const accountStatusOptions = ["active", "suspended", "blocked"];
 
 function statusLabel(status: string | null) {
   if (!status) return "Unknown";
-
-  return status
-    .replaceAll("_", " ")
-    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+  return status.replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
 function statusClass(status: string | null) {
-  if (status === "completed") {
-    return "border-emerald-700/40 bg-emerald-950/30 text-emerald-300";
-  }
-
-  if (status === "in_progress") {
-    return "border-blue-700/40 bg-blue-950/30 text-blue-300";
-  }
-
-  if (status === "file_check") {
-    return "border-yellow-700/40 bg-yellow-950/30 text-yellow-300";
-  }
-
-  if (status === "customer_info_needed") {
-    return "border-orange-700/40 bg-orange-950/30 text-orange-300";
-  }
-
-  if (status === "revision") {
-    return "border-purple-700/40 bg-purple-950/30 text-purple-300";
-  }
-
-  if (status === "cancelled") {
-    return "border-zinc-700/40 bg-zinc-900/50 text-zinc-400";
-  }
-
+  if (status === "completed") return "border-emerald-700/40 bg-emerald-950/30 text-emerald-300";
+  if (status === "in_progress") return "border-blue-700/40 bg-blue-950/30 text-blue-300";
+  if (status === "file_check") return "border-yellow-700/40 bg-yellow-950/30 text-yellow-300";
+  if (status === "customer_info_needed") return "border-orange-700/40 bg-orange-950/30 text-orange-300";
+  if (status === "revision") return "border-purple-700/40 bg-purple-950/30 text-purple-300";
+  if (status === "cancelled") return "border-zinc-700/40 bg-zinc-900/50 text-zinc-400";
   return "border-red-800/40 bg-red-950/25 text-red-300";
+}
+
+function accountStatusClass(status: string | null) {
+  if (status === "blocked") return "border-red-700/40 bg-red-950/30 text-red-300";
+  if (status === "suspended") return "border-orange-700/40 bg-orange-950/30 text-orange-300";
+  return "border-emerald-700/40 bg-emerald-950/30 text-emerald-300";
 }
 
 function formatDate(value: string | null) {
   if (!value) return "-";
-
   return new Date(value).toLocaleString("de-DE", {
     day: "2-digit",
     month: "2-digit",
@@ -150,10 +163,7 @@ function shortId(id: string) {
 
 function splitServiceItems(service: string | null) {
   if (!service) return [];
-  return service
-    .split(/[,;+|]/)
-    .map((item) => item.trim())
-    .filter(Boolean);
+  return service.split(/[,;+|]/).map((item) => item.trim()).filter(Boolean);
 }
 
 function getWorkflowStep(order: Order) {
@@ -169,30 +179,88 @@ function workflowLabel(index: number) {
   return labels[index] ?? "Created";
 }
 
+function makeCustomerForm(customer: Profile): CustomerForm {
+  return {
+    full_name: customer.full_name ?? "",
+    account_type: customer.account_type ?? "private",
+    company_name: customer.company_name ?? "",
+    phone: customer.phone ?? "",
+    street: customer.street ?? "",
+    postal_code: customer.postal_code ?? "",
+    city: customer.city ?? "",
+    country: customer.country ?? "",
+    vat_id: customer.vat_id ?? "",
+    invoice_email: customer.invoice_email ?? "",
+    preferred_contact: customer.preferred_contact ?? "",
+    allow_negative_credits: Boolean(customer.allow_negative_credits),
+    negative_credit_limit: String(customer.negative_credit_limit ?? 0),
+    account_status: customer.account_status ?? "active",
+    internal_admin_note: customer.internal_admin_note ?? "",
+  };
+}
+
+function playAdminNotificationSound() {
+  try {
+    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioContextClass) return;
+    const audioContext = new AudioContextClass();
+    const oscillatorOne = audioContext.createOscillator();
+    const oscillatorTwo = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    oscillatorOne.type = "sine";
+    oscillatorTwo.type = "triangle";
+    oscillatorOne.frequency.setValueAtTime(1040, audioContext.currentTime);
+    oscillatorOne.frequency.setValueAtTime(760, audioContext.currentTime + 0.12);
+    oscillatorTwo.frequency.setValueAtTime(520, audioContext.currentTime);
+    oscillatorTwo.frequency.setValueAtTime(640, audioContext.currentTime + 0.12);
+    gainNode.gain.setValueAtTime(0.0001, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.12, audioContext.currentTime + 0.02);
+    gainNode.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + 0.38);
+    oscillatorOne.connect(gainNode);
+    oscillatorTwo.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    oscillatorOne.start();
+    oscillatorTwo.start();
+    oscillatorOne.stop(audioContext.currentTime + 0.42);
+    oscillatorTwo.stop(audioContext.currentTime + 0.42);
+  } catch {}
+}
 
 export default function AdminPage() {
   const router = useRouter();
 
+  const [activeTab, setActiveTab] = useState<AdminTab>("orders");
   const [orders, setOrders] = useState<Order[]>([]);
   const [customers, setCustomers] = useState<Profile[]>([]);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [selectedCustomer, setSelectedCustomer] = useState<Profile | null>(null);
+  const [customerForm, setCustomerForm] = useState<CustomerForm | null>(null);
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [search, setSearch] = useState("");
   const [customerSearch, setCustomerSearch] = useState("");
   const [onlyWithFile, setOnlyWithFile] = useState(false);
   const [creditInputs, setCreditInputs] = useState<Record<string, string>>({});
+  const [creditNotes, setCreditNotes] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [creditUpdatingId, setCreditUpdatingId] = useState<string | null>(null);
+  const [customerSavingId, setCustomerSavingId] = useState<string | null>(null);
   const [uploadingModifiedId, setUploadingModifiedId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
+  const [autoRefreshing, setAutoRefreshing] = useState(false);
+  const [newOrderNotice, setNewOrderNotice] = useState("");
+  const [lastSyncAt, setLastSyncAt] = useState<Date | null>(null);
 
-  const loadAdminData = async () => {
-    setLoading(true);
+  const knownOrderIdsRef = useRef<Set<string>>(new Set());
+  const initialOrdersLoadedRef = useRef(false);
+
+  async function loadAdminData(options?: { silent?: boolean }) {
+    const silent = Boolean(options?.silent);
+    if (silent) setAutoRefreshing(true);
+    else setLoading(true);
     setMessage("");
 
     const { data: userData } = await supabase.auth.getUser();
-
     if (!userData.user) {
       router.push("/login");
       return;
@@ -207,38 +275,71 @@ export default function AdminPage() {
     if (profileError || profile?.role !== "admin") {
       setMessage("You are not authorized to access the admin panel.");
       setLoading(false);
+      setAutoRefreshing(false);
       return;
     }
 
-    const { data, error } = await supabase
-      .from("orders")
-      .select("*")
-      .order("created_at", { ascending: false });
-
+    const { data, error } = await supabase.from("orders").select("*").order("created_at", { ascending: false });
     if (error) {
       setMessage(error.message);
       setLoading(false);
+      setAutoRefreshing(false);
       return;
     }
 
     const { data: profileList, error: customerError } = await supabase
       .from("profiles")
-      .select("id, email, customer_id, full_name, role, credit_balance, account_type, company_name, phone, street, postal_code, city, country, vat_id, invoice_email, preferred_contact, created_at")
+      .select(
+        "id, email, customer_id, full_name, role, credit_balance, account_type, company_name, phone, street, postal_code, city, country, vat_id, invoice_email, preferred_contact, allow_negative_credits, negative_credit_limit, account_status, internal_admin_note, created_at"
+      )
       .order("created_at", { ascending: false });
 
     if (customerError) {
       setMessage(customerError.message);
       setLoading(false);
+      setAutoRefreshing(false);
       return;
     }
 
-    setOrders((data ?? []) as Order[]);
-    setCustomers((profileList ?? []) as Profile[]);
+    const nextOrders = (data ?? []) as Order[];
+    const nextCustomers = (profileList ?? []) as Profile[];
+
+    if (initialOrdersLoadedRef.current) {
+      const previousIds = knownOrderIdsRef.current;
+      const newOrders = nextOrders.filter((order) => !previousIds.has(order.id));
+      if (newOrders.length > 0) {
+        const newestOrder = newOrders[0];
+        const vehicle = [newestOrder.vehicle_brand, newestOrder.vehicle_model].filter(Boolean).join(" ");
+        setNewOrderNotice(`${newOrders.length} new request${newOrders.length > 1 ? "s" : ""} received${vehicle ? ` · ${vehicle}` : ""}`);
+        playAdminNotificationSound();
+        window.setTimeout(() => setNewOrderNotice(""), 9000);
+      }
+    }
+
+    knownOrderIdsRef.current = new Set(nextOrders.map((order) => order.id));
+    initialOrdersLoadedRef.current = true;
+
+    setOrders(nextOrders);
+    setCustomers(nextCustomers);
+    setSelectedOrder((current) => (current ? nextOrders.find((order) => order.id === current.id) ?? current : null));
+    setSelectedCustomer((current) => {
+      if (!current) return null;
+      const updated = nextCustomers.find((customer) => customer.id === current.id) ?? current;
+      setCustomerForm(makeCustomerForm(updated));
+      return updated;
+    });
+    setLastSyncAt(new Date());
     setLoading(false);
-  };
+    setAutoRefreshing(false);
+  }
 
   useEffect(() => {
     loadAdminData();
+  }, []);
+
+  useEffect(() => {
+    const interval = window.setInterval(() => loadAdminData({ silent: true }), 10000);
+    return () => window.clearInterval(interval);
   }, []);
 
   const stats = useMemo(() => {
@@ -248,41 +349,19 @@ export default function AdminPage() {
     const inProgress = orders.filter((order) => order.status === "in_progress").length;
     const completed = orders.filter((order) => order.status === "completed").length;
     const withFile = orders.filter((order) => Boolean(order.original_file_path)).length;
-    const totalCredits = orders.reduce(
-      (sum, order) => sum + Number(order.credits_required ?? 0),
-      0
-    );
-
-    return {
-      total,
-      customers: customers.length,
-      newRequests,
-      fileCheck,
-      inProgress,
-      completed,
-      withFile,
-      totalCredits,
-    };
+    const totalCredits = orders.reduce((sum, order) => sum + Number(order.credits_required ?? 0), 0);
+    const suspendedCustomers = customers.filter((customer) => customer.account_status === "suspended" || customer.account_status === "blocked").length;
+    return { total, customers: customers.length, suspendedCustomers, newRequests, fileCheck, inProgress, completed, withFile, totalCredits };
   }, [orders, customers]);
 
-  const customerById = useMemo(() => {
-    return new Map(customers.map((customer) => [customer.id, customer]));
-  }, [customers]);
+  const customerById = useMemo(() => new Map(customers.map((customer) => [customer.id, customer])), [customers]);
 
   const filteredOrders = useMemo(() => {
     const term = search.trim().toLowerCase();
-
     return orders.filter((order) => {
-      if (selectedStatus !== "all" && order.status !== selectedStatus) {
-        return false;
-      }
-
-      if (onlyWithFile && !order.original_file_path) {
-        return false;
-      }
-
+      if (selectedStatus !== "all" && order.status !== selectedStatus) return false;
+      if (onlyWithFile && !order.original_file_path) return false;
       if (!term) return true;
-
       const fullText = [
         order.id,
         order.customer_email,
@@ -291,53 +370,42 @@ export default function AdminPage() {
         customerById.get(order.customer_id ?? "")?.company_name,
         order.vehicle_brand,
         order.vehicle_model,
-        order.vehicle_generation,
         order.vehicle_engine,
         order.service_type,
         order.ecu,
         order.gearbox,
-        order.vehicle_year,
         order.read_method,
         order.hw_sw,
         order.license_plate,
-        order.master_slave,
-        order.status,
         order.uploaded_file_name,
         order.notes,
       ]
         .filter(Boolean)
         .join(" ")
         .toLowerCase();
-
       return fullText.includes(term);
     });
   }, [orders, search, selectedStatus, onlyWithFile, customerById]);
 
   const filteredCustomers = useMemo(() => {
     const term = customerSearch.trim().toLowerCase();
-
     if (!term) return customers;
-
-    return customers.filter((customer) => {
-      const fullText = [
-        customer.email,
-        customer.customer_id,
-        customer.full_name,
-        customer.company_name,
-        customer.phone,
-        customer.role,
-        customer.id,
-      ]
+    return customers.filter((customer) =>
+      [customer.email, customer.customer_id, customer.full_name, customer.company_name, customer.phone, customer.role, customer.account_status, customer.id]
         .filter(Boolean)
         .join(" ")
-        .toLowerCase();
-
-      return fullText.includes(term);
-    });
+        .toLowerCase()
+        .includes(term)
+    );
   }, [customers, customerSearch]);
 
-  const addCreditsToCustomer = async (customer: Profile, amountToAdd: number) => {
-    if (!Number.isFinite(amountToAdd) || amountToAdd <= 0) {
+  function openCustomer(customer: Profile) {
+    setSelectedCustomer(customer);
+    setCustomerForm(makeCustomerForm(customer));
+  }
+
+  async function adjustCredits(customer: Profile, amount: number, note?: string) {
+    if (!Number.isFinite(amount) || amount === 0) {
       setMessage("Please enter a valid credit amount.");
       return;
     }
@@ -345,172 +413,134 @@ export default function AdminPage() {
     setCreditUpdatingId(customer.id);
     setMessage("");
 
-    const { data, error } = await supabase.rpc("admin_add_credits", {
+    const { data, error } = await supabase.rpc("admin_adjust_customer_credits", {
       p_customer_id: customer.id,
-      p_credits: amountToAdd,
-      p_note: `Manual admin credit top-up for ${customer.email ?? customer.customer_id ?? customer.id}`,
+      p_amount: amount,
+      p_note: note || `Admin credit adjustment for ${customer.email ?? customer.customer_id ?? customer.id}`,
     });
 
     setCreditUpdatingId(null);
-
     if (error) {
       setMessage(error.message);
       return;
     }
 
-    const newBalance = Number(data ?? Number(customer.credit_balance ?? 0) + amountToAdd);
+    const newBalance = Number(data ?? Number(customer.credit_balance ?? 0) + amount);
+    setCustomers((current) => current.map((item) => (item.id === customer.id ? { ...item, credit_balance: newBalance } : item)));
+    setSelectedCustomer((current) => (current?.id === customer.id ? { ...current, credit_balance: newBalance } : current));
+    setCreditInputs((current) => ({ ...current, [customer.id]: "" }));
+    setCreditNotes((current) => ({ ...current, [customer.id]: "" }));
+    setMessage(`${amount > 0 ? "+" : ""}${amount} credits adjusted for ${customer.customer_id ?? customer.email ?? "customer"}. Ledger entry created.`);
+  }
 
-    setCustomers((current) =>
-      current.map((item) =>
-        item.id === customer.id
-          ? {
-              ...item,
-              credit_balance: newBalance,
-            }
-          : item
-      )
-    );
+  function quickAdjustCredits(customer: Profile, amount: number) {
+    adjustCredits(customer, amount, `Quick admin adjustment: ${amount > 0 ? "+" : ""}${amount} credits`);
+  }
 
-    setCreditInputs((current) => ({
-      ...current,
-      [customer.id]: "",
-    }));
+  function handleCustomCreditAdjust(customer: Profile) {
+    adjustCredits(customer, Number(creditInputs[customer.id] ?? 0), creditNotes[customer.id] || undefined);
+  }
 
-    setMessage(`${amountToAdd} credits added to ${customer.customer_id ?? customer.email ?? "customer"}. Ledger entry created.`);
-  };
-
-  const handleCustomCreditAdd = (customer: Profile) => {
-    const amount = Number(creditInputs[customer.id] ?? 0);
-    addCreditsToCustomer(customer, amount);
-  };
-
-  const updateStatus = async (orderId: string, newStatus: string) => {
-    setUpdatingId(orderId);
+  async function saveCustomerSettings() {
+    if (!selectedCustomer || !customerForm) return;
+    setCustomerSavingId(selectedCustomer.id);
     setMessage("");
 
-    const { error } = await supabase
-      .from("orders")
-      .update({ status: newStatus })
-      .eq("id", orderId);
+    const updatePayload = {
+      full_name: customerForm.full_name.trim() || null,
+      account_type: customerForm.account_type,
+      company_name: customerForm.company_name.trim() || null,
+      phone: customerForm.phone.trim() || null,
+      street: customerForm.street.trim() || null,
+      postal_code: customerForm.postal_code.trim() || null,
+      city: customerForm.city.trim() || null,
+      country: customerForm.country.trim() || null,
+      vat_id: customerForm.vat_id.trim() || null,
+      invoice_email: customerForm.invoice_email.trim() || null,
+      preferred_contact: customerForm.preferred_contact.trim() || null,
+      allow_negative_credits: customerForm.allow_negative_credits,
+      negative_credit_limit: Number(customerForm.negative_credit_limit || 0),
+      account_status: customerForm.account_status,
+      internal_admin_note: customerForm.internal_admin_note.trim() || null,
+    };
 
-    setUpdatingId(null);
-
+    const { error } = await supabase.from("profiles").update(updatePayload).eq("id", selectedCustomer.id);
+    setCustomerSavingId(null);
     if (error) {
       setMessage(error.message);
       return;
     }
 
-    setOrders((current) =>
-      current.map((order) =>
-        order.id === orderId ? { ...order, status: newStatus } : order
-      )
-    );
+    const updatedCustomer = { ...selectedCustomer, ...updatePayload } as Profile;
+    setCustomers((current) => current.map((customer) => (customer.id === selectedCustomer.id ? updatedCustomer : customer)));
+    setSelectedCustomer(updatedCustomer);
+    setMessage(`${selectedCustomer.customer_id ?? selectedCustomer.email ?? "Customer"} updated.`);
+  }
 
-    setSelectedOrder((current) =>
-      current?.id === orderId ? { ...current, status: newStatus } : current
-    );
-  };
+  async function updateStatus(orderId: string, newStatus: string) {
+    setUpdatingId(orderId);
+    setMessage("");
+    const { error } = await supabase.from("orders").update({ status: newStatus }).eq("id", orderId);
+    setUpdatingId(null);
+    if (error) {
+      setMessage(error.message);
+      return;
+    }
+    setOrders((current) => current.map((order) => (order.id === orderId ? { ...order, status: newStatus } : order)));
+    setSelectedOrder((current) => (current?.id === orderId ? { ...current, status: newStatus } : current));
+  }
 
-  const downloadOriginalFile = async (order: Order) => {
+  async function downloadOriginalFile(order: Order) {
     if (!order.original_file_path) {
       setMessage("No original file path found for this order.");
       return;
     }
-
     setMessage("");
-
-    const { data, error } = await supabase.storage
-      .from("customer-files")
-      .createSignedUrl(order.original_file_path, 60);
-
+    const { data, error } = await supabase.storage.from("customer-files").createSignedUrl(order.original_file_path, 60);
     if (error) {
       setMessage(error.message);
       return;
     }
-
     window.open(data.signedUrl, "_blank");
-  };
+  }
 
-  const uploadModifiedFile = async (order: Order, file: File | null) => {
+  async function uploadModifiedFile(order: Order, file: File | null) {
     if (!file) return;
-
     setUploadingModifiedId(order.id);
     setMessage("");
-
-    const safeFileName = file.name
-      .replaceAll(" ", "_")
-      .replace(/[^a-zA-Z0-9._-]/g, "");
-
+    const safeFileName = file.name.replaceAll(" ", "_").replace(/[^a-zA-Z0-9._-]/g, "");
     const customerFolder = order.customer_id ?? "unknown-customer";
     const filePath = `${customerFolder}/modified/${order.id}/${Date.now()}-${safeFileName}`;
-
-    const { error: uploadError } = await supabase.storage
-      .from("customer-files")
-      .upload(filePath, file, {
-        cacheControl: "3600",
-        upsert: false,
-      });
-
+    const { error: uploadError } = await supabase.storage.from("customer-files").upload(filePath, file, { cacheControl: "3600", upsert: false });
     if (uploadError) {
       setUploadingModifiedId(null);
       setMessage(uploadError.message);
       return;
     }
-
-    const { error: updateError } = await supabase
-      .from("orders")
-      .update({
-        modified_file_path: filePath,
-        status: "completed",
-      })
-      .eq("id", order.id);
-
+    const { error: updateError } = await supabase.from("orders").update({ modified_file_path: filePath, status: "completed" }).eq("id", order.id);
     setUploadingModifiedId(null);
-
     if (updateError) {
       setMessage(updateError.message);
       return;
     }
-
-    setOrders((current) =>
-      current.map((item) =>
-        item.id === order.id
-          ? {
-              ...item,
-              modified_file_path: filePath,
-              status: "completed",
-            }
-          : item
-      )
-    );
-
-    setSelectedOrder((current) =>
-      current?.id === order.id
-        ? {
-            ...current,
-            modified_file_path: filePath,
-            status: "completed",
-          }
-        : current
-    );
-
+    setOrders((current) => current.map((item) => (item.id === order.id ? { ...item, modified_file_path: filePath, status: "completed" } : item)));
+    setSelectedOrder((current) => (current?.id === order.id ? { ...current, modified_file_path: filePath, status: "completed" } : current));
     setMessage("Modified file uploaded and order marked as completed.");
-  };
+  }
 
-  const copyOrderId = async (id: string) => {
+  async function copyOrderId(id: string) {
     await navigator.clipboard.writeText(id);
     setMessage("Order ID copied.");
-  };
+  }
 
-  const copyValue = async (value: string | null | undefined, label: string) => {
+  async function copyValue(value: string | null | undefined, label: string) {
     if (!value) {
       setMessage(`${label} is empty.`);
       return;
     }
-
     await navigator.clipboard.writeText(value);
     setMessage(`${label} copied.`);
-  };
+  }
 
   if (loading) {
     return (
@@ -530,10 +560,7 @@ export default function AdminPage() {
           <Lock className="mx-auto mb-5 h-12 w-12 text-red-500" />
           <h1 className="text-3xl font-black">Access Denied</h1>
           <p className="mt-3 text-zinc-400">{message}</p>
-          <Link
-            href="/dashboard"
-            className="mt-6 inline-flex rounded-xl bg-[#b1121b] px-5 py-3 font-black text-white"
-          >
+          <Link href="/dashboard" className="mt-6 inline-flex rounded-xl bg-[#b1121b] px-5 py-3 font-black text-white">
             Back to Dashboard
           </Link>
         </div>
@@ -546,35 +573,26 @@ export default function AdminPage() {
       <div className="fixed inset-0 -z-10 bg-[radial-gradient(circle_at_18%_0%,rgba(160,18,28,0.25),transparent_34%),linear-gradient(135deg,#050505,#0c0c0e_48%,#170507)]" />
 
       <header className="sticky top-0 z-50 border-b border-white/10 bg-black/80 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-[1500px] items-center justify-between px-4 py-5">
+        <div className="mx-auto flex max-w-[1600px] items-center justify-between px-4 py-5">
           <div className="flex items-center gap-3">
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-red-800/50 bg-[#111] shadow-lg shadow-red-950/40">
               <ShieldCheck className="h-7 w-7 text-red-600" />
             </div>
-
             <div>
-              <div className="text-xl font-black tracking-wide">
-                MG <span className="text-red-600">AUTOTECH</span>
-              </div>
-              <div className="text-xs text-zinc-400">
-                File Service Admin Operations
-              </div>
+              <div className="text-xl font-black tracking-wide">MG <span className="text-red-600">AUTOTECH</span></div>
+              <div className="text-xs text-zinc-400">File Service Admin Operations</div>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
-            <button
-              onClick={loadAdminData}
-              className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-bold text-white transition hover:bg-white/10"
-            >
-              <RefreshCcw className="mr-2 inline h-4 w-4" />
+            <div className="hidden rounded-xl border border-emerald-700/30 bg-emerald-950/20 px-4 py-3 text-xs font-black text-emerald-300 lg:block">
+              {autoRefreshing ? "Syncing..." : lastSyncAt ? `Synced ${lastSyncAt.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}` : "Live Sync"}
+            </div>
+            <button onClick={() => loadAdminData()} className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-bold text-white transition hover:bg-white/10">
+              <RefreshCcw className={`mr-2 inline h-4 w-4 ${autoRefreshing ? "animate-spin" : ""}`} />
               Refresh
             </button>
-
-            <Link
-              href="/dashboard"
-              className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-bold text-white transition hover:bg-white/10"
-            >
+            <Link href="/dashboard" className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-bold text-white transition hover:bg-white/10">
               <ArrowLeft className="mr-2 inline h-4 w-4" />
               Dashboard
             </Link>
@@ -582,592 +600,89 @@ export default function AdminPage() {
         </div>
       </header>
 
-      <section className="mx-auto max-w-[1500px] px-4 py-8">
-        <div className="mb-8">
-          <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-red-800/50 bg-red-950/25 px-4 py-2 text-sm font-semibold text-red-100">
-            <Database className="h-4 w-4 text-red-500" />
-            Live order management
+      <section className="mx-auto grid max-w-[1600px] gap-6 px-4 py-8 xl:grid-cols-[260px_1fr]">
+        <aside className="h-fit rounded-[2rem] border border-white/10 bg-white/[0.04] p-4 shadow-2xl shadow-black/20 xl:sticky xl:top-28">
+          <div className="mb-4 px-3">
+            <div className="text-xs font-black uppercase tracking-[0.22em] text-zinc-500">Admin Workspace</div>
+            <div className="mt-1 text-lg font-black text-white">Operations</div>
+          </div>
+          <nav className="space-y-2">
+            <SidebarButton active={activeTab === "orders"} icon={<FileCode2 />} label="Orders" count={stats.total} onClick={() => setActiveTab("orders")} />
+            <SidebarButton active={activeTab === "customers"} icon={<Users />} label="Customers" count={stats.customers} onClick={() => setActiveTab("customers")} />
+          </nav>
+          <div className="mt-5 rounded-2xl border border-red-900/40 bg-red-950/20 p-4">
+            <div className="text-xs font-black uppercase tracking-[0.18em] text-red-300">Open Work</div>
+            <div className="mt-3 grid grid-cols-2 gap-2 text-center">
+              <MiniStat label="New" value={stats.newRequests} />
+              <MiniStat label="Progress" value={stats.inProgress} />
+            </div>
+          </div>
+        </aside>
+
+        <div>
+          <div className="mb-8">
+            <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-red-800/50 bg-red-950/25 px-4 py-2 text-sm font-semibold text-red-100">
+              <Database className="h-4 w-4 text-red-500" />
+              Live management
+            </div>
+            <h1 className="text-4xl font-black md:text-5xl">Admin <span className="text-red-600">Control Panel</span></h1>
+            <p className="mt-3 max-w-3xl text-zinc-400">Manage requests, customers, credits, account permissions and file workflows from one clean workspace.</p>
           </div>
 
-          <h1 className="text-4xl font-black md:text-5xl">
-            Admin <span className="text-red-600">Control Panel</span>
-          </h1>
+          <div className="mb-8 grid gap-4 md:grid-cols-2 xl:grid-cols-8">
+            <StatCard icon={<FileCode2 />} label="Orders" value={stats.total} />
+            <StatCard icon={<Users />} label="Customers" value={stats.customers} />
+            <StatCard icon={<Upload />} label="New" value={stats.newRequests} />
+            <StatCard icon={<Search />} label="File Check" value={stats.fileCheck} />
+            <StatCard icon={<Wrench />} label="In Progress" value={stats.inProgress} />
+            <StatCard icon={<CheckCircle2 />} label="Completed" value={stats.completed} />
+            <StatCard icon={<FileDown />} label="With File" value={stats.withFile} />
+            <StatCard icon={<CreditCard />} label="Credits Used" value={stats.totalCredits} highlight />
+          </div>
 
-          <p className="mt-3 max-w-3xl text-zinc-400">
-            Manage customer requests, download original files, update order
-            status and inspect technical vehicle data from one clean workspace.
-          </p>
+          {newOrderNotice && (
+            <div className="mb-6 flex items-center gap-3 rounded-2xl border border-emerald-700/40 bg-emerald-950/30 p-4 text-sm font-black text-emerald-200 shadow-xl shadow-emerald-950/20">
+              <BellRing className="h-5 w-5 text-emerald-300" />
+              {newOrderNotice}
+            </div>
+          )}
+
+          {message && (
+            <div className="mb-6 rounded-2xl border border-red-800/50 bg-red-950/30 p-4 text-sm text-red-200">{message}</div>
+          )}
+
+          {activeTab === "orders" ? (
+            <OrdersPanel
+              orders={orders}
+              filteredOrders={filteredOrders}
+              customerById={customerById}
+              selectedStatus={selectedStatus}
+              setSelectedStatus={setSelectedStatus}
+              search={search}
+              setSearch={setSearch}
+              onlyWithFile={onlyWithFile}
+              setOnlyWithFile={setOnlyWithFile}
+              updatingId={updatingId}
+              setSelectedOrder={setSelectedOrder}
+              updateStatus={updateStatus}
+            />
+          ) : (
+            <CustomersPanel
+              customers={customers}
+              filteredCustomers={filteredCustomers}
+              customerSearch={customerSearch}
+              setCustomerSearch={setCustomerSearch}
+              creditInputs={creditInputs}
+              setCreditInputs={setCreditInputs}
+              creditNotes={creditNotes}
+              setCreditNotes={setCreditNotes}
+              creditUpdatingId={creditUpdatingId}
+              openCustomer={openCustomer}
+              quickAdjustCredits={quickAdjustCredits}
+              handleCustomCreditAdjust={handleCustomCreditAdjust}
+            />
+          )}
         </div>
-
-        <div className="mb-8 grid gap-4 md:grid-cols-2 xl:grid-cols-8">
-          <StatCard icon={<FileCode2 />} label="Total Orders" value={stats.total} />
-          <StatCard icon={<Users />} label="Customers" value={stats.customers} />
-          <StatCard icon={<Upload />} label="New" value={stats.newRequests} />
-          <StatCard icon={<Search />} label="File Check" value={stats.fileCheck} />
-          <StatCard icon={<Wrench />} label="In Progress" value={stats.inProgress} />
-          <StatCard icon={<CheckCircle2 />} label="Completed" value={stats.completed} />
-          <StatCard icon={<FileDown />} label="With File" value={stats.withFile} />
-          <StatCard icon={<CreditCard />} label="Credits Used" value={stats.totalCredits} highlight />
-        </div>
-
-        {message && (
-          <div className="mb-6 rounded-2xl border border-red-800/50 bg-red-950/30 p-4 text-sm text-red-200">
-            {message}
-          </div>
-        )}
-
-        <section className="mb-8 rounded-[2rem] border border-white/10 bg-white/[0.04] p-5 shadow-2xl shadow-black/20">
-          <div className="mb-5 flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-            <div>
-              <h2 className="text-2xl font-black">Customers & Credits</h2>
-              <p className="mt-1 text-sm text-zinc-500">
-                Manage customer credit balances after payment confirmation.
-              </p>
-            </div>
-
-            <div className="relative">
-              <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
-              <input
-                value={customerSearch}
-                onChange={(event) => setCustomerSearch(event.target.value)}
-                placeholder="Search customer email, name or role..."
-                className="h-12 w-full rounded-xl border border-white/10 bg-black/35 pl-11 pr-4 text-sm font-bold text-white outline-none transition placeholder:text-zinc-600 focus:border-red-700 md:w-96"
-              />
-            </div>
-          </div>
-
-          <div className="hidden overflow-hidden rounded-2xl border border-white/10 xl:block">
-            <table className="w-full border-collapse text-left text-sm">
-              <thead className="bg-black/50 text-xs uppercase tracking-[0.14em] text-zinc-500">
-                <tr>
-                  <th className="px-4 py-4">Customer</th>
-                  <th className="px-4 py-4">Customer ID</th>
-                  <th className="px-4 py-4">Type</th>
-                  <th className="px-4 py-4">Role</th>
-                  <th className="px-4 py-4">Balance</th>
-                  <th className="px-4 py-4">Quick Add</th>
-                  <th className="px-4 py-4">Custom Add</th>
-                  <th className="px-4 py-4 text-right">Created</th>
-                </tr>
-              </thead>
-
-              <tbody className="divide-y divide-white/10">
-                {filteredCustomers.length === 0 ? (
-                  <tr>
-                    <td colSpan={8} className="px-4 py-12 text-center text-zinc-500">
-                      No customers found.
-                    </td>
-                  </tr>
-                ) : (
-                  filteredCustomers.map((customer) => (
-                    <tr
-                      key={customer.id}
-                      className="bg-black/20 transition hover:bg-white/[0.04]"
-                    >
-                      <td className="px-4 py-4 align-top">
-                        <div className="font-black text-white">
-                          {customer.email || "-"}
-                        </div>
-                        <div className="mt-1 text-xs text-zinc-500">
-                          {customer.full_name || customer.company_name || customer.id}
-                        </div>
-                      </td>
-
-                      <td className="px-4 py-4 align-top">
-                        <button
-                          onClick={() => customer.customer_id && navigator.clipboard.writeText(customer.customer_id)}
-                          className="rounded-xl border border-red-800/40 bg-red-950/25 px-3 py-2 text-xs font-black text-red-300 transition hover:bg-red-900/30"
-                        >
-                          {customer.customer_id || "-"}
-                        </button>
-                      </td>
-
-                      <td className="px-4 py-4 align-top">
-                        <div className="text-sm font-bold text-white">
-                          {customer.account_type === "company" ? "Company" : "Private"}
-                        </div>
-                        <div className="mt-1 max-w-[180px] truncate text-xs text-zinc-500">
-                          {customer.company_name || customer.phone || "-"}
-                        </div>
-                      </td>
-
-                      <td className="px-4 py-4 align-top">
-                        <span
-                          className={`rounded-xl border px-3 py-2 text-xs font-black ${
-                            customer.role === "admin"
-                              ? "border-red-700/40 bg-red-950/30 text-red-300"
-                              : "border-white/10 bg-white/[0.04] text-zinc-300"
-                          }`}
-                        >
-                          {customer.role || "customer"}
-                        </span>
-                      </td>
-
-                      <td className="px-4 py-4 align-top">
-                        <div className="w-28 rounded-xl bg-red-950/30 px-3 py-2 text-center font-black text-red-300">
-                          {Number(customer.credit_balance ?? 0)}
-                        </div>
-                      </td>
-
-                      <td className="px-4 py-4 align-top">
-                        <div className="flex flex-wrap gap-2">
-                          {[10, 25, 50, 100].map((amount) => (
-                            <button
-                              key={amount}
-                              onClick={() => addCreditsToCustomer(customer, amount)}
-                              disabled={creditUpdatingId === customer.id}
-                              className="rounded-xl border border-emerald-700/40 bg-emerald-950/30 px-3 py-2 text-xs font-black text-emerald-300 transition hover:bg-emerald-900/40 disabled:cursor-not-allowed disabled:opacity-50"
-                            >
-                              +{amount}
-                            </button>
-                          ))}
-                        </div>
-                      </td>
-
-                      <td className="px-4 py-4 align-top">
-                        <div className="flex gap-2">
-                          <input
-                            type="number"
-                            min="1"
-                            value={creditInputs[customer.id] ?? ""}
-                            onChange={(event) =>
-                              setCreditInputs((current) => ({
-                                ...current,
-                                [customer.id]: event.target.value,
-                              }))
-                            }
-                            placeholder="Amount"
-                            className="h-10 w-28 rounded-xl border border-white/10 bg-black/35 px-3 text-sm font-bold text-white outline-none placeholder:text-zinc-600 focus:border-red-700"
-                          />
-
-                          <button
-                            onClick={() => handleCustomCreditAdd(customer)}
-                            disabled={creditUpdatingId === customer.id}
-                            className="h-10 rounded-xl bg-[#b1121b] px-4 text-xs font-black text-white transition hover:bg-[#c91824] disabled:cursor-not-allowed disabled:opacity-50"
-                          >
-                            {creditUpdatingId === customer.id ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              "Add"
-                            )}
-                          </button>
-                        </div>
-                      </td>
-
-                      <td className="px-4 py-4 text-right align-top text-sm text-zinc-500">
-                        {formatDate(customer.created_at)}
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          <div className="space-y-4 xl:hidden">
-            {filteredCustomers.length === 0 ? (
-              <div className="rounded-2xl border border-white/10 bg-black/30 p-8 text-center text-zinc-500">
-                No customers found.
-              </div>
-            ) : (
-              filteredCustomers.map((customer) => (
-                <div
-                  key={customer.id}
-                  className="rounded-2xl border border-white/10 bg-black/30 p-5"
-                >
-                  <div className="mb-4 flex items-start justify-between gap-4">
-                    <div>
-                      <div className="font-black">{customer.email || "-"}</div>
-                      <div className="mt-1 text-sm text-zinc-500">
-                        {customer.customer_id || customer.id}
-                      </div>
-                      <div className="mt-1 text-xs text-zinc-500">
-                        {customer.full_name || customer.company_name || "-"}
-                      </div>
-                    </div>
-
-                    <div className="rounded-xl bg-red-950/30 px-3 py-2 text-center font-black text-red-300">
-                      {Number(customer.credit_balance ?? 0)}
-                    </div>
-                  </div>
-
-                  <div className="mb-4 flex flex-wrap gap-2">
-                    {[10, 25, 50, 100].map((amount) => (
-                      <button
-                        key={amount}
-                        onClick={() => addCreditsToCustomer(customer, amount)}
-                        disabled={creditUpdatingId === customer.id}
-                        className="rounded-xl border border-emerald-700/40 bg-emerald-950/30 px-3 py-2 text-xs font-black text-emerald-300 disabled:opacity-50"
-                      >
-                        +{amount}
-                      </button>
-                    ))}
-                  </div>
-
-                  <div className="flex gap-2">
-                    <input
-                      type="number"
-                      min="1"
-                      value={creditInputs[customer.id] ?? ""}
-                      onChange={(event) =>
-                        setCreditInputs((current) => ({
-                          ...current,
-                          [customer.id]: event.target.value,
-                        }))
-                      }
-                      placeholder="Custom amount"
-                      className="h-11 min-w-0 flex-1 rounded-xl border border-white/10 bg-black/35 px-3 text-sm font-bold text-white outline-none placeholder:text-zinc-600 focus:border-red-700"
-                    />
-
-                    <button
-                      onClick={() => handleCustomCreditAdd(customer)}
-                      disabled={creditUpdatingId === customer.id}
-                      className="h-11 rounded-xl bg-[#b1121b] px-4 text-sm font-black text-white disabled:opacity-50"
-                    >
-                      Add
-                    </button>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </section>
-
-        <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5 shadow-2xl shadow-black/20">
-          <div className="mb-5 flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-            <div>
-              <h2 className="text-2xl font-black">Orders</h2>
-              <p className="mt-1 text-sm text-zinc-500">
-                Showing {filteredOrders.length} of {orders.length} requests.
-              </p>
-            </div>
-
-            <div className="flex flex-col gap-3 md:flex-row md:items-center">
-              <div className="relative">
-                <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
-                <input
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
-                  placeholder="Search customer, vehicle, ECU, file..."
-                  className="h-12 w-full rounded-xl border border-white/10 bg-black/35 pl-11 pr-4 text-sm font-bold text-white outline-none transition placeholder:text-zinc-600 focus:border-red-700 md:w-96"
-                />
-              </div>
-
-              <button
-                onClick={() => setOnlyWithFile((current) => !current)}
-                className={`h-12 rounded-xl border px-4 text-sm font-black transition ${
-                  onlyWithFile
-                    ? "border-red-700 bg-red-950/40 text-red-200"
-                    : "border-white/10 bg-black/35 text-zinc-400 hover:text-white"
-                }`}
-              >
-                <FileDown className="mr-2 inline h-4 w-4" />
-                Only With File
-              </button>
-            </div>
-          </div>
-
-          <div className="mb-5 flex gap-2 overflow-x-auto pb-1">
-            {statusOptions.map((status) => {
-              const active = selectedStatus === status;
-              const count =
-                status === "all"
-                  ? orders.length
-                  : orders.filter((order) => order.status === status).length;
-
-              return (
-                <button
-                  key={status}
-                  onClick={() => setSelectedStatus(status)}
-                  className={`shrink-0 rounded-xl border px-4 py-3 text-sm font-black transition ${
-                    active
-                      ? "border-red-700 bg-red-950/40 text-white"
-                      : "border-white/10 bg-black/30 text-zinc-400 hover:text-white"
-                  }`}
-                >
-                  {status === "all" ? "All" : statusLabel(status)}
-                  <span className="ml-2 rounded-full bg-white/10 px-2 py-0.5 text-xs">
-                    {count}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="hidden overflow-hidden rounded-2xl border border-white/10 xl:block">
-            <table className="w-full border-collapse text-left text-sm">
-              <thead className="bg-black/50 text-xs uppercase tracking-[0.14em] text-zinc-500">
-                <tr>
-                  <th className="px-4 py-4">Order</th>
-                  <th className="px-4 py-4">Customer</th>
-                  <th className="px-4 py-4">Vehicle</th>
-                  <th className="px-4 py-4">ECU / Read</th>
-                  <th className="px-4 py-4">Service</th>
-                  <th className="px-4 py-4">Credits</th>
-                  <th className="px-4 py-4">Status</th>
-                  <th className="px-4 py-4">File</th>
-                  <th className="px-4 py-4 text-right">Actions</th>
-                </tr>
-              </thead>
-
-              <tbody className="divide-y divide-white/10">
-                {filteredOrders.length === 0 ? (
-                  <tr>
-                    <td colSpan={9} className="px-4 py-12 text-center text-zinc-500">
-                      No orders found.
-                    </td>
-                  </tr>
-                ) : (
-                  filteredOrders.map((order) => (
-                    <tr key={order.id} className="bg-black/20 transition hover:bg-white/[0.04]">
-                      <td className="px-4 py-4 align-top">
-                        <div className="font-black text-white">#{shortId(order.id)}</div>
-                        <div className="mt-1 flex items-center gap-1 text-xs text-zinc-500">
-                          <CalendarDays className="h-3 w-3" />
-                          {formatDate(order.created_at)}
-                        </div>
-                      </td>
-
-                      <td className="px-4 py-4 align-top">
-                        <div className="font-bold text-white">
-                          {order.customer_email || "-"}
-                        </div>
-                        <div className="mt-1 text-xs font-black text-red-400">
-                          {customerById.get(order.customer_id ?? "")?.customer_id ||
-                            (order.customer_id ? order.customer_id.slice(0, 8) : "-")}
-                        </div>
-                        <div className="mt-1 max-w-[180px] truncate text-xs text-zinc-500">
-                          {customerById.get(order.customer_id ?? "")?.full_name ||
-                            customerById.get(order.customer_id ?? "")?.company_name ||
-                            "-"}
-                        </div>
-                      </td>
-
-                      <td className="px-4 py-4 align-top">
-                        <div className="font-black">
-                          {order.vehicle_brand || "-"} {order.vehicle_model || ""}
-                        </div>
-                        <div className="mt-1 text-xs text-zinc-500">
-                          {order.vehicle_generation || "-"} · {order.vehicle_engine || "-"}
-                        </div>
-                      </td>
-
-                      <td className="px-4 py-4 align-top">
-                        <div className="font-bold">{order.ecu || "-"}</div>
-                        <div className="mt-1 text-xs text-zinc-500">
-                          {order.read_method || "-"} · {order.gearbox || "-"}
-                        </div>
-                      </td>
-
-                      <td className="max-w-[260px] px-4 py-4 align-top">
-                        <div className="line-clamp-2 font-bold text-zinc-200">
-                          {order.service_type || "-"}
-                        </div>
-                      </td>
-
-                      <td className="px-4 py-4 align-top">
-                        <div className="rounded-xl bg-red-950/30 px-3 py-2 text-center font-black text-red-300">
-                          {order.credits_required ?? 0}
-                        </div>
-                      </td>
-
-                      <td className="px-4 py-4 align-top">
-                        <select
-                          value={order.status ?? "new_request"}
-                          onChange={(event) => updateStatus(order.id, event.target.value)}
-                          disabled={updatingId === order.id}
-                          className={`w-44 rounded-xl border px-3 py-2 text-xs font-black outline-none ${statusClass(
-                            order.status
-                          )}`}
-                        >
-                          {editableStatusOptions.map((status) => (
-                            <option key={status} value={status} className="bg-[#111]">
-                              {statusLabel(status)}
-                            </option>
-                          ))}
-                        </select>
-                      </td>
-
-                      <td className="px-4 py-4 align-top">
-                        {order.original_file_path ? (
-                          <div className="rounded-xl border border-emerald-700/40 bg-emerald-950/25 px-3 py-2 text-xs font-bold text-emerald-300">
-                            Original Ready
-                          </div>
-                        ) : (
-                          <div className="rounded-xl border border-zinc-700/40 bg-zinc-900/40 px-3 py-2 text-xs font-bold text-zinc-500">
-                            No Original
-                          </div>
-                        )}
-
-                        {order.modified_file_path && (
-                          <div className="mt-1 rounded-xl border border-blue-700/40 bg-blue-950/25 px-3 py-2 text-xs font-bold text-blue-300">
-                            Modified Ready
-                          </div>
-                        )}
-
-                        <div className="mt-1 max-w-[160px] truncate text-xs text-zinc-500">
-                          {order.uploaded_file_name || "-"}
-                        </div>
-                      </td>
-
-                      <td className="px-4 py-4 align-top">
-                        <div className="flex justify-end gap-2">
-                          <button
-                            onClick={() => downloadOriginalFile(order)}
-                            disabled={!order.original_file_path}
-                            className="rounded-xl bg-[#b1121b] px-3 py-2 text-xs font-black text-white transition hover:bg-[#c91824] disabled:cursor-not-allowed disabled:opacity-40"
-                          >
-                            <Download className="mr-1 inline h-4 w-4" />
-                            Original
-                          </button>
-
-                          <label className="cursor-pointer rounded-xl border border-emerald-700/40 bg-emerald-950/30 px-3 py-2 text-xs font-black text-emerald-300 transition hover:bg-emerald-900/40">
-                            {uploadingModifiedId === order.id ? (
-                              <>
-                                <Loader2 className="mr-1 inline h-4 w-4 animate-spin" />
-                                Uploading
-                              </>
-                            ) : (
-                              <>
-                                <Upload className="mr-1 inline h-4 w-4" />
-                                Upload Mod
-                              </>
-                            )}
-
-                            <input
-                              type="file"
-                              className="hidden"
-                              disabled={uploadingModifiedId === order.id}
-                              onChange={(event) => {
-                                const file = event.target.files?.[0] ?? null;
-                                uploadModifiedFile(order, file);
-                                event.target.value = "";
-                              }}
-                            />
-                          </label>
-
-                          <button
-                            onClick={() => setSelectedOrder(order)}
-                            className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-black text-white transition hover:bg-white/10"
-                          >
-                            <Eye className="mr-1 inline h-4 w-4" />
-                            Details
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          <div className="space-y-4 xl:hidden">
-            {filteredOrders.length === 0 ? (
-              <div className="rounded-2xl border border-white/10 bg-black/30 p-8 text-center text-zinc-500">
-                No orders found.
-              </div>
-            ) : (
-              filteredOrders.map((order) => (
-                <div
-                  key={order.id}
-                  className="rounded-2xl border border-white/10 bg-black/30 p-5"
-                >
-                  <div className="mb-4 flex items-start justify-between gap-4">
-                    <div>
-                      <div className="text-lg font-black">
-                        {order.vehicle_brand || "-"} {order.vehicle_model || ""}
-                      </div>
-                      <div className="mt-1 text-sm text-zinc-500">
-                        #{shortId(order.id)} · {formatDate(order.created_at)}
-                      </div>
-                    </div>
-
-                    <span
-                      className={`rounded-full border px-3 py-1 text-xs font-bold ${statusClass(
-                        order.status
-                      )}`}
-                    >
-                      {statusLabel(order.status)}
-                    </span>
-                  </div>
-
-                  <div className="grid gap-3 text-sm md:grid-cols-2">
-                    <MiniInfo
-                      label="Customer"
-                      value={
-                        customerById.get(order.customer_id ?? "")?.customer_id ||
-                        order.customer_email
-                      }
-                    />
-                    <MiniInfo label="Engine" value={order.vehicle_engine} />
-                    <MiniInfo label="ECU" value={order.ecu} />
-                    <MiniInfo label="Service" value={order.service_type} />
-                  </div>
-
-                  <div className="mt-4 flex flex-col gap-2 md:flex-row">
-                    <select
-                      value={order.status ?? "new_request"}
-                      onChange={(event) => updateStatus(order.id, event.target.value)}
-                      disabled={updatingId === order.id}
-                      className={`h-11 rounded-xl border px-3 text-xs font-black outline-none ${statusClass(
-                        order.status
-                      )}`}
-                    >
-                      {editableStatusOptions.map((status) => (
-                        <option key={status} value={status} className="bg-[#111]">
-                          {statusLabel(status)}
-                        </option>
-                      ))}
-                    </select>
-
-                    <button
-                      onClick={() => downloadOriginalFile(order)}
-                      disabled={!order.original_file_path}
-                      className="h-11 rounded-xl bg-[#b1121b] px-4 text-sm font-black text-white disabled:opacity-40"
-                    >
-                      <Download className="mr-2 inline h-4 w-4" />
-                      Original
-                    </button>
-
-                    <label className="flex h-11 cursor-pointer items-center justify-center rounded-xl border border-emerald-700/40 bg-emerald-950/30 px-4 text-sm font-black text-emerald-300">
-                      {uploadingModifiedId === order.id ? (
-                        <>
-                          <Loader2 className="mr-2 inline h-4 w-4 animate-spin" />
-                          Uploading
-                        </>
-                      ) : (
-                        <>
-                          <Upload className="mr-2 inline h-4 w-4" />
-                          Upload Mod
-                        </>
-                      )}
-
-                      <input
-                        type="file"
-                        className="hidden"
-                        disabled={uploadingModifiedId === order.id}
-                        onChange={(event) => {
-                          const file = event.target.files?.[0] ?? null;
-                          uploadModifiedFile(order, file);
-                          event.target.value = "";
-                        }}
-                      />
-                    </label>
-
-                    <button
-                      onClick={() => setSelectedOrder(order)}
-                      className="h-11 rounded-xl border border-white/10 bg-white/[0.04] px-4 text-sm font-black text-white"
-                    >
-                      <Eye className="mr-2 inline h-4 w-4" />
-                      Details
-                    </button>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </section>
       </section>
 
       {selectedOrder && (
@@ -1184,91 +699,529 @@ export default function AdminPage() {
           uploadingModified={uploadingModifiedId === selectedOrder.id}
         />
       )}
+
+      {selectedCustomer && customerForm && (
+        <CustomerDetailModal
+          customer={selectedCustomer}
+          form={customerForm}
+          setForm={setCustomerForm}
+          creditInput={creditInputs[selectedCustomer.id] ?? ""}
+          setCreditInput={(value) => setCreditInputs((current) => ({ ...current, [selectedCustomer.id]: value }))}
+          creditNote={creditNotes[selectedCustomer.id] ?? ""}
+          setCreditNote={(value) => setCreditNotes((current) => ({ ...current, [selectedCustomer.id]: value }))}
+          creditUpdating={creditUpdatingId === selectedCustomer.id}
+          saving={customerSavingId === selectedCustomer.id}
+          onClose={() => {
+            setSelectedCustomer(null);
+            setCustomerForm(null);
+          }}
+          onSave={saveCustomerSettings}
+          onQuickAdjust={(amount) => quickAdjustCredits(selectedCustomer, amount)}
+          onCustomAdjust={() => handleCustomCreditAdjust(selectedCustomer)}
+          onCopyValue={copyValue}
+        />
+      )}
     </main>
   );
 }
 
-function StatCard({
-  icon,
-  label,
-  value,
-  highlight = false,
+function OrdersPanel({
+  orders,
+  filteredOrders,
+  customerById,
+  selectedStatus,
+  setSelectedStatus,
+  search,
+  setSearch,
+  onlyWithFile,
+  setOnlyWithFile,
+  updatingId,
+  setSelectedOrder,
+  updateStatus,
 }: {
-  icon: ReactNode;
-  label: string;
-  value: string | number;
-  highlight?: boolean;
+  orders: Order[];
+  filteredOrders: Order[];
+  customerById: Map<string, Profile>;
+  selectedStatus: string;
+  setSelectedStatus: (value: string) => void;
+  search: string;
+  setSearch: (value: string) => void;
+  onlyWithFile: boolean;
+  setOnlyWithFile: React.Dispatch<React.SetStateAction<boolean>>;
+  updatingId: string | null;
+  setSelectedOrder: (order: Order) => void;
+  updateStatus: (orderId: string, newStatus: string) => void;
 }) {
   return (
-    <div
-      className={`rounded-[2rem] border p-5 ${
-        highlight
-          ? "border-red-900/40 bg-red-950/20"
-          : "border-white/10 bg-white/[0.04]"
-      }`}
-    >
-      <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-2xl bg-red-950/40 text-red-400">
-        {icon}
+    <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5 shadow-2xl shadow-black/20">
+      <div className="mb-5 flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+        <div>
+          <h2 className="text-2xl font-black">Orders</h2>
+          <p className="mt-1 text-sm text-zinc-500">Showing {filteredOrders.length} of {orders.length} requests.</p>
+        </div>
+
+        <div className="flex flex-col gap-3 md:flex-row md:items-center">
+          <div className="relative">
+            <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
+            <input
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Search customer, vehicle, ECU, file..."
+              className="h-12 w-full rounded-xl border border-white/10 bg-black/35 pl-11 pr-4 text-sm font-bold text-white outline-none transition placeholder:text-zinc-600 focus:border-red-700 md:w-96"
+            />
+          </div>
+
+          <button
+            onClick={() => setOnlyWithFile((current) => !current)}
+            className={`h-12 rounded-xl border px-4 text-sm font-black transition ${
+              onlyWithFile
+                ? "border-red-700 bg-red-950/40 text-red-200"
+                : "border-white/10 bg-black/35 text-zinc-400 hover:text-white"
+            }`}
+          >
+            <FileDown className="mr-2 inline h-4 w-4" />
+            Only With File
+          </button>
+        </div>
       </div>
+
+      <div className="mb-5 flex gap-2 overflow-x-auto pb-1">
+        {statusOptions.map((status) => {
+          const active = selectedStatus === status;
+          const count = status === "all" ? orders.length : orders.filter((order) => order.status === status).length;
+          return (
+            <button
+              key={status}
+              onClick={() => setSelectedStatus(status)}
+              className={`shrink-0 rounded-xl border px-4 py-3 text-sm font-black transition ${
+                active ? "border-red-700 bg-red-950/40 text-white" : "border-white/10 bg-black/30 text-zinc-400 hover:text-white"
+              }`}
+            >
+              {status === "all" ? "All" : statusLabel(status)}
+              <span className="ml-2 rounded-full bg-white/10 px-2 py-0.5 text-xs">{count}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="hidden overflow-hidden rounded-2xl border border-white/10 xl:block">
+        <table className="w-full table-fixed border-collapse text-left text-sm">
+          <colgroup>
+            <col className="w-[8%]" />
+            <col className="w-[15%]" />
+            <col className="w-[12%]" />
+            <col className="w-[13%]" />
+            <col className="w-[11%]" />
+            <col className="w-[7%]" />
+            <col className="w-[14%]" />
+            <col className="w-[12%]" />
+            <col className="w-[8%]" />
+          </colgroup>
+          <thead className="bg-black/50 text-xs uppercase tracking-[0.14em] text-zinc-500">
+            <tr>
+              <th className="px-3 py-4">Order</th>
+              <th className="px-3 py-4">Customer</th>
+              <th className="px-3 py-4">Vehicle</th>
+              <th className="px-3 py-4">ECU / Read</th>
+              <th className="px-3 py-4">Service</th>
+              <th className="px-3 py-4">Credits</th>
+              <th className="px-3 py-4">Status</th>
+              <th className="px-3 py-4">File</th>
+              <th className="px-3 py-4 text-center">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-white/10">
+            {filteredOrders.length === 0 ? (
+              <tr>
+                <td colSpan={9} className="px-4 py-12 text-center text-zinc-500">No orders found.</td>
+              </tr>
+            ) : (
+              filteredOrders.map((order) => (
+                <tr key={order.id} className="bg-black/20 transition hover:bg-white/[0.04]">
+                  <td className="px-3 py-4 align-top">
+                    <div className="truncate font-black text-white">#{shortId(order.id)}</div>
+                    <div className="mt-1 flex items-center gap-1 text-xs text-zinc-500">
+                      <CalendarDays className="h-3 w-3" />
+                      {formatDate(order.created_at)}
+                    </div>
+                  </td>
+                  <td className="px-3 py-4 align-top">
+                    <div className="truncate font-bold text-white">{order.customer_email || "-"}</div>
+                    <div className="mt-1 text-xs font-black text-red-400">
+                      {customerById.get(order.customer_id ?? "")?.customer_id || (order.customer_id ? order.customer_id.slice(0, 8) : "-")}
+                    </div>
+                    <div className="mt-1 max-w-[180px] truncate text-xs text-zinc-500">
+                      {customerById.get(order.customer_id ?? "")?.full_name || customerById.get(order.customer_id ?? "")?.company_name || "-"}
+                    </div>
+                  </td>
+                  <td className="px-3 py-4 align-top">
+                    <div className="line-clamp-2 font-black">{order.vehicle_brand || "-"} {order.vehicle_model || ""}</div>
+                    <div className="mt-1 line-clamp-2 text-xs text-zinc-500">{order.vehicle_generation || "-"} · {order.vehicle_engine || "-"}</div>
+                  </td>
+                  <td className="px-3 py-4 align-top">
+                    <div className="line-clamp-3 font-bold">{order.ecu || "-"}</div>
+                    <div className="mt-1 line-clamp-2 text-xs text-zinc-500">{order.read_method || "-"} · {order.gearbox || "-"}</div>
+                  </td>
+                  <td className="px-3 py-4 align-top"><div className="line-clamp-2 font-bold text-zinc-200">{order.service_type || "-"}</div></td>
+                  <td className="px-3 py-4 align-top"><div className="rounded-xl bg-red-950/30 px-3 py-2 text-center font-black text-red-300">{order.credits_required ?? 0}</div></td>
+                  <td className="px-3 py-4 align-top">
+                    <select
+                      value={order.status ?? "new_request"}
+                      onChange={(event) => updateStatus(order.id, event.target.value)}
+                      disabled={updatingId === order.id}
+                      className={`w-full rounded-xl border px-3 py-2 text-xs font-black outline-none ${statusClass(order.status)}`}
+                    >
+                      {editableStatusOptions.map((status) => <option key={status} value={status} className="bg-[#111]">{statusLabel(status)}</option>)}
+                    </select>
+                  </td>
+                  <td className="px-3 py-4 align-top">
+                    {order.original_file_path ? (
+                      <div className="rounded-xl border border-emerald-700/40 bg-emerald-950/25 px-3 py-2 text-xs font-bold text-emerald-300">Original Ready</div>
+                    ) : (
+                      <div className="rounded-xl border border-zinc-700/40 bg-zinc-900/40 px-3 py-2 text-xs font-bold text-zinc-500">No Original</div>
+                    )}
+                    {order.modified_file_path && <div className="mt-1 rounded-xl border border-blue-700/40 bg-blue-950/25 px-3 py-2 text-xs font-bold text-blue-300">Modified Ready</div>}
+                    <div title={order.uploaded_file_name || "-"} className="mt-1 max-w-full truncate text-xs text-zinc-500">{order.uploaded_file_name || "-"}</div>
+                  </td>
+                  <td className="px-3 py-4 text-center align-top">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedOrder(order)}
+                      className="inline-flex h-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] px-4 text-xs font-black text-white transition hover:border-red-700/50 hover:bg-red-950/30"
+                    >
+                      <Eye className="mr-2 h-4 w-4" />
+                      Details
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="space-y-4 xl:hidden">
+        {filteredOrders.length === 0 ? (
+          <div className="rounded-2xl border border-white/10 bg-black/30 p-8 text-center text-zinc-500">No orders found.</div>
+        ) : (
+          filteredOrders.map((order) => (
+            <div key={order.id} className="rounded-2xl border border-white/10 bg-black/30 p-5">
+              <div className="mb-4 flex items-start justify-between gap-4">
+                <div>
+                  <div className="text-lg font-black">{order.vehicle_brand || "-"} {order.vehicle_model || ""}</div>
+                  <div className="mt-1 text-sm text-zinc-500">#{shortId(order.id)} · {formatDate(order.created_at)}</div>
+                </div>
+                <span className={`rounded-full border px-3 py-1 text-xs font-bold ${statusClass(order.status)}`}>{statusLabel(order.status)}</span>
+              </div>
+              <div className="grid gap-3 text-sm md:grid-cols-2">
+                <MiniInfo label="Customer" value={customerById.get(order.customer_id ?? "")?.customer_id || order.customer_email} />
+                <MiniInfo label="Engine" value={order.vehicle_engine} />
+                <MiniInfo label="ECU" value={order.ecu} />
+                <MiniInfo label="Service" value={order.service_type} />
+              </div>
+              <div className="mt-4 grid gap-2 md:grid-cols-[1fr_auto]">
+                <select
+                  value={order.status ?? "new_request"}
+                  onChange={(event) => updateStatus(order.id, event.target.value)}
+                  disabled={updatingId === order.id}
+                  className={`h-11 rounded-xl border px-3 text-xs font-black outline-none ${statusClass(order.status)}`}
+                >
+                  {editableStatusOptions.map((status) => <option key={status} value={status} className="bg-[#111]">{statusLabel(status)}</option>)}
+                </select>
+                <button onClick={() => setSelectedOrder(order)} className="h-11 rounded-xl border border-white/10 bg-white/[0.04] px-4 text-sm font-black text-white transition hover:border-red-700/50 hover:bg-red-950/30">
+                  <Eye className="mr-2 inline h-4 w-4" />
+                  Details
+                </button>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </section>
+  );
+}
+
+function CustomersPanel({
+  customers,
+  filteredCustomers,
+  customerSearch,
+  setCustomerSearch,
+  creditInputs,
+  setCreditInputs,
+  creditNotes,
+  setCreditNotes,
+  creditUpdatingId,
+  openCustomer,
+  quickAdjustCredits,
+  handleCustomCreditAdjust,
+}: {
+  customers: Profile[];
+  filteredCustomers: Profile[];
+  customerSearch: string;
+  setCustomerSearch: (value: string) => void;
+  creditInputs: Record<string, string>;
+  setCreditInputs: React.Dispatch<React.SetStateAction<Record<string, string>>>;
+  creditNotes: Record<string, string>;
+  setCreditNotes: React.Dispatch<React.SetStateAction<Record<string, string>>>;
+  creditUpdatingId: string | null;
+  openCustomer: (customer: Profile) => void;
+  quickAdjustCredits: (customer: Profile, amount: number) => void;
+  handleCustomCreditAdjust: (customer: Profile) => void;
+}) {
+  return (
+    <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5 shadow-2xl shadow-black/20">
+      <div className="mb-5 flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+        <div>
+          <h2 className="text-2xl font-black">Customers</h2>
+          <p className="mt-1 text-sm text-zinc-500">Manage {filteredCustomers.length} of {customers.length} customers, credits and account permissions.</p>
+        </div>
+        <div className="relative">
+          <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
+          <input
+            value={customerSearch}
+            onChange={(event) => setCustomerSearch(event.target.value)}
+            placeholder="Search customer ID, email, name, company..."
+            className="h-12 w-full rounded-xl border border-white/10 bg-black/35 pl-11 pr-4 text-sm font-bold text-white outline-none transition placeholder:text-zinc-600 focus:border-red-700 md:w-[520px]"
+          />
+        </div>
+      </div>
+
+      <div className="hidden overflow-hidden rounded-2xl border border-white/10 xl:block">
+        <table className="w-full table-fixed border-collapse text-left text-sm">
+          <colgroup>
+            <col className="w-[27%]" />
+            <col className="w-[13%]" />
+            <col className="w-[16%]" />
+            <col className="w-[10%]" />
+            <col className="w-[20%]" />
+            <col className="w-[14%]" />
+          </colgroup>
+          <thead className="bg-black/50 text-xs uppercase tracking-[0.14em] text-zinc-500">
+            <tr>
+              <th className="px-4 py-4">Customer</th>
+              <th className="px-4 py-4">Customer ID</th>
+              <th className="px-4 py-4">Account</th>
+              <th className="px-4 py-4">Balance</th>
+              <th className="px-4 py-4">Quick Credits</th>
+              <th className="px-4 py-4 text-right">Manage</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-white/10">
+            {filteredCustomers.length === 0 ? (
+              <tr><td colSpan={6} className="px-4 py-12 text-center text-zinc-500">No customers found.</td></tr>
+            ) : (
+              filteredCustomers.map((customer) => (
+                <tr key={customer.id} className="bg-black/20 transition hover:bg-white/[0.04]">
+                  <td className="px-4 py-4 align-top">
+                    <div className="truncate font-black text-white">{customer.email || "-"}</div>
+                    <div className="mt-1 truncate text-xs text-zinc-500">{customer.full_name || customer.company_name || customer.id}</div>
+                    {customer.internal_admin_note ? (
+                      <div className="mt-2 line-clamp-1 rounded-lg border border-yellow-700/30 bg-yellow-950/15 px-2 py-1 text-xs text-yellow-300">Note: {customer.internal_admin_note}</div>
+                    ) : null}
+                  </td>
+                  <td className="px-4 py-4 align-top">
+                    <button onClick={() => customer.customer_id && navigator.clipboard.writeText(customer.customer_id)} className="rounded-xl border border-red-800/40 bg-red-950/25 px-3 py-2 text-xs font-black text-red-300 transition hover:bg-red-900/30">
+                      {customer.customer_id || "-"}
+                    </button>
+                  </td>
+                  <td className="px-4 py-4 align-top">
+                    <div className="text-sm font-bold text-white">{customer.account_type === "company" ? "Company" : "Private"}</div>
+                    <span className={`mt-2 inline-flex rounded-xl border px-3 py-1 text-xs font-black ${accountStatusClass(customer.account_status)}`}>{statusLabel(customer.account_status ?? "active")}</span>
+                    {customer.allow_negative_credits ? <div className="mt-2 text-xs font-bold text-orange-300">Negative limit: -{Math.abs(Number(customer.negative_credit_limit ?? 0))}</div> : null}
+                  </td>
+                  <td className="px-4 py-4 align-top"><div className="w-24 rounded-xl bg-red-950/30 px-3 py-2 text-center font-black text-red-300">{Number(customer.credit_balance ?? 0)}</div></td>
+                  <td className="px-4 py-4 align-top">
+                    <div className="flex flex-wrap gap-2">
+                      {[10, 25, 50, 100].map((amount) => (
+                        <button key={amount} onClick={() => quickAdjustCredits(customer, amount)} disabled={creditUpdatingId === customer.id} className="rounded-xl border border-emerald-700/40 bg-emerald-950/30 px-3 py-2 text-xs font-black text-emerald-300 transition hover:bg-emerald-900/40 disabled:opacity-50">+{amount}</button>
+                      ))}
+                      <button onClick={() => quickAdjustCredits(customer, -10)} disabled={creditUpdatingId === customer.id} className="rounded-xl border border-red-700/40 bg-red-950/30 px-3 py-2 text-xs font-black text-red-300 transition hover:bg-red-900/40 disabled:opacity-50">-10</button>
+                    </div>
+                    <div className="mt-2 text-xs text-zinc-500">Custom amount and ledger note are inside Manage.</div>
+                  </td>
+                  <td className="px-4 py-4 text-right align-top">
+                    <button onClick={() => openCustomer(customer)} className="inline-flex h-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] px-4 text-xs font-black text-white transition hover:border-red-700/50 hover:bg-red-950/30">
+                      <Settings className="mr-2 h-4 w-4" />Manage
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="space-y-4 xl:hidden">
+        {filteredCustomers.length === 0 ? <div className="rounded-2xl border border-white/10 bg-black/30 p-8 text-center text-zinc-500">No customers found.</div> : filteredCustomers.map((customer) => (
+          <div key={customer.id} className="rounded-2xl border border-white/10 bg-black/30 p-5">
+            <div className="mb-4 flex items-start justify-between gap-4">
+              <div>
+                <div className="font-black">{customer.email || "-"}</div>
+                <div className="mt-1 text-sm text-zinc-500">{customer.customer_id || customer.id}</div>
+                <div className="mt-1 text-xs text-zinc-500">{customer.full_name || customer.company_name || "-"}</div>
+              </div>
+              <div className="rounded-xl bg-red-950/30 px-3 py-2 text-center font-black text-red-300">{Number(customer.credit_balance ?? 0)}</div>
+            </div>
+            <div className="mb-4 flex flex-wrap gap-2">
+              {[10, 25, 50, 100].map((amount) => <button key={amount} onClick={() => quickAdjustCredits(customer, amount)} disabled={creditUpdatingId === customer.id} className="rounded-xl border border-emerald-700/40 bg-emerald-950/30 px-3 py-2 text-xs font-black text-emerald-300 disabled:opacity-50">+{amount}</button>)}
+              <button onClick={() => quickAdjustCredits(customer, -10)} disabled={creditUpdatingId === customer.id} className="rounded-xl border border-red-700/40 bg-red-950/30 px-3 py-2 text-xs font-black text-red-300 disabled:opacity-50">-10</button>
+            </div>
+            <button onClick={() => openCustomer(customer)} className="h-11 w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 text-sm font-black text-white"><Settings className="mr-2 inline h-4 w-4" />Manage Customer</button>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function CustomerDetailModal({ customer, form, setForm, creditInput, setCreditInput, creditNote, setCreditNote, creditUpdating, saving, onClose, onSave, onQuickAdjust, onCustomAdjust, onCopyValue }: {
+  customer: Profile;
+  form: CustomerForm;
+  setForm: React.Dispatch<React.SetStateAction<CustomerForm | null>>;
+  creditInput: string;
+  setCreditInput: (value: string) => void;
+  creditNote: string;
+  setCreditNote: (value: string) => void;
+  creditUpdating: boolean;
+  saving: boolean;
+  onClose: () => void;
+  onSave: () => void;
+  onQuickAdjust: (amount: number) => void;
+  onCustomAdjust: () => void;
+  onCopyValue: (value: string | null | undefined, label: string) => void;
+}) {
+  const updateForm = <K extends keyof CustomerForm>(key: K, value: CustomerForm[K]) => setForm((current) => current ? { ...current, [key]: value } : current);
+
+  return (
+    <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/75 px-4 py-6 backdrop-blur-sm">
+      <div className="max-h-[94vh] w-full max-w-6xl overflow-auto rounded-[2rem] border border-white/10 bg-[#090909] shadow-2xl shadow-black">
+        <div className="sticky top-0 z-10 border-b border-white/10 bg-[#090909]/95 p-5 backdrop-blur-xl">
+          <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+            <div>
+              <div className="mb-3 flex flex-wrap items-center gap-2">
+                <span className="rounded-full border border-red-800/40 bg-red-950/25 px-3 py-1 text-xs font-black uppercase tracking-[0.16em] text-red-300">{customer.customer_id || customer.id}</span>
+                <span className={`rounded-full border px-3 py-1 text-xs font-black ${accountStatusClass(form.account_status)}`}>{statusLabel(form.account_status)}</span>
+                <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs font-bold text-zinc-400">Balance: {Number(customer.credit_balance ?? 0)} credits</span>
+              </div>
+              <h2 className="text-3xl font-black md:text-4xl">{customer.full_name || customer.company_name || customer.email || "Customer"}</h2>
+              <p className="mt-2 text-sm text-zinc-500">{customer.email}</p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button onClick={() => onCopyValue(customer.customer_id || customer.id, "Customer ID")} className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-black text-white transition hover:bg-white/10"><Copy className="mr-2 inline h-4 w-4" />Copy ID</button>
+              <button onClick={onSave} disabled={saving} className="rounded-xl bg-[#b1121b] px-4 py-3 text-sm font-black text-white transition hover:bg-[#c91824] disabled:opacity-50">{saving ? <Loader2 className="mr-2 inline h-4 w-4 animate-spin" /> : <Save className="mr-2 inline h-4 w-4" />}Save Customer</button>
+              <button onClick={onClose} className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-black text-white transition hover:bg-white/10"><X className="mr-2 inline h-4 w-4" />Close</button>
+            </div>
+          </div>
+        </div>
+        <div className="grid gap-6 p-5 xl:grid-cols-[1fr_360px]">
+          <div className="space-y-6">
+            <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
+              <h3 className="mb-5 text-2xl font-black">Customer Profile</h3>
+              <div className="grid gap-4 md:grid-cols-2">
+                <FormInput label="Full Name" value={form.full_name} onChange={(value) => updateForm("full_name", value)} />
+                <FormSelect label="Account Type" value={form.account_type} onChange={(value) => updateForm("account_type", value)} options={["private", "company"]} />
+                <FormInput label="Company Name" value={form.company_name} onChange={(value) => updateForm("company_name", value)} />
+                <FormInput label="Phone" value={form.phone} onChange={(value) => updateForm("phone", value)} />
+                <FormInput label="Street" value={form.street} onChange={(value) => updateForm("street", value)} />
+                <FormInput label="Postal Code" value={form.postal_code} onChange={(value) => updateForm("postal_code", value)} />
+                <FormInput label="City" value={form.city} onChange={(value) => updateForm("city", value)} />
+                <FormInput label="Country" value={form.country} onChange={(value) => updateForm("country", value)} />
+                <FormInput label="VAT ID" value={form.vat_id} onChange={(value) => updateForm("vat_id", value)} />
+                <FormInput label="Invoice Email" value={form.invoice_email} onChange={(value) => updateForm("invoice_email", value)} />
+                <FormInput label="Preferred Contact" value={form.preferred_contact} onChange={(value) => updateForm("preferred_contact", value)} />
+                <FormSelect label="Account Status" value={form.account_status} onChange={(value) => updateForm("account_status", value)} options={accountStatusOptions} />
+              </div>
+            </section>
+            <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
+              <h3 className="mb-5 text-2xl font-black">Credit Permissions</h3>
+              <div className="grid gap-4 md:grid-cols-2">
+                <label className="flex items-center justify-between gap-4 rounded-2xl border border-white/10 bg-black/30 p-4">
+                  <div><div className="font-black text-white">Allow Negative Credits</div><div className="mt-1 text-sm text-zinc-500">Customer can submit requests with insufficient balance.</div></div>
+                  <input type="checkbox" checked={form.allow_negative_credits} onChange={(event) => updateForm("allow_negative_credits", event.target.checked)} className="h-5 w-5 accent-red-600" />
+                </label>
+                <FormInput label="Negative Credit Limit" type="number" value={form.negative_credit_limit} onChange={(value) => updateForm("negative_credit_limit", value)} />
+              </div>
+              <textarea value={form.internal_admin_note} onChange={(event) => updateForm("internal_admin_note", event.target.value)} placeholder="Internal admin note. Customer cannot see this." className="mt-4 min-h-32 w-full resize-none rounded-2xl border border-white/10 bg-black/35 px-4 py-3 text-sm font-bold text-white outline-none placeholder:text-zinc-600 focus:border-red-700" />
+            </section>
+          </div>
+          <aside className="space-y-6">
+            <section className="rounded-[2rem] border border-red-900/40 bg-red-950/20 p-5">
+              <CreditCard className="mb-4 h-8 w-8 text-red-400" /><div className="text-sm text-zinc-400">Current Balance</div><div className="mt-2 text-5xl font-black">{Number(customer.credit_balance ?? 0)}</div><div className="mt-1 text-sm text-zinc-500">credits</div>
+            </section>
+            <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
+              <h3 className="mb-5 text-2xl font-black">Adjust Credits</h3>
+              <div className="mb-4 grid grid-cols-2 gap-2">
+                {[10, 25, 50, 100].map((amount) => <button key={amount} onClick={() => onQuickAdjust(amount)} disabled={creditUpdating} className="rounded-xl border border-emerald-700/40 bg-emerald-950/30 px-3 py-3 text-sm font-black text-emerald-300 transition hover:bg-emerald-900/40 disabled:opacity-50">+{amount}</button>)}
+                {[-10, -25, -50, -100].map((amount) => <button key={amount} onClick={() => onQuickAdjust(amount)} disabled={creditUpdating} className="rounded-xl border border-red-700/40 bg-red-950/30 px-3 py-3 text-sm font-black text-red-300 transition hover:bg-red-900/40 disabled:opacity-50">{amount}</button>)}
+              </div>
+              <input type="number" value={creditInput} onChange={(event) => setCreditInput(event.target.value)} placeholder="+/- custom amount" className="mb-3 h-12 w-full rounded-xl border border-white/10 bg-black/35 px-4 text-sm font-bold text-white outline-none placeholder:text-zinc-600 focus:border-red-700" />
+              <textarea value={creditNote} onChange={(event) => setCreditNote(event.target.value)} placeholder="Ledger note" className="mb-3 min-h-24 w-full resize-none rounded-xl border border-white/10 bg-black/35 px-4 py-3 text-sm font-bold text-white outline-none placeholder:text-zinc-600 focus:border-red-700" />
+              <button onClick={onCustomAdjust} disabled={creditUpdating} className="flex h-12 w-full items-center justify-center rounded-xl bg-[#b1121b] px-4 text-sm font-black text-white transition hover:bg-[#c91824] disabled:opacity-50">{creditUpdating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <MinusCircle className="mr-2 h-4 w-4" />}Apply Credit Adjustment</button>
+            </section>
+          </aside>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SidebarButton({ active, icon, label, count, onClick }: { active: boolean; icon: ReactNode; label: string; count: number; onClick: () => void }) {
+  return (
+    <button onClick={onClick} className={`flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left text-sm font-black transition ${active ? "border-red-700/50 bg-red-950/35 text-white" : "border-white/10 bg-black/25 text-zinc-400 hover:bg-white/[0.04] hover:text-white"}`}>
+      <span className="flex items-center gap-3"><span className={active ? "text-red-400" : "text-zinc-500"}>{icon}</span>{label}</span>
+      <span className="rounded-full bg-white/10 px-2 py-0.5 text-xs">{count}</span>
+    </button>
+  );
+}
+
+function MiniStat({ label, value }: { label: string; value: number }) {
+  return <div className="rounded-xl bg-black/30 p-3"><div className="text-xs text-zinc-500">{label}</div><div className="mt-1 text-xl font-black">{value}</div></div>;
+}
+
+function StatCard({ icon, label, value, highlight = false }: { icon: ReactNode; label: string; value: string | number; highlight?: boolean }) {
+  return (
+    <div className={`rounded-[2rem] border p-5 ${highlight ? "border-red-900/40 bg-red-950/20" : "border-white/10 bg-white/[0.04]"}`}>
+      <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-2xl bg-red-950/40 text-red-400">{icon}</div>
       <div className="text-sm text-zinc-400">{label}</div>
       <div className="mt-2 text-3xl font-black">{value}</div>
     </div>
   );
 }
 
-function MiniInfo({
-  label,
-  value,
-}: {
-  label: string;
-  value: string | number | null | undefined;
-}) {
+function MiniInfo({ label, value }: { label: string; value: string | number | null | undefined }) {
+  return <div className="rounded-xl bg-white/[0.04] p-3"><div className="text-xs uppercase tracking-[0.12em] text-zinc-500">{label}</div><div className="mt-1 font-bold text-white">{value || "-"}</div></div>;
+}
+
+function FormInput({ label, value, onChange, type = "text" }: { label: string; value: string; onChange: (value: string) => void; type?: string }) {
   return (
-    <div className="rounded-xl bg-white/[0.04] p-3">
-      <div className="text-xs uppercase tracking-[0.12em] text-zinc-500">
-        {label}
-      </div>
-      <div className="mt-1 font-bold text-white">{value || "-"}</div>
-    </div>
+    <label>
+      <div className="mb-2 text-xs font-black uppercase tracking-[0.14em] text-zinc-500">{label}</div>
+      <input type={type} value={value} onChange={(event) => onChange(event.target.value)} className="h-12 w-full rounded-xl border border-white/10 bg-black/35 px-4 text-sm font-bold text-white outline-none placeholder:text-zinc-600 focus:border-red-700" />
+    </label>
   );
 }
 
-function Detail({
-  icon,
-  label,
-  value,
-}: {
-  icon: ReactNode;
-  label: string;
-  value: string | number | null | undefined;
-}) {
+function FormSelect({ label, value, onChange, options }: { label: string; value: string; onChange: (value: string) => void; options: string[] }) {
+  return (
+    <label>
+      <div className="mb-2 text-xs font-black uppercase tracking-[0.14em] text-zinc-500">{label}</div>
+      <select value={value} onChange={(event) => onChange(event.target.value)} className="h-12 w-full rounded-xl border border-white/10 bg-black/35 px-4 text-sm font-bold text-white outline-none focus:border-red-700">
+        {options.map((option) => <option key={option} value={option} className="bg-[#111]">{statusLabel(option)}</option>)}
+      </select>
+    </label>
+  );
+}
+
+function Detail({ icon, label, value }: { icon: ReactNode; label: string; value: string | number | null | undefined }) {
   return (
     <div className="flex gap-3 rounded-2xl bg-white/[0.04] p-4">
-      <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-red-950/40 text-red-400">
-        {icon}
-      </div>
-      <div>
-        <div className="text-xs uppercase tracking-[0.14em] text-zinc-500">
-          {label}
-        </div>
-        <div className="mt-1 break-words font-bold text-white">{value || "-"}</div>
-      </div>
+      <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-red-950/40 text-red-400">{icon}</div>
+      <div className="min-w-0"><div className="text-xs uppercase tracking-[0.14em] text-zinc-500">{label}</div><div title={String(value || "-")} className="mt-1 line-clamp-2 break-all font-bold text-white">{value || "-"}</div></div>
     </div>
   );
 }
 
-function OrderDetailModal({
-  order,
-  customer,
-  onClose,
-  onDownload,
-  onCopy,
-  onCopyValue,
-  onStatusChange,
-  onUploadModified,
-  updating,
-  uploadingModified,
-}: {
+function OrderDetailModal({ order, customer, onClose, onDownload, onCopy, onCopyValue, onStatusChange, onUploadModified, updating, uploadingModified }: {
   order: Order;
   customer: Profile | null;
   onClose: () => void;
@@ -1289,231 +1242,31 @@ function OrderDetailModal({
         <div className="sticky top-0 z-10 border-b border-white/10 bg-[#090909]/95 p-5 backdrop-blur-xl">
           <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
             <div>
-              <div className="mb-3 flex flex-wrap items-center gap-2">
-                <span className="rounded-full border border-red-800/40 bg-red-950/25 px-3 py-1 text-xs font-black uppercase tracking-[0.16em] text-red-300">
-                  Work Order #{shortId(order.id)}
-                </span>
-                <span className={`rounded-full border px-3 py-1 text-xs font-bold ${statusClass(order.status)}`}>
-                  {statusLabel(order.status)}
-                </span>
-                <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs font-bold text-zinc-400">
-                  {formatDate(order.created_at)}
-                </span>
-              </div>
-
-              <h2 className="text-3xl font-black md:text-4xl">
-                {order.vehicle_brand || "-"} {order.vehicle_model || ""}{" "}
-                <span className="text-red-500">{order.vehicle_engine || ""}</span>
-              </h2>
-
-              <p className="mt-2 text-sm text-zinc-500">
-                {customer?.customer_id || order.customer_id || "-"} ·{" "}
-                {customer?.full_name || customer?.company_name || order.customer_email || "-"}
-              </p>
+              <div className="mb-3 flex flex-wrap items-center gap-2"><span className="rounded-full border border-red-800/40 bg-red-950/25 px-3 py-1 text-xs font-black uppercase tracking-[0.16em] text-red-300">Work Order #{shortId(order.id)}</span><span className={`rounded-full border px-3 py-1 text-xs font-bold ${statusClass(order.status)}`}>{statusLabel(order.status)}</span><span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs font-bold text-zinc-400">{formatDate(order.created_at)}</span></div>
+              <h2 className="text-3xl font-black md:text-4xl">{order.vehicle_brand || "-"} {order.vehicle_model || ""} <span className="text-red-500">{order.vehicle_engine || ""}</span></h2>
+              <p className="mt-2 text-sm text-zinc-500">{customer?.customer_id || order.customer_id || "-"} · {customer?.full_name || customer?.company_name || order.customer_email || "-"}</p>
             </div>
-
             <div className="flex flex-wrap gap-2">
-              <button onClick={onCopy} className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-black text-white transition hover:bg-white/10">
-                <Copy className="mr-2 inline h-4 w-4" />
-                Copy Order ID
-              </button>
-
-              <button onClick={onDownload} disabled={!order.original_file_path} className="rounded-xl bg-[#b1121b] px-4 py-3 text-sm font-black text-white transition hover:bg-[#c91824] disabled:cursor-not-allowed disabled:opacity-40">
-                <Download className="mr-2 inline h-4 w-4" />
-                Download Original
-              </button>
-
-              <label className="cursor-pointer rounded-xl border border-emerald-700/40 bg-emerald-950/30 px-4 py-3 text-sm font-black text-emerald-300 transition hover:bg-emerald-900/40">
-                {uploadingModified ? (
-                  <>
-                    <Loader2 className="mr-2 inline h-4 w-4 animate-spin" />
-                    Uploading Modified
-                  </>
-                ) : (
-                  <>
-                    <Upload className="mr-2 inline h-4 w-4" />
-                    Upload Modified
-                  </>
-                )}
-                <input
-                  type="file"
-                  className="hidden"
-                  disabled={uploadingModified}
-                  onChange={(event) => {
-                    const file = event.target.files?.[0] ?? null;
-                    onUploadModified(file);
-                    event.target.value = "";
-                  }}
-                />
-              </label>
-
-              <button onClick={onClose} className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-black text-white transition hover:bg-white/10">
-                <X className="mr-2 inline h-4 w-4" />
-                Close
-              </button>
+              <button onClick={onCopy} className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-black text-white transition hover:bg-white/10"><Copy className="mr-2 inline h-4 w-4" />Copy Order ID</button>
+              <button onClick={onDownload} disabled={!order.original_file_path} className="rounded-xl bg-[#b1121b] px-4 py-3 text-sm font-black text-white transition hover:bg-[#c91824] disabled:opacity-40"><Download className="mr-2 inline h-4 w-4" />Download Original</button>
+              <label className="cursor-pointer rounded-xl border border-emerald-700/40 bg-emerald-950/30 px-4 py-3 text-sm font-black text-emerald-300 transition hover:bg-emerald-900/40">{uploadingModified ? <><Loader2 className="mr-2 inline h-4 w-4 animate-spin" />Uploading Modified</> : <><Upload className="mr-2 inline h-4 w-4" />Upload Modified</>}<input type="file" className="hidden" disabled={uploadingModified} onChange={(event) => { const file = event.target.files?.[0] ?? null; onUploadModified(file); event.target.value = ""; }} /></label>
+              <button onClick={onClose} className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-black text-white transition hover:bg-white/10"><X className="mr-2 inline h-4 w-4" />Close</button>
             </div>
           </div>
         </div>
-
         <div className="grid gap-6 p-5 xl:grid-cols-[1fr_380px]">
           <div className="space-y-6">
-            <section className="rounded-[2rem] border border-red-900/40 bg-red-950/20 p-5">
-              <div className="mb-5 flex items-center justify-between gap-4">
-                <div>
-                  <div className="text-sm font-black uppercase tracking-[0.22em] text-red-400">Work Order Overview</div>
-                  <h3 className="mt-1 text-2xl font-black">Main job information</h3>
-                </div>
-                <div className="rounded-2xl bg-black/30 px-4 py-3 text-right">
-                  <div className="text-xs text-zinc-500">Credits</div>
-                  <div className="text-2xl font-black text-red-400">{order.credits_required ?? 0}</div>
-                </div>
-              </div>
-
-              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                <WorkInfo label="Customer ID" value={customer?.customer_id || order.customer_id} />
-                <WorkInfo label="Vehicle" value={`${order.vehicle_brand || "-"} ${order.vehicle_model || ""}`} />
-                <WorkInfo label="ECU / TCU" value={order.ecu || order.gearbox} />
-                <WorkInfo label="Read Method" value={order.read_method} />
-              </div>
-            </section>
-
-            <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
-              <div className="mb-5 flex items-center gap-3">
-                <Car className="h-7 w-7 text-red-500" />
-                <div>
-                  <h3 className="text-2xl font-black">Vehicle Information</h3>
-                  <p className="mt-1 text-sm text-zinc-500">Vehicle and identification details for this work order.</p>
-                </div>
-              </div>
-              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                <Detail icon={<Car />} label="Brand" value={order.vehicle_brand} />
-                <Detail icon={<Car />} label="Model" value={order.vehicle_model} />
-                <Detail icon={<FileCode2 />} label="Generation" value={order.vehicle_generation} />
-                <Detail icon={<Gauge />} label="Engine" value={order.vehicle_engine} />
-                <Detail icon={<CalendarDays />} label="Year" value={order.vehicle_year} />
-                <Detail icon={<Clipboard />} label="License Plate" value={order.license_plate} />
-              </div>
-            </section>
-
-            <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
-              <div className="mb-5 flex items-center gap-3">
-                <Database className="h-7 w-7 text-red-500" />
-                <div>
-                  <h3 className="text-2xl font-black">ECU / File Technical Data</h3>
-                  <p className="mt-1 text-sm text-zinc-500">Technical identifiers needed for file service processing.</p>
-                </div>
-              </div>
-              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                <Detail icon={<Wrench />} label="ECU / TCU" value={order.ecu} />
-                <Detail icon={<Wrench />} label="Gearbox" value={order.gearbox} />
-                <Detail icon={<FileCode2 />} label="Read Method" value={order.read_method} />
-                <Detail icon={<Database />} label="HW / SW" value={order.hw_sw} />
-                <Detail icon={<PackageCheck />} label="Master / Slave" value={order.master_slave} />
-                <Detail icon={<FileDown />} label="Uploaded File" value={order.uploaded_file_name} />
-              </div>
-            </section>
-
-            <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
-              <div className="mb-5 flex items-center justify-between gap-4">
-                <div>
-                  <h3 className="text-2xl font-black">Service Breakdown</h3>
-                  <p className="mt-1 text-sm text-zinc-500">Requested services for this file.</p>
-                </div>
-                <div className="rounded-2xl border border-red-900/40 bg-red-950/25 px-4 py-3 text-sm font-black text-red-300">
-                  {order.credits_required ?? 0} Credits
-                </div>
-              </div>
-
-              {serviceItems.length > 0 ? (
-                <div className="grid gap-3 md:grid-cols-2">
-                  {serviceItems.map((service) => (
-                    <div key={service} className="flex items-center gap-3 rounded-2xl border border-emerald-700/30 bg-emerald-950/15 p-4">
-                      <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-400" />
-                      <span className="font-black text-white">{service}</span>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="rounded-2xl bg-black/30 p-5 text-sm leading-7 text-zinc-300">{order.service_type || "-"}</div>
-              )}
-            </section>
-
-            <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
-              <h3 className="mb-4 text-2xl font-black">Customer Notes</h3>
-              <div className="min-h-32 whitespace-pre-wrap rounded-2xl bg-black/30 p-5 text-sm leading-7 text-zinc-300">
-                {order.notes || "-"}
-              </div>
-            </section>
-
-            <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
-              <RequestChat requestId={order.id} senderRole="admin" />
-            </section>
+            <section className="rounded-[2rem] border border-red-900/40 bg-red-950/20 p-5"><div className="mb-5 flex items-center justify-between gap-4"><div><div className="text-sm font-black uppercase tracking-[0.22em] text-red-400">Work Order Overview</div><h3 className="mt-1 text-2xl font-black">Main job information</h3></div><div className="rounded-2xl bg-black/30 px-4 py-3 text-right"><div className="text-xs text-zinc-500">Credits</div><div className="text-2xl font-black text-red-400">{order.credits_required ?? 0}</div></div></div><div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4"><WorkInfo label="Customer ID" value={customer?.customer_id || order.customer_id} /><WorkInfo label="Vehicle" value={`${order.vehicle_brand || "-"} ${order.vehicle_model || ""}`} /><WorkInfo label="ECU / TCU" value={order.ecu || order.gearbox} /><WorkInfo label="Read Method" value={order.read_method} /></div></section>
+            <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5"><div className="mb-5 flex items-center gap-3"><Car className="h-7 w-7 text-red-500" /><div><h3 className="text-2xl font-black">Vehicle Information</h3><p className="mt-1 text-sm text-zinc-500">Vehicle and identification details for this work order.</p></div></div><div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3"><Detail icon={<Car />} label="Brand" value={order.vehicle_brand} /><Detail icon={<Car />} label="Model" value={order.vehicle_model} /><Detail icon={<FileCode2 />} label="Generation" value={order.vehicle_generation} /><Detail icon={<Gauge />} label="Engine" value={order.vehicle_engine} /><Detail icon={<CalendarDays />} label="Year" value={order.vehicle_year} /><Detail icon={<Clipboard />} label="License Plate" value={order.license_plate} /></div></section>
+            <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5"><div className="mb-5 flex items-center gap-3"><Database className="h-7 w-7 text-red-500" /><div><h3 className="text-2xl font-black">ECU / File Technical Data</h3><p className="mt-1 text-sm text-zinc-500">Technical identifiers needed for file service processing.</p></div></div><div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3"><Detail icon={<Wrench />} label="ECU / TCU" value={order.ecu} /><Detail icon={<Wrench />} label="Gearbox" value={order.gearbox} /><Detail icon={<FileCode2 />} label="Read Method" value={order.read_method} /><Detail icon={<Database />} label="HW / SW" value={order.hw_sw} /><Detail icon={<PackageCheck />} label="Master / Slave" value={order.master_slave} /><Detail icon={<FileDown />} label="Uploaded File" value={order.uploaded_file_name} /></div></section>
+            <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5"><div className="mb-5 flex items-center justify-between gap-4"><div><h3 className="text-2xl font-black">Service Breakdown</h3><p className="mt-1 text-sm text-zinc-500">Requested services for this file.</p></div><div className="rounded-2xl border border-red-900/40 bg-red-950/25 px-4 py-3 text-sm font-black text-red-300">{order.credits_required ?? 0} Credits</div></div>{serviceItems.length > 0 ? <div className="grid gap-3 md:grid-cols-2">{serviceItems.map((service) => <div key={service} className="flex items-center gap-3 rounded-2xl border border-emerald-700/30 bg-emerald-950/15 p-4"><CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-400" /><span className="font-black text-white">{service}</span></div>)}</div> : <div className="rounded-2xl bg-black/30 p-5 text-sm leading-7 text-zinc-300">{order.service_type || "-"}</div>}</section>
+            <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5"><h3 className="mb-4 text-2xl font-black">Customer Notes</h3><div className="min-h-32 whitespace-pre-wrap rounded-2xl bg-black/30 p-5 text-sm leading-7 text-zinc-300">{order.notes || "-"}</div></section>
+            <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5"><RequestChat requestId={order.id} senderRole="admin" /></section>
           </div>
-
           <aside className="space-y-6">
-            <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
-              <h3 className="mb-5 text-2xl font-black">Status Workflow</h3>
-              <div className="mb-5 h-2 overflow-hidden rounded-full bg-white/10">
-                <div className="h-full rounded-full bg-gradient-to-r from-red-800 via-red-600 to-emerald-500 transition-all duration-700" style={{ width: `${((workflowStep + 1) / 5) * 100}%` }} />
-              </div>
-              <div className="space-y-3">
-                {[0, 1, 2, 3, 4].map((index) => (
-                  <div key={index} className={`flex items-center gap-3 rounded-2xl border p-4 ${index <= workflowStep ? "border-emerald-700/30 bg-emerald-950/10" : "border-white/10 bg-black/30"}`}>
-                    <div className={`flex h-9 w-9 items-center justify-center rounded-full ${index <= workflowStep ? "bg-emerald-500/15 text-emerald-400" : "bg-white/5 text-zinc-500"}`}>
-                      {index <= workflowStep ? <CheckCircle2 className="h-4 w-4" /> : <Clock3 className="h-4 w-4" />}
-                    </div>
-                    <div className="font-black">{workflowLabel(index)}</div>
-                  </div>
-                ))}
-              </div>
-              <div className="mt-5">
-                <select value={order.status ?? "new_request"} onChange={(event) => onStatusChange(event.target.value)} disabled={updating} className={`h-12 w-full rounded-xl border px-4 text-sm font-black outline-none ${statusClass(order.status)}`}>
-                  {editableStatusOptions.map((status) => (
-                    <option key={status} value={status} className="bg-[#111]">{statusLabel(status)}</option>
-                  ))}
-                </select>
-                {updating && (
-                  <div className="mt-3 flex items-center gap-2 text-xs text-zinc-500">
-                    <Loader2 className="h-3 w-3 animate-spin" />
-                    Updating status...
-                  </div>
-                )}
-              </div>
-            </section>
-
-            <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
-              <h3 className="mb-5 text-2xl font-black">File Workflow</h3>
-              <div className="grid gap-3">
-                <FileStateCard title="Original File" ready={Boolean(order.original_file_path)} description={order.uploaded_file_name || order.original_file_path || "No original file uploaded."} />
-                <FileStateCard title="Modified File" ready={Boolean(order.modified_file_path)} description={order.modified_file_path || "Modified file not uploaded yet."} />
-              </div>
-              <button onClick={onDownload} disabled={!order.original_file_path} className="mt-4 flex w-full items-center justify-center rounded-xl bg-[#b1121b] px-4 py-3 text-sm font-black text-white transition hover:bg-[#c91824] disabled:cursor-not-allowed disabled:opacity-40">
-                <Download className="mr-2 h-4 w-4" />
-                Download Original
-              </button>
-              <label className="mt-3 flex w-full cursor-pointer items-center justify-center rounded-xl border border-emerald-700/40 bg-emerald-950/30 px-4 py-3 text-sm font-black text-emerald-300 transition hover:bg-emerald-900/40">
-                {uploadingModified ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Uploading Modified</> : <><Upload className="mr-2 h-4 w-4" />Upload Modified File</>}
-                <input type="file" className="hidden" disabled={uploadingModified} onChange={(event) => { const file = event.target.files?.[0] ?? null; onUploadModified(file); event.target.value = ""; }} />
-              </label>
-            </section>
-
-            <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
-              <h3 className="mb-5 text-2xl font-black">Customer Contact</h3>
-              <div className="space-y-3">
-                <Detail icon={<User />} label="Customer ID" value={customer?.customer_id || order.customer_id} />
-                <Detail icon={<Mail />} label="Login Email" value={order.customer_email} />
-                <Detail icon={<User />} label="Full Name" value={customer?.full_name} />
-                <Detail icon={<Building2 />} label="Company" value={customer?.company_name} />
-                <Detail icon={<Phone />} label="Phone" value={customer?.phone} />
-                <Detail icon={<MapPin />} label="Address" value={[customer?.street, customer?.postal_code, customer?.city, customer?.country].filter(Boolean).join(", ") || null} />
-              </div>
-              <div className="mt-4 grid gap-2">
-                <button onClick={() => onCopyValue(customer?.customer_id || order.customer_id, "Customer ID")} className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-black text-white transition hover:bg-white/10"><Copy className="mr-2 inline h-4 w-4" />Copy Customer ID</button>
-                <button onClick={() => onCopyValue(order.customer_email, "Customer Email")} className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-black text-white transition hover:bg-white/10"><Mail className="mr-2 inline h-4 w-4" />Copy Email</button>
-                <button onClick={() => onCopyValue(customer?.phone, "Phone")} className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-black text-white transition hover:bg-white/10"><Phone className="mr-2 inline h-4 w-4" />Copy Phone</button>
-                {order.customer_email && <a href={`mailto:${order.customer_email}`} className="flex w-full items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-black text-white transition hover:bg-white/10"><Mail className="mr-2 h-4 w-4" />Email Customer</a>}
-              </div>
-            </section>
+            <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5"><h3 className="mb-5 text-2xl font-black">Status Workflow</h3><div className="mb-5 h-2 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-gradient-to-r from-red-800 via-red-600 to-emerald-500 transition-all duration-700" style={{ width: `${((workflowStep + 1) / 5) * 100}%` }} /></div><div className="space-y-3">{[0, 1, 2, 3, 4].map((index) => <div key={index} className={`flex items-center gap-3 rounded-2xl border p-4 ${index <= workflowStep ? "border-emerald-700/30 bg-emerald-950/10" : "border-white/10 bg-black/30"}`}><div className={`flex h-9 w-9 items-center justify-center rounded-full ${index <= workflowStep ? "bg-emerald-500/15 text-emerald-400" : "bg-white/5 text-zinc-500"}`}>{index <= workflowStep ? <CheckCircle2 className="h-4 w-4" /> : <Clock3 className="h-4 w-4" />}</div><div className="font-black">{workflowLabel(index)}</div></div>)}</div><div className="mt-5"><select value={order.status ?? "new_request"} onChange={(event) => onStatusChange(event.target.value)} disabled={updating} className={`h-12 w-full rounded-xl border px-4 text-sm font-black outline-none ${statusClass(order.status)}`}>{editableStatusOptions.map((status) => <option key={status} value={status} className="bg-[#111]">{statusLabel(status)}</option>)}</select>{updating && <div className="mt-3 flex items-center gap-2 text-xs text-zinc-500"><Loader2 className="h-3 w-3 animate-spin" />Updating status...</div>}</div></section>
+            <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5"><h3 className="mb-5 text-2xl font-black">File Workflow</h3><div className="grid gap-3"><FileStateCard title="Original File" ready={Boolean(order.original_file_path)} description={order.uploaded_file_name || order.original_file_path || "No original file uploaded."} /><FileStateCard title="Modified File" ready={Boolean(order.modified_file_path)} description={order.modified_file_path || "Modified file not uploaded yet."} /></div><button onClick={onDownload} disabled={!order.original_file_path} className="mt-4 flex w-full items-center justify-center rounded-xl bg-[#b1121b] px-4 py-3 text-sm font-black text-white transition hover:bg-[#c91824] disabled:opacity-40"><Download className="mr-2 h-4 w-4" />Download Original</button><label className="mt-3 flex w-full cursor-pointer items-center justify-center rounded-xl border border-emerald-700/40 bg-emerald-950/30 px-4 py-3 text-sm font-black text-emerald-300 transition hover:bg-emerald-900/40">{uploadingModified ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Uploading Modified</> : <><Upload className="mr-2 h-4 w-4" />Upload Modified File</>}<input type="file" className="hidden" disabled={uploadingModified} onChange={(event) => { const file = event.target.files?.[0] ?? null; onUploadModified(file); event.target.value = ""; }} /></label></section>
+            <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5"><h3 className="mb-5 text-2xl font-black">Customer Contact</h3><div className="space-y-3"><Detail icon={<User />} label="Customer ID" value={customer?.customer_id || order.customer_id} /><Detail icon={<Mail />} label="Login Email" value={order.customer_email} /><Detail icon={<User />} label="Full Name" value={customer?.full_name} /><Detail icon={<Building2 />} label="Company" value={customer?.company_name} /><Detail icon={<Phone />} label="Phone" value={customer?.phone} /><Detail icon={<MapPin />} label="Address" value={[customer?.street, customer?.postal_code, customer?.city, customer?.country].filter(Boolean).join(", ") || null} /></div><div className="mt-4 grid gap-2"><button onClick={() => onCopyValue(customer?.customer_id || order.customer_id, "Customer ID")} className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-black text-white transition hover:bg-white/10"><Copy className="mr-2 inline h-4 w-4" />Copy Customer ID</button><button onClick={() => onCopyValue(order.customer_email, "Customer Email")} className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-black text-white transition hover:bg-white/10"><Mail className="mr-2 inline h-4 w-4" />Copy Email</button><button onClick={() => onCopyValue(customer?.phone, "Phone")} className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-black text-white transition hover:bg-white/10"><Phone className="mr-2 inline h-4 w-4" />Copy Phone</button>{order.customer_email && <a href={`mailto:${order.customer_email}`} className="flex w-full items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-black text-white transition hover:bg-white/10"><Mail className="mr-2 h-4 w-4" />Email Customer</a>}</div></section>
           </aside>
         </div>
       </div>
@@ -1522,27 +1275,9 @@ function OrderDetailModal({
 }
 
 function WorkInfo({ label, value }: { label: string; value: string | number | null | undefined }) {
-  return (
-    <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
-      <div className="text-xs font-black uppercase tracking-[0.16em] text-zinc-500">{label}</div>
-      <div className="mt-2 break-words text-lg font-black text-white">{value || "-"}</div>
-    </div>
-  );
+  return <div className="rounded-2xl border border-white/10 bg-black/30 p-4"><div className="text-xs font-black uppercase tracking-[0.16em] text-zinc-500">{label}</div><div title={String(value || "-")} className="mt-2 line-clamp-2 break-all text-lg font-black text-white">{value || "-"}</div></div>;
 }
 
 function FileStateCard({ title, ready, description }: { title: string; ready: boolean; description: string }) {
-  return (
-    <div className={`rounded-2xl border p-4 ${ready ? "border-emerald-700/30 bg-emerald-950/15" : "border-white/10 bg-black/30"}`}>
-      <div className="flex items-center gap-3">
-        <div className={`flex h-9 w-9 items-center justify-center rounded-full ${ready ? "bg-emerald-500/15 text-emerald-400" : "bg-white/5 text-zinc-500"}`}>
-          {ready ? <CheckCircle2 className="h-4 w-4" /> : <Clock3 className="h-4 w-4" />}
-        </div>
-        <div>
-          <div className="font-black">{title}</div>
-          <div className="mt-1 text-xs leading-5 text-zinc-500">{ready ? "Ready" : "Waiting"}</div>
-        </div>
-      </div>
-      <div className="mt-3 break-all text-xs leading-5 text-zinc-400">{description}</div>
-    </div>
-  );
+  return <div className={`rounded-2xl border p-4 ${ready ? "border-emerald-700/30 bg-emerald-950/15" : "border-white/10 bg-black/30"}`}><div className="flex items-center gap-3"><div className={`flex h-9 w-9 items-center justify-center rounded-full ${ready ? "bg-emerald-500/15 text-emerald-400" : "bg-white/5 text-zinc-500"}`}>{ready ? <CheckCircle2 className="h-4 w-4" /> : <Clock3 className="h-4 w-4" />}</div><div><div className="font-black">{title}</div><div className="mt-1 text-xs leading-5 text-zinc-500">{ready ? "Ready" : "Waiting"}</div></div></div><div title={description} className="mt-3 line-clamp-2 break-all text-xs leading-5 text-zinc-400">{description}</div></div>;
 }

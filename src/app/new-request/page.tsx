@@ -84,6 +84,16 @@ type ExtraServiceCategory = {
   services: ExtraService[];
 };
 
+type CustomerProfile = {
+  id: string;
+  email: string | null;
+  customer_id: string | null;
+  credit_balance: number | string | null;
+  allow_negative_credits: boolean | null;
+  negative_credit_limit: number | string | null;
+  account_status: string | null;
+};
+
 const mainServices: MainService[] = [
   {
     id: "only_options",
@@ -566,6 +576,8 @@ export default function NewRequestPage() {
   const [responsibilityAccepted, setResponsibilityAccepted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState("");
+  const [customerProfile, setCustomerProfile] = useState<CustomerProfile | null>(null);
+  const [profileLoading, setProfileLoading] = useState(true);
 
   const selectedBrandName =
     brands.find((item) => item.id === vehicleBrandId)?.name ?? "";
@@ -575,6 +587,38 @@ export default function NewRequestPage() {
     generations.find((item) => item.id === vehicleGenerationId)?.name ?? "";
   const selectedEngineName =
     engines.find((item) => item.id === vehicleEngineId)?.name ?? "";
+
+  async function loadCustomerProfile() {
+    setProfileLoading(true);
+
+    const { data: userData } = await supabase.auth.getUser();
+
+    if (!userData.user) {
+      router.push("/login");
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from("profiles")
+      .select(
+        "id, email, customer_id, credit_balance, allow_negative_credits, negative_credit_limit, account_status"
+      )
+      .eq("id", userData.user.id)
+      .single();
+
+    if (error) {
+      setMessage(error.message);
+      setProfileLoading(false);
+      return;
+    }
+
+    setCustomerProfile(data as CustomerProfile);
+    setProfileLoading(false);
+  }
+
+  useEffect(() => {
+    loadCustomerProfile();
+  }, []);
 
   useEffect(() => {
     fetch("/api/vehicles?type=brands")
@@ -677,6 +721,17 @@ export default function NewRequestPage() {
     return mainCredits + extrasCredits;
   }, [selectedExtras, selectedMainService]);
 
+  const creditBalance = Number(customerProfile?.credit_balance ?? 0);
+  const negativeCreditLimit = Number(customerProfile?.negative_credit_limit ?? 0);
+  const allowNegativeCredits = Boolean(customerProfile?.allow_negative_credits);
+  const accountStatus = customerProfile?.account_status ?? "active";
+  const availableCredits = allowNegativeCredits
+    ? creditBalance + Math.max(negativeCreditLimit, 0)
+    : creditBalance;
+  const balanceAfterRequest = creditBalance - totalCredits;
+  const canCreateByCredits = totalCredits <= availableCredits;
+  const accountBlocked = accountStatus !== "active";
+
   const serviceSummary = useMemo(() => {
     const main = selectedMainService?.title ?? "Service";
     const extras = selectedExtras
@@ -693,6 +748,45 @@ export default function NewRequestPage() {
         : [...current, id]
     );
   };
+
+  async function getLatestCustomerProfile(userId: string) {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select(
+        "id, email, customer_id, credit_balance, allow_negative_credits, negative_credit_limit, account_status"
+      )
+      .eq("id", userId)
+      .single();
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return data as CustomerProfile;
+  }
+
+  function validateCreditAccess(profile: CustomerProfile, requiredCredits: number) {
+    const status = profile.account_status ?? "active";
+
+    if (status !== "active") {
+      return `Your account is currently ${status}. Please contact MG AutoTech support.`;
+    }
+
+    const balance = Number(profile.credit_balance ?? 0);
+    const negativeLimit = Number(profile.negative_credit_limit ?? 0);
+    const negativeEnabled = Boolean(profile.allow_negative_credits);
+    const available = negativeEnabled ? balance + Math.max(negativeLimit, 0) : balance;
+
+    if (requiredCredits > available) {
+      if (negativeEnabled) {
+        return `Not enough credits. Balance: ${balance}, negative limit: ${negativeLimit}, available total: ${available}, required: ${requiredCredits}.`;
+      }
+
+      return `Not enough credits. Balance: ${balance}, required: ${requiredCredits}.`;
+    }
+
+    return null;
+  }
 
   const handleSubmit = async () => {
     setMessage("");
@@ -722,6 +816,29 @@ export default function NewRequestPage() {
     }
 
     const customerEmail = userData.user.email ?? "";
+
+    let latestProfile: CustomerProfile;
+
+    try {
+      latestProfile = await getLatestCustomerProfile(userData.user.id);
+    } catch (error) {
+      setSubmitting(false);
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "Customer profile could not be loaded."
+      );
+      return;
+    }
+
+    const creditValidationError = validateCreditAccess(latestProfile, totalCredits);
+
+    if (creditValidationError) {
+      setSubmitting(false);
+      setCustomerProfile(latestProfile);
+      setMessage(creditValidationError);
+      return;
+    }
 
     let originalFilePath: string | null = null;
 
@@ -774,6 +891,15 @@ export default function NewRequestPage() {
       setMessage(error.message);
       return;
     }
+
+    setCustomerProfile((current) =>
+      current
+        ? {
+            ...current,
+            credit_balance: Number(current.credit_balance ?? 0) - totalCredits,
+          }
+        : current
+    );
 
     router.push("/dashboard");
   };
@@ -1258,6 +1384,56 @@ export default function NewRequestPage() {
               <ShieldCheck className="mb-5 h-9 w-9 text-red-500" />
               <h3 className="text-2xl font-black">Request Summary</h3>
 
+              <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-sm">
+                <div className="mb-3 flex items-center justify-between gap-4">
+                  <span className="text-zinc-400">Credit Balance</span>
+                  <span className="font-black text-white">
+                    {profileLoading ? "Loading..." : `${creditBalance} Credits`}
+                  </span>
+                </div>
+
+                <div className="mb-3 flex items-center justify-between gap-4">
+                  <span className="text-zinc-400">Negative Credit</span>
+                  <span
+                    className={`font-black ${
+                      allowNegativeCredits ? "text-emerald-300" : "text-zinc-500"
+                    }`}
+                  >
+                    {allowNegativeCredits
+                      ? `Allowed up to -${negativeCreditLimit}`
+                      : "Disabled"}
+                  </span>
+                </div>
+
+                <div className="mb-3 flex items-center justify-between gap-4">
+                  <span className="text-zinc-400">Available</span>
+                  <span className="font-black text-red-300">
+                    {availableCredits} Credits
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between gap-4">
+                  <span className="text-zinc-400">After Request</span>
+                  <span
+                    className={`font-black ${
+                      balanceAfterRequest < 0 ? "text-yellow-300" : "text-emerald-300"
+                    }`}
+                  >
+                    {balanceAfterRequest} Credits
+                  </span>
+                </div>
+
+                {accountBlocked ? (
+                  <div className="mt-4 rounded-xl border border-red-800/50 bg-red-950/30 p-3 text-xs font-bold text-red-200">
+                    Account status: {accountStatus}. New requests are disabled.
+                  </div>
+                ) : !canCreateByCredits ? (
+                  <div className="mt-4 rounded-xl border border-yellow-700/50 bg-yellow-950/25 p-3 text-xs font-bold text-yellow-200">
+                    Not enough available credits for this request.
+                  </div>
+                ) : null}
+              </div>
+
               <div className="mt-5 space-y-3 text-sm">
                 <div className="flex justify-between gap-4 rounded-2xl bg-white/[0.04] p-4">
                   <span className="text-zinc-400">Vehicle</span>
@@ -1331,13 +1507,28 @@ export default function NewRequestPage() {
 
               <button
                 onClick={handleSubmit}
-                disabled={submitting}
+                disabled={submitting || profileLoading || accountBlocked || !canCreateByCredits}
                 className="mt-6 flex w-full items-center justify-center rounded-xl bg-[#b1121b] px-6 py-4 font-black text-white shadow-xl shadow-red-950/40 transition hover:bg-[#c91824] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {submitting ? (
                   <>
                     <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                     Creating Request...
+                  </>
+                ) : profileLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    Loading Credits...
+                  </>
+                ) : accountBlocked ? (
+                  <>
+                    <ShieldCheck className="mr-2 h-5 w-5" />
+                    Account Disabled
+                  </>
+                ) : !canCreateByCredits ? (
+                  <>
+                    <CreditCard className="mr-2 h-5 w-5" />
+                    Not Enough Credits
                   </>
                 ) : (
                   <>

@@ -27,11 +27,84 @@ export default function RequestChat({
   const [initialLoading, setInitialLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
+  const [newMessageCount, setNewMessageCount] = useState(0);
 
-  const bottomRef = useRef<HTMLDivElement | null>(null);
+  const scrollAreaRef = useRef<HTMLDivElement | null>(null);
+  const previousMessageIdsRef = useRef<Set<string>>(new Set());
+  const initialLoadDoneRef = useRef(false);
+  const sendingOwnMessageRef = useRef(false);
 
-  async function loadMessages(options?: { silent?: boolean }) {
+  function sortMessages(items: RequestMessage[]) {
+    return [...items].sort(
+      (a, b) =>
+        new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+    );
+  }
+
+  function scrollChatToBottom(behavior: ScrollBehavior = "smooth") {
+    const element = scrollAreaRef.current;
+    if (!element) return;
+
+    element.scrollTo({
+      top: element.scrollHeight,
+      behavior,
+    });
+
+    setNewMessageCount(0);
+  }
+
+  function isNearBottom() {
+    const element = scrollAreaRef.current;
+    if (!element) return true;
+
+    const distanceFromBottom =
+      element.scrollHeight - element.scrollTop - element.clientHeight;
+
+    return distanceFromBottom < 80;
+  }
+
+  function playNewMessageSound() {
+    try {
+      const AudioContextClass =
+        window.AudioContext || (window as any).webkitAudioContext;
+
+      if (!AudioContextClass) return;
+
+      const audioContext = new AudioContextClass();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+
+      oscillator.type = "sine";
+      oscillator.frequency.setValueAtTime(880, audioContext.currentTime);
+      oscillator.frequency.setValueAtTime(660, audioContext.currentTime + 0.12);
+
+      gainNode.gain.setValueAtTime(0.0001, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(
+        0.08,
+        audioContext.currentTime + 0.02
+      );
+      gainNode.gain.exponentialRampToValueAtTime(
+        0.0001,
+        audioContext.currentTime + 0.28
+      );
+
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+
+      oscillator.start();
+      oscillator.stop(audioContext.currentTime + 0.3);
+    } catch {
+      // Browser blocked sound or audio context failed.
+    }
+  }
+
+  async function loadMessages(options?: {
+    silent?: boolean;
+    scrollAfterLoad?: boolean;
+  }) {
     if (!requestId) return;
+
+    const wasNearBottom = isNearBottom();
 
     if (options?.silent) {
       setRefreshing(true);
@@ -51,13 +124,47 @@ export default function RequestChat({
         return;
       }
 
-      const sortedMessages: RequestMessage[] = [...(data.messages || [])].sort(
-        (a, b) =>
-          new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      const sortedMessages = sortMessages(data.messages || []);
+
+      const previousIds = previousMessageIdsRef.current;
+      const incomingMessages = sortedMessages.filter(
+        (item) => !previousIds.has(item.id)
+      );
+
+      const incomingFromOtherSide = incomingMessages.filter(
+        (item) => item.sender_role !== senderRole
       );
 
       setMessages(sortedMessages);
       setError("");
+
+      previousMessageIdsRef.current = new Set(
+        sortedMessages.map((item) => item.id)
+      );
+
+      const shouldNotify =
+        initialLoadDoneRef.current &&
+        incomingFromOtherSide.length > 0 &&
+        !sendingOwnMessageRef.current;
+
+      if (shouldNotify) {
+        playNewMessageSound();
+
+        if (!wasNearBottom) {
+          setNewMessageCount(
+            (current) => current + incomingFromOtherSide.length
+          );
+        }
+      }
+
+      if (!initialLoadDoneRef.current || options?.scrollAfterLoad) {
+        window.setTimeout(() => scrollChatToBottom("auto"), 0);
+      } else if (wasNearBottom || sendingOwnMessageRef.current) {
+        window.setTimeout(() => scrollChatToBottom("smooth"), 0);
+      }
+
+      initialLoadDoneRef.current = true;
+      sendingOwnMessageRef.current = false;
     } catch {
       setError("Messages could not be loaded.");
     } finally {
@@ -67,7 +174,12 @@ export default function RequestChat({
   }
 
   useEffect(() => {
-    loadMessages();
+    previousMessageIdsRef.current = new Set();
+    initialLoadDoneRef.current = false;
+    sendingOwnMessageRef.current = false;
+    setMessages([]);
+    setNewMessageCount(0);
+    loadMessages({ scrollAfterLoad: true });
   }, [requestId]);
 
   useEffect(() => {
@@ -76,11 +188,7 @@ export default function RequestChat({
     }, 5000);
 
     return () => window.clearInterval(interval);
-  }, [requestId]);
-
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [requestId, senderRole]);
 
   async function sendMessage() {
     const cleanMessage = message.trim();
@@ -89,6 +197,7 @@ export default function RequestChat({
 
     setSending(true);
     setError("");
+    sendingOwnMessageRef.current = true;
 
     try {
       const {
@@ -97,6 +206,7 @@ export default function RequestChat({
 
       if (!session?.access_token) {
         setError("Unauthorized");
+        sendingOwnMessageRef.current = false;
         return;
       }
 
@@ -116,13 +226,15 @@ export default function RequestChat({
 
       if (!res.ok) {
         setError(data.error || "Message could not be sent.");
+        sendingOwnMessageRef.current = false;
         return;
       }
 
       setMessage("");
-      await loadMessages({ silent: true });
+      await loadMessages({ silent: true, scrollAfterLoad: true });
     } catch {
       setError("Message could not be sent.");
+      sendingOwnMessageRef.current = false;
     } finally {
       setSending(false);
     }
@@ -140,7 +252,20 @@ export default function RequestChat({
       <div className="border-b border-white/10 bg-white/[0.03] px-5 py-4">
         <div className="flex items-center justify-between gap-4">
           <div>
-            <h3 className="text-lg font-black text-white">Request Chat</h3>
+            <div className="flex items-center gap-2">
+              <h3 className="text-lg font-black text-white">Request Chat</h3>
+
+              {newMessageCount > 0 ? (
+                <button
+                  type="button"
+                  onClick={() => scrollChatToBottom("smooth")}
+                  className="rounded-full border border-red-500/30 bg-red-500/10 px-2.5 py-1 text-xs font-black text-red-300 transition hover:bg-red-500/20"
+                >
+                  {newMessageCount} new
+                </button>
+              ) : null}
+            </div>
+
             <p className="mt-1 text-sm text-zinc-400">
               Communicate directly about this file request.
             </p>
@@ -157,7 +282,10 @@ export default function RequestChat({
         </div>
       </div>
 
-      <div className="max-h-96 min-h-64 space-y-3 overflow-y-auto bg-black/25 p-5">
+      <div
+        ref={scrollAreaRef}
+        className="max-h-96 min-h-64 space-y-3 overflow-y-auto bg-black/25 p-5"
+      >
         {initialLoading ? (
           <div className="flex h-40 items-center justify-center text-sm text-zinc-500">
             Loading messages...
@@ -214,8 +342,6 @@ export default function RequestChat({
             );
           })
         )}
-
-        <div ref={bottomRef} />
       </div>
 
       {error ? (
