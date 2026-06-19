@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
-import { sendNewOrderEmailToAdmin } from "@/lib/email";
+import { sendOrderReceivedEmail } from "@/lib/email";
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
 
-    await sendNewOrderEmailToAdmin({
+    await sendOrderReceivedEmail({
       orderId: String(body.orderId || ""),
       customerEmail: String(body.customerEmail || ""),
       vehicle: String(body.vehicle || ""),
@@ -18,7 +18,8 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error ? error.message : "Email could not be sent",
+        error:
+          error instanceof Error ? error.message : "Email could not be sent",
       },
       { status: 500 }
     );
