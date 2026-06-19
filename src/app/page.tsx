@@ -90,11 +90,31 @@ const steps = [
   },
 ];
 
-const recentWorks = [
-  { car: "Mercedes-Benz E-Class", job: "Stage 1", date: "Today" },
-  { car: "BMW 320d", job: "EGR OFF", date: "Today" },
-  { car: "Audi A6 3.0 TDI", job: "Stage 1 + DTC", date: "Yesterday" },
-  { car: "VW Golf 7 GTD", job: "DPF / EGR", date: "Yesterday" },
+const workshopUseCases = [
+  {
+    title: "Performance File Preparation",
+    text: "Stage 1 and Stage 2 requests with vehicle data, ECU details and original file upload.",
+    meta: "ECU / TCU tuning",
+    icon: Gauge,
+  },
+  {
+    title: "Emission System Solutions",
+    text: "Structured requests for DPF, EGR, AdBlue, OPF/GPF and related diagnostic requirements.",
+    meta: "Technical options",
+    icon: Wrench,
+  },
+  {
+    title: "Diagnostic DTC Workflow",
+    text: "Customers can add notes, fault codes and readout details so the file check stays clear.",
+    meta: "DTC support",
+    icon: FileCode2,
+  },
+  {
+    title: "Completed File Delivery",
+    text: "Modified files can be uploaded by admin and downloaded securely from the customer dashboard.",
+    meta: "Secure delivery",
+    icon: Download,
+  },
 ];
 
 const creditPackages = [
@@ -111,6 +131,40 @@ const securityItems = [
   { title: "Workshop Ready", icon: Wrench },
   { title: "Secure Login", icon: ShieldCheck },
   { title: "File Workflow", icon: Upload },
+];
+
+const supportedBrands = [
+  { name: "BMW", note: "MD1, EDC17, MG1", initials: "BM" },
+  { name: "Mercedes-Benz", note: "CDI, MED, VGS", initials: "MB" },
+  { name: "Audi", note: "VAG ECU / TCU", initials: "AU" },
+  { name: "Volkswagen", note: "EDC, Simos, DSG", initials: "VW" },
+  { name: "Porsche", note: "Performance files", initials: "PO" },
+  { name: "Opel", note: "Diesel & petrol", initials: "OP" },
+  { name: "Renault", note: "ECU solutions", initials: "RE" },
+  { name: "Peugeot", note: "BlueHDi support", initials: "PE" },
+];
+
+const trustHighlights = [
+  {
+    title: "Secure file handling",
+    text: "Original and modified files stay connected to the customer account.",
+    icon: ShieldCheck,
+  },
+  {
+    title: "Fast turnaround",
+    text: "Clear request details help reduce back-and-forth before processing.",
+    icon: Zap,
+  },
+  {
+    title: "Workshop focused",
+    text: "Built for repeat orders, technical notes and ECU/TCU file workflows.",
+    icon: Wrench,
+  },
+  {
+    title: "Credit based workflow",
+    text: "Customers can buy credits once and use them across file requests.",
+    icon: CreditCard,
+  },
 ];
 
 type VehicleOption = {
@@ -858,6 +912,9 @@ export default function HomePage() {
             <a href="#services" className="hover:text-white">
               Services
             </a>
+            <a href="#brands" className="hover:text-white">
+              Brands
+            </a>
             <a href="#prices" className="hover:text-white">
               Prices
             </a>
@@ -899,6 +956,9 @@ export default function HomePage() {
             </a>
             <a href="#services" className="hover:text-white">
               Services
+            </a>
+            <a href="#brands" className="hover:text-white">
+              Brands
             </a>
             <a href="#prices" className="hover:text-white">
               Credit Prices
@@ -998,6 +1058,128 @@ export default function HomePage() {
 
         <PublicVehicleChecker />
       </section>
+
+      <AnimatedSection id="brands" className="bg-[#050505] py-20">
+        <div className="mx-auto max-w-7xl px-4">
+          <div className="mb-10 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <div className="text-sm font-black uppercase tracking-[0.25em] text-red-600">
+                Supported Brands
+              </div>
+              <h2 className="mt-3 max-w-3xl text-4xl font-black md:text-5xl">
+                Popular ECU and TCU platforms for modern workshops.
+              </h2>
+            </div>
+
+            <p className="max-w-xl text-sm leading-7 text-zinc-400">
+              MG AutoTech supports a broad range of European diesel and petrol
+              vehicles, with vehicle-specific checks before every file service.
+            </p>
+          </div>
+
+          <motion.div
+            variants={stagger}
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, amount: 0.18 }}
+            className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
+          >
+            {supportedBrands.map((brand) => (
+              <motion.div
+                variants={fadeUp}
+                key={brand.name}
+                className="group rounded-2xl border border-white/10 bg-white/[0.04] p-5 transition duration-300 hover:-translate-y-1 hover:border-red-800/60 hover:bg-white/[0.07]"
+              >
+                <div className="mb-5 flex items-center justify-between gap-4">
+                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-red-900/50 bg-red-950/25 text-lg font-black text-red-200 shadow-lg shadow-red-950/20">
+                    {brand.initials}
+                  </div>
+
+                  <BadgeCheck className="h-5 w-5 text-emerald-400 opacity-80 transition group-hover:opacity-100" />
+                </div>
+
+                <h3 className="text-xl font-black">{brand.name}</h3>
+                <p className="mt-2 text-sm font-bold text-zinc-500">
+                  {brand.note}
+                </p>
+              </motion.div>
+            ))}
+          </motion.div>
+
+          <div className="mt-8 rounded-2xl border border-red-900/40 bg-red-950/20 p-5">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div>
+                <div className="text-sm font-black text-white">
+                  Need another brand?
+                </div>
+                <p className="mt-1 text-sm leading-6 text-zinc-400">
+                  Customers can select from the vehicle database or submit a
+                  manual request with ECU, read method and file details.
+                </p>
+              </div>
+
+              <Link
+                href="/new-request"
+                className="inline-flex items-center justify-center rounded-xl bg-[#b1121b] px-5 py-3 text-sm font-black text-white transition hover:-translate-y-0.5 hover:bg-[#c91824]"
+              >
+                Check Vehicle
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+            </div>
+          </div>
+        </div>
+      </AnimatedSection>
+
+      <AnimatedSection className="bg-[#eef1f4] py-20 text-[#111827]">
+        <div className="mx-auto max-w-7xl px-4">
+          <div className="mb-10 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <div className="text-sm font-black uppercase tracking-[0.25em] text-red-700">
+                Why MG AutoTech?
+              </div>
+              <h2 className="mt-3 max-w-3xl text-4xl font-black md:text-5xl">
+                A file service workflow built for serious workshop operations.
+              </h2>
+            </div>
+
+            <Link
+              href="/register"
+              className="inline-flex items-center justify-center rounded-xl bg-[#b1121b] px-5 py-3 text-sm font-black text-white shadow-lg shadow-red-950/20 transition hover:-translate-y-0.5 hover:bg-[#c91824]"
+            >
+              Create Account
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Link>
+          </div>
+
+          <motion.div
+            variants={stagger}
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, amount: 0.2 }}
+            className="grid gap-5 md:grid-cols-2 xl:grid-cols-4"
+          >
+            {trustHighlights.map((item) => {
+              const Icon = item.icon;
+
+              return (
+                <motion.div
+                  variants={fadeUp}
+                  key={item.title}
+                  className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-xl shadow-black/5 transition duration-300 hover:-translate-y-1 hover:shadow-2xl"
+                >
+                  <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-red-50 text-red-700">
+                    <Icon className="h-6 w-6" />
+                  </div>
+                  <h3 className="text-lg font-black">{item.title}</h3>
+                  <p className="mt-3 text-sm leading-6 text-zinc-600">
+                    {item.text}
+                  </p>
+                </motion.div>
+              );
+            })}
+          </motion.div>
+        </div>
+      </AnimatedSection>
 
       <AnimatedSection id="workflow" className="bg-[#0b1226] py-20">
         <div className="mx-auto max-w-7xl px-4">
@@ -1099,27 +1281,39 @@ export default function HomePage() {
         <div className="mx-auto max-w-7xl px-4">
           <div className="mb-10">
             <div className="text-sm font-black uppercase tracking-[0.25em] text-red-600">
-              Latest Works
+              Workshop Use Cases
             </div>
             <h2 className="mt-3 text-4xl font-black md:text-5xl">
-              Recent file service requests
+              Built around real file service operations.
             </h2>
+            <p className="mt-3 max-w-2xl text-sm leading-7 text-zinc-400">
+              A cleaner workflow for workshops that need repeatable requests,
+              clear technical details and secure file delivery.
+            </p>
           </div>
 
           <div className="grid gap-5 md:grid-cols-4">
-            {recentWorks.map((work) => (
-              <div
-                key={work.car}
-                className="rounded-3xl border border-red-900/50 bg-white/[0.03] p-6 transition duration-300 hover:-translate-y-2 hover:border-red-700 hover:bg-white/[0.06]"
-              >
-                <Car className="mb-5 h-10 w-10 text-zinc-500" />
-                <h3 className="font-black">{work.car}</h3>
-                <p className="mt-4 text-sm font-bold text-red-500">
-                  {work.job}
-                </p>
-                <p className="mt-4 text-xs text-zinc-500">{work.date}</p>
-              </div>
-            ))}
+            {workshopUseCases.map((item) => {
+              const Icon = item.icon;
+
+              return (
+                <div
+                  key={item.title}
+                  className="rounded-2xl border border-red-900/50 bg-white/[0.03] p-6 transition duration-300 hover:-translate-y-1 hover:border-red-700 hover:bg-white/[0.06]"
+                >
+                  <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl border border-red-900/50 bg-red-950/25 text-red-500">
+                    <Icon className="h-6 w-6" />
+                  </div>
+                  <h3 className="text-lg font-black">{item.title}</h3>
+                  <p className="mt-3 text-sm leading-6 text-zinc-400">
+                    {item.text}
+                  </p>
+                  <div className="mt-5 inline-flex rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs font-black text-red-300">
+                    {item.meta}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       </AnimatedSection>

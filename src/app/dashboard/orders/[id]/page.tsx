@@ -19,6 +19,7 @@ import {
   Loader2,
   Mail,
   PackageCheck,
+  RefreshCcw,
   ShieldCheck,
   Sparkles,
   Upload,
@@ -48,7 +49,16 @@ type Order = {
   uploaded_file_name: string | null;
   original_file_path: string | null;
   modified_file_path: string | null;
+  modified_files: ModifiedFileVersion[] | null;
   created_at: string;
+};
+
+type ModifiedFileVersion = {
+  id: string;
+  label: "v1" | "revision" | "final";
+  file_name: string;
+  file_path: string;
+  uploaded_at: string;
 };
 
 function formatStatus(status: string | null) {
@@ -107,6 +117,30 @@ function shortId(id: string) {
   return id.slice(0, 8).toUpperCase();
 }
 
+function getModifiedFileVersions(order: Order) {
+  const versions = Array.isArray(order.modified_files) ? order.modified_files : [];
+
+  if (versions.length > 0) return versions;
+
+  if (!order.modified_file_path) return [];
+
+  return [
+    {
+      id: "legacy-final",
+      label: "final" as const,
+      file_name: order.modified_file_path.split("/").pop() || "Modified file",
+      file_path: order.modified_file_path,
+      uploaded_at: order.created_at,
+    },
+  ];
+}
+
+function formatFileVersionLabel(label: ModifiedFileVersion["label"]) {
+  if (label === "v1") return "V1";
+  if (label === "revision") return "Revision";
+  return "Final";
+}
+
 const timelineSteps = [
   {
     key: "new_request",
@@ -120,7 +154,7 @@ const timelineSteps = [
   },
   {
     key: "in_progress",
-    label: "Processing",
+    label: "In Progress",
     description: "Your file is being prepared by MG AutoTech.",
   },
   {
@@ -133,8 +167,8 @@ const timelineSteps = [
 function getTimelineIndex(order: Order) {
   const status = order.status ?? "new_request";
 
-  if (status === "completed" || order.modified_file_path) return 3;
   if (status === "in_progress" || status === "revision") return 2;
+  if (status === "completed" || order.modified_file_path) return 3;
   if (status === "file_check" || status === "customer_info_needed") return 1;
 
   return 0;
@@ -148,6 +182,8 @@ export default function OrderDetailPage() {
   const [email, setEmail] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
+  const [revisionNote, setRevisionNote] = useState("");
+  const [revisionSubmitting, setRevisionSubmitting] = useState(false);
 
   useEffect(() => {
     const loadOrder = async () => {
@@ -192,7 +228,10 @@ export default function OrderDetailPage() {
   }, [params?.id, router]);
 
   const downloadCompletedFile = async () => {
-    if (!order?.modified_file_path) {
+    const latestFilePath =
+      order && getModifiedFileVersions(order).at(-1)?.file_path;
+
+    if (!latestFilePath) {
       setMessage("Completed file is not available yet.");
       return;
     }
@@ -201,7 +240,7 @@ export default function OrderDetailPage() {
 
     const { data, error } = await supabase.storage
       .from("customer-files")
-      .createSignedUrl(order.modified_file_path, 60);
+      .createSignedUrl(latestFilePath, 60);
 
     if (error) {
       setMessage(error.message);
@@ -209,6 +248,72 @@ export default function OrderDetailPage() {
     }
 
     window.open(data.signedUrl, "_blank");
+  };
+
+  const downloadModifiedVersion = async (filePath: string) => {
+    setMessage("");
+
+    const { data, error } = await supabase.storage
+      .from("customer-files")
+      .createSignedUrl(filePath, 60);
+
+    if (error) {
+      setMessage(error.message);
+      return;
+    }
+
+    window.open(data.signedUrl, "_blank");
+  };
+
+  const requestRevision = async () => {
+    if (!order || revisionSubmitting) return;
+
+    const cleanNote = revisionNote.trim();
+
+    if (!cleanNote) {
+      setMessage("Please describe what needs to be revised.");
+      return;
+    }
+
+    setRevisionSubmitting(true);
+    setMessage("");
+
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session?.access_token) {
+        setMessage("Unauthorized");
+        return;
+      }
+
+      const response = await fetch(`/api/requests/${order.id}/revision`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ revisionNote: cleanNote }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setMessage(data.error || "Revision request could not be sent.");
+        return;
+      }
+
+      setOrder((current) =>
+        current ? { ...current, status: "revision" } : current
+      );
+      setRevisionNote("");
+      setMessage("Revision request sent. MG AutoTech will review your note.");
+    } catch {
+      setMessage("Revision request could not be sent.");
+    } finally {
+      setRevisionSubmitting(false);
+    }
   };
 
   if (loading) {
@@ -242,8 +347,10 @@ export default function OrderDetailPage() {
     );
   }
 
-  const completedFileReady =
-    order.status === "completed" && Boolean(order.modified_file_path);
+  const modifiedVersions = getModifiedFileVersions(order);
+  const completedFileReady = modifiedVersions.length > 0;
+  const revisionRequested = order.status === "revision";
+  const canRequestRevision = completedFileReady && !revisionRequested;
 
   return (
     <main className="min-h-screen bg-[#050505] text-white">
@@ -337,7 +444,20 @@ export default function OrderDetailPage() {
           </div>
         </div>
 
-        {completedFileReady ? (
+        {revisionRequested ? (
+          <div className="mb-8 rounded-[2rem] border border-purple-700/30 bg-purple-950/20 p-6">
+            <div className="flex items-start gap-4">
+              <RefreshCcw className="mt-1 h-8 w-8 shrink-0 text-purple-300" />
+              <div>
+                <h2 className="text-2xl font-black">Revision requested</h2>
+                <p className="mt-2 text-sm leading-6 text-zinc-300">
+                  Your revision request has been sent. MG AutoTech will review
+                  your note and prepare the next file version if required.
+                </p>
+              </div>
+            </div>
+          </div>
+        ) : completedFileReady ? (
           <div className="mb-8 rounded-[2rem] border border-emerald-700/30 bg-emerald-950/20 p-6">
             <div className="flex items-start gap-4">
               <CheckCircle2 className="mt-1 h-8 w-8 shrink-0 text-emerald-400" />
@@ -398,6 +518,63 @@ export default function OrderDetailPage() {
             </section>
 
             <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6">
+              <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <h2 className="text-2xl font-black">Modified File Versions</h2>
+                  <p className="mt-1 text-sm text-zinc-500">
+                    Download every delivered version for this order.
+                  </p>
+                </div>
+
+                <div className="rounded-full border border-emerald-700/30 bg-emerald-950/20 px-3 py-1 text-xs font-black text-emerald-300">
+                  {modifiedVersions.length} version{modifiedVersions.length === 1 ? "" : "s"}
+                </div>
+              </div>
+
+              {modifiedVersions.length > 0 ? (
+                <div className="grid gap-3 md:grid-cols-2">
+                  {modifiedVersions.map((version) => (
+                    <div
+                      key={version.id}
+                      className="rounded-2xl border border-emerald-700/30 bg-emerald-950/15 p-4"
+                    >
+                      <div className="mb-4 flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="text-sm font-black text-emerald-300">
+                            {formatFileVersionLabel(version.label)}
+                          </div>
+                          <div
+                            title={version.file_name}
+                            className="mt-1 truncate font-black text-white"
+                          >
+                            {version.file_name}
+                          </div>
+                          <div className="mt-1 text-xs text-zinc-500">
+                            Uploaded {formatDate(version.uploaded_at)}
+                          </div>
+                        </div>
+
+                        <CheckCircle2 className="mt-1 h-5 w-5 shrink-0 text-emerald-400" />
+                      </div>
+
+                      <button
+                        onClick={() => downloadModifiedVersion(version.file_path)}
+                        className="flex w-full items-center justify-center rounded-xl bg-emerald-600 px-4 py-3 text-sm font-black text-white transition hover:bg-emerald-500"
+                      >
+                        <Download className="mr-2 h-4 w-4" />
+                        Download {formatFileVersionLabel(version.label)}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="rounded-2xl border border-dashed border-white/15 bg-black/25 p-6 text-sm leading-6 text-zinc-400">
+                  No modified file version has been uploaded yet.
+                </div>
+              )}
+            </section>
+
+            <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6">
               <RequestChat requestId={order.id} senderRole="customer" />
             </section>
           </div>
@@ -440,7 +617,9 @@ export default function OrderDetailPage() {
                     </div>
                     <p className="mt-1 text-sm leading-6 text-zinc-400">
                       {completedFileReady
-                        ? "Your modified file is ready. You can download it securely from this page."
+                        ? revisionRequested
+                          ? "Your revision request is waiting for review."
+                          : "Your modified file is ready. You can download it securely from this page."
                         : order.status === "customer_info_needed"
                         ? "MG AutoTech needs additional information from you to continue this request."
                         : order.status === "in_progress"
@@ -452,6 +631,55 @@ export default function OrderDetailPage() {
                   </div>
                 </div>
               </div>
+            </section>
+
+            <section className="rounded-[2rem] border border-purple-700/30 bg-purple-950/15 p-6">
+              <div className="mb-5 flex items-start gap-3">
+                <RefreshCcw className="mt-1 h-7 w-7 shrink-0 text-purple-300" />
+                <div>
+                  <h2 className="text-2xl font-black">Request Revision</h2>
+                  <p className="mt-1 text-sm leading-6 text-zinc-400">
+                    If the delivered file needs an adjustment, send a clear
+                    revision note directly to MG AutoTech.
+                  </p>
+                </div>
+              </div>
+
+              {canRequestRevision ? (
+                <>
+                  <textarea
+                    value={revisionNote}
+                    onChange={(event) => setRevisionNote(event.target.value)}
+                    rows={5}
+                    placeholder="Example: Vehicle still shows DTC P0401. Please check EGR solution and reduce smoke on acceleration."
+                    className="w-full resize-none rounded-2xl border border-white/10 bg-black/35 p-4 text-sm text-white outline-none transition placeholder:text-zinc-600 focus:border-purple-500"
+                  />
+
+                  <button
+                    onClick={requestRevision}
+                    disabled={revisionSubmitting}
+                    className="mt-4 flex w-full items-center justify-center rounded-xl bg-purple-700 px-4 py-3 text-sm font-black text-white transition hover:bg-purple-600 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {revisionSubmitting ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Sending Revision...
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCcw className="mr-2 h-4 w-4" />
+                        Request Revision
+                      </>
+                    )}
+                  </button>
+                </>
+              ) : (
+                <div className="rounded-2xl border border-white/10 bg-black/30 p-4 text-sm leading-6 text-zinc-400">
+                  {revisionRequested
+                    ? "A revision request is already open for this order."
+                    : "Revision requests become available after a modified file is delivered."}
+                </div>
+              )}
             </section>
 
             <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6">

@@ -865,25 +865,28 @@ export default function NewRequestPage() {
       originalFilePath = filePath;
     }
 
-    const { error } = await supabase.rpc("create_order_with_credit_deduction", {
-      p_customer_email: customerEmail,
-      p_vehicle_brand: selectedBrandName,
-      p_vehicle_model: selectedModelName,
-      p_vehicle_generation: selectedGenerationName,
-      p_vehicle_engine: selectedEngineName,
-      p_service_type: serviceSummary,
-      p_credits_required: totalCredits,
-      p_notes: notes || "-",
-      p_ecu: ecu || null,
-      p_gearbox: gearbox || null,
-      p_vehicle_year: year || null,
-      p_read_method: readMethod || null,
-      p_license_plate: licensePlate || null,
-      p_hw_sw: hwSw || null,
-      p_master_slave: masterSlave,
-      p_uploaded_file_name: fileName || null,
-      p_original_file_path: originalFilePath,
-    });
+    const { data: createdOrderId, error } = await supabase.rpc(
+      "create_order_with_credit_deduction",
+      {
+        p_customer_email: customerEmail,
+        p_vehicle_brand: selectedBrandName,
+        p_vehicle_model: selectedModelName,
+        p_vehicle_generation: selectedGenerationName,
+        p_vehicle_engine: selectedEngineName,
+        p_service_type: serviceSummary,
+        p_credits_required: totalCredits,
+        p_notes: notes || "-",
+        p_ecu: ecu || null,
+        p_gearbox: gearbox || null,
+        p_vehicle_year: year || null,
+        p_read_method: readMethod || null,
+        p_license_plate: licensePlate || null,
+        p_hw_sw: hwSw || null,
+        p_master_slave: masterSlave,
+        p_uploaded_file_name: fileName || null,
+        p_original_file_path: originalFilePath,
+      }
+    );
 
     setSubmitting(false);
 
@@ -900,6 +903,24 @@ export default function NewRequestPage() {
           }
         : current
     );
+
+    try {
+      await fetch("/api/email/new-order", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          orderId: String(createdOrderId || ""),
+          customerEmail,
+          vehicle: `${selectedBrandName} ${selectedModelName} ${selectedEngineName}`.trim(),
+          service: serviceSummary,
+          credits: totalCredits,
+        }),
+      });
+    } catch {
+      // Email notification failure must not block the customer request.
+    }
 
     router.push("/dashboard");
   };

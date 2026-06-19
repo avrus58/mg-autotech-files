@@ -66,7 +66,16 @@ type Order = {
   uploaded_file_name: string | null;
   original_file_path: string | null;
   modified_file_path: string | null;
+  modified_files: ModifiedFileVersion[] | null;
   created_at: string | null;
+};
+
+type ModifiedFileVersion = {
+  id: string;
+  label: "v1" | "revision" | "final";
+  file_name: string;
+  file_path: string;
+  uploaded_at: string;
 };
 
 type Profile = {
@@ -172,6 +181,30 @@ function getWorkflowStep(order: Order) {
   if (order.status === "file_check" || order.status === "customer_info_needed") return 2;
   if (order.original_file_path) return 1;
   return 0;
+}
+
+function getModifiedFileVersions(order: Order) {
+  const versions = Array.isArray(order.modified_files) ? order.modified_files : [];
+
+  if (versions.length > 0) return versions;
+
+  if (!order.modified_file_path) return [];
+
+  return [
+    {
+      id: "legacy-final",
+      label: "final" as const,
+      file_name: order.modified_file_path.split("/").pop() || "Modified file",
+      file_path: order.modified_file_path,
+      uploaded_at: order.created_at || new Date().toISOString(),
+    },
+  ];
+}
+
+function formatFileVersionLabel(label: ModifiedFileVersion["label"]) {
+  if (label === "v1") return "V1";
+  if (label === "revision") return "Revision";
+  return "Final";
 }
 
 function workflowLabel(index: number) {
@@ -504,28 +537,55 @@ export default function AdminPage() {
     window.open(data.signedUrl, "_blank");
   }
 
-  async function uploadModifiedFile(order: Order, file: File | null) {
+  async function uploadModifiedFile(
+    order: Order,
+    file: File | null,
+    label: ModifiedFileVersion["label"]
+  ) {
     if (!file) return;
     setUploadingModifiedId(order.id);
     setMessage("");
     const safeFileName = file.name.replaceAll(" ", "_").replace(/[^a-zA-Z0-9._-]/g, "");
     const customerFolder = order.customer_id ?? "unknown-customer";
-    const filePath = `${customerFolder}/modified/${order.id}/${Date.now()}-${safeFileName}`;
+    const timestamp = Date.now();
+    const filePath = `${customerFolder}/modified/${order.id}/${label}/${timestamp}-${safeFileName}`;
     const { error: uploadError } = await supabase.storage.from("customer-files").upload(filePath, file, { cacheControl: "3600", upsert: false });
     if (uploadError) {
       setUploadingModifiedId(null);
       setMessage(uploadError.message);
       return;
     }
-    const { error: updateError } = await supabase.from("orders").update({ modified_file_path: filePath, status: "completed" }).eq("id", order.id);
+
+    const version: ModifiedFileVersion = {
+      id: `${label}-${timestamp}`,
+      label,
+      file_name: file.name,
+      file_path: filePath,
+      uploaded_at: new Date().toISOString(),
+    };
+    const modifiedFiles = [...getModifiedFileVersions(order), version];
+    const { error: updateError } = await supabase
+      .from("orders")
+      .update({ modified_file_path: filePath, modified_files: modifiedFiles, status: "completed" })
+      .eq("id", order.id);
     setUploadingModifiedId(null);
     if (updateError) {
       setMessage(updateError.message);
       return;
     }
-    setOrders((current) => current.map((item) => (item.id === order.id ? { ...item, modified_file_path: filePath, status: "completed" } : item)));
-    setSelectedOrder((current) => (current?.id === order.id ? { ...current, modified_file_path: filePath, status: "completed" } : current));
-    setMessage("Modified file uploaded and order marked as completed.");
+    setOrders((current) => current.map((item) => (item.id === order.id ? { ...item, modified_file_path: filePath, modified_files: modifiedFiles, status: "completed" } : item)));
+    setSelectedOrder((current) => (current?.id === order.id ? { ...current, modified_file_path: filePath, modified_files: modifiedFiles, status: "completed" } : current));
+    setMessage(`${formatFileVersionLabel(label)} modified file uploaded and order marked as completed.`);
+  }
+
+  async function downloadModifiedFile(filePath: string) {
+    setMessage("");
+    const { data, error } = await supabase.storage.from("customer-files").createSignedUrl(filePath, 60);
+    if (error) {
+      setMessage(error.message);
+      return;
+    }
+    window.open(data.signedUrl, "_blank");
   }
 
   async function copyOrderId(id: string) {
@@ -694,7 +754,8 @@ export default function AdminPage() {
           onCopy={() => copyOrderId(selectedOrder.id)}
           onCopyValue={copyValue}
           onStatusChange={(status) => updateStatus(selectedOrder.id, status)}
-          onUploadModified={(file) => uploadModifiedFile(selectedOrder, file)}
+          onUploadModified={(file, label) => uploadModifiedFile(selectedOrder, file, label)}
+          onDownloadModified={downloadModifiedFile}
           updating={updatingId === selectedOrder.id}
           uploadingModified={uploadingModifiedId === selectedOrder.id}
         />
@@ -1221,7 +1282,7 @@ function Detail({ icon, label, value }: { icon: ReactNode; label: string; value:
   );
 }
 
-function OrderDetailModal({ order, customer, onClose, onDownload, onCopy, onCopyValue, onStatusChange, onUploadModified, updating, uploadingModified }: {
+function OrderDetailModal({ order, customer, onClose, onDownload, onCopy, onCopyValue, onStatusChange, onUploadModified, onDownloadModified, updating, uploadingModified }: {
   order: Order;
   customer: Profile | null;
   onClose: () => void;
@@ -1229,12 +1290,16 @@ function OrderDetailModal({ order, customer, onClose, onDownload, onCopy, onCopy
   onCopy: () => void;
   onCopyValue: (value: string | null | undefined, label: string) => void;
   onStatusChange: (status: string) => void;
-  onUploadModified: (file: File | null) => void;
+  onUploadModified: (file: File | null, label: ModifiedFileVersion["label"]) => void;
+  onDownloadModified: (filePath: string) => void;
   updating: boolean;
   uploadingModified: boolean;
 }) {
   const serviceItems = splitServiceItems(order.service_type);
   const workflowStep = getWorkflowStep(order);
+  const modifiedVersions = getModifiedFileVersions(order);
+  const [modifiedFileLabel, setModifiedFileLabel] =
+    useState<ModifiedFileVersion["label"]>("v1");
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/75 px-4 py-6 backdrop-blur-sm">
@@ -1249,7 +1314,7 @@ function OrderDetailModal({ order, customer, onClose, onDownload, onCopy, onCopy
             <div className="flex flex-wrap gap-2">
               <button onClick={onCopy} className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-black text-white transition hover:bg-white/10"><Copy className="mr-2 inline h-4 w-4" />Copy Order ID</button>
               <button onClick={onDownload} disabled={!order.original_file_path} className="rounded-xl bg-[#b1121b] px-4 py-3 text-sm font-black text-white transition hover:bg-[#c91824] disabled:opacity-40"><Download className="mr-2 inline h-4 w-4" />Download Original</button>
-              <label className="cursor-pointer rounded-xl border border-emerald-700/40 bg-emerald-950/30 px-4 py-3 text-sm font-black text-emerald-300 transition hover:bg-emerald-900/40">{uploadingModified ? <><Loader2 className="mr-2 inline h-4 w-4 animate-spin" />Uploading Modified</> : <><Upload className="mr-2 inline h-4 w-4" />Upload Modified</>}<input type="file" className="hidden" disabled={uploadingModified} onChange={(event) => { const file = event.target.files?.[0] ?? null; onUploadModified(file); event.target.value = ""; }} /></label>
+              <label className="cursor-pointer rounded-xl border border-emerald-700/40 bg-emerald-950/30 px-4 py-3 text-sm font-black text-emerald-300 transition hover:bg-emerald-900/40">{uploadingModified ? <><Loader2 className="mr-2 inline h-4 w-4 animate-spin" />Uploading Modified</> : <><Upload className="mr-2 inline h-4 w-4" />Upload Modified</>}<input type="file" className="hidden" disabled={uploadingModified} onChange={(event) => { const file = event.target.files?.[0] ?? null; onUploadModified(file, modifiedFileLabel); event.target.value = ""; }} /></label>
               <button onClick={onClose} className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-black text-white transition hover:bg-white/10"><X className="mr-2 inline h-4 w-4" />Close</button>
             </div>
           </div>
@@ -1265,7 +1330,41 @@ function OrderDetailModal({ order, customer, onClose, onDownload, onCopy, onCopy
           </div>
           <aside className="space-y-6">
             <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5"><h3 className="mb-5 text-2xl font-black">Status Workflow</h3><div className="mb-5 h-2 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-gradient-to-r from-red-800 via-red-600 to-emerald-500 transition-all duration-700" style={{ width: `${((workflowStep + 1) / 5) * 100}%` }} /></div><div className="space-y-3">{[0, 1, 2, 3, 4].map((index) => <div key={index} className={`flex items-center gap-3 rounded-2xl border p-4 ${index <= workflowStep ? "border-emerald-700/30 bg-emerald-950/10" : "border-white/10 bg-black/30"}`}><div className={`flex h-9 w-9 items-center justify-center rounded-full ${index <= workflowStep ? "bg-emerald-500/15 text-emerald-400" : "bg-white/5 text-zinc-500"}`}>{index <= workflowStep ? <CheckCircle2 className="h-4 w-4" /> : <Clock3 className="h-4 w-4" />}</div><div className="font-black">{workflowLabel(index)}</div></div>)}</div><div className="mt-5"><select value={order.status ?? "new_request"} onChange={(event) => onStatusChange(event.target.value)} disabled={updating} className={`h-12 w-full rounded-xl border px-4 text-sm font-black outline-none ${statusClass(order.status)}`}>{editableStatusOptions.map((status) => <option key={status} value={status} className="bg-[#111]">{statusLabel(status)}</option>)}</select>{updating && <div className="mt-3 flex items-center gap-2 text-xs text-zinc-500"><Loader2 className="h-3 w-3 animate-spin" />Updating status...</div>}</div></section>
-            <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5"><h3 className="mb-5 text-2xl font-black">File Workflow</h3><div className="grid gap-3"><FileStateCard title="Original File" ready={Boolean(order.original_file_path)} description={order.uploaded_file_name || order.original_file_path || "No original file uploaded."} /><FileStateCard title="Modified File" ready={Boolean(order.modified_file_path)} description={order.modified_file_path || "Modified file not uploaded yet."} /></div><button onClick={onDownload} disabled={!order.original_file_path} className="mt-4 flex w-full items-center justify-center rounded-xl bg-[#b1121b] px-4 py-3 text-sm font-black text-white transition hover:bg-[#c91824] disabled:opacity-40"><Download className="mr-2 h-4 w-4" />Download Original</button><label className="mt-3 flex w-full cursor-pointer items-center justify-center rounded-xl border border-emerald-700/40 bg-emerald-950/30 px-4 py-3 text-sm font-black text-emerald-300 transition hover:bg-emerald-900/40">{uploadingModified ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Uploading Modified</> : <><Upload className="mr-2 h-4 w-4" />Upload Modified File</>}<input type="file" className="hidden" disabled={uploadingModified} onChange={(event) => { const file = event.target.files?.[0] ?? null; onUploadModified(file); event.target.value = ""; }} /></label></section>
+            <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
+              <h3 className="mb-5 text-2xl font-black">File Workflow</h3>
+              <div className="grid gap-3">
+                <FileStateCard title="Original File" ready={Boolean(order.original_file_path)} description={order.uploaded_file_name || order.original_file_path || "No original file uploaded."} />
+                <FileStateCard title="Modified Versions" ready={modifiedVersions.length > 0} description={modifiedVersions.length > 0 ? `${modifiedVersions.length} modified file version${modifiedVersions.length === 1 ? "" : "s"} uploaded.` : "No modified file uploaded yet."} />
+              </div>
+              <button onClick={onDownload} disabled={!order.original_file_path} className="mt-4 flex w-full items-center justify-center rounded-xl bg-[#b1121b] px-4 py-3 text-sm font-black text-white transition hover:bg-[#c91824] disabled:opacity-40"><Download className="mr-2 h-4 w-4" />Download Original</button>
+
+              <div className="mt-4 rounded-2xl border border-white/10 bg-black/30 p-4">
+                <div className="mb-3 text-xs font-black uppercase tracking-[0.14em] text-zinc-500">Upload Version</div>
+                <select value={modifiedFileLabel} onChange={(event) => setModifiedFileLabel(event.target.value as ModifiedFileVersion["label"])} className="mb-3 h-11 w-full rounded-xl border border-white/10 bg-black/35 px-3 text-sm font-black text-white outline-none focus:border-red-700">
+                  <option value="v1" className="bg-[#111]">V1</option>
+                  <option value="revision" className="bg-[#111]">Revision</option>
+                  <option value="final" className="bg-[#111]">Final</option>
+                </select>
+                <label className="flex w-full cursor-pointer items-center justify-center rounded-xl border border-emerald-700/40 bg-emerald-950/30 px-4 py-3 text-sm font-black text-emerald-300 transition hover:bg-emerald-900/40">{uploadingModified ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Uploading Modified</> : <><Upload className="mr-2 h-4 w-4" />Upload {formatFileVersionLabel(modifiedFileLabel)} File</>}<input type="file" className="hidden" disabled={uploadingModified} onChange={(event) => { const file = event.target.files?.[0] ?? null; onUploadModified(file, modifiedFileLabel); event.target.value = ""; }} /></label>
+              </div>
+
+              {modifiedVersions.length > 0 && (
+                <div className="mt-4 space-y-3">
+                  {modifiedVersions.map((version) => (
+                    <div key={version.id} className="rounded-2xl border border-emerald-700/30 bg-emerald-950/15 p-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="text-sm font-black text-emerald-300">{formatFileVersionLabel(version.label)}</div>
+                          <div title={version.file_name} className="mt-1 truncate text-sm font-bold text-white">{version.file_name}</div>
+                          <div className="mt-1 text-xs text-zinc-500">{formatDate(version.uploaded_at)}</div>
+                        </div>
+                        <button onClick={() => onDownloadModified(version.file_path)} className="shrink-0 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-black text-white transition hover:bg-white/10"><Download className="mr-1 inline h-3 w-3" />Download</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
             <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5"><h3 className="mb-5 text-2xl font-black">Customer Contact</h3><div className="space-y-3"><Detail icon={<User />} label="Customer ID" value={customer?.customer_id || order.customer_id} /><Detail icon={<Mail />} label="Login Email" value={order.customer_email} /><Detail icon={<User />} label="Full Name" value={customer?.full_name} /><Detail icon={<Building2 />} label="Company" value={customer?.company_name} /><Detail icon={<Phone />} label="Phone" value={customer?.phone} /><Detail icon={<MapPin />} label="Address" value={[customer?.street, customer?.postal_code, customer?.city, customer?.country].filter(Boolean).join(", ") || null} /></div><div className="mt-4 grid gap-2"><button onClick={() => onCopyValue(customer?.customer_id || order.customer_id, "Customer ID")} className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-black text-white transition hover:bg-white/10"><Copy className="mr-2 inline h-4 w-4" />Copy Customer ID</button><button onClick={() => onCopyValue(order.customer_email, "Customer Email")} className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-black text-white transition hover:bg-white/10"><Mail className="mr-2 inline h-4 w-4" />Copy Email</button><button onClick={() => onCopyValue(customer?.phone, "Phone")} className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-black text-white transition hover:bg-white/10"><Phone className="mr-2 inline h-4 w-4" />Copy Phone</button>{order.customer_email && <a href={`mailto:${order.customer_email}`} className="flex w-full items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-black text-white transition hover:bg-white/10"><Mail className="mr-2 h-4 w-4" />Email Customer</a>}</div></section>
           </aside>
         </div>
