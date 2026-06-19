@@ -5,8 +5,10 @@ import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
+import RequestChat from "@/components/RequestChat";
 import {
   ArrowLeft,
+  Building2,
   CalendarDays,
   CheckCircle2,
   Clock3,
@@ -21,13 +23,17 @@ import {
   Loader2,
   Lock,
   Mail,
+  MapPin,
   PackageCheck,
   RefreshCcw,
+  Clipboard,
+  Car,
   Search,
   ShieldCheck,
   Upload,
   User,
   Users,
+  Phone,
   Wrench,
   X,
 } from "lucide-react";
@@ -60,9 +66,20 @@ type Order = {
 type Profile = {
   id: string;
   email: string | null;
+  customer_id: string | null;
   full_name: string | null;
   role: string | null;
   credit_balance: number | string | null;
+  account_type: string | null;
+  company_name: string | null;
+  phone: string | null;
+  street: string | null;
+  postal_code: string | null;
+  city: string | null;
+  country: string | null;
+  vat_id: string | null;
+  invoice_email: string | null;
+  preferred_contact: string | null;
   created_at: string | null;
 };
 
@@ -131,6 +148,28 @@ function shortId(id: string) {
   return id.slice(0, 8).toUpperCase();
 }
 
+function splitServiceItems(service: string | null) {
+  if (!service) return [];
+  return service
+    .split(/[,;+|]/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function getWorkflowStep(order: Order) {
+  if (order.modified_file_path || order.status === "completed") return 4;
+  if (order.status === "in_progress" || order.status === "revision") return 3;
+  if (order.status === "file_check" || order.status === "customer_info_needed") return 2;
+  if (order.original_file_path) return 1;
+  return 0;
+}
+
+function workflowLabel(index: number) {
+  const labels = ["Created", "Original File", "File Check", "Processing", "Completed"];
+  return labels[index] ?? "Created";
+}
+
+
 export default function AdminPage() {
   const router = useRouter();
 
@@ -184,7 +223,7 @@ export default function AdminPage() {
 
     const { data: profileList, error: customerError } = await supabase
       .from("profiles")
-      .select("id, email, full_name, role, credit_balance, created_at")
+      .select("id, email, customer_id, full_name, role, credit_balance, account_type, company_name, phone, street, postal_code, city, country, vat_id, invoice_email, preferred_contact, created_at")
       .order("created_at", { ascending: false });
 
     if (customerError) {
@@ -226,6 +265,10 @@ export default function AdminPage() {
     };
   }, [orders, customers]);
 
+  const customerById = useMemo(() => {
+    return new Map(customers.map((customer) => [customer.id, customer]));
+  }, [customers]);
+
   const filteredOrders = useMemo(() => {
     const term = search.trim().toLowerCase();
 
@@ -243,6 +286,9 @@ export default function AdminPage() {
       const fullText = [
         order.id,
         order.customer_email,
+        customerById.get(order.customer_id ?? "")?.customer_id,
+        customerById.get(order.customer_id ?? "")?.full_name,
+        customerById.get(order.customer_id ?? "")?.company_name,
         order.vehicle_brand,
         order.vehicle_model,
         order.vehicle_generation,
@@ -265,7 +311,7 @@ export default function AdminPage() {
 
       return fullText.includes(term);
     });
-  }, [orders, search, selectedStatus, onlyWithFile]);
+  }, [orders, search, selectedStatus, onlyWithFile, customerById]);
 
   const filteredCustomers = useMemo(() => {
     const term = customerSearch.trim().toLowerCase();
@@ -275,7 +321,10 @@ export default function AdminPage() {
     return customers.filter((customer) => {
       const fullText = [
         customer.email,
+        customer.customer_id,
         customer.full_name,
+        customer.company_name,
+        customer.phone,
         customer.role,
         customer.id,
       ]
@@ -296,13 +345,11 @@ export default function AdminPage() {
     setCreditUpdatingId(customer.id);
     setMessage("");
 
-    const currentBalance = Number(customer.credit_balance ?? 0);
-    const newBalance = currentBalance + amountToAdd;
-
-    const { error } = await supabase
-      .from("profiles")
-      .update({ credit_balance: newBalance })
-      .eq("id", customer.id);
+    const { data, error } = await supabase.rpc("admin_add_credits", {
+      p_customer_id: customer.id,
+      p_credits: amountToAdd,
+      p_note: `Manual admin credit top-up for ${customer.email ?? customer.customer_id ?? customer.id}`,
+    });
 
     setCreditUpdatingId(null);
 
@@ -310,6 +357,8 @@ export default function AdminPage() {
       setMessage(error.message);
       return;
     }
+
+    const newBalance = Number(data ?? Number(customer.credit_balance ?? 0) + amountToAdd);
 
     setCustomers((current) =>
       current.map((item) =>
@@ -327,7 +376,7 @@ export default function AdminPage() {
       [customer.id]: "",
     }));
 
-    setMessage(`${amountToAdd} credits added to ${customer.email ?? "customer"}.`);
+    setMessage(`${amountToAdd} credits added to ${customer.customer_id ?? customer.email ?? "customer"}. Ledger entry created.`);
   };
 
   const handleCustomCreditAdd = (customer: Profile) => {
@@ -451,6 +500,16 @@ export default function AdminPage() {
   const copyOrderId = async (id: string) => {
     await navigator.clipboard.writeText(id);
     setMessage("Order ID copied.");
+  };
+
+  const copyValue = async (value: string | null | undefined, label: string) => {
+    if (!value) {
+      setMessage(`${label} is empty.`);
+      return;
+    }
+
+    await navigator.clipboard.writeText(value);
+    setMessage(`${label} copied.`);
   };
 
   if (loading) {
@@ -582,6 +641,8 @@ export default function AdminPage() {
               <thead className="bg-black/50 text-xs uppercase tracking-[0.14em] text-zinc-500">
                 <tr>
                   <th className="px-4 py-4">Customer</th>
+                  <th className="px-4 py-4">Customer ID</th>
+                  <th className="px-4 py-4">Type</th>
                   <th className="px-4 py-4">Role</th>
                   <th className="px-4 py-4">Balance</th>
                   <th className="px-4 py-4">Quick Add</th>
@@ -593,7 +654,7 @@ export default function AdminPage() {
               <tbody className="divide-y divide-white/10">
                 {filteredCustomers.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-4 py-12 text-center text-zinc-500">
+                    <td colSpan={8} className="px-4 py-12 text-center text-zinc-500">
                       No customers found.
                     </td>
                   </tr>
@@ -608,7 +669,25 @@ export default function AdminPage() {
                           {customer.email || "-"}
                         </div>
                         <div className="mt-1 text-xs text-zinc-500">
-                          {customer.full_name || customer.id}
+                          {customer.full_name || customer.company_name || customer.id}
+                        </div>
+                      </td>
+
+                      <td className="px-4 py-4 align-top">
+                        <button
+                          onClick={() => customer.customer_id && navigator.clipboard.writeText(customer.customer_id)}
+                          className="rounded-xl border border-red-800/40 bg-red-950/25 px-3 py-2 text-xs font-black text-red-300 transition hover:bg-red-900/30"
+                        >
+                          {customer.customer_id || "-"}
+                        </button>
+                      </td>
+
+                      <td className="px-4 py-4 align-top">
+                        <div className="text-sm font-bold text-white">
+                          {customer.account_type === "company" ? "Company" : "Private"}
+                        </div>
+                        <div className="mt-1 max-w-[180px] truncate text-xs text-zinc-500">
+                          {customer.company_name || customer.phone || "-"}
                         </div>
                       </td>
 
@@ -700,7 +779,10 @@ export default function AdminPage() {
                     <div>
                       <div className="font-black">{customer.email || "-"}</div>
                       <div className="mt-1 text-sm text-zinc-500">
-                        {customer.full_name || customer.id}
+                        {customer.customer_id || customer.id}
+                      </div>
+                      <div className="mt-1 text-xs text-zinc-500">
+                        {customer.full_name || customer.company_name || "-"}
                       </div>
                     </div>
 
@@ -850,8 +932,14 @@ export default function AdminPage() {
                         <div className="font-bold text-white">
                           {order.customer_email || "-"}
                         </div>
-                        <div className="mt-1 text-xs text-zinc-500">
-                          {order.customer_id ? order.customer_id.slice(0, 8) : "-"}
+                        <div className="mt-1 text-xs font-black text-red-400">
+                          {customerById.get(order.customer_id ?? "")?.customer_id ||
+                            (order.customer_id ? order.customer_id.slice(0, 8) : "-")}
+                        </div>
+                        <div className="mt-1 max-w-[180px] truncate text-xs text-zinc-500">
+                          {customerById.get(order.customer_id ?? "")?.full_name ||
+                            customerById.get(order.customer_id ?? "")?.company_name ||
+                            "-"}
                         </div>
                       </td>
 
@@ -1005,7 +1093,13 @@ export default function AdminPage() {
                   </div>
 
                   <div className="grid gap-3 text-sm md:grid-cols-2">
-                    <MiniInfo label="Customer" value={order.customer_email} />
+                    <MiniInfo
+                      label="Customer"
+                      value={
+                        customerById.get(order.customer_id ?? "")?.customer_id ||
+                        order.customer_email
+                      }
+                    />
                     <MiniInfo label="Engine" value={order.vehicle_engine} />
                     <MiniInfo label="ECU" value={order.ecu} />
                     <MiniInfo label="Service" value={order.service_type} />
@@ -1079,9 +1173,11 @@ export default function AdminPage() {
       {selectedOrder && (
         <OrderDetailModal
           order={selectedOrder}
+          customer={customerById.get(selectedOrder.customer_id ?? "") ?? null}
           onClose={() => setSelectedOrder(null)}
           onDownload={() => downloadOriginalFile(selectedOrder)}
           onCopy={() => copyOrderId(selectedOrder.id)}
+          onCopyValue={copyValue}
           onStatusChange={(status) => updateStatus(selectedOrder.id, status)}
           onUploadModified={(file) => uploadModifiedFile(selectedOrder, file)}
           updating={updatingId === selectedOrder.id}
@@ -1163,66 +1259,66 @@ function Detail({
 
 function OrderDetailModal({
   order,
+  customer,
   onClose,
   onDownload,
   onCopy,
+  onCopyValue,
   onStatusChange,
   onUploadModified,
   updating,
   uploadingModified,
 }: {
   order: Order;
+  customer: Profile | null;
   onClose: () => void;
   onDownload: () => void;
   onCopy: () => void;
+  onCopyValue: (value: string | null | undefined, label: string) => void;
   onStatusChange: (status: string) => void;
   onUploadModified: (file: File | null) => void;
   updating: boolean;
   uploadingModified: boolean;
 }) {
+  const serviceItems = splitServiceItems(order.service_type);
+  const workflowStep = getWorkflowStep(order);
+
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/75 px-4 py-6 backdrop-blur-sm">
-      <div className="max-h-[92vh] w-full max-w-6xl overflow-auto rounded-[2rem] border border-white/10 bg-[#090909] shadow-2xl shadow-black">
+      <div className="max-h-[94vh] w-full max-w-7xl overflow-auto rounded-[2rem] border border-white/10 bg-[#090909] shadow-2xl shadow-black">
         <div className="sticky top-0 z-10 border-b border-white/10 bg-[#090909]/95 p-5 backdrop-blur-xl">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
             <div>
-              <div className="mb-2 flex flex-wrap items-center gap-2">
-                <span
-                  className={`rounded-full border px-3 py-1 text-xs font-bold ${statusClass(
-                    order.status
-                  )}`}
-                >
+              <div className="mb-3 flex flex-wrap items-center gap-2">
+                <span className="rounded-full border border-red-800/40 bg-red-950/25 px-3 py-1 text-xs font-black uppercase tracking-[0.16em] text-red-300">
+                  Work Order #{shortId(order.id)}
+                </span>
+                <span className={`rounded-full border px-3 py-1 text-xs font-bold ${statusClass(order.status)}`}>
                   {statusLabel(order.status)}
                 </span>
-
                 <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs font-bold text-zinc-400">
-                  #{shortId(order.id)}
+                  {formatDate(order.created_at)}
                 </span>
               </div>
 
-              <h2 className="text-3xl font-black">
-                {order.vehicle_brand || "-"} {order.vehicle_model || ""}
+              <h2 className="text-3xl font-black md:text-4xl">
+                {order.vehicle_brand || "-"} {order.vehicle_model || ""}{" "}
+                <span className="text-red-500">{order.vehicle_engine || ""}</span>
               </h2>
 
-              <p className="mt-1 text-sm text-zinc-500">
-                {order.customer_email || "-"} · {formatDate(order.created_at)}
+              <p className="mt-2 text-sm text-zinc-500">
+                {customer?.customer_id || order.customer_id || "-"} ·{" "}
+                {customer?.full_name || customer?.company_name || order.customer_email || "-"}
               </p>
             </div>
 
             <div className="flex flex-wrap gap-2">
-              <button
-                onClick={onCopy}
-                className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-black text-white transition hover:bg-white/10"
-              >
+              <button onClick={onCopy} className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-black text-white transition hover:bg-white/10">
                 <Copy className="mr-2 inline h-4 w-4" />
-                Copy ID
+                Copy Order ID
               </button>
 
-              <button
-                onClick={onDownload}
-                disabled={!order.original_file_path}
-                className="rounded-xl bg-[#b1121b] px-4 py-3 text-sm font-black text-white transition hover:bg-[#c91824] disabled:cursor-not-allowed disabled:opacity-40"
-              >
+              <button onClick={onDownload} disabled={!order.original_file_path} className="rounded-xl bg-[#b1121b] px-4 py-3 text-sm font-black text-white transition hover:bg-[#c91824] disabled:cursor-not-allowed disabled:opacity-40">
                 <Download className="mr-2 inline h-4 w-4" />
                 Download Original
               </button>
@@ -1239,7 +1335,6 @@ function OrderDetailModal({
                     Upload Modified
                   </>
                 )}
-
                 <input
                   type="file"
                   className="hidden"
@@ -1252,10 +1347,7 @@ function OrderDetailModal({
                 />
               </label>
 
-              <button
-                onClick={onClose}
-                className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-black text-white transition hover:bg-white/10"
-              >
+              <button onClick={onClose} className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-black text-white transition hover:bg-white/10">
                 <X className="mr-2 inline h-4 w-4" />
                 Close
               </button>
@@ -1263,15 +1355,55 @@ function OrderDetailModal({
           </div>
         </div>
 
-        <div className="grid gap-6 p-5 lg:grid-cols-[1fr_340px]">
+        <div className="grid gap-6 p-5 xl:grid-cols-[1fr_380px]">
           <div className="space-y-6">
-            <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
-              <h3 className="mb-4 text-xl font-black">Technical Details</h3>
+            <section className="rounded-[2rem] border border-red-900/40 bg-red-950/20 p-5">
+              <div className="mb-5 flex items-center justify-between gap-4">
+                <div>
+                  <div className="text-sm font-black uppercase tracking-[0.22em] text-red-400">Work Order Overview</div>
+                  <h3 className="mt-1 text-2xl font-black">Main job information</h3>
+                </div>
+                <div className="rounded-2xl bg-black/30 px-4 py-3 text-right">
+                  <div className="text-xs text-zinc-500">Credits</div>
+                  <div className="text-2xl font-black text-red-400">{order.credits_required ?? 0}</div>
+                </div>
+              </div>
 
+              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                <WorkInfo label="Customer ID" value={customer?.customer_id || order.customer_id} />
+                <WorkInfo label="Vehicle" value={`${order.vehicle_brand || "-"} ${order.vehicle_model || ""}`} />
+                <WorkInfo label="ECU / TCU" value={order.ecu || order.gearbox} />
+                <WorkInfo label="Read Method" value={order.read_method} />
+              </div>
+            </section>
+
+            <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
+              <div className="mb-5 flex items-center gap-3">
+                <Car className="h-7 w-7 text-red-500" />
+                <div>
+                  <h3 className="text-2xl font-black">Vehicle Information</h3>
+                  <p className="mt-1 text-sm text-zinc-500">Vehicle and identification details for this work order.</p>
+                </div>
+              </div>
               <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                <Detail icon={<Gauge />} label="Engine" value={order.vehicle_engine} />
+                <Detail icon={<Car />} label="Brand" value={order.vehicle_brand} />
+                <Detail icon={<Car />} label="Model" value={order.vehicle_model} />
                 <Detail icon={<FileCode2 />} label="Generation" value={order.vehicle_generation} />
+                <Detail icon={<Gauge />} label="Engine" value={order.vehicle_engine} />
                 <Detail icon={<CalendarDays />} label="Year" value={order.vehicle_year} />
+                <Detail icon={<Clipboard />} label="License Plate" value={order.license_plate} />
+              </div>
+            </section>
+
+            <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
+              <div className="mb-5 flex items-center gap-3">
+                <Database className="h-7 w-7 text-red-500" />
+                <div>
+                  <h3 className="text-2xl font-black">ECU / File Technical Data</h3>
+                  <p className="mt-1 text-sm text-zinc-500">Technical identifiers needed for file service processing.</p>
+                </div>
+              </div>
+              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
                 <Detail icon={<Wrench />} label="ECU / TCU" value={order.ecu} />
                 <Detail icon={<Wrench />} label="Gearbox" value={order.gearbox} />
                 <Detail icon={<FileCode2 />} label="Read Method" value={order.read_method} />
@@ -1282,102 +1414,135 @@ function OrderDetailModal({
             </section>
 
             <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
-              <h3 className="mb-4 text-xl font-black">Requested Service</h3>
-
-              <div className="rounded-2xl bg-black/30 p-5 text-sm leading-7 text-zinc-300">
-                {order.service_type || "-"}
+              <div className="mb-5 flex items-center justify-between gap-4">
+                <div>
+                  <h3 className="text-2xl font-black">Service Breakdown</h3>
+                  <p className="mt-1 text-sm text-zinc-500">Requested services for this file.</p>
+                </div>
+                <div className="rounded-2xl border border-red-900/40 bg-red-950/25 px-4 py-3 text-sm font-black text-red-300">
+                  {order.credits_required ?? 0} Credits
+                </div>
               </div>
+
+              {serviceItems.length > 0 ? (
+                <div className="grid gap-3 md:grid-cols-2">
+                  {serviceItems.map((service) => (
+                    <div key={service} className="flex items-center gap-3 rounded-2xl border border-emerald-700/30 bg-emerald-950/15 p-4">
+                      <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-400" />
+                      <span className="font-black text-white">{service}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="rounded-2xl bg-black/30 p-5 text-sm leading-7 text-zinc-300">{order.service_type || "-"}</div>
+              )}
             </section>
 
             <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
-              <h3 className="mb-4 text-xl font-black">Customer Notes</h3>
-
+              <h3 className="mb-4 text-2xl font-black">Customer Notes</h3>
               <div className="min-h-32 whitespace-pre-wrap rounded-2xl bg-black/30 p-5 text-sm leading-7 text-zinc-300">
                 {order.notes || "-"}
               </div>
             </section>
+
+            <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
+              <RequestChat requestId={order.id} senderRole="admin" />
+            </section>
           </div>
 
           <aside className="space-y-6">
-            <section className="rounded-[2rem] border border-red-900/40 bg-red-950/20 p-5">
-              <CreditCard className="mb-4 h-8 w-8 text-red-400" />
-              <div className="text-sm text-zinc-400">Credits Used</div>
-              <div className="mt-2 text-5xl font-black">
-                {order.credits_required ?? 0}
+            <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
+              <h3 className="mb-5 text-2xl font-black">Status Workflow</h3>
+              <div className="mb-5 h-2 overflow-hidden rounded-full bg-white/10">
+                <div className="h-full rounded-full bg-gradient-to-r from-red-800 via-red-600 to-emerald-500 transition-all duration-700" style={{ width: `${((workflowStep + 1) / 5) * 100}%` }} />
               </div>
-            </section>
-
-            <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
-              <h3 className="mb-4 text-xl font-black">Order Status</h3>
-
-              <select
-                value={order.status ?? "new_request"}
-                onChange={(event) => onStatusChange(event.target.value)}
-                disabled={updating}
-                className={`h-12 w-full rounded-xl border px-4 text-sm font-black outline-none ${statusClass(
-                  order.status
-                )}`}
-              >
-                {editableStatusOptions.map((status) => (
-                  <option key={status} value={status} className="bg-[#111]">
-                    {statusLabel(status)}
-                  </option>
-                ))}
-              </select>
-
-              {updating && (
-                <div className="mt-3 flex items-center gap-2 text-xs text-zinc-500">
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                  Updating status...
-                </div>
-              )}
-            </section>
-
-            <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
-              <h3 className="mb-4 text-xl font-black">Customer</h3>
-
               <div className="space-y-3">
-                <Detail icon={<Mail />} label="Email" value={order.customer_email} />
-                <Detail icon={<User />} label="Customer ID" value={order.customer_id} />
+                {[0, 1, 2, 3, 4].map((index) => (
+                  <div key={index} className={`flex items-center gap-3 rounded-2xl border p-4 ${index <= workflowStep ? "border-emerald-700/30 bg-emerald-950/10" : "border-white/10 bg-black/30"}`}>
+                    <div className={`flex h-9 w-9 items-center justify-center rounded-full ${index <= workflowStep ? "bg-emerald-500/15 text-emerald-400" : "bg-white/5 text-zinc-500"}`}>
+                      {index <= workflowStep ? <CheckCircle2 className="h-4 w-4" /> : <Clock3 className="h-4 w-4" />}
+                    </div>
+                    <div className="font-black">{workflowLabel(index)}</div>
+                  </div>
+                ))}
               </div>
-
-              {order.customer_email && (
-                <a
-                  href={`mailto:${order.customer_email}`}
-                  className="mt-4 flex w-full items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-black text-white transition hover:bg-white/10"
-                >
-                  <Mail className="mr-2 h-4 w-4" />
-                  Email Customer
-                </a>
-              )}
+              <div className="mt-5">
+                <select value={order.status ?? "new_request"} onChange={(event) => onStatusChange(event.target.value)} disabled={updating} className={`h-12 w-full rounded-xl border px-4 text-sm font-black outline-none ${statusClass(order.status)}`}>
+                  {editableStatusOptions.map((status) => (
+                    <option key={status} value={status} className="bg-[#111]">{statusLabel(status)}</option>
+                  ))}
+                </select>
+                {updating && (
+                  <div className="mt-3 flex items-center gap-2 text-xs text-zinc-500">
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    Updating status...
+                  </div>
+                )}
+              </div>
             </section>
 
             <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
-              <h3 className="mb-4 text-xl font-black">File Paths</h3>
+              <h3 className="mb-5 text-2xl font-black">File Workflow</h3>
+              <div className="grid gap-3">
+                <FileStateCard title="Original File" ready={Boolean(order.original_file_path)} description={order.uploaded_file_name || order.original_file_path || "No original file uploaded."} />
+                <FileStateCard title="Modified File" ready={Boolean(order.modified_file_path)} description={order.modified_file_path || "Modified file not uploaded yet."} />
+              </div>
+              <button onClick={onDownload} disabled={!order.original_file_path} className="mt-4 flex w-full items-center justify-center rounded-xl bg-[#b1121b] px-4 py-3 text-sm font-black text-white transition hover:bg-[#c91824] disabled:cursor-not-allowed disabled:opacity-40">
+                <Download className="mr-2 h-4 w-4" />
+                Download Original
+              </button>
+              <label className="mt-3 flex w-full cursor-pointer items-center justify-center rounded-xl border border-emerald-700/40 bg-emerald-950/30 px-4 py-3 text-sm font-black text-emerald-300 transition hover:bg-emerald-900/40">
+                {uploadingModified ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Uploading Modified</> : <><Upload className="mr-2 h-4 w-4" />Upload Modified File</>}
+                <input type="file" className="hidden" disabled={uploadingModified} onChange={(event) => { const file = event.target.files?.[0] ?? null; onUploadModified(file); event.target.value = ""; }} />
+              </label>
+            </section>
 
-              <div className="space-y-3 text-xs">
-                <div className="rounded-2xl bg-black/30 p-4">
-                  <div className="mb-1 uppercase tracking-[0.14em] text-zinc-500">
-                    Original
-                  </div>
-                  <div className="break-all text-zinc-300">
-                    {order.original_file_path || "-"}
-                  </div>
-                </div>
-
-                <div className="rounded-2xl bg-black/30 p-4">
-                  <div className="mb-1 uppercase tracking-[0.14em] text-zinc-500">
-                    Modified
-                  </div>
-                  <div className="break-all text-zinc-300">
-                    {order.modified_file_path || "Not uploaded yet"}
-                  </div>
-                </div>
+            <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
+              <h3 className="mb-5 text-2xl font-black">Customer Contact</h3>
+              <div className="space-y-3">
+                <Detail icon={<User />} label="Customer ID" value={customer?.customer_id || order.customer_id} />
+                <Detail icon={<Mail />} label="Login Email" value={order.customer_email} />
+                <Detail icon={<User />} label="Full Name" value={customer?.full_name} />
+                <Detail icon={<Building2 />} label="Company" value={customer?.company_name} />
+                <Detail icon={<Phone />} label="Phone" value={customer?.phone} />
+                <Detail icon={<MapPin />} label="Address" value={[customer?.street, customer?.postal_code, customer?.city, customer?.country].filter(Boolean).join(", ") || null} />
+              </div>
+              <div className="mt-4 grid gap-2">
+                <button onClick={() => onCopyValue(customer?.customer_id || order.customer_id, "Customer ID")} className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-black text-white transition hover:bg-white/10"><Copy className="mr-2 inline h-4 w-4" />Copy Customer ID</button>
+                <button onClick={() => onCopyValue(order.customer_email, "Customer Email")} className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-black text-white transition hover:bg-white/10"><Mail className="mr-2 inline h-4 w-4" />Copy Email</button>
+                <button onClick={() => onCopyValue(customer?.phone, "Phone")} className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-black text-white transition hover:bg-white/10"><Phone className="mr-2 inline h-4 w-4" />Copy Phone</button>
+                {order.customer_email && <a href={`mailto:${order.customer_email}`} className="flex w-full items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-black text-white transition hover:bg-white/10"><Mail className="mr-2 h-4 w-4" />Email Customer</a>}
               </div>
             </section>
           </aside>
         </div>
       </div>
+    </div>
+  );
+}
+
+function WorkInfo({ label, value }: { label: string; value: string | number | null | undefined }) {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
+      <div className="text-xs font-black uppercase tracking-[0.16em] text-zinc-500">{label}</div>
+      <div className="mt-2 break-words text-lg font-black text-white">{value || "-"}</div>
+    </div>
+  );
+}
+
+function FileStateCard({ title, ready, description }: { title: string; ready: boolean; description: string }) {
+  return (
+    <div className={`rounded-2xl border p-4 ${ready ? "border-emerald-700/30 bg-emerald-950/15" : "border-white/10 bg-black/30"}`}>
+      <div className="flex items-center gap-3">
+        <div className={`flex h-9 w-9 items-center justify-center rounded-full ${ready ? "bg-emerald-500/15 text-emerald-400" : "bg-white/5 text-zinc-500"}`}>
+          {ready ? <CheckCircle2 className="h-4 w-4" /> : <Clock3 className="h-4 w-4" />}
+        </div>
+        <div>
+          <div className="font-black">{title}</div>
+          <div className="mt-1 text-xs leading-5 text-zinc-500">{ready ? "Ready" : "Waiting"}</div>
+        </div>
+      </div>
+      <div className="mt-3 break-all text-xs leading-5 text-zinc-400">{description}</div>
     </div>
   );
 }

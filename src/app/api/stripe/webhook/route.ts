@@ -32,7 +32,9 @@ export async function POST(request: Request) {
     event = stripe.webhooks.constructEvent(rawBody, signature, webhookSecret);
   } catch (error) {
     const message =
-      error instanceof Error ? error.message : "Webhook signature verification failed.";
+      error instanceof Error
+        ? error.message
+        : "Webhook signature verification failed.";
 
     return NextResponse.json({ error: message }, { status: 400 });
   }
@@ -61,7 +63,8 @@ export async function POST(request: Request) {
       p_user_id: userId,
       p_stripe_session_id: session.id,
       p_stripe_payment_intent: paymentIntent,
-      p_customer_email: session.customer_email ?? session.metadata?.user_email ?? null,
+      p_customer_email:
+        session.customer_email ?? session.metadata?.user_email ?? null,
       p_package_id: session.metadata?.package_id ?? null,
       p_credits: credits,
       p_amount_total: session.amount_total ?? null,
@@ -70,6 +73,46 @@ export async function POST(request: Request) {
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    const { data: profile } = await supabaseAdmin
+      .from("profiles")
+      .select("credit_balance")
+      .eq("id", userId)
+      .single();
+
+    const balanceAfter = Number(profile?.credit_balance ?? 0);
+
+    const { error: ledgerError } = await supabaseAdmin
+      .from("credit_transactions")
+      .upsert(
+        {
+          user_id: userId,
+          type: "purchase",
+          source_type: "stripe_checkout",
+          source_id: session.id,
+          credits_delta: credits,
+          balance_after: balanceAfter,
+          description: `${credits} credits purchased via Stripe.`,
+          amount_total: session.amount_total ?? null,
+          currency: session.currency ?? null,
+          metadata: {
+            stripe_session_id: session.id,
+            stripe_payment_intent: paymentIntent,
+            customer_email:
+              session.customer_email ?? session.metadata?.user_email ?? null,
+            package_id: session.metadata?.package_id ?? null,
+            purchase_type: session.metadata?.purchase_type ?? null,
+          },
+        },
+        {
+          onConflict: "source_type,source_id",
+          ignoreDuplicates: true,
+        }
+      );
+
+    if (ledgerError) {
+      return NextResponse.json({ error: ledgerError.message }, { status: 500 });
     }
   }
 

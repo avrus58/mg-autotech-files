@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
+import RequestChat from "@/components/RequestChat";
 import {
   ArrowLeft,
   CalendarDays,
@@ -138,7 +139,6 @@ function getTimelineIndex(order: Order) {
 
   return 0;
 }
-
 
 export default function OrderDetailPage() {
   const router = useRouter();
@@ -395,6 +395,10 @@ export default function OrderDetailPage() {
               <div className="min-h-32 whitespace-pre-wrap rounded-2xl bg-black/30 p-5 text-sm leading-7 text-zinc-300">
                 {order.notes || "-"}
               </div>
+            </section>
+
+            <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6">
+              <RequestChat requestId={order.id} senderRole="customer" />
             </section>
           </div>
 

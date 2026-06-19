@@ -74,6 +74,14 @@ type ExtraService = {
   id: string;
   title: string;
   credits: number;
+  description?: string;
+};
+
+type ExtraServiceCategory = {
+  id: string;
+  title: string;
+  description: string;
+  services: ExtraService[];
 };
 
 const mainServices: MainService[] = [
@@ -102,6 +110,18 @@ const mainServices: MainService[] = [
     description: "For heavily modified setups, manual review recommended.",
   },
   {
+    id: "eco_tuning",
+    title: "ECO Tuning",
+    credits: 8,
+    description: "Fuel economy optimization with smooth drivability.",
+  },
+  {
+    id: "tcu_tuning",
+    title: "TCU Tuning",
+    credits: 10,
+    description: "Gearbox software optimization and torque limiter adjustment.",
+  },
+  {
     id: "original_file",
     title: "Original File",
     credits: 4,
@@ -109,35 +129,99 @@ const mainServices: MainService[] = [
   },
 ];
 
-const extraServices: ExtraService[] = [
-  { id: "dpf_off", title: "DPF OFF", credits: 6 },
-  { id: "egr_off", title: "EGR / AGR OFF", credits: 6 },
-  { id: "adblue_off", title: "AdBlue / SCR OFF", credits: 11 },
-  { id: "dpf_egr_off", title: "DPF + EGR OFF", credits: 9 },
-  { id: "adblue_dpf_egr", title: "AdBlue + DPF + EGR OFF", credits: 15 },
-  { id: "adblue_dpf", title: "AdBlue + DPF OFF", credits: 14 },
-  { id: "decat", title: "Decat / CAT OFF", credits: 6 },
-  { id: "o2_lambda", title: "O2 / Lambda OFF", credits: 5 },
-  { id: "dtc_off", title: "DTC OFF", credits: 4 },
-  { id: "maf_off", title: "MAF OFF", credits: 5 },
-  { id: "additive", title: "Additive OFF", credits: 6 },
-  { id: "vmax_off", title: "VMAX OFF", credits: 5 },
-  { id: "hot_start", title: "Hot Start / Cold Start", credits: 5 },
-  { id: "flap_off", title: "Swirl Flap OFF", credits: 7 },
-  { id: "e85_flex", title: "E85 Flex-Fuel", credits: 10 },
-  { id: "water_pump", title: "Water Pump OFF", credits: 5 },
-  { id: "start_stop", title: "Start & Stop OFF", credits: 1 },
-  { id: "pops_bangs", title: "Pops & Bangs", credits: 8 },
-  { id: "hardcut", title: "Hardcut Limiter", credits: 8 },
-  { id: "launch_control", title: "Launch Control", credits: 10 },
-  { id: "special_request", title: "Special Request", credits: 0 },
-  { id: "file_check", title: "File Check", credits: 4 },
-  { id: "checksum", title: "Checksum Correction", credits: 2 },
-  { id: "tva_off", title: "TVA OFF", credits: 5 },
-  { id: "opf_off", title: "OPF / GPF OFF", credits: 12 },
-  { id: "thermostat", title: "Thermostat Fix", credits: 6 },
-  { id: "file_expertise", title: "File Expertise", credits: 17 },
+const extraServiceCategories: ExtraServiceCategory[] = [
+  {
+    id: "emissions",
+    title: "Emission / Aftertreatment Solutions",
+    description: "DPF, EGR, AdBlue, OPF/GPF, NOx and related emission system solutions.",
+    services: [
+      { id: "dpf_off", title: "DPF Removal", credits: 6, description: "Diesel particulate filter software solution." },
+      { id: "egr_off", title: "EGR / AGR Removal", credits: 6, description: "EGR valve software solution." },
+      { id: "adblue_off", title: "AdBlue / SCR Removal", credits: 11, description: "SCR / AdBlue system software solution." },
+      { id: "dpf_egr_off", title: "DPF + EGR Removal", credits: 9 },
+      { id: "dpf_adblue_off", title: "DPF + AdBlue Removal", credits: 14 },
+      { id: "egr_adblue_off", title: "EGR + AdBlue Removal", credits: 11 },
+      { id: "dpf_egr_adblue_off", title: "DPF + EGR + AdBlue Removal", credits: 15 },
+      { id: "opf_gpf_off", title: "GPF / OPF Removal", credits: 12 },
+      { id: "nox_off", title: "NOx Removal", credits: 4 },
+      { id: "lambda_o2_off", title: "Lambda / O2 Removal", credits: 5 },
+      { id: "lambda_o2_gpf_off", title: "Lambda / O2 + GPF / OPF Removal", credits: 12 },
+      { id: "decat", title: "Decat / CAT Removal", credits: 6 },
+      { id: "additive_off", title: "Additive Removal", credits: 6 },
+    ],
+  },
+  {
+    id: "performance",
+    title: "Performance & Driving Features",
+    description: "Performance features, speed limiter, launch control and driving behavior options.",
+    services: [
+      { id: "vmax_off", title: "Speed Limit Removal / VMAX OFF", credits: 5 },
+      { id: "limited_vmax", title: "Limited VMAX to Specific Speed", credits: 6 },
+      { id: "launch_control", title: "Launch Control", credits: 10 },
+      { id: "hardcut_diesel", title: "Hard Cut Limiter (Diesel)", credits: 8 },
+      { id: "pops_bangs", title: "Pop and Bangs", credits: 8 },
+      { id: "pops_bangs_sport", title: "Pop and Bangs Sport Button", credits: 9 },
+      { id: "pops_bangs_ac", title: "Pop and Bangs AC Button", credits: 9 },
+      { id: "upshift_farts", title: "Upshift Farts", credits: 8 },
+      { id: "performance_gauge", title: "Performance Gauge BMW / Mini / VAG", credits: 4 },
+      { id: "map_switch", title: "Map Switch", credits: 60 },
+      { id: "multi_map", title: "Multi Map Setup", credits: 12 },
+      { id: "burble_map", title: "Burble Map", credits: 8 },
+      { id: "flex_fuel", title: "Flex Fuel / Ethanol Setup", credits: 10 },
+    ],
+  },
+  {
+    id: "engine_functions",
+    title: "Engine Function Solutions",
+    description: "Engine behavior, cold start, flap systems, sensors and special function solutions.",
+    services: [
+      { id: "start_stop", title: "Start / Stop Removal", credits: 5 },
+      { id: "cold_start", title: "Cold Start Removal", credits: 4 },
+      { id: "hot_start_fix", title: "Hot Start Fix", credits: 8 },
+      { id: "swirl_flaps", title: "Swirl Flaps Removal", credits: 5 },
+      { id: "exhaust_flaps", title: "Exhaust Flaps Removal", credits: 4 },
+      { id: "tva_off", title: "TVA Removal", credits: 5 },
+      { id: "cylinder_on_demand", title: "Cylinder On Demand Removal", credits: 4 },
+      { id: "maf_off", title: "MAF Removal", credits: 4 },
+      { id: "map_sensor_calibration", title: "Map Sensor Calibration", credits: 5 },
+      { id: "coolant_thermostat", title: "Coolant Temperature Control / Thermostat", credits: 6 },
+      { id: "water_pump", title: "Water Pump Removal", credits: 5 },
+    ],
+  },
+  {
+    id: "diagnostics",
+    title: "Diagnostics & File Services",
+    description: "File checking, DTC solutions, checksum and technical verification.",
+    services: [
+      { id: "dtc_off", title: "DTC Removal", credits: 4 },
+      { id: "file_check", title: "File Check", credits: 2 },
+      { id: "checksum", title: "Checksum Correction", credits: 2 },
+      { id: "file_expertise", title: "File Expertise", credits: 17 },
+      { id: "readout_verification", title: "Readout Verification", credits: 2 },
+      { id: "software_version_check", title: "Software Version Check", credits: 2 },
+      { id: "ecu_recovery", title: "ECU Recovery Support", credits: 10 },
+      { id: "original_backup_check", title: "Original Backup Check", credits: 4 },
+    ],
+  },
+  {
+    id: "support_addons",
+    title: "Professional Support Add-ons",
+    description: "Priority handling, log review and technical support add-ons for complex jobs.",
+    services: [
+      { id: "priority_processing", title: "Priority Processing", credits: 5 },
+      { id: "same_day_processing", title: "Same Day Processing", credits: 10 },
+      { id: "log_file_review", title: "Log File Review", credits: 5 },
+      { id: "dyno_report_review", title: "Dyno Report Review", credits: 5 },
+      { id: "smoke_limiter", title: "Smoke Limiter Optimization", credits: 6 },
+      { id: "torque_monitoring", title: "Torque Monitoring", credits: 6 },
+      { id: "gearbox_torque_limit", title: "Gearbox Torque Limit Adjustment", credits: 8 },
+      { id: "remote_support", title: "Remote Support Session", credits: 8 },
+      { id: "special_request", title: "Special Request / Other", credits: 0 },
+    ],
+  },
 ];
+
+const extraServices = extraServiceCategories.flatMap((category) => category.services);
 
 function SelectBox({
   label,
@@ -1025,43 +1109,80 @@ export default function NewRequestPage() {
             </section>
 
             <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6">
-              <div className="mb-6 flex items-center gap-3">
-                <Wrench className="h-6 w-6 text-red-600" />
-                <h2 className="text-2xl font-black">Actions To Be Taken</h2>
+              <div className="mb-6 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+                <div>
+                  <div className="mb-3 flex items-center gap-3">
+                    <Wrench className="h-6 w-6 text-red-600" />
+                    <h2 className="text-2xl font-black">Professional Service Catalog</h2>
+                  </div>
+                  <p className="max-w-3xl text-sm leading-6 text-zinc-500">
+                    Select every required software solution for this file. Services are grouped by workflow so complex ECU / TCU requests stay clear and professional.
+                  </p>
+                </div>
+
+                <div className="rounded-2xl border border-red-900/40 bg-red-950/25 px-4 py-3 text-sm font-black text-red-300">
+                  {selectedExtras.length} selected
+                </div>
               </div>
 
-              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                {extraServices.map((service) => {
-                  const active = selectedExtras.includes(service.id);
+              <div className="space-y-5">
+                {extraServiceCategories.map((category) => (
+                  <div
+                    key={category.id}
+                    className="rounded-[1.5rem] border border-white/10 bg-black/25 p-4"
+                  >
+                    <div className="mb-4">
+                      <h3 className="text-lg font-black text-white">
+                        {category.title}
+                      </h3>
+                      <p className="mt-1 text-sm leading-6 text-zinc-500">
+                        {category.description}
+                      </p>
+                    </div>
 
-                  return (
-                    <button
-                      key={service.id}
-                      onClick={() => toggleExtra(service.id)}
-                      className={`flex items-center gap-3 rounded-xl border px-4 py-3 text-left text-sm font-bold transition hover:-translate-y-0.5 ${
-                        active
-                          ? "border-red-700 bg-red-950/35 text-white"
-                          : "border-white/10 bg-black/30 text-zinc-400 hover:border-red-800/60 hover:text-white"
-                      }`}
-                    >
-                      <span
-                        className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${
-                          active
-                            ? "border-red-500 bg-red-600"
-                            : "border-zinc-600"
-                        }`}
-                      >
-                        {active && <CheckCircle2 className="h-4 w-4" />}
-                      </span>
-                      <span>
-                        {service.title}{" "}
-                        <span className="text-zinc-500">
-                          ({service.credits} Credit)
-                        </span>
-                      </span>
-                    </button>
-                  );
-                })}
+                    <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                      {category.services.map((service) => {
+                        const active = selectedExtras.includes(service.id);
+
+                        return (
+                          <button
+                            key={service.id}
+                            onClick={() => toggleExtra(service.id)}
+                            className={`group flex items-start gap-3 rounded-xl border px-4 py-3 text-left text-sm font-bold transition hover:-translate-y-0.5 ${
+                              active
+                                ? "border-red-700 bg-red-950/35 text-white shadow-lg shadow-red-950/20"
+                                : "border-white/10 bg-black/30 text-zinc-400 hover:border-red-800/60 hover:text-white"
+                            }`}
+                          >
+                            <span
+                              className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition ${
+                                active
+                                  ? "border-red-500 bg-red-600"
+                                  : "border-zinc-600 group-hover:border-red-700"
+                              }`}
+                            >
+                              {active && <CheckCircle2 className="h-4 w-4" />}
+                            </span>
+
+                            <span className="min-w-0">
+                              <span className="block">{service.title}</span>
+
+                              {service.description && (
+                                <span className="mt-1 block text-xs font-medium leading-5 text-zinc-500">
+                                  {service.description}
+                                </span>
+                              )}
+
+                              <span className="mt-2 inline-flex rounded-full bg-cyan-500/90 px-2 py-0.5 text-xs font-black text-white">
+                                {service.credits} Credit{service.credits === 1 ? "" : "s"}
+                              </span>
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
               </div>
             </section>
 

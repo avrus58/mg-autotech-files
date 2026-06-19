@@ -20,6 +20,7 @@ import {
   LayoutDashboard,
   LogOut,
   Plus,
+  Settings,
   ShieldCheck,
   Upload,
   User,
@@ -283,6 +284,14 @@ export default function DashboardPage() {
                 Credit History
               </Link>
 
+              <Link
+                href="/dashboard/settings"
+                className="flex items-center gap-3 rounded-2xl px-4 py-3 font-bold text-zinc-400 transition hover:bg-white/[0.06] hover:text-white"
+              >
+                <Settings className="h-5 w-5" />
+                Settings
+              </Link>
+
               <a
                 href="mailto:info@mgautotech.de"
                 className="flex items-center gap-3 rounded-2xl px-4 py-3 font-bold text-zinc-400 transition hover:bg-white/[0.06] hover:text-white"
@@ -368,7 +377,7 @@ export default function DashboardPage() {
                     communication from your private MG AutoTech dashboard.
                   </p>
 
-                  <div className="mt-7 grid gap-3 md:grid-cols-3">
+                  <div className="mt-7 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
                     <Link
                       href="/new-request"
                       className="rounded-2xl bg-[#b1121b] px-5 py-4 text-center font-black text-white shadow-xl shadow-red-950/40 transition hover:-translate-y-1 hover:bg-[#c91824]"
@@ -383,6 +392,14 @@ export default function DashboardPage() {
                     >
                       <CreditCard className="mr-2 inline h-5 w-5" />
                       Buy Credits
+                    </Link>
+
+                    <Link
+                      href="/dashboard/settings"
+                      className="rounded-2xl border border-white/10 bg-white/[0.06] px-5 py-4 text-center font-black text-white transition hover:-translate-y-1 hover:bg-white/10"
+                    >
+                      <Settings className="mr-2 inline h-5 w-5" />
+                      Settings
                     </Link>
 
                     <a
@@ -431,7 +448,7 @@ export default function DashboardPage() {
 
                 <p className="mt-4 text-xs leading-5 text-zinc-500">
                   Use this Customer ID as payment reference for bank transfer
-                  top-ups and support messages. Example: MGA-24817
+                  top-ups and support messages.
                 </p>
               </div>
             </div>
@@ -655,6 +672,17 @@ export default function DashboardPage() {
                       <span className="flex items-center gap-3 font-black">
                         <CreditCard className="h-5 w-5 text-red-600" />
                         Buy Credits
+                      </span>
+                      <ArrowRight className="h-5 w-5 text-zinc-500" />
+                    </Link>
+
+                    <Link
+                      href="/dashboard/settings"
+                      className="flex items-center justify-between rounded-2xl border border-white/10 bg-black/30 p-5 transition hover:-translate-y-1 hover:border-red-800/60"
+                    >
+                      <span className="flex items-center gap-3 font-black">
+                        <Settings className="h-5 w-5 text-red-600" />
+                        Account Settings
                       </span>
                       <ArrowRight className="h-5 w-5 text-zinc-500" />
                     </Link>

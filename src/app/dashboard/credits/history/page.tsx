@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import {
   ArrowLeft,
-  CheckCircle2,
   CreditCard,
   FileText,
   Gauge,
@@ -16,40 +15,21 @@ import {
   MinusCircle,
   PlusCircle,
   RefreshCcw,
+  ShieldCheck,
 } from "lucide-react";
 
-type CreditPayment = {
+type CreditTransaction = {
   id: string;
   user_id: string;
-  stripe_session_id: string;
-  stripe_payment_intent: string | null;
-  customer_email: string | null;
-  package_id: string | null;
-  credits: number | string;
+  type: string;
+  source_type: string | null;
+  source_id: string | null;
+  credits_delta: number | string;
+  balance_after: number | string | null;
+  description: string | null;
   amount_total: number | string | null;
   currency: string | null;
-  status: string | null;
-  created_at: string;
-};
-
-type Order = {
-  id: string;
-  vehicle_brand: string | null;
-  vehicle_model: string | null;
-  service_type: string | null;
-  credits_required: number | string | null;
-  status: string | null;
-  created_at: string;
-};
-
-type HistoryItem = {
-  id: string;
-  type: "purchase" | "usage";
-  title: string;
-  subtitle: string;
-  credits: number;
-  amount?: string;
-  status: string;
+  metadata: Record<string, unknown> | null;
   created_at: string;
 };
 
@@ -75,10 +55,10 @@ function formatAmount(amountTotal: number | string | null, currency: string | nu
   }).format(value);
 }
 
-function formatStatus(status: string | null) {
-  if (!status) return "Paid";
+function formatType(type: string | null) {
+  if (!type) return "Transaction";
 
-  return status
+  return type
     .replaceAll("_", " ")
     .split(" ")
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
@@ -89,9 +69,9 @@ export default function CreditHistoryPage() {
   const router = useRouter();
 
   const [email, setEmail] = useState<string | null>(null);
+  const [customerId, setCustomerId] = useState<string | null>(null);
   const [credits, setCredits] = useState<number>(0);
-  const [payments, setPayments] = useState<CreditPayment[]>([]);
-  const [orders, setOrders] = useState<Order[]>([]);
+  const [transactions, setTransactions] = useState<CreditTransaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -110,35 +90,25 @@ export default function CreditHistoryPage() {
 
     const { data: profile } = await supabase
       .from("profiles")
-      .select("credit_balance")
+      .select("credit_balance, customer_id")
       .eq("id", user.id)
       .single();
 
     if (profile) {
       setCredits(Number(profile.credit_balance ?? 0));
+      setCustomerId(profile.customer_id ?? null);
     }
 
-    const { data: paymentRows } = await supabase
-      .from("credit_payments")
+    const { data: transactionRows, error } = await supabase
+      .from("credit_transactions")
       .select(
-        "id, user_id, stripe_session_id, stripe_payment_intent, customer_email, package_id, credits, amount_total, currency, status, created_at"
+        "id, user_id, type, source_type, source_id, credits_delta, balance_after, description, amount_total, currency, metadata, created_at"
       )
       .eq("user_id", user.id)
       .order("created_at", { ascending: false });
 
-    if (paymentRows) {
-      setPayments(paymentRows as CreditPayment[]);
-    }
-
-    const { data: orderRows } = await supabase
-      .from("orders")
-      .select("id, vehicle_brand, vehicle_model, service_type, credits_required, status, created_at")
-      .eq("customer_id", user.id)
-      .gt("credits_required", 0)
-      .order("created_at", { ascending: false });
-
-    if (orderRows) {
-      setOrders(orderRows as Order[]);
+    if (!error && transactionRows) {
+      setTransactions(transactionRows as CreditTransaction[]);
     }
 
     setLoading(false);
@@ -150,44 +120,22 @@ export default function CreditHistoryPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const historyItems = useMemo<HistoryItem[]>(() => {
-    const purchaseItems: HistoryItem[] = payments.map((payment) => ({
-      id: `payment-${payment.id}`,
-      type: "purchase",
-      title: `${Number(payment.credits ?? 0)} Credits Purchased`,
-      subtitle: payment.package_id
-        ? `Stripe payment · ${payment.package_id}`
-        : "Stripe payment",
-      credits: Number(payment.credits ?? 0),
-      amount: formatAmount(payment.amount_total, payment.currency),
-      status: formatStatus(payment.status),
-      created_at: payment.created_at,
-    }));
-
-    const usageItems: HistoryItem[] = orders.map((order) => ({
-      id: `order-${order.id}`,
-      type: "usage",
-      title: `${order.vehicle_brand || "Vehicle"} ${order.vehicle_model || ""}`.trim(),
-      subtitle: order.service_type || "File request",
-      credits: -Number(order.credits_required ?? 0),
-      status: formatStatus(order.status),
-      created_at: order.created_at,
-    }));
-
-    return [...purchaseItems, ...usageItems].sort(
-      (a, b) =>
-        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-    );
-  }, [payments, orders]);
-
-  const purchasedCredits = payments.reduce(
-    (total, payment) => total + Number(payment.credits ?? 0),
-    0
+  const positiveCredits = useMemo(
+    () =>
+      transactions
+        .filter((item) => Number(item.credits_delta) > 0)
+        .reduce((total, item) => total + Number(item.credits_delta ?? 0), 0),
+    [transactions]
   );
 
-  const usedCredits = orders.reduce(
-    (total, order) => total + Number(order.credits_required ?? 0),
-    0
+  const usedCredits = useMemo(
+    () =>
+      Math.abs(
+        transactions
+          .filter((item) => Number(item.credits_delta) < 0)
+          .reduce((total, item) => total + Number(item.credits_delta ?? 0), 0)
+      ),
+    [transactions]
   );
 
   const handleLogout = async () => {
@@ -200,7 +148,7 @@ export default function CreditHistoryPage() {
       <main className="flex min-h-screen items-center justify-center bg-[#050505] text-white">
         <div className="text-center">
           <Loader2 className="mx-auto mb-5 h-12 w-12 animate-spin text-red-600" />
-          <p className="text-sm text-zinc-400">Loading credit history...</p>
+          <p className="text-sm text-zinc-400">Loading credit ledger...</p>
         </div>
       </main>
     );
@@ -221,7 +169,7 @@ export default function CreditHistoryPage() {
               <div className="text-xl font-black tracking-wide">
                 MG <span className="text-red-600">AUTOTECH</span>
               </div>
-              <div className="text-xs text-zinc-400">Credit History</div>
+              <div className="text-xs text-zinc-400">Credit Ledger</div>
             </div>
           </Link>
 
@@ -231,6 +179,11 @@ export default function CreditHistoryPage() {
               <div className="max-w-[220px] truncate text-sm font-bold">
                 {email}
               </div>
+              {customerId && (
+                <div className="mt-1 text-xs font-black text-red-400">
+                  {customerId}
+                </div>
+              )}
             </div>
 
             <button
@@ -259,10 +212,11 @@ export default function CreditHistoryPage() {
               Customer Credits
             </div>
             <h1 className="mt-2 text-4xl font-black md:text-6xl">
-              Credit <span className="text-red-600">History</span>
+              Credit <span className="text-red-600">Ledger</span>
             </h1>
             <p className="mt-4 max-w-2xl text-sm leading-6 text-zinc-400">
-              All purchased credits and used credits from file requests are listed here.
+              Every credit top-up, Stripe purchase, manual adjustment and file
+              request usage is recorded here.
             </p>
           </div>
 
@@ -289,8 +243,8 @@ export default function CreditHistoryPage() {
 
           <div className="rounded-3xl border border-emerald-700/30 bg-emerald-950/20 p-6">
             <PlusCircle className="mb-4 h-8 w-8 text-emerald-400" />
-            <div className="text-sm text-zinc-400">Purchased Credits</div>
-            <div className="mt-2 text-5xl font-black">{purchasedCredits}</div>
+            <div className="text-sm text-zinc-400">Positive Credits</div>
+            <div className="mt-2 text-5xl font-black">{positiveCredits}</div>
           </div>
 
           <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-6">
@@ -311,12 +265,12 @@ export default function CreditHistoryPage() {
             </div>
           </div>
 
-          {historyItems.length === 0 ? (
+          {transactions.length === 0 ? (
             <div className="rounded-3xl border border-dashed border-white/15 bg-black/25 p-10 text-center">
               <FileText className="mx-auto mb-4 h-10 w-10 text-red-600" />
-              <h3 className="text-xl font-black">No credit history yet</h3>
+              <h3 className="text-xl font-black">No credit ledger yet</h3>
               <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-zinc-400">
-                Purchased credits and used credits will appear here.
+                Stripe purchases, manual top-ups and credit usage will appear here.
               </p>
               <Link
                 href="/dashboard/credits"
@@ -329,75 +283,85 @@ export default function CreditHistoryPage() {
             <div className="overflow-hidden rounded-3xl border border-white/10">
               <div className="grid grid-cols-[1.4fr_.7fr_.7fr_.7fr] gap-4 bg-black/40 px-5 py-4 text-xs font-black uppercase tracking-[0.18em] text-zinc-500">
                 <div>Transaction</div>
-                <div>Status</div>
+                <div>Balance After</div>
                 <div>Date</div>
                 <div className="text-right">Credits</div>
               </div>
 
               <div className="divide-y divide-white/10">
-                {historyItems.map((item) => (
-                  <div
-                    key={item.id}
-                    className="grid grid-cols-1 gap-4 bg-black/20 px-5 py-4 transition hover:bg-white/[0.04] md:grid-cols-[1.4fr_.7fr_.7fr_.7fr] md:items-center"
-                  >
-                    <div className="flex items-start gap-3">
-                      <div
-                        className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${
-                          item.type === "purchase"
-                            ? "bg-emerald-500/10 text-emerald-400"
-                            : "bg-red-500/10 text-red-400"
-                        }`}
-                      >
-                        {item.type === "purchase" ? (
-                          <PlusCircle className="h-5 w-5" />
-                        ) : (
-                          <MinusCircle className="h-5 w-5" />
-                        )}
+                {transactions.map((item) => {
+                  const delta = Number(item.credits_delta ?? 0);
+                  const isPositive = delta >= 0;
+
+                  return (
+                    <div
+                      key={item.id}
+                      className="grid grid-cols-1 gap-4 bg-black/20 px-5 py-4 transition hover:bg-white/[0.04] md:grid-cols-[1.4fr_.7fr_.7fr_.7fr] md:items-center"
+                    >
+                      <div className="flex items-start gap-3">
+                        <div
+                          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${
+                            isPositive
+                              ? "bg-emerald-500/10 text-emerald-400"
+                              : "bg-red-500/10 text-red-400"
+                          }`}
+                        >
+                          {isPositive ? (
+                            <PlusCircle className="h-5 w-5" />
+                          ) : (
+                            <MinusCircle className="h-5 w-5" />
+                          )}
+                        </div>
+
+                        <div>
+                          <div className="font-black">
+                            {item.description || formatType(item.type)}
+                          </div>
+                          <div className="mt-1 text-sm text-zinc-400">
+                            {formatType(item.type)}
+                            {item.source_type ? ` · ${item.source_type}` : ""}
+                          </div>
+                          {formatAmount(item.amount_total, item.currency) && (
+                            <div className="mt-1 text-xs font-bold text-emerald-300">
+                              {formatAmount(item.amount_total, item.currency)}
+                            </div>
+                          )}
+                        </div>
                       </div>
 
                       <div>
-                        <div className="font-black">{item.title}</div>
-                        <div className="mt-1 text-sm text-zinc-400">
-                          {item.subtitle}
-                        </div>
-                        {item.amount && (
-                          <div className="mt-1 text-xs font-bold text-emerald-300">
-                            {item.amount}
-                          </div>
-                        )}
+                        <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs font-black text-zinc-300">
+                          {item.balance_after ?? "-"}
+                        </span>
+                      </div>
+
+                      <div className="text-sm text-zinc-400">
+                        {formatDate(item.created_at)}
+                      </div>
+
+                      <div
+                        className={`text-left text-xl font-black md:text-right ${
+                          isPositive ? "text-emerald-400" : "text-red-500"
+                        }`}
+                      >
+                        {isPositive ? "+" : ""}
+                        {delta}
                       </div>
                     </div>
-
-                    <div>
-                      <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs font-black text-zinc-300">
-                        {item.status}
-                      </span>
-                    </div>
-
-                    <div className="text-sm text-zinc-400">
-                      {formatDate(item.created_at)}
-                    </div>
-
-                    <div
-                      className={`text-left text-xl font-black md:text-right ${
-                        item.credits >= 0 ? "text-emerald-400" : "text-red-500"
-                      }`}
-                    >
-                      {item.credits >= 0 ? "+" : ""}
-                      {item.credits}
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
         </div>
 
         <div className="mt-8 rounded-[2rem] border border-red-900/40 bg-red-950/20 p-6">
-          <CheckCircle2 className="mb-4 h-9 w-9 text-red-500" />
-          <h3 className="text-2xl font-black">Automatic credit tracking</h3>
+          <ShieldCheck className="mb-4 h-9 w-9 text-red-500" />
+          <h3 className="text-2xl font-black">Ledger based credit tracking</h3>
           <p className="mt-3 text-sm leading-6 text-zinc-400">
-            Stripe purchases are stored in the credit payment table and file request usage is calculated from submitted orders.
+            This page is based on the credit_transactions ledger table. Manual
+            admin credits, Stripe purchases and order usage can all be tracked
+            from one transaction source.
           </p>
         </div>
       </section>
