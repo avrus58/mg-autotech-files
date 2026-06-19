@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { signOutIfEmailUnverified } from "@/lib/authGuards";
 import { supabase } from "@/lib/supabaseClient";
 import {
   ArrowLeft,
@@ -86,6 +87,12 @@ export default function CreditHistoryPage() {
     }
 
     const user = userData.user;
+
+    if (await signOutIfEmailUnverified(user)) {
+      router.push("/login?verify_email=1");
+      return;
+    }
+
     setEmail(user.email ?? null);
 
     const { data: profile } = await supabase

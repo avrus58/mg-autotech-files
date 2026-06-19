@@ -48,6 +48,13 @@ export async function POST(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  if (!user.email_confirmed_at && !user.confirmed_at) {
+    return NextResponse.json(
+      { error: "Please verify your e-mail address first." },
+      { status: 403 }
+    );
+  }
+
   const message = String(body.message || "").trim();
   const senderRole = body.senderRole === "admin" ? "admin" : "customer";
 

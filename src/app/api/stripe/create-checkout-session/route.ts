@@ -92,6 +92,14 @@ export async function POST(request: Request) {
     }
 
     const user = userData.user;
+
+    if (!user.email_confirmed_at && !user.confirmed_at) {
+      return NextResponse.json(
+        { error: "Please verify your e-mail address before buying credits." },
+        { status: 403 }
+      );
+    }
+
     const stripe = getStripe();
 
     const session = await stripe.checkout.sessions.create({

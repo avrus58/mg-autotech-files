@@ -30,6 +30,8 @@ import {
   Activity,
   BarChart3,
   Sparkles,
+  Calculator,
+  TrendingUp,
 } from "lucide-react";
 import { Footer } from "@/components/Footer";
 import { OnlineStatus } from "@/components/OnlineStatus";
@@ -166,6 +168,113 @@ const trustHighlights = [
     icon: CreditCard,
   },
 ];
+
+const calculatorPresets = [
+  {
+    label: "Starter workshop",
+    files: 12,
+    salePrice: 149,
+    credits: 8,
+    creditCost: 4,
+    extraCost: 10,
+    conversion: 80,
+  },
+  {
+    label: "Growing partner",
+    files: 35,
+    salePrice: 169,
+    credits: 8,
+    creditCost: 3.8,
+    extraCost: 8,
+    conversion: 85,
+  },
+  {
+    label: "High-volume reseller",
+    files: 80,
+    salePrice: 189,
+    credits: 9,
+    creditCost: 3.5,
+    extraCost: 7,
+    conversion: 90,
+  },
+];
+
+function getGermanyNow() {
+  return new Date(
+    new Date().toLocaleString("en-US", { timeZone: "Europe/Berlin" })
+  );
+}
+
+function getWorkloadSnapshot(date: Date) {
+  const day = date.getDay();
+  const hour = date.getHours();
+  const minute = date.getMinutes();
+  const minutes = hour * 60 + minute;
+  const open = 9 * 60;
+  const close = 20 * 60;
+  const online = day !== 0 && minutes >= open && minutes < close;
+
+  if (!online) {
+    return {
+      support: "Offline",
+      queue: "Closed",
+      response: "Next working hours",
+      note: "Requests can still be submitted and will be reviewed when support is back online.",
+    };
+  }
+
+  if (minutes < 10 * 60) {
+    return {
+      support: "Online",
+      queue: "Fresh start",
+      response: "~10-15 min",
+      note: "Morning queue is usually light for standard file checks.",
+    };
+  }
+
+  if (minutes < 12 * 60) {
+    return {
+      support: "Online",
+      queue: "Normal",
+      response: "~15-25 min",
+      note: "Good time for standard ECU/TCU requests.",
+    };
+  }
+
+  if (minutes < 14 * 60) {
+    return {
+      support: "Online",
+      queue: "Lunch traffic",
+      response: "~25-35 min",
+      note: "Response time can move slightly during midday traffic.",
+    };
+  }
+
+  if (minutes < 17 * 60) {
+    return {
+      support: "Online",
+      queue: "Normal",
+      response: "~15-30 min",
+      note: "Most standard files are handled quickly during normal workload.",
+    };
+  }
+
+  if (minutes < 19 * 60) {
+    return {
+      support: "Online",
+      queue: "Busy",
+      response: "~30-45 min",
+      note: "After-work traffic can be busier, especially for complex files.",
+    };
+  }
+
+  return {
+    support: "Online",
+    queue: "Closing window",
+    response: "~45-60 min",
+    note: "Late requests may move into the next working window if checks take longer.",
+  };
+}
 
 type VehicleOption = {
   id: string;
@@ -351,6 +460,115 @@ function RatingStars() {
         <Star key={item} className="h-3 w-3 fill-current" />
       ))}
     </div>
+  );
+}
+
+const technicalPreviewSteps = [
+  {
+    title: "Secure upload",
+    text: "Original file and vehicle data enter a private request workflow.",
+    icon: Upload,
+  },
+  {
+    title: "ECU identification",
+    text: "Read method, ECU/TCU type and HW/SW details are checked before work.",
+    icon: Search,
+  },
+  {
+    title: "Calibration",
+    text: "Requested services are prepared against the submitted file details.",
+    icon: Gauge,
+  },
+  {
+    title: "Checksum & delivery",
+    text: "Completed file versions are delivered through the customer portal.",
+    icon: ShieldCheck,
+  },
+];
+
+function TechnicalHeroPreview() {
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.96, x: 24 }}
+      animate={{ opacity: 1, scale: 1, x: 0 }}
+      transition={{ duration: 0.75, delay: 0.12, ease: [0.16, 1, 0.3, 1] }}
+      className="hidden h-[685px] lg:block"
+    >
+      <div className="relative h-[685px] overflow-hidden rounded-[2.25rem] border border-white/10 bg-[#07080b]/90 p-6 shadow-2xl shadow-black backdrop-blur-xl">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_36%,rgba(177,18,27,0.25),transparent_36%),linear-gradient(145deg,rgba(255,255,255,0.06),transparent_38%)]" />
+        <div className="absolute -right-24 -top-24 h-80 w-80 rounded-full bg-red-700/20 blur-3xl" />
+        <div className="absolute -bottom-24 -left-24 h-80 w-80 rounded-full bg-red-950/35 blur-3xl" />
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-red-500/70 to-transparent" />
+
+        <div className="relative flex h-full flex-col">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <div className="text-xs font-black uppercase tracking-[0.28em] text-red-500">
+                MG AutoTech
+              </div>
+              <div className="mt-2 text-4xl font-black tracking-wide">
+                File Service
+              </div>
+            </div>
+
+            <div className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-4 py-2 text-sm font-black text-emerald-300">
+              Online
+            </div>
+          </div>
+
+          <div className="relative mt-8 flex flex-1 items-center justify-center overflow-hidden rounded-[2rem] border border-white/10 bg-black/35">
+            <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,0.04)_1px,transparent_1px),linear-gradient(rgba(255,255,255,0.04)_1px,transparent_1px)] bg-[size:42px_42px] opacity-25" />
+            <div className="absolute left-8 top-8 rounded-full border border-red-800/50 bg-red-950/25 px-4 py-2 text-sm font-black text-red-100">
+              ECU / TCU
+            </div>
+            <div className="absolute bottom-8 right-8 rounded-full border border-white/10 bg-white/[0.05] px-4 py-2 text-sm font-black text-zinc-200">
+              OBD · Bench · Boot
+            </div>
+
+            <div className="absolute h-[420px] w-[420px] rounded-full border-[34px] border-red-700/20" />
+            <div className="absolute h-[300px] w-[300px] rounded-full border border-red-600/30" />
+            <div className="absolute h-[220px] w-[220px] rounded-full bg-red-700/15 blur-3xl" />
+
+            <motion.div
+              animate={{ y: [0, -10, 0], rotate: [0, 1, 0] }}
+              transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut" }}
+              className="relative flex h-56 w-56 items-center justify-center rounded-[2.5rem] border border-red-800/60 bg-black/80 shadow-2xl shadow-red-950/50"
+            >
+              <div className="absolute inset-5 rounded-[1.8rem] border border-red-700/35" />
+              <div className="absolute -left-10 top-14 h-px w-10 bg-red-700/70" />
+              <div className="absolute -right-10 bottom-14 h-px w-10 bg-red-700/70" />
+              <div className="absolute -top-10 left-1/2 h-10 w-px -translate-x-1/2 bg-red-700/70" />
+              <div className="absolute -bottom-10 left-1/2 h-10 w-px -translate-x-1/2 bg-red-700/70" />
+              <Cpu className="h-24 w-24 text-red-500" />
+            </motion.div>
+          </div>
+
+          <div className="relative mt-5 grid h-[92px] grid-cols-3 gap-3">
+            {[
+              [ShieldCheck, "Secure Portal"],
+              [Zap, "Fast Handling"],
+              [Wrench, "Workshop Ready"],
+            ].map(([Icon, label]) => {
+              const LucideIcon = Icon as typeof ShieldCheck;
+
+              return (
+              <div
+                key={String(label)}
+                className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] px-4"
+              >
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-red-950/40 text-red-500">
+                  <LucideIcon className="h-5 w-5" />
+                </div>
+                <div className="text-sm font-black leading-tight text-white">
+                  {String(label)}
+                </div>
+              </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </motion.div>
   );
 }
 
@@ -644,6 +862,284 @@ function PublicStageCard({
   );
 }
 
+function formatEuro(value: number) {
+  return new Intl.NumberFormat("de-DE", {
+    style: "currency",
+    currency: "EUR",
+    maximumFractionDigits: 0,
+  }).format(value);
+}
+
+function BusinessMarginCalculator() {
+  const [monthlyFiles, setMonthlyFiles] = useState(35);
+  const [averageSalePrice, setAverageSalePrice] = useState(169);
+  const [averageCredits, setAverageCredits] = useState(8);
+  const [creditCost, setCreditCost] = useState(3.8);
+  const [internalCost, setInternalCost] = useState(8);
+  const [conversionRate, setConversionRate] = useState(85);
+
+  const paidFiles = Math.round(monthlyFiles * (conversionRate / 100));
+  const revenue = paidFiles * averageSalePrice;
+  const fileServiceCost = paidFiles * averageCredits * creditCost;
+  const operationsCost = paidFiles * internalCost;
+  const totalCost = fileServiceCost + operationsCost;
+  const grossProfit = revenue - totalCost;
+  const profitMargin = revenue > 0 ? (grossProfit / revenue) * 100 : 0;
+  const costPerFile = paidFiles > 0 ? totalCost / paidFiles : 0;
+  const profitPerFile = paidFiles > 0 ? grossProfit / paidFiles : 0;
+
+  const applyPreset = (preset: (typeof calculatorPresets)[number]) => {
+    setMonthlyFiles(preset.files);
+    setAverageSalePrice(preset.salePrice);
+    setAverageCredits(preset.credits);
+    setCreditCost(preset.creditCost);
+    setInternalCost(preset.extraCost);
+    setConversionRate(preset.conversion);
+  };
+
+  return (
+    <AnimatedSection className="bg-[#050505] py-20">
+      <div className="mx-auto max-w-7xl px-4">
+        <div className="mb-10 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <div className="text-sm font-black uppercase tracking-[0.25em] text-red-600">
+              Business Calculator
+            </div>
+            <h2 className="mt-3 max-w-4xl text-4xl font-black md:text-5xl">
+              Estimate monthly file-service margin before scaling volume.
+            </h2>
+            <p className="mt-4 max-w-3xl text-sm leading-7 text-zinc-400">
+              Model realistic workshop numbers with credit cost, conversion rate
+              and internal handling cost. Results are estimates, not financial
+              advice.
+            </p>
+          </div>
+
+          <Link
+            href="/register"
+            className="inline-flex items-center justify-center rounded-xl bg-[#b1121b] px-5 py-3 text-sm font-black text-white transition hover:-translate-y-0.5 hover:bg-[#c91824]"
+          >
+            Start as Partner
+            <ArrowRight className="ml-2 h-4 w-4" />
+          </Link>
+        </div>
+
+        <div className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
+          <div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 shadow-2xl shadow-black/20">
+            <div className="mb-5 flex items-center gap-3">
+              <Calculator className="h-7 w-7 text-red-500" />
+              <h3 className="text-2xl font-black">Workshop Inputs</h3>
+            </div>
+
+            <div className="mb-6 grid gap-3 md:grid-cols-3">
+              {calculatorPresets.map((preset) => (
+                <button
+                  key={preset.label}
+                  type="button"
+                  onClick={() => applyPreset(preset)}
+                  className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-left text-xs font-black text-zinc-300 transition hover:border-red-800/60 hover:bg-red-950/20 hover:text-white"
+                >
+                  {preset.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="space-y-5">
+              <CalculatorInput
+                label="Monthly file opportunities"
+                value={monthlyFiles}
+                min={1}
+                max={150}
+                step={1}
+                suffix="files"
+                onChange={setMonthlyFiles}
+              />
+              <CalculatorInput
+                label="Average customer sale price"
+                value={averageSalePrice}
+                min={49}
+                max={399}
+                step={5}
+                prefix="€"
+                onChange={setAverageSalePrice}
+              />
+              <CalculatorInput
+                label="Average credits per file"
+                value={averageCredits}
+                min={2}
+                max={20}
+                step={1}
+                suffix="credits"
+                onChange={setAverageCredits}
+              />
+              <CalculatorInput
+                label="Average credit cost"
+                value={creditCost}
+                min={3.5}
+                max={4.5}
+                step={0.1}
+                prefix="€"
+                onChange={setCreditCost}
+              />
+              <CalculatorInput
+                label="Internal handling cost"
+                value={internalCost}
+                min={0}
+                max={50}
+                step={1}
+                prefix="€"
+                onChange={setInternalCost}
+              />
+              <CalculatorInput
+                label="Conversion to paid jobs"
+                value={conversionRate}
+                min={40}
+                max={100}
+                step={5}
+                suffix="%"
+                onChange={setConversionRate}
+              />
+            </div>
+          </div>
+
+          <div className="rounded-[2rem] border border-red-900/50 bg-gradient-to-br from-red-950/30 via-white/[0.04] to-black p-6 shadow-2xl shadow-black/30">
+            <div className="mb-6 flex items-center justify-between gap-4">
+              <div>
+                <div className="text-sm font-black uppercase tracking-[0.22em] text-red-400">
+                  Estimated Outcome
+                </div>
+                <h3 className="mt-2 text-3xl font-black">Monthly partner model</h3>
+              </div>
+              <TrendingUp className="h-9 w-9 text-emerald-400" />
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <ResultCard label="Paid jobs" value={`${paidFiles}`} detail={`${monthlyFiles} opportunities at ${conversionRate}%`} />
+              <ResultCard label="Revenue" value={formatEuro(revenue)} detail={`${formatEuro(averageSalePrice)} average sale`} />
+              <ResultCard label="Service cost" value={formatEuro(fileServiceCost)} detail={`${averageCredits} credits × ${formatEuro(creditCost)}`} />
+              <ResultCard label="Total cost" value={formatEuro(totalCost)} detail={`${formatEuro(operationsCost)} internal handling`} />
+            </div>
+
+            <div className="mt-5 rounded-[1.5rem] border border-emerald-700/30 bg-emerald-950/20 p-5">
+              <div className="grid gap-4 md:grid-cols-3">
+                <div>
+                  <div className="text-xs font-black uppercase tracking-[0.16em] text-emerald-300/80">
+                    Gross profit
+                  </div>
+                  <div className="mt-2 text-4xl font-black text-emerald-300">
+                    {formatEuro(grossProfit)}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-xs font-black uppercase tracking-[0.16em] text-zinc-500">
+                    Margin
+                  </div>
+                  <div className="mt-2 text-3xl font-black">
+                    {profitMargin.toFixed(1)}%
+                  </div>
+                </div>
+                <div>
+                  <div className="text-xs font-black uppercase tracking-[0.16em] text-zinc-500">
+                    Profit / file
+                  </div>
+                  <div className="mt-2 text-3xl font-black">
+                    {formatEuro(profitPerFile)}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-5 grid gap-3 md:grid-cols-2">
+              <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
+                <div className="text-xs font-black uppercase tracking-[0.14em] text-zinc-500">
+                  Cost per delivered file
+                </div>
+                <div className="mt-2 text-2xl font-black">{formatEuro(costPerFile)}</div>
+              </div>
+              <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
+                <div className="text-xs font-black uppercase tracking-[0.14em] text-zinc-500">
+                  Break-even jobs
+                </div>
+                <div className="mt-2 text-2xl font-black">
+                  {averageSalePrice > costPerFile ? "1+" : "Review pricing"}
+                </div>
+              </div>
+            </div>
+
+            <p className="mt-5 rounded-2xl border border-white/10 bg-black/30 p-4 text-xs leading-6 text-zinc-500">
+              This calculator uses simplified gross-margin logic. Taxes, refunds,
+              dyno time, local labor and customer-specific pricing should be
+              reviewed separately.
+            </p>
+          </div>
+        </div>
+      </div>
+    </AnimatedSection>
+  );
+}
+
+function CalculatorInput({
+  label,
+  value,
+  min,
+  max,
+  step,
+  prefix,
+  suffix,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  min: number;
+  max: number;
+  step: number;
+  prefix?: string;
+  suffix?: string;
+  onChange: (value: number) => void;
+}) {
+  return (
+    <label className="block">
+      <div className="mb-2 flex items-center justify-between gap-4">
+        <span className="text-sm font-black text-white">{label}</span>
+        <span className="rounded-xl border border-white/10 bg-black/30 px-3 py-1 text-xs font-black text-red-300">
+          {prefix}
+          {value}
+          {suffix ? ` ${suffix}` : ""}
+        </span>
+      </div>
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        onChange={(event) => onChange(Number(event.target.value))}
+        className="w-full accent-red-600"
+      />
+    </label>
+  );
+}
+
+function ResultCard({
+  label,
+  value,
+  detail,
+}: {
+  label: string;
+  value: string;
+  detail: string;
+}) {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
+      <div className="text-xs font-black uppercase tracking-[0.14em] text-zinc-500">
+        {label}
+      </div>
+      <div className="mt-2 text-2xl font-black text-white">{value}</div>
+      <div className="mt-1 text-xs leading-5 text-zinc-500">{detail}</div>
+    </div>
+  );
+}
+
 function PublicVehicleChecker() {
   const [brands, setBrands] = useState<VehicleOption[]>([]);
   const [models, setModels] = useState<VehicleOption[]>([]);
@@ -891,6 +1387,52 @@ function PublicVehicleChecker() {
 }
 
 export default function HomePage() {
+  const [workloadSnapshot, setWorkloadSnapshot] = useState(() =>
+    getWorkloadSnapshot(getGermanyNow())
+  );
+
+  useEffect(() => {
+    const updateWorkload = () => {
+      setWorkloadSnapshot(getWorkloadSnapshot(getGermanyNow()));
+    };
+
+    updateWorkload();
+    const interval = window.setInterval(updateWorkload, 60_000);
+
+    return () => window.clearInterval(interval);
+  }, []);
+
+  const liveWorkloadItems = [
+    {
+      title: "Online status",
+      value: workloadSnapshot.support,
+      text:
+        workloadSnapshot.support === "Offline"
+          ? "Requests are accepted and reviewed in the next working window."
+          : "Customer requests are monitored during working hours.",
+      icon: Activity,
+      tone: workloadSnapshot.support === "Offline" ? "red" : "emerald",
+    },
+    {
+      title: "Standard file queue",
+      value: workloadSnapshot.queue,
+      text: "Queue level changes during busy workshop traffic hours.",
+      icon: Gauge,
+      tone:
+        workloadSnapshot.queue === "Busy" ||
+        workloadSnapshot.queue === "Closing window"
+          ? "red"
+          : "blue",
+    },
+    {
+      title: "Average response",
+      value: workloadSnapshot.response,
+      text: workloadSnapshot.note,
+      icon: Clock3,
+      tone: "blue",
+    },
+  ];
+
   return (
     <main className="min-h-screen bg-[#050505] text-white">
       <FloatingTechBackground />
@@ -1053,11 +1595,79 @@ export default function HomePage() {
             </div>
           </motion.div>
 
-          <HeroShowcase />
+          <TechnicalHeroPreview />
         </div>
 
         <PublicVehicleChecker />
       </section>
+
+      <AnimatedSection className="bg-[#0b1226] py-12">
+        <div className="mx-auto max-w-7xl px-4">
+          <div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5 shadow-2xl shadow-black/20">
+            <div className="grid gap-5 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
+              <div>
+                <div
+                  className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-black uppercase tracking-[0.16em] ${
+                    workloadSnapshot.support === "Offline"
+                      ? "border-red-500/30 bg-red-500/10 text-red-300"
+                      : "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+                  }`}
+                >
+                  <span
+                    className={`h-2 w-2 rounded-full shadow-lg ${
+                      workloadSnapshot.support === "Offline"
+                        ? "bg-red-400 shadow-red-400/40"
+                        : "bg-emerald-400 shadow-emerald-400/40"
+                    }`}
+                  />
+                  Live Workload
+                </div>
+                <h2 className="mt-4 text-3xl font-black md:text-4xl">
+                  Current file service availability
+                </h2>
+                <p className="mt-3 max-w-xl text-sm leading-7 text-zinc-400">
+                  A quick operational snapshot for workshops before sending a
+                  new file request.
+                </p>
+              </div>
+
+              <div className="grid gap-3 md:grid-cols-3">
+                {liveWorkloadItems.map((item) => {
+                  const Icon = item.icon;
+                  const toneClass =
+                    item.tone === "emerald"
+                      ? "border-emerald-700/30 bg-emerald-950/20 text-emerald-300"
+                      : item.tone === "blue"
+                      ? "border-blue-700/30 bg-blue-950/20 text-blue-300"
+                      : "border-red-800/40 bg-red-950/25 text-red-300";
+
+                  return (
+                    <div
+                      key={item.title}
+                      className="rounded-2xl border border-white/10 bg-black/30 p-4"
+                    >
+                      <div
+                        className={`mb-4 flex h-11 w-11 items-center justify-center rounded-2xl border ${toneClass}`}
+                      >
+                        <Icon className="h-5 w-5" />
+                      </div>
+                      <div className="text-xs font-black uppercase tracking-[0.14em] text-zinc-500">
+                        {item.title}
+                      </div>
+                      <div className="mt-2 text-2xl font-black text-white">
+                        {item.value}
+                      </div>
+                      <p className="mt-2 text-xs leading-5 text-zinc-500">
+                        {item.text}
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+      </AnimatedSection>
 
       <AnimatedSection id="brands" className="bg-[#050505] py-20">
         <div className="mx-auto max-w-7xl px-4">
@@ -1180,6 +1790,8 @@ export default function HomePage() {
           </motion.div>
         </div>
       </AnimatedSection>
+
+      <BusinessMarginCalculator />
 
       <AnimatedSection id="workflow" className="bg-[#0b1226] py-20">
         <div className="mx-auto max-w-7xl px-4">

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { getAuthRedirect } from "@/lib/authGuards";
 import { supabase } from "@/lib/supabaseClient";
 import {
   ArrowRight,
@@ -24,6 +25,7 @@ export default function RegisterPage() {
   const [message, setMessage] = useState("");
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,6 +55,7 @@ export default function RegisterPage() {
       email: cleanEmail,
       password,
       options: {
+        emailRedirectTo: getAuthRedirect("/auth/callback?next=/dashboard"),
         data: {
           full_name: cleanFullName,
           role: "customer",
@@ -68,9 +71,30 @@ export default function RegisterPage() {
 
     setSuccess(true);
     setMessage(
-      "Account created successfully. Please check your e-mail if confirmation is required, then login."
+      "Account created. Please verify your e-mail address before logging in."
     );
+    setPassword("");
     setLoading(false);
+  };
+
+  const handleGoogleRegister = async () => {
+    if (googleLoading) return;
+
+    setGoogleLoading(true);
+    setMessage("");
+    setSuccess(false);
+
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: getAuthRedirect("/auth/callback?next=/dashboard"),
+      },
+    });
+
+    if (error) {
+      setMessage(error.message);
+      setGoogleLoading(false);
+    }
   };
 
   return (
@@ -239,6 +263,28 @@ export default function RegisterPage() {
                 )}
               </button>
             </form>
+
+            <div className="mt-4 flex items-center gap-3 text-xs font-black uppercase tracking-[0.16em] text-zinc-600">
+              <span className="h-px flex-1 bg-white/10" />
+              or
+              <span className="h-px flex-1 bg-white/10" />
+            </div>
+
+            <button
+              type="button"
+              onClick={handleGoogleRegister}
+              disabled={googleLoading}
+              className="mt-4 flex h-14 w-full items-center justify-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] px-5 font-black text-white transition hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {googleLoading ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : (
+                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white text-sm font-black text-black">
+                  G
+                </span>
+              )}
+              Continue with Google
+            </button>
 
             {message && (
               <div

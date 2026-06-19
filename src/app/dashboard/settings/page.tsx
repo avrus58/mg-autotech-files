@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { signOutIfEmailUnverified } from "@/lib/authGuards";
 import { supabase } from "@/lib/supabaseClient";
 import {
   ArrowLeft,
@@ -69,6 +70,12 @@ export default function CustomerSettingsPage() {
       }
 
       const user = userData.user;
+
+      if (await signOutIfEmailUnverified(user)) {
+        router.push("/login?verify_email=1");
+        return;
+      }
+
       setEmail(user.email ?? null);
 
       const { data: profile, error } = await supabase
@@ -117,6 +124,11 @@ export default function CustomerSettingsPage() {
 
     if (!userData.user) {
       router.push("/login");
+      return;
+    }
+
+    if (await signOutIfEmailUnverified(userData.user)) {
+      router.push("/login?verify_email=1");
       return;
     }
 

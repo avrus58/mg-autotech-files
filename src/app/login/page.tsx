@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { getAuthRedirect, signOutIfEmailUnverified } from "@/lib/authGuards";
 import { supabase } from "@/lib/supabaseClient";
 import {
   ArrowRight,
@@ -22,6 +23,19 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+
+    if (params.get("verify_email") === "1") {
+      setMessage("Please verify your e-mail address before accessing your account.");
+    }
+
+    if (params.get("reset") === "success") {
+      setMessage("Password updated successfully. You can login now.");
+    }
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,13 +45,23 @@ export default function LoginPage() {
     setLoading(true);
     setMessage("");
 
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email: email.trim(),
       password,
     });
 
     if (error) {
-      setMessage(error.message);
+      setMessage(
+        error.message.toLowerCase().includes("email not confirmed")
+          ? "Please verify your e-mail address before logging in."
+          : error.message
+      );
+      setLoading(false);
+      return;
+    }
+
+    if (data.user && (await signOutIfEmailUnverified(data.user))) {
+      setMessage("Please verify your e-mail address before accessing your account.");
       setLoading(false);
       return;
     }
@@ -45,6 +69,25 @@ export default function LoginPage() {
     setLoading(false);
     router.refresh();
     router.push("/dashboard");
+  };
+
+  const handleGoogleLogin = async () => {
+    if (googleLoading) return;
+
+    setGoogleLoading(true);
+    setMessage("");
+
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: getAuthRedirect("/auth/callback?next=/dashboard"),
+      },
+    });
+
+    if (error) {
+      setMessage(error.message);
+      setGoogleLoading(false);
+    }
   };
 
   return (
@@ -186,6 +229,34 @@ export default function LoginPage() {
                 )}
               </button>
             </form>
+
+            <div className="mt-4 flex items-center gap-3 text-xs font-black uppercase tracking-[0.16em] text-zinc-600">
+              <span className="h-px flex-1 bg-white/10" />
+              or
+              <span className="h-px flex-1 bg-white/10" />
+            </div>
+
+            <button
+              type="button"
+              onClick={handleGoogleLogin}
+              disabled={googleLoading}
+              className="mt-4 flex h-14 w-full items-center justify-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] px-5 font-black text-white transition hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {googleLoading ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : (
+                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white text-sm font-black text-black">
+                  G
+                </span>
+              )}
+              Continue with Google
+            </button>
+
+            <div className="mt-5 text-center">
+              <Link href="/forgot-password" className="text-sm font-black text-red-400">
+                Forgot password?
+              </Link>
+            </div>
 
             {message && (
               <div className="mt-5 rounded-2xl border border-red-800/50 bg-red-950/30 p-4 text-sm text-red-100">

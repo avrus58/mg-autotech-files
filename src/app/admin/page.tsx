@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { signOutIfEmailUnverified } from "@/lib/authGuards";
 import { supabase } from "@/lib/supabaseClient";
 import RequestChat from "@/components/RequestChat";
 import {
@@ -35,6 +36,7 @@ import {
   Search,
   Settings,
   ShieldCheck,
+  Tags,
   Upload,
   User,
   Users,
@@ -67,8 +69,12 @@ type Order = {
   original_file_path: string | null;
   modified_file_path: string | null;
   modified_files: ModifiedFileVersion[] | null;
+  estimated_delivery_label: DeliveryEstimate | null;
+  estimated_delivery_note: string | null;
   created_at: string | null;
 };
+
+type DeliveryEstimate = "usually_30_min" | "same_day" | "24h" | "48h" | "manual_review";
 
 type ModifiedFileVersion = {
   id: string;
@@ -77,6 +83,8 @@ type ModifiedFileVersion = {
   file_path: string;
   uploaded_at: string;
 };
+
+type CustomerTag = "workshop" | "reseller" | "vip" | "blocked" | "negative_credit";
 
 type Profile = {
   id: string;
@@ -98,6 +106,7 @@ type Profile = {
   allow_negative_credits: boolean | null;
   negative_credit_limit: number | string | null;
   account_status: string | null;
+  customer_tags: CustomerTag[] | null;
   internal_admin_note: string | null;
   created_at: string | null;
 };
@@ -117,6 +126,7 @@ type CustomerForm = {
   allow_negative_credits: boolean;
   negative_credit_limit: string;
   account_status: string;
+  customer_tags: CustomerTag[];
   internal_admin_note: string;
 };
 
@@ -133,6 +143,70 @@ const statusOptions = [
 
 const editableStatusOptions = statusOptions.filter((status) => status !== "all");
 const accountStatusOptions = ["active", "suspended", "blocked"];
+
+const deliveryEstimateOptions: Array<{
+  value: DeliveryEstimate;
+  label: string;
+  description: string;
+}> = [
+  {
+    value: "usually_30_min",
+    label: "Usually around 30 min",
+    description: "Default fast file service estimate for standard requests.",
+  },
+  {
+    value: "same_day",
+    label: "Same day",
+    description: "For priority or normal same-day handling.",
+  },
+  {
+    value: "24h",
+    label: "24h",
+    description: "For requests that need additional review.",
+  },
+  {
+    value: "48h",
+    label: "48h",
+    description: "For complex projects or busy workload.",
+  },
+  {
+    value: "manual_review",
+    label: "Manual review",
+    description: "Delivery depends on project complexity.",
+  },
+];
+
+const customerTagOptions: Array<{
+  value: CustomerTag;
+  label: string;
+  className: string;
+}> = [
+  {
+    value: "workshop",
+    label: "Workshop",
+    className: "border-blue-700/40 bg-blue-950/30 text-blue-300",
+  },
+  {
+    value: "reseller",
+    label: "Reseller",
+    className: "border-cyan-700/40 bg-cyan-950/30 text-cyan-300",
+  },
+  {
+    value: "vip",
+    label: "VIP",
+    className: "border-yellow-700/40 bg-yellow-950/30 text-yellow-300",
+  },
+  {
+    value: "blocked",
+    label: "Blocked",
+    className: "border-red-700/40 bg-red-950/30 text-red-300",
+  },
+  {
+    value: "negative_credit",
+    label: "Negative Credit",
+    className: "border-orange-700/40 bg-orange-950/30 text-orange-300",
+  },
+];
 
 function statusLabel(status: string | null) {
   if (!status) return "Unknown";
@@ -153,6 +227,17 @@ function accountStatusClass(status: string | null) {
   if (status === "blocked") return "border-red-700/40 bg-red-950/30 text-red-300";
   if (status === "suspended") return "border-orange-700/40 bg-orange-950/30 text-orange-300";
   return "border-emerald-700/40 bg-emerald-950/30 text-emerald-300";
+}
+
+function customerTagClass(tag: CustomerTag) {
+  return (
+    customerTagOptions.find((option) => option.value === tag)?.className ??
+    "border-white/10 bg-white/[0.04] text-zinc-300"
+  );
+}
+
+function customerTagLabel(tag: CustomerTag) {
+  return customerTagOptions.find((option) => option.value === tag)?.label ?? tag;
 }
 
 function formatDate(value: string | null) {
@@ -207,6 +292,13 @@ function formatFileVersionLabel(label: ModifiedFileVersion["label"]) {
   return "Final";
 }
 
+function formatDeliveryEstimate(value: DeliveryEstimate | string | null) {
+  return (
+    deliveryEstimateOptions.find((option) => option.value === value)?.label ??
+    "Usually around 30 min"
+  );
+}
+
 function workflowLabel(index: number) {
   const labels = ["Created", "Original File", "File Check", "Processing", "Completed"];
   return labels[index] ?? "Created";
@@ -228,6 +320,9 @@ function makeCustomerForm(customer: Profile): CustomerForm {
     allow_negative_credits: Boolean(customer.allow_negative_credits),
     negative_credit_limit: String(customer.negative_credit_limit ?? 0),
     account_status: customer.account_status ?? "active",
+    customer_tags: Array.isArray(customer.customer_tags)
+      ? customer.customer_tags
+      : [],
     internal_admin_note: customer.internal_admin_note ?? "",
   };
 }
@@ -299,6 +394,11 @@ export default function AdminPage() {
       return;
     }
 
+    if (await signOutIfEmailUnverified(userData.user)) {
+      router.push("/login?verify_email=1");
+      return;
+    }
+
     const { data: profile, error: profileError } = await supabase
       .from("profiles")
       .select("role")
@@ -320,12 +420,30 @@ export default function AdminPage() {
       return;
     }
 
-    const { data: profileList, error: customerError } = await supabase
+    const customerSelect =
+      "id, email, customer_id, full_name, role, credit_balance, account_type, company_name, phone, street, postal_code, city, country, vat_id, invoice_email, preferred_contact, allow_negative_credits, negative_credit_limit, account_status, customer_tags, internal_admin_note, created_at";
+    const fallbackCustomerSelect =
+      "id, email, customer_id, full_name, role, credit_balance, account_type, company_name, phone, street, postal_code, city, country, vat_id, invoice_email, preferred_contact, allow_negative_credits, negative_credit_limit, account_status, internal_admin_note, created_at";
+
+    let { data: profileList, error: customerError } = await supabase
       .from("profiles")
-      .select(
-        "id, email, customer_id, full_name, role, credit_balance, account_type, company_name, phone, street, postal_code, city, country, vat_id, invoice_email, preferred_contact, allow_negative_credits, negative_credit_limit, account_status, internal_admin_note, created_at"
-      )
+      .select(customerSelect)
       .order("created_at", { ascending: false });
+
+    if (customerError?.code === "42703") {
+      const fallback = await supabase
+        .from("profiles")
+        .select(fallbackCustomerSelect)
+        .order("created_at", { ascending: false });
+
+      profileList = fallback.data
+        ? fallback.data.map((customer) => ({
+            ...customer,
+            customer_tags: [],
+          }))
+        : null;
+      customerError = fallback.error;
+    }
 
     if (customerError) {
       setMessage(customerError.message);
@@ -380,11 +498,29 @@ export default function AdminPage() {
     const newRequests = orders.filter((order) => order.status === "new_request").length;
     const fileCheck = orders.filter((order) => order.status === "file_check").length;
     const inProgress = orders.filter((order) => order.status === "in_progress").length;
+    const revisionRequested = orders.filter((order) => order.status === "revision").length;
+    const customerInfoNeeded = orders.filter((order) => order.status === "customer_info_needed").length;
     const completed = orders.filter((order) => order.status === "completed").length;
+    const todayKey = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Europe/Berlin",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(new Date());
+    const completedToday = orders.filter((order) => {
+      if (order.status !== "completed" || !order.created_at) return false;
+      const orderDay = new Intl.DateTimeFormat("en-CA", {
+        timeZone: "Europe/Berlin",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      }).format(new Date(order.created_at));
+      return orderDay === todayKey;
+    }).length;
     const withFile = orders.filter((order) => Boolean(order.original_file_path)).length;
     const totalCredits = orders.reduce((sum, order) => sum + Number(order.credits_required ?? 0), 0);
     const suspendedCustomers = customers.filter((customer) => customer.account_status === "suspended" || customer.account_status === "blocked").length;
-    return { total, customers: customers.length, suspendedCustomers, newRequests, fileCheck, inProgress, completed, withFile, totalCredits };
+    return { total, customers: customers.length, suspendedCustomers, newRequests, fileCheck, inProgress, revisionRequested, customerInfoNeeded, completed, completedToday, withFile, totalCredits };
   }, [orders, customers]);
 
   const customerById = useMemo(() => new Map(customers.map((customer) => [customer.id, customer])), [customers]);
@@ -424,7 +560,7 @@ export default function AdminPage() {
     const term = customerSearch.trim().toLowerCase();
     if (!term) return customers;
     return customers.filter((customer) =>
-      [customer.email, customer.customer_id, customer.full_name, customer.company_name, customer.phone, customer.role, customer.account_status, customer.id]
+      [customer.email, customer.customer_id, customer.full_name, customer.company_name, customer.phone, customer.role, customer.account_status, ...(customer.customer_tags ?? []), customer.id]
         .filter(Boolean)
         .join(" ")
         .toLowerCase()
@@ -494,10 +630,27 @@ export default function AdminPage() {
       allow_negative_credits: customerForm.allow_negative_credits,
       negative_credit_limit: Number(customerForm.negative_credit_limit || 0),
       account_status: customerForm.account_status,
+      customer_tags: customerForm.customer_tags,
       internal_admin_note: customerForm.internal_admin_note.trim() || null,
     };
 
-    const { error } = await supabase.from("profiles").update(updatePayload).eq("id", selectedCustomer.id);
+    let { error } = await supabase.from("profiles").update(updatePayload).eq("id", selectedCustomer.id);
+    let tagsSkipped = false;
+
+    if (error?.code === "42703") {
+      const payloadWithoutTags: Partial<typeof updatePayload> = {
+        ...updatePayload,
+      };
+      delete payloadWithoutTags.customer_tags;
+      const retry = await supabase
+        .from("profiles")
+        .update(payloadWithoutTags)
+        .eq("id", selectedCustomer.id);
+
+      error = retry.error;
+      tagsSkipped = true;
+    }
+
     setCustomerSavingId(null);
     if (error) {
       setMessage(error.message);
@@ -507,7 +660,11 @@ export default function AdminPage() {
     const updatedCustomer = { ...selectedCustomer, ...updatePayload } as Profile;
     setCustomers((current) => current.map((customer) => (customer.id === selectedCustomer.id ? updatedCustomer : customer)));
     setSelectedCustomer(updatedCustomer);
-    setMessage(`${selectedCustomer.customer_id ?? selectedCustomer.email ?? "Customer"} updated.`);
+    setMessage(
+      tagsSkipped
+        ? `${selectedCustomer.customer_id ?? selectedCustomer.email ?? "Customer"} updated. Customer tags need the Supabase SQL column before they can be saved.`
+        : `${selectedCustomer.customer_id ?? selectedCustomer.email ?? "Customer"} updated.`
+    );
   }
 
   async function updateStatus(orderId: string, newStatus: string) {
@@ -521,6 +678,52 @@ export default function AdminPage() {
     }
     setOrders((current) => current.map((order) => (order.id === orderId ? { ...order, status: newStatus } : order)));
     setSelectedOrder((current) => (current?.id === orderId ? { ...current, status: newStatus } : current));
+  }
+
+  async function updateDeliveryEstimate(
+    orderId: string,
+    estimate: DeliveryEstimate,
+    note: string
+  ) {
+    setUpdatingId(orderId);
+    setMessage("");
+
+    let { error } = await supabase
+      .from("orders")
+      .update({
+        estimated_delivery_label: estimate,
+        estimated_delivery_note: note.trim() || null,
+      })
+      .eq("id", orderId);
+
+    setUpdatingId(null);
+
+    if (error?.code === "42703") {
+      setMessage(
+        "Estimated delivery needs the Supabase SQL column before it can be saved."
+      );
+      return;
+    }
+
+    if (error) {
+      setMessage(error.message);
+      return;
+    }
+
+    const update = {
+      estimated_delivery_label: estimate,
+      estimated_delivery_note: note.trim() || null,
+    };
+
+    setOrders((current) =>
+      current.map((order) =>
+        order.id === orderId ? { ...order, ...update } : order
+      )
+    );
+    setSelectedOrder((current) =>
+      current?.id === orderId ? { ...current, ...update } : current
+    );
+    setMessage("Estimated delivery updated.");
   }
 
   async function downloadOriginalFile(order: Order) {
@@ -689,6 +892,16 @@ export default function AdminPage() {
             <p className="mt-3 max-w-3xl text-zinc-400">Manage requests, customers, credits, account permissions and file workflows from one clean workspace.</p>
           </div>
 
+          <AdminNotificationCenter
+            stats={stats}
+            onFilter={(status) => {
+              setActiveTab("orders");
+              setSelectedStatus(status);
+              setSearch("");
+              setOnlyWithFile(false);
+            }}
+          />
+
           <div className="mb-8 grid gap-4 md:grid-cols-2 xl:grid-cols-8">
             <StatCard icon={<FileCode2 />} label="Orders" value={stats.total} />
             <StatCard icon={<Users />} label="Customers" value={stats.customers} />
@@ -754,6 +967,9 @@ export default function AdminPage() {
           onCopy={() => copyOrderId(selectedOrder.id)}
           onCopyValue={copyValue}
           onStatusChange={(status) => updateStatus(selectedOrder.id, status)}
+          onDeliveryUpdate={(estimate, note) =>
+            updateDeliveryEstimate(selectedOrder.id, estimate, note)
+          }
           onUploadModified={(file, label) => uploadModifiedFile(selectedOrder, file, label)}
           onDownloadModified={downloadModifiedFile}
           updating={updatingId === selectedOrder.id}
@@ -1089,6 +1305,15 @@ function CustomersPanel({
                     <div className="text-sm font-bold text-white">{customer.account_type === "company" ? "Company" : "Private"}</div>
                     <span className={`mt-2 inline-flex rounded-xl border px-3 py-1 text-xs font-black ${accountStatusClass(customer.account_status)}`}>{statusLabel(customer.account_status ?? "active")}</span>
                     {customer.allow_negative_credits ? <div className="mt-2 text-xs font-bold text-orange-300">Negative limit: -{Math.abs(Number(customer.negative_credit_limit ?? 0))}</div> : null}
+                    {customer.customer_tags?.length ? (
+                      <div className="mt-2 flex flex-wrap gap-1">
+                        {customer.customer_tags.map((tag) => (
+                          <span key={tag} className={`rounded-lg border px-2 py-1 text-[10px] font-black ${customerTagClass(tag)}`}>
+                            {customerTagLabel(tag)}
+                          </span>
+                        ))}
+                      </div>
+                    ) : null}
                   </td>
                   <td className="px-4 py-4 align-top"><div className="w-24 rounded-xl bg-red-950/30 px-3 py-2 text-center font-black text-red-300">{Number(customer.credit_balance ?? 0)}</div></td>
                   <td className="px-4 py-4 align-top">
@@ -1120,6 +1345,15 @@ function CustomersPanel({
                 <div className="font-black">{customer.email || "-"}</div>
                 <div className="mt-1 text-sm text-zinc-500">{customer.customer_id || customer.id}</div>
                 <div className="mt-1 text-xs text-zinc-500">{customer.full_name || customer.company_name || "-"}</div>
+                {customer.customer_tags?.length ? (
+                  <div className="mt-2 flex flex-wrap gap-1">
+                    {customer.customer_tags.map((tag) => (
+                      <span key={tag} className={`rounded-lg border px-2 py-1 text-[10px] font-black ${customerTagClass(tag)}`}>
+                        {customerTagLabel(tag)}
+                      </span>
+                    ))}
+                  </div>
+                ) : null}
               </div>
               <div className="rounded-xl bg-red-950/30 px-3 py-2 text-center font-black text-red-300">{Number(customer.credit_balance ?? 0)}</div>
             </div>
@@ -1152,6 +1386,20 @@ function CustomerDetailModal({ customer, form, setForm, creditInput, setCreditIn
   onCopyValue: (value: string | null | undefined, label: string) => void;
 }) {
   const updateForm = <K extends keyof CustomerForm>(key: K, value: CustomerForm[K]) => setForm((current) => current ? { ...current, [key]: value } : current);
+  const toggleCustomerTag = (tag: CustomerTag) => {
+    setForm((current) => {
+      if (!current) return current;
+
+      const active = current.customer_tags.includes(tag);
+
+      return {
+        ...current,
+        customer_tags: active
+          ? current.customer_tags.filter((item) => item !== tag)
+          : [...current.customer_tags, tag],
+      };
+    });
+  };
 
   return (
     <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/75 px-4 py-6 backdrop-blur-sm">
@@ -1163,6 +1411,11 @@ function CustomerDetailModal({ customer, form, setForm, creditInput, setCreditIn
                 <span className="rounded-full border border-red-800/40 bg-red-950/25 px-3 py-1 text-xs font-black uppercase tracking-[0.16em] text-red-300">{customer.customer_id || customer.id}</span>
                 <span className={`rounded-full border px-3 py-1 text-xs font-black ${accountStatusClass(form.account_status)}`}>{statusLabel(form.account_status)}</span>
                 <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs font-bold text-zinc-400">Balance: {Number(customer.credit_balance ?? 0)} credits</span>
+                {form.customer_tags.map((tag) => (
+                  <span key={tag} className={`rounded-full border px-3 py-1 text-xs font-black ${customerTagClass(tag)}`}>
+                    {customerTagLabel(tag)}
+                  </span>
+                ))}
               </div>
               <h2 className="text-3xl font-black md:text-4xl">{customer.full_name || customer.company_name || customer.email || "Customer"}</h2>
               <p className="mt-2 text-sm text-zinc-500">{customer.email}</p>
@@ -1191,6 +1444,45 @@ function CustomerDetailModal({ customer, form, setForm, creditInput, setCreditIn
                 <FormInput label="Invoice Email" value={form.invoice_email} onChange={(value) => updateForm("invoice_email", value)} />
                 <FormInput label="Preferred Contact" value={form.preferred_contact} onChange={(value) => updateForm("preferred_contact", value)} />
                 <FormSelect label="Account Status" value={form.account_status} onChange={(value) => updateForm("account_status", value)} options={accountStatusOptions} />
+              </div>
+            </section>
+            <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
+              <div className="mb-5 flex items-center gap-3">
+                <Tags className="h-6 w-6 text-red-500" />
+                <div>
+                  <h3 className="text-2xl font-black">Customer Tags</h3>
+                  <p className="mt-1 text-sm text-zinc-500">
+                    Internal labels for workflow priority, pricing and account handling.
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                {customerTagOptions.map((option) => {
+                  const active = form.customer_tags.includes(option.value);
+
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => toggleCustomerTag(option.value)}
+                      className={`rounded-2xl border p-4 text-left transition hover:-translate-y-0.5 ${
+                        active
+                          ? option.className
+                          : "border-white/10 bg-black/30 text-zinc-400 hover:border-red-800/60 hover:text-white"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="font-black">{option.label}</span>
+                        {active ? (
+                          <CheckCircle2 className="h-5 w-5" />
+                        ) : (
+                          <span className="h-5 w-5 rounded-full border border-zinc-700" />
+                        )}
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
             </section>
             <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
@@ -1239,6 +1531,98 @@ function MiniStat({ label, value }: { label: string; value: number }) {
   return <div className="rounded-xl bg-black/30 p-3"><div className="text-xs text-zinc-500">{label}</div><div className="mt-1 text-xl font-black">{value}</div></div>;
 }
 
+function AdminNotificationCenter({
+  stats,
+  onFilter,
+}: {
+  stats: {
+    newRequests: number;
+    revisionRequested: number;
+    customerInfoNeeded: number;
+    completedToday: number;
+  };
+  onFilter: (status: string) => void;
+}) {
+  const items = [
+    {
+      label: "New requests",
+      value: stats.newRequests,
+      status: "new_request",
+      icon: Upload,
+      className: "border-red-800/50 bg-red-950/25 text-red-200",
+      iconClassName: "text-red-400",
+    },
+    {
+      label: "Revision requested",
+      value: stats.revisionRequested,
+      status: "revision",
+      icon: RefreshCcw,
+      className: "border-purple-700/50 bg-purple-950/25 text-purple-200",
+      iconClassName: "text-purple-300",
+    },
+    {
+      label: "Customer info needed",
+      value: stats.customerInfoNeeded,
+      status: "customer_info_needed",
+      icon: BellRing,
+      className: "border-orange-700/50 bg-orange-950/25 text-orange-200",
+      iconClassName: "text-orange-300",
+    },
+    {
+      label: "Completed today",
+      value: stats.completedToday,
+      status: "completed",
+      icon: CheckCircle2,
+      className: "border-emerald-700/50 bg-emerald-950/25 text-emerald-200",
+      iconClassName: "text-emerald-300",
+    },
+  ];
+
+  return (
+    <section className="mb-8 rounded-[2rem] border border-white/10 bg-white/[0.04] p-5 shadow-2xl shadow-black/20">
+      <div className="mb-5 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+        <div>
+          <div className="text-sm font-black uppercase tracking-[0.22em] text-red-500">
+            Notification Center
+          </div>
+          <h2 className="mt-1 text-2xl font-black text-white">
+            Today&apos;s operational focus
+          </h2>
+        </div>
+        <div className="text-sm text-zinc-500">
+          Click a card to filter the order list.
+        </div>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        {items.map((item) => {
+          const Icon = item.icon;
+
+          return (
+            <button
+              key={item.status}
+              type="button"
+              onClick={() => onFilter(item.status)}
+              className={`rounded-2xl border p-5 text-left transition hover:-translate-y-1 ${item.className}`}
+            >
+              <div className="mb-5 flex items-center justify-between gap-4">
+                <div className={`flex h-11 w-11 items-center justify-center rounded-2xl bg-black/25 ${item.iconClassName}`}>
+                  <Icon className="h-5 w-5" />
+                </div>
+                <div className="text-4xl font-black">{item.value}</div>
+              </div>
+              <div className="font-black">{item.label}</div>
+              <div className="mt-1 text-xs font-bold opacity-70">
+                View matching orders
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
 function StatCard({ icon, label, value, highlight = false }: { icon: ReactNode; label: string; value: string | number; highlight?: boolean }) {
   return (
     <div className={`rounded-[2rem] border p-5 ${highlight ? "border-red-900/40 bg-red-950/20" : "border-white/10 bg-white/[0.04]"}`}>
@@ -1282,7 +1666,7 @@ function Detail({ icon, label, value }: { icon: ReactNode; label: string; value:
   );
 }
 
-function OrderDetailModal({ order, customer, onClose, onDownload, onCopy, onCopyValue, onStatusChange, onUploadModified, onDownloadModified, updating, uploadingModified }: {
+function OrderDetailModal({ order, customer, onClose, onDownload, onCopy, onCopyValue, onStatusChange, onDeliveryUpdate, onUploadModified, onDownloadModified, updating, uploadingModified }: {
   order: Order;
   customer: Profile | null;
   onClose: () => void;
@@ -1290,6 +1674,7 @@ function OrderDetailModal({ order, customer, onClose, onDownload, onCopy, onCopy
   onCopy: () => void;
   onCopyValue: (value: string | null | undefined, label: string) => void;
   onStatusChange: (status: string) => void;
+  onDeliveryUpdate: (estimate: DeliveryEstimate, note: string) => void;
   onUploadModified: (file: File | null, label: ModifiedFileVersion["label"]) => void;
   onDownloadModified: (filePath: string) => void;
   updating: boolean;
@@ -1300,6 +1685,12 @@ function OrderDetailModal({ order, customer, onClose, onDownload, onCopy, onCopy
   const modifiedVersions = getModifiedFileVersions(order);
   const [modifiedFileLabel, setModifiedFileLabel] =
     useState<ModifiedFileVersion["label"]>("v1");
+  const [deliveryEstimate, setDeliveryEstimate] = useState<DeliveryEstimate>(
+    order.estimated_delivery_label ?? "usually_30_min"
+  );
+  const [deliveryNote, setDeliveryNote] = useState(
+    order.estimated_delivery_note ?? ""
+  );
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/75 px-4 py-6 backdrop-blur-sm">
@@ -1330,6 +1721,48 @@ function OrderDetailModal({ order, customer, onClose, onDownload, onCopy, onCopy
           </div>
           <aside className="space-y-6">
             <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5"><h3 className="mb-5 text-2xl font-black">Status Workflow</h3><div className="mb-5 h-2 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-gradient-to-r from-red-800 via-red-600 to-emerald-500 transition-all duration-700" style={{ width: `${((workflowStep + 1) / 5) * 100}%` }} /></div><div className="space-y-3">{[0, 1, 2, 3, 4].map((index) => <div key={index} className={`flex items-center gap-3 rounded-2xl border p-4 ${index <= workflowStep ? "border-emerald-700/30 bg-emerald-950/10" : "border-white/10 bg-black/30"}`}><div className={`flex h-9 w-9 items-center justify-center rounded-full ${index <= workflowStep ? "bg-emerald-500/15 text-emerald-400" : "bg-white/5 text-zinc-500"}`}>{index <= workflowStep ? <CheckCircle2 className="h-4 w-4" /> : <Clock3 className="h-4 w-4" />}</div><div className="font-black">{workflowLabel(index)}</div></div>)}</div><div className="mt-5"><select value={order.status ?? "new_request"} onChange={(event) => onStatusChange(event.target.value)} disabled={updating} className={`h-12 w-full rounded-xl border px-4 text-sm font-black outline-none ${statusClass(order.status)}`}>{editableStatusOptions.map((status) => <option key={status} value={status} className="bg-[#111]">{statusLabel(status)}</option>)}</select>{updating && <div className="mt-3 flex items-center gap-2 text-xs text-zinc-500"><Loader2 className="h-3 w-3 animate-spin" />Updating status...</div>}</div></section>
+            <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
+              <h3 className="mb-5 text-2xl font-black">Estimated Delivery</h3>
+              <div className="rounded-2xl border border-red-900/40 bg-red-950/20 p-4">
+                <div className="text-xs font-black uppercase tracking-[0.16em] text-red-300">
+                  Customer visible SLA
+                </div>
+                <div className="mt-2 text-xl font-black text-white">
+                  {formatDeliveryEstimate(deliveryEstimate)}
+                </div>
+              </div>
+              <select
+                value={deliveryEstimate}
+                onChange={(event) =>
+                  setDeliveryEstimate(event.target.value as DeliveryEstimate)
+                }
+                className="mt-4 h-12 w-full rounded-xl border border-white/10 bg-black/35 px-4 text-sm font-black text-white outline-none focus:border-red-700"
+              >
+                {deliveryEstimateOptions.map((option) => (
+                  <option key={option.value} value={option.value} className="bg-[#111]">
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+              <textarea
+                value={deliveryNote}
+                onChange={(event) => setDeliveryNote(event.target.value)}
+                placeholder="Optional note: Depends on file complexity, logs or extra checks."
+                className="mt-3 min-h-24 w-full resize-none rounded-xl border border-white/10 bg-black/35 px-4 py-3 text-sm font-bold text-white outline-none placeholder:text-zinc-600 focus:border-red-700"
+              />
+              <button
+                onClick={() => onDeliveryUpdate(deliveryEstimate, deliveryNote)}
+                disabled={updating}
+                className="mt-3 flex h-12 w-full items-center justify-center rounded-xl bg-[#b1121b] px-4 text-sm font-black text-white transition hover:bg-[#c91824] disabled:opacity-50"
+              >
+                {updating ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Clock3 className="mr-2 h-4 w-4" />
+                )}
+                Save Delivery Estimate
+              </button>
+            </section>
             <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
               <h3 className="mb-5 text-2xl font-black">File Workflow</h3>
               <div className="grid gap-3">

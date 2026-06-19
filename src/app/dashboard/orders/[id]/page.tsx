@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { signOutIfEmailUnverified } from "@/lib/authGuards";
 import { supabase } from "@/lib/supabaseClient";
 import RequestChat from "@/components/RequestChat";
 import {
@@ -50,8 +51,12 @@ type Order = {
   original_file_path: string | null;
   modified_file_path: string | null;
   modified_files: ModifiedFileVersion[] | null;
+  estimated_delivery_label: DeliveryEstimate | null;
+  estimated_delivery_note: string | null;
   created_at: string;
 };
+
+type DeliveryEstimate = "usually_30_min" | "same_day" | "24h" | "48h" | "manual_review";
 
 type ModifiedFileVersion = {
   id: string;
@@ -141,6 +146,18 @@ function formatFileVersionLabel(label: ModifiedFileVersion["label"]) {
   return "Final";
 }
 
+function formatDeliveryEstimate(value: DeliveryEstimate | string | null) {
+  const labels: Record<DeliveryEstimate, string> = {
+    usually_30_min: "Usually around 30 min",
+    same_day: "Same day",
+    "24h": "24h",
+    "48h": "48h",
+    manual_review: "Manual review",
+  };
+
+  return labels[value as DeliveryEstimate] ?? labels.usually_30_min;
+}
+
 const timelineSteps = [
   {
     key: "new_request",
@@ -194,6 +211,11 @@ export default function OrderDetailPage() {
 
       if (!userData.user) {
         router.push("/login");
+        return;
+      }
+
+      if (await signOutIfEmailUnverified(userData.user)) {
+        router.push("/login?verify_email=1");
         return;
       }
 
@@ -285,6 +307,13 @@ export default function OrderDetailPage() {
 
       if (!session?.access_token) {
         setMessage("Unauthorized");
+        return;
+      }
+
+      const { data: userData } = await supabase.auth.getUser();
+
+      if (!userData.user || (await signOutIfEmailUnverified(userData.user))) {
+        router.push("/login?verify_email=1");
         return;
       }
 
@@ -586,6 +615,18 @@ export default function OrderDetailPage() {
               <div className="mt-2 text-5xl font-black">
                 {Number(order.credits_required ?? 0)}
               </div>
+            </section>
+
+            <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6">
+              <Clock3 className="mb-4 h-8 w-8 text-red-400" />
+              <div className="text-sm text-zinc-400">Estimated Delivery</div>
+              <div className="mt-2 text-3xl font-black">
+                {formatDeliveryEstimate(order.estimated_delivery_label)}
+              </div>
+              <p className="mt-3 text-sm leading-6 text-zinc-400">
+                {order.estimated_delivery_note ||
+                  "Most standard file requests are usually handled quickly. Complex projects can take longer depending on file and vehicle data."}
+              </p>
             </section>
 
             <section className="overflow-hidden rounded-[2rem] border border-white/10 bg-white/[0.04] p-6">
