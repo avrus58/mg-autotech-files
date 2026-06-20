@@ -1485,7 +1485,7 @@ function WorkshopCommandDesk() {
                 <Sparkles className="h-4 w-4 text-red-400" />
                 Workshop command desk
               </div>
-              <h2 className="mt-5 max-w-xl text-4xl font-black leading-tight md:text-5xl">
+              <h2 className="mt-5 max-w-xl text-4xl font-black leading-tight [overflow-wrap:anywhere] md:text-5xl">
                 One clear view for serious file-service work.
               </h2>
               <p className="mt-5 max-w-xl text-sm leading-7 text-zinc-400">
