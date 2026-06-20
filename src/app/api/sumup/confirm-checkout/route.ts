@@ -54,12 +54,23 @@ export async function POST(request: Request) {
       String(data.checkout_reference || ""),
       "base64url"
     ).toString("utf8");
-    const metadata = JSON.parse(decodedReference || "{}") as {
-      u?: string;
-      c?: number;
-      p?: string;
-      t?: string;
-    };
+    const parsedMetadata = JSON.parse(decodedReference || "{}") as
+      | [string, number, string, string, string?]
+      | {
+          u?: string;
+          c?: number;
+          p?: string;
+          t?: string;
+        };
+
+    const metadata = Array.isArray(parsedMetadata)
+      ? {
+          u: parsedMetadata[0],
+          c: parsedMetadata[1],
+          p: parsedMetadata[2],
+          t: parsedMetadata[3],
+        }
+      : parsedMetadata;
 
     if (!metadata.u || !metadata.c) {
       return NextResponse.json(

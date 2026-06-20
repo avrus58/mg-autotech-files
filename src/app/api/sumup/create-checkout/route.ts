@@ -68,15 +68,14 @@ export async function POST(request: Request) {
     }
 
     const checkoutReference = Buffer.from(
-      JSON.stringify({
-        u: user.id,
-        c: selectedPackage.credits,
-        p: selectedPackage.id,
-        t: selectedPackage.purchaseType,
-      })
-    )
-      .toString("base64url")
-      .slice(0, 120);
+      JSON.stringify([
+        user.id,
+        selectedPackage.credits,
+        selectedPackage.id,
+        selectedPackage.purchaseType,
+        Date.now().toString(36),
+      ])
+    ).toString("base64url");
 
     const response = await fetch(`${SUMUP_API_BASE}/v0.1/checkouts`, {
       method: "POST",
