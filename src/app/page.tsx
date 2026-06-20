@@ -16,8 +16,10 @@ import {
   Download,
   FileCode2,
   Gauge,
+  LayoutDashboard,
   Lock,
   LogIn,
+  LogOut,
   Mail,
   MessageCircle,
   Search,
@@ -35,6 +37,7 @@ import {
 } from "lucide-react";
 import { Footer } from "@/components/Footer";
 import { OnlineStatus } from "@/components/OnlineStatus";
+import { supabase } from "@/lib/supabaseClient";
 
 const services = [
   {
@@ -2110,6 +2113,8 @@ export default function HomePage() {
   const [workloadSnapshot, setWorkloadSnapshot] = useState(() =>
     getWorkloadSnapshot(getGermanyNow())
   );
+  const [authReady, setAuthReady] = useState(false);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
 
   useEffect(() => {
     const updateWorkload = () => {
@@ -2121,6 +2126,41 @@ export default function HomePage() {
 
     return () => window.clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    let active = true;
+
+    const loadAuthState = async () => {
+      const { data } = await supabase.auth.getSession();
+
+      if (!active) return;
+
+      setUserEmail(data.session?.user.email ?? null);
+      setAuthReady(true);
+    };
+
+    loadAuthState();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUserEmail(session?.user.email ?? null);
+      setAuthReady(true);
+    });
+
+    return () => {
+      active = false;
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setUserEmail(null);
+    setAuthReady(true);
+  };
+
+  const isLoggedIn = authReady && Boolean(userEmail);
 
   const liveWorkloadItems = [
     {
@@ -2183,9 +2223,24 @@ export default function HomePage() {
             <a href="#contact" className="hover:text-white">
               Contact
             </a>
-            <Link href="/login" className="hover:text-white">
-              Login
-            </Link>
+            {!authReady ? null : isLoggedIn ? (
+              <>
+                <Link href="/dashboard" className="hover:text-white">
+                  My Account
+                </Link>
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="hover:text-white"
+                >
+                  Logout
+                </button>
+              </>
+            ) : (
+              <Link href="/login" className="hover:text-white">
+                Login
+              </Link>
+            )}
           </div>
         </div>
 
@@ -2230,22 +2285,51 @@ export default function HomePage() {
             </a>
           </nav>
 
-          <div className="flex items-center gap-2">
-            <Link
-              href="/login"
-              className="hidden rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-bold text-white transition duration-300 hover:bg-white/10 md:flex"
+          {!authReady ? (
+            <div
+              className="flex items-center gap-2"
+              aria-hidden="true"
             >
-              <LogIn className="mr-2 h-4 w-4" />
-              Login
-            </Link>
+              <div className="hidden h-11 w-28 rounded-xl border border-white/10 bg-white/[0.04] md:block" />
+              <div className="h-11 w-28 rounded-xl bg-red-950/40" />
+            </div>
+          ) : isLoggedIn ? (
+            <div className="flex items-center gap-2">
+              <Link
+                href="/dashboard"
+                className="rounded-xl bg-[#b1121b] px-5 py-3 text-sm font-black text-white shadow-lg shadow-red-950/40 transition duration-300 hover:-translate-y-0.5 hover:bg-[#c91824]"
+              >
+                <LayoutDashboard className="mr-2 inline h-4 w-4" />
+                My Account
+              </Link>
 
-            <Link
-              href="/register"
-              className="rounded-xl bg-[#b1121b] px-5 py-3 text-sm font-black text-white shadow-lg shadow-red-950/40 transition duration-300 hover:-translate-y-0.5 hover:bg-[#c91824]"
-            >
-              Register
-            </Link>
-          </div>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="hidden rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-bold text-white transition duration-300 hover:bg-white/10 md:flex"
+              >
+                <LogOut className="mr-2 h-4 w-4" />
+                Logout
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <Link
+                href="/login"
+                className="hidden rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-bold text-white transition duration-300 hover:bg-white/10 md:flex"
+              >
+                <LogIn className="mr-2 h-4 w-4" />
+                Login
+              </Link>
+
+              <Link
+                href="/register"
+                className="rounded-xl bg-[#b1121b] px-5 py-3 text-sm font-black text-white shadow-lg shadow-red-950/40 transition duration-300 hover:-translate-y-0.5 hover:bg-[#c91824]"
+              >
+                Register
+              </Link>
+            </div>
+          )}
         </div>
       </header>
 
@@ -2292,26 +2376,60 @@ export default function HomePage() {
             </p>
 
             <div className="mt-9 flex flex-wrap gap-4">
-              <Link
-                href="/login"
-                className="rounded-xl border border-white/10 bg-white/10 px-10 py-4 font-black text-white transition duration-300 hover:-translate-y-1 hover:bg-white/15"
-              >
-                Login
-              </Link>
+              {!authReady ? (
+                <>
+                  <div className="h-14 w-36 rounded-xl border border-white/10 bg-white/[0.08]" />
+                  <div className="h-14 w-40 rounded-xl bg-red-950/40" />
+                  <div className="h-14 w-36 rounded-xl border border-red-800/30 bg-red-950/10" />
+                </>
+              ) : isLoggedIn ? (
+                <>
+                  <Link
+                    href="/dashboard"
+                    className="rounded-xl bg-[#b1121b] px-10 py-4 font-black text-white shadow-xl shadow-red-950/40 transition duration-300 hover:-translate-y-1 hover:bg-[#c91824]"
+                  >
+                    My Account
+                  </Link>
 
-              <Link
-                href="/register"
-                className="rounded-xl bg-[#b1121b] px-10 py-4 font-black text-white shadow-xl shadow-red-950/40 transition duration-300 hover:-translate-y-1 hover:bg-[#c91824]"
-              >
-                Register
-              </Link>
+                  <Link
+                    href="/new-request"
+                    className="rounded-xl border border-red-800/50 px-10 py-4 font-black text-white transition duration-300 hover:-translate-y-1 hover:bg-red-950/25"
+                  >
+                    New Request
+                  </Link>
 
-              <Link
-                href="/new-request"
-                className="rounded-xl border border-red-800/50 px-10 py-4 font-black text-white transition duration-300 hover:-translate-y-1 hover:bg-red-950/25"
-              >
-                Upload File
-              </Link>
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    className="rounded-xl border border-white/10 bg-white/10 px-10 py-4 font-black text-white transition duration-300 hover:-translate-y-1 hover:bg-white/15"
+                  >
+                    Logout
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link
+                    href="/login"
+                    className="rounded-xl border border-white/10 bg-white/10 px-10 py-4 font-black text-white transition duration-300 hover:-translate-y-1 hover:bg-white/15"
+                  >
+                    Login
+                  </Link>
+
+                  <Link
+                    href="/register"
+                    className="rounded-xl bg-[#b1121b] px-10 py-4 font-black text-white shadow-xl shadow-red-950/40 transition duration-300 hover:-translate-y-1 hover:bg-[#c91824]"
+                  >
+                    Register
+                  </Link>
+
+                  <Link
+                    href="/new-request"
+                    className="rounded-xl border border-red-800/50 px-10 py-4 font-black text-white transition duration-300 hover:-translate-y-1 hover:bg-red-950/25"
+                  >
+                    Upload File
+                  </Link>
+                </>
+              )}
             </div>
           </motion.div>
 
@@ -2477,10 +2595,10 @@ export default function HomePage() {
             </div>
 
             <Link
-              href="/register"
+              href={isLoggedIn ? "/dashboard" : "/register"}
               className="inline-flex items-center justify-center rounded-xl bg-[#b1121b] px-5 py-3 text-sm font-black text-white shadow-lg shadow-red-950/20 transition hover:-translate-y-0.5 hover:bg-[#c91824]"
             >
-              Create Account
+              {isLoggedIn ? "My Account" : "Create Account"}
               <ArrowRight className="ml-2 h-4 w-4" />
             </Link>
           </div>
@@ -2741,23 +2859,51 @@ export default function HomePage() {
               Start your next file request.
             </h2>
             <p className="mt-3 text-red-100">
-              Register, login and create your first MG AutoTech file request.
+              {isLoggedIn
+                ? "Open your dashboard or create a new MG AutoTech file request."
+                : "Register, login and create your first MG AutoTech file request."}
             </p>
           </div>
 
           <div className="flex flex-wrap gap-3">
-            <Link
-              href="/register"
-              className="rounded-xl bg-white px-7 py-4 font-black text-[#b1121b] transition duration-300 hover:-translate-y-1 hover:bg-zinc-100"
-            >
-              Create Account
-            </Link>
-            <Link
-              href="/login"
-              className="rounded-xl border border-white/30 px-7 py-4 font-black text-white transition duration-300 hover:-translate-y-1 hover:bg-white/10"
-            >
-              Login
-            </Link>
+            {isLoggedIn ? (
+              <>
+                <Link
+                  href="/dashboard"
+                  className="rounded-xl bg-white px-7 py-4 font-black text-[#b1121b] transition duration-300 hover:-translate-y-1 hover:bg-zinc-100"
+                >
+                  My Account
+                </Link>
+                <Link
+                  href="/new-request"
+                  className="rounded-xl border border-white/30 px-7 py-4 font-black text-white transition duration-300 hover:-translate-y-1 hover:bg-white/10"
+                >
+                  New Request
+                </Link>
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="rounded-xl border border-white/30 px-7 py-4 font-black text-white transition duration-300 hover:-translate-y-1 hover:bg-white/10"
+                >
+                  Logout
+                </button>
+              </>
+            ) : (
+              <>
+                <Link
+                  href="/register"
+                  className="rounded-xl bg-white px-7 py-4 font-black text-[#b1121b] transition duration-300 hover:-translate-y-1 hover:bg-zinc-100"
+                >
+                  Create Account
+                </Link>
+                <Link
+                  href="/login"
+                  className="rounded-xl border border-white/30 px-7 py-4 font-black text-white transition duration-300 hover:-translate-y-1 hover:bg-white/10"
+                >
+                  Login
+                </Link>
+              </>
+            )}
             <a
               href="mailto:info@mgautotech.de"
               className="rounded-xl border border-white/30 px-7 py-4 font-black text-white transition duration-300 hover:-translate-y-1 hover:bg-white/10"
