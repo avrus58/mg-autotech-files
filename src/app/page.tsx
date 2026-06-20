@@ -169,6 +169,40 @@ const trustHighlights = [
   },
 ];
 
+const commandDeskStages = [
+  {
+    title: "File intake",
+    detail: "Original file, vehicle data and read method are grouped into one request.",
+    status: "Queued",
+    icon: Upload,
+  },
+  {
+    title: "Technical check",
+    detail: "ECU/TCU details, notes and selected service are reviewed before processing.",
+    status: "Review",
+    icon: Search,
+  },
+  {
+    title: "Calibration work",
+    detail: "The file is prepared according to the requested service and vehicle context.",
+    status: "Active",
+    icon: Cpu,
+  },
+  {
+    title: "Delivery control",
+    detail: "Completed versions, revisions and customer downloads stay inside the portal.",
+    status: "Ready",
+    icon: Download,
+  },
+];
+
+const commandDeskSignals = [
+  { label: "Secure upload", value: "Portal only", icon: ShieldCheck },
+  { label: "Payment flow", value: "Credits tracked", icon: CreditCard },
+  { label: "Order status", value: "Live timeline", icon: Activity },
+  { label: "File versions", value: "Revision ready", icon: FileCode2 },
+];
+
 const calculatorPresets = [
   {
     label: "Starter workshop",
@@ -1440,6 +1474,122 @@ function MetricPanel({
   );
 }
 
+function WorkshopCommandDesk() {
+  return (
+    <AnimatedSection className="bg-[#07090d] py-20">
+      <div className="mx-auto max-w-7xl px-4">
+        <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-stretch">
+          <div className="flex flex-col justify-between rounded-[2rem] border border-white/10 bg-white/[0.04] p-7 shadow-2xl shadow-black/30">
+            <div>
+              <div className="inline-flex items-center gap-2 rounded-full border border-red-800/50 bg-red-950/25 px-4 py-2 text-xs font-black uppercase tracking-[0.18em] text-red-200">
+                <Sparkles className="h-4 w-4 text-red-400" />
+                Workshop command desk
+              </div>
+              <h2 className="mt-5 max-w-xl text-4xl font-black leading-tight md:text-5xl">
+                One clear view for serious file-service work.
+              </h2>
+              <p className="mt-5 max-w-xl text-sm leading-7 text-zinc-400">
+                A public preview of how requests are handled inside MG AutoTech:
+                intake, checking, calibration, delivery and revision control.
+              </p>
+            </div>
+
+            <div className="mt-8 grid gap-3 sm:grid-cols-2">
+              {commandDeskSignals.map((item) => {
+                const Icon = item.icon;
+
+                return (
+                  <div
+                    key={item.label}
+                    className="rounded-2xl border border-white/10 bg-black/35 p-4"
+                  >
+                    <Icon className="mb-3 h-5 w-5 text-red-400" />
+                    <div className="text-xs font-black uppercase tracking-[0.14em] text-zinc-500">
+                      {item.label}
+                    </div>
+                    <div className="mt-1 text-sm font-black text-white">
+                      {item.value}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="rounded-[2rem] border border-red-900/40 bg-[linear-gradient(135deg,rgba(177,18,27,0.18),rgba(255,255,255,0.04)_45%,rgba(0,0,0,0.5))] p-5 shadow-2xl shadow-red-950/20">
+            <div className="mb-5 flex flex-col gap-4 border-b border-white/10 pb-5 md:flex-row md:items-center md:justify-between">
+              <div>
+                <div className="text-sm font-black text-white">
+                  Live operation preview
+                </div>
+                <div className="mt-1 text-xs text-zinc-500">
+                  Structured workflow without exposing private order data
+                </div>
+              </div>
+              <div className="inline-flex w-fit items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-xs font-black text-emerald-300">
+                <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-lg shadow-emerald-400/40" />
+                System online
+              </div>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              {commandDeskStages.map((stage, index) => {
+                const Icon = stage.icon;
+
+                return (
+                  <div
+                    key={stage.title}
+                    className="relative overflow-hidden rounded-2xl border border-white/10 bg-black/35 p-5"
+                  >
+                    <div className="absolute right-4 top-4 text-5xl font-black text-white/[0.04]">
+                      {String(index + 1).padStart(2, "0")}
+                    </div>
+                    <div className="mb-5 flex items-center justify-between gap-3">
+                      <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-red-800/40 bg-red-950/25 text-red-300">
+                        <Icon className="h-5 w-5" />
+                      </div>
+                      <span className="rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-xs font-black text-zinc-300">
+                        {stage.status}
+                      </span>
+                    </div>
+                    <h3 className="text-lg font-black text-white">
+                      {stage.title}
+                    </h3>
+                    <p className="mt-2 text-sm leading-6 text-zinc-400">
+                      {stage.detail}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="mt-5 grid gap-4 rounded-2xl border border-white/10 bg-black/30 p-4 md:grid-cols-3">
+              <div>
+                <div className="text-xs font-black uppercase tracking-[0.14em] text-zinc-500">
+                  Standard response
+                </div>
+                <div className="mt-1 text-xl font-black">~30 min</div>
+              </div>
+              <div>
+                <div className="text-xs font-black uppercase tracking-[0.14em] text-zinc-500">
+                  Request types
+                </div>
+                <div className="mt-1 text-xl font-black">ECU / TCU</div>
+              </div>
+              <div>
+                <div className="text-xs font-black uppercase tracking-[0.14em] text-zinc-500">
+                  Delivery
+                </div>
+                <div className="mt-1 text-xl font-black">Dashboard</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </AnimatedSection>
+  );
+}
+
 function BusinessMarginCalculator() {
   const [monthlyFiles, setMonthlyFiles] = useState(35);
   const [averageSalePrice, setAverageSalePrice] = useState(169);
@@ -2238,6 +2388,8 @@ export default function HomePage() {
           </div>
         </div>
       </AnimatedSection>
+
+      <WorkshopCommandDesk />
 
       <PerformanceLogChecker />
 
