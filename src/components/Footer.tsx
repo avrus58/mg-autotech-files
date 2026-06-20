@@ -11,12 +11,11 @@ import {
 } from "lucide-react";
 
 const services = [
-  { label: "Stage 1 Tuning", href: "/services/stage-1-tuning" },
+  { label: "Stage 1 Tuning", href: "/services/stage-1" },
   { label: "DPF OFF", href: "/services/dpf-off" },
   { label: "EGR / AGR OFF", href: "/services/egr-off" },
   { label: "AdBlue OFF", href: "/services/adblue-off" },
-  { label: "TCU Tuning", href: "/services/tcu-tuning" },
-  { label: "ECU Cloning", href: "/services/ecu-cloning" },
+  { label: "DTC OFF", href: "/services/dtc-off" },
 ];
 
 const platform = [
