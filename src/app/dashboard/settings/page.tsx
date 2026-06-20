@@ -356,7 +356,7 @@ export default function CustomerSettingsPage() {
                   Reference
                 </div>
                 <div className="mt-2 text-2xl font-black text-red-400">
-                  {customerId ?? "MGA-XXXXX"}
+                  {customerId ?? "MGA-10001"}
                 </div>
               </div>
             </div>
