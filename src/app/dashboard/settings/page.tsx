@@ -34,6 +34,15 @@ type Profile = {
   preferred_contact: string | null;
 };
 
+function formatCustomerReference(customerId: string | null) {
+  if (!customerId) return "MGA-10001";
+
+  const cleanId = customerId.trim().toUpperCase();
+  if (/^MGA-\d{5,}$/.test(cleanId)) return cleanId;
+  if (/^\d+$/.test(cleanId)) return `MGA-${cleanId.padStart(5, "0")}`;
+  return "MGA-10001";
+}
+
 export default function CustomerSettingsPage() {
   const router = useRouter();
 
@@ -56,6 +65,7 @@ export default function CustomerSettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+  const customerReference = formatCustomerReference(customerId);
 
   useEffect(() => {
     const loadSettings = async () => {
@@ -230,7 +240,7 @@ export default function CustomerSettingsPage() {
                   Customer ID
                 </div>
                 <div className="mt-1 text-2xl font-black">
-                  {customerId ?? "Not assigned"}
+                  {customerReference}
                 </div>
               </div>
             </div>
@@ -356,7 +366,7 @@ export default function CustomerSettingsPage() {
                   Reference
                 </div>
                 <div className="mt-2 text-2xl font-black text-red-400">
-                  {customerId ?? "MGA-10001"}
+                  {customerReference}
                 </div>
               </div>
             </div>
