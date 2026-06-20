@@ -86,6 +86,15 @@ function formatDate(date: string) {
   }).format(new Date(date));
 }
 
+function formatCustomerReference(customerId: string | null) {
+  if (!customerId) return "MGA-10001";
+
+  const cleanId = customerId.trim().toUpperCase();
+  if (/^MGA-\d{5,}$/.test(cleanId)) return cleanId;
+  if (/^\d+$/.test(cleanId)) return `MGA-${cleanId.padStart(5, "0")}`;
+  return "MGA-10001";
+}
+
 export default function DashboardPage() {
   const router = useRouter();
 
@@ -244,7 +253,7 @@ export default function DashboardPage() {
       .slice(0, 6);
   }, [orders]);
 
-  const customerReference = customerId ?? email ?? "Customer account";
+  const customerReference = formatCustomerReference(customerId);
 
   const firstName =
     email?.split("@")[0]?.replace(/[._-]/g, " ").split(" ")[0] ?? "Customer";
