@@ -43,14 +43,19 @@ function translateText(value: string, locale: LocaleCode) {
   const leading = value.match(/^\s*/)?.[0] ?? "";
   const trailing = value.match(/\s*$/)?.[0] ?? "";
   const trimmed = value.trim();
+  const normalized = trimmed.replace(/\s+/g, " ");
 
   if (!trimmed) return value;
 
-  const exact = exactTranslations[locale]?.[trimmed];
+  const exact = exactTranslations[locale]?.[normalized] ?? exactTranslations[locale]?.[trimmed];
   if (exact) return `${leading}${exact}${trailing}`;
 
+  if (normalized.length > 36) {
+    return value;
+  }
+
   const terms = termTranslations[locale] ?? {};
-  let translated = trimmed;
+  let translated = normalized;
 
   Object.entries(terms)
     .sort((a, b) => b[0].length - a[0].length)
