@@ -885,10 +885,20 @@ function calculatePowerFromTorque(torqueNm: number, rpm: number) {
 }
 
 function parseLogInput(input: string) {
-  return input
+  const lines = input
     .split(/\r?\n/)
     .map((line) => line.trim())
-    .filter(Boolean)
+    .filter(Boolean);
+
+  if (!lines.length) return [];
+
+  const firstLine = lines[0].toLowerCase();
+
+  if (firstLine.includes("engine speed") && firstLine.includes("engine torque")) {
+    return parseAutotunerCsv(input);
+  }
+
+  return lines
     .map((line) => {
       const [rpmValue, torqueValue] = line
         .split(/[,;\t ]+/)
@@ -915,10 +925,93 @@ function parseLogInput(input: string) {
     .filter((point): point is LogPoint => Boolean(point));
 }
 
+function splitCsvLine(line: string) {
+  const values: string[] = [];
+  let current = "";
+  let quoted = false;
+
+  for (let index = 0; index < line.length; index += 1) {
+    const char = line[index];
+    const next = line[index + 1];
+
+    if (char === '"' && next === '"') {
+      current += '"';
+      index += 1;
+      continue;
+    }
+
+    if (char === '"') {
+      quoted = !quoted;
+      continue;
+    }
+
+    if (char === "," && !quoted) {
+      values.push(current.trim());
+      current = "";
+      continue;
+    }
+
+    current += char;
+  }
+
+  values.push(current.trim());
+
+  return values;
+}
+
+function parseAutotunerCsv(input: string) {
+  const lines = input
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  if (lines.length < 2) return [];
+
+  const headers = splitCsvLine(lines[0]).map((header) =>
+    header.toLowerCase().replaceAll(" ", "")
+  );
+  const rpmIndex = headers.findIndex((header) =>
+    header.includes("enginespeed(rpm)")
+  );
+  const torqueIndex = headers.findIndex((header) =>
+    header.includes("enginetorque(nm)")
+  );
+
+  if (rpmIndex === -1 || torqueIndex === -1) return [];
+
+  return lines
+    .slice(1)
+    .map((line) => {
+      const values = splitCsvLine(line);
+      const rpmValue = Number(values[rpmIndex]?.replace(",", "."));
+      const torqueValue = Number(values[torqueIndex]?.replace(",", "."));
+
+      if (
+        !Number.isFinite(rpmValue) ||
+        !Number.isFinite(torqueValue) ||
+        rpmValue <= 0 ||
+        torqueValue <= 0
+      ) {
+        return null;
+      }
+
+      const power = calculatePowerFromTorque(torqueValue, rpmValue);
+
+      return {
+        rpm: rpmValue,
+        torque: torqueValue,
+        kw: power.kw,
+        hp: power.hp,
+      };
+    })
+    .filter((point): point is LogPoint => Boolean(point));
+}
+
 function PerformanceLogChecker() {
   const [torqueNm, setTorqueNm] = useState(430);
   const [rpm, setRpm] = useState(3200);
   const [kwInput, setKwInput] = useState(140);
+  const [logFileName, setLogFileName] = useState("");
   const [logInput, setLogInput] = useState(
     "1800, 320\n2200, 390\n2600, 430\n3000, 420\n3400, 395\n3800, 360\n4200, 315"
   );
@@ -942,6 +1035,14 @@ function PerformanceLogChecker() {
         logPoints.length
       : 0;
   const chartMaxHp = Math.max(...logPoints.map((point) => point.hp), 1);
+
+  const handleLogUpload = async (file: File | null) => {
+    if (!file) return;
+
+    const text = await file.text();
+    setLogFileName(file.name);
+    setLogInput(text);
+  };
 
   return (
     <AnimatedSection id="tools" className="bg-[#050505] py-20">
@@ -1029,12 +1130,37 @@ function PerformanceLogChecker() {
             <div className="mb-5 flex items-center justify-between gap-4">
               <div>
                 <div className="text-sm font-black uppercase tracking-[0.22em] text-red-400">
-                  Log Checker
+                  Autotuner Log Checker
                 </div>
                 <h3 className="mt-2 text-2xl font-black">RPM / torque rows</h3>
               </div>
               <BarChart3 className="h-8 w-8 text-red-500" />
             </div>
+
+            <label className="mb-5 flex cursor-pointer items-center justify-between gap-4 rounded-2xl border border-white/10 bg-black/30 p-4 transition hover:border-red-800/60 hover:bg-red-950/20">
+              <div className="flex min-w-0 items-center gap-3">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-red-950/40 text-red-500">
+                  <Upload className="h-5 w-5" />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-sm font-black text-white">
+                    Upload Autotuner CSV
+                  </div>
+                  <div className="mt-1 truncate text-xs font-bold text-zinc-500">
+                    {logFileName || "Engine speed + engine torque columns are detected automatically"}
+                  </div>
+                </div>
+              </div>
+              <span className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-black text-zinc-300">
+                CSV
+              </span>
+              <input
+                type="file"
+                accept=".csv,text/csv"
+                onChange={(event) => handleLogUpload(event.target.files?.[0] ?? null)}
+                className="sr-only"
+              />
+            </label>
 
             <textarea
               value={logInput}
