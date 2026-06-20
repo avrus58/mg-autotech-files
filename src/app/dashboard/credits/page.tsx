@@ -114,6 +114,13 @@ function formatEuro(value: number) {
   }).format(value);
 }
 
+function formatCustomerReference(customerId: string) {
+  const cleanId = customerId.trim().toUpperCase();
+  if (/^MGA-\d{5,}$/.test(cleanId)) return cleanId;
+  if (/^\d+$/.test(cleanId)) return `MGA-${cleanId.padStart(5, "0")}`;
+  return cleanId;
+}
+
 export default function BuyCreditsPage() {
   const router = useRouter();
 
@@ -165,7 +172,7 @@ export default function BuyCreditsPage() {
       throw new Error("Customer ID could not be loaded.");
     }
 
-    return data.customer_id as string;
+    return formatCustomerReference(data.customer_id as string);
   };
 
   const startCheckout = async (payload: {
