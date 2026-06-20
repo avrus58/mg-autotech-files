@@ -130,6 +130,7 @@ function translateNode(root: ParentNode, locale: LocaleCode) {
 
 export function LanguageSwitcher() {
   const [locale, setLocale] = useState<LocaleCode>(defaultLocale);
+  const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
     const initial = getInitialLocale();
@@ -165,6 +166,28 @@ export function LanguageSwitcher() {
     return () => observer.disconnect();
   }, [locale]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target as Element | null;
+      if (target?.closest("[data-language-switcher]")) return;
+      setIsOpen(false);
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setIsOpen(false);
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isOpen]);
+
   const activeLocale = useMemo(
     () => supportedLocales.find((item) => item.code === locale) ?? supportedLocales[1],
     [locale]
@@ -173,31 +196,42 @@ export function LanguageSwitcher() {
   return (
     <div
       data-language-switcher
-      className="fixed right-3 top-1/2 z-[80] -translate-y-1/2 overflow-hidden rounded-2xl border border-white/10 bg-[#111720]/95 shadow-2xl shadow-black/50 backdrop-blur-xl"
+      className="fixed bottom-4 right-4 z-[80] flex flex-col items-end gap-2"
       aria-label="Language selector"
     >
-      <div className="border-b border-white/10 px-2 py-2 text-center text-[10px] font-black text-zinc-400">
+      {isOpen && (
+        <div className="grid max-h-[46vh] w-24 overflow-y-auto rounded-2xl border border-white/10 bg-[#111720]/95 p-1.5 shadow-2xl shadow-black/50 backdrop-blur-xl">
+          {supportedLocales.map((item) => (
+            <button
+              key={item.code}
+              type="button"
+              onClick={() => {
+                setLocale(item.code);
+                setIsOpen(false);
+              }}
+              className={`flex h-9 items-center justify-center rounded-xl text-xs font-black transition ${
+                item.code === locale
+                  ? "bg-red-600 text-white"
+                  : "text-zinc-200 hover:bg-white/10"
+              }`}
+              title={item.name}
+              aria-label={`Switch language to ${item.name}`}
+            >
+              <span>{item.label}</span>
+            </button>
+          ))}
+        </div>
+      )}
+      <button
+        type="button"
+        onClick={() => setIsOpen((value) => !value)}
+        className="flex h-11 min-w-11 items-center justify-center rounded-full border border-white/10 bg-[#111720]/95 px-3 text-xs font-black text-white shadow-2xl shadow-black/40 backdrop-blur-xl transition hover:border-red-700/60 hover:bg-[#171f2b]"
+        aria-expanded={isOpen}
+        aria-label="Change language"
+        title="Change language"
+      >
         {activeLocale.label}
-      </div>
-      <div className="max-h-[74vh] overflow-y-auto">
-        {supportedLocales.map((item) => (
-          <button
-            key={item.code}
-            type="button"
-            onClick={() => setLocale(item.code)}
-            className={`flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-black transition ${
-              item.code === locale
-                ? "bg-red-600 text-white"
-                : "text-zinc-200 hover:bg-white/10"
-            }`}
-            title={item.name}
-            aria-label={`Switch language to ${item.name}`}
-          >
-            <span className="min-w-5 text-[10px] opacity-70">{item.label}</span>
-            <span>{item.label}</span>
-          </button>
-        ))}
-      </div>
+      </button>
     </div>
   );
 }
