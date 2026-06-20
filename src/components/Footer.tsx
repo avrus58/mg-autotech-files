@@ -33,6 +33,14 @@ const legal = [
   { label: "Widerruf", href: "/widerruf" },
 ];
 
+const whatsappNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER?.replace(/\D/g, "");
+const whatsappMessage = encodeURIComponent(
+  "Hello MG AutoTech, I need help with a file service request."
+);
+const whatsappHref = whatsappNumber
+  ? `https://wa.me/${whatsappNumber}?text=${whatsappMessage}`
+  : null;
+
 export function Footer() {
   return (
     <footer className="relative overflow-hidden border-t border-white/10 bg-[#07090d] text-white">
@@ -82,13 +90,17 @@ export function Footer() {
               >
                 <Mail className="h-5 w-5" />
               </a>
-              <a
-                href="https://wa.me/"
-                className="flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 bg-white/[0.05] text-zinc-300 transition hover:border-red-800/60 hover:text-white"
-                aria-label="WhatsApp MG AutoTech"
-              >
-                <MessageCircle className="h-5 w-5" />
-              </a>
+              {whatsappHref && (
+                <a
+                  href={whatsappHref}
+                  className="flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 bg-white/[0.05] text-zinc-300 transition hover:border-red-800/60 hover:text-white"
+                  aria-label="WhatsApp MG AutoTech"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  <MessageCircle className="h-5 w-5" />
+                </a>
+              )}
             </div>
           </div>
 
