@@ -150,12 +150,22 @@ export default function BuyCreditsPage() {
     bic: process.env.NEXT_PUBLIC_BANK_BIC || "BIC",
   };
 
-  const getPaymentReference = (payload: {
-    packageId?: string;
-    customCredits?: number;
-  }) => {
-    const value = payload.packageId ?? `custom_${payload.customCredits}`;
-    return `MG-${value}-${Date.now().toString().slice(-6)}`.toUpperCase();
+  const getCustomerReference = async (userId: string) => {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("customer_id")
+      .eq("id", userId)
+      .single();
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    if (!data?.customer_id) {
+      throw new Error("Customer ID could not be loaded.");
+    }
+
+    return data.customer_id as string;
   };
 
   const startCheckout = async (payload: {
@@ -183,13 +193,22 @@ export default function BuyCreditsPage() {
     }
 
     if (paymentMethod !== "stripe") {
-      const reference = getPaymentReference(payload);
-
       if (paymentMethod === "bank") {
-        setLoadingPackage(null);
-        setMessage(
-          `Bank transfer selected. Use reference ${reference}. Credits are added manually after payment is received.`
-        );
+        try {
+          const reference = await getCustomerReference(userData.user.id);
+          setMessage(
+            `Bank transfer selected. Use your Customer ID as payment reference: ${reference}. Credits are added manually after payment is received.`
+          );
+        } catch (error) {
+          setMessage(
+            error instanceof Error
+              ? error.message
+              : "Customer ID could not be loaded."
+          );
+        } finally {
+          setLoadingPackage(null);
+        }
+
         return;
       }
 
@@ -223,7 +242,7 @@ export default function BuyCreditsPage() {
         return;
       }
 
-      window.location.href = data.url;
+      window.location.assign(data.url);
       return;
     }
 
@@ -250,7 +269,7 @@ export default function BuyCreditsPage() {
       return;
     }
 
-    window.location.href = data.url;
+    window.location.assign(data.url);
   };
 
   const startCustomCheckout = () => {
@@ -263,7 +282,30 @@ export default function BuyCreditsPage() {
   };
 
   const copyBankReference = async () => {
-    const reference = getPaymentReference({ customCredits: customCreditAmount });
+    const { data: sessionData } = await supabase.auth.getSession();
+
+    if (!sessionData.session) {
+      router.push("/login");
+      return;
+    }
+
+    const { data: userData } = await supabase.auth.getUser();
+
+    if (!userData.user || (await signOutIfEmailUnverified(userData.user))) {
+      router.push("/login?verify_email=1");
+      return;
+    }
+
+    let reference = "";
+
+    try {
+      reference = await getCustomerReference(userData.user.id);
+    } catch (error) {
+      setMessage(
+        error instanceof Error ? error.message : "Customer ID could not be loaded."
+      );
+      return;
+    }
 
     await navigator.clipboard.writeText(reference);
     setCopiedBankReference(true);
