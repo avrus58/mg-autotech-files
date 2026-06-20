@@ -55,6 +55,14 @@ export const metadata: Metadata = {
     siteName: "MG AutoTech File Service",
     locale: "en_US",
     type: "website",
+    images: [
+      {
+        url: "/og-image.svg",
+        width: 1200,
+        height: 630,
+        alt: "MG AutoTech ECU and TCU File Service",
+      },
+    ],
   },
 
   twitter: {
@@ -62,6 +70,7 @@ export const metadata: Metadata = {
     title: "MG AutoTech File Service",
     description:
       "Professional ECU & TCU File Service Platform.",
+    images: ["/og-image.svg"],
   },
 
   robots: {
@@ -72,6 +81,28 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "https://file.mgautotech.de",
   },
+
+  category: "automotive",
+};
+
+const organizationJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "AutoRepair",
+  name: "MG AutoTech",
+  url: "https://file.mgautotech.de",
+  email: "info@mgautotech.de",
+  description:
+    "Professional ECU and TCU file service platform for workshops, tuners and automotive professionals.",
+  areaServed: ["Germany", "Europe"],
+  serviceType: [
+    "ECU file service",
+    "TCU tuning",
+    "Stage 1 tuning",
+    "DPF OFF",
+    "EGR OFF",
+    "AdBlue OFF",
+    "DTC OFF",
+  ],
 };
 
 export default function RootLayout({
@@ -84,7 +115,15 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(organizationJsonLd),
+          }}
+        />
+        {children}
+      </body>
     </html>
   );
 }
