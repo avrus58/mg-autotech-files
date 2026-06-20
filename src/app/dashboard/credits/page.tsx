@@ -8,12 +8,16 @@ import { supabase } from "@/lib/supabaseClient";
 import {
   ArrowLeft,
   CheckCircle2,
+  Copy,
   CreditCard,
   Crown,
+  ExternalLink,
   Gauge,
+  Landmark,
   Loader2,
   ShieldCheck,
   Sparkles,
+  WalletCards,
   Zap,
 } from "lucide-react";
 
@@ -69,6 +73,39 @@ const utilization = [
   { title: "DTC OFF", credits: "4 Credit", icon: Sparkles },
 ];
 
+const paymentMethods = [
+  {
+    id: "sumup",
+    title: "SumUp",
+    subtitle: "Card / mobile payment",
+    badge: "Automatic",
+    icon: WalletCards,
+  },
+  {
+    id: "paypal",
+    title: "PayPal",
+    subtitle: "PayPal payment link",
+    badge: "Automatic",
+    icon: ShieldCheck,
+  },
+  {
+    id: "bank",
+    title: "Bank Transfer",
+    subtitle: "SEPA transfer",
+    badge: "Manual check",
+    icon: Landmark,
+  },
+  {
+    id: "stripe",
+    title: "Credit Card",
+    subtitle: "Stripe checkout",
+    badge: "Automatic",
+    icon: CreditCard,
+  },
+] as const;
+
+type PaymentMethod = (typeof paymentMethods)[number]["id"];
+
 function formatEuro(value: number) {
   return new Intl.NumberFormat("de-DE", {
     style: "currency",
@@ -83,6 +120,8 @@ export default function BuyCreditsPage() {
   const [loadingPackage, setLoadingPackage] = useState<string | null>(null);
   const [customCredits, setCustomCredits] = useState("17");
   const [message, setMessage] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("sumup");
+  const [copiedBankReference, setCopiedBankReference] = useState(false);
 
   const customCreditAmount = Number(customCredits);
   const customValid =
@@ -95,6 +134,29 @@ export default function BuyCreditsPage() {
     if (!customValid) return 0;
     return customCreditAmount * 5;
   }, [customCreditAmount, customValid]);
+
+  const selectedPayment = paymentMethods.find(
+    (method) => method.id === paymentMethod
+  );
+
+  const bankDetails = {
+    accountName: process.env.NEXT_PUBLIC_BANK_ACCOUNT_NAME || "MG AutoTech",
+    bankName:
+      process.env.NEXT_PUBLIC_BANK_NAME ||
+      "Bank details will be confirmed by admin",
+    iban:
+      process.env.NEXT_PUBLIC_BANK_IBAN ||
+      "IBAN will be provided after contact",
+    bic: process.env.NEXT_PUBLIC_BANK_BIC || "BIC",
+  };
+
+  const getPaymentReference = (payload: {
+    packageId?: string;
+    customCredits?: number;
+  }) => {
+    const value = payload.packageId ?? `custom_${payload.customCredits}`;
+    return `MG-${value}-${Date.now().toString().slice(-6)}`.toUpperCase();
+  };
 
   const startCheckout = async (payload: {
     packageId?: string;
@@ -117,6 +179,51 @@ export default function BuyCreditsPage() {
 
     if (!userData.user || (await signOutIfEmailUnverified(userData.user))) {
       router.push("/login?verify_email=1");
+      return;
+    }
+
+    if (paymentMethod !== "stripe") {
+      const reference = getPaymentReference(payload);
+
+      if (paymentMethod === "bank") {
+        setLoadingPackage(null);
+        setMessage(
+          `Bank transfer selected. Use reference ${reference}. Credits are added manually after payment is received.`
+        );
+        return;
+      }
+
+      const endpoint =
+        paymentMethod === "paypal"
+          ? "/api/paypal/create-order"
+          : "/api/sumup/create-checkout";
+
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${sessionData.session.access_token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json();
+
+      setLoadingPackage(null);
+
+      if (!response.ok) {
+        setMessage(
+          data.error ?? `Could not start ${selectedPayment?.title ?? "payment"}.`
+        );
+        return;
+      }
+
+      if (!data.url) {
+        setMessage(`${selectedPayment?.title ?? "Payment"} URL was not returned.`);
+        return;
+      }
+
+      window.location.href = data.url;
       return;
     }
 
@@ -155,6 +262,17 @@ export default function BuyCreditsPage() {
     startCheckout({ customCredits: customCreditAmount });
   };
 
+  const copyBankReference = async () => {
+    const reference = getPaymentReference({ customCredits: customCreditAmount });
+
+    await navigator.clipboard.writeText(reference);
+    setCopiedBankReference(true);
+
+    window.setTimeout(() => {
+      setCopiedBankReference(false);
+    }, 1600);
+  };
+
   return (
     <main className="min-h-screen bg-[#050505] text-white">
       <div className="fixed inset-0 -z-10 bg-[radial-gradient(circle_at_18%_0%,rgba(160,18,28,0.25),transparent_34%),radial-gradient(circle_at_80%_20%,rgba(177,18,27,0.15),transparent_28%),linear-gradient(135deg,#050505,#0c0c0e_48%,#170507)]" />
@@ -189,7 +307,7 @@ export default function BuyCreditsPage() {
           <div>
             <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-red-800/50 bg-red-950/25 px-4 py-2 text-sm font-semibold text-red-100">
               <CreditCard className="h-4 w-4 text-red-500" />
-              Secure payment via Stripe
+              Secure payment options
             </div>
 
             <h1 className="text-4xl font-black md:text-6xl">
@@ -207,14 +325,119 @@ export default function BuyCreditsPage() {
               <ShieldCheck className="h-8 w-8 text-red-500" />
               <div>
                 <div className="text-sm font-black uppercase tracking-[0.2em] text-red-400">
-                  Automatic Top-Up
+                  Payment Workflow
                 </div>
                 <p className="mt-1 text-sm text-zinc-400">
-                  Credits are added after successful Stripe payment.
+                  SumUp, PayPal and Stripe add credits automatically after
+                  payment confirmation. Bank transfer stays manual.
                 </p>
               </div>
             </div>
           </div>
+        </div>
+
+        <div className="mb-8 rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
+          <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <div className="text-sm font-black uppercase tracking-[0.2em] text-red-400">
+                Payment Method
+              </div>
+              <h2 className="mt-1 text-2xl font-black">
+                Choose how you want to pay
+              </h2>
+            </div>
+            <div className="text-sm font-bold text-zinc-500">
+              Selected: {selectedPayment?.title}
+            </div>
+          </div>
+
+          <div className="grid gap-3 md:grid-cols-4">
+            {paymentMethods.map((method) => {
+              const Icon = method.icon;
+              const active = paymentMethod === method.id;
+
+              return (
+                <button
+                  key={method.id}
+                  type="button"
+                  onClick={() => {
+                    setPaymentMethod(method.id);
+                    setMessage("");
+                  }}
+                  className={`rounded-2xl border p-4 text-left transition ${
+                    active
+                      ? "border-red-700 bg-red-950/30"
+                      : "border-white/10 bg-black/30 hover:border-white/20 hover:bg-white/[0.06]"
+                  }`}
+                >
+                  <div className="mb-4 flex items-center justify-between gap-3">
+                    <div
+                      className={`flex h-11 w-11 items-center justify-center rounded-2xl ${
+                        active
+                          ? "bg-red-600 text-white"
+                          : "bg-white/10 text-zinc-300"
+                      }`}
+                    >
+                      <Icon className="h-5 w-5" />
+                    </div>
+                    <span className="rounded-full border border-white/10 bg-black/35 px-2.5 py-1 text-[11px] font-black text-zinc-300">
+                      {method.badge}
+                    </span>
+                  </div>
+                  <div className="font-black text-white">{method.title}</div>
+                  <div className="mt-1 text-xs font-bold text-zinc-500">
+                    {method.subtitle}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          {paymentMethod === "bank" && (
+            <div className="mt-5 rounded-2xl border border-white/10 bg-black/30 p-5">
+              <div className="grid gap-4 md:grid-cols-4">
+                <div>
+                  <div className="text-xs font-black uppercase tracking-[0.14em] text-zinc-500">
+                    Account
+                  </div>
+                  <div className="mt-1 font-black">
+                    {bankDetails.accountName}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-xs font-black uppercase tracking-[0.14em] text-zinc-500">
+                    Bank
+                  </div>
+                  <div className="mt-1 font-black">{bankDetails.bankName}</div>
+                </div>
+                <div>
+                  <div className="text-xs font-black uppercase tracking-[0.14em] text-zinc-500">
+                    IBAN
+                  </div>
+                  <div className="mt-1 break-all font-black">
+                    {bankDetails.iban}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-xs font-black uppercase tracking-[0.14em] text-zinc-500">
+                    BIC
+                  </div>
+                  <div className="mt-1 font-black">{bankDetails.bic}</div>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={copyBankReference}
+                className="mt-5 inline-flex items-center rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-black text-white transition hover:bg-white/10"
+              >
+                <Copy className="mr-2 h-4 w-4" />
+                {copiedBankReference
+                  ? "Reference copied"
+                  : "Copy payment reference"}
+              </button>
+            </div>
+          )}
         </div>
 
         <div className="mb-8 rounded-[2rem] border border-white/10 bg-white/[0.04] p-4">
@@ -294,11 +517,19 @@ export default function BuyCreditsPage() {
               <div className="mt-5 space-y-2 text-xs text-zinc-300">
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="h-4 w-4 text-emerald-400" />
-                  Automatic credit top-up
+                  {paymentMethod === "stripe"
+                    ? "Automatic credit top-up"
+                    : paymentMethod === "bank"
+                    ? "Manual admin verification"
+                    : "Automatic credit top-up"}
                 </div>
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="h-4 w-4 text-emerald-400" />
-                  Secure Stripe checkout
+                  {paymentMethod === "stripe"
+                    ? "Secure Stripe checkout"
+                    : paymentMethod === "bank"
+                    ? "Reference based payment"
+                    : "Reference based payment"}
                 </div>
               </div>
 
@@ -313,7 +544,14 @@ export default function BuyCreditsPage() {
                     Opening...
                   </>
                 ) : (
-                  "Buy"
+                  <>
+                    {paymentMethod === "stripe"
+                      ? "Buy"
+                      : `Pay with ${selectedPayment?.title}`}
+                    {paymentMethod !== "stripe" && paymentMethod !== "bank" && (
+                      <ExternalLink className="ml-2 h-4 w-4" />
+                    )}
+                  </>
                 )}
               </button>
             </div>
@@ -358,7 +596,7 @@ export default function BuyCreditsPage() {
                   Total Price
                 </div>
                 <div className="mt-2 text-3xl font-black text-red-400">
-                  {customValid ? formatEuro(customPrice) : "—"}
+                  {customValid ? formatEuro(customPrice) : "-"}
                 </div>
               </div>
             </div>
@@ -376,7 +614,12 @@ export default function BuyCreditsPage() {
               ) : (
                 <>
                   <CreditCard className="mr-2 h-4 w-4" />
-                  Buy Custom Credits
+                  {paymentMethod === "stripe"
+                    ? "Buy Custom Credits"
+                    : `Pay Custom via ${selectedPayment?.title}`}
+                  {paymentMethod !== "stripe" && paymentMethod !== "bank" && (
+                    <ExternalLink className="ml-2 h-4 w-4" />
+                  )}
                 </>
               )}
             </button>
@@ -387,9 +630,9 @@ export default function BuyCreditsPage() {
             <h2 className="text-2xl font-black">Important</h2>
             <p className="mt-3 text-sm leading-7 text-zinc-400">
               Package purchases use discounted package pricing. Custom credit
-              purchases are always calculated at €5 per credit. Credits are
-              added after Stripe confirms the payment. During local development,
-              this requires the Stripe webhook listener to be active.
+              purchases are always calculated at €5 per credit. Stripe payments
+              add credits automatically after payment confirmation. Bank
+              transfer requires admin verification before credits are added.
             </p>
 
             <div className="mt-6 grid gap-3 sm:grid-cols-2">

@@ -76,7 +76,7 @@ export default function CreditHistoryPage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  const loadHistory = async () => {
+  const loadHistory = async (options?: { silent?: boolean }) => {
     setRefreshing(true);
 
     const { data: userData } = await supabase.auth.getUser();
@@ -123,7 +123,54 @@ export default function CreditHistoryPage() {
   };
 
   useEffect(() => {
-    loadHistory();
+    let currentUserId: string | null = null;
+
+    const loadLiveHistory = async (options?: { silent?: boolean }) => {
+      const { data: userData } = await supabase.auth.getUser();
+
+      if (userData.user) currentUserId = userData.user.id;
+
+      await loadHistory(options);
+    };
+
+    loadLiveHistory();
+
+    const interval = window.setInterval(() => {
+      loadLiveHistory({ silent: true });
+    }, 30000);
+
+    const channel = supabase
+      .channel("customer-credit-history-live")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "credit_transactions" },
+        (payload) => {
+          const row = (payload.new || payload.old) as
+            | { user_id?: string }
+            | undefined;
+
+          if (!currentUserId || row?.user_id !== currentUserId) return;
+
+          loadLiveHistory({ silent: true });
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "profiles" },
+        (payload) => {
+          const row = (payload.new || payload.old) as { id?: string } | undefined;
+
+          if (!currentUserId || row?.id !== currentUserId) return;
+
+          loadLiveHistory({ silent: true });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      window.clearInterval(interval);
+      supabase.removeChannel(channel);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -228,7 +275,7 @@ export default function CreditHistoryPage() {
           </div>
 
           <button
-            onClick={loadHistory}
+            onClick={() => loadHistory()}
             disabled={refreshing}
             className="rounded-xl bg-[#b1121b] px-5 py-3 text-sm font-black text-white transition hover:bg-[#c91824] disabled:opacity-60"
           >

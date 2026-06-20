@@ -20,21 +20,50 @@ export default function PaymentSuccessPage() {
   useEffect(() => {
     const confirmPayment = async () => {
       const params = new URLSearchParams(window.location.search);
+      const provider = params.get("provider") || "stripe";
       const sessionId = params.get("session_id");
+      const paypalOrderId = params.get("token");
+      const sumupCheckoutId =
+        params.get("checkout_id") ||
+        params.get("sumup_checkout_id") ||
+        params.get("id");
 
-      if (!sessionId) {
+      let endpoint = "/api/stripe/confirm-session";
+      let payload: Record<string, string> = {};
+
+      if (provider === "paypal") {
+        if (!paypalOrderId) {
+          setState("missing");
+          setMessage("PayPal order id is missing.");
+          return;
+        }
+
+        endpoint = "/api/paypal/capture-order";
+        payload = { orderId: paypalOrderId };
+      } else if (provider === "sumup") {
+        if (!sumupCheckoutId) {
+          setState("missing");
+          setMessage("SumUp checkout id is missing.");
+          return;
+        }
+
+        endpoint = "/api/sumup/confirm-checkout";
+        payload = { checkoutId: sumupCheckoutId };
+      } else if (sessionId) {
+        payload = { sessionId };
+      } else {
         setState("missing");
-        setMessage("Stripe session id is missing.");
+        setMessage("Payment session id is missing.");
         return;
       }
 
       try {
-        const response = await fetch("/api/stripe/confirm-session", {
+        const response = await fetch(endpoint, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ sessionId }),
+          body: JSON.stringify(payload),
         });
 
         const data = await response.json();

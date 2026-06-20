@@ -198,13 +198,18 @@ export default function OrderDetailPage() {
   const [order, setOrder] = useState<Order | null>(null);
   const [email, setEmail] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [liveRefreshing, setLiveRefreshing] = useState(false);
   const [message, setMessage] = useState("");
   const [revisionNote, setRevisionNote] = useState("");
   const [revisionSubmitting, setRevisionSubmitting] = useState(false);
 
   useEffect(() => {
-    const loadOrder = async () => {
-      setLoading(true);
+    let currentUserId: string | null = null;
+    const orderId = params?.id;
+
+    const loadOrder = async (options?: { silent?: boolean }) => {
+      if (options?.silent) setLiveRefreshing(true);
+      else setLoading(true);
       setMessage("");
 
       const { data: userData } = await supabase.auth.getUser();
@@ -219,9 +224,8 @@ export default function OrderDetailPage() {
         return;
       }
 
+      currentUserId = userData.user.id;
       setEmail(userData.user.email ?? null);
-
-      const orderId = params?.id;
 
       if (!orderId) {
         setMessage("Order ID is missing.");
@@ -244,9 +248,55 @@ export default function OrderDetailPage() {
 
       setOrder(data as Order);
       setLoading(false);
+      setLiveRefreshing(false);
     };
 
     loadOrder();
+
+    if (!orderId) return;
+
+    const interval = window.setInterval(() => {
+      loadOrder({ silent: true });
+    }, 20000);
+
+    const channel = supabase
+      .channel(`customer-order-live-${orderId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "orders",
+          filter: `id=eq.${orderId}`,
+        },
+        (payload) => {
+          const row = (payload.new || payload.old) as
+            | { customer_id?: string }
+            | undefined;
+
+          if (!currentUserId || row?.customer_id !== currentUserId) return;
+
+          loadOrder({ silent: true });
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "request_messages",
+          filter: `request_id=eq.${orderId}`,
+        },
+        () => {
+          loadOrder({ silent: true });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      window.clearInterval(interval);
+      supabase.removeChannel(channel);
+    };
   }, [params?.id, router]);
 
   const downloadCompletedFile = async () => {
@@ -401,6 +451,11 @@ export default function OrderDetailPage() {
           </Link>
 
           <div className="flex items-center gap-2">
+            <div className="hidden items-center gap-2 rounded-xl border border-emerald-700/30 bg-emerald-950/20 px-4 py-3 text-xs font-black text-emerald-300 md:flex">
+              <span className="h-2 w-2 rounded-full bg-emerald-400" />
+              {liveRefreshing ? "Syncing" : "Live sync"}
+            </div>
+
             <div className="hidden rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-bold text-zinc-300 md:block">
               {email}
             </div>

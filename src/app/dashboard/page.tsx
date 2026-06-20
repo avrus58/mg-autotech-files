@@ -99,10 +99,15 @@ export default function DashboardPage() {
   const [pendingCount, setPendingCount] = useState<number>(0);
   const [inProgressCount, setInProgressCount] = useState<number>(0);
   const [loading, setLoading] = useState(true);
+  const [liveRefreshing, setLiveRefreshing] = useState(false);
   const [copiedReference, setCopiedReference] = useState(false);
 
   useEffect(() => {
-    const loadDashboard = async () => {
+    let currentUserId: string | null = null;
+
+    const loadDashboard = async (options?: { silent?: boolean }) => {
+      if (options?.silent) setLiveRefreshing(true);
+
       const { data: userData } = await supabase.auth.getUser();
 
       if (!userData.user) {
@@ -111,6 +116,7 @@ export default function DashboardPage() {
       }
 
       const user = userData.user;
+      currentUserId = user.id;
 
       if (await signOutIfEmailUnverified(user)) {
         router.push("/login?verify_email=1");
@@ -176,9 +182,60 @@ export default function DashboardPage() {
 
       setActiveCount(active < 0 ? 0 : active);
       setLoading(false);
+      setLiveRefreshing(false);
     };
 
     loadDashboard();
+
+    const interval = window.setInterval(() => {
+      loadDashboard({ silent: true });
+    }, 30000);
+
+    const channel = supabase
+      .channel("customer-dashboard-live")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "orders" },
+        (payload) => {
+          const row = (payload.new || payload.old) as
+            | { customer_id?: string }
+            | undefined;
+
+          if (!currentUserId || row?.customer_id !== currentUserId) return;
+
+          loadDashboard({ silent: true });
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "profiles" },
+        (payload) => {
+          const row = (payload.new || payload.old) as { id?: string } | undefined;
+
+          if (!currentUserId || row?.id !== currentUserId) return;
+
+          loadDashboard({ silent: true });
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "credit_transactions" },
+        (payload) => {
+          const row = (payload.new || payload.old) as
+            | { user_id?: string }
+            | undefined;
+
+          if (!currentUserId || row?.user_id !== currentUserId) return;
+
+          loadDashboard({ silent: true });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      window.clearInterval(interval);
+      supabase.removeChannel(channel);
+    };
   }, [router]);
 
   const creditHistory = useMemo(() => {
@@ -331,6 +388,11 @@ export default function DashboardPage() {
               </div>
 
               <div className="flex items-center gap-3">
+                <div className="hidden items-center gap-2 rounded-2xl border border-emerald-700/30 bg-emerald-950/20 px-4 py-3 text-xs font-black text-emerald-300 md:flex">
+                  <span className="h-2 w-2 rounded-full bg-emerald-400" />
+                  {liveRefreshing ? "Syncing" : "Live sync"}
+                </div>
+
                 <div className="hidden rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 md:block">
                   <div className="text-xs text-zinc-500">Logged in as</div>
                   <div className="max-w-[220px] truncate text-sm font-bold">
