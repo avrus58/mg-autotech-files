@@ -90,7 +90,8 @@ export async function POST(request: Request) {
         currency: "EUR",
         pay_to_email: sumupPayToEmail,
         description: `${selectedPackage.credits} MG AutoTech Credits`,
-        return_url: `${siteUrl}/payment/success?provider=sumup`,
+        redirect_url: `${siteUrl}/payment/success?provider=sumup`,
+        hosted_checkout: { enabled: true },
       }),
     });
 
@@ -105,6 +106,7 @@ export async function POST(request: Request) {
 
     const checkoutUrl =
       data.hosted_checkout_url ||
+      data.hosted_checkout?.url ||
       data.checkout_url ||
       data.links?.checkout ||
       data.links?.payment ||
