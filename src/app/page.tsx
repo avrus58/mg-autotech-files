@@ -1007,6 +1007,119 @@ function parseAutotunerCsv(input: string) {
     .filter((point): point is LogPoint => Boolean(point));
 }
 
+function escapeSvgText(value: string) {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
+}
+
+function buildDynoReportSvg({
+  fileName,
+  points,
+  peakTorque,
+  peakPower,
+}: {
+  fileName: string;
+  points: LogPoint[];
+  peakTorque: LogPoint | null;
+  peakPower: LogPoint | null;
+}) {
+  const width = 1200;
+  const height = 760;
+  const chart = {
+    x: 90,
+    y: 190,
+    width: 980,
+    height: 430,
+  };
+  const rpmValues = points.map((point) => point.rpm);
+  const minRpm = Math.min(...rpmValues);
+  const maxRpm = Math.max(...rpmValues);
+  const maxHp = Math.max(...points.map((point) => point.hp), 1);
+  const maxNm = Math.max(...points.map((point) => point.torque), 1);
+  const maxScale = Math.ceil(Math.max(maxHp, maxNm) / 50) * 50;
+
+  const xFor = (rpmValue: number) =>
+    chart.x +
+    ((rpmValue - minRpm) / Math.max(1, maxRpm - minRpm)) * chart.width;
+  const yFor = (value: number) =>
+    chart.y + chart.height - (value / maxScale) * chart.height;
+
+  const hpPolyline = points
+    .map((point) => `${xFor(point.rpm).toFixed(1)},${yFor(point.hp).toFixed(1)}`)
+    .join(" ");
+  const torquePolyline = points
+    .map((point) => `${xFor(point.rpm).toFixed(1)},${yFor(point.torque).toFixed(1)}`)
+    .join(" ");
+  const gridLines = [0, 0.25, 0.5, 0.75, 1]
+    .map((ratio) => {
+      const y = chart.y + chart.height * ratio;
+      const label = Math.round(maxScale * (1 - ratio));
+
+      return `
+        <line x1="${chart.x}" y1="${y}" x2="${chart.x + chart.width}" y2="${y}" stroke="#27272a" stroke-width="1"/>
+        <text x="${chart.x - 18}" y="${y + 5}" text-anchor="end" fill="#71717a" font-size="18">${label}</text>
+      `;
+    })
+    .join("");
+  const rpmLabels = [minRpm, minRpm + (maxRpm - minRpm) / 2, maxRpm]
+    .map((rpmValue) => {
+      const x = xFor(rpmValue);
+
+      return `<text x="${x}" y="${chart.y + chart.height + 42}" text-anchor="middle" fill="#a1a1aa" font-size="18">${Math.round(rpmValue)} rpm</text>`;
+    })
+    .join("");
+  const peakPs = peakPower ? peakPower.kw * 1.35962 : 0;
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
+  <rect width="${width}" height="${height}" fill="#050505"/>
+  <rect x="32" y="32" width="${width - 64}" height="${height - 64}" rx="34" fill="#09090b" stroke="#27272a" stroke-width="2"/>
+  <circle cx="1040" cy="95" r="150" fill="#7f1d1d" opacity="0.22"/>
+  <text x="78" y="92" fill="#ef4444" font-size="22" font-weight="900" letter-spacing="5">MG AUTOTECH</text>
+  <text x="78" y="135" fill="#ffffff" font-size="42" font-weight="900">Dyno Log Report</text>
+  <text x="78" y="165" fill="#a1a1aa" font-size="18">${escapeSvgText(fileName || "Autotuner CSV log")}</text>
+
+  <rect x="78" y="655" width="1044" height="58" rx="18" fill="#111113" stroke="#27272a"/>
+  <text x="104" y="691" fill="#a1a1aa" font-size="18">Calculated from ECU log values. Power is estimated from torque and RPM.</text>
+
+  <rect x="760" y="72" width="150" height="82" rx="18" fill="#111113" stroke="#27272a"/>
+  <text x="785" y="105" fill="#a1a1aa" font-size="16">Peak PS</text>
+  <text x="785" y="138" fill="#ffffff" font-size="30" font-weight="900">${peakPower ? peakPs.toFixed(1) : "-"}</text>
+
+  <rect x="928" y="72" width="150" height="82" rx="18" fill="#111113" stroke="#27272a"/>
+  <text x="953" y="105" fill="#a1a1aa" font-size="16">Peak Nm</text>
+  <text x="953" y="138" fill="#ffffff" font-size="30" font-weight="900">${peakTorque ? peakTorque.torque.toFixed(0) : "-"}</text>
+
+  <rect x="${chart.x}" y="${chart.y}" width="${chart.width}" height="${chart.height}" rx="18" fill="#0f0f12" stroke="#27272a" stroke-width="2"/>
+  ${gridLines}
+  ${rpmLabels}
+
+  <polyline points="${torquePolyline}" fill="none" stroke="#38bdf8" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  <polyline points="${hpPolyline}" fill="none" stroke="#ef4444" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+
+  ${
+    peakTorque
+      ? `<circle cx="${xFor(peakTorque.rpm)}" cy="${yFor(peakTorque.torque)}" r="8" fill="#38bdf8"/>
+         <text x="${xFor(peakTorque.rpm) + 12}" y="${yFor(peakTorque.torque) - 12}" fill="#bae6fd" font-size="17" font-weight="900">${peakTorque.torque.toFixed(0)} Nm @ ${peakTorque.rpm.toFixed(0)} rpm</text>`
+      : ""
+  }
+  ${
+    peakPower
+      ? `<circle cx="${xFor(peakPower.rpm)}" cy="${yFor(peakPower.hp)}" r="8" fill="#ef4444"/>
+         <text x="${xFor(peakPower.rpm) + 12}" y="${yFor(peakPower.hp) + 28}" fill="#fecaca" font-size="17" font-weight="900">${peakPs.toFixed(1)} PS / ${peakPower.hp.toFixed(1)} HP @ ${peakPower.rpm.toFixed(0)} rpm</text>`
+      : ""
+  }
+
+  <rect x="90" y="92" width="16" height="16" rx="4" fill="#ef4444"/>
+  <text x="114" y="107" fill="#d4d4d8" font-size="18">Power</text>
+  <rect x="205" y="92" width="16" height="16" rx="4" fill="#38bdf8"/>
+  <text x="229" y="107" fill="#d4d4d8" font-size="18">Torque</text>
+</svg>`;
+}
+
 function PerformanceLogChecker() {
   const [torqueNm, setTorqueNm] = useState(430);
   const [rpm, setRpm] = useState(3200);
@@ -1042,6 +1155,30 @@ function PerformanceLogChecker() {
     const text = await file.text();
     setLogFileName(file.name);
     setLogInput(text);
+  };
+
+  const downloadDynoReport = () => {
+    if (!logPoints.length) return;
+
+    const svg = buildDynoReportSvg({
+      fileName: logFileName,
+      points: logPoints,
+      peakTorque,
+      peakPower,
+    });
+    const blob = new Blob([svg], { type: "image/svg+xml;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    const baseName =
+      logFileName.replace(/\.[^.]+$/, "").replace(/[^a-z0-9_-]+/gi, "-") ||
+      "mg-autotech-dyno-report";
+
+    link.href = url;
+    link.download = `${baseName}-dyno-report.svg`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -1188,6 +1325,16 @@ function PerformanceLogChecker() {
                 unit="Nm"
               />
             </div>
+
+            <button
+              type="button"
+              onClick={downloadDynoReport}
+              disabled={!logPoints.length}
+              className="mt-5 flex w-full items-center justify-center rounded-xl bg-[#b1121b] px-5 py-4 text-sm font-black text-white shadow-xl shadow-red-950/30 transition hover:bg-[#c91824] disabled:cursor-not-allowed disabled:bg-zinc-800 disabled:text-zinc-500"
+            >
+              <Download className="mr-2 h-4 w-4" />
+              Download Dyno Report
+            </button>
 
             <div className="mt-5 rounded-2xl border border-white/10 bg-black/30 p-4">
               <div className="mb-4 flex items-center justify-between gap-4">
