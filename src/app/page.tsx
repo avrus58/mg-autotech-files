@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { motion, type Variants } from "framer-motion";
 import {
@@ -870,6 +870,303 @@ function formatEuro(value: number) {
   }).format(value);
 }
 
+type LogPoint = {
+  rpm: number;
+  torque: number;
+  kw: number;
+  hp: number;
+};
+
+function calculatePowerFromTorque(torqueNm: number, rpm: number) {
+  const kw = (torqueNm * rpm) / 9549;
+  const hp = kw * 1.34102;
+
+  return { kw, hp };
+}
+
+function parseLogInput(input: string) {
+  return input
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const [rpmValue, torqueValue] = line
+        .split(/[,;\t ]+/)
+        .map((value) => Number(value.replace(",", ".")));
+
+      if (
+        !Number.isFinite(rpmValue) ||
+        !Number.isFinite(torqueValue) ||
+        rpmValue <= 0 ||
+        torqueValue <= 0
+      ) {
+        return null;
+      }
+
+      const power = calculatePowerFromTorque(torqueValue, rpmValue);
+
+      return {
+        rpm: rpmValue,
+        torque: torqueValue,
+        kw: power.kw,
+        hp: power.hp,
+      };
+    })
+    .filter((point): point is LogPoint => Boolean(point));
+}
+
+function PerformanceLogChecker() {
+  const [torqueNm, setTorqueNm] = useState(430);
+  const [rpm, setRpm] = useState(3200);
+  const [kwInput, setKwInput] = useState(140);
+  const [logInput, setLogInput] = useState(
+    "1800, 320\n2200, 390\n2600, 430\n3000, 420\n3400, 395\n3800, 360\n4200, 315"
+  );
+
+  const power = calculatePowerFromTorque(torqueNm, rpm);
+  const hpFromKw = kwInput * 1.34102;
+  const psFromKw = kwInput * 1.35962;
+
+  const logPoints = useMemo(() => parseLogInput(logInput), [logInput]);
+  const peakTorque = logPoints.reduce<LogPoint | null>(
+    (best, point) => (!best || point.torque > best.torque ? point : best),
+    null
+  );
+  const peakPower = logPoints.reduce<LogPoint | null>(
+    (best, point) => (!best || point.hp > best.hp ? point : best),
+    null
+  );
+  const averageTorque =
+    logPoints.length > 0
+      ? logPoints.reduce((total, point) => total + point.torque, 0) /
+        logPoints.length
+      : 0;
+  const chartMaxHp = Math.max(...logPoints.map((point) => point.hp), 1);
+
+  return (
+    <AnimatedSection id="tools" className="bg-[#050505] py-20">
+      <div className="mx-auto max-w-7xl px-4">
+        <div className="mb-10 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <div className="text-sm font-black uppercase tracking-[0.25em] text-red-600">
+              Performance Tools
+            </div>
+            <h2 className="mt-3 max-w-4xl text-4xl font-black md:text-5xl">
+              Torque, RPM and log-based power checker for quick workshop checks.
+            </h2>
+            <p className="mt-4 max-w-3xl text-sm leading-7 text-zinc-400">
+              Estimate kW and HP from measured torque and engine speed. Paste
+              simple log rows to identify peak torque and peak power points.
+            </p>
+          </div>
+
+          <Link
+            href="/new-request"
+            className="inline-flex items-center justify-center rounded-xl border border-red-800/60 bg-red-950/30 px-5 py-3 text-sm font-black text-white transition hover:-translate-y-0.5 hover:bg-red-900/30"
+          >
+            Create File Request
+            <ArrowRight className="ml-2 h-4 w-4" />
+          </Link>
+        </div>
+
+        <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
+          <div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 shadow-2xl shadow-black/20">
+            <div className="mb-5 flex items-center gap-3">
+              <Gauge className="h-7 w-7 text-red-500" />
+              <h3 className="text-2xl font-black">Torque Power Calculator</h3>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <NumberField
+                label="Torque"
+                value={torqueNm}
+                suffix="Nm"
+                min={50}
+                max={1200}
+                step={5}
+                onChange={setTorqueNm}
+              />
+              <NumberField
+                label="Engine speed"
+                value={rpm}
+                suffix="RPM"
+                min={800}
+                max={9000}
+                step={50}
+                onChange={setRpm}
+              />
+            </div>
+
+            <div className="mt-5 grid gap-3 sm:grid-cols-2">
+              <MetricPanel label="Estimated power" value={power.hp.toFixed(1)} unit="HP" />
+              <MetricPanel label="Estimated power" value={power.kw.toFixed(1)} unit="kW" />
+            </div>
+
+            <div className="mt-6 rounded-2xl border border-white/10 bg-black/30 p-5">
+              <div className="mb-4 flex items-center gap-3">
+                <Calculator className="h-5 w-5 text-red-500" />
+                <h4 className="font-black">kW to HP quick convert</h4>
+              </div>
+
+              <NumberField
+                label="Power"
+                value={kwInput}
+                suffix="kW"
+                min={1}
+                max={1000}
+                step={1}
+                onChange={setKwInput}
+              />
+
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <MetricPanel label="Mechanical HP" value={hpFromKw.toFixed(1)} unit="HP" />
+                <MetricPanel label="Metric power" value={psFromKw.toFixed(1)} unit="PS" />
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-[2rem] border border-red-900/50 bg-gradient-to-br from-red-950/25 via-white/[0.04] to-black p-6 shadow-2xl shadow-black/30">
+            <div className="mb-5 flex items-center justify-between gap-4">
+              <div>
+                <div className="text-sm font-black uppercase tracking-[0.22em] text-red-400">
+                  Log Checker
+                </div>
+                <h3 className="mt-2 text-2xl font-black">RPM / torque rows</h3>
+              </div>
+              <BarChart3 className="h-8 w-8 text-red-500" />
+            </div>
+
+            <textarea
+              value={logInput}
+              onChange={(event) => setLogInput(event.target.value)}
+              rows={7}
+              spellCheck={false}
+              className="w-full resize-none rounded-2xl border border-white/10 bg-black/45 p-4 font-mono text-sm font-bold leading-6 text-white outline-none transition placeholder:text-zinc-600 focus:border-red-700"
+              placeholder={"RPM, Nm\n2200, 390\n2600, 430"}
+            />
+
+            <div className="mt-5 grid gap-3 md:grid-cols-3">
+              <MetricPanel
+                label="Peak torque"
+                value={peakTorque ? peakTorque.torque.toFixed(0) : "-"}
+                unit={peakTorque ? `Nm @ ${peakTorque.rpm.toFixed(0)} rpm` : "Nm"}
+              />
+              <MetricPanel
+                label="Peak power"
+                value={peakPower ? peakPower.hp.toFixed(1) : "-"}
+                unit={peakPower ? `HP @ ${peakPower.rpm.toFixed(0)} rpm` : "HP"}
+              />
+              <MetricPanel
+                label="Average torque"
+                value={logPoints.length ? averageTorque.toFixed(0) : "-"}
+                unit="Nm"
+              />
+            </div>
+
+            <div className="mt-5 rounded-2xl border border-white/10 bg-black/30 p-4">
+              <div className="mb-4 flex items-center justify-between gap-4">
+                <div className="text-xs font-black uppercase tracking-[0.16em] text-zinc-500">
+                  Power curve preview
+                </div>
+                <div className="text-xs font-bold text-zinc-500">
+                  {logPoints.length} valid rows
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                {logPoints.slice(0, 8).map((point) => (
+                  <div key={`${point.rpm}-${point.torque}`} className="grid grid-cols-[74px_1fr_74px] items-center gap-3 text-xs">
+                    <div className="font-black text-zinc-400">
+                      {point.rpm.toFixed(0)}
+                    </div>
+                    <div className="h-3 overflow-hidden rounded-full bg-white/10">
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-red-700 to-red-400"
+                        style={{
+                          width: `${Math.max(6, (point.hp / chartMaxHp) * 100)}%`,
+                        }}
+                      />
+                    </div>
+                    <div className="text-right font-black text-white">
+                      {point.hp.toFixed(0)} HP
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <p className="mt-5 rounded-2xl border border-white/10 bg-black/30 p-4 text-xs leading-6 text-zinc-500">
+              This tool is an estimate for workshop checks. Real dyno output can
+              vary with drivetrain loss, correction method, gear selection and
+              logging quality.
+            </p>
+          </div>
+        </div>
+      </div>
+    </AnimatedSection>
+  );
+}
+
+function NumberField({
+  label,
+  value,
+  suffix,
+  min,
+  max,
+  step,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  suffix: string;
+  min: number;
+  max: number;
+  step: number;
+  onChange: (value: number) => void;
+}) {
+  return (
+    <label className="block">
+      <div className="mb-2 flex items-center justify-between gap-3">
+        <span className="text-sm font-black text-white">{label}</span>
+        <span className="rounded-xl border border-white/10 bg-black/30 px-3 py-1 text-xs font-black text-red-300">
+          {value} {suffix}
+        </span>
+      </div>
+      <input
+        type="number"
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        onChange={(event) => onChange(Number(event.target.value))}
+        className="h-14 w-full rounded-2xl border border-white/10 bg-black/35 px-4 text-sm font-black text-white outline-none transition focus:border-red-700"
+      />
+    </label>
+  );
+}
+
+function MetricPanel({
+  label,
+  value,
+  unit,
+}: {
+  label: string;
+  value: string;
+  unit: string;
+}) {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
+      <div className="text-xs font-black uppercase tracking-[0.14em] text-zinc-500">
+        {label}
+      </div>
+      <div className="mt-2 flex items-end gap-2">
+        <span className="text-3xl font-black text-white">{value}</span>
+        <span className="pb-1 text-xs font-black text-red-300">{unit}</span>
+      </div>
+    </div>
+  );
+}
+
 function BusinessMarginCalculator() {
   const [monthlyFiles, setMonthlyFiles] = useState(35);
   const [averageSalePrice, setAverageSalePrice] = useState(169);
@@ -1668,6 +1965,8 @@ export default function HomePage() {
           </div>
         </div>
       </AnimatedSection>
+
+      <PerformanceLogChecker />
 
       <AnimatedSection id="brands" className="bg-[#050505] py-20">
         <div className="mx-auto max-w-7xl px-4">
