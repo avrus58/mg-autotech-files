@@ -16,6 +16,10 @@ const googleCookieKey = "googtrans";
 const originalText = new WeakMap<Text, string>();
 const originalAttributes = new WeakMap<Element, Record<string, string>>();
 
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 function readCookie(name: string) {
   if (typeof document === "undefined") return "";
 
@@ -59,10 +63,25 @@ function translateText(value: string, locale: LocaleCode) {
   const exact = exactTranslations[locale]?.[normalized];
   if (exact) return `${leading}${exact}${trailing}`;
 
-  if (normalized.length > 34) return value;
+  const terms = termTranslations[locale] ?? {};
+  const term =
+    terms[normalized] ??
+    Object.entries(terms).find(
+      ([source]) => source.toLowerCase() === normalized.toLowerCase()
+    )?.[1];
 
-  const term = termTranslations[locale]?.[normalized];
   if (term) return `${leading}${term}${trailing}`;
+
+  if (normalized.length > 48) return value;
+
+  const replaced = Object.entries(terms)
+    .sort((a, b) => b[0].length - a[0].length)
+    .reduce((text, [source, target]) => {
+      const escaped = escapeRegExp(source);
+      return text.replace(new RegExp(`\\b${escaped}\\b`, "gi"), target);
+    }, normalized);
+
+  if (replaced !== normalized) return `${leading}${replaced}${trailing}`;
 
   return value;
 }
