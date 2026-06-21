@@ -1279,8 +1279,8 @@ function PerformanceLogChecker() {
   };
 
   return (
-    <AnimatedSection id="tools" className="bg-[#050505] py-20">
-      <div className="mx-auto max-w-7xl px-4">
+    <AnimatedSection id="tools" className="overflow-x-hidden bg-[#050505] py-16 md:py-20">
+      <div className="mx-auto max-w-7xl overflow-hidden px-4">
         <div className="mb-10 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <div className="text-sm font-black uppercase tracking-[0.25em] text-red-600">
@@ -1304,11 +1304,11 @@ function PerformanceLogChecker() {
           </Link>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
-          <div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 shadow-2xl shadow-black/20">
-            <div className="mb-5 flex items-center gap-3">
-              <Gauge className="h-7 w-7 text-red-500" />
-              <h3 className="text-2xl font-black">Torque Power Calculator</h3>
+        <div className="grid min-w-0 gap-6 lg:grid-cols-[0.9fr_1.1fr]">
+          <div className="min-w-0 overflow-hidden rounded-[1.5rem] border border-white/10 bg-white/[0.04] p-4 shadow-2xl shadow-black/20 sm:rounded-[2rem] sm:p-6">
+            <div className="mb-5 flex min-w-0 items-center gap-3">
+              <Gauge className="h-7 w-7 shrink-0 text-red-500" />
+              <h3 className="min-w-0 text-2xl font-black leading-tight">Torque Power Calculator</h3>
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
@@ -1337,10 +1337,10 @@ function PerformanceLogChecker() {
               <MetricPanel label="Estimated power" value={power.kw.toFixed(1)} unit="kW" />
             </div>
 
-            <div className="mt-6 rounded-2xl border border-white/10 bg-black/30 p-5">
-              <div className="mb-4 flex items-center gap-3">
-                <Calculator className="h-5 w-5 text-red-500" />
-                <h4 className="font-black">kW to HP quick convert</h4>
+            <div className="mt-6 min-w-0 rounded-2xl border border-white/10 bg-black/30 p-4 sm:p-5">
+              <div className="mb-4 flex min-w-0 items-center gap-3">
+                <Calculator className="h-5 w-5 shrink-0 text-red-500" />
+                <h4 className="min-w-0 font-black">kW to HP quick convert</h4>
               </div>
 
               <NumberField
@@ -1360,18 +1360,18 @@ function PerformanceLogChecker() {
             </div>
           </div>
 
-          <div className="rounded-[2rem] border border-red-900/50 bg-gradient-to-br from-red-950/25 via-white/[0.04] to-black p-6 shadow-2xl shadow-black/30">
-            <div className="mb-5 flex items-center justify-between gap-4">
-              <div>
+          <div className="min-w-0 overflow-hidden rounded-[1.5rem] border border-red-900/50 bg-gradient-to-br from-red-950/25 via-white/[0.04] to-black p-4 shadow-2xl shadow-black/30 sm:rounded-[2rem] sm:p-6">
+            <div className="mb-5 flex min-w-0 items-center justify-between gap-4">
+              <div className="min-w-0">
                 <div className="text-sm font-black uppercase tracking-[0.22em] text-red-400">
                   Autotuner Log Checker
                 </div>
-                <h3 className="mt-2 text-2xl font-black">RPM / torque rows</h3>
+                <h3 className="mt-2 text-2xl font-black leading-tight">RPM / torque rows</h3>
               </div>
-              <BarChart3 className="h-8 w-8 text-red-500" />
+              <BarChart3 className="h-8 w-8 shrink-0 text-red-500" />
             </div>
 
-            <label className="mb-5 flex cursor-pointer items-center justify-between gap-4 rounded-2xl border border-white/10 bg-black/30 p-4 transition hover:border-red-800/60 hover:bg-red-950/20">
+            <label className="mb-5 flex min-w-0 cursor-pointer flex-col items-start gap-4 rounded-2xl border border-white/10 bg-black/30 p-4 transition hover:border-red-800/60 hover:bg-red-950/20 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex min-w-0 items-center gap-3">
                 <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-red-950/40 text-red-500">
                   <Upload className="h-5 w-5" />
@@ -1385,7 +1385,7 @@ function PerformanceLogChecker() {
                   </div>
                 </div>
               </div>
-              <span className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-black text-zinc-300">
+              <span className="shrink-0 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-black text-zinc-300">
                 CSV
               </span>
               <input
@@ -1443,9 +1443,12 @@ function PerformanceLogChecker() {
                 </div>
               </div>
 
-              <div className="space-y-3">
+              <div className="min-w-0 space-y-3">
                 {logPoints.slice(0, 8).map((point) => (
-                  <div key={`${point.rpm}-${point.torque}`} className="grid grid-cols-[74px_1fr_74px] items-center gap-3 text-xs">
+                  <div
+                    key={`${point.rpm}-${point.torque}`}
+                    className="grid min-w-0 grid-cols-[48px_minmax(0,1fr)_52px] items-center gap-2 text-xs sm:grid-cols-[74px_minmax(0,1fr)_74px] sm:gap-3"
+                  >
                     <div className="font-black text-zinc-400">
                       {point.rpm.toFixed(0)}
                     </div>
@@ -1495,10 +1498,10 @@ function NumberField({
   onChange: (value: number) => void;
 }) {
   return (
-    <label className="block">
-      <div className="mb-2 flex items-center justify-between gap-3">
-        <span className="text-sm font-black text-white">{label}</span>
-        <span className="rounded-xl border border-white/10 bg-black/30 px-3 py-1 text-xs font-black text-red-300">
+    <label className="block min-w-0">
+      <div className="mb-2 flex min-w-0 items-center justify-between gap-3">
+        <span className="min-w-0 text-sm font-black text-white">{label}</span>
+        <span className="shrink-0 rounded-xl border border-white/10 bg-black/30 px-3 py-1 text-xs font-black text-red-300">
           {value} {suffix}
         </span>
       </div>
@@ -1525,13 +1528,13 @@ function MetricPanel({
   unit: string;
 }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
+    <div className="min-w-0 rounded-2xl border border-white/10 bg-black/30 p-4">
       <div className="text-xs font-black uppercase tracking-[0.14em] text-zinc-500">
         {label}
       </div>
-      <div className="mt-2 flex items-end gap-2">
-        <span className="text-3xl font-black text-white">{value}</span>
-        <span className="pb-1 text-xs font-black text-red-300">{unit}</span>
+      <div className="mt-2 flex min-w-0 flex-wrap items-end gap-x-2 gap-y-1">
+        <span className="text-3xl font-black leading-none text-white">{value}</span>
+        <span className="break-words pb-1 text-xs font-black text-red-300">{unit}</span>
       </div>
     </div>
   );
