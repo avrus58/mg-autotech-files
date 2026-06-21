@@ -21,6 +21,7 @@ import {
   LayoutDashboard,
   LogOut,
   Plus,
+  Search,
   Settings,
   ShieldCheck,
   Upload,
@@ -355,6 +356,14 @@ export default function DashboardPage() {
               >
                 <History className="h-5 w-5" />
                 Credit History
+              </Link>
+
+              <Link
+                href="/dashboard/fault-codes"
+                className="flex items-center gap-3 rounded-2xl px-4 py-3 font-bold text-zinc-400 transition hover:bg-white/[0.06] hover:text-white"
+              >
+                <Search className="h-5 w-5" />
+                Fault Codes
               </Link>
 
               <Link
@@ -761,6 +770,17 @@ export default function DashboardPage() {
                       <span className="flex items-center gap-3 font-black">
                         <Settings className="h-5 w-5 text-red-600" />
                         Account Settings
+                      </span>
+                      <ArrowRight className="h-5 w-5 text-zinc-500" />
+                    </Link>
+
+                    <Link
+                      href="/dashboard/fault-codes"
+                      className="flex items-center justify-between rounded-2xl border border-white/10 bg-black/30 p-5 transition hover:-translate-y-1 hover:border-red-800/60"
+                    >
+                      <span className="flex items-center gap-3 font-black">
+                        <Search className="h-5 w-5 text-red-600" />
+                        Fault Codes
                       </span>
                       <ArrowRight className="h-5 w-5 text-zinc-500" />
                     </Link>
