@@ -143,6 +143,35 @@ const statusOptions = [
 
 const editableStatusOptions = statusOptions.filter((status) => status !== "all");
 const accountStatusOptions = ["active", "suspended", "blocked"];
+const adminOrdersPageSize = 15;
+type AdminOrderGroup = "open" | "completed" | "cancelled" | "all";
+
+const adminOrderGroups: Array<{
+  value: AdminOrderGroup;
+  label: string;
+  description: string;
+}> = [
+  {
+    value: "open",
+    label: "Open Work",
+    description: "New, file check, progress, revision and info-needed requests.",
+  },
+  {
+    value: "completed",
+    label: "Completed Archive",
+    description: "Finished orders kept away from the daily work queue.",
+  },
+  {
+    value: "cancelled",
+    label: "Cancelled",
+    description: "Cancelled requests for later reference.",
+  },
+  {
+    value: "all",
+    label: "All Orders",
+    description: "Full recent order list.",
+  },
+];
 
 const deliveryEstimateOptions: Array<{
   value: DeliveryEstimate;
@@ -1029,12 +1058,52 @@ function OrdersPanel({
   setSelectedOrder: (order: Order) => void;
   updateStatus: (orderId: string, newStatus: string) => void;
 }) {
+  const [orderGroup, setOrderGroup] = useState<AdminOrderGroup>("open");
+  const [visibleCount, setVisibleCount] = useState(adminOrdersPageSize);
+
+  const groupedOrders = useMemo(() => {
+    if (orderGroup === "completed") {
+      return filteredOrders.filter((order) => order.status === "completed");
+    }
+
+    if (orderGroup === "cancelled") {
+      return filteredOrders.filter((order) => order.status === "cancelled");
+    }
+
+    if (orderGroup === "open") {
+      return filteredOrders.filter(
+        (order) => order.status !== "completed" && order.status !== "cancelled"
+      );
+    }
+
+    return filteredOrders;
+  }, [filteredOrders, orderGroup]);
+
+  const visibleOrders = groupedOrders.slice(0, visibleCount);
+  const groupCounts = useMemo(
+    () => ({
+      open: filteredOrders.filter(
+        (order) => order.status !== "completed" && order.status !== "cancelled"
+      ).length,
+      completed: filteredOrders.filter((order) => order.status === "completed").length,
+      cancelled: filteredOrders.filter((order) => order.status === "cancelled").length,
+      all: filteredOrders.length,
+    }),
+    [filteredOrders]
+  );
+
+  useEffect(() => {
+    setVisibleCount(adminOrdersPageSize);
+  }, [orderGroup, filteredOrders.length, selectedStatus, search, onlyWithFile]);
+
   return (
     <section className="min-w-0 rounded-[1.5rem] border border-white/10 bg-white/[0.04] p-4 shadow-2xl shadow-black/20 sm:rounded-[2rem] sm:p-5">
       <div className="mb-5 flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
         <div className="min-w-0">
           <h2 className="text-2xl font-black">Orders</h2>
-          <p className="mt-1 text-sm text-zinc-500">Showing {filteredOrders.length} of {orders.length} requests.</p>
+          <p className="mt-1 text-sm text-zinc-500">
+            Showing {visibleOrders.length} of {groupedOrders.length} in this view.
+          </p>
         </div>
 
         <div className="flex min-w-0 flex-col gap-3 md:flex-row md:items-center">
@@ -1060,6 +1129,39 @@ function OrdersPanel({
             Only With File
           </button>
         </div>
+      </div>
+
+      <div className="mb-5 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+        {adminOrderGroups.map((group) => {
+          const active = orderGroup === group.value;
+          const count = groupCounts[group.value];
+
+          return (
+            <button
+              key={group.value}
+              type="button"
+              onClick={() => {
+                setOrderGroup(group.value);
+                setSelectedStatus("all");
+              }}
+              className={`min-w-0 rounded-2xl border p-4 text-left transition ${
+                active
+                  ? "border-red-700 bg-red-950/35 text-white"
+                  : "border-white/10 bg-black/30 text-zinc-400 hover:border-red-800/50 hover:text-white"
+              }`}
+            >
+              <div className="flex items-center justify-between gap-3">
+                <span className="font-black">{group.label}</span>
+                <span className="rounded-full bg-white/10 px-2.5 py-1 text-xs font-black">
+                  {count}
+                </span>
+              </div>
+              <div className="mt-2 text-xs leading-5 text-zinc-500">
+                {group.description}
+              </div>
+            </button>
+          );
+        })}
       </div>
 
       <div className="mb-5 flex min-w-0 flex-wrap gap-2 pb-1">
@@ -1108,12 +1210,12 @@ function OrdersPanel({
             </tr>
           </thead>
           <tbody className="divide-y divide-white/10">
-            {filteredOrders.length === 0 ? (
+            {groupedOrders.length === 0 ? (
               <tr>
                 <td colSpan={9} className="px-4 py-12 text-center text-zinc-500">No orders found.</td>
               </tr>
             ) : (
-              filteredOrders.map((order) => (
+              visibleOrders.map((order) => (
                 <tr key={order.id} className="bg-black/20 transition hover:bg-white/[0.04]">
                   <td className="px-3 py-4 align-top">
                     <div className="truncate font-black text-white">#{shortId(order.id)}</div>
@@ -1178,10 +1280,10 @@ function OrdersPanel({
       </div>
 
       <div className="space-y-4 xl:hidden">
-        {filteredOrders.length === 0 ? (
+        {groupedOrders.length === 0 ? (
           <div className="rounded-2xl border border-white/10 bg-black/30 p-8 text-center text-zinc-500">No orders found.</div>
         ) : (
-          filteredOrders.map((order) => (
+          visibleOrders.map((order) => (
             <div key={order.id} className="min-w-0 rounded-2xl border border-white/10 bg-black/30 p-4 sm:p-5">
               <div className="mb-4 flex items-start justify-between gap-4">
                 <div className="min-w-0">
@@ -1214,6 +1316,16 @@ function OrdersPanel({
           ))
         )}
       </div>
+
+      {visibleOrders.length < groupedOrders.length && (
+        <button
+          type="button"
+          onClick={() => setVisibleCount((current) => current + adminOrdersPageSize)}
+          className="mt-5 w-full rounded-xl border border-white/10 bg-white/[0.04] px-5 py-4 text-sm font-black text-white transition hover:border-red-800/60 hover:bg-red-950/25"
+        >
+          Load {Math.min(adminOrdersPageSize, groupedOrders.length - visibleOrders.length)} more orders
+        </button>
+      )}
     </section>
   );
 }
@@ -1497,7 +1609,7 @@ function CustomerDetailModal({ customer, form, setForm, creditInput, setCreditIn
               <textarea value={form.internal_admin_note} onChange={(event) => updateForm("internal_admin_note", event.target.value)} placeholder="Internal admin note. Customer cannot see this." className="mt-4 min-h-32 w-full resize-none rounded-2xl border border-white/10 bg-black/35 px-4 py-3 text-sm font-bold text-white outline-none placeholder:text-zinc-600 focus:border-red-700" />
             </section>
           </div>
-          <aside className="space-y-6">
+          <aside className="min-w-0 space-y-5 sm:space-y-6">
             <section className="rounded-[2rem] border border-red-900/40 bg-red-950/20 p-5">
               <CreditCard className="mb-4 h-8 w-8 text-red-400" /><div className="text-sm text-zinc-400">Current Balance</div><div className="mt-2 text-5xl font-black">{Number(customer.credit_balance ?? 0)}</div><div className="mt-1 text-sm text-zinc-500">credits</div>
             </section>
@@ -1693,16 +1805,16 @@ function OrderDetailModal({ order, customer, onClose, onDownload, onCopy, onCopy
   );
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/75 px-4 py-6 backdrop-blur-sm">
-      <div className="max-h-[94vh] w-full max-w-7xl overflow-auto rounded-[2rem] border border-white/10 bg-[#090909] shadow-2xl shadow-black">
-        <div className="sticky top-0 z-10 border-b border-white/10 bg-[#090909]/95 p-5 backdrop-blur-xl">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center overflow-x-hidden bg-black/75 px-2 py-4 backdrop-blur-sm sm:px-4 sm:py-6">
+      <div className="max-h-[94vh] w-full max-w-7xl overflow-x-hidden overflow-y-auto rounded-[1.5rem] border border-white/10 bg-[#090909] shadow-2xl shadow-black sm:rounded-[2rem]">
+        <div className="sticky top-0 z-10 border-b border-white/10 bg-[#090909]/95 p-4 backdrop-blur-xl sm:p-5">
           <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-            <div>
+            <div className="min-w-0">
               <div className="mb-3 flex flex-wrap items-center gap-2"><span className="rounded-full border border-red-800/40 bg-red-950/25 px-3 py-1 text-xs font-black uppercase tracking-[0.16em] text-red-300">Work Order #{shortId(order.id)}</span><span className={`rounded-full border px-3 py-1 text-xs font-bold ${statusClass(order.status)}`}>{statusLabel(order.status)}</span><span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs font-bold text-zinc-400">{formatDate(order.created_at)}</span></div>
-              <h2 className="text-3xl font-black md:text-4xl">{order.vehicle_brand || "-"} {order.vehicle_model || ""} <span className="text-red-500">{order.vehicle_engine || ""}</span></h2>
-              <p className="mt-2 text-sm text-zinc-500">{customer?.customer_id || order.customer_id || "-"} Â· {customer?.full_name || customer?.company_name || order.customer_email || "-"}</p>
+              <h2 className="break-words text-2xl font-black md:text-4xl">{order.vehicle_brand || "-"} {order.vehicle_model || ""} <span className="text-red-500">{order.vehicle_engine || ""}</span></h2>
+              <p className="mt-2 break-words text-sm text-zinc-500">{customer?.customer_id || order.customer_id || "-"} Â· {customer?.full_name || customer?.company_name || order.customer_email || "-"}</p>
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="grid gap-2 sm:flex sm:flex-wrap">
               <button onClick={onCopy} className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-black text-white transition hover:bg-white/10"><Copy className="mr-2 inline h-4 w-4" />Copy Order ID</button>
               <button onClick={onDownload} disabled={!order.original_file_path} className="rounded-xl bg-[#b1121b] px-4 py-3 text-sm font-black text-white transition hover:bg-[#c91824] disabled:opacity-40"><Download className="mr-2 inline h-4 w-4" />Download Original</button>
               <label className="cursor-pointer rounded-xl border border-emerald-700/40 bg-emerald-950/30 px-4 py-3 text-sm font-black text-emerald-300 transition hover:bg-emerald-900/40">{uploadingModified ? <><Loader2 className="mr-2 inline h-4 w-4 animate-spin" />Uploading Modified</> : <><Upload className="mr-2 inline h-4 w-4" />Upload Modified</>}<input type="file" className="hidden" disabled={uploadingModified} onChange={(event) => { const file = event.target.files?.[0] ?? null; onUploadModified(file, modifiedFileLabel); event.target.value = ""; }} /></label>
@@ -1710,8 +1822,8 @@ function OrderDetailModal({ order, customer, onClose, onDownload, onCopy, onCopy
             </div>
           </div>
         </div>
-        <div className="grid gap-6 p-5 xl:grid-cols-[1fr_380px]">
-          <div className="space-y-6">
+        <div className="grid min-w-0 gap-5 p-3 sm:p-5 xl:grid-cols-[minmax(0,1fr)_380px]">
+          <div className="min-w-0 space-y-5 sm:space-y-6">
             <section className="rounded-[2rem] border border-red-900/40 bg-red-950/20 p-5"><div className="mb-5 flex items-center justify-between gap-4"><div><div className="text-sm font-black uppercase tracking-[0.22em] text-red-400">Work Order Overview</div><h3 className="mt-1 text-2xl font-black">Main job information</h3></div><div className="rounded-2xl bg-black/30 px-4 py-3 text-right"><div className="text-xs text-zinc-500">Credits</div><div className="text-2xl font-black text-red-400">{order.credits_required ?? 0}</div></div></div><div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4"><WorkInfo label="Customer ID" value={customer?.customer_id || order.customer_id} /><WorkInfo label="Vehicle" value={`${order.vehicle_brand || "-"} ${order.vehicle_model || ""}`} /><WorkInfo label="ECU / TCU" value={order.ecu || order.gearbox} /><WorkInfo label="Read Method" value={order.read_method} /></div></section>
             <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5"><div className="mb-5 flex items-center gap-3"><Car className="h-7 w-7 text-red-500" /><div><h3 className="text-2xl font-black">Vehicle Information</h3><p className="mt-1 text-sm text-zinc-500">Vehicle and identification details for this work order.</p></div></div><div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3"><Detail icon={<Car />} label="Brand" value={order.vehicle_brand} /><Detail icon={<Car />} label="Model" value={order.vehicle_model} /><Detail icon={<FileCode2 />} label="Generation" value={order.vehicle_generation} /><Detail icon={<Gauge />} label="Engine" value={order.vehicle_engine} /><Detail icon={<CalendarDays />} label="Year" value={order.vehicle_year} /><Detail icon={<Clipboard />} label="License Plate" value={order.license_plate} /></div></section>
             <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5"><div className="mb-5 flex items-center gap-3"><Database className="h-7 w-7 text-red-500" /><div><h3 className="text-2xl font-black">ECU / File Technical Data</h3><p className="mt-1 text-sm text-zinc-500">Technical identifiers needed for file service processing.</p></div></div><div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3"><Detail icon={<Wrench />} label="ECU / TCU" value={order.ecu} /><Detail icon={<Wrench />} label="Gearbox" value={order.gearbox} /><Detail icon={<FileCode2 />} label="Read Method" value={order.read_method} /><Detail icon={<Database />} label="HW / SW" value={order.hw_sw} /><Detail icon={<PackageCheck />} label="Master / Slave" value={order.master_slave} /><Detail icon={<FileDown />} label="Uploaded File" value={order.uploaded_file_name} /></div></section>
@@ -1719,7 +1831,7 @@ function OrderDetailModal({ order, customer, onClose, onDownload, onCopy, onCopy
             <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5"><h3 className="mb-4 text-2xl font-black">Customer Notes</h3><div className="min-h-32 whitespace-pre-wrap rounded-2xl bg-black/30 p-5 text-sm leading-7 text-zinc-300">{order.notes || "-"}</div></section>
             <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5"><RequestChat requestId={order.id} senderRole="admin" /></section>
           </div>
-          <aside className="space-y-6">
+          <aside className="min-w-0 space-y-5 sm:space-y-6">
             <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5"><h3 className="mb-5 text-2xl font-black">Status Workflow</h3><div className="mb-5 h-2 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-gradient-to-r from-red-800 via-red-600 to-emerald-500 transition-all duration-700" style={{ width: `${((workflowStep + 1) / 5) * 100}%` }} /></div><div className="space-y-3">{[0, 1, 2, 3, 4].map((index) => <div key={index} className={`flex items-center gap-3 rounded-2xl border p-4 ${index <= workflowStep ? "border-emerald-700/30 bg-emerald-950/10" : "border-white/10 bg-black/30"}`}><div className={`flex h-9 w-9 items-center justify-center rounded-full ${index <= workflowStep ? "bg-emerald-500/15 text-emerald-400" : "bg-white/5 text-zinc-500"}`}>{index <= workflowStep ? <CheckCircle2 className="h-4 w-4" /> : <Clock3 className="h-4 w-4" />}</div><div className="font-black">{workflowLabel(index)}</div></div>)}</div><div className="mt-5"><select value={order.status ?? "new_request"} onChange={(event) => onStatusChange(event.target.value)} disabled={updating} className={`h-12 w-full rounded-xl border px-4 text-sm font-black outline-none ${statusClass(order.status)}`}>{editableStatusOptions.map((status) => <option key={status} value={status} className="bg-[#111]">{statusLabel(status)}</option>)}</select>{updating && <div className="mt-3 flex items-center gap-2 text-xs text-zinc-500"><Loader2 className="h-3 w-3 animate-spin" />Updating status...</div>}</div></section>
             <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
               <h3 className="mb-5 text-2xl font-black">Estimated Delivery</h3>
@@ -1788,7 +1900,7 @@ function OrderDetailModal({ order, customer, onClose, onDownload, onCopy, onCopy
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
                           <div className="text-sm font-black text-emerald-300">{formatFileVersionLabel(version.label)}</div>
-                          <div title={version.file_name} className="mt-1 truncate text-sm font-bold text-white">{version.file_name}</div>
+                          <div title={version.file_name} className="mt-1 break-all text-sm font-bold text-white">{version.file_name}</div>
                           <div className="mt-1 text-xs text-zinc-500">{formatDate(version.uploaded_at)}</div>
                         </div>
                         <button onClick={() => onDownloadModified(version.file_path)} className="shrink-0 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-black text-white transition hover:bg-white/10"><Download className="mr-1 inline h-3 w-3" />Download</button>

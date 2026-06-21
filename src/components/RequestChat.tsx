@@ -248,11 +248,11 @@ export default function RequestChat({
   }
 
   return (
-    <section className="overflow-hidden rounded-2xl border border-white/10 bg-[#0f1115] shadow-lg">
-      <div className="border-b border-white/10 bg-white/[0.03] px-5 py-4">
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2">
+    <section className="min-w-0 overflow-hidden rounded-2xl border border-white/10 bg-[#0f1115] shadow-lg">
+      <div className="border-b border-white/10 bg-white/[0.03] px-4 py-4 sm:px-5">
+        <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+          <div className="min-w-0">
+            <div className="flex min-w-0 flex-wrap items-center gap-2">
               <h3 className="text-lg font-black text-white">Request Chat</h3>
 
               {newMessageCount > 0 ? (
@@ -284,7 +284,7 @@ export default function RequestChat({
 
       <div
         ref={scrollAreaRef}
-        className="max-h-96 min-h-64 space-y-3 overflow-y-auto bg-black/25 p-5"
+        className="max-h-96 min-h-64 space-y-3 overflow-y-auto overflow-x-hidden bg-black/25 p-3 sm:p-5"
       >
         {initialLoading ? (
           <div className="flex h-40 items-center justify-center text-sm text-zinc-500">
@@ -314,7 +314,7 @@ export default function RequestChat({
                 }`}
               >
                 <div
-                  className={`max-w-[82%] rounded-2xl px-4 py-3 text-sm shadow-sm ${
+                  className={`max-w-[92%] rounded-2xl px-4 py-3 text-sm shadow-sm sm:max-w-[82%] ${
                     isAdmin
                       ? "bg-blue-600 text-white"
                       : "bg-zinc-800 text-zinc-100"
@@ -350,21 +350,21 @@ export default function RequestChat({
         </div>
       ) : null}
 
-      <div className="border-t border-white/10 bg-white/[0.03] p-4">
-        <div className="flex gap-2">
+      <div className="border-t border-white/10 bg-white/[0.03] p-3 sm:p-4">
+        <div className="flex min-w-0 flex-col gap-2 sm:flex-row">
           <textarea
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Write a message..."
-            className="min-h-[48px] flex-1 resize-none rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-500 transition focus:border-blue-500"
+            className="min-h-[48px] min-w-0 flex-1 resize-none rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-500 transition focus:border-blue-500"
           />
 
           <button
             type="button"
             onClick={sendMessage}
             disabled={sending || !message.trim()}
-            className="rounded-xl bg-blue-600 px-5 py-3 text-sm font-black text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-xl bg-blue-600 px-5 py-3 text-sm font-black text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
           >
             {sending ? "Sending..." : "Send"}
           </button>
