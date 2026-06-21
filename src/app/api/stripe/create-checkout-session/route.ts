@@ -1,53 +1,15 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { getSelectedCreditPurchase } from "@/lib/paymentSelection";
 import { getStripe } from "@/lib/stripe";
-import { getCreditPackage } from "@/lib/creditPackages";
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
+    const selectedPackage = getSelectedCreditPurchase(body);
+    const isPackagePurchase = Boolean(body.packageId);
 
-    const packageId = body.packageId;
-    const customCredits = Number(body.customCredits ?? 0);
-
-    let selectedPackage:
-      | {
-          id: string;
-          credits: number;
-          priceEuro: number;
-          description: string;
-        }
-      | null = null;
-
-    if (packageId && typeof packageId === "string") {
-      const packageData = getCreditPackage(packageId);
-
-      if (!packageData) {
-        return NextResponse.json(
-          { error: "Invalid credit package." },
-          { status: 400 }
-        );
-      }
-
-      selectedPackage = {
-        id: packageData.id,
-        credits: packageData.credits,
-        priceEuro: packageData.priceEuro,
-        description: packageData.description,
-      };
-    } else if (
-      Number.isFinite(customCredits) &&
-      Number.isInteger(customCredits) &&
-      customCredits >= 1 &&
-      customCredits <= 1000
-    ) {
-      selectedPackage = {
-        id: `custom_${customCredits}`,
-        credits: customCredits,
-        priceEuro: customCredits * 5,
-        description: `Custom credit purchase: ${customCredits} credits at €5 per credit.`,
-      };
-    } else {
+    if (!selectedPackage) {
       return NextResponse.json(
         { error: "Credit package or valid custom credit amount is missing." },
         { status: 400 }
@@ -126,7 +88,7 @@ export async function POST(request: Request) {
         package_id: selectedPackage.id,
         credits: String(selectedPackage.credits),
         price_euro: String(selectedPackage.priceEuro),
-        purchase_type: packageId ? "package" : "custom",
+        purchase_type: isPackagePurchase ? "package" : "custom",
       },
     });
 

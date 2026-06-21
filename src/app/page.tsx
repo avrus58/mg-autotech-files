@@ -37,6 +37,10 @@ import {
 } from "lucide-react";
 import { Footer } from "@/components/Footer";
 import { OnlineStatus } from "@/components/OnlineStatus";
+import {
+  CREDIT_PROMOTION_PERCENT,
+  creditPackages as sharedCreditPackages,
+} from "@/lib/creditPackages";
 import { supabase } from "@/lib/supabaseClient";
 
 const services = [
@@ -122,12 +126,15 @@ const workshopUseCases = [
   },
 ];
 
-const creditPackages = [
-  { credits: "10", price: "€45", each: "€4.50 / Credit" },
-  { credits: "50", price: "€225", each: "€4.50 / Credit" },
-  { credits: "100", price: "€400", each: "€4.00 / Credit", popular: true },
-  { credits: "250", price: "€875", each: "€3.50 / Credit" },
-];
+const creditPackages = sharedCreditPackages
+  .filter((pack) => pack.credits <= 250)
+  .map((pack) => ({
+    credits: String(pack.credits),
+    price: pack.priceEuro,
+    basePrice: pack.basePriceEuro,
+    each: pack.priceEuro / pack.credits,
+    popular: pack.highlight,
+  }));
 
 const securityItems = [
   { title: "Private Dashboard", icon: Lock },
@@ -2806,6 +2813,9 @@ export default function HomePage() {
             <p className="mt-3 text-zinc-400">
               Volume based pricing for customers, workshops and partners.
             </p>
+            <div className="mt-4 inline-flex rounded-full border border-red-700/60 bg-red-950/40 px-4 py-2 text-sm font-black text-red-100">
+              Limited time -{CREDIT_PROMOTION_PERCENT}% on all credit packages
+            </div>
           </div>
 
           <div className="grid gap-5 md:grid-cols-4">
@@ -2826,8 +2836,15 @@ export default function HomePage() {
                 <div className="text-sm text-zinc-400">
                   {pack.credits} Credits
                 </div>
-                <div className="mt-4 text-4xl font-black">{pack.price}</div>
-                <div className="mt-3 text-sm text-zinc-400">{pack.each}</div>
+                <div className="mt-4 text-sm font-bold text-zinc-500 line-through">
+                  {formatEuro(pack.basePrice)}
+                </div>
+                <div className="mt-1 text-4xl font-black">
+                  {formatEuro(pack.price)}
+                </div>
+                <div className="mt-3 text-sm text-zinc-400">
+                  {formatEuro(pack.each)} / Credit
+                </div>
                 <Link
                   href="/dashboard/credits"
                   className="mt-7 block rounded-xl border border-red-800/70 px-5 py-3 text-center font-black text-white transition duration-300 hover:bg-red-950/30"

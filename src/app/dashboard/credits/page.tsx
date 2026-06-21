@@ -1,9 +1,15 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { signOutIfEmailUnverified } from "@/lib/authGuards";
+import {
+  CREDIT_PROMOTION_PERCENT,
+  CUSTOM_CREDIT_BASE_PRICE_EURO,
+  CUSTOM_CREDIT_PRICE_EURO,
+  creditPackages as packages,
+} from "@/lib/creditPackages";
 import { supabase } from "@/lib/supabaseClient";
 import {
   ArrowLeft,
@@ -20,50 +26,6 @@ import {
   WalletCards,
   Zap,
 } from "lucide-react";
-
-const packages = [
-  {
-    id: "credits_10",
-    credits: 10,
-    priceEuro: 50,
-    perCredit: 5,
-    title: "Starter",
-    description: "Perfect for testing the platform or a small single request.",
-  },
-  {
-    id: "credits_50",
-    credits: 50,
-    priceEuro: 225,
-    perCredit: 4.5,
-    title: "Workshop",
-    description: "Better price for regular customers and small workshops.",
-  },
-  {
-    id: "credits_100",
-    credits: 100,
-    priceEuro: 400,
-    perCredit: 4,
-    title: "Professional",
-    description: "Strong value for recurring file service requests.",
-    highlight: true,
-  },
-  {
-    id: "credits_250",
-    credits: 250,
-    priceEuro: 875,
-    perCredit: 3.5,
-    title: "Partner",
-    description: "High-volume package for workshops and partner businesses.",
-  },
-  {
-    id: "credits_500",
-    credits: 500,
-    priceEuro: 1500,
-    perCredit: 3,
-    title: "Enterprise",
-    description: "Best price for serious volume and frequent ECU/TCU work.",
-  },
-];
 
 const utilization = [
   { title: "Stage 1", credits: "10 Credit", icon: Crown },
@@ -139,12 +101,13 @@ export default function BuyCreditsPage() {
 
   const customPrice = useMemo(() => {
     if (!customValid) return 0;
-    return customCreditAmount * 5;
+    return customCreditAmount * CUSTOM_CREDIT_PRICE_EURO;
   }, [customCreditAmount, customValid]);
 
   const selectedPayment = paymentMethods.find(
     (method) => method.id === paymentMethod
   );
+  const bestValuePackage = packages.find((pack) => pack.credits === 500);
 
   const bankDetails = {
     accountName: process.env.NEXT_PUBLIC_BANK_ACCOUNT_NAME || "MG AutoTech",
@@ -367,6 +330,9 @@ export default function BuyCreditsPage() {
               Choose a package or enter a custom credit amount. Package prices
               get cheaper as the volume increases.
             </p>
+            <div className="mt-5 inline-flex rounded-full border border-red-700/60 bg-red-950/40 px-4 py-2 text-sm font-black text-red-100">
+              Limited time -{CREDIT_PROMOTION_PERCENT}% on all credit purchases
+            </div>
           </div>
 
           <div className="rounded-[2rem] border border-red-900/50 bg-red-950/20 p-6 shadow-2xl shadow-black/30">
@@ -551,12 +517,16 @@ export default function BuyCreditsPage() {
                 {item.credits} Credit
               </div>
 
-              <div className="mt-2 text-4xl font-black">
+              <div className="mt-3 text-sm font-bold text-zinc-500 line-through">
+                {formatEuro(item.basePriceEuro)}
+              </div>
+
+              <div className="mt-1 text-4xl font-black">
                 {formatEuro(item.priceEuro)}
               </div>
 
               <div className="mt-2 text-sm font-bold text-red-400">
-                Each Credit {formatEuro(item.perCredit)}
+                Each Credit {formatEuro(item.priceEuro / item.credits)}
               </div>
 
               <p className="mt-5 flex-1 text-sm leading-6 text-zinc-400">
@@ -619,8 +589,9 @@ export default function BuyCreditsPage() {
             </h2>
 
             <p className="mt-3 text-sm leading-6 text-zinc-400">
-              Enter any credit amount. Custom credit purchases are calculated at
-              €5 per credit.
+              Enter any credit amount. Custom credit purchases are calculated at{" "}
+              {formatEuro(CUSTOM_CREDIT_PRICE_EURO)} per credit during the
+              limited-time promotion.
             </p>
 
             <div className="mt-6 grid gap-4 sm:grid-cols-[1fr_180px]">
@@ -644,6 +615,13 @@ export default function BuyCreditsPage() {
                 <div className="text-xs font-black uppercase tracking-[0.16em] text-zinc-500">
                   Total Price
                 </div>
+                {customValid && (
+                  <div className="mt-2 text-sm font-bold text-zinc-500 line-through">
+                    {formatEuro(
+                      customCreditAmount * CUSTOM_CREDIT_BASE_PRICE_EURO
+                    )}
+                  </div>
+                )}
                 <div className="mt-2 text-3xl font-black text-red-400">
                   {customValid ? formatEuro(customPrice) : "-"}
                 </div>
@@ -679,23 +657,30 @@ export default function BuyCreditsPage() {
             <h2 className="text-2xl font-black">Important</h2>
             <p className="mt-3 text-sm leading-7 text-zinc-400">
               Package purchases use discounted package pricing. Custom credit
-              purchases are always calculated at €5 per credit. Stripe payments
-              add credits automatically after payment confirmation. Bank
-              transfer requires admin verification before credits are added.
+              purchases are currently calculated at{" "}
+              {formatEuro(CUSTOM_CREDIT_PRICE_EURO)} per credit with the
+              limited-time discount. Stripe, PayPal and SumUp payments add
+              credits automatically after payment confirmation. Bank transfer
+              requires admin verification before credits are added.
             </p>
 
             <div className="mt-6 grid gap-3 sm:grid-cols-2">
               <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
                 <div className="text-sm font-black">Example</div>
                 <div className="mt-1 text-sm text-zinc-400">
-                  17 Credits × €5 = €85
+                  17 Credits × {formatEuro(CUSTOM_CREDIT_PRICE_EURO)} ={" "}
+                  {formatEuro(17 * CUSTOM_CREDIT_PRICE_EURO)}
                 </div>
               </div>
 
               <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
                 <div className="text-sm font-black">Best Value</div>
                 <div className="mt-1 text-sm text-zinc-400">
-                  500 Credits = €3 / Credit
+                  500 Credits ={" "}
+                  {formatEuro(
+                    (bestValuePackage?.priceEuro ?? 1200) / 500
+                  )}{" "}
+                  / Credit
                 </div>
               </div>
             </div>

@@ -1,4 +1,7 @@
-import { getCreditPackage } from "@/lib/creditPackages";
+import {
+  CUSTOM_CREDIT_PRICE_EURO,
+  getCreditPackage,
+} from "@/lib/creditPackages";
 
 export type SelectedCreditPurchase = {
   id: string;
@@ -38,8 +41,8 @@ export function getSelectedCreditPurchase(body: {
     return {
       id: `custom_${customCredits}`,
       credits: customCredits,
-      priceEuro: customCredits * 5,
-      description: `Custom credit purchase: ${customCredits} credits at €5 per credit.`,
+      priceEuro: customCredits * CUSTOM_CREDIT_PRICE_EURO,
+      description: `Custom credit purchase: ${customCredits} credits at €${CUSTOM_CREDIT_PRICE_EURO} per credit.`,
       purchaseType: "custom",
     };
   }
