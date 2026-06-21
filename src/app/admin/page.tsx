@@ -557,7 +557,6 @@ export default function AdminPage() {
   const filteredOrders = useMemo(() => {
     const term = search.trim().toLowerCase();
     return orders.filter((order) => {
-      if (selectedStatus !== "all" && order.status !== selectedStatus) return false;
       if (onlyWithFile && !order.original_file_path) return false;
       if (!term) return true;
       const fullText = [
@@ -583,7 +582,7 @@ export default function AdminPage() {
         .toLowerCase();
       return fullText.includes(term);
     });
-  }, [orders, search, selectedStatus, onlyWithFile, customerById]);
+  }, [orders, search, onlyWithFile, customerById]);
 
   const filteredCustomers = useMemo(() => {
     const term = customerSearch.trim().toLowerCase();
@@ -1079,7 +1078,12 @@ function OrdersPanel({
     return filteredOrders;
   }, [filteredOrders, orderGroup]);
 
-  const visibleOrders = groupedOrders.slice(0, visibleCount);
+  const statusFilteredGroupedOrders = useMemo(() => {
+    if (selectedStatus === "all") return groupedOrders;
+    return groupedOrders.filter((order) => order.status === selectedStatus);
+  }, [groupedOrders, selectedStatus]);
+
+  const visibleOrders = statusFilteredGroupedOrders.slice(0, visibleCount);
   const groupCounts = useMemo(
     () => ({
       open: filteredOrders.filter(
@@ -1091,10 +1095,27 @@ function OrdersPanel({
     }),
     [filteredOrders]
   );
+  const visibleStatusOptions = useMemo(() => {
+    if (orderGroup === "completed") return ["all", "completed"];
+    if (orderGroup === "cancelled") return ["all", "cancelled"];
+    if (orderGroup === "open") {
+      return statusOptions.filter(
+        (status) => status !== "completed" && status !== "cancelled"
+      );
+    }
+
+    return statusOptions;
+  }, [orderGroup]);
+
+  useEffect(() => {
+    if (!visibleStatusOptions.includes(selectedStatus)) {
+      setSelectedStatus("all");
+    }
+  }, [selectedStatus, setSelectedStatus, visibleStatusOptions]);
 
   useEffect(() => {
     setVisibleCount(adminOrdersPageSize);
-  }, [orderGroup, filteredOrders.length, selectedStatus, search, onlyWithFile]);
+  }, [orderGroup, statusFilteredGroupedOrders.length, selectedStatus, search, onlyWithFile]);
 
   return (
     <section className="min-w-0 rounded-[1.5rem] border border-white/10 bg-white/[0.04] p-4 shadow-2xl shadow-black/20 sm:rounded-[2rem] sm:p-5">
@@ -1102,7 +1123,7 @@ function OrdersPanel({
         <div className="min-w-0">
           <h2 className="text-2xl font-black">Orders</h2>
           <p className="mt-1 text-sm text-zinc-500">
-            Showing {visibleOrders.length} of {groupedOrders.length} in this view.
+            Showing {visibleOrders.length} of {statusFilteredGroupedOrders.length} in this view.
           </p>
         </div>
 
@@ -1165,9 +1186,12 @@ function OrdersPanel({
       </div>
 
       <div className="mb-5 flex min-w-0 flex-wrap gap-2 pb-1">
-        {statusOptions.map((status) => {
+        {visibleStatusOptions.map((status) => {
           const active = selectedStatus === status;
-          const count = status === "all" ? orders.length : orders.filter((order) => order.status === status).length;
+          const count =
+            status === "all"
+              ? groupedOrders.length
+              : groupedOrders.filter((order) => order.status === status).length;
           return (
             <button
               key={status}
@@ -1210,7 +1234,7 @@ function OrdersPanel({
             </tr>
           </thead>
           <tbody className="divide-y divide-white/10">
-            {groupedOrders.length === 0 ? (
+            {statusFilteredGroupedOrders.length === 0 ? (
               <tr>
                 <td colSpan={9} className="px-4 py-12 text-center text-zinc-500">No orders found.</td>
               </tr>
@@ -1280,7 +1304,7 @@ function OrdersPanel({
       </div>
 
       <div className="space-y-4 xl:hidden">
-        {groupedOrders.length === 0 ? (
+        {statusFilteredGroupedOrders.length === 0 ? (
           <div className="rounded-2xl border border-white/10 bg-black/30 p-8 text-center text-zinc-500">No orders found.</div>
         ) : (
           visibleOrders.map((order) => (
@@ -1317,13 +1341,13 @@ function OrdersPanel({
         )}
       </div>
 
-      {visibleOrders.length < groupedOrders.length && (
+      {visibleOrders.length < statusFilteredGroupedOrders.length && (
         <button
           type="button"
           onClick={() => setVisibleCount((current) => current + adminOrdersPageSize)}
           className="mt-5 w-full rounded-xl border border-white/10 bg-white/[0.04] px-5 py-4 text-sm font-black text-white transition hover:border-red-800/60 hover:bg-red-950/25"
         >
-          Load {Math.min(adminOrdersPageSize, groupedOrders.length - visibleOrders.length)} more orders
+          Load {Math.min(adminOrdersPageSize, statusFilteredGroupedOrders.length - visibleOrders.length)} more orders
         </button>
       )}
     </section>
