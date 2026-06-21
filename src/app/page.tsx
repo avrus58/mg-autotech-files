@@ -2194,12 +2194,12 @@ export default function HomePage() {
   ];
 
   return (
-    <main className="min-h-screen bg-[#050505] text-white">
+    <main className="min-h-screen overflow-x-hidden bg-[#050505] text-white">
       <FloatingTechBackground />
 
       <header className="sticky top-0 z-50 border-b border-white/10 bg-black/80 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-2 text-xs text-zinc-300">
-          <div className="hidden items-center gap-3 md:flex">
+        <div className="mx-auto hidden max-w-7xl items-center justify-between px-4 py-2 text-xs text-zinc-300 lg:flex">
+          <div className="flex items-center gap-3">
             <RatingStars />
             <span className="rounded-md bg-[#b1121b] px-2 py-0.5 font-bold text-white">
               9.9/10
@@ -2244,21 +2244,21 @@ export default function HomePage() {
           </div>
         </div>
 
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-5">
-          <Link href="/" className="flex items-center gap-3">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-4 sm:py-5">
+          <Link href="/" className="flex min-w-0 items-center gap-2 sm:gap-3">
             <motion.div
               whileHover={{ scale: 1.05, rotate: -1 }}
-              className="relative flex h-12 w-12 items-center justify-center rounded-2xl border border-red-800/50 bg-[#111] shadow-lg shadow-red-950/40"
+              className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-red-800/50 bg-[#111] shadow-lg shadow-red-950/40 sm:h-12 sm:w-12"
             >
               <div className="absolute -top-2 h-5 w-10 rounded-t-full border-t-2 border-red-700" />
-              <Cpu className="h-7 w-7 text-red-600" />
+              <Cpu className="h-6 w-6 text-red-600 sm:h-7 sm:w-7" />
             </motion.div>
 
-            <div>
-              <div className="text-xl font-black tracking-wide">
+            <div className="min-w-0">
+              <div className="truncate text-lg font-black tracking-wide sm:text-xl">
                 MG <span className="text-red-600">AUTOTECH</span>
               </div>
-              <div className="text-xs text-zinc-400">
+              <div className="truncate text-[11px] text-zinc-400 sm:text-xs">
                 ECU / TCU File Service
               </div>
             </div>
@@ -2297,7 +2297,7 @@ export default function HomePage() {
             <div className="flex items-center gap-2">
               <Link
                 href="/dashboard"
-                className="rounded-xl bg-[#b1121b] px-5 py-3 text-sm font-black text-white shadow-lg shadow-red-950/40 transition duration-300 hover:-translate-y-0.5 hover:bg-[#c91824]"
+                className="rounded-xl bg-[#b1121b] px-3 py-3 text-xs font-black text-white shadow-lg shadow-red-950/40 transition duration-300 hover:-translate-y-0.5 hover:bg-[#c91824] sm:px-5 sm:text-sm"
               >
                 <LayoutDashboard className="mr-2 inline h-4 w-4" />
                 My Account
@@ -2324,7 +2324,7 @@ export default function HomePage() {
 
               <Link
                 href="/register"
-                className="rounded-xl bg-[#b1121b] px-5 py-3 text-sm font-black text-white shadow-lg shadow-red-950/40 transition duration-300 hover:-translate-y-0.5 hover:bg-[#c91824]"
+                className="rounded-xl bg-[#b1121b] px-3 py-3 text-xs font-black text-white shadow-lg shadow-red-950/40 transition duration-300 hover:-translate-y-0.5 hover:bg-[#c91824] sm:px-5 sm:text-sm"
               >
                 Register
               </Link>
@@ -2352,9 +2352,9 @@ export default function HomePage() {
           className="absolute right-32 top-52 -z-10 hidden h-1 w-[480px] rounded-full bg-red-500 lg:block"
         />
 
-        <div className="mx-auto grid h-[825px] max-w-7xl gap-12 px-4 py-20 lg:grid-cols-[1.05fr_.95fr] lg:items-center">
+        <div className="mx-auto grid min-h-[720px] max-w-7xl gap-12 px-4 py-14 sm:py-20 lg:h-[825px] lg:grid-cols-[1.05fr_.95fr] lg:items-center">
           <motion.div
-            className="lg:min-h-[520px]"
+            className="min-w-0 lg:min-h-[520px]"
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.55 }}
@@ -2364,7 +2364,7 @@ export default function HomePage() {
               Professional online file service platform
             </div>
 
-            <h1 className="max-w-4xl text-5xl font-black uppercase leading-[1.05] tracking-[0.08em] md:text-7xl">
+            <h1 className="max-w-full break-words text-[clamp(2.65rem,12vw,4.6rem)] font-black uppercase leading-[1.05] tracking-[0.04em] md:text-7xl md:tracking-[0.08em]">
               Custom ECU & TCU
               <span className="block text-red-600">Tuning Files</span>
             </h1>
@@ -2433,7 +2433,9 @@ export default function HomePage() {
             </div>
           </motion.div>
 
-          <TechnicalHeroPreview />
+          <div className="hidden min-w-0 lg:block">
+            <TechnicalHeroPreview />
+          </div>
         </div>
 
         <PublicVehicleChecker />
