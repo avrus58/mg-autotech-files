@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import type { ReactNode } from "react";
@@ -461,7 +461,7 @@ export default function AdminPage() {
       if (newOrders.length > 0) {
         const newestOrder = newOrders[0];
         const vehicle = [newestOrder.vehicle_brand, newestOrder.vehicle_model].filter(Boolean).join(" ");
-        setNewOrderNotice(`${newOrders.length} new request${newOrders.length > 1 ? "s" : ""} received${vehicle ? ` · ${vehicle}` : ""}`);
+        setNewOrderNotice(`${newOrders.length} new request${newOrders.length > 1 ? "s" : ""} received${vehicle ? ` Â· ${vehicle}` : ""}`);
         playAdminNotificationSound();
         window.setTimeout(() => setNewOrderNotice(""), 9000);
       }
@@ -832,39 +832,39 @@ export default function AdminPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#050505] text-white">
+    <main className="min-h-screen overflow-x-hidden bg-[#050505] text-white">
       <div className="fixed inset-0 -z-10 bg-[radial-gradient(circle_at_18%_0%,rgba(160,18,28,0.25),transparent_34%),linear-gradient(135deg,#050505,#0c0c0e_48%,#170507)]" />
 
       <header className="sticky top-0 z-50 border-b border-white/10 bg-black/80 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-[1600px] items-center justify-between px-4 py-5">
-          <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-red-800/50 bg-[#111] shadow-lg shadow-red-950/40">
-              <ShieldCheck className="h-7 w-7 text-red-600" />
+        <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-3 px-4 py-4 sm:py-5">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-red-800/50 bg-[#111] shadow-lg shadow-red-950/40 sm:h-12 sm:w-12">
+              <ShieldCheck className="h-6 w-6 text-red-600 sm:h-7 sm:w-7" />
             </div>
-            <div>
-              <div className="text-xl font-black tracking-wide">MG <span className="text-red-600">AUTOTECH</span></div>
-              <div className="text-xs text-zinc-400">File Service Admin Operations</div>
+            <div className="min-w-0">
+              <div className="truncate text-lg font-black tracking-wide sm:text-xl">MG <span className="text-red-600">AUTOTECH</span></div>
+              <div className="truncate text-xs text-zinc-400">File Service Admin Operations</div>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-2">
             <div className="hidden rounded-xl border border-emerald-700/30 bg-emerald-950/20 px-4 py-3 text-xs font-black text-emerald-300 lg:block">
               {autoRefreshing ? "Syncing..." : lastSyncAt ? `Synced ${lastSyncAt.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}` : "Live Sync"}
             </div>
-            <button onClick={() => loadAdminData()} className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-bold text-white transition hover:bg-white/10">
+            <button onClick={() => loadAdminData()} className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-3 text-sm font-bold text-white transition hover:bg-white/10 sm:px-4">
               <RefreshCcw className={`mr-2 inline h-4 w-4 ${autoRefreshing ? "animate-spin" : ""}`} />
-              Refresh
+              <span className="hidden sm:inline">Refresh</span>
             </button>
-            <Link href="/dashboard" className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-bold text-white transition hover:bg-white/10">
+            <Link href="/dashboard" className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-3 text-sm font-bold text-white transition hover:bg-white/10 sm:px-4">
               <ArrowLeft className="mr-2 inline h-4 w-4" />
-              Dashboard
+              <span className="hidden sm:inline">Dashboard</span>
             </Link>
           </div>
         </div>
       </header>
 
-      <section className="mx-auto grid max-w-[1600px] gap-6 px-4 py-8 xl:grid-cols-[260px_1fr]">
-        <aside className="h-fit rounded-[2rem] border border-white/10 bg-white/[0.04] p-4 shadow-2xl shadow-black/20 xl:sticky xl:top-28">
+      <section className="mx-auto grid max-w-[1600px] min-w-0 gap-5 px-3 py-6 sm:px-4 sm:py-8 xl:grid-cols-[260px_1fr]">
+        <aside className="h-fit min-w-0 rounded-[1.5rem] border border-white/10 bg-white/[0.04] p-4 shadow-2xl shadow-black/20 sm:rounded-[2rem] xl:sticky xl:top-28">
           <div className="mb-4 px-3">
             <div className="text-xs font-black uppercase tracking-[0.22em] text-zinc-500">Admin Workspace</div>
             <div className="mt-1 text-lg font-black text-white">Operations</div>
@@ -882,7 +882,7 @@ export default function AdminPage() {
           </div>
         </aside>
 
-        <div>
+        <div className="min-w-0">
           <div className="mb-8">
             <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-red-800/50 bg-red-950/25 px-4 py-2 text-sm font-semibold text-red-100">
               <Database className="h-4 w-4 text-red-500" />
@@ -902,7 +902,7 @@ export default function AdminPage() {
             }}
           />
 
-          <div className="mb-8 grid gap-4 md:grid-cols-2 xl:grid-cols-8">
+          <div className="mb-8 grid min-w-0 grid-cols-2 gap-3 md:grid-cols-2 xl:grid-cols-8 xl:gap-4">
             <StatCard icon={<FileCode2 />} label="Orders" value={stats.total} />
             <StatCard icon={<Users />} label="Customers" value={stats.customers} />
             <StatCard icon={<Upload />} label="New" value={stats.newRequests} />
@@ -1030,15 +1030,15 @@ function OrdersPanel({
   updateStatus: (orderId: string, newStatus: string) => void;
 }) {
   return (
-    <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5 shadow-2xl shadow-black/20">
+    <section className="min-w-0 rounded-[1.5rem] border border-white/10 bg-white/[0.04] p-4 shadow-2xl shadow-black/20 sm:rounded-[2rem] sm:p-5">
       <div className="mb-5 flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-        <div>
+        <div className="min-w-0">
           <h2 className="text-2xl font-black">Orders</h2>
           <p className="mt-1 text-sm text-zinc-500">Showing {filteredOrders.length} of {orders.length} requests.</p>
         </div>
 
-        <div className="flex flex-col gap-3 md:flex-row md:items-center">
-          <div className="relative">
+        <div className="flex min-w-0 flex-col gap-3 md:flex-row md:items-center">
+          <div className="relative min-w-0">
             <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
             <input
               value={search}
@@ -1062,7 +1062,7 @@ function OrdersPanel({
         </div>
       </div>
 
-      <div className="mb-5 flex gap-2 overflow-x-auto pb-1">
+      <div className="mb-5 flex min-w-0 flex-wrap gap-2 pb-1">
         {statusOptions.map((status) => {
           const active = selectedStatus === status;
           const count = status === "all" ? orders.length : orders.filter((order) => order.status === status).length;
@@ -1070,7 +1070,7 @@ function OrdersPanel({
             <button
               key={status}
               onClick={() => setSelectedStatus(status)}
-              className={`shrink-0 rounded-xl border px-4 py-3 text-sm font-black transition ${
+              className={`rounded-xl border px-3 py-3 text-sm font-black transition sm:px-4 ${
                 active ? "border-red-700 bg-red-950/40 text-white" : "border-white/10 bg-black/30 text-zinc-400 hover:text-white"
               }`}
             >
@@ -1133,11 +1133,11 @@ function OrdersPanel({
                   </td>
                   <td className="px-3 py-4 align-top">
                     <div className="line-clamp-2 font-black">{order.vehicle_brand || "-"} {order.vehicle_model || ""}</div>
-                    <div className="mt-1 line-clamp-2 text-xs text-zinc-500">{order.vehicle_generation || "-"} · {order.vehicle_engine || "-"}</div>
+                    <div className="mt-1 line-clamp-2 text-xs text-zinc-500">{order.vehicle_generation || "-"} Â· {order.vehicle_engine || "-"}</div>
                   </td>
                   <td className="px-3 py-4 align-top">
                     <div className="line-clamp-3 font-bold">{order.ecu || "-"}</div>
-                    <div className="mt-1 line-clamp-2 text-xs text-zinc-500">{order.read_method || "-"} · {order.gearbox || "-"}</div>
+                    <div className="mt-1 line-clamp-2 text-xs text-zinc-500">{order.read_method || "-"} Â· {order.gearbox || "-"}</div>
                   </td>
                   <td className="px-3 py-4 align-top"><div className="line-clamp-2 font-bold text-zinc-200">{order.service_type || "-"}</div></td>
                   <td className="px-3 py-4 align-top"><div className="rounded-xl bg-red-950/30 px-3 py-2 text-center font-black text-red-300">{order.credits_required ?? 0}</div></td>
@@ -1182,13 +1182,13 @@ function OrdersPanel({
           <div className="rounded-2xl border border-white/10 bg-black/30 p-8 text-center text-zinc-500">No orders found.</div>
         ) : (
           filteredOrders.map((order) => (
-            <div key={order.id} className="rounded-2xl border border-white/10 bg-black/30 p-5">
+            <div key={order.id} className="min-w-0 rounded-2xl border border-white/10 bg-black/30 p-4 sm:p-5">
               <div className="mb-4 flex items-start justify-between gap-4">
-                <div>
-                  <div className="text-lg font-black">{order.vehicle_brand || "-"} {order.vehicle_model || ""}</div>
-                  <div className="mt-1 text-sm text-zinc-500">#{shortId(order.id)} · {formatDate(order.created_at)}</div>
+                <div className="min-w-0">
+                  <div className="break-words text-lg font-black">{order.vehicle_brand || "-"} {order.vehicle_model || ""}</div>
+                  <div className="mt-1 break-words text-sm text-zinc-500">#{shortId(order.id)} Â· {formatDate(order.created_at)}</div>
                 </div>
-                <span className={`rounded-full border px-3 py-1 text-xs font-bold ${statusClass(order.status)}`}>{statusLabel(order.status)}</span>
+                <span className={`shrink-0 rounded-full border px-3 py-1 text-xs font-bold ${statusClass(order.status)}`}>{statusLabel(order.status)}</span>
               </div>
               <div className="grid gap-3 text-sm md:grid-cols-2">
                 <MiniInfo label="Customer" value={customerById.get(order.customer_id ?? "")?.customer_id || order.customer_email} />
@@ -1246,13 +1246,13 @@ function CustomersPanel({
   handleCustomCreditAdjust: (customer: Profile) => void;
 }) {
   return (
-    <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5 shadow-2xl shadow-black/20">
+    <section className="min-w-0 rounded-[1.5rem] border border-white/10 bg-white/[0.04] p-4 shadow-2xl shadow-black/20 sm:rounded-[2rem] sm:p-5">
       <div className="mb-5 flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-        <div>
+        <div className="min-w-0">
           <h2 className="text-2xl font-black">Customers</h2>
           <p className="mt-1 text-sm text-zinc-500">Manage {filteredCustomers.length} of {customers.length} customers, credits and account permissions.</p>
         </div>
-        <div className="relative">
+        <div className="relative min-w-0">
           <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
           <input
             value={customerSearch}
@@ -1339,12 +1339,12 @@ function CustomersPanel({
 
       <div className="space-y-4 xl:hidden">
         {filteredCustomers.length === 0 ? <div className="rounded-2xl border border-white/10 bg-black/30 p-8 text-center text-zinc-500">No customers found.</div> : filteredCustomers.map((customer) => (
-          <div key={customer.id} className="rounded-2xl border border-white/10 bg-black/30 p-5">
+          <div key={customer.id} className="min-w-0 rounded-2xl border border-white/10 bg-black/30 p-4 sm:p-5">
             <div className="mb-4 flex items-start justify-between gap-4">
-              <div>
-                <div className="font-black">{customer.email || "-"}</div>
-                <div className="mt-1 text-sm text-zinc-500">{customer.customer_id || customer.id}</div>
-                <div className="mt-1 text-xs text-zinc-500">{customer.full_name || customer.company_name || "-"}</div>
+              <div className="min-w-0">
+                <div className="break-words font-black">{customer.email || "-"}</div>
+                <div className="mt-1 break-words text-sm text-zinc-500">{customer.customer_id || customer.id}</div>
+                <div className="mt-1 break-words text-xs text-zinc-500">{customer.full_name || customer.company_name || "-"}</div>
                 {customer.customer_tags?.length ? (
                   <div className="mt-2 flex flex-wrap gap-1">
                     {customer.customer_tags.map((tag) => (
@@ -1355,7 +1355,7 @@ function CustomersPanel({
                   </div>
                 ) : null}
               </div>
-              <div className="rounded-xl bg-red-950/30 px-3 py-2 text-center font-black text-red-300">{Number(customer.credit_balance ?? 0)}</div>
+              <div className="shrink-0 rounded-xl bg-red-950/30 px-3 py-2 text-center font-black text-red-300">{Number(customer.credit_balance ?? 0)}</div>
             </div>
             <div className="mb-4 flex flex-wrap gap-2">
               {[10, 25, 50, 100].map((amount) => <button key={amount} onClick={() => quickAdjustCredits(customer, amount)} disabled={creditUpdatingId === customer.id} className="rounded-xl border border-emerald-700/40 bg-emerald-950/30 px-3 py-2 text-xs font-black text-emerald-300 disabled:opacity-50">+{amount}</button>)}
@@ -1625,16 +1625,16 @@ function AdminNotificationCenter({
 
 function StatCard({ icon, label, value, highlight = false }: { icon: ReactNode; label: string; value: string | number; highlight?: boolean }) {
   return (
-    <div className={`rounded-[2rem] border p-5 ${highlight ? "border-red-900/40 bg-red-950/20" : "border-white/10 bg-white/[0.04]"}`}>
-      <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-2xl bg-red-950/40 text-red-400">{icon}</div>
-      <div className="text-sm text-zinc-400">{label}</div>
-      <div className="mt-2 text-3xl font-black">{value}</div>
+    <div className={`min-w-0 rounded-[1.5rem] border p-4 sm:rounded-[2rem] sm:p-5 ${highlight ? "border-red-900/40 bg-red-950/20" : "border-white/10 bg-white/[0.04]"}`}>
+      <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-2xl bg-red-950/40 text-red-400 sm:h-11 sm:w-11">{icon}</div>
+      <div className="break-words text-sm text-zinc-400">{label}</div>
+      <div className="mt-2 break-words text-3xl font-black">{value}</div>
     </div>
   );
 }
 
 function MiniInfo({ label, value }: { label: string; value: string | number | null | undefined }) {
-  return <div className="rounded-xl bg-white/[0.04] p-3"><div className="text-xs uppercase tracking-[0.12em] text-zinc-500">{label}</div><div className="mt-1 font-bold text-white">{value || "-"}</div></div>;
+  return <div className="min-w-0 rounded-xl bg-white/[0.04] p-3"><div className="text-xs uppercase tracking-[0.12em] text-zinc-500">{label}</div><div className="mt-1 break-words font-bold text-white">{value || "-"}</div></div>;
 }
 
 function FormInput({ label, value, onChange, type = "text" }: { label: string; value: string; onChange: (value: string) => void; type?: string }) {
@@ -1700,7 +1700,7 @@ function OrderDetailModal({ order, customer, onClose, onDownload, onCopy, onCopy
             <div>
               <div className="mb-3 flex flex-wrap items-center gap-2"><span className="rounded-full border border-red-800/40 bg-red-950/25 px-3 py-1 text-xs font-black uppercase tracking-[0.16em] text-red-300">Work Order #{shortId(order.id)}</span><span className={`rounded-full border px-3 py-1 text-xs font-bold ${statusClass(order.status)}`}>{statusLabel(order.status)}</span><span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs font-bold text-zinc-400">{formatDate(order.created_at)}</span></div>
               <h2 className="text-3xl font-black md:text-4xl">{order.vehicle_brand || "-"} {order.vehicle_model || ""} <span className="text-red-500">{order.vehicle_engine || ""}</span></h2>
-              <p className="mt-2 text-sm text-zinc-500">{customer?.customer_id || order.customer_id || "-"} · {customer?.full_name || customer?.company_name || order.customer_email || "-"}</p>
+              <p className="mt-2 text-sm text-zinc-500">{customer?.customer_id || order.customer_id || "-"} Â· {customer?.full_name || customer?.company_name || order.customer_email || "-"}</p>
             </div>
             <div className="flex flex-wrap gap-2">
               <button onClick={onCopy} className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-black text-white transition hover:bg-white/10"><Copy className="mr-2 inline h-4 w-4" />Copy Order ID</button>
