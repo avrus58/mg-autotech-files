@@ -179,6 +179,40 @@ const trustHighlights = [
   },
 ];
 
+const calibrationKnowledgeItems = [
+  {
+    title: "WinOLS based file analysis",
+    text: "Original files are reviewed with a calibration-focused workflow before service work starts.",
+    icon: FileCode2,
+    highlight: true,
+  },
+  {
+    title: "DAMOS / A2L assisted checks",
+    text: "Map structure knowledge can support deeper review when suitable data is available.",
+    icon: Search,
+  },
+  {
+    title: "ECU / TCU map structure experience",
+    text: "Requests are checked against the vehicle, ECU family, read method and selected service.",
+    icon: Cpu,
+  },
+  {
+    title: "Bosch EDC / MD1 / MG1 support",
+    text: "Common modern diesel and petrol control units are handled with platform-specific care.",
+    icon: Gauge,
+  },
+  {
+    title: "Siemens, Delphi and VAG knowledge",
+    text: "The workflow is built around real workshop file-service cases, not generic upload handling.",
+    icon: Wrench,
+  },
+  {
+    title: "Manual calibration review",
+    text: "Vehicle-specific checks help keep service requests clear before delivery or revision.",
+    icon: ShieldCheck,
+  },
+];
+
 const commandDeskStages = [
   {
     title: "File intake",
@@ -2653,6 +2687,76 @@ export default function HomePage() {
                   </div>
                   <h3 className="text-lg font-black">{item.title}</h3>
                   <p className="mt-3 text-sm leading-6 text-zinc-600">
+                    {item.text}
+                  </p>
+                </motion.div>
+              );
+            })}
+          </motion.div>
+        </div>
+      </AnimatedSection>
+
+      <AnimatedSection className="bg-[#050505] py-20">
+        <div className="mx-auto grid max-w-7xl gap-10 px-4 lg:grid-cols-[0.85fr_1.15fr] lg:items-center">
+          <div>
+            <div className="text-sm font-black uppercase tracking-[0.25em] text-red-600">
+              Calibration Knowledge Base
+            </div>
+            <h2 className="mt-3 text-4xl font-black md:text-5xl">
+              WinOLS based analysis with vehicle-specific file review.
+            </h2>
+            <p className="mt-5 max-w-xl text-sm leading-7 text-zinc-400">
+              MG AutoTech focuses on structured calibration review: ECU/TCU
+              family, read method, selected service, fault notes and available
+              map data are checked before the file workflow continues.
+            </p>
+            <div className="mt-6 rounded-2xl border border-red-900/50 bg-red-950/20 p-5">
+              <div className="text-xs font-black uppercase tracking-[0.2em] text-red-300">
+                Professional approach
+              </div>
+              <p className="mt-2 text-sm leading-6 text-zinc-300">
+                No exaggerated database numbers. Just a clean technical
+                workflow built around WinOLS, DAMOS/A2L support and manual
+                calibration checks where they matter.
+              </p>
+            </div>
+          </div>
+
+          <motion.div
+            variants={stagger}
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, amount: 0.2 }}
+            className="grid gap-4 sm:grid-cols-2"
+          >
+            {calibrationKnowledgeItems.map((item) => {
+              const Icon = item.icon;
+
+              return (
+                <motion.div
+                  variants={fadeUp}
+                  key={item.title}
+                  className={`rounded-2xl border p-5 transition duration-300 hover:-translate-y-1 ${
+                    item.highlight
+                      ? "border-red-700 bg-[#b1121b] text-white shadow-2xl shadow-red-950/40"
+                      : "border-white/10 bg-white/[0.04] hover:border-red-800/60 hover:bg-white/[0.07]"
+                  }`}
+                >
+                  <div
+                    className={`mb-4 flex h-11 w-11 items-center justify-center rounded-2xl ${
+                      item.highlight
+                        ? "bg-white/15 text-white"
+                        : "border border-red-900/50 bg-red-950/30 text-red-500"
+                    }`}
+                  >
+                    <Icon className="h-5 w-5" />
+                  </div>
+                  <h3 className="text-lg font-black">{item.title}</h3>
+                  <p
+                    className={`mt-3 text-sm leading-6 ${
+                      item.highlight ? "text-red-50" : "text-zinc-400"
+                    }`}
+                  >
                     {item.text}
                   </p>
                 </motion.div>
