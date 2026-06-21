@@ -247,25 +247,44 @@ function getWorkloadSnapshot(date: Date) {
   const hour = date.getHours();
   const minute = date.getMinutes();
   const minutes = hour * 60 + minute;
-  const open = 9 * 60;
-  const close = 20 * 60;
-  const online = day !== 0 && minutes >= open && minutes < close;
+  const open = 6 * 60;
+  const nightPause = 2 * 60;
+  const online = minutes >= open || minutes < nightPause;
+  const sunday = day === 0;
 
   if (!online) {
     return {
       support: "Offline",
-      queue: "Closed",
-      response: "Next working hours",
-      note: "Requests can still be submitted and will be reviewed when support is back online.",
+      queue: "Night pause",
+      response: "From 06:00",
+      note: "Requests can still be submitted and will be reviewed when the morning support window opens.",
     };
   }
 
-  if (minutes < 10 * 60) {
+  if (sunday) {
+    if (minutes >= 22 * 60 || minutes < nightPause) {
+      return {
+        support: "Online",
+        queue: "Limited Sunday",
+        response: "~60-90 min",
+        note: "Sunday support stays online with a smaller team, so complex files can take longer.",
+      };
+    }
+
     return {
       support: "Online",
-      queue: "Fresh start",
-      response: "~10-15 min",
-      note: "Morning queue is usually light for standard file checks.",
+      queue: "Sunday support",
+      response: "~35-60 min",
+      note: "Sunday requests are accepted, but response times can be slower because fewer staff are online.",
+    };
+  }
+
+  if (minutes < 8 * 60) {
+    return {
+      support: "Online",
+      queue: "Early support",
+      response: "~10-20 min",
+      note: "Early queue is usually light for standard file checks.",
     };
   }
 
@@ -287,7 +306,7 @@ function getWorkloadSnapshot(date: Date) {
     };
   }
 
-  if (minutes < 17 * 60) {
+  if (minutes < 18 * 60) {
     return {
       support: "Online",
       queue: "Normal",
@@ -296,7 +315,7 @@ function getWorkloadSnapshot(date: Date) {
     };
   }
 
-  if (minutes < 19 * 60) {
+  if (minutes < 22 * 60) {
     return {
       support: "Online",
       queue: "Busy",
@@ -307,9 +326,9 @@ function getWorkloadSnapshot(date: Date) {
 
   return {
     support: "Online",
-    queue: "Closing window",
-    response: "~45-60 min",
-    note: "Late requests may move into the next working window if checks take longer.",
+    queue: "Late support",
+    response: "~45-75 min",
+    note: "Late evening requests are accepted, but complex checks may take longer during the reduced night team.",
   };
 }
 
@@ -2168,8 +2187,8 @@ export default function HomePage() {
       value: workloadSnapshot.support,
       text:
         workloadSnapshot.support === "Offline"
-          ? "Requests are accepted and reviewed in the next working window."
-          : "Customer requests are monitored during working hours.",
+          ? "Requests are accepted and reviewed from the 06:00 support window."
+          : "Customer requests are monitored during the 06:00-02:00 operation window.",
       icon: Activity,
       tone: workloadSnapshot.support === "Offline" ? "red" : "emerald",
     },
@@ -2180,7 +2199,8 @@ export default function HomePage() {
       icon: Gauge,
       tone:
         workloadSnapshot.queue === "Busy" ||
-        workloadSnapshot.queue === "Closing window"
+        workloadSnapshot.queue === "Late support" ||
+        workloadSnapshot.queue === "Limited Sunday"
           ? "red"
           : "blue",
     },

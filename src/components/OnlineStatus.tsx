@@ -17,18 +17,39 @@ function formatTime(date: Date) {
 }
 
 function isOnline(date: Date) {
-  const day = date.getDay();
   const hour = date.getHours();
   const minute = date.getMinutes();
   const minutes = hour * 60 + minute;
 
-  // Monday - Saturday, 09:00 - 20:00
-  const open = 9 * 60;
-  const close = 20 * 60;
+  // Daily operation window: 06:00 - 02:00, with a short night pause.
+  const open = 6 * 60;
+  const nightPause = 2 * 60;
 
-  if (day === 0) return false;
+  return minutes >= open || minutes < nightPause;
+}
 
-  return minutes >= open && minutes < close;
+function getStatusLabel(date: Date, online: boolean) {
+  if (!online) {
+    return (
+      <>
+        We are <span className="font-black text-red-400">offline</span>
+      </>
+    );
+  }
+
+  if (date.getDay() === 0) {
+    return (
+      <>
+        Sunday support is <span className="font-black text-amber-300">online</span>
+      </>
+    );
+  }
+
+  return (
+    <>
+      Now we are <span className="font-black text-emerald-400">online!</span>
+    </>
+  );
 }
 
 export function OnlineStatus() {
@@ -49,12 +70,20 @@ export function OnlineStatus() {
       return {
         time: "--:--",
         online: false,
+        label: (
+          <>
+            We are <span className="font-black text-red-400">offline</span>
+          </>
+        ),
       };
     }
 
+    const online = isOnline(now);
+
     return {
       time: formatTime(now),
-      online: isOnline(now),
+      online,
+      label: getStatusLabel(now, online),
     };
   }, [now]);
 
@@ -72,15 +101,7 @@ export function OnlineStatus() {
           <div className="text-sm leading-tight">
             <div className="font-black">It&apos;s {status.time}.</div>
             <div className="text-xs text-zinc-300">
-              {status.online ? (
-                <>
-                  Now we are <span className="font-black text-emerald-400">online!</span>
-                </>
-              ) : (
-                <>
-                  We are <span className="font-black text-red-400">offline</span>
-                </>
-              )}
+              {status.label}
             </div>
           </div>
         </div>
