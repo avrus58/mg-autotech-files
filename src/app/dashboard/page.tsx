@@ -648,8 +648,8 @@ export default function DashboardPage() {
                     </Link>
                   </div>
                 ) : (
-                  <div className="overflow-hidden rounded-3xl border border-white/10">
-                    <div className="grid grid-cols-[1.4fr_.8fr_.7fr_.7fr_.9fr] gap-4 bg-black/40 px-5 py-4 text-xs font-black uppercase tracking-[0.18em] text-zinc-500">
+                  <div className="min-w-0 overflow-hidden rounded-3xl border border-white/10">
+                    <div className="hidden grid-cols-[1.4fr_.8fr_.7fr_.7fr_.9fr] gap-4 bg-black/40 px-5 py-4 text-xs font-black uppercase tracking-[0.18em] text-zinc-500 md:grid">
                       <div>Vehicle / Request</div>
                       <div>Status</div>
                       <div>Credit</div>
@@ -661,23 +661,26 @@ export default function DashboardPage() {
                       {orders.map((order) => (
                         <div
                           key={order.id}
-                          className="grid grid-cols-1 gap-4 bg-black/20 px-5 py-4 transition hover:bg-white/[0.04] md:grid-cols-[1.4fr_.8fr_.7fr_.7fr_.9fr] md:items-center"
+                          className="grid min-w-0 grid-cols-1 gap-4 bg-black/20 px-4 py-5 transition hover:bg-white/[0.04] md:grid-cols-[1.4fr_.8fr_.7fr_.7fr_.9fr] md:items-center md:px-5 md:py-4"
                         >
-                          <div>
-                            <div className="font-black">
+                          <div className="min-w-0">
+                            <div className="break-words font-black">
                               {order.vehicle_brand || "Vehicle"}{" "}
                               {order.vehicle_model || ""}
                             </div>
-                            <div className="mt-1 text-sm text-zinc-400">
+                            <div className="mt-1 break-words text-sm text-zinc-400">
                               {order.vehicle_generation || "Generation not set"} ·{" "}
                               {order.vehicle_engine || "Engine not set"}
                             </div>
-                            <div className="mt-2 text-xs font-bold text-red-400">
+                            <div className="mt-2 break-words text-xs font-bold text-red-400">
                               {order.service_type || "Service not set"}
                             </div>
                           </div>
 
-                          <div>
+                          <div className="flex flex-wrap items-center gap-3 md:block">
+                            <span className="text-xs font-black uppercase tracking-[0.14em] text-zinc-600 md:hidden">
+                              Status
+                            </span>
                             <span
                               className={`rounded-full border px-3 py-1 text-xs font-black ${getStatusStyle(
                                 order.status
@@ -687,32 +690,40 @@ export default function DashboardPage() {
                             </span>
                           </div>
 
-                          <div className="font-black">
-                            {Number(order.credits_required ?? 0)}
+                          <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-black/25 px-4 py-3 md:block md:border-0 md:bg-transparent md:px-0 md:py-0">
+                            <span className="text-xs font-black uppercase tracking-[0.14em] text-zinc-600 md:hidden">
+                              Credit
+                            </span>
+                            <span className="font-black">
+                              {Number(order.credits_required ?? 0)}
+                            </span>
                           </div>
 
-                          <div className="text-left text-sm text-zinc-400">
-                            {formatDate(order.created_at)}
+                          <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-zinc-400 md:block md:border-0 md:bg-transparent md:px-0 md:py-0 md:text-left">
+                            <span className="text-xs font-black uppercase tracking-[0.14em] text-zinc-600 md:hidden">
+                              Date
+                            </span>
+                            <span>{formatDate(order.created_at)}</span>
                           </div>
 
-                          <div className="flex flex-col gap-2 text-left md:items-end md:text-right">
+                          <div className="flex min-w-0 flex-col gap-2 text-left md:items-end md:text-right">
                             {order.status === "completed" && order.modified_file_path ? (
                               <button
                                 onClick={() => downloadCompletedFile(order.modified_file_path)}
-                                className="rounded-xl border border-emerald-700/40 bg-emerald-950/30 px-4 py-3 text-xs font-black text-emerald-300 transition hover:bg-emerald-900/40"
+                                className="w-full rounded-xl border border-emerald-700/40 bg-emerald-950/30 px-4 py-3 text-xs font-black text-emerald-300 transition hover:bg-emerald-900/40 md:w-auto"
                               >
                                 <Download className="mr-2 inline h-4 w-4" />
                                 Download File
                               </button>
                             ) : (
-                              <span className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-xs font-bold text-zinc-500">
+                              <span className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-center text-xs font-bold text-zinc-500 md:w-auto">
                                 Not Ready
                               </span>
                             )}
 
                             <Link
                               href={`/dashboard/orders/${order.id}`}
-                              className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-xs font-black text-white transition hover:bg-white/10"
+                              className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-center text-xs font-black text-white transition hover:bg-white/10 md:w-auto"
                             >
                               <Eye className="mr-2 inline h-4 w-4" />
                               Details
