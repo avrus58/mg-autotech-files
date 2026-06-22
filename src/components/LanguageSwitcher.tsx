@@ -69,6 +69,7 @@ function persistLocale(locale: LocaleCode) {
   document.cookie = `${cookieKey}=${locale}; path=/; max-age=31536000; samesite=lax`;
   document.cookie = `${googleCookieKey}=; path=/; max-age=0; samesite=lax`;
   document.documentElement.lang = locale;
+  window.dispatchEvent(new CustomEvent("mg-locale-change", { detail: { locale } }));
 }
 
 function translateText(value: string, locale: LocaleCode) {

@@ -1926,6 +1926,10 @@ function ResultCard({
   );
 }
 
+function ignoreVehicleFetchError() {
+  // Page navigation can abort the public vehicle checker requests.
+}
+
 function PublicVehicleChecker() {
   const [brands, setBrands] = useState<VehicleOption[]>([]);
   const [models, setModels] = useState<VehicleOption[]>([]);
@@ -1950,10 +1954,14 @@ function PublicVehicleChecker() {
     engines.find((item) => item.id === engineId)?.name ?? "";
 
   useEffect(() => {
-    fetch("/api/vehicles?type=brands")
+    const controller = new AbortController();
+
+    fetch("/api/vehicles?type=brands", { signal: controller.signal })
       .then((res) => res.json())
       .then(setBrands)
-      .catch(console.error);
+      .catch(ignoreVehicleFetchError);
+
+    return () => controller.abort();
   }, []);
 
   useEffect(() => {
@@ -1967,10 +1975,16 @@ function PublicVehicleChecker() {
 
     if (!brandId) return;
 
-    fetch(`/api/vehicles?type=models&brandId=${brandId}`)
+    const controller = new AbortController();
+
+    fetch(`/api/vehicles?type=models&brandId=${brandId}`, {
+      signal: controller.signal,
+    })
       .then((res) => res.json())
       .then(setModels)
-      .catch(console.error);
+      .catch(ignoreVehicleFetchError);
+
+    return () => controller.abort();
   }, [brandId]);
 
   useEffect(() => {
@@ -1982,10 +1996,16 @@ function PublicVehicleChecker() {
 
     if (!brandId || !modelId) return;
 
-    fetch(`/api/vehicles?type=generations&brandId=${brandId}&modelId=${modelId}`)
+    const controller = new AbortController();
+
+    fetch(`/api/vehicles?type=generations&brandId=${brandId}&modelId=${modelId}`, {
+      signal: controller.signal,
+    })
       .then((res) => res.json())
       .then(setGenerations)
-      .catch(console.error);
+      .catch(ignoreVehicleFetchError);
+
+    return () => controller.abort();
   }, [brandId, modelId]);
 
   useEffect(() => {
@@ -1995,12 +2015,17 @@ function PublicVehicleChecker() {
 
     if (!brandId || !modelId || !generationId) return;
 
+    const controller = new AbortController();
+
     fetch(
-      `/api/vehicles?type=engines&brandId=${brandId}&modelId=${modelId}&generationId=${generationId}`
+      `/api/vehicles?type=engines&brandId=${brandId}&modelId=${modelId}&generationId=${generationId}`,
+      { signal: controller.signal }
     )
       .then((res) => res.json())
       .then(setEngines)
-      .catch(console.error);
+      .catch(ignoreVehicleFetchError);
+
+    return () => controller.abort();
   }, [brandId, modelId, generationId]);
 
   const handleSearch = async () => {
@@ -2016,8 +2041,8 @@ function PublicVehicleChecker() {
       const data = (await res.json()) as PublicVehicleData | null;
 
       setVehicle(data);
-    } catch (error) {
-      console.error(error);
+    } catch {
+      setVehicle(null);
     } finally {
       setLoadingVehicle(false);
     }

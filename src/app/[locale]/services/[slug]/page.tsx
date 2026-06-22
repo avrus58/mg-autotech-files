@@ -192,7 +192,7 @@ export default async function LocalizedServicePage({
             <BadgeCheck className="h-4 w-4 text-red-500" />
             {service.eyebrow}
           </div>
-          <h1 className="max-w-5xl break-words text-5xl font-black leading-[0.95] tracking-normal [overflow-wrap:anywhere] md:text-7xl">
+          <h1 className="max-w-5xl break-words text-[clamp(2.35rem,10vw,4.5rem)] font-black leading-[0.98] tracking-normal [overflow-wrap:anywhere] md:text-7xl md:leading-[0.95]">
             {service.title}
           </h1>
           <p className="mt-7 max-w-3xl text-lg leading-8 text-zinc-300">

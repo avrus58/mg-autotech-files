@@ -170,7 +170,7 @@ export default async function LocalizedHomePage({
             <BadgeCheck className="h-4 w-4 text-red-500" />
             {copy.eyebrow}
           </div>
-          <h1 className="max-w-5xl break-words text-5xl font-black leading-[0.95] tracking-normal [overflow-wrap:anywhere] md:text-7xl">
+          <h1 className="max-w-5xl break-words text-[clamp(2.35rem,10vw,4.5rem)] font-black leading-[0.98] tracking-normal [overflow-wrap:anywhere] md:text-7xl md:leading-[0.95]">
             {copy.heroTitle}
           </h1>
           <p className="mt-7 max-w-3xl text-lg leading-8 text-zinc-300">
@@ -232,21 +232,21 @@ export default async function LocalizedHomePage({
       </section>
 
       <section id="services" className="mx-auto max-w-7xl px-4 py-16">
-        <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr] lg:items-end">
-          <div>
+        <div className="grid min-w-0 gap-6 lg:grid-cols-[0.9fr_1.1fr] lg:items-end">
+          <div className="min-w-0">
             <div className="text-sm font-black uppercase tracking-[0.35em] text-red-500">
               {labels.navServices}
             </div>
-            <h2 className="mt-4 text-4xl font-black leading-tight md:text-6xl">
+            <h2 className="mt-4 break-words text-4xl font-black leading-tight [overflow-wrap:anywhere] md:text-6xl">
               {copy.servicesTitle}
             </h2>
           </div>
-          <p className="max-w-2xl text-base leading-8 text-zinc-400">
+          <p className="min-w-0 max-w-2xl break-words text-base leading-8 text-zinc-400 [overflow-wrap:anywhere]">
             {copy.servicesText}
           </p>
         </div>
 
-        <div className="mt-10 grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+        <div className="mt-10 grid min-w-0 gap-4 md:grid-cols-2 xl:grid-cols-5">
           {publicServiceSlugs.map((slug) => {
             const service = getServiceSeo(slug, locale);
             const Icon = serviceIcons[slug];
@@ -255,13 +255,13 @@ export default async function LocalizedHomePage({
               <Link
                 key={slug}
                 href={localizedPath(locale, `/services/${slug}`)}
-                className="group rounded-2xl border border-white/10 bg-white/[0.04] p-5 transition hover:border-red-800/60 hover:bg-red-950/20"
+                className="group min-w-0 rounded-2xl border border-white/10 bg-white/[0.04] p-5 transition hover:border-red-800/60 hover:bg-red-950/20"
               >
                 <Icon className="h-6 w-6 text-red-500" />
-                <div className="mt-6 text-xl font-black leading-tight">
+                <div className="mt-6 break-words text-xl font-black leading-tight [overflow-wrap:anywhere]">
                   {service.name}
                 </div>
-                <div className="mt-4 text-sm leading-6 text-zinc-400">
+                <div className="mt-4 break-words text-sm leading-6 text-zinc-400 [overflow-wrap:anywhere]">
                   {service.description}
                 </div>
                 <div className="mt-5 inline-flex items-center text-sm font-black text-red-300">
@@ -276,19 +276,19 @@ export default async function LocalizedHomePage({
 
       <section id="trust" className="mx-auto max-w-7xl px-4 py-16">
         <div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 md:p-10">
-          <div className="grid gap-8 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
-            <div>
+          <div className="grid min-w-0 gap-8 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
+            <div className="min-w-0">
               <div className="text-sm font-black uppercase tracking-[0.35em] text-red-500">
                 {labels.why}
               </div>
-              <h2 className="mt-4 text-4xl font-black leading-tight md:text-6xl">
+              <h2 className="mt-4 break-words text-4xl font-black leading-tight [overflow-wrap:anywhere] md:text-6xl">
                 {copy.trustTitle}
               </h2>
-              <p className="mt-5 max-w-2xl text-base leading-8 text-zinc-400">
+              <p className="mt-5 max-w-2xl break-words text-base leading-8 text-zinc-400 [overflow-wrap:anywhere]">
                 {copy.trustText}
               </p>
             </div>
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid min-w-0 gap-4 sm:grid-cols-2">
               {[
                 { title: labels.securePortal, icon: ShieldCheck },
                 { title: labels.credits, icon: CreditCard },
@@ -297,10 +297,12 @@ export default async function LocalizedHomePage({
               ].map(({ title, icon: Icon }) => (
                 <div
                   key={title}
-                  className="rounded-2xl border border-white/10 bg-black/35 p-5"
+                  className="min-w-0 rounded-2xl border border-white/10 bg-black/35 p-5"
                 >
                   <Icon className="mb-5 h-6 w-6 text-red-500" />
-                  <div className="text-lg font-black">{title}</div>
+                  <div className="break-words text-lg font-black [overflow-wrap:anywhere]">
+                    {title}
+                  </div>
                 </div>
               ))}
             </div>
