@@ -490,7 +490,7 @@ export default function AdminPage() {
       if (newOrders.length > 0) {
         const newestOrder = newOrders[0];
         const vehicle = [newestOrder.vehicle_brand, newestOrder.vehicle_model].filter(Boolean).join(" ");
-        setNewOrderNotice(`${newOrders.length} new request${newOrders.length > 1 ? "s" : ""} received${vehicle ? ` Â· ${vehicle}` : ""}`);
+        setNewOrderNotice(`${newOrders.length} new request${newOrders.length > 1 ? "s" : ""} received${vehicle ? ` · ${vehicle}` : ""}`);
         playAdminNotificationSound();
         window.setTimeout(() => setNewOrderNotice(""), 9000);
       }
@@ -1259,11 +1259,11 @@ function OrdersPanel({
                   </td>
                   <td className="px-3 py-4 align-top">
                     <div className="line-clamp-2 font-black">{order.vehicle_brand || "-"} {order.vehicle_model || ""}</div>
-                    <div className="mt-1 line-clamp-2 text-xs text-zinc-500">{order.vehicle_generation || "-"} Â· {order.vehicle_engine || "-"}</div>
+                    <div className="mt-1 line-clamp-2 text-xs text-zinc-500">{order.vehicle_generation || "-"} · {order.vehicle_engine || "-"}</div>
                   </td>
                   <td className="px-3 py-4 align-top">
                     <div className="line-clamp-3 font-bold">{order.ecu || "-"}</div>
-                    <div className="mt-1 line-clamp-2 text-xs text-zinc-500">{order.read_method || "-"} Â· {order.gearbox || "-"}</div>
+                    <div className="mt-1 line-clamp-2 text-xs text-zinc-500">{order.read_method || "-"} · {order.gearbox || "-"}</div>
                   </td>
                   <td className="px-3 py-4 align-top"><div className="line-clamp-2 font-bold text-zinc-200">{order.service_type || "-"}</div></td>
                   <td className="px-3 py-4 align-top"><div className="rounded-xl bg-red-950/30 px-3 py-2 text-center font-black text-red-300">{order.credits_required ?? 0}</div></td>
@@ -1312,7 +1312,7 @@ function OrdersPanel({
               <div className="mb-4 flex items-start justify-between gap-4">
                 <div className="min-w-0">
                   <div className="break-words text-lg font-black">{order.vehicle_brand || "-"} {order.vehicle_model || ""}</div>
-                  <div className="mt-1 break-words text-sm text-zinc-500">#{shortId(order.id)} Â· {formatDate(order.created_at)}</div>
+                  <div className="mt-1 break-words text-sm text-zinc-500">#{shortId(order.id)} · {formatDate(order.created_at)}</div>
                 </div>
                 <span className={`shrink-0 rounded-full border px-3 py-1 text-xs font-bold ${statusClass(order.status)}`}>{statusLabel(order.status)}</span>
               </div>
@@ -1836,7 +1836,7 @@ function OrderDetailModal({ order, customer, onClose, onDownload, onCopy, onCopy
             <div className="min-w-0">
               <div className="mb-3 flex flex-wrap items-center gap-2"><span className="rounded-full border border-red-800/40 bg-red-950/25 px-3 py-1 text-xs font-black uppercase tracking-[0.16em] text-red-300">Work Order #{shortId(order.id)}</span><span className={`rounded-full border px-3 py-1 text-xs font-bold ${statusClass(order.status)}`}>{statusLabel(order.status)}</span><span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs font-bold text-zinc-400">{formatDate(order.created_at)}</span></div>
               <h2 className="break-words text-2xl font-black md:text-4xl">{order.vehicle_brand || "-"} {order.vehicle_model || ""} <span className="text-red-500">{order.vehicle_engine || ""}</span></h2>
-              <p className="mt-2 break-words text-sm text-zinc-500">{customer?.customer_id || order.customer_id || "-"} Â· {customer?.full_name || customer?.company_name || order.customer_email || "-"}</p>
+              <p className="mt-2 break-words text-sm text-zinc-500">{customer?.customer_id || order.customer_id || "-"} · {customer?.full_name || customer?.company_name || order.customer_email || "-"}</p>
             </div>
             <div className="grid gap-2 sm:flex sm:flex-wrap">
               <button onClick={onCopy} className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-black text-white transition hover:bg-white/10"><Copy className="mr-2 inline h-4 w-4" />Copy Order ID</button>

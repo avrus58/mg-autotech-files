@@ -1,6 +1,16 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import {
+  absoluteUrl,
+  hreflangByLocale,
+  languageAlternates,
+  organizationJsonLd,
+  siteName,
+  siteUrl,
+  websiteJsonLd,
+} from "@/lib/seo";
+import { defaultLocale } from "@/lib/i18n";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -14,10 +24,10 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://file.mgautotech.de"),
+  metadataBase: new URL(siteUrl),
 
   title: {
-    default: "MG AutoTech File Service",
+    default: siteName,
     template: "%s | MG AutoTech",
   },
 
@@ -47,18 +57,23 @@ export const metadata: Metadata = {
   ],
 
   creator: "MG AutoTech",
+  publisher: "MG AutoTech",
+  applicationName: siteName,
+  verification: {
+    google: "google7844e5845c531482.html",
+  },
 
   openGraph: {
-    title: "MG AutoTech File Service",
+    title: siteName,
     description:
       "Professional ECU & TCU File Service Platform for workshops and tuning companies.",
-    url: "https://file.mgautotech.de",
-    siteName: "MG AutoTech File Service",
+    url: siteUrl,
+    siteName,
     locale: "en_US",
     type: "website",
     images: [
       {
-        url: "/og-image.svg",
+        url: "/opengraph-image",
         width: 1200,
         height: 630,
         alt: "MG AutoTech ECU and TCU File Service",
@@ -68,42 +83,30 @@ export const metadata: Metadata = {
 
   twitter: {
     card: "summary_large_image",
-    title: "MG AutoTech File Service",
+    title: siteName,
     description:
       "Professional ECU & TCU File Service Platform.",
-    images: ["/og-image.svg"],
+    images: ["/opengraph-image"],
   },
 
   robots: {
     index: true,
     follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-snippet": -1,
+      "max-image-preview": "large",
+      "max-video-preview": -1,
+    },
   },
 
   alternates: {
-    canonical: "https://file.mgautotech.de",
+    canonical: absoluteUrl("/"),
+    languages: languageAlternates("/"),
   },
 
   category: "automotive",
-};
-
-const organizationJsonLd = {
-  "@context": "https://schema.org",
-  "@type": "AutoRepair",
-  name: "MG AutoTech",
-  url: "https://file.mgautotech.de",
-  email: "info@mgautotech.de",
-  description:
-    "Professional ECU and TCU file service platform for workshops, tuners and automotive professionals.",
-  areaServed: ["Germany", "Europe"],
-  serviceType: [
-    "ECU file service",
-    "TCU tuning",
-    "Stage 1 tuning",
-    "DPF OFF",
-    "EGR OFF",
-    "AdBlue OFF",
-    "DTC OFF",
-  ],
 };
 
 export default function RootLayout({
@@ -111,16 +114,21 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@graph": [organizationJsonLd(), websiteJsonLd(defaultLocale)],
+  };
+
   return (
     <html
-      lang="en"
+      lang={hreflangByLocale[defaultLocale]}
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
-            __html: JSON.stringify(organizationJsonLd),
+            __html: JSON.stringify(jsonLd),
           }}
         />
         {children}

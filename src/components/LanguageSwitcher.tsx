@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import {
   defaultLocale,
   exactTranslations,
@@ -9,6 +10,7 @@ import {
   termTranslations,
   type LocaleCode,
 } from "@/lib/i18n";
+import { isSeoLocale, localizedPath } from "@/lib/seo";
 
 const storageKey = "mg_locale";
 const cookieKey = "mg_locale";
@@ -41,6 +43,25 @@ function getInitialLocale() {
   if (cookieLocale) return normalizeLocale(cookieLocale);
 
   return normalizeLocale(window.navigator.language);
+}
+
+function getPathLocale(pathname: string) {
+  const firstSegment = pathname.split("/").filter(Boolean)[0];
+  return firstSegment && isSeoLocale(firstSegment) ? firstSegment : null;
+}
+
+function getLocalizedTarget(pathname: string, locale: LocaleCode) {
+  const parts = pathname.split("/").filter(Boolean);
+  const currentPathLocale = parts[0] && isSeoLocale(parts[0]) ? parts[0] : null;
+  const normalizedParts = currentPathLocale ? parts.slice(1) : parts;
+
+  if (normalizedParts.length === 0) return localizedPath(locale);
+
+  if (normalizedParts[0] === "services" && normalizedParts[1]) {
+    return localizedPath(locale, `/services/${normalizedParts[1]}`);
+  }
+
+  return null;
 }
 
 function persistLocale(locale: LocaleCode) {
@@ -129,14 +150,16 @@ function translateNode(root: ParentNode, locale: LocaleCode) {
 }
 
 export function LanguageSwitcher() {
+  const pathname = usePathname();
+  const router = useRouter();
   const [locale, setLocale] = useState<LocaleCode>(defaultLocale);
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
-    const initial = getInitialLocale();
+    const initial = getPathLocale(pathname) ?? getInitialLocale();
     setLocale(initial);
     persistLocale(initial);
-  }, []);
+  }, [pathname]);
 
   useEffect(() => {
     persistLocale(locale);
@@ -206,8 +229,15 @@ export function LanguageSwitcher() {
               key={item.code}
               type="button"
               onClick={() => {
+                const target = getLocalizedTarget(pathname, item.code);
+
                 setLocale(item.code);
+                persistLocale(item.code);
                 setIsOpen(false);
+
+                if (target && target !== pathname) {
+                  router.push(target);
+                }
               }}
               className={`flex h-9 items-center justify-center rounded-xl text-xs font-black transition ${
                 item.code === locale

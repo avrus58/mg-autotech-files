@@ -1,50 +1,88 @@
 import type { MetadataRoute } from "next";
+import {
+  absoluteUrl,
+  languageAlternates,
+  localizedUrl,
+  publicServiceSlugs,
+  seoLocales,
+  siteUrl,
+} from "@/lib/seo";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = "https://file.mgautotech.de";
-
   const lastModified = new Date();
-  const serviceRoutes = [
-    "stage-1",
-    "dpf-off",
-    "egr-off",
-    "adblue-off",
-    "dtc-off",
-  ];
-
-  return [
+  const publicPages: MetadataRoute.Sitemap = [
     {
-      url: `${baseUrl}/`,
+      url: absoluteUrl("/"),
       lastModified,
       changeFrequency: "weekly",
       priority: 1,
+      alternates: {
+        languages: languageAlternates("/"),
+      },
     },
-    ...serviceRoutes.map((slug) => ({
-      url: `${baseUrl}/services/${slug}`,
-      lastModified,
-      changeFrequency: "monthly" as const,
-      priority: 0.85,
-    })),
+    ...publicServiceSlugs.map((slug) => {
+      const path = `/services/${slug}`;
+
+      return {
+        url: absoluteUrl(path),
+        lastModified,
+        changeFrequency: "monthly" as const,
+        priority: 0.85,
+        alternates: {
+          languages: languageAlternates(path),
+        },
+      };
+    }),
+  ];
+
+  const localizedPages: MetadataRoute.Sitemap = seoLocales.flatMap((locale) => [
     {
-      url: `${baseUrl}/agb`,
+      url: localizedUrl(locale, "/"),
+      lastModified,
+      changeFrequency: "weekly" as const,
+      priority: 0.95,
+      alternates: {
+        languages: languageAlternates("/"),
+      },
+    },
+    ...publicServiceSlugs.map((slug) => {
+      const path = `/services/${slug}`;
+
+      return {
+        url: localizedUrl(locale, path),
+        lastModified,
+        changeFrequency: "monthly" as const,
+        priority: 0.82,
+        alternates: {
+          languages: languageAlternates(path),
+        },
+      };
+    }),
+  ]);
+
+  return [
+    ...publicPages,
+    ...localizedPages,
+    {
+      url: `${siteUrl}/agb`,
       lastModified,
       changeFrequency: "yearly",
       priority: 0.3,
     },
     {
-      url: `${baseUrl}/datenschutz`,
+      url: `${siteUrl}/datenschutz`,
       lastModified,
       changeFrequency: "yearly",
       priority: 0.3,
     },
     {
-      url: `${baseUrl}/impressum`,
+      url: `${siteUrl}/impressum`,
       lastModified,
       changeFrequency: "yearly",
       priority: 0.3,
     },
     {
-      url: `${baseUrl}/widerruf`,
+      url: `${siteUrl}/widerruf`,
       lastModified,
       changeFrequency: "yearly",
       priority: 0.3,

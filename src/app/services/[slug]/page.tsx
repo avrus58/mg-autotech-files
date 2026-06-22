@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { Footer } from "@/components/Footer";
 import { OnlineStatus } from "@/components/OnlineStatus";
+import { languageAlternates } from "@/lib/seo";
 
 type ServicePage = {
   slug: string;
@@ -344,12 +345,27 @@ export async function generateMetadata({
     description: service.description,
     alternates: {
       canonical: `/services/${service.slug}`,
+      languages: languageAlternates(`/services/${service.slug}`),
     },
     openGraph: {
       title: service.title,
       description: service.description,
       url: `https://file.mgautotech.de/services/${service.slug}`,
       type: "website",
+      images: [
+        {
+          url: "/opengraph-image",
+          width: 1200,
+          height: 630,
+          alt: service.title,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: service.title,
+      description: service.description,
+      images: ["/opengraph-image"],
     },
   };
 }

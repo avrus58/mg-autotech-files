@@ -1,13 +1,24 @@
 import type { MetadataRoute } from "next";
+import { publicServiceSlugs, seoLocales, siteUrl } from "@/lib/seo";
 
 export default function robots(): MetadataRoute.Robots {
-  const baseUrl = "https://file.mgautotech.de";
-
   return {
     rules: [
       {
         userAgent: "*",
-        allow: ["/", "/agb", "/datenschutz", "/impressum", "/widerruf"],
+        allow: [
+          "/",
+          "/services",
+          ...publicServiceSlugs.map((slug) => `/services/${slug}`),
+          ...seoLocales.map((locale) => `/${locale}`),
+          ...seoLocales.flatMap((locale) =>
+            publicServiceSlugs.map((slug) => `/${locale}/services/${slug}`)
+          ),
+          "/agb",
+          "/datenschutz",
+          "/impressum",
+          "/widerruf",
+        ],
         disallow: [
           "/admin",
           "/api",
@@ -22,7 +33,7 @@ export default function robots(): MetadataRoute.Robots {
         ],
       },
     ],
-    sitemap: `${baseUrl}/sitemap.xml`,
-    host: baseUrl,
+    sitemap: `${siteUrl}/sitemap.xml`,
+    host: siteUrl,
   };
 }
