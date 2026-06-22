@@ -928,14 +928,14 @@ function PublicStageCard({
         <div className="flex justify-between rounded-xl bg-white/10 px-3 py-2">
           <span className="text-red-100/80">Power</span>
           <span className="font-black">
-            {data.stockHp} → {data.tunedHp} HP
+            {data.stockHp} {"\u2192"} {data.tunedHp} HP
           </span>
         </div>
 
         <div className="flex justify-between rounded-xl bg-white/10 px-3 py-2">
           <span className="text-red-100/80">Torque</span>
           <span className="font-black">
-            {data.stockNm} → {data.tunedNm} Nm
+            {data.stockNm} {"\u2192"} {data.tunedNm} Nm
           </span>
         </div>
 
@@ -1279,7 +1279,7 @@ function PerformanceLogChecker() {
   };
 
   return (
-    <AnimatedSection id="tools" className="overflow-x-hidden bg-[#050505] py-16 md:py-20">
+    <section id="tools" className="overflow-x-hidden bg-[#050505] py-16 md:py-20">
       <div className="mx-auto max-w-7xl overflow-hidden px-4">
         <div className="mb-10 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div>
@@ -1306,14 +1306,26 @@ function PerformanceLogChecker() {
 
         <div className="grid min-w-0 gap-6 lg:grid-cols-[0.9fr_1.1fr]">
           <div className="min-w-0 overflow-hidden rounded-[1.5rem] border border-white/10 bg-white/[0.04] p-4 shadow-2xl shadow-black/20 sm:rounded-[2rem] sm:p-6">
-            <div className="mb-5 flex min-w-0 items-center gap-3">
-              <Gauge className="h-7 w-7 shrink-0 text-red-500" />
-              <h3 className="min-w-0 text-2xl font-black leading-tight">Torque Power Calculator</h3>
+            <div className="mb-5 flex min-w-0 items-start gap-3">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-red-800/50 bg-red-950/30 text-red-400">
+                <Gauge className="h-6 w-6" />
+              </div>
+              <div className="min-w-0">
+                <div className="text-xs font-black uppercase tracking-[0.22em] text-red-400">
+                  Manual input
+                </div>
+                <h3 className="mt-1 min-w-0 text-2xl font-black leading-tight">
+                  Torque Power Calculator
+                </h3>
+                <p className="mt-2 text-xs font-bold leading-5 text-zinc-500">
+                  Enter measured torque and RPM. Results update instantly.
+                </p>
+              </div>
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
               <NumberField
-                label="Torque"
+                label="Enter torque"
                 value={torqueNm}
                 suffix="Nm"
                 min={50}
@@ -1322,7 +1334,7 @@ function PerformanceLogChecker() {
                 onChange={setTorqueNm}
               />
               <NumberField
-                label="Engine speed"
+                label="Enter engine speed"
                 value={rpm}
                 suffix="RPM"
                 min={800}
@@ -1344,7 +1356,7 @@ function PerformanceLogChecker() {
               </div>
 
               <NumberField
-                label="Power"
+                label="Enter power"
                 value={kwInput}
                 suffix="kW"
                 min={1}
@@ -1371,22 +1383,25 @@ function PerformanceLogChecker() {
               <BarChart3 className="h-8 w-8 shrink-0 text-red-500" />
             </div>
 
-            <label className="mb-5 flex min-w-0 cursor-pointer flex-col items-start gap-4 overflow-hidden rounded-2xl border border-white/10 bg-black/30 p-4 transition hover:border-red-800/60 hover:bg-red-950/20 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex w-full min-w-0 items-center gap-3 sm:w-auto">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-red-950/40 text-red-500">
+            <label className="mb-5 flex min-w-0 cursor-pointer flex-col gap-4 overflow-hidden rounded-2xl border-2 border-dashed border-red-800/60 bg-red-950/20 p-4 transition hover:border-red-500/70 hover:bg-red-950/30 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex w-full min-w-0 items-start gap-3 sm:w-auto">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-red-600/15 text-red-300 ring-1 ring-red-700/50">
                   <Upload className="h-5 w-5" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="text-sm font-black text-white">
-                    Upload Autotuner CSV
+                  <div className="text-xs font-black uppercase tracking-[0.18em] text-red-300">
+                    CSV upload
                   </div>
-                  <div className="mt-1 truncate text-xs font-bold text-zinc-500">
+                  <div className="mt-1 text-base font-black text-white">
+                    Tap to upload Autotuner CSV
+                  </div>
+                  <div className="mt-1 text-xs font-bold leading-5 text-zinc-400">
                     {logFileName || "Engine speed + engine torque columns are detected automatically"}
                   </div>
                 </div>
               </div>
-              <span className="shrink-0 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-black text-zinc-300">
-                CSV
+              <span className="inline-flex w-full shrink-0 items-center justify-center rounded-xl bg-[#b1121b] px-4 py-3 text-xs font-black text-white shadow-lg shadow-red-950/30 sm:w-auto">
+                Choose CSV
               </span>
               <input
                 type="file"
@@ -1396,14 +1411,29 @@ function PerformanceLogChecker() {
               />
             </label>
 
-            <textarea
-              value={logInput}
-              onChange={(event) => setLogInput(event.target.value)}
-              rows={7}
-              spellCheck={false}
-              className="w-full resize-none rounded-2xl border border-white/10 bg-black/45 p-4 font-mono text-sm font-bold leading-6 text-white outline-none transition placeholder:text-zinc-600 focus:border-red-700"
-              placeholder={"RPM, Nm\n2200, 390\n2600, 430"}
-            />
+            <label className="block min-w-0 rounded-2xl border border-red-900/45 bg-black/45 p-4 ring-1 ring-white/5">
+              <div className="mb-3 flex min-w-0 flex-wrap items-center justify-between gap-2">
+                <div>
+                  <div className="text-xs font-black uppercase tracking-[0.18em] text-red-300">
+                    Paste log rows
+                  </div>
+                  <div className="mt-1 text-sm font-black text-white">
+                    RPM and torque values
+                  </div>
+                </div>
+                <span className="rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-xs font-black text-zinc-400">
+                  RPM, Nm
+                </span>
+              </div>
+              <textarea
+                value={logInput}
+                onChange={(event) => setLogInput(event.target.value)}
+                rows={7}
+                spellCheck={false}
+                className="w-full resize-none rounded-2xl border border-white/10 bg-[#050505] p-4 font-mono text-sm font-bold leading-6 text-white outline-none transition placeholder:text-zinc-600 focus:border-red-600 focus:ring-2 focus:ring-red-900/50"
+                placeholder={"1800, 320\n2200, 390\n2600, 430"}
+              />
+            </label>
 
             <div className="mt-5 grid gap-3 md:grid-cols-3">
               <MetricPanel
@@ -1476,7 +1506,7 @@ function PerformanceLogChecker() {
           </div>
         </div>
       </div>
-    </AnimatedSection>
+    </section>
   );
 }
 
@@ -1501,19 +1531,32 @@ function NumberField({
     <label className="block min-w-0">
       <div className="mb-2 flex min-w-0 items-center justify-between gap-3">
         <span className="min-w-0 text-sm font-black text-white">{label}</span>
-        <span className="shrink-0 rounded-xl border border-white/10 bg-black/30 px-3 py-1 text-xs font-black text-red-300">
+        <span className="shrink-0 rounded-full border border-red-800/45 bg-red-950/20 px-3 py-1 text-[0.65rem] font-black uppercase tracking-[0.12em] text-red-200">
+          Input
+        </span>
+      </div>
+      <div className="relative min-w-0 rounded-2xl border border-red-900/55 bg-black/45 p-2 shadow-inner shadow-black/40 transition focus-within:border-red-600/70">
+        <input
+          type="number"
+          min={min}
+          max={max}
+          step={step}
+          value={value}
+          inputMode="decimal"
+          aria-label={label}
+          onInput={(event) => onChange(Number(event.currentTarget.value))}
+          onChange={(event) => onChange(Number(event.currentTarget.value))}
+          className="h-14 w-full rounded-xl border border-white/10 bg-[#050505] px-4 pr-20 text-lg font-black text-white outline-none transition placeholder:text-zinc-700 focus:border-red-600 focus:ring-2 focus:ring-red-900/50"
+        />
+        <span className="pointer-events-none absolute right-5 top-1/2 -translate-y-1/2 rounded-lg border border-white/10 bg-white/[0.04] px-2.5 py-1 text-xs font-black text-red-200">
+          {suffix}
+        </span>
+      </div>
+      <div className="mt-2 flex justify-end">
+        <span className="rounded-xl border border-white/10 bg-black/30 px-3 py-1 text-xs font-black text-red-300">
           {value} {suffix}
         </span>
       </div>
-      <input
-        type="number"
-        min={min}
-        max={max}
-        step={step}
-        value={value}
-        onChange={(event) => onChange(Number(event.target.value))}
-        className="h-14 w-full rounded-2xl border border-white/10 bg-black/35 px-4 text-sm font-black text-white outline-none transition focus:border-red-700"
-      />
     </label>
   );
 }
