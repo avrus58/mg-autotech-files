@@ -1371,12 +1371,12 @@ function PerformanceLogChecker() {
               <BarChart3 className="h-8 w-8 shrink-0 text-red-500" />
             </div>
 
-            <label className="mb-5 flex min-w-0 cursor-pointer flex-col items-start gap-4 rounded-2xl border border-white/10 bg-black/30 p-4 transition hover:border-red-800/60 hover:bg-red-950/20 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex min-w-0 items-center gap-3">
+            <label className="mb-5 flex min-w-0 cursor-pointer flex-col items-start gap-4 overflow-hidden rounded-2xl border border-white/10 bg-black/30 p-4 transition hover:border-red-800/60 hover:bg-red-950/20 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex w-full min-w-0 items-center gap-3 sm:w-auto">
                 <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-red-950/40 text-red-500">
                   <Upload className="h-5 w-5" />
                 </div>
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                   <div className="text-sm font-black text-white">
                     Upload Autotuner CSV
                   </div>
@@ -2429,7 +2429,7 @@ export default function HomePage() {
             </div>
 
             <h1 className="max-w-full break-words text-[clamp(2.65rem,12vw,4.6rem)] font-black uppercase leading-[1.05] tracking-[0.04em] md:text-7xl md:tracking-[0.08em]">
-              Custom ECU & TCU
+              Custom ECU & TCU{" "}
               <span className="block text-red-600">Tuning Files</span>
             </h1>
 

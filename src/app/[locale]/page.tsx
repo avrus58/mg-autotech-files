@@ -165,12 +165,12 @@ export default async function LocalizedHomePage({
       </header>
 
       <section className="mx-auto grid max-w-7xl gap-10 px-4 py-16 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:py-24">
-        <div>
+        <div className="min-w-0">
           <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-red-800/50 bg-red-950/25 px-4 py-2 text-sm font-black text-red-100">
             <BadgeCheck className="h-4 w-4 text-red-500" />
             {copy.eyebrow}
           </div>
-          <h1 className="max-w-5xl text-5xl font-black leading-[0.95] tracking-normal md:text-7xl">
+          <h1 className="max-w-5xl break-words text-5xl font-black leading-[0.95] tracking-normal [overflow-wrap:anywhere] md:text-7xl">
             {copy.heroTitle}
           </h1>
           <p className="mt-7 max-w-3xl text-lg leading-8 text-zinc-300">
@@ -194,7 +194,7 @@ export default async function LocalizedHomePage({
           </div>
         </div>
 
-        <div className="rounded-[2rem] border border-red-900/40 bg-[linear-gradient(135deg,rgba(177,18,27,0.16),rgba(255,255,255,0.04))] p-5 shadow-2xl shadow-black/30">
+        <div className="min-w-0 rounded-[2rem] border border-red-900/40 bg-[linear-gradient(135deg,rgba(177,18,27,0.16),rgba(255,255,255,0.04))] p-5 shadow-2xl shadow-black/30">
           <div className="rounded-[1.5rem] border border-white/10 bg-black/45 p-5">
             <div className="mb-5 flex items-center justify-between gap-4 border-b border-white/10 pb-5">
               <div>
