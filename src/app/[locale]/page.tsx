@@ -110,7 +110,7 @@ export default async function LocalizedHomePage({
   };
 
   return (
-    <main className="min-h-screen bg-[#050505] text-white">
+    <main lang={hreflangByLocale[locale]} className="min-h-screen bg-[#050505] text-white">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
