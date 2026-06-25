@@ -15,20 +15,62 @@ export default function AuthCallbackPage() {
       const params = new URLSearchParams(window.location.search);
       const code = params.get("code");
       const next = params.get("next") || "/dashboard";
+      let session = null;
 
       if (code) {
-        const { error } = await supabase.auth.exchangeCodeForSession(code);
+        const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
         if (error) {
           setMessage(error.message);
           return;
         }
+
+        session = data.session;
       } else {
         const { data } = await supabase.auth.getSession();
 
         if (!data.session) {
           router.replace("/login");
           return;
+        }
+
+        session = data.session;
+      }
+
+      const oauthSignupProvider = window.sessionStorage.getItem(
+        "mg_register_oauth_provider"
+      );
+
+      if (oauthSignupProvider && session?.user) {
+        window.sessionStorage.removeItem("mg_register_oauth_provider");
+
+        const createdAt = new Date(session.user.created_at).getTime();
+        const isRecentSignup = Date.now() - createdAt < 15 * 60 * 1000;
+        const metadata = session.user.user_metadata || {};
+
+        if (isRecentSignup) {
+          try {
+            await fetch("/api/email/new-customer", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                customerEmail: session.user.email || "",
+                fullName:
+                  metadata.full_name ||
+                  metadata.name ||
+                  metadata.user_name ||
+                  "",
+                accountType: "google",
+                companyName: metadata.company_name || "",
+                phone: metadata.phone || "",
+                source: oauthSignupProvider,
+              }),
+            });
+          } catch {
+            // Admin notification failure must not block the auth redirect.
+          }
         }
       }
 

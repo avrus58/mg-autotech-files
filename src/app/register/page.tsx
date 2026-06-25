@@ -179,6 +179,25 @@ export default function RegisterPage() {
       return;
     }
 
+    try {
+      await fetch("/api/email/new-customer", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          customerEmail: cleanEmail,
+          fullName: cleanFullName,
+          accountType,
+          companyName: cleanCompanyName,
+          phone,
+          source: "email",
+        }),
+      });
+    } catch {
+      // Admin notification failure must not block customer registration.
+    }
+
     setSuccess(true);
     setMessage(
       "Account created. Please verify your e-mail address before logging in."
@@ -195,6 +214,8 @@ export default function RegisterPage() {
     setMessage("");
     setSuccess(false);
 
+    window.sessionStorage.setItem("mg_register_oauth_provider", "google");
+
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
@@ -203,6 +224,7 @@ export default function RegisterPage() {
     });
 
     if (error) {
+      window.sessionStorage.removeItem("mg_register_oauth_provider");
       setMessage(error.message);
       setGoogleLoading(false);
     }
