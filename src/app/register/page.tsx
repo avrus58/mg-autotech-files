@@ -311,6 +311,13 @@ export default function RegisterPage() {
 
             <StepProgress step={step} onStepChange={setStep} />
 
+            {step !== 3 && (
+              <GoogleRegisterButton
+                loading={googleLoading}
+                onClick={handleGoogleRegister}
+              />
+            )}
+
             <form onSubmit={handleRegister} className="space-y-5">
               {step === 1 && (
                 <div className="space-y-5">
@@ -447,23 +454,6 @@ export default function RegisterPage() {
                     </PrimaryButton>
                   </div>
 
-                  <Divider label="or" />
-
-                  <button
-                    type="button"
-                    onClick={handleGoogleRegister}
-                    disabled={googleLoading}
-                    className="flex h-14 w-full items-center justify-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] px-5 font-black text-white transition hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {googleLoading ? (
-                      <Loader2 className="h-5 w-5 animate-spin" />
-                    ) : (
-                      <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white text-sm font-black text-black">
-                        G
-                      </span>
-                    )}
-                    Continue with Google
-                  </button>
                 </div>
               )}
 
@@ -758,13 +748,29 @@ function InfoBox({ children }: { children: ReactNode }) {
   );
 }
 
-function Divider({ label }: { label: string }) {
+function GoogleRegisterButton({
+  loading,
+  onClick,
+}: {
+  loading: boolean;
+  onClick: () => void;
+}) {
   return (
-    <div className="flex items-center gap-3 text-xs font-black uppercase tracking-[0.16em] text-zinc-600">
-      <span className="h-px flex-1 bg-white/10" />
-      {label}
-      <span className="h-px flex-1 bg-white/10" />
-    </div>
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={loading}
+      className="mb-5 flex h-14 w-full items-center justify-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] px-5 font-black text-white transition hover:border-white/20 hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-60"
+    >
+      {loading ? (
+        <Loader2 className="h-5 w-5 animate-spin" />
+      ) : (
+        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white text-sm font-black text-black">
+          G
+        </span>
+      )}
+      Continue with Google
+    </button>
   );
 }
 
