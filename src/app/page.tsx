@@ -254,8 +254,6 @@ const calculatorPresets = [
     salePrice: 149,
     credits: 8,
     creditCost: 4,
-    extraCost: 10,
-    conversion: 80,
   },
   {
     label: "Growing partner",
@@ -263,8 +261,6 @@ const calculatorPresets = [
     salePrice: 169,
     credits: 8,
     creditCost: 3.8,
-    extraCost: 8,
-    conversion: 85,
   },
   {
     label: "High-volume reseller",
@@ -272,8 +268,6 @@ const calculatorPresets = [
     salePrice: 189,
     credits: 9,
     creditCost: 3.5,
-    extraCost: 7,
-    conversion: 90,
   },
 ];
 
@@ -1704,26 +1698,18 @@ function BusinessMarginCalculator() {
   const [averageSalePrice, setAverageSalePrice] = useState(169);
   const [averageCredits, setAverageCredits] = useState(8);
   const [creditCost, setCreditCost] = useState(3.8);
-  const [internalCost, setInternalCost] = useState(8);
-  const [conversionRate, setConversionRate] = useState(85);
 
-  const paidFiles = Math.round(monthlyFiles * (conversionRate / 100));
-  const revenue = paidFiles * averageSalePrice;
-  const fileServiceCost = paidFiles * averageCredits * creditCost;
-  const operationsCost = paidFiles * internalCost;
-  const totalCost = fileServiceCost + operationsCost;
-  const grossProfit = revenue - totalCost;
+  const revenue = monthlyFiles * averageSalePrice;
+  const fileServiceCost = monthlyFiles * averageCredits * creditCost;
+  const grossProfit = revenue - fileServiceCost;
   const profitMargin = revenue > 0 ? (grossProfit / revenue) * 100 : 0;
-  const costPerFile = paidFiles > 0 ? totalCost / paidFiles : 0;
-  const profitPerFile = paidFiles > 0 ? grossProfit / paidFiles : 0;
+  const profitPerFile = monthlyFiles > 0 ? grossProfit / monthlyFiles : 0;
 
   const applyPreset = (preset: (typeof calculatorPresets)[number]) => {
     setMonthlyFiles(preset.files);
     setAverageSalePrice(preset.salePrice);
     setAverageCredits(preset.credits);
     setCreditCost(preset.creditCost);
-    setInternalCost(preset.extraCost);
-    setConversionRate(preset.conversion);
   };
 
   return (
@@ -1735,12 +1721,12 @@ function BusinessMarginCalculator() {
               Business Calculator
             </div>
             <h2 className="mt-3 max-w-4xl text-4xl font-black md:text-5xl">
-              Estimate monthly file-service margin before scaling volume.
+              See what file-service volume could mean for your workshop.
             </h2>
             <p className="mt-4 max-w-3xl text-sm leading-7 text-zinc-400">
-              Model realistic workshop numbers with credit cost, conversion rate
-              and internal handling cost. Results are estimates, not financial
-              advice.
+              Choose a simple workshop profile or adjust the key numbers. The
+              result gives a quick partner revenue estimate before opening an
+              account.
             </p>
           </div>
 
@@ -1757,7 +1743,7 @@ function BusinessMarginCalculator() {
           <div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 shadow-2xl shadow-black/20">
             <div className="mb-5 flex items-center gap-3">
               <Calculator className="h-7 w-7 text-red-500" />
-              <h3 className="text-2xl font-black">Workshop Inputs</h3>
+              <h3 className="text-2xl font-black">Your numbers</h3>
             </div>
 
             <div className="mb-6 grid gap-3 md:grid-cols-3">
@@ -1775,7 +1761,7 @@ function BusinessMarginCalculator() {
 
             <div className="space-y-5">
               <CalculatorInput
-                label="Monthly file opportunities"
+                label="Monthly completed files"
                 value={monthlyFiles}
                 min={1}
                 max={150}
@@ -1801,34 +1787,8 @@ function BusinessMarginCalculator() {
                 suffix="credits"
                 onChange={setAverageCredits}
               />
-              <CalculatorInput
-                label="Average credit cost"
-                value={creditCost}
-                min={3.5}
-                max={4.5}
-                step={0.1}
-                prefix="€"
-                onChange={setCreditCost}
-              />
-              <CalculatorInput
-                label="Internal handling cost"
-                value={internalCost}
-                min={0}
-                max={50}
-                step={1}
-                prefix="€"
-                onChange={setInternalCost}
-              />
-              <CalculatorInput
-                label="Conversion to paid jobs"
-                value={conversionRate}
-                min={40}
-                max={100}
-                step={5}
-                suffix="%"
-                onChange={setConversionRate}
-              />
             </div>
+
           </div>
 
           <div className="rounded-[2rem] border border-red-900/50 bg-gradient-to-br from-red-950/30 via-white/[0.04] to-black p-6 shadow-2xl shadow-black/30">
@@ -1837,23 +1797,23 @@ function BusinessMarginCalculator() {
                 <div className="text-sm font-black uppercase tracking-[0.22em] text-red-400">
                   Estimated Outcome
                 </div>
-                <h3 className="mt-2 text-3xl font-black">Monthly partner model</h3>
+                <h3 className="mt-2 text-3xl font-black">Simple monthly estimate</h3>
               </div>
               <TrendingUp className="h-9 w-9 text-emerald-400" />
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
-              <ResultCard label="Paid jobs" value={`${paidFiles}`} detail={`${monthlyFiles} opportunities at ${conversionRate}%`} />
-              <ResultCard label="Revenue" value={formatEuro(revenue)} detail={`${formatEuro(averageSalePrice)} average sale`} />
-              <ResultCard label="Service cost" value={formatEuro(fileServiceCost)} detail={`${averageCredits} credits × ${formatEuro(creditCost)}`} />
-              <ResultCard label="Total cost" value={formatEuro(totalCost)} detail={`${formatEuro(operationsCost)} internal handling`} />
+              <ResultCard label="Completed files" value={`${monthlyFiles}`} detail="Estimated monthly file volume" />
+              <ResultCard label="Customer revenue" value={formatEuro(revenue)} detail={`${formatEuro(averageSalePrice)} average sale`} />
+              <ResultCard label="Credit usage" value={`${monthlyFiles * averageCredits}`} detail={`${averageCredits} credits per file`} />
+              <ResultCard label="Credit cost" value={formatEuro(fileServiceCost)} detail={`${formatEuro(creditCost)} estimated credit rate`} />
             </div>
 
             <div className="mt-5 rounded-[1.5rem] border border-emerald-700/30 bg-emerald-950/20 p-5">
               <div className="grid gap-4 md:grid-cols-3">
                 <div>
                   <div className="text-xs font-black uppercase tracking-[0.16em] text-emerald-300/80">
-                    Gross profit
+                    Estimated profit
                   </div>
                   <div className="mt-2 text-4xl font-black text-emerald-300">
                     {formatEuro(grossProfit)}
@@ -1878,27 +1838,9 @@ function BusinessMarginCalculator() {
               </div>
             </div>
 
-            <div className="mt-5 grid gap-3 md:grid-cols-2">
-              <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
-                <div className="text-xs font-black uppercase tracking-[0.14em] text-zinc-500">
-                  Cost per delivered file
-                </div>
-                <div className="mt-2 text-2xl font-black">{formatEuro(costPerFile)}</div>
-              </div>
-              <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
-                <div className="text-xs font-black uppercase tracking-[0.14em] text-zinc-500">
-                  Break-even jobs
-                </div>
-                <div className="mt-2 text-2xl font-black">
-                  {averageSalePrice > costPerFile ? "1+" : "Review pricing"}
-                </div>
-              </div>
-            </div>
-
             <p className="mt-5 rounded-2xl border border-white/10 bg-black/30 p-4 text-xs leading-6 text-zinc-500">
-              This calculator uses simplified gross-margin logic. Taxes, refunds,
-              dyno time, local labor and customer-specific pricing should be
-              reviewed separately.
+              A quick estimate for workshops comparing monthly file volume,
+              customer pricing and MG AutoTech credit usage.
             </p>
           </div>
         </div>
