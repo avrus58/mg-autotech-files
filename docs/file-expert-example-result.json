@@ -1,0 +1,100 @@
+{
+  "job_id": "example-job-id",
+  "analysis_version": "1.0.0",
+  "mode": "ori_mod_compare",
+  "files": {
+    "ori": {
+      "file_size": 6291456,
+      "sha256": "7b9f1b4f6df2a1f8d2d17e89f9a9a444f1b7b0f7977dd4a812f5f6ef11111111",
+      "first_64_bytes_hex": "000102030405060708090a0b0c0d0e0f",
+      "last_64_bytes_hex": "ffffffffffffffffffffffffffffffff",
+      "ff_ratio": 0.43,
+      "zero_ratio": 0.07,
+      "entropy": 6.71,
+      "ascii_strings": ["Bosch", "EDC17C46", "SW1037512345"],
+      "ecu_identifiers": ["Bosch", "EDC", "EDC17"]
+    },
+    "mod": {
+      "file_size": 6291456,
+      "sha256": "bad6f1b4f6df2a1f8d2d17e89f9a9a444f1b7b0f7977dd4a812f5f6ef22222222",
+      "first_64_bytes_hex": "000102030405060708090a0b0c0d0e0f",
+      "last_64_bytes_hex": "ffffffffffffffffffffffffffffffff",
+      "ff_ratio": 0.43,
+      "zero_ratio": 0.07,
+      "entropy": 6.72,
+      "ascii_strings": ["Bosch", "EDC17C46", "SW1037512345"],
+      "ecu_identifiers": ["Bosch", "EDC", "EDC17"]
+    }
+  },
+  "comparison": {
+    "same_size": true,
+    "changed_bytes": 2105,
+    "changed_percent": 0.03346,
+    "raw_changed_blocks": 321,
+    "merged_changed_blocks": 29,
+    "changed_blocks": [
+      {
+        "start_offset_hex": "0x08097C",
+        "end_offset_hex": "0x0809BC",
+        "length": 64,
+        "changed_byte_count": 32,
+        "ori_hex_preview": "0102030405060708",
+        "mod_hex_preview": "01020408070a0c0e",
+        "unsigned_8bit_preview": [1, 2, 4, 8, 7, 10],
+        "signed_8bit_preview": [1, 2, 4, 8, 7, 10],
+        "uint16_be_preview": [258, 1032, 1802],
+        "uint16_le_preview": [513, 2052, 2567],
+        "delta_preview": [0, 0, 1, 4, 2, 4]
+      }
+    ]
+  },
+  "active_regions": [
+    {
+      "start_offset_hex": "0x080000",
+      "end_offset_hex": "0x0A4000",
+      "density": 0.72
+    }
+  ],
+  "map_candidates": [
+    {
+      "offset_hex": "0x08097C",
+      "length": 64,
+      "possible_type": "map_candidate",
+      "reason": "Structured changed region with repeated numeric deltas.",
+      "confidence": 0.64
+    }
+  ],
+  "repeated_patterns": [
+    {
+      "signature": "64:0,0,1,4",
+      "count": 4,
+      "offsets": ["0x08097C", "0x0812A0", "0x081CE0", "0x082910"],
+      "reason": "Similar changed block length and delta signature repeated."
+    }
+  ],
+  "possible_features": [
+    {
+      "feature": "stage1",
+      "confidence": 0.82,
+      "reasons": ["Multiple structured calibration-like regions changed."]
+    }
+  ],
+  "risk_assessment": {
+    "risk_level": "medium",
+    "confidence": 0.68,
+    "reasons": ["0.03346% of bytes changed across 29 merged regions."],
+    "warnings": [
+      "Checksum must be verified before writing.",
+      "Human tuner confirmation is required before any flashing decision."
+    ]
+  },
+  "summary": {
+    "stock_or_modified": "likely_modified",
+    "main_conclusion": "The MOD file differs from the ORI in structured file regions. Feature labels are heuristic and require human confirmation.",
+    "recommended_next_steps": [
+      "Review detected regions in professional calibration software.",
+      "Verify checksum before writing.",
+      "Confirm results with logs and experienced tuner review."
+    ]
+  }
+}

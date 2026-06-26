@@ -7,6 +7,7 @@ import { signOutIfEmailUnverified } from "@/lib/authGuards";
 import { supabase } from "@/lib/supabaseClient";
 import {
   ArrowRight,
+  BrainCircuit,
   Car,
   CheckCircle2,
   Clipboard,
@@ -342,6 +343,14 @@ export default function DashboardPage() {
               </Link>
 
               <Link
+                href="/dashboard/file-expert"
+                className="flex items-center gap-3 rounded-2xl px-4 py-3 font-bold text-zinc-400 transition hover:bg-white/[0.06] hover:text-white"
+              >
+                <BrainCircuit className="h-5 w-5" />
+                AI File Expert
+              </Link>
+
+              <Link
                 href="/dashboard/credits"
                 className="flex items-center gap-3 rounded-2xl px-4 py-3 font-bold text-zinc-400 transition hover:bg-white/[0.06] hover:text-white"
               >
@@ -455,7 +464,7 @@ export default function DashboardPage() {
                     communication from your private MG AutoTech dashboard.
                   </p>
 
-                  <div className="mt-7 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                  <div className="mt-7 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
                     <Link
                       href="/new-request"
                       className="rounded-2xl bg-[#b1121b] px-5 py-4 text-center font-black text-white shadow-xl shadow-red-950/40 transition hover:-translate-y-1 hover:bg-[#c91824]"
@@ -470,6 +479,14 @@ export default function DashboardPage() {
                     >
                       <CreditCard className="mr-2 inline h-5 w-5" />
                       Buy Credits
+                    </Link>
+
+                    <Link
+                      href="/dashboard/file-expert"
+                      className="rounded-2xl border border-red-800/50 bg-red-950/25 px-5 py-4 text-center font-black text-white transition hover:-translate-y-1 hover:bg-red-950/40"
+                    >
+                      <BrainCircuit className="mr-2 inline h-5 w-5" />
+                      AI File Expert
                     </Link>
 
                     <Link
@@ -761,6 +778,17 @@ export default function DashboardPage() {
                       <span className="flex items-center gap-3 font-black">
                         <CreditCard className="h-5 w-5 text-red-600" />
                         Buy Credits
+                      </span>
+                      <ArrowRight className="h-5 w-5 text-zinc-500" />
+                    </Link>
+
+                    <Link
+                      href="/dashboard/file-expert"
+                      className="flex items-center justify-between rounded-2xl border border-white/10 bg-black/30 p-5 transition hover:-translate-y-1 hover:border-red-800/60"
+                    >
+                      <span className="flex items-center gap-3 font-black">
+                        <BrainCircuit className="h-5 w-5 text-red-600" />
+                        AI File Expert
                       </span>
                       <ArrowRight className="h-5 w-5 text-zinc-500" />
                     </Link>

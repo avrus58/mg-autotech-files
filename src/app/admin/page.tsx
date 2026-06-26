@@ -10,6 +10,7 @@ import RequestChat from "@/components/RequestChat";
 import {
   ArrowLeft,
   BellRing,
+  BrainCircuit,
   Building2,
   CalendarDays,
   Car,
@@ -900,6 +901,16 @@ export default function AdminPage() {
           <nav className="space-y-2">
             <SidebarButton active={activeTab === "orders"} icon={<FileCode2 />} label="Orders" count={stats.total} onClick={() => setActiveTab("orders")} />
             <SidebarButton active={activeTab === "customers"} icon={<Users />} label="Customers" count={stats.customers} onClick={() => setActiveTab("customers")} />
+            <Link
+              href="/admin/file-expert"
+              className="flex w-full items-center justify-between gap-3 rounded-2xl px-4 py-3 text-left text-sm font-black text-zinc-400 transition hover:bg-white/[0.06] hover:text-white"
+            >
+              <span className="flex items-center gap-3">
+                <BrainCircuit className="h-5 w-5" />
+                File Expert
+              </span>
+              <span className="rounded-full bg-red-950/40 px-2 py-1 text-xs text-red-200">AI</span>
+            </Link>
           </nav>
           <div className="mt-5 rounded-2xl border border-red-900/40 bg-red-950/20 p-4">
             <div className="text-xs font-black uppercase tracking-[0.18em] text-red-300">Open Work</div>
