@@ -3,7 +3,11 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getAuthRedirect, signOutIfEmailUnverified } from "@/lib/authGuards";
+import {
+  getAuthenticatedHome,
+  getAuthRedirect,
+  signOutIfEmailUnverified,
+} from "@/lib/authGuards";
 import { supabase } from "@/lib/supabaseClient";
 import {
   ArrowRight,
@@ -24,18 +28,46 @@ export default function LoginPage() {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [checkingAuth, setCheckingAuth] = useState(true);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
+    const queryMessage = params.get("verify_email") === "1"
+      ? "Please verify your e-mail address before accessing your account."
+      : params.get("reset") === "success"
+        ? "Password updated successfully. You can login now."
+        : "";
 
-    if (params.get("verify_email") === "1") {
-      setMessage("Please verify your e-mail address before accessing your account.");
-    }
+    let active = true;
 
-    if (params.get("reset") === "success") {
-      setMessage("Password updated successfully. You can login now.");
-    }
-  }, []);
+    const redirectAuthenticatedUser = async () => {
+      const { data } = await supabase.auth.getUser();
+      const user = data.user;
+
+      if (!active) return;
+
+      if (!user) {
+        setMessage(queryMessage);
+        setCheckingAuth(false);
+        return;
+      }
+
+      if (await signOutIfEmailUnverified(user)) {
+        setMessage("Please verify your e-mail address before accessing your account.");
+        setCheckingAuth(false);
+        return;
+      }
+
+      router.replace(await getAuthenticatedHome(user.id));
+      router.refresh();
+    };
+
+    void redirectAuthenticatedUser();
+
+    return () => {
+      active = false;
+    };
+  }, [router]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,8 +99,8 @@ export default function LoginPage() {
     }
 
     setLoading(false);
+    router.replace(await getAuthenticatedHome(data.user!.id));
     router.refresh();
-    router.push("/dashboard");
   };
 
   const handleGoogleLogin = async () => {
@@ -89,6 +121,14 @@ export default function LoginPage() {
       setGoogleLoading(false);
     }
   };
+
+  if (checkingAuth) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-[#050505] text-white">
+        <Loader2 className="h-8 w-8 animate-spin text-red-500" aria-label="Checking account" />
+      </main>
+    );
+  }
 
   return (
     <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#050505] px-4 py-10 text-white">

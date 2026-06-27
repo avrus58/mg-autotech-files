@@ -2,12 +2,18 @@
 
 import Link from "next/link";
 import {
+  useEffect,
   useState,
   type ButtonHTMLAttributes,
   type FormEvent,
   type ReactNode,
 } from "react";
-import { getAuthRedirect } from "@/lib/authGuards";
+import { useRouter } from "next/navigation";
+import {
+  getAuthenticatedHome,
+  getAuthRedirect,
+  signOutIfEmailUnverified,
+} from "@/lib/authGuards";
 import { supabase } from "@/lib/supabaseClient";
 import {
   ArrowLeft,
@@ -57,6 +63,7 @@ const accountCards: {
 ];
 
 export default function RegisterPage() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -76,6 +83,37 @@ export default function RegisterPage() {
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [checkingAuth, setCheckingAuth] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+
+    const redirectAuthenticatedUser = async () => {
+      const { data } = await supabase.auth.getUser();
+      const user = data.user;
+
+      if (!active) return;
+
+      if (!user) {
+        setCheckingAuth(false);
+        return;
+      }
+
+      if (await signOutIfEmailUnverified(user)) {
+        router.replace("/login?verify_email=1");
+        return;
+      }
+
+      router.replace(await getAuthenticatedHome(user.id));
+      router.refresh();
+    };
+
+    void redirectAuthenticatedUser();
+
+    return () => {
+      active = false;
+    };
+  }, [router]);
 
   const cleanFullName = fullName.trim();
   const cleanCompanyName = companyName.trim();
@@ -229,6 +267,14 @@ export default function RegisterPage() {
       setGoogleLoading(false);
     }
   };
+
+  if (checkingAuth) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-[#050505] text-white">
+        <Loader2 className="h-8 w-8 animate-spin text-red-500" aria-label="Checking account" />
+      </main>
+    );
+  }
 
   return (
     <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#050505] px-4 py-8 text-white sm:py-10">

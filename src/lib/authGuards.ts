@@ -12,6 +12,16 @@ export async function signOutIfEmailUnverified(user: User) {
   return true;
 }
 
+export async function getAuthenticatedHome(userId: string) {
+  const { data } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", userId)
+    .maybeSingle();
+
+  return data?.role === "admin" ? "/admin" : "/dashboard";
+}
+
 export function getAuthRedirect(path: string) {
   if (typeof window === "undefined") return path;
 
