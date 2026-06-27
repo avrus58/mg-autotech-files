@@ -31,7 +31,7 @@ async function fileToBuffer(file: File | null) {
 }
 
 export async function GET(request: Request) {
-  const user = await getCurrentServerUser();
+  const user = await getCurrentServerUser(request);
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const url = new URL(request.url);
@@ -53,7 +53,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const user = await getCurrentServerUser();
+  const user = await getCurrentServerUser(request);
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (!user.email_confirmed_at && !user.confirmed_at) {
     return NextResponse.json({ error: "Please verify your e-mail address first." }, { status: 403 });

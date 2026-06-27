@@ -17,6 +17,7 @@ import {
   SlidersHorizontal,
 } from "lucide-react";
 import { signOutIfEmailUnverified } from "@/lib/authGuards";
+import { getFileExpertAuthHeaders } from "@/lib/fileExpert/client";
 import { supabase } from "@/lib/supabaseClient";
 import type { FileExpertFeature, FileExpertJob } from "@/lib/fileExpert/types";
 import { fileExpertFeatureLabels } from "@/lib/fileExpert/types";
@@ -101,7 +102,11 @@ export default function AdminFileExpertPage() {
       return;
     }
 
-    const response = await fetch("/api/file-expert/jobs?all=1", { cache: "no-store" });
+    const headers = await getFileExpertAuthHeaders();
+    const response = await fetch("/api/file-expert/jobs?all=1", {
+      cache: "no-store",
+      headers,
+    });
     const payload = await response.json();
 
     if (!response.ok) {
@@ -126,7 +131,11 @@ export default function AdminFileExpertPage() {
   async function openJob(job: FileExpertJob, options?: { silent?: boolean }) {
     if (!options?.silent) setMessage("");
     setSelectedJob(job);
-    const response = await fetch(`/api/file-expert/jobs/${job.id}`, { cache: "no-store" });
+    const headers = await getFileExpertAuthHeaders();
+    const response = await fetch(`/api/file-expert/jobs/${job.id}`, {
+      cache: "no-store",
+      headers,
+    });
     const payload = await response.json();
 
     if (!response.ok) {
@@ -187,7 +196,10 @@ export default function AdminFileExpertPage() {
 
     const response = await fetch(`/api/admin/file-expert/jobs/${selectedJob.id}/feedback`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...(await getFileExpertAuthHeaders()),
+      },
       body: JSON.stringify({
         actualFeatures,
         aiCorrect: aiCorrect === "yes" ? true : aiCorrect === "no" ? false : null,
@@ -212,7 +224,11 @@ export default function AdminFileExpertPage() {
     if (!selectedJob) return;
     setReanalyzing(true);
     setMessage("");
-    const response = await fetch(`/api/file-expert/jobs/${selectedJob.id}/analyze`, { method: "POST" });
+    const headers = await getFileExpertAuthHeaders();
+    const response = await fetch(`/api/file-expert/jobs/${selectedJob.id}/analyze`, {
+      method: "POST",
+      headers,
+    });
     const payload = await response.json();
     setReanalyzing(false);
 

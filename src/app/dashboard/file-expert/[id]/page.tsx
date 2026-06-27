@@ -16,6 +16,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { signOutIfEmailUnverified } from "@/lib/authGuards";
+import { getFileExpertAuthHeaders } from "@/lib/fileExpert/client";
 import { supabase } from "@/lib/supabaseClient";
 import type {
   FileExpertAnalyzerResult,
@@ -100,7 +101,11 @@ export default function FileExpertReportPage() {
       return;
     }
 
-    const response = await fetch(`/api/file-expert/jobs/${jobId}`, { cache: "no-store" });
+    const headers = await getFileExpertAuthHeaders();
+    const response = await fetch(`/api/file-expert/jobs/${jobId}`, {
+      cache: "no-store",
+      headers,
+    });
     const payload = await response.json();
 
     if (!response.ok) {
@@ -149,7 +154,11 @@ export default function FileExpertReportPage() {
   async function reanalyze() {
     setReanalyzing(true);
     setMessage("");
-    const response = await fetch(`/api/file-expert/jobs/${jobId}/analyze`, { method: "POST" });
+    const headers = await getFileExpertAuthHeaders();
+    const response = await fetch(`/api/file-expert/jobs/${jobId}/analyze`, {
+      method: "POST",
+      headers,
+    });
     const payload = await response.json();
     setReanalyzing(false);
 

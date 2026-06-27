@@ -32,7 +32,7 @@ export async function POST(
   context: { params: Promise<{ id: string }> }
 ) {
   const { id } = await context.params;
-  const admin = await requireFileExpertAdmin();
+  const admin = await requireFileExpertAdmin(request);
 
   if (admin.status !== 200) {
     return NextResponse.json({ error: admin.error }, { status: admin.status });

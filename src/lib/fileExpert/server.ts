@@ -26,8 +26,19 @@ export function validateFileExpertFile(file: File | null) {
   return null;
 }
 
-export async function getCurrentServerUser() {
+export async function getCurrentServerUser(request?: Request) {
   const supabase = await getSupabaseServer();
+
+  const token = request?.headers.get("authorization")?.replace(/^Bearer\s+/i, "").trim();
+
+  if (token) {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser(token);
+
+    if (user) return user;
+  }
+
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -45,8 +56,8 @@ export async function isFileExpertAdmin(userId: string) {
   return data?.role === "admin";
 }
 
-export async function requireFileExpertAdmin() {
-  const user = await getCurrentServerUser();
+export async function requireFileExpertAdmin(request?: Request) {
+  const user = await getCurrentServerUser(request);
   if (!user) return { error: "Unauthorized", status: 401 as const };
 
   const isAdmin = await isFileExpertAdmin(user.id);
