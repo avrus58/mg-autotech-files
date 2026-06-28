@@ -2,6 +2,23 @@ export type FileExpertStatus = "pending" | "processing" | "completed" | "failed"
 export type FileExpertReadMethod = "OBD" | "Bench" | "Boot" | "VR" | "Unknown";
 export type FileExpertRiskLevel = "low" | "medium" | "high" | "unknown";
 export type FileExpertMode = "single_file" | "ori_mod_compare";
+export type FileExpertDetectionStatus = "detected" | "probable" | "possible" | "not_detected";
+export type FileExpertModuleType = "ECU" | "TCU" | "unknown";
+export type FileExpertFileFormat =
+  | "raw_binary"
+  | "intel_hex"
+  | "motorola_srecord"
+  | "zip_archive"
+  | "frf_container"
+  | "encrypted_or_compressed"
+  | "unknown";
+export type FileExpertReadScope =
+  | "full_read"
+  | "calibration_area"
+  | "partial_read"
+  | "virtual_read"
+  | "container"
+  | "unknown";
 export type FileExpertFeature =
   | "stock_or_modified"
   | "stage1"
@@ -26,6 +43,83 @@ export type FileExpertFileInspection = {
   entropy: number;
   ascii_strings: string[];
   ecu_identifiers: string[];
+  file_format?: FileExpertFileFormat;
+  read_scope?: FileExpertReadScope;
+  read_scope_confidence?: number;
+  hardware_numbers?: string[];
+  software_numbers?: string[];
+  calibration_ids?: string[];
+  vins?: string[];
+  engine_codes?: string[];
+};
+
+export type FileExpertEcuIdentification = {
+  status: FileExpertDetectionStatus;
+  module_type: FileExpertModuleType;
+  supplier: string | null;
+  family: string | null;
+  variant: string | null;
+  display_name: string;
+  processor: string | null;
+  confidence: number;
+  evidence: string[];
+  hardware_numbers: string[];
+  software_numbers: string[];
+  calibration_ids: string[];
+  vins: string[];
+  engine_codes: string[];
+};
+
+export type FileExpertVehicleCandidate = {
+  brand: string;
+  model: string;
+  generation: string;
+  engine: string;
+  ecu: string;
+  confidence: number;
+  reason: string;
+};
+
+export type FileExpertVehicleMatch = {
+  total_matches: number;
+  exact_vehicle_identified: boolean;
+  summary: string;
+  candidates: FileExpertVehicleCandidate[];
+};
+
+export type FileExpertChangeClassification =
+  | "identical"
+  | "focused_calibration"
+  | "distributed_calibration"
+  | "broad_rework"
+  | "structural_mismatch"
+  | "single_file";
+
+export type FileExpertChangeProfile = {
+  classification: FileExpertChangeClassification;
+  label: string;
+  summary: string;
+  confidence: number;
+  affected_area_percent: number;
+  changed_regions: number;
+};
+
+export type FileExpertFinding = {
+  id: string;
+  category: "identity" | "file" | "comparison" | "calibration" | "integrity" | "vehicle";
+  severity: "positive" | "info" | "warning" | "critical";
+  title: string;
+  summary: string;
+  confidence: number;
+  evidence: string[];
+};
+
+export type FileExpertIntegrityAssessment = {
+  file_size_match: boolean | null;
+  ecu_identity_match: boolean | null;
+  vin_match: boolean | null;
+  checksum_status: "not_checked";
+  issues: string[];
 };
 
 export type FileExpertChangedBlock = {
@@ -90,6 +184,11 @@ export type FileExpertAnalyzerResult = {
   map_candidates: FileExpertMapCandidate[];
   repeated_patterns: FileExpertRepeatedPattern[];
   possible_features: FileExpertPossibleFeature[];
+  ecu_identification?: FileExpertEcuIdentification;
+  vehicle_match?: FileExpertVehicleMatch;
+  change_profile?: FileExpertChangeProfile;
+  findings?: FileExpertFinding[];
+  integrity_assessment?: FileExpertIntegrityAssessment;
   risk_assessment: {
     risk_level: FileExpertRiskLevel;
     confidence: number;

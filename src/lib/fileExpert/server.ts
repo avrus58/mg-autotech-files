@@ -2,6 +2,7 @@ import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { getSupabaseServer } from "@/lib/supabaseServer";
 import { analyzeFileExpertBuffers, buildPatternSignature, sha256Buffer } from "@/lib/fileExpert/analyzer";
 import { generateFileExpertReport } from "@/lib/fileExpert/report";
+import { findVehicleCandidates } from "@/lib/fileExpert/vehicleMatcher";
 import type { FileExpertAnalyzerResult, FileExpertFeature, FileExpertJob } from "@/lib/fileExpert/types";
 
 export const fileExpertBucket = "file-expert";
@@ -15,6 +16,11 @@ export function sanitizeFileExpertName(name: string) {
 
 export function validateFileExpertFile(file: File | null) {
   if (!file || file.size === 0) return "File is empty.";
+  return validateFileExpertDescriptor({ name: file.name, size: file.size });
+}
+
+export function validateFileExpertDescriptor(file: { name: string; size: number }) {
+  if (!file.size || file.size <= 0) return "File is empty.";
   if (file.size > fileExpertMaxFileSize) return "File is too large. Maximum size is 32 MB.";
 
   const lowerName = file.name.toLowerCase();
@@ -73,7 +79,12 @@ async function downloadFile(path: string | null) {
   if (error || !data) {
     throw new Error(error?.message || `File could not be downloaded: ${path}`);
   }
-  return Buffer.from(await data.arrayBuffer());
+  const buffer = Buffer.from(await data.arrayBuffer());
+  if (!buffer.length) throw new Error("Uploaded file is empty.");
+  if (buffer.length > fileExpertMaxFileSize) {
+    throw new Error("Uploaded file exceeds the 32 MB analysis limit.");
+  }
+  return buffer;
 }
 
 async function callExternalAnalyzer(input: {
@@ -110,6 +121,8 @@ async function callExternalAnalyzer(input: {
           engine: input.job.engine,
           ecu_type: input.job.ecu_type,
           read_method: input.job.read_method,
+          ori_file_name: input.job.ori_file_name,
+          mod_file_name: input.job.mod_file_name,
         },
       }),
     });
@@ -149,6 +162,7 @@ function getPrimaryFingerprintEntries(result: FileExpertAnalyzerResult, job: Fil
     active_regions: activeRegions,
     fingerprint_json: {
       identifiers: entry.file.ecu_identifiers,
+      ecu_identification: result.ecu_identification ?? null,
       first_64_bytes_hex: entry.file.first_64_bytes_hex,
       last_64_bytes_hex: entry.file.last_64_bytes_hex,
       mode: result.mode,
@@ -183,13 +197,49 @@ export async function analyzeFileExpertJob(jobId: string) {
 
     const externalResult = await callExternalAnalyzer({ job, ori, mod });
     const result =
-      externalResult ??
-      (await analyzeFileExpertBuffers({
+      externalResult?.analysis_version?.startsWith("2.")
+        ? externalResult
+        : await analyzeFileExpertBuffers({
         jobId: job.id,
         ori: ori ?? undefined,
         mod: mod ?? undefined,
         single: single ?? undefined,
-      }));
+        fileNames: {
+          ori: job.ori_file_name,
+          mod: job.mod_file_name,
+          single: job.ori_file_name ?? job.mod_file_name,
+        },
+        metadata: {
+          ecuType: job.ecu_type,
+          readMethod: job.read_method,
+        },
+      });
+
+    result.vehicle_match = findVehicleCandidates({
+      identification: result.ecu_identification,
+      metadata: {
+        brand: job.brand,
+        model: job.model,
+        engine: job.engine,
+      },
+    });
+
+    if (result.vehicle_match.total_matches > 0) {
+      result.findings = [
+        ...(result.findings ?? []),
+        {
+          id: "vehicle-applications",
+          category: "vehicle",
+          severity: "info",
+          title: `${result.vehicle_match.total_matches} compatible vehicle applications`,
+          summary: result.vehicle_match.summary,
+          confidence: result.vehicle_match.exact_vehicle_identified ? 0.94 : 0.62,
+          evidence: result.vehicle_match.candidates.slice(0, 3).map(
+            (candidate) => `${candidate.brand} ${candidate.model} ${candidate.engine}`
+          ),
+        },
+      ];
+    }
 
     const generated = generateFileExpertReport({
       result,
@@ -216,10 +266,24 @@ export async function analyzeFileExpertJob(jobId: string) {
       if (fingerprintError) throw fingerprintError;
     }
 
+    const exactVehicle = result.vehicle_match?.exact_vehicle_identified
+      ? result.vehicle_match.candidates[0]
+      : null;
     const { error: updateError } = await supabaseAdmin
       .from("file_expert_jobs")
       .update({
         status: "completed",
+        brand: job.brand || exactVehicle?.brand || null,
+        model: job.model || exactVehicle?.model || null,
+        engine: job.engine || exactVehicle?.engine || null,
+        ecu_type:
+          result.ecu_identification && result.ecu_identification.confidence >= 0.68
+            ? result.ecu_identification.display_name
+            : job.ecu_type,
+        ori_sha256: result.files.ori?.sha256 ?? job.ori_sha256,
+        mod_sha256: result.files.mod?.sha256 ?? job.mod_sha256,
+        ori_file_size: result.files.ori?.file_size ?? job.ori_file_size,
+        mod_file_size: result.files.mod?.file_size ?? job.mod_file_size,
         result_json: result,
         ai_report: generated.report,
         executive_summary: generated.executiveSummary,
@@ -257,6 +321,7 @@ export async function storeConfirmedPatterns(input: {
 
   const signature = buildPatternSignature(result);
   const ecuFamily =
+    result.ecu_identification?.family ??
     result.files.ori?.ecu_identifiers[0] ??
     result.files.mod?.ecu_identifiers[0] ??
     result.files.single?.ecu_identifiers[0] ??

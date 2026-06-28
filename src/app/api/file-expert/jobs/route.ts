@@ -11,6 +11,31 @@ import {
   validateFileExpertFile,
 } from "@/lib/fileExpert/server";
 
+const jobListColumns = [
+  "id",
+  "user_id",
+  "status",
+  "brand",
+  "model",
+  "engine",
+  "ecu_type",
+  "read_method",
+  "customer_notes",
+  "ori_file_name",
+  "mod_file_name",
+  "ori_sha256",
+  "mod_sha256",
+  "ori_file_size",
+  "mod_file_size",
+  "executive_summary",
+  "detected_features",
+  "confidence_score",
+  "risk_level",
+  "error_message",
+  "created_at",
+  "updated_at",
+].join(",");
+
 const createJobSchema = z.object({
   brand: z.string().max(100).optional().default(""),
   model: z.string().max(100).optional().default(""),
@@ -41,7 +66,7 @@ export async function GET(request: Request) {
 
   let query = supabaseAdmin
     .from("file_expert_jobs")
-    .select("*")
+    .select(jobListColumns)
     .order("created_at", { ascending: false });
 
   if (!includeAll || !isAdmin) query = query.eq("user_id", user.id);

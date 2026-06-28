@@ -54,6 +54,7 @@ export default function FileExpertDashboardPage() {
   const [jobs, setJobs] = useState<FileExpertJob[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [submissionStage, setSubmissionStage] = useState("");
   const [message, setMessage] = useState("");
   const [oriFile, setOriFile] = useState<File | null>(null);
   const [modFile, setModFile] = useState<File | null>(null);
@@ -130,27 +131,67 @@ export default function FileExpertDashboardPage() {
     }
 
     setSubmitting(true);
-    const formData = new FormData();
-    if (oriFile) formData.append("oriFile", oriFile);
-    if (modFile) formData.append("modFile", modFile);
-    formData.append("brand", form.brand);
-    formData.append("model", form.model);
-    formData.append("engine", form.engine);
-    formData.append("ecuType", form.ecuType);
-    formData.append("readMethod", form.readMethod);
-    formData.append("customerNotes", form.customerNotes);
-
+    setSubmissionStage("Preparing secure upload...");
     const headers = await getFileExpertAuthHeaders();
-    const response = await fetch("/api/file-expert/jobs", {
+    const prepareResponse = await fetch("/api/file-expert/jobs/prepare", {
       method: "POST",
-      headers,
-      body: formData,
+      headers: { "Content-Type": "application/json", ...headers },
+      body: JSON.stringify({
+        ...form,
+        oriFile: oriFile ? { name: oriFile.name, size: oriFile.size, type: oriFile.type } : null,
+        modFile: modFile ? { name: modFile.name, size: modFile.size, type: modFile.type } : null,
+      }),
     });
-    const payload = await response.json();
+    const prepared = await prepareResponse.json();
+
+    if (!prepareResponse.ok) {
+      setMessage(prepared.error || "Analysis could not be prepared.");
+      setSubmissionStage("");
+      setSubmitting(false);
+      return;
+    }
+
+    setSubmissionStage("Uploading files securely...");
+    const uploadResults = await Promise.all([
+      oriFile && prepared.uploads?.ori
+        ? supabase.storage.from("file-expert").upload(prepared.uploads.ori.path, oriFile, {
+            contentType: prepared.uploads.ori.contentType,
+            upsert: false,
+          })
+        : Promise.resolve({ error: null }),
+      modFile && prepared.uploads?.mod
+        ? supabase.storage.from("file-expert").upload(prepared.uploads.mod.path, modFile, {
+            contentType: prepared.uploads.mod.contentType,
+            upsert: false,
+          })
+        : Promise.resolve({ error: null }),
+    ]);
+    const uploadError = uploadResults.find((result) => result.error)?.error;
+
+    if (uploadError) {
+      await fetch(`/api/file-expert/jobs/${prepared.jobId}/finalize`, {
+        method: "POST",
+        headers: await getFileExpertAuthHeaders(),
+      });
+      setMessage(uploadError.message || "File upload failed.");
+      setSubmissionStage("");
+      setSubmitting(false);
+      await loadJobs({ silent: true });
+      return;
+    }
+
+    setSubmissionStage("Identifying control unit...");
+    const finalizeResponse = await fetch(`/api/file-expert/jobs/${prepared.jobId}/finalize`, {
+      method: "POST",
+      headers: await getFileExpertAuthHeaders(),
+    });
+    const finalized = await finalizeResponse.json();
+    setSubmissionStage("");
     setSubmitting(false);
 
-    if (!response.ok && response.status !== 202) {
-      setMessage(payload.error || "Analysis could not be created.");
+    if (!finalizeResponse.ok) {
+      setMessage(finalized.error || "Analysis could not be completed.");
+      await loadJobs({ silent: true });
       return;
     }
 
@@ -165,7 +206,7 @@ export default function FileExpertDashboardPage() {
       customerNotes: "",
     });
     await loadJobs({ silent: true });
-    router.push(`/dashboard/file-expert/${payload.jobId}`);
+    router.push(`/dashboard/file-expert/${prepared.jobId}`);
   }
 
   if (loading) {
@@ -197,11 +238,11 @@ export default function FileExpertDashboardPage() {
               MG AutoTech AI File Expert
             </div>
             <h1 className="mt-2 break-words text-4xl font-black md:text-5xl">
-              ECU / TCU file analysis
+              Automatic ECU / TCU identification
             </h1>
             <p className="mt-3 max-w-3xl text-sm leading-7 text-zinc-400">
-              Upload ORI and MOD files for a technical comparison report. This is an
-              analysis tool only; it does not create ready-to-write tuning files.
+              Upload one file to identify the control unit, HW/SW information and file
+              profile. Add the matching ORI and MOD pair for a professional modification comparison.
             </p>
           </div>
 
@@ -240,30 +281,30 @@ export default function FileExpertDashboardPage() {
                 <div className="text-sm font-black uppercase tracking-[0.22em] text-red-400">
                   New analysis
                 </div>
-                <h2 className="mt-1 text-2xl font-black">Upload file pair</h2>
+                <h2 className="mt-1 text-2xl font-black">Upload control-unit files</h2>
               </div>
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
               <FileDrop
                 title="ORI file"
-                description="Original ECU/TCU file"
+                description="Original read or single file for identification"
                 file={oriFile}
                 onChange={setOriFile}
               />
               <FileDrop
                 title="MOD file"
-                description="Modified file or optional single-file check"
+                description="Optional modified file for ORI/MOD comparison"
                 file={modFile}
                 onChange={setModFile}
               />
             </div>
 
             <div className="mt-6 grid gap-4 sm:grid-cols-2">
-              <TextInput label="Vehicle brand" value={form.brand} onChange={(brand) => setForm((current) => ({ ...current, brand }))} placeholder="BMW, Audi, Mercedes..." />
-              <TextInput label="Model" value={form.model} onChange={(model) => setForm((current) => ({ ...current, model }))} placeholder="320d, A6, E-Class..." />
-              <TextInput label="Engine" value={form.engine} onChange={(engine) => setForm((current) => ({ ...current, engine }))} placeholder="3.0 TDI, N57, 2.0 TDI..." />
-              <TextInput label="ECU / TCU type" value={form.ecuType} onChange={(ecuType) => setForm((current) => ({ ...current, ecuType }))} placeholder="EDC17, MD1, MG1, ZF 8HP..." />
+              <TextInput label="Vehicle brand (optional)" value={form.brand} onChange={(brand) => setForm((current) => ({ ...current, brand }))} placeholder="Auto-detected where evidence is available" />
+              <TextInput label="Model (optional)" value={form.model} onChange={(model) => setForm((current) => ({ ...current, model }))} placeholder="Optional workshop reference" />
+              <TextInput label="Engine (optional)" value={form.engine} onChange={(engine) => setForm((current) => ({ ...current, engine }))} placeholder="Engine code or capacity if known" />
+              <TextInput label="ECU / TCU hint (optional)" value={form.ecuType} onChange={(ecuType) => setForm((current) => ({ ...current, ecuType }))} placeholder="Leave empty for automatic identification" />
             </div>
 
             <label className="mt-4 block">
@@ -308,13 +349,13 @@ export default function FileExpertDashboardPage() {
               ) : (
                 <BrainCircuit className="mr-2 h-5 w-5" />
               )}
-              Start AI File Expert Analysis
+              {submissionStage || "Identify and analyze files"}
             </button>
 
             <div className="mt-5 rounded-2xl border border-amber-700/30 bg-amber-950/15 p-4 text-xs leading-6 text-amber-100/80">
               <ShieldCheck className="mr-2 inline h-4 w-4 text-amber-300" />
-              Automated output is for analysis and quality control. Human tuner
-              confirmation and checksum verification are still required.
+              The system separates file evidence from probable matches. Exact vehicle,
+              map purpose and checksum status are never invented when evidence is missing.
             </div>
           </form>
 
@@ -358,7 +399,7 @@ export default function FileExpertDashboardPage() {
                           </span>
                         </div>
                         <h3 className="mt-3 break-words text-xl font-black">
-                          {[job.brand, job.model, job.engine].filter(Boolean).join(" ") || "Unspecified vehicle"}
+                          {[job.brand, job.model, job.engine].filter(Boolean).join(" ") || job.ecu_type || "Automatic ECU analysis"}
                         </h3>
                         <div className="mt-2 grid gap-2 text-sm text-zinc-400 sm:grid-cols-2">
                           <span className="min-w-0 break-words">ECU: {job.ecu_type || "-"}</span>

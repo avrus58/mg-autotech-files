@@ -1,13 +1,12 @@
-import type { FileExpertAnalyzerResult } from "@/lib/fileExpert/types";
+import type { FileExpertAnalyzerResult, FileExpertFileInspection } from "@/lib/fileExpert/types";
 import { fileExpertFeatureLabels } from "@/lib/fileExpert/types";
 
 export const fileExpertReportPromptTemplate = `
 You are MG AutoTech AI File Expert.
 Use only the structured analyzer JSON and submitted vehicle metadata.
-Do not generate tuning files.
-Do not claim guaranteed safety.
-Use words like possible, likely, no clear evidence, requires human confirmation.
-Always include checksum and human calibrator disclaimer.
+Do not generate tuning files or invent exact vehicle, engine, map or checksum results.
+Clearly separate detected facts, probable matches and items requiring human confirmation.
+Always include checksum and human calibrator disclaimers.
 `;
 
 function percent(value: number | undefined) {
@@ -19,23 +18,28 @@ function shortHash(value?: string) {
   return value ? `${value.slice(0, 12)}...` : "-";
 }
 
+function list(values: string[] | undefined) {
+  return values?.length ? values.join(", ") : "not detected";
+}
+
 function formatFeatureList(result: FileExpertAnalyzerResult) {
   if (result.possible_features.length === 0) {
-    return "No specific feature pattern was detected with useful confidence.";
+    return "No specific operation can be named from the available evidence.";
   }
 
   return result.possible_features
     .map((item) => {
       const label = fileExpertFeatureLabels[item.feature] ?? item.feature;
-      const reasons = item.reasons.length ? ` Reason: ${item.reasons.join(" ")}` : "";
-      return `- ${label}: possible confidence ${(item.confidence * 100).toFixed(0)}%.${reasons}`;
+      return `- ${label}: ${Math.round(item.confidence * 100)}% indication. ${item.reasons.join(" ")}`;
     })
     .join("\n");
 }
 
-function fileLine(label: string, file?: { file_size: number; sha256: string; entropy: number; ecu_identifiers: string[] }) {
+function fileLine(label: string, file?: FileExpertFileInspection) {
   if (!file) return `- ${label}: not uploaded`;
-  return `- ${label}: ${file.file_size.toLocaleString()} bytes, SHA256 ${shortHash(file.sha256)}, entropy ${file.entropy}, identifiers ${file.ecu_identifiers.join(", ") || "none detected"}`;
+  const format = (file.file_format || "unknown").replaceAll("_", " ");
+  const scope = (file.read_scope || "unknown").replaceAll("_", " ");
+  return `- ${label}: ${file.file_size.toLocaleString()} bytes, ${format}, ${scope}, SHA256 ${shortHash(file.sha256)}`;
 }
 
 export function generateFileExpertReport(input: {
@@ -51,83 +55,67 @@ export function generateFileExpertReport(input: {
 }) {
   const { result, metadata } = input;
   const comparison = result.comparison;
-  const vehicle = [metadata.brand, metadata.model, metadata.engine].filter(Boolean).join(" ") || "Vehicle not specified";
-  const features = formatFeatureList(result);
-  const changedBlocks = comparison?.changed_blocks.slice(0, 10) ?? [];
-  const maps = result.map_candidates.slice(0, 10);
-  const warnings = result.risk_assessment.warnings.map((item) => `- ${item}`).join("\n");
-
-  const executiveSummary =
-    result.mode === "ori_mod_compare"
-      ? `${vehicle}: ${result.summary.main_conclusion} ${comparison ? `${comparison.changed_bytes.toLocaleString()} bytes changed across ${comparison.merged_changed_blocks} merged regions.` : ""}`
-      : `${vehicle}: single file inspection completed. No ORI/MOD comparison was available.`;
+  const identity = result.ecu_identification;
+  const changeProfile = result.change_profile;
+  const integrity = result.integrity_assessment;
+  const vehicle = [metadata.brand, metadata.model, metadata.engine].filter(Boolean).join(" ") || "Vehicle not supplied";
+  const detectedEcu = identity?.display_name || metadata.ecuType || "Control unit not identified";
+  const changeSummary = changeProfile?.summary || result.summary.main_conclusion;
+  const executiveSummary = `${detectedEcu}: ${changeSummary}`;
 
   const report = [
-    "# Executive Summary",
+    "# Expert Conclusion",
     executiveSummary,
     "",
-    "# File Identification",
-    `Vehicle: ${vehicle}`,
-    `ECU / TCU: ${metadata.ecuType || "-"}`,
-    `Read method: ${metadata.readMethod || "-"}`,
+    "# Control Unit Identification",
+    `Detected unit: ${detectedEcu}`,
+    `Detection status: ${identity?.status || "not detected"}`,
+    `Module type: ${identity?.module_type || "unknown"}`,
+    `Supplier: ${identity?.supplier || "not detected"}`,
+    `Family / variant: ${identity?.variant || identity?.family || "not detected"}`,
+    `Processor: ${identity?.processor || "not detected"}`,
+    `Identification confidence: ${identity ? Math.round(identity.confidence * 100) : 0}%`,
+    `Hardware numbers: ${list(identity?.hardware_numbers)}`,
+    `Software numbers: ${list(identity?.software_numbers)}`,
+    `Calibration IDs: ${list(identity?.calibration_ids)}`,
+    `VIN identifiers: ${list(identity?.vins)}`,
+    `Engine code markers: ${list(identity?.engine_codes)}`,
+    "",
+    "# Vehicle Assessment",
+    `Submitted vehicle: ${vehicle}`,
+    result.vehicle_match?.summary || "No automatic vehicle application match is available.",
+    "Exact vehicle and engine are only reported when supported by file identifiers; ECU-family compatibility alone is not treated as proof.",
+    "",
+    "# Uploaded File Profile",
+    `Read method supplied by customer: ${metadata.readMethod || "unknown"}`,
     fileLine("ORI", result.files.ori),
     fileLine("MOD", result.files.mod),
-    fileLine("Single", result.files.single),
+    fileLine("Single file", result.files.single),
     "",
-    "# Stock/Modified Assessment",
-    `Assessment: ${result.summary.stock_or_modified.replaceAll("_", " ")}`,
+    "# Modification Assessment",
+    `Result: ${changeProfile?.label || result.summary.stock_or_modified.replaceAll("_", " ")}`,
+    changeSummary,
     comparison
-      ? `Changed bytes: ${comparison.changed_bytes.toLocaleString()} (${percent(comparison.changed_percent)}). Same size: ${comparison.same_size ? "yes" : "no"}.`
-      : "No comparison data available.",
+      ? `${comparison.changed_bytes.toLocaleString()} bytes differ across ${comparison.merged_changed_blocks} grouped regions (${percent(comparison.changed_percent)} of the file).`
+      : "A matching ORI/MOD pair was not available, so modification status cannot be confirmed.",
     "",
-    "# Detected Possible Features",
-    features,
+    "# Possible Operations",
+    formatFeatureList(result),
+    "Low-confidence operation labels are indications only. Exact DPF, EGR, AdBlue, DTC, VMAX or tuning-stage confirmation requires ECU-specific map definitions or a known verified pattern.",
     "",
-    "# Calibration Change Summary",
-    comparison
-      ? `The comparison found ${comparison.raw_changed_blocks} raw changed blocks and ${comparison.merged_changed_blocks} merged changed regions. This is a first-level binary review, not a map-definition export.`
-      : "Single file mode can identify strings, entropy and active regions, but cannot confirm modified features.",
-    "",
-    "# Important Changed Regions",
-    changedBlocks.length
-      ? changedBlocks
-          .map((block) => `- ${block.start_offset_hex} - ${block.end_offset_hex}: ${block.changed_byte_count} changed bytes, length ${block.length}`)
-          .join("\n")
-      : "No changed regions available.",
-    "",
-    "# Map Candidates",
-    maps.length
-      ? maps
-          .map((item) => `- ${item.offset_hex}: ${item.length} bytes, confidence ${(item.confidence * 100).toFixed(0)}%. ${item.reason}`)
-          .join("\n")
-      : "No clear map candidates were detected in this first-level analysis.",
-    "",
-    "# Risk Assessment",
-    `Risk level: ${result.risk_assessment.risk_level}`,
-    `Analyzer confidence: ${(result.risk_assessment.confidence * 100).toFixed(0)}%`,
-    result.risk_assessment.reasons.map((item) => `- ${item}`).join("\n") || "- No additional risk reasons.",
-    "",
-    "# Recommended Logging Parameters",
-    "- Boost pressure request vs actual",
-    "- Rail pressure request vs actual",
-    "- Air mass request vs actual",
-    "- Lambda / AFR where available",
-    "- Exhaust gas temperature where available",
-    "- Torque request, torque limiters and gearbox torque intervention",
-    "- DTC scan before and after road test",
+    "# File Integrity",
+    `File size match: ${integrity?.file_size_match === null || integrity?.file_size_match === undefined ? "not applicable" : integrity.file_size_match ? "yes" : "no"}`,
+    `ECU identity match: ${integrity?.ecu_identity_match === null || integrity?.ecu_identity_match === undefined ? "not proven" : integrity.ecu_identity_match ? "yes" : "no"}`,
+    `VIN match: ${integrity?.vin_match === null || integrity?.vin_match === undefined ? "not available" : integrity.vin_match ? "yes" : "no"}`,
+    "Checksum status: not checked",
+    ...(integrity?.issues.length ? integrity.issues.map((issue) => `- ${issue}`) : ["- No obvious structural conflict was detected."]),
     "",
     "# Recommended Next Steps",
-    result.summary.recommended_next_steps.map((item) => `- ${item}`).join("\n"),
-    "",
-    "# Warnings",
-    warnings,
+    ...result.summary.recommended_next_steps.map((item) => `- ${item}`),
     "",
     "# Disclaimer",
-    "This report is an automated analysis and does not guarantee file safety. Final verification must be performed by an experienced calibrator. Checksum correction must be verified with the flashing tool or professional checksum software before writing.",
+    "This automated report identifies binary evidence and likely matches; it does not guarantee file safety or exact map purpose. An experienced calibrator must confirm the result. Checksum correction must be verified with the flashing tool or professional checksum software before writing.",
   ].join("\n");
 
-  return {
-    executiveSummary,
-    report,
-  };
+  return { executiveSummary, report };
 }

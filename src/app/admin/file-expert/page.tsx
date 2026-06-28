@@ -188,6 +188,7 @@ export default function AdminFileExpertPage() {
       return text.includes(term);
     });
   }, [jobs, search, statusFilter, featureFilter]);
+  const selectedIdentity = selectedJob?.result_json?.ecu_identification;
 
   async function saveFeedback() {
     if (!selectedJob) return;
@@ -412,7 +413,7 @@ export default function AdminFileExpertPage() {
 
                   <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                     <MiniDetail icon={<FileCode2 />} label="Status" value={selectedJob.status} />
-                    <MiniDetail icon={<Database />} label="ECU / TCU" value={selectedJob.ecu_type || "-"} />
+                    <MiniDetail icon={<Database />} label="ECU / TCU" value={selectedIdentity?.display_name || selectedJob.ecu_type || "-"} />
                     <MiniDetail icon={<BrainCircuit />} label="Confidence" value={selectedJob.confidence_score ? `${selectedJob.confidence_score}%` : "-"} />
                     <MiniDetail icon={<ShieldAlert />} label="Risk" value={selectedJob.risk_level || "unknown"} />
                   </div>
@@ -421,6 +422,21 @@ export default function AdminFileExpertPage() {
                     <FileLine label="ORI file" name={selectedJob.ori_file_name} hash={selectedJob.ori_sha256} />
                     <FileLine label="MOD file" name={selectedJob.mod_file_name} hash={selectedJob.mod_sha256} />
                   </div>
+
+                  {selectedIdentity && (
+                    <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                      <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
+                        <div className="text-xs font-black uppercase tracking-[0.16em] text-zinc-500">Detected identity</div>
+                        <div className="mt-2 font-black">{selectedIdentity.status} · {Math.round(selectedIdentity.confidence * 100)}%</div>
+                        <div className="mt-2 text-sm text-zinc-400">{selectedIdentity.supplier || "Unknown supplier"} · {selectedIdentity.variant || selectedIdentity.family || "Unknown family"} · {selectedIdentity.processor || "Processor not found"}</div>
+                      </div>
+                      <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
+                        <div className="text-xs font-black uppercase tracking-[0.16em] text-zinc-500">HW / SW identifiers</div>
+                        <div className="mt-2 break-all text-sm font-bold leading-6 text-zinc-300">HW: {selectedIdentity.hardware_numbers.join(", ") || "-"}</div>
+                        <div className="mt-1 break-all text-sm font-bold leading-6 text-zinc-300">SW: {selectedIdentity.software_numbers.join(", ") || "-"}</div>
+                      </div>
+                    </div>
+                  )}
 
                   {selectedJob.customer_notes && (
                     <div className="mt-4 rounded-2xl border border-white/10 bg-black/30 p-4">

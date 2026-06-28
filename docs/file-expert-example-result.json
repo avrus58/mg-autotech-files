@@ -1,7 +1,23 @@
 {
   "job_id": "example-job-id",
-  "analysis_version": "1.0.0",
+  "analysis_version": "2.0.0",
   "mode": "ori_mod_compare",
+  "ecu_identification": {
+    "status": "detected",
+    "module_type": "ECU",
+    "supplier": "Bosch",
+    "family": "EDC17",
+    "variant": "EDC17C56",
+    "display_name": "Bosch EDC17C56",
+    "processor": "TC1797",
+    "confidence": 0.95,
+    "evidence": ["ECU signature EDC17C56 found inside the binary."],
+    "hardware_numbers": ["0281012345"],
+    "software_numbers": ["1037512345"],
+    "calibration_ids": [],
+    "vins": [],
+    "engine_codes": ["N47D20"]
+  },
   "files": {
     "ori": {
       "file_size": 6291456,
@@ -11,8 +27,16 @@
       "ff_ratio": 0.43,
       "zero_ratio": 0.07,
       "entropy": 6.71,
-      "ascii_strings": ["Bosch", "EDC17C46", "SW1037512345"],
-      "ecu_identifiers": ["Bosch", "EDC", "EDC17"]
+      "ascii_strings": ["Bosch", "EDC17C56", "SW1037512345"],
+      "ecu_identifiers": ["Bosch", "EDC17", "EDC17C56"],
+      "file_format": "raw_binary",
+      "read_scope": "full_read",
+      "read_scope_confidence": 0.64,
+      "hardware_numbers": ["0281012345"],
+      "software_numbers": ["1037512345"],
+      "calibration_ids": [],
+      "vins": [],
+      "engine_codes": ["N47D20"]
     },
     "mod": {
       "file_size": 6291456,
@@ -22,8 +46,16 @@
       "ff_ratio": 0.43,
       "zero_ratio": 0.07,
       "entropy": 6.72,
-      "ascii_strings": ["Bosch", "EDC17C46", "SW1037512345"],
-      "ecu_identifiers": ["Bosch", "EDC", "EDC17"]
+      "ascii_strings": ["Bosch", "EDC17C56", "SW1037512345"],
+      "ecu_identifiers": ["Bosch", "EDC17", "EDC17C56"],
+      "file_format": "raw_binary",
+      "read_scope": "full_read",
+      "read_scope_confidence": 0.64,
+      "hardware_numbers": ["0281012345"],
+      "software_numbers": ["1037512345"],
+      "calibration_ids": [],
+      "vins": [],
+      "engine_codes": ["N47D20"]
     }
   },
   "comparison": {
@@ -79,6 +111,66 @@
       "reasons": ["Multiple structured calibration-like regions changed."]
     }
   ],
+  "vehicle_match": {
+    "total_matches": 45,
+    "exact_vehicle_identified": false,
+    "summary": "EDC17C56 appears in 45 vehicle applications. ECU identity alone does not prove the exact vehicle or engine.",
+    "candidates": [
+      {
+        "brand": "BMW",
+        "model": "3 serie",
+        "generation": "F30/31 - 2011 - 2015",
+        "engine": "320D 184hp",
+        "ecu": "Bosch EDC17C56",
+        "confidence": 0.82,
+        "reason": "ECU listing contains EDC17C56; submitted brand and trim match"
+      }
+    ]
+  },
+  "change_profile": {
+    "classification": "focused_calibration",
+    "label": "Focused calibration changes",
+    "summary": "Changes are concentrated in a limited set of structured, calibration-like regions.",
+    "confidence": 0.82,
+    "affected_area_percent": 0.03346,
+    "changed_regions": 29
+  },
+  "findings": [
+    {
+      "id": "ecu-identification",
+      "category": "identity",
+      "severity": "positive",
+      "title": "Bosch EDC17C56",
+      "summary": "ECU identity is detected.",
+      "confidence": 0.95,
+      "evidence": ["ECU signature EDC17C56 found inside the binary."]
+    },
+    {
+      "id": "change-profile",
+      "category": "comparison",
+      "severity": "info",
+      "title": "Focused calibration changes",
+      "summary": "Changes are concentrated in calibration-like regions.",
+      "confidence": 0.82,
+      "evidence": ["2,105 changed bytes", "29 changed regions"]
+    },
+    {
+      "id": "integrity-status",
+      "category": "integrity",
+      "severity": "positive",
+      "title": "No structural conflict detected",
+      "summary": "File size and ECU identity checks passed. Checksum remains unverified.",
+      "confidence": 0.78,
+      "evidence": ["File-pair structure checked"]
+    }
+  ],
+  "integrity_assessment": {
+    "file_size_match": true,
+    "ecu_identity_match": true,
+    "vin_match": null,
+    "checksum_status": "not_checked",
+    "issues": []
+  },
   "risk_assessment": {
     "risk_level": "medium",
     "confidence": 0.68,

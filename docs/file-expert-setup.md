@@ -6,10 +6,11 @@
 - Customer report page: `/dashboard/file-expert/[id]`
 - Admin page: `/admin/file-expert`
 - Upload/list/detail/analyze API routes
+- Direct-to-Supabase private uploads so ECU files do not pass through Vercel request bodies
 - Admin feedback API route
 - Supabase SQL migration: `scripts/add-file-expert.sql`
 - Optional FastAPI analyzer: `file-expert-analyzer/`
-- TypeScript fallback analyzer inside Next.js
+- V2 TypeScript identity and comparison analyzer inside Next.js
 
 ## Required Supabase Step
 
@@ -46,7 +47,7 @@ OPENAI_API_KEY=
 AI_PROVIDER_API_KEY=
 ```
 
-The MVP report generator is deterministic and uses analyzer JSON only. No LLM key is required yet.
+The V2 report generator is deterministic and uses binary evidence plus submitted metadata. No LLM key is required.
 
 ## Local Test Flow
 
@@ -83,14 +84,31 @@ FILE_EXPERT_ANALYZER_URL=http://localhost:8010
 
 If the external analyzer is unavailable or returns an error, the app falls back to the TypeScript analyzer.
 
+## V2 Detection Coverage
+
+- ECU/TCU supplier, family and variant signatures
+- HW/SW numbers, calibration IDs, VIN-format values and common engine-code markers
+- Processor markers such as Tricore, MPC, SPC, RH850 and SH705x
+- Raw binary, Intel HEX, Motorola S-record, FRF and ZIP/container classification
+- Full/partial/calibration/virtual-read estimation
+- Vehicle application candidates from the local MG AutoTech vehicle database
+- Human-readable ORI/MOD change and integrity findings
+
+Existing V1 jobs can be upgraded with the **Re-analyze** action.
+
+Files up to 32 MB are uploaded directly from the authenticated browser to the private
+`file-expert` bucket. The finalize endpoint then downloads the private objects server-side,
+calculates hashes and runs the analyzer. This avoids Vercel's 4.5 MB Function payload limit.
+
 ## Known Limitations
 
-- This MVP detects binary structure and possible modification patterns only.
-- It does not identify exact map names.
+- Exact vehicle and engine identification requires identifying evidence inside the file or a unique verified database match.
+- ECU family compatibility alone is never treated as proof of the exact vehicle.
+- It does not identify exact map names without ECU-specific definitions or confirmed patterns.
 - It does not generate tuning files.
 - It does not guarantee file safety.
 - It does not correct checksums.
-- Feature labels are heuristic and require tuner confirmation.
+- Operation labels remain heuristic unless matched to tuner-confirmed pattern data.
 
 ## Future Learning Engine Notes
 

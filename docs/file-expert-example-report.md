@@ -5,7 +5,7 @@ BMW 320d N47: the MOD file differs from the ORI in structured file regions. The 
 # File Identification
 
 - Vehicle: BMW 320d N47
-- ECU / TCU: Bosch EDC17C46
+- ECU / TCU: Bosch EDC17C56
 - Read method: Bench
 - ORI: 6,291,456 bytes, SHA256 7b9f1b4f6df2...
 - MOD: 6,291,456 bytes, SHA256 bad6f1b4f6df...
