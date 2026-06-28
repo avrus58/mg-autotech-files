@@ -569,6 +569,9 @@ export default function NewRequestPage() {
   const [hwSw, setHwSw] = useState("");
   const [mainService, setMainService] = useState("stage_1");
   const [selectedExtras, setSelectedExtras] = useState<string[]>([]);
+  const [openServiceCategories, setOpenServiceCategories] = useState<string[]>([
+    "emissions",
+  ]);
   const [masterSlave, setMasterSlave] = useState<"master" | "slave">("master");
   const [notes, setNotes] = useState("");
   const [fileName, setFileName] = useState("");
@@ -749,6 +752,14 @@ export default function NewRequestPage() {
 
   const toggleExtra = (id: string) => {
     setSelectedExtras((current) =>
+      current.includes(id)
+        ? current.filter((item) => item !== id)
+        : [...current, id]
+    );
+  };
+
+  const toggleServiceCategory = (id: string) => {
+    setOpenServiceCategories((current) =>
       current.includes(id)
         ? current.filter((item) => item !== id)
         : [...current, id]
@@ -1287,18 +1298,38 @@ export default function NewRequestPage() {
                 {extraServiceCategories.map((category) => (
                   <div
                     key={category.id}
-                    className="rounded-[1.5rem] border border-white/10 bg-black/25 p-4"
+                    className={`overflow-hidden rounded-[1.5rem] border bg-black/25 transition ${
+                      category.services.some((service) => selectedExtras.includes(service.id))
+                        ? "border-red-800/50"
+                        : "border-white/10"
+                    }`}
                   >
-                    <div className="mb-4">
-                      <h3 className="text-lg font-black text-white">
-                        {category.title}
-                      </h3>
-                      <p className="mt-1 text-sm leading-6 text-zinc-500">
-                        {category.description}
-                      </p>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => toggleServiceCategory(category.id)}
+                      className="flex w-full items-center justify-between gap-4 p-4 text-left transition hover:bg-white/[0.04] sm:p-5"
+                      aria-expanded={openServiceCategories.includes(category.id)}
+                    >
+                      <span className="min-w-0">
+                        <span className="block text-lg font-black text-white">
+                          {category.title}
+                        </span>
+                        <span className="mt-1 block text-sm leading-6 text-zinc-500">
+                          {category.description}
+                        </span>
+                      </span>
+                      <span className="flex shrink-0 items-center gap-3">
+                        <span className="rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-xs font-black text-zinc-300">
+                          {category.services.filter((service) => selectedExtras.includes(service.id)).length} selected
+                        </span>
+                        <ChevronDown className={`h-5 w-5 text-zinc-400 transition ${
+                          openServiceCategories.includes(category.id) ? "rotate-180" : ""
+                        }`} />
+                      </span>
+                    </button>
 
-                    <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                    {openServiceCategories.includes(category.id) && (
+                    <div className="grid gap-3 border-t border-white/10 p-4 md:grid-cols-2 xl:grid-cols-3 sm:p-5">
                       {category.services.map((service) => {
                         const active = selectedExtras.includes(service.id);
 
@@ -1339,6 +1370,7 @@ export default function NewRequestPage() {
                         );
                       })}
                     </div>
+                    )}
                   </div>
                 ))}
               </div>

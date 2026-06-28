@@ -8,6 +8,12 @@ import { signOutIfEmailUnverified } from "@/lib/authGuards";
 import { supabase } from "@/lib/supabaseClient";
 import RequestChat from "@/components/RequestChat";
 import {
+  hasStaffPermission,
+  isPrimaryOwner,
+  isStaffMember,
+  type StaffAccess,
+} from "@/lib/staffPermissions";
+import {
   ArrowLeft,
   BellRing,
   BrainCircuit,
@@ -72,7 +78,17 @@ type Order = {
   modified_files: ModifiedFileVersion[] | null;
   estimated_delivery_label: DeliveryEstimate | null;
   estimated_delivery_note: string | null;
+  customer_upload_enabled?: boolean | null;
+  customer_uploads?: CustomerUpload[] | null;
   created_at: string | null;
+};
+
+type CustomerUpload = {
+  id: string;
+  file_name: string;
+  file_path: string;
+  file_size: number;
+  uploaded_at: string;
 };
 
 type DeliveryEstimate = "usually_30_min" | "same_day" | "24h" | "48h" | "manual_review";
@@ -408,6 +424,7 @@ export default function AdminPage() {
   const [autoRefreshing, setAutoRefreshing] = useState(false);
   const [newOrderNotice, setNewOrderNotice] = useState("");
   const [lastSyncAt, setLastSyncAt] = useState<Date | null>(null);
+  const [adminAccess, setAdminAccess] = useState<StaffAccess | null>(null);
 
   const knownOrderIdsRef = useRef<Set<string>>(new Set());
   const initialOrdersLoadedRef = useRef(false);
@@ -429,18 +446,40 @@ export default function AdminPage() {
       return;
     }
 
-    const { data: profile, error: profileError } = await supabase
+    let { data: profile, error: profileError } = await supabase
       .from("profiles")
-      .select("role")
+      .select("role, staff_role, staff_permissions")
       .eq("id", userData.user.id)
       .single();
 
-    if (profileError || profile?.role !== "admin") {
+    if (profileError?.code === "42703") {
+      const legacy = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", userData.user.id)
+        .single();
+      profile = legacy.data
+        ? { ...legacy.data, staff_role: null, staff_permissions: [] }
+        : null;
+      profileError = legacy.error;
+    }
+
+    const access: StaffAccess = {
+      role: profile?.role ?? null,
+      staffRole: profile?.staff_role ?? null,
+      permissions: Array.isArray(profile?.staff_permissions)
+        ? profile.staff_permissions
+        : [],
+    };
+
+    if (profileError || !isStaffMember(access) || !hasStaffPermission(access, "orders.view")) {
       setMessage("You are not authorized to access the admin panel.");
       setLoading(false);
       setAutoRefreshing(false);
       return;
     }
+
+    setAdminAccess(access);
 
     const { data, error } = await supabase.from("orders").select("*").order("created_at", { ascending: false });
     if (error) {
@@ -455,12 +494,19 @@ export default function AdminPage() {
     const fallbackCustomerSelect =
       "id, email, customer_id, full_name, role, credit_balance, account_type, company_name, phone, street, postal_code, city, country, vat_id, invoice_email, preferred_contact, allow_negative_credits, negative_credit_limit, account_status, internal_admin_note, created_at";
 
-    let { data: profileList, error: customerError } = await supabase
-      .from("profiles")
-      .select(customerSelect)
-      .order("created_at", { ascending: false });
+    let profileList: Record<string, unknown>[] | null = [];
+    let customerError = null as { code?: string; message: string } | null;
 
-    if (customerError?.code === "42703") {
+    if (hasStaffPermission(access, "customers.view")) {
+      const customerResult = await supabase
+        .from("profiles")
+        .select(customerSelect)
+        .order("created_at", { ascending: false });
+      profileList = customerResult.data;
+      customerError = customerResult.error;
+    }
+
+    if (hasStaffPermission(access, "customers.view") && customerError?.code === "42703") {
       const fallback = await supabase
         .from("profiles")
         .select(fallbackCustomerSelect)
@@ -483,7 +529,7 @@ export default function AdminPage() {
     }
 
     const nextOrders = (data ?? []) as Order[];
-    const nextCustomers = (profileList ?? []) as Profile[];
+    const nextCustomers = (profileList ?? []) as unknown as Profile[];
 
     if (initialOrdersLoadedRef.current) {
       const previousIds = knownOrderIdsRef.current;
@@ -603,6 +649,10 @@ export default function AdminPage() {
   }
 
   async function adjustCredits(customer: Profile, amount: number, note?: string) {
+    if (!hasStaffPermission(adminAccess, "credits.manage")) {
+      setMessage("Your staff role cannot adjust customer credits.");
+      return;
+    }
     if (!Number.isFinite(amount) || amount === 0) {
       setMessage("Please enter a valid credit amount.");
       return;
@@ -611,7 +661,7 @@ export default function AdminPage() {
     setCreditUpdatingId(customer.id);
     setMessage("");
 
-    const { data, error } = await supabase.rpc("admin_adjust_customer_credits", {
+    const { data, error } = await supabase.rpc("staff_adjust_customer_credits", {
       p_customer_id: customer.id,
       p_amount: amount,
       p_note: note || `Admin credit adjustment for ${customer.email ?? customer.customer_id ?? customer.id}`,
@@ -640,6 +690,10 @@ export default function AdminPage() {
   }
 
   async function saveCustomerSettings() {
+    if (!hasStaffPermission(adminAccess, "customers.manage")) {
+      setMessage("Your staff role cannot update customer profiles.");
+      return;
+    }
     if (!selectedCustomer || !customerForm) return;
     setCustomerSavingId(selectedCustomer.id);
     setMessage("");
@@ -697,6 +751,10 @@ export default function AdminPage() {
   }
 
   async function updateStatus(orderId: string, newStatus: string) {
+    if (!hasStaffPermission(adminAccess, "orders.manage")) {
+      setMessage("Your staff role cannot update order status.");
+      return;
+    }
     setUpdatingId(orderId);
     setMessage("");
     const { error } = await supabase.from("orders").update({ status: newStatus }).eq("id", orderId);
@@ -714,6 +772,10 @@ export default function AdminPage() {
     estimate: DeliveryEstimate,
     note: string
   ) {
+    if (!hasStaffPermission(adminAccess, "orders.manage")) {
+      setMessage("Your staff role cannot update delivery estimates.");
+      return;
+    }
     setUpdatingId(orderId);
     setMessage("");
 
@@ -756,6 +818,10 @@ export default function AdminPage() {
   }
 
   async function downloadOriginalFile(order: Order) {
+    if (!hasStaffPermission(adminAccess, "files.download")) {
+      setMessage("Your staff role cannot download customer files.");
+      return;
+    }
     if (!order.original_file_path) {
       setMessage("No original file path found for this order.");
       return;
@@ -774,6 +840,10 @@ export default function AdminPage() {
     file: File | null,
     label: ModifiedFileVersion["label"]
   ) {
+    if (!hasStaffPermission(adminAccess, "files.upload")) {
+      setMessage("Your staff role cannot upload completed files.");
+      return;
+    }
     if (!file) return;
     setUploadingModifiedId(order.id);
     setMessage("");
@@ -818,6 +888,50 @@ export default function AdminPage() {
       return;
     }
     window.open(data.signedUrl, "_blank");
+  }
+
+  async function updateCustomerUploadPermission(orderId: string, enabled: boolean) {
+    if (!hasStaffPermission(adminAccess, "orders.manage")) {
+      setMessage("Your staff role cannot change customer upload permission.");
+      return;
+    }
+
+    setUpdatingId(orderId);
+    setMessage("");
+    const { data } = await supabase.auth.getSession();
+    const token = data.session?.access_token;
+    if (!token) {
+      setUpdatingId(null);
+      setMessage("Unauthorized");
+      return;
+    }
+
+    const response = await fetch(`/api/admin/orders/${orderId}/upload-permission`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ enabled }),
+    });
+    const result = await response.json();
+    setUpdatingId(null);
+    if (!response.ok) {
+      setMessage(result.error || "Upload permission could not be updated.");
+      return;
+    }
+
+    setOrders((current) => current.map((order) =>
+      order.id === orderId ? { ...order, customer_upload_enabled: enabled } : order
+    ));
+    setSelectedOrder((current) => current?.id === orderId
+      ? { ...current, customer_upload_enabled: enabled }
+      : current
+    );
+    setMessage(enabled
+      ? "Customer can now upload one additional file to this request."
+      : "Additional customer upload permission disabled."
+    );
   }
 
   async function copyOrderId(id: string) {
@@ -900,17 +1014,33 @@ export default function AdminPage() {
           </div>
           <nav className="space-y-2">
             <SidebarButton active={activeTab === "orders"} icon={<FileCode2 />} label="Orders" count={stats.total} onClick={() => setActiveTab("orders")} />
-            <SidebarButton active={activeTab === "customers"} icon={<Users />} label="Customers" count={stats.customers} onClick={() => setActiveTab("customers")} />
-            <Link
-              href="/admin/file-expert"
-              className="flex w-full items-center justify-between gap-3 rounded-2xl px-4 py-3 text-left text-sm font-black text-zinc-400 transition hover:bg-white/[0.06] hover:text-white"
-            >
-              <span className="flex items-center gap-3">
-                <BrainCircuit className="h-5 w-5" />
-                File Expert
-              </span>
-              <span className="rounded-full bg-red-950/40 px-2 py-1 text-xs text-red-200">AI</span>
-            </Link>
+            {hasStaffPermission(adminAccess, "customers.view") && (
+              <SidebarButton active={activeTab === "customers"} icon={<Users />} label="Customers" count={stats.customers} onClick={() => setActiveTab("customers")} />
+            )}
+            {hasStaffPermission(adminAccess, "file_expert.manage") && (
+              <Link
+                href="/admin/file-expert"
+                className="flex w-full items-center justify-between gap-3 rounded-2xl px-4 py-3 text-left text-sm font-black text-zinc-400 transition hover:bg-white/[0.06] hover:text-white"
+              >
+                <span className="flex items-center gap-3">
+                  <BrainCircuit className="h-5 w-5" />
+                  File Expert
+                </span>
+                <span className="rounded-full bg-red-950/40 px-2 py-1 text-xs text-red-200">AI</span>
+              </Link>
+            )}
+            {isPrimaryOwner(adminAccess) && (
+              <Link
+                href="/admin/team"
+                className="flex w-full items-center justify-between gap-3 rounded-2xl px-4 py-3 text-left text-sm font-black text-zinc-400 transition hover:bg-white/[0.06] hover:text-white"
+              >
+                <span className="flex items-center gap-3">
+                  <Lock className="h-5 w-5" />
+                  Team & Permissions
+                </span>
+                <span className="rounded-full border border-amber-700/30 bg-amber-950/20 px-2 py-1 text-[10px] font-black text-amber-300">OWNER</span>
+              </Link>
+            )}
           </nav>
           <div className="mt-5 rounded-2xl border border-red-900/40 bg-red-950/20 p-4">
             <div className="text-xs font-black uppercase tracking-[0.18em] text-red-300">Open Work</div>
@@ -1011,6 +1141,13 @@ export default function AdminPage() {
           }
           onUploadModified={(file, label) => uploadModifiedFile(selectedOrder, file, label)}
           onDownloadModified={downloadModifiedFile}
+          onCustomerUploadPermission={(enabled) =>
+            updateCustomerUploadPermission(selectedOrder.id, enabled)
+          }
+          canManageOrders={hasStaffPermission(adminAccess, "orders.manage")}
+          canDownloadFiles={hasStaffPermission(adminAccess, "files.download")}
+          canUploadFiles={hasStaffPermission(adminAccess, "files.upload")}
+          canManageMessages={hasStaffPermission(adminAccess, "messages.manage")}
           updating={updatingId === selectedOrder.id}
           uploadingModified={uploadingModifiedId === selectedOrder.id}
         />
@@ -1813,7 +1950,7 @@ function Detail({ icon, label, value }: { icon: ReactNode; label: string; value:
   );
 }
 
-function OrderDetailModal({ order, customer, onClose, onDownload, onCopy, onCopyValue, onStatusChange, onDeliveryUpdate, onUploadModified, onDownloadModified, updating, uploadingModified }: {
+function OrderDetailModal({ order, customer, onClose, onDownload, onCopy, onCopyValue, onStatusChange, onDeliveryUpdate, onUploadModified, onDownloadModified, onCustomerUploadPermission, canManageOrders, canDownloadFiles, canUploadFiles, canManageMessages, updating, uploadingModified }: {
   order: Order;
   customer: Profile | null;
   onClose: () => void;
@@ -1824,6 +1961,11 @@ function OrderDetailModal({ order, customer, onClose, onDownload, onCopy, onCopy
   onDeliveryUpdate: (estimate: DeliveryEstimate, note: string) => void;
   onUploadModified: (file: File | null, label: ModifiedFileVersion["label"]) => void;
   onDownloadModified: (filePath: string) => void;
+  onCustomerUploadPermission: (enabled: boolean) => void;
+  canManageOrders: boolean;
+  canDownloadFiles: boolean;
+  canUploadFiles: boolean;
+  canManageMessages: boolean;
   updating: boolean;
   uploadingModified: boolean;
 }) {
@@ -1851,8 +1993,8 @@ function OrderDetailModal({ order, customer, onClose, onDownload, onCopy, onCopy
             </div>
             <div className="grid gap-2 sm:flex sm:flex-wrap">
               <button onClick={onCopy} className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-black text-white transition hover:bg-white/10"><Copy className="mr-2 inline h-4 w-4" />Copy Order ID</button>
-              <button onClick={onDownload} disabled={!order.original_file_path} className="rounded-xl bg-[#b1121b] px-4 py-3 text-sm font-black text-white transition hover:bg-[#c91824] disabled:opacity-40"><Download className="mr-2 inline h-4 w-4" />Download Original</button>
-              <label className="cursor-pointer rounded-xl border border-emerald-700/40 bg-emerald-950/30 px-4 py-3 text-sm font-black text-emerald-300 transition hover:bg-emerald-900/40">{uploadingModified ? <><Loader2 className="mr-2 inline h-4 w-4 animate-spin" />Uploading Modified</> : <><Upload className="mr-2 inline h-4 w-4" />Upload Modified</>}<input type="file" className="hidden" disabled={uploadingModified} onChange={(event) => { const file = event.target.files?.[0] ?? null; onUploadModified(file, modifiedFileLabel); event.target.value = ""; }} /></label>
+              <button onClick={onDownload} disabled={!order.original_file_path || !canDownloadFiles} className="rounded-xl bg-[#b1121b] px-4 py-3 text-sm font-black text-white transition hover:bg-[#c91824] disabled:opacity-40"><Download className="mr-2 inline h-4 w-4" />Download Original</button>
+              {canUploadFiles && <label className="cursor-pointer rounded-xl border border-emerald-700/40 bg-emerald-950/30 px-4 py-3 text-sm font-black text-emerald-300 transition hover:bg-emerald-900/40">{uploadingModified ? <><Loader2 className="mr-2 inline h-4 w-4 animate-spin" />Uploading Modified</> : <><Upload className="mr-2 inline h-4 w-4" />Upload Modified</>}<input type="file" className="hidden" disabled={uploadingModified} onChange={(event) => { const file = event.target.files?.[0] ?? null; onUploadModified(file, modifiedFileLabel); event.target.value = ""; }} /></label>}
               <button onClick={onClose} className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-black text-white transition hover:bg-white/10"><X className="mr-2 inline h-4 w-4" />Close</button>
             </div>
           </div>
@@ -1864,10 +2006,10 @@ function OrderDetailModal({ order, customer, onClose, onDownload, onCopy, onCopy
             <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5"><div className="mb-5 flex items-center gap-3"><Database className="h-7 w-7 text-red-500" /><div><h3 className="text-2xl font-black">ECU / File Technical Data</h3><p className="mt-1 text-sm text-zinc-500">Technical identifiers needed for file service processing.</p></div></div><div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3"><Detail icon={<Wrench />} label="ECU / TCU" value={order.ecu} /><Detail icon={<Wrench />} label="Gearbox" value={order.gearbox} /><Detail icon={<FileCode2 />} label="Read Method" value={order.read_method} /><Detail icon={<Database />} label="HW / SW" value={order.hw_sw} /><Detail icon={<PackageCheck />} label="Master / Slave" value={order.master_slave} /><Detail icon={<FileDown />} label="Uploaded File" value={order.uploaded_file_name} /></div></section>
             <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5"><div className="mb-5 flex items-center justify-between gap-4"><div><h3 className="text-2xl font-black">Service Breakdown</h3><p className="mt-1 text-sm text-zinc-500">Requested services for this file.</p></div><div className="rounded-2xl border border-red-900/40 bg-red-950/25 px-4 py-3 text-sm font-black text-red-300">{order.credits_required ?? 0} Credits</div></div>{serviceItems.length > 0 ? <div className="grid gap-3 md:grid-cols-2">{serviceItems.map((service) => <div key={service} className="flex items-center gap-3 rounded-2xl border border-emerald-700/30 bg-emerald-950/15 p-4"><CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-400" /><span className="font-black text-white">{service}</span></div>)}</div> : <div className="rounded-2xl bg-black/30 p-5 text-sm leading-7 text-zinc-300">{order.service_type || "-"}</div>}</section>
             <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5"><h3 className="mb-4 text-2xl font-black">Customer Notes</h3><div className="min-h-32 whitespace-pre-wrap rounded-2xl bg-black/30 p-5 text-sm leading-7 text-zinc-300">{order.notes || "-"}</div></section>
-            <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5"><RequestChat requestId={order.id} senderRole="admin" /></section>
+            {canManageMessages ? <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5"><RequestChat requestId={order.id} senderRole="admin" /></section> : <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5 text-sm text-zinc-500">Your staff role does not include customer messaging.</section>}
           </div>
           <aside className="min-w-0 space-y-5 sm:space-y-6">
-            <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5"><h3 className="mb-5 text-2xl font-black">Status Workflow</h3><div className="mb-5 h-2 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-gradient-to-r from-red-800 via-red-600 to-emerald-500 transition-all duration-700" style={{ width: `${((workflowStep + 1) / 5) * 100}%` }} /></div><div className="space-y-3">{[0, 1, 2, 3, 4].map((index) => <div key={index} className={`flex items-center gap-3 rounded-2xl border p-4 ${index <= workflowStep ? "border-emerald-700/30 bg-emerald-950/10" : "border-white/10 bg-black/30"}`}><div className={`flex h-9 w-9 items-center justify-center rounded-full ${index <= workflowStep ? "bg-emerald-500/15 text-emerald-400" : "bg-white/5 text-zinc-500"}`}>{index <= workflowStep ? <CheckCircle2 className="h-4 w-4" /> : <Clock3 className="h-4 w-4" />}</div><div className="font-black">{workflowLabel(index)}</div></div>)}</div><div className="mt-5"><select value={order.status ?? "new_request"} onChange={(event) => onStatusChange(event.target.value)} disabled={updating} className={`h-12 w-full rounded-xl border px-4 text-sm font-black outline-none ${statusClass(order.status)}`}>{editableStatusOptions.map((status) => <option key={status} value={status} className="bg-[#111]">{statusLabel(status)}</option>)}</select>{updating && <div className="mt-3 flex items-center gap-2 text-xs text-zinc-500"><Loader2 className="h-3 w-3 animate-spin" />Updating status...</div>}</div></section>
+            <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5"><h3 className="mb-5 text-2xl font-black">Status Workflow</h3><div className="mb-5 h-2 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-gradient-to-r from-red-800 via-red-600 to-emerald-500 transition-all duration-700" style={{ width: `${((workflowStep + 1) / 5) * 100}%` }} /></div><div className="space-y-3">{[0, 1, 2, 3, 4].map((index) => <div key={index} className={`flex items-center gap-3 rounded-2xl border p-4 ${index <= workflowStep ? "border-emerald-700/30 bg-emerald-950/10" : "border-white/10 bg-black/30"}`}><div className={`flex h-9 w-9 items-center justify-center rounded-full ${index <= workflowStep ? "bg-emerald-500/15 text-emerald-400" : "bg-white/5 text-zinc-500"}`}>{index <= workflowStep ? <CheckCircle2 className="h-4 w-4" /> : <Clock3 className="h-4 w-4" />}</div><div className="font-black">{workflowLabel(index)}</div></div>)}</div><div className="mt-5"><select value={order.status ?? "new_request"} onChange={(event) => onStatusChange(event.target.value)} disabled={updating || !canManageOrders} className={`h-12 w-full rounded-xl border px-4 text-sm font-black outline-none disabled:opacity-60 ${statusClass(order.status)}`}>{editableStatusOptions.map((status) => <option key={status} value={status} className="bg-[#111]">{statusLabel(status)}</option>)}</select>{updating && <div className="mt-3 flex items-center gap-2 text-xs text-zinc-500"><Loader2 className="h-3 w-3 animate-spin" />Updating status...</div>}</div></section>
             <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
               <h3 className="mb-5 text-2xl font-black">Estimated Delivery</h3>
               <div className="rounded-2xl border border-red-900/40 bg-red-950/20 p-4">
@@ -1899,7 +2041,7 @@ function OrderDetailModal({ order, customer, onClose, onDownload, onCopy, onCopy
               />
               <button
                 onClick={() => onDeliveryUpdate(deliveryEstimate, deliveryNote)}
-                disabled={updating}
+                disabled={updating || !canManageOrders}
                 className="mt-3 flex h-12 w-full items-center justify-center rounded-xl bg-[#b1121b] px-4 text-sm font-black text-white transition hover:bg-[#c91824] disabled:opacity-50"
               >
                 {updating ? (
@@ -1916,7 +2058,7 @@ function OrderDetailModal({ order, customer, onClose, onDownload, onCopy, onCopy
                 <FileStateCard title="Original File" ready={Boolean(order.original_file_path)} description={order.uploaded_file_name || order.original_file_path || "No original file uploaded."} />
                 <FileStateCard title="Modified Versions" ready={modifiedVersions.length > 0} description={modifiedVersions.length > 0 ? `${modifiedVersions.length} modified file version${modifiedVersions.length === 1 ? "" : "s"} uploaded.` : "No modified file uploaded yet."} />
               </div>
-              <button onClick={onDownload} disabled={!order.original_file_path} className="mt-4 flex w-full items-center justify-center rounded-xl bg-[#b1121b] px-4 py-3 text-sm font-black text-white transition hover:bg-[#c91824] disabled:opacity-40"><Download className="mr-2 h-4 w-4" />Download Original</button>
+              <button onClick={onDownload} disabled={!order.original_file_path || !canDownloadFiles} className="mt-4 flex w-full items-center justify-center rounded-xl bg-[#b1121b] px-4 py-3 text-sm font-black text-white transition hover:bg-[#c91824] disabled:opacity-40"><Download className="mr-2 h-4 w-4" />Download Original</button>
 
               <div className="mt-4 rounded-2xl border border-white/10 bg-black/30 p-4">
                 <div className="mb-3 text-xs font-black uppercase tracking-[0.14em] text-zinc-500">Upload Version</div>
@@ -1925,7 +2067,7 @@ function OrderDetailModal({ order, customer, onClose, onDownload, onCopy, onCopy
                   <option value="revision" className="bg-[#111]">Revision</option>
                   <option value="final" className="bg-[#111]">Final</option>
                 </select>
-                <label className="flex w-full cursor-pointer items-center justify-center rounded-xl border border-emerald-700/40 bg-emerald-950/30 px-4 py-3 text-sm font-black text-emerald-300 transition hover:bg-emerald-900/40">{uploadingModified ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Uploading Modified</> : <><Upload className="mr-2 h-4 w-4" />Upload {formatFileVersionLabel(modifiedFileLabel)} File</>}<input type="file" className="hidden" disabled={uploadingModified} onChange={(event) => { const file = event.target.files?.[0] ?? null; onUploadModified(file, modifiedFileLabel); event.target.value = ""; }} /></label>
+                {canUploadFiles ? <label className="flex w-full cursor-pointer items-center justify-center rounded-xl border border-emerald-700/40 bg-emerald-950/30 px-4 py-3 text-sm font-black text-emerald-300 transition hover:bg-emerald-900/40">{uploadingModified ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Uploading Modified</> : <><Upload className="mr-2 h-4 w-4" />Upload {formatFileVersionLabel(modifiedFileLabel)} File</>}<input type="file" className="hidden" disabled={uploadingModified} onChange={(event) => { const file = event.target.files?.[0] ?? null; onUploadModified(file, modifiedFileLabel); event.target.value = ""; }} /></label> : <div className="text-xs text-zinc-500">Your staff role cannot upload completed files.</div>}
               </div>
 
               {modifiedVersions.length > 0 && (
@@ -1944,6 +2086,45 @@ function OrderDetailModal({ order, customer, onClose, onDownload, onCopy, onCopy
                   ))}
                 </div>
               )}
+
+              <div className="mt-4 rounded-2xl border border-blue-700/30 bg-blue-950/15 p-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <div className="text-sm font-black text-blue-200">Customer additional upload</div>
+                    <p className="mt-1 text-xs leading-5 text-zinc-400">
+                      Grant one-time permission for the customer to attach another file to this request.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => onCustomerUploadPermission(!order.customer_upload_enabled)}
+                    disabled={updating || !canManageOrders}
+                    className={`shrink-0 rounded-xl border px-3 py-2 text-xs font-black transition ${
+                      order.customer_upload_enabled
+                        ? "border-emerald-600/40 bg-emerald-950/30 text-emerald-300"
+                        : "border-white/10 bg-white/[0.04] text-zinc-300"
+                    }`}
+                  >
+                    {order.customer_upload_enabled ? "Enabled" : "Enable"}
+                  </button>
+                </div>
+
+                {Array.isArray(order.customer_uploads) && order.customer_uploads.length > 0 && (
+                  <div className="mt-4 space-y-2 border-t border-white/10 pt-4">
+                    {order.customer_uploads.map((file) => (
+                      <div key={file.id} className="flex min-w-0 items-center justify-between gap-3 rounded-xl bg-black/25 p-3">
+                        <div className="min-w-0">
+                          <div className="truncate text-xs font-black text-white">{file.file_name}</div>
+                          <div className="mt-1 text-[11px] text-zinc-500">{formatDate(file.uploaded_at)}</div>
+                        </div>
+                        <button onClick={() => onDownloadModified(file.file_path)} className="shrink-0 rounded-lg border border-white/10 px-3 py-2 text-xs font-black">
+                          <Download className="mr-1 inline h-3 w-3" />Download
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </section>
             <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5"><h3 className="mb-5 text-2xl font-black">Customer Contact</h3><div className="space-y-3"><Detail icon={<User />} label="Customer ID" value={customer?.customer_id || order.customer_id} /><Detail icon={<Mail />} label="Login Email" value={order.customer_email} /><Detail icon={<User />} label="Full Name" value={customer?.full_name} /><Detail icon={<Building2 />} label="Company" value={customer?.company_name} /><Detail icon={<Phone />} label="Phone" value={customer?.phone} /><Detail icon={<MapPin />} label="Address" value={[customer?.street, customer?.postal_code, customer?.city, customer?.country].filter(Boolean).join(", ") || null} /></div><div className="mt-4 grid gap-2"><button onClick={() => onCopyValue(customer?.customer_id || order.customer_id, "Customer ID")} className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-black text-white transition hover:bg-white/10"><Copy className="mr-2 inline h-4 w-4" />Copy Customer ID</button><button onClick={() => onCopyValue(order.customer_email, "Customer Email")} className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-black text-white transition hover:bg-white/10"><Mail className="mr-2 inline h-4 w-4" />Copy Email</button><button onClick={() => onCopyValue(customer?.phone, "Phone")} className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-black text-white transition hover:bg-white/10"><Phone className="mr-2 inline h-4 w-4" />Copy Phone</button>{order.customer_email && <a href={`mailto:${order.customer_email}`} className="flex w-full items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-black text-white transition hover:bg-white/10"><Mail className="mr-2 h-4 w-4" />Email Customer</a>}</div></section>
           </aside>

@@ -94,13 +94,13 @@ function translateText(value: string, locale: LocaleCode) {
 
   if (term) return `${leading}${term}${trailing}`;
 
-  if (normalized.length > 48) return value;
-
   const replaced = Object.entries(terms)
     .sort((a, b) => b[0].length - a[0].length)
     .reduce((text, [source, target]) => {
       const escaped = escapeRegExp(source);
-      return text.replace(new RegExp(`\\b${escaped}\\b`, "gi"), target);
+      const prefix = /^\w/.test(source) ? "\\b" : "";
+      const suffix = /\w$/.test(source) ? "\\b" : "";
+      return text.replace(new RegExp(`${prefix}${escaped}${suffix}`, "gi"), target);
     }, normalized);
 
   if (replaced !== normalized) return `${leading}${replaced}${trailing}`;
@@ -158,8 +158,8 @@ export function LanguageSwitcher() {
 
   useEffect(() => {
     const initial = getPathLocale(pathname) ?? getInitialLocale();
-    setLocale(initial);
     persistLocale(initial);
+    void Promise.resolve().then(() => setLocale(initial));
   }, [pathname]);
 
   useEffect(() => {

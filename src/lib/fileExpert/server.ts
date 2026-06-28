@@ -4,6 +4,7 @@ import { analyzeFileExpertBuffers, buildPatternSignature, sha256Buffer } from "@
 import { generateFileExpertReport } from "@/lib/fileExpert/report";
 import { findVehicleCandidates } from "@/lib/fileExpert/vehicleMatcher";
 import type { FileExpertAnalyzerResult, FileExpertFeature, FileExpertJob } from "@/lib/fileExpert/types";
+import { hasStaffPermission, type StaffAccess } from "@/lib/staffPermissions";
 
 export const fileExpertBucket = "file-expert";
 export const fileExpertMaxFileSize = 32 * 1024 * 1024;
@@ -53,13 +54,29 @@ export async function getCurrentServerUser(request?: Request) {
 
 export async function isFileExpertAdmin(userId: string) {
   const supabaseAdmin = getSupabaseAdmin();
-  const { data } = await supabaseAdmin
+  const current = await supabaseAdmin
     .from("profiles")
-    .select("role")
+    .select("role, staff_role, staff_permissions")
     .eq("id", userId)
     .single();
 
-  return data?.role === "admin";
+  if (current.error?.code === "42703") {
+    const legacy = await supabaseAdmin
+      .from("profiles")
+      .select("role")
+      .eq("id", userId)
+      .single();
+    return legacy.data?.role === "admin";
+  }
+
+  const access: StaffAccess = {
+    role: current.data?.role ?? null,
+    staffRole: current.data?.staff_role ?? null,
+    permissions: Array.isArray(current.data?.staff_permissions)
+      ? current.data.staff_permissions
+      : [],
+  };
+  return hasStaffPermission(access, "file_expert.manage");
 }
 
 export async function requireFileExpertAdmin(request?: Request) {

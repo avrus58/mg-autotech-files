@@ -1,17 +1,57 @@
 import { NextResponse } from "next/server";
-import { getSupabaseServer } from "@/lib/supabaseServer";
+import { z } from "zod";
+import { requireApiUser } from "@/lib/apiAuth";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
+import { hasStaffPermission, isStaffMember } from "@/lib/staffPermissions";
+
+const messageSchema = z.object({
+  message: z.string().trim().min(1).max(4000),
+});
+
+async function authorizeRequest(request: Request, orderId: string) {
+  const auth = await requireApiUser(request);
+  if (!auth.ok) return auth;
+
+  const admin = getSupabaseAdmin();
+  const { data: order, error } = await admin
+    .from("orders")
+    .select("id, customer_id")
+    .eq("id", orderId)
+    .maybeSingle();
+
+  if (error || !order) {
+    return { ok: false as const, status: 404, error: "Order not found." };
+  }
+
+  const isOwner = order.customer_id === auth.user.id;
+  const canManageMessages =
+    isStaffMember(auth.access) && hasStaffPermission(auth.access, "messages.manage");
+
+  if (!isOwner && !canManageMessages) {
+    return { ok: false as const, status: 403, error: "Access denied." };
+  }
+
+  return {
+    ok: true as const,
+    user: auth.user,
+    senderRole: canManageMessages && !isOwner ? "admin" as const : "customer" as const,
+  };
+}
 
 export async function GET(
   request: Request,
   context: { params: Promise<{ id: string }> }
 ) {
   const { id } = await context.params;
-  const supabaseAdmin = getSupabaseAdmin();
+  const access = await authorizeRequest(request, id);
+  if (!access.ok) {
+    return NextResponse.json({ error: access.error }, { status: access.status });
+  }
 
-  const { data, error } = await supabaseAdmin
+  const admin = getSupabaseAdmin();
+  const { data, error } = await admin
     .from("request_messages")
-    .select("*")
+    .select("id, request_id, sender_id, sender_role, message, created_at")
     .eq("request_id", id)
     .order("created_at", { ascending: true });
 
@@ -27,50 +67,26 @@ export async function POST(
   context: { params: Promise<{ id: string }> }
 ) {
   const { id } = await context.params;
-  const body = await request.json();
-
-  const supabase = await getSupabaseServer();
-  const supabaseAdmin = getSupabaseAdmin();
-
-  const authHeader = request.headers.get("authorization");
-  const token = authHeader?.replace("Bearer ", "");
-
-  if (!token) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const access = await authorizeRequest(request, id);
+  if (!access.ok) {
+    return NextResponse.json({ error: access.error }, { status: access.status });
   }
 
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser(token);
-
-  if (userError || !user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const parsed = messageSchema.safeParse(await request.json());
+  if (!parsed.success) {
+    return NextResponse.json({ error: "Message must be between 1 and 4000 characters." }, { status: 400 });
   }
 
-  if (!user.email_confirmed_at && !user.confirmed_at) {
-    return NextResponse.json(
-      { error: "Please verify your e-mail address first." },
-      { status: 403 }
-    );
-  }
-
-  const message = String(body.message || "").trim();
-  const senderRole = body.senderRole === "admin" ? "admin" : "customer";
-
-  if (!message) {
-    return NextResponse.json({ error: "Message is required" }, { status: 400 });
-  }
-
-  const { data, error } = await supabaseAdmin
+  const admin = getSupabaseAdmin();
+  const { data, error } = await admin
     .from("request_messages")
     .insert({
       request_id: id,
-      sender_id: user.id,
-      sender_role: senderRole,
-      message,
+      sender_id: access.user.id,
+      sender_role: access.senderRole,
+      message: parsed.data.message,
     })
-    .select("*")
+    .select("id, request_id, sender_id, sender_role, message, created_at")
     .single();
 
   if (error) {

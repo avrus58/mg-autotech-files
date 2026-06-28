@@ -19,6 +19,7 @@ import {
 import { signOutIfEmailUnverified } from "@/lib/authGuards";
 import { getFileExpertAuthHeaders } from "@/lib/fileExpert/client";
 import { supabase } from "@/lib/supabaseClient";
+import { hasStaffPermission, type StaffAccess } from "@/lib/staffPermissions";
 import type { FileExpertFeature, FileExpertJob } from "@/lib/fileExpert/types";
 import { fileExpertFeatureLabels } from "@/lib/fileExpert/types";
 
@@ -90,13 +91,30 @@ export default function AdminFileExpertPage() {
       return;
     }
 
-    const { data: profile } = await supabase
+    const current = await supabase
       .from("profiles")
-      .select("role")
+      .select("role, staff_role, staff_permissions")
       .eq("id", userData.user.id)
       .single();
 
-    if (profile?.role !== "admin") {
+    let access: StaffAccess = {
+      role: current.data?.role ?? null,
+      staffRole: current.data?.staff_role ?? null,
+      permissions: Array.isArray(current.data?.staff_permissions)
+        ? current.data.staff_permissions
+        : [],
+    };
+
+    if (current.error?.code === "42703") {
+      const legacy = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", userData.user.id)
+        .single();
+      access = { role: legacy.data?.role ?? null, staffRole: null, permissions: [] };
+    }
+
+    if (!hasStaffPermission(access, "file_expert.manage")) {
       setMessage("Admin access required.");
       setLoading(false);
       return;

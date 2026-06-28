@@ -1,3 +1,5 @@
+import { panelV2LocaleOrder, panelV2Translations } from "@/lib/panelV2Translations";
+
 export const supportedLocales = [
   { code: "nl", label: "NL", name: "Nederlands" },
   { code: "en", label: "EN", name: "English" },
@@ -6118,5 +6120,14 @@ registerFlowLanguagePatch.forEach(({ source, ...translations }) => {
     if (!value) return;
     exactTranslations[locale as LocaleCode][source] = value;
     termTranslations[locale as LocaleCode][source] = value;
+  });
+});
+
+Object.entries(panelV2Translations).forEach(([source, values]) => {
+  panelV2LocaleOrder.forEach((locale, index) => {
+    const value = values[index];
+    if (!value) return;
+    exactTranslations[locale][source] = value;
+    termTranslations[locale][source] = value;
   });
 });

@@ -53,7 +53,17 @@ type Order = {
   modified_files: ModifiedFileVersion[] | null;
   estimated_delivery_label: DeliveryEstimate | null;
   estimated_delivery_note: string | null;
+  customer_upload_enabled?: boolean | null;
+  customer_uploads?: CustomerUpload[] | null;
   created_at: string;
+};
+
+type CustomerUpload = {
+  id: string;
+  file_name: string;
+  file_path: string;
+  file_size: number;
+  uploaded_at: string;
 };
 
 type DeliveryEstimate = "usually_30_min" | "same_day" | "24h" | "48h" | "manual_review";
@@ -202,6 +212,7 @@ export default function OrderDetailPage() {
   const [message, setMessage] = useState("");
   const [revisionNote, setRevisionNote] = useState("");
   const [revisionSubmitting, setRevisionSubmitting] = useState(false);
+  const [additionalUploading, setAdditionalUploading] = useState(false);
 
   useEffect(() => {
     let currentUserId: string | null = null;
@@ -392,6 +403,70 @@ export default function OrderDetailPage() {
       setMessage("Revision request could not be sent.");
     } finally {
       setRevisionSubmitting(false);
+    }
+  };
+
+  const uploadAdditionalFile = async (file: File | null) => {
+    if (!file || !order || additionalUploading) return;
+    if (file.size > 32 * 1024 * 1024) {
+      setMessage("The additional file must be 32 MB or smaller.");
+      return;
+    }
+
+    setAdditionalUploading(true);
+    setMessage("");
+    try {
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token;
+      if (!token) {
+        setMessage("Unauthorized");
+        return;
+      }
+
+      const prepareResponse = await fetch(`/api/requests/${order.id}/additional-file/prepare`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ fileName: file.name, fileSize: file.size, contentType: file.type }),
+      });
+      const prepared = await prepareResponse.json();
+      if (!prepareResponse.ok) {
+        setMessage(prepared.error || "Additional file upload could not be prepared.");
+        return;
+      }
+
+      const { error: uploadError } = await supabase.storage
+        .from("customer-files")
+        .upload(prepared.upload.path, file, {
+          contentType: prepared.upload.contentType,
+          cacheControl: "3600",
+          upsert: false,
+        });
+      if (uploadError) {
+        setMessage(uploadError.message);
+        return;
+      }
+
+      const finalizeResponse = await fetch(`/api/requests/${order.id}/additional-file/finalize`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ path: prepared.upload.path, fileName: file.name, fileSize: file.size }),
+      });
+      const finalized = await finalizeResponse.json();
+      if (!finalizeResponse.ok) {
+        setMessage(finalized.error || "Additional file upload could not be completed.");
+        return;
+      }
+
+      setOrder((current) => current ? {
+        ...current,
+        customer_upload_enabled: false,
+        customer_uploads: [...(current.customer_uploads ?? []), finalized.upload],
+      } : current);
+      setMessage("Additional file uploaded. MG AutoTech can now review it inside this request.");
+    } catch {
+      setMessage("Additional file upload could not be completed.");
+    } finally {
+      setAdditionalUploading(false);
     }
   };
 
@@ -657,6 +732,47 @@ export default function OrderDetailPage() {
                 </div>
               )}
             </section>
+
+            {(order.customer_upload_enabled || (order.customer_uploads?.length ?? 0) > 0) && (
+              <section className="rounded-[2rem] border border-blue-700/30 bg-blue-950/15 p-6">
+                <div className="flex items-start gap-4">
+                  <Upload className="mt-1 h-8 w-8 shrink-0 text-blue-300" />
+                  <div className="min-w-0 flex-1">
+                    <h2 className="text-2xl font-black">Additional Request Files</h2>
+                    <p className="mt-2 text-sm leading-6 text-zinc-400">
+                      MG AutoTech can enable a one-time upload when another read, log or supporting file is required for this order.
+                    </p>
+
+                    {order.customer_upload_enabled && (
+                      <label className="mt-5 flex min-h-28 cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-blue-500/40 bg-black/25 p-5 text-center transition hover:bg-blue-950/20">
+                        {additionalUploading ? <Loader2 className="mb-3 h-7 w-7 animate-spin text-blue-300" /> : <Upload className="mb-3 h-7 w-7 text-blue-300" />}
+                        <span className="font-black text-white">{additionalUploading ? "Uploading additional file..." : "Upload requested file"}</span>
+                        <span className="mt-1 text-xs text-zinc-500">One file, maximum 32 MB</span>
+                        <input type="file" disabled={additionalUploading} className="hidden" onChange={(event) => {
+                          const file = event.target.files?.[0] ?? null;
+                          uploadAdditionalFile(file);
+                          event.target.value = "";
+                        }} />
+                      </label>
+                    )}
+
+                    {Array.isArray(order.customer_uploads) && order.customer_uploads.length > 0 && (
+                      <div className="mt-5 space-y-2">
+                        {order.customer_uploads.map((file) => (
+                          <div key={file.id} className="flex min-w-0 items-center justify-between gap-3 rounded-xl border border-white/10 bg-black/25 p-3">
+                            <div className="min-w-0">
+                              <div className="truncate text-sm font-black text-white">{file.file_name}</div>
+                              <div className="mt-1 text-xs text-zinc-500">Uploaded {formatDate(file.uploaded_at)}</div>
+                            </div>
+                            <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-400" />
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </section>
+            )}
 
             <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6">
               <RequestChat requestId={order.id} senderRole="customer" />

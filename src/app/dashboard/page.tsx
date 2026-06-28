@@ -103,7 +103,6 @@ export default function DashboardPage() {
   const [customerId, setCustomerId] = useState<string | null>(null);
   const [credits, setCredits] = useState<number>(0);
   const [orders, setOrders] = useState<Order[]>([]);
-  const [ordersCount, setOrdersCount] = useState<number>(0);
   const [completedCount, setCompletedCount] = useState<number>(0);
   const [activeCount, setActiveCount] = useState<number>(0);
   const [pendingCount, setPendingCount] = useState<number>(0);
@@ -153,7 +152,7 @@ export default function DashboardPage() {
         )
         .eq("customer_id", user.id)
         .order("created_at", { ascending: false })
-        .limit(10);
+        .limit(5);
 
       if (recentOrders) {
         setOrders(recentOrders as Order[]);
@@ -182,13 +181,18 @@ export default function DashboardPage() {
         .eq("customer_id", user.id)
         .eq("status", "in_progress");
 
-      setOrdersCount(allOrders ?? 0);
+      const { count: cancelledOrders } = await supabase
+        .from("orders")
+        .select("*", { count: "exact", head: true })
+        .eq("customer_id", user.id)
+        .eq("status", "cancelled");
+
       setCompletedCount(completedOrders ?? 0);
       setPendingCount(pendingOrders ?? 0);
       setInProgressCount(progressOrders ?? 0);
 
       const active =
-        (allOrders ?? 0) - (completedOrders ?? 0);
+        (allOrders ?? 0) - (completedOrders ?? 0) - (cancelledOrders ?? 0);
 
       setActiveCount(active < 0 ? 0 : active);
       setLoading(false);
@@ -351,6 +355,22 @@ export default function DashboardPage() {
               </Link>
 
               <Link
+                href="/dashboard/orders"
+                className="flex items-center gap-3 rounded-2xl px-4 py-3 font-bold text-zinc-400 transition hover:bg-white/[0.06] hover:text-white"
+              >
+                <FileText className="h-5 w-5" />
+                Active Orders
+              </Link>
+
+              <Link
+                href="/dashboard/orders?view=completed"
+                className="flex items-center gap-3 rounded-2xl px-4 py-3 font-bold text-zinc-400 transition hover:bg-white/[0.06] hover:text-white"
+              >
+                <History className="h-5 w-5" />
+                Order History
+              </Link>
+
+              <Link
                 href="/dashboard/credits"
                 className="flex items-center gap-3 rounded-2xl px-4 py-3 font-bold text-zinc-400 transition hover:bg-white/[0.06] hover:text-white"
               >
@@ -438,6 +458,21 @@ export default function DashboardPage() {
               </div>
             </div>
           </header>
+
+          <nav className="flex gap-2 overflow-x-auto border-b border-white/10 bg-black/45 px-4 py-3 lg:hidden">
+            <Link href="/dashboard" className="shrink-0 rounded-xl border border-red-800/50 bg-red-950/30 px-4 py-2.5 text-xs font-black">
+              <Home className="mr-2 inline h-4 w-4" />Dashboard
+            </Link>
+            <Link href="/new-request" className="shrink-0 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-xs font-black">
+              <Upload className="mr-2 inline h-4 w-4" />New Request
+            </Link>
+            <Link href="/dashboard/orders" className="shrink-0 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-xs font-black">
+              <FileText className="mr-2 inline h-4 w-4" />Orders
+            </Link>
+            <Link href="/dashboard/credits" className="shrink-0 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-xs font-black">
+              <CreditCard className="mr-2 inline h-4 w-4" />Credits
+            </Link>
+          </nav>
 
           <div className="px-4 py-8 lg:px-8">
             <div className="mb-8 grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
@@ -580,55 +615,6 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {orders.some(
-              (order) => order.status === "completed" && order.modified_file_path
-            ) && (
-              <div className="mb-8 rounded-[2rem] border border-emerald-700/30 bg-emerald-950/20 p-6">
-                <div className="mb-4 flex items-center gap-3">
-                  <Download className="h-7 w-7 text-emerald-400" />
-                  <div>
-                    <div className="text-sm font-black uppercase tracking-[0.25em] text-emerald-400">
-                      Completed Files
-                    </div>
-                    <h2 className="mt-1 text-2xl font-black">
-                      Your modified file is ready to download
-                    </h2>
-                  </div>
-                </div>
-
-                <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                  {orders
-                    .filter(
-                      (order) =>
-                        order.status === "completed" && order.modified_file_path
-                    )
-                    .map((order) => (
-                      <div
-                        key={order.id}
-                        className="rounded-2xl border border-emerald-700/30 bg-black/30 p-4"
-                      >
-                        <div className="font-black">
-                          {order.vehicle_brand || "Vehicle"}{" "}
-                          {order.vehicle_model || ""}
-                        </div>
-                        <div className="mt-1 text-sm text-zinc-400">
-                          {order.service_type || "Service not set"}
-                        </div>
-                        <button
-                          onClick={() =>
-                            downloadCompletedFile(order.modified_file_path)
-                          }
-                          className="mt-4 w-full rounded-xl bg-emerald-600 px-4 py-3 text-sm font-black text-white transition hover:bg-emerald-500"
-                        >
-                          <Download className="mr-2 inline h-4 w-4" />
-                          Download Completed File
-                        </button>
-                      </div>
-                    ))}
-                </div>
-              </div>
-            )}
-
             <div className="mb-8 grid gap-6 xl:grid-cols-[1.25fr_.75fr]">
               <div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6">
                 <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -641,13 +627,22 @@ export default function DashboardPage() {
                     </h2>
                   </div>
 
-                  <Link
-                    href="/new-request"
-                    className="rounded-xl bg-[#b1121b] px-5 py-3 text-sm font-black text-white transition hover:-translate-y-1 hover:bg-[#c91824]"
-                  >
-                    <Plus className="mr-2 inline h-4 w-4" />
-                    New Request
-                  </Link>
+                  <div className="flex flex-wrap gap-2">
+                    <Link
+                      href="/dashboard/orders"
+                      className="rounded-xl border border-white/10 bg-white/[0.04] px-5 py-3 text-sm font-black text-white transition hover:bg-white/10"
+                    >
+                      <History className="mr-2 inline h-4 w-4" />
+                      View All Orders
+                    </Link>
+                    <Link
+                      href="/new-request"
+                      className="rounded-xl bg-[#b1121b] px-5 py-3 text-sm font-black text-white transition hover:-translate-y-1 hover:bg-[#c91824]"
+                    >
+                      <Plus className="mr-2 inline h-4 w-4" />
+                      New Request
+                    </Link>
+                  </div>
                 </div>
 
                 {orders.length === 0 ? (

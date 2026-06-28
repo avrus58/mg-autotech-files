@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { CustomerNotifications } from "@/components/CustomerNotifications";
 import {
   absoluteUrl,
   hreflangByLocale,
@@ -132,6 +133,7 @@ export default function RootLayout({
           }}
         />
         {children}
+        <CustomerNotifications />
         <LanguageSwitcher />
       </body>
     </html>

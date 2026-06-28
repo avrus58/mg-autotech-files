@@ -19,7 +19,9 @@ export async function getAuthenticatedHome(userId: string) {
     .eq("id", userId)
     .maybeSingle();
 
-  return data?.role === "admin" ? "/admin" : "/dashboard";
+  return data?.role === "admin" || data?.role === "staff"
+    ? "/admin"
+    : "/dashboard";
 }
 
 export function getAuthRedirect(path: string) {

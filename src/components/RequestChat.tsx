@@ -113,8 +113,20 @@ export default function RequestChat({
     }
 
     try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session?.access_token) {
+        setError("Unauthorized");
+        return;
+      }
+
       const res = await fetch(`/api/requests/${requestId}/messages`, {
         cache: "no-store",
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
       });
 
       const data = await res.json();
@@ -216,10 +228,7 @@ export default function RequestChat({
           "Content-Type": "application/json",
           Authorization: `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({
-          message: cleanMessage,
-          senderRole,
-        }),
+        body: JSON.stringify({ message: cleanMessage }),
       });
 
       const data = await res.json();
