@@ -53,12 +53,11 @@
     "52:Land Rover",
     "53:Lexus",
     "54:Lincoln",
-    "55:Lindner",
     "56:Lotus",
     "57:Luxgen",
+    "58:Lynk & Co",
     "59:MAN",
     "60:MG",
-    "61:Mack",
     "62:Mahindra",
     "63:Maserati",
     "64:Massey Fergusson",
@@ -83,7 +82,6 @@
     "83:Rolls Royce",
     "84:Rover",
     "85:Saab",
-    "86:Same",
     "87:Saturn",
     "88:Scania trucks",
     "89:Seat",
@@ -106,6 +104,8 @@
     "109:Chery"
   ],
   "failed": [
-    "58:Lynk & Co"
+    "55:Lindner",
+    "61:Mack",
+    "86:Same"
   ]
 }

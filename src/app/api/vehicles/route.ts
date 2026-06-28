@@ -1,6 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import vehicles from "../../../../data/vehicle-database.json";
 
+type StageData = {
+  stockHp: number | null;
+  tunedHp: number | null;
+  gainHp: number | null;
+  stockNm: number | null;
+  tunedNm: number | null;
+  gainNm: number | null;
+};
+
 type Vehicle = {
   brand: string;
   brandId: string;
@@ -12,8 +21,8 @@ type Vehicle = {
   engineId: string;
   fuelType?: string | null;
   ecu?: string[];
-  stage1?: any;
-  stage2?: any;
+  stage1?: StageData | null;
+  stage2?: StageData | null;
   readMethods?: string[];
   services?: string[];
   imageUrl?: string;
@@ -92,7 +101,24 @@ export async function GET(req: NextRequest) {
         v.engineId === engineId
     );
 
-    return NextResponse.json(vehicle ?? null);
+    if (!vehicle) return NextResponse.json(null);
+
+    return NextResponse.json({
+      brand: vehicle.brand,
+      brandId: vehicle.brandId,
+      model: vehicle.model,
+      modelId: vehicle.modelId,
+      generation: vehicle.generation,
+      generationId: vehicle.generationId,
+      engine: vehicle.engine,
+      engineId: vehicle.engineId,
+      fuelType: vehicle.fuelType ?? null,
+      ecu: vehicle.ecu ?? [],
+      stage1: vehicle.stage1 ?? null,
+      stage2: vehicle.stage2 ?? null,
+      readMethods: vehicle.readMethods ?? [],
+      services: vehicle.services ?? [],
+    });
   }
 
   return NextResponse.json(

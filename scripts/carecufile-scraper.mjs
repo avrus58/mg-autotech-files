@@ -74,7 +74,23 @@ async function mergeWithExistingRows(newRows) {
 
 async function mergeWithExistingErrors(newErrors) {
   const existing = await readJsonIfExists(OUTPUT_ERRORS, []);
-  return [...existing, ...newErrors];
+  const errorMap = new Map();
+
+  for (const error of [...existing, ...newErrors]) {
+    const key = [
+      error.level || "",
+      error.brand?.id || "",
+      error.model?.id || "",
+      error.generation?.id || "",
+      error.engine?.id || "",
+      error.url || "",
+      error.error || "",
+    ].join("|");
+
+    errorMap.set(key, error);
+  }
+
+  return Array.from(errorMap.values());
 }
 
 async function readJsonIfExists(filePath, fallback) {

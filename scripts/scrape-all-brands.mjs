@@ -3,8 +3,10 @@ import fs from "node:fs/promises";
 
 const BRANDS_FILE = "data/carecufile-brands.json";
 const PROGRESS_FILE = "data/scrape-all-progress.json";
+const DATABASE_FILE = "data/vehicle-database.json";
 
-const WAIT_BETWEEN_BRANDS_MS = 15000;
+const WAIT_BETWEEN_BRANDS_MS = Number(process.env.CAREECU_BRAND_DELAY_MS || 15000);
+const WAIT_BETWEEN_ENGINES_MS = Number(process.env.CAREECU_REQUEST_DELAY_MS || 350);
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -30,6 +32,18 @@ async function saveJson(path, data) {
   await fs.writeFile(path, JSON.stringify(data, null, 2), "utf8");
 }
 
+function getBrandRowCounts(rows) {
+  const counts = new Map();
+
+  for (const row of rows) {
+    const brandId = String(row.brandId || "");
+    if (!brandId) continue;
+    counts.set(brandId, (counts.get(brandId) || 0) + 1);
+  }
+
+  return counts;
+}
+
 function runBrandScraper(brand) {
   return new Promise((resolve) => {
     console.log("\n========================================");
@@ -37,7 +51,7 @@ function runBrandScraper(brand) {
     console.log("========================================\n");
 
     const child = spawn(
-      "node",
+      process.execPath,
       [
         "scripts/carecufile-scraper.mjs",
         "--brand-id",
@@ -45,10 +59,11 @@ function runBrandScraper(brand) {
         "--brand-name",
         String(brand.name),
         "--append",
+        "--delay",
+        String(WAIT_BETWEEN_ENGINES_MS),
       ],
       {
         stdio: "inherit",
-        shell: true,
       }
     );
 
@@ -64,6 +79,8 @@ async function main() {
     completed: [],
     failed: [],
   });
+  const database = await loadJson(DATABASE_FILE, []);
+  let brandRowCounts = getBrandRowCounts(database);
 
   if (!Array.isArray(brands) || brands.length === 0) {
     console.error(`No brands found in ${BRANDS_FILE}`);
@@ -71,25 +88,43 @@ async function main() {
   }
 
   console.log(`Brands found: ${brands.length}`);
-  console.log(`Already completed: ${progress.completed.length}`);
+  progress.completed = brands
+    .filter((brand) => (brandRowCounts.get(String(brand.id)) || 0) > 0)
+    .map((brand) => `${brand.id}:${brand.name}`);
+  progress.failed = progress.failed.filter((brandKey) => {
+    const brandId = String(brandKey).split(":", 1)[0];
+    return (brandRowCounts.get(brandId) || 0) === 0;
+  });
+
+  console.log(`Brands already present in database: ${brandRowCounts.size}`);
   console.log(`Already failed: ${progress.failed.length}`);
 
   for (const brand of brands) {
     const brandKey = `${brand.id}:${brand.name}`;
 
-    if (progress.completed.includes(brandKey)) {
-      console.log(`Skipping completed brand: ${brand.name}`);
+    const existingRows = brandRowCounts.get(String(brand.id)) || 0;
+
+    if (existingRows > 0) {
+      console.log(`Skipping existing brand: ${brand.name} (${existingRows} vehicles)`);
       continue;
     }
 
     const code = await runBrandScraper(brand);
+    const updatedDatabase = await loadJson(DATABASE_FILE, []);
+    brandRowCounts = getBrandRowCounts(updatedDatabase);
+    const scrapedRows = brandRowCounts.get(String(brand.id)) || 0;
 
-    if (code === 0) {
-      console.log(`Completed brand: ${brand.name}`);
-      progress.completed.push(brandKey);
+    if (code === 0 && scrapedRows > 0) {
+      console.log(`Completed brand: ${brand.name} (${scrapedRows} vehicles)`);
+      if (!progress.completed.includes(brandKey)) {
+        progress.completed.push(brandKey);
+      }
       progress.failed = progress.failed.filter((x) => x !== brandKey);
     } else {
-      console.log(`Failed brand: ${brand.name} | exit code: ${code}`);
+      console.log(
+        `Failed brand: ${brand.name} | exit code: ${code} | vehicles added: ${scrapedRows}`
+      );
+      progress.completed = progress.completed.filter((x) => x !== brandKey);
       if (!progress.failed.includes(brandKey)) {
         progress.failed.push(brandKey);
       }
@@ -100,6 +135,18 @@ async function main() {
     console.log(`Waiting ${WAIT_BETWEEN_BRANDS_MS / 1000}s before next brand...`);
     await sleep(WAIT_BETWEEN_BRANDS_MS);
   }
+
+  const finalDatabase = await loadJson(DATABASE_FILE, []);
+  const finalBrandRowCounts = getBrandRowCounts(finalDatabase);
+
+  progress.completed = brands
+    .filter((brand) => (finalBrandRowCounts.get(String(brand.id)) || 0) > 0)
+    .map((brand) => `${brand.id}:${brand.name}`);
+  progress.failed = brands
+    .filter((brand) => (finalBrandRowCounts.get(String(brand.id)) || 0) === 0)
+    .map((brand) => `${brand.id}:${brand.name}`);
+
+  await saveJson(PROGRESS_FILE, progress);
 
   console.log("\nAll brands processed.");
   console.log(`Completed: ${progress.completed.length}`);
