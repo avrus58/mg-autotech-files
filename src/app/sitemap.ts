@@ -64,6 +64,18 @@ export default function sitemap(): MetadataRoute.Sitemap {
     ...publicPages,
     ...localizedPages,
     {
+      url: `${siteUrl}/widget`,
+      lastModified,
+      changeFrequency: "monthly",
+      priority: 0.85,
+    },
+    {
+      url: `${siteUrl}/av-vertrag`,
+      lastModified,
+      changeFrequency: "yearly",
+      priority: 0.2,
+    },
+    {
       url: `${siteUrl}/agb`,
       lastModified,
       changeFrequency: "yearly",

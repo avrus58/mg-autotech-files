@@ -217,6 +217,8 @@ export function LanguageSwitcher() {
     [locale]
   );
 
+  if (pathname.startsWith("/embed/")) return null;
+
   return (
     <div
       data-language-switcher

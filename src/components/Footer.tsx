@@ -19,6 +19,7 @@ const services = [
 ];
 
 const platform = [
+  { label: "Vehicle Widget", href: "/widget" },
   { label: "Upload File", href: "/new-request" },
   { label: "Buy Credits", href: "/dashboard/credits" },
   { label: "Login", href: "/login" },
@@ -31,6 +32,7 @@ const legal = [
   { label: "Datenschutz", href: "/datenschutz" },
   { label: "AGB", href: "/agb" },
   { label: "Widerruf", href: "/widerruf" },
+  { label: "AV-Vertrag", href: "/av-vertrag" },
 ];
 
 const whatsappNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER?.replace(/\D/g, "");

@@ -18,6 +18,8 @@ export default function robots(): MetadataRoute.Robots {
           "/datenschutz",
           "/impressum",
           "/widerruf",
+          "/av-vertrag",
+          "/widget",
         ],
         disallow: [
           "/admin",
@@ -30,6 +32,7 @@ export default function robots(): MetadataRoute.Robots {
           "/payment",
           "/register",
           "/reset-password",
+          "/embed",
         ],
       },
     ],

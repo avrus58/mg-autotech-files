@@ -17,6 +17,7 @@ import {
   ArrowLeft,
   BellRing,
   BrainCircuit,
+  Braces,
   Building2,
   CalendarDays,
   Car,
@@ -1027,6 +1028,18 @@ export default function AdminPage() {
                   File Expert
                 </span>
                 <span className="rounded-full bg-red-950/40 px-2 py-1 text-xs text-red-200">AI</span>
+              </Link>
+            )}
+            {hasStaffPermission(adminAccess, "widget.manage") && (
+              <Link
+                href="/admin/widget-clients"
+                className="flex w-full items-center justify-between gap-3 rounded-2xl px-4 py-3 text-left text-sm font-black text-zinc-400 transition hover:bg-white/[0.06] hover:text-white"
+              >
+                <span className="flex items-center gap-3">
+                  <Braces className="h-5 w-5" />
+                  Widget SaaS
+                </span>
+                <span className="rounded-full bg-red-950/40 px-2 py-1 text-[10px] font-black text-red-200">NEW</span>
               </Link>
             )}
             {isPrimaryOwner(adminAccess) && (

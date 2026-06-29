@@ -157,3 +157,51 @@ export async function sendOrderCompletedEmail({
     `,
   });
 }
+
+export async function sendWidgetLifecycleEmail({
+  customerEmail,
+  companyName,
+  event,
+  detail,
+}: {
+  customerEmail: string;
+  companyName: string;
+  event: "activated" | "payment_failed" | "domain_approved" | "domain_rejected" | "key_changed" | "cancelled";
+  detail?: string;
+}) {
+  if (!process.env.RESEND_API_KEY || !customerEmail) return;
+  const content = {
+    activated: ["Your vehicle widget is active", "Your MG AutoTech Vehicle Selector Widget is ready. Sign in to configure the design and copy your embed code."],
+    payment_failed: ["Widget payment failed", "We could not collect your widget subscription payment. Public widget access has been paused until billing is updated."],
+    domain_approved: ["Widget domain updated", "Your domain change request was approved. Use the widget only on the newly approved domain."],
+    domain_rejected: ["Domain change request reviewed", "Your requested widget domain change was not approved. Your existing allowed domain remains unchanged."],
+    key_changed: ["Widget public key changed", "A new public widget key was generated. Replace the old embed code on your website."],
+    cancelled: ["Widget subscription cancelled", "Your vehicle widget subscription has ended and public widget access is disabled."],
+  }[event];
+  await getResendClient().emails.send({
+    from: fromEmail,
+    to: customerEmail,
+    subject: content[0],
+    html: `<div style="font-family:Arial,sans-serif;background:#050505;color:#fff;padding:30px"><div style="max-width:650px;margin:auto;background:#111;border:1px solid #333;border-radius:18px;padding:26px"><p style="color:#ff4b5c;font-size:12px;font-weight:bold;letter-spacing:2px;text-transform:uppercase">MG AutoTech Vehicle Widget</p><h1 style="font-size:28px">${escapeHtml(content[0])}</h1><p style="color:#bbb;line-height:1.7">Hello ${escapeHtml(companyName || "Partner")},</p><p style="color:#ddd;line-height:1.7">${escapeHtml(content[1])}</p>${detail ? `<p style="background:#050505;border-radius:12px;padding:14px;color:#bbb">${escapeHtml(detail)}</p>` : ""}<a href="${siteUrl}/dashboard/widget" style="display:inline-block;margin-top:16px;background:#b1121b;color:white;text-decoration:none;padding:14px 20px;border-radius:12px;font-weight:bold">Open Widget Dashboard</a></div></div>`,
+  });
+}
+
+export async function sendNewWidgetSubscriberNotification({
+  companyName,
+  customerEmail,
+  domain,
+  subscriptionId,
+}: {
+  companyName: string;
+  customerEmail: string;
+  domain: string;
+  subscriptionId: string | null;
+}) {
+  if (!process.env.RESEND_API_KEY) return;
+  await getResendClient().emails.send({
+    from: fromEmail,
+    to: adminNotificationEmail,
+    subject: `New Widget Subscriber: ${companyName}`,
+    html: `<div style="font-family:Arial,sans-serif;background:#050505;color:#fff;padding:30px"><div style="max-width:650px;margin:auto;background:#111;border:1px solid #333;border-radius:18px;padding:26px"><p style="color:#ff4b5c;font-size:12px;font-weight:bold;letter-spacing:2px;text-transform:uppercase">MG AutoTech Vehicle Widget</p><h1>New widget subscriber</h1><p><strong>Company:</strong> ${escapeHtml(companyName)}</p><p><strong>E-mail:</strong> ${escapeHtml(customerEmail)}</p><p><strong>Allowed domain:</strong> ${escapeHtml(domain)}</p><p><strong>Stripe subscription:</strong> ${escapeHtml(subscriptionId || "pending")}</p><a href="${siteUrl}/admin/widget-clients" style="display:inline-block;margin-top:16px;background:#b1121b;color:white;text-decoration:none;padding:14px 20px;border-radius:12px;font-weight:bold">Open Widget Clients</a></div></div>`,
+  });
+}

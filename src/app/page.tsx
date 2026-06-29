@@ -2294,6 +2294,9 @@ export default function HomePage() {
             <a href="#prices" className="hover:text-white">
               Prices
             </a>
+            <Link href="/widget" className="hover:text-white">
+              Vehicle Widget
+            </Link>
             <a href="#contact" className="hover:text-white">
               Contact
             </a>
@@ -2357,6 +2360,9 @@ export default function HomePage() {
             <a href="#security" className="hover:text-white">
               Security
             </a>
+            <Link href="/widget" className="hover:text-white">
+              Vehicle Widget
+            </Link>
           </nav>
 
           {!authReady ? (
@@ -2472,6 +2478,13 @@ export default function HomePage() {
                     New Request
                   </Link>
 
+                  <Link
+                    href="/dashboard/widget"
+                    className="rounded-xl border border-white/10 bg-white/5 px-8 py-4 font-black text-white transition duration-300 hover:-translate-y-1 hover:bg-white/10"
+                  >
+                    Vehicle Widget
+                  </Link>
+
                   <button
                     type="button"
                     onClick={handleLogout}
@@ -2501,6 +2514,13 @@ export default function HomePage() {
                     className="rounded-xl border border-red-800/50 px-10 py-4 font-black text-white transition duration-300 hover:-translate-y-1 hover:bg-red-950/25"
                   >
                     Upload File
+                  </Link>
+
+                  <Link
+                    href="/widget"
+                    className="rounded-xl border border-white/10 bg-white/5 px-8 py-4 font-black text-white transition duration-300 hover:-translate-y-1 hover:bg-white/10"
+                  >
+                    Vehicle Widget €4.99
                   </Link>
                 </>
               )}

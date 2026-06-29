@@ -8,6 +8,7 @@ import { supabase } from "@/lib/supabaseClient";
 import {
   ArrowRight,
   BrainCircuit,
+  Braces,
   Car,
   CheckCircle2,
   Clipboard,
@@ -352,6 +353,14 @@ export default function DashboardPage() {
               >
                 <BrainCircuit className="h-5 w-5" />
                 AI File Expert
+              </Link>
+
+              <Link
+                href="/dashboard/widget"
+                className="flex items-center gap-3 rounded-2xl px-4 py-3 font-bold text-zinc-400 transition hover:bg-white/[0.06] hover:text-white"
+              >
+                <Braces className="h-5 w-5" />
+                Vehicle Widget
               </Link>
 
               <Link

@@ -61,6 +61,12 @@ export default function Page() {
                 <div className="rounded-2xl border border-white/10 bg-black/25 p-4 text-sm text-zinc-300">Rechtsgrundlagen: Vertragserfüllung, berechtigtes Interesse und gesetzliche Pflichten.</div>
                 <div className="rounded-2xl border border-white/10 bg-black/25 p-4 text-sm text-zinc-300">Betroffene Personen können Auskunft, Berichtigung, Löschung und Einschränkung der Verarbeitung verlangen.</div>
               </div>
+
+              <h2 className="mt-10 text-2xl font-black">Datenschutz beim Vehicle Selector Widget</h2>
+              <p className="mt-4 leading-8 text-zinc-300">Bei Aufruf eines eingebetteten Widgets werden zur Bereitstellung und Missbrauchsabwehr technische Zugriffsdaten verarbeitet. Dazu gehören Zeitpunkt, angefragter Pfad, freigegebene und anfragende Domain, Sprache, Browserkennung, Zugriffsstatus und ein nicht rückrechenbarer Hash der IP-Adresse. Die rohe IP-Adresse wird nicht im Widget-Zugriffsprotokoll gespeichert.</p>
+              <p className="mt-4 leading-8 text-zinc-300">Die Verarbeitung dient der Vertragserfüllung, Domainsicherung, Fehleranalyse, Durchsetzung von Nutzungslimits und Abwehr automatisierter Datenabfragen. Zahlungs- und Abonnementdaten werden über Stripe verarbeitet.</p>
+              <p className="mt-4 leading-8 text-zinc-300">Bei einer Fahrzeugauswahl werden ausschließlich die für die konkrete Auswahl benötigten Fahrzeugdaten an die einbettende, zuvor freigegebene Website übermittelt. Ein vollständiger Datenbankexport wird nicht bereitgestellt.</p>
+              <p className="mt-4 leading-8 text-zinc-300">Betreiber einbettender Websites müssen ihre eigenen Besucher in ihrer Datenschutzerklärung über die Nutzung des MG AutoTech Widgets informieren. Soweit eine Auftragsverarbeitung vorliegt, ist vor Produktivnutzung eine entsprechende Vereinbarung abzuschließen.</p>
           </div>
         </div>
       </section>

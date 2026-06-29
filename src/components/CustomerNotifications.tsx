@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Bell, CheckCheck, MessageSquareText, Volume2, VolumeX, X } from "lucide-react";
+import { usePathname } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 
 type CustomerNotification = {
@@ -53,6 +54,7 @@ function timeLabel(value: string) {
 }
 
 export function CustomerNotifications() {
+  const pathname = usePathname();
   const [userId, setUserId] = useState("");
   const [items, setItems] = useState<CustomerNotification[]>([]);
   const [open, setOpen] = useState(false);
@@ -148,7 +150,7 @@ export function CustomerNotifications() {
     });
   }
 
-  if (!userId) return null;
+  if (!userId || pathname.startsWith("/embed/")) return null;
 
   return (
     <div className="fixed right-4 top-20 z-[95] flex flex-col items-end gap-3">

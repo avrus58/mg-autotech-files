@@ -61,6 +61,13 @@ export default function Page() {
                 <div className="rounded-2xl border border-white/10 bg-black/25 p-4 text-sm text-zinc-300">Bearbeitungszeiten sind Richtwerte und können je nach Datei, ECU, Service und Arbeitsaufwand variieren.</div>
                 <div className="rounded-2xl border border-white/10 bg-black/25 p-4 text-sm text-zinc-300">Revisionen können geprüft werden, sofern Originalauftrag und technische Grundlage dies zulassen.</div>
               </div>
+
+              <h2 className="mt-10 text-2xl font-black">Vehicle Selector Widget (B2B)</h2>
+              <p className="mt-4 leading-8 text-zinc-300">Das MG AutoTech Vehicle Selector Widget ist ein gehosteter Softwaredienst für Unternehmer, Werkstätten und gewerbliche Automotive-Websites. Der Starter-Tarif wird monatlich abgerechnet und ist auf eine freigegebene Website-Domain beschränkt.</p>
+              <p className="mt-4 leading-8 text-zinc-300">Das Abonnement verlängert sich monatlich, bis es über den Stripe-Kundenbereich gekündigt wird. Bei fehlgeschlagenen, überfälligen oder stornierten Zahlungen kann der Zugriff automatisch und ohne gesonderte technische Übergangsfrist deaktiviert werden.</p>
+              <p className="mt-4 leading-8 text-zinc-300">Der öffentliche Einbettungsschlüssel ist kein Zugang zur vollständigen Datenbank. Automatisierter Export, Scraping, systematisches Kopieren, Weiterverkauf der Daten oder die Nutzung auf nicht freigegebenen Domains ist untersagt. MG AutoTech darf Schlüssel sperren, Limits anwenden und missbräuchliche Zugriffe protokollieren.</p>
+              <p className="mt-4 leading-8 text-zinc-300">Domainwechsel bedürfen einer Freigabe. Verfügbarkeit, Datenabdeckung und einzelne Fahrzeugangaben können sich durch Wartung oder Datenbankupdates ändern. Eine unterbrechungsfreie Verfügbarkeit oder bestimmte Datenabdeckung wird nicht garantiert.</p>
+              <p className="mt-4 leading-8 text-zinc-300">Der Kunde bleibt für die rechtmäßige Einbindung, eigene Kontaktformulare, Datenschutzhinweise und die Verwendung der ausgewählten Fahrzeugdaten auf seiner Website verantwortlich.</p>
           </div>
         </div>
       </section>
