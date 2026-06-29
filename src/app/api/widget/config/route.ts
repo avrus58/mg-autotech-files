@@ -45,6 +45,8 @@ export async function GET(request: NextRequest) {
     difference_color: result.client.difference_color,
     theme_mode: result.client.theme_mode,
     show_branding: result.settings.show_mg_branding && result.client.show_branding,
+    enquiry_email: result.client.enquiry_email,
+    whatsapp_number: result.client.whatsapp_number,
     language: result.language,
     direction: result.language === "ar" ? "rtl" : "ltr",
     sessionToken,

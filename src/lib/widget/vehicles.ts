@@ -1,4 +1,5 @@
 import vehicles from "../../../data/vehicle-database.json";
+import performanceOverrides from "../../../data/vehicle-performance-overrides.json";
 
 type VehicleRow = {
   brand: string;
@@ -26,7 +27,14 @@ type StageData = {
   gainNm: number | null;
 };
 
+type PerformanceOverride = {
+  stage1?: StageData;
+  stage2?: StageData;
+  services?: string[];
+};
+
 const rows = vehicles as VehicleRow[];
+const overrides = performanceOverrides as Record<string, PerformanceOverride>;
 
 function uniqueOptions(items: VehicleRow[], id: (row: VehicleRow) => string, name: (row: VehicleRow) => string) {
   const map = new Map<string, string>();
@@ -66,9 +74,14 @@ export function widgetVehicle(make: string, model: string, year: string, engine:
     item.brandId === make && item.modelId === model && item.generationId === year && item.engineId === engine
   );
   if (!row) return null;
+  const vehicleId = `${row.brandId}:${row.modelId}:${row.generationId}:${row.engineId}`;
+  const override = overrides[vehicleId];
+  const stage1 = override?.stage1 ?? row.stage1 ?? null;
+  const stage2 = override?.stage2 ?? row.stage2 ?? null;
+  const services = [...new Set([...(row.services ?? []), ...(override?.services ?? [])])];
   const vehicleName = `${row.brand} ${row.model} ${row.generation} ${row.engine}`.replace(/\s+/g, " ").trim();
   return {
-    vehicleId: `${row.brandId}:${row.modelId}:${row.generationId}:${row.engineId}`,
+    vehicleId,
     vehicleName,
     make: row.brand,
     model: row.model,
@@ -77,10 +90,10 @@ export function widgetVehicle(make: string, model: string, year: string, engine:
     fuelType: row.fuelType ?? null,
     ecu: row.ecu?.slice(0, 8).join(", ") || "",
     ecuFamilies: row.ecu?.slice(0, 8) ?? [],
-    powerHp: row.stage1?.stockHp ?? null,
-    stage1: row.stage1 ?? null,
-    stage2: row.stage2 ?? null,
-    services: row.services?.slice(0, 24) ?? [],
+    powerHp: stage1?.stockHp ?? null,
+    stage1,
+    stage2,
+    services: services.slice(0, 24),
     readMethods: row.readMethods?.slice(0, 8) ?? [],
   };
 }

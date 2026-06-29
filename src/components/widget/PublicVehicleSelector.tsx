@@ -1,9 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { CarFront, CheckCircle2, Cpu, Gauge, Loader2, Search, ShieldCheck, Wrench } from "lucide-react";
+import { ArrowRight, CarFront, CheckCircle2, Cpu, Gauge, Loader2, MessageCircle, Search, ShieldCheck, Wrench } from "lucide-react";
 import { widgetResultLabels, widgetT, widgetVehicleTypeLabels } from "@/lib/i18n/widget-translations";
-import type { WidgetResultLabels } from "@/lib/i18n/widget-translations";
 import type { WidgetLanguage, WidgetTheme } from "@/lib/widget/types";
 
 type Option = { value: string; label: string; fuelType?: string | null };
@@ -33,6 +32,8 @@ type SelectorConfig = {
   theme_mode: WidgetTheme;
   show_branding: boolean;
   language: WidgetLanguage;
+  enquiry_email?: string | null;
+  whatsapp_number?: string | null;
 };
 
 const demoMakes: Option[] = [
@@ -184,31 +185,57 @@ export function PublicVehicleSelector({
         </button>
 
         {selectedName && !selectedVehicle && <div className="mt-4 flex items-start gap-3 rounded-lg border p-4 text-sm font-bold" style={{ borderColor: `${config.difference_color}66`, background: `${config.difference_color}12` }}><CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" style={{ color: config.difference_color }} /><span>{selectedName}</span></div>}
-        {selectedVehicle && <VehicleResultPanel vehicle={selectedVehicle} language={language} accent={config.difference_color} dark={dark} />}
+        {selectedVehicle && <VehicleResultPanel key={selectedVehicle.vehicleId} vehicle={selectedVehicle} language={language} accent={config.difference_color} dark={dark} enquiryEmail={config.enquiry_email} whatsappNumber={config.whatsapp_number} />}
         {config.show_branding && <div className="mt-5 flex items-center justify-center gap-2 text-[11px] font-bold opacity-55"><ShieldCheck className="h-3.5 w-3.5" />{widgetT(language, "poweredBy")}</div>}
       </div>
     </div>
   );
 }
 
-function VehicleResultPanel({ vehicle, language, accent, dark }: { vehicle: VehicleResult; language: WidgetLanguage; accent: string; dark: boolean }) {
+function VehicleResultPanel({ vehicle, language, accent, dark, enquiryEmail, whatsappNumber }: { vehicle: VehicleResult; language: WidgetLanguage; accent: string; dark: boolean; enquiryEmail?: string | null; whatsappNumber?: string | null }) {
   const labels = widgetResultLabels[language];
-  const stages = [["Stage 1", vehicle.stage1], ["Stage 2", vehicle.stage2]] as const;
+  const availableStages = ([
+    { key: "stage1", label: "Stage 1", data: vehicle.stage1 },
+    { key: "stage2", label: "Stage 2", data: vehicle.stage2 },
+  ] as const).filter((stage) => stage.data && (stage.data.tunedHp !== null || stage.data.tunedNm !== null));
+  const initialStage = availableStages[0]?.key ?? "stage1";
+  const [activeStage, setActiveStage] = useState<"stage1" | "stage2">(initialStage);
+  const selectedStage = availableStages.find((stage) => stage.key === activeStage) ?? availableStages[0];
+  const extraServices = vehicle.services.filter((service) => !/^stage\s*[12]$/i.test(service.trim()));
+
+  function requestOffer() {
+    const detail = { dataType: "mga-vehicle-enquiry", ...vehicle, stage: selectedStage?.label ?? "Stage 1" };
+    window.dispatchEvent(new CustomEvent("mga-vehicle-enquiry", { detail }));
+    if (whatsappNumber) {
+      const number = whatsappNumber.replace(/\D/g, "");
+      if (number) window.open(`https://wa.me/${number}?text=${encodeURIComponent(`${vehicle.vehicleName} - ${selectedStage?.label ?? "Stage 1"}`)}`, "_blank", "noopener,noreferrer");
+    } else if (enquiryEmail) {
+      window.location.href = `mailto:${enquiryEmail}?subject=${encodeURIComponent(`${vehicle.vehicleName} - ${selectedStage?.label ?? "Stage 1"}`)}`;
+    }
+  }
+
   return <section className="mt-5 overflow-hidden rounded-lg border" style={{ borderColor: `${accent}66`, background: `${accent}0d` }}>
     <div className="flex items-start gap-3 border-b p-4" style={{ borderColor: `${accent}44` }}><CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" style={{ color: accent }} /><div className="min-w-0"><div className="break-words text-base font-black">{vehicle.vehicleName}</div>{vehicle.fuelType && <div className="mt-1 text-xs opacity-60">{vehicle.fuelType}</div>}</div></div>
-    {stages.some(([, data]) => data?.tunedHp || data?.tunedNm) && <div className="p-4"><div className="mb-3 flex items-center gap-2 text-xs font-black uppercase tracking-[0.12em] opacity-60"><Gauge className="h-4 w-4" />{labels.performance}</div><div className="grid gap-3 sm:grid-cols-2">{stages.map(([name, data]) => data && (data.tunedHp || data.tunedNm) ? <StageCard key={name} name={name} data={data} labels={labels} accent={accent} dark={dark} /> : null)}</div></div>}
-    {vehicle.services.length > 0 && <div className="border-t p-4" style={{ borderColor: `${accent}33` }}><div className="mb-3 flex items-center gap-2 text-xs font-black uppercase tracking-[0.12em] opacity-60"><Wrench className="h-4 w-4" />{labels.supportedServices}</div><div className="flex flex-wrap gap-2">{vehicle.services.map((service) => <span key={service} className="rounded-md border px-2.5 py-2 text-xs font-black" style={{ borderColor: `${accent}66`, color: accent }}>{service}</span>)}</div></div>}
+    {selectedStage?.data && <div className="p-4">
+      <div className="mb-3 flex items-center gap-2 text-xs font-black uppercase tracking-[0.12em] opacity-60"><Gauge className="h-4 w-4" />{labels.performance}</div>
+      <div className="mb-3 flex flex-wrap gap-2">{availableStages.map((stage) => <button type="button" key={stage.key} onClick={() => setActiveStage(stage.key)} className="rounded-md border px-3 py-2 text-xs font-black transition" style={stage.key === selectedStage.key ? { background: accent, borderColor: accent, color: dark ? "#071006" : "#ffffff" } : { borderColor: `${accent}55`, color: accent }}>{stage.label}</button>)}</div>
+      <div className={`overflow-hidden rounded-lg border ${dark ? "border-white/10 bg-black/25" : "border-zinc-200 bg-white/75"}`}>
+        <PerformanceRow label={labels.power} unit="HP" stock={selectedStage.data.stockHp} tuned={selectedStage.data.tunedHp} gain={selectedStage.data.gainHp} accent={accent} />
+        <PerformanceRow label={labels.torque} unit="Nm" stock={selectedStage.data.stockNm} tuned={selectedStage.data.tunedNm} gain={selectedStage.data.gainNm} accent={accent} bordered />
+      </div>
+    </div>}
+    {extraServices.length > 0 && <div className="border-t p-4" style={{ borderColor: `${accent}33` }}><div className="mb-3 flex items-center gap-2 text-xs font-black uppercase tracking-[0.12em] opacity-60"><Wrench className="h-4 w-4" />{labels.supportedServices}</div><div className="grid gap-2">{extraServices.map((service) => <div key={service} className="flex items-center gap-2 text-sm font-bold"><CheckCircle2 className="h-4 w-4 shrink-0" style={{ color: accent }} /><span>{service}</span></div>)}</div></div>}
     {vehicle.ecuFamilies.length > 0 && <div className="border-t p-4" style={{ borderColor: `${accent}33` }}><div className="mb-3 flex items-center gap-2 text-xs font-black uppercase tracking-[0.12em] opacity-60"><Cpu className="h-4 w-4" />{labels.compatibleEcu}</div><div className="text-sm font-bold leading-6 opacity-80">{vehicle.ecuFamilies.join(" · ")}</div></div>}
+    <div className="border-t p-4" style={{ borderColor: `${accent}33` }}><button type="button" onClick={requestOffer} className="flex h-12 w-full items-center justify-center gap-2 rounded-lg text-sm font-black transition hover:brightness-110" style={{ background: accent, color: dark ? "#071006" : "#ffffff" }}><MessageCircle className="h-4 w-4" />{labels.requestOffer}</button></div>
     <p className="border-t p-4 text-[11px] leading-5 opacity-50" style={{ borderColor: `${accent}33` }}>{labels.technicalDataNotice}</p>
   </section>;
 }
 
-function StageCard({ name, data, labels, accent, dark }: { name: string; data: StageData; labels: WidgetResultLabels; accent: string; dark: boolean }) {
-  return <div className={`rounded-lg border p-4 ${dark ? "border-white/10 bg-black/25" : "border-zinc-200 bg-white/70"}`}><div className="mb-3 flex items-center justify-between gap-3"><span className="font-black">{name}</span>{data.gainHp !== null && <span className="text-xs font-black" style={{ color: accent }}>+{data.gainHp} HP</span>}</div><div className="grid grid-cols-2 gap-3 text-sm"><PerformanceLine label="HP" stock={data.stockHp} tuned={data.tunedHp} gain={data.gainHp} labels={labels} /><PerformanceLine label="Nm" stock={data.stockNm} tuned={data.tunedNm} gain={data.gainNm} labels={labels} /></div></div>;
-}
-
-function PerformanceLine({ label, stock, tuned, gain, labels }: { label: string; stock: number | null; tuned: number | null; gain: number | null; labels: WidgetResultLabels }) {
-  return <div><div className="text-[10px] font-black uppercase opacity-45">{label}</div><div className="mt-1 font-black"><span className="opacity-55">{stock ?? "-"}</span><span className="mx-1 opacity-35">→</span><span>{tuned ?? "-"}</span></div><div className="mt-1 text-[10px] opacity-50">{labels.gain}: {gain !== null ? `+${gain}` : "-"}</div></div>;
+function PerformanceRow({ label, unit, stock, tuned, gain, accent, bordered = false }: { label: string; unit: string; stock: number | null; tuned: number | null; gain: number | null; accent: string; bordered?: boolean }) {
+  return <div className={`grid grid-cols-[minmax(72px,0.7fr)_minmax(0,1.8fr)] items-center gap-3 p-4 ${bordered ? "border-t border-inherit" : ""}`}>
+    <div className="text-[10px] font-black uppercase tracking-[0.1em] opacity-50">{label}</div>
+    <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 text-right"><span className="text-lg font-bold opacity-60">{stock ?? "-"}</span><ArrowRight className="h-4 w-4 opacity-35" /><span className="text-xl font-black">{tuned ?? "-"} <small className="text-[10px] font-black opacity-55">{unit}</small></span><span className="col-start-3 text-xs font-black" style={{ color: accent }}>{gain !== null ? `+${gain}` : "-"}</span></div>
+  </div>;
 }
 
 function Selector({ label, value, options, disabled, className, onChange }: { label: string; value: string; options: Option[]; disabled?: boolean; className: string; onChange: (value: string) => void }) {

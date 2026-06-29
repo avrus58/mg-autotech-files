@@ -1,0 +1,19 @@
+{
+  "7:78:175:1034": {
+    "stage1": {
+      "stockHp": 204,
+      "tunedHp": 400,
+      "gainHp": 196,
+      "stockNm": 350,
+      "tunedNm": 700,
+      "gainNm": 350
+    },
+    "services": [
+      "Stage 1",
+      "DTC OFF",
+      "VMAX OFF"
+    ],
+    "source": "user-verified reference",
+    "verifiedAt": "2026-06-29"
+  }
+}
