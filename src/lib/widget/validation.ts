@@ -25,6 +25,8 @@ function mapClient(row: Record<string, unknown>): WidgetClient {
     monthly_usage_limit: Number(row.monthly_usage_limit ?? 5000),
     allowed_languages: sanitizeWidgetLanguages(row.allowed_languages),
     default_language: normalizeWidgetLanguage(row.default_language, "de"),
+    email_enquiries_enabled: row.email_enquiries_enabled === undefined ? Boolean(row.enquiry_email) : Boolean(row.email_enquiries_enabled),
+    whatsapp_enquiries_enabled: row.whatsapp_enquiries_enabled === undefined ? Boolean(row.whatsapp_number) : Boolean(row.whatsapp_enquiries_enabled),
   } as WidgetClient;
 }
 

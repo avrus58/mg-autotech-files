@@ -16,6 +16,7 @@ const updateSchema = z.object({
   plan: z.enum(["starter", "pro", "white_label"]).optional(), monthly_price: z.number().min(0).max(10000).optional(), currency: z.string().regex(/^[a-zA-Z]{3}$/).optional(),
   widget_title: z.string().min(2).max(80).optional(), button_text: z.string().min(2).max(80).optional(),
   enquiry_email: z.union([z.string().email(), z.literal(""), z.null()]).optional(), whatsapp_number: z.union([z.string().max(30), z.null()]).optional(),
+  email_enquiries_enabled: z.boolean().optional(), whatsapp_enquiries_enabled: z.boolean().optional(),
   main_color: hex.optional(), button_text_color: hex.optional(), difference_color: hex.optional(), theme_mode: z.enum(["light", "dark", "auto"]).optional(),
   default_language: z.string().max(5).optional(), allowed_languages: z.array(z.string().max(5)).min(1).max(12).optional(), show_branding: z.boolean().optional(),
   allow_script_embed: z.boolean().optional(), allow_iframe_embed: z.boolean().optional(), can_edit_colours: z.boolean().optional(), can_edit_language: z.boolean().optional(), can_edit_contact: z.boolean().optional(), can_hide_branding: z.boolean().optional(), monthly_usage_limit: z.number().int().min(0).max(10000000).optional(),
@@ -39,7 +40,12 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
     admin.from("widget_domain_change_requests").select("*").eq("client_id", id).order("created_at", { ascending: false }).limit(50),
     admin.from("widget_audit_logs").select("*").eq("client_id", id).order("created_at", { ascending: false }).limit(100),
   ]);
-  return NextResponse.json({ client: client.data, keys: keys.data ?? [], logs: logs.data ?? [], domainRequests: requests.data ?? [], auditLogs: audit.data ?? [] });
+  const normalizedClient = {
+    ...client.data,
+    email_enquiries_enabled: client.data.email_enquiries_enabled ?? Boolean(client.data.enquiry_email),
+    whatsapp_enquiries_enabled: client.data.whatsapp_enquiries_enabled ?? Boolean(client.data.whatsapp_number),
+  };
+  return NextResponse.json({ client: normalizedClient, keys: keys.data ?? [], logs: logs.data ?? [], domainRequests: requests.data ?? [], auditLogs: audit.data ?? [] });
 }
 
 export async function PATCH(request: Request, context: { params: Promise<{ id: string }> }) {

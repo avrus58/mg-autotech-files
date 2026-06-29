@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { ArrowRight, CarFront, CheckCircle2, Cpu, Gauge, Loader2, MessageCircle, Search, ShieldCheck, Wrench } from "lucide-react";
-import { widgetResultLabels, widgetT, widgetVehicleTypeLabels } from "@/lib/i18n/widget-translations";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { ArrowRight, CarFront, CheckCircle2, Cpu, Gauge, Loader2, Mail, MessageCircle, Search, ShieldCheck, Wrench } from "lucide-react";
+import { widgetEnquiryLabels, widgetResultLabels, widgetT, widgetVehicleTypeLabels } from "@/lib/i18n/widget-translations";
 import type { WidgetLanguage, WidgetTheme } from "@/lib/widget/types";
 
 type Option = { value: string; label: string; fuelType?: string | null };
@@ -32,7 +32,8 @@ type SelectorConfig = {
   theme_mode: WidgetTheme;
   show_branding: boolean;
   language: WidgetLanguage;
-  enquiry_email?: string | null;
+  email_enquiries_enabled?: boolean;
+  whatsapp_enquiries_enabled?: boolean;
   whatsapp_number?: string | null;
 };
 
@@ -185,15 +186,16 @@ export function PublicVehicleSelector({
         </button>
 
         {selectedName && !selectedVehicle && <div className="mt-4 flex items-start gap-3 rounded-lg border p-4 text-sm font-bold" style={{ borderColor: `${config.difference_color}66`, background: `${config.difference_color}12` }}><CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" style={{ color: config.difference_color }} /><span>{selectedName}</span></div>}
-        {selectedVehicle && <VehicleResultPanel key={selectedVehicle.vehicleId} vehicle={selectedVehicle} language={language} accent={config.difference_color} dark={dark} enquiryEmail={config.enquiry_email} whatsappNumber={config.whatsapp_number} />}
+        {selectedVehicle && <VehicleResultPanel key={selectedVehicle.vehicleId} vehicle={selectedVehicle} language={language} accent={config.difference_color} dark={dark} emailEnabled={config.email_enquiries_enabled ?? demo} whatsappEnabled={Boolean(config.whatsapp_enquiries_enabled && config.whatsapp_number)} whatsappNumber={config.whatsapp_number} publicKey={publicKey} sessionToken={sessionToken} apiBaseUrl={apiBaseUrl} selection={{ make, model, year, engine }} demo={demo} />}
         {config.show_branding && <div className="mt-5 flex items-center justify-center gap-2 text-[11px] font-bold opacity-55"><ShieldCheck className="h-3.5 w-3.5" />{widgetT(language, "poweredBy")}</div>}
       </div>
     </div>
   );
 }
 
-function VehicleResultPanel({ vehicle, language, accent, dark, enquiryEmail, whatsappNumber }: { vehicle: VehicleResult; language: WidgetLanguage; accent: string; dark: boolean; enquiryEmail?: string | null; whatsappNumber?: string | null }) {
+function VehicleResultPanel({ vehicle, language, accent, dark, emailEnabled, whatsappEnabled, whatsappNumber, publicKey, sessionToken, apiBaseUrl, selection, demo }: { vehicle: VehicleResult; language: WidgetLanguage; accent: string; dark: boolean; emailEnabled: boolean; whatsappEnabled: boolean; whatsappNumber?: string | null; publicKey: string; sessionToken: string; apiBaseUrl: string; selection: { make: string; model: string; year: string; engine: string }; demo: boolean }) {
   const labels = widgetResultLabels[language];
+  const enquiry = widgetEnquiryLabels[language];
   const availableStages = ([
     { key: "stage1", label: "Stage 1", data: vehicle.stage1 },
     { key: "stage2", label: "Stage 2", data: vehicle.stage2 },
@@ -202,15 +204,59 @@ function VehicleResultPanel({ vehicle, language, accent, dark, enquiryEmail, wha
   const [activeStage, setActiveStage] = useState<"stage1" | "stage2">(initialStage);
   const selectedStage = availableStages.find((stage) => stage.key === activeStage) ?? availableStages[0];
   const extraServices = vehicle.services.filter((service) => !/^stage\s*[12]$/i.test(service.trim()));
+  const [selectedServices, setSelectedServices] = useState<string[]>([]);
+  const [contactMode, setContactMode] = useState<"closed" | "choose" | "email" | "success">("closed");
+  const [submitting, setSubmitting] = useState(false);
+  const [formError, setFormError] = useState("");
+  const [form, setForm] = useState({ name: "", email: "", phone: "", location: "", registration: "", message: "", website: "" });
+  const contactEnabled = emailEnabled || whatsappEnabled;
+
+  function toggleService(service: string) {
+    setSelectedServices((current) => current.includes(service) ? current.filter((item) => item !== service) : [...current, service]);
+  }
+
+  function openWhatsApp() {
+    if (!whatsappNumber) return;
+    const stage = selectedStage?.label ?? "Stage 1";
+    const performance = selectedStage?.data;
+    const lines = [
+      vehicle.vehicleName,
+      stage,
+      performance ? `${enquiryLabelsLine(labels.power, performance.stockHp, performance.tunedHp, "HP")}` : "",
+      performance ? `${enquiryLabelsLine(labels.torque, performance.stockNm, performance.tunedNm, "Nm")}` : "",
+      selectedServices.length ? `${labels.supportedServices}: ${selectedServices.join(", ")}` : "",
+    ].filter(Boolean);
+    const detail = { dataType: "mga-vehicle-enquiry", ...vehicle, stage, selectedServices };
+    window.dispatchEvent(new CustomEvent("mga-vehicle-enquiry", { detail }));
+    const number = whatsappNumber.replace(/\D/g, "");
+    if (number) window.open(`https://wa.me/${number}?text=${encodeURIComponent(lines.join("\n"))}`, "_blank", "noopener,noreferrer");
+  }
 
   function requestOffer() {
-    const detail = { dataType: "mga-vehicle-enquiry", ...vehicle, stage: selectedStage?.label ?? "Stage 1" };
-    window.dispatchEvent(new CustomEvent("mga-vehicle-enquiry", { detail }));
-    if (whatsappNumber) {
-      const number = whatsappNumber.replace(/\D/g, "");
-      if (number) window.open(`https://wa.me/${number}?text=${encodeURIComponent(`${vehicle.vehicleName} - ${selectedStage?.label ?? "Stage 1"}`)}`, "_blank", "noopener,noreferrer");
-    } else if (enquiryEmail) {
-      window.location.href = `mailto:${enquiryEmail}?subject=${encodeURIComponent(`${vehicle.vehicleName} - ${selectedStage?.label ?? "Stage 1"}`)}`;
+    if (emailEnabled && whatsappEnabled) setContactMode("choose");
+    else if (emailEnabled) setContactMode("email");
+    else if (whatsappEnabled) openWhatsApp();
+  }
+
+  async function submitEnquiry(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!selectedStage) return;
+    setSubmitting(true); setFormError("");
+    if (demo) {
+      setContactMode("success"); setSubmitting(false); return;
+    }
+    try {
+      const response = await fetch(`${apiBaseUrl}/api/widget/enquiry`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key: publicKey, session: sessionToken, lang: language, ...selection, stage: selectedStage.label, selectedServices, ...form }),
+      });
+      if (!response.ok) throw new Error("delivery_failed");
+      setContactMode("success");
+    } catch {
+      setFormError(enquiry.enquiryFailed);
+    } finally {
+      setSubmitting(false);
     }
   }
 
@@ -224,11 +270,22 @@ function VehicleResultPanel({ vehicle, language, accent, dark, enquiryEmail, wha
         <PerformanceRow label={labels.torque} unit="Nm" stock={selectedStage.data.stockNm} tuned={selectedStage.data.tunedNm} gain={selectedStage.data.gainNm} accent={accent} bordered />
       </div>
     </div>}
-    {extraServices.length > 0 && <div className="border-t p-4" style={{ borderColor: `${accent}33` }}><div className="mb-3 flex items-center gap-2 text-xs font-black uppercase tracking-[0.12em] opacity-60"><Wrench className="h-4 w-4" />{labels.supportedServices}</div><div className="grid gap-2">{extraServices.map((service) => <div key={service} className="flex items-center gap-2 text-sm font-bold"><CheckCircle2 className="h-4 w-4 shrink-0" style={{ color: accent }} /><span>{service}</span></div>)}</div></div>}
+    {extraServices.length > 0 && <div className="border-t p-4" style={{ borderColor: `${accent}33` }}><div className="mb-3 flex items-center gap-2 text-xs font-black uppercase tracking-[0.12em] opacity-60"><Wrench className="h-4 w-4" />{labels.supportedServices}</div><div className="grid gap-2">{extraServices.map((service) => <label key={service} className={`flex cursor-pointer items-center gap-3 rounded-md border p-3 text-sm font-bold ${selectedServices.includes(service) ? "bg-white/[0.04]" : ""}`} style={{ borderColor: selectedServices.includes(service) ? `${accent}88` : `${accent}25` }}><input type="checkbox" checked={selectedServices.includes(service)} onChange={() => toggleService(service)} className="h-4 w-4 shrink-0" style={{ accentColor: accent }} /><span>{service}</span></label>)}</div></div>}
     {vehicle.ecuFamilies.length > 0 && <div className="border-t p-4" style={{ borderColor: `${accent}33` }}><div className="mb-3 flex items-center gap-2 text-xs font-black uppercase tracking-[0.12em] opacity-60"><Cpu className="h-4 w-4" />{labels.compatibleEcu}</div><div className="text-sm font-bold leading-6 opacity-80">{vehicle.ecuFamilies.join(" · ")}</div></div>}
-    <div className="border-t p-4" style={{ borderColor: `${accent}33` }}><button type="button" onClick={requestOffer} className="flex h-12 w-full items-center justify-center gap-2 rounded-lg text-sm font-black transition hover:brightness-110" style={{ background: accent, color: dark ? "#071006" : "#ffffff" }}><MessageCircle className="h-4 w-4" />{labels.requestOffer}</button></div>
+    {contactEnabled && contactMode === "closed" && <div className="border-t p-4" style={{ borderColor: `${accent}33` }}><button type="button" onClick={requestOffer} className="flex h-12 w-full items-center justify-center gap-2 rounded-lg text-sm font-black transition hover:brightness-110" style={{ background: accent, color: dark ? "#071006" : "#ffffff" }}><MessageCircle className="h-4 w-4" />{labels.requestOffer}</button></div>}
+    {contactMode === "choose" && <div className="border-t p-4" style={{ borderColor: `${accent}33` }}><div className="mb-3 text-sm font-black">{enquiry.chooseContact}</div><div className="grid gap-2 sm:grid-cols-2"><button type="button" onClick={() => setContactMode("email")} className="flex h-12 items-center justify-center gap-2 rounded-lg border text-sm font-black" style={{ borderColor: `${accent}66` }}><Mail className="h-4 w-4" />{enquiry.continueByEmail}</button><button type="button" onClick={openWhatsApp} className="flex h-12 items-center justify-center gap-2 rounded-lg text-sm font-black" style={{ background: accent, color: dark ? "#071006" : "#ffffff" }}><MessageCircle className="h-4 w-4" />{enquiry.continueByWhatsapp}</button></div></div>}
+    {contactMode === "email" && <form onSubmit={submitEnquiry} className="relative space-y-3 border-t p-4" style={{ borderColor: `${accent}33` }}><div className="flex items-center justify-between gap-3"><div><div className="text-sm font-black">{labels.requestOffer}</div><div className="mt-1 text-[11px] opacity-50">{enquiry.requiredNote}</div></div><button type="button" onClick={() => setContactMode("closed")} className="h-9 w-9 rounded-md border text-lg" style={{ borderColor: `${accent}44` }} aria-label="Close">×</button></div><div className="grid gap-3 sm:grid-cols-2"><EnquiryInput label={enquiry.name} value={form.name} maxLength={120} onChange={(value) => setForm((current) => ({ ...current, name: value }))} required /><EnquiryInput label={enquiry.emailAddress} value={form.email} maxLength={250} onChange={(value) => setForm((current) => ({ ...current, email: value }))} type="email" required /><EnquiryInput label={enquiry.phone} value={form.phone} maxLength={40} onChange={(value) => setForm((current) => ({ ...current, phone: value }))} /><EnquiryInput label={enquiry.location} value={form.location} maxLength={160} onChange={(value) => setForm((current) => ({ ...current, location: value }))} /><div className="sm:col-span-2"><EnquiryInput label={enquiry.vehicleRegistration} value={form.registration} maxLength={80} onChange={(value) => setForm((current) => ({ ...current, registration: value }))} /></div></div><label className="block"><span className="mb-1.5 block text-[10px] font-black uppercase tracking-[0.1em] opacity-50">{enquiry.additionalInformation}</span><textarea value={form.message} onChange={(event) => setForm((current) => ({ ...current, message: event.target.value }))} rows={4} maxLength={2000} className={`w-full resize-y rounded-lg border p-3 text-sm outline-none ${dark ? "border-white/10 bg-black/30" : "border-zinc-200 bg-white"}`} /></label><input tabIndex={-1} autoComplete="off" aria-hidden="true" value={form.website} onChange={(event) => setForm((current) => ({ ...current, website: event.target.value }))} className="absolute h-0 w-0 overflow-hidden opacity-0" />{formError && <div className="text-xs font-bold text-red-400">{formError}</div>}<button type="submit" disabled={submitting} className="flex h-12 w-full items-center justify-center gap-2 rounded-lg text-sm font-black disabled:opacity-50" style={{ background: accent, color: dark ? "#071006" : "#ffffff" }}>{submitting ? <><Loader2 className="h-4 w-4 animate-spin" />{enquiry.sending}</> : <><Mail className="h-4 w-4" />{enquiry.sendEnquiry}</>}</button></form>}
+    {contactMode === "success" && <div className="border-t p-5 text-center" style={{ borderColor: `${accent}33` }}><CheckCircle2 className="mx-auto h-8 w-8" style={{ color: accent }} /><div className="mt-3 text-sm font-black">{enquiry.enquirySent}</div></div>}
     <p className="border-t p-4 text-[11px] leading-5 opacity-50" style={{ borderColor: `${accent}33` }}>{labels.technicalDataNotice}</p>
   </section>;
+}
+
+function enquiryLabelsLine(label: string, stock: number | null, tuned: number | null, unit: string) {
+  return `${label}: ${stock ?? "-"} -> ${tuned ?? "-"} ${unit}`;
+}
+
+function EnquiryInput({ label, value, onChange, type = "text", required = false, maxLength = 250 }: { label: string; value: string; onChange: (value: string) => void; type?: string; required?: boolean; maxLength?: number }) {
+  return <label className="block"><span className="mb-1.5 block text-[10px] font-black uppercase tracking-[0.1em] opacity-50">{label}{required ? " *" : ""}</span><input type={type} value={value} required={required} maxLength={maxLength} onChange={(event) => onChange(event.target.value)} className="h-11 w-full rounded-lg border bg-black/[0.04] px-3 text-sm outline-none" style={{ borderColor: "rgba(127,127,127,.25)" }} /></label>;
 }
 
 function PerformanceRow({ label, unit, stock, tuned, gain, accent, bordered = false }: { label: string; unit: string; stock: number | null; tuned: number | null; gain: number | null; accent: string; bordered?: boolean }) {

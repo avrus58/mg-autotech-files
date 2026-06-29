@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createWidgetSession } from "@/lib/widget/session";
 import { validateWidgetClient } from "@/lib/widget/validation";
 import { widgetCorsHeaders, widgetOptions, widgetUnavailable } from "@/lib/widget/http";
-import { widgetResultLabels, widgetTranslations, widgetVehicleTypeLabels } from "@/lib/i18n/widget-translations";
+import { widgetEnquiryLabels, widgetResultLabels, widgetTranslations, widgetVehicleTypeLabels } from "@/lib/i18n/widget-translations";
 
 export const dynamic = "force-dynamic";
 
@@ -45,8 +45,9 @@ export async function GET(request: NextRequest) {
     difference_color: result.client.difference_color,
     theme_mode: result.client.theme_mode,
     show_branding: result.settings.show_mg_branding && result.client.show_branding,
-    enquiry_email: result.client.enquiry_email,
-    whatsapp_number: result.client.whatsapp_number,
+    email_enquiries_enabled: result.client.email_enquiries_enabled && Boolean(result.client.enquiry_email),
+    whatsapp_enquiries_enabled: result.client.whatsapp_enquiries_enabled && Boolean(result.client.whatsapp_number),
+    whatsapp_number: result.client.whatsapp_enquiries_enabled ? result.client.whatsapp_number : null,
     language: result.language,
     direction: result.language === "ar" ? "rtl" : "ltr",
     sessionToken,
@@ -55,5 +56,6 @@ export async function GET(request: NextRequest) {
     labels: widgetTranslations[result.language],
     vehicleTypeLabel: widgetVehicleTypeLabels[result.language],
     resultLabels: widgetResultLabels[result.language],
+    enquiryLabels: widgetEnquiryLabels[result.language],
   }, { headers: widgetCorsHeaders(allowedOrigin) });
 }

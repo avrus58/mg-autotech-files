@@ -205,3 +205,49 @@ export async function sendNewWidgetSubscriberNotification({
     html: `<div style="font-family:Arial,sans-serif;background:#050505;color:#fff;padding:30px"><div style="max-width:650px;margin:auto;background:#111;border:1px solid #333;border-radius:18px;padding:26px"><p style="color:#ff4b5c;font-size:12px;font-weight:bold;letter-spacing:2px;text-transform:uppercase">MG AutoTech Vehicle Widget</p><h1>New widget subscriber</h1><p><strong>Company:</strong> ${escapeHtml(companyName)}</p><p><strong>E-mail:</strong> ${escapeHtml(customerEmail)}</p><p><strong>Allowed domain:</strong> ${escapeHtml(domain)}</p><p><strong>Stripe subscription:</strong> ${escapeHtml(subscriptionId || "pending")}</p><a href="${siteUrl}/admin/widget-clients" style="display:inline-block;margin-top:16px;background:#b1121b;color:white;text-decoration:none;padding:14px 20px;border-radius:12px;font-weight:bold">Open Widget Clients</a></div></div>`,
   });
 }
+
+export async function sendWidgetEnquiryEmail({
+  targetEmail,
+  companyName,
+  visitorName,
+  visitorEmail,
+  visitorPhone,
+  visitorLocation,
+  vehicleRegistration,
+  message,
+  vehicleName,
+  stage,
+  services,
+  performance,
+  requestDomain,
+}: {
+  targetEmail: string;
+  companyName: string;
+  visitorName: string;
+  visitorEmail: string;
+  visitorPhone?: string;
+  visitorLocation?: string;
+  vehicleRegistration?: string;
+  message?: string;
+  vehicleName: string;
+  stage: "Stage 1" | "Stage 2";
+  services: string[];
+  performance: { stockHp: number | null; tunedHp: number | null; gainHp: number | null; stockNm: number | null; tunedNm: number | null; gainNm: number | null };
+  requestDomain: string;
+}) {
+  if (!process.env.RESEND_API_KEY) throw new Error("RESEND_API_KEY is missing");
+  const serviceList = services.length
+    ? services.map((service) => `<li style="margin:0 0 7px">${escapeHtml(service)}</li>`).join("")
+    : '<li style="color:#888">No additional option selected</li>';
+  const metric = (label: string, stock: number | null, tuned: number | null, gain: number | null, unit: string) =>
+    `<tr><td style="padding:10px 0;color:#888">${label}</td><td style="padding:10px 0;text-align:right;font-weight:bold">${stock ?? "-"} &rarr; ${tuned ?? "-"} ${unit}${gain !== null ? ` <span style="color:#22c55e">(+${gain})</span>` : ""}</td></tr>`;
+
+  const result = await getResendClient().emails.send({
+    from: fromEmail,
+    to: targetEmail,
+    replyTo: visitorEmail,
+    subject: `New vehicle enquiry: ${vehicleName}`,
+    html: `<div style="font-family:Arial,sans-serif;background:#050505;color:#fff;padding:30px"><div style="max-width:680px;margin:auto;background:#111;border:1px solid #333;border-radius:14px;padding:26px"><p style="margin:0 0 10px;color:#ff4b5c;font-size:12px;font-weight:bold;letter-spacing:2px;text-transform:uppercase">${escapeHtml(companyName)} vehicle enquiry</p><h1 style="margin:0 0 8px;font-size:26px">New tuning request</h1><p style="margin:0 0 22px;color:#aaa">A visitor submitted an enquiry through your MG AutoTech vehicle widget.</p><div style="background:#080808;border:1px solid #292929;border-radius:10px;padding:18px"><h2 style="margin:0 0 6px;font-size:19px">${escapeHtml(vehicleName)}</h2><div style="color:#ff6674;font-weight:bold">${escapeHtml(stage)}</div><table style="width:100%;margin-top:12px;border-collapse:collapse">${metric("Power", performance.stockHp, performance.tunedHp, performance.gainHp, "HP")}${metric("Torque", performance.stockNm, performance.tunedNm, performance.gainNm, "Nm")}</table></div><div style="margin-top:18px;background:#080808;border:1px solid #292929;border-radius:10px;padding:18px"><h3 style="margin:0 0 12px">Selected options</h3><ul style="margin:0;padding-left:20px">${serviceList}</ul></div><div style="margin-top:18px;background:#080808;border:1px solid #292929;border-radius:10px;padding:18px"><p><strong>Name:</strong> ${formatOptional(visitorName)}</p><p><strong>E-mail:</strong> ${formatOptional(visitorEmail)}</p><p><strong>Phone:</strong> ${formatOptional(visitorPhone || "")}</p><p><strong>Location:</strong> ${formatOptional(visitorLocation || "")}</p><p><strong>Registration:</strong> ${formatOptional(vehicleRegistration || "")}</p><p style="margin-bottom:0"><strong>Message:</strong><br>${formatOptional(message || "")}</p></div><p style="margin:18px 0 0;color:#777;font-size:12px">Source domain: ${escapeHtml(requestDomain || "-")} &middot; Reply directly to this e-mail to contact the visitor.</p></div></div>`,
+  });
+  if (result.error) throw new Error(result.error.message);
+}

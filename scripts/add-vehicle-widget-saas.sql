@@ -141,6 +141,8 @@ create table if not exists public.widget_clients (
   button_text text not null default 'Show tuning options',
   enquiry_email text,
   whatsapp_number text,
+  email_enquiries_enabled boolean not null default true,
+  whatsapp_enquiries_enabled boolean not null default false,
   main_color text not null default '#1473e6',
   button_text_color text not null default '#ffffff',
   difference_color text not null default '#8cc500',
@@ -164,6 +166,8 @@ create table if not exists public.widget_clients (
 
 create index if not exists widget_clients_user_idx on public.widget_clients(user_id);
 alter table public.widget_clients add column if not exists admin_suspended boolean not null default false;
+alter table public.widget_clients add column if not exists email_enquiries_enabled boolean not null default true;
+alter table public.widget_clients add column if not exists whatsapp_enquiries_enabled boolean not null default false;
 create index if not exists widget_clients_email_idx on public.widget_clients(lower(email));
 create unique index if not exists widget_clients_subscription_idx
   on public.widget_clients(stripe_subscription_id) where stripe_subscription_id is not null;
@@ -230,6 +234,31 @@ create table if not exists public.widget_audit_logs (
 
 create index if not exists widget_audit_logs_date_idx
   on public.widget_audit_logs(client_id, created_at desc);
+
+create table if not exists public.widget_enquiries (
+  id uuid primary key default gen_random_uuid(),
+  client_id uuid not null references public.widget_clients(id) on delete cascade,
+  vehicle_id text not null,
+  vehicle_name text not null,
+  stage text not null check (stage in ('Stage 1', 'Stage 2')),
+  selected_services jsonb not null default '[]'::jsonb,
+  performance_data jsonb not null default '{}'::jsonb,
+  visitor_name text not null,
+  visitor_email text not null,
+  visitor_phone text,
+  visitor_location text,
+  vehicle_registration text,
+  message text,
+  request_domain text,
+  ip_hash text,
+  status text not null default 'new' check (status in ('new', 'delivered', 'delivery_failed')),
+  created_at timestamptz not null default now()
+);
+
+create index if not exists widget_enquiries_client_date_idx
+  on public.widget_enquiries(client_id, created_at desc);
+create index if not exists widget_enquiries_ip_date_idx
+  on public.widget_enquiries(client_id, ip_hash, created_at desc);
 
 create table if not exists public.widget_rate_limit_buckets (
   client_id uuid not null references public.widget_clients(id) on delete cascade,
@@ -299,6 +328,7 @@ alter table public.widget_access_logs enable row level security;
 alter table public.widget_domain_change_requests enable row level security;
 alter table public.widget_webhook_events enable row level security;
 alter table public.widget_audit_logs enable row level security;
+alter table public.widget_enquiries enable row level security;
 alter table public.widget_rate_limit_buckets enable row level security;
 
 drop policy if exists widget_clients_own_select on public.widget_clients;
@@ -320,6 +350,7 @@ for insert to authenticated with check (
 grant execute on function public.widget_consume_rate_limit(uuid, integer) to service_role;
 revoke all on public.widget_settings, public.widget_plans, public.widget_api_keys,
   public.widget_access_logs, public.widget_webhook_events, public.widget_audit_logs,
+  public.widget_enquiries,
   public.widget_rate_limit_buckets, public.vehicle_data_sources, public.vehicle_import_batches,
   public.vehicle_source_records, public.vehicle_duplicate_reviews from anon, authenticated;
 

@@ -17,6 +17,8 @@ const updateSchema = z.object({
   allowed_languages: z.array(z.string().max(5)).min(1).max(12).optional(),
   enquiry_email: z.union([z.string().email(), z.literal("")]).optional(),
   whatsapp_number: z.string().trim().max(30).optional(),
+  email_enquiries_enabled: z.boolean().optional(),
+  whatsapp_enquiries_enabled: z.boolean().optional(),
   show_branding: z.boolean().optional(),
 });
 
@@ -53,7 +55,12 @@ export async function GET(request: Request) {
     admin.from("widget_api_keys").select("public_key, is_active, created_at").eq("client_id", result.data.id).eq("is_active", true).order("created_at", { ascending: false }).limit(1).maybeSingle(),
     admin.from("widget_domain_change_requests").select("*").eq("client_id", result.data.id).order("created_at", { ascending: false }).limit(10),
   ]);
-  return NextResponse.json({ client: result.data, publicKey: keyResult.data?.public_key ?? null, domainRequests: domainResult.data ?? [], settings: settingsResult.settings });
+  const client = {
+    ...result.data,
+    email_enquiries_enabled: result.data.email_enquiries_enabled ?? Boolean(result.data.enquiry_email),
+    whatsapp_enquiries_enabled: result.data.whatsapp_enquiries_enabled ?? Boolean(result.data.whatsapp_number),
+  };
+  return NextResponse.json({ client, publicKey: keyResult.data?.public_key ?? null, domainRequests: domainResult.data ?? [], settings: settingsResult.settings });
 }
 
 export async function PATCH(request: Request) {
@@ -73,6 +80,8 @@ export async function PATCH(request: Request) {
   if (client.can_edit_contact) {
     if (parsed.data.enquiry_email !== undefined) update.enquiry_email = parsed.data.enquiry_email || null;
     if (parsed.data.whatsapp_number !== undefined) update.whatsapp_number = parsed.data.whatsapp_number || null;
+    if (parsed.data.email_enquiries_enabled !== undefined) update.email_enquiries_enabled = parsed.data.email_enquiries_enabled;
+    if (parsed.data.whatsapp_enquiries_enabled !== undefined) update.whatsapp_enquiries_enabled = parsed.data.whatsapp_enquiries_enabled;
   }
   if (client.can_hide_branding && parsed.data.show_branding !== undefined) update.show_branding = parsed.data.show_branding;
   const admin = getSupabaseAdmin();
@@ -81,4 +90,3 @@ export async function PATCH(request: Request) {
   await admin.from("widget_audit_logs").insert({ actor_user_id: auth.user.id, client_id: client.id, action: "customer.settings_updated", details: { fields: Object.keys(update) } });
   return NextResponse.json({ client: saved.data });
 }
-

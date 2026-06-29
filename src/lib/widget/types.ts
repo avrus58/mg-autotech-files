@@ -46,6 +46,8 @@ export type WidgetClient = {
   button_text: string;
   enquiry_email: string | null;
   whatsapp_number: string | null;
+  email_enquiries_enabled: boolean;
+  whatsapp_enquiries_enabled: boolean;
   main_color: string;
   button_text_color: string;
   difference_color: string;
