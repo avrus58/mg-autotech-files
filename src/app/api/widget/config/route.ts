@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createWidgetSession } from "@/lib/widget/session";
 import { validateWidgetClient } from "@/lib/widget/validation";
 import { widgetCorsHeaders, widgetOptions, widgetUnavailable } from "@/lib/widget/http";
-import { widgetTranslations, widgetVehicleTypeLabels } from "@/lib/i18n/widget-translations";
+import { widgetResultLabels, widgetTranslations, widgetVehicleTypeLabels } from "@/lib/i18n/widget-translations";
 
 export const dynamic = "force-dynamic";
 
@@ -52,5 +52,6 @@ export async function GET(request: NextRequest) {
     allowedOrigin,
     labels: widgetTranslations[result.language],
     vehicleTypeLabel: widgetVehicleTypeLabels[result.language],
+    resultLabels: widgetResultLabels[result.language],
   }, { headers: widgetCorsHeaders(allowedOrigin) });
 }

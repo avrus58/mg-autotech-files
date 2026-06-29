@@ -11,7 +11,19 @@ type VehicleRow = {
   engineId: string;
   fuelType?: string | null;
   ecu?: string[];
-  stage1?: { stockHp: number | null; tunedHp: number | null } | null;
+  stage1?: StageData | null;
+  stage2?: StageData | null;
+  readMethods?: string[];
+  services?: string[];
+};
+
+type StageData = {
+  stockHp: number | null;
+  tunedHp: number | null;
+  gainHp: number | null;
+  stockNm: number | null;
+  tunedNm: number | null;
+  gainNm: number | null;
 };
 
 const rows = vehicles as VehicleRow[];
@@ -62,8 +74,13 @@ export function widgetVehicle(make: string, model: string, year: string, engine:
     model: row.model,
     year: row.generation,
     engine: row.engine,
+    fuelType: row.fuelType ?? null,
     ecu: row.ecu?.slice(0, 8).join(", ") || "",
+    ecuFamilies: row.ecu?.slice(0, 8) ?? [],
     powerHp: row.stage1?.stockHp ?? null,
+    stage1: row.stage1 ?? null,
+    stage2: row.stage2 ?? null,
+    services: row.services?.slice(0, 24) ?? [],
+    readMethods: row.readMethods?.slice(0, 8) ?? [],
   };
 }
-

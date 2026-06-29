@@ -65,6 +65,31 @@ export const widgetVehicleTypeLabels: Record<WidgetLanguage, string> = {
   ru: "Легковой / Лёгкий коммерческий", ar: "سيارة / مركبة تجارية خفيفة",
 };
 
+export type WidgetResultLabels = {
+  performance: string;
+  stock: string;
+  tuned: string;
+  gain: string;
+  supportedServices: string;
+  compatibleEcu: string;
+  technicalDataNotice: string;
+};
+
+export const widgetResultLabels: Record<WidgetLanguage, WidgetResultLabels> = {
+  en: { performance: "Performance data", stock: "Stock", tuned: "Tuned", gain: "Gain", supportedServices: "Supported software options", compatibleEcu: "Compatible ECU families", technicalDataNotice: "Reference values from the selected vehicle record. Final availability is confirmed after file identification." },
+  de: { performance: "Leistungsdaten", stock: "Serie", tuned: "Optimiert", gain: "Zuwachs", supportedServices: "Unterstützte Softwareoptionen", compatibleEcu: "Kompatible Steuergeräte", technicalDataNotice: "Referenzwerte aus dem gewählten Fahrzeugdatensatz. Die endgültige Verfügbarkeit wird nach der Dateiidentifikation bestätigt." },
+  tr: { performance: "Performans verileri", stock: "Orijinal", tuned: "Yazılımlı", gain: "Kazanç", supportedServices: "Desteklenen yazılım seçenekleri", compatibleEcu: "Uyumlu ECU aileleri", technicalDataNotice: "Değerler seçilen araç kaydına aittir. Kesin uygunluk dosya tanımlamasından sonra onaylanır." },
+  fr: { performance: "Données de performance", stock: "Origine", tuned: "Optimisé", gain: "Gain", supportedServices: "Options logicielles prises en charge", compatibleEcu: "Calculateurs compatibles", technicalDataNotice: "Valeurs de référence du véhicule sélectionné. La disponibilité finale est confirmée après identification du fichier." },
+  es: { performance: "Datos de rendimiento", stock: "Serie", tuned: "Optimizado", gain: "Ganancia", supportedServices: "Opciones de software disponibles", compatibleEcu: "ECU compatibles", technicalDataNotice: "Valores de referencia del vehículo seleccionado. La disponibilidad final se confirma tras identificar el archivo." },
+  it: { performance: "Dati prestazionali", stock: "Originale", tuned: "Ottimizzato", gain: "Incremento", supportedServices: "Opzioni software supportate", compatibleEcu: "Centraline compatibili", technicalDataNotice: "Valori di riferimento del veicolo selezionato. La disponibilità finale viene confermata dopo l’identificazione del file." },
+  nl: { performance: "Prestatiegegevens", stock: "Standaard", tuned: "Geoptimaliseerd", gain: "Winst", supportedServices: "Ondersteunde softwareopties", compatibleEcu: "Compatibele ECU-families", technicalDataNotice: "Referentiewaarden uit het geselecteerde voertuigrecord. Definitieve beschikbaarheid volgt na bestandsidentificatie." },
+  pl: { performance: "Dane osiągów", stock: "Seria", tuned: "Po modyfikacji", gain: "Przyrost", supportedServices: "Obsługiwane opcje programowe", compatibleEcu: "Zgodne sterowniki ECU", technicalDataNotice: "Wartości referencyjne dla wybranego pojazdu. Ostateczna dostępność jest potwierdzana po identyfikacji pliku." },
+  ro: { performance: "Date de performanță", stock: "Standard", tuned: "Optimizat", gain: "Câștig", supportedServices: "Opțiuni software disponibile", compatibleEcu: "Familii ECU compatibile", technicalDataNotice: "Valori de referință pentru vehiculul selectat. Disponibilitatea finală se confirmă după identificarea fișierului." },
+  pt: { performance: "Dados de desempenho", stock: "Original", tuned: "Otimizado", gain: "Ganho", supportedServices: "Opções de software suportadas", compatibleEcu: "ECU compatíveis", technicalDataNotice: "Valores de referência do veículo selecionado. A disponibilidade final é confirmada após a identificação do ficheiro." },
+  ru: { performance: "Данные мощности", stock: "Стандарт", tuned: "После настройки", gain: "Прирост", supportedServices: "Поддерживаемые программные опции", compatibleEcu: "Совместимые блоки ECU", technicalDataNotice: "Справочные значения выбранного автомобиля. Окончательная доступность подтверждается после идентификации файла." },
+  ar: { performance: "بيانات الأداء", stock: "قياسي", tuned: "بعد التعديل", gain: "الزيادة", supportedServices: "خيارات البرمجة المدعومة", compatibleEcu: "وحدات ECU المتوافقة", technicalDataNotice: "قيم مرجعية لسجل المركبة المختارة. يتم تأكيد التوفر النهائي بعد تحديد ملف المركبة." },
+};
+
 export function normalizeWidgetLanguage(value: unknown, fallback: WidgetLanguage = "en") {
   const code = typeof value === "string" ? value.toLowerCase().split(/[-_]/)[0] : "";
   return isWidgetLanguage(code) ? code : fallback;
