@@ -32,7 +32,7 @@ const en: WidgetDictionary = {
   selectModel: "Select model", selectYear: "Select year / generation", selectEngine: "Select engine",
   searchPlaceholder: "Search vehicles", noResults: "No results", loading: "Loading...",
   unavailable: "Vehicle selector temporarily unavailable.", poweredBy: "Powered by MG AutoTech",
-  startSubscription: "Start for EUR 4.99/month", monthlyPrice: "per month", cancelAnytime: "Cancel anytime",
+  startSubscription: "Start for €4.99 / month", monthlyPrice: "per month", cancelAnytime: "Cancel anytime",
   easyIntegration: "Easy script or iframe integration", languagesIncluded: "12 languages included",
   showTuningOptions: "Show tuning options", contactSupport: "Contact support", manageBilling: "Manage billing",
   domainLocked: "Domain locked", domainChangeRequest: "Request domain change",

@@ -20,6 +20,13 @@ import {
   Zap,
 } from "lucide-react";
 
+function getRequestedRedirect() {
+  if (typeof window === "undefined") return null;
+
+  const value = new URLSearchParams(window.location.search).get("redirect");
+  return value?.startsWith("/") && !value.startsWith("//") ? value : null;
+}
+
 export default function LoginPage() {
   const router = useRouter();
 
@@ -28,10 +35,10 @@ export default function LoginPage() {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
-  const [checkingAuth, setCheckingAuth] = useState(true);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
+    const requestedRedirect = getRequestedRedirect();
     const queryMessage = params.get("verify_email") === "1"
       ? "Please verify your e-mail address before accessing your account."
       : params.get("reset") === "success"
@@ -48,17 +55,15 @@ export default function LoginPage() {
 
       if (!user) {
         setMessage(queryMessage);
-        setCheckingAuth(false);
         return;
       }
 
       if (await signOutIfEmailUnverified(user)) {
         setMessage("Please verify your e-mail address before accessing your account.");
-        setCheckingAuth(false);
         return;
       }
 
-      router.replace(await getAuthenticatedHome(user.id));
+      router.replace(requestedRedirect ?? (await getAuthenticatedHome(user.id)));
       router.refresh();
     };
 
@@ -99,7 +104,7 @@ export default function LoginPage() {
     }
 
     setLoading(false);
-    router.replace(await getAuthenticatedHome(data.user!.id));
+    router.replace(getRequestedRedirect() ?? (await getAuthenticatedHome(data.user!.id)));
     router.refresh();
   };
 
@@ -112,7 +117,9 @@ export default function LoginPage() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: getAuthRedirect("/auth/callback?next=/dashboard"),
+        redirectTo: getAuthRedirect(
+          `/auth/callback?next=${encodeURIComponent(getRequestedRedirect() ?? "/dashboard")}`
+        ),
       },
     });
 
@@ -121,14 +128,6 @@ export default function LoginPage() {
       setGoogleLoading(false);
     }
   };
-
-  if (checkingAuth) {
-    return (
-      <main className="flex min-h-screen items-center justify-center bg-[#050505] text-white">
-        <Loader2 className="h-8 w-8 animate-spin text-red-500" aria-label="Checking account" />
-      </main>
-    );
-  }
 
   return (
     <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#050505] px-4 py-10 text-white">

@@ -18,7 +18,6 @@ export default function robots(): MetadataRoute.Robots {
           "/datenschutz",
           "/impressum",
           "/widerruf",
-          "/av-vertrag",
           "/widget",
           "/tools",
           "/tools/torque-power-calculator",

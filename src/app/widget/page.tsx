@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Vehicle Selector Widget for Automotive Websites",
-  description: "Embed a hosted, multilingual vehicle selector on your tuning or workshop website for EUR 4.99 per month.",
+  description: "Embed a hosted, multilingual vehicle selector on your tuning or workshop website for €4.99 / month.",
   alternates: { canonical: "/widget" },
 };
 

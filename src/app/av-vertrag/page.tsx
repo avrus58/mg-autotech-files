@@ -1,7 +1,56 @@
+import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowLeft, FileCheck2, ShieldCheck } from "lucide-react";
+import { ArrowLeft, FileCheck2, Mail, ShieldCheck } from "lucide-react";
 
-export default function DataProcessingAgreementPage() {
-  return <main className="min-h-screen bg-[#050505] text-white"><header className="border-b border-white/10"><div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-5"><div className="flex items-center gap-3 font-black"><ShieldCheck className="h-7 w-7 text-red-500" />MG <span className="text-red-500">AUTOTECH</span></div><Link href="/" className="rounded-lg border border-white/10 px-4 py-3 text-sm font-black"><ArrowLeft className="mr-2 inline h-4 w-4" />Startseite</Link></div></header><section className="mx-auto max-w-4xl px-4 py-12"><FileCheck2 className="h-10 w-10 text-red-500" /><h1 className="mt-5 text-4xl font-black sm:text-5xl">Auftragsverarbeitung</h1><div className="mt-7 border border-amber-700/40 bg-amber-950/20 p-5 text-sm leading-7 text-amber-100">Entwurf: Diese Vereinbarung muss vor Verwendung als verbindlicher AV-Vertrag rechtlich geprüft, mit den vollständigen Unternehmensdaten ergänzt und zwischen den Parteien abgeschlossen werden.</div><div className="mt-8 space-y-6 text-sm leading-7 text-zinc-300"><Section title="Gegenstand und Dauer">MG AutoTech stellt dem Auftraggeber das gehostete Vehicle Selector Widget und die damit verbundenen technischen Betriebs-, Sicherheits- und Zugriffsprotokolle für die Dauer des Widget-Abonnements bereit.</Section><Section title="Art und Zweck">Verarbeitet werden technische Nutzungsdaten zur Auslieferung des Widgets, zur Domainprüfung, zur Fehleranalyse, zur Missbrauchsabwehr und zur Durchsetzung vereinbarter Nutzungslimits.</Section><Section title="Daten und betroffene Personen">Mögliche Datenkategorien sind Domain, Zeitstempel, Sprache, Browserkennung, gehashte IP-Adresse und ausgewählte Fahrzeugdaten. Betroffen sind Besucher der Website des Auftraggebers.</Section><Section title="Technische und organisatorische Maßnahmen">Domain-Whitelist, serverseitige Statusprüfung, kurzlebige Widget-Sitzungen, Rate Limits, rollenbasierte Administration, Protokollierung blockierter Zugriffe und minimierte Datenausgabe.</Section><Section title="Unterauftragnehmer und Löschung">Hosting-, Datenbank-, E-Mail- und Zahlungsanbieter sind entsprechend der tatsächlich eingesetzten Dienste in der finalen Vereinbarung zu benennen. Lösch- und Aufbewahrungsfristen sind vor Vertragsabschluss verbindlich festzulegen.</Section></div></section></main>;
+export const metadata: Metadata = {
+  title: "Auftragsverarbeitung",
+  description: "Informationen zur Auftragsverarbeitung für gewerbliche MG AutoTech Widget-Kunden.",
+  robots: { index: false, follow: false },
+};
+
+export default function ProcessingAgreementPage() {
+  return (
+    <div data-no-translate className="min-h-screen bg-[#050505] text-white">
+      <header className="border-b border-white/10 bg-black/90">
+        <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-4">
+          <div className="flex items-center gap-3 font-black">
+            <ShieldCheck className="h-7 w-7 text-red-500" /> MG <span className="text-red-500">AUTOTECH</span>
+          </div>
+          <Link href="/datenschutz" className="inline-flex h-11 items-center rounded-lg border border-white/10 px-4 text-sm font-black">
+            <ArrowLeft className="mr-2 h-4 w-4" /> Datenschutz
+          </Link>
+        </div>
+      </header>
+
+      <main className="mx-auto max-w-5xl px-4 py-12 sm:py-16">
+        <FileCheck2 className="h-10 w-10 text-red-500" />
+        <div className="mt-5 text-xs font-black uppercase tracking-[0.18em] text-red-400">B2B Datenschutz</div>
+        <h1 className="mt-3 text-4xl font-black sm:text-6xl">Auftragsverarbeitung nach Art. 28 DSGVO</h1>
+        <p className="mt-6 max-w-3xl text-base leading-8 text-zinc-400">Soweit MG AutoTech bei der Bereitstellung des Vehicle Selector Widgets personenbezogene Daten im Auftrag eines gewerblichen Kunden verarbeitet, stellen wir eine auf den Kunden und den tatsächlichen Einsatz abgestimmte Vereinbarung zur Auftragsverarbeitung bereit.</p>
+
+        <section className="mt-10 grid gap-px overflow-hidden border border-white/10 bg-white/10 md:grid-cols-3">
+          <Info title="Gegenstand" text="Gehostetes Widget, Domainprüfung, technische Bereitstellung und Sicherheitsprotokolle." />
+          <Info title="Schutzmaßnahmen" text="Zugriffskontrolle, verschlüsselte Übertragung, Rollenmodell, Limits und Protokollierung." />
+          <Info title="Unterauftragnehmer" text="Die eingesetzten Hosting-, Datenbank- und Kommunikationsanbieter werden im Vertrag aufgeführt." />
+        </section>
+
+        <section className="mt-10 border-y border-white/10 py-8">
+          <h2 className="text-2xl font-black">AV-Vereinbarung anfordern</h2>
+          <p className="mt-3 max-w-3xl leading-7 text-zinc-400">Senden Sie Firmenname, Anschrift, Ansprechpartner und die für das Widget vorgesehene Domain. Wir stellen die Vereinbarung zur Prüfung und zum Abschluss bereit.</p>
+          <a href="mailto:info@mgautotech.de?subject=AV-Vertrag%20Vehicle%20Selector%20Widget" className="mt-6 inline-flex h-12 items-center rounded-lg bg-[#b1121b] px-5 text-sm font-black">
+            <Mail className="mr-2 h-4 w-4" /> AV-Vertrag anfordern
+          </a>
+        </section>
+      </main>
+    </div>
+  );
 }
-function Section({ title, children }: { title: string; children: React.ReactNode }) { return <section className="border-t border-white/10 pt-5"><h2 className="text-xl font-black text-white">{title}</h2><p className="mt-3">{children}</p></section>; }
+
+function Info({ title, text }: { title: string; text: string }) {
+  return (
+    <div className="bg-[#080808] p-5 sm:p-6">
+      <h2 className="font-black">{title}</h2>
+      <p className="mt-2 text-sm leading-6 text-zinc-500">{text}</p>
+    </div>
+  );
+}

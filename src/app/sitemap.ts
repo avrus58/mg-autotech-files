@@ -81,12 +81,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.85,
     },
     {
-      url: `${siteUrl}/av-vertrag`,
-      lastModified,
-      changeFrequency: "yearly",
-      priority: 0.2,
-    },
-    {
       url: `${siteUrl}/agb`,
       lastModified,
       changeFrequency: "yearly",

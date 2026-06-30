@@ -1,79 +1,69 @@
-"use client";
+import type { Metadata } from "next";
+import { LegalPageShell, LegalSection } from "@/components/legal/LegalPageShell";
+import { absoluteUrl } from "@/lib/seo";
 
-import Link from "next/link";
-import { ArrowLeft, Cpu, ShieldCheck } from "lucide-react";
-import { Footer } from "@/components/Footer";
-import { OnlineStatus } from "@/components/OnlineStatus";
+export const metadata: Metadata = {
+  title: "Allgemeine Geschäftsbedingungen",
+  description: "Allgemeine Geschäftsbedingungen der MG AutoTech File-Service-Plattform.",
+  alternates: { canonical: absoluteUrl("/agb") },
+};
 
-export default function Page() {
+export default function AgbPage() {
   return (
-    <main className="min-h-screen bg-[#050505] text-white">
-      <div className="fixed inset-0 -z-10 bg-[radial-gradient(circle_at_20%_0%,rgba(160,18,28,0.24),transparent_32%),linear-gradient(135deg,#050505,#0d0d0f_48%,#160608)]" />
+    <LegalPageShell eyebrow="Vertragsbedingungen" title="Allgemeine Geschäftsbedingungen">
+      <LegalSection title="1. Anbieter und Geltungsbereich">
+        <p>Diese Allgemeinen Geschäftsbedingungen gelten für Verträge über die MG AutoTech File-Service-Plattform zwischen MG AutoTech, Inhaber Melih Gökkaya, Böckinger Str. 32, 70437 Stuttgart, und dem jeweiligen Kunden.</p>
+        <p>Das Vehicle Selector Widget wird ausschließlich Unternehmern, Werkstätten und sonstigen gewerblichen Kunden angeboten. Für Verbraucher gelten ergänzend die zwingenden gesetzlichen Verbraucherschutzvorschriften.</p>
+      </LegalSection>
 
-      <header className="border-b border-white/10 bg-black/80 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-5">
-          <Link href="/" className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-red-800/50 bg-[#111]">
-              <Cpu className="h-7 w-7 text-red-600" />
-            </div>
-            <div>
-              <div className="text-xl font-black tracking-wide">
-                MG <span className="text-red-600">AUTOTECH</span>
-              </div>
-              <div className="text-xs text-zinc-400">Legal Information</div>
-            </div>
-          </Link>
+      <LegalSection title="2. Kundenkonto und Zugang">
+        <p>Für portalbasierte Leistungen ist ein Kundenkonto erforderlich. Der Kunde muss vollständige und zutreffende Angaben machen, Zugangsdaten vertraulich behandeln und MG AutoTech bei einem vermuteten Missbrauch unverzüglich informieren.</p>
+        <p>MG AutoTech darf Zugänge vorübergehend sperren, wenn konkrete Anhaltspunkte für Missbrauch, Zahlungsstörungen, unzulässige Nutzung oder eine Gefährdung der Plattform bestehen.</p>
+      </LegalSection>
 
-          <Link
-            href="/"
-            className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-black text-white transition hover:bg-white/10"
-          >
-            <ArrowLeft className="mr-2 inline h-4 w-4" />
-            Back Home
-          </Link>
-        </div>
-      </header>
+      <LegalSection title="3. Vertragsschluss und Leistungsumfang">
+        <p>Die Darstellung von Leistungen und Preisen ist noch kein verbindliches Angebot. Ein Vertrag kommt zustande, wenn der Kunde eine Bestellung oder Dateianfrage absendet und MG AutoTech diese annimmt oder mit der Ausführung beginnt.</p>
+        <p>Der konkrete Leistungsumfang ergibt sich aus der gewählten Serviceart, den übermittelten Fahrzeug- und Steuergerätedaten, der Originaldatei, den Auftragsnotizen und gegebenenfalls ergänzenden Vereinbarungen im Kundenportal.</p>
+      </LegalSection>
 
-      <section className="mx-auto max-w-4xl px-4 py-12">
-        <div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 md:p-10">
-          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-red-800/50 bg-red-950/25 px-4 py-2 text-sm font-semibold text-red-100">
-            <ShieldCheck className="h-4 w-4 text-red-500" />
-            Allgemeine Geschäftsbedingungen
-          </div>
+      <LegalSection title="4. Mitwirkungspflichten des Kunden">
+        <p>Der Kunde stellt korrekte Fahrzeug-, Motor-, ECU-/TCU-, Hardware-, Software- und Lesemethodendaten sowie eine technisch geeignete Originaldatei bereit. Er prüft vor und nach der Verwendung den technischen Zustand des Fahrzeugs und beachtet Flash-Anweisungen, Spannungsversorgung, Checksummen und erforderliche Backups.</p>
+        <p>Der Kunde bestätigt, dass er zur Übermittlung und Bearbeitung der hochgeladenen Daten und Dateien berechtigt ist. Fehlerhafte oder unvollständige Angaben können zu Rückfragen, Verzögerungen oder Ablehnung des Auftrags führen.</p>
+      </LegalSection>
 
-          <h1 className="text-4xl font-black md:text-6xl">AGB</h1>
+      <LegalSection title="5. Preise, Credits und Zahlung">
+        <p>Es gelten die im Portal vor Abschluss des jeweiligen Vorgangs angezeigten Preise und Credit-Werte. Credits dienen als plattforminternes Abrechnungsguthaben. Zahlungsarten und deren Verfügbarkeit werden im Checkout angezeigt.</p>
+        <p>Eine Auszahlung nicht verbrauchter Credits ist ausgeschlossen, soweit keine zwingenden gesetzlichen Ansprüche bestehen. Gesetzliche Erstattungs-, Gewährleistungs- und Widerrufsrechte bleiben unberührt.</p>
+      </LegalSection>
 
-          <div className="mt-8 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-5 text-sm leading-7 text-amber-100">
-            Hinweis: Diese Seite ist ein technischer Platzhalter / Entwurf und
-            sollte vor Veröffentlichung von einem geeigneten Rechtsberater oder
-            Impressum-/Datenschutz-Generator geprüft und finalisiert werden.
-          </div>
+      <LegalSection title="6. Bearbeitung, Lieferung und Revision">
+        <p>Angegebene Bearbeitungszeiten sind unverbindliche Erfahrungswerte. Komplexität, Datenqualität, ECU-/TCU-Typ, Auslastung und notwendige Rückfragen können die Bearbeitungszeit verändern.</p>
+        <p>Fertige Dateien werden über den geschützten Auftragsbereich bereitgestellt. Der Kunde muss die Datei dem richtigen Auftrag und Fahrzeug zuordnen und vor Verwendung die angezeigten Hinweise kontrollieren. Revisionen werden im Rahmen des ursprünglichen Auftrags geprüft; wesentliche Änderungen des Leistungsumfangs können einen neuen Auftrag erfordern.</p>
+      </LegalSection>
 
-          <div className="mt-8 text-sm md:text-base">
-              <p className="mt-4 leading-8 text-zinc-300">Diese Allgemeinen Geschäftsbedingungen regeln die Nutzung des MG AutoTech File Service Portals und die Beauftragung von Softwaredienstleistungen.</p>
-              <p className="mt-4 leading-8 text-zinc-300">Der Kunde ist verpflichtet, korrekte Fahrzeug-, ECU-/TCU- und Dateiinformationen bereitzustellen. Fehlerhafte Angaben können die Bearbeitung verzögern oder unmöglich machen.</p>
-              <p className="mt-4 leading-8 text-zinc-300">Credits werden für Datei-Anfragen verwendet. Die benötigte Credit-Anzahl wird vor dem Absenden der Anfrage angezeigt.</p>
-              <p className="mt-4 leading-8 text-zinc-300">Softwarelösungen werden nach Kundenwunsch erstellt. Der Kunde ist selbst für die rechtmäßige Nutzung und die Einhaltung gesetzlicher Vorschriften verantwortlich.</p>
-              <p className="mt-4 leading-8 text-zinc-300">Bestimmte Lösungen können ausschließlich für Motorsport, Export, Prüfstand, Diagnosezwecke oder Offroad-Nutzung bestimmt sein.</p>
+      <LegalSection title="7. Zulässige Nutzung und Straßenverkehr">
+        <p>Der Kunde ist für die rechtmäßige Verwendung der beauftragten Softwareänderung im jeweiligen Land und Einsatzzweck verantwortlich. Änderungen an abgas-, sicherheits- oder zulassungsrelevanten Systemen können im öffentlichen Straßenverkehr unzulässig sein und Betriebserlaubnis, Versicherungsschutz, Garantie oder Gewährleistung beeinflussen.</p>
+        <p>Als Motorsport-, Prüfstands-, Export-, Diagnose- oder Offroad-Lösung bezeichnete Leistungen dürfen nur im rechtlich zulässigen Rahmen verwendet werden.</p>
+      </LegalSection>
 
-              <div className="mt-6 grid gap-3">
-                <div className="rounded-2xl border border-white/10 bg-black/25 p-4 text-sm text-zinc-300">Keine Garantie für Eignung bei falschen Fahrzeugdaten oder fehlerhaften Originaldateien.</div>
-                <div className="rounded-2xl border border-white/10 bg-black/25 p-4 text-sm text-zinc-300">Bearbeitungszeiten sind Richtwerte und können je nach Datei, ECU, Service und Arbeitsaufwand variieren.</div>
-                <div className="rounded-2xl border border-white/10 bg-black/25 p-4 text-sm text-zinc-300">Revisionen können geprüft werden, sofern Originalauftrag und technische Grundlage dies zulassen.</div>
-              </div>
+      <LegalSection title="8. Vehicle Selector Widget (B2B)">
+        <p>Das Widget ist ein gehosteter Softwaredienst für eine freigegebene Website-Domain. Abonnement, Preis, Leistungsgrenzen und Abrechnungsintervall werden vor Vertragsschluss angezeigt. Das Abonnement läuft bis zur Kündigung über den bereitgestellten Abrechnungsbereich weiter.</p>
+        <p>Automatisierter Datenexport, Scraping, systematisches Kopieren, Weiterverkauf der Daten, Umgehung von Nutzungslimits und Einsatz auf nicht freigegebenen Domains sind untersagt. Domainwechsel bedürfen einer Freigabe. Datenabdeckung und einzelne Fahrzeugangaben können sich durch Wartung und Datenbankupdates ändern.</p>
+      </LegalSection>
 
-              <h2 className="mt-10 text-2xl font-black">Vehicle Selector Widget (B2B)</h2>
-              <p className="mt-4 leading-8 text-zinc-300">Das MG AutoTech Vehicle Selector Widget ist ein gehosteter Softwaredienst für Unternehmer, Werkstätten und gewerbliche Automotive-Websites. Der Starter-Tarif wird monatlich abgerechnet und ist auf eine freigegebene Website-Domain beschränkt.</p>
-              <p className="mt-4 leading-8 text-zinc-300">Das Abonnement verlängert sich monatlich, bis es über den Stripe-Kundenbereich gekündigt wird. Bei fehlgeschlagenen, überfälligen oder stornierten Zahlungen kann der Zugriff automatisch und ohne gesonderte technische Übergangsfrist deaktiviert werden.</p>
-              <p className="mt-4 leading-8 text-zinc-300">Der öffentliche Einbettungsschlüssel ist kein Zugang zur vollständigen Datenbank. Automatisierter Export, Scraping, systematisches Kopieren, Weiterverkauf der Daten oder die Nutzung auf nicht freigegebenen Domains ist untersagt. MG AutoTech darf Schlüssel sperren, Limits anwenden und missbräuchliche Zugriffe protokollieren.</p>
-              <p className="mt-4 leading-8 text-zinc-300">Domainwechsel bedürfen einer Freigabe. Verfügbarkeit, Datenabdeckung und einzelne Fahrzeugangaben können sich durch Wartung oder Datenbankupdates ändern. Eine unterbrechungsfreie Verfügbarkeit oder bestimmte Datenabdeckung wird nicht garantiert.</p>
-              <p className="mt-4 leading-8 text-zinc-300">Der Kunde bleibt für die rechtmäßige Einbindung, eigene Kontaktformulare, Datenschutzhinweise und die Verwendung der ausgewählten Fahrzeugdaten auf seiner Website verantwortlich.</p>
-          </div>
-        </div>
-      </section>
+      <LegalSection title="9. Verfügbarkeit und Wartung">
+        <p>MG AutoTech bemüht sich um eine hohe Verfügbarkeit, schuldet jedoch keine ununterbrochene Erreichbarkeit. Wartung, Sicherheitsmaßnahmen, Störungen von Telekommunikations- oder Drittanbietern sowie Ereignisse außerhalb des Einflussbereichs können zu vorübergehenden Einschränkungen führen.</p>
+      </LegalSection>
 
-      <Footer />
-      <OnlineStatus />
-    </main>
+      <LegalSection title="10. Mängelrechte und Haftung">
+        <p>Die gesetzlichen Mängelrechte bleiben unberührt. MG AutoTech haftet unbeschränkt bei Vorsatz, grober Fahrlässigkeit, Verletzung von Leben, Körper oder Gesundheit sowie in Fällen zwingender gesetzlicher Haftung.</p>
+        <p>Bei leicht fahrlässiger Verletzung wesentlicher Vertragspflichten ist die Haftung auf den vertragstypischen, vorhersehbaren Schaden begrenzt. Eine Haftung für Schäden aufgrund falscher Kundendaten, ungeeigneter Hardware, fehlerhafter Flash-Vorgänge außerhalb des Einflussbereichs von MG AutoTech oder unzulässiger Nutzung besteht nur nach Maßgabe der gesetzlichen Vorschriften.</p>
+      </LegalSection>
+
+      <LegalSection title="11. Schlussbestimmungen">
+        <p>Es gilt deutsches Recht unter Ausschluss des UN-Kaufrechts. Für Kaufleute, juristische Personen des öffentlichen Rechts und öffentlich-rechtliche Sondervermögen ist Stuttgart Gerichtsstand, soweit gesetzlich zulässig.</p>
+        <p>Sollte eine einzelne Bestimmung unwirksam sein oder werden, bleibt die Wirksamkeit der übrigen Bestimmungen unberührt.</p>
+      </LegalSection>
+    </LegalPageShell>
   );
 }

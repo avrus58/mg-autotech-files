@@ -33,7 +33,6 @@ const legal = [
   { label: "Datenschutz", href: "/datenschutz" },
   { label: "AGB", href: "/agb" },
   { label: "Widerruf", href: "/widerruf" },
-  { label: "AV-Vertrag", href: "/av-vertrag" },
 ];
 
 const whatsappNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER?.replace(/\D/g, "");

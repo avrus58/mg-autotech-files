@@ -1,78 +1,68 @@
-"use client";
+import type { Metadata } from "next";
+import { LegalPageShell, LegalSection } from "@/components/legal/LegalPageShell";
+import { absoluteUrl } from "@/lib/seo";
 
-import Link from "next/link";
-import { ArrowLeft, Cpu, ShieldCheck } from "lucide-react";
-import { Footer } from "@/components/Footer";
-import { OnlineStatus } from "@/components/OnlineStatus";
+export const metadata: Metadata = {
+  title: "Datenschutzerklärung",
+  description: "Datenschutzerklärung für die MG AutoTech File-Service-Plattform und das Vehicle Selector Widget.",
+  alternates: { canonical: absoluteUrl("/datenschutz") },
+};
 
-export default function Page() {
+export default function DatenschutzPage() {
   return (
-    <main className="min-h-screen bg-[#050505] text-white">
-      <div className="fixed inset-0 -z-10 bg-[radial-gradient(circle_at_20%_0%,rgba(160,18,28,0.24),transparent_32%),linear-gradient(135deg,#050505,#0d0d0f_48%,#160608)]" />
+    <LegalPageShell eyebrow="Datenschutz nach DSGVO" title="Datenschutzerklärung">
+      <LegalSection title="1. Verantwortlicher">
+        <p><strong className="text-white">MG AutoTech, Inhaber Melih Gökkaya</strong><br />Böckinger Str. 32, 70437 Stuttgart, Deutschland<br />E-Mail: <a className="font-bold text-white hover:text-red-400" href="mailto:info@mgautotech.de">info@mgautotech.de</a><br />Telefon: <a className="font-bold text-white hover:text-red-400" href="tel:+4915151561670">+49 151 51561670</a></p>
+      </LegalSection>
 
-      <header className="border-b border-white/10 bg-black/80 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-5">
-          <Link href="/" className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-red-800/50 bg-[#111]">
-              <Cpu className="h-7 w-7 text-red-600" />
-            </div>
-            <div>
-              <div className="text-xl font-black tracking-wide">
-                MG <span className="text-red-600">AUTOTECH</span>
-              </div>
-              <div className="text-xs text-zinc-400">Legal Information</div>
-            </div>
-          </Link>
+      <LegalSection title="2. Verarbeitete Daten und Zwecke">
+        <p>Wir verarbeiten Stammdaten, Kontaktdaten, Kunden- und Kontokennungen, Fahrzeug- und Steuergerätedaten, Bestell- und Servicedaten, Nachrichten, Zahlungsstatus, hochgeladene Originaldateien, ausgelieferte Dateiversionen sowie technische Sicherheits- und Zugriffsprotokolle.</p>
+        <p>Die Verarbeitung erfolgt zur Bereitstellung des Kundenkontos, zur Durchführung von File-Service-Aufträgen, zur Abrechnung, zur Kommunikation, zur technischen Absicherung des Portals, zur Fehleranalyse und zur Erfüllung gesetzlicher Aufbewahrungspflichten.</p>
+      </LegalSection>
 
-          <Link
-            href="/"
-            className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-black text-white transition hover:bg-white/10"
-          >
-            <ArrowLeft className="mr-2 inline h-4 w-4" />
-            Back Home
-          </Link>
-        </div>
-      </header>
+      <LegalSection title="3. Rechtsgrundlagen">
+        <p>Rechtsgrundlagen sind insbesondere Art. 6 Abs. 1 lit. b DSGVO für Vertrag und vorvertragliche Maßnahmen, Art. 6 Abs. 1 lit. c DSGVO für rechtliche Pflichten, Art. 6 Abs. 1 lit. f DSGVO für IT-Sicherheit, Missbrauchsprävention und die zuverlässige Bereitstellung des Dienstes sowie Art. 6 Abs. 1 lit. a DSGVO, soweit eine Einwilligung eingeholt wird.</p>
+      </LegalSection>
 
-      <section className="mx-auto max-w-4xl px-4 py-12">
-        <div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 md:p-10">
-          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-red-800/50 bg-red-950/25 px-4 py-2 text-sm font-semibold text-red-100">
-            <ShieldCheck className="h-4 w-4 text-red-500" />
-            Privacy Policy
-          </div>
+      <LegalSection title="4. Hosting, Datenbank und Dateispeicher">
+        <p>Die Website wird über <strong className="text-white">Vercel</strong> bereitgestellt. Kundenkonten, Authentifizierung, Datenbankfunktionen und Dateispeicher werden über <strong className="text-white">Supabase</strong> verarbeitet. Dabei können technische Verbindungsdaten, insbesondere IP-Adresse, Zeitpunkt, angefragte Ressource, Browserinformationen und Sicherheitsereignisse, verarbeitet werden.</p>
+        <p>Die Einbindung dieser Anbieter erfolgt auf Grundlage von Verträgen zur Auftragsverarbeitung und den jeweils anwendbaren Datenschutzgarantien. Soweit Daten außerhalb des Europäischen Wirtschaftsraums verarbeitet werden, erfolgt dies auf Grundlage eines Angemessenheitsbeschlusses oder geeigneter Garantien, insbesondere Standardvertragsklauseln.</p>
+      </LegalSection>
 
-          <h1 className="text-4xl font-black md:text-6xl">Datenschutz</h1>
+      <LegalSection title="5. E-Mail und Support">
+        <p>Transaktions- und Benachrichtigungs-E-Mails werden über <strong className="text-white">Resend</strong> versendet. Dabei werden insbesondere Empfängeradresse, Nachrichteninhalt, Versandstatus und technische Zustellinformationen verarbeitet. Direkte Supportanfragen werden zur Bearbeitung und Dokumentation des Anliegens gespeichert.</p>
+      </LegalSection>
 
-          <div className="mt-8 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-5 text-sm leading-7 text-amber-100">
-            Hinweis: Diese Seite ist ein technischer Platzhalter / Entwurf und
-            sollte vor Veröffentlichung von einem geeigneten Rechtsberater oder
-            Impressum-/Datenschutz-Generator geprüft und finalisiert werden.
-          </div>
+      <LegalSection title="6. Zahlungen">
+        <p>Je nach ausgewählter Zahlungsart werden Zahlungen über <strong className="text-white">Stripe</strong>, <strong className="text-white">PayPal</strong> oder <strong className="text-white">SumUp</strong> abgewickelt. Diese Anbieter verarbeiten Zahlungs- und Transaktionsdaten in eigener datenschutzrechtlicher Verantwortung. MG AutoTech erhält grundsätzlich nur die für Zuordnung, Bestätigung, Buchhaltung und Betrugsprävention erforderlichen Zahlungsstatus- und Referenzdaten. Banküberweisungen werden anhand der übermittelten Bank- und Verwendungszweckdaten zugeordnet.</p>
+      </LegalSection>
 
-          <div className="mt-8 text-sm md:text-base">
-              <p className="mt-4 leading-8 text-zinc-300">Wir verarbeiten personenbezogene Daten ausschließlich im Rahmen der Nutzung unseres Kundenportals, der Bearbeitung von Datei-Anfragen, der Zahlungsabwicklung und der Kommunikation mit Kunden.</p>
-              <p className="mt-4 leading-8 text-zinc-300">Zu den verarbeiteten Daten können Name, E-Mail-Adresse, Fahrzeugdaten, Bestelldaten, Zahlungsstatus, hochgeladene Dateien und technische Logdaten gehören.</p>
-              <p className="mt-4 leading-8 text-zinc-300">Zahlungen werden über externe Zahlungsdienstleister wie Stripe verarbeitet. Zahlungsdaten werden dabei direkt vom Zahlungsdienstleister verarbeitet.</p>
-              <p className="mt-4 leading-8 text-zinc-300">Kundendaten und Dateien werden über technische Dienstleister wie Hosting-, Datenbank- und Storage-Anbieter verarbeitet.</p>
-              <p className="mt-4 leading-8 text-zinc-300">Diese Datenschutzerklärung muss vor Live-Betrieb vollständig an die tatsächlichen Anbieter, Prozesse, Speicherfristen und Rechtsgrundlagen angepasst werden.</p>
+      <LegalSection title="7. Anmeldung und Google Login">
+        <p>Für die Anmeldung werden technisch erforderliche Authentifizierungsinformationen und Sitzungscookies verwendet. Wenn Sie freiwillig „Mit Google fortfahren“ auswählen, werden Sie zu Google weitergeleitet; dabei verarbeitet Google die für die Anmeldung erforderlichen Daten. MG AutoTech erhält die von Google freigegebenen Basisprofildaten wie E-Mail-Adresse und Name.</p>
+      </LegalSection>
 
-              <div className="mt-6 grid gap-3">
-                <div className="rounded-2xl border border-white/10 bg-black/25 p-4 text-sm text-zinc-300">Zweck: Kundenkonto, File-Service-Bearbeitung, Zahlungsbestätigung, Support und Sicherheit.</div>
-                <div className="rounded-2xl border border-white/10 bg-black/25 p-4 text-sm text-zinc-300">Rechtsgrundlagen: Vertragserfüllung, berechtigtes Interesse und gesetzliche Pflichten.</div>
-                <div className="rounded-2xl border border-white/10 bg-black/25 p-4 text-sm text-zinc-300">Betroffene Personen können Auskunft, Berichtigung, Löschung und Einschränkung der Verarbeitung verlangen.</div>
-              </div>
+      <LegalSection title="8. Cookies und lokaler Speicher">
+        <p>Wir verwenden technisch erforderliche Cookies und lokalen Browserspeicher für Anmeldung, Sitzungsverwaltung, Spracheinstellung und die vom Nutzer gewählte Benachrichtigungseinstellung. Diese Funktionen sind für Sicherheit oder ausdrücklich angeforderte Komfortfunktionen erforderlich. Auf der File-Service-Plattform wird derzeit kein eigenes Werbe- oder Reichweiten-Tracking eingesetzt.</p>
+      </LegalSection>
 
-              <h2 className="mt-10 text-2xl font-black">Datenschutz beim Vehicle Selector Widget</h2>
-              <p className="mt-4 leading-8 text-zinc-300">Bei Aufruf eines eingebetteten Widgets werden zur Bereitstellung und Missbrauchsabwehr technische Zugriffsdaten verarbeitet. Dazu gehören Zeitpunkt, angefragter Pfad, freigegebene und anfragende Domain, Sprache, Browserkennung, Zugriffsstatus und ein nicht rückrechenbarer Hash der IP-Adresse. Die rohe IP-Adresse wird nicht im Widget-Zugriffsprotokoll gespeichert.</p>
-              <p className="mt-4 leading-8 text-zinc-300">Die Verarbeitung dient der Vertragserfüllung, Domainsicherung, Fehleranalyse, Durchsetzung von Nutzungslimits und Abwehr automatisierter Datenabfragen. Zahlungs- und Abonnementdaten werden über Stripe verarbeitet.</p>
-              <p className="mt-4 leading-8 text-zinc-300">Bei einer Fahrzeugauswahl werden ausschließlich die für die konkrete Auswahl benötigten Fahrzeugdaten an die einbettende, zuvor freigegebene Website übermittelt. Ein vollständiger Datenbankexport wird nicht bereitgestellt.</p>
-              <p className="mt-4 leading-8 text-zinc-300">Betreiber einbettender Websites müssen ihre eigenen Besucher in ihrer Datenschutzerklärung über die Nutzung des MG AutoTech Widgets informieren. Soweit eine Auftragsverarbeitung vorliegt, ist vor Produktivnutzung eine entsprechende Vereinbarung abzuschließen.</p>
-          </div>
-        </div>
-      </section>
+      <LegalSection title="9. Vehicle Selector Widget">
+        <p>Beim Aufruf eines eingebetteten Widgets werden zur Auslieferung, Domainprüfung, Fehleranalyse, Durchsetzung von Nutzungslimits und Missbrauchsabwehr technische Zugriffsdaten verarbeitet. Dazu können Zeitpunkt, Pfad, freigegebene und anfragende Domain, Sprache, Browserkennung, Zugriffsstatus und ein nicht rückrechenbarer Hash der IP-Adresse gehören. Die rohe IP-Adresse wird nicht im Widget-Zugriffsprotokoll gespeichert.</p>
+        <p>Bei einer Fahrzeugauswahl werden nur die für die konkrete Auswahl erforderlichen Fahrzeugdaten an die zuvor freigegebene Website übermittelt. Betreiber einbettender Websites bleiben für ihre eigene Datenschutzerklärung, Kontaktformulare und weitere Verarbeitung verantwortlich.</p>
+      </LegalSection>
 
-      <Footer />
-      <OnlineStatus />
-    </main>
+      <LegalSection title="10. Speicherdauer">
+        <p>Wir speichern Daten nur so lange, wie dies für Konto, Auftrag, Support, Sicherheit und Abrechnung erforderlich ist. Vertrags-, Zahlungs- und Buchungsdaten werden entsprechend gesetzlicher Aufbewahrungsfristen gespeichert. Dateien und technische Protokolle werden gelöscht oder anonymisiert, sobald der jeweilige Zweck entfällt und keine vertraglichen, sicherheitsbezogenen oder gesetzlichen Gründe entgegenstehen.</p>
+      </LegalSection>
+
+      <LegalSection title="11. Ihre Rechte">
+        <p>Betroffene Personen haben nach Maßgabe der DSGVO das Recht auf Auskunft, Berichtigung, Löschung, Einschränkung der Verarbeitung, Datenübertragbarkeit und Widerspruch. Eine erteilte Einwilligung kann jederzeit mit Wirkung für die Zukunft widerrufen werden.</p>
+        <p>Anfragen richten Sie bitte an <a className="font-bold text-white hover:text-red-400" href="mailto:info@mgautotech.de">info@mgautotech.de</a>. Sie haben außerdem das Recht, sich bei einer Datenschutzaufsichtsbehörde zu beschweren, insbesondere bei der für Baden-Württemberg zuständigen Aufsichtsbehörde.</p>
+      </LegalSection>
+
+      <LegalSection title="12. Datensicherheit und Aktualisierung">
+        <p>Wir setzen angemessene technische und organisatorische Maßnahmen ein, darunter verschlüsselte Übertragung, rollenbasierte Zugriffe, private Dateiablagen, zeitlich begrenzte Download-Links, serverseitige Berechtigungsprüfungen und Protokollierung sicherheitsrelevanter Vorgänge.</p>
+        <p>Diese Datenschutzerklärung wird angepasst, wenn sich eingesetzte Dienste oder Verarbeitungsabläufe wesentlich ändern.</p>
+      </LegalSection>
+    </LegalPageShell>
   );
 }

@@ -6,6 +6,10 @@ import { useRouter } from "next/navigation";
 import { Loader2, ShieldCheck, Upload } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 
+function safeNextPath(value: string | null) {
+  return value?.startsWith("/") && !value.startsWith("//") ? value : "/dashboard";
+}
+
 export default function AuthCallbackPage() {
   const router = useRouter();
   const [message, setMessage] = useState("Verifying your access...");
@@ -14,7 +18,7 @@ export default function AuthCallbackPage() {
     const handleCallback = async () => {
       const params = new URLSearchParams(window.location.search);
       const code = params.get("code");
-      const next = params.get("next") || "/dashboard";
+      const next = safeNextPath(params.get("next"));
       let session = null;
 
       if (code) {
