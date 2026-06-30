@@ -10,6 +10,11 @@ import {
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const lastModified = new Date();
+  const toolPaths = [
+    "/tools",
+    "/tools/torque-power-calculator",
+    "/tools/autotuner-log-analyzer",
+  ];
   const publicPages: MetadataRoute.Sitemap = [
     {
       url: absoluteUrl("/"),
@@ -63,6 +68,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
   return [
     ...publicPages,
     ...localizedPages,
+    ...toolPaths.map((path) => ({
+      url: absoluteUrl(path),
+      lastModified,
+      changeFrequency: "monthly" as const,
+      priority: path === "/tools" ? 0.85 : 0.8,
+    })),
     {
       url: `${siteUrl}/widget`,
       lastModified,

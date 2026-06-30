@@ -20,6 +20,9 @@ export default function robots(): MetadataRoute.Robots {
           "/widerruf",
           "/av-vertrag",
           "/widget",
+          "/tools",
+          "/tools/torque-power-calculator",
+          "/tools/autotuner-log-analyzer",
         ],
         disallow: [
           "/admin",

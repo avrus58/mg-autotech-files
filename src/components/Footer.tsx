@@ -19,6 +19,7 @@ const services = [
 ];
 
 const platform = [
+  { label: "Workshop Tools", href: "/tools" },
   { label: "Vehicle Widget", href: "/widget" },
   { label: "Upload File", href: "/new-request" },
   { label: "Buy Credits", href: "/dashboard/credits" },
