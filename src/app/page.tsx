@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { motion, type Variants } from "framer-motion";
 import {
@@ -1253,6 +1253,8 @@ function PublicVehicleChecker() {
   const [loadingVehicle, setLoadingVehicle] = useState(false);
   const [vehicleError, setVehicleError] = useState("");
   const vehicleResultRef = useRef<HTMLDivElement | null>(null);
+  const vehicleLookupIdRef = useRef(0);
+  const lastAutoLookupKeyRef = useRef("");
 
   const selectedBrandName =
     brands.find((item) => item.id === brandId)?.name ?? "";
@@ -1263,6 +1265,13 @@ function PublicVehicleChecker() {
   const selectedEngineName =
     engines.find((item) => item.id === engineId)?.name ?? "";
 
+  const clearVehicleResult = () => {
+    vehicleLookupIdRef.current += 1;
+    setLoadingVehicle(false);
+    setVehicle(null);
+    setVehicleError("");
+  };
+
   const handleBrandChange = (value: string) => {
     setBrandId(value);
     setModelId("");
@@ -1271,8 +1280,7 @@ function PublicVehicleChecker() {
     setModels([]);
     setGenerations([]);
     setEngines([]);
-    setVehicle(null);
-    setVehicleError("");
+    clearVehicleResult();
   };
 
   const handleModelChange = (value: string) => {
@@ -1281,22 +1289,20 @@ function PublicVehicleChecker() {
     setEngineId("");
     setGenerations([]);
     setEngines([]);
-    setVehicle(null);
-    setVehicleError("");
+    clearVehicleResult();
   };
 
   const handleGenerationChange = (value: string) => {
     setGenerationId(value);
     setEngineId("");
     setEngines([]);
-    setVehicle(null);
-    setVehicleError("");
+    clearVehicleResult();
   };
 
   const handleEngineChange = (value: string) => {
+    lastAutoLookupKeyRef.current = "";
     setEngineId(value);
-    setVehicle(null);
-    setVehicleError("");
+    clearVehicleResult();
   };
 
   useEffect(() => {
@@ -1375,9 +1381,11 @@ function PublicVehicleChecker() {
     return () => controller.abort();
   }, [brandId, modelId, generationId]);
 
-  const handleSearch = async () => {
+  const handleSearch = useCallback(async () => {
     if (!brandId || !modelId || !generationId || !engineId) return;
 
+    const lookupId = vehicleLookupIdRef.current + 1;
+    vehicleLookupIdRef.current = lookupId;
     setLoadingVehicle(true);
     setVehicle(null);
     setVehicleError("");
@@ -1397,24 +1405,34 @@ function PublicVehicleChecker() {
       if (!res.ok) throw new Error(`Vehicle lookup failed with ${res.status}`);
 
       const data = (await res.json()) as PublicVehicleData | null;
+      if (lookupId !== vehicleLookupIdRef.current) return;
 
       if (!data) {
-        setVehicleError(
-          copy.notFound
-        );
+        setVehicleError(copy.notFound);
         return;
       }
 
       setVehicle(data);
     } catch {
+      if (lookupId !== vehicleLookupIdRef.current) return;
       setVehicle(null);
-      setVehicleError(
-        copy.loadError
-      );
+      setVehicleError(copy.loadError);
     } finally {
-      setLoadingVehicle(false);
+      if (lookupId === vehicleLookupIdRef.current) {
+        setLoadingVehicle(false);
+      }
     }
-  };
+  }, [brandId, copy.loadError, copy.notFound, engineId, generationId, modelId]);
+
+  useEffect(() => {
+    if (!brandId || !modelId || !generationId || !engineId) return;
+
+    const lookupKey = `${brandId}:${modelId}:${generationId}:${engineId}`;
+    if (lastAutoLookupKeyRef.current === lookupKey) return;
+
+    lastAutoLookupKeyRef.current = lookupKey;
+    void handleSearch();
+  }, [brandId, engineId, generationId, handleSearch, modelId]);
 
   const requestUrl =
     brandId && modelId && generationId && engineId
