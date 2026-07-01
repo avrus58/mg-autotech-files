@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { motion, type Variants } from "framer-motion";
 import {
@@ -383,24 +383,130 @@ type PublicVehicleData = {
   fuelType?: string | null;
   ecu?: string[];
   stage1?: {
-    stockHp: number;
-    tunedHp: number;
-    gainHp: number;
-    stockNm: number;
-    tunedNm: number;
-    gainNm: number;
-  };
+    stockHp: number | null;
+    tunedHp: number | null;
+    gainHp: number | null;
+    stockNm: number | null;
+    tunedNm: number | null;
+    gainNm: number | null;
+  } | null;
   stage2?: {
-    stockHp: number;
-    tunedHp: number;
-    gainHp: number;
-    stockNm: number;
-    tunedNm: number;
-    gainNm: number;
-  };
+    stockHp: number | null;
+    tunedHp: number | null;
+    gainHp: number | null;
+    stockNm: number | null;
+    tunedNm: number | null;
+    gainNm: number | null;
+  } | null;
   readMethods?: string[];
   services?: string[];
 };
+
+const publicVehicleCopy = {
+  en: {
+    reviewTitle: "Performance data under review",
+    reviewText: "Exact values for this variant are confirmed after ECU and original-file identification.",
+    checking: "Checking the selected vehicle record...",
+    notFound: "No matching vehicle record was found. Please reselect the vehicle or create a manual request.",
+    loadError: "Vehicle data could not be loaded. Please try again or create a manual request.",
+    manualRequest: "Create a manual request",
+  },
+  de: {
+    reviewTitle: "Leistungsdaten werden geprüft",
+    reviewText: "Die genauen Werte dieser Variante werden nach Identifikation von Steuergerät und Originaldatei bestätigt.",
+    checking: "Der ausgewählte Fahrzeugdatensatz wird geprüft...",
+    notFound: "Kein passender Fahrzeugdatensatz gefunden. Bitte Fahrzeug erneut auswählen oder eine manuelle Anfrage erstellen.",
+    loadError: "Die Fahrzeugdaten konnten nicht geladen werden. Bitte erneut versuchen oder eine manuelle Anfrage erstellen.",
+    manualRequest: "Manuelle Anfrage erstellen",
+  },
+  tr: {
+    reviewTitle: "Performans verileri kontrol ediliyor",
+    reviewText: "Bu varyantın kesin değerleri ECU ve orijinal dosya tanımlamasından sonra doğrulanır.",
+    checking: "Seçilen araç kaydı kontrol ediliyor...",
+    notFound: "Eşleşen araç kaydı bulunamadı. Aracı yeniden seçin veya manuel talep oluşturun.",
+    loadError: "Araç verileri yüklenemedi. Tekrar deneyin veya manuel talep oluşturun.",
+    manualRequest: "Manuel talep oluştur",
+  },
+  nl: {
+    reviewTitle: "Prestatiegegevens worden gecontroleerd",
+    reviewText: "De exacte waarden voor deze variant worden bevestigd na identificatie van de ECU en het originele bestand.",
+    checking: "Het geselecteerde voertuigrecord wordt gecontroleerd...",
+    notFound: "Geen passend voertuigrecord gevonden. Selecteer het voertuig opnieuw of maak een handmatige aanvraag.",
+    loadError: "De voertuiggegevens konden niet worden geladen. Probeer opnieuw of maak een handmatige aanvraag.",
+    manualRequest: "Handmatige aanvraag maken",
+  },
+  fr: {
+    reviewTitle: "Données de performance en cours de vérification",
+    reviewText: "Les valeurs exactes de cette variante sont confirmées après identification de l'ECU et du fichier d'origine.",
+    checking: "Vérification du véhicule sélectionné...",
+    notFound: "Aucun véhicule correspondant n'a été trouvé. Sélectionnez à nouveau le véhicule ou créez une demande manuelle.",
+    loadError: "Les données du véhicule n'ont pas pu être chargées. Réessayez ou créez une demande manuelle.",
+    manualRequest: "Créer une demande manuelle",
+  },
+  it: {
+    reviewTitle: "Dati prestazionali in verifica",
+    reviewText: "I valori esatti di questa variante vengono confermati dopo l'identificazione della ECU e del file originale.",
+    checking: "Verifica del veicolo selezionato...",
+    notFound: "Nessun veicolo corrispondente trovato. Seleziona nuovamente il veicolo o crea una richiesta manuale.",
+    loadError: "Impossibile caricare i dati del veicolo. Riprova o crea una richiesta manuale.",
+    manualRequest: "Crea richiesta manuale",
+  },
+  ru: {
+    reviewTitle: "Данные мощности проверяются",
+    reviewText: "Точные значения для этой версии подтверждаются после идентификации ECU и исходного файла.",
+    checking: "Проверяем выбранную запись автомобиля...",
+    notFound: "Подходящая запись автомобиля не найдена. Выберите автомобиль ещё раз или создайте ручную заявку.",
+    loadError: "Не удалось загрузить данные автомобиля. Повторите попытку или создайте ручную заявку.",
+    manualRequest: "Создать ручную заявку",
+  },
+  es: {
+    reviewTitle: "Datos de rendimiento en revisión",
+    reviewText: "Los valores exactos de esta variante se confirman tras identificar la ECU y el archivo original.",
+    checking: "Comprobando el vehículo seleccionado...",
+    notFound: "No se encontró un vehículo coincidente. Vuelve a seleccionarlo o crea una solicitud manual.",
+    loadError: "No se pudieron cargar los datos del vehículo. Inténtalo de nuevo o crea una solicitud manual.",
+    manualRequest: "Crear solicitud manual",
+  },
+  pt: {
+    reviewTitle: "Dados de desempenho em verificação",
+    reviewText: "Os valores exatos desta variante são confirmados após a identificação da ECU e do ficheiro original.",
+    checking: "A verificar o veículo selecionado...",
+    notFound: "Não foi encontrado um veículo correspondente. Selecione novamente ou crie um pedido manual.",
+    loadError: "Não foi possível carregar os dados do veículo. Tente novamente ou crie um pedido manual.",
+    manualRequest: "Criar pedido manual",
+  },
+  zh: {
+    reviewTitle: "性能数据正在审核",
+    reviewText: "该车型的准确数值将在识别 ECU 和原始文件后确认。",
+    checking: "正在检查所选车辆记录...",
+    notFound: "未找到匹配的车辆记录。请重新选择车辆或创建手动请求。",
+    loadError: "无法加载车辆数据。请重试或创建手动请求。",
+    manualRequest: "创建手动请求",
+  },
+  pl: {
+    reviewTitle: "Dane osiągów są weryfikowane",
+    reviewText: "Dokładne wartości dla tej wersji są potwierdzane po identyfikacji ECU i oryginalnego pliku.",
+    checking: "Sprawdzanie wybranego pojazdu...",
+    notFound: "Nie znaleziono pasującego pojazdu. Wybierz pojazd ponownie lub utwórz zgłoszenie ręczne.",
+    loadError: "Nie udało się wczytać danych pojazdu. Spróbuj ponownie lub utwórz zgłoszenie ręczne.",
+    manualRequest: "Utwórz zgłoszenie ręczne",
+  },
+  sq: {
+    reviewTitle: "Të dhënat e performancës po verifikohen",
+    reviewText: "Vlerat e sakta për këtë variant konfirmohen pas identifikimit të ECU-së dhe skedarit origjinal.",
+    checking: "Po kontrollohet automjeti i zgjedhur...",
+    notFound: "Nuk u gjet një automjet që përputhet. Zgjidheni përsëri ose krijoni një kërkesë manuale.",
+    loadError: "Të dhënat e automjetit nuk u ngarkuan. Provoni përsëri ose krijoni një kërkesë manuale.",
+    manualRequest: "Krijo kërkesë manuale",
+  },
+} as const;
+
+function getPublicVehicleCopy() {
+  if (typeof document === "undefined") return publicVehicleCopy.en;
+
+  const locale = document.documentElement.lang.toLowerCase().split("-")[0];
+  return publicVehicleCopy[locale as keyof typeof publicVehicleCopy] ?? publicVehicleCopy.en;
+}
 
 
 const fadeUp: Variants = {
@@ -628,7 +734,27 @@ function PublicStageCard({
   title: string;
   data?: PublicVehicleData["stage1"];
 }) {
-  if (!data) return null;
+  const copy = getPublicVehicleCopy();
+  const hasPerformanceData = Boolean(
+    data && (data.tunedHp !== null || data.tunedNm !== null)
+  );
+
+  if (!data || !hasPerformanceData) {
+    return (
+      <div className="rounded-2xl border border-white/15 bg-black/35 p-4 backdrop-blur">
+        <div className="mb-3 flex items-center justify-between">
+          <div className="text-sm font-black">{title}</div>
+          <Zap className="h-4 w-4 text-red-300" />
+        </div>
+        <div className="rounded-xl border border-white/10 bg-white/[0.06] p-4">
+          <div className="text-sm font-black">{copy.reviewTitle}</div>
+          <p className="mt-2 text-xs leading-5 text-red-100/70">
+            {copy.reviewText}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="rounded-2xl border border-white/15 bg-black/35 p-4 backdrop-blur">
@@ -641,14 +767,14 @@ function PublicStageCard({
         <div className="flex justify-between rounded-xl bg-white/10 px-3 py-2">
           <span className="text-red-100/80">Power</span>
           <span className="font-black">
-            {data.stockHp} {"\u2192"} {data.tunedHp} HP
+            {data.stockHp ?? "-"} {"\u2192"} {data.tunedHp ?? "-"} HP
           </span>
         </div>
 
         <div className="flex justify-between rounded-xl bg-white/10 px-3 py-2">
           <span className="text-red-100/80">Torque</span>
           <span className="font-black">
-            {data.stockNm} {"\u2192"} {data.tunedNm} Nm
+            {data.stockNm ?? "-"} {"\u2192"} {data.tunedNm ?? "-"} Nm
           </span>
         </div>
 
@@ -657,14 +783,18 @@ function PublicStageCard({
             <div className="text-[10px] uppercase tracking-[0.12em] text-red-100/70">
               HP Gain
             </div>
-            <div className="text-lg font-black">+{data.gainHp}</div>
+            <div className="text-lg font-black">
+              {data.gainHp !== null ? `+${data.gainHp}` : "-"}
+            </div>
           </div>
 
           <div className="rounded-xl border border-white/15 bg-white/10 p-2 text-center">
             <div className="text-[10px] uppercase tracking-[0.12em] text-red-100/70">
               Nm Gain
             </div>
-            <div className="text-lg font-black">+{data.gainNm}</div>
+            <div className="text-lg font-black">
+              {data.gainNm !== null ? `+${data.gainNm}` : "-"}
+            </div>
           </div>
         </div>
       </div>
@@ -1019,6 +1149,7 @@ function ignoreVehicleFetchError() {
 }
 
 function PublicVehicleChecker() {
+  const copy = getPublicVehicleCopy();
   const [brands, setBrands] = useState<VehicleOption[]>([]);
   const [models, setModels] = useState<VehicleOption[]>([]);
   const [generations, setGenerations] = useState<VehicleOption[]>([]);
@@ -1031,6 +1162,8 @@ function PublicVehicleChecker() {
 
   const [vehicle, setVehicle] = useState<PublicVehicleData | null>(null);
   const [loadingVehicle, setLoadingVehicle] = useState(false);
+  const [vehicleError, setVehicleError] = useState("");
+  const vehicleResultRef = useRef<HTMLDivElement | null>(null);
 
   const selectedBrandName =
     brands.find((item) => item.id === brandId)?.name ?? "";
@@ -1050,6 +1183,7 @@ function PublicVehicleChecker() {
     setGenerations([]);
     setEngines([]);
     setVehicle(null);
+    setVehicleError("");
   };
 
   const handleModelChange = (value: string) => {
@@ -1059,6 +1193,7 @@ function PublicVehicleChecker() {
     setGenerations([]);
     setEngines([]);
     setVehicle(null);
+    setVehicleError("");
   };
 
   const handleGenerationChange = (value: string) => {
@@ -1066,12 +1201,33 @@ function PublicVehicleChecker() {
     setEngineId("");
     setEngines([]);
     setVehicle(null);
+    setVehicleError("");
   };
 
   const handleEngineChange = (value: string) => {
     setEngineId(value);
     setVehicle(null);
+    setVehicleError("");
   };
+
+  useEffect(() => {
+    if (!vehicle) return;
+
+    const timer = window.setTimeout(() => {
+      const result = vehicleResultRef.current;
+      if (!result) return;
+
+      result.scrollIntoView({
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+          ? "auto"
+          : "smooth",
+        block: "start",
+      });
+      result.focus({ preventScroll: true });
+    }, 80);
+
+    return () => window.clearTimeout(timer);
+  }, [vehicle]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -1134,17 +1290,38 @@ function PublicVehicleChecker() {
     if (!brandId || !modelId || !generationId || !engineId) return;
 
     setLoadingVehicle(true);
+    setVehicle(null);
+    setVehicleError("");
 
     try {
-      const res = await fetch(
-        `/api/vehicles?type=vehicle&brandId=${brandId}&modelId=${modelId}&generationId=${generationId}&engineId=${engineId}`
-      );
+      const params = new URLSearchParams({
+        type: "vehicle",
+        brandId,
+        modelId,
+        generationId,
+        engineId,
+      });
+      const res = await fetch(`/api/vehicles?${params.toString()}`, {
+        cache: "no-store",
+      });
+
+      if (!res.ok) throw new Error(`Vehicle lookup failed with ${res.status}`);
 
       const data = (await res.json()) as PublicVehicleData | null;
+
+      if (!data) {
+        setVehicleError(
+          copy.notFound
+        );
+        return;
+      }
 
       setVehicle(data);
     } catch {
       setVehicle(null);
+      setVehicleError(
+        copy.loadError
+      );
     } finally {
       setLoadingVehicle(false);
     }
@@ -1207,12 +1384,32 @@ function PublicVehicleChecker() {
           </button>
         </div>
 
+        <div aria-live="polite" aria-atomic="true">
+          {loadingVehicle && (
+            <div className="mt-4 flex items-center gap-3 rounded-xl border border-white/20 bg-black/20 px-4 py-3 text-sm font-bold text-white">
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+              {copy.checking}
+            </div>
+          )}
+
+          {vehicleError && (
+            <div role="alert" className="mt-4 rounded-xl border border-white/25 bg-black/30 px-4 py-4 text-sm font-bold text-white">
+              {vehicleError}
+              <Link href="/new-request" className="ml-2 underline decoration-white/50 underline-offset-4 hover:decoration-white">
+                {copy.manualRequest}
+              </Link>
+            </div>
+          )}
+        </div>
+
         {vehicle && (
           <motion.div
+            ref={vehicleResultRef}
+            tabIndex={-1}
             initial={{ opacity: 0, y: 22 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.45 }}
-            className="mt-8 overflow-hidden rounded-[2rem] border border-white/20 bg-black/35 p-5 shadow-2xl shadow-black/30 backdrop-blur-xl"
+            className="mt-8 scroll-mt-24 overflow-hidden rounded-[2rem] border border-white/20 bg-black/35 p-5 shadow-2xl shadow-black/30 backdrop-blur-xl outline-none focus-visible:ring-2 focus-visible:ring-white/70"
           >
             <div className="grid gap-5 lg:grid-cols-[0.95fr_1.05fr]">
               <div className="rounded-[1.5rem] border border-white/15 bg-gradient-to-br from-black/60 via-red-950/20 to-black/60 p-6">

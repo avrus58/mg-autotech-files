@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { ArrowRight, CarFront, CheckCircle2, Cpu, Gauge, Loader2, Mail, MessageCircle, Search, ShieldCheck, Wrench } from "lucide-react";
 import { widgetEnquiryLabels, widgetResultLabels, widgetT, widgetVehicleTypeLabels } from "@/lib/i18n/widget-translations";
 import type { WidgetLanguage, WidgetTheme } from "@/lib/widget/types";
@@ -73,6 +73,8 @@ export function PublicVehicleSelector({
   const [unavailable, setUnavailable] = useState(false);
   const [selectedName, setSelectedName] = useState("");
   const [selectedVehicle, setSelectedVehicle] = useState<VehicleResult | null>(null);
+  const [selectionError, setSelectionError] = useState("");
+  const resultRef = useRef<HTMLDivElement | null>(null);
 
   const dark = config.theme_mode === "dark" || config.theme_mode === "auto";
   const queryBase = useMemo(() => {
@@ -94,6 +96,22 @@ export function PublicVehicleSelector({
     return () => controller.abort();
   }, [apiBaseUrl, demo, queryBase]);
 
+  useEffect(() => {
+    if (!selectedVehicle) return;
+
+    const timer = window.setTimeout(() => {
+      const result = resultRef.current;
+      if (!result) return;
+      result.scrollIntoView({
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+        block: "nearest",
+      });
+      result.focus({ preventScroll: true });
+    }, 80);
+
+    return () => window.clearTimeout(timer);
+  }, [selectedVehicle]);
+
   async function load(path: string, onData: (items: Option[]) => void) {
     if (demo) return;
     setLoading(true);
@@ -110,23 +128,24 @@ export function PublicVehicleSelector({
   }
 
   function selectMake(value: string) {
-    setMake(value); setModel(""); setYear(""); setEngine(""); setSelectedName(""); setSelectedVehicle(null);
+    setMake(value); setModel(""); setYear(""); setEngine(""); setSelectedName(""); setSelectedVehicle(null); setSelectionError("");
     setModels(demo ? (value ? demoModels : []) : []); setYears([]); setEngines([]);
     if (value && !demo) void load(`/api/widget/models?make=${encodeURIComponent(value)}`, setModels);
   }
   function selectModel(value: string) {
-    setModel(value); setYear(""); setEngine(""); setSelectedName(""); setSelectedVehicle(null);
+    setModel(value); setYear(""); setEngine(""); setSelectedName(""); setSelectedVehicle(null); setSelectionError("");
     setYears(demo ? (value ? demoYears : []) : []); setEngines([]);
     if (value && !demo) void load(`/api/widget/years?make=${encodeURIComponent(make)}&model=${encodeURIComponent(value)}`, setYears);
   }
   function selectYear(value: string) {
-    setYear(value); setEngine(""); setSelectedName(""); setSelectedVehicle(null);
+    setYear(value); setEngine(""); setSelectedName(""); setSelectedVehicle(null); setSelectionError("");
     setEngines(demo ? (value ? demoEngines : []) : []);
     if (value && !demo) void load(`/api/widget/engines?make=${encodeURIComponent(make)}&model=${encodeURIComponent(model)}&year=${encodeURIComponent(value)}`, setEngines);
   }
 
   async function completeSelection() {
     if (!make || !model || !year || !engine) return;
+    setSelectionError("");
     if (demo) {
       const vehicleName = `${makes.find((item) => item.value === make)?.label} ${models.find((item) => item.value === model)?.label} ${engines.find((item) => item.value === engine)?.label}`;
       setSelectedName(vehicleName);
@@ -149,7 +168,9 @@ export function PublicVehicleSelector({
       if (safeOrigin && window.parent !== window) window.parent.postMessage({ dataType: "mga-vehicle-data", ...payload.vehicle }, safeOrigin);
       window.dispatchEvent(new CustomEvent("mga-vehicle-data", { detail: payload.vehicle }));
     } catch {
-      setUnavailable(true);
+      setSelectedName("");
+      setSelectedVehicle(null);
+      setSelectionError(widgetT(language, "unavailable"));
     } finally {
       setLoading(false);
     }
@@ -178,15 +199,17 @@ export function PublicVehicleSelector({
           <Selector label={widgetT(language, "selectMake")} value={make} options={makes} className={input} onChange={selectMake} />
           <Selector label={widgetT(language, "selectModel")} value={model} options={models} disabled={!make} className={input} onChange={selectModel} />
           <Selector label={widgetT(language, "selectYear")} value={year} options={years} disabled={!model} className={input} onChange={selectYear} />
-          <div className="sm:col-span-2"><Selector label={widgetT(language, "selectEngine")} value={engine} options={engines} disabled={!year} className={input} onChange={(value) => { setEngine(value); setSelectedName(""); setSelectedVehicle(null); }} /></div>
+          <div className="sm:col-span-2"><Selector label={widgetT(language, "selectEngine")} value={engine} options={engines} disabled={!year} className={input} onChange={(value) => { setEngine(value); setSelectedName(""); setSelectedVehicle(null); setSelectionError(""); }} /></div>
         </div>
 
         <button type="button" disabled={!engine || loading} onClick={completeSelection} className="mt-4 flex h-14 w-full items-center justify-center gap-2 rounded-lg px-5 text-sm font-black transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-45" style={{ background: config.main_color, color: config.button_text_color }}>
           <Search className="h-4 w-4" />{config.button_text || widgetT(language, "showTuningOptions")}
         </button>
 
+        {selectionError && <div role="alert" className="mt-4 rounded-lg border p-4 text-sm font-bold" style={{ borderColor: `${config.difference_color}66`, background: `${config.difference_color}12`, color: config.difference_color }}>{selectionError}</div>}
+
         {selectedName && !selectedVehicle && <div className="mt-4 flex items-start gap-3 rounded-lg border p-4 text-sm font-bold" style={{ borderColor: `${config.difference_color}66`, background: `${config.difference_color}12` }}><CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" style={{ color: config.difference_color }} /><span>{selectedName}</span></div>}
-        {selectedVehicle && <VehicleResultPanel key={selectedVehicle.vehicleId} vehicle={selectedVehicle} language={language} accent={config.difference_color} dark={dark} emailEnabled={config.email_enquiries_enabled ?? demo} whatsappEnabled={Boolean(config.whatsapp_enquiries_enabled && config.whatsapp_number)} whatsappNumber={config.whatsapp_number} publicKey={publicKey} sessionToken={sessionToken} apiBaseUrl={apiBaseUrl} selection={{ make, model, year, engine }} demo={demo} />}
+        {selectedVehicle && <div ref={resultRef} tabIndex={-1} className="scroll-mt-4 outline-none"><VehicleResultPanel key={selectedVehicle.vehicleId} vehicle={selectedVehicle} language={language} accent={config.difference_color} dark={dark} emailEnabled={config.email_enquiries_enabled ?? demo} whatsappEnabled={Boolean(config.whatsapp_enquiries_enabled && config.whatsapp_number)} whatsappNumber={config.whatsapp_number} publicKey={publicKey} sessionToken={sessionToken} apiBaseUrl={apiBaseUrl} selection={{ make, model, year, engine }} demo={demo} /></div>}
         {config.show_branding && <div className="mt-5 flex items-center justify-center gap-2 text-[11px] font-bold opacity-55"><ShieldCheck className="h-3.5 w-3.5" />{widgetT(language, "poweredBy")}</div>}
       </div>
     </div>
@@ -270,6 +293,7 @@ function VehicleResultPanel({ vehicle, language, accent, dark, emailEnabled, wha
         <PerformanceRow label={labels.torque} unit="Nm" stock={selectedStage.data.stockNm} tuned={selectedStage.data.tunedNm} gain={selectedStage.data.gainNm} accent={accent} bordered />
       </div>
     </div>}
+    {!selectedStage && <div className="p-4"><div className={`rounded-lg border p-4 ${dark ? "border-white/10 bg-black/25" : "border-zinc-200 bg-white/75"}`}><div className="text-sm font-black">{labels.performanceReview}</div><p className="mt-2 text-xs leading-5 opacity-60">{labels.performanceReviewText}</p></div></div>}
     {extraServices.length > 0 && <div className="border-t p-4" style={{ borderColor: `${accent}33` }}><div className="mb-3 flex items-center gap-2 text-xs font-black uppercase tracking-[0.12em] opacity-60"><Wrench className="h-4 w-4" />{labels.supportedServices}</div><div className="grid gap-2">{extraServices.map((service) => <label key={service} className={`flex cursor-pointer items-center gap-3 rounded-md border p-3 text-sm font-bold ${selectedServices.includes(service) ? "bg-white/[0.04]" : ""}`} style={{ borderColor: selectedServices.includes(service) ? `${accent}88` : `${accent}25` }}><input type="checkbox" checked={selectedServices.includes(service)} onChange={() => toggleService(service)} className="h-4 w-4 shrink-0" style={{ accentColor: accent }} /><span>{service}</span></label>)}</div></div>}
     {vehicle.ecuFamilies.length > 0 && <div className="border-t p-4" style={{ borderColor: `${accent}33` }}><div className="mb-3 flex items-center gap-2 text-xs font-black uppercase tracking-[0.12em] opacity-60"><Cpu className="h-4 w-4" />{labels.compatibleEcu}</div><div className="text-sm font-bold leading-6 opacity-80">{vehicle.ecuFamilies.join(" · ")}</div></div>}
     {contactEnabled && contactMode === "closed" && <div className="border-t p-4" style={{ borderColor: `${accent}33` }}><button type="button" onClick={requestOffer} className="flex h-12 w-full items-center justify-center gap-2 rounded-lg text-sm font-black transition hover:brightness-110" style={{ background: accent, color: dark ? "#071006" : "#ffffff" }}><MessageCircle className="h-4 w-4" />{labels.requestOffer}</button></div>}
