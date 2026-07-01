@@ -404,6 +404,7 @@ type PublicVehicleData = {
 
 const publicVehicleCopy = {
   en: {
+    title: "View tuning data and create your file request online.",
     brandPlaceholder: "Select Vehicle Brand",
     modelPlaceholder: "Choose Model",
     generationPlaceholder: "Select Generation",
@@ -417,6 +418,7 @@ const publicVehicleCopy = {
     manualRequest: "Create a manual request",
   },
   de: {
+    title: "Tuningdaten ansehen und Dateianfrage online erstellen.",
     brandPlaceholder: "Fahrzeugmarke wählen",
     modelPlaceholder: "Modell wählen",
     generationPlaceholder: "Generation wählen",
@@ -430,6 +432,7 @@ const publicVehicleCopy = {
     manualRequest: "Manuelle Anfrage erstellen",
   },
   tr: {
+    title: "Tuning verilerini görüntüleyin ve dosya talebinizi oluşturun.",
     brandPlaceholder: "Araç markası seçin",
     modelPlaceholder: "Model seçin",
     generationPlaceholder: "Nesil seçin",
@@ -443,6 +446,7 @@ const publicVehicleCopy = {
     manualRequest: "Manuel talep oluştur",
   },
   nl: {
+    title: "Bekijk tuninggegevens en maak uw bestandsaanvraag online.",
     brandPlaceholder: "Kies voertuigmerk",
     modelPlaceholder: "Kies model",
     generationPlaceholder: "Kies generatie",
@@ -456,6 +460,7 @@ const publicVehicleCopy = {
     manualRequest: "Handmatige aanvraag maken",
   },
   fr: {
+    title: "Consultez les données de préparation et créez votre demande en ligne.",
     brandPlaceholder: "Sélectionner la marque",
     modelPlaceholder: "Sélectionner le modèle",
     generationPlaceholder: "Sélectionner la génération",
@@ -469,6 +474,7 @@ const publicVehicleCopy = {
     manualRequest: "Créer une demande manuelle",
   },
   it: {
+    title: "Consulta i dati di tuning e crea online la tua richiesta.",
     brandPlaceholder: "Seleziona la marca",
     modelPlaceholder: "Seleziona il modello",
     generationPlaceholder: "Seleziona la generazione",
@@ -482,6 +488,7 @@ const publicVehicleCopy = {
     manualRequest: "Crea richiesta manuale",
   },
   ru: {
+    title: "Просмотрите данные тюнинга и создайте заявку на файл онлайн.",
     brandPlaceholder: "Выберите марку",
     modelPlaceholder: "Выберите модель",
     generationPlaceholder: "Выберите поколение",
@@ -495,6 +502,7 @@ const publicVehicleCopy = {
     manualRequest: "Создать ручную заявку",
   },
   es: {
+    title: "Consulta los datos de tuning y crea tu solicitud online.",
     brandPlaceholder: "Seleccionar marca",
     modelPlaceholder: "Seleccionar modelo",
     generationPlaceholder: "Seleccionar generación",
@@ -508,6 +516,7 @@ const publicVehicleCopy = {
     manualRequest: "Crear solicitud manual",
   },
   pt: {
+    title: "Consulte os dados de tuning e crie o seu pedido online.",
     brandPlaceholder: "Selecionar marca",
     modelPlaceholder: "Selecionar modelo",
     generationPlaceholder: "Selecionar geração",
@@ -521,6 +530,7 @@ const publicVehicleCopy = {
     manualRequest: "Criar pedido manual",
   },
   zh: {
+    title: "查看调校数据并在线创建文件请求。",
     brandPlaceholder: "选择车辆品牌",
     modelPlaceholder: "选择车型",
     generationPlaceholder: "选择代系",
@@ -534,6 +544,7 @@ const publicVehicleCopy = {
     manualRequest: "创建手动请求",
   },
   pl: {
+    title: "Sprawdź dane tuningu i utwórz zlecenie pliku online.",
     brandPlaceholder: "Wybierz markę pojazdu",
     modelPlaceholder: "Wybierz model",
     generationPlaceholder: "Wybierz generację",
@@ -547,6 +558,7 @@ const publicVehicleCopy = {
     manualRequest: "Utwórz zgłoszenie ręczne",
   },
   sq: {
+    title: "Shikoni të dhënat e tuningut dhe krijoni kërkesën online.",
     brandPlaceholder: "Zgjidhni markën",
     modelPlaceholder: "Zgjidhni modelin",
     generationPlaceholder: "Zgjidhni gjeneratën",
@@ -1442,11 +1454,11 @@ function PublicVehicleChecker() {
       : "/login";
 
   return (
-    <div className="relative border-t border-red-500/20 bg-[#b1121b] py-10">
+    <div data-no-translate className="relative border-t border-red-500/20 bg-[#b1121b] py-10">
       <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_70%_0%,white,transparent_28%)]" />
       <div className="mx-auto max-w-7xl px-4">
         <h2 className="text-2xl font-black md:text-3xl">
-          View tuning data and create your file request online.
+          {copy.title}
         </h2>
 
         <div data-no-translate className="mt-7 grid gap-4 md:grid-cols-5">

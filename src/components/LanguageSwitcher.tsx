@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
   defaultLocale,
@@ -165,6 +165,7 @@ export function LanguageSwitcher() {
   const router = useRouter();
   const [locale, setLocale] = useState<LocaleCode>(defaultLocale);
   const [isOpen, setIsOpen] = useState(false);
+  const translatedLocaleRef = useRef<LocaleCode>(defaultLocale);
 
   useEffect(() => {
     const initial =
@@ -176,10 +177,21 @@ export function LanguageSwitcher() {
 
   useEffect(() => {
     persistLocale(locale);
+
+    if (
+      locale === defaultLocale &&
+      translatedLocaleRef.current === defaultLocale
+    ) {
+      return;
+    }
+
     let observer: MutationObserver | null = null;
 
     const timer = window.setTimeout(() => {
       translateNode(document.body, locale);
+      translatedLocaleRef.current = locale;
+
+      if (locale === defaultLocale) return;
 
       observer = new MutationObserver((mutations) => {
         mutations.forEach((mutation) => {
@@ -201,7 +213,7 @@ export function LanguageSwitcher() {
         childList: true,
         subtree: true,
       });
-    }, 150);
+    }, 500);
 
     return () => {
       window.clearTimeout(timer);
