@@ -404,6 +404,11 @@ type PublicVehicleData = {
 
 const publicVehicleCopy = {
   en: {
+    brandPlaceholder: "Select Vehicle Brand",
+    modelPlaceholder: "Choose Model",
+    generationPlaceholder: "Select Generation",
+    enginePlaceholder: "Select Engine",
+    search: "Search",
     reviewTitle: "Performance data under review",
     reviewText: "Exact values for this variant are confirmed after ECU and original-file identification.",
     checking: "Checking the selected vehicle record...",
@@ -412,6 +417,11 @@ const publicVehicleCopy = {
     manualRequest: "Create a manual request",
   },
   de: {
+    brandPlaceholder: "Fahrzeugmarke wählen",
+    modelPlaceholder: "Modell wählen",
+    generationPlaceholder: "Generation wählen",
+    enginePlaceholder: "Motor wählen",
+    search: "Suchen",
     reviewTitle: "Leistungsdaten werden geprüft",
     reviewText: "Die genauen Werte dieser Variante werden nach Identifikation von Steuergerät und Originaldatei bestätigt.",
     checking: "Der ausgewählte Fahrzeugdatensatz wird geprüft...",
@@ -420,6 +430,11 @@ const publicVehicleCopy = {
     manualRequest: "Manuelle Anfrage erstellen",
   },
   tr: {
+    brandPlaceholder: "Araç markası seçin",
+    modelPlaceholder: "Model seçin",
+    generationPlaceholder: "Nesil seçin",
+    enginePlaceholder: "Motor seçin",
+    search: "Ara",
     reviewTitle: "Performans verileri kontrol ediliyor",
     reviewText: "Bu varyantın kesin değerleri ECU ve orijinal dosya tanımlamasından sonra doğrulanır.",
     checking: "Seçilen araç kaydı kontrol ediliyor...",
@@ -428,6 +443,11 @@ const publicVehicleCopy = {
     manualRequest: "Manuel talep oluştur",
   },
   nl: {
+    brandPlaceholder: "Kies voertuigmerk",
+    modelPlaceholder: "Kies model",
+    generationPlaceholder: "Kies generatie",
+    enginePlaceholder: "Kies motor",
+    search: "Zoeken",
     reviewTitle: "Prestatiegegevens worden gecontroleerd",
     reviewText: "De exacte waarden voor deze variant worden bevestigd na identificatie van de ECU en het originele bestand.",
     checking: "Het geselecteerde voertuigrecord wordt gecontroleerd...",
@@ -436,6 +456,11 @@ const publicVehicleCopy = {
     manualRequest: "Handmatige aanvraag maken",
   },
   fr: {
+    brandPlaceholder: "Sélectionner la marque",
+    modelPlaceholder: "Sélectionner le modèle",
+    generationPlaceholder: "Sélectionner la génération",
+    enginePlaceholder: "Sélectionner le moteur",
+    search: "Rechercher",
     reviewTitle: "Données de performance en cours de vérification",
     reviewText: "Les valeurs exactes de cette variante sont confirmées après identification de l'ECU et du fichier d'origine.",
     checking: "Vérification du véhicule sélectionné...",
@@ -444,6 +469,11 @@ const publicVehicleCopy = {
     manualRequest: "Créer une demande manuelle",
   },
   it: {
+    brandPlaceholder: "Seleziona la marca",
+    modelPlaceholder: "Seleziona il modello",
+    generationPlaceholder: "Seleziona la generazione",
+    enginePlaceholder: "Seleziona il motore",
+    search: "Cerca",
     reviewTitle: "Dati prestazionali in verifica",
     reviewText: "I valori esatti di questa variante vengono confermati dopo l'identificazione della ECU e del file originale.",
     checking: "Verifica del veicolo selezionato...",
@@ -452,6 +482,11 @@ const publicVehicleCopy = {
     manualRequest: "Crea richiesta manuale",
   },
   ru: {
+    brandPlaceholder: "Выберите марку",
+    modelPlaceholder: "Выберите модель",
+    generationPlaceholder: "Выберите поколение",
+    enginePlaceholder: "Выберите двигатель",
+    search: "Найти",
     reviewTitle: "Данные мощности проверяются",
     reviewText: "Точные значения для этой версии подтверждаются после идентификации ECU и исходного файла.",
     checking: "Проверяем выбранную запись автомобиля...",
@@ -460,6 +495,11 @@ const publicVehicleCopy = {
     manualRequest: "Создать ручную заявку",
   },
   es: {
+    brandPlaceholder: "Seleccionar marca",
+    modelPlaceholder: "Seleccionar modelo",
+    generationPlaceholder: "Seleccionar generación",
+    enginePlaceholder: "Seleccionar motor",
+    search: "Buscar",
     reviewTitle: "Datos de rendimiento en revisión",
     reviewText: "Los valores exactos de esta variante se confirman tras identificar la ECU y el archivo original.",
     checking: "Comprobando el vehículo seleccionado...",
@@ -468,6 +508,11 @@ const publicVehicleCopy = {
     manualRequest: "Crear solicitud manual",
   },
   pt: {
+    brandPlaceholder: "Selecionar marca",
+    modelPlaceholder: "Selecionar modelo",
+    generationPlaceholder: "Selecionar geração",
+    enginePlaceholder: "Selecionar motor",
+    search: "Pesquisar",
     reviewTitle: "Dados de desempenho em verificação",
     reviewText: "Os valores exatos desta variante são confirmados após a identificação da ECU e do ficheiro original.",
     checking: "A verificar o veículo selecionado...",
@@ -476,6 +521,11 @@ const publicVehicleCopy = {
     manualRequest: "Criar pedido manual",
   },
   zh: {
+    brandPlaceholder: "选择车辆品牌",
+    modelPlaceholder: "选择车型",
+    generationPlaceholder: "选择代系",
+    enginePlaceholder: "选择发动机",
+    search: "搜索",
     reviewTitle: "性能数据正在审核",
     reviewText: "该车型的准确数值将在识别 ECU 和原始文件后确认。",
     checking: "正在检查所选车辆记录...",
@@ -484,6 +534,11 @@ const publicVehicleCopy = {
     manualRequest: "创建手动请求",
   },
   pl: {
+    brandPlaceholder: "Wybierz markę pojazdu",
+    modelPlaceholder: "Wybierz model",
+    generationPlaceholder: "Wybierz generację",
+    enginePlaceholder: "Wybierz silnik",
+    search: "Szukaj",
     reviewTitle: "Dane osiągów są weryfikowane",
     reviewText: "Dokładne wartości dla tej wersji są potwierdzane po identyfikacji ECU i oryginalnego pliku.",
     checking: "Sprawdzanie wybranego pojazdu...",
@@ -492,6 +547,11 @@ const publicVehicleCopy = {
     manualRequest: "Utwórz zgłoszenie ręczne",
   },
   sq: {
+    brandPlaceholder: "Zgjidhni markën",
+    modelPlaceholder: "Zgjidhni modelin",
+    generationPlaceholder: "Zgjidhni gjeneratën",
+    enginePlaceholder: "Zgjidhni motorin",
+    search: "Kërko",
     reviewTitle: "Të dhënat e performancës po verifikohen",
     reviewText: "Vlerat e sakta për këtë variant konfirmohen pas identifikimit të ECU-së dhe skedarit origjinal.",
     checking: "Po kontrollohet automjeti i zgjedhur...",
@@ -501,11 +561,39 @@ const publicVehicleCopy = {
   },
 } as const;
 
-function getPublicVehicleCopy() {
-  if (typeof document === "undefined") return publicVehicleCopy.en;
+type PublicVehicleCopy = (typeof publicVehicleCopy)[keyof typeof publicVehicleCopy];
 
-  const locale = document.documentElement.lang.toLowerCase().split("-")[0];
-  return publicVehicleCopy[locale as keyof typeof publicVehicleCopy] ?? publicVehicleCopy.en;
+function normalizePublicVehicleLocale(value?: string | null) {
+  const locale = value?.toLowerCase().split("-")[0] ?? "en";
+  return locale in publicVehicleCopy
+    ? (locale as keyof typeof publicVehicleCopy)
+    : "en";
+}
+
+function usePublicVehicleCopy() {
+  const [copy, setCopy] = useState<PublicVehicleCopy>(publicVehicleCopy.en);
+
+  useEffect(() => {
+    const syncLocale = (value?: string | null) => {
+      const stored = window.localStorage.getItem("mg_locale");
+      const locale = normalizePublicVehicleLocale(
+        value ?? stored ?? document.documentElement.lang
+      );
+      setCopy(publicVehicleCopy[locale]);
+    };
+
+    const handleLocaleChange = (event: Event) => {
+      const detail = (event as CustomEvent<{ locale?: string }>).detail;
+      syncLocale(detail?.locale);
+    };
+
+    syncLocale();
+    window.addEventListener("mg-locale-change", handleLocaleChange);
+
+    return () => window.removeEventListener("mg-locale-change", handleLocaleChange);
+  }, []);
+
+  return copy;
 }
 
 
@@ -730,18 +818,19 @@ function PublicVehicleSelect({
 function PublicStageCard({
   title,
   data,
+  copy,
 }: {
   title: string;
   data?: PublicVehicleData["stage1"];
+  copy: PublicVehicleCopy;
 }) {
-  const copy = getPublicVehicleCopy();
   const hasPerformanceData = Boolean(
     data && (data.tunedHp !== null || data.tunedNm !== null)
   );
 
   if (!data || !hasPerformanceData) {
     return (
-      <div className="rounded-2xl border border-white/15 bg-black/35 p-4 backdrop-blur">
+      <div data-no-translate className="rounded-2xl border border-white/15 bg-black/35 p-4 backdrop-blur">
         <div className="mb-3 flex items-center justify-between">
           <div className="text-sm font-black">{title}</div>
           <Zap className="h-4 w-4 text-red-300" />
@@ -1149,7 +1238,7 @@ function ignoreVehicleFetchError() {
 }
 
 function PublicVehicleChecker() {
-  const copy = getPublicVehicleCopy();
+  const copy = usePublicVehicleCopy();
   const [brands, setBrands] = useState<VehicleOption[]>([]);
   const [models, setModels] = useState<VehicleOption[]>([]);
   const [generations, setGenerations] = useState<VehicleOption[]>([]);
@@ -1342,19 +1431,19 @@ function PublicVehicleChecker() {
           View tuning data and create your file request online.
         </h2>
 
-        <div className="mt-7 grid gap-4 md:grid-cols-5">
+        <div data-no-translate className="mt-7 grid gap-4 md:grid-cols-5">
           <PublicVehicleSelect
             value={brandId}
             onChange={handleBrandChange}
             options={brands}
-            placeholder="Select Vehicle Brand"
+            placeholder={copy.brandPlaceholder}
           />
 
           <PublicVehicleSelect
             value={modelId}
             onChange={handleModelChange}
             options={models}
-            placeholder="Choose Model"
+            placeholder={copy.modelPlaceholder}
             disabled={!brandId}
           />
 
@@ -1362,7 +1451,7 @@ function PublicVehicleChecker() {
             value={generationId}
             onChange={handleGenerationChange}
             options={generations}
-            placeholder="Select Generation"
+            placeholder={copy.generationPlaceholder}
             disabled={!modelId}
           />
 
@@ -1370,7 +1459,7 @@ function PublicVehicleChecker() {
             value={engineId}
             onChange={handleEngineChange}
             options={engines}
-            placeholder="Select Engine"
+            placeholder={copy.enginePlaceholder}
             disabled={!generationId}
           />
 
@@ -1380,11 +1469,11 @@ function PublicVehicleChecker() {
             className="flex h-14 items-center justify-center rounded-xl bg-white px-4 text-sm font-black text-[#b1121b] transition duration-300 hover:-translate-y-1 hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-60"
           >
             <Search className="mr-2 h-4 w-4" />
-            {loadingVehicle ? "Checking..." : "Search"}
+            {loadingVehicle ? copy.checking : copy.search}
           </button>
         </div>
 
-        <div aria-live="polite" aria-atomic="true">
+        <div data-no-translate aria-live="polite" aria-atomic="true">
           {loadingVehicle && (
             <div className="mt-4 flex items-center gap-3 rounded-xl border border-white/20 bg-black/20 px-4 py-3 text-sm font-bold text-white">
               <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
@@ -1462,8 +1551,8 @@ function PublicVehicleChecker() {
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">
-                <PublicStageCard title="Stage 1" data={vehicle.stage1} />
-                <PublicStageCard title="Stage 2" data={vehicle.stage2} />
+                <PublicStageCard title="Stage 1" data={vehicle.stage1} copy={copy} />
+                <PublicStageCard title="Stage 2" data={vehicle.stage2} copy={copy} />
               </div>
             </div>
 

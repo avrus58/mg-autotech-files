@@ -176,30 +176,37 @@ export function LanguageSwitcher() {
 
   useEffect(() => {
     persistLocale(locale);
-    translateNode(document.body, locale);
+    let observer: MutationObserver | null = null;
 
-    const observer = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
-        mutation.addedNodes.forEach((node) => {
-          if (node.nodeType === Node.TEXT_NODE && !shouldSkip(node)) {
-            const text = node as Text;
-            if (!originalText.has(text)) originalText.set(text, text.nodeValue ?? "");
-            text.nodeValue = translateText(originalText.get(text) ?? "", locale);
-          }
+    const timer = window.setTimeout(() => {
+      translateNode(document.body, locale);
 
-          if (node.nodeType === Node.ELEMENT_NODE) {
-            translateNode(node as Element, locale);
-          }
+      observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+          mutation.addedNodes.forEach((node) => {
+            if (node.nodeType === Node.TEXT_NODE && !shouldSkip(node)) {
+              const text = node as Text;
+              if (!originalText.has(text)) originalText.set(text, text.nodeValue ?? "");
+              text.nodeValue = translateText(originalText.get(text) ?? "", locale);
+            }
+
+            if (node.nodeType === Node.ELEMENT_NODE) {
+              translateNode(node as Element, locale);
+            }
+          });
         });
       });
-    });
 
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true,
-    });
+      observer.observe(document.body, {
+        childList: true,
+        subtree: true,
+      });
+    }, 150);
 
-    return () => observer.disconnect();
+    return () => {
+      window.clearTimeout(timer);
+      observer?.disconnect();
+    };
   }, [locale]);
 
   useEffect(() => {
