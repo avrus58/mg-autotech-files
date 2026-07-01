@@ -11,11 +11,10 @@ import {
   ShieldCheck,
   Wrench,
 } from "lucide-react";
-import { Footer } from "@/components/Footer";
+import { LocalizedSeoFooter } from "@/components/LocalizedSeoFooter";
 import { OnlineStatus } from "@/components/OnlineStatus";
 import {
   getServiceSeo,
-  homeSeo,
   hreflangByLocale,
   isPublicServiceSlug,
   isSeoLocale,
@@ -66,6 +65,9 @@ export async function generateMetadata({
       url: localizedUrl(locale, path),
       siteName,
       locale: hreflangByLocale[locale],
+      alternateLocale: seoLocales
+        .filter((item) => item !== locale)
+        .map((item) => hreflangByLocale[item]),
       type: "website",
       images: [
         {
@@ -97,7 +99,6 @@ export default async function LocalizedServicePage({
   const locale = rawLocale as LocaleCode;
   const slug = rawSlug as PublicServiceSlug;
   const labels = seoLabels[locale];
-  const home = homeSeo[locale];
   const service = getServiceSeo(slug, locale);
   const jsonLd = {
     "@context": "https://schema.org",
@@ -211,7 +212,7 @@ export default async function LocalizedServicePage({
               href={localizedPath(locale)}
               className="inline-flex items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] px-6 py-4 text-sm font-black text-white transition hover:bg-white/10"
             >
-              {home.primaryCta}
+              {labels.navHome}
             </Link>
           </div>
         </div>
@@ -221,8 +222,16 @@ export default async function LocalizedServicePage({
             <InfoCard icon={Wrench} label={labels.credits} value={`${service.credits} credits`} />
             <InfoCard icon={Clock3} label={labels.turnaround} value={service.turnaround} />
             <InfoCard icon={ShieldCheck} label={labels.delivery} value={labels.securePortal} />
-            <InfoCard icon={FileCode2} label="ECU / TCU" value="File workflow" />
+            <InfoCard icon={FileCode2} label="ECU / TCU" value={service.eyebrow} />
           </div>
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-7xl px-4 pb-10">
+        <div className="grid gap-5 border-y border-white/10 py-8 md:grid-cols-2">
+          {service.intro.map((paragraph) => (
+            <p key={paragraph} className="text-sm leading-7 text-zinc-300">{paragraph}</p>
+          ))}
         </div>
       </section>
 
@@ -280,7 +289,25 @@ export default async function LocalizedServicePage({
         </div>
       </section>
 
-      <Footer />
+      <section className="mx-auto max-w-7xl px-4 pb-16">
+        <div className="border-t border-white/10 pt-10">
+          <h2 className="text-2xl font-black">{labels.navServices}</h2>
+          <div className="mt-5 flex flex-wrap gap-3">
+            {publicServiceSlugs.filter((item) => item !== slug).map((relatedSlug) => (
+              <Link
+                key={relatedSlug}
+                href={localizedPath(locale, `/services/${relatedSlug}`)}
+                className="inline-flex items-center rounded-lg border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-bold text-zinc-200 hover:border-red-800/60 hover:text-white"
+              >
+                {getServiceSeo(relatedSlug, locale).name}
+                <ArrowRight className="ml-2 h-4 w-4 text-red-500" />
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <LocalizedSeoFooter locale={locale} />
       <OnlineStatus />
     </main>
   );

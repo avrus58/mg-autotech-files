@@ -17,6 +17,7 @@ const cookieKey = "mg_locale";
 const googleCookieKey = "googtrans";
 const originalText = new WeakMap<Text, string>();
 const originalAttributes = new WeakMap<Element, Record<string, string>>();
+const englishOnlySeoSegments = new Set(["about", "contact", "brands", "ecu-platforms"]);
 
 function escapeRegExp(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -61,7 +62,16 @@ function getLocalizedTarget(pathname: string, locale: LocaleCode) {
     return localizedPath(locale, `/services/${normalizedParts[1]}`);
   }
 
+  if (normalizedParts[0] && englishOnlySeoSegments.has(normalizedParts[0])) {
+    return localizedPath(locale);
+  }
+
   return null;
+}
+
+function isEnglishOnlySeoPath(pathname: string) {
+  const firstSegment = pathname.split("/").filter(Boolean)[0];
+  return Boolean(firstSegment && englishOnlySeoSegments.has(firstSegment));
 }
 
 function persistLocale(locale: LocaleCode) {
@@ -157,7 +167,9 @@ export function LanguageSwitcher() {
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
-    const initial = getPathLocale(pathname) ?? getInitialLocale();
+    const initial =
+      getPathLocale(pathname) ??
+      (isEnglishOnlySeoPath(pathname) ? defaultLocale : getInitialLocale());
     persistLocale(initial);
     void Promise.resolve().then(() => setLocale(initial));
   }, [pathname]);

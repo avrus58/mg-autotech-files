@@ -7,8 +7,10 @@ import {
   Mail,
   MapPin,
   MessageCircle,
+  Phone,
   ShieldCheck,
 } from "lucide-react";
+import { companyAddress, contactEmail, contactPhone } from "@/lib/seo";
 
 const services = [
   { label: "Stage 1 Tuning", href: "/services/stage-1" },
@@ -19,6 +21,8 @@ const services = [
 ];
 
 const platform = [
+  { label: "Vehicle Brands", href: "/brands" },
+  { label: "ECU Platforms", href: "/ecu-platforms" },
   { label: "Workshop Tools", href: "/tools" },
   { label: "Vehicle Widget", href: "/widget" },
   { label: "Upload File", href: "/new-request" },
@@ -26,6 +30,11 @@ const platform = [
   { label: "Login", href: "/login" },
   { label: "Register", href: "/register" },
   { label: "Dashboard", href: "/dashboard" },
+];
+
+const company = [
+  { label: "About MG AutoTech", href: "/about" },
+  { label: "Contact", href: "/contact" },
 ];
 
 const legal = [
@@ -62,7 +71,7 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="grid gap-10 lg:grid-cols-[1.2fr_.8fr_.8fr_.8fr_1.2fr]">
+        <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-[1.2fr_.8fr_.8fr_.8fr_1.2fr]">
           <div>
             <Link href="/" className="mb-5 flex items-center gap-3">
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-red-800/50 bg-[#111] shadow-lg shadow-red-950/40">
@@ -86,7 +95,7 @@ export function Footer() {
 
             <div className="mt-5 flex flex-wrap gap-3">
               <a
-                href="mailto:info@mgautotech.de"
+                href={`mailto:${contactEmail}`}
                 className="flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 bg-white/[0.05] text-zinc-300 transition hover:border-red-800/60 hover:text-white"
                 aria-label="Email MG AutoTech"
               >
@@ -139,6 +148,15 @@ export function Footer() {
           <div>
             <h3 className="mb-5 text-lg font-black">Legal</h3>
             <div className="space-y-3">
+              {company.map((item) => (
+                <Link
+                  key={item.label}
+                  href={item.href}
+                  className="block text-sm text-zinc-400 transition hover:text-white"
+                >
+                  {item.label}
+                </Link>
+              ))}
               {legal.map((item) => (
                 <Link
                   key={item.label}
@@ -156,12 +174,18 @@ export function Footer() {
             <div className="space-y-4 text-sm text-zinc-400">
               <div className="flex items-start gap-3">
                 <MapPin className="mt-0.5 h-5 w-5 text-red-500" />
-                <span>Germany / Stuttgart area</span>
+                <span>{companyAddress.streetAddress}<br />{companyAddress.postalCode} {companyAddress.addressLocality}, Germany</span>
+              </div>
+              <div className="flex items-start gap-3">
+                <Phone className="mt-0.5 h-5 w-5 text-red-500" />
+                <a href={`tel:${contactPhone.replace(/\s/g, "")}`} className="hover:text-white">
+                  {contactPhone}
+                </a>
               </div>
               <div className="flex items-start gap-3">
                 <Mail className="mt-0.5 h-5 w-5 text-red-500" />
-                <a href="mailto:info@mgautotech.de" className="hover:text-white">
-                  info@mgautotech.de
+                <a href={`mailto:${contactEmail}`} className="hover:text-white">
+                  {contactEmail}
                 </a>
               </div>
               <div className="flex items-start gap-3">

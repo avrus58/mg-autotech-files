@@ -7,6 +7,13 @@ import {
 export const siteUrl = "https://file.mgautotech.de";
 export const siteName = "MG AutoTech File Service";
 export const contactEmail = "info@mgautotech.de";
+export const contactPhone = "+49 151 51561670";
+export const companyAddress = {
+  streetAddress: "Böckinger Str. 32",
+  postalCode: "70437",
+  addressLocality: "Stuttgart",
+  addressCountry: "DE",
+} as const;
 
 export const hreflangByLocale: Record<LocaleCode, string> = {
   nl: "nl",
@@ -107,28 +114,28 @@ export const homeSeo: Record<LocaleCode, SeoHomeCopy> = {
       "Clear pages for the services workshops search for most: Stage 1, DPF, EGR, AdBlue and DTC file work.",
   },
   de: {
-    title: "ECU & TCU File Service für Werkstätten",
+    title: "ECU- & TCU-Dateiservice für Werkstätten",
     description:
-      "Professioneller ECU- und TCU-File-Service für Werkstätten: Stage 1, DPF OFF, EGR OFF, AdBlue OFF, DTC OFF, sichere Uploads, Credits und schnelle Portal-Lieferung.",
-    eyebrow: "Sichere Online-File-Service-Plattform",
-    heroTitle: "Professioneller ECU- & TCU-Tuning-File-Workflow für Werkstätten.",
+      "Professioneller ECU- und TCU-Dateiservice für Werkstätten: Stage 1, DPF OFF, EGR OFF, AdBlue OFF, DTC OFF, sichere Uploads, Credits und schnelle Portal-Lieferung.",
+    eyebrow: "Sichere Online-Plattform für Dateiservices",
+    heroTitle: "Professioneller Ablauf für ECU- und TCU-Tuningdateien in Werkstätten.",
     intro:
       "Originaldateien hochladen, Service wählen, Auftrag verfolgen und fertige Versionen sicher über das MG AutoTech Kundenportal herunterladen.",
     primaryCta: "Dateianfrage starten",
     secondaryCta: "Services ansehen",
     trustTitle: "Für den täglichen Werkstattbetrieb gebaut",
     trustText:
-      "Fahrzeugdaten, ECU-Informationen, Notizen, Credits, Dateiversionen und Revisionen bleiben in einem sauberen Workflow verbunden.",
+      "Fahrzeugdaten, ECU-Informationen, Notizen, Credits, Dateiversionen und Revisionen bleiben in einem klaren Arbeitsablauf verbunden.",
     servicesTitle: "Gefragte ECU- und TCU-Services",
     servicesText:
-      "Gezielte Seiten für häufig gesuchte Werkstatt-Services: Stage 1, DPF, EGR, AdBlue und DTC File-Service.",
+      "Gezielte Seiten für häufig gesuchte Werkstatt-Services: Stage 1 sowie DPF-, EGR-, AdBlue- und DTC-Dateibearbeitung.",
   },
   tr: {
     title: "Servisler için ECU & TCU Dosya Servisi",
     description:
       "Servisler için profesyonel ECU ve TCU dosya servisi: Stage 1, DPF OFF, EGR OFF, AdBlue OFF, DTC OFF, güvenli yükleme, kredi sistemi ve hızlı panel teslimatı.",
     eyebrow: "Güvenli online dosya servis platformu",
-    heroTitle: "Servisler için profesyonel ECU & TCU tuning dosya akışı.",
+    heroTitle: "Servisler için profesyonel ECU ve TCU tuning dosyası iş akışı.",
     intro:
       "Orijinal dosyayı yükle, servisi seç, siparişi takip et ve tamamlanan versiyonları MG AutoTech müşteri panelinden güvenli şekilde indir.",
     primaryCta: "Dosya talebi oluştur",
@@ -141,62 +148,62 @@ export const homeSeo: Record<LocaleCode, SeoHomeCopy> = {
       "Servislerin en çok aradığı işler için net sayfalar: Stage 1, DPF, EGR, AdBlue ve DTC dosya işlemleri.",
   },
   nl: {
-    title: "ECU & TCU file service voor werkplaatsen",
+    title: "ECU- en TCU-bestandsservice voor werkplaatsen",
     description:
-      "Professionele ECU en TCU file service voor werkplaatsen: Stage 1, DPF OFF, EGR OFF, AdBlue OFF, DTC OFF, veilige uploads, credits en snelle levering via het portaal.",
-    eyebrow: "Veilig online file-service platform",
-    heroTitle: "Professionele ECU & TCU tuningfile-workflow voor werkplaatsen.",
+      "Professionele ECU- en TCU-bestandsservice voor werkplaatsen: Stage 1, DPF OFF, EGR OFF, AdBlue OFF, DTC OFF, veilige uploads, credits en snelle levering via het portaal.",
+    eyebrow: "Veilig online platform voor bestandsservices",
+    heroTitle: "Professioneel werkproces voor ECU- en TCU-tuningbestanden.",
     intro:
-      "Upload originele bestanden, kies de service, volg de order en download voltooide versies via het beveiligde MG AutoTech klantenportaal.",
-    primaryCta: "File request starten",
+      "Verstuur originele bestanden, kies de service, volg de order en download voltooide versies via het beveiligde MG AutoTech klantenportaal.",
+    primaryCta: "Bestandsaanvraag starten",
     secondaryCta: "Services bekijken",
     trustTitle: "Gebouwd voor dagelijks werkplaatsgebruik",
     trustText:
-      "Voertuigdata, ECU-informatie, notities, credits, fileversies en revisies blijven in één workflow verbonden.",
+      "Voertuigdata, ECU-informatie, notities, credits, bestandsversies en revisies blijven in één werkproces verbonden.",
     servicesTitle: "Populaire ECU en TCU services",
     servicesText:
-      "Duidelijke pagina's voor veelgevraagde services: Stage 1, DPF, EGR, AdBlue en DTC file work.",
+      "Duidelijke pagina's voor veelgevraagde services: Stage 1 en DPF-, EGR-, AdBlue- en DTC-bestandsbewerking.",
   },
   fr: {
-    title: "Service fichiers ECU & TCU pour ateliers",
+    title: "Service de fichiers ECU et TCU pour ateliers",
     description:
-      "Service professionnel de fichiers ECU et TCU pour ateliers: Stage 1, DPF OFF, EGR OFF, AdBlue OFF, DTC OFF, uploads sécurisés, crédits et livraison rapide via portail.",
-    eyebrow: "Plateforme file service en ligne sécurisée",
-    heroTitle: "Workflow professionnel de fichiers tuning ECU & TCU pour ateliers.",
+      "Service professionnel de fichiers ECU et TCU pour ateliers : Stage 1, DPF OFF, EGR OFF, AdBlue OFF, DTC OFF, envois sécurisés, crédits et livraison rapide via le portail.",
+    eyebrow: "Plateforme sécurisée de services de fichiers en ligne",
+    heroTitle: "Processus professionnel pour les fichiers de réglage ECU et TCU.",
     intro:
       "Envoyez les fichiers d'origine, choisissez le service, suivez la demande et téléchargez les versions terminées depuis le portail client MG AutoTech.",
     primaryCta: "Créer une demande",
     secondaryCta: "Voir les services",
-    trustTitle: "Conçu pour l'opération atelier quotidienne",
+    trustTitle: "Conçu pour le travail quotidien en atelier",
     trustText:
-      "Données véhicule, informations ECU, notes, crédits, versions de fichiers et révisions restent liés dans un même workflow.",
+      "Données véhicule, informations ECU, notes, crédits, versions de fichiers et révisions restent liés dans un même processus.",
     servicesTitle: "Services ECU et TCU populaires",
     servicesText:
       "Pages claires pour les services les plus recherchés: Stage 1, DPF, EGR, AdBlue et DTC.",
   },
   it: {
-    title: "File service ECU & TCU per officine",
+    title: "Servizio file ECU e TCU per officine",
     description:
-      "File service professionale ECU e TCU per officine: Stage 1, DPF OFF, EGR OFF, AdBlue OFF, DTC OFF, upload sicuri, crediti e consegna rapida tramite portale.",
-    eyebrow: "Piattaforma file service online sicura",
-    heroTitle: "Workflow professionale per file tuning ECU & TCU dedicato alle officine.",
+      "Servizio professionale di file ECU e TCU per officine: Stage 1, DPF OFF, EGR OFF, AdBlue OFF, DTC OFF, caricamenti sicuri, crediti e consegna rapida tramite portale.",
+    eyebrow: "Piattaforma online sicura per i servizi file",
+    heroTitle: "Processo professionale per file tuning ECU e TCU dedicato alle officine.",
     intro:
       "Carica i file originali, scegli il servizio, segui l'ordine e scarica le versioni completate dal portale cliente MG AutoTech.",
     primaryCta: "Crea richiesta file",
     secondaryCta: "Vedi servizi",
     trustTitle: "Creato per il lavoro quotidiano in officina",
     trustText:
-      "Dati veicolo, informazioni ECU, note, crediti, versioni file e revisioni restano collegati in un unico workflow.",
+      "Dati veicolo, informazioni ECU, note, crediti, versioni file e revisioni restano collegati in un unico processo operativo.",
     servicesTitle: "Servizi ECU e TCU più richiesti",
     servicesText:
       "Pagine chiare per i servizi cercati dalle officine: Stage 1, DPF, EGR, AdBlue e DTC.",
   },
   ru: {
-    title: "ECU & TCU file service для сервисов",
+    title: "Сервис файлов ECU и TCU для автосервисов",
     description:
-      "Профессиональный ECU и TCU file service для автосервисов: Stage 1, DPF OFF, EGR OFF, AdBlue OFF, DTC OFF, безопасная загрузка, кредиты и быстрая выдача через портал.",
-    eyebrow: "Безопасная онлайн-платформа file service",
-    heroTitle: "Профессиональный workflow для ECU & TCU tuning files.",
+      "Профессиональная подготовка файлов ECU и TCU для автосервисов: Stage 1, DPF OFF, EGR OFF, AdBlue OFF, DTC OFF, безопасная загрузка, кредиты и быстрая выдача через портал.",
+    eyebrow: "Безопасная онлайн-платформа для работы с файлами",
+    heroTitle: "Профессиональный процесс подготовки файлов ECU и TCU для автосервисов.",
     intro:
       "Загрузите оригинальный файл, выберите услугу, отслеживайте заказ и скачивайте готовые версии через портал MG AutoTech.",
     primaryCta: "Создать запрос",
@@ -209,35 +216,35 @@ export const homeSeo: Record<LocaleCode, SeoHomeCopy> = {
       "Отдельные страницы для самых востребованных услуг: Stage 1, DPF, EGR, AdBlue и DTC.",
   },
   es: {
-    title: "File service ECU & TCU para talleres",
+    title: "Servicio de archivos ECU y TCU para talleres",
     description:
-      "File service profesional de ECU y TCU para talleres: Stage 1, DPF OFF, EGR OFF, AdBlue OFF, DTC OFF, cargas seguras, créditos y entrega rápida por portal.",
-    eyebrow: "Plataforma online segura de file service",
-    heroTitle: "Workflow profesional de archivos tuning ECU & TCU para talleres.",
+      "Servicio profesional de archivos ECU y TCU para talleres: Stage 1, DPF OFF, EGR OFF, AdBlue OFF, DTC OFF, cargas seguras, créditos y entrega rápida por portal.",
+    eyebrow: "Plataforma segura en línea para servicios de archivos",
+    heroTitle: "Proceso profesional para archivos de calibración ECU y TCU.",
     intro:
       "Sube archivos originales, elige el servicio, sigue el pedido y descarga las versiones completadas desde el portal MG AutoTech.",
     primaryCta: "Crear solicitud",
     secondaryCta: "Ver servicios",
     trustTitle: "Diseñado para la operación diaria del taller",
     trustText:
-      "Datos del vehículo, información ECU, notas, créditos, versiones y revisiones quedan conectados en un mismo workflow.",
+      "Datos del vehículo, información ECU, notas, créditos, versiones y revisiones quedan conectados en un mismo proceso.",
     servicesTitle: "Servicios ECU y TCU populares",
     servicesText:
       "Páginas claras para los servicios más buscados: Stage 1, DPF, EGR, AdBlue y DTC.",
   },
   pt: {
-    title: "File service ECU & TCU para oficinas",
+    title: "Serviço de ficheiros ECU e TCU para oficinas",
     description:
-      "File service profissional de ECU e TCU para oficinas: Stage 1, DPF OFF, EGR OFF, AdBlue OFF, DTC OFF, uploads seguros, créditos e entrega rápida no portal.",
-    eyebrow: "Plataforma online segura de file service",
-    heroTitle: "Workflow profissional de ficheiros tuning ECU & TCU para oficinas.",
+      "Serviço profissional de ficheiros ECU e TCU para oficinas: Stage 1, DPF OFF, EGR OFF, AdBlue OFF, DTC OFF, carregamentos seguros, créditos e entrega rápida no portal.",
+    eyebrow: "Plataforma online segura para serviços de ficheiros",
+    heroTitle: "Processo profissional para ficheiros de afinação ECU e TCU.",
     intro:
       "Envie ficheiros originais, escolha o serviço, acompanhe o pedido e descarregue as versões concluídas no portal MG AutoTech.",
     primaryCta: "Criar pedido",
     secondaryCta: "Ver serviços",
     trustTitle: "Criado para a operação diária da oficina",
     trustText:
-      "Dados do veículo, informação ECU, notas, créditos, versões e revisões ficam ligados num só workflow.",
+      "Dados do veículo, informação ECU, notas, créditos, versões e revisões ficam ligados num só processo.",
     servicesTitle: "Serviços ECU e TCU populares",
     servicesText:
       "Páginas claras para serviços procurados: Stage 1, DPF, EGR, AdBlue e DTC.",
@@ -260,35 +267,35 @@ export const homeSeo: Record<LocaleCode, SeoHomeCopy> = {
       "针对常见需求的清晰页面：Stage 1、DPF、EGR、AdBlue 和 DTC 文件处理。",
   },
   pl: {
-    title: "ECU & TCU file service dla warsztatów",
+    title: "Obsługa plików ECU i TCU dla warsztatów",
     description:
-      "Profesjonalny ECU i TCU file service dla warsztatów: Stage 1, DPF OFF, EGR OFF, AdBlue OFF, DTC OFF, bezpieczne uploady, kredyty i szybka dostawa w portalu.",
-    eyebrow: "Bezpieczna platforma online file service",
-    heroTitle: "Profesjonalny workflow plików tuningowych ECU & TCU dla warsztatów.",
+      "Profesjonalna obsługa plików ECU i TCU dla warsztatów: Stage 1, DPF OFF, EGR OFF, AdBlue OFF, DTC OFF, bezpieczne przesyłanie, kredyty i szybka dostawa w portalu.",
+    eyebrow: "Bezpieczna platforma internetowa do obsługi plików",
+    heroTitle: "Profesjonalny proces przygotowania plików tuningowych ECU i TCU.",
     intro:
       "Prześlij oryginalny plik, wybierz usługę, śledź zlecenie i pobierz gotowe wersje z portalu klienta MG AutoTech.",
     primaryCta: "Utwórz zlecenie",
     secondaryCta: "Zobacz usługi",
     trustTitle: "Zbudowane do codziennej pracy warsztatu",
     trustText:
-      "Dane pojazdu, informacje ECU, notatki, kredyty, wersje plików i rewizje pozostają w jednym workflow.",
+      "Dane pojazdu, informacje ECU, notatki, kredyty, wersje plików i poprawki pozostają w jednym procesie.",
     servicesTitle: "Popularne usługi ECU i TCU",
     servicesText:
       "Czytelne strony dla najczęściej szukanych usług: Stage 1, DPF, EGR, AdBlue i DTC.",
   },
   sq: {
-    title: "ECU & TCU file service për servise",
+    title: "Shërbim për skedarë ECU dhe TCU për servise",
     description:
-      "File service profesional për ECU dhe TCU: Stage 1, DPF OFF, EGR OFF, AdBlue OFF, DTC OFF, upload i sigurt, kredi dhe dorëzim i shpejtë në portal.",
-    eyebrow: "Platformë e sigurt online për file service",
-    heroTitle: "Workflow profesional për file tuning ECU & TCU për servise.",
+      "Shërbim profesional për skedarë ECU dhe TCU: Stage 1, DPF OFF, EGR OFF, AdBlue OFF, DTC OFF, ngarkim i sigurt, kredi dhe dorëzim i shpejtë në portal.",
+    eyebrow: "Platformë e sigurt online për shërbimin e skedarëve",
+    heroTitle: "Proces profesional për përgatitjen e skedarëve tuning ECU dhe TCU.",
     intro:
-      "Ngarko file-in origjinal, zgjidh shërbimin, ndiq porosinë dhe shkarko versionet e përfunduara në portalin MG AutoTech.",
-    primaryCta: "Krijo kërkesë file",
+      "Ngarko skedarin origjinal, zgjidh shërbimin, ndiq porosinë dhe shkarko versionet e përfunduara në portalin MG AutoTech.",
+    primaryCta: "Krijo kërkesë për skedar",
     secondaryCta: "Shiko shërbimet",
     trustTitle: "Ndërtuar për punën ditore të servisit",
     trustText:
-      "Të dhënat e automjetit, ECU, shënimet, kreditë, versionet dhe revizionet qëndrojnë në një workflow të vetëm.",
+      "Të dhënat e automjetit, ECU, shënimet, kreditë, versionet dhe revizionet qëndrojnë në një proces të vetëm.",
     servicesTitle: "Shërbime popullore ECU dhe TCU",
     servicesText:
       "Faqe të qarta për shërbimet më të kërkuara: Stage 1, DPF, EGR, AdBlue dhe DTC.",
@@ -536,73 +543,73 @@ export const seoLabels: Record<LocaleCode, LocaleLabels> = {
 const serviceNames: Record<PublicServiceSlug, Record<LocaleCode, string>> = {
   "stage-1": {
     en: "Stage 1 ECU File Service",
-    de: "Stage 1 ECU File Service",
+    de: "Stage 1 ECU-Dateiservice",
     tr: "Stage 1 ECU Dosya Servisi",
-    nl: "Stage 1 ECU file service",
+    nl: "Stage 1 ECU-bestandsservice",
     fr: "Service fichier ECU Stage 1",
-    it: "File service ECU Stage 1",
-    ru: "Stage 1 ECU File Service",
-    es: "File service ECU Stage 1",
-    pt: "File service ECU Stage 1",
+    it: "Servizio file ECU Stage 1",
+    ru: "Файловый сервис ECU Stage 1",
+    es: "Servicio de archivo ECU Stage 1",
+    pt: "Serviço de ficheiro ECU Stage 1",
     zh: "Stage 1 ECU 文件服务",
-    pl: "Stage 1 ECU file service",
-    sq: "Stage 1 ECU file service",
+    pl: "Usługa pliku ECU Stage 1",
+    sq: "Shërbim file ECU Stage 1",
   },
   "dpf-off": {
     en: "DPF OFF File Service",
-    de: "DPF OFF File Service",
+    de: "DPF OFF Dateiservice",
     tr: "DPF OFF Dosya Servisi",
-    nl: "DPF OFF file service",
+    nl: "DPF OFF bestandsservice",
     fr: "Service fichier DPF OFF",
-    it: "File service DPF OFF",
-    ru: "DPF OFF File Service",
-    es: "File service DPF OFF",
-    pt: "File service DPF OFF",
+    it: "Servizio file DPF OFF",
+    ru: "Файловый сервис DPF OFF",
+    es: "Servicio de archivo DPF OFF",
+    pt: "Serviço de ficheiro DPF OFF",
     zh: "DPF OFF 文件服务",
-    pl: "DPF OFF file service",
-    sq: "DPF OFF file service",
+    pl: "Usługa pliku DPF OFF",
+    sq: "Shërbim file DPF OFF",
   },
   "egr-off": {
     en: "EGR OFF File Service",
-    de: "EGR / AGR OFF File Service",
+    de: "EGR / AGR OFF Dateiservice",
     tr: "EGR OFF Dosya Servisi",
-    nl: "EGR OFF file service",
+    nl: "EGR OFF bestandsservice",
     fr: "Service fichier EGR OFF",
-    it: "File service EGR OFF",
-    ru: "EGR OFF File Service",
-    es: "File service EGR OFF",
-    pt: "File service EGR OFF",
+    it: "Servizio file EGR OFF",
+    ru: "Файловый сервис EGR OFF",
+    es: "Servicio de archivo EGR OFF",
+    pt: "Serviço de ficheiro EGR OFF",
     zh: "EGR OFF 文件服务",
-    pl: "EGR OFF file service",
-    sq: "EGR OFF file service",
+    pl: "Usługa pliku EGR OFF",
+    sq: "Shërbim file EGR OFF",
   },
   "adblue-off": {
     en: "AdBlue OFF File Service",
-    de: "AdBlue OFF File Service",
+    de: "AdBlue OFF Dateiservice",
     tr: "AdBlue OFF Dosya Servisi",
-    nl: "AdBlue OFF file service",
+    nl: "AdBlue OFF bestandsservice",
     fr: "Service fichier AdBlue OFF",
-    it: "File service AdBlue OFF",
-    ru: "AdBlue OFF File Service",
-    es: "File service AdBlue OFF",
-    pt: "File service AdBlue OFF",
+    it: "Servizio file AdBlue OFF",
+    ru: "Файловый сервис AdBlue OFF",
+    es: "Servicio de archivo AdBlue OFF",
+    pt: "Serviço de ficheiro AdBlue OFF",
     zh: "AdBlue OFF 文件服务",
-    pl: "AdBlue OFF file service",
-    sq: "AdBlue OFF file service",
+    pl: "Usługa pliku AdBlue OFF",
+    sq: "Shërbim file AdBlue OFF",
   },
   "dtc-off": {
     en: "DTC OFF File Service",
-    de: "DTC OFF File Service",
+    de: "DTC OFF Dateiservice",
     tr: "DTC OFF Dosya Servisi",
-    nl: "DTC OFF file service",
+    nl: "DTC OFF bestandsservice",
     fr: "Service fichier DTC OFF",
-    it: "File service DTC OFF",
-    ru: "DTC OFF File Service",
-    es: "File service DTC OFF",
-    pt: "File service DTC OFF",
+    it: "Servizio file DTC OFF",
+    ru: "Файловый сервис DTC OFF",
+    es: "Servicio de archivo DTC OFF",
+    pt: "Serviço de ficheiro DTC OFF",
     zh: "DTC OFF 文件服务",
-    pl: "DTC OFF file service",
-    sq: "DTC OFF file service",
+    pl: "Usługa pliku DTC OFF",
+    sq: "Shërbim file DTC OFF",
   },
 };
 
@@ -686,18 +693,18 @@ const serviceTemplates: Record<LocaleCode, ServiceTemplate> = {
     ],
   },
   de: {
-    eyebrow: "Workflow für Werkstatt-File-Service",
+    eyebrow: "Ablauf für den Werkstatt-Dateiservice",
     description: (name) =>
-      `${name} für Werkstätten und Tuning-Partner mit sicherem Upload, Credit-Checkout, Auftragsverfolgung und kontrollierter Dateilieferung.`,
+      `${name} für Werkstätten und Tuning-Partner mit sicherem Hochladen, Credit-Abrechnung, Auftragsverfolgung und kontrollierter Dateilieferung.`,
     hero: (name) =>
-      `${name} in einem professionellen Portal-Workflow: Anfrage, Dateiprüfung, Bearbeitung, Lieferung und Revision.`,
+      `${name} in einem professionellen Portal-Ablauf: Anfrage, Dateiprüfung, Bearbeitung, Lieferung und Revision.`,
     intro: (name) => [
       `${name} ist für Werkstätten gedacht, die einen klaren technischen Ablauf statt verstreuter Nachrichten und unsicherem Dateiaustausch brauchen.`,
-      "Originaldatei, Fahrzeugdaten, Lesemethode, ECU-Informationen und Notizen bleiben vom Upload bis zur Lieferung am Auftrag.",
+      "Originaldatei, Fahrzeugdaten, Lesemethode, ECU-Informationen und Notizen bleiben vom Hochladen bis zur Lieferung am Auftrag.",
     ],
     benefits: [
       "Sicheres Kundenportal für Originaldateien und modifizierte Dateien",
-      "Status-Timeline für Anfrage, Dateiprüfung, Bearbeitung und Abschluss",
+      "Klarer Statusverlauf für Anfrage, Dateiprüfung, Bearbeitung und Abschluss",
       "Credit-basierter Ablauf mit SumUp, PayPal, Stripe und Banküberweisung",
       "Revisionsanfrage nach abgeschlossener Lieferung möglich",
     ],
@@ -723,14 +730,14 @@ const serviceTemplates: Record<LocaleCode, ServiceTemplate> = {
       "Orijinal dosya, araç bilgisi, okuma yöntemi, ECU detayı ve notlar yüklemeden teslimata kadar siparişe bağlı kalır.",
     ],
     benefits: [
-      "Original ve modified dosyalar için güvenli müşteri paneli",
-      "Request created, file check, in progress ve completed durum timeline'ı",
+      "Orijinal ve düzenlenmiş dosyalar için güvenli müşteri paneli",
+      "Talep oluşturuldu, dosya kontrolü, işlemde ve tamamlandı durum akışı",
       "SumUp, PayPal, Stripe ve banka transferli kredi akışı",
       "Tamamlanan teslimat sonrası revizyon talebi desteği",
     ],
     process: [
       { title: "Araç bilgilerini gönder", text: "Müşteri araç, ECU, okuma yöntemi ve servis detaylarını seçer." },
-      { title: "Original dosyayı yükle", text: "Original ECU/TCU dosyası müşteri hesabına bağlı şekilde saklanır." },
+      { title: "Orijinal dosyayı yükle", text: "Orijinal ECU/TCU dosyası müşteri hesabına bağlı şekilde saklanır." },
       { title: "Teknik kontrol", text: "MG AutoTech talebi kontrol eder ve gerekirse ek bilgi ister." },
       { title: "Güvenli teslimat", text: "Tamamlanan dosya sipariş detayından indirilir." },
     ],
@@ -740,19 +747,19 @@ const serviceTemplates: Record<LocaleCode, ServiceTemplate> = {
     ],
   },
   nl: {
-    eyebrow: "Workflow voor werkplaats file service",
+    eyebrow: "Werkproces voor bestandsservice in de werkplaats",
     description: (name) =>
-      `${name} voor werkplaatsen en tuningpartners met veilige upload, credit-checkout, ordertracking en gecontroleerde bestandslevering.`,
+      `${name} voor werkplaatsen en tuningpartners met veilige bestandsoverdracht, creditbetaling, orderopvolging en gecontroleerde bestandslevering.`,
     hero: (name) =>
-      `${name} via een professioneel portaal: aanvraag, file check, verwerking, levering en revisie-support.`,
+      `${name} via een professioneel portaal: aanvraag, bestandscontrole, verwerking, levering en revisieondersteuning.`,
     intro: (name) => [
-      `${name} is bedoeld voor werkplaatsen die een duidelijke technische workflow nodig hebben.`,
+      `${name} is bedoeld voor werkplaatsen die een duidelijk technisch werkproces nodig hebben.`,
       "Origineel bestand, voertuigdata, leesmethode, ECU-informatie en notities blijven aan de order gekoppeld.",
     ],
-    benefits: ["Veilig klantenportaal", "Duidelijke status-timeline", "Credit-based workflow", "Revisie mogelijk na levering"],
+    benefits: ["Veilig klantenportaal", "Duidelijk statusverloop", "Werkproces op basis van credits", "Revisie mogelijk na levering"],
     process: [
       { title: "Voertuigdata indienen", text: "Selecteer voertuig, ECU, leesmethode en service." },
-      { title: "Origineel bestand uploaden", text: "Het originele ECU/TCU-bestand wordt aan het account gekoppeld." },
+      { title: "Origineel bestand versturen", text: "Het originele ECU/TCU-bestand wordt aan het account gekoppeld." },
       { title: "Technische controle", text: "MG AutoTech controleert de aanvraag." },
       { title: "Veilige levering", text: "Het voltooide bestand staat in de orderdetailpagina." },
     ],
@@ -762,19 +769,19 @@ const serviceTemplates: Record<LocaleCode, ServiceTemplate> = {
     ],
   },
   fr: {
-    eyebrow: "Workflow file service pour ateliers",
+    eyebrow: "Processus de service de fichiers pour ateliers",
     description: (name) =>
-      `${name} pour ateliers et partenaires tuning avec upload sécurisé, crédits, suivi de commande et livraison contrôlée.`,
+      `${name} pour ateliers et partenaires tuning avec envoi sécurisé, crédits, suivi de commande et livraison contrôlée.`,
     hero: (name) =>
       `${name} dans un portail professionnel: demande, contrôle fichier, traitement, livraison et révision.`,
     intro: (name) => [
       `${name} s'adresse aux ateliers qui veulent un processus technique clair.`,
       "Fichier original, données véhicule, méthode de lecture, ECU et notes restent liés à la demande.",
     ],
-    benefits: ["Portail client sécurisé", "Timeline de statut claire", "Workflow basé sur crédits", "Révision possible après livraison"],
+    benefits: ["Portail client sécurisé", "Suivi clair du statut", "Processus basé sur des crédits", "Révision possible après livraison"],
     process: [
       { title: "Envoyer les données véhicule", text: "Sélection du véhicule, ECU, méthode de lecture et service." },
-      { title: "Uploader le fichier original", text: "Le fichier ECU/TCU original reste lié au compte client." },
+      { title: "Envoyer le fichier original", text: "Le fichier ECU/TCU original reste lié au compte client." },
       { title: "Contrôle technique", text: "MG AutoTech vérifie la demande." },
       { title: "Livraison sécurisée", text: "Le fichier terminé est disponible dans le détail de commande." },
     ],
@@ -784,19 +791,19 @@ const serviceTemplates: Record<LocaleCode, ServiceTemplate> = {
     ],
   },
   it: {
-    eyebrow: "Workflow file service per officine",
+    eyebrow: "Processo di servizio file per officine",
     description: (name) =>
-      `${name} per officine e partner tuning con upload sicuro, crediti, tracking ordine e consegna controllata.`,
+      `${name} per officine e partner tuning con caricamento sicuro, crediti, tracciamento ordine e consegna controllata.`,
     hero: (name) =>
       `${name} tramite portale professionale: richiesta, controllo file, lavorazione, consegna e revisione.`,
     intro: (name) => [
       `${name} è pensato per officine che vogliono un processo tecnico chiaro.`,
       "File originale, dati veicolo, metodo di lettura, ECU e note restano collegati all'ordine.",
     ],
-    benefits: ["Portale cliente sicuro", "Timeline stato chiara", "Workflow a crediti", "Revisione dopo la consegna"],
+    benefits: ["Portale cliente sicuro", "Stato ordine sempre chiaro", "Processo basato su crediti", "Revisione dopo la consegna"],
     process: [
       { title: "Invio dati veicolo", text: "Veicolo, ECU, metodo di lettura e servizio." },
-      { title: "Upload file originale", text: "Il file ECU/TCU originale resta collegato all'account." },
+      { title: "Caricamento file originale", text: "Il file ECU/TCU originale resta collegato all'account." },
       { title: "Controllo tecnico", text: "MG AutoTech controlla la richiesta." },
       { title: "Consegna sicura", text: "Il file completato è nella pagina ordine." },
     ],
@@ -806,16 +813,16 @@ const serviceTemplates: Record<LocaleCode, ServiceTemplate> = {
     ],
   },
   ru: {
-    eyebrow: "Workflow file service для сервисов",
+    eyebrow: "Процесс обработки файлов для автосервисов",
     description: (name) =>
-      `${name} для автосервисов и tuning-партнеров: безопасная загрузка, кредиты, отслеживание заказа и контролируемая выдача файла.`,
+      `${name} для автосервисов и партнёров по тюнингу: безопасная загрузка, кредиты, отслеживание заказа и контролируемая выдача файла.`,
     hero: (name) =>
       `${name} через профессиональный портал: запрос, проверка файла, обработка, выдача и ревизия.`,
     intro: (name) => [
       `${name} подходит сервисам, которым нужен понятный технический процесс.`,
       "Оригинальный файл, данные автомобиля, метод чтения, ECU и заметки остаются привязанными к заказу.",
     ],
-    benefits: ["Безопасный клиентский портал", "Понятная timeline статуса", "Workflow на кредитах", "Ревизия после выдачи"],
+    benefits: ["Безопасный клиентский портал", "Понятный ход выполнения заказа", "Расчёт с помощью кредитов", "Доработка после выдачи"],
     process: [
       { title: "Данные автомобиля", text: "Выбор автомобиля, ECU, метода чтения и услуги." },
       { title: "Загрузка оригинала", text: "Оригинальный ECU/TCU файл привязан к аккаунту." },
@@ -828,16 +835,16 @@ const serviceTemplates: Record<LocaleCode, ServiceTemplate> = {
     ],
   },
   es: {
-    eyebrow: "Workflow file service para talleres",
+    eyebrow: "Proceso de servicio de archivos para talleres",
     description: (name) =>
-      `${name} para talleres y partners tuning con carga segura, créditos, seguimiento de pedido y entrega controlada.`,
+      `${name} para talleres y colaboradores de calibración con carga segura, créditos, seguimiento del pedido y entrega controlada.`,
     hero: (name) =>
       `${name} mediante portal profesional: solicitud, revisión, proceso, entrega y revisión posterior.`,
     intro: (name) => [
       `${name} está pensado para talleres que necesitan un proceso técnico claro.`,
       "Archivo original, datos del vehículo, método de lectura, ECU y notas quedan ligados al pedido.",
     ],
-    benefits: ["Portal cliente seguro", "Timeline de estado clara", "Workflow con créditos", "Revisión después de entrega"],
+    benefits: ["Portal de cliente seguro", "Estado del pedido siempre claro", "Proceso basado en créditos", "Revisión después de la entrega"],
     process: [
       { title: "Enviar datos vehículo", text: "Vehículo, ECU, método de lectura y servicio." },
       { title: "Subir archivo original", text: "El archivo ECU/TCU original queda ligado a la cuenta." },
@@ -850,19 +857,19 @@ const serviceTemplates: Record<LocaleCode, ServiceTemplate> = {
     ],
   },
   pt: {
-    eyebrow: "Workflow file service para oficinas",
+    eyebrow: "Processo de serviço de ficheiros para oficinas",
     description: (name) =>
-      `${name} para oficinas e parceiros tuning com upload seguro, créditos, acompanhamento e entrega controlada.`,
+      `${name} para oficinas e parceiros de afinação com carregamento seguro, créditos, acompanhamento e entrega controlada.`,
     hero: (name) =>
       `${name} por portal profissional: pedido, verificação, processamento, entrega e revisão.`,
     intro: (name) => [
       `${name} foi pensado para oficinas que precisam de um processo técnico claro.`,
       "Ficheiro original, dados do veículo, método de leitura, ECU e notas ficam ligados ao pedido.",
     ],
-    benefits: ["Portal cliente seguro", "Timeline de estado clara", "Workflow com créditos", "Revisão após entrega"],
+    benefits: ["Portal de cliente seguro", "Estado do pedido sempre claro", "Processo baseado em créditos", "Revisão após entrega"],
     process: [
       { title: "Enviar dados do veículo", text: "Veículo, ECU, método de leitura e serviço." },
-      { title: "Upload do ficheiro original", text: "O ficheiro ECU/TCU original fica ligado à conta." },
+      { title: "Carregar ficheiro original", text: "O ficheiro ECU/TCU original fica ligado à conta." },
       { title: "Verificação técnica", text: "MG AutoTech verifica o pedido." },
       { title: "Entrega segura", text: "O ficheiro concluído fica no detalhe do pedido." },
     ],
@@ -894,19 +901,19 @@ const serviceTemplates: Record<LocaleCode, ServiceTemplate> = {
     ],
   },
   pl: {
-    eyebrow: "Workflow file service dla warsztatów",
+    eyebrow: "Proces obsługi plików dla warsztatów",
     description: (name) =>
-      `${name} dla warsztatów i partnerów tuningowych z bezpiecznym uploadem, kredytami, śledzeniem i kontrolowaną dostawą pliku.`,
+      `${name} dla warsztatów i partnerów tuningowych z bezpiecznym przesyłaniem, kredytami, śledzeniem i kontrolowaną dostawą pliku.`,
     hero: (name) =>
       `${name} przez profesjonalny portal: zlecenie, kontrola pliku, praca, dostawa i rewizja.`,
     intro: (name) => [
       `${name} jest dla warsztatów, które potrzebują jasnego procesu technicznego.`,
       "Oryginalny plik, dane pojazdu, metoda odczytu, ECU i notatki pozostają przy zleceniu.",
     ],
-    benefits: ["Bezpieczny portal klienta", "Czytelna timeline statusu", "Workflow kredytowy", "Rewizja po dostawie"],
+    benefits: ["Bezpieczny portal klienta", "Czytelny przebieg realizacji", "Proces rozliczany kredytami", "Poprawka po dostawie"],
     process: [
       { title: "Dane pojazdu", text: "Wybór pojazdu, ECU, metody odczytu i usługi." },
-      { title: "Upload oryginału", text: "Oryginalny plik ECU/TCU jest przypisany do konta." },
+      { title: "Prześlij oryginalny plik", text: "Oryginalny plik ECU/TCU jest przypisany do konta." },
       { title: "Kontrola techniczna", text: "MG AutoTech sprawdza zlecenie." },
       { title: "Bezpieczna dostawa", text: "Gotowy plik jest w szczegółach zlecenia." },
     ],
@@ -916,32 +923,100 @@ const serviceTemplates: Record<LocaleCode, ServiceTemplate> = {
     ],
   },
   sq: {
-    eyebrow: "Workflow file service për servise",
+    eyebrow: "Proces i shërbimit të skedarëve për servise",
     description: (name) =>
-      `${name} për servise dhe partnerë tuning me upload të sigurt, kredi, ndjekje porosie dhe dorëzim të kontrolluar.`,
+      `${name} për servise dhe partnerë tuning me ngarkim të sigurt, kredi, ndjekje porosie dhe dorëzim të kontrolluar.`,
     hero: (name) =>
-      `${name} përmes portalit profesional: kërkesë, kontroll file, përpunim, dorëzim dhe revizion.`,
+      `${name} përmes portalit profesional: kërkesë, kontroll skedari, përpunim, dorëzim dhe revizion.`,
     intro: (name) => [
       `${name} është për servise që duan proces teknik të qartë.`,
-      "File origjinal, të dhënat e automjetit, metoda e leximit, ECU dhe shënimet lidhen me porosinë.",
+      "Skedari origjinal, të dhënat e automjetit, metoda e leximit, ECU dhe shënimet lidhen me porosinë.",
     ],
-    benefits: ["Portal i sigurt klienti", "Timeline statusi i qartë", "Workflow me kredi", "Revizion pas dorëzimit"],
+    benefits: ["Portal i sigurt klienti", "Ecuri e qartë e statusit", "Proces me kredi", "Revizion pas dorëzimit"],
     process: [
       { title: "Dërgo të dhënat", text: "Automjeti, ECU, metoda e leximit dhe shërbimi." },
-      { title: "Ngarko file origjinal", text: "File ECU/TCU lidhet me llogarinë." },
+      { title: "Ngarko skedarin origjinal", text: "Skedari ECU/TCU lidhet me llogarinë." },
       { title: "Kontroll teknik", text: "MG AutoTech kontrollon kërkesën." },
-      { title: "Dorëzim i sigurt", text: "File i përfunduar është në detajet e porosisë." },
+      { title: "Dorëzim i sigurt", text: "Skedari i përfunduar është në detajet e porosisë." },
     ],
     faq: (name) => [
-      { q: `Sa zgjat ${name}?`, a: "File standard shpesh trajtohen rreth 30 minuta, sipas ngarkesës dhe kompleksitetit." },
+      { q: `Sa zgjat ${name}?`, a: "Skedarët standardë shpesh trajtohen rreth 30 minuta, sipas ngarkesës dhe kompleksitetit." },
       { q: "A mund të kërkoj revizion?", a: "Po, nga portali i klientit." },
     ],
+  },
+};
+
+const localizedServiceOperations: Record<
+  LocaleCode,
+  { standardTurnaround: string; fastReview: string; required: string[] }
+> = {
+  en: {
+    standardTurnaround: "Usually around 30 minutes",
+    fastReview: "Fast technical review",
+    required: ["Original ECU/TCU file", "Vehicle model and engine", "ECU and HW/SW information", "Read method", "Fault codes and workshop notes"],
+  },
+  de: {
+    standardTurnaround: "In der Regel etwa 30 Minuten",
+    fastReview: "Schnelle technische Prüfung",
+    required: ["Originale ECU-/TCU-Datei", "Fahrzeugmodell und Motor", "Steuergerät und HW-/SW-Daten", "Lesemethode", "Fehlercodes und Werkstattnotizen"],
+  },
+  nl: {
+    standardTurnaround: "Meestal rond 30 minuten",
+    fastReview: "Snelle technische controle",
+    required: ["Origineel ECU/TCU-bestand", "Voertuigmodel en motor", "ECU- en HW/SW-informatie", "Leesmethode", "Foutcodes en werkplaatsnotities"],
+  },
+  fr: {
+    standardTurnaround: "En général autour de 30 minutes",
+    fastReview: "Contrôle technique rapide",
+    required: ["Fichier ECU/TCU d'origine", "Modèle du véhicule et moteur", "ECU et informations HW/SW", "Méthode de lecture", "Codes défaut et notes atelier"],
+  },
+  it: {
+    standardTurnaround: "Di solito circa 30 minuti",
+    fastReview: "Controllo tecnico rapido",
+    required: ["File ECU/TCU originale", "Modello veicolo e motore", "ECU e dati HW/SW", "Metodo di lettura", "Codici guasto e note officina"],
+  },
+  ru: {
+    standardTurnaround: "Обычно около 30 минут",
+    fastReview: "Быстрая техническая проверка",
+    required: ["Исходный файл ECU/TCU", "Модель автомобиля и двигатель", "ECU и данные HW/SW", "Метод чтения", "Коды ошибок и заметки сервиса"],
+  },
+  es: {
+    standardTurnaround: "Normalmente unos 30 minutos",
+    fastReview: "Revisión técnica rápida",
+    required: ["Archivo ECU/TCU original", "Modelo del vehículo y motor", "ECU y datos HW/SW", "Método de lectura", "Códigos de avería y notas del taller"],
+  },
+  tr: {
+    standardTurnaround: "Genellikle yaklaşık 30 dakika",
+    fastReview: "Hızlı teknik kontrol",
+    required: ["Orijinal ECU/TCU dosyası", "Araç modeli ve motor", "ECU ile HW/SW bilgileri", "Okuma yöntemi", "Arıza kodları ve servis notları"],
+  },
+  pt: {
+    standardTurnaround: "Normalmente cerca de 30 minutos",
+    fastReview: "Verificação técnica rápida",
+    required: ["Ficheiro ECU/TCU original", "Modelo do veículo e motor", "ECU e dados HW/SW", "Método de leitura", "Códigos de avaria e notas da oficina"],
+  },
+  zh: {
+    standardTurnaround: "通常约 30 分钟",
+    fastReview: "快速技术审核",
+    required: ["原始 ECU/TCU 文件", "车型与发动机信息", "ECU 与 HW/SW 信息", "读取方式", "故障码与车间备注"],
+  },
+  pl: {
+    standardTurnaround: "Zwykle około 30 minut",
+    fastReview: "Szybka kontrola techniczna",
+    required: ["Oryginalny plik ECU/TCU", "Model pojazdu i silnik", "ECU oraz dane HW/SW", "Metoda odczytu", "Kody błędów i uwagi warsztatu"],
+  },
+  sq: {
+    standardTurnaround: "Zakonisht rreth 30 minuta",
+    fastReview: "Kontroll i shpejtë teknik",
+    required: ["File origjinal ECU/TCU", "Modeli i automjetit dhe motori", "ECU dhe të dhënat HW/SW", "Metoda e leximit", "Kodet e defekteve dhe shënimet e servisit"],
   },
 };
 
 export function getServiceSeo(slug: PublicServiceSlug, locale: LocaleCode) {
   const name = serviceNames[slug][locale] ?? serviceNames[slug][defaultLocale];
   const template = serviceTemplates[locale] ?? serviceTemplates[defaultLocale];
+  const operations = localizedServiceOperations[locale] ?? localizedServiceOperations[defaultLocale];
+  const meta = serviceMeta[slug];
 
   return {
     slug,
@@ -954,28 +1029,56 @@ export function getServiceSeo(slug: PublicServiceSlug, locale: LocaleCode) {
     benefits: template.benefits,
     process: template.process,
     faq: template.faq(name),
-    ...serviceMeta[slug],
+    ...meta,
+    turnaround: slug === "dtc-off" ? operations.fastReview : operations.standardTurnaround,
+    required: operations.required,
   };
 }
 
 export function organizationJsonLd() {
   return {
     "@context": "https://schema.org",
-    "@type": "Organization",
+    "@type": ["Organization", "AutomotiveBusiness"],
     "@id": `${siteUrl}/#organization`,
     name: "MG AutoTech",
+    legalName: "MG AutoTech - Melih Gokkaya",
+    description:
+      "Professional ECU and TCU file service platform for workshops and automotive tuning partners.",
     url: siteUrl,
     email: contactEmail,
-    logo: `${siteUrl}/opengraph-image`,
+    telephone: contactPhone,
+    taxID: "93087/00619",
+    vatID: "DE461343520",
+    image: `${siteUrl}/opengraph-image`,
+    logo: {
+      "@type": "ImageObject",
+      url: `${siteUrl}/mg-autotech-logo.svg`,
+      contentUrl: `${siteUrl}/mg-autotech-logo.svg`,
+      width: 512,
+      height: 512,
+    },
+    address: {
+      "@type": "PostalAddress",
+      ...companyAddress,
+    },
+    founder: {
+      "@type": "Person",
+      name: "Melih Gokkaya",
+    },
+    sameAs: ["https://mgautotech.de"],
     contactPoint: [
       {
         "@type": "ContactPoint",
         email: contactEmail,
+        telephone: contactPhone,
         contactType: "customer support",
         availableLanguage: seoLocales.map((locale) => hreflangByLocale[locale]),
+        areaServed: ["DE", "EU"],
       },
     ],
-    areaServed: ["Germany", "Europe"],
+    areaServed: ["Germany", "European Union", "Europe"],
+    currenciesAccepted: "EUR",
+    priceRange: "EUR",
     knowsAbout: [
       "ECU file service",
       "TCU tuning",
@@ -1013,10 +1116,17 @@ export function serviceJsonLd(slug: PublicServiceSlug, locale: LocaleCode) {
     name: service.name,
     description: service.description,
     serviceType: service.name,
+    inLanguage: hreflangByLocale[locale],
+    category: "Automotive ECU and TCU file service",
+    audience: {
+      "@type": "BusinessAudience",
+      audienceType: "Automotive workshops and tuning professionals",
+    },
     provider: {
       "@id": `${siteUrl}/#organization`,
     },
     areaServed: ["Germany", "Europe"],
     url: localizedUrl(locale, `/services/${slug}`),
+    mainEntityOfPage: localizedUrl(locale, `/services/${slug}`),
   };
 }

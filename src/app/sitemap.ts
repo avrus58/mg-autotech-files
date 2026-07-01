@@ -7,9 +7,11 @@ import {
   seoLocales,
   siteUrl,
 } from "@/lib/seo";
+import { brandGuides, platformGuides } from "@/lib/industry-content";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const lastModified = new Date();
+  const contentUpdated = new Date("2026-07-01T00:00:00.000Z");
+  const legalUpdated = new Date("2026-06-30T00:00:00.000Z");
   const toolPaths = [
     "/tools",
     "/tools/torque-power-calculator",
@@ -18,7 +20,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const publicPages: MetadataRoute.Sitemap = [
     {
       url: absoluteUrl("/"),
-      lastModified,
+      lastModified: contentUpdated,
       changeFrequency: "weekly",
       priority: 1,
       alternates: {
@@ -30,7 +32,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
       return {
         url: absoluteUrl(path),
-        lastModified,
+        lastModified: contentUpdated,
         changeFrequency: "monthly" as const,
         priority: 0.85,
         alternates: {
@@ -43,7 +45,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const localizedPages: MetadataRoute.Sitemap = seoLocales.flatMap((locale) => [
     {
       url: localizedUrl(locale, "/"),
-      lastModified,
+      lastModified: contentUpdated,
       changeFrequency: "weekly" as const,
       priority: 0.95,
       alternates: {
@@ -55,7 +57,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
       return {
         url: localizedUrl(locale, path),
-        lastModified,
+        lastModified: contentUpdated,
         changeFrequency: "monthly" as const,
         priority: 0.82,
         alternates: {
@@ -70,39 +72,75 @@ export default function sitemap(): MetadataRoute.Sitemap {
     ...localizedPages,
     ...toolPaths.map((path) => ({
       url: absoluteUrl(path),
-      lastModified,
+      lastModified: contentUpdated,
       changeFrequency: "monthly" as const,
       priority: path === "/tools" ? 0.85 : 0.8,
     })),
     {
       url: `${siteUrl}/widget`,
-      lastModified,
+      lastModified: contentUpdated,
       changeFrequency: "monthly",
       priority: 0.85,
     },
     {
       url: `${siteUrl}/agb`,
-      lastModified,
+      lastModified: legalUpdated,
       changeFrequency: "yearly",
       priority: 0.3,
     },
     {
       url: `${siteUrl}/datenschutz`,
-      lastModified,
+      lastModified: legalUpdated,
       changeFrequency: "yearly",
       priority: 0.3,
     },
     {
       url: `${siteUrl}/impressum`,
-      lastModified,
+      lastModified: legalUpdated,
       changeFrequency: "yearly",
       priority: 0.3,
     },
     {
       url: `${siteUrl}/widerruf`,
-      lastModified,
+      lastModified: legalUpdated,
       changeFrequency: "yearly",
       priority: 0.3,
     },
+    {
+      url: absoluteUrl("/about"),
+      lastModified: contentUpdated,
+      changeFrequency: "yearly",
+      priority: 0.7,
+    },
+    {
+      url: absoluteUrl("/contact"),
+      lastModified: contentUpdated,
+      changeFrequency: "yearly",
+      priority: 0.7,
+    },
+    {
+      url: absoluteUrl("/brands"),
+      lastModified: contentUpdated,
+      changeFrequency: "monthly",
+      priority: 0.85,
+    },
+    ...brandGuides.map((guide) => ({
+      url: absoluteUrl(`/brands/${guide.slug}`),
+      lastModified: contentUpdated,
+      changeFrequency: "monthly" as const,
+      priority: 0.78,
+    })),
+    {
+      url: absoluteUrl("/ecu-platforms"),
+      lastModified: contentUpdated,
+      changeFrequency: "monthly",
+      priority: 0.85,
+    },
+    ...platformGuides.map((guide) => ({
+      url: absoluteUrl(`/ecu-platforms/${guide.slug}`),
+      lastModified: contentUpdated,
+      changeFrequency: "monthly" as const,
+      priority: 0.78,
+    })),
   ];
 }

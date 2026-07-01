@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import HomePage from "../page";
+import { LocalizedSeoHome } from "@/components/LocalizedSeoHome";
 import {
   homeSeo,
   hreflangByLocale,
@@ -43,6 +43,9 @@ export async function generateMetadata({
       url: localizedUrl(locale, "/"),
       siteName,
       locale: hreflangByLocale[locale],
+      alternateLocale: seoLocales
+        .filter((item) => item !== locale)
+        .map((item) => hreflangByLocale[item]),
       type: "website",
       images: [
         {
@@ -83,7 +86,7 @@ export default async function LocalizedHomePage({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <HomePage />
+      <LocalizedSeoHome locale={locale} />
     </>
   );
 }

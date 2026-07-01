@@ -28,12 +28,12 @@ export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
 
   title: {
-    default: siteName,
+    default: "ECU & TCU File Service for Workshops | MG AutoTech",
     template: "%s | MG AutoTech",
   },
 
   description:
-    "Professional ECU & TCU File Service Platform. Stage 1, Stage 2, TCU Tuning, DPF OFF, EGR OFF, AdBlue OFF, VMAX OFF, ECU Unlock and custom tuning solutions.",
+    "Professional ECU and TCU file service for workshops with secure upload, tracked orders and portal delivery. Stage 1, DPF, EGR, AdBlue and DTC services.",
 
   keywords: [
     "ECU Tuning",
@@ -60,17 +60,23 @@ export const metadata: Metadata = {
   creator: "MG AutoTech",
   publisher: "MG AutoTech",
   applicationName: siteName,
-  verification: {
-    google: "google7844e5845c531482.html",
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
   },
-
+  icons: {
+    icon: "/favicon.ico",
+    shortcut: "/favicon.ico",
+  },
   openGraph: {
-    title: siteName,
+    title: "ECU & TCU File Service for Workshops | MG AutoTech",
     description:
-      "Professional ECU & TCU File Service Platform for workshops and tuning companies.",
+      "Professional ECU and TCU file service for workshops with secure uploads, order tracking and controlled portal delivery.",
     url: siteUrl,
     siteName,
     locale: "en_US",
+    alternateLocale: Object.values(hreflangByLocale).filter((locale) => locale !== "en"),
     type: "website",
     images: [
       {
