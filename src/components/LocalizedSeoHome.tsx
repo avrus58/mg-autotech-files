@@ -31,14 +31,14 @@ export function LocalizedSeoHome({ locale }: { locale: LocaleCode }) {
   return (
     <main className="min-h-screen bg-[#050505] text-white">
       <header className="sticky top-0 z-40 border-b border-white/10 bg-black/90 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-2 px-4 py-4 sm:gap-4">
           <Link href={localizedPath(locale)} className="flex min-w-0 items-center gap-3">
             <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-red-800/50 bg-[#111]">
               <Cpu className="h-6 w-6 text-red-500" aria-hidden="true" />
             </span>
             <span className="min-w-0">
-              <span className="block truncate text-lg font-black">MG <span className="text-red-500">AUTOTECH</span></span>
-              <span className="block text-[11px] text-zinc-400">ECU / TCU File Service</span>
+              <span className="block whitespace-nowrap text-base font-black sm:text-lg">MG <span className="text-red-500">AUTOTECH</span></span>
+              <span className="hidden text-[11px] text-zinc-400 sm:block">ECU / TCU File Service</span>
             </span>
           </Link>
           <nav aria-label="Primary navigation" className="hidden items-center gap-6 text-sm font-bold text-zinc-300 md:flex">
@@ -49,7 +49,7 @@ export function LocalizedSeoHome({ locale }: { locale: LocaleCode }) {
           </nav>
           <div className="flex items-center gap-2">
             <Link href="/login" className="hidden rounded-lg border border-white/10 px-4 py-2.5 text-sm font-bold hover:bg-white/10 sm:inline-flex">{labels.login}</Link>
-            <Link href="/register" className="rounded-lg bg-[#b1121b] px-4 py-2.5 text-sm font-black hover:bg-[#c91824]">{labels.register}</Link>
+            <Link href="/register" className="rounded-lg bg-[#b1121b] px-3 py-2.5 text-xs font-black hover:bg-[#c91824] sm:px-4 sm:text-sm">{labels.register}</Link>
           </div>
         </div>
       </header>
@@ -60,7 +60,7 @@ export function LocalizedSeoHome({ locale }: { locale: LocaleCode }) {
             <p className="inline-flex items-center gap-2 rounded-full border border-red-800/50 bg-red-950/20 px-4 py-2 text-sm font-black text-red-100">
               <ShieldCheck className="h-4 w-4 text-red-500" aria-hidden="true" />{copy.eyebrow}
             </p>
-            <h1 className="mt-7 max-w-4xl text-[clamp(2.7rem,8vw,5.4rem)] font-black leading-[0.96] tracking-normal [overflow-wrap:anywhere]">
+            <h1 className="mt-7 max-w-4xl text-[clamp(2.15rem,8vw,5.4rem)] font-black leading-[1] tracking-normal [overflow-wrap:anywhere] sm:leading-[0.96]">
               {copy.heroTitle}
             </h1>
             <p className="mt-7 max-w-3xl text-base leading-8 text-zinc-300 md:text-lg">{copy.intro}</p>
