@@ -32,7 +32,7 @@ const groups = [
   },
   {
     name: "SumUp",
-    keys: ["SUMUP_API_KEY", "SUMUP_PAY_TO_EMAIL"],
+    keys: ["SUMUP_API_KEY", "SUMUP_MERCHANT_CODE"],
   },
   {
     name: "PayPal",

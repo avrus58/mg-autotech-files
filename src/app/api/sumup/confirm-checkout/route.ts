@@ -55,6 +55,7 @@ export async function POST(request: Request) {
       "base64url"
     ).toString("utf8");
     const parsedMetadata = JSON.parse(decodedReference || "{}") as
+      | [1, string, number, "c" | "p", string]
       | [string, number, string, string, string?]
       | {
           u?: string;
@@ -64,12 +65,19 @@ export async function POST(request: Request) {
         };
 
     const metadata = Array.isArray(parsedMetadata)
-      ? {
-          u: parsedMetadata[0],
-          c: parsedMetadata[1],
-          p: parsedMetadata[2],
-          t: parsedMetadata[3],
-        }
+      ? parsedMetadata[0] === 1
+        ? {
+            u: parsedMetadata[1],
+            c: parsedMetadata[2],
+            p: undefined,
+            t: parsedMetadata[3] === "c" ? "custom" : "package",
+          }
+        : {
+            u: parsedMetadata[0],
+            c: parsedMetadata[1],
+            p: parsedMetadata[2],
+            t: parsedMetadata[3],
+          }
       : parsedMetadata;
 
     if (!metadata.u || !metadata.c) {

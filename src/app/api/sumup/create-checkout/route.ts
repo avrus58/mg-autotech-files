@@ -9,12 +9,13 @@ export async function POST(request: Request) {
     const body = await request.json();
 
     const sumupApiKey = process.env.SUMUP_API_KEY;
+    const sumupMerchantCode = process.env.SUMUP_MERCHANT_CODE;
     const sumupPayToEmail = process.env.SUMUP_PAY_TO_EMAIL;
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
-    if (!sumupApiKey || !sumupPayToEmail) {
+    if (!sumupApiKey || (!sumupMerchantCode && !sumupPayToEmail)) {
       return NextResponse.json(
         { error: "SumUp API credentials are missing." },
         { status: 500 }
@@ -69,13 +70,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Credit package or valid custom credit amount is missing." }, { status: 400 });
     }
 
+    // Keep the merchant reference below SumUp's 90-character API limit.
     const checkoutReference = Buffer.from(
       JSON.stringify([
+        1,
         user.id,
         selectedPackage.credits,
-        selectedPackage.id,
-        selectedPackage.purchaseType,
-        selectedPackage.priceEuro,
+        selectedPackage.purchaseType === "custom" ? "c" : "p",
         Date.now().toString(36),
       ])
     ).toString("base64url");
@@ -90,7 +91,9 @@ export async function POST(request: Request) {
         checkout_reference: checkoutReference,
         amount: selectedPackage.priceEuro,
         currency: "EUR",
-        pay_to_email: sumupPayToEmail,
+        ...(sumupMerchantCode
+          ? { merchant_code: sumupMerchantCode }
+          : { pay_to_email: sumupPayToEmail }),
         description: `${selectedPackage.credits} MG AutoTech Credits`,
         redirect_url: `${siteUrl}/payment/success?provider=sumup`,
         hosted_checkout: { enabled: true },
@@ -101,7 +104,13 @@ export async function POST(request: Request) {
 
     if (!response.ok) {
       return NextResponse.json(
-        { error: data.message || "Could not create SumUp checkout." },
+        {
+          error:
+            data.error_message ||
+            data.detail ||
+            data.message ||
+            "Could not create SumUp checkout.",
+        },
         { status: 500 }
       );
     }

@@ -11,7 +11,7 @@ Add these values in Vercel project settings, then redeploy.
 ### SumUp
 
 - `SUMUP_API_KEY`
-- `SUMUP_PAY_TO_EMAIL`
+- `SUMUP_MERCHANT_CODE`
 - `SUMUP_API_BASE=https://api.sumup.com`
 
 Return URL used by the app:
