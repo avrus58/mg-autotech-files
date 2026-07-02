@@ -267,17 +267,20 @@ export function OnlineStatus() {
   );
 
   useEffect(() => {
-    setNow(getGermanyTime());
+    const initialUpdate = window.setTimeout(() => setNow(getGermanyTime()), 0);
 
     const interval = window.setInterval(() => {
       setNow(getGermanyTime());
     }, 30_000);
 
-    return () => window.clearInterval(interval);
+    return () => {
+      window.clearTimeout(initialUpdate);
+      window.clearInterval(interval);
+    };
   }, []);
 
   useEffect(() => {
-    setLocale(getClientLocale(pathname));
+    const initialUpdate = window.setTimeout(() => setLocale(getClientLocale(pathname)), 0);
 
     function handleLocaleChange(event: Event) {
       const detail = (event as CustomEvent<{ locale?: string }>).detail;
@@ -286,7 +289,10 @@ export function OnlineStatus() {
 
     window.addEventListener("mg-locale-change", handleLocaleChange);
 
-    return () => window.removeEventListener("mg-locale-change", handleLocaleChange);
+    return () => {
+      window.clearTimeout(initialUpdate);
+      window.removeEventListener("mg-locale-change", handleLocaleChange);
+    };
   }, [pathname]);
 
   const status = useMemo(() => {

@@ -66,7 +66,9 @@ export default function RequestChat({
   function playNewMessageSound() {
     try {
       const AudioContextClass =
-        window.AudioContext || (window as any).webkitAudioContext;
+        window.AudioContext || (window as typeof window & {
+          webkitAudioContext?: typeof AudioContext;
+        }).webkitAudioContext;
 
       if (!AudioContextClass) return;
 
@@ -186,12 +188,16 @@ export default function RequestChat({
   }
 
   useEffect(() => {
-    previousMessageIdsRef.current = new Set();
-    initialLoadDoneRef.current = false;
-    sendingOwnMessageRef.current = false;
-    setMessages([]);
-    setNewMessageCount(0);
-    loadMessages({ scrollAfterLoad: true });
+    const timeout = window.setTimeout(() => {
+      previousMessageIdsRef.current = new Set();
+      initialLoadDoneRef.current = false;
+      sendingOwnMessageRef.current = false;
+      setMessages([]);
+      setNewMessageCount(0);
+      void loadMessages({ scrollAfterLoad: true });
+    }, 0);
+    return () => window.clearTimeout(timeout);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [requestId]);
 
   useEffect(() => {

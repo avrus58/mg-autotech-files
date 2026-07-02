@@ -8,6 +8,7 @@ const actualFeaturesSchema = z.object({
   stock_or_modified: z.boolean().optional(),
   stage1: z.boolean().optional(),
   stage2: z.boolean().optional(),
+  stage3: z.boolean().optional(),
   dpf_off: z.boolean().optional(),
   egr_off: z.boolean().optional(),
   adblue_off: z.boolean().optional(),

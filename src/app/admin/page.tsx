@@ -376,7 +376,9 @@ function makeCustomerForm(customer: Profile): CustomerForm {
 
 function playAdminNotificationSound() {
   try {
-    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+    const AudioContextClass = window.AudioContext || (window as typeof window & {
+      webkitAudioContext?: typeof AudioContext;
+    }).webkitAudioContext;
     if (!AudioContextClass) return;
     const audioContext = new AudioContextClass();
     const oscillatorOne = audioContext.createOscillator();
@@ -562,12 +564,15 @@ export default function AdminPage() {
   }
 
   useEffect(() => {
-    loadAdminData();
+    const timeout = window.setTimeout(() => { void loadAdminData(); }, 0);
+    return () => window.clearTimeout(timeout);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
     const interval = window.setInterval(() => loadAdminData({ silent: true }), 10000);
     return () => window.clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const stats = useMemo(() => {
@@ -766,6 +771,16 @@ export default function AdminPage() {
     }
     setOrders((current) => current.map((order) => (order.id === orderId ? { ...order, status: newStatus } : order)));
     setSelectedOrder((current) => (current?.id === orderId ? { ...current, status: newStatus } : current));
+    if (newStatus === "completed") {
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token;
+      if (token) {
+        void fetch(`/api/admin/orders/${orderId}/training-capture`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      }
+    }
   }
 
   async function updateDeliveryEstimate(
@@ -780,7 +795,7 @@ export default function AdminPage() {
     setUpdatingId(orderId);
     setMessage("");
 
-    let { error } = await supabase
+    const { error } = await supabase
       .from("orders")
       .update({
         estimated_delivery_label: estimate,
@@ -867,18 +882,36 @@ export default function AdminPage() {
       uploaded_at: new Date().toISOString(),
     };
     const modifiedFiles = [...getModifiedFileVersions(order), version];
-    const { error: updateError } = await supabase
-      .from("orders")
-      .update({ modified_file_path: filePath, modified_files: modifiedFiles, status: "completed" })
-      .eq("id", order.id);
+    const { data: sessionData } = await supabase.auth.getSession();
+    const token = sessionData.session?.access_token;
+    if (!token) {
+      setUploadingModifiedId(null);
+      setMessage("Unauthorized");
+      return;
+    }
+    const deliveryResponse = await fetch(`/api/admin/orders/${order.id}/complete-delivery`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        filePath,
+        fileName: file.name,
+        label,
+        versionId: version.id,
+        uploadedAt: version.uploaded_at,
+      }),
+    });
+    const deliveryPayload = await deliveryResponse.json();
     setUploadingModifiedId(null);
-    if (updateError) {
-      setMessage(updateError.message);
+    if (!deliveryResponse.ok) {
+      setMessage(deliveryPayload.error || "Completed file delivery could not be saved.");
       return;
     }
     setOrders((current) => current.map((item) => (item.id === order.id ? { ...item, modified_file_path: filePath, modified_files: modifiedFiles, status: "completed" } : item)));
     setSelectedOrder((current) => (current?.id === order.id ? { ...current, modified_file_path: filePath, modified_files: modifiedFiles, status: "completed" } : current));
-    setMessage(`${formatFileVersionLabel(label)} modified file uploaded and order marked as completed.`);
+    setMessage(`${formatFileVersionLabel(label)} modified file uploaded and the order was completed.`);
   }
 
   async function downloadModifiedFile(filePath: string) {
@@ -1028,6 +1061,18 @@ export default function AdminPage() {
                   File Expert
                 </span>
                 <span className="rounded-full bg-red-950/40 px-2 py-1 text-xs text-red-200">AI</span>
+              </Link>
+            )}
+            {hasStaffPermission(adminAccess, "ai_training.manage") && (
+              <Link
+                href="/admin/ai-training"
+                className="flex w-full items-center justify-between gap-3 rounded-2xl px-4 py-3 text-left text-sm font-black text-zinc-400 transition hover:bg-white/[0.06] hover:text-white"
+              >
+                <span className="flex items-center gap-3">
+                  <Database className="h-5 w-5" />
+                  ECU Learning
+                </span>
+                <span className="rounded-full bg-emerald-950/40 px-2 py-1 text-xs text-emerald-200">DATA</span>
               </Link>
             )}
             {hasStaffPermission(adminAccess, "widget.manage") && (
@@ -1275,7 +1320,8 @@ function OrdersPanel({
   }, [selectedStatus, setSelectedStatus, visibleStatusOptions]);
 
   useEffect(() => {
-    setVisibleCount(adminOrdersPageSize);
+    const timeout = window.setTimeout(() => setVisibleCount(adminOrdersPageSize), 0);
+    return () => window.clearTimeout(timeout);
   }, [orderGroup, statusFilteredGroupedOrders.length, selectedStatus, search, onlyWithFile]);
 
   return (

@@ -42,6 +42,35 @@ function fileLine(label: string, file?: FileExpertFileInspection) {
   return `- ${label}: ${file.file_size.toLocaleString()} bytes, ${format}, ${scope}, SHA256 ${shortHash(file.sha256)}`;
 }
 
+function changedRegionLines(result: FileExpertAnalyzerResult) {
+  const blocks = result.comparison?.changed_blocks.slice(0, 8) ?? [];
+  if (!blocks.length) return ["- No changed region is available for review."];
+  return blocks.map((block) =>
+    `- ${block.start_offset_hex}-${block.end_offset_hex}: ${block.changed_byte_count} changed bytes in a ${block.length}-byte grouped region.`
+  );
+}
+
+function loggingRecommendations(result: FileExpertAnalyzerResult) {
+  if (result.mode === "single_file" || result.summary.stock_or_modified !== "likely_modified") {
+    return [
+      "- No calibration-specific logging list can be justified from a single or unchanged file.",
+      "- If drivability is being investigated, record RPM, requested/actual torque, boost and lambda only with a qualified operator and appropriate equipment.",
+    ];
+  }
+  const moduleType = result.ecu_identification?.module_type;
+  if (moduleType === "TCU") {
+    return [
+      "- Review input/output speed, selected/actual gear, clutch slip, clutch pressure, oil temperature and torque intervention.",
+      "- Validate shift quality under controlled load; parameter names depend on the manufacturer and logging tool.",
+    ];
+  }
+  return [
+    "- Review RPM, accelerator/requested load, requested/actual torque, requested/actual boost, lambda/AFR, rail pressure and relevant temperatures.",
+    "- Add ignition correction/knock information for petrol applications and smoke/air-mass information for diesel applications where available.",
+    "- Parameter availability and safe test conditions must be confirmed by an experienced operator; use controlled road or dyno testing as appropriate.",
+  ];
+}
+
 export function generateFileExpertReport(input: {
   result: FileExpertAnalyzerResult;
   metadata: {
@@ -99,6 +128,13 @@ export function generateFileExpertReport(input: {
       ? `${comparison.changed_bytes.toLocaleString()} bytes differ across ${comparison.merged_changed_blocks} grouped regions (${percent(comparison.changed_percent)} of the file).`
       : "A matching ORI/MOD pair was not available, so modification status cannot be confirmed.",
     "",
+    "# Calibration Change Summary",
+    changeProfile?.summary || "No calibration change profile is available.",
+    `Map candidates: ${result.map_candidates.length}. Repeated binary patterns: ${result.repeated_patterns.length}. These are structural candidates, not proven map definitions.`,
+    "",
+    "# Important Changed Regions",
+    ...changedRegionLines(result),
+    "",
     "# Possible Operations",
     formatFeatureList(result),
     "Low-confidence operation labels are indications only. Exact DPF, EGR, AdBlue, DTC, VMAX or tuning-stage confirmation requires ECU-specific map definitions or a known verified pattern.",
@@ -110,11 +146,19 @@ export function generateFileExpertReport(input: {
     "Checksum status: not checked",
     ...(integrity?.issues.length ? integrity.issues.map((issue) => `- ${issue}`) : ["- No obvious structural conflict was detected."]),
     "",
+    "# Risk Assessment",
+    `Risk level: ${result.risk_assessment.risk_level}`,
+    `Analyzer confidence: ${Math.round(result.risk_assessment.confidence * 100)}%`,
+    ...(result.risk_assessment.reasons.length ? result.risk_assessment.reasons.map((reason) => `- ${reason}`) : ["- No additional risk reason was produced."]),
+    "",
+    "# Recommended Logging Parameters",
+    ...loggingRecommendations(result),
+    "",
     "# Recommended Next Steps",
     ...result.summary.recommended_next_steps.map((item) => `- ${item}`),
     "",
     "# Disclaimer",
-    "This automated report identifies binary evidence and likely matches; it does not guarantee file safety or exact map purpose. An experienced calibrator must confirm the result. Checksum correction must be verified with the flashing tool or professional checksum software before writing.",
+    "This automated report identifies binary evidence and likely matches; it does not guarantee file safety, legal suitability, exact map purpose, horsepower or torque. An experienced calibrator must confirm the result. Checksum correction must be verified with the flashing tool or professional checksum software before writing. Where a modification is present or suspected, validate the result with controlled vehicle logging and/or dyno testing as appropriate.",
   ].join("\n");
 
   return { executiveSummary, report };

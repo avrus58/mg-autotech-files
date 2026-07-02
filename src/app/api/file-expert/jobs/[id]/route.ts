@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { getCurrentServerUser, isFileExpertAdmin } from "@/lib/fileExpert/server";
+import { redactBinaryPreviews } from "@/lib/fileExpert/publicResult";
 
 export async function GET(
   request: Request,
@@ -49,7 +50,10 @@ export async function GET(
   ]);
 
   return NextResponse.json({
-    job,
+    job: {
+      ...job,
+      result_json: redactBinaryPreviews(job.result_json),
+    },
     fingerprints: fingerprints ?? [],
     feedback: feedback ?? [],
     isAdmin,

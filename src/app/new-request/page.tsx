@@ -626,7 +626,9 @@ export default function NewRequestPage() {
   }
 
   useEffect(() => {
-    loadCustomerProfile();
+    const timeout = window.setTimeout(() => { void loadCustomerProfile(); }, 0);
+    return () => window.clearTimeout(timeout);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -637,82 +639,94 @@ export default function NewRequestPage() {
   }, []);
 
   useEffect(() => {
-    setVehicleModelId("");
-    setVehicleGenerationId("");
-    setVehicleEngineId("");
-    setModels([]);
-    setGenerations([]);
-    setEngines([]);
-    setSelectedVehicle(null);
+    const timeout = window.setTimeout(() => {
+      setVehicleModelId("");
+      setVehicleGenerationId("");
+      setVehicleEngineId("");
+      setModels([]);
+      setGenerations([]);
+      setEngines([]);
+      setSelectedVehicle(null);
 
-    if (!vehicleBrandId) return;
+      if (!vehicleBrandId) return;
 
-    fetch(`/api/vehicles?type=models&brandId=${vehicleBrandId}`)
-      .then((res) => res.json())
-      .then(setModels)
-      .catch(console.error);
+      fetch(`/api/vehicles?type=models&brandId=${vehicleBrandId}`)
+        .then((res) => res.json())
+        .then(setModels)
+        .catch(console.error);
+    }, 0);
+    return () => window.clearTimeout(timeout);
   }, [vehicleBrandId]);
 
   useEffect(() => {
-    setVehicleGenerationId("");
-    setVehicleEngineId("");
-    setGenerations([]);
-    setEngines([]);
-    setSelectedVehicle(null);
+    const timeout = window.setTimeout(() => {
+      setVehicleGenerationId("");
+      setVehicleEngineId("");
+      setGenerations([]);
+      setEngines([]);
+      setSelectedVehicle(null);
 
-    if (!vehicleBrandId || !vehicleModelId) return;
+      if (!vehicleBrandId || !vehicleModelId) return;
 
-    fetch(
-      `/api/vehicles?type=generations&brandId=${vehicleBrandId}&modelId=${vehicleModelId}`
-    )
-      .then((res) => res.json())
-      .then(setGenerations)
-      .catch(console.error);
+      fetch(
+        `/api/vehicles?type=generations&brandId=${vehicleBrandId}&modelId=${vehicleModelId}`
+      )
+        .then((res) => res.json())
+        .then(setGenerations)
+        .catch(console.error);
+    }, 0);
+    return () => window.clearTimeout(timeout);
   }, [vehicleBrandId, vehicleModelId]);
 
   useEffect(() => {
-    setVehicleEngineId("");
-    setEngines([]);
-    setSelectedVehicle(null);
+    const timeout = window.setTimeout(() => {
+      setVehicleEngineId("");
+      setEngines([]);
+      setSelectedVehicle(null);
 
-    if (!vehicleBrandId || !vehicleModelId || !vehicleGenerationId) return;
+      if (!vehicleBrandId || !vehicleModelId || !vehicleGenerationId) return;
 
-    fetch(
-      `/api/vehicles?type=engines&brandId=${vehicleBrandId}&modelId=${vehicleModelId}&generationId=${vehicleGenerationId}`
-    )
-      .then((res) => res.json())
-      .then(setEngines)
-      .catch(console.error);
+      fetch(
+        `/api/vehicles?type=engines&brandId=${vehicleBrandId}&modelId=${vehicleModelId}&generationId=${vehicleGenerationId}`
+      )
+        .then((res) => res.json())
+        .then(setEngines)
+        .catch(console.error);
+    }, 0);
+    return () => window.clearTimeout(timeout);
   }, [vehicleBrandId, vehicleModelId, vehicleGenerationId]);
 
   useEffect(() => {
-    setSelectedVehicle(null);
+    const timeout = window.setTimeout(() => {
+      setSelectedVehicle(null);
 
-    if (
-      !vehicleBrandId ||
-      !vehicleModelId ||
-      !vehicleGenerationId ||
-      !vehicleEngineId
-    ) {
-      return;
-    }
+      if (
+        !vehicleBrandId ||
+        !vehicleModelId ||
+        !vehicleGenerationId ||
+        !vehicleEngineId
+      ) {
+        return;
+      }
 
-    fetch(
-      `/api/vehicles?type=vehicle&brandId=${vehicleBrandId}&modelId=${vehicleModelId}&generationId=${vehicleGenerationId}&engineId=${vehicleEngineId}`
-    )
-      .then((res) => res.json())
-      .then((vehicle: VehicleData | null) => {
-        setSelectedVehicle(vehicle);
+      fetch(
+        `/api/vehicles?type=vehicle&brandId=${vehicleBrandId}&modelId=${vehicleModelId}&generationId=${vehicleGenerationId}&engineId=${vehicleEngineId}`
+      )
+        .then((res) => res.json())
+        .then((vehicle: VehicleData | null) => {
+          setSelectedVehicle(vehicle);
 
-        if (vehicle?.ecu?.length) {
-          setEcu(vehicle.ecu.join(", "));
-        }
+          if (vehicle?.ecu?.length) {
+            setEcu(vehicle.ecu.join(", "));
+          }
 
-        if (vehicle?.readMethods?.length) {
-          setReadMethod(vehicle.readMethods[0]);
-        }
-      })
-      .catch(console.error);
+          if (vehicle?.readMethods?.length) {
+            setReadMethod(vehicle.readMethods[0]);
+          }
+        })
+        .catch(console.error);
+    }, 0);
+    return () => window.clearTimeout(timeout);
   }, [vehicleBrandId, vehicleModelId, vehicleGenerationId, vehicleEngineId]);
 
   const selectedMainService = mainServices.find(

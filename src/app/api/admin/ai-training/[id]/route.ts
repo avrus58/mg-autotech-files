@@ -1,0 +1,99 @@
+import { NextResponse } from "next/server";
+import { z } from "zod";
+import { requireStaffPermission } from "@/lib/apiAuth";
+import { updateTrainingSampleVerification } from "@/lib/ecuIntelligence/learning";
+import { trainingFeatureKeys } from "@/lib/ecuIntelligence/types";
+import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
+import { redactBinaryPreviews } from "@/lib/fileExpert/publicResult";
+
+const serviceLabelsSchema = z.object(
+  Object.fromEntries(trainingFeatureKeys.map((key) => [key, z.boolean()])) as Record<
+    (typeof trainingFeatureKeys)[number],
+    z.ZodBoolean
+  >
+);
+
+const updateSchema = z.object({
+  status: z.enum(["unverified", "confirmed", "rejected", "needs_review"]),
+  aiCorrect: z.boolean().nullable().optional(),
+  serviceLabels: serviceLabelsSchema,
+  qualityRating: z.number().int().min(1).max(5).nullable().optional(),
+  safetyRating: z.enum(["unknown", "safe", "aggressive", "risky", "bad"]).nullable().optional(),
+  outcome: z.enum([
+    "unknown",
+    "customer_ok",
+    "issue_reported",
+    "limp",
+    "smoke",
+    "knock",
+    "dyno_confirmed",
+    "needs_revision",
+  ]).nullable().optional(),
+  adminNotes: z.string().max(5000).nullable().optional(),
+});
+
+export async function GET(
+  request: Request,
+  context: { params: Promise<{ id: string }> }
+) {
+  const auth = await requireStaffPermission(request, "ai_training.manage");
+  if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
+  const { id } = await context.params;
+  const admin = getSupabaseAdmin();
+
+  const [sample, events, signatures, modelRuns] = await Promise.all([
+    admin.from("ai_training_samples").select("*").eq("id", id).single(),
+    admin.from("ai_training_events").select("*").eq("training_sample_id", id).order("created_at", { ascending: false }),
+    admin.from("ai_pattern_signatures").select("*").eq("training_sample_id", id).order("created_at", { ascending: false }),
+    admin.from("ai_model_runs").select("*").eq("source_type", "training_sample").eq("source_id", id).order("created_at", { ascending: false }),
+  ]);
+  if (sample.error || !sample.data) {
+    return NextResponse.json({ error: sample.error?.message || "Training sample not found." }, { status: 404 });
+  }
+
+  return NextResponse.json({
+    sample: {
+      ...sample.data,
+      diff_json: redactBinaryPreviews(sample.data.diff_json),
+    },
+    events: events.data ?? [],
+    signatures: signatures.data ?? [],
+    modelRuns: modelRuns.data ?? [],
+  });
+}
+
+export async function PATCH(
+  request: Request,
+  context: { params: Promise<{ id: string }> }
+) {
+  const auth = await requireStaffPermission(request, "ai_training.manage");
+  if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
+  const parsed = updateSchema.safeParse(await request.json().catch(() => null));
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: parsed.error.issues[0]?.message || "Invalid verification data." },
+      { status: 400 }
+    );
+  }
+  const { id } = await context.params;
+
+  try {
+    const sample = await updateTrainingSampleVerification({
+      sampleId: id,
+      actorUserId: auth.user.id,
+      status: parsed.data.status,
+      aiCorrect: parsed.data.aiCorrect,
+      serviceLabels: parsed.data.serviceLabels,
+      qualityRating: parsed.data.qualityRating,
+      safetyRating: parsed.data.safetyRating,
+      outcome: parsed.data.outcome,
+      adminNotes: parsed.data.adminNotes,
+    });
+    return NextResponse.json({ sample });
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Training sample could not be updated." },
+      { status: 500 }
+    );
+  }
+}

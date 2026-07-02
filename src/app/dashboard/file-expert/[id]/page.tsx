@@ -12,6 +12,7 @@ import {
   CarFront,
   CheckCircle2,
   Cpu,
+  Copy,
   Database,
   Download,
   FileCode2,
@@ -198,6 +199,12 @@ export default function FileExpertReportPage() {
     URL.revokeObjectURL(url);
   }
 
+  async function copyJson() {
+    if (!job?.result_json) return;
+    await navigator.clipboard.writeText(JSON.stringify(job.result_json, null, 2));
+    setMessage("Analyzer JSON copied to the clipboard.");
+  }
+
   if (loading) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-[#050505] text-white">
@@ -238,17 +245,20 @@ export default function FileExpertReportPage() {
               <span className={`rounded-full border px-3 py-1 text-xs font-black ${riskClass(job.risk_level)}`}>RISK: {(job.risk_level || "unknown").toUpperCase()}</span>
               {identity && (
                 <span className="rounded-full border border-red-800/40 bg-red-950/25 px-3 py-1 text-xs font-black text-red-200">
-                  ECU {identity.status.toUpperCase()} · {Math.round(identity.confidence * 100)}%
+                  ECU {identity.status.toUpperCase()} / {Math.round(identity.confidence * 100)}%
                 </span>
               )}
             </div>
             <h1 className="mt-3 break-words text-4xl font-black md:text-5xl">{reportTitle}</h1>
             <p className="mt-3 max-w-4xl text-sm leading-7 text-zinc-400">{job.executive_summary || "The analysis report is being prepared."}</p>
-            <p className="mt-2 text-xs font-bold text-zinc-600">Analysis {result?.analysis_version || "legacy"} · {formatDate(job.created_at)}</p>
+            <p className="mt-2 text-xs font-bold text-zinc-600">Analysis {result?.analysis_version || "legacy"} / {formatDate(job.created_at)}</p>
           </div>
           <div className="grid gap-2 sm:flex sm:flex-wrap">
             <button onClick={reanalyze} disabled={reanalyzing} className="inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] px-5 py-3 text-sm font-black transition hover:bg-white/10 disabled:opacity-50">
               {reanalyzing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCcw className="mr-2 h-4 w-4" />} Re-analyze
+            </button>
+            <button onClick={() => void copyJson()} disabled={!job.result_json} className="inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] px-5 py-3 text-sm font-black transition hover:bg-white/10 disabled:opacity-50">
+              <Copy className="mr-2 h-4 w-4" /> Copy JSON
             </button>
             <button onClick={downloadJson} disabled={!job.result_json} className="inline-flex items-center justify-center rounded-2xl bg-[#b1121b] px-5 py-3 text-sm font-black transition hover:bg-[#c91824] disabled:opacity-50">
               <Download className="mr-2 h-4 w-4" /> Download report data
@@ -258,6 +268,22 @@ export default function FileExpertReportPage() {
 
         {message && <div className="mb-6 rounded-2xl border border-red-800/40 bg-red-950/30 p-4 text-sm font-bold text-red-200">{message}</div>}
 
+        {job.status === "failed" && (
+          <div className="mb-6 rounded-2xl border border-red-700/40 bg-red-950/20 p-5">
+            <div className="flex items-center gap-3 font-black text-red-200"><AlertTriangle className="h-5 w-5" />Analysis failed</div>
+            <p className="mt-2 text-sm leading-6 text-zinc-400">{job.error_message || "The analyzer could not complete this job. Your uploaded files remain private and unchanged."}</p>
+            <button onClick={reanalyze} disabled={reanalyzing} className="mt-4 inline-flex h-10 items-center rounded-xl border border-red-700/40 px-4 text-sm font-black text-red-100 disabled:opacity-50">Try analysis again</button>
+          </div>
+        )}
+
+        <div className="mb-6 rounded-2xl border border-white/10 bg-white/[0.035] p-4 text-sm leading-6 text-zinc-300">
+          <strong className="text-white">{result?.mode === "ori_mod_compare" ? "ORI + MOD comparison" : "Single-file inspection"}</strong>
+          <span className="text-zinc-500"> - </span>
+          {result?.mode === "ori_mod_compare"
+            ? "Both files were compared byte by byte. Changed regions and possible feature indicators are shown with confidence values."
+            : "Only one file is available. The system can inspect structure and ECU markers, but it cannot confirm modifications without a matching ORI/MOD pair."}
+        </div>
+
         {!identity && result && (
           <div className="mb-6 rounded-2xl border border-amber-700/30 bg-amber-950/15 p-4 text-sm leading-6 text-amber-100/80">
             This is a legacy report. Select <strong>Re-analyze</strong> to generate automatic ECU identification and the V2 workshop report.
@@ -266,8 +292,8 @@ export default function FileExpertReportPage() {
 
         <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <InfoCard title="Control unit" value={identity?.display_name || job.ecu_type || "Not identified"} icon={<Cpu />} />
-          <InfoCard title="Module / supplier" value={[identity?.module_type, identity?.supplier].filter(Boolean).join(" · ") || "Unknown"} icon={<Database />} />
-          <InfoCard title="File profile" value={`${formatLabel(primaryFile?.file_format)} · ${formatLabel(primaryFile?.read_scope)}`} icon={<FileCode2 />} />
+          <InfoCard title="Module / supplier" value={[identity?.module_type, identity?.supplier].filter(Boolean).join(" / ") || "Unknown"} icon={<Database />} />
+          <InfoCard title="File profile" value={`${formatLabel(primaryFile?.file_format)} / ${formatLabel(primaryFile?.read_scope)}`} icon={<FileCode2 />} />
           <InfoCard title="Analysis confidence" value={job.confidence_score ? `${job.confidence_score}%` : "-"} icon={<Gauge />} />
         </div>
 
@@ -293,7 +319,7 @@ export default function FileExpertReportPage() {
             <div className="mt-4 rounded-2xl border border-white/10 bg-black/25 p-4">
               <div className="text-xs font-black uppercase tracking-[0.16em] text-zinc-500">Detection evidence</div>
               <div className="mt-3 space-y-2 text-sm leading-6 text-zinc-300">
-                {identity?.evidence.length ? identity.evidence.map((item) => <div key={item}>• {item}</div>) : <div>No reliable identity marker was found.</div>}
+                {identity?.evidence.length ? identity.evidence.map((item) => <div key={item}>- {item}</div>) : <div>No reliable identity marker was found.</div>}
               </div>
             </div>
           </div>
@@ -301,7 +327,7 @@ export default function FileExpertReportPage() {
             <IdentifierBox label="Hardware numbers" value={idValue(identity?.hardware_numbers)} />
             <IdentifierBox label="Software numbers" value={idValue(identity?.software_numbers)} />
             <IdentifierBox label="Calibration IDs" value={idValue(identity?.calibration_ids)} />
-            <IdentifierBox label="VIN / engine markers" value={[idValue(identity?.vins), idValue(identity?.engine_codes)].filter((value) => value !== "Not detected").join(" · ") || "Not detected"} />
+            <IdentifierBox label="VIN / engine markers" value={[idValue(identity?.vins), idValue(identity?.engine_codes)].filter((value) => value !== "Not detected").join(" / ") || "Not detected"} />
           </div>
         </section>
 
@@ -334,7 +360,7 @@ export default function FileExpertReportPage() {
                       <div className="flex flex-wrap items-start justify-between gap-3">
                         <div>
                           <div className="font-black">{candidate.brand} {candidate.model}</div>
-                          <div className="mt-1 text-sm text-zinc-400">{candidate.generation} · {candidate.engine}</div>
+                          <div className="mt-1 text-sm text-zinc-400">{candidate.generation} / {candidate.engine}</div>
                           <div className="mt-2 text-xs font-bold text-red-200">{candidate.ecu}</div>
                         </div>
                         <span className="rounded-full bg-white/[0.06] px-3 py-1 text-xs font-black">{Math.round(candidate.confidence * 100)}%</span>
@@ -354,7 +380,7 @@ export default function FileExpertReportPage() {
                       <span className="rounded-full bg-white/[0.06] px-3 py-1 text-xs font-black text-zinc-400">{formatBytes(file.size)}</span>
                     </div>
                     <div className="mt-3 break-all text-sm font-bold">{file.name || "Not uploaded"}</div>
-                    <div className="mt-2 text-xs text-zinc-500">{formatLabel(file.profile?.file_format)} · {formatLabel(file.profile?.read_scope)}</div>
+                    <div className="mt-2 text-xs text-zinc-500">{formatLabel(file.profile?.file_format)} / {formatLabel(file.profile?.read_scope)}</div>
                     <div className="mt-2 break-all text-xs text-zinc-600">SHA256 {shortHash(file.hash)}</div>
                   </div>
                 ))}
@@ -412,18 +438,33 @@ export default function FileExpertReportPage() {
                 {result?.comparison?.changed_blocks.length ? (
                   <div className="overflow-x-auto rounded-2xl border border-white/10">
                     <table className="w-full min-w-[620px] text-left text-sm">
-                      <thead className="bg-black/40 text-xs uppercase tracking-[0.14em] text-zinc-500"><tr><th className="px-4 py-3">Offset</th><th className="px-4 py-3">Length</th><th className="px-4 py-3">Changed</th><th className="px-4 py-3">Delta sample</th></tr></thead>
+                      <thead className="bg-black/40 text-xs uppercase tracking-[0.14em] text-zinc-500"><tr><th className="px-4 py-3">Offset</th><th className="px-4 py-3">Length</th><th className="px-4 py-3">Changed bytes</th></tr></thead>
                       <tbody className="divide-y divide-white/10">{result.comparison.changed_blocks.slice(0, 18).map((block) => (
-                        <tr key={`${block.start_offset_hex}-${block.end_offset_hex}`} className="bg-black/20"><td className="px-4 py-3 font-mono text-red-200">{block.start_offset_hex}</td><td className="px-4 py-3">{block.length}</td><td className="px-4 py-3">{block.changed_byte_count}</td><td className="px-4 py-3 font-mono text-xs text-zinc-400">{block.delta_preview.slice(0, 8).join(", ") || "-"}</td></tr>
+                        <tr key={`${block.start_offset_hex}-${block.end_offset_hex}`} className="bg-black/20"><td className="px-4 py-3 font-mono text-red-200">{block.start_offset_hex}</td><td className="px-4 py-3">{block.length}</td><td className="px-4 py-3">{block.changed_byte_count}</td></tr>
                       ))}</tbody>
                     </table>
+                  </div>
+                ) : null}
+                {result?.map_candidates.length ? (
+                  <div className="overflow-x-auto rounded-2xl border border-white/10">
+                    <table className="w-full min-w-[620px] text-left text-sm">
+                      <thead className="bg-black/40 text-xs uppercase tracking-[0.14em] text-zinc-500"><tr><th className="px-4 py-3">Candidate offset</th><th className="px-4 py-3">Length</th><th className="px-4 py-3">Possible type</th><th className="px-4 py-3">Confidence</th></tr></thead>
+                      <tbody className="divide-y divide-white/10">{result.map_candidates.slice(0, 18).map((candidate, index) => <tr key={`${candidate.offset_hex}-${index}`} className="bg-black/20"><td className="px-4 py-3 font-mono text-red-200">{candidate.offset_hex}</td><td className="px-4 py-3">{candidate.length}</td><td className="px-4 py-3">{candidate.possible_type}</td><td className="px-4 py-3">{Math.round(candidate.confidence * 100)}%</td></tr>)}</tbody>
+                    </table>
+                    <div className="border-t border-white/10 px-4 py-3 text-xs text-amber-100/70">Structural candidates only. Exact map purpose requires ECU-specific definitions and human calibration review.</div>
+                  </div>
+                ) : null}
+                {result?.repeated_patterns.length ? (
+                  <div className="rounded-2xl border border-white/10 bg-black/25 p-4">
+                    <div className="text-xs font-black uppercase tracking-[0.14em] text-zinc-500">Repeated binary patterns</div>
+                    <div className="mt-3 space-y-2">{result.repeated_patterns.slice(0, 12).map((pattern) => <div key={pattern.signature} className="grid gap-2 border-t border-white/10 pt-2 text-xs sm:grid-cols-[120px_80px_1fr]"><span className="font-mono text-red-200">{pattern.signature}</span><span>{pattern.count} matches</span><span className="break-all text-zinc-500">{pattern.offsets.join(", ")}</span></div>)}</div>
                   </div>
                 ) : null}
                 {fingerprints.map((fingerprint) => (
                   <div key={fingerprint.id} className="rounded-2xl border border-white/10 bg-black/30 p-4 text-xs text-zinc-400">
                     <div className="font-black uppercase text-red-200">{fingerprint.file_role} fingerprint</div>
                     <div className="mt-2 break-all">SHA256 {shortHash(fingerprint.sha256)}</div>
-                    <div className="mt-2">Entropy {fingerprint.entropy ?? "-"} · FF {fingerprint.ff_ratio ?? "-"} · 00 {fingerprint.zero_ratio ?? "-"}</div>
+                    <div className="mt-2">Entropy {fingerprint.entropy ?? "-"} / FF {fingerprint.ff_ratio ?? "-"} / 00 {fingerprint.zero_ratio ?? "-"}</div>
                   </div>
                 ))}
                 {job.ai_report && <details className="rounded-2xl border border-white/10 bg-black/25 p-4"><summary className="cursor-pointer font-black">Text report</summary><pre className="mt-4 whitespace-pre-wrap break-words text-xs leading-6 text-zinc-300">{job.ai_report}</pre></details>}
@@ -433,7 +474,7 @@ export default function FileExpertReportPage() {
 
             <div className="rounded-[2rem] border border-amber-700/30 bg-amber-950/15 p-4 sm:p-6">
               <div className="mb-3 flex items-center gap-3"><ShieldCheck className="h-6 w-6 text-amber-300" /><h2 className="text-xl font-black">Verification required</h2></div>
-              <p className="text-sm leading-7 text-amber-100/80">Automatic identification is evidence-based but not a flashing approval. Verify HW/SW compatibility, checksum and the calibration in professional software before writing the file.</p>
+              <p className="text-sm leading-7 text-amber-100/80">Automatic identification is evidence-based but not a flashing approval. Verify HW/SW compatibility, checksum and the calibration in professional software before writing the file. Validate suspected modifications with controlled logging and/or dyno testing where relevant.</p>
             </div>
           </section>
         </div>

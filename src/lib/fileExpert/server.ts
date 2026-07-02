@@ -1,7 +1,7 @@
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { getSupabaseServer } from "@/lib/supabaseServer";
 import { analyzeFileExpertBuffers, buildPatternSignature, sha256Buffer } from "@/lib/fileExpert/analyzer";
-import { generateFileExpertReport } from "@/lib/fileExpert/report";
+import { generateAiFileExpertReport } from "@/lib/ai";
 import { findVehicleCandidates } from "@/lib/fileExpert/vehicleMatcher";
 import type { FileExpertAnalyzerResult, FileExpertFeature, FileExpertJob } from "@/lib/fileExpert/types";
 import { hasStaffPermission, type StaffAccess } from "@/lib/staffPermissions";
@@ -227,9 +227,13 @@ export async function analyzeFileExpertJob(jobId: string) {
           single: job.ori_file_name ?? job.mod_file_name,
         },
         metadata: {
+          brand: job.brand,
+          model: job.model,
+          engine: job.engine,
           ecuType: job.ecu_type,
           readMethod: job.read_method,
         },
+        sourceKind: "manual_file_expert",
       });
 
     result.vehicle_match = findVehicleCandidates({
@@ -258,7 +262,9 @@ export async function analyzeFileExpertJob(jobId: string) {
       ];
     }
 
-    const generated = generateFileExpertReport({
+    const generated = await generateAiFileExpertReport({
+      sourceType: "file_expert_job",
+      sourceId: job.id,
       result,
       metadata: {
         brand: job.brand,
@@ -297,6 +303,9 @@ export async function analyzeFileExpertJob(jobId: string) {
           result.ecu_identification && result.ecu_identification.confidence >= 0.68
             ? result.ecu_identification.display_name
             : job.ecu_type,
+        ecu_family: result.ecu_identification?.family ?? job.ecu_family,
+        sw_number: result.ecu_identification?.software_numbers[0] ?? job.sw_number,
+        hw_number: result.ecu_identification?.hardware_numbers[0] ?? job.hw_number,
         ori_sha256: result.files.ori?.sha256 ?? job.ori_sha256,
         mod_sha256: result.files.mod?.sha256 ?? job.mod_sha256,
         ori_file_size: result.files.ori?.file_size ?? job.ori_file_size,

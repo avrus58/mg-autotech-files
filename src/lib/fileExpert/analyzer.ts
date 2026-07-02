@@ -556,9 +556,13 @@ export async function analyzeFileExpertBuffers(input: {
     single?: string | null;
   };
   metadata?: {
+    brand?: string | null;
+    model?: string | null;
+    engine?: string | null;
     ecuType?: string | null;
     readMethod?: string | null;
   };
+  sourceKind?: "manual_file_expert" | "completed_request" | "unknown";
 }): Promise<FileExpertAnalyzerResult> {
   const mode = input.ori && input.mod ? "ori_mod_compare" : "single_file";
   const files: FileExpertAnalyzerResult["files"] = {};
@@ -644,10 +648,23 @@ export async function analyzeFileExpertBuffers(input: {
     ? `${ecuIdentification.display_name} was identified with ${ecuIdentification.status} confidence. Modification status cannot be confirmed from a single file.`
     : heuristics.conclusion;
 
-  return {
+  const result: FileExpertAnalyzerResult = {
     job_id: input.jobId,
-    analysis_version: "2.0.0",
+    analysis_version: "2.1.0",
     mode,
+    source: {
+      kind: input.sourceKind ?? "unknown",
+      ori_file_name: input.fileNames?.ori ?? null,
+      mod_file_name: input.fileNames?.mod ?? null,
+      single_file_name: input.fileNames?.single ?? null,
+    },
+    metadata: {
+      brand: input.metadata?.brand ?? null,
+      model: input.metadata?.model ?? null,
+      engine: input.metadata?.engine ?? null,
+      ecu_type: input.metadata?.ecuType ?? null,
+      read_method: input.metadata?.readMethod ?? null,
+    },
     files,
     comparison,
     active_regions: activeRegions,
@@ -662,7 +679,15 @@ export async function analyzeFileExpertBuffers(input: {
       risk_level: riskLevel,
       confidence: Number(analysisConfidence.toFixed(2)),
       reasons: riskReasons,
-      warnings: heuristics.warnings,
+      warnings: [
+        ...heuristics.warnings,
+        "Automated binary analysis is not a flash-safety approval.",
+        "Checksum status is not verified by this analyzer.",
+        "A qualified calibrator must review the file before any write operation.",
+        mode === "ori_mod_compare"
+          ? "Validate the result with controlled vehicle logging and/or dyno testing where relevant."
+          : "A matching ORI/MOD pair and controlled logging are required for a stronger assessment.",
+      ],
     },
     summary: {
       stock_or_modified: heuristics.stock,
@@ -676,9 +701,13 @@ export async function analyzeFileExpertBuffers(input: {
           : "Review calibration-like regions in professional calibration software.",
         "Verify checksum before writing.",
         "Complete an experienced tuner review before writing.",
+        "Use controlled logging and/or dyno validation where relevant.",
       ],
     },
-  } satisfies FileExpertAnalyzerResult;
+  };
+
+  result.pattern_signature = buildPatternSignature(result);
+  return result;
 }
 
 export function buildPatternSignature(result: FileExpertAnalyzerResult) {
@@ -692,5 +721,15 @@ export function buildPatternSignature(result: FileExpertAnalyzerResult) {
     feature_candidates: result.possible_features,
     ecu_identification: result.ecu_identification ?? null,
     change_profile: result.change_profile ?? null,
+    main_regions: (result.comparison?.changed_blocks ?? []).slice(0, 24).map((block) => ({
+      start_offset_hex: block.start_offset_hex,
+      end_offset_hex: block.end_offset_hex,
+      changed_byte_count: block.changed_byte_count,
+    })),
+    changed_bytes: result.comparison?.changed_bytes ?? null,
+    merged_blocks: result.comparison?.merged_changed_blocks ?? null,
+    repeated_patterns_summary: result.repeated_patterns.slice(0, 12),
+    map_candidates_summary: result.map_candidates.slice(0, 12),
+    feature_hint_summary: result.possible_features,
   };
 }

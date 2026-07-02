@@ -23,6 +23,7 @@ export type FileExpertFeature =
   | "stock_or_modified"
   | "stage1"
   | "stage2"
+  | "stage3"
   | "dpf_off"
   | "egr_off"
   | "adblue_off"
@@ -163,10 +164,45 @@ export type FileExpertPossibleFeature = {
   reasons: string[];
 };
 
+export type FileExpertPatternSignature = {
+  analysis_version: string;
+  mode: FileExpertMode;
+  changed_percent: number | null;
+  merged_changed_blocks: number | null;
+  map_candidates: FileExpertMapCandidate[];
+  repeated_patterns: FileExpertRepeatedPattern[];
+  feature_candidates: FileExpertPossibleFeature[];
+  ecu_identification: FileExpertEcuIdentification | null;
+  change_profile: FileExpertChangeProfile | null;
+  main_regions: Array<{
+    start_offset_hex: string;
+    end_offset_hex: string;
+    changed_byte_count: number;
+  }>;
+  changed_bytes: number | null;
+  merged_blocks: number | null;
+  repeated_patterns_summary: FileExpertRepeatedPattern[];
+  map_candidates_summary: FileExpertMapCandidate[];
+  feature_hint_summary: FileExpertPossibleFeature[];
+};
+
 export type FileExpertAnalyzerResult = {
   job_id: string;
   analysis_version: string;
   mode: FileExpertMode;
+  source?: {
+    kind: "manual_file_expert" | "completed_request" | "unknown";
+    ori_file_name?: string | null;
+    mod_file_name?: string | null;
+    single_file_name?: string | null;
+  };
+  metadata?: {
+    brand?: string | null;
+    model?: string | null;
+    engine?: string | null;
+    ecu_type?: string | null;
+    read_method?: string | null;
+  };
   files: {
     ori?: FileExpertFileInspection;
     mod?: FileExpertFileInspection;
@@ -184,6 +220,7 @@ export type FileExpertAnalyzerResult = {
   map_candidates: FileExpertMapCandidate[];
   repeated_patterns: FileExpertRepeatedPattern[];
   possible_features: FileExpertPossibleFeature[];
+  pattern_signature?: FileExpertPatternSignature;
   ecu_identification?: FileExpertEcuIdentification;
   vehicle_match?: FileExpertVehicleMatch;
   change_profile?: FileExpertChangeProfile;
@@ -210,6 +247,9 @@ export type FileExpertJob = {
   model: string | null;
   engine: string | null;
   ecu_type: string | null;
+  ecu_family: string | null;
+  sw_number: string | null;
+  hw_number: string | null;
   read_method: string | null;
   customer_notes: string | null;
   ori_file_path: string | null;
@@ -235,6 +275,7 @@ export const fileExpertFeatureLabels: Record<FileExpertFeature, string> = {
   stock_or_modified: "Stock / Modified",
   stage1: "Stage 1",
   stage2: "Stage 2",
+  stage3: "Stage 3",
   dpf_off: "DPF OFF",
   egr_off: "EGR OFF",
   adblue_off: "AdBlue OFF",
