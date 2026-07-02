@@ -50,8 +50,11 @@ export async function runAiTrainingDemo(actorUserId: string) {
     hwNumber: "HW0281031234-DEMO",
     readMethod: "Bench",
     serviceLabels: labels,
+    performedServiceLabels: labels,
     provider: "demo_fixture",
     revisionLabel: demoFixtureVersion,
+    revisionNumber: 1,
+    sourceType: "demo_fixture",
     sourceMetadata: {
       demo: true,
       fixture_version: demoFixtureVersion,

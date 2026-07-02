@@ -6,8 +6,11 @@ import { calculateTrainingSampleQuality } from "@/lib/ecuIntelligence/quality";
 import { calculateKnowledgeReadiness } from "@/lib/ecuIntelligence/readiness";
 import {
   trainingFeatureKeys,
+  emptyTrainingServiceLabels,
   type AiTrainingSample,
   type HumanVerificationStatus,
+  type LearningUseStatus,
+  type TrainingSourceType,
   type TrainingSafetyRating,
   type TrainingServiceLabels,
 } from "@/lib/ecuIntelligence/types";
@@ -45,6 +48,7 @@ export type CaptureTrainingOptions = {
   revisionLabel?: string | null;
   actorUserId?: string | null;
   provider?: string | null;
+  performedServiceLabels?: TrainingServiceLabels | null;
 };
 
 export type CaptureTrainingResult =
@@ -72,8 +76,11 @@ export type TrainingSampleBufferInput = {
   hwNumber?: string | null;
   readMethod?: string | null;
   serviceLabels: TrainingServiceLabels;
+  performedServiceLabels?: TrainingServiceLabels | null;
   provider?: string | null;
   revisionLabel?: string | null;
+  revisionNumber?: number | null;
+  sourceType?: TrainingSourceType | null;
   sourceMetadata?: Record<string, unknown> | null;
   createdMessage?: string;
 };
@@ -122,6 +129,7 @@ function resolveMod(order: CompletedOrder, options: CaptureTrainingOptions) {
     path,
     name: options.modFileName || selected?.file_name || baseName(path),
     revisionLabel: options.revisionLabel || selected?.label || null,
+    revisionNumber: Math.max(1, selected ? versions.indexOf(selected) + 1 : versions.length || 1),
   };
 }
 
@@ -222,6 +230,8 @@ export async function createTrainingSampleFromBuffers(
     });
     const identity = result.ecu_identification;
     const patternSignature = result.pattern_signature || buildPatternSignature(result);
+    const performedLabels = input.performedServiceLabels ?? emptyTrainingServiceLabels();
+    const sourceType = input.sourceType || (input.sourceMetadata?.demo === true ? "demo_fixture" : requestId ? "completed_request" : "manual_capture");
     const candidate = {
       request_id: requestId,
       user_id: input.userId ?? null,
@@ -241,15 +251,21 @@ export async function createTrainingSampleFromBuffers(
       sw_number: identity?.software_numbers[0] || input.swNumber || null,
       hw_number: identity?.hardware_numbers[0] || input.hwNumber || null,
       read_method: input.readMethod ?? null,
-      service_labels: input.serviceLabels,
+      service_labels: performedLabels,
+      requested_service_labels: input.serviceLabels,
+      performed_service_labels: performedLabels,
       provider: input.provider || "internal",
       revision_label: input.revisionLabel ?? null,
+      revision_number: Math.max(1, Number(input.revisionNumber || 1)),
+      source_type: sourceType,
       source_metadata: input.sourceMetadata ?? null,
       diff_json: result,
       pattern_signature: patternSignature,
+      change_type_classification: (result.change_profile?.classification || "unknown") as AiTrainingSample["change_type_classification"],
       auto_label_confidence: averageFeatureConfidence(input.serviceLabels, result),
       human_verified: false,
       human_verification_status: "unverified" as const,
+      learning_use_status: "pending" as const,
       outcome: "unknown",
     };
     const quality = calculateTrainingSampleQuality(candidate, result);
@@ -292,7 +308,7 @@ export async function createTrainingSampleFromBuffers(
         .eq("id", diffStartedEventId);
     }
     const signatures = trainingFeatureKeys
-      .filter((feature) => input.serviceLabels[feature])
+      .filter((feature) => performedLabels[feature])
       .map((feature) => ({
         training_sample_id: sample.id,
         ecu_family: sample.ecu_family,
@@ -316,6 +332,8 @@ export async function createTrainingSampleFromBuffers(
       message: input.createdMessage || "ORI/MOD training sample created.",
       metadata: {
         revision_label: input.revisionLabel ?? null,
+        revision_number: Math.max(1, Number(input.revisionNumber || 1)),
+        source_type: sourceType,
         analysis_version: result.analysis_version,
         data_quality_score: quality.score,
         demo: input.sourceMetadata?.demo === true,
@@ -400,8 +418,11 @@ export async function maybeCreateTrainingSampleForRequest(
       hwNumber: submitted.hwNumber,
       readMethod: order.read_method,
       serviceLabels: labels,
+      performedServiceLabels: options.performedServiceLabels,
       provider: options.provider || "internal",
       revisionLabel: mod.revisionLabel,
+      revisionNumber: mod.revisionNumber,
+      sourceType: "completed_request",
       sourceMetadata: {
         vehicle_generation: order.vehicle_generation,
         master_slave: order.master_slave,
@@ -437,6 +458,8 @@ export { calculateKnowledgeReadiness } from "@/lib/ecuIntelligence/readiness";
 export type KnowledgeProfileSample = {
   id: string;
   service_labels: TrainingServiceLabels | null;
+  performed_service_labels: TrainingServiceLabels | null;
+  learning_use_status: LearningUseStatus;
   human_verified: boolean;
   human_verification_status: HumanVerificationStatus;
   quality_rating: number | null;
@@ -447,7 +470,8 @@ export function calculateKnowledgeProfileMetrics(samples: KnowledgeProfileSample
   const verified = samples.filter((sample) => sample.human_verification_status === "confirmed");
   const rejected = samples.filter((sample) => sample.human_verification_status === "rejected");
   const usable = samples.filter((sample) =>
-    sample.human_verification_status !== "rejected" &&
+    sample.human_verification_status === "confirmed" &&
+    sample.learning_use_status === "approved_for_learning" &&
     (sample.quality_rating ?? 3) >= 3 &&
     Number(sample.data_quality_score ?? 0) >= 60
   );
@@ -455,7 +479,7 @@ export function calculateKnowledgeProfileMetrics(samples: KnowledgeProfileSample
   const featureCounts = Object.fromEntries(
     trainingFeatureKeys.map((feature) => [
       `${feature}_samples`,
-      usable.filter((sample) => sample.service_labels?.[feature]).length,
+      usable.filter((sample) => (sample.performed_service_labels ?? sample.service_labels)?.[feature]).length,
     ])
   );
   const ratio = (value: number, total: number) => Number((total ? value / total : 0).toFixed(3));
@@ -478,7 +502,7 @@ export async function updateEcuKnowledgeProfile(
   for (let offset = 0; ; offset += pageSize) {
     const sampleQuery = admin
       .from("ai_training_samples")
-      .select("id, service_labels, human_verified, human_verification_status, quality_rating, data_quality_score")
+      .select("id, service_labels, performed_service_labels, learning_use_status, human_verified, human_verification_status, quality_rating, data_quality_score")
       .range(offset, offset + pageSize - 1);
     const { data, error } = await matchingIdentity(sampleQuery, identity);
     if (error) throw new Error(error.message);
@@ -507,6 +531,8 @@ export async function updateEcuKnowledgeProfile(
     generation_readiness: state.value,
     profile_json: {
       usable_samples: usable.length,
+      approved_for_learning_samples: samples.filter((sample) => sample.learning_use_status === "approved_for_learning").length,
+      excluded_samples: samples.filter((sample) => sample.learning_use_status === "excluded").length,
       needs_review_samples: samples.filter((sample) => sample.human_verification_status === "needs_review").length,
       verified_ratio: ratio(verified.length, samples.length),
       average_data_quality: averageQuality,
@@ -555,7 +581,13 @@ export async function updateTrainingSampleVerification(input: {
   actorUserId: string;
   status: HumanVerificationStatus;
   aiCorrect?: boolean | null;
-  serviceLabels: TrainingServiceLabels;
+  requestedServiceLabels: TrainingServiceLabels;
+  performedServiceLabels: TrainingServiceLabels;
+  learningUseStatus: LearningUseStatus;
+  changeTypeClassification: AiTrainingSample["change_type_classification"];
+  revisionNumber: number;
+  provider?: string | null;
+  sourceType?: TrainingSourceType | null;
   qualityRating?: number | null;
   safetyRating?: TrainingSafetyRating | null;
   outcome?: string | null;
@@ -565,15 +597,33 @@ export async function updateTrainingSampleVerification(input: {
   const current = await admin.from("ai_training_samples").select("*").eq("id", input.sampleId).single();
   if (current.error || !current.data) throw new Error(current.error?.message || "Training sample not found.");
 
+  const hasPerformedService = trainingFeatureKeys.some((feature) => input.performedServiceLabels[feature]);
+  if (input.learningUseStatus === "approved_for_learning" && input.status !== "confirmed") {
+    throw new Error("A sample must be human-confirmed before it can be approved for learning.");
+  }
+  if (input.learningUseStatus === "approved_for_learning" && !hasPerformedService) {
+    throw new Error("Confirm at least one actually performed service before approving this sample for learning.");
+  }
+  const currentSample = current.data as AiTrainingSample;
+  const provider = input.provider?.trim() || currentSample.provider || "internal";
+  const sourceType = input.sourceType || currentSample.source_type || "manual_capture";
+
   const pendingQuality = calculateTrainingSampleQuality({
-    ...(current.data as AiTrainingSample),
+    ...currentSample,
     human_verified: input.status === "confirmed",
     human_verification_status: input.status,
-    service_labels: input.serviceLabels,
+    service_labels: input.performedServiceLabels,
+    requested_service_labels: input.requestedServiceLabels,
+    performed_service_labels: input.performedServiceLabels,
+    learning_use_status: input.learningUseStatus,
+    change_type_classification: input.changeTypeClassification,
+    revision_number: input.revisionNumber,
+    provider,
+    source_type: sourceType,
     quality_rating: input.qualityRating ?? null,
     safety_rating: input.safetyRating ?? "unknown",
     outcome: input.outcome?.trim() || "unknown",
-  }, (current.data as AiTrainingSample).diff_json);
+  }, currentSample.diff_json);
 
   const update = await admin
     .from("ai_training_samples")
@@ -581,7 +631,14 @@ export async function updateTrainingSampleVerification(input: {
       human_verified: input.status === "confirmed",
       human_verification_status: input.status,
       auto_labels_correct: input.aiCorrect ?? null,
-      service_labels: input.serviceLabels,
+      service_labels: input.performedServiceLabels,
+      requested_service_labels: input.requestedServiceLabels,
+      performed_service_labels: input.performedServiceLabels,
+      learning_use_status: input.learningUseStatus,
+      change_type_classification: input.changeTypeClassification,
+      revision_number: input.revisionNumber,
+      provider,
+      source_type: sourceType,
       quality_rating: input.qualityRating ?? null,
       data_quality_score: pendingQuality.score,
       data_quality_reasons: pendingQuality.reasons,
@@ -597,15 +654,15 @@ export async function updateTrainingSampleVerification(input: {
 
   await admin.from("ai_pattern_signatures").delete().eq("training_sample_id", sample.id);
   if (sample.pattern_signature) {
-    const rows = trainingFeatureKeys.filter((feature) => input.serviceLabels[feature]).map((feature) => ({
+    const rows = trainingFeatureKeys.filter((feature) => input.performedServiceLabels[feature]).map((feature) => ({
       training_sample_id: sample.id,
       ecu_family: sample.ecu_family,
       ecu_type: sample.ecu_type,
       sw_number: sample.sw_number,
       feature_type: feature,
       signature_json: sample.pattern_signature,
-      human_confirmed: input.status === "confirmed",
-      confidence: input.status === "confirmed" ? 1 : Number(sample.auto_label_confidence || 0),
+      human_confirmed: input.status === "confirmed" && input.learningUseStatus === "approved_for_learning",
+      confidence: input.status === "confirmed" && input.learningUseStatus === "approved_for_learning" ? 1 : Number(sample.auto_label_confidence || 0),
     }));
     if (rows.length) await admin.from("ai_pattern_signatures").insert(rows);
   }
@@ -624,6 +681,11 @@ export async function updateTrainingSampleVerification(input: {
     message: input.adminNotes?.trim() || `Training sample marked ${input.status}.`,
     metadata: {
       ai_correct: input.aiCorrect,
+      learning_use_status: input.learningUseStatus,
+      requested_services: trainingFeatureKeys.filter((feature) => input.requestedServiceLabels[feature]),
+      performed_services: trainingFeatureKeys.filter((feature) => input.performedServiceLabels[feature]),
+      change_type_classification: input.changeTypeClassification,
+      revision_number: input.revisionNumber,
       quality_rating: input.qualityRating,
       data_quality_score: pendingQuality.score,
       safety_rating: input.safetyRating,

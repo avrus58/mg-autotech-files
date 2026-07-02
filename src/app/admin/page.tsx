@@ -103,6 +103,7 @@ type ModifiedFileVersion = {
 };
 
 type CustomerTag = "workshop" | "reseller" | "vip" | "blocked" | "negative_credit";
+type PaymentOverride = "inherit" | "enabled" | "disabled";
 
 type Profile = {
   id: string;
@@ -146,6 +147,15 @@ type CustomerForm = {
   account_status: string;
   customer_tags: CustomerTag[];
   internal_admin_note: string;
+  credit_price_override_eur: string;
+  commercial_adjustment_type: "none" | "percentage" | "fixed";
+  commercial_adjustment_value: string;
+  payment_sumup: PaymentOverride;
+  payment_paypal: PaymentOverride;
+  payment_bank: PaymentOverride;
+  payment_stripe: PaymentOverride;
+  commercial_internal_note: string;
+  effective_custom_unit_price_eur: string;
 };
 
 const statusOptions = [
@@ -371,7 +381,24 @@ function makeCustomerForm(customer: Profile): CustomerForm {
       ? customer.customer_tags
       : [],
     internal_admin_note: customer.internal_admin_note ?? "",
+    credit_price_override_eur: "",
+    commercial_adjustment_type: "none",
+    commercial_adjustment_value: "0",
+    payment_sumup: "inherit",
+    payment_paypal: "inherit",
+    payment_bank: "inherit",
+    payment_stripe: "inherit",
+    commercial_internal_note: "",
+    effective_custom_unit_price_eur: "",
   };
+}
+
+function paymentOverride(value: boolean | null | undefined): PaymentOverride {
+  return value == null ? "inherit" : value ? "enabled" : "disabled";
+}
+
+function paymentOverrideValue(value: PaymentOverride) {
+  return value === "inherit" ? null : value === "enabled";
 }
 
 function playAdminNotificationSound() {
@@ -649,9 +676,34 @@ export default function AdminPage() {
     );
   }, [customers, customerSearch]);
 
-  function openCustomer(customer: Profile) {
+  async function openCustomer(customer: Profile) {
     setSelectedCustomer(customer);
     setCustomerForm(makeCustomerForm(customer));
+    try {
+      const session = await supabase.auth.getSession();
+      const token = session.data.session?.access_token;
+      if (!token) throw new Error("Unauthorized");
+      const response = await fetch(`/api/admin/customers/${customer.id}/commercial-policy`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "Customer pricing policy could not be loaded.");
+      const policy = payload.policy;
+      setCustomerForm((current) => current ? {
+        ...current,
+        credit_price_override_eur: policy.credit_price_override_eur == null ? "" : String(policy.credit_price_override_eur),
+        commercial_adjustment_type: policy.adjustment_type || "none",
+        commercial_adjustment_value: String(policy.adjustment_value || 0),
+        payment_sumup: paymentOverride(policy.payment_sumup_enabled),
+        payment_paypal: paymentOverride(policy.payment_paypal_enabled),
+        payment_bank: paymentOverride(policy.payment_bank_enabled),
+        payment_stripe: paymentOverride(policy.payment_stripe_enabled),
+        commercial_internal_note: policy.internal_note || "",
+        effective_custom_unit_price_eur: String(payload.effectiveQuote?.customUnitPriceEuro ?? ""),
+      } : current);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Customer pricing policy could not be loaded.");
+    }
   }
 
   async function adjustCredits(customer: Profile, amount: number, note?: string) {
@@ -740,11 +792,44 @@ export default function AdminPage() {
       tagsSkipped = true;
     }
 
-    setCustomerSavingId(null);
     if (error) {
+      setCustomerSavingId(null);
       setMessage(error.message);
       return;
     }
+
+    if (hasStaffPermission(adminAccess, "credits.manage")) {
+      try {
+        const session = await supabase.auth.getSession();
+        const token = session.data.session?.access_token;
+        if (!token) throw new Error("Unauthorized");
+        const response = await fetch(`/api/admin/customers/${selectedCustomer.id}/commercial-policy`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({
+            creditPriceOverrideEuro: customerForm.credit_price_override_eur.trim() ? Number(customerForm.credit_price_override_eur) : null,
+            adjustmentType: customerForm.commercial_adjustment_type,
+            adjustmentValue: Number(customerForm.commercial_adjustment_value || 0),
+            paymentMethods: {
+              sumup: paymentOverrideValue(customerForm.payment_sumup),
+              paypal: paymentOverrideValue(customerForm.payment_paypal),
+              bank: paymentOverrideValue(customerForm.payment_bank),
+              stripe: paymentOverrideValue(customerForm.payment_stripe),
+            },
+            internalNote: customerForm.commercial_internal_note.trim() || null,
+          }),
+        });
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.error || "Customer commercial policy could not be saved.");
+        setCustomerForm((current) => current ? { ...current, effective_custom_unit_price_eur: String(payload.effectiveQuote?.customUnitPriceEuro ?? "") } : current);
+      } catch (commercialError) {
+        setCustomerSavingId(null);
+        setMessage(`Customer profile saved, but pricing policy failed: ${commercialError instanceof Error ? commercialError.message : "Unknown error"}`);
+        return;
+      }
+    }
+
+    setCustomerSavingId(null);
 
     const updatedCustomer = { ...selectedCustomer, ...updatePayload } as Profile;
     setCustomers((current) => current.map((customer) => (customer.id === selectedCustomer.id ? updatedCustomer : customer)));
@@ -1085,6 +1170,18 @@ export default function AdminPage() {
                   Widget SaaS
                 </span>
                 <span className="rounded-full bg-red-950/40 px-2 py-1 text-[10px] font-black text-red-200">NEW</span>
+              </Link>
+            )}
+            {hasStaffPermission(adminAccess, "credits.manage") && (
+              <Link
+                href="/admin/commercial"
+                className="flex w-full items-center justify-between gap-3 rounded-2xl px-4 py-3 text-left text-sm font-black text-zinc-400 transition hover:bg-white/[0.06] hover:text-white"
+              >
+                <span className="flex items-center gap-3">
+                  <CreditCard className="h-5 w-5" />
+                  Pricing & Payments
+                </span>
+                <span className="rounded-full bg-red-950/40 px-2 py-1 text-[10px] font-black text-red-200">FINANCE</span>
               </Link>
             )}
             {isPrimaryOwner(adminAccess) && (
@@ -1839,6 +1936,25 @@ function CustomerDetailModal({ customer, form, setForm, creditInput, setCreditIn
               </div>
               <textarea value={form.internal_admin_note} onChange={(event) => updateForm("internal_admin_note", event.target.value)} placeholder="Internal admin note. Customer cannot see this." className="mt-4 min-h-32 w-full resize-none rounded-2xl border border-white/10 bg-black/35 px-4 py-3 text-sm font-bold text-white outline-none placeholder:text-zinc-600 focus:border-red-700" />
             </section>
+            <section className="rounded-[2rem] border border-red-900/40 bg-red-950/10 p-5">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div><h3 className="text-2xl font-black">Customer Pricing & Payments</h3><p className="mt-1 text-sm leading-6 text-zinc-500">A base-price override replaces the global result. The customer adjustment is applied after it.</p></div>
+                {form.effective_custom_unit_price_eur && <div className="rounded-xl border border-emerald-700/40 bg-emerald-950/20 px-4 py-3 text-right"><div className="text-xs font-black uppercase text-emerald-400">Effective custom credit</div><div className="mt-1 text-2xl font-black">EUR {Number(form.effective_custom_unit_price_eur).toFixed(2)}</div></div>}
+              </div>
+              <div className="mt-5 grid gap-4 md:grid-cols-3">
+                <FormInput label="Base Price Override (EUR)" type="number" value={form.credit_price_override_eur} onChange={(value) => updateForm("credit_price_override_eur", value)} />
+                <FormSelect label="Customer Adjustment" value={form.commercial_adjustment_type} onChange={(value) => updateForm("commercial_adjustment_type", value as CustomerForm["commercial_adjustment_type"])} options={["none", "percentage", "fixed"]} />
+                <FormInput label={form.commercial_adjustment_type === "percentage" ? "Adjustment (%)" : "Adjustment (EUR / credit)"} type="number" value={form.commercial_adjustment_value} onChange={(value) => updateForm("commercial_adjustment_value", value)} />
+              </div>
+              <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                <PaymentPolicySelect label="SumUp" value={form.payment_sumup} onChange={(value) => updateForm("payment_sumup", value)} />
+                <PaymentPolicySelect label="PayPal" value={form.payment_paypal} onChange={(value) => updateForm("payment_paypal", value)} />
+                <PaymentPolicySelect label="Bank transfer" value={form.payment_bank} onChange={(value) => updateForm("payment_bank", value)} />
+                <PaymentPolicySelect label="Stripe" value={form.payment_stripe} onChange={(value) => updateForm("payment_stripe", value)} />
+              </div>
+              <p className="mt-4 text-xs leading-5 text-zinc-500">Positive adjustment values reduce the per-credit price; negative values increase it. “Inherit” follows the global payment setting.</p>
+              <textarea value={form.commercial_internal_note} onChange={(event) => updateForm("commercial_internal_note", event.target.value)} placeholder="Internal pricing agreement or approval note. Customer cannot see this." className="mt-4 min-h-24 w-full resize-none rounded-2xl border border-white/10 bg-black/35 px-4 py-3 text-sm font-bold text-white outline-none placeholder:text-zinc-600 focus:border-red-700" />
+            </section>
           </div>
           <aside className="min-w-0 space-y-5 sm:space-y-6">
             <section className="rounded-[2rem] border border-red-900/40 bg-red-950/20 p-5">
@@ -1998,6 +2114,10 @@ function FormSelect({ label, value, onChange, options }: { label: string; value:
       </select>
     </label>
   );
+}
+
+function PaymentPolicySelect({ label, value, onChange }: { label: string; value: PaymentOverride; onChange: (value: PaymentOverride) => void }) {
+  return <label className="text-xs font-black uppercase tracking-[0.12em] text-zinc-500">{label}<select value={value} onChange={(event) => onChange(event.target.value as PaymentOverride)} className="mt-2 h-12 w-full rounded-xl border border-white/10 bg-black/35 px-4 text-sm font-black normal-case text-white outline-none focus:border-red-700"><option value="inherit">Inherit global</option><option value="enabled">Enabled</option><option value="disabled">Disabled</option></select></label>;
 }
 
 function Detail({ icon, label, value }: { icon: ReactNode; label: string; value: string | number | null | undefined }) {

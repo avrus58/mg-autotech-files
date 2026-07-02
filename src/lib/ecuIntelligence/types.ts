@@ -1,4 +1,8 @@
-import type { FileExpertAnalyzerResult, FileExpertPatternSignature } from "@/lib/fileExpert/types";
+import type {
+  FileExpertAnalyzerResult,
+  FileExpertChangeClassification,
+  FileExpertPatternSignature,
+} from "@/lib/fileExpert/types";
 
 export const trainingFeatureKeys = [
   "stage1",
@@ -19,6 +23,12 @@ export type TrainingFeature = (typeof trainingFeatureKeys)[number];
 export type TrainingServiceLabels = Record<TrainingFeature, boolean>;
 export type HumanVerificationStatus = "unverified" | "confirmed" | "rejected" | "needs_review";
 export type TrainingSafetyRating = "unknown" | "safe" | "aggressive" | "risky" | "bad";
+export type LearningUseStatus = "pending" | "approved_for_learning" | "excluded";
+export type TrainingSourceType =
+  | "completed_request"
+  | "demo_fixture"
+  | "manual_capture"
+  | "file_expert";
 
 export type AiTrainingSample = {
   id: string;
@@ -41,13 +51,19 @@ export type AiTrainingSample = {
   hw_number: string | null;
   read_method: string | null;
   service_labels: TrainingServiceLabels | null;
+  requested_service_labels: TrainingServiceLabels | null;
+  performed_service_labels: TrainingServiceLabels | null;
   provider: string | null;
   revision_label: string | null;
+  revision_number: number;
+  source_type: TrainingSourceType | null;
   source_metadata: Record<string, unknown> | null;
+  change_type_classification: FileExpertChangeClassification | "unknown" | null;
   diff_json: FileExpertAnalyzerResult | null;
   pattern_signature: FileExpertPatternSignature | null;
   auto_label_confidence: number | string | null;
   auto_labels_correct: boolean | null;
+  learning_use_status: LearningUseStatus;
   human_verified: boolean;
   human_verification_status: HumanVerificationStatus;
   quality_rating: number | null;

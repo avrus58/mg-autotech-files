@@ -10,6 +10,8 @@ import {
   trainingFeatureKeys,
   type AiTrainingSample,
   type HumanVerificationStatus,
+  type LearningUseStatus,
+  type TrainingSourceType,
   type TrainingSafetyRating,
   type TrainingServiceLabels,
 } from "@/lib/ecuIntelligence/types";
@@ -23,6 +25,8 @@ type DetailPayload = {
 
 const outcomes = ["unknown", "customer_ok", "issue_reported", "limp", "smoke", "knock", "dyno_confirmed", "needs_revision"];
 const safetyRatings: TrainingSafetyRating[] = ["unknown", "safe", "aggressive", "risky", "bad"];
+const changeTypes = ["identical", "focused_calibration", "distributed_calibration", "broad_rework", "structural_mismatch", "single_file", "unknown"] as const;
+const sourceTypes: TrainingSourceType[] = ["completed_request", "demo_fixture", "manual_capture", "file_expert"];
 
 export default function AiTrainingDetailPage() {
   const params = useParams<{ id: string }>();
@@ -30,7 +34,13 @@ export default function AiTrainingDetailPage() {
   const [data, setData] = useState<DetailPayload | null>(null);
   const [status, setStatus] = useState<HumanVerificationStatus>("unverified");
   const [aiCorrect, setAiCorrect] = useState<"unknown" | "yes" | "no">("unknown");
-  const [labels, setLabels] = useState<TrainingServiceLabels>(emptyTrainingServiceLabels());
+  const [requestedLabels, setRequestedLabels] = useState<TrainingServiceLabels>(emptyTrainingServiceLabels());
+  const [performedLabels, setPerformedLabels] = useState<TrainingServiceLabels>(emptyTrainingServiceLabels());
+  const [learningUseStatus, setLearningUseStatus] = useState<LearningUseStatus>("pending");
+  const [changeType, setChangeType] = useState<(typeof changeTypes)[number]>("unknown");
+  const [revisionNumber, setRevisionNumber] = useState(1);
+  const [provider, setProvider] = useState("internal");
+  const [sourceType, setSourceType] = useState<TrainingSourceType>("manual_capture");
   const [quality, setQuality] = useState<number | null>(null);
   const [safety, setSafety] = useState<TrainingSafetyRating>("unknown");
   const [outcome, setOutcome] = useState("unknown");
@@ -59,7 +69,13 @@ export default function AiTrainingDetailPage() {
       setData(next);
       setStatus(next.sample.human_verification_status);
       setAiCorrect(next.sample.auto_labels_correct === true ? "yes" : next.sample.auto_labels_correct === false ? "no" : "unknown");
-      setLabels({ ...emptyTrainingServiceLabels(), ...(next.sample.service_labels || {}) });
+      setRequestedLabels({ ...emptyTrainingServiceLabels(), ...(next.sample.requested_service_labels || next.sample.service_labels || {}) });
+      setPerformedLabels({ ...emptyTrainingServiceLabels(), ...(next.sample.performed_service_labels || {}) });
+      setLearningUseStatus(next.sample.learning_use_status || "pending");
+      setChangeType(next.sample.change_type_classification || next.sample.diff_json?.change_profile?.classification || "unknown");
+      setRevisionNumber(Math.max(1, Number(next.sample.revision_number || 1)));
+      setProvider(next.sample.provider || "internal");
+      setSourceType(next.sample.source_type || "manual_capture");
       setQuality(next.sample.quality_rating);
       setSafety(next.sample.safety_rating || "unknown");
       setOutcome(next.sample.outcome || "unknown");
@@ -82,7 +98,8 @@ export default function AiTrainingDetailPage() {
   const analyzer = data?.sample.diff_json;
   const changed = analyzer?.comparison;
   const identity = analyzer?.ecu_identification;
-  const activeFeatures = useMemo(() => trainingFeatureKeys.filter((key) => labels[key]), [labels]);
+  const activeRequestedFeatures = useMemo(() => trainingFeatureKeys.filter((key) => requestedLabels[key]), [requestedLabels]);
+  const activePerformedFeatures = useMemo(() => trainingFeatureKeys.filter((key) => performedLabels[key]), [performedLabels]);
 
   async function save() {
     setSaving(true);
@@ -91,7 +108,21 @@ export default function AiTrainingDetailPage() {
       const response = await authFetch(`/api/admin/ai-training/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status, aiCorrect: aiCorrect === "unknown" ? null : aiCorrect === "yes", serviceLabels: labels, qualityRating: quality, safetyRating: safety, outcome, adminNotes: notes }),
+        body: JSON.stringify({
+          status,
+          aiCorrect: aiCorrect === "unknown" ? null : aiCorrect === "yes",
+          requestedServiceLabels: requestedLabels,
+          performedServiceLabels: performedLabels,
+          learningUseStatus,
+          changeTypeClassification: changeType,
+          revisionNumber,
+          provider,
+          sourceType,
+          qualityRating: quality,
+          safetyRating: safety,
+          outcome,
+          adminNotes: notes,
+        }),
       });
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.error || "Verification could not be saved.");
@@ -142,6 +173,7 @@ export default function AiTrainingDetailPage() {
             <div className="flex items-center gap-3"><FileCode2 className="h-6 w-6 text-red-400" /><h2 className="text-xl font-black">ORI / MOD evidence</h2></div>
             <div className="mt-5 grid gap-3 sm:grid-cols-2"><FileInfo label="Original" name={sample.ori_file_name} hash={sample.ori_sha256} size={sample.ori_file_size} /><FileInfo label="Modified" name={sample.mod_file_name} hash={sample.mod_sha256} size={sample.mod_file_size} /></div>
             <div className="mt-4 grid gap-3 sm:grid-cols-4"><Info label="Changed bytes" value={changed?.changed_bytes?.toLocaleString()} /><Info label="Changed area" value={changed ? `${changed.changed_percent.toFixed(4)}%` : null} /><Info label="Grouped regions" value={changed?.merged_changed_blocks?.toString()} /><Info label="Map candidates" value={analyzer?.map_candidates.length.toString()} /></div>
+            <div className="mt-3 grid gap-3 sm:grid-cols-4"><Info label="Change type" value={sample.change_type_classification} /><Info label="Revision" value={`#${sample.revision_number || 1} ${sample.revision_label || ""}`.trim()} /><Info label="Provider" value={sample.provider} /><Info label="Source" value={sample.source_type} /></div>
           </section>
 
           <section className="rounded-lg border border-white/10 bg-white/[0.025] p-5">
@@ -154,17 +186,30 @@ export default function AiTrainingDetailPage() {
 
         <aside className="min-w-0 space-y-6 xl:sticky xl:top-6 xl:h-fit">
           <section className="rounded-lg border border-red-900/50 bg-red-950/10 p-5">
-            <div className="flex items-center gap-3"><CheckCircle2 className="h-6 w-6 text-emerald-400" /><div><div className="text-xs font-black uppercase tracking-[0.18em] text-red-400">Human gate</div><h2 className="text-xl font-black">Verification</h2></div></div>
-            <label className="mt-5 block text-xs font-black uppercase tracking-[0.12em] text-zinc-500">Decision<select value={status} onChange={(event) => setStatus(event.target.value as HumanVerificationStatus)} className="mt-2 h-12 w-full rounded-lg border border-white/10 bg-black/50 px-3 text-sm font-black text-white">{["unverified", "needs_review", "confirmed", "rejected"].map((value) => <option key={value} value={value}>{value.replaceAll("_", " ")}</option>)}</select></label>
+            <div className="flex items-center gap-3"><CheckCircle2 className="h-6 w-6 text-emerald-400" /><div><div className="text-xs font-black uppercase tracking-[0.18em] text-red-400">Human gate</div><h2 className="text-xl font-black">Training data integrity</h2></div></div>
+            <div className="mt-5 grid grid-cols-2 gap-3">
+              <label className="text-xs font-black uppercase text-zinc-500">Review decision<select value={status} onChange={(event) => setStatus(event.target.value as HumanVerificationStatus)} className="mt-2 h-11 w-full rounded-lg border border-white/10 bg-black/50 px-3 text-sm text-white">{["unverified", "needs_review", "confirmed", "rejected"].map((value) => <option key={value} value={value}>{value.replaceAll("_", " ")}</option>)}</select></label>
+              <label className="text-xs font-black uppercase text-zinc-500">Learning use<select value={learningUseStatus} onChange={(event) => setLearningUseStatus(event.target.value as LearningUseStatus)} className="mt-2 h-11 w-full rounded-lg border border-white/10 bg-black/50 px-3 text-sm text-white"><option value="pending">Pending</option><option value="approved_for_learning">Approved for learning</option><option value="excluded">Excluded</option></select></label>
+            </div>
             <label className="mt-4 block text-xs font-black uppercase tracking-[0.12em] text-zinc-500">Automatic labels correct?<select value={aiCorrect} onChange={(event) => setAiCorrect(event.target.value as "unknown" | "yes" | "no")} className="mt-2 h-12 w-full rounded-lg border border-white/10 bg-black/50 px-3 text-sm font-black text-white"><option value="unknown">Not reviewed</option><option value="yes">Yes</option><option value="no">No, corrected below</option></select></label>
-            <div className="mt-5 grid grid-cols-2 gap-2">{trainingFeatureKeys.map((feature) => <label key={feature} className={`flex cursor-pointer items-center justify-between rounded-lg border p-3 text-xs font-black uppercase ${labels[feature] ? "border-emerald-700/50 bg-emerald-950/20 text-emerald-200" : "border-white/10 text-zinc-500"}`}><span>{feature.replaceAll("_", " ")}</span><input type="checkbox" checked={labels[feature]} onChange={(event) => setLabels((current) => ({ ...current, [feature]: event.target.checked }))} className="h-4 w-4 accent-emerald-500" /></label>)}</div>
-            <div className="mt-4 text-xs text-zinc-500">Selected: {activeFeatures.length || 0}</div>
+
+            <FeatureEditor title="Requested services" subtitle="What the customer asked for" labels={requestedLabels} setLabels={setRequestedLabels} tone="amber" />
+            <div className="mt-2 text-xs text-zinc-500">Requested: {activeRequestedFeatures.length}</div>
+            <FeatureEditor title="Actual performed services" subtitle="What is truly present in this MOD" labels={performedLabels} setLabels={setPerformedLabels} tone="green" />
+            <div className="mt-2 text-xs text-zinc-500">Performed: {activePerformedFeatures.length}</div>
+
+            <div className="mt-5 grid grid-cols-2 gap-3">
+              <label className="text-xs font-black uppercase text-zinc-500">Change type<select value={changeType} onChange={(event) => setChangeType(event.target.value as typeof changeType)} className="mt-2 h-11 w-full rounded-lg border border-white/10 bg-black/50 px-3 text-sm text-white">{changeTypes.map((value) => <option key={value}>{value}</option>)}</select></label>
+              <label className="text-xs font-black uppercase text-zinc-500">Revision number<input type="number" min={1} value={revisionNumber} onChange={(event) => setRevisionNumber(Math.max(1, Number(event.target.value) || 1))} className="mt-2 h-11 w-full rounded-lg border border-white/10 bg-black/50 px-3 text-sm text-white" /></label>
+              <label className="text-xs font-black uppercase text-zinc-500">Provider<input value={provider} onChange={(event) => setProvider(event.target.value)} className="mt-2 h-11 w-full rounded-lg border border-white/10 bg-black/50 px-3 text-sm normal-case text-white" /></label>
+              <label className="text-xs font-black uppercase text-zinc-500">Source<select value={sourceType} onChange={(event) => setSourceType(event.target.value as TrainingSourceType)} className="mt-2 h-11 w-full rounded-lg border border-white/10 bg-black/50 px-3 text-sm text-white">{sourceTypes.map((value) => <option key={value}>{value}</option>)}</select></label>
+            </div>
             <div className="mt-4 grid grid-cols-2 gap-3"><label className="text-xs font-black uppercase text-zinc-500">Quality<select value={quality || ""} onChange={(event) => setQuality(event.target.value ? Number(event.target.value) : null)} className="mt-2 h-11 w-full rounded-lg border border-white/10 bg-black/50 px-3 text-sm text-white"><option value="">Not rated</option>{[1,2,3,4,5].map((value) => <option key={value} value={value}>{value}/5</option>)}</select></label><label className="text-xs font-black uppercase text-zinc-500">Safety<select value={safety} onChange={(event) => setSafety(event.target.value as TrainingSafetyRating)} className="mt-2 h-11 w-full rounded-lg border border-white/10 bg-black/50 px-3 text-sm text-white">{safetyRatings.map((value) => <option key={value}>{value}</option>)}</select></label></div>
             <label className="mt-4 block text-xs font-black uppercase text-zinc-500">Outcome<select value={outcome} onChange={(event) => setOutcome(event.target.value)} className="mt-2 h-11 w-full rounded-lg border border-white/10 bg-black/50 px-3 text-sm text-white">{outcomes.map((value) => <option key={value}>{value}</option>)}</select></label>
             <label className="mt-4 block text-xs font-black uppercase text-zinc-500">Admin notes<textarea value={notes} onChange={(event) => setNotes(event.target.value)} className="mt-2 min-h-28 w-full resize-none rounded-lg border border-white/10 bg-black/50 p-3 text-sm normal-case text-white outline-none focus:border-red-700" placeholder="Evidence, correction reason, outcome or revision context..." /></label>
           </section>
 
-          <section className="rounded-lg border border-amber-700/30 bg-amber-950/10 p-5 text-sm leading-6 text-amber-100/75"><ShieldAlert className="mb-3 h-6 w-6 text-amber-400" />Confirmation labels this sample as trusted learning evidence. Verify the exact ORI/MOD pair, ECU identity and requested services first. This does not approve the file for flashing.</section>
+          <section className="rounded-lg border border-amber-700/30 bg-amber-950/10 p-5 text-sm leading-6 text-amber-100/75"><ShieldAlert className="mb-3 h-6 w-6 text-amber-400" />Only records marked <strong>confirmed</strong> and <strong>approved for learning</strong> influence ECU knowledge. Requested services alone are never treated as proof of performed work. This does not approve a file for flashing.</section>
 
           <section className="rounded-lg border border-white/10 bg-white/[0.025] p-5"><h2 className="font-black">Event timeline</h2><div className="mt-4 space-y-4">{data.events.map((event) => <div key={event.id} className="relative border-l border-white/15 pb-1 pl-4"><span className="absolute -left-1.5 top-1 h-3 w-3 rounded-full border border-red-500 bg-[#090909]" /><div className="text-xs font-black uppercase text-red-300">{event.event_type.replaceAll("_", " ")}</div><div className="mt-1 text-xs leading-5 text-zinc-500">{event.message || "Recorded automatically."}</div><div className="mt-1 text-[10px] text-zinc-700">{formatDate(event.created_at)}</div></div>)}{!data.events.length && <div className="text-xs text-zinc-600">No audit events recorded.</div>}</div></section>
         </aside>
@@ -175,4 +220,7 @@ export default function AiTrainingDetailPage() {
 
 function Info({ label, value }: { label: string; value: string | null | undefined }) { return <div className="min-w-0 rounded-lg border border-white/10 bg-black/30 p-3"><div className="text-[10px] font-black uppercase tracking-[0.12em] text-zinc-600">{label}</div><div className="mt-1 break-all text-sm font-black">{value || "-"}</div></div>; }
 function FileInfo({ label, name, hash, size }: { label: string; name: string | null; hash: string | null; size: string | number | null }) { return <div className="min-w-0 rounded-lg border border-white/10 bg-black/30 p-4"><div className="text-xs font-black uppercase text-red-400">{label}</div><div className="mt-2 break-all font-black">{name || "-"}</div><div className="mt-2 break-all text-xs text-zinc-600">SHA256 {hash || "-"}</div><div className="mt-1 text-xs text-zinc-600">{size ? `${Number(size).toLocaleString()} bytes` : "Size unknown"}</div></div>; }
+function FeatureEditor({ title, subtitle, labels, setLabels, tone }: { title: string; subtitle: string; labels: TrainingServiceLabels; setLabels: React.Dispatch<React.SetStateAction<TrainingServiceLabels>>; tone: "amber" | "green" }) {
+  return <div className="mt-5 rounded-lg border border-white/10 bg-black/25 p-3"><div className="font-black">{title}</div><div className="mt-1 text-xs text-zinc-500">{subtitle}</div><div className="mt-3 grid grid-cols-2 gap-2">{trainingFeatureKeys.map((feature) => { const active = labels[feature]; const activeClass = tone === "green" ? "border-emerald-700/50 bg-emerald-950/20 text-emerald-200" : "border-amber-700/50 bg-amber-950/20 text-amber-200"; return <label key={feature} className={`flex cursor-pointer items-center justify-between rounded-lg border p-3 text-xs font-black uppercase ${active ? activeClass : "border-white/10 text-zinc-500"}`}><span>{feature.replaceAll("_", " ")}</span><input type="checkbox" checked={active} onChange={(event) => setLabels((current) => ({ ...current, [feature]: event.target.checked }))} className="h-4 w-4 accent-emerald-500" /></label>; })}</div></div>;
+}
 function formatDate(value: string) { return new Date(value).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" }); }

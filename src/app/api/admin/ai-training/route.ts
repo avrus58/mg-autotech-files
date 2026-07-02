@@ -23,13 +23,13 @@ export async function GET(request: Request) {
   let samplesQuery = admin
     .from("ai_training_samples")
     .select(
-      "id, request_id, brand, model, engine, ecu_type, ecu_family, sw_number, hw_number, service_labels, provider, revision_label, auto_label_confidence, human_verified, human_verification_status, quality_rating, data_quality_score, data_quality_reasons, safety_rating, outcome, ori_file_name, mod_file_name, source_metadata, created_at, updated_at"
+      "id, request_id, brand, model, engine, ecu_type, ecu_family, sw_number, hw_number, service_labels, requested_service_labels, performed_service_labels, provider, source_type, revision_label, revision_number, change_type_classification, learning_use_status, auto_label_confidence, human_verified, human_verification_status, quality_rating, data_quality_score, data_quality_reasons, safety_rating, outcome, ori_file_name, mod_file_name, source_metadata, created_at, updated_at"
     )
     .order("created_at", { ascending: false })
     .limit(limit);
   if (status !== "all") samplesQuery = samplesQuery.eq("human_verification_status", status);
 
-  const [samples, profiles, events, total, confirmed, unverified, review, rejected, profileTotal, level3Profiles] = await Promise.all([
+  const [samples, profiles, events, total, confirmed, unverified, review, rejected, approved, excluded, profileTotal, level3Profiles] = await Promise.all([
     samplesQuery,
     admin
       .from("ai_ecu_knowledge_profiles")
@@ -46,11 +46,13 @@ export async function GET(request: Request) {
     admin.from("ai_training_samples").select("id", { count: "exact", head: true }).eq("human_verification_status", "unverified"),
     admin.from("ai_training_samples").select("id", { count: "exact", head: true }).in("human_verification_status", ["unverified", "needs_review"]),
     admin.from("ai_training_samples").select("id", { count: "exact", head: true }).eq("human_verification_status", "rejected"),
+    admin.from("ai_training_samples").select("id", { count: "exact", head: true }).eq("learning_use_status", "approved_for_learning"),
+    admin.from("ai_training_samples").select("id", { count: "exact", head: true }).eq("learning_use_status", "excluded"),
     admin.from("ai_ecu_knowledge_profiles").select("id", { count: "exact", head: true }),
     admin.from("ai_ecu_knowledge_profiles").select("id", { count: "exact", head: true }).gte("learning_level", 3),
   ]);
 
-  const firstError = samples.error || profiles.error || events.error || total.error || confirmed.error || unverified.error || review.error || rejected.error || profileTotal.error || level3Profiles.error;
+  const firstError = samples.error || profiles.error || events.error || total.error || confirmed.error || unverified.error || review.error || rejected.error || approved.error || excluded.error || profileTotal.error || level3Profiles.error;
   if (firstError) {
     return NextResponse.json(
       {
@@ -66,7 +68,8 @@ export async function GET(request: Request) {
       const result = await admin
         .from("ai_training_samples")
         .select("id", { count: "exact", head: true })
-        .contains("service_labels", { [feature]: true });
+        .eq("learning_use_status", "approved_for_learning")
+        .contains("performed_service_labels", { [feature]: true });
       return { feature, count: result.count ?? 0, error: result.error };
     })
   );
@@ -88,6 +91,8 @@ export async function GET(request: Request) {
       unverified: unverified.count ?? 0,
       needsReview: review.count ?? 0,
       rejected: rejected.count ?? 0,
+      approvedForLearning: approved.count ?? 0,
+      excludedFromLearning: excluded.count ?? 0,
       profiles: profileTotal.count ?? 0,
       level3Plus: level3Profiles.count ?? 0,
       featureCounts,

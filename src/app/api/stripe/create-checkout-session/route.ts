@@ -1,20 +1,12 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { getSelectedCreditPurchase } from "@/lib/paymentSelection";
+import { getCreditPurchaseQuote } from "@/lib/commercialPolicy";
 import { getStripe } from "@/lib/stripe";
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const selectedPackage = getSelectedCreditPurchase(body);
     const isPackagePurchase = Boolean(body.packageId);
-
-    if (!selectedPackage) {
-      return NextResponse.json(
-        { error: "Credit package or valid custom credit amount is missing." },
-        { status: 400 }
-      );
-    }
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -62,6 +54,16 @@ export async function POST(request: Request) {
       );
     }
 
+    let selectedPackage;
+    try {
+      selectedPackage = await getCreditPurchaseQuote(user.id, body, "stripe");
+    } catch (error) {
+      return NextResponse.json({ error: error instanceof Error ? error.message : "Stripe is not available." }, { status: 403 });
+    }
+    if (!selectedPackage) {
+      return NextResponse.json({ error: "Credit package or valid custom credit amount is missing." }, { status: 400 });
+    }
+
     const stripe = getStripe();
 
     const session = await stripe.checkout.sessions.create({
@@ -88,6 +90,7 @@ export async function POST(request: Request) {
         package_id: selectedPackage.id,
         credits: String(selectedPackage.credits),
         price_euro: String(selectedPackage.priceEuro),
+        unit_price_euro: String(selectedPackage.unitPriceEuro),
         purchase_type: isPackagePurchase ? "package" : "custom",
       },
     });

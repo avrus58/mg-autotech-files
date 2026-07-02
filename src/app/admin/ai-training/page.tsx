@@ -20,7 +20,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
-import type { AiEcuKnowledgeProfile, HumanVerificationStatus, TrainingServiceLabels } from "@/lib/ecuIntelligence/types";
+import type { AiEcuKnowledgeProfile, HumanVerificationStatus, LearningUseStatus, TrainingServiceLabels } from "@/lib/ecuIntelligence/types";
 import { trainingFeatureKeys } from "@/lib/ecuIntelligence/types";
 import { getKnowledgeLevelDefinition, knowledgeLevelDefinitions } from "@/lib/ecuIntelligence/readiness";
 
@@ -35,8 +35,14 @@ type SampleSummary = {
   sw_number: string | null;
   hw_number: string | null;
   service_labels: TrainingServiceLabels | null;
+  requested_service_labels: TrainingServiceLabels | null;
+  performed_service_labels: TrainingServiceLabels | null;
   provider: string | null;
+  source_type: string | null;
   revision_label: string | null;
+  revision_number: number;
+  change_type_classification: string | null;
+  learning_use_status: LearningUseStatus;
   auto_label_confidence: number | string | null;
   human_verification_status: HumanVerificationStatus;
   quality_rating: number | null;
@@ -69,6 +75,8 @@ type Payload = {
     unverified: number;
     needsReview: number;
     rejected: number;
+    approvedForLearning: number;
+    excludedFromLearning: number;
     profiles: number;
     level3Plus: number;
     featureCounts: Record<string, number>;
@@ -80,7 +88,7 @@ const emptyPayload: Payload = {
   samples: [],
   profiles: [],
   events: [],
-  stats: { total: 0, oriModPairs: 0, confirmed: 0, unverified: 0, needsReview: 0, rejected: 0, profiles: 0, level3Plus: 0, featureCounts: {} },
+  stats: { total: 0, oriModPairs: 0, confirmed: 0, unverified: 0, needsReview: 0, rejected: 0, approvedForLearning: 0, excludedFromLearning: 0, profiles: 0, level3Plus: 0, featureCounts: {} },
 };
 
 const statusOptions: Array<HumanVerificationStatus | "all"> = [
@@ -224,13 +232,15 @@ export default function AiTrainingPage() {
           </div>
         )}
 
-        <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-8">
+        <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5 xl:grid-cols-10">
           <Metric icon={<Database />} label="Training samples" value={data.stats.total} />
           <Metric icon={<FileCode2 />} label="ORI / MOD pairs" value={data.stats.oriModPairs} />
           <Metric icon={<CheckCircle2 />} label="Human confirmed" value={data.stats.confirmed} tone="green" />
           <Metric icon={<FileSearch />} label="Unverified" value={data.stats.unverified} tone="amber" />
           <Metric icon={<FileSearch />} label="Needs review" value={data.stats.needsReview} tone="amber" />
           <Metric icon={<ShieldAlert />} label="Rejected" value={data.stats.rejected} />
+          <Metric icon={<CheckCircle2 />} label="Learning approved" value={data.stats.approvedForLearning} tone="green" />
+          <Metric icon={<ShieldAlert />} label="Learning excluded" value={data.stats.excludedFromLearning} />
           <Metric icon={<Layers3 />} label="ECU profiles" value={data.stats.profiles} />
           <Metric icon={<Sparkles />} label="Level 3+" value={data.stats.level3Plus} tone="green" />
         </section>
@@ -268,15 +278,18 @@ export default function AiTrainingPage() {
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
                       <Status value={sample.human_verification_status} />
-                      {sample.revision_label && <span className="rounded-md border border-white/10 px-2 py-1 text-xs font-bold text-zinc-400">{sample.revision_label}</span>}
+                      <LearningStatus value={sample.learning_use_status || "pending"} />
+                      <span className="rounded-md border border-white/10 px-2 py-1 text-xs font-bold text-zinc-400">Rev. {sample.revision_number || 1}{sample.revision_label ? ` / ${sample.revision_label}` : ""}</span>
                     </div>
                     <div className="mt-3 break-words text-lg font-black">{[sample.brand, sample.model, sample.engine].filter(Boolean).join(" ") || "Vehicle metadata pending"}</div>
                     <div className="mt-1 break-all text-xs text-zinc-600">Request {sample.request_id || (sample.source_metadata?.demo ? "demo fixture" : "manual")} / {formatDate(sample.created_at)}</div>
+                    <div className="mt-2 text-xs text-zinc-500">{sample.provider || "unknown provider"} / {sample.source_type || "unknown source"} / {sample.change_type_classification || "unclassified"}</div>
                   </div>
                   <div className="min-w-0 text-sm">
                     <div className="break-words font-black text-zinc-200">{sample.ecu_type || sample.ecu_family || "ECU not identified"}</div>
                     <div className="mt-1 break-all text-xs text-zinc-500">HW {sample.hw_number || "-"} / SW {sample.sw_number || "-"}</div>
-                    <div className="mt-2 text-xs text-red-300">{featureList(sample.service_labels)}</div>
+                    <div className="mt-2 text-xs text-amber-300">Requested: {featureList(sample.requested_service_labels || sample.service_labels)}</div>
+                    <div className="mt-1 text-xs text-emerald-300">Performed: {featureList(sample.performed_service_labels)}</div>
                   </div>
                   <div className="grid grid-cols-2 gap-2 text-center md:grid-cols-1 md:text-left">
                     <Small label="Auto confidence" value={`${Math.round(Number(sample.auto_label_confidence || 0) * 100)}%`} />
@@ -351,6 +364,11 @@ function Status({ value }: { value: HumanVerificationStatus }) {
   return <span className={`rounded-md border px-2 py-1 text-xs font-black uppercase ${classes}`}>{humanLabel(value)}</span>;
 }
 
+function LearningStatus({ value }: { value: LearningUseStatus }) {
+  const classes = value === "approved_for_learning" ? "border-emerald-700/40 bg-emerald-950/25 text-emerald-300" : value === "excluded" ? "border-red-700/40 bg-red-950/25 text-red-300" : "border-amber-700/40 bg-amber-950/25 text-amber-300";
+  return <span className={`rounded-md border px-2 py-1 text-xs font-black uppercase ${classes}`}>{humanLabel(value)}</span>;
+}
+
 function Small({ label, value }: { label: string; value: string }) {
   return <div className="min-w-0"><div className="text-[10px] font-black uppercase tracking-[0.12em] text-zinc-600">{label}</div><div className="mt-1 break-words text-sm font-black text-zinc-200">{value}</div></div>;
 }
@@ -358,4 +376,4 @@ function Small({ label, value }: { label: string; value: string }) {
 function Empty({ text }: { text: string }) { return <div className="rounded-lg border border-dashed border-white/15 p-10 text-center text-sm text-zinc-500">{text}</div>; }
 function humanLabel(value: string) { return value === "all" ? "All statuses" : value.replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase()); }
 function formatDate(value: string) { return new Date(value).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" }); }
-function featureList(labels: TrainingServiceLabels | null) { const values = labels ? Object.entries(labels).filter(([, enabled]) => enabled).map(([key]) => key.replaceAll("_", " ").toUpperCase()) : []; return values.join(" / ") || "No requested feature label"; }
+function featureList(labels: TrainingServiceLabels | null) { const values = labels ? Object.entries(labels).filter(([, enabled]) => enabled).map(([key]) => key.replaceAll("_", " ").toUpperCase()) : []; return values.join(" / ") || "None"; }

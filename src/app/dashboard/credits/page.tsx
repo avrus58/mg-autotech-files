@@ -1,14 +1,13 @@
 ﻿"use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { signOutIfEmailUnverified } from "@/lib/authGuards";
 import {
-  CREDIT_PROMOTION_PERCENT,
   CUSTOM_CREDIT_BASE_PRICE_EURO,
   CUSTOM_CREDIT_PRICE_EURO,
-  creditPackages as packages,
+  creditPackages,
 } from "@/lib/creditPackages";
 import { supabase } from "@/lib/supabaseClient";
 import {
@@ -67,6 +66,23 @@ const paymentMethods = [
 ] as const;
 
 type PaymentMethod = (typeof paymentMethods)[number]["id"];
+type CreditQuote = {
+  promotionLabel: string | null;
+  customBaseUnitPriceEuro: number;
+  customUnitPriceEuro: number;
+  customerPricingActive: boolean;
+  paymentMethods: Record<PaymentMethod, boolean>;
+  packages: Array<(typeof creditPackages)[number] & { unitPriceEuro: number }>;
+};
+
+const fallbackQuote: CreditQuote = {
+  promotionLabel: "Limited time -20% on all credit purchases",
+  customBaseUnitPriceEuro: CUSTOM_CREDIT_BASE_PRICE_EURO,
+  customUnitPriceEuro: CUSTOM_CREDIT_PRICE_EURO,
+  customerPricingActive: false,
+  paymentMethods: { sumup: true, paypal: true, bank: true, stripe: true },
+  packages: creditPackages.map((item) => ({ ...item, unitPriceEuro: item.priceEuro / item.credits })),
+};
 
 function formatEuro(value: number) {
   return new Intl.NumberFormat("de-DE", {
@@ -91,6 +107,35 @@ export default function BuyCreditsPage() {
   const [message, setMessage] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("sumup");
   const [copiedBankReference, setCopiedBankReference] = useState(false);
+  const [quote, setQuote] = useState<CreditQuote>(fallbackQuote);
+  const [quoteLoading, setQuoteLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    async function loadQuote() {
+      const session = await supabase.auth.getSession();
+      const token = session.data.session?.access_token;
+      if (!token) {
+        if (active) setQuoteLoading(false);
+        return;
+      }
+      try {
+        const response = await fetch("/api/credits/quote", { headers: { Authorization: `Bearer ${token}` } });
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.error || "Credit prices could not be loaded.");
+        if (!active) return;
+        const nextQuote = payload.quote as CreditQuote;
+        setQuote(nextQuote);
+        setPaymentMethod((current) => nextQuote.paymentMethods[current] ? current : paymentMethods.find((method) => nextQuote.paymentMethods[method.id])?.id || current);
+      } catch (error) {
+        if (active) setMessage(error instanceof Error ? error.message : "Credit prices could not be loaded.");
+      } finally {
+        if (active) setQuoteLoading(false);
+      }
+    }
+    void loadQuote();
+    return () => { active = false; };
+  }, []);
 
   const customCreditAmount = Number(customCredits);
   const customValid =
@@ -101,12 +146,14 @@ export default function BuyCreditsPage() {
 
   const customPrice = useMemo(() => {
     if (!customValid) return 0;
-    return customCreditAmount * CUSTOM_CREDIT_PRICE_EURO;
-  }, [customCreditAmount, customValid]);
+    return customCreditAmount * quote.customUnitPriceEuro;
+  }, [customCreditAmount, customValid, quote.customUnitPriceEuro]);
 
   const selectedPayment = paymentMethods.find(
     (method) => method.id === paymentMethod
   );
+  const packages = quote.packages;
+  const availablePaymentMethods = paymentMethods.filter((method) => quote.paymentMethods[method.id]);
   const bestValuePackage = packages.find((pack) => pack.credits === 500);
 
   const bankDetails = {
@@ -330,9 +377,8 @@ export default function BuyCreditsPage() {
               Choose a package or enter a custom credit amount. Package prices
               get cheaper as the volume increases.
             </p>
-            <div className="mt-5 inline-flex rounded-full border border-red-700/60 bg-red-950/40 px-4 py-2 text-sm font-black text-red-100">
-              Limited time -{CREDIT_PROMOTION_PERCENT}% on all credit purchases
-            </div>
+            {quote.promotionLabel && <div className="mt-5 inline-flex rounded-full border border-red-700/60 bg-red-950/40 px-4 py-2 text-sm font-black text-red-100">{quote.promotionLabel}</div>}
+            {quote.customerPricingActive && <div className="mt-3 text-sm font-bold text-emerald-300">Your partner pricing is active on this account.</div>}
           </div>
 
           <div className="rounded-[2rem] border border-red-900/50 bg-red-950/20 p-6 shadow-2xl shadow-black/30">
@@ -367,7 +413,7 @@ export default function BuyCreditsPage() {
           </div>
 
           <div className="grid gap-3 md:grid-cols-4">
-            {paymentMethods.map((method) => {
+            {availablePaymentMethods.map((method) => {
               const Icon = method.icon;
               const active = paymentMethod === method.id;
 
@@ -408,7 +454,9 @@ export default function BuyCreditsPage() {
             })}
           </div>
 
-          {paymentMethod === "bank" && (
+          {!availablePaymentMethods.length && <div className="mt-4 rounded-xl border border-amber-700/40 bg-amber-950/20 p-4 text-sm text-amber-200">Online credit purchases are currently disabled for this account. Please contact support.</div>}
+
+          {paymentMethod === "bank" && quote.paymentMethods.bank && (
             <div className="mt-5 rounded-2xl border border-white/10 bg-black/30 p-5">
               <div className="grid gap-4 md:grid-cols-4">
                 <div>
@@ -526,7 +574,7 @@ export default function BuyCreditsPage() {
               </div>
 
               <div className="mt-2 text-sm font-bold text-red-400">
-                Each Credit {formatEuro(item.priceEuro / item.credits)}
+                Each Credit {formatEuro(item.unitPriceEuro)}
               </div>
 
               <p className="mt-5 flex-1 text-sm leading-6 text-zinc-400">
@@ -554,7 +602,7 @@ export default function BuyCreditsPage() {
 
               <button
                 onClick={() => startCheckout({ packageId: item.id })}
-                disabled={loadingPackage === item.id}
+                disabled={quoteLoading || !availablePaymentMethods.length || loadingPackage === item.id}
                 className="mt-7 flex w-full items-center justify-center rounded-xl border border-red-700 bg-transparent px-5 py-4 text-sm font-black text-white transition hover:bg-red-950/40 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {loadingPackage === item.id ? (
@@ -590,8 +638,7 @@ export default function BuyCreditsPage() {
 
             <p className="mt-3 text-sm leading-6 text-zinc-400">
               Enter any credit amount. Custom credit purchases are calculated at{" "}
-              {formatEuro(CUSTOM_CREDIT_PRICE_EURO)} per credit during the
-              limited-time promotion.
+              {formatEuro(quote.customUnitPriceEuro)} per credit for your account.
             </p>
 
             <div className="mt-6 grid gap-4 sm:grid-cols-[1fr_180px]">
@@ -618,7 +665,7 @@ export default function BuyCreditsPage() {
                 {customValid && (
                   <div className="mt-2 text-sm font-bold text-zinc-500 line-through">
                     {formatEuro(
-                      customCreditAmount * CUSTOM_CREDIT_BASE_PRICE_EURO
+                      customCreditAmount * quote.customBaseUnitPriceEuro
                     )}
                   </div>
                 )}
@@ -630,7 +677,7 @@ export default function BuyCreditsPage() {
 
             <button
               onClick={startCustomCheckout}
-              disabled={!customValid || Boolean(loadingPackage?.startsWith("custom_"))}
+              disabled={quoteLoading || !availablePaymentMethods.length || !customValid || Boolean(loadingPackage?.startsWith("custom_"))}
               className="mt-6 flex w-full items-center justify-center rounded-xl bg-[#b1121b] px-5 py-4 text-sm font-black text-white shadow-xl shadow-red-950/40 transition hover:bg-[#c91824] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {loadingPackage?.startsWith("custom_") ? (
@@ -657,9 +704,8 @@ export default function BuyCreditsPage() {
             <h2 className="text-2xl font-black">Important</h2>
             <p className="mt-3 text-sm leading-7 text-zinc-400">
               Package purchases use discounted package pricing. Custom credit
-              purchases are currently calculated at{" "}
-              {formatEuro(CUSTOM_CREDIT_PRICE_EURO)} per credit with the
-              limited-time discount. Stripe, PayPal and SumUp payments add
+              purchases are calculated at{" "}
+              {formatEuro(quote.customUnitPriceEuro)} per credit for this account. Stripe, PayPal and SumUp payments add
               credits automatically after payment confirmation. Bank transfer
               requires admin verification before credits are added.
             </p>
@@ -668,8 +714,8 @@ export default function BuyCreditsPage() {
               <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
                 <div className="text-sm font-black">Example</div>
                 <div className="mt-1 text-sm text-zinc-400">
-                  17 Credits × {formatEuro(CUSTOM_CREDIT_PRICE_EURO)} ={" "}
-                  {formatEuro(17 * CUSTOM_CREDIT_PRICE_EURO)}
+                  17 Credits × {formatEuro(quote.customUnitPriceEuro)} ={" "}
+                  {formatEuro(17 * quote.customUnitPriceEuro)}
                 </div>
               </div>
 

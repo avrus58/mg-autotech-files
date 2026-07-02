@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { getSelectedCreditPurchase } from "@/lib/paymentSelection";
+import { getCreditPurchaseQuote } from "@/lib/commercialPolicy";
 
 const PAYPAL_API_BASE =
   process.env.PAYPAL_API_BASE || "https://api-m.paypal.com";
@@ -38,14 +38,6 @@ async function getPayPalAccessToken() {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const selectedPackage = getSelectedCreditPurchase(body);
-
-    if (!selectedPackage) {
-      return NextResponse.json(
-        { error: "Credit package or valid custom credit amount is missing." },
-        { status: 400 }
-      );
-    }
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -89,12 +81,23 @@ export async function POST(request: Request) {
       );
     }
 
+    let selectedPackage;
+    try {
+      selectedPackage = await getCreditPurchaseQuote(user.id, body, "paypal");
+    } catch (error) {
+      return NextResponse.json({ error: error instanceof Error ? error.message : "PayPal is not available." }, { status: 403 });
+    }
+    if (!selectedPackage) {
+      return NextResponse.json({ error: "Credit package or valid custom credit amount is missing." }, { status: 400 });
+    }
+
     const accessToken = await getPayPalAccessToken();
     const customId = JSON.stringify({
       u: user.id,
       c: selectedPackage.credits,
       p: selectedPackage.id,
       t: selectedPackage.purchaseType,
+      a: selectedPackage.priceEuro,
     });
 
     const response = await fetch(`${PAYPAL_API_BASE}/v2/checkout/orders`, {

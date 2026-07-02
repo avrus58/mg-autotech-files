@@ -20,6 +20,11 @@ import { generateAiFileExpertReport } from "../src/lib/ai";
 import { modelSafeAnalyzerResult, modelSafeMetadata } from "../src/lib/ai/prompt";
 import { hasStaffPermission } from "../src/lib/staffPermissions";
 import { validateFileExpertDescriptor } from "../src/lib/fileExpert/server";
+import {
+  buildCreditQuote,
+  defaultCommerceSettings,
+  emptyCustomerCommercialPolicy,
+} from "../src/lib/commercialPolicy";
 
 function calibrationLikeBuffer(size = 16_384) {
   const buffer = Buffer.alloc(size, 0xff);
@@ -262,14 +267,18 @@ test("knowledge profiles exclude rejected and low-quality samples", () => {
   const samples: KnowledgeProfileSample[] = Array.from({ length: 110 }, (_, index) => ({
     id: String(index),
     service_labels: labels,
-    human_verified: index < 12,
-    human_verification_status: index < 12 ? "confirmed" as const : "unverified" as const,
+    performed_service_labels: labels,
+    learning_use_status: "approved_for_learning" as const,
+    human_verified: true,
+    human_verification_status: "confirmed" as const,
     quality_rating: 4,
     data_quality_score: 85,
   }));
   samples.push({
     id: "low",
     service_labels: labels,
+    performed_service_labels: labels,
+    learning_use_status: "approved_for_learning",
     human_verified: false,
     human_verification_status: "unverified",
     quality_rating: 5,
@@ -278,6 +287,8 @@ test("knowledge profiles exclude rejected and low-quality samples", () => {
   samples.push({
     id: "rejected",
     service_labels: labels,
+    performed_service_labels: labels,
+    learning_use_status: "excluded",
     human_verified: false,
     human_verification_status: "rejected",
     quality_rating: 5,
@@ -288,6 +299,45 @@ test("knowledge profiles exclude rejected and low-quality samples", () => {
   assert.equal(metrics.rejected.length, 1);
   assert.equal(metrics.state.level, 2);
   assert.equal(metrics.featureCounts.stage1_samples, 110);
+});
+
+test("knowledge profiles require confirmed performed services and explicit learning approval", () => {
+  const requested = emptyTrainingServiceLabels();
+  requested.egr_off = true;
+  const performed = emptyTrainingServiceLabels();
+  performed.stage1 = true;
+  const metrics = calculateKnowledgeProfileMetrics([
+    {
+      id: "pending",
+      service_labels: performed,
+      performed_service_labels: performed,
+      learning_use_status: "pending",
+      human_verified: true,
+      human_verification_status: "confirmed",
+      quality_rating: 5,
+      data_quality_score: 95,
+    },
+  ]);
+  assert.equal(metrics.usable.length, 0);
+  assert.equal(metrics.featureCounts.stage1_samples, 0);
+  assert.equal(requested.egr_off, true);
+});
+
+test("commercial pricing applies customer override before customer adjustment", () => {
+  const globalQuote = buildCreditQuote(defaultCommerceSettings, emptyCustomerCommercialPolicy("customer-a"));
+  assert.equal(globalQuote.customUnitPriceEuro, 4);
+
+  const customerFive = emptyCustomerCommercialPolicy("customer-b");
+  customerFive.credit_price_override_eur = 5;
+  customerFive.adjustment_type = "fixed";
+  customerFive.adjustment_value = 1;
+  assert.equal(buildCreditQuote(defaultCommerceSettings, customerFive).customUnitPriceEuro, 4);
+
+  const customerFour = { ...customerFive, user_id: "customer-c", credit_price_override_eur: 4 };
+  assert.equal(buildCreditQuote(defaultCommerceSettings, customerFour).customUnitPriceEuro, 3);
+  customerFour.payment_paypal_enabled = false;
+  assert.equal(buildCreditQuote(defaultCommerceSettings, customerFour).paymentMethods.paypal, false);
+  assert.equal(buildCreditQuote(defaultCommerceSettings, customerFour).paymentMethods.sumup, true);
 });
 
 test("database migration enforces duplicate ORI/MOD sample prevention", () => {

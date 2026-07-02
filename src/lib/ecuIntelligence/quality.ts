@@ -68,9 +68,14 @@ export function calculateTrainingSampleQuality(
     add("ecu_metadata_missing", "ECU type and family are missing.", -5);
   }
 
-  const hasLabels = trainingFeatureKeys.some((key) => sample.service_labels?.[key] === true);
-  if (hasLabels) add("service_labels", "At least one service label is present.", 8);
-  else add("service_labels_missing", "No service label is present.", -5);
+  const requestedLabels = sample.requested_service_labels ?? sample.service_labels;
+  const performedLabels = sample.performed_service_labels;
+  const hasRequestedLabels = trainingFeatureKeys.some((key) => requestedLabels?.[key] === true);
+  const hasPerformedLabels = trainingFeatureKeys.some((key) => performedLabels?.[key] === true);
+  if (hasRequestedLabels) add("requested_labels", "Customer-requested services are recorded separately.", 4);
+  else add("requested_labels_missing", "No requested service label is present.", -3);
+  if (hasPerformedLabels) add("performed_labels", "Actually performed services were confirmed separately.", 8);
+  else add("performed_labels_pending", "Performed services still require human confirmation.", 0);
 
   if (analyzerResult) add("diff_present", "Structured analyzer output is present.", 10);
   else add("diff_missing", "Structured analyzer output is missing.", 0);
@@ -97,6 +102,24 @@ export function calculateTrainingSampleQuality(
     add("human_verified", "A human reviewer confirmed the sample.", 7);
   } else {
     add("human_verification_pending", "Human verification is still pending.", 0);
+  }
+
+  if (sample.learning_use_status === "approved_for_learning") {
+    add("learning_approved", "The sample passed the explicit learning-use gate.", 4);
+  } else if (sample.learning_use_status === "excluded") {
+    add("learning_excluded", "The sample is excluded from learning.", -10);
+  } else {
+    add("learning_pending", "Learning use is pending an explicit admin decision.", 0);
+  }
+
+  if (hasText(sample.provider) && hasText(sample.source_type)) {
+    add("source_traceable", "Provider and source are traceable.", 3);
+  } else {
+    add("source_incomplete", "Provider or source classification is missing.", 0);
+  }
+
+  if (Number(sample.revision_number ?? 0) >= 1) {
+    add("revision_tracked", "The delivered revision number is recorded.", 2);
   }
 
   if (hasText(sample.outcome) && sample.outcome !== "unknown") {

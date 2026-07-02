@@ -1,20 +1,12 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { getSelectedCreditPurchase } from "@/lib/paymentSelection";
+import { getCreditPurchaseQuote } from "@/lib/commercialPolicy";
 
 const SUMUP_API_BASE = process.env.SUMUP_API_BASE || "https://api.sumup.com";
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const selectedPackage = getSelectedCreditPurchase(body);
-
-    if (!selectedPackage) {
-      return NextResponse.json(
-        { error: "Credit package or valid custom credit amount is missing." },
-        { status: 400 }
-      );
-    }
 
     const sumupApiKey = process.env.SUMUP_API_KEY;
     const sumupPayToEmail = process.env.SUMUP_PAY_TO_EMAIL;
@@ -67,12 +59,23 @@ export async function POST(request: Request) {
       );
     }
 
+    let selectedPackage;
+    try {
+      selectedPackage = await getCreditPurchaseQuote(user.id, body, "sumup");
+    } catch (error) {
+      return NextResponse.json({ error: error instanceof Error ? error.message : "SumUp is not available." }, { status: 403 });
+    }
+    if (!selectedPackage) {
+      return NextResponse.json({ error: "Credit package or valid custom credit amount is missing." }, { status: 400 });
+    }
+
     const checkoutReference = Buffer.from(
       JSON.stringify([
         user.id,
         selectedPackage.credits,
         selectedPackage.id,
         selectedPackage.purchaseType,
+        selectedPackage.priceEuro,
         Date.now().toString(36),
       ])
     ).toString("base64url");
