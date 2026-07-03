@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { getCreditPurchaseQuote } from "@/lib/commercialPolicy";
+import { safeAppendPaymentEvent, safeUpsertPaymentRecord } from "@/lib/paymentAudit";
 import { getStripe } from "@/lib/stripe";
 
 export async function POST(request: Request) {
@@ -93,6 +94,36 @@ export async function POST(request: Request) {
         unit_price_euro: String(selectedPackage.unitPriceEuro),
         purchase_type: isPackagePurchase ? "package" : "custom",
       },
+      payment_intent_data: {
+        metadata: {
+          user_id: user.id,
+          credits: String(selectedPackage.credits),
+          package_id: selectedPackage.id,
+          purchase_type: isPackagePurchase ? "package" : "custom",
+        },
+      },
+    });
+
+    const recordId = await safeUpsertPaymentRecord({
+      provider: "stripe",
+      externalId: session.id,
+      userId: user.id,
+      status: "pending",
+      credits: selectedPackage.credits,
+      amountTotal: Math.round(selectedPackage.priceEuro * 100),
+      currency: "eur",
+      customerEmail: user.email ?? null,
+      packageId: selectedPackage.id,
+      purchaseType: isPackagePurchase ? "package" : "custom",
+      metadata: { stripe_session_id: session.id, livemode: session.livemode },
+    });
+    await safeAppendPaymentEvent({
+      paymentRecordId: recordId,
+      provider: "stripe",
+      eventType: "checkout_created",
+      status: "info",
+      message: "Stripe Checkout session created.",
+      payload: { session_id: session.id },
     });
 
     return NextResponse.json({ url: session.url });
@@ -101,6 +132,13 @@ export async function POST(request: Request) {
       error instanceof Error
         ? error.message
         : "Could not create checkout session.";
+
+    await safeAppendPaymentEvent({
+      provider: "stripe",
+      eventType: "checkout_creation_failed",
+      status: "failed",
+      message,
+    });
 
     return NextResponse.json({ error: message }, { status: 500 });
   }

@@ -25,6 +25,7 @@ import {
   defaultCommerceSettings,
   emptyCustomerCommercialPolicy,
 } from "../src/lib/commercialPolicy";
+import { paymentProviderFromSource } from "../src/lib/paymentAudit";
 
 function calibrationLikeBuffer(size = 16_384) {
   const buffer = Buffer.alloc(size, 0xff);
@@ -338,6 +339,22 @@ test("commercial pricing applies customer override before customer adjustment", 
   customerFour.payment_paypal_enabled = false;
   assert.equal(buildCreditQuote(defaultCommerceSettings, customerFour).paymentMethods.paypal, false);
   assert.equal(buildCreditQuote(defaultCommerceSettings, customerFour).paymentMethods.stripe, true);
+});
+
+test("payment ledger sources map to supported finance providers", () => {
+  assert.equal(paymentProviderFromSource("stripe_checkout"), "stripe");
+  assert.equal(paymentProviderFromSource("paypal_order"), "paypal");
+  assert.equal(paymentProviderFromSource("bank_transfer"), "bank");
+  assert.equal(paymentProviderFromSource("staff_adjustment"), null);
+});
+
+test("payment control migration includes reconciliation and refund safeguards", () => {
+  const sql = readFileSync(resolve(process.cwd(), "scripts", "add-payment-revenue-control.sql"), "utf8");
+  assert.match(sql, /create table if not exists public\.payment_records/i);
+  assert.match(sql, /unique \(provider, external_id\)/i);
+  assert.match(sql, /admin_record_bank_payment/i);
+  assert.match(sql, /admin_apply_payment_refund/i);
+  assert.match(sql, /for update/i);
 });
 
 test("database migration enforces duplicate ORI/MOD sample prevention", () => {

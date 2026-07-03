@@ -31,6 +31,8 @@ Stripe webhook endpoint:
 Event:
 
 - `checkout.session.completed`
+- `checkout.session.expired`
+- `payment_intent.payment_failed`
 
 ### Bank Transfer
 
@@ -40,6 +42,16 @@ Event:
 - `NEXT_PUBLIC_BANK_BIC`
 
 Bank transfer stays manual. PayPal and Stripe are automatic credit top-up flows.
+
+## Payment & Revenue Control Center
+
+Run `scripts/add-payment-revenue-control.sql` in Supabase, then open:
+
+- `https://file.mgautotech.de/admin/payments`
+
+The migration adds provider payment records, webhook/event history, atomic bank
+payment matching and audited full-refund credit reversal. Access requires the
+`credits.manage` staff permission.
 
 ## Local Check
 

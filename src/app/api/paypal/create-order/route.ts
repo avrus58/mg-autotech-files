@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { getCreditPurchaseQuote } from "@/lib/commercialPolicy";
+import { safeAppendPaymentEvent, safeUpsertPaymentRecord } from "@/lib/paymentAudit";
 
 const PAYPAL_API_BASE =
   process.env.PAYPAL_API_BASE || "https://api-m.paypal.com";
@@ -148,10 +149,39 @@ export async function POST(request: Request) {
       );
     }
 
+    const recordId = await safeUpsertPaymentRecord({
+      provider: "paypal",
+      externalId: String(data.id),
+      userId: user.id,
+      status: "pending",
+      credits: selectedPackage.credits,
+      amountTotal: Math.round(selectedPackage.priceEuro * 100),
+      currency: "eur",
+      customerEmail: user.email ?? null,
+      packageId: selectedPackage.id,
+      purchaseType: selectedPackage.purchaseType,
+      metadata: { paypal_order_id: data.id },
+    });
+    await safeAppendPaymentEvent({
+      paymentRecordId: recordId,
+      provider: "paypal",
+      eventType: "order_created",
+      status: "info",
+      message: "PayPal order created and awaiting approval.",
+      payload: { paypal_order_id: data.id },
+    });
+
     return NextResponse.json({ url: approveUrl, orderId: data.id });
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Could not create PayPal order.";
+
+    await safeAppendPaymentEvent({
+      provider: "paypal",
+      eventType: "order_creation_failed",
+      status: "failed",
+      message,
+    });
 
     return NextResponse.json({ error: message }, { status: 500 });
   }

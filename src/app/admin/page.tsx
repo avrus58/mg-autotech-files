@@ -15,6 +15,7 @@ import {
 } from "@/lib/staffPermissions";
 import {
   ArrowLeft,
+  BadgeEuro,
   BellRing,
   BrainCircuit,
   Braces,
@@ -1170,14 +1171,26 @@ export default function AdminPage() {
             )}
             {hasStaffPermission(adminAccess, "credits.manage") && (
               <Link
-                href="/admin/commercial"
+                href="/admin/payments"
                 className="flex w-full items-center justify-between gap-3 rounded-2xl px-4 py-3 text-left text-sm font-black text-zinc-400 transition hover:bg-white/[0.06] hover:text-white"
               >
                 <span className="flex items-center gap-3">
                   <CreditCard className="h-5 w-5" />
-                  Pricing & Payments
+                  Revenue Control
                 </span>
-                <span className="rounded-full bg-red-950/40 px-2 py-1 text-[10px] font-black text-red-200">FINANCE</span>
+                <span className="rounded-full bg-emerald-950/40 px-2 py-1 text-[10px] font-black text-emerald-200">LIVE</span>
+              </Link>
+            )}
+            {hasStaffPermission(adminAccess, "credits.manage") && (
+              <Link
+                href="/admin/commercial"
+                className="flex w-full items-center justify-between gap-3 rounded-2xl px-4 py-3 text-left text-sm font-black text-zinc-400 transition hover:bg-white/[0.06] hover:text-white"
+              >
+                <span className="flex items-center gap-3">
+                  <BadgeEuro className="h-5 w-5" />
+                  Pricing Rules
+                </span>
+                <span className="rounded-full bg-red-950/40 px-2 py-1 text-[10px] font-black text-red-200">PRICING</span>
               </Link>
             )}
             {isPrimaryOwner(adminAccess) && (
