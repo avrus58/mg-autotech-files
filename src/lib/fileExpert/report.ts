@@ -1,5 +1,6 @@
 import type { FileExpertAnalyzerResult, FileExpertFileInspection } from "@/lib/fileExpert/types";
 import { fileExpertFeatureLabels } from "@/lib/fileExpert/types";
+import type { PublicSimilarityEvidence } from "@/lib/ecuIntelligence/similarity";
 
 export const fileExpertReportPromptTemplate = `
 You are MG AutoTech AI File Expert.
@@ -81,8 +82,9 @@ export function generateFileExpertReport(input: {
     readMethod?: string | null;
     customerNotes?: string | null;
   };
+  similarityEvidence?: PublicSimilarityEvidence | null;
 }) {
-  const { result, metadata } = input;
+  const { result, metadata, similarityEvidence } = input;
   const comparison = result.comparison;
   const identity = result.ecu_identification;
   const changeProfile = result.change_profile;
@@ -138,6 +140,12 @@ export function generateFileExpertReport(input: {
     "# Possible Operations",
     formatFeatureList(result),
     "Low-confidence operation labels are indications only. Exact DPF, EGR, AdBlue, DTC, VMAX or tuning-stage confirmation requires ECU-specific map definitions or a known verified pattern.",
+    "",
+    "# Similar Approved Learning Evidence",
+    similarityEvidence?.message || "No approved similarity search result is available. Confidence is limited and human tuner verification is required.",
+    similarityEvidence?.matchesFound
+      ? `Best match confidence: ${similarityEvidence.confidence} (${similarityEvidence.bestScore}/100). Similarity does not approve this file for writing.`
+      : "No approved historical sample is being used as evidence for this report.",
     "",
     "# File Integrity",
     `File size match: ${integrity?.file_size_match === null || integrity?.file_size_match === undefined ? "not applicable" : integrity.file_size_match ? "yes" : "no"}`,

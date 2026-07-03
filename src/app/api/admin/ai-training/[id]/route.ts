@@ -5,6 +5,7 @@ import { updateTrainingSampleVerification } from "@/lib/ecuIntelligence/learning
 import { trainingFeatureKeys } from "@/lib/ecuIntelligence/types";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { redactBinaryPreviews } from "@/lib/fileExpert/publicResult";
+import { getStoredSimilarityResults } from "@/lib/ecuIntelligence/similarity";
 
 const serviceLabelsSchema = z.object(
   Object.fromEntries(trainingFeatureKeys.map((key) => [key, z.boolean()])) as Record<
@@ -55,11 +56,12 @@ export async function GET(
   const { id } = await context.params;
   const admin = getSupabaseAdmin();
 
-  const [sample, events, signatures, modelRuns] = await Promise.all([
+  const [sample, events, signatures, modelRuns, similarityEvidence] = await Promise.all([
     admin.from("ai_training_samples").select("*").eq("id", id).single(),
     admin.from("ai_training_events").select("*").eq("training_sample_id", id).order("created_at", { ascending: false }),
     admin.from("ai_pattern_signatures").select("*").eq("training_sample_id", id).order("created_at", { ascending: false }),
     admin.from("ai_model_runs").select("*").eq("source_type", "training_sample").eq("source_id", id).order("created_at", { ascending: false }),
+    getStoredSimilarityResults("training_sample", id).catch(() => null),
   ]);
   if (sample.error || !sample.data) {
     return NextResponse.json({ error: sample.error?.message || "Training sample not found." }, { status: 404 });
@@ -73,6 +75,7 @@ export async function GET(
     events: events.data ?? [],
     signatures: signatures.data ?? [],
     modelRuns: modelRuns.data ?? [],
+    similarityEvidence,
   });
 }
 

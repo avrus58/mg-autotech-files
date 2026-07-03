@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ArrowLeft, CheckCircle2, Database, FileCode2, Gauge, Loader2, Save, ShieldAlert } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Database, FileCode2, Gauge, Loader2, Network, RefreshCcw, Save, ShieldAlert } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import {
   emptyTrainingServiceLabels,
@@ -15,12 +15,14 @@ import {
   type TrainingSafetyRating,
   type TrainingServiceLabels,
 } from "@/lib/ecuIntelligence/types";
+import type { SimilaritySearchResult } from "@/lib/ecuIntelligence/similarity";
 
 type DetailPayload = {
   sample: AiTrainingSample;
   events: Array<{ id: string; event_type: string; message: string | null; created_at: string }>;
   signatures: Array<{ id: string; feature_type: string; confidence: number | string; human_confirmed: boolean }>;
   modelRuns: Array<{ id: string; provider: string; model_name: string | null; latency_ms: number | null; error_message: string | null; created_at: string }>;
+  similarityEvidence: SimilaritySearchResult | null;
 };
 
 const outcomes = ["unknown", "customer_ok", "issue_reported", "limp", "smoke", "knock", "dyno_confirmed", "needs_revision"];
@@ -47,6 +49,7 @@ export default function AiTrainingDetailPage() {
   const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [similarityRunning, setSimilarityRunning] = useState(false);
   const [message, setMessage] = useState("");
 
   const authFetch = useCallback(async (url: string, init?: RequestInit) => {
@@ -132,6 +135,22 @@ export default function AiTrainingDetailPage() {
     finally { setSaving(false); }
   }
 
+  async function runSimilarity() {
+    setSimilarityRunning(true);
+    setMessage("");
+    try {
+      const response = await authFetch(`/api/admin/ai-training/${id}/similarity`, { method: "POST" });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "Similarity search could not be completed.");
+      setMessage(payload.message || "Similarity evidence updated.");
+      await load();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Similarity search could not be completed.");
+    } finally {
+      setSimilarityRunning(false);
+    }
+  }
+
   if (loading) return <main className="flex min-h-screen items-center justify-center bg-[#050505] text-white"><Loader2 className="mr-3 h-5 w-5 animate-spin text-red-500" />Loading training sample...</main>;
   if (!data) return <main className="min-h-screen bg-[#050505] p-8 text-white"><Link href="/admin/ai-training">Back</Link><div className="mt-8 text-red-300">{message || "Training sample not found."}</div></main>;
 
@@ -141,7 +160,10 @@ export default function AiTrainingDetailPage() {
       <header className="border-b border-white/10 bg-black/80">
         <div className="mx-auto flex max-w-[1500px] flex-col gap-4 px-4 py-5 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0"><Link href="/admin/ai-training" className="text-sm font-bold text-zinc-500 hover:text-white"><ArrowLeft className="mr-2 inline h-4 w-4" />Learning control room</Link><h1 className="mt-3 break-words text-2xl font-black sm:text-3xl">{[sample.brand, sample.model, sample.engine].filter(Boolean).join(" ") || "Training sample"}</h1><div className="mt-1 break-all text-xs text-zinc-600">#{sample.id}</div></div>
-          <button onClick={() => void save()} disabled={saving} className="inline-flex h-12 items-center justify-center rounded-lg bg-[#b1121b] px-5 text-sm font-black hover:bg-[#c91824] disabled:opacity-50">{saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}Save verification</button>
+          <div className="flex flex-wrap gap-2">
+            <button onClick={() => void runSimilarity()} disabled={similarityRunning} className="inline-flex h-12 items-center justify-center rounded-lg border border-sky-800/50 bg-sky-950/20 px-5 text-sm font-black text-sky-100 hover:bg-sky-950/35 disabled:opacity-50">{similarityRunning ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCcw className="mr-2 h-4 w-4" />}Run similarity</button>
+            <button onClick={() => void save()} disabled={saving} className="inline-flex h-12 items-center justify-center rounded-lg bg-[#b1121b] px-5 text-sm font-black hover:bg-[#c91824] disabled:opacity-50">{saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}Save verification</button>
+          </div>
         </div>
       </header>
 
@@ -151,6 +173,30 @@ export default function AiTrainingDetailPage() {
           <section className="rounded-lg border border-white/10 bg-white/[0.025] p-5">
             <div className="flex items-center gap-3"><Database className="h-6 w-6 text-red-400" /><div><div className="text-xs font-black uppercase tracking-[0.18em] text-red-400">Binary identity</div><h2 className="text-xl font-black">{identity?.display_name || sample.ecu_type || "ECU not identified"}</h2></div></div>
             <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4"><Info label="Family" value={sample.ecu_family || identity?.family} /><Info label="Hardware" value={sample.hw_number || identity?.hardware_numbers[0]} /><Info label="Software" value={sample.sw_number || identity?.software_numbers[0]} /><Info label="Read method" value={sample.read_method} /></div>
+          </section>
+
+          <section className="rounded-lg border border-sky-900/50 bg-sky-950/10 p-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-3"><Network className="h-6 w-6 text-sky-400" /><div><div className="text-xs font-black uppercase tracking-[0.18em] text-sky-400">Similarity evidence</div><h2 className="text-xl font-black">Approved learning matches</h2></div></div>
+              <div className="text-right"><div className="text-2xl font-black">{data.similarityEvidence?.summary.best_score || 0}<span className="text-xs text-zinc-500"> / 100</span></div><div className="text-xs font-black uppercase text-zinc-500">{data.similarityEvidence?.summary.confidence || "none"} confidence</div></div>
+            </div>
+            {sample.learning_use_status === "pending" && data.similarityEvidence?.summary.matches_found ? (
+              <div className="mt-4 border-l-2 border-amber-400 bg-amber-950/15 px-4 py-3 text-sm text-amber-100/80">This pending sample is similar to {data.similarityEvidence.summary.matches_found} approved sample{data.similarityEvidence.summary.matches_found === 1 ? "" : "s"}. The final learning decision remains human.</div>
+            ) : null}
+            <div className="mt-5 space-y-3">
+              {(data.similarityEvidence?.matches || []).map((match) => (
+                <div key={match.training_sample_id} className="rounded-lg border border-white/10 bg-black/30 p-4">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div className="min-w-0"><Link href={`/admin/ai-training/${match.training_sample_id}`} className="break-words font-black text-sky-200 hover:text-white">{[match.compared_sample.brand, match.compared_sample.model, match.compared_sample.engine].filter(Boolean).join(" ") || match.compared_sample.ecu_type || "Approved training sample"}</Link><div className="mt-1 break-words text-xs text-zinc-500">{match.compared_sample.ecu_type || match.compared_sample.ecu_family || "ECU metadata unavailable"} / {match.compared_sample.actual_service_labels.join(" / ") || "No label"}</div></div>
+                    <div className="rounded-md border border-sky-700/40 bg-sky-950/25 px-3 py-2 text-lg font-black text-sky-200">{match.score}%</div>
+                  </div>
+                  <div className="mt-3 grid gap-2 sm:grid-cols-2"><Small label="Evidence quality" value={`${Math.round(match.compared_sample.data_quality_score)}/100`} /><Small label="Outcome" value={match.compared_sample.outcome || "unknown"} /></div>
+                  <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-5"><Small label="ECU" value={`${match.ecu_match_score}/50`} /><Small label="Identifier" value={`${match.identifier_score}/20`} /><Small label="File size" value={`${match.file_size_score}/10`} /><Small label="Pattern" value={`${Math.round(match.pattern_score)}/20`} /><Small label="Services" value={`${Math.round(match.feature_label_score)}/20`} /></div>
+                  <div className="mt-3 space-y-1 text-xs leading-5 text-zinc-400">{match.reasons.map((reason) => <div key={reason}>+ {reason}</div>)}{match.warnings.map((warning) => <div key={warning} className="text-amber-200/70">! {warning}</div>)}</div>
+                </div>
+              ))}
+              {!data.similarityEvidence?.matches.length && <div className="rounded-lg border border-dashed border-white/15 p-6 text-center text-sm text-zinc-500">No stored approved evidence matches. Run similarity after applying the Level 1 migration.</div>}
+            </div>
           </section>
 
           <section className="rounded-lg border border-white/10 bg-white/[0.025] p-5">
@@ -219,6 +265,7 @@ export default function AiTrainingDetailPage() {
 }
 
 function Info({ label, value }: { label: string; value: string | null | undefined }) { return <div className="min-w-0 rounded-lg border border-white/10 bg-black/30 p-3"><div className="text-[10px] font-black uppercase tracking-[0.12em] text-zinc-600">{label}</div><div className="mt-1 break-all text-sm font-black">{value || "-"}</div></div>; }
+function Small({ label, value }: { label: string; value: string }) { return <div className="min-w-0 rounded-lg border border-white/10 bg-black/20 p-3"><div className="text-[10px] font-black uppercase tracking-[0.12em] text-zinc-600">{label}</div><div className="mt-1 break-words text-sm font-black text-zinc-200">{value}</div></div>; }
 function FileInfo({ label, name, hash, size }: { label: string; name: string | null; hash: string | null; size: string | number | null }) { return <div className="min-w-0 rounded-lg border border-white/10 bg-black/30 p-4"><div className="text-xs font-black uppercase text-red-400">{label}</div><div className="mt-2 break-all font-black">{name || "-"}</div><div className="mt-2 break-all text-xs text-zinc-600">SHA256 {hash || "-"}</div><div className="mt-1 text-xs text-zinc-600">{size ? `${Number(size).toLocaleString()} bytes` : "Size unknown"}</div></div>; }
 function FeatureEditor({ title, subtitle, labels, setLabels, tone }: { title: string; subtitle: string; labels: TrainingServiceLabels; setLabels: React.Dispatch<React.SetStateAction<TrainingServiceLabels>>; tone: "amber" | "green" }) {
   return <div className="mt-5 rounded-lg border border-white/10 bg-black/25 p-3"><div className="font-black">{title}</div><div className="mt-1 text-xs text-zinc-500">{subtitle}</div><div className="mt-3 grid grid-cols-2 gap-2">{trainingFeatureKeys.map((feature) => { const active = labels[feature]; const activeClass = tone === "green" ? "border-emerald-700/50 bg-emerald-950/20 text-emerald-200" : "border-amber-700/50 bg-amber-950/20 text-amber-200"; return <label key={feature} className={`flex cursor-pointer items-center justify-between rounded-lg border p-3 text-xs font-black uppercase ${active ? activeClass : "border-white/10 text-zinc-500"}`}><span>{feature.replaceAll("_", " ")}</span><input type="checkbox" checked={active} onChange={(event) => setLabels((current) => ({ ...current, [feature]: event.target.checked }))} className="h-4 w-4 accent-emerald-500" /></label>; })}</div></div>;

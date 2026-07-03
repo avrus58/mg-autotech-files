@@ -19,6 +19,7 @@ import {
   Fingerprint,
   Gauge,
   Loader2,
+  Network,
   RefreshCcw,
   ScanSearch,
   ShieldCheck,
@@ -34,6 +35,10 @@ import type {
   FileExpertPossibleFeature,
 } from "@/lib/fileExpert/types";
 import { fileExpertFeatureLabels } from "@/lib/fileExpert/types";
+import type {
+  PublicSimilarityEvidence,
+  SimilaritySearchResult,
+} from "@/lib/ecuIntelligence/similarity";
 
 type FingerprintRow = {
   id: string;
@@ -108,6 +113,7 @@ export default function FileExpertReportPage() {
   const jobId = params.id;
   const [job, setJob] = useState<FileExpertJob | null>(null);
   const [fingerprints, setFingerprints] = useState<FingerprintRow[]>([]);
+  const [similarityEvidence, setSimilarityEvidence] = useState<PublicSimilarityEvidence | SimilaritySearchResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [reanalyzing, setReanalyzing] = useState(false);
   const [message, setMessage] = useState("");
@@ -140,6 +146,7 @@ export default function FileExpertReportPage() {
 
     setJob(payload.job);
     setFingerprints(payload.fingerprints ?? []);
+    setSimilarityEvidence(payload.similarityEvidence ?? null);
     setLoading(false);
   }
 
@@ -162,6 +169,16 @@ export default function FileExpertReportPage() {
   const findings = result?.findings ?? [];
   const submittedVehicle = [job?.brand, job?.model, job?.engine].filter(Boolean).join(" ");
   const reportTitle = submittedVehicle || identity?.display_name || "File Expert Report";
+  const similaritySummary = similarityEvidence && "summary" in similarityEvidence
+    ? {
+        matchesFound: similarityEvidence.summary.matches_found,
+        bestScore: similarityEvidence.summary.best_score,
+        confidence: similarityEvidence.summary.confidence,
+        message: similarityEvidence.summary.matches_found
+          ? `Found ${similarityEvidence.summary.matches_found} similar approved ECU patterns.`
+          : "No approved similar learning evidence was found.",
+      }
+    : similarityEvidence;
 
   const fileCards = useMemo(
     () => [
@@ -415,6 +432,31 @@ export default function FileExpertReportPage() {
                 <div className="rounded-2xl border border-dashed border-white/15 bg-black/25 p-5 text-sm leading-6 text-zinc-400">
                   No specific operation can be named safely from this file. This does not mean the file is stock.
                 </div>
+              )}
+            </Panel>
+
+            <Panel eyebrow="Approved evidence" title="Similar learning patterns" icon={<Network />}>
+              {similaritySummary ? (
+                <div>
+                  <div className="grid gap-3 sm:grid-cols-3">
+                    <MetricValue label="Approved matches" value={String(similaritySummary.matchesFound)} />
+                    <MetricValue label="Best score" value={`${similaritySummary.bestScore}/100`} />
+                    <MetricValue label="Confidence" value={formatLabel(similaritySummary.confidence)} />
+                  </div>
+                  <p className="mt-4 text-sm leading-7 text-zinc-400">{similaritySummary.message} Similarity is supporting evidence only and does not approve this file for writing.</p>
+                  {similarityEvidence && "matches" in similarityEvidence && similarityEvidence.matches.length ? (
+                    <div className="mt-4 space-y-3">
+                      {similarityEvidence.matches.slice(0, 5).map((match) => (
+                        <div key={match.training_sample_id} className="rounded-2xl border border-white/10 bg-black/25 p-4">
+                          <div className="flex flex-wrap items-start justify-between gap-3"><div><Link href={`/admin/ai-training/${match.training_sample_id}`} className="font-black text-sky-200 hover:text-white">{match.compared_sample.ecu_type || match.compared_sample.ecu_family || "Approved sample"}</Link><div className="mt-1 text-xs text-zinc-500">{match.compared_sample.actual_service_labels.join(" / ") || "No service label"}</div></div><span className="rounded-full bg-sky-950/40 px-3 py-1 text-xs font-black text-sky-200">{match.score}%</span></div>
+                          <div className="mt-3 text-xs leading-5 text-zinc-400">{match.reasons.slice(0, 3).join(" ")}</div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
+              ) : (
+                <p className="rounded-2xl border border-dashed border-white/15 bg-black/25 p-5 text-sm leading-6 text-zinc-400">Similarity evidence has not been calculated for this report yet. Human tuner verification remains required.</p>
               )}
             </Panel>
 

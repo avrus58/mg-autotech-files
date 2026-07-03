@@ -10,6 +10,7 @@ export class RuleBasedAiReportProvider implements AiReportProvider {
     const generated = generateFileExpertReport({
       result: input.result,
       metadata: input.metadata,
+      similarityEvidence: input.similarityEvidence,
     });
 
     return {

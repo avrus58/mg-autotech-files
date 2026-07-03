@@ -1,4 +1,5 @@
 import type { FileExpertAnalyzerResult } from "@/lib/fileExpert/types";
+import type { PublicSimilarityEvidence } from "@/lib/ecuIntelligence/similarity";
 
 export type AiProviderName = "rule_based" | "openai" | "ollama" | "vllm" | "local";
 
@@ -16,6 +17,7 @@ export type AiReportRequest = {
   sourceId?: string | null;
   result: FileExpertAnalyzerResult;
   metadata: AiReportMetadata;
+  similarityEvidence?: PublicSimilarityEvidence | null;
 };
 
 export type AiReportResponse = {

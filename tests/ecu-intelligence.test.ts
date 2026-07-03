@@ -26,6 +26,15 @@ import {
   emptyCustomerCommercialPolicy,
 } from "../src/lib/commercialPolicy";
 import { paymentProviderFromSource } from "../src/lib/paymentAudit";
+import {
+  buildPublicSimilarityEvidence,
+  calculateSimilarityReadiness,
+  isEligibleSimilaritySample,
+  rankSimilarTrainingSamples,
+  scoreTrainingSampleSimilarity,
+  type SimilarityCandidate,
+  type SimilaritySource,
+} from "../src/lib/ecuIntelligence/similarity";
 
 function calibrationLikeBuffer(size = 16_384) {
   const buffer = Buffer.alloc(size, 0xff);
@@ -35,6 +44,75 @@ function calibrationLikeBuffer(size = 16_384) {
   Buffer.from("BOSCH EDC17C50 0281031234 SW1037550001").copy(buffer, 64);
   return buffer;
 }
+
+function similarityLabels(feature: "stage1" | "egr_off" = "stage1") {
+  const labels = emptyTrainingServiceLabels();
+  labels[feature] = true;
+  return labels;
+}
+
+function similaritySignature(start = "0x00001000", end = "0x00001100") {
+  return {
+    analysis_version: "2.1.0",
+    mode: "ori_mod_compare" as const,
+    changed_percent: 1,
+    merged_changed_blocks: 1,
+    map_candidates: [],
+    repeated_patterns: [],
+    feature_candidates: [],
+    ecu_identification: null,
+    change_profile: null,
+    main_regions: [{ start_offset_hex: start, end_offset_hex: end, changed_byte_count: 64 }],
+    changed_bytes: 64,
+    merged_blocks: 1,
+    repeated_patterns_summary: [],
+    map_candidates_summary: [],
+    feature_hint_summary: [],
+  };
+}
+
+function similarityCandidate(
+  id: string,
+  overrides: Partial<SimilarityCandidate> = {}
+): SimilarityCandidate {
+  return {
+    id,
+    brand: "BMW",
+    model: "5 Series",
+    engine: "3.0d",
+    ecu_family: "EDC17",
+    ecu_type: "Bosch EDC17C50",
+    sw_number: "SW1037550001",
+    hw_number: "0281031234",
+    ori_file_size: 2_097_152,
+    mod_file_size: 2_097_152,
+    pattern_signature: similaritySignature(),
+    diff_json: true,
+    performed_service_labels: similarityLabels(),
+    learning_use_status: "approved_for_learning",
+    human_verification_status: "confirmed",
+    data_quality_score: 90,
+    quality_rating: 5,
+    provider: "internal",
+    source_type: "completed_request",
+    source_metadata: null,
+    outcome: "customer_ok",
+    ...overrides,
+  };
+}
+
+const similaritySource: SimilaritySource = {
+  sourceType: "training_sample",
+  sourceId: "00000000-0000-4000-8000-000000000300",
+  ecuFamily: "EDC17",
+  ecuType: "Bosch EDC17C50",
+  swNumber: "SW1037550001",
+  hwNumber: "0281031234",
+  fileSize: 2_097_152,
+  patternSignature: similaritySignature(),
+  serviceLabels: similarityLabels(),
+  provider: "internal",
+};
 
 test("normalizes requested service labels conservatively", () => {
   const labels = parseTrainingServiceLabels(
@@ -324,6 +402,98 @@ test("knowledge profiles require confirmed performed services and explicit learn
   assert.equal(requested.egr_off, true);
 });
 
+test("similarity evidence uses only approved, confirmed and quality-gated samples", () => {
+  const candidates = [
+    similarityCandidate("approved"),
+    similarityCandidate("pending", { learning_use_status: "pending" }),
+    similarityCandidate("rejected", { human_verification_status: "rejected" }),
+    similarityCandidate("excluded", { learning_use_status: "excluded" }),
+    similarityCandidate("low-quality", { data_quality_score: 59 }),
+    similarityCandidate("no-pattern", { pattern_signature: null }),
+    similarityCandidate("demo", { source_type: "demo_fixture", source_metadata: { demo: true } }),
+  ];
+  const result = rankSimilarTrainingSamples(similaritySource, candidates);
+  assert.equal(result.summary.eligible_samples_checked, 1);
+  assert.deepEqual(result.matches.map((match) => match.training_sample_id), ["approved"]);
+  assert.equal(isEligibleSimilaritySample(candidates[1]), false);
+  assert.equal(isEligibleSimilaritySample(candidates[2]), false);
+  assert.equal(isEligibleSimilaritySample(candidates[4]), false);
+  assert.equal(isEligibleSimilaritySample(candidates[6]), false);
+});
+
+test("same ECU family and type score higher than mismatched ECU evidence", () => {
+  const same = scoreTrainingSampleSimilarity(similaritySource, similarityCandidate("same"));
+  const different = scoreTrainingSampleSimilarity(
+    similaritySource,
+    similarityCandidate("different", { ecu_family: "MED17", ecu_type: "Bosch MED17.5" })
+  );
+  assert.ok(same.score > different.score);
+  assert.ok(same.reasons.some((reason) => /same ecu family/i.test(reason)));
+  assert.ok(different.warnings.some((warning) => /ecu family mismatch/i.test(warning)));
+});
+
+test("matching actual service labels increase similarity score", () => {
+  const matching = scoreTrainingSampleSimilarity(similaritySource, similarityCandidate("stage1"));
+  const mismatch = scoreTrainingSampleSimilarity(
+    similaritySource,
+    similarityCandidate("egr", { performed_service_labels: similarityLabels("egr_off") })
+  );
+  assert.ok(matching.score > mismatch.score);
+  assert.ok(matching.reasons.some((reason) => /same actual service label/i.test(reason)));
+});
+
+test("missing source metadata produces explicit similarity warnings", () => {
+  const result = scoreTrainingSampleSimilarity(
+    { ...similaritySource, ecuFamily: null, ecuType: null, swNumber: null, fileSize: null },
+    similarityCandidate("candidate")
+  );
+  assert.ok(result.warnings.some((warning) => /ecu family is missing/i.test(warning)));
+  assert.ok(result.warnings.some((warning) => /sw number is missing/i.test(warning)));
+  assert.ok(result.warnings.some((warning) => /file size comparison is unavailable/i.test(warning)));
+});
+
+test("similarity search handles no eligible matches cleanly", () => {
+  const result = rankSimilarTrainingSamples(similaritySource, [
+    similarityCandidate("pending-only", { learning_use_status: "pending" }),
+  ]);
+  assert.equal(result.summary.matches_found, 0);
+  assert.equal(result.summary.best_score, 0);
+  assert.equal(result.summary.confidence, "none");
+  assert.match(buildPublicSimilarityEvidence(result).message, /no approved similar learning evidence/i);
+});
+
+test("similarity ranking deduplicates the same approved sample safely", () => {
+  const duplicate = similarityCandidate("same-sample");
+  const result = rankSimilarTrainingSamples(similaritySource, [duplicate, { ...duplicate }]);
+  assert.equal(result.summary.eligible_samples_checked, 1);
+  assert.equal(result.matches.length, 1);
+});
+
+test("customer similarity evidence exposes aggregates without sample ids or binary data", () => {
+  const ranked = rankSimilarTrainingSamples(similaritySource, [similarityCandidate("private-sample-id")]);
+  const publicEvidence = buildPublicSimilarityEvidence(ranked);
+  const serialized = JSON.stringify(publicEvidence);
+  assert.equal(serialized.includes("private-sample-id"), false);
+  assert.equal(serialized.includes("pattern_signature"), false);
+  assert.equal(serialized.includes("diff_json"), false);
+  assert.equal(publicEvidence.matchesFound, 1);
+});
+
+test("similarity readiness uses independent approved-sample thresholds", () => {
+  assert.equal(calculateSimilarityReadiness(0), "no_data");
+  assert.equal(calculateSimilarityReadiness(1), "weak");
+  assert.equal(calculateSimilarityReadiness(10), "usable");
+  assert.equal(calculateSimilarityReadiness(100), "strong");
+});
+
+test("Level 1 migration prevents duplicate comparisons and grants no customer read policy", () => {
+  const sql = readFileSync(resolve(process.cwd(), "scripts", "add-ecu-similarity-level1.sql"), "utf8");
+  assert.match(sql, /create table if not exists public\.ai_similarity_results/i);
+  assert.match(sql, /ai_similarity_results_unique_comparison/i);
+  assert.match(sql, /source_type, source_id, compared_sample_id/i);
+  assert.doesNotMatch(sql, /Customers can read AI similarity/i);
+});
+
 test("commercial pricing applies customer override before customer adjustment", () => {
   const globalQuote = buildCreditQuote(defaultCommerceSettings, emptyCustomerCommercialPolicy("customer-a"));
   assert.equal(globalQuote.customUnitPriceEuro, 4);
@@ -402,6 +572,15 @@ test("customer access cannot satisfy the AI training admin permission", () => {
 test("admin training API rejects unauthenticated access", async () => {
   const { GET } = await import("../src/app/api/admin/ai-training/route");
   const response = await GET(new Request("http://localhost/api/admin/ai-training"));
+  assert.equal(response.status, 401);
+});
+
+test("admin similarity API rejects unauthenticated access", async () => {
+  const { POST } = await import("../src/app/api/admin/ai-training/[id]/similarity/route");
+  const response = await POST(
+    new Request("http://localhost/api/admin/ai-training/sample-id/similarity", { method: "POST" }),
+    { params: Promise.resolve({ id: "00000000-0000-4000-8000-000000000300" }) }
+  );
   assert.equal(response.status, 401);
 });
 

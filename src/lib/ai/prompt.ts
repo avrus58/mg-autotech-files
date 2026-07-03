@@ -15,6 +15,7 @@ Structure the report with these headings: Executive Summary, File Identification
 Use confidence wording such as likely, possible, no clear evidence, pattern suggests and requires human confirmation.
 Always state that checksum verification and human calibrator review are required before any write operation.
 Recommend controlled logging and/or dyno validation where a modification is present or suspected.
+Treat similarity results only as supporting evidence from approved historical samples. State clearly when no approved evidence exists or confidence is limited.
 Return only the requested JSON object.
 `.trim();
 

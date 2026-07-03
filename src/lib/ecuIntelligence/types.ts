@@ -103,6 +103,11 @@ export type AiEcuKnowledgeProfile = {
   pattern_confidence: number | string;
   map_candidate_confidence: number | string;
   generation_readiness: string;
+  approved_samples: number;
+  pending_samples: number;
+  excluded_samples: number;
+  average_quality_score: number | string;
+  similarity_readiness: "no_data" | "weak" | "usable" | "strong";
   profile_json: Record<string, unknown> | null;
   last_updated_at: string;
 };

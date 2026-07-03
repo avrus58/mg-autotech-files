@@ -5,6 +5,10 @@ import { parseTrainingServiceLabels } from "@/lib/ecuIntelligence/serviceLabels"
 import { calculateTrainingSampleQuality } from "@/lib/ecuIntelligence/quality";
 import { calculateKnowledgeReadiness } from "@/lib/ecuIntelligence/readiness";
 import {
+  calculateSimilarityReadiness,
+  runSimilarityForTrainingSample,
+} from "@/lib/ecuIntelligence/similarity";
+import {
   trainingFeatureKeys,
   emptyTrainingServiceLabels,
   type AiTrainingSample,
@@ -351,6 +355,7 @@ export async function createTrainingSampleFromBuffers(
       },
     });
     await updateEcuKnowledgeProfile(sample, input.actorUserId, sample.id, requestId);
+    await runSimilarityForTrainingSample(sample.id, { actorUserId: input.actorUserId }).catch(() => undefined);
     return { status: "created", sampleId: sample.id };
   } catch (error) {
     const message = error instanceof Error ? error.message : "Training analysis failed.";
@@ -464,6 +469,10 @@ export type KnowledgeProfileSample = {
   human_verification_status: HumanVerificationStatus;
   quality_rating: number | null;
   data_quality_score: number | string | null;
+  pattern_signature?: AiTrainingSample["pattern_signature"];
+  diff_json?: AiTrainingSample["diff_json"];
+  source_type?: TrainingSourceType | null;
+  source_metadata?: Record<string, unknown> | null;
 };
 
 export function calculateKnowledgeProfileMetrics(samples: KnowledgeProfileSample[]) {
@@ -487,7 +496,32 @@ export function calculateKnowledgeProfileMetrics(samples: KnowledgeProfileSample
     ? Number((samples.reduce((sum, sample) => sum + Number(sample.data_quality_score || 0), 0) / samples.length).toFixed(1))
     : 0;
 
-  return { verified, rejected, usable, state, featureCounts, ratio, averageQuality };
+  const similarityEligible = usable.filter((sample) =>
+    Boolean(sample.pattern_signature) &&
+    Boolean(sample.diff_json) &&
+    trainingFeatureKeys.some((feature) => sample.performed_service_labels?.[feature]) &&
+    sample.source_type !== "demo_fixture" &&
+    sample.source_metadata?.demo !== true
+  );
+  const learningCounts = {
+    approved: samples.filter((sample) => sample.learning_use_status === "approved_for_learning").length,
+    pending: samples.filter((sample) => sample.learning_use_status === "pending").length,
+    excluded: samples.filter((sample) => sample.learning_use_status === "excluded").length,
+  };
+  const similarityReadiness = calculateSimilarityReadiness(similarityEligible.length);
+
+  return {
+    verified,
+    rejected,
+    usable,
+    similarityEligible,
+    similarityReadiness,
+    learningCounts,
+    state,
+    featureCounts,
+    ratio,
+    averageQuality,
+  };
 }
 
 export async function updateEcuKnowledgeProfile(
@@ -502,7 +536,7 @@ export async function updateEcuKnowledgeProfile(
   for (let offset = 0; ; offset += pageSize) {
     const sampleQuery = admin
       .from("ai_training_samples")
-      .select("id, service_labels, performed_service_labels, learning_use_status, human_verified, human_verification_status, quality_rating, data_quality_score")
+      .select("id, service_labels, performed_service_labels, learning_use_status, human_verified, human_verification_status, quality_rating, data_quality_score, pattern_signature, diff_json, source_type, source_metadata")
       .range(offset, offset + pageSize - 1);
     const { data, error } = await matchingIdentity(sampleQuery, identity);
     if (error) throw new Error(error.message);
@@ -510,9 +544,25 @@ export async function updateEcuKnowledgeProfile(
     samples.push(...page);
     if (page.length < pageSize) break;
   }
-  const { verified, rejected, usable, state, featureCounts, ratio, averageQuality } =
+  const {
+    verified,
+    rejected,
+    usable,
+    similarityEligible,
+    similarityReadiness,
+    learningCounts,
+    state,
+    featureCounts,
+    ratio,
+    averageQuality,
+  } =
     calculateKnowledgeProfileMetrics(samples);
   const qualityWeight = averageQuality / 100;
+  const topFeatureTypes = trainingFeatureKeys
+    .map((feature) => ({ feature, count: Number(featureCounts[`${feature}_samples`] || 0) }))
+    .filter((item) => item.count > 0)
+    .sort((left, right) => right.count - left.count)
+    .slice(0, 5);
 
   const payload = {
     ecu_family: identity.ecu_family,
@@ -529,8 +579,16 @@ export async function updateEcuKnowledgeProfile(
     pattern_confidence: Number((ratio(verified.length, Math.max(100, usable.length)) * qualityWeight).toFixed(3)),
     map_candidate_confidence: Number((ratio(verified.length, Math.max(500, usable.length)) * qualityWeight).toFixed(3)),
     generation_readiness: state.value,
+    approved_samples: learningCounts.approved,
+    pending_samples: learningCounts.pending,
+    excluded_samples: learningCounts.excluded,
+    average_quality_score: averageQuality,
+    similarity_readiness: similarityReadiness,
     profile_json: {
       usable_samples: usable.length,
+      similarity_eligible_samples: similarityEligible.length,
+      similarity_readiness: similarityReadiness,
+      top_feature_types: topFeatureTypes,
       approved_for_learning_samples: samples.filter((sample) => sample.learning_use_status === "approved_for_learning").length,
       excluded_samples: samples.filter((sample) => sample.learning_use_status === "excluded").length,
       needs_review_samples: samples.filter((sample) => sample.human_verification_status === "needs_review").length,
@@ -693,6 +751,7 @@ export async function updateTrainingSampleVerification(input: {
     },
   });
   await updateEcuKnowledgeProfile(sample, input.actorUserId, sample.id, sample.request_id);
+  await runSimilarityForTrainingSample(sample.id, { actorUserId: input.actorUserId }).catch(() => undefined);
   return sample;
 }
 

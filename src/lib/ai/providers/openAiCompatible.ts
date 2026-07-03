@@ -24,7 +24,7 @@ export class OpenAiCompatibleReportProvider implements AiReportProvider {
           { role: "system", content: fileExpertAiInstructions },
           {
             role: "user",
-            content: JSON.stringify({ metadata: modelSafeMetadata(input.metadata), analyzer: modelSafeAnalyzerResult(input.result) }),
+            content: JSON.stringify({ metadata: modelSafeMetadata(input.metadata), analyzer: modelSafeAnalyzerResult(input.result), similarity_evidence: input.similarityEvidence ?? null }),
           },
         ],
       }),

@@ -84,3 +84,21 @@ order by created_at desc;
 ## Existing Flow Regression
 
 Create a normal customer request, buy/test credits in the configured safe environment, upload/download a file and complete one order. Customer delivery must succeed even if training capture fails. Re-capturing the same completed ORI/MOD pair must not create a duplicate.
+
+## Level 1 Similarity Manual Test
+
+1. Run `scripts/add-ecu-similarity-level1.sql` in Supabase SQL Editor.
+2. Open `/admin/ai-training` as a user with `ai_training.manage`.
+3. Open a quality-scored sample, set verification to `confirmed`, select at least one **Actual performed service**, set learning use to `approved_for_learning`, and save.
+4. Prepare a second sample with the same ECU family/type and a related actual service. It may remain `pending`.
+5. Open the second sample and select **Run similarity**.
+6. Confirm **Similarity Evidence** shows the approved sample, overall score, ECU/identifier/pattern/service reasons, quality score and warnings.
+7. Confirm the pending sample remains pending. Similarity must not change verification or learning approval.
+8. Run similarity again. In Supabase, confirm only one row exists for the same `(source_type, source_id, compared_sample_id)` combination.
+9. Filter `/admin/ai-training` by learning state, actual service, ECU family/type, quality threshold, matches and review status.
+10. Confirm the ECU profile shows approved/pending/excluded counts, average quality and `no_data`, `weak`, `usable` or `strong` similarity readiness.
+11. Create or re-analyze an ORI/MOD job from `/dashboard/file-expert` and open its report.
+12. Confirm the customer sees only match count, best score and confidence. The response must not contain a matched sample ID, filename, storage path, hash, customer identity or binary preview.
+13. As an admin, open the same File Expert report and confirm sanitized matched-sample links and reasons are available.
+14. Sign in as another customer and request the File Expert job API directly. Confirm access is denied.
+15. Test a database with no eligible samples. Confirm the UI reports no approved evidence and still requires human tuner verification.

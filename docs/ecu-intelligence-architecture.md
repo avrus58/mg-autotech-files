@@ -53,9 +53,28 @@ A knowledge profile groups samples by ECU family, ECU type, software number and 
 
 Only human-confirmed samples contribute full trust. Unverified samples may improve discovery statistics but must not be treated as approved examples. Rejected samples remain available as negative evidence.
 
+## Level 1 Similarity & Evidence Engine
+
+Level 1 adds deterministic evidence retrieval without generating or editing calibration data. A File Expert job or training sample is converted into a sanitized comparison source containing ECU family/type, HW/SW identifiers, file size, compact pattern signature and service labels. The server compares that source with eligible approved training samples and stores the top results in `ai_similarity_results`.
+
+Trusted evidence must satisfy every gate:
+
+- `learning_use_status = approved_for_learning`;
+- `human_verification_status = confirmed`;
+- `data_quality_score >= 60`;
+- at least one human-confirmed performed service label;
+- analyzer diff and pattern signature are present;
+- demo samples are excluded unless an admin-only demo run explicitly allows them.
+
+The score is transparent and normalized to 0-100. ECU family/type, software number, file size, changed-region overlap, actual service overlap, sample quality and provider similarity add evidence. ECU, size and service mismatches apply penalties. Missing metadata creates warnings instead of invented matches.
+
+Customers receive only the number of approved matches, best score and confidence band. Admins can inspect sanitized vehicle/ECU labels, component scores, reasons, warnings, quality and outcome. Neither response contains raw bytes, private storage paths, filenames or another customer's identity.
+
+Similarity readiness is separate from the existing Level 0-5 learning level: `no_data` at zero eligible approved samples, `weak` at 1-9, `usable` at 10-99 and `strong` at 100 or more.
+
 ## Future Calibration Assistant
 
-Future phases may add vector embeddings, similarity search, ECU-specific map definitions, outcome/log/dyno ingestion and an assistant that points an experienced calibrator to likely regions. Any future draft generation must be separately designed, explicitly enabled and protected by human approval, checksum verification, audit logs and quality gates. It is intentionally absent from this phase.
+Future phases may add versioned vector embeddings, ECU-specific map definitions, outcome/log/dyno ingestion and an assistant that points an experienced calibrator to likely regions. Any future draft generation must be separately designed, explicitly enabled and protected by human approval, checksum verification, audit logs and quality gates. It is intentionally absent from this phase.
 
 ## Security Boundaries
 

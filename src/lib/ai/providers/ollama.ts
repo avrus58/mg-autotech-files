@@ -20,7 +20,7 @@ export class OllamaReportProvider implements AiReportProvider {
         options: { temperature: 0.1 },
         messages: [
           { role: "system", content: fileExpertAiInstructions },
-          { role: "user", content: JSON.stringify({ metadata: modelSafeMetadata(input.metadata), analyzer: modelSafeAnalyzerResult(input.result) }) },
+          { role: "user", content: JSON.stringify({ metadata: modelSafeMetadata(input.metadata), analyzer: modelSafeAnalyzerResult(input.result), similarity_evidence: input.similarityEvidence ?? null }) },
         ],
       }),
       signal: AbortSignal.timeout(60_000),

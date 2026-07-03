@@ -51,6 +51,7 @@ async function auditRun(input: {
         metadata: modelSafeMetadata(input.request.metadata),
         analysis_version: input.request.result.analysis_version,
         pattern_signature: input.request.result.pattern_signature ?? null,
+        similarity_evidence: input.request.similarityEvidence ?? null,
       },
       output_text: input.outputText ?? null,
       output_json: input.outputJson ?? null,

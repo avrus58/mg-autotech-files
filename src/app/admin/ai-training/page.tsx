@@ -11,6 +11,7 @@ import {
   Database,
   FileCode2,
   FileSearch,
+  Gauge,
   Layers3,
   Loader2,
   PlayCircle,
@@ -53,6 +54,7 @@ type SampleSummary = {
   ori_file_name: string | null;
   mod_file_name: string | null;
   source_metadata: Record<string, unknown> | null;
+  has_similarity_matches: boolean;
   created_at: string;
 };
 
@@ -76,7 +78,10 @@ type Payload = {
     needsReview: number;
     rejected: number;
     approvedForLearning: number;
+    pendingLearning: number;
     excludedFromLearning: number;
+    averageQualityScore: number;
+    similarityReadyProfiles: number;
     profiles: number;
     level3Plus: number;
     featureCounts: Record<string, number>;
@@ -88,7 +93,7 @@ const emptyPayload: Payload = {
   samples: [],
   profiles: [],
   events: [],
-  stats: { total: 0, oriModPairs: 0, confirmed: 0, unverified: 0, needsReview: 0, rejected: 0, approvedForLearning: 0, excludedFromLearning: 0, profiles: 0, level3Plus: 0, featureCounts: {} },
+  stats: { total: 0, oriModPairs: 0, confirmed: 0, unverified: 0, needsReview: 0, rejected: 0, approvedForLearning: 0, pendingLearning: 0, excludedFromLearning: 0, averageQualityScore: 0, similarityReadyProfiles: 0, profiles: 0, level3Plus: 0, featureCounts: {} },
 };
 
 const statusOptions: Array<HumanVerificationStatus | "all"> = [
@@ -106,6 +111,13 @@ export default function AiTrainingPage() {
   const [setupRequired, setSetupRequired] = useState(false);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<(typeof statusOptions)[number]>("all");
+  const [learningFilter, setLearningFilter] = useState<LearningUseStatus | "all">("all");
+  const [serviceFilter, setServiceFilter] = useState<string>("all");
+  const [ecuFamilyFilter, setEcuFamilyFilter] = useState("");
+  const [ecuTypeFilter, setEcuTypeFilter] = useState("");
+  const [minimumQuality, setMinimumQuality] = useState("0");
+  const [hasSimilarity, setHasSimilarity] = useState(false);
+  const [needsReviewOnly, setNeedsReviewOnly] = useState(false);
   const [view, setView] = useState<"samples" | "profiles" | "events">("samples");
   const [demoRunning, setDemoRunning] = useState(false);
 
@@ -123,7 +135,17 @@ export default function AiTrainingPage() {
     setLoading(true);
     setMessage("");
     try {
-      const response = await authFetch(`/api/admin/ai-training?status=${status}`);
+      const query = new URLSearchParams({
+        status,
+        learningUseStatus: learningFilter,
+        serviceLabel: serviceFilter,
+        minQuality: minimumQuality,
+        hasSimilarity: String(hasSimilarity),
+        needsReview: String(needsReviewOnly),
+      });
+      if (ecuFamilyFilter.trim()) query.set("ecuFamily", ecuFamilyFilter.trim());
+      if (ecuTypeFilter.trim()) query.set("ecuType", ecuTypeFilter.trim());
+      const response = await authFetch(`/api/admin/ai-training?${query.toString()}`);
       const payload = await response.json();
       if (response.status === 401) {
         window.location.href = "/login?redirect=/admin/ai-training";
@@ -148,7 +170,7 @@ export default function AiTrainingPage() {
     } finally {
       setLoading(false);
     }
-  }, [authFetch, status]);
+  }, [authFetch, ecuFamilyFilter, ecuTypeFilter, hasSimilarity, learningFilter, minimumQuality, needsReviewOnly, serviceFilter, status]);
 
   async function runDemo() {
     setDemoRunning(true);
@@ -167,7 +189,7 @@ export default function AiTrainingPage() {
   }
 
   useEffect(() => {
-    const timeout = window.setTimeout(() => { void load(); }, 0);
+    const timeout = window.setTimeout(() => { void load(); }, 250);
     return () => window.clearTimeout(timeout);
   }, [load]);
 
@@ -240,7 +262,10 @@ export default function AiTrainingPage() {
           <Metric icon={<FileSearch />} label="Needs review" value={data.stats.needsReview} tone="amber" />
           <Metric icon={<ShieldAlert />} label="Rejected" value={data.stats.rejected} />
           <Metric icon={<CheckCircle2 />} label="Learning approved" value={data.stats.approvedForLearning} tone="green" />
+          <Metric icon={<FileSearch />} label="Learning pending" value={data.stats.pendingLearning} tone="amber" />
           <Metric icon={<ShieldAlert />} label="Learning excluded" value={data.stats.excludedFromLearning} />
+          <Metric icon={<Gauge />} label="Average quality" value={data.stats.averageQualityScore} tone="green" />
+          <Metric icon={<Sparkles />} label="Similarity-ready" value={data.stats.similarityReadyProfiles} tone="green" />
           <Metric icon={<Layers3 />} label="ECU profiles" value={data.stats.profiles} />
           <Metric icon={<Sparkles />} label="Level 3+" value={data.stats.level3Plus} tone="green" />
         </section>
@@ -262,7 +287,7 @@ export default function AiTrainingPage() {
 
         {view === "samples" && (
           <section className="mt-6">
-            <div className="mb-5 grid gap-3 md:grid-cols-[minmax(0,1fr)_220px]">
+            <div className="mb-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
               <label className="relative">
                 <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-600" />
                 <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search vehicle, ECU, HW/SW or request..." className="h-12 w-full rounded-lg border border-white/10 bg-white/[0.03] pl-11 pr-4 text-sm font-bold outline-none focus:border-red-700" />
@@ -270,6 +295,21 @@ export default function AiTrainingPage() {
               <select value={status} onChange={(event) => setStatus(event.target.value as typeof status)} className="h-12 rounded-lg border border-white/10 bg-[#0a0a0a] px-4 text-sm font-black outline-none focus:border-red-700">
                 {statusOptions.map((item) => <option key={item} value={item}>{humanLabel(item)}</option>)}
               </select>
+              <select value={learningFilter} onChange={(event) => setLearningFilter(event.target.value as LearningUseStatus | "all")} className="h-12 rounded-lg border border-white/10 bg-[#0a0a0a] px-4 text-sm font-black outline-none focus:border-red-700">
+                <option value="all">All learning states</option><option value="pending">Pending</option><option value="approved_for_learning">Approved for learning</option><option value="excluded">Excluded</option>
+              </select>
+              <select value={serviceFilter} onChange={(event) => setServiceFilter(event.target.value)} className="h-12 rounded-lg border border-white/10 bg-[#0a0a0a] px-4 text-sm font-black outline-none focus:border-red-700">
+                <option value="all">All actual services</option>{trainingFeatureKeys.map((feature) => <option key={feature} value={feature}>{humanLabel(feature)}</option>)}
+              </select>
+              <input value={ecuFamilyFilter} onChange={(event) => setEcuFamilyFilter(event.target.value)} placeholder="ECU family" className="h-12 rounded-lg border border-white/10 bg-[#0a0a0a] px-4 text-sm font-bold outline-none focus:border-red-700" />
+              <input value={ecuTypeFilter} onChange={(event) => setEcuTypeFilter(event.target.value)} placeholder="ECU type" className="h-12 rounded-lg border border-white/10 bg-[#0a0a0a] px-4 text-sm font-bold outline-none focus:border-red-700" />
+              <select value={minimumQuality} onChange={(event) => setMinimumQuality(event.target.value)} className="h-12 rounded-lg border border-white/10 bg-[#0a0a0a] px-4 text-sm font-black outline-none focus:border-red-700">
+                <option value="0">Any quality score</option><option value="60">Quality 60+</option><option value="80">Quality 80+</option><option value="90">Quality 90+</option>
+              </select>
+              <div className="grid grid-cols-2 gap-2">
+                <label className="flex h-12 cursor-pointer items-center gap-3 rounded-lg border border-white/10 bg-[#0a0a0a] px-3 text-xs font-black text-zinc-300"><input type="checkbox" checked={hasSimilarity} onChange={(event) => setHasSimilarity(event.target.checked)} className="h-4 w-4 accent-red-600" />Has matches</label>
+                <label className="flex h-12 cursor-pointer items-center gap-3 rounded-lg border border-white/10 bg-[#0a0a0a] px-3 text-xs font-black text-zinc-300"><input type="checkbox" checked={needsReviewOnly} onChange={(event) => setNeedsReviewOnly(event.target.checked)} className="h-4 w-4 accent-amber-500" />Needs review</label>
+              </div>
             </div>
 
             <div className="space-y-3">
@@ -280,6 +320,7 @@ export default function AiTrainingPage() {
                       <Status value={sample.human_verification_status} />
                       <LearningStatus value={sample.learning_use_status || "pending"} />
                       <span className="rounded-md border border-white/10 px-2 py-1 text-xs font-bold text-zinc-400">Rev. {sample.revision_number || 1}{sample.revision_label ? ` / ${sample.revision_label}` : ""}</span>
+                      {sample.has_similarity_matches && <span className="rounded-md border border-sky-700/40 bg-sky-950/20 px-2 py-1 text-xs font-black text-sky-200">Similarity evidence</span>}
                     </div>
                     <div className="mt-3 break-words text-lg font-black">{[sample.brand, sample.model, sample.engine].filter(Boolean).join(" ") || "Vehicle metadata pending"}</div>
                     <div className="mt-1 break-all text-xs text-zinc-600">Request {sample.request_id || (sample.source_metadata?.demo ? "demo fixture" : "manual")} / {formatDate(sample.created_at)}</div>
@@ -317,13 +358,15 @@ export default function AiTrainingPage() {
             <div className="overflow-hidden rounded-lg border border-white/10">
               {(data.profiles ?? []).map((profile) => {
                 const definition = getKnowledgeLevelDefinition(profile.learning_level);
-                const averageQuality = Number(profile.profile_json?.average_data_quality || 0);
+                const averageQuality = Number(profile.average_quality_score || profile.profile_json?.average_data_quality || 0);
+                const readiness = profile.similarity_readiness || "no_data";
                 return (
-                  <div key={profile.id} className="grid gap-4 border-b border-white/10 px-4 py-5 last:border-0 lg:grid-cols-[minmax(0,1.4fr)_minmax(260px,1fr)_repeat(3,110px)] lg:items-center">
+                  <div key={profile.id} className="grid gap-4 border-b border-white/10 px-4 py-5 last:border-0 lg:grid-cols-[minmax(0,1.3fr)_minmax(240px,1fr)_repeat(4,110px)] lg:items-center">
                     <div className="min-w-0"><div className="break-words font-black">{profile.ecu_type || profile.ecu_family || "Unknown ECU"}</div><div className="mt-1 break-all text-xs text-zinc-600">{profile.ecu_family || "-"} / SW {profile.sw_number || "-"}</div></div>
                     <div><div className="inline-flex rounded-md border border-red-700/40 bg-red-950/20 px-2 py-1 text-xs font-black text-red-200">{definition.label}</div><p className="mt-2 text-xs leading-5 text-zinc-500">{definition.explanation}</p></div>
-                    <Small label="Samples" value={`${profile.total_samples} total / ${profile.human_verified_samples} verified`} />
+                    <Small label="Learning samples" value={`${profile.approved_samples || 0} approved / ${profile.pending_samples || 0} pending / ${profile.excluded_samples || 0} excluded`} />
                     <Small label="Data quality" value={`${Math.round(averageQuality)}/100 avg.`} />
+                    <Small label="Similarity" value={humanLabel(readiness)} />
                     <Small label="Detection" value={`${Math.round(Number(profile.detection_confidence) * 100)}%`} />
                   </div>
                 );

@@ -42,3 +42,26 @@
 10. Complete one controlled real ORI/MOD order and verify sample/signature/profile/events without exposing the source file.
 
 No SQL in this hardening task deletes, truncates or rewrites production rows.
+
+## Level 1 Similarity Data Exposure
+
+- `ai_similarity_results` has no customer RLS policy. Browser clients cannot read it directly.
+- Customer File Expert APIs verify job ownership before loading any similarity result.
+- Customer responses contain only match count, best score, confidence and a generic evidence message.
+- Training sample IDs, vehicle metadata, outcomes and match reasons are returned only after `ai_training.manage` authorization.
+- `compared_features` stores sanitized metadata only. It must never contain filenames, user IDs, storage paths, hashes, raw bytes, printable strings or binary previews.
+- Similarity search never downloads a compared sample's source files. It uses structured analyzer output and compact signatures.
+- Pending, rejected, excluded, low-quality and non-explicit demo samples cannot become trusted evidence.
+- Similarity failures are non-blocking for File Expert analysis; no customer upload or report is lost because the Level 1 table is unavailable.
+- Similarity cannot approve a sample, modify a binary, create a MOD or trigger customer delivery.
+
+### Level 1 Deployment Checklist
+
+1. Run `scripts/add-ecu-similarity-level1.sql` in Supabase SQL Editor.
+2. Confirm `ai_similarity_results` has RLS enabled and no customer read policy.
+3. Confirm the unique comparison index exists.
+4. Re-save approved samples if their knowledge profiles need readiness backfill.
+5. Run similarity for one pending sample and inspect reasons/warnings.
+6. Verify a customer sees only aggregate evidence on their own File Expert report.
+7. Verify a second customer cannot access that File Expert job.
+8. Confirm production `ENABLE_AI_TRAINING_DEMO` remains false or unset.

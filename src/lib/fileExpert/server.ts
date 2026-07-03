@@ -5,6 +5,10 @@ import { generateAiFileExpertReport } from "@/lib/ai";
 import { findVehicleCandidates } from "@/lib/fileExpert/vehicleMatcher";
 import type { FileExpertAnalyzerResult, FileExpertFeature, FileExpertJob } from "@/lib/fileExpert/types";
 import { hasStaffPermission, type StaffAccess } from "@/lib/staffPermissions";
+import {
+  buildPublicSimilarityEvidence,
+  runSimilarityForFileExpert,
+} from "@/lib/ecuIntelligence/similarity";
 
 export const fileExpertBucket = "file-expert";
 export const fileExpertMaxFileSize = 32 * 1024 * 1024;
@@ -262,6 +266,7 @@ export async function analyzeFileExpertJob(jobId: string) {
       ];
     }
 
+    const similarity = await runSimilarityForFileExpert(job, result).catch(() => null);
     const generated = await generateAiFileExpertReport({
       sourceType: "file_expert_job",
       sourceId: job.id,
@@ -274,6 +279,7 @@ export async function analyzeFileExpertJob(jobId: string) {
         readMethod: job.read_method,
         customerNotes: job.customer_notes,
       },
+      similarityEvidence: similarity ? buildPublicSimilarityEvidence(similarity) : null,
     });
 
     await supabaseAdmin

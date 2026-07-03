@@ -44,7 +44,7 @@ export class OpenAiReportProvider implements AiReportProvider {
       body: JSON.stringify({
         model: this.modelName,
         instructions: fileExpertAiInstructions,
-        input: JSON.stringify({ metadata: modelSafeMetadata(input.metadata), analyzer: modelSafeAnalyzerResult(input.result) }),
+        input: JSON.stringify({ metadata: modelSafeMetadata(input.metadata), analyzer: modelSafeAnalyzerResult(input.result), similarity_evidence: input.similarityEvidence ?? null }),
         text: {
           format: {
             type: "json_schema",
