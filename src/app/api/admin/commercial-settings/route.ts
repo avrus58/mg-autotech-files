@@ -10,10 +10,9 @@ const schema = z.object({
   adjustmentValue: z.number().min(-1000).max(1000),
   promotionLabel: z.string().trim().max(180).nullable(),
   paymentMethods: z.object({
-    sumup: z.boolean(),
+    stripe: z.boolean(),
     paypal: z.boolean(),
     bank: z.boolean(),
-    stripe: z.boolean(),
   }),
 }).superRefine((value, context) => {
   if (value.adjustmentType === "percentage" && Math.abs(value.adjustmentValue) > 100) {
@@ -47,10 +46,9 @@ export async function PATCH(request: Request) {
     global_adjustment_type: parsed.data.adjustmentType,
     global_adjustment_value: parsed.data.adjustmentValue,
     promotion_label: parsed.data.promotionLabel || null,
-    payment_sumup_enabled: parsed.data.paymentMethods.sumup,
+    payment_stripe_enabled: parsed.data.paymentMethods.stripe,
     payment_paypal_enabled: parsed.data.paymentMethods.paypal,
     payment_bank_enabled: parsed.data.paymentMethods.bank,
-    payment_stripe_enabled: parsed.data.paymentMethods.stripe,
     updated_by: auth.user.id,
   };
   const saved = await admin.from("commerce_settings").upsert(payload, { onConflict: "id" }).select("*").single();

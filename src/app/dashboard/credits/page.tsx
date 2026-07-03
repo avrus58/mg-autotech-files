@@ -22,7 +22,6 @@ import {
   Loader2,
   ShieldCheck,
   Sparkles,
-  WalletCards,
   Zap,
 } from "lucide-react";
 
@@ -36,11 +35,11 @@ const utilization = [
 
 const paymentMethods = [
   {
-    id: "sumup",
-    title: "SumUp",
-    subtitle: "Card / mobile payment",
+    id: "stripe",
+    title: "Credit Card",
+    subtitle: "Secure Stripe checkout",
     badge: "Automatic",
-    icon: WalletCards,
+    icon: CreditCard,
   },
   {
     id: "paypal",
@@ -55,13 +54,6 @@ const paymentMethods = [
     subtitle: "SEPA transfer",
     badge: "Manual check",
     icon: Landmark,
-  },
-  {
-    id: "stripe",
-    title: "Credit Card",
-    subtitle: "Stripe checkout",
-    badge: "Automatic",
-    icon: CreditCard,
   },
 ] as const;
 
@@ -80,7 +72,7 @@ const fallbackQuote: CreditQuote = {
   customBaseUnitPriceEuro: CUSTOM_CREDIT_BASE_PRICE_EURO,
   customUnitPriceEuro: CUSTOM_CREDIT_PRICE_EURO,
   customerPricingActive: false,
-  paymentMethods: { sumup: true, paypal: true, bank: true, stripe: true },
+  paymentMethods: { stripe: true, paypal: true, bank: true },
   packages: creditPackages.map((item) => ({ ...item, unitPriceEuro: item.priceEuro / item.credits })),
 };
 
@@ -105,7 +97,7 @@ export default function BuyCreditsPage() {
   const [loadingPackage, setLoadingPackage] = useState<string | null>(null);
   const [customCredits, setCustomCredits] = useState("17");
   const [message, setMessage] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("sumup");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("stripe");
   const [copiedBankReference, setCopiedBankReference] = useState(false);
   const [quote, setQuote] = useState<CreditQuote>(fallbackQuote);
   const [quoteLoading, setQuoteLoading] = useState(true);
@@ -209,7 +201,7 @@ export default function BuyCreditsPage() {
       return;
     }
 
-    if (paymentMethod !== "stripe") {
+    if (paymentMethod === "paypal" || paymentMethod === "bank") {
       if (paymentMethod === "bank") {
         try {
           const reference = await getCustomerReference(userData.user.id);
@@ -229,10 +221,7 @@ export default function BuyCreditsPage() {
         return;
       }
 
-      const endpoint =
-        paymentMethod === "paypal"
-          ? "/api/paypal/create-order"
-          : "/api/sumup/create-checkout";
+      const endpoint = "/api/paypal/create-order";
 
       const response = await fetch(endpoint, {
         method: "POST",
@@ -389,7 +378,7 @@ export default function BuyCreditsPage() {
                   Payment Workflow
                 </div>
                 <p className="mt-1 text-sm text-zinc-400">
-                  SumUp, PayPal and Stripe add credits automatically after
+                  Stripe and PayPal add credits automatically after
                   payment confirmation. Bank transfer stays manual.
                 </p>
               </div>
@@ -412,7 +401,7 @@ export default function BuyCreditsPage() {
             </div>
           </div>
 
-          <div className="grid gap-3 md:grid-cols-4">
+          <div className="grid gap-3 md:grid-cols-3">
             {availablePaymentMethods.map((method) => {
               const Icon = method.icon;
               const active = paymentMethod === method.id;
@@ -705,7 +694,7 @@ export default function BuyCreditsPage() {
             <p className="mt-3 text-sm leading-7 text-zinc-400">
               Package purchases use discounted package pricing. Custom credit
               purchases are calculated at{" "}
-              {formatEuro(quote.customUnitPriceEuro)} per credit for this account. Stripe, PayPal and SumUp payments add
+              {formatEuro(quote.customUnitPriceEuro)} per credit for this account. Stripe and PayPal payments add
               credits automatically after payment confirmation. Bank transfer
               requires admin verification before credits are added.
             </p>

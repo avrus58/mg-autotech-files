@@ -337,7 +337,7 @@ test("commercial pricing applies customer override before customer adjustment", 
   assert.equal(buildCreditQuote(defaultCommerceSettings, customerFour).customUnitPriceEuro, 3);
   customerFour.payment_paypal_enabled = false;
   assert.equal(buildCreditQuote(defaultCommerceSettings, customerFour).paymentMethods.paypal, false);
-  assert.equal(buildCreditQuote(defaultCommerceSettings, customerFour).paymentMethods.sumup, true);
+  assert.equal(buildCreditQuote(defaultCommerceSettings, customerFour).paymentMethods.stripe, true);
 });
 
 test("database migration enforces duplicate ORI/MOD sample prevention", () => {

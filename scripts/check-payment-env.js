@@ -31,10 +31,6 @@ const groups = [
     ],
   },
   {
-    name: "SumUp",
-    keys: ["SUMUP_API_KEY", "SUMUP_MERCHANT_CODE"],
-  },
-  {
     name: "PayPal",
     keys: ["PAYPAL_CLIENT_ID", "PAYPAL_CLIENT_SECRET"],
   },

@@ -150,10 +150,9 @@ type CustomerForm = {
   credit_price_override_eur: string;
   commercial_adjustment_type: "none" | "percentage" | "fixed";
   commercial_adjustment_value: string;
-  payment_sumup: PaymentOverride;
+  payment_stripe: PaymentOverride;
   payment_paypal: PaymentOverride;
   payment_bank: PaymentOverride;
-  payment_stripe: PaymentOverride;
   commercial_internal_note: string;
   effective_custom_unit_price_eur: string;
 };
@@ -384,10 +383,9 @@ function makeCustomerForm(customer: Profile): CustomerForm {
     credit_price_override_eur: "",
     commercial_adjustment_type: "none",
     commercial_adjustment_value: "0",
-    payment_sumup: "inherit",
+    payment_stripe: "inherit",
     payment_paypal: "inherit",
     payment_bank: "inherit",
-    payment_stripe: "inherit",
     commercial_internal_note: "",
     effective_custom_unit_price_eur: "",
   };
@@ -694,10 +692,9 @@ export default function AdminPage() {
         credit_price_override_eur: policy.credit_price_override_eur == null ? "" : String(policy.credit_price_override_eur),
         commercial_adjustment_type: policy.adjustment_type || "none",
         commercial_adjustment_value: String(policy.adjustment_value || 0),
-        payment_sumup: paymentOverride(policy.payment_sumup_enabled),
+        payment_stripe: paymentOverride(policy.payment_stripe_enabled),
         payment_paypal: paymentOverride(policy.payment_paypal_enabled),
         payment_bank: paymentOverride(policy.payment_bank_enabled),
-        payment_stripe: paymentOverride(policy.payment_stripe_enabled),
         commercial_internal_note: policy.internal_note || "",
         effective_custom_unit_price_eur: String(payload.effectiveQuote?.customUnitPriceEuro ?? ""),
       } : current);
@@ -811,10 +808,9 @@ export default function AdminPage() {
             adjustmentType: customerForm.commercial_adjustment_type,
             adjustmentValue: Number(customerForm.commercial_adjustment_value || 0),
             paymentMethods: {
-              sumup: paymentOverrideValue(customerForm.payment_sumup),
+              stripe: paymentOverrideValue(customerForm.payment_stripe),
               paypal: paymentOverrideValue(customerForm.payment_paypal),
               bank: paymentOverrideValue(customerForm.payment_bank),
-              stripe: paymentOverrideValue(customerForm.payment_stripe),
             },
             internalNote: customerForm.commercial_internal_note.trim() || null,
           }),
@@ -1946,11 +1942,10 @@ function CustomerDetailModal({ customer, form, setForm, creditInput, setCreditIn
                 <FormSelect label="Customer Adjustment" value={form.commercial_adjustment_type} onChange={(value) => updateForm("commercial_adjustment_type", value as CustomerForm["commercial_adjustment_type"])} options={["none", "percentage", "fixed"]} />
                 <FormInput label={form.commercial_adjustment_type === "percentage" ? "Adjustment (%)" : "Adjustment (EUR / credit)"} type="number" value={form.commercial_adjustment_value} onChange={(value) => updateForm("commercial_adjustment_value", value)} />
               </div>
-              <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                <PaymentPolicySelect label="SumUp" value={form.payment_sumup} onChange={(value) => updateForm("payment_sumup", value)} />
+              <div className="mt-5 grid gap-3 sm:grid-cols-3">
+                <PaymentPolicySelect label="Stripe" value={form.payment_stripe} onChange={(value) => updateForm("payment_stripe", value)} />
                 <PaymentPolicySelect label="PayPal" value={form.payment_paypal} onChange={(value) => updateForm("payment_paypal", value)} />
                 <PaymentPolicySelect label="Bank transfer" value={form.payment_bank} onChange={(value) => updateForm("payment_bank", value)} />
-                <PaymentPolicySelect label="Stripe" value={form.payment_stripe} onChange={(value) => updateForm("payment_stripe", value)} />
               </div>
               <p className="mt-4 text-xs leading-5 text-zinc-500">Positive adjustment values reduce the per-credit price; negative values increase it. “Inherit” follows the global payment setting.</p>
               <textarea value={form.commercial_internal_note} onChange={(event) => updateForm("commercial_internal_note", event.target.value)} placeholder="Internal pricing agreement or approval note. Customer cannot see this." className="mt-4 min-h-24 w-full resize-none rounded-2xl border border-white/10 bg-black/35 px-4 py-3 text-sm font-bold text-white outline-none placeholder:text-zinc-600 focus:border-red-700" />

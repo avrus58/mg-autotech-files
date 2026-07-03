@@ -8,16 +8,6 @@ Add these values in Vercel project settings, then redeploy.
 
 - `NEXT_PUBLIC_SITE_URL=https://file.mgautotech.de`
 
-### SumUp
-
-- `SUMUP_API_KEY`
-- `SUMUP_MERCHANT_CODE`
-- `SUMUP_API_BASE=https://api.sumup.com`
-
-Return URL used by the app:
-
-- `https://file.mgautotech.de/payment/success?provider=sumup`
-
 ### PayPal
 
 - `PAYPAL_CLIENT_ID`
@@ -49,7 +39,7 @@ Event:
 - `NEXT_PUBLIC_BANK_IBAN`
 - `NEXT_PUBLIC_BANK_BIC`
 
-Bank transfer stays manual. SumUp, PayPal and Stripe are automatic credit top-up flows.
+Bank transfer stays manual. PayPal and Stripe are automatic credit top-up flows.
 
 ## Local Check
 

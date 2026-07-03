@@ -678,7 +678,7 @@ const serviceTemplates: Record<LocaleCode, ServiceTemplate> = {
     benefits: [
       "Secure customer dashboard for original and modified files",
       "Status timeline for request created, file check, in progress and completed",
-      "Credit-based workflow with SumUp, PayPal, Stripe and bank transfer",
+      "Credit-based workflow with Stripe, PayPal and bank transfer",
       "Revision request support after completed delivery",
     ],
     process: [
@@ -705,7 +705,7 @@ const serviceTemplates: Record<LocaleCode, ServiceTemplate> = {
     benefits: [
       "Sicheres Kundenportal für Originaldateien und modifizierte Dateien",
       "Klarer Statusverlauf für Anfrage, Dateiprüfung, Bearbeitung und Abschluss",
-      "Credit-basierter Ablauf mit SumUp, PayPal, Stripe und Banküberweisung",
+      "Credit-basierter Ablauf mit Stripe, PayPal und Banküberweisung",
       "Revisionsanfrage nach abgeschlossener Lieferung möglich",
     ],
     process: [
@@ -732,7 +732,7 @@ const serviceTemplates: Record<LocaleCode, ServiceTemplate> = {
     benefits: [
       "Orijinal ve düzenlenmiş dosyalar için güvenli müşteri paneli",
       "Talep oluşturuldu, dosya kontrolü, işlemde ve tamamlandı durum akışı",
-      "SumUp, PayPal, Stripe ve banka transferli kredi akışı",
+      "Stripe, PayPal ve banka transferli kredi akışı",
       "Tamamlanan teslimat sonrası revizyon talebi desteği",
     ],
     process: [

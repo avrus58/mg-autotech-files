@@ -108,7 +108,6 @@ create table if not exists public.commerce_settings (
   global_adjustment_value numeric(10,4) not null default 20.0000
     check (global_adjustment_value between -1000 and 1000),
   promotion_label text,
-  payment_sumup_enabled boolean not null default true,
   payment_paypal_enabled boolean not null default true,
   payment_bank_enabled boolean not null default true,
   payment_stripe_enabled boolean not null default true,
@@ -131,7 +130,6 @@ create table if not exists public.customer_commercial_policies (
     check (adjustment_type in ('none', 'percentage', 'fixed')),
   adjustment_value numeric(10,4) not null default 0
     check (adjustment_value between -1000 and 1000),
-  payment_sumup_enabled boolean,
   payment_paypal_enabled boolean,
   payment_bank_enabled boolean,
   payment_stripe_enabled boolean,

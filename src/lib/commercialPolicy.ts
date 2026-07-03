@@ -1,7 +1,7 @@
 import { creditPackages, getCreditPackage } from "@/lib/creditPackages";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 
-export const paymentMethodIds = ["sumup", "paypal", "bank", "stripe"] as const;
+export const paymentMethodIds = ["stripe", "paypal", "bank"] as const;
 export type PaymentMethodId = (typeof paymentMethodIds)[number];
 export type PriceAdjustmentType = "none" | "percentage" | "fixed";
 
@@ -12,7 +12,6 @@ export type CommerceSettings = {
   global_adjustment_type: PriceAdjustmentType;
   global_adjustment_value: number;
   promotion_label: string | null;
-  payment_sumup_enabled: boolean;
   payment_paypal_enabled: boolean;
   payment_bank_enabled: boolean;
   payment_stripe_enabled: boolean;
@@ -24,7 +23,6 @@ export type CustomerCommercialPolicy = {
   credit_price_override_eur: number | null;
   adjustment_type: PriceAdjustmentType;
   adjustment_value: number;
-  payment_sumup_enabled: boolean | null;
   payment_paypal_enabled: boolean | null;
   payment_bank_enabled: boolean | null;
   payment_stripe_enabled: boolean | null;
@@ -41,7 +39,6 @@ export const defaultCommerceSettings: CommerceSettings = {
   global_adjustment_type: "percentage",
   global_adjustment_value: 20,
   promotion_label: "Limited time -20% on all credit purchases",
-  payment_sumup_enabled: true,
   payment_paypal_enabled: true,
   payment_bank_enabled: true,
   payment_stripe_enabled: true,
@@ -53,7 +50,6 @@ export function emptyCustomerCommercialPolicy(userId: string): CustomerCommercia
     credit_price_override_eur: null,
     adjustment_type: "none",
     adjustment_value: 0,
-    payment_sumup_enabled: null,
     payment_paypal_enabled: null,
     payment_bank_enabled: null,
     payment_stripe_enabled: null,
@@ -82,7 +78,6 @@ function normalizeSettings(row: Record<string, unknown> | null): CommerceSetting
       : "percentage") as PriceAdjustmentType,
     global_adjustment_value: asNumber(row.global_adjustment_value, 20),
     promotion_label: typeof row.promotion_label === "string" ? row.promotion_label : null,
-    payment_sumup_enabled: row.payment_sumup_enabled !== false,
     payment_paypal_enabled: row.payment_paypal_enabled !== false,
     payment_bank_enabled: row.payment_bank_enabled !== false,
     payment_stripe_enabled: row.payment_stripe_enabled !== false,
@@ -100,7 +95,6 @@ function normalizeCustomerPolicy(userId: string, row: Record<string, unknown> | 
       ? row.adjustment_type
       : "none") as PriceAdjustmentType,
     adjustment_value: asNumber(row.adjustment_value, 0),
-    payment_sumup_enabled: typeof row.payment_sumup_enabled === "boolean" ? row.payment_sumup_enabled : null,
     payment_paypal_enabled: typeof row.payment_paypal_enabled === "boolean" ? row.payment_paypal_enabled : null,
     payment_bank_enabled: typeof row.payment_bank_enabled === "boolean" ? row.payment_bank_enabled : null,
     payment_stripe_enabled: typeof row.payment_stripe_enabled === "boolean" ? row.payment_stripe_enabled : null,
@@ -142,10 +136,9 @@ export function effectivePaymentMethods(
   policy: CustomerCommercialPolicy
 ): EffectivePaymentMethods {
   return {
-    sumup: policy.payment_sumup_enabled ?? settings.payment_sumup_enabled,
+    stripe: policy.payment_stripe_enabled ?? settings.payment_stripe_enabled,
     paypal: policy.payment_paypal_enabled ?? settings.payment_paypal_enabled,
     bank: policy.payment_bank_enabled ?? settings.payment_bank_enabled,
-    stripe: policy.payment_stripe_enabled ?? settings.payment_stripe_enabled,
   };
 }
 
@@ -202,10 +195,9 @@ export function buildCreditQuote(
       customerPolicy.credit_price_override_eur != null ||
       customerPolicy.adjustment_type !== "none" ||
       [
-        customerPolicy.payment_sumup_enabled,
+        customerPolicy.payment_stripe_enabled,
         customerPolicy.payment_paypal_enabled,
         customerPolicy.payment_bank_enabled,
-        customerPolicy.payment_stripe_enabled,
       ].some((value) => value != null),
   };
 }

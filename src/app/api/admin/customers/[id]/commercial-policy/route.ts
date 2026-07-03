@@ -9,10 +9,9 @@ const schema = z.object({
   adjustmentType: z.enum(["none", "percentage", "fixed"]),
   adjustmentValue: z.number().min(-1000).max(1000),
   paymentMethods: z.object({
-    sumup: z.boolean().nullable(),
+    stripe: z.boolean().nullable(),
     paypal: z.boolean().nullable(),
     bank: z.boolean().nullable(),
-    stripe: z.boolean().nullable(),
   }),
   internalNote: z.string().trim().max(2000).nullable(),
 }).superRefine((value, context) => {
@@ -59,10 +58,9 @@ export async function PATCH(
     credit_price_override_eur: parsed.data.creditPriceOverrideEuro,
     adjustment_type: parsed.data.adjustmentType,
     adjustment_value: parsed.data.adjustmentValue,
-    payment_sumup_enabled: parsed.data.paymentMethods.sumup,
+    payment_stripe_enabled: parsed.data.paymentMethods.stripe,
     payment_paypal_enabled: parsed.data.paymentMethods.paypal,
     payment_bank_enabled: parsed.data.paymentMethods.bank,
-    payment_stripe_enabled: parsed.data.paymentMethods.stripe,
     internal_note: parsed.data.internalNote || null,
     updated_by: auth.user.id,
   };
