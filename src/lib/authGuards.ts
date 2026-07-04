@@ -7,6 +7,28 @@ const transientAuthErrors = new Set([
   "NavigatorLockAcquireTimeoutError",
 ]);
 
+let lastStableSession: Session | null = null;
+let authMemoryListenerReady = false;
+
+function hasUsableCachedSession() {
+  if (!lastStableSession) return false;
+  if (!lastStableSession.expires_at) return true;
+  return lastStableSession.expires_at > Math.floor(Date.now() / 1000) + 15;
+}
+
+function initializeAuthMemoryListener() {
+  if (authMemoryListenerReady || typeof window === "undefined") return;
+  authMemoryListenerReady = true;
+
+  supabase.auth.onAuthStateChange((event, session) => {
+    if (session) {
+      lastStableSession = session;
+    } else if (event === "SIGNED_OUT") {
+      lastStableSession = null;
+    }
+  });
+}
+
 export function isTransientAuthError(error: unknown) {
   return Boolean(
     error && typeof error === "object" && "name" in error &&
@@ -15,6 +37,7 @@ export function isTransientAuthError(error: unknown) {
 }
 
 export async function getStableSession(): Promise<{ session: Session | null; error: unknown }> {
+  initializeAuthMemoryListener();
   let lastError: unknown = null;
 
   // Cross-tab refresh can briefly expose an empty session while the refreshed
@@ -22,8 +45,15 @@ export async function getStableSession(): Promise<{ session: Session | null; err
   // than logging the user out or rejecting an authenticated action.
   for (let attempt = 0; attempt < 6; attempt += 1) {
     const { data, error } = await supabase.auth.getSession();
-    if (data.session) return { session: data.session, error: null };
+    if (data.session) {
+      lastStableSession = data.session;
+      return { session: data.session, error: null };
+    }
     lastError = error;
+
+    if (hasUsableCachedSession()) {
+      return { session: lastStableSession, error: null };
+    }
 
     if (attempt < 5) {
       const delay = Math.min(250 * (attempt + 1), 750);
@@ -31,7 +61,10 @@ export async function getStableSession(): Promise<{ session: Session | null; err
     }
   }
 
-  return { session: null, error: lastError };
+  return {
+    session: hasUsableCachedSession() ? lastStableSession : null,
+    error: lastError,
+  };
 }
 
 export function isEmailVerified(user: User) {
