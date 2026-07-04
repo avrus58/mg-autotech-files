@@ -40,6 +40,7 @@ import {
   creditPackages as sharedCreditPackages,
 } from "@/lib/creditPackages";
 import { supabase } from "@/lib/supabaseClient";
+import { signOutStable } from "@/lib/authGuards";
 
 const services = [
   {
@@ -1655,7 +1656,7 @@ export default function HomePage() {
   }, []);
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    await signOutStable();
     setUserEmail(null);
     setAuthReady(true);
   };

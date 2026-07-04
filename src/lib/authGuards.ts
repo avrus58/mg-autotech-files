@@ -38,8 +38,6 @@ function initializeAuthMemoryListener() {
   supabase.auth.onAuthStateChange((event, session) => {
     if (session) {
       setCachedSession(session);
-    } else if (event === "SIGNED_OUT") {
-      setCachedSession(null);
     }
   });
 }
@@ -104,6 +102,11 @@ export async function authenticatedFetch(input: RequestInfo | URL, init?: Reques
   return send(data.session.access_token);
 }
 
+export async function signOutStable() {
+  setCachedSession(null);
+  await supabase.auth.signOut();
+}
+
 export function isEmailVerified(user: User) {
   return Boolean(user.email_confirmed_at || user.confirmed_at);
 }
@@ -111,7 +114,7 @@ export function isEmailVerified(user: User) {
 export async function signOutIfEmailUnverified(user: User) {
   if (isEmailVerified(user)) return false;
 
-  await supabase.auth.signOut();
+  await signOutStable();
   return true;
 }
 

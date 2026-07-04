@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Loader2, Lock, ShieldCheck, Upload } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
+import { signOutStable } from "@/lib/authGuards";
 
 export default function ResetPasswordPage() {
   const router = useRouter();
@@ -57,7 +58,7 @@ export default function ResetPasswordPage() {
       return;
     }
 
-    await supabase.auth.signOut();
+    await signOutStable();
     router.replace("/login?reset=success");
   };
 

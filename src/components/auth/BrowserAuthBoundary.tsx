@@ -43,8 +43,12 @@ export function BrowserAuthBoundary({
     const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
       if (session?.user) {
         resolveAuthState("authenticated");
-      } else if (event === "SIGNED_OUT" || event === "INITIAL_SESSION") {
+      } else if (event === "INITIAL_SESSION") {
         resolveAuthState("unauthenticated");
+      } else if (event === "SIGNED_OUT") {
+        void getStableSession().then(({ session: recovered }) => {
+          resolveAuthState(recovered?.user ? "authenticated" : "unauthenticated");
+        });
       }
     });
 

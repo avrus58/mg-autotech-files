@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getStableSession, signOutIfEmailUnverified } from "@/lib/authGuards";
+import { getStableSession, signOutIfEmailUnverified, signOutStable } from "@/lib/authGuards";
 import { supabase } from "@/lib/supabaseClient";
 import {
   ArrowRight,
@@ -211,8 +211,15 @@ export function DashboardClient() {
         currentUserId = session.user.id;
         setEmail(session.user.email ?? null);
       } else if (event === "SIGNED_OUT") {
-        currentUserId = null;
-        router.replace("/login");
+        void getStableSession().then(({ session: recovered }) => {
+          if (recovered?.user) {
+            currentUserId = recovered.user.id;
+            setEmail(recovered.user.email ?? null);
+          } else {
+            currentUserId = null;
+            router.replace("/login");
+          }
+        });
       }
     });
 
@@ -291,7 +298,7 @@ export function DashboardClient() {
   };
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    await signOutStable();
     router.push("/login");
   };
 

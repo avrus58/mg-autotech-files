@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { signOutIfEmailUnverified } from "@/lib/authGuards";
+import { signOutIfEmailUnverified, signOutStable } from "@/lib/authGuards";
 import { supabase } from "@/lib/supabaseClient";
 import {
   ArrowLeft,
@@ -193,7 +193,7 @@ export default function CreditHistoryPage() {
   );
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    await signOutStable();
     router.push("/login");
   };
 
