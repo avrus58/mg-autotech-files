@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AlertTriangle, ArrowLeft, CheckCircle2, Database, Loader2, RefreshCcw, ShieldAlert } from "lucide-react";
-import { getStableSession } from "@/lib/authGuards";
+import { authenticatedFetch } from "@/lib/authGuards";
 import type { AiAccuracyMetric, AiClusterMember, AiPatternCluster, RepeatedRegionEvidence, TrainingServiceLabels } from "@/lib/ecuIntelligence/types";
 
 type Sample = {
@@ -27,10 +27,7 @@ export default function PatternClusterDetailPage() {
   const [message, setMessage] = useState("");
 
   const authFetch = useCallback(async (url: string, init?: RequestInit) => {
-    const { session } = await getStableSession();
-    const token = session?.access_token;
-    if (!token) throw new Error("Unauthorized");
-    return fetch(url, { ...init, headers: { ...init?.headers, Authorization: `Bearer ${token}` } });
+    return authenticatedFetch(url, init);
   }, []);
   const load = useCallback(async () => {
     setLoading(true); setMessage("");

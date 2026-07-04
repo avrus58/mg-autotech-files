@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ArrowLeft, CheckCircle2, Database, FileCode2, Gauge, Layers3, Loader2, Network, RefreshCcw, Save, ShieldAlert } from "lucide-react";
-import { getStableSession } from "@/lib/authGuards";
+import { authenticatedFetch } from "@/lib/authGuards";
 import {
   emptyTrainingServiceLabels,
   trainingFeatureKeys,
@@ -84,10 +84,7 @@ export default function AiTrainingDetailPage() {
   const [message, setMessage] = useState("");
 
   const authFetch = useCallback(async (url: string, init?: RequestInit) => {
-    const { session } = await getStableSession();
-    const token = session?.access_token;
-    if (!token) throw new Error("Unauthorized");
-    return fetch(url, { ...init, headers: { ...init?.headers, Authorization: `Bearer ${token}` } });
+    return authenticatedFetch(url, init);
   }, []);
 
   const load = useCallback(async () => {

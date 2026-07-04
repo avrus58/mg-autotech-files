@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Activity, ArrowLeft, CheckCircle2, ChevronRight, Layers3, Loader2, RefreshCcw, Search, ShieldAlert } from "lucide-react";
-import { getStableSession } from "@/lib/authGuards";
+import { authenticatedFetch } from "@/lib/authGuards";
 import { patternClusterStatuses, trainingFeatureKeys, type AiAccuracyMetric, type AiPatternCluster, type PatternClusterStatus } from "@/lib/ecuIntelligence/types";
 
 type Payload = {
@@ -24,10 +24,7 @@ export default function PatternClustersPage() {
   const [search, setSearch] = useState("");
 
   const authFetch = useCallback(async (url: string, init?: RequestInit) => {
-    const { session } = await getStableSession();
-    const token = session?.access_token;
-    if (!token) throw new Error("Unauthorized");
-    return fetch(url, { ...init, headers: { ...init?.headers, Authorization: `Bearer ${token}` } });
+    return authenticatedFetch(url, init);
   }, []);
 
   const load = useCallback(async () => {

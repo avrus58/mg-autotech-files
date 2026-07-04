@@ -67,6 +67,28 @@ export async function getStableSession(): Promise<{ session: Session | null; err
   };
 }
 
+export async function authenticatedFetch(input: RequestInfo | URL, init?: RequestInit) {
+  const { session } = await getStableSession();
+  if (!session?.access_token) throw new Error("Unauthorized");
+
+  const send = (accessToken: string) => {
+    const headers = new Headers(init?.headers);
+    headers.set("Authorization", `Bearer ${accessToken}`);
+    return fetch(input, { ...init, headers });
+  };
+
+  const response = await send(session.access_token);
+  if (response.status !== 401) return response;
+
+  const { data, error } = await supabase.auth.refreshSession(
+    session.refresh_token ? { refresh_token: session.refresh_token } : undefined
+  );
+  if (error || !data.session?.access_token) return response;
+
+  lastStableSession = data.session;
+  return send(data.session.access_token);
+}
+
 export function isEmailVerified(user: User) {
   return Boolean(user.email_confirmed_at || user.confirmed_at);
 }

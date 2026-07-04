@@ -20,7 +20,7 @@ import {
   ShieldAlert,
   Sparkles,
 } from "lucide-react";
-import { getStableSession } from "@/lib/authGuards";
+import { authenticatedFetch } from "@/lib/authGuards";
 import type { AiEcuKnowledgeProfile, HumanVerificationStatus, LearningUseStatus, TrainingServiceLabels } from "@/lib/ecuIntelligence/types";
 import { trainingFeatureKeys } from "@/lib/ecuIntelligence/types";
 import { getKnowledgeLevelDefinition, knowledgeLevelDefinitions } from "@/lib/ecuIntelligence/readiness";
@@ -138,13 +138,7 @@ export default function AiTrainingPage() {
   const [demoRunning, setDemoRunning] = useState(false);
 
   const authFetch = useCallback(async (url: string, init?: RequestInit) => {
-    const { session } = await getStableSession();
-    const token = session?.access_token;
-    if (!token) throw new Error("Unauthorized");
-    return fetch(url, {
-      ...init,
-      headers: { ...init?.headers, Authorization: `Bearer ${token}` },
-    });
+    return authenticatedFetch(url, init);
   }, []);
 
   const load = useCallback(async () => {
