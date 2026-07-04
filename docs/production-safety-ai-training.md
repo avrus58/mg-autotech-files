@@ -65,3 +65,31 @@ No SQL in this hardening task deletes, truncates or rewrites production rows.
 6. Verify a customer sees only aggregate evidence on their own File Expert report.
 7. Verify a second customer cannot access that File Expert job.
 8. Confirm production `ENABLE_AI_TRAINING_DEMO` remains false or unset.
+
+## Level 2 Cluster Data Exposure
+
+- `ai_pattern_clusters`, `ai_cluster_members` and `ai_accuracy_metrics` have RLS enabled and only `ai_training.manage` policies.
+- Cluster rebuild APIs require the same server-side staff permission. A normal customer cannot list, rebuild or inspect clusters.
+- Only confirmed, learning-approved, quality 60+ samples with actual performed labels and pattern signatures are trusted inputs.
+- Demo samples remain excluded unless the server-only demo flag is explicitly enabled.
+- Customer File Expert responses contain aggregate cluster count, readiness and confidence only.
+- Customer responses never include cluster IDs, training sample IDs, repeated offsets, filenames, providers, storage paths, hashes, raw bytes or hex previews.
+- Admin cluster screens use structured signatures and summaries. They do not download or render source binary content.
+- Outlier detection is advisory. It cannot reject, exclude or approve a sample automatically.
+- Accuracy metrics compare predictions only with human-confirmed actual labels and explicitly report insufficient data.
+- A full rebuild may remove stale derived memberships and zero stale cluster/metric aggregates. It never deletes source training samples, customer orders or uploaded files.
+- Every screen warns that evidence is not write-ready and still requires human tuner and checksum verification.
+
+### Level 2 Deployment Checklist
+
+1. Back up the Supabase schema.
+2. Review and run `scripts/add-ecu-pattern-clustering-level2.sql` in Supabase SQL Editor.
+3. Confirm RLS and admin-only policies on all three Level 2 tables.
+4. Confirm Production keeps `ENABLE_AI_TRAINING_DEMO=false` or unset.
+5. Run lint, typecheck, tests and production build.
+6. Deploy to Preview first and complete the Level 2 section in `docs/manual-test-ai-training.md`.
+7. Verify customer isolation with two different customer accounts.
+8. Verify rebuild endpoints return 401 without a session and 403 for a normal customer.
+9. Verify customer File Expert JSON contains no private cluster/member/offset data.
+10. Rebuild once with a small approved set and inspect weak status; do not interpret low-count clusters as calibration truth.
+11. Deploy only after owner approval. This implementation does not deploy itself.

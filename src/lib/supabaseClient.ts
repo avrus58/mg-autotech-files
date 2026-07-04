@@ -1,4 +1,5 @@
-import { createClient } from "@supabase/supabase-js";
+import { navigatorLock } from "@supabase/auth-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -13,7 +14,25 @@ function getValidSupabaseUrl(value: string | undefined) {
   }
 }
 
-export const supabase = createClient(
+type SupabaseWindow = Window & typeof globalThis & {
+  __mgAutotechSupabase?: SupabaseClient;
+};
+
+const browserWindow = typeof window === "undefined" ? null : window as SupabaseWindow;
+
+export const supabase = browserWindow?.__mgAutotechSupabase ?? createClient(
   getValidSupabaseUrl(supabaseUrl),
-  supabaseAnonKey || "placeholder-anon-key"
+  supabaseAnonKey || "placeholder-anon-key",
+  {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+      // Supabase v2 still supports this lock and it prevents cross-tab refresh races.
+      lock: typeof navigator !== "undefined" && navigator.locks ? navigatorLock : undefined,
+      lockAcquireTimeout: 10_000,
+    },
+  }
 );
+
+if (browserWindow) browserWindow.__mgAutotechSupabase = supabase;

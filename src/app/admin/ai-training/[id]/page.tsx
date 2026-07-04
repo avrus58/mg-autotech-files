@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ArrowLeft, CheckCircle2, Database, FileCode2, Gauge, Loader2, Network, RefreshCcw, Save, ShieldAlert } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Database, FileCode2, Gauge, Layers3, Loader2, Network, RefreshCcw, Save, ShieldAlert } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import {
   emptyTrainingServiceLabels,
@@ -24,6 +24,37 @@ type DetailPayload = {
   signatures: Array<{ id: string; feature_type: string; confidence: number | string; human_confirmed: boolean }>;
   modelRuns: Array<{ id: string; provider: string; model_name: string | null; latency_ms: number | null; error_message: string | null; created_at: string }>;
   similarityEvidence: SimilaritySearchResult | null;
+  clusterEvidence: {
+    available: boolean;
+    memberships: Array<{
+      cluster_id: string;
+      membership_score: number | string;
+      membership_reasons: string[] | null;
+      is_outlier: boolean;
+      cluster: {
+        id: string;
+        ecu_family: string | null;
+        ecu_type: string | null;
+        sw_number: string | null;
+        feature_type: string;
+        sample_count: number;
+        cluster_confidence: number | string;
+        cluster_status: string;
+        repeated_regions: unknown[] | null;
+      } | null;
+    }>;
+    possibleClusters: Array<{
+      id: string;
+      ecu_family: string | null;
+      ecu_type: string | null;
+      sw_number: string | null;
+      feature_type: string;
+      sample_count: number;
+      cluster_confidence: number | string;
+      cluster_status: string;
+    }>;
+    warning: string;
+  };
 };
 
 const outcomes = ["unknown", "customer_ok", "issue_reported", "limp", "smoke", "knock", "dyno_confirmed", "needs_revision"];
@@ -197,6 +228,43 @@ export default function AiTrainingDetailPage() {
               ))}
               {!data.similarityEvidence?.matches.length && <div className="rounded-lg border border-dashed border-white/15 p-6 text-center text-sm text-zinc-500">No stored approved evidence matches. Run similarity after applying the Level 1 migration.</div>}
             </div>
+          </section>
+
+          <section className="rounded-lg border border-violet-900/45 bg-violet-950/10 p-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-3"><Layers3 className="h-6 w-6 text-violet-300" /><div><div className="text-xs font-black uppercase tracking-[0.18em] text-violet-300">Cluster evidence</div><h2 className="text-xl font-black">Repeated approved patterns</h2></div></div>
+              <Link href="/admin/ai-training/clusters" className="text-sm font-black text-violet-200 hover:text-white">Open cluster library</Link>
+            </div>
+            {!data.clusterEvidence?.available ? (
+              <div className="mt-5 rounded-lg border border-dashed border-white/15 p-5 text-sm text-zinc-500">Level 2 tables are not available yet. Apply the safe clustering migration before rebuilding evidence.</div>
+            ) : (
+              <>
+                <div className="mt-5 space-y-3">
+                  {data.clusterEvidence.memberships.map((membership) => {
+                    const cluster = membership.cluster;
+                    if (!cluster) return null;
+                    return (
+                      <div key={membership.cluster_id} className={`rounded-lg border p-4 ${membership.is_outlier ? "border-amber-700/45 bg-amber-950/15" : "border-white/10 bg-black/25"}`}>
+                        <div className="flex flex-wrap items-start justify-between gap-3">
+                          <div className="min-w-0"><Link href={`/admin/ai-training/clusters/${cluster.id}`} className="break-words font-black text-violet-200 hover:text-white">{cluster.ecu_type || cluster.ecu_family || "ECU cluster"} / {cluster.feature_type.replaceAll("_", " ")}</Link><div className="mt-1 text-xs text-zinc-500">{cluster.sw_number || "General ECU-type evidence"} / {cluster.sample_count} trusted samples</div></div>
+                          <div className="flex gap-2"><span className="rounded-md border border-violet-700/40 bg-violet-950/30 px-3 py-2 text-xs font-black text-violet-100">{Math.round(Number(membership.membership_score || 0))}% member</span><span className="rounded-md border border-white/10 bg-black/30 px-3 py-2 text-xs font-black">{cluster.cluster_status} / {Math.round(Number(cluster.cluster_confidence || 0))}%</span></div>
+                        </div>
+                        {membership.is_outlier && <div className="mt-3 border-l-2 border-amber-400 px-3 text-sm text-amber-100/80">This sample is an outlier compared with approved cluster evidence. Human review recommended.</div>}
+                        <div className="mt-3 text-xs leading-5 text-zinc-400">{(membership.membership_reasons || []).join(" ") || "Membership reasons were not recorded."}</div>
+                      </div>
+                    );
+                  })}
+                  {!data.clusterEvidence.memberships.length && data.clusterEvidence.possibleClusters.map((cluster) => (
+                    <div key={cluster.id} className="rounded-lg border border-dashed border-violet-800/40 bg-black/20 p-4">
+                      <div className="flex flex-wrap items-center justify-between gap-3"><Link href={`/admin/ai-training/clusters/${cluster.id}`} className="font-black text-violet-200 hover:text-white">Possible match: {cluster.ecu_type || cluster.ecu_family || "ECU"} / {cluster.feature_type.replaceAll("_", " ")}</Link><span className="text-xs font-black text-zinc-400">{cluster.cluster_status} / {Math.round(Number(cluster.cluster_confidence || 0))}%</span></div>
+                      <p className="mt-2 text-xs text-zinc-500">This is supporting evidence for review only. It does not approve the pending sample.</p>
+                    </div>
+                  ))}
+                  {!data.clusterEvidence.memberships.length && !data.clusterEvidence.possibleClusters.length && <div className="rounded-lg border border-dashed border-white/15 p-5 text-sm text-zinc-500">No matching trusted cluster is available for this sample yet.</div>}
+                </div>
+                <p className="mt-4 text-xs leading-5 text-amber-100/65">{data.clusterEvidence.warning}</p>
+              </>
+            )}
           </section>
 
           <section className="rounded-lg border border-white/10 bg-white/[0.025] p-5">

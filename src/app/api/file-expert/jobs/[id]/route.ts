@@ -6,6 +6,10 @@ import {
   buildPublicSimilarityEvidence,
   getStoredSimilarityResults,
 } from "@/lib/ecuIntelligence/similarity";
+import {
+  buildPublicClusterEvidence,
+  findClusterEvidenceForFileExpert,
+} from "@/lib/ecuIntelligence/clustering";
 
 export async function GET(
   request: Request,
@@ -38,7 +42,7 @@ export async function GET(
     return NextResponse.json({ error: "Access denied." }, { status: 403 });
   }
 
-  const [{ data: fingerprints }, { data: feedback }, similarityResult] = await Promise.all([
+  const [{ data: fingerprints }, { data: feedback }, similarityResult, clusterResult] = await Promise.all([
     supabaseAdmin
       .from("file_expert_binary_fingerprints")
       .select("*")
@@ -52,6 +56,9 @@ export async function GET(
           .order("created_at", { ascending: false })
       : Promise.resolve({ data: [] }),
     getStoredSimilarityResults("file_expert_job", id).catch(() => null),
+    job.result_json
+      ? findClusterEvidenceForFileExpert(job, job.result_json).catch(() => null)
+      : Promise.resolve(null),
   ]);
 
   return NextResponse.json({
@@ -66,6 +73,11 @@ export async function GET(
       ? isAdmin
         ? similarityResult
         : buildPublicSimilarityEvidence(similarityResult)
+      : null,
+    clusterEvidence: clusterResult
+      ? isAdmin
+        ? clusterResult
+        : buildPublicClusterEvidence(clusterResult)
       : null,
   });
 }

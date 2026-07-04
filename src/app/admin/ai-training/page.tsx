@@ -67,9 +67,16 @@ type EventSummary = {
 
 type Payload = {
   demoEnabled: boolean;
+  level2Available: boolean;
   samples: SampleSummary[];
   profiles: AiEcuKnowledgeProfile[];
   events: EventSummary[];
+  accuracy: {
+    total_reviewed: number;
+    precision_score: number | string;
+    review_coverage: number | string;
+    confusion_json: Record<string, unknown> | null;
+  } | null;
   stats: {
     total: number;
     oriModPairs: number;
@@ -84,16 +91,25 @@ type Payload = {
     similarityReadyProfiles: number;
     profiles: number;
     level3Plus: number;
+    patternClusters: number;
+    weakClusters: number;
+    usableClusters: number;
+    strongClusters: number;
+    outliersNeedingReview: number;
+    autoLabelPrecision: number;
+    reviewCoverage: number;
     featureCounts: Record<string, number>;
   };
 };
 
 const emptyPayload: Payload = {
   demoEnabled: false,
+  level2Available: false,
   samples: [],
   profiles: [],
   events: [],
-  stats: { total: 0, oriModPairs: 0, confirmed: 0, unverified: 0, needsReview: 0, rejected: 0, approvedForLearning: 0, pendingLearning: 0, excludedFromLearning: 0, averageQualityScore: 0, similarityReadyProfiles: 0, profiles: 0, level3Plus: 0, featureCounts: {} },
+  accuracy: null,
+  stats: { total: 0, oriModPairs: 0, confirmed: 0, unverified: 0, needsReview: 0, rejected: 0, approvedForLearning: 0, pendingLearning: 0, excludedFromLearning: 0, averageQualityScore: 0, similarityReadyProfiles: 0, profiles: 0, level3Plus: 0, patternClusters: 0, weakClusters: 0, usableClusters: 0, strongClusters: 0, outliersNeedingReview: 0, autoLabelPrecision: 0, reviewCoverage: 0, featureCounts: {} },
 };
 
 const statusOptions: Array<HumanVerificationStatus | "all"> = [
@@ -270,6 +286,33 @@ export default function AiTrainingPage() {
           <Metric icon={<Sparkles />} label="Level 3+" value={data.stats.level3Plus} tone="green" />
         </section>
 
+        <section className="mt-4 rounded-lg border border-red-900/45 bg-red-950/10 p-4">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <div className="text-xs font-black uppercase tracking-[0.18em] text-red-400">Level 2 pattern intelligence</div>
+              <h2 className="mt-1 text-xl font-black">Cluster evidence and measured label accuracy</h2>
+              <p className="mt-2 text-xs leading-5 text-zinc-500">Evidence only. Cluster output never creates, edits or approves a tuning file.</p>
+            </div>
+            <Link href="/admin/ai-training/clusters" className="inline-flex h-11 items-center justify-center rounded-lg border border-red-700/50 bg-red-950/25 px-4 text-sm font-black text-red-100 hover:bg-red-900/30">
+              <Layers3 className="mr-2 h-4 w-4" /> Open clusters
+            </Link>
+          </div>
+          <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
+            <Metric icon={<Layers3 />} label="Pattern clusters" value={data.stats.patternClusters} />
+            <Metric icon={<CheckCircle2 />} label="Strong clusters" value={data.stats.strongClusters} tone="green" />
+            <Metric icon={<Sparkles />} label="Usable clusters" value={data.stats.usableClusters} tone="green" />
+            <Metric icon={<ShieldAlert />} label="Weak clusters" value={data.stats.weakClusters} tone="amber" />
+            <Metric icon={<FileSearch />} label="Outliers" value={data.stats.outliersNeedingReview} tone="amber" />
+            <Metric icon={<Gauge />} label="Auto precision %" value={Math.round(data.stats.autoLabelPrecision)} tone="green" />
+            <Metric icon={<Activity />} label="Review coverage %" value={Math.round(data.stats.reviewCoverage)} />
+          </div>
+          {!data.level2Available && !loading && (
+            <div className="mt-4 rounded-lg border border-amber-700/30 bg-amber-950/15 px-4 py-3 text-sm text-amber-100/80">
+              Level 2 database migration is not installed yet. Existing Level 0/1 workflows remain available.
+            </div>
+          )}
+        </section>
+
         <section className="mt-3 grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-white/10 bg-white/10 sm:grid-cols-4 xl:grid-cols-6">
           {trainingFeatureKeys.map((feature) => (
             <div key={feature} className="bg-[#090909] px-3 py-3">
@@ -361,12 +404,15 @@ export default function AiTrainingPage() {
                 const averageQuality = Number(profile.average_quality_score || profile.profile_json?.average_data_quality || 0);
                 const readiness = profile.similarity_readiness || "no_data";
                 return (
-                  <div key={profile.id} className="grid gap-4 border-b border-white/10 px-4 py-5 last:border-0 lg:grid-cols-[minmax(0,1.3fr)_minmax(240px,1fr)_repeat(4,110px)] lg:items-center">
+                  <div key={profile.id} className="grid gap-4 border-b border-white/10 px-4 py-5 last:border-0 lg:grid-cols-[minmax(0,1.3fr)_minmax(220px,1fr)_repeat(7,95px)] lg:items-center">
                     <div className="min-w-0"><div className="break-words font-black">{profile.ecu_type || profile.ecu_family || "Unknown ECU"}</div><div className="mt-1 break-all text-xs text-zinc-600">{profile.ecu_family || "-"} / SW {profile.sw_number || "-"}</div></div>
                     <div><div className="inline-flex rounded-md border border-red-700/40 bg-red-950/20 px-2 py-1 text-xs font-black text-red-200">{definition.label}</div><p className="mt-2 text-xs leading-5 text-zinc-500">{definition.explanation}</p></div>
                     <Small label="Learning samples" value={`${profile.approved_samples || 0} approved / ${profile.pending_samples || 0} pending / ${profile.excluded_samples || 0} excluded`} />
                     <Small label="Data quality" value={`${Math.round(averageQuality)}/100 avg.`} />
                     <Small label="Similarity" value={humanLabel(readiness)} />
+                    <Small label="Clusters" value={`${profile.cluster_count || 0} total / ${profile.strong_cluster_count || 0} strong`} />
+                    <Small label="Outliers" value={String(profile.outlier_count || 0)} />
+                    <Small label="Pattern readiness" value={humanLabel(profile.pattern_clustering_readiness || "no_data")} />
                     <Small label="Detection" value={`${Math.round(Number(profile.detection_confidence) * 100)}%`} />
                   </div>
                 );

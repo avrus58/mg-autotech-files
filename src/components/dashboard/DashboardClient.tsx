@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { signOutIfEmailUnverified } from "@/lib/authGuards";
+import { getStableSession, signOutIfEmailUnverified } from "@/lib/authGuards";
 import { supabase } from "@/lib/supabaseClient";
 import {
   ArrowRight,
@@ -118,27 +118,31 @@ export function DashboardClient() {
     const loadDashboard = async (options?: { silent?: boolean }) => {
       if (options?.silent) setLiveRefreshing(true);
 
-      const { data: userData } = await supabase.auth.getUser();
+      if (!currentUserId) {
+        const { session } = await getStableSession();
+        if (!session?.user) {
+          if (!options?.silent) router.replace("/login");
+          return;
+        }
 
-      if (!userData.user) {
-        router.push("/login");
-        return;
+        const user = session.user;
+        currentUserId = user.id;
+
+        if (await signOutIfEmailUnverified(user)) {
+          router.replace("/login?verify_email=1");
+          return;
+        }
+
+        setEmail(user.email ?? null);
       }
 
-      const user = userData.user;
-      currentUserId = user.id;
-
-      if (await signOutIfEmailUnverified(user)) {
-        router.push("/login?verify_email=1");
-        return;
-      }
-
-      setEmail(user.email ?? null);
+      const userId = currentUserId;
+      if (!userId) return;
 
       const { data: profile } = await supabase
         .from("profiles")
         .select("credit_balance, customer_id")
-        .eq("id", user.id)
+        .eq("id", userId)
         .single();
 
       if (profile) {
@@ -151,7 +155,7 @@ export function DashboardClient() {
         .select(
           "id, customer_id, customer_email, vehicle_brand, vehicle_model, vehicle_generation, vehicle_engine, service_type, credits_required, status, notes, modified_file_path, created_at"
         )
-        .eq("customer_id", user.id)
+        .eq("customer_id", userId)
         .order("created_at", { ascending: false })
         .limit(5);
 
@@ -162,30 +166,30 @@ export function DashboardClient() {
       const { count: allOrders } = await supabase
         .from("orders")
         .select("*", { count: "exact", head: true })
-        .eq("customer_id", user.id);
+        .eq("customer_id", userId);
 
       const { count: completedOrders } = await supabase
         .from("orders")
         .select("*", { count: "exact", head: true })
-        .eq("customer_id", user.id)
+        .eq("customer_id", userId)
         .eq("status", "completed");
 
       const { count: pendingOrders } = await supabase
         .from("orders")
         .select("*", { count: "exact", head: true })
-        .eq("customer_id", user.id)
+        .eq("customer_id", userId)
         .in("status", ["new_request", "file_check"]);
 
       const { count: progressOrders } = await supabase
         .from("orders")
         .select("*", { count: "exact", head: true })
-        .eq("customer_id", user.id)
+        .eq("customer_id", userId)
         .eq("status", "in_progress");
 
       const { count: cancelledOrders } = await supabase
         .from("orders")
         .select("*", { count: "exact", head: true })
-        .eq("customer_id", user.id)
+        .eq("customer_id", userId)
         .eq("status", "cancelled");
 
       setCompletedCount(completedOrders ?? 0);
@@ -201,6 +205,16 @@ export function DashboardClient() {
     };
 
     loadDashboard();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session?.user) {
+        currentUserId = session.user.id;
+        setEmail(session.user.email ?? null);
+      } else if (event === "SIGNED_OUT") {
+        currentUserId = null;
+        router.replace("/login");
+      }
+    });
 
     const interval = window.setInterval(() => {
       loadDashboard({ silent: true });
@@ -249,6 +263,7 @@ export function DashboardClient() {
 
     return () => {
       window.clearInterval(interval);
+      authListener.subscription.unsubscribe();
       supabase.removeChannel(channel);
     };
   }, [router]);

@@ -31,6 +31,72 @@ export type TrainingSourceType =
   | "manual_capture"
   | "file_expert";
 
+export const patternClusterStatuses = ["weak", "usable", "strong", "mature"] as const;
+export type PatternClusterStatus = (typeof patternClusterStatuses)[number];
+export type AccuracyScopeType = "global" | "ecu_family" | "ecu_type" | "feature_type" | "cluster";
+
+export type RepeatedRegionEvidence = {
+  bucket_start_hex: string;
+  bucket_end_hex: string;
+  occurrence_count: number;
+  occurrence_rate: number;
+  representative_offsets: string[];
+  confidence: number;
+  reason: string;
+  notes: string;
+};
+
+export type AiPatternCluster = {
+  id: string;
+  cluster_key: string;
+  ecu_family: string | null;
+  ecu_type: string | null;
+  sw_number: string | null;
+  hw_number: string | null;
+  feature_type: TrainingFeature;
+  sample_count: number;
+  approved_sample_count: number;
+  human_verified_sample_count: number;
+  average_quality_score: number | string;
+  cluster_confidence: number | string;
+  cluster_status: PatternClusterStatus;
+  repeated_regions: RepeatedRegionEvidence[] | null;
+  common_pattern_signature: Record<string, unknown> | null;
+  feature_consistency_json: Record<string, unknown> | null;
+  outlier_sample_ids: string[] | null;
+  source_sample_ids: string[] | null;
+  last_rebuilt_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type AiClusterMember = {
+  id: string;
+  cluster_id: string;
+  training_sample_id: string;
+  membership_score: number | string;
+  membership_reasons: string[] | null;
+  is_outlier: boolean;
+  created_at: string;
+};
+
+export type AiAccuracyMetric = {
+  id: string;
+  scope_type: AccuracyScopeType;
+  scope_key: string;
+  total_reviewed: number;
+  auto_label_correct: number;
+  auto_label_partial: number;
+  auto_label_wrong: number;
+  precision_score: number | string;
+  review_coverage: number | string;
+  average_quality_score: number | string;
+  confusion_json: Record<string, unknown> | null;
+  last_calculated_at: string;
+  created_at: string;
+  updated_at: string;
+};
+
 export type AiTrainingSample = {
   id: string;
   request_id: string | null;
@@ -109,6 +175,13 @@ export type AiEcuKnowledgeProfile = {
   excluded_samples: number;
   average_quality_score: number | string;
   similarity_readiness: "no_data" | "weak" | "usable" | "strong";
+  cluster_count: number;
+  strong_cluster_count: number;
+  usable_cluster_count: number;
+  weak_cluster_count: number;
+  outlier_count: number;
+  pattern_clustering_readiness: "no_data" | PatternClusterStatus;
+  accuracy_summary: Record<string, unknown> | null;
   profile_json: Record<string, unknown> | null;
   last_updated_at: string;
 };

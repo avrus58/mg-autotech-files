@@ -14,8 +14,9 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@supabase/auth-js": "^2.110.0",
     "@supabase/ssr": "^0.12.0",
-    "@supabase/supabase-js": "^2.106.2",
+    "@supabase/supabase-js": "^2.110.0",
     "framer-motion": "^12.40.0",
     "lucide-react": "^1.16.0",
     "next": "^16.2.10",

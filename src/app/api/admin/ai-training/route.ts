@@ -140,6 +140,25 @@ export async function GET(request: Request) {
     ? Number((qualityValues.reduce((sum, value) => sum + value, 0) / qualityValues.length).toFixed(1))
     : 0;
 
+  const [level2Clusters, globalAccuracy] = await Promise.all([
+    admin.from("ai_pattern_clusters")
+      .select("cluster_status, outlier_sample_ids")
+      .limit(5000),
+    admin.from("ai_accuracy_metrics")
+      .select("total_reviewed, precision_score, review_coverage, confusion_json")
+      .eq("scope_type", "global")
+      .eq("scope_key", "all")
+      .maybeSingle(),
+  ]);
+  const level2Error = level2Clusters.error || globalAccuracy.error;
+  if (level2Error && !tableMissing(level2Error)) {
+    return NextResponse.json({ error: level2Error.message }, { status: 500 });
+  }
+  const clusterRows = level2Error ? [] : level2Clusters.data ?? [];
+  const outlierIds = new Set(
+    clusterRows.flatMap((cluster) => Array.isArray(cluster.outlier_sample_ids) ? cluster.outlier_sample_ids : [])
+  );
+
   return NextResponse.json({
     demoEnabled: isAiTrainingDemoEnabled(),
     samples: (samples.data ?? []).map((sample) => ({
@@ -148,6 +167,8 @@ export async function GET(request: Request) {
     })),
     profiles: profiles.data ?? [],
     events: events.data ?? [],
+    level2Available: !level2Error,
+    accuracy: level2Error ? null : globalAccuracy.data ?? null,
     stats: {
       total: total.count ?? 0,
       oriModPairs: total.count ?? 0,
@@ -162,6 +183,13 @@ export async function GET(request: Request) {
       similarityReadyProfiles: similarityReadyProfiles.count ?? 0,
       profiles: profileTotal.count ?? 0,
       level3Plus: level3Profiles.count ?? 0,
+      patternClusters: clusterRows.length,
+      weakClusters: clusterRows.filter((cluster) => cluster.cluster_status === "weak").length,
+      usableClusters: clusterRows.filter((cluster) => cluster.cluster_status === "usable").length,
+      strongClusters: clusterRows.filter((cluster) => cluster.cluster_status === "strong" || cluster.cluster_status === "mature").length,
+      outliersNeedingReview: outlierIds.size,
+      autoLabelPrecision: Number(globalAccuracy.data?.precision_score || 0),
+      reviewCoverage: Number(globalAccuracy.data?.review_coverage || 0),
       featureCounts,
     },
   });

@@ -39,6 +39,10 @@ import type {
   PublicSimilarityEvidence,
   SimilaritySearchResult,
 } from "@/lib/ecuIntelligence/similarity";
+import type {
+  AdminClusterEvidence,
+  PublicClusterEvidence,
+} from "@/lib/ecuIntelligence/clustering";
 
 type FingerprintRow = {
   id: string;
@@ -114,6 +118,7 @@ export default function FileExpertReportPage() {
   const [job, setJob] = useState<FileExpertJob | null>(null);
   const [fingerprints, setFingerprints] = useState<FingerprintRow[]>([]);
   const [similarityEvidence, setSimilarityEvidence] = useState<PublicSimilarityEvidence | SimilaritySearchResult | null>(null);
+  const [clusterEvidence, setClusterEvidence] = useState<PublicClusterEvidence | AdminClusterEvidence | null>(null);
   const [loading, setLoading] = useState(true);
   const [reanalyzing, setReanalyzing] = useState(false);
   const [message, setMessage] = useState("");
@@ -147,6 +152,7 @@ export default function FileExpertReportPage() {
     setJob(payload.job);
     setFingerprints(payload.fingerprints ?? []);
     setSimilarityEvidence(payload.similarityEvidence ?? null);
+    setClusterEvidence(payload.clusterEvidence ?? null);
     setLoading(false);
   }
 
@@ -457,6 +463,32 @@ export default function FileExpertReportPage() {
                 </div>
               ) : (
                 <p className="rounded-2xl border border-dashed border-white/15 bg-black/25 p-5 text-sm leading-6 text-zinc-400">Similarity evidence has not been calculated for this report yet. Human tuner verification remains required.</p>
+              )}
+            </Panel>
+
+            <Panel eyebrow="Level 2 evidence" title="Pattern cluster confidence" icon={<Database />}>
+              {clusterEvidence ? (
+                <div>
+                  <div className="grid gap-3 sm:grid-cols-3">
+                    <MetricValue label="Matching clusters" value={String(clusterEvidence.matchingClusters)} />
+                    <MetricValue label="Best readiness" value={formatLabel(clusterEvidence.bestStatus)} />
+                    <MetricValue label="Cluster confidence" value={`${Math.round(clusterEvidence.bestConfidence)}/100`} />
+                  </div>
+                  <p className="mt-4 text-sm leading-7 text-zinc-400">{clusterEvidence.message}</p>
+                  <div className="mt-3 rounded-2xl border border-amber-700/30 bg-amber-950/10 p-4 text-xs leading-6 text-amber-100/75">This is evidence only. Human tuner verification and checksum verification are required before any real write.</div>
+                  {"clusters" in clusterEvidence && clusterEvidence.clusters.length ? (
+                    <div className="mt-4 space-y-3">
+                      {clusterEvidence.clusters.slice(0, 5).map((cluster) => (
+                        <div key={cluster.id} className="rounded-2xl border border-violet-800/35 bg-violet-950/10 p-4">
+                          <div className="flex flex-wrap items-start justify-between gap-3"><div><Link href={`/admin/ai-training/clusters/${cluster.id}`} className="font-black text-violet-200 hover:text-white">{cluster.ecu_type || cluster.ecu_family || "ECU cluster"} / {formatLabel(cluster.feature_type)}</Link><div className="mt-1 text-xs text-zinc-500">{cluster.sw_number || "General ECU-type cluster"} / {cluster.sample_count} trusted samples</div></div><span className="rounded-full bg-violet-950/50 px-3 py-1 text-xs font-black text-violet-100">{cluster.cluster_status} / {Math.round(cluster.cluster_confidence)}%</span></div>
+                          {cluster.repeated_regions.length ? <div className="mt-3 text-xs leading-5 text-zinc-400">Repeated region evidence: {cluster.repeated_regions.slice(0, 3).map((region) => `${region.bucket_start_hex}-${region.bucket_end_hex} (${Math.round(region.occurrence_rate * 100)}%)`).join(", ")}</div> : null}
+                        </div>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
+              ) : (
+                <p className="rounded-2xl border border-dashed border-white/15 bg-black/25 p-5 text-sm leading-6 text-zinc-400">No trusted cluster evidence is available for this report yet. Human tuner verification remains required.</p>
               )}
             </Panel>
 

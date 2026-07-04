@@ -72,6 +72,29 @@ Customers receive only the number of approved matches, best score and confidence
 
 Similarity readiness is separate from the existing Level 0-5 learning level: `no_data` at zero eligible approved samples, `weak` at 1-9, `usable` at 10-99 and `strong` at 100 or more.
 
+## Level 2 Pattern Clustering And Accuracy
+
+Level 2 aggregates trusted Level 1 evidence into repeated-pattern clusters. It remains deterministic, analysis-only and evidence-only. A cluster is scoped by ECU family, ECU type, optional HW/SW identifiers and one human-confirmed actual service label. A multi-label sample may therefore contribute to more than one feature cluster, with that fact recorded in feature consistency metadata.
+
+Only samples meeting every gate are eligible:
+
+- `learning_use_status = approved_for_learning`;
+- `human_verification_status = confirmed`;
+- `data_quality_score >= 60`;
+- at least one actual performed service label;
+- a compact pattern signature is present;
+- demo fixtures are excluded unless the server-only demo flag is explicitly enabled.
+
+Changed regions are normalized into conservative buckets because offsets can move between software versions. Exact-SW clusters use `0x200` buckets. General ECU-type clusters use `0x1000` buckets and explicitly state that a repeated bucket is not proof of an exact map identity. Stored evidence includes occurrence count/rate, representative offsets, confidence and a limitation note.
+
+Cluster confidence is 0-100 and combines sample count, average quality, repeated-region consistency, actual-label consistency, exact software identity and positive outcomes. Too few samples, outliers, missing exact SW identity and negative outcomes reduce confidence. Status thresholds are deliberately conservative: `weak`, `usable`, `strong` and `mature`.
+
+Outlier membership considers repeated-region overlap, changed-byte consistency, analyzer support, quality and outcome. An outlier is retained as evidence and shown to admins. It is never deleted, automatically rejected or automatically excluded. An admin must explicitly choose whether to move it to `needs_review`.
+
+`ai_accuracy_metrics` measures automatic labels against human-confirmed actual labels. It records correct, partial and wrong counts, precision with half credit for partial matches, review coverage and a confusion matrix. When there is no reliable reviewed data, the metric is stored as insufficient instead of inventing accuracy.
+
+Customers receive only aggregate cluster count, readiness, confidence and a human/checksum verification warning. Cluster IDs, member sample IDs, filenames, provider details, storage paths, repeated offsets and raw binary data are admin-only. No Level 2 path generates a MOD, edits bytes, proposes exact calibration values or approves a file for writing.
+
 ## Future Calibration Assistant
 
 Future phases may add versioned vector embeddings, ECU-specific map definitions, outcome/log/dyno ingestion and an assistant that points an experienced calibrator to likely regions. Any future draft generation must be separately designed, explicitly enabled and protected by human approval, checksum verification, audit logs and quality gates. It is intentionally absent from this phase.

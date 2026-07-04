@@ -22,6 +22,7 @@ import {
 import { generateAiFileExpertReport } from "../src/lib/ai";
 import { modelSafeAnalyzerResult, modelSafeMetadata } from "../src/lib/ai/prompt";
 import { hasStaffPermission } from "../src/lib/staffPermissions";
+import { isTransientAuthError } from "../src/lib/authGuards";
 import { validateFileExpertDescriptor } from "../src/lib/fileExpert/server";
 import {
   buildCreditQuote,
@@ -38,6 +39,18 @@ import {
   type SimilarityCandidate,
   type SimilaritySource,
 } from "../src/lib/ecuIntelligence/similarity";
+import {
+  buildPatternCluster,
+  buildPublicClusterEvidence,
+  calculateAccuracyMetrics,
+  clusterStatusFor,
+  exactSoftwareRegionBucketSize,
+  extractRepeatedRegions,
+  generalEcuRegionBucketSize,
+  isEligibleClusteringSample,
+  type AdminClusterEvidence,
+  type ClusteringSample,
+} from "../src/lib/ecuIntelligence/clustering";
 
 function calibrationLikeBuffer(size = 16_384) {
   const buffer = Buffer.alloc(size, 0xff);
@@ -116,6 +129,43 @@ const similaritySource: SimilaritySource = {
   serviceLabels: similarityLabels(),
   provider: "internal",
 };
+
+function clusteringSignature(
+  start = "0x00001000",
+  end = "0x00001100",
+  predicted: Array<"stage1" | "egr_off" | "dpf_off"> = ["stage1"]
+) {
+  return {
+    ...similaritySignature(start, end),
+    feature_candidates: predicted.map((feature) => ({ feature, confidence: 0.9, reasons: ["test evidence"] })),
+    feature_hint_summary: predicted.map((feature) => ({ feature, confidence: 0.9, reasons: ["test evidence"] })),
+  };
+}
+
+function clusteringSample(
+  id: string,
+  overrides: Partial<ClusteringSample> = {}
+): ClusteringSample {
+  return {
+    id,
+    ecu_family: "EDC17",
+    ecu_type: "Bosch EDC17C50",
+    sw_number: "SW1037550001",
+    hw_number: "0281031234",
+    performed_service_labels: similarityLabels("stage1"),
+    requested_service_labels: similarityLabels("stage1"),
+    pattern_signature: clusteringSignature(),
+    auto_labels_correct: true,
+    learning_use_status: "approved_for_learning",
+    human_verification_status: "confirmed",
+    data_quality_score: 90,
+    quality_rating: 5,
+    source_type: "completed_request",
+    source_metadata: null,
+    outcome: "customer_ok",
+    ...overrides,
+  };
+}
 
 test("normalizes requested service labels conservatively", () => {
   const labels = parseTrainingServiceLabels(
@@ -593,6 +643,21 @@ test("customer access cannot satisfy the AI training admin permission", () => {
   assert.equal(hasStaffPermission({ role: "staff", staffRole: "manager", permissions: ["ai_training.manage"] }, "ai_training.manage"), true);
 });
 
+test("auth guards recognize refresh races as transient instead of a real logout", () => {
+  assert.equal(isTransientAuthError({ name: "AuthRefreshDiscardedError" }), true);
+  assert.equal(isTransientAuthError({ name: "AuthRetryableFetchError" }), true);
+  assert.equal(isTransientAuthError({ name: "NavigatorLockAcquireTimeoutError" }), true);
+  assert.equal(isTransientAuthError({ name: "AuthInvalidCredentialsError" }), false);
+});
+
+test("browser Supabase client persists and serializes cross-tab token refresh", () => {
+  const source = readFileSync(resolve(process.cwd(), "src", "lib", "supabaseClient.ts"), "utf8");
+  assert.match(source, /persistSession:\s*true/);
+  assert.match(source, /autoRefreshToken:\s*true/);
+  assert.match(source, /lock:\s*typeof navigator[\s\S]*navigatorLock/);
+  assert.match(source, /__mgAutotechSupabase/);
+});
+
 test("admin training API rejects unauthenticated access", async () => {
   const { GET } = await import("../src/app/api/admin/ai-training/route");
   const response = await GET(new Request("http://localhost/api/admin/ai-training"));
@@ -619,4 +684,208 @@ test("demo API is unavailable when the environment flag is false", async () => {
     if (previous === undefined) delete process.env.ENABLE_AI_TRAINING_DEMO;
     else process.env.ENABLE_AI_TRAINING_DEMO = previous;
   }
+});
+
+test("Level 2 clustering accepts only approved, confirmed and quality-gated samples", () => {
+  assert.equal(isEligibleClusteringSample(clusteringSample("approved")), true);
+  assert.equal(isEligibleClusteringSample(clusteringSample("pending", { learning_use_status: "pending" })), false);
+  assert.equal(isEligibleClusteringSample(clusteringSample("rejected", { human_verification_status: "rejected" })), false);
+  assert.equal(isEligibleClusteringSample(clusteringSample("excluded", { learning_use_status: "excluded" })), false);
+  assert.equal(isEligibleClusteringSample(clusteringSample("low", { data_quality_score: 59 })), false);
+  assert.equal(isEligibleClusteringSample(clusteringSample("no-pattern", { pattern_signature: null })), false);
+});
+
+test("demo samples are excluded from trusted clusters unless explicitly allowed", () => {
+  const demo = clusteringSample("demo", { source_type: "demo_fixture", source_metadata: { demo: true } });
+  assert.equal(isEligibleClusteringSample(demo), false);
+  assert.equal(isEligibleClusteringSample(demo, { allowDemoEvidence: true }), true);
+});
+
+test("same ECU and actual feature form one evidence cluster", () => {
+  const samples = [clusteringSample("one"), clusteringSample("two"), clusteringSample("three")];
+  const cluster = buildPatternCluster({
+    ecuFamily: "EDC17",
+    ecuType: "Bosch EDC17C50",
+    featureType: "stage1",
+    samples,
+  });
+  assert.equal(cluster.sample_count, 3);
+  assert.deepEqual(cluster.source_sample_ids.sort(), ["one", "three", "two"]);
+  assert.equal(cluster.feature_type, "stage1");
+});
+
+test("different actual feature labels remain in separate clusters", () => {
+  const stage = clusteringSample("stage");
+  const egr = clusteringSample("egr", {
+    performed_service_labels: similarityLabels("egr_off"),
+    requested_service_labels: similarityLabels("egr_off"),
+    pattern_signature: clusteringSignature("0x00002000", "0x00002100", ["egr_off"]),
+  });
+  const stageCluster = buildPatternCluster({ ecuType: "Bosch EDC17C50", featureType: "stage1", samples: [stage, egr] });
+  const egrCluster = buildPatternCluster({ ecuType: "Bosch EDC17C50", featureType: "egr_off", samples: [stage, egr] });
+  assert.deepEqual(stageCluster.source_sample_ids, ["stage"]);
+  assert.deepEqual(egrCluster.source_sample_ids, ["egr"]);
+});
+
+test("repeated regions count each approved sample only once per bucket", () => {
+  const samples = [
+    clusteringSample("a", { pattern_signature: clusteringSignature("0x00001010", "0x000011F0") }),
+    clusteringSample("b", { pattern_signature: clusteringSignature("0x00001080", "0x00001120") }),
+    clusteringSample("c", { pattern_signature: clusteringSignature("0x00002800", "0x00002840") }),
+  ];
+  const regions = extractRepeatedRegions(samples, { exactSoftware: false });
+  assert.equal(regions.length, 1);
+  assert.equal(regions[0].occurrence_count, 2);
+  assert.equal(regions[0].occurrence_rate, 0.667);
+});
+
+test("region bucketing is stricter for the same software identifier", () => {
+  assert.ok(exactSoftwareRegionBucketSize < generalEcuRegionBucketSize);
+  const samples = [
+    clusteringSample("a", { pattern_signature: clusteringSignature("0x00001020", "0x00001040") }),
+    clusteringSample("b", { pattern_signature: clusteringSignature("0x00001620", "0x00001640") }),
+  ];
+  assert.equal(extractRepeatedRegions(samples, { exactSoftware: true }).length, 0);
+  assert.equal(extractRepeatedRegions(samples, { exactSoftware: false }).length, 1);
+});
+
+test("outlier detection flags a dissimilar sample without deleting it", () => {
+  const regular = Array.from({ length: 5 }, (_, index) => clusteringSample(`regular-${index}`));
+  const outlier = clusteringSample("outlier", {
+    pattern_signature: clusteringSignature("0x000A0000", "0x000A0100", ["egr_off"]),
+    outcome: "issue_reported",
+  });
+  const cluster = buildPatternCluster({ ecuType: "Bosch EDC17C50", featureType: "stage1", samples: [...regular, outlier] });
+  assert.ok(cluster.source_sample_ids.includes("outlier"));
+  assert.ok(cluster.outlier_sample_ids.includes("outlier"));
+  assert.equal(cluster.memberships.find((member) => member.training_sample_id === "outlier")?.is_outlier, true);
+});
+
+test("cluster confidence rises with repeated high-quality evidence", () => {
+  const weak = buildPatternCluster({
+    ecuType: "Bosch EDC17C50",
+    swNumber: "SW1037550001",
+    featureType: "stage1",
+    samples: Array.from({ length: 3 }, (_, index) => clusteringSample(`weak-${index}`)),
+  });
+  const strong = buildPatternCluster({
+    ecuType: "Bosch EDC17C50",
+    swNumber: "SW1037550001",
+    featureType: "stage1",
+    samples: Array.from({ length: 25 }, (_, index) => clusteringSample(`strong-${index}`, { data_quality_score: 96 })),
+  });
+  assert.ok(strong.cluster_confidence > weak.cluster_confidence);
+  assert.equal(weak.cluster_status, "weak");
+  assert.equal(strong.cluster_status, "strong");
+  assert.equal(clusterStatusFor(4, 90), "weak");
+});
+
+test("multi-label actual services contribute to each relevant feature cluster", () => {
+  const labels = similarityLabels("stage1");
+  labels.egr_off = true;
+  const sample = clusteringSample("multi", {
+    performed_service_labels: labels,
+    pattern_signature: clusteringSignature("0x00001000", "0x00001100", ["stage1", "egr_off"]),
+  });
+  const stage = buildPatternCluster({ ecuType: sample.ecu_type, featureType: "stage1", samples: [sample] });
+  const egr = buildPatternCluster({ ecuType: sample.ecu_type, featureType: "egr_off", samples: [sample] });
+  assert.deepEqual(stage.source_sample_ids, ["multi"]);
+  assert.deepEqual(egr.source_sample_ids, ["multi"]);
+});
+
+test("accuracy metrics explicitly report insufficient reviewed data", () => {
+  const sample = clusteringSample("unreviewed", { auto_labels_correct: null, pattern_signature: clusteringSignature("0x1000", "0x1100", []) });
+  const global = calculateAccuracyMetrics([sample])[0];
+  assert.equal(global.total_reviewed, 0);
+  assert.equal(global.precision_score, 0);
+  assert.equal(global.confusion_json?.insufficient_data, true);
+});
+
+test("accuracy metrics ignore labels that are not human-confirmed", () => {
+  const unconfirmed = clusteringSample("unconfirmed", {
+    human_verification_status: "unverified",
+    auto_labels_correct: true,
+  });
+  const global = calculateAccuracyMetrics([unconfirmed])[0];
+  assert.equal(global.total_reviewed, 0);
+  assert.equal(global.confusion_json?.insufficient_data, true);
+});
+
+test("accuracy metrics calculate correct, partial and wrong labels", () => {
+  const correct = clusteringSample("correct", { auto_labels_correct: true });
+  const partialLabels = similarityLabels("stage1");
+  partialLabels.egr_off = true;
+  const partial = clusteringSample("partial", {
+    auto_labels_correct: false,
+    performed_service_labels: partialLabels,
+    pattern_signature: clusteringSignature("0x1000", "0x1100", ["stage1"]),
+  });
+  const wrong = clusteringSample("wrong", {
+    auto_labels_correct: false,
+    performed_service_labels: similarityLabels("egr_off"),
+    pattern_signature: clusteringSignature("0x1000", "0x1100", ["dpf_off"]),
+  });
+  const global = calculateAccuracyMetrics([correct, partial, wrong])[0];
+  assert.equal(global.total_reviewed, 3);
+  assert.equal(global.auto_label_correct, 1);
+  assert.equal(global.auto_label_partial, 1);
+  assert.equal(global.auto_label_wrong, 1);
+  assert.equal(global.precision_score, 50);
+  const pairs = global.confusion_json?.pairs as Record<string, number>;
+  assert.equal(pairs["dpf_off->egr_off"], 1);
+});
+
+test("customer cluster evidence exposes no sample IDs, offsets or raw data", () => {
+  const adminEvidence: AdminClusterEvidence = {
+    matchingClusters: 1,
+    bestStatus: "usable",
+    bestConfidence: 64,
+    message: "private admin evidence",
+    humanVerificationRequired: true,
+    checksumVerificationRequired: true,
+    clusters: [{
+      id: "private-cluster-id",
+      ecu_family: "EDC17",
+      ecu_type: "Bosch EDC17C50",
+      sw_number: "PRIVATE-SW",
+      feature_type: "stage1",
+      sample_count: 8,
+      cluster_confidence: 64,
+      cluster_status: "usable",
+      repeated_regions: [{
+        bucket_start_hex: "0x00001000",
+        bucket_end_hex: "0x00001FFF",
+        occurrence_count: 7,
+        occurrence_rate: 0.875,
+        representative_offsets: ["0x00001020"],
+        confidence: 0.8,
+        reason: "private region",
+        notes: "private note",
+      }],
+    }],
+  };
+  const serialized = JSON.stringify(buildPublicClusterEvidence(adminEvidence));
+  assert.equal(serialized.includes("private-cluster-id"), false);
+  assert.equal(serialized.includes("PRIVATE-SW"), false);
+  assert.equal(serialized.includes("0x00001000"), false);
+  assert.equal(serialized.includes("representative_offsets"), false);
+  assert.equal(serialized.includes("raw"), false);
+});
+
+test("admin cluster rebuild API rejects unauthenticated customers", async () => {
+  const { POST } = await import("../src/app/api/admin/ai-training/clusters/rebuild/route");
+  const response = await POST(new Request("http://localhost/api/admin/ai-training/clusters/rebuild", { method: "POST" }));
+  assert.equal(response.status, 401);
+});
+
+test("Level 2 migration is additive, admin-only and contains no binary payload column", () => {
+  const sql = readFileSync(resolve(process.cwd(), "scripts", "add-ecu-pattern-clustering-level2.sql"), "utf8");
+  assert.match(sql, /create table if not exists public\.ai_pattern_clusters/i);
+  assert.match(sql, /create table if not exists public\.ai_accuracy_metrics/i);
+  assert.match(sql, /create table if not exists public\.ai_cluster_members/i);
+  assert.match(sql, /unique \(cluster_id, training_sample_id\)/i);
+  assert.match(sql, /has_staff_permission\('ai_training\.manage'\)/i);
+  assert.doesNotMatch(sql, /customer[\s\S]*read[\s\S]*cluster/i);
+  assert.doesNotMatch(sql, /raw_binary|binary_content|hex_preview/i);
+  assert.doesNotMatch(sql, /drop table|truncate table/i);
 });

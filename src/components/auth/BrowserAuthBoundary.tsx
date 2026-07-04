@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import { AuthRequired } from "@/components/auth/AuthRequired";
+import { getStableSession } from "@/lib/authGuards";
 
 type AuthState = "checking" | "authenticated" | "unauthenticated";
 
@@ -25,7 +26,7 @@ export function BrowserAuthBoundary({
     let active = true;
     const fallback = window.setTimeout(() => {
       if (active) setAuthState("unauthenticated");
-    }, 2000);
+    }, 8000);
 
     const resolveAuthState = (nextState: AuthState) => {
       if (!active) return;
@@ -33,14 +34,18 @@ export function BrowserAuthBoundary({
       setAuthState(nextState);
     };
 
-    void supabase.auth.getSession().then(({ data }) => {
-      resolveAuthState(data.session?.user ? "authenticated" : "unauthenticated");
+    void getStableSession().then(({ session }) => {
+      resolveAuthState(session?.user ? "authenticated" : "unauthenticated");
     }).catch(() => {
       resolveAuthState("unauthenticated");
     });
 
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      resolveAuthState(session?.user ? "authenticated" : "unauthenticated");
+    const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session?.user) {
+        resolveAuthState("authenticated");
+      } else if (event === "SIGNED_OUT" || event === "INITIAL_SESSION") {
+        resolveAuthState("unauthenticated");
+      }
     });
 
     return () => {

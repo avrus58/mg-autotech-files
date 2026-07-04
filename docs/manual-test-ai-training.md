@@ -102,3 +102,43 @@ Create a normal customer request, buy/test credits in the configured safe enviro
 13. As an admin, open the same File Expert report and confirm sanitized matched-sample links and reasons are available.
 14. Sign in as another customer and request the File Expert job API directly. Confirm access is denied.
 15. Test a database with no eligible samples. Confirm the UI reports no approved evidence and still requires human tuner verification.
+
+## Level 2 Pattern Clustering Manual Test
+
+1. Back up the schema, then run `scripts/add-ecu-pattern-clustering-level2.sql` in Supabase SQL Editor. The migration is additive and does not delete training samples or customer data.
+2. Prepare at least five samples for the same ECU type and actual service label. Each must be `confirmed`, `approved_for_learning`, quality 60+ and have a pattern signature.
+3. Keep one otherwise related sample pending, one excluded and one below quality 60. These are negative controls and must not become cluster members.
+4. Open `/admin/ai-training/clusters` as an owner or staff user with `ai_training.manage`.
+5. Select **Rebuild all clusters** and confirm the success message reports eligible samples and rebuilt clusters.
+6. Open a cluster and verify ECU family/type, optional SW/HW, actual feature, member count, average quality, confidence, status and last rebuild time.
+7. Verify repeated regions show bucket range, occurrence count/rate, representative offsets, confidence and the evidence-only warning.
+8. Verify the pending, excluded and low-quality controls do not appear as members.
+9. Confirm an exact-SW cluster uses a stricter bucket than its general ECU-type cluster.
+10. Add or identify a deliberately dissimilar approved sample. Rebuild and confirm it appears as an outlier warning but remains in the database.
+11. Use **Mark needs review** only as an explicit admin action. Confirm the sample changes to `needs_review` and learning use returns to `pending`.
+12. Open `/admin/ai-training/[sample-id]`. Confirm **Cluster Evidence** lists memberships, score, reasons and outlier state. A pending sample may show possible clusters but is not auto-approved.
+13. Verify the Level 2 cards show cluster counts, status distribution, outliers, automatic-label precision and review coverage.
+14. If reviewed automatic labels exist, verify correct/partial/wrong totals and the confusion matrix in `ai_accuracy_metrics`. Otherwise confirm the UI says reviewed data is insufficient.
+15. Open a customer-owned File Expert report. Confirm it shows only matching cluster count, best readiness, confidence and generic warnings.
+16. Inspect the customer API response. It must not contain cluster IDs, member sample IDs, SW/provider details, offsets, filenames, storage paths, hashes, raw bytes or hex previews.
+17. Open the same report as an authorized admin. Confirm richer repeated-region evidence is visible without raw binary content.
+18. Sign in as a normal customer and call `POST /api/admin/ai-training/clusters/rebuild`. Confirm 403. Without a session, confirm 401.
+19. Rebuild a second time. Confirm cluster/member uniqueness is preserved and stale memberships are not duplicated.
+
+Read-only verification queries:
+
+```sql
+select ecu_family, ecu_type, sw_number, feature_type, sample_count,
+       average_quality_score, cluster_confidence, cluster_status, last_rebuilt_at
+from public.ai_pattern_clusters
+order by cluster_confidence desc;
+
+select cluster_id, training_sample_id, membership_score, is_outlier
+from public.ai_cluster_members
+order by is_outlier desc, membership_score asc;
+
+select scope_type, scope_key, total_reviewed, precision_score,
+       review_coverage, confusion_json
+from public.ai_accuracy_metrics
+order by scope_type, scope_key;
+```
