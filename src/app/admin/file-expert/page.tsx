@@ -22,6 +22,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { hasStaffPermission, type StaffAccess } from "@/lib/staffPermissions";
 import type { FileExpertFeature, FileExpertJob } from "@/lib/fileExpert/types";
 import { fileExpertFeatureLabels } from "@/lib/fileExpert/types";
+import { trainingSafetyRatingKeys } from "@/lib/ecuIntelligence/types";
 
 type Feedback = {
   id: string;
@@ -550,7 +551,7 @@ export default function AdminFileExpertPage() {
                         onChange={(event) => setSafetyRating(event.target.value)}
                         className="mt-2 h-13 w-full rounded-2xl border border-white/10 bg-black/40 px-4 text-sm font-black text-white outline-none focus:border-red-700"
                       >
-                        {["safe", "aggressive", "risky", "unknown"].map((value) => (
+                        {trainingSafetyRatingKeys.map((value) => (
                           <option key={value} value={value} className="bg-[#111]">{value}</option>
                         ))}
                       </select>

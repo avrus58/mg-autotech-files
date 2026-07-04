@@ -15,7 +15,10 @@ import {
 } from "../src/lib/ecuIntelligence/learning";
 import { calculateTrainingSampleQuality } from "../src/lib/ecuIntelligence/quality";
 import { buildDemoBinaryFixtures, isAiTrainingDemoEnabled } from "../src/lib/ecuIntelligence/demoFixtures";
-import { emptyTrainingServiceLabels } from "../src/lib/ecuIntelligence/types";
+import {
+  emptyTrainingServiceLabels,
+  trainingSafetyRatingKeys,
+} from "../src/lib/ecuIntelligence/types";
 import { generateAiFileExpertReport } from "../src/lib/ai";
 import { modelSafeAnalyzerResult, modelSafeMetadata } from "../src/lib/ai/prompt";
 import { hasStaffPermission } from "../src/lib/staffPermissions";
@@ -516,6 +519,27 @@ test("payment ledger sources map to supported finance providers", () => {
   assert.equal(paymentProviderFromSource("paypal_order"), "paypal");
   assert.equal(paymentProviderFromSource("bank_transfer"), "bank");
   assert.equal(paymentProviderFromSource("staff_adjustment"), null);
+});
+
+test("admin credit migration writes only ledger-supported transaction types", () => {
+  const sql = readFileSync(
+    resolve(process.cwd(), "scripts", "fix-credit-ledger-safety-contracts.sql"),
+    "utf8"
+  );
+  assert.match(sql, /p_amount > 0 then 'admin_topup' else 'admin_adjustment'/i);
+  assert.doesNotMatch(sql, /p_customer_id\s*,\s*'adjustment'/i);
+  assert.match(sql, /grant execute on function public\.staff_adjust_customer_credits/i);
+});
+
+test("File Expert and AI Training share the complete safety rating contract", () => {
+  assert.deepEqual(trainingSafetyRatingKeys, ["unknown", "safe", "aggressive", "risky", "bad"]);
+  const sql = readFileSync(
+    resolve(process.cwd(), "scripts", "fix-credit-ledger-safety-contracts.sql"),
+    "utf8"
+  );
+  for (const rating of trainingSafetyRatingKeys) {
+    assert.match(sql, new RegExp(`'${rating}'`, "i"));
+  }
 });
 
 test("payment control migration includes reconciliation and refund safeguards", () => {

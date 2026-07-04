@@ -163,7 +163,9 @@ begin
     user_id, type, source_type, source_id, credits_delta, balance_after,
     description, amount_total, currency, metadata
   ) values (
-    p_customer_id, 'adjustment', 'staff_adjustment', transaction_id,
+    p_customer_id,
+    case when p_amount > 0 then 'admin_topup' else 'admin_adjustment' end,
+    'staff_adjustment', transaction_id,
     p_amount, next_balance, coalesce(nullif(trim(p_note), ''), 'Staff credit adjustment'),
     null, null, jsonb_build_object('actor_id', auth.uid())
   );

@@ -22,7 +22,8 @@ export const trainingFeatureKeys = [
 export type TrainingFeature = (typeof trainingFeatureKeys)[number];
 export type TrainingServiceLabels = Record<TrainingFeature, boolean>;
 export type HumanVerificationStatus = "unverified" | "confirmed" | "rejected" | "needs_review";
-export type TrainingSafetyRating = "unknown" | "safe" | "aggressive" | "risky" | "bad";
+export const trainingSafetyRatingKeys = ["unknown", "safe", "aggressive", "risky", "bad"] as const;
+export type TrainingSafetyRating = (typeof trainingSafetyRatingKeys)[number];
 export type LearningUseStatus = "pending" | "approved_for_learning" | "excluded";
 export type TrainingSourceType =
   | "completed_request"

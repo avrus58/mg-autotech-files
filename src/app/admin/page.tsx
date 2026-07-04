@@ -1259,7 +1259,6 @@ export default function AdminPage() {
 
           {activeTab === "orders" ? (
             <OrdersPanel
-              orders={orders}
               filteredOrders={filteredOrders}
               customerById={customerById}
               selectedStatus={selectedStatus}
@@ -1278,14 +1277,9 @@ export default function AdminPage() {
               filteredCustomers={filteredCustomers}
               customerSearch={customerSearch}
               setCustomerSearch={setCustomerSearch}
-              creditInputs={creditInputs}
-              setCreditInputs={setCreditInputs}
-              creditNotes={creditNotes}
-              setCreditNotes={setCreditNotes}
               creditUpdatingId={creditUpdatingId}
               openCustomer={openCustomer}
               quickAdjustCredits={quickAdjustCredits}
-              handleCustomCreditAdjust={handleCustomCreditAdjust}
             />
           )}
         </div>
@@ -1343,7 +1337,6 @@ export default function AdminPage() {
 }
 
 function OrdersPanel({
-  orders,
   filteredOrders,
   customerById,
   selectedStatus,
@@ -1356,7 +1349,6 @@ function OrdersPanel({
   setSelectedOrder,
   updateStatus,
 }: {
-  orders: Order[];
   filteredOrders: Order[];
   customerById: Map<string, Profile>;
   selectedStatus: string;
@@ -1672,27 +1664,17 @@ function CustomersPanel({
   filteredCustomers,
   customerSearch,
   setCustomerSearch,
-  creditInputs,
-  setCreditInputs,
-  creditNotes,
-  setCreditNotes,
   creditUpdatingId,
   openCustomer,
   quickAdjustCredits,
-  handleCustomCreditAdjust,
 }: {
   customers: Profile[];
   filteredCustomers: Profile[];
   customerSearch: string;
   setCustomerSearch: (value: string) => void;
-  creditInputs: Record<string, string>;
-  setCreditInputs: React.Dispatch<React.SetStateAction<Record<string, string>>>;
-  creditNotes: Record<string, string>;
-  setCreditNotes: React.Dispatch<React.SetStateAction<Record<string, string>>>;
   creditUpdatingId: string | null;
   openCustomer: (customer: Profile) => void;
   quickAdjustCredits: (customer: Profile, amount: number) => void;
-  handleCustomCreditAdjust: (customer: Profile) => void;
 }) {
   return (
     <section className="min-w-0 rounded-[1.5rem] border border-white/10 bg-white/[0.04] p-4 shadow-2xl shadow-black/20 sm:rounded-[2rem] sm:p-5">

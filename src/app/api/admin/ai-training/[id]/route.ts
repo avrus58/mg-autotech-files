@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireStaffPermission } from "@/lib/apiAuth";
 import { updateTrainingSampleVerification } from "@/lib/ecuIntelligence/learning";
-import { trainingFeatureKeys } from "@/lib/ecuIntelligence/types";
+import { trainingFeatureKeys, trainingSafetyRatingKeys } from "@/lib/ecuIntelligence/types";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { redactBinaryPreviews } from "@/lib/fileExpert/publicResult";
 import { getStoredSimilarityResults } from "@/lib/ecuIntelligence/similarity";
@@ -33,7 +33,7 @@ const updateSchema = z.object({
   provider: z.string().trim().min(1).max(120),
   sourceType: z.enum(["completed_request", "demo_fixture", "manual_capture", "file_expert"]),
   qualityRating: z.number().int().min(1).max(5).nullable().optional(),
-  safetyRating: z.enum(["unknown", "safe", "aggressive", "risky", "bad"]).nullable().optional(),
+  safetyRating: z.enum(trainingSafetyRatingKeys).nullable().optional(),
   outcome: z.enum([
     "unknown",
     "customer_ok",

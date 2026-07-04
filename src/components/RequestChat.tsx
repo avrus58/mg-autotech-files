@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 
 type RequestMessage = {
@@ -16,6 +16,43 @@ type RequestChatProps = {
   requestId: string;
   senderRole: "customer" | "admin";
 };
+
+function sortMessages(items: RequestMessage[]) {
+  return [...items].sort(
+    (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+  );
+}
+
+function playNewMessageSound() {
+  try {
+    const AudioContextClass =
+      window.AudioContext || (window as typeof window & {
+        webkitAudioContext?: typeof AudioContext;
+      }).webkitAudioContext;
+
+    if (!AudioContextClass) return;
+
+    const audioContext = new AudioContextClass();
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+
+    oscillator.type = "sine";
+    oscillator.frequency.setValueAtTime(880, audioContext.currentTime);
+    oscillator.frequency.setValueAtTime(660, audioContext.currentTime + 0.12);
+
+    gainNode.gain.setValueAtTime(0.0001, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.08, audioContext.currentTime + 0.02);
+    gainNode.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + 0.28);
+
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+
+    oscillator.start();
+    oscillator.stop(audioContext.currentTime + 0.3);
+  } catch {
+    // Browser blocked sound or audio context failed.
+  }
+}
 
 export default function RequestChat({
   requestId,
@@ -34,14 +71,7 @@ export default function RequestChat({
   const initialLoadDoneRef = useRef(false);
   const sendingOwnMessageRef = useRef(false);
 
-  function sortMessages(items: RequestMessage[]) {
-    return [...items].sort(
-      (a, b) =>
-        new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-    );
-  }
-
-  function scrollChatToBottom(behavior: ScrollBehavior = "smooth") {
+  const scrollChatToBottom = useCallback((behavior: ScrollBehavior = "smooth") => {
     const element = scrollAreaRef.current;
     if (!element) return;
 
@@ -51,9 +81,9 @@ export default function RequestChat({
     });
 
     setNewMessageCount(0);
-  }
+  }, []);
 
-  function isNearBottom() {
+  const isNearBottom = useCallback(() => {
     const element = scrollAreaRef.current;
     if (!element) return true;
 
@@ -61,49 +91,12 @@ export default function RequestChat({
       element.scrollHeight - element.scrollTop - element.clientHeight;
 
     return distanceFromBottom < 80;
-  }
+  }, []);
 
-  function playNewMessageSound() {
-    try {
-      const AudioContextClass =
-        window.AudioContext || (window as typeof window & {
-          webkitAudioContext?: typeof AudioContext;
-        }).webkitAudioContext;
-
-      if (!AudioContextClass) return;
-
-      const audioContext = new AudioContextClass();
-      const oscillator = audioContext.createOscillator();
-      const gainNode = audioContext.createGain();
-
-      oscillator.type = "sine";
-      oscillator.frequency.setValueAtTime(880, audioContext.currentTime);
-      oscillator.frequency.setValueAtTime(660, audioContext.currentTime + 0.12);
-
-      gainNode.gain.setValueAtTime(0.0001, audioContext.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(
-        0.08,
-        audioContext.currentTime + 0.02
-      );
-      gainNode.gain.exponentialRampToValueAtTime(
-        0.0001,
-        audioContext.currentTime + 0.28
-      );
-
-      oscillator.connect(gainNode);
-      gainNode.connect(audioContext.destination);
-
-      oscillator.start();
-      oscillator.stop(audioContext.currentTime + 0.3);
-    } catch {
-      // Browser blocked sound or audio context failed.
-    }
-  }
-
-  async function loadMessages(options?: {
+  const loadMessages = useCallback(async (options?: {
     silent?: boolean;
     scrollAfterLoad?: boolean;
-  }) {
+  }) => {
     if (!requestId) return;
 
     const wasNearBottom = isNearBottom();
@@ -185,7 +178,7 @@ export default function RequestChat({
       setInitialLoading(false);
       setRefreshing(false);
     }
-  }
+  }, [isNearBottom, requestId, scrollChatToBottom, senderRole]);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
@@ -197,8 +190,7 @@ export default function RequestChat({
       void loadMessages({ scrollAfterLoad: true });
     }, 0);
     return () => window.clearTimeout(timeout);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [requestId]);
+  }, [loadMessages]);
 
   useEffect(() => {
     const interval = window.setInterval(() => {
@@ -206,7 +198,7 @@ export default function RequestChat({
     }, 5000);
 
     return () => window.clearInterval(interval);
-  }, [requestId, senderRole]);
+  }, [loadMessages]);
 
   async function sendMessage() {
     const cleanMessage = message.trim();

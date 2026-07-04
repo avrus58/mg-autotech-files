@@ -43,7 +43,7 @@ create table if not exists public.file_expert_feedback (
   actual_features jsonb,
   ai_correct boolean,
   quality_rating int check (quality_rating is null or quality_rating between 1 and 5),
-  safety_rating text check (safety_rating is null or safety_rating in ('safe', 'aggressive', 'risky', 'unknown')),
+  safety_rating text check (safety_rating is null or safety_rating in ('unknown', 'safe', 'aggressive', 'risky', 'bad')),
   admin_notes text,
   created_at timestamptz not null default now()
 );

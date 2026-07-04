@@ -3,6 +3,7 @@ import { z } from "zod";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { requireFileExpertAdmin, storeConfirmedPatterns } from "@/lib/fileExpert/server";
 import type { FileExpertJob } from "@/lib/fileExpert/types";
+import { trainingSafetyRatingKeys } from "@/lib/ecuIntelligence/types";
 
 const actualFeaturesSchema = z.object({
   stock_or_modified: z.boolean().optional(),
@@ -24,7 +25,7 @@ const feedbackSchema = z.object({
   actualFeatures: actualFeaturesSchema.default({}),
   aiCorrect: z.boolean().nullable().optional(),
   qualityRating: z.number().int().min(1).max(5).nullable().optional(),
-  safetyRating: z.enum(["safe", "aggressive", "risky", "unknown"]).nullable().optional(),
+  safetyRating: z.enum(trainingSafetyRatingKeys).nullable().optional(),
   adminNotes: z.string().max(4000).optional().default(""),
 });
 

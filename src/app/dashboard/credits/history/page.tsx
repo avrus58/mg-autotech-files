@@ -77,7 +77,7 @@ export default function CreditHistoryPage() {
   const [refreshing, setRefreshing] = useState(false);
 
   const loadHistory = async (options?: { silent?: boolean }) => {
-    setRefreshing(true);
+    if (!options?.silent) setRefreshing(true);
 
     const { data: userData } = await supabase.auth.getUser();
 

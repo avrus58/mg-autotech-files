@@ -8,6 +8,7 @@ import { supabase } from "@/lib/supabaseClient";
 import {
   emptyTrainingServiceLabels,
   trainingFeatureKeys,
+  trainingSafetyRatingKeys,
   type AiTrainingSample,
   type HumanVerificationStatus,
   type LearningUseStatus,
@@ -26,7 +27,6 @@ type DetailPayload = {
 };
 
 const outcomes = ["unknown", "customer_ok", "issue_reported", "limp", "smoke", "knock", "dyno_confirmed", "needs_revision"];
-const safetyRatings: TrainingSafetyRating[] = ["unknown", "safe", "aggressive", "risky", "bad"];
 const changeTypes = ["identical", "focused_calibration", "distributed_calibration", "broad_rework", "structural_mismatch", "single_file", "unknown"] as const;
 const sourceTypes: TrainingSourceType[] = ["completed_request", "demo_fixture", "manual_capture", "file_expert"];
 
@@ -250,7 +250,7 @@ export default function AiTrainingDetailPage() {
               <label className="text-xs font-black uppercase text-zinc-500">Provider<input value={provider} onChange={(event) => setProvider(event.target.value)} className="mt-2 h-11 w-full rounded-lg border border-white/10 bg-black/50 px-3 text-sm normal-case text-white" /></label>
               <label className="text-xs font-black uppercase text-zinc-500">Source<select value={sourceType} onChange={(event) => setSourceType(event.target.value as TrainingSourceType)} className="mt-2 h-11 w-full rounded-lg border border-white/10 bg-black/50 px-3 text-sm text-white">{sourceTypes.map((value) => <option key={value}>{value}</option>)}</select></label>
             </div>
-            <div className="mt-4 grid grid-cols-2 gap-3"><label className="text-xs font-black uppercase text-zinc-500">Quality<select value={quality || ""} onChange={(event) => setQuality(event.target.value ? Number(event.target.value) : null)} className="mt-2 h-11 w-full rounded-lg border border-white/10 bg-black/50 px-3 text-sm text-white"><option value="">Not rated</option>{[1,2,3,4,5].map((value) => <option key={value} value={value}>{value}/5</option>)}</select></label><label className="text-xs font-black uppercase text-zinc-500">Safety<select value={safety} onChange={(event) => setSafety(event.target.value as TrainingSafetyRating)} className="mt-2 h-11 w-full rounded-lg border border-white/10 bg-black/50 px-3 text-sm text-white">{safetyRatings.map((value) => <option key={value}>{value}</option>)}</select></label></div>
+            <div className="mt-4 grid grid-cols-2 gap-3"><label className="text-xs font-black uppercase text-zinc-500">Quality<select value={quality || ""} onChange={(event) => setQuality(event.target.value ? Number(event.target.value) : null)} className="mt-2 h-11 w-full rounded-lg border border-white/10 bg-black/50 px-3 text-sm text-white"><option value="">Not rated</option>{[1,2,3,4,5].map((value) => <option key={value} value={value}>{value}/5</option>)}</select></label><label className="text-xs font-black uppercase text-zinc-500">Safety<select value={safety} onChange={(event) => setSafety(event.target.value as TrainingSafetyRating)} className="mt-2 h-11 w-full rounded-lg border border-white/10 bg-black/50 px-3 text-sm text-white">{trainingSafetyRatingKeys.map((value) => <option key={value}>{value}</option>)}</select></label></div>
             <label className="mt-4 block text-xs font-black uppercase text-zinc-500">Outcome<select value={outcome} onChange={(event) => setOutcome(event.target.value)} className="mt-2 h-11 w-full rounded-lg border border-white/10 bg-black/50 px-3 text-sm text-white">{outcomes.map((value) => <option key={value}>{value}</option>)}</select></label>
             <label className="mt-4 block text-xs font-black uppercase text-zinc-500">Admin notes<textarea value={notes} onChange={(event) => setNotes(event.target.value)} className="mt-2 min-h-28 w-full resize-none rounded-lg border border-white/10 bg-black/50 p-3 text-sm normal-case text-white outline-none focus:border-red-700" placeholder="Evidence, correction reason, outcome or revision context..." /></label>
           </section>
