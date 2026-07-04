@@ -15,15 +15,23 @@ export function isTransientAuthError(error: unknown) {
 }
 
 export async function getStableSession(): Promise<{ session: Session | null; error: unknown }> {
-  for (let attempt = 0; attempt < 3; attempt += 1) {
+  let lastError: unknown = null;
+
+  // Cross-tab refresh can briefly expose an empty session while the refreshed
+  // token is being persisted. Treat that short window as indeterminate rather
+  // than logging the user out or rejecting an authenticated action.
+  for (let attempt = 0; attempt < 6; attempt += 1) {
     const { data, error } = await supabase.auth.getSession();
     if (data.session) return { session: data.session, error: null };
-    if (!isTransientAuthError(error)) return { session: null, error };
-    await new Promise((resolve) => window.setTimeout(resolve, 150 * (attempt + 1)));
+    lastError = error;
+
+    if (attempt < 5) {
+      const delay = Math.min(250 * (attempt + 1), 750);
+      await new Promise((resolve) => window.setTimeout(resolve, delay));
+    }
   }
 
-  const { data, error } = await supabase.auth.getSession();
-  return { session: data.session, error };
+  return { session: null, error: lastError };
 }
 
 export function isEmailVerified(user: User) {

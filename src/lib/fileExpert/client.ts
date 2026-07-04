@@ -1,9 +1,7 @@
-import { supabase } from "@/lib/supabaseClient";
+import { getStableSession } from "@/lib/authGuards";
 
 export async function getFileExpertAuthHeaders(): Promise<Record<string, string>> {
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
+  const { session } = await getStableSession();
 
   if (!session?.access_token) return {};
 
