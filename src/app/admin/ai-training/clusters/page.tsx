@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Activity, ArrowLeft, CheckCircle2, ChevronRight, Layers3, Loader2, RefreshCcw, Search, ShieldAlert } from "lucide-react";
-import { authenticatedFetch } from "@/lib/authGuards";
+import { authenticatedFetch, getStableSession } from "@/lib/authGuards";
 import { patternClusterStatuses, trainingFeatureKeys, type AiAccuracyMetric, type AiPatternCluster, type PatternClusterStatus } from "@/lib/ecuIntelligence/types";
 
 type Payload = {
@@ -22,8 +22,23 @@ export default function PatternClustersPage() {
   const [status, setStatus] = useState<PatternClusterStatus | "all">("all");
   const [feature, setFeature] = useState("all");
   const [search, setSearch] = useState("");
+  const authTokenRef = useRef<string | null>(null);
 
   const authFetch = useCallback(async (url: string, init?: RequestInit) => {
+    let token = authTokenRef.current;
+    if (!token) {
+      const { session } = await getStableSession();
+      token = session?.access_token ?? null;
+      if (!token) throw new Error("Unauthorized");
+      authTokenRef.current = token;
+    }
+
+    const headers = new Headers(init?.headers);
+    headers.set("Authorization", `Bearer ${token}`);
+    const response = await fetch(url, { ...init, headers });
+    if (response.status !== 401) return response;
+
+    authTokenRef.current = null;
     return authenticatedFetch(url, init);
   }, []);
 
