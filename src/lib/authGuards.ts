@@ -7,24 +7,39 @@ const transientAuthErrors = new Set([
   "NavigatorLockAcquireTimeoutError",
 ]);
 
-let lastStableSession: Session | null = null;
-let authMemoryListenerReady = false;
+type AuthMemoryWindow = Window & typeof globalThis & {
+  __mgAutotechStableSession?: Session | null;
+  __mgAutotechAuthMemoryListenerReady?: boolean;
+};
+
+const authWindow = typeof window === "undefined" ? null : window as AuthMemoryWindow;
+let serverStableSession: Session | null = null;
+
+function getCachedSession() {
+  return authWindow?.__mgAutotechStableSession ?? serverStableSession;
+}
+
+function setCachedSession(session: Session | null) {
+  serverStableSession = session;
+  if (authWindow) authWindow.__mgAutotechStableSession = session;
+}
 
 function hasUsableCachedSession() {
-  if (!lastStableSession) return false;
-  if (!lastStableSession.expires_at) return true;
-  return lastStableSession.expires_at > Math.floor(Date.now() / 1000) + 15;
+  const session = getCachedSession();
+  if (!session) return false;
+  if (!session.expires_at) return true;
+  return session.expires_at > Math.floor(Date.now() / 1000) + 15;
 }
 
 function initializeAuthMemoryListener() {
-  if (authMemoryListenerReady || typeof window === "undefined") return;
-  authMemoryListenerReady = true;
+  if (!authWindow || authWindow.__mgAutotechAuthMemoryListenerReady) return;
+  authWindow.__mgAutotechAuthMemoryListenerReady = true;
 
   supabase.auth.onAuthStateChange((event, session) => {
     if (session) {
-      lastStableSession = session;
+      setCachedSession(session);
     } else if (event === "SIGNED_OUT") {
-      lastStableSession = null;
+      setCachedSession(null);
     }
   });
 }
@@ -46,13 +61,13 @@ export async function getStableSession(): Promise<{ session: Session | null; err
   for (let attempt = 0; attempt < 6; attempt += 1) {
     const { data, error } = await supabase.auth.getSession();
     if (data.session) {
-      lastStableSession = data.session;
+      setCachedSession(data.session);
       return { session: data.session, error: null };
     }
     lastError = error;
 
     if (hasUsableCachedSession()) {
-      return { session: lastStableSession, error: null };
+      return { session: getCachedSession(), error: null };
     }
 
     if (attempt < 5) {
@@ -62,7 +77,7 @@ export async function getStableSession(): Promise<{ session: Session | null; err
   }
 
   return {
-    session: hasUsableCachedSession() ? lastStableSession : null,
+    session: hasUsableCachedSession() ? getCachedSession() : null,
     error: lastError,
   };
 }
@@ -85,7 +100,7 @@ export async function authenticatedFetch(input: RequestInfo | URL, init?: Reques
   );
   if (error || !data.session?.access_token) return response;
 
-  lastStableSession = data.session;
+  setCachedSession(data.session);
   return send(data.session.access_token);
 }
 
