@@ -160,13 +160,46 @@ export type VehicleValidationIssue = {
 
 export type VehicleImportSummary = {
   dryRun: boolean;
+  mode?: "valid_only";
   totalRows: number;
   created: number;
   updated: number;
   skipped: number;
   errors: number;
   duplicates: number;
+  duplicateExtraRows?: number;
+  skippedDuplicate?: number;
+  skippedInvalid?: number;
+  validImportableCount?: number;
+  needsReviewCount?: number;
+  protectedManualVerifiedCount?: number;
+  warningCount?: number;
+  infoCount?: number;
+  dbDiffCalculated?: boolean;
   warnings: VehicleValidationIssue[];
+  examples?: {
+    duplicates?: Array<{
+      vehicleKey: string;
+      count: number;
+      records: Array<Pick<VehicleControlRecord, "brand" | "model" | "generation" | "engine" | "ecuType" | "stockHp" | "stockNm" | "tunedHp" | "tunedNm" | "services">>;
+    }>;
+    invalid?: Array<{
+      vehicleKey: string | null;
+      reason: string;
+      issueCodes: string[];
+      record: Pick<VehicleControlRecord, "brand" | "model" | "generation" | "engine" | "ecuType" | "stockHp" | "stockNm" | "tunedHp" | "tunedNm" | "services"> | null;
+    }>;
+    warnings?: Array<{
+      vehicleKey: string | null;
+      reason: string;
+      issueCodes: string[];
+      record: Pick<VehicleControlRecord, "brand" | "model" | "generation" | "engine" | "ecuType" | "stockHp" | "stockNm" | "tunedHp" | "tunedNm" | "services"> | null;
+    }>;
+    protectedManualVerified?: Array<{
+      vehicleKey: string;
+      reason: string;
+    }>;
+  };
   sampleRecords: VehicleControlRecord[];
   batchId?: string | null;
 };

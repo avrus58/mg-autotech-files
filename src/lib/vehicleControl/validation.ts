@@ -1,5 +1,16 @@
 import type { VehicleControlRecord, VehicleValidationIssue } from "@/lib/vehicleControl/types";
 
+export const vehiclePerformanceLimits = {
+  maxStockHp: 2500,
+  maxTunedHp: 2500,
+  maxStockNm: 6000,
+  maxTunedNm: 7000,
+  maxTunedHpMultiplier: 2.4,
+  maxTunedNmMultiplier: 2.6,
+  lowTunedHpMultiplier: 0.75,
+  lowTunedNmMultiplier: 0.75,
+} as const;
+
 function add(
   issues: VehicleValidationIssue[],
   issue: VehicleValidationIssue
@@ -21,21 +32,68 @@ export function validateVehicleRecord(record: VehicleControlRecord): VehicleVali
   if (!text(record.engine)) add(issues, { severity: "error", code: "missing_engine", message: "Engine is required.", vehicleKey, metadata: { suggestedFix: "Set an engine label before publishing." } });
   if (!vehicleKey) add(issues, { severity: "error", code: "missing_vehicle_key", message: "Stable vehicle key could not be generated.", vehicleKey });
 
-  for (const [field, value] of [
-    ["stock_hp", record.stockHp],
-    ["stock_nm", record.stockNm],
-    ["tuned_hp", record.tunedHp],
-    ["tuned_nm", record.tunedNm],
+  for (const [field, value, max] of [
+    ["stock_hp", record.stockHp, vehiclePerformanceLimits.maxStockHp],
+    ["stock_nm", record.stockNm, vehiclePerformanceLimits.maxStockNm],
+    ["tuned_hp", record.tunedHp, vehiclePerformanceLimits.maxTunedHp],
+    ["tuned_nm", record.tunedNm, vehiclePerformanceLimits.maxTunedNm],
   ] as const) {
-    if (value != null && (!Number.isFinite(value) || value < 0 || value > 4000)) {
+    if (value != null && (!Number.isFinite(value) || value <= 0 || value > max)) {
       add(issues, {
         severity: "error",
         code: "invalid_power_value",
         message: `${field} has an invalid value.`,
         vehicleKey,
-        metadata: { field, value, suggestedFix: "Use realistic positive horsepower/torque values or leave the field empty until verified." },
+        metadata: { field, value, max, suggestedFix: "Use realistic positive horsepower/torque values or leave the field empty until verified." },
       });
     }
+  }
+
+  if (record.stockHp != null && record.tunedHp != null && record.tunedHp > record.stockHp * vehiclePerformanceLimits.maxTunedHpMultiplier) {
+    add(issues, {
+      severity: "error",
+      code: "unrealistic_tuned_hp_gain",
+      message: "Tuned horsepower is unrealistically high compared with stock horsepower.",
+      vehicleKey,
+      metadata: {
+        stockHp: record.stockHp,
+        tunedHp: record.tunedHp,
+        maxMultiplier: vehiclePerformanceLimits.maxTunedHpMultiplier,
+        suggestedFix: "Verify the tuned horsepower or keep this row out of real import.",
+      },
+    });
+  }
+  if (record.stockNm != null && record.tunedNm != null && record.tunedNm > record.stockNm * vehiclePerformanceLimits.maxTunedNmMultiplier) {
+    add(issues, {
+      severity: "error",
+      code: "unrealistic_tuned_nm_gain",
+      message: "Tuned torque is unrealistically high compared with stock torque.",
+      vehicleKey,
+      metadata: {
+        stockNm: record.stockNm,
+        tunedNm: record.tunedNm,
+        maxMultiplier: vehiclePerformanceLimits.maxTunedNmMultiplier,
+        suggestedFix: "Verify the tuned torque or keep this row out of real import.",
+      },
+    });
+  }
+  if (record.stockHp != null && record.tunedHp != null && record.tunedHp < record.stockHp * vehiclePerformanceLimits.lowTunedHpMultiplier) {
+    add(issues, {
+      severity: "warning",
+      code: "tuned_hp_below_stock",
+      message: "Tuned horsepower is much lower than stock horsepower.",
+      vehicleKey,
+      metadata: { stockHp: record.stockHp, tunedHp: record.tunedHp, suggestedFix: "Verify whether the tuned horsepower value is incomplete or belongs to another stage." },
+    });
+  }
+  if (record.stockNm != null && record.tunedNm != null && record.tunedNm < record.stockNm * vehiclePerformanceLimits.lowTunedNmMultiplier) {
+    add(issues, {
+      severity: "warning",
+      code: "tuned_nm_below_stock",
+      message: "Tuned torque is much lower than stock torque.",
+      vehicleKey,
+      metadata: { stockNm: record.stockNm, tunedNm: record.tunedNm, suggestedFix: "Verify whether the tuned torque value is incomplete or belongs to another stage." },
+    });
   }
 
   if (record.yearFrom != null && (record.yearFrom < 1950 || record.yearFrom > 2050)) {

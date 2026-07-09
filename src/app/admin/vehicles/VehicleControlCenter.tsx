@@ -321,9 +321,9 @@ export default function VehicleControlCenter({ section = "overview" }: { section
 
       {(section === "import" || section === "overview") && <section className="mt-6 grid gap-4 lg:grid-cols-[1fr_420px]">
         <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-5">
-          <div className="flex items-center gap-3"><UploadCloud className="h-6 w-6 text-red-400" /><div><h2 className="text-2xl font-black">CareEcuFile Import</h2><p className="mt-1 text-sm text-zinc-500">Dry-run first. Real import is additive and avoids overwriting verified manual data.</p></div></div>
+          <div className="flex items-center gap-3"><UploadCloud className="h-6 w-6 text-red-400" /><div><h2 className="text-2xl font-black">CareEcuFile Import</h2><p className="mt-1 text-sm text-zinc-500">Dry-run first. Real import is valid-only, additive and avoids overwriting verified manual data.</p></div></div>
           <div className="mt-5 rounded-xl border border-amber-800/30 bg-amber-950/10 p-4 text-sm leading-6 text-amber-100">
-            Real import writes database rows, import batch records and audit logs. Run dry-run first, review warnings, then type <span className="font-black">IMPORT</span> to unlock the real import button.
+            Real import will import only valid unique records by default. Duplicate vehicleKey groups and blocking-invalid performance data are skipped. Run dry-run first, review warnings, then type <span className="font-black">IMPORT</span> to unlock the real import button.
           </div>
           <div className="mt-5 grid gap-3 lg:grid-cols-[1fr_auto_auto]">
             <input value={importConfirm} onChange={(event) => setImportConfirm(event.target.value)} placeholder="Type IMPORT for real import" className="h-12 rounded-xl border border-white/10 bg-black/40 px-4 text-sm font-bold text-white outline-none placeholder:text-zinc-600 focus:border-red-700" />
@@ -334,18 +334,31 @@ export default function VehicleControlCenter({ section = "overview" }: { section
         <div className="rounded-2xl border border-red-900/40 bg-red-950/10 p-5">
           <div className="text-xs font-black uppercase tracking-[0.18em] text-red-300">Latest import result</div>
           {importSummary ? <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
-            <Mini label="Rows" value={importSummary.totalRows} />
-            <Mini label="Created" value={importSummary.created} />
-            <Mini label="Updated" value={importSummary.updated} />
-            <Mini label="Skipped" value={importSummary.skipped} />
+            <Mini label="Scanned" value={importSummary.totalRows} />
+            <Mini label="Valid importable" value={importSummary.validImportableCount ?? "-"} />
+            <Mini label={importSummary.dryRun ? "Would create" : "Created"} value={importSummary.created} />
+            <Mini label={importSummary.dryRun ? "Would update" : "Updated"} value={importSummary.updated} />
+            <Mini label="Would skip" value={importSummary.skipped} />
+            <Mini label="Duplicate skips" value={importSummary.skippedDuplicate ?? "-"} />
+            <Mini label="Invalid skips" value={importSummary.skippedInvalid ?? "-"} />
+            <Mini label="Needs review" value={importSummary.needsReviewCount ?? "-"} />
+            <Mini label="Warnings" value={importSummary.warningCount ?? importSummary.warnings.length} />
             <Mini label="Errors" value={importSummary.errors} />
-            <Mini label="Warnings" value={importSummary.warnings.length} />
+            <Mini label="Protected manual" value={importSummary.protectedManualVerifiedCount ?? "-"} />
+            <Mini label="DB diff" value={importSummary.dbDiffCalculated ? "Yes" : "No"} />
           </div> : <p className="mt-4 text-sm leading-6 text-zinc-500">Run a dry-run to preview import counts and validation warnings.</p>}
+          {importSummary && <p className="mt-4 rounded-xl border border-emerald-800/30 bg-emerald-950/10 p-3 text-xs leading-5 text-emerald-100">
+            Mode: valid-only. Real import skips duplicate groups and blocking-invalid rows; missing ECU or incomplete Stage 1 performance is imported as needs-review/lower-confidence data.
+          </p>}
           {importSummary?.warnings?.length ? <div className="mt-4 max-h-56 space-y-2 overflow-auto pr-1">
             {importSummary.warnings.slice(0, 8).map((warning, index) => <div key={`${warning.code}-${index}`} className="rounded-xl border border-amber-800/30 bg-black/30 p-3 text-xs leading-5 text-amber-100">
               <span className="font-black uppercase">{warning.severity}</span> {warning.message}
+              {warning.vehicleKey && <div className="mt-1 break-all text-amber-200/70">{warning.vehicleKey}</div>}
             </div>)}
           </div> : null}
+          {importSummary?.examples?.duplicates?.length ? <ImportExampleList title="Duplicate groups skipped" items={importSummary.examples.duplicates.map((item) => `${item.vehicleKey} (${item.count} rows)`)} /> : null}
+          {importSummary?.examples?.invalid?.length ? <ImportExampleList title="Invalid rows skipped" items={importSummary.examples.invalid.map((item) => `${item.vehicleKey}: ${item.reason}`)} /> : null}
+          {importSummary?.examples?.warnings?.length ? <ImportExampleList title="Needs review examples" items={importSummary.examples.warnings.map((item) => `${item.vehicleKey}: ${item.reason}`)} /> : null}
         </div>
       </section>}
 
@@ -402,6 +415,15 @@ function Metric({ icon, label, value, helper }: { icon: ReactNode; label: string
 
 function Mini({ label, value }: { label: string; value: string | number }) {
   return <div className="rounded-xl border border-white/10 bg-black/30 p-3"><div className="text-xs uppercase tracking-[0.12em] text-zinc-500">{label}</div><div className="mt-1 text-xl font-black">{value}</div></div>;
+}
+
+function ImportExampleList({ title, items }: { title: string; items: string[] }) {
+  return <div className="mt-4 rounded-xl border border-white/10 bg-black/30 p-3">
+    <div className="text-xs font-black uppercase tracking-[0.14em] text-zinc-500">{title}</div>
+    <div className="mt-2 space-y-2">
+      {items.slice(0, 6).map((item) => <div key={item} className="break-all text-xs leading-5 text-zinc-300">{item}</div>)}
+    </div>
+  </div>;
 }
 
 function DraftField({ label, value, onChange, type = "text" }: { label: string; value: string; onChange: (value: string) => void; type?: string }) {

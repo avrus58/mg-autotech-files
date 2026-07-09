@@ -5,10 +5,16 @@ import {
   rawVehicleToControlRecord,
   stageGain,
 } from "@/lib/vehicleControl/normalization";
-import type { RawVehicleRow, VehicleControlRecord, VehicleImportSummary } from "@/lib/vehicleControl/types";
+import type {
+  RawVehicleRow,
+  VehicleControlRecord,
+  VehicleImportSummary,
+  VehicleValidationIssue,
+} from "@/lib/vehicleControl/types";
 import { validateVehicleCollection } from "@/lib/vehicleControl/validation";
 
 const rawRows = vehicles as RawVehicleRow[];
+const careImportSourceTypes = new Set(["carecufile", "carecufile_import"]);
 
 type ImportOptions = {
   dryRun: boolean;
@@ -16,40 +22,182 @@ type ImportOptions = {
   limit?: number;
 };
 
+type ExistingProtectedRow = {
+  id: string;
+  source_type: string | null;
+  verification_status: string | null;
+};
+
+type ExistingVehicleEngine = ExistingProtectedRow & {
+  vehicle_key: string;
+};
+
 export function createVehicleImportPlan(limit?: number) {
   const rows = typeof limit === "number" && limit > 0 ? rawRows.slice(0, limit) : rawRows;
   const records = rows.map(rawVehicleToControlRecord);
   const issues = validateVehicleCollection(records);
-  const duplicateKeys = new Set(
-    [...records.reduce((map, record) => {
-      map.set(record.vehicleKey, (map.get(record.vehicleKey) ?? 0) + 1);
-      return map;
-    }, new Map<string, number>()).entries()]
-      .filter(([, count]) => count > 1)
-      .map(([key]) => key)
-  );
+  const recordsByKey = groupRecordsByKey(records);
+  const duplicateKeys = new Set([...recordsByKey.entries()].filter(([, group]) => group.length > 1).map(([key]) => key));
   return {
     rows,
     records,
     issues,
     duplicateKeys,
+    recordsByKey,
+  };
+}
+
+function groupRecordsByKey(records: VehicleControlRecord[]) {
+  const map = new Map<string, VehicleControlRecord[]>();
+  for (const record of records) {
+    if (!map.has(record.vehicleKey)) map.set(record.vehicleKey, []);
+    map.get(record.vehicleKey)?.push(record);
+  }
+  return map;
+}
+
+function groupIssuesByKey(issues: VehicleValidationIssue[]) {
+  const map = new Map<string, VehicleValidationIssue[]>();
+  for (const issue of issues) {
+    if (!issue.vehicleKey) continue;
+    if (!map.has(issue.vehicleKey)) map.set(issue.vehicleKey, []);
+    map.get(issue.vehicleKey)?.push(issue);
+  }
+  return map;
+}
+
+function blockingInvalidKeys(issues: VehicleValidationIssue[]) {
+  return new Set(issues.filter((issue) => issue.severity === "error" && issue.vehicleKey).map((issue) => issue.vehicleKey as string));
+}
+
+function isProtectedManualVerified(row: ExistingProtectedRow | null | undefined) {
+  return Boolean(row?.verification_status === "verified" && !careImportSourceTypes.has(row.source_type ?? ""));
+}
+
+function recordPreview(record: VehicleControlRecord) {
+  return {
+    brand: record.brand,
+    model: record.model,
+    generation: record.generation,
+    engine: record.engine,
+    ecuType: record.ecuType,
+    stockHp: record.stockHp,
+    stockNm: record.stockNm,
+    tunedHp: record.tunedHp,
+    tunedNm: record.tunedNm,
+    services: record.services,
+  };
+}
+
+function importCandidateRecord(record: VehicleControlRecord, issues: VehicleValidationIssue[]) {
+  const needsReview = issues.some((issue) => issue.severity === "warning");
+  if (!needsReview) return record;
+  return {
+    ...record,
+    verificationStatus: "needs_review" as const,
+    confidenceScore: Math.max(40, Math.min(record.confidenceScore, record.ecuType ? 60 : 45)),
+  };
+}
+
+export function getValidImportCandidates(plan: ReturnType<typeof createVehicleImportPlan>) {
+  const issueMap = groupIssuesByKey(plan.issues);
+  const invalidKeys = blockingInvalidKeys(plan.issues);
+  return plan.records
+    .filter((record) => !plan.duplicateKeys.has(record.vehicleKey))
+    .filter((record) => !invalidKeys.has(record.vehicleKey))
+    .map((record) => importCandidateRecord(record, issueMap.get(record.vehicleKey) ?? []));
+}
+
+export function buildVehicleImportSummary(
+  plan: ReturnType<typeof createVehicleImportPlan>,
+  existingRows: ExistingVehicleEngine[] = [],
+  options: {
+    dryRun: boolean;
+    dbDiffCalculated?: boolean;
+    batchId?: string | null;
+    created?: number;
+    updated?: number;
+    runtimeErrors?: number;
+  } = { dryRun: true }
+): VehicleImportSummary {
+  const issueMap = groupIssuesByKey(plan.issues);
+  const invalidKeys = blockingInvalidKeys(plan.issues);
+  const duplicateRowCount = [...plan.duplicateKeys].reduce((total, key) => total + (plan.recordsByKey.get(key)?.length ?? 0), 0);
+  const duplicateExtraRows = [...plan.duplicateKeys].reduce((total, key) => total + Math.max(0, (plan.recordsByKey.get(key)?.length ?? 0) - 1), 0);
+  const invalidRecords = plan.records.filter((record) => !plan.duplicateKeys.has(record.vehicleKey) && invalidKeys.has(record.vehicleKey));
+  const validCandidates = getValidImportCandidates(plan);
+  const existingByKey = new Map(existingRows.map((row) => [row.vehicle_key, row]));
+  const protectedManualVerified = validCandidates.filter((record) => isProtectedManualVerified(existingByKey.get(record.vehicleKey)));
+  const wouldCreate = validCandidates.filter((record) => !existingByKey.has(record.vehicleKey)).length;
+  const wouldUpdate = validCandidates.filter((record) => existingByKey.has(record.vehicleKey) && !isProtectedManualVerified(existingByKey.get(record.vehicleKey))).length;
+  const warningKeys = new Set(
+    plan.issues
+      .filter((issue) => issue.severity === "warning" && issue.vehicleKey && !plan.duplicateKeys.has(issue.vehicleKey) && !invalidKeys.has(issue.vehicleKey))
+      .map((issue) => issue.vehicleKey as string)
+  );
+  const skippedBase = duplicateRowCount + invalidRecords.length + protectedManualVerified.length;
+  const warningOrErrorIssues = plan.issues.filter((issue) => issue.severity !== "info");
+
+  const duplicateExamples = [...plan.duplicateKeys].slice(0, 10).map((key) => ({
+    vehicleKey: key,
+    count: plan.recordsByKey.get(key)?.length ?? 0,
+    records: (plan.recordsByKey.get(key) ?? []).slice(0, 3).map(recordPreview),
+  }));
+  const invalidExamples = invalidRecords.slice(0, 10).map((record) => {
+    const issues = (issueMap.get(record.vehicleKey) ?? []).filter((issue) => issue.severity === "error");
+    return {
+      vehicleKey: record.vehicleKey,
+      reason: issues[0]?.message ?? "Blocking validation error.",
+      issueCodes: issues.map((issue) => issue.code),
+      record: recordPreview(record),
+    };
+  });
+  const warningExamples = [...warningKeys].slice(0, 10).map((key) => {
+    const issues = (issueMap.get(key) ?? []).filter((issue) => issue.severity === "warning");
+    return {
+      vehicleKey: key,
+      reason: issues[0]?.message ?? "Needs review warning.",
+      issueCodes: issues.map((issue) => issue.code),
+      record: recordPreview((plan.recordsByKey.get(key) ?? [])[0]),
+    };
+  });
+
+  return {
+    dryRun: options.dryRun,
+    mode: "valid_only",
+    totalRows: plan.records.length,
+    created: options.dryRun ? wouldCreate : options.created ?? 0,
+    updated: options.dryRun ? wouldUpdate : options.updated ?? 0,
+    skipped: skippedBase,
+    errors: plan.issues.filter((issue) => issue.severity === "error").length + (options.runtimeErrors ?? 0),
+    duplicates: plan.duplicateKeys.size,
+    duplicateExtraRows,
+    skippedDuplicate: duplicateRowCount,
+    skippedInvalid: invalidRecords.length,
+    validImportableCount: validCandidates.length,
+    needsReviewCount: warningKeys.size,
+    protectedManualVerifiedCount: protectedManualVerified.length,
+    warningCount: plan.issues.filter((issue) => issue.severity === "warning").length,
+    infoCount: plan.issues.filter((issue) => issue.severity === "info").length,
+    dbDiffCalculated: Boolean(options.dbDiffCalculated),
+    warnings: warningOrErrorIssues.slice(0, 250),
+    examples: {
+      duplicates: duplicateExamples,
+      invalid: invalidExamples,
+      warnings: warningExamples,
+      protectedManualVerified: protectedManualVerified.slice(0, 10).map((record) => ({
+        vehicleKey: record.vehicleKey,
+        reason: "Existing verified manual record is protected from CareEcuFile import overwrite.",
+      })),
+    },
+    sampleRecords: validCandidates.slice(0, 10),
+    batchId: options.batchId ?? null,
   };
 }
 
 export function dryRunVehicleImport(limit?: number): VehicleImportSummary {
   const plan = createVehicleImportPlan(limit);
-  return {
-    dryRun: true,
-    totalRows: plan.records.length,
-    created: 0,
-    updated: 0,
-    skipped: plan.duplicateKeys.size,
-    errors: plan.issues.filter((issue) => issue.severity === "error").length,
-    duplicates: plan.duplicateKeys.size,
-    warnings: plan.issues.slice(0, 250),
-    sampleRecords: plan.records.slice(0, 10),
-    batchId: null,
-  };
+  return buildVehicleImportSummary(plan, [], { dryRun: true, dbDiffCalculated: false });
 }
 
 async function audit(entityType: string, entityId: string | null, action: string, actorUserId: string | null | undefined, oldValue: unknown, newValue: unknown, metadata: Record<string, unknown> = {}) {
@@ -68,6 +216,8 @@ async function audit(entityType: string, entityId: string | null, action: string
 async function upsertBrand(record: VehicleControlRecord, actorUserId?: string | null) {
   const admin = getSupabaseAdmin();
   const slug = normalizeToken(record.brand);
+  const existing = await admin.from("vehicle_brands").select("id, verification_status, source_type").eq("slug", slug).maybeSingle();
+  if (isProtectedManualVerified(existing.data as ExistingProtectedRow | null)) return existing.data?.id as string;
   const { data, error } = await admin.from("vehicle_brands").upsert({
     name: record.brand,
     slug,
@@ -87,6 +237,8 @@ async function upsertBrand(record: VehicleControlRecord, actorUserId?: string | 
 async function upsertModel(record: VehicleControlRecord, brandId: string, actorUserId?: string | null) {
   const admin = getSupabaseAdmin();
   const slug = normalizeToken(record.model);
+  const existing = await admin.from("vehicle_models").select("id, verification_status, source_type").eq("brand_id", brandId).eq("slug", slug).maybeSingle();
+  if (isProtectedManualVerified(existing.data as ExistingProtectedRow | null)) return existing.data?.id as string;
   const { data, error } = await admin.from("vehicle_models").upsert({
     brand_id: brandId,
     name: record.model,
@@ -107,6 +259,8 @@ async function upsertModel(record: VehicleControlRecord, brandId: string, actorU
 async function upsertGeneration(record: VehicleControlRecord, modelId: string, actorUserId?: string | null) {
   const admin = getSupabaseAdmin();
   const slug = normalizeToken(record.generation);
+  const existing = await admin.from("vehicle_generations").select("id, verification_status, source_type").eq("model_id", modelId).eq("slug", slug).maybeSingle();
+  if (isProtectedManualVerified(existing.data as ExistingProtectedRow | null)) return existing.data?.id as string;
   const { data, error } = await admin.from("vehicle_generations").upsert({
     model_id: modelId,
     name: record.generation,
@@ -136,12 +290,7 @@ async function upsertEngine(record: VehicleControlRecord, generationId: string, 
     .eq("vehicle_key", record.vehicleKey)
     .maybeSingle();
 
-  if (
-    existing.data &&
-    existing.data.verification_status === "verified" &&
-    existing.data.source_type !== "carecufile" &&
-    existing.data.source_type !== "carecufile_import"
-  ) {
+  if (isProtectedManualVerified(existing.data as ExistingProtectedRow | null)) {
     return { id: existing.data.id as string, skipped: true, existing: existing.data };
   }
 
@@ -174,6 +323,22 @@ async function upsertEngine(record: VehicleControlRecord, generationId: string, 
     .single();
   if (error) throw error;
   return { id: data.id as string, skipped: false, existing: existing.data };
+}
+
+async function getExistingVehicleEngines(vehicleKeys: string[]) {
+  const admin = getSupabaseAdmin();
+  const rows: ExistingVehicleEngine[] = [];
+  const uniqueKeys = [...new Set(vehicleKeys)].filter(Boolean);
+  for (let index = 0; index < uniqueKeys.length; index += 500) {
+    const chunk = uniqueKeys.slice(index, index + 500);
+    const { data, error } = await admin
+      .from("vehicle_engines")
+      .select("id, vehicle_key, source_type, verification_status")
+      .in("vehicle_key", chunk);
+    if (error) throw error;
+    rows.push(...(data as ExistingVehicleEngine[] | null ?? []));
+  }
+  return rows;
 }
 
 async function syncChildren(record: VehicleControlRecord, raw: RawVehicleRow, engineId: string, actorUserId?: string | null) {
@@ -241,9 +406,18 @@ async function syncChildren(record: VehicleControlRecord, raw: RawVehicleRow, en
 }
 
 export async function runVehicleImport(options: ImportOptions): Promise<VehicleImportSummary> {
-  if (options.dryRun) return dryRunVehicleImport(options.limit);
-
   const plan = createVehicleImportPlan(options.limit);
+  const candidates = getValidImportCandidates(plan);
+
+  if (options.dryRun) {
+    try {
+      const existingRows = await getExistingVehicleEngines(candidates.map((record) => record.vehicleKey));
+      return buildVehicleImportSummary(plan, existingRows, { dryRun: true, dbDiffCalculated: true });
+    } catch {
+      return buildVehicleImportSummary(plan, [], { dryRun: true, dbDiffCalculated: false });
+    }
+  }
+
   const admin = getSupabaseAdmin();
   const source = await admin.from("vehicle_data_sources").upsert({
     source_type: "carecufile_import",
@@ -265,19 +439,23 @@ export async function runVehicleImport(options: ImportOptions): Promise<VehicleI
 
   let created = 0;
   let updated = 0;
-  let skipped = 0;
-  let errors = 0;
+  let protectedSkipped = 0;
+  let runtimeErrors = 0;
+  const rawByKey = new Map(plan.records.map((record, index) => [record.vehicleKey, plan.rows[index]]));
 
-  for (let index = 0; index < plan.records.length; index += 1) {
-    const record = plan.records[index];
-    const raw = plan.rows[index];
+  for (const record of candidates) {
+    const raw = rawByKey.get(record.vehicleKey);
+    if (!raw) {
+      runtimeErrors += 1;
+      continue;
+    }
     try {
       const brandId = await upsertBrand(record, options.actorUserId);
       const modelId = await upsertModel(record, brandId, options.actorUserId);
       const generationId = await upsertGeneration(record, modelId, options.actorUserId);
       const engine = await upsertEngine(record, generationId, options.actorUserId);
       if (engine.skipped) {
-        skipped += 1;
+        protectedSkipped += 1;
         continue;
       }
       await syncChildren(record, raw, engine.id, options.actorUserId);
@@ -285,30 +463,23 @@ export async function runVehicleImport(options: ImportOptions): Promise<VehicleI
       else created += 1;
       await audit("vehicle_engine", engine.id, engine.existing ? "import.updated" : "import.created", options.actorUserId, engine.existing, { vehicleKey: record.vehicleKey }, { batchId });
     } catch (error) {
-      errors += 1;
+      runtimeErrors += 1;
       await audit("vehicle_engine", null, "import.error", options.actorUserId, null, { vehicleKey: record.vehicleKey, error: error instanceof Error ? error.message : String(error) }, { batchId });
     }
   }
 
-  const summary: VehicleImportSummary = {
-    dryRun: false,
-    totalRows: plan.records.length,
-    created,
-    updated,
-    skipped,
-    errors,
-    duplicates: plan.duplicateKeys.size,
-    warnings: plan.issues.slice(0, 250),
-    sampleRecords: plan.records.slice(0, 10),
-    batchId,
-  };
+  const existingRows = await getExistingVehicleEngines(candidates.map((record) => record.vehicleKey));
+  const summary = buildVehicleImportSummary(plan, existingRows, { dryRun: false, dbDiffCalculated: true, batchId, created, updated, runtimeErrors });
+  summary.protectedManualVerifiedCount = Math.max(summary.protectedManualVerifiedCount ?? 0, protectedSkipped);
+  summary.skipped = (summary.skippedDuplicate ?? 0) + (summary.skippedInvalid ?? 0) + (summary.protectedManualVerifiedCount ?? 0);
+
   if (batchId) {
     await admin.from("vehicle_import_batches").update({
-      status: errors > 0 ? "failed" : "completed",
+      status: runtimeErrors > 0 ? "failed" : "completed",
       created_count: created,
       updated_count: updated,
-      skipped_count: skipped,
-      error_count: errors,
+      skipped_count: summary.skipped,
+      error_count: runtimeErrors,
       duplicate_count: plan.duplicateKeys.size,
       warning_count: plan.issues.filter((issue) => issue.severity !== "error").length,
       summary_json: summary,

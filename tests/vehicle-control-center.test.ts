@@ -9,7 +9,12 @@ import {
   rawVehicleToControlRecord,
 } from "../src/lib/vehicleControl/normalization";
 import { getSafePublishedVehicleRows } from "../src/lib/vehicleControl/public";
-import { createVehicleImportPlan, dryRunVehicleImport } from "../src/lib/vehicleControl/importer";
+import {
+  buildVehicleImportSummary,
+  createVehicleImportPlan,
+  dryRunVehicleImport,
+  getValidImportCandidates,
+} from "../src/lib/vehicleControl/importer";
 import type { RawVehicleRow, VehicleControlRecord } from "../src/lib/vehicleControl/types";
 import { validateVehicleCollection, validateVehicleRecord } from "../src/lib/vehicleControl/validation";
 
@@ -92,6 +97,17 @@ test("malformed raw rows produce validation issues instead of crashing normaliza
   assert.ok(issues.some((issue) => issue.metadata?.suggestedFix));
 });
 
+test("vehicle validation blocks unrealistic performance values and warns on suspicious lower tuned output", () => {
+  const impossible = controlRecord({ stockHp: 375, tunedHp: 4710, stockNm: 1539, tunedNm: 1925 });
+  const lowTune = controlRecord({ stockHp: 300, tunedHp: 190, stockNm: 700, tunedNm: 480 });
+  const missingEcu = controlRecord({ ecuType: null, ecuFamily: null });
+  const missingTuned = controlRecord({ tunedHp: null, tunedNm: null, services: ["stage1"] });
+  assert.ok(validateVehicleRecord(impossible).some((issue) => issue.code === "invalid_power_value" || issue.code === "unrealistic_tuned_hp_gain"));
+  assert.ok(validateVehicleRecord(lowTune).some((issue) => issue.code === "tuned_hp_below_stock"));
+  assert.equal(validateVehicleRecord(missingEcu).some((issue) => issue.code === "missing_ecu_info" && issue.severity === "warning"), true);
+  assert.equal(validateVehicleRecord(missingTuned).some((issue) => issue.code === "missing_tuned_performance" && issue.severity === "warning"), true);
+});
+
 test("customer public vehicle projection strips admin-only data", () => {
   const publicRecord = controlRecordToPublicVehicle(controlRecord());
   const serialized = JSON.stringify(publicRecord);
@@ -142,17 +158,51 @@ test("validation catches duplicate vehicle keys and invalid published records", 
 test("vehicle import dry-run is non-destructive and reports source health", () => {
   const summary = dryRunVehicleImport(20);
   assert.equal(summary.dryRun, true);
+  assert.equal(summary.mode, "valid_only");
   assert.equal(summary.totalRows, 20);
-  assert.equal(summary.created, 0);
+  assert.equal(summary.created, summary.validImportableCount);
   assert.equal(summary.updated, 0);
+  assert.equal(summary.dbDiffCalculated, false);
   assert.ok(summary.sampleRecords.length > 0);
   assert.ok(Array.isArray(summary.warnings));
 });
 
-test("vehicle import plan detects duplicates before any database write", () => {
-  const plan = createVehicleImportPlan(250);
+test("vehicle import dry-run calculates create, update and protected manual rows when DB state is known", () => {
+  const plan = createVehicleImportPlan(20);
+  const candidates = getValidImportCandidates(plan);
+  const summary = buildVehicleImportSummary(plan, [
+    { id: "existing-care", vehicle_key: candidates[0].vehicleKey, source_type: "carecufile_import", verification_status: "imported" },
+    { id: "existing-manual", vehicle_key: candidates[1].vehicleKey, source_type: "manual", verification_status: "verified" },
+  ], { dryRun: true, dbDiffCalculated: true });
+  assert.equal(summary.dbDiffCalculated, true);
+  assert.equal(summary.updated, 1);
+  assert.equal(summary.protectedManualVerifiedCount, 1);
+  assert.equal(summary.created, (summary.validImportableCount ?? 0) - 2);
+});
+
+test("vehicle import plan skips duplicate groups and blocking-invalid records before any database write", () => {
+  const plan = createVehicleImportPlan();
+  const summary = buildVehicleImportSummary(plan, [], { dryRun: true });
   assert.ok(plan.records.length > 0);
-  assert.ok(plan.issues.some((issue) => issue.code === "duplicate_vehicle_key") || plan.duplicateKeys.size >= 0);
+  assert.ok(plan.duplicateKeys.size > 0);
+  assert.ok((summary.skippedDuplicate ?? 0) > (summary.duplicateExtraRows ?? 0));
+  assert.ok((summary.skippedInvalid ?? 0) >= 1);
+  assert.equal(summary.examples?.invalid?.some((item) => item.vehicleKey?.includes("challenger:rogator") && item.issueCodes.includes("invalid_power_value")), true);
+  assert.equal(getValidImportCandidates(plan).some((record) => plan.duplicateKeys.has(record.vehicleKey)), false);
+});
+
+test("valid-only import candidates keep warning rows as needs-review instead of blocking them", () => {
+  const plan = createVehicleImportPlan(20);
+  const candidates = getValidImportCandidates(plan);
+  assert.ok(candidates.some((record) => record.ecuType == null && record.verificationStatus === "needs_review"));
+  assert.ok(candidates.some((record) => record.services.includes("stage1")));
+});
+
+test("real import path is valid-only by construction", () => {
+  const source = readFileSync(resolve(process.cwd(), "src", "lib", "vehicleControl", "importer.ts"), "utf8");
+  assert.match(source, /getValidImportCandidates\(plan\)/);
+  assert.match(source, /for \(const record of candidates\)/);
+  assert.doesNotMatch(source, /for \(let index = 0; index < plan\.records\.length/);
 });
 
 test("anonymous users cannot call admin vehicle APIs", async () => {
@@ -224,9 +274,10 @@ test("admin update path writes audit log entries", () => {
 
 test("importer protects verified manual records and writes import audit events", () => {
   const source = readFileSync(resolve(process.cwd(), "src", "lib", "vehicleControl", "importer.ts"), "utf8");
-  assert.match(source, /verification_status === "verified"/);
-  assert.match(source, /source_type !== "carecufile"/);
-  assert.match(source, /source_type !== "carecufile_import"/);
+  assert.match(source, /isProtectedManualVerified/);
+  assert.match(source, /vehicle_brands"\)\.select\("id, verification_status, source_type"/);
+  assert.match(source, /vehicle_models"\)\.select\("id, verification_status, source_type"/);
+  assert.match(source, /vehicle_generations"\)\.select\("id, verification_status, source_type"/);
   assert.match(source, /import\.created/);
   assert.match(source, /import\.updated/);
   assert.match(source, /import\.error/);
@@ -236,7 +287,8 @@ test("real import UI requires explicit confirmation text", () => {
   const source = readFileSync(resolve(process.cwd(), "src", "app", "admin", "vehicles", "VehicleControlCenter.tsx"), "utf8");
   assert.match(source, /Type IMPORT/);
   assert.match(source, /importConfirm\.trim\(\) !== "IMPORT"/);
-  assert.match(source, /Real import writes database rows/);
+  assert.match(source, /Real import will import only valid unique records by default/);
+  assert.match(source, /Valid importable/);
 });
 
 test("admin dashboard surfaces owner profile edge warnings without weakening security", () => {

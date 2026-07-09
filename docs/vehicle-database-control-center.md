@@ -74,10 +74,21 @@ Admin users with `vehicles.manage` can import, create draft records, edit record
 
 1. Open `/admin/vehicles/import`.
 2. Run dry-run first.
-3. Review created/updated/skipped/error/warning counts.
-4. Run real import only after the SQL migration is active.
+3. Review valid importable, would-create, would-update, duplicate skip, invalid skip, needs-review, protected-manual, error and warning counts.
+4. Run real import only after the SQL migration is active and the dry-run result is acceptable.
 
-The importer is additive. It upserts CareEcuFile source rows by stable `vehicle_key`, tracks batches and avoids overwriting verified manual records from non-CareEcuFile sources.
+The importer is additive and valid-only by default. It upserts CareEcuFile source rows by stable `vehicle_key`, tracks batches and avoids overwriting verified manual records from non-CareEcuFile sources.
+
+Before the first production import, the importer filters the raw CareEcuFile source:
+
+- Duplicate `vehicle_key` groups are skipped completely by default. The first import does not try to guess a winner.
+- Blocking-invalid rows are skipped. This includes missing identity fields, invalid year ranges and unrealistic stock/tuned HP/NM values.
+- Missing ECU type is a warning, not a blocking error. The record can import as lower-confidence `needs_review`.
+- Stage 1 records with missing tuned HP/NM are warnings, not blocking errors, unless the app cannot safely display them.
+- Missing stock performance is a warning unless validation turns it into a blocking error.
+- Info-level generation overlap warnings are noisy and non-blocking.
+
+Dry-run calculates the expected import impact. When Supabase admin env values are available, it also checks existing `vehicle_engines` and reports would-create, would-update and protected manual verified counts. If the env values are missing locally, the dry-run still reports the valid-only source plan but marks `dbDiffCalculated=false`.
 
 Real import now requires an explicit confirmation text in the admin UI. This is intentional production safety.
 
