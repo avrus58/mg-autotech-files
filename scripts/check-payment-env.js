@@ -31,10 +31,6 @@ const groups = [
     ],
   },
   {
-    name: "PayPal",
-    keys: ["PAYPAL_CLIENT_ID", "PAYPAL_CLIENT_SECRET"],
-  },
-  {
     name: "Bank Transfer",
     keys: [
       "NEXT_PUBLIC_BANK_ACCOUNT_NAME",

@@ -52,25 +52,6 @@ function cents(value: unknown) {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
-async function getPayPalAccessToken() {
-  const clientId = process.env.PAYPAL_CLIENT_ID;
-  const clientSecret = process.env.PAYPAL_CLIENT_SECRET;
-  const base = process.env.PAYPAL_API_BASE || "https://api-m.paypal.com";
-  if (!clientId || !clientSecret) throw new Error("PayPal API credentials are missing.");
-  const credentials = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
-  const response = await fetch(`${base}/v1/oauth2/token`, {
-    method: "POST",
-    headers: {
-      Authorization: `Basic ${credentials}`,
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: "grant_type=client_credentials",
-  });
-  const data = await response.json();
-  if (!response.ok) throw new Error(data.error_description || "Could not authorize PayPal refund.");
-  return String(data.access_token);
-}
-
 export async function GET(request: Request) {
   const auth = await requireStaffPermission(request, "credits.manage");
   if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
@@ -255,23 +236,10 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: `Stripe refund is ${refund.status}; manual review is required.` }, { status: 409 });
       }
     } else if (payment.provider === "paypal") {
-      if (!payment.provider_payment_id) throw new Error("PayPal capture id is missing.");
-      const token = await getPayPalAccessToken();
-      const base = process.env.PAYPAL_API_BASE || "https://api-m.paypal.com";
-      const response = await fetch(`${base}/v2/payments/captures/${payment.provider_payment_id}/refund`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-          "PayPal-Request-Id": `mga-refund-${payment.id}`,
-        },
-        body: JSON.stringify({}),
-      });
-      const data = await response.json();
-      if (!response.ok || data.status !== "COMPLETED") {
-        throw new Error(data.message || `PayPal refund status: ${data.status || response.status}`);
-      }
-      providerRefundId = String(data.id);
+      return NextResponse.json(
+        { error: "Legacy provider refunds are disabled. Handle this record manually." },
+        { status: 410 }
+      );
     }
 
     const reversal = await admin.rpc("admin_apply_payment_refund", {

@@ -16,7 +16,6 @@ import {
   Copy,
   CreditCard,
   Crown,
-  ExternalLink,
   Gauge,
   Landmark,
   Loader2,
@@ -42,13 +41,6 @@ const paymentMethods = [
     icon: CreditCard,
   },
   {
-    id: "paypal",
-    title: "PayPal",
-    subtitle: "PayPal payment link",
-    badge: "Automatic",
-    icon: ShieldCheck,
-  },
-  {
     id: "bank",
     title: "Bank Transfer",
     subtitle: "SEPA transfer",
@@ -72,7 +64,7 @@ const fallbackQuote: CreditQuote = {
   customBaseUnitPriceEuro: CUSTOM_CREDIT_BASE_PRICE_EURO,
   customUnitPriceEuro: CUSTOM_CREDIT_PRICE_EURO,
   customerPricingActive: false,
-  paymentMethods: { stripe: true, paypal: true, bank: true },
+  paymentMethods: { stripe: true, bank: true },
   packages: creditPackages.map((item) => ({ ...item, unitPriceEuro: item.priceEuro / item.credits })),
 };
 
@@ -201,54 +193,22 @@ export default function BuyCreditsPage() {
       return;
     }
 
-    if (paymentMethod === "paypal" || paymentMethod === "bank") {
-      if (paymentMethod === "bank") {
-        try {
-          const reference = await getCustomerReference(userData.user.id);
-          setMessage(
-            `Bank transfer selected. Use your Customer ID as payment reference: ${reference}. Credits are added manually after payment is received.`
-          );
-        } catch (error) {
-          setMessage(
-            error instanceof Error
-              ? error.message
-              : "Customer ID could not be loaded."
-          );
-        } finally {
-          setLoadingPackage(null);
-        }
-
-        return;
-      }
-
-      const endpoint = "/api/paypal/create-order";
-
-      const response = await fetch(endpoint, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${sessionData.session.access_token}`,
-        },
-        body: JSON.stringify(payload),
-      });
-
-      const data = await response.json();
-
-      setLoadingPackage(null);
-
-      if (!response.ok) {
+    if (paymentMethod === "bank") {
+      try {
+        const reference = await getCustomerReference(userData.user.id);
         setMessage(
-          data.error ?? `Could not start ${selectedPayment?.title ?? "payment"}.`
+          `Bank transfer selected. Use your Customer ID as payment reference: ${reference}. Credits are added manually after payment is received.`
         );
-        return;
+      } catch (error) {
+        setMessage(
+          error instanceof Error
+            ? error.message
+            : "Customer ID could not be loaded."
+        );
+      } finally {
+        setLoadingPackage(null);
       }
 
-      if (!data.url) {
-        setMessage(`${selectedPayment?.title ?? "Payment"} URL was not returned.`);
-        return;
-      }
-
-      window.location.assign(data.url);
       return;
     }
 
@@ -378,8 +338,8 @@ export default function BuyCreditsPage() {
                   Payment Workflow
                 </div>
                 <p className="mt-1 text-sm text-zinc-400">
-                  Stripe and PayPal add credits automatically after
-                  payment confirmation. Bank transfer stays manual.
+                  Stripe card payments add credits automatically after
+                  confirmation. Bank transfer stays manual.
                 </p>
               </div>
             </div>
@@ -401,7 +361,7 @@ export default function BuyCreditsPage() {
             </div>
           </div>
 
-          <div className="grid gap-3 md:grid-cols-3">
+          <div className="grid gap-3 md:grid-cols-2">
             {availablePaymentMethods.map((method) => {
               const Icon = method.icon;
               const active = paymentMethod === method.id;
@@ -601,12 +561,9 @@ export default function BuyCreditsPage() {
                   </>
                 ) : (
                   <>
-                    {paymentMethod === "stripe"
-                      ? "Buy"
-                      : `Pay with ${selectedPayment?.title}`}
-                    {paymentMethod !== "stripe" && paymentMethod !== "bank" && (
-                      <ExternalLink className="ml-2 h-4 w-4" />
-                    )}
+                  {paymentMethod === "stripe"
+                    ? "Buy"
+                    : `Pay with ${selectedPayment?.title}`}
                   </>
                 )}
               </button>
@@ -680,9 +637,6 @@ export default function BuyCreditsPage() {
                   {paymentMethod === "stripe"
                     ? "Buy Custom Credits"
                     : `Pay Custom via ${selectedPayment?.title}`}
-                  {paymentMethod !== "stripe" && paymentMethod !== "bank" && (
-                    <ExternalLink className="ml-2 h-4 w-4" />
-                  )}
                 </>
               )}
             </button>
@@ -694,7 +648,7 @@ export default function BuyCreditsPage() {
             <p className="mt-3 text-sm leading-7 text-zinc-400">
               Package purchases use discounted package pricing. Custom credit
               purchases are calculated at{" "}
-              {formatEuro(quote.customUnitPriceEuro)} per credit for this account. Stripe and PayPal payments add
+              {formatEuro(quote.customUnitPriceEuro)} per credit for this account. Stripe payments add
               credits automatically after payment confirmation. Bank transfer
               requires admin verification before credits are added.
             </p>

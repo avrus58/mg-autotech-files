@@ -5,7 +5,7 @@ Scope: full project review after ECU Intelligence Level 2. This is an architectu
 
 ## Executive Summary
 
-The platform is commercially usable for a controlled launch, but it is not yet at "hundreds of paying customers without operational guardrails" maturity. The core security direction is good: Supabase auth is enforced, admin APIs use permission checks, AI learning is gated, and payment records now have reconciliation tables. The remaining risk is mostly around operational hardening: distributed rate limiting, migration discipline, server-side upload finalization for all customer files, stronger payment atomicity for PayPal/manual flows, background processing, and observability.
+The platform is commercially usable for a controlled launch, but it is not yet at "hundreds of paying customers without operational guardrails" maturity. The core security direction is good: Supabase auth is enforced, admin APIs use permission checks, AI learning is gated, and payment records now have reconciliation tables. The remaining risk is mostly around operational hardening: distributed rate limiting, migration discipline, server-side upload finalization for all customer files, stronger payment atomicity for manual flows, background processing, and observability.
 
 Safe fixes applied in this pass:
 
@@ -60,28 +60,21 @@ Impact: a malicious client could attempt oversized or unsupported storage upload
 Migration difficulty: medium. Move main request upload to prepare/finalize API like additional uploads and File Expert.
 Estimated benefit: high.
 
-3. PayPal credit application is not as atomic as the Stripe RPC flow.
-Status: remaining.
-Why: `addPurchasedCredits` reads balance, updates profile, then inserts ledger outside a single DB transaction.
-Impact: rare double-processing/race risk under concurrent capture retries.
-Migration difficulty: medium. Add a Postgres RPC with row locking and unique source constraint.
-Estimated benefit: high.
-
-4. SQL migration management is manual.
+3. SQL migration management is manual.
 Status: remaining.
 Why: production depends on manually run SQL scripts; no formal migration ledger or CI schema verification.
 Impact: schema drift, missing columns/policies, deploy-time surprises.
 Migration difficulty: medium.
 Estimated benefit: high.
 
-5. Heavy AI/File Expert work is synchronous.
+4. Heavy AI/File Expert work is synchronous.
 Status: remaining.
 Why: analysis, similarity rebuilds, and cluster rebuilds run inside request/route lifecycles.
 Impact: timeouts or slow admin UX as samples grow.
 Migration difficulty: medium to high. Introduce queued background jobs.
 Estimated benefit: high.
 
-6. External File Expert analyzer trust boundary needs a shared secret.
+5. External File Expert analyzer trust boundary needs a shared secret.
 Status: remaining.
 Why: if `FILE_EXPERT_ANALYZER_URL` is configured, signed storage URLs are sent to the analyzer without an app-level authentication header.
 Impact: acceptable only if the analyzer is private and controlled; risky if exposed.
@@ -171,7 +164,7 @@ Remaining: no automated production schema/RLS drift check.
 
 Most sensitive APIs are protected. The public email relay issue was fixed. Widget public APIs validate widget key/session/domain. Webhooks verify Stripe signatures.
 
-Remaining: distributed rate limiting and stronger PayPal atomicity.
+Remaining: distributed rate limiting and stronger manual-payment idempotency.
 
 ### File Upload And Binary Isolation
 
@@ -189,7 +182,7 @@ Remaining: background jobs and stronger large-sample performance profiling.
 
 Stripe webhook is signed and idempotent. Payment records/event logs exist. Admin refund flow is guarded. Customer-specific pricing exists.
 
-Remaining: PayPal/manual credit mutation should be DB-transactional with unique source constraints.
+Remaining: manual credit mutation should be DB-transactional with unique source constraints where possible. Legacy provider records remain readable, but new credit purchases are limited to Stripe and bank transfer.
 
 ### Performance And Scalability
 
@@ -205,7 +198,7 @@ Build/lint/tests are in place. No dedicated production observability or alerting
 
 - Add distributed rate limiting for public and mutation APIs.
 - Move main new-request upload to server prepare/finalize with hard size/type checks.
-- Add PayPal credit RPC with row locking and unique source constraints.
+- Add manual payment idempotency checks and reconciliation review workflow.
 - Add schema migration ledger and production schema verification checklist.
 - Add Sentry or equivalent error monitoring.
 - Add server-side admin/dashboard route guards.

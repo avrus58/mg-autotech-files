@@ -10,7 +10,6 @@ const schema = z.object({
   adjustmentValue: z.number().min(-1000).max(1000),
   paymentMethods: z.object({
     stripe: z.boolean().nullable(),
-    paypal: z.boolean().nullable(),
     bank: z.boolean().nullable(),
   }),
   internalNote: z.string().trim().max(2000).nullable(),
@@ -59,7 +58,7 @@ export async function PATCH(
     adjustment_type: parsed.data.adjustmentType,
     adjustment_value: parsed.data.adjustmentValue,
     payment_stripe_enabled: parsed.data.paymentMethods.stripe,
-    payment_paypal_enabled: parsed.data.paymentMethods.paypal,
+    payment_paypal_enabled: false,
     payment_bank_enabled: parsed.data.paymentMethods.bank,
     internal_note: parsed.data.internalNote || null,
     updated_by: auth.user.id,

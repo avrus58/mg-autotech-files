@@ -34,7 +34,7 @@ export default function DatenschutzPage() {
       </LegalSection>
 
       <LegalSection title="6. Zahlungen">
-        <p>Je nach ausgewählter Zahlungsart werden Zahlungen über <strong className="text-white">Stripe</strong> oder <strong className="text-white">PayPal</strong> abgewickelt. Diese Anbieter verarbeiten Zahlungs- und Transaktionsdaten in eigener datenschutzrechtlicher Verantwortung. MG AutoTech erhält grundsätzlich nur die für Zuordnung, Bestätigung, Buchhaltung und Betrugsprävention erforderlichen Zahlungsstatus- und Referenzdaten. Banküberweisungen werden anhand der übermittelten Bank- und Verwendungszweckdaten zugeordnet.</p>
+        <p>Je nach ausgewählter Zahlungsart werden Kartenzahlungen über <strong className="text-white">Stripe</strong> abgewickelt oder Banküberweisungen manuell zugeordnet. Stripe verarbeitet Zahlungs- und Transaktionsdaten in eigener datenschutzrechtlicher Verantwortung. MG AutoTech erhält grundsätzlich nur die für Zuordnung, Bestätigung, Buchhaltung und Betrugsprävention erforderlichen Zahlungsstatus- und Referenzdaten. Banküberweisungen werden anhand der übermittelten Bank- und Verwendungszweckdaten zugeordnet.</p>
       </LegalSection>
 
       <LegalSection title="7. Anmeldung und Google Login">

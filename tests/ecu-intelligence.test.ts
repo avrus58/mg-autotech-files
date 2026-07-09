@@ -560,12 +560,13 @@ test("commercial pricing applies customer override before customer adjustment", 
 
   const customerFour = { ...customerFive, user_id: "customer-c", credit_price_override_eur: 4 };
   assert.equal(buildCreditQuote(defaultCommerceSettings, customerFour).customUnitPriceEuro, 3);
-  customerFour.payment_paypal_enabled = false;
-  assert.equal(buildCreditQuote(defaultCommerceSettings, customerFour).paymentMethods.paypal, false);
-  assert.equal(buildCreditQuote(defaultCommerceSettings, customerFour).paymentMethods.stripe, true);
+  customerFour.payment_paypal_enabled = true;
+  const quote = buildCreditQuote(defaultCommerceSettings, customerFour);
+  assert.deepEqual(Object.keys(quote.paymentMethods).sort(), ["bank", "stripe"]);
+  assert.equal(quote.paymentMethods.stripe, true);
 });
 
-test("payment ledger sources map to supported finance providers", () => {
+test("payment ledger sources map to supported and legacy finance providers", () => {
   assert.equal(paymentProviderFromSource("stripe_checkout"), "stripe");
   assert.equal(paymentProviderFromSource("paypal_order"), "paypal");
   assert.equal(paymentProviderFromSource("bank_transfer"), "bank");

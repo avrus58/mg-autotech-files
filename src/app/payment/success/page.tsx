@@ -22,21 +22,17 @@ export default function PaymentSuccessPage() {
       const params = new URLSearchParams(window.location.search);
       const provider = params.get("provider") || "stripe";
       const sessionId = params.get("session_id");
-      const paypalOrderId = params.get("token");
 
-      let endpoint = "/api/stripe/confirm-session";
+      const endpoint = "/api/stripe/confirm-session";
       let payload: Record<string, string> = {};
 
-      if (provider === "paypal") {
-        if (!paypalOrderId) {
-          setState("missing");
-          setMessage("PayPal order id is missing.");
-          return;
-        }
+      if (provider !== "stripe") {
+        setState("error");
+        setMessage("This legacy payment method is no longer supported. Please use card payment or bank transfer.");
+        return;
+      }
 
-        endpoint = "/api/paypal/capture-order";
-        payload = { orderId: paypalOrderId };
-      } else if (sessionId) {
+      if (sessionId) {
         payload = { sessionId };
       } else {
         setState("missing");

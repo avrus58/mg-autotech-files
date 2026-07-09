@@ -11,7 +11,6 @@ const schema = z.object({
   promotionLabel: z.string().trim().max(180).nullable(),
   paymentMethods: z.object({
     stripe: z.boolean(),
-    paypal: z.boolean(),
     bank: z.boolean(),
   }),
 }).superRefine((value, context) => {
@@ -47,7 +46,7 @@ export async function PATCH(request: Request) {
     global_adjustment_value: parsed.data.adjustmentValue,
     promotion_label: parsed.data.promotionLabel || null,
     payment_stripe_enabled: parsed.data.paymentMethods.stripe,
-    payment_paypal_enabled: parsed.data.paymentMethods.paypal,
+    payment_paypal_enabled: false,
     payment_bank_enabled: parsed.data.paymentMethods.bank,
     updated_by: auth.user.id,
   };

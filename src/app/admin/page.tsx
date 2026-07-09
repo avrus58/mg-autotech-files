@@ -152,7 +152,6 @@ type CustomerForm = {
   commercial_adjustment_type: "none" | "percentage" | "fixed";
   commercial_adjustment_value: string;
   payment_stripe: PaymentOverride;
-  payment_paypal: PaymentOverride;
   payment_bank: PaymentOverride;
   commercial_internal_note: string;
   effective_custom_unit_price_eur: string;
@@ -385,7 +384,6 @@ function makeCustomerForm(customer: Profile): CustomerForm {
     commercial_adjustment_type: "none",
     commercial_adjustment_value: "0",
     payment_stripe: "inherit",
-    payment_paypal: "inherit",
     payment_bank: "inherit",
     commercial_internal_note: "",
     effective_custom_unit_price_eur: "",
@@ -694,7 +692,6 @@ export default function AdminPage() {
         commercial_adjustment_type: policy.adjustment_type || "none",
         commercial_adjustment_value: String(policy.adjustment_value || 0),
         payment_stripe: paymentOverride(policy.payment_stripe_enabled),
-        payment_paypal: paymentOverride(policy.payment_paypal_enabled),
         payment_bank: paymentOverride(policy.payment_bank_enabled),
         commercial_internal_note: policy.internal_note || "",
         effective_custom_unit_price_eur: String(payload.effectiveQuote?.customUnitPriceEuro ?? ""),
@@ -810,7 +807,6 @@ export default function AdminPage() {
             adjustmentValue: Number(customerForm.commercial_adjustment_value || 0),
             paymentMethods: {
               stripe: paymentOverrideValue(customerForm.payment_stripe),
-              paypal: paymentOverrideValue(customerForm.payment_paypal),
               bank: paymentOverrideValue(customerForm.payment_bank),
             },
             internalNote: customerForm.commercial_internal_note.trim() || null,
@@ -1937,9 +1933,8 @@ function CustomerDetailModal({ customer, form, setForm, creditInput, setCreditIn
                 <FormSelect label="Customer Adjustment" value={form.commercial_adjustment_type} onChange={(value) => updateForm("commercial_adjustment_type", value as CustomerForm["commercial_adjustment_type"])} options={["none", "percentage", "fixed"]} />
                 <FormInput label={form.commercial_adjustment_type === "percentage" ? "Adjustment (%)" : "Adjustment (EUR / credit)"} type="number" value={form.commercial_adjustment_value} onChange={(value) => updateForm("commercial_adjustment_value", value)} />
               </div>
-              <div className="mt-5 grid gap-3 sm:grid-cols-3">
+              <div className="mt-5 grid gap-3 sm:grid-cols-2">
                 <PaymentPolicySelect label="Stripe" value={form.payment_stripe} onChange={(value) => updateForm("payment_stripe", value)} />
-                <PaymentPolicySelect label="PayPal" value={form.payment_paypal} onChange={(value) => updateForm("payment_paypal", value)} />
                 <PaymentPolicySelect label="Bank transfer" value={form.payment_bank} onChange={(value) => updateForm("payment_bank", value)} />
               </div>
               <p className="mt-4 text-xs leading-5 text-zinc-500">Positive adjustment values reduce the per-credit price; negative values increase it. “Inherit” follows the global payment setting.</p>

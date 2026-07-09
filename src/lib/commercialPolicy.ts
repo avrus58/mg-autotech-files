@@ -1,7 +1,7 @@
 import { creditPackages, getCreditPackage } from "@/lib/creditPackages";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 
-export const paymentMethodIds = ["stripe", "paypal", "bank"] as const;
+export const paymentMethodIds = ["stripe", "bank"] as const;
 export type PaymentMethodId = (typeof paymentMethodIds)[number];
 export type PriceAdjustmentType = "none" | "percentage" | "fixed";
 
@@ -39,7 +39,7 @@ export const defaultCommerceSettings: CommerceSettings = {
   global_adjustment_type: "percentage",
   global_adjustment_value: 20,
   promotion_label: "Limited time -20% on all credit purchases",
-  payment_paypal_enabled: true,
+  payment_paypal_enabled: false,
   payment_bank_enabled: true,
   payment_stripe_enabled: true,
 };
@@ -78,7 +78,7 @@ function normalizeSettings(row: Record<string, unknown> | null): CommerceSetting
       : "percentage") as PriceAdjustmentType,
     global_adjustment_value: asNumber(row.global_adjustment_value, 20),
     promotion_label: typeof row.promotion_label === "string" ? row.promotion_label : null,
-    payment_paypal_enabled: row.payment_paypal_enabled !== false,
+    payment_paypal_enabled: false,
     payment_bank_enabled: row.payment_bank_enabled !== false,
     payment_stripe_enabled: row.payment_stripe_enabled !== false,
     updated_at: typeof row.updated_at === "string" ? row.updated_at : undefined,
@@ -95,7 +95,7 @@ function normalizeCustomerPolicy(userId: string, row: Record<string, unknown> | 
       ? row.adjustment_type
       : "none") as PriceAdjustmentType,
     adjustment_value: asNumber(row.adjustment_value, 0),
-    payment_paypal_enabled: typeof row.payment_paypal_enabled === "boolean" ? row.payment_paypal_enabled : null,
+    payment_paypal_enabled: null,
     payment_bank_enabled: typeof row.payment_bank_enabled === "boolean" ? row.payment_bank_enabled : null,
     payment_stripe_enabled: typeof row.payment_stripe_enabled === "boolean" ? row.payment_stripe_enabled : null,
     internal_note: typeof row.internal_note === "string" ? row.internal_note : null,
@@ -137,7 +137,6 @@ export function effectivePaymentMethods(
 ): EffectivePaymentMethods {
   return {
     stripe: policy.payment_stripe_enabled ?? settings.payment_stripe_enabled,
-    paypal: policy.payment_paypal_enabled ?? settings.payment_paypal_enabled,
     bank: policy.payment_bank_enabled ?? settings.payment_bank_enabled,
   };
 }
@@ -196,7 +195,6 @@ export function buildCreditQuote(
       customerPolicy.adjustment_type !== "none" ||
       [
         customerPolicy.payment_stripe_enabled,
-        customerPolicy.payment_paypal_enabled,
         customerPolicy.payment_bank_enabled,
       ].some((value) => value != null),
   };

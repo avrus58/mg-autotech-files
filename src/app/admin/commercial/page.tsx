@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ArrowLeft, BadgeEuro, CreditCard, Landmark, Loader2, Save, ShieldCheck } from "lucide-react";
+import { ArrowLeft, BadgeEuro, CreditCard, Landmark, Loader2, Save } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 
 type AdjustmentType = "none" | "percentage" | "fixed";
@@ -11,12 +11,11 @@ type SettingsForm = {
   adjustmentType: AdjustmentType;
   adjustmentValue: string;
   promotionLabel: string;
-  paymentMethods: { stripe: boolean; paypal: boolean; bank: boolean };
+  paymentMethods: { stripe: boolean; bank: boolean };
 };
 
 const paymentOptions = [
   { id: "stripe", label: "Stripe", description: "Primary automatic card checkout", icon: CreditCard },
-  { id: "paypal", label: "PayPal", description: "Automatic PayPal checkout", icon: ShieldCheck },
   { id: "bank", label: "Bank transfer", description: "Manual SEPA verification", icon: Landmark },
 ] as const;
 
@@ -48,7 +47,6 @@ export default function CommercialSettingsPage() {
         promotionLabel: settings.promotion_label || "",
         paymentMethods: {
           stripe: settings.payment_stripe_enabled,
-          paypal: settings.payment_paypal_enabled,
           bank: settings.payment_bank_enabled,
         },
       });

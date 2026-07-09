@@ -52,7 +52,7 @@ const services: ServicePage[] = [
     benefits: [
       "Improved torque and power delivery for suitable stock hardware",
       "Workshop-friendly request flow with file versions and revision support",
-      "Credit-based checkout with Stripe, PayPal and bank transfer options",
+      "Credit-based checkout with Stripe card payment and bank transfer options",
       "Secure customer portal for uploads, status tracking and completed file delivery",
     ],
     process: [

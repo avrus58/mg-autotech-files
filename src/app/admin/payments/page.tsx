@@ -17,7 +17,6 @@ import {
   RotateCcw,
   Search,
   ShieldCheck,
-  WalletCards,
 } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 
@@ -100,7 +99,7 @@ type Payload = {
 const PAGE_SIZE = 20;
 const providerMeta = {
   stripe: { label: "Stripe", icon: CreditCard },
-  paypal: { label: "PayPal", icon: WalletCards },
+  paypal: { label: "Legacy", icon: Clock3 },
   bank: { label: "Bank", icon: Landmark },
 } as const;
 
@@ -293,7 +292,7 @@ export default function PaymentControlPage() {
             {view === "payments" && <>
               <div className="my-5 grid gap-3 md:grid-cols-[1fr_170px_190px]">
                 <label className="relative"><Search className="absolute left-4 top-3.5 h-4 w-4 text-zinc-600" /><input value={search} onChange={(event) => { setSearch(event.target.value); setPage(1); }} placeholder="Customer, reference or payment ID" className="h-11 w-full rounded-lg border border-white/10 bg-black/40 pl-11 pr-4 text-sm outline-none focus:border-red-700" /></label>
-                <select value={provider} onChange={(event) => { setProvider(event.target.value as "all" | Provider); setPage(1); }} className="h-11 rounded-lg border border-white/10 bg-black/40 px-3 text-sm font-bold"><option value="all">All providers</option><option value="stripe">Stripe</option><option value="paypal">PayPal</option><option value="bank">Bank</option></select>
+                <select value={provider} onChange={(event) => { setProvider(event.target.value as "all" | Provider); setPage(1); }} className="h-11 rounded-lg border border-white/10 bg-black/40 px-3 text-sm font-bold"><option value="all">All providers</option><option value="stripe">Stripe</option><option value="bank">Bank</option></select>
                 <select value={status} onChange={(event) => { setStatus(event.target.value); setPage(1); }} className="h-11 rounded-lg border border-white/10 bg-black/40 px-3 text-sm font-bold"><option value="all">All statuses</option><option value="pending">Pending</option><option value="succeeded">Succeeded</option><option value="failed">Failed</option><option value="requires_review">Needs review</option><option value="refunded">Refunded</option><option value="cancelled">Cancelled</option></select>
               </div>
               <div className="hidden overflow-x-auto border-y border-white/10 lg:block"><table className="w-full min-w-[980px] text-left text-sm"><thead className="text-xs uppercase text-zinc-500"><tr>{["Provider","Customer","Amount","Credits","Status","Credit match","Created","Action"].map((item) => <th key={item} className="px-3 py-4">{item}</th>)}</tr></thead><tbody>{visibleRecords.map((record) => <tr key={record.id} className="border-t border-white/10"><td className="px-3 py-4 font-black">{providerMeta[record.provider].label}</td><td className="px-3 py-4"><div className="font-bold">{record.customer?.customer_id || record.customer_email || "-"}</div><div className="mt-1 max-w-52 truncate text-xs text-zinc-600">{record.customer?.company_name || record.customer?.full_name || record.external_id}</div></td><td className="px-3 py-4 font-black">{money(record.amount_total, record.currency)}</td><td className="px-3 py-4 font-black">{record.credits}</td><td className="px-3 py-4"><StatusBadge status={record.status} /></td><td className="px-3 py-4">{record.creditMatched ? <CheckCircle2 className="h-5 w-5 text-emerald-400" /> : <AlertTriangle className="h-5 w-5 text-amber-400" />}</td><td className="px-3 py-4 text-zinc-500">{dateTime(record.created_at)}</td><td className="px-3 py-4"><button onClick={() => { setSelected(record); setReviewNote(record.review_note || ""); }} className="rounded-lg border border-white/10 px-3 py-2 text-xs font-black">Review</button></td></tr>)}</tbody></table></div>
@@ -326,9 +325,9 @@ export default function PaymentControlPage() {
               <textarea value={reviewNote} onChange={(event) => setReviewNote(event.target.value)} placeholder="Required audit note" className="mt-4 min-h-24 w-full resize-none rounded-lg border border-white/10 bg-black/50 p-3 text-sm outline-none focus:border-red-700" />
               <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
                 <button disabled={saving || !reviewNote.trim()} onClick={() => void post({ action: "mark_reviewed", paymentId: selected.id, note: reviewNote.trim() })} className="h-11 rounded-lg border border-white/10 text-sm font-black disabled:opacity-40">Mark reviewed</button>
-                {selected.status === "succeeded" && selected.creditMatched && <button disabled={saving || !reviewNote.trim()} onClick={() => void refundPayment(selected)} className="h-11 rounded-lg border border-red-800/50 bg-red-950/30 text-sm font-black text-red-200 disabled:opacity-40"><RotateCcw className="mr-2 inline h-4 w-4" />Full refund</button>}
+                {selected.status === "succeeded" && selected.creditMatched && selected.provider !== "paypal" && <button disabled={saving || !reviewNote.trim()} onClick={() => void refundPayment(selected)} className="h-11 rounded-lg border border-red-800/50 bg-red-950/30 text-sm font-black text-red-200 disabled:opacity-40"><RotateCcw className="mr-2 inline h-4 w-4" />Full refund</button>}
               </div>
-              {selected.provider_payment_id && selected.provider !== "bank" && <a href={selected.provider === "stripe" ? `https://dashboard.stripe.com/payments/${selected.provider_payment_id}` : "https://www.paypal.com/myaccount/activities/"} target="_blank" rel="noreferrer" className="mt-3 flex h-11 items-center justify-center rounded-lg border border-white/10 text-sm font-black text-zinc-300">Open provider <ExternalLink className="ml-2 h-4 w-4" /></a>}
+              {selected.provider_payment_id && selected.provider === "stripe" && <a href={`https://dashboard.stripe.com/payments/${selected.provider_payment_id}`} target="_blank" rel="noreferrer" className="mt-3 flex h-11 items-center justify-center rounded-lg border border-white/10 text-sm font-black text-zinc-300">Open provider <ExternalLink className="ml-2 h-4 w-4" /></a>}
             </section>}
           </aside>
         </section>
