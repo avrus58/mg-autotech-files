@@ -329,8 +329,9 @@ async function getExistingVehicleEngines(vehicleKeys: string[]) {
   const admin = getSupabaseAdmin();
   const rows: ExistingVehicleEngine[] = [];
   const uniqueKeys = [...new Set(vehicleKeys)].filter(Boolean);
-  for (let index = 0; index < uniqueKeys.length; index += 500) {
-    const chunk = uniqueKeys.slice(index, index + 500);
+  const chunkSize = 75;
+  for (let index = 0; index < uniqueKeys.length; index += chunkSize) {
+    const chunk = uniqueKeys.slice(index, index + chunkSize);
     const { data, error } = await admin
       .from("vehicle_engines")
       .select("id, vehicle_key, source_type, verification_status")
