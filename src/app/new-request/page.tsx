@@ -95,6 +95,9 @@ type CustomerProfile = {
   account_status: string | null;
 };
 
+const maxRequestFileSize = 32 * 1024 * 1024;
+const allowedRequestFileExtensions = [".bin", ".ori", ".mod", ".frf", ".hex", ".zip", ".sgo"];
+
 const mainServices: MainService[] = [
   {
     id: "only_options",
@@ -832,6 +835,17 @@ export default function NewRequestPage() {
       return;
     }
 
+    if (selectedFile.size > maxRequestFileSize) {
+      setMessage("The original file must be 32 MB or smaller.");
+      return;
+    }
+
+    const selectedFileName = selectedFile.name.toLowerCase();
+    if (!allowedRequestFileExtensions.some((extension) => selectedFileName.endsWith(extension))) {
+      setMessage("Unsupported file type. Please upload .bin, .ori, .mod, .frf, .hex, .zip or .sgo.");
+      return;
+    }
+
     if (!paymentAccepted || !responsibilityAccepted) {
       setMessage("Please accept payment and responsibility confirmation.");
       return;
@@ -941,17 +955,17 @@ export default function NewRequestPage() {
     );
 
     try {
+      const { data: sessionData } = await supabase.auth.getSession();
       await fetch("/api/email/new-order", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          ...(sessionData.session?.access_token
+            ? { Authorization: `Bearer ${sessionData.session.access_token}` }
+            : {}),
         },
         body: JSON.stringify({
           orderId: String(createdOrderId || ""),
-          customerEmail,
-          vehicle: `${selectedBrandName} ${selectedModelName} ${selectedEngineName}`.trim(),
-          service: serviceSummary,
-          credits: totalCredits,
         }),
       });
     } catch {
@@ -1408,9 +1422,30 @@ export default function NewRequestPage() {
 
                 <input
                   type="file"
+                  accept=".bin,.ori,.mod,.frf,.hex,.zip,.sgo"
                   className="hidden"
                   onChange={(event) => {
                     const file = event.target.files?.[0] ?? null;
+                    if (file && file.size > maxRequestFileSize) {
+                      setMessage("The original file must be 32 MB or smaller.");
+                      event.currentTarget.value = "";
+                      setSelectedFile(null);
+                      setFileName("");
+                      return;
+                    }
+                    if (
+                      file &&
+                      !allowedRequestFileExtensions.some((extension) =>
+                        file.name.toLowerCase().endsWith(extension)
+                      )
+                    ) {
+                      setMessage("Unsupported file type. Please upload .bin, .ori, .mod, .frf, .hex, .zip or .sgo.");
+                      event.currentTarget.value = "";
+                      setSelectedFile(null);
+                      setFileName("");
+                      return;
+                    }
+                    setMessage("");
                     setSelectedFile(file);
                     setFileName(file?.name ?? "");
                   }}

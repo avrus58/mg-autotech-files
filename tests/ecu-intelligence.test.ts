@@ -30,6 +30,7 @@ import {
   emptyCustomerCommercialPolicy,
 } from "../src/lib/commercialPolicy";
 import { paymentProviderFromSource } from "../src/lib/paymentAudit";
+import { checkRateLimit, getClientIp, rateLimitKey } from "../src/lib/rateLimit";
 import {
   buildPublicSimilarityEvidence,
   calculateSimilarityReadiness,
@@ -648,6 +649,21 @@ test("auth guards recognize refresh races as transient instead of a real logout"
   assert.equal(isTransientAuthError({ name: "AuthRetryableFetchError" }), true);
   assert.equal(isTransientAuthError({ name: "NavigatorLockAcquireTimeoutError" }), true);
   assert.equal(isTransientAuthError({ name: "AuthInvalidCredentialsError" }), false);
+});
+
+test("rate limiter keys requests by forwarded client IP and enforces limits", () => {
+  const request = new Request("https://file.mgautotech.de/api/email/new-customer", {
+    headers: { "x-forwarded-for": "203.0.113.10, 10.0.0.1" },
+  });
+  const key = rateLimitKey(request, "unit-test", crypto.randomUUID());
+
+  assert.equal(getClientIp(request), "203.0.113.10");
+  assert.equal(checkRateLimit({ key, limit: 2, windowMs: 60_000 }).allowed, true);
+  assert.equal(checkRateLimit({ key, limit: 2, windowMs: 60_000 }).allowed, true);
+  const blocked = checkRateLimit({ key, limit: 2, windowMs: 60_000 });
+  assert.equal(blocked.allowed, false);
+  assert.equal(blocked.remaining, 0);
+  assert.ok(blocked.retryAfterSeconds > 0);
 });
 
 test("browser Supabase client persists and serializes cross-tab token refresh", () => {
