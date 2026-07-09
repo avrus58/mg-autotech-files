@@ -1,128 +1,43 @@
 import { NextRequest, NextResponse } from "next/server";
-import vehicles from "../../../../data/vehicle-database.json";
-
-type StageData = {
-  stockHp: number | null;
-  tunedHp: number | null;
-  gainHp: number | null;
-  stockNm: number | null;
-  tunedNm: number | null;
-  gainNm: number | null;
-};
-
-type Vehicle = {
-  brand: string;
-  brandId: string;
-  model: string;
-  modelId: string;
-  generation: string;
-  generationId: string;
-  engine: string;
-  engineId: string;
-  fuelType?: string | null;
-  ecu?: string[];
-  stage1?: StageData | null;
-  stage2?: StageData | null;
-  readMethods?: string[];
-  services?: string[];
-  imageUrl?: string;
-};
-
-const data = vehicles as Vehicle[];
-
-function uniqueBy<T>(items: T[], keyFn: (item: T) => string) {
-  const map = new Map<string, T>();
-  for (const item of items) map.set(keyFn(item), item);
-  return Array.from(map.values());
-}
+import {
+  findVehicleFromRows,
+  getSafePublishedVehicleRows,
+  listBrandsFromRows,
+  listEnginesFromRows,
+  listGenerationsFromRows,
+  listModelsFromRows,
+} from "@/lib/vehicleControl/public";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-
   const type = searchParams.get("type");
-  const brandId = searchParams.get("brandId");
-  const modelId = searchParams.get("modelId");
-  const generationId = searchParams.get("generationId");
-  const engineId = searchParams.get("engineId");
+  const brandId = searchParams.get("brandId") ?? "";
+  const modelId = searchParams.get("modelId") ?? "";
+  const generationId = searchParams.get("generationId") ?? "";
+  const engineId = searchParams.get("engineId") ?? "";
+  const { rows, source } = await getSafePublishedVehicleRows();
 
   if (type === "brands") {
-    const brands = uniqueBy(data, (v) => v.brandId)
-      .map((v) => ({ id: v.brandId, name: v.brand }))
-      .sort((a, b) => a.name.localeCompare(b.name));
-
-    return NextResponse.json(brands);
+    return NextResponse.json(listBrandsFromRows(rows), { headers: { "x-vehicle-source": source } });
   }
 
   if (type === "models") {
-    const filtered = data.filter((v) => v.brandId === brandId);
-
-    const models = uniqueBy(filtered, (v) => v.modelId)
-      .map((v) => ({ id: v.modelId, name: v.model }))
-      .sort((a, b) => a.name.localeCompare(b.name));
-
-    return NextResponse.json(models);
+    return NextResponse.json(listModelsFromRows(rows, brandId), { headers: { "x-vehicle-source": source } });
   }
 
   if (type === "generations") {
-    const filtered = data.filter(
-      (v) => v.brandId === brandId && v.modelId === modelId
-    );
-
-    const generations = uniqueBy(filtered, (v) => v.generationId)
-      .map((v) => ({ id: v.generationId, name: v.generation }))
-      .sort((a, b) => a.name.localeCompare(b.name));
-
-    return NextResponse.json(generations);
+    return NextResponse.json(listGenerationsFromRows(rows, brandId, modelId), { headers: { "x-vehicle-source": source } });
   }
 
   if (type === "engines") {
-    const filtered = data.filter(
-      (v) =>
-        v.brandId === brandId &&
-        v.modelId === modelId &&
-        v.generationId === generationId
-    );
-
-    const engines = uniqueBy(filtered, (v) => v.engineId).map((v) => ({
-      id: v.engineId,
-      name: v.engine,
-      fuelType: v.fuelType,
-    }));
-
-    return NextResponse.json(engines);
+    return NextResponse.json(listEnginesFromRows(rows, brandId, modelId, generationId), { headers: { "x-vehicle-source": source } });
   }
 
   if (type === "vehicle") {
-    const vehicle = data.find(
-      (v) =>
-        v.brandId === brandId &&
-        v.modelId === modelId &&
-        v.generationId === generationId &&
-        v.engineId === engineId
-    );
-
-    if (!vehicle) return NextResponse.json(null);
-
-    return NextResponse.json({
-      brand: vehicle.brand,
-      brandId: vehicle.brandId,
-      model: vehicle.model,
-      modelId: vehicle.modelId,
-      generation: vehicle.generation,
-      generationId: vehicle.generationId,
-      engine: vehicle.engine,
-      engineId: vehicle.engineId,
-      fuelType: vehicle.fuelType ?? null,
-      ecu: vehicle.ecu ?? [],
-      stage1: vehicle.stage1 ?? null,
-      stage2: vehicle.stage2 ?? null,
-      readMethods: vehicle.readMethods ?? [],
-      services: vehicle.services ?? [],
+    return NextResponse.json(findVehicleFromRows(rows, brandId, modelId, generationId, engineId), {
+      headers: { "x-vehicle-source": source },
     });
   }
 
-  return NextResponse.json(
-    { error: "Invalid type" },
-    { status: 400 }
-  );
+  return NextResponse.json({ error: "Invalid type" }, { status: 400 });
 }

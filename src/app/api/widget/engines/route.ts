@@ -12,6 +12,5 @@ export async function GET(request: NextRequest) {
   const make = params.get("make") ?? "";
   const model = params.get("model") ?? "";
   const year = params.get("year") ?? "";
-  return NextResponse.json({ items: make && model && year ? widgetEngines(make, model, year) : [] }, { headers: widgetCorsHeaders(origin) });
+  return NextResponse.json({ items: make && model && year ? await widgetEngines(make, model, year) : [] }, { headers: widgetCorsHeaders(origin) });
 }
-

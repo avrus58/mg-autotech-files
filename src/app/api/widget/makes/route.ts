@@ -10,6 +10,5 @@ export async function GET(request: NextRequest) {
   const result = await validateWidgetClient(key, request.headers, request.nextUrl.searchParams.get("lang"), { path: "/api/widget/makes", sessionToken: session });
   const origin = result.requestOrigin ?? request.headers.get("origin") ?? "";
   if (!result.valid) return widgetUnavailable(result.language ?? "en", origin);
-  return NextResponse.json({ items: widgetMakes() }, { headers: widgetCorsHeaders(origin) });
+  return NextResponse.json({ items: await widgetMakes() }, { headers: widgetCorsHeaders(origin) });
 }
-

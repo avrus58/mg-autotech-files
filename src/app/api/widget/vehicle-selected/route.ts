@@ -24,8 +24,7 @@ export async function POST(request: NextRequest) {
   });
   const origin = result.requestOrigin ?? originHeader;
   if (!result.valid) return widgetUnavailable(result.language ?? "en", origin);
-  const vehicle = widgetVehicle(parsed.data.make, parsed.data.model, parsed.data.year, parsed.data.engine);
+  const vehicle = await widgetVehicle(parsed.data.make, parsed.data.model, parsed.data.year, parsed.data.engine);
   if (!vehicle) return NextResponse.json({ vehicle: null }, { status: 404, headers: widgetCorsHeaders(origin) });
   return NextResponse.json({ vehicle, targetOrigin: origin }, { headers: widgetCorsHeaders(origin) });
 }
-

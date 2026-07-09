@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
     return widgetUnavailable(validation.language, responseOrigin, 404);
   }
 
-  const vehicle = widgetVehicle(parsed.data.make, parsed.data.model, parsed.data.year, parsed.data.engine);
+  const vehicle = await widgetVehicle(parsed.data.make, parsed.data.model, parsed.data.year, parsed.data.engine);
   if (!vehicle) return widgetUnavailable(validation.language, responseOrigin, 404);
   const performance = parsed.data.stage === "Stage 2" ? vehicle.stage2 : vehicle.stage1;
   if (!performance || (performance.tunedHp === null && performance.tunedNm === null)) {

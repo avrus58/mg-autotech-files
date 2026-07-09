@@ -11,6 +11,5 @@ export async function GET(request: NextRequest) {
   if (!result.valid) return widgetUnavailable(result.language ?? "en", origin);
   const make = params.get("make") ?? "";
   const model = params.get("model") ?? "";
-  return NextResponse.json({ items: make && model ? widgetYears(make, model) : [] }, { headers: widgetCorsHeaders(origin) });
+  return NextResponse.json({ items: make && model ? await widgetYears(make, model) : [] }, { headers: widgetCorsHeaders(origin) });
 }
-

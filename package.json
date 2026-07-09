@@ -8,7 +8,7 @@
     "start": "next start",
     "check:payments": "node scripts/check-payment-env.js",
     "fixtures:ecu-intelligence": "tsx scripts/generate-ai-training-fixtures.ts",
-    "test": "npm run test:ecu-intelligence",
+    "test": "tsx --test tests/*.test.ts",
     "test:ecu-intelligence": "tsx --test tests/ecu-intelligence.test.ts",
     "typecheck": "tsc --noEmit",
     "lint": "eslint"

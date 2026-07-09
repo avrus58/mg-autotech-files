@@ -1126,6 +1126,18 @@ export default function AdminPage() {
           </div>
           <nav className="space-y-2">
             <SidebarButton active={activeTab === "orders"} icon={<FileCode2 />} label="Orders" count={stats.total} onClick={() => setActiveTab("orders")} />
+            {hasStaffPermission(adminAccess, "orders.view") && (
+              <Link
+                href="/admin/requests"
+                className="flex w-full items-center justify-between gap-3 rounded-2xl px-4 py-3 text-left text-sm font-black text-zinc-400 transition hover:bg-white/[0.06] hover:text-white"
+              >
+                <span className="flex items-center gap-3">
+                  <Clipboard className="h-5 w-5" />
+                  Request Control
+                </span>
+                <span className="rounded-full bg-red-950/40 px-2 py-1 text-[10px] font-black text-red-200">WORK</span>
+              </Link>
+            )}
             {hasStaffPermission(adminAccess, "customers.view") && (
               <SidebarButton active={activeTab === "customers"} icon={<Users />} label="Customers" count={stats.customers} onClick={() => setActiveTab("customers")} />
             )}
@@ -1151,6 +1163,18 @@ export default function AdminPage() {
                   ECU Learning
                 </span>
                 <span className="rounded-full bg-emerald-950/40 px-2 py-1 text-xs text-emerald-200">DATA</span>
+              </Link>
+            )}
+            {hasStaffPermission(adminAccess, "vehicles.manage") && (
+              <Link
+                href="/admin/vehicles"
+                className="flex w-full items-center justify-between gap-3 rounded-2xl px-4 py-3 text-left text-sm font-black text-zinc-400 transition hover:bg-white/[0.06] hover:text-white"
+              >
+                <span className="flex items-center gap-3">
+                  <Car className="h-5 w-5" />
+                  Vehicle Database
+                </span>
+                <span className="rounded-full bg-red-950/40 px-2 py-1 text-[10px] font-black text-red-200">CONTROL</span>
               </Link>
             )}
             {hasStaffPermission(adminAccess, "widget.manage") && (

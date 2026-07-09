@@ -1,0 +1,172 @@
+export type StageData = {
+  stockHp: number | null;
+  tunedHp: number | null;
+  gainHp: number | null;
+  stockNm: number | null;
+  tunedNm: number | null;
+  gainNm: number | null;
+};
+
+export type RawVehicleRow = {
+  source?: string;
+  sourceUrl?: string;
+  brand: string;
+  brandId?: string;
+  model: string;
+  modelId?: string;
+  generation: string;
+  generationId?: string;
+  engine: string;
+  engineId?: string;
+  fuelType?: string | null;
+  ecu?: string[];
+  stage1?: StageData | null;
+  stage2?: StageData | null;
+  readMethods?: string[];
+  services?: string[];
+  imageUrl?: string | null;
+  scrapedAt?: string;
+};
+
+export type VerificationStatus = "imported" | "unverified" | "needs_review" | "verified" | "rejected";
+export type PublishStatus = "draft" | "published" | "archived";
+export type VehicleServiceKey =
+  | "stage1"
+  | "stage2"
+  | "stage3"
+  | "dpf_off"
+  | "egr_off"
+  | "adblue_off"
+  | "dtc_off"
+  | "vmax_off"
+  | "start_stop_off"
+  | "tcu_tune"
+  | "tcu_shift"
+  | "tcu_lockup"
+  | "pop_bangs"
+  | "launch_control";
+
+export const vehicleServiceKeys: VehicleServiceKey[] = [
+  "stage1",
+  "stage2",
+  "stage3",
+  "dpf_off",
+  "egr_off",
+  "adblue_off",
+  "dtc_off",
+  "vmax_off",
+  "start_stop_off",
+  "tcu_tune",
+  "tcu_shift",
+  "tcu_lockup",
+  "pop_bangs",
+  "launch_control",
+];
+
+export const vehicleServiceLabels: Record<VehicleServiceKey, string> = {
+  stage1: "Stage 1",
+  stage2: "Stage 2",
+  stage3: "Stage 3",
+  dpf_off: "DPF OFF",
+  egr_off: "EGR OFF",
+  adblue_off: "AdBlue OFF",
+  dtc_off: "DTC OFF",
+  vmax_off: "VMAX OFF",
+  start_stop_off: "Start-Stop OFF",
+  tcu_tune: "TCU Tune",
+  tcu_shift: "TCU Shift",
+  tcu_lockup: "TCU Lock-up",
+  pop_bangs: "Pop and Bangs",
+  launch_control: "Launch Control",
+};
+
+export type VehicleControlRecord = {
+  id?: string;
+  brand: string;
+  brandId?: string | null;
+  model: string;
+  modelId?: string | null;
+  generation: string;
+  generationId?: string | null;
+  engine: string;
+  engineId?: string | null;
+  vehicleKey: string;
+  displayName: string;
+  yearFrom: number | null;
+  yearTo: number | null;
+  faceliftLabel: string | null;
+  isLci: boolean;
+  fuelType: string | null;
+  displacementCc: number | null;
+  stockHp: number | null;
+  stockNm: number | null;
+  tunedHp: number | null;
+  tunedNm: number | null;
+  ecuFamily: string | null;
+  ecuType: string | null;
+  ecuHardware: string | null;
+  ecuSoftware: string | null;
+  ecuNotes: string | null;
+  protectionNotes: string | null;
+  unlockNotes: string | null;
+  gearboxType: string | null;
+  tcuType: string | null;
+  tcuNotes: string | null;
+  services: VehicleServiceKey[];
+  readMethods: string[];
+  customerSafeNotes: string | null;
+  adminTechnicalNotes: string | null;
+  sourceType: string;
+  sourceReference: string | null;
+  sourceUrl: string | null;
+  confidenceScore: number;
+  verificationStatus: VerificationStatus;
+  publishStatus: PublishStatus;
+  active: boolean;
+  published: boolean;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+};
+
+export type PublicVehicleRecord = {
+  id: string;
+  brand: string;
+  brandId: string;
+  model: string;
+  modelId: string;
+  generation: string;
+  generationId: string;
+  engine: string;
+  engineId: string;
+  fuelType: string | null;
+  ecu: string[];
+  stage1: StageData | null;
+  stage2: StageData | null;
+  readMethods: string[];
+  services: string[];
+  vehicleKey?: string;
+  customerSafeNotes?: string | null;
+};
+
+export type VehicleValidationIssue = {
+  severity: "info" | "warning" | "error";
+  code: string;
+  message: string;
+  vehicleKey?: string | null;
+  entityType?: string;
+  entityId?: string | null;
+  metadata?: Record<string, unknown>;
+};
+
+export type VehicleImportSummary = {
+  dryRun: boolean;
+  totalRows: number;
+  created: number;
+  updated: number;
+  skipped: number;
+  errors: number;
+  duplicates: number;
+  warnings: VehicleValidationIssue[];
+  sampleRecords: VehicleControlRecord[];
+  batchId?: string | null;
+};

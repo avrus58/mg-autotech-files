@@ -9,6 +9,7 @@ export const staffPermissionOptions = [
   { key: "credits.manage", label: "Adjust customer credits", group: "Finance" },
   { key: "file_expert.manage", label: "Review File Expert jobs", group: "File Expert" },
   { key: "ai_training.manage", label: "Review ECU learning data", group: "ECU Intelligence" },
+  { key: "vehicles.manage", label: "Manage vehicle database", group: "Vehicle Database" },
   { key: "widget.manage", label: "Manage widget clients and settings", group: "Widget SaaS" },
   { key: "staff.manage", label: "Manage staff access", group: "Security" },
 ] as const;
@@ -34,6 +35,7 @@ export const staffRoleDefaults: Record<Exclude<StaffRole, "owner">, StaffPermiss
     "credits.manage",
     "file_expert.manage",
     "ai_training.manage",
+    "vehicles.manage",
     "widget.manage",
   ],
   calibrator: [
