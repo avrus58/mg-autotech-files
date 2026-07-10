@@ -30,6 +30,8 @@ export type VehicleAdminUpdate = {
   services?: VehicleServiceKey[];
   customerSafeNotes?: string | null;
   adminTechnicalNotes?: string | null;
+  sourceType?: string;
+  sourceReference?: string | null;
   confidenceScore?: number;
   verificationStatus?: VerificationStatus;
   published?: boolean;
@@ -468,8 +470,8 @@ export async function createVehicleAdminRecord(update: VehicleAdminUpdate, actor
     readMethods: [],
     customerSafeNotes: update.customerSafeNotes ?? null,
     adminTechnicalNotes: update.adminTechnicalNotes ?? null,
-    sourceType: "manual",
-    sourceReference: null,
+    sourceType: update.sourceType ?? "manual",
+    sourceReference: update.sourceReference ?? null,
     sourceUrl: null,
     confidenceScore: update.confidenceScore ?? 70,
     verificationStatus: update.verificationStatus ?? "unverified",
@@ -529,7 +531,7 @@ export async function createVehicleAdminRecord(update: VehicleAdminUpdate, actor
     admin_technical_notes: update.adminTechnicalNotes ?? null,
     active: update.active !== false,
     published: Boolean(update.published),
-    source_type: "manual",
+    source_type: update.sourceType ?? "manual",
     confidence_score: update.confidenceScore ?? 70,
     verification_status: update.verificationStatus ?? "unverified",
     created_by: actorUserId,
