@@ -8,7 +8,7 @@ import {
   controlRecordToPublicVehicle,
   rawVehicleToControlRecord,
 } from "../src/lib/vehicleControl/normalization";
-import { getSafePublishedVehicleRows } from "../src/lib/vehicleControl/public";
+import { fetchPagedRowsForVehicleSelector, getSafePublishedVehicleRows } from "../src/lib/vehicleControl/public";
 import {
   buildVehicleImportSummary,
   createVehicleImportPlan,
@@ -138,6 +138,22 @@ test("JSON fallback returns safe vehicle rows when database access is unavailabl
     if (previousService === undefined) delete process.env.SUPABASE_SERVICE_ROLE_KEY;
     else process.env.SUPABASE_SERVICE_ROLE_KEY = previousService;
   }
+});
+
+test("public vehicle database pagination collects every page", async () => {
+  const sourceRows = Array.from({ length: 2505 }, (_, index) => ({ id: String(index + 1) }));
+  const rows = await fetchPagedRowsForVehicleSelector(async (from, to) => ({
+    data: sourceRows.slice(from, to + 1),
+    error: null,
+  }));
+  assert.equal(rows.length, 2505);
+  assert.equal(rows[0].id, "1");
+  assert.equal(rows.at(-1)?.id, "2505");
+});
+
+test("public vehicle database pagination handles empty database for JSON fallback", async () => {
+  const rows = await fetchPagedRowsForVehicleSelector(async () => ({ data: [], error: null }));
+  assert.deepEqual(rows, []);
 });
 
 test("validation catches duplicate vehicle keys and invalid published records", () => {
@@ -322,6 +338,7 @@ test("public selector queries database as published-only and keeps JSON fallback
   const source = readFileSync(resolve(process.cwd(), "src", "lib", "vehicleControl", "public.ts"), "utf8");
   assert.match(source, /\.eq\("active", true\)/);
   assert.match(source, /\.eq\("published", true\)/);
+  assert.match(source, /\.range\(from, to\)/);
   assert.match(source, /publicRowsFromJson/);
   assert.match(source, /customer_safe_notes/);
   assert.doesNotMatch(source, /admin_technical_notes|source_reference|confidence_score/);

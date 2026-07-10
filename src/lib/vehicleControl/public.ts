@@ -17,10 +17,13 @@ type PerformanceOverride = {
 
 const rawRows = vehicles as RawVehicleRow[];
 const overrides = performanceOverrides as Record<string, PerformanceOverride>;
+const databasePageSize = 1000;
+const cacheTtlMs = 60_000;
 
-type DbVehicleEngine = {
+type DbVehicleEngineBase = {
   id: string;
   vehicle_key: string;
+  generation_id: string;
   engine_name: string;
   external_id: string | null;
   fuel_type: string | null;
@@ -50,6 +53,9 @@ type DbVehicleEngine = {
       };
     };
   };
+};
+
+type DbVehicleDetail = {
   ecu_variants?: Array<{
     ecu_family: string | null;
     ecu_type: string | null;
@@ -73,6 +79,11 @@ type DbVehicleEngine = {
   }>;
 };
 
+type PagedResult<T> = {
+  data: T[] | null;
+  error: { message: string } | null;
+};
+
 function withOverrides(row: RawVehicleRow): PublicVehicleRecord {
   const publicRow = controlRecordToPublicVehicle(rawVehicleToControlRecord(row));
   const legacyKey = [row.brandId, row.modelId, row.generationId, row.engineId].join(":");
@@ -89,7 +100,23 @@ function publicRowsFromJson() {
   return rawRows.map(withOverrides);
 }
 
-function dbEngineToPublic(row: DbVehicleEngine): PublicVehicleRecord | null {
+export async function fetchPagedRowsForVehicleSelector<T>(
+  fetchPage: (from: number, to: number) => Promise<PagedResult<T>>,
+  pageSize = databasePageSize
+) {
+  const rows: T[] = [];
+  for (let from = 0; ; from += pageSize) {
+    const to = from + pageSize - 1;
+    const { data, error } = await fetchPage(from, to);
+    if (error) throw new Error(error.message);
+    const page = data ?? [];
+    rows.push(...page);
+    if (page.length < pageSize) break;
+  }
+  return rows;
+}
+
+function dbEngineToPublic(row: DbVehicleEngineBase, detail: DbVehicleDetail = {}): PublicVehicleRecord | null {
   const generation = row.generation;
   const model = generation?.model;
   const brand = model?.brand;
@@ -97,13 +124,13 @@ function dbEngineToPublic(row: DbVehicleEngine): PublicVehicleRecord | null {
   if (!row.active || !row.published || !brand.active || !brand.published || !model.active || !model.published || !generation.active || !generation.published) {
     return null;
   }
-  const ecu = (row.ecu_variants ?? [])
+  const ecu = (detail.ecu_variants ?? [])
     .filter((item) => item.active && item.published)
     .flatMap((item) => [item.ecu_type, item.ecu_family])
     .filter((value): value is string => Boolean(value));
-  const stage1 = (row.performance_profiles ?? []).find((item) => item.stage === "stage1" && item.active && item.published) ?? null;
-  const stage2 = (row.performance_profiles ?? []).find((item) => item.stage === "stage2" && item.active && item.published) ?? null;
-  const services = (row.service_capabilities ?? [])
+  const stage1 = (detail.performance_profiles ?? []).find((item) => item.stage === "stage1" && item.active && item.published) ?? null;
+  const stage2 = (detail.performance_profiles ?? []).find((item) => item.stage === "stage2" && item.active && item.published) ?? null;
+  const services = (detail.service_capabilities ?? [])
     .filter((item) => item.available)
     .map((item) => vehicleServiceLabels[item.service_key] ?? item.service_key);
   return {
@@ -141,29 +168,79 @@ function dbEngineToPublic(row: DbVehicleEngine): PublicVehicleRecord | null {
   };
 }
 
-async function publishedRowsFromDatabase() {
+async function publishedBaseRowsFromDatabase() {
   try {
     const admin = getSupabaseAdmin();
-    const { data, error } = await admin
+    const data = await fetchPagedRowsForVehicleSelector<DbVehicleEngineBase>((from, to) =>
+      admin
+        .from("vehicle_engines")
+        .select(`
+          id, vehicle_key, generation_id, engine_name, external_id, fuel_type, stock_hp, stock_nm, customer_safe_notes, active, published,
+          generation:vehicle_generations(id, name, external_id, active, published,
+            model:vehicle_models(id, name, external_id, active, published,
+              brand:vehicle_brands(id, name, external_id, active, published)
+            )
+          )
+        `)
+        .eq("active", true)
+        .eq("published", true)
+        .order("vehicle_key", { ascending: true })
+        .range(from, to) as unknown as Promise<PagedResult<DbVehicleEngineBase>>
+    );
+    return data.map((row) => dbEngineToPublic(row)).filter((row): row is PublicVehicleRecord => Boolean(row));
+  } catch {
+    return [];
+  }
+}
+
+async function publishedVehicleDetailFromDatabase(vehicleKey: string) {
+  try {
+    const admin = getSupabaseAdmin();
+    const { data: engine, error } = await admin
       .from("vehicle_engines")
       .select(`
-        id, vehicle_key, engine_name, external_id, fuel_type, stock_hp, stock_nm, customer_safe_notes, active, published,
+        id, vehicle_key, generation_id, engine_name, external_id, fuel_type, stock_hp, stock_nm, customer_safe_notes, active, published,
         generation:vehicle_generations(id, name, external_id, active, published,
           model:vehicle_models(id, name, external_id, active, published,
             brand:vehicle_brands(id, name, external_id, active, published)
           )
-        ),
-        ecu_variants:vehicle_ecu_variants(ecu_family, ecu_type, active, published),
-        service_capabilities:vehicle_service_capabilities(service_key, available),
-        performance_profiles:vehicle_performance_profiles(stage, stock_hp, stock_nm, tuned_hp, tuned_nm, gain_hp, gain_nm, active, published)
+        )
       `)
+      .eq("vehicle_key", vehicleKey)
       .eq("active", true)
       .eq("published", true)
-      .limit(20000);
-    if (error || !data?.length) return [];
-    return (data as unknown as DbVehicleEngine[]).map(dbEngineToPublic).filter((row): row is PublicVehicleRecord => Boolean(row));
+      .maybeSingle();
+    if (error || !engine) return null;
+
+    const engineId = (engine as { id: string }).id;
+    const [ecu, services, performance] = await Promise.all([
+      admin
+        .from("vehicle_ecu_variants")
+        .select("ecu_family, ecu_type, active, published")
+        .eq("engine_id", engineId)
+        .eq("active", true)
+        .eq("published", true),
+      admin
+        .from("vehicle_service_capabilities")
+        .select("service_key, available")
+        .eq("engine_id", engineId)
+        .eq("available", true),
+      admin
+        .from("vehicle_performance_profiles")
+        .select("stage, stock_hp, stock_nm, tuned_hp, tuned_nm, gain_hp, gain_nm, active, published")
+        .eq("engine_id", engineId)
+        .eq("active", true)
+        .eq("published", true),
+    ]);
+    if (ecu.error || services.error || performance.error) return null;
+
+    return dbEngineToPublic(engine as unknown as DbVehicleEngineBase, {
+      ecu_variants: ecu.data ?? [],
+      service_capabilities: (services.data ?? []) as DbVehicleDetail["service_capabilities"],
+      performance_profiles: (performance.data ?? []) as DbVehicleDetail["performance_profiles"],
+    });
   } catch {
-    return [];
+    return null;
   }
 }
 
@@ -172,10 +249,10 @@ let cachedRows: { source: "database" | "json"; rows: PublicVehicleRecord[]; expi
 export async function getSafePublishedVehicleRows(options: { forceRefresh?: boolean } = {}) {
   const now = Date.now();
   if (!options.forceRefresh && cachedRows && cachedRows.expiresAt > now) return cachedRows;
-  const databaseRows = await publishedRowsFromDatabase();
+  const databaseRows = await publishedBaseRowsFromDatabase();
   const result = databaseRows.length
-    ? { source: "database" as const, rows: databaseRows, expiresAt: now + 60_000 }
-    : { source: "json" as const, rows: publicRowsFromJson(), expiresAt: now + 60_000 };
+    ? { source: "database" as const, rows: databaseRows, expiresAt: now + cacheTtlMs }
+    : { source: "json" as const, rows: publicRowsFromJson(), expiresAt: now + cacheTtlMs };
   cachedRows = result;
   return result;
 }
@@ -221,4 +298,12 @@ export function findVehicleFromRows(rows: PublicVehicleRecord[], brandId: string
     row.generationId === generationId &&
     row.engineId === engineId
   ) ?? null;
+}
+
+export async function getSafePublishedVehicle(brandId: string, modelId: string, generationId: string, engineId: string) {
+  const list = await getSafePublishedVehicleRows();
+  const base = findVehicleFromRows(list.rows, brandId, modelId, generationId, engineId);
+  if (!base) return { source: list.source, row: null };
+  if (list.source !== "database") return { source: list.source, row: base };
+  return { source: "database" as const, row: await publishedVehicleDetailFromDatabase(base.vehicleKey ?? base.id) ?? base };
 }

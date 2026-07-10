@@ -1,6 +1,6 @@
 import {
-  findVehicleFromRows,
   getSafePublishedVehicleRows,
+  getSafePublishedVehicle,
   listBrandsFromRows,
   listEnginesFromRows,
   listGenerationsFromRows,
@@ -32,8 +32,7 @@ export async function widgetEngines(make: string, model: string, year: string) {
 }
 
 export async function widgetVehicle(make: string, model: string, year: string, engine: string) {
-  const { rows } = await getSafePublishedVehicleRows();
-  const row = findVehicleFromRows(rows, make, model, year, engine);
+  const { row } = await getSafePublishedVehicle(make, model, year, engine);
   if (!row) return null;
   const vehicleName = `${row.brand} ${row.model} ${row.generation} ${row.engine}`.replace(/\s+/g, " ").trim();
   return {

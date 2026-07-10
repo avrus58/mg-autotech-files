@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
-  findVehicleFromRows,
   getSafePublishedVehicleRows,
+  getSafePublishedVehicle,
   listBrandsFromRows,
   listEnginesFromRows,
   listGenerationsFromRows,
@@ -34,8 +34,9 @@ export async function GET(req: NextRequest) {
   }
 
   if (type === "vehicle") {
-    return NextResponse.json(findVehicleFromRows(rows, brandId, modelId, generationId, engineId), {
-      headers: { "x-vehicle-source": source },
+    const vehicle = await getSafePublishedVehicle(brandId, modelId, generationId, engineId);
+    return NextResponse.json(vehicle.row, {
+      headers: { "x-vehicle-source": vehicle.source },
     });
   }
 
