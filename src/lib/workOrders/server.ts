@@ -1,5 +1,11 @@
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import {
+  normalizeRequestMessageVisibility,
+  projectAdminRequestMessage,
+  type RequestMessageVisibilityStatus,
+  type RequestMessageVisibilityRow,
+} from "@/lib/workOrders/messageVisibility";
+import {
   adminWorkOrderStatuses,
   deliveryStatuses,
   finalFileStatuses,
@@ -143,6 +149,13 @@ export type WorkOrderNote = {
   body: string;
   pinned: boolean;
   customer_visible: boolean;
+  visibility_status: "visible" | "hidden" | "archived";
+  hidden_at: string | null;
+  hidden_by: string | null;
+  hidden_reason: string | null;
+  restored_at: string | null;
+  restored_by: string | null;
+  linked_request_message_id: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -163,7 +176,7 @@ export type AdminRequestListItem = {
 
 export type AdminRequestDetail = AdminRequestListItem & {
   migrationReady: boolean;
-  requestMessages: Array<{ id: string; sender_role: string; message: string; created_at: string }>;
+  requestMessages: Array<ReturnType<typeof projectAdminRequestMessage>>;
   notes: WorkOrderNote[];
   events: WorkOrderEvent[];
   fileExpert: {
@@ -353,8 +366,28 @@ async function fetchWorkOrderDetailRows(requestId: string) {
   const [notesResult, eventsResult, messagesResult] = await Promise.all([
     admin.from("request_internal_notes").select("*").eq("request_id", requestId).is("deleted_at", null).order("pinned", { ascending: false }).order("created_at", { ascending: false }),
     admin.from("request_work_order_events").select("*").eq("request_id", requestId).order("created_at", { ascending: false }).limit(200),
-    admin.from("request_messages").select("id,sender_role,message,created_at").eq("request_id", requestId).order("created_at", { ascending: true }).limit(200),
+    admin.from("request_messages").select("id,request_id,sender_id,sender_role,message,created_at,visibility_status,hidden_at,hidden_by,hidden_reason,restored_at,restored_by").eq("request_id", requestId).order("created_at", { ascending: true }).limit(200),
   ]);
+  let requestMessages: Array<ReturnType<typeof projectAdminRequestMessage>> = [];
+  if (messagesResult.error && isWorkOrderMigrationMissing(messagesResult.error)) {
+    const fallbackMessages = await admin
+      .from("request_messages")
+      .select("id,request_id,sender_id,sender_role,message,created_at")
+      .eq("request_id", requestId)
+      .order("created_at", { ascending: true })
+      .limit(200);
+    requestMessages = fallbackMessages.error
+      ? []
+      : (fallbackMessages.data ?? []).map((row) =>
+        projectAdminRequestMessage(row as RequestMessageVisibilityRow)
+      );
+  } else {
+    requestMessages = messagesResult.error
+      ? []
+      : (messagesResult.data ?? []).map((row) =>
+        projectAdminRequestMessage(row as RequestMessageVisibilityRow)
+      );
+  }
   return {
     notes: notesResult.error ? [] : (notesResult.data ?? []).map((row) => ({
       id: String(row.id),
@@ -365,6 +398,13 @@ async function fetchWorkOrderDetailRows(requestId: string) {
       body: String(row.body ?? ""),
       pinned: Boolean(row.pinned),
       customer_visible: Boolean(row.customer_visible),
+      visibility_status: normalizeRequestMessageVisibility(row.visibility_status),
+      hidden_at: row.hidden_at ?? null,
+      hidden_by: row.hidden_by ?? null,
+      hidden_reason: row.hidden_reason ?? null,
+      restored_at: row.restored_at ?? null,
+      restored_by: row.restored_by ?? null,
+      linked_request_message_id: row.linked_request_message_id ?? null,
       created_at: row.created_at ?? nowIso(),
       updated_at: row.updated_at ?? row.created_at ?? nowIso(),
     } satisfies WorkOrderNote)),
@@ -381,7 +421,7 @@ async function fetchWorkOrderDetailRows(requestId: string) {
       metadata: row.metadata && typeof row.metadata === "object" && !Array.isArray(row.metadata) ? row.metadata as Record<string, unknown> : {},
       created_at: row.created_at ?? nowIso(),
     } satisfies WorkOrderEvent)),
-    messages: messagesResult.error ? [] : (messagesResult.data ?? []),
+    messages: requestMessages,
     migrationReady: !(isWorkOrderMigrationMissing(notesResult.error) || isWorkOrderMigrationMissing(eventsResult.error)),
   };
 }
@@ -569,7 +609,7 @@ export async function getAdminRequestDetail(requestId: string): Promise<AdminReq
   return {
     ...buildListItem(order, profile, workOrder, trainingCounts.get(requestId) ?? 0),
     migrationReady: workOrders.migrationReady && rows.migrationReady,
-    requestMessages: rows.messages as Array<{ id: string; sender_role: string; message: string; created_at: string }>,
+    requestMessages: rows.messages,
     notes: rows.notes,
     events: rows.events,
     fileExpert,
@@ -695,10 +735,15 @@ export async function addAdminWorkOrderNote(input: {
       sender_id: input.actorUserId,
       sender_role: "admin",
       message: input.body,
-    });
-    if (messageResult.error) {
-      throw new Error(`Customer-visible note could not be copied to request messages: ${messageResult.error.message}`);
+      visibility_status: "visible",
+    }).select("id").single();
+    if (messageResult.error || !messageResult.data) {
+      throw new Error(`Customer-visible note could not be copied to request messages: ${messageResult.error?.message ?? "No message id was returned."}`);
     }
+    await admin
+      .from("request_internal_notes")
+      .update({ linked_request_message_id: messageResult.data.id })
+      .eq("id", note.data.id);
   }
 
   await recordWorkOrderEvent({
@@ -711,4 +756,103 @@ export async function addAdminWorkOrderNote(input: {
     metadata: { note_type: input.noteType, note_id: note.data.id },
   });
   return note.data;
+}
+
+export async function updateRequestMessageVisibility(input: {
+  requestId: string;
+  messageId: string;
+  actorUserId: string;
+  action: "hide" | "restore";
+  reason?: string | null;
+}) {
+  const admin = getSupabaseAdmin();
+  const currentResult = await admin
+    .from("request_messages")
+    .select("id,request_id,sender_id,sender_role,message,created_at,visibility_status,hidden_at,hidden_by,hidden_reason,restored_at,restored_by")
+    .eq("id", input.messageId)
+    .eq("request_id", input.requestId)
+    .maybeSingle();
+
+  if (currentResult.error) {
+    if (isWorkOrderMigrationMissing(currentResult.error)) {
+      throw new Error("Request message visibility migration is required.");
+    }
+    throw new Error(currentResult.error.message);
+  }
+  if (!currentResult.data) throw new Error("Request message not found.");
+
+  const current = currentResult.data as RequestMessageVisibilityRow;
+  const oldVisibility = normalizeRequestMessageVisibility(current.visibility_status);
+  const nextVisibility: RequestMessageVisibilityStatus = input.action === "hide" ? "hidden" : "visible";
+  const timestamp = nowIso();
+  const reason = input.reason?.trim() || null;
+  const patch = input.action === "hide"
+    ? {
+      visibility_status: nextVisibility,
+      hidden_at: timestamp,
+      hidden_by: input.actorUserId,
+      hidden_reason: reason,
+      restored_at: null,
+      restored_by: null,
+    }
+    : {
+      visibility_status: nextVisibility,
+      restored_at: timestamp,
+      restored_by: input.actorUserId,
+    };
+
+  const updatedResult = await admin
+    .from("request_messages")
+    .update(patch)
+    .eq("id", input.messageId)
+    .eq("request_id", input.requestId)
+    .select("id,request_id,sender_id,sender_role,message,created_at,visibility_status,hidden_at,hidden_by,hidden_reason,restored_at,restored_by")
+    .single();
+
+  if (updatedResult.error || !updatedResult.data) {
+    throw new Error(updatedResult.error?.message || "Request message visibility could not be updated.");
+  }
+
+  const notePatch = input.action === "hide"
+    ? {
+      visibility_status: nextVisibility,
+      hidden_at: timestamp,
+      hidden_by: input.actorUserId,
+      hidden_reason: reason,
+      restored_at: null,
+      restored_by: null,
+    }
+    : {
+      visibility_status: nextVisibility,
+      restored_at: timestamp,
+      restored_by: input.actorUserId,
+    };
+
+  await admin
+    .from("request_internal_notes")
+    .update(notePatch)
+    .eq("linked_request_message_id", input.messageId);
+
+  await admin
+    .from("request_internal_notes")
+    .update(notePatch)
+    .eq("request_id", input.requestId)
+    .eq("customer_visible", true)
+    .eq("body", current.message)
+    .is("linked_request_message_id", null);
+
+  await recordWorkOrderEvent({
+    requestId: input.requestId,
+    actorUserId: input.actorUserId,
+    eventType: input.action === "hide" ? "message_hidden_from_customer" : "message_restored_to_customer",
+    oldValue: { message_id: input.messageId, visibility_status: oldVisibility },
+    newValue: { message_id: input.messageId, visibility_status: nextVisibility, reason },
+    customerVisible: false,
+    message: input.action === "hide"
+      ? "Customer-visible message hidden from customer."
+      : "Customer-visible message restored to customer.",
+    metadata: { message_id: input.messageId, reason },
+  });
+
+  return projectAdminRequestMessage(updatedResult.data as RequestMessageVisibilityRow);
 }

@@ -10,6 +10,11 @@ import {
   sanitizeCustomerVisibleEvents,
 } from "../src/lib/workOrders/visibility";
 import {
+  filterCustomerVisibleRequestMessages,
+  isHiddenFromCustomer,
+  normalizeRequestMessageVisibility,
+} from "../src/lib/workOrders/messageVisibility";
+import {
   mapLegacyOrderStatus,
   splitServiceLabels,
 } from "../src/lib/workOrders/types";
@@ -24,6 +29,19 @@ test("work-order migration is additive, RLS protected and non-destructive", () =
   assert.match(sql, /has_staff_permission\('orders\.manage'\)/);
   assert.match(sql, /request_work_order_events_request_idx/i);
   assert.match(sql, /request_internal_notes_request_idx/i);
+  assert.doesNotMatch(sql, /\bdrop\s+table\b|\bdrop\s+column\b|\btruncate\b|\bdelete\s+from\b/i);
+});
+
+test("request message soft-hide migration is additive and preserves history", () => {
+  const sql = readFileSync(resolve(process.cwd(), "scripts", "add-request-message-soft-hide.sql"), "utf8");
+  assert.match(sql, /alter table public\.request_messages\s+add column if not exists visibility_status/i);
+  assert.match(sql, /alter table public\.request_internal_notes\s+add column if not exists visibility_status/i);
+  assert.match(sql, /hidden_at timestamptz/i);
+  assert.match(sql, /hidden_by uuid references auth\.users/i);
+  assert.match(sql, /hidden_reason text/i);
+  assert.match(sql, /linked_request_message_id uuid references public\.request_messages/i);
+  assert.match(sql, /alter table public\.request_messages enable row level security/i);
+  assert.match(sql, /request_messages_visible_request_idx/i);
   assert.doesNotMatch(sql, /\bdrop\s+table\b|\bdrop\s+column\b|\btruncate\b|\bdelete\s+from\b/i);
 });
 
@@ -44,10 +62,25 @@ test("anonymous users cannot call admin work-order APIs", async () => {
   const list = await import("../src/app/api/admin/requests/route");
   const detail = await import("../src/app/api/admin/requests/[id]/route");
   const notes = await import("../src/app/api/admin/requests/[id]/notes/route");
+  const visibility = await import("../src/app/api/admin/requests/[id]/messages/[messageId]/visibility/route");
   assert.equal((await list.GET(new Request("http://localhost/api/admin/requests"))).status, 401);
   assert.equal((await detail.GET(new Request("http://localhost/api/admin/requests/id"), { params: Promise.resolve({ id: "id" }) })).status, 401);
   assert.equal((await detail.PATCH(new Request("http://localhost/api/admin/requests/id", { method: "PATCH", body: "{}" }), { params: Promise.resolve({ id: "id" }) })).status, 401);
   assert.equal((await notes.POST(new Request("http://localhost/api/admin/requests/id/notes", { method: "POST", body: "{}" }), { params: Promise.resolve({ id: "id" }) })).status, 401);
+  assert.equal((await visibility.PATCH(new Request("http://localhost/api/admin/requests/id/messages/msg/visibility", { method: "PATCH", body: "{}" }), { params: Promise.resolve({ id: "id", messageId: "msg" }) })).status, 401);
+});
+
+test("request message visibility helper hides archived messages from customers", () => {
+  const rows = [
+    { id: "visible", request_id: "r1", sender_id: "u1", sender_role: "admin", message: "visible", created_at: "2026-01-01T00:00:00.000Z", visibility_status: "visible" },
+    { id: "legacy", request_id: "r1", sender_id: "u1", sender_role: "admin", message: "legacy", created_at: "2026-01-01T00:01:00.000Z", visibility_status: null },
+    { id: "hidden", request_id: "r1", sender_id: "u1", sender_role: "admin", message: "hidden", created_at: "2026-01-01T00:02:00.000Z", visibility_status: "hidden", hidden_reason: "test" },
+  ];
+  const customerRows = filterCustomerVisibleRequestMessages(rows);
+  assert.deepEqual(customerRows.map((row) => row.id), ["visible", "legacy"]);
+  assert.equal(JSON.stringify(customerRows).includes("hidden_reason"), false);
+  assert.equal(normalizeRequestMessageVisibility("archived"), "archived");
+  assert.equal(isHiddenFromCustomer({ visibility_status: "hidden" }), true);
 });
 
 test("customer sanitizer removes internal work-order and AI evidence fields", () => {
@@ -159,8 +192,38 @@ test("customer-visible note path copies to existing request messages while inter
   assert.match(source, /noteType === "customer_visible"/);
   assert.match(source, /request_messages/);
   assert.match(source, /request_internal_notes/);
+  assert.match(source, /linked_request_message_id/);
   assert.match(source, /internal_note_added/);
   assert.match(source, /Customer-visible note could not be copied to request messages/);
+});
+
+test("customer message API filters hidden messages and returns no visibility internals", () => {
+  const source = readFileSync(resolve(process.cwd(), "src", "app", "api", "requests", "[id]", "messages", "route.ts"), "utf8");
+  assert.match(source, /visibility_status\.eq\.visible/);
+  assert.match(source, /filterCustomerVisibleRequestMessages/);
+  assert.doesNotMatch(source, /hidden_reason|hidden_by|restored_by/);
+});
+
+test("admin message visibility route soft-hides and audits without hard delete", () => {
+  const route = readFileSync(resolve(process.cwd(), "src", "app", "api", "admin", "requests", "[id]", "messages", "[messageId]", "visibility", "route.ts"), "utf8");
+  const server = readFileSync(resolve(process.cwd(), "src", "lib", "workOrders", "server.ts"), "utf8");
+  assert.match(route, /requireStaffPermission\(request,\s*"orders\.manage"\)/);
+  assert.match(route, /z\.enum\(\["hide", "restore"\]\)/);
+  assert.match(server, /message_hidden_from_customer/);
+  assert.match(server, /message_restored_to_customer/);
+  assert.match(server, /recordWorkOrderEvent/);
+  assert.match(server, /visibility_status:\s*nextVisibility/);
+  assert.doesNotMatch(route + server, /\.delete\(|\bdelete\s+from\b/i);
+});
+
+test("admin work-order UI confirms hide and keeps hidden customer messages visible to admin", () => {
+  const source = readFileSync(resolve(process.cwd(), "src", "app", "admin", "requests", "[id]", "WorkOrderDetailClient.tsx"), "utf8");
+  assert.match(source, /Hide from customer/);
+  assert.match(source, /Restore to customer/);
+  assert.match(source, /window\.confirm/);
+  assert.match(source, /window\.prompt/);
+  assert.match(source, /Hidden from customer/);
+  assert.match(source, /\/api\/admin\/requests\/\$\{requestId\}\/messages\/\$\{messageId\}\/visibility/);
 });
 
 test("admin work-order mutations create timeline events and reject empty updates", () => {

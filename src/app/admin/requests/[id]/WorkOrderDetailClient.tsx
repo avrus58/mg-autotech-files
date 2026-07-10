@@ -46,8 +46,26 @@ type DetailPayload = {
   customer: Record<string, unknown> | null;
   workOrder: Record<string, unknown> | null;
   requestedServices: string[];
-  requestMessages: Array<{ id: string; sender_role: string; message: string; created_at: string }>;
-  notes: Array<{ id: string; note_type: string; body: string; pinned: boolean; customer_visible: boolean; created_at: string }>;
+  requestMessages: Array<{
+    id: string;
+    sender_role: string;
+    message: string;
+    created_at: string;
+    visibility_status?: "visible" | "hidden" | "archived";
+    hidden_at?: string | null;
+    hidden_reason?: string | null;
+  }>;
+  notes: Array<{
+    id: string;
+    note_type: string;
+    body: string;
+    pinned: boolean;
+    customer_visible: boolean;
+    visibility_status?: "visible" | "hidden" | "archived";
+    hidden_at?: string | null;
+    hidden_reason?: string | null;
+    created_at: string;
+  }>;
   events: Array<{ id: string; event_type: string; message: string | null; created_at: string; customer_visible: boolean }>;
   fileExpert: { linked: boolean; job: Record<string, unknown> | null; warning: string | null };
   aiEvidence: {
@@ -219,6 +237,42 @@ export default function WorkOrderDetailClient() {
       return;
     }
     setNoteBody("");
+    setSaving(false);
+    await load();
+  }
+
+  async function updateCustomerMessageVisibility(messageId: string, action: "hide" | "restore") {
+    if (!requestId) return;
+    const confirmed = window.confirm(
+      action === "hide"
+        ? "Hide this message from the customer? The message will remain visible to admins and the action will be logged."
+        : "Restore this message to the customer chat? The action will be logged."
+    );
+    if (!confirmed) return;
+    const reason = action === "hide"
+      ? window.prompt("Reason for hiding this message:", "Production smoke test cleanup")
+      : window.prompt("Reason for restoring this message:", "Admin restored message");
+    if (reason === null) return;
+
+    setSaving(true);
+    setMessage("");
+    const accessToken = await token();
+    if (!accessToken) {
+      setSaving(false);
+      return;
+    }
+    const response = await fetch(`/api/admin/requests/${requestId}/messages/${messageId}/visibility`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
+      body: JSON.stringify({ action, reason }),
+    });
+    const result = await response.json();
+    if (!response.ok) {
+      setMessage(result.error || "Message visibility could not be updated.");
+      setSaving(false);
+      return;
+    }
+    setMessage(action === "hide" ? "Message hidden from customer." : "Message restored to customer.");
     setSaving(false);
     await load();
   }
@@ -460,15 +514,23 @@ export default function WorkOrderDetailClient() {
                 </button>
               </div>
               <div className="mt-5 grid gap-3">
-                {payload.notes.length === 0 ? <Empty text="No internal notes yet." /> : payload.notes.map((note) => (
-                  <div key={note.id} className={`rounded-2xl border p-4 ${note.customer_visible ? "border-blue-700/30 bg-blue-950/15" : note.pinned ? "border-amber-700/30 bg-amber-950/15" : "border-white/10 bg-black/25"}`}>
+                {payload.notes.length === 0 ? <Empty text="No internal notes yet." /> : payload.notes.map((note) => {
+                  const hiddenNote = note.visibility_status === "hidden" || note.visibility_status === "archived";
+                  return (
+                  <div key={note.id} className={`rounded-2xl border p-4 ${hiddenNote ? "border-amber-700/40 bg-amber-950/20" : note.customer_visible ? "border-blue-700/30 bg-blue-950/15" : note.pinned ? "border-amber-700/30 bg-amber-950/15" : "border-white/10 bg-black/25"}`}>
                     <div className="mb-2 flex flex-wrap items-center gap-2 text-xs font-black">
                       <span className={`rounded-full border px-2 py-1 ${badgeClass(note.note_type)}`}>{labelFromToken(note.note_type)}</span>
+                      {hiddenNote && <span className="rounded-full border border-amber-700/40 bg-amber-950/30 px-2 py-1 text-amber-200">Hidden from customer</span>}
                       <span className="text-zinc-500">{formatDate(note.created_at)}</span>
                     </div>
                     <p className="whitespace-pre-wrap text-sm leading-6 text-zinc-200">{note.body}</p>
+                    {hiddenNote && (
+                      <p className="mt-3 rounded-xl border border-amber-700/30 bg-black/20 p-3 text-xs leading-5 text-amber-100">
+                        Hidden {formatDate(note.hidden_at)}{note.hidden_reason ? ` - ${note.hidden_reason}` : ""}
+                      </p>
+                    )}
                   </div>
-                ))}
+                );})}
               </div>
             </section>
 
@@ -527,12 +589,34 @@ export default function WorkOrderDetailClient() {
 
             <Panel title="Customer Messages" icon={<MessageSquare />}>
               <div className="max-h-[420px] space-y-3 overflow-auto pr-1">
-                {payload.requestMessages.length === 0 ? <Empty text="No customer messages yet." /> : payload.requestMessages.map((entry) => (
-                  <div key={entry.id} className={`rounded-2xl border p-4 ${entry.sender_role === "admin" ? "border-blue-700/30 bg-blue-950/15" : "border-white/10 bg-black/25"}`}>
-                    <div className="mb-2 text-xs font-black uppercase tracking-[0.14em] text-zinc-500">{entry.sender_role} - {formatDate(entry.created_at)}</div>
+                {payload.requestMessages.length === 0 ? <Empty text="No customer messages yet." /> : payload.requestMessages.map((entry) => {
+                  const hidden = entry.visibility_status === "hidden" || entry.visibility_status === "archived";
+                  return (
+                  <div key={entry.id} className={`rounded-2xl border p-4 ${hidden ? "border-amber-700/40 bg-amber-950/20" : entry.sender_role === "admin" ? "border-blue-700/30 bg-blue-950/15" : "border-white/10 bg-black/25"}`}>
+                    <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-xs font-black uppercase tracking-[0.14em] text-zinc-500">
+                      <span>{entry.sender_role} - {formatDate(entry.created_at)}</span>
+                      {hidden && <span className="rounded-full border border-amber-700/40 bg-amber-950/30 px-2 py-1 text-amber-200">Hidden from customer</span>}
+                    </div>
                     <p className="whitespace-pre-wrap text-sm leading-6 text-zinc-200">{entry.message}</p>
+                    {hidden && (
+                      <p className="mt-3 rounded-xl border border-amber-700/30 bg-black/20 p-3 text-xs leading-5 text-amber-100">
+                        Hidden {formatDate(entry.hidden_at)}{entry.hidden_reason ? ` - ${entry.hidden_reason}` : ""}
+                      </p>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => updateCustomerMessageVisibility(entry.id, hidden ? "restore" : "hide")}
+                      disabled={saving}
+                      className={`mt-3 rounded-xl border px-3 py-2 text-xs font-black disabled:opacity-50 ${
+                        hidden
+                          ? "border-emerald-700/40 bg-emerald-950/20 text-emerald-200 hover:bg-emerald-900/30"
+                          : "border-amber-700/40 bg-amber-950/20 text-amber-100 hover:bg-amber-900/30"
+                      }`}
+                    >
+                      {hidden ? "Restore to customer" : "Hide from customer"}
+                    </button>
                   </div>
-                ))}
+                );})}
               </div>
             </Panel>
           </aside>

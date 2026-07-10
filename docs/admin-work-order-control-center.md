@@ -65,6 +65,26 @@ Customer-visible notes are copied into the existing `request_messages` channel a
 
 Customer actions that matter operationally, such as a revision request or an additional upload, create safe timeline events for the admin workbench. These events store only safe summaries such as event type, file name and file size. They do not expose storage paths, raw binary content, hashes, provider names or AI internals to the customer.
 
+## Message Soft-Hide / Archive
+
+Customer-visible messages must not be hard-deleted. The additive `scripts/add-request-message-soft-hide.sql` migration adds visibility metadata to `request_messages` and customer-visible internal notes:
+
+- `visibility_status`
+- `hidden_at`
+- `hidden_by`
+- `hidden_reason`
+- `restored_at`
+- `restored_by`
+
+Customer message APIs return only visible or legacy-visible messages. Hidden or archived messages remain visible to admins on `/admin/requests/[id]` with a "Hidden from customer" badge and reason metadata.
+
+Admin actions:
+
+- `Hide from customer`: hides one request message from the customer, preserves database history, and writes a `message_hidden_from_customer` event.
+- `Restore to customer`: restores one hidden message and writes a `message_restored_to_customer` event.
+
+The hide/restore action requires `orders.manage`. Anonymous users and normal customers cannot call the admin visibility route.
+
 ## AI Evidence Rules
 
 The admin detail page shows AI evidence as read-only operational context:
@@ -117,10 +137,13 @@ Customer-facing pages only continue to use customer-safe vehicle fields.
 5. Change priority and confirm an event appears.
 6. Add an internal note and confirm it does not appear in the customer dashboard.
 7. Add a customer-visible note and confirm it appears in request messages.
-8. Open `/api/admin/requests` in incognito and confirm `401` or `403`.
-9. Use a normal customer session against `/api/admin/requests` and confirm `403`.
-10. Confirm `/dashboard/orders/[id]` still shows only customer-safe request data.
-11. Confirm no browser console errors.
+8. Hide a test customer-visible message and confirm it remains visible to admin as "Hidden from customer".
+9. Confirm the hidden message is no longer returned by `/api/requests/[id]/messages` for the customer.
+10. Restore the message only if it should become customer-visible again.
+11. Open `/api/admin/requests` in incognito and confirm `401` or `403`.
+12. Use a normal customer session against `/api/admin/requests` and confirm `403`.
+13. Confirm `/dashboard/orders/[id]` still shows only customer-safe request data.
+14. Confirm no browser console errors.
 
 ## Known Limitations
 

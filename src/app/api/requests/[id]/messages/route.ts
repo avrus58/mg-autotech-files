@@ -3,6 +3,10 @@ import { z } from "zod";
 import { requireApiUser } from "@/lib/apiAuth";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { hasStaffPermission, isStaffMember } from "@/lib/staffPermissions";
+import {
+  filterCustomerVisibleRequestMessages,
+  type RequestMessageVisibilityRow,
+} from "@/lib/workOrders/messageVisibility";
 
 const messageSchema = z.object({
   message: z.string().trim().min(1).max(4000),
@@ -51,15 +55,27 @@ export async function GET(
   const admin = getSupabaseAdmin();
   const { data, error } = await admin
     .from("request_messages")
-    .select("id, request_id, sender_id, sender_role, message, created_at")
+    .select("id, request_id, sender_id, sender_role, message, created_at, visibility_status")
     .eq("request_id", id)
+    .or("visibility_status.is.null,visibility_status.eq.visible")
     .order("created_at", { ascending: true });
 
   if (error) {
+    if (error.code === "42703") {
+      const legacy = await admin
+        .from("request_messages")
+        .select("id, request_id, sender_id, sender_role, message, created_at")
+        .eq("request_id", id)
+        .order("created_at", { ascending: true });
+      if (legacy.error) {
+        return NextResponse.json({ error: legacy.error.message }, { status: 500 });
+      }
+      return NextResponse.json({ messages: filterCustomerVisibleRequestMessages((legacy.data ?? []) as RequestMessageVisibilityRow[]) });
+    }
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ messages: data ?? [] });
+  return NextResponse.json({ messages: filterCustomerVisibleRequestMessages((data ?? []) as RequestMessageVisibilityRow[]) });
 }
 
 export async function POST(
@@ -85,6 +101,7 @@ export async function POST(
       sender_id: access.user.id,
       sender_role: access.senderRole,
       message: parsed.data.message,
+      visibility_status: "visible",
     })
     .select("id, request_id, sender_id, sender_role, message, created_at")
     .single();
