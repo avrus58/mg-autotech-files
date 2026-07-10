@@ -25,6 +25,11 @@ import { hasStaffPermission } from "../src/lib/staffPermissions";
 import { isTransientAuthError } from "../src/lib/authGuards";
 import { validateFileExpertDescriptor } from "../src/lib/fileExpert/server";
 import {
+  hasFileExpertCustomerLeak,
+  redactFileExpertResultForCustomer,
+  sanitizeFileExpertJobForCustomer,
+} from "../src/lib/fileExpert/publicResult";
+import {
   buildCreditQuote,
   defaultCommerceSettings,
   emptyCustomerCommercialPolicy,
@@ -887,6 +892,71 @@ test("customer cluster evidence exposes no sample IDs, offsets or raw data", () 
   assert.equal(serialized.includes("0x00001000"), false);
   assert.equal(serialized.includes("representative_offsets"), false);
   assert.equal(serialized.includes("raw"), false);
+});
+
+test("customer File Expert projection strips paths, hashes, offsets and admin fields", async () => {
+  const analyzerResult = await analyzeFileExpertBuffers({
+    jobId: "customer-safe-job",
+    ori: calibrationLikeBuffer(),
+    mod: (() => {
+      const mod = calibrationLikeBuffer();
+      mod.fill(0x42, 0x1000, 0x1100);
+      mod.fill(0x24, 0x3000, 0x3100);
+      return mod;
+    })(),
+  });
+  const safeJob = sanitizeFileExpertJobForCustomer({
+    id: "job-1",
+    user_id: "customer-1",
+    status: "completed",
+    brand: "BMW",
+    model: "5 Series",
+    engine: "530d",
+    ecu_type: "Bosch EDC17C50",
+    ori_file_path: "customer-1/job-1/ori-private.bin",
+    mod_file_path: "customer-1/job-1/mod-private.bin",
+    ori_sha256: "secret-ori-hash",
+    mod_sha256: "secret-mod-hash",
+    confidence_score: 88,
+    admin_notes: "private tuner note",
+    provider: "private-provider",
+    source_reference: "private-source",
+    ai_report: "private report mentions 0x00001000",
+    result_json: analyzerResult,
+    created_at: "2026-01-01T00:00:00.000Z",
+    updated_at: "2026-01-01T00:00:00.000Z",
+  });
+  const serialized = JSON.stringify(safeJob);
+  assert.equal(hasFileExpertCustomerLeak(safeJob), false);
+  assert.equal(serialized.includes("ori-private.bin"), false);
+  assert.equal(serialized.includes("secret-ori-hash"), false);
+  assert.equal(serialized.includes("confidence_score"), false);
+  assert.equal(serialized.includes("private tuner note"), false);
+  assert.equal(serialized.includes("0x00001000"), false);
+  assert.equal(serialized.includes("offset"), false);
+  assert.equal(serialized.includes("hex"), false);
+  assert.equal(serialized.includes("private-provider"), false);
+});
+
+test("customer File Expert analyzer result keeps safe summary while hiding binary coordinates", async () => {
+  const result = await analyzeFileExpertBuffers({
+    jobId: "safe-summary",
+    ori: calibrationLikeBuffer(),
+    mod: (() => {
+      const mod = calibrationLikeBuffer();
+      mod.fill(0x11, 0x2000, 0x2100);
+      return mod;
+    })(),
+  });
+  const safe = redactFileExpertResultForCustomer(result);
+  const serialized = JSON.stringify(safe);
+  assert.equal(hasFileExpertCustomerLeak(safe), false);
+  assert.equal(serialized.includes("main_conclusion"), true);
+  assert.equal(serialized.includes("changed_bytes"), true);
+  assert.equal(serialized.includes("0x"), false);
+  assert.equal(serialized.includes("first_64_bytes_hex"), false);
+  assert.equal(serialized.includes("ori_hex_preview"), false);
+  assert.equal(serialized.includes("sha256"), false);
 });
 
 test("admin cluster rebuild API rejects unauthenticated customers", async () => {

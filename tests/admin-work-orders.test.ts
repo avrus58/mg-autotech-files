@@ -162,3 +162,12 @@ test("admin work-order smoke script does not contain tokens or mutation calls", 
   assert.match(source, /\/api\/admin\/requests/);
   assert.doesNotMatch(source, /Authorization|Bearer|access_token|SUPABASE_SERVICE_ROLE_KEY|method:\s*"POST"|method:\s*"PATCH"/);
 });
+
+test("platform smoke scripts are non-mutating and contain no secrets", () => {
+  for (const script of ["smoke-public-platform.mjs", "smoke-admin-unauthenticated.mjs"]) {
+    const source = readFileSync(resolve(process.cwd(), "scripts", script), "utf8");
+    assert.match(source, /BASE_URL/);
+    assert.doesNotMatch(source, /Authorization|Bearer|access_token|SUPABASE_SERVICE_ROLE_KEY|STRIPE_SECRET_KEY/);
+    assert.doesNotMatch(source, /method:\s*["'](?:POST|PATCH|PUT|DELETE)["']/i);
+  }
+});

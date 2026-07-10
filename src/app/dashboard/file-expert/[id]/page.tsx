@@ -119,6 +119,7 @@ export default function FileExpertReportPage() {
   const [fingerprints, setFingerprints] = useState<FingerprintRow[]>([]);
   const [similarityEvidence, setSimilarityEvidence] = useState<PublicSimilarityEvidence | SimilaritySearchResult | null>(null);
   const [clusterEvidence, setClusterEvidence] = useState<PublicClusterEvidence | AdminClusterEvidence | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [reanalyzing, setReanalyzing] = useState(false);
   const [message, setMessage] = useState("");
@@ -153,6 +154,7 @@ export default function FileExpertReportPage() {
     setFingerprints(payload.fingerprints ?? []);
     setSimilarityEvidence(payload.similarityEvidence ?? null);
     setClusterEvidence(payload.clusterEvidence ?? null);
+    setIsAdmin(Boolean(payload.isAdmin));
     setLoading(false);
   }
 
@@ -317,7 +319,7 @@ export default function FileExpertReportPage() {
           <InfoCard title="Control unit" value={identity?.display_name || job.ecu_type || "Not identified"} icon={<Cpu />} />
           <InfoCard title="Module / supplier" value={[identity?.module_type, identity?.supplier].filter(Boolean).join(" / ") || "Unknown"} icon={<Database />} />
           <InfoCard title="File profile" value={`${formatLabel(primaryFile?.file_format)} / ${formatLabel(primaryFile?.read_scope)}`} icon={<FileCode2 />} />
-          <InfoCard title="Analysis confidence" value={job.confidence_score ? `${job.confidence_score}%` : "-"} icon={<Gauge />} />
+          <InfoCard title="Report state" value={formatLabel(job.status)} icon={<Gauge />} />
         </div>
 
         <section className="mb-6 grid gap-6 rounded-[2rem] border border-red-900/45 bg-white/[0.04] p-4 sm:p-6 xl:grid-cols-[1.1fr_0.9fr]">
@@ -450,7 +452,7 @@ export default function FileExpertReportPage() {
                     <MetricValue label="Confidence" value={formatLabel(similaritySummary.confidence)} />
                   </div>
                   <p className="mt-4 text-sm leading-7 text-zinc-400">{similaritySummary.message} Similarity is supporting evidence only and does not approve this file for writing.</p>
-                  {similarityEvidence && "matches" in similarityEvidence && similarityEvidence.matches.length ? (
+                  {isAdmin && similarityEvidence && "matches" in similarityEvidence && similarityEvidence.matches.length ? (
                     <div className="mt-4 space-y-3">
                       {similarityEvidence.matches.slice(0, 5).map((match) => (
                         <div key={match.training_sample_id} className="rounded-2xl border border-white/10 bg-black/25 p-4">
@@ -476,7 +478,7 @@ export default function FileExpertReportPage() {
                   </div>
                   <p className="mt-4 text-sm leading-7 text-zinc-400">{clusterEvidence.message}</p>
                   <div className="mt-3 rounded-2xl border border-amber-700/30 bg-amber-950/10 p-4 text-xs leading-6 text-amber-100/75">This is evidence only. Human tuner verification and checksum verification are required before any real write.</div>
-                  {"clusters" in clusterEvidence && clusterEvidence.clusters.length ? (
+                  {isAdmin && "clusters" in clusterEvidence && clusterEvidence.clusters.length ? (
                     <div className="mt-4 space-y-3">
                       {clusterEvidence.clusters.slice(0, 5).map((cluster) => (
                         <div key={cluster.id} className="rounded-2xl border border-violet-800/35 bg-violet-950/10 p-4">
@@ -509,40 +511,48 @@ export default function FileExpertReportPage() {
                 <Fingerprint className="h-5 w-5 text-red-400" /> Technical details
               </summary>
               <div className="mt-5 space-y-5">
-                {result?.comparison?.changed_blocks.length ? (
-                  <div className="overflow-x-auto rounded-2xl border border-white/10">
-                    <table className="w-full min-w-[620px] text-left text-sm">
-                      <thead className="bg-black/40 text-xs uppercase tracking-[0.14em] text-zinc-500"><tr><th className="px-4 py-3">Offset</th><th className="px-4 py-3">Length</th><th className="px-4 py-3">Changed bytes</th></tr></thead>
-                      <tbody className="divide-y divide-white/10">{result.comparison.changed_blocks.slice(0, 18).map((block) => (
-                        <tr key={`${block.start_offset_hex}-${block.end_offset_hex}`} className="bg-black/20"><td className="px-4 py-3 font-mono text-red-200">{block.start_offset_hex}</td><td className="px-4 py-3">{block.length}</td><td className="px-4 py-3">{block.changed_byte_count}</td></tr>
-                      ))}</tbody>
-                    </table>
+                {isAdmin ? (
+                  <>
+                    {result?.comparison?.changed_blocks.length ? (
+                      <div className="overflow-x-auto rounded-2xl border border-white/10">
+                        <table className="w-full min-w-[620px] text-left text-sm">
+                          <thead className="bg-black/40 text-xs uppercase tracking-[0.14em] text-zinc-500"><tr><th className="px-4 py-3">Offset</th><th className="px-4 py-3">Length</th><th className="px-4 py-3">Changed bytes</th></tr></thead>
+                          <tbody className="divide-y divide-white/10">{result.comparison.changed_blocks.slice(0, 18).map((block) => (
+                            <tr key={`${block.start_offset_hex}-${block.end_offset_hex}`} className="bg-black/20"><td className="px-4 py-3 font-mono text-red-200">{block.start_offset_hex}</td><td className="px-4 py-3">{block.length}</td><td className="px-4 py-3">{block.changed_byte_count}</td></tr>
+                          ))}</tbody>
+                        </table>
+                      </div>
+                    ) : null}
+                    {result?.map_candidates.length ? (
+                      <div className="overflow-x-auto rounded-2xl border border-white/10">
+                        <table className="w-full min-w-[620px] text-left text-sm">
+                          <thead className="bg-black/40 text-xs uppercase tracking-[0.14em] text-zinc-500"><tr><th className="px-4 py-3">Candidate offset</th><th className="px-4 py-3">Length</th><th className="px-4 py-3">Possible type</th><th className="px-4 py-3">Confidence</th></tr></thead>
+                          <tbody className="divide-y divide-white/10">{result.map_candidates.slice(0, 18).map((candidate, index) => <tr key={`${candidate.offset_hex}-${index}`} className="bg-black/20"><td className="px-4 py-3 font-mono text-red-200">{candidate.offset_hex}</td><td className="px-4 py-3">{candidate.length}</td><td className="px-4 py-3">{candidate.possible_type}</td><td className="px-4 py-3">{Math.round(candidate.confidence * 100)}%</td></tr>)}</tbody>
+                        </table>
+                        <div className="border-t border-white/10 px-4 py-3 text-xs text-amber-100/70">Structural candidates only. Exact map purpose requires ECU-specific definitions and human calibration review.</div>
+                      </div>
+                    ) : null}
+                    {result?.repeated_patterns.length ? (
+                      <div className="rounded-2xl border border-white/10 bg-black/25 p-4">
+                        <div className="text-xs font-black uppercase tracking-[0.14em] text-zinc-500">Repeated binary patterns</div>
+                        <div className="mt-3 space-y-2">{result.repeated_patterns.slice(0, 12).map((pattern) => <div key={pattern.signature} className="grid gap-2 border-t border-white/10 pt-2 text-xs sm:grid-cols-[120px_80px_1fr]"><span className="font-mono text-red-200">{pattern.signature}</span><span>{pattern.count} matches</span><span className="break-all text-zinc-500">{pattern.offsets.join(", ")}</span></div>)}</div>
+                      </div>
+                    ) : null}
+                    {fingerprints.map((fingerprint) => (
+                      <div key={fingerprint.id} className="rounded-2xl border border-white/10 bg-black/30 p-4 text-xs text-zinc-400">
+                        <div className="font-black uppercase text-red-200">{fingerprint.file_role} fingerprint</div>
+                        <div className="mt-2 break-all">SHA256 {shortHash(fingerprint.sha256)}</div>
+                        <div className="mt-2">Entropy {fingerprint.entropy ?? "-"} / FF {fingerprint.ff_ratio ?? "-"} / 00 {fingerprint.zero_ratio ?? "-"}</div>
+                      </div>
+                    ))}
+                    {job.ai_report && <details className="rounded-2xl border border-white/10 bg-black/25 p-4"><summary className="cursor-pointer font-black">Text report</summary><pre className="mt-4 whitespace-pre-wrap break-words text-xs leading-6 text-zinc-300">{job.ai_report}</pre></details>}
+                    <details className="rounded-2xl border border-white/10 bg-black/25 p-4"><summary className="cursor-pointer font-black">Analyzer JSON</summary><pre className="mt-4 max-h-[520px] overflow-auto text-xs leading-5 text-zinc-300">{JSON.stringify(job.result_json, null, 2)}</pre></details>
+                  </>
+                ) : (
+                  <div className="rounded-2xl border border-white/10 bg-black/25 p-4 text-sm leading-6 text-zinc-400">
+                    Technical coordinate data, raw previews and binary fingerprints are hidden on customer reports. MG AutoTech keeps those details inside the protected admin review workflow.
                   </div>
-                ) : null}
-                {result?.map_candidates.length ? (
-                  <div className="overflow-x-auto rounded-2xl border border-white/10">
-                    <table className="w-full min-w-[620px] text-left text-sm">
-                      <thead className="bg-black/40 text-xs uppercase tracking-[0.14em] text-zinc-500"><tr><th className="px-4 py-3">Candidate offset</th><th className="px-4 py-3">Length</th><th className="px-4 py-3">Possible type</th><th className="px-4 py-3">Confidence</th></tr></thead>
-                      <tbody className="divide-y divide-white/10">{result.map_candidates.slice(0, 18).map((candidate, index) => <tr key={`${candidate.offset_hex}-${index}`} className="bg-black/20"><td className="px-4 py-3 font-mono text-red-200">{candidate.offset_hex}</td><td className="px-4 py-3">{candidate.length}</td><td className="px-4 py-3">{candidate.possible_type}</td><td className="px-4 py-3">{Math.round(candidate.confidence * 100)}%</td></tr>)}</tbody>
-                    </table>
-                    <div className="border-t border-white/10 px-4 py-3 text-xs text-amber-100/70">Structural candidates only. Exact map purpose requires ECU-specific definitions and human calibration review.</div>
-                  </div>
-                ) : null}
-                {result?.repeated_patterns.length ? (
-                  <div className="rounded-2xl border border-white/10 bg-black/25 p-4">
-                    <div className="text-xs font-black uppercase tracking-[0.14em] text-zinc-500">Repeated binary patterns</div>
-                    <div className="mt-3 space-y-2">{result.repeated_patterns.slice(0, 12).map((pattern) => <div key={pattern.signature} className="grid gap-2 border-t border-white/10 pt-2 text-xs sm:grid-cols-[120px_80px_1fr]"><span className="font-mono text-red-200">{pattern.signature}</span><span>{pattern.count} matches</span><span className="break-all text-zinc-500">{pattern.offsets.join(", ")}</span></div>)}</div>
-                  </div>
-                ) : null}
-                {fingerprints.map((fingerprint) => (
-                  <div key={fingerprint.id} className="rounded-2xl border border-white/10 bg-black/30 p-4 text-xs text-zinc-400">
-                    <div className="font-black uppercase text-red-200">{fingerprint.file_role} fingerprint</div>
-                    <div className="mt-2 break-all">SHA256 {shortHash(fingerprint.sha256)}</div>
-                    <div className="mt-2">Entropy {fingerprint.entropy ?? "-"} / FF {fingerprint.ff_ratio ?? "-"} / 00 {fingerprint.zero_ratio ?? "-"}</div>
-                  </div>
-                ))}
-                {job.ai_report && <details className="rounded-2xl border border-white/10 bg-black/25 p-4"><summary className="cursor-pointer font-black">Text report</summary><pre className="mt-4 whitespace-pre-wrap break-words text-xs leading-6 text-zinc-300">{job.ai_report}</pre></details>}
-                <details className="rounded-2xl border border-white/10 bg-black/25 p-4"><summary className="cursor-pointer font-black">Analyzer JSON</summary><pre className="mt-4 max-h-[520px] overflow-auto text-xs leading-5 text-zinc-300">{JSON.stringify(job.result_json, null, 2)}</pre></details>
+                )}
               </div>
             </details>
 

@@ -5,7 +5,10 @@ import {
   getCurrentServerUser,
   isFileExpertAdmin,
 } from "@/lib/fileExpert/server";
-import { redactBinaryPreviews } from "@/lib/fileExpert/publicResult";
+import {
+  redactBinaryPreviews,
+  redactFileExpertResultForCustomer,
+} from "@/lib/fileExpert/publicResult";
 
 export async function POST(
   request: Request,
@@ -54,7 +57,10 @@ export async function POST(
 
   try {
     const result = await analyzeFileExpertJob(id);
-    return NextResponse.json({ status: "completed", result: redactBinaryPreviews(result) });
+    return NextResponse.json({
+      status: "completed",
+      result: isAdmin ? redactBinaryPreviews(result) : redactFileExpertResultForCustomer(result),
+    });
   } catch (analysisError) {
     return NextResponse.json(
       {

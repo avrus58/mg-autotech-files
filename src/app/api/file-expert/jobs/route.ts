@@ -10,6 +10,7 @@ import {
   sanitizeFileExpertName,
   validateFileExpertFile,
 } from "@/lib/fileExpert/server";
+import { sanitizeFileExpertJobsForCustomer } from "@/lib/fileExpert/publicResult";
 
 const jobListColumns = [
   "id",
@@ -74,7 +75,10 @@ export async function GET(request: Request) {
   const { data, error } = await query.limit(100);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  return NextResponse.json({ jobs: data ?? [] });
+  const jobs = data ?? [];
+  return NextResponse.json({
+    jobs: includeAll && isAdmin ? jobs : sanitizeFileExpertJobsForCustomer(jobs as unknown as Array<Record<string, unknown>>),
+  });
 }
 
 export async function POST(request: Request) {

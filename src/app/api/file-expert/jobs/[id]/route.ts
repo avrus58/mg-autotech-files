@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { getCurrentServerUser, isFileExpertAdmin } from "@/lib/fileExpert/server";
-import { redactBinaryPreviews } from "@/lib/fileExpert/publicResult";
+import {
+  redactBinaryPreviews,
+  sanitizeFileExpertJobForCustomer,
+} from "@/lib/fileExpert/publicResult";
 import {
   buildPublicSimilarityEvidence,
   getStoredSimilarityResults,
@@ -61,12 +64,16 @@ export async function GET(
       : Promise.resolve(null),
   ]);
 
+  const safeJob = isAdmin
+    ? {
+        ...job,
+        result_json: redactBinaryPreviews(job.result_json),
+      }
+    : sanitizeFileExpertJobForCustomer(job as Record<string, unknown>);
+
   return NextResponse.json({
-    job: {
-      ...job,
-      result_json: redactBinaryPreviews(job.result_json),
-    },
-    fingerprints: fingerprints ?? [],
+    job: safeJob,
+    fingerprints: isAdmin ? fingerprints ?? [] : [],
     feedback: feedback ?? [],
     isAdmin,
     similarityEvidence: similarityResult
