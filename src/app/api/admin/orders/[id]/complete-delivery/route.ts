@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireStaffPermission } from "@/lib/apiAuth";
 import { maybeCreateTrainingSampleForRequest } from "@/lib/ecuIntelligence/learning";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
+import { recordWorkOrderEvent } from "@/lib/workOrders/server";
 
 export const maxDuration = 60;
 
@@ -98,6 +99,21 @@ export async function POST(
       { status: 500 }
     );
   }
+
+  await recordWorkOrderEvent({
+    requestId: id,
+    actorUserId: auth.user.id,
+    eventType: "final_file_delivery_saved",
+    message: `Admin saved ${parsed.data.label} delivery file ${parsed.data.fileName}.`,
+    customerVisible: true,
+    newValue: {
+      label: parsed.data.label,
+      file_name: parsed.data.fileName,
+      version_id: parsed.data.versionId,
+      status: "completed",
+    },
+    mode: "best_effort",
+  });
 
   let training: Awaited<ReturnType<typeof maybeCreateTrainingSampleForRequest>> | null = null;
   let trainingWarning: string | null = null;

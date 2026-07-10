@@ -22,6 +22,7 @@ import {
   Save,
   ShieldCheck,
   Sparkles,
+  Upload,
   User,
   Wrench,
 } from "lucide-react";
@@ -222,6 +223,31 @@ export default function WorkOrderDetailClient() {
     await load();
   }
 
+  async function toggleCustomerUpload(enabled: boolean) {
+    if (!requestId) return;
+    setSaving(true);
+    setMessage("");
+    const accessToken = await token();
+    if (!accessToken) {
+      setSaving(false);
+      return;
+    }
+    const response = await fetch(`/api/admin/orders/${requestId}/upload-permission`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
+      body: JSON.stringify({ enabled }),
+    });
+    const result = await response.json();
+    if (!response.ok) {
+      setMessage(result.error || "Customer upload permission could not be updated.");
+      setSaving(false);
+      return;
+    }
+    setMessage(enabled ? "Customer can upload one additional file for this request." : "Customer upload permission disabled.");
+    setSaving(false);
+    await load();
+  }
+
   async function downloadPrivateFile(path: unknown) {
     if (typeof path !== "string" || !path) {
       setMessage("File path is not available.");
@@ -374,6 +400,27 @@ export default function WorkOrderDetailClient() {
                   ))}
                 </div>
               )}
+              <div className="mt-4 rounded-2xl border border-blue-700/30 bg-blue-950/15 p-4">
+                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                  <div>
+                    <div className="font-black text-blue-100">Additional customer upload</div>
+                    <p className="mt-1 text-sm leading-6 text-zinc-400">
+                      Enable one extra customer upload when another read, log or supporting file is needed.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => toggleCustomerUpload(!Boolean(order.customer_upload_enabled))}
+                    disabled={saving}
+                    className="shrink-0 rounded-xl border border-blue-700/40 bg-blue-950/30 px-4 py-3 text-sm font-black text-blue-100 hover:bg-blue-900/35 disabled:opacity-50"
+                  >
+                    <Upload className="mr-2 inline h-4 w-4" />
+                    {order.customer_upload_enabled ? "Disable upload" : "Enable upload"}
+                  </button>
+                </div>
+                <div className="mt-3 text-xs font-black uppercase tracking-[0.14em] text-blue-300">
+                  Current state: {order.customer_upload_enabled ? "enabled for customer" : "disabled"}
+                </div>
+              </div>
             </section>
 
             <section className="grid gap-6 lg:grid-cols-2">

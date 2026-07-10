@@ -68,6 +68,12 @@ export async function PATCH(
       { status: 400 }
     );
   }
+  if (Object.keys(parsed.data).length === 0) {
+    return NextResponse.json(
+      { error: "Work order update is empty." },
+      { status: 400 }
+    );
+  }
 
   const { id } = await context.params;
   try {

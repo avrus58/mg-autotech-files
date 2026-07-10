@@ -63,6 +63,8 @@ Customers must never receive:
 
 Customer-visible notes are copied into the existing `request_messages` channel as admin messages. Internal notes remain in `request_internal_notes` only.
 
+Customer actions that matter operationally, such as a revision request or an additional upload, create safe timeline events for the admin workbench. These events store only safe summaries such as event type, file name and file size. They do not expose storage paths, raw binary content, hashes, provider names or AI internals to the customer.
+
 ## AI Evidence Rules
 
 The admin detail page shows AI evidence as read-only operational context:
@@ -85,6 +87,20 @@ Payment and credit information is read-only:
 - payment status summary
 
 The Work Order Control Center does not mutate payments, credits, Stripe, bank transfer or refunds.
+
+## Admin Mutations and Audit Events
+
+Every admin mutation connected to the work-order workflow should create a `request_work_order_events` entry:
+
+- work-order status, priority, tuner, payment-review, quality and delivery updates
+- internal, tuner, pinned and customer-visible notes
+- enabling or disabling a one-time customer upload slot
+- saving a completed delivery file version
+- manually requesting AI training capture for a completed request
+
+The legacy order delivery/upload APIs write timeline events in best-effort mode so older installations without the work-order migration do not break. On the production system, where the migration is installed, these events make the request detail page useful as a daily audit trail.
+
+The detail page includes a small "Additional customer upload" control. It uses the existing upload-permission API and only toggles whether the customer can submit one extra file for that request. It does not upload files by itself and does not change credits or payments.
 
 ## Vehicle DB Integration
 

@@ -580,22 +580,23 @@ export async function getAdminRequestDetail(requestId: string): Promise<AdminReq
   };
 }
 
-async function insertWorkOrderEvent(input: {
+export async function recordWorkOrderEvent(input: {
   requestId: string;
   workOrderId?: string | null;
-  actorUserId: string;
+  actorUserId?: string | null;
   eventType: string;
   oldValue?: unknown;
   newValue?: unknown;
   customerVisible?: boolean;
   message?: string | null;
   metadata?: Record<string, unknown>;
+  mode?: "strict" | "best_effort";
 }) {
   const admin = getSupabaseAdmin();
-  await admin.from("request_work_order_events").insert({
+  const result = await admin.from("request_work_order_events").insert({
     request_id: input.requestId,
     work_order_id: input.workOrderId ?? null,
-    actor_user_id: input.actorUserId,
+    actor_user_id: input.actorUserId ?? null,
     event_type: input.eventType,
     old_value: input.oldValue ?? null,
     new_value: input.newValue ?? null,
@@ -603,6 +604,13 @@ async function insertWorkOrderEvent(input: {
     message: input.message ?? null,
     metadata: input.metadata ?? {},
   });
+  if (result.error) {
+    if (input.mode === "best_effort" || isWorkOrderMigrationMissing(result.error)) {
+      return { ok: false as const, error: result.error.message };
+    }
+    throw new Error(`Work-order event could not be recorded: ${result.error.message}`);
+  }
+  return { ok: true as const };
 }
 
 async function ensureWorkOrder(requestId: string, actorUserId: string) {
@@ -618,7 +626,7 @@ async function ensureWorkOrder(requestId: string, actorUserId: string) {
   }).select("*").single();
   if (created.error || !created.data) throw new Error(created.error?.message || "Work order could not be created.");
   const workOrder = normalizeWorkOrder(created.data as Record<string, unknown>);
-  await insertWorkOrderEvent({
+  await recordWorkOrderEvent({
     requestId,
     workOrderId: workOrder?.id,
     actorUserId,
@@ -647,7 +655,7 @@ export async function updateAdminWorkOrder(requestId: string, actorUserId: strin
   const updated = await admin.from("request_work_orders").update(payload).eq("request_id", requestId).select("*").single();
   if (updated.error || !updated.data) throw new Error(updated.error?.message || "Work order could not be updated.");
   const next = normalizeWorkOrder(updated.data as Record<string, unknown>);
-  await insertWorkOrderEvent({
+  await recordWorkOrderEvent({
     requestId,
     workOrderId: next?.id,
     actorUserId,
@@ -682,15 +690,18 @@ export async function addAdminWorkOrderNote(input: {
   if (note.error || !note.data) throw new Error(note.error?.message || "Note could not be saved.");
 
   if (customerVisible) {
-    await admin.from("request_messages").insert({
+    const messageResult = await admin.from("request_messages").insert({
       request_id: input.requestId,
       sender_id: input.actorUserId,
       sender_role: "admin",
       message: input.body,
     });
+    if (messageResult.error) {
+      throw new Error(`Customer-visible note could not be copied to request messages: ${messageResult.error.message}`);
+    }
   }
 
-  await insertWorkOrderEvent({
+  await recordWorkOrderEvent({
     requestId: input.requestId,
     workOrderId: workOrder.id,
     actorUserId: input.actorUserId,

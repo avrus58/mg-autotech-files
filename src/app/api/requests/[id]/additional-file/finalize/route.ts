@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireApiUser } from "@/lib/apiAuth";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
+import { recordWorkOrderEvent } from "@/lib/workOrders/server";
 
 const schema = z.object({
   path: z.string().trim().min(1).max(700),
@@ -69,6 +70,16 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     sender_id: auth.user.id,
     sender_role: "customer",
     message: `Additional file uploaded: ${parsed.data.fileName}`,
+  });
+
+  await recordWorkOrderEvent({
+    requestId: id,
+    actorUserId: auth.user.id,
+    eventType: "customer_additional_file_uploaded",
+    message: `Customer uploaded additional file ${parsed.data.fileName}.`,
+    customerVisible: true,
+    newValue: { file_name: parsed.data.fileName, file_size: parsed.data.fileSize },
+    mode: "best_effort",
   });
 
   return NextResponse.json({ upload: uploaded });

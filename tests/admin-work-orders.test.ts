@@ -58,7 +58,10 @@ test("customer sanitizer removes internal work-order and AI evidence fields", ()
     file_path: "customer/private/original.bin",
     ai: {
       provider: "internal",
+      provider_name: "private-provider",
       sample_id: "sample-secret",
+      confidence_score: 92,
+      source_metadata: { source_reference: "private-source" },
       private_offsets: ["0x1234"],
       hex_preview: "DE AD BE EF",
       confidence: "usable",
@@ -70,6 +73,9 @@ test("customer sanitizer removes internal work-order and AI evidence fields", ()
   assert.equal(serialized.includes("private tuner note"), false);
   assert.equal(serialized.includes("customer/private"), false);
   assert.equal(serialized.includes("sample-secret"), false);
+  assert.equal(serialized.includes("private-provider"), false);
+  assert.equal(serialized.includes("private-source"), false);
+  assert.equal(serialized.includes("92"), false);
   assert.equal(serialized.includes("DE AD BE EF"), false);
 });
 
@@ -154,6 +160,40 @@ test("customer-visible note path copies to existing request messages while inter
   assert.match(source, /request_messages/);
   assert.match(source, /request_internal_notes/);
   assert.match(source, /internal_note_added/);
+  assert.match(source, /Customer-visible note could not be copied to request messages/);
+});
+
+test("admin work-order mutations create timeline events and reject empty updates", () => {
+  const detailRoute = readFileSync(resolve(process.cwd(), "src", "app", "api", "admin", "requests", "[id]", "route.ts"), "utf8");
+  const uploadRoute = readFileSync(resolve(process.cwd(), "src", "app", "api", "admin", "orders", "[id]", "upload-permission", "route.ts"), "utf8");
+  const deliveryRoute = readFileSync(resolve(process.cwd(), "src", "app", "api", "admin", "orders", "[id]", "complete-delivery", "route.ts"), "utf8");
+  const trainingRoute = readFileSync(resolve(process.cwd(), "src", "app", "api", "admin", "orders", "[id]", "training-capture", "route.ts"), "utf8");
+
+  assert.match(detailRoute, /Object\.keys\(parsed\.data\)\.length === 0/);
+  assert.match(uploadRoute, /recordWorkOrderEvent/);
+  assert.match(uploadRoute, /customer_upload_permission_enabled/);
+  assert.match(deliveryRoute, /recordWorkOrderEvent/);
+  assert.match(deliveryRoute, /final_file_delivery_saved/);
+  assert.match(trainingRoute, /recordWorkOrderEvent/);
+  assert.match(trainingRoute, /training_capture_requested/);
+});
+
+test("customer request actions add safe work-order timeline events without exposing private file paths", () => {
+  const revisionRoute = readFileSync(resolve(process.cwd(), "src", "app", "api", "requests", "[id]", "revision", "route.ts"), "utf8");
+  const additionalFinalize = readFileSync(resolve(process.cwd(), "src", "app", "api", "requests", "[id]", "additional-file", "finalize", "route.ts"), "utf8");
+
+  assert.match(revisionRoute, /customer_revision_requested/);
+  assert.match(additionalFinalize, /customer_additional_file_uploaded/);
+  assert.match(additionalFinalize, /file_name/);
+  assert.doesNotMatch(additionalFinalize, /newValue:\s*\{[\s\S]*?file_path[\s\S]*?\}/);
+});
+
+test("admin work-order detail exposes upload permission control without payment mutation", () => {
+  const source = readFileSync(resolve(process.cwd(), "src", "app", "admin", "requests", "[id]", "WorkOrderDetailClient.tsx"), "utf8");
+  assert.match(source, /Additional customer upload/);
+  assert.match(source, /\/api\/admin\/orders\/\$\{requestId\}\/upload-permission/);
+  assert.match(source, /Read-only summary/);
+  assert.doesNotMatch(source, /\/api\/admin\/payments|credit_transactions[\s\S]*insert|payment_records[\s\S]*update/);
 });
 
 test("admin work-order smoke script does not contain tokens or mutation calls", () => {

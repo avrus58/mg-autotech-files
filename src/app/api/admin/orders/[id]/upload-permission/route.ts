@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireStaffPermission } from "@/lib/apiAuth";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
+import { recordWorkOrderEvent } from "@/lib/workOrders/server";
 
 const schema = z.object({ enabled: z.boolean() });
 
@@ -24,5 +25,15 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     return NextResponse.json({ error: "Additional file upload migration has not been installed." }, { status: 409 });
   }
   if (error || !data) return NextResponse.json({ error: error?.message || "Order not found." }, { status: 404 });
+  await recordWorkOrderEvent({
+    requestId: id,
+    actorUserId: auth.user.id,
+    eventType: parsed.data.enabled ? "customer_upload_permission_enabled" : "customer_upload_permission_disabled",
+    message: parsed.data.enabled
+      ? "Admin enabled a one-time customer upload for this request."
+      : "Admin disabled customer upload for this request.",
+    newValue: { customer_upload_enabled: parsed.data.enabled },
+    mode: "best_effort",
+  });
   return NextResponse.json({ order: data });
 }

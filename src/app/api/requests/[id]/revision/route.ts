@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSupabaseServer } from "@/lib/supabaseServer";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
+import { recordWorkOrderEvent } from "@/lib/workOrders/server";
 
 export async function POST(
   request: Request,
@@ -86,6 +87,16 @@ export async function POST(
   if (messageError) {
     return NextResponse.json({ error: messageError.message }, { status: 500 });
   }
+
+  await recordWorkOrderEvent({
+    requestId: id,
+    actorUserId: user.id,
+    eventType: "customer_revision_requested",
+    message: "Customer requested a revision for the delivered file.",
+    customerVisible: true,
+    newValue: { status: "revision", note_length: revisionNote.length },
+    mode: "best_effort",
+  });
 
   return NextResponse.json({ success: true, status: "revision" });
 }
