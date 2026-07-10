@@ -237,7 +237,7 @@ export default function FileExpertReportPage() {
             </Link>
             <div className="flex flex-wrap items-center gap-2">
               <span className={`rounded-full border px-3 py-1 text-xs font-black ${statusClass(job.status)}`}>{job.status.toUpperCase()}</span>
-              <span className={`rounded-full border px-3 py-1 text-xs font-black ${riskClass(job.risk_level)}`}>RISK: {(job.risk_level || "unknown").toUpperCase()}</span>
+              <span className={`rounded-full border px-3 py-1 text-xs font-black ${riskClass(job.risk_level)}`}>REVIEW: {(job.risk_level || "standard").toUpperCase()}</span>
               {identity && (
               <span className="rounded-full border border-red-800/40 bg-red-950/25 px-3 py-1 text-xs font-black text-red-200">
                   ECU {identity.status.toUpperCase()}
@@ -269,7 +269,7 @@ export default function FileExpertReportPage() {
           <strong className="text-white">{result?.mode === "ori_mod_compare" ? "ORI + MOD comparison" : "Single-file inspection"}</strong>
           <span className="text-zinc-500"> - </span>
           {result?.mode === "ori_mod_compare"
-            ? "Both files were compared byte by byte. Changed regions and possible feature indicators are shown with confidence values."
+            ? "Both files were compared and summarized for technician review. Detailed binary internals stay inside the protected admin workflow."
             : "Only one file is available. The system can inspect structure and ECU markers, but it cannot confirm modifications without a matching ORI/MOD pair."}
         </div>
 
@@ -328,7 +328,7 @@ export default function FileExpertReportPage() {
                   <div key={finding.id} className={`rounded-2xl border p-4 ${findingClass(finding.severity)}`}>
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div className="font-black">{finding.title}</div>
-                      <span className="rounded-full bg-black/35 px-3 py-1 text-xs font-black text-zinc-300">{Math.round(finding.confidence * 100)}%</span>
+                      <span className="rounded-full bg-black/35 px-3 py-1 text-xs font-black text-zinc-300">Review</span>
                     </div>
                     <p className="mt-2 text-sm leading-6 text-zinc-300">{safeReportText(finding.summary)}</p>
                   </div>
