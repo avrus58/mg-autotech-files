@@ -287,9 +287,20 @@ export default function AiTrainingPage() {
               <h2 className="mt-1 text-xl font-black">Cluster evidence and measured label accuracy</h2>
               <p className="mt-2 text-xs leading-5 text-zinc-500">Evidence only. Cluster output never creates, edits or approves a tuning file.</p>
             </div>
-            <Link href="/admin/ai-training/clusters" className="inline-flex h-11 items-center justify-center rounded-lg border border-red-700/50 bg-red-950/25 px-4 text-sm font-black text-red-100 hover:bg-red-900/30">
-              <Layers3 className="mr-2 h-4 w-4" /> Open clusters
-            </Link>
+            <div className="flex flex-wrap gap-2">
+              <Link href="/admin/ai-training/clusters" className="inline-flex h-11 items-center justify-center rounded-lg border border-red-700/50 bg-red-950/25 px-4 text-sm font-black text-red-100 hover:bg-red-900/30">
+                <Layers3 className="mr-2 h-4 w-4" /> Open clusters
+              </Link>
+              <Link href="/admin/ai-training/map-definitions" className="inline-flex h-11 items-center justify-center rounded-lg border border-white/10 bg-white/[0.03] px-4 text-sm font-black text-zinc-200 hover:bg-white/[0.06]">
+                <FileCode2 className="mr-2 h-4 w-4" /> Map definitions
+              </Link>
+              <Link href="/admin/ai-training/synthetic-lab" className="inline-flex h-11 items-center justify-center rounded-lg border border-emerald-700/40 bg-emerald-950/20 px-4 text-sm font-black text-emerald-100 hover:bg-emerald-900/25">
+                <Sparkles className="mr-2 h-4 w-4" /> Synthetic lab
+              </Link>
+              <Link href="/admin/ai-training/datasets" className="inline-flex h-11 items-center justify-center rounded-lg border border-white/10 bg-white/[0.03] px-4 text-sm font-black text-zinc-200 hover:bg-white/[0.06]">
+                <Database className="mr-2 h-4 w-4" /> Dataset importer
+              </Link>
+            </div>
           </div>
           <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
             <Metric icon={<Layers3 />} label="Pattern clusters" value={data.stats.patternClusters} />

@@ -1,111 +1,172 @@
 # MG AutoTech Map Definition Layer
 
-The Map Definition Layer is the next safe step after File Expert, similarity search and pattern clustering.
+The Map Definition Layer connects File Expert changed regions to human-reviewed ECU/TCU map definitions. It is Level 3 of MG AutoTech AI File Intelligence.
 
-It is **not** a MOD generator. It does not edit bytes, export tuning files, repair checksums or deliver files to customers.
+It is not a MOD generator. It does not edit bytes, export files, repair checksums or deliver customer files.
 
-## Purpose
+## Tables
 
-The current AI intelligence stack can compare ORI/MOD files, extract changed regions, calculate pattern signatures, find similar approved samples and build pattern clusters. That is enough to say:
+The non-destructive migration draft is:
 
-- this file looks related to trusted examples
-- these changed regions repeat across approved samples
-- this evidence is weak, usable, strong or mature
+`scripts/add-ai-level3-map-definitions.sql`
 
-It is not enough to say:
-
-- this exact map has been safely changed
-- these values should be edited
-- this file is write-ready
-
-Map definitions close that gap by connecting changed regions to human-reviewed ECU map areas.
-
-## Definition Shape
-
-A map definition should describe a known region for a specific ECU context:
-
-- ECU family
-- ECU type
-- SW number when possible
-- HW number when possible
-- map name
-- map category
-- start offset
-- end offset
-- confidence
-- source
-- admin notes
-
-Example categories:
-
-- torque_model
-- boost
-- fuel
-- rail_pressure
-- smoke_limiter
-- egr
-- dpf
-- adblue
-- dtc
-- vmax
-- start_stop
-- tcu_shift
-- tcu_lockup
-- unknown
-
-## Attribution Rules
-
-Attribution must stay conservative:
-
-- exact SW/HW definitions are stronger than general ECU-family definitions
-- unknown SW/HW should be treated as limited confidence
-- overlap with a known region is evidence, not proof
-- unknown changed regions must remain visible to admin
-- customer reports must never expose offsets or private map data
-
-## Safety Gates
-
-Before any future AI-assisted draft workflow, all of these must be true:
-
-- trusted sample evidence exists
-- pattern cluster is strong or mature
-- actual performed services are human-confirmed
-- map definitions exist for the ECU/SW context
-- unknown changed regions are reviewed by a human tuner
-- checksum/export tooling is explicitly handled outside the AI evidence layer
-- final delivery remains manual/admin-approved
-
-## Current Implementation
-
-Code foundation:
-
-- `src/lib/ecuIntelligence/mapDefinitions.ts`
-
-The helper can:
-
-- accept human-reviewed map definitions
-- compare changed regions against definitions
-- return category attribution
-- report unknown changed regions
-- flag when map definitions are required
-
-It cannot:
-
-- edit binary files
-- generate byte patches
-- export MOD files
-- approve a file for customer delivery
-
-## Future Database Design
-
-If/when this becomes persistent, use additive tables only:
+It creates:
 
 - `ai_map_definition_sets`
 - `ai_map_definitions`
-- `ai_map_attribution_reviews`
+- `ai_map_attribution_results`
+- `ai_generation_readiness_reports`
+- `ai_synthetic_fixture_runs`
 
-All map definitions must be admin-only. Public/customer APIs must return only safe summaries such as:
+All tables are RLS protected and admin/staff-only through `ai_training.manage`.
 
-> Human-reviewed map definition coverage exists for this ECU/service family.
+## Map definition set
 
-They must not expose offsets, private source references, provider notes, sample IDs or storage paths.
+A definition set scopes maps to an ECU context:
+
+- name
+- ECU family
+- ECU type
+- SW number
+- HW number
+- vehicle brand/model/engine
+- source type
+- source reference
+- confidence score
+- human verified flag
+- active flag
+
+Prefer exact SW/HW definition sets. Generic ECU-family sets are lower-confidence evidence.
+
+## Map definition
+
+A map definition describes one known region:
+
+- map name
+- category
+- offset start
+- offset end
+- rows and columns
+- data type
+- endian
+- factor
+- unit
+- axes
+- description
+- confidence score
+- human verified flag
+
+Supported categories include:
+
+- driver_wish
+- torque_limiter
+- boost_request
+- boost_limiter
+- rail_pressure
+- duration
+- lambda
+- smoke_limiter
+- ignition
+- vanos
+- egr
+- dpf
+- dtc
+- vmax
+- pop_bangs
+- tcu_shift
+- tcu_pressure
+- tcu_lockup
+- checksum
+- axis
+- metadata
+- unknown
+
+## Attribution logic
+
+Changed-region attribution:
+
+1. Select active definition sets matching ECU family/type/SW/HW.
+2. Prefer exact SW match.
+3. Compare changed region ranges to active map definitions.
+4. Calculate overlap ratio.
+5. Score matches by overlap, definition confidence, human verification, set verification and exact SW match.
+6. Return matched_verified, matched_unverified, partial_match, ambiguous, unknown or no_definition_set.
+
+Attribution is evidence only. It is not a write instruction.
+
+## Customer privacy
+
+Customer output must never include:
+
+- offsets
+- map definition IDs
+- definition set IDs
+- source reference
+- provider/source metadata
+- private sample IDs
+- storage paths
+- raw binary or hex
+- hashes
+- admin notes
+- confidence internals
+
+Customer-safe wording can say:
+
+> Analysis is complete and human review is required.
+
+## Admin workflow
+
+Admin can use the layer to:
+
+- list definition sets
+- see map categories
+- identify unknown changed regions
+- see whether exact SW definition coverage exists
+- understand why generation is blocked
+- decide whether a sample can improve learning
+
+Admin must still verify:
+
+- actual performed services
+- map definition correctness
+- checksum and flash workflow
+- final customer delivery
+
+## JSON input example
+
+```json
+{
+  "name": "Bosch EDC17C50 SW1037550001",
+  "ecuFamily": "EDC17",
+  "ecuType": "Bosch EDC17C50",
+  "swNumber": "SW1037550001",
+  "hwNumber": "0281031234",
+  "sourceType": "manual",
+  "confidenceScore": 80,
+  "humanVerified": true,
+  "definitions": [
+    {
+      "mapName": "Torque limiter 1",
+      "category": "torque_limiter",
+      "offsetStart": 4096,
+      "offsetEnd": 4351,
+      "rows": 16,
+      "cols": 16,
+      "dataType": "uint16",
+      "endian": "big",
+      "factor": 0.1,
+      "unit": "Nm",
+      "confidenceScore": 85,
+      "humanVerified": true
+    }
+  ]
+}
+```
+
+## Limitations
+
+- No DAMOS/A2L parser yet.
+- No byte-level generation.
+- No checksum support.
+- No customer-visible map details.
+- Low-confidence or generic definitions must not be treated as approval.

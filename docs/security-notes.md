@@ -32,6 +32,14 @@ Customers must not receive:
 - Admin users can still access technical evidence required for review.
 - AI/File Expert remains evidence-only: no MOD generation, no byte editing and no write-ready output.
 
+## AI Dataset Importer
+
+- Dataset import batches, file candidates, pair candidates, review events and negative examples are admin-only.
+- Dry-run mode must not read production storage, write files or create training samples.
+- Suggested service labels are not trusted `actual_service_labels`.
+- Learning approval requires explicit human/admin confirmation.
+- Dataset importer internals must never be returned to customer or public APIs.
+
 ## Vehicle Database
 
 - Public vehicle selector responses use active + published data only.
@@ -56,4 +64,3 @@ BASE_URL=https://file.mgautotech.de node scripts/smoke-admin-unauthenticated.mjs
 ```
 
 These scripts are intentionally non-mutating and contain no secrets.
-
