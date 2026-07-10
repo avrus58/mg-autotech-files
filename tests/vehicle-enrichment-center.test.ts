@@ -312,6 +312,7 @@ test("external coverage detects global missing vehicles beyond Mercedes examples
   assert.ok(plan.coverage.stats.missingGenerations >= 2);
   assert.ok(plan.coverage.stats.missingEngines >= 2);
   assert.equal(plan.coverage.aliasSuggestions.some((item) => item.entityType === "brand" && item.sourceName === "VW" && item.canonicalName === "Volkswagen"), true);
+  assert.equal(plan.coverage.sourceMappings.some((item) => item.source.brand === "VW" && item.canonical.brand === "Volkswagen"), true);
   assert.equal(plan.coverage.issues.some((item) => item.type === "missing_generation" && item.brand === "BMW"), true);
   assert.equal(plan.coverage.issues.some((item) => item.type === "missing_engine" && item.brand === "Volkswagen"), true);
   assert.equal(plan.coverage.reviewQueue.every((item) => item.reviewStatus === "needs_review"), true);
@@ -324,6 +325,7 @@ test("external Mercedes W214 source maps through canonical E/W214 coverage inste
   }, [existingRecord({ model: "E", generation: "W214/S214/V214 (2023-present)", engine: "Different engine" })]);
 
   assert.equal(plan.generationGroups[0].model, "E");
+  assert.equal(plan.coverage.sourceMappings.some((item) => item.source.model === "E-Class" && item.canonical.model === "E"), true);
   assert.equal(plan.coverage.sourceMappings[0].canonical.model, "E");
   assert.equal(plan.coverage.sourceMappings[0].canonical.generation, "W214/S214/V214 (2023-present)");
   assert.equal(plan.coverage.sourceMappings[0].action, "create_draft");

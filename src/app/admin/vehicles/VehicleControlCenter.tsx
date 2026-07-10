@@ -674,6 +674,7 @@ function EnrichmentSection({
             </div>
           </div>
         </div>
+        {plan?.coverage.aliasSuggestions.length ? <ImportExampleList title="Alias suggestions" items={plan.coverage.aliasSuggestions.slice(0, 10).map((item) => `${item.entityType}: ${item.sourceName} -> ${item.canonicalName} (${item.reason})`)} /> : null}
         {plan?.coverage.sourceMappings.length ? <ImportExampleList title="Source -> canonical mapping preview" items={plan.coverage.sourceMappings.slice(0, 10).map((item) => `${item.source.brand} / ${item.source.model} / ${item.source.generation ?? "-"} / ${item.source.engine ?? "-"} -> ${item.canonical.brand} / ${item.canonical.model} / ${item.canonical.generation ?? "-"} / ${item.canonical.engine ?? "-"} (${item.action})`)} /> : null}
       </div>}
 

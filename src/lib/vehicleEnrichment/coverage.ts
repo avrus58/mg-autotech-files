@@ -450,12 +450,14 @@ export function buildExternalCoverageReport(input: {
       normalizeGenerationName(candidate.brand, candidate.model, candidate.generation).aliasMatched ? "generation" : null,
       normalizeEngineName(candidate.engineDisplayName).aliasMatched ? "engine" : null,
     ].filter((value): value is string => Boolean(value));
+    const sourceEntry = group.includedEntries.find((entry) => entry.engineDisplayName === candidate.engineDisplayName) ?? group.includedEntries[0];
+    const sourceGeneration = sourceEntry?.rawGeneration ?? sourceEntry?.rawTitle ?? group.customerDisplayLabel;
     sourceMappings.push({
       source: {
-        brand: candidate.brand,
-        model: candidate.model,
-        generation: group.includedEntries[0]?.rawGeneration ?? group.includedEntries[0]?.rawTitle ?? group.customerDisplayLabel,
-        engine: candidate.engineDisplayName,
+        brand: sourceEntry?.brand ?? candidate.brand,
+        model: sourceEntry?.model ?? candidate.model,
+        generation: sourceGeneration,
+        engine: sourceEntry?.engineDisplayName ?? candidate.engineDisplayName,
       },
       canonical: {
         brand: candidate.brand,
