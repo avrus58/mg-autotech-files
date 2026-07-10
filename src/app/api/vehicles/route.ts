@@ -8,7 +8,9 @@ import {
 } from "@/lib/vehicleControl/public";
 
 const vehicleCacheHeaders = {
-  "Cache-Control": "public, max-age=60, stale-while-revalidate=300",
+  "Cache-Control": "public, max-age=60, s-maxage=60, stale-while-revalidate=300",
+  "CDN-Cache-Control": "public, max-age=300, stale-while-revalidate=600",
+  "Vercel-CDN-Cache-Control": "public, max-age=300, stale-while-revalidate=600",
 };
 
 export async function GET(req: NextRequest) {
