@@ -26,7 +26,14 @@ async function checkPage(path, description) {
 
 await checkJson(
   "/api/vehicles?type=brands",
-  (response, json) => response.status === 200 && Array.isArray(json),
+  (response, json, text) => {
+    const source = response.headers.get("x-vehicle-source");
+    const forbidden = ["admin_notes", "source_reference", "confidence_score", "audit", "validation", "import_metadata", "alias"];
+    return response.status === 200 &&
+      Array.isArray(json) &&
+      ["cache", "database", "json"].includes(source || "") &&
+      forbidden.every((field) => !text.includes(field));
+  },
   "public vehicle brands endpoint returns an array"
 );
 

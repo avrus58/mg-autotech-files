@@ -33,6 +33,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { Footer } from "@/components/Footer";
+import { fetchVehicleOptions, preloadVehicleBrands } from "@/lib/vehicleControl/clientCatalog";
 import { PerformanceTools } from "@/components/tools/PerformanceTools";
 import { OnlineStatus } from "@/components/OnlineStatus";
 import {
@@ -1340,8 +1341,8 @@ function PublicVehicleChecker() {
   useEffect(() => {
     const controller = new AbortController();
 
-    fetch("/api/vehicles?type=brands", { signal: controller.signal })
-      .then((res) => res.json())
+    preloadVehicleBrands();
+    fetchVehicleOptions("/api/vehicles?type=brands", controller.signal)
       .then(setBrands)
       .catch(ignoreVehicleFetchError);
 
@@ -1353,10 +1354,7 @@ function PublicVehicleChecker() {
 
     const controller = new AbortController();
 
-    fetch(`/api/vehicles?type=models&brandId=${brandId}`, {
-      signal: controller.signal,
-    })
-      .then((res) => res.json())
+    fetchVehicleOptions(`/api/vehicles?type=models&brandId=${brandId}`, controller.signal)
       .then(setModels)
       .catch(ignoreVehicleFetchError);
 
@@ -1368,10 +1366,7 @@ function PublicVehicleChecker() {
 
     const controller = new AbortController();
 
-    fetch(`/api/vehicles?type=generations&brandId=${brandId}&modelId=${modelId}`, {
-      signal: controller.signal,
-    })
-      .then((res) => res.json())
+    fetchVehicleOptions(`/api/vehicles?type=generations&brandId=${brandId}&modelId=${modelId}`, controller.signal)
       .then(setGenerations)
       .catch(ignoreVehicleFetchError);
 
@@ -1383,11 +1378,10 @@ function PublicVehicleChecker() {
 
     const controller = new AbortController();
 
-    fetch(
+    fetchVehicleOptions(
       `/api/vehicles?type=engines&brandId=${brandId}&modelId=${modelId}&generationId=${generationId}`,
-      { signal: controller.signal }
+      controller.signal
     )
-      .then((res) => res.json())
       .then(setEngines)
       .catch(ignoreVehicleFetchError);
 

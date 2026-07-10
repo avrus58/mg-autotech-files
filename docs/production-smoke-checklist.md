@@ -12,6 +12,7 @@ Use this checklist after every production deploy. It is intentionally non-destru
 - Run `npm audit --omit=dev --audit-level=high`
 - Run `node scripts/check-i18n-seo.mjs` after public SEO or translation changes.
 - Confirm no SQL migration is required, or run only reviewed non-destructive SQL first.
+- If vehicle selector cache changed, run `scripts/add-public-vehicle-catalog-cache.sql`, verify with `scripts/verify-public-vehicle-catalog-cache.sql`, then rebuild the cache from `/admin/vehicles`.
 - Confirm no real vehicle import is triggered during deploy.
 - Confirm active payment methods are Stripe/Card and Bank Transfer only.
 
@@ -20,8 +21,9 @@ Use this checklist after every production deploy. It is intentionally non-destru
 - Open `/`
 - Open `/new-request`
 - Open `/api/vehicles?type=brands`
-- Confirm vehicle source is `database` when imported records are available.
+- Confirm vehicle source is `cache` after the Public Catalog Cache is rebuilt, or `database` when the cache is missing and imported records are available.
 - Confirm vehicle response does not contain `admin_notes`, `source_reference`, `confidence_score`, import metadata, audit data, storage paths, raw binary, hex previews or private offsets.
+- Confirm Mercedes-Benz models do not duplicate `E` and `E-Class`; W214 should appear under `Mercedes-Benz -> E`.
 - Confirm language-prefixed home routes render the same full platform layout.
 
 ## Customer Smoke
@@ -49,6 +51,7 @@ Use this checklist after every production deploy. It is intentionally non-destru
 - Confirm customer-visible notes appear in customer messages.
 - Confirm status, priority and quality/delivery updates create visible work-order events.
 - Open `/admin/vehicles`
+- Click `Rebuild Public Catalog Cache` after vehicle data or aliases change.
 - Open `/admin/vehicles/import`
 - Run dry-run only when needed. Do not run real import without owner approval.
 - Open `/admin/ai-training`

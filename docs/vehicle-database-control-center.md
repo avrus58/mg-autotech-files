@@ -11,6 +11,9 @@ Run the SQL in this order:
 1. Confirm `scripts/add-staff-access-notifications.sql` has already been applied in the environment. This is expected from the existing staff access system.
 2. Run `scripts/add-vehicle-control-center.sql`.
 3. Run `scripts/verify-vehicle-control-center.sql`.
+4. Run `scripts/add-vehicle-normalization-aliases.sql` when alias tables are not present yet.
+5. Run `scripts/add-public-vehicle-catalog-cache.sql` to enable the fast public selector snapshot.
+6. Run `scripts/verify-public-vehicle-catalog-cache.sql`.
 
 The migration creates:
 
@@ -25,6 +28,7 @@ The migration creates:
 - `vehicle_performance_profiles`
 - `vehicle_change_audit_log`
 - `vehicle_validation_results`
+- `public_vehicle_catalog_cache`
 
 It enables RLS and grants access through `public.has_staff_permission('vehicles.manage')`. It contains no destructive data operations.
 
@@ -109,6 +113,8 @@ Customer-facing APIs expose only safe fields. They must not expose:
 - confidence internals
 - validation warnings
 - private source references
+- alias/internal metadata
+- public catalog cache internals
 
 To confirm fallback, open:
 
@@ -127,6 +133,39 @@ After a successful real import with published rows, the response header should b
 ```text
 x-vehicle-source: database
 ```
+
+After the Public Catalog Cache is rebuilt, the response header should become:
+
+```text
+x-vehicle-source: cache
+```
+
+### Public Catalog Cache
+
+The public vehicle selector can use a Supabase-backed snapshot stored in:
+
+```text
+public.public_vehicle_catalog_cache
+```
+
+The cache row uses `id = 'published'` and contains only the customer-safe selector payload:
+
+- published active vehicle rows
+- canonical brands
+- canonical models by brand
+- canonical generations by model
+- engines by generation
+
+The cache excludes admin notes, source references, confidence scores, validation metadata, import metadata, audit data, alias tables and private storage paths. Public users do not read this table directly. `/api/vehicles` reads it server-side, returns the safe payload slices and falls back to the database loader or JSON when the cache is missing.
+
+Admin rebuild:
+
+1. Open `/admin/vehicles`.
+2. Click `Rebuild Public Catalog Cache`.
+3. Confirm the message shows brand, model, generation and engine counts.
+4. Open `/api/vehicles?type=brands` and confirm `x-vehicle-source: cache`.
+
+Rebuild the cache after real import, publish/unpublish, vehicle edits or alias changes. The operation does not import vehicles and does not publish drafts.
 
 ## Vehicle Normalization & Alias System
 

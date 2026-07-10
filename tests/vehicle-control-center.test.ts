@@ -11,11 +11,15 @@ import {
   rawVehicleToControlRecord,
 } from "../src/lib/vehicleControl/normalization";
 import {
+  buildPublicVehicleCatalogPayload,
   fetchPagedRowsForVehicleSelector,
   getSafePublishedVehicleRows,
+  listEnginesFromCatalog,
   listBrandsFromRows,
+  listGenerationsFromCatalog,
   listEnginesFromRows,
   listGenerationsFromRows,
+  listModelsFromCatalog,
   listModelsFromRows,
 } from "../src/lib/vehicleControl/public";
 import {
@@ -210,6 +214,48 @@ test("public selector merges Mercedes E and E-Class into one model option at rea
   assert.equal(generations.includes("W214/S214/V214 (2023-present)"), true);
   const engines = listEnginesFromRows(rows, "mercedes-benz", "e", "w214-s214-v214-2023-present");
   assert.deepEqual(engines, [{ id: "e-300-d", name: "E 300 d", fuelType: "Diesel" }]);
+});
+
+test("public catalog cache payload keeps Mercedes aliases merged and customer-safe", () => {
+  const rows = rawVehiclesToPublicRows([
+    {
+      brand: "Mercedes-Benz",
+      brandId: "mercedes-benz",
+      model: "E",
+      modelId: "e",
+      generation: "W213/S213 - 2016 - 2023",
+      generationId: "w213-s213",
+      engine: "E 220 d",
+      engineId: "e-220-d",
+      fuelType: "Diesel",
+      ecu: ["Bosch MD1"],
+      stage1: { stockHp: 194, stockNm: 400, tunedHp: 220, tunedNm: 470, gainHp: 26, gainNm: 70 },
+    },
+    {
+      brand: "Mercedes-Benz",
+      brandId: "mercedes-benz",
+      model: "E-Class",
+      modelId: "source-e-class",
+      generation: "E Klasse W 214",
+      generationId: "source-w-214",
+      engine: "E 300 d",
+      engineId: "e-300-d",
+      fuelType: "Diesel",
+      ecu: ["Bosch MD1"],
+      stage1: { stockHp: 197, stockNm: 440, tunedHp: 227, tunedNm: 506, gainHp: 30, gainNm: 66 },
+    },
+  ]);
+  const payload = buildPublicVehicleCatalogPayload(rows, "2026-07-10T00:00:00.000Z");
+
+  assert.deepEqual(payload.brands, [{ id: "mercedes-benz", name: "Mercedes-Benz" }]);
+  assert.deepEqual(listModelsFromCatalog(payload, "mercedes-benz"), [{ id: "e", name: "E" }]);
+  assert.deepEqual(listGenerationsFromCatalog(payload, "mercedes-benz", "e").map((item) => item.name), ["W213/S213 (2016-2023)", "W214"]);
+  assert.deepEqual(listEnginesFromCatalog(payload, "mercedes-benz", "e", "w214"), [{ id: "e-300-d", name: "E 300 d", fuelType: "Diesel" }]);
+
+  const serialized = JSON.stringify(payload);
+  for (const forbidden of ["admin_notes", "source_reference", "confidence_score", "audit", "validation", "import_metadata", "alias", "private"]) {
+    assert.equal(serialized.includes(forbidden), false, `${forbidden} should not be present`);
+  }
 });
 
 test("public selector normalizes brand and generation aliases without exposing alias metadata", () => {
@@ -443,12 +489,19 @@ test("admin vehicle routes consistently require vehicles.manage permission", () 
     "src/app/api/admin/vehicles/route.ts",
     "src/app/api/admin/vehicles/[id]/route.ts",
     "src/app/api/admin/vehicles/import/route.ts",
+    "src/app/api/admin/vehicles/catalog-cache/rebuild/route.ts",
     "src/app/api/admin/vehicles/validation/route.ts",
     "src/app/api/admin/vehicles/audit/route.ts",
   ]) {
     const source = readFileSync(resolve(process.cwd(), file), "utf8");
     assert.match(source, /requireStaffPermission\(request,\s*"vehicles\.manage"\)/);
   }
+});
+
+test("anonymous users cannot rebuild the public vehicle catalog cache", async () => {
+  const { POST } = await import("../src/app/api/admin/vehicles/catalog-cache/rebuild/route");
+  const response = await POST(new Request("http://localhost/api/admin/vehicles/catalog-cache/rebuild", { method: "POST" }));
+  assert.equal(response.status, 401);
 });
 
 test("vehicle control migration is additive, indexed, RLS protected and non-destructive", () => {
@@ -492,6 +545,45 @@ test("vehicle normalization alias migration is additive and admin protected", ()
   assert.match(sql, /normalized_alias/i);
   assert.match(sql, /vehicle_alias_review_events/i);
   assert.doesNotMatch(sql, /\bdrop\s+table\b|\bdrop\s+column\b|\btruncate\b|\bdelete\s+from\b/i);
+});
+
+test("public vehicle catalog cache migration is additive, RLS protected and server mediated", () => {
+  const sql = readFileSync(resolve(process.cwd(), "scripts", "add-public-vehicle-catalog-cache.sql"), "utf8");
+  assert.match(sql, /create table if not exists public\.public_vehicle_catalog_cache/i);
+  assert.match(sql, /payload jsonb not null/i);
+  assert.match(sql, /alter table public\.public_vehicle_catalog_cache enable row level security/i);
+  assert.match(sql, /revoke all on table public\.public_vehicle_catalog_cache from anon/i);
+  assert.match(sql, /vehicles\.manage/i);
+  assert.match(sql, /grant select, insert, update on table public\.public_vehicle_catalog_cache to service_role/i);
+  assert.doesNotMatch(sql, /\bdrop\s+table\b|\bdrop\s+column\b|\btruncate\b|\bdelete\s+from\b/i);
+});
+
+test("public vehicle catalog cache verification SQL is read-only", () => {
+  const sql = readFileSync(resolve(process.cwd(), "scripts", "verify-public-vehicle-catalog-cache.sql"), "utf8");
+  assert.match(sql, /public_vehicle_catalog_cache/i);
+  assert.match(sql, /pg_policies/i);
+  assert.match(sql, /relrowsecurity/i);
+  assert.match(sql, /role_table_grants/i);
+  assert.doesNotMatch(sql, /\binsert\b|\bupdate\b|\bdelete\b|\bdrop\b|\btruncate\b|\balter\b|\brevoke\b|\bgrant\b/i);
+});
+
+test("vehicles API is cache-first and still exposes stale-while-revalidate headers", () => {
+  const source = readFileSync(resolve(process.cwd(), "src", "app", "api", "vehicles", "route.ts"), "utf8");
+  assert.match(source, /getSafePublishedVehicleCatalog/);
+  assert.match(source, /payload\.brands/);
+  assert.match(source, /stale-while-revalidate=300/);
+  assert.match(source, /x-vehicle-source/);
+});
+
+test("public selector uses memory and session storage cache for vehicle options", () => {
+  const helper = readFileSync(resolve(process.cwd(), "src", "lib", "vehicleControl", "clientCatalog.ts"), "utf8");
+  const newRequest = readFileSync(resolve(process.cwd(), "src", "app", "new-request", "page.tsx"), "utf8");
+  const homepage = readFileSync(resolve(process.cwd(), "src", "app", "page.tsx"), "utf8");
+  assert.match(helper, /sessionStorage/);
+  assert.match(helper, /memoryCache/);
+  assert.match(newRequest, /fetchVehicleOptions/);
+  assert.match(newRequest, /Loading vehicles/);
+  assert.match(homepage, /fetchVehicleOptions/);
 });
 
 test("admin update path writes audit log entries", () => {

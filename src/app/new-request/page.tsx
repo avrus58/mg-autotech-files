@@ -9,6 +9,7 @@ import {
   isAdvancedRequestServiceCategory,
 } from "@/lib/requestFlow";
 import { supabase } from "@/lib/supabaseClient";
+import { fetchVehicleOptions, preloadVehicleBrands } from "@/lib/vehicleControl/clientCatalog";
 import {
   Activity,
   ArrowLeft,
@@ -255,6 +256,7 @@ function SelectBox({
   options,
   required = false,
   disabled = false,
+  loading = false,
 }: {
   label: string;
   value: string;
@@ -262,6 +264,7 @@ function SelectBox({
   options: Option[];
   required?: boolean;
   disabled?: boolean;
+  loading?: boolean;
 }) {
   return (
     <label className="block">
@@ -276,7 +279,7 @@ function SelectBox({
           disabled={disabled}
           className="h-12 w-full appearance-none rounded-xl border border-white/10 bg-black/35 px-4 text-sm font-bold text-white outline-none transition focus:border-red-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          <option value="">Select</option>
+          <option value="">{loading ? "Loading vehicles..." : "Select"}</option>
           {options.map((option) => (
             <option key={option.id} value={option.id} className="bg-[#111]">
               {option.name}
@@ -661,6 +664,10 @@ export default function NewRequestPage() {
   const [models, setModels] = useState<Option[]>([]);
   const [generations, setGenerations] = useState<Option[]>([]);
   const [engines, setEngines] = useState<Option[]>([]);
+  const [loadingBrands, setLoadingBrands] = useState(true);
+  const [loadingModels, setLoadingModels] = useState(false);
+  const [loadingGenerations, setLoadingGenerations] = useState(false);
+  const [loadingEngines, setLoadingEngines] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState<VehicleData | null>(
     null
   );
@@ -741,10 +748,13 @@ export default function NewRequestPage() {
   }, []);
 
   useEffect(() => {
-    fetch("/api/vehicles?type=brands")
-      .then((res) => res.json())
+    const controller = new AbortController();
+    preloadVehicleBrands();
+    fetchVehicleOptions("/api/vehicles?type=brands", controller.signal)
       .then(setBrands)
-      .catch(console.error);
+      .catch(() => setMessage("Vehicle catalog could not be loaded. You can still submit the request with manual vehicle details."))
+      .finally(() => setLoadingBrands(false));
+    return () => controller.abort();
   }, []);
 
   useEffect(() => {
@@ -757,12 +767,16 @@ export default function NewRequestPage() {
       setEngines([]);
       setSelectedVehicle(null);
 
-      if (!vehicleBrandId) return;
+      if (!vehicleBrandId) {
+        setLoadingModels(false);
+        return;
+      }
 
-      fetch(`/api/vehicles?type=models&brandId=${vehicleBrandId}`)
-        .then((res) => res.json())
+      setLoadingModels(true);
+      fetchVehicleOptions(`/api/vehicles?type=models&brandId=${vehicleBrandId}`)
         .then(setModels)
-        .catch(console.error);
+        .catch(() => setMessage("Vehicle models could not be loaded. Please try again."))
+        .finally(() => setLoadingModels(false));
     }, 0);
     return () => window.clearTimeout(timeout);
   }, [vehicleBrandId]);
@@ -775,14 +789,18 @@ export default function NewRequestPage() {
       setEngines([]);
       setSelectedVehicle(null);
 
-      if (!vehicleBrandId || !vehicleModelId) return;
+      if (!vehicleBrandId || !vehicleModelId) {
+        setLoadingGenerations(false);
+        return;
+      }
 
-      fetch(
+      setLoadingGenerations(true);
+      fetchVehicleOptions(
         `/api/vehicles?type=generations&brandId=${vehicleBrandId}&modelId=${vehicleModelId}`
       )
-        .then((res) => res.json())
         .then(setGenerations)
-        .catch(console.error);
+        .catch(() => setMessage("Vehicle generations could not be loaded. Please try again."))
+        .finally(() => setLoadingGenerations(false));
     }, 0);
     return () => window.clearTimeout(timeout);
   }, [vehicleBrandId, vehicleModelId]);
@@ -793,14 +811,18 @@ export default function NewRequestPage() {
       setEngines([]);
       setSelectedVehicle(null);
 
-      if (!vehicleBrandId || !vehicleModelId || !vehicleGenerationId) return;
+      if (!vehicleBrandId || !vehicleModelId || !vehicleGenerationId) {
+        setLoadingEngines(false);
+        return;
+      }
 
-      fetch(
+      setLoadingEngines(true);
+      fetchVehicleOptions(
         `/api/vehicles?type=engines&brandId=${vehicleBrandId}&modelId=${vehicleModelId}&generationId=${vehicleGenerationId}`
       )
-        .then((res) => res.json())
         .then(setEngines)
-        .catch(console.error);
+        .catch(() => setMessage("Vehicle engines could not be loaded. Please try again."))
+        .finally(() => setLoadingEngines(false));
     }, 0);
     return () => window.clearTimeout(timeout);
   }, [vehicleBrandId, vehicleModelId, vehicleGenerationId]);
@@ -1207,6 +1229,8 @@ export default function NewRequestPage() {
                   onChange={setVehicleBrandId}
                   required
                   options={brands}
+                  loading={loadingBrands}
+                  disabled={loadingBrands && brands.length === 0}
                 />
 
                 <SelectBox
@@ -1215,7 +1239,8 @@ export default function NewRequestPage() {
                   onChange={setVehicleModelId}
                   required
                   options={models}
-                  disabled={!vehicleBrandId}
+                  loading={loadingModels}
+                  disabled={!vehicleBrandId || loadingModels}
                 />
 
                 <SelectBox
@@ -1223,7 +1248,8 @@ export default function NewRequestPage() {
                   value={vehicleGenerationId}
                   onChange={setVehicleGenerationId}
                   options={generations}
-                  disabled={!vehicleModelId}
+                  loading={loadingGenerations}
+                  disabled={!vehicleModelId || loadingGenerations}
                 />
 
                 <SelectBox
@@ -1232,7 +1258,8 @@ export default function NewRequestPage() {
                   onChange={setVehicleEngineId}
                   required
                   options={engines}
-                  disabled={!vehicleGenerationId}
+                  loading={loadingEngines}
+                  disabled={!vehicleGenerationId || loadingEngines}
                 />
 
                 <InputBox

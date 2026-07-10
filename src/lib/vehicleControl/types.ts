@@ -148,6 +148,42 @@ export type PublicVehicleRecord = {
   customerSafeNotes?: string | null;
 };
 
+export type PublicVehicleOption = {
+  id: string;
+  name: string;
+  fuelType?: string | null;
+};
+
+export type PublicVehicleCatalogPayload = {
+  version: 1;
+  generatedAt: string;
+  rows: PublicVehicleRecord[];
+  brands: PublicVehicleOption[];
+  modelsByBrand: Record<string, PublicVehicleOption[]>;
+  generationsByModel: Record<string, PublicVehicleOption[]>;
+  enginesByGeneration: Record<string, PublicVehicleOption[]>;
+};
+
+export type PublicVehicleCatalogSource = "cache" | "database" | "json";
+
+export type PublicVehicleCatalogResult = {
+  source: PublicVehicleCatalogSource;
+  payload: PublicVehicleCatalogPayload;
+  rows: PublicVehicleRecord[];
+  expiresAt: number;
+};
+
+export type PublicVehicleCatalogRebuildResult = {
+  ok: true;
+  id: "published";
+  sourceHash: string;
+  brandCount: number;
+  modelCount: number;
+  generationCount: number;
+  engineCount: number;
+  generatedAt: string;
+};
+
 export type VehicleValidationIssue = {
   severity: "info" | "warning" | "error";
   code: string;

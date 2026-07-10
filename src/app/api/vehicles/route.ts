@@ -1,12 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
-  getSafePublishedVehicleRows,
+  getSafePublishedVehicleCatalog,
   getSafePublishedVehicle,
-  listBrandsFromRows,
-  listEnginesFromRows,
-  listGenerationsFromRows,
-  listModelsFromRows,
+  listEnginesFromCatalog,
+  listGenerationsFromCatalog,
+  listModelsFromCatalog,
 } from "@/lib/vehicleControl/public";
+
+const vehicleCacheHeaders = {
+  "Cache-Control": "public, max-age=60, stale-while-revalidate=300",
+};
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -15,28 +18,29 @@ export async function GET(req: NextRequest) {
   const modelId = searchParams.get("modelId") ?? "";
   const generationId = searchParams.get("generationId") ?? "";
   const engineId = searchParams.get("engineId") ?? "";
-  const { rows, source } = await getSafePublishedVehicleRows();
+  const { payload, source } = await getSafePublishedVehicleCatalog();
+  const headers = { ...vehicleCacheHeaders, "x-vehicle-source": source };
 
   if (type === "brands") {
-    return NextResponse.json(listBrandsFromRows(rows), { headers: { "x-vehicle-source": source } });
+    return NextResponse.json(payload.brands, { headers });
   }
 
   if (type === "models") {
-    return NextResponse.json(listModelsFromRows(rows, brandId), { headers: { "x-vehicle-source": source } });
+    return NextResponse.json(listModelsFromCatalog(payload, brandId), { headers });
   }
 
   if (type === "generations") {
-    return NextResponse.json(listGenerationsFromRows(rows, brandId, modelId), { headers: { "x-vehicle-source": source } });
+    return NextResponse.json(listGenerationsFromCatalog(payload, brandId, modelId), { headers });
   }
 
   if (type === "engines") {
-    return NextResponse.json(listEnginesFromRows(rows, brandId, modelId, generationId), { headers: { "x-vehicle-source": source } });
+    return NextResponse.json(listEnginesFromCatalog(payload, brandId, modelId, generationId), { headers });
   }
 
   if (type === "vehicle") {
     const vehicle = await getSafePublishedVehicle(brandId, modelId, generationId, engineId);
     return NextResponse.json(vehicle.row, {
-      headers: { "x-vehicle-source": vehicle.source },
+      headers: { ...vehicleCacheHeaders, "x-vehicle-source": vehicle.source },
     });
   }
 

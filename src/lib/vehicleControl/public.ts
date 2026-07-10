@@ -1,5 +1,6 @@
 import vehicles from "../../../data/vehicle-database.json";
 import performanceOverrides from "../../../data/vehicle-performance-overrides.json";
+import { createHash } from "node:crypto";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import {
   canonicalizeVehicleModel,
@@ -9,7 +10,17 @@ import {
   rawVehicleToControlRecord,
 } from "@/lib/vehicleControl/normalization";
 import { normalizeBrandName, normalizeGenerationName } from "@/lib/vehicleNormalization";
-import type { PublicVehicleRecord, RawVehicleRow, StageData, VehicleServiceKey } from "@/lib/vehicleControl/types";
+import type {
+  PublicVehicleCatalogPayload,
+  PublicVehicleCatalogRebuildResult,
+  PublicVehicleCatalogResult,
+  PublicVehicleCatalogSource,
+  PublicVehicleOption,
+  PublicVehicleRecord,
+  RawVehicleRow,
+  StageData,
+  VehicleServiceKey,
+} from "@/lib/vehicleControl/types";
 import { vehicleServiceLabels } from "@/lib/vehicleControl/types";
 
 type PerformanceOverride = {
@@ -22,6 +33,7 @@ const rawRows = vehicles as RawVehicleRow[];
 const overrides = performanceOverrides as Record<string, PerformanceOverride>;
 const databasePageSize = 1000;
 const cacheTtlMs = 60_000;
+const catalogCacheId = "published";
 
 type DbVehicleEngineBase = {
   id: string;
@@ -86,6 +98,95 @@ type PagedResult<T> = {
   data: T[] | null;
   error: { message: string } | null;
 };
+
+type DbCatalogCacheRow = {
+  payload: unknown;
+  version: number | null;
+  source_hash: string | null;
+  generated_at: string | null;
+  is_active: boolean | null;
+};
+
+function catalogModelKey(brandId: string, modelId: string) {
+  return `${brandId}::${modelId}`;
+}
+
+function catalogGenerationKey(brandId: string, modelId: string, generationId: string) {
+  return `${brandId}::${modelId}::${generationId}`;
+}
+
+function isPublicVehicleOption(value: unknown): value is PublicVehicleOption {
+  return Boolean(value && typeof value === "object" && typeof (value as PublicVehicleOption).id === "string" && typeof (value as PublicVehicleOption).name === "string");
+}
+
+function isPublicVehicleRecord(value: unknown): value is PublicVehicleRecord {
+  const row = value as PublicVehicleRecord;
+  return Boolean(value && typeof value === "object" && typeof row.brand === "string" && typeof row.brandId === "string" && typeof row.model === "string" && typeof row.modelId === "string" && typeof row.generation === "string" && typeof row.generationId === "string" && typeof row.engine === "string" && typeof row.engineId === "string");
+}
+
+function isPublicVehicleCatalogPayload(value: unknown): value is PublicVehicleCatalogPayload {
+  const payload = value as PublicVehicleCatalogPayload;
+  return Boolean(
+    value &&
+    typeof value === "object" &&
+    payload.version === 1 &&
+    typeof payload.generatedAt === "string" &&
+    Array.isArray(payload.rows) &&
+    payload.rows.every(isPublicVehicleRecord) &&
+    Array.isArray(payload.brands) &&
+    payload.brands.every(isPublicVehicleOption) &&
+    payload.modelsByBrand &&
+    typeof payload.modelsByBrand === "object" &&
+    payload.generationsByModel &&
+    typeof payload.generationsByModel === "object" &&
+    payload.enginesByGeneration &&
+    typeof payload.enginesByGeneration === "object"
+  );
+}
+
+export function buildPublicVehicleCatalogPayload(rows: PublicVehicleRecord[], generatedAt = new Date().toISOString()): PublicVehicleCatalogPayload {
+  const brands = listBrandsFromRows(rows);
+  const modelsByBrand: Record<string, PublicVehicleOption[]> = {};
+  const generationsByModel: Record<string, PublicVehicleOption[]> = {};
+  const enginesByGeneration: Record<string, PublicVehicleOption[]> = {};
+
+  for (const brand of brands) {
+    const models = listModelsFromRows(rows, brand.id);
+    modelsByBrand[brand.id] = models;
+
+    for (const model of models) {
+      const generations = listGenerationsFromRows(rows, brand.id, model.id);
+      generationsByModel[catalogModelKey(brand.id, model.id)] = generations;
+
+      for (const generation of generations) {
+        enginesByGeneration[catalogGenerationKey(brand.id, model.id, generation.id)] = listEnginesFromRows(rows, brand.id, model.id, generation.id);
+      }
+    }
+  }
+
+  return {
+    version: 1,
+    generatedAt,
+    rows,
+    brands,
+    modelsByBrand,
+    generationsByModel,
+    enginesByGeneration,
+  };
+}
+
+function sourceHashForPayload(payload: PublicVehicleCatalogPayload) {
+  return createHash("sha256").update(JSON.stringify(payload.rows)).digest("hex");
+}
+
+function countCatalogItems(payload: PublicVehicleCatalogPayload) {
+  return {
+    brandCount: payload.brands.length,
+    modelCount: Object.values(payload.modelsByBrand).reduce((sum, items) => sum + items.length, 0),
+    generationCount: Object.values(payload.generationsByModel).reduce((sum, items) => sum + items.length, 0),
+    engineCount: Object.values(payload.enginesByGeneration).reduce((sum, items) => sum + items.length, 0),
+  };
+}
 
 function withOverrides(row: RawVehicleRow): PublicVehicleRecord {
   const publicRow = controlRecordToPublicVehicle(rawVehicleToControlRecord(row));
@@ -251,17 +352,100 @@ async function publishedVehicleDetailFromDatabase(vehicleKey: string) {
   }
 }
 
-let cachedRows: { source: "database" | "json"; rows: PublicVehicleRecord[]; expiresAt: number } | null = null;
+async function publicCatalogPayloadFromDatabaseCache() {
+  try {
+    const admin = getSupabaseAdmin();
+    const { data, error } = await admin
+      .from("public_vehicle_catalog_cache")
+      .select("payload, version, source_hash, generated_at, is_active")
+      .eq("id", catalogCacheId)
+      .eq("is_active", true)
+      .maybeSingle();
+
+    if (error || !data) return null;
+    const row = data as DbCatalogCacheRow;
+    return isPublicVehicleCatalogPayload(row.payload) ? row.payload : null;
+  } catch {
+    return null;
+  }
+}
+
+let cachedCatalog: PublicVehicleCatalogResult | null = null;
+
+export async function getSafePublishedVehicleCatalog(options: { forceRefresh?: boolean } = {}): Promise<PublicVehicleCatalogResult> {
+  const now = Date.now();
+  if (!options.forceRefresh && cachedCatalog && cachedCatalog.expiresAt > now) return cachedCatalog;
+
+  const cachedPayload = await publicCatalogPayloadFromDatabaseCache();
+  if (cachedPayload) {
+    cachedCatalog = {
+      source: "cache",
+      payload: cachedPayload,
+      rows: cachedPayload.rows,
+      expiresAt: now + cacheTtlMs,
+    };
+    return cachedCatalog;
+  }
+
+  const databaseRows = await publishedBaseRowsFromDatabase();
+  const source: PublicVehicleCatalogSource = databaseRows.length ? "database" : "json";
+  const rows = databaseRows.length ? databaseRows : publicRowsFromJson();
+  const payload = buildPublicVehicleCatalogPayload(rows);
+  cachedCatalog = {
+    source,
+    payload,
+    rows,
+    expiresAt: now + cacheTtlMs,
+  };
+  return cachedCatalog;
+}
 
 export async function getSafePublishedVehicleRows(options: { forceRefresh?: boolean } = {}) {
-  const now = Date.now();
-  if (!options.forceRefresh && cachedRows && cachedRows.expiresAt > now) return cachedRows;
-  const databaseRows = await publishedBaseRowsFromDatabase();
-  const result = databaseRows.length
-    ? { source: "database" as const, rows: databaseRows, expiresAt: now + cacheTtlMs }
-    : { source: "json" as const, rows: publicRowsFromJson(), expiresAt: now + cacheTtlMs };
-  cachedRows = result;
-  return result;
+  const catalog = await getSafePublishedVehicleCatalog(options);
+  return { source: catalog.source, rows: catalog.rows, expiresAt: catalog.expiresAt };
+}
+
+export async function rebuildPublicVehicleCatalogCache(generatedBy?: string | null): Promise<PublicVehicleCatalogRebuildResult> {
+  const rows = await publishedBaseRowsFromDatabase();
+  if (!rows.length) throw new Error("No published database vehicle rows were found. Cache rebuild was skipped.");
+
+  const generatedAt = new Date().toISOString();
+  const payload = buildPublicVehicleCatalogPayload(rows, generatedAt);
+  const sourceHash = sourceHashForPayload(payload);
+  const counts = countCatalogItems(payload);
+  const admin = getSupabaseAdmin();
+  const { error } = await admin
+    .from("public_vehicle_catalog_cache")
+    .upsert({
+      id: catalogCacheId,
+      payload,
+      version: payload.version,
+      source_hash: sourceHash,
+      brand_count: counts.brandCount,
+      model_count: counts.modelCount,
+      generation_count: counts.generationCount,
+      engine_count: counts.engineCount,
+      generated_at: generatedAt,
+      generated_by: generatedBy ?? null,
+      is_active: true,
+      updated_at: generatedAt,
+    }, { onConflict: "id" });
+
+  if (error) throw new Error(error.message);
+  cachedCatalog = {
+    source: "cache",
+    payload,
+    rows,
+    expiresAt: Date.now() + cacheTtlMs,
+  };
+
+  return {
+    ok: true,
+    id: catalogCacheId,
+    sourceHash,
+    ...counts,
+    generatedAt,
+  };
 }
 
 function uniqueBy<T>(items: T[], keyFn: (item: T) => string) {
@@ -283,6 +467,18 @@ export function listModelsFromRows(rows: PublicVehicleRecord[], brandId: string)
   return uniqueBy(rows.filter((row) => row.brandId === brandId), (row) => row.modelId || normalizeToken(row.model))
     .map((row) => ({ id: row.modelId || normalizeToken(row.model), name: row.model }))
     .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+export function listModelsFromCatalog(payload: PublicVehicleCatalogPayload, brandId: string) {
+  return payload.modelsByBrand[brandId] ?? [];
+}
+
+export function listGenerationsFromCatalog(payload: PublicVehicleCatalogPayload, brandId: string, modelId: string) {
+  return payload.generationsByModel[catalogModelKey(brandId, modelId)] ?? [];
+}
+
+export function listEnginesFromCatalog(payload: PublicVehicleCatalogPayload, brandId: string, modelId: string, generationId: string) {
+  return payload.enginesByGeneration[catalogGenerationKey(brandId, modelId, generationId)] ?? [];
 }
 
 export function listGenerationsFromRows(rows: PublicVehicleRecord[], brandId: string, modelId: string) {
@@ -311,6 +507,6 @@ export async function getSafePublishedVehicle(brandId: string, modelId: string, 
   const list = await getSafePublishedVehicleRows();
   const base = findVehicleFromRows(list.rows, brandId, modelId, generationId, engineId);
   if (!base) return { source: list.source, row: null };
-  if (list.source !== "database") return { source: list.source, row: base };
-  return { source: "database" as const, row: await publishedVehicleDetailFromDatabase(base.vehicleKey ?? base.id) ?? base };
+  if (list.source === "json") return { source: list.source, row: base };
+  return { source: list.source, row: await publishedVehicleDetailFromDatabase(base.vehicleKey ?? base.id) ?? base };
 }

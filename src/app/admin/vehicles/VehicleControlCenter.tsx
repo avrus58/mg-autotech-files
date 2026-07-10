@@ -193,6 +193,22 @@ export default function VehicleControlCenter({ section = "overview" }: { section
     }
   }
 
+  async function rebuildCatalogCache() {
+    setBusyAction("catalog-cache");
+    setMessage("");
+    try {
+      const response = await authFetch("/api/admin/vehicles/catalog-cache/rebuild", { method: "POST" });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Public catalog cache rebuild failed.");
+      const result = data.result;
+      setMessage(`Public catalog cache rebuilt: ${result.brandCount} brands, ${result.modelCount} models, ${result.generationCount} generations, ${result.engineCount} engines.`);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Public catalog cache rebuild failed.");
+    } finally {
+      setBusyAction("");
+    }
+  }
+
   function numberOrNull(value: string) {
     if (value.trim() === "") return null;
     const parsed = Number(value);
@@ -266,6 +282,7 @@ export default function VehicleControlCenter({ section = "overview" }: { section
           <button onClick={() => void load()} className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-black hover:bg-white/10"><RefreshCcw className="mr-2 inline h-4 w-4" />Refresh</button>
           <button onClick={() => setShowCreate((value) => !value)} className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-black hover:bg-white/10"><PlusCircle className="mr-2 inline h-4 w-4" />Create draft</button>
           <button onClick={() => void runValidation()} disabled={busyAction === "validation"} className="rounded-xl border border-amber-800/40 bg-amber-950/20 px-4 py-3 text-sm font-black text-amber-200 disabled:opacity-50">{busyAction === "validation" ? <Loader2 className="mr-2 inline h-4 w-4 animate-spin" /> : <ShieldCheck className="mr-2 inline h-4 w-4" />}Run validation</button>
+          <button onClick={() => void rebuildCatalogCache()} disabled={busyAction === "catalog-cache"} className="rounded-xl border border-sky-800/40 bg-sky-950/20 px-4 py-3 text-sm font-black text-sky-200 disabled:opacity-50">{busyAction === "catalog-cache" ? <Loader2 className="mr-2 inline h-4 w-4 animate-spin" /> : <Database className="mr-2 inline h-4 w-4" />}Rebuild Public Catalog Cache</button>
           <Link href="/admin/vehicles/enrichment" className="rounded-xl border border-emerald-800/40 bg-emerald-950/20 px-4 py-3 text-sm font-black text-emerald-200 hover:bg-emerald-900/30"><Sparkles className="mr-2 inline h-4 w-4" />Enrichment</Link>
           <Link href="/admin/vehicles/import" className="rounded-xl bg-[#b1121b] px-4 py-3 text-sm font-black text-white hover:bg-[#c91824]"><UploadCloud className="mr-2 inline h-4 w-4" />Import tools</Link>
         </div>
