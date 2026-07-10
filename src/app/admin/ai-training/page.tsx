@@ -214,7 +214,7 @@ export default function AiTrainingPage() {
   }, [data.samples, search]);
 
   return (
-    <main className="min-h-screen overflow-x-hidden bg-[#050505] text-white">
+    <main className="mg-compact-ui min-h-screen overflow-x-hidden bg-[#050505] text-white">
       <header className="border-b border-white/10 bg-black/80">
         <div className="mx-auto flex max-w-[1500px] flex-col gap-4 px-4 py-5 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">

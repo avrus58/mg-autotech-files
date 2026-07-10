@@ -4,6 +4,10 @@ import Link from "next/link";
 import { ReactNode, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { signOutIfEmailUnverified } from "@/lib/authGuards";
+import {
+  getRequestFlowStepStates,
+  isAdvancedRequestServiceCategory,
+} from "@/lib/requestFlow";
 import { supabase } from "@/lib/supabaseClient";
 import {
   Activity,
@@ -237,6 +241,13 @@ const extraServiceCategories: ExtraServiceCategory[] = [
 
 const extraServices = extraServiceCategories.flatMap((category) => category.services);
 
+const primaryExtraServiceCategories = extraServiceCategories.filter(
+  (category) => !isAdvancedRequestServiceCategory(category.id)
+);
+const advancedExtraServiceCategories = extraServiceCategories.filter((category) =>
+  isAdvancedRequestServiceCategory(category.id)
+);
+
 function SelectBox({
   label,
   value,
@@ -444,6 +455,101 @@ function StatCard({
         {label}
       </div>
       <div className="mt-3 break-words text-lg font-black">{value}</div>
+    </div>
+  );
+}
+
+function ServiceCategoryPanel({
+  category,
+  selectedExtras,
+  openServiceCategories,
+  toggleServiceCategory,
+  toggleExtra,
+}: {
+  category: ExtraServiceCategory;
+  selectedExtras: string[];
+  openServiceCategories: string[];
+  toggleServiceCategory: (id: string) => void;
+  toggleExtra: (id: string) => void;
+}) {
+  const selectedCount = category.services.filter((service) =>
+    selectedExtras.includes(service.id)
+  ).length;
+  const open = openServiceCategories.includes(category.id);
+
+  return (
+    <div
+      className={`overflow-hidden rounded-[1.25rem] border bg-black/25 transition ${
+        selectedCount > 0 ? "border-red-800/50" : "border-white/10"
+      }`}
+    >
+      <button
+        type="button"
+        onClick={() => toggleServiceCategory(category.id)}
+        className="flex w-full items-center justify-between gap-4 p-4 text-left transition hover:bg-white/[0.04]"
+        aria-expanded={open}
+      >
+        <span className="min-w-0">
+          <span className="block text-base font-black text-white">
+            {category.title}
+          </span>
+          <span className="mt-1 block text-xs leading-5 text-zinc-500">
+            {category.description}
+          </span>
+        </span>
+        <span className="flex shrink-0 items-center gap-3">
+          <span className="rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-xs font-black text-zinc-300">
+            {selectedCount} selected
+          </span>
+          <ChevronDown
+            className={`h-5 w-5 text-zinc-400 transition ${
+              open ? "rotate-180" : ""
+            }`}
+          />
+        </span>
+      </button>
+
+      {open && (
+        <div className="grid gap-3 border-t border-white/10 p-4 md:grid-cols-2 xl:grid-cols-3">
+          {category.services.map((service) => {
+            const active = selectedExtras.includes(service.id);
+
+            return (
+              <button
+                key={service.id}
+                onClick={() => toggleExtra(service.id)}
+                className={`group flex items-start gap-3 rounded-xl border px-4 py-3 text-left text-sm font-bold transition hover:-translate-y-0.5 ${
+                  active
+                    ? "border-red-700 bg-red-950/35 text-white shadow-lg shadow-red-950/20"
+                    : "border-white/10 bg-black/30 text-zinc-400 hover:border-red-800/60 hover:text-white"
+                }`}
+              >
+                <span
+                  className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition ${
+                    active
+                      ? "border-red-500 bg-red-600"
+                      : "border-zinc-600 group-hover:border-red-700"
+                  }`}
+                >
+                  {active && <CheckCircle2 className="h-4 w-4" />}
+                </span>
+
+                <span className="min-w-0">
+                  <span className="block">{service.title}</span>
+                  {service.description && (
+                    <span className="mt-1 block text-xs font-medium leading-5 text-zinc-500">
+                      {service.description}
+                    </span>
+                  )}
+                  <span className="mt-2 inline-flex rounded-full bg-cyan-500/90 px-2 py-0.5 text-xs font-black text-white">
+                    {service.credits} Credit{service.credits === 1 ? "" : "s"}
+                  </span>
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
@@ -767,6 +873,21 @@ export default function NewRequestPage() {
     return [main, ...extras].join(" + ");
   }, [selectedExtras, selectedMainService]);
 
+  const selectedAdvancedExtraCount = advancedExtraServiceCategories.reduce(
+    (sum, category) =>
+      sum + category.services.filter((service) => selectedExtras.includes(service.id)).length,
+    0
+  );
+
+  const requestStepStates = getRequestFlowStepStates({
+    hasVehicle: Boolean(selectedBrandName && selectedModelName && selectedEngineName),
+    hasService: Boolean(selectedMainService),
+    hasUpload: Boolean(selectedFile),
+    hasNotes: Boolean(notes.trim()),
+    hasPaymentAcceptance: paymentAccepted,
+    hasFinalAcceptance: responsibilityAccepted,
+  });
+
   const toggleExtra = (id: string) => {
     setSelectedExtras((current) =>
       current.includes(id)
@@ -976,7 +1097,7 @@ export default function NewRequestPage() {
   };
 
   return (
-    <main className="min-h-screen bg-[#050505] text-white">
+    <main className="mg-compact-ui min-h-screen bg-[#050505] text-white">
       <div className="fixed inset-0 -z-10 bg-[radial-gradient(circle_at_20%_0%,rgba(160,18,28,0.24),transparent_32%),linear-gradient(135deg,#050505,#0d0d0f_48%,#160608)]" />
 
       <header className="sticky top-0 z-50 border-b border-white/10 bg-black/80 backdrop-blur-xl">
@@ -1043,6 +1164,31 @@ export default function NewRequestPage() {
             <div className="mt-5 rounded-2xl bg-black/30 p-4 text-sm leading-6 text-zinc-300">
               {serviceSummary || "Select service"}
             </div>
+          </div>
+        </div>
+
+        <div className="mb-6 rounded-2xl border border-white/10 bg-white/[0.035] p-3">
+          <div className="mg-step-rail">
+            {requestStepStates.map((step, index) => (
+              <div
+                key={step.id}
+                className={`rounded-xl border px-3 py-2 ${
+                  step.completed
+                    ? "border-emerald-700/35 bg-emerald-950/20 text-emerald-200"
+                    : step.active
+                      ? "border-red-700/50 bg-red-950/25 text-white"
+                      : "border-white/10 bg-black/25 text-zinc-500"
+                }`}
+              >
+                <div className="text-[10px] font-black uppercase tracking-[0.16em] opacity-70">
+                  Step {index + 1}
+                </div>
+                <div className="mt-1 flex items-center gap-2 text-sm font-black">
+                  {step.completed ? <CheckCircle2 className="h-4 w-4" /> : null}
+                  {step.label}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 
@@ -1322,85 +1468,43 @@ export default function NewRequestPage() {
                 </div>
               </div>
 
-              <div className="space-y-5">
-                {extraServiceCategories.map((category) => (
-                  <div
+              <div className="space-y-4">
+                {primaryExtraServiceCategories.map((category) => (
+                  <ServiceCategoryPanel
                     key={category.id}
-                    className={`overflow-hidden rounded-[1.5rem] border bg-black/25 transition ${
-                      category.services.some((service) => selectedExtras.includes(service.id))
-                        ? "border-red-800/50"
-                        : "border-white/10"
-                    }`}
-                  >
-                    <button
-                      type="button"
-                      onClick={() => toggleServiceCategory(category.id)}
-                      className="flex w-full items-center justify-between gap-4 p-4 text-left transition hover:bg-white/[0.04] sm:p-5"
-                      aria-expanded={openServiceCategories.includes(category.id)}
-                    >
-                      <span className="min-w-0">
-                        <span className="block text-lg font-black text-white">
-                          {category.title}
-                        </span>
-                        <span className="mt-1 block text-sm leading-6 text-zinc-500">
-                          {category.description}
-                        </span>
-                      </span>
-                      <span className="flex shrink-0 items-center gap-3">
-                        <span className="rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-xs font-black text-zinc-300">
-                          {category.services.filter((service) => selectedExtras.includes(service.id)).length} selected
-                        </span>
-                        <ChevronDown className={`h-5 w-5 text-zinc-400 transition ${
-                          openServiceCategories.includes(category.id) ? "rotate-180" : ""
-                        }`} />
-                      </span>
-                    </button>
-
-                    {openServiceCategories.includes(category.id) && (
-                    <div className="grid gap-3 border-t border-white/10 p-4 md:grid-cols-2 xl:grid-cols-3 sm:p-5">
-                      {category.services.map((service) => {
-                        const active = selectedExtras.includes(service.id);
-
-                        return (
-                          <button
-                            key={service.id}
-                            onClick={() => toggleExtra(service.id)}
-                            className={`group flex items-start gap-3 rounded-xl border px-4 py-3 text-left text-sm font-bold transition hover:-translate-y-0.5 ${
-                              active
-                                ? "border-red-700 bg-red-950/35 text-white shadow-lg shadow-red-950/20"
-                                : "border-white/10 bg-black/30 text-zinc-400 hover:border-red-800/60 hover:text-white"
-                            }`}
-                          >
-                            <span
-                              className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition ${
-                                active
-                                  ? "border-red-500 bg-red-600"
-                                  : "border-zinc-600 group-hover:border-red-700"
-                              }`}
-                            >
-                              {active && <CheckCircle2 className="h-4 w-4" />}
-                            </span>
-
-                            <span className="min-w-0">
-                              <span className="block">{service.title}</span>
-
-                              {service.description && (
-                                <span className="mt-1 block text-xs font-medium leading-5 text-zinc-500">
-                                  {service.description}
-                                </span>
-                              )}
-
-                              <span className="mt-2 inline-flex rounded-full bg-cyan-500/90 px-2 py-0.5 text-xs font-black text-white">
-                                {service.credits} Credit{service.credits === 1 ? "" : "s"}
-                              </span>
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                    )}
-                  </div>
+                    category={category}
+                    selectedExtras={selectedExtras}
+                    openServiceCategories={openServiceCategories}
+                    toggleServiceCategory={toggleServiceCategory}
+                    toggleExtra={toggleExtra}
+                  />
                 ))}
+
+                <details className="rounded-[1.25rem] border border-white/10 bg-black/25 p-4">
+                  <summary className="flex cursor-pointer list-none items-center justify-between gap-4">
+                    <span>
+                      <span className="block text-base font-black">Advanced services</span>
+                      <span className="mt-1 block text-xs leading-5 text-zinc-500">
+                        Performance add-ons, special functions and support options stay available without overwhelming standard requests.
+                      </span>
+                    </span>
+                    <span className="rounded-full border border-red-800/40 bg-red-950/25 px-3 py-1 text-xs font-black text-red-200">
+                      {selectedAdvancedExtraCount} selected
+                    </span>
+                  </summary>
+                  <div className="mt-4 space-y-4">
+                    {advancedExtraServiceCategories.map((category) => (
+                      <ServiceCategoryPanel
+                        key={category.id}
+                        category={category}
+                        selectedExtras={selectedExtras}
+                        openServiceCategories={openServiceCategories}
+                        toggleServiceCategory={toggleServiceCategory}
+                        toggleExtra={toggleExtra}
+                      />
+                    ))}
+                  </div>
+                </details>
               </div>
             </section>
 

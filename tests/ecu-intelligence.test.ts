@@ -57,6 +57,17 @@ import {
   type AdminClusterEvidence,
   type ClusteringSample,
 } from "../src/lib/ecuIntelligence/clustering";
+import {
+  buildEvidenceChecklist,
+  calculateGenerationReadiness,
+  calculateLearningUsefulness,
+  categorizeSimilarityMatch,
+} from "../src/lib/ecuIntelligence/evidenceReadiness";
+import {
+  attributeChangedRegionsToMapDefinitions,
+  summarizeMapCandidates,
+  type MapDefinition,
+} from "../src/lib/ecuIntelligence/mapDefinitions";
 
 function calibrationLikeBuffer(size = 16_384) {
   const buffer = Buffer.alloc(size, 0xff);
@@ -892,6 +903,105 @@ test("customer cluster evidence exposes no sample IDs, offsets or raw data", () 
   assert.equal(serialized.includes("0x00001000"), false);
   assert.equal(serialized.includes("representative_offsets"), false);
   assert.equal(serialized.includes("raw"), false);
+});
+
+test("AI evidence checklist explains trusted matches without approving generation", () => {
+  const match = scoreTrainingSampleSimilarity(similaritySource, similarityCandidate("trusted"));
+  const result = rankSimilarTrainingSamples(similaritySource, [similarityCandidate("trusted")]);
+  const cluster = buildPublicClusterEvidence({
+    matchingClusters: 1,
+    bestStatus: "strong",
+    bestConfidence: 76,
+    message: "Approved cluster evidence exists.",
+    humanVerificationRequired: true,
+    checksumVerificationRequired: true,
+    clusters: [],
+  });
+  const evidence = buildEvidenceChecklist({
+    similarity: result,
+    cluster,
+    sample: {
+      learning_use_status: "approved_for_learning",
+      human_verification_status: "confirmed",
+      data_quality_score: 92,
+      requested_service_labels: similarityLabels("stage1"),
+      performed_service_labels: similarityLabels("stage1"),
+      pattern_signature: similaritySignature(),
+      diff_json: { mode: "ori_mod_compare" } as never,
+      ecu_type: "Bosch EDC17C50",
+    },
+  });
+  const generation = calculateGenerationReadiness({
+    evidence,
+    mapDefinitionsAvailable: false,
+    checksumWorkflowAvailable: false,
+    humanApprovalReady: false,
+    exactSwMatch: true,
+    actualLabelsConfirmed: true,
+  });
+
+  assert.equal(categorizeSimilarityMatch(match), "same_file_family");
+  assert.ok(["strong", "exact"].includes(evidence.level));
+  assert.equal(generation.ready, false);
+  assert.ok(generation.blockers.some((blocker) => /map definitions/i.test(blocker)));
+  assert.ok(generation.blockers.some((blocker) => /checksum/i.test(blocker)));
+});
+
+test("learning usefulness blocks weak or unconfirmed samples from trusted evidence", () => {
+  const pending = calculateLearningUsefulness({
+    learning_use_status: "pending",
+    human_verification_status: "unverified",
+    data_quality_score: 42,
+    requested_service_labels: similarityLabels("stage1"),
+    performed_service_labels: null,
+    pattern_signature: null,
+    diff_json: null,
+  });
+  const approved = calculateLearningUsefulness({
+    learning_use_status: "approved_for_learning",
+    human_verification_status: "confirmed",
+    data_quality_score: 92,
+    requested_service_labels: similarityLabels("stage1"),
+    performed_service_labels: similarityLabels("stage1"),
+    pattern_signature: similaritySignature(),
+    diff_json: { mode: "ori_mod_compare" } as never,
+    ecu_family: "EDC17",
+  });
+
+  assert.equal(pending.usable, false);
+  assert.equal(pending.status, "needs_review");
+  assert.ok(pending.missing.some((item) => /quality/i.test(item)));
+  assert.equal(approved.usable, true);
+  assert.equal(approved.status, "trusted");
+});
+
+test("map definition attribution stays conservative without definitions", async () => {
+  const result = await analyzeFileExpertBuffers({
+    jobId: "map-definition-required",
+    ori: calibrationLikeBuffer(),
+    mod: (() => {
+      const mod = calibrationLikeBuffer();
+      mod.fill(0x55, 0x3000, 0x3100);
+      return mod;
+    })(),
+  });
+  const noDefinitions = attributeChangedRegionsToMapDefinitions(result, []);
+  const definition: MapDefinition = {
+    id: "torque-map-1",
+    ecuFamily: result.ecu_identification?.family,
+    name: "Torque limiter candidate",
+    category: "torque_model",
+    startOffsetHex: "0x00003000",
+    endOffsetHex: "0x000031FF",
+    confidence: 0.85,
+    source: "human_verified",
+  };
+  const attributed = attributeChangedRegionsToMapDefinitions(result, [definition]);
+
+  assert.equal(noDefinitions.status, "no_definitions");
+  assert.equal(noDefinitions.mapDefinitionRequired, true);
+  assert.ok(attributed.attributed.some((item) => item.definitionId === "torque-map-1"));
+  assert.ok(summarizeMapCandidates(result.map_candidates).every((item) => /Human|Structural/i.test(item.note)));
 });
 
 test("customer File Expert projection strips paths, hashes, offsets and admin fields", async () => {

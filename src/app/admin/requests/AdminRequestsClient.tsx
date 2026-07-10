@@ -180,7 +180,7 @@ export default function AdminRequestsClient() {
   }, [payload]);
 
   return (
-    <main className="min-h-screen bg-[#050505] text-white">
+    <main className="mg-compact-ui min-h-screen bg-[#050505] text-white">
       <div className="fixed inset-0 -z-10 bg-[radial-gradient(circle_at_20%_0%,rgba(180,18,28,0.22),transparent_34%),linear-gradient(135deg,#050505,#101012_52%,#170507)]" />
       <header className="border-b border-white/10 bg-black/80 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-6 md:flex-row md:items-center md:justify-between">

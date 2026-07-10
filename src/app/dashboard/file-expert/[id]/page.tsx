@@ -43,6 +43,10 @@ import type {
   AdminClusterEvidence,
   PublicClusterEvidence,
 } from "@/lib/ecuIntelligence/clustering";
+import {
+  buildEvidenceChecklist,
+  calculateGenerationReadiness,
+} from "@/lib/ecuIntelligence/evidenceReadiness";
 
 type FingerprintRow = {
   id: string;
@@ -187,6 +191,34 @@ export default function FileExpertReportPage() {
           : "No approved similar learning evidence was found.",
       }
     : similarityEvidence;
+  const adminEvidenceChecklist = useMemo(() => {
+    if (!isAdmin) return null;
+    return buildEvidenceChecklist({
+      similarity: similarityEvidence,
+      cluster: clusterEvidence,
+      sample: result
+        ? {
+            pattern_signature: result.pattern_signature ?? null,
+            diff_json: result,
+            ecu_type: identity?.display_name ?? job?.ecu_type ?? null,
+            ecu_family: identity?.family ?? job?.ecu_family ?? null,
+            sw_number: identity?.software_numbers[0] ?? job?.sw_number ?? null,
+            hw_number: identity?.hardware_numbers[0] ?? job?.hw_number ?? null,
+          }
+        : null,
+    });
+  }, [clusterEvidence, identity, isAdmin, job, result, similarityEvidence]);
+  const adminGenerationReadiness = useMemo(() => {
+    if (!adminEvidenceChecklist) return null;
+    return calculateGenerationReadiness({
+      evidence: adminEvidenceChecklist,
+      mapDefinitionsAvailable: false,
+      checksumWorkflowAvailable: false,
+      humanApprovalReady: false,
+      exactSwMatch: Boolean(identity?.software_numbers.length || job?.sw_number),
+      actualLabelsConfirmed: false,
+    });
+  }, [adminEvidenceChecklist, identity?.software_numbers.length, job?.sw_number]);
 
   const fileCards = useMemo(
     () => [
@@ -257,7 +289,7 @@ export default function FileExpertReportPage() {
   }
 
   return (
-    <main className="min-h-screen overflow-x-hidden bg-[#050505] text-white">
+    <main className="mg-compact-ui min-h-screen overflow-x-hidden bg-[#050505] text-white">
       <div className="fixed inset-0 -z-10 bg-[radial-gradient(circle_at_20%_0%,rgba(160,18,28,0.22),transparent_32%),linear-gradient(135deg,#050505,#0d0d0f_48%,#160608)]" />
       <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
         <header className="mb-6 flex flex-col gap-5 border-b border-white/10 pb-6 xl:flex-row xl:items-end xl:justify-between">
@@ -269,9 +301,9 @@ export default function FileExpertReportPage() {
               <span className={`rounded-full border px-3 py-1 text-xs font-black ${statusClass(job.status)}`}>{job.status.toUpperCase()}</span>
               <span className={`rounded-full border px-3 py-1 text-xs font-black ${riskClass(job.risk_level)}`}>RISK: {(job.risk_level || "unknown").toUpperCase()}</span>
               {identity && (
-                <span className="rounded-full border border-red-800/40 bg-red-950/25 px-3 py-1 text-xs font-black text-red-200">
-                  ECU {identity.status.toUpperCase()} / {Math.round(identity.confidence * 100)}%
-                </span>
+              <span className="rounded-full border border-red-800/40 bg-red-950/25 px-3 py-1 text-xs font-black text-red-200">
+                  ECU {identity.status.toUpperCase()}{isAdmin ? ` / ${Math.round(identity.confidence * 100)}%` : ""}
+              </span>
               )}
             </div>
             <h1 className="mt-3 break-words text-4xl font-black md:text-5xl">{reportTitle}</h1>
@@ -282,12 +314,16 @@ export default function FileExpertReportPage() {
             <button onClick={reanalyze} disabled={reanalyzing} className="inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] px-5 py-3 text-sm font-black transition hover:bg-white/10 disabled:opacity-50">
               {reanalyzing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCcw className="mr-2 h-4 w-4" />} Re-analyze
             </button>
-            <button onClick={() => void copyJson()} disabled={!job.result_json} className="inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] px-5 py-3 text-sm font-black transition hover:bg-white/10 disabled:opacity-50">
-              <Copy className="mr-2 h-4 w-4" /> Copy JSON
-            </button>
-            <button onClick={downloadJson} disabled={!job.result_json} className="inline-flex items-center justify-center rounded-2xl bg-[#b1121b] px-5 py-3 text-sm font-black transition hover:bg-[#c91824] disabled:opacity-50">
-              <Download className="mr-2 h-4 w-4" /> Download report data
-            </button>
+            {isAdmin ? (
+              <>
+                <button onClick={() => void copyJson()} disabled={!job.result_json} className="inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] px-5 py-3 text-sm font-black transition hover:bg-white/10 disabled:opacity-50">
+                  <Copy className="mr-2 h-4 w-4" /> Copy JSON
+                </button>
+                <button onClick={downloadJson} disabled={!job.result_json} className="inline-flex items-center justify-center rounded-2xl bg-[#b1121b] px-5 py-3 text-sm font-black transition hover:bg-[#c91824] disabled:opacity-50">
+                  <Download className="mr-2 h-4 w-4" /> Download report data
+                </button>
+              </>
+            ) : null}
           </div>
         </header>
 
@@ -388,7 +424,7 @@ export default function FileExpertReportPage() {
                           <div className="mt-1 text-sm text-zinc-400">{candidate.generation} / {candidate.engine}</div>
                           <div className="mt-2 text-xs font-bold text-red-200">{candidate.ecu}</div>
                         </div>
-                        <span className="rounded-full bg-white/[0.06] px-3 py-1 text-xs font-black">{Math.round(candidate.confidence * 100)}%</span>
+                        <span className="rounded-full bg-white/[0.06] px-3 py-1 text-xs font-black">{isAdmin ? `${Math.round(candidate.confidence * 100)}%` : "Possible"}</span>
                       </div>
                     </div>
                   ))}
@@ -406,7 +442,7 @@ export default function FileExpertReportPage() {
                     </div>
                     <div className="mt-3 break-all text-sm font-bold">{file.name || "Not uploaded"}</div>
                     <div className="mt-2 text-xs text-zinc-500">{formatLabel(file.profile?.file_format)} / {formatLabel(file.profile?.read_scope)}</div>
-                    <div className="mt-2 break-all text-xs text-zinc-600">SHA256 {shortHash(file.hash)}</div>
+                    {isAdmin ? <div className="mt-2 break-all text-xs text-zinc-600">SHA256 {shortHash(file.hash)}</div> : null}
                   </div>
                 ))}
               </div>
@@ -430,7 +466,7 @@ export default function FileExpertReportPage() {
                     <div key={feature.feature} className="rounded-2xl border border-red-900/35 bg-red-950/15 p-4">
                       <div className="flex items-center justify-between gap-3">
                         <div className="font-black">{fileExpertFeatureLabels[feature.feature] ?? feature.feature}</div>
-                        <span className="rounded-full bg-black/35 px-3 py-1 text-xs font-black text-red-200">{featureConfidence(feature)}</span>
+                        <span className="rounded-full bg-black/35 px-3 py-1 text-xs font-black text-red-200">{isAdmin ? featureConfidence(feature) : "Possible"}</span>
                       </div>
                       <p className="mt-3 text-xs leading-5 text-zinc-400">{feature.reasons.join(" ")}</p>
                     </div>
@@ -448,8 +484,8 @@ export default function FileExpertReportPage() {
                 <div>
                   <div className="grid gap-3 sm:grid-cols-3">
                     <MetricValue label="Approved matches" value={String(similaritySummary.matchesFound)} />
-                    <MetricValue label="Best score" value={`${similaritySummary.bestScore}/100`} />
-                    <MetricValue label="Confidence" value={formatLabel(similaritySummary.confidence)} />
+                    <MetricValue label={isAdmin ? "Best score" : "Evidence status"} value={isAdmin ? `${similaritySummary.bestScore}/100` : (similaritySummary.matchesFound ? "Available" : "Limited")} />
+                    <MetricValue label={isAdmin ? "Confidence" : "Review state"} value={isAdmin ? formatLabel(similaritySummary.confidence) : "Human required"} />
                   </div>
                   <p className="mt-4 text-sm leading-7 text-zinc-400">{similaritySummary.message} Similarity is supporting evidence only and does not approve this file for writing.</p>
                   {isAdmin && similarityEvidence && "matches" in similarityEvidence && similarityEvidence.matches.length ? (
@@ -474,7 +510,7 @@ export default function FileExpertReportPage() {
                   <div className="grid gap-3 sm:grid-cols-3">
                     <MetricValue label="Matching clusters" value={String(clusterEvidence.matchingClusters)} />
                     <MetricValue label="Best readiness" value={formatLabel(clusterEvidence.bestStatus)} />
-                    <MetricValue label="Cluster confidence" value={`${Math.round(clusterEvidence.bestConfidence)}/100`} />
+                    <MetricValue label={isAdmin ? "Cluster confidence" : "Verification"} value={isAdmin ? `${Math.round(clusterEvidence.bestConfidence)}/100` : "Required"} />
                   </div>
                   <p className="mt-4 text-sm leading-7 text-zinc-400">{clusterEvidence.message}</p>
                   <div className="mt-3 rounded-2xl border border-amber-700/30 bg-amber-950/10 p-4 text-xs leading-6 text-amber-100/75">This is evidence only. Human tuner verification and checksum verification are required before any real write.</div>
@@ -493,6 +529,24 @@ export default function FileExpertReportPage() {
                 <p className="rounded-2xl border border-dashed border-white/15 bg-black/25 p-5 text-sm leading-6 text-zinc-400">No trusted cluster evidence is available for this report yet. Human tuner verification remains required.</p>
               )}
             </Panel>
+
+            {adminEvidenceChecklist && adminGenerationReadiness ? (
+              <Panel eyebrow="Admin evidence gate" title="Learning and generation readiness" icon={<ShieldCheck />} accent>
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <MetricValue label="Evidence trust" value={`${formatLabel(adminEvidenceChecklist.level)} / ${adminEvidenceChecklist.score}`} />
+                  <MetricValue label="Generation gate" value={formatLabel(adminGenerationReadiness.level)} />
+                  <MetricValue label="Open safety gates" value={String(adminGenerationReadiness.blockers.length)} />
+                </div>
+                <p className="mt-4 text-sm leading-7 text-zinc-300">{adminEvidenceChecklist.summary}</p>
+                <div className="mt-4 grid gap-3 lg:grid-cols-2">
+                  <EvidenceList title="Strengths" items={adminEvidenceChecklist.strengths} tone="emerald" />
+                  <EvidenceList title="Missing / warnings" items={[...adminEvidenceChecklist.gaps, ...adminEvidenceChecklist.warnings, ...adminGenerationReadiness.blockers]} tone="amber" />
+                </div>
+                <div className="mt-4 rounded-2xl border border-red-800/35 bg-red-950/15 p-4 text-xs leading-6 text-red-100/80">
+                  Future AI generation remains disabled. This panel only explains evidence quality, learning value and the safety gates required before any admin-reviewed draft workflow.
+                </div>
+              </Panel>
+            ) : null}
 
             <Panel eyebrow="Compatibility" title="File integrity checks" icon={<BadgeCheck />}>
               <div className="space-y-3">
@@ -585,6 +639,18 @@ function Panel({ eyebrow, title, icon, accent, children }: { eyebrow: string; ti
 
 function MetricValue({ label, value }: { label: string; value: string }) {
   return <div className="rounded-2xl border border-white/10 bg-black/30 p-4"><div className="text-xs font-black uppercase tracking-[0.14em] text-zinc-500">{label}</div><div className="mt-2 text-2xl font-black">{value}</div></div>;
+}
+
+function EvidenceList({ title, items, tone }: { title: string; items: string[]; tone: "emerald" | "amber" }) {
+  const color = tone === "emerald" ? "border-emerald-800/35 bg-emerald-950/10 text-emerald-100" : "border-amber-800/35 bg-amber-950/10 text-amber-100";
+  return (
+    <div className={`rounded-2xl border p-4 ${color}`}>
+      <div className="text-xs font-black uppercase tracking-[0.16em] opacity-70">{title}</div>
+      <div className="mt-3 space-y-2 text-xs leading-5">
+        {items.length ? items.slice(0, 8).map((item, index) => <div key={`${item}-${index}`}>- {item}</div>) : <div>No items.</div>}
+      </div>
+    </div>
+  );
 }
 
 function CheckRow({ label, value, unknownLabel = "Not available" }: { label: string; value: boolean | null | undefined; unknownLabel?: string }) {

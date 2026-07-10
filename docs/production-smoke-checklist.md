@@ -10,6 +10,7 @@ Use this checklist after every production deploy. It is intentionally non-destru
 - Run `npm run build`
 - Run `npm run check:payments`
 - Run `npm audit --omit=dev --audit-level=high`
+- Run `node scripts/check-i18n-seo.mjs` after public SEO or translation changes.
 - Confirm no SQL migration is required, or run only reviewed non-destructive SQL first.
 - Confirm no real vehicle import is triggered during deploy.
 - Confirm active payment methods are Stripe/Card and Bank Transfer only.
@@ -26,18 +27,23 @@ Use this checklist after every production deploy. It is intentionally non-destru
 ## Customer Smoke
 
 - Open `/dashboard`
+- Confirm the dashboard feels compact: KPI cards, latest requests and quick actions should fit without excessive empty space on desktop.
 - Open `/dashboard/settings`
 - Open `/dashboard/credits`
 - Confirm credits page shows Stripe/Card and Bank Transfer only.
 - Open `/dashboard/file-expert`
 - Open a File Expert report as a customer account.
 - Confirm customer report does not expose storage paths, SHA hashes, binary previews, raw hex, offsets, provider data, private sample IDs or admin notes.
+- Open `/new-request`
+- Confirm the request flow shows Vehicle, Service, Upload, Notes, Credits and Review progress.
+- Confirm advanced services are collapsed and standard service choices remain available.
 - Confirm customer request detail shows customer-visible messages only and does not expose internal work-order notes.
 
 ## Admin Smoke
 
 - Open `/admin/requests`
 - Open an existing `/admin/requests/[id]`
+- Confirm admin pages use compact control-center density instead of oversized cards.
 - Confirm payment summary is read-only.
 - Confirm internal notes are admin-only.
 - Confirm customer-visible notes appear in customer messages.
@@ -56,6 +62,7 @@ These scripts do not mutate data and do not contain secrets:
 ```bash
 BASE_URL=https://file.mgautotech.de node scripts/smoke-public-platform.mjs
 BASE_URL=https://file.mgautotech.de node scripts/smoke-admin-unauthenticated.mjs
+node scripts/check-i18n-seo.mjs
 ```
 
 ## Rollback
@@ -67,3 +74,4 @@ BASE_URL=https://file.mgautotech.de node scripts/smoke-admin-unauthenticated.mjs
 ## Known Limitations
 
 See `docs/known-limitations.md` before changing upload, background processing or rate-limit architecture.
+See `docs/ai-file-intelligence-roadmap.md` before adding any AI-assisted generation work.

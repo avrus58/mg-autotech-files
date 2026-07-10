@@ -246,7 +246,7 @@ export default function VehicleControlCenter({ section = "overview" }: { section
   const stats = payload?.stats;
   const lastImport = payload?.importBatches?.[0];
 
-  return <main className="min-h-screen bg-[#050505] text-white">
+  return <main className="mg-compact-ui min-h-screen bg-[#050505] text-white">
     <header className="border-b border-white/10 bg-black/80">
       <div className="mx-auto flex max-w-[1500px] flex-col gap-4 px-4 py-6 lg:flex-row lg:items-center lg:justify-between">
         <div>

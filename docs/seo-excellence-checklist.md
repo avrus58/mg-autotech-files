@@ -1,0 +1,70 @@
+# MG AutoTech SEO Excellence Checklist
+
+Use this checklist before every public content or language release.
+
+## Technical SEO
+
+- `/robots.txt` blocks private routes: `/admin`, `/dashboard`, `/api`, auth and payment routes.
+- `/sitemap.xml` includes public home, service, tool, brand, ECU-platform and legal pages.
+- Localized pages include language alternates for all supported locales.
+- Canonical URLs point to the intended public page.
+- Public pages have a unique title and description.
+- Open Graph metadata is present on public landing/service pages.
+- No customer/dashboard/admin pages are indexed.
+
+## Multilingual Quality
+
+- Supported locales: NL, EN, DE, FR, IT, RU, ES, TR, PT, CN, PL, AL.
+- Run `node scripts/check-i18n-seo.mjs` after translation edits.
+- Do not mix customer-facing German, Turkish and English in the same locale page.
+- Keep admin technical language in English only when it is intentional.
+- Avoid automatic machine-translation wording that sounds unnatural.
+- Check long labels on mobile after every translation batch.
+
+## Service Page Standards
+
+Each service page should clearly explain:
+
+- what the service is
+- when it is used
+- what the customer should upload
+- supported vehicle/ECU context
+- credit information
+- process and delivery expectations
+- human verification and legal responsibility limits
+
+Priority topics:
+
+- ECU file service
+- TCU file service
+- Stage 1
+- Stage 2
+- DPF OFF
+- EGR OFF
+- AdBlue OFF
+- DTC OFF
+- VMAX OFF
+- Start/Stop OFF
+- TCU tuning
+- ECU unlock
+- BMW ECU unlock
+- Mercedes ECU/TCU file service
+
+## Safety And Trust
+
+- Do not claim guaranteed search ranking.
+- Do not claim universal vehicle support.
+- Do not promise legal road use.
+- Use careful language: support is confirmed after checking the submitted file, ECU/SW data and read method.
+- Mention secure portal upload, customer account history, credits, file versions and revision workflow.
+
+## Automated Checks
+
+Run:
+
+```bash
+node scripts/check-i18n-seo.mjs
+npm run build
+```
+
+The first script checks language coverage, core SEO files and common encoding/translation corruption markers. The build validates sitemap, robots and metadata generation through Next.js.

@@ -34,3 +34,88 @@ body {
 * {
   box-sizing: border-box;
 }
+
+/*
+  Compact operating UI
+  --------------------
+  The customer/admin product screens use this opt-in wrapper to reduce
+  wasted vertical space without making the app feel cramped.
+*/
+.mg-compact-ui {
+  --mg-panel-radius: 1.25rem;
+  --mg-panel-radius-sm: 0.875rem;
+}
+
+.mg-compact-ui :where([class*="rounded-[2rem]"], .rounded-3xl) {
+  border-radius: var(--mg-panel-radius) !important;
+}
+
+.mg-compact-ui :where(.rounded-2xl) {
+  border-radius: var(--mg-panel-radius-sm) !important;
+}
+
+.mg-compact-ui :where(.p-8, .p-7) {
+  padding: 1.25rem !important;
+}
+
+.mg-compact-ui :where(.p-6) {
+  padding: 1.125rem !important;
+}
+
+.mg-compact-ui :where(.py-8) {
+  padding-top: 1.5rem !important;
+  padding-bottom: 1.5rem !important;
+}
+
+.mg-compact-ui :where(.gap-8) {
+  gap: 1.5rem !important;
+}
+
+.mg-compact-ui :where(.gap-6) {
+  gap: 1.125rem !important;
+}
+
+.mg-compact-ui :where(.space-y-8 > :not([hidden]) ~ :not([hidden])) {
+  margin-top: 1.5rem !important;
+}
+
+.mg-compact-ui :where(.space-y-6 > :not([hidden]) ~ :not([hidden])) {
+  margin-top: 1.125rem !important;
+}
+
+.mg-compact-ui :where(.text-5xl) {
+  font-size: clamp(2.25rem, 4vw, 3rem) !important;
+  line-height: 1.02 !important;
+}
+
+.mg-compact-ui :where(.text-4xl) {
+  font-size: clamp(2rem, 3vw, 2.5rem) !important;
+  line-height: 1.05 !important;
+}
+
+.mg-compact-ui :where(.text-3xl) {
+  font-size: clamp(1.5rem, 2.2vw, 1.875rem) !important;
+  line-height: 1.1 !important;
+}
+
+.mg-compact-ui :where(.text-2xl) {
+  font-size: 1.35rem !important;
+  line-height: 1.18 !important;
+}
+
+.mg-step-rail {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+@media (max-width: 860px) {
+  .mg-step-rail {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.mg-dense-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(239, 68, 68, 0.6) rgba(255, 255, 255, 0.08);
+}

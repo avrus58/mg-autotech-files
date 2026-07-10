@@ -93,7 +93,7 @@ export default function CommercialSettingsPage() {
   if (loading) return <main className="flex min-h-screen items-center justify-center bg-[#050505] text-white"><Loader2 className="mr-3 h-5 w-5 animate-spin text-red-500" />Loading commercial controls...</main>;
   if (!form) return <main className="min-h-screen bg-[#050505] p-8 text-white"><Link href="/admin">Back</Link><div className="mt-8 text-red-300">{message}</div></main>;
 
-  return <main className="min-h-screen bg-[#050505] text-white">
+  return <main className="mg-compact-ui min-h-screen bg-[#050505] text-white">
     <header className="border-b border-white/10 bg-black/80"><div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-5 sm:flex-row sm:items-center sm:justify-between"><div><Link href="/admin" className="text-sm font-bold text-zinc-500 hover:text-white"><ArrowLeft className="mr-2 inline h-4 w-4" />Admin operations</Link><h1 className="mt-3 text-3xl font-black">Commercial controls</h1><p className="mt-2 text-sm text-zinc-500">Global credit pricing, promotions and payment availability.</p></div><button onClick={() => void save()} disabled={saving} className="inline-flex h-12 items-center justify-center rounded-lg bg-[#b1121b] px-5 text-sm font-black hover:bg-[#c91824] disabled:opacity-50">{saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}Save settings</button></div></header>
     <div className="mx-auto grid max-w-6xl gap-6 px-4 py-8 lg:grid-cols-[1fr_360px]">
       <div className="space-y-6">
