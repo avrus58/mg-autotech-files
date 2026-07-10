@@ -62,12 +62,11 @@ test("anonymous users cannot call admin work-order APIs", async () => {
   const list = await import("../src/app/api/admin/requests/route");
   const detail = await import("../src/app/api/admin/requests/[id]/route");
   const notes = await import("../src/app/api/admin/requests/[id]/notes/route");
-  const visibility = await import("../src/app/api/admin/requests/[id]/messages/[messageId]/visibility/route");
   assert.equal((await list.GET(new Request("http://localhost/api/admin/requests"))).status, 401);
   assert.equal((await detail.GET(new Request("http://localhost/api/admin/requests/id"), { params: Promise.resolve({ id: "id" }) })).status, 401);
   assert.equal((await detail.PATCH(new Request("http://localhost/api/admin/requests/id", { method: "PATCH", body: "{}" }), { params: Promise.resolve({ id: "id" }) })).status, 401);
   assert.equal((await notes.POST(new Request("http://localhost/api/admin/requests/id/notes", { method: "POST", body: "{}" }), { params: Promise.resolve({ id: "id" }) })).status, 401);
-  assert.equal((await visibility.PATCH(new Request("http://localhost/api/admin/requests/id/messages/msg/visibility", { method: "PATCH", body: "{}" }), { params: Promise.resolve({ id: "id", messageId: "msg" }) })).status, 401);
+  assert.equal((await detail.PATCH(new Request("http://localhost/api/admin/requests/id", { method: "PATCH", body: JSON.stringify({ message_visibility: { message_id: "00000000-0000-4000-8000-000000000001", action: "hide" } }) }), { params: Promise.resolve({ id: "id" }) })).status, 401);
 });
 
 test("request message visibility helper hides archived messages from customers", () => {
@@ -204,11 +203,13 @@ test("customer message API filters hidden messages and returns no visibility int
   assert.doesNotMatch(source, /hidden_reason|hidden_by|restored_by/);
 });
 
-test("admin message visibility route soft-hides and audits without hard delete", () => {
-  const route = readFileSync(resolve(process.cwd(), "src", "app", "api", "admin", "requests", "[id]", "messages", "[messageId]", "visibility", "route.ts"), "utf8");
+test("admin request route soft-hides messages and audits without hard delete", () => {
+  const route = readFileSync(resolve(process.cwd(), "src", "app", "api", "admin", "requests", "[id]", "route.ts"), "utf8");
   const server = readFileSync(resolve(process.cwd(), "src", "lib", "workOrders", "server.ts"), "utf8");
   assert.match(route, /requireStaffPermission\(request,\s*"orders\.manage"\)/);
+  assert.match(route, /message_visibility/);
   assert.match(route, /z\.enum\(\["hide", "restore"\]\)/);
+  assert.match(route, /updateRequestMessageVisibility/);
   assert.match(server, /message_hidden_from_customer/);
   assert.match(server, /message_restored_to_customer/);
   assert.match(server, /recordWorkOrderEvent/);
@@ -223,7 +224,7 @@ test("admin work-order UI confirms hide and keeps hidden customer messages visib
   assert.match(source, /window\.confirm/);
   assert.match(source, /window\.prompt/);
   assert.match(source, /Hidden from customer/);
-  assert.match(source, /\/api\/admin\/requests\/\$\{requestId\}\/messages\/\$\{messageId\}\/visibility/);
+  assert.match(source, /message_visibility:\s*\{\s*message_id:\s*messageId/);
 });
 
 test("admin work-order mutations create timeline events and reject empty updates", () => {

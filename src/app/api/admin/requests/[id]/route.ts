@@ -4,6 +4,7 @@ import { requireStaffPermission } from "@/lib/apiAuth";
 import {
   getAdminRequestDetail,
   updateAdminWorkOrder,
+  updateRequestMessageVisibility,
   type WorkOrderPatch,
 } from "@/lib/workOrders/server";
 import {
@@ -34,6 +35,11 @@ const patchSchema = z.object({
   quality_check_json: z.record(z.string(), z.unknown()).optional(),
   final_file_status: z.enum(finalFileStatuses).optional(),
   delivery_method: z.enum(deliveryMethods).optional(),
+  message_visibility: z.object({
+    message_id: z.string().uuid(),
+    action: z.enum(["hide", "restore"]),
+    reason: z.string().trim().max(500).optional().default(""),
+  }).optional(),
 }).strict();
 
 export async function GET(
@@ -77,9 +83,30 @@ export async function PATCH(
 
   const { id } = await context.params;
   try {
-    const workOrder = await updateAdminWorkOrder(id, auth.user.id, parsed.data as WorkOrderPatch);
+    const { message_visibility: messageVisibility, ...workOrderPatch } = parsed.data;
+    if (messageVisibility) {
+      if (Object.keys(workOrderPatch).length > 0) {
+        return NextResponse.json(
+          { error: "Message visibility updates must be submitted separately." },
+          { status: 400 }
+        );
+      }
+      const message = await updateRequestMessageVisibility({
+        requestId: id,
+        messageId: messageVisibility.message_id,
+        actorUserId: auth.user.id,
+        action: messageVisibility.action,
+        reason: messageVisibility.reason,
+      });
+      return NextResponse.json({ message });
+    }
+
+    const workOrder = await updateAdminWorkOrder(id, auth.user.id, workOrderPatch as WorkOrderPatch);
     return NextResponse.json({ workOrder });
   } catch (error) {
+    if (error instanceof Error && error.message === "Request message not found.") {
+      return NextResponse.json({ error: error.message }, { status: 404 });
+    }
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Work order could not be updated." },
       { status: 500 }

@@ -261,10 +261,10 @@ export default function WorkOrderDetailClient() {
       setSaving(false);
       return;
     }
-    const response = await fetch(`/api/admin/requests/${requestId}/messages/${messageId}/visibility`, {
+    const response = await fetch(`/api/admin/requests/${requestId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
-      body: JSON.stringify({ action, reason }),
+      body: JSON.stringify({ message_visibility: { message_id: messageId, action, reason } }),
     });
     const result = await response.json();
     if (!response.ok) {
