@@ -62,16 +62,15 @@ test("new request flow exposes clear progress steps and keeps advanced services 
   assert.match(page, /mg-step-rail/);
 });
 
-test("customer File Expert UI keeps technical internals behind admin-only gating", () => {
+test("customer File Expert UI renders only customer-safe report details", () => {
   const page = readProjectFile("src", "app", "dashboard", "file-expert", "[id]", "page.tsx");
-  assert.match(page, /isAdmin \? \(/);
-  assert.match(page, /Technical coordinate data, raw previews and binary fingerprints are hidden on customer reports/);
-  assert.match(page, /Human tuner verification and checksum verification are required/);
-  assert.doesNotMatch(page, /customer reports[\s\S]*changed_blocks\.slice/);
-  assert.match(page, /isAdmin \? `\$\{similaritySummary\.bestScore\}\/100`/);
-  assert.match(page, /isAdmin \? `\$\{Math\.round\(clusterEvidence\.bestConfidence\)\}\/100`/);
-  assert.match(page, /isAdmin \? <div className="mt-2 break-all text-xs text-zinc-600">SHA256/);
-  assert.match(page, /Copy JSON/);
+  assert.match(page, /Technical coordinate data, private file fingerprints and binary internals are hidden on customer reports/);
+  assert.match(page, /Human tuner verification remains required/);
+  assert.match(page, /does not approve this file for writing/);
+  assert.match(page, /formatSafeFileProfile/);
+  assert.match(page, /safeReportText/);
+  assert.doesNotMatch(page, /isAdmin/);
+  assert.doesNotMatch(page, /SHA256|Copy JSON|Download report data|Analyzer JSON|changed_blocks\.slice|offset_start|offset_end|provider\/source/i);
 });
 
 test("active customer payment UI remains Stripe/Card and Bank Transfer only", () => {

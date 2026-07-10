@@ -12,11 +12,8 @@ import {
   CarFront,
   CheckCircle2,
   Cpu,
-  Copy,
   Database,
-  Download,
   FileCode2,
-  Fingerprint,
   Gauge,
   Loader2,
   Network,
@@ -32,7 +29,6 @@ import type {
   FileExpertAnalyzerResult,
   FileExpertFinding,
   FileExpertJob,
-  FileExpertPossibleFeature,
 } from "@/lib/fileExpert/types";
 import { fileExpertFeatureLabels } from "@/lib/fileExpert/types";
 import type {
@@ -43,21 +39,6 @@ import type {
   AdminClusterEvidence,
   PublicClusterEvidence,
 } from "@/lib/ecuIntelligence/clustering";
-import {
-  buildEvidenceChecklist,
-  calculateGenerationReadiness,
-} from "@/lib/ecuIntelligence/evidenceReadiness";
-
-type FingerprintRow = {
-  id: string;
-  file_role: string;
-  sha256: string;
-  file_size: number;
-  entropy: number | null;
-  ff_ratio: number | null;
-  zero_ratio: number | null;
-  created_at: string;
-};
 
 function statusClass(status: string) {
   if (status === "completed") return "border-emerald-700/40 bg-emerald-950/30 text-emerald-300";
@@ -97,18 +78,23 @@ function formatBytes(value: number | string | null | undefined) {
   return `${(bytes / 1024).toFixed(1)} KB`;
 }
 
-function shortHash(value: string | null | undefined) {
-  if (!value) return "-";
-  return `${value.slice(0, 12)}...${value.slice(-6)}`;
-}
-
-function featureConfidence(feature: FileExpertPossibleFeature) {
-  return `${Math.round(feature.confidence * 100)}%`;
-}
-
 function formatLabel(value: string | null | undefined) {
   if (!value) return "Not detected";
   return value.replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function formatSafeFileProfile(format: string | null | undefined, readScope: string | null | undefined) {
+  const safeFormat = format === "raw_binary" ? "Binary file" : formatLabel(format).replace(/\bRaw\b/gi, "Binary");
+  return `${safeFormat} / ${formatLabel(readScope)}`;
+}
+
+function safeReportText(value: string | null | undefined) {
+  return (value || "")
+    .replace(/\braw binary\b/gi, "binary file")
+    .replace(/\braw previews?\b/gi, "technical previews")
+    .replace(/\bSHA-?256\b/gi, "file fingerprint")
+    .replace(/\bhash(?:es)?\b/gi, "file fingerprint")
+    .replace(/\bVIN \/ engine markers\b/gi, "Vehicle markers");
 }
 
 function idValue(values: string[] | undefined) {
@@ -120,10 +106,8 @@ export default function FileExpertReportPage() {
   const router = useRouter();
   const jobId = params.id;
   const [job, setJob] = useState<FileExpertJob | null>(null);
-  const [fingerprints, setFingerprints] = useState<FingerprintRow[]>([]);
   const [similarityEvidence, setSimilarityEvidence] = useState<PublicSimilarityEvidence | SimilaritySearchResult | null>(null);
   const [clusterEvidence, setClusterEvidence] = useState<PublicClusterEvidence | AdminClusterEvidence | null>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [reanalyzing, setReanalyzing] = useState(false);
   const [message, setMessage] = useState("");
@@ -155,10 +139,8 @@ export default function FileExpertReportPage() {
     }
 
     setJob(payload.job);
-    setFingerprints(payload.fingerprints ?? []);
     setSimilarityEvidence(payload.similarityEvidence ?? null);
     setClusterEvidence(payload.clusterEvidence ?? null);
-    setIsAdmin(Boolean(payload.isAdmin));
     setLoading(false);
   }
 
@@ -181,6 +163,7 @@ export default function FileExpertReportPage() {
   const findings = result?.findings ?? [];
   const submittedVehicle = [job?.brand, job?.model, job?.engine].filter(Boolean).join(" ");
   const reportTitle = submittedVehicle || identity?.display_name || "File Expert Report";
+  const visibleMarkerIds = [idValue(identity?.engine_codes)].filter((value) => value !== "Not detected");
   const similaritySummary = similarityEvidence && "summary" in similarityEvidence
     ? {
         matchesFound: similarityEvidence.summary.matches_found,
@@ -191,39 +174,11 @@ export default function FileExpertReportPage() {
           : "No approved similar learning evidence was found.",
       }
     : similarityEvidence;
-  const adminEvidenceChecklist = useMemo(() => {
-    if (!isAdmin) return null;
-    return buildEvidenceChecklist({
-      similarity: similarityEvidence,
-      cluster: clusterEvidence,
-      sample: result
-        ? {
-            pattern_signature: result.pattern_signature ?? null,
-            diff_json: result,
-            ecu_type: identity?.display_name ?? job?.ecu_type ?? null,
-            ecu_family: identity?.family ?? job?.ecu_family ?? null,
-            sw_number: identity?.software_numbers[0] ?? job?.sw_number ?? null,
-            hw_number: identity?.hardware_numbers[0] ?? job?.hw_number ?? null,
-          }
-        : null,
-    });
-  }, [clusterEvidence, identity, isAdmin, job, result, similarityEvidence]);
-  const adminGenerationReadiness = useMemo(() => {
-    if (!adminEvidenceChecklist) return null;
-    return calculateGenerationReadiness({
-      evidence: adminEvidenceChecklist,
-      mapDefinitionsAvailable: false,
-      checksumWorkflowAvailable: false,
-      humanApprovalReady: false,
-      exactSwMatch: Boolean(identity?.software_numbers.length || job?.sw_number),
-      actualLabelsConfirmed: false,
-    });
-  }, [adminEvidenceChecklist, identity?.software_numbers.length, job?.sw_number]);
 
   const fileCards = useMemo(
     () => [
-      { label: "ORI", name: job?.ori_file_name, size: job?.ori_file_size, hash: job?.ori_sha256, profile: result?.files.ori },
-      { label: "MOD", name: job?.mod_file_name, size: job?.mod_file_size, hash: job?.mod_sha256, profile: result?.files.mod },
+      { label: "ORI", name: job?.ori_file_name, size: job?.ori_file_size, profile: result?.files.ori },
+      { label: "MOD", name: job?.mod_file_name, size: job?.mod_file_size, profile: result?.files.mod },
     ],
     [job, result]
   );
@@ -243,23 +198,6 @@ export default function FileExpertReportPage() {
       return;
     }
     await loadJob({ silent: true });
-  }
-
-  function downloadJson() {
-    if (!job?.result_json) return;
-    const blob = new Blob([JSON.stringify(job.result_json, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `mg-file-expert-${job.id}.json`;
-    link.click();
-    URL.revokeObjectURL(url);
-  }
-
-  async function copyJson() {
-    if (!job?.result_json) return;
-    await navigator.clipboard.writeText(JSON.stringify(job.result_json, null, 2));
-    setMessage("Analyzer JSON copied to the clipboard.");
   }
 
   if (loading) {
@@ -302,28 +240,18 @@ export default function FileExpertReportPage() {
               <span className={`rounded-full border px-3 py-1 text-xs font-black ${riskClass(job.risk_level)}`}>RISK: {(job.risk_level || "unknown").toUpperCase()}</span>
               {identity && (
               <span className="rounded-full border border-red-800/40 bg-red-950/25 px-3 py-1 text-xs font-black text-red-200">
-                  ECU {identity.status.toUpperCase()}{isAdmin ? ` / ${Math.round(identity.confidence * 100)}%` : ""}
+                  ECU {identity.status.toUpperCase()}
               </span>
               )}
             </div>
             <h1 className="mt-3 break-words text-4xl font-black md:text-5xl">{reportTitle}</h1>
-            <p className="mt-3 max-w-4xl text-sm leading-7 text-zinc-400">{job.executive_summary || "The analysis report is being prepared."}</p>
+            <p className="mt-3 max-w-4xl text-sm leading-7 text-zinc-400">{safeReportText(job.executive_summary) || "The analysis report is being prepared."}</p>
             <p className="mt-2 text-xs font-bold text-zinc-600">Analysis {result?.analysis_version || "legacy"} / {formatDate(job.created_at)}</p>
           </div>
           <div className="grid gap-2 sm:flex sm:flex-wrap">
             <button onClick={reanalyze} disabled={reanalyzing} className="inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] px-5 py-3 text-sm font-black transition hover:bg-white/10 disabled:opacity-50">
               {reanalyzing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCcw className="mr-2 h-4 w-4" />} Re-analyze
             </button>
-            {isAdmin ? (
-              <>
-                <button onClick={() => void copyJson()} disabled={!job.result_json} className="inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] px-5 py-3 text-sm font-black transition hover:bg-white/10 disabled:opacity-50">
-                  <Copy className="mr-2 h-4 w-4" /> Copy JSON
-                </button>
-                <button onClick={downloadJson} disabled={!job.result_json} className="inline-flex items-center justify-center rounded-2xl bg-[#b1121b] px-5 py-3 text-sm font-black transition hover:bg-[#c91824] disabled:opacity-50">
-                  <Download className="mr-2 h-4 w-4" /> Download report data
-                </button>
-              </>
-            ) : null}
           </div>
         </header>
 
@@ -354,7 +282,7 @@ export default function FileExpertReportPage() {
         <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <InfoCard title="Control unit" value={identity?.display_name || job.ecu_type || "Not identified"} icon={<Cpu />} />
           <InfoCard title="Module / supplier" value={[identity?.module_type, identity?.supplier].filter(Boolean).join(" / ") || "Unknown"} icon={<Database />} />
-          <InfoCard title="File profile" value={`${formatLabel(primaryFile?.file_format)} / ${formatLabel(primaryFile?.read_scope)}`} icon={<FileCode2 />} />
+          <InfoCard title="File profile" value={formatSafeFileProfile(primaryFile?.file_format, primaryFile?.read_scope)} icon={<FileCode2 />} />
           <InfoCard title="Report state" value={formatLabel(job.status)} icon={<Gauge />} />
         </div>
 
@@ -388,7 +316,7 @@ export default function FileExpertReportPage() {
             <IdentifierBox label="Hardware numbers" value={idValue(identity?.hardware_numbers)} />
             <IdentifierBox label="Software numbers" value={idValue(identity?.software_numbers)} />
             <IdentifierBox label="Calibration IDs" value={idValue(identity?.calibration_ids)} />
-            <IdentifierBox label="VIN / engine markers" value={[idValue(identity?.vins), idValue(identity?.engine_codes)].filter((value) => value !== "Not detected").join(" / ") || "Not detected"} />
+            {visibleMarkerIds.length ? <IdentifierBox label="Vehicle markers" value={visibleMarkerIds.join(" / ")} /> : null}
           </div>
         </section>
 
@@ -402,7 +330,7 @@ export default function FileExpertReportPage() {
                       <div className="font-black">{finding.title}</div>
                       <span className="rounded-full bg-black/35 px-3 py-1 text-xs font-black text-zinc-300">{Math.round(finding.confidence * 100)}%</span>
                     </div>
-                    <p className="mt-2 text-sm leading-6 text-zinc-300">{finding.summary}</p>
+                    <p className="mt-2 text-sm leading-6 text-zinc-300">{safeReportText(finding.summary)}</p>
                   </div>
                 )) : (
                   <p className="rounded-2xl border border-dashed border-white/15 bg-black/25 p-5 text-sm leading-6 text-zinc-400">
@@ -424,7 +352,7 @@ export default function FileExpertReportPage() {
                           <div className="mt-1 text-sm text-zinc-400">{candidate.generation} / {candidate.engine}</div>
                           <div className="mt-2 text-xs font-bold text-red-200">{candidate.ecu}</div>
                         </div>
-                        <span className="rounded-full bg-white/[0.06] px-3 py-1 text-xs font-black">{isAdmin ? `${Math.round(candidate.confidence * 100)}%` : "Possible"}</span>
+                        <span className="rounded-full bg-white/[0.06] px-3 py-1 text-xs font-black">Possible</span>
                       </div>
                     </div>
                   ))}
@@ -441,8 +369,7 @@ export default function FileExpertReportPage() {
                       <span className="rounded-full bg-white/[0.06] px-3 py-1 text-xs font-black text-zinc-400">{formatBytes(file.size)}</span>
                     </div>
                     <div className="mt-3 break-all text-sm font-bold">{file.name || "Not uploaded"}</div>
-                    <div className="mt-2 text-xs text-zinc-500">{formatLabel(file.profile?.file_format)} / {formatLabel(file.profile?.read_scope)}</div>
-                    {isAdmin ? <div className="mt-2 break-all text-xs text-zinc-600">SHA256 {shortHash(file.hash)}</div> : null}
+                    <div className="mt-2 text-xs text-zinc-500">{formatSafeFileProfile(file.profile?.file_format, file.profile?.read_scope)}</div>
                   </div>
                 ))}
               </div>
@@ -451,7 +378,7 @@ export default function FileExpertReportPage() {
 
           <section className="min-w-0 space-y-6">
             <Panel eyebrow="ORI / MOD assessment" title={changeProfile?.label || "Modification assessment"} icon={<BrainCircuit />} accent>
-              <p className="text-sm leading-7 text-zinc-300">{changeProfile?.summary || result?.summary.main_conclusion || "Analysis is not ready."}</p>
+              <p className="text-sm leading-7 text-zinc-300">{safeReportText(changeProfile?.summary || result?.summary.main_conclusion) || "Analysis is not ready."}</p>
               <div className="mt-5 grid gap-3 sm:grid-cols-3">
                 <MetricValue label="Changed bytes" value={result?.comparison?.changed_bytes.toLocaleString() || "-"} />
                 <MetricValue label="Affected area" value={result?.comparison ? `${result.comparison.changed_percent}%` : "-"} />
@@ -466,7 +393,7 @@ export default function FileExpertReportPage() {
                     <div key={feature.feature} className="rounded-2xl border border-red-900/35 bg-red-950/15 p-4">
                       <div className="flex items-center justify-between gap-3">
                         <div className="font-black">{fileExpertFeatureLabels[feature.feature] ?? feature.feature}</div>
-                        <span className="rounded-full bg-black/35 px-3 py-1 text-xs font-black text-red-200">{isAdmin ? featureConfidence(feature) : "Possible"}</span>
+                        <span className="rounded-full bg-black/35 px-3 py-1 text-xs font-black text-red-200">Possible</span>
                       </div>
                       <p className="mt-3 text-xs leading-5 text-zinc-400">{feature.reasons.join(" ")}</p>
                     </div>
@@ -484,20 +411,10 @@ export default function FileExpertReportPage() {
                 <div>
                   <div className="grid gap-3 sm:grid-cols-3">
                     <MetricValue label="Approved matches" value={String(similaritySummary.matchesFound)} />
-                    <MetricValue label={isAdmin ? "Best score" : "Evidence status"} value={isAdmin ? `${similaritySummary.bestScore}/100` : (similaritySummary.matchesFound ? "Available" : "Limited")} />
-                    <MetricValue label={isAdmin ? "Confidence" : "Review state"} value={isAdmin ? formatLabel(similaritySummary.confidence) : "Human required"} />
+                    <MetricValue label="Evidence status" value={similaritySummary.matchesFound ? "Available" : "Limited"} />
+                    <MetricValue label="Review state" value="Human required" />
                   </div>
                   <p className="mt-4 text-sm leading-7 text-zinc-400">{similaritySummary.message} Similarity is supporting evidence only and does not approve this file for writing.</p>
-                  {isAdmin && similarityEvidence && "matches" in similarityEvidence && similarityEvidence.matches.length ? (
-                    <div className="mt-4 space-y-3">
-                      {similarityEvidence.matches.slice(0, 5).map((match) => (
-                        <div key={match.training_sample_id} className="rounded-2xl border border-white/10 bg-black/25 p-4">
-                          <div className="flex flex-wrap items-start justify-between gap-3"><div><Link href={`/admin/ai-training/${match.training_sample_id}`} className="font-black text-sky-200 hover:text-white">{match.compared_sample.ecu_type || match.compared_sample.ecu_family || "Approved sample"}</Link><div className="mt-1 text-xs text-zinc-500">{match.compared_sample.actual_service_labels.join(" / ") || "No service label"}</div></div><span className="rounded-full bg-sky-950/40 px-3 py-1 text-xs font-black text-sky-200">{match.score}%</span></div>
-                          <div className="mt-3 text-xs leading-5 text-zinc-400">{match.reasons.slice(0, 3).join(" ")}</div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : null}
                 </div>
               ) : (
                 <p className="rounded-2xl border border-dashed border-white/15 bg-black/25 p-5 text-sm leading-6 text-zinc-400">Similarity evidence has not been calculated for this report yet. Human tuner verification remains required.</p>
@@ -510,43 +427,15 @@ export default function FileExpertReportPage() {
                   <div className="grid gap-3 sm:grid-cols-3">
                     <MetricValue label="Matching clusters" value={String(clusterEvidence.matchingClusters)} />
                     <MetricValue label="Best readiness" value={formatLabel(clusterEvidence.bestStatus)} />
-                    <MetricValue label={isAdmin ? "Cluster confidence" : "Verification"} value={isAdmin ? `${Math.round(clusterEvidence.bestConfidence)}/100` : "Required"} />
+                    <MetricValue label="Verification" value="Required" />
                   </div>
                   <p className="mt-4 text-sm leading-7 text-zinc-400">{clusterEvidence.message}</p>
                   <div className="mt-3 rounded-2xl border border-amber-700/30 bg-amber-950/10 p-4 text-xs leading-6 text-amber-100/75">This is evidence only. Human tuner verification and checksum verification are required before any real write.</div>
-                  {isAdmin && "clusters" in clusterEvidence && clusterEvidence.clusters.length ? (
-                    <div className="mt-4 space-y-3">
-                      {clusterEvidence.clusters.slice(0, 5).map((cluster) => (
-                        <div key={cluster.id} className="rounded-2xl border border-violet-800/35 bg-violet-950/10 p-4">
-                          <div className="flex flex-wrap items-start justify-between gap-3"><div><Link href={`/admin/ai-training/clusters/${cluster.id}`} className="font-black text-violet-200 hover:text-white">{cluster.ecu_type || cluster.ecu_family || "ECU cluster"} / {formatLabel(cluster.feature_type)}</Link><div className="mt-1 text-xs text-zinc-500">{cluster.sw_number || "General ECU-type cluster"} / {cluster.sample_count} trusted samples</div></div><span className="rounded-full bg-violet-950/50 px-3 py-1 text-xs font-black text-violet-100">{cluster.cluster_status} / {Math.round(cluster.cluster_confidence)}%</span></div>
-                          {cluster.repeated_regions.length ? <div className="mt-3 text-xs leading-5 text-zinc-400">Repeated region evidence: {cluster.repeated_regions.slice(0, 3).map((region) => `${region.bucket_start_hex}-${region.bucket_end_hex} (${Math.round(region.occurrence_rate * 100)}%)`).join(", ")}</div> : null}
-                        </div>
-                      ))}
-                    </div>
-                  ) : null}
                 </div>
               ) : (
                 <p className="rounded-2xl border border-dashed border-white/15 bg-black/25 p-5 text-sm leading-6 text-zinc-400">No trusted cluster evidence is available for this report yet. Human tuner verification remains required.</p>
               )}
             </Panel>
-
-            {adminEvidenceChecklist && adminGenerationReadiness ? (
-              <Panel eyebrow="Admin evidence gate" title="Learning and generation readiness" icon={<ShieldCheck />} accent>
-                <div className="grid gap-3 sm:grid-cols-3">
-                  <MetricValue label="Evidence trust" value={`${formatLabel(adminEvidenceChecklist.level)} / ${adminEvidenceChecklist.score}`} />
-                  <MetricValue label="Generation gate" value={formatLabel(adminGenerationReadiness.level)} />
-                  <MetricValue label="Open safety gates" value={String(adminGenerationReadiness.blockers.length)} />
-                </div>
-                <p className="mt-4 text-sm leading-7 text-zinc-300">{adminEvidenceChecklist.summary}</p>
-                <div className="mt-4 grid gap-3 lg:grid-cols-2">
-                  <EvidenceList title="Strengths" items={adminEvidenceChecklist.strengths} tone="emerald" />
-                  <EvidenceList title="Missing / warnings" items={[...adminEvidenceChecklist.gaps, ...adminEvidenceChecklist.warnings, ...adminGenerationReadiness.blockers]} tone="amber" />
-                </div>
-                <div className="mt-4 rounded-2xl border border-red-800/35 bg-red-950/15 p-4 text-xs leading-6 text-red-100/80">
-                  Future AI generation remains disabled. This panel only explains evidence quality, learning value and the safety gates required before any admin-reviewed draft workflow.
-                </div>
-              </Panel>
-            ) : null}
 
             <Panel eyebrow="Compatibility" title="File integrity checks" icon={<BadgeCheck />}>
               <div className="space-y-3">
@@ -562,51 +451,12 @@ export default function FileExpertReportPage() {
 
             <details className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-4 sm:p-6">
               <summary className="flex cursor-pointer list-none items-center gap-3 text-lg font-black">
-                <Fingerprint className="h-5 w-5 text-red-400" /> Technical details
+                <ShieldCheck className="h-5 w-5 text-red-400" /> Technical details
               </summary>
               <div className="mt-5 space-y-5">
-                {isAdmin ? (
-                  <>
-                    {result?.comparison?.changed_blocks.length ? (
-                      <div className="overflow-x-auto rounded-2xl border border-white/10">
-                        <table className="w-full min-w-[620px] text-left text-sm">
-                          <thead className="bg-black/40 text-xs uppercase tracking-[0.14em] text-zinc-500"><tr><th className="px-4 py-3">Offset</th><th className="px-4 py-3">Length</th><th className="px-4 py-3">Changed bytes</th></tr></thead>
-                          <tbody className="divide-y divide-white/10">{result.comparison.changed_blocks.slice(0, 18).map((block) => (
-                            <tr key={`${block.start_offset_hex}-${block.end_offset_hex}`} className="bg-black/20"><td className="px-4 py-3 font-mono text-red-200">{block.start_offset_hex}</td><td className="px-4 py-3">{block.length}</td><td className="px-4 py-3">{block.changed_byte_count}</td></tr>
-                          ))}</tbody>
-                        </table>
-                      </div>
-                    ) : null}
-                    {result?.map_candidates.length ? (
-                      <div className="overflow-x-auto rounded-2xl border border-white/10">
-                        <table className="w-full min-w-[620px] text-left text-sm">
-                          <thead className="bg-black/40 text-xs uppercase tracking-[0.14em] text-zinc-500"><tr><th className="px-4 py-3">Candidate offset</th><th className="px-4 py-3">Length</th><th className="px-4 py-3">Possible type</th><th className="px-4 py-3">Confidence</th></tr></thead>
-                          <tbody className="divide-y divide-white/10">{result.map_candidates.slice(0, 18).map((candidate, index) => <tr key={`${candidate.offset_hex}-${index}`} className="bg-black/20"><td className="px-4 py-3 font-mono text-red-200">{candidate.offset_hex}</td><td className="px-4 py-3">{candidate.length}</td><td className="px-4 py-3">{candidate.possible_type}</td><td className="px-4 py-3">{Math.round(candidate.confidence * 100)}%</td></tr>)}</tbody>
-                        </table>
-                        <div className="border-t border-white/10 px-4 py-3 text-xs text-amber-100/70">Structural candidates only. Exact map purpose requires ECU-specific definitions and human calibration review.</div>
-                      </div>
-                    ) : null}
-                    {result?.repeated_patterns.length ? (
-                      <div className="rounded-2xl border border-white/10 bg-black/25 p-4">
-                        <div className="text-xs font-black uppercase tracking-[0.14em] text-zinc-500">Repeated binary patterns</div>
-                        <div className="mt-3 space-y-2">{result.repeated_patterns.slice(0, 12).map((pattern) => <div key={pattern.signature} className="grid gap-2 border-t border-white/10 pt-2 text-xs sm:grid-cols-[120px_80px_1fr]"><span className="font-mono text-red-200">{pattern.signature}</span><span>{pattern.count} matches</span><span className="break-all text-zinc-500">{pattern.offsets.join(", ")}</span></div>)}</div>
-                      </div>
-                    ) : null}
-                    {fingerprints.map((fingerprint) => (
-                      <div key={fingerprint.id} className="rounded-2xl border border-white/10 bg-black/30 p-4 text-xs text-zinc-400">
-                        <div className="font-black uppercase text-red-200">{fingerprint.file_role} fingerprint</div>
-                        <div className="mt-2 break-all">SHA256 {shortHash(fingerprint.sha256)}</div>
-                        <div className="mt-2">Entropy {fingerprint.entropy ?? "-"} / FF {fingerprint.ff_ratio ?? "-"} / 00 {fingerprint.zero_ratio ?? "-"}</div>
-                      </div>
-                    ))}
-                    {job.ai_report && <details className="rounded-2xl border border-white/10 bg-black/25 p-4"><summary className="cursor-pointer font-black">Text report</summary><pre className="mt-4 whitespace-pre-wrap break-words text-xs leading-6 text-zinc-300">{job.ai_report}</pre></details>}
-                    <details className="rounded-2xl border border-white/10 bg-black/25 p-4"><summary className="cursor-pointer font-black">Analyzer JSON</summary><pre className="mt-4 max-h-[520px] overflow-auto text-xs leading-5 text-zinc-300">{JSON.stringify(job.result_json, null, 2)}</pre></details>
-                  </>
-                ) : (
-                  <div className="rounded-2xl border border-white/10 bg-black/25 p-4 text-sm leading-6 text-zinc-400">
-                    Technical coordinate data, raw previews and binary fingerprints are hidden on customer reports. MG AutoTech keeps those details inside the protected admin review workflow.
-                  </div>
-                )}
+                <div className="rounded-2xl border border-white/10 bg-black/25 p-4 text-sm leading-6 text-zinc-400">
+                  Technical coordinate data, private file fingerprints and binary internals are hidden on customer reports. MG AutoTech keeps those details inside the protected admin review workflow.
+                </div>
               </div>
             </details>
 
@@ -639,18 +489,6 @@ function Panel({ eyebrow, title, icon, accent, children }: { eyebrow: string; ti
 
 function MetricValue({ label, value }: { label: string; value: string }) {
   return <div className="rounded-2xl border border-white/10 bg-black/30 p-4"><div className="text-xs font-black uppercase tracking-[0.14em] text-zinc-500">{label}</div><div className="mt-2 text-2xl font-black">{value}</div></div>;
-}
-
-function EvidenceList({ title, items, tone }: { title: string; items: string[]; tone: "emerald" | "amber" }) {
-  const color = tone === "emerald" ? "border-emerald-800/35 bg-emerald-950/10 text-emerald-100" : "border-amber-800/35 bg-amber-950/10 text-amber-100";
-  return (
-    <div className={`rounded-2xl border p-4 ${color}`}>
-      <div className="text-xs font-black uppercase tracking-[0.16em] opacity-70">{title}</div>
-      <div className="mt-3 space-y-2 text-xs leading-5">
-        {items.length ? items.slice(0, 8).map((item, index) => <div key={`${item}-${index}`}>- {item}</div>) : <div>No items.</div>}
-      </div>
-    </div>
-  );
 }
 
 function CheckRow({ label, value, unknownLabel = "Not available" }: { label: string; value: boolean | null | undefined; unknownLabel?: string }) {
