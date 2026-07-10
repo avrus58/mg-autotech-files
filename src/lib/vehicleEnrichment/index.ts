@@ -4,6 +4,7 @@ import { DEFAULT_MODERN_YEAR_CUTOFF } from "@/lib/vehicleEnrichment/scopeRules";
 import { normalizeGenerationGroups } from "@/lib/vehicleEnrichment/normalizeGeneration";
 import { normalizeEngineCandidate } from "@/lib/vehicleEnrichment/normalizeEngine";
 import { analyzeVehicleEnrichmentGaps } from "@/lib/vehicleEnrichment/gapAnalysis";
+import { buildExternalCoverageReport } from "@/lib/vehicleEnrichment/coverage";
 
 export function buildVehicleEnrichmentPlan(input: VehicleEnrichmentInput, existingRecords: VehicleControlRecord[] = []): VehicleEnrichmentPlan {
   const modernOnly = input.modernOnly !== false;
@@ -20,6 +21,13 @@ export function buildVehicleEnrichmentPlan(input: VehicleEnrichmentInput, existi
     group.includedEntries.map((entry) => normalizeEngineCandidate(entry, group))
   );
   const gaps = analyzeVehicleEnrichmentGaps(groups, engineCandidates, existingRecords);
+  const coverage = buildExternalCoverageReport({
+    source: input,
+    groups,
+    engineCandidates,
+    gaps,
+    existingRecords,
+  });
   return {
     source: {
       sourceType: input.sourceType,
@@ -34,9 +42,11 @@ export function buildVehicleEnrichmentPlan(input: VehicleEnrichmentInput, existi
     generationGroups: groups,
     engineCandidates,
     gaps,
+    coverage,
     warnings: [
       "Manual-assisted enrichment only. No broad crawling or anti-bot bypass is performed.",
       "All external data remains draft/needs_review until MG AutoTech verifies and publishes it.",
+      "Coverage analysis is global across brands, models, generations and engines; W214 is only one example.",
       ...(skippedOld.length ? [`${skippedOld.length} older/out-of-scope entries were excluded by default.`] : []),
     ],
   };

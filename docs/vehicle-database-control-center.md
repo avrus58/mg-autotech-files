@@ -286,6 +286,20 @@ Existing request records may already reference legacy `vehicleKey` values. For t
 
 This keeps historical requests stable while preventing new duplicate model families.
 
+## External Vehicle Coverage
+
+The enrichment system is global, not Mercedes-only. `/admin/vehicles/coverage` provides an external coverage dry-run workflow for all brands, models, generations and engines.
+
+It reuses the admin-only `vehicle_external_*` staging/review tables and compares legal external JSON, CSV or manually prepared source data against the canonical Vehicle Database. The coverage report shows missing brands, missing models, missing generations, missing engines, alias suggestions, duplicate risks, conflicts, protected verified-data conflicts and review queue items.
+
+External coverage never auto-publishes and never overwrites verified MG AutoTech data. Creating a draft requires explicit admin confirmation and produces an unpublished `needs_review` record. The public selector changes only after an admin verifies/publishes records and rebuilds the Public Catalog Cache.
+
+More detail:
+
+```text
+docs/external-vehicle-coverage-system.md
+```
+
 ## Security
 
 Admin APIs use `requireStaffPermission(request, 'vehicles.manage')`.
@@ -294,6 +308,7 @@ Anonymous users and normal customers cannot access:
 
 - `/api/admin/vehicles`
 - `/api/admin/vehicles/import`
+- `/api/admin/vehicles/coverage`
 - `/api/admin/vehicles/validation`
 - `/api/admin/vehicles/audit`
 - `/api/admin/vehicles/[id]`

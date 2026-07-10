@@ -25,7 +25,7 @@ import type { VehicleControlRecord, VehicleImportSummary } from "@/lib/vehicleCo
 import type { ExternalVehicleEntry, VehicleEnrichmentPlan } from "@/lib/vehicleEnrichment/types";
 import { parseVehicleEnrichmentEntries } from "@/lib/vehicleEnrichment/parseInput";
 
-type Section = "overview" | "brands" | "models" | "generations" | "engines" | "import" | "enrichment" | "validation" | "audit";
+type Section = "overview" | "brands" | "models" | "generations" | "engines" | "import" | "enrichment" | "coverage" | "validation" | "audit";
 
 type OverviewPayload = {
   stats: {
@@ -83,6 +83,7 @@ const sectionLinks: Array<{ id: Section; label: string; href: string }> = [
   { id: "engines", label: "Engines", href: "/admin/vehicles/engines" },
   { id: "import", label: "Import", href: "/admin/vehicles/import" },
   { id: "enrichment", label: "Enrichment", href: "/admin/vehicles/enrichment" },
+  { id: "coverage", label: "Coverage", href: "/admin/vehicles/coverage" },
   { id: "validation", label: "Validation", href: "/admin/vehicles/validation" },
   { id: "audit", label: "Audit", href: "/admin/vehicles/audit" },
 ];
@@ -283,6 +284,7 @@ export default function VehicleControlCenter({ section = "overview" }: { section
           <button onClick={() => setShowCreate((value) => !value)} className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-black hover:bg-white/10"><PlusCircle className="mr-2 inline h-4 w-4" />Create draft</button>
           <button onClick={() => void runValidation()} disabled={busyAction === "validation"} className="rounded-xl border border-amber-800/40 bg-amber-950/20 px-4 py-3 text-sm font-black text-amber-200 disabled:opacity-50">{busyAction === "validation" ? <Loader2 className="mr-2 inline h-4 w-4 animate-spin" /> : <ShieldCheck className="mr-2 inline h-4 w-4" />}Run validation</button>
           <button onClick={() => void rebuildCatalogCache()} disabled={busyAction === "catalog-cache"} className="rounded-xl border border-sky-800/40 bg-sky-950/20 px-4 py-3 text-sm font-black text-sky-200 disabled:opacity-50">{busyAction === "catalog-cache" ? <Loader2 className="mr-2 inline h-4 w-4 animate-spin" /> : <Database className="mr-2 inline h-4 w-4" />}Rebuild Public Catalog Cache</button>
+          <Link href="/admin/vehicles/coverage" className="rounded-xl border border-violet-800/40 bg-violet-950/20 px-4 py-3 text-sm font-black text-violet-200 hover:bg-violet-900/30"><Sparkles className="mr-2 inline h-4 w-4" />Coverage</Link>
           <Link href="/admin/vehicles/enrichment" className="rounded-xl border border-emerald-800/40 bg-emerald-950/20 px-4 py-3 text-sm font-black text-emerald-200 hover:bg-emerald-900/30"><Sparkles className="mr-2 inline h-4 w-4" />Enrichment</Link>
           <Link href="/admin/vehicles/import" className="rounded-xl bg-[#b1121b] px-4 py-3 text-sm font-black text-white hover:bg-[#c91824]"><UploadCloud className="mr-2 inline h-4 w-4" />Import tools</Link>
         </div>
@@ -386,7 +388,7 @@ export default function VehicleControlCenter({ section = "overview" }: { section
         </div>
       </section>}
 
-      {section === "enrichment" && <EnrichmentSection authFetch={authFetch} setMessage={setMessage} />}
+      {(section === "enrichment" || section === "coverage") && <EnrichmentSection mode={section} authFetch={authFetch} setMessage={setMessage} />}
 
       {(section === "audit" || section === "overview") && <section className="mt-6 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
         <h2 className="text-2xl font-black">Recent audit history</h2>
@@ -399,7 +401,7 @@ export default function VehicleControlCenter({ section = "overview" }: { section
         </div>
       </section>}
 
-      {(section !== "import" && section !== "enrichment" && section !== "audit") && <section className="mt-6 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+      {(section !== "import" && section !== "enrichment" && section !== "coverage" && section !== "audit") && <section className="mt-6 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <h2 className="text-2xl font-black">{section === "validation" ? "Records needing review" : "Vehicle records"}</h2>
@@ -456,13 +458,51 @@ const enrichmentExample = JSON.stringify([
     "powerText": "Power: 204 HP",
     "torqueText": "Torque: 320 Nm",
     "fuelType": "Plug-in hybrid"
+  },
+  {
+    "brand": "BMW",
+    "model": "5 Series",
+    "rawTitle": "BMW 5 Series Touring (G61), 2024-present",
+    "rawBodyType": "Touring",
+    "rawYearRange": "2024-present",
+    "engineDisplayName": "530e xDrive",
+    "powerText": "Power: 299 HP",
+    "torqueText": "Torque: 450 Nm",
+    "displacementText": "1998 cm3",
+    "fuelType": "Plug-in hybrid"
+  },
+  {
+    "brand": "VW",
+    "model": "Golf",
+    "rawTitle": "Volkswagen Golf 8.5, 2024-present",
+    "rawBodyType": "Hatchback",
+    "rawYearRange": "2024-present",
+    "engineDisplayName": "2.0 TSI GTI",
+    "powerText": "Power: 265 HP",
+    "torqueText": "Torque: 370 Nm",
+    "displacementText": "1984 cm3",
+    "fuelType": "Petrol"
+  },
+  {
+    "brand": "Audi",
+    "model": "A5",
+    "rawTitle": "Audi A5 (B10), 2024-present",
+    "rawBodyType": "Sedan / Avant",
+    "rawYearRange": "2024-present",
+    "engineDisplayName": "2.0 TDI",
+    "powerText": "Power: 204 HP",
+    "torqueText": "Torque: 400 Nm",
+    "displacementText": "1968 cm3",
+    "fuelType": "Diesel"
   }
 ], null, 2);
 
 function EnrichmentSection({
+  mode,
   authFetch,
   setMessage,
 }: {
+  mode: "enrichment" | "coverage";
   authFetch: (url: string, init?: RequestInit) => Promise<Response>;
   setMessage: (value: string) => void;
 }) {
@@ -474,6 +514,7 @@ function EnrichmentSection({
   const [plan, setPlan] = useState<VehicleEnrichmentPlan | null>(null);
   const [busy, setBusy] = useState("");
   const [draftConfirm, setDraftConfirm] = useState("");
+  const [coverageFilter, setCoverageFilter] = useState("all");
 
   function parseEntries(): ExternalVehicleEntry[] {
     return parseVehicleEnrichmentEntries(text);
@@ -484,7 +525,7 @@ function EnrichmentSection({
     setMessage("");
     try {
       const entries = parseEntries();
-      const response = await authFetch("/api/admin/vehicles/enrichment/compare", {
+      const response = await authFetch(mode === "coverage" ? "/api/admin/vehicles/coverage" : "/api/admin/vehicles/enrichment/compare", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -497,11 +538,11 @@ function EnrichmentSection({
         }),
       });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Enrichment compare failed.");
+      if (!response.ok) throw new Error(data.error || "External coverage compare failed.");
       setPlan(data.plan);
-      setMessage("Enrichment dry-run completed. No data was changed.");
+      setMessage(mode === "coverage" ? "External coverage dry-run completed. No data was changed." : "Enrichment dry-run completed. No data was changed.");
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Enrichment compare failed.");
+      setMessage(error instanceof Error ? error.message : "External coverage compare failed.");
     } finally {
       setBusy("");
     }
@@ -541,12 +582,17 @@ function EnrichmentSection({
     }
   }
 
+  const coverageIssues = (plan?.coverage.issues ?? []).filter((item) => coverageFilter === "all" || item.type === coverageFilter || item.severity === coverageFilter);
+  const coverageStats = plan?.coverage.stats;
+
   return <section className="mt-6 grid gap-4 xl:grid-cols-[420px_1fr]">
     <div className="rounded-2xl border border-emerald-900/40 bg-emerald-950/10 p-5">
-      <div className="text-xs font-black uppercase tracking-[0.18em] text-emerald-300">Modern Vehicle Intelligence</div>
-      <h2 className="mt-2 text-2xl font-black">Enrichment Center</h2>
+      <div className="text-xs font-black uppercase tracking-[0.18em] text-emerald-300">{mode === "coverage" ? "External Vehicle Coverage" : "Modern Vehicle Intelligence"}</div>
+      <h2 className="mt-2 text-2xl font-black">{mode === "coverage" ? "Coverage & Gap Import" : "Enrichment Center"}</h2>
       <p className="mt-2 text-sm leading-6 text-zinc-400">
-        Manual-assisted enrichment for missing modern vehicles. It does not crawl, auto-publish, overwrite verified records or expose source references to customers.
+        {mode === "coverage"
+          ? "Source-agnostic coverage analysis for all brands, models, generations and engines. It stages external data for review and never auto-publishes."
+          : "Manual-assisted enrichment for missing modern vehicles. It does not crawl, auto-publish, overwrite verified records or expose source references to customers."}
       </p>
       <div className="mt-5 space-y-3">
         <DraftField label="Source name" value={sourceName} onChange={setSourceName} />
@@ -560,7 +606,7 @@ function EnrichmentSection({
           <textarea value={text} onChange={(event) => setText(event.target.value)} className="mt-2 min-h-72 w-full rounded-xl border border-white/10 bg-black/50 p-4 font-mono text-xs normal-case leading-5 text-zinc-200 outline-none focus:border-emerald-700" />
         </label>
         <button onClick={() => void runCompare()} disabled={Boolean(busy)} className="w-full rounded-xl bg-emerald-700 px-5 py-3 text-sm font-black text-white hover:bg-emerald-600 disabled:opacity-50">
-          {busy === "compare" ? <Loader2 className="mr-2 inline h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 inline h-4 w-4" />}Dry-run normalize + compare
+          {busy === "compare" ? <Loader2 className="mr-2 inline h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 inline h-4 w-4" />}{mode === "coverage" ? "Dry-run coverage gap analysis" : "Dry-run normalize + compare"}
         </button>
       </div>
     </div>
@@ -577,6 +623,59 @@ function EnrichmentSection({
           Stage 1 values are auto-estimated at +15% only as an unverified helper. Stage 2, ECU type, unlock/protection and TCU data are never invented.
         </p>
       </div>
+
+      {coverageStats && <div className="rounded-2xl border border-violet-900/40 bg-violet-950/10 p-5">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <div className="text-xs font-black uppercase tracking-[0.18em] text-violet-300">Coverage diff dashboard</div>
+            <h3 className="mt-2 text-2xl font-black">Global external source comparison</h3>
+            <p className="mt-1 text-sm text-zinc-500">These are review candidates only. Public selector/cache changes only after explicit admin approval, publish and cache rebuild.</p>
+          </div>
+          <select value={coverageFilter} onChange={(event) => setCoverageFilter(event.target.value)} className="h-11 rounded-xl border border-white/10 bg-black/50 px-3 text-sm font-bold text-white outline-none">
+            <option value="all">All issues</option>
+            <option value="missing_brand">Missing brand</option>
+            <option value="missing_model">Missing model</option>
+            <option value="missing_generation">Missing generation</option>
+            <option value="missing_engine">Missing engine</option>
+            <option value="warning">Warnings</option>
+            <option value="error">Errors</option>
+          </select>
+        </div>
+        <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          <Mini label="Missing brands" value={coverageStats.missingBrands} />
+          <Mini label="Missing models" value={coverageStats.missingModels} />
+          <Mini label="Missing generations" value={coverageStats.missingGenerations} />
+          <Mini label="Missing engines" value={coverageStats.missingEngines} />
+          <Mini label="Alias suggestions" value={coverageStats.aliasSuggestions} />
+          <Mini label="Duplicate risks" value={coverageStats.duplicateRisks} />
+          <Mini label="Conflicts" value={coverageStats.conflicts} />
+          <Mini label="Needs review" value={coverageStats.needsReview} />
+        </div>
+        <div className="mt-4 grid gap-3 lg:grid-cols-2">
+          <div className="rounded-xl border border-white/10 bg-black/30 p-4">
+            <div className="text-xs font-black uppercase tracking-[0.14em] text-zinc-500">Filtered issues</div>
+            <div className="mt-3 max-h-72 space-y-2 overflow-auto pr-1">
+              {coverageIssues.slice(0, 12).map((item) => <div key={`${item.type}-${item.candidateId}-${item.message}`} className="rounded-xl border border-white/10 bg-black/40 p-3 text-xs leading-5 text-zinc-300">
+                <div className={`font-black uppercase ${item.severity === "error" ? "text-red-300" : item.severity === "warning" ? "text-amber-300" : "text-sky-300"}`}>{item.type.replaceAll("_", " ")}</div>
+                <div className="mt-1 text-white">{item.brand} {item.model ?? ""} {item.generation ?? ""} {item.engine ?? ""}</div>
+                <div className="mt-1 text-zinc-500">{item.message}</div>
+              </div>)}
+              {!coverageIssues.length && <div className="text-sm text-zinc-500">Run a coverage dry-run to see issues.</div>}
+            </div>
+          </div>
+          <div className="rounded-xl border border-white/10 bg-black/30 p-4">
+            <div className="text-xs font-black uppercase tracking-[0.14em] text-zinc-500">Review queue</div>
+            <div className="mt-3 max-h-72 space-y-2 overflow-auto pr-1">
+              {(plan?.coverage.reviewQueue ?? []).slice(0, 12).map((item) => <div key={item.id} className="rounded-xl border border-white/10 bg-black/40 p-3 text-xs leading-5 text-zinc-300">
+                <div className="font-black text-white">{item.kind.toUpperCase()} - {item.suggestedAction}</div>
+                <div className="mt-1">{item.brand} {item.model ?? ""} {item.generation ?? ""} {item.engine ?? ""}</div>
+                {item.blockedByVerifiedData && <div className="mt-1 text-red-300">Blocked by verified internal data.</div>}
+              </div>)}
+            </div>
+          </div>
+        </div>
+        {plan?.coverage.sourceMappings.length ? <ImportExampleList title="Source -> canonical mapping preview" items={plan.coverage.sourceMappings.slice(0, 10).map((item) => `${item.source.brand} / ${item.source.model} / ${item.source.generation ?? "-"} / ${item.source.engine ?? "-"} -> ${item.canonical.brand} / ${item.canonical.model} / ${item.canonical.generation ?? "-"} / ${item.canonical.engine ?? "-"} (${item.action})`)} /> : null}
+      </div>}
 
       {plan?.warnings.map((warning) => <div key={warning} className="rounded-xl border border-emerald-800/30 bg-emerald-950/10 p-3 text-sm text-emerald-100">{warning}</div>)}
 

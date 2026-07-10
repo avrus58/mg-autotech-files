@@ -148,6 +148,116 @@ export type VehicleEnrichmentGapResult = {
   reasons: string[];
 };
 
+export type ExternalCoverageIssueType =
+  | "missing_brand"
+  | "missing_model"
+  | "missing_generation"
+  | "missing_engine"
+  | "outdated_year_range"
+  | "missing_stock_performance"
+  | "missing_fuel_or_displacement"
+  | "missing_ecu_info"
+  | "alias_suggestion"
+  | "duplicate_risk"
+  | "generation_overlap"
+  | "engine_possible_duplicate"
+  | "vehicle_key_collision"
+  | "verified_conflict"
+  | "low_confidence";
+
+export type ExternalCoverageSeverity = "info" | "warning" | "error";
+
+export type ExternalCoverageIssue = {
+  type: ExternalCoverageIssueType;
+  severity: ExternalCoverageSeverity;
+  brand: string;
+  model: string | null;
+  generation: string | null;
+  engine: string | null;
+  candidateId: string;
+  suggestedAction: VehicleEnrichmentSuggestedAction | "create_alias" | "link_existing" | "reject_candidate";
+  message: string;
+  sourceName: string | null;
+  sourceUrl: string | null;
+  canonical: {
+    brand: string;
+    model: string | null;
+    generation: string | null;
+    engine: string | null;
+    vehicleKey?: string | null;
+  };
+  matchedExistingId?: string | null;
+  reasons: string[];
+};
+
+export type ExternalAliasSuggestion = {
+  entityType: "brand" | "model" | "generation" | "engine";
+  sourceName: string;
+  canonicalName: string;
+  normalizedKey: string;
+  brand?: string | null;
+  model?: string | null;
+  confidenceScore: number;
+  reason: string;
+  action: "suggest_alias" | "already_normalized";
+};
+
+export type ExternalCoverageReviewItem = {
+  id: string;
+  kind: "brand" | "model" | "generation" | "engine" | "conflict" | "alias";
+  brand: string;
+  model: string | null;
+  generation: string | null;
+  engine: string | null;
+  sourceName: string | null;
+  sourceUrl: string | null;
+  confidenceScore: number;
+  reviewStatus: VehicleEnrichmentReviewStatus;
+  suggestedAction: VehicleEnrichmentSuggestedAction | "create_alias" | "link_existing" | "reject_candidate";
+  reasons: string[];
+  blockedByVerifiedData: boolean;
+};
+
+export type ExternalCoverageStats = {
+  missingBrands: number;
+  missingModels: number;
+  missingGenerations: number;
+  missingEngines: number;
+  outdatedYearRanges: number;
+  aliasSuggestions: number;
+  duplicateRisks: number;
+  conflicts: number;
+  protectedVerifiedConflicts: number;
+  lowConfidenceCandidates: number;
+  needsReview: number;
+  alreadyMatched: number;
+};
+
+export type ExternalCoverageReport = {
+  stats: ExternalCoverageStats;
+  issues: ExternalCoverageIssue[];
+  aliasSuggestions: ExternalAliasSuggestion[];
+  reviewQueue: ExternalCoverageReviewItem[];
+  sourceMappings: Array<{
+    source: {
+      brand: string;
+      model: string;
+      generation: string | null;
+      engine: string | null;
+    };
+    canonical: {
+      brand: string;
+      model: string;
+      generation: string | null;
+      engine: string | null;
+      vehicleKey?: string | null;
+    };
+    aliasMatched: string[];
+    action: "reuse_existing" | "create_draft" | "review_conflict" | "suggest_alias" | "reject_old_scope";
+    reasons: string[];
+  }>;
+};
+
 export type VehicleEnrichmentPlan = {
   source: {
     sourceType: VehicleEnrichmentSourceType;
@@ -162,5 +272,6 @@ export type VehicleEnrichmentPlan = {
   generationGroups: NormalizedGenerationGroup[];
   engineCandidates: NormalizedEngineCandidate[];
   gaps: VehicleEnrichmentGapResult[];
+  coverage: ExternalCoverageReport;
   warnings: string[];
 };

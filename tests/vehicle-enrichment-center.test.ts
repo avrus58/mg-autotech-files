@@ -246,6 +246,113 @@ test("vehicle enrichment gap analysis suggests draft engine instead of duplicate
   assert.equal(gaps[0].matchedExistingEngine, null);
 });
 
+test("external coverage detects global missing vehicles beyond Mercedes examples", () => {
+  const plan = buildVehicleEnrichmentPlan({
+    sourceType: "json",
+    sourceName: "Global legal reference export",
+    entries: [
+      {
+        brand: "BMW",
+        model: "5 Series",
+        rawTitle: "BMW 5 Series Touring (G61), 2024-present",
+        rawYearRange: "2024-present",
+        engineDisplayName: "530e xDrive",
+        powerText: "Power: 299 HP",
+        torqueText: "Torque: 450 Nm",
+        displacementText: "1998 cm3",
+        fuelType: "Plug-in hybrid",
+      },
+      {
+        brand: "VW",
+        model: "Golf",
+        rawTitle: "Volkswagen Golf 8.5, 2024-present",
+        rawYearRange: "2024-present",
+        engineDisplayName: "2.0 TSI GTI",
+        powerText: "Power: 265 HP",
+        torqueText: "Torque: 370 Nm",
+        displacementText: "1984 cm3",
+        fuelType: "Petrol",
+      },
+      {
+        brand: "Audi",
+        model: "A5",
+        rawTitle: "Audi A5 (B10), 2024-present",
+        rawYearRange: "2024-present",
+        engineDisplayName: "2.0 TDI",
+        powerText: "Power: 204 HP",
+        torqueText: "Torque: 400 Nm",
+        displacementText: "1968 cm3",
+        fuelType: "Diesel",
+      },
+    ],
+  }, [
+    existingRecord({
+      id: "bmw-old",
+      brand: "BMW",
+      model: "5 Series",
+      generation: "G30/G31 (2017-2023)",
+      engine: "530e",
+      vehicleKey: "bmw:5-series:g30-g31-2017-2023:530e",
+      verificationStatus: "verified",
+      sourceType: "manual",
+    }),
+    existingRecord({
+      id: "vw-golf-old",
+      brand: "Volkswagen",
+      model: "Golf",
+      generation: "Golf 8 (2020-2023)",
+      engine: "2.0 TSI GTI",
+      vehicleKey: "volkswagen:golf:golf-8-2020-2023:2-0-tsi-gti",
+      verificationStatus: "imported",
+      sourceType: "carecufile_import",
+    }),
+  ]);
+
+  assert.ok(plan.coverage.stats.missingBrands >= 1);
+  assert.ok(plan.coverage.stats.missingGenerations >= 2);
+  assert.ok(plan.coverage.stats.missingEngines >= 2);
+  assert.equal(plan.coverage.aliasSuggestions.some((item) => item.entityType === "brand" && item.sourceName === "VW" && item.canonicalName === "Volkswagen"), true);
+  assert.equal(plan.coverage.issues.some((item) => item.type === "missing_generation" && item.brand === "BMW"), true);
+  assert.equal(plan.coverage.issues.some((item) => item.type === "missing_engine" && item.brand === "Volkswagen"), true);
+  assert.equal(plan.coverage.reviewQueue.every((item) => item.reviewStatus === "needs_review"), true);
+});
+
+test("external Mercedes W214 source maps through canonical E/W214 coverage instead of duplicate E-Class family", () => {
+  const plan = buildVehicleEnrichmentPlan({
+    sourceType: "manual",
+    entries: eClassEntries.slice(0, 4),
+  }, [existingRecord({ model: "E", generation: "W214/S214/V214 (2023-present)", engine: "Different engine" })]);
+
+  assert.equal(plan.generationGroups[0].model, "E");
+  assert.equal(plan.coverage.sourceMappings[0].canonical.model, "E");
+  assert.equal(plan.coverage.sourceMappings[0].canonical.generation, "W214/S214/V214 (2023-present)");
+  assert.equal(plan.coverage.sourceMappings[0].action, "create_draft");
+  assert.equal(plan.coverage.aliasSuggestions.some((item) => item.entityType === "model" && item.sourceName === "E-Class"), true);
+});
+
+test("external coverage never auto-publishes and create-draft path stays unpublished needs-review", () => {
+  const uiSource = readFileSync(resolve(process.cwd(), "src", "app", "admin", "vehicles", "VehicleControlCenter.tsx"), "utf8");
+  const routeSource = readFileSync(resolve(process.cwd(), "src", "app", "api", "admin", "vehicles", "enrichment", "create-draft", "route.ts"), "utf8");
+  assert.match(uiSource, /never auto-publishes|never auto-published|no auto-publish/i);
+  assert.match(routeSource, /published:\s*false/);
+  assert.match(routeSource, /verificationStatus:\s*"needs_review"/);
+  assert.match(routeSource, /confirm !== "CREATE_DRAFT"/);
+});
+
+test("external coverage admin API is protected and dry-run only", async () => {
+  const { POST } = await import("../src/app/api/admin/vehicles/coverage/route");
+  const response = await POST(new Request("http://localhost/api/admin/vehicles/coverage", {
+    method: "POST",
+    body: JSON.stringify({ sourceType: "json", entries: [] }),
+  }));
+  assert.equal(response.status, 401);
+  const source = readFileSync(resolve(process.cwd(), "src", "app", "api", "admin", "vehicles", "coverage", "route.ts"), "utf8");
+  assert.match(source, /requireStaffPermission\(request,\s*"vehicles\.manage"\)/);
+  assert.match(source, /dryRun:\s*true/);
+  assert.match(source, /mutation:\s*false/);
+  assert.doesNotMatch(source, /fetch\(\s*body\.sourceUrl|puppeteer|playwright/i);
+});
+
 test("vehicle enrichment SQL migration is additive, RLS protected and non-destructive", () => {
   const sql = readFileSync(resolve(process.cwd(), "scripts", "add-vehicle-enrichment-center.sql"), "utf8");
   for (const table of [
@@ -271,6 +378,7 @@ test("vehicle enrichment admin APIs require vehicles.manage and do not broad cra
     "src/app/api/admin/vehicles/enrichment/route.ts",
     "src/app/api/admin/vehicles/enrichment/normalize/route.ts",
     "src/app/api/admin/vehicles/enrichment/compare/route.ts",
+    "src/app/api/admin/vehicles/coverage/route.ts",
     "src/app/api/admin/vehicles/enrichment/create-draft/route.ts",
     "src/app/api/admin/vehicles/enrichment/review/route.ts",
   ]) {
@@ -283,6 +391,8 @@ test("vehicle enrichment admin APIs require vehicles.manage and do not broad cra
 test("vehicle enrichment UI is linked and warns about draft/manual-assisted workflow", () => {
   const source = readFileSync(resolve(process.cwd(), "src", "app", "admin", "vehicles", "VehicleControlCenter.tsx"), "utf8");
   assert.match(source, /\/admin\/vehicles\/enrichment/);
+  assert.match(source, /\/admin\/vehicles\/coverage/);
+  assert.match(source, /Coverage & Gap Import/);
   assert.match(source, /Manual-assisted enrichment/);
   assert.match(source, /does not crawl/);
   assert.match(source, /CREATE_DRAFT/);

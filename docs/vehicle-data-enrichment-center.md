@@ -35,7 +35,13 @@ Direct source connectors can be added later only if they respect source terms, r
 
 ## Modern / Current Scope
 
-Default enrichment is modern/current only.
+Default enrichment is modern/current only. Mercedes W214/S214/V214 is an example, not the whole scope. The same workflow is intended for all legally usable external source exports across BMW, Audi, Volkswagen, Mercedes-Benz and any other brand supported by MG AutoTech.
+
+For the global coverage dashboard and review queue, see:
+
+```text
+docs/external-vehicle-coverage-system.md
+```
 
 Default rules:
 

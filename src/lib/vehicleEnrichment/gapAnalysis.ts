@@ -26,10 +26,11 @@ function isManualVerified(record: VehicleControlRecord) {
 }
 
 export function findExistingGeneration(group: NormalizedGenerationGroup, records: VehicleControlRecord[]) {
+  const hasPlatformCodes = group.platformCodes.length > 0;
   return records.find((record) =>
     sameBrand(record.brand, group.brand) &&
     sameVehicleModelFamily(record.brand, record.model, group.model) &&
-    (sameText(record.generation, group.customerDisplayLabel) || group.platformCodes.every((code) => record.generation.toUpperCase().includes(code)))
+    (sameText(record.generation, group.customerDisplayLabel) || (hasPlatformCodes && group.platformCodes.every((code) => record.generation.toUpperCase().includes(code))))
   ) ?? null;
 }
 
