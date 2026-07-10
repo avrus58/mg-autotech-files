@@ -1,4 +1,4 @@
-import { buildVehicleKey, normalizeToken } from "@/lib/vehicleControl/normalization";
+import { buildVehicleKey, compareNormalizedNames, normalizeToken, sameVehicleModelFamily } from "@/lib/vehicleControl/normalization";
 import type { VehicleControlRecord } from "@/lib/vehicleControl/types";
 import type {
   NormalizedEngineCandidate,
@@ -9,6 +9,10 @@ import type {
 
 function sameText(left: string | null | undefined, right: string | null | undefined) {
   return normalizeToken(left ?? "") === normalizeToken(right ?? "");
+}
+
+function sameBrand(left: string | null | undefined, right: string | null | undefined) {
+  return compareNormalizedNames({ entityType: "brand", left, right }).equal;
 }
 
 function generationCompatible(existing: string, candidate: string) {
@@ -23,8 +27,8 @@ function isManualVerified(record: VehicleControlRecord) {
 
 export function findExistingGeneration(group: NormalizedGenerationGroup, records: VehicleControlRecord[]) {
   return records.find((record) =>
-    sameText(record.brand, group.brand) &&
-    sameText(record.model, group.model) &&
+    sameBrand(record.brand, group.brand) &&
+    sameVehicleModelFamily(record.brand, record.model, group.model) &&
     (sameText(record.generation, group.customerDisplayLabel) || group.platformCodes.every((code) => record.generation.toUpperCase().includes(code)))
   ) ?? null;
 }
@@ -39,8 +43,8 @@ export function findExistingEngine(candidate: NormalizedEngineCandidate, records
   });
   return records.find((record) =>
     record.vehicleKey === key ||
-    (sameText(record.brand, candidate.brand) &&
-      sameText(record.model, candidate.model) &&
+    (sameBrand(record.brand, candidate.brand) &&
+      sameVehicleModelFamily(record.brand, record.model, candidate.model) &&
       generationCompatible(record.generation, candidate.generation) &&
       sameText(record.engine, candidate.engineDisplayName))
   ) ?? null;
@@ -72,8 +76,8 @@ export function analyzeVehicleEnrichmentGaps(
     for (const candidate of groupEngines) {
       const matchedEngine = findExistingEngine(candidate, existingRecords);
       const possibleDuplicates = existingRecords.filter((record) =>
-        sameText(record.brand, candidate.brand) &&
-        sameText(record.model, candidate.model) &&
+        sameBrand(record.brand, candidate.brand) &&
+        sameVehicleModelFamily(record.brand, record.model, candidate.model) &&
         (record.engine.toLowerCase().includes(candidate.engineDisplayName.toLowerCase()) || candidate.engineDisplayName.toLowerCase().includes(record.engine.toLowerCase()))
       ).slice(0, 5);
       const conflictingValues: VehicleEnrichmentDiff[] = [];

@@ -350,6 +350,7 @@ export default function VehicleControlCenter({ section = "overview" }: { section
             <Mini label="Warnings" value={importSummary.warningCount ?? importSummary.warnings.length} />
             <Mini label="Errors" value={importSummary.errors} />
             <Mini label="Protected manual" value={importSummary.protectedManualVerifiedCount ?? "-"} />
+            <Mini label="Alias mappings" value={importSummary.aliasWarningCount ?? 0} />
             <Mini label="DB diff" value={importSummary.dbDiffCalculated ? "Yes" : "No"} />
           </div> : <p className="mt-4 text-sm leading-6 text-zinc-500">Run a dry-run to preview import counts and validation warnings.</p>}
           {importSummary && <p className="mt-4 rounded-xl border border-emerald-800/30 bg-emerald-950/10 p-3 text-xs leading-5 text-emerald-100">
@@ -362,6 +363,7 @@ export default function VehicleControlCenter({ section = "overview" }: { section
             </div>)}
           </div> : null}
           {importSummary?.examples?.duplicates?.length ? <ImportExampleList title="Duplicate groups skipped" items={importSummary.examples.duplicates.map((item) => `${item.vehicleKey} (${item.count} rows)`)} /> : null}
+          {importSummary?.aliasMappings?.length ? <ImportExampleList title="Alias resolution preview" items={importSummary.aliasMappings.map((item) => `${item.source.brand} / ${item.source.model} / ${item.source.generation} -> ${item.canonical.brand} / ${item.canonical.model} / ${item.canonical.generation} (${item.action})`)} /> : null}
           {importSummary?.examples?.invalid?.length ? <ImportExampleList title="Invalid rows skipped" items={importSummary.examples.invalid.map((item) => `${item.vehicleKey}: ${item.reason}`)} /> : null}
           {importSummary?.examples?.warnings?.length ? <ImportExampleList title="Needs review examples" items={importSummary.examples.warnings.map((item) => `${item.vehicleKey}: ${item.reason}`)} /> : null}
         </div>

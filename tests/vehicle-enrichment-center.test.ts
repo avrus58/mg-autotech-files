@@ -127,6 +127,7 @@ test("vehicle enrichment groups W214/S214/V214 and excludes C238/A238 from the c
   const { groups } = normalizeGenerationGroups(eClassEntries, { modernOnly: true, yearCutoff: 2020 });
   assert.equal(groups.length, 1);
   const group = groups[0];
+  assert.equal(group.model, "E");
   assert.equal(group.customerDisplayLabel, "W214/S214/V214 (2023-present)");
   assert.deepEqual(group.platformCodes, ["W214", "S214", "V214"]);
   assert.equal(group.bodyVariants.some((variant) => variant.label === "W214 Sedan"), true);
@@ -222,6 +223,19 @@ test("vehicle enrichment gap analysis protects existing and manually verified da
   assert.equal(gap.protectedManualVerified, true);
   assert.equal(gap.suggestedAction, "create_diff_review");
   assert.equal(gap.conflictingValues.some((diff) => diff.diffType === "protected_manual_verified"), true);
+});
+
+test("vehicle enrichment compares E-Class candidates against existing E family records", () => {
+  const plan = buildVehicleEnrichmentPlan({
+    sourceType: "manual",
+    entries: eClassEntries.slice(1, 2),
+  }, [existingRecord({ model: "E", vehicleKey: "mercedes-benz:e:w214-s214-v214-2023-present:e-300-d" })]);
+  const gap = plan.gaps[0];
+  assert.equal(plan.generationGroups[0].model, "E");
+  assert.equal(plan.engineCandidates[0].model, "E");
+  assert.equal(gap.matchedExistingGeneration?.model, "E");
+  assert.equal(gap.matchedExistingEngine?.engine, "E 300 d");
+  assert.equal(gap.suggestedAction, "create_diff_review");
 });
 
 test("vehicle enrichment gap analysis suggests draft engine instead of duplicate when generation exists", () => {

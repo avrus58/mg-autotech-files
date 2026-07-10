@@ -2,10 +2,13 @@ import vehicles from "../../../data/vehicle-database.json";
 import performanceOverrides from "../../../data/vehicle-performance-overrides.json";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import {
+  canonicalizeVehicleModel,
   controlRecordToPublicVehicle,
+  normalizeVehicleBrandKey,
   normalizeToken,
   rawVehicleToControlRecord,
 } from "@/lib/vehicleControl/normalization";
+import { normalizeBrandName, normalizeGenerationName } from "@/lib/vehicleNormalization";
 import type { PublicVehicleRecord, RawVehicleRow, StageData, VehicleServiceKey } from "@/lib/vehicleControl/types";
 import { vehicleServiceLabels } from "@/lib/vehicleControl/types";
 
@@ -124,6 +127,10 @@ function dbEngineToPublic(row: DbVehicleEngineBase, detail: DbVehicleDetail = {}
   if (!row.active || !row.published || !brand.active || !brand.published || !model.active || !model.published || !generation.active || !generation.published) {
     return null;
   }
+  const canonicalBrand = normalizeBrandName(brand.name);
+  const brandName = canonicalBrand.canonicalName || brand.name;
+  const canonicalModel = canonicalizeVehicleModel(brandName, model.name);
+  const canonicalGeneration = normalizeGenerationName(brandName, canonicalModel.displayName || model.name, generation.name);
   const ecu = (detail.ecu_variants ?? [])
     .filter((item) => item.active && item.published)
     .flatMap((item) => [item.ecu_type, item.ecu_family])
@@ -135,12 +142,12 @@ function dbEngineToPublic(row: DbVehicleEngineBase, detail: DbVehicleDetail = {}
     .map((item) => vehicleServiceLabels[item.service_key] ?? item.service_key);
   return {
     id: row.vehicle_key,
-    brand: brand.name,
-    brandId: brand.external_id || brand.id,
-    model: model.name,
-    modelId: model.external_id || model.id,
-    generation: generation.name,
-    generationId: generation.external_id || generation.id,
+    brand: brandName,
+    brandId: normalizeVehicleBrandKey(brand.name) || brand.external_id || brand.id,
+    model: canonicalModel.displayName || model.name,
+    modelId: canonicalModel.slug || normalizeToken(model.name),
+    generation: canonicalGeneration.canonicalName || generation.name,
+    generationId: canonicalGeneration.normalizedKey || normalizeToken(generation.name),
     engine: row.engine_name,
     engineId: row.external_id || row.id,
     fuelType: row.fuel_type,

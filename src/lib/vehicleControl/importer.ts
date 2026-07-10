@@ -1,10 +1,13 @@
 import vehicles from "../../../data/vehicle-database.json";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import {
+  canonicalizeVehicleModel,
+  normalizeVehicleBrandKey,
   normalizeToken,
   rawVehicleToControlRecord,
   stageGain,
 } from "@/lib/vehicleControl/normalization";
+import { buildCanonicalVehicleKey, normalizeBrandName, normalizeEngineName, normalizeGenerationName, normalizeModelName } from "@/lib/vehicleNormalization";
 import type {
   RawVehicleRow,
   VehicleControlRecord,
@@ -89,6 +92,47 @@ function recordPreview(record: VehicleControlRecord) {
   };
 }
 
+function buildAliasMappings(plan: ReturnType<typeof createVehicleImportPlan>) {
+  return plan.records.map((record, index) => {
+    const source = plan.rows[index];
+    const brand = normalizeBrandName(source.brand);
+    const model = normalizeModelName(source.brand, source.model);
+    const generation = normalizeGenerationName(source.brand, source.model, source.generation);
+    const engine = normalizeEngineName(source.engine);
+    const canonicalVehicleKey = buildCanonicalVehicleKey({
+      brand: source.brand,
+      model: source.model,
+      generation: source.generation,
+      engine: source.engine,
+      ecuType: source.ecu?.[0] ?? null,
+    });
+    const matchedAliases = [
+      brand.aliasMatched ? "brand" : null,
+      model.aliasMatched ? "model" : null,
+      generation.aliasMatched ? "generation" : null,
+      engine.aliasMatched ? "engine" : null,
+    ].filter((value): value is string => Boolean(value));
+    return {
+      vehicleKey: record.vehicleKey,
+      source: {
+        brand: source.brand,
+        model: source.model,
+        generation: source.generation,
+        engine: source.engine,
+      },
+      canonical: {
+        brand: brand.canonicalName,
+        model: model.canonicalName,
+        generation: generation.canonicalName,
+        engine: engine.canonicalName,
+        vehicleKey: canonicalVehicleKey,
+      },
+      matchedAliases,
+      action: matchedAliases.length ? "reuse_canonical" as const : canonicalVehicleKey !== record.vehicleKey ? "canonical_key_changed" as const : "no_alias" as const,
+    };
+  }).filter((item) => item.action !== "no_alias").slice(0, 100);
+}
+
 function importCandidateRecord(record: VehicleControlRecord, issues: VehicleValidationIssue[]) {
   const needsReview = issues.some((issue) => issue.severity === "warning");
   if (!needsReview) return record;
@@ -137,6 +181,7 @@ export function buildVehicleImportSummary(
   );
   const skippedBase = duplicateRowCount + invalidRecords.length + protectedManualVerified.length;
   const warningOrErrorIssues = plan.issues.filter((issue) => issue.severity !== "info");
+  const aliasMappings = buildAliasMappings(plan);
 
   const duplicateExamples = [...plan.duplicateKeys].slice(0, 10).map((key) => ({
     vehicleKey: key,
@@ -177,6 +222,8 @@ export function buildVehicleImportSummary(
     validImportableCount: validCandidates.length,
     needsReviewCount: warningKeys.size,
     protectedManualVerifiedCount: protectedManualVerified.length,
+    aliasMappings,
+    aliasWarningCount: aliasMappings.length,
     warningCount: plan.issues.filter((issue) => issue.severity === "warning").length,
     infoCount: plan.issues.filter((issue) => issue.severity === "info").length,
     dbDiffCalculated: Boolean(options.dbDiffCalculated),
@@ -215,13 +262,15 @@ async function audit(entityType: string, entityId: string | null, action: string
 
 async function upsertBrand(record: VehicleControlRecord, actorUserId?: string | null) {
   const admin = getSupabaseAdmin();
-  const slug = normalizeToken(record.brand);
+  const canonicalBrand = normalizeBrandName(record.brand);
+  const slug = canonicalBrand.normalizedKey || normalizeToken(record.brand);
+  const name = canonicalBrand.canonicalName || record.brand;
   const existing = await admin.from("vehicle_brands").select("id, verification_status, source_type").eq("slug", slug).maybeSingle();
   if (isProtectedManualVerified(existing.data as ExistingProtectedRow | null)) return existing.data?.id as string;
   const { data, error } = await admin.from("vehicle_brands").upsert({
-    name: record.brand,
+    name,
     slug,
-    external_id: record.brandId,
+    external_id: canonicalBrand.aliasMatched ? normalizeVehicleBrandKey(record.brand) : record.brandId,
     active: true,
     published: true,
     source_type: record.sourceType,
@@ -236,14 +285,16 @@ async function upsertBrand(record: VehicleControlRecord, actorUserId?: string | 
 
 async function upsertModel(record: VehicleControlRecord, brandId: string, actorUserId?: string | null) {
   const admin = getSupabaseAdmin();
-  const slug = normalizeToken(record.model);
+  const canonicalModel = canonicalizeVehicleModel(record.brand, record.model);
+  const slug = canonicalModel.slug || normalizeToken(record.model);
+  const name = canonicalModel.normalized ? canonicalModel.displayName : record.model;
   const existing = await admin.from("vehicle_models").select("id, verification_status, source_type").eq("brand_id", brandId).eq("slug", slug).maybeSingle();
   if (isProtectedManualVerified(existing.data as ExistingProtectedRow | null)) return existing.data?.id as string;
   const { data, error } = await admin.from("vehicle_models").upsert({
     brand_id: brandId,
-    name: record.model,
+    name,
     slug,
-    external_id: record.modelId,
+    external_id: canonicalModel.normalized ? slug : record.modelId,
     active: true,
     published: true,
     source_type: record.sourceType,
@@ -258,14 +309,16 @@ async function upsertModel(record: VehicleControlRecord, brandId: string, actorU
 
 async function upsertGeneration(record: VehicleControlRecord, modelId: string, actorUserId?: string | null) {
   const admin = getSupabaseAdmin();
-  const slug = normalizeToken(record.generation);
+  const canonicalGeneration = normalizeGenerationName(record.brand, record.model, record.generation);
+  const slug = canonicalGeneration.aliasMatched ? canonicalGeneration.normalizedKey : normalizeToken(record.generation);
+  const name = canonicalGeneration.canonicalName || record.generation;
   const existing = await admin.from("vehicle_generations").select("id, verification_status, source_type").eq("model_id", modelId).eq("slug", slug).maybeSingle();
   if (isProtectedManualVerified(existing.data as ExistingProtectedRow | null)) return existing.data?.id as string;
   const { data, error } = await admin.from("vehicle_generations").upsert({
     model_id: modelId,
-    name: record.generation,
+    name,
     slug,
-    external_id: record.generationId,
+    external_id: canonicalGeneration.aliasMatched ? slug : record.generationId,
     year_from: record.yearFrom,
     year_to: record.yearTo,
     facelift_label: record.faceliftLabel,

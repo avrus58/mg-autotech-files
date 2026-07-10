@@ -1,4 +1,6 @@
 import type { VehicleControlRecord, VehicleValidationIssue } from "@/lib/vehicleControl/types";
+import { normalizeToken } from "@/lib/vehicleControl/normalization";
+import { normalizeBrandName, normalizeGenerationName, normalizeModelName } from "@/lib/vehicleNormalization";
 
 export const vehiclePerformanceLimits = {
   maxStockHp: 2500,
@@ -143,9 +145,81 @@ export function validateVehicleCollection(records: VehicleControlRecord[]) {
     }
   }
 
+  const brandDisplaysByCanonical = new Map<string, Set<string>>();
+  const modelDisplaysByCanonical = new Map<string, Set<string>>();
+  const generationDisplaysByCanonical = new Map<string, Set<string>>();
+  for (const record of records) {
+    const brand = normalizeBrandName(record.brand);
+    if (!brandDisplaysByCanonical.has(brand.normalizedKey)) brandDisplaysByCanonical.set(brand.normalizedKey, new Set());
+    brandDisplaysByCanonical.get(brand.normalizedKey)?.add(record.brand);
+
+    const model = normalizeModelName(record.brand, record.model);
+    const modelKey = `${brand.normalizedKey}:${model.normalizedKey}`;
+    if (!modelDisplaysByCanonical.has(modelKey)) modelDisplaysByCanonical.set(modelKey, new Set());
+    modelDisplaysByCanonical.get(modelKey)?.add(record.model);
+
+    const generation = normalizeGenerationName(record.brand, record.model, record.generation);
+    const generationKey = `${brand.normalizedKey}:${model.normalizedKey}:${generation.normalizedKey}`;
+    if (!generationDisplaysByCanonical.has(generationKey)) generationDisplaysByCanonical.set(generationKey, new Set());
+    generationDisplaysByCanonical.get(generationKey)?.add(record.generation);
+
+    const canonicalKey = [
+      brand.normalizedKey,
+      model.normalizedKey,
+      generation.normalizedKey,
+      normalizeToken(record.engine),
+      normalizeToken(record.ecuType ?? ""),
+    ].filter(Boolean).join(":");
+    if (canonicalKey !== record.vehicleKey) {
+      issues.push({
+        severity: "warning",
+        code: "vehicle_key_alias_resolution",
+        message: "Vehicle key differs from the canonical alias-normalized key. Keep old references, but use canonical keys for new records.",
+        vehicleKey: record.vehicleKey,
+        entityType: "vehicle_engine",
+        metadata: { canonicalKey, suggestedFix: "Review source references before changing existing published keys." },
+      });
+    }
+  }
+  for (const [normalizedBrand, displays] of brandDisplaysByCanonical.entries()) {
+    if (displays.size > 1) {
+      issues.push({
+        severity: "warning",
+        code: "brand_alias_duplicate_candidate",
+        message: "Multiple brand display names resolve to the same normalized brand.",
+        entityType: "vehicle_brand",
+        metadata: { normalizedBrand, displayNames: [...displays], suggestedFix: "Add or approve a brand alias instead of creating duplicate brand families." },
+      });
+    }
+  }
+  for (const [normalizedModel, displays] of modelDisplaysByCanonical.entries()) {
+    if (displays.size > 1) {
+      issues.push({
+        severity: "warning",
+        code: "model_alias_duplicate_candidate",
+        message: "Multiple model display names resolve to the same normalized model family.",
+        entityType: "vehicle_model",
+        metadata: { normalizedModel, displayNames: [...displays], suggestedFix: "Approve an alias or keep one canonical model display name." },
+      });
+    }
+  }
+  for (const [normalizedGeneration, displays] of generationDisplaysByCanonical.entries()) {
+    if (displays.size > 1) {
+      issues.push({
+        severity: "warning",
+        code: "generation_alias_duplicate_candidate",
+        message: "Multiple generation labels resolve to the same normalized generation.",
+        entityType: "vehicle_generation",
+        metadata: { normalizedGeneration, displayNames: [...displays], suggestedFix: "Review generation aliases before publishing duplicate generation options." },
+      });
+    }
+  }
+
   const generations = new Map<string, Array<{ from: number | null; to: number | null; key: string }>>();
   for (const record of records) {
-    const groupKey = `${record.brand}|${record.model}`;
+    const brandKey = normalizeBrandName(record.brand).normalizedKey;
+    const modelKey = normalizeModelName(record.brand, record.model).normalizedKey;
+    const groupKey = `${brandKey}|${modelKey}`;
     generations.set(groupKey, [...(generations.get(groupKey) ?? []), {
       from: record.yearFrom,
       to: record.yearTo,

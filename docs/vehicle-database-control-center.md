@@ -128,6 +128,125 @@ After a successful real import with published rows, the response header should b
 x-vehicle-source: database
 ```
 
+## Vehicle Normalization & Alias System
+
+Vehicle data can arrive from different sources with different naming conventions. MG AutoTech keeps a single clean customer-facing hierarchy by normalizing source names before public grouping, import deduplication and validation.
+
+The central helper is:
+
+```text
+src/lib/vehicleNormalization.ts
+```
+
+It provides:
+
+- `normalizeText`
+- `normalizeBrandName`
+- `normalizeModelName`
+- `normalizeGenerationName`
+- `normalizeEngineName`
+- `buildCanonicalVehicleKey`
+- `resolveAliasCandidate`
+- `compareNormalizedNames`
+
+### Canonical Names
+
+The system normalizes common brand and model aliases into canonical families. Examples:
+
+- `Mercedes`, `Mercedes Benz`, `Mercedes-Benz`, `MB` -> `Mercedes-Benz`
+- `Bmw`, `BMW`, `Bayerische Motoren Werke` -> `BMW`
+- `VW`, `Volkswagen` -> `Volkswagen`
+- Mercedes `E`, `E-Class`, `E Klasse`, `E-Klasse` -> customer-facing `E`
+- Mercedes `C`, `C-Class`, `C Klasse`, `C-Klasse` -> customer-facing `C`
+
+Generation aliases are normalized conservatively by platform code when clear. Examples:
+
+- `W214`
+- `W 214`
+- `E-Class W214`
+- `E Klasse W 214`
+
+all resolve to `W214`. Combined current-generation labels such as `W214/S214/V214 (2023-present)` remain grouped under the same canonical Mercedes `E` model family.
+
+### Import Resolution
+
+Dry-run import reports alias resolution before any real write. The preview shows:
+
+- source brand/model/generation
+- resolved canonical brand/model/generation
+- matched alias type
+- whether the canonical model will be reused
+- whether the vehicle key would change after normalization
+
+Example:
+
+```text
+Mercedes / E-Class / E Klasse W 214
+-> Mercedes-Benz / E / W214
+```
+
+Real import uses canonical keys for new records, but it does not destructively merge existing records.
+
+### Public Selector Behavior
+
+The customer selector groups by canonical brand, model and generation names. Customers should see clean choices such as:
+
+```text
+Mercedes-Benz -> E -> W214/S214/V214 (2023-present)
+```
+
+They should not see duplicate model families such as:
+
+```text
+E
+E-Class
+E Klasse
+```
+
+Customers never see alias tables, source names, normalized keys, source references, confidence scores, batch IDs, duplicate warnings, validation metadata or admin notes.
+
+### Validation Warnings
+
+Validation is intentionally non-destructive. It warns when:
+
+- the same normalized brand appears with different display names
+- the same normalized model appears under the same brand with different display names
+- the same normalized generation appears with different labels
+- a canonical vehicle key would differ from an existing legacy/source key
+- a vehicle key collision could occur after normalization
+
+These warnings are for admin review. The app must not auto-merge or delete records.
+
+### Alias Tables
+
+The optional migration:
+
+```text
+scripts/add-vehicle-normalization-aliases.sql
+```
+
+adds admin-only alias tables:
+
+- `vehicle_brand_aliases`
+- `vehicle_model_aliases`
+- `vehicle_generation_aliases`
+- `vehicle_engine_aliases`
+- `vehicle_alias_review_events`
+
+These tables are additive, RLS-protected and guarded by `vehicles.manage`. They are for future admin-approved alias workflows. Applying an alias must be audited and must not automatically destroy or merge existing records.
+
+### VehicleKey Stability
+
+Existing request records may already reference legacy `vehicleKey` values. For that reason:
+
+- existing keys are not rewritten automatically
+- canonical keys are used for new imports/records
+- validation reports a warning when an old key differs from the canonical key
+- old/source references should be preserved where needed
+- any manual cleanup must be handled by an explicit admin-reviewed migration plan, not automatic code
+
+This keeps historical requests stable while preventing new duplicate model families.
+
 ## Security
 
 Admin APIs use `requireStaffPermission(request, 'vehicles.manage')`.

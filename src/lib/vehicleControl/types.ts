@@ -176,6 +176,25 @@ export type VehicleImportSummary = {
   warningCount?: number;
   infoCount?: number;
   dbDiffCalculated?: boolean;
+  aliasMappings?: Array<{
+    vehicleKey: string;
+    source: {
+      brand: string;
+      model: string;
+      generation: string;
+      engine: string;
+    };
+    canonical: {
+      brand: string;
+      model: string;
+      generation: string;
+      engine: string;
+      vehicleKey: string;
+    };
+    matchedAliases: string[];
+    action: "reuse_canonical" | "canonical_key_changed" | "no_alias";
+  }>;
+  aliasWarningCount?: number;
   warnings: VehicleValidationIssue[];
   examples?: {
     duplicates?: Array<{

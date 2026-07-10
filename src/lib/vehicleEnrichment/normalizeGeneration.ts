@@ -1,4 +1,5 @@
-import { normalizeToken } from "@/lib/vehicleControl/normalization";
+import { canonicalizeVehicleModel, normalizeToken } from "@/lib/vehicleControl/normalization";
+import { normalizeBrandName } from "@/lib/vehicleNormalization";
 import type {
   BodyVariantSummary,
   ExcludedExternalEntry,
@@ -63,6 +64,12 @@ function bodyVariant(entry: ExternalVehicleEntry): BodyVariantSummary {
   };
 }
 
+function brandModelKey(entry: ExternalVehicleEntry) {
+  const brandKey = normalizeBrandName(entry.brand).normalizedKey || normalizeToken(entry.brand);
+  const modelKey = canonicalizeVehicleModel(entry.brand, entry.model).slug || normalizeToken(entry.model);
+  return `${brandKey}:${modelKey}`;
+}
+
 export function normalizeGenerationGroups(entries: ExternalVehicleEntry[], options: VehicleEnrichmentScopeOptions = {}) {
   const accepted: ExternalVehicleEntry[] = [];
   const skippedOld: ExcludedExternalEntry[] = [];
@@ -75,13 +82,13 @@ export function normalizeGenerationGroups(entries: ExternalVehicleEntry[], optio
   const currentFamilyTargets = new Set(
     accepted
       .filter((entry) => platformFamilyKey(extractPlatformCodes([entry.rawTitle, entry.rawGeneration].filter(Boolean).join(" "))) === "W214/S214/V214")
-      .map((entry) => `${normalizeToken(entry.brand)}:${normalizeToken(entry.model)}`)
+      .map(brandModelKey)
   );
 
   const buckets = new Map<string, ExternalVehicleEntry[]>();
   for (const entry of accepted) {
     const codes = extractPlatformCodes([entry.rawTitle, entry.rawGeneration].filter(Boolean).join(" "));
-    const brandModel = `${normalizeToken(entry.brand)}:${normalizeToken(entry.model)}`;
+    const brandModel = brandModelKey(entry);
     if (currentFamilyTargets.has(brandModel) && platformFamilyKey(codes) === "C238/A238") {
       skippedOld.push({
         entry,
@@ -89,7 +96,7 @@ export function normalizeGenerationGroups(entries: ExternalVehicleEntry[], optio
       });
       continue;
     }
-    const key = `${normalizeToken(entry.brand)}:${normalizeToken(entry.model)}:${platformFamilyKey(codes)}`;
+    const key = `${brandModel}:${platformFamilyKey(codes)}`;
     buckets.set(key, [...(buckets.get(key) ?? []), entry]);
   }
 
@@ -103,7 +110,7 @@ export function normalizeGenerationGroups(entries: ExternalVehicleEntry[], optio
     });
     const excludedEntries: ExcludedExternalEntry[] = [
       ...bucketEntries.filter((entry) => !includedEntries.includes(entry)).map((entry) => ({ entry, reason: "Different platform family." })),
-      ...skippedOld.filter((item) => normalizeToken(item.entry.brand) === normalizeToken(bucketEntries[0]?.brand) && normalizeToken(item.entry.model) === normalizeToken(bucketEntries[0]?.model)),
+      ...skippedOld.filter((item) => normalizeBrandName(item.entry.brand).normalizedKey === normalizeBrandName(bucketEntries[0]?.brand).normalizedKey && canonicalizeVehicleModel(item.entry.brand, item.entry.model).slug === canonicalizeVehicleModel(bucketEntries[0]?.brand, bucketEntries[0]?.model).slug),
     ];
     const years = includedEntries.map(parseExternalYearRange);
     const yearFromValues = years.map((year) => year.yearFrom).filter((value): value is number => value != null);
@@ -111,8 +118,11 @@ export function normalizeGenerationGroups(entries: ExternalVehicleEntry[], optio
     const yearFrom = yearFromValues.length ? Math.min(...yearFromValues) : null;
     const yearTo = years.some((year) => year.yearTo == null) ? null : (yearToValues.length ? Math.max(...yearToValues) : null);
     const bodyVariants = includedEntries.map(bodyVariant);
-    const brand = includedEntries[0]?.brand ?? bucketEntries[0]?.brand ?? "";
-    const model = includedEntries[0]?.model ?? bucketEntries[0]?.model ?? "";
+    const rawBrand = includedEntries[0]?.brand ?? bucketEntries[0]?.brand ?? "";
+    const brand = normalizeBrandName(rawBrand).canonicalName || rawBrand;
+    const rawModel = includedEntries[0]?.model ?? bucketEntries[0]?.model ?? "";
+    const canonicalModel = canonicalizeVehicleModel(brand, rawModel);
+    const model = canonicalModel.displayName || rawModel;
     const customerDisplayLabel = customerLabelFromCodes(allCodes, yearFrom, yearTo);
     groups.push({
       id: key,

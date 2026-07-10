@@ -1,6 +1,7 @@
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import type { VehicleControlRecord, VehicleServiceKey, VehicleValidationIssue, VerificationStatus } from "@/lib/vehicleControl/types";
-import { buildVehicleKey, inferEcuFamily, normalizeToken } from "@/lib/vehicleControl/normalization";
+import { buildVehicleKey, canonicalizeVehicleModel, inferEcuFamily, normalizeToken } from "@/lib/vehicleControl/normalization";
+import { normalizeBrandName, normalizeGenerationName } from "@/lib/vehicleNormalization";
 import { validateVehicleRecord } from "@/lib/vehicleControl/validation";
 
 export type VehicleAdminUpdate = {
@@ -318,9 +319,12 @@ export async function updateVehicleAdminRecord(id: string, update: VehicleAdminU
   const generation = (await admin.from("vehicle_generations").select("id, model:vehicle_models(id, brand:vehicle_brands(id))").eq("id", before.record.generationId || "").maybeSingle()).data;
   let generationId = oldRecord.generationId && /^[0-9a-f-]{36}$/i.test(oldRecord.generationId) ? oldRecord.generationId : null;
   if (!generationId || !generation) {
+    const canonicalBrand = normalizeBrandName(update.brand);
+    const canonicalModel = canonicalizeVehicleModel(update.brand, update.model);
+    const canonicalGeneration = normalizeGenerationName(update.brand, update.model, update.generation);
     const brand = await admin.from("vehicle_brands").upsert({
-      name: update.brand,
-      slug: normalizeToken(update.brand),
+      name: canonicalBrand.canonicalName || update.brand,
+      slug: canonicalBrand.normalizedKey || normalizeToken(update.brand),
       active: true,
       published: true,
       source_type: "manual",
@@ -329,8 +333,8 @@ export async function updateVehicleAdminRecord(id: string, update: VehicleAdminU
     }, { onConflict: "slug" }).select("id").single();
     const model = await admin.from("vehicle_models").upsert({
       brand_id: brand.data?.id,
-      name: update.model,
-      slug: normalizeToken(update.model),
+      name: canonicalModel.normalized ? canonicalModel.displayName : update.model,
+      slug: canonicalModel.slug || normalizeToken(update.model),
       active: true,
       published: true,
       source_type: "manual",
@@ -339,8 +343,8 @@ export async function updateVehicleAdminRecord(id: string, update: VehicleAdminU
     }, { onConflict: "brand_id,slug" }).select("id").single();
     const generationRow = await admin.from("vehicle_generations").upsert({
       model_id: model.data?.id,
-      name: update.generation,
-      slug: normalizeToken(update.generation),
+      name: canonicalGeneration.canonicalName || update.generation,
+      slug: canonicalGeneration.aliasMatched ? canonicalGeneration.normalizedKey : normalizeToken(update.generation),
       year_from: update.yearFrom ?? null,
       year_to: update.yearTo ?? null,
       active: true,
@@ -435,17 +439,23 @@ export async function updateVehicleAdminRecord(id: string, update: VehicleAdminU
 
 export async function createVehicleAdminRecord(update: VehicleAdminUpdate, actorUserId: string | null) {
   const admin = getSupabaseAdmin();
+  const canonicalBrand = normalizeBrandName(update.brand);
+  const canonicalModel = canonicalizeVehicleModel(update.brand, update.model);
+  const canonicalGeneration = normalizeGenerationName(update.brand, update.model, update.generation);
+  const brandName = canonicalBrand.canonicalName || update.brand;
+  const modelName = canonicalModel.normalized ? canonicalModel.displayName : update.model;
+  const generationName = canonicalGeneration.canonicalName || update.generation;
   const record: VehicleControlRecord = {
-    brand: update.brand,
-    brandId: null,
-    model: update.model,
-    modelId: null,
-    generation: update.generation,
-    generationId: null,
+    brand: brandName,
+    brandId: canonicalBrand.aliasMatched ? canonicalBrand.normalizedKey : null,
+    model: modelName,
+    modelId: canonicalModel.normalized ? canonicalModel.slug : null,
+    generation: generationName,
+    generationId: canonicalGeneration.aliasMatched ? canonicalGeneration.normalizedKey : null,
     engine: update.engine,
     engineId: null,
     vehicleKey: buildVehicleKey({ brand: update.brand, model: update.model, generation: update.generation, engine: update.engine, ecuType: update.ecuType }),
-    displayName: update.displayName || `${update.brand} ${update.model} ${update.generation} ${update.engine}`.replace(/\s+/g, " ").trim(),
+    displayName: update.displayName || `${brandName} ${modelName} ${generationName} ${update.engine}`.replace(/\s+/g, " ").trim(),
     yearFrom: update.yearFrom ?? null,
     yearTo: update.yearTo ?? null,
     faceliftLabel: null,
@@ -483,8 +493,8 @@ export async function createVehicleAdminRecord(update: VehicleAdminUpdate, actor
   if (issues.some((issue) => issue.severity === "error")) return { ok: false as const, issues };
 
   const brand = await admin.from("vehicle_brands").upsert({
-    name: update.brand,
-    slug: normalizeToken(update.brand),
+    name: brandName,
+    slug: canonicalBrand.normalizedKey || normalizeToken(update.brand),
     active: true,
     published: true,
     source_type: "manual",
@@ -494,8 +504,8 @@ export async function createVehicleAdminRecord(update: VehicleAdminUpdate, actor
   if (brand.error) throw brand.error;
   const model = await admin.from("vehicle_models").upsert({
     brand_id: brand.data.id,
-    name: update.model,
-    slug: normalizeToken(update.model),
+    name: modelName,
+    slug: canonicalModel.slug || normalizeToken(update.model),
     active: true,
     published: true,
     source_type: "manual",
@@ -505,8 +515,8 @@ export async function createVehicleAdminRecord(update: VehicleAdminUpdate, actor
   if (model.error) throw model.error;
   const generation = await admin.from("vehicle_generations").upsert({
     model_id: model.data.id,
-    name: update.generation,
-    slug: normalizeToken(update.generation),
+    name: generationName,
+    slug: canonicalGeneration.aliasMatched ? canonicalGeneration.normalizedKey : normalizeToken(update.generation),
     year_from: update.yearFrom ?? null,
     year_to: update.yearTo ?? null,
     active: true,

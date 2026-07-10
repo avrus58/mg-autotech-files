@@ -6,6 +6,15 @@ import type {
   VehicleServiceKey,
 } from "@/lib/vehicleControl/types";
 import { vehicleServiceLabels } from "@/lib/vehicleControl/types";
+import {
+  buildCanonicalVehicleKey,
+  compareNormalizedNames,
+  normalizeBrandName,
+  normalizeGenerationName,
+  normalizeModelName,
+  normalizeText,
+  resolveAliasCandidate,
+} from "@/lib/vehicleNormalization";
 
 const serviceSynonyms: Array<[VehicleServiceKey, RegExp]> = [
   ["stage1", /\bstage\s*1\b/i],
@@ -24,15 +33,24 @@ const serviceSynonyms: Array<[VehicleServiceKey, RegExp]> = [
   ["launch_control", /launch/i],
 ];
 
-export function normalizeToken(value: string | null | undefined) {
-  return (value ?? "")
-    .normalize("NFKD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/&/g, " and ")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .replace(/-{2,}/g, "-");
+export const normalizeToken = normalizeText;
+export { buildCanonicalVehicleKey, compareNormalizedNames, resolveAliasCandidate };
+
+export function normalizeVehicleBrandKey(brand: string | null | undefined) {
+  return normalizeBrandName(brand).normalizedKey;
+}
+
+export function canonicalizeVehicleModel(brand: string | null | undefined, model: string | null | undefined) {
+  const normalized = normalizeModelName(brand, model);
+  return { slug: normalized.normalizedKey, displayName: normalized.canonicalName, normalized: normalized.aliasMatched };
+}
+
+export function sameVehicleModelFamily(
+  brand: string | null | undefined,
+  left: string | null | undefined,
+  right: string | null | undefined
+) {
+  return compareNormalizedNames({ entityType: "model", brand, left, right }).equal;
 }
 
 export function buildVehicleKey(input: {
@@ -42,14 +60,7 @@ export function buildVehicleKey(input: {
   engine: string;
   ecuType?: string | null;
 }) {
-  const parts = [
-    input.brand,
-    input.model,
-    input.generation,
-    input.engine,
-    input.ecuType ?? "",
-  ].map(normalizeToken).filter(Boolean);
-  return parts.join(":");
+  return buildCanonicalVehicleKey(input);
 }
 
 export function parseYearRange(generation: string | null | undefined) {
@@ -123,9 +134,12 @@ export function stageGain(stage: StageData | null | undefined) {
 }
 
 export function rawVehicleToControlRecord(row: RawVehicleRow): VehicleControlRecord {
-  const brand = row.brand ?? "";
-  const model = row.model ?? "";
-  const generation = row.generation ?? "";
+  const brandName = normalizeBrandName(row.brand ?? "");
+  const brand = brandName.canonicalName || (row.brand ?? "");
+  const canonicalModel = canonicalizeVehicleModel(brand, row.model ?? "");
+  const model = canonicalModel.displayName || (row.model ?? "");
+  const generationName = normalizeGenerationName(brand, model, row.generation ?? "");
+  const generation = generationName.canonicalName || (row.generation ?? "");
   const engine = row.engine ?? "";
   const ecuType = row.ecu?.[0] ?? null;
   const years = parseYearRange(generation);
@@ -139,11 +153,11 @@ export function rawVehicleToControlRecord(row: RawVehicleRow): VehicleControlRec
   });
   return {
     brand,
-    brandId: row.brandId ?? null,
+    brandId: brandName.aliasMatched ? brandName.normalizedKey : row.brandId ?? null,
     model,
-    modelId: row.modelId ?? null,
+    modelId: canonicalModel.normalized ? canonicalModel.slug : row.modelId ?? null,
     generation,
-    generationId: row.generationId ?? null,
+    generationId: generationName.aliasMatched ? generationName.normalizedKey : row.generationId ?? null,
     engine,
     engineId: row.engineId ?? null,
     vehicleKey,
@@ -184,6 +198,9 @@ export function rawVehicleToControlRecord(row: RawVehicleRow): VehicleControlRec
 }
 
 export function controlRecordToPublicVehicle(record: VehicleControlRecord): PublicVehicleRecord {
+  const canonicalBrand = normalizeBrandName(record.brand);
+  const canonicalModel = canonicalizeVehicleModel(record.brand, record.model);
+  const canonicalGeneration = normalizeGenerationName(record.brand, record.model, record.generation);
   const stage1: StageData | null = record.stockHp || record.stockNm || record.tunedHp || record.tunedNm
     ? {
         stockHp: record.stockHp,
@@ -196,12 +213,12 @@ export function controlRecordToPublicVehicle(record: VehicleControlRecord): Publ
     : null;
   return {
     id: record.vehicleKey,
-    brand: record.brand,
-    brandId: record.brandId || normalizeToken(record.brand),
-    model: record.model,
-    modelId: record.modelId || normalizeToken(record.model),
-    generation: record.generation,
-    generationId: record.generationId || normalizeToken(record.generation),
+    brand: canonicalBrand.canonicalName || record.brand,
+    brandId: canonicalBrand.normalizedKey || record.brandId || normalizeToken(record.brand),
+    model: canonicalModel.displayName || record.model,
+    modelId: canonicalModel.slug || normalizeToken(record.model),
+    generation: canonicalGeneration.canonicalName || record.generation,
+    generationId: canonicalGeneration.normalizedKey || normalizeToken(record.generation),
     engine: record.engine,
     engineId: record.engineId || normalizeToken(record.engine),
     fuelType: record.fuelType,

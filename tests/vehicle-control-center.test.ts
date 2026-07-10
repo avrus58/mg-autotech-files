@@ -5,10 +5,19 @@ import { resolve } from "node:path";
 import { hasStaffPermission } from "../src/lib/staffPermissions";
 import {
   buildVehicleKey,
+  canonicalizeVehicleModel,
   controlRecordToPublicVehicle,
+  rawVehiclesToPublicRows,
   rawVehicleToControlRecord,
 } from "../src/lib/vehicleControl/normalization";
-import { fetchPagedRowsForVehicleSelector, getSafePublishedVehicleRows } from "../src/lib/vehicleControl/public";
+import {
+  fetchPagedRowsForVehicleSelector,
+  getSafePublishedVehicleRows,
+  listBrandsFromRows,
+  listEnginesFromRows,
+  listGenerationsFromRows,
+  listModelsFromRows,
+} from "../src/lib/vehicleControl/public";
 import {
   buildVehicleImportSummary,
   createVehicleImportPlan,
@@ -17,6 +26,13 @@ import {
 } from "../src/lib/vehicleControl/importer";
 import type { RawVehicleRow, VehicleControlRecord } from "../src/lib/vehicleControl/types";
 import { validateVehicleCollection, validateVehicleRecord } from "../src/lib/vehicleControl/validation";
+import {
+  buildCanonicalVehicleKey,
+  compareNormalizedNames,
+  normalizeBrandName,
+  normalizeGenerationName,
+  resolveAliasCandidate,
+} from "../src/lib/vehicleNormalization";
 
 const rawRow: RawVehicleRow = {
   source: "carecufile_import",
@@ -65,6 +81,43 @@ test("vehicle key generation is stable and normalized", () => {
   });
   assert.equal(left, "bmw:5-serie:g30-31-2016-2019:530d-265hp:bosch-edc17c50");
   assert.equal(left, right);
+});
+
+test("Mercedes model aliases collapse to the existing short customer-facing family", () => {
+  assert.deepEqual(canonicalizeVehicleModel("Mercedes-Benz", "E-Class"), { slug: "e", displayName: "E", normalized: true });
+  assert.deepEqual(canonicalizeVehicleModel("Mercedes-Benz", "E Klasse"), { slug: "e", displayName: "E", normalized: true });
+  assert.deepEqual(canonicalizeVehicleModel("Mercedes-Benz", "C-Klasse"), { slug: "c", displayName: "C", normalized: true });
+  assert.deepEqual(canonicalizeVehicleModel("Mercedes-Benz", "GLC-Class"), { slug: "glc", displayName: "GLC", normalized: true });
+  assert.deepEqual(canonicalizeVehicleModel("BMW", "E-Class"), { slug: "e-class", displayName: "E-Class", normalized: false });
+
+  const key = buildVehicleKey({
+    brand: "Mercedes-Benz",
+    model: "E-Class",
+    generation: "W214/S214/V214 (2023-present)",
+    engine: "E 300 d",
+  });
+  assert.equal(key, "mercedes-benz:e:w214-s214-v214-2023-present:e-300-d");
+});
+
+test("vehicle normalization framework resolves brand, model and generation aliases", () => {
+  assert.deepEqual(normalizeBrandName("MB"), {
+    sourceName: "MB",
+    canonicalName: "Mercedes-Benz",
+    normalizedKey: "mercedes-benz",
+    aliasMatched: true,
+    matchedAlias: "mb",
+  });
+  assert.equal(normalizeBrandName("Mercedes Benz").normalizedKey, "mercedes-benz");
+  assert.equal(normalizeBrandName("Bayerische Motoren Werke").normalizedKey, "bmw");
+  assert.equal(normalizeBrandName("VW").canonicalName, "Volkswagen");
+  assert.equal(compareNormalizedNames({ entityType: "brand", left: "VW", right: "Volkswagen" }).equal, true);
+  assert.equal(compareNormalizedNames({ entityType: "model", brand: "Mercedes-Benz", left: "E Klasse", right: "E-Class" }).equal, true);
+
+  const generation = normalizeGenerationName("Mercedes-Benz", "E-Class", "E Klasse W 214");
+  assert.equal(generation.canonicalName, "W214");
+  assert.equal(generation.normalizedKey, "w214");
+  assert.equal(resolveAliasCandidate({ entityType: "generation", brand: "Mercedes", model: "E-Klasse", value: "E-Class W214" }).normalizedKey, "w214");
+  assert.equal(buildCanonicalVehicleKey({ brand: "MB", model: "E-Klasse", generation: "E-Class W 214", engine: "E 300 d" }), "mercedes-benz:e:w214:e-300-d");
 });
 
 test("raw CareEcuFile rows become structured vehicle control records", () => {
@@ -120,6 +173,117 @@ test("customer public vehicle projection strips admin-only data", () => {
   assert.ok(serialized.includes("Bosch EDC17C50"));
 });
 
+test("public selector merges Mercedes E and E-Class into one model option at read time", () => {
+  const rows = rawVehiclesToPublicRows([
+    {
+      brand: "Mercedes-Benz",
+      brandId: "mercedes-benz",
+      model: "E",
+      modelId: "e",
+      generation: "W213/S213 - 2016 - 2023",
+      generationId: "w213-s213",
+      engine: "E 220 d",
+      engineId: "e-220-d",
+      fuelType: "Diesel",
+      ecu: ["Bosch MD1"],
+      stage1: { stockHp: 194, stockNm: 400, tunedHp: 220, tunedNm: 470, gainHp: 26, gainNm: 70 },
+    },
+    {
+      brand: "Mercedes-Benz",
+      brandId: "mercedes-benz",
+      model: "E-Class",
+      modelId: "external-e-class",
+      generation: "W214/S214/V214 (2023-present)",
+      generationId: "w214-s214-v214",
+      engine: "E 300 d",
+      engineId: "e-300-d",
+      fuelType: "Diesel",
+      ecu: ["Bosch MD1"],
+      stage1: { stockHp: 197, stockNm: 440, tunedHp: 227, tunedNm: 506, gainHp: 30, gainNm: 66 },
+    },
+  ]);
+
+  const models = listModelsFromRows(rows, "mercedes-benz");
+  assert.deepEqual(models, [{ id: "e", name: "E" }]);
+  const generations = listGenerationsFromRows(rows, "mercedes-benz", "e").map((item) => item.name);
+  assert.equal(generations.includes("W213/S213 (2016-2023)"), true);
+  assert.equal(generations.includes("W214/S214/V214 (2023-present)"), true);
+  const engines = listEnginesFromRows(rows, "mercedes-benz", "e", "w214-s214-v214-2023-present");
+  assert.deepEqual(engines, [{ id: "e-300-d", name: "E 300 d", fuelType: "Diesel" }]);
+});
+
+test("public selector normalizes brand and generation aliases without exposing alias metadata", () => {
+  const rows = rawVehiclesToPublicRows([
+    {
+      brand: "MB",
+      brandId: "mb",
+      model: "E Klasse",
+      modelId: "external-e-klasse",
+      generation: "E-Class W 214",
+      generationId: "source-w-214",
+      engine: "E 300 d",
+      engineId: "e-300-d",
+      fuelType: "Diesel",
+      ecu: ["Bosch MD1"],
+      stage1: { stockHp: 197, stockNm: 440, tunedHp: 227, tunedNm: 506, gainHp: 30, gainNm: 66 },
+    },
+    {
+      brand: "Mercedes-Benz",
+      brandId: "mercedes-benz",
+      model: "E",
+      modelId: "e",
+      generation: "W214",
+      generationId: "w214",
+      engine: "E 220 d",
+      engineId: "e-220-d",
+      fuelType: "Diesel",
+      ecu: ["Bosch MD1"],
+      stage1: { stockHp: 197, stockNm: 440, tunedHp: 227, tunedNm: 506, gainHp: 30, gainNm: 66 },
+    },
+  ]);
+
+  assert.deepEqual(listBrandsFromRows(rows), [{ id: "mercedes-benz", name: "Mercedes-Benz" }]);
+  assert.deepEqual(listModelsFromRows(rows, "mercedes-benz"), [{ id: "e", name: "E" }]);
+  assert.deepEqual(listGenerationsFromRows(rows, "mercedes-benz", "e"), [{ id: "w214", name: "W214" }]);
+  const serialized = JSON.stringify(rows);
+  assert.equal(serialized.includes("alias"), false);
+  assert.equal(serialized.includes("source-w-214"), false);
+  assert.equal(serialized.includes("external-e-klasse"), false);
+});
+
+test("import dry-run summary exposes source to canonical alias mapping", () => {
+  const row: RawVehicleRow = {
+    brand: "Mercedes",
+    brandId: "source-mercedes",
+    model: "E-Class",
+    modelId: "source-e-class",
+    generation: "E Klasse W 214",
+    generationId: "source-w-214",
+    engine: "E 300 d",
+    engineId: "e-300-d",
+    fuelType: "Diesel",
+    ecu: ["Bosch MD1"],
+    stage1: { stockHp: 197, stockNm: 440, tunedHp: 227, tunedNm: 506, gainHp: 30, gainNm: 66 },
+  };
+  const record = rawVehicleToControlRecord(row);
+  const plan = {
+    rows: [row],
+    records: [record],
+    issues: [],
+    duplicateKeys: new Set<string>(),
+    recordsByKey: new Map([[record.vehicleKey, [record]]]),
+  } as ReturnType<typeof createVehicleImportPlan>;
+  const summary = buildVehicleImportSummary(plan, [], { dryRun: true, dbDiffCalculated: true });
+
+  assert.equal(summary.aliasWarningCount, 1);
+  assert.equal(summary.aliasMappings?.[0]?.source.model, "E-Class");
+  assert.equal(summary.aliasMappings?.[0]?.canonical.brand, "Mercedes-Benz");
+  assert.equal(summary.aliasMappings?.[0]?.canonical.model, "E");
+  assert.equal(summary.aliasMappings?.[0]?.canonical.generation, "W214");
+  assert.deepEqual(summary.aliasMappings?.[0]?.matchedAliases, ["brand", "model", "generation"]);
+  assert.equal(summary.aliasMappings?.[0]?.action, "reuse_canonical");
+});
+
 test("JSON fallback returns safe vehicle rows when database access is unavailable", async () => {
   const previousUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const previousService = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -169,6 +333,37 @@ test("validation catches duplicate vehicle keys and invalid published records", 
   assert.ok(issues.some((issue) => issue.code === "duplicate_vehicle_key"));
   assert.ok(validateVehicleRecord(invalid).some((issue) => issue.code === "missing_brand"));
   assert.ok(validateVehicleRecord(invalid).some((issue) => issue.code === "invalid_power_value"));
+});
+
+test("validation warns about alias duplicate candidates and canonical key collisions", () => {
+  const eShort = rawVehicleToControlRecord({
+    brand: "Mercedes-Benz",
+    model: "E",
+    generation: "W214",
+    engine: "E 300 d",
+    ecu: ["Bosch MD1"],
+    stage1: { stockHp: 197, stockNm: 440, tunedHp: 227, tunedNm: 506, gainHp: 30, gainNm: 66 },
+  });
+  const eClass = {
+    ...rawVehicleToControlRecord({
+      brand: "Mercedes",
+      model: "E-Class",
+      generation: "E Klasse W 214",
+      engine: "E 220 d",
+      ecu: ["Bosch MD1"],
+      stage1: { stockHp: 197, stockNm: 440, tunedHp: 227, tunedNm: 506, gainHp: 30, gainNm: 66 },
+    }),
+    brand: "Mercedes",
+    model: "E-Class",
+    generation: "E Klasse W 214",
+    vehicleKey: "legacy-source-key",
+  };
+  const issues = validateVehicleCollection([eShort, eClass]);
+
+  assert.ok(issues.some((issue) => issue.code === "brand_alias_duplicate_candidate"));
+  assert.ok(issues.some((issue) => issue.code === "model_alias_duplicate_candidate"));
+  assert.ok(issues.some((issue) => issue.code === "generation_alias_duplicate_candidate"));
+  assert.ok(issues.some((issue) => issue.code === "vehicle_key_alias_resolution" && issue.metadata?.canonicalKey));
 });
 
 test("vehicle import dry-run is non-destructive and reports source health", () => {
@@ -279,6 +474,24 @@ test("vehicle control migration is additive, indexed, RLS protected and non-dest
   assert.match(sql, /unique \(vehicle_key\)/i);
   assert.match(sql, /vehicle_engines_published_idx/i);
   assert.doesNotMatch(sql, /\bdrop\s+table\b|\btruncate\b|\bdelete\s+from\b/i);
+});
+
+test("vehicle normalization alias migration is additive and admin protected", () => {
+  const sql = readFileSync(resolve(process.cwd(), "scripts", "add-vehicle-normalization-aliases.sql"), "utf8");
+  for (const table of [
+    "vehicle_brand_aliases",
+    "vehicle_model_aliases",
+    "vehicle_generation_aliases",
+    "vehicle_engine_aliases",
+    "vehicle_alias_review_events",
+  ]) {
+    assert.match(sql, new RegExp(`create table if not exists public\\.${table}`, "i"));
+    assert.match(sql, new RegExp(`alter table public\\.${table} enable row level security`, "i"));
+  }
+  assert.match(sql, /vehicles\.manage/i);
+  assert.match(sql, /normalized_alias/i);
+  assert.match(sql, /vehicle_alias_review_events/i);
+  assert.doesNotMatch(sql, /\bdrop\s+table\b|\bdrop\s+column\b|\btruncate\b|\bdelete\s+from\b/i);
 });
 
 test("admin update path writes audit log entries", () => {
