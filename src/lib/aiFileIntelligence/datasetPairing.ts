@@ -11,7 +11,9 @@ import {
 } from "@/lib/aiFileIntelligence/datasetImport";
 import { scoreDatasetPairCandidate } from "@/lib/aiFileIntelligence/datasetValidation";
 
-const supportedExtensions = new Set(["bin", "ori", "mod", "hex", "frf", "sgo"]);
+export const supportedDatasetExtensions = new Set(["bin", "ori", "mod", "hex", "frf", "sgo", "zip", "rar", "7z", "a2l", "xdf", "csv", "json"]);
+export const archiveDatasetExtensions = new Set(["zip", "rar", "7z"]);
+const pairableDatasetExtensions = new Set(["bin", "ori", "mod", "hex", "frf", "sgo"]);
 
 function normalizeText(value: string | null | undefined) {
   return (value || "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
@@ -63,15 +65,27 @@ export function createDatasetFileCandidate(input: {
 }): DatasetFileCandidate {
   const filename = input.descriptor.filename.trim();
   const ext = extension(filename);
-  const role = guessFileRole(filename);
+  const metadata = input.descriptor.providerMetadata || {};
+  const metadataRole = metadata.guessed_file_role === "ori" || metadata.guessed_file_role === "mod" || metadata.guessed_file_role === "unknown"
+    ? metadata.guessed_file_role
+    : null;
+  const role = metadataRole || guessFileRole(`${input.descriptor.folder || ""} ${filename}`);
   const fileSize = Math.max(0, Math.floor(Number(input.descriptor.fileSize || 0)));
   const fingerprint = input.descriptor.fingerprint?.trim() ||
     stableDatasetId("fp", `${filename}:${fileSize}:${input.descriptor.folder || ""}`);
   const warnings: string[] = [];
   const errors: string[] = [];
   if (!filename) errors.push("Filename is required.");
-  if (!supportedExtensions.has(ext)) warnings.push("File extension is not a common ECU/TCU binary container.");
+  if (!supportedDatasetExtensions.has(ext)) warnings.push("File extension is not a supported ECU/TCU metadata or binary container.");
+  if (archiveDatasetExtensions.has(ext)) warnings.push("Archive candidate recorded as metadata only; archive contents are not extracted.");
   if (fileSize <= 0) warnings.push("File size is missing; pairing confidence will be limited.");
+  const metadataLabels = Array.isArray(metadata.guessed_service_labels)
+    ? metadata.guessed_service_labels.filter((label): label is DatasetServiceLabel => typeof label === "string")
+    : [];
+  const serviceLabels = [...new Set<DatasetServiceLabel>([
+    ...suggestServiceLabelsFromText(`${input.descriptor.folder || ""} ${filename}`),
+    ...metadataLabels,
+  ])];
 
   return {
     id: stableDatasetId("file", `${input.batchId}:${input.index}:${filename}:${fingerprint}`),
@@ -82,13 +96,13 @@ export function createDatasetFileCandidate(input: {
     file_extension: ext,
     file_size: fileSize,
     fingerprint,
-    ecu_family_guess: typeof input.descriptor.providerMetadata?.ecu_family === "string" ? input.descriptor.providerMetadata.ecu_family : null,
-    ecu_type_guess: typeof input.descriptor.providerMetadata?.ecu_type === "string" ? input.descriptor.providerMetadata.ecu_type : null,
-    sw_number_guess: typeof input.descriptor.providerMetadata?.sw_number === "string" ? input.descriptor.providerMetadata.sw_number : null,
-    hw_number_guess: typeof input.descriptor.providerMetadata?.hw_number === "string" ? input.descriptor.providerMetadata.hw_number : null,
-    vehicle_guess: typeof input.descriptor.providerMetadata?.vehicle === "object" && input.descriptor.providerMetadata.vehicle !== null ? input.descriptor.providerMetadata.vehicle as Record<string, unknown> : {},
-    service_label_guess: suggestServiceLabelsFromText(`${input.descriptor.folder || ""} ${filename}`),
-    provider_metadata: input.descriptor.providerMetadata || {},
+    ecu_family_guess: typeof metadata.ecu_family === "string" ? metadata.ecu_family : typeof metadata.guessed_ecu_family === "string" ? metadata.guessed_ecu_family : null,
+    ecu_type_guess: typeof metadata.ecu_type === "string" ? metadata.ecu_type : typeof metadata.guessed_ecu_type === "string" ? metadata.guessed_ecu_type : null,
+    sw_number_guess: typeof metadata.sw_number === "string" ? metadata.sw_number : typeof metadata.guessed_sw_number === "string" ? metadata.guessed_sw_number : null,
+    hw_number_guess: typeof metadata.hw_number === "string" ? metadata.hw_number : typeof metadata.guessed_hw_number === "string" ? metadata.guessed_hw_number : null,
+    vehicle_guess: typeof metadata.vehicle === "object" && metadata.vehicle !== null ? metadata.vehicle as Record<string, unknown> : {},
+    service_label_guess: serviceLabels,
+    provider_metadata: metadata,
     privacy_status: "safe",
     validation_status: errors.length ? "invalid" : warnings.length ? "warning" : "valid",
     warnings,
@@ -134,12 +148,28 @@ function pairConfidence(ori: DatasetFileCandidate, mod: DatasetFileCandidate) {
     score += 5;
     reasons.push("MOD filename/provider metadata suggests service labels.");
   }
+  if (ori.fingerprint && mod.fingerprint && ori.fingerprint !== mod.fingerprint) {
+    score += 5;
+    reasons.push("ORI and MOD fingerprints differ, so this is not an identical duplicate.");
+  }
+  if (ori.file_extension && ori.file_extension === mod.file_extension) {
+    score += 3;
+    reasons.push("File extensions are compatible.");
+  } else if (ori.file_extension && mod.file_extension && pairableDatasetExtensions.has(ori.file_extension) && pairableDatasetExtensions.has(mod.file_extension)) {
+    score += 2;
+    reasons.push("File extensions are different but both are ECU/TCU binary containers.");
+  }
   return { score: Math.min(100, score), reasons };
 }
 
 export function suggestOriModPairs(files: DatasetFileCandidate[], batchId: string): DatasetPairCandidate[] {
-  const oris = files.filter((file) => file.file_role_guess === "ori");
-  const mods = files.filter((file) => file.file_role_guess === "mod");
+  const pairableFiles = files.filter((file) =>
+    file.validation_status !== "invalid" &&
+    file.validation_status !== "duplicate" &&
+    pairableDatasetExtensions.has(file.file_extension)
+  );
+  const oris = pairableFiles.filter((file) => file.file_role_guess === "ori");
+  const mods = pairableFiles.filter((file) => file.file_role_guess === "mod");
   const pairs: DatasetPairCandidate[] = [];
   for (const ori of oris) {
     for (const mod of mods) {

@@ -297,11 +297,14 @@ export default function AiTrainingPage() {
               <Link href="/admin/ai-training/synthetic-lab" className="inline-flex h-11 items-center justify-center rounded-lg border border-emerald-700/40 bg-emerald-950/20 px-4 text-sm font-black text-emerald-100 hover:bg-emerald-900/25">
                 <Sparkles className="mr-2 h-4 w-4" /> Synthetic lab
               </Link>
-              <Link href="/admin/ai-training/datasets" className="inline-flex h-11 items-center justify-center rounded-lg border border-white/10 bg-white/[0.03] px-4 text-sm font-black text-zinc-200 hover:bg-white/[0.06]">
-                <Database className="mr-2 h-4 w-4" /> Dataset importer
-              </Link>
+                <Link href="/admin/ai-training/datasets" className="inline-flex h-11 items-center justify-center rounded-lg border border-white/10 bg-white/[0.03] px-4 text-sm font-black text-zinc-200 hover:bg-white/[0.06]">
+                  <Database className="mr-2 h-4 w-4" /> Dataset importer
+                </Link>
+                <Link href="/admin/ai-training/calibration-assistant" className="inline-flex h-11 items-center justify-center rounded-lg border border-white/10 bg-white/[0.03] px-4 text-sm font-black text-zinc-200 hover:bg-white/[0.06]">
+                  <Gauge className="mr-2 h-4 w-4" /> Calibration assistant
+                </Link>
+              </div>
             </div>
-          </div>
           <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
             <Metric icon={<Layers3 />} label="Pattern clusters" value={data.stats.patternClusters} />
             <Metric icon={<CheckCircle2 />} label="Strong clusters" value={data.stats.strongClusters} tone="green" />

@@ -7,6 +7,7 @@ export const datasetReviewStatuses = [
   "auto_pair_suggested",
   "needs_manual_pairing",
   "ready_for_human_label",
+  "approved",
   "approved_for_learning",
   "rejected",
   "excluded",

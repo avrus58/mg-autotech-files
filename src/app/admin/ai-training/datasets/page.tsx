@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useMemo, useState } from "react";
-import { ArrowLeft, DatabaseZap, Loader2, PlayCircle, ShieldAlert } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { ArrowLeft, DatabaseZap, FileUp, Loader2, PlayCircle, RefreshCw, ShieldAlert } from "lucide-react";
 import { authenticatedFetch } from "@/lib/authGuards";
 
 type DryRunPair = {
@@ -30,6 +30,37 @@ type DryRunResult = {
   warnings: string[];
   errors: string[];
   persisted: boolean;
+  scanner_summary?: {
+    total_files: number;
+    total_size_gb: number;
+    supported_files: number;
+    unsupported_files: number;
+    duplicate_files: number;
+    archive_candidates: number;
+  };
+  rejected_lines?: Array<{ line: number; error: string }>;
+};
+
+type DatasetBatch = {
+  id: string;
+  source_name: string | null;
+  source_type: string;
+  status: string;
+  total_files: number;
+  candidate_pairs: number;
+  duplicates: number;
+  needs_review: number;
+  created_at: string;
+  scanner_summary?: DryRunResult["scanner_summary"] & {
+    total_size_bytes?: number;
+    guessed_ori?: number;
+    guessed_mod?: number;
+    unknown_role?: number;
+    warnings?: number;
+    errors?: number;
+    service_label_distribution?: Record<string, number>;
+  } | null;
+  review_counts?: Record<string, number>;
 };
 
 const exampleFiles = [
@@ -42,9 +73,29 @@ const exampleFiles = [
 
 export default function DatasetWorkbenchPage() {
   const [payload, setPayload] = useState(JSON.stringify({ sourceType: "manual_upload", sourceName: "Local metadata dry-run", files: exampleFiles }, null, 2));
+  const [scannerPayload, setScannerPayload] = useState("");
   const [result, setResult] = useState<DryRunResult | null>(null);
+  const [importResult, setImportResult] = useState<{
+    batch_id: string;
+    created: { file_candidates: number; pair_candidates: number; training_samples: number; approved_learning_samples: number };
+    scanner_summary: NonNullable<DryRunResult["scanner_summary"]>;
+    message: string;
+  } | null>(null);
+  const [batches, setBatches] = useState<DatasetBatch[]>([]);
   const [loading, setLoading] = useState(false);
+  const [importing, setImporting] = useState(false);
   const [message, setMessage] = useState("");
+
+  const loadBatches = useCallback(async () => {
+    const response = await authenticatedFetch("/api/admin/ai/datasets");
+    const data = await response.json();
+    if (response.ok) setBatches(Array.isArray(data.batches) ? data.batches : []);
+  }, []);
+
+  useEffect(() => {
+    const handle = window.setTimeout(() => void loadBatches(), 0);
+    return () => window.clearTimeout(handle);
+  }, [loadBatches]);
 
   const runDryRun = useCallback(async () => {
     setLoading(true);
@@ -68,6 +119,37 @@ export default function DatasetWorkbenchPage() {
       setLoading(false);
     }
   }, [payload]);
+
+  const importScannerMetadata = useCallback(async () => {
+    setImporting(true);
+    setMessage("");
+    setImportResult(null);
+    try {
+      const response = await authenticatedFetch("/api/admin/ai/datasets/import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          jsonl: scannerPayload,
+          sourceType: "local_dev_archive",
+          sourceName: "Local scanner JSONL metadata",
+          sourceReference: "local-scanner-jsonl",
+          persist: true,
+        }),
+      });
+      const data = await response.json();
+      if (response.status === 401) {
+        window.location.href = "/login?redirect=/admin/ai-training/datasets";
+        return;
+      }
+      if (!response.ok) throw new Error(data.error || "Scanner metadata import failed.");
+      setImportResult(data);
+      await loadBatches();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Scanner metadata import failed.");
+    } finally {
+      setImporting(false);
+    }
+  }, [loadBatches, scannerPayload]);
 
   const summary = useMemo(() => result?.batch ?? null, [result]);
 
@@ -138,6 +220,82 @@ export default function DatasetWorkbenchPage() {
               {(result?.warnings ?? []).slice(0, 20).map((warning) => <li key={warning}>- {warning}</li>)}
               {result && !result.warnings.length && <li>No warnings.</li>}
             </ul>
+          </div>
+        </section>
+      </div>
+
+      <div className="mx-auto grid max-w-[1500px] gap-5 px-4 pb-10 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+        <section className="rounded-lg border border-white/10 bg-white/[0.025] p-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <div className="text-xs font-black uppercase tracking-[0.16em] text-red-500">Scanner metadata import</div>
+              <h2 className="mt-1 text-lg font-black">JSONL review-batch intake</h2>
+            </div>
+            <button onClick={() => void importScannerMetadata()} disabled={importing || scannerPayload.trim().length === 0} className="inline-flex h-10 items-center rounded-lg bg-[#b1121b] px-4 text-sm font-black hover:bg-[#c91824] disabled:opacity-50">
+              {importing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileUp className="mr-2 h-4 w-4" />}
+              Import metadata
+            </button>
+          </div>
+          <p className="mt-3 text-sm leading-6 text-zinc-400">
+            Paste output from <code className="rounded bg-black/40 px-1">scripts/scan-ai-dataset.mjs</code>. Only metadata is stored in Supabase. Raw files stay local/offline.
+          </p>
+          <input
+            type="file"
+            accept=".jsonl,.txt,application/jsonl,text/plain"
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              if (file) void file.text().then(setScannerPayload);
+            }}
+            className="mt-4 block w-full rounded-lg border border-white/10 bg-black/50 p-3 text-sm text-zinc-300"
+          />
+          <textarea value={scannerPayload} onChange={(event) => setScannerPayload(event.target.value)} placeholder='{"relative_path":"BMW/ORI.bin","filename":"ORI.bin","file_size":2048,"sha256":"..."}' className="mt-3 h-[320px] w-full rounded-lg border border-white/10 bg-black/50 p-4 font-mono text-xs leading-5 text-zinc-200 outline-none focus:border-red-700" />
+          {importResult && (
+            <div className="mt-4 rounded-lg border border-emerald-800/30 bg-emerald-950/15 p-4 text-sm text-emerald-100">
+              <div className="font-black">Batch created: {importResult.batch_id}</div>
+              <div className="mt-2 grid gap-2 sm:grid-cols-4">
+                <Metric label="Files" value={importResult.created.file_candidates} />
+                <Metric label="Pairs" value={importResult.created.pair_candidates} />
+                <Metric label="Training samples" value={importResult.created.training_samples} tone="amber" />
+                <Metric label="Approved" value={importResult.created.approved_learning_samples} tone="amber" />
+              </div>
+              <p className="mt-3 text-emerald-100/80">{importResult.message}</p>
+            </div>
+          )}
+        </section>
+
+        <section className="rounded-lg border border-white/10 bg-white/[0.025] p-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-lg font-black">Recent metadata batches</h2>
+            <button onClick={() => void loadBatches()} className="inline-flex h-9 items-center rounded-lg border border-white/10 px-3 text-xs font-black text-zinc-300 hover:border-red-700/50 hover:text-white">
+              <RefreshCw className="mr-2 h-3.5 w-3.5" /> Refresh
+            </button>
+          </div>
+          <div className="mt-4 space-y-3">
+            {batches.map((batch) => (
+              <Link key={batch.id} href={`/admin/ai-training/datasets/${batch.id}`} className="block rounded-lg border border-white/10 bg-black/30 p-3 hover:border-red-700/50">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="font-black">{batch.source_name || batch.source_type}</div>
+                  <Badge value={batch.status} />
+                </div>
+                <div className="mt-2 grid gap-2 text-xs text-zinc-400 sm:grid-cols-4">
+                  <span>{batch.total_files} files</span>
+                  <span>{batch.scanner_summary?.total_size_gb ?? 0} GB</span>
+                  <span>{batch.candidate_pairs} pairs</span>
+                  <span>{batch.duplicates} duplicates</span>
+                  <span>{batch.needs_review} review</span>
+                  <span>{batch.scanner_summary?.supported_files ?? 0} supported</span>
+                  <span>{batch.scanner_summary?.unsupported_files ?? 0} unsupported</span>
+                  <span>{batch.scanner_summary?.archive_candidates ?? 0} archives</span>
+                  <span>{batch.scanner_summary?.service_label_distribution?.stage1 ?? 0} Stage 1 hints</span>
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <Badge value={`approved ${batch.review_counts?.approved ?? 0}`} tone="green" />
+                  <Badge value={`rejected ${batch.review_counts?.rejected ?? 0}`} />
+                  <Badge value={`excluded ${batch.review_counts?.excluded ?? 0}`} />
+                </div>
+              </Link>
+            ))}
+            {!batches.length && <div className="text-sm text-zinc-500">No persisted metadata batches yet.</div>}
           </div>
         </section>
       </div>
