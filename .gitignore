@@ -51,3 +51,5 @@ next-env.d.ts
 /apps/customer-uploader/dist/
 /apps/customer-uploader/dist-electron/
 /apps/customer-uploader/release/
+
+.autopilot/runtime/
