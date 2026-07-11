@@ -23,6 +23,8 @@
 # misc
 .DS_Store
 *.pem
+*.pfx
+*.p12
 
 # debug
 npm-debug.log*
@@ -42,3 +44,9 @@ next-env.d.ts
 
 .vercel
 .env*
+
+# desktop app local dependencies and build outputs
+/apps/customer-uploader/node_modules/
+/apps/customer-uploader/dist/
+/apps/customer-uploader/dist-electron/
+/apps/customer-uploader/release/

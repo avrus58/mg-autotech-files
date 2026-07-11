@@ -1,0 +1,70 @@
+{
+  "name": "mg-autotech-customer-uploader",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Secure file upload client for MG AutoTech customers.",
+  "author": "MG AutoTech",
+  "homepage": "https://file.mgautotech.de",
+  "main": "dist-electron/main.js",
+  "type": "commonjs",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "tsc -p tsconfig.json && vite build && tsc -p tsconfig.electron.json",
+    "package:win": "npm run build && node scripts/package-win.mjs"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.110.0",
+    "electron-updater": "^6.8.9",
+    "lucide-react": "^1.16.0",
+    "react": "19.2.4",
+    "react-dom": "19.2.4"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^5.0.0",
+    "electron": "^39.0.0",
+    "electron-builder": "^26.0.0",
+    "typescript": "^5.0.0",
+    "vite": "^7.0.0"
+  },
+  "build": {
+    "appId": "de.mgautotech.fileuploadassistant",
+    "productName": "MG AutoTech File Upload Assistant",
+    "copyright": "Copyright (c) 2026 MG AutoTech",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**",
+      "dist-electron/**",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "artifactName": "${productName} ${version}-nsis.${ext}",
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "perMachine": false,
+      "shortcutName": "MG AutoTech File Upload Assistant",
+      "uninstallDisplayName": "MG AutoTech File Upload Assistant",
+      "deleteAppDataOnUninstall": false
+    },
+    "portable": {
+      "artifactName": "${productName} ${version}-portable.${ext}"
+    }
+  }
+}
