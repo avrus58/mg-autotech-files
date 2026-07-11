@@ -1,6 +1,6 @@
 import type { VehicleControlRecord, VehicleServiceKey } from "@/lib/vehicleControl/types";
 
-export type VehicleEnrichmentSourceType = "manual" | "auto_data_reference" | "json" | "csv" | "other";
+export type VehicleEnrichmentSourceType = "manual" | "auto_data_reference" | "json" | "csv" | "url" | "other";
 
 export type VehicleEnrichmentReviewStatus =
   | "needs_review"

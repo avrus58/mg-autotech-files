@@ -497,6 +497,23 @@ const enrichmentExample = JSON.stringify([
   }
 ], null, 2);
 
+type UrlSourceType = "auto" | "html" | "json" | "csv" | "text";
+type EnrichmentInputMode = "paste" | "url";
+
+type UrlFetchPreview = {
+  title: string | null;
+  sourceUrl: string;
+  finalUrl: string;
+  contentType: string | null;
+  fetchedBytes: number;
+  detectedRows: number;
+  detectedItems: number;
+  extractedCandidateCount: number;
+  confidence: number;
+  warnings: string[];
+  errors: string[];
+};
+
 function EnrichmentSection({
   mode,
   authFetch,
@@ -508,16 +525,48 @@ function EnrichmentSection({
 }) {
   const [sourceUrl, setSourceUrl] = useState("");
   const [sourceName, setSourceName] = useState("Manual reference");
+  const [inputMode, setInputMode] = useState<EnrichmentInputMode>("paste");
+  const [sourceType, setSourceType] = useState<UrlSourceType>("auto");
   const [yearCutoff, setYearCutoff] = useState("2020");
   const [modernOnly, setModernOnly] = useState(true);
   const [text, setText] = useState(enrichmentExample);
   const [plan, setPlan] = useState<VehicleEnrichmentPlan | null>(null);
+  const [urlPreview, setUrlPreview] = useState<UrlFetchPreview | null>(null);
   const [busy, setBusy] = useState("");
   const [draftConfirm, setDraftConfirm] = useState("");
   const [coverageFilter, setCoverageFilter] = useState("all");
 
   function parseEntries(): ExternalVehicleEntry[] {
     return parseVehicleEnrichmentEntries(text);
+  }
+
+  async function fetchUrl() {
+    setBusy("fetch-url");
+    setMessage("");
+    setUrlPreview(null);
+    try {
+      const response = await authFetch("/api/admin/vehicles/enrichment/fetch-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sourceName,
+          sourceUrl,
+          sourceType,
+          modernOnly,
+          modernYearCutoff: Number(yearCutoff) || 2020,
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "URL vehicle extraction failed.");
+      setText(JSON.stringify(data.entries ?? [], null, 2));
+      setPlan(data.plan);
+      setUrlPreview(data.fetch);
+      setMessage("URL fetch extraction completed. Review candidates before creating drafts; no data was changed.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "URL vehicle extraction failed.");
+    } finally {
+      setBusy("");
+    }
   }
 
   async function runCompare() {
@@ -529,7 +578,7 @@ function EnrichmentSection({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          sourceType: "auto_data_reference",
+          sourceType: inputMode === "url" ? "url" : "auto_data_reference",
           sourceName,
           sourceUrl: sourceUrl || null,
           entries,
@@ -561,7 +610,7 @@ function EnrichmentSection({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          sourceType: "auto_data_reference",
+          sourceType: inputMode === "url" ? "url" : "auto_data_reference",
           sourceName,
           sourceUrl: sourceUrl || null,
           entries,
@@ -596,12 +645,44 @@ function EnrichmentSection({
       </p>
       <div className="mt-5 space-y-3">
         <DraftField label="Source name" value={sourceName} onChange={setSourceName} />
+        <label className="block text-xs font-black uppercase tracking-[0.14em] text-zinc-500">Source mode
+          <select value={inputMode} onChange={(event) => setInputMode(event.target.value as EnrichmentInputMode)} className="mt-2 h-12 w-full rounded-xl border border-white/10 bg-black/40 px-4 text-sm font-bold normal-case text-white outline-none focus:border-emerald-700">
+            <option value="paste">Paste JSON/CSV</option>
+            <option value="url">Fetch from URL</option>
+          </select>
+        </label>
         <DraftField label="Source URL / reference (admin-only)" value={sourceUrl} onChange={setSourceUrl} />
+        {inputMode === "url" && <>
+          <label className="block text-xs font-black uppercase tracking-[0.14em] text-zinc-500">URL source type
+            <select value={sourceType} onChange={(event) => setSourceType(event.target.value as UrlSourceType)} className="mt-2 h-12 w-full rounded-xl border border-white/10 bg-black/40 px-4 text-sm font-bold normal-case text-white outline-none focus:border-emerald-700">
+              <option value="auto">Auto-detect</option>
+              <option value="html">Generic HTML table/list</option>
+              <option value="json">JSON endpoint</option>
+              <option value="csv">CSV endpoint</option>
+              <option value="text">Plain text</option>
+            </select>
+          </label>
+        </>}
         <DraftField label="Modern year cutoff" value={yearCutoff} onChange={setYearCutoff} type="number" />
         <label className="flex items-center gap-3 rounded-xl border border-white/10 bg-black/40 p-3 text-sm font-bold text-zinc-200">
           <input type="checkbox" checked={modernOnly} onChange={(event) => setModernOnly(event.target.checked)} />
           Modern/current only by default
         </label>
+        {inputMode === "url" && <>
+          <div className="rounded-xl border border-amber-800/30 bg-amber-950/10 p-3 text-xs leading-5 text-amber-100">
+            Only import data you are allowed to use. URL import performs a one-page extraction for admin review and does not auto-publish.
+          </div>
+          <button onClick={() => void fetchUrl()} disabled={Boolean(busy) || !sourceUrl.trim()} className="w-full rounded-xl border border-sky-700/50 bg-sky-950/30 px-5 py-3 text-sm font-black text-sky-100 hover:bg-sky-900/40 disabled:opacity-50">
+            {busy === "fetch-url" ? <Loader2 className="mr-2 inline h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 inline h-4 w-4" />}Fetch URL + Extract Vehicles
+          </button>
+          {urlPreview && <div className="rounded-xl border border-sky-800/30 bg-sky-950/10 p-3 text-xs leading-5 text-sky-100">
+            <div className="font-black text-white">Fetched: {urlPreview.title || "Untitled source"}</div>
+            <div>Rows/items detected: {urlPreview.detectedRows + urlPreview.detectedItems}. Candidates: {urlPreview.extractedCandidateCount}. Confidence: {urlPreview.confidence}%.</div>
+            <div className="text-sky-200/80">Content: {urlPreview.contentType || "unknown"} - {Math.round(urlPreview.fetchedBytes / 1024)} KB</div>
+            {urlPreview.warnings.map((warning) => <div key={warning} className="text-amber-200">Warning: {warning}</div>)}
+            {urlPreview.errors.map((error) => <div key={error} className="text-red-200">Error: {error}</div>)}
+          </div>}
+        </>}
         <label className="block text-xs font-black uppercase tracking-[0.14em] text-zinc-500">Structured paste JSON or CSV
           <textarea value={text} onChange={(event) => setText(event.target.value)} className="mt-2 min-h-72 w-full rounded-xl border border-white/10 bg-black/50 p-4 font-mono text-xs normal-case leading-5 text-zinc-200 outline-none focus:border-emerald-700" />
         </label>

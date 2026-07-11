@@ -68,11 +68,37 @@ If the owner profile has a missing staff role, `/admin/vehicles` still works thr
 - `/admin/vehicles/generations`
 - `/admin/vehicles/engines`
 - `/admin/vehicles/import`
+- `/admin/vehicles/enrichment`
+- `/admin/vehicles/coverage`
 - `/admin/vehicles/validation`
 - `/admin/vehicles/audit`
 - `/admin/vehicles/[id]`
 
 Admin users with `vehicles.manage` can import, create draft records, edit records, publish/unpublish, archive with `active=false`, view validation warnings and review audit history.
+
+## URL-Based Enrichment Import
+
+The Vehicle Enrichment Center supports a controlled one-page URL import for admin review.
+
+Admin can paste a source URL, choose a source type, click `Fetch URL + Extract Vehicles`, review extracted candidates, and then run the normal dry-run normalize/compare workflow.
+
+Safety rules:
+
+- exact URL only
+- no broad crawling
+- no anti-bot bypass
+- localhost/private IP/file URLs blocked
+- response timeout and size limit enforced
+- no auto-publish
+- no overwrite of verified records
+- source URLs and extraction metadata stay admin-only
+- customers see only published customer-safe vehicle records
+
+Operational details are documented in:
+
+```text
+docs/vehicle-url-enrichment-import.md
+```
 
 ## Import Flow
 

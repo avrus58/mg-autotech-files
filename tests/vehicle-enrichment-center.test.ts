@@ -8,6 +8,7 @@ import { normalizeEngineCandidate, parseDisplacementCcFromText, parseEngineCode,
 import { normalizeGenerationGroups } from "../src/lib/vehicleEnrichment/normalizeGeneration";
 import { parseVehicleEnrichmentEntries } from "../src/lib/vehicleEnrichment/parseInput";
 import { createStage1DraftEstimate } from "../src/lib/vehicleEnrichment/stageEstimate";
+import { extractVehicleEntriesFromSource, fetchAndExtractVehicleUrl, validateVehicleSourceUrl } from "../src/lib/vehicleEnrichment/urlImport";
 import type { ExternalVehicleEntry } from "../src/lib/vehicleEnrichment/types";
 import type { VehicleControlRecord } from "../src/lib/vehicleControl/types";
 
@@ -185,6 +186,121 @@ test("vehicle enrichment accepts structured CSV paste without crawling external 
   assert.equal(entries[0].engineCodeText, "M254.920");
 });
 
+test("vehicle URL enrichment blocks unsafe SSRF targets before fetching", () => {
+  for (const url of [
+    "file:///etc/passwd",
+    "http://localhost/vehicles",
+    "http://127.0.0.1/vehicles",
+    "http://10.0.0.1/vehicles",
+    "http://172.16.1.4/vehicles",
+    "http://192.168.1.2/vehicles",
+    "http://169.254.169.254/latest/meta-data",
+    "http://[::1]/vehicles",
+    "http://[fe80::1]/vehicles",
+    "ftp://example.com/vehicles.csv",
+  ]) {
+    assert.equal(validateVehicleSourceUrl(url).ok, false, url);
+  }
+  assert.equal(validateVehicleSourceUrl("https://example.com/vehicles").ok, true);
+});
+
+test("vehicle URL enrichment rejects redirects and requires the final exact URL", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = (async () => new Response("", {
+    status: 302,
+    headers: { location: "https://example.com/final" },
+  })) as typeof fetch;
+  try {
+    await assert.rejects(
+      () => fetchAndExtractVehicleUrl({ sourceUrl: "http://93.184.216.34/redirect", sourceType: "html" }),
+      /final public URL directly/i,
+    );
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("vehicle URL enrichment parses simple HTML tables", () => {
+  const extraction = extractVehicleEntriesFromSource({
+    sourceUrl: "https://example.com/w214",
+    sourceType: "html",
+    contentType: "text/html",
+    text: `
+      <html><head><title>Mercedes W214 engines</title></head><body>
+      <table>
+        <tr><th>Brand</th><th>Model</th><th>Generation</th><th>Body</th><th>Years</th><th>Engine</th><th>Power</th><th>Torque</th><th>Displacement</th><th>Fuel</th></tr>
+        <tr><td>Mercedes-Benz</td><td>E-Class</td><td>W 214</td><td>Sedan</td><td>2023-present</td><td>E 300 d</td><td>Power: 197 HP</td><td>Torque: 440 Nm</td><td>1993 cm3</td><td>Diesel</td></tr>
+      </table></body></html>
+    `,
+  });
+  assert.equal(extraction.title, "Mercedes W214 engines");
+  assert.equal(extraction.detectedRows, 1);
+  assert.equal(extraction.candidates.length, 1);
+  assert.equal(extraction.candidates[0].brand, "Mercedes-Benz");
+  assert.equal(extraction.candidates[0].model, "E-Class");
+  assert.equal(extraction.candidates[0].rawGeneration, "W 214");
+  assert.equal(extraction.confidence >= 70, true);
+});
+
+test("vehicle URL enrichment parses JSON lists and normalizes aliases through the existing plan", () => {
+  const extraction = extractVehicleEntriesFromSource({
+    sourceUrl: "https://example.com/vehicles.json",
+    sourceType: "json",
+    contentType: "application/json",
+    text: JSON.stringify([
+      {
+        brand: "VW",
+        model: "Tiguan",
+        generation: "New generation",
+        years: "2024-present",
+        engine: "2.0 TSI",
+        power: "Power: 265 HP",
+        torque: "Torque: 400 Nm",
+      },
+      {
+        brand: "Mercedes-Benz",
+        model: "E-Class",
+        generation: "E-Class W 214",
+        years: "2023-present",
+        engine: "E 300 d",
+        power: "Power: 197 HP",
+        torque: "Torque: 440 Nm",
+      },
+    ]),
+  });
+  assert.equal(extraction.candidates.length, 2);
+  const plan = buildVehicleEnrichmentPlan({ sourceType: "url", sourceUrl: "https://example.com/vehicles.json", entries: extraction.candidates });
+  assert.equal(plan.coverage.sourceMappings.some((item) => item.source.brand === "VW" && item.canonical.brand === "Volkswagen"), true);
+  assert.equal(plan.coverage.sourceMappings.some((item) => item.source.model === "E-Class" && item.canonical.model === "E"), true);
+  assert.equal(plan.generationGroups.some((group) => group.model === "E" && group.customerDisplayLabel.includes("W214")), true);
+});
+
+test("vehicle URL enrichment parses CSV endpoints", () => {
+  const extraction = extractVehicleEntriesFromSource({
+    sourceUrl: "https://example.com/vehicles.csv",
+    sourceType: "csv",
+    contentType: "text/csv",
+    text: [
+      "brand,model,generation,years,engine,power,torque,displacement,fuel",
+      "Audi,A5,B10,2024-present,2.0 TDI,Power: 204 HP,Torque: 400 Nm,1968 cm3,Diesel",
+    ].join("\n"),
+  });
+  assert.equal(extraction.candidates.length, 1);
+  assert.equal(extraction.candidates[0].brand, "Audi");
+  assert.equal(extraction.candidates[0].rawGeneration, "B10");
+});
+
+test("vehicle URL enrichment marks low-confidence extraction for review", () => {
+  const extraction = extractVehicleEntriesFromSource({
+    sourceUrl: "https://example.com/weak",
+    sourceType: "text",
+    contentType: "text/plain",
+    text: "Unstructured modern car page with 197 HP and no usable model table",
+  });
+  assert.equal(extraction.confidence < 50, true);
+  assert.equal(extraction.warnings.some((warning) => /No reliable|missing/i.test(warning)), true);
+});
+
 test("vehicle enrichment creates only unverified low-confidence Stage 1 draft estimates", () => {
   const estimate = createStage1DraftEstimate(197, 440);
   assert.equal(estimate.stage1HpEstimate, 227);
@@ -355,6 +471,30 @@ test("external coverage admin API is protected and dry-run only", async () => {
   assert.doesNotMatch(source, /fetch\(\s*body\.sourceUrl|puppeteer|playwright/i);
 });
 
+test("vehicle URL enrichment API is admin-only, exact-URL and dry-run only", async () => {
+  const { POST } = await import("../src/app/api/admin/vehicles/enrichment/fetch-url/route");
+  const response = await POST(new Request("http://localhost/api/admin/vehicles/enrichment/fetch-url", {
+    method: "POST",
+    body: JSON.stringify({ sourceUrl: "https://example.com/vehicles", sourceType: "auto" }),
+  }));
+  assert.equal(response.status, 401);
+  const source = readFileSync(resolve(process.cwd(), "src", "app", "api", "admin", "vehicles", "enrichment", "fetch-url", "route.ts"), "utf8");
+  assert.match(source, /requireStaffPermission\(request,\s*"vehicles\.manage"\)/);
+  assert.match(source, /dryRun:\s*true/);
+  assert.match(source, /mutation:\s*false/);
+  assert.match(source, /reviewStatus:\s*"needs_review"/);
+  assert.match(source, /normalizedCandidates/);
+  assert.match(source, /comparison/);
+  assert.match(source, /Only import data you are allowed to use/);
+  assert.doesNotMatch(source, /published:\s*true|create_draft|upsert|insert\(/i);
+});
+
+test("vehicle URL enrichment stays out of the public selector surface", () => {
+  const publicRoute = readFileSync(resolve(process.cwd(), "src", "app", "api", "vehicles", "route.ts"), "utf8");
+  assert.doesNotMatch(publicRoute, /vehicleEnrichment|fetch-url|sourceUrl|sourceReference|confidenceScore|validation metadata|import metadata/i);
+  assert.match(publicRoute, /getSafePublishedVehicleCatalog/);
+});
+
 test("vehicle enrichment SQL migration is additive, RLS protected and non-destructive", () => {
   const sql = readFileSync(resolve(process.cwd(), "scripts", "add-vehicle-enrichment-center.sql"), "utf8");
   for (const table of [
@@ -380,13 +520,14 @@ test("vehicle enrichment admin APIs require vehicles.manage and do not broad cra
     "src/app/api/admin/vehicles/enrichment/route.ts",
     "src/app/api/admin/vehicles/enrichment/normalize/route.ts",
     "src/app/api/admin/vehicles/enrichment/compare/route.ts",
+    "src/app/api/admin/vehicles/enrichment/fetch-url/route.ts",
     "src/app/api/admin/vehicles/coverage/route.ts",
     "src/app/api/admin/vehicles/enrichment/create-draft/route.ts",
     "src/app/api/admin/vehicles/enrichment/review/route.ts",
   ]) {
     const source = readFileSync(resolve(process.cwd(), file), "utf8");
     assert.match(source, /requireStaffPermission\(request,\s*"vehicles\.manage"\)/);
-    assert.doesNotMatch(source, /fetch\(\s*body\.sourceUrl|fetch\(\s*sourceUrl|puppeteer|playwright/i);
+    assert.doesNotMatch(source, /puppeteer|playwright/i);
   }
 });
 
@@ -397,6 +538,11 @@ test("vehicle enrichment UI is linked and warns about draft/manual-assisted work
   assert.match(source, /Coverage & Gap Import/);
   assert.match(source, /Manual-assisted enrichment/);
   assert.match(source, /does not crawl/);
+  assert.match(source, /Source mode/);
+  assert.match(source, /Paste JSON\/CSV/);
+  assert.match(source, /Fetch from URL/);
+  assert.match(source, /Fetch URL \+ Extract Vehicles/);
+  assert.match(source, /Only import data you are allowed to use/);
   assert.match(source, /CREATE_DRAFT/);
   assert.match(source, /Stage 1 values are auto-estimated at \+15%/);
 });

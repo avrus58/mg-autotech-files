@@ -9,10 +9,10 @@ import type {
 } from "@/lib/vehicleEnrichment/types";
 import { isCurrentOrModernEntry, parseExternalYearRange } from "@/lib/vehicleEnrichment/scopeRules";
 
-const PLATFORM_CODE_RE = /\b[A-Z]\d{3}\b/g;
+const PLATFORM_CODE_RE = /\b[A-Z]\s?\d{3}\b/g;
 
 export function extractPlatformCodes(text: string | null | undefined) {
-  return [...new Set(((text ?? "").toUpperCase().match(PLATFORM_CODE_RE) ?? []))];
+  return [...new Set(((text ?? "").toUpperCase().match(PLATFORM_CODE_RE) ?? []).map((code) => code.replace(/\s+/g, "")))];
 }
 
 function inferBodyLabel(entry: ExternalVehicleEntry, code: string | null) {
