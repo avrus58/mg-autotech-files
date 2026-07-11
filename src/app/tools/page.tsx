@@ -4,8 +4,11 @@ import Link from "next/link";
 import {
   ArrowRight,
   BarChart3,
+  Cable,
   Calculator,
+  Clipboard,
   CheckCircle2,
+  ClipboardCheck,
   FileDown,
   Gauge,
   LockKeyhole,
@@ -15,6 +18,36 @@ import { ToolsHeader } from "@/components/tools/ToolsHeader";
 import { absoluteUrl, siteName } from "@/lib/seo";
 
 const tools = [
+  {
+    href: "/tools/file-readiness-check",
+    eyebrow: "Request prep",
+    title: "ECU File Readiness Check",
+    description:
+      "Check whether your file-service request is ready before upload, with a preparation score and customer-safe next steps.",
+    features: ["No file upload", "Readiness score", "Practical next actions"],
+    icon: ClipboardCheck,
+    action: "Check readiness",
+  },
+  {
+    href: "/tools/request-brief-builder",
+    eyebrow: "Cleaner intake",
+    title: "ECU Request Brief Builder",
+    description:
+      "Create a structured customer request note with vehicle, service, read method and diagnostic context before upload.",
+    features: ["Copy-ready brief", "Completeness score", "No file upload"],
+    icon: Clipboard,
+    action: "Build a brief",
+  },
+  {
+    href: "/tools/ecu-read-method-advisor",
+    eyebrow: "Read planning",
+    title: "ECU Read Method Advisor",
+    description:
+      "Plan safer ECU or TCU read preparation for OBD, bench, boot or unknown read situations before upload.",
+    features: ["Read checklist", "Preparation score", "No file upload"],
+    icon: Cable,
+    action: "Plan read method",
+  },
   {
     href: "/tools/torque-power-calculator",
     eyebrow: "Instant calculation",

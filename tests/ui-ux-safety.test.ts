@@ -122,6 +122,77 @@ test("How It Works localization is wired for locale routes, homepage and footer"
   assert.match(sitemap, /languageAlternates\("\/how-it-works"\)/);
 });
 
+test("Windows upload assistant public page is beta-gated and exposes no installer", () => {
+  const page = readProjectFile("src", "app", "download", "windows", "page.tsx");
+  const footer = readProjectFile("src", "components", "Footer.tsx");
+
+  assert.match(page, /Windows upload app is being prepared for selected beta customers/i);
+  assert.match(page, /Public download is not enabled yet/i);
+  assert.match(page, /There is no direct installer link/i);
+  assert.match(page, /robots:\s*\{\s*index:\s*false,\s*follow:\s*true\s*\}/);
+  assert.match(page, /Use Web Upload/);
+  assert.match(page, /Request Beta Access/);
+  assert.match(page, /does not modify files/);
+  assert.match(footer, /Windows App Beta/);
+  assert.match(footer, /\/download\/windows/);
+  assert.doesNotMatch(page, /\.exe|\.msi|release\/|win-unpacked|portable|nsis/i);
+});
+
+test("ECU file readiness checker is public, useful and does not upload files", () => {
+  const page = readProjectFile("src", "app", "tools", "file-readiness-check", "page.tsx");
+  const assistant = readProjectFile("src", "components", "tools", "FileReadinessAssistant.tsx");
+  const tools = readProjectFile("src", "app", "tools", "page.tsx");
+
+  assert.match(page, /ECU File Readiness Check/);
+  assert.match(page, /without reading, uploading or modifying any file/i);
+  assert.match(page, /applicationCategory:\s*"UtilitiesApplication"/);
+  assert.match(page, /FAQPage/);
+  assert.match(assistant, /Ready to submit/);
+  assert.match(assistant, /Needs preparation/);
+  assert.match(assistant, /Start Secure Request/);
+  assert.match(assistant, /Customer safety: no file picker, no upload session, no raw data, no checksum, no MOD generation/);
+  assert.match(tools, /\/tools\/file-readiness-check/);
+  assert.match(tools, /Check readiness/);
+  assert.doesNotMatch(assistant, /type="file"|upload-session|createObjectURL|FileReader|fetch\(|generateMod|bytePatch|writeFile/i);
+});
+
+test("ECU request brief builder creates copy-ready notes without backend side effects", () => {
+  const page = readProjectFile("src", "app", "tools", "request-brief-builder", "page.tsx");
+  const builder = readProjectFile("src", "components", "tools", "RequestBriefBuilder.tsx");
+  const tools = readProjectFile("src", "app", "tools", "page.tsx");
+
+  assert.match(page, /ECU Request Brief Builder/);
+  assert.match(page, /No file upload, no automation, no hidden server action/);
+  assert.match(page, /applicationCategory:\s*"UtilitiesApplication"/);
+  assert.match(page, /FAQPage/);
+  assert.match(builder, /MG AutoTech request brief/);
+  assert.match(builder, /Brief completeness/);
+  assert.match(builder, /Generated request brief/);
+  assert.match(builder, /navigator\.clipboard\.writeText/);
+  assert.match(builder, /does not upload files, inspect binary data, create a request or contact MG AutoTech automatically/);
+  assert.match(tools, /\/tools\/request-brief-builder/);
+  assert.match(tools, /Build a brief/);
+  assert.doesNotMatch(builder, /type="file"|upload-session|api\/admin|fetch\(|createObjectURL|FileReader|generateMod|bytePatch|writeFile/i);
+});
+
+test("ECU read method advisor gives safe preparation guidance without file actions", () => {
+  const page = readProjectFile("src", "app", "tools", "ecu-read-method-advisor", "page.tsx");
+  const advisor = readProjectFile("src", "components", "tools", "EcuReadMethodAdvisor.tsx");
+  const tools = readProjectFile("src", "app", "tools", "page.tsx");
+
+  assert.match(page, /ECU Read Method Advisor/);
+  assert.match(page, /without opening or uploading a file/);
+  assert.match(page, /applicationCategory:\s*"UtilitiesApplication"/);
+  assert.match(page, /FAQPage/);
+  assert.match(advisor, /Good read preparation/);
+  assert.match(advisor, /Read preparation checklist/);
+  assert.match(advisor, /Build Request Brief/);
+  assert.match(advisor, /Customer safety: no file picker, no upload session, no binary analysis, no checksum, no file generation/);
+  assert.match(tools, /\/tools\/ecu-read-method-advisor/);
+  assert.match(tools, /Plan read method/);
+  assert.doesNotMatch(advisor, /type="file"|upload-session|api\/admin|fetch\(|createObjectURL|FileReader|generateMod|bytePatch|writeFile/i);
+});
+
 test("active customer payment UI remains Stripe/Card and Bank Transfer only", () => {
   const page = readProjectFile("src", "app", "dashboard", "credits", "page.tsx");
   assert.match(page, /id: "stripe"/);

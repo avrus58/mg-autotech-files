@@ -26,6 +26,7 @@ const platform = [
   { label: "ECU Platforms", href: "/ecu-platforms" },
   { label: "Workshop Tools", href: "/tools" },
   { label: "Vehicle Widget", href: "/widget" },
+  { label: "Windows App Beta", href: "/download/windows" },
   { label: "Upload File", href: "/new-request" },
   { label: "Buy Credits", href: "/dashboard/credits" },
   { label: "Login", href: "/login" },
