@@ -75,6 +75,15 @@ If `app_version < DESKTOP_APP_MIN_VERSION`, the app blocks the workflow and show
 
 If `app_version < DESKTOP_APP_LATEST_VERSION`, the app shows an update banner but allows the customer to continue unless the minimum version also blocks it.
 
+The Settings page also shows:
+
+- current app version
+- latest server version
+- minimum supported version
+- update required state
+- native update check result
+- update URL and release notes actions when available
+
 ## Native Updater Foundation
 
 Electron main process includes an `electron-updater` IPC foundation.
@@ -86,6 +95,14 @@ MG_DESKTOP_UPDATE_FEED_URL=https://file.mgautotech.de/desktop/updates
 ```
 
 If configured, the app can check a generic Electron update feed. The app does not auto-download or auto-install updates in the current MVP.
+
+The native update check is customer-safe:
+
+- no auto-download
+- no auto-install
+- no execution of scripts
+- HTTPS feed only
+- app-check remains the forced-update authority
 
 ## Update Security Rules
 

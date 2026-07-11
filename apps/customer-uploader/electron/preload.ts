@@ -7,4 +7,5 @@ contextBridge.exposeInMainWorld("mgDesktop", {
   getInstallationId: () => ipcRenderer.invoke("installation-id"),
   closeApp: () => ipcRenderer.invoke("close-app"),
   checkNativeUpdate: () => ipcRenderer.invoke("native-update-check"),
+  openAppDataFolder: () => ipcRenderer.invoke("open-app-data-folder"),
 });

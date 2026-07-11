@@ -1,8 +1,11 @@
 export type DesktopModuleId =
   | "file_upload"
   | "request_history"
+  | "support"
+  | "dtc_tools_beta_visible"
   | "diagnostics_future"
-  | "dtc_tools_future";
+  | "dtc_tools_future"
+  | "tuning_tools_future";
 
 export type DesktopModuleDefinition = {
   id: DesktopModuleId;
@@ -13,6 +16,9 @@ export type DesktopModuleDefinition = {
   requiredPermission: string | null;
   customerVisible: boolean;
   route: string | null;
+  badge?: string;
+  comingSoon?: boolean;
+  buttonLabel?: string;
 };
 
 export const desktopModules: DesktopModuleDefinition[] = [
@@ -37,6 +43,29 @@ export const desktopModules: DesktopModuleDefinition[] = [
     route: "dashboard",
   },
   {
+    id: "support",
+    name: "Support",
+    description: "Customer-safe support, diagnostics and update information.",
+    enabledByDefault: true,
+    minAppVersion: "0.1.0",
+    requiredPermission: null,
+    customerVisible: true,
+    route: "support",
+  },
+  {
+    id: "dtc_tools_beta_visible",
+    name: "DTC Tools",
+    description: "Prepare DTC requests faster with guided code entry and file submission. This feature is currently in beta and will be available soon.",
+    enabledByDefault: true,
+    minAppVersion: "0.1.0",
+    requiredPermission: null,
+    customerVisible: true,
+    route: null,
+    badge: "Beta / Coming Soon",
+    comingSoon: true,
+    buttonLabel: "Coming Soon",
+  },
+  {
     id: "diagnostics_future",
     name: "Diagnostics",
     description: "Future read-only diagnostic helpers. No binary editing.",
@@ -49,7 +78,17 @@ export const desktopModules: DesktopModuleDefinition[] = [
   {
     id: "dtc_tools_future",
     name: "DTC Tools",
-    description: "Future safe tooling placeholder. No DTC OFF generation, patching, checksum or MOD output.",
+    description: "Future safe tooling placeholder. Not available in this release.",
+    enabledByDefault: false,
+    minAppVersion: "9.9.9",
+    requiredPermission: "future",
+    customerVisible: false,
+    route: null,
+  },
+  {
+    id: "tuning_tools_future",
+    name: "Tuning Tools",
+    description: "Future placeholder only. Not available in this release.",
     enabledByDefault: false,
     minAppVersion: "9.9.9",
     requiredPermission: "future",

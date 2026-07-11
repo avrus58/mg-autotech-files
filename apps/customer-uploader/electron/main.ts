@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, shell } from "electron";
+import { app, BrowserWindow, ipcMain, Menu, shell } from "electron";
 import { autoUpdater } from "electron-updater";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { mkdir } from "node:fs/promises";
@@ -7,6 +7,11 @@ import { randomUUID } from "node:crypto";
 
 const isDev = process.env.VITE_DEV_SERVER_URL || process.env.NODE_ENV === "development";
 const updateFeedUrl = process.env.MG_DESKTOP_UPDATE_FEED_URL || "";
+const appUserModelId = "de.mgautotech.fileuploadassistant";
+
+function getIconPath() {
+  return isDev ? join(app.getAppPath(), "build", "icon.ico") : join(__dirname, "../build/icon.ico");
+}
 
 function historyPath() {
   return join(app.getPath("userData"), "safe-upload-history.json");
@@ -25,12 +30,17 @@ async function getInstallationId() {
 }
 
 async function createWindow() {
+  if (!isDev) {
+    Menu.setApplicationMenu(null);
+  }
+
   const mainWindow = new BrowserWindow({
     width: 1180,
     height: 820,
     minWidth: 980,
     minHeight: 680,
     title: "MG AutoTech File Upload Assistant",
+    icon: getIconPath(),
     backgroundColor: "#050505",
     webPreferences: {
       preload: join(__dirname, "preload.js"),
@@ -56,6 +66,10 @@ async function createWindow() {
 }
 
 app.whenReady().then(async () => {
+  if (process.platform === "win32") {
+    app.setAppUserModelId(appUserModelId);
+  }
+
   autoUpdater.autoDownload = false;
   autoUpdater.autoInstallOnAppQuit = false;
   if (updateFeedUrl.startsWith("https://")) {
@@ -89,6 +103,10 @@ app.whenReady().then(async () => {
   ipcMain.handle("installation-id", async () => getInstallationId());
   ipcMain.handle("close-app", () => {
     app.quit();
+    return true;
+  });
+  ipcMain.handle("open-app-data-folder", async () => {
+    await shell.openPath(app.getPath("userData"));
     return true;
   });
   ipcMain.handle("native-update-check", async () => {

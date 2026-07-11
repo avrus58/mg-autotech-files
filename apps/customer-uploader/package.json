@@ -8,21 +8,22 @@
   "main": "dist-electron/main.js",
   "type": "commonjs",
   "scripts": {
-    "dev": "vite --host 127.0.0.1",
-    "build": "tsc -p tsconfig.json && vite build && tsc -p tsconfig.electron.json",
+    "check-env": "node scripts/check-env.mjs",
+    "dev": "npm run check-env && vite --host 127.0.0.1",
+    "build": "npm run check-env && tsc -p tsconfig.json && vite build && tsc -p tsconfig.electron.json",
     "package:win": "npm run build && node scripts/package-win.mjs"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.110.0",
-    "electron-updater": "^6.8.9",
-    "lucide-react": "^1.16.0",
-    "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "electron-updater": "^6.8.9"
   },
   "devDependencies": {
+    "@supabase/supabase-js": "^2.110.0",
     "@vitejs/plugin-react": "^5.0.0",
     "electron": "^39.0.0",
     "electron-builder": "^26.0.0",
+    "lucide-react": "^1.16.0",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
     "typescript": "^5.0.0",
     "vite": "^7.0.0"
   },
@@ -34,11 +35,14 @@
       "output": "release"
     },
     "files": [
+      "build/icon.ico",
       "dist/**",
       "dist-electron/**",
       "package.json"
     ],
+    "icon": "build/icon.ico",
     "win": {
+      "icon": "build/icon.ico",
       "target": [
         {
           "target": "nsis",
@@ -61,6 +65,9 @@
       "perMachine": false,
       "shortcutName": "MG AutoTech File Upload Assistant",
       "uninstallDisplayName": "MG AutoTech File Upload Assistant",
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "installerHeaderIcon": "build/icon.ico",
       "deleteAppDataOnUninstall": false
     },
     "portable": {

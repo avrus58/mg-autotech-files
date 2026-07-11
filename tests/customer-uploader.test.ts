@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import test from "node:test";
 import {
@@ -122,8 +122,12 @@ test("desktop app-check forced update blocks old versions", async () => {
 });
 
 test("desktop module registry exposes only safe enabled customer modules", () => {
-  const enabled = resolveEnabledModules(["file_upload", "request_history", "diagnostics_future", "dtc_tools_future"]);
-  assert.deepEqual(enabled.map((module) => module.id), ["file_upload", "request_history"]);
+  const enabled = resolveEnabledModules(["file_upload", "request_history", "support", "diagnostics_future", "dtc_tools_future", "tuning_tools_future"]);
+  assert.deepEqual(enabled.map((module) => module.id), ["file_upload", "request_history", "support"]);
+  const betaVisible = resolveEnabledModules(["dtc_tools_beta_visible"]);
+  assert.deepEqual(betaVisible.map((module) => module.id), ["dtc_tools_beta_visible"]);
+  assert.equal(betaVisible[0]?.comingSoon, true);
+  assert.equal(betaVisible[0]?.buttonLabel, "Coming Soon");
   const futureModules = desktopModules.filter((module) => module.id.includes("future"));
   assert.ok(futureModules.length >= 2);
   for (const desktopModule of futureModules) {
@@ -131,6 +135,24 @@ test("desktop module registry exposes only safe enabled customer modules", () =>
     assert.equal(desktopModule.enabledByDefault, false);
     assert.doesNotMatch(`${desktopModule.name} ${desktopModule.description}`, /patching enabled|MOD output enabled|checksum correction enabled/i);
   }
+});
+
+test("desktop DTC Tools beta card is visible but cannot start DTC processing", () => {
+  const app = readFileSync(resolve(process.cwd(), "apps/customer-uploader/src/App.tsx"), "utf8");
+  const registry = readFileSync(resolve(process.cwd(), "apps/customer-uploader/src/modules/registry.ts"), "utf8");
+  const styles = readFileSync(resolve(process.cwd(), "apps/customer-uploader/src/styles.css"), "utf8");
+
+  assert.match(registry, /dtc_tools_beta_visible/);
+  assert.match(registry, /Beta \/ Coming Soon/);
+  assert.match(registry, /Prepare DTC requests faster with guided code entry and file submission/);
+  assert.match(app, /DtcComingSoonModal/);
+  assert.match(app, /DTC Tools - Coming Soon/);
+  assert.match(app, /No file modification is performed in this version/);
+  assert.match(app, /setDtcInfoOpen\(true\)/);
+  assert.match(styles, /beta-badge/);
+  assert.match(styles, /modal-backdrop/);
+  assert.doesNotMatch(app, /\/api\/dtc|\/api\/desktop\/dtc|dtc-upload|dtcUpload|createDtc|DTC request created/i);
+  assert.doesNotMatch(app, /checksum|byte patch|binary patch|DTC OFF file/i);
 });
 
 test("desktop customer order select excludes admin-only and private fields", () => {
@@ -220,6 +242,9 @@ test("desktop app source blocks offline continuation and sends app verification 
   const preload = readFileSync(resolve(process.cwd(), "apps/customer-uploader/electron/preload.ts"), "utf8");
 
   assert.match(app, /gate === "server_unavailable"/);
+  assert.match(app, /gate === "configuration_missing"/);
+  assert.match(app, /getDesktopConfigurationStatus/);
+  assert.doesNotMatch(app, /^const supabase = createSupabaseBrowserClient\(\);$/m);
   assert.match(app, /en\.creditUnavailable/);
   assert.match(app, /verifyOnline\(session\)/);
   assert.match(app, /resolveEnabledModules/);
@@ -232,22 +257,90 @@ test("desktop app source blocks offline continuation and sends app verification 
   assert.match(main, /randomUUID/);
   assert.match(main, /electron-updater/);
   assert.match(main, /autoDownload = false/);
+  assert.match(main, /Menu\.setApplicationMenu\(null\)/);
   assert.match(preload, /checkNativeUpdate/);
+  assert.match(preload, /openAppDataFolder/);
+});
+
+test("desktop premium UI keeps local history, diagnostics and messages customer-safe", () => {
+  const app = readFileSync(resolve(process.cwd(), "apps/customer-uploader/src/App.tsx"), "utf8");
+  const api = readFileSync(resolve(process.cwd(), "apps/customer-uploader/src/api.ts"), "utf8");
+  const styles = readFileSync(resolve(process.cwd(), "apps/customer-uploader/src/styles.css"), "utf8");
+  const globalTypes = readFileSync(resolve(process.cwd(), "apps/customer-uploader/src/global.d.ts"), "utf8");
+
+  assert.match(app, /Local history only\. Server status is verified online/);
+  assert.match(app, /Copy Diagnostic Info/);
+  assert.match(app, /tokens, raw file content or private storage paths/);
+  assert.match(app, /Customer-visible messages/);
+  assert.match(app, /\/api\/requests\/\$\{encodeURIComponent\(requestId\)\}\/messages/);
+  assert.match(app, /Retry-safe upload\. True chunked resume is not enabled yet/);
+  assert.match(app, /ActiveSubmission/);
+  assert.match(app, /uploadSession/);
+  assert.match(app, /desktopUploadEnabled/);
+  assert.match(api, /bytesPerSecond/);
+  assert.match(api, /etaSeconds/);
+  assert.match(globalTypes, /vehicleSummary/);
+  assert.match(globalTypes, /serviceSummary/);
+  assert.match(styles, /dashboard-grid/);
+  assert.match(styles, /history-table/);
+  assert.doesNotMatch(app, /localPath|absolutePath|storage_path|admin_notes|internal_notes|source_reference|confidence_score/);
+});
+
+test("desktop build validates public Vite env and renders missing-config screen instead of crashing", () => {
+  const packageJson = JSON.parse(readFileSync(resolve(process.cwd(), "apps/customer-uploader/package.json"), "utf8"));
+  const envExamplePath = resolve(process.cwd(), "apps/customer-uploader/.env.example");
+  const envExample = readFileSync(envExamplePath, "utf8");
+  const checkEnv = readFileSync(resolve(process.cwd(), "apps/customer-uploader/scripts/check-env.mjs"), "utf8");
+  const viteConfig = readFileSync(resolve(process.cwd(), "apps/customer-uploader/vite.config.ts"), "utf8");
+  const api = readFileSync(resolve(process.cwd(), "apps/customer-uploader/src/api.ts"), "utf8");
+  const app = readFileSync(resolve(process.cwd(), "apps/customer-uploader/src/App.tsx"), "utf8");
+  const strings = readFileSync(resolve(process.cwd(), "apps/customer-uploader/src/i18n/en.ts"), "utf8");
+
+  assert.equal(existsSync(envExamplePath), true);
+  assert.match(envExample, /VITE_SUPABASE_URL=/);
+  assert.match(envExample, /VITE_SUPABASE_ANON_KEY=/);
+  assert.match(envExample, /VITE_API_BASE_URL=https:\/\/file\.mgautotech\.de/);
+  assert.doesNotMatch(envExample, /SERVICE_ROLE|SECRET|PASSWORD/i);
+  assert.match(packageJson.scripts["check-env"], /scripts\/check-env\.mjs/);
+  assert.match(packageJson.scripts.build, /npm run check-env/);
+  assert.match(packageJson.scripts.dev, /npm run check-env/);
+  assert.match(checkEnv, /Missing desktop app environment variables/);
+  assert.match(checkEnv, /NEXT_PUBLIC_SUPABASE_URL/);
+  assert.match(checkEnv, /Never put the service-role key into the desktop app/);
+  assert.match(viteConfig, /NEXT_PUBLIC_SUPABASE_ANON_KEY/);
+  assert.match(viteConfig, /https:\/\/file\.mgautotech\.de/);
+  assert.doesNotMatch(viteConfig, /NEXT_PUBLIC_SITE_URL/);
+  assert.match(viteConfig, /Object\.entries\(desktopEnv\)/);
+  assert.match(viteConfig, /import\.meta\.env\.\$\{key\}/);
+  assert.match(api, /getDesktopConfigurationStatus/);
+  assert.match(api, /Application configuration is missing/);
+  assert.match(app, /configuration_missing/);
+  assert.match(strings, /Please reinstall the app or contact MG AutoTech support/);
+  assert.doesNotMatch(`${api}\n${app}`, /Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY/);
 });
 
 test("desktop package is signing-ready, per-user and installer-friendly", () => {
   const packageJson = JSON.parse(readFileSync(resolve(process.cwd(), "apps/customer-uploader/package.json"), "utf8"));
   const packageScript = readFileSync(resolve(process.cwd(), "apps/customer-uploader/scripts/package-win.mjs"), "utf8");
   const gitignore = readFileSync(resolve(process.cwd(), ".gitignore"), "utf8");
+  const iconPath = resolve(process.cwd(), "apps/customer-uploader/build/icon.ico");
 
   assert.equal(packageJson.build.appId, "de.mgautotech.fileuploadassistant");
   assert.equal(packageJson.author, "MG AutoTech");
+  assert.equal(existsSync(iconPath), true);
   assert.equal(JSON.stringify(packageJson.build).includes("requireAdministrator"), false);
+  assert.equal(packageJson.build.icon, "build/icon.ico");
+  assert.equal(packageJson.build.win.icon, "build/icon.ico");
+  assert.equal(packageJson.build.files.includes("build/icon.ico"), true);
+  assert.equal(packageJson.build.nsis.installerIcon, "build/icon.ico");
+  assert.equal(packageJson.build.nsis.uninstallerIcon, "build/icon.ico");
+  assert.equal(packageJson.build.nsis.installerHeaderIcon, "build/icon.ico");
   assert.equal(packageJson.build.nsis.perMachine, false);
   assert.match(packageScript, /WINDOWS_CERTIFICATE_FILE/);
   assert.match(packageScript, /WINDOWS_CERTIFICATE_PASSWORD/);
   assert.match(gitignore, /\*\.pfx/);
   assert.match(gitignore, /\*\.p12/);
+  assert.match(readFileSync(resolve(process.cwd(), "apps/customer-uploader/electron/main.ts"), "utf8"), /setAppUserModelId|icon:\s*getIconPath/);
 });
 
 test("desktop distribution docs cover signing, updates and false-positive process", () => {

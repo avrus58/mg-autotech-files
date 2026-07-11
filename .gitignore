@@ -34,6 +34,8 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
+!**/.env.example
 
 # vercel
 .vercel
@@ -43,7 +45,6 @@ yarn-error.log*
 next-env.d.ts
 
 .vercel
-.env*
 
 # desktop app local dependencies and build outputs
 /apps/customer-uploader/node_modules/

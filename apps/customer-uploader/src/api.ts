@@ -65,6 +65,27 @@ export type BootstrapPayload = {
   app?: AppCheckPayload;
 };
 
+export type DesktopConfigurationStatus = {
+  ok: boolean;
+  missing: string[];
+};
+
+export type CustomerVisibleMessage = {
+  id: string;
+  request_id: string;
+  sender_role: "admin" | "customer" | string;
+  message: string;
+  created_at: string;
+};
+
+export type UploadProgressSnapshot = {
+  loadedBytes: number;
+  totalBytes: number;
+  percent: number;
+  bytesPerSecond: number | null;
+  etaSeconds: number | null;
+};
+
 export function setDesktopInstallationId(value: string) {
   installationId = value;
 }
@@ -88,9 +109,19 @@ function desktopHeaders(session?: Session | null) {
   };
 }
 
+export function getDesktopConfigurationStatus(): DesktopConfigurationStatus {
+  const missing = [
+    ["VITE_SUPABASE_URL", supabaseUrl],
+    ["VITE_SUPABASE_ANON_KEY", supabaseAnonKey],
+    ["VITE_API_BASE_URL", apiBaseUrl],
+  ].filter(([, value]) => !String(value || "").trim()).map(([key]) => key);
+
+  return { ok: missing.length === 0, missing };
+}
+
 export function createSupabaseBrowserClient() {
   if (!supabaseUrl || !supabaseAnonKey) {
-    throw new Error("Supabase configuration missing. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.");
+    throw new Error("Application configuration is missing. Please reinstall the app or contact MG AutoTech support.");
   }
   return createClient(supabaseUrl, supabaseAnonKey, {
     auth: {
@@ -142,24 +173,38 @@ export async function uploadToPrivateStorage(input: {
   anonKey: string;
   file: File;
   contentType: string;
-  onProgress(progress: number): void;
+  onProgress(progress: UploadProgressSnapshot): void;
 }) {
   await new Promise<void>((resolve, reject) => {
     const xhr = new XMLHttpRequest();
+    const startedAt = performance.now();
+    const emitProgress = (loadedBytes: number, totalBytes: number) => {
+      const elapsedSeconds = Math.max((performance.now() - startedAt) / 1000, 0.001);
+      const bytesPerSecond = loadedBytes > 0 ? loadedBytes / elapsedSeconds : null;
+      const remainingBytes = Math.max(totalBytes - loadedBytes, 0);
+      input.onProgress({
+        loadedBytes,
+        totalBytes,
+        percent: totalBytes > 0 ? Math.round((loadedBytes / totalBytes) * 100) : 0,
+        bytesPerSecond,
+        etaSeconds: bytesPerSecond && bytesPerSecond > 0 ? Math.round(remainingBytes / bytesPerSecond) : null,
+      });
+    };
+
     xhr.open("POST", input.storageObjectUrl);
     xhr.setRequestHeader("Authorization", `Bearer ${input.token}`);
     xhr.setRequestHeader("apikey", input.anonKey);
     xhr.setRequestHeader("x-upsert", "false");
     xhr.setRequestHeader("content-type", input.contentType || "application/octet-stream");
     xhr.upload.onprogress = (event) => {
-      if (event.lengthComputable) input.onProgress(Math.round((event.loaded / event.total) * 100));
+      if (event.lengthComputable) emitProgress(event.loaded, event.total);
     };
     xhr.onload = () => {
       if (xhr.status >= 200 && xhr.status < 300) {
-        input.onProgress(100);
+        emitProgress(input.file.size, input.file.size);
         resolve();
       } else if (xhr.status === 409) {
-        input.onProgress(100);
+        emitProgress(input.file.size, input.file.size);
         resolve();
       } else {
         reject(new Error(`Upload failed with ${xhr.status}: ${xhr.responseText || xhr.statusText}`));

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="MG AutoTech placeholder icon">
+  <rect width="256" height="256" rx="56" fill="#050505"/>
+  <rect x="24" y="24" width="208" height="208" rx="44" fill="#160609" stroke="#b1121b" stroke-width="8"/>
+  <text x="128" y="118" text-anchor="middle" font-family="Arial, sans-serif" font-size="58" font-weight="900" fill="#f87171">MG</text>
+  <text x="128" y="158" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" font-weight="800" letter-spacing="4" fill="#ffffff">AUTOTECH</text>
+  <path d="M70 184h116" stroke="#22c55e" stroke-width="10" stroke-linecap="round"/>
+</svg>
