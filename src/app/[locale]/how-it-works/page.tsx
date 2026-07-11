@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { LocalizedSeoHome } from "@/components/LocalizedSeoHome";
+import { HowItWorksPageContent } from "@/components/HowItWorksPageContent";
+import { getHowItWorksCopy, howItWorksJsonLd } from "@/lib/howItWorksI18n";
+import type { LocaleCode } from "@/lib/i18n";
 import {
-  homeSeo,
   hreflangByLocale,
   isSeoLocale,
   languageAlternates,
@@ -12,7 +13,6 @@ import {
   siteName,
   websiteJsonLd,
 } from "@/lib/seo";
-import type { LocaleCode } from "@/lib/i18n";
 
 export function generateStaticParams() {
   return seoLocales.map((locale) => ({ locale }));
@@ -28,44 +28,36 @@ export async function generateMetadata({
   if (!isSeoLocale(rawLocale)) return {};
 
   const locale = rawLocale as LocaleCode;
-  const copy = homeSeo[locale];
+  const copy = getHowItWorksCopy(locale);
+  const pageUrl = localizedUrl(locale, "/how-it-works");
 
   return {
-    title: copy.title,
+    title: copy.pageTitle,
     description: copy.description,
     alternates: {
-      canonical: localizedUrl(locale, "/"),
-      languages: languageAlternates("/"),
+      canonical: pageUrl,
+      languages: languageAlternates("/how-it-works"),
     },
     openGraph: {
-      title: `${copy.title} | MG AutoTech`,
+      title: copy.pageTitle,
       description: copy.description,
-      url: localizedUrl(locale, "/"),
+      url: pageUrl,
       siteName,
       locale: hreflangByLocale[locale],
       alternateLocale: seoLocales
         .filter((item) => item !== locale)
         .map((item) => hreflangByLocale[item]),
       type: "website",
-      images: [
-        {
-          url: "/opengraph-image",
-          width: 1200,
-          height: 630,
-          alt: "MG AutoTech ECU and TCU File Service",
-        },
-      ],
     },
     twitter: {
       card: "summary_large_image",
-      title: copy.title,
+      title: copy.pageTitle,
       description: copy.description,
-      images: ["/opengraph-image"],
     },
   };
 }
 
-export default async function LocalizedHomePage({
+export default async function LocalizedHowItWorksPage({
   params,
 }: {
   params: Promise<{ locale: string }>;
@@ -75,18 +67,27 @@ export default async function LocalizedHomePage({
   if (!isSeoLocale(rawLocale)) notFound();
 
   const locale = rawLocale as LocaleCode;
+  const copy = getHowItWorksCopy(locale);
+  const pageUrl = localizedUrl(locale, "/how-it-works");
+  const pageJsonLd = howItWorksJsonLd(locale, pageUrl);
   const jsonLd = {
     "@context": "https://schema.org",
-    "@graph": [organizationJsonLd(), websiteJsonLd(locale)],
+    "@graph": [
+      organizationJsonLd(),
+      websiteJsonLd(locale),
+      {
+        ...pageJsonLd.page,
+        isPartOf: { "@id": `${localizedUrl(locale, "/")}#website` },
+        about: { "@id": `${localizedUrl(locale, "/")}#organization` },
+      },
+      pageJsonLd.faq,
+    ],
   };
 
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
-      <LocalizedSeoHome locale={locale} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <HowItWorksPageContent copy={copy} locale={locale} localized />
     </>
   );
 }

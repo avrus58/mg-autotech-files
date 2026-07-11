@@ -10,7 +10,9 @@ export default function robots(): MetadataRoute.Robots {
           "/",
           "/services",
           ...publicServiceSlugs.map((slug) => `/services/${slug}`),
+          "/how-it-works",
           ...seoLocales.map((locale) => `/${locale}`),
+          ...seoLocales.map((locale) => `/${locale}/how-it-works`),
           ...seoLocales.flatMap((locale) =>
             publicServiceSlugs.map((slug) => `/${locale}/services/${slug}`)
           ),

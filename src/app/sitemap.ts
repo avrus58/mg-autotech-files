@@ -27,6 +27,15 @@ export default function sitemap(): MetadataRoute.Sitemap {
         languages: languageAlternates("/"),
       },
     },
+    {
+      url: absoluteUrl("/how-it-works"),
+      lastModified: contentUpdated,
+      changeFrequency: "monthly",
+      priority: 0.88,
+      alternates: {
+        languages: languageAlternates("/how-it-works"),
+      },
+    },
     ...publicServiceSlugs.map((slug) => {
       const path = `/services/${slug}`;
 
@@ -50,6 +59,15 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.95,
       alternates: {
         languages: languageAlternates("/"),
+      },
+    },
+    {
+      url: localizedUrl(locale, "/how-it-works"),
+      lastModified: contentUpdated,
+      changeFrequency: "monthly" as const,
+      priority: 0.86,
+      alternates: {
+        languages: languageAlternates("/how-it-works"),
       },
     },
     ...publicServiceSlugs.map((slug) => {

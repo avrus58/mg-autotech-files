@@ -73,6 +73,55 @@ test("customer File Expert UI renders only customer-safe report details", () => 
   assert.doesNotMatch(page, /SHA256|Copy JSON|Download report data|Analyzer JSON|changed_blocks\.slice|offset_start|offset_end|provider\/source/i);
 });
 
+test("How It Works page is English, SEO-ready and linked from public surfaces", () => {
+  const page = readProjectFile("src", "app", "how-it-works", "page.tsx");
+  const homepage = readProjectFile("src", "app", "page.tsx");
+  const footer = readProjectFile("src", "components", "Footer.tsx");
+  const header = readProjectFile("src", "components", "PublicSeoHeader.tsx");
+  const sitemap = readProjectFile("src", "app", "sitemap.ts");
+
+  assert.match(page, /title:\s*copy\.pageTitle/);
+  assert.match(page, /canonical:\s*"\/how-it-works"/);
+  assert.match(page, /openGraph/);
+  assert.match(page, /howItWorksJsonLd/);
+  assert.match(page, /languageAlternates\("\/how-it-works"\)/);
+  assert.doesNotMatch(page, /Anfrage|Kunden|Datei|hochladen|öffnen|bearbeitet/i);
+
+  assert.match(homepage, /A Clear File-Service Workflow/);
+  assert.match(homepage, /See How It Works/);
+  assert.match(homepage, /href="\/how-it-works"/);
+  assert.match(footer, /How It Works/);
+  assert.match(header, /How it works/);
+  assert.match(sitemap, /absoluteUrl\("\/how-it-works"\)/);
+});
+
+test("How It Works localization is wired for locale routes, homepage and footer", () => {
+  const localizedPage = readProjectFile("src", "app", "[locale]", "how-it-works", "page.tsx");
+  const copy = readProjectFile("src", "lib", "howItWorksI18n.ts");
+  const localizedHomeRoute = readProjectFile("src", "app", "[locale]", "page.tsx");
+  const localizedHome = readProjectFile("src", "components", "LocalizedSeoHome.tsx");
+  const localizedFooter = readProjectFile("src", "components", "LocalizedSeoFooter.tsx");
+  const sitemap = readProjectFile("src", "app", "sitemap.ts");
+
+  assert.match(localizedPage, /generateStaticParams/);
+  assert.match(localizedPage, /localizedUrl\(locale, "\/how-it-works"\)/);
+  assert.match(localizedPage, /languageAlternates\("\/how-it-works"\)/);
+  assert.match(localizedPage, /HowItWorksPageContent/);
+  assert.match(copy, /How MG AutoTech File Service Works/);
+  assert.match(copy, /So funktioniert der MG AutoTech File-Service/);
+  assert.match(copy, /MG AutoTech File Service Nasıl Çalışır/);
+  assert.match(copy, /Does the system automatically modify files\?/);
+  assert.match(copy, /Ändert das System Dateien automatisch\?/);
+  assert.match(copy, /Sistem dosyaları otomatik değiştirir mi\?/);
+  assert.match(localizedHomeRoute, /LocalizedSeoHome/);
+  assert.doesNotMatch(localizedHomeRoute, /import HomePage|<HomePage/);
+  assert.match(localizedHome, /getHowItWorksCopy/);
+  assert.match(localizedHome, /localizedPath\(locale, "\/how-it-works"\)/);
+  assert.match(localizedFooter, /localizedPath\(locale, "\/how-it-works"\)/);
+  assert.match(sitemap, /localizedUrl\(locale, "\/how-it-works"\)/);
+  assert.match(sitemap, /languageAlternates\("\/how-it-works"\)/);
+});
+
 test("active customer payment UI remains Stripe/Card and Bank Transfer only", () => {
   const page = readProjectFile("src", "app", "dashboard", "credits", "page.tsx");
   assert.match(page, /id: "stripe"/);

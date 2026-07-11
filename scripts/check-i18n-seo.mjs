@@ -5,9 +5,13 @@ const root = process.cwd();
 const filesToScan = [
   "src/lib/i18n.ts",
   "src/lib/seo.ts",
+  "src/lib/howItWorksI18n.ts",
+  "src/lib/i18nRoutes.ts",
   "src/app/[locale]/page.tsx",
   "src/app/[locale]/layout.tsx",
   "src/app/[locale]/services/[slug]/page.tsx",
+  "src/app/[locale]/how-it-works/page.tsx",
+  "src/app/how-it-works/page.tsx",
   "src/app/sitemap.ts",
   "src/app/robots.ts",
 ];
@@ -54,11 +58,20 @@ for (const slug of ["stage-1", "dpf-off", "egr-off", "adblue-off", "dtc-off"]) {
 const sitemap = readFileSync(join(root, "src/app/sitemap.ts"), "utf8");
 if (!sitemap.includes("languageAlternates")) failures.push("Sitemap does not include language alternates.");
 if (!sitemap.includes("publicServiceSlugs")) failures.push("Sitemap does not include service slugs.");
+if (!sitemap.includes('localizedUrl(locale, "/how-it-works")')) {
+  failures.push("Sitemap does not include localized How It Works routes.");
+}
+if (!sitemap.includes('languageAlternates("/how-it-works")')) {
+  failures.push("Sitemap does not include How It Works language alternates.");
+}
 
 const robots = readFileSync(join(root, "src/app/robots.ts"), "utf8");
 if (!robots.includes("sitemap")) failures.push("robots.ts does not expose sitemap.");
 if (!robots.includes("/admin") || !robots.includes("/dashboard") || !robots.includes("/api")) {
   failures.push("robots.ts should block private/admin/dashboard/API crawling.");
+}
+if (!robots.includes("/how-it-works") || !robots.includes('`/${locale}/how-it-works`')) {
+  failures.push("robots.ts should allow root and localized How It Works routes.");
 }
 
 if (failures.length) {

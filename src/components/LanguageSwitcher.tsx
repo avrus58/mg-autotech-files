@@ -10,14 +10,14 @@ import {
   termTranslations,
   type LocaleCode,
 } from "@/lib/i18n";
-import { isSeoLocale, localizedPath } from "@/lib/seo";
+import { appendSafeQuery, getLocalizedPublicPath, splitLocalizedPath } from "@/lib/i18nRoutes";
+import { isSeoLocale } from "@/lib/seo";
 
 const storageKey = "mg_locale";
 const cookieKey = "mg_locale";
 const googleCookieKey = "googtrans";
 const originalText = new WeakMap<Text, string>();
 const originalAttributes = new WeakMap<Element, Record<string, string>>();
-const englishOnlySeoSegments = new Set(["about", "contact", "brands", "ecu-platforms"]);
 
 function escapeRegExp(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -51,27 +51,9 @@ function getPathLocale(pathname: string) {
   return firstSegment && isSeoLocale(firstSegment) ? firstSegment : null;
 }
 
-function getLocalizedTarget(pathname: string, locale: LocaleCode) {
-  const parts = pathname.split("/").filter(Boolean);
-  const currentPathLocale = parts[0] && isSeoLocale(parts[0]) ? parts[0] : null;
-  const normalizedParts = currentPathLocale ? parts.slice(1) : parts;
-
-  if (normalizedParts.length === 0) return localizedPath(locale);
-
-  if (normalizedParts[0] === "services" && normalizedParts[1]) {
-    return localizedPath(locale, `/services/${normalizedParts[1]}`);
-  }
-
-  if (normalizedParts[0] && englishOnlySeoSegments.has(normalizedParts[0])) {
-    return localizedPath(locale);
-  }
-
-  return null;
-}
-
 function isEnglishOnlySeoPath(pathname: string) {
-  const firstSegment = pathname.split("/").filter(Boolean)[0];
-  return Boolean(firstSegment && englishOnlySeoSegments.has(firstSegment));
+  const { parts } = splitLocalizedPath(pathname);
+  return Boolean(parts[0] && ["about", "contact", "brands", "ecu-platforms", "tools"].includes(parts[0]));
 }
 
 function persistLocale(locale: LocaleCode) {
@@ -263,13 +245,16 @@ export function LanguageSwitcher() {
               key={item.code}
               type="button"
               onClick={() => {
-                const target = getLocalizedTarget(pathname, item.code);
+                const target = appendSafeQuery(
+                  getLocalizedPublicPath(pathname, item.code),
+                  typeof window === "undefined" ? "" : window.location.search
+                );
 
                 setLocale(item.code);
                 persistLocale(item.code);
                 setIsOpen(false);
 
-                if (target && target !== pathname) {
+                if (target !== `${pathname}${typeof window === "undefined" ? "" : window.location.search}`) {
                   router.push(target);
                 }
               }}

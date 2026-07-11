@@ -1770,9 +1770,9 @@ export default function HomePage() {
             <a href="#home" className="text-red-500">
               Home
             </a>
-            <a href="#workflow" className="hover:text-white">
+            <Link href="/how-it-works" className="hover:text-white">
               How It Works
-            </a>
+            </Link>
             <a href="#services" className="hover:text-white">
               Services
             </a>
@@ -2228,6 +2228,31 @@ export default function HomePage() {
       </AnimatedSection>
 
       <BusinessMarginCalculator />
+
+      <AnimatedSection className="border-y border-white/10 bg-[linear-gradient(135deg,#07090d,#111827_55%,#050505)] py-16">
+        <div className="mx-auto flex max-w-7xl flex-col gap-8 px-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="max-w-3xl">
+            <div className="text-sm font-black uppercase tracking-[0.25em] text-red-500">
+              Customer workflow
+            </div>
+            <h2 className="mt-3 text-4xl font-black md:text-5xl">
+              A Clear File-Service Workflow
+            </h2>
+            <p className="mt-4 text-sm leading-7 text-zinc-400">
+              From vehicle selection to secure file upload, request tracking and
+              final delivery, MG AutoTech gives customers a structured way to
+              manage ECU/TCU file requests.
+            </p>
+          </div>
+          <Link
+            href="/how-it-works"
+            className="inline-flex items-center justify-center rounded-xl bg-[#b1121b] px-6 py-4 text-sm font-black text-white shadow-lg shadow-red-950/30 transition hover:-translate-y-0.5 hover:bg-[#c91824]"
+          >
+            See How It Works
+            <ArrowRight className="ml-2 h-4 w-4" />
+          </Link>
+        </div>
+      </AnimatedSection>
 
       <AnimatedSection id="workflow" className="bg-[#0b1226] py-20">
         <div className="mx-auto max-w-7xl px-4">

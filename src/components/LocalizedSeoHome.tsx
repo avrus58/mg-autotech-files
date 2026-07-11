@@ -10,6 +10,7 @@ import {
 } from "@/lib/seo";
 import { seoUiCopy } from "@/lib/seo-ui";
 import { LocalizedSeoFooter } from "@/components/LocalizedSeoFooter";
+import { getHowItWorksCopy } from "@/lib/howItWorksI18n";
 
 const brands = [
   ["BMW", "MD1 · EDC17 · MG1"],
@@ -27,6 +28,7 @@ export function LocalizedSeoHome({ locale }: { locale: LocaleCode }) {
   const labels = seoLabels[locale];
   const ui = seoUiCopy[locale];
   const referenceService = getServiceSeo("stage-1", locale);
+  const howItWorks = getHowItWorksCopy(locale);
 
   return (
     <main className="min-h-screen bg-[#050505] text-white">
@@ -44,6 +46,7 @@ export function LocalizedSeoHome({ locale }: { locale: LocaleCode }) {
           <nav aria-label="Primary navigation" className="hidden items-center gap-6 text-sm font-bold text-zinc-300 md:flex">
             <Link href={localizedPath(locale)} className="text-red-500">{labels.navHome}</Link>
             <Link href={localizedPath(locale, "/#services")} className="hover:text-white">{labels.navServices}</Link>
+            <Link href={localizedPath(locale, "/how-it-works")} className="hover:text-white">{howItWorks.navLabel}</Link>
             <Link href="/tools" className="hover:text-white">{ui.tools}</Link>
             <Link href="/dashboard/credits" className="hover:text-white">{labels.navPrices}</Link>
           </nav>
@@ -70,6 +73,9 @@ export function LocalizedSeoHome({ locale }: { locale: LocaleCode }) {
               </Link>
               <Link href={localizedPath(locale, "/#services")} className="inline-flex items-center justify-center rounded-lg border border-white/15 bg-white/[0.04] px-6 py-4 text-sm font-black hover:bg-white/10">
                 {copy.secondaryCta}
+              </Link>
+              <Link href={localizedPath(locale, "/how-it-works")} className="inline-flex items-center justify-center rounded-lg border border-white/15 bg-white/[0.04] px-6 py-4 text-sm font-black hover:bg-white/10">
+                {howItWorks.navLabel}
               </Link>
             </div>
           </div>
@@ -102,6 +108,21 @@ export function LocalizedSeoHome({ locale }: { locale: LocaleCode }) {
               const service = getServiceSeo(slug, locale);
               return <article key={slug} className="flex min-h-64 flex-col border border-white/10 bg-[#0d0e10] p-5"><BadgeCheck className="h-5 w-5 text-red-500" /><h3 className="mt-6 text-xl font-black">{service.name}</h3><p className="mt-3 line-clamp-4 text-sm leading-6 text-zinc-400">{service.description}</p><div className="mt-auto pt-5"><span className="mb-4 flex items-center gap-2 text-xs font-bold text-zinc-500"><Clock3 className="h-4 w-4" />{service.credits} {labels.credits}</span><Link href={localizedPath(locale, `/services/${slug}`)} className="inline-flex items-center text-sm font-black text-red-400 hover:text-red-300">{labels.viewService}<ArrowRight className="ml-2 h-4 w-4" /></Link></div></article>;
             })}
+          </div>
+        </div>
+      </section>
+
+      <section className="border-b border-white/10 bg-[#050505]">
+        <div className="mx-auto grid max-w-7xl gap-6 px-4 py-14 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.24em] text-red-500">{howItWorks.eyebrow}</p>
+            <h2 className="mt-4 text-4xl font-black md:text-5xl">{howItWorks.hero}</h2>
+          </div>
+          <div>
+            <p className="text-sm leading-7 text-zinc-400">{howItWorks.intro}</p>
+            <Link href={localizedPath(locale, "/how-it-works")} className="mt-6 inline-flex items-center text-sm font-black text-red-400 hover:text-red-300">
+              {howItWorks.navLabel}<ArrowRight className="ml-2 h-4 w-4" aria-hidden="true" />
+            </Link>
           </div>
         </div>
       </section>

@@ -21,6 +21,7 @@ const services = [
 ];
 
 const platform = [
+  { label: "How It Works", href: "/how-it-works" },
   { label: "Vehicle Brands", href: "/brands" },
   { label: "ECU Platforms", href: "/ecu-platforms" },
   { label: "Workshop Tools", href: "/tools" },
