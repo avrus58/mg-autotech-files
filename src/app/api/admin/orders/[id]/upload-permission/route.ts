@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireStaffPermission } from "@/lib/apiAuth";
+import { sendUploadPermissionEmail } from "@/lib/email/events";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { recordWorkOrderEvent } from "@/lib/workOrders/server";
 
@@ -35,5 +36,6 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     newValue: { customer_upload_enabled: parsed.data.enabled },
     mode: "best_effort",
   });
+  await sendUploadPermissionEmail({ requestId: id, enabled: parsed.data.enabled });
   return NextResponse.json({ order: data });
 }

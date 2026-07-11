@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireApiUser } from "@/lib/apiAuth";
+import { sendAdditionalFileUploadedAdminEmail } from "@/lib/email/events";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { recordWorkOrderEvent } from "@/lib/workOrders/server";
 
@@ -80,6 +81,10 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     customerVisible: true,
     newValue: { file_name: parsed.data.fileName, file_size: parsed.data.fileSize },
     mode: "best_effort",
+  });
+  await sendAdditionalFileUploadedAdminEmail({
+    requestId: id,
+    fileName: parsed.data.fileName,
   });
 
   return NextResponse.json({ upload: uploaded });

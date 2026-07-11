@@ -1,4 +1,5 @@
 import type Stripe from "stripe";
+import { sendCreditsAddedEmail } from "@/lib/email/events";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import {
   safeAppendPaymentEvent,
@@ -97,6 +98,15 @@ export async function completeStripeCreditPurchase(
     status: "processed",
     message: "Stripe payment confirmed and credits reconciled.",
     payload: { session_id: session.id, payment_intent: paymentIntent },
+  });
+  await sendCreditsAddedEmail({
+    userId,
+    customerEmail: session.customer_email ?? session.metadata?.user_email ?? null,
+    credits,
+    amountTotal: session.amount_total ?? null,
+    currency: session.currency,
+    source: "stripe",
+    referenceId: session.id,
   });
 
   return { credits, recordId, creditsAppliedAt };

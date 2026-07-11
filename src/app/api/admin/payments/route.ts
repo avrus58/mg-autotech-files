@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireStaffPermission } from "@/lib/apiAuth";
+import { sendCreditsAddedEmail } from "@/lib/email/events";
 import { getStripe } from "@/lib/stripe";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import {
@@ -180,6 +181,14 @@ export async function POST(request: Request) {
       p_note: parsed.data.note || null,
     });
     if (result.error) return NextResponse.json({ error: result.error.message }, { status: 400 });
+    await sendCreditsAddedEmail({
+      userId: parsed.data.customerUserId,
+      credits: parsed.data.credits,
+      amountTotal: Math.round(parsed.data.amountEuro * 100),
+      currency: "eur",
+      source: "bank",
+      referenceId: parsed.data.reference,
+    });
     return NextResponse.json({ success: true, result: result.data });
   }
 

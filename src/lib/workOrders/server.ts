@@ -1,5 +1,9 @@
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import {
+  sendCustomerVisibleMessageEmail,
+  sendWorkOrderStatusEmail,
+} from "@/lib/email/events";
+import {
   normalizeRequestMessageVisibility,
   projectAdminRequestMessage,
   type RequestMessageVisibilityStatus,
@@ -704,6 +708,12 @@ export async function updateAdminWorkOrder(requestId: string, actorUserId: strin
     newValue: patch,
     message: "Work order fields updated.",
   });
+  if (patch.admin_status && patch.admin_status !== current.admin_status) {
+    await sendWorkOrderStatusEmail({ requestId, status: patch.admin_status });
+  }
+  if (patch.delivery_status && patch.delivery_status !== current.delivery_status && patch.delivery_status === "delivered") {
+    await sendWorkOrderStatusEmail({ requestId, status: "delivered" });
+  }
   return next;
 }
 
@@ -729,6 +739,7 @@ export async function addAdminWorkOrderNote(input: {
   }).select("*").single();
   if (note.error || !note.data) throw new Error(note.error?.message || "Note could not be saved.");
 
+  let linkedMessageId: string | null = null;
   if (customerVisible) {
     const messageResult = await admin.from("request_messages").insert({
       request_id: input.requestId,
@@ -740,9 +751,10 @@ export async function addAdminWorkOrderNote(input: {
     if (messageResult.error || !messageResult.data) {
       throw new Error(`Customer-visible note could not be copied to request messages: ${messageResult.error?.message ?? "No message id was returned."}`);
     }
+    linkedMessageId = String(messageResult.data.id);
     await admin
       .from("request_internal_notes")
-      .update({ linked_request_message_id: messageResult.data.id })
+      .update({ linked_request_message_id: linkedMessageId })
       .eq("id", note.data.id);
   }
 
@@ -755,6 +767,12 @@ export async function addAdminWorkOrderNote(input: {
     message: customerVisible ? "Customer-visible note added." : "Internal note added.",
     metadata: { note_type: input.noteType, note_id: note.data.id },
   });
+  if (customerVisible && linkedMessageId) {
+    await sendCustomerVisibleMessageEmail({
+      requestId: input.requestId,
+      messageId: linkedMessageId,
+    });
+  }
   return note.data;
 }
 

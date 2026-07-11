@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireStaffPermission } from "@/lib/apiAuth";
 import { maybeCreateTrainingSampleForRequest } from "@/lib/ecuIntelligence/learning";
+import { sendDeliveryCompletedEmail } from "@/lib/email/events";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { recordWorkOrderEvent } from "@/lib/workOrders/server";
 
@@ -113,6 +114,10 @@ export async function POST(
       status: "completed",
     },
     mode: "best_effort",
+  });
+  await sendDeliveryCompletedEmail({
+    requestId: id,
+    fileName: parsed.data.fileName,
   });
 
   let training: Awaited<ReturnType<typeof maybeCreateTrainingSampleForRequest>> | null = null;

@@ -196,6 +196,24 @@ export default function BuyCreditsPage() {
     if (paymentMethod === "bank") {
       try {
         const reference = await getCustomerReference(userData.user.id);
+        const selectedPackage = payload.packageId
+          ? packages.find((item) => item.id === payload.packageId)
+          : null;
+        const selectedCredits = selectedPackage?.credits ?? payload.customCredits ?? null;
+        const selectedAmount =
+          selectedPackage?.priceEuro ??
+          (payload.customCredits ? payload.customCredits * quote.customUnitPriceEuro : null);
+        await fetch("/api/email/bank-transfer", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${sessionData.session.access_token}`,
+          },
+          body: JSON.stringify({
+            credits: selectedCredits,
+            amountEuro: selectedAmount,
+          }),
+        }).catch(() => null);
         setMessage(
           `Bank transfer selected. Use your Customer ID as payment reference: ${reference}. Credits are added manually after payment is received.`
         );
