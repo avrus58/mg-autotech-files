@@ -1,0 +1,4 @@
+/apps/customer-uploader/node_modules/
+/apps/customer-uploader/dist/
+/apps/customer-uploader/dist-electron/
+/apps/customer-uploader/release/
