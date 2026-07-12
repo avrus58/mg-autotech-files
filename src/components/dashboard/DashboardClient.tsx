@@ -46,6 +46,56 @@ type Order = {
   created_at: string;
 };
 
+type DashboardProfile = {
+  credit_balance: number | string | null;
+  customer_id: string | null;
+  full_name: string | null;
+  account_type: string | null;
+  company_name: string | null;
+  phone: string | null;
+  street: string | null;
+  postal_code: string | null;
+  city: string | null;
+  country: string | null;
+  invoice_email: string | null;
+  preferred_contact: string | null;
+};
+
+function hasProfileValue(value: string | null | undefined) {
+  return Boolean(value?.trim());
+}
+
+function getProfileCompletionMissingItems(profile: DashboardProfile) {
+  const missing: string[] = [];
+
+  if (!hasProfileValue(profile.full_name)) missing.push("Full name");
+  if (!hasProfileValue(profile.phone)) missing.push("Phone / WhatsApp contact");
+  if (!hasProfileValue(profile.preferred_contact)) missing.push("Preferred contact method");
+  if (!hasProfileValue(profile.invoice_email)) missing.push("Invoice e-mail");
+  if (!hasProfileValue(profile.account_type)) missing.push("Account type");
+
+  if (profile.account_type === "company" && !hasProfileValue(profile.company_name)) {
+    missing.push("Company / workshop name");
+  }
+
+  if (
+    !hasProfileValue(profile.street) ||
+    !hasProfileValue(profile.postal_code) ||
+    !hasProfileValue(profile.city) ||
+    !hasProfileValue(profile.country)
+  ) {
+    missing.push("Billing address");
+  }
+
+  return missing;
+}
+
+function formatMissingProfileItems(items: string[]) {
+  if (items.length <= 2) return items.join(" and ");
+
+  return `${items.slice(0, -1).join(", ")} and ${items[items.length - 1]}`;
+}
+
 function formatStatus(status: string | null) {
   if (!status) return "New Request";
 
@@ -109,6 +159,7 @@ export function DashboardClient() {
   const [needsResponseCount, setNeedsResponseCount] = useState<number>(0);
   const [pendingCount, setPendingCount] = useState<number>(0);
   const [inProgressCount, setInProgressCount] = useState<number>(0);
+  const [profileMissingItems, setProfileMissingItems] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [liveRefreshing, setLiveRefreshing] = useState(false);
   const [copiedReference, setCopiedReference] = useState(false);
@@ -142,13 +193,19 @@ export function DashboardClient() {
 
       const { data: profile } = await supabase
         .from("profiles")
-        .select("credit_balance, customer_id")
+        .select(
+          "credit_balance, customer_id, full_name, account_type, company_name, phone, street, postal_code, city, country, invoice_email, preferred_contact"
+        )
         .eq("id", userId)
         .single();
 
       if (profile) {
-        setCredits(Number(profile.credit_balance ?? 0));
-        setCustomerId(profile.customer_id ?? null);
+        const dashboardProfile = profile as DashboardProfile;
+        setCredits(Number(dashboardProfile.credit_balance ?? 0));
+        setCustomerId(dashboardProfile.customer_id ?? null);
+        setProfileMissingItems(getProfileCompletionMissingItems(dashboardProfile));
+      } else {
+        setProfileMissingItems([]);
       }
 
       const { data: recentOrders } = await supabase
@@ -290,6 +347,7 @@ export function DashboardClient() {
   }, [orders]);
 
   const customerReference = formatCustomerReference(customerId);
+  const profileCompletionSummary = formatMissingProfileItems(profileMissingItems);
 
   const firstName =
     email?.split("@")[0]?.replace(/[._-]/g, " ").split(" ")[0] ?? "Customer";
@@ -632,6 +690,47 @@ export function DashboardClient() {
                 </p>
               </div>
             </div>
+
+            {profileMissingItems.length > 0 && (
+              <div className="mb-8 rounded-[2rem] border border-amber-700/40 bg-amber-950/20 p-5 shadow-2xl shadow-black/20">
+                <div className="grid gap-5 lg:grid-cols-[1fr_auto] lg:items-center">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2 text-xs font-black uppercase tracking-[0.2em] text-amber-200">
+                      <User className="h-4 w-4 shrink-0" />
+                      Profile completion
+                    </div>
+
+                    <h2 className="mt-2 break-words text-2xl font-black">
+                      Complete your customer profile
+                    </h2>
+
+                    <p className="mt-2 max-w-3xl text-sm leading-6 text-amber-100/80">
+                      Add {profileCompletionSummary} so support and billing can
+                      use your saved account details.
+                    </p>
+
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      {profileMissingItems.map((item) => (
+                        <span
+                          key={item}
+                          className="max-w-full break-words rounded-full border border-amber-600/30 bg-black/25 px-3 py-1 text-xs font-bold text-amber-100"
+                        >
+                          {item}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  <Link
+                    href="/dashboard/settings"
+                    className="inline-flex w-full items-center justify-center rounded-2xl bg-amber-300 px-5 py-3 text-sm font-black text-black transition hover:bg-amber-200 lg:w-auto"
+                  >
+                    <Settings className="mr-2 h-4 w-4" />
+                    Update Settings
+                  </Link>
+                </div>
+              </div>
+            )}
 
             <div className="mb-8 grid gap-5 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
               <div className="rounded-3xl border border-red-900/50 bg-red-950/25 p-6 shadow-2xl shadow-black/20">

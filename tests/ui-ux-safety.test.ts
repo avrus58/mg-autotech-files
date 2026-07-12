@@ -105,6 +105,28 @@ test("customer dashboard and order archive surface action-needed orders separate
   assert.match(orders, /active=\{\["completed", "cancelled", "all"\]\.includes\(view\)\}/);
 });
 
+test("customer dashboard surfaces missing profile details without changing settings flow", () => {
+  const dashboard = readProjectFile("src", "components", "dashboard", "DashboardClient.tsx");
+  const settings = readProjectFile("src", "app", "dashboard", "settings", "page.tsx");
+
+  assert.match(dashboard, /type DashboardProfile = \{/);
+  assert.match(dashboard, /full_name, account_type, company_name, phone, street, postal_code, city, country, invoice_email, preferred_contact/);
+  assert.match(dashboard, /const \[profileMissingItems, setProfileMissingItems\]/);
+  assert.match(dashboard, /getProfileCompletionMissingItems\(dashboardProfile\)/);
+  assert.match(dashboard, /profileMissingItems\.length > 0/);
+  assert.match(dashboard, /Complete your customer profile/);
+  assert.match(dashboard, /Phone \/ WhatsApp contact/);
+  assert.match(dashboard, /Invoice e-mail/);
+  assert.match(dashboard, /Company \/ workshop name/);
+  assert.match(dashboard, /Billing address/);
+  assert.match(dashboard, /href="\/dashboard\/settings"/);
+  assert.match(dashboard, /max-w-full break-words rounded-full/);
+
+  assert.match(settings, /\.update\(\{\s*[\s\S]*full_name: fullName\.trim\(\) \|\| null/);
+  assert.match(settings, /invoice_email: invoiceEmail\.trim\(\) \|\| email/);
+  assert.match(settings, /preferred_contact: preferredContact/);
+});
+
 test("customer File Expert UI renders only customer-safe report details", () => {
   const page = readProjectFile("src", "app", "dashboard", "file-expert", "[id]", "page.tsx");
   assert.match(page, /Technical coordinate data, private file fingerprints and binary internals are hidden on customer reports/);

@@ -2,6 +2,20 @@
 
 Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
+## 2026-07-12 worker run AUTO-016
+
+- Baslangic: 2026-07-12 18:20:00 +01:00; bitis: 2026-07-12 18:37:54 +01:00.
+- Gorev: Musteri dashboard'u eksik profil bilgilerini tamamlatmaya yoneltsin.
+- Fingerprint: `customer-experience|customer-dashboard-profile|settings-fields-not-surfaced|profile-completion-next-step`.
+- Sonuc: Done. Dashboard artik eksik customer-safe profil/contact/billing alanlari varsa settings linkli profil tamamlama karti gosteriyor.
+- Duplicate/evidence kontrolu: V4 package constitution dosyalari, `.autopilot/constitution/*`, AGENTS, PROJECT, ROADMAP, INBOX, FEATURE_PROPOSALS, TASKS, TASK_HISTORY, PRODUCT_SCORECARD, STATUS, package scriptleri, mevcut Git durumu ve son 100 commit incelendi. Ayni fingerprint tamamlanmis gorunmedi; evidence halen gecerliydi.
+- Degisen dosyalar: `src/components/dashboard/DashboardClient.tsx`, `tests/ui-ux-safety.test.ts`, `.autopilot/TASKS.md`, `.autopilot/TASK_HISTORY.md`, `.autopilot/STATUS.md`, `.autopilot/runtime/last-result.json`.
+- Uygulama sonucu: Dashboard `profiles` sorgusu credit/customer id yaninda `full_name`, `phone`, `preferred_contact`, `invoice_email`, account/company ve billing address alanlarini yukler. `getProfileCompletionMissingItems` yalniz eksik alanlari listeler; eksik yoksa prompt render edilmez. Prompt `/dashboard/settings` linkiyle mevcut settings kayit akisini kullanir.
+- Guvenlik/UI kontrolu: Yeni dependency, production servis cagrisi, migration, deploy, `.env`/secret, gercek musteri verisi, fiyat/hukuki iddia, kredi/odeme kurali, account policy veya settings save davranisi degistirilmedi. Dashboard yalniz customer-safe ve settings'te zaten duzenlenebilen profil alanlarini yukler; prompt chipleri responsive `break-words` siniflariyla tasma riskine karsi sinirlandi.
+- Calistirilan kontroller: `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (16/16); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (243/243); `git diff --check` PASS (yalniz CRLF uyarilari); diff review PASS.
+- Calistirilmayan kontroller: `npm run build` bu repoda bilinen restricted-network Google Fonts / Next env yukleme riski nedeniyle calistirilmadi. Live service, SQL, smoke, scraper, desktop build/package ve normal env kontrolleri calistirilmadi.
+- Kalan risk: Dashboard credit ledger preview, admin completed-today ve explicit delivery estimate Ready gorevleri ayri kapsamda devam eder. Offline build icin Google Fonts/`next/font/google` owner onayi bekleyen bilinen risk devam eder.
+
 ## 2026-07-12 worker run AUTO-014
 
 - Baslangic: 2026-07-12 17:46:00 +01:00; bitis: 2026-07-12 18:18:00 +01:00.

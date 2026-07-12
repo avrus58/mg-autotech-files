@@ -4,32 +4,6 @@
 
 ## Ready
 
-- [ ] **P2 AUTO-016 - Musteri dashboard'u eksik profil bilgilerini tamamlatmaya yoneltsin**
-  - Lane: Product Evolution
-  - Domain: Customer onboarding & profile completion
-  - Fingerprint: `customer-experience|customer-dashboard-profile|settings-fields-not-surfaced|profile-completion-next-step`
-  - Business impact: 3/5
-  - User impact: 3/5
-  - Admin impact: 3/5
-  - Strategic fit: 4/5
-  - Confidence: 5/5
-  - Effort: 2/5
-  - Risk: 2/5
-  - Evidence: `src/app/dashboard/settings/page.tsx:91-119` loads customer contact, company, invoice and preferred-contact fields; `src/components/dashboard/DashboardClient.tsx:142-150` dashboard profile fetch only reads `credit_balance` and `customer_id`, so missing contact/billing details are not surfaced before support or billing friction. `docs/customer-profile-customer-id-roadmap.md:64` expects customers to read and use stable profile details.
-  - Product value: Customers get a clear next step to complete support/billing-critical profile details before a request stalls or invoice/support follow-up is needed.
-  - Scope: Add a small profile-completion signal on the customer dashboard using existing `profiles` fields and a link to `/dashboard/settings`. Do not make fields newly mandatory and do not change billing, pricing or account policy.
-  - Acceptance criteria:
-    - Dashboard loads only customer-safe profile fields already editable in settings.
-    - Missing full name, phone/contact, invoice email or company/billing details are summarized as a profile completion prompt.
-    - Fully complete profiles do not show noisy warnings.
-    - Settings save behavior, credit display and customer ID formatting remain unchanged.
-    - Mobile and desktop dashboard cards remain readable without overflow.
-  - Validation:
-    - `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts`
-    - `npm run lint`
-    - `npm run typecheck`
-    - `npm test`
-
 - [ ] **P2 AUTO-017 - Admin completed-today metrigi teslim zamanini baz alsin**
   - Lane: Product Evolution
   - Domain: Admin operational reporting
@@ -141,6 +115,18 @@ Kabul kriterleri:
 Dogrulama: Diff incelemesi, `npm run lint`, `npm run typecheck`.
 
 ## Done
+
+### AUTO-016 [P2] Musteri dashboard'u eksik profil bilgilerini tamamlatmaya yoneltsin
+
+Durum: Done
+
+Fingerprint: `customer-experience|customer-dashboard-profile|settings-fields-not-surfaced|profile-completion-next-step`
+
+Kapsam: Musteri dashboard'una settings ekraninda zaten duzenlenebilen customer-safe profil alanlarina dayali, yalniz eksik bilgi varsa gorunen profil tamamlama sinyali eklendi.
+
+Sonuc: Dashboard `profiles` sorgusu artik `full_name`, `phone`, `preferred_contact`, `invoice_email`, account/company ve billing address alanlarini credit/customer id ile birlikte yukluyor. Eksik full name, phone/contact, invoice e-mail, account/company veya billing address bilgileri settings linkli "Complete your customer profile" kartinda ozetleniyor; eksik yoksa kart render edilmiyor. Credit display, customer ID formatting, settings save davranisi, payment/pricing kurallari ve account policy degistirilmedi.
+
+Dogrulama: `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (16/16); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (243/243); `git diff --check` PASS (yalniz CRLF uyarilari). `npm run build` bilinen restricted-network Google Fonts / Next env yukleme riski nedeniyle calistirilmadi.
 
 ### AUTO-014 [P2] Musteri paneli aksiyon gereken siparisleri ayri gostersin
 
