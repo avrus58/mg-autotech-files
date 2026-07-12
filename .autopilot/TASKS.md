@@ -82,6 +82,58 @@
     - `npm run typecheck`
     - `npm test`
 
+- [ ] **P2 AUTO-026 - Request chat uzun mesajlari gondermeden once sinirlasin**
+  - Lane: Product Evolution
+  - Domain: Customer request messaging & API contract clarity
+  - Fingerprint: `customer-experience|request-chat-composer|api-4000-character-limit-only-server-side|client-side-length-guidance`
+  - Business impact: 2/5
+  - User impact: 4/5
+  - Admin impact: 2/5
+  - Strategic fit: 4/5
+  - Confidence: 5/5
+  - Effort: 1/5
+  - Risk: 1/5
+  - Evidence: `src/app/api/requests/[id]/messages/route.ts:11-13` enforces `message` as trimmed 1-4000 characters and `src/app/api/requests/[id]/messages/route.ts:91-94` returns a 400 error for invalid length. The customer/admin chat composer in `src/components/RequestChat.tsx:203-230` posts the trimmed message directly, while `src/components/RequestChat.tsx:362-368` has no `maxLength` or counter and `src/components/RequestChat.tsx:370-374` disables Send only for empty/sending states.
+  - Product value: Customers and admins get immediate composer feedback instead of losing momentum to a preventable API rejection when a long request message exceeds the existing server contract.
+  - Scope: Add client-side length guidance and send prevention to the existing `RequestChat` composer. Reuse the current `/api/requests/[id]/messages` contract; do not change message storage, visibility filtering, permissions, realtime polling, notification sounds, database schema or maximum length.
+  - Acceptance criteria:
+    - The composer exposes the 4000-character message limit with a visible counter or remaining-character state.
+    - Send is disabled or the textarea is capped before a message can exceed the API contract.
+    - Empty trimmed messages remain blocked, valid multiline messages still send with Enter/Shift+Enter behavior unchanged.
+    - API error handling remains visible for network/auth/server failures.
+    - No admin-only notes, hidden-message metadata, storage paths, signed URLs, hashes or customer-private internals are exposed.
+  - Validation:
+    - `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts`
+    - `npm run lint`
+    - `npm run typecheck`
+    - `npm test`
+
+- [ ] **P2 AUTO-027 - Musteri bildirim paneli yukleme hatasini sessiz gecmesin**
+  - Lane: Product Evolution
+  - Domain: Customer notifications & reliability feedback
+  - Fingerprint: `customer-experience|notification-bell|load-error-silent-empty-state|visible-retryable-notification-state`
+  - Business impact: 2/5
+  - User impact: 3/5
+  - Admin impact: 2/5
+  - Strategic fit: 3/5
+  - Confidence: 5/5
+  - Effort: 1/5
+  - Risk: 1/5
+  - Evidence: `src/components/CustomerNotifications.tsx:95-103` loads notifications but returns silently on Supabase errors without setting any loading or error state. The dropdown body at `src/components/CustomerNotifications.tsx:193-195` can only show `No notifications yet`, so a failed first load is indistinguishable from a genuinely empty notification feed.
+  - Product value: Customers can tell when the notification feed failed to sync and retry instead of assuming there are no updates.
+  - Scope: Add local loading/error/retry feedback to the customer notification dropdown. Preserve the existing `notifications` table query, realtime channel, polling interval, mark-read behavior, sound preference and customer-only visibility rules.
+  - Acceptance criteria:
+    - Opening the dropdown during the first notification load shows a compact loading state.
+    - A load error shows a customer-safe error message and retry action instead of the empty-state copy.
+    - Existing notification items, unread count, toast, sound toggle and order links keep their current behavior.
+    - Mark-all-read remains a customer-scoped update and does not expose notification internals.
+    - Mobile dropdown width and long notification text remain readable without overflow.
+  - Validation:
+    - `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts`
+    - `npm run lint`
+    - `npm run typecheck`
+    - `npm test`
+
 ## In Progress
 
 ## Blocked

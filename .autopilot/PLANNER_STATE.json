@@ -1,19 +1,19 @@
 {
   "schema_version": 1,
-  "planning_cycle": 7,
-  "last_planned_at": "2026-07-12T20:39:34+01:00",
+  "planning_cycle": 8,
+  "last_planned_at": "2026-07-12T22:15:21+01:00",
   "last_domains": [
     "ResponsiveUX",
-    "Integrations"
+    "Reliability"
   ],
   "domain_last_audited": {
-    "Reliability": "2026-07-12T15:59:21+01:00",
+    "Reliability": "2026-07-12T22:15:21+01:00",
     "Security": null,
     "DataIntegrity": "2026-07-12T18:07:56+01:00",
     "Testing": null,
     "Performance": null,
     "Accessibility": null,
-    "ResponsiveUX": "2026-07-12T20:39:34+01:00",
+    "ResponsiveUX": "2026-07-12T22:15:21+01:00",
     "SEOContentI18n": null,
     "Observability": "2026-07-12T19:07:43+01:00",
     "Maintainability": null,

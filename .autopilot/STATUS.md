@@ -2,6 +2,24 @@
 
 Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
+## 2026-07-12 planner run V4 CUSTOMER MESSAGING RELIABILITY
+
+- Baslangic: 2026-07-12 22:15:21 +01:00; bitis: 2026-07-12 22:16:48 +01:00.
+- Gorev: MG AI Operating System V4 planner pass; planlama disinda uygulama kodu degistirilmedi.
+- Repo sinifi: `.autopilot/PROJECT.md`, route yapisi ve mevcut urun kapsami bu repository'nin `file.mgautotech.de` ECU file service SaaS platformu oldugunu dogruluyor. File-platform V4 constitution uygulandi; mgautotech.de ticari/SEO sinirlari guardrail olarak korundu.
+- Okunan kaynaklar: V4 package constitution dosyalari (`common/*`, `mgautotech/*`, `file-platform/*`), local `.autopilot/constitution/*`, `AGENTS.md`, `.autopilot/PROJECT.md`, ROADMAP, INBOX, FEATURE_PROPOSALS, TASKS, TASK_HISTORY, PLANNER_STATE, PRODUCT_SCORECARD, STATUS, kok ve desktop `package.json`, mevcut Git durumu, son 100 commit, ilgili request chat/message API, notification component, customer dashboard/order route, tests ve docs kaynaklari.
+- INBOX sonucu: `New requests` bos; yeni owner istegi yok. Aktif `MILESTONE-20260712-PRODUCT-EVOLUTION` devam ediyor.
+- Portfolio kontrolu: Son 10 tamamlanan is customer dashboard/order clarity, admin queue/audit ve delivery/credit/product slices arasinda dengeli. Ready sayisi 3 oldugu icin kanitli Product Evolution dilimleriyle 5'e tamamlandi; yalniz test/docs/guard/refactor gorevi uretilmedi.
+- Duplicate kontrolu: ROADMAP, INBOX, FEATURE_PROPOSALS, TASKS, TASK_HISTORY, STATUS ve son 100 commit icinde `request-chat-composer|api-4000-character-limit-only-server-side` veya `notification-bell|load-error-silent-empty-state` fingerprint/intent'i bulunmadi. Mevcut message/notification commitleri chat soft-hide ve transactional email sistemini kapsiyor; yeni gorevler client-side composer siniri ve bildirim paneli yukleme/hata gorunurlugu olarak ayriliyor.
+- Evidence kontrolu: `src/app/api/requests/[id]/messages/route.ts:11-13` mesajlari 1-4000 karakterle sinirliyor ve `:91-94` limit disinda 400 donuyor, ancak `src/components/RequestChat.tsx:362-374` composer tarafinda `maxLength`, counter veya over-limit disable yok. `src/components/CustomerNotifications.tsx:95-103` notification query hatasinda sessizce donuyor; dropdown `:193-195` yalniz `No notifications yet` bos durumunu gosterebildigi icin ilk yukleme hatasi bos feed gibi gorunebilir.
+- Audited domains: ResponsiveUX; Reliability.
+- Eklenen Ready gorevler: `AUTO-026` request chat uzun mesajlari gondermeden once sinirlasin; `AUTO-027` musteri bildirim paneli yukleme hatasini sessiz gecmesin.
+- Ready sayisi: 5 (`AUTO-023`, `AUTO-024`, `AUTO-025`, `AUTO-026`, `AUTO-027`).
+- Degisen dosyalar: `.autopilot/ROADMAP.md`, `.autopilot/TASKS.md`, `.autopilot/PLANNER_STATE.json`, `.autopilot/STATUS.md`, `.autopilot/runtime/planner-result.json`.
+- Calistirilan kontroller: zorunlu V4/repo constitution ve memory dosyalari `Get-Content` ile okundu; `git status --short --branch`; `git log -100 --pretty=format:'%h %ad %s' --date=short`; kok ve desktop `package.json` script incelemesi; hedefli PowerShell `Select-String` ve `Get-Content` ile kanit ve duplicate aramalari; `.autopilot/PLANNER_STATE.json` JSON parse PASS; `.autopilot/runtime/planner-result.json` JSON parse PASS; Ready total sayimi 5 PASS; `git diff --name-only` yalniz izinli tracked planning dosyalarini gosterdi; `git check-ignore -v .autopilot/runtime/planner-result.json` PASS; `git diff --check` PASS (yalniz CRLF uyarilari).
+- Calistirilmayan kontroller: Planlama disinda uygulama kodu degismedigi icin `npm run lint`, `npm run typecheck`, `npm test` ve `npm run build` calistirilmadi. `.env*`, live service, SQL, smoke, scraper, desktop build/package ve normal env kontrolleri calistirilmadi.
+- Kalan risk: Ready kuyrugundaki widget domain visibility, desktop local history, request chat length guidance ve notification load/error visibility iyilestirmeleri uygulanana kadar ilgili UX/operasyon belirsizlikleri devam eder. Offline build icin Google Fonts/`next/font/google` owner onayi gerektiren bilinen risk devam eder.
+
 ## 2026-07-12 reviewer run AUTO-020
 
 - Baslangic: 2026-07-12 21:53:00 +01:00; bitis: 2026-07-12 21:58:16 +01:00.
