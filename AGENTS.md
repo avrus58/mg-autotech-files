@@ -70,3 +70,15 @@
 - Geliştirme alanlarını dönüşümlü incele.
 - Güvenli ve kanıtlı iş yoksa idle kal.
 - Aynı öncelikte MANUAL görevlerini AUTO görevlerinden önce ele al.
+
+<!-- MG_AI_OS_V3_PRO -->
+## MG AI Operating System V3 Pro
+
+- Her planner, worker ve reviewer .autopilot/constitution/ altındaki tüm dosyaları okur.
+- Kod kalitesi tek başına amaç değildir; ürün, kullanıcı, admin ve işletme değeri amaçtır.
+- Aynı işi tekrar etme.
+- Üç tur üst üste yalnız test/docs/guard görevi üretme.
+- Küçük ve orta ölçekli ürün özelliklerini güvenli sınırlar içinde otomatik uygula.
+- Büyük fikirleri .autopilot/FEATURE_PROPOSALS.md içine yaz.
+- Product scorecard yalnız gerçek kanıtla güncellenir.
+- Production deploy, canlı migration, secret, gerçek müşteri verisi, fiyat ve hukuki iddia owner onayı olmadan yasaktır.

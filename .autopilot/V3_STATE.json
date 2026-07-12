@@ -1,0 +1,9 @@
+﻿{
+    "version":  "3.0.0-pro",
+    "mode":  "product-first",
+    "installed_at":  "2026-07-12T12:44:19",
+    "profiles":  {
+                     "mgautotech.de":  "physical-business-growth",
+                     "mg-autotech-files":  "saas-product-evolution"
+                 }
+}
