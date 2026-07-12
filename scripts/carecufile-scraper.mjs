@@ -4,13 +4,13 @@
  * CareEcuFile vehicle database scraper
  *
  * Usage:
- *   node scripts/carecufile-scraper.mjs --brands-only
- *   node scripts/carecufile-scraper.mjs --brand-id 7 --brand-name BMW --limit-models 1 --limit-generations 1 --limit-engines 2
- *   node scripts/carecufile-scraper.mjs --brand-id 68 --brand-name Mercedes-Benz --append
- *   node scripts/carecufile-scraper.mjs --all --append
+ *   node scripts/carecufile-scraper.mjs --allow-network --brands-only
+ *   node scripts/carecufile-scraper.mjs --allow-network --brand-id 7 --brand-name BMW --limit-models 1 --limit-generations 1 --limit-engines 2
+ *   node scripts/carecufile-scraper.mjs --allow-network --brand-id 68 --brand-name Mercedes-Benz --append
+ *   node scripts/carecufile-scraper.mjs --allow-network --all --append
  *
  * Optional:
- *   CAREECU_COOKIE="PHPSESSID=...; cf_clearance=..." node scripts/carecufile-scraper.mjs --brand-id 7 --brand-name BMW
+ *   CAREECU_COOKIE="PHPSESSID=...; cf_clearance=..." node scripts/carecufile-scraper.mjs --allow-network --brand-id 7 --brand-name BMW
  *
  * Do not share your cookie with anyone.
  */
@@ -18,6 +18,7 @@
 import { mkdir, writeFile, readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import path from "node:path";
+import { requireCareEcuNetworkPermission } from "./carecufile-network-guard.mjs";
 
 const BASE_URL = "https://carecufile.com";
 const LANG = "en";
@@ -25,7 +26,18 @@ const OUTPUT_DIR = "data";
 const OUTPUT_JSON = path.join(OUTPUT_DIR, "vehicle-database.json");
 const OUTPUT_ERRORS = path.join(OUTPUT_DIR, "vehicle-database-errors.json");
 
-const args = parseArgs(process.argv.slice(2));
+const rawArgs = process.argv.slice(2);
+const args = parseArgs(rawArgs);
+
+try {
+  requireCareEcuNetworkPermission({
+    argv: rawArgs,
+    scriptName: "carecufile-scraper",
+  });
+} catch (error) {
+  console.error(error instanceof Error ? error.message : String(error));
+  process.exit(1);
+}
 
 const HEADERS = {
   "accept": "*/*",

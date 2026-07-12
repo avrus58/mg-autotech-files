@@ -4,19 +4,6 @@
 
 ## Ready
 
-### AUTO-005 [P0] Scraper scriptlerine explicit network guard ekle
-
-Kapsam: `scripts/carecufile-scraper.mjs` ve `scripts/scrape-all-brands.mjs` dis aga cikmadan once explicit flag/env gerektirsin.
-
-Kabul kriterleri:
-
-- Flag/env yokken script network istegi yapmadan anlasilir mesajla cikar.
-- Explicit izinle mevcut scraper davranisi korunur.
-- `scripts/README-carecufile-scraper.md` yeni guard'i aciklar.
-- Veri dosyalarinda otomatik icerik degisikligi yapilmaz.
-
-Dogrulama: Guard'i tetikleyen no-network komutu, `npm test`.
-
 ### AUTO-006 [P1] `src/proxy.ts` locale davranisi icin unit test ekle
 
 Kapsam: Locale cookie/header cozumu ve localized path davranisi icin dar kapsamli test ekle.
@@ -143,6 +130,18 @@ Kabul kriterleri:
 Dogrulama: Diff incelemesi, `npm run lint`, `npm run typecheck`.
 
 ## Done
+
+### AUTO-005 [P0] Scraper scriptlerine explicit network guard ekle
+
+Durum: Done
+
+Fingerprint: `security|scraper-scripts|external-network-without-explicit-opt-in|explicit-careecufile-network-guard`
+
+Kapsam: `scripts/carecufile-scraper.mjs` ve `scripts/scrape-all-brands.mjs` dis aga cikmadan once explicit `--allow-network` flag'i veya `ALLOW_CAREECU_NETWORK=1` env izni gerektirir.
+
+Sonuc: Izin yokken scraperlar fetch, child scraping veya veri dosyasi yazma adimina gelmeden anlasilir mesajla cikar. Explicit izinle mevcut scraping argumanlari korunur; tum marka scripti `--allow-network` bayragini child scraper'a aktarir. `scripts/README-carecufile-scraper.md` yeni guard'i aciklar.
+
+Dogrulama: `node scripts/carecufile-scraper.mjs --brands-only` beklenen guard cikisi; `.\node_modules\.bin\tsx.cmd --test tests/carecufile-scraper-guard.test.ts` PASS (4/4); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (232/232); `git diff --check` PASS (yalnizca CRLF uyarilari).
 
 ### AUTO-004 [P0] Smoke scriptlerine non-local hedef guard'i ekle
 

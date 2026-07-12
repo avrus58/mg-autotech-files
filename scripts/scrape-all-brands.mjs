@@ -1,5 +1,9 @@
 import { spawn } from "node:child_process";
 import fs from "node:fs/promises";
+import {
+  CAREECU_NETWORK_OVERRIDE_FLAG,
+  requireCareEcuNetworkPermission,
+} from "./carecufile-network-guard.mjs";
 
 const BRANDS_FILE = "data/carecufile-brands.json";
 const PROGRESS_FILE = "data/scrape-all-progress.json";
@@ -7,6 +11,20 @@ const DATABASE_FILE = "data/vehicle-database.json";
 
 const WAIT_BETWEEN_BRANDS_MS = Number(process.env.CAREECU_BRAND_DELAY_MS || 15000);
 const WAIT_BETWEEN_ENGINES_MS = Number(process.env.CAREECU_REQUEST_DELAY_MS || 350);
+const rawArgs = process.argv.slice(2);
+const childNetworkArgs = rawArgs.includes(CAREECU_NETWORK_OVERRIDE_FLAG)
+  ? [CAREECU_NETWORK_OVERRIDE_FLAG]
+  : [];
+
+try {
+  requireCareEcuNetworkPermission({
+    argv: rawArgs,
+    scriptName: "scrape-all-brands",
+  });
+} catch (error) {
+  console.error(error instanceof Error ? error.message : String(error));
+  process.exit(1);
+}
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -54,6 +72,7 @@ function runBrandScraper(brand) {
       process.execPath,
       [
         "scripts/carecufile-scraper.mjs",
+        ...childNetworkArgs,
         "--brand-id",
         String(brand.id),
         "--brand-name",

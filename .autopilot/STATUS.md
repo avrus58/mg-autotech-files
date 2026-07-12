@@ -2,6 +2,31 @@
 
 Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
+## 2026-07-12 reviewer run AUTO-005
+
+- Gorev: Mevcut uncommitted AUTO-005 degisikliklerini bagimsiz reviewer olarak incelemek.
+- Sonuc: Accepted. Scraper entrypoint'leri explicit `--allow-network` veya `ALLOW_CAREECU_NETWORK=1` olmadan CareEcuFile fetch, child scraping veya veri dosyasi yazma adimina gecmeden duruyor.
+- Duplicate/evidence kontrolu: TASKS, TASK_HISTORY, STATUS, last-result, product scorecard, constitution dosyalari, tam diff, untracked dosyalar ve son 100 commit incelendi. Ayni fingerprint daha once tamamlanmis gorunmedi; evidence gercek: HEAD'de scraper dogrudan fetch/write pathlerine ulasabiliyordu ve tum marka scripti child scraper baslatabiliyordu.
+- Reviewer duzeltmesi: Kod duzeltmesi gerekmedi. `.autopilot/runtime/review-result.json` accepted olarak yazildi.
+- Risk kontrolu: Production servis cagrisi, migration, secret, musteri verisi, yeni dependency, fiyat/hukuki iddia, doorway SEO veya UI/regresyon riski tespit edilmedi. Explicit izinli gercek scraping otonom olarak calistirilmadi.
+- Calistirilan kontroller: `node scripts/carecufile-scraper.mjs --brands-only` beklenen guard cikisi PASS; `.\node_modules\.bin\tsx.cmd --test tests/carecufile-scraper-guard.test.ts` PASS (4/4); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (232/232); `git diff --check` PASS (yalnizca CRLF uyarilari).
+- Calistirilmayan kontroller: `npm run build` script/test/docs odakli degisiklik ve bilinen restricted-network Google Fonts / Next env yukleme riski nedeniyle calistirilmadi.
+- Kalan risk: CareEcuFile scraping sadece bilincli human/operator izniyle yapilmalidir; Ready kuyrugundaki P1/P2 urun ve test gorevleri devam ediyor.
+
+## 2026-07-12 worker run AUTO-005
+
+- Gorev: Scraper scriptlerine explicit network guard eklemek.
+- Fingerprint: `security|scraper-scripts|external-network-without-explicit-opt-in|explicit-careecufile-network-guard`.
+- Duplicate kontrolu: ROADMAP, TASKS, TASK_HISTORY, STATUS ve son 100 commit incelendi; ayni fingerprint veya CareEcuFile scraper icin explicit network opt-in guard'i tamamlanmis gorunmedi.
+- Evidence kontrolu: `scripts/carecufile-scraper.mjs` `getBrands`, `getText` ve `postText` pathlerine explicit opt-in olmadan ulasabiliyordu; `scripts/scrape-all-brands.mjs` child scraper baslatabiliyordu.
+- Degisen dosyalar: `scripts/carecufile-network-guard.mjs`, `scripts/carecufile-scraper.mjs`, `scripts/scrape-all-brands.mjs`, `scripts/README-carecufile-scraper.md`, `tests/carecufile-scraper-guard.test.ts`, `.autopilot/TASKS.md`, `.autopilot/TASK_HISTORY.md`, `.autopilot/STATUS.md`, `.autopilot/runtime/last-result.json`.
+- Sonuc: CareEcuFile scraper entrypoint'leri `--allow-network` veya `ALLOW_CAREECU_NETWORK=1` olmadan fetch, child scraping veya veri dosyasi yazma adimina gelmeden anlasilir mesajla cikar. Explicit izinle mevcut scraping argumanlari korunur; tum marka scripti `--allow-network` bayragini child scraper'a aktarir.
+- Guvenlik/UI kontrolu: Dis ag izin guard'i eklendi; `.env`, secret, musteri verisi, production servis, migration, deploy veya yeni dependency kullanilmadi. Veri dosyalari degismedi. UI degisikligi olmadigi icin responsive/accessibility/loading/error/empty state etkisi yok.
+- Product scorecard: Kanitli skor metodolojisi bulunmadigi icin puan degistirilmedi.
+- Calistirilan kontroller: `node scripts/carecufile-scraper.mjs --brands-only` beklenen guard cikisi PASS; `.\node_modules\.bin\tsx.cmd --test tests/carecufile-scraper-guard.test.ts` PASS (4/4); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (232/232); `git diff --check` PASS (yalnizca CRLF uyarilari); diff review PASS.
+- Calistirilmayan kontroller: `npm run build` script/test/docs odakli gorev ve bilinen restricted-network Google Fonts / Next env yukleme riski nedeniyle calistirilmadi. Scraperlar explicit network izinle calistirilmadi ve dis aga cikilmadi.
+- Kalan risk: CareEcuFile scraping sadece bilincli human/operator izniyle yapilmalidir; Ready kuyrugunda P1/P2 urun ve test gorevleri devam ediyor.
+
 ## 2026-07-12 reviewer run AUTO-004
 
 - Gorev: Mevcut uncommitted AUTO-004 degisikliklerini bagimsiz reviewer olarak incelemek.
@@ -43,8 +68,8 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
 - Kurulum tarihi: 2026-07-12 (Europe/Berlin)
 - Aktif branch: codex/autopilot
-- Son basarili gorev: AUTO-004 Smoke scriptlerine non-local hedef guard'i ekle
-- Son dogrulama: reviewer no-network guard kontrolu PASS; hedefli smoke/work-order test PASS (61/61); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (228/228); `git diff --check` PASS (yalnizca CRLF uyarilari)
+- Son basarili gorev: AUTO-005 Scraper scriptlerine explicit network guard ekle
+- Son dogrulama: CareEcuFile no-network guard kontrolu PASS; hedefli scraper guard test PASS (4/4); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (232/232); `git diff --check` PASS (yalnizca CRLF uyarilari)
 - Insan mudahalesi gereken konu: Offline build icin Google Fonts/`next/font/google` stratejisi onayi; production smoke, SQL migration, deploy ve normal env kontrolleri insan onayi gerektirir.
 
 ## 2026-07-12 reviewer run AUTO-003

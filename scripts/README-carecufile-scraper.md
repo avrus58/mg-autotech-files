@@ -10,13 +10,36 @@ ZIP içindeki dosyayı şu klasöre koy:
 scripts/carecufile-scraper.mjs
 ```
 
+## Network guard
+
+Bu scraper CareEcuFile'a dis ag istegi yapar. Yanlislikla otomatik calismamasi icin varsayilan olarak network'e cikmadan durur.
+
+Gercek scraping icin komuta `--allow-network` ekle:
+
+```powershell
+node scripts/carecufile-scraper.mjs --allow-network --brands-only
+```
+
+Alternatif olarak yalniz bilerek calistirilan oturumda env izni verilebilir:
+
+```powershell
+$env:ALLOW_CAREECU_NETWORK="1"
+node scripts/carecufile-scraper.mjs --brands-only
+```
+
+Tum marka dongusu de ayni izni ister:
+
+```powershell
+node scripts/scrape-all-brands.mjs --allow-network
+```
+
 ## 2) İlk test: marka listesi
 
 PowerShell:
 
 ```powershell
 cd C:\Users\gokka\Desktop\mg-autotech-files
-node scripts/carecufile-scraper.mjs --brands-only
+node scripts/carecufile-scraper.mjs --allow-network --brands-only
 ```
 
 Çıktı:
@@ -30,7 +53,7 @@ data/carecufile-brands.json
 Önce küçük test yap:
 
 ```powershell
-node scripts/carecufile-scraper.mjs --brand-id 7 --brand-name BMW --limit-models 1 --limit-generations 1 --limit-engines 2
+node scripts/carecufile-scraper.mjs --allow-network --brand-id 7 --brand-name BMW --limit-models 1 --limit-generations 1 --limit-engines 2
 ```
 
 Çıktı:
@@ -45,13 +68,13 @@ data/vehicle-database-errors.json
 BMW komple:
 
 ```powershell
-node scripts/carecufile-scraper.mjs --brand-id 7 --brand-name BMW
+node scripts/carecufile-scraper.mjs --allow-network --brand-id 7 --brand-name BMW
 ```
 
 Tüm markalar:
 
 ```powershell
-node scripts/carecufile-scraper.mjs --all
+node scripts/carecufile-scraper.mjs --allow-network --all
 ```
 
 ## 5) Cloudflare / session sorunu olursa
@@ -62,7 +85,7 @@ PowerShell örnek:
 
 ```powershell
 $env:CAREECU_COOKIE="PHPSESSID=BURAYA; cf_clearance=BURAYA"
-node scripts/carecufile-scraper.mjs --brand-id 7 --brand-name BMW --limit-models 1 --limit-generations 1 --limit-engines 2
+node scripts/carecufile-scraper.mjs --allow-network --brand-id 7 --brand-name BMW --limit-models 1 --limit-generations 1 --limit-engines 2
 ```
 
 Cookie'yi kimseyle paylaşma.
@@ -116,10 +139,10 @@ Normalde script her çalışınca `data/vehicle-database.json` dosyasını yenid
 Eski datayı silmeden yeni markayı eklemek için `--append` kullan:
 
 ```powershell
-node scripts/carecufile-scraper.mjs --brand-id 7 --brand-name BMW --append
-node scripts/carecufile-scraper.mjs --brand-id 68 --brand-name Mercedes-Benz --append
-node scripts/carecufile-scraper.mjs --brand-id 6 --brand-name Audi --append
-node scripts/carecufile-scraper.mjs --brand-id 99 --brand-name Volkswagen --append
+node scripts/carecufile-scraper.mjs --allow-network --brand-id 7 --brand-name BMW --append
+node scripts/carecufile-scraper.mjs --allow-network --brand-id 68 --brand-name Mercedes-Benz --append
+node scripts/carecufile-scraper.mjs --allow-network --brand-id 6 --brand-name Audi --append
+node scripts/carecufile-scraper.mjs --allow-network --brand-id 99 --brand-name Volkswagen --append
 ```
 
 Aynı araç tekrar çekilirse duplicate yapmaz, mevcut kaydı günceller.
@@ -129,11 +152,11 @@ Aynı araç tekrar çekilirse duplicate yapmaz, mevcut kaydı günceller.
 Önce küçük test:
 
 ```powershell
-node scripts/carecufile-scraper.mjs --brand-id 68 --brand-name Mercedes-Benz --limit-models 2 --limit-generations 2 --limit-engines 2 --append
+node scripts/carecufile-scraper.mjs --allow-network --brand-id 68 --brand-name Mercedes-Benz --limit-models 2 --limit-generations 2 --limit-engines 2 --append
 ```
 
 Sonra marka komple:
 
 ```powershell
-node scripts/carecufile-scraper.mjs --brand-id 68 --brand-name Mercedes-Benz --append
+node scripts/carecufile-scraper.mjs --allow-network --brand-id 68 --brand-name Mercedes-Benz --append
 ```
