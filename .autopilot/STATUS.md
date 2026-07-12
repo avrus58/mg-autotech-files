@@ -10,6 +10,18 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 - Son dogrulama: `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (221/221); `npm run build` FAIL (restricted network nedeniyle Google Fonts fetch hatasi)
 - Insan mudahalesi gereken konu: Offline build icin Google Fonts/`next/font/google` stratejisi onayi; production smoke, SQL migration, deploy ve env kontrolleri insan onayi gerektirir.
 
+## 2026-07-12 planner run
+
+- Gorev: Portfoy planlamasi ve guvenli gorev kesfi; uygulama koduna dokunulmadi.
+- Okunan kaynaklar: `AGENTS.md`, `.autopilot/PROJECT.md`, `.autopilot/ROADMAP.md`, `.autopilot/INBOX.md`, `.autopilot/IMPROVEMENT_AREAS.md`, `.autopilot/TASKS.md`, `.autopilot/TASK_HISTORY.md`, `.autopilot/PLANNER_STATE.json`, `.autopilot/STATUS.md`, `package.json`, `git status --short --branch`, son 100 commit ozeti.
+- INBOX sonucu: `New requests` bos; owner kaynakli yeni istek islenmedi.
+- Duplicate kontrolu: TASKS/ROADMAP/TASK_HISTORY/STATUS ve son 100 commit incelendi; mevcut guvenli isler zaten `AUTO-001` - `AUTO-010` olarak kayitli.
+- Degisen dosyalar: `.autopilot/TASKS.md`, `.autopilot/PLANNER_STATE.json`, `.autopilot/STATUS.md`, `.autopilot/runtime/planner-result.json`.
+- Sonuc: Yeni gorev eklenmedi. Ready hedef araligi icin `AUTO-009` ve `AUTO-010` Later bolumune tasindi; Ready sayisi 8 oldu.
+- Calistirilan kontroller: `git status --short --branch`; `git log -100 --pretty=format:'%h %ad %s' --date=short`; `Get-Content` ile zorunlu planlama dosyalari; `package.json` script incelemesi.
+- Calistirilmayan kontroller: Uygulama kodu degismedigi icin `npm run lint`, `npm run typecheck`, `npm test`, `npm run build` calistirilmadi.
+- Kalan risk: Ready kuyrugundaki mevcut P0/P1 isler uygulanmadikca env checker, smoke, scraper ve offline build riskleri devam eder.
+
 ## Bootstrap bulgulari
 
 - Git durumu baslangicta dirty idi: `.gitignore` modified, `.autopilot/` ve `AGENTS.md` untracked gorundu. Bu calisma mevcut degisiklikleri geri almaz.

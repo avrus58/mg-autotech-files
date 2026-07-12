@@ -108,6 +108,12 @@ Kabul kriterleri:
 
 Dogrulama: Markdown diff incelemesi, `npm run lint`.
 
+## In Progress
+
+## Blocked
+
+## Later
+
 ### AUTO-009 [P2] Production smoke dokumani ile local autopilot smoke ayrimini netlestir
 
 Kapsam: `docs/production-smoke-checklist.md` ve ilgili guvenlik notlarinda production smoke'un insan kontrollu, autopilot smoke'un local-only oldugunu ayir.
@@ -133,9 +139,5 @@ Kabul kriterleri:
 - Diff sadece yorum/dokuman karakter duzeltmesi icerir.
 
 Dogrulama: Diff incelemesi, `npm run lint`, `npm run typecheck`.
-
-## In Progress
-
-## Blocked
 
 ## Done
