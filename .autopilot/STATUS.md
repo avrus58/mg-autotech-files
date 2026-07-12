@@ -2,6 +2,24 @@
 
 Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
+## 2026-07-12 planner run V4 DESKTOP INTAKE AND DASHBOARD RELIABILITY
+
+- Baslangic: 2026-07-12 23:21:52 +01:00; bitis: 2026-07-12 23:21:52 +01:00 kaydiyla planlama tamamlandi.
+- Gorev: MG AI Operating System V4 planner pass; planlama disinda uygulama kodu degistirilmedi.
+- Repo sinifi: `.autopilot/PROJECT.md`, route yapisi ve desktop/customer/admin yuzeyleri bu repository'nin `file.mgautotech.de` ECU file service SaaS platformu oldugunu dogruluyor. File-platform V4 constitution uygulandi; `mgautotech.de` ticari/SEO sinirlari guardrail olarak korundu.
+- Okunan kaynaklar: V4 package constitution dosyalari (`common/*`, `mgautotech/*`, `file-platform/*`), local `.autopilot/constitution/*`, `AGENTS.md`, `.autopilot/PROJECT.md`, ROADMAP, INBOX, FEATURE_PROPOSALS, TASKS, TASK_HISTORY, PLANNER_STATE, PRODUCT_SCORECARD, STATUS, kok ve desktop `package.json`, mevcut Git durumu, son 100 commit, ilgili customer dashboard, notification, desktop uploader app/API/test, widget admin route/UI, order detail/settings route ve docs kaynaklari.
+- INBOX sonucu: `New requests` bos; yeni owner istegi yok. Aktif `MILESTONE-20260712-PRODUCT-EVOLUTION` devam ediyor.
+- Portfolio kontrolu: Son 10 tamamlanan is customer dashboard/order clarity, admin queue/audit ve delivery/credit/product slices arasinda dengeli. Ready sayisi 3 oldugu icin kanitli Product Evolution/Reliability dilimleriyle 5'e tamamlandi; yalniz test/docs/guard/refactor gorevi uretilmedi.
+- Duplicate kontrolu: ROADMAP, INBOX, FEATURE_PROPOSALS, TASKS, TASK_HISTORY, STATUS ve son 100 commit icinde `request-notes-contract|api-length-limits-and-silent-1000-char-truncation` veya `dashboard-data-sync|supabase-load-errors-look-empty-or-syncing` fingerprint/intent'i bulunmadi. Desktop local history raw-status bulgusu mevcut `AUTO-025` fingerprint'ine ait oldugu icin yeni gorev yapilmadi; `AUTO-025` evidence/scope dashboard preview'i de kapsayacak sekilde netlestirildi.
+- Evidence kontrolu: `src/app/api/desktop/requests/finalize/route.ts:39-42` desktop finalize API not/ECU/gearbox/readMethod uzunluk sozlesmesini belirliyor; `apps/customer-uploader/src/App.tsx:1278-1282` notes step alanlarinda gorunur limit yok; `apps/customer-uploader/src/validation.ts:36-40` tum stringleri 1000 karakterde sessiz kirpiyor. `src/components/dashboard/DashboardClient.tsx:215-299` profile/order/credit/count sorgularinda Supabase `error` degerlerini kontrol etmiyor; `src/components/dashboard/DashboardClient.tsx:192` silent sync baslatirken `src/components/dashboard/DashboardClient.tsx:300-301` loading/syncing durumunu yalniz basarili yol sonunda temizliyor.
+- Audited domains: Reliability; ResponsiveUX.
+- Eklenen Ready gorevler: `AUTO-028` desktop uploader not alanlari API sinirini gondermeden once gostersin; `AUTO-029` musteri dashboard veri senkron hatasini bos durum gibi gostermesin.
+- Ready sayisi: 5 (`AUTO-023`, `AUTO-025`, `AUTO-027`, `AUTO-028`, `AUTO-029`).
+- Degisen dosyalar: `.autopilot/ROADMAP.md`, `.autopilot/TASKS.md`, `.autopilot/PLANNER_STATE.json`, `.autopilot/STATUS.md`, `.autopilot/runtime/planner-result.json`.
+- Calistirilan kontroller: zorunlu V4 constitution ve repository memory dosyalari `Get-Content` ile okundu; `git status --short --branch`; `git log -100 --pretty=format:'%h %ad %s' --date=short`; kok ve desktop `package.json` script incelemesi; hedefli `Get-ChildItem`/`Select-String` ile route/UI/test/docs ve duplicate aramalari; `.autopilot/PLANNER_STATE.json` JSON parse PASS; `.autopilot/runtime/planner-result.json` JSON parse PASS; Ready checkbox sayimi 5 PASS; `git diff --name-only` yalniz izinli tracked planning dosyalarini gosterdi; `git check-ignore -v .autopilot/runtime/planner-result.json` PASS; `git diff --check` PASS (yalniz CRLF uyarilari).
+- Calistirilmayan kontroller: Planlama disinda uygulama kodu degismedigi icin `npm run lint`, `npm run typecheck`, `npm test` ve `npm run build` calistirilmadi. `.env*`, live service, SQL, smoke, scraper, desktop build/package ve normal env kontrolleri calistirilmadi.
+- Kalan risk: Ready kuyrugundaki widget domain visibility, desktop history labels, notification load/error state, desktop notes contract guidance ve dashboard sync error state uygulanana kadar ilgili UX/operasyon belirsizlikleri devam eder. Offline build icin Google Fonts/`next/font/google` owner onayi gerektiren bilinen risk devam eder.
+
 ## 2026-07-12 worker run AUTO-026
 
 - Baslangic: 2026-07-12 22:24:00 +01:00; bitis: 2026-07-12 22:58:03 +01:00.

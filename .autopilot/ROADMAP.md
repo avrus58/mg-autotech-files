@@ -27,6 +27,8 @@
   - Windows desktop uploader local upload history, raw status degerleri yerine ayni guvenli status etiketlerini kullansin.
   - Request chat composer, mevcut 4000 karakter API sinirini gonderimden once musteriye ve admin kullanicisina gostersin.
   - Musteri bildirim paneli, bildirim yuklenemeyince sessiz bos durum yerine retry edilebilir hata/yukleme durumunu gostersin.
+  - Windows desktop uploader yeni istek not/ECU/read-method alanlari, desktop finalize API uzunluk sozlesmesini gonderimden once musteriye gostersin.
+  - Musteri dashboard'u, profil/order/credit senkron hatalarini bos veya sifir durum gibi gostermek yerine retry edilebilir hata durumuyla ayirsin.
 - Success signals:
   - Musteri, talebin gercek durumunu ve kendi aksiyon gereksinimini detay ekraninda ayri gorebilir.
   - Musteri, aksiyon bekleyen siparisi liste veya dashboard uzerinden hizlica bulabilir.
@@ -44,6 +46,8 @@
   - Desktop uploader kullanicisi, local history filtre ve satirlarinda teknik raw status yerine okunabilir durum etiketleri gorur.
   - Musteri ve admin, uzun request chat mesajinin API limitine takilacagini gondermeden once gorur.
   - Musteri, bildirim panelinin gercekten bos mu yoksa senkron hatasinda mi oldugunu ayirt eder.
+  - Desktop uploader kullanicisi, uzun not veya teknik metadata alaninin sessizce kirpilmeden once hangi sinira takildigini gorur.
+  - Musteri dashboard kullanicisi, order/kredi/profile verisi yuklenemediginde bunu gercek bos durumdan ayirt edip tekrar deneyebilir.
   - Migration/fallback durumlarinda mutasyon aksiyonlari read-only davranir ve hata yerine acik mesaj verir.
 
 ## Owner priorities
