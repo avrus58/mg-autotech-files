@@ -6,9 +6,33 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
 - Kurulum tarihi: 2026-07-12 (Europe/Berlin)
 - Aktif branch: codex/autopilot
-- Son basarili gorev: AUTO-002 Payment env checker icin otonom guvenli mod ekle
-- Son dogrulama: reviewer `node scripts/check-payment-env.js --schema-only` PASS; hedefli test PASS (3/3); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (224/224); `git diff --check` PASS (yalnizca CRLF uyarilari)
+- Son basarili gorev: AUTO-003 Desktop env checker icin otonom guvenli mod ekle
+- Son dogrulama: reviewer `node apps/customer-uploader/scripts/check-env.mjs --schema-only` PASS; hedefli desktop test PASS (20/20); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (227/227); `git diff --check` PASS (yalnizca CRLF uyarilari)
 - Insan mudahalesi gereken konu: Offline build icin Google Fonts/`next/font/google` stratejisi onayi; production smoke, SQL migration, deploy ve normal env kontrolleri insan onayi gerektirir.
+
+## 2026-07-12 reviewer run AUTO-003
+
+- Gorev: Mevcut uncommitted AUTO-003 degisikliklerini bagimsiz reviewer olarak incelemek.
+- Sonuc: Accepted. Desktop env checker `--schema-only` modu root/app `.env*` dosyalarini okumadan public desktop Vite env sozlesmesini raporlar; varsayilan normal env kontrol davranisi korunur.
+- Duplicate/evidence kontrolu: ROADMAP, TASKS, TASK_HISTORY, STATUS ve Git gecmisi incelendi; ayni fingerprint daha once tamamlanmis gorunmedi. Evidence gercek: HEAD'deki `apps/customer-uploader/scripts/check-env.mjs` safe mode branch'i olmadan root/app `.env` ve `.env.local` kaynaklarini okuyordu.
+- Reviewer duzeltmesi: `.autopilot/PROJECT.md` icindeki stale desktop schema-only notlari guncellendi; normal mod ve guvenli `--schema-only` modu ayrimi eklendi.
+- Risk kontrolu: Production servis, migration, secret, musteri verisi, yeni dependency, debug kodu veya kapsam disi refactor tespit edilmedi. UI degisikligi olmadigi icin responsive/accessibility/loading/error/empty state etkisi yok.
+- Calistirilan kontroller: `node apps/customer-uploader/scripts/check-env.mjs --schema-only` PASS; `.\node_modules\.bin\tsx.cmd --test tests/customer-uploader.test.ts` PASS (20/20); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (227/227); `git diff --check` PASS (yalnizca CRLF uyarilari).
+- Calistirilmayan kontroller: `npm run build` script/test/autopilot-doc odakli degisiklik ve bilinen restricted-network Google Fonts bagimliligi nedeniyle calistirilmadi. Desktop normal `npm run check-env`, `dev`, `build` ve `package:win` `.env*` veya packaging bagimliliklari nedeniyle calistirilmadi.
+- Kalan risk: Smoke ve scraper guard gorevleri Ready kuyrugunda devam ediyor; offline build Google Fonts stratejisi owner onayi bekliyor.
+
+## 2026-07-12 worker run AUTO-003
+
+- Gorev: Desktop env checker icin otonom guvenli `--schema-only` modu eklemek.
+- Fingerprint: `security|desktop-env-checker|env-file-secret-read|schema-only-public-contract-validation`.
+- Duplicate kontrolu: TASK_HISTORY, Done gorevleri ve yakin Git gecmisi incelendi; ayni fingerprint veya uygulanmis desktop `schema-only` modu bulunmadi.
+- Evidence kontrolu: `apps/customer-uploader/scripts/check-env.mjs` baslangicta safe mode branch'i olmadan root/app `.env` ve `.env.local` dosyalarini top-level parse ediyordu.
+- Degisen dosyalar: `apps/customer-uploader/scripts/check-env.mjs`, `tests/customer-uploader.test.ts`, `.autopilot/TASKS.md`, `.autopilot/TASK_HISTORY.md`, `.autopilot/STATUS.md`, `.autopilot/runtime/last-result.json`.
+- Sonuc: `node apps/customer-uploader/scripts/check-env.mjs --schema-only` root/app `.env*` dosyalarini okumadan public desktop Vite env sozlesmesini raporlar. Varsayilan desktop build/dev oncesi env kontrol davranisi korunur.
+- Guvenlik/UI kontrolu: `.env`, secret, musteri verisi, production servis, migration, deploy veya yeni dependency kullanilmadi. UI degisikligi olmadigi icin responsive/accessibility/loading/error/empty state etkisi yok.
+- Calistirilan kontroller: `node apps/customer-uploader/scripts/check-env.mjs --schema-only` PASS; `.\node_modules\.bin\tsx.cmd --test tests/customer-uploader.test.ts` PASS (20/20); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (227/227); `git diff --check` PASS (yalnizca CRLF uyarilari).
+- Calistirilmayan kontroller: `npm run build` script/test odakli gorev ve bu repoda bilinen restricted-network Google Fonts / Next env yukleme riski nedeniyle calistirilmadi. Desktop normal `npm run check-env`, `dev`, `build` ve `package:win` `.env*` veya packaging bagimliliklari nedeniyle calistirilmadi.
+- Kalan risk: Smoke ve scraper guard gorevleri Ready kuyrugunda devam ediyor; offline build Google Fonts stratejisi owner onayi bekliyor.
 
 ## 2026-07-12 reviewer run AUTO-002
 

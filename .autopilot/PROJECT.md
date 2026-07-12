@@ -52,6 +52,7 @@ Kok `package.json` scriptleri:
 Desktop `apps/customer-uploader/package.json` scriptleri:
 
 - `npm run check-env`: `.env`, `.env.local` ve public Vite env degerlerini okur; otonom dongude calistirilmez.
+- `node apps/customer-uploader/scripts/check-env.mjs --schema-only`: root/app `.env*` dosyalarini okumadan public desktop Vite env sozlesmesini kontrol eder; otonom dongu icin guvenlidir.
 - `npm run dev`, `npm run build`, `npm run package:win`: desktop env ve packaging bagimliliklari nedeniyle yalnizca acik gorevle calistirilir.
 
 Ek guvenli script:
@@ -92,7 +93,7 @@ Calistirilmayan veya insan onayi isteyen kontroller:
 ## Bilinen sorunlar ve teknik borc
 
 - Offline/restricted build `next/font/google` nedeniyle Google Fonts fetch hatasina takiliyor.
-- Desktop `check-env.mjs` `.env`/`.env.local` okuyor; otonom dongu icin schema-only guvenli mod yok. Payment checker normal modu `.env.local` okur, ancak `--schema-only` modu env dosyasi okumadan guvenli sozlesme kontrolu yapar.
+- Payment ve desktop env checker normal modlari `.env*` dosyalari okuyabilir; otonom dongude yalnizca `--schema-only` modlari guvenli sozlesme kontrolu icin kullanilir.
 - Smoke scriptleri default localhost olsa da env ile production URL hedefleyebilir; otonom guard yok.
 - CareEcuFile scraper scriptleri dis aga baglanir ve veri dosyalarini yazar; otonom dongude risklidir.
 - Bazi yorum/dokumanlarda encoding artifactleri goruldu; runtime etkisi yok, dar kapsamli duzeltme gerektirir.

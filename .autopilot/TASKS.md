@@ -4,19 +4,6 @@
 
 ## Ready
 
-### AUTO-003 [P0] Desktop env checker icin otonom guvenli mod ekle
-
-Kapsam: `apps/customer-uploader/scripts/check-env.mjs` icin `.env`/`.env.local` okumayan ve yalnizca public desktop env sozlesmesini dogrulayan guvenli mod ekle.
-
-Kabul kriterleri:
-
-- Normal desktop build/dev oncesi env kontrol davranisi korunur.
-- Yeni mod root/app `.env*` dosyalarini okumaz.
-- Service-role key veya secret kullanimi tesvik edilmez.
-- Mevcut desktop safety testleri yeni modu da kapsar.
-
-Dogrulama: `node apps/customer-uploader/scripts/check-env.mjs --schema-only`, `npm test`.
-
 ### AUTO-004 [P0] Smoke scriptlerine non-local hedef guard'i ekle
 
 Kapsam: `scripts/smoke-public-platform.mjs`, `scripts/smoke-admin-unauthenticated.mjs`, `scripts/smoke-admin-work-orders.mjs` ve `scripts/smoke-vehicle-control-center.mjs` icin otonom dongude non-local URL kullanimini engelleyen ortak guard ekle.
@@ -115,6 +102,18 @@ Kabul kriterleri:
 Dogrulama: Diff incelemesi, `npm run lint`, `npm run typecheck`.
 
 ## Done
+
+### AUTO-003 [P0] Desktop env checker icin otonom guvenli mod ekle
+
+Durum: Done
+
+Fingerprint: `security|desktop-env-checker|env-file-secret-read|schema-only-public-contract-validation`
+
+Kapsam: `apps/customer-uploader/scripts/check-env.mjs` icin `.env`/`.env.local` okumayan ve yalnizca public desktop env sozlesmesini dogrulayan guvenli mod eklendi.
+
+Sonuc: Varsayilan desktop build/dev oncesi env kontrol davranisi korundu; `--schema-only` modu root/app `.env*` dosyalarina dokunmadan yalnizca public Vite env sozlesmesini raporlar ve service-role/server secret uyarisi yapar.
+
+Dogrulama: `node apps/customer-uploader/scripts/check-env.mjs --schema-only`, hedefli desktop test, `npm run lint`, `npm run typecheck`, `npm test`.
 
 ### AUTO-002 [P0] Payment env checker icin otonom guvenli mod ekle
 

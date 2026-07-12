@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { pathToFileURL } from "node:url";
 import test from "node:test";
 import {
   buildDesktopServiceSummary,
@@ -21,6 +23,24 @@ import {
   validateUploadFile,
 } from "../apps/customer-uploader/src/validation";
 import { desktopModules, resolveEnabledModules } from "../apps/customer-uploader/src/modules/registry";
+
+type DesktopEnvChecker = {
+  main(options?: {
+    argv?: string[];
+    envFilePaths?: string[];
+    fsModule?: {
+      existsSync(path: string): boolean;
+      readFileSync(path: string, encoding: BufferEncoding): string;
+    };
+    processEnv?: Record<string, string | undefined>;
+    log?(message?: string): void;
+    error?(message?: string): void;
+  }): number;
+};
+
+async function loadDesktopEnvChecker() {
+  return (await import(pathToFileURL(resolve(process.cwd(), "apps/customer-uploader/scripts/check-env.mjs")).href)) as DesktopEnvChecker;
+}
 
 test("desktop upload file validation accepts safe ECU files and rejects unsafe files", () => {
   assert.deepEqual(validateDesktopUploadFile({ fileName: "BMW_EDC17_ORI.bin", fileSize: 1024 }), { ok: true });
@@ -317,6 +337,83 @@ test("desktop build validates public Vite env and renders missing-config screen 
   assert.match(app, /configuration_missing/);
   assert.match(strings, /Please reinstall the app or contact MG AutoTech support/);
   assert.doesNotMatch(`${api}\n${app}`, /Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY/);
+});
+
+test("desktop env checker schema-only reports the public contract without reading env files", async () => {
+  const checker = await loadDesktopEnvChecker();
+  const fsCalls: string[] = [];
+  const lines: string[] = [];
+  const failingFs = {
+    existsSync(path: string) {
+      fsCalls.push(`existsSync:${path}`);
+      throw new Error("schema-only must not check env file existence");
+    },
+    readFileSync(path: string) {
+      fsCalls.push(`readFileSync:${path}`);
+      throw new Error("schema-only must not read env files");
+    },
+  };
+
+  const exitCode = checker.main({
+    argv: ["--schema-only"],
+    envFilePaths: [".env", ".env.local", "apps/customer-uploader/.env", "apps/customer-uploader/.env.local"],
+    fsModule: failingFs,
+    processEnv: {},
+    log: (message = "") => lines.push(message),
+  });
+
+  const output = lines.join("\n");
+  assert.equal(exitCode, 0);
+  assert.deepEqual(fsCalls, []);
+  assert.match(output, /Desktop app environment schema-only contract/);
+  assert.match(output, /REQ\s+VITE_SUPABASE_URL/);
+  assert.match(output, /REQ\s+VITE_SUPABASE_ANON_KEY/);
+  assert.match(output, /DEFAULT\s+VITE_API_BASE_URL=https:\/\/file\.mgautotech\.de/);
+  assert.match(output, /Never put the service-role key or server secrets into the desktop app/);
+  assert.match(output, /No environment files were read/);
+});
+
+test("desktop env checker default mode keeps env file fallback behavior", async () => {
+  const checker = await loadDesktopEnvChecker();
+  const lines: string[] = [];
+  const errors: string[] = [];
+  const envSources = new Map([
+    [
+      "root.env.local",
+      [
+        "NEXT_PUBLIC_SUPABASE_URL=https://example.supabase.co",
+        "NEXT_PUBLIC_SUPABASE_ANON_KEY=public-anon-key",
+      ].join("\n"),
+    ],
+    ["app.env.local", "VITE_API_BASE_URL=https://file.mgautotech.de"],
+  ]);
+
+  const exitCode = checker.main({
+    argv: [],
+    envFilePaths: ["root.env", "root.env.local", "app.env", "app.env.local"],
+    fsModule: {
+      existsSync: (path: string) => envSources.has(path),
+      readFileSync: (path: string) => envSources.get(path) ?? "",
+    },
+    processEnv: {},
+    log: (message = "") => lines.push(message),
+    error: (message = "") => errors.push(message),
+  });
+
+  assert.equal(exitCode, 0);
+  assert.deepEqual(errors, []);
+  assert.match(lines.join("\n"), /Desktop app environment looks ready/);
+});
+
+test("desktop env checker schema-only CLI succeeds without requiring env files", () => {
+  const output = execFileSync(process.execPath, ["apps/customer-uploader/scripts/check-env.mjs", "--schema-only"], {
+    cwd: process.cwd(),
+    encoding: "utf8",
+  });
+
+  assert.match(output, /Desktop app environment schema-only contract/);
+  assert.match(output, /REQ\s+VITE_SUPABASE_ANON_KEY/);
+  assert.match(output, /No environment files were read/);
 });
 
 test("desktop package is signing-ready, per-user and installer-friendly", () => {
