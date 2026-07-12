@@ -1,4 +1,4 @@
-# MG AutoTech Codex çalışma kuralları
+﻿# MG AutoTech Codex çalışma kuralları
 
 ## Repository ozel guvenli calisma ekleri
 
@@ -60,3 +60,13 @@
 - Bu repository için gerçek komutlar, mimari ve hassas alanlar `.autopilot/PROJECT.md` içinde tutulur.
 - `file.mgautotech.de` gibi ödeme/veritabanı kullanan projelerde entegrasyon kodu düzenlenebilir; ancak canlı servise çağrı, veri mutasyonu veya migration çalıştırılamaz.
 - `mgautotech.de` içeriğinde mevcut işletme gerçekleri korunur. Teknik SEO düzeltilebilir; fiyat, garanti, yasal iddia ve hizmet kapsamı uydurulamaz.
+
+<!-- SMART_AUTOPILOT_V2 -->
+## Akıllı otonom planlama
+
+- Yeni görev oluşturmadan önce ROADMAP, INBOX, TASK_HISTORY, TASKS, STATUS ve Git geçmişini kontrol et.
+- Aynı amacı farklı başlıkla tekrar etme.
+- Her görev somut kanıta ve kalıcı Fingerprint değerine dayanmalıdır.
+- Geliştirme alanlarını dönüşümlü incele.
+- Güvenli ve kanıtlı iş yoksa idle kal.
+- Aynı öncelikte MANUAL görevlerini AUTO görevlerinden önce ele al.

@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "planning_cycle": 0,
+  "last_planned_at": null,
+  "last_domains": [],
+  "domain_last_audited": {
+    "Reliability": null,
+    "Security": null,
+    "DataIntegrity": null,
+    "Testing": null,
+    "Performance": null,
+    "Accessibility": null,
+    "ResponsiveUX": null,
+    "SEOContentI18n": null,
+    "Observability": null,
+    "Maintainability": null,
+    "DeveloperExperience": null,
+    "Integrations": null
+  }
+}
