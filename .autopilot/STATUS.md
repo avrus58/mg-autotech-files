@@ -2,6 +2,31 @@
 
 Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
+## 2026-07-12 reviewer run AUTO-020
+
+- Baslangic: 2026-07-12 21:53:00 +01:00; bitis: 2026-07-12 21:58:16 +01:00.
+- Gorev: Mevcut uncommitted AUTO-020 degisikliklerini V4 reviewer olarak urun, guvenlik ve kalite kapisindan incelemek.
+- Sonuc: Accepted. Musteri order detay ek dosya yukleme akisi prepare, upload ve verify/save fazlarini musteriye acik gosteriyor ve hata/erken donuslarda retry icin `idle` phase'e donuyor.
+- Gate sonucu: Gorev gercek musteri deneyimi ve destek azaltma degeri tasiyor; duplicate fingerprint bulunmadi; evidence halen gecerli; diff AUTO-020 kapsaminda kaldi. Public/customer/admin veri sinirlari korundu; storage path, signed URL, binary content, hash, secret, payment data, admin-only note, production servis, migration, fiyat/hukuki iddia veya gercek musteri verisi riski tespit edilmedi.
+- Reviewer duzeltmesi: Aktif upload phase etiketi icin `role="status"` ve `aria-live="polite"` eklendi; responsive `break-words` davranisi, mevcut prepare/upload/finalize akisi ve one-time permission kapatma davranisi korunur.
+- Calistirilan kontroller: `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (20/20); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (249/249); `git diff --check` PASS (yalniz CRLF uyarilari).
+- Calistirilmayan kontroller: `npm run build` bilinen restricted-network Google Fonts / Next env yukleme riski nedeniyle calistirilmadi. Live service, SQL, smoke, scraper, desktop build/package ve normal env kontrolleri calistirilmadi.
+- Kalan risk: Offline build icin Google Fonts/`next/font/google` owner onayi bekleyen bilinen risk devam eder; widget domain ve desktop history Ready gorevleri ayri kapsamda kalir.
+
+## 2026-07-12 worker run AUTO-020
+
+- Baslangic: 2026-07-12 21:19:00 +01:00; bitis: 2026-07-12 21:52:27 +01:00.
+- Gorev: Musteri ek dosya yuklemesi asamalari acik geri bildirim versin.
+- Fingerprint: `customer-experience|order-detail-additional-upload|single-generic-uploading-state|phase-aware-upload-feedback`.
+- Sonuc: Done. Musteri order detay ek dosya yukleme karti artik prepare, upload ve verify/save asamalarini musteriye acik sekilde gosteriyor.
+- Duplicate/evidence kontrolu: V4 package constitution dosyalari, `.autopilot/constitution/*`, AGENTS, PROJECT, ROADMAP, INBOX, FEATURE_PROPOSALS, TASKS, TASK_HISTORY, PRODUCT_SCORECARD, STATUS, package scriptleri, mevcut Git durumu ve son 100 commit incelendi. Ayni fingerprint tamamlanmis gorunmedi; evidence halen gecerliydi. `src/app/dashboard/orders/[id]/page.tsx` ek dosya upload akisini prepare, Supabase Storage upload ve finalize adimlarindan geciriyordu, ancak UI yalniz boolean `additionalUploading` ve tek "Uploading additional file..." etiketi kullaniyordu.
+- Degisen dosyalar: `src/app/dashboard/orders/[id]/page.tsx`, `tests/ui-ux-safety.test.ts`, `.autopilot/TASKS.md`, `.autopilot/TASK_HISTORY.md`, `.autopilot/STATUS.md`, `.autopilot/runtime/last-result.json`.
+- Uygulama sonucu: `AdditionalUploadPhase` state'i `preparing`, `uploading` ve `verifying` adimlarini suruyor. Upload karti aktif/tamamlanan/bekleyen fazlari responsive, wrap eden metinlerle gosterir ve `aria-busy` kullanir. Prepare endpoint, Supabase Storage `.upload`, finalize endpoint, tek dosya 32 MB siniri, private bucket, one-time permission kapatma ve basarili upload'i listeye ekleme davranislari korunur.
+- Guvenlik/UI kontrolu: Hata veya erken donuslerde phase `finally` icinde `idle` durumuna doner, musteri yeniden deneyebilir. Storage path, signed URL, binary content, hash, secret, payment data, admin-only note veya live service sonucu UI'da aciga cikarilmadi. Yeni dependency, production servis cagrisi, migration, deploy, `.env`/secret, gercek musteri verisi, fiyat/hukuki iddia veya database schema degisikligi yapilmadi.
+- Calistirilan kontroller: `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (20/20); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (249/249); `git diff --check` PASS (yalniz CRLF uyarilari); diff review PASS.
+- Calistirilmayan kontroller: `npm run build` bu repoda bilinen restricted-network Google Fonts / Next env yukleme riski nedeniyle calistirilmadi. Live service, SQL, smoke, scraper, desktop build/package ve normal env kontrolleri calistirilmadi.
+- Kalan risk: Widget domain review sinyali, pending widget domain guidance ve desktop history status Ready gorevleri ayri kapsamda devam eder. Offline build icin Google Fonts/`next/font/google` owner onayi bekleyen bilinen risk devam eder.
+
 ## 2026-07-12 worker run AUTO-019
 
 - Baslangic: 2026-07-12 21:01:00 +01:00; bitis: 2026-07-12 21:18:00 +01:00.

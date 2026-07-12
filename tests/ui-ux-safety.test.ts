@@ -104,6 +104,23 @@ test("customer order detail shows delivery estimates only when explicitly set", 
   assert.doesNotMatch(page, /formatDeliveryEstimate\(order\.estimated_delivery_label\)/);
 });
 
+test("customer additional file upload shows phase-aware retry-safe feedback", () => {
+  const page = readProjectFile("src", "app", "dashboard", "orders", "[id]", "page.tsx");
+
+  assert.match(page, /type AdditionalUploadPhase = "idle" \| "preparing" \| "uploading" \| "verifying"/);
+  assert.match(page, /const additionalUploadSteps/);
+  assert.match(page, /Preparing upload/);
+  assert.match(page, /Uploading file/);
+  assert.match(page, /Verifying upload/);
+  assert.match(page, /setAdditionalUploadPhase\("preparing"\)[\s\S]*additional-file\/prepare/);
+  assert.match(page, /setAdditionalUploadPhase\("uploading"\)[\s\S]*\.upload\(prepared\.upload\.path, file/);
+  assert.match(page, /setAdditionalUploadPhase\("verifying"\)[\s\S]*additional-file\/finalize/);
+  assert.match(page, /finally\s*\{\s*setAdditionalUploadPhase\("idle"\);/);
+  assert.match(page, /aria-busy=\{additionalUploading\}/);
+  assert.match(page, /max-w-full break-words font-black/);
+  assert.doesNotMatch(page, /Uploading additional file\.\.\./);
+});
+
 test("customer dashboard and order archive surface action-needed orders separately", () => {
   const dashboard = readProjectFile("src", "components", "dashboard", "DashboardClient.tsx");
   const orders = readProjectFile("src", "app", "dashboard", "orders", "page.tsx");

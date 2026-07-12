@@ -4,32 +4,6 @@
 
 ## Ready
 
-- [ ] **P2 AUTO-020 - Musteri ek dosya yuklemesi asamalari acik geri bildirim versin**
-  - Lane: Product Evolution
-  - Domain: Customer additional upload experience & retry clarity
-  - Fingerprint: `customer-experience|order-detail-additional-upload|single-generic-uploading-state|phase-aware-upload-feedback`
-  - Business impact: 3/5
-  - User impact: 4/5
-  - Admin impact: 3/5
-  - Strategic fit: 4/5
-  - Confidence: 5/5
-  - Effort: 2/5
-  - Risk: 2/5
-  - Evidence: `src/app/dashboard/orders/[id]/page.tsx:456-516` runs the additional upload flow through prepare, Supabase Storage upload and finalize steps, but tracks only the boolean `additionalUploading`; `src/app/dashboard/orders/[id]/page.tsx:793-797` shows the single generic label "Uploading additional file..." for the whole flow. The product docs at `docs/customer-file-upload-assistant.md:129-137` describe upload phases and retry-safe wording as important customer expectations.
-  - Product value: Customers asked for another read, log or support file can see whether the upload is preparing, transferring or verifying, reducing repeat attempts and support uncertainty during a sensitive file action.
-  - Scope: Add local phase-aware feedback for the existing customer order detail additional-upload flow. Keep the current prepare/upload/finalize APIs, one-file 32 MB limit, private storage bucket, permission toggle behavior and success state unchanged.
-  - Acceptance criteria:
-    - Additional upload UI shows distinct customer-safe phases for preparing upload, uploading file and verifying/saving the upload.
-    - Errors in prepare, storage upload or finalize reset the phase and leave the customer able to retry without changing the selected order data incorrectly.
-    - Success still appends the returned upload entry, disables the one-time upload permission locally and shows the existing uploaded-file list.
-    - No raw storage path, signed URL, binary content, hash, secret, payment data, admin-only note or live service operation is exposed.
-    - Mobile and desktop text remains readable without overflow.
-  - Validation:
-    - `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts`
-    - `npm run lint`
-    - `npm run typecheck`
-    - `npm test`
-
 - [ ] **P2 AUTO-023 - Admin widget clients listesi bekleyen domain taleplerini gostersin**
   - Lane: Product Evolution
   - Domain: Admin widget SaaS operations & domain review visibility
@@ -141,6 +115,18 @@ Kabul kriterleri:
 Dogrulama: Diff incelemesi, `npm run lint`, `npm run typecheck`.
 
 ## Done
+
+### AUTO-020 [P2] Musteri ek dosya yuklemesi asamalari acik geri bildirim versin
+
+Durum: Done
+
+Fingerprint: `customer-experience|order-detail-additional-upload|single-generic-uploading-state|phase-aware-upload-feedback`
+
+Kapsam: Musteri order detayindaki ek dosya yukleme akisi, tek generic uploading etiketi yerine prepare, upload ve verify/save asamalarini musteriye guvenli sekilde gosterecek yerel phase state ile guncellendi.
+
+Sonuc: Ek dosya yukleme karti artik "Preparing upload", "Uploading file" ve "Verifying upload" asamalarini aktif/tamamlanan/bekleyen durumlarla gosterir. Prepare, Supabase Storage upload ve finalize API akisi, tek dosya 32 MB siniri, private bucket, one-time permission kapatma ve basarili upload listeye ekleme davranisi korundu. Hata durumlarinda phase `idle` durumuna doner ve musteri yeniden deneyebilir; storage path, signed URL, hash, binary data, secret, payment data veya admin-only not aciga cikarilmadi.
+
+Dogrulama: `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (20/20); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (249/249); `git diff --check` PASS (yalniz CRLF uyarilari). `npm run build` bilinen restricted-network Google Fonts / Next env yukleme riski nedeniyle calistirilmadi.
 
 ### AUTO-019 [P2] Musteri order teslim tahmini yalniz acik estimate varsa sure gostersin
 

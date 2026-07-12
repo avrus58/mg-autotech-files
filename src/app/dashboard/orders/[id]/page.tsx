@@ -76,6 +76,30 @@ type ModifiedFileVersion = {
   uploaded_at: string;
 };
 
+type AdditionalUploadPhase = "idle" | "preparing" | "uploading" | "verifying";
+
+const additionalUploadSteps: Array<{
+  phase: Exclude<AdditionalUploadPhase, "idle">;
+  label: string;
+  description: string;
+}> = [
+  {
+    phase: "preparing",
+    label: "Preparing upload",
+    description: "Creating the secure upload slot.",
+  },
+  {
+    phase: "uploading",
+    label: "Uploading file",
+    description: "Transferring the selected file.",
+  },
+  {
+    phase: "verifying",
+    label: "Verifying upload",
+    description: "Saving it to this request.",
+  },
+];
+
 function formatStatus(status: string | null) {
   if (!status) return "New Request";
 
@@ -264,7 +288,16 @@ export default function OrderDetailPage() {
   const [message, setMessage] = useState("");
   const [revisionNote, setRevisionNote] = useState("");
   const [revisionSubmitting, setRevisionSubmitting] = useState(false);
-  const [additionalUploading, setAdditionalUploading] = useState(false);
+  const [additionalUploadPhase, setAdditionalUploadPhase] =
+    useState<AdditionalUploadPhase>("idle");
+  const additionalUploading = additionalUploadPhase !== "idle";
+  const activeAdditionalUploadStepIndex = additionalUploadSteps.findIndex(
+    (step) => step.phase === additionalUploadPhase
+  );
+  const activeAdditionalUploadStep =
+    activeAdditionalUploadStepIndex >= 0
+      ? additionalUploadSteps[activeAdditionalUploadStepIndex]
+      : null;
 
   useEffect(() => {
     let currentUserId: string | null = null;
@@ -465,7 +498,7 @@ export default function OrderDetailPage() {
       return;
     }
 
-    setAdditionalUploading(true);
+    setAdditionalUploadPhase("preparing");
     setMessage("");
     try {
       const { data } = await supabase.auth.getSession();
@@ -486,6 +519,7 @@ export default function OrderDetailPage() {
         return;
       }
 
+      setAdditionalUploadPhase("uploading");
       const { error: uploadError } = await supabase.storage
         .from("customer-files")
         .upload(prepared.upload.path, file, {
@@ -498,6 +532,7 @@ export default function OrderDetailPage() {
         return;
       }
 
+      setAdditionalUploadPhase("verifying");
       const finalizeResponse = await fetch(`/api/requests/${order.id}/additional-file/finalize`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
@@ -518,7 +553,7 @@ export default function OrderDetailPage() {
     } catch {
       setMessage("Additional file upload could not be completed.");
     } finally {
-      setAdditionalUploading(false);
+      setAdditionalUploadPhase("idle");
     }
   };
 
@@ -801,10 +836,39 @@ export default function OrderDetailPage() {
                     </p>
 
                     {order.customer_upload_enabled && (
-                      <label className="mt-5 flex min-h-28 cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-blue-500/40 bg-black/25 p-5 text-center transition hover:bg-blue-950/20">
+                      <label aria-busy={additionalUploading} className="mt-5 flex min-h-28 cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-blue-500/40 bg-black/25 p-5 text-center transition hover:bg-blue-950/20">
                         {additionalUploading ? <Loader2 className="mb-3 h-7 w-7 animate-spin text-blue-300" /> : <Upload className="mb-3 h-7 w-7 text-blue-300" />}
-                        <span className="font-black text-white">{additionalUploading ? "Uploading additional file..." : "Upload requested file"}</span>
-                        <span className="mt-1 text-xs text-zinc-500">One file, maximum 32 MB</span>
+                        <span role={additionalUploading ? "status" : undefined} aria-live={additionalUploading ? "polite" : undefined} className="max-w-full break-words font-black text-white">
+                          {activeAdditionalUploadStep?.label ?? "Upload requested file"}
+                        </span>
+                        <span className="mt-1 max-w-full break-words text-xs text-zinc-500">
+                          {activeAdditionalUploadStep?.description ?? "One file, maximum 32 MB"}
+                        </span>
+                        {additionalUploading && (
+                          <div className="mt-4 grid w-full gap-2 text-left text-xs sm:grid-cols-3">
+                            {additionalUploadSteps.map((step, index) => {
+                              const state =
+                                index < activeAdditionalUploadStepIndex
+                                  ? "complete"
+                                  : index === activeAdditionalUploadStepIndex
+                                    ? "active"
+                                    : "pending";
+                              const badgeClass =
+                                state === "complete"
+                                  ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+                                  : state === "active"
+                                    ? "border-blue-400/40 bg-blue-500/10 text-blue-200"
+                                    : "border-white/10 bg-white/[0.03] text-zinc-500";
+
+                              return (
+                                <div key={step.phase} className={`min-w-0 rounded-xl border px-3 py-2 ${badgeClass}`}>
+                                  <div className="max-w-full break-words font-black">{step.label}</div>
+                                  <div className="mt-1 max-w-full break-words leading-5">{step.description}</div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
                         <input type="file" disabled={additionalUploading} className="hidden" onChange={(event) => {
                           const file = event.target.files?.[0] ?? null;
                           uploadAdditionalFile(file);
