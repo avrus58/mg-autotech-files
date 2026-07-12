@@ -272,6 +272,19 @@ test("admin work-order detail exposes upload permission control without payment 
   assert.doesNotMatch(source, /\/api\/admin\/payments|credit_transactions[\s\S]*insert|payment_records[\s\S]*update/);
 });
 
+test("admin work-order fallback mode disables mutation controls", () => {
+  const source = readFileSync(resolve(process.cwd(), "src", "app", "admin", "requests", "[id]", "WorkOrderDetailClient.tsx"), "utf8");
+  const guardCalls = source.match(/if \(blockReadOnlyFallback\(\)\) return;/g) ?? [];
+
+  assert.match(source, /payload\?\.migrationReady === false/);
+  assert.ok(guardCalls.length >= 4);
+  assert.match(source, /disabled=\{saving \|\| readOnlyFallback\}/);
+  assert.match(source, /disabled=\{saving \|\| readOnlyFallback \|\| !noteBody\.trim\(\)\}/);
+  assert.match(source, /<ActionSelect disabled=\{readOnlyFallback\} label="Admin status"/);
+  assert.match(source, /<ActionSelect disabled=\{readOnlyFallback\} label="Final file"/);
+  assert.match(source, /customer message visibility, upload permissions and status actions require the SQL migration/);
+});
+
 test("admin work-order smoke script does not contain tokens or mutation calls", () => {
   const source = readFileSync(resolve(process.cwd(), "scripts", "smoke-admin-work-orders.mjs"), "utf8");
   assert.match(source, /ADMIN_WORK_ORDER_SMOKE_BASE_URL/);

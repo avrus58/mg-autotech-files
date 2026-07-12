@@ -61,24 +61,6 @@ Dogrulama: Markdown diff incelemesi, `npm run lint`.
     - `npm run typecheck`
     - `npm test`
 
-- [ ] **P1 AUTO-012 - Work-order fallback modunda mutasyon kontrollerini read-only yap**
-  - Domain: Observability & error handling
-  - Fingerprint: `observability|admin-work-order-detail|fallback-mode-actions-still-enabled|read-only-state-with-actionable-feedback`
-  - Impact: 4/5
-  - Confidence: 5/5
-  - Effort: 2/5
-  - Evidence: `src/app/admin/requests/[id]/WorkOrderDetailClient.tsx:386-388` migration eksikken sayfanin read-only fallback oldugunu soyluyor; buna ragmen Start Work (`src/app/admin/requests/[id]/WorkOrderDetailClient.tsx:376`), customer upload toggle (`src/app/admin/requests/[id]/WorkOrderDetailClient.tsx:466-467`), Add note (`src/app/admin/requests/[id]/WorkOrderDetailClient.tsx:512`) ve ActionSelect kontrolleri (`src/app/admin/requests/[id]/WorkOrderDetailClient.tsx:555-561`) migrationReady false iken de tiklanabilir kaliyor.
-  - Scope: `payload.migrationReady === false` durumunda mutation yapan admin kontrollerini disable/read-only hale getir; Refresh ve read-only bilgi panellerini koru.
-  - Acceptance criteria:
-    - Migration fallback modunda status, priority, tuner, payment review, quality, delivery, final file, note ekleme, Start Work ve upload permission mutasyonlari tetiklenemez.
-    - Kullaniciya neden read-only oldugunu aciklayan mevcut banner veya yakin bir inline mesaj korunur.
-    - Migration hazir oldugunda mevcut aksiyon davranislari degismez.
-    - Yeni migration, production DB islemi veya dependency eklenmez.
-  - Validation:
-    - `npm run lint`
-    - `npm run typecheck`
-    - `npm test`
-
 - [ ] **P2 AUTO-013 - Musteri order timeline'i bekleme ve revizyon adimlarini acik gostersin**
   - Domain: Responsive UX & product flow
   - Fingerprint: `responsive-ux|customer-order-detail|timeline-collapses-actionable-statuses|clear-next-step-status`
@@ -130,6 +112,18 @@ Kabul kriterleri:
 Dogrulama: Diff incelemesi, `npm run lint`, `npm run typecheck`.
 
 ## Done
+
+### AUTO-012 [P1] Work-order fallback modunda mutasyon kontrollerini read-only yap
+
+Durum: Done
+
+Fingerprint: `observability|admin-work-order-detail|fallback-mode-actions-still-enabled|read-only-state-with-actionable-feedback`
+
+Kapsam: `payload.migrationReady === false` fallback modunda admin work-order detay ekranindaki mutasyon kontrolleri read-only/disabled hale getirildi.
+
+Sonuc: Start Work, status/priority/tuner/payment review/quality/delivery/final file secimleri, note ekleme, customer upload permission ve customer message visibility aksiyonlari fallback modunda tetiklenemez. Mevcut read-only banner genisletildi; Refresh, ozet panelleri ve migration hazir oldugundaki mevcut aksiyon davranislari korundu.
+
+Dogrulama: `.\node_modules\.bin\tsx.cmd --test tests\admin-work-orders.test.ts` PASS (23/23); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (233/233); `git diff --check` PASS (yalnizca CRLF uyarilari).
 
 ### AUTO-005 [P0] Scraper scriptlerine explicit network guard ekle
 

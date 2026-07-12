@@ -97,6 +97,9 @@ type ModifiedFile = {
   uploaded_at?: string;
 };
 
+const WORK_ORDER_READ_ONLY_FALLBACK_MESSAGE =
+  "Work Order migration is missing. This fallback view is read-only until the SQL migration is available.";
+
 function text(value: unknown) {
   return typeof value === "string" && value.trim() ? value : "-";
 }
@@ -146,6 +149,13 @@ export default function WorkOrderDetailClient() {
   const [message, setMessage] = useState("");
   const [noteBody, setNoteBody] = useState("");
   const [noteType, setNoteType] = useState("internal");
+  const readOnlyFallback = payload?.migrationReady === false;
+
+  function blockReadOnlyFallback() {
+    if (!readOnlyFallback) return false;
+    setMessage(WORK_ORDER_READ_ONLY_FALLBACK_MESSAGE);
+    return true;
+  }
 
   async function token() {
     const { data: userData } = await supabase.auth.getUser();
@@ -193,6 +203,7 @@ export default function WorkOrderDetailClient() {
 
   async function patchWorkOrder(patch: Record<string, unknown>) {
     if (!requestId) return;
+    if (blockReadOnlyFallback()) return;
     setSaving(true);
     setMessage("");
     const accessToken = await token();
@@ -218,6 +229,7 @@ export default function WorkOrderDetailClient() {
 
   async function addNote() {
     if (!requestId || !noteBody.trim()) return;
+    if (blockReadOnlyFallback()) return;
     setSaving(true);
     setMessage("");
     const accessToken = await token();
@@ -243,6 +255,7 @@ export default function WorkOrderDetailClient() {
 
   async function updateCustomerMessageVisibility(messageId: string, action: "hide" | "restore") {
     if (!requestId) return;
+    if (blockReadOnlyFallback()) return;
     const confirmed = window.confirm(
       action === "hide"
         ? "Hide this message from the customer? The message will remain visible to admins and the action will be logged."
@@ -279,6 +292,7 @@ export default function WorkOrderDetailClient() {
 
   async function toggleCustomerUpload(enabled: boolean) {
     if (!requestId) return;
+    if (blockReadOnlyFallback()) return;
     setSaving(true);
     setMessage("");
     const accessToken = await token();
@@ -373,7 +387,7 @@ export default function WorkOrderDetailClient() {
             <button onClick={load} className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-black hover:bg-white/10">
               <RefreshCcw className="mr-2 inline h-4 w-4" /> Refresh
             </button>
-            <button onClick={() => patchWorkOrder({ admin_status: "in_progress", tuner_status: "working" })} disabled={saving} className="rounded-xl bg-[#b1121b] px-4 py-3 text-sm font-black hover:bg-[#c91824] disabled:opacity-50">
+            <button onClick={() => patchWorkOrder({ admin_status: "in_progress", tuner_status: "working" })} disabled={saving || readOnlyFallback} title={readOnlyFallback ? WORK_ORDER_READ_ONLY_FALLBACK_MESSAGE : undefined} className="rounded-xl bg-[#b1121b] px-4 py-3 text-sm font-black hover:bg-[#c91824] disabled:cursor-not-allowed disabled:opacity-50">
               {saving ? <Loader2 className="mr-2 inline h-4 w-4 animate-spin" /> : <Wrench className="mr-2 inline h-4 w-4" />}
               Start Work
             </button>
@@ -385,7 +399,7 @@ export default function WorkOrderDetailClient() {
         {message && <div className="mb-5 rounded-2xl border border-red-800/50 bg-red-950/30 p-4 text-sm text-red-200">{message}</div>}
         {!payload.migrationReady && (
           <div className="mb-5 rounded-2xl border border-amber-700/40 bg-amber-950/25 p-4 text-sm text-amber-100">
-            Work Order migration is missing. This page is showing read-only fallback data; notes, events and status actions require the SQL migration.
+            Work Order migration is missing. This page is showing read-only fallback data; notes, customer message visibility, upload permissions and status actions require the SQL migration.
           </div>
         )}
 
@@ -464,8 +478,9 @@ export default function WorkOrderDetailClient() {
                   </div>
                   <button
                     onClick={() => toggleCustomerUpload(!Boolean(order.customer_upload_enabled))}
-                    disabled={saving}
-                    className="shrink-0 rounded-xl border border-blue-700/40 bg-blue-950/30 px-4 py-3 text-sm font-black text-blue-100 hover:bg-blue-900/35 disabled:opacity-50"
+                    disabled={saving || readOnlyFallback}
+                    title={readOnlyFallback ? WORK_ORDER_READ_ONLY_FALLBACK_MESSAGE : undefined}
+                    className="shrink-0 rounded-xl border border-blue-700/40 bg-blue-950/30 px-4 py-3 text-sm font-black text-blue-100 hover:bg-blue-900/35 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <Upload className="mr-2 inline h-4 w-4" />
                     {order.customer_upload_enabled ? "Disable upload" : "Enable upload"}
@@ -505,11 +520,11 @@ export default function WorkOrderDetailClient() {
             <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
               <div className="mb-5 flex items-center gap-3"><MessageSquare className="h-7 w-7 text-red-400" /><h2 className="text-2xl font-black">Internal & Customer Notes</h2></div>
               <div className="grid gap-3 md:grid-cols-[220px_1fr_auto]">
-                <select value={noteType} onChange={(event) => setNoteType(event.target.value)} className="h-12 rounded-xl border border-white/10 bg-black/30 px-4 text-sm font-black outline-none">
+                <select value={noteType} onChange={(event) => setNoteType(event.target.value)} disabled={readOnlyFallback} className="h-12 rounded-xl border border-white/10 bg-black/30 px-4 text-sm font-black outline-none disabled:cursor-not-allowed disabled:opacity-50">
                   {workOrderNoteTypes.map((item) => <option key={item} value={item} className="bg-[#111]">{labelFromToken(item)}</option>)}
                 </select>
-                <input value={noteBody} onChange={(event) => setNoteBody(event.target.value)} placeholder="Add internal, tuner, pinned or customer-visible note..." className="h-12 rounded-xl border border-white/10 bg-black/30 px-4 text-sm font-bold outline-none placeholder:text-zinc-600" />
-                <button onClick={addNote} disabled={saving || !noteBody.trim()} className="rounded-xl bg-[#b1121b] px-5 py-3 text-sm font-black hover:bg-[#c91824] disabled:opacity-50">
+                <input value={noteBody} onChange={(event) => setNoteBody(event.target.value)} disabled={readOnlyFallback} placeholder="Add internal, tuner, pinned or customer-visible note..." className="h-12 rounded-xl border border-white/10 bg-black/30 px-4 text-sm font-bold outline-none placeholder:text-zinc-600 disabled:cursor-not-allowed disabled:opacity-50" />
+                <button onClick={addNote} disabled={saving || readOnlyFallback || !noteBody.trim()} title={readOnlyFallback ? WORK_ORDER_READ_ONLY_FALLBACK_MESSAGE : undefined} className="rounded-xl bg-[#b1121b] px-5 py-3 text-sm font-black hover:bg-[#c91824] disabled:cursor-not-allowed disabled:opacity-50">
                   <Save className="mr-2 inline h-4 w-4" /> Add note
                 </button>
               </div>
@@ -552,13 +567,18 @@ export default function WorkOrderDetailClient() {
 
           <aside className="space-y-6">
             <Panel title="Actions" icon={<Sparkles />}>
-              <ActionSelect label="Admin status" value={String(workOrder.admin_status ?? "new")} options={adminWorkOrderStatuses} onChange={(value) => patchWorkOrder({ admin_status: value })} />
-              <ActionSelect label="Priority" value={String(workOrder.priority ?? "normal")} options={workOrderPriorities} onChange={(value) => patchWorkOrder({ priority: value })} />
-              <ActionSelect label="Tuner status" value={String(workOrder.tuner_status ?? "unassigned")} options={tunerStatuses} onChange={(value) => patchWorkOrder({ tuner_status: value })} />
-              <ActionSelect label="Payment review" value={String(workOrder.payment_review_status ?? "not_checked")} options={paymentReviewStatuses} onChange={(value) => patchWorkOrder({ payment_review_status: value })} />
-              <ActionSelect label="Quality check" value={String(workOrder.quality_check_status ?? "pending")} options={qualityCheckStatuses} onChange={(value) => patchWorkOrder({ quality_check_status: value })} />
-              <ActionSelect label="Delivery" value={String(workOrder.delivery_status ?? "not_ready")} options={deliveryStatuses} onChange={(value) => patchWorkOrder({ delivery_status: value })} />
-              <ActionSelect label="Final file" value={String(workOrder.final_file_status ?? "not_ready")} options={finalFileStatuses} onChange={(value) => patchWorkOrder({ final_file_status: value })} />
+              {readOnlyFallback && (
+                <p className="mb-4 rounded-xl border border-amber-700/40 bg-amber-950/20 p-3 text-xs leading-5 text-amber-100">
+                  {WORK_ORDER_READ_ONLY_FALLBACK_MESSAGE}
+                </p>
+              )}
+              <ActionSelect disabled={readOnlyFallback} label="Admin status" value={String(workOrder.admin_status ?? "new")} options={adminWorkOrderStatuses} onChange={(value) => patchWorkOrder({ admin_status: value })} />
+              <ActionSelect disabled={readOnlyFallback} label="Priority" value={String(workOrder.priority ?? "normal")} options={workOrderPriorities} onChange={(value) => patchWorkOrder({ priority: value })} />
+              <ActionSelect disabled={readOnlyFallback} label="Tuner status" value={String(workOrder.tuner_status ?? "unassigned")} options={tunerStatuses} onChange={(value) => patchWorkOrder({ tuner_status: value })} />
+              <ActionSelect disabled={readOnlyFallback} label="Payment review" value={String(workOrder.payment_review_status ?? "not_checked")} options={paymentReviewStatuses} onChange={(value) => patchWorkOrder({ payment_review_status: value })} />
+              <ActionSelect disabled={readOnlyFallback} label="Quality check" value={String(workOrder.quality_check_status ?? "pending")} options={qualityCheckStatuses} onChange={(value) => patchWorkOrder({ quality_check_status: value })} />
+              <ActionSelect disabled={readOnlyFallback} label="Delivery" value={String(workOrder.delivery_status ?? "not_ready")} options={deliveryStatuses} onChange={(value) => patchWorkOrder({ delivery_status: value })} />
+              <ActionSelect disabled={readOnlyFallback} label="Final file" value={String(workOrder.final_file_status ?? "not_ready")} options={finalFileStatuses} onChange={(value) => patchWorkOrder({ final_file_status: value })} />
               {saving && <div className="mt-3 text-xs text-zinc-500"><Loader2 className="mr-1 inline h-3 w-3 animate-spin" />Saving...</div>}
             </Panel>
 
@@ -606,7 +626,8 @@ export default function WorkOrderDetailClient() {
                     <button
                       type="button"
                       onClick={() => updateCustomerMessageVisibility(entry.id, hidden ? "restore" : "hide")}
-                      disabled={saving}
+                      disabled={saving || readOnlyFallback}
+                      title={readOnlyFallback ? WORK_ORDER_READ_ONLY_FALLBACK_MESSAGE : undefined}
                       className={`mt-3 rounded-xl border px-3 py-2 text-xs font-black disabled:opacity-50 ${
                         hidden
                           ? "border-emerald-700/40 bg-emerald-950/20 text-emerald-200 hover:bg-emerald-900/30"
@@ -682,16 +703,18 @@ function ActionSelect<T extends readonly string[]>({
   value,
   options,
   onChange,
+  disabled = false,
 }: {
   label: string;
   value: string;
   options: T;
   onChange: (value: T[number]) => void;
+  disabled?: boolean;
 }) {
   return (
     <label className="mb-3 block">
       <div className="mb-2 text-xs font-black uppercase tracking-[0.14em] text-zinc-500">{label}</div>
-      <select value={value} onChange={(event) => onChange(event.target.value as T[number])} className="h-12 w-full rounded-xl border border-white/10 bg-black/30 px-4 text-sm font-black outline-none focus:border-red-700">
+      <select value={value} onChange={(event) => onChange(event.target.value as T[number])} disabled={disabled} title={disabled ? WORK_ORDER_READ_ONLY_FALLBACK_MESSAGE : undefined} className="h-12 w-full rounded-xl border border-white/10 bg-black/30 px-4 text-sm font-black outline-none focus:border-red-700 disabled:cursor-not-allowed disabled:opacity-50">
         {options.map((option) => <option key={option} value={option} className="bg-[#111]">{labelFromToken(option)}</option>)}
       </select>
     </label>

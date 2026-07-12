@@ -2,6 +2,30 @@
 
 Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
+## 2026-07-12 reviewer run AUTO-012
+
+- Gorev: Mevcut uncommitted AUTO-012 degisikliklerini product/safety/quality gate olarak incelemek.
+- Sonuc: Accepted. Fallback modunda admin work-order mutation handler'lari erken guard ile duruyor; Start Work, ActionSelect kontrolleri, note ekleme, customer upload permission ve customer message visibility butonlari disabled/read-only hale getirilmis.
+- Duplicate/evidence kontrolu: AGENTS, V4 package constitution dosyalari, `.autopilot/constitution/*`, PROJECT, ROADMAP, TASKS, TASK_HISTORY, PRODUCT_SCORECARD, STATUS, last-result, son 100 commit ve tam diff incelendi. Ayni fingerprint tamamlanmis commit olarak gorunmedi; diff, migration fallback banner'i varken mutation kontrollerinin HEAD'de etkin kaldigini dogruluyor.
+- Risk kontrolu: Production servis, migration, deploy, `.env`/secret, gercek musteri verisi, fiyat/hukuki iddia, payment/credit mutasyonu, doorway SEO veya yeni dependency riski tespit edilmedi. Degisiklik admin-only fallback UI ve local source assertion testiyle sinirli.
+- Reviewer duzeltmesi: Kod duzeltmesi gerekmedi. `.autopilot/runtime/review-result.json` accepted olarak yazildi.
+- Calistirilan kontroller: `.\node_modules\.bin\tsx.cmd --test tests\admin-work-orders.test.ts` PASS (23/23); `npm run lint` PASS; `npm run typecheck` PASS; `git diff --check` PASS (yalnizca CRLF uyarilari); `npm test` PASS (233/233); review-result JSON parse PASS.
+- Calistirilmayan kontroller: `npm run build` bilinen restricted-network Google Fonts / Next env yukleme riski nedeniyle calistirilmadi. Dev server, live service, smoke, SQL, scraper ve normal env kontrolleri calistirilmadi.
+- Kalan risk: Gercek SQL migration hazirlik/uygulama ve canli operasyonlar owner/human kontrollu kalmalidir.
+
+## 2026-07-12 worker run AUTO-012
+
+- Gorev: Work-order fallback modunda mutasyon kontrollerini read-only yapmak.
+- Fingerprint: `observability|admin-work-order-detail|fallback-mode-actions-still-enabled|read-only-state-with-actionable-feedback`.
+- Duplicate kontrolu: AGENTS, V4 package constitution dosyalari, `.autopilot/constitution/*`, PROJECT, ROADMAP, INBOX, FEATURE_PROPOSALS, TASKS, TASK_HISTORY, PRODUCT_SCORECARD, STATUS ve son 100 commit incelendi; ayni fingerprint veya tamamlanmis read-only fallback aksiyon guard'i bulunmadi.
+- Evidence kontrolu: `src/app/admin/requests/[id]/WorkOrderDetailClient.tsx` fallback banner'i read-only oldugunu soyluyordu, ancak Start Work, ActionSelect kontrolleri, note ekleme, customer upload toggle ve customer message visibility aksiyonlari `migrationReady === false` iken tetiklenebilir durumdaydi.
+- Degisen dosyalar: `src/app/admin/requests/[id]/WorkOrderDetailClient.tsx`, `tests/admin-work-orders.test.ts`, `.autopilot/TASKS.md`, `.autopilot/TASK_HISTORY.md`, `.autopilot/STATUS.md`, `.autopilot/runtime/last-result.json`.
+- Sonuc: Fallback modunda mutasyon handler'lari erken cikis guard'i ile korunuyor; Start Work, status/priority/tuner/payment review/quality/delivery/final file secimleri, note ekleme, customer upload permission ve customer message visibility kontrolleri disabled/read-only. Refresh, read-only bilgi panelleri ve migration hazir oldugundaki mevcut davranis korundu.
+- Guvenlik/UI kontrolu: Yeni dependency, production servis cagrisi, migration, deploy, `.env`/secret, gercek musteri verisi, fiyat/hukuki iddia veya odeme/kredi mutasyonu yapilmadi. UI degisikligi disabled state ve acik read-only mesajiyla sinirli tutuldu.
+- Calistirilan kontroller: `.\node_modules\.bin\tsx.cmd --test tests\admin-work-orders.test.ts` PASS (23/23); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (233/233); `git diff --check` PASS (yalnizca CRLF uyarilari); diff review PASS.
+- Calistirilmayan kontroller: `npm run build` bu repoda bilinen restricted-network Google Fonts / Next env yukleme riski nedeniyle calistirilmadi. Dev server acilmadi; Next dev/build `.env*` yukleme ve ag/env riskleri nedeniyle bu otonom gorevde uygun degildi.
+- Kalan risk: Gercek migration hazirlik ve canli DB islemleri owner/human kontrollu surecte kalmalidir; Ready kuyrugunda diger P1/P2 urun ve test gorevleri devam ediyor.
+
 ## 2026-07-12 reviewer run AUTO-005
 
 - Gorev: Mevcut uncommitted AUTO-005 degisikliklerini bagimsiz reviewer olarak incelemek.
@@ -68,8 +92,8 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
 - Kurulum tarihi: 2026-07-12 (Europe/Berlin)
 - Aktif branch: codex/autopilot
-- Son basarili gorev: AUTO-005 Scraper scriptlerine explicit network guard ekle
-- Son dogrulama: CareEcuFile no-network guard kontrolu PASS; hedefli scraper guard test PASS (4/4); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (232/232); `git diff --check` PASS (yalnizca CRLF uyarilari)
+- Son basarili gorev: AUTO-012 Work-order fallback modunda mutasyon kontrollerini read-only yap
+- Son dogrulama: hedefli `tests\admin-work-orders.test.ts` PASS (23/23); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (233/233); `git diff --check` PASS (yalnizca CRLF uyarilari)
 - Insan mudahalesi gereken konu: Offline build icin Google Fonts/`next/font/google` stratejisi onayi; production smoke, SQL migration, deploy ve normal env kontrolleri insan onayi gerektirir.
 
 ## 2026-07-12 reviewer run AUTO-003
