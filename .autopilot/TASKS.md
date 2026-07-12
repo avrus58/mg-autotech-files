@@ -4,32 +4,6 @@
 
 ## Ready
 
-- [ ] **P2 AUTO-018 - Musteri dashboard kredi gecmisi gercek ledger'dan beslensin**
-  - Lane: Product Evolution
-  - Domain: Customer credit visibility & billing trust
-  - Fingerprint: `customer-experience|dashboard-credit-history-preview|orders-used-as-credit-ledger|safe-ledger-preview`
-  - Business impact: 3/5
-  - User impact: 4/5
-  - Admin impact: 2/5
-  - Strategic fit: 4/5
-  - Confidence: 5/5
-  - Effort: 2/5
-  - Risk: 2/5
-  - Evidence: `src/components/dashboard/DashboardClient.tsx:153-160` dashboard already loads only the latest 5 orders; `src/components/dashboard/DashboardClient.tsx:278-282` builds `creditHistory` from those orders' `credits_required`; `src/components/dashboard/DashboardClient.tsx:861-894` labels that order-derived preview as "Credit History". The real credit ledger exists at `src/app/dashboard/credits/history/page.tsx:109-118`, where customer-scoped `credit_transactions` are loaded and rendered as all credit movements.
-  - Product value: Customers see the same billing/credit source of truth on the dashboard and full ledger page, reducing confusion after top-ups, manual adjustments or order usage.
-  - Scope: Replace the dashboard's order-derived credit history preview with a small customer-safe `credit_transactions` preview. Reuse the existing credit ledger field contract; do not mutate payments, credits, Stripe, bank transfer rules or pricing.
-  - Acceptance criteria:
-    - Dashboard credit preview reads latest customer-scoped `credit_transactions` rows by `user_id`, not recent `orders.credits_required`.
-    - Positive and negative credit movements are visually distinguishable and include safe description/type, delta, balance/date where available.
-    - Empty state links clearly to buy credits or the full ledger without implying missing order history.
-    - Existing recent orders, credit balance, live refresh and `/dashboard/credits/history` behavior remain unchanged.
-    - No payment records, source IDs, metadata internals, secrets or admin-only notes are exposed.
-  - Validation:
-    - `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts`
-    - `npm run lint`
-    - `npm run typecheck`
-    - `npm test`
-
 - [ ] **P2 AUTO-019 - Musteri order teslim tahmini yalniz acik estimate varsa sure gostersin**
   - Lane: Product Evolution
   - Domain: Customer order detail & delivery expectation clarity
@@ -193,6 +167,18 @@ Kabul kriterleri:
 Dogrulama: Diff incelemesi, `npm run lint`, `npm run typecheck`.
 
 ## Done
+
+### AUTO-018 [P2] Musteri dashboard kredi gecmisi gercek ledger'dan beslensin
+
+Durum: Done
+
+Fingerprint: `customer-experience|dashboard-credit-history-preview|orders-used-as-credit-ledger|safe-ledger-preview`
+
+Kapsam: Musteri dashboard `Credit History` onizlemesi, son siparislerin `credits_required` alanindan turetilmek yerine customer-scoped `credit_transactions` ledger satirlarindan beslenecek sekilde guncellendi.
+
+Sonuc: Dashboard artik son kredi hareketlerini `user_id` ile filtrelenen ledger kaynagindan yukler; description/type, delta, balance-after ve tarih alanlarini customer-safe sekilde gosterir. Pozitif hareketler yesil, negatif hareketler kirmizi ayrilir. Bos state buy credits ve full ledger linkleri verir. Recent orders, credit balance, live refresh ve `/dashboard/credits/history` akisi korunur; source id, metadata, odeme kaydi internali, secret veya admin-only not aciga cikarilmadi.
+
+Dogrulama: `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (18/18); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (247/247); `git diff --check` PASS (yalniz CRLF uyarilari). `npm run build` bilinen restricted-network Google Fonts / Next env yukleme riski nedeniyle calistirilmadi.
 
 ### AUTO-022 [P2] Admin audit timeline event gorunurlugunu rozetlesin
 

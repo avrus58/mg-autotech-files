@@ -2,6 +2,31 @@
 
 Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
+## 2026-07-12 reviewer run AUTO-018
+
+- Baslangic: 2026-07-12 20:55:00 +01:00; bitis: 2026-07-12 20:59:45 +01:00.
+- Gorev: Mevcut uncommitted AUTO-018 degisikliklerini bagimsiz V4 reviewer olarak incelemek.
+- Sonuc: Accepted. Musteri dashboard `Credit History` onizlemesi, son siparislerden turetilen kredi tahmini yerine customer-scoped `credit_transactions` ledger satirlarini kullaniyor.
+- Gate sonucu: Gorev gercek musteri/odeme guveni degeri tasiyor, duplicate fingerprint bulunmadi, evidence gecerliydi ve diff AUTO-018 kapsami icinde kaldi. Public/customer/admin veri sinirlari korundu; source id, metadata, payment internalleri, secret, storage path, signed URL, production servis, migration, fiyat/hukuki iddia veya gercek musteri verisi riski tespit edilmedi.
+- Reviewer duzeltmesi: Uygulama kodu icin duzeltme gerekmedi. `.autopilot/runtime/review-result.json` accepted sonucu icin yazildi.
+- Calistirilan kontroller: `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (18/18); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (247/247); `git diff --check` PASS (yalniz CRLF uyarilari).
+- Calistirilmayan kontroller: `npm run build` bilinen restricted-network Google Fonts / Next env yukleme riski nedeniyle calistirilmadi. Live service, SQL, smoke, scraper, desktop build/package ve normal env kontrolleri calistirilmadi.
+- Kalan risk: Offline build icin Google Fonts/`next/font/google` owner onayi bekleyen bilinen risk devam eder; Ready kuyrugundaki AUTO-019, AUTO-020, AUTO-023, AUTO-024 ve AUTO-025 ayri kapsamda kalir.
+
+## 2026-07-12 worker run AUTO-018
+
+- Baslangic: 2026-07-12 20:40:00 +01:00; bitis: 2026-07-12 20:54:12 +01:00.
+- Gorev: Musteri dashboard kredi gecmisi gercek ledger'dan beslensin.
+- Fingerprint: `customer-experience|dashboard-credit-history-preview|orders-used-as-credit-ledger|safe-ledger-preview`.
+- Sonuc: Done. Musteri dashboard `Credit History` onizlemesi artik son siparislerden turetilen kredi kullanimi tahmini yerine customer-scoped `credit_transactions` ledger satirlarindan besleniyor.
+- Duplicate/evidence kontrolu: V4 package constitution dosyalari, `.autopilot/constitution/*`, AGENTS, PROJECT, ROADMAP, INBOX, FEATURE_PROPOSALS, TASKS, TASK_HISTORY, PRODUCT_SCORECARD, STATUS, package scriptleri, mevcut Git durumu ve son 100 commit incelendi. Ayni fingerprint tamamlanmis gorunmedi; evidence halen gecerliydi. Dashboard daha once `orders.credits_required` ile `creditHistory` olusturuyordu, tam kredi gecmisi sayfasi ise `credit_transactions` tablosunu `user_id` ile filtreliyordu.
+- Degisen dosyalar: `src/components/dashboard/DashboardClient.tsx`, `tests/ui-ux-safety.test.ts`, `.autopilot/TASKS.md`, `.autopilot/TASK_HISTORY.md`, `.autopilot/STATUS.md`, `.autopilot/runtime/last-result.json`.
+- Uygulama sonucu: Dashboard guvenli ledger alanlarini (`id`, `user_id`, `type`, `credits_delta`, `balance_after`, `description`, `created_at`) yukler ve preview'da description/type, delta, balance-after ve tarihi gosterir. Pozitif hareketler yesil, negatif hareketler kirmizi ayrilir; bos state buy credits ve full ledger linkleri verir. Recent orders, credit balance, live refresh ve `/dashboard/credits/history` davranisi korunur.
+- Guvenlik/UI kontrolu: `source_id`, metadata, odeme kaydi internalleri, Stripe/bank transfer kurallari, secret, admin-only not, storage path, signed URL, hash veya gercek musteri verisi aciga cikarilmadi. Yeni dependency, production servis cagrisi, migration, deploy, fiyat/hukuki iddia veya odeme/kredi kural degisikligi yapilmadi.
+- Calistirilan kontroller: `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (18/18); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (247/247); `git diff --check` PASS (yalniz CRLF uyarilari); diff review PASS.
+- Calistirilmayan kontroller: `npm run build` bu repoda bilinen restricted-network Google Fonts / Next env yukleme riski nedeniyle calistirilmadi. Live service, SQL, smoke, scraper, desktop build/package ve normal env kontrolleri calistirilmadi.
+- Kalan risk: Teslim tahmini, ek dosya upload phase feedback, widget domain review sinyali ve desktop history status Ready gorevleri ayri kapsamda devam eder. Offline build icin Google Fonts/`next/font/google` owner onayi bekleyen bilinen risk devam eder.
+
 ## 2026-07-12 planner run V4 WIDGET AND DESKTOP VISIBILITY
 
 - Baslangic: 2026-07-12 20:04:00 +01:00; bitis: 2026-07-12 20:39:34 +01:00.

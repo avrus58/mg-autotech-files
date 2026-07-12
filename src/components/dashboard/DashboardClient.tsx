@@ -46,6 +46,16 @@ type Order = {
   created_at: string;
 };
 
+type CreditTransaction = {
+  id: string;
+  user_id: string;
+  type: string | null;
+  credits_delta: number | string;
+  balance_after: number | string | null;
+  description: string | null;
+  created_at: string;
+};
+
 type DashboardProfile = {
   credit_balance: number | string | null;
   customer_id: string | null;
@@ -106,6 +116,16 @@ function formatStatus(status: string | null) {
     .join(" ");
 }
 
+function formatCreditTransactionType(type: string | null) {
+  if (!type) return "Credit movement";
+
+  return type
+    .replaceAll("_", " ")
+    .split(" ")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
 function getStatusStyle(status: string | null) {
   const value = status?.toLowerCase() ?? "new_request";
 
@@ -154,6 +174,7 @@ export function DashboardClient() {
   const [customerId, setCustomerId] = useState<string | null>(null);
   const [credits, setCredits] = useState<number>(0);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [creditTransactions, setCreditTransactions] = useState<CreditTransaction[]>([]);
   const [completedCount, setCompletedCount] = useState<number>(0);
   const [activeCount, setActiveCount] = useState<number>(0);
   const [needsResponseCount, setNeedsResponseCount] = useState<number>(0);
@@ -219,6 +240,17 @@ export function DashboardClient() {
 
       if (recentOrders) {
         setOrders(recentOrders as Order[]);
+      }
+
+      const { data: transactionRows } = await supabase
+        .from("credit_transactions")
+        .select("id, user_id, type, credits_delta, balance_after, description, created_at")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(6);
+
+      if (transactionRows) {
+        setCreditTransactions(transactionRows as CreditTransaction[]);
       }
 
       const { count: allOrders } = await supabase
@@ -341,10 +373,8 @@ export function DashboardClient() {
   }, [router]);
 
   const creditHistory = useMemo(() => {
-    return orders
-      .filter((order) => Number(order.credits_required ?? 0) > 0)
-      .slice(0, 6);
-  }, [orders]);
+    return creditTransactions.slice(0, 6);
+  }, [creditTransactions]);
 
   const customerReference = formatCustomerReference(customerId);
   const profileCompletionSummary = formatMissingProfileItems(profileMissingItems);
@@ -1001,32 +1031,70 @@ export function DashboardClient() {
                 </div>
 
                 {creditHistory.length === 0 ? (
-                  <div className="rounded-3xl border border-dashed border-white/15 bg-black/25 p-8 text-center text-sm text-zinc-400">
-                    No credit usage yet.
+                  <div className="rounded-3xl border border-dashed border-white/15 bg-black/25 p-8 text-center">
+                    <CreditCard className="mx-auto mb-4 h-9 w-9 text-red-500" />
+                    <h3 className="text-lg font-black text-white">
+                      No credit ledger movements yet
+                    </h3>
+                    <p className="mx-auto mt-3 max-w-sm text-sm leading-6 text-zinc-400">
+                      Credit purchases, admin top-ups and file usage will appear here
+                      once they are recorded in your ledger.
+                    </p>
+                    <div className="mt-5 flex flex-wrap justify-center gap-3">
+                      <Link
+                        href="/dashboard/credits"
+                        className="rounded-xl bg-[#b1121b] px-4 py-2.5 text-xs font-black text-white transition hover:bg-[#c91824]"
+                      >
+                        Buy Credits
+                      </Link>
+                      <Link
+                        href="/dashboard/credits/history"
+                        className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-xs font-black text-white transition hover:bg-white/10"
+                      >
+                        Full Ledger
+                      </Link>
+                    </div>
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {creditHistory.map((order) => (
-                      <div
-                        key={order.id}
-                        className="flex items-center justify-between gap-4 rounded-2xl bg-black/30 p-4"
-                      >
-                        <div>
-                          <div className="font-bold">
-                            {order.vehicle_brand || "Vehicle"}{" "}
-                            {order.vehicle_model || ""}
-                          </div>
-                          <div className="mt-1 text-xs text-zinc-500">
-                            {order.service_type || "Service"} ·{" "}
-                            {formatDate(order.created_at)}
-                          </div>
-                        </div>
+                    {creditHistory.map((item) => {
+                      const delta = Number(item.credits_delta ?? 0);
+                      const isPositive = delta >= 0;
+                      const typeLabel = formatCreditTransactionType(item.type);
 
-                        <div className="font-black text-red-500">
-                          -{Number(order.credits_required ?? 0)}
+                      return (
+                        <div
+                          key={item.id}
+                          className="flex flex-col gap-4 rounded-2xl bg-black/30 p-4 sm:flex-row sm:items-center sm:justify-between"
+                        >
+                          <div className="min-w-0">
+                            <div className="break-words font-bold">
+                              {item.description || typeLabel}
+                            </div>
+                            <div className="mt-1 break-words text-xs text-zinc-500">
+                              {typeLabel} - {formatDate(item.created_at)}
+                            </div>
+                          </div>
+
+                          <div className="flex shrink-0 items-center justify-between gap-4 sm:flex-col sm:items-end sm:gap-1">
+                            {item.balance_after !== null && item.balance_after !== undefined && (
+                              <div className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs font-black text-zinc-300">
+                                Balance {item.balance_after}
+                              </div>
+                            )}
+
+                            <div
+                              className={`text-xl font-black ${
+                                isPositive ? "text-emerald-400" : "text-red-500"
+                              }`}
+                            >
+                              {isPositive ? "+" : ""}
+                              {delta}
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>

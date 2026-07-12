@@ -128,6 +128,30 @@ test("customer dashboard surfaces missing profile details without changing setti
   assert.match(settings, /preferred_contact: preferredContact/);
 });
 
+test("customer dashboard credit history preview uses the customer credit ledger", () => {
+  const dashboard = readProjectFile("src", "components", "dashboard", "DashboardClient.tsx");
+
+  assert.match(dashboard, /type CreditTransaction = \{/);
+  assert.match(dashboard, /const \[creditTransactions, setCreditTransactions\]/);
+  assert.match(dashboard, /\.from\("credit_transactions"\)/);
+  assert.match(
+    dashboard,
+    /\.select\("id, user_id, type, credits_delta, balance_after, description, created_at"\)/
+  );
+  assert.match(dashboard, /\.eq\("user_id", userId\)/);
+  assert.match(dashboard, /\.order\("created_at", \{ ascending: false \}\)/);
+  assert.match(dashboard, /\.limit\(6\)/);
+  assert.match(dashboard, /return creditTransactions\.slice\(0, 6\)/);
+  assert.match(dashboard, /item\.description \|\| typeLabel/);
+  assert.match(dashboard, /item\.balance_after !== null/);
+  assert.match(dashboard, /isPositive \? "text-emerald-400" : "text-red-500"/);
+  assert.match(dashboard, /No credit ledger movements yet/);
+  assert.match(dashboard, /href="\/dashboard\/credits"/);
+  assert.match(dashboard, /href="\/dashboard\/credits\/history"/);
+  assert.doesNotMatch(dashboard, /return orders[\s\S]*credits_required[\s\S]*slice\(0, 6\)/);
+  assert.doesNotMatch(dashboard, /source_id|metadata/);
+});
+
 test("admin completed-today metric uses delivered file timestamps before request creation", () => {
   const adminPage = readProjectFile("src", "app", "admin", "page.tsx");
 
