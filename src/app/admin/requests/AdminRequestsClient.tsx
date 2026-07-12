@@ -96,6 +96,22 @@ function badgeClass(value: string | null | undefined) {
   return "border-white/10 bg-white/[0.04] text-zinc-300";
 }
 
+const adminReviewStatuses = new Set(["needs_review", "payment_review", "quality_check"]);
+const paymentReviewSignals = new Set(["requires_review"]);
+const qualityReviewSignals = new Set(["failed", "needs_review"]);
+const deliveryReviewSignals = new Set(["blocked", "revision_requested"]);
+
+function hasReviewSignal(item: ApiItem) {
+  const workOrder = item.workOrder;
+  if (!workOrder) return false;
+  return (
+    adminReviewStatuses.has(workOrder.admin_status) ||
+    paymentReviewSignals.has(workOrder.payment_review_status) ||
+    qualityReviewSignals.has(workOrder.quality_check_status) ||
+    deliveryReviewSignals.has(workOrder.delivery_status)
+  );
+}
+
 export default function AdminRequestsClient() {
   const router = useRouter();
   const [payload, setPayload] = useState<ApiPayload | null>(null);
@@ -164,7 +180,7 @@ export default function AdminRequestsClient() {
       if (term && !haystack.includes(term)) return false;
       if (status !== "all" && item.workOrder?.admin_status !== status && item.order.status !== status) return false;
       if (priority !== "all" && item.workOrder?.priority !== priority) return false;
-      if (onlyNeedsReview && !["needs_review", "payment_review", "quality_check"].includes(item.workOrder?.admin_status ?? "")) return false;
+      if (onlyNeedsReview && !hasReviewSignal(item)) return false;
       return true;
     });
   }, [payload, priority, search, status, onlyNeedsReview]);
@@ -174,7 +190,7 @@ export default function AdminRequestsClient() {
     return {
       total: items.length,
       open: items.filter((item) => !["completed", "cancelled"].includes(item.workOrder?.admin_status ?? "")).length,
-      review: items.filter((item) => ["needs_review", "payment_review", "quality_check"].includes(item.workOrder?.admin_status ?? "")).length,
+      review: items.filter((item) => hasReviewSignal(item)).length,
       delivered: items.filter((item) => item.indicators.hasDeliveredFile).length,
     };
   }, [payload]);

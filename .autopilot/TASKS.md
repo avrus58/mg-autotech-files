@@ -43,24 +43,6 @@ Kabul kriterleri:
 
 Dogrulama: Markdown diff incelemesi, `npm run lint`.
 
-- [ ] **P1 AUTO-011 - Admin review filtresi payment ve kalite sinyallerini kapsasin**
-  - Domain: Responsive UX & product flow
-  - Fingerprint: `responsive-ux|admin-request-control-center|review-filter-misses-payment-quality-signals|complete-review-queue`
-  - Impact: 4/5
-  - Confidence: 5/5
-  - Effort: 2/5
-  - Evidence: `src/app/admin/requests/AdminRequestsClient.tsx:167` Review only filtresi yalniz `workOrder.admin_status` degerini kontrol ediyor; `src/app/admin/requests/AdminRequestsClient.tsx:177` Needs review metrigi ayni dar kontrolu kullaniyor. Ayni ekranda `payment_review_status` gosteriliyor (`src/app/admin/requests/AdminRequestsClient.tsx:280`) ve tipte `quality_check_status` mevcut (`src/app/admin/requests/AdminRequestsClient.tsx:48-50`).
-  - Scope: Admin request listesinde tek bir review-signal helper'i ile review-only filtresi ve Needs review metrigini payment/QC/delivery blokaj sinyallerini kapsayacak sekilde dar kapsamda guncelle.
-  - Acceptance criteria:
-    - `admin_status` review durumlari mevcut davranisi korur.
-    - `payment_review_status === "requires_review"` ve `quality_check_status` failed/needs_review gibi gercek inceleme gerektiren durumlar Review only sonucuna ve Needs review sayacina girer.
-    - Filtre, arama ve priority secimleriyle birlikte calismaya devam eder.
-    - Odeme, kredi, fiyat veya DB mutasyonu yapilmaz.
-  - Validation:
-    - `npm run lint`
-    - `npm run typecheck`
-    - `npm test`
-
 - [ ] **P2 AUTO-013 - Musteri order timeline'i bekleme ve revizyon adimlarini acik gostersin**
   - Domain: Responsive UX & product flow
   - Fingerprint: `responsive-ux|customer-order-detail|timeline-collapses-actionable-statuses|clear-next-step-status`
@@ -112,6 +94,18 @@ Kabul kriterleri:
 Dogrulama: Diff incelemesi, `npm run lint`, `npm run typecheck`.
 
 ## Done
+
+### AUTO-011 [P1] Admin review filtresi payment ve kalite sinyallerini kapsasin
+
+Durum: Done
+
+Fingerprint: `responsive-ux|admin-request-control-center|review-filter-misses-payment-quality-signals|complete-review-queue`
+
+Kapsam: Admin request listesinde Review only filtresi ve Needs review metrigi ortak `hasReviewSignal` helper'i ile guncellendi.
+
+Sonuc: Mevcut admin status review davranisi korundu; payment `requires_review`, quality `failed`/`needs_review` ve delivery `blocked`/`revision_requested` sinyalleri Review only sonucuna ve Needs review sayacina dahil edildi. Odeme, kredi, fiyat, DB mutasyonu veya production servis islemi yapilmadi.
+
+Dogrulama: `.\node_modules\.bin\tsx.cmd --test tests\admin-work-orders.test.ts` PASS (24/24); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (234/234); `git diff --check` PASS (yalnizca CRLF uyarilari).
 
 ### AUTO-012 [P1] Work-order fallback modunda mutasyon kontrollerini read-only yap
 

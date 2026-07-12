@@ -272,6 +272,18 @@ test("admin work-order detail exposes upload permission control without payment 
   assert.doesNotMatch(source, /\/api\/admin\/payments|credit_transactions[\s\S]*insert|payment_records[\s\S]*update/);
 });
 
+test("admin request review queue includes payment, quality and delivery signals", () => {
+  const source = readFileSync(resolve(process.cwd(), "src", "app", "admin", "requests", "AdminRequestsClient.tsx"), "utf8");
+  const helperCalls = source.match(/hasReviewSignal\(item\)/g) ?? [];
+
+  assert.match(source, /function hasReviewSignal\(item: ApiItem\)/);
+  assert.match(source, /adminReviewStatuses/);
+  assert.match(source, /paymentReviewSignals[\s\S]*"requires_review"/);
+  assert.match(source, /qualityReviewSignals[\s\S]*"failed"[\s\S]*"needs_review"/);
+  assert.match(source, /deliveryReviewSignals[\s\S]*"blocked"[\s\S]*"revision_requested"/);
+  assert.ok(helperCalls.length >= 2);
+});
+
 test("admin work-order fallback mode disables mutation controls", () => {
   const source = readFileSync(resolve(process.cwd(), "src", "app", "admin", "requests", "[id]", "WorkOrderDetailClient.tsx"), "utf8");
   const guardCalls = source.match(/if \(blockReadOnlyFallback\(\)\) return;/g) ?? [];

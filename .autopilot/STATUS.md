@@ -2,6 +2,19 @@
 
 Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
+## 2026-07-12 worker run AUTO-011
+
+- Gorev: Admin review filtresi payment ve kalite sinyallerini kapsasin.
+- Fingerprint: `responsive-ux|admin-request-control-center|review-filter-misses-payment-quality-signals|complete-review-queue`.
+- Duplicate kontrolu: AGENTS, V4 package constitution dosyalari, `.autopilot/constitution/*`, PROJECT, ROADMAP, INBOX, FEATURE_PROPOSALS, TASKS, TASK_HISTORY, PRODUCT_SCORECARD, STATUS ve son 100 commit incelendi; ayni fingerprint veya tamamlanmis review-signal helper'i bulunmadi.
+- Evidence kontrolu: `src/app/admin/requests/AdminRequestsClient.tsx` icinde Review only filtresi ve Needs review metrigi yalniz `workOrder.admin_status` degerlerini sayiyordu; ayni item tipinde `payment_review_status`, `quality_check_status` ve `delivery_status` sinyalleri mevcuttu.
+- Degisen dosyalar: `src/app/admin/requests/AdminRequestsClient.tsx`, `tests/admin-work-orders.test.ts`, `.autopilot/TASKS.md`, `.autopilot/TASK_HISTORY.md`, `.autopilot/STATUS.md`, `.autopilot/runtime/last-result.json`.
+- Sonuc: Admin request listesinde ortak `hasReviewSignal` helper'i eklendi. Mevcut admin status review davranisi korundu; payment `requires_review`, quality `failed`/`needs_review` ve delivery `blocked`/`revision_requested` sinyalleri Review only sonucuna ve Needs review sayacina dahil edildi.
+- Guvenlik/UI kontrolu: Yeni dependency, production servis cagrisi, migration, deploy, `.env`/secret, gercek musteri verisi, fiyat/hukuki iddia veya odeme/kredi/DB mutasyonu yapilmadi. UI degisikligi filtre/sayac davranisiyla sinirli; mevcut arama/status/priority filtreleri korunuyor.
+- Calistirilan kontroller: `.\node_modules\.bin\tsx.cmd --test tests\admin-work-orders.test.ts` PASS (24/24); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (234/234); `git diff --check` PASS (yalnizca CRLF uyarilari); diff review PASS.
+- Calistirilmayan kontroller: `npm run build` bu repoda bilinen restricted-network Google Fonts / Next env yukleme riski nedeniyle calistirilmadi. Dev server, smoke, scraper, SQL ve normal env kontrolleri calistirilmadi.
+- Kalan risk: Canli operasyonlarda review queue dogrulugu insan/admin gozlemiyle izlenmelidir; Ready kuyrugunda diger P1/P2 gorevler devam ediyor.
+
 ## 2026-07-12 reviewer run AUTO-012
 
 - Gorev: Mevcut uncommitted AUTO-012 degisikliklerini product/safety/quality gate olarak incelemek.
@@ -92,8 +105,8 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
 - Kurulum tarihi: 2026-07-12 (Europe/Berlin)
 - Aktif branch: codex/autopilot
-- Son basarili gorev: AUTO-012 Work-order fallback modunda mutasyon kontrollerini read-only yap
-- Son dogrulama: hedefli `tests\admin-work-orders.test.ts` PASS (23/23); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (233/233); `git diff --check` PASS (yalnizca CRLF uyarilari)
+- Son basarili gorev: AUTO-011 Admin review filtresi payment ve kalite sinyallerini kapsasin
+- Son dogrulama: hedefli `tests\admin-work-orders.test.ts` PASS (24/24); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (234/234); `git diff --check` PASS (yalnizca CRLF uyarilari)
 - Insan mudahalesi gereken konu: Offline build icin Google Fonts/`next/font/google` stratejisi onayi; production smoke, SQL migration, deploy ve normal env kontrolleri insan onayi gerektirir.
 
 ## 2026-07-12 reviewer run AUTO-003
