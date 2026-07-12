@@ -4,19 +4,6 @@
 
 ## Ready
 
-### AUTO-006 [P1] `src/proxy.ts` locale davranisi icin unit test ekle
-
-Kapsam: Locale cookie/header cozumu ve localized path davranisi icin dar kapsamli test ekle.
-
-Kabul kriterleri:
-
-- Locale path varsa `x-mg-locale` ona gore set edilir.
-- Cookie varsa ve path locale icermiyorsa cookie dili korunur.
-- Cookie yoksa `accept-language` fallback davranisi test edilir.
-- API/private matcher davranisi uzerinde urun route degisikligi yapilmaz.
-
-Dogrulama: `npm test`.
-
 ### AUTO-007 [P1] Vehicle JSON fallback icin data integrity testi ekle
 
 Kapsam: `data/vehicle-database.json` ve `data/vehicle-performance-overrides.json` public fallback sozlesmesini testle.
@@ -94,6 +81,18 @@ Kabul kriterleri:
 Dogrulama: Diff incelemesi, `npm run lint`, `npm run typecheck`.
 
 ## Done
+
+### AUTO-006 [P1] `src/proxy.ts` locale davranisi icin unit test ekle
+
+Durum: Done
+
+Fingerprint: `i18n|proxy-locale-routing|locale-cookie-header-resolution-untested|covered-locale-contract`
+
+Kapsam: Locale cookie/header cozumu ve localized path davranisi icin dar kapsamli unit test eklendi.
+
+Sonuc: `tests/proxy-locale.test.ts` path locale onceligini, path locale yokken cookie dilinin korunmasini, cookie yokken `accept-language` fallback davranisini ve mevcut non-api/static matcher sozlesmesini dogrular. `src/proxy.ts` urun davranisi degistirilmedi.
+
+Dogrulama: `.\node_modules\.bin\tsx.cmd --test tests\proxy-locale.test.ts` PASS (4/4); `npm test` PASS (238/238); `npm run lint` PASS; `npm run typecheck` PASS; `git diff --check` PASS (yalnizca CRLF uyarilari).
 
 ### AUTO-011 [P1] Admin review filtresi payment ve kalite sinyallerini kapsasin
 

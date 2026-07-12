@@ -2,6 +2,19 @@
 
 Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
+## 2026-07-12 worker run AUTO-006
+
+- Gorev: `src/proxy.ts` locale davranisi icin unit test ekle.
+- Fingerprint: `i18n|proxy-locale-routing|locale-cookie-header-resolution-untested|covered-locale-contract`.
+- Duplicate kontrolu: AGENTS, V4 package constitution dosyalari, `.autopilot/constitution/*`, PROJECT, ROADMAP, INBOX, FEATURE_PROPOSALS, TASKS, TASK_HISTORY, PRODUCT_SCORECARD, STATUS ve son 100 commit incelendi; ayni fingerprint veya tamamlanmis proxy-locale unit test bulunmadi.
+- Evidence kontrolu: `src/proxy.ts` localized path, `mg_locale` cookie ve `accept-language` kaynaklarindan `x-mg-locale` uretiyor ve gerekirse locale cookie yaziyor; bu sozlesme icin dogrudan unit test yoktu.
+- Degisen dosyalar: `tests/proxy-locale.test.ts`, `.autopilot/TASKS.md`, `.autopilot/TASK_HISTORY.md`, `.autopilot/STATUS.md`, `.autopilot/runtime/last-result.json`.
+- Sonuc: Proxy locale sozlesmesi dar kapsamli unit testle kapsandi. Testler localized path onceligini, cookie dilinin path locale yokken korunmasini, cookie yokken `accept-language` fallback'ini ve mevcut non-api/static matcher sozlesmesini dogrular. `src/proxy.ts` urun davranisi degistirilmedi.
+- Guvenlik/UI kontrolu: Yeni dependency, production servis cagrisi, migration, deploy, `.env`/secret, gercek musteri verisi, fiyat/hukuki iddia veya route davranisi degisikligi yapilmadi. UI degisikligi yok.
+- Calistirilan kontroller: `.\node_modules\.bin\tsx.cmd --test tests\proxy-locale.test.ts` PASS (4/4); `npm test` PASS (238/238); `npm run lint` PASS; `npm run typecheck` PASS; `git diff --check` PASS (yalnizca CRLF uyarilari); diff review PASS; runtime JSON parse PASS.
+- Calistirilmayan kontroller: `npm run build` bu repoda bilinen restricted-network Google Fonts / Next env yukleme riski nedeniyle calistirilmadi. Dev server, smoke, scraper, SQL ve normal env kontrolleri calistirilmadi.
+- Kalan risk: Offline build icin Google Fonts/`next/font/google` stratejisi owner onayi bekliyor; Ready kuyrugunda `AUTO-007`, `AUTO-008` ve `AUTO-013` devam ediyor.
+
 ## 2026-07-12 worker run AUTO-011
 
 - Gorev: Admin review filtresi payment ve kalite sinyallerini kapsasin.
@@ -105,8 +118,8 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
 - Kurulum tarihi: 2026-07-12 (Europe/Berlin)
 - Aktif branch: codex/autopilot
-- Son basarili gorev: AUTO-011 Admin review filtresi payment ve kalite sinyallerini kapsasin
-- Son dogrulama: hedefli `tests\admin-work-orders.test.ts` PASS (24/24); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (234/234); `git diff --check` PASS (yalnizca CRLF uyarilari)
+- Son basarili gorev: AUTO-006 `src/proxy.ts` locale davranisi icin unit test ekle
+- Son dogrulama: `.\node_modules\.bin\tsx.cmd --test tests\proxy-locale.test.ts` PASS (4/4); `npm test` PASS (238/238); `npm run lint` PASS; `npm run typecheck` PASS; `git diff --check` PASS (yalnizca CRLF uyarilari)
 - Insan mudahalesi gereken konu: Offline build icin Google Fonts/`next/font/google` stratejisi onayi; production smoke, SQL migration, deploy ve normal env kontrolleri insan onayi gerektirir.
 
 ## 2026-07-12 reviewer run AUTO-003
