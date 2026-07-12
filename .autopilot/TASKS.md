@@ -82,6 +82,84 @@
     - `npm run typecheck`
     - `npm test`
 
+- [ ] **P2 AUTO-023 - Admin widget clients listesi bekleyen domain taleplerini gostersin**
+  - Lane: Product Evolution
+  - Domain: Admin widget SaaS operations & domain review visibility
+  - Fingerprint: `admin-operations|widget-clients-list|pending-domain-requests-hidden|domain-request-queue-signal`
+  - Business impact: 3/5
+  - User impact: 2/5
+  - Admin impact: 4/5
+  - Strategic fit: 4/5
+  - Confidence: 5/5
+  - Effort: 2/5
+  - Risk: 2/5
+  - Evidence: `src/app/api/admin/widget-clients/[id]/route.ts:37-48` already loads `widget_domain_change_requests` for the detail page, and `src/app/admin/widget-clients/[id]/page.tsx:44` lets admins approve or reject pending requests. The list API at `src/app/api/admin/widget-clients/route.ts:15-23` enriches each client only with usage, blocked counts and public key; the list UI at `src/app/admin/widget-clients/page.tsx:19-21` shows total/active/past-due/blocked metrics and rows without any pending domain request signal.
+  - Product value: Admins can see domain-change work from the widget client queue instead of discovering it only after opening each client detail page.
+  - Scope: Add a read-only pending-domain-request signal to the admin widget clients list using the existing `widget_domain_change_requests` table. Do not approve/reject requests, change domain policy, touch Stripe, mutate pricing, add migrations or expose private audit internals.
+  - Acceptance criteria:
+    - Admin widget clients API returns a safe per-client pending domain request count and latest requested domain when available.
+    - Desktop table and mobile cards show a compact pending-domain badge or metric that links naturally to the existing client detail review flow.
+    - Search can find clients with pending domain requests without breaking existing company/email/domain/plan search.
+    - Existing activate/suspend, copy embed, public key, usage and blocked-domain behavior remain unchanged.
+    - No widget audit log details, Stripe IDs beyond existing display, private keys, secrets or customer-only fields are newly exposed.
+  - Validation:
+    - `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts`
+    - `npm run lint`
+    - `npm run typecheck`
+    - `npm test`
+
+- [ ] **P2 AUTO-024 - Musteri widget domain talebi beklemedeyken tekrar gonderilemesin**
+  - Lane: Product Evolution
+  - Domain: Customer widget dashboard & domain-change clarity
+  - Fingerprint: `customer-experience|widget-dashboard-domain-change|pending-request-still-submit-able|pending-state-guidance`
+  - Business impact: 3/5
+  - User impact: 4/5
+  - Admin impact: 3/5
+  - Strategic fit: 4/5
+  - Confidence: 5/5
+  - Effort: 1/5
+  - Risk: 1/5
+  - Evidence: `src/app/api/widget/domain-change/route.ts:19-20` rejects a second pending domain-change request with `409`, and `src/app/api/widget/client/route.ts:54-63` already returns the latest `domainRequests` to the dashboard. `src/components/dashboard/WidgetDashboardClient.tsx:75-78` only checks that the input is non-empty before posting, while `src/components/dashboard/WidgetDashboardClient.tsx:102` lists domain requests but keeps the input/send affordance active even when one is pending.
+  - Product value: Customers see that their domain-change request is already waiting for admin review instead of hitting an avoidable API error and creating support uncertainty.
+  - Scope: Add a customer-safe pending state to the widget dashboard domain-change card. Reuse returned `domainRequests`; do not change domain normalization, approval rules, admin actions, Stripe billing, pricing or schema.
+  - Acceptance criteria:
+    - When a pending domain-change request exists, the dashboard shows the requested domain and a clear pending-review state.
+    - The input and send action are disabled or replaced while a pending request exists.
+    - Approved/rejected historical requests remain visible without blocking a new request.
+    - Empty, invalid and API-error states remain actionable and do not expose audit internals.
+    - Mobile and desktop layout remains readable without text overflow.
+  - Validation:
+    - `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts`
+    - `npm run lint`
+    - `npm run typecheck`
+    - `npm test`
+
+- [ ] **P3 AUTO-025 - Desktop uploader local history statuslari okunabilir etiket kullansin**
+  - Lane: Product Evolution
+  - Domain: Desktop uploader customer clarity & support reduction
+  - Fingerprint: `desktop-uploader|local-upload-history|raw-status-values-in-history|human-readable-status-labels`
+  - Business impact: 2/5
+  - User impact: 3/5
+  - Admin impact: 2/5
+  - Strategic fit: 3/5
+  - Confidence: 5/5
+  - Effort: 1/5
+  - Risk: 1/5
+  - Evidence: `apps/customer-uploader/src/App.tsx:88-90` defines `statusLabel`, and current request details/list already use it at `apps/customer-uploader/src/App.tsx:685` and `apps/customer-uploader/src/App.tsx:722`. The local upload history still renders raw stored status values in filter chips and rows at `apps/customer-uploader/src/App.tsx:730-754`, producing labels like `submitted` or `failed` instead of the same human-readable format.
+  - Product value: The desktop uploader feels more consistent and support-safe; customers can scan local upload history without seeing implementation-style status strings.
+  - Scope: Reuse the existing `statusLabel` helper for local history filter labels and history rows. Keep stored history values, filtering semantics, safe local-only storage, request links and diagnostic privacy unchanged.
+  - Acceptance criteria:
+    - Local history filter chips show human-readable status labels while still filtering by the original stored status value.
+    - Local history rows display the human-readable status label next to file size.
+    - Current request list/detail status labels remain unchanged.
+    - No raw local paths, storage paths, tokens, binary content, hashes beyond the existing customer-visible checksum row, or admin-only notes are exposed.
+    - Desktop UI tests cover the label consistency.
+  - Validation:
+    - `.\node_modules\.bin\tsx.cmd --test tests\customer-uploader.test.ts`
+    - `npm run lint`
+    - `npm run typecheck`
+    - `npm test`
+
 ## In Progress
 
 ## Blocked

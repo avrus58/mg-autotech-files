@@ -2,6 +2,24 @@
 
 Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
+## 2026-07-12 planner run V4 WIDGET AND DESKTOP VISIBILITY
+
+- Baslangic: 2026-07-12 20:04:00 +01:00; bitis: 2026-07-12 20:39:34 +01:00.
+- Gorev: MG AI Operating System V4 planner pass; planlama disinda uygulama kodu degistirilmedi.
+- Repo sinifi: `.autopilot/PROJECT.md`, route yapisi ve mevcut urun kapsami bu repository'nin `file.mgautotech.de` ECU file service SaaS platformu oldugunu dogruluyor. File-platform V4 constitution uygulandi; mgautotech.de ticari/SEO sinirlari guardrail olarak korundu.
+- Okunan kaynaklar: V4 package constitution dosyalari (`common/*`, `mgautotech/*`, `file-platform/*`), `AGENTS.md`, `.autopilot/constitution/*`, `.autopilot/PROJECT.md`, ROADMAP, INBOX, FEATURE_PROPOSALS, TASKS, TASK_HISTORY, PLANNER_STATE, PRODUCT_SCORECARD, STATUS, kok ve desktop `package.json`, mevcut Git durumu, son 100 commit, ilgili widget admin/customer route ve UI dosyalari, desktop uploader UI/API/test dosyalari, admin payment/email kontrol yuzeyleri ve ilgili dokumanlar.
+- INBOX sonucu: `New requests` bos; yeni owner istegi yok. Aktif `MILESTONE-20260712-PRODUCT-EVOLUTION` devam ediyor.
+- Portfolio kontrolu: Son 10 tamamlanan is customer dashboard/order clarity, admin queue/audit, data/test ve docs arasinda dengeli. Ready sayisi 3'e dustugu icin kanitli Product Evolution dilimleriyle 6'ya tamamlandi; yalniz test/docs/guard/refactor gorevi uretilmedi.
+- Duplicate kontrolu: ROADMAP, INBOX, FEATURE_PROPOSALS, TASKS, TASK_HISTORY, STATUS ve son 100 commit icinde `widget-clients-list|pending-domain-requests-hidden`, `widget-dashboard-domain-change|pending-request-still-submit-able` veya `local-upload-history|raw-status-values-in-history` fingerprint/intent'i bulunmadi. Mevcut widget/domain commitleri temel SaaS ve enquiry akisini kuruyor; yeni gorevler bekleyen domain talebi gorunurlugu ve desktop history status tutarliligi olarak ayri kanita dayaniyor.
+- Evidence kontrolu: `src/app/api/admin/widget-clients/[id]/route.ts:37-48` ve `src/app/admin/widget-clients/[id]/page.tsx:44` pending domain review detay akisini tasiyor, ancak `src/app/api/admin/widget-clients/route.ts:15-23` ve `src/app/admin/widget-clients/page.tsx:19-21` listeye pending domain sinyali tasimiyor. `src/app/api/widget/domain-change/route.ts:19-20` ikinci pending talebi 409 ile reddediyor, `src/app/api/widget/client/route.ts:54-63` domainRequests donduruyor, fakat `src/components/dashboard/WidgetDashboardClient.tsx:75-78` input doluysa tekrar POST ediyor ve `:102` sadece listeyi gosteriyor. `apps/customer-uploader/src/App.tsx:88-90` statusLabel helper'i var ve request detail/list `:685`/`:722` bunu kullaniyor, ancak local history `:730-754` raw status degerlerini filtre ve satirda gosteriyor.
+- Audited domains: ResponsiveUX; Integrations.
+- Eklenen Ready gorevler: `AUTO-023` admin widget clients listesi bekleyen domain taleplerini gostersin; `AUTO-024` musteri widget domain talebi beklemedeyken tekrar gonderilemesin; `AUTO-025` desktop uploader local history statuslari okunabilir etiket kullansin.
+- Ready sayisi: 6 (`AUTO-018`, `AUTO-019`, `AUTO-020`, `AUTO-023`, `AUTO-024`, `AUTO-025`).
+- Degisen dosyalar: `.autopilot/ROADMAP.md`, `.autopilot/TASKS.md`, `.autopilot/PLANNER_STATE.json`, `.autopilot/STATUS.md`, `.autopilot/runtime/planner-result.json`.
+- Calistirilan kontroller: zorunlu V4/repo constitution ve memory dosyalari `Get-Content` ile okundu; `git status --short --branch`; `git log -100 --pretty=format:'%h %ad %s' --date=short`; kok ve desktop `package.json` script incelemesi; `git grep` ve hedefli `Get-Content` ile kanit ve duplicate aramalari; `.autopilot/PLANNER_STATE.json` JSON parse PASS; `.autopilot/runtime/planner-result.json` JSON parse PASS; Ready total sayimi 6 PASS; `git diff --name-only` yalniz izinli tracked planning dosyalarini gosterdi; `git diff --check` PASS (yalniz CRLF uyarilari).
+- Calistirilmayan kontroller: Planlama disinda uygulama kodu degismedigi icin `npm run lint`, `npm run typecheck`, `npm test` ve `npm run build` calistirilmadi. `.env*`, live service, SQL, smoke, scraper, desktop build/package ve normal env kontrolleri calistirilmadi.
+- Kalan risk: Ready kuyrugundaki dashboard credit ledger, explicit delivery estimate, additional upload phase, widget domain visibility ve desktop local history iyilestirmeleri uygulanana kadar ilgili UX/operasyon belirsizlikleri devam eder. Offline build icin Google Fonts/`next/font/google` owner onayi gerektiren bilinen risk devam eder.
+
 ## 2026-07-12 worker run AUTO-022
 
 - Baslangic: 2026-07-12 19:50:00 +01:00; bitis: 2026-07-12 20:03:13 +01:00.

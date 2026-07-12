@@ -22,6 +22,9 @@
   - Musteri order detayinda ek dosya yukleme sureci prepare/upload/verify asamalarini acik gostersin.
   - Admin request control center, musteri tarafindan yuklenen ek destek dosyasi sinyalini listede gostersin.
   - Admin work-order audit timeline, customer-visible ve internal-only eventleri rozetlerle ayirsin.
+  - Admin widget clients listesi, bekleyen domain-change taleplerini liste ve metriklerde kacirmadan gostersin.
+  - Musteri widget dashboard'u, bekleyen domain-change talebi varken ikinci talebi gonderilebilir gibi gostermesin.
+  - Windows desktop uploader local upload history, raw status degerleri yerine ayni guvenli status etiketlerini kullansin.
 - Success signals:
   - Musteri, talebin gercek durumunu ve kendi aksiyon gereksinimini detay ekraninda ayri gorebilir.
   - Musteri, aksiyon bekleyen siparisi liste veya dashboard uzerinden hizlica bulabilir.
@@ -34,6 +37,9 @@
   - Admin, gunluk tamamlanan is sinyalini request yaratilis tarihi yerine teslim dosyasi zamanina gore gorur.
   - Admin, musteri ek dosyasi gelen requestleri liste uzerinden kacirmadan fark eder.
   - Admin, audit eventinin customer-visible mi internal-only mi oldugunu detay ekraninda hizlica ayirt eder.
+  - Admin, widget domain degisiklik talebini tek tek musteri detayi acmadan listede fark eder.
+  - Musteri, widget domain degisikligi zaten incelemedeyken tekrar denemek yerine bekleyen durumu gorur.
+  - Desktop uploader kullanicisi, local history filtre ve satirlarinda teknik raw status yerine okunabilir durum etiketleri gorur.
   - Migration/fallback durumlarinda mutasyon aksiyonlari read-only davranir ve hata yerine acik mesaj verir.
 
 ## Owner priorities
