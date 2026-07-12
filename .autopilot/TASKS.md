@@ -4,32 +4,6 @@
 
 ## Ready
 
-- [ ] **P2 AUTO-019 - Musteri order teslim tahmini yalniz acik estimate varsa sure gostersin**
-  - Lane: Product Evolution
-  - Domain: Customer order detail & delivery expectation clarity
-  - Fingerprint: `customer-experience|order-detail-estimated-delivery|null-estimate-shows-default-30min|explicit-estimate-only`
-  - Business impact: 3/5
-  - User impact: 4/5
-  - Admin impact: 2/5
-  - Strategic fit: 4/5
-  - Confidence: 5/5
-  - Effort: 1/5
-  - Risk: 2/5
-  - Evidence: `src/app/dashboard/orders/[id]/page.tsx:54-55` allows `estimated_delivery_label` and note to be null, but `src/app/dashboard/orders/[id]/page.tsx:159-166` maps a null/unknown value through `formatDeliveryEstimate` to the default label "Usually around 30 min"; `src/app/dashboard/orders/[id]/page.tsx:840-846` shows that value in the customer-facing Estimated Delivery card even when no explicit estimate was saved.
-  - Product value: Customers get a clearer, support-safe expectation without showing a specific turnaround label that was not explicitly set for their order.
-  - Scope: Adjust the customer order detail Estimated Delivery card so null or unknown estimate values show a neutral "estimate not set yet" state, while explicit admin-selected estimate labels and notes continue to display exactly as before. Do not change admin delivery options, pricing, SLA policy, legal text or database schema.
-  - Acceptance criteria:
-    - Null or unknown `estimated_delivery_label` no longer renders as "Usually around 30 min" on the customer order detail page.
-    - Explicit `usually_30_min`, `same_day`, `24h`, `48h` and `manual_review` values still render with their existing labels.
-    - The fallback explanatory copy avoids exact turnaround claims unless a label exists.
-    - Completed, revision and in-progress order detail actions continue to work.
-    - Mobile and desktop Estimated Delivery card text remains readable without overflow.
-  - Validation:
-    - `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts`
-    - `npm run lint`
-    - `npm run typecheck`
-    - `npm test`
-
 - [ ] **P2 AUTO-020 - Musteri ek dosya yuklemesi asamalari acik geri bildirim versin**
   - Lane: Product Evolution
   - Domain: Customer additional upload experience & retry clarity
@@ -167,6 +141,18 @@ Kabul kriterleri:
 Dogrulama: Diff incelemesi, `npm run lint`, `npm run typecheck`.
 
 ## Done
+
+### AUTO-019 [P2] Musteri order teslim tahmini yalniz acik estimate varsa sure gostersin
+
+Durum: Done
+
+Fingerprint: `customer-experience|order-detail-estimated-delivery|null-estimate-shows-default-30min|explicit-estimate-only`
+
+Kapsam: Musteri order detayindaki Estimated Delivery karti, null veya taninmayan `estimated_delivery_label` icin varsayilan "Usually around 30 min" etiketi yerine not-set durumunu gosterecek sekilde guncellendi.
+
+Sonuc: Explicit admin secimleri `usually_30_min`, `same_day`, `24h`, `48h` ve `manual_review` icin mevcut etiketler korunur. Estimate yoksa kart "Estimate not set yet" ve review sonrasi estimate gelecegini belirten neutral copy gosterir. Explicit estimate yokken saved note veya varsayilan spesifik sure iddiasi gosterilmez; order actions, revision/download akisi, admin delivery secenekleri, SLA/fiyat/hukuki metin ve schema degismedi.
+
+Dogrulama: `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (19/19); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (248/248); `git diff --check` PASS (yalniz CRLF uyarilari). `npm run build` bilinen restricted-network Google Fonts / Next env yukleme riski nedeniyle calistirilmadi.
 
 ### AUTO-018 [P2] Musteri dashboard kredi gecmisi gercek ledger'dan beslensin
 

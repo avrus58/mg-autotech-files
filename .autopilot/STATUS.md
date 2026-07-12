@@ -2,6 +2,20 @@
 
 Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
+## 2026-07-12 worker run AUTO-019
+
+- Baslangic: 2026-07-12 21:01:00 +01:00; bitis: 2026-07-12 21:18:00 +01:00.
+- Gorev: Musteri order teslim tahmini yalniz acik estimate varsa sure gostersin.
+- Fingerprint: `customer-experience|order-detail-estimated-delivery|null-estimate-shows-default-30min|explicit-estimate-only`.
+- Sonuc: Done. Musteri order detay Estimated Delivery karti null veya taninmayan estimate label icin artik "Usually around 30 min" default'una dusmez; neutral "Estimate not set yet" durumunu gosterir.
+- Duplicate/evidence kontrolu: V4 package constitution dosyalari, `.autopilot/constitution/*`, AGENTS, PROJECT, ROADMAP, INBOX, FEATURE_PROPOSALS, TASKS, TASK_HISTORY, PRODUCT_SCORECARD, STATUS, package scriptleri, mevcut Git durumu ve son commitler incelendi. Ayni fingerprint tamamlanmis gorunmedi; evidence halen gecerliydi. `estimated_delivery_label` null olabilirken onceki formatter null/unknown degeri customer-facing 30 min etiketine map ediyordu.
+- Degisen dosyalar: `src/app/dashboard/orders/[id]/page.tsx`, `tests/ui-ux-safety.test.ts`, `.autopilot/TASKS.md`, `.autopilot/TASK_HISTORY.md`, `.autopilot/STATUS.md`, `.autopilot/runtime/last-result.json`.
+- Uygulama sonucu: Explicit admin estimate degerleri `usually_30_min`, `same_day`, `24h`, `48h` ve `manual_review` icin mevcut etiketler korunur. Estimate yoksa veya taninmiyorsa not-set label ve review sonrasi estimate gelecegini soyleyen neutral copy render edilir; explicit estimate yokken saved note veya spesifik sure iddiasi gosterilmez. Completed, revision, download ve upload aksiyonlari degistirilmedi.
+- Guvenlik/UI kontrolu: Yeni dependency, production servis cagrisi, migration, deploy, `.env`/secret, gercek musteri verisi, fiyat/hukuki iddia, SLA policy, admin delivery option veya database schema degisikligi yapilmadi. Estimated Delivery label container'i `max-w-full break-words` ile uzun metne karsi korunur.
+- Calistirilan kontroller: `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (19/19); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (248/248); `git diff --check` PASS (yalniz CRLF uyarilari); diff review PASS.
+- Calistirilmayan kontroller: `npm run build` bu repoda bilinen restricted-network Google Fonts / Next env yukleme riski nedeniyle calistirilmadi. Live service, SQL, smoke, scraper, desktop build/package ve normal env kontrolleri calistirilmadi.
+- Kalan risk: Ek dosya upload phase feedback, widget domain review sinyali ve desktop history status Ready gorevleri ayri kapsamda devam eder. Offline build icin Google Fonts/`next/font/google` owner onayi bekleyen bilinen risk devam eder.
+
 ## 2026-07-12 reviewer run AUTO-018
 
 - Baslangic: 2026-07-12 20:55:00 +01:00; bitis: 2026-07-12 20:59:45 +01:00.

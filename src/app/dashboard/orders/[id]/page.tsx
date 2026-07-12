@@ -156,16 +156,21 @@ function formatFileVersionLabel(label: ModifiedFileVersion["label"]) {
   return "Final";
 }
 
-function formatDeliveryEstimate(value: DeliveryEstimate | string | null) {
-  const labels: Record<DeliveryEstimate, string> = {
-    usually_30_min: "Usually around 30 min",
-    same_day: "Same day",
-    "24h": "24h",
-    "48h": "48h",
-    manual_review: "Manual review",
-  };
+const deliveryEstimateLabels: Record<DeliveryEstimate, string> = {
+  usually_30_min: "Usually around 30 min",
+  same_day: "Same day",
+  "24h": "24h",
+  "48h": "48h",
+  manual_review: "Manual review",
+};
 
-  return labels[value as DeliveryEstimate] ?? labels.usually_30_min;
+function getDeliveryEstimateDisplay(value: DeliveryEstimate | string | null) {
+  const label = value ? deliveryEstimateLabels[value as DeliveryEstimate] : null;
+
+  return {
+    isExplicit: Boolean(label),
+    label: label ?? "Estimate not set yet",
+  };
 }
 
 type TimelineStep = {
@@ -552,6 +557,11 @@ export default function OrderDetailPage() {
   const completedFileReady = modifiedVersions.length > 0;
   const revisionRequested = order.status === "revision";
   const canRequestRevision = completedFileReady && !revisionRequested;
+  const deliveryEstimate = getDeliveryEstimateDisplay(order.estimated_delivery_label);
+  const deliveryEstimateDescription = deliveryEstimate.isExplicit
+    ? order.estimated_delivery_note ||
+      "Most standard file requests are usually handled quickly. Complex projects can take longer depending on file and vehicle data."
+    : "A delivery estimate will appear here after MG AutoTech reviews your request details.";
 
   return (
     <main className="min-h-screen bg-[#050505] text-white">
@@ -838,12 +848,11 @@ export default function OrderDetailPage() {
             <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6">
               <Clock3 className="mb-4 h-8 w-8 text-red-400" />
               <div className="text-sm text-zinc-400">Estimated Delivery</div>
-              <div className="mt-2 text-3xl font-black">
-                {formatDeliveryEstimate(order.estimated_delivery_label)}
+              <div className="mt-2 max-w-full break-words text-3xl font-black">
+                {deliveryEstimate.label}
               </div>
               <p className="mt-3 text-sm leading-6 text-zinc-400">
-                {order.estimated_delivery_note ||
-                  "Most standard file requests are usually handled quickly. Complex projects can take longer depending on file and vehicle data."}
+                {deliveryEstimateDescription}
               </p>
             </section>
 

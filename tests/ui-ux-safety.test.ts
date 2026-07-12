@@ -86,6 +86,24 @@ test("customer order detail timeline shows action-needed and revision states sep
   assert.doesNotMatch(page, /status === "file_check"\s*\|\|\s*status === "customer_info_needed"/);
 });
 
+test("customer order detail shows delivery estimates only when explicitly set", () => {
+  const page = readProjectFile("src", "app", "dashboard", "orders", "[id]", "page.tsx");
+
+  assert.match(page, /const deliveryEstimateLabels: Record<DeliveryEstimate, string>/);
+  assert.match(page, /usually_30_min: "Usually around 30 min"/);
+  assert.match(page, /same_day: "Same day"/);
+  assert.match(page, /"24h": "24h"/);
+  assert.match(page, /"48h": "48h"/);
+  assert.match(page, /manual_review: "Manual review"/);
+  assert.match(page, /getDeliveryEstimateDisplay\(order\.estimated_delivery_label\)/);
+  assert.match(page, /label: label \?\? "Estimate not set yet"/);
+  assert.match(page, /deliveryEstimate\.isExplicit[\s\S]*order\.estimated_delivery_note/);
+  assert.match(page, /A delivery estimate will appear here after MG AutoTech reviews your request details\./);
+  assert.match(page, /max-w-full break-words text-3xl font-black/);
+  assert.doesNotMatch(page, /labels\[value as DeliveryEstimate\] \?\? labels\.usually_30_min/);
+  assert.doesNotMatch(page, /formatDeliveryEstimate\(order\.estimated_delivery_label\)/);
+});
+
 test("customer dashboard and order archive surface action-needed orders separately", () => {
   const dashboard = readProjectFile("src", "components", "dashboard", "DashboardClient.tsx");
   const orders = readProjectFile("src", "app", "dashboard", "orders", "page.tsx");
