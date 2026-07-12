@@ -4,19 +4,6 @@
 
 ## Ready
 
-### AUTO-001 [P0] Root README'yi gercek proje rehberine cevir
-
-Kapsam: Default create-next-app README icerigini, bu repository'nin gercek amaci, mimarisi, npm komutlari, local setup notlari ve guvenli calisma sinirlariyla degistir.
-
-Kabul kriterleri:
-
-- README kok Next.js app, `apps/customer-uploader` desktop app ve opsiyonel `file-expert-analyzer` rollerini aciklar.
-- npm package manager ve mevcut guvenli komutlar listelenir.
-- `.env` okumama, production servislerine baglanmama, SQL/deploy calistirmama sinirlari net yazilir.
-- Fiyat, garanti, hukuki iddia veya yeni urun vaadi eklenmez.
-
-Dogrulama: Markdown diff incelemesi, `npm run lint`.
-
 ### AUTO-002 [P0] Payment env checker icin otonom guvenli mod ekle
 
 Kapsam: `scripts/check-payment-env.js` icin `.env.local` okumadan yalnizca gerekli key listesini ve dokumantasyon sozlesmesini kontrol eden `--schema-only` benzeri bir mod ekle.
@@ -141,3 +128,20 @@ Kabul kriterleri:
 Dogrulama: Diff incelemesi, `npm run lint`, `npm run typecheck`.
 
 ## Done
+
+### AUTO-001 [P0] Root README'yi gercek proje rehberine cevir
+
+Durum: Done
+
+Fingerprint: `developer-experience|root-readme|default-create-next-app|project-specific-safe-setup-guide`
+
+Kapsam: Default create-next-app README icerigini, bu repository'nin gercek amaci, mimarisi, npm komutlari, local setup notlari ve guvenli calisma sinirlariyla degistir.
+
+Kabul kriterleri:
+
+- README kok Next.js app, `apps/customer-uploader` desktop app ve opsiyonel `file-expert-analyzer` rollerini aciklar.
+- npm package manager ve mevcut guvenli komutlar listelenir.
+- `.env` okumama, production servislerine baglanmama, SQL/deploy calistirmama sinirlari net yazilir.
+- Fiyat, garanti, hukuki iddia veya yeni urun vaadi eklenmez.
+
+Dogrulama: Markdown diff incelemesi, `npm run lint`.

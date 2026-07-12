@@ -6,9 +6,30 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
 - Kurulum tarihi: 2026-07-12 (Europe/Berlin)
 - Aktif branch: codex/autopilot
-- Son basarili gorev: Bootstrap / otonom calisma hazirligi
-- Son dogrulama: `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (221/221); `npm run build` FAIL (restricted network nedeniyle Google Fonts fetch hatasi)
+- Son basarili gorev: AUTO-001 Root README'yi gercek proje rehberine cevir
+- Son dogrulama: reviewer `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (221/221); `npm run build` README-only gorevde calistirilmadi (restricted network Google Fonts/env yukleme riski biliniyor)
 - Insan mudahalesi gereken konu: Offline build icin Google Fonts/`next/font/google` stratejisi onayi; production smoke, SQL migration, deploy ve env kontrolleri insan onayi gerektirir.
+
+## 2026-07-12 reviewer run AUTO-001
+
+- Gorev: Mevcut uncommitted AUTO-001 degisikliklerini bagimsiz reviewer olarak incelemek.
+- Sonuc: Accepted. README degisikligi gorev kapsaminda; TASKS, TASK_HISTORY ve STATUS kayitlari worker sonucuyla uyumlu.
+- Duplicate/evidence kontrolu: HEAD README default create-next-app icerigiydi; HEAD TASK_HISTORY bos idi; fingerprint yalnizca yeni Done/TASK_HISTORY kayitlarinda gorundu.
+- Risk kontrolu: Production servis, migration, secret, musteri verisi, yeni dependency, debug kodu veya kapsam disi refactor tespit edilmedi.
+- Calistirilan kontroller: `git diff --check` PASS (yalnizca CRLF uyarilari); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (221/221).
+- Calistirilmayan kontroller: `npm run build` README-only gorev icin calistirilmadi; restricted network Google Fonts bagimliligi ve Next env yukleme davranisi bilinen risk olarak kayitli.
+
+## 2026-07-12 worker run AUTO-001
+
+- Gorev: Root README'yi default create-next-app iceriginden gercek proje rehberine cevirmek.
+- Fingerprint: `developer-experience|root-readme|default-create-next-app|project-specific-safe-setup-guide`.
+- Duplicate kontrolu: TASK_HISTORY, Done gorevleri ve yakin Git gecmisi incelendi; ayni amacin tamamlandigina dair kayit bulunmadi.
+- Evidence kontrolu: `README.md` baslangicta default create-next-app metni iceriyordu.
+- Degisen dosyalar: `README.md`, `.autopilot/TASKS.md`, `.autopilot/TASK_HISTORY.md`, `.autopilot/STATUS.md`, `.autopilot/runtime/last-result.json`.
+- Sonuc: README kok Next.js app, desktop uploader, opsiyonel analyzer, npm komutlari, local setup notlari ve guvenli calisma sinirlariyla guncellendi. Fiyat, garanti, hukuki iddia veya yeni urun vaadi eklenmedi.
+- Calistirilan kontroller: Markdown diff incelemesi PASS; `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (221/221).
+- Calistirilmayan kontroller: `npm run build` README-only gorev icin zorunlu olmadigi ve restricted network ortaminda Google Fonts fetch bagimliligi bilindigi icin calistirilmadi; `npm run check:payments`, desktop env/build/package, smoke, scraper ve SQL komutlari hassas sinirlar nedeniyle calistirilmadi.
+- Kalan risk: Offline build Google Fonts stratejisi onayi bekliyor; env checker, smoke ve scraper guard gorevleri henuz Ready kuyrugunda.
 
 ## 2026-07-12 planner run
 
@@ -78,4 +99,3 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 - Offline build basarisiz; Google Fonts bagimliligi cozulmeden restricted Codex ortaminda `npm run build` gecmeyebilir.
 - Env checker scriptleri icin guvenli schema-only mod henuz uygulanmadi.
 - Smoke/scraper scriptleri non-local/dis ag guard'i henuz uygulamadi.
-- README default Next.js iceriginden cikmadi.
