@@ -4,32 +4,6 @@
 
 ## Ready
 
-- [ ] **P2 AUTO-023 - Admin widget clients listesi bekleyen domain taleplerini gostersin**
-  - Lane: Product Evolution
-  - Domain: Admin widget SaaS operations & domain review visibility
-  - Fingerprint: `admin-operations|widget-clients-list|pending-domain-requests-hidden|domain-request-queue-signal`
-  - Business impact: 3/5
-  - User impact: 2/5
-  - Admin impact: 4/5
-  - Strategic fit: 4/5
-  - Confidence: 5/5
-  - Effort: 2/5
-  - Risk: 2/5
-  - Evidence: `src/app/api/admin/widget-clients/[id]/route.ts:37-48` already loads `widget_domain_change_requests` for the detail page, and `src/app/admin/widget-clients/[id]/page.tsx:44` lets admins approve or reject pending requests. The list API at `src/app/api/admin/widget-clients/route.ts:15-23` enriches each client only with usage, blocked counts and public key; the list UI at `src/app/admin/widget-clients/page.tsx:19-21` shows total/active/past-due/blocked metrics and rows without any pending domain request signal.
-  - Product value: Admins can see domain-change work from the widget client queue instead of discovering it only after opening each client detail page.
-  - Scope: Add a read-only pending-domain-request signal to the admin widget clients list using the existing `widget_domain_change_requests` table. Do not approve/reject requests, change domain policy, touch Stripe, mutate pricing, add migrations or expose private audit internals.
-  - Acceptance criteria:
-    - Admin widget clients API returns a safe per-client pending domain request count and latest requested domain when available.
-    - Desktop table and mobile cards show a compact pending-domain badge or metric that links naturally to the existing client detail review flow.
-    - Search can find clients with pending domain requests without breaking existing company/email/domain/plan search.
-    - Existing activate/suspend, copy embed, public key, usage and blocked-domain behavior remain unchanged.
-    - No widget audit log details, Stripe IDs beyond existing display, private keys, secrets or customer-only fields are newly exposed.
-  - Validation:
-    - `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts`
-    - `npm run lint`
-    - `npm run typecheck`
-    - `npm test`
-
 - [ ] **P3 AUTO-025 - Desktop uploader local history statuslari okunabilir etiket kullansin**
   - Lane: Product Evolution
   - Domain: Desktop uploader customer clarity & support reduction
@@ -168,6 +142,18 @@ Kabul kriterleri:
 Dogrulama: Diff incelemesi, `npm run lint`, `npm run typecheck`.
 
 ## Done
+
+### AUTO-023 [P2] Admin widget clients listesi bekleyen domain taleplerini gostersin
+
+Durum: Done
+
+Fingerprint: `admin-operations|widget-clients-list|pending-domain-requests-hidden|domain-request-queue-signal`
+
+Kapsam: Admin widget clients list API'si ve liste UI'i, mevcut `widget_domain_change_requests` pending taleplerinden yalniz guvenli ozet sinyali kullanacak sekilde guncellendi.
+
+Sonuc: Liste API'si pending domain taleplerini `client_id`, `requested_domain` ve `created_at` alanlariyla okur, her client icin pending count ve latest requested domain dondurur. Admin liste UI'i toplam pending domain request metrigi, masaustu `Domain review` link rozeti ve mobil `Pending` metric'i gosterir; search latest requested domain ve pending review terimleriyle de eslesir. Activate/suspend, copy embed, public key, usage, blocked-domain ve existing Stripe display davranisi korunur.
+
+Dogrulama: `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (23/23); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (252/252); `git diff --check` PASS (yalniz CRLF uyarilari). `npm run build` bilinen restricted-network Google Fonts / Next env yukleme riski nedeniyle calistirilmadi.
 
 ### AUTO-026 [P2] Request chat uzun mesajlari gondermeden once sinirlasin
 

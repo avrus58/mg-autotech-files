@@ -179,6 +179,28 @@ test("customer widget dashboard blocks duplicate pending domain-change requests"
   assert.doesNotMatch(widgetDashboard, /widget_audit_logs|actor_user_id|old_domain/);
 });
 
+test("admin widget clients list surfaces pending domain review signals safely", () => {
+  const route = readProjectFile("src", "app", "api", "admin", "widget-clients", "route.ts");
+  const page = readProjectFile("src", "app", "admin", "widget-clients", "page.tsx");
+
+  assert.match(route, /\.from\("widget_domain_change_requests"\)/);
+  assert.match(route, /\.select\("client_id, requested_domain, created_at"\)/);
+  assert.match(route, /\.eq\("status", "pending"\)/);
+  assert.match(route, /pending_domain_request_count/);
+  assert.match(route, /latest_requested_domain/);
+  assert.doesNotMatch(route, /admin_note|old_domain|widget_audit_logs|actor_user_id|resolved_at/);
+
+  assert.match(page, /pending_domain_request_count: number/);
+  assert.match(page, /latest_requested_domain: string \| null/);
+  assert.match(page, /Pending domain requests/);
+  assert.match(page, /Domain review/);
+  assert.match(page, /PendingDomainSignal/);
+  assert.match(page, /href=\{`\/admin\/widget-clients\/\$\{clientId\}`\}/);
+  assert.match(page, /pending domain request domain review/);
+  assert.match(page, /label="Pending"/);
+  assert.doesNotMatch(page, /admin_note|old_domain|widget_audit_logs|actor_user_id/);
+});
+
 test("request chat composer exposes and enforces the API message length contract", () => {
   const chat = readProjectFile("src", "components", "RequestChat.tsx");
   const route = readProjectFile("src", "app", "api", "requests", "[id]", "messages", "route.ts");

@@ -2,6 +2,31 @@
 
 Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
+## 2026-07-12 reviewer run AUTO-023
+
+- Baslangic: 2026-07-12 23:33:00 +01:00; bitis: 2026-07-12 23:38:01 +01:00.
+- Gorev: Mevcut uncommitted AUTO-023 degisikliklerini V4 reviewer olarak urun, guvenlik ve kalite kapisindan incelemek.
+- Sonuc: Accepted. Admin widget clients listesi, mevcut detail review akisini bozmadan pending domain request sayisi/latest requested domain sinyalini gosteriyor ve mevcut client detail review akisini isaret ediyor.
+- Gate sonucu: Gorev gercek admin operasyon degeri tasiyor; duplicate fingerprint bulunmadi; evidence halen gecerli; diff AUTO-023 kapsaminda kaldi. Public/customer/admin veri sinirlari korundu; widget audit log detaylari, admin note, old domain, actor id, private key, secret, Stripe/payment policy, migration, production servis, fiyat/hukuki iddia veya gercek musteri verisi riski tespit edilmedi.
+- Reviewer duzeltmesi: Kod degisikligi yapilmadi.
+- Calistirilan kontroller: `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (23/23); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (252/252); `git diff --check` PASS (yalniz CRLF uyarilari).
+- Calistirilmayan kontroller: `npm run build` bilinen restricted-network Google Fonts / Next env yukleme riski nedeniyle calistirilmadi. Live service, SQL, smoke, scraper, desktop build/package ve normal env kontrolleri calistirilmadi.
+- Kalan risk: Desktop local history labels, customer notification load/error retry visibility, desktop notes contract guidance ve dashboard sync error state Ready gorevleri ayri kapsamda devam eder. Offline build icin Google Fonts/`next/font/google` owner onayi bekleyen bilinen risk devam eder.
+
+## 2026-07-12 worker run AUTO-023
+
+- Baslangic: 2026-07-12 23:23:00 +01:00; bitis: 2026-07-12 23:32:04 +01:00.
+- Gorev: Admin widget clients listesi bekleyen domain taleplerini gostersin.
+- Fingerprint: `admin-operations|widget-clients-list|pending-domain-requests-hidden|domain-request-queue-signal`.
+- Secim nedeni: Ready kuyrugunda MANUAL gorev yoktu. P2 gorevler arasinda AUTO-023 en yuksek admin/product operasyon degeri skoruna sahipti ve mevcut detail review akisi ile liste gorunurlugu arasinda kanitli fark vardi.
+- Duplicate/evidence kontrolu: V4 package constitution dosyalari, local `.autopilot/constitution/*`, AGENTS, PROJECT, ROADMAP, INBOX, FEATURE_PROPOSALS, TASKS, TASK_HISTORY, PRODUCT_SCORECARD, STATUS, package scriptleri, mevcut Git durumu ve son 100 commit incelendi. Ayni fingerprint tamamlanmis gorunmedi. Evidence halen gecerliydi: admin widget client detail API/UI `widget_domain_change_requests` pending review akisini tasirken liste API/UI pending request sinyali dondurmuyordu.
+- Degisen dosyalar: `src/app/api/admin/widget-clients/route.ts`, `src/app/admin/widget-clients/page.tsx`, `tests/ui-ux-safety.test.ts`, `.autopilot/TASKS.md`, `.autopilot/TASK_HISTORY.md`, `.autopilot/STATUS.md`, `.autopilot/runtime/last-result.json`.
+- Uygulama sonucu: Admin widget clients API artik her client icin pending domain request count ve latest requested domain dondurur. Liste UI toplam pending domain request metrigi, masaustu `Domain review` link rozeti, mobil `Pending` metric'i ve pending/domain review aramasini destekler. Existing detail review flow'a link verilir; approve/reject davranisi listeden eklenmedi.
+- Guvenlik/UI kontrolu: Domain request ozet sorgusu yalniz `client_id`, `requested_domain` ve `created_at` alanlarini okur. Widget audit log detaylari, admin note, old domain, actor id, private key, secret, customer-only alan, fiyat/odeme kurali, migration veya live servis davranisi degismedi. Activate/suspend, copy embed, public key, usage ve blocked-domain davranisi korundu.
+- Calistirilan kontroller: `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (23/23); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (252/252); `git diff --check` PASS (yalniz CRLF uyarilari); diff review PASS.
+- Calistirilmayan kontroller: `npm run build` bu repoda bilinen restricted-network Google Fonts / Next env yukleme riski nedeniyle calistirilmadi. Live service, SQL, smoke, scraper, desktop build/package ve normal env kontrolleri calistirilmadi.
+- Kalan risk: Desktop local history labels, customer notification load/error retry visibility, desktop notes contract guidance ve dashboard sync error state Ready gorevleri ayri kapsamda devam eder. Offline build icin Google Fonts/`next/font/google` owner onayi bekleyen bilinen risk devam eder.
+
 ## 2026-07-12 planner run V4 DESKTOP INTAKE AND DASHBOARD RELIABILITY
 
 - Baslangic: 2026-07-12 23:21:52 +01:00; bitis: 2026-07-12 23:21:52 +01:00 kaydiyla planlama tamamlandi.
