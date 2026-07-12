@@ -30,32 +30,6 @@
     - `npm run typecheck`
     - `npm test`
 
-- [ ] **P2 AUTO-024 - Musteri widget domain talebi beklemedeyken tekrar gonderilemesin**
-  - Lane: Product Evolution
-  - Domain: Customer widget dashboard & domain-change clarity
-  - Fingerprint: `customer-experience|widget-dashboard-domain-change|pending-request-still-submit-able|pending-state-guidance`
-  - Business impact: 3/5
-  - User impact: 4/5
-  - Admin impact: 3/5
-  - Strategic fit: 4/5
-  - Confidence: 5/5
-  - Effort: 1/5
-  - Risk: 1/5
-  - Evidence: `src/app/api/widget/domain-change/route.ts:19-20` rejects a second pending domain-change request with `409`, and `src/app/api/widget/client/route.ts:54-63` already returns the latest `domainRequests` to the dashboard. `src/components/dashboard/WidgetDashboardClient.tsx:75-78` only checks that the input is non-empty before posting, while `src/components/dashboard/WidgetDashboardClient.tsx:102` lists domain requests but keeps the input/send affordance active even when one is pending.
-  - Product value: Customers see that their domain-change request is already waiting for admin review instead of hitting an avoidable API error and creating support uncertainty.
-  - Scope: Add a customer-safe pending state to the widget dashboard domain-change card. Reuse returned `domainRequests`; do not change domain normalization, approval rules, admin actions, Stripe billing, pricing or schema.
-  - Acceptance criteria:
-    - When a pending domain-change request exists, the dashboard shows the requested domain and a clear pending-review state.
-    - The input and send action are disabled or replaced while a pending request exists.
-    - Approved/rejected historical requests remain visible without blocking a new request.
-    - Empty, invalid and API-error states remain actionable and do not expose audit internals.
-    - Mobile and desktop layout remains readable without text overflow.
-  - Validation:
-    - `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts`
-    - `npm run lint`
-    - `npm run typecheck`
-    - `npm test`
-
 - [ ] **P3 AUTO-025 - Desktop uploader local history statuslari okunabilir etiket kullansin**
   - Lane: Product Evolution
   - Domain: Desktop uploader customer clarity & support reduction
@@ -167,6 +141,18 @@ Kabul kriterleri:
 Dogrulama: Diff incelemesi, `npm run lint`, `npm run typecheck`.
 
 ## Done
+
+### AUTO-024 [P2] Musteri widget domain talebi beklemedeyken tekrar gonderilemesin
+
+Durum: Done
+
+Fingerprint: `customer-experience|widget-dashboard-domain-change|pending-request-still-submit-able|pending-state-guidance`
+
+Kapsam: Musteri widget dashboard domain-change karti, mevcut `domainRequests` payload'undaki pending talebi customer-safe sekilde kullanarak ikinci talep gonderimini engelleyecek sekilde guncellendi.
+
+Sonuc: Bekleyen domain-change talebi varsa dashboard artik istenen domaini `Pending admin review` durumuyla gosterir, input ve Send aksiyonunu disabled yapar ve handler seviyesinde duplicate gonderimi durdurur. Approved/rejected gecmis talepler listede gorunmeye devam eder ve pending yoksa yeni talep akisi korunur. Domain normalization, admin approval/rejection, Stripe billing, pricing, schema, audit log detayi ve private/internal alanlar degistirilmedi.
+
+Dogrulama: `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (21/21); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (250/250); `git diff --check` PASS (yalniz CRLF uyarilari). `npm run build` bilinen restricted-network Google Fonts / Next env yukleme riski nedeniyle calistirilmadi.
 
 ### AUTO-020 [P2] Musteri ek dosya yuklemesi asamalari acik geri bildirim versin
 

@@ -2,6 +2,20 @@
 
 Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
+## 2026-07-12 worker run AUTO-024
+
+- Baslangic: 2026-07-12 22:17:00 +01:00; bitis: 2026-07-12 22:23:55 +01:00.
+- Gorev: Musteri widget domain talebi beklemedeyken tekrar gonderilemesin.
+- Fingerprint: `customer-experience|widget-dashboard-domain-change|pending-request-still-submit-able|pending-state-guidance`.
+- Secim nedeni: Ready kuyrugunda MANUAL gorev yoktu; P2 gorevler arasinda AUTO-024 en yuksek urun degeri skoruna, dusuk risk/effort degerine ve dogrulanmis customer-support belirsizligi kanitina sahipti.
+- Duplicate/evidence kontrolu: V4 package constitution dosyalari, local `.autopilot/constitution/*`, AGENTS, PROJECT, ROADMAP, INBOX, FEATURE_PROPOSALS, TASKS, TASK_HISTORY, PRODUCT_SCORECARD, STATUS, package scriptleri, mevcut Git durumu ve son 100 commit incelendi. Ayni fingerprint tamamlanmis gorunmedi. Evidence halen gecerliydi: `/api/widget/domain-change` ikinci pending talebi 409 ile reddediyor, `/api/widget/client` domain request history donduruyor, ancak dashboard input/send affordance'i pending talep varken aktif kaliyordu.
+- Degisen dosyalar: `src/components/dashboard/WidgetDashboardClient.tsx`, `tests/ui-ux-safety.test.ts`, `.autopilot/TASKS.md`, `.autopilot/TASK_HISTORY.md`, `.autopilot/STATUS.md`, `.autopilot/runtime/last-result.json`.
+- Uygulama sonucu: Widget dashboard artik pending domain-change talebini `Pending admin review` durumu ve requested domain ile gosterir. Pending varken domain input'u ve Send butonu disabled olur; click handler duplicate request gonderimini ayrica durdurur. Approved/rejected gecmis talepler gorunmeye devam eder ve pending yokken mevcut yeni talep akisi korunur.
+- Guvenlik/UI kontrolu: Domain normalization, admin approval/rejection, Stripe billing, pricing, schema, audit log detayi, private key, secret, customer-only/private internals ve live service davranisi degismedi. Yeni dependency, production servis cagrisi, migration, deploy, `.env`/secret, gercek musteri verisi, fiyat/hukuki iddia veya database schema degisikligi yapilmadi.
+- Calistirilan kontroller: `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (21/21); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (250/250); `git diff --check` PASS (yalniz CRLF uyarilari); diff review PASS.
+- Calistirilmayan kontroller: `npm run build` bu repoda bilinen restricted-network Google Fonts / Next env yukleme riski nedeniyle calistirilmadi. Live service, SQL, smoke, scraper, desktop build/package ve normal env kontrolleri calistirilmadi.
+- Kalan risk: Admin widget domain queue signal, desktop history status labels, request chat length guidance ve notification load/error visibility Ready gorevleri ayri kapsamda devam eder. Offline build icin Google Fonts/`next/font/google` owner onayi bekleyen bilinen risk devam eder.
+
 ## 2026-07-12 planner run V4 CUSTOMER MESSAGING RELIABILITY
 
 - Baslangic: 2026-07-12 22:15:21 +01:00; bitis: 2026-07-12 22:16:48 +01:00.

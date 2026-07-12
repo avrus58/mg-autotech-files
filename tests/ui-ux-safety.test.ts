@@ -163,6 +163,22 @@ test("customer dashboard surfaces missing profile details without changing setti
   assert.match(settings, /preferred_contact: preferredContact/);
 });
 
+test("customer widget dashboard blocks duplicate pending domain-change requests", () => {
+  const widgetDashboard = readProjectFile("src", "components", "dashboard", "WidgetDashboardClient.tsx");
+
+  assert.match(widgetDashboard, /const pendingDomainRequest = payload\?\.domainRequests\?\.find\(\(item\) => item\.status === "pending"\) \?\? null/);
+  assert.match(widgetDashboard, /const hasPendingDomainRequest = Boolean\(pendingDomainRequest\)/);
+  assert.match(widgetDashboard, /if \(hasPendingDomainRequest\) \{ setMessage\("Your domain change request is already waiting for admin review\."\); return; \}/);
+  assert.match(widgetDashboard, /Pending admin review/);
+  assert.match(widgetDashboard, /pendingDomainRequest\.requested_domain/);
+  assert.match(widgetDashboard, /A new request can be sent after this one is approved or rejected\./);
+  assert.match(widgetDashboard, /disabled=\{hasPendingDomainRequest\}/);
+  assert.match(widgetDashboard, /aria-describedby=\{hasPendingDomainRequest \? "pending-domain-request" : undefined\}/);
+  assert.match(widgetDashboard, /disabled=\{hasPendingDomainRequest \|\| !domainRequest\.trim\(\)\}/);
+  assert.match(widgetDashboard, /payload\.domainRequests\?\.map/);
+  assert.doesNotMatch(widgetDashboard, /widget_audit_logs|actor_user_id|old_domain/);
+});
+
 test("customer dashboard credit history preview uses the customer credit ledger", () => {
   const dashboard = readProjectFile("src", "components", "dashboard", "DashboardClient.tsx");
 
