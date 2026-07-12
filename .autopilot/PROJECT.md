@@ -44,7 +44,8 @@ Kok `package.json` scriptleri:
 - `npm run typecheck`: `tsc --noEmit`. Bootstrap sirasinda gecti.
 - `npm test`: `tsx --test tests/*.test.ts`. Bootstrap sirasinda 221/221 test gecti.
 - `npm run build`: `next build`. Bootstrap sirasinda ag kapali ortamda Google Fonts (`next/font/google`) fetch hatasiyla basarisiz oldu. Bu ortam/harici ag bagimliligi olarak kaydedildi; font veya tasarim onaysiz degistirilmez.
-- `npm run check:payments`: `scripts/check-payment-env.js`; `.env.local` okur. Otonom Codex dongusunde calistirilmez.
+- `npm run check:payments`: `scripts/check-payment-env.js`; normal modda `.env.local` okur. Otonom Codex dongusunde normal mod calistirilmez.
+- `node scripts/check-payment-env.js --schema-only`: `.env.local` okumadan payment env anahtar sozlesmesini kontrol eder; otonom dongu icin guvenlidir.
 - `npm run fixtures:ecu-intelligence`: fixture uretir; gorev acikca istemedikce calistirilmez.
 - `npm run test:ecu-intelligence`: tek ECU testi icin guvenli test komutu.
 
@@ -90,9 +91,8 @@ Calistirilmayan veya insan onayi isteyen kontroller:
 
 ## Bilinen sorunlar ve teknik borc
 
-- Root `README.md` hala default create-next-app icerigi tasiyor; proje ozel local setup ve guvenlik sinirlari eksik.
 - Offline/restricted build `next/font/google` nedeniyle Google Fonts fetch hatasina takiliyor.
-- `scripts/check-payment-env.js` ve desktop `check-env.mjs` `.env`/`.env.local` okuyor; otonom dongu icin schema-only guvenli mod yok.
+- Desktop `check-env.mjs` `.env`/`.env.local` okuyor; otonom dongu icin schema-only guvenli mod yok. Payment checker normal modu `.env.local` okur, ancak `--schema-only` modu env dosyasi okumadan guvenli sozlesme kontrolu yapar.
 - Smoke scriptleri default localhost olsa da env ile production URL hedefleyebilir; otonom guard yok.
 - CareEcuFile scraper scriptleri dis aga baglanir ve veri dosyalarini yazar; otonom dongude risklidir.
 - Bazi yorum/dokumanlarda encoding artifactleri goruldu; runtime etkisi yok, dar kapsamli duzeltme gerektirir.

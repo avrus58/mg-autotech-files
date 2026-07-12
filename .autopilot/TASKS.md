@@ -4,19 +4,6 @@
 
 ## Ready
 
-### AUTO-002 [P0] Payment env checker icin otonom guvenli mod ekle
-
-Kapsam: `scripts/check-payment-env.js` icin `.env.local` okumadan yalnizca gerekli key listesini ve dokumantasyon sozlesmesini kontrol eden `--schema-only` benzeri bir mod ekle.
-
-Kabul kriterleri:
-
-- Varsayilan davranis bozulmaz; manuel kullanim hala OK/MISS raporu verir.
-- Yeni guvenli mod `.env`, `.env.local` veya secret icerigi okumaz.
-- Output secret degeri basmaz, sadece key adlari ve durum basar.
-- Test veya source assertion yeni modun `.env.local` okumadigini dogrular.
-
-Dogrulama: `node scripts/check-payment-env.js --schema-only`, `npm test`.
-
 ### AUTO-003 [P0] Desktop env checker icin otonom guvenli mod ekle
 
 Kapsam: `apps/customer-uploader/scripts/check-env.mjs` icin `.env`/`.env.local` okumayan ve yalnizca public desktop env sozlesmesini dogrulayan guvenli mod ekle.
@@ -128,6 +115,18 @@ Kabul kriterleri:
 Dogrulama: Diff incelemesi, `npm run lint`, `npm run typecheck`.
 
 ## Done
+
+### AUTO-002 [P0] Payment env checker icin otonom guvenli mod ekle
+
+Durum: Done
+
+Fingerprint: `security|payment-env-checker|env-local-secret-read|schema-only-contract-validation`
+
+Kapsam: `scripts/check-payment-env.js` icin `.env.local` okumadan yalnizca gerekli key listesini ve dokumantasyon sozlesmesini kontrol eden `--schema-only` modu eklendi.
+
+Sonuc: Varsayilan OK/MISS raporu korundu; `--schema-only` modu env dosyasi okumadan yalnizca gerekli key sozlesmesini raporlar. Yeni testler guvenli modun dosya okuma API'lerine gitmedigini ve output'un deger basmadigini dogrular.
+
+Dogrulama: `node scripts/check-payment-env.js --schema-only`, hedefli test, `npm run lint`, `npm run typecheck`, `npm test`.
 
 ### AUTO-001 [P0] Root README'yi gercek proje rehberine cevir
 

@@ -6,9 +6,33 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
 - Kurulum tarihi: 2026-07-12 (Europe/Berlin)
 - Aktif branch: codex/autopilot
-- Son basarili gorev: AUTO-001 Root README'yi gercek proje rehberine cevir
-- Son dogrulama: reviewer `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (221/221); `npm run build` README-only gorevde calistirilmadi (restricted network Google Fonts/env yukleme riski biliniyor)
-- Insan mudahalesi gereken konu: Offline build icin Google Fonts/`next/font/google` stratejisi onayi; production smoke, SQL migration, deploy ve env kontrolleri insan onayi gerektirir.
+- Son basarili gorev: AUTO-002 Payment env checker icin otonom guvenli mod ekle
+- Son dogrulama: reviewer `node scripts/check-payment-env.js --schema-only` PASS; hedefli test PASS (3/3); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (224/224); `git diff --check` PASS (yalnizca CRLF uyarilari)
+- Insan mudahalesi gereken konu: Offline build icin Google Fonts/`next/font/google` stratejisi onayi; production smoke, SQL migration, deploy ve normal env kontrolleri insan onayi gerektirir.
+
+## 2026-07-12 reviewer run AUTO-002
+
+- Gorev: Mevcut uncommitted AUTO-002 degisikliklerini bagimsiz reviewer olarak incelemek.
+- Sonuc: Accepted. Payment env checker `--schema-only` modu env dosyasi okumadan sozlesme raporu veriyor; varsayilan `.env.local` tabanli OK/MISS davranisi korunuyor.
+- Duplicate/evidence kontrolu: TASKS, TASK_HISTORY, STATUS ve Git gecmisi incelendi; ayni fingerprint daha once tamamlanmis gorunmedi. Evidence gercek: HEAD'deki script safe mode branch'i olmadan `.env.local` varligini kontrol edip dosyayi okuyordu.
+- Reviewer duzeltmesi: `.autopilot/PROJECT.md` icindeki stale README ve payment checker schema-only notlari guncellendi; guvenli mod ve normal mod ayrimi eklendi.
+- Risk kontrolu: Production servis, migration, secret, musteri verisi, yeni dependency, debug kodu veya kapsam disi refactor tespit edilmedi. UI degisikligi olmadigi icin responsive/accessibility/loading/error/empty state etkisi yok.
+- Calistirilan kontroller: `node scripts/check-payment-env.js --schema-only` PASS; `.\node_modules\.bin\tsx.cmd --test tests/payment-env-checker.test.ts` PASS (3/3); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (224/224); `git diff --check` PASS (yalnizca CRLF uyarilari).
+- Calistirilmayan kontroller: `npm run build` script/test/autopilot-doc odakli degisiklik ve bilinen restricted-network Google Fonts / Next env yukleme riski nedeniyle calistirilmadi. `npm run check:payments` normal mod `.env.local` okudugu icin calistirilmadi.
+- Kalan risk: Desktop env checker, smoke ve scraper guard gorevleri Ready kuyrugunda devam ediyor; offline build Google Fonts stratejisi owner onayi bekliyor.
+
+## 2026-07-12 worker run AUTO-002
+
+- Gorev: Payment env checker icin otonom guvenli `--schema-only` modu eklemek.
+- Fingerprint: `security|payment-env-checker|env-local-secret-read|schema-only-contract-validation`.
+- Duplicate kontrolu: TASK_HISTORY, Done gorevleri ve yakin Git gecmisi incelendi; ayni fingerprint veya uygulanmis `schema-only` modu bulunmadi.
+- Evidence kontrolu: `scripts/check-payment-env.js` baslangicta safe mode branch'i olmadan `.env.local` varligini kontrol ediyor ve dosyayi okuyordu.
+- Degisen dosyalar: `scripts/check-payment-env.js`, `tests/payment-env-checker.test.ts`, `.autopilot/TASKS.md`, `.autopilot/TASK_HISTORY.md`, `.autopilot/STATUS.md`, `.autopilot/runtime/last-result.json`.
+- Sonuc: `node scripts/check-payment-env.js --schema-only` env dosyasi okumadan gerekli Stripe, Bank Transfer ve Site key sozlesmesini raporlar. Varsayilan modun OK/MISS raporu korunur ve secret degerleri basmaz.
+- Guvenlik/UI kontrolu: `.env`, secret, musteri verisi, production servis, migration, deploy veya yeni dependency kullanilmadi. UI degisikligi olmadigi icin responsive/accessibility/loading/error/empty state etkisi yok.
+- Calistirilan kontroller: `node scripts/check-payment-env.js --schema-only` PASS; `.\node_modules\.bin\tsx.cmd --test tests/payment-env-checker.test.ts` PASS (3/3); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (224/224); `git diff --check` PASS (yalnizca CRLF uyarilari).
+- Calistirilmayan kontroller: `npm run build` script/test odakli gorev ve bu repoda bilinen restricted-network Google Fonts / Next env yukleme riski nedeniyle calistirilmadi. `npm run check:payments` normal mod `.env.local` okudugu icin calistirilmadi.
+- Kalan risk: Desktop env checker, smoke ve scraper guard gorevleri Ready kuyrugunda devam ediyor; offline build Google Fonts stratejisi owner onayi bekliyor.
 
 ## 2026-07-12 reviewer run AUTO-001
 
