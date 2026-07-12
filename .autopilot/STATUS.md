@@ -2,6 +2,20 @@
 
 Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
+## 2026-07-12 worker run AUTO-014
+
+- Baslangic: 2026-07-12 17:46:00 +01:00; bitis: 2026-07-12 18:18:00 +01:00.
+- Gorev: Musteri paneli aksiyon gereken siparisleri ayri gostersin.
+- Fingerprint: `customer-experience|customer-dashboard-orders|action-required-statuses-hidden-in-active-orders|needs-response-surface`.
+- Sonuc: Done. Dashboard ve siparis arsivi `customer_info_needed` durumundaki siparisleri ayri "Needs Response" sinyaliyle gosteriyor.
+- Duplicate/evidence kontrolu: V4 package constitution dosyalari, `.autopilot/constitution/*`, AGENTS, PROJECT, ROADMAP, INBOX, FEATURE_PROPOSALS, TASKS, TASK_HISTORY, PRODUCT_SCORECARD, STATUS, package scriptleri, mevcut Git durumu ve son 100 commit incelendi. Ayni fingerprint tamamlanmis gorunmedi; evidence halen gecerliydi. `AUTO-013` yalniz order detay timeline'ini kapsadigi icin dashboard/archive discoverability bu gorevde ayrica ele alindi.
+- Degisen dosyalar: `src/components/dashboard/DashboardClient.tsx`, `src/app/dashboard/orders/page.tsx`, `tests/ui-ux-safety.test.ts`, `.autopilot/TASKS.md`, `.autopilot/TASK_HISTORY.md`, `.autopilot/STATUS.md`, `.autopilot/runtime/last-result.json`.
+- Uygulama sonucu: Dashboard customer-safe `customer_info_needed` count query'si ve `Needs Response` ozet karti/linkleri eklendi. Siparis arsivine `needs_response` view'i ve `/dashboard/orders?view=needs_response` query state'i eklendi. Active, Completed, Cancelled ve All view'leri korunur; `revision` siparisleri "Revision review in progress" olarak musteri aksiyonu bekleyen durumdan ayrilir.
+- Guvenlik/UI kontrolu: Yeni dependency, production servis cagrisi, migration, deploy, `.env`/secret, gercek musteri verisi, fiyat/hukuki iddia, kredi/odeme kurali, signed URL, hash, private storage path veya admin-only note degisikligi yapilmadi. Customer/admin data boundary mevcut customer-safe order status alanlariyla korundu.
+- Calistirilan kontroller: `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (15/15); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (242/242); `git diff --check` PASS (yalniz CRLF uyarilari); diff review PASS.
+- Calistirilmayan kontroller: `npm run build` bu repoda bilinen restricted-network Google Fonts / Next env yukleme riski nedeniyle calistirilmadi. Live service, SQL, smoke, scraper, desktop build/package ve normal env kontrolleri calistirilmadi.
+- Kalan risk: Dashboard credit ledger preview, profil completion, admin completed-today ve explicit delivery estimate Ready gorevleri ayri kapsamda devam eder. Offline build icin Google Fonts/`next/font/google` owner onayi bekleyen bilinen risk devam eder.
+
 ## 2026-07-12 planner run V4 CREDIT AND DELIVERY CLARITY
 
 - Gorev: MG AI Operating System V4 planner pass; planlama disinda uygulama kodu degistirilmedi.

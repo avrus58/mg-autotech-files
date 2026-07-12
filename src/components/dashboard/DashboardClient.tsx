@@ -106,6 +106,7 @@ export function DashboardClient() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [completedCount, setCompletedCount] = useState<number>(0);
   const [activeCount, setActiveCount] = useState<number>(0);
+  const [needsResponseCount, setNeedsResponseCount] = useState<number>(0);
   const [pendingCount, setPendingCount] = useState<number>(0);
   const [inProgressCount, setInProgressCount] = useState<number>(0);
   const [loading, setLoading] = useState(true);
@@ -180,6 +181,12 @@ export function DashboardClient() {
         .eq("customer_id", userId)
         .in("status", ["new_request", "file_check"]);
 
+      const { count: needsResponseOrders } = await supabase
+        .from("orders")
+        .select("*", { count: "exact", head: true })
+        .eq("customer_id", userId)
+        .eq("status", "customer_info_needed");
+
       const { count: progressOrders } = await supabase
         .from("orders")
         .select("*", { count: "exact", head: true })
@@ -194,6 +201,7 @@ export function DashboardClient() {
 
       setCompletedCount(completedOrders ?? 0);
       setPendingCount(pendingOrders ?? 0);
+      setNeedsResponseCount(needsResponseOrders ?? 0);
       setInProgressCount(progressOrders ?? 0);
 
       const active =
@@ -394,6 +402,14 @@ export function DashboardClient() {
               </Link>
 
               <Link
+                href="/dashboard/orders?view=needs_response"
+                className="flex items-center gap-3 rounded-2xl px-4 py-3 font-bold text-zinc-400 transition hover:bg-white/[0.06] hover:text-white"
+              >
+                <Clipboard className="h-5 w-5" />
+                Needs Response
+              </Link>
+
+              <Link
                 href="/dashboard/orders?view=completed"
                 className="flex items-center gap-3 rounded-2xl px-4 py-3 font-bold text-zinc-400 transition hover:bg-white/[0.06] hover:text-white"
               >
@@ -499,6 +515,9 @@ export function DashboardClient() {
             </Link>
             <Link href="/dashboard/orders" className="shrink-0 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-xs font-black">
               <FileText className="mr-2 inline h-4 w-4" />Orders
+            </Link>
+            <Link href="/dashboard/orders?view=needs_response" className="shrink-0 rounded-xl border border-orange-700/40 bg-orange-950/25 px-4 py-2.5 text-xs font-black text-orange-100">
+              <Clipboard className="mr-2 inline h-4 w-4" />Needs Response
             </Link>
             <Link href="/dashboard/credits" className="shrink-0 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-xs font-black">
               <CreditCard className="mr-2 inline h-4 w-4" />Credits
@@ -614,7 +633,7 @@ export function DashboardClient() {
               </div>
             </div>
 
-            <div className="mb-8 grid gap-5 md:grid-cols-2 xl:grid-cols-5">
+            <div className="mb-8 grid gap-5 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
               <div className="rounded-3xl border border-red-900/50 bg-red-950/25 p-6 shadow-2xl shadow-black/20">
                 <CreditCard className="mb-4 h-8 w-8 text-red-500" />
                 <div className="text-sm text-zinc-400">Available Credits</div>
@@ -626,6 +645,20 @@ export function DashboardClient() {
                 <div className="text-sm text-zinc-400">Active Orders</div>
                 <div className="mt-2 text-5xl font-black">{activeCount}</div>
               </div>
+
+              <Link
+                href="/dashboard/orders?view=needs_response"
+                className="min-w-0 rounded-3xl border border-orange-700/40 bg-orange-950/20 p-6 transition hover:-translate-y-1 hover:border-orange-500/70"
+              >
+                <Clipboard className="mb-4 h-8 w-8 text-orange-300" />
+                <div className="break-words text-sm text-orange-100">
+                  Needs Response
+                </div>
+                <div className="mt-2 text-5xl font-black">{needsResponseCount}</div>
+                <div className="mt-2 break-words text-xs font-bold text-orange-200/80">
+                  Waiting for your information
+                </div>
+              </Link>
 
               <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-6 transition hover:-translate-y-1 hover:border-red-800/60">
                 <FileText className="mb-4 h-8 w-8 text-amber-400" />

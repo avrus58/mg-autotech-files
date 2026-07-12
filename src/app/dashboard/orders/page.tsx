@@ -34,11 +34,12 @@ type Order = {
   created_at: string;
 };
 
-type View = "active" | "completed" | "cancelled" | "all";
+type View = "active" | "needs_response" | "completed" | "cancelled" | "all";
 const pageSize = 15;
 
 const views: Array<{ value: View; label: string; description: string }> = [
   { value: "active", label: "Active Orders", description: "Requests still being worked on" },
+  { value: "needs_response", label: "Needs Response", description: "Requests waiting for your information" },
   { value: "completed", label: "Completed", description: "Delivered file services" },
   { value: "cancelled", label: "Cancelled", description: "Cancelled requests" },
   { value: "all", label: "All Orders", description: "Complete order archive" },
@@ -83,6 +84,22 @@ export default function CustomerOrdersPage() {
     }
   }, []);
 
+  const selectView = useCallback((selectedView: View) => {
+    setView(selectedView);
+    setPage(1);
+
+    const params = new URLSearchParams(window.location.search);
+    if (selectedView === "active") params.delete("view");
+    else params.set("view", selectedView);
+
+    const query = params.toString();
+    window.history.replaceState(
+      null,
+      "",
+      query ? `${window.location.pathname}?${query}` : window.location.pathname
+    );
+  }, []);
+
   const buildQuery = useCallback(async (uid: string, selectedView: View, term: string, rangeEnd: number) => {
     let query = supabase
       .from("orders")
@@ -100,6 +117,7 @@ export default function CustomerOrdersPage() {
         "revision",
       ]);
     }
+    if (selectedView === "needs_response") query = query.eq("status", "customer_info_needed");
     if (selectedView === "completed") query = query.eq("status", "completed");
     if (selectedView === "cancelled") query = query.eq("status", "cancelled");
 
@@ -177,7 +195,8 @@ export default function CustomerOrdersPage() {
               <PortalLink href="/dashboard" icon={<ArrowLeft />} label="Dashboard" />
               <PortalLink href="/new-request" icon={<Upload />} label="New File Request" />
               <PortalLink href="/dashboard/orders" icon={<FileText />} label="Active Orders" active={view === "active"} />
-              <PortalLink href="/dashboard/orders?view=completed" icon={<History />} label="Order History" active={view !== "active"} />
+              <PortalLink href="/dashboard/orders?view=needs_response" icon={<Clock3 />} label="Needs Response" active={view === "needs_response"} />
+              <PortalLink href="/dashboard/orders?view=completed" icon={<History />} label="Order History" active={["completed", "cancelled", "all"].includes(view)} />
               <PortalLink href="/dashboard/file-expert" icon={<BrainCircuit />} label="AI File Expert" />
               <PortalLink href="/dashboard/credits" icon={<CreditCard />} label="Buy Credits" />
               <PortalLink href="/dashboard/settings" icon={<Settings />} label="Settings" />
@@ -195,12 +214,12 @@ export default function CustomerOrdersPage() {
 
           <div className="mx-auto max-w-7xl px-4 py-7 lg:px-8">
             <div className="mb-5 flex gap-2 overflow-x-auto pb-2 lg:hidden">
-              {views.map((item) => <button key={item.value} onClick={() => setView(item.value)} className={`shrink-0 rounded-xl border px-4 py-3 text-sm font-black ${view === item.value ? "border-red-700 bg-red-950/35" : "border-white/10 bg-white/[0.04] text-zinc-400"}`}>{item.label}</button>)}
+              {views.map((item) => <button key={item.value} onClick={() => selectView(item.value)} className={`shrink-0 rounded-xl border px-4 py-3 text-sm font-black ${view === item.value ? "border-red-700 bg-red-950/35" : "border-white/10 bg-white/[0.04] text-zinc-400"}`}>{item.label}</button>)}
             </div>
 
-            <div className="mb-6 grid gap-3 md:grid-cols-4">
+            <div className="mb-6 grid gap-3 md:grid-cols-5">
               {views.map((item) => (
-                <button key={item.value} onClick={() => setView(item.value)} className={`hidden rounded-xl border p-4 text-left transition md:block ${view === item.value ? "border-red-700 bg-red-950/30" : "border-white/10 bg-white/[0.03] hover:bg-white/[0.06]"}`}>
+                <button key={item.value} onClick={() => selectView(item.value)} className={`hidden rounded-xl border p-4 text-left transition md:block ${view === item.value ? "border-red-700 bg-red-950/30" : "border-white/10 bg-white/[0.03] hover:bg-white/[0.06]"}`}>
                   <div className="font-black">{item.label}</div><div className="mt-1 text-xs text-zinc-500">{item.description}</div>
                 </button>
               ))}
@@ -222,7 +241,7 @@ export default function CustomerOrdersPage() {
                   {orders.map((order) => (
                     <article key={order.id} className="grid min-w-0 gap-4 rounded-xl border border-white/10 bg-black/25 p-4 transition hover:border-red-800/50 md:grid-cols-[1.4fr_.7fr_.5fr_auto] md:items-center">
                       <div className="min-w-0"><div className="break-words text-lg font-black">{order.vehicle_brand || "Vehicle"} {order.vehicle_model || ""}</div><div className="mt-1 break-words text-sm text-zinc-500">{order.vehicle_generation || "Generation not set"} · {order.vehicle_engine || "Engine not set"}</div><div className="mt-2 line-clamp-2 text-sm font-bold text-red-300">{order.service_type || "Service not set"}</div></div>
-                      <div><span className={`inline-flex rounded-full border px-3 py-1 text-xs font-black ${statusClass(order.status)}`}>{statusLabel(order.status)}</span>{order.modified_file_path && <div className="mt-2 text-xs font-black text-emerald-400"><CheckCircle2 className="mr-1 inline h-3 w-3" />File delivered</div>}</div>
+                      <div><span className={`inline-flex rounded-full border px-3 py-1 text-xs font-black ${statusClass(order.status)}`}>{statusLabel(order.status)}</span>{order.status === "customer_info_needed" && <div className="mt-2 break-words text-xs font-black text-orange-300">Needs your response</div>}{order.status === "revision" && <div className="mt-2 break-words text-xs font-black text-purple-300">Revision review in progress</div>}{order.modified_file_path && <div className="mt-2 text-xs font-black text-emerald-400"><CheckCircle2 className="mr-1 inline h-3 w-3" />File delivered</div>}</div>
                       <div><div className="font-black">{Number(order.credits_required ?? 0)} credits</div><div className="mt-1 text-xs text-zinc-500">{formatDate(order.created_at)}</div></div>
                       <Link href={`/dashboard/orders/${order.id}`} className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-center text-sm font-black hover:bg-white/10"><Eye className="mr-2 inline h-4 w-4" />Details</Link>
                     </article>

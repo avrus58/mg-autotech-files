@@ -85,6 +85,26 @@ test("customer order detail timeline shows action-needed and revision states sep
   assert.doesNotMatch(page, /status === "file_check"\s*\|\|\s*status === "customer_info_needed"/);
 });
 
+test("customer dashboard and order archive surface action-needed orders separately", () => {
+  const dashboard = readProjectFile("src", "components", "dashboard", "DashboardClient.tsx");
+  const orders = readProjectFile("src", "app", "dashboard", "orders", "page.tsx");
+
+  assert.match(dashboard, /const \[needsResponseCount, setNeedsResponseCount\]/);
+  assert.match(dashboard, /\.eq\("status", "customer_info_needed"\)/);
+  assert.match(dashboard, /setNeedsResponseCount\(needsResponseOrders \?\? 0\)/);
+  assert.match(dashboard, /href="\/dashboard\/orders\?view=needs_response"/);
+  assert.match(dashboard, /Needs Response/);
+  assert.match(dashboard, /Waiting for your information/);
+
+  assert.match(orders, /type View = "active" \| "needs_response" \| "completed" \| "cancelled" \| "all"/);
+  assert.match(orders, /value: "needs_response"/);
+  assert.match(orders, /selectedView === "needs_response"[\s\S]*\.eq\("status", "customer_info_needed"\)/);
+  assert.match(orders, /window\.history\.replaceState/);
+  assert.match(orders, /Needs your response/);
+  assert.match(orders, /Revision review in progress/);
+  assert.match(orders, /active=\{\["completed", "cancelled", "all"\]\.includes\(view\)\}/);
+});
+
 test("customer File Expert UI renders only customer-safe report details", () => {
   const page = readProjectFile("src", "app", "dashboard", "file-expert", "[id]", "page.tsx");
   assert.match(page, /Technical coordinate data, private file fingerprints and binary internals are hidden on customer reports/);

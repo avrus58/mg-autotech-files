@@ -4,32 +4,6 @@
 
 ## Ready
 
-- [ ] **P2 AUTO-014 - Musteri paneli aksiyon gereken siparisleri ayri gostersin**
-  - Lane: Product Evolution
-  - Domain: Customer experience & request lifecycle
-  - Fingerprint: `customer-experience|customer-dashboard-orders|action-required-statuses-hidden-in-active-orders|needs-response-surface`
-  - Business impact: 3/5
-  - User impact: 4/5
-  - Admin impact: 2/5
-  - Strategic fit: 4/5
-  - Confidence: 5/5
-  - Effort: 2/5
-  - Risk: 2/5
-  - Evidence: `src/components/dashboard/DashboardClient.tsx:177-187` pending/progress dashboard counts only include `new_request`, `file_check` and `in_progress`; `customer_info_needed` is not surfaced as its own customer action signal. `src/app/dashboard/orders/page.tsx:37-45` has only `active`, `completed`, `cancelled`, `all` views, while `src/app/dashboard/orders/page.tsx:94-101` folds `customer_info_needed` and `revision` into Active Orders. Existing `AUTO-013` covers the order detail timeline only, not dashboard/archive discoverability.
-  - Product value: Customers can find requests that need their response without opening every active order, reducing support follow-up and stalled jobs.
-  - Scope: Add a small customer-facing "Needs response" / action-needed surface using existing order status data in the dashboard and/or orders archive. Keep revision states clear without implying customer action when the revision is already waiting for MG AutoTech review.
-  - Acceptance criteria:
-    - `customer_info_needed` orders are counted or filtered separately from generic active/pending work.
-    - The orders archive can show the actionable subset directly from a tab/link/query state.
-    - Existing Active, Completed, Cancelled and All views continue to work.
-    - No admin-only notes, private paths, signed URLs, hashes or internal quality data are exposed.
-    - Mobile and desktop layouts keep status labels and cards readable without overflow.
-  - Validation:
-    - `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts`
-    - `npm run lint`
-    - `npm run typecheck`
-    - `npm test`
-
 - [ ] **P2 AUTO-016 - Musteri dashboard'u eksik profil bilgilerini tamamlatmaya yoneltsin**
   - Lane: Product Evolution
   - Domain: Customer onboarding & profile completion
@@ -167,6 +141,18 @@ Kabul kriterleri:
 Dogrulama: Diff incelemesi, `npm run lint`, `npm run typecheck`.
 
 ## Done
+
+### AUTO-014 [P2] Musteri paneli aksiyon gereken siparisleri ayri gostersin
+
+Durum: Done
+
+Fingerprint: `customer-experience|customer-dashboard-orders|action-required-statuses-hidden-in-active-orders|needs-response-surface`
+
+Kapsam: Musteri dashboard'u ve siparis arsivi `customer_info_needed` durumundaki siparisleri ayri "Needs Response" sinyaliyle gosterir.
+
+Sonuc: Dashboard artik customer-safe `customer_info_needed` sayacini yukluyor, masaustu ve mobil navigasyondan `/dashboard/orders?view=needs_response` linki veriyor ve ozet kartinda aksiyon gereken siparis sayisini ayri gosteriyor. Siparis arsivine `needs_response` view'i eklendi; tab secimi URL query state'ini guncelliyor. Active, Completed, Cancelled ve All gorunumleri korundu; `revision` siparisleri "Revision review in progress" olarak aksiyon bekleyen musteri durumundan ayri gosteriliyor.
+
+Dogrulama: `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (15/15); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (242/242); `git diff --check` PASS (yalniz CRLF uyarilari). `npm run build` bilinen restricted-network Google Fonts / Next env yukleme riski nedeniyle calistirilmadi.
 
 ### AUTO-013 [P2] Musteri order timeline'i bekleme ve revizyon adimlarini acik gostersin
 
