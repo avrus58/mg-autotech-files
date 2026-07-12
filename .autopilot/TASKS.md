@@ -82,33 +82,6 @@
     - `npm run typecheck`
     - `npm test`
 
-- [ ] **P2 AUTO-021 - Admin request listesi musteri ek dosya sinyalini gostersin**
-  - Lane: Product Evolution
-  - Domain: Admin request queue & customer-supplied file visibility
-  - Fingerprint: `admin-operations|request-control-center|customer-upload-indicator-hidden|show-supporting-file-signal`
-  - Business impact: 3/5
-  - User impact: 2/5
-  - Admin impact: 4/5
-  - Strategic fit: 4/5
-  - Confidence: 5/5
-  - Effort: 1/5
-  - Risk: 1/5
-  - Evidence: `src/lib/workOrders/server.ts:337-340` already computes `indicators.hasCustomerUpload` from `order.customer_uploads`; `src/app/admin/requests/AdminRequestsClient.tsx:289-292` renders only ORI, MOD and AI indicators in the request control center row, so a customer-supplied supporting file is hidden until the admin opens the detail page.
-  - Product value: Admin can spot requests with a newly uploaded supporting file directly in the daily queue, reducing missed customer responses and unnecessary detail-page checks.
-  - Scope: Surface the existing boolean `hasCustomerUpload` as a compact, non-sensitive indicator in the admin request control center list. Do not add a new query, expose file names/paths, mutate uploads, alter filters or change payment/credit behavior.
-  - Acceptance criteria:
-    - Request rows show a clear supporting-file/customer-upload indicator when `item.indicators.hasCustomerUpload` is true.
-    - Rows without customer uploads keep the existing ORI/MOD/AI indicator layout stable.
-    - No customer file name, storage path, signed URL, hash or binary metadata is exposed in the list.
-    - The indicator remains readable on mobile and desktop layouts.
-    - Existing search, status filter, priority filter and review-only behavior remain unchanged.
-  - Validation:
-    - `.\node_modules\.bin\tsx.cmd --test tests\admin-work-orders.test.ts`
-    - `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts`
-    - `npm run lint`
-    - `npm run typecheck`
-    - `npm test`
-
 - [ ] **P2 AUTO-022 - Admin audit timeline event gorunurlugunu rozetlesin**
   - Lane: Product Evolution
   - Domain: Admin audit trail & customer visibility safety
@@ -169,6 +142,18 @@ Kabul kriterleri:
 Dogrulama: Diff incelemesi, `npm run lint`, `npm run typecheck`.
 
 ## Done
+
+### AUTO-021 [P2] Admin request listesi musteri ek dosya sinyalini gostersin
+
+Durum: Done
+
+Fingerprint: `admin-operations|request-control-center|customer-upload-indicator-hidden|show-supporting-file-signal`
+
+Kapsam: Admin request control center listesine mevcut `item.indicators.hasCustomerUpload` boolean'ini kullanan kompakt, non-sensitive musteri ek dosya rozeti eklendi.
+
+Sonuc: Ek musteri dosyasi olan request satirlari artik `Customer file` rozetiyle listede fark edilir. ORI/MOD/AI indikator grid'i korunur; dosya adi, storage path, signed URL, hash, binary metadata, odeme/kredi verisi veya admin-only note listede aciga cikarilmadi.
+
+Dogrulama: `.\node_modules\.bin\tsx.cmd --test tests\admin-work-orders.test.ts` PASS (25/25); `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (17/17); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (245/245); `git diff --check` PASS (yalniz CRLF uyarilari). `npm run build` bilinen restricted-network Google Fonts / Next env yukleme riski nedeniyle calistirilmadi.
 
 ### AUTO-017 [P2] Admin completed-today metrigi teslim zamanini baz alsin
 

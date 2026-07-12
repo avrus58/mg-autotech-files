@@ -11,6 +11,7 @@ import {
   CreditCard,
   FileCode2,
   Loader2,
+  Paperclip,
   RefreshCcw,
   Search,
   User,
@@ -285,6 +286,12 @@ export default function AdminRequestsClient() {
                   <div className="mb-2 flex flex-wrap gap-2">
                     {item.requestedServices.slice(0, 3).map((service) => <span key={service} className="rounded-full border border-white/10 bg-black/30 px-2 py-1 text-xs font-bold text-zinc-300">{service}</span>)}
                     {item.requestedServices.length > 3 && <span className="rounded-full border border-white/10 bg-black/30 px-2 py-1 text-xs font-bold text-zinc-500">+{item.requestedServices.length - 3}</span>}
+                    {item.indicators.hasCustomerUpload && (
+                      <span className="inline-flex max-w-full items-center gap-1 rounded-full border border-blue-700/40 bg-blue-950/25 px-2 py-1 text-xs font-bold text-blue-200">
+                        <Paperclip className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                        <span className="truncate">Customer file</span>
+                      </span>
+                    )}
                   </div>
                   <div className="grid grid-cols-3 gap-2 text-xs text-zinc-500">
                     <Indicator ok={item.indicators.hasOriginalFile} label="ORI" />

@@ -284,6 +284,17 @@ test("admin request review queue includes payment, quality and delivery signals"
   assert.ok(helperCalls.length >= 2);
 });
 
+test("admin request list surfaces customer upload signal without upload internals", () => {
+  const client = readFileSync(resolve(process.cwd(), "src", "app", "admin", "requests", "AdminRequestsClient.tsx"), "utf8");
+  const server = readFileSync(resolve(process.cwd(), "src", "lib", "workOrders", "server.ts"), "utf8");
+
+  assert.match(server, /hasCustomerUpload:\s*Array\.isArray\(order\.customer_uploads\)\s*&&\s*order\.customer_uploads\.length > 0/);
+  assert.match(client, /item\.indicators\.hasCustomerUpload/);
+  assert.match(client, /Customer file/);
+  assert.match(client, /Paperclip/);
+  assert.doesNotMatch(client, /customer_uploads|signed_url|storage_path|file_name|hash/i);
+});
+
 test("admin work-order fallback mode disables mutation controls", () => {
   const source = readFileSync(resolve(process.cwd(), "src", "app", "admin", "requests", "[id]", "WorkOrderDetailClient.tsx"), "utf8");
   const guardCalls = source.match(/if \(blockReadOnlyFallback\(\)\) return;/g) ?? [];

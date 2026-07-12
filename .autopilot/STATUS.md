@@ -2,6 +2,20 @@
 
 Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
+## 2026-07-12 worker run AUTO-021
+
+- Baslangic: 2026-07-12 19:21:00 +01:00; bitis: 2026-07-12 19:38:00 +01:00.
+- Gorev: Admin request listesi musteri ek dosya sinyalini gostersin.
+- Fingerprint: `admin-operations|request-control-center|customer-upload-indicator-hidden|show-supporting-file-signal`.
+- Sonuc: Done. Admin request control center satirlari artik musteri tarafindan yuklenen ek destek dosyasi varsa kompakt `Customer file` rozeti gosteriyor.
+- Duplicate/evidence kontrolu: V4 package constitution dosyalari, `.autopilot/constitution/*`, AGENTS, PROJECT, ROADMAP, INBOX, FEATURE_PROPOSALS, TASKS, TASK_HISTORY, PRODUCT_SCORECARD, STATUS, package scriptleri, mevcut Git durumu ve son 30 commit incelendi. Ayni fingerprint tamamlanmis gorunmedi; evidence halen gecerliydi. `src/lib/workOrders/server.ts` mevcut `indicators.hasCustomerUpload` boolean'ini hesapliyor, request listesi ise daha once sadece ORI/MOD/AI indikatorlerini gosteriyordu.
+- Degisen dosyalar: `src/app/admin/requests/AdminRequestsClient.tsx`, `tests/admin-work-orders.test.ts`, `.autopilot/TASKS.md`, `.autopilot/TASK_HISTORY.md`, `.autopilot/STATUS.md`, `.autopilot/runtime/last-result.json`.
+- Uygulama sonucu: Liste UI'i yeni sorgu eklemeden mevcut boolean'i kullanir. Ek musteri dosyasi olan satirlarda `Paperclip` ikonlu `Customer file` rozeti render edilir; ek dosya olmayan satirlarda ORI/MOD/AI indikator grid'i mevcut sekilde kalir.
+- Guvenlik/UI kontrolu: Dosya adi, customer upload payload'i, storage path, signed URL, hash, binary metadata, payment/credit verisi veya admin-only note listede aciga cikarilmadi. Yeni dependency, production servis cagrisi, migration, deploy, `.env`/secret, gercek musteri verisi, fiyat/hukuki iddia veya odeme/kredi kurali degisikligi yapilmadi.
+- Calistirilan kontroller: `.\node_modules\.bin\tsx.cmd --test tests\admin-work-orders.test.ts` PASS (25/25); `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (17/17); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (245/245); `git diff --check` PASS (yalniz CRLF uyarilari); diff review PASS.
+- Calistirilmayan kontroller: `npm run build` bu repoda bilinen restricted-network Google Fonts / Next env yukleme riski nedeniyle calistirilmadi. Live service, SQL, smoke, scraper, desktop build/package ve normal env kontrolleri calistirilmadi.
+- Kalan risk: Dashboard credit ledger preview, explicit delivery estimate, customer additional upload phase feedback ve audit event visibility Ready gorevleri ayri kapsamda devam eder. Offline build icin Google Fonts/`next/font/google` owner onayi bekleyen bilinen risk devam eder.
+
 ## 2026-07-12 reviewer run AUTO-017
 
 - Baslangic: 2026-07-12 19:16:00 +01:00; bitis: 2026-07-12 19:20:43 +01:00.
