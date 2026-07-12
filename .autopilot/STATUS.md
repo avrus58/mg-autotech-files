@@ -2,6 +2,22 @@
 
 Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
+## 2026-07-12 planner run V4 PROFILE AND ADMIN METRICS
+
+- Gorev: MG AI Operating System V4 planner pass; planlama disinda uygulama kodu degistirilmedi.
+- Repo sinifi: `.autopilot/PROJECT.md`, route yapisi ve mevcut urun kapsamı bu repository'nin `file.mgautotech.de` ECU file service SaaS platformu oldugunu dogruluyor. File-platform V4 constitution uygulandi.
+- Okunan kaynaklar: V4 package constitution dosyalari (`common/*`, `mgautotech/*`, `file-platform/*`), `AGENTS.md`, `.autopilot/constitution/*`, `.autopilot/PROJECT.md`, ROADMAP, INBOX, FEATURE_PROPOSALS, TASKS, TASK_HISTORY, PLANNER_STATE, PRODUCT_SCORECARD, STATUS, kok ve desktop `package.json`, mevcut Git durumu, son 100 commit, ilgili customer dashboard/settings/orders, admin dashboard, desktop uploader route/app/test ve docs kaynaklari.
+- INBOX sonucu: `New requests` bos; yeni owner istegi yok. Aktif `MILESTONE-20260712-PRODUCT-EVOLUTION` devam ediyor.
+- Duplicate kontrolu: ROADMAP, INBOX, FEATURE_PROPOSALS, TASKS, TASK_HISTORY, STATUS ve son 100 commit icinde `dashboard-profile|profile-completion-next-step` veya `completed-today|delivery-time-completion-metric` fingerprint/intent'i bulunmadi. Mevcut `AUTO-013` ve `AUTO-014` musteri order status discoverability kapsaminda kalir; yeni profil tamamlama ve admin tamamlanma metrigi ayri kanita dayaniyor.
+- Evidence kontrolu: `src/app/dashboard/settings/page.tsx:91-119` contact/company/invoice/preferred-contact alanlarini yukluyor; `src/components/dashboard/DashboardClient.tsx:142-150` dashboard yalniz `credit_balance` ve `customer_id` okuyor. `src/app/admin/page.tsx:616-624` `Completed today` sayimini `created_at` ile yapiyor; `src/app/api/admin/orders/[id]/complete-delivery/route.ts:76-93` teslim dosyasinin `uploaded_at` degerini `modified_files` icine kaydedip order statusunu `completed` yapiyor.
+- Audited domains: Responsive UX; Observability / admin reporting.
+- Eklenen Ready gorevler: `AUTO-016` musteri dashboard'u eksik profil bilgilerini tamamlatmaya yoneltsin; `AUTO-017` admin completed-today metrigi teslim zamanini baz alsin.
+- Ready sayisi: 5 (`AUTO-008`, `AUTO-013`, `AUTO-014`, `AUTO-016`, `AUTO-017`). `AUTO-008` eski heading formatinda kaldigi icin checkbox-only sayim 4 gorunur.
+- Degisen dosyalar: `.autopilot/ROADMAP.md`, `.autopilot/TASKS.md`, `.autopilot/PLANNER_STATE.json`, `.autopilot/STATUS.md`, `.autopilot/runtime/planner-result.json`.
+- Calistirilan kontroller: zorunlu V4/repo constitution ve memory dosyalari `Get-Content` ile okundu; `git status --short --branch`; `git log -100 --pretty=format:"%h %ad %s" --date=short`; kok ve desktop `package.json` script incelemesi; PowerShell `Select-String` ile kanit ve duplicate aramalari; `.autopilot/PLANNER_STATE.json` ve `.autopilot/runtime/planner-result.json` `ConvertFrom-Json` PASS; Ready total sayimi 5 PASS; `git diff --name-only` yalniz izinli planner dosyalarini gosterdi; `git check-ignore -v .autopilot/runtime/planner-result.json` PASS; `git diff --check` PASS (yalniz CRLF uyarilari).
+- Calistirilmayan kontroller: Planlama disinda uygulama kodu degismedigi icin `npm run lint`, `npm run typecheck`, `npm test` ve `npm run build` calistirilmadi. `.env*`, live service, SQL, smoke, scraper, desktop build/package ve normal env kontrolleri calistirilmadi.
+- Kalan risk: Ready kuyrugundaki product-evolution isleri uygulanana kadar profil eksikleri musteri dashboard'unda gorunmez ve legacy admin `Completed today` metrigi teslim zamanini dogru temsil etmeyebilir. Offline build icin Google Fonts/`next/font/google` owner onayi gerektiren bilinen risk devam eder.
+
 ## 2026-07-12 reviewer run AUTO-007
 
 - Gorev: Mevcut uncommitted AUTO-007 degisikliklerini product/safety/quality gate olarak incelemek.
