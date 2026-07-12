@@ -56,32 +56,6 @@
     - `npm run typecheck`
     - `npm test`
 
-- [ ] **P2 AUTO-026 - Request chat uzun mesajlari gondermeden once sinirlasin**
-  - Lane: Product Evolution
-  - Domain: Customer request messaging & API contract clarity
-  - Fingerprint: `customer-experience|request-chat-composer|api-4000-character-limit-only-server-side|client-side-length-guidance`
-  - Business impact: 2/5
-  - User impact: 4/5
-  - Admin impact: 2/5
-  - Strategic fit: 4/5
-  - Confidence: 5/5
-  - Effort: 1/5
-  - Risk: 1/5
-  - Evidence: `src/app/api/requests/[id]/messages/route.ts:11-13` enforces `message` as trimmed 1-4000 characters and `src/app/api/requests/[id]/messages/route.ts:91-94` returns a 400 error for invalid length. The customer/admin chat composer in `src/components/RequestChat.tsx:203-230` posts the trimmed message directly, while `src/components/RequestChat.tsx:362-368` has no `maxLength` or counter and `src/components/RequestChat.tsx:370-374` disables Send only for empty/sending states.
-  - Product value: Customers and admins get immediate composer feedback instead of losing momentum to a preventable API rejection when a long request message exceeds the existing server contract.
-  - Scope: Add client-side length guidance and send prevention to the existing `RequestChat` composer. Reuse the current `/api/requests/[id]/messages` contract; do not change message storage, visibility filtering, permissions, realtime polling, notification sounds, database schema or maximum length.
-  - Acceptance criteria:
-    - The composer exposes the 4000-character message limit with a visible counter or remaining-character state.
-    - Send is disabled or the textarea is capped before a message can exceed the API contract.
-    - Empty trimmed messages remain blocked, valid multiline messages still send with Enter/Shift+Enter behavior unchanged.
-    - API error handling remains visible for network/auth/server failures.
-    - No admin-only notes, hidden-message metadata, storage paths, signed URLs, hashes or customer-private internals are exposed.
-  - Validation:
-    - `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts`
-    - `npm run lint`
-    - `npm run typecheck`
-    - `npm test`
-
 - [ ] **P2 AUTO-027 - Musteri bildirim paneli yukleme hatasini sessiz gecmesin**
   - Lane: Product Evolution
   - Domain: Customer notifications & reliability feedback
@@ -141,6 +115,18 @@ Kabul kriterleri:
 Dogrulama: Diff incelemesi, `npm run lint`, `npm run typecheck`.
 
 ## Done
+
+### AUTO-026 [P2] Request chat uzun mesajlari gondermeden once sinirlasin
+
+Durum: Done
+
+Fingerprint: `customer-experience|request-chat-composer|api-4000-character-limit-only-server-side|client-side-length-guidance`
+
+Kapsam: Customer/admin request chat composer mevcut `/api/requests/[id]/messages` 4000 karakter sozlesmesine uygun sekilde yerel `maxLength`, kalan karakter sayaci ve ortak send-disable durumu ile guncellendi.
+
+Sonuc: Composer artik 4000 karakter ustunu textarea seviyesinde engeller, kalan karakter sayisini gorunur ve `aria-live` destekli olarak gosterir, bos trimlenmis mesajlari ve sending durumunu tek `canSendMessage` guard'i ile bloke eder. Enter ile gonderme ve Shift+Enter ile yeni satir davranisi, mevcut API hata mesaji alani, mesaj yukleme/senkron, visibility filtering, permission, notification sound ve message storage davranisi korunur.
+
+Dogrulama: `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (22/22); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (251/251); `git diff --check` PASS (yalniz CRLF uyarilari). `npm run build` bilinen restricted-network Google Fonts / Next env yukleme riski nedeniyle calistirilmadi.
 
 ### AUTO-024 [P2] Musteri widget domain talebi beklemedeyken tekrar gonderilemesin
 

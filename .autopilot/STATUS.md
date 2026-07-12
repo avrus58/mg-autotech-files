@@ -2,6 +2,20 @@
 
 Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
+## 2026-07-12 worker run AUTO-026
+
+- Baslangic: 2026-07-12 22:24:00 +01:00; bitis: 2026-07-12 22:58:03 +01:00.
+- Gorev: Request chat uzun mesajlari gondermeden once sinirlasin.
+- Fingerprint: `customer-experience|request-chat-composer|api-4000-character-limit-only-server-side|client-side-length-guidance`.
+- Secim nedeni: Ready kuyrugunda MANUAL gorev yoktu. P2 gorevler arasinda AUTO-026 en yuksek urun degeri skoruna sahipti (2+4+2+4+5-1-1=15), dusuk effort/risk degeri tasiyordu ve mevcut API/UI sozlesme uyumsuzluguna somut kanit vardi.
+- Duplicate/evidence kontrolu: V4 package constitution dosyalari, local `.autopilot/constitution/*`, AGENTS, PROJECT, ROADMAP, INBOX, FEATURE_PROPOSALS, TASKS, TASK_HISTORY, PRODUCT_SCORECARD, STATUS, package scriptleri, mevcut Git durumu ve son 100 commit incelendi. Ayni fingerprint tamamlanmis gorunmedi. Evidence halen gecerliydi: message API `z.string().trim().min(1).max(4000)` ile 1-4000 karakter sozlesmesini uygular ve limit disinda 400 dondurur; `RequestChat` composer ise calisma basinda `maxLength`, counter veya limit odakli local guidance icermiyordu.
+- Degisen dosyalar: `src/components/RequestChat.tsx`, `tests/ui-ux-safety.test.ts`, `.autopilot/TASKS.md`, `.autopilot/TASK_HISTORY.md`, `.autopilot/STATUS.md`, `.autopilot/runtime/last-result.json`.
+- Uygulama sonucu: Request chat composer artik `MESSAGE_MAX_LENGTH = 4000` sabitini kullanir, textarea `maxLength` ile API limitini asan input'u engeller, kalan karakter sayisini gorunur ve `aria-live` destekli olarak gosterir, send butonunu ortak `canSendMessage` guard'i ile bos trimlenmis mesajlarda veya sending durumunda kapatir. Enter ile gonderme, Shift+Enter ile yeni satir, mevcut API hata mesaji alani, mesaj yukleme/senkron, visibility filtering, permission, notification sound ve message storage davranisi korunur.
+- Guvenlik/UI kontrolu: Admin-only notlar, hidden-message metadata, storage path, signed URL, hash, binary data, customer-private internal alan, secret, `.env`, payment/credit davranisi veya database schema aciga cikarilmadi ya da degistirilmedi. Yeni dependency, production servis cagrisi, migration, deploy, gercek musteri verisi, fiyat/hukuki iddia veya maximum length policy degisikligi yapilmadi. Helper row responsive wrap davranisi ve `aria-describedby`/`aria-live` ile erisilebilirlik korunacak sekilde eklendi.
+- Calistirilan kontroller: `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (22/22); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (251/251); `git diff --check` PASS (yalniz CRLF uyarilari); diff review PASS.
+- Calistirilmayan kontroller: `npm run build` bu repoda bilinen restricted-network Google Fonts / Next env yukleme riski nedeniyle calistirilmadi. Live service, SQL, smoke, scraper, desktop build/package ve normal env kontrolleri calistirilmadi.
+- Kalan risk: Admin widget clients pending domain request signal, desktop local history readable status labels ve customer notification load/error retry visibility Ready gorevleri ayri kapsamda devam eder. Offline build icin Google Fonts/`next/font/google` owner onayi bekleyen bilinen risk devam eder.
+
 ## 2026-07-12 worker run AUTO-024
 
 - Baslangic: 2026-07-12 22:17:00 +01:00; bitis: 2026-07-12 22:23:55 +01:00.

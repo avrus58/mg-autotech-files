@@ -17,6 +17,8 @@ type RequestChatProps = {
   senderRole: "customer" | "admin";
 };
 
+const MESSAGE_MAX_LENGTH = 4000;
+
 function sortMessages(items: RequestMessage[]) {
   return [...items].sort(
     (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
@@ -70,6 +72,9 @@ export default function RequestChat({
   const previousMessageIdsRef = useRef<Set<string>>(new Set());
   const initialLoadDoneRef = useRef(false);
   const sendingOwnMessageRef = useRef(false);
+  const charactersRemaining = MESSAGE_MAX_LENGTH - message.length;
+  const canSendMessage =
+    !sending && message.trim().length > 0 && message.length <= MESSAGE_MAX_LENGTH;
 
   const scrollChatToBottom = useCallback((behavior: ScrollBehavior = "smooth") => {
     const element = scrollAreaRef.current;
@@ -363,6 +368,8 @@ export default function RequestChat({
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             onKeyDown={handleKeyDown}
+            maxLength={MESSAGE_MAX_LENGTH}
+            aria-describedby="request-chat-message-help request-chat-message-limit"
             placeholder="Write a message..."
             className="min-h-[48px] min-w-0 flex-1 resize-none rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-500 transition focus:border-blue-500"
           />
@@ -370,15 +377,27 @@ export default function RequestChat({
           <button
             type="button"
             onClick={sendMessage}
-            disabled={sending || !message.trim()}
+            disabled={!canSendMessage}
             className="rounded-xl bg-blue-600 px-5 py-3 text-sm font-black text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
           >
             {sending ? "Sending..." : "Send"}
           </button>
         </div>
 
-        <div className="mt-2 text-xs text-zinc-600">
+        <div
+          id="request-chat-message-help"
+          className="mt-2 flex min-w-0 flex-col gap-1 break-words text-xs text-zinc-600 sm:flex-row sm:items-center sm:justify-between"
+        >
           Press Enter to send · Shift + Enter for a new line
+          <span
+            id="request-chat-message-limit"
+            aria-live="polite"
+            className={`shrink-0 font-bold ${
+              charactersRemaining === 0 ? "text-amber-300" : "text-zinc-500"
+            }`}
+          >
+            {charactersRemaining} characters remaining
+          </span>
         </div>
       </div>
     </section>

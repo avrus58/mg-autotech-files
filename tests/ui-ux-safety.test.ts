@@ -179,6 +179,26 @@ test("customer widget dashboard blocks duplicate pending domain-change requests"
   assert.doesNotMatch(widgetDashboard, /widget_audit_logs|actor_user_id|old_domain/);
 });
 
+test("request chat composer exposes and enforces the API message length contract", () => {
+  const chat = readProjectFile("src", "components", "RequestChat.tsx");
+  const route = readProjectFile("src", "app", "api", "requests", "[id]", "messages", "route.ts");
+
+  assert.match(route, /z\.string\(\)\.trim\(\)\.min\(1\)\.max\(4000\)/);
+  assert.match(route, /Message must be between 1 and 4000 characters\./);
+  assert.match(chat, /const MESSAGE_MAX_LENGTH = 4000/);
+  assert.match(chat, /const charactersRemaining = MESSAGE_MAX_LENGTH - message\.length/);
+  assert.match(chat, /const canSendMessage =[\s\S]*message\.trim\(\)\.length > 0[\s\S]*message\.length <= MESSAGE_MAX_LENGTH/);
+  assert.match(chat, /maxLength=\{MESSAGE_MAX_LENGTH\}/);
+  assert.match(chat, /aria-describedby="request-chat-message-help request-chat-message-limit"/);
+  assert.match(chat, /disabled=\{!canSendMessage\}/);
+  assert.match(chat, /id="request-chat-message-limit"/);
+  assert.match(chat, /aria-live="polite"/);
+  assert.match(chat, /\{charactersRemaining\} characters remaining/);
+  assert.match(chat, /Press Enter to send/);
+  assert.match(chat, /Shift \+ Enter for a new line/);
+  assert.doesNotMatch(chat, /disabled=\{sending \|\| !message\.trim\(\)\}/);
+});
+
 test("customer dashboard credit history preview uses the customer credit ledger", () => {
   const dashboard = readProjectFile("src", "components", "dashboard", "DashboardClient.tsx");
 
