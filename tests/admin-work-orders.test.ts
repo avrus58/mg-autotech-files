@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import { resolve } from "node:path";
+import { pathToFileURL } from "node:url";
 import {
   hasForbiddenCustomerKey,
   removeCustomerForbiddenKeys,
@@ -18,6 +19,17 @@ import {
   mapLegacyOrderStatus,
   splitServiceLabels,
 } from "../src/lib/workOrders/types";
+
+type SmokeUrlGuardModule = {
+  NON_LOCAL_SMOKE_OVERRIDE_ENV: string;
+  isLocalSmokeUrl: (value: string | URL) => boolean;
+  resolveSmokeBaseUrl: (options?: {
+    defaultUrl?: string;
+    env?: Record<string, string | undefined>;
+    envVarName?: string;
+    scriptName?: string;
+  }) => string;
+};
 
 test("work-order migration is additive, RLS protected and non-destructive", () => {
   const sql = readFileSync(resolve(process.cwd(), "scripts", "add-admin-work-order-control-center.sql"), "utf8");
@@ -263,6 +275,7 @@ test("admin work-order detail exposes upload permission control without payment 
 test("admin work-order smoke script does not contain tokens or mutation calls", () => {
   const source = readFileSync(resolve(process.cwd(), "scripts", "smoke-admin-work-orders.mjs"), "utf8");
   assert.match(source, /ADMIN_WORK_ORDER_SMOKE_BASE_URL/);
+  assert.match(source, /smoke-url-guard\.mjs/);
   assert.match(source, /\/api\/admin\/requests/);
   assert.doesNotMatch(source, /Authorization|Bearer|access_token|SUPABASE_SERVICE_ROLE_KEY|method:\s*"POST"|method:\s*"PATCH"/);
 });
@@ -271,7 +284,46 @@ test("platform smoke scripts are non-mutating and contain no secrets", () => {
   for (const script of ["smoke-public-platform.mjs", "smoke-admin-unauthenticated.mjs"]) {
     const source = readFileSync(resolve(process.cwd(), "scripts", script), "utf8");
     assert.match(source, /BASE_URL/);
+    assert.match(source, /resolveSmokeBaseUrl/);
     assert.doesNotMatch(source, /Authorization|Bearer|access_token|SUPABASE_SERVICE_ROLE_KEY|STRIPE_SECRET_KEY/);
     assert.doesNotMatch(source, /method:\s*["'](?:POST|PATCH|PUT|DELETE)["']/i);
   }
+});
+
+test("smoke URL guard keeps local defaults and requires explicit non-local override", async () => {
+  const guard = (await import(pathToFileURL(resolve(process.cwd(), "scripts", "smoke-url-guard.mjs")).href)) as SmokeUrlGuardModule;
+
+  assert.equal(guard.NON_LOCAL_SMOKE_OVERRIDE_ENV, "ALLOW_NON_LOCAL_SMOKE");
+  assert.equal(guard.isLocalSmokeUrl("http://localhost:3000"), true);
+  assert.equal(guard.isLocalSmokeUrl("http://127.0.0.1:3000"), true);
+  assert.equal(guard.isLocalSmokeUrl("https://file.mgautotech.de"), false);
+  assert.equal(
+    guard.resolveSmokeBaseUrl({
+      env: {},
+      envVarName: "BASE_URL",
+      scriptName: "test smoke",
+    }),
+    "http://localhost:3000"
+  );
+  assert.throws(
+    () =>
+      guard.resolveSmokeBaseUrl({
+        env: { BASE_URL: "https://file.mgautotech.de" },
+        envVarName: "BASE_URL",
+        scriptName: "test smoke",
+      }),
+    /ALLOW_NON_LOCAL_SMOKE=1/
+  );
+  assert.equal(
+    guard.resolveSmokeBaseUrl({
+      env: { BASE_URL: "https://file.mgautotech.de/", ALLOW_NON_LOCAL_SMOKE: "1" },
+      envVarName: "BASE_URL",
+      scriptName: "test smoke",
+    }),
+    "https://file.mgautotech.de"
+  );
+
+  const productionChecklist = readFileSync(resolve(process.cwd(), "docs", "production-smoke-checklist.md"), "utf8");
+  assert.match(productionChecklist, /ALLOW_NON_LOCAL_SMOKE=1/);
+  assert.match(productionChecklist, /human-controlled production smoke/i);
 });

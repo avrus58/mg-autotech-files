@@ -633,6 +633,7 @@ test("verification SQL is read-only and checks tables, RLS, policies and counts"
 test("production smoke script checks only public-safe endpoints by default", () => {
   const source = readFileSync(resolve(process.cwd(), "scripts", "smoke-vehicle-control-center.mjs"), "utf8");
   assert.match(source, /VEHICLE_SMOKE_BASE_URL/);
+  assert.match(source, /smoke-url-guard\.mjs/);
   assert.match(source, /\/api\/vehicles\?type=brands/);
   assert.match(source, /\/new-request/);
   assert.match(source, /\/api\/admin\/vehicles/);

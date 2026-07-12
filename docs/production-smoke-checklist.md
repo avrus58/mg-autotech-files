@@ -60,11 +60,12 @@ Use this checklist after every production deploy. It is intentionally non-destru
 
 ## Safe Scripts
 
-These scripts do not mutate data and do not contain secrets:
+These scripts do not mutate data and do not contain secrets.
+They default to `http://localhost:3000`; non-local targets require `ALLOW_NON_LOCAL_SMOKE=1` and are for human-controlled production smoke runs only:
 
 ```bash
-BASE_URL=https://file.mgautotech.de node scripts/smoke-public-platform.mjs
-BASE_URL=https://file.mgautotech.de node scripts/smoke-admin-unauthenticated.mjs
+ALLOW_NON_LOCAL_SMOKE=1 BASE_URL=https://file.mgautotech.de node scripts/smoke-public-platform.mjs
+ALLOW_NON_LOCAL_SMOKE=1 BASE_URL=https://file.mgautotech.de node scripts/smoke-admin-unauthenticated.mjs
 node scripts/check-i18n-seo.mjs
 ```
 

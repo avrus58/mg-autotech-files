@@ -4,19 +4,6 @@
 
 ## Ready
 
-### AUTO-004 [P0] Smoke scriptlerine non-local hedef guard'i ekle
-
-Kapsam: `scripts/smoke-public-platform.mjs`, `scripts/smoke-admin-unauthenticated.mjs`, `scripts/smoke-admin-work-orders.mjs` ve `scripts/smoke-vehicle-control-center.mjs` icin otonom dongude non-local URL kullanimini engelleyen ortak guard ekle.
-
-Kabul kriterleri:
-
-- Default `localhost` hedefleri korunur.
-- `https://file.mgautotech.de` gibi non-local hedefler acik override olmadan calismaz.
-- Override env adi dokumante edilir ve production smoke'un insan kontrollu oldugu belirtilir.
-- Smoke scriptlerinin non-mutating guvenlik sozlesmesi testlerde korunur.
-
-Dogrulama: `npm test`; local URL guard test/source assertion.
-
 ### AUTO-005 [P0] Scraper scriptlerine explicit network guard ekle
 
 Kapsam: `scripts/carecufile-scraper.mjs` ve `scripts/scrape-all-brands.mjs` dis aga cikmadan once explicit flag/env gerektirsin.
@@ -156,6 +143,18 @@ Kabul kriterleri:
 Dogrulama: Diff incelemesi, `npm run lint`, `npm run typecheck`.
 
 ## Done
+
+### AUTO-004 [P0] Smoke scriptlerine non-local hedef guard'i ekle
+
+Durum: Done
+
+Fingerprint: `security|smoke-scripts|non-local-target-without-explicit-override|local-only-autopilot-guard`
+
+Kapsam: `scripts/smoke-public-platform.mjs`, `scripts/smoke-admin-unauthenticated.mjs`, `scripts/smoke-admin-work-orders.mjs` ve `scripts/smoke-vehicle-control-center.mjs` icin ortak local-only smoke URL guard'i eklendi.
+
+Sonuc: Default `localhost` hedefleri korunur; non-local smoke hedefleri `ALLOW_NON_LOCAL_SMOKE=1` olmadan fetch'e gecmeden reddedilir. Production smoke dokumanlari human-controlled override kosulunu gosterir; non-mutating source assertion testleri korundu ve guard testi eklendi.
+
+Dogrulama: no-network guard kontrolu PASS; hedefli `tsx --test tests/admin-work-orders.test.ts tests/vehicle-control-center.test.ts` PASS (61/61); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (228/228); `git diff --check` PASS (yalnizca CRLF uyarilari).
 
 ### AUTO-003 [P0] Desktop env checker icin otonom guvenli mod ekle
 

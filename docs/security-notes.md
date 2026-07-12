@@ -56,11 +56,11 @@ Customers must not receive:
 
 ## Smoke Tests
 
-Use:
+Use the smoke scripts for human-controlled production smoke runs only. They default to `http://localhost:3000`; non-local targets require `ALLOW_NON_LOCAL_SMOKE=1`:
 
 ```bash
-BASE_URL=https://file.mgautotech.de node scripts/smoke-public-platform.mjs
-BASE_URL=https://file.mgautotech.de node scripts/smoke-admin-unauthenticated.mjs
+ALLOW_NON_LOCAL_SMOKE=1 BASE_URL=https://file.mgautotech.de node scripts/smoke-public-platform.mjs
+ALLOW_NON_LOCAL_SMOKE=1 BASE_URL=https://file.mgautotech.de node scripts/smoke-admin-unauthenticated.mjs
 ```
 
 These scripts are intentionally non-mutating and contain no secrets.

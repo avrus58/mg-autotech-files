@@ -1,4 +1,9 @@
-const baseUrl = (process.env.ADMIN_WORK_ORDER_SMOKE_BASE_URL || "http://localhost:3000").replace(/\/+$/, "");
+import { resolveSmokeBaseUrl } from "./smoke-url-guard.mjs";
+
+const baseUrl = resolveSmokeBaseUrl({
+  envVarName: "ADMIN_WORK_ORDER_SMOKE_BASE_URL",
+  scriptName: "Admin Work Order smoke",
+});
 
 async function check(path, predicate, description) {
   const response = await fetch(`${baseUrl}${path}`, { redirect: "manual" });

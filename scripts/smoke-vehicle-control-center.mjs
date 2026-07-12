@@ -1,4 +1,9 @@
-const baseUrl = (process.env.VEHICLE_SMOKE_BASE_URL || "http://localhost:3000").replace(/\/+$/, "");
+import { resolveSmokeBaseUrl } from "./smoke-url-guard.mjs";
+
+const baseUrl = resolveSmokeBaseUrl({
+  envVarName: "VEHICLE_SMOKE_BASE_URL",
+  scriptName: "Vehicle Control Center smoke",
+});
 
 async function checkJson(path, predicate, description) {
   const response = await fetch(`${baseUrl}${path}`, { redirect: "manual" });

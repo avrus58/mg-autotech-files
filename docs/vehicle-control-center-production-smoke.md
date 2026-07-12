@@ -63,12 +63,12 @@ Use this checklist after the Vehicle Database Control Center changes are deploye
 4. Owner/admin token: call `/api/admin/vehicles`; expected `200`.
 5. Confirm browser console has no obvious errors.
 
-## 8. Optional Local Smoke Script
+## 8. Optional Smoke Script
 
-Run:
+Run against production only as a human-controlled smoke check. The script defaults to `http://localhost:3000`; non-local targets require `ALLOW_NON_LOCAL_SMOKE=1`:
 
 ```bash
-VEHICLE_SMOKE_BASE_URL=https://file.mgautotech.de node scripts/smoke-vehicle-control-center.mjs
+ALLOW_NON_LOCAL_SMOKE=1 VEHICLE_SMOKE_BASE_URL=https://file.mgautotech.de node scripts/smoke-vehicle-control-center.mjs
 ```
 
 The script checks public-safe endpoints only and never requires admin tokens.

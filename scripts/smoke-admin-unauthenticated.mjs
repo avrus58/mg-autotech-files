@@ -1,4 +1,9 @@
-const baseUrl = process.env.BASE_URL || "http://localhost:3000";
+import { resolveSmokeBaseUrl } from "./smoke-url-guard.mjs";
+
+const baseUrl = resolveSmokeBaseUrl({
+  envVarName: "BASE_URL",
+  scriptName: "MG AutoTech unauthenticated admin smoke",
+});
 
 const adminRoutes = [
   "/api/admin/vehicles",

@@ -2,6 +2,30 @@
 
 Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
+## 2026-07-12 reviewer run AUTO-004
+
+- Gorev: Mevcut uncommitted AUTO-004 degisikliklerini bagimsiz reviewer olarak incelemek.
+- Sonuc: Accepted. Smoke scriptleri ortak local-only URL guard'i ile default localhost davranisini koruyor; non-local hedefler `ALLOW_NON_LOCAL_SMOKE=1` olmadan fetch'e gecmeden reddediliyor.
+- Duplicate/evidence kontrolu: ROADMAP, TASKS, TASK_HISTORY, STATUS ve yakin Git gecmisi incelendi; ayni fingerprint daha once tamamlanmis gorunmedi. Evidence gercek: HEAD'deki smoke scriptleri env-provided non-local base URL'leri guard olmadan kabul ediyordu.
+- Reviewer duzeltmesi: STATUS son durum ozeti AUTO-004 dogrulamasiyla guncellendi.
+- Risk kontrolu: Production servis cagrisi, migration, secret, musteri verisi, yeni dependency, debug kodu veya kapsam disi refactor tespit edilmedi. UI degisikligi olmadigi icin responsive/accessibility/loading/error/empty state etkisi yok.
+- Calistirilan kontroller: no-network guard kontrolu PASS; `.\node_modules\.bin\tsx.cmd --test tests/admin-work-orders.test.ts tests/vehicle-control-center.test.ts` PASS (61/61); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (228/228); `git diff --check` PASS (yalnizca CRLF uyarilari).
+- Calistirilmayan kontroller: `npm run build` script/test/docs odakli degisiklik ve bilinen restricted-network Google Fonts / Next env yukleme riski nedeniyle calistirilmadi. Smoke scriptleri production hedefe karsi calistirilmadi.
+- Kalan risk: Scraper explicit network guard'i ve diger Ready product-evolution gorevleri henuz uygulanmadi; production smoke sadece insan kontrollu calistirilmalidir.
+
+## 2026-07-12 worker run AUTO-004
+
+- Gorev: Smoke scriptlerine non-local hedef guard'i eklemek.
+- Fingerprint: `security|smoke-scripts|non-local-target-without-explicit-override|local-only-autopilot-guard`.
+- Duplicate kontrolu: TASK_HISTORY, Done gorevleri ve yakin Git gecmisi incelendi; ayni fingerprint veya uygulanmis ortak smoke URL guard'i bulunmadi.
+- Evidence kontrolu: `scripts/smoke-public-platform.mjs`, `scripts/smoke-admin-unauthenticated.mjs`, `scripts/smoke-admin-work-orders.mjs` ve `scripts/smoke-vehicle-control-center.mjs` env-provided non-local base URL'leri guard olmadan kabul ediyordu.
+- Degisen dosyalar: `scripts/smoke-url-guard.mjs`, `scripts/smoke-public-platform.mjs`, `scripts/smoke-admin-unauthenticated.mjs`, `scripts/smoke-admin-work-orders.mjs`, `scripts/smoke-vehicle-control-center.mjs`, `tests/admin-work-orders.test.ts`, `tests/vehicle-control-center.test.ts`, `docs/production-smoke-checklist.md`, `docs/security-notes.md`, `docs/vehicle-control-center-production-smoke.md`, `.autopilot/TASKS.md`, `.autopilot/TASK_HISTORY.md`, `.autopilot/STATUS.md`, `.autopilot/runtime/last-result.json`.
+- Sonuc: Ortak smoke URL guard'i default localhost davranisini korur; non-local hedefler `ALLOW_NON_LOCAL_SMOKE=1` olmadan fetch'e gecmeden reddedilir. Production smoke dokumanlari bu override'in yalniz human-controlled production smoke icin oldugunu belirtir.
+- Guvenlik/UI kontrolu: `.env`, secret, musteri verisi, production servis cagrisi, migration, deploy veya yeni dependency kullanilmadi. UI degisikligi olmadigi icin responsive/accessibility/loading/error/empty state etkisi yok.
+- Calistirilan kontroller: no-network guard kontrolu PASS; `.\node_modules\.bin\tsx.cmd --test tests/admin-work-orders.test.ts tests/vehicle-control-center.test.ts` PASS (61/61); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (228/228); `git diff --check` PASS (yalnizca CRLF uyarilari).
+- Calistirilmayan kontroller: `npm run build` script/test/docs odakli gorev ve bu repoda bilinen restricted-network Google Fonts / Next env yukleme riski nedeniyle calistirilmadi. Smoke scriptleri localhost sunucusu gerektirdigi ve production hedefe otonom calistirma yasak oldugu icin gercek endpointlere karsi calistirilmadi.
+- Kalan risk: Scraper explicit network guard'i ve diger Ready product-evolution gorevleri henuz uygulanmadi; production smoke sadece insan kontrollu calistirilmalidir.
+
 ## 2026-07-12 planner run PRODUCT EVOLUTION MODE
 
 - Gorev: Portfoy planlamasi ve guvenli gorev kesfi; kullanici talimatina uygun olarak uygulama kodu degistirilmedi.
@@ -19,8 +43,8 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
 - Kurulum tarihi: 2026-07-12 (Europe/Berlin)
 - Aktif branch: codex/autopilot
-- Son basarili gorev: AUTO-003 Desktop env checker icin otonom guvenli mod ekle
-- Son dogrulama: reviewer `node apps/customer-uploader/scripts/check-env.mjs --schema-only` PASS; hedefli desktop test PASS (20/20); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (227/227); `git diff --check` PASS (yalnizca CRLF uyarilari)
+- Son basarili gorev: AUTO-004 Smoke scriptlerine non-local hedef guard'i ekle
+- Son dogrulama: reviewer no-network guard kontrolu PASS; hedefli smoke/work-order test PASS (61/61); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (228/228); `git diff --check` PASS (yalnizca CRLF uyarilari)
 - Insan mudahalesi gereken konu: Offline build icin Google Fonts/`next/font/google` stratejisi onayi; production smoke, SQL migration, deploy ve normal env kontrolleri insan onayi gerektirir.
 
 ## 2026-07-12 reviewer run AUTO-003
