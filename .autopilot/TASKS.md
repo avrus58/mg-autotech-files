@@ -4,19 +4,6 @@
 
 ## Ready
 
-### AUTO-007 [P1] Vehicle JSON fallback icin data integrity testi ekle
-
-Kapsam: `data/vehicle-database.json` ve `data/vehicle-performance-overrides.json` public fallback sozlesmesini testle.
-
-Kabul kriterleri:
-
-- Public fallback kayitlari forbidden admin/private alanlari icermez.
-- Normalize edilmis public key duplicate adaylari raporlanir.
-- Override keyleri beklenen formatta ve mevcut data ile uyumlu kontrol edilir.
-- Test veri icerigini otomatik degistirmez.
-
-Dogrulama: `npm test`.
-
 ### AUTO-008 [P1] Offline build bagimliligini dokumante et
 
 Kapsam: `next/font/google` nedeniyle restricted/offline build'in Google Fonts fetch hatasina takildigini README veya docs icinde local automation notu olarak belgele.
@@ -107,6 +94,18 @@ Kabul kriterleri:
 Dogrulama: Diff incelemesi, `npm run lint`, `npm run typecheck`.
 
 ## Done
+
+### AUTO-007 [P1] Vehicle JSON fallback icin data integrity testi ekle
+
+Durum: Done
+
+Fingerprint: `vehicle-catalog|json-fallback-data|public-data-contract-untested|covered-integrity-regression`
+
+Kapsam: `data/vehicle-database.json` ve `data/vehicle-performance-overrides.json` public fallback sozlesmesi icin data integrity testleri eklendi.
+
+Sonuc: Gercek JSON fallback satirlari public projection uzerinden forbidden admin/private alanlara karsi kontrol ediliyor; normalize edilmis public duplicate adaylari mevcut import summary raporuyla eslestiriliyor; performance override keyleri dort parcali legacy format ve mevcut fallback satirlariyla uyumlu dogrulaniyor. Data dosyalari degistirilmedi.
+
+Dogrulama: `.\node_modules\.bin\tsx.cmd --test tests\vehicle-control-center.test.ts` PASS (41/41); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (240/240); `git diff --check` PASS (yalnizca CRLF uyarilari).
 
 ### AUTO-015 [P1] Yeni istek formu katalog yokken manuel arac bilgisi kabul etsin
 

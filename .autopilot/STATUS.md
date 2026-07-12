@@ -2,6 +2,30 @@
 
 Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
+## 2026-07-12 reviewer run AUTO-007
+
+- Gorev: Mevcut uncommitted AUTO-007 degisikliklerini product/safety/quality gate olarak incelemek.
+- Sonuc: Accepted. Vehicle JSON fallback integrity testleri katalog public projection guvenligi, duplicate raporlama sozlesmesi ve performance override uyumlulugu icin gercek urun/veri kalitesi degeri tasiyor.
+- Duplicate/evidence kontrolu: AGENTS, V4 package constitution dosyalari, `.autopilot/constitution/*`, PROJECT, ROADMAP, TASKS, TASK_HISTORY, PRODUCT_SCORECARD, STATUS, last-result, son 100 commit ve tam diff incelendi. Ayni fingerprint tamamlanmis commit olarak gorunmedi; evidence `data/vehicle-database.json` ve `data/vehicle-performance-overrides.json` fallback sozlesmesinin full-dataset test eksigiyle uyumlu.
+- Risk kontrolu: Degisiklik yalniz read-only test ve autopilot kayitlariyla sinirli. Production servis, migration, deploy, `.env`/secret, gercek musteri verisi, fiyat/hukuki iddia, katalog data mutasyonu, payment/upload/AI visibility veya yeni dependency riski tespit edilmedi. UI degisikligi yok.
+- Reviewer duzeltmesi: Kod duzeltmesi gerekmedi. `.autopilot/runtime/review-result.json` accepted olarak yazildi.
+- Calistirilan kontroller: `.\node_modules\.bin\tsx.cmd --test tests\vehicle-control-center.test.ts` PASS (41/41); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (240/240); `git diff --check` PASS (yalnizca CRLF uyarilari).
+- Calistirilmayan kontroller: `npm run build` bilinen restricted-network Google Fonts / Next env yukleme riski nedeniyle calistirilmadi. Live service, smoke, SQL, scraper ve normal env kontrolleri calistirilmadi.
+- Kalan risk: Offline build icin Google Fonts/`next/font/google` stratejisi owner onayi bekliyor; katalog veri icerigi ticari kapsam iddiasi olarak kanitsiz degistirilmemelidir.
+
+## 2026-07-12 worker run AUTO-007
+
+- Gorev: Vehicle JSON fallback icin data integrity testi ekle.
+- Fingerprint: `vehicle-catalog|json-fallback-data|public-data-contract-untested|covered-integrity-regression`.
+- Duplicate kontrolu: AGENTS, V4 package constitution dosyalari, `.autopilot/constitution/*`, PROJECT, ROADMAP, INBOX, FEATURE_PROPOSALS, TASKS, TASK_HISTORY, PRODUCT_SCORECARD, STATUS ve son 100 commit incelendi; ayni fingerprint veya gercek JSON fallback data integrity testi tamamlanmis gorunmedi.
+- Evidence kontrolu: `data/vehicle-database.json` ve `data/vehicle-performance-overrides.json` public JSON fallback kaynaklariydi; mevcut testler projection davranisini ornek satirlarla kapsiyor, fakat tum fallback dataset icin forbidden admin/private alanlari, normalize duplicate raporu ve override key uyumlulugu birlikte dogrulanmiyordu.
+- Degisen dosyalar: `tests/vehicle-control-center.test.ts`, `.autopilot/TASKS.md`, `.autopilot/TASK_HISTORY.md`, `.autopilot/STATUS.md`, `.autopilot/runtime/last-result.json`.
+- Sonuc: Read-only data integrity testleri eklendi. Public projection tum fallback satirlarinda forbidden admin/private keylere karsi kontrol ediliyor; normalize public duplicate adaylari mevcut import summary duplicate raporuyla eslestiriliyor; performance override keyleri dort parcali legacy format ve mevcut fallback satirlariyla uyumlu dogrulaniyor. `data/*.json` icerigi degistirilmedi.
+- Guvenlik/UI kontrolu: Yeni dependency, production servis cagrisi, migration, deploy, `.env`/secret, gercek musteri verisi, fiyat/hukuki iddia veya katalog data mutasyonu yapilmadi. UI degisikligi yok.
+- Calistirilan kontroller: `.\node_modules\.bin\tsx.cmd --test tests\vehicle-control-center.test.ts` PASS (41/41); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (240/240); `git diff --check` PASS (yalnizca CRLF uyarilari); diff review PASS.
+- Calistirilmayan kontroller: `npm run build` bu repoda bilinen restricted-network Google Fonts / Next env yukleme riski nedeniyle calistirilmadi. Dev server, smoke, scraper, SQL ve normal env kontrolleri calistirilmadi.
+- Kalan risk: Offline build icin Google Fonts/`next/font/google` stratejisi owner onayi bekliyor; Ready kuyrugunda `AUTO-008`, `AUTO-013` ve `AUTO-014` devam ediyor.
+
 ## 2026-07-12 reviewer run AUTO-015
 
 - Gorev: Mevcut uncommitted AUTO-015 degisikliklerini product/safety/quality gate olarak incelemek.
@@ -158,8 +182,8 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
 - Kurulum tarihi: 2026-07-12 (Europe/Berlin)
 - Aktif branch: codex/autopilot
-- Son basarili gorev: AUTO-015 Yeni istek formu katalog yokken manuel arac bilgisi kabul etsin
-- Son dogrulama: `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (13/13); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (238/238); `git diff --check` PASS (yalnizca CRLF uyarilari)
+- Son basarili gorev: AUTO-007 Vehicle JSON fallback icin data integrity testi ekle
+- Son dogrulama: `.\node_modules\.bin\tsx.cmd --test tests\vehicle-control-center.test.ts` PASS (41/41); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (240/240); `git diff --check` PASS (yalnizca CRLF uyarilari)
 - Insan mudahalesi gereken konu: Offline build icin Google Fonts/`next/font/google` stratejisi onayi; production smoke, SQL migration, deploy ve normal env kontrolleri insan onayi gerektirir.
 
 ## 2026-07-12 reviewer run AUTO-003

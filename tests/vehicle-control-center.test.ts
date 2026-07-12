@@ -28,7 +28,12 @@ import {
   dryRunVehicleImport,
   getValidImportCandidates,
 } from "../src/lib/vehicleControl/importer";
-import type { RawVehicleRow, VehicleControlRecord } from "../src/lib/vehicleControl/types";
+import type {
+  PublicVehicleRecord,
+  RawVehicleRow,
+  StageData,
+  VehicleControlRecord,
+} from "../src/lib/vehicleControl/types";
 import { validateVehicleCollection, validateVehicleRecord } from "../src/lib/vehicleControl/validation";
 import {
   buildCanonicalVehicleKey,
@@ -66,6 +71,88 @@ function controlRecord(overrides: Partial<VehicleControlRecord> = {}): VehicleCo
     confidenceScore: 73,
     ...overrides,
   };
+}
+
+type VehiclePerformanceOverride = {
+  stage1?: StageData | null;
+  stage2?: StageData | null;
+  services?: string[];
+};
+
+const forbiddenPublicVehicleKeys = new Set([
+  "adminTechnicalNotes",
+  "audit",
+  "confidenceScore",
+  "file_path",
+  "filePath",
+  "hex_preview",
+  "imageUrl",
+  "import_metadata",
+  "private",
+  "private_offsets",
+  "publishStatus",
+  "published",
+  "scrapedAt",
+  "signed_url",
+  "signedUrl",
+  "source",
+  "sourceReference",
+  "sourceUrl",
+  "storage_path",
+  "storagePath",
+  "validation",
+  "verificationStatus",
+]);
+
+const forbiddenPerformanceOverrideKeys = new Set(
+  [...forbiddenPublicVehicleKeys].filter((key) => key !== "source")
+);
+
+function readVehicleFallbackRows() {
+  return JSON.parse(readFileSync(resolve(process.cwd(), "data", "vehicle-database.json"), "utf8")) as RawVehicleRow[];
+}
+
+function readVehiclePerformanceOverrides() {
+  return JSON.parse(readFileSync(resolve(process.cwd(), "data", "vehicle-performance-overrides.json"), "utf8")) as Record<string, VehiclePerformanceOverride>;
+}
+
+function findForbiddenPublicKeys(
+  value: unknown,
+  path = "$",
+  findings: string[] = [],
+  forbiddenKeys = forbiddenPublicVehicleKeys
+) {
+  if (Array.isArray(value)) {
+    value.forEach((item, index) => findForbiddenPublicKeys(item, `${path}[${index}]`, findings, forbiddenKeys));
+    return findings;
+  }
+  if (!value || typeof value !== "object") return findings;
+
+  for (const [key, child] of Object.entries(value as Record<string, unknown>)) {
+    const childPath = `${path}.${key}`;
+    if (forbiddenKeys.has(key)) findings.push(childPath);
+    findForbiddenPublicKeys(child, childPath, findings, forbiddenKeys);
+  }
+  return findings;
+}
+
+function duplicatePublicVehicleKeys(rows: PublicVehicleRecord[]) {
+  const byKey = new Map<string, PublicVehicleRecord[]>();
+  for (const row of rows) {
+    const key = row.vehicleKey ?? row.id;
+    byKey.set(key, [...(byKey.get(key) ?? []), row]);
+  }
+  return [...byKey.entries()]
+    .filter(([, group]) => group.length > 1)
+    .map(([key, group]) => ({ key, count: group.length }));
+}
+
+function assertStageOverrideShape(stage: StageData | null | undefined, label: string) {
+  if (stage == null) return;
+  for (const field of ["stockHp", "tunedHp", "gainHp", "stockNm", "tunedNm", "gainNm"] as const) {
+    const value: number | null = stage[field];
+    assert.equal(value == null || (typeof value === "number" && Number.isFinite(value)), true, `${label}.${field} must be a finite number or null`);
+  }
 }
 
 test("vehicle key generation is stable and normalized", () => {
@@ -347,6 +434,48 @@ test("JSON fallback returns safe vehicle rows when database access is unavailabl
     else process.env.NEXT_PUBLIC_SUPABASE_URL = previousUrl;
     if (previousService === undefined) delete process.env.SUPABASE_SERVICE_ROLE_KEY;
     else process.env.SUPABASE_SERVICE_ROLE_KEY = previousService;
+  }
+});
+
+test("vehicle JSON fallback full projection is customer-safe and duplicate-reportable", () => {
+  const fallbackRows = readVehicleFallbackRows();
+  const firstRowBefore = JSON.stringify(fallbackRows[0]);
+  const publicRows = rawVehiclesToPublicRows(fallbackRows);
+  const forbiddenPaths = findForbiddenPublicKeys(publicRows);
+  const duplicateGroups = duplicatePublicVehicleKeys(publicRows);
+  const plan = createVehicleImportPlan();
+  const summary = buildVehicleImportSummary(plan, [], { dryRun: true });
+
+  assert.equal(publicRows.length, fallbackRows.length);
+  assert.deepEqual(forbiddenPaths.slice(0, 20), []);
+  assert.equal(plan.duplicateKeys.size, duplicateGroups.length);
+  assert.equal(summary.duplicates, duplicateGroups.length);
+  assert.equal(summary.duplicateExtraRows, duplicateGroups.reduce((total, group) => total + group.count - 1, 0));
+  for (const example of summary.examples?.duplicates ?? []) {
+    assert.equal(duplicateGroups.some((group) => group.key === example.vehicleKey && group.count === example.count), true);
+  }
+  assert.equal(JSON.stringify(fallbackRows[0]), firstRowBefore);
+});
+
+test("vehicle performance override keys match existing JSON fallback rows", () => {
+  const fallbackRows = readVehicleFallbackRows();
+  const fallbackLegacyKeys = new Set(
+    fallbackRows.map((row) => [row.brandId, row.modelId, row.generationId, row.engineId].join(":"))
+  );
+  const overrides = readVehiclePerformanceOverrides();
+
+  for (const [key, override] of Object.entries(overrides)) {
+    assert.match(key, /^[^:\s]+:[^:\s]+:[^:\s]+:[^:\s]+$/, `${key} must be a four-part legacy vehicle key`);
+    assert.equal(fallbackLegacyKeys.has(key), true, `${key} must match data/vehicle-database.json`);
+    assert.equal(findForbiddenPublicKeys(override, "$", [], forbiddenPerformanceOverrideKeys).length, 0, `${key} override must not contain private/admin fields`);
+    assertStageOverrideShape(override.stage1, `${key}.stage1`);
+    assertStageOverrideShape(override.stage2, `${key}.stage2`);
+    if (override.services !== undefined) {
+      assert.equal(Array.isArray(override.services), true, `${key}.services must be an array`);
+      for (const service of override.services) {
+        assert.equal(typeof service === "string" && service.trim().length > 0, true, `${key}.services entries must be non-empty strings`);
+      }
+    }
   }
 });
 
