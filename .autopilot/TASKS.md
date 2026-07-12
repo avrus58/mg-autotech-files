@@ -4,19 +4,6 @@
 
 ## Ready
 
-### AUTO-008 [P1] Offline build bagimliligini dokumante et
-
-Kapsam: `next/font/google` nedeniyle restricted/offline build'in Google Fonts fetch hatasina takildigini README veya docs icinde local automation notu olarak belgele.
-
-Kabul kriterleri:
-
-- `npm run build` icin ag gereksinimi ve bootstrap hata nedeni aciklanir.
-- Font/tasarim degisikligi yapilmaz.
-- Yerel fonta gecis istenirse bunun ayri onayli gorev olacagi belirtilir.
-- STATUS/PROJECT ile celismeyen tek bir kaynak notu olusturulur.
-
-Dogrulama: Markdown diff incelemesi, `npm run lint`.
-
 - [ ] **P2 AUTO-013 - Musteri order timeline'i bekleme ve revizyon adimlarini acik gostersin**
   - Domain: Responsive UX & product flow
   - Fingerprint: `responsive-ux|customer-order-detail|timeline-collapses-actionable-statuses|clear-next-step-status`
@@ -146,6 +133,18 @@ Kabul kriterleri:
 Dogrulama: Diff incelemesi, `npm run lint`, `npm run typecheck`.
 
 ## Done
+
+### AUTO-008 [P1] Offline build bagimliligini dokumante et
+
+Durum: Done
+
+Fingerprint: `documentation|offline-build|google-fonts-build-dependency-undocumented|documented-local-automation-note`
+
+Kapsam: `next/font/google` nedeniyle restricted/offline build'in Google Fonts fetch hatasina takildigini README veya docs icinde local automation notu olarak belgele.
+
+Sonuc: Zaten karsilanmis olarak kapatildi. `README.md:73-76` `npm run build` icin restricted/offline automation ortaminda `next/font/google` kaynakli Google Fonts fetch riski oldugunu ve local fonts gecisinin ayri onayli gorev olmasi gerektigini acikliyor. Font, tasarim, uygulama kodu veya ticari metin degistirilmedi.
+
+Dogrulama: Markdown evidence/diff incelemesi, `npm run lint`.
 
 ### AUTO-007 [P1] Vehicle JSON fallback icin data integrity testi ekle
 

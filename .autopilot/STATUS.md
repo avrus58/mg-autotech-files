@@ -2,6 +2,19 @@
 
 Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
+## 2026-07-12 worker run AUTO-008
+
+- Baslangic: 2026-07-12 17:14:46 +01:00; bitis: 2026-07-12 17:15:20 +01:00.
+- Gorev: Offline build bagimliligini dokumante et.
+- Fingerprint: `documentation|offline-build|google-fonts-build-dependency-undocumented|documented-local-automation-note`.
+- Sonuc: Zaten karsilanmis olarak Done'a tasindi. `README.md:73-76` `npm run build` icin restricted/offline automation ortaminda `next/font/google` kaynakli Google Fonts fetch riskini ve local fonts gecisinin ayri onayli gorev olmasi gerektigini zaten acikliyor.
+- Duplicate/evidence kontrolu: AGENTS, V4 package constitution dosyalari, `.autopilot/constitution/*`, PROJECT, ROADMAP, INBOX, FEATURE_PROPOSALS, TASKS, TASK_HISTORY, PRODUCT_SCORECARD, STATUS, package scripts, mevcut Git durumu, son 100 commit ve README evidence incelendi; ayni fingerprint TASK_HISTORY veya son 100 committe tamamlanmis task olarak yoktu, ancak kabul kriterleri mevcut README ile zaten saglaniyordu.
+- Degisen dosyalar: `.autopilot/TASKS.md`, `.autopilot/TASK_HISTORY.md`, `.autopilot/STATUS.md`, `.autopilot/runtime/last-result.json`.
+- Uygulama/doc kaynak degisikligi: Yapilmadi; README zaten yeterli oldugu icin font, tasarim, uygulama kodu, fiyat, hukuki metin veya ticari iddia degistirilmedi.
+- Calistirilan kontroller: Markdown evidence/diff review PASS; `npm run lint` PASS; `git diff --check` PASS (yalniz CRLF uyarilari); `.autopilot/runtime/last-result.json` JSON parse PASS.
+- Calistirilmayan kontroller: `npm run typecheck` ve `npm test` calistirilmadi; uygulama kodu veya test kaynaklari degismedi. `npm run build` bilinen restricted-network Google Fonts / Next env yukleme riski nedeniyle calistirilmadi. Live service, SQL, smoke, scraper, desktop build/package ve normal env kontrolleri calistirilmadi.
+- Kalan risk: Offline build icin gercek local-font stratejisi halen owner onayli ayri teknik gorev gerektirir; Ready kuyrugundaki product-evolution gorevleri devam eder.
+
 ## 2026-07-12 planner run V4 PROFILE AND ADMIN METRICS
 
 - Gorev: MG AI Operating System V4 planner pass; planlama disinda uygulama kodu degistirilmedi.
