@@ -2,6 +2,20 @@
 
 Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
+## 2026-07-12 worker run AUTO-022
+
+- Baslangic: 2026-07-12 19:50:00 +01:00; bitis: 2026-07-12 20:03:13 +01:00.
+- Gorev: Admin audit timeline event gorunurlugunu rozetlesin.
+- Fingerprint: `admin-operations|work-order-audit-timeline|customer-visible-events-unbadged|visibility-badges-for-audit-events`.
+- Sonuc: Done. Admin work-order audit timeline eventleri artik customer-visible ve internal-only gorunurluklerini kompakt rozetlerle ayiriyor.
+- Duplicate/evidence kontrolu: V4 package constitution dosyalari, `.autopilot/constitution/*`, AGENTS, PROJECT, ROADMAP, INBOX, FEATURE_PROPOSALS, TASKS, TASK_HISTORY, PRODUCT_SCORECARD, STATUS, package scriptleri, mevcut Git durumu ve son 100 commit incelendi. Ayni fingerprint tamamlanmis gorunmedi; evidence halen gecerliydi. `WorkOrderDetailClient` event tipinde `customer_visible` alani vardi, audit kartlari ise daha once tip/tarih/mesaj disinda gorunurluk ayrimi gostermiyordu.
+- Degisen dosyalar: `src/app/admin/requests/[id]/WorkOrderDetailClient.tsx`, `tests/admin-work-orders.test.ts`, `.autopilot/TASKS.md`, `.autopilot/TASK_HISTORY.md`, `.autopilot/STATUS.md`, `.autopilot/runtime/last-result.json`.
+- Uygulama sonucu: Audit kartlari `event.customer_visible` boolean'ina gore `Customer-visible` veya `Internal-only` rozeti render ediyor. Event mesajlari, siralama, API shape, customer API'leri, internal note gorunurlugu, empty state ve fallback read-only davranislari degistirilmedi.
+- Guvenlik/UI kontrolu: `old_value`, `new_value`, metadata internals, risk flags, private paths, signed URL, hash, hidden customer message payload'i veya admin-only note payload'i audit kartlarinda aciga cikarilmadi. Yeni dependency, production servis cagrisi, migration, deploy, `.env`/secret, gercek musteri verisi, fiyat/hukuki iddia veya odeme/kredi kurali degisikligi yapilmadi.
+- Calistirilan kontroller: `.\node_modules\.bin\tsx.cmd --test tests\admin-work-orders.test.ts` PASS (26/26); `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (17/17); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (246/246); `git diff --check` PASS (yalniz CRLF uyarilari); diff review PASS.
+- Calistirilmayan kontroller: `npm run build` bu repoda bilinen restricted-network Google Fonts / Next env yukleme riski nedeniyle calistirilmadi. Live service, SQL, smoke, scraper, desktop build/package ve normal env kontrolleri calistirilmadi.
+- Kalan risk: Dashboard credit ledger preview, explicit delivery estimate ve customer additional upload phase feedback Ready gorevleri ayri kapsamda devam eder. Offline build icin Google Fonts/`next/font/google` owner onayi bekleyen bilinen risk devam eder.
+
 ## 2026-07-12 worker run AUTO-021
 
 - Baslangic: 2026-07-12 19:21:00 +01:00; bitis: 2026-07-12 19:38:00 +01:00.

@@ -239,6 +239,21 @@ test("admin work-order UI confirms hide and keeps hidden customer messages visib
   assert.match(source, /message_visibility:\s*\{\s*message_id:\s*messageId/);
 });
 
+test("admin audit timeline badges customer-visible and internal-only events", () => {
+  const source = readFileSync(resolve(process.cwd(), "src", "app", "admin", "requests", "[id]", "WorkOrderDetailClient.tsx"), "utf8");
+  const auditStart = source.indexOf("Status Timeline & Audit");
+  const asideStart = source.indexOf("<aside", auditStart);
+  assert.notEqual(auditStart, -1);
+  assert.notEqual(asideStart, -1);
+  const auditSection = source.slice(auditStart, asideStart);
+
+  assert.match(auditSection, /event\.customer_visible \? "Customer-visible" : "Internal-only"/);
+  assert.match(auditSection, /event\.customer_visible \? <User/);
+  assert.match(auditSection, /: <ShieldCheck/);
+  assert.match(auditSection, /break-words text-sm/);
+  assert.doesNotMatch(auditSection, /old_value|new_value|metadata|risk_flags|private_offsets|hidden_reason|file_path|signedUrl|storage_path|hash/i);
+});
+
 test("admin work-order mutations create timeline events and reject empty updates", () => {
   const detailRoute = readFileSync(resolve(process.cwd(), "src", "app", "api", "admin", "requests", "[id]", "route.ts"), "utf8");
   const uploadRoute = readFileSync(resolve(process.cwd(), "src", "app", "api", "admin", "orders", "[id]", "upload-permission", "route.ts"), "utf8");

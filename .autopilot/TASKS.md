@@ -82,33 +82,6 @@
     - `npm run typecheck`
     - `npm test`
 
-- [ ] **P2 AUTO-022 - Admin audit timeline event gorunurlugunu rozetlesin**
-  - Lane: Product Evolution
-  - Domain: Admin audit trail & customer visibility safety
-  - Fingerprint: `admin-operations|work-order-audit-timeline|customer-visible-events-unbadged|visibility-badges-for-audit-events`
-  - Business impact: 3/5
-  - User impact: 2/5
-  - Admin impact: 4/5
-  - Strategic fit: 4/5
-  - Confidence: 5/5
-  - Effort: 1/5
-  - Risk: 1/5
-  - Evidence: `src/app/admin/requests/[id]/WorkOrderDetailClient.tsx:69` includes `customer_visible` on each work-order event; `src/app/admin/requests/[id]/WorkOrderDetailClient.tsx:553-561` renders the audit timeline with event type, date and message but no visible distinction between customer-visible and internal-only events.
-  - Product value: Admins can quickly understand which timeline events are safe/customer-visible versus internal-only, reducing disclosure mistakes while reviewing request history.
-  - Scope: Add a compact visibility badge to each admin work-order audit event using the existing `event.customer_visible` boolean. Keep event messages, ordering, API shape, customer APIs and internal note visibility unchanged.
-  - Acceptance criteria:
-    - Customer-visible audit events are marked with a clear customer-visible badge.
-    - Internal-only audit events are marked separately or clearly distinguishable without exposing hidden/internal payload details.
-    - Empty audit state and fallback read-only behavior remain unchanged.
-    - No `old_value`, `new_value`, metadata internals, risk flags, private paths, hidden customer messages or admin-only notes are exposed.
-    - Event cards remain readable on mobile and desktop.
-  - Validation:
-    - `.\node_modules\.bin\tsx.cmd --test tests\admin-work-orders.test.ts`
-    - `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts`
-    - `npm run lint`
-    - `npm run typecheck`
-    - `npm test`
-
 ## In Progress
 
 ## Blocked
@@ -142,6 +115,18 @@ Kabul kriterleri:
 Dogrulama: Diff incelemesi, `npm run lint`, `npm run typecheck`.
 
 ## Done
+
+### AUTO-022 [P2] Admin audit timeline event gorunurlugunu rozetlesin
+
+Durum: Done
+
+Fingerprint: `admin-operations|work-order-audit-timeline|customer-visible-events-unbadged|visibility-badges-for-audit-events`
+
+Kapsam: Admin work-order audit timeline kartlarina mevcut `event.customer_visible` boolean'ini kullanan kompakt gorunurluk rozeti eklendi.
+
+Sonuc: Customer-visible eventler `Customer-visible`, internal-only eventler `Internal-only` olarak ayriliyor. Event tipi, tarih, mesaj, siralama, API shape, customer API'leri, internal note gorunurlugu ve fallback empty/read-only davranislari korunur. `old_value`, `new_value`, metadata, risk flag, private path, hidden customer message veya admin-only note payload'i audit kartlarinda aciga cikarilmadi.
+
+Dogrulama: `.\node_modules\.bin\tsx.cmd --test tests\admin-work-orders.test.ts` PASS (26/26); `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (17/17); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (246/246); `git diff --check` PASS (yalniz CRLF uyarilari). `npm run build` bilinen restricted-network Google Fonts / Next env yukleme riski nedeniyle calistirilmadi.
 
 ### AUTO-021 [P2] Admin request listesi musteri ek dosya sinyalini gostersin
 
