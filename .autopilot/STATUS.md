@@ -2,6 +2,22 @@
 
 Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
+## 2026-07-12 planner run V4 CUSTOMER FLOW AUDIT
+
+- Gorev: MG AI Operating System V4 planner pass; planlama disinda uygulama kodu degistirilmedi.
+- Repo sinifi: `.autopilot/PROJECT.md` ve route yapisi bu repository'nin `file.mgautotech.de` ECU file service SaaS platformu oldugunu dogruluyor. File-platform V4 constitution uygulandi; ortak guvenlik sinirlari ve MG AutoTech ticari/SEO dogruluk sinirlari korundu.
+- Okunan kaynaklar: V4 package constitution dosyalari (`common/*`, `mgautotech/*`, `file-platform/*`), `AGENTS.md`, `.autopilot/constitution/*`, `.autopilot/PROJECT.md`, ROADMAP, INBOX, FEATURE_PROPOSALS, TASKS, TASK_HISTORY, PLANNER_STATE, PRODUCT_SCORECARD, STATUS, kok ve desktop `package.json`, mevcut Git durumu, son 100 commit, ilgili dashboard/order/new-request route'lari, `DashboardClient`, `ui-ux-safety` testi ve docs/i18n referanslari.
+- INBOX sonucu: `New requests` bos; yeni owner istegi yok. Aktif `MILESTONE-20260712-PRODUCT-EVOLUTION` devam ediyor.
+- Duplicate kontrolu: ROADMAP, INBOX, FEATURE_PROPOSALS, TASKS, TASK_HISTORY, STATUS ve son 100 commit icinde `action-required-statuses-hidden-in-active-orders` veya `manual-vehicle-copy-without-form-path` fingerprint/intent'i bulunmadi. `AUTO-013` yalniz order-detail timeline icin tutuldu; dashboard/archive discoverability ayri kapsam olarak degerlendirildi.
+- Evidence kontrolu: `src/components/dashboard/DashboardClient.tsx:177-187` `customer_info_needed` durumunu ayri customer aksiyon sinyali olarak saymiyor; `src/app/dashboard/orders/page.tsx:37-45` view seti action-needed view icermiyor ve `src/app/dashboard/orders/page.tsx:94-101` ilgili statuslari Active Orders icine gomuyor. `src/app/new-request/page.tsx:752-756` manuel arac fallback mesajini veriyor; `src/app/new-request/page.tsx:1226-1263` sadece katalog select'leri sunuyor; `src/app/new-request/page.tsx:971-973` katalogdan gelen brand/model/engine adlarini zorunlu tutuyor; `src/lib/howItWorksI18n.ts:88` unlisted vehicle icin manuel bilgi vaadi iceriyor.
+- Audited domains: Responsive UX; Reliability / request intake.
+- Eklenen Ready gorevler: `AUTO-014` musteri paneli aksiyon gereken siparisleri ayri gostersin; `AUTO-015` yeni istek formu katalog yokken manuel arac bilgisi kabul etsin.
+- Ready sayisi: 5 (`AUTO-007`, `AUTO-008`, `AUTO-013`, `AUTO-014`, `AUTO-015`).
+- Degisen dosyalar: `.autopilot/ROADMAP.md`, `.autopilot/TASKS.md`, `.autopilot/PLANNER_STATE.json`, `.autopilot/STATUS.md`, `.autopilot/runtime/planner-result.json`.
+- Calistirilan kontroller: V4 ve repo constitution dosyalari `Get-Content` ile okundu; `git status --short --branch`; `git log -100 --pretty=format:"%h %ad %s" --date=short`; package script incelemesi; route/test/doc kanit aramalari PowerShell `Get-ChildItem` / `Select-String` ile yapildi (`rg` ortamda yok); duplicate aramalari; `.autopilot/PLANNER_STATE.json` ve `.autopilot/runtime/planner-result.json` `ConvertFrom-Json` PASS; heading-based Ready sayimi 5 PASS; `git diff --name-only` yalniz izinli planner dosyalarini gosterdi; `git check-ignore -v .autopilot/runtime/planner-result.json` PASS; `git diff --check` PASS (yalniz CRLF uyarilari).
+- Calistirilmayan kontroller: Planlama disinda uygulama kodu degismedigi icin `npm run lint`, `npm run typecheck`, `npm test` ve `npm run build` calistirilmadi. `npm run build` icin bilinen restricted-network Google Fonts riski devam ediyor; `.env*`, live service, SQL, smoke ve scraper komutlari calistirilmadi.
+- Kalan risk: Ready kuyrugundaki product-evolution isleri uygulanana kadar musterinin aksiyon gereken siparisleri liste uzerinden kacirmasi ve katalog yokken yeni istek akisini tamamlayamamasi devam eder. Production deploy, live migration, fiyat/hukuki metin, real customer data ve yeni dependency sinirlari korunmalidir.
+
 ## 2026-07-12 worker run AUTO-006
 
 - Gorev: `src/proxy.ts` locale davranisi icin unit test ekle.

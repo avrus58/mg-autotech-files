@@ -12,8 +12,13 @@
   - Musteri order detayinda status timeline ve siradaki adim netligi.
   - Admin request control center icinde review kuyrugu dogrulugu.
   - Admin work-order fallback/error modlarinda yaniltici aksiyonlari engelleme.
+- Current planned slices:
+  - Musteri paneli ve siparis arsivi, `customer_info_needed` durumundaki isleri aksiyon gereken isler olarak ayri gostersin.
+  - Yeni istek formu, arac katalogu yuklenemediginde veya arac listede olmadiginda mevcut string alanlarla manuel arac bilgisi alabilsin.
 - Success signals:
   - Musteri, talebin gercek durumunu ve kendi aksiyon gereksinimini detay ekraninda ayri gorebilir.
+  - Musteri, aksiyon bekleyen siparisi liste veya dashboard uzerinden hizlica bulabilir.
+  - Katalog kapsami veya gecici katalog hatasi, guvenli manuel talep olusturmayi tamamen engellemez.
   - Admin, payment/QC/delivery review sinyallerini kacirmadan filtreleyebilir.
   - Migration/fallback durumlarinda mutasyon aksiyonlari read-only davranir ve hata yerine acik mesaj verir.
 

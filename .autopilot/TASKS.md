@@ -48,6 +48,58 @@ Dogrulama: Markdown diff incelemesi, `npm run lint`.
     - `npm run typecheck`
     - `npm test`
 
+- [ ] **P2 AUTO-014 - Musteri paneli aksiyon gereken siparisleri ayri gostersin**
+  - Lane: Product Evolution
+  - Domain: Customer experience & request lifecycle
+  - Fingerprint: `customer-experience|customer-dashboard-orders|action-required-statuses-hidden-in-active-orders|needs-response-surface`
+  - Business impact: 3/5
+  - User impact: 4/5
+  - Admin impact: 2/5
+  - Strategic fit: 4/5
+  - Confidence: 5/5
+  - Effort: 2/5
+  - Risk: 2/5
+  - Evidence: `src/components/dashboard/DashboardClient.tsx:177-187` pending/progress dashboard counts only include `new_request`, `file_check` and `in_progress`; `customer_info_needed` is not surfaced as its own customer action signal. `src/app/dashboard/orders/page.tsx:37-45` has only `active`, `completed`, `cancelled`, `all` views, while `src/app/dashboard/orders/page.tsx:94-101` folds `customer_info_needed` and `revision` into Active Orders. Existing `AUTO-013` covers the order detail timeline only, not dashboard/archive discoverability.
+  - Product value: Customers can find requests that need their response without opening every active order, reducing support follow-up and stalled jobs.
+  - Scope: Add a small customer-facing "Needs response" / action-needed surface using existing order status data in the dashboard and/or orders archive. Keep revision states clear without implying customer action when the revision is already waiting for MG AutoTech review.
+  - Acceptance criteria:
+    - `customer_info_needed` orders are counted or filtered separately from generic active/pending work.
+    - The orders archive can show the actionable subset directly from a tab/link/query state.
+    - Existing Active, Completed, Cancelled and All views continue to work.
+    - No admin-only notes, private paths, signed URLs, hashes or internal quality data are exposed.
+    - Mobile and desktop layouts keep status labels and cards readable without overflow.
+  - Validation:
+    - `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts`
+    - `npm run lint`
+    - `npm run typecheck`
+    - `npm test`
+
+- [ ] **P1 AUTO-015 - Yeni istek formu katalog yokken manuel arac bilgisi kabul etsin**
+  - Lane: Product Evolution
+  - Domain: Customer request intake reliability
+  - Fingerprint: `customer-experience|new-request-vehicle-intake|manual-vehicle-copy-without-form-path|manual-catalog-fallback`
+  - Business impact: 4/5
+  - User impact: 4/5
+  - Admin impact: 3/5
+  - Strategic fit: 5/5
+  - Confidence: 5/5
+  - Effort: 3/5
+  - Risk: 2/5
+  - Evidence: `src/app/new-request/page.tsx:752-756` tells the customer "You can still submit the request with manual vehicle details" when the vehicle catalog cannot be loaded, but the UI only renders catalog `SelectBox` controls for brand/model/engine at `src/app/new-request/page.tsx:1226-1263`. Submit validation still requires `selectedBrandName`, `selectedModelName` and `selectedEngineName` from catalog selections at `src/app/new-request/page.tsx:971-973`. Public workflow copy also says unlisted vehicles can use manual details in `src/lib/howItWorksI18n.ts:88`.
+  - Product value: Customers with unlisted vehicles or temporary catalog loading failures can still create a complete request instead of being blocked by a misleading fallback message.
+  - Scope: Add a narrow manual vehicle detail fallback to the existing new-request form using the current order RPC string fields. Do not change vehicle catalog data, pricing, credit policy, database schema or service claims.
+  - Acceptance criteria:
+    - A customer can intentionally switch to manual vehicle details or proceed when catalog loading fails.
+    - Manual brand, model and engine values satisfy the existing request validation and summary.
+    - Catalog selection remains the default and keeps the current vehicle intelligence behavior when data is available.
+    - Manual fallback values are clearly marked as customer-provided/unverified in UI copy without inventing support coverage.
+    - File upload, credit validation and private storage behavior remain unchanged.
+  - Validation:
+    - `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts`
+    - `npm run lint`
+    - `npm run typecheck`
+    - `npm test`
+
 ## In Progress
 
 ## Blocked
