@@ -82,6 +82,86 @@
     - `npm run typecheck`
     - `npm test`
 
+- [ ] **P2 AUTO-020 - Musteri ek dosya yuklemesi asamalari acik geri bildirim versin**
+  - Lane: Product Evolution
+  - Domain: Customer additional upload experience & retry clarity
+  - Fingerprint: `customer-experience|order-detail-additional-upload|single-generic-uploading-state|phase-aware-upload-feedback`
+  - Business impact: 3/5
+  - User impact: 4/5
+  - Admin impact: 3/5
+  - Strategic fit: 4/5
+  - Confidence: 5/5
+  - Effort: 2/5
+  - Risk: 2/5
+  - Evidence: `src/app/dashboard/orders/[id]/page.tsx:456-516` runs the additional upload flow through prepare, Supabase Storage upload and finalize steps, but tracks only the boolean `additionalUploading`; `src/app/dashboard/orders/[id]/page.tsx:793-797` shows the single generic label "Uploading additional file..." for the whole flow. The product docs at `docs/customer-file-upload-assistant.md:129-137` describe upload phases and retry-safe wording as important customer expectations.
+  - Product value: Customers asked for another read, log or support file can see whether the upload is preparing, transferring or verifying, reducing repeat attempts and support uncertainty during a sensitive file action.
+  - Scope: Add local phase-aware feedback for the existing customer order detail additional-upload flow. Keep the current prepare/upload/finalize APIs, one-file 32 MB limit, private storage bucket, permission toggle behavior and success state unchanged.
+  - Acceptance criteria:
+    - Additional upload UI shows distinct customer-safe phases for preparing upload, uploading file and verifying/saving the upload.
+    - Errors in prepare, storage upload or finalize reset the phase and leave the customer able to retry without changing the selected order data incorrectly.
+    - Success still appends the returned upload entry, disables the one-time upload permission locally and shows the existing uploaded-file list.
+    - No raw storage path, signed URL, binary content, hash, secret, payment data, admin-only note or live service operation is exposed.
+    - Mobile and desktop text remains readable without overflow.
+  - Validation:
+    - `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts`
+    - `npm run lint`
+    - `npm run typecheck`
+    - `npm test`
+
+- [ ] **P2 AUTO-021 - Admin request listesi musteri ek dosya sinyalini gostersin**
+  - Lane: Product Evolution
+  - Domain: Admin request queue & customer-supplied file visibility
+  - Fingerprint: `admin-operations|request-control-center|customer-upload-indicator-hidden|show-supporting-file-signal`
+  - Business impact: 3/5
+  - User impact: 2/5
+  - Admin impact: 4/5
+  - Strategic fit: 4/5
+  - Confidence: 5/5
+  - Effort: 1/5
+  - Risk: 1/5
+  - Evidence: `src/lib/workOrders/server.ts:337-340` already computes `indicators.hasCustomerUpload` from `order.customer_uploads`; `src/app/admin/requests/AdminRequestsClient.tsx:289-292` renders only ORI, MOD and AI indicators in the request control center row, so a customer-supplied supporting file is hidden until the admin opens the detail page.
+  - Product value: Admin can spot requests with a newly uploaded supporting file directly in the daily queue, reducing missed customer responses and unnecessary detail-page checks.
+  - Scope: Surface the existing boolean `hasCustomerUpload` as a compact, non-sensitive indicator in the admin request control center list. Do not add a new query, expose file names/paths, mutate uploads, alter filters or change payment/credit behavior.
+  - Acceptance criteria:
+    - Request rows show a clear supporting-file/customer-upload indicator when `item.indicators.hasCustomerUpload` is true.
+    - Rows without customer uploads keep the existing ORI/MOD/AI indicator layout stable.
+    - No customer file name, storage path, signed URL, hash or binary metadata is exposed in the list.
+    - The indicator remains readable on mobile and desktop layouts.
+    - Existing search, status filter, priority filter and review-only behavior remain unchanged.
+  - Validation:
+    - `.\node_modules\.bin\tsx.cmd --test tests\admin-work-orders.test.ts`
+    - `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts`
+    - `npm run lint`
+    - `npm run typecheck`
+    - `npm test`
+
+- [ ] **P2 AUTO-022 - Admin audit timeline event gorunurlugunu rozetlesin**
+  - Lane: Product Evolution
+  - Domain: Admin audit trail & customer visibility safety
+  - Fingerprint: `admin-operations|work-order-audit-timeline|customer-visible-events-unbadged|visibility-badges-for-audit-events`
+  - Business impact: 3/5
+  - User impact: 2/5
+  - Admin impact: 4/5
+  - Strategic fit: 4/5
+  - Confidence: 5/5
+  - Effort: 1/5
+  - Risk: 1/5
+  - Evidence: `src/app/admin/requests/[id]/WorkOrderDetailClient.tsx:69` includes `customer_visible` on each work-order event; `src/app/admin/requests/[id]/WorkOrderDetailClient.tsx:553-561` renders the audit timeline with event type, date and message but no visible distinction between customer-visible and internal-only events.
+  - Product value: Admins can quickly understand which timeline events are safe/customer-visible versus internal-only, reducing disclosure mistakes while reviewing request history.
+  - Scope: Add a compact visibility badge to each admin work-order audit event using the existing `event.customer_visible` boolean. Keep event messages, ordering, API shape, customer APIs and internal note visibility unchanged.
+  - Acceptance criteria:
+    - Customer-visible audit events are marked with a clear customer-visible badge.
+    - Internal-only audit events are marked separately or clearly distinguishable without exposing hidden/internal payload details.
+    - Empty audit state and fallback read-only behavior remain unchanged.
+    - No `old_value`, `new_value`, metadata internals, risk flags, private paths, hidden customer messages or admin-only notes are exposed.
+    - Event cards remain readable on mobile and desktop.
+  - Validation:
+    - `.\node_modules\.bin\tsx.cmd --test tests\admin-work-orders.test.ts`
+    - `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts`
+    - `npm run lint`
+    - `npm run typecheck`
+    - `npm test`
+
 ## In Progress
 
 ## Blocked

@@ -2,6 +2,24 @@
 
 Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
+## 2026-07-12 planner run V4 UPLOAD AND AUDIT VISIBILITY
+
+- Baslangic: 2026-07-12 18:42:00 +01:00; bitis: 2026-07-12 19:07:43 +01:00.
+- Gorev: MG AI Operating System V4 planner pass; planlama disinda uygulama kodu degistirilmedi.
+- Repo sinifi: `.autopilot/PROJECT.md`, route yapisi ve mevcut urun kapsami bu repository'nin `file.mgautotech.de` ECU file service SaaS platformu oldugunu dogruluyor. File-platform V4 constitution uygulandi; mgautotech.de ticari/SEO sinirlari yalniz guardrail olarak korundu.
+- Okunan kaynaklar: V4 package constitution dosyalari (`common/*`, `mgautotech/*`, `file-platform/*`), `AGENTS.md`, `.autopilot/constitution/*`, `.autopilot/PROJECT.md`, ROADMAP, INBOX, FEATURE_PROPOSALS, TASKS, TASK_HISTORY, PLANNER_STATE, PRODUCT_SCORECARD, STATUS, kok ve desktop `package.json`, mevcut Git durumu, son 100 commit, ilgili customer order detail/additional upload, admin request control center, work-order detail/audit, notification/email, tests ve docs kaynaklari.
+- INBOX sonucu: `New requests` bos; yeni owner istegi yok. Aktif `MILESTONE-20260712-PRODUCT-EVOLUTION` devam ediyor.
+- Portfolio kontrolu: Son tamamlanan isler customer dashboard/profile/order clarity, admin review/fallback ve guvenlik guard alanlarina dagilmis durumda. Ready sayisi 3'e dustugu icin kanitli product-evolution dilimleriyle 6'ya tamamlandi; yalniz test/docs/guard/refactor gorevi uretilmedi.
+- Duplicate kontrolu: ROADMAP, INBOX, FEATURE_PROPOSALS, TASKS, TASK_HISTORY, STATUS ve son 100 commit icinde `order-detail-additional-upload|phase-aware-upload-feedback`, `request-control-center|customer-upload-indicator-hidden` veya `work-order-audit-timeline|visibility-badges-for-audit-events` fingerprint/intent'i bulunmadi. Mevcut `AUTO-012` fallback read-only aksiyonlarini, `AUTO-013` customer timeline state ayrimini ve `AUTO-014` customer action-needed discoverability'yi kapsiyor; yeni gorevler ek dosya upload geri bildirimi, admin liste sinyali ve audit event visibility ayrimi olarak ayri kanita dayaniyor.
+- Evidence kontrolu: `src/app/dashboard/orders/[id]/page.tsx:456-516` ek dosya upload akisini prepare/upload/finalize asamalarindan geciriyor, ancak `src/app/dashboard/orders/[id]/page.tsx:793-797` tek "Uploading additional file..." etiketi kullaniyor. `src/lib/workOrders/server.ts:337-340` `indicators.hasCustomerUpload` hesapliyor, ancak `src/app/admin/requests/AdminRequestsClient.tsx:289-292` listede yalniz ORI/MOD/AI indikatorlerini gosteriyor. `src/app/admin/requests/[id]/WorkOrderDetailClient.tsx:69` eventlerde `customer_visible` alanini tasiyor, ancak `src/app/admin/requests/[id]/WorkOrderDetailClient.tsx:553-561` audit timeline kartlarinda bu gorunurluk rozetlenmiyor.
+- Audited domains: ResponsiveUX; Observability.
+- Eklenen Ready gorevler: `AUTO-020` musteri ek dosya yuklemesi asamalari acik geri bildirim versin; `AUTO-021` admin request listesi musteri ek dosya sinyalini gostersin; `AUTO-022` admin audit timeline event gorunurlugunu rozetlesin.
+- Ready sayisi: 6 (`AUTO-017`, `AUTO-018`, `AUTO-019`, `AUTO-020`, `AUTO-021`, `AUTO-022`).
+- Degisen dosyalar: `.autopilot/ROADMAP.md`, `.autopilot/TASKS.md`, `.autopilot/PLANNER_STATE.json`, `.autopilot/STATUS.md`, `.autopilot/runtime/planner-result.json`.
+- Calistirilan kontroller: zorunlu V4/repo constitution ve memory dosyalari `Get-Content` ile okundu; `git status --short --branch`; `git log -100 --pretty=format:'%h %ad %s' --date=short`; kok ve desktop `package.json` script incelemesi; PowerShell `Select-String` ile kanit ve duplicate aramalari; `.autopilot/PLANNER_STATE.json` ve `.autopilot/runtime/planner-result.json` `ConvertFrom-Json` PASS; Ready total sayimi 6 PASS; `git check-ignore -v .autopilot/runtime/planner-result.json` PASS; `git diff --check` PASS (yalniz CRLF uyarilari).
+- Calistirilmayan kontroller: Planlama disinda uygulama kodu degismedigi icin `npm run lint`, `npm run typecheck`, `npm test` ve `npm run build` calistirilmadi. `.env*`, live service, SQL, smoke, scraper, desktop build/package ve normal env kontrolleri calistirilmadi.
+- Kalan risk: Ready kuyrugundaki product-evolution isleri uygulanana kadar customer additional upload yalniz generic uploading etiketi gosterir, admin queue musteri ek dosya sinyalini listede gostermeyebilir ve audit event customer-visible/internal ayrimi detay timeline'inda rozetlenmez. Offline build icin Google Fonts/`next/font/google` owner onayi gerektiren bilinen risk devam eder.
+
 ## 2026-07-12 worker run AUTO-016
 
 - Baslangic: 2026-07-12 18:20:00 +01:00; bitis: 2026-07-12 18:37:54 +01:00.

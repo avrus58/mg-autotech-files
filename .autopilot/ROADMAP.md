@@ -19,6 +19,9 @@
   - Legacy admin notification center `Completed today` metrigi, is gercekten teslim edildigi zamani baz alsin.
   - Musteri dashboard kredi gecmisi, son siparislerden turetilen tahmin yerine `credit_transactions` ledger kaynagindan beslensin.
   - Musteri order detayinda teslim tahmini, yalniz admin tarafindan acik estimate kaydedildiginde spesifik sure etiketi gostersin.
+  - Musteri order detayinda ek dosya yukleme sureci prepare/upload/verify asamalarini acik gostersin.
+  - Admin request control center, musteri tarafindan yuklenen ek destek dosyasi sinyalini listede gostersin.
+  - Admin work-order audit timeline, customer-visible ve internal-only eventleri rozetlerle ayirsin.
 - Success signals:
   - Musteri, talebin gercek durumunu ve kendi aksiyon gereksinimini detay ekraninda ayri gorebilir.
   - Musteri, aksiyon bekleyen siparisi liste veya dashboard uzerinden hizlica bulabilir.
@@ -26,8 +29,11 @@
   - Musteri, profil bilgileri eksikken destek veya faturalama gecikmesi yasamadan settings ekranina yonlendirilir.
   - Musteri, dashboard kredi gecmisi ile tam credit ledger arasinda ayni hareket kaynagini gorur.
   - Musteri, kaydedilmemis teslim tahmini icin varsayilan spesifik sure vaadi yerine not-set durumunu gorur.
+  - Musteri, ek dosya yuklerken islemin hangi asamada oldugunu gorur ve hata sonrasi tekrar deneyebilir.
   - Admin, payment/QC/delivery review sinyallerini kacirmadan filtreleyebilir.
   - Admin, gunluk tamamlanan is sinyalini request yaratilis tarihi yerine teslim dosyasi zamanina gore gorur.
+  - Admin, musteri ek dosyasi gelen requestleri liste uzerinden kacirmadan fark eder.
+  - Admin, audit eventinin customer-visible mi internal-only mi oldugunu detay ekraninda hizlica ayirt eder.
   - Migration/fallback durumlarinda mutasyon aksiyonlari read-only davranir ve hata yerine acik mesaj verir.
 
 ## Owner priorities
