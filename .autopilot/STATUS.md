@@ -2,6 +2,19 @@
 
 Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
+## 2026-07-12 planner run PRODUCT EVOLUTION MODE
+
+- Gorev: Portfoy planlamasi ve guvenli gorev kesfi; kullanici talimatina uygun olarak uygulama kodu degistirilmedi.
+- Okunan kaynaklar: `AGENTS.md`, `.autopilot/PROJECT.md`, `.autopilot/ROADMAP.md`, `.autopilot/INBOX.md`, `.autopilot/IMPROVEMENT_AREAS.md`, `.autopilot/TASKS.md`, `.autopilot/TASK_HISTORY.md`, `.autopilot/PLANNER_STATE.json`, `.autopilot/STATUS.md`, kok ve desktop `package.json`, mevcut Git durumu ve son 100 commit ozeti.
+- INBOX sonucu: `MANUAL-20260712-120055` buyuk owner hedefi olarak islendi; `MILESTONE-20260712-PRODUCT-EVOLUTION` aktif roadmap milestone'una tasindi ve INBOX `Planned` altina alindi.
+- Duplicate kontrolu: ROADMAP, TASKS, TASK_HISTORY, STATUS ve son 100 commit incelendi. Yeni gorevler mevcut smoke/scraper/env/docs/test guard islerinin veya onceki genel operasyon commitlerinin aynisi degil; her biri yeni, somut kod kanitina dayaniyor.
+- Audited domains: Responsive UX & product flow; Observability & error handling.
+- Eklenen Ready gorevler: `AUTO-011` admin review filtresi payment/QC sinyallerini kapsasin; `AUTO-012` work-order fallback modunda mutasyon kontrolleri read-only olsun; `AUTO-013` musteri order timeline'i bekleme ve revizyon adimlarini acik gostersin.
+- Degisen dosyalar: `.autopilot/ROADMAP.md`, `.autopilot/INBOX.md`, `.autopilot/TASKS.md`, `.autopilot/PLANNER_STATE.json`, `.autopilot/STATUS.md`, `.autopilot/runtime/planner-result.json`.
+- Calistirilan kontroller: zorunlu dosyalar `Get-Content` ile okundu; `git status --short --branch`; `git log -n 100 --oneline`; kok ve desktop `package.json` script incelemesi; `Select-String` ile admin/musteri UX kanit aramasi; `ConvertFrom-Json` ile planner/runtime JSON parse kontrolu; Ready gorev sayimi 8; `git diff --name-only` yalniz izinli autopilot dosyalarini gosterdi; `git check-ignore -v .autopilot/runtime/planner-result.json` PASS; `git diff --check` PASS (yalniz CRLF uyarilari).
+- Calistirilmayan kontroller: Uygulama kodu degismedigi icin `npm run lint`, `npm run typecheck`, `npm test` ve `npm run build` calistirilmadi. Build icin bilinen restricted-network Google Fonts riski devam ediyor.
+- Kalan risk: Ready kuyrugunda onceki P0/P1 guard isleri ve yeni product-evolution gorevleri henuz uygulanmadi; canli servis, migration, fiyat/hukuki metin ve gercek musteri verisi sinirlari korunmali.
+
 ## Son durum
 
 - Kurulum tarihi: 2026-07-12 (Europe/Berlin)

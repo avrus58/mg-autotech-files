@@ -69,6 +69,60 @@ Kabul kriterleri:
 
 Dogrulama: Markdown diff incelemesi, `npm run lint`.
 
+- [ ] **P1 AUTO-011 - Admin review filtresi payment ve kalite sinyallerini kapsasin**
+  - Domain: Responsive UX & product flow
+  - Fingerprint: `responsive-ux|admin-request-control-center|review-filter-misses-payment-quality-signals|complete-review-queue`
+  - Impact: 4/5
+  - Confidence: 5/5
+  - Effort: 2/5
+  - Evidence: `src/app/admin/requests/AdminRequestsClient.tsx:167` Review only filtresi yalniz `workOrder.admin_status` degerini kontrol ediyor; `src/app/admin/requests/AdminRequestsClient.tsx:177` Needs review metrigi ayni dar kontrolu kullaniyor. Ayni ekranda `payment_review_status` gosteriliyor (`src/app/admin/requests/AdminRequestsClient.tsx:280`) ve tipte `quality_check_status` mevcut (`src/app/admin/requests/AdminRequestsClient.tsx:48-50`).
+  - Scope: Admin request listesinde tek bir review-signal helper'i ile review-only filtresi ve Needs review metrigini payment/QC/delivery blokaj sinyallerini kapsayacak sekilde dar kapsamda guncelle.
+  - Acceptance criteria:
+    - `admin_status` review durumlari mevcut davranisi korur.
+    - `payment_review_status === "requires_review"` ve `quality_check_status` failed/needs_review gibi gercek inceleme gerektiren durumlar Review only sonucuna ve Needs review sayacina girer.
+    - Filtre, arama ve priority secimleriyle birlikte calismaya devam eder.
+    - Odeme, kredi, fiyat veya DB mutasyonu yapilmaz.
+  - Validation:
+    - `npm run lint`
+    - `npm run typecheck`
+    - `npm test`
+
+- [ ] **P1 AUTO-012 - Work-order fallback modunda mutasyon kontrollerini read-only yap**
+  - Domain: Observability & error handling
+  - Fingerprint: `observability|admin-work-order-detail|fallback-mode-actions-still-enabled|read-only-state-with-actionable-feedback`
+  - Impact: 4/5
+  - Confidence: 5/5
+  - Effort: 2/5
+  - Evidence: `src/app/admin/requests/[id]/WorkOrderDetailClient.tsx:386-388` migration eksikken sayfanin read-only fallback oldugunu soyluyor; buna ragmen Start Work (`src/app/admin/requests/[id]/WorkOrderDetailClient.tsx:376`), customer upload toggle (`src/app/admin/requests/[id]/WorkOrderDetailClient.tsx:466-467`), Add note (`src/app/admin/requests/[id]/WorkOrderDetailClient.tsx:512`) ve ActionSelect kontrolleri (`src/app/admin/requests/[id]/WorkOrderDetailClient.tsx:555-561`) migrationReady false iken de tiklanabilir kaliyor.
+  - Scope: `payload.migrationReady === false` durumunda mutation yapan admin kontrollerini disable/read-only hale getir; Refresh ve read-only bilgi panellerini koru.
+  - Acceptance criteria:
+    - Migration fallback modunda status, priority, tuner, payment review, quality, delivery, final file, note ekleme, Start Work ve upload permission mutasyonlari tetiklenemez.
+    - Kullaniciya neden read-only oldugunu aciklayan mevcut banner veya yakin bir inline mesaj korunur.
+    - Migration hazir oldugunda mevcut aksiyon davranislari degismez.
+    - Yeni migration, production DB islemi veya dependency eklenmez.
+  - Validation:
+    - `npm run lint`
+    - `npm run typecheck`
+    - `npm test`
+
+- [ ] **P2 AUTO-013 - Musteri order timeline'i bekleme ve revizyon adimlarini acik gostersin**
+  - Domain: Responsive UX & product flow
+  - Fingerprint: `responsive-ux|customer-order-detail|timeline-collapses-actionable-statuses|clear-next-step-status`
+  - Impact: 3/5
+  - Confidence: 5/5
+  - Effort: 2/5
+  - Evidence: `src/app/dashboard/orders/[id]/page.tsx:171` timeline yalniz `new_request`, `file_check`, `in_progress`, `completed` adimlarindan olusuyor; `src/app/dashboard/orders/[id]/page.tsx:197-199` `revision` statusunu `in_progress`, `customer_info_needed` statusunu `file_check` adimina sikistiriyor. Ayni sayfada current-step metni bu iki statusu ayri ele aliyor (`src/app/dashboard/orders/[id]/page.tsx:831-836`).
+  - Scope: Musteri order detay sayfasinda timeline adimlarini musteriye acik ve guvenli sekilde `customer_info_needed` ve `revision` durumlarini gosterecek bicimde guncelle.
+  - Acceptance criteria:
+    - `customer_info_needed` musteriye aksiyon gerektiren ayri bir bekleme/adim olarak gorunur.
+    - `revision` teslim sonrasi revizyon sureci olarak ayri gorunur ve mevcut revision request paneliyle celismez.
+    - Completed/download davranisi ve private/admin-only bilgi gizliligi korunur.
+    - Mobil/desktop layoutta timeline metinleri tasmaz.
+  - Validation:
+    - `npm run lint`
+    - `npm run typecheck`
+    - `npm test`
+
 ## In Progress
 
 ## Blocked
