@@ -2,6 +2,31 @@
 
 Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
+## 2026-07-12 reviewer run AUTO-017
+
+- Baslangic: 2026-07-12 19:16:00 +01:00; bitis: 2026-07-12 19:20:43 +01:00.
+- Gorev: Mevcut uncommitted AUTO-017 degisikliklerini bagimsiz V4 reviewer olarak incelemek.
+- Sonuc: Accepted. Admin `Completed today` metrigi artik teslim edilen modified file `uploaded_at` zamanini onceleyen `countCompletedToday` helper'i ile hesaplaniyor ve teslim timestamp kaniti yoksa mevcut `created_at` fallback'ini koruyor.
+- Gate sonucu: Gorev gercek admin operasyon degeri tasiyor, duplicate fingerprint bulunmadi, evidence gecerliydi ve degisiklik kapsaminda kaldi. Public/customer/admin veri sinirlari korundu; secret, `.env`, production servis, odeme, migration, gercek musteri verisi, fiyat/hukuki iddia veya mgautotech.de SEO/claim degisikligi tespit edilmedi.
+- Reviewer duzeltmesi: Uygulama kodu icin duzeltme gerekmedi. `.autopilot/runtime/review-result.json` accepted sonucu icin yazildi.
+- Calistirilan kontroller: `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (17/17); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (244/244); `git diff --check` PASS (yalniz CRLF uyarilari).
+- Calistirilmayan kontroller: `npm run build` bilinen restricted-network Google Fonts / Next env yukleme riski nedeniyle calistirilmadi. Live service, SQL, smoke, scraper, desktop build/package ve normal env kontrolleri calistirilmadi.
+- Kalan risk: Offline build icin Google Fonts/`next/font/google` owner onayi bekleyen bilinen risk devam eder; Ready kuyrugundaki AUTO-018-AUTO-022 ayri kapsamda kalir.
+
+## 2026-07-12 worker run AUTO-017
+
+- Baslangic: 2026-07-12 19:08:00 +01:00; bitis: 2026-07-12 19:15:12 +01:00.
+- Gorev: Admin completed-today metrigi teslim zamanini baz alsin.
+- Fingerprint: `admin-operations|legacy-admin-notification-center|completed-today-uses-created-at|delivery-time-completion-metric`.
+- Sonuc: Done. Legacy admin dashboard `Completed today` metrigi teslim dosyasi zamanini onceleyerek gunluk tamamlanan is sinyalini request yaratilis tarihinden ayirdi.
+- Duplicate/evidence kontrolu: V4 package constitution dosyalari, `.autopilot/constitution/*`, AGENTS, PROJECT, ROADMAP, INBOX, FEATURE_PROPOSALS, TASKS, TASK_HISTORY, PRODUCT_SCORECARD, STATUS, package scriptleri, mevcut Git durumu ve son 100 commit incelendi. Ayni fingerprint tamamlanmis gorunmedi; evidence halen gecerliydi. `src/app/admin/page.tsx` sayimi `created_at` uzerinden yapiyordu; `complete-delivery` route'u teslim dosyasi zamanini `modified_files.uploaded_at` icinde sakliyordu.
+- Degisen dosyalar: `src/lib/adminDashboardMetrics.ts`, `src/app/admin/page.tsx`, `tests/ui-ux-safety.test.ts`, `.autopilot/TASKS.md`, `.autopilot/TASK_HISTORY.md`, `.autopilot/STATUS.md`, `.autopilot/runtime/last-result.json`.
+- Uygulama sonucu: `countCompletedToday` helper'i Europe/Berlin gun anahtariyla completed orderlari sayar; en son gecerli `modified_files.uploaded_at` varsa onu kullanir, teslim timestamp kaniti yoksa `created_at` fallback'ini korur. Admin page stats hesaplamasi bu helper'i kullanir.
+- Guvenlik/UI kontrolu: Yeni dependency, production servis cagrisi, migration, deploy, `.env`/secret, gercek musteri verisi, fiyat/hukuki iddia, kredi/odeme kurali, signed URL, hash, private storage path veya admin/customer veri siniri degisikligi yapilmadi. UI layout classlari ve status filtreleri degistirilmedi.
+- Calistirilan kontroller: `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (17/17); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (244/244); `git diff --check` PASS (yalniz CRLF uyarilari); diff review PASS.
+- Calistirilmayan kontroller: `npm run build` bu repoda bilinen restricted-network Google Fonts / Next env yukleme riski nedeniyle calistirilmadi. Live service, SQL, smoke, scraper, desktop build/package ve normal env kontrolleri calistirilmadi.
+- Kalan risk: Dashboard credit ledger preview, explicit delivery estimate, customer additional upload phase feedback, admin customer-upload indicator ve audit event visibility Ready gorevleri ayri kapsamda devam eder. Offline build icin Google Fonts/`next/font/google` owner onayi bekleyen bilinen risk devam eder.
+
 ## 2026-07-12 planner run V4 UPLOAD AND AUDIT VISIBILITY
 
 - Baslangic: 2026-07-12 18:42:00 +01:00; bitis: 2026-07-12 19:07:43 +01:00.

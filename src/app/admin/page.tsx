@@ -13,6 +13,7 @@ import {
   isStaffMember,
   type StaffAccess,
 } from "@/lib/staffPermissions";
+import { countCompletedToday } from "@/lib/adminDashboardMetrics";
 import {
   ArrowLeft,
   BadgeEuro,
@@ -607,22 +608,7 @@ export default function AdminPage() {
     const revisionRequested = orders.filter((order) => order.status === "revision").length;
     const customerInfoNeeded = orders.filter((order) => order.status === "customer_info_needed").length;
     const completed = orders.filter((order) => order.status === "completed").length;
-    const todayKey = new Intl.DateTimeFormat("en-CA", {
-      timeZone: "Europe/Berlin",
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-    }).format(new Date());
-    const completedToday = orders.filter((order) => {
-      if (order.status !== "completed" || !order.created_at) return false;
-      const orderDay = new Intl.DateTimeFormat("en-CA", {
-        timeZone: "Europe/Berlin",
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-      }).format(new Date(order.created_at));
-      return orderDay === todayKey;
-    }).length;
+    const completedToday = countCompletedToday(orders);
     const withFile = orders.filter((order) => Boolean(order.original_file_path)).length;
     const totalCredits = orders.reduce((sum, order) => sum + Number(order.credits_required ?? 0), 0);
     const suspendedCustomers = customers.filter((customer) => customer.account_status === "suspended" || customer.account_status === "blocked").length;

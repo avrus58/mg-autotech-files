@@ -4,32 +4,6 @@
 
 ## Ready
 
-- [ ] **P2 AUTO-017 - Admin completed-today metrigi teslim zamanini baz alsin**
-  - Lane: Product Evolution
-  - Domain: Admin operational reporting
-  - Fingerprint: `admin-operations|legacy-admin-notification-center|completed-today-uses-created-at|delivery-time-completion-metric`
-  - Business impact: 3/5
-  - User impact: 1/5
-  - Admin impact: 4/5
-  - Strategic fit: 4/5
-  - Confidence: 5/5
-  - Effort: 2/5
-  - Risk: 2/5
-  - Evidence: `src/app/admin/page.tsx:616-624` computes `completedToday` from `order.created_at` even when the label says completed today; `src/app/api/admin/orders/[id]/complete-delivery/route.ts:76-93` records each delivered modified file with `uploaded_at` in `modified_files` while setting `status: "completed"`. The `Order` type in `src/app/admin/page.tsx:79-85` includes `modified_files` and `created_at` but no explicit `completed_at`.
-  - Product value: Admin operational focus reflects work actually delivered today instead of requests created today, reducing misleading daily completion signals.
-  - Scope: In the legacy admin dashboard notification center metric, derive completed-today from the latest delivered modified-file `uploaded_at` when available, with a conservative fallback that preserves current behavior only when delivery timestamp evidence is missing.
-  - Acceptance criteria:
-    - Completed orders with a modified file uploaded today are counted even if the request was created earlier.
-    - Completed orders created today but delivered on another day are not incorrectly counted when `modified_files.uploaded_at` exists.
-    - Orders without `modified_files` keep a safe fallback and do not crash the dashboard.
-    - No database migration, production data change, pricing/payment rule or live service call is introduced.
-    - The operational focus cards and status filters keep existing layout behavior on mobile and desktop.
-  - Validation:
-    - `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts`
-    - `npm run lint`
-    - `npm run typecheck`
-    - `npm test`
-
 - [ ] **P2 AUTO-018 - Musteri dashboard kredi gecmisi gercek ledger'dan beslensin**
   - Lane: Product Evolution
   - Domain: Customer credit visibility & billing trust
@@ -195,6 +169,18 @@ Kabul kriterleri:
 Dogrulama: Diff incelemesi, `npm run lint`, `npm run typecheck`.
 
 ## Done
+
+### AUTO-017 [P2] Admin completed-today metrigi teslim zamanini baz alsin
+
+Durum: Done
+
+Fingerprint: `admin-operations|legacy-admin-notification-center|completed-today-uses-created-at|delivery-time-completion-metric`
+
+Kapsam: Legacy admin dashboard `Completed today` metrigi, teslim edilen modified file `uploaded_at` zamanini onceleyen testli bir helper'a tasindi.
+
+Sonuc: Completed orders artik teslim dosyasinin en son `modified_files.uploaded_at` gunu bugunse sayilir. Teslim zaman kaniti yoksa mevcut `created_at` fallback'i korunur; completed olmayan orderlar ve gecersiz tarihli teslim kayitlari sayimi bozmaz. DB migration, production veri degisikligi, odeme/fiyat kurali veya live servis cagrisi yapilmadi.
+
+Dogrulama: `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (17/17); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (244/244); `git diff --check` PASS (yalniz CRLF uyarilari). `npm run build` bilinen restricted-network Google Fonts / Next env yukleme riski nedeniyle calistirilmadi.
 
 ### AUTO-016 [P2] Musteri dashboard'u eksik profil bilgilerini tamamlatmaya yoneltsin
 

@@ -8,6 +8,7 @@ import {
   isAdvancedRequestServiceCategory,
   requestFlowSteps,
 } from "../src/lib/requestFlow";
+import { countCompletedToday } from "../src/lib/adminDashboardMetrics";
 
 function readProjectFile(...segments: string[]) {
   return readFileSync(resolve(process.cwd(), ...segments), "utf8");
@@ -125,6 +126,47 @@ test("customer dashboard surfaces missing profile details without changing setti
   assert.match(settings, /\.update\(\{\s*[\s\S]*full_name: fullName\.trim\(\) \|\| null/);
   assert.match(settings, /invoice_email: invoiceEmail\.trim\(\) \|\| email/);
   assert.match(settings, /preferred_contact: preferredContact/);
+});
+
+test("admin completed-today metric uses delivered file timestamps before request creation", () => {
+  const adminPage = readProjectFile("src", "app", "admin", "page.tsx");
+
+  assert.match(adminPage, /countCompletedToday\(orders\)/);
+  assert.doesNotMatch(adminPage, /order\.created_at\)[\s\S]*return orderDay === todayKey/);
+
+  assert.equal(
+    countCompletedToday(
+      [
+        {
+          status: "completed",
+          created_at: "2026-07-10T09:00:00.000Z",
+          modified_files: [{ uploaded_at: "2026-07-12T08:00:00.000Z" }],
+        },
+        {
+          status: "completed",
+          created_at: "2026-07-12T09:00:00.000Z",
+          modified_files: [{ uploaded_at: "2026-07-11T18:00:00.000Z" }],
+        },
+        {
+          status: "completed",
+          created_at: "2026-07-12T10:00:00.000Z",
+          modified_files: [],
+        },
+        {
+          status: "completed",
+          created_at: "2026-07-12T11:00:00.000Z",
+          modified_files: null,
+        },
+        {
+          status: "in_progress",
+          created_at: "2026-07-12T12:00:00.000Z",
+          modified_files: [{ uploaded_at: "2026-07-12T12:30:00.000Z" }],
+        },
+      ],
+      new Date("2026-07-12T12:00:00.000Z")
+    ),
+    3
+  );
 });
 
 test("customer File Expert UI renders only customer-safe report details", () => {
