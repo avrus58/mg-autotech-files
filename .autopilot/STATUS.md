@@ -2,6 +2,22 @@
 
 Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
+## 2026-07-12 planner run V4 CREDIT AND DELIVERY CLARITY
+
+- Gorev: MG AI Operating System V4 planner pass; planlama disinda uygulama kodu degistirilmedi.
+- Repo sinifi: `.autopilot/PROJECT.md`, route yapisi ve mevcut urun kapsami bu repository'nin `file.mgautotech.de` ECU file service SaaS platformu oldugunu dogruluyor. File-platform V4 constitution uygulandi; MG AutoTech ticari/SEO dogruluk sinirlari korundu.
+- Okunan kaynaklar: V4 package constitution dosyalari (`common/*`, `mgautotech/*`, `file-platform/*`), `AGENTS.md`, `.autopilot/constitution/*`, `.autopilot/PROJECT.md`, ROADMAP, INBOX, FEATURE_PROPOSALS, TASKS, TASK_HISTORY, PLANNER_STATE, PRODUCT_SCORECARD, STATUS, kok ve desktop `package.json`, mevcut Git durumu, son 100 commit, ilgili customer dashboard/credits/order-detail, admin delivery, work-order route/test ve docs kaynaklari.
+- INBOX sonucu: `New requests` bos; yeni owner istegi yok. Aktif `MILESTONE-20260712-PRODUCT-EVOLUTION` devam ediyor.
+- Duplicate kontrolu: ROADMAP, INBOX, FEATURE_PROPOSALS, TASKS, TASK_HISTORY, STATUS ve son 100 commit icinde `dashboard-credit-history-preview|orders-used-as-credit-ledger` veya `order-detail-estimated-delivery|null-estimate-shows-default-30min` fingerprint/intent'i bulunmadi. Onceki credit/payment commitleri ledger ve checkout altyapisini kuruyor; dashboard preview'in siparisten turetilmesi ve null estimate'in customer-facing 30 min fallback'i ayri kanita dayaniyor.
+- Evidence kontrolu: `src/components/dashboard/DashboardClient.tsx:153-160` son 5 siparisi yukluyor; `src/components/dashboard/DashboardClient.tsx:278-282` credit history preview'i `orders.credits_required` ile turetiyor; `src/app/dashboard/credits/history/page.tsx:109-118` gercek `credit_transactions` ledger'ini yukluyor. `src/app/dashboard/orders/[id]/page.tsx:54-55` estimate alanlarini null kabul ediyor; `src/app/dashboard/orders/[id]/page.tsx:159-166` null/unknown estimate'i "Usually around 30 min" fallback'ine dusuruyor; `src/app/dashboard/orders/[id]/page.tsx:840-846` bunu customer-facing Estimated Delivery kartinda gosteriyor.
+- Audited domains: DataIntegrity; ResponsiveUX.
+- Eklenen Ready gorevler: `AUTO-018` musteri dashboard kredi gecmisi gercek ledger'dan beslensin; `AUTO-019` musteri order teslim tahmini yalniz acik estimate varsa sure gostersin.
+- Ready sayisi: 5 (`AUTO-014`, `AUTO-016`, `AUTO-017`, `AUTO-018`, `AUTO-019`).
+- Degisen dosyalar: `.autopilot/ROADMAP.md`, `.autopilot/TASKS.md`, `.autopilot/PLANNER_STATE.json`, `.autopilot/STATUS.md`, `.autopilot/runtime/planner-result.json`.
+- Calistirilan kontroller: zorunlu V4/repo constitution ve memory dosyalari `Get-Content` ile okundu; `git status --short --branch`; `git log -100 --pretty=format:"%h %ad %s" --date=short`; kok ve desktop `package.json` script incelemesi; PowerShell `Select-String` ile kanit ve duplicate aramalari; `.autopilot/PLANNER_STATE.json` ve `.autopilot/runtime/planner-result.json` `ConvertFrom-Json` PASS; Ready total sayimi 5 PASS; `git diff --name-only` yalniz izinli planner dosyalarini gosterdi; `git check-ignore -v .autopilot/runtime/planner-result.json` PASS; `git diff --check` PASS (yalniz CRLF uyarilari).
+- Calistirilmayan kontroller: Planlama disinda uygulama kodu degismedigi icin `npm run lint`, `npm run typecheck`, `npm test` ve `npm run build` calistirilmadi. `.env*`, live service, SQL, smoke, scraper, desktop build/package ve normal env kontrolleri calistirilmadi.
+- Kalan risk: Ready kuyrugundaki product-evolution isleri uygulanana kadar dashboard credit preview tam ledger kaynagini kullanmaz ve customer order detail null delivery estimate icin default 30 min etiketi gosterebilir. Offline build icin Google Fonts/`next/font/google` owner onayi gerektiren bilinen risk devam eder.
+
 ## 2026-07-12 worker run AUTO-013
 
 - Baslangic: 2026-07-12 17:16:00 +01:00; bitis: 2026-07-12 17:40:30 +01:00.

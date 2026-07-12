@@ -82,6 +82,58 @@
     - `npm run typecheck`
     - `npm test`
 
+- [ ] **P2 AUTO-018 - Musteri dashboard kredi gecmisi gercek ledger'dan beslensin**
+  - Lane: Product Evolution
+  - Domain: Customer credit visibility & billing trust
+  - Fingerprint: `customer-experience|dashboard-credit-history-preview|orders-used-as-credit-ledger|safe-ledger-preview`
+  - Business impact: 3/5
+  - User impact: 4/5
+  - Admin impact: 2/5
+  - Strategic fit: 4/5
+  - Confidence: 5/5
+  - Effort: 2/5
+  - Risk: 2/5
+  - Evidence: `src/components/dashboard/DashboardClient.tsx:153-160` dashboard already loads only the latest 5 orders; `src/components/dashboard/DashboardClient.tsx:278-282` builds `creditHistory` from those orders' `credits_required`; `src/components/dashboard/DashboardClient.tsx:861-894` labels that order-derived preview as "Credit History". The real credit ledger exists at `src/app/dashboard/credits/history/page.tsx:109-118`, where customer-scoped `credit_transactions` are loaded and rendered as all credit movements.
+  - Product value: Customers see the same billing/credit source of truth on the dashboard and full ledger page, reducing confusion after top-ups, manual adjustments or order usage.
+  - Scope: Replace the dashboard's order-derived credit history preview with a small customer-safe `credit_transactions` preview. Reuse the existing credit ledger field contract; do not mutate payments, credits, Stripe, bank transfer rules or pricing.
+  - Acceptance criteria:
+    - Dashboard credit preview reads latest customer-scoped `credit_transactions` rows by `user_id`, not recent `orders.credits_required`.
+    - Positive and negative credit movements are visually distinguishable and include safe description/type, delta, balance/date where available.
+    - Empty state links clearly to buy credits or the full ledger without implying missing order history.
+    - Existing recent orders, credit balance, live refresh and `/dashboard/credits/history` behavior remain unchanged.
+    - No payment records, source IDs, metadata internals, secrets or admin-only notes are exposed.
+  - Validation:
+    - `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts`
+    - `npm run lint`
+    - `npm run typecheck`
+    - `npm test`
+
+- [ ] **P2 AUTO-019 - Musteri order teslim tahmini yalniz acik estimate varsa sure gostersin**
+  - Lane: Product Evolution
+  - Domain: Customer order detail & delivery expectation clarity
+  - Fingerprint: `customer-experience|order-detail-estimated-delivery|null-estimate-shows-default-30min|explicit-estimate-only`
+  - Business impact: 3/5
+  - User impact: 4/5
+  - Admin impact: 2/5
+  - Strategic fit: 4/5
+  - Confidence: 5/5
+  - Effort: 1/5
+  - Risk: 2/5
+  - Evidence: `src/app/dashboard/orders/[id]/page.tsx:54-55` allows `estimated_delivery_label` and note to be null, but `src/app/dashboard/orders/[id]/page.tsx:159-166` maps a null/unknown value through `formatDeliveryEstimate` to the default label "Usually around 30 min"; `src/app/dashboard/orders/[id]/page.tsx:840-846` shows that value in the customer-facing Estimated Delivery card even when no explicit estimate was saved.
+  - Product value: Customers get a clearer, support-safe expectation without showing a specific turnaround label that was not explicitly set for their order.
+  - Scope: Adjust the customer order detail Estimated Delivery card so null or unknown estimate values show a neutral "estimate not set yet" state, while explicit admin-selected estimate labels and notes continue to display exactly as before. Do not change admin delivery options, pricing, SLA policy, legal text or database schema.
+  - Acceptance criteria:
+    - Null or unknown `estimated_delivery_label` no longer renders as "Usually around 30 min" on the customer order detail page.
+    - Explicit `usually_30_min`, `same_day`, `24h`, `48h` and `manual_review` values still render with their existing labels.
+    - The fallback explanatory copy avoids exact turnaround claims unless a label exists.
+    - Completed, revision and in-progress order detail actions continue to work.
+    - Mobile and desktop Estimated Delivery card text remains readable without overflow.
+  - Validation:
+    - `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts`
+    - `npm run lint`
+    - `npm run typecheck`
+    - `npm test`
+
 ## In Progress
 
 ## Blocked

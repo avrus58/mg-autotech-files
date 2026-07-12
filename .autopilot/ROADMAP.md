@@ -17,11 +17,15 @@
   - Yeni istek formu, arac katalogu yuklenemediginde veya arac listede olmadiginda mevcut string alanlarla manuel arac bilgisi alabilsin.
   - Musteri dashboard'u, eksik profil/contact/billing bilgilerini mevcut settings akisini bozmadan tamamlatmaya yoneltsin.
   - Legacy admin notification center `Completed today` metrigi, is gercekten teslim edildigi zamani baz alsin.
+  - Musteri dashboard kredi gecmisi, son siparislerden turetilen tahmin yerine `credit_transactions` ledger kaynagindan beslensin.
+  - Musteri order detayinda teslim tahmini, yalniz admin tarafindan acik estimate kaydedildiginde spesifik sure etiketi gostersin.
 - Success signals:
   - Musteri, talebin gercek durumunu ve kendi aksiyon gereksinimini detay ekraninda ayri gorebilir.
   - Musteri, aksiyon bekleyen siparisi liste veya dashboard uzerinden hizlica bulabilir.
   - Katalog kapsami veya gecici katalog hatasi, guvenli manuel talep olusturmayi tamamen engellemez.
   - Musteri, profil bilgileri eksikken destek veya faturalama gecikmesi yasamadan settings ekranina yonlendirilir.
+  - Musteri, dashboard kredi gecmisi ile tam credit ledger arasinda ayni hareket kaynagini gorur.
+  - Musteri, kaydedilmemis teslim tahmini icin varsayilan spesifik sure vaadi yerine not-set durumunu gorur.
   - Admin, payment/QC/delivery review sinyallerini kacirmadan filtreleyebilir.
   - Admin, gunluk tamamlanan is sinyalini request yaratilis tarihi yerine teslim dosyasi zamanina gore gorur.
   - Migration/fallback durumlarinda mutasyon aksiyonlari read-only davranir ve hata yerine acik mesaj verir.
