@@ -60,6 +60,13 @@ test("new request flow exposes clear progress steps and keeps advanced services 
   assert.match(page, /Advanced services/);
   assert.match(page, /ServiceCategoryPanel/);
   assert.match(page, /mg-step-rail/);
+  assert.match(page, /Manual vehicle details/);
+  assert.match(page, /Customer-provided, unverified catalog match/);
+  assert.match(page, /p_vehicle_brand: requestVehicleBrand/);
+  assert.match(page, /switchToManualVehicleDetails/);
+  assert.match(page, /setEcu\(""\)/);
+  assert.match(page, /if \(useManualVehicleDetails\) \{\s*return;\s*\}/);
+  assert.match(page, /let cancelled = false/);
 });
 
 test("customer File Expert UI renders only customer-safe report details", () => {

@@ -676,6 +676,11 @@ export default function NewRequestPage() {
   const [vehicleModelId, setVehicleModelId] = useState("");
   const [vehicleGenerationId, setVehicleGenerationId] = useState("");
   const [vehicleEngineId, setVehicleEngineId] = useState("");
+  const [useManualVehicleDetails, setUseManualVehicleDetails] = useState(false);
+  const [manualVehicleBrand, setManualVehicleBrand] = useState("");
+  const [manualVehicleModel, setManualVehicleModel] = useState("");
+  const [manualVehicleGeneration, setManualVehicleGeneration] = useState("");
+  const [manualVehicleEngine, setManualVehicleEngine] = useState("");
 
   const [ecu, setEcu] = useState("");
   const [gearbox, setGearbox] = useState("");
@@ -707,6 +712,18 @@ export default function NewRequestPage() {
     generations.find((item) => item.id === vehicleGenerationId)?.name ?? "";
   const selectedEngineName =
     engines.find((item) => item.id === vehicleEngineId)?.name ?? "";
+  const requestVehicleBrand = useManualVehicleDetails
+    ? manualVehicleBrand.trim()
+    : selectedBrandName;
+  const requestVehicleModel = useManualVehicleDetails
+    ? manualVehicleModel.trim()
+    : selectedModelName;
+  const requestVehicleGeneration = useManualVehicleDetails
+    ? manualVehicleGeneration.trim()
+    : selectedGenerationName;
+  const requestVehicleEngine = useManualVehicleDetails
+    ? manualVehicleEngine.trim()
+    : selectedEngineName;
 
   async function loadCustomerProfile() {
     setProfileLoading(true);
@@ -751,8 +768,16 @@ export default function NewRequestPage() {
     const controller = new AbortController();
     preloadVehicleBrands();
     fetchVehicleOptions("/api/vehicles?type=brands", controller.signal)
-      .then(setBrands)
-      .catch(() => setMessage("Vehicle catalog could not be loaded. You can still submit the request with manual vehicle details."))
+      .then((options) => {
+        setBrands(options);
+        if (options.length === 0) {
+          setUseManualVehicleDetails(true);
+        }
+      })
+      .catch(() => {
+        setUseManualVehicleDetails(true);
+        setMessage("Vehicle catalog could not be loaded. You can still submit the request with manual vehicle details.");
+      })
       .finally(() => setLoadingBrands(false));
     return () => controller.abort();
   }, []);
@@ -828,8 +853,13 @@ export default function NewRequestPage() {
   }, [vehicleBrandId, vehicleModelId, vehicleGenerationId]);
 
   useEffect(() => {
+    let cancelled = false;
     const timeout = window.setTimeout(() => {
       setSelectedVehicle(null);
+
+      if (useManualVehicleDetails) {
+        return;
+      }
 
       if (
         !vehicleBrandId ||
@@ -845,6 +875,10 @@ export default function NewRequestPage() {
       )
         .then((res) => res.json())
         .then((vehicle: VehicleData | null) => {
+          if (cancelled) {
+            return;
+          }
+
           setSelectedVehicle(vehicle);
 
           if (vehicle?.ecu?.length) {
@@ -855,10 +889,17 @@ export default function NewRequestPage() {
             setReadMethod(vehicle.readMethods[0]);
           }
         })
-        .catch(console.error);
+        .catch((error) => {
+          if (!cancelled) {
+            console.error(error);
+          }
+        });
     }, 0);
-    return () => window.clearTimeout(timeout);
-  }, [vehicleBrandId, vehicleModelId, vehicleGenerationId, vehicleEngineId]);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeout);
+    };
+  }, [useManualVehicleDetails, vehicleBrandId, vehicleModelId, vehicleGenerationId, vehicleEngineId]);
 
   const selectedMainService = mainServices.find(
     (service) => service.id === mainService
@@ -902,13 +943,26 @@ export default function NewRequestPage() {
   );
 
   const requestStepStates = getRequestFlowStepStates({
-    hasVehicle: Boolean(selectedBrandName && selectedModelName && selectedEngineName),
+    hasVehicle: Boolean(requestVehicleBrand && requestVehicleModel && requestVehicleEngine),
     hasService: Boolean(selectedMainService),
     hasUpload: Boolean(selectedFile),
     hasNotes: Boolean(notes.trim()),
     hasPaymentAcceptance: paymentAccepted,
     hasFinalAcceptance: responsibilityAccepted,
   });
+
+  const switchToCatalogVehicleDetails = () => {
+    setUseManualVehicleDetails(false);
+  };
+
+  const switchToManualVehicleDetails = () => {
+    setUseManualVehicleDetails(true);
+    setSelectedVehicle(null);
+    if (selectedVehicle) {
+      setEcu("");
+      setReadMethod("");
+    }
+  };
 
   const toggleExtra = (id: string) => {
     setSelectedExtras((current) =>
@@ -968,8 +1022,12 @@ export default function NewRequestPage() {
   const handleSubmit = async () => {
     setMessage("");
 
-    if (!selectedBrandName || !selectedModelName || !selectedEngineName) {
-      setMessage("Please fill in brand, model and engine.");
+    if (!requestVehicleBrand || !requestVehicleModel || !requestVehicleEngine) {
+      setMessage(
+        useManualVehicleDetails
+          ? "Please fill in manual brand, model and engine."
+          : "Please fill in brand, model and engine."
+      );
       return;
     }
 
@@ -1062,10 +1120,10 @@ export default function NewRequestPage() {
       "create_order_with_credit_deduction",
       {
         p_customer_email: customerEmail,
-        p_vehicle_brand: selectedBrandName,
-        p_vehicle_model: selectedModelName,
-        p_vehicle_generation: selectedGenerationName,
-        p_vehicle_engine: selectedEngineName,
+        p_vehicle_brand: requestVehicleBrand,
+        p_vehicle_model: requestVehicleModel,
+        p_vehicle_generation: requestVehicleGeneration,
+        p_vehicle_engine: requestVehicleEngine,
         p_service_type: serviceSummary,
         p_credits_required: totalCredits,
         p_notes: notes || "-",
@@ -1222,63 +1280,155 @@ export default function NewRequestPage() {
                 <h2 className="text-2xl font-black">Vehicle Information</h2>
               </div>
 
-              <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-                <SelectBox
-                  label="Brand"
-                  value={vehicleBrandId}
-                  onChange={setVehicleBrandId}
-                  required
-                  options={brands}
-                  loading={loadingBrands}
-                  disabled={loadingBrands && brands.length === 0}
-                />
+              <div className="mb-5 flex flex-col gap-3 rounded-2xl border border-white/10 bg-black/25 p-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <div className="text-sm font-black text-white">
+                    {useManualVehicleDetails
+                      ? "Manual vehicle details"
+                      : "Vehicle catalog"}
+                  </div>
+                  <div className="mt-1 text-xs font-bold text-zinc-500">
+                    {useManualVehicleDetails
+                      ? "Customer-provided, unverified catalog match."
+                      : "Catalog selection keeps vehicle intelligence available when matched."}
+                  </div>
+                </div>
 
-                <SelectBox
-                  label="Model"
-                  value={vehicleModelId}
-                  onChange={setVehicleModelId}
-                  required
-                  options={models}
-                  loading={loadingModels}
-                  disabled={!vehicleBrandId || loadingModels}
-                />
-
-                <SelectBox
-                  label="Generation"
-                  value={vehicleGenerationId}
-                  onChange={setVehicleGenerationId}
-                  options={generations}
-                  loading={loadingGenerations}
-                  disabled={!vehicleModelId || loadingGenerations}
-                />
-
-                <SelectBox
-                  label="Engine"
-                  value={vehicleEngineId}
-                  onChange={setVehicleEngineId}
-                  required
-                  options={engines}
-                  loading={loadingEngines}
-                  disabled={!vehicleGenerationId || loadingEngines}
-                />
-
-                <InputBox
-                  label="Year"
-                  value={year}
-                  onChange={setYear}
-                  placeholder="e.g. 2016"
-                />
-
-                <InputBox
-                  label="License Plate"
-                  value={licensePlate}
-                  onChange={setLicensePlate}
-                  placeholder="Optional"
-                />
+                <div className="grid grid-cols-2 gap-2 sm:w-auto">
+                  <button
+                    type="button"
+                    onClick={switchToCatalogVehicleDetails}
+                    disabled={loadingBrands || brands.length === 0}
+                    aria-pressed={!useManualVehicleDetails}
+                    className={`rounded-xl border px-3 py-2 text-xs font-black uppercase tracking-[0.12em] transition disabled:cursor-not-allowed disabled:opacity-40 ${
+                      !useManualVehicleDetails
+                        ? "border-red-700 bg-red-950/35 text-white"
+                        : "border-white/10 bg-white/[0.04] text-zinc-400 hover:text-white"
+                    }`}
+                  >
+                    Catalog
+                  </button>
+                  <button
+                    type="button"
+                    onClick={switchToManualVehicleDetails}
+                    aria-pressed={useManualVehicleDetails}
+                    className={`rounded-xl border px-3 py-2 text-xs font-black uppercase tracking-[0.12em] transition ${
+                      useManualVehicleDetails
+                        ? "border-red-700 bg-red-950/35 text-white"
+                        : "border-white/10 bg-white/[0.04] text-zinc-400 hover:text-white"
+                    }`}
+                  >
+                    Manual
+                  </button>
+                </div>
               </div>
+
+              {useManualVehicleDetails ? (
+                <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+                  <InputBox
+                    label="Manual Brand"
+                    value={manualVehicleBrand}
+                    onChange={setManualVehicleBrand}
+                    placeholder="e.g. BMW"
+                    required
+                  />
+
+                  <InputBox
+                    label="Manual Model"
+                    value={manualVehicleModel}
+                    onChange={setManualVehicleModel}
+                    placeholder="e.g. 320d"
+                    required
+                  />
+
+                  <InputBox
+                    label="Manual Generation / Variant"
+                    value={manualVehicleGeneration}
+                    onChange={setManualVehicleGeneration}
+                    placeholder="Optional"
+                  />
+
+                  <InputBox
+                    label="Manual Engine"
+                    value={manualVehicleEngine}
+                    onChange={setManualVehicleEngine}
+                    placeholder="e.g. 2.0 diesel"
+                    required
+                  />
+
+                  <InputBox
+                    label="Year"
+                    value={year}
+                    onChange={setYear}
+                    placeholder="e.g. 2016"
+                  />
+
+                  <InputBox
+                    label="License Plate"
+                    value={licensePlate}
+                    onChange={setLicensePlate}
+                    placeholder="Optional"
+                  />
+                </div>
+              ) : (
+                <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+                  <SelectBox
+                    label="Brand"
+                    value={vehicleBrandId}
+                    onChange={setVehicleBrandId}
+                    required
+                    options={brands}
+                    loading={loadingBrands}
+                    disabled={loadingBrands && brands.length === 0}
+                  />
+
+                  <SelectBox
+                    label="Model"
+                    value={vehicleModelId}
+                    onChange={setVehicleModelId}
+                    required
+                    options={models}
+                    loading={loadingModels}
+                    disabled={!vehicleBrandId || loadingModels}
+                  />
+
+                  <SelectBox
+                    label="Generation"
+                    value={vehicleGenerationId}
+                    onChange={setVehicleGenerationId}
+                    options={generations}
+                    loading={loadingGenerations}
+                    disabled={!vehicleModelId || loadingGenerations}
+                  />
+
+                  <SelectBox
+                    label="Engine"
+                    value={vehicleEngineId}
+                    onChange={setVehicleEngineId}
+                    required
+                    options={engines}
+                    loading={loadingEngines}
+                    disabled={!vehicleGenerationId || loadingEngines}
+                  />
+
+                  <InputBox
+                    label="Year"
+                    value={year}
+                    onChange={setYear}
+                    placeholder="e.g. 2016"
+                  />
+
+                  <InputBox
+                    label="License Plate"
+                    value={licensePlate}
+                    onChange={setLicensePlate}
+                    placeholder="Optional"
+                  />
+                </div>
+              )}
             </section>
 
-            {selectedVehicle && (
+            {!useManualVehicleDetails && selectedVehicle && (
               <section className="relative overflow-hidden rounded-[2rem] border border-red-900/50 bg-gradient-to-br from-red-950/20 via-white/[0.04] to-black p-5 shadow-2xl shadow-black/40">
                 <div className="absolute -right-24 -top-24 h-64 w-64 rounded-full bg-red-700/20 blur-3xl" />
                 <div className="absolute -bottom-24 -left-24 h-64 w-64 rounded-full bg-red-950/30 blur-3xl" />
@@ -1682,14 +1832,19 @@ export default function NewRequestPage() {
                 <div className="flex justify-between gap-4 rounded-2xl bg-white/[0.04] p-4">
                   <span className="text-zinc-400">Vehicle</span>
                   <span className="text-right font-bold">
-                    {selectedBrandName || "-"} {selectedModelName || ""}
+                    {requestVehicleBrand || "-"} {requestVehicleModel || ""}
+                    {useManualVehicleDetails ? (
+                      <span className="mt-1 block text-[11px] font-black uppercase tracking-[0.12em] text-yellow-300">
+                        Customer-provided
+                      </span>
+                    ) : null}
                   </span>
                 </div>
 
                 <div className="flex justify-between gap-4 rounded-2xl bg-white/[0.04] p-4">
                   <span className="text-zinc-400">Engine</span>
                   <span className="text-right font-bold">
-                    {selectedEngineName || "-"}
+                    {requestVehicleEngine || "-"}
                   </span>
                 </div>
 

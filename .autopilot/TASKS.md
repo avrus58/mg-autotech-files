@@ -74,32 +74,6 @@ Dogrulama: Markdown diff incelemesi, `npm run lint`.
     - `npm run typecheck`
     - `npm test`
 
-- [ ] **P1 AUTO-015 - Yeni istek formu katalog yokken manuel arac bilgisi kabul etsin**
-  - Lane: Product Evolution
-  - Domain: Customer request intake reliability
-  - Fingerprint: `customer-experience|new-request-vehicle-intake|manual-vehicle-copy-without-form-path|manual-catalog-fallback`
-  - Business impact: 4/5
-  - User impact: 4/5
-  - Admin impact: 3/5
-  - Strategic fit: 5/5
-  - Confidence: 5/5
-  - Effort: 3/5
-  - Risk: 2/5
-  - Evidence: `src/app/new-request/page.tsx:752-756` tells the customer "You can still submit the request with manual vehicle details" when the vehicle catalog cannot be loaded, but the UI only renders catalog `SelectBox` controls for brand/model/engine at `src/app/new-request/page.tsx:1226-1263`. Submit validation still requires `selectedBrandName`, `selectedModelName` and `selectedEngineName` from catalog selections at `src/app/new-request/page.tsx:971-973`. Public workflow copy also says unlisted vehicles can use manual details in `src/lib/howItWorksI18n.ts:88`.
-  - Product value: Customers with unlisted vehicles or temporary catalog loading failures can still create a complete request instead of being blocked by a misleading fallback message.
-  - Scope: Add a narrow manual vehicle detail fallback to the existing new-request form using the current order RPC string fields. Do not change vehicle catalog data, pricing, credit policy, database schema or service claims.
-  - Acceptance criteria:
-    - A customer can intentionally switch to manual vehicle details or proceed when catalog loading fails.
-    - Manual brand, model and engine values satisfy the existing request validation and summary.
-    - Catalog selection remains the default and keeps the current vehicle intelligence behavior when data is available.
-    - Manual fallback values are clearly marked as customer-provided/unverified in UI copy without inventing support coverage.
-    - File upload, credit validation and private storage behavior remain unchanged.
-  - Validation:
-    - `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts`
-    - `npm run lint`
-    - `npm run typecheck`
-    - `npm test`
-
 ## In Progress
 
 ## Blocked
@@ -133,6 +107,18 @@ Kabul kriterleri:
 Dogrulama: Diff incelemesi, `npm run lint`, `npm run typecheck`.
 
 ## Done
+
+### AUTO-015 [P1] Yeni istek formu katalog yokken manuel arac bilgisi kabul etsin
+
+Durum: Done
+
+Fingerprint: `customer-experience|new-request-vehicle-intake|manual-vehicle-copy-without-form-path|manual-catalog-fallback`
+
+Kapsam: Yeni istek formuna katalog secimi varsayilan kalacak sekilde manuel arac bilgisi fallback modu eklendi.
+
+Sonuc: Katalog yuklenemediginde veya katalog bos geldiginde form manuel arac bilgisi moduna gecer; musteri isterse katalog varken de manuel moda gecebilir. Manuel brand/model/engine degerleri request progress, validasyon, ozet ve mevcut order RPC string alanlarinda kullanilir. Katalog secimi ve vehicle intelligence paneli katalog modu icin korunur; manuel degerler UI'da customer-provided/unverified olarak isaretlenir.
+
+Dogrulama: `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (13/13); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (238/238); `git diff --check` PASS (yalnizca CRLF uyarilari).
 
 ### AUTO-006 [P1] `src/proxy.ts` locale davranisi icin unit test ekle
 

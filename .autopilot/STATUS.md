@@ -2,6 +2,30 @@
 
 Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
+## 2026-07-12 reviewer run AUTO-015
+
+- Gorev: Mevcut uncommitted AUTO-015 degisikliklerini product/safety/quality gate olarak incelemek.
+- Sonuc: Accepted. Manuel arac bilgisi fallback'i gercek musteri akisi degeri tasiyor; katalog yokken veya listede olmayan aracta yeni istek akisi mevcut order RPC string alanlariyla tamamlanabiliyor.
+- Duplicate/evidence kontrolu: AGENTS, V4 package constitution dosyalari, `.autopilot/constitution/*`, PROJECT, ROADMAP, TASKS, TASK_HISTORY, PRODUCT_SCORECARD, STATUS, last-result, son 100 commit ve tam diff incelendi. Ayni fingerprint tamamlanmis commit olarak gorunmedi; evidence worker kaydiyla uyumlu.
+- Reviewer duzeltmesi: Manuel moda gecildiginde katalog arac intelligence fetch'i durduruldu, in-flight fetch sonucu ignore edildi ve katalogdan gelen ECU/read-method ipuclari manuel istege tasinmayacak sekilde dar kapsamli guard eklendi.
+- Risk kontrolu: Production servis, migration, deploy, `.env`/secret, gercek musteri verisi, fiyat/hukuki iddia, kredi/odeme kurali, private storage path veya yeni dependency riski tespit edilmedi. Customer/admin data boundary React text rendering ve mevcut customer-safe alanlarla korunuyor.
+- Calistirilan kontroller: `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (13/13); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (238/238); `git diff --check` PASS (yalnizca CRLF uyarilari); review-result JSON yazimi.
+- Calistirilmayan kontroller: `npm run build` bilinen restricted-network Google Fonts / Next env yukleme riski nedeniyle calistirilmadi. Dev server, live service, smoke, SQL, scraper ve normal env kontrolleri calistirilmadi.
+- Kalan risk: Manuel arac bilgisi katalog dogrulamasi olmadigi icin operasyonel dogrulama admin/musteri surecinde kalir; ileride istenirse manual-vs-catalog source metadata ayri schema/proposal konusu olabilir.
+
+## 2026-07-12 worker run AUTO-015
+
+- Gorev: Yeni istek formu katalog yokken manuel arac bilgisi kabul etsin.
+- Fingerprint: `customer-experience|new-request-vehicle-intake|manual-vehicle-copy-without-form-path|manual-catalog-fallback`.
+- Duplicate kontrolu: AGENTS, V4 package constitution dosyalari, `.autopilot/constitution/*`, PROJECT, ROADMAP, INBOX, FEATURE_PROPOSALS, TASKS, TASK_HISTORY, PRODUCT_SCORECARD, STATUS ve son 100 commit incelendi; ayni fingerprint tamamlanmis gorunmedi. Aktif milestone bu intake fallback dilimini planliyor.
+- Evidence kontrolu: `src/app/new-request/page.tsx` katalog yukleme hatasinda manuel arac bilgisiyle devam edilebilecegini soyluyordu, ancak form yalniz katalog SelectBox kontrollerini gosteriyor ve submit validasyonu/RPC payload'i katalogdan gelen brand/model/engine adlarini zorunlu tutuyordu.
+- Degisen dosyalar: `src/app/new-request/page.tsx`, `tests/ui-ux-safety.test.ts`, `.autopilot/TASKS.md`, `.autopilot/TASK_HISTORY.md`, `.autopilot/STATUS.md`, `.autopilot/runtime/last-result.json`.
+- Sonuc: Yeni istek formunda katalog varsayilan kaldi; musteri manuel arac bilgisi moduna gecebilir ve katalog yuklenemezse veya bos gelirse form manuel moda duser. Manuel brand/model/engine degerleri progress, validasyon, ozet ve mevcut `create_order_with_credit_deduction` RPC string alanlarinda kullanilir. Vehicle intelligence paneli sadece katalog modunda kalir; manuel bilgiler UI'da customer-provided/unverified olarak isaretlenir.
+- Guvenlik/UI kontrolu: Yeni dependency, production servis cagrisi, migration, deploy, `.env`/secret, gercek musteri verisi, fiyat/hukuki iddia, kredi/odeme kurali veya storage davranisi degistirilmedi. File upload, credit validation, payment acceptance ve private storage path akislari aynen korundu.
+- Calistirilan kontroller: `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (13/13); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (238/238); `git diff --check` PASS (yalnizca CRLF uyarilari); diff review PASS.
+- Calistirilmayan kontroller: `npm run build` bu repoda bilinen restricted-network Google Fonts / Next env yukleme riski nedeniyle calistirilmadi. Dev server, smoke, scraper, SQL ve normal env kontrolleri calistirilmadi.
+- Kalan risk: Manuel arac bilgileri catalog match olmadigi icin operasyonel dogrulama musteri/admin surecinde kalir; Ready kuyrugunda `AUTO-007`, `AUTO-008`, `AUTO-013` ve `AUTO-014` devam ediyor.
+
 ## 2026-07-12 planner run V4 CUSTOMER FLOW AUDIT
 
 - Gorev: MG AI Operating System V4 planner pass; planlama disinda uygulama kodu degistirilmedi.
@@ -134,8 +158,8 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
 - Kurulum tarihi: 2026-07-12 (Europe/Berlin)
 - Aktif branch: codex/autopilot
-- Son basarili gorev: AUTO-006 `src/proxy.ts` locale davranisi icin unit test ekle
-- Son dogrulama: `.\node_modules\.bin\tsx.cmd --test tests\proxy-locale.test.ts` PASS (4/4); `npm test` PASS (238/238); `npm run lint` PASS; `npm run typecheck` PASS; `git diff --check` PASS (yalnizca CRLF uyarilari)
+- Son basarili gorev: AUTO-015 Yeni istek formu katalog yokken manuel arac bilgisi kabul etsin
+- Son dogrulama: `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (13/13); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (238/238); `git diff --check` PASS (yalnizca CRLF uyarilari)
 - Insan mudahalesi gereken konu: Offline build icin Google Fonts/`next/font/google` stratejisi onayi; production smoke, SQL migration, deploy ve normal env kontrolleri insan onayi gerektirir.
 
 ## 2026-07-12 reviewer run AUTO-003
