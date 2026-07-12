@@ -4,24 +4,6 @@
 
 ## Ready
 
-- [ ] **P2 AUTO-013 - Musteri order timeline'i bekleme ve revizyon adimlarini acik gostersin**
-  - Domain: Responsive UX & product flow
-  - Fingerprint: `responsive-ux|customer-order-detail|timeline-collapses-actionable-statuses|clear-next-step-status`
-  - Impact: 3/5
-  - Confidence: 5/5
-  - Effort: 2/5
-  - Evidence: `src/app/dashboard/orders/[id]/page.tsx:171` timeline yalniz `new_request`, `file_check`, `in_progress`, `completed` adimlarindan olusuyor; `src/app/dashboard/orders/[id]/page.tsx:197-199` `revision` statusunu `in_progress`, `customer_info_needed` statusunu `file_check` adimina sikistiriyor. Ayni sayfada current-step metni bu iki statusu ayri ele aliyor (`src/app/dashboard/orders/[id]/page.tsx:831-836`).
-  - Scope: Musteri order detay sayfasinda timeline adimlarini musteriye acik ve guvenli sekilde `customer_info_needed` ve `revision` durumlarini gosterecek bicimde guncelle.
-  - Acceptance criteria:
-    - `customer_info_needed` musteriye aksiyon gerektiren ayri bir bekleme/adim olarak gorunur.
-    - `revision` teslim sonrasi revizyon sureci olarak ayri gorunur ve mevcut revision request paneliyle celismez.
-    - Completed/download davranisi ve private/admin-only bilgi gizliligi korunur.
-    - Mobil/desktop layoutta timeline metinleri tasmaz.
-  - Validation:
-    - `npm run lint`
-    - `npm run typecheck`
-    - `npm test`
-
 - [ ] **P2 AUTO-014 - Musteri paneli aksiyon gereken siparisleri ayri gostersin**
   - Lane: Product Evolution
   - Domain: Customer experience & request lifecycle
@@ -133,6 +115,18 @@ Kabul kriterleri:
 Dogrulama: Diff incelemesi, `npm run lint`, `npm run typecheck`.
 
 ## Done
+
+### AUTO-013 [P2] Musteri order timeline'i bekleme ve revizyon adimlarini acik gostersin
+
+Durum: Done
+
+Fingerprint: `responsive-ux|customer-order-detail|timeline-collapses-actionable-statuses|clear-next-step-status`
+
+Kapsam: Musteri order detay timeline'i `customer_info_needed` ve `revision` durumlarini generic file-check/in-progress adimlarina sikistirmadan ayri gosterir.
+
+Sonuc: Timeline artik order durumuna gore safe, dinamik adimlar olusturuyor. `customer_info_needed` durumunda "Waiting for Your Information" adimi aktif gorunur; `revision` durumunda teslim sonrasi "Revision Review" adimi Completed sonrasinda gorunur. Download ve revision request aksiyonlari degistirilmedi; timeline basligi ve satirlari uzun status/metin tasmasina karsi wrap davranisi kazandi.
+
+Dogrulama: `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (14/14); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (241/241); `git diff --check` PASS (yalniz CRLF uyarilari).
 
 ### AUTO-008 [P1] Offline build bagimliligini dokumante et
 

@@ -2,6 +2,20 @@
 
 Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
+## 2026-07-12 worker run AUTO-013
+
+- Baslangic: 2026-07-12 17:16:00 +01:00; bitis: 2026-07-12 17:40:30 +01:00.
+- Gorev: Musteri order timeline'i bekleme ve revizyon adimlarini acik gostersin.
+- Fingerprint: `responsive-ux|customer-order-detail|timeline-collapses-actionable-statuses|clear-next-step-status`.
+- Sonuc: Done. Musteri order detay timeline'i `customer_info_needed` ve `revision` durumlarini generic `file_check`/`in_progress` adimlarina sikistirmeden ayri gosteriyor.
+- Duplicate/evidence kontrolu: V4 package constitution dosyalari, `.autopilot/constitution/*`, AGENTS, PROJECT, ROADMAP, INBOX, FEATURE_PROPOSALS, TASKS, TASK_HISTORY, PRODUCT_SCORECARD, STATUS, package scriptleri, mevcut Git durumu ve son 100 commit incelendi. Ayni fingerprint tamamlanmis gorunmedi; evidence halen gecerliydi.
+- Degisen dosyalar: `src/app/dashboard/orders/[id]/page.tsx`, `tests/ui-ux-safety.test.ts`, `.autopilot/TASKS.md`, `.autopilot/TASK_HISTORY.md`, `.autopilot/STATUS.md`, `.autopilot/runtime/last-result.json`.
+- Uygulama sonucu: Timeline adimlari order durumuna gore dinamik olusturuluyor. `customer_info_needed` icin "Waiting for Your Information" adimi aktif; `revision` icin Completed sonrasinda "Revision Review" adimi aktif. Download completed file, signed URL olusturma ve revision request action davranisi degistirilmedi. Timeline status rozeti ve satir metinleri uzun label/description tasmasina karsi wrap davranisi kazandi.
+- Guvenlik/UI kontrolu: Yeni dependency, production servis cagrisi, migration, deploy, `.env`/secret, gercek musteri verisi, fiyat/hukuki iddia, kredi/odeme kurali veya private storage path degisikligi yapilmadi. Customer/admin data boundary aynen korundu.
+- Calistirilan kontroller: `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (14/14); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (241/241); `git diff --check` PASS (yalniz CRLF uyarilari); diff review PASS.
+- Calistirilmayan kontroller: `npm run build` bu repoda bilinen restricted-network Google Fonts / Next env yukleme riski nedeniyle calistirilmadi. Live service, SQL, smoke, scraper, desktop build/package ve normal env kontrolleri calistirilmadi.
+- Kalan risk: Order listesi/dashboard uzerinde aksiyon gereken siparis discoverability ayri Ready `AUTO-014` kapsaminda devam eder. Offline build icin Google Fonts/`next/font/google` owner onayi bekleyen bilinen risk devam eder.
+
 ## 2026-07-12 worker run AUTO-008
 
 - Baslangic: 2026-07-12 17:14:46 +01:00; bitis: 2026-07-12 17:15:20 +01:00.

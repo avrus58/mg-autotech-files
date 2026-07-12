@@ -69,6 +69,22 @@ test("new request flow exposes clear progress steps and keeps advanced services 
   assert.match(page, /let cancelled = false/);
 });
 
+test("customer order detail timeline shows action-needed and revision states separately", () => {
+  const page = readProjectFile("src", "app", "dashboard", "orders", "[id]", "page.tsx");
+
+  assert.match(page, /key:\s*"customer_info_needed"/);
+  assert.match(page, /Waiting for Your Information/);
+  assert.match(page, /status === "customer_info_needed"[\s\S]*timelineStepDefinitions\.customerInfoNeeded/);
+  assert.match(page, /key:\s*"revision"/);
+  assert.match(page, /Revision Review/);
+  assert.match(page, /status === "revision"[\s\S]*timelineStepDefinitions\.revision/);
+  assert.match(page, /step\.key === "revision"/);
+  assert.match(page, /max-w-full rounded-full/);
+  assert.match(page, /break-words font-black/);
+  assert.doesNotMatch(page, /status === "in_progress"\s*\|\|\s*status === "revision"/);
+  assert.doesNotMatch(page, /status === "file_check"\s*\|\|\s*status === "customer_info_needed"/);
+});
+
 test("customer File Expert UI renders only customer-safe report details", () => {
   const page = readProjectFile("src", "app", "dashboard", "file-expert", "[id]", "page.tsx");
   assert.match(page, /Technical coordinate data, private file fingerprints and binary internals are hidden on customer reports/);

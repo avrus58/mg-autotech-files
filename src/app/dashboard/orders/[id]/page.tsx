@@ -168,35 +168,82 @@ function formatDeliveryEstimate(value: DeliveryEstimate | string | null) {
   return labels[value as DeliveryEstimate] ?? labels.usually_30_min;
 }
 
-const timelineSteps = [
-  {
+type TimelineStep = {
+  key: "new_request" | "file_check" | "customer_info_needed" | "in_progress" | "completed" | "revision";
+  label: string;
+  description: string;
+};
+
+const timelineStepDefinitions = {
+  newRequest: {
     key: "new_request",
     label: "Request Created",
     description: "Your file request has been created.",
   },
-  {
+  fileCheck: {
     key: "file_check",
     label: "File Check",
     description: "MG AutoTech checks your original file and vehicle data.",
   },
-  {
+  customerInfoNeeded: {
+    key: "customer_info_needed",
+    label: "Waiting for Your Information",
+    description: "MG AutoTech needs details from you before work can continue.",
+  },
+  inProgress: {
     key: "in_progress",
     label: "In Progress",
     description: "Your file is being prepared by MG AutoTech.",
   },
-  {
+  completed: {
     key: "completed",
     label: "Completed",
     description: "Your modified file is ready to download.",
   },
-];
+  revision: {
+    key: "revision",
+    label: "Revision Review",
+    description: "Your revision request is being reviewed after delivery.",
+  },
+} satisfies Record<string, TimelineStep>;
 
-function getTimelineIndex(order: Order) {
+function getTimelineSteps(order: Order) {
   const status = order.status ?? "new_request";
 
-  if (status === "in_progress" || status === "revision") return 2;
-  if (status === "completed" || order.modified_file_path) return 3;
-  if (status === "file_check" || status === "customer_info_needed") return 1;
+  return [
+    timelineStepDefinitions.newRequest,
+    timelineStepDefinitions.fileCheck,
+    ...(status === "customer_info_needed"
+      ? [timelineStepDefinitions.customerInfoNeeded]
+      : []),
+    timelineStepDefinitions.inProgress,
+    timelineStepDefinitions.completed,
+    ...(status === "revision" ? [timelineStepDefinitions.revision] : []),
+  ];
+}
+
+function getTimelineIndex(order: Order, timelineSteps: TimelineStep[]) {
+  const status = order.status ?? "new_request";
+
+  if (status === "revision") {
+    return timelineSteps.findIndex((step) => step.key === "revision");
+  }
+
+  if (status === "completed" || order.modified_file_path) {
+    return timelineSteps.findIndex((step) => step.key === "completed");
+  }
+
+  if (status === "in_progress") {
+    return timelineSteps.findIndex((step) => step.key === "in_progress");
+  }
+
+  if (status === "customer_info_needed") {
+    return timelineSteps.findIndex((step) => step.key === "customer_info_needed");
+  }
+
+  if (status === "file_check") {
+    return timelineSteps.findIndex((step) => step.key === "file_check");
+  }
 
   return 0;
 }
@@ -801,7 +848,7 @@ export default function OrderDetailPage() {
             </section>
 
             <section className="overflow-hidden rounded-[2rem] border border-white/10 bg-white/[0.04] p-6">
-              <div className="mb-5 flex items-center justify-between gap-4">
+              <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <h2 className="text-2xl font-black">Order Timeline</h2>
                   <p className="mt-1 text-sm text-zinc-500">
@@ -810,7 +857,7 @@ export default function OrderDetailPage() {
                 </div>
 
                 <div
-                  className={`rounded-full border px-3 py-1 text-xs font-black ${getStatusStyle(
+                  className={`max-w-full rounded-full border px-3 py-1 text-center text-xs font-black ${getStatusStyle(
                     order.status
                   )}`}
                 >
@@ -946,7 +993,8 @@ function Detail({
 }
 
 function ProgressTimeline({ order }: { order: Order }) {
-  const activeIndex = getTimelineIndex(order);
+  const timelineSteps = getTimelineSteps(order);
+  const activeIndex = getTimelineIndex(order, timelineSteps);
 
   return (
     <div className="space-y-3">
@@ -1012,15 +1060,17 @@ function TimelineItem({
         )}
       </div>
 
-      <div>
+      <div className="min-w-0">
         <div
           className={
-            done ? "font-black text-white" : "font-black text-zinc-500"
+            done
+              ? "break-words font-black text-white"
+              : "break-words font-black text-zinc-500"
           }
         >
           {label}
         </div>
-        <div className="mt-1 text-sm leading-5 text-zinc-500">
+        <div className="mt-1 break-words text-sm leading-5 text-zinc-500">
           {description}
         </div>
       </div>
