@@ -74,7 +74,7 @@ export async function GET(request: Request) {
   if (!includeAll || !isAdmin) query = query.eq("user_id", user.id);
 
   const { data, error } = await query.limit(100);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: "File Expert jobs could not be loaded." }, { status: 500 });
 
   const jobs = data ?? [];
   return NextResponse.json({

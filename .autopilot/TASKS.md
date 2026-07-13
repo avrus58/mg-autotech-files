@@ -83,32 +83,6 @@
     - `npm run typecheck`
     - `npm test`
 
-- [ ] **P2 AUTO-039 - File Expert analiz listesi yukleme hatasini bos analiz gibi gostermesin**
-  - Lane: Product Evolution
-  - Domain: Customer File Expert analysis history reliability
-  - Fingerprint: `customer-experience|file-expert-dashboard-load|jobs-api-error-renders-empty-analysis-list|retryable-file-expert-jobs-error-state`
-  - Business impact: 2/5
-  - User impact: 4/5
-  - Admin impact: 2/5
-  - Strategic fit: 4/5
-  - Confidence: 5/5
-  - Effort: 2/5
-  - Risk: 2/5
-  - Evidence: `src/app/dashboard/file-expert/page.tsx:141-166` loads `/api/file-expert/jobs` and, on failure, sets `payload.error` or a generic message before clearing loading. Because `jobs` starts as an empty array at `src/app/dashboard/file-expert/page.tsx:131`, the stats at `src/app/dashboard/file-expert/page.tsx:186-192` show zeros and the recent jobs panel renders `No analysis yet` at `src/app/dashboard/file-expert/page.tsx:521-527`. The same loader is called silently every 15 seconds at `src/app/dashboard/file-expert/page.tsx:174-182`, and the API can return raw query errors at `src/app/api/file-expert/jobs/route.ts:76-77`.
-  - Product value: Customers can tell whether File Expert history is truly empty or temporarily unavailable, reducing repeat uploads and support questions.
-  - Scope: Add a customer-safe retryable jobs-load error state for the File Expert dashboard. Preserve login and verified-email redirects, existing intake form validation, prepare/upload/finalize behavior, recent jobs cards, status labels and sanitized customer job projection.
-  - Acceptance criteria:
-    - Initial jobs API failures show a customer-safe retry state instead of the normal `No analysis yet` empty state and zeroed history metrics.
-    - Successful zero-job responses still show the existing empty analysis state.
-    - Silent refresh failures after a successful load preserve the last successful jobs list and show a compact retry/sync warning.
-    - Raw backend messages, Supabase internals, analyzer internals, raw binary data, storage paths, signed URLs, hashes beyond existing sanitized display, tokens and admin-only fields are not exposed.
-    - File Expert prepare, upload, finalize, report navigation and the AUTO-037 local limit guidance remain unchanged.
-  - Validation:
-    - `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts`
-    - `npm run lint`
-    - `npm run typecheck`
-    - `npm test`
-
 ## In Progress
 
 ## Blocked
@@ -142,6 +116,18 @@ Kabul kriterleri:
 Dogrulama: Diff incelemesi, `npm run lint`, `npm run typecheck`.
 
 ## Done
+
+### AUTO-039 [P2] File Expert analiz listesi yukleme hatasini bos analiz gibi gostermesin
+
+Durum: Done
+
+Fingerprint: `customer-experience|file-expert-dashboard-load|jobs-api-error-renders-empty-analysis-list|retryable-file-expert-jobs-error-state`
+
+Kapsam: Musteri File Expert dashboard'u, analiz gecmisi `/api/file-expert/jobs` yukleme hatalarini gercek bos analiz listesi veya sifir metrik gibi gostermek yerine retry edilebilir customer-safe hata durumuyla ayiracak sekilde guncellendi.
+
+Sonuc: Ilk jobs API hatasinda `File Expert history sync failed` retry karti gorunur; history metrikleri ve `No analysis yet` bos durumu render edilmez. Basarili yukleme sonrasi silent refresh hatasi olursa son yuklu analiz listesi ve metrikler korunur, inline `File Expert history sync needs retry` uyarisi ve retry aksiyonu gosterilir. Basarili sifir-job yuklemelerinde mevcut `No analysis yet` bos durumu korunur. Jobs API GET sorgu hatasinda raw backend mesaji yerine generic `File Expert jobs could not be loaded.` cevabi dondurur. Login redirect, verified-email guard, intake limit guidance, prepare/upload/finalize akisi, report navigation, status label'lari ve customer-safe job projection korunur. Raw backend mesajlari, Supabase/analyzer internalleri, raw binary data, storage path, signed URL, token veya admin-only alan hata UI'inda aciga cikarilmadi.
+
+Dogrulama: `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (33/33); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (264/264); `git diff --check` PASS (yalniz CRLF uyarilari). `npm run build` bilinen restricted-network Google Fonts / Next env yukleme riski nedeniyle calistirilmadi.
 
 ### AUTO-038 [P2] Admin request control center yukleme hatasini bos filtre gibi gostermesin
 

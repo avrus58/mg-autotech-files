@@ -522,6 +522,40 @@ test("customer File Expert intake shows upload limits before prepare", () => {
   assert.match(page, /if \(!oriFile && !modFile\) \{[\s\S]*fetch\("\/api\/file-expert\/jobs\/prepare"/);
 });
 
+test("customer File Expert jobs history shows retryable load errors", () => {
+  const page = readProjectFile("src", "app", "dashboard", "file-expert", "page.tsx");
+  const route = readProjectFile("src", "app", "api", "file-expert", "jobs", "route.ts");
+
+  assert.match(page, /const FILE_EXPERT_JOBS_LOAD_ERROR_MESSAGE =/);
+  assert.match(page, /const FILE_EXPERT_JOBS_SYNC_ERROR_MESSAGE =/);
+  assert.match(page, /const \[jobsLoadError, setJobsLoadError\] = useState\(""\)/);
+  assert.match(page, /const \[jobsReady, setJobsReady\] = useState\(false\)/);
+  assert.match(page, /const hasLoadedJobsRef = useRef\(false\)/);
+  assert.match(page, /if \(!response\.ok\) \{[\s\S]*throw new Error\(FILE_EXPERT_JOBS_LOAD_ERROR_MESSAGE\)/);
+  assert.match(
+    page,
+    /setJobsLoadError\([\s\S]*hasLoadedJobsRef\.current \? FILE_EXPERT_JOBS_SYNC_ERROR_MESSAGE : FILE_EXPERT_JOBS_LOAD_ERROR_MESSAGE/
+  );
+  assert.match(page, /setJobs\(payload\.jobs \?\? \[\]\)/);
+  assert.match(page, /setJobs\(payload\.jobs \?\? \[\]\);\s*setJobsLoadError\(""\)/);
+  assert.match(page, /setJobsReady\(true\)/);
+  assert.match(page, /hasLoadedJobsRef\.current = true/);
+  assert.match(page, /const showInitialJobsLoadError = Boolean\(jobsLoadError && !jobsReady\)/);
+  assert.match(page, /\{!showInitialJobsLoadError && \(/);
+  assert.match(page, /jobsLoadError && jobsReady \? \(/);
+  assert.match(page, /File Expert history sync needs retry/);
+  assert.match(page, /Your last loaded analysis history is still shown/);
+  assert.match(page, /showInitialJobsLoadError \? \(/);
+  assert.match(page, /<FileExpertJobsLoadErrorState onRetry=\{\(\) => void loadJobs\(\)\}/);
+  assert.match(page, /role="alert"[\s\S]*File Expert history sync failed/);
+  assert.match(page, /Analysis history is not shown until it loads successfully/);
+  assert.match(page, /No analysis yet/);
+  assert.match(route, /\{ error: "File Expert jobs could not be loaded\." \}/);
+  assert.doesNotMatch(page, /payload\.error/);
+  assert.doesNotMatch(route, /if \(error\) return NextResponse\.json\(\{ error: error\.message \}/);
+  assert.doesNotMatch(page, /storage_path|signed_url|service_role|admin_note/i);
+});
+
 test("customer File Expert UI renders only customer-safe report details", () => {
   const page = readProjectFile("src", "app", "dashboard", "file-expert", "[id]", "page.tsx");
   assert.match(page, /Technical coordinate data, private file fingerprints and binary internals are hidden on customer reports/);

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   AlertTriangle,
@@ -31,6 +31,9 @@ import type { FileExpertJob, FileExpertReadMethod } from "@/lib/fileExpert/types
 const readMethods: FileExpertReadMethod[] = ["OBD", "Bench", "Boot", "VR", "Unknown"];
 const fileExpertFileRequirements = `Allowed files: ${fileExpertAllowedExtensionsLabel}. Maximum ${fileExpertMaxFileSizeLabel} per file.`;
 const fileExpertAccept = fileExpertAllowedExtensions.join(",");
+const FILE_EXPERT_JOBS_LOAD_ERROR_MESSAGE = "File Expert analysis history could not be loaded. Please try again.";
+const FILE_EXPERT_JOBS_SYNC_ERROR_MESSAGE =
+  "File Expert analysis history could not be refreshed. Your last loaded analysis history is still shown.";
 
 type FileExpertFormState = {
   brand: string;
@@ -130,6 +133,8 @@ export default function FileExpertDashboardPage() {
   const router = useRouter();
   const [jobs, setJobs] = useState<FileExpertJob[]>([]);
   const [loading, setLoading] = useState(true);
+  const [jobsLoadError, setJobsLoadError] = useState("");
+  const [jobsReady, setJobsReady] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submissionStage, setSubmissionStage] = useState("");
   const [message, setMessage] = useState("");
@@ -137,6 +142,7 @@ export default function FileExpertDashboardPage() {
   const [modFile, setModFile] = useState<File | null>(null);
   const [fileSelectionErrors, setFileSelectionErrors] = useState(emptyFileSelectionErrors);
   const [form, setForm] = useState<FileExpertFormState>(initialFileExpertForm);
+  const hasLoadedJobsRef = useRef(false);
 
   async function loadJobs(options?: { silent?: boolean }) {
     if (!options?.silent) setLoading(true);
@@ -154,21 +160,29 @@ export default function FileExpertDashboardPage() {
       return;
     }
 
-    const headers = await getFileExpertAuthHeaders();
-    const response = await fetch("/api/file-expert/jobs", {
-      cache: "no-store",
-      headers,
-    });
-    const payload = await response.json();
+    try {
+      const headers = await getFileExpertAuthHeaders();
+      const response = await fetch("/api/file-expert/jobs", {
+        cache: "no-store",
+        headers,
+      });
+      const payload = (await response.json().catch(() => ({}))) as { jobs?: FileExpertJob[] };
 
-    if (!response.ok) {
-      setMessage(payload.error || "File Expert analyses could not be loaded.");
+      if (!response.ok) {
+        throw new Error(FILE_EXPERT_JOBS_LOAD_ERROR_MESSAGE);
+      }
+
+      setJobs(payload.jobs ?? []);
+      setJobsLoadError("");
+      setJobsReady(true);
+      hasLoadedJobsRef.current = true;
+    } catch {
+      setJobsLoadError(
+        hasLoadedJobsRef.current ? FILE_EXPERT_JOBS_SYNC_ERROR_MESSAGE : FILE_EXPERT_JOBS_LOAD_ERROR_MESSAGE
+      );
+    } finally {
       setLoading(false);
-      return;
     }
-
-    setJobs(payload.jobs ?? []);
-    setLoading(false);
   }
 
   useEffect(() => {
@@ -198,6 +212,7 @@ export default function FileExpertDashboardPage() {
   const submitGuidance = !hasSelectedFile
     ? "Select at least one valid ORI or MOD file before starting analysis."
     : selectedFileError || textLimitError;
+  const showInitialJobsLoadError = Boolean(jobsLoadError && !jobsReady);
 
   function handleFileSelection(slot: FileSlot, file: File | null) {
     const validationError = validateFileExpertSelection(file);
@@ -358,12 +373,36 @@ export default function FileExpertDashboardPage() {
           </div>
         )}
 
-        <div className="mb-6 grid gap-4 md:grid-cols-4">
-          <Metric title="Total analyses" value={stats.total} icon={<BrainCircuit />} />
-          <Metric title="In review" value={stats.processing} icon={<Clock3 />} />
-          <Metric title="Completed" value={stats.completed} icon={<CheckCircle2 />} />
-          <Metric title="Failed" value={stats.failed} icon={<AlertTriangle />} />
-        </div>
+        {!showInitialJobsLoadError && (
+          <div className="mb-6 grid gap-4 md:grid-cols-4">
+            <Metric title="Total analyses" value={stats.total} icon={<BrainCircuit />} />
+            <Metric title="In review" value={stats.processing} icon={<Clock3 />} />
+            <Metric title="Completed" value={stats.completed} icon={<CheckCircle2 />} />
+            <Metric title="Failed" value={stats.failed} icon={<AlertTriangle />} />
+          </div>
+        )}
+
+        {jobsLoadError && jobsReady ? (
+          <div role="alert" className="mb-6 flex flex-col gap-3 rounded-2xl border border-amber-700/30 bg-amber-950/20 p-4 text-amber-100 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex min-w-0 items-start gap-3">
+              <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-300" />
+              <div className="min-w-0">
+                <div className="font-black">File Expert history sync needs retry</div>
+                <p className="mt-1 text-sm leading-6 text-amber-100/75">
+                  Your last loaded analysis history is still shown.
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => void loadJobs({ silent: true })}
+              className="inline-flex shrink-0 items-center justify-center rounded-2xl border border-amber-500/30 bg-black/20 px-4 py-2 text-xs font-black text-amber-100 transition hover:bg-amber-950/40"
+            >
+              <RefreshCcw className="mr-2 h-4 w-4" />
+              Retry sync
+            </button>
+          </div>
+        ) : null}
 
         <div className="grid gap-6 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
           <form
@@ -518,7 +557,9 @@ export default function FileExpertDashboardPage() {
               </div>
             </div>
 
-            {jobs.length === 0 ? (
+            {showInitialJobsLoadError ? (
+              <FileExpertJobsLoadErrorState onRetry={() => void loadJobs()} />
+            ) : jobs.length === 0 ? (
               <div className="rounded-3xl border border-dashed border-white/15 bg-black/25 p-8 text-center">
                 <FileCode2 className="mx-auto mb-4 h-10 w-10 text-red-500" />
                 <h3 className="text-xl font-black">No analysis yet</h3>
@@ -567,6 +608,26 @@ export default function FileExpertDashboardPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+function FileExpertJobsLoadErrorState({ onRetry }: { onRetry: () => void }) {
+  return (
+    <div role="alert" className="rounded-3xl border border-red-800/40 bg-red-950/25 p-8 text-center">
+      <AlertTriangle className="mx-auto mb-4 h-10 w-10 text-red-300" />
+      <h3 className="text-xl font-black">File Expert history sync failed</h3>
+      <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-zinc-300">
+        Analysis history is not shown until it loads successfully. Your files and reports have not been changed.
+      </p>
+      <button
+        type="button"
+        onClick={onRetry}
+        className="mt-5 inline-flex items-center justify-center rounded-2xl bg-[#b1121b] px-5 py-3 text-sm font-black text-white transition hover:bg-[#c91824]"
+      >
+        <RefreshCcw className="mr-2 h-4 w-4" />
+        Try again
+      </button>
+    </div>
   );
 }
 

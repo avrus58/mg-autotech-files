@@ -2,6 +2,32 @@
 
 Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
+## 2026-07-13 reviewer run AUTO-039
+
+- Bitis: 2026-07-13 10:30:40 +01:00.
+- Gorev: AUTO-039 uncommitted worker degisikliklerini V4 product/safety/quality gate olarak incelemek.
+- Sonuc: Accepted. File Expert analiz gecmisi yukleme hatasini gercek bos analiz durumundan ayirmak customer/support degeri tasiyor, duplicate degil, evidence gecerli ve kapsam customer-safe retry/sync hata durumuyla sinirli.
+- Reviewer duzeltmesi: `src/app/dashboard/file-expert/page.tsx` icinde silent refresh/retry baslarken `jobsLoadError` erken temizlenmesin; hata yalniz basarili jobs yuklemesinden sonra temizlensin. `tests/ui-ux-safety.test.ts` bu davranisi kapsayacak sekilde guncellendi.
+- Degisen dosyalar: `src/app/dashboard/file-expert/page.tsx`, `tests/ui-ux-safety.test.ts`, `.autopilot/STATUS.md`, `.autopilot/runtime/review-result.json`.
+- Guvenlik/UI kontrolu: Login redirect, verified-email guard, prepare/upload/finalize akisi, report navigation, status label'lari ve customer-safe job projection korundu. Ilk jobs API hatasinda sifir metrik ve `No analysis yet` render edilmiyor; silent refresh hatasinda son basarili analiz listesi korunuyor ve hata retry/sync uyarisi gorunur kaliyor. Raw backend mesaji, Supabase/analyzer internali, raw binary data, storage path, signed URL, token, secret, gercek musteri verisi veya admin-only alan aciga cikarilmadi.
+- Calistirilan kontroller: `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (33/33); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (264/264); `git diff --check` PASS (yalniz CRLF uyarilari); duplicate/history/runtime/diff review PASS.
+- Calistirilmayan kontroller: `npm run build` bilinen restricted-network Google Fonts / Next env yukleme riski nedeniyle calistirilmadi. `npm run check:payments`, normal desktop env/build/package, SQL, smoke, scraper, live service ve production kontrolleri calistirilmadi.
+- Kalan risk: Customer order archive ve customer settings profile load-error Ready gorevleri ayri kapsamda devam eder. Desktop local history label gorevi ayri P3 kapsamda kalir. Offline build icin Google Fonts/`next/font/google` owner onayi bekleyen bilinen risk devam eder.
+
+## 2026-07-13 worker run AUTO-039
+
+- Baslangic: 2026-07-13 10:00:00 +01:00; bitis: 2026-07-13 10:24:04 +01:00.
+- Gorev: File Expert analiz listesi yukleme hatasini bos analiz gibi gostermesin.
+- Fingerprint: `customer-experience|file-expert-dashboard-load|jobs-api-error-renders-empty-analysis-list|retryable-file-expert-jobs-error-state`.
+- Secim nedeni: Ready kuyrugunda MANUAL gorev yoktu. En yuksek Ready oncelik P2 idi; P2 gorevler arasinda AUTO-039 value skoru en yuksek kalan slice idi (2+4+2+4+5-2-2=13). Task local-only, geri alinabilir ve File Expert analiz gecmisi guvenilirligini artiran customer reliability/support reduction isiydi.
+- Duplicate/evidence kontrolu: V4 package constitution dosyalari, local `.autopilot/constitution/*`, AGENTS, PROJECT, ROADMAP, INBOX, FEATURE_PROPOSALS, TASKS, TASK_HISTORY, PRODUCT_SCORECARD, STATUS, kok/desktop package scriptleri, mevcut Git durumu ve son 100 commit incelendi. Ayni fingerprint tamamlanmis gorunmedi. Evidence halen gecerliydi: `src/app/dashboard/file-expert/page.tsx` jobs API hatasinda generic message set edip `jobs` bos kaldigi icin sifir metrik ve `No analysis yet` render edebiliyordu; `src/app/api/file-expert/jobs/route.ts` query error mesajini raw dondurebiliyordu.
+- Degisen dosyalar: `src/app/dashboard/file-expert/page.tsx`, `src/app/api/file-expert/jobs/route.ts`, `tests/ui-ux-safety.test.ts`, `.autopilot/TASKS.md`, `.autopilot/TASK_HISTORY.md`, `.autopilot/STATUS.md`, `.autopilot/runtime/last-result.json`.
+- Uygulama sonucu: File Expert dashboard'u jobs history yukleme hatasini form/upload mesajlarindan ayri `jobsLoadError` state'iyle izliyor. Ilk API hatasinda `File Expert history sync failed` retry karti gorunur; history metrikleri ve `No analysis yet` bos durumu render edilmez. Basarili yukleme sonrasi silent refresh hatasinda son yuklu analiz listesi ve metrikler korunur, inline `File Expert history sync needs retry` uyarisi ve retry aksiyonu gorunur. Basarili sifir-job yuklemelerinde mevcut bos analiz durumu korunur. Jobs API GET query hatasinda generic `File Expert jobs could not be loaded.` cevabi dondurur.
+- Guvenlik/UI kontrolu: Login redirect, verified-email guard, intake limit guidance, prepare/upload/finalize akisi, report navigation, status label'lari ve customer-safe job projection korundu. Raw backend mesaji, Supabase/analyzer internali, raw binary data, storage path, signed URL, token, secret, gercek musteri verisi veya admin-only alan hata UI'inda aciga cikarilmadi. Production servis, migration, deploy, `.env`, yeni dependency veya canli dosya/odeme/veritabani islemi kullanilmadi.
+- Calistirilan kontroller: `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (33/33); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (264/264); `git diff --check` PASS (yalniz CRLF uyarilari); diff review PASS.
+- Calistirilmayan kontroller: `npm run build` bu repoda bilinen restricted-network Google Fonts / Next env yukleme riski nedeniyle calistirilmadi. `npm run check:payments`, normal desktop env/build/package, SQL, smoke, scraper, live service ve production kontrolleri calistirilmadi.
+- Kalan risk: Customer order archive ve customer settings profile load-error Ready gorevleri ayri kapsamda devam eder. Desktop local history label gorevi ayri P3 kapsamda kalir. Offline build icin Google Fonts/`next/font/google` owner onayi bekleyen bilinen risk devam eder.
+
 ## 2026-07-13 reviewer run AUTO-038
 
 - Bitis: 2026-07-13 09:56:05 +01:00.
