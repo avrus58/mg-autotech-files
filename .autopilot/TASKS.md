@@ -83,6 +83,59 @@
     - `npm run typecheck`
     - `npm test`
 
+- [ ] **P2 AUTO-030 - Musteri kredi ledger hatasini bos hareket gibi gostermesin**
+  - Lane: Product Evolution
+  - Domain: Customer credit visibility & support reduction
+  - Fingerprint: `customer-experience|credit-ledger-page|credit-transaction-query-error-looks-empty|retryable-ledger-error-state`
+  - Business impact: 2/5
+  - User impact: 4/5
+  - Admin impact: 2/5
+  - Strategic fit: 3/5
+  - Confidence: 5/5
+  - Effort: 2/5
+  - Risk: 2/5
+  - Evidence: `src/app/dashboard/credits/history/page.tsx:98-107` loads customer credit profile data without handling Supabase errors, and `src/app/dashboard/credits/history/page.tsx:109-119` ignores `credit_transactions` errors by only setting transactions on the non-error path. `src/app/dashboard/credits/history/page.tsx:121-122` then clears loading/refreshing, and `src/app/dashboard/credits/history/page.tsx:322-327` renders `No credit ledger yet` whenever the transaction array is empty, so a ledger query failure can look like a real empty ledger.
+  - Product value: Customers can distinguish a real empty credit history from a sync failure, reducing payment/credit confusion and support follow-up.
+  - Scope: Add a customer-safe, retryable error state for the full credit history page. Preserve auth redirects, verified-email guard, customer-scoped `user_id` ledger query, live polling/subscription behavior, ledger formatting, Buy Credits link and payment/credit policy.
+  - Acceptance criteria:
+    - Initial profile or credit ledger load failures show a clear customer-safe error state with a retry action instead of the empty ledger state.
+    - Successful zero-transaction loads still show the existing empty ledger state.
+    - Silent/live refresh failures clear the refreshing indicator and preserve the last successfully loaded credit balance and transaction list.
+    - Supabase table internals, metadata, payment internals, storage paths, secrets and admin-only fields are not exposed.
+    - Existing auth/session and unverified-email redirects continue to work as before.
+  - Validation:
+    - `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts`
+    - `npm run lint`
+    - `npm run typecheck`
+    - `npm test`
+
+- [ ] **P2 AUTO-031 - Admin bank payment formu API kontratini gondermeden once dogrulasin**
+  - Lane: Product Evolution
+  - Domain: Admin payment operations & audit safety
+  - Fingerprint: `admin-operations|payment-control-bank-entry|server-side-payment-action-limits-only|client-side-bank-payment-validation`
+  - Business impact: 4/5
+  - User impact: 1/5
+  - Admin impact: 4/5
+  - Strategic fit: 4/5
+  - Confidence: 5/5
+  - Effort: 2/5
+  - Risk: 2/5
+  - Evidence: `src/app/api/admin/payments/route.ts:16-21` enforces the bank-payment action contract: customer UUID, reference 3-160 chars, positive credits up to 100000, positive amount EUR up to 1000000 and optional note up to 1000 chars. The admin payment UI at `src/app/admin/payments/page.tsx:313-317` uses plain inputs/textarea and disables submit only for `saving || !data?.migrationReady`, so empty, non-positive or over-limit values can be posted and fail only after the server action attempt.
+  - Product value: Admins get immediate validation before a sensitive audited payment action, reducing failed attempts and making manual bank credit entry safer.
+  - Scope: Add local validation, input constraints and inline guidance for the existing Record bank payment form. Keep `admin_record_bank_payment`, audit logging, credit math, email behavior, Stripe/refund behavior, customer list loading, pricing and payment policy unchanged.
+  - Acceptance criteria:
+    - Customer selection, bank reference, credits, amount EUR and internal note expose constraints aligned with the admin payments API.
+    - The Match payment & add credits action is disabled until the local form is valid and migration is ready.
+    - Invalid local values show actionable admin-safe guidance before any POST is sent.
+    - The submitted payload shape and server-side validation remain unchanged.
+    - No live payment call, production service call, migration, secret, price rule or credit policy change is introduced.
+  - Validation:
+    - `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts`
+    - `.\node_modules\.bin\tsx.cmd --test tests\ecu-intelligence.test.ts`
+    - `npm run lint`
+    - `npm run typecheck`
+    - `npm test`
+
 ## In Progress
 
 ## Blocked

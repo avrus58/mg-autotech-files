@@ -2,6 +2,25 @@
 
 Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
+## 2026-07-13 planner run V4 CREDIT AND PAYMENT CLARITY
+
+- Baslangic: 2026-07-13 03:40:00 +01:00; bitis: 2026-07-13 03:59:57 +01:00.
+- Gorev: MG AI Operating System V4 planner pass; planlama disinda uygulama kodu degistirilmedi.
+- Repo sinifi: `.autopilot/PROJECT.md`, route yapisi, customer/admin/dashboard/desktop yuzeyleri ve package constitution bu repository'nin `file.mgautotech.de` ECU file service SaaS platformu oldugunu dogruluyor. File-platform V4 constitution uygulandi; `mgautotech.de` ticari/SEO sinirlari guardrail olarak korundu.
+- Okunan kaynaklar: V4 package constitution dosyalari (`common/*`, `mgautotech/*`, `file-platform/*`), local `.autopilot/constitution/*`, `AGENTS.md`, `.autopilot/PROJECT.md`, ROADMAP, INBOX, FEATURE_PROPOSALS, TASKS, TASK_HISTORY, PLANNER_STATE, PRODUCT_SCORECARD, STATUS, kok ve desktop `package.json`, mevcut Git durumu, son 100 commit, ilgili customer credit ledger, admin payment control, desktop upload session/uploader, tests ve docs kaynaklari.
+- INBOX sonucu: `New requests` bos; yeni owner istegi yok. Aktif `MILESTONE-20260712-PRODUCT-EVOLUTION` devam ediyor.
+- Portfolio kontrolu: Son 10 tamamlanan is customer dashboard/order clarity, admin queue/audit, payment-related visibility ve desktop/customer UX dilimleri arasinda dengeli. Ready sayisi 3 oldugu icin iki kanitli Product Evolution dilimiyle 5'e tamamlandi; yalniz test/docs/guard/refactor gorevi uretilmedi.
+- Duplicate kontrolu: ROADMAP, INBOX, FEATURE_PROPOSALS, TASKS, TASK_HISTORY, STATUS ve son 100 commit icinde `credit-ledger-page|credit-transaction-query-error-looks-empty`, `payment-control-bank-entry|server-side-payment-action-limits-only` veya desktop true resumable upload proposal fingerprint/intent'i bulunmadi. `AUTO-018` dashboard credit preview, `AUTO-029` dashboard data sync ve `AUTO-028` desktop notes contract ayri kapsamda kaldigi icin yeni tasklar duplicate degil.
+- Evidence kontrolu: `src/app/dashboard/credits/history/page.tsx:98-107` profile load errorunu ele almiyor; `src/app/dashboard/credits/history/page.tsx:109-119` `credit_transactions` error durumunda transaction state'i guncellemeden devam ediyor; `src/app/dashboard/credits/history/page.tsx:322-327` bos transaction listesi icin `No credit ledger yet` gosteriyor. `src/app/api/admin/payments/route.ts:16-21` bank payment action limitlerini server tarafinda zorunlu kiliyor; `src/app/admin/payments/page.tsx:313-317` form gondermeden once bu limitleri yerelde gostermiyor ve submit disable guard'i yalniz `saving || !data?.migrationReady`. Desktop proposal evidence: `apps/customer-uploader/src/App.tsx:1110-1119` tek upload istegi yapiyor, `apps/customer-uploader/src/App.tsx:1301` true chunked resume'un etkin olmadigini soyluyor ve `src/app/api/desktop/upload-session/route.ts:73-88` tek object upload hedefi donduruyor.
+- Audited domains: Reliability; Integrations.
+- Eklenen Ready gorevler: `AUTO-030` musteri kredi ledger hatasini bos hareket gibi gostermesin; `AUTO-031` admin bank payment formu API kontratini gondermeden once dogrulasin.
+- Eklenen proposal: `PROPOSAL-20260713-DESKTOP-RESUMABLE-UPLOAD` desktop uploader true resumable chunked upload.
+- Ready sayisi: 5 (`AUTO-025`, `AUTO-028`, `AUTO-029`, `AUTO-030`, `AUTO-031`).
+- Degisen dosyalar: `.autopilot/ROADMAP.md`, `.autopilot/FEATURE_PROPOSALS.md`, `.autopilot/TASKS.md`, `.autopilot/PLANNER_STATE.json`, `.autopilot/STATUS.md`, `.autopilot/runtime/planner-result.json`.
+- Calistirilan kontroller: zorunlu V4 constitution ve repository memory dosyalari `Get-Content` ile okundu; `git status --short --branch`; `git log -100 --pretty=format:'%h %ad %s' --date=short`; kok ve desktop `package.json` script incelemesi; targeted PowerShell `Select-String`/line reads ile duplicate, route/UI/test/docs evidence aramalari; `.autopilot/PLANNER_STATE.json` JSON parse PASS; `.autopilot/runtime/planner-result.json` JSON parse PASS; Ready checkbox sayimi 5 PASS; `git diff --name-only` yalniz izinli tracked planning dosyalarini gosterdi; `git check-ignore -v .autopilot/runtime/planner-result.json` PASS; `git diff --check` PASS (yalniz CRLF uyarilari).
+- Calistirilmayan kontroller: Planlama disinda uygulama kodu degismedigi icin `npm run lint`, `npm run typecheck`, `npm test` ve `npm run build` calistirilmadi. `.env*`, live service, SQL, smoke, scraper, desktop build/package ve normal env kontrolleri calistirilmadi.
+- Kalan risk: Ready kuyrugundaki desktop local history labels, desktop notes contract guidance, dashboard sync error state, credit ledger error state ve admin bank payment local validation uygulanana kadar ilgili UX/operasyon belirsizlikleri devam eder. Desktop true resumable/chunked upload icin owner teknik tasarim karari gerekir. Offline build icin Google Fonts/`next/font/google` owner onayi gerektiren bilinen risk devam eder.
+
 ## 2026-07-13 worker run AUTO-027
 
 - Baslangic: 2026-07-13 03:03:00 +01:00; bitis: 2026-07-13 03:34:00 +01:00.

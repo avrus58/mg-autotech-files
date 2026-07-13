@@ -29,6 +29,8 @@
   - Musteri bildirim paneli, bildirim yuklenemeyince sessiz bos durum yerine retry edilebilir hata/yukleme durumunu gostersin.
   - Windows desktop uploader yeni istek not/ECU/read-method alanlari, desktop finalize API uzunluk sozlesmesini gonderimden once musteriye gostersin.
   - Musteri dashboard'u, profil/order/credit senkron hatalarini bos veya sifir durum gibi gostermek yerine retry edilebilir hata durumuyla ayirsin.
+  - Musteri kredi ledger sayfasi, transaction sorgu hatalarini gercek bos hareket listesi gibi gostermek yerine retry edilebilir hata durumuyla ayirsin.
+  - Admin Payment & Revenue Control bank payment formu, server action kontratini gonderimden once yerel olarak dogrulasin.
 - Success signals:
   - Musteri, talebin gercek durumunu ve kendi aksiyon gereksinimini detay ekraninda ayri gorebilir.
   - Musteri, aksiyon bekleyen siparisi liste veya dashboard uzerinden hizlica bulabilir.
@@ -48,6 +50,8 @@
   - Musteri, bildirim panelinin gercekten bos mu yoksa senkron hatasinda mi oldugunu ayirt eder.
   - Desktop uploader kullanicisi, uzun not veya teknik metadata alaninin sessizce kirpilmeden once hangi sinira takildigini gorur.
   - Musteri dashboard kullanicisi, order/kredi/profile verisi yuklenemediginde bunu gercek bos durumdan ayirt edip tekrar deneyebilir.
+  - Musteri full credit ledger kullanicisi, ledger senkron hatasini gercek hareket yok durumundan ayirt edip tekrar deneyebilir.
+  - Admin, manuel bank payment kaydinda eksik veya limit disi degerleri audited action denemesinden once gorur.
   - Migration/fallback durumlarinda mutasyon aksiyonlari read-only davranir ve hata yerine acik mesaj verir.
 
 ## Owner priorities
@@ -59,5 +63,6 @@
 ## Needs owner decision
 
 - Yeni database alani, migration uygulama, fiyat/odeme politikasi, hukuki metin veya production servis islemi gerektiren product-evolution isleri owner onayi olmadan Ready yapilmaz.
+- Desktop uploader true resumable/chunked upload, storage/API tasarimi ve olasi migration gerektirdigi icin `FEATURE_PROPOSALS.md` icinde owner karari bekleyen proposal olarak tutulur.
 
 ## Completed milestones
