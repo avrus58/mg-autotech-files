@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { signOutIfEmailUnverified, signOutStable } from "@/lib/authGuards";
 import { supabase } from "@/lib/supabaseClient";
@@ -30,9 +30,14 @@ type CreditTransaction = {
   description: string | null;
   amount_total: number | string | null;
   currency: string | null;
-  metadata: Record<string, unknown> | null;
   created_at: string;
 };
+
+const CREDIT_LEDGER_LOAD_ERROR_MESSAGE =
+  "We couldn't load your current balance or ledger movements. Try again before treating this history as empty.";
+
+const CREDIT_LEDGER_SYNC_ERROR_MESSAGE =
+  "Credit ledger sync needs retry. Your last loaded balance and movements are still shown.";
 
 function formatDate(date: string) {
   return new Intl.DateTimeFormat("de-DE", {
@@ -75,51 +80,74 @@ export default function CreditHistoryPage() {
   const [transactions, setTransactions] = useState<CreditTransaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [ledgerLoadError, setLedgerLoadError] = useState<string | null>(null);
+  const [ledgerReady, setLedgerReady] = useState(false);
+  const hasLoadedLedgerRef = useRef(false);
 
   const loadHistory = async (options?: { silent?: boolean }) => {
     if (!options?.silent) setRefreshing(true);
 
-    const { data: userData } = await supabase.auth.getUser();
+    let isRedirecting = false;
 
-    if (!userData.user) {
-      router.push("/login");
-      return;
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+
+      if (!userData.user) {
+        isRedirecting = true;
+        router.push("/login");
+        return;
+      }
+
+      const user = userData.user;
+
+      if (await signOutIfEmailUnverified(user)) {
+        isRedirecting = true;
+        router.push("/login?verify_email=1");
+        return;
+      }
+
+      setEmail(user.email ?? null);
+
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("credit_balance, customer_id")
+        .eq("id", user.id)
+        .single();
+
+      const { data: transactionRows, error: transactionRowsError } = await supabase
+        .from("credit_transactions")
+        .select(
+          "id, user_id, type, source_type, source_id, credits_delta, balance_after, description, amount_total, currency, created_at"
+        )
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
+
+      if (profileError || transactionRowsError) {
+        setLedgerLoadError(
+          hasLoadedLedgerRef.current
+            ? CREDIT_LEDGER_SYNC_ERROR_MESSAGE
+            : CREDIT_LEDGER_LOAD_ERROR_MESSAGE
+        );
+        return;
+      }
+
+      setCredits(Number(profile?.credit_balance ?? 0));
+      setCustomerId(profile?.customer_id ?? null);
+      setTransactions((transactionRows ?? []) as CreditTransaction[]);
+      setLedgerLoadError(null);
+      setLedgerReady(true);
+      hasLoadedLedgerRef.current = true;
+    } catch {
+      setLedgerLoadError(
+        hasLoadedLedgerRef.current
+          ? CREDIT_LEDGER_SYNC_ERROR_MESSAGE
+          : CREDIT_LEDGER_LOAD_ERROR_MESSAGE
+      );
+    } finally {
+      if (isRedirecting) return;
+      setLoading(false);
+      setRefreshing(false);
     }
-
-    const user = userData.user;
-
-    if (await signOutIfEmailUnverified(user)) {
-      router.push("/login?verify_email=1");
-      return;
-    }
-
-    setEmail(user.email ?? null);
-
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("credit_balance, customer_id")
-      .eq("id", user.id)
-      .single();
-
-    if (profile) {
-      setCredits(Number(profile.credit_balance ?? 0));
-      setCustomerId(profile.customer_id ?? null);
-    }
-
-    const { data: transactionRows, error } = await supabase
-      .from("credit_transactions")
-      .select(
-        "id, user_id, type, source_type, source_id, credits_delta, balance_after, description, amount_total, currency, metadata, created_at"
-      )
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false });
-
-    if (!error && transactionRows) {
-      setTransactions(transactionRows as CreditTransaction[]);
-    }
-
-    setLoading(false);
-    setRefreshing(false);
   };
 
   useEffect(() => {
@@ -196,6 +224,8 @@ export default function CreditHistoryPage() {
     await signOutStable();
     router.push("/login");
   };
+
+  const showInitialLedgerLoadError = Boolean(ledgerLoadError && !ledgerReady);
 
   if (loading) {
     return (
@@ -287,6 +317,69 @@ export default function CreditHistoryPage() {
             Refresh
           </button>
         </div>
+
+        {showInitialLedgerLoadError ? (
+          <div
+            role="alert"
+            className="rounded-[2rem] border border-red-900/50 bg-red-950/25 p-6"
+          >
+            <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+              <div>
+                <div className="text-sm font-black uppercase tracking-[0.25em] text-red-500">
+                  Credit ledger sync failed
+                </div>
+                <h2 className="mt-2 text-3xl font-black">Try loading again</h2>
+                <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-300">
+                  {ledgerLoadError}
+                </p>
+              </div>
+
+              <button
+                onClick={() => loadHistory()}
+                disabled={refreshing}
+                className="inline-flex items-center justify-center rounded-xl bg-[#b1121b] px-5 py-3 text-sm font-black text-white transition hover:bg-[#c91824] disabled:opacity-60"
+              >
+                {refreshing ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <RefreshCcw className="mr-2 h-4 w-4" />
+                )}
+                Try again
+              </button>
+            </div>
+          </div>
+        ) : (
+          <>
+            {ledgerLoadError && ledgerReady && (
+              <div
+                role="alert"
+                className="mb-6 rounded-3xl border border-amber-500/30 bg-amber-500/10 p-5"
+              >
+                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                  <div>
+                    <h2 className="font-black text-amber-200">
+                      Credit ledger sync needs retry
+                    </h2>
+                    <p className="mt-2 text-sm leading-6 text-amber-100/80">
+                      {ledgerLoadError}
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={() => loadHistory()}
+                    disabled={refreshing}
+                    className="inline-flex items-center justify-center rounded-xl border border-amber-300/30 px-4 py-3 text-sm font-black text-amber-100 transition hover:bg-amber-300/10 disabled:opacity-60"
+                  >
+                    {refreshing ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <RefreshCcw className="mr-2 h-4 w-4" />
+                    )}
+                    Retry sync
+                  </button>
+                </div>
+              </div>
+            )}
 
         <div className="mb-8 grid gap-5 md:grid-cols-3">
           <div className="rounded-3xl border border-red-900/50 bg-red-950/25 p-6">
@@ -408,14 +501,16 @@ export default function CreditHistoryPage() {
             </div>
           )}
         </div>
+          </>
+        )}
 
         <div className="mt-8 rounded-[2rem] border border-red-900/40 bg-red-950/20 p-6">
           <ShieldCheck className="mb-4 h-9 w-9 text-red-500" />
           <h3 className="text-2xl font-black">Ledger based credit tracking</h3>
           <p className="mt-3 text-sm leading-6 text-zinc-400">
-            This page is based on the credit_transactions ledger table. Manual
-            admin credits, Stripe purchases and order usage can all be tracked
-            from one transaction source.
+            This page is based on your credit ledger records. Manual admin
+            credits, Stripe purchases and order usage can all be tracked from one
+            transaction source.
           </p>
         </div>
       </section>

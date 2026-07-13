@@ -375,6 +375,37 @@ test("customer dashboard credit history preview uses the customer credit ledger"
   assert.doesNotMatch(dashboard, /source_id|metadata/);
 });
 
+test("customer credit ledger history shows retryable load errors", () => {
+  const page = readProjectFile("src", "app", "dashboard", "credits", "history", "page.tsx");
+
+  assert.match(page, /const CREDIT_LEDGER_LOAD_ERROR_MESSAGE =/);
+  assert.match(page, /const CREDIT_LEDGER_SYNC_ERROR_MESSAGE =/);
+  assert.match(page, /const \[ledgerLoadError, setLedgerLoadError\]/);
+  assert.match(page, /const \[ledgerReady, setLedgerReady\]/);
+  assert.match(page, /const hasLoadedLedgerRef = useRef\(false\)/);
+  assert.match(page, /error: profileError/);
+  assert.match(page, /error: transactionRowsError/);
+  assert.match(page, /if \(profileError \|\| transactionRowsError\) \{/);
+  assert.match(
+    page,
+    /setLedgerLoadError\([\s\S]*hasLoadedLedgerRef\.current[\s\S]*CREDIT_LEDGER_SYNC_ERROR_MESSAGE[\s\S]*CREDIT_LEDGER_LOAD_ERROR_MESSAGE/
+  );
+  assert.match(page, /setTransactions\(\(transactionRows \?\? \[\]\) as CreditTransaction\[\]\)/);
+  assert.match(page, /setLedgerReady\(true\)/);
+  assert.match(page, /hasLoadedLedgerRef\.current = true/);
+  assert.match(page, /finally \{[\s\S]*setLoading\(false\);[\s\S]*setRefreshing\(false\);/);
+  assert.match(page, /const showInitialLedgerLoadError = Boolean\(ledgerLoadError && !ledgerReady\)/);
+  assert.match(page, /showInitialLedgerLoadError \? \(/);
+  assert.match(page, /role="alert"[\s\S]*Credit ledger sync failed/);
+  assert.match(page, /onClick=\{\(\) => loadHistory\(\)\}/);
+  assert.match(page, /Try again/);
+  assert.match(page, /ledgerLoadError && ledgerReady/);
+  assert.match(page, /Your last loaded balance and movements are still shown/);
+  assert.match(page, /No credit ledger yet/);
+  assert.doesNotMatch(page, /error\.message|profileError\.message|transactionRowsError\.message/);
+  assert.doesNotMatch(page, /credit_transactions ledger table|metadata|storage_path|signed_url|service_role|admin_note/);
+});
+
 test("admin completed-today metric uses delivered file timestamps before request creation", () => {
   const adminPage = readProjectFile("src", "app", "admin", "page.tsx");
 

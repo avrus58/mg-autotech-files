@@ -31,32 +31,6 @@
     - `npm run typecheck`
     - `npm test`
 
-- [ ] **P2 AUTO-030 - Musteri kredi ledger hatasini bos hareket gibi gostermesin**
-  - Lane: Product Evolution
-  - Domain: Customer credit visibility & support reduction
-  - Fingerprint: `customer-experience|credit-ledger-page|credit-transaction-query-error-looks-empty|retryable-ledger-error-state`
-  - Business impact: 2/5
-  - User impact: 4/5
-  - Admin impact: 2/5
-  - Strategic fit: 3/5
-  - Confidence: 5/5
-  - Effort: 2/5
-  - Risk: 2/5
-  - Evidence: `src/app/dashboard/credits/history/page.tsx:98-107` loads customer credit profile data without handling Supabase errors, and `src/app/dashboard/credits/history/page.tsx:109-119` ignores `credit_transactions` errors by only setting transactions on the non-error path. `src/app/dashboard/credits/history/page.tsx:121-122` then clears loading/refreshing, and `src/app/dashboard/credits/history/page.tsx:322-327` renders `No credit ledger yet` whenever the transaction array is empty, so a ledger query failure can look like a real empty ledger.
-  - Product value: Customers can distinguish a real empty credit history from a sync failure, reducing payment/credit confusion and support follow-up.
-  - Scope: Add a customer-safe, retryable error state for the full credit history page. Preserve auth redirects, verified-email guard, customer-scoped `user_id` ledger query, live polling/subscription behavior, ledger formatting, Buy Credits link and payment/credit policy.
-  - Acceptance criteria:
-    - Initial profile or credit ledger load failures show a clear customer-safe error state with a retry action instead of the empty ledger state.
-    - Successful zero-transaction loads still show the existing empty ledger state.
-    - Silent/live refresh failures clear the refreshing indicator and preserve the last successfully loaded credit balance and transaction list.
-    - Supabase table internals, metadata, payment internals, storage paths, secrets and admin-only fields are not exposed.
-    - Existing auth/session and unverified-email redirects continue to work as before.
-  - Validation:
-    - `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts`
-    - `npm run lint`
-    - `npm run typecheck`
-    - `npm test`
-
 - [ ] **P2 AUTO-032 - Musteri siparis arsivi sorgu hatasini bos liste gibi gostermesin**
   - Lane: Product Evolution
   - Domain: Customer order archive reliability & status clarity
@@ -142,6 +116,18 @@ Kabul kriterleri:
 Dogrulama: Diff incelemesi, `npm run lint`, `npm run typecheck`.
 
 ## Done
+
+### AUTO-030 [P2] Musteri kredi ledger hatasini bos hareket gibi gostermesin
+
+Durum: Done
+
+Fingerprint: `customer-experience|credit-ledger-page|credit-transaction-query-error-looks-empty|retryable-ledger-error-state`
+
+Kapsam: Musteri kredi ledger history sayfasi, profile veya `credit_transactions` sorgu hatalarini gercek bos hareket listesi gibi gostermek yerine retry edilebilir customer-safe hata durumuyla ayiracak sekilde guncellendi.
+
+Sonuc: Ilk yukleme hatasinda `Credit ledger sync failed` retry karti gorunur ve `No credit ledger yet` bos hareket durumu render edilmez. Basarili yukleme sonrasi manuel, interval veya realtime refresh hatasi olursa son yuklu balance ve ledger hareketleri korunur, refreshing indikatoru kapanir ve inline `Credit ledger sync needs retry` uyarisi gorunur. Basarili sifir transaction yuklemelerinde mevcut bos ledger state'i ve Buy Credits linki korunur. Login redirect, unverified-email redirect, customer-scoped `user_id` ledger sorgusu, live polling/subscription davranisi, ledger formatting ve payment/credit policy degistirilmedi. Raw backend error, metadata select'i, visible `credit_transactions` table copy'si, storage path, signed URL, secret veya admin-only alan hata UI'inda aciga cikarilmadi.
+
+Dogrulama: `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (31/31); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (261/261); `git diff --check` PASS (yalniz CRLF uyarilari). `npm run build` bilinen restricted-network Google Fonts / Next env yukleme riski nedeniyle calistirilmadi.
 
 ### AUTO-037 [P2] File Expert yukleme formu API limitlerini gondermeden once gostersin
 

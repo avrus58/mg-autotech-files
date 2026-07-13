@@ -2,6 +2,32 @@
 
 Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
+## 2026-07-13 reviewer run AUTO-030
+
+- Baslangic: 2026-07-13 08:14:00 +01:00; bitis: 2026-07-13 08:22:00 +01:00.
+- Gorev: AUTO-030 uncommitted worker degisikliklerini V4 product/safety/quality gate olarak incelemek.
+- Sonuc: Accepted. Customer credit ledger load-error ayrimi gercek musteri/support degeri tasiyor, duplicate degil, evidence gecerli ve kapsam customer-safe retry/sync hata durumuyla sinirli.
+- Reviewer duzeltmesi: Yok.
+- Degisen dosyalar: `.autopilot/STATUS.md`, `.autopilot/runtime/review-result.json`.
+- Guvenlik/UI kontrolu: Login redirect, unverified-email redirect, `user_id` customer scoping, live polling/subscription, ledger formatting, Buy Credits linki ve payment/credit policy korundu. Ilk yukleme hatasinda normal bos ledger state'i render edilmiyor; sonraki sync hatalarinda son basarili balance ve transaction listesi korunuyor. Raw backend error, metadata select'i, visible `credit_transactions` table copy'si, storage path, signed URL, secret, token, gercek musteri verisi, payment internali veya admin-only alan hata UI'inda aciga cikarilmadi.
+- Calistirilan kontroller: `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (31/31); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (261/261); `git diff --check` PASS (yalniz CRLF uyarilari); duplicate/history/runtime/diff review PASS.
+- Calistirilmayan kontroller: `npm run build` bilinen restricted-network Google Fonts / Next env yukleme riski nedeniyle calistirilmadi. `npm run check:payments`, normal desktop env/build/package, SQL, smoke, scraper, live service ve production kontrolleri calistirilmadi.
+- Kalan risk: Customer order archive ve settings profile load-error Ready gorevleri ayri kapsamda devam eder. Offline build icin Google Fonts/`next/font/google` owner onayi bekleyen bilinen risk devam eder.
+
+## 2026-07-13 worker run AUTO-030
+
+- Baslangic: 2026-07-13 07:50:00 +01:00; bitis: 2026-07-13 08:13:37 +01:00.
+- Gorev: Musteri kredi ledger hatasini bos hareket gibi gostermesin.
+- Fingerprint: `customer-experience|credit-ledger-page|credit-transaction-query-error-looks-empty|retryable-ledger-error-state`.
+- Secim nedeni: Ready kuyrugunda MANUAL gorev yoktu. En yuksek Ready oncelik P2 idi; P2 gorevler arasinda AUTO-030, AUTO-032 ve AUTO-036 value skorunda esitti (2+4+2+3+5-2-2=12). Ready sirasi ve kredi/odeme gorunurlugu support riski nedeniyle AUTO-030 secildi. Task local-only, geri alinabilir ve mevcut customer-scoped queryleri koruyan bir reliability/customer-clarity iyilestirmesiydi.
+- Duplicate/evidence kontrolu: V4 package constitution dosyalari, local `.autopilot/constitution/*`, AGENTS, PROJECT, ROADMAP, INBOX, FEATURE_PROPOSALS, TASKS, TASK_HISTORY, PRODUCT_SCORECARD, STATUS, kok/desktop package scriptleri, mevcut Git durumu ve son 100 commit incelendi. Ayni fingerprint tamamlanmis gorunmedi. Evidence halen gecerliydi: `src/app/dashboard/credits/history/page.tsx` profile query errorunu ele almiyor, `credit_transactions` errorunu yalniz non-error pathte state yazarak geciyor ve bos transaction listesinde `No credit ledger yet` render ediyordu.
+- Degisen dosyalar: `src/app/dashboard/credits/history/page.tsx`, `tests/ui-ux-safety.test.ts`, `.autopilot/TASKS.md`, `.autopilot/TASK_HISTORY.md`, `.autopilot/STATUS.md`, `.autopilot/runtime/last-result.json`.
+- Uygulama sonucu: Credit ledger history sayfasi artik profile veya ledger query failure durumunda customer-safe `Credit ledger sync failed` retry karti gosterir ve normal bos ledger state'ini render etmez. Basarili yukleme sonrasi manuel/interval/realtime refresh hatasi olursa son yuklu balance ve transaction listesi korunur, refreshing indikatoru kapanir ve inline `Credit ledger sync needs retry` uyarisi gorunur. Basarili sifir transaction yuklemesi mevcut `No credit ledger yet` ve Buy Credits bos state'ini korur.
+- Guvenlik/UI kontrolu: Login redirect, unverified-email redirect, `user_id` customer scoping, live polling/subscription, ledger formatting ve payment/credit policy korundu. Raw backend error, metadata select'i, visible `credit_transactions` table copy'si, storage path, signed URL, secret, token, gercek musteri verisi, payment internali veya admin-only alan hata UI'inda aciga cikarilmadi. Production servis, migration, deploy, `.env`, yeni dependency veya canli odeme/veritabani islemi kullanilmadi.
+- Calistirilan kontroller: `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (31/31); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (261/261); `git diff --check` PASS (yalniz CRLF uyarilari); diff review PASS.
+- Calistirilmayan kontroller: `npm run build` bu repoda bilinen restricted-network Google Fonts / Next env yukleme riski nedeniyle calistirilmadi. `npm run check:payments`, normal desktop env/build/package, SQL, smoke, scraper, live service ve production kontrolleri calistirilmadi.
+- Kalan risk: Customer order archive ve settings profile load-error Ready gorevleri ayri kapsamda devam eder. Offline build icin Google Fonts/`next/font/google` owner onayi bekleyen bilinen risk devam eder.
+
 ## 2026-07-13 reviewer run AUTO-037
 
 - Baslangic: 2026-07-13 07:43:00 +01:00; bitis: 2026-07-13 07:48:12 +01:00.
