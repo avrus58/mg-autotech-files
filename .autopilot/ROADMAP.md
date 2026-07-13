@@ -31,6 +31,8 @@
   - Musteri dashboard'u, profil/order/credit senkron hatalarini bos veya sifir durum gibi gostermek yerine retry edilebilir hata durumuyla ayirsin.
   - Musteri kredi ledger sayfasi, transaction sorgu hatalarini gercek bos hareket listesi gibi gostermek yerine retry edilebilir hata durumuyla ayirsin.
   - Admin Payment & Revenue Control bank payment formu, server action kontratini gonderimden once yerel olarak dogrulasin.
+  - Musteri siparis arsivi, order sorgu hatalarini normal bos liste durumundan ayirsin ve retry aksiyonu sunsun.
+  - Legacy admin order modal, kaydedilmemis teslim tahminini gizli `usually_30_min` varsayimina cevirmeden acik admin secimi istesin.
 - Success signals:
   - Musteri, talebin gercek durumunu ve kendi aksiyon gereksinimini detay ekraninda ayri gorebilir.
   - Musteri, aksiyon bekleyen siparisi liste veya dashboard uzerinden hizlica bulabilir.
@@ -52,6 +54,8 @@
   - Musteri dashboard kullanicisi, order/kredi/profile verisi yuklenemediginde bunu gercek bos durumdan ayirt edip tekrar deneyebilir.
   - Musteri full credit ledger kullanicisi, ledger senkron hatasini gercek hareket yok durumundan ayirt edip tekrar deneyebilir.
   - Admin, manuel bank payment kaydinda eksik veya limit disi degerleri audited action denemesinden once gorur.
+  - Musteri order archive kullanicisi, siparis sorgu hatasini gercek bos sonuc veya filtre sonucu ile karistirmadan tekrar deneyebilir.
+  - Admin, legacy order modalinda teslim tahmini kaydetmeden once spesifik sure etiketini bilincli olarak secer.
   - Migration/fallback durumlarinda mutasyon aksiyonlari read-only davranir ve hata yerine acik mesaj verir.
 
 ## Owner priorities

@@ -2,6 +2,24 @@
 
 Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
+## 2026-07-13 planner run V4 ORDER ARCHIVE AND DELIVERY ESTIMATE CLARITY
+
+- Baslangic: 2026-07-13 05:00:00 +01:00; bitis: 2026-07-13 05:08:37 +01:00.
+- Gorev: MG AI Operating System V4 planner pass; planlama disinda uygulama kodu degistirilmedi.
+- Repo sinifi: `.autopilot/PROJECT.md`, route yapisi, admin/customer/dashboard/desktop yuzeyleri ve package constitution bu repository'nin `file.mgautotech.de` ECU file service SaaS platformu oldugunu dogruluyor. File-platform V4 constitution uygulandi; `mgautotech.de` ticari/SEO sinirlari guardrail olarak korundu.
+- Okunan kaynaklar: V4 package constitution dosyalari (`common/*`, `mgautotech/*`, `file-platform/*`), local `.autopilot/constitution/*`, `AGENTS.md`, `.autopilot/PROJECT.md`, ROADMAP, INBOX, FEATURE_PROPOSALS, TASKS, TASK_HISTORY, PLANNER_STATE, PRODUCT_SCORECARD, STATUS, kok ve desktop `package.json`, mevcut Git durumu, son 100 commit, ilgili customer orders archive, legacy admin order modal, customer credit/dashboard, desktop uploader, tests ve docs kaynaklari.
+- INBOX sonucu: `New requests` bos; yeni owner istegi yok. Aktif `MILESTONE-20260712-PRODUCT-EVOLUTION` devam ediyor.
+- Portfolio kontrolu: Son 10 tamamlanan is customer dashboard/order clarity, admin queue/audit, payment visibility ve desktop/customer UX dilimleri arasinda dengeli. Ready sayisi 3 oldugu icin iki kanitli Product Evolution dilimiyle 5'e tamamlandi; yalniz test/docs/guard/refactor gorevi uretilmedi.
+- Duplicate kontrolu: ROADMAP, INBOX, FEATURE_PROPOSALS, TASKS, TASK_HISTORY, STATUS ve son 100 commit incelendi. `AUTO-019` customer order detail estimate display kapsamindaydi; legacy admin write-side hidden default ayri kaldigi icin `AUTO-033` duplicate degil. `AUTO-014` order archive Needs Response view kapsamindaydi; order archive query-failure/empty-state ayrimi ayri kaldigi icin `AUTO-032` duplicate degil.
+- Evidence kontrolu: `src/app/dashboard/orders/page.tsx:133-148` order archive sorgu hatasinda yalniz `message` set edip loading state'lerini kapatiyor; `src/app/dashboard/orders/page.tsx:234-239` ayni anda hata mesaji ve bos liste durumunu render edebiliyor. `src/app/admin/page.tsx:2151-2152` legacy admin modalinda null `estimated_delivery_label` icin `usually_30_min` varsayiyor; `src/app/admin/page.tsx:2188-2195` bunu `Customer visible SLA` olarak gosteriyor; `src/app/admin/page.tsx:2216-2226` kaydetme aksiyonu bu default'u persist edebiliyor.
+- Audited domains: Reliability; ResponsiveUX.
+- Eklenen Ready gorevler: `AUTO-032` musteri siparis arsivi sorgu hatasini bos liste gibi gostermesin; `AUTO-033` legacy admin teslim tahmini kaydedilmeden 30 dk varsaymasin.
+- Ready sayisi: 5 (`AUTO-025`, `AUTO-029`, `AUTO-030`, `AUTO-032`, `AUTO-033`).
+- Degisen dosyalar: `.autopilot/ROADMAP.md`, `.autopilot/TASKS.md`, `.autopilot/PLANNER_STATE.json`, `.autopilot/STATUS.md`, `.autopilot/runtime/planner-result.json`.
+- Calistirilan kontroller: zorunlu V4 constitution ve repository memory dosyalari `Get-Content` ile okundu; local `.autopilot/constitution/*` okundu; `git status --short --branch`; `git log -100 --pretty=format:'%h %ad %s' --date=short`; kok ve desktop `package.json` script incelemesi; PowerShell `Select-String`/line reads ile duplicate, route/UI/test/docs evidence aramalari; `.autopilot/PLANNER_STATE.json` JSON parse PASS; `.autopilot/runtime/planner-result.json` JSON parse PASS; Ready checkbox sayimi 5 PASS; `git diff --name-only` yalniz izinli tracked planning dosyalarini gosterdi; `git check-ignore -v .autopilot/runtime/planner-result.json` PASS; `git diff --check` PASS (yalniz CRLF uyarilari).
+- Calistirilmayan kontroller: Planlama disinda uygulama kodu degismedigi icin `npm run lint`, `npm run typecheck`, `npm test` ve `npm run build` calistirilmadi. `.env*`, live service, SQL, smoke, scraper, desktop build/package ve normal env kontrolleri calistirilmadi.
+- Kalan risk: Ready kuyrugundaki desktop local history labels, customer dashboard sync error state, credit ledger error state, customer order archive error state ve legacy admin delivery estimate explicit selection uygulanana kadar ilgili UX/operasyon belirsizlikleri devam eder. Desktop true resumable/chunked upload icin owner teknik tasarim karari gerekir. Offline build icin Google Fonts/`next/font/google` owner onayi gerektiren bilinen risk devam eder.
+
 ## 2026-07-13 worker run AUTO-028
 
 - Baslangic: 2026-07-13 04:12:00 +01:00; bitis: 2026-07-13 04:46:39 +01:00.

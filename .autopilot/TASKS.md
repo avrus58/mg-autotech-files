@@ -83,6 +83,58 @@
     - `npm run typecheck`
     - `npm test`
 
+- [ ] **P2 AUTO-032 - Musteri siparis arsivi sorgu hatasini bos liste gibi gostermesin**
+  - Lane: Product Evolution
+  - Domain: Customer order archive reliability & status clarity
+  - Fingerprint: `customer-experience|order-archive|supabase-query-error-renders-with-empty-state|retryable-order-archive-error-state`
+  - Business impact: 2/5
+  - User impact: 4/5
+  - Admin impact: 2/5
+  - Strategic fit: 3/5
+  - Confidence: 5/5
+  - Effort: 2/5
+  - Risk: 2/5
+  - Evidence: `src/app/dashboard/orders/page.tsx:133-148` sets `message` when the customer-scoped orders query fails but still clears loading/loadingMore and leaves the list state unchanged. `src/app/dashboard/orders/page.tsx:234-239` then renders the error message and, when the current list is empty, also renders `No orders found in this view`, so an initial archive sync failure can be presented alongside the normal empty state without a retry action.
+  - Product value: Customers can distinguish a real empty order archive from a temporary sync failure and retry without assuming their requests disappeared.
+  - Scope: Add a customer-safe, retryable load-error state for the order archive. Preserve auth redirects, verified-email guard, `customer_id` scoping, view tabs, search, pagination, realtime refresh and existing order card fields.
+  - Acceptance criteria:
+    - Initial order archive query failures show a clear customer-safe error state with a retry action instead of the normal empty-order message.
+    - Successful zero-result loads still show the existing empty state for the selected view/search.
+    - Load-more or realtime refresh failures clear loading indicators and preserve the last successfully loaded order list.
+    - Supabase table internals, storage paths, signed URLs, raw binary metadata, payment internals, secrets and admin-only fields are not exposed.
+    - Existing Active, Needs Response, Completed, Cancelled and All views keep their current filters and URL behavior.
+  - Validation:
+    - `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts`
+    - `npm run lint`
+    - `npm run typecheck`
+    - `npm test`
+
+- [ ] **P2 AUTO-033 - Legacy admin teslim tahmini kaydedilmeden 30 dk varsaymasin**
+  - Lane: Product Evolution
+  - Domain: Admin delivery estimate accuracy & customer-visible SLA safety
+  - Fingerprint: `admin-operations|legacy-admin-order-modal|unset-delivery-estimate-defaults-to-30-min|explicit-estimate-selection`
+  - Business impact: 3/5
+  - User impact: 3/5
+  - Admin impact: 4/5
+  - Strategic fit: 4/5
+  - Confidence: 5/5
+  - Effort: 2/5
+  - Risk: 2/5
+  - Evidence: `src/app/admin/page.tsx:2151-2152` initializes the legacy admin order modal delivery estimate state with `order.estimated_delivery_label ?? "usually_30_min"`. The same modal labels the preview as `Customer visible SLA` at `src/app/admin/page.tsx:2188-2195` and the `Save Delivery Estimate` action at `src/app/admin/page.tsx:2216-2226` can persist that default, even when the order has no explicit estimate. AUTO-019 fixed the customer detail display, but this legacy admin write surface still has a hidden 30-minute default.
+  - Product value: Admins must intentionally choose a customer-visible delivery estimate; unset estimates should not turn into a specific time promise by opening and saving the legacy modal.
+  - Scope: Add an explicit unset/not-set state to the legacy admin delivery estimate control and require a deliberate estimate choice before saving. Preserve existing saved estimate labels, optional note behavior, permissions, SQL-column fallback messaging, order status flow and customer detail display.
+  - Acceptance criteria:
+    - Orders with `estimated_delivery_label` null show a neutral not-set delivery estimate state in the legacy admin modal.
+    - The modal does not preview or save `Usually around 30 min` unless an admin explicitly selects that option.
+    - Save is disabled or guarded until a valid explicit estimate is selected, while existing non-null estimates remain editable as before.
+    - Optional delivery notes remain tied to explicitly saved estimates and do not create a standalone timing claim.
+    - No pricing, warranty, legal claim, SLA policy, database schema, production data or live service behavior is changed.
+  - Validation:
+    - `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts`
+    - `npm run lint`
+    - `npm run typecheck`
+    - `npm test`
+
 ## In Progress
 
 ## Blocked
