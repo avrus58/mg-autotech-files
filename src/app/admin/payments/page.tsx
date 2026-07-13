@@ -71,6 +71,13 @@ type PaymentEvent = {
   message: string | null;
   created_at: string;
 };
+type BankForm = {
+  customerUserId: string;
+  reference: string;
+  credits: string;
+  amountEuro: string;
+  note: string;
+};
 type Payload = {
   migrationReady: boolean;
   records: PaymentRecord[];
@@ -97,6 +104,14 @@ type Payload = {
 };
 
 const PAGE_SIZE = 20;
+const BANK_PAYMENT_LIMITS = {
+  referenceMin: 3,
+  referenceMax: 160,
+  creditsMax: 100000,
+  amountEuroMax: 1000000,
+  noteMax: 1000,
+} as const;
+const emptyBankForm: BankForm = { customerUserId: "", reference: "", credits: "", amountEuro: "", note: "" };
 const providerMeta = {
   stripe: { label: "Stripe", icon: CreditCard },
   paypal: { label: "Legacy", icon: Clock3 },
@@ -115,6 +130,48 @@ function dateTime(value: string) {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(new Date(value));
+}
+
+function isUuid(value: string) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+}
+
+function parseFormNumber(value: string) {
+  if (!value.trim()) return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function getBankPaymentValidation(bankForm: BankForm, customers: Customer[]) {
+  const errors: string[] = [];
+  const referenceLength = bankForm.reference.trim().length;
+  const credits = parseFormNumber(bankForm.credits);
+  const amountEuro = parseFormNumber(bankForm.amountEuro);
+  const customerExists = customers.some((customer) => customer.id === bankForm.customerUserId);
+
+  if (!bankForm.customerUserId) {
+    errors.push("Select a customer from the loaded customer list.");
+  } else if (!isUuid(bankForm.customerUserId) || !customerExists) {
+    errors.push("Select a valid customer from the loaded customer list.");
+  }
+  if (referenceLength < BANK_PAYMENT_LIMITS.referenceMin || referenceLength > BANK_PAYMENT_LIMITS.referenceMax) {
+    errors.push("Bank reference must be 3-160 characters.");
+  }
+  if (credits === null || credits <= 0 || credits > BANK_PAYMENT_LIMITS.creditsMax) {
+    errors.push("Credits must be greater than 0 and no more than 100000.");
+  }
+  if (amountEuro === null || amountEuro <= 0 || amountEuro > BANK_PAYMENT_LIMITS.amountEuroMax) {
+    errors.push("Amount EUR must be greater than 0 and no more than 1000000.");
+  }
+  if (bankForm.note.length > BANK_PAYMENT_LIMITS.noteMax) {
+    errors.push("Internal note must be 1000 characters or fewer.");
+  }
+
+  return {
+    errors,
+    isValid: errors.length === 0,
+    noteRemaining: BANK_PAYMENT_LIMITS.noteMax - bankForm.note.length,
+  };
 }
 
 function StatusBadge({ status }: { status: string }) {
@@ -140,7 +197,7 @@ export default function PaymentControlPage() {
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<PaymentRecord | null>(null);
   const [reviewNote, setReviewNote] = useState("");
-  const [bankForm, setBankForm] = useState({ customerUserId: "", reference: "", credits: "", amountEuro: "", note: "" });
+  const [bankForm, setBankForm] = useState<BankForm>(emptyBankForm);
 
   const authFetch = useCallback(async (init?: RequestInit) => {
     const session = await supabase.auth.getSession();
@@ -197,6 +254,11 @@ export default function PaymentControlPage() {
   }, [data, provider, search, status]);
   const pageCount = Math.max(1, Math.ceil(filteredRecords.length / PAGE_SIZE));
   const visibleRecords = filteredRecords.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const bankFormValidation = useMemo(
+    () => getBankPaymentValidation(bankForm, data?.customers ?? []),
+    [bankForm, data?.customers]
+  );
+  const canRecordBankPayment = Boolean(data?.migrationReady) && bankFormValidation.isValid && !saving;
 
   async function post(body: Record<string, unknown>) {
     setSaving(true);
@@ -221,6 +283,14 @@ export default function PaymentControlPage() {
   }
 
   async function recordBankPayment() {
+    if (!bankFormValidation.isValid) {
+      setMessage(bankFormValidation.errors[0] ?? "Complete the bank payment form before posting.");
+      return;
+    }
+    if (!data?.migrationReady) {
+      setMessage("Payment Control migration is required before recording bank payments.");
+      return;
+    }
     const success = await post({
       action: "record_bank_payment",
       customerUserId: bankForm.customerUserId,
@@ -229,7 +299,7 @@ export default function PaymentControlPage() {
       amountEuro: Number(bankForm.amountEuro),
       note: bankForm.note.trim() || null,
     });
-    if (success) setBankForm({ customerUserId: "", reference: "", credits: "", amountEuro: "", note: "" });
+    if (success) setBankForm(emptyBankForm);
   }
 
   async function refundPayment(record: PaymentRecord) {
@@ -310,11 +380,53 @@ export default function PaymentControlPage() {
             <section className="rounded-lg border border-white/10 bg-white/[0.025] p-5">
               <h2 className="text-lg font-black">Record bank payment</h2>
               <div className="mt-4 space-y-3">
-                <select value={bankForm.customerUserId} onChange={(event) => setBankForm({ ...bankForm, customerUserId: event.target.value })} className="h-11 w-full rounded-lg border border-white/10 bg-black/50 px-3 text-sm"><option value="">Select customer</option>{(data?.customers ?? []).map((customer) => <option key={customer.id} value={customer.id}>{customer.customer_id || customer.email} · {customer.company_name || customer.full_name || "Customer"}</option>)}</select>
-                <Input label="Bank reference" value={bankForm.reference} onChange={(value) => setBankForm({ ...bankForm, reference: value })} />
-                <div className="grid grid-cols-2 gap-3"><Input label="Credits" type="number" value={bankForm.credits} onChange={(value) => setBankForm({ ...bankForm, credits: value })} /><Input label="Amount EUR" type="number" value={bankForm.amountEuro} onChange={(value) => setBankForm({ ...bankForm, amountEuro: value })} /></div>
-                <textarea value={bankForm.note} onChange={(event) => setBankForm({ ...bankForm, note: event.target.value })} placeholder="Internal note" className="min-h-20 w-full resize-none rounded-lg border border-white/10 bg-black/50 p-3 text-sm outline-none focus:border-red-700" />
-                <button disabled={saving || !data?.migrationReady} onClick={() => void recordBankPayment()} className="h-11 w-full rounded-lg bg-[#b1121b] text-sm font-black disabled:opacity-40">Match payment & add credits</button>
+                <label className="block text-xs font-black uppercase text-zinc-600">
+                  Customer
+                  <select required value={bankForm.customerUserId} aria-invalid={!bankForm.customerUserId} onChange={(event) => setBankForm({ ...bankForm, customerUserId: event.target.value })} className="mt-2 h-11 w-full rounded-lg border border-white/10 bg-black/50 px-3 text-sm normal-case text-white outline-none focus:border-red-700"><option value="">Select customer</option>{(data?.customers ?? []).map((customer) => <option key={customer.id} value={customer.id}>{customer.customer_id || customer.email} · {customer.company_name || customer.full_name || "Customer"}</option>)}</select>
+                  <span className="mt-1 block text-[11px] leading-4 text-zinc-500">Required. Must be one loaded customer profile.</span>
+                </label>
+                <Input
+                  required
+                  label="Bank reference"
+                  value={bankForm.reference}
+                  onChange={(value) => setBankForm({ ...bankForm, reference: value })}
+                  maxLength={BANK_PAYMENT_LIMITS.referenceMax}
+                  help="Required. 3-160 characters."
+                  invalid={bankForm.reference.trim().length > 0 && bankForm.reference.trim().length < BANK_PAYMENT_LIMITS.referenceMin}
+                />
+                <div className="grid grid-cols-2 gap-3">
+                  <Input
+                    required
+                    label="Credits"
+                    type="number"
+                    value={bankForm.credits}
+                    onChange={(value) => setBankForm({ ...bankForm, credits: value })}
+                    min="0.01"
+                    max={BANK_PAYMENT_LIMITS.creditsMax}
+                    step="0.01"
+                    help="Required. More than 0, max 100000."
+                    invalid={bankForm.credits.trim() !== "" && (parseFormNumber(bankForm.credits) === null || Number(bankForm.credits) <= 0 || Number(bankForm.credits) > BANK_PAYMENT_LIMITS.creditsMax)}
+                  />
+                  <Input
+                    required
+                    label="Amount EUR"
+                    type="number"
+                    value={bankForm.amountEuro}
+                    onChange={(value) => setBankForm({ ...bankForm, amountEuro: value })}
+                    min="0.01"
+                    max={BANK_PAYMENT_LIMITS.amountEuroMax}
+                    step="0.01"
+                    help="Required. More than 0, max 1000000."
+                    invalid={bankForm.amountEuro.trim() !== "" && (parseFormNumber(bankForm.amountEuro) === null || Number(bankForm.amountEuro) <= 0 || Number(bankForm.amountEuro) > BANK_PAYMENT_LIMITS.amountEuroMax)}
+                  />
+                </div>
+                <label className="block text-xs font-black uppercase text-zinc-600">
+                  Internal note
+                  <textarea maxLength={BANK_PAYMENT_LIMITS.noteMax} value={bankForm.note} onChange={(event) => setBankForm({ ...bankForm, note: event.target.value })} placeholder="Internal note" aria-invalid={bankForm.note.length > BANK_PAYMENT_LIMITS.noteMax} className="mt-2 min-h-20 w-full resize-none rounded-lg border border-white/10 bg-black/50 p-3 text-sm normal-case text-white outline-none focus:border-red-700" />
+                  <span className="mt-1 block text-[11px] leading-4 text-zinc-500">{Math.max(0, bankFormValidation.noteRemaining)} characters remaining. Optional, max 1000.</span>
+                </label>
+                {!bankFormValidation.isValid && <div className="rounded-lg border border-amber-700/40 bg-amber-950/20 p-3 text-xs leading-5 text-amber-100"><div className="font-black">Complete the bank payment contract before posting:</div><ul className="mt-1 list-disc space-y-1 pl-4">{bankFormValidation.errors.map((error) => <li key={error}>{error}</li>)}</ul></div>}
+                <button disabled={!canRecordBankPayment} onClick={() => void recordBankPayment()} className="h-11 w-full rounded-lg bg-[#b1121b] text-sm font-black disabled:opacity-40">Match payment & add credits</button>
               </div>
             </section>
 
@@ -342,5 +454,5 @@ function Metric({ icon, label, value, tone = "default" }: { icon: ReactNode; lab
 }
 function Small({ label, value }: { label: string; value: string }) { return <div className="rounded-lg bg-black/30 p-2"><div className="text-[10px] uppercase text-zinc-600">{label}</div><div className="mt-1 font-black">{value}</div></div>; }
 function Empty({ text }: { text: string }) { return <div className="py-16 text-center text-sm text-zinc-600"><Clock3 className="mx-auto mb-3 h-7 w-7" />{text}</div>; }
-function Input({ label, value, onChange, type = "text" }: { label: string; value: string; onChange: (value: string) => void; type?: string }) { return <label className="block text-xs font-black uppercase text-zinc-600">{label}<input type={type} value={value} onChange={(event) => onChange(event.target.value)} className="mt-2 h-11 w-full rounded-lg border border-white/10 bg-black/50 px-3 text-sm normal-case text-white outline-none focus:border-red-700" /></label>; }
+function Input({ label, value, onChange, type = "text", min, max, step, maxLength, help, required = false, invalid = false }: { label: string; value: string; onChange: (value: string) => void; type?: string; min?: string; max?: number; step?: string; maxLength?: number; help?: string; required?: boolean; invalid?: boolean }) { return <label className="block text-xs font-black uppercase text-zinc-600">{label}<input required={required} type={type} value={value} min={min} max={max} step={step} maxLength={maxLength} aria-invalid={invalid} onChange={(event) => onChange(event.target.value)} className="mt-2 h-11 w-full rounded-lg border border-white/10 bg-black/50 px-3 text-sm normal-case text-white outline-none focus:border-red-700" />{help && <span className="mt-1 block text-[11px] leading-4 text-zinc-500">{help}</span>}</label>; }
 function Detail({ label, value }: { label: string; value: string }) { return <div className="flex items-start justify-between gap-3 border-b border-white/10 pb-2"><span className="text-zinc-600">{label}</span><span className="max-w-[220px] break-all text-right font-bold">{value}</span></div>; }

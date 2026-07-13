@@ -109,33 +109,6 @@
     - `npm run typecheck`
     - `npm test`
 
-- [ ] **P2 AUTO-031 - Admin bank payment formu API kontratini gondermeden once dogrulasin**
-  - Lane: Product Evolution
-  - Domain: Admin payment operations & audit safety
-  - Fingerprint: `admin-operations|payment-control-bank-entry|server-side-payment-action-limits-only|client-side-bank-payment-validation`
-  - Business impact: 4/5
-  - User impact: 1/5
-  - Admin impact: 4/5
-  - Strategic fit: 4/5
-  - Confidence: 5/5
-  - Effort: 2/5
-  - Risk: 2/5
-  - Evidence: `src/app/api/admin/payments/route.ts:16-21` enforces the bank-payment action contract: customer UUID, reference 3-160 chars, positive credits up to 100000, positive amount EUR up to 1000000 and optional note up to 1000 chars. The admin payment UI at `src/app/admin/payments/page.tsx:313-317` uses plain inputs/textarea and disables submit only for `saving || !data?.migrationReady`, so empty, non-positive or over-limit values can be posted and fail only after the server action attempt.
-  - Product value: Admins get immediate validation before a sensitive audited payment action, reducing failed attempts and making manual bank credit entry safer.
-  - Scope: Add local validation, input constraints and inline guidance for the existing Record bank payment form. Keep `admin_record_bank_payment`, audit logging, credit math, email behavior, Stripe/refund behavior, customer list loading, pricing and payment policy unchanged.
-  - Acceptance criteria:
-    - Customer selection, bank reference, credits, amount EUR and internal note expose constraints aligned with the admin payments API.
-    - The Match payment & add credits action is disabled until the local form is valid and migration is ready.
-    - Invalid local values show actionable admin-safe guidance before any POST is sent.
-    - The submitted payload shape and server-side validation remain unchanged.
-    - No live payment call, production service call, migration, secret, price rule or credit policy change is introduced.
-  - Validation:
-    - `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts`
-    - `.\node_modules\.bin\tsx.cmd --test tests\ecu-intelligence.test.ts`
-    - `npm run lint`
-    - `npm run typecheck`
-    - `npm test`
-
 ## In Progress
 
 ## Blocked
@@ -169,6 +142,18 @@ Kabul kriterleri:
 Dogrulama: Diff incelemesi, `npm run lint`, `npm run typecheck`.
 
 ## Done
+
+### AUTO-031 [P2] Admin bank payment formu API kontratini gondermeden once dogrulasin
+
+Durum: Done
+
+Fingerprint: `admin-operations|payment-control-bank-entry|server-side-payment-action-limits-only|client-side-bank-payment-validation`
+
+Kapsam: Admin Payment & Revenue Control bank payment formuna mevcut server action kontratiyla uyumlu yerel dogrulama, input limitleri, not kalan karakter bilgisi ve inline guidance eklendi.
+
+Sonuc: Customer secimi, bank reference, credits, amount EUR ve internal note alanlari POST oncesinde dogrulanir. Match payment & add credits aksiyonu form valid, migration ready ve saving degilken aktif olur; invalid durumda handler POST'a gecmeden admin-safe mesaj verir. Submitted payload shape, `admin_record_bank_payment` RPC, audit/email/server validation, Stripe/refund davranisi, fiyat/credit policy ve customer list loading degistirilmedi. Canli payment servisi, production servis cagrisi, migration, secret veya gercek musteri verisi kullanilmadi.
+
+Dogrulama: `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (25/25); `.\node_modules\.bin\tsx.cmd --test tests\ecu-intelligence.test.ts` PASS (59/59); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (254/254); `git diff --check` PASS (yalniz CRLF uyarilari). `npm run build` bilinen restricted-network Google Fonts / Next env yukleme riski nedeniyle calistirilmadi.
 
 ### AUTO-027 [P2] Musteri bildirim paneli yukleme hatasini sessiz gecmesin
 

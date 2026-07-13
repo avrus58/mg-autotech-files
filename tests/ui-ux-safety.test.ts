@@ -448,6 +448,28 @@ test("active customer payment UI remains Stripe/Card and Bank Transfer only", ()
   assert.doesNotMatch(page, /id:\s*"paypal"|PayPal checkout|paypalClient/i);
 });
 
+test("admin bank payment form validates the API contract before posting", () => {
+  const page = readProjectFile("src", "app", "admin", "payments", "page.tsx");
+
+  assert.match(page, /const BANK_PAYMENT_LIMITS = \{/);
+  assert.match(page, /referenceMin: 3/);
+  assert.match(page, /referenceMax: 160/);
+  assert.match(page, /creditsMax: 100000/);
+  assert.match(page, /amountEuroMax: 1000000/);
+  assert.match(page, /noteMax: 1000/);
+  assert.match(page, /getBankPaymentValidation\(bankForm, data\?\.customers \?\? \[\]\)/);
+  assert.match(page, /if \(!bankFormValidation\.isValid\)/);
+  assert.match(page, /const canRecordBankPayment = Boolean\(data\?\.migrationReady\) && bankFormValidation\.isValid && !saving/);
+  assert.match(page, /maxLength=\{BANK_PAYMENT_LIMITS\.referenceMax\}/);
+  assert.match(page, /max=\{BANK_PAYMENT_LIMITS\.creditsMax\}/);
+  assert.match(page, /max=\{BANK_PAYMENT_LIMITS\.amountEuroMax\}/);
+  assert.match(page, /maxLength=\{BANK_PAYMENT_LIMITS\.noteMax\}/);
+  assert.match(page, /Complete the bank payment contract before posting/);
+  assert.match(page, /disabled=\{!canRecordBankPayment\}/);
+  assert.match(page, /action: "record_bank_payment"[\s\S]*customerUserId: bankForm\.customerUserId[\s\S]*reference: bankForm\.reference[\s\S]*credits: Number\(bankForm\.credits\)[\s\S]*amountEuro: Number\(bankForm\.amountEuro\)[\s\S]*note: bankForm\.note\.trim\(\) \|\| null/);
+  assert.doesNotMatch(page, /STRIPE_SECRET_KEY|SUPABASE_SERVICE_ROLE_KEY|admin_record_bank_payment\(/);
+});
+
 test("PayPal routes stay disabled with 410 Gone", async () => {
   const create = await import("../src/app/api/paypal/create-order/route");
   const capture = await import("../src/app/api/paypal/capture-order/route");

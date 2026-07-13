@@ -2,6 +2,20 @@
 
 Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
+## 2026-07-13 worker run AUTO-031
+
+- Baslangic: 2026-07-13 04:00:00 +01:00; bitis: 2026-07-13 04:11:16 +01:00.
+- Gorev: Admin bank payment formu API kontratini gondermeden once dogrulasin.
+- Fingerprint: `admin-operations|payment-control-bank-entry|server-side-payment-action-limits-only|client-side-bank-payment-validation`.
+- Secim nedeni: Ready kuyrugunda MANUAL gorev yoktu. P2 gorevler arasinda AUTO-031 en yuksek kayitli urun/admin degeri skoruna sahipti (4+1+4+4+5-2-2=14), local-only ve geri alinabilir bir admin operasyon guvenligi iyilestirmesiydi.
+- Duplicate/evidence kontrolu: V4 package constitution dosyalari, local `.autopilot/constitution/*`, AGENTS, PROJECT, ROADMAP, INBOX, FEATURE_PROPOSALS, TASKS, TASK_HISTORY, PRODUCT_SCORECARD, STATUS, package scriptleri, mevcut Git durumu ve son 100 commit incelendi. Ayni fingerprint tamamlanmis gorunmedi. Evidence halen gecerliydi: `src/app/api/admin/payments/route.ts:16-21` bank payment action limitlerini server tarafinda uygular; `src/app/admin/payments/page.tsx` formu daha once yalniz `saving || !data?.migrationReady` ile disable ediyordu.
+- Degisen dosyalar: `src/app/admin/payments/page.tsx`, `tests/ui-ux-safety.test.ts`, `.autopilot/TASKS.md`, `.autopilot/TASK_HISTORY.md`, `.autopilot/STATUS.md`, `.autopilot/runtime/last-result.json`.
+- Uygulama sonucu: Record bank payment formu customer selection, bank reference, credits, amount EUR ve internal note alanlarini mevcut API kontratina gore POST oncesinde dogrular. Alan limitleri ve inline guidance gorunur; action yalniz form valid, migration ready ve saving degilken aktif olur. Handler invalid formda POST helper'a gecmeden admin-safe mesaj verir.
+- Guvenlik/UI kontrolu: Submitted payload shape, server-side validation, `admin_record_bank_payment` RPC, audit/email davranisi, Stripe/refund akisi, pricing/credit policy ve customer list loading degistirilmedi. Canli payment servisi, production servis cagrisi, SQL migration, `.env`, secret, token, gercek musteri verisi, yeni dependency, deploy veya fiyat/hukuki iddia kullanilmadi.
+- Calistirilan kontroller: `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (25/25); `.\node_modules\.bin\tsx.cmd --test tests\ecu-intelligence.test.ts` PASS (59/59); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (254/254); `git diff --check` PASS (yalniz CRLF uyarilari); diff review PASS.
+- Calistirilmayan kontroller: `npm run build` bu repoda bilinen restricted-network Google Fonts / Next env yukleme riski nedeniyle calistirilmadi. `npm run check:payments`, normal desktop env/build/package, SQL, smoke, scraper, live service ve production kontrolleri calistirilmadi.
+- Kalan risk: Desktop local history labels, desktop notes contract guidance, customer dashboard sync error state ve customer credit ledger error state Ready gorevleri ayri kapsamda devam eder. Offline build icin Google Fonts/`next/font/google` owner onayi bekleyen bilinen risk devam eder.
+
 ## 2026-07-13 planner run V4 CREDIT AND PAYMENT CLARITY
 
 - Baslangic: 2026-07-13 03:40:00 +01:00; bitis: 2026-07-13 03:59:57 +01:00.
