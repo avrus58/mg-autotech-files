@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getStableSession, signOutIfEmailUnverified, signOutStable } from "@/lib/authGuards";
 import { supabase } from "@/lib/supabaseClient";
 import {
   ArrowRight,
+  AlertTriangle,
   BrainCircuit,
   Braces,
   Car,
@@ -23,6 +24,7 @@ import {
   LayoutDashboard,
   LogOut,
   Plus,
+  RefreshCw,
   Settings,
   ShieldCheck,
   Upload,
@@ -70,6 +72,11 @@ type DashboardProfile = {
   invoice_email: string | null;
   preferred_contact: string | null;
 };
+
+const DASHBOARD_LOAD_ERROR_MESSAGE =
+  "We could not load your dashboard data. Please try again.";
+const DASHBOARD_SYNC_ERROR_MESSAGE =
+  "Dashboard sync failed. Your last loaded data is still shown.";
 
 function hasProfileValue(value: string | null | undefined) {
   return Boolean(value?.trim());
@@ -183,122 +190,169 @@ export function DashboardClient() {
   const [profileMissingItems, setProfileMissingItems] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [liveRefreshing, setLiveRefreshing] = useState(false);
+  const [dashboardLoadError, setDashboardLoadError] = useState<string | null>(null);
+  const [dashboardReady, setDashboardReady] = useState(false);
+  const [dashboardRefreshKey, setDashboardRefreshKey] = useState(0);
   const [copiedReference, setCopiedReference] = useState(false);
+  const hasLoadedDashboardRef = useRef(false);
 
   useEffect(() => {
     let currentUserId: string | null = null;
 
     const loadDashboard = async (options?: { silent?: boolean }) => {
-      if (options?.silent) setLiveRefreshing(true);
+      const silent = Boolean(options?.silent);
+      let keepLoadingForRedirect = false;
 
-      if (!currentUserId) {
-        const { session } = await getStableSession();
-        if (!session?.user) {
-          if (!options?.silent) router.replace("/login");
-          return;
-        }
-
-        const user = session.user;
-        currentUserId = user.id;
-
-        if (await signOutIfEmailUnverified(user)) {
-          router.replace("/login?verify_email=1");
-          return;
-        }
-
-        setEmail(user.email ?? null);
-      }
-
-      const userId = currentUserId;
-      if (!userId) return;
-
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select(
-          "credit_balance, customer_id, full_name, account_type, company_name, phone, street, postal_code, city, country, invoice_email, preferred_contact"
-        )
-        .eq("id", userId)
-        .single();
-
-      if (profile) {
-        const dashboardProfile = profile as DashboardProfile;
-        setCredits(Number(dashboardProfile.credit_balance ?? 0));
-        setCustomerId(dashboardProfile.customer_id ?? null);
-        setProfileMissingItems(getProfileCompletionMissingItems(dashboardProfile));
+      if (silent) {
+        setLiveRefreshing(true);
       } else {
-        setProfileMissingItems([]);
+        setLoading(true);
+        setDashboardLoadError(null);
       }
 
-      const { data: recentOrders } = await supabase
-        .from("orders")
-        .select(
-          "id, customer_id, customer_email, vehicle_brand, vehicle_model, vehicle_generation, vehicle_engine, service_type, credits_required, status, notes, modified_file_path, created_at"
-        )
-        .eq("customer_id", userId)
-        .order("created_at", { ascending: false })
-        .limit(5);
+      try {
+        if (!currentUserId) {
+          const { session } = await getStableSession();
+          if (!session?.user) {
+            if (!silent) {
+              keepLoadingForRedirect = true;
+              router.replace("/login");
+            }
+            return;
+          }
 
-      if (recentOrders) {
-        setOrders(recentOrders as Order[]);
+          const user = session.user;
+          currentUserId = user.id;
+
+          if (await signOutIfEmailUnverified(user)) {
+            keepLoadingForRedirect = true;
+            router.replace("/login?verify_email=1");
+            return;
+          }
+
+          setEmail(user.email ?? null);
+        }
+
+        const userId = currentUserId;
+        if (!userId) return;
+
+        const { data: profile, error: profileError } = await supabase
+          .from("profiles")
+          .select(
+            "credit_balance, customer_id, full_name, account_type, company_name, phone, street, postal_code, city, country, invoice_email, preferred_contact"
+          )
+          .eq("id", userId)
+          .single();
+
+        const { data: recentOrders, error: recentOrdersError } = await supabase
+          .from("orders")
+          .select(
+            "id, customer_id, customer_email, vehicle_brand, vehicle_model, vehicle_generation, vehicle_engine, service_type, credits_required, status, notes, modified_file_path, created_at"
+          )
+          .eq("customer_id", userId)
+          .order("created_at", { ascending: false })
+          .limit(5);
+
+        const { data: transactionRows, error: transactionRowsError } = await supabase
+          .from("credit_transactions")
+          .select("id, user_id, type, credits_delta, balance_after, description, created_at")
+          .eq("user_id", userId)
+          .order("created_at", { ascending: false })
+          .limit(6);
+
+        const { count: allOrders, error: allOrdersError } = await supabase
+          .from("orders")
+          .select("*", { count: "exact", head: true })
+          .eq("customer_id", userId);
+
+        const { count: completedOrders, error: completedOrdersError } = await supabase
+          .from("orders")
+          .select("*", { count: "exact", head: true })
+          .eq("customer_id", userId)
+          .eq("status", "completed");
+
+        const { count: pendingOrders, error: pendingOrdersError } = await supabase
+          .from("orders")
+          .select("*", { count: "exact", head: true })
+          .eq("customer_id", userId)
+          .in("status", ["new_request", "file_check"]);
+
+        const { count: needsResponseOrders, error: needsResponseOrdersError } = await supabase
+          .from("orders")
+          .select("*", { count: "exact", head: true })
+          .eq("customer_id", userId)
+          .eq("status", "customer_info_needed");
+
+        const { count: progressOrders, error: progressOrdersError } = await supabase
+          .from("orders")
+          .select("*", { count: "exact", head: true })
+          .eq("customer_id", userId)
+          .eq("status", "in_progress");
+
+        const { count: cancelledOrders, error: cancelledOrdersError } = await supabase
+          .from("orders")
+          .select("*", { count: "exact", head: true })
+          .eq("customer_id", userId)
+          .eq("status", "cancelled");
+
+        const queryFailed =
+          profileError ||
+          recentOrdersError ||
+          transactionRowsError ||
+          allOrdersError ||
+          completedOrdersError ||
+          pendingOrdersError ||
+          needsResponseOrdersError ||
+          progressOrdersError ||
+          cancelledOrdersError;
+
+        if (queryFailed) {
+          setDashboardLoadError(
+            hasLoadedDashboardRef.current || silent
+              ? DASHBOARD_SYNC_ERROR_MESSAGE
+              : DASHBOARD_LOAD_ERROR_MESSAGE
+          );
+          return;
+        }
+
+        if (profile) {
+          const dashboardProfile = profile as DashboardProfile;
+          setCredits(Number(dashboardProfile.credit_balance ?? 0));
+          setCustomerId(dashboardProfile.customer_id ?? null);
+          setProfileMissingItems(getProfileCompletionMissingItems(dashboardProfile));
+        } else {
+          setCredits(0);
+          setCustomerId(null);
+          setProfileMissingItems([]);
+        }
+
+        setOrders((recentOrders ?? []) as Order[]);
+        setCreditTransactions((transactionRows ?? []) as CreditTransaction[]);
+        setCompletedCount(completedOrders ?? 0);
+        setPendingCount(pendingOrders ?? 0);
+        setNeedsResponseCount(needsResponseOrders ?? 0);
+        setInProgressCount(progressOrders ?? 0);
+
+        const active =
+          (allOrders ?? 0) - (completedOrders ?? 0) - (cancelledOrders ?? 0);
+
+        setActiveCount(active < 0 ? 0 : active);
+        setDashboardLoadError(null);
+        setDashboardReady(true);
+        hasLoadedDashboardRef.current = true;
+      } catch {
+        setDashboardLoadError(
+          hasLoadedDashboardRef.current || silent
+            ? DASHBOARD_SYNC_ERROR_MESSAGE
+            : DASHBOARD_LOAD_ERROR_MESSAGE
+        );
+      } finally {
+        if (silent) {
+          setLiveRefreshing(false);
+        } else if (!keepLoadingForRedirect) {
+          setLoading(false);
+        }
       }
-
-      const { data: transactionRows } = await supabase
-        .from("credit_transactions")
-        .select("id, user_id, type, credits_delta, balance_after, description, created_at")
-        .eq("user_id", userId)
-        .order("created_at", { ascending: false })
-        .limit(6);
-
-      if (transactionRows) {
-        setCreditTransactions(transactionRows as CreditTransaction[]);
-      }
-
-      const { count: allOrders } = await supabase
-        .from("orders")
-        .select("*", { count: "exact", head: true })
-        .eq("customer_id", userId);
-
-      const { count: completedOrders } = await supabase
-        .from("orders")
-        .select("*", { count: "exact", head: true })
-        .eq("customer_id", userId)
-        .eq("status", "completed");
-
-      const { count: pendingOrders } = await supabase
-        .from("orders")
-        .select("*", { count: "exact", head: true })
-        .eq("customer_id", userId)
-        .in("status", ["new_request", "file_check"]);
-
-      const { count: needsResponseOrders } = await supabase
-        .from("orders")
-        .select("*", { count: "exact", head: true })
-        .eq("customer_id", userId)
-        .eq("status", "customer_info_needed");
-
-      const { count: progressOrders } = await supabase
-        .from("orders")
-        .select("*", { count: "exact", head: true })
-        .eq("customer_id", userId)
-        .eq("status", "in_progress");
-
-      const { count: cancelledOrders } = await supabase
-        .from("orders")
-        .select("*", { count: "exact", head: true })
-        .eq("customer_id", userId)
-        .eq("status", "cancelled");
-
-      setCompletedCount(completedOrders ?? 0);
-      setPendingCount(pendingOrders ?? 0);
-      setNeedsResponseCount(needsResponseOrders ?? 0);
-      setInProgressCount(progressOrders ?? 0);
-
-      const active =
-        (allOrders ?? 0) - (completedOrders ?? 0) - (cancelledOrders ?? 0);
-
-      setActiveCount(active < 0 ? 0 : active);
-      setLoading(false);
-      setLiveRefreshing(false);
     };
 
     loadDashboard();
@@ -370,7 +424,7 @@ export function DashboardClient() {
       authListener.subscription.unsubscribe();
       supabase.removeChannel(channel);
     };
-  }, [router]);
+  }, [router, dashboardRefreshKey]);
 
   const creditHistory = useMemo(() => {
     return creditTransactions.slice(0, 6);
@@ -398,6 +452,10 @@ export function DashboardClient() {
     router.push("/login");
   };
 
+  const retryDashboardLoad = () => {
+    setDashboardRefreshKey((current) => current + 1);
+  };
+
   const downloadCompletedFile = async (filePath: string | null) => {
     if (!filePath) {
       alert("Completed file is not available yet.");
@@ -422,6 +480,31 @@ export function DashboardClient() {
         <div className="text-center">
           <div className="mx-auto mb-5 h-12 w-12 animate-spin rounded-full border-4 border-white/10 border-t-red-600" />
           <p className="text-sm text-zinc-400">Loading customer dashboard...</p>
+        </div>
+      </main>
+    );
+  }
+
+  if (dashboardLoadError && !dashboardReady) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-[#050505] px-4 text-white">
+        <div className="max-w-lg rounded-[2rem] border border-red-900/50 bg-red-950/20 p-7 text-center shadow-2xl shadow-black/30">
+          <AlertTriangle className="mx-auto mb-5 h-10 w-10 text-red-400" />
+          <div className="text-xs font-black uppercase tracking-[0.24em] text-red-300">
+            Dashboard sync failed
+          </div>
+          <h1 className="mt-3 text-3xl font-black">Your dashboard could not be loaded</h1>
+          <p role="alert" className="mt-4 text-sm leading-6 text-zinc-300">
+            {dashboardLoadError}
+          </p>
+          <button
+            type="button"
+            onClick={retryDashboardLoad}
+            className="mt-6 inline-flex items-center justify-center rounded-xl bg-[#b1121b] px-5 py-3 text-sm font-black text-white transition hover:bg-[#c91824]"
+          >
+            <RefreshCw className="mr-2 h-4 w-4" />
+            Try again
+          </button>
         </div>
       </main>
     );
@@ -613,6 +696,31 @@ export function DashboardClient() {
           </nav>
 
           <div className="px-4 py-8 lg:px-8">
+            {dashboardLoadError && dashboardReady && (
+              <div
+                role="alert"
+                className="mb-6 flex flex-col gap-4 rounded-[2rem] border border-amber-700/40 bg-amber-950/20 p-5 shadow-2xl shadow-black/20 md:flex-row md:items-center md:justify-between"
+              >
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2 text-xs font-black uppercase tracking-[0.2em] text-amber-200">
+                    <AlertTriangle className="h-4 w-4 shrink-0" />
+                    Sync needs retry
+                  </div>
+                  <p className="mt-2 break-words text-sm leading-6 text-amber-100/90">
+                    {dashboardLoadError}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={retryDashboardLoad}
+                  className="inline-flex shrink-0 items-center justify-center rounded-xl border border-amber-500/40 bg-black/25 px-5 py-3 text-sm font-black text-amber-100 transition hover:bg-amber-900/30"
+                >
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  Try again
+                </button>
+              </div>
+            )}
+
             <div className="mb-8 grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
               <div className="relative overflow-hidden rounded-[2rem] border border-red-900/50 bg-gradient-to-br from-red-950/30 via-white/[0.04] to-black p-7 shadow-2xl shadow-black/30">
                 <div className="absolute -right-24 -top-24 h-64 w-64 rounded-full bg-red-700/20 blur-3xl" />

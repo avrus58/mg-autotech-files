@@ -2,6 +2,20 @@
 
 Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
+## 2026-07-13 worker run AUTO-029
+
+- Baslangic: 2026-07-13 05:20:00 +02:00; bitis: 2026-07-13 05:42:00 +02:00.
+- Gorev: Musteri dashboard veri senkron hatasini bos durum gibi gostermesin.
+- Fingerprint: `customer-experience|dashboard-data-sync|supabase-load-errors-look-empty-or-syncing|retryable-error-state`.
+- Secim nedeni: Ready kuyrugunda MANUAL gorev yoktu. En yuksek Ready oncelik P2 idi; P2 gorevler arasinda AUTO-029, AUTO-030 ve AUTO-032 esit value skorundaydi (2+4+2+3+5-2-2=12). Ready sirasi ve dashboard'un ana musteri giris yuzeyi olmasi nedeniyle AUTO-029 secildi. Task local-only, kucuk/orta olcekli, geri alinabilir ve mevcut customer-scoped queryleri koruyan bir reliability/UX iyilestirmesiydi.
+- Duplicate/evidence kontrolu: V4 package constitution dosyalari, local `.autopilot/constitution/*`, AGENTS, PROJECT, ROADMAP, INBOX, FEATURE_PROPOSALS, TASKS, TASK_HISTORY, PRODUCT_SCORECARD, STATUS, `package.json`, mevcut Git durumu ve son 100 commit incelendi. Ayni fingerprint tamamlanmis gorunmedi. Evidence halen gecerliydi: `DashboardClient.tsx` profile, recent orders, credit ledger ve count querylerinde Supabase `error` degerlerini kontrol etmiyor ve basarisiz queryler dashboard'u bos/zero gibi gosterebiliyordu.
+- Degisen dosyalar: `src/components/dashboard/DashboardClient.tsx`, `tests/ui-ux-safety.test.ts`, `.autopilot/TASKS.md`, `.autopilot/TASK_HISTORY.md`, `.autopilot/STATUS.md`, `.autopilot/runtime/last-result.json`.
+- Uygulama sonucu: Dashboard load akisi artik profile, recent orders, credit_transactions ve order count query error degerlerini staged olarak kontrol eder; tum queryler basarili olmadan customer-visible dashboard state overwrite edilmez. Ilk yukleme hatasinda customer-safe `Dashboard sync failed` ekrani ve `Try again` aksiyonu gorunur. Silent/live refresh hatasinda `Syncing` indikatoru kapanir, son basarili dashboard verisi korunur ve inline retry banner'i gorunur.
+- Guvenlik/UI kontrolu: Customer-scoped `profiles.id`, `orders.customer_id` ve `credit_transactions.user_id` queryleri, auth/session redirectleri, unverified-email guard, realtime subscriptions, profile completion karti, credit ledger preview, order count kartlari ve completed-file signed-url download davranisi korundu. Supabase table internals, error message, storage path, signed URL, raw binary, payment internals, secret, metadata, admin note veya admin-only alan gosterilmedi. Production servis, migration, deploy, `.env`, secret, gercek musteri verisi veya yeni dependency kullanilmadi.
+- Calistirilan kontroller: `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (27/27); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (257/257); `git diff --check` PASS (yalniz CRLF uyarilari); diff review PASS.
+- Calistirilmayan kontroller: `npm run build` bu repoda bilinen restricted-network Google Fonts / Next env yukleme riski nedeniyle calistirilmadi. `npm run check:payments`, normal desktop env/build/package, SQL, smoke, scraper, live service ve production kontrolleri calistirilmadi.
+- Kalan risk: Desktop local history labels, customer credit ledger error state ve customer order archive error state Ready gorevleri ayri kapsamda devam eder. Offline build icin Google Fonts/`next/font/google` owner onayi bekleyen bilinen risk devam eder.
+
 ## 2026-07-13 worker run AUTO-033
 
 - Baslangic: 2026-07-13 05:09:00 +01:00; bitis: 2026-07-13 05:18:28 +01:00.

@@ -31,32 +31,6 @@
     - `npm run typecheck`
     - `npm test`
 
-- [ ] **P2 AUTO-029 - Musteri dashboard veri senkron hatasini bos durum gibi gostermesin**
-  - Lane: Product Evolution
-  - Domain: Customer dashboard reliability & status clarity
-  - Fingerprint: `customer-experience|dashboard-data-sync|supabase-load-errors-look-empty-or-syncing|retryable-error-state`
-  - Business impact: 2/5
-  - User impact: 4/5
-  - Admin impact: 2/5
-  - Strategic fit: 3/5
-  - Confidence: 5/5
-  - Effort: 2/5
-  - Risk: 2/5
-  - Evidence: `src/components/dashboard/DashboardClient.tsx:215-299` loads profile, recent orders, credit ledger and order counts but reads only `data`/`count` and ignores Supabase `error` values, so failed queries can leave previous defaults and make the dashboard look empty or zeroed. `src/components/dashboard/DashboardClient.tsx:192` sets `liveRefreshing` for silent sync, while `src/components/dashboard/DashboardClient.tsx:300-301` clears loading/syncing only after the successful path completes.
-  - Product value: Customers can distinguish a real empty dashboard from a sync failure and retry without assuming orders, credits or actions disappeared.
-  - Scope: Add a customer-safe, retryable dashboard data-load error state. Preserve existing customer-scoped queries, auth redirects, realtime subscriptions, profile completion, order counts, credit ledger preview and live-sync behavior.
-  - Acceptance criteria:
-    - Initial dashboard load failures show a clear customer-safe error state with a retry action instead of rendering empty orders/zero counts.
-    - Silent/live refresh failures clear the syncing indicator and preserve the last successfully loaded dashboard data.
-    - Supabase errors from profile, recent orders, credit ledger and count queries are handled consistently without leaking table internals.
-    - Auth/session and unverified-email redirects continue to work as before.
-    - No new customer data fields, admin-only fields, storage paths, payment internals, secrets or live service mutations are introduced.
-  - Validation:
-    - `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts`
-    - `npm run lint`
-    - `npm run typecheck`
-    - `npm test`
-
 - [ ] **P2 AUTO-030 - Musteri kredi ledger hatasini bos hareket gibi gostermesin**
   - Lane: Product Evolution
   - Domain: Customer credit visibility & support reduction
@@ -142,6 +116,18 @@ Kabul kriterleri:
 Dogrulama: Diff incelemesi, `npm run lint`, `npm run typecheck`.
 
 ## Done
+
+### AUTO-029 [P2] Musteri dashboard veri senkron hatasini bos durum gibi gostermesin
+
+Durum: Done
+
+Fingerprint: `customer-experience|dashboard-data-sync|supabase-load-errors-look-empty-or-syncing|retryable-error-state`
+
+Kapsam: Musteri dashboard data-load akisi, profile/orders/credit ledger/count query hatalarini customer-safe retry state ile ele alacak ve basarisiz sync durumunda son basarili dashboard verisini koruyacak sekilde guncellendi.
+
+Sonuc: Dashboard artik Supabase query error degerlerini toplu kontrol eder ve tum queryler basarili olmadan credits, orders, ledger preview veya status count state'lerini overwrite etmez. Ilk yukleme hatasinda `Dashboard sync failed` ekrani ve `Try again` aksiyonu gorunur; live/silent refresh hatasinda syncing indikatoru kapanir, son basarili veri korunur ve inline retry banner'i gosterilir. Auth/session ve verified-email redirect akisi, customer-scoped `user_id` / `customer_id` queryleri, realtime subscriptions, profile completion karti, credit ledger preview, order count kartlari ve signed-url download davranisi korundu. Supabase table internals, storage path, signed URL, payment internals, secret, metadata veya admin-only alan aciga cikarilmadi.
+
+Dogrulama: `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (27/27); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (257/257); `git diff --check` PASS (yalniz CRLF uyarilari). `npm run build` bilinen restricted-network Google Fonts / Next env yukleme riski nedeniyle calistirilmadi.
 
 ### AUTO-033 [P2] Legacy admin teslim tahmini kaydedilmeden 30 dk varsaymasin
 

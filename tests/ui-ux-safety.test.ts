@@ -161,6 +161,41 @@ test("customer dashboard and order archive surface action-needed orders separate
   assert.match(orders, /active=\{\["completed", "cancelled", "all"\]\.includes\(view\)\}/);
 });
 
+test("customer dashboard load errors show retry without replacing last good data", () => {
+  const dashboard = readProjectFile("src", "components", "dashboard", "DashboardClient.tsx");
+
+  assert.match(dashboard, /const DASHBOARD_LOAD_ERROR_MESSAGE =/);
+  assert.match(dashboard, /const DASHBOARD_SYNC_ERROR_MESSAGE =/);
+  assert.match(dashboard, /const \[dashboardLoadError, setDashboardLoadError\]/);
+  assert.match(dashboard, /const \[dashboardReady, setDashboardReady\]/);
+  assert.match(dashboard, /const \[dashboardRefreshKey, setDashboardRefreshKey\]/);
+  assert.match(dashboard, /const hasLoadedDashboardRef = useRef\(false\)/);
+  assert.match(dashboard, /error: profileError/);
+  assert.match(dashboard, /error: recentOrdersError/);
+  assert.match(dashboard, /error: transactionRowsError/);
+  assert.match(dashboard, /error: allOrdersError/);
+  assert.match(dashboard, /error: needsResponseOrdersError/);
+  assert.match(dashboard, /const queryFailed =[\s\S]*profileError[\s\S]*recentOrdersError[\s\S]*transactionRowsError[\s\S]*cancelledOrdersError/);
+  assert.match(dashboard, /if \(queryFailed\) \{[\s\S]*setDashboardLoadError/);
+  assert.match(dashboard, /hasLoadedDashboardRef\.current \|\| silent[\s\S]*DASHBOARD_SYNC_ERROR_MESSAGE[\s\S]*DASHBOARD_LOAD_ERROR_MESSAGE/);
+  assert.match(dashboard, /setOrders\(\(recentOrders \?\? \[\]\) as Order\[\]\)/);
+  assert.match(dashboard, /setCreditTransactions\(\(transactionRows \?\? \[\]\) as CreditTransaction\[\]\)/);
+  assert.match(dashboard, /setDashboardReady\(true\)/);
+  assert.match(dashboard, /hasLoadedDashboardRef\.current = true/);
+  assert.match(dashboard, /finally \{[\s\S]*setLiveRefreshing\(false\)/);
+  assert.match(dashboard, /const retryDashboardLoad = \(\) => \{/);
+  assert.match(dashboard, /setDashboardRefreshKey\(\(current\) => current \+ 1\)/);
+  assert.match(dashboard, /dashboardLoadError && !dashboardReady/);
+  assert.match(dashboard, /Dashboard sync failed/);
+  assert.match(dashboard, /role="alert"[\s\S]*\{dashboardLoadError\}/);
+  assert.match(dashboard, /onClick=\{retryDashboardLoad\}/);
+  assert.match(dashboard, /Try again/);
+  assert.match(dashboard, /dashboardLoadError && dashboardReady/);
+  assert.match(dashboard, /Your last loaded data is still shown/);
+  assert.doesNotMatch(dashboard, /profileError\.message|recentOrdersError\.message|transactionRowsError\.message|allOrdersError\.message/);
+  assert.doesNotMatch(dashboard, /storage_path|signed_url|service_role|admin_note|metadata/);
+});
+
 test("customer dashboard surfaces missing profile details without changing settings flow", () => {
   const dashboard = readProjectFile("src", "components", "dashboard", "DashboardClient.tsx");
   const settings = readProjectFile("src", "app", "dashboard", "settings", "page.tsx");
