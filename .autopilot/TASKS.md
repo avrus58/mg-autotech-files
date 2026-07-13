@@ -83,32 +83,6 @@
     - `npm run typecheck`
     - `npm test`
 
-- [ ] **P2 AUTO-035 - Musteri widget workspace yukleme hatasini abonelik yok gibi gostermesin**
-  - Lane: Product Evolution
-  - Domain: Customer widget workspace reliability & support reduction
-  - Fingerprint: `customer-experience|widget-dashboard-client-load|api-load-error-looks-like-missing-subscription|retryable-widget-load-error`
-  - Business impact: 2/5
-  - User impact: 3/5
-  - Admin impact: 2/5
-  - Strategic fit: 3/5
-  - Confidence: 5/5
-  - Effort: 1/5
-  - Risk: 1/5
-  - Evidence: `src/components/dashboard/WidgetDashboardClient.tsx:32-43` catches `/api/widget/client` load failures by setting `message` but leaves `payload` and `client` null. `src/components/dashboard/WidgetDashboardClient.tsx:83-84` then renders the no-client state with `View plans` and the fallback `No widget subscription is linked to this account`, so a temporary API sync failure can be presented as a missing subscription without a retry path.
-  - Product value: Widget customers can tell whether their widget subscription is actually missing or the workspace failed to sync, reducing billing/support confusion.
-  - Scope: Add a customer-safe, retryable widget workspace load-error state. Preserve auth redirects, verified-email guard, real no-subscription state, billing portal action, domain-change request behavior, settings save, embed code generation and live preview.
-  - Acceptance criteria:
-    - `/api/widget/client` load failures show a retryable sync error state separate from the no-subscription or no-client plan CTA.
-    - Retry calls the same widget client load path and keeps existing login and verified-email redirects.
-    - Real no-client/no-subscription responses still show the current `View plans` and `Dashboard` actions.
-    - Successful client loads keep existing settings, domain request, billing, embed code and preview behavior.
-    - Public keys, access tokens, Stripe internals, Supabase internals, audit details, secrets and admin-only fields are not exposed.
-  - Validation:
-    - `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts`
-    - `npm run lint`
-    - `npm run typecheck`
-    - `npm test`
-
 ## In Progress
 
 ## Blocked
@@ -142,6 +116,18 @@ Kabul kriterleri:
 Dogrulama: Diff incelemesi, `npm run lint`, `npm run typecheck`.
 
 ## Done
+
+### AUTO-035 [P2] Musteri widget workspace yukleme hatasini abonelik yok gibi gostermesin
+
+Durum: Done
+
+Fingerprint: `customer-experience|widget-dashboard-client-load|api-load-error-looks-like-missing-subscription|retryable-widget-load-error`
+
+Kapsam: Musteri widget dashboard client yukleme akisi, `/api/widget/client` hatalarini no-subscription/plan CTA fallback'i yerine ayri customer-safe retry state ile gosterecek sekilde guncellendi.
+
+Sonuc: Widget workspace ilk yukleme hatasinda artik `Widget workspace sync failed` retry ekrani gorunur; `View plans` no-subscription CTA'si sadece gercek no-client/no-subscription sonucu icin kalir. Retry ayni `load` yolunu kullanir ve mevcut login/verified-email redirectlerini korur. Basarili client yuklemesi sonrasi tekrar sync hatasi olursa son yuklu widget ayarlari korunur ve inline `Retry sync` uyarisi gorunur. Billing portal, domain-change request, pending domain guidance, settings save, embed code generation ve live preview davranislari korunur. Raw API hata mesaji, Stripe internali, Supabase internali, audit detayi, secret veya admin-only alan hata UI'inda aciga cikarilmadi.
+
+Dogrulama: `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (29/29); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (259/259); `git diff --check` PASS (yalniz CRLF uyarilari). `npm run build` bilinen restricted-network Google Fonts / Next env yukleme riski nedeniyle calistirilmadi.
 
 ### AUTO-034 [P2] Legacy admin panel yukleme hatasini bos operasyon listesi gibi gostermesin
 

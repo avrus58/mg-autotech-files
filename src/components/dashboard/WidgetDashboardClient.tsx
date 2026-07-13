@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { ArrowLeft, Braces, Check, ChevronDown, CircleHelp, Code2, CreditCard, Globe2, KeyRound, Loader2, LockKeyhole, Mail, MessageCircle, Save, Settings2 } from "lucide-react";
+import { ArrowLeft, Braces, Check, ChevronDown, CircleHelp, Code2, CreditCard, Globe2, KeyRound, Loader2, LockKeyhole, Mail, MessageCircle, RefreshCw, Save, Settings2 } from "lucide-react";
 import { EmbedCodeBox } from "@/components/widget/EmbedCodeBox";
 import { SubscriptionNotice } from "@/components/widget/SubscriptionNotice";
 import { VehicleLookupPreview } from "@/components/widget/VehicleLookupPreview";
@@ -14,6 +14,7 @@ import { widgetLanguageCodes, type WidgetClient, type WidgetLanguage, type Widge
 type Payload = { client: WidgetClient | null; publicKey?: string | null; settings: WidgetSettings; domainRequests?: Array<{ id: string; requested_domain: string; status: string; created_at: string }> };
 const languageNames: Record<WidgetLanguage, string> = { de: "Deutsch", en: "English", tr: "Türkçe", fr: "Français", es: "Español", it: "Italiano", nl: "Nederlands", pl: "Polski", ro: "Română", pt: "Português", ru: "Русский", ar: "العربية" };
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://file.mgautotech.de").replace(/\/$/, "");
+const WIDGET_LOAD_ERROR_MESSAGE = "Widget workspace could not be synced. Please try again.";
 
 export function WidgetDashboardClient() {
   const [payload, setPayload] = useState<Payload | null>(null);
@@ -21,6 +22,7 @@ export function WidgetDashboardClient() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+  const [widgetLoadError, setWidgetLoadError] = useState("");
   const [domainRequest, setDomainRequest] = useState("");
 
   const authFetch = useCallback(async (url: string, init?: RequestInit) => {
@@ -31,15 +33,17 @@ export function WidgetDashboardClient() {
 
   const load = useCallback(async () => {
     setLoading(true);
+    setWidgetLoadError("");
     const user = (await supabase.auth.getUser()).data.user;
     if (!user) { window.location.href = "/login"; return; }
     if (await signOutIfEmailUnverified(user)) { window.location.href = "/login?verify_email=1"; return; }
     try {
       const response = await authFetch("/api/widget/client", { cache: "no-store" });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Widget account could not be loaded.");
+      if (!response.ok) throw new Error(WIDGET_LOAD_ERROR_MESSAGE);
       setPayload(data); setClient(data.client);
-    } catch (error) { setMessage(error instanceof Error ? error.message : "Widget account could not be loaded."); }
+      setWidgetLoadError("");
+    } catch { setWidgetLoadError(WIDGET_LOAD_ERROR_MESSAGE); }
     finally { setLoading(false); }
   }, [authFetch]);
   useEffect(() => { void Promise.resolve().then(load); }, [load]);
@@ -54,6 +58,7 @@ export function WidgetDashboardClient() {
   const advancedCode = `<script>\nwindow.addEventListener("message", function(event) {\n  if (!event.data || event.data.dataType !== "mga-vehicle-data") {\n    return;\n  }\n  var vehicleName = event.data.vehicleName;\n  var make = event.data.make;\n  var model = event.data.model;\n  var year = event.data.year;\n  var engine = event.data.engine;\n  var ecu = event.data.ecu;\n  var powerHp = event.data.powerHp;\n  console.log("Selected vehicle:", vehicleName);\n  var input = document.querySelector('input[name="vehicle"]');\n  if (input) {\n    input.value = vehicleName;\n  }\n});\n</script>`;
   const pendingDomainRequest = payload?.domainRequests?.find((item) => item.status === "pending") ?? null;
   const hasPendingDomainRequest = Boolean(pendingDomainRequest);
+  const showInitialWidgetLoadError = Boolean(widgetLoadError && !client && !payload);
 
   function update<K extends keyof WidgetClient>(key: K, value: WidgetClient[K]) { setClient((current) => current ? { ...current, [key]: value } : current); }
   function toggleLanguage(code: WidgetLanguage) {
@@ -81,10 +86,11 @@ export function WidgetDashboardClient() {
   }
 
   if (loading) return <main data-no-translate className="flex min-h-screen items-center justify-center bg-[#050505] text-white"><Loader2 className="mr-3 h-6 w-6 animate-spin text-red-500" />Loading widget workspace...</main>;
+  if (showInitialWidgetLoadError) return <main data-no-translate className="min-h-screen bg-[#050505] px-4 py-20 text-white"><div role="alert" className="mx-auto max-w-2xl border-y border-red-900/50 py-10 text-center"><Braces className="mx-auto h-10 w-10 text-red-500" /><h1 className="mt-5 text-3xl font-black">Widget workspace sync failed</h1><p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-zinc-400">{widgetLoadError} Your widget subscription status has not changed.</p><div className="mt-7 flex justify-center gap-3"><button type="button" onClick={() => void load()} className="rounded-lg bg-[#b1121b] px-5 py-3 text-sm font-black"><RefreshCw className="mr-2 inline h-4 w-4" />Try again</button><Link href="/dashboard" className="rounded-lg border border-white/10 px-5 py-3 text-sm font-black">Dashboard</Link></div></div></main>;
   if (!client || !payload) return <main data-no-translate className="min-h-screen bg-[#050505] px-4 py-20 text-white"><div className="mx-auto max-w-2xl border-y border-white/10 py-10 text-center"><Braces className="mx-auto h-10 w-10 text-red-500" /><h1 className="mt-5 text-3xl font-black">Vehicle Selector Widget</h1><p className="mt-3 text-zinc-400">{message || "No widget subscription is linked to this account."}</p><div className="mt-7 flex justify-center gap-3"><Link href="/widget" className="rounded-lg bg-[#b1121b] px-5 py-3 text-sm font-black">View plans</Link><Link href="/dashboard" className="rounded-lg border border-white/10 px-5 py-3 text-sm font-black">Dashboard</Link></div></div></main>;
 
   return <main data-no-translate className="min-h-screen bg-[#050505] text-white"><header className="border-b border-white/10 bg-black/90"><div className="mx-auto flex max-w-[1500px] items-center justify-between gap-3 px-4 py-4"><div className="flex min-w-0 items-center gap-3"><span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-red-800/50 bg-red-950/30"><Braces className="h-5 w-5 text-red-500" /></span><div className="min-w-0"><div className="truncate text-xs font-black uppercase tracking-[0.16em] text-red-500">MG AutoTech SaaS</div><h1 className="truncate text-lg font-black sm:text-2xl">{widgetT(dashboardLanguage, "vehicleLookupCodeGenerator")}</h1></div></div><Link href="/dashboard" className="rounded-lg border border-white/10 px-3 py-2.5 text-sm font-black"><ArrowLeft className="mr-2 inline h-4 w-4" />Dashboard</Link></div></header>
-  <section className="mx-auto max-w-[1500px] px-4 py-8">{!active && <SubscriptionNotice onManage={manageBilling} />}{message && <div className="mb-6 border border-red-800/40 bg-red-950/20 p-4 text-sm text-red-100">{message}</div>}
+  <section className="mx-auto max-w-[1500px] px-4 py-8">{!active && <SubscriptionNotice onManage={manageBilling} />}{widgetLoadError && <div role="alert" className="mb-6 flex flex-col gap-3 border border-red-800/40 bg-red-950/20 p-4 text-sm text-red-100 sm:flex-row sm:items-center sm:justify-between"><span>{widgetLoadError} Your last loaded widget settings are still shown.</span><button type="button" onClick={() => void load()} className="inline-flex h-10 items-center justify-center rounded-lg border border-red-700/40 px-3 text-xs font-black"><RefreshCw className="mr-2 h-4 w-4" />Retry sync</button></div>}{message && <div className="mb-6 border border-red-800/40 bg-red-950/20 p-4 text-sm text-red-100">{message}</div>}
     <div className="mb-7 flex flex-col gap-4 border-b border-white/10 pb-7 sm:flex-row sm:items-end sm:justify-between"><div><div className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.18em] text-emerald-400"><LockKeyhole className="h-4 w-4" />{widgetT(dashboardLanguage, "domainLocked")} · {client.allowed_domain}</div><h2 className="mt-3 text-3xl font-black">Configure, preview and publish.</h2><p className="mt-2 text-sm text-zinc-500">Plan: {client.plan} · Status: {client.status} · {client.monthly_usage_limit.toLocaleString()} loads/month</p></div><button onClick={save} disabled={saving} className="flex h-12 items-center justify-center rounded-lg bg-[#b1121b] px-5 text-sm font-black disabled:opacity-50">{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Save className="mr-2 h-4 w-4" />Save settings</>}</button></div>
     <div className="grid gap-8 xl:grid-cols-[430px_1fr]"><aside className="space-y-8"><SettingsCard title={widgetT(dashboardLanguage, "widgetSettings")} icon={<Settings2 />}><div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-1"><Select label={widgetT(dashboardLanguage, "themeMode")} value={client.theme_mode} disabled={!client.can_edit_colours} onChange={(value) => update("theme_mode", value as WidgetClient["theme_mode"])} options={[["light","Light"],["dark","Dark"],["auto","Auto"]]} /><Input label="Widget title" value={client.widget_title} disabled={!client.can_edit_colours} onChange={(value) => update("widget_title", value)} /><Input label="Button text" value={client.button_text} disabled={!client.can_edit_colours} onChange={(value) => update("button_text", value)} /><Colour label={widgetT(dashboardLanguage, "mainColour")} value={client.main_color} disabled={!client.can_edit_colours} onChange={(value) => update("main_color", value)} /><Colour label={widgetT(dashboardLanguage, "buttonTextColour")} value={client.button_text_color} disabled={!client.can_edit_colours} onChange={(value) => update("button_text_color", value)} /><Colour label={widgetT(dashboardLanguage, "differenceColour")} value={client.difference_color} disabled={!client.can_edit_colours} onChange={(value) => update("difference_color", value)} /></div></SettingsCard>
       <SettingsCard title={widgetT(dashboardLanguage, "otherSettings")} icon={<Globe2 />}>

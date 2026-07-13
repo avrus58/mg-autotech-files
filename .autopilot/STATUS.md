@@ -2,6 +2,32 @@
 
 Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
+## 2026-07-13 reviewer run AUTO-035
+
+- Baslangic: 2026-07-13 06:54:00 +01:00; bitis: 2026-07-13 06:59:00 +01:00.
+- Gorev: AUTO-035 uncommitted worker degisikliklerini V4 product/safety/quality gate olarak incelemek.
+- Sonuc: Accepted. Widget dashboard load-error ayrimi gercek musteri/support degeri tasiyor, duplicate degil, evidence gecerli ve kapsam `/api/widget/client` hata durumunu customer-safe retry state ile ayirmakla sinirli.
+- Reviewer duzeltmesi: Yok.
+- Degisen dosyalar: `.autopilot/STATUS.md`, `.autopilot/runtime/review-result.json`.
+- Guvenlik/UI kontrolu: Public/customer/admin data sinirlari korundu; raw API hata mesaji, Stripe/Supabase internali, audit detayi, secret, token veya admin-only alan hata UI'inda aciga cikarilmadi. Production servis, migration, deploy, `.env`, secret, gercek musteri verisi veya yeni dependency kullanilmadi. Ilk hata ekrani `role="alert"` ile retry aksiyonu sunuyor; basarili yukleme sonrasi sync hatasinda son widget ayarlari korunarak inline retry gosteriliyor. Gercek no-subscription state ve plan CTA korunuyor.
+- Calistirilan kontroller: `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (29/29); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (259/259); `git diff --check` PASS (yalniz CRLF uyarilari); duplicate/history/runtime/diff review PASS.
+- Calistirilmayan kontroller: `npm run build` bilinen restricted-network Google Fonts / Next env yukleme riski nedeniyle calistirilmadi. `npm run check:payments`, normal desktop env/build/package, SQL, smoke, scraper, live service ve production kontrolleri calistirilmadi.
+- Kalan risk: Ready kuyrugundaki desktop local history labels, customer credit ledger error state ve customer order archive error state ayri kapsamda devam eder. Offline build icin Google Fonts/`next/font/google` owner onayi bekleyen bilinen risk devam eder.
+
+## 2026-07-13 worker run AUTO-035
+
+- Baslangic: 2026-07-13 06:33:00 +01:00; bitis: 2026-07-13 06:53:25 +01:00.
+- Gorev: Musteri widget workspace yukleme hatasini abonelik yok gibi gostermesin.
+- Fingerprint: `customer-experience|widget-dashboard-client-load|api-load-error-looks-like-missing-subscription|retryable-widget-load-error`.
+- Secim nedeni: Ready kuyrugunda MANUAL gorev yoktu. En yuksek Ready oncelik P2 idi; P2 gorevler arasinda AUTO-035 onerilen value skoru en yuksek ve risk/effort en dusuk slice idi (2+3+2+3+5-1-1=13). Task local-only, geri alinabilir ve mevcut widget auth/subscription akisini koruyan bir reliability/customer-clarity iyilestirmesiydi.
+- Duplicate/evidence kontrolu: V4 package constitution dosyalari, local `.autopilot/constitution/*`, AGENTS, PROJECT, ROADMAP, INBOX, FEATURE_PROPOSALS, TASKS, TASK_HISTORY, PRODUCT_SCORECARD, STATUS, kok/desktop package scriptleri, mevcut Git durumu ve son commitler incelendi. Ayni fingerprint tamamlanmis gorunmedi. Evidence halen gecerliydi: `WidgetDashboardClient` `/api/widget/client` hatasinda generic `message` set ediyor, `payload` ve `client` null kaldigi icin no-subscription/`View plans` fallback'i gecici sync hatasiyla karisabiliyordu.
+- Degisen dosyalar: `src/components/dashboard/WidgetDashboardClient.tsx`, `tests/ui-ux-safety.test.ts`, `.autopilot/TASKS.md`, `.autopilot/TASK_HISTORY.md`, `.autopilot/STATUS.md`, `.autopilot/runtime/last-result.json`.
+- Uygulama sonucu: Widget dashboard artik ilk `/api/widget/client` yukleme hatasinda customer-safe `Widget workspace sync failed` retry ekranini gosterir ve plan CTA'sina dusmez. Retry ayni `load` yolunu kullanir; login ve verified-email redirectleri korunur. Gercek no-client/no-subscription sonucu mevcut `View plans` ve `Dashboard` aksiyonlarini gostermeye devam eder. Basarili client yuklemesi sonrasi sync hatasi olursa son yuklu widget ayarlari korunur ve inline `Retry sync` uyarisi gorunur.
+- Guvenlik/UI kontrolu: Billing portal action, domain-change request behavior, pending domain guidance, settings save, embed code generation ve live preview korunur. Raw API hata mesaji, Stripe internali, Supabase internali, audit detayi, secret, token veya admin-only alan hata UI'inda aciga cikarilmadi. Production servis, migration, deploy, `.env`, secret, gercek musteri verisi veya yeni dependency kullanilmadi. UI degisikligi responsive alert/button layout'u ve retry state'i icinde kaldi.
+- Calistirilan kontroller: `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (29/29); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (259/259); `git diff --check` PASS (yalniz CRLF uyarilari); diff review PASS.
+- Calistirilmayan kontroller: `npm run build` bu repoda bilinen restricted-network Google Fonts / Next env yukleme riski nedeniyle calistirilmadi. `npm run check:payments`, normal desktop env/build/package, SQL, smoke, scraper, live service ve production kontrolleri calistirilmadi.
+- Kalan risk: Desktop local history labels, customer credit ledger error state ve customer order archive error state Ready gorevleri ayri kapsamda devam eder. Offline build icin Google Fonts/`next/font/google` owner onayi bekleyen bilinen risk devam eder.
+
 ## 2026-07-13 reviewer run AUTO-034
 
 - Baslangic: 2026-07-13 06:27:00 +01:00; bitis: 2026-07-13 06:31:30 +01:00.

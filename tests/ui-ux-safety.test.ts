@@ -262,6 +262,29 @@ test("customer widget dashboard blocks duplicate pending domain-change requests"
   assert.doesNotMatch(widgetDashboard, /widget_audit_logs|actor_user_id|old_domain/);
 });
 
+test("customer widget dashboard shows retryable load errors without plan fallback", () => {
+  const widgetDashboard = readProjectFile("src", "components", "dashboard", "WidgetDashboardClient.tsx");
+
+  assert.match(widgetDashboard, /const WIDGET_LOAD_ERROR_MESSAGE = "Widget workspace could not be synced\. Please try again\."/);
+  assert.match(widgetDashboard, /const \[widgetLoadError, setWidgetLoadError\]/);
+  assert.match(widgetDashboard, /setWidgetLoadError\(""\);[\s\S]*\/api\/widget\/client/);
+  assert.match(widgetDashboard, /if \(!response\.ok\) throw new Error\(WIDGET_LOAD_ERROR_MESSAGE\)/);
+  assert.match(widgetDashboard, /catch \{ setWidgetLoadError\(WIDGET_LOAD_ERROR_MESSAGE\); \}/);
+  assert.match(widgetDashboard, /const showInitialWidgetLoadError = Boolean\(widgetLoadError && !client && !payload\)/);
+  assert.match(widgetDashboard, /if \(showInitialWidgetLoadError\) return/);
+  assert.match(widgetDashboard, /role="alert"[\s\S]*Widget workspace sync failed/);
+  assert.match(widgetDashboard, /Your widget subscription status has not changed/);
+  assert.match(widgetDashboard, /onClick=\{\(\) => void load\(\)\}/);
+  assert.match(widgetDashboard, /Try again/);
+  assert.match(widgetDashboard, /No widget subscription is linked to this account/);
+  assert.match(widgetDashboard, /View plans/);
+  assert.match(widgetDashboard, /widgetLoadError && <div role="alert"[\s\S]*Your last loaded widget settings are still shown/);
+  assert.match(widgetDashboard, /Retry sync/);
+  assert.doesNotMatch(widgetDashboard, /throw new Error\(data\.error/);
+  assert.doesNotMatch(widgetDashboard, /setMessage\(error instanceof Error \? error\.message/);
+  assert.doesNotMatch(widgetDashboard, /stripe_customer_id|widget_audit_logs|service_role|admin_note/);
+});
+
 test("admin widget clients list surfaces pending domain review signals safely", () => {
   const route = readProjectFile("src", "app", "api", "admin", "widget-clients", "route.ts");
   const page = readProjectFile("src", "app", "admin", "widget-clients", "page.tsx");
