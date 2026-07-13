@@ -556,6 +556,27 @@ test("customer File Expert jobs history shows retryable load errors", () => {
   assert.doesNotMatch(page, /storage_path|signed_url|service_role|admin_note/i);
 });
 
+test("DTC analyzer provider boundary keeps fallback local and safety-scoped", () => {
+  const types = readProjectFile("src", "lib", "dtcAnalyzer", "types.ts");
+  const fallback = readProjectFile("src", "lib", "dtcAnalyzer", "fallback.ts");
+  const index = readProjectFile("src", "lib", "dtcAnalyzer", "index.ts");
+  const combined = `${types}\n${fallback}\n${index}`;
+
+  assert.match(types, /export interface DtcAnalyzerProvider/);
+  assert.match(types, /provider_unavailable/);
+  assert.match(types, /DtcAnalyzerFallbackState/);
+  assert.match(types, /isAiGenerated: boolean/);
+  assert.match(fallback, /Deterministic non-AI DTC fallback/);
+  assert.match(fallback, /No DTC AI provider is configured for local analysis/);
+  assert.match(fallback, /DTC-off decision/);
+  assert.match(fallback, /does not confirm a root cause, fix or legal suitability/);
+  assert.match(index, /class UnavailableDtcAnalyzerProvider/);
+  assert.match(index, /buildDeterministicDtcFallback/);
+  assert.doesNotMatch(combined, /fetch\(|process\.env|OPENAI_API_KEY|SUPABASE_SERVICE_ROLE_KEY/i);
+  assert.doesNotMatch(combined, /upload-session|createObjectURL|FileReader|writeFile|bytePatch/i);
+  assert.doesNotMatch(combined, /confirmed fix|customer-ready file|checksum result/i);
+});
+
 test("customer File Expert UI renders only customer-safe report details", () => {
   const page = readProjectFile("src", "app", "dashboard", "file-expert", "[id]", "page.tsx");
   assert.match(page, /Technical coordinate data, private file fingerprints and binary internals are hidden on customer reports/);

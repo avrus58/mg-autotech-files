@@ -2,6 +2,33 @@
 
 Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
+## 2026-07-13 reviewer run RMAP-FILE-DTC-M1
+
+- Bitis: 2026-07-13 22:52:44 +01:00.
+- Gorev: RMAP-FILE-DTC-M1 uncommitted worker degisikliklerini V4 roadmap/product/safety/quality gate olarak incelemek.
+- Sonuc: Accepted. Degisiklik Roadmap V2 `file-ai-dtc-analyzer` epic'inin provider-boundary milestone'una uyuyor; provider-neutral contract, explicit unavailable state ve deterministic non-AI fallback no-fake-AI sinirini koruyor.
+- Reviewer duzeltmesi: Yok.
+- Degisen dosyalar: `.autopilot/STATUS.md`, `.autopilot/runtime/review-result.json`.
+- Guvenlik/UI kontrolu: UI, API route, upload, binary inspection, DB schema, migration, payment, pricing, service claim, `.env*` read, live provider call veya production servis islemi eklenmedi. Fallback output raw binary, hashes, signed URL, private storage path, service-role detail, provider secret, admin-only note veya real customer data expose etmiyor. `selectedScore` 76, roadmap selection base score 51 + allocation/continuity bonuslariyla tutarli.
+- Calistirilan kontroller: `.\node_modules\.bin\tsx.cmd --test tests\ecu-intelligence.test.ts` PASS (62/62); `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (34/34); `.\node_modules\.bin\tsx.cmd --test tests\customer-uploader.test.ts` PASS (22/22); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (269/269); `git diff --check` PASS (yalniz CRLF uyarilari); duplicate/history/runtime/diff review PASS.
+- Calistirilmayan kontroller: `npm run build` bilinen restricted-network Google Fonts / Next env yukleme riski nedeniyle calistirilmadi. `npm run check:payments`, normal desktop env/build/package, SQL, smoke, scraper, live service ve production kontrolleri calistirilmadi.
+- Kalan risk: DTC Analyzer henuz customer/admin UI, provider configuration, audit veya expert-review workflow'a baglanmadi; sonraki milestone'lar bunu ayri guvenli dilimler olarak ele almali. Offline build icin Google Fonts/`next/font/google` owner onayi bekleyen bilinen risk devam eder.
+
+## 2026-07-13 worker run RMAP-FILE-DTC-M1
+
+- Baslangic: 2026-07-13 22:35:00 +01:00; bitis: 2026-07-13 22:46:13 +01:00.
+- Gorev: AI DTC Analyzer provider boundary and deterministic fallback.
+- Roadmap: `file-platform`; Epic: `file-ai-dtc-analyzer`; Feature: `file-dtc-m1-provider-boundary`; Roadmap task: `RMAP-FILE-DTC-M1`; Scope class: L; Strategic score: 51 weighted / 76 selected.
+- Fingerprint: `ai-capability|dtc-analyzer|missing-provider-boundary-and-fallback|deterministic-provider-contract`.
+- Secim nedeni: `.autopilot/runtime/roadmap-selection.json` selected task'i `RMAP-FILE-DTC-M1` olarak verdi ve Ready kuyrugunda ayni task guvenli/actionable durumdaydi. Product spec provider interface, deterministic non-AI fallback, provider unavailable state, no fake AI output ve tests istiyordu.
+- Duplicate/evidence kontrolu: Package constitution dosyalari, roadmap selection/state/docs/spec, local `.autopilot/constitution/*`, AGENTS, PROJECT, ROADMAP, INBOX, FEATURE_PROPOSALS, TASKS, TASK_HISTORY, PRODUCT_SCORECARD, STATUS, package scripts, mevcut Git status ve son commitler okundu. TASK_HISTORY/Done ve source search icinde ayni fingerprint veya DTC analyzer provider/fallback implementation bulunmadi. Evidence halen gecerliydi: mevcut `src/lib/ai` File Expert report provider/fallback pattern'i vardi, DTC analyzer icin provider-neutral contract yoktu.
+- Degisen dosyalar: `src/lib/dtcAnalyzer/types.ts`, `src/lib/dtcAnalyzer/fallback.ts`, `src/lib/dtcAnalyzer/index.ts`, `tests/ecu-intelligence.test.ts`, `tests/ui-ux-safety.test.ts`, `.autopilot/TASKS.md`, `.autopilot/TASK_HISTORY.md`, `.autopilot/STATUS.md`, `.autopilot/runtime/last-result.json`.
+- Uygulama sonucu: `DtcAnalyzerProvider` interface'i, `dtc-analyzer-v1` response contract'i, explicit `provider_unavailable` state, unavailable provider, deterministic fallback provider ve `analyzeDtcText` entrypoint'i eklendi. Fallback valid DTC text input'unu normalize eder, duplicate kodlari tekillestirir, bilinen kodlar (`P0401`, `P2002`, `U0100` vb.) icin diagnostic context/check guidance uretir, unknown valid kodlarda dusuk guvenli genel context verir ve invalid/empty input'u provider cagirmadan customer-safe sekilde reddeder. Response provider identity/status, fallback usage, confidence/uncertainty, missing information, human review requirements ve safety boundaries alanlarini ayirir; default output `isAiGenerated: false` kalir.
+- Guvenlik/UI kontrolu: UI/API route, file upload, binary inspection, create request, DB schema/migration, MOD generation, checksum result, production service call, `.env*` read, external provider call, price/payment/service claim veya real customer data islemi eklenmedi. Raw binary, hex offsets, storage path, signed URL, hash, provider secret, service-role detail veya admin-only payload expose edilmedi. Existing request brief, file readiness, File Expert ve desktop DTC coming-soon sinirlari korunur.
+- Calistirilan kontroller: `.\node_modules\.bin\tsx.cmd --test tests\ecu-intelligence.test.ts` PASS (62/62); `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (34/34); `.\node_modules\.bin\tsx.cmd --test tests\customer-uploader.test.ts` PASS (22/22); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (269/269); `git diff --check` PASS (yalniz CRLF uyarilari); diff review PASS.
+- Calistirilmayan kontroller: `npm run build` bu repoda bilinen restricted-network Google Fonts / Next env yukleme riski nedeniyle calistirilmadi. `npm run check:payments`, normal desktop env/build/package, SQL, smoke, scraper, live service ve production kontrolleri calistirilmadi.
+- Kalan risk: DTC Analyzer henuz customer/admin UI veya request lifecycle'a baglanmadi; sonraki milestone'lar provider configuration, UI flow, audit ve expert review entegrasyonunu ayri guvenli dilimler olarak ele almali. Offline build icin Google Fonts/`next/font/google` owner onayi bekleyen bilinen risk devam eder.
+
 ## 2026-07-13 planner run V4 ROADMAP DTC PROVIDER BOUNDARY
 
 - Baslangic: 2026-07-13 22:33:07 +01:00; bitis: 2026-07-13 22:34:55 +01:00.

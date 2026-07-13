@@ -68,6 +68,10 @@ import {
   summarizeMapCandidates,
   type MapDefinition,
 } from "../src/lib/ecuIntelligence/mapDefinitions";
+import {
+  analyzeDtcText,
+  UnavailableDtcAnalyzerProvider,
+} from "../src/lib/dtcAnalyzer";
 
 function calibrationLikeBuffer(size = 16_384) {
   const buffer = Buffer.alloc(size, 0xff);
@@ -312,6 +316,76 @@ test("AI reporting falls back to the rule-based provider when no provider is con
     if (previousOpenAiKey === undefined) delete process.env.OPENAI_API_KEY;
     else process.env.OPENAI_API_KEY = previousOpenAiKey;
   }
+});
+
+test("DTC analyzer exposes provider-unavailable state before fallback", async () => {
+  const provider = new UnavailableDtcAnalyzerProvider("Local DTC AI provider is disabled.");
+  const response = await provider.analyzeDtc({
+    source: "local_test",
+    text: "P0401",
+  });
+
+  assert.equal(response.contractVersion, "dtc-analyzer-v1");
+  assert.equal(response.status, "provider_unavailable");
+  assert.equal(response.provider.providerId, "unconfigured_dtc_ai_provider");
+  assert.equal(response.provider.providerStatus, "unavailable");
+  assert.equal(response.provider.unavailableReason, "Local DTC AI provider is disabled.");
+  assert.equal(response.fallback.used, false);
+  assert.equal(response.isAiGenerated, false);
+  assert.deepEqual(response.normalizedInput.normalizedCodes, ["P0401"]);
+  assert.ok(response.humanReview.required);
+});
+
+test("DTC analyzer deterministic fallback handles valid DTC text safely", async () => {
+  const response = await analyzeDtcText({
+    source: "customer_text",
+    text: "Customer reports limp mode with p0401, P0401 and P2002.",
+    vehicle: { brand: "BMW", engine: "2.0d", ecuType: "EDC17" },
+  });
+  const serialized = JSON.stringify(response);
+
+  assert.equal(response.status, "fallback");
+  assert.equal(response.provider.providerStatus, "unavailable");
+  assert.equal(response.fallback.used, true);
+  assert.equal(response.fallback.providerId, "deterministic_rules");
+  assert.equal(response.isAiGenerated, false);
+  assert.equal(response.confidence, "medium");
+  assert.deepEqual(response.normalizedInput.normalizedCodes, ["P0401", "P2002"]);
+  assert.equal(response.codes[0].code, "P0401");
+  assert.match(response.codes[0].title, /EGR flow lower than expected/i);
+  assert.ok(response.codes[0].recommendedChecks.some((item) => /commanded EGR/i.test(item)));
+  assert.ok(response.missingInformation.some((item) => /Freeze-frame/i.test(item)));
+  assert.ok(response.humanReview.required);
+  assert.ok(response.humanReview.requiredBefore.some((item) => /DTC-off decision/i.test(item)));
+  assert.ok(response.safetyBoundaries.some((item) => /does not approve DTC-off/i.test(item)));
+  assert.doesNotMatch(serialized, /Customer reports limp mode/i);
+  assert.doesNotMatch(serialized, /confirmed fix|customer-ready file|checksum result|byte patch approved/i);
+  assert.doesNotMatch(serialized, /storage_path|signed_url|service_role|first_64_bytes_hex/i);
+});
+
+test("DTC analyzer deterministic fallback handles invalid and empty input", async () => {
+  const invalid = await analyzeDtcText({
+    source: "customer_text",
+    text: "P0XYZ and random note",
+  });
+  const empty = await analyzeDtcText({
+    source: "customer_text",
+    text: "   ",
+  });
+
+  assert.equal(invalid.status, "invalid_input");
+  assert.equal(invalid.provider.providerId, "deterministic_rules");
+  assert.equal(invalid.fallback.used, true);
+  assert.equal(invalid.isAiGenerated, false);
+  assert.deepEqual(invalid.normalizedInput.normalizedCodes, []);
+  assert.deepEqual(invalid.normalizedInput.rejectedCodeLikeTokens, ["P0XYZ"]);
+  assert.match(invalid.summary, /No valid SAE-style DTC code/i);
+  assert.doesNotMatch(JSON.stringify(invalid), /random note/i);
+
+  assert.equal(empty.status, "invalid_input");
+  assert.equal(empty.normalizedInput.hasText, false);
+  assert.equal(empty.confidence, "none");
+  assert.match(empty.summary, /Enter at least one diagnostic trouble code/i);
 });
 
 test("model payload removes customer notes, filenames, VIN and printable strings", async () => {

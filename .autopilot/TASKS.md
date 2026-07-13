@@ -4,42 +4,6 @@
 
 ## Ready
 
-- [ ] **P1 RMAP-FILE-DTC-M1 - AI DTC Analyzer provider boundary and deterministic fallback**
-  - Lane: AI Capability
-  - Roadmap: `file-platform`
-  - Epic: `file-ai-dtc-analyzer` - AI DTC Analyzer
-  - Feature: `file-dtc-m1-provider-boundary` - DTC analyzer provider boundary
-  - Roadmap task: `RMAP-FILE-DTC-M1`
-  - Fingerprint: `ai-capability|dtc-analyzer|missing-provider-boundary-and-fallback|deterministic-provider-contract`
-  - Strategic score: 51 weighted / 54 selected
-  - Scope class: L
-  - Expected effort: Major AI product capability milestone; first safe vertical slice should stay local, deterministic and testable in one worker run.
-  - Business impact: 4/5
-  - User impact: 4/5
-  - Admin impact: 3/5
-  - Strategic fit: 5/5
-  - Confidence: 4/5
-  - Effort: 4/5
-  - Risk: 3/5
-  - Evidence: `.autopilot/runtime/roadmap-selection.json` selects `RMAP-FILE-DTC-M1` with product spec `C:\Users\gokka\Documents\MG-AI-OS-V4\artifacts\specs\rmap-file-dtc-m1.md`. The spec requires a provider interface, deterministic non-AI fallback, provider-unavailable state, no fake AI output and provider/fallback tests. `src/lib/ai/types.ts:32-35` and `src/lib/ai/index.ts:9-32` show an existing provider/fallback pattern for File Expert reports, but duplicate search found no `DtcAnalyzer` or DTC analyzer provider/fallback implementation in source, tests, docs or task history. Existing DTC surfaces are preparatory only: `src/components/tools/RequestBriefBuilder.tsx:18` and `src/components/tools/RequestBriefBuilder.tsx:69` collect DTC context, `src/components/tools/FileReadinessAssistant.tsx:76` asks for fault codes, and `docs/customer-file-upload-assistant.md:154-165` plus `tests/customer-uploader.test.ts:163-177` explicitly keep desktop DTC Tools as coming-soon with no DTC API or file processing.
-  - Product value: Establishes the safe AI DTC Analyzer foundation without pretending an external provider exists. Customers and admins can later receive explainable DTC guidance from a deterministic fallback while the platform keeps human review, no-file-modification and no-secret boundaries intact.
-  - Selection reason: Roadmap V2 selected this P1/L milestone for `file.mgautotech.de` because File Platform allocation pressure is high and AI DTC Analyzer is a strategic product-capability epic. It is not duplicated in current Ready, Done history or the last 100 commits, and it is safer to plan this selected milestone than add another isolated XS/S polish task.
-  - Scope: Add a provider-neutral DTC analyzer domain contract and deterministic rule-based fallback for text DTC input only. Include input normalization/validation, explicit provider-unavailable semantics, customer/admin-safe output copy, and tests. Keep external provider calls disabled unless separately configured and mocked locally. Do not upload files, inspect binaries, generate MOD files, create DTC requests, mutate database schema, read `.env*`, call production services or change payment/service claims.
-  - Acceptance criteria:
-    - A DTC analyzer provider interface and response contract exists with provider identity, status, confidence/uncertainty semantics, safe explanation fields and explicit unavailable/fallback states.
-    - Deterministic fallback handles valid DTC-like input such as `P0401` and invalid/empty input without external network, secrets or fake AI claims.
-    - Output clearly separates normalized codes, likely diagnostic context, missing information and human review requirements; it must not claim a confirmed fix, legal suitability, byte patch, checksum result, MOD generation or customer-ready file.
-    - Provider unavailable behavior is visible through the implemented local surface or response contract and covered by tests.
-    - Existing request brief, file readiness, File Expert, desktop DTC coming-soon and customer/admin data-safety boundaries remain unchanged unless directly integrated with the new safe contract.
-    - No raw binary, hex, offsets, hashes, private storage paths, tokens, service-role details, admin-only notes, provider secrets or real customer data are exposed.
-  - Validation:
-    - `.\node_modules\.bin\tsx.cmd --test tests\ecu-intelligence.test.ts`
-    - `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts`
-    - `.\node_modules\.bin\tsx.cmd --test tests\customer-uploader.test.ts`
-    - `npm run lint`
-    - `npm run typecheck`
-    - `npm test`
-
 - [ ] **P3 AUTO-025 - Desktop uploader local history statuslari okunabilir etiket kullansin**
   - Lane: Product Evolution
   - Domain: Desktop uploader customer clarity & support reduction
@@ -152,6 +116,20 @@ Kabul kriterleri:
 Dogrulama: Diff incelemesi, `npm run lint`, `npm run typecheck`.
 
 ## Done
+
+### RMAP-FILE-DTC-M1 [P1] AI DTC Analyzer provider boundary and deterministic fallback
+
+Durum: Done
+
+Fingerprint: `ai-capability|dtc-analyzer|missing-provider-boundary-and-fallback|deterministic-provider-contract`
+
+Roadmap: `file-platform`; Epic: `file-ai-dtc-analyzer`; Feature: `file-dtc-m1-provider-boundary`; Scope class: L.
+
+Kapsam: Text DTC input icin provider-neutral analyzer contract, explicit provider-unavailable response state ve deterministic non-AI fallback eklendi.
+
+Sonuc: `src/lib/dtcAnalyzer` altinda `DtcAnalyzerProvider` interface'i, `dtc-analyzer-v1` response contract'i, unavailable provider, deterministic fallback provider, input normalization/validation ve `analyzeDtcText` entrypoint'i olusturuldu. Fallback `P0401`, `P2002`, `U0100` gibi valid DTC kodlarini normalize eder, bilinen kodlar icin diagnostic context/check guidance uretir, invalid/empty input'u provider cagirmadan customer-safe sekilde reddeder ve her response'ta fallback usage, provider identity/status, confidence/uncertainty, missing information, safety boundaries ve human review requirement ayirir. No fake AI output: default provider explicit unavailable kalir ve fallback `isAiGenerated: false` dondurur. Dosya yukleme, binary inspection, API route, database schema, MOD generation, checksum result, price/payment/service claim, env read veya production service cagrisi eklenmedi.
+
+Dogrulama: `.\node_modules\.bin\tsx.cmd --test tests\ecu-intelligence.test.ts` PASS (62/62); `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (34/34); `.\node_modules\.bin\tsx.cmd --test tests\customer-uploader.test.ts` PASS (22/22); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (269/269); `git diff --check` PASS (yalniz CRLF uyarilari). `npm run build` bilinen restricted-network Google Fonts / Next env yukleme riski nedeniyle calistirilmadi.
 
 ### AUTO-039 [P2] File Expert analiz listesi yukleme hatasini bos analiz gibi gostermesin
 
