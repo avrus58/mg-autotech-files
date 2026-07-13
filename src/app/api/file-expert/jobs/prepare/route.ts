@@ -6,6 +6,7 @@ import {
   sanitizeFileExpertName,
   validateFileExpertDescriptor,
 } from "@/lib/fileExpert/server";
+import { fileExpertTextLimits } from "@/lib/fileExpert/limits";
 
 const fileDescriptorSchema = z.object({
   name: z.string().min(1).max(255),
@@ -14,12 +15,12 @@ const fileDescriptorSchema = z.object({
 });
 
 const prepareSchema = z.object({
-  brand: z.string().max(100).optional().default(""),
-  model: z.string().max(100).optional().default(""),
-  engine: z.string().max(100).optional().default(""),
-  ecuType: z.string().max(120).optional().default(""),
+  brand: z.string().max(fileExpertTextLimits.brand).optional().default(""),
+  model: z.string().max(fileExpertTextLimits.model).optional().default(""),
+  engine: z.string().max(fileExpertTextLimits.engine).optional().default(""),
+  ecuType: z.string().max(fileExpertTextLimits.ecuType).optional().default(""),
   readMethod: z.enum(["OBD", "Bench", "Boot", "VR", "Unknown"]).default("Unknown"),
-  customerNotes: z.string().max(2000).optional().default(""),
+  customerNotes: z.string().max(fileExpertTextLimits.customerNotes).optional().default(""),
   oriFile: fileDescriptorSchema.nullable().optional(),
   modFile: fileDescriptorSchema.nullable().optional(),
 });

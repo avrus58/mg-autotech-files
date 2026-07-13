@@ -416,6 +416,50 @@ test("admin completed-today metric uses delivered file timestamps before request
   );
 });
 
+test("customer File Expert intake shows upload limits before prepare", () => {
+  const page = readProjectFile("src", "app", "dashboard", "file-expert", "page.tsx");
+  const limits = readProjectFile("src", "lib", "fileExpert", "limits.ts");
+  const prepareRoute = readProjectFile("src", "app", "api", "file-expert", "jobs", "prepare", "route.ts");
+
+  assert.match(limits, /brand:\s*100/);
+  assert.match(limits, /model:\s*100/);
+  assert.match(limits, /engine:\s*100/);
+  assert.match(limits, /ecuType:\s*120/);
+  assert.match(limits, /customerNotes:\s*2000/);
+  assert.match(limits, /fileExpertAllowedExtensions = \["\.bin", "\.ori", "\.mod", "\.frf", "\.hex", "\.zip"\]/);
+  assert.match(limits, /fileExpertMaxFileSize = 32 \* 1024 \* 1024/);
+  assert.match(limits, /fileExpertMaxFileSizeLabel = "32 MB"/);
+
+  assert.match(prepareRoute, /fileExpertTextLimits/);
+  assert.match(prepareRoute, /\.max\(fileExpertTextLimits\.brand\)/);
+  assert.match(prepareRoute, /\.max\(fileExpertTextLimits\.customerNotes\)/);
+
+  assert.match(page, /fileExpertFileRequirements/);
+  assert.match(page, /Allowed files:/);
+  assert.match(page, /Maximum \$\{fileExpertMaxFileSizeLabel\} per file/);
+  assert.match(page, /validateFileExpertSelection/);
+  assert.match(page, /file\.size === 0/);
+  assert.match(page, /file\.size > fileExpertMaxFileSize/);
+  assert.match(page, /fileExpertAllowedExtensions\.some/);
+  assert.match(page, /Unsupported file type/);
+  assert.match(page, /handleFileSelection\("ori", file\)/);
+  assert.match(page, /handleFileSelection\("mod", file\)/);
+  assert.match(page, /accept=\{fileExpertAccept\}/);
+  assert.match(page, /event\.currentTarget\.value = ""/);
+
+  assert.match(page, /maxLength=\{fileExpertTextLimits\.brand\}/);
+  assert.match(page, /maxLength=\{fileExpertTextLimits\.model\}/);
+  assert.match(page, /maxLength=\{fileExpertTextLimits\.engine\}/);
+  assert.match(page, /maxLength=\{fileExpertTextLimits\.ecuType\}/);
+  assert.match(page, /maxLength=\{fileExpertTextLimits\.customerNotes\}/);
+  assert.match(page, /CharacterLimitHint/);
+  assert.match(page, /Select at least one valid ORI or MOD file before starting analysis/);
+  assert.match(page, /setMessage\("Please upload at least one valid ORI or MOD file\."\)/);
+  assert.match(page, /disabled=\{!canSubmitAnalysis\}/);
+  assert.match(page, /if \(textLimitError\) \{[\s\S]*setMessage\(textLimitError\)/);
+  assert.match(page, /if \(!oriFile && !modFile\) \{[\s\S]*fetch\("\/api\/file-expert\/jobs\/prepare"/);
+});
+
 test("customer File Expert UI renders only customer-safe report details", () => {
   const page = readProjectFile("src", "app", "dashboard", "file-expert", "[id]", "page.tsx");
   assert.match(page, /Technical coordinate data, private file fingerprints and binary internals are hidden on customer reports/);

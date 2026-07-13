@@ -2,6 +2,32 @@
 
 Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
+## 2026-07-13 reviewer run AUTO-037
+
+- Baslangic: 2026-07-13 07:43:00 +01:00; bitis: 2026-07-13 07:48:12 +01:00.
+- Gorev: AUTO-037 uncommitted worker degisikliklerini V4 product/safety/quality gate olarak incelemek.
+- Sonuc: Accepted. File Expert intake limit guidance gercek customer/support degeri tasiyor, duplicate degil, evidence gecerli ve kapsam mevcut server text/file limitlerini musteriye prepare oncesi gostermekle sinirli.
+- Reviewer duzeltmesi: Yok.
+- Degisen dosyalar: `.autopilot/STATUS.md`, `.autopilot/runtime/review-result.json`.
+- Guvenlik/UI kontrolu: Public/customer/admin veri sinirlari korundu. Prepare/upload/finalize akisi, private bucket upload davranisi, authenticated headers, report navigation ve customer-safe redaction degismedi. Raw binary, private storage path, signed URL, hash, analyzer internali, secret, token, gercek musteri verisi, odeme internali veya admin-only alan UI'da aciga cikarilmadi. Production servis, migration, deploy, `.env`, yeni dependency veya canli dosya/odeme islemi kullanilmadi.
+- Calistirilan kontroller: `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (30/30); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (260/260); `git diff --check` PASS (yalniz CRLF uyarilari); duplicate/history/runtime/diff review PASS.
+- Calistirilmayan kontroller: `npm run build` bilinen restricted-network Google Fonts / Next env yukleme riski nedeniyle calistirilmadi. `npm run check:payments`, normal desktop env/build/package, SQL, smoke, scraper, live service ve production kontrolleri calistirilmadi.
+- Kalan risk: Customer credit ledger, order archive ve settings profile load-error Ready gorevleri ayri kapsamda devam eder. Offline build icin Google Fonts/`next/font/google` owner onayi bekleyen bilinen risk devam eder.
+
+## 2026-07-13 worker run AUTO-037
+
+- Baslangic: 2026-07-13 07:28:00 +01:00; bitis: 2026-07-13 07:42:26 +01:00.
+- Gorev: File Expert yukleme formu API limitlerini gondermeden once gostersin.
+- Fingerprint: `customer-experience|file-expert-intake|server-side-file-and-field-limits-only|client-side-file-expert-limit-guidance`.
+- Secim nedeni: Ready kuyrugunda MANUAL gorev yoktu. En yuksek Ready oncelik P2 idi; P2 gorevler arasinda AUTO-037 value skoru en yuksek slice idi (2+4+2+4+5-2-2=13). Task local-only, geri alinabilir ve mevcut File Expert prepare/upload/finalize akisini koruyan customer guidance/reliability iyilestirmesiydi.
+- Duplicate/evidence kontrolu: V4 package constitution dosyalari, local `.autopilot/constitution/*`, AGENTS, PROJECT, ROADMAP, INBOX, FEATURE_PROPOSALS, TASKS, TASK_HISTORY, PRODUCT_SCORECARD, STATUS, kok/desktop package scriptleri, mevcut Git durumu ve son 100 commit incelendi. Ayni fingerprint tamamlanmis gorunmedi. Evidence halen gecerliydi: prepare API ve server descriptor validation 100/120/2000 karakter, 32 MB ve `.bin/.ori/.mod/.frf/.hex/.zip` limitlerini zorluyor; musteri formu ise bunlari prepare oncesi tam gostermiyor ve yalniz en az bir dosya varligini kontrol ediyordu.
+- Degisen dosyalar: `src/lib/fileExpert/limits.ts`, `src/app/dashboard/file-expert/page.tsx`, `src/app/api/file-expert/jobs/prepare/route.ts`, `src/app/api/file-expert/jobs/route.ts`, `src/lib/fileExpert/server.ts`, `tests/ui-ux-safety.test.ts`, `.autopilot/TASKS.md`, `.autopilot/TASK_HISTORY.md`, `.autopilot/STATUS.md`, `.autopilot/runtime/last-result.json`.
+- Uygulama sonucu: File Expert text/file limitleri ortak local contract dosyasina tasindi. Musteri intake formu brand/model/engine icin 100, ECU/TCU hint icin 120 ve customer notes icin 2000 karakter `maxLength`/counter yardimi gosterir. ORI/MOD file picker'lari desteklenen uzantilari ve 32 MB limitini gosterir; bos, buyuk veya desteklenmeyen dosyalari local olarak reddeder. Submit, en az bir gecerli ORI/MOD dosyasi ve limit icinde metadata olmadan disabled kalir; submit handler da prepare cagrisi oncesi ayni guardlari uygular.
+- Guvenlik/UI kontrolu: Prepare/upload/finalize asamalari, private bucket upload, authenticated headers, report navigation, analyzer/finalize davranisi ve customer-safe report redaction korunur. Raw binary, private storage path, signed URL, hash, analyzer internali, secret, token, gercek musteri verisi veya admin-only alan UI'da aciga cikarilmadi. Production servis, migration, deploy, `.env`, yeni dependency veya canli dosya/odeme islemi kullanilmadi.
+- Calistirilan kontroller: `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (30/30); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (260/260); `git diff --check` PASS (yalniz CRLF uyarilari); diff review PASS.
+- Calistirilmayan kontroller: `npm run build` bu repoda bilinen restricted-network Google Fonts / Next env yukleme riski nedeniyle calistirilmadi. `npm run check:payments`, normal desktop env/build/package, SQL, smoke, scraper, live service ve production kontrolleri calistirilmadi.
+- Kalan risk: Customer credit ledger, order archive ve settings profile load-error Ready gorevleri ayri kapsamda devam eder. Offline build icin Google Fonts/`next/font/google` owner onayi bekleyen bilinen risk devam eder.
+
 ## 2026-07-13 planner run V4 CUSTOMER SETTINGS AND FILE EXPERT INTAKE
 
 - Baslangic: 2026-07-13 07:05:00 +01:00; bitis: 2026-07-13 07:27:58 +01:00.

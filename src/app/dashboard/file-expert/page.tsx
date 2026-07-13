@@ -18,10 +18,53 @@ import {
 } from "lucide-react";
 import { signOutIfEmailUnverified } from "@/lib/authGuards";
 import { getFileExpertAuthHeaders } from "@/lib/fileExpert/client";
+import {
+  fileExpertAllowedExtensions,
+  fileExpertAllowedExtensionsLabel,
+  fileExpertMaxFileSize,
+  fileExpertMaxFileSizeLabel,
+  fileExpertTextLimits,
+} from "@/lib/fileExpert/limits";
 import { supabase } from "@/lib/supabaseClient";
 import type { FileExpertJob, FileExpertReadMethod } from "@/lib/fileExpert/types";
 
 const readMethods: FileExpertReadMethod[] = ["OBD", "Bench", "Boot", "VR", "Unknown"];
+const fileExpertFileRequirements = `Allowed files: ${fileExpertAllowedExtensionsLabel}. Maximum ${fileExpertMaxFileSizeLabel} per file.`;
+const fileExpertAccept = fileExpertAllowedExtensions.join(",");
+
+type FileExpertFormState = {
+  brand: string;
+  model: string;
+  engine: string;
+  ecuType: string;
+  readMethod: FileExpertReadMethod;
+  customerNotes: string;
+};
+
+type FileExpertTextField = keyof typeof fileExpertTextLimits;
+type FileSlot = "ori" | "mod";
+
+const initialFileExpertForm: FileExpertFormState = {
+  brand: "",
+  model: "",
+  engine: "",
+  ecuType: "",
+  readMethod: "Unknown",
+  customerNotes: "",
+};
+
+const fileExpertTextFieldLabels: Record<FileExpertTextField, string> = {
+  brand: "Vehicle brand",
+  model: "Model",
+  engine: "Engine",
+  ecuType: "ECU / TCU hint",
+  customerNotes: "Customer notes",
+};
+
+const emptyFileSelectionErrors: Record<FileSlot, string> = {
+  ori: "",
+  mod: "",
+};
 
 function statusClass(status: string) {
   if (status === "completed") return "border-emerald-700/40 bg-emerald-950/30 text-emerald-300";
@@ -49,6 +92,40 @@ function shortHash(value: string | null) {
   return `${value.slice(0, 10)}...`;
 }
 
+function validateFileExpertSelection(file: File | null) {
+  if (!file) return "";
+  if (file.size === 0) return "File is empty.";
+  if (file.size > fileExpertMaxFileSize) return `File is too large. Maximum size is ${fileExpertMaxFileSizeLabel}.`;
+
+  const lowerName = file.name.toLowerCase();
+  const hasAllowedExtension = fileExpertAllowedExtensions.some((extension) => lowerName.endsWith(extension));
+  if (!hasAllowedExtension) {
+    return `Unsupported file type. Please upload ${fileExpertAllowedExtensionsLabel}.`;
+  }
+
+  return "";
+}
+
+function getFileExpertTextLimitError(form: FileExpertFormState) {
+  for (const field of Object.keys(fileExpertTextLimits) as FileExpertTextField[]) {
+    const limit = fileExpertTextLimits[field];
+    if (form[field].length > limit) {
+      return `${fileExpertTextFieldLabels[field]} must be ${limit} characters or fewer.`;
+    }
+  }
+
+  return "";
+}
+
+function formatFileExpertSize(size: number) {
+  if (size >= 1024 * 1024) {
+    const megabytes = size / (1024 * 1024);
+    return `${Number.isInteger(megabytes) ? megabytes.toFixed(0) : megabytes.toFixed(1)} MB`;
+  }
+
+  return `${Math.max(1, Math.round(size / 1024))} KB`;
+}
+
 export default function FileExpertDashboardPage() {
   const router = useRouter();
   const [jobs, setJobs] = useState<FileExpertJob[]>([]);
@@ -58,14 +135,8 @@ export default function FileExpertDashboardPage() {
   const [message, setMessage] = useState("");
   const [oriFile, setOriFile] = useState<File | null>(null);
   const [modFile, setModFile] = useState<File | null>(null);
-  const [form, setForm] = useState({
-    brand: "",
-    model: "",
-    engine: "",
-    ecuType: "",
-    readMethod: "Unknown" as FileExpertReadMethod,
-    customerNotes: "",
-  });
+  const [fileSelectionErrors, setFileSelectionErrors] = useState(emptyFileSelectionErrors);
+  const [form, setForm] = useState<FileExpertFormState>(initialFileExpertForm);
 
   async function loadJobs(options?: { silent?: boolean }) {
     if (!options?.silent) setLoading(true);
@@ -120,13 +191,45 @@ export default function FileExpertDashboardPage() {
       failed: jobs.filter((job) => job.status === "failed").length,
     };
   }, [jobs]);
+  const textLimitError = getFileExpertTextLimitError(form);
+  const selectedFileError = validateFileExpertSelection(oriFile) || validateFileExpertSelection(modFile);
+  const hasSelectedFile = Boolean(oriFile || modFile);
+  const canSubmitAnalysis = !submitting && hasSelectedFile && !selectedFileError && !textLimitError;
+  const submitGuidance = !hasSelectedFile
+    ? "Select at least one valid ORI or MOD file before starting analysis."
+    : selectedFileError || textLimitError;
+
+  function handleFileSelection(slot: FileSlot, file: File | null) {
+    const validationError = validateFileExpertSelection(file);
+    setFileSelectionErrors((current) => ({ ...current, [slot]: validationError }));
+
+    if (slot === "ori") setOriFile(validationError ? null : file);
+    if (slot === "mod") setModFile(validationError ? null : file);
+
+    if (validationError) {
+      setMessage(validationError);
+      return;
+    }
+
+    if (file) setMessage("");
+  }
 
   async function submitAnalysis(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setMessage("");
 
     if (!oriFile && !modFile) {
-      setMessage("Please upload at least one ORI or MOD file.");
+      setMessage("Please upload at least one valid ORI or MOD file.");
+      return;
+    }
+
+    if (selectedFileError) {
+      setMessage(selectedFileError);
+      return;
+    }
+
+    if (textLimitError) {
+      setMessage(textLimitError);
       return;
     }
 
@@ -197,14 +300,8 @@ export default function FileExpertDashboardPage() {
 
     setOriFile(null);
     setModFile(null);
-    setForm({
-      brand: "",
-      model: "",
-      engine: "",
-      ecuType: "",
-      readMethod: "Unknown",
-      customerNotes: "",
-    });
+    setFileSelectionErrors(emptyFileSelectionErrors);
+    setForm(initialFileExpertForm);
     await loadJobs({ silent: true });
     router.push(`/dashboard/file-expert/${prepared.jobId}`);
   }
@@ -287,24 +384,56 @@ export default function FileExpertDashboardPage() {
 
             <div className="grid gap-4 sm:grid-cols-2">
               <FileDrop
+                inputId="file-expert-ori-file"
                 title="ORI file"
                 description="Original read or single file for identification"
                 file={oriFile}
-                onChange={setOriFile}
+                error={fileSelectionErrors.ori}
+                onChange={(file) => handleFileSelection("ori", file)}
               />
               <FileDrop
+                inputId="file-expert-mod-file"
                 title="MOD file"
                 description="Optional modified file for ORI/MOD comparison"
                 file={modFile}
-                onChange={setModFile}
+                error={fileSelectionErrors.mod}
+                onChange={(file) => handleFileSelection("mod", file)}
               />
             </div>
 
             <div className="mt-6 grid gap-4 sm:grid-cols-2">
-              <TextInput label="Vehicle brand (optional)" value={form.brand} onChange={(brand) => setForm((current) => ({ ...current, brand }))} placeholder="Auto-detected where evidence is available" />
-              <TextInput label="Model (optional)" value={form.model} onChange={(model) => setForm((current) => ({ ...current, model }))} placeholder="Optional workshop reference" />
-              <TextInput label="Engine (optional)" value={form.engine} onChange={(engine) => setForm((current) => ({ ...current, engine }))} placeholder="Engine code or capacity if known" />
-              <TextInput label="ECU / TCU hint (optional)" value={form.ecuType} onChange={(ecuType) => setForm((current) => ({ ...current, ecuType }))} placeholder="Leave empty for automatic identification" />
+              <TextInput
+                id="file-expert-brand"
+                label="Vehicle brand (optional)"
+                value={form.brand}
+                maxLength={fileExpertTextLimits.brand}
+                onChange={(brand) => setForm((current) => ({ ...current, brand }))}
+                placeholder="Auto-detected where evidence is available"
+              />
+              <TextInput
+                id="file-expert-model"
+                label="Model (optional)"
+                value={form.model}
+                maxLength={fileExpertTextLimits.model}
+                onChange={(model) => setForm((current) => ({ ...current, model }))}
+                placeholder="Optional workshop reference"
+              />
+              <TextInput
+                id="file-expert-engine"
+                label="Engine (optional)"
+                value={form.engine}
+                maxLength={fileExpertTextLimits.engine}
+                onChange={(engine) => setForm((current) => ({ ...current, engine }))}
+                placeholder="Engine code or capacity if known"
+              />
+              <TextInput
+                id="file-expert-ecu-type"
+                label="ECU / TCU hint (optional)"
+                value={form.ecuType}
+                maxLength={fileExpertTextLimits.ecuType}
+                onChange={(ecuType) => setForm((current) => ({ ...current, ecuType }))}
+                placeholder="Leave empty for automatic identification"
+              />
             </div>
 
             <label className="mt-4 block">
@@ -331,18 +460,35 @@ export default function FileExpertDashboardPage() {
               <span className="text-sm font-black text-zinc-200">Customer notes</span>
               <textarea
                 value={form.customerNotes}
+                maxLength={fileExpertTextLimits.customerNotes}
+                aria-describedby="file-expert-customer-notes-limit"
+                aria-invalid={form.customerNotes.length > fileExpertTextLimits.customerNotes || undefined}
                 onChange={(event) =>
                   setForm((current) => ({ ...current, customerNotes: event.target.value }))
                 }
                 placeholder="What should be checked? Example: compare Stage 1 file, DTC area, suspected DPF/EGR changes..."
                 className="mt-2 min-h-32 w-full resize-none rounded-2xl border border-white/10 bg-black/40 px-4 py-3 text-sm font-bold leading-6 text-white outline-none placeholder:text-zinc-600 focus:border-red-700"
               />
+              <CharacterLimitHint
+                id="file-expert-customer-notes-limit"
+                value={form.customerNotes}
+                maxLength={fileExpertTextLimits.customerNotes}
+              />
             </label>
+
+            {submitGuidance ? (
+              <p
+                role={selectedFileError || textLimitError ? "alert" : undefined}
+                className="mt-4 rounded-2xl border border-amber-700/30 bg-amber-950/15 px-4 py-3 text-xs font-bold leading-5 text-amber-100"
+              >
+                {submitGuidance}
+              </p>
+            ) : null}
 
             <button
               type="submit"
-              disabled={submitting}
-              className="mt-6 flex h-14 w-full items-center justify-center rounded-2xl bg-[#b1121b] px-5 text-sm font-black text-white shadow-xl shadow-red-950/30 transition hover:bg-[#c91824] disabled:opacity-50"
+              disabled={!canSubmitAnalysis}
+              className="mt-6 flex h-14 w-full items-center justify-center rounded-2xl bg-[#b1121b] px-5 text-sm font-black text-white shadow-xl shadow-red-950/30 transition hover:bg-[#c91824] disabled:cursor-not-allowed disabled:opacity-50"
             >
               {submitting ? (
                 <Loader2 className="mr-2 h-5 w-5 animate-spin" />
@@ -437,47 +583,99 @@ function Metric({ title, value, icon }: { title: string; value: number; icon: Re
 }
 
 function TextInput({
+  id,
   label,
   value,
+  maxLength,
   onChange,
   placeholder,
 }: {
+  id: string;
   label: string;
   value: string;
+  maxLength: number;
   onChange: (value: string) => void;
   placeholder: string;
 }) {
+  const hintId = `${id}-limit`;
+
   return (
-    <label className="block min-w-0">
+    <label htmlFor={id} className="block min-w-0">
       <span className="text-sm font-black text-zinc-200">{label}</span>
       <input
+        id={id}
         value={value}
+        maxLength={maxLength}
+        aria-describedby={hintId}
+        aria-invalid={value.length > maxLength || undefined}
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
         className="mt-2 h-14 w-full rounded-2xl border border-white/10 bg-black/40 px-4 text-sm font-bold text-white outline-none placeholder:text-zinc-600 focus:border-red-700"
       />
+      <CharacterLimitHint id={hintId} value={value} maxLength={maxLength} />
     </label>
   );
 }
 
+function CharacterLimitHint({
+  id,
+  value,
+  maxLength,
+}: {
+  id: string;
+  value: string;
+  maxLength: number;
+}) {
+  const remaining = maxLength - value.length;
+
+  return (
+    <div
+      id={id}
+      className={`mt-2 text-xs font-bold ${
+        remaining < 0 ? "text-red-300" : "text-zinc-500"
+      }`}
+    >
+      Max {maxLength} characters.{" "}
+      {remaining >= 0 ? `${remaining} remaining.` : `${Math.abs(remaining)} over limit.`}
+    </div>
+  );
+}
+
 function FileDrop({
+  inputId,
   title,
   description,
   file,
+  error,
   onChange,
 }: {
+  inputId: string;
   title: string;
   description: string;
   file: File | null;
+  error: string;
   onChange: (file: File | null) => void;
 }) {
+  const requirementsId = `${inputId}-requirements`;
+  const errorId = `${inputId}-error`;
+
   return (
-    <label className="block min-w-0 cursor-pointer rounded-3xl border border-white/10 bg-black/30 p-4 transition hover:border-red-800/60 hover:bg-white/[0.04]">
+    <label
+      htmlFor={inputId}
+      className={`block min-w-0 cursor-pointer rounded-3xl border bg-black/30 p-4 transition hover:border-red-800/60 hover:bg-white/[0.04] ${
+        error ? "border-red-800/60" : "border-white/10"
+      }`}
+    >
       <input
+        id={inputId}
         type="file"
-        accept=".bin,.ori,.mod,.frf,.hex,.zip"
+        accept={fileExpertAccept}
+        aria-describedby={error ? `${requirementsId} ${errorId}` : requirementsId}
         className="hidden"
-        onChange={(event) => onChange(event.target.files?.[0] ?? null)}
+        onChange={(event) => {
+          onChange(event.target.files?.[0] ?? null);
+          event.currentTarget.value = "";
+        }}
       />
       <div className="flex items-start gap-3">
         <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-red-950/35 text-red-400">
@@ -486,9 +684,17 @@ function FileDrop({
         <div className="min-w-0">
           <div className="font-black">{title}</div>
           <div className="mt-1 text-xs leading-5 text-zinc-500">{description}</div>
-          <div className="mt-3 break-all rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-bold text-zinc-300">
-            {file ? `${file.name} (${Math.round(file.size / 1024)} KB)` : "Choose file"}
+          <div id={requirementsId} className="mt-2 text-xs font-bold leading-5 text-zinc-500">
+            {fileExpertFileRequirements}
           </div>
+          <div className="mt-3 break-all rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-bold text-zinc-300">
+            {file ? `${file.name} (${formatFileExpertSize(file.size)})` : "Choose file"}
+          </div>
+          {error ? (
+            <div id={errorId} role="alert" className="mt-2 text-xs font-bold leading-5 text-red-300">
+              {error}
+            </div>
+          ) : null}
         </div>
       </div>
     </label>

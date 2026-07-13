@@ -109,32 +109,6 @@
     - `npm run typecheck`
     - `npm test`
 
-- [ ] **P2 AUTO-037 - File Expert yukleme formu API limitlerini gondermeden once gostersin**
-  - Lane: Product Evolution
-  - Domain: File Expert upload reliability & customer guidance
-  - Fingerprint: `customer-experience|file-expert-intake|server-side-file-and-field-limits-only|client-side-file-expert-limit-guidance`
-  - Business impact: 2/5
-  - User impact: 4/5
-  - Admin impact: 2/5
-  - Strategic fit: 4/5
-  - Confidence: 5/5
-  - Effort: 2/5
-  - Risk: 2/5
-  - Evidence: `src/app/api/file-expert/jobs/prepare/route.ts:17-22` enforces server-side limits for brand/model/engine (100), ECU hint (120) and customer notes (2000), and `src/lib/fileExpert/server.ts:14-15` plus `src/lib/fileExpert/server.ts:29-34` enforce 32 MB and `.bin/.ori/.mod/.frf/.hex/.zip` file rules. The customer File Expert form fields at `src/app/dashboard/file-expert/page.tsx:304-307` and notes textarea at `src/app/dashboard/file-expert/page.tsx:330-332` do not expose those text limits, and the file picker at `src/app/dashboard/file-expert/page.tsx:477-480` only uses `accept` without local size/type rejection before the prepare request. `src/app/dashboard/file-expert/page.tsx:128-148` only checks that at least one file exists before the API can reject the detailed contract.
-  - Product value: Customers see File Expert upload requirements before starting analysis, reducing failed prepare/upload attempts and support follow-up.
-  - Scope: Add shared client constants that mirror the existing File Expert prepare contract, maxLength/counter guidance for metadata fields, local file type/size validation for ORI/MOD selections and pre-submit blocking for invalid File Expert input. Preserve direct private upload flow, authenticated headers, analyzer/finalize behavior, report rendering and all customer data redaction.
-  - Acceptance criteria:
-    - Brand, model, engine, ECU/TCU hint and customer notes show/enforce the current server text limits before prepare.
-    - ORI and MOD file pickers show allowed extensions and 32 MB limit, and reject empty, oversized or unsupported files locally before calling `/api/file-expert/jobs/prepare`.
-    - Submit remains blocked until at least one valid ORI or MOD file is selected and text fields are within limits.
-    - Prepare/upload/finalize stages, private bucket behavior and report navigation remain unchanged for valid inputs.
-    - No raw binary, private storage path, signed URL, hash, analyzer internals, secret or admin-only data is exposed in the customer UI.
-  - Validation:
-    - `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts`
-    - `npm run lint`
-    - `npm run typecheck`
-    - `npm test`
-
 ## In Progress
 
 ## Blocked
@@ -168,6 +142,18 @@ Kabul kriterleri:
 Dogrulama: Diff incelemesi, `npm run lint`, `npm run typecheck`.
 
 ## Done
+
+### AUTO-037 [P2] File Expert yukleme formu API limitlerini gondermeden once gostersin
+
+Durum: Done
+
+Fingerprint: `customer-experience|file-expert-intake|server-side-file-and-field-limits-only|client-side-file-expert-limit-guidance`
+
+Kapsam: Musteri File Expert intake formu, mevcut server text/file limitlerini prepare cagrisindan once gorunur ve local olarak dogrulanir hale getirildi.
+
+Sonuc: Brand/model/engine alanlari 100, ECU/TCU hint 120 ve customer notes 2000 karakter kontratini `maxLength` ve kalan karakter yardimiyla gosterir. ORI/MOD secicileri desteklenen `.bin/.ori/.mod/.frf/.hex/.zip` uzantilarini ve 32 MB limitini gosterir; bos, buyuk veya desteklenmeyen dosyalar `/api/file-expert/jobs/prepare` cagrilmadan once reddedilir. Submit, en az bir gecerli ORI veya MOD dosyasi secilmeden ve text alanlari limit icinde olmadan disabled kalir. Prepare/upload/finalize akisi, private bucket upload davranisi, report navigation ve customer-safe redaction korunur. Raw binary, private storage path, signed URL, hash, analyzer internali, secret veya admin-only alan UI'da aciga cikarilmadi.
+
+Dogrulama: `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (30/30); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (260/260); `git diff --check` PASS (yalniz CRLF uyarilari). `npm run build` bilinen restricted-network Google Fonts / Next env yukleme riski nedeniyle calistirilmadi.
 
 ### AUTO-035 [P2] Musteri widget workspace yukleme hatasini abonelik yok gibi gostermesin
 

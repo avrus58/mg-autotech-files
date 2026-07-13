@@ -9,10 +9,11 @@ import {
   buildPublicSimilarityEvidence,
   runSimilarityForFileExpert,
 } from "@/lib/ecuIntelligence/similarity";
+import { fileExpertAllowedExtensions, fileExpertMaxFileSize } from "@/lib/fileExpert/limits";
+export { fileExpertMaxFileSize } from "@/lib/fileExpert/limits";
 
 export const fileExpertBucket = "file-expert";
-export const fileExpertMaxFileSize = 32 * 1024 * 1024;
-const allowedExtensions = new Set([".bin", ".ori", ".mod", ".frf", ".hex", ".zip"]);
+const allowedExtensions = new Set(fileExpertAllowedExtensions);
 
 export function sanitizeFileExpertName(name: string) {
   const cleaned = name.replaceAll(" ", "_").replace(/[^a-zA-Z0-9._-]/g, "");
