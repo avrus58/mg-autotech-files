@@ -33,11 +33,12 @@ export function createIdempotencyKey() {
   return `desktop-${Date.now()}-${random}`.replace(/[^a-zA-Z0-9._-]/g, "");
 }
 
-export function safeUploadPayload(value: unknown) {
+export function safeUploadPayload(value: unknown, options: { maxStringLength?: number } = {}) {
   const FileCtor = globalThis.File;
+  const maxStringLength = options.maxStringLength ?? 1000;
   return JSON.parse(JSON.stringify(value, (_key, nested) => {
     if (typeof FileCtor !== "undefined" && nested instanceof FileCtor) return undefined;
-    if (typeof nested === "string" && nested.length > 1000) return nested.slice(0, 1000);
+    if (typeof nested === "string" && nested.length > maxStringLength) return nested.slice(0, maxStringLength);
     return nested;
   }));
 }

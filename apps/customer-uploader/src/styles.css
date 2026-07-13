@@ -49,6 +49,11 @@ body {
   border-color: rgba(24, 24, 27, 0.15);
 }
 
+:root[data-theme="light"] .field-help.combined {
+  background: rgba(24, 24, 27, 0.04);
+  border-color: rgba(24, 24, 27, 0.12);
+}
+
 :root[data-theme="light"] aside {
   background: #fff;
   border-color: rgba(24, 24, 27, 0.12);
@@ -136,6 +141,24 @@ label {
   color: #a1a1aa;
   font-size: 13px;
   font-weight: 800;
+}
+
+.field-help {
+  color: #8b8b94;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.45;
+}
+
+.field-help.combined {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 10px 12px;
+}
+
+.field-help.warn {
+  color: #fde68a;
 }
 
 .login-shell {

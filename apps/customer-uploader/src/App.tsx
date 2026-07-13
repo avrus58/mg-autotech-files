@@ -84,9 +84,31 @@ type ActiveSubmission = {
 };
 
 const supportEmail = "support@mgautotech.de";
+const DESKTOP_TEXT_LIMITS = {
+  ecu: 200,
+  gearbox: 200,
+  readMethod: 120,
+  notes: 4000,
+} as const;
 
 function statusLabel(value: string | null) {
   return (value || "new_request").replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function buildDesktopNotesPayload(notes: string, specialRequest: string, contactPreference: string) {
+  return [
+    notes,
+    specialRequest && `Special request: ${specialRequest}`,
+    contactPreference && `Contact preference: ${contactPreference}`,
+  ].filter(Boolean).join("\n\n");
+}
+
+function fieldLimitError(label: string, value: string, limit: number) {
+  return value.length > limit ? `${label} must be ${limit} characters or less.` : null;
+}
+
+function remainingText(value: string, limit: number) {
+  return limit - value.length;
 }
 
 function formatBytes(value: number | null | undefined) {
@@ -989,6 +1011,12 @@ function RequestWizard({
   const hasService = Boolean(selectedPrimary);
   const hasFile = Boolean(file && sha256);
   const draftFilled = Boolean(hasVehicle || hasService || file || notes || ecu || readMethod || specialRequest);
+  const notesPayload = buildDesktopNotesPayload(notes, specialRequest, contactPreference);
+  const textLimitError = fieldLimitError("ECU / TCU", ecu, DESKTOP_TEXT_LIMITS.ecu)
+    ?? fieldLimitError("Gearbox / TCU details", gearbox, DESKTOP_TEXT_LIMITS.gearbox)
+    ?? fieldLimitError("Read method", readMethod, DESKTOP_TEXT_LIMITS.readMethod)
+    ?? fieldLimitError("Combined notes", notesPayload, DESKTOP_TEXT_LIMITS.notes);
+  const notesPayloadRemaining = remainingText(notesPayload, DESKTOP_TEXT_LIMITS.notes);
 
   function chooseBrand(value: string) {
     setBrandId(value);
@@ -1070,9 +1098,23 @@ function RequestWizard({
     resetWizard();
   }
 
+  function continueFromNotes() {
+    if (textLimitError) {
+      setMessage(textLimitError);
+      return;
+    }
+    setMessage("");
+    setStep("review");
+  }
+
   async function submit() {
     if (!creditVerified) {
       setMessage(en.creditUnavailable);
+      return;
+    }
+    if (textLimitError) {
+      setStep("notes");
+      setMessage(textLimitError);
       return;
     }
     if (!file || !sha256 || !hasVehicle || !selectedPrimary) {
@@ -1134,12 +1176,12 @@ function RequestWizard({
           engine: vehicleNames.engine,
         },
         service: { primaryServiceId, extraServiceIds },
-        notes: [notes, specialRequest && `Special request: ${specialRequest}`, contactPreference && `Contact preference: ${contactPreference}`].filter(Boolean).join("\n\n"),
+        notes: notesPayload,
         ecu,
         gearbox,
         readMethod,
         masterSlave: "master",
-      });
+      }, { maxStringLength: DESKTOP_TEXT_LIMITS.notes });
       const result = await apiFetch<{ request: { id: string; uploaded_file_name: string; credits_required: number; service_type: string }; duplicatePrevented?: boolean }>("/api/desktop/requests/finalize", session, {
         method: "POST",
         body: JSON.stringify(finalizePayload),
@@ -1275,18 +1317,39 @@ function RequestWizard({
       {step === "notes" && (
         <div className="step">
           <h2>{en.notes}</h2>
-          <input value={ecu} onChange={(event) => setEcu(event.target.value)} placeholder="ECU / TCU, if known" />
-          <input value={gearbox} onChange={(event) => setGearbox(event.target.value)} placeholder="Gearbox / TCU details, optional" />
-          <input value={readMethod} onChange={(event) => setReadMethod(event.target.value)} placeholder="Read method, e.g. Bench / OBD / Boot" />
-          <textarea value={notes} onChange={(event) => setNotes(event.target.value)} placeholder="Customer notes, DTCs, vehicle behavior, previous modifications..." />
-          <textarea value={specialRequest} onChange={(event) => setSpecialRequest(event.target.value)} placeholder="Special request, optional" />
+          <label>
+            ECU / TCU, if known
+            <input value={ecu} maxLength={DESKTOP_TEXT_LIMITS.ecu} onChange={(event) => setEcu(event.target.value)} placeholder="ECU / TCU, if known" aria-describedby="ecu-limit" />
+            <FieldLimitHint id="ecu-limit" value={ecu} limit={DESKTOP_TEXT_LIMITS.ecu} />
+          </label>
+          <label>
+            Gearbox / TCU details, optional
+            <input value={gearbox} maxLength={DESKTOP_TEXT_LIMITS.gearbox} onChange={(event) => setGearbox(event.target.value)} placeholder="Gearbox / TCU details, optional" aria-describedby="gearbox-limit" />
+            <FieldLimitHint id="gearbox-limit" value={gearbox} limit={DESKTOP_TEXT_LIMITS.gearbox} />
+          </label>
+          <label>
+            Read method
+            <input value={readMethod} maxLength={DESKTOP_TEXT_LIMITS.readMethod} onChange={(event) => setReadMethod(event.target.value)} placeholder="Read method, e.g. Bench / OBD / Boot" aria-describedby="read-method-limit" />
+            <FieldLimitHint id="read-method-limit" value={readMethod} limit={DESKTOP_TEXT_LIMITS.readMethod} />
+          </label>
+          <label>
+            Customer notes
+            <textarea value={notes} maxLength={DESKTOP_TEXT_LIMITS.notes} onChange={(event) => setNotes(event.target.value)} placeholder="Customer notes, DTCs, vehicle behavior, previous modifications..." aria-describedby="notes-field-limit notes-combined-limit" />
+            <FieldLimitHint id="notes-field-limit" value={notes} limit={DESKTOP_TEXT_LIMITS.notes} />
+          </label>
+          <label>
+            Special request, optional
+            <textarea value={specialRequest} maxLength={DESKTOP_TEXT_LIMITS.notes} onChange={(event) => setSpecialRequest(event.target.value)} placeholder="Special request, optional" aria-describedby="special-request-field-limit notes-combined-limit" />
+            <FieldLimitHint id="special-request-field-limit" value={specialRequest} limit={DESKTOP_TEXT_LIMITS.notes} />
+          </label>
+          <CombinedNotesLimitHint id="notes-combined-limit" remaining={notesPayloadRemaining} limit={DESKTOP_TEXT_LIMITS.notes} />
           <label>Contact preference</label>
           <select value={contactPreference} onChange={(event) => setContactPreference(event.target.value)}>
             <option>Dashboard message</option>
             <option>Email</option>
             <option>Phone if needed</option>
           </select>
-          <div className="button-row"><button className="ghost" onClick={() => setStep("file")}>{en.back}</button><button onClick={() => setStep("review")}>{en.continue}</button></div>
+          <div className="button-row"><button className="ghost" onClick={() => setStep("file")}>{en.back}</button><button disabled={Boolean(textLimitError)} onClick={continueFromNotes}>{en.continue}</button></div>
         </div>
       )}
       {step === "review" && (
@@ -1300,7 +1363,7 @@ function RequestWizard({
           <ReviewLine label="SHA-256" value={sha256 || "Not available"} />
           <ReviewLine label="Upload mode" value="Retry-safe upload. True chunked resume is not enabled yet." />
           {uploadProgress && <UploadProgressCard progress={uploadProgress} phase={phase} />}
-          <div className="button-row"><button className="ghost" onClick={() => setStep("notes")}>{en.back}</button><button disabled={busy || !creditVerified} onClick={() => void submit()}>{busy ? <Loader2 className="spin" /> : <CheckCircle2 />} {busy && phase === "failed" ? en.retryUpload : en.submitRequest}</button></div>
+          <div className="button-row"><button className="ghost" onClick={() => setStep("notes")}>{en.back}</button><button disabled={busy || !creditVerified || Boolean(textLimitError)} onClick={() => void submit()}>{busy ? <Loader2 className="spin" /> : <CheckCircle2 />} {busy && phase === "failed" ? en.retryUpload : en.submitRequest}</button></div>
         </div>
       )}
       {step === "success" && (
@@ -1334,6 +1397,25 @@ function SearchableSelect({ label, value, onChange, options, disabled = false }:
         {filtered.map((option) => <option key={option.id} value={option.id}>{option.name}</option>)}
       </select>
     </label>
+  );
+}
+
+function FieldLimitHint({ id, value, limit }: { id: string; value: string; limit: number }) {
+  const remaining = remainingText(value, limit);
+  const overLimit = remaining < 0;
+  return (
+    <span id={id} className={overLimit ? "field-help warn" : "field-help"} aria-live="polite">
+      {overLimit ? `${Math.abs(remaining)} characters over the ${limit} character limit.` : `${remaining} of ${limit} characters remaining.`}
+    </span>
+  );
+}
+
+function CombinedNotesLimitHint({ id, remaining, limit }: { id: string; remaining: number; limit: number }) {
+  const overLimit = remaining < 0;
+  return (
+    <div id={id} className={overLimit ? "field-help combined warn" : "field-help combined"} aria-live="polite">
+      {overLimit ? `Combined notes are ${Math.abs(remaining)} characters over the ${limit} character limit.` : `Combined notes sent to MG AutoTech: ${remaining} characters remaining from ${limit}.`}
+    </div>
   );
 }
 

@@ -31,32 +31,6 @@
     - `npm run typecheck`
     - `npm test`
 
-- [ ] **P2 AUTO-028 - Desktop uploader not alanlari API sinirini gondermeden once gostersin**
-  - Lane: Product Evolution
-  - Domain: Desktop uploader request intake & API contract clarity
-  - Fingerprint: `desktop-uploader|request-notes-contract|api-length-limits-and-silent-1000-char-truncation|client-side-field-limits-guidance`
-  - Business impact: 2/5
-  - User impact: 3/5
-  - Admin impact: 2/5
-  - Strategic fit: 3/5
-  - Confidence: 5/5
-  - Effort: 2/5
-  - Risk: 1/5
-  - Evidence: Desktop finalize API enforces `notes` max 4000, `ecu`/`gearbox` max 200 and `readMethod` max 120 at `src/app/api/desktop/requests/finalize/route.ts:39-42`. The desktop request wizard notes step renders plain inputs/textareas without visible limits at `apps/customer-uploader/src/App.tsx:1278-1282`. `apps/customer-uploader/src/validation.ts:36-40` also truncates any string longer than 1000 characters inside `safeUploadPayload`, so a long customer note or special request can be silently clipped before reaching the server contract.
-  - Product value: Customers know the exact text limits before submit, and support receives complete, intentional request context instead of silently shortened notes.
-  - Scope: Add customer-visible length guidance and submit guards for desktop notes/ECU/read-method metadata using the existing API contract. Keep service catalogue, credit calculation, upload idempotency, private storage upload, app-check and local history behavior unchanged.
-  - Acceptance criteria:
-    - ECU, gearbox and read-method fields expose limits aligned with the desktop finalize API.
-    - Notes and special-request fields expose visible remaining-character guidance and prevent over-limit submit before upload/finalize starts.
-    - Combined notes payload is not silently clipped by `safeUploadPayload` without a matching customer-visible limit.
-    - Existing file validation, SHA-256 calculation, upload session creation, finalization, duplicate prevention and local history writes remain unchanged.
-    - No prices, credit values, service labels, raw file data, storage paths, tokens or admin-only fields are changed or exposed.
-  - Validation:
-    - `.\node_modules\.bin\tsx.cmd --test tests\customer-uploader.test.ts`
-    - `npm run lint`
-    - `npm run typecheck`
-    - `npm test`
-
 - [ ] **P2 AUTO-029 - Musteri dashboard veri senkron hatasini bos durum gibi gostermesin**
   - Lane: Product Evolution
   - Domain: Customer dashboard reliability & status clarity
@@ -142,6 +116,18 @@ Kabul kriterleri:
 Dogrulama: Diff incelemesi, `npm run lint`, `npm run typecheck`.
 
 ## Done
+
+### AUTO-028 [P2] Desktop uploader not alanlari API sinirini gondermeden once gostersin
+
+Durum: Done
+
+Fingerprint: `desktop-uploader|request-notes-contract|api-length-limits-and-silent-1000-char-truncation|client-side-field-limits-guidance`
+
+Kapsam: Desktop request wizard notes adimi, mevcut finalize API kontratina gore ECU, gearbox, read-method ve combined notes limitlerini musteriye gorunur hale getirecek sekilde guncellendi.
+
+Sonuc: ECU ve gearbox alanlari 200, read method 120 karakter limitini `maxLength` ve kalan karakter yardimiyla gosterir. Customer notes ve special request alanlari combined finalize notes payload'una bagli 4000 karakter sayacini gosterir; notes adimindan review'a gecis ve review submit aksiyonu over-limit durumda engellenir. Finalize payload artik ayni shared notes builder'i kullanir ve `safeUploadPayload` bu path icin 4000 karakterlik API kontratini korur; varsayilan 1000 karakter guvenli payload davranisi diger kullanimlar icin korunur. Service catalogue, credit calculation, upload idempotency, private storage upload, app-check, local history, price/credit policy, raw file data, storage path, token ve admin-only alanlar degistirilmedi.
+
+Dogrulama: `.\node_modules\.bin\tsx.cmd --test tests\customer-uploader.test.ts` PASS (21/21); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (255/255); `git diff --check` PASS (yalniz CRLF uyarilari). `npm run build` bilinen restricted-network Google Fonts / Next env yukleme riski nedeniyle calistirilmadi.
 
 ### AUTO-031 [P2] Admin bank payment formu API kontratini gondermeden once dogrulasin
 

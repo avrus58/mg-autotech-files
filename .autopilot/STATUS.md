@@ -2,6 +2,20 @@
 
 Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
+## 2026-07-13 worker run AUTO-028
+
+- Baslangic: 2026-07-13 04:12:00 +01:00; bitis: 2026-07-13 04:46:39 +01:00.
+- Gorev: Desktop uploader not alanlari API sinirini gondermeden once gostersin.
+- Fingerprint: `desktop-uploader|request-notes-contract|api-length-limits-and-silent-1000-char-truncation|client-side-field-limits-guidance`.
+- Secim nedeni: Ready kuyrugunda MANUAL gorev yoktu. En yuksek Ready oncelik P2 idi; AUTO-028, P2 gorevler arasinda ilk siradaydi, value skoru diger P2 gorevlerle esitti (2+3+2+3+5-2-1=12), local-only ve geri alinabilir desktop customer clarity iyilestirmesiydi.
+- Duplicate/evidence kontrolu: V4 package constitution dosyalari, local `.autopilot/constitution/*`, AGENTS, PROJECT, ROADMAP, INBOX, FEATURE_PROPOSALS, TASKS, TASK_HISTORY, PRODUCT_SCORECARD, STATUS, kok/desktop package scriptleri, mevcut Git durumu ve son 100 commit incelendi. Ayni fingerprint tamamlanmis gorunmedi. Evidence halen gecerliydi: desktop finalize API notes/ECU/gearbox/readMethod limitlerini server tarafinda zorluyordu; notes step alanlari gorunur limit gostermiyordu ve `safeUploadPayload` varsayilan olarak uzun stringleri 1000 karaktere kirpiyordu.
+- Degisen dosyalar: `apps/customer-uploader/src/App.tsx`, `apps/customer-uploader/src/styles.css`, `apps/customer-uploader/src/validation.ts`, `tests/customer-uploader.test.ts`, `.autopilot/TASKS.md`, `.autopilot/TASK_HISTORY.md`, `.autopilot/STATUS.md`, `.autopilot/runtime/last-result.json`.
+- Uygulama sonucu: Desktop notes adimina API kontratiyla uyumlu ECU/gearbox/read-method `maxLength` degerleri, kalan karakter yardimi ve combined notes 4000 karakter sayaci eklendi. Notes adimindan review'a gecis ve review submit aksiyonu over-limit durumda engellenir. Finalize payload shared notes builder kullanir ve `safeUploadPayload` bu path icin 4000 karakterlik API notes kontratini korur.
+- Guvenlik/UI kontrolu: Service catalogue, credit calculation, upload idempotency, private storage upload, app-check, local history, duplicate prevention, fiyat/credit policy ve customer-visible checksum davranisi korunur. Raw file data, storage path, token, secret, admin-only note, payment internali, production servis cagrisi, SQL migration, deploy veya yeni dependency kullanilmadi.
+- Calistirilan kontroller: `.\node_modules\.bin\tsx.cmd --test tests\customer-uploader.test.ts` PASS (21/21); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (255/255); `git diff --check` PASS (yalniz CRLF uyarilari); diff review PASS.
+- Calistirilmayan kontroller: `npm run build` bu repoda bilinen restricted-network Google Fonts / Next env yukleme riski nedeniyle calistirilmadi. Desktop normal `npm run check-env`, `dev`, `build`, `package:win`, live service, SQL, smoke, scraper ve production kontrolleri calistirilmadi.
+- Kalan risk: Desktop local history labels, customer dashboard sync error state ve customer credit ledger error state Ready gorevleri ayri kapsamda devam eder. Offline build icin Google Fonts/`next/font/google` owner onayi bekleyen bilinen risk devam eder.
+
 ## 2026-07-13 worker run AUTO-031
 
 - Baslangic: 2026-07-13 04:00:00 +01:00; bitis: 2026-07-13 04:11:16 +01:00.

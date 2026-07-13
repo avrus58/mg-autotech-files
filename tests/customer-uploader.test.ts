@@ -71,6 +71,9 @@ test("desktop idempotency and safe payload helpers avoid unsafe request data", (
   });
   assert.equal(payload.note.length, 1000);
   assert.equal(payload.nested.value, "ok");
+
+  const apiContractPayload = safeUploadPayload({ note: "x".repeat(4000) }, { maxStringLength: 4000 });
+  assert.equal(apiContractPayload.note.length, 4000);
 });
 
 test("desktop service pricing and summary are computed server-side from known options", () => {
@@ -253,6 +256,27 @@ test("desktop app does not expose admin routes or raw binary internals", () => {
   assert.doesNotMatch(appSource, /\b(Kunde|Fahrzeug|Passwort|Zurueck|Anfrage|Datei|Notizen|Bitte|auswaehlen|oeffnen|verfuegbar|Pruefen|Senden)\b/);
   assert.equal(isValidSha256("a".repeat(64)), true);
   assert.equal(isValidSha256("not-a-hash"), false);
+});
+
+test("desktop request notes step exposes finalize API text limits before submit", () => {
+  const app = readFileSync(resolve(process.cwd(), "apps/customer-uploader/src/App.tsx"), "utf8");
+  const validation = readFileSync(resolve(process.cwd(), "apps/customer-uploader/src/validation.ts"), "utf8");
+  const finalizeRoute = readFileSync(resolve(process.cwd(), "src/app/api/desktop/requests/finalize/route.ts"), "utf8");
+
+  assert.match(finalizeRoute, /notes:\s*z\.string\(\)\.trim\(\)\.max\(4000\)/);
+  assert.match(finalizeRoute, /ecu:\s*z\.string\(\)\.trim\(\)\.max\(200\)/);
+  assert.match(finalizeRoute, /gearbox:\s*z\.string\(\)\.trim\(\)\.max\(200\)/);
+  assert.match(finalizeRoute, /readMethod:\s*z\.string\(\)\.trim\(\)\.max\(120\)/);
+  assert.match(app, /DESKTOP_TEXT_LIMITS = \{[\s\S]*ecu: 200,[\s\S]*gearbox: 200,[\s\S]*readMethod: 120,[\s\S]*notes: 4000/);
+  assert.match(app, /maxLength=\{DESKTOP_TEXT_LIMITS\.ecu\}/);
+  assert.match(app, /maxLength=\{DESKTOP_TEXT_LIMITS\.gearbox\}/);
+  assert.match(app, /maxLength=\{DESKTOP_TEXT_LIMITS\.readMethod\}/);
+  assert.match(app, /CombinedNotesLimitHint/);
+  assert.match(app, /fieldLimitError\("Combined notes", notesPayload, DESKTOP_TEXT_LIMITS\.notes\)/);
+  assert.match(app, /setStep\("notes"\);[\s\S]*setMessage\(textLimitError\);[\s\S]*return;/);
+  assert.match(app, /notes: notesPayload/);
+  assert.match(app, /\}, \{ maxStringLength: DESKTOP_TEXT_LIMITS\.notes \}\)/);
+  assert.match(validation, /const maxStringLength = options\.maxStringLength \?\? 1000/);
 });
 
 test("desktop app source blocks offline continuation and sends app verification headers", () => {
