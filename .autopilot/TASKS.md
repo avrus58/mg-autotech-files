@@ -83,6 +83,59 @@
     - `npm run typecheck`
     - `npm test`
 
+- [ ] **P2 AUTO-038 - Admin request control center yukleme hatasini bos filtre gibi gostermesin**
+  - Lane: Product Evolution
+  - Domain: Admin request queue reliability & operation clarity
+  - Fingerprint: `admin-operations|request-control-center-load|api-load-error-renders-empty-filter|retryable-admin-requests-error-state`
+  - Business impact: 3/5
+  - User impact: 2/5
+  - Admin impact: 4/5
+  - Strategic fit: 4/5
+  - Confidence: 5/5
+  - Effort: 2/5
+  - Risk: 2/5
+  - Evidence: `src/app/admin/requests/AdminRequestsClient.tsx:126-156` loads `/api/admin/requests`; on non-OK responses `src/app/admin/requests/AdminRequestsClient.tsx:149-153` sets `result.error` or a generic message and stops loading while `payload` can remain null. `src/app/admin/requests/AdminRequestsClient.tsx:165-187` then derives `filtered` from `payload?.items ?? []`, and `src/app/admin/requests/AdminRequestsClient.tsx:258-267` renders `No work orders match this filter`, so an initial admin queue sync failure can look like an empty filter result. The route also returns raw caught error messages at `src/app/api/admin/requests/route.ts:12-15`.
+  - Product value: Admins can distinguish a failed operations sync from a genuinely empty filtered queue and retry before assuming work orders are absent.
+  - Scope: Add an admin-safe retryable load-error state for the request control center. Preserve auth redirects, verified-email guard, staff permission API boundary, filters, metrics, migration fallback banner, work-order row fields and existing review signal logic.
+  - Acceptance criteria:
+    - Initial `/api/admin/requests` failures show an admin-safe error state with a retry action instead of the normal empty-filter message and zeroed metrics.
+    - After a successful load, a later manual refresh failure preserves the last successful queue and shows an inline retry warning.
+    - The UI does not expose raw Supabase table/column details, stack traces, tokens, service-role details, storage paths, payment internals, customer file internals or admin-only payload internals.
+    - Existing search, status filter, priority filter, Review only filter, metrics and migration-ready fallback behavior remain unchanged on successful loads.
+    - Unauthorized and unverified-email flows still redirect through the existing auth paths.
+  - Validation:
+    - `.\node_modules\.bin\tsx.cmd --test tests\admin-work-orders.test.ts`
+    - `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts`
+    - `npm run lint`
+    - `npm run typecheck`
+    - `npm test`
+
+- [ ] **P2 AUTO-039 - File Expert analiz listesi yukleme hatasini bos analiz gibi gostermesin**
+  - Lane: Product Evolution
+  - Domain: Customer File Expert analysis history reliability
+  - Fingerprint: `customer-experience|file-expert-dashboard-load|jobs-api-error-renders-empty-analysis-list|retryable-file-expert-jobs-error-state`
+  - Business impact: 2/5
+  - User impact: 4/5
+  - Admin impact: 2/5
+  - Strategic fit: 4/5
+  - Confidence: 5/5
+  - Effort: 2/5
+  - Risk: 2/5
+  - Evidence: `src/app/dashboard/file-expert/page.tsx:141-166` loads `/api/file-expert/jobs` and, on failure, sets `payload.error` or a generic message before clearing loading. Because `jobs` starts as an empty array at `src/app/dashboard/file-expert/page.tsx:131`, the stats at `src/app/dashboard/file-expert/page.tsx:186-192` show zeros and the recent jobs panel renders `No analysis yet` at `src/app/dashboard/file-expert/page.tsx:521-527`. The same loader is called silently every 15 seconds at `src/app/dashboard/file-expert/page.tsx:174-182`, and the API can return raw query errors at `src/app/api/file-expert/jobs/route.ts:76-77`.
+  - Product value: Customers can tell whether File Expert history is truly empty or temporarily unavailable, reducing repeat uploads and support questions.
+  - Scope: Add a customer-safe retryable jobs-load error state for the File Expert dashboard. Preserve login and verified-email redirects, existing intake form validation, prepare/upload/finalize behavior, recent jobs cards, status labels and sanitized customer job projection.
+  - Acceptance criteria:
+    - Initial jobs API failures show a customer-safe retry state instead of the normal `No analysis yet` empty state and zeroed history metrics.
+    - Successful zero-job responses still show the existing empty analysis state.
+    - Silent refresh failures after a successful load preserve the last successful jobs list and show a compact retry/sync warning.
+    - Raw backend messages, Supabase internals, analyzer internals, raw binary data, storage paths, signed URLs, hashes beyond existing sanitized display, tokens and admin-only fields are not exposed.
+    - File Expert prepare, upload, finalize, report navigation and the AUTO-037 local limit guidance remain unchanged.
+  - Validation:
+    - `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts`
+    - `npm run lint`
+    - `npm run typecheck`
+    - `npm test`
+
 ## In Progress
 
 ## Blocked
