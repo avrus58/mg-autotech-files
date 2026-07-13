@@ -83,6 +83,58 @@
     - `npm run typecheck`
     - `npm test`
 
+- [ ] **P2 AUTO-036 - Musteri settings profil hatasinda varsayilan form gostermesin**
+  - Lane: Product Evolution
+  - Domain: Customer profile reliability & support reduction
+  - Fingerprint: `customer-experience|settings-profile-load|supabase-profile-error-renders-default-editable-form|retryable-profile-settings-error-state`
+  - Business impact: 2/5
+  - User impact: 4/5
+  - Admin impact: 2/5
+  - Strategic fit: 3/5
+  - Confidence: 5/5
+  - Effort: 2/5
+  - Risk: 2/5
+  - Evidence: `src/app/dashboard/settings/page.tsx:99-101` sets raw `error.message` and exits loading when the customer profile query fails, while `src/app/dashboard/settings/page.tsx:37-43` and `src/app/dashboard/settings/page.tsx:68` can format a fallback `MGA-10001` customer reference from a null profile. The settings form still renders after loading at `src/app/dashboard/settings/page.tsx:277`, so an initial profile sync failure can show editable default/blank profile fields and a bank-transfer reference as if settings loaded correctly. Save failures also surface raw backend copy at `src/app/dashboard/settings/page.tsx:164-166`.
+  - Product value: Customers can distinguish a real editable profile from a temporary settings sync failure, avoiding wrong bank-transfer references and support confusion.
+  - Scope: Add a customer-safe retryable settings load-error state and customer-safe save-error copy. Preserve auth redirects, verified-email guard, own-profile `id` scoping, successful settings load/save behavior, bank reference behavior after successful load and existing profile fields.
+  - Acceptance criteria:
+    - Initial profile query failures show a clear retryable customer-safe error state instead of the settings form, default customer reference, blank loaded fields or raw backend error.
+    - Successful profile loads still render the existing settings form, customer ID card, bank-transfer reference and editable fields.
+    - Save failures show customer-safe copy and keep the user's entered form values available for retry.
+    - Supabase table/column internals, secrets, service-role details, payment internals, admin-only fields and raw backend messages are not exposed.
+    - Existing login redirect and unverified-email redirect behavior remains unchanged.
+  - Validation:
+    - `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts`
+    - `npm run lint`
+    - `npm run typecheck`
+    - `npm test`
+
+- [ ] **P2 AUTO-037 - File Expert yukleme formu API limitlerini gondermeden once gostersin**
+  - Lane: Product Evolution
+  - Domain: File Expert upload reliability & customer guidance
+  - Fingerprint: `customer-experience|file-expert-intake|server-side-file-and-field-limits-only|client-side-file-expert-limit-guidance`
+  - Business impact: 2/5
+  - User impact: 4/5
+  - Admin impact: 2/5
+  - Strategic fit: 4/5
+  - Confidence: 5/5
+  - Effort: 2/5
+  - Risk: 2/5
+  - Evidence: `src/app/api/file-expert/jobs/prepare/route.ts:17-22` enforces server-side limits for brand/model/engine (100), ECU hint (120) and customer notes (2000), and `src/lib/fileExpert/server.ts:14-15` plus `src/lib/fileExpert/server.ts:29-34` enforce 32 MB and `.bin/.ori/.mod/.frf/.hex/.zip` file rules. The customer File Expert form fields at `src/app/dashboard/file-expert/page.tsx:304-307` and notes textarea at `src/app/dashboard/file-expert/page.tsx:330-332` do not expose those text limits, and the file picker at `src/app/dashboard/file-expert/page.tsx:477-480` only uses `accept` without local size/type rejection before the prepare request. `src/app/dashboard/file-expert/page.tsx:128-148` only checks that at least one file exists before the API can reject the detailed contract.
+  - Product value: Customers see File Expert upload requirements before starting analysis, reducing failed prepare/upload attempts and support follow-up.
+  - Scope: Add shared client constants that mirror the existing File Expert prepare contract, maxLength/counter guidance for metadata fields, local file type/size validation for ORI/MOD selections and pre-submit blocking for invalid File Expert input. Preserve direct private upload flow, authenticated headers, analyzer/finalize behavior, report rendering and all customer data redaction.
+  - Acceptance criteria:
+    - Brand, model, engine, ECU/TCU hint and customer notes show/enforce the current server text limits before prepare.
+    - ORI and MOD file pickers show allowed extensions and 32 MB limit, and reject empty, oversized or unsupported files locally before calling `/api/file-expert/jobs/prepare`.
+    - Submit remains blocked until at least one valid ORI or MOD file is selected and text fields are within limits.
+    - Prepare/upload/finalize stages, private bucket behavior and report navigation remain unchanged for valid inputs.
+    - No raw binary, private storage path, signed URL, hash, analyzer internals, secret or admin-only data is exposed in the customer UI.
+  - Validation:
+    - `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts`
+    - `npm run lint`
+    - `npm run typecheck`
+    - `npm test`
+
 ## In Progress
 
 ## Blocked

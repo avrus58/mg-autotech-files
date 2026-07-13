@@ -35,6 +35,8 @@
   - Legacy admin order modal, kaydedilmemis teslim tahminini gizli `usually_30_min` varsayimina cevirmeden acik admin secimi istesin.
   - Legacy admin ana paneli, orders/customers sorgu hatalarini bos operasyon kuyrugu veya ham DB mesaji gibi gostermesin.
   - Musteri widget workspace'i, widget client yukleme hatasini abonelik yok durumundan ayirsin.
+  - Musteri settings sayfasi, profil sync hatasinda varsayilan editable profil ve bank reference gostermez.
+  - File Expert yukleme formu, mevcut dosya ve metadata limitlerini prepare/upload oncesi musteriye gosterir.
 - Success signals:
   - Musteri, talebin gercek durumunu ve kendi aksiyon gereksinimini detay ekraninda ayri gorebilir.
   - Musteri, aksiyon bekleyen siparisi liste veya dashboard uzerinden hizlica bulabilir.
@@ -60,6 +62,8 @@
   - Admin, legacy order modalinda teslim tahmini kaydetmeden once spesifik sure etiketini bilincli olarak secer.
   - Admin, legacy operasyon panelinde veri senkron hatasini bos is kuyrugundan ayirt edip tekrar deneyebilir.
   - Musteri widget dashboard kullanicisi, gecici widget client yukleme hatasini gercek abonelik eksikligiyle karistirmaz.
+  - Musteri settings kullanicisi, profil verisi yuklenemediginde bunu gercek kayitli profil yerine retry edilebilir hata olarak gorur.
+  - File Expert kullanicisi, desteklenen dosya tipi, 32 MB siniri ve metadata karakter limitlerini API hatasindan once gorur.
   - Migration/fallback durumlarinda mutasyon aksiyonlari read-only davranir ve hata yerine acik mesaj verir.
 
 ## Owner priorities
