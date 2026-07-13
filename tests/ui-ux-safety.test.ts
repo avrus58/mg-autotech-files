@@ -152,6 +152,37 @@ test("legacy admin dashboard shows retryable sync errors instead of empty queues
   assert.doesNotMatch(adminPage, /if \(customerError\) \{\s*setMessage\(customerError\.message\);/);
 });
 
+test("admin request control center shows retryable API load errors instead of empty filters", () => {
+  const client = readProjectFile("src", "app", "admin", "requests", "AdminRequestsClient.tsx");
+  const route = readProjectFile("src", "app", "api", "admin", "requests", "route.ts");
+
+  assert.match(client, /const ADMIN_REQUESTS_LOAD_ERROR_MESSAGE =/);
+  assert.match(client, /const ADMIN_REQUESTS_SYNC_ERROR_MESSAGE =/);
+  assert.match(client, /const \[loadError, setLoadError\] = useState\(""\)/);
+  assert.match(client, /const hasLoadedRequestsRef = useRef\(false\)/);
+  assert.match(client, /if \(!response\.ok\) \{[\s\S]*throw new Error\(ADMIN_REQUESTS_LOAD_ERROR_MESSAGE\)/);
+  assert.match(
+    client,
+    /setLoadError\([\s\S]*hasLoadedRequestsRef\.current \? ADMIN_REQUESTS_SYNC_ERROR_MESSAGE : ADMIN_REQUESTS_LOAD_ERROR_MESSAGE/
+  );
+  assert.match(client, /hasLoadedRequestsRef\.current = true/);
+  assert.match(client, /const showInitialLoadError = Boolean\(loadError && !payload\)/);
+  assert.match(client, /showInitialLoadError \? \(/);
+  assert.match(client, /<AdminRequestsLoadErrorState/);
+  assert.match(client, /role="alert"[\s\S]*Request queue sync failed/);
+  assert.match(client, /The queue is not shown until work orders load successfully/);
+  assert.match(client, /onRetry=\{\(\) => void load\(\)\}/);
+  assert.match(client, /loadError && payload/);
+  assert.match(client, /Admin request sync needs retry/);
+  assert.match(client, /Your last loaded work-order queue is still shown/);
+  assert.match(client, /Retry sync/);
+  assert.match(client, /loading && !payload/);
+  assert.match(route, /\{ error: "Admin requests could not be loaded\." \}/);
+  assert.doesNotMatch(client, /setMessage\(result\.error/);
+  assert.doesNotMatch(client + route, /error instanceof Error \? error\.message/);
+  assert.doesNotMatch(client, /storage_path|signed_url|service_role|admin_note|customer_uploads|payment_records/i);
+});
+
 test("customer additional file upload shows phase-aware retry-safe feedback", () => {
   const page = readProjectFile("src", "app", "dashboard", "orders", "[id]", "page.tsx");
 

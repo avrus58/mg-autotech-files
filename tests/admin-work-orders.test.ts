@@ -70,6 +70,13 @@ test("admin request routes require existing staff permissions", () => {
   }
 });
 
+test("admin request list route returns a generic load error", () => {
+  const route = readFileSync(resolve(process.cwd(), "src", "app", "api", "admin", "requests", "route.ts"), "utf8");
+
+  assert.match(route, /\{ error: "Admin requests could not be loaded\." \}/);
+  assert.doesNotMatch(route, /error instanceof Error \? error\.message/);
+});
+
 test("anonymous users cannot call admin work-order APIs", async () => {
   const list = await import("../src/app/api/admin/requests/route");
   const detail = await import("../src/app/api/admin/requests/[id]/route");

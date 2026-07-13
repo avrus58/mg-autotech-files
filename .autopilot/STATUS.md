@@ -2,6 +2,32 @@
 
 Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
+## 2026-07-13 reviewer run AUTO-038
+
+- Bitis: 2026-07-13 09:56:05 +01:00.
+- Gorev: AUTO-038 uncommitted worker degisikliklerini V4 product/safety/quality gate olarak incelemek.
+- Sonuc: Accepted. Admin request control center load-error ayrimi gercek admin operasyon degeri tasiyor, duplicate degil, evidence gecerli ve kapsam `/api/admin/requests` yukleme hatalarini retry edilebilir admin-safe state ile ayirmakla sinirli.
+- Reviewer duzeltmesi: Yok.
+- Degisen dosyalar: `.autopilot/STATUS.md`, `.autopilot/runtime/review-result.json`.
+- Guvenlik/UI kontrolu: Auth redirect, verified-email guard, `orders.view` staff permission API boundary, filtreler, metrikler, Review only davranisi, migration fallback banner ve request satir alanlari korundu. Ilk API yukleme hatasinda normal bos filtre sonucu ve sifir metrik render edilmiyor; basarili yukleme sonrasi sync hatasinda son basarili queue korunuyor. Raw Supabase/table/column hata metni, stack trace, token, service-role detayi, storage path, signed URL, payment internali, customer file internali veya admin-only payload internali UI/API hata cevabinda aciga cikarilmadi.
+- Calistirilan kontroller: `.\node_modules\.bin\tsx.cmd --test tests\admin-work-orders.test.ts` PASS (27/27); `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (32/32); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (263/263); `git diff --check` PASS (yalniz CRLF uyarilari); duplicate/history/runtime/diff review PASS.
+- Calistirilmayan kontroller: `npm run build` bilinen restricted-network Google Fonts / Next env yukleme riski nedeniyle calistirilmadi. `npm run check:payments`, normal desktop env/build/package, SQL, smoke, scraper, live service ve production kontrolleri calistirilmadi.
+- Kalan risk: Customer order archive, customer settings profile ve File Expert jobs load-error Ready gorevleri ayri kapsamda devam eder. Offline build icin Google Fonts/`next/font/google` owner onayi bekleyen bilinen risk devam eder.
+
+## 2026-07-13 worker run AUTO-038
+
+- Baslangic: 2026-07-13 08:41:00 +01:00; bitis: 2026-07-13 08:50:44 +01:00.
+- Gorev: Admin request control center yukleme hatasini bos filtre gibi gostermesin.
+- Fingerprint: `admin-operations|request-control-center-load|api-load-error-renders-empty-filter|retryable-admin-requests-error-state`.
+- Secim nedeni: Ready kuyrugunda MANUAL gorev yoktu. En yuksek Ready oncelik P2 idi; P2 gorevler arasinda AUTO-038 en yuksek value skoruna sahipti (3+2+4+4+5-2-2=14). Task local-only, geri alinabilir ve admin operasyon kuyrugu guvenilirligini artiran bir Product Evolution/reliability slice idi.
+- Duplicate/evidence kontrolu: V4 package constitution dosyalari, local `.autopilot/constitution/*`, AGENTS, PROJECT, ROADMAP, INBOX, FEATURE_PROPOSALS, TASKS, TASK_HISTORY, PRODUCT_SCORECARD, STATUS, kok/desktop package scriptleri, mevcut Git durumu ve son 100 commit incelendi. Ayni fingerprint tamamlanmis gorunmedi. Evidence halen gecerliydi: `AdminRequestsClient.tsx` API hata durumunda payload null kalabildigi halde `payload?.items ?? []` ile metrik/filtreleri sifirlayip normal `No work orders match this filter` bos sonucunu render edebiliyordu; route catch raw `error.message` dondurebiliyordu.
+- Degisen dosyalar: `src/app/admin/requests/AdminRequestsClient.tsx`, `src/app/api/admin/requests/route.ts`, `tests/admin-work-orders.test.ts`, `tests/ui-ux-safety.test.ts`, `.autopilot/TASKS.md`, `.autopilot/TASK_HISTORY.md`, `.autopilot/STATUS.md`, `.autopilot/runtime/last-result.json`.
+- Uygulama sonucu: Ilk `/api/admin/requests` hatasinda `Request queue sync failed` retry state'i gosteriliyor; metrikler, filtreler ve normal bos filtre mesaji render edilmiyor. Basarili yukleme sonrasi manuel refresh/API hatasi olursa son yuklu request queue ve metrikler korunuyor, inline `Admin request sync needs retry` uyarisi gorunuyor. API catch generic `Admin requests could not be loaded.` cevabina indirildi.
+- Guvenlik/UI kontrolu: Login redirect, verified-email guard, staff permission API boundary, search/status/priority/Review only filtreleri, migration fallback banner, work-order row alanlari ve review signal logic korundu. Raw Supabase/table/column hata metni, stack trace, token, service-role detayi, storage path, signed URL, payment internali, customer file internali veya admin-only payload internali UI'da aciga cikarilmadi. Production servis, migration, deploy, `.env`, yeni dependency veya canli odeme/veritabani islemi kullanilmadi.
+- Calistirilan kontroller: `.\node_modules\.bin\tsx.cmd --test tests\admin-work-orders.test.ts` PASS (27/27); `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (32/32); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (263/263); `git diff --check` PASS (yalniz CRLF uyarilari); diff review PASS.
+- Calistirilmayan kontroller: `npm run build` bu repoda bilinen restricted-network Google Fonts / Next env yukleme riski nedeniyle calistirilmadi. `npm run check:payments`, normal desktop env/build/package, SQL, smoke, scraper, live service ve production kontrolleri calistirilmadi.
+- Kalan risk: Customer order archive, customer settings profile ve File Expert jobs load-error Ready gorevleri ayri kapsamda devam eder. Offline build icin Google Fonts/`next/font/google` owner onayi bekleyen bilinen risk devam eder.
+
 ## 2026-07-13 planner run V4 ADMIN REQUESTS AND FILE EXPERT LOAD STATES
 
 - Baslangic: 2026-07-13 08:23:00 +01:00; bitis: 2026-07-13 08:40:33 +01:00.

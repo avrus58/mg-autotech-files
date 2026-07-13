@@ -83,33 +83,6 @@
     - `npm run typecheck`
     - `npm test`
 
-- [ ] **P2 AUTO-038 - Admin request control center yukleme hatasini bos filtre gibi gostermesin**
-  - Lane: Product Evolution
-  - Domain: Admin request queue reliability & operation clarity
-  - Fingerprint: `admin-operations|request-control-center-load|api-load-error-renders-empty-filter|retryable-admin-requests-error-state`
-  - Business impact: 3/5
-  - User impact: 2/5
-  - Admin impact: 4/5
-  - Strategic fit: 4/5
-  - Confidence: 5/5
-  - Effort: 2/5
-  - Risk: 2/5
-  - Evidence: `src/app/admin/requests/AdminRequestsClient.tsx:126-156` loads `/api/admin/requests`; on non-OK responses `src/app/admin/requests/AdminRequestsClient.tsx:149-153` sets `result.error` or a generic message and stops loading while `payload` can remain null. `src/app/admin/requests/AdminRequestsClient.tsx:165-187` then derives `filtered` from `payload?.items ?? []`, and `src/app/admin/requests/AdminRequestsClient.tsx:258-267` renders `No work orders match this filter`, so an initial admin queue sync failure can look like an empty filter result. The route also returns raw caught error messages at `src/app/api/admin/requests/route.ts:12-15`.
-  - Product value: Admins can distinguish a failed operations sync from a genuinely empty filtered queue and retry before assuming work orders are absent.
-  - Scope: Add an admin-safe retryable load-error state for the request control center. Preserve auth redirects, verified-email guard, staff permission API boundary, filters, metrics, migration fallback banner, work-order row fields and existing review signal logic.
-  - Acceptance criteria:
-    - Initial `/api/admin/requests` failures show an admin-safe error state with a retry action instead of the normal empty-filter message and zeroed metrics.
-    - After a successful load, a later manual refresh failure preserves the last successful queue and shows an inline retry warning.
-    - The UI does not expose raw Supabase table/column details, stack traces, tokens, service-role details, storage paths, payment internals, customer file internals or admin-only payload internals.
-    - Existing search, status filter, priority filter, Review only filter, metrics and migration-ready fallback behavior remain unchanged on successful loads.
-    - Unauthorized and unverified-email flows still redirect through the existing auth paths.
-  - Validation:
-    - `.\node_modules\.bin\tsx.cmd --test tests\admin-work-orders.test.ts`
-    - `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts`
-    - `npm run lint`
-    - `npm run typecheck`
-    - `npm test`
-
 - [ ] **P2 AUTO-039 - File Expert analiz listesi yukleme hatasini bos analiz gibi gostermesin**
   - Lane: Product Evolution
   - Domain: Customer File Expert analysis history reliability
@@ -169,6 +142,18 @@ Kabul kriterleri:
 Dogrulama: Diff incelemesi, `npm run lint`, `npm run typecheck`.
 
 ## Done
+
+### AUTO-038 [P2] Admin request control center yukleme hatasini bos filtre gibi gostermesin
+
+Durum: Done
+
+Fingerprint: `admin-operations|request-control-center-load|api-load-error-renders-empty-filter|retryable-admin-requests-error-state`
+
+Kapsam: Admin request control center, `/api/admin/requests` yukleme hatalarini normal bos filtre sonucu veya sifir metrik gibi gostermek yerine retry edilebilir admin-safe hata durumuyla ayiracak sekilde guncellendi.
+
+Sonuc: Ilk request queue API hatasinda `Request queue sync failed` retry state'i gorunur; metrikler, filtreler ve `No work orders match this filter` bos sonucu render edilmez. Basarili yukleme sonrasi manuel refresh/API hatasi olursa son yuklu queue, metrikler, filtreler, Review only davranisi ve migration fallback banner korunur; inline `Admin request sync needs retry` uyarisi ve retry aksiyonu gosterilir. API catch artik raw exception mesajini dondurmez ve generic `Admin requests could not be loaded.` cevabi kullanir. Login redirect, verified-email guard, staff permission boundary, work-order satir alanlari ve review signal logic degistirilmedi. Raw Supabase hata metni, stack trace, service-role detayi, storage path, signed URL, payment internali, customer file internali veya admin-only payload internali hata UI'inda aciga cikarilmadi.
+
+Dogrulama: `.\node_modules\.bin\tsx.cmd --test tests\admin-work-orders.test.ts` PASS (27/27); `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (32/32); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (263/263); `git diff --check` PASS (yalniz CRLF uyarilari). `npm run build` bilinen restricted-network Google Fonts / Next env yukleme riski nedeniyle calistirilmadi.
 
 ### AUTO-030 [P2] Musteri kredi ledger hatasini bos hareket gibi gostermesin
 

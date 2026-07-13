@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   AlertTriangle,
@@ -101,6 +101,10 @@ const adminReviewStatuses = new Set(["needs_review", "payment_review", "quality_
 const paymentReviewSignals = new Set(["requires_review"]);
 const qualityReviewSignals = new Set(["failed", "needs_review"]);
 const deliveryReviewSignals = new Set(["blocked", "revision_requested"]);
+const ADMIN_REQUESTS_LOAD_ERROR_MESSAGE =
+  "Admin request queue could not be loaded. Retry before treating this filter as empty.";
+const ADMIN_REQUESTS_SYNC_ERROR_MESSAGE =
+  "Admin request queue could not be refreshed. Your last loaded work-order queue is still shown.";
 
 function hasReviewSignal(item: ApiItem) {
   const workOrder = item.workOrder;
@@ -118,14 +122,17 @@ export default function AdminRequestsClient() {
   const [payload, setPayload] = useState<ApiPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
+  const [loadError, setLoadError] = useState("");
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("all");
   const [priority, setPriority] = useState("all");
   const [onlyNeedsReview, setOnlyNeedsReview] = useState(false);
+  const hasLoadedRequestsRef = useRef(false);
 
   async function load() {
     setLoading(true);
     setMessage("");
+    setLoadError("");
     const { data: userData } = await supabase.auth.getUser();
     if (!userData.user) {
       router.push("/login?redirect=/admin/requests");
@@ -142,18 +149,25 @@ export default function AdminRequestsClient() {
       setLoading(false);
       return;
     }
-    const response = await fetch("/api/admin/requests", {
-      headers: { Authorization: `Bearer ${token}` },
-      cache: "no-store",
-    });
-    const result = await response.json();
-    if (!response.ok) {
-      setMessage(result.error || "Work orders could not be loaded.");
+    try {
+      const response = await fetch("/api/admin/requests", {
+        headers: { Authorization: `Bearer ${token}` },
+        cache: "no-store",
+      });
+      if (!response.ok) {
+        throw new Error(ADMIN_REQUESTS_LOAD_ERROR_MESSAGE);
+      }
+      const result = (await response.json()) as ApiPayload;
+      setPayload(result);
+      hasLoadedRequestsRef.current = true;
+      setLoadError("");
+    } catch {
+      setLoadError(
+        hasLoadedRequestsRef.current ? ADMIN_REQUESTS_SYNC_ERROR_MESSAGE : ADMIN_REQUESTS_LOAD_ERROR_MESSAGE
+      );
+    } finally {
       setLoading(false);
-      return;
     }
-    setPayload(result);
-    setLoading(false);
   }
 
   useEffect(() => {
@@ -196,6 +210,8 @@ export default function AdminRequestsClient() {
     };
   }, [payload]);
 
+  const showInitialLoadError = Boolean(loadError && !payload);
+
   return (
     <main className="mg-compact-ui min-h-screen bg-[#050505] text-white">
       <div className="fixed inset-0 -z-10 bg-[radial-gradient(circle_at_20%_0%,rgba(180,18,28,0.22),transparent_34%),linear-gradient(135deg,#050505,#101012_52%,#170507)]" />
@@ -220,95 +236,144 @@ export default function AdminRequestsClient() {
 
       <section className="mx-auto max-w-7xl px-4 py-8">
         {message && <div className="mb-5 rounded-2xl border border-red-800/50 bg-red-950/30 p-4 text-sm text-red-200">{message}</div>}
-        {payload && !payload.migrationReady && (
-          <div className="mb-5 rounded-2xl border border-amber-700/40 bg-amber-950/25 p-4 text-sm text-amber-100">
-            Work Order migration is not installed yet. Existing orders are visible in fallback mode, but internal notes, events and status actions require the SQL migration.
-          </div>
-        )}
 
-        <div className="grid gap-4 md:grid-cols-4">
-          <Metric icon={<FileCode2 />} label="Total requests" value={stats.total} />
-          <Metric icon={<Clock3 />} label="Open work" value={stats.open} />
-          <Metric icon={<AlertTriangle />} label="Needs review" value={stats.review} />
-          <Metric icon={<CheckCircle2 />} label="Delivered files" value={stats.delivered} />
-        </div>
-
-        <div className="mt-6 rounded-[2rem] border border-white/10 bg-white/[0.04] p-4">
-          <div className="grid gap-3 lg:grid-cols-[1fr_180px_180px_auto]">
-            <label className="flex min-h-12 items-center gap-3 rounded-xl border border-white/10 bg-black/30 px-4">
-              <Search className="h-5 w-5 text-zinc-500" />
-              <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search customer, vehicle, ECU, service or request id..." className="h-full min-w-0 flex-1 bg-transparent text-sm font-bold outline-none placeholder:text-zinc-600" />
-            </label>
-            <select value={status} onChange={(event) => setStatus(event.target.value)} className="h-12 rounded-xl border border-white/10 bg-black/30 px-4 text-sm font-black outline-none">
-              <option value="all">All statuses</option>
-              {["new", "file_received", "in_analysis", "in_progress", "waiting_for_customer", "payment_review", "quality_check", "ready_for_delivery", "completed", "cancelled", "needs_review"].map((item) => (
-                <option key={item} value={item} className="bg-[#111]">{labelFromToken(item)}</option>
-              ))}
-            </select>
-            <select value={priority} onChange={(event) => setPriority(event.target.value)} className="h-12 rounded-xl border border-white/10 bg-black/30 px-4 text-sm font-black outline-none">
-              <option value="all">All priorities</option>
-              {["low", "normal", "high", "urgent"].map((item) => <option key={item} value={item} className="bg-[#111]">{labelFromToken(item)}</option>)}
-            </select>
-            <button onClick={() => setOnlyNeedsReview((value) => !value)} className={`rounded-xl border px-4 text-sm font-black ${onlyNeedsReview ? "border-red-700/50 bg-red-950/30 text-red-200" : "border-white/10 bg-black/30 text-zinc-300"}`}>
-              Review only
-            </button>
-          </div>
-        </div>
-
-        <div className="mt-6 space-y-4">
-          {loading ? (
-            <div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-8 text-center text-zinc-400">
-              <Loader2 className="mx-auto mb-3 h-6 w-6 animate-spin text-red-500" />
-              Loading work orders...
-            </div>
-          ) : filtered.length === 0 ? (
-            <div className="rounded-[2rem] border border-dashed border-white/15 bg-white/[0.03] p-8 text-center text-zinc-400">
-              No work orders match this filter.
-            </div>
-          ) : filtered.map((item) => (
-            <Link key={item.order.id} href={`/admin/requests/${item.order.id}`} className="block rounded-[2rem] border border-white/10 bg-white/[0.04] p-5 transition hover:border-red-800/50 hover:bg-red-950/10">
-              <div className="grid gap-5 xl:grid-cols-[1.1fr_1fr_1fr_auto] xl:items-center">
+        {showInitialLoadError ? (
+          <AdminRequestsLoadErrorState message={loadError} retrying={loading} onRetry={() => void load()} />
+        ) : (
+          <>
+            {loadError && payload && (
+              <div role="alert" className="mb-5 flex flex-col gap-4 rounded-2xl border border-amber-700/40 bg-amber-950/20 p-4 text-sm text-amber-100 sm:flex-row sm:items-center sm:justify-between">
                 <div className="min-w-0">
-                  <div className="mb-3 flex flex-wrap gap-2">
-                    <span className="rounded-full border border-red-800/40 bg-red-950/25 px-3 py-1 text-xs font-black text-red-200">#{shortId(item.order.id)}</span>
-                    <span className={`rounded-full border px-3 py-1 text-xs font-black ${badgeClass(item.workOrder?.priority)}`}>{labelFromToken(item.workOrder?.priority)}</span>
-                    <span className={`rounded-full border px-3 py-1 text-xs font-black ${badgeClass(item.workOrder?.admin_status)}`}>{labelFromToken(item.workOrder?.admin_status)}</span>
-                  </div>
-                  <h2 className="truncate text-2xl font-black">{item.order.vehicle_brand || "Vehicle"} {item.order.vehicle_model || ""}</h2>
-                  <p className="mt-1 truncate text-sm text-zinc-400">{item.order.vehicle_generation || "Generation not set"} - {item.order.vehicle_engine || "Engine not set"}</p>
+                  <div className="font-black text-amber-200">Admin request sync needs retry</div>
+                  <div className="mt-1 break-words text-amber-100/80">{loadError}</div>
                 </div>
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2 text-sm font-black text-white"><User className="h-4 w-4 text-red-400" />{item.customer?.company_name || item.customer?.full_name || item.order.customer_email || "Unknown customer"}</div>
-                  <div className="mt-2 text-xs text-zinc-500">{item.customer?.customer_id || item.order.customer_id || "-"}</div>
-                  <div className="mt-2 text-xs text-zinc-500">Created {formatDate(item.order.created_at)}</div>
-                </div>
-                <div className="min-w-0">
-                  <div className="mb-2 flex flex-wrap gap-2">
-                    {item.requestedServices.slice(0, 3).map((service) => <span key={service} className="rounded-full border border-white/10 bg-black/30 px-2 py-1 text-xs font-bold text-zinc-300">{service}</span>)}
-                    {item.requestedServices.length > 3 && <span className="rounded-full border border-white/10 bg-black/30 px-2 py-1 text-xs font-bold text-zinc-500">+{item.requestedServices.length - 3}</span>}
-                    {item.indicators.hasCustomerUpload && (
-                      <span className="inline-flex max-w-full items-center gap-1 rounded-full border border-blue-700/40 bg-blue-950/25 px-2 py-1 text-xs font-bold text-blue-200">
-                        <Paperclip className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                        <span className="truncate">Customer file</span>
-                      </span>
-                    )}
-                  </div>
-                  <div className="grid grid-cols-3 gap-2 text-xs text-zinc-500">
-                    <Indicator ok={item.indicators.hasOriginalFile} label="ORI" />
-                    <Indicator ok={item.indicators.hasDeliveredFile} label="MOD" />
-                    <Indicator ok={item.indicators.hasAiEvidence} label="AI" />
-                  </div>
-                </div>
-                <div className="grid gap-2 text-right text-sm">
-                  <div className={`rounded-xl border px-3 py-2 font-black ${badgeClass(item.workOrder?.payment_review_status)}`}><CreditCard className="mr-1 inline h-4 w-4" />{labelFromToken(item.workOrder?.payment_review_status)}</div>
-                  <div className="rounded-xl border border-white/10 bg-black/25 px-3 py-2 font-black text-zinc-300">{Number(item.order.credits_required ?? 0)} credits</div>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => void load()}
+                  className="inline-flex h-10 items-center justify-center rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 text-sm font-black text-amber-100 transition hover:bg-amber-500/20"
+                >
+                  <RefreshCcw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+                  Retry sync
+                </button>
               </div>
-            </Link>
-          ))}
-        </div>
+            )}
+            {payload && !payload.migrationReady && (
+              <div className="mb-5 rounded-2xl border border-amber-700/40 bg-amber-950/25 p-4 text-sm text-amber-100">
+                Work Order migration is not installed yet. Existing orders are visible in fallback mode, but internal notes, events and status actions require the SQL migration.
+              </div>
+            )}
+
+            <div className="grid gap-4 md:grid-cols-4">
+              <Metric icon={<FileCode2 />} label="Total requests" value={stats.total} />
+              <Metric icon={<Clock3 />} label="Open work" value={stats.open} />
+              <Metric icon={<AlertTriangle />} label="Needs review" value={stats.review} />
+              <Metric icon={<CheckCircle2 />} label="Delivered files" value={stats.delivered} />
+            </div>
+
+            <div className="mt-6 rounded-[2rem] border border-white/10 bg-white/[0.04] p-4">
+              <div className="grid gap-3 lg:grid-cols-[1fr_180px_180px_auto]">
+                <label className="flex min-h-12 items-center gap-3 rounded-xl border border-white/10 bg-black/30 px-4">
+                  <Search className="h-5 w-5 text-zinc-500" />
+                  <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search customer, vehicle, ECU, service or request id..." className="h-full min-w-0 flex-1 bg-transparent text-sm font-bold outline-none placeholder:text-zinc-600" />
+                </label>
+                <select value={status} onChange={(event) => setStatus(event.target.value)} className="h-12 rounded-xl border border-white/10 bg-black/30 px-4 text-sm font-black outline-none">
+                  <option value="all">All statuses</option>
+                  {["new", "file_received", "in_analysis", "in_progress", "waiting_for_customer", "payment_review", "quality_check", "ready_for_delivery", "completed", "cancelled", "needs_review"].map((item) => (
+                    <option key={item} value={item} className="bg-[#111]">{labelFromToken(item)}</option>
+                  ))}
+                </select>
+                <select value={priority} onChange={(event) => setPriority(event.target.value)} className="h-12 rounded-xl border border-white/10 bg-black/30 px-4 text-sm font-black outline-none">
+                  <option value="all">All priorities</option>
+                  {["low", "normal", "high", "urgent"].map((item) => <option key={item} value={item} className="bg-[#111]">{labelFromToken(item)}</option>)}
+                </select>
+                <button onClick={() => setOnlyNeedsReview((value) => !value)} className={`rounded-xl border px-4 text-sm font-black ${onlyNeedsReview ? "border-red-700/50 bg-red-950/30 text-red-200" : "border-white/10 bg-black/30 text-zinc-300"}`}>
+                  Review only
+                </button>
+              </div>
+            </div>
+
+            <div className="mt-6 space-y-4">
+              {loading && !payload ? (
+                <div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-8 text-center text-zinc-400">
+                  <Loader2 className="mx-auto mb-3 h-6 w-6 animate-spin text-red-500" />
+                  Loading work orders...
+                </div>
+              ) : filtered.length === 0 ? (
+                <div className="rounded-[2rem] border border-dashed border-white/15 bg-white/[0.03] p-8 text-center text-zinc-400">
+                  No work orders match this filter.
+                </div>
+              ) : filtered.map((item) => (
+                <Link key={item.order.id} href={`/admin/requests/${item.order.id}`} className="block rounded-[2rem] border border-white/10 bg-white/[0.04] p-5 transition hover:border-red-800/50 hover:bg-red-950/10">
+                  <div className="grid gap-5 xl:grid-cols-[1.1fr_1fr_1fr_auto] xl:items-center">
+                    <div className="min-w-0">
+                      <div className="mb-3 flex flex-wrap gap-2">
+                        <span className="rounded-full border border-red-800/40 bg-red-950/25 px-3 py-1 text-xs font-black text-red-200">#{shortId(item.order.id)}</span>
+                        <span className={`rounded-full border px-3 py-1 text-xs font-black ${badgeClass(item.workOrder?.priority)}`}>{labelFromToken(item.workOrder?.priority)}</span>
+                        <span className={`rounded-full border px-3 py-1 text-xs font-black ${badgeClass(item.workOrder?.admin_status)}`}>{labelFromToken(item.workOrder?.admin_status)}</span>
+                      </div>
+                      <h2 className="truncate text-2xl font-black">{item.order.vehicle_brand || "Vehicle"} {item.order.vehicle_model || ""}</h2>
+                      <p className="mt-1 truncate text-sm text-zinc-400">{item.order.vehicle_generation || "Generation not set"} - {item.order.vehicle_engine || "Engine not set"}</p>
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 text-sm font-black text-white"><User className="h-4 w-4 text-red-400" />{item.customer?.company_name || item.customer?.full_name || item.order.customer_email || "Unknown customer"}</div>
+                      <div className="mt-2 text-xs text-zinc-500">{item.customer?.customer_id || item.order.customer_id || "-"}</div>
+                      <div className="mt-2 text-xs text-zinc-500">Created {formatDate(item.order.created_at)}</div>
+                    </div>
+                    <div className="min-w-0">
+                      <div className="mb-2 flex flex-wrap gap-2">
+                        {item.requestedServices.slice(0, 3).map((service) => <span key={service} className="rounded-full border border-white/10 bg-black/30 px-2 py-1 text-xs font-bold text-zinc-300">{service}</span>)}
+                        {item.requestedServices.length > 3 && <span className="rounded-full border border-white/10 bg-black/30 px-2 py-1 text-xs font-bold text-zinc-500">+{item.requestedServices.length - 3}</span>}
+                        {item.indicators.hasCustomerUpload && (
+                          <span className="inline-flex max-w-full items-center gap-1 rounded-full border border-blue-700/40 bg-blue-950/25 px-2 py-1 text-xs font-bold text-blue-200">
+                            <Paperclip className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                            <span className="truncate">Customer file</span>
+                          </span>
+                        )}
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 text-xs text-zinc-500">
+                        <Indicator ok={item.indicators.hasOriginalFile} label="ORI" />
+                        <Indicator ok={item.indicators.hasDeliveredFile} label="MOD" />
+                        <Indicator ok={item.indicators.hasAiEvidence} label="AI" />
+                      </div>
+                    </div>
+                    <div className="grid gap-2 text-right text-sm">
+                      <div className={`rounded-xl border px-3 py-2 font-black ${badgeClass(item.workOrder?.payment_review_status)}`}><CreditCard className="mr-1 inline h-4 w-4" />{labelFromToken(item.workOrder?.payment_review_status)}</div>
+                      <div className="rounded-xl border border-white/10 bg-black/25 px-3 py-2 font-black text-zinc-300">{Number(item.order.credits_required ?? 0)} credits</div>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </>
+        )}
       </section>
     </main>
+  );
+}
+
+function AdminRequestsLoadErrorState({ message, retrying, onRetry }: { message: string; retrying: boolean; onRetry: () => void }) {
+  return (
+    <section role="alert" className="rounded-[2rem] border border-red-800/50 bg-red-950/20 p-6 text-red-100 sm:p-8">
+      <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl border border-red-700/40 bg-red-950/40 text-red-200">
+            <AlertTriangle className="h-6 w-6" />
+          </div>
+          <h2 className="break-words text-2xl font-black text-white">Request queue sync failed</h2>
+          <p className="mt-3 max-w-2xl break-words text-sm leading-6 text-red-100/80">
+            {message} The queue is not shown until work orders load successfully.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onRetry}
+          className="inline-flex h-11 items-center justify-center rounded-xl border border-red-600/50 bg-red-600/15 px-5 text-sm font-black text-red-50 transition hover:bg-red-600/25"
+        >
+          {retrying ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCcw className="mr-2 h-4 w-4" />}
+          Try again
+        </button>
+      </div>
+    </section>
   );
 }
 

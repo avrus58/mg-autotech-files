@@ -9,9 +9,9 @@ export async function GET(request: Request) {
   try {
     const result = await getAdminRequestList();
     return NextResponse.json(result);
-  } catch (error) {
+  } catch {
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Admin requests could not be loaded." },
+      { error: "Admin requests could not be loaded." },
       { status: 500 }
     );
   }
