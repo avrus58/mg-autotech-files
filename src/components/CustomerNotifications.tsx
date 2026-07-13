@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Bell, CheckCheck, MessageSquareText, Volume2, VolumeX, X } from "lucide-react";
+import { Bell, CheckCheck, MessageSquareText, RefreshCw, Volume2, VolumeX, X } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 
@@ -59,6 +59,9 @@ export function CustomerNotifications() {
   const [items, setItems] = useState<CustomerNotification[]>([]);
   const [open, setOpen] = useState(false);
   const [toast, setToast] = useState<CustomerNotification | null>(null);
+  const [notificationLoading, setNotificationLoading] = useState(false);
+  const [notificationLoadError, setNotificationLoadError] = useState<string | null>(null);
+  const [notificationRefreshKey, setNotificationRefreshKey] = useState(0);
   const [soundEnabled, setSoundEnabled] = useState(() =>
     typeof window === "undefined" || window.localStorage.getItem(soundStorageKey) !== "off"
   );
@@ -83,6 +86,8 @@ export function CustomerNotifications() {
       if (!session?.user) {
         setItems([]);
         setOpen(false);
+        setNotificationLoading(false);
+        setNotificationLoadError(null);
       }
     });
     return () => data.subscription.unsubscribe();
@@ -93,6 +98,11 @@ export function CustomerNotifications() {
     let active = true;
 
     async function loadNotifications(notify = false) {
+      if (!initialized.current) {
+        setNotificationLoading(true);
+        setNotificationLoadError(null);
+      }
+
       const { data, error } = await supabase
         .from("notifications")
         .select("id, user_id, order_id, type, title, body, read_at, created_at")
@@ -100,10 +110,17 @@ export function CustomerNotifications() {
         .order("created_at", { ascending: false })
         .limit(20);
 
-      if (!active || error) return;
+      if (!active) return;
+      if (error) {
+        setNotificationLoading(false);
+        setNotificationLoadError("Notifications could not be loaded. Please try again.");
+        return;
+      }
       const next = (data ?? []) as CustomerNotification[];
       const incoming = next.filter((item) => !knownIds.current.has(item.id));
       setItems(next);
+      setNotificationLoading(false);
+      setNotificationLoadError(null);
       knownIds.current = new Set(next.map((item) => item.id));
 
       if (initialized.current && notify && incoming.length > 0) {
@@ -132,7 +149,7 @@ export function CustomerNotifications() {
       knownIds.current = new Set();
       initialized.current = false;
     };
-  }, [soundEnabled, userId]);
+  }, [notificationRefreshKey, soundEnabled, userId]);
 
   async function markRead(ids: string[]) {
     if (!ids.length) return;
@@ -150,6 +167,12 @@ export function CustomerNotifications() {
     });
   }
 
+  function retryNotificationLoad() {
+    setNotificationLoading(true);
+    setNotificationLoadError(null);
+    setNotificationRefreshKey((current) => current + 1);
+  }
+
   if (!userId || pathname.startsWith("/embed/")) return null;
 
   return (
@@ -162,8 +185,8 @@ export function CustomerNotifications() {
             </div>
             <div className="min-w-0 flex-1">
               <div className="text-xs font-black uppercase tracking-[0.16em] text-red-400">New notification</div>
-              <div className="mt-1 font-black text-white">{toast.title}</div>
-              {toast.body && <div className="mt-1 line-clamp-2 text-sm leading-5 text-zinc-400">{toast.body}</div>}
+              <div className="mt-1 break-words font-black text-white">{toast.title}</div>
+              {toast.body && <div className="mt-1 line-clamp-2 break-words text-sm leading-5 text-zinc-400">{toast.body}</div>}
               {toast.order_id && (
                 <Link href={`/dashboard/orders/${toast.order_id}`} onClick={() => { markRead([toast.id]); setToast(null); }} className="mt-3 inline-flex text-sm font-black text-red-400 hover:text-red-300">
                   Open request
@@ -191,13 +214,32 @@ export function CustomerNotifications() {
               </div>
             </div>
             <div className="max-h-[60vh] overflow-y-auto">
-              {items.length === 0 ? (
+              {notificationLoading && items.length === 0 ? (
+                <div role="status" aria-live="polite" className="p-8 text-center text-sm text-zinc-500">
+                  Loading notifications...
+                </div>
+              ) : notificationLoadError && items.length === 0 ? (
+                <div role="alert" className="space-y-4 p-6 text-center">
+                  <div>
+                    <div className="font-black text-white">Notification sync failed</div>
+                    <div className="mt-2 break-words text-sm leading-5 text-zinc-400">{notificationLoadError}</div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={retryNotificationLoad}
+                    className="inline-flex items-center gap-2 rounded-xl border border-red-700/40 px-4 py-2 text-sm font-black text-red-300 hover:bg-red-950/30 hover:text-red-200"
+                  >
+                    <RefreshCw className="h-4 w-4" />
+                    Try again
+                  </button>
+                </div>
+              ) : items.length === 0 ? (
                 <div className="p-8 text-center text-sm text-zinc-500">No notifications yet.</div>
               ) : items.map((item) => (
                 <Link key={item.id} href={item.order_id ? `/dashboard/orders/${item.order_id}` : "/dashboard"} onClick={() => markRead([item.id])} className={`block border-b border-white/5 px-4 py-4 transition hover:bg-white/[0.05] ${item.read_at ? "opacity-60" : "bg-red-950/10"}`}>
                   <div className="flex items-start gap-3">
                     <span className={`mt-1 h-2 w-2 shrink-0 rounded-full ${item.read_at ? "bg-zinc-700" : "bg-red-500"}`} />
-                    <div className="min-w-0 flex-1"><div className="font-black text-white">{item.title}</div>{item.body && <div className="mt-1 line-clamp-2 text-sm leading-5 text-zinc-400">{item.body}</div>}<div className="mt-2 text-xs text-zinc-600">{timeLabel(item.created_at)}</div></div>
+                    <div className="min-w-0 flex-1"><div className="break-words font-black text-white">{item.title}</div>{item.body && <div className="mt-1 line-clamp-2 break-words text-sm leading-5 text-zinc-400">{item.body}</div>}<div className="mt-2 text-xs text-zinc-600">{timeLabel(item.created_at)}</div></div>
                   </div>
                 </Link>
               ))}

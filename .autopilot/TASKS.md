@@ -31,32 +31,6 @@
     - `npm run typecheck`
     - `npm test`
 
-- [ ] **P2 AUTO-027 - Musteri bildirim paneli yukleme hatasini sessiz gecmesin**
-  - Lane: Product Evolution
-  - Domain: Customer notifications & reliability feedback
-  - Fingerprint: `customer-experience|notification-bell|load-error-silent-empty-state|visible-retryable-notification-state`
-  - Business impact: 2/5
-  - User impact: 3/5
-  - Admin impact: 2/5
-  - Strategic fit: 3/5
-  - Confidence: 5/5
-  - Effort: 1/5
-  - Risk: 1/5
-  - Evidence: `src/components/CustomerNotifications.tsx:95-103` loads notifications but returns silently on Supabase errors without setting any loading or error state. The dropdown body at `src/components/CustomerNotifications.tsx:193-195` can only show `No notifications yet`, so a failed first load is indistinguishable from a genuinely empty notification feed.
-  - Product value: Customers can tell when the notification feed failed to sync and retry instead of assuming there are no updates.
-  - Scope: Add local loading/error/retry feedback to the customer notification dropdown. Preserve the existing `notifications` table query, realtime channel, polling interval, mark-read behavior, sound preference and customer-only visibility rules.
-  - Acceptance criteria:
-    - Opening the dropdown during the first notification load shows a compact loading state.
-    - A load error shows a customer-safe error message and retry action instead of the empty-state copy.
-    - Existing notification items, unread count, toast, sound toggle and order links keep their current behavior.
-    - Mark-all-read remains a customer-scoped update and does not expose notification internals.
-    - Mobile dropdown width and long notification text remain readable without overflow.
-  - Validation:
-    - `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts`
-    - `npm run lint`
-    - `npm run typecheck`
-    - `npm test`
-
 - [ ] **P2 AUTO-028 - Desktop uploader not alanlari API sinirini gondermeden once gostersin**
   - Lane: Product Evolution
   - Domain: Desktop uploader request intake & API contract clarity
@@ -142,6 +116,18 @@ Kabul kriterleri:
 Dogrulama: Diff incelemesi, `npm run lint`, `npm run typecheck`.
 
 ## Done
+
+### AUTO-027 [P2] Musteri bildirim paneli yukleme hatasini sessiz gecmesin
+
+Durum: Done
+
+Fingerprint: `customer-experience|notification-bell|load-error-silent-empty-state|visible-retryable-notification-state`
+
+Kapsam: Musteri notification bell dropdown'i, ilk yukleme ve Supabase query hatalarini sessiz bos durum gibi gostermek yerine yerel loading/error/retry state'leriyle guncellendi.
+
+Sonuc: Bildirimler ilk yuklenirken dropdown kompakt `Loading notifications...` durumunu gosterir. Query hata verirse customer-safe `Notification sync failed` mesaji ve `Try again` aksiyonu gorunur; retry mevcut customer-scoped notification sorgusunu tekrar tetikler. Basarili yuklemede mevcut notification itemlari, unread count, toast, sound toggle, order linkleri, polling/realtime sync ve mark-all-read `user_id` scope'u korunur. Uzun notification title/body metinleri dropdown genisligi icinde wrap davranisi kazandi; storage path, signed URL, secret, admin note, metadata veya admin-only alan aciga cikarilmadi.
+
+Dogrulama: `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (24/24); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (253/253); `git diff --check` PASS (yalniz CRLF uyarilari). `npm run build` bilinen restricted-network Google Fonts / Next env yukleme riski nedeniyle calistirilmadi.
 
 ### AUTO-023 [P2] Admin widget clients listesi bekleyen domain taleplerini gostersin
 

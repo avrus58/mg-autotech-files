@@ -2,6 +2,20 @@
 
 Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
+## 2026-07-13 worker run AUTO-027
+
+- Baslangic: 2026-07-13 03:03:00 +01:00; bitis: 2026-07-13 03:34:00 +01:00.
+- Gorev: Musteri bildirim paneli yukleme hatasini sessiz gecmesin.
+- Fingerprint: `customer-experience|notification-bell|load-error-silent-empty-state|visible-retryable-notification-state`.
+- Secim nedeni: Ready kuyrugunda MANUAL gorev yoktu. P2 gorevler arasinda AUTO-027 en yuksek urun degeri skoruna sahipti (2+3+2+3+5-1-1=13), dusuk risk/effort tasiyordu ve musteri notification feed'inde kanitli sessiz hata durumu vardi.
+- Duplicate/evidence kontrolu: V4 package constitution dosyalari, local `.autopilot/constitution/*`, AGENTS, PROJECT, ROADMAP, INBOX, FEATURE_PROPOSALS, TASKS, TASK_HISTORY, PRODUCT_SCORECARD, STATUS, package scriptleri, mevcut Git durumu ve son 100 commit incelendi. Ayni fingerprint tamamlanmis gorunmedi. Evidence halen gecerliydi: `src/components/CustomerNotifications.tsx` notification query hatasinda state set etmeden donuyor ve dropdown sadece `No notifications yet` bos durumunu gosterebiliyordu.
+- Degisen dosyalar: `src/components/CustomerNotifications.tsx`, `tests/ui-ux-safety.test.ts`, `.autopilot/TASKS.md`, `.autopilot/TASK_HISTORY.md`, `.autopilot/STATUS.md`, `.autopilot/runtime/last-result.json`.
+- Uygulama sonucu: Notification dropdown artik ilk yuklemede `Loading notifications...` durumunu, query hatasinda customer-safe `Notification sync failed` mesaji ve `Try again` aksiyonunu gosterir. Retry mevcut customer-scoped notification sorgusunu tekrar tetikler. Basarili yuklemede mevcut item render, unread count, toast, sound toggle, order linkleri, realtime/polling sync ve mark-all-read davranisi korunur.
+- Guvenlik/UI kontrolu: `notifications` sorgusu ve mark-read update'i `user_id` scope'unu korur. Storage path, signed URL, raw binary, hash, secret, admin note, metadata, payment/credit internali veya admin-only alan aciga cikarilmadi. Uzun title/body metinleri dropdown genisligi icinde `break-words` ile tasmasiz hale getirildi.
+- Calistirilan kontroller: `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (24/24); ilk `npm run lint` `react-hooks/set-state-in-effect` nedeniyle FAIL oldu, effect icindeki senkron reset kaldirildiktan sonra `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (253/253); `git diff --check` PASS (yalniz CRLF uyarilari); diff review PASS.
+- Calistirilmayan kontroller: `npm run build` bu repoda bilinen restricted-network Google Fonts / Next env yukleme riski nedeniyle calistirilmadi. Live service, SQL, smoke, scraper, desktop build/package ve normal env kontrolleri calistirilmadi.
+- Kalan risk: Desktop local history labels, desktop notes contract guidance ve dashboard sync error state Ready gorevleri ayri kapsamda devam eder. Offline build icin Google Fonts/`next/font/google` owner onayi bekleyen bilinen risk devam eder.
+
 ## 2026-07-12 reviewer run AUTO-023
 
 - Baslangic: 2026-07-12 23:33:00 +01:00; bitis: 2026-07-12 23:38:01 +01:00.

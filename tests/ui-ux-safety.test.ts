@@ -221,6 +221,30 @@ test("request chat composer exposes and enforces the API message length contract
   assert.doesNotMatch(chat, /disabled=\{sending \|\| !message\.trim\(\)\}/);
 });
 
+test("customer notifications show retryable loading and error states", () => {
+  const notifications = readProjectFile("src", "components", "CustomerNotifications.tsx");
+
+  assert.match(notifications, /const \[notificationLoading, setNotificationLoading\]/);
+  assert.match(notifications, /const \[notificationLoadError, setNotificationLoadError\]/);
+  assert.match(notifications, /const \[notificationRefreshKey, setNotificationRefreshKey\]/);
+  assert.match(notifications, /\.from\("notifications"\)/);
+  assert.match(notifications, /\.eq\("user_id", userId\)/);
+  assert.match(notifications, /if \(error\) \{[\s\S]*setNotificationLoadError\("Notifications could not be loaded\. Please try again\."\)/);
+  assert.match(notifications, /setNotificationLoading\(false\);[\s\S]*setNotificationLoadError\(null\);[\s\S]*knownIds\.current = new Set/);
+  assert.match(notifications, /function retryNotificationLoad\(\)/);
+  assert.match(notifications, /setNotificationRefreshKey\(\(current\) => current \+ 1\)/);
+  assert.match(notifications, /role="status" aria-live="polite"/);
+  assert.match(notifications, /Loading notifications\.\.\./);
+  assert.match(notifications, /role="alert"/);
+  assert.match(notifications, /Notification sync failed/);
+  assert.match(notifications, /onClick=\{retryNotificationLoad\}/);
+  assert.match(notifications, /Try again/);
+  assert.match(notifications, /notificationLoadError && items\.length === 0[\s\S]*No notifications yet\./);
+  assert.match(notifications, /break-words font-black text-white/);
+  assert.match(notifications, /\.update\(\{ read_at: readAt \}\)\.in\("id", ids\)\.eq\("user_id", userId\)/);
+  assert.doesNotMatch(notifications, /storage_path|signed_url|service_role|admin_note|metadata/);
+});
+
 test("customer dashboard credit history preview uses the customer credit ledger", () => {
   const dashboard = readProjectFile("src", "components", "dashboard", "DashboardClient.tsx");
 
