@@ -83,32 +83,6 @@
     - `npm run typecheck`
     - `npm test`
 
-- [ ] **P2 AUTO-034 - Legacy admin panel yukleme hatasini bos operasyon listesi gibi gostermesin**
-  - Lane: Product Evolution
-  - Domain: Admin operations reliability & error clarity
-  - Fingerprint: `admin-operations|legacy-admin-dashboard|orders-customers-query-error-renders-empty-state|retryable-admin-load-error`
-  - Business impact: 3/5
-  - User impact: 1/5
-  - Admin impact: 4/5
-  - Strategic fit: 4/5
-  - Confidence: 5/5
-  - Effort: 2/5
-  - Risk: 2/5
-  - Evidence: `src/app/admin/page.tsx:513-518` returns on the legacy admin orders query error after setting raw `error.message`, and `src/app/admin/page.tsx:553-557` does the same for the customer list query. The same generic message banner is rendered at `src/app/admin/page.tsx:1263-1265`, while the empty orders states still render `No orders found` at `src/app/admin/page.tsx:1549-1552` and `src/app/admin/page.tsx:1619-1620`, so an initial admin data sync failure can look like an empty operations queue and may expose low-level database copy.
-  - Product value: Admins can distinguish a real empty queue from a sync failure and retry without assuming no work is waiting.
-  - Scope: Add an admin-safe, retryable load-error state for the legacy admin dashboard. Preserve auth redirects, verified-email guard, staff permission denial, existing filters, order/customer selection, live refresh, notification sound, delivery estimate behavior and all mutation permissions.
-  - Acceptance criteria:
-    - Initial orders or customers query failures show a clear admin-safe error state with a retry action instead of the normal empty orders/customers state.
-    - Successful zero-order or zero-customer loads still show the existing empty states.
-    - Silent/live refresh failures clear the syncing indicator and preserve the last successfully loaded orders, customers and current selections.
-    - Supabase table names, column names, raw error messages, storage paths, signed URLs, secrets, payment internals and customer file internals are not exposed in the error UI.
-    - Unauthorized or insufficient-permission state remains separate from data sync failure.
-  - Validation:
-    - `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts`
-    - `npm run lint`
-    - `npm run typecheck`
-    - `npm test`
-
 - [ ] **P2 AUTO-035 - Musteri widget workspace yukleme hatasini abonelik yok gibi gostermesin**
   - Lane: Product Evolution
   - Domain: Customer widget workspace reliability & support reduction
@@ -168,6 +142,18 @@ Kabul kriterleri:
 Dogrulama: Diff incelemesi, `npm run lint`, `npm run typecheck`.
 
 ## Done
+
+### AUTO-034 [P2] Legacy admin panel yukleme hatasini bos operasyon listesi gibi gostermesin
+
+Durum: Done
+
+Fingerprint: `admin-operations|legacy-admin-dashboard|orders-customers-query-error-renders-empty-state|retryable-admin-load-error`
+
+Kapsam: Legacy admin dashboard data-load akisi, orders/customers query hatalarini admin-safe retry state ile ele alacak ve basarisiz sync durumunda son basarili operasyon verisini koruyacak sekilde guncellendi.
+
+Sonuc: Dashboard artik orders veya customers sorgu hatasinda raw backend mesajini `message` banner'ina basmaz. Ilk yukleme hatasinda `Admin data sync failed` retry karti gorunur ve orders/customers panelleri render edilmedigi icin normal `No orders found` veya `No customers found` bos durumlariyla karismaz. Basarili yukleme sonrasi silent/live refresh hatasinda `Admin sync needs retry` inline uyarisi gorunur, syncing indikatoru kapanir ve son basarili orders/customers listeleri ile secimler korunur. Auth/session redirectleri, verified-email guard, staff permission denial, filtreler, order/customer selection, notification sound, delivery estimate behavior ve mutation permission kontrolleri korunur. Supabase table/column internalleri, raw error mesajlari, storage path, signed URL, secret, payment internali veya customer file internali hata UI'inda aciga cikarilmadi.
+
+Dogrulama: `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (28/28); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (258/258); `git diff --check` PASS (yalniz CRLF uyarilari). `npm run build` bilinen restricted-network Google Fonts / Next env yukleme riski nedeniyle calistirilmadi.
 
 ### AUTO-029 [P2] Musteri dashboard veri senkron hatasini bos durum gibi gostermesin
 

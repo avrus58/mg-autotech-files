@@ -124,6 +124,34 @@ test("legacy admin order modal requires an explicit delivery estimate before sav
   assert.doesNotMatch(adminPage, /\?\?\s*"Usually around 30 min"/);
 });
 
+test("legacy admin dashboard shows retryable sync errors instead of empty queues", () => {
+  const adminPage = readProjectFile("src", "app", "admin", "page.tsx");
+
+  assert.match(adminPage, /const ADMIN_LOAD_ERROR_MESSAGE =/);
+  assert.match(adminPage, /const ADMIN_SYNC_ERROR_MESSAGE =/);
+  assert.match(adminPage, /Retry before treating the queue as empty/);
+  assert.match(adminPage, /last loaded orders and customers are still shown/);
+  assert.match(adminPage, /const \[adminLoadError, setAdminLoadError\]/);
+  assert.match(adminPage, /const \[adminDataReady, setAdminDataReady\]/);
+  assert.match(adminPage, /const hasLoadedAdminDataRef = useRef\(false\)/);
+  assert.match(adminPage, /if \(error\) \{[\s\S]*setAdminLoadError\([\s\S]*hasLoadedAdminDataRef\.current \? ADMIN_SYNC_ERROR_MESSAGE : ADMIN_LOAD_ERROR_MESSAGE/);
+  assert.match(adminPage, /if \(customerError\) \{[\s\S]*setAdminLoadError\([\s\S]*hasLoadedAdminDataRef\.current \? ADMIN_SYNC_ERROR_MESSAGE : ADMIN_LOAD_ERROR_MESSAGE/);
+  assert.match(adminPage, /hasLoadedAdminDataRef\.current = true/);
+  assert.match(adminPage, /setAdminDataReady\(true\)/);
+  assert.match(adminPage, /if \(!hasLoadedAdminDataRef\.current\) return;\s*void loadAdminData\(\{ silent: true \}\);/);
+  assert.match(adminPage, /const showInitialAdminLoadError = Boolean\(adminLoadError && !adminDataReady\)/);
+  assert.match(adminPage, /showInitialAdminLoadError \? \(/);
+  assert.match(adminPage, /<AdminLoadErrorState/);
+  assert.match(adminPage, /role="alert"[\s\S]*Admin data sync failed/);
+  assert.match(adminPage, /The queue is not shown until orders and customers load successfully/);
+  assert.match(adminPage, /onRetry=\{\(\) => loadAdminData\(\)\}/);
+  assert.match(adminPage, /adminLoadError && adminDataReady/);
+  assert.match(adminPage, /Admin sync needs retry/);
+  assert.match(adminPage, /onClick=\{\(\) => loadAdminData\(\)\}/);
+  assert.doesNotMatch(adminPage, /if \(error\) \{\s*setMessage\(error\.message\);\s*setLoading\(false\);\s*setAutoRefreshing\(false\);/);
+  assert.doesNotMatch(adminPage, /if \(customerError\) \{\s*setMessage\(customerError\.message\);/);
+});
+
 test("customer additional file upload shows phase-aware retry-safe feedback", () => {
   const page = readProjectFile("src", "app", "dashboard", "orders", "[id]", "page.tsx");
 

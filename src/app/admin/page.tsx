@@ -173,6 +173,10 @@ const statusOptions = [
 const editableStatusOptions = statusOptions.filter((status) => status !== "all");
 const accountStatusOptions = ["active", "suspended", "blocked"];
 const adminOrdersPageSize = 15;
+const ADMIN_LOAD_ERROR_MESSAGE =
+  "Admin operations could not be loaded. Retry before treating the queue as empty.";
+const ADMIN_SYNC_ERROR_MESSAGE =
+  "Admin operations could not be refreshed. The last loaded orders and customers are still shown.";
 type AdminOrderGroup = "open" | "completed" | "cancelled" | "all";
 
 const adminOrderGroups: Array<{
@@ -450,6 +454,8 @@ export default function AdminPage() {
   const [customerSavingId, setCustomerSavingId] = useState<string | null>(null);
   const [uploadingModifiedId, setUploadingModifiedId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
+  const [adminLoadError, setAdminLoadError] = useState("");
+  const [adminDataReady, setAdminDataReady] = useState(false);
   const [autoRefreshing, setAutoRefreshing] = useState(false);
   const [newOrderNotice, setNewOrderNotice] = useState("");
   const [lastSyncAt, setLastSyncAt] = useState<Date | null>(null);
@@ -457,12 +463,14 @@ export default function AdminPage() {
 
   const knownOrderIdsRef = useRef<Set<string>>(new Set());
   const initialOrdersLoadedRef = useRef(false);
+  const hasLoadedAdminDataRef = useRef(false);
 
   async function loadAdminData(options?: { silent?: boolean }) {
     const silent = Boolean(options?.silent);
     if (silent) setAutoRefreshing(true);
     else setLoading(true);
     setMessage("");
+    setAdminLoadError("");
 
     const { data: userData } = await supabase.auth.getUser();
     if (!userData.user) {
@@ -502,6 +510,7 @@ export default function AdminPage() {
     };
 
     if (profileError || !isStaffMember(access) || !hasStaffPermission(access, "orders.view")) {
+      setAdminLoadError("");
       setMessage("You are not authorized to access the admin panel.");
       setLoading(false);
       setAutoRefreshing(false);
@@ -512,7 +521,9 @@ export default function AdminPage() {
 
     const { data, error } = await supabase.from("orders").select("*").order("created_at", { ascending: false });
     if (error) {
-      setMessage(error.message);
+      setAdminLoadError(
+        hasLoadedAdminDataRef.current ? ADMIN_SYNC_ERROR_MESSAGE : ADMIN_LOAD_ERROR_MESSAGE
+      );
       setLoading(false);
       setAutoRefreshing(false);
       return;
@@ -551,7 +562,9 @@ export default function AdminPage() {
     }
 
     if (customerError) {
-      setMessage(customerError.message);
+      setAdminLoadError(
+        hasLoadedAdminDataRef.current ? ADMIN_SYNC_ERROR_MESSAGE : ADMIN_LOAD_ERROR_MESSAGE
+      );
       setLoading(false);
       setAutoRefreshing(false);
       return;
@@ -574,6 +587,7 @@ export default function AdminPage() {
 
     knownOrderIdsRef.current = new Set(nextOrders.map((order) => order.id));
     initialOrdersLoadedRef.current = true;
+    hasLoadedAdminDataRef.current = true;
 
     setOrders(nextOrders);
     setCustomers(nextCustomers);
@@ -584,6 +598,8 @@ export default function AdminPage() {
       setCustomerForm(makeCustomerForm(updated));
       return updated;
     });
+    setAdminLoadError("");
+    setAdminDataReady(true);
     setLastSyncAt(new Date());
     setLoading(false);
     setAutoRefreshing(false);
@@ -596,7 +612,10 @@ export default function AdminPage() {
   }, []);
 
   useEffect(() => {
-    const interval = window.setInterval(() => loadAdminData({ silent: true }), 10000);
+    const interval = window.setInterval(() => {
+      if (!hasLoadedAdminDataRef.current) return;
+      void loadAdminData({ silent: true });
+    }, 10000);
     return () => window.clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -659,6 +678,8 @@ export default function AdminPage() {
         .includes(term)
     );
   }, [customers, customerSearch]);
+
+  const showInitialAdminLoadError = Boolean(adminLoadError && !adminDataReady);
 
   async function openCustomer(customer: Profile) {
     setSelectedCustomer(customer);
@@ -1264,7 +1285,30 @@ export default function AdminPage() {
             <div className="mb-6 rounded-2xl border border-red-800/50 bg-red-950/30 p-4 text-sm text-red-200">{message}</div>
           )}
 
-          {activeTab === "orders" ? (
+          {adminLoadError && adminDataReady && (
+            <div role="alert" className="mb-6 flex flex-col gap-4 rounded-2xl border border-amber-700/40 bg-amber-950/20 p-4 text-sm text-amber-100 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <div className="font-black text-amber-200">Admin sync needs retry</div>
+                <div className="mt-1 text-amber-100/80">{adminLoadError}</div>
+              </div>
+              <button
+                type="button"
+                onClick={() => loadAdminData()}
+                className="inline-flex h-10 items-center justify-center rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 text-sm font-black text-amber-100 transition hover:bg-amber-500/20"
+              >
+                <RefreshCcw className={`mr-2 h-4 w-4 ${autoRefreshing || loading ? "animate-spin" : ""}`} />
+                Try again
+              </button>
+            </div>
+          )}
+
+          {showInitialAdminLoadError ? (
+            <AdminLoadErrorState
+              message={adminLoadError}
+              retrying={loading || autoRefreshing}
+              onRetry={() => loadAdminData()}
+            />
+          ) : activeTab === "orders" ? (
             <OrdersPanel
               filteredOrders={filteredOrders}
               customerById={customerById}
@@ -1340,6 +1384,34 @@ export default function AdminPage() {
         />
       )}
     </main>
+  );
+}
+
+function AdminLoadErrorState({ message, retrying, onRetry }: { message: string; retrying: boolean; onRetry: () => void }) {
+  return (
+    <section role="alert" className="rounded-[2rem] border border-red-800/50 bg-red-950/20 p-6 text-red-100 sm:p-8">
+      <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl border border-red-700/40 bg-red-950/40 text-red-200">
+            <Database className="h-6 w-6" />
+          </div>
+          <h2 className="break-words text-2xl font-black text-white">Admin data sync failed</h2>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-red-100/80">{message}</p>
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-400">
+            The queue is not shown until orders and customers load successfully, so this screen cannot be mistaken for an empty operation list.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onRetry}
+          disabled={retrying}
+          className="inline-flex h-11 shrink-0 items-center justify-center rounded-xl border border-red-500/40 bg-red-600 px-4 text-sm font-black text-white transition hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          <RefreshCcw className={`mr-2 h-4 w-4 ${retrying ? "animate-spin" : ""}`} />
+          Try again
+        </button>
+      </div>
+    </section>
   );
 }
 

@@ -2,6 +2,32 @@
 
 Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
+## 2026-07-13 reviewer run AUTO-034
+
+- Baslangic: 2026-07-13 06:27:00 +01:00; bitis: 2026-07-13 06:31:30 +01:00.
+- Gorev: AUTO-034 uncommitted worker degisikliklerini V4 product/safety/quality gate olarak incelemek.
+- Sonuc: Accepted. Legacy admin dashboard data-load hata durumu gercek urun/admin degeri tasiyor, duplicate degil, evidence gecerli ve kapsam admin-safe retry/error clarity ile sinirli.
+- Reviewer duzeltmesi: Ilk basarili admin data load olmadan 10 saniyelik silent refresh calisip `adminLoadError` degerini gecici olarak temizlemesin diye interval guard'i eklendi. Boylece ilk yukleme hatasindan sonra normal bos queue UI'i tekrar gorunmez. `tests/ui-ux-safety.test.ts` bu guard'i da kapsayacak sekilde guncellendi.
+- Degisen dosyalar: `src/app/admin/page.tsx`, `tests/ui-ux-safety.test.ts`, `.autopilot/STATUS.md`, `.autopilot/runtime/review-result.json`.
+- Guvenlik/UI kontrolu: Public/customer/admin data sinirlari korundu; raw Supabase hata mesaji, table/column internali, storage path, signed URL, secret, payment internali veya musteri dosya internali hata UI'inda aciga cikarilmadi. Production servis, migration, deploy, `.env`, secret, gercek musteri verisi veya yeni dependency kullanilmadi. UI degisikligi responsive alert/button layout'u ve retry state'i icinde kaldi.
+- Calistirilan kontroller: `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (28/28); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (258/258); `git diff --check` PASS (yalniz CRLF uyarilari).
+- Calistirilmayan kontroller: `npm run build` bilinen restricted-network Google Fonts / Next env yukleme riski nedeniyle calistirilmadi. `npm run check:payments`, normal desktop env/build/package, SQL, smoke, scraper, live service ve production kontrolleri calistirilmadi.
+- Kalan risk: Ready kuyrugundaki desktop local history labels, customer credit ledger error state, customer order archive error state ve widget workspace load error state ayri kapsamda devam eder. Offline build icin Google Fonts/`next/font/google` owner onayi bekleyen bilinen risk devam eder.
+
+## 2026-07-13 worker run AUTO-034
+
+- Baslangic: 2026-07-13 06:18:00 +01:00; bitis: 2026-07-13 06:26:20 +01:00.
+- Gorev: Legacy admin panel yukleme hatasini bos operasyon listesi gibi gostermesin.
+- Fingerprint: `admin-operations|legacy-admin-dashboard|orders-customers-query-error-renders-empty-state|retryable-admin-load-error`.
+- Secim nedeni: Ready kuyrugunda MANUAL gorev yoktu. En yuksek Ready oncelik P2 idi; P2 gorevler arasinda AUTO-034 ve AUTO-035 value skorunda esitti (13). AUTO-034 admin operasyon kuyrugu guvenilirligi ve Ready sirasi nedeniyle secildi. Task local-only, geri alinabilir ve mevcut admin permission/auth sinirlarini koruyan bir reliability/UX iyilestirmesiydi.
+- Duplicate/evidence kontrolu: V4 package constitution dosyalari, local `.autopilot/constitution/*`, AGENTS, PROJECT, ROADMAP, INBOX, FEATURE_PROPOSALS, TASKS, TASK_HISTORY, PRODUCT_SCORECARD, STATUS, kok/desktop package scriptleri, mevcut Git durumu ve son commitler incelendi. Ayni fingerprint tamamlanmis gorunmedi. Evidence halen gecerliydi: legacy admin orders/customers query error pathleri raw backend mesajini set ediyor ve normal empty queue UI ile karisabiliyordu.
+- Degisen dosyalar: `src/app/admin/page.tsx`, `tests/ui-ux-safety.test.ts`, `.autopilot/TASKS.md`, `.autopilot/TASK_HISTORY.md`, `.autopilot/STATUS.md`, `.autopilot/runtime/last-result.json`.
+- Uygulama sonucu: Legacy admin dashboard artik orders veya customers sorgu hatasinda raw backend mesajini genel `message` banner'ina basmaz. Ilk yukleme hatasinda `Admin data sync failed` retry karti gorunur ve orders/customers panelleri render edilmez, bu yuzden `No orders found` veya `No customers found` bos durumlariyla karismaz. Basarili yukleme sonrasi silent/live refresh hatasinda `Admin sync needs retry` inline uyarisi gorunur; syncing indikatoru kapanir ve son basarili orders/customers listeleri ile secili kayitlar korunur.
+- Guvenlik/UI kontrolu: Auth redirectleri, verified-email guard, staff permission denial, filtreler, order/customer selection, live refresh, notification sound, delivery estimate behavior ve mutation permission kontrolleri korundu. Supabase table/column internalleri, raw error mesajlari, storage path, signed URL, secret, payment internali veya customer file internali hata UI'inda aciga cikarilmadi. Production servis, migration, deploy, `.env`, secret, gercek musteri verisi veya yeni dependency kullanilmadi.
+- Calistirilan kontroller: `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (28/28); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (258/258); `git diff --check` PASS (yalniz CRLF uyarilari); diff review PASS.
+- Calistirilmayan kontroller: `npm run build` bu repoda bilinen restricted-network Google Fonts / Next env yukleme riski nedeniyle calistirilmadi. `npm run check:payments`, normal desktop env/build/package, SQL, smoke, scraper, live service ve production kontrolleri calistirilmadi.
+- Kalan risk: Desktop local history labels, customer credit ledger error state, customer order archive error state ve widget workspace load error state Ready gorevleri ayri kapsamda devam eder. Offline build icin Google Fonts/`next/font/google` owner onayi bekleyen bilinen risk devam eder.
+
 ## 2026-07-13 planner run V4 ADMIN AND WIDGET LOAD CLARITY
 
 - Baslangic: 2026-07-13 06:00:00 +01:00; bitis: 2026-07-13 06:17:03 +01:00.
