@@ -109,32 +109,6 @@
     - `npm run typecheck`
     - `npm test`
 
-- [ ] **P2 AUTO-033 - Legacy admin teslim tahmini kaydedilmeden 30 dk varsaymasin**
-  - Lane: Product Evolution
-  - Domain: Admin delivery estimate accuracy & customer-visible SLA safety
-  - Fingerprint: `admin-operations|legacy-admin-order-modal|unset-delivery-estimate-defaults-to-30-min|explicit-estimate-selection`
-  - Business impact: 3/5
-  - User impact: 3/5
-  - Admin impact: 4/5
-  - Strategic fit: 4/5
-  - Confidence: 5/5
-  - Effort: 2/5
-  - Risk: 2/5
-  - Evidence: `src/app/admin/page.tsx:2151-2152` initializes the legacy admin order modal delivery estimate state with `order.estimated_delivery_label ?? "usually_30_min"`. The same modal labels the preview as `Customer visible SLA` at `src/app/admin/page.tsx:2188-2195` and the `Save Delivery Estimate` action at `src/app/admin/page.tsx:2216-2226` can persist that default, even when the order has no explicit estimate. AUTO-019 fixed the customer detail display, but this legacy admin write surface still has a hidden 30-minute default.
-  - Product value: Admins must intentionally choose a customer-visible delivery estimate; unset estimates should not turn into a specific time promise by opening and saving the legacy modal.
-  - Scope: Add an explicit unset/not-set state to the legacy admin delivery estimate control and require a deliberate estimate choice before saving. Preserve existing saved estimate labels, optional note behavior, permissions, SQL-column fallback messaging, order status flow and customer detail display.
-  - Acceptance criteria:
-    - Orders with `estimated_delivery_label` null show a neutral not-set delivery estimate state in the legacy admin modal.
-    - The modal does not preview or save `Usually around 30 min` unless an admin explicitly selects that option.
-    - Save is disabled or guarded until a valid explicit estimate is selected, while existing non-null estimates remain editable as before.
-    - Optional delivery notes remain tied to explicitly saved estimates and do not create a standalone timing claim.
-    - No pricing, warranty, legal claim, SLA policy, database schema, production data or live service behavior is changed.
-  - Validation:
-    - `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts`
-    - `npm run lint`
-    - `npm run typecheck`
-    - `npm test`
-
 ## In Progress
 
 ## Blocked
@@ -168,6 +142,18 @@ Kabul kriterleri:
 Dogrulama: Diff incelemesi, `npm run lint`, `npm run typecheck`.
 
 ## Done
+
+### AUTO-033 [P2] Legacy admin teslim tahmini kaydedilmeden 30 dk varsaymasin
+
+Durum: Done
+
+Fingerprint: `admin-operations|legacy-admin-order-modal|unset-delivery-estimate-defaults-to-30-min|explicit-estimate-selection`
+
+Kapsam: Legacy admin order modal delivery estimate control'u, null estimate durumunu neutral not-set olarak gosterecek ve kayit icin acik estimate secimi isteyecek sekilde guncellendi.
+
+Sonuc: Modal artik unset `estimated_delivery_label` degerini `usually_30_min` olarak baslatmaz. Preview `Estimate not set yet` gosterir, select disabled not-set placeholder'i gosterir, delivery note ve save aksiyonu explicit estimate secilene kadar disabled kalir. Mevcut non-null estimate label'lari, optional note edit davranisi, permission guard, SQL-column fallback mesaji, order status akisi ve customer detail display korunur. Fiyat, garanti, hukuki claim, SLA policy, database schema, production data veya live service davranisi degistirilmedi.
+
+Dogrulama: `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (26/26); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (256/256); `git diff --check` PASS (yalniz CRLF uyarilari). `npm run build` bilinen restricted-network Google Fonts / Next env yukleme riski nedeniyle calistirilmadi.
 
 ### AUTO-028 [P2] Desktop uploader not alanlari API sinirini gondermeden once gostersin
 

@@ -95,6 +95,7 @@ type CustomerUpload = {
 };
 
 type DeliveryEstimate = "usually_30_min" | "same_day" | "24h" | "48h" | "manual_review";
+type DeliveryEstimateSelection = DeliveryEstimate | "";
 
 type ModifiedFileVersion = {
   id: string;
@@ -349,10 +350,10 @@ function formatFileVersionLabel(label: ModifiedFileVersion["label"]) {
   return "Final";
 }
 
-function formatDeliveryEstimate(value: DeliveryEstimate | string | null) {
+function formatDeliveryEstimate(value: DeliveryEstimateSelection | string | null) {
   return (
     deliveryEstimateOptions.find((option) => option.value === value)?.label ??
-    "Usually around 30 min"
+    "Estimate not set yet"
   );
 }
 
@@ -2148,12 +2149,15 @@ function OrderDetailModal({ order, customer, onClose, onDownload, onCopy, onCopy
   const modifiedVersions = getModifiedFileVersions(order);
   const [modifiedFileLabel, setModifiedFileLabel] =
     useState<ModifiedFileVersion["label"]>("v1");
-  const [deliveryEstimate, setDeliveryEstimate] = useState<DeliveryEstimate>(
-    order.estimated_delivery_label ?? "usually_30_min"
+  const [deliveryEstimate, setDeliveryEstimate] = useState<DeliveryEstimateSelection>(
+    order.estimated_delivery_label ?? ""
   );
   const [deliveryNote, setDeliveryNote] = useState(
-    order.estimated_delivery_note ?? ""
+    order.estimated_delivery_label ? order.estimated_delivery_note ?? "" : ""
   );
+  const hasExplicitDeliveryEstimate = deliveryEstimate !== "";
+  const canSaveDeliveryEstimate =
+    hasExplicitDeliveryEstimate && canManageOrders && !updating;
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center overflow-x-hidden bg-black/75 px-2 py-4 backdrop-blur-sm sm:px-4 sm:py-6">
@@ -2186,21 +2190,43 @@ function OrderDetailModal({ order, customer, onClose, onDownload, onCopy, onCopy
             <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5"><h3 className="mb-5 text-2xl font-black">Status Workflow</h3><div className="mb-5 h-2 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-gradient-to-r from-red-800 via-red-600 to-emerald-500 transition-all duration-700" style={{ width: `${((workflowStep + 1) / 5) * 100}%` }} /></div><div className="space-y-3">{[0, 1, 2, 3, 4].map((index) => <div key={index} className={`flex items-center gap-3 rounded-2xl border p-4 ${index <= workflowStep ? "border-emerald-700/30 bg-emerald-950/10" : "border-white/10 bg-black/30"}`}><div className={`flex h-9 w-9 items-center justify-center rounded-full ${index <= workflowStep ? "bg-emerald-500/15 text-emerald-400" : "bg-white/5 text-zinc-500"}`}>{index <= workflowStep ? <CheckCircle2 className="h-4 w-4" /> : <Clock3 className="h-4 w-4" />}</div><div className="font-black">{workflowLabel(index)}</div></div>)}</div><div className="mt-5"><select value={order.status ?? "new_request"} onChange={(event) => onStatusChange(event.target.value)} disabled={updating || !canManageOrders} className={`h-12 w-full rounded-xl border px-4 text-sm font-black outline-none disabled:opacity-60 ${statusClass(order.status)}`}>{editableStatusOptions.map((status) => <option key={status} value={status} className="bg-[#111]">{statusLabel(status)}</option>)}</select>{updating && <div className="mt-3 flex items-center gap-2 text-xs text-zinc-500"><Loader2 className="h-3 w-3 animate-spin" />Updating status...</div>}</div></section>
             <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
               <h3 className="mb-5 text-2xl font-black">Estimated Delivery</h3>
-              <div className="rounded-2xl border border-red-900/40 bg-red-950/20 p-4">
-                <div className="text-xs font-black uppercase tracking-[0.16em] text-red-300">
+              <div
+                className={`rounded-2xl border p-4 ${
+                  hasExplicitDeliveryEstimate
+                    ? "border-red-900/40 bg-red-950/20"
+                    : "border-white/10 bg-black/30"
+                }`}
+              >
+                <div
+                  className={`text-xs font-black uppercase tracking-[0.16em] ${
+                    hasExplicitDeliveryEstimate ? "text-red-300" : "text-zinc-500"
+                  }`}
+                >
                   Customer visible SLA
                 </div>
-                <div className="mt-2 text-xl font-black text-white">
+                <div className="mt-2 break-words text-xl font-black text-white">
                   {formatDeliveryEstimate(deliveryEstimate)}
                 </div>
               </div>
+              {!hasExplicitDeliveryEstimate && (
+                <p className="mt-3 text-sm font-bold leading-6 text-zinc-400">
+                  Select an explicit estimate before saving. No customer-visible time estimate is saved yet.
+                </p>
+              )}
               <select
                 value={deliveryEstimate}
-                onChange={(event) =>
-                  setDeliveryEstimate(event.target.value as DeliveryEstimate)
-                }
+                onChange={(event) => {
+                  const nextEstimate = event.target.value as DeliveryEstimateSelection;
+                  setDeliveryEstimate(nextEstimate);
+                  if (nextEstimate === "") {
+                    setDeliveryNote("");
+                  }
+                }}
                 className="mt-4 h-12 w-full rounded-xl border border-white/10 bg-black/35 px-4 text-sm font-black text-white outline-none focus:border-red-700"
               >
+                <option value="" disabled className="bg-[#111]">
+                  Estimate not set - choose one
+                </option>
                 {deliveryEstimateOptions.map((option) => (
                   <option key={option.value} value={option.value} className="bg-[#111]">
                     {option.label}
@@ -2210,12 +2236,22 @@ function OrderDetailModal({ order, customer, onClose, onDownload, onCopy, onCopy
               <textarea
                 value={deliveryNote}
                 onChange={(event) => setDeliveryNote(event.target.value)}
-                placeholder="Optional note: Depends on file complexity, logs or extra checks."
-                className="mt-3 min-h-24 w-full resize-none rounded-xl border border-white/10 bg-black/35 px-4 py-3 text-sm font-bold text-white outline-none placeholder:text-zinc-600 focus:border-red-700"
+                disabled={!hasExplicitDeliveryEstimate}
+                placeholder={
+                  hasExplicitDeliveryEstimate
+                    ? "Optional note: Depends on file complexity, logs or extra checks."
+                    : "Select an estimate before adding a delivery note."
+                }
+                className="mt-3 min-h-24 w-full resize-none rounded-xl border border-white/10 bg-black/35 px-4 py-3 text-sm font-bold text-white outline-none placeholder:text-zinc-600 focus:border-red-700 disabled:cursor-not-allowed disabled:opacity-50"
               />
               <button
-                onClick={() => onDeliveryUpdate(deliveryEstimate, deliveryNote)}
-                disabled={updating || !canManageOrders}
+                onClick={() => {
+                  if (!deliveryEstimate) {
+                    return;
+                  }
+                  onDeliveryUpdate(deliveryEstimate, deliveryNote);
+                }}
+                disabled={!canSaveDeliveryEstimate}
                 className="mt-3 flex h-12 w-full items-center justify-center rounded-xl bg-[#b1121b] px-4 text-sm font-black text-white transition hover:bg-[#c91824] disabled:opacity-50"
               >
                 {updating ? (

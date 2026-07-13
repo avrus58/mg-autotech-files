@@ -2,6 +2,20 @@
 
 Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
+## 2026-07-13 worker run AUTO-033
+
+- Baslangic: 2026-07-13 05:09:00 +01:00; bitis: 2026-07-13 05:18:28 +01:00.
+- Gorev: Legacy admin teslim tahmini kaydedilmeden 30 dk varsaymasin.
+- Fingerprint: `admin-operations|legacy-admin-order-modal|unset-delivery-estimate-defaults-to-30-min|explicit-estimate-selection`.
+- Secim nedeni: Ready kuyrugunda MANUAL gorev yoktu. En yuksek Ready oncelik P2 idi; P2 gorevler arasinda AUTO-033 en yuksek value skoruna sahipti (3+3+4+4+5-2-2=15), local-only ve geri alinabilir admin/customer-visible estimate safety iyilestirmesiydi.
+- Duplicate/evidence kontrolu: V4 package constitution dosyalari, local `.autopilot/constitution/*`, AGENTS, PROJECT, ROADMAP, INBOX, FEATURE_PROPOSALS, TASKS, TASK_HISTORY, PRODUCT_SCORECARD, STATUS, kok/desktop package scriptleri, mevcut Git durumu ve son commitler incelendi. Ayni fingerprint tamamlanmis gorunmedi. Evidence halen gecerliydi: legacy admin modal null `estimated_delivery_label` degerini `usually_30_min` olarak baslatiyor ve Save Delivery Estimate bu gizli default'u persist edebiliyordu.
+- Degisen dosyalar: `src/app/admin/page.tsx`, `tests/ui-ux-safety.test.ts`, `.autopilot/TASKS.md`, `.autopilot/TASK_HISTORY.md`, `.autopilot/STATUS.md`, `.autopilot/runtime/last-result.json`.
+- Uygulama sonucu: Legacy admin order modal artik unset delivery estimate'i neutral `Estimate not set yet` durumuyla gosterir. Select disabled not-set placeholder'i gosterir; delivery note ve Save Delivery Estimate aksiyonu explicit estimate secilmeden disabled kalir ve handler bos estimate durumunda update path'ine gecmez. Existing saved estimate label'lari ve note edit davranisi non-null orderlar icin korunur.
+- Guvenlik/UI kontrolu: `orders.manage` permission guard, SQL-column fallback mesaji, status workflow, file upload/download kontrolleri, customer detail display ve customer order detail estimate display degistirilmedi. Fiyat, garanti, hukuki claim, SLA policy, database schema, production data, live service, secret, token, `.env`, migration, deploy veya yeni dependency kullanilmadi.
+- Calistirilan kontroller: `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (26/26); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (256/256); `git diff --check` PASS (yalniz CRLF uyarilari); diff review PASS.
+- Calistirilmayan kontroller: `npm run build` bu repoda bilinen restricted-network Google Fonts / Next env yukleme riski nedeniyle calistirilmadi. `npm run check:payments`, normal desktop env/build/package, SQL, smoke, scraper, live service ve production kontrolleri calistirilmadi.
+- Kalan risk: Desktop local history labels, customer dashboard sync error state, customer credit ledger error state ve customer order archive error state Ready gorevleri ayri kapsamda devam eder. Offline build icin Google Fonts/`next/font/google` owner onayi bekleyen bilinen risk devam eder.
+
 ## 2026-07-13 planner run V4 ORDER ARCHIVE AND DELIVERY ESTIMATE CLARITY
 
 - Baslangic: 2026-07-13 05:00:00 +01:00; bitis: 2026-07-13 05:08:37 +01:00.

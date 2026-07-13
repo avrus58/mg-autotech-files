@@ -104,6 +104,26 @@ test("customer order detail shows delivery estimates only when explicitly set", 
   assert.doesNotMatch(page, /formatDeliveryEstimate\(order\.estimated_delivery_label\)/);
 });
 
+test("legacy admin order modal requires an explicit delivery estimate before saving", () => {
+  const adminPage = readProjectFile("src", "app", "admin", "page.tsx");
+
+  assert.match(adminPage, /type DeliveryEstimateSelection = DeliveryEstimate \| ""/);
+  assert.match(adminPage, /order\.estimated_delivery_label \?\? ""/);
+  assert.match(adminPage, /"Estimate not set yet"/);
+  assert.match(adminPage, /const hasExplicitDeliveryEstimate = deliveryEstimate !== ""/);
+  assert.match(adminPage, /const canSaveDeliveryEstimate =[\s\S]*hasExplicitDeliveryEstimate && canManageOrders && !updating/);
+  assert.match(adminPage, /formatDeliveryEstimate\(deliveryEstimate\)/);
+  assert.match(adminPage, /Select an explicit estimate before saving\. No customer-visible time estimate is saved yet\./);
+  assert.match(adminPage, /<option value="" disabled className="bg-\[#111\]"/);
+  assert.match(adminPage, /Estimate not set - choose one/);
+  assert.match(adminPage, /disabled=\{!hasExplicitDeliveryEstimate\}/);
+  assert.match(adminPage, /disabled=\{!canSaveDeliveryEstimate\}/);
+  assert.match(adminPage, /if \(!deliveryEstimate\) \{[\s\S]*return;[\s\S]*\}[\s\S]*onDeliveryUpdate\(deliveryEstimate, deliveryNote\)/);
+  assert.match(adminPage, /order\.estimated_delivery_label \? order\.estimated_delivery_note \?\? "" : ""/);
+  assert.doesNotMatch(adminPage, /order\.estimated_delivery_label \?\? "usually_30_min"/);
+  assert.doesNotMatch(adminPage, /\?\?\s*"Usually around 30 min"/);
+});
+
 test("customer additional file upload shows phase-aware retry-safe feedback", () => {
   const page = readProjectFile("src", "app", "dashboard", "orders", "[id]", "page.tsx");
 
