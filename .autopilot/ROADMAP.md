@@ -33,6 +33,8 @@
   - Admin Payment & Revenue Control bank payment formu, server action kontratini gonderimden once yerel olarak dogrulasin.
   - Musteri siparis arsivi, order sorgu hatalarini normal bos liste durumundan ayirsin ve retry aksiyonu sunsun.
   - Legacy admin order modal, kaydedilmemis teslim tahminini gizli `usually_30_min` varsayimina cevirmeden acik admin secimi istesin.
+  - Legacy admin ana paneli, orders/customers sorgu hatalarini bos operasyon kuyrugu veya ham DB mesaji gibi gostermesin.
+  - Musteri widget workspace'i, widget client yukleme hatasini abonelik yok durumundan ayirsin.
 - Success signals:
   - Musteri, talebin gercek durumunu ve kendi aksiyon gereksinimini detay ekraninda ayri gorebilir.
   - Musteri, aksiyon bekleyen siparisi liste veya dashboard uzerinden hizlica bulabilir.
@@ -56,6 +58,8 @@
   - Admin, manuel bank payment kaydinda eksik veya limit disi degerleri audited action denemesinden once gorur.
   - Musteri order archive kullanicisi, siparis sorgu hatasini gercek bos sonuc veya filtre sonucu ile karistirmadan tekrar deneyebilir.
   - Admin, legacy order modalinda teslim tahmini kaydetmeden once spesifik sure etiketini bilincli olarak secer.
+  - Admin, legacy operasyon panelinde veri senkron hatasini bos is kuyrugundan ayirt edip tekrar deneyebilir.
+  - Musteri widget dashboard kullanicisi, gecici widget client yukleme hatasini gercek abonelik eksikligiyle karistirmaz.
   - Migration/fallback durumlarinda mutasyon aksiyonlari read-only davranir ve hata yerine acik mesaj verir.
 
 ## Owner priorities

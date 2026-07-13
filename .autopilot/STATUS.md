@@ -2,6 +2,24 @@
 
 Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
+## 2026-07-13 planner run V4 ADMIN AND WIDGET LOAD CLARITY
+
+- Baslangic: 2026-07-13 06:00:00 +01:00; bitis: 2026-07-13 06:17:03 +01:00.
+- Gorev: MG AI Operating System V4 planner pass; planlama disinda uygulama kodu degistirilmedi.
+- Repo sinifi: `.autopilot/PROJECT.md`, route yapisi, admin/customer/widget/desktop yuzeyleri ve package constitution bu repository'nin `file.mgautotech.de` ECU file service SaaS platformu oldugunu dogruluyor. File-platform V4 constitution uygulandi; `mgautotech.de` ticari/SEO sinirlari guardrail olarak korundu.
+- Okunan kaynaklar: V4 package constitution dosyalari (`common/*`, `mgautotech/*`, `file-platform/*`), local `.autopilot/constitution/*`, `AGENTS.md`, `.autopilot/PROJECT.md`, ROADMAP, INBOX, FEATURE_PROPOSALS, TASKS, TASK_HISTORY, PLANNER_STATE, PRODUCT_SCORECARD, STATUS, kok ve desktop `package.json`, mevcut Git durumu, son 100 commit, ilgili legacy admin dashboard, widget dashboard, desktop uploader, customer credit/order pages, tests ve docs kaynaklari.
+- INBOX sonucu: `New requests` bos; yeni owner istegi yok. Aktif `MILESTONE-20260712-PRODUCT-EVOLUTION` devam ediyor.
+- Portfolio kontrolu: Son 10 tamamlanan is customer dashboard/order clarity, widget domain state, admin payment/delivery, notification ve desktop request notes alanlari arasinda dengeli. Ready sayisi 3 oldugu icin iki kanitli Product Evolution goreviyle 5'e tamamlandi; yalniz test/docs/guard/refactor gorevi uretilmedi.
+- Duplicate kontrolu: ROADMAP, INBOX, FEATURE_PROPOSALS, TASKS, TASK_HISTORY, STATUS ve son 100 commit icinde `legacy-admin-dashboard|orders-customers-query-error-renders-empty-state` veya `widget-dashboard-client-load|api-load-error-looks-like-missing-subscription` fingerprint/intent'i bulunmadi. Onceki `AUTO-024` widget pending domain talebi, `AUTO-023` admin widget domain listesi, `AUTO-029` customer dashboard sync ve `AUTO-033` delivery estimate modal kapsamlarindan ayri kaldigi icin yeni tasklar duplicate degil.
+- Evidence kontrolu: `src/app/admin/page.tsx:513-518` legacy admin orders query errorunda raw `error.message` set edip return ediyor; `src/app/admin/page.tsx:553-557` customers query errorunda ayni pattern var; `src/app/admin/page.tsx:1263-1265` generic message banner'i gosterirken `src/app/admin/page.tsx:1549-1552` ve `src/app/admin/page.tsx:1619-1620` bos orders durumunu render edebiliyor. `src/components/dashboard/WidgetDashboardClient.tsx:32-43` `/api/widget/client` load failure durumunda sadece `message` set ediyor; `src/components/dashboard/WidgetDashboardClient.tsx:83-84` `client/payload` yokken no-subscription/plan CTA ekranini render ediyor.
+- Audited domains: Reliability; ResponsiveUX.
+- Eklenen Ready gorevler: `AUTO-034` legacy admin panel yukleme hatasini bos operasyon listesi gibi gostermesin; `AUTO-035` musteri widget workspace yukleme hatasini abonelik yok gibi gostermesin.
+- Ready sayisi: 5 (`AUTO-025`, `AUTO-030`, `AUTO-032`, `AUTO-034`, `AUTO-035`).
+- Degisen dosyalar: `.autopilot/ROADMAP.md`, `.autopilot/TASKS.md`, `.autopilot/PLANNER_STATE.json`, `.autopilot/STATUS.md`, `.autopilot/runtime/planner-result.json`.
+- Calistirilan kontroller: zorunlu V4 constitution ve repository memory dosyalari `Get-Content` ile okundu; local `.autopilot/constitution/*` okundu; `git status --short --branch`; `git log -100 --pretty=format:'%h %ad %s' --date=short`; kok ve desktop `package.json` script incelemesi; PowerShell `Get-ChildItem`/`Select-String` ile route/UI/test/docs evidence ve duplicate aramalari; `.autopilot/PLANNER_STATE.json` JSON parse PASS; `.autopilot/runtime/planner-result.json` JSON parse PASS; Ready checkbox sayimi 5 PASS; `git diff --name-only` yalniz izinli tracked planning dosyalarini gosterdi; `git check-ignore -v .autopilot/runtime/planner-result.json` PASS; `git diff --check` PASS (yalniz CRLF uyarilari).
+- Calistirilmayan kontroller: Planlama disinda uygulama kodu degismedigi icin `npm run lint`, `npm run typecheck`, `npm test` ve `npm run build` calistirilmadi. `.env*`, live service, SQL, smoke, scraper, desktop build/package ve normal env kontrolleri calistirilmadi.
+- Kalan risk: Ready kuyrugundaki desktop local history labels, customer credit ledger error state, customer order archive error state, legacy admin load error state ve widget workspace load error state uygulanana kadar ilgili UX/operasyon belirsizlikleri devam eder. Offline build icin Google Fonts/`next/font/google` owner onayi gerektiren bilinen risk devam eder.
+
 ## 2026-07-13 worker run AUTO-029
 
 - Baslangic: 2026-07-13 05:20:00 +02:00; bitis: 2026-07-13 05:42:00 +02:00.

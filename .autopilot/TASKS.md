@@ -83,6 +83,58 @@
     - `npm run typecheck`
     - `npm test`
 
+- [ ] **P2 AUTO-034 - Legacy admin panel yukleme hatasini bos operasyon listesi gibi gostermesin**
+  - Lane: Product Evolution
+  - Domain: Admin operations reliability & error clarity
+  - Fingerprint: `admin-operations|legacy-admin-dashboard|orders-customers-query-error-renders-empty-state|retryable-admin-load-error`
+  - Business impact: 3/5
+  - User impact: 1/5
+  - Admin impact: 4/5
+  - Strategic fit: 4/5
+  - Confidence: 5/5
+  - Effort: 2/5
+  - Risk: 2/5
+  - Evidence: `src/app/admin/page.tsx:513-518` returns on the legacy admin orders query error after setting raw `error.message`, and `src/app/admin/page.tsx:553-557` does the same for the customer list query. The same generic message banner is rendered at `src/app/admin/page.tsx:1263-1265`, while the empty orders states still render `No orders found` at `src/app/admin/page.tsx:1549-1552` and `src/app/admin/page.tsx:1619-1620`, so an initial admin data sync failure can look like an empty operations queue and may expose low-level database copy.
+  - Product value: Admins can distinguish a real empty queue from a sync failure and retry without assuming no work is waiting.
+  - Scope: Add an admin-safe, retryable load-error state for the legacy admin dashboard. Preserve auth redirects, verified-email guard, staff permission denial, existing filters, order/customer selection, live refresh, notification sound, delivery estimate behavior and all mutation permissions.
+  - Acceptance criteria:
+    - Initial orders or customers query failures show a clear admin-safe error state with a retry action instead of the normal empty orders/customers state.
+    - Successful zero-order or zero-customer loads still show the existing empty states.
+    - Silent/live refresh failures clear the syncing indicator and preserve the last successfully loaded orders, customers and current selections.
+    - Supabase table names, column names, raw error messages, storage paths, signed URLs, secrets, payment internals and customer file internals are not exposed in the error UI.
+    - Unauthorized or insufficient-permission state remains separate from data sync failure.
+  - Validation:
+    - `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts`
+    - `npm run lint`
+    - `npm run typecheck`
+    - `npm test`
+
+- [ ] **P2 AUTO-035 - Musteri widget workspace yukleme hatasini abonelik yok gibi gostermesin**
+  - Lane: Product Evolution
+  - Domain: Customer widget workspace reliability & support reduction
+  - Fingerprint: `customer-experience|widget-dashboard-client-load|api-load-error-looks-like-missing-subscription|retryable-widget-load-error`
+  - Business impact: 2/5
+  - User impact: 3/5
+  - Admin impact: 2/5
+  - Strategic fit: 3/5
+  - Confidence: 5/5
+  - Effort: 1/5
+  - Risk: 1/5
+  - Evidence: `src/components/dashboard/WidgetDashboardClient.tsx:32-43` catches `/api/widget/client` load failures by setting `message` but leaves `payload` and `client` null. `src/components/dashboard/WidgetDashboardClient.tsx:83-84` then renders the no-client state with `View plans` and the fallback `No widget subscription is linked to this account`, so a temporary API sync failure can be presented as a missing subscription without a retry path.
+  - Product value: Widget customers can tell whether their widget subscription is actually missing or the workspace failed to sync, reducing billing/support confusion.
+  - Scope: Add a customer-safe, retryable widget workspace load-error state. Preserve auth redirects, verified-email guard, real no-subscription state, billing portal action, domain-change request behavior, settings save, embed code generation and live preview.
+  - Acceptance criteria:
+    - `/api/widget/client` load failures show a retryable sync error state separate from the no-subscription or no-client plan CTA.
+    - Retry calls the same widget client load path and keeps existing login and verified-email redirects.
+    - Real no-client/no-subscription responses still show the current `View plans` and `Dashboard` actions.
+    - Successful client loads keep existing settings, domain request, billing, embed code and preview behavior.
+    - Public keys, access tokens, Stripe internals, Supabase internals, audit details, secrets and admin-only fields are not exposed.
+  - Validation:
+    - `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts`
+    - `npm run lint`
+    - `npm run typecheck`
+    - `npm test`
+
 ## In Progress
 
 ## Blocked
