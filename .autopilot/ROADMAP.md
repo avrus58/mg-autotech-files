@@ -39,6 +39,7 @@
   - File Expert yukleme formu, mevcut dosya ve metadata limitlerini prepare/upload oncesi musteriye gosterir.
   - Admin request control center, API yukleme hatasini bos filtre sonucu gibi gostermek yerine retry edilebilir admin-safe state ile ayirir.
   - File Expert dashboard'u, analiz gecmisi yukleme hatasini gercek bos analiz listesiyle karistirmadan retry aksiyonu sunar.
+  - Roadmap V2 selected task `RMAP-FILE-DTC-M1`, AI DTC Analyzer icin provider-neutral contract, deterministic fallback, unavailable state ve no-fake-AI test temelini kurar.
 - Success signals:
   - Musteri, talebin gercek durumunu ve kendi aksiyon gereksinimini detay ekraninda ayri gorebilir.
   - Musteri, aksiyon bekleyen siparisi liste veya dashboard uzerinden hizlica bulabilir.
@@ -68,6 +69,7 @@
   - File Expert kullanicisi, desteklenen dosya tipi, 32 MB siniri ve metadata karakter limitlerini API hatasindan once gorur.
   - Admin, request control center senkron hatasini gercek bos filtre sonucu sanmadan son basarili kuyrugu veya retry aksiyonunu gorur.
   - File Expert kullanicisi, analiz gecmisi yuklenemediginde bunu gercekten hic analiz olmamasi durumundan ayirt eder.
+  - DTC Analyzer gelecekteki musteri/admin yuzeylerine gecmeden once, text DTC girdisi icin fake AI uretmeyen provider boundary ve deterministic fallback sozlesmesine sahip olur.
   - Migration/fallback durumlarinda mutasyon aksiyonlari read-only davranir ve hata yerine acik mesaj verir.
 
 ## Owner priorities

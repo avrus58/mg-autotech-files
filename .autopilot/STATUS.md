@@ -2,6 +2,23 @@
 
 Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
+## 2026-07-13 planner run V4 ROADMAP DTC PROVIDER BOUNDARY
+
+- Baslangic: 2026-07-13 22:33:07 +01:00; bitis: 2026-07-13 22:34:55 +01:00.
+- Gorev: MG AI Operating System V4 Strategic Planner; planlama disinda uygulama kodu degistirilmedi.
+- Repo sinifi: `.autopilot/PROJECT.md`, route yapisi, package scriptleri ve V4 constitution dosyalari bu repository'nin `file.mgautotech.de` ECU file service SaaS platformu oldugunu dogruluyor. File-platform product/admin/customer/AI constitution birincil uygulandi; `mgautotech.de` business/SEO guardrail'leri ticari iddia, fiyat, hukuki metin ve public service claim siniri olarak korundu.
+- Selected roadmap task: `.autopilot/runtime/roadmap-selection.json` `RMAP-FILE-DTC-M1` taskini secti. Product spec `C:\Users\gokka\Documents\MG-AI-OS-V4\artifacts\specs\rmap-file-dtc-m1.md`, AI DTC Analyzer icin provider interface, deterministic non-AI fallback, provider unavailable state, no fake AI output ve provider/fallback testlerini istiyor.
+- INBOX sonucu: `New requests` bos; yeni owner istegi yok. Onceki `MANUAL-20260712-120055` product-evolution milestone'u korunuyor, ancak Roadmap V2 selected task P1/L oldugu icin Ready kuyrugunun birinci maddesi yapildi.
+- Duplicate kontrolu: `.autopilot/TASKS.md`, `.autopilot/TASK_HISTORY.md`, `.autopilot/ROADMAP.md`, `.autopilot/FEATURE_PROPOSALS.md`, `.autopilot/STATUS.md`, source/tests/docs search ve son 100 commit icinde `RMAP-FILE-DTC-M1`, `file-ai-dtc-analyzer`, `DtcAnalyzer`, DTC analyzer provider boundary veya deterministic fallback intent'i bulunmadi. Eslesen tek kayit runtime roadmap selection dosyasiydi.
+- Evidence kontrolu: `src/lib/ai/types.ts:32-35` ve `src/lib/ai/index.ts:9-32` mevcut File Expert AI report provider/fallback pattern'ini gosteriyor, ancak DTC Analyzer icin esdeger domain/provider sozlesmesi yok. `src/components/tools/RequestBriefBuilder.tsx:18` ve `src/components/tools/RequestBriefBuilder.tsx:69` DTC context topluyor; `src/components/tools/FileReadinessAssistant.tsx:76` DTC kodlarini ister; `docs/customer-file-upload-assistant.md:154-165` ve `tests/customer-uploader.test.ts:163-177` desktop DTC Tools'un coming-soon oldugunu ve DTC API/file processing yapmadigini kanitliyor.
+- Portfolio kontrolu: Son tamamlanan isler cogunlukla customer/admin reliability ve product clarity dilimleriydi. Roadmap V2 allocation pressure File Platform tarafinda yuksek; P1/L AI Capability milestone'u, baska isolated XS/S polish isleri eklemekten daha yuksek stratejik deger tasiyor.
+- Eklenen Ready gorev: `RMAP-FILE-DTC-M1 - AI DTC Analyzer provider boundary and deterministic fallback`.
+- Ready sayisi: 4 (`RMAP-FILE-DTC-M1`, `AUTO-025`, `AUTO-032`, `AUTO-036`).
+- Degisen dosyalar: `.autopilot/ROADMAP.md`, `.autopilot/TASKS.md`, `.autopilot/PLANNER_STATE.json`, `.autopilot/STATUS.md`, `.autopilot/runtime/planner-result.json`.
+- Calistirilan kontroller: V4 package constitution dosyalari, roadmap engine docs, roadmap markdown/state/selection, product spec, local `.autopilot/constitution/*`, repository memory, root/desktop `package.json`, mevcut Git durumu ve son 100 commit okundu; PowerShell `Select-String` ile DTC/provider duplicate ve evidence aramalari yapildi; `rg` denenip ortamda olmadigi goruldu ve PowerShell search fallback kullanildi; `.autopilot/PLANNER_STATE.json` JSON parse PASS; `.autopilot/runtime/planner-result.json` JSON parse PASS; Ready checkbox sayimi 4 PASS; `git check-ignore -v .autopilot/runtime/planner-result.json` PASS; `git diff --name-only` yalniz izinli planning dosyalarini gosterdi; `git diff --check` yalniz LF/CRLF uyarilariyla PASS.
+- Calistirilmayan kontroller: Planlama disinda uygulama kodu degismedigi icin `npm run lint`, `npm run typecheck`, `npm test` ve `npm run build` calistirilmadi. `.env*`, live Supabase/Stripe/Resend/OpenAI, SQL, smoke, scraper, desktop build/package ve production servis islemleri calistirilmadi.
+- Kalan risk: `RMAP-FILE-DTC-M1` uygulanana kadar DTC Analyzer icin provider boundary ve deterministic fallback yoktur; mevcut DTC yuzeyleri preparatory/coming-soon kalmalidir. `AUTO-032` ve `AUTO-036` customer reliability gorevleri, `AUTO-025` desktop local history label polish gorevi ayri Ready kapsaminda devam eder. Offline build icin Google Fonts/`next/font/google` owner onayi gerektiren bilinen risk devam eder.
+
 ## 2026-07-13 reviewer run AUTO-039
 
 - Bitis: 2026-07-13 10:30:40 +01:00.
