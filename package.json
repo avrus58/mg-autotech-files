@@ -2,15 +2,21 @@
   "name": "mg-autotech-files",
   "version": "0.1.0",
   "private": true,
+  "workspaces": [
+    "apps/customer-uploader"
+  ],
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:customer-uploader": "npm run build --workspace apps/customer-uploader",
     "start": "next start",
     "check:payments": "node scripts/check-payment-env.js",
     "fixtures:ecu-intelligence": "tsx scripts/generate-ai-training-fixtures.ts",
     "test": "tsx --test tests/*.test.ts",
     "test:ecu-intelligence": "tsx --test tests/ecu-intelligence.test.ts",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "npm run typecheck:web && npm run typecheck:customer-uploader",
+    "typecheck:web": "tsc --noEmit -p tsconfig.json",
+    "typecheck:customer-uploader": "npm run typecheck --workspace apps/customer-uploader",
     "lint": "eslint"
   },
   "dependencies": {

@@ -464,6 +464,48 @@ test("desktop package is signing-ready, per-user and installer-friendly", () => 
   assert.match(readFileSync(resolve(process.cwd(), "apps/customer-uploader/electron/main.ts"), "utf8"), /setAppUserModelId|icon:\s*getIconPath/);
 });
 
+test("customer uploader is isolated as a strict npm workspace TypeScript project", () => {
+  const rootPackage = JSON.parse(readFileSync(resolve(process.cwd(), "package.json"), "utf8"));
+  const rootLock = JSON.parse(readFileSync(resolve(process.cwd(), "package-lock.json"), "utf8"));
+  const rootTsconfig = JSON.parse(readFileSync(resolve(process.cwd(), "tsconfig.json"), "utf8"));
+  const uploaderPackage = JSON.parse(readFileSync(resolve(process.cwd(), "apps/customer-uploader/package.json"), "utf8"));
+  const uploaderTsconfig = JSON.parse(readFileSync(resolve(process.cwd(), "apps/customer-uploader/tsconfig.json"), "utf8"));
+  const rendererTsconfig = JSON.parse(readFileSync(resolve(process.cwd(), "apps/customer-uploader/tsconfig.renderer.json"), "utf8"));
+  const electronTsconfig = JSON.parse(readFileSync(resolve(process.cwd(), "apps/customer-uploader/tsconfig.electron.json"), "utf8"));
+  const nodeTsconfig = JSON.parse(readFileSync(resolve(process.cwd(), "apps/customer-uploader/tsconfig.node.json"), "utf8"));
+  const viteEnv = readFileSync(resolve(process.cwd(), "apps/customer-uploader/src/vite-env.d.ts"), "utf8");
+
+  assert.deepEqual(rootPackage.workspaces, ["apps/customer-uploader"]);
+  assert.match(rootPackage.scripts.typecheck, /typecheck:web/);
+  assert.match(rootPackage.scripts.typecheck, /typecheck:customer-uploader/);
+  assert.match(rootPackage.scripts["typecheck:customer-uploader"], /--workspace apps\/customer-uploader/);
+  assert.equal(rootLock.packages[""].workspaces.includes("apps/customer-uploader"), true);
+  assert.equal(Boolean(rootLock.packages["apps/customer-uploader"]), true);
+
+  for (const packageName of ["electron", "electron-updater", "vite", "@vitejs/plugin-react"]) {
+    assert.equal(Boolean(rootLock.packages[`node_modules/${packageName}`]), true, `${packageName} must be installed by root npm ci`);
+  }
+
+  assert.equal(rootTsconfig.exclude.includes("apps/customer-uploader"), true);
+  assert.equal(uploaderPackage.dependencies["electron-updater"].startsWith("^"), true);
+  assert.equal(uploaderPackage.devDependencies.electron.startsWith("^"), true);
+  assert.equal(uploaderPackage.devDependencies.vite.startsWith("^"), true);
+  assert.equal(uploaderPackage.devDependencies["@vitejs/plugin-react"].startsWith("^"), true);
+  assert.match(uploaderPackage.scripts.typecheck, /tsconfig\.renderer\.json/);
+  assert.match(uploaderPackage.scripts.typecheck, /tsconfig\.electron\.json/);
+  assert.match(uploaderPackage.scripts.typecheck, /tsconfig\.node\.json/);
+
+  assert.deepEqual(uploaderTsconfig.references.map((reference: { path: string }) => reference.path), [
+    "./tsconfig.renderer.json",
+    "./tsconfig.electron.json",
+    "./tsconfig.node.json",
+  ]);
+  assert.deepEqual(rendererTsconfig.compilerOptions.types, ["vite/client"]);
+  assert.deepEqual(electronTsconfig.compilerOptions.types, ["node"]);
+  assert.deepEqual(nodeTsconfig.compilerOptions.types, ["node"]);
+  assert.match(viteEnv, /<reference types="vite\/client" \/>/);
+});
+
 test("desktop distribution docs cover signing, updates and false-positive process", () => {
   for (const file of [
     "docs/desktop-app-security-and-distribution.md",

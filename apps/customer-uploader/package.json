@@ -10,7 +10,8 @@
   "scripts": {
     "check-env": "node scripts/check-env.mjs",
     "dev": "npm run check-env && vite --host 127.0.0.1",
-    "build": "npm run check-env && tsc -p tsconfig.json && vite build && tsc -p tsconfig.electron.json",
+    "typecheck": "tsc --noEmit -p tsconfig.renderer.json && tsc --noEmit -p tsconfig.electron.json && tsc --noEmit -p tsconfig.node.json",
+    "build": "npm run check-env && npm run typecheck && vite build && tsc -p tsconfig.electron.json",
     "package:win": "npm run build && node scripts/package-win.mjs"
   },
   "dependencies": {

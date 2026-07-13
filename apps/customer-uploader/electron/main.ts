@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, Menu, shell } from "electron";
+import { app, BrowserWindow, ipcMain, Menu, shell, type IpcMainInvokeEvent, type WebContents } from "electron";
 import { autoUpdater } from "electron-updater";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { mkdir } from "node:fs/promises";
@@ -8,6 +8,7 @@ import { randomUUID } from "node:crypto";
 const isDev = process.env.VITE_DEV_SERVER_URL || process.env.NODE_ENV === "development";
 const updateFeedUrl = process.env.MG_DESKTOP_UPDATE_FEED_URL || "";
 const appUserModelId = "de.mgautotech.fileuploadassistant";
+type WindowOpenHandler = Parameters<WebContents["setWindowOpenHandler"]>[0];
 
 function getIconPath() {
   return isDev ? join(app.getAppPath(), "build", "icon.ico") : join(__dirname, "../build/icon.ico");
@@ -51,12 +52,14 @@ async function createWindow() {
     },
   });
 
-  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+  const handleWindowOpen: WindowOpenHandler = ({ url }) => {
     if (url.startsWith("https://file.mgautotech.de")) {
       void shell.openExternal(url);
     }
     return { action: "deny" };
-  });
+  };
+
+  mainWindow.webContents.setWindowOpenHandler(handleWindowOpen);
 
   if (isDev) {
     await mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL || "http://127.0.0.1:5174");
@@ -76,7 +79,7 @@ app.whenReady().then(async () => {
     autoUpdater.setFeedURL({ provider: "generic", url: updateFeedUrl });
   }
 
-  ipcMain.handle("open-external", async (_event, url: string) => {
+  ipcMain.handle("open-external", async (_event: IpcMainInvokeEvent, url: string) => {
     if (typeof url === "string" && url.startsWith("https://file.mgautotech.de")) {
       await shell.openExternal(url);
       return true;
@@ -94,7 +97,7 @@ app.whenReady().then(async () => {
     }
   });
 
-  ipcMain.handle("history-write", async (_event, rows: unknown[]) => {
+  ipcMain.handle("history-write", async (_event: IpcMainInvokeEvent, rows: unknown[]) => {
     await mkdir(app.getPath("userData"), { recursive: true });
     writeFileSync(historyPath(), JSON.stringify(Array.isArray(rows) ? rows.slice(0, 50) : [], null, 2));
     return true;
