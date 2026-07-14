@@ -4,6 +4,42 @@
 
 ## Ready
 
+- [ ] **P1 RMAP-FILE-AI-LOG-ANALYZER-M1-FOUNDATION - AI Log Analyzer provider fallback and safe log summary foundation**
+  - Lane: AI Capability
+  - Roadmap: file-platform
+  - Epic: file-ai-log-analyzer
+  - Feature: file-ai-log-analyzer-m1-foundation-feature
+  - Roadmap task: RMAP-FILE-AI-LOG-ANALYZER-M1-FOUNDATION
+  - Fingerprint: `ai-capability|log-analyzer|browser-log-tool-lacks-provider-safe-analysis-contract|provider-fallback-safe-summary-foundation`
+  - Strategic score: 38 totalScore / 31.66 selectedScore
+  - Scope class: M
+  - Expected effort: M roadmap milestone slice
+  - Business impact: 4/5
+  - User impact: 4/5
+  - Admin impact: 3/5
+  - Strategic fit: 5/5
+  - Confidence: 4/5
+  - Effort: 3/5
+  - Risk: 2/5
+  - Evidence: `.autopilot/runtime/roadmap-selection.json` selects `RMAP-FILE-AI-LOG-ANALYZER-M1-FOUNDATION`; product spec `C:\Users\gokka\Documents\MG-AI-OS-V4\artifacts\specs\rmap-file-ai-log-analyzer-m1-foundation.md` requires no raw binary exposure and provider/fallback boundary; `src/components/tools/PerformanceTools.tsx:27` and `src/components/tools/PerformanceTools.tsx:102` parse browser log rows locally, but there is no `src/lib/logAnalyzer` domain contract; `src/app/tools/autotuner-log-analyzer/page.tsx:43` and `src/app/tools/autotuner-log-analyzer/page.tsx:130` prove the current public tool is browser-local rather than a provider-safe platform AI capability; DTC/Tune/File Expert patterns exist at `src/lib/dtcAnalyzer/index.ts:18`, `src/lib/tuneAdvisor/service.ts:14` and `src/lib/fileExpert/reportStatus.ts:46`.
+  - Product value: Creates the first reusable, provider-neutral AI Log Analyzer foundation so future log-analysis workflows can be explicit about fallback, uncertainty, privacy and review before any customer/admin integration.
+  - Selection reason: Roadmap V2 selected this P1/M File Platform AI capability task; duplicate search across TASKS, TASK_HISTORY, STATUS, ROADMAP, FEATURE_PROPOSALS and the last 100 commits found no completed Log Analyzer foundation or matching fingerprint.
+  - Scope: Add a local-only `src/lib/logAnalyzer` foundation with versioned types, provider identity/status, deterministic non-AI fallback for parsed RPM/Nm log data, invalid-input/unavailable/error states, confidence/evidence/risk semantics, customer/expert projection boundaries, tests and a short operator runbook. Do not add live provider calls, upload endpoints, database migrations, public claims, MOD output, checksum approval, production access, secrets or package dependencies.
+  - Acceptance criteria:
+    - `log-analyzer-v1` contract includes request/response types, provider identity, fallback state, confidence/readiness semantics and explicit unavailable/error/invalid-input statuses.
+    - Deterministic fallback summarizes safe log-derived facts such as valid-row count, RPM range and peak torque/power estimates without pretending to be AI.
+    - Customer-safe projection excludes provider/model/prompt internals, raw CSV rows, raw binary/hex, filenames when not needed, storage paths, signed URLs, hashes, customer identifiers and admin-only notes.
+    - Expert/admin projection includes provider/fallback status, evidence gaps, risk flags, required human review and blocked production actions.
+    - Tests cover provider unavailable, provider error, invalid/empty input, deterministic fallback and no raw/private leakage in customer projection.
+    - Documentation states local validation, privacy boundaries, blocked production actions and operator-only future live/provider rollout decisions.
+  - Validation:
+    - `.\node_modules\.bin\tsx.cmd --test tests\ecu-intelligence.test.ts`
+    - `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts`
+    - `npm run lint`
+    - `npm run typecheck`
+    - `npm test`
+    - `git diff --check`
+
 ## In Progress
 
 ## Blocked
@@ -23,9 +59,9 @@ Kabul kriterleri:
 
 Dogrulama: Markdown diff incelemesi, `npm test` ilgili source assertion testleri.
 
-Deferred reason: Selected P1/M roadmap milestone `RMAP-FILE-AI-TUNE-ADVISOR-M1-FOUNDATION` has higher strategic value and starts the next File Platform AI capability milestone; this is a low-priority documentation cleanup and does not unlock the selected Tune Advisor foundation.
+Deferred reason: Selected P1/M roadmap milestone `RMAP-FILE-AI-LOG-ANALYZER-M1-FOUNDATION` has higher strategic value and starts the next File Platform AI Log Analyzer foundation; this is a low-priority documentation cleanup and does not unlock the selected provider/fallback boundary.
 
-Remediation: Reconsider after the AI Tune Advisor M1 milestone is accepted, or if owner explicitly asks for production smoke documentation cleanup.
+Remediation: Reconsider after the AI Log Analyzer M1 milestone is accepted, or if owner explicitly asks for production smoke documentation cleanup.
 
 Expected validation command: `npm test` plus markdown diff review.
 
@@ -42,9 +78,9 @@ Kabul kriterleri:
 
 Dogrulama: Diff incelemesi, `npm run lint`, `npm run typecheck`.
 
-Deferred reason: Maintenance-only artifact cleanup is intentionally behind selected P1/M roadmap milestone `RMAP-FILE-AI-TUNE-ADVISOR-M1-FOUNDATION` and should not consume the Ready queue while a high-impact roadmap slice is available.
+Deferred reason: Maintenance-only artifact cleanup is intentionally behind selected P1/M roadmap milestone `RMAP-FILE-AI-LOG-ANALYZER-M1-FOUNDATION` and should not consume the Ready queue while a high-impact roadmap slice is available.
 
-Remediation: Batch with a future documentation/source-comment maintenance pass after the AI Tune Advisor M1 milestone is accepted, or when no P1/P2 product or roadmap milestone is ready.
+Remediation: Batch with a future documentation/source-comment maintenance pass after the AI Log Analyzer M1 milestone is accepted, or when no P1/P2 product or roadmap milestone is ready.
 
 Expected validation command: `npm run lint` and `npm run typecheck`.
 

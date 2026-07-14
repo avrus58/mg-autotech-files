@@ -46,6 +46,7 @@
   - Roadmap V2 selected task `RMAP-FILE-DTC-M5-ROLLOUT-READINESS`, AI DTC Analyzer icin regression suite, sanitized analytics/readiness summary ve operator-readable rollout dokumantasyonunu production/veri erisimi olmadan tamamlar.
   - Roadmap V2 selected task `RMAP-FILE-AI-EXPERT-V2-M1-FOUNDATION`, AI File Expert report flow icin provider/fallback status, deterministic fallback ve human-review/export-lock review gate sozlesmesini local-only foundation olarak netlestirir.
   - Roadmap V2 selected task `RMAP-FILE-AI-TUNE-ADVISOR-M1-FOUNDATION`, AI Tune Advisor icin request/service metadata uzerinden deterministic rule fallback, provider-unavailable semantics, expert review gate ve no-MOD/no-checksum safety contract temelini local-only kurar.
+  - Roadmap V2 selected task `RMAP-FILE-AI-LOG-ANALYZER-M1-FOUNDATION`, AI Log Analyzer icin log-derived summary, provider unavailable/error states, deterministic fallback, customer/expert projection boundary ve no-raw-data safety contract temelini local-only kurar.
 - Success signals:
   - Musteri, talebin gercek durumunu ve kendi aksiyon gereksinimini detay ekraninda ayri gorebilir.
   - Musteri, aksiyon bekleyen siparisi liste veya dashboard uzerinden hizlica bulabilir.
@@ -82,6 +83,7 @@
   - DTC Analyzer rollout readiness milestone'u, regression coverage, local analytics/readiness signals and safe operator documentation ile future rollout kararini production access olmadan okunabilir hale getirir.
   - AI File Expert V2 foundation milestone'u, existing File Expert AI report provider/fallback akisini review-gate status, human review requirement ve export locked sinirlariyla operator-readable hale getirir.
   - AI Tune Advisor foundation milestone'u, stage/eco/TCU/advanced service talepleri icin AI gibi davranmayan rule fallback, eksik evidence listesi, risk flags, required human checks ve blocked production actions sozlesmesini saglar.
+  - AI Log Analyzer foundation milestone'u, mevcut browser-local log utility'den ayrilan provider-safe local contract ile log summary, uncertainty, fallback status, customer-safe projection ve expert review sinirlarini tanimlar.
   - Migration/fallback durumlarinda mutasyon aksiyonlari read-only davranir ve hata yerine acik mesaj verir.
 
 ## Owner priorities
