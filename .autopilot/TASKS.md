@@ -4,6 +4,43 @@
 
 ## Ready
 
+- [ ] **P1 RMAP-FILE-AI-EXPERT-V2-M1-FOUNDATION - AI File Expert V2 provider fallback and review gate foundation**
+  - Lane: AI Capability
+  - Roadmap: File Platform Roadmap (`file-platform`)
+  - Epic: AI File Expert V2 (`file-ai-expert-v2`)
+  - Feature: Foundation Milestone (`file-ai-expert-v2-m1-foundation-feature`)
+  - Roadmap task: `RMAP-FILE-AI-EXPERT-V2-M1-FOUNDATION`
+  - Fingerprint: `ai-capability|file-expert-v2|ai-report-lacks-explicit-review-gate-status-contract|provider-fallback-review-foundation`
+  - Strategic score: 45 roadmap weighted score; 38.9 selected score
+  - Scope class: M
+  - Expected effort: M roadmap milestone slice
+  - Business impact: 4/5
+  - User impact: 4/5
+  - Admin impact: 4/5
+  - Strategic fit: 5/5
+  - Confidence: 4/5
+  - Effort: 3/5
+  - Risk: 2/5
+  - Evidence: `.autopilot/runtime/roadmap-selection.json` selected `RMAP-FILE-AI-EXPERT-V2-M1-FOUNDATION`; product spec `C:\Users\gokka\Documents\MG-AI-OS-V4\artifacts\specs\rmap-file-ai-expert-v2-m1-foundation.md` requires provider interface, deterministic fallback and review gate. Existing `src/lib/ai/types.ts` and `src/lib/ai/index.ts` already provide `AiReportProvider` and rule-based fallback, and `tests/ecu-intelligence.test.ts` covers no-provider fallback. Existing `src/lib/fileExpert/server.ts` calls `generateAiFileExpertReport` and stores `ai_report` directly after analysis, while `docs/ai-generation-safety-gates.md` documents human review/export lock boundaries separately. No reusable File Expert V2 report readiness/review-gate status contract currently ties provider/fallback state, human-review requirement and export lock into one local code contract.
+  - Product value: Makes AI File Expert reporting safer and more operator-readable before future provider work by making provider success, fallback, unavailable state and human review/export lock explicit without calling live AI services.
+  - Selection reason: This is the exact selected Roadmap V2 P1/M task for `file.mgautotech.de`; DTC Analyzer M1-M5 is already done, and this milestone starts the next high-impact File Platform AI epic without production access.
+  - Scope: Add a narrow local File Expert V2 foundation contract around the existing AI report flow. Preserve current analyzer behavior and customer/admin data boundaries. Do not add a DB migration, package, live provider call, production analytics query, MOD generation, checksum approval, pricing/legal change or deploy.
+  - Acceptance criteria:
+    - Existing `AiReportProvider` adapters and `RuleBasedAiReportProvider` continue to work, and no configured-provider failure can break binary analysis.
+    - A reusable File Expert V2 report status/review-gate contract exists for provider name/model/prompt version, deterministic fallback state, fallback reason, human review requirement, export locked state and blocked production actions.
+    - Customer-safe projection continues to hide provider internals, raw binary/hex, offsets, storage paths, signed URLs, hashes, VIN/customer-identifying internals, sample IDs and admin-only notes.
+    - Admin/operator-facing status can distinguish provider-generated, deterministic fallback and provider-error fallback states without implying flash safety, checksum completion or customer-ready MOD output.
+    - Regression tests cover no-provider fallback, provider-error fallback, review-gate/export lock semantics and no customer leak from the new status contract.
+    - Documentation or inline runbook notes identify safe local validation commands and operator-only production decisions.
+  - Validation:
+    - `.\node_modules\.bin\tsx.cmd --test tests\ecu-intelligence.test.ts`
+    - `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts`
+    - `npm run lint`
+    - `npm run typecheck`
+    - `npm test`
+    - `git diff --check`
+    - `npm run build` only if the runner environment explicitly permits local env handling and Google Fonts network access; otherwise record the known environment skip in `STATUS.md`.
+
 ## In Progress
 
 ## Blocked
@@ -23,9 +60,9 @@ Kabul kriterleri:
 
 Dogrulama: Markdown diff incelemesi, `npm test` ilgili source assertion testleri.
 
-Deferred reason: Selected P1/M roadmap milestone `RMAP-FILE-DTC-M5-ROLLOUT-READINESS` has higher strategic value and directly continues the active File Platform AI DTC epic; this is a low-priority documentation cleanup and does not unlock the selected milestone.
+Deferred reason: Selected P1/M roadmap milestone `RMAP-FILE-AI-EXPERT-V2-M1-FOUNDATION` has higher strategic value and starts the next active File Platform AI milestone after DTC M5 completion; this is a low-priority documentation cleanup and does not unlock the selected milestone.
 
-Remediation: Reconsider after the DTC Analyzer M5 milestone is accepted, or if owner explicitly asks for production smoke documentation cleanup.
+Remediation: Reconsider after the AI File Expert V2 M1 milestone is accepted, or if owner explicitly asks for production smoke documentation cleanup.
 
 Expected validation command: `npm test` plus markdown diff review.
 
@@ -42,9 +79,9 @@ Kabul kriterleri:
 
 Dogrulama: Diff incelemesi, `npm run lint`, `npm run typecheck`.
 
-Deferred reason: Maintenance-only artifact cleanup is intentionally behind selected P1/M roadmap milestone `RMAP-FILE-DTC-M5-ROLLOUT-READINESS` and should not consume the Ready queue while a high-impact roadmap slice is available.
+Deferred reason: Maintenance-only artifact cleanup is intentionally behind selected P1/M roadmap milestone `RMAP-FILE-AI-EXPERT-V2-M1-FOUNDATION` and should not consume the Ready queue while a high-impact roadmap slice is available.
 
-Remediation: Batch with a future documentation/source-comment maintenance pass after the DTC Analyzer M5 milestone is accepted, or when no P1/P2 product or roadmap milestone is ready.
+Remediation: Batch with a future documentation/source-comment maintenance pass after the AI File Expert V2 M1 milestone is accepted, or when no P1/P2 product or roadmap milestone is ready.
 
 Expected validation command: `npm run lint` and `npm run typecheck`.
 

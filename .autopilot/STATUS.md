@@ -2,6 +2,22 @@
 
 Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
+## 2026-07-14 planner run V4 ROADMAP AI FILE EXPERT V2 FOUNDATION
+
+- Baslangic/bitis: 2026-07-14 06:45:24 +01:00.
+- Gorev: Strategic Planner planning-only run; uygulama kodu degistirilmeden V4 Roadmap selected task'ini Ready queue'ya cevirmek.
+- Proje tespiti: `.autopilot/PROJECT.md` bu repository'yi `file.mgautotech.de` File Platform olarak tanimliyor; File Platform constitution uygulandi.
+- Selected roadmap task: `.autopilot/runtime/roadmap-selection.json` `RMAP-FILE-AI-EXPERT-V2-M1-FOUNDATION` task'ini secti. Product spec `C:\Users\gokka\Documents\MG-AI-OS-V4\artifacts\specs\rmap-file-ai-expert-v2-m1-foundation.md`, AI File Expert V2 M1 icin provider interface, deterministic fallback and review gate istiyor.
+- Duplicate/evidence kontrolu: Package V4 constitution dosyalari, roadmap docs/state/markdown/selection/spec, automotive content evidence policy, repo-local `.autopilot/constitution/*`, AGENTS, PROJECT, ROADMAP, INBOX, FEATURE_PROPOSALS, TASKS, TASK_HISTORY, PLANNER_STATE, PRODUCT_SCORECARD, STATUS, package scripts, relevant File Expert/AI provider routes/docs/tests, current Git status ve son 100 commit okundu. `RMAP-FILE-AI-EXPERT-V2-M1-FOUNDATION` veya ayni fingerprint Done/Ready icinde bulunmadi.
+- Evidence sonucu: Roadmap state `file-ai-expert-v2` epic'ini Active/progress 20, M1 milestone'u Active/progress 0 ve selected task'i Ready/0 attempt olarak gosteriyor. `src/lib/ai/types.ts` ve `src/lib/ai/index.ts` mevcut provider interface + rule-based fallback sagliyor; `tests/ecu-intelligence.test.ts` no-provider fallback'i test ediyor. Buna karsin `src/lib/fileExpert/server.ts` `generateAiFileExpertReport` sonucunu dogrudan `ai_report` olarak yazar ve provider/fallback status, human-review requirement, export lock and blocked production actions icin reusable File Expert V2 review-gate contract yok. `docs/ai-generation-safety-gates.md` bu sinirlari dokuman olarak anlatir ama AI File Expert report flow'a bagli local code contract degildir.
+- Eklenen Ready gorev: `RMAP-FILE-AI-EXPERT-V2-M1-FOUNDATION - AI File Expert V2 provider fallback and review gate foundation`.
+- Deferred kaydi: `AUTO-009` ve `AUTO-010` Later altinda tutuldu; deferred reason/remediation metinleri yeni selected AI File Expert V2 M1 milestone'una gore guncellendi.
+- Degisen dosyalar: `.autopilot/ROADMAP.md`, `.autopilot/TASKS.md`, `.autopilot/PLANNER_STATE.json`, `.autopilot/STATUS.md`, `.autopilot/runtime/planner-result.json`.
+- Factuality gate: `AcceptedArchitectureOnly`; public `mgautotech.de` teknik content, structured data veya publication-ready automotive claim planlanmadi. AI/File Expert scope'u file platform local product contract ile sinirli.
+- Calistirilan kontroller: V4 package constitution ve roadmap engine dosyalari okundu; roadmap state PowerShell `ConvertFrom-Json` ile selected AI File Expert V2 task/epic/milestone ve File Platform Ready adaylari parse edildi; selected product spec okundu; repository memory ve relevant File Expert/AI provider code/docs/tests incelendi; `git status --short --branch`; `git log -100 --oneline --decorate`; root ve desktop `package.json` scriptleri incelendi; `.autopilot/PLANNER_STATE.json` JSON parse PASS; `.autopilot/runtime/planner-result.json` JSON parse PASS; Ready checkbox count 1 PASS; `git check-ignore -v .autopilot/runtime/planner-result.json` PASS; `git diff --name-only` yalniz izinli planning dosyalarini gosterdi; `git diff --check` PASS (yalniz LF/CRLF warnings).
+- Calistirilmayan kontroller: Planning-only run oldugu ve uygulama kodu degismedigi icin `npm run lint`, `npm run typecheck`, `npm test` ve `npm run build` calistirilmadi. `npm run build` ayrica bu repoda local Next env dosyalarini okuyabilir ve `next/font/google` nedeniyle Google Fonts ag istegi yapabilir.
+- Kalan risk: Ready queue intentionally 1 tasktir; bu, selected P1/M roadmap milestone icin planlama kurallarindaki kucuk kuyruk istisnasina dayanir. AI File Expert V2 review-gate contract uygulanana kadar provider/fallback status and export-lock semantics operator-readable local code contract olarak eksik kalir. Production deploy, live migration, `.env*`, secret, real customer data veya live service islemi yapilmadi.
+
 ## 2026-07-14 reviewer run RMAP-FILE-DTC-M5-ROLLOUT-READINESS
 
 - Bitis: 2026-07-14 06:17:16 +01:00.
