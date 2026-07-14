@@ -2128,3 +2128,16 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 - Calistirilan kontroller: targeted `npx tsx --test tests/dtc-active-phase-c.test.ts` PASS (14/14); local Supabase clean reset PASS; Phase A verification PASS; Phase C/C.1 verification PASS; `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (401/401); `npm run build` PASS; `node scripts/check-payment-env.js --schema-only` PASS; `npm audit --omit=dev --audit-level=high` PASS; `git diff --check` PASS (yalniz CRLF warning).
 - Local cleanup: `npx supabase stop` PASS. Production Supabase'e baglanilmadi; deploy/push yok.
 - Guvenlik siniri: yalniz synthetic fixture artifactlari store edildi; gercek ECU/customer file islenmedi; real ECU checksum yok; A3/A4/A5/customer delivery yok; Phase D baslatilmadi.
+
+## 2026-07-15 DTC Phase D readiness-only corpus qualification
+
+- Gorev: Phase D customer processing'e baslamadan Bosch ME7.5, Bosch EDC15P/EDC15VM+ ve Bosch EDC16U34 icin read-only / evidence-only first real lab target qualification dashboard'u eklemek.
+- Kapsam: Existing metadata kaynaklari kullanildi: `ai_training_samples`, `ai_dataset_file_candidates`, `ai_dataset_pair_candidates`, `file_expert_jobs` ve `ai_map_definition_sets`. Firmware bytes, raw/hex, storage path veya customer file okunmadi.
+- Uygulama: `src/lib/dtcActive/corpusReadiness.ts` exact compound identity clustering ve readiness state hesaplamasini ekledi. `src/lib/dtcActive/corpusReadinessData.ts` server-only metadata adapter olarak sadece allowlisted kolonlari okur ve missing table/column durumlarini warning'e cevirir.
+- Admin UI/API: `/admin/dtc/corpus-readiness` ve `GET /api/admin/dtc/corpus-readiness` eklendi. API `ai_training.manage` staff permission ister. Ana DTC admin sayfasina Corpus readiness linki eklendi.
+- Readiness states: `INSUFFICIENT_DATA`, `CORPUS_CLEANUP_REQUIRED`, `CONTROLLED_PAIR_REQUIRED`, `INTEGRITY_RESEARCH_REQUIRED`, `BENCH_VALIDATION_REQUIRED`, `READY_FOR_INTERNAL_RULE_RESEARCH`.
+- Guvenlik siniri: Dashboard read-only; firmware modification yok; MOD/final artifact output yok; real checksum adapter yok; A3/A4/A5 yok; customer delivery yok; production Supabase'e baglanilmadi; deploy/push yok.
+- Testler: Yeni `tests/dtc-active-corpus-readiness.test.ts` exact clustering, mixed SW split, mixed/invalid file-role rejection, duplicate normalization, uncertain pair rejection, unrelated-change conflict, missing provenance, admin-only API guard ve zero binary mutation/output artifact guard kapsar.
+- Calistirilan kontroller: targeted `npx tsx --test tests/dtc-active-corpus-readiness.test.ts` PASS (9/9); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (410/410); `npm run build` PASS; `node scripts/check-payment-env.js --schema-only` PASS; `npm audit --omit=dev --audit-level=high` PASS; `git diff --check` PASS (yalniz CRLF warning).
+- DATABASE_VERIFIED: Bu gorevde yeni SQL/migration yok; local/prod DB mutation yok. Phase A/B/C/C.1 verification status korunur.
+- Phase D customer processing: baslatilmadi.

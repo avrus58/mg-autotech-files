@@ -1,6 +1,7 @@
 export * from "@/lib/dtcActive/codes";
 export * from "@/lib/dtcActive/canonicalJson";
 export * from "@/lib/dtcActive/customerVisibility";
+export * from "@/lib/dtcActive/corpusReadiness";
 export * from "@/lib/dtcActive/dryRunCompiler";
 export * from "@/lib/dtcActive/fixtures";
 export * from "@/lib/dtcActive/goldenCorpus";

@@ -101,6 +101,13 @@ export default function AdminDtcFoundationPage() {
             <PlayCircle className="mr-2 h-4 w-4" />
             Phase C test output
           </Link>
+          <Link
+            href="/admin/dtc/corpus-readiness"
+            className="inline-flex h-11 items-center justify-center rounded-lg border border-cyan-500/30 bg-cyan-950/20 px-4 text-sm font-black text-cyan-100 hover:bg-cyan-900/30"
+          >
+            <Database className="mr-2 h-4 w-4" />
+            Corpus readiness
+          </Link>
         </header>
 
         {state.status === "loading" && (
