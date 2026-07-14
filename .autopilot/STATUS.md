@@ -2,6 +2,21 @@
 
 Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
+## 2026-07-14 planner run V4 ROADMAP DTC REQUEST INTEGRATION
+
+- Baslangic/bitis: 2026-07-14 04:16:18 +01:00.
+- Gorev: Strategic Planner planning-only run; uygulama kodu degistirilmeden V4 Roadmap selected task'ini Ready queue'ya cevirmek.
+- Proje tespiti: `.autopilot/PROJECT.md` bu repository'yi `file.mgautotech.de` File Platform olarak tanimliyor; File Platform constitution uygulandi.
+- Selected roadmap task: `.autopilot/runtime/roadmap-selection.json` `RMAP-FILE-DTC-M3-REQUEST-INTEGRATION` task'ini secti. Product spec `C:\Users\gokka\Documents\MG-AI-OS-V4\artifacts\specs\rmap-file-dtc-m3-request-integration.md`, DTC Analyzer M3 icin customer/expert boundary ve audit events istiyor.
+- Duplicate/evidence kontrolu: Package V4 constitution dosyalari, roadmap docs/state/markdown/selection/spec, repo-local `.autopilot/constitution/*`, AGENTS, PROJECT, ROADMAP, INBOX, FEATURE_PROPOSALS, TASKS, TASK_HISTORY, PLANNER_STATE, PRODUCT_SCORECARD, STATUS, package scripts, relevant DTC/work-order/request docs/routes/tests, current Git status ve son 100 commit okundu. `RMAP-FILE-DTC-M1` ve `RMAP-FILE-DTC-M2-ANALYSIS-SERVICE` Done olarak bulundu; `RMAP-FILE-DTC-M3-REQUEST-INTEGRATION` veya ayni fingerprint Done/Ready icinde bulunmadi.
+- Evidence sonucu: `src/app/new-request/page.tsx:1793` ve `:1800` DTC kodunu yalniz free-form note olarak aliyor; `src/lib/dtcAnalyzer/index.ts:39` request text analiz contract'ini sagliyor; `src/lib/dtcAnalyzer/types.ts:152` customer-safe evidence/risk/recommendation/confidence response contract'ini tasiyor; `src/lib/workOrders/server.ts:627` audit event altyapisini sagliyor; `src/app/admin/requests/[id]/WorkOrderDetailClient.tsx:553` audit timeline'i gosteriyor; `tests/ecu-intelligence.test.ts:323-435` M2 DTC fallback davranisini kapsiyor ama request integration/projection/audit kapsamiyor.
+- Eklenen Ready gorev: `RMAP-FILE-DTC-M3-REQUEST-INTEGRATION - AI DTC Analyzer request boundary and audit integration`.
+- Deferred kaydi: `AUTO-009` ve `AUTO-010` Later altinda tutuldu; deferred reason/remediation metinleri M3 selected milestone'a gore guncellendi.
+- Degisen dosyalar: `.autopilot/ROADMAP.md`, `.autopilot/TASKS.md`, `.autopilot/PLANNER_STATE.json`, `.autopilot/STATUS.md`, `.autopilot/runtime/planner-result.json`.
+- Calistirilan kontroller: V4 package constitution ve roadmap engine dosyalari okundu; roadmap state PowerShell `ConvertFrom-Json` ile DTC epic task listesi parse edildi; selected product spec okundu; repository memory ve relevant DTC/request/work-order docs/routes/tests incelendi; `git status --short --branch`; `git log -100 --oneline --decorate`; root `package.json` scriptleri incelendi; `.autopilot/PLANNER_STATE.json` JSON parse PASS; `.autopilot/runtime/planner-result.json` JSON parse PASS; Ready checkbox count 1 PASS; `git check-ignore -v .autopilot/runtime/planner-result.json` PASS; `git diff --name-only` yalniz izinli planning dosyalarini gosterdi; `git diff --check` yalniz LF/CRLF uyarilariyla PASS.
+- Calistirilmayan kontroller: Planning-only run oldugu ve uygulama kodu degismedigi icin `npm run lint`, `npm run typecheck`, `npm test` ve `npm run build` calistirilmeyecek.
+- Kalan risk: Ready queue intentionally 1 tasktir; bu, selected high-impact P1/L milestone icin planlama kurallarindaki kucuk kuyruk istisnasina dayanir. M3 uygulanana kadar DTC Analyzer customer/admin request lifecycle integration, audit event ve projection boundary eksik kalir. Production deploy, live migration, `.env*`, secret, real customer data veya live service islemi yapilmadi.
+
 ## 2026-07-14 reviewer run RMAP-FILE-DTC-M2-ANALYSIS-SERVICE
 
 - Bitis: 2026-07-14 03:40:59 +01:00.

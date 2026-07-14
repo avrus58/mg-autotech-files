@@ -41,6 +41,7 @@
   - File Expert dashboard'u, analiz gecmisi yukleme hatasini gercek bos analiz listesiyle karistirmadan retry aksiyonu sunar.
   - Roadmap V2 selected task `RMAP-FILE-DTC-M1`, AI DTC Analyzer icin provider-neutral contract, deterministic fallback, unavailable state ve no-fake-AI test temelini kurar.
   - Roadmap V2 selected task `RMAP-FILE-DTC-M2-ANALYSIS-SERVICE`, AI DTC Analyzer icin evidence model, risk flags, recommendation categories ve confidence semantics katmanini mevcut local fallback uzerine kurar.
+  - Roadmap V2 selected task `RMAP-FILE-DTC-M3-REQUEST-INTEGRATION`, AI DTC Analyzer sonucunu request lifecycle'a customer/expert boundary ve internal-only audit event ile guvenli sekilde baglar.
 - Success signals:
   - Musteri, talebin gercek durumunu ve kendi aksiyon gereksinimini detay ekraninda ayri gorebilir.
   - Musteri, aksiyon bekleyen siparisi liste veya dashboard uzerinden hizlica bulabilir.
@@ -72,6 +73,7 @@
   - File Expert kullanicisi, analiz gecmisi yuklenemediginde bunu gercekten hic analiz olmamasi durumundan ayirt eder.
   - DTC Analyzer gelecekteki musteri/admin yuzeylerine gecmeden once, text DTC girdisi icin fake AI uretmeyen provider boundary ve deterministic fallback sozlesmesine sahip olur.
   - DTC Analyzer response'u musteri/admin yuzeylerine baglanmadan once structured evidence, risk flags ve confidence reasons tasir; provider unavailable durumunda AI gibi davranmaz.
+  - DTC Analyzer request entegrasyonu, musteriye yalniz customer-safe aciklama gosterirken admine review icin evidence/risk detaylarini ve internal-only audit kaydini saglar.
   - Migration/fallback durumlarinda mutasyon aksiyonlari read-only davranir ve hata yerine acik mesaj verir.
 
 ## Owner priorities

@@ -4,6 +4,55 @@
 
 ## Ready
 
+- [ ] **P1 RMAP-FILE-DTC-M3-REQUEST-INTEGRATION - AI DTC Analyzer request boundary and audit integration**
+  - Lane: AI Capability
+  - Roadmap: File Platform Roadmap (`file-platform`)
+  - Epic: AI DTC Analyzer (`file-ai-dtc-analyzer`)
+  - Feature: Request Integration (`file-dtc-m3-request-integration-feature`)
+  - Roadmap task: `RMAP-FILE-DTC-M3-REQUEST-INTEGRATION`
+  - Fingerprint: `ai-capability|dtc-analyzer|request-notes-not-connected-to-safe-analysis|request-boundary-audit-integration`
+  - Strategic score: 50
+  - Scope class: L
+  - Expected effort: L roadmap milestone slice
+  - Business impact: 4/5
+  - User impact: 4/5
+  - Admin impact: 4/5
+  - Strategic fit: 5/5
+  - Confidence: 4/5
+  - Effort: 4/5
+  - Risk: 2/5
+  - Evidence:
+    - `.autopilot/runtime/roadmap-selection.json` selects `RMAP-FILE-DTC-M3-REQUEST-INTEGRATION`; product spec `C:\Users\gokka\Documents\MG-AI-OS-V4\artifacts\specs\rmap-file-dtc-m3-request-integration.md` requires customer/expert boundary and audit events.
+    - `src/app/new-request/page.tsx:1793` and `src/app/new-request/page.tsx:1800` accept DTC codes only as free-form request notes today.
+    - `src/lib/dtcAnalyzer/index.ts:39` exposes `analyzeDtcText`; `src/lib/dtcAnalyzer/types.ts:152` defines the response contract with customer-safe evidence, risk flags, recommendations and confidence reasons, but M2 stopped before request lifecycle integration.
+    - `src/lib/workOrders/server.ts:627` already has `recordWorkOrderEvent`; `src/app/admin/requests/[id]/WorkOrderDetailClient.tsx:553` renders `Status Timeline & Audit` and `:562` distinguishes customer-visible from internal-only events.
+    - `tests/ecu-intelligence.test.ts:323`, `:346`, `:382`, `:405` and `:435` cover provider-unavailable, valid, unknown, provider-error and invalid DTC behavior; request-level projection and audit are not covered yet.
+    - `docs/customer-file-upload-assistant.md:154` keeps the desktop `DTC Tools` module non-functional, and `:164`, `:166`, `:167` prohibit DTC API calls, MOD generation and checksum behavior in that module.
+  - Product value: Connects the completed DTC analyzer contract to a real request lifecycle slice so customers and experts can see safe diagnostic guidance without treating AI or deterministic output as final file advice.
+  - Selection reason: This is the selected P1/L Roadmap V2 milestone, continues the active File Platform AI DTC Analyzer epic after M1/M2, and has stronger strategic value than deferred maintenance/documentation work.
+  - Scope:
+    - Create the first safe request-level DTC integration using existing request text/service/vehicle fields and the existing `analyzeDtcText` contract.
+    - Add a customer-safe projection and an expert/admin projection boundary; do not echo raw customer notes, admin notes, provider internals, storage paths, signed URLs, hashes, binary/hex data, sample IDs or private metadata.
+    - Record an internal-only best-effort audit event when request DTC analysis runs, using existing work-order event infrastructure and sanitized metadata only.
+    - Keep the work local-only and reversible: no DB schema, migration execution, live provider call, desktop DTC module activation, file processing, MOD output, checksum action, pricing, legal or commercial policy change.
+  - Acceptance criteria:
+    - Authenticated request-level DTC analysis is available through a bounded local helper/API/UI slice that uses existing order ownership/staff boundaries and existing request fields only.
+    - Customer-facing output shows only customer-safe summary, detected DTCs, missing information, safety boundaries, human-review requirement and allowed evidence/recommendation/confidence fields.
+    - Expert/admin output may show provider/fallback status and detailed evidence/risk/recommendation structure, but still does not claim final diagnosis, DTC-off approval, file edit approval, checksum completion or customer-ready MOD output.
+    - Invalid input, no DTC input, provider unavailable and provider failure states are explicit and do not look like AI-generated analysis.
+    - A sanitized internal-only audit event is recorded best-effort for generated analysis, and missing work-order migration/fallback mode degrades without breaking the request view.
+    - If UI is touched, loading, empty, error, retry, responsive and accessibility states are covered for the new DTC surface.
+    - Tests assert no customer leakage of raw notes, storage paths, signed URLs, hashes, binary/hex, provider secrets, admin notes, sample IDs or private metadata.
+  - Validation:
+    - `.\node_modules\.bin\tsx.cmd --test tests\ecu-intelligence.test.ts`
+    - `.\node_modules\.bin\tsx.cmd --test tests\admin-work-orders.test.ts`
+    - `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts`
+    - `npm run lint`
+    - `npm run typecheck`
+    - `npm test`
+    - `npm run build`
+    - `git diff --check`
+
 ## In Progress
 
 ## Blocked
@@ -23,9 +72,9 @@ Kabul kriterleri:
 
 Dogrulama: Markdown diff incelemesi, `npm test` ilgili source assertion testleri.
 
-Deferred reason: Selected P1/L roadmap milestone `RMAP-FILE-DTC-M2-ANALYSIS-SERVICE` has higher strategic value and directly continues the active File Platform AI epic; this is a low-priority documentation cleanup and does not unlock the selected milestone.
+Deferred reason: Selected P1/L roadmap milestone `RMAP-FILE-DTC-M3-REQUEST-INTEGRATION` has higher strategic value and directly continues the active File Platform AI epic; this is a low-priority documentation cleanup and does not unlock the selected milestone.
 
-Remediation: Reconsider after the DTC Analyzer M2 milestone is accepted, or if owner explicitly asks for production smoke documentation cleanup.
+Remediation: Reconsider after the DTC Analyzer M3 milestone is accepted, or if owner explicitly asks for production smoke documentation cleanup.
 
 Expected validation command: `npm test` plus markdown diff review.
 
@@ -42,9 +91,9 @@ Kabul kriterleri:
 
 Dogrulama: Diff incelemesi, `npm run lint`, `npm run typecheck`.
 
-Deferred reason: Maintenance-only artifact cleanup is intentionally behind the selected File Platform AI capability milestone and should not consume the Ready queue while a high-impact roadmap slice is available.
+Deferred reason: Maintenance-only artifact cleanup is intentionally behind selected P1/L roadmap milestone `RMAP-FILE-DTC-M3-REQUEST-INTEGRATION` and should not consume the Ready queue while a high-impact roadmap slice is available.
 
-Remediation: Batch with a future documentation/source-comment maintenance pass when no P1/P2 product or roadmap milestone is ready.
+Remediation: Batch with a future documentation/source-comment maintenance pass after the DTC Analyzer M3 milestone is accepted, or when no P1/P2 product or roadmap milestone is ready.
 
 Expected validation command: `npm run lint` and `npm run typecheck`.
 
