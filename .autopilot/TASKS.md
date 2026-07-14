@@ -4,6 +4,43 @@
 
 ## Ready
 
+- [ ] **P1 RMAP-FILE-AI-EXPLAIN-LAYER-M1-FOUNDATION - AI Explain Layer source labels and unavailable-state foundation**
+  - Lane: AI Capability
+  - Roadmap: file-platform - File Platform Roadmap
+  - Epic: file-ai-explain-layer - AI Explain and Recommendation Layer
+  - Feature: file-ai-explain-layer-m1-foundation-feature - Foundation Milestone
+  - Roadmap task: RMAP-FILE-AI-EXPLAIN-LAYER-M1-FOUNDATION
+  - Fingerprint: `ai-capability|explain-layer|ai-recommendation-surfaces-lack-source-labeled-unavailable-contract|source-label-unavailable-foundation`
+  - Strategic score: 36 V2 weighted score; selected score 29.58
+  - Scope class: M
+  - Expected effort: M roadmap milestone slice
+  - Business impact: 4/5
+  - User impact: 5/5
+  - Admin impact: 3/5
+  - Strategic fit: 5/5
+  - Confidence: 4/5
+  - Effort: 3/5
+  - Risk: 2/5
+  - Evidence: `.autopilot/runtime/roadmap-selection.json` selected `RMAP-FILE-AI-EXPLAIN-LAYER-M1-FOUNDATION` for `file.mgautotech.de`; product spec `C:\Users\gokka\Documents\MG-AI-OS-V4\artifacts\specs\rmap-file-ai-explain-layer-m1-foundation.md` requires `Source labels` and `Unavailable state`; `Test-Path src/lib/aiExplain` and `Test-Path docs/ai-explain-layer-foundation.md` both returned false; duplicate search found no exact selected task id in `.autopilot`, `docs`, `src` or `tests`; existing `src/lib/dtcAnalyzer/requestIntegration.ts`, `src/lib/tuneAdvisor/requestIntegration.ts`, `src/lib/logAnalyzer/requestIntegration.ts` and `src/lib/fileExpert/reportStatus.ts` provide separate provider/fallback/review patterns but no shared customer-safe explain/recommendation layer.
+  - Product value: Customers can understand why an AI-assisted recommendation is shown, which source category supports it and when no AI output is available; experts/admins keep provider and fallback detail without leaking internals to customers.
+  - Selection reason: Roadmap V2 selected this P1/M milestone, it depends on the already completed AI File Expert V2 foundation, it is new in repo memory/history, and it continues File Platform AI capability work without production, secret, migration or customer-data access.
+  - Scope: Add a local-only AI Explain Layer foundation that defines a typed `ai-explain-layer-v1` contract, source labels, unavailable/provider/fallback states, customer-safe projection, expert projection, no-leak boundaries, deterministic non-AI fallback behavior and an operator runbook. Keep it library/docs/tests only unless an existing route integration is required for local projection tests; do not add live provider routing, upload endpoints, migrations, production analytics, public claims, MOD output, checksum approval, pricing or delivery automation.
+  - Acceptance criteria:
+    - `src/lib/aiExplain` exposes a versioned contract with explicit source labels for evidence, recommendations, risk flags, human-review gates and unavailable/provider/fallback state.
+    - The default local behavior is deterministic and non-AI when no provider is configured; provider unavailable and provider error states are explicit and never presented as successful AI output.
+    - Customer projection hides provider id, provider kind, model name, prompt version, fallback internals, raw binary/hex/CSV, hashes, signed URLs, storage paths, filenames, customer identifiers, sample ids and admin-only notes.
+    - Expert/admin projection exposes provider status, fallback reason, source labels, required human checks and blocked production actions.
+    - Existing DTC, Tune Advisor, Log Analyzer and File Expert contracts remain compatible; no working feature is removed or weakened.
+    - Runbook documents safe local validation, privacy boundaries and operator-only future decisions for live provider rollout, UI/API integration, analytics persistence, migrations, deploy, MOD export, checksum workflow and delivery automation.
+    - Tests cover source-label generation, unavailable/error fallback states, customer/expert projection separation and forbidden private data patterns.
+  - Validation:
+    - `.\node_modules\.bin\tsx.cmd --test tests\ecu-intelligence.test.ts`
+    - `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts`
+    - `npm run lint`
+    - `npm run typecheck`
+    - `npm test`
+    - `git diff --check`
+
 
 ## In Progress
 
@@ -24,9 +61,9 @@ Kabul kriterleri:
 
 Dogrulama: Markdown diff incelemesi, `npm test` ilgili source assertion testleri.
 
-Deferred reason: Selected P1/M roadmap milestone `RMAP-FILE-AI-LOG-ANALYZER-M1-FOUNDATION` has higher strategic value and starts the next File Platform AI Log Analyzer foundation; this is a low-priority documentation cleanup and does not unlock the selected provider/fallback boundary.
+Deferred reason: Selected P1/M roadmap milestone `RMAP-FILE-AI-EXPLAIN-LAYER-M1-FOUNDATION` has higher strategic value and starts the next File Platform AI Explain Layer foundation; this is a low-priority documentation cleanup and does not unlock the selected source-label/unavailable-state boundary.
 
-Remediation: Reconsider after the AI Log Analyzer M1 milestone is accepted, or if owner explicitly asks for production smoke documentation cleanup.
+Remediation: Reconsider after the AI Explain Layer M1 milestone is accepted, or if owner explicitly asks for production smoke documentation cleanup.
 
 Expected validation command: `npm test` plus markdown diff review.
 
@@ -43,9 +80,9 @@ Kabul kriterleri:
 
 Dogrulama: Diff incelemesi, `npm run lint`, `npm run typecheck`.
 
-Deferred reason: Maintenance-only artifact cleanup is intentionally behind selected P1/M roadmap milestone `RMAP-FILE-AI-LOG-ANALYZER-M1-FOUNDATION` and should not consume the Ready queue while a high-impact roadmap slice is available.
+Deferred reason: Maintenance-only artifact cleanup is intentionally behind selected P1/M roadmap milestone `RMAP-FILE-AI-EXPLAIN-LAYER-M1-FOUNDATION` and should not consume the Ready queue while a high-impact roadmap slice is available.
 
-Remediation: Batch with a future documentation/source-comment maintenance pass after the AI Log Analyzer M1 milestone is accepted, or when no P1/P2 product or roadmap milestone is ready.
+Remediation: Batch with a future documentation/source-comment maintenance pass after the AI Explain Layer M1 milestone is accepted, or when no P1/P2 product or roadmap milestone is ready.
 
 Expected validation command: `npm run lint` and `npm run typecheck`.
 
