@@ -3553,9 +3553,9 @@ export default function HomePage() {
           className="absolute right-32 top-52 -z-10 hidden h-1 w-[480px] rounded-full bg-red-500 lg:block"
         />
 
-        <div className="mx-auto grid min-h-[720px] max-w-7xl gap-12 px-4 py-14 sm:py-20 lg:h-[825px] lg:grid-cols-[1.05fr_.95fr] lg:items-center">
+        <div className="mx-auto grid min-h-[720px] max-w-[88rem] gap-10 px-4 py-14 sm:py-20 lg:min-h-[825px] lg:grid-cols-[minmax(0,1fr)_minmax(400px,0.88fr)] lg:items-center">
           <motion.div
-            className="min-w-0 lg:min-h-[520px]"
+            className="min-w-0 lg:min-h-[520px] lg:max-w-[44rem]"
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.55 }}
@@ -3565,18 +3565,18 @@ export default function HomePage() {
               Professional online file service platform
             </div>
 
-            <h1 className="max-w-full break-words text-[clamp(2.65rem,12vw,4.6rem)] font-black uppercase leading-[1.05] tracking-[0.04em] md:text-7xl md:tracking-[0.08em]">
+            <h1 className="max-w-[42rem] text-balance break-words text-[clamp(2.85rem,5.7vw,5.35rem)] font-black uppercase leading-[0.96] tracking-[0.035em] sm:tracking-[0.055em]">
               Custom ECU & TCU{" "}
               <span className="block text-red-600">Tuning Files</span>
             </h1>
 
-            <p className="mt-6 max-w-2xl text-lg leading-8 text-zinc-300">
+            <p className="mt-6 max-w-[38rem] text-pretty text-base leading-8 text-zinc-300 sm:text-lg">
               Upload original ECU/TCU files, select your service, track your
               order and download the completed file directly through the secure
               MG AutoTech customer portal.
             </p>
 
-            <div className="mt-9 flex flex-wrap gap-4">
+            <div className="mt-9 grid w-full max-w-[42rem] grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
               {!authReady ? (
                 <>
                   <div className="h-14 w-36 rounded-xl border border-white/10 bg-white/[0.08]" />
@@ -3587,21 +3587,21 @@ export default function HomePage() {
                 <>
                   <Link
                     href="/dashboard"
-                    className="rounded-xl bg-[#b1121b] px-10 py-4 font-black text-white shadow-xl shadow-red-950/40 transition duration-300 hover:-translate-y-1 hover:bg-[#c91824]"
+                    className="flex min-h-14 items-center justify-center rounded-xl bg-[#b1121b] px-5 py-4 text-center font-black text-white shadow-xl shadow-red-950/40 transition duration-300 hover:-translate-y-1 hover:bg-[#c91824]"
                   >
                     My Account
                   </Link>
 
                   <Link
                     href="/new-request"
-                    className="rounded-xl border border-red-800/50 px-10 py-4 font-black text-white transition duration-300 hover:-translate-y-1 hover:bg-red-950/25"
+                    className="flex min-h-14 items-center justify-center rounded-xl border border-red-800/50 px-5 py-4 text-center font-black text-white transition duration-300 hover:-translate-y-1 hover:bg-red-950/25"
                   >
                     New Request
                   </Link>
 
                   <Link
                     href="/dashboard/widget"
-                    className="rounded-xl border border-white/10 bg-white/5 px-8 py-4 font-black text-white transition duration-300 hover:-translate-y-1 hover:bg-white/10"
+                    className="flex min-h-14 items-center justify-center rounded-xl border border-white/10 bg-white/5 px-5 py-4 text-center font-black text-white transition duration-300 hover:-translate-y-1 hover:bg-white/10"
                   >
                     Vehicle Widget
                   </Link>
@@ -3609,7 +3609,7 @@ export default function HomePage() {
                   <button
                     type="button"
                     onClick={handleLogout}
-                    className="rounded-xl border border-white/10 bg-white/10 px-10 py-4 font-black text-white transition duration-300 hover:-translate-y-1 hover:bg-white/15"
+                    className="flex min-h-14 items-center justify-center rounded-xl border border-white/10 bg-white/10 px-5 py-4 text-center font-black text-white transition duration-300 hover:-translate-y-1 hover:bg-white/15"
                   >
                     Logout
                   </button>
@@ -3618,28 +3618,28 @@ export default function HomePage() {
                 <>
                   <Link
                     href="/login"
-                    className="rounded-xl border border-white/10 bg-white/10 px-10 py-4 font-black text-white transition duration-300 hover:-translate-y-1 hover:bg-white/15"
+                    className="flex min-h-14 items-center justify-center rounded-xl border border-white/10 bg-white/10 px-5 py-4 text-center font-black text-white transition duration-300 hover:-translate-y-1 hover:bg-white/15"
                   >
                     Login
                   </Link>
 
                   <Link
                     href="/register"
-                    className="rounded-xl bg-[#b1121b] px-10 py-4 font-black text-white shadow-xl shadow-red-950/40 transition duration-300 hover:-translate-y-1 hover:bg-[#c91824]"
+                    className="flex min-h-14 items-center justify-center rounded-xl bg-[#b1121b] px-5 py-4 text-center font-black text-white shadow-xl shadow-red-950/40 transition duration-300 hover:-translate-y-1 hover:bg-[#c91824]"
                   >
                     Register
                   </Link>
 
                   <Link
                     href="/new-request"
-                    className="rounded-xl border border-red-800/50 px-10 py-4 font-black text-white transition duration-300 hover:-translate-y-1 hover:bg-red-950/25"
+                    className="flex min-h-14 items-center justify-center rounded-xl border border-red-800/50 px-5 py-4 text-center font-black text-white transition duration-300 hover:-translate-y-1 hover:bg-red-950/25"
                   >
                     Upload File
                   </Link>
 
                   <Link
                     href="/widget"
-                    className="rounded-xl border border-white/10 bg-white/5 px-8 py-4 font-black text-white transition duration-300 hover:-translate-y-1 hover:bg-white/10"
+                    className="flex min-h-14 items-center justify-center rounded-xl border border-white/10 bg-white/5 px-5 py-4 text-center font-black text-white transition duration-300 hover:-translate-y-1 hover:bg-white/10"
                   >
                     Vehicle Widget €4.99
                   </Link>
@@ -3698,11 +3698,11 @@ export default function HomePage() {
         <PublicVehicleChecker />
       </section>
 
-      <AnimatedSection id="file-service-navigator" className="bg-[#f8fafc] py-16 text-[#111827]">
+      <AnimatedSection id="file-service-navigator" className="bg-[#050607] py-16 text-white">
         <div className="mx-auto max-w-7xl px-4">
           <div className="mb-8 grid gap-5 lg:grid-cols-[0.78fr_1.22fr] lg:items-end">
             <div>
-              <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-red-700 shadow-sm shadow-red-950/5">
+              <div className="inline-flex items-center gap-2 rounded-full border border-red-900/50 bg-red-950/30 px-3 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-red-200 shadow-sm shadow-red-950/20">
                 <Search className="h-4 w-4" />
                 File Service Navigator
               </div>
@@ -3710,7 +3710,7 @@ export default function HomePage() {
                 Jump straight to the file-service answer you need.
               </h2>
             </div>
-            <p className="max-w-3xl text-sm leading-7 text-slate-600 lg:justify-self-end">
+            <p className="max-w-3xl text-sm leading-7 text-zinc-300 lg:justify-self-end">
               The homepage now works like a guided file-service index: start
               with a service path, compare request routes, check read method
               context, prepare the brief or review privacy and delivery
@@ -3726,23 +3726,23 @@ export default function HomePage() {
                 <Link
                   key={item.title}
                   href={item.href}
-                  className="group flex min-h-56 flex-col rounded-3xl border border-slate-200 bg-white p-5 shadow-sm shadow-slate-950/5 transition duration-300 hover:-translate-y-1 hover:border-red-200 hover:shadow-lg hover:shadow-red-950/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-700"
+                  className="group flex min-h-56 flex-col rounded-3xl border border-white/10 bg-white/[0.045] p-5 shadow-2xl shadow-black/20 transition duration-300 hover:-translate-y-1 hover:border-red-700/60 hover:bg-white/[0.075] focus:outline-none focus-visible:ring-2 focus-visible:ring-red-700"
                 >
                   <div className="mb-5 flex items-start justify-between gap-4">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#111827] text-white">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-red-900/45 bg-red-950/35 text-red-200">
                       <Icon className="h-5 w-5" />
                     </div>
-                    <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-black uppercase tracking-[0.14em] text-slate-500">
+                    <span className="rounded-full border border-white/10 bg-black/30 px-3 py-1 text-[11px] font-black uppercase tracking-[0.14em] text-zinc-300">
                       {item.tag}
                     </span>
                   </div>
-                  <h3 className="text-lg font-black text-[#111827]">
+                  <h3 className="text-lg font-black text-white">
                     {item.title}
                   </h3>
-                  <p className="mt-3 flex-1 text-sm leading-7 text-slate-600">
+                  <p className="mt-3 flex-1 text-sm leading-7 text-zinc-300">
                     {item.text}
                   </p>
-                  <div className="mt-5 inline-flex items-center text-sm font-black text-red-700 transition group-hover:text-red-800">
+                  <div className="mt-5 inline-flex items-center text-sm font-black text-red-300 transition group-hover:text-red-100">
                     Open section
                     <ArrowRight className="ml-2 h-4 w-4 transition group-hover:translate-x-1" />
                   </div>
@@ -3751,8 +3751,8 @@ export default function HomePage() {
             })}
           </div>
 
-          <div className="mt-6 rounded-3xl border border-slate-200 bg-white p-5 text-sm leading-7 text-slate-600 shadow-sm shadow-slate-950/5">
-            <span className="font-black text-[#111827]">Navigator boundary:</span>{" "}
+          <div className="mt-6 rounded-3xl border border-white/10 bg-white/[0.045] p-5 text-sm leading-7 text-zinc-300 shadow-2xl shadow-black/20">
+            <span className="font-black text-white">Navigator boundary:</span>{" "}
             this is public on-page navigation only. It does not create
             requests, inspect customer files, open account data, change
             payments or deliver files.
@@ -3828,33 +3828,33 @@ export default function HomePage() {
         </div>
       </AnimatedSection>
 
-      <AnimatedSection id="file-service-answer-library" className="bg-white py-20 text-[#111827]">
+      <AnimatedSection id="file-service-answer-library" className="bg-[#07090d] py-20 text-white">
         <div className="mx-auto max-w-7xl px-4">
           <div className="grid gap-8 lg:grid-cols-[0.82fr_1.18fr] lg:items-start">
             <div className="lg:sticky lg:top-24">
-              <div className="inline-flex items-center gap-2 rounded-full border border-red-100 bg-red-50 px-3 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-red-700">
+              <div className="inline-flex items-center gap-2 rounded-full border border-red-900/50 bg-red-950/30 px-3 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-red-200">
                 <MessageCircle className="h-4 w-4" />
                 File Service Answer Library
               </div>
               <h2 className="mt-5 text-4xl font-black leading-tight md:text-5xl">
                 Answers that match real workshop search intent.
               </h2>
-              <p className="mt-5 max-w-xl text-sm leading-7 text-slate-600">
+              <p className="mt-5 max-w-xl text-sm leading-7 text-zinc-300">
                 Customers often arrive with broad questions such as online ECU
                 file service, TCU file service, read method, Stage 1 context or
                 diagnostic code preparation. This library gives clear answers
                 before the secure account workflow starts.
               </p>
               <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
-                <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
-                  <div className="text-3xl font-black text-red-700">
+                <div className="rounded-3xl border border-white/10 bg-white/[0.045] p-5">
+                  <div className="text-3xl font-black text-red-300">
                     {fileServiceAnswerLibrary.length}
                   </div>
-                  <div className="mt-1 text-xs font-black uppercase tracking-[0.16em] text-slate-500">
+                  <div className="mt-1 text-xs font-black uppercase tracking-[0.16em] text-zinc-400">
                     customer-safe answers
                   </div>
                 </div>
-                <div className="rounded-3xl border border-emerald-200 bg-emerald-50 p-5 text-sm leading-7 text-emerald-900">
+                <div className="rounded-3xl border border-emerald-500/20 bg-emerald-950/20 p-5 text-sm leading-7 text-emerald-100">
                   <span className="font-black">Boundary:</span> public guidance
                   only. It does not inspect files, open private account records,
                   change account balances or create delivery assets.
@@ -3869,25 +3869,25 @@ export default function HomePage() {
                 return (
                   <article
                     key={item.question}
-                    className="group rounded-3xl border border-slate-200 bg-[#f8fafc] p-5 shadow-sm shadow-slate-950/5 transition duration-300 hover:-translate-y-1 hover:border-red-200 hover:bg-white hover:shadow-lg hover:shadow-red-950/10"
+                    className="group rounded-3xl border border-white/10 bg-white/[0.045] p-5 shadow-2xl shadow-black/20 transition duration-300 hover:-translate-y-1 hover:border-red-700/60 hover:bg-white/[0.075]"
                   >
                     <div className="mb-5 flex items-start justify-between gap-4">
-                      <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#111827] text-white">
+                      <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-red-900/45 bg-red-950/35 text-red-200">
                         <Icon className="h-5 w-5" />
                       </div>
-                      <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-black uppercase tracking-[0.14em] text-slate-500">
+                      <span className="rounded-full border border-white/10 bg-black/30 px-3 py-1 text-[11px] font-black uppercase tracking-[0.14em] text-zinc-300">
                         {item.intent}
                       </span>
                     </div>
-                    <h3 className="text-lg font-black leading-tight text-[#111827]">
+                    <h3 className="text-lg font-black leading-tight text-white">
                       {item.question}
                     </h3>
-                    <p className="mt-3 text-sm leading-7 text-slate-600">
+                    <p className="mt-3 text-sm leading-7 text-zinc-300">
                       {item.answer}
                     </p>
                     <Link
                       href={item.href}
-                      className="mt-5 inline-flex items-center text-sm font-black text-red-700 transition hover:text-red-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-700"
+                      className="mt-5 inline-flex items-center text-sm font-black text-red-300 transition hover:text-red-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-700"
                     >
                       {item.action}
                       <ArrowRight className="ml-2 h-4 w-4 transition group-hover:translate-x-1" />
@@ -3969,24 +3969,24 @@ export default function HomePage() {
         </div>
       </AnimatedSection>
 
-      <AnimatedSection id="file-service-snippet-summary" className="bg-white py-20">
+      <AnimatedSection id="file-service-snippet-summary" className="bg-[#050607] py-20 text-white">
         <div className="mx-auto max-w-7xl px-4">
           <div className="grid gap-8 lg:grid-cols-[0.85fr_1.15fr] lg:items-start">
             <div className="lg:sticky lg:top-24">
-              <div className="inline-flex items-center gap-2 rounded-full border border-red-100 bg-red-50 px-3 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-red-700">
+              <div className="inline-flex items-center gap-2 rounded-full border border-red-900/50 bg-red-950/30 px-3 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-red-200">
                 <BadgeCheck className="h-4 w-4" />
                 File Service At A Glance
               </div>
-              <h2 className="mt-5 text-4xl font-black leading-tight text-slate-950 md:text-5xl">
+              <h2 className="mt-5 text-4xl font-black leading-tight text-white md:text-5xl">
                 A snippet-ready summary for ECU and TCU file service.
               </h2>
-              <p className="mt-5 text-base leading-8 text-slate-600">
+              <p className="mt-5 text-base leading-8 text-zinc-300">
                 This section gives customers and search engines the short,
                 direct answer first: what MG AutoTech file service is, who it
                 helps, what to prepare and where secure account handling begins.
               </p>
-              <div className="mt-6 rounded-3xl border border-slate-200 bg-slate-50 p-5 text-sm leading-7 text-slate-600">
-                <span className="font-black text-slate-950">Public summary boundary:</span>{" "}
+              <div className="mt-6 rounded-3xl border border-white/10 bg-white/[0.045] p-5 text-sm leading-7 text-zinc-300">
+                <span className="font-black text-white">Public summary boundary:</span>{" "}
                 this overview is informational only. It does not inspect files,
                 change customer accounts, create requests or generate
                 deliverable files.
@@ -4000,23 +4000,23 @@ export default function HomePage() {
                 return (
                   <article
                     key={item.title}
-                    className="group flex min-h-[260px] flex-col justify-between rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:border-red-200 hover:shadow-xl hover:shadow-red-950/10"
+                    className="group flex min-h-[260px] flex-col justify-between rounded-3xl border border-white/10 bg-white/[0.045] p-6 shadow-2xl shadow-black/20 transition hover:-translate-y-1 hover:border-red-700/60 hover:bg-white/[0.075]"
                   >
                     <div>
-                      <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-950 text-white shadow-lg shadow-slate-950/15">
+                      <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl border border-red-900/45 bg-red-950/35 text-red-200 shadow-lg shadow-black/20">
                         <Icon className="h-5 w-5" />
                       </div>
-                      <h3 className="text-xl font-black text-slate-950">
+                      <h3 className="text-xl font-black text-white">
                         {item.title}
                       </h3>
-                      <p className="mt-3 text-sm leading-7 text-slate-600">
+                      <p className="mt-3 text-sm leading-7 text-zinc-300">
                         {item.text}
                       </p>
                     </div>
                     <Link
                       href={item.href}
                       aria-label={`${item.action}: ${item.title}`}
-                      className="mt-6 inline-flex items-center gap-2 text-sm font-black text-red-700 transition group-hover:text-red-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+                      className="mt-6 inline-flex items-center gap-2 text-sm font-black text-red-300 transition group-hover:text-red-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
                     >
                       {item.action}
                       <ArrowRight className="h-4 w-4" />
@@ -4029,19 +4029,19 @@ export default function HomePage() {
         </div>
       </AnimatedSection>
 
-      <AnimatedSection id="professional-file-service-comparison" className="bg-slate-50 py-20">
+      <AnimatedSection id="professional-file-service-comparison" className="bg-[#07090d] py-20 text-white">
         <div className="mx-auto max-w-7xl px-4">
           <div className="mb-10 grid gap-6 lg:grid-cols-[0.8fr_1.2fr] lg:items-end">
             <div>
-              <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-slate-700">
+              <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-3 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-zinc-200">
                 <ShieldCheck className="h-4 w-4 text-red-700" />
                 Professional File Service Standard
               </div>
-              <h2 className="mt-5 text-4xl font-black leading-tight text-slate-950 md:text-5xl">
+              <h2 className="mt-5 text-4xl font-black leading-tight text-white md:text-5xl">
                 More than a basic file handoff.
               </h2>
             </div>
-            <p className="max-w-3xl text-sm leading-7 text-slate-600 lg:justify-self-end">
+            <p className="max-w-3xl text-sm leading-7 text-zinc-300 lg:justify-self-end">
               Customers searching for a professional ECU file service need to
               know what makes the workflow controlled, traceable and easy to
               prepare. This comparison explains the MG AutoTech process without
@@ -4049,32 +4049,32 @@ export default function HomePage() {
             </p>
           </div>
 
-          <div className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-xl shadow-slate-950/5">
-            <div className="hidden grid-cols-[0.75fr_1fr_1fr_0.35fr] gap-4 border-b border-slate-200 bg-slate-950 px-5 py-4 text-xs font-black uppercase tracking-[0.16em] text-slate-400 lg:grid">
+          <div className="overflow-hidden rounded-[2rem] border border-white/10 bg-white/[0.045] shadow-2xl shadow-black/20">
+            <div className="hidden grid-cols-[0.75fr_1fr_1fr_0.35fr] gap-4 border-b border-white/10 bg-black/35 px-5 py-4 text-xs font-black uppercase tracking-[0.16em] text-zinc-400 lg:grid">
               <div>Trust signal</div>
               <div>Without structure</div>
               <div>MG AutoTech workflow</div>
               <div className="text-right">Route</div>
             </div>
 
-            <div className="divide-y divide-slate-200">
+            <div className="divide-y divide-white/10">
               {fileServiceTrustComparison.map((item) => {
                 const Icon = item.icon;
 
                 return (
                   <article
                     key={item.title}
-                    className="grid gap-5 px-5 py-6 transition hover:bg-red-50/40 lg:grid-cols-[0.75fr_1fr_1fr_0.35fr] lg:items-start"
+                    className="grid gap-5 px-5 py-6 transition hover:bg-white/[0.04] lg:grid-cols-[0.75fr_1fr_1fr_0.35fr] lg:items-start"
                   >
                     <div className="flex items-start gap-3">
                       <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-red-700 text-white shadow-lg shadow-red-950/15">
                         <Icon className="h-5 w-5" />
                       </div>
                       <div>
-                        <div className="text-xs font-black uppercase tracking-[0.14em] text-red-700">
+                        <div className="text-xs font-black uppercase tracking-[0.14em] text-red-300">
                           Trust signal
                         </div>
-                        <h3 className="mt-1 text-lg font-black leading-tight text-slate-950">
+                        <h3 className="mt-1 text-lg font-black leading-tight text-white">
                           {item.title}
                         </h3>
                       </div>
@@ -4083,7 +4083,7 @@ export default function HomePage() {
                       <div className="mb-2 text-xs font-black uppercase tracking-[0.14em] text-slate-400 lg:hidden">
                         Without structure
                       </div>
-                      <p className="text-sm leading-7 text-slate-500">
+                        <p className="text-sm leading-7 text-zinc-400">
                         {item.typical}
                       </p>
                     </div>
@@ -4091,14 +4091,14 @@ export default function HomePage() {
                       <div className="mb-2 text-xs font-black uppercase tracking-[0.14em] text-slate-400 lg:hidden">
                         MG AutoTech workflow
                       </div>
-                      <p className="text-sm font-semibold leading-7 text-slate-700">
+                        <p className="text-sm font-semibold leading-7 text-zinc-200">
                         {item.text}
                       </p>
                     </div>
                     <Link
                       href={item.href}
                       aria-label={`${item.action}: ${item.title}`}
-                      className="inline-flex items-center justify-between rounded-2xl border border-slate-200 px-4 py-3 text-sm font-black text-slate-950 transition hover:border-red-200 hover:bg-white hover:text-red-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 lg:justify-end"
+                      className="inline-flex items-center justify-between rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm font-black text-white transition hover:border-red-700/60 hover:bg-red-950/25 hover:text-red-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 lg:justify-end"
                     >
                       <span className="lg:hidden">{item.action}</span>
                       <ArrowRight className="h-4 w-4" />
@@ -4110,13 +4110,13 @@ export default function HomePage() {
           </div>
 
           <div className="mt-6 grid gap-4 md:grid-cols-[1fr_0.8fr]">
-            <div className="rounded-3xl border border-slate-200 bg-white p-5 text-sm leading-7 text-slate-600">
-              <span className="font-black text-slate-950">Comparison boundary:</span>{" "}
+            <div className="rounded-3xl border border-white/10 bg-white/[0.045] p-5 text-sm leading-7 text-zinc-300">
+              <span className="font-black text-white">Comparison boundary:</span>{" "}
               this section explains public workflow standards only. It does not
               open account data, inspect customer files, make technical changes
               or create deliverable files.
             </div>
-            <div className="rounded-3xl border border-red-100 bg-red-50 p-5 text-sm leading-7 text-red-950">
+            <div className="rounded-3xl border border-red-900/45 bg-red-950/25 p-5 text-sm leading-7 text-red-100">
               <span className="font-black">SEO purpose:</span> answer the
               professional file service search intent with visible, customer-safe
               process signals instead of duplicate doorway pages.
@@ -4193,19 +4193,19 @@ export default function HomePage() {
         </div>
       </AnimatedSection>
 
-      <AnimatedSection id="file-service-myth-checks" className="bg-white py-20">
+      <AnimatedSection id="file-service-myth-checks" className="bg-[#050607] py-20 text-white">
         <div className="mx-auto max-w-7xl px-4">
           <div className="mb-10 grid gap-6 lg:grid-cols-[0.8fr_1.2fr] lg:items-end">
             <div>
-              <div className="inline-flex items-center gap-2 rounded-full border border-red-100 bg-red-50 px-3 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-red-700">
+              <div className="inline-flex items-center gap-2 rounded-full border border-red-900/50 bg-red-950/30 px-3 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-red-200">
                 <ShieldCheck className="h-4 w-4" />
                 File Service Reality Check
               </div>
-              <h2 className="mt-5 text-4xl font-black leading-tight text-slate-950 md:text-5xl">
+              <h2 className="mt-5 text-4xl font-black leading-tight text-white md:text-5xl">
                 Clear answers before the wrong expectation starts.
               </h2>
             </div>
-            <p className="max-w-3xl text-sm leading-7 text-slate-600 lg:justify-self-end">
+            <p className="max-w-3xl text-sm leading-7 text-zinc-300 lg:justify-self-end">
               Many file-service searches start with incomplete assumptions. This
               section turns common misunderstandings into practical next steps
               without opening private account or technical handling details.
@@ -4219,29 +4219,29 @@ export default function HomePage() {
               return (
                 <article
                   key={item.myth}
-                  className="group grid gap-5 rounded-3xl border border-slate-200 bg-slate-50 p-6 transition hover:-translate-y-1 hover:border-red-200 hover:bg-white hover:shadow-xl hover:shadow-red-950/10 md:grid-cols-[0.28fr_1fr]"
+                  className="group grid gap-5 rounded-3xl border border-white/10 bg-white/[0.045] p-6 transition hover:-translate-y-1 hover:border-red-700/60 hover:bg-white/[0.075] hover:shadow-2xl hover:shadow-black/20 md:grid-cols-[0.28fr_1fr]"
                 >
                   <div className="flex items-start justify-between gap-3 md:block">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-950 text-white shadow-lg shadow-slate-950/15">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-red-900/45 bg-red-950/35 text-red-200 shadow-lg shadow-black/20">
                       <Icon className="h-5 w-5" />
                     </div>
-                    <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-slate-500 md:mt-5 md:inline-flex">
+                    <span className="rounded-full border border-white/10 bg-black/30 px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-zinc-300 md:mt-5 md:inline-flex">
                       Myth
                     </span>
                   </div>
 
                   <div>
-                    <h3 className="text-xl font-black leading-tight text-slate-950">
+                    <h3 className="text-xl font-black leading-tight text-white">
                       {item.myth}
                     </h3>
-                    <p className="mt-3 text-sm leading-7 text-slate-600">
-                      <span className="font-black text-red-700">Reality:</span>{" "}
+                    <p className="mt-3 text-sm leading-7 text-zinc-300">
+                      <span className="font-black text-red-300">Reality:</span>{" "}
                       {item.fact}
                     </p>
                     <Link
                       href={item.href}
                       aria-label={`${item.action}: ${item.myth}`}
-                      className="mt-5 inline-flex items-center gap-2 text-sm font-black text-red-700 transition group-hover:text-red-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+                      className="mt-5 inline-flex items-center gap-2 text-sm font-black text-red-300 transition group-hover:text-red-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
                     >
                       {item.action}
                       <ArrowRight className="h-4 w-4" />
@@ -4252,8 +4252,8 @@ export default function HomePage() {
             })}
           </div>
 
-          <div className="mt-6 rounded-3xl border border-slate-200 bg-slate-50 p-5 text-sm leading-7 text-slate-600">
-            <span className="font-black text-slate-950">Reality-check boundary:</span>{" "}
+          <div className="mt-6 rounded-3xl border border-white/10 bg-white/[0.045] p-5 text-sm leading-7 text-zinc-300">
+            <span className="font-black text-white">Reality-check boundary:</span>{" "}
             this section corrects public expectations only. It does not inspect
             files, start account handling, change orders or create deliverable
             files.
@@ -4489,11 +4489,11 @@ export default function HomePage() {
         </div>
       </AnimatedSection>
 
-      <AnimatedSection id="file-service-brief-requirements" className="bg-[#f6f8fb] py-20 text-[#111827]">
+      <AnimatedSection id="file-service-brief-requirements" className="bg-[#07090d] py-20 text-white">
         <div className="mx-auto max-w-7xl px-4">
           <div className="mb-10 grid gap-6 lg:grid-cols-[0.78fr_1.22fr] lg:items-end">
             <div>
-              <div className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-3 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-slate-600">
+              <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-3 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-zinc-200">
                 <BadgeCheck className="h-4 w-4 text-red-700" />
                 File Service Brief Requirements
               </div>
@@ -4501,7 +4501,7 @@ export default function HomePage() {
                 A stronger ECU or TCU file-service result starts with a stronger request brief.
               </h2>
             </div>
-            <p className="max-w-3xl text-sm leading-7 text-slate-600 lg:justify-self-end">
+            <p className="max-w-3xl text-sm leading-7 text-zinc-300 lg:justify-self-end">
               The best online file-service workflow is not a blind file drop.
               MG AutoTech guides workshops to prepare the vehicle, controller,
               service and file context before moving into the secure customer
@@ -4514,23 +4514,23 @@ export default function HomePage() {
               <Link
                 key={item.title}
                 href={item.href}
-                className="group flex min-h-64 flex-col rounded-3xl border border-slate-200 bg-white p-6 shadow-sm shadow-slate-200/70 transition duration-300 hover:-translate-y-1 hover:border-red-200 hover:shadow-lg hover:shadow-red-950/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-700"
+                className="group flex min-h-64 flex-col rounded-3xl border border-white/10 bg-white/[0.045] p-6 shadow-2xl shadow-black/20 transition duration-300 hover:-translate-y-1 hover:border-red-700/60 hover:bg-white/[0.075] focus:outline-none focus-visible:ring-2 focus-visible:ring-red-700"
               >
                 <div className="mb-5 flex items-start justify-between gap-4">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-red-100 bg-red-50 text-red-700">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-red-900/45 bg-red-950/35 text-red-200">
                     <FileCode2 className="h-6 w-6" />
                   </div>
-                  <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-slate-500">
+                  <span className="rounded-full border border-white/10 bg-black/30 px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-zinc-300">
                     {item.tag}
                   </span>
                 </div>
-                <h3 className="text-xl font-black text-slate-950">
+                <h3 className="text-xl font-black text-white">
                   {item.title}
                 </h3>
-                <p className="mt-3 flex-1 text-sm leading-7 text-slate-600">
+                <p className="mt-3 flex-1 text-sm leading-7 text-zinc-300">
                   {item.text}
                 </p>
-                <div className="mt-6 inline-flex items-center text-sm font-black text-red-700 transition group-hover:text-red-900">
+                <div className="mt-6 inline-flex items-center text-sm font-black text-red-300 transition group-hover:text-red-100">
                   {item.action}
                   <ArrowRight className="ml-2 h-4 w-4 transition group-hover:translate-x-1" />
                 </div>
@@ -4538,8 +4538,8 @@ export default function HomePage() {
             ))}
           </div>
 
-          <div className="mt-6 rounded-3xl border border-slate-200 bg-white p-5 text-sm leading-7 text-slate-600">
-            <span className="font-black text-slate-950">Customer-safe boundary:</span>{" "}
+          <div className="mt-6 rounded-3xl border border-white/10 bg-white/[0.045] p-5 text-sm leading-7 text-zinc-300">
+            <span className="font-black text-white">Customer-safe boundary:</span>{" "}
             this checklist prepares the request only. It does not request a file
             on the homepage, inspect file contents, expose private storage data
             or create ECU/TCU outputs.
@@ -4608,19 +4608,19 @@ export default function HomePage() {
         </div>
       </AnimatedSection>
 
-      <AnimatedSection id="file-service-outcome-preview" className="bg-[#eef1f4] py-20 text-[#111827]">
+      <AnimatedSection id="file-service-outcome-preview" className="bg-[#050607] py-20 text-white">
         <div className="mx-auto max-w-7xl px-4">
           <div className="mb-10 grid gap-6 lg:grid-cols-[0.85fr_1.15fr] lg:items-end">
             <div>
-              <div className="inline-flex items-center gap-2 rounded-full border border-red-200 bg-white px-3 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-red-700 shadow-sm">
+              <div className="inline-flex items-center gap-2 rounded-full border border-red-900/50 bg-red-950/30 px-3 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-red-200 shadow-sm">
                 <ShieldCheck className="h-4 w-4" />
                 File Service Outcome Preview
               </div>
-              <h2 className="mt-5 max-w-3xl text-4xl font-black leading-tight text-slate-950 md:text-5xl">
+              <h2 className="mt-5 max-w-3xl text-4xl font-black leading-tight text-white md:text-5xl">
                 Customers should always know what happens after a secure ECU or TCU file-service request.
               </h2>
             </div>
-            <p className="max-w-3xl text-sm leading-7 text-slate-600 lg:justify-self-end">
+            <p className="max-w-3xl text-sm leading-7 text-zinc-300 lg:justify-self-end">
               This preview explains the customer-visible operating model after
               secure submission. It is not a public upload area and does not
               expose internal review data.
@@ -4635,23 +4635,23 @@ export default function HomePage() {
                 <Link
                   key={item.title}
                   href={item.href}
-                  className="group flex min-h-72 flex-col rounded-3xl border border-slate-200 bg-white p-6 shadow-sm shadow-slate-200/70 transition duration-300 hover:-translate-y-1 hover:border-red-200 hover:shadow-lg hover:shadow-red-950/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-700"
+                  className="group flex min-h-72 flex-col rounded-3xl border border-white/10 bg-white/[0.045] p-6 shadow-2xl shadow-black/20 transition duration-300 hover:-translate-y-1 hover:border-red-700/60 hover:bg-white/[0.075] focus:outline-none focus-visible:ring-2 focus-visible:ring-red-700"
                 >
                   <div className="mb-5 flex items-start justify-between gap-4">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-red-100 bg-red-50 text-red-700">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-red-900/45 bg-red-950/35 text-red-200">
                       <Icon className="h-6 w-6" />
                     </div>
-                    <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-slate-500">
+                    <span className="rounded-full border border-white/10 bg-black/30 px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-zinc-300">
                       {item.tag}
                     </span>
                   </div>
-                  <h3 className="text-xl font-black text-slate-950">
+                  <h3 className="text-xl font-black text-white">
                     {item.title}
                   </h3>
-                  <p className="mt-3 flex-1 text-sm leading-7 text-slate-600">
+                  <p className="mt-3 flex-1 text-sm leading-7 text-zinc-300">
                     {item.text}
                   </p>
-                  <div className="mt-6 inline-flex items-center text-sm font-black text-red-700 transition group-hover:text-red-900">
+                  <div className="mt-6 inline-flex items-center text-sm font-black text-red-300 transition group-hover:text-red-100">
                     {item.action}
                     <ArrowRight className="ml-2 h-4 w-4 transition group-hover:translate-x-1" />
                   </div>
@@ -4660,8 +4660,8 @@ export default function HomePage() {
             })}
           </div>
 
-          <div className="mt-6 rounded-3xl border border-slate-200 bg-white p-5 text-sm leading-7 text-slate-600 shadow-sm shadow-slate-200/70">
-            <span className="font-black text-slate-950">Customer-visible boundary:</span>{" "}
+          <div className="mt-6 rounded-3xl border border-white/10 bg-white/[0.045] p-5 text-sm leading-7 text-zinc-300 shadow-2xl shadow-black/20">
+            <span className="font-black text-white">Customer-visible boundary:</span>{" "}
             this preview does not expose order records, internal notes, file
             paths, binary data, private review metadata or generated ECU/TCU
             outputs.
@@ -4669,11 +4669,11 @@ export default function HomePage() {
         </div>
       </AnimatedSection>
 
-      <AnimatedSection id="file-service-status-guide" className="bg-white py-20 text-slate-950">
+      <AnimatedSection id="file-service-status-guide" className="bg-[#07090d] py-20 text-white">
         <div className="mx-auto max-w-7xl px-4">
           <div className="mb-10 grid gap-6 lg:grid-cols-[0.78fr_1.22fr] lg:items-end">
             <div>
-              <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-slate-600">
+              <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-3 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-zinc-200">
                 <Clock3 className="h-4 w-4 text-red-700" />
                 File Service Status Guide
               </div>
@@ -4681,7 +4681,7 @@ export default function HomePage() {
                 Clear status language keeps ECU and TCU file-service tracking understandable.
               </h2>
             </div>
-            <p className="max-w-3xl text-sm leading-7 text-slate-600 lg:justify-self-end">
+            <p className="max-w-3xl text-sm leading-7 text-zinc-300 lg:justify-self-end">
               Customers should not need to guess what a file-service status
               means. This guide explains the public meaning of common request
               states while private order data stays inside the authenticated
@@ -4697,31 +4697,31 @@ export default function HomePage() {
                 <Link
                   key={item.title}
                   href={item.href}
-                  className="group grid gap-5 rounded-3xl border border-slate-200 bg-slate-50 p-6 transition duration-300 hover:-translate-y-1 hover:border-red-200 hover:bg-white hover:shadow-lg hover:shadow-red-950/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-700 sm:grid-cols-[auto_1fr]"
+                  className="group grid gap-5 rounded-3xl border border-white/10 bg-white/[0.045] p-6 transition duration-300 hover:-translate-y-1 hover:border-red-700/60 hover:bg-white/[0.075] hover:shadow-2xl hover:shadow-black/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-700 sm:grid-cols-[auto_1fr]"
                 >
                   <div className="flex items-start gap-4 sm:block">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-red-100 bg-white text-red-700">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-red-900/45 bg-red-950/35 text-red-200">
                       <Icon className="h-6 w-6" />
                     </div>
                     <div className="mt-0 sm:mt-4">
-                      <span className="inline-flex rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-slate-500">
+                      <span className="inline-flex rounded-full border border-white/10 bg-black/30 px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-zinc-300">
                         Step {index + 1}
                       </span>
                     </div>
                   </div>
                   <div>
                     <div className="flex flex-wrap items-center gap-3">
-                      <h3 className="text-xl font-black text-slate-950">
+                      <h3 className="text-xl font-black text-white">
                         {item.title}
                       </h3>
-                      <span className="rounded-full bg-red-50 px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-red-700">
+                      <span className="rounded-full border border-red-900/45 bg-red-950/30 px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-red-200">
                         {item.tag}
                       </span>
                     </div>
-                    <p className="mt-3 text-sm leading-7 text-slate-600">
+                    <p className="mt-3 text-sm leading-7 text-zinc-300">
                       {item.text}
                     </p>
-                    <div className="mt-5 inline-flex items-center text-sm font-black text-red-700 transition group-hover:text-red-900">
+                    <div className="mt-5 inline-flex items-center text-sm font-black text-red-300 transition group-hover:text-red-100">
                       {item.action}
                       <ArrowRight className="ml-2 h-4 w-4 transition group-hover:translate-x-1" />
                     </div>
@@ -4731,8 +4731,8 @@ export default function HomePage() {
             })}
           </div>
 
-          <div className="mt-6 rounded-3xl border border-slate-200 bg-slate-50 p-5 text-sm leading-7 text-slate-600">
-            <span className="font-black text-slate-950">Status privacy boundary:</span>{" "}
+          <div className="mt-6 rounded-3xl border border-white/10 bg-white/[0.045] p-5 text-sm leading-7 text-zinc-300">
+            <span className="font-black text-white">Status privacy boundary:</span>{" "}
             this guide explains meanings only. It does not expose live order
             state, customer messages, internal workflow notes, file paths,
             binary data or delivery assets.
@@ -4802,11 +4802,11 @@ export default function HomePage() {
         </div>
       </AnimatedSection>
 
-      <AnimatedSection id="file-service-use-cases" className="bg-white py-20 text-[#111827]">
+      <AnimatedSection id="file-service-use-cases" className="bg-[#050607] py-20 text-white">
         <div className="mx-auto max-w-7xl px-4">
           <div className="mb-10 grid gap-6 lg:grid-cols-[0.82fr_1.18fr] lg:items-end">
             <div>
-              <div className="inline-flex items-center gap-2 rounded-full border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-red-700">
+              <div className="inline-flex items-center gap-2 rounded-full border border-red-900/50 bg-red-950/30 px-3 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-red-200">
                 <Sparkles className="h-4 w-4" />
                 File Service Use Case Library
               </div>
@@ -4814,7 +4814,7 @@ export default function HomePage() {
                 Match the workshop situation to the right file-service route.
               </h2>
             </div>
-            <p className="max-w-3xl text-sm leading-7 text-slate-600 lg:justify-self-end">
+            <p className="max-w-3xl text-sm leading-7 text-zinc-300 lg:justify-self-end">
               A strong file-service page should answer the real search intent
               behind each request type. These use cases help customers choose
               the correct public guide before moving into the secure portal.
@@ -4829,27 +4829,27 @@ export default function HomePage() {
                 <Link
                   key={item.title}
                   href={item.href}
-                  className="group flex min-h-72 flex-col rounded-3xl border border-slate-200 bg-slate-50 p-6 transition duration-300 hover:-translate-y-1 hover:border-red-200 hover:bg-white hover:shadow-lg hover:shadow-red-950/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-700"
+                  className="group flex min-h-72 flex-col rounded-3xl border border-white/10 bg-white/[0.045] p-6 transition duration-300 hover:-translate-y-1 hover:border-red-700/60 hover:bg-white/[0.075] hover:shadow-2xl hover:shadow-black/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-700"
                 >
                   <div className="mb-6 flex items-start justify-between gap-4">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-red-100 bg-white text-red-700 shadow-sm shadow-red-950/5">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-red-900/45 bg-red-950/35 text-red-200 shadow-sm shadow-black/20">
                       <Icon className="h-6 w-6" />
                     </div>
-                    <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-slate-500">
+                    <span className="rounded-full border border-white/10 bg-black/30 px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-zinc-300">
                       {item.tag}
                     </span>
                   </div>
-                  <h3 className="text-xl font-black text-[#111827]">
+                  <h3 className="text-xl font-black text-white">
                     {item.title}
                   </h3>
-                  <p className="mt-3 flex-1 text-sm leading-7 text-slate-600">
+                  <p className="mt-3 flex-1 text-sm leading-7 text-zinc-300">
                     {item.text}
                   </p>
-                  <div className="mt-6 border-t border-slate-200 pt-5">
-                    <div className="text-xs font-black uppercase tracking-[0.16em] text-slate-400">
+                  <div className="mt-6 border-t border-white/10 pt-5">
+                    <div className="text-xs font-black uppercase tracking-[0.16em] text-zinc-500">
                       {item.searchIntent}
                     </div>
-                    <div className="mt-3 inline-flex items-center text-sm font-black text-red-700 transition group-hover:text-red-800">
+                    <div className="mt-3 inline-flex items-center text-sm font-black text-red-300 transition group-hover:text-red-100">
                       {item.action}
                       <ArrowRight className="ml-2 h-4 w-4 transition group-hover:translate-x-1" />
                     </div>
@@ -4859,8 +4859,8 @@ export default function HomePage() {
             })}
           </div>
 
-          <div className="mt-6 rounded-3xl border border-slate-200 bg-slate-50 p-5 text-sm leading-7 text-slate-600">
-            <span className="font-black text-[#111827]">Use-case boundary:</span>{" "}
+          <div className="mt-6 rounded-3xl border border-white/10 bg-white/[0.045] p-5 text-sm leading-7 text-zinc-300">
+            <span className="font-black text-white">Use-case boundary:</span>{" "}
             this library is public routing guidance only. It does not inspect
             customer files, create requests, start upload actions or modify
             files.
@@ -4868,11 +4868,11 @@ export default function HomePage() {
         </div>
       </AnimatedSection>
 
-      <AnimatedSection id="file-service-quality-signals" className="bg-[#f8fafc] py-20 text-[#111827]">
+      <AnimatedSection id="file-service-quality-signals" className="bg-[#07090d] py-20 text-white">
         <div className="mx-auto max-w-7xl px-4">
           <div className="mb-10 grid gap-6 lg:grid-cols-[0.78fr_1.22fr] lg:items-end">
             <div>
-              <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-red-700 shadow-sm shadow-red-950/5">
+              <div className="inline-flex items-center gap-2 rounded-full border border-red-900/50 bg-red-950/30 px-3 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-red-200 shadow-sm shadow-red-950/20">
                 <ShieldCheck className="h-4 w-4" />
                 File Service Quality Signals
               </div>
@@ -4880,7 +4880,7 @@ export default function HomePage() {
                 Better request quality means faster, clearer file-service review.
               </h2>
             </div>
-            <p className="max-w-3xl text-sm leading-7 text-slate-600 lg:justify-self-end">
+            <p className="max-w-3xl text-sm leading-7 text-zinc-300 lg:justify-self-end">
               A professional ECU or TCU file-service request is easier to review
               when the customer prepares the right context first. These signals
               explain what improves review clarity before secure submission.
@@ -4895,27 +4895,27 @@ export default function HomePage() {
                 <Link
                   key={item.title}
                   href={item.href}
-                  className="group flex min-h-72 flex-col rounded-3xl border border-slate-200 bg-white p-6 shadow-sm shadow-slate-950/5 transition duration-300 hover:-translate-y-1 hover:border-red-200 hover:shadow-lg hover:shadow-red-950/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-700"
+                  className="group flex min-h-72 flex-col rounded-3xl border border-white/10 bg-white/[0.045] p-6 shadow-2xl shadow-black/20 transition duration-300 hover:-translate-y-1 hover:border-red-700/60 hover:bg-white/[0.075] focus:outline-none focus-visible:ring-2 focus-visible:ring-red-700"
                 >
                   <div className="mb-6 flex items-start justify-between gap-4">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#111827] text-white">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-red-900/45 bg-red-950/35 text-red-200">
                       <Icon className="h-6 w-6" />
                     </div>
-                    <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-slate-500">
+                    <span className="rounded-full border border-white/10 bg-black/30 px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-zinc-300">
                       {item.tag}
                     </span>
                   </div>
-                  <h3 className="text-xl font-black text-[#111827]">
+                  <h3 className="text-xl font-black text-white">
                     {item.title}
                   </h3>
-                  <p className="mt-3 flex-1 text-sm leading-7 text-slate-600">
+                  <p className="mt-3 flex-1 text-sm leading-7 text-zinc-300">
                     {item.text}
                   </p>
-                  <div className="mt-6 flex items-center justify-between gap-3 border-t border-slate-200 pt-5">
-                    <span className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">
+                  <div className="mt-6 flex items-center justify-between gap-3 border-t border-white/10 pt-5">
+                    <span className="text-xs font-bold uppercase tracking-[0.16em] text-zinc-500">
                       {item.searchIntent}
                     </span>
-                    <span className="inline-flex items-center text-sm font-black text-red-700 transition group-hover:text-red-800">
+                    <span className="inline-flex items-center text-sm font-black text-red-300 transition group-hover:text-red-100">
                       {item.action}
                       <ArrowRight className="ml-2 h-4 w-4 transition group-hover:translate-x-1" />
                     </span>
@@ -4925,8 +4925,8 @@ export default function HomePage() {
             })}
           </div>
 
-          <div className="mt-6 rounded-3xl border border-slate-200 bg-white p-5 text-sm leading-7 text-slate-600 shadow-sm shadow-slate-950/5">
-            <span className="font-black text-[#111827]">Quality-signal boundary:</span>{" "}
+          <div className="mt-6 rounded-3xl border border-white/10 bg-white/[0.045] p-5 text-sm leading-7 text-zinc-300 shadow-2xl shadow-black/20">
+            <span className="font-black text-white">Quality-signal boundary:</span>{" "}
             this section is public preparation guidance only. It does not score
             customer files, inspect uploaded content, approve learning evidence,
             generate files or change file integrity data.
@@ -4934,11 +4934,11 @@ export default function HomePage() {
         </div>
       </AnimatedSection>
 
-      <AnimatedSection id="file-service-workshop-profiles" className="bg-white py-20 text-[#111827]">
+      <AnimatedSection id="file-service-workshop-profiles" className="bg-[#050607] py-20 text-white">
         <div className="mx-auto max-w-7xl px-4">
           <div className="mb-10 grid gap-6 lg:grid-cols-[0.78fr_1.22fr] lg:items-end">
             <div>
-              <div className="inline-flex items-center gap-2 rounded-full border border-red-100 bg-red-50 px-3 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-red-700">
+              <div className="inline-flex items-center gap-2 rounded-full border border-red-900/50 bg-red-950/30 px-3 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-red-200">
                 <BadgeCheck className="h-4 w-4" />
                 Workshop File Service Profiles
               </div>
@@ -4946,7 +4946,7 @@ export default function HomePage() {
                 Different workshop teams need different file-service entry points.
               </h2>
             </div>
-            <p className="max-w-3xl text-sm leading-7 text-slate-600 lg:justify-self-end">
+            <p className="max-w-3xl text-sm leading-7 text-zinc-300 lg:justify-self-end">
               Performance shops, diagnostic workshops and transmission
               specialists should not land on the same vague path. These public
               profiles route each customer type to the safest preparation page
@@ -4962,27 +4962,27 @@ export default function HomePage() {
                 <Link
                   key={item.title}
                   href={item.href}
-                  className="group flex min-h-72 flex-col rounded-3xl border border-slate-200 bg-[#f8fafc] p-6 shadow-sm shadow-slate-950/5 transition duration-300 hover:-translate-y-1 hover:border-red-200 hover:bg-white hover:shadow-lg hover:shadow-red-950/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-700"
+                  className="group flex min-h-72 flex-col rounded-3xl border border-white/10 bg-white/[0.045] p-6 shadow-2xl shadow-black/20 transition duration-300 hover:-translate-y-1 hover:border-red-700/60 hover:bg-white/[0.075] focus:outline-none focus-visible:ring-2 focus-visible:ring-red-700"
                 >
                   <div className="mb-6 flex items-start justify-between gap-4">
                     <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-red-700 text-white shadow-sm shadow-red-950/20">
                       <Icon className="h-6 w-6" />
                     </div>
-                    <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-slate-500">
+                    <span className="rounded-full border border-white/10 bg-black/30 px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-zinc-300">
                       {item.tag}
                     </span>
                   </div>
-                  <h3 className="text-xl font-black text-[#111827]">
+                  <h3 className="text-xl font-black text-white">
                     {item.title}
                   </h3>
-                  <p className="mt-3 flex-1 text-sm leading-7 text-slate-600">
+                  <p className="mt-3 flex-1 text-sm leading-7 text-zinc-300">
                     {item.text}
                   </p>
-                  <div className="mt-6 flex items-center justify-between gap-3 border-t border-slate-200 pt-5">
-                    <span className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">
+                  <div className="mt-6 flex items-center justify-between gap-3 border-t border-white/10 pt-5">
+                    <span className="text-xs font-bold uppercase tracking-[0.16em] text-zinc-500">
                       {item.searchIntent}
                     </span>
-                    <span className="inline-flex items-center text-sm font-black text-red-700 transition group-hover:text-red-800">
+                    <span className="inline-flex items-center text-sm font-black text-red-300 transition group-hover:text-red-100">
                       {item.action}
                       <ArrowRight className="ml-2 h-4 w-4 transition group-hover:translate-x-1" />
                     </span>
@@ -4992,8 +4992,8 @@ export default function HomePage() {
             })}
           </div>
 
-          <div className="mt-6 rounded-3xl border border-red-100 bg-red-50/70 p-5 text-sm leading-7 text-slate-700">
-            <span className="font-black text-[#111827]">Workshop-profile boundary:</span>{" "}
+          <div className="mt-6 rounded-3xl border border-red-900/45 bg-red-950/20 p-5 text-sm leading-7 text-zinc-300">
+            <span className="font-black text-white">Workshop-profile boundary:</span>{" "}
             this section is public routing guidance only. It does not create
             requests, inspect customer files, expose customer records, change
             payments or deliver files.
@@ -5091,11 +5091,11 @@ export default function HomePage() {
         </div>
       </AnimatedSection>
 
-      <AnimatedSection id="file-service-decision-matrix" className="bg-[#eef1f4] py-20 text-[#111827]">
+      <AnimatedSection id="file-service-decision-matrix" className="bg-[#07090d] py-20 text-white">
         <div className="mx-auto max-w-7xl px-4">
           <div className="mb-10 grid gap-6 lg:grid-cols-[0.82fr_1.18fr] lg:items-end">
             <div>
-              <div className="inline-flex items-center gap-2 rounded-full border border-red-200 bg-white px-3 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-red-700">
+              <div className="inline-flex items-center gap-2 rounded-full border border-red-900/50 bg-red-950/30 px-3 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-red-200">
                 <BadgeCheck className="h-4 w-4" />
                 File Service Decision Matrix
               </div>
@@ -5103,7 +5103,7 @@ export default function HomePage() {
                 Choose the right file-service route in seconds.
               </h2>
             </div>
-            <p className="max-w-3xl text-sm leading-7 text-zinc-600 lg:justify-self-end">
+            <p className="max-w-3xl text-sm leading-7 text-zinc-300 lg:justify-self-end">
               A strong file-service workflow starts before upload. This matrix
               turns common customer intent into the correct public page,
               required context and secure next step, without exposing any file
@@ -5111,8 +5111,8 @@ export default function HomePage() {
             </p>
           </div>
 
-          <div className="overflow-hidden rounded-[2rem] border border-zinc-200 bg-white shadow-2xl shadow-black/10">
-            <div className="grid border-b border-zinc-200 bg-zinc-50 px-5 py-4 text-xs font-black uppercase tracking-[0.14em] text-zinc-500 md:grid-cols-[0.8fr_1.15fr_1.05fr_1.25fr_auto]">
+          <div className="overflow-hidden rounded-[2rem] border border-white/10 bg-white/[0.045] shadow-2xl shadow-black/20">
+            <div className="grid border-b border-white/10 bg-black/35 px-5 py-4 text-xs font-black uppercase tracking-[0.14em] text-zinc-400 md:grid-cols-[0.8fr_1.15fr_1.05fr_1.25fr_auto]">
               <div>Search intent</div>
               <div className="hidden md:block">Customer need</div>
               <div className="hidden md:block">Best path</div>
@@ -5123,28 +5123,28 @@ export default function HomePage() {
             {fileServiceDecisionMatrix.map((item) => (
               <article
                 key={item.title}
-                className="grid gap-4 border-b border-zinc-100 px-5 py-5 last:border-b-0 md:grid-cols-[0.8fr_1.15fr_1.05fr_1.25fr_auto] md:items-center"
+                className="grid gap-4 border-b border-white/10 px-5 py-5 last:border-b-0 md:grid-cols-[0.8fr_1.15fr_1.05fr_1.25fr_auto] md:items-center"
               >
                 <div>
-                  <div className="text-lg font-black text-[#111827]">
+                  <div className="text-lg font-black text-white">
                     {item.title}
                   </div>
-                  <div className="mt-2 rounded-full border border-red-100 bg-red-50 px-3 py-1 text-xs font-black uppercase tracking-[0.12em] text-red-700 md:inline-flex">
+                  <div className="mt-2 rounded-full border border-red-900/45 bg-red-950/30 px-3 py-1 text-xs font-black uppercase tracking-[0.12em] text-red-200 md:inline-flex">
                     {item.searchIntent}
                   </div>
                 </div>
-                <p className="text-sm leading-6 text-zinc-600">
+                <p className="text-sm leading-6 text-zinc-300">
                   {item.customerNeed}
                 </p>
-                <p className="text-sm font-bold leading-6 text-zinc-800">
+                <p className="text-sm font-bold leading-6 text-zinc-100">
                   {item.bestPath}
                 </p>
-                <p className="text-sm leading-6 text-zinc-600">
+                <p className="text-sm leading-6 text-zinc-300">
                   {item.requiredContext}
                 </p>
                 <Link
                   href={item.href}
-                  className="inline-flex items-center justify-center whitespace-nowrap rounded-xl border border-zinc-200 px-4 py-3 text-sm font-black text-zinc-900 transition hover:-translate-y-0.5 hover:border-red-200 hover:bg-red-50 hover:text-red-700"
+                  className="inline-flex items-center justify-center whitespace-nowrap rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm font-black text-white transition hover:-translate-y-0.5 hover:border-red-700/60 hover:bg-red-950/25 hover:text-red-100"
                 >
                   {item.action}
                   <ArrowRight className="ml-2 h-4 w-4" />
@@ -5153,7 +5153,7 @@ export default function HomePage() {
             ))}
           </div>
 
-          <div className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-5 text-sm leading-7 text-emerald-900">
+          <div className="mt-6 rounded-2xl border border-emerald-500/20 bg-emerald-950/20 p-5 text-sm leading-7 text-emerald-100">
             <div className="flex gap-3">
               <ShieldCheck className="mt-1 h-5 w-5 shrink-0 text-emerald-700" />
               <p>
@@ -5236,18 +5236,18 @@ export default function HomePage() {
         </div>
       </AnimatedSection>
 
-      <AnimatedSection id="file-service-glossary" className="bg-[#eef1f4] py-20 text-[#111827]">
+      <AnimatedSection id="file-service-glossary" className="bg-[#050607] py-20 text-white">
         <div className="mx-auto max-w-7xl px-4">
           <div className="mb-10 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
             <div>
-              <div className="inline-flex items-center gap-2 rounded-full border border-[#111827]/10 bg-white px-3 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-[#111827] shadow-sm">
+              <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-3 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-zinc-200 shadow-sm">
                 <FileCode2 className="h-4 w-4 text-red-700" />
                 File Service Glossary
               </div>
               <h2 className="mt-5 max-w-4xl text-4xl font-black leading-tight md:text-5xl">
                 Understand the file-service terms before opening an ECU or TCU request.
               </h2>
-              <p className="mt-5 max-w-3xl text-sm leading-7 text-slate-600">
+              <p className="mt-5 max-w-3xl text-sm leading-7 text-zinc-300">
                 A cleaner request starts with shared language. These customer-safe
                 definitions explain the terms workshops and vehicle owners see
                 before preparing an online MG AutoTech file-service request.
@@ -5268,18 +5268,18 @@ export default function HomePage() {
               <Link
                 key={term.title}
                 href={term.href}
-                className="group flex min-h-64 flex-col rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition duration-300 hover:-translate-y-1 hover:border-red-200 hover:shadow-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-red-700"
+                className="group flex min-h-64 flex-col rounded-3xl border border-white/10 bg-white/[0.045] p-6 shadow-2xl shadow-black/20 transition duration-300 hover:-translate-y-1 hover:border-red-700/60 hover:bg-white/[0.075] focus:outline-none focus-visible:ring-2 focus-visible:ring-red-700"
               >
-                <span className="mb-5 inline-flex w-fit rounded-full border border-red-100 bg-red-50 px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-red-800">
+                <span className="mb-5 inline-flex w-fit rounded-full border border-red-900/45 bg-red-950/30 px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-red-200">
                   {term.tag}
                 </span>
-                <h3 className="text-xl font-black text-[#111827]">
+                <h3 className="text-xl font-black text-white">
                   {term.title}
                 </h3>
-                <p className="mt-3 flex-1 text-sm leading-7 text-slate-600">
+                <p className="mt-3 flex-1 text-sm leading-7 text-zinc-300">
                   {term.text}
                 </p>
-                <div className="mt-6 inline-flex items-center text-sm font-black text-red-800 transition group-hover:text-red-700">
+                <div className="mt-6 inline-flex items-center text-sm font-black text-red-300 transition group-hover:text-red-100">
                   Learn more
                   <ArrowRight className="ml-2 h-4 w-4 transition group-hover:translate-x-1" />
                 </div>
@@ -5287,7 +5287,7 @@ export default function HomePage() {
             ))}
           </div>
 
-          <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 text-sm leading-7 text-slate-700 shadow-sm">
+          <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.045] p-5 text-sm leading-7 text-zinc-300 shadow-2xl shadow-black/20">
             <div className="flex gap-3">
               <ShieldCheck className="mt-1 h-5 w-5 shrink-0 text-red-700" />
               <p>
@@ -5561,11 +5561,11 @@ export default function HomePage() {
         </div>
       </AnimatedSection>
 
-      <AnimatedSection className="bg-[#eef1f4] py-20 text-[#111827]">
+      <AnimatedSection className="bg-[#07090d] py-20 text-white">
         <div className="mx-auto max-w-7xl px-4">
           <div className="mb-10 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
             <div>
-              <div className="text-sm font-black uppercase tracking-[0.25em] text-red-700">
+              <div className="text-sm font-black uppercase tracking-[0.25em] text-red-300">
                 Why MG AutoTech?
               </div>
               <h2 className="mt-3 max-w-3xl text-4xl font-black md:text-5xl">
@@ -5596,13 +5596,13 @@ export default function HomePage() {
                 <motion.div
                   variants={fadeUp}
                   key={item.title}
-                  className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-xl shadow-black/5 transition duration-300 hover:-translate-y-1 hover:shadow-2xl"
+                  className="rounded-2xl border border-white/10 bg-white/[0.045] p-6 shadow-2xl shadow-black/20 transition duration-300 hover:-translate-y-1 hover:border-red-700/60 hover:bg-white/[0.075]"
                 >
-                  <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-red-50 text-red-700">
+                  <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl border border-red-900/45 bg-red-950/35 text-red-200">
                     <Icon className="h-6 w-6" />
                   </div>
                   <h3 className="text-lg font-black">{item.title}</h3>
-                  <p className="mt-3 text-sm leading-6 text-zinc-600">
+                  <p className="mt-3 text-sm leading-6 text-zinc-300">
                     {item.text}
                   </p>
                 </motion.div>
@@ -5765,10 +5765,10 @@ export default function HomePage() {
         </div>
       </AnimatedSection>
 
-      <AnimatedSection id="services" className="bg-[#eef1f4] py-20 text-[#111827]">
+      <AnimatedSection id="services" className="bg-[#050607] py-20 text-white">
         <div className="mx-auto max-w-7xl px-4">
           <div className="mb-12">
-            <div className="text-sm font-black uppercase tracking-[0.25em] text-red-700">
+            <div className="text-sm font-black uppercase tracking-[0.25em] text-red-300">
               Our Services
             </div>
             <h2 className="mt-3 max-w-3xl text-4xl font-black md:text-5xl">
@@ -5787,24 +5787,24 @@ export default function HomePage() {
               <motion.div variants={fadeUp} key={service.title}>
                 <Link
                   href={service.href}
-                  className="group flex h-full flex-col rounded-3xl bg-white p-6 shadow-xl shadow-black/5 transition duration-300 hover:-translate-y-2 hover:shadow-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-red-700"
+                  className="group flex h-full flex-col rounded-3xl border border-white/10 bg-white/[0.045] p-6 shadow-2xl shadow-black/20 transition duration-300 hover:-translate-y-2 hover:border-red-700/60 hover:bg-white/[0.075] focus:outline-none focus-visible:ring-2 focus-visible:ring-red-700"
                 >
                   <div className="mb-5 flex items-start justify-between gap-4">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-red-50 text-red-700">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-red-900/45 bg-red-950/35 text-red-200">
                       <FileCode2 />
                     </div>
-                    <span className="rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1 text-xs font-black uppercase tracking-[0.12em] text-zinc-500">
+                    <span className="rounded-full border border-white/10 bg-black/30 px-3 py-1 text-xs font-black uppercase tracking-[0.12em] text-zinc-300">
                       {service.searchIntent}
                     </span>
                   </div>
                   <h3 className="text-xl font-black">{service.title}</h3>
-                  <p className="mt-3 flex-1 text-sm leading-6 text-zinc-600">
+                  <p className="mt-3 flex-1 text-sm leading-6 text-zinc-300">
                     {service.text}
                   </p>
-                  <div className="mt-5 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-black text-red-700">
+                  <div className="mt-5 rounded-xl border border-red-900/45 bg-red-950/25 px-4 py-3 text-sm font-black text-red-100">
                     {service.credits}
                   </div>
-                  <div className="mt-5 inline-flex items-center text-sm font-black text-red-700 transition group-hover:text-red-900">
+                  <div className="mt-5 inline-flex items-center text-sm font-black text-red-300 transition group-hover:text-red-100">
                     {service.action}
                     <ArrowRight className="ml-2 h-4 w-4 transition group-hover:translate-x-1" />
                   </div>
@@ -5946,11 +5946,11 @@ export default function HomePage() {
         </div>
       </AnimatedSection>
 
-      <AnimatedSection className="bg-[#eef1f4] py-20 text-[#111827]">
+      <AnimatedSection className="bg-[#07090d] py-20 text-white">
         <div className="mx-auto max-w-7xl px-4">
           <div className="mb-10 grid gap-6 lg:grid-cols-[0.8fr_1.2fr] lg:items-end">
             <div>
-              <div className="text-sm font-black uppercase tracking-[0.25em] text-red-700">
+              <div className="text-sm font-black uppercase tracking-[0.25em] text-red-300">
                 Workshop Search Guide
               </div>
               <h2 className="mt-3 text-4xl font-black md:text-5xl">
@@ -5958,7 +5958,7 @@ export default function HomePage() {
               </h2>
             </div>
 
-            <p className="max-w-3xl text-sm leading-7 text-zinc-600">
+            <p className="max-w-3xl text-sm leading-7 text-zinc-300">
               Workshops often search for the same answers before opening a file
               request: what information is needed, when upload starts, how
               delivery works and what to do when the exact vehicle is not yet in
@@ -5970,15 +5970,15 @@ export default function HomePage() {
             {homepageSearchIntentFaq.map((item) => (
               <article
                 key={item.question}
-                className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-xl shadow-black/5"
+                className="rounded-3xl border border-white/10 bg-white/[0.045] p-6 shadow-2xl shadow-black/20"
               >
                 <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-                  <span className="rounded-full border border-red-100 bg-red-50 px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-red-700">
+                  <span className="rounded-full border border-red-900/45 bg-red-950/30 px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-red-200">
                     {item.intent}
                   </span>
                   <Link
                     href={item.href}
-                    className="inline-flex items-center rounded-full border border-zinc-200 px-3 py-1 text-xs font-black text-zinc-700 transition hover:border-red-200 hover:text-red-700"
+                    className="inline-flex items-center rounded-full border border-white/10 bg-black/20 px-3 py-1 text-xs font-black text-zinc-200 transition hover:border-red-700/60 hover:text-red-100"
                   >
                     {item.action}
                     <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
@@ -5987,14 +5987,14 @@ export default function HomePage() {
                 <h3 className="text-xl font-black leading-tight">
                   {item.question}
                 </h3>
-                <p className="mt-4 text-sm leading-7 text-zinc-600">
+                <p className="mt-4 text-sm leading-7 text-zinc-300">
                   {item.answer}
                 </p>
               </article>
             ))}
           </div>
 
-          <div className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-5 text-sm leading-7 text-emerald-900">
+          <div className="mt-6 rounded-2xl border border-emerald-500/20 bg-emerald-950/20 p-5 text-sm leading-7 text-emerald-100">
             <div className="flex gap-3">
               <ShieldCheck className="mt-1 h-5 w-5 shrink-0 text-emerald-700" />
               <p>

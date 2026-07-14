@@ -1198,6 +1198,21 @@ test("homepage exposes above-the-fold quick file service paths", () => {
   );
 });
 
+test("homepage hero typography and major SEO sections avoid overflow and white expanses", () => {
+  const homepage = readProjectFile("src", "app", "page.tsx");
+  const heroSection =
+    homepage.match(/<section id="home"[\s\S]*?<PublicVehicleChecker \/>/)?.[0] ?? "";
+
+  assert.match(heroSection, /text-\[clamp\(2\.85rem,5\.7vw,5\.35rem\)\]/);
+  assert.match(heroSection, /max-w-\[42rem\] text-balance break-words/);
+  assert.match(heroSection, /grid w-full max-w-\[42rem\] grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3/);
+  assert.doesNotMatch(heroSection, /md:text-7xl|lg:h-\[825px\]/);
+  assert.doesNotMatch(
+    homepage,
+    /<AnimatedSection[^>]*className="[^"]*(?:bg-white py-20|bg-\[#eef1f4\]|bg-\[#f8fafc\]|bg-slate-50 py-20)[^"]*"/
+  );
+});
+
 test("homepage file service navigator indexes major sections safely", () => {
   const homepage = readProjectFile("src", "app", "page.tsx");
   const navigatorSource =
@@ -2034,7 +2049,7 @@ test("homepage ECU platform library deep-links to public platform guides", () =>
   const platformSource =
     homepage.match(/const ecuPlatformLinks = \[[\s\S]*?const trustHighlights = \[/)?.[0] ?? "";
   const platformSection =
-    homepage.match(/<AnimatedSection id="ecu-platforms"[\s\S]*?<AnimatedSection className="bg-\[#eef1f4\] py-20 text-\[#111827\]">/)?.[0] ??
+    homepage.match(/<AnimatedSection id="ecu-platforms"[\s\S]*?<AnimatedSection className="bg-\[#07090d\] py-20 text-white">/)?.[0] ??
     "";
 
   assert.match(platformSource, /href: "\/ecu-platforms\/bosch-edc17"/);
