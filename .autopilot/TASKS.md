@@ -4,6 +4,44 @@
 
 ## Ready
 
+- [ ] **P1 RMAP-FILE-QUALITY-SCORE-M1-FOUNDATION - AI File Quality Score deterministic baseline and explainability foundation**
+  - Lane: AI Capability
+  - Roadmap: file-platform
+  - Epic: file-quality-score
+  - Feature: file-quality-score-m1-foundation-feature
+  - Roadmap task: RMAP-FILE-QUALITY-SCORE-M1-FOUNDATION
+  - Fingerprint: `ai-capability|file-quality-score|file-request-quality-lacks-explainable-deterministic-baseline|deterministic-quality-score-foundation`
+  - Strategic score: 36
+  - Scope class: M
+  - Expected effort: M roadmap milestone slice
+  - Business impact: 4/5
+  - User impact: 4/5
+  - Admin impact: 4/5
+  - Strategic fit: 5/5
+  - Confidence: 4/5
+  - Effort: 3/5
+  - Risk: 2/5
+  - Evidence: `.autopilot/runtime/roadmap-selection.json` selects `RMAP-FILE-QUALITY-SCORE-M1-FOUNDATION` with acceptance criteria `Deterministic baseline` and `Explainability`; product spec `C:\Users\gokka\Documents\MG-AI-OS-V4\artifacts\specs\rmap-file-quality-score-m1-foundation.md` says the milestone reduces bad submissions and rework. `Test-Path src/lib/fileQualityScore` and `Test-Path docs/file-quality-score-foundation.md` are false. Existing `src/lib/fileExpert/types.ts`, `src/lib/fileExpert/reportStatus.ts`, `src/lib/fileExpert/publicResult.ts`, `src/lib/ecuIntelligence/quality.ts`, `src/lib/aiExplain/*`, and `tests/ecu-intelligence.test.ts` provide File Expert evidence, training quality, provider/fallback/review-gate and no-leak patterns, but no reusable request/file quality-score contract.
+  - Product value: Gives admins and future customer surfaces a consistent, explainable quality/readiness baseline before bad or incomplete file-service submissions become rework, while keeping AI evidence-only and human-review gated.
+  - Selection reason: Selected Roadmap V2 P1/M task is safe, new, local-only, and higher strategic value than deferred documentation/encoding maintenance. Owner inbox has no newer request.
+  - Scope: Create a local-only `file-quality-score-v1` domain module and runbook. Score deterministic quality/readiness from existing File Expert analyzer/request evidence, metadata completeness, integrity/risk signals and review blockers. Include customer-safe and expert/admin projections. Do not add UI/API routes, DB schema/migrations, live provider calls, production analytics persistence, pricing/payment policy, MOD output, checksum approval, deploy, package install, `.env*` reads or customer-data tests.
+  - Acceptance criteria:
+    - `src/lib/fileQualityScore` exposes typed request/response helpers for deterministic quality scoring with explicit provider unavailable/error/invalid-input states and `isAiGenerated: false` for fallback output.
+    - The deterministic baseline returns a bounded score, grade/readiness, factor breakdown, evidence reasons, missing-information list, risk flags, human-review gate, safety boundaries and blocked production actions.
+    - Scoring uses only existing structured File Expert/request metadata and never raw binary bytes, hex previews, offsets, storage paths, signed URLs, hashes, filenames, customer identifiers, sample IDs or admin-only notes in customer projection.
+    - Expert/admin projection may expose factor weights, provider/fallback status and required checks, but still treats the result as review support only.
+    - Invalid or insufficient input is explicit and does not look like successful AI analysis.
+    - A runbook documents local validation, privacy boundaries and operator-only future rollout decisions.
+    - Tests cover high-quality, weak/blocked, invalid-input, provider-unavailable fallback and customer projection no-leak behavior.
+  - Validation:
+    - `.\node_modules\.bin\tsx.cmd --test tests\ecu-intelligence.test.ts`
+    - `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts`
+    - `npm run lint`
+    - `npm run typecheck`
+    - `npm test`
+    - `git diff --check`
+    - Do not run `npm run build` in no-env/no-network Codex conditions unless explicitly approved; this repo build can load local Next env files and request Google Fonts.
+
 ## In Progress
 
 ## Blocked
@@ -23,9 +61,9 @@ Kabul kriterleri:
 
 Dogrulama: Markdown diff incelemesi, `npm test` ilgili source assertion testleri.
 
-Deferred reason: Selected P1/M roadmap milestone `RMAP-FILE-AI-EXPLAIN-LAYER-M1-FOUNDATION` has higher strategic value and starts the next File Platform AI Explain Layer foundation; this is a low-priority documentation cleanup and does not unlock the selected source-label/unavailable-state boundary.
+Deferred reason: Selected P1/M roadmap milestone `RMAP-FILE-QUALITY-SCORE-M1-FOUNDATION` has higher strategic value and starts the File Platform AI File Quality Score foundation; this is a low-priority documentation cleanup and does not unlock the selected deterministic quality-score/explainability boundary.
 
-Remediation: Reconsider after the AI Explain Layer M1 milestone is accepted, or if owner explicitly asks for production smoke documentation cleanup.
+Remediation: Reconsider after the AI File Quality Score M1 milestone is accepted, or if owner explicitly asks for production smoke documentation cleanup.
 
 Expected validation command: `npm test` plus markdown diff review.
 
@@ -42,9 +80,9 @@ Kabul kriterleri:
 
 Dogrulama: Diff incelemesi, `npm run lint`, `npm run typecheck`.
 
-Deferred reason: Maintenance-only artifact cleanup is intentionally behind selected P1/M roadmap milestone `RMAP-FILE-AI-EXPLAIN-LAYER-M1-FOUNDATION` and should not consume the Ready queue while a high-impact roadmap slice is available.
+Deferred reason: Maintenance-only artifact cleanup is intentionally behind selected P1/M roadmap milestone `RMAP-FILE-QUALITY-SCORE-M1-FOUNDATION` and should not consume the Ready queue while a high-impact roadmap slice is available.
 
-Remediation: Batch with a future documentation/source-comment maintenance pass after the AI Explain Layer M1 milestone is accepted, or when no P1/P2 product or roadmap milestone is ready.
+Remediation: Batch with a future documentation/source-comment maintenance pass after the AI File Quality Score M1 milestone is accepted, or when no P1/P2 product or roadmap milestone is ready.
 
 Expected validation command: `npm run lint` and `npm run typecheck`.
 

@@ -48,6 +48,7 @@
   - Roadmap V2 selected task `RMAP-FILE-AI-TUNE-ADVISOR-M1-FOUNDATION`, AI Tune Advisor icin request/service metadata uzerinden deterministic rule fallback, provider-unavailable semantics, expert review gate ve no-MOD/no-checksum safety contract temelini local-only kurar.
   - Roadmap V2 selected task `RMAP-FILE-AI-LOG-ANALYZER-M1-FOUNDATION`, AI Log Analyzer icin log-derived summary, provider unavailable/error states, deterministic fallback, customer/expert projection boundary ve no-raw-data safety contract temelini local-only kurar.
   - Roadmap V2 selected task `RMAP-FILE-AI-EXPLAIN-LAYER-M1-FOUNDATION`, AI Explain Layer icin customer-safe source labels, explicit unavailable/provider/fallback state, recommendation explanation boundary ve expert projection temelini local-only kurar.
+  - Roadmap V2 selected task `RMAP-FILE-QUALITY-SCORE-M1-FOUNDATION`, AI File Quality Score icin deterministic quality/readiness baseline, explainable factor breakdown, customer/expert projection boundary ve no-fake-AI safety contract temelini local-only kurar.
 - Success signals:
   - Musteri, talebin gercek durumunu ve kendi aksiyon gereksinimini detay ekraninda ayri gorebilir.
   - Musteri, aksiyon bekleyen siparisi liste veya dashboard uzerinden hizlica bulabilir.
@@ -86,6 +87,7 @@
   - AI Tune Advisor foundation milestone'u, stage/eco/TCU/advanced service talepleri icin AI gibi davranmayan rule fallback, eksik evidence listesi, risk flags, required human checks ve blocked production actions sozlesmesini saglar.
   - AI Log Analyzer foundation milestone'u, mevcut browser-local log utility'den ayrilan provider-safe local contract ile log summary, uncertainty, fallback status, customer-safe projection ve expert review sinirlarini tanimlar.
   - AI Explain Layer foundation milestone'u, DTC/Tune/Log/File Expert gibi AI-assisted ciktilar icin source-labeled, customer-safe explanation contract'i ve provider-unavailable durumda fake AI uretmeyen projection boundary saglar.
+  - AI File Quality Score foundation milestone'u, File Expert/request evidence uzerinden kotu veya eksik submission riskini deterministic, aciklanabilir ve human-review gated kalite sinyaline cevirir.
   - Migration/fallback durumlarinda mutasyon aksiyonlari read-only davranir ve hata yerine acik mesaj verir.
 
 ## Owner priorities
