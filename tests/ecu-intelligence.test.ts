@@ -108,6 +108,17 @@ import {
   type LogAnalyzerRequest,
   UnavailableLogAnalyzerProvider,
 } from "../src/lib/logAnalyzer";
+import {
+  aiExplainLayerBlockedProductionActions,
+  aiExplainLayerContractVersion,
+  analyzeAiExplainRequest,
+  buildAiExplainSourceLabels,
+  hasAiExplainCustomerLeak,
+  projectAiExplainResponse,
+  type AiExplainProvider,
+  type AiExplainRequest,
+  UnavailableAiExplainProvider,
+} from "../src/lib/aiExplain";
 
 function calibrationLikeBuffer(size = 16_384) {
   const buffer = Buffer.alloc(size, 0xff);
@@ -1186,6 +1197,201 @@ test("request Log Analyzer projection separates customer and expert boundaries",
   }
   assert.match(expertSerialized, /providerStatus/);
   assert.match(expertSerialized, /blockedProductionActions/);
+});
+
+function aiExplainRequestFixture(): AiExplainRequest {
+  return {
+    surface: "dtc_analyzer",
+    subject: "request-level recommendation",
+    items: [
+      {
+        id: "dtc-evidence",
+        kind: "evidence",
+        source: "diagnostic_evidence",
+      },
+      {
+        id: "rule-recommendation",
+        kind: "recommendation",
+        source: "deterministic_rules",
+      },
+      {
+        id: "safety-risk",
+        kind: "risk_flag",
+        source: "safety_boundary",
+        requiresHumanReview: true,
+      },
+      {
+        id: "expert-review",
+        kind: "human_review_gate",
+        source: "human_review",
+        requiresHumanReview: true,
+      },
+    ],
+    context: {
+      vehiclePresent: true,
+      diagnosticEvidencePresent: true,
+      serviceMetadataPresent: true,
+    },
+    privateMetadata: {
+      customer_id: "customer-private",
+      storage_path: "customer-private/request/file.bin",
+      signed_url: "https://private.example/signed",
+      sample_id: "private-sample",
+      raw_hex: "DE AD BE EF",
+      admin_note: "private note",
+    },
+  };
+}
+
+test("AI Explain Layer source labels cover evidence, recommendations, risks and state", () => {
+  const request = aiExplainRequestFixture();
+  const labels = buildAiExplainSourceLabels(request.items, {
+    providerStatus: "unavailable",
+    fallbackUsed: true,
+  });
+  const kinds = new Set(labels.map((label) => label.itemKind));
+
+  assert.ok(kinds.has("evidence"));
+  assert.ok(kinds.has("recommendation"));
+  assert.ok(kinds.has("risk_flag"));
+  assert.ok(kinds.has("human_review_gate"));
+  assert.ok(kinds.has("provider_state"));
+  assert.ok(kinds.has("fallback_state"));
+  assert.ok(labels.some((label) => label.sourceCategory === "unavailable_state"));
+  assert.ok(labels.some((label) => label.sourceCategory === "deterministic_rules"));
+  assert.ok(labels.every((label) => label.customerVisible));
+  assert.ok(labels.some((label) => label.requiresHumanReview));
+});
+
+test("AI Explain Layer exposes provider-unavailable state before fallback", async () => {
+  const provider = new UnavailableAiExplainProvider("Local AI Explain provider is disabled.");
+  const response = await provider.explain(aiExplainRequestFixture());
+
+  assert.equal(response.contractVersion, aiExplainLayerContractVersion);
+  assert.equal(response.status, "provider_unavailable");
+  assert.equal(response.state, "provider_unavailable");
+  assert.equal(response.provider.providerId, "unconfigured_ai_explain_provider");
+  assert.equal(response.provider.providerStatus, "unavailable");
+  assert.equal(response.provider.unavailableReason, "Local AI Explain provider is disabled.");
+  assert.equal(response.fallback.used, false);
+  assert.equal(response.isAiGenerated, false);
+  assert.equal(response.confidence, "none");
+  assert.equal(response.unavailableState.unavailable, true);
+  assert.ok(response.sourceLabels.some((label) => label.itemKind === "provider_state"));
+  assert.ok(response.humanReview.required);
+});
+
+test("AI Explain Layer default behavior is deterministic non-AI fallback", async () => {
+  const response = await analyzeAiExplainRequest(aiExplainRequestFixture());
+  const serialized = JSON.stringify(response);
+  const kinds = new Set(response.sourceLabels.map((label) => label.itemKind));
+
+  assert.equal(response.contractVersion, "ai-explain-layer-v1");
+  assert.equal(response.status, "fallback");
+  assert.equal(response.state, "provider_unavailable_fallback");
+  assert.equal(response.provider.providerStatus, "unavailable");
+  assert.equal(response.fallback.used, true);
+  assert.equal(response.fallback.providerId, "deterministic_rules");
+  assert.equal(response.isAiGenerated, false);
+  assert.equal(response.confidence, "medium");
+  assert.ok(kinds.has("evidence"));
+  assert.ok(kinds.has("recommendation"));
+  assert.ok(kinds.has("risk_flag"));
+  assert.ok(kinds.has("human_review_gate"));
+  assert.ok(kinds.has("provider_state"));
+  assert.ok(kinds.has("fallback_state"));
+  assert.ok(response.explanationCards.some((card) => card.id === "provider-fallback-state"));
+  assert.ok(response.humanReview.required);
+  assert.ok(response.blockedProductionActions.includes("checksum_approval"));
+  assert.equal(aiExplainLayerBlockedProductionActions.includes("automatic_delivery"), true);
+  assert.doesNotMatch(serialized, /customer-private|private\.example|private-sample|DE AD BE EF|private note/i);
+});
+
+test("AI Explain Layer provider errors preserve expert state without leaking thrown secrets", async () => {
+  class ThrowingExplainProvider implements AiExplainProvider {
+    readonly providerId = "throwing_explain_provider";
+    readonly providerKind = "external_ai" as const;
+    readonly modelName = "private-explain-model";
+
+    async explain(_input: AiExplainRequest): Promise<never> {
+      void _input;
+      throw new Error("provider failed with sk-explain-secret-token");
+    }
+  }
+
+  const response = await analyzeAiExplainRequest(aiExplainRequestFixture(), {
+    provider: new ThrowingExplainProvider(),
+  });
+  const serialized = JSON.stringify(response);
+
+  assert.equal(response.status, "fallback");
+  assert.equal(response.state, "provider_error_fallback");
+  assert.equal(response.provider.providerId, "throwing_explain_provider");
+  assert.equal(response.provider.providerStatus, "error");
+  assert.equal(response.provider.modelName, "private-explain-model");
+  assert.equal(response.fallback.used, true);
+  assert.equal(response.isAiGenerated, false);
+  assert.ok(response.sourceLabels.some((label) => label.itemKind === "provider_state" && label.severity === "warning"));
+  assert.doesNotMatch(serialized, /sk-explain-secret-token/);
+});
+
+test("AI Explain Layer projection separates customer and expert boundaries", async () => {
+  const response = await analyzeAiExplainRequest(aiExplainRequestFixture());
+  const projection = projectAiExplainResponse(response);
+  const customerSerialized = JSON.stringify(projection.customer);
+  const expertSerialized = JSON.stringify(projection.expert);
+  const auditSerialized = JSON.stringify(projection.auditMetadata);
+
+  assert.equal(projection.customer.contractVersion, aiExplainLayerContractVersion);
+  assert.equal(projection.customer.isAiGenerated, false);
+  assert.equal(projection.customer.state, "provider_unavailable_fallback");
+  assert.match(projection.customer.providerNotice, /deterministic non-AI explanation labels/i);
+  assert.equal(hasAiExplainCustomerLeak(projection.customer), false);
+  assert.equal(projection.expert.provider.providerStatus, "unavailable");
+  assert.equal(projection.expert.fallback.used, true);
+  assert.ok(projection.expert.requiredHumanChecks.some((item) => /checksum approval/i.test(item)));
+  assert.ok(projection.expert.blockedProductionActions.includes("checksum_approval"));
+  assert.equal(projection.auditMetadata.provider_status, "unavailable");
+  assert.equal(projection.auditMetadata.customer_id, undefined);
+
+  assert.doesNotMatch(customerSerialized, /providerId|providerKind|providerStatus|modelName|promptVersion|"fallback":/i);
+  for (const serialized of [customerSerialized, expertSerialized, auditSerialized]) {
+    assert.doesNotMatch(serialized, /customer-private|private\.example|private-sample|DE AD BE EF|private note/i);
+    assert.doesNotMatch(serialized, /storage_path|signed_url|raw_hex|first_64_bytes_hex|customer-ready file|safe to flash/i);
+  }
+  assert.match(expertSerialized, /providerStatus/);
+  assert.match(expertSerialized, /fallback/);
+  assert.match(expertSerialized, /blockedProductionActions/);
+});
+
+test("AI Explain Layer expert projection keeps source labels hidden from customers", async () => {
+  const response = await analyzeAiExplainRequest({
+    ...aiExplainRequestFixture(),
+    items: [
+      {
+        id: "internal-file-summary",
+        kind: "evidence",
+        source: "file_analysis_summary",
+        customerSafe: false,
+      },
+      {
+        id: "safe-rule-recommendation",
+        kind: "recommendation",
+        source: "deterministic_rules",
+      },
+    ],
+  });
+  const projection = projectAiExplainResponse(response);
+
+  assert.equal(
+    projection.customer.sourceLabels.some((label) => label.sourceCategory === "file_analysis_summary"),
+    false
+  );
+  assert.equal(
+    projection.expert.sourceLabels.some((label) => label.sourceCategory === "file_analysis_summary"),
+    true
+  );
+  assert.equal(hasAiExplainCustomerLeak(projection.customer), false);
 });
 
 test("model payload removes customer notes, filenames, VIN and printable strings", async () => {

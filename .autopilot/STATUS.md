@@ -2,6 +2,31 @@
 
 Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
+## 2026-07-14 reviewer run RMAP-FILE-AI-EXPLAIN-LAYER-M1-FOUNDATION
+
+- Gorev: RMAP-FILE-AI-EXPLAIN-LAYER-M1-FOUNDATION uncommitted worker degisikliklerini V4 roadmap/product/safety/quality gate olarak incelemek.
+- Sonuc: Accepted. Degisiklik selected Roadmap V2 `file-ai-explain-layer` M1 Foundation milestone'una uyuyor; source labels, explicit unavailable/provider/fallback state, deterministic non-AI fallback, customer/expert projection boundary and operator runbook acceptance kriterlerini karsiliyor.
+- Reviewer duzeltmesi: Expert projection, customer-visible filtreye takilmamasi gereken source label'lari artik tam kaynak listesiyle tasir; customer projection customer-safe filtreyi korur. Regression testi eklendi.
+- Factuality gate: `AcceptedArchitectureOnly`; public `mgautotech.de` technical content, structured data veya publication-ready automotive claim degismedi. Unsupported/conflicting public technical claim yok. Source coverage architecture/runbook ve local tests ile sinirli; future live provider rollout, customer-facing release, MOD export, checksum workflow, exact gain claims, flash-safety and delivery automation operator approval gerektirir.
+- Guvenlik/UI kontrolu: No `.env*`, secret, live Supabase/Stripe/Resend/OpenAI/PayPal call, production data, migration, package install, pricing/credit/payment/legal claim, raw binary exposure, customer-ready MOD output, checksum approval, commit/push/deploy. UI route degisikligi yok; new library and runbook only.
+- Calistirilan kontroller: `.\node_modules\.bin\tsx.cmd --test tests\ecu-intelligence.test.ts` PASS (90/90); `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (61/61); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (326/326); `git diff --check` PASS (CRLF warnings only); new AI Explain source forbidden live-service/env/secret pattern scan PASS; new-file trailing whitespace scan PASS.
+- Calistirilmayan kontroller: `npm run build` reviewer tarafindan calistirilmadi; bu repo build'i local Next env dosyalarini okuyabilir ve `next/font/google` nedeniyle Google Fonts ag istegi yapabilir, bu no-env/no-live-network review siniri icin guvenli degil.
+- Kalan risk: Foundation henuz UI/API/live provider rollout'a bagli degil. Production provider credentials, live model routing, customer-facing release copy, upload endpoint, analytics persistence, MOD export, checksum tooling, delivery automation, migration and deploy operator-only kalir. Roadmap state runner reconciliation sonrasi task/milestone progress'i guncellemelidir.
+
+## 2026-07-14 worker run RMAP-FILE-AI-EXPLAIN-LAYER-M1-FOUNDATION
+
+- Gorev: AI Explain Layer source labels and unavailable-state foundation.
+- Fingerprint: `ai-capability|explain-layer|ai-recommendation-surfaces-lack-source-labeled-unavailable-contract|source-label-unavailable-foundation`.
+- Secim nedeni: `.autopilot/runtime/roadmap-selection.json` selected roadmap task olarak `RMAP-FILE-AI-EXPLAIN-LAYER-M1-FOUNDATION` verdi ve `.autopilot/TASKS.md` Ready icinde ayni selected task bulundu. Roadmap state task'i Ready/attemptCount 0 olarak gosteriyordu; recent outcomes ayni fingerprint'i tamamlanmis gostermedi.
+- Duplicate/evidence kontrolu: Package V4 constitution dosyalari, roadmap docs/state/selection/spec, repo-local `.autopilot/constitution/*`, AGENTS, PROJECT, ROADMAP, INBOX, FEATURE_PROPOSALS, TASKS, TASK_HISTORY, PRODUCT_SCORECARD, STATUS, package scripts, current Git status ve son 100 commit okundu. `src/lib/aiExplain` ve `docs/ai-explain-layer-foundation.md` baslangicta yoktu; DTC/Tune/Log/File Expert provider/fallback/projection patterns vardi ancak shared source-labeled Explain Layer yoktu.
+- Degisen dosyalar: `src/lib/aiExplain/types.ts`, `src/lib/aiExplain/sourceLabels.ts`, `src/lib/aiExplain/service.ts`, `src/lib/aiExplain/projection.ts`, `src/lib/aiExplain/index.ts`, `docs/ai-explain-layer-foundation.md`, `tests/ecu-intelligence.test.ts`, `tests/ui-ux-safety.test.ts`, `.autopilot/TASKS.md`, `.autopilot/TASK_HISTORY.md`, `.autopilot/STATUS.md`, `.autopilot/runtime/last-result.json`.
+- Uygulama sonucu: `ai-explain-layer-v1` reusable local contract eklendi. Evidence, recommendation, risk flag, human-review gate, provider-state and fallback-state source labels uretilir. Default provider unconfigured kalir ve deterministic non-AI fallback kullanir; provider unavailable, provider-unavailable fallback, provider-error fallback and invalid-input states explicit kalir. Customer projection provider id/kind/status, model name, prompt version, fallback internals, raw binary/hex/CSV, hashes, signed URLs, storage paths, filenames, customer identifiers, sample ids and admin-only notes tasimaz. Expert projection provider status, fallback reason, source labels, required human checks and blocked production actions tasir. Runbook safe local validation, privacy boundaries and operator-only future live/provider rollout decisions'i belgeler.
+- Factuality gate: `AcceptedArchitectureOnly`; public `mgautotech.de` teknik content, structured data veya publication-ready automotive claim degismedi. AI Explain output MOD export, checksum approval, flash safety, exact gains, pricing and delivery automation icin operator/human review gerektirir.
+- Guvenlik/UI kontrolu: `.env`, secret, real customer data, live Supabase/Stripe/Resend/OpenAI/PayPal, production analytics query, migration, package install, pricing/credit/payment/legal policy, UI/API endpoint, upload behavior, customer-ready MOD output, checksum approval, commit/push/deploy yapilmadi. UI degisikligi yok; customer/expert projection no-leak tests eklendi.
+- Calistirilan kontroller: `.\node_modules\.bin\tsx.cmd --test tests\ecu-intelligence.test.ts` PASS (89/89); `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (61/61); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (325/325); `git diff --check` PASS (yalniz CRLF warnings); new AI Explain source forbidden live-service/env/secret pattern scan PASS; new-file trailing whitespace scan PASS.
+- Calistirilmayan kontroller: `npm run build` calistirilmadi; bu repo build'i local Next env dosyalarini okuyabilir ve `next/font/google` nedeniyle Google Fonts ag istegi yapabilir, bu run'daki no-env/no-live-network siniri icin guvenli degil. `npm run check:payments`, desktop normal env/dev/build/package, SQL migration/verification, smoke, scraper, live service ve deploy islemleri calistirilmadi.
+- Kalan risk: Foundation henuz UI/API/live provider rollout'a bagli degil. Production provider credentials, live model routing, customer-facing release copy, analytics persistence, migration, deploy, MOD export, checksum workflow and delivery automation operator-only kalir. Roadmap state runner reconciliation sonrasi task/milestone progress'i guncellemelidir.
+
 ## 2026-07-14 planner run V4 ROADMAP AI EXPLAIN LAYER FOUNDATION
 
 - Baslangic/bitis: 2026-07-14 09:43:25 +01:00.
@@ -1483,8 +1508,8 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
 - Kurulum tarihi: 2026-07-12 (Europe/Berlin)
 - Aktif branch: codex/autopilot
-- Son basarili gorev: RMAP-FILE-AI-LOG-ANALYZER-M1-FOUNDATION AI Log Analyzer provider fallback and safe log summary foundation
-- Son dogrulama: `.\node_modules\.bin\tsx.cmd --test tests\ecu-intelligence.test.ts` PASS (84/84); `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (60/60); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (319/319); `git diff --check` PASS (yalnizca CRLF uyarilari). `npm run build` no-env/no-live-network siniri nedeniyle calistirilmadi.
+- Son basarili gorev: RMAP-FILE-AI-EXPLAIN-LAYER-M1-FOUNDATION AI Explain Layer source labels and unavailable-state foundation
+- Son dogrulama: `.\node_modules\.bin\tsx.cmd --test tests\ecu-intelligence.test.ts` PASS (90/90); `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (61/61); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (326/326); `git diff --check` PASS (yalnizca CRLF uyarilari). `npm run build` no-env/no-live-network siniri nedeniyle calistirilmadi.
 - Insan mudahalesi gereken konu: Production smoke, SQL migration, deploy ve normal env kontrolleri insan onayi gerektirir.
 
 ## 2026-07-12 reviewer run AUTO-003
