@@ -99,6 +99,15 @@ import {
   UnavailableTuneAdvisorProvider,
 } from "../src/lib/tuneAdvisor";
 import { analyzeRequestTuneAdvisor } from "../src/lib/tuneAdvisor/requestIntegration";
+import {
+  analyzeLogRequest,
+  analyzeRequestLog,
+  logAnalyzerBlockedProductionActions,
+  logAnalyzerContractVersion,
+  type LogAnalyzerProvider,
+  type LogAnalyzerRequest,
+  UnavailableLogAnalyzerProvider,
+} from "../src/lib/logAnalyzer";
 
 function calibrationLikeBuffer(size = 16_384) {
   const buffer = Buffer.alloc(size, 0xff);
@@ -1004,6 +1013,177 @@ test("request Tune Advisor projection separates customer and expert boundaries",
   assert.equal(projection.auditMetadata.provider_status, "unavailable");
   assert.doesNotMatch(customerSerialized, /providerId|modelName|promptVersion|providerKind|providerStatus/i);
   assert.doesNotMatch(customerSerialized, /storage_path|signed_url|customer-private|sample_id|raw|hex|private note/i);
+  assert.match(expertSerialized, /providerStatus/);
+  assert.match(expertSerialized, /blockedProductionActions/);
+});
+
+test("Log Analyzer exposes provider-unavailable state before fallback", async () => {
+  const provider = new UnavailableLogAnalyzerProvider("Local Log Analyzer provider is disabled.");
+  const response = await provider.analyzeLog({
+    source: "local_test",
+    rows: [
+      { rpm: 2200, torqueNm: 390 },
+      { rpm: 2600, torqueNm: 430 },
+    ],
+  });
+
+  assert.equal(response.contractVersion, logAnalyzerContractVersion);
+  assert.equal(response.status, "provider_unavailable");
+  assert.equal(response.provider.providerId, "unconfigured_log_analyzer_provider");
+  assert.equal(response.provider.providerStatus, "unavailable");
+  assert.equal(response.provider.unavailableReason, "Local Log Analyzer provider is disabled.");
+  assert.equal(response.fallback.used, false);
+  assert.equal(response.isAiGenerated, false);
+  assert.equal(response.confidence, "none");
+  assert.equal(response.normalizedInput.validRowCount, 2);
+  assert.ok(response.evidence.some((item) => item.source === "provider_state"));
+  assert.ok(response.riskFlags.some((item) => item.kind === "provider_unavailable"));
+  assert.ok(response.recommendations.some((item) => item.category === "fallback_notice"));
+  assert.ok(response.humanReview.required);
+});
+
+test("Log Analyzer deterministic fallback summarizes RPM and torque rows safely", async () => {
+  const response = await analyzeLogRequest({
+    source: "local_test",
+    text: "1800, 320\n2200, 390\n2600, 430\n3000, 420\n3400, 395\n3800, 360\n4200, 315",
+    vehicle: {
+      brand: "BMW",
+      model: "5 Series",
+      engine: "530d",
+      ecuType: "Bosch EDC17C50",
+      readMethod: "bench",
+    },
+  });
+  const serialized = JSON.stringify(response);
+
+  assert.equal(response.status, "fallback");
+  assert.equal(response.provider.providerStatus, "unavailable");
+  assert.equal(response.fallback.used, true);
+  assert.equal(response.fallback.providerId, "deterministic_rules");
+  assert.equal(response.isAiGenerated, false);
+  assert.equal(response.readiness, "evidence_supported_review");
+  assert.equal(response.confidence, "medium");
+  assert.equal(response.normalizedInput.sourceFormat, "text_rows");
+  assert.equal(response.normalizedInput.validRowCount, 7);
+  assert.deepEqual(response.logSummary.rpmRange, { min: 1800, max: 4200 });
+  assert.equal(response.logSummary.peakTorque?.torqueNm, 430);
+  assert.equal(response.logSummary.peakTorque?.rpm, 2600);
+  assert.ok((response.logSummary.peakPower?.hp ?? 0) > 190);
+  assert.ok(response.evidence.some((item) => item.type === "peak_estimate"));
+  assert.ok(response.riskFlags.some((item) => item.kind === "dyno_equivalence_risk"));
+  assert.ok(response.riskFlags.some((item) => item.kind === "provider_unavailable"));
+  assert.ok(response.recommendations.some((item) => item.category === "human_review_gate"));
+  assert.ok(response.confidenceReasons.some((item) => /deterministic fallback/i.test(item.text)));
+  assert.ok(response.safetyBoundaries.some((item) => /not a calibrated chassis-dyno measurement/i.test(item)));
+  assert.ok(response.blockedProductionActions.includes("customer_ready_mod_export"));
+  assert.equal(logAnalyzerBlockedProductionActions.includes("checksum_approval"), true);
+  assert.doesNotMatch(serialized, /1800, 320|2200, 390|storage_path|signed_url|service_role|first_64_bytes_hex|rawHex|sample_id/i);
+  assert.doesNotMatch(serialized, /customer-ready file|checksum completed|safe to flash|automatic delivery/i);
+});
+
+test("Log Analyzer handles AutoTuner CSV headers, invalid and empty input", async () => {
+  const autotuner = await analyzeLogRequest({
+    source: "browser_tool",
+    text: '"Time","Engine Speed (rpm)","Engine Torque (Nm)"\n"0.1","1800","320"\n"0.2","2200","390"\n"0.3","bad","private"',
+  });
+  const invalid = await analyzeLogRequest({
+    source: "customer_request",
+    text: "private note storage_path=customer/private/log.csv signed_url=https://private.example",
+  });
+  const empty = await analyzeLogRequest({
+    source: "customer_request",
+    text: "   ",
+  });
+
+  assert.equal(autotuner.status, "fallback");
+  assert.equal(autotuner.normalizedInput.sourceFormat, "autotuner_csv");
+  assert.equal(autotuner.normalizedInput.validRowCount, 2);
+  assert.equal(autotuner.normalizedInput.rejectedRowCount, 1);
+
+  assert.equal(invalid.status, "invalid_input");
+  assert.equal(invalid.normalizedInput.validRowCount, 0);
+  assert.equal(invalid.confidence, "none");
+  assert.match(invalid.summary, /No valid RPM and torque rows/i);
+  assert.ok(invalid.evidence.some((item) => item.type === "input_validation"));
+  assert.ok(invalid.riskFlags.some((item) => item.kind === "invalid_input"));
+  assert.ok(invalid.recommendations.some((item) => item.category === "missing_information"));
+  assert.doesNotMatch(JSON.stringify(invalid), /customer\/private|signed_url|private\.example/i);
+
+  assert.equal(empty.status, "invalid_input");
+  assert.equal(empty.normalizedInput.sourceFormat, "empty");
+  assert.equal(empty.confidence, "none");
+  assert.match(empty.summary, /Provide log rows/i);
+});
+
+test("Log Analyzer provider errors preserve provider identity and non-AI fallback", async () => {
+  class ThrowingLogProvider implements LogAnalyzerProvider {
+    readonly providerId = "throwing_log_provider";
+    readonly providerKind = "external_ai" as const;
+    readonly modelName = "private-log-model";
+
+    async analyzeLog(_input: LogAnalyzerRequest): Promise<never> {
+      void _input;
+      throw new Error("provider failed with sk-log-secret-token");
+    }
+  }
+
+  const response = await analyzeLogRequest({
+    source: "admin_request",
+    rows: [
+      { rpm: 2000, torqueNm: 350 },
+      { rpm: 2600, torqueNm: 430 },
+      { rpm: 3300, torqueNm: 410 },
+      { rpm: 3900, torqueNm: 360 },
+    ],
+    vehicle: { brand: "BMW", model: "3 Series", engine: "320d", ecuType: "EDC17", readMethod: "bench" },
+  }, { provider: new ThrowingLogProvider() });
+  const serialized = JSON.stringify(response);
+
+  assert.equal(response.status, "fallback");
+  assert.equal(response.provider.providerId, "throwing_log_provider");
+  assert.equal(response.provider.providerStatus, "error");
+  assert.equal(response.provider.modelName, "private-log-model");
+  assert.equal(response.fallback.used, true);
+  assert.equal(response.isAiGenerated, false);
+  assert.ok(response.confidenceReasons.some((item) => /provider unavailable or failed/i.test(item.text)));
+  assert.ok(response.evidence.some((item) => item.source === "provider_state" && item.severity === "warning"));
+  assert.doesNotMatch(serialized, /sk-log-secret-token/);
+});
+
+test("request Log Analyzer projection separates customer and expert boundaries", async () => {
+  const projection = await analyzeRequestLog({
+    id: "request-log-safe",
+    customer_id: "customer-private",
+    vehicle_brand: "BMW",
+    vehicle_model: "5 Series",
+    vehicle_engine: "530d",
+    ecu: "Bosch EDC17C50",
+    read_method: "bench",
+    fileName: "customer-name-private-log.csv",
+    logText: '"Time","Engine Speed (rpm)","Engine Torque (Nm)"\n"0.1","1800","320"\n"0.2","2600","430"\n"0.3","3800","360"',
+    notes: "Private note with storage_path signed_url SHA256=secret-hash first_64_bytes_hex=DE AD BE EF.",
+  }, "admin");
+  const customerSerialized = JSON.stringify(projection.customer);
+  const expertSerialized = JSON.stringify(projection.expert);
+  const auditSerialized = JSON.stringify(projection.auditMetadata);
+
+  assert.equal(projection.customer.contractVersion, logAnalyzerContractVersion);
+  assert.equal(projection.customer.isAiGenerated, false);
+  assert.equal(projection.customer.state, "provider_unavailable_fallback");
+  assert.match(projection.customer.providerNotice, /deterministic non-AI fallback/i);
+  assert.equal(projection.customer.logSummary.validRowCount, 3);
+  assert.equal(projection.expert.provider.providerStatus, "unavailable");
+  assert.equal(projection.expert.fallback.used, true);
+  assert.ok(projection.expert.blockedProductionActions.includes("checksum_approval"));
+  assert.equal(projection.auditMetadata.provider_status, "unavailable");
+  assert.equal(projection.auditMetadata.customer_id, undefined);
+
+  assert.doesNotMatch(customerSerialized, /providerId|modelName|promptVersion|providerKind|providerStatus/i);
+  for (const serialized of [customerSerialized, expertSerialized, auditSerialized]) {
+    assert.doesNotMatch(serialized, /customer-private|customer-name-private-log|Private note/i);
+    assert.doesNotMatch(serialized, /storage_path|signed_url|secret-hash|first_64_bytes_hex|DE AD BE EF/i);
+    assert.doesNotMatch(serialized, /raw CSV|raw binary|customer-ready file|checksum completed|safe to flash/i);
+  }
   assert.match(expertSerialized, /providerStatus/);
   assert.match(expertSerialized, /blockedProductionActions/);
 });

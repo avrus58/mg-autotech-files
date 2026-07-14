@@ -2,6 +2,30 @@
 
 Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
+## 2026-07-14 reviewer run RMAP-FILE-AI-LOG-ANALYZER-M1-FOUNDATION
+
+- Gorev: RMAP-FILE-AI-LOG-ANALYZER-M1-FOUNDATION uncommitted worker degisikliklerini V4 roadmap/product/safety/quality gate olarak incelemek.
+- Sonuc: Accepted. Degisiklik selected Roadmap V2 `file-ai-log-analyzer` M1 Foundation milestone'una uyuyor; local-only `log-analyzer-v1` provider/fallback contract, deterministic non-AI RPM/Nm summary fallback, customer/expert projection boundary, human-review requirement and blocked production actions acceptance kriterlerini karsiliyor.
+- Factuality gate: `AcceptedArchitectureOnly`; public `mgautotech.de` technical content, structured data veya publication-ready automotive claim degismedi. Unsupported/conflicting public technical claim yok. Source coverage architecture/runbook ve local tests ile sinirli; future live provider rollout, customer-facing release, MOD export, checksum workflow, exact gain claims, flash-safety and delivery automation operator approval gerektirir.
+- Guvenlik/UI kontrolu: No `.env*`, secret, live Supabase/Stripe/Resend/OpenAI/PayPal call, production data, migration, package install, pricing/credit/payment/legal claim, raw binary exposure, customer-ready MOD output, checksum approval, commit/push/deploy. UI route degisikligi yok; new library and runbook only.
+- Calistirilan kontroller: `.\node_modules\.bin\tsx.cmd --test tests\ecu-intelligence.test.ts` PASS (84/84); `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (60/60); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (319/319); `git diff --check` PASS (CRLF warnings only); new Log Analyzer live-service/env/secret pattern scan PASS; untracked new-file trailing whitespace scan PASS.
+- Calistirilmayan kontroller: `npm run build` reviewer tarafindan calistirilmadi; bu repo build'i local Next env dosyalarini okuyabilir ve `next/font/google` nedeniyle Google Fonts ag istegi yapabilir, bu no-env/no-live-network review siniri icin guvenli degil.
+- Kalan risk: Foundation henuz UI/API/live provider rollout'a bagli degil. Production provider credentials, live model routing, customer-facing release copy, upload endpoint, analytics persistence, MOD export, checksum tooling, delivery automation, migration and deploy operator-only kalir. Roadmap state runner reconciliation sonrasi task/milestone progress'i guncellemelidir.
+
+## 2026-07-14 worker run RMAP-FILE-AI-LOG-ANALYZER-M1-FOUNDATION
+
+- Gorev: AI Log Analyzer provider fallback and safe log summary foundation.
+- Fingerprint: `ai-capability|log-analyzer|browser-log-tool-lacks-provider-safe-analysis-contract|provider-fallback-safe-summary-foundation`.
+- Secim nedeni: `.autopilot/runtime/roadmap-selection.json` selected roadmap task olarak `RMAP-FILE-AI-LOG-ANALYZER-M1-FOUNDATION` verdi ve `.autopilot/TASKS.md` Ready icinde ayni selected task bulundu. Roadmap state task'i Ready/attemptCount 0 olarak gosteriyordu; blocked task kaydi yoktu.
+- Duplicate/evidence kontrolu: Package V4 constitution dosyalari, roadmap docs/state/selection/spec, repo-local `.autopilot/constitution/*`, AGENTS, PROJECT, ROADMAP, INBOX, FEATURE_PROPOSALS, TASKS, TASK_HISTORY, PRODUCT_SCORECARD, STATUS, package scripts, current Git status ve son 100 commit okundu. Ayni Log Analyzer fingerprint Done/TASK_HISTORY/Git gecmisinde yoktu. Evidence gecerliydi: existing public tool browser-local RPM/Nm parsing yapiyordu, ancak `src/lib/logAnalyzer` domain contract, provider unavailable/error semantics, deterministic fallback, projection boundary ve runbook yoktu.
+- Degisen dosyalar: `src/lib/logAnalyzer/types.ts`, `src/lib/logAnalyzer/fallback.ts`, `src/lib/logAnalyzer/service.ts`, `src/lib/logAnalyzer/requestIntegration.ts`, `src/lib/logAnalyzer/index.ts`, `docs/log-analyzer-foundation.md`, `tests/ecu-intelligence.test.ts`, `tests/ui-ux-safety.test.ts`, `.autopilot/TASKS.md`, `.autopilot/TASK_HISTORY.md`, `.autopilot/STATUS.md`, `.autopilot/runtime/last-result.json`.
+- Uygulama sonucu: `log-analyzer-v1` provider-neutral contract eklendi. Deterministic non-AI fallback structured rows, simple RPM/Nm text rows and AutoTuner CSV headersinden valid/rejected row count, RPM range, torque range, average torque, peak torque and peak estimated power uretir; provider unavailable/error and invalid-input states explicit kalir. Customer projection provider/model/prompt/fallback internals, raw CSV rows, raw binary/hex, filenames, storage paths, signed URLs, hashes, customer identifiers and admin-only notes tasimaz. Expert projection provider/fallback status, normalized counts, required human checks and blocked production actions tasir. Runbook safe local validation, privacy boundaries and operator-only future live/provider rollout decisions'i belgeler.
+- Factuality gate: `AcceptedArchitectureOnly`; public `mgautotech.de` teknik content, structured data veya publication-ready automotive claim degismedi. Log Analyzer output dyno-equivalent claim, exact gain claim, MOD export, checksum approval, flash safety or delivery approval uretmez.
+- Guvenlik/UI kontrolu: `.env`, secret, real customer data, live Supabase/Stripe/Resend/OpenAI/PayPal, production analytics query, migration, package install, pricing/credit/payment/legal policy, upload endpoint, request submission, customer-ready MOD output, checksum approval, commit/push/deploy yapilmadi. UI degisikligi yok; customer/expert projection no-leak tests eklendi.
+- Calistirilan kontroller: `.\node_modules\.bin\tsx.cmd --test tests\ecu-intelligence.test.ts` PASS (84/84); `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (60/60); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (319/319); `git diff --check` PASS (yalniz CRLF warnings); new Log Analyzer source forbidden live-service/env/secret pattern scan PASS.
+- Calistirilmayan kontroller: `npm run build` calistirilmadi; bu repo build'i local Next env dosyalarini okuyabilir ve `next/font/google` nedeniyle Google Fonts ag istegi yapabilir, bu run'daki no-env/no-live-network siniri icin guvenli degil. `npm run check:payments`, desktop normal env/dev/build/package, SQL migration/verification, smoke, scraper, live service ve deploy islemleri calistirilmadi.
+- Kalan risk: Log Analyzer foundation henuz UI/API/live provider rollout'a bagli degil; production provider credentials, live model routing, customer-facing release copy, upload endpoint, analytics persistence, MOD export, checksum tooling, delivery automation, migration and deploy operator-only kalir. Roadmap state runner reconciliation sonrasi task/milestone progress'i guncellemelidir.
+
 ## 2026-07-14 planner run V4 ROADMAP AI LOG ANALYZER FOUNDATION
 
 - Baslangic/bitis: 2026-07-14 08:47:08 +01:00.
@@ -1443,8 +1467,8 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
 - Kurulum tarihi: 2026-07-12 (Europe/Berlin)
 - Aktif branch: codex/autopilot
-- Son basarili gorev: RMAP-FILE-AI-TUNE-ADVISOR-M1-FOUNDATION AI Tune Advisor rule fallback and expert review foundation
-- Son dogrulama: `.\node_modules\.bin\tsx.cmd --test tests\ecu-intelligence.test.ts` PASS (79/79); `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (59/59); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (313/313); `git diff --check` PASS (yalnizca CRLF uyarilari). `npm run build` no-env/no-live-network siniri nedeniyle calistirilmadi.
+- Son basarili gorev: RMAP-FILE-AI-LOG-ANALYZER-M1-FOUNDATION AI Log Analyzer provider fallback and safe log summary foundation
+- Son dogrulama: `.\node_modules\.bin\tsx.cmd --test tests\ecu-intelligence.test.ts` PASS (84/84); `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (60/60); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (319/319); `git diff --check` PASS (yalnizca CRLF uyarilari). `npm run build` no-env/no-live-network siniri nedeniyle calistirilmadi.
 - Insan mudahalesi gereken konu: Production smoke, SQL migration, deploy ve normal env kontrolleri insan onayi gerektirir.
 
 ## 2026-07-12 reviewer run AUTO-003

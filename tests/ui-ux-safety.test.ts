@@ -1458,6 +1458,29 @@ test("Tune Advisor foundation is local-only and expert-review gated", () => {
   assert.doesNotMatch(combined, /customer-ready\s+file|safe to flash|checksum completed|exact \d+\s*(hp|nm)|automatic delivery is possible|MOD generation approved/i);
 });
 
+test("Log Analyzer foundation is local-only and projection-gated", () => {
+  const fallback = readProjectFile("src", "lib", "logAnalyzer", "fallback.ts");
+  const service = readProjectFile("src", "lib", "logAnalyzer", "service.ts");
+  const integration = readProjectFile("src", "lib", "logAnalyzer", "requestIntegration.ts");
+  const runbook = readProjectFile("docs", "log-analyzer-foundation.md");
+  const combined = `${fallback}\n${service}\n${integration}\n${runbook}`;
+
+  assert.match(fallback, /log-analyzer-v1/);
+  assert.match(fallback, /Deterministic non-AI Log Analyzer/);
+  assert.match(fallback, /calculateLogPowerEstimate/);
+  assert.match(fallback, /provider-unavailable/i);
+  assert.match(service, /class UnavailableLogAnalyzerProvider/);
+  assert.match(service, /buildDeterministicLogAnalyzerFallback/);
+  assert.match(integration, /export type CustomerRequestLogAnalyzerAnalysis/);
+  assert.match(integration, /export type ExpertRequestLogAnalyzerAnalysis/);
+  assert.match(integration, /blockedProductionActions/);
+  assert.match(runbook, /RMAP-FILE-AI-LOG-ANALYZER-M1-FOUNDATION/);
+  assert.match(runbook, /No raw binary or hex data/i);
+  assert.match(runbook, /operator approval/i);
+  assert.doesNotMatch(combined, /fetch\(|process\.env|getSupabaseAdmin|createClient|\.from\(|OPENAI_API_KEY|SUPABASE_SERVICE_ROLE_KEY|STRIPE_SECRET_KEY|RESEND_API_KEY/i);
+  assert.doesNotMatch(combined, /customer-ready\s+file|safe to flash|checksum completed|automatic delivery is possible|MOD generation approved/i);
+});
+
 test("i18n and SEO health script catches core multilingual requirements", () => {
   const script = readProjectFile("scripts", "check-i18n-seo.mjs");
   assert.match(script, /expectedLocales/);
