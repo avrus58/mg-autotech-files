@@ -1431,6 +1431,33 @@ test("admin File Expert exposes V2 report review gate without customer-ready out
   assert.doesNotMatch(runbook, /SUPABASE_SERVICE_ROLE_KEY|OPENAI_API_KEY|STRIPE_SECRET_KEY|RESEND_API_KEY/);
 });
 
+test("Tune Advisor foundation is local-only and expert-review gated", () => {
+  const fallback = readProjectFile("src", "lib", "tuneAdvisor", "fallback.ts");
+  const service = readProjectFile("src", "lib", "tuneAdvisor", "service.ts");
+  const integration = readProjectFile("src", "lib", "tuneAdvisor", "requestIntegration.ts");
+  const runbook = readProjectFile("docs", "tune-advisor-foundation.md");
+  const combined = `${fallback}\n${service}\n${integration}\n${runbook}`;
+
+  assert.match(fallback, /tune-advisor-v1/);
+  assert.match(fallback, /Deterministic non-AI Tune Advisor/);
+  assert.match(fallback, /stage_1/);
+  assert.match(fallback, /eco_tuning/);
+  assert.match(fallback, /tcu_tuning/);
+  assert.match(fallback, /only_options/);
+  assert.match(fallback, /emissions_or_legal_review/);
+  assert.match(fallback, /checksum_not_approved/);
+  assert.match(service, /class UnavailableTuneAdvisorProvider/);
+  assert.match(service, /buildDeterministicTuneAdvisorFallback/);
+  assert.match(integration, /export type CustomerRequestTuneAdvisorAnalysis/);
+  assert.match(integration, /export type ExpertRequestTuneAdvisorAnalysis/);
+  assert.match(integration, /blockedProductionActions/);
+  assert.match(runbook, /RMAP-FILE-AI-TUNE-ADVISOR-M1-FOUNDATION/);
+  assert.match(runbook, /provider-unavailable/i);
+  assert.match(runbook, /operator approval/i);
+  assert.doesNotMatch(combined, /fetch\(|process\.env|getSupabaseAdmin|createClient|\.from\(|OPENAI_API_KEY|SUPABASE_SERVICE_ROLE_KEY|STRIPE_SECRET_KEY|RESEND_API_KEY/i);
+  assert.doesNotMatch(combined, /customer-ready\s+file|safe to flash|checksum completed|exact \d+\s*(hp|nm)|automatic delivery is possible|MOD generation approved/i);
+});
+
 test("i18n and SEO health script catches core multilingual requirements", () => {
   const script = readProjectFile("scripts", "check-i18n-seo.mjs");
   assert.match(script, /expectedLocales/);

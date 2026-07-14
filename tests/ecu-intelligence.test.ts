@@ -90,6 +90,15 @@ import {
   projectDtcUsageLimitForResponse,
 } from "../src/lib/dtcAnalyzer/config";
 import { analyzeRequestDtc } from "../src/lib/dtcAnalyzer/requestIntegration";
+import {
+  analyzeTuneAdvisorRequest,
+  tuneAdvisorBlockedProductionActions,
+  tuneAdvisorContractVersion,
+  type TuneAdvisorProvider,
+  type TuneAdvisorRequest,
+  UnavailableTuneAdvisorProvider,
+} from "../src/lib/tuneAdvisor";
+import { analyzeRequestTuneAdvisor } from "../src/lib/tuneAdvisor/requestIntegration";
 
 function calibrationLikeBuffer(size = 16_384) {
   const buffer = Buffer.alloc(size, 0xff);
@@ -823,6 +832,180 @@ test("DTC analyzer deterministic fallback handles invalid and empty input", asyn
   assert.equal(empty.normalizedInput.hasText, false);
   assert.equal(empty.confidence, "none");
   assert.match(empty.summary, /Enter at least one diagnostic trouble code/i);
+});
+
+test("Tune Advisor exposes provider-unavailable state before fallback", async () => {
+  const provider = new UnavailableTuneAdvisorProvider("Local Tune Advisor provider is disabled.");
+  const response = await provider.analyzeTuneRequest({
+    source: "local_test",
+    services: { primaryServiceId: "stage_1" },
+  });
+
+  assert.equal(response.contractVersion, tuneAdvisorContractVersion);
+  assert.equal(response.status, "provider_unavailable");
+  assert.equal(response.provider.providerId, "unconfigured_tune_advisor_provider");
+  assert.equal(response.provider.providerStatus, "unavailable");
+  assert.equal(response.provider.unavailableReason, "Local Tune Advisor provider is disabled.");
+  assert.equal(response.fallback.used, false);
+  assert.equal(response.isAiGenerated, false);
+  assert.equal(response.confidence, "none");
+  assert.ok(response.evidence.some((item) => item.source === "provider_state"));
+  assert.ok(response.riskFlags.some((item) => item.kind === "provider_unavailable"));
+  assert.ok(response.recommendations.some((item) => item.category === "fallback_notice"));
+  assert.ok(response.humanReview.required);
+});
+
+test("Tune Advisor deterministic fallback handles Stage 1 request guidance safely", async () => {
+  const response = await analyzeTuneAdvisorRequest({
+    source: "local_test",
+    vehicle: {
+      brand: "BMW",
+      model: "5 Series",
+      engine: "530d",
+      ecuType: "Bosch EDC17C50",
+      readMethod: "bench",
+      hwSw: "SW1037550001",
+    },
+    services: {
+      primaryServiceId: "stage_1",
+      extraServiceIds: ["log_file_review"],
+      evidenceCount: 3,
+      highQualityEvidenceCount: 2,
+      mapDefinitionsAvailable: true,
+    },
+  });
+  const serialized = JSON.stringify(response);
+
+  assert.equal(response.status, "fallback");
+  assert.equal(response.provider.providerStatus, "unavailable");
+  assert.equal(response.fallback.used, true);
+  assert.equal(response.fallback.providerId, "deterministic_rules");
+  assert.equal(response.isAiGenerated, false);
+  assert.equal(response.readiness, "evidence_supported_review");
+  assert.equal(response.confidence, "medium");
+  assert.equal(response.normalizedService.primary?.id, "stage_1");
+  assert.ok(response.guidance.some((item) => item.category === "stage_calibration"));
+  assert.ok(response.missingInformation.some((item) => /Original file identity/i.test(item)));
+  assert.ok(response.riskFlags.some((item) => item.kind === "stage_calibration_review"));
+  assert.ok(response.recommendations.some((item) => item.category === "human_review_gate"));
+  assert.ok(response.humanReview.requiredBefore.some((item) => /calibration byte changes/i.test(item)));
+  assert.ok(response.safetyBoundaries.some((item) => /does not approve calibration bytes/i.test(item)));
+  assert.ok(response.blockedProductionActions.includes("customer_ready_mod_export"));
+  assert.equal(tuneAdvisorBlockedProductionActions.includes("checksum_approval"), true);
+  assert.doesNotMatch(serialized, /customer-ready file|checksum completed|safe to flash|exact \d+\s*(hp|nm)|automatic delivery/i);
+  assert.doesNotMatch(serialized, /storage_path|signed_url|service_role|first_64_bytes_hex|rawHex|sample_id/i);
+});
+
+test("Tune Advisor flags missing metadata and risky advanced service contexts", async () => {
+  const response = await analyzeTuneAdvisorRequest({
+    source: "admin_request",
+    services: {
+      serviceSummary: "Stage 2 + DPF Removal + DTC OFF + Checksum",
+    },
+  });
+
+  assert.equal(response.status, "fallback");
+  assert.equal(response.readiness, "needs_metadata");
+  assert.equal(response.confidence, "low");
+  assert.equal(response.normalizedService.primary?.id, "stage_2");
+  assert.ok(response.normalizedService.extras.some((item) => item.id === "dpf_off"));
+  assert.ok(response.normalizedService.extras.some((item) => item.id === "dtc_off"));
+  assert.ok(response.normalizedService.extras.some((item) => item.id === "checksum"));
+  assert.ok(response.missingInformation.some((item) => /Vehicle brand/i.test(item)));
+  assert.ok(response.riskFlags.some((item) => item.kind === "emissions_or_legal_review"));
+  assert.ok(response.riskFlags.some((item) => item.kind === "diagnostic_uncertainty"));
+  assert.ok(response.riskFlags.some((item) => item.kind === "checksum_not_approved"));
+  assert.ok(response.recommendations.some((item) => /legal, hardware and diagnostic review/i.test(item.text)));
+  assert.ok(response.recommendations.some((item) => /Tune Advisor cannot approve/i.test(item.text)));
+});
+
+test("Tune Advisor handles ECO, TCU and Only Options service contexts", async () => {
+  const eco = await analyzeTuneAdvisorRequest({
+    source: "local_test",
+    vehicle: { brand: "VW", model: "Golf", engine: "2.0 TDI", ecuType: "EDC17", readMethod: "OBD", hwSw: "SW1" },
+    services: { primaryServiceId: "eco_tuning" },
+  });
+  const tcu = await analyzeTuneAdvisorRequest({
+    source: "local_test",
+    vehicle: { brand: "Audi", model: "A6", engine: "3.0 TDI", ecuType: "TCU", readMethod: "bench", hwSw: "TCU-SW" },
+    services: { serviceSummary: "TCU tuning with gearbox shift review" },
+  });
+  const onlyOptions = await analyzeTuneAdvisorRequest({
+    source: "local_test",
+    services: { primaryServiceId: "only_options", extraServiceIds: ["vmax_off", "launch_control"] },
+  });
+
+  assert.ok(eco.guidance.some((item) => item.category === "eco_calibration"));
+  assert.ok(eco.guidance.some((item) => /does not estimate fuel savings/i.test(item.summary)));
+  assert.equal(tcu.normalizedService.primary?.id, "tcu_tuning");
+  assert.ok(tcu.guidance.some((item) => item.category === "tcu_calibration"));
+  assert.ok(tcu.riskFlags.some((item) => item.kind === "tcu_review"));
+  assert.equal(onlyOptions.normalizedService.primary?.id, "only_options");
+  assert.ok(onlyOptions.guidance.some((item) => item.category === "options_only"));
+  assert.ok(onlyOptions.riskFlags.some((item) => item.kind === "driveability_or_safety_review"));
+});
+
+test("Tune Advisor provider errors preserve provider identity and non-AI fallback", async () => {
+  class ThrowingTuneProvider implements TuneAdvisorProvider {
+    readonly providerId = "throwing_tune_provider";
+    readonly providerKind = "external_ai" as const;
+    readonly modelName = "private-tune-model";
+
+    async analyzeTuneRequest(_input: TuneAdvisorRequest): Promise<never> {
+      void _input;
+      throw new Error("provider failed with sk-test-secret-token");
+    }
+  }
+
+  const response = await analyzeTuneAdvisorRequest({
+    source: "admin_request",
+    vehicle: { brand: "BMW", model: "3 Series", engine: "320d", ecuType: "EDC17", readMethod: "bench", hwSw: "SW2" },
+    services: { primaryServiceId: "stage_1" },
+  }, { provider: new ThrowingTuneProvider() });
+  const serialized = JSON.stringify(response);
+
+  assert.equal(response.status, "fallback");
+  assert.equal(response.provider.providerId, "throwing_tune_provider");
+  assert.equal(response.provider.providerStatus, "error");
+  assert.equal(response.provider.modelName, "private-tune-model");
+  assert.equal(response.fallback.used, true);
+  assert.equal(response.isAiGenerated, false);
+  assert.ok(response.confidenceReasons.some((item) => /provider unavailable or failed/i.test(item.text)));
+  assert.doesNotMatch(serialized, /sk-test-secret-token/);
+});
+
+test("request Tune Advisor projection separates customer and expert boundaries", async () => {
+  const projection = await analyzeRequestTuneAdvisor({
+    id: "request-tune-safe",
+    customer_id: "customer-private",
+    vehicle_brand: "BMW",
+    vehicle_model: "5 Series",
+    vehicle_engine: "530d",
+    ecu: "Bosch EDC17C50",
+    read_method: "bench",
+    hw_sw: "SW1037550001",
+    service_type: "Stage 1 + EGR OFF + Checksum",
+    notes: "Private note with storage_path and signed_url should not be projected.",
+  }, "admin");
+  const customerSerialized = JSON.stringify(projection.customer);
+  const expertSerialized = JSON.stringify(projection.expert);
+
+  assert.equal(projection.customer.contractVersion, tuneAdvisorContractVersion);
+  assert.equal(projection.customer.isAiGenerated, false);
+  assert.equal(projection.customer.state, "provider_unavailable_fallback");
+  assert.match(projection.customer.providerNotice, /deterministic non-AI fallback/i);
+  assert.ok(projection.customer.riskFlags.some((item) => item.kind === "emissions_or_legal_review"));
+  assert.ok(projection.customer.riskFlags.some((item) => item.kind === "checksum_not_approved"));
+  assert.equal(projection.expert.provider.providerStatus, "unavailable");
+  assert.equal(projection.expert.fallback.used, true);
+  assert.ok(projection.expert.requiredHumanChecks.some((item) => /checksum approval/i.test(item)));
+  assert.ok(projection.expert.blockedProductionActions.includes("checksum_approval"));
+  assert.equal(projection.auditMetadata.primary_service_id, "stage_1");
+  assert.equal(projection.auditMetadata.provider_status, "unavailable");
+  assert.doesNotMatch(customerSerialized, /providerId|modelName|promptVersion|providerKind|providerStatus/i);
+  assert.doesNotMatch(customerSerialized, /storage_path|signed_url|customer-private|sample_id|raw|hex|private note/i);
+  assert.match(expertSerialized, /providerStatus/);
+  assert.match(expertSerialized, /blockedProductionActions/);
 });
 
 test("model payload removes customer notes, filenames, VIN and printable strings", async () => {

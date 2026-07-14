@@ -2,6 +2,30 @@
 
 Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
+## 2026-07-14 reviewer run RMAP-FILE-AI-TUNE-ADVISOR-M1-FOUNDATION
+
+- Gorev: RMAP-FILE-AI-TUNE-ADVISOR-M1-FOUNDATION uncommitted worker degisikliklerini V4 roadmap/product/safety/quality gate olarak incelemek.
+- Sonuc: Accepted. Degisiklik selected Roadmap V2 `file-ai-tune-advisor` M1 Foundation milestone'una uyuyor; local-only `tune-advisor-v1` contract, deterministic non-AI fallback, provider unavailable/error states, customer/expert projection boundary, human-review requirement and blocked production actions acceptance kriterlerini karsiliyor.
+- Factuality gate: `AcceptedArchitectureOnly`; public `mgautotech.de` teknik content, structured data veya publication-ready automotive claim degismedi. Unsupported/conflicting public technical claim yok. Source coverage V4 automotive evidence policy ile sinirli; Tune Advisor output MOD export, checksum approval, flash safety, legal suitability, exact gains, pricing and delivery automation icin operator/human review gerektirir.
+- Guvenlik/UI kontrolu: No `.env*`, secret, live Supabase/Stripe/Resend/OpenAI/PayPal call, production data, migration, package install, pricing/credit/payment/legal claim, customer-ready MOD output, checksum approval, commit/push/deploy. UI/API route degisikligi yok; new library and runbook only.
+- Calistirilan kontroller: `.\node_modules\.bin\tsx.cmd --test tests\ecu-intelligence.test.ts` PASS (79/79); `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (59/59); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (313/313); `git diff --check` PASS (CRLF warnings only); untracked new-file trailing whitespace scan PASS; forbidden live-service/env/secret/customer-ready-output pattern scan PASS with expected blocked-action text only.
+- Calistirilmayan kontroller: `npm run build` reviewer tarafindan calistirilmadi; bu repo build'i local Next env dosyalarini okuyabilir ve `next/font/google` nedeniyle Google Fonts ag istegi yapabilir, bu no-env/no-live-network review siniri icin guvenli degil.
+- Kalan risk: Foundation henuz UI/API/live provider rollout'a bagli degil. Production provider credentials, live model routing, customer-facing release copy, MOD export, checksum tooling, delivery automation, migration and deploy operator-only kalir. Roadmap state runner reconciliation sonrasi task/milestone progress'i guncellemelidir.
+
+## 2026-07-14 worker run RMAP-FILE-AI-TUNE-ADVISOR-M1-FOUNDATION
+
+- Baslangic/bitis: 2026-07-14 07:42 - 2026-07-14 07:57:47 +01:00.
+- Gorev: AI Tune Advisor rule fallback and expert review foundation.
+- Fingerprint: `ai-capability|tune-advisor|request-service-guidance-lacks-safe-rule-fallback|rule-fallback-expert-review-contract`.
+- Secim nedeni: `.autopilot/runtime/roadmap-selection.json` selected roadmap task olarak `RMAP-FILE-AI-TUNE-ADVISOR-M1-FOUNDATION` verdi ve `.autopilot/TASKS.md` Ready icinde ayni selected task bulundu. Roadmap state task'i Ready/attemptCount 0 olarak gosteriyordu; blocked epic kaydi yoktu.
+- Duplicate/evidence kontrolu: Package V4 constitution dosyalari, roadmap docs/state/selection/spec, repo-local `.autopilot/constitution/*`, AGENTS, PROJECT, ROADMAP, INBOX, FEATURE_PROPOSALS, TASKS, TASK_HISTORY, PRODUCT_SCORECARD, STATUS, package scripts, current Git status ve son 100 commit okundu. Ayni Tune Advisor fingerprint Done/TASK_HISTORY/Git gecmisinde yoktu. Evidence gecerliydi: existing stage/eco/TCU/advanced service taxonomy ve DTC/File Expert fallback/review-gate patterns vardi, ancak Tune Advisor local contract/projection/runbook yoktu.
+- Degisen dosyalar: `src/lib/tuneAdvisor/types.ts`, `src/lib/tuneAdvisor/fallback.ts`, `src/lib/tuneAdvisor/service.ts`, `src/lib/tuneAdvisor/requestIntegration.ts`, `src/lib/tuneAdvisor/index.ts`, `docs/tune-advisor-foundation.md`, `tests/ecu-intelligence.test.ts`, `tests/ui-ux-safety.test.ts`, `.autopilot/TASKS.md`, `.autopilot/TASK_HISTORY.md`, `.autopilot/STATUS.md`, `.autopilot/runtime/last-result.json`.
+- Uygulama sonucu: `tune-advisor-v1` provider-neutral contract eklendi. Deterministic non-AI fallback stage/eco/TCU/only-options/original-file and selected advanced service contexts'i existing service metadata uzerinden cozer; provider unavailable/error and invalid-input states explicit kalir. Customer projection provider/model/prompt/fallback internals, storage paths, hashes, raw binary/hex, sample IDs and admin-only notes tasimaz. Expert projection provider/fallback status, required human checks and blocked production actions tasir. Runbook safe local validation, blocked production actions and operator-only live/provider rollout decisions'i belgeler.
+- Guvenlik/UI kontrolu: `.env`, secret, real customer data, live Supabase/Stripe/Resend/OpenAI/PayPal, production analytics query, migration, package install, pricing/credit/payment/legal policy, request submission, upload behavior, customer-ready MOD output, checksum approval, flash-safety claim, commit/push/deploy yapilmadi. Public `mgautotech.de` automotive content veya publication-ready technical claim degismedi.
+- Calistirilan kontroller: `.\node_modules\.bin\tsx.cmd --test tests\ecu-intelligence.test.ts` PASS (79/79); `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (59/59); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (313/313); `git diff --check` PASS (yalniz CRLF warnings); forbidden live-service/env/secret/customer-ready-output pattern scan PASS.
+- Calistirilmayan kontroller: `npm run build` calistirilmadi; bu repo build'i local Next env dosyalarini okuyabilir ve `next/font/google` nedeniyle Google Fonts ag istegi yapabilir, bu run'daki no-env/no-live-network siniri icin guvenli degil. `npm run check:payments`, desktop normal env/dev/build/package, SQL migration/verification, smoke, scraper, live service ve deploy islemleri calistirilmadi.
+- Kalan risk: Tune Advisor foundation henuz UI/API/live provider rollout'a bagli degil; production provider credentials, live model routing, customer-facing release copy, MOD export, checksum tooling, delivery automation, migration and deploy operator-only kalir. Roadmap state runner reconciliation sonrasi task/milestone progress'i guncellemelidir.
+
 ## 2026-07-14 planner run V4 ROADMAP AI TUNE ADVISOR FOUNDATION
 
 - Baslangic/bitis: 2026-07-14 07:39:30 +01:00.
@@ -1403,8 +1427,8 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
 - Kurulum tarihi: 2026-07-12 (Europe/Berlin)
 - Aktif branch: codex/autopilot
-- Son basarili gorev: RMAP-FILE-DTC-M2-ANALYSIS-SERVICE AI DTC Analyzer analysis service contract
-- Son dogrulama: `.\node_modules\.bin\tsx.cmd --test tests\ecu-intelligence.test.ts` PASS (64/64); `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (55/55); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (293/293); `npm run build` PASS (228/228); `git diff --check` PASS (yalnizca CRLF uyarilari)
+- Son basarili gorev: RMAP-FILE-AI-TUNE-ADVISOR-M1-FOUNDATION AI Tune Advisor rule fallback and expert review foundation
+- Son dogrulama: `.\node_modules\.bin\tsx.cmd --test tests\ecu-intelligence.test.ts` PASS (79/79); `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (59/59); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (313/313); `git diff --check` PASS (yalnizca CRLF uyarilari). `npm run build` no-env/no-live-network siniri nedeniyle calistirilmadi.
 - Insan mudahalesi gereken konu: Production smoke, SQL migration, deploy ve normal env kontrolleri insan onayi gerektirir.
 
 ## 2026-07-12 reviewer run AUTO-003
