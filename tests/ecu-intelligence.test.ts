@@ -71,6 +71,10 @@ import {
 } from "../src/lib/ecuIntelligence/mapDefinitions";
 import {
   analyzeDtcText,
+  buildDtcRolloutReadinessReport,
+  dtcRolloutAnalyticsFields,
+  dtcRolloutReadinessContractVersion,
+  projectDtcRolloutAnalyticsSnapshot,
   type DtcAnalyzerProvider,
   type DtcAnalyzerRequest,
   UnavailableDtcAnalyzerProvider,
@@ -516,6 +520,110 @@ test("admin DTC projection carries admin-safe configuration while customer proje
   assert.equal(projection.auditMetadata.analysis_success, false);
   assert.match(expertSerialized, /usageLimits/);
   assert.doesNotMatch(customerSerialized, /configuration|usageLimits|providerId|modelName|promptVersion|providerKind|providerStatus/i);
+});
+
+test("DTC rollout readiness report covers regression analytics and documentation gates", () => {
+  const report = buildDtcRolloutReadinessReport();
+  const serialized = JSON.stringify(report);
+  const scenarioIds = report.regressionSuite.scenarios.map((scenario) => scenario.id).sort();
+
+  assert.equal(report.contractVersion, dtcRolloutReadinessContractVersion);
+  assert.equal(report.roadmapTaskId, "RMAP-FILE-DTC-M5-ROLLOUT-READINESS");
+  assert.equal(report.status, "ready_for_operator_review");
+  assert.equal(report.readiness.regressionSuite, "covered");
+  assert.equal(report.readiness.analytics, "local_fixture_ready");
+  assert.equal(report.readiness.documentation, "documented");
+  assert.equal(report.readiness.productionRollout, "operator_approval_required");
+  assert.equal(report.configurationBoundary.customerProviderStatus, "unavailable");
+  assert.equal(report.configurationBoundary.adminProviderStatus, "unavailable");
+  assert.equal(report.configurationBoundary.deterministicFallbackEnabled, true);
+  assert.equal(report.regressionSuite.requiredScenarioCount, 7);
+  assert.equal(report.regressionSuite.coveredScenarioCount, report.regressionSuite.requiredScenarioCount);
+  assert.deepEqual(scenarioIds, [
+    "audit_metadata_safety",
+    "customer_admin_projection_boundary",
+    "invalid_or_no_code_input",
+    "provider_error_fallback",
+    "provider_unavailable_fallback",
+    "ui_no_leak_boundary",
+    "usage_limit_rejection",
+  ]);
+  assert.ok(report.validation.localCommands.includes(".\\node_modules\\.bin\\tsx.cmd --test tests\\ecu-intelligence.test.ts"));
+  assert.ok(report.validation.localCommands.includes(".\\node_modules\\.bin\\tsx.cmd --test tests\\admin-work-orders.test.ts"));
+  assert.ok(report.validation.localCommands.includes(".\\node_modules\\.bin\\tsx.cmd --test tests\\ui-ux-safety.test.ts"));
+  assert.ok(report.validation.localCommands.includes("npm run lint"));
+  assert.ok(report.validation.localCommands.includes("npm run typecheck"));
+  assert.ok(report.validation.localCommands.includes("npm test"));
+  assert.ok(report.validation.localCommands.includes("git diff --check"));
+  assert.match(report.validation.skippedAutonomousBuildReason, /Google Fonts/i);
+  assert.ok(report.blockedProductionActions.some((item) => /production deployment/i.test(item)));
+  assert.ok(report.blockedProductionActions.some((item) => /No live Supabase/i.test(item)));
+  assert.ok(report.blockedProductionActions.some((item) => /No DTC-off approval/i.test(item)));
+  assert.equal(report.documentation.runbook, "docs/dtc-analyzer-rollout-readiness.md");
+  assert.equal(dtcRolloutAnalyticsFields.some((field) => field.key === "provider_status"), true);
+  assert.doesNotMatch(
+    serialized,
+    /SUPABASE_SERVICE_ROLE_KEY|OPENAI_API_KEY|STRIPE_SECRET_KEY|storage_path|signed_url|first_64_bytes_hex|sample_id|customer-ready file|checksum result|byte patch approved/i
+  );
+});
+
+test("DTC rollout analytics snapshot allow-lists fixture metadata only", async () => {
+  const customerProjection = await analyzeRequestDtc({
+    id: "request-dtc-rollout-analytics",
+    customer_id: "customer-private",
+    service_type: "DTC OFF review",
+    notes: "Please review P0401 with private note and signed_url=https://private.example/read.bin",
+    ecu: "Bosch EDC17C50",
+  }, "customer");
+  const adminProjection = await analyzeRequestDtc({
+    id: "request-dtc-rollout-invalid",
+    service_type: "DTC review",
+    notes: "No usable diagnostic trouble code was supplied.",
+  }, "admin");
+
+  const snapshot = projectDtcRolloutAnalyticsSnapshot([
+    {
+      ...customerProjection.auditMetadata,
+      storage_path: "customer/private/read.bin",
+      signed_url: "https://private.example/read.bin",
+      sha256: "secret-hash",
+      customer_id: "customer-private",
+      internal_note: "private note",
+    },
+    {
+      ...adminProjection.auditMetadata,
+      rawHex: "DE AD BE EF",
+      sample_id: "private-sample",
+      provider_secret_key: "secret",
+    },
+  ]);
+  const serialized = JSON.stringify(snapshot);
+
+  assert.equal(snapshot.contractVersion, dtcRolloutReadinessContractVersion);
+  assert.equal(snapshot.source, "local_fixture_metadata");
+  assert.equal(snapshot.eventCount, 2);
+  assert.equal(snapshot.fallbackUsedCount, 2);
+  assert.equal(snapshot.providerUnavailableCount, 1);
+  assert.equal(snapshot.providerErrorCount, 0);
+  assert.equal(snapshot.analysisSuccessCount, 0);
+  assert.equal(snapshot.aiGeneratedCount, 0);
+  assert.equal(snapshot.humanReviewRequiredCount, 2);
+  assert.equal(snapshot.totals.detectedCodeCount, 1);
+  assert.equal(snapshot.totals.riskFlagCount > 0, true);
+  assert.equal(snapshot.statusCounts.fallback, 1);
+  assert.equal(snapshot.statusCounts.invalid_input, 1);
+  assert.equal(snapshot.stateCounts.provider_unavailable_fallback, 1);
+  assert.equal(snapshot.stateCounts.no_valid_dtc, 1);
+  assert.equal(snapshot.providerStatusCounts.unavailable, 1);
+  assert.equal(snapshot.providerStatusCounts.ready, 1);
+  assert.equal(snapshot.ignoredFieldCount, 8);
+  assert.equal(snapshot.ignoredForbiddenFieldCount, 8);
+  assert.ok(snapshot.allowedFields.includes("provider_status"));
+  assert.ok(snapshot.allowedFields.includes("human_review_required"));
+  assert.doesNotMatch(
+    serialized,
+    /customer-private|storage_path|signed_url|secret-hash|private note|rawHex|DE AD BE EF|sample_id|provider_secret_key/i
+  );
 });
 
 test("request DTC projection makes missing and invalid DTC input explicit", async () => {

@@ -12,6 +12,7 @@ import type {
 } from "@/lib/dtcAnalyzer/types";
 
 export * from "@/lib/dtcAnalyzer/fallback";
+export * from "@/lib/dtcAnalyzer/rolloutReadiness";
 export * from "@/lib/dtcAnalyzer/types";
 
 export class UnavailableDtcAnalyzerProvider implements DtcAnalyzerProvider {

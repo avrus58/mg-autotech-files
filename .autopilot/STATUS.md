@@ -2,6 +2,33 @@
 
 Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
+## 2026-07-14 reviewer run RMAP-FILE-DTC-M5-ROLLOUT-READINESS
+
+- Bitis: 2026-07-14 06:17:16 +01:00.
+- Gorev: RMAP-FILE-DTC-M5-ROLLOUT-READINESS uncommitted worker degisikliklerini V4 roadmap/product/safety/quality gate olarak incelemek.
+- Sonuc: Accepted. Degisiklik selected Roadmap V2 `file-ai-dtc-analyzer` M5 Rollout Readiness milestone'una uyuyor; regression suite, sanitized local analytics/readiness summary and operator-readable documentation acceptance kriterlerini karsiliyor.
+- Reviewer duzeltmesi: Yok.
+- Degisen dosyalar: `.autopilot/STATUS.md`, `.autopilot/runtime/review-result.json`.
+- Factuality gate: `AcceptedArchitectureOnly`; public `mgautotech.de` sayfasi, structured data veya publication-ready automotive technical content degismedi. Unsupported/conflicting new public technical claim yok. Source coverage automotive evidence policy and MG business facts boundary ile sinirli; operator review production rollout icin zorunlu kalir.
+- Guvenlik/UI kontrolu: Yeni helper local code contracts and caller-provided fixture audit metadata ile sinirli; Supabase query, `.env*` read, provider call, customer file, storage path, signed URL, hash, raw binary/hex, sample id, payment, migration, package install, deploy veya public claim eklenmedi. UI degisikligi yok; mevcut DTC UI no-leak/loading/error/empty/retry states regression kapsaminda.
+- Calistirilan kontroller: `.\node_modules\.bin\tsx.cmd --test tests\ecu-intelligence.test.ts` PASS (71/71); `.\node_modules\.bin\tsx.cmd --test tests\admin-work-orders.test.ts` PASS (28/28); `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (57/57); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (303/303); `git diff --check` PASS (yalniz CRLF warnings); forbidden live-service/env/secret/pricing pattern scan PASS.
+- Calistirilmayan kontroller: `npm run build` reviewer tarafindan calistirilmadi; bu repo build'i local Next env dosyalarini okuyabilir ve `next/font/google` nedeniyle Google Fonts ag istegi yapabilir, bu run'daki no-env/no-live-network siniri icin guvenli degil. `npm run check:payments`, desktop normal env/dev/build/package, SQL migration/verification, smoke, scraper, live service ve deploy islemleri calistirilmadi.
+- Kalan risk: Roadmap state reconciliation runner kabul/commit sonrasi M5 statusunu Done yapmalidir. Production provider configuration, rate-limit persistence/monitoring, sanitized production analytics, deploy/smoke/rollback and customer/admin copy review operator-only kalir.
+
+## 2026-07-14 worker run RMAP-FILE-DTC-M5-ROLLOUT-READINESS
+
+- Baslangic/bitis: 2026-07-14 06:02:15 - 06:11:37 +01:00.
+- Gorev: AI DTC Analyzer rollout readiness pack.
+- Fingerprint: `ai-capability|dtc-analyzer|rollout-readiness-missing|regression-analytics-documentation-pack`.
+- Secim nedeni: `.autopilot/runtime/roadmap-selection.json` selected roadmap task olarak `RMAP-FILE-DTC-M5-ROLLOUT-READINESS` verdi ve `.autopilot/TASKS.md` Ready icinde ayni selected task bulundu. Roadmap state M5'i Planned/0 attempt olarak gosteriyordu; M1-M4 TASK_HISTORY/Done kayitlariyla tamamlanmis durumda.
+- Duplicate/evidence kontrolu: Package V4 constitution dosyalari, roadmap docs/state/selection/spec, repo-local `.autopilot/constitution/*`, AGENTS, PROJECT, ROADMAP, INBOX, FEATURE_PROPOSALS, TASKS, TASK_HISTORY, PRODUCT_SCORECARD, STATUS, package scripts, current Git status ve son commitler okundu. Ayni fingerprint Done/TASK_HISTORY icinde yoktu. Evidence gecerliydi: DTC M1-M4 regression/projection/configuration katmanlari vardi, ancak DTC-specific rollout readiness report/runbook ve sanitized local analytics summary yoktu.
+- Degisen dosyalar: `src/lib/dtcAnalyzer/rolloutReadiness.ts`, `src/lib/dtcAnalyzer/index.ts`, `docs/dtc-analyzer-rollout-readiness.md`, `tests/ecu-intelligence.test.ts`, `tests/ui-ux-safety.test.ts`, `.autopilot/TASKS.md`, `.autopilot/TASK_HISTORY.md`, `.autopilot/STATUS.md`, `.autopilot/runtime/last-result.json`.
+- Uygulama sonucu: `buildDtcRolloutReadinessReport` DTC M5 icin regression scenarios, provider/fallback/usage boundary, safe validation commands, data access policy and blocked production actions raporlar. `projectDtcRolloutAnalyticsSnapshot` yalniz caller-provided local fixture audit metadata uzerinden allow-listed aggregate counts uretir ve forbidden/private keyleri yok sayar. `docs/dtc-analyzer-rollout-readiness.md` local validation, operator-only production checks, analytics boundary and remaining limitations dokumante eder. Tests readiness contract, analytics no-leak behavior and runbook local-only boundaries icin genisletildi.
+- Guvenlik/UI kontrolu: `.env`, secret, real customer data, live Supabase/Stripe/Resend/OpenAI/PayPal, migration, production analytics query, package install, pricing/payment/legal policy, public automotive content, DTC-off approval, checksum/MOD output, commit/push/deploy yapilmadi. UI degisikligi yok; mevcut DTC UI no-leak/loading/error/empty/retry assumptions static regression ile korunuyor.
+- Calistirilan kontroller: `.\node_modules\.bin\tsx.cmd --test tests\ecu-intelligence.test.ts` PASS (71/71); `.\node_modules\.bin\tsx.cmd --test tests\admin-work-orders.test.ts` PASS (28/28); `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (57/57); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (303/303); `git diff --check` PASS (yalniz CRLF warnings).
+- Calistirilmayan kontroller: `npm run build` calistirilmadi; bu repo build'i local Next env dosyalarini okuyabilir ve `next/font/google` nedeniyle Google Fonts ag istegi yapabilir, bu run'daki no-env/no-live-network siniri icin guvenli degil. `npm run check:payments`, desktop normal env/dev/build/package, SQL migration/verification, smoke, scraper, live service ve deploy islemleri calistirilmadi.
+- Kalan risk: Production rollout henuz onayli degil; real provider configuration, production rate-limit persistence/monitoring, sanitized production analytics access, deploy/smoke/rollback and customer/admin copy review operator-only check olarak kalir.
+
 ## 2026-07-14 planner run V4 ROADMAP DTC ROLLOUT READINESS
 
 - Baslangic/bitis: 2026-07-14 05:59:53 +01:00.

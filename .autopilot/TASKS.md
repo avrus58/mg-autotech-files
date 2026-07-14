@@ -4,42 +4,6 @@
 
 ## Ready
 
-- [ ] **P1 RMAP-FILE-DTC-M5-ROLLOUT-READINESS - AI DTC Analyzer rollout readiness pack**
-  - Lane: AI Capability
-  - Roadmap: file-platform
-  - Epic: file-ai-dtc-analyzer
-  - Feature: file-dtc-m5-rollout-readiness-feature
-  - Roadmap task: RMAP-FILE-DTC-M5-ROLLOUT-READINESS
-  - Fingerprint: `ai-capability|dtc-analyzer|rollout-readiness-missing|regression-analytics-documentation-pack`
-  - Strategic score: 46 (V2 roadmap weighted score; runtime selection score 40.12)
-  - Scope class: M
-  - Expected effort: M roadmap milestone slice
-  - Business impact: 4/5
-  - User impact: 4/5
-  - Admin impact: 4/5
-  - Strategic fit: 5/5
-  - Confidence: 4/5
-  - Effort: 3/5
-  - Risk: 2/5
-  - Evidence: `.autopilot/runtime/roadmap-selection.json` selects `RMAP-FILE-DTC-M5-ROLLOUT-READINESS` and points to `C:\Users\gokka\Documents\MG-AI-OS-V4\artifacts\specs\rmap-file-dtc-m5-rollout-readiness.md`; roadmap state shows DTC M1-M4 Done/accepted and M5 Planned with 0 attempts; `src/app/api/requests/[id]/dtc-analysis/route.ts` and `src/app/api/admin/requests/[id]/dtc-analysis/route.ts` record sanitized `dtc_analysis_generated` audit events, but no DTC-specific rollout readiness report/runbook exists; `src/lib/dtcAnalyzer/requestIntegration.ts` exposes sanitized audit metadata fields such as `provider_status`, `fallback_used`, `analysis_success`, counts and human-review flags that can support local analytics without production queries; existing DTC regression coverage is split across `tests/ecu-intelligence.test.ts`, `tests/admin-work-orders.test.ts` and `tests/ui-ux-safety.test.ts`.
-  - Product value: Completes the active AI DTC Analyzer epic with a reviewable local readiness gate so future rollout decisions see regression status, safe analytics signals, known limitations and validation commands without touching production data.
-  - Selection reason: This is the selected V2 roadmap task, continues the accepted DTC M1-M4 sequence, and is higher strategic value than deferred maintenance/documentation cleanup.
-  - Scope: Add a local-only rollout readiness contract/report for the DTC Analyzer covering regression scenarios, sanitized analytics fields, provider/usage/fallback states, safety boundaries and operator/manual checks. Strengthen tests around the readiness contract and no-leak boundaries. Document exact safe validation and explicitly out-of-scope production actions. Do not add live provider calls, production analytics queries, migrations, package dependencies, desktop DTC activation, real customer data access, public automotive content publication, pricing/payment/legal changes or deploy steps.
-  - Acceptance criteria:
-    - A DTC rollout readiness artifact or helper summarizes current milestone readiness, required regression scenarios, known unavailable/fallback behavior, sanitized analytics fields and blocked production actions.
-    - Regression coverage verifies provider-unavailable fallback, provider-error fallback, invalid/no-code input, customer/admin projection boundaries, usage-limit responses, audit metadata safety and UI no-leak assumptions in the local test suite.
-    - Analytics/readiness output is derived only from local code contracts or fixture metadata and never queries Supabase, reads `.env*`, exposes storage paths, hashes, raw binary/hex, sample ids, provider secrets or customer notes.
-    - Documentation names the safe local validation commands, operator-only production rollout checks and remaining limitations before any real provider or customer-data rollout.
-    - Customer-facing DTC guidance remains customer-safe and admin-facing details remain permissioned; no output claims final diagnosis, DTC-off approval, checksum completion, byte patch approval or customer-ready MOD generation.
-  - Validation:
-    - `.\node_modules\.bin\tsx.cmd --test tests\ecu-intelligence.test.ts`
-    - `.\node_modules\.bin\tsx.cmd --test tests\admin-work-orders.test.ts`
-    - `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts`
-    - `npm run lint`
-    - `npm run typecheck`
-    - `npm test`
-    - `git diff --check`
-
 ## In Progress
 
 ## Blocked
@@ -85,6 +49,18 @@ Remediation: Batch with a future documentation/source-comment maintenance pass a
 Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
+
+### RMAP-FILE-DTC-M5-ROLLOUT-READINESS [P1] AI DTC Analyzer rollout readiness pack
+
+Durum: Done
+
+Fingerprint: `ai-capability|dtc-analyzer|rollout-readiness-missing|regression-analytics-documentation-pack`
+
+Kapsam: DTC Analyzer M5 icin local-only rollout readiness contract/report, sanitized fixture analytics helper ve operator runbook eklendi.
+
+Sonuc: `src/lib/dtcAnalyzer/rolloutReadiness.ts` `buildDtcRolloutReadinessReport` ve `projectDtcRolloutAnalyticsSnapshot` helperlarini saglar; regression scenario coverage, provider/fallback/usage boundary summary, allow-listed audit metadata aggregation, blocked production actions and validation gates local kod sozlesmesi olarak raporlanir. `docs/dtc-analyzer-rollout-readiness.md` safe local validation komutlarini, operator-only production rollout checks listesini ve kalan limitasyonlari belgeler. Testler readiness contract, sanitized analytics no-leak behavior and runbook local-only boundaries icin genisletildi. Live provider call, production analytics query, `.env*` read, migration, package install, pricing/legal change, DTC-off approval, checksum/MOD output veya deploy yapilmadi.
+
+Dogrulama: `.\node_modules\.bin\tsx.cmd --test tests\ecu-intelligence.test.ts` PASS (71/71); `.\node_modules\.bin\tsx.cmd --test tests\admin-work-orders.test.ts` PASS (28/28); `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (57/57); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (303/303); `git diff --check` PASS (CRLF warnings only). `npm run build` calistirilmadi; bu repo build'i local Next env dosyalarini okuyabilir ve `next/font/google` nedeniyle Google Fonts ag istegi yapabilir.
 
 ### RMAP-FILE-DTC-M4-ADMIN-CONFIGURATION [P1] AI DTC Analyzer admin configuration and usage limits
 

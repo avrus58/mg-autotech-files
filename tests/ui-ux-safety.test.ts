@@ -889,6 +889,31 @@ test("request DTC integration keeps customer and admin projections bounded", () 
   );
 });
 
+test("DTC rollout readiness runbook stays local-only and names validation gates", () => {
+  const runbook = readProjectFile("docs", "dtc-analyzer-rollout-readiness.md");
+  const helper = readProjectFile("src", "lib", "dtcAnalyzer", "rolloutReadiness.ts");
+  const combined = `${runbook}\n${helper}`;
+
+  assert.match(runbook, /RMAP-FILE-DTC-M5-ROLLOUT-READINESS/);
+  assert.match(runbook, /ready_for_operator_review/);
+  assert.match(runbook, /provider-unavailable fallback/);
+  assert.match(runbook, /provider-error fallback/);
+  assert.match(runbook, /usage-limit rejection before analysis and audit generation/);
+  assert.match(runbook, /projectDtcRolloutAnalyticsSnapshot/);
+  assert.match(runbook, /\.\\node_modules\\.bin\\tsx\.cmd --test tests\\ecu-intelligence\.test\.ts/);
+  assert.match(runbook, /\.\\node_modules\\.bin\\tsx\.cmd --test tests\\admin-work-orders\.test\.ts/);
+  assert.match(runbook, /\.\\node_modules\\.bin\\tsx\.cmd --test tests\\ui-ux-safety\.test\.ts/);
+  assert.match(runbook, /npm run lint/);
+  assert.match(runbook, /npm run typecheck/);
+  assert.match(runbook, /npm test/);
+  assert.match(runbook, /git diff --check/);
+  assert.match(runbook, /Autonomous Codex must not perform/);
+  assert.match(helper, /dtc-analyzer-rollout-readiness-v1/);
+  assert.match(helper, /sanitized local audit metadata/);
+  assert.doesNotMatch(combined, /fetch\(|process\.env|getSupabaseAdmin|createClient|\.from\(|OPENAI_API_KEY|SUPABASE_SERVICE_ROLE_KEY|STRIPE_SECRET_KEY/i);
+  assert.doesNotMatch(combined, /DTC-off approved|customer-ready file|checksum result|byte patch approved/i);
+});
+
 test("customer File Expert UI renders only customer-safe report details", () => {
   const page = readProjectFile("src", "app", "dashboard", "file-expert", "[id]", "page.tsx");
   assert.match(page, /Technical coordinate data, private file fingerprints and binary internals are hidden on customer reports/);
