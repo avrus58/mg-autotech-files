@@ -41,7 +41,7 @@ export function getApprovedSyntheticSourceBytes() {
 }
 
 export function makeArtifactId(role: string, attemptId: string, sha256: string) {
-  return `dtc-phase-c/${attemptId}/${role}/${sha256.slice(0, 16)}`;
+  return `dtc-phase-c/${attemptId}/${role}/${sha256}`;
 }
 
 export function applySyntheticCrc32(preIntegrity: Uint8Array) {

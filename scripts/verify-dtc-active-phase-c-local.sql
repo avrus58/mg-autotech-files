@@ -10,6 +10,7 @@ declare
   authenticated_can_read boolean;
   service_can_insert boolean;
   byte_columns integer;
+  classification_columns integer;
   attempt_id uuid;
   source_artifact_id uuid;
   immutability_blocked boolean := false;
@@ -44,6 +45,17 @@ begin
 
   if byte_columns <> 0 then
     raise exception 'Phase C must not store firmware bytes in bytea columns';
+  end if;
+
+  select count(*)
+  into classification_columns
+  from information_schema.columns
+  where table_schema = 'dtc_private'
+    and table_name = 'dtc_phase_c_synthetic_artifacts'
+    and column_name = 'artifact_classification';
+
+  if classification_columns <> 1 then
+    raise exception 'Phase C.1 artifact metadata must include INTERNAL_TEST_ONLY classification';
   end if;
 
   select has_table_privilege('anon', 'dtc_private.dtc_phase_c_synthetic_artifacts', 'SELECT')
@@ -86,13 +98,15 @@ begin
     artifact_role,
     artifact_reference,
     sha256,
-    byte_size
+    byte_size,
+    artifact_classification
   ) values (
     attempt_id,
     'source',
     'dtc-phase-c/local/source',
     '3635c2b76cba5164d0b189305a0264e167d8a9e7c3bd264e92574e41acb277c9',
-    4096
+    4096,
+    'INTERNAL_TEST_ONLY'
   )
   returning id into source_artifact_id;
 

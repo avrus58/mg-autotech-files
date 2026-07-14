@@ -13,7 +13,8 @@ export type DtcPhaseCArtifactRecord = {
   sha256: string;
   byteSize: number;
   parentArtifactId: string | null;
-  storageKind: "memory_synthetic_test";
+  storageKind: "memory_synthetic_test" | "local_disposable_test";
+  artifactClassification: "INTERNAL_TEST_ONLY";
   internalTestOnly: true;
   customerPublishable: false;
   createdAt: string;

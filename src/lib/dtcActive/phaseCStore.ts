@@ -1,5 +1,8 @@
 import { createHash, randomUUID } from "node:crypto";
-import { makeArtifactId, sha256Hex } from "@/lib/dtcActive/syntheticFixtureSource";
+import {
+  DtcPhaseCLocalArtifactStore,
+  type DtcPhaseCArtifactStorage,
+} from "@/lib/dtcActive/localArtifactStore";
 import type {
   DtcPhaseCArtifactRecord,
   DtcPhaseCEventRecord,
@@ -9,7 +12,6 @@ import type { DtcActiveHardVetoCode } from "@/lib/dtcActive/types";
 
 type StoredArtifact = {
   record: DtcPhaseCArtifactRecord;
-  bytes: Buffer;
 };
 
 export class DtcPhaseCInMemoryStore {
@@ -17,6 +19,8 @@ export class DtcPhaseCInMemoryStore {
   private readonly attempts = new Map<string, DtcPhaseCProcessingAttempt>();
   private readonly idempotency = new Map<string, string>();
   private readonly events: DtcPhaseCEventRecord[] = [];
+
+  constructor(private readonly artifactStorage: DtcPhaseCArtifactStorage = new DtcPhaseCLocalArtifactStore()) {}
 
   createOrGetAttempt(input: {
     idempotencyKey: string;
@@ -103,31 +107,23 @@ export class DtcPhaseCInMemoryStore {
     bytes: Uint8Array;
     parentArtifactId?: string | null;
   }) {
-    const sha256 = sha256Hex(input.bytes);
-    const artifactId = makeArtifactId(input.role, input.attemptId, sha256);
-    if (this.artifacts.has(artifactId)) {
-      throw new Error(`Immutable synthetic artifact already exists: ${artifactId}`);
-    }
-    const record: DtcPhaseCArtifactRecord = {
-      artifactId,
+    const record = this.artifactStorage.putArtifact({
       attemptId: input.attemptId,
       role: input.role,
-      sha256,
-      byteSize: input.bytes.length,
       parentArtifactId: input.parentArtifactId ?? null,
-      storageKind: "memory_synthetic_test",
-      internalTestOnly: true,
-      customerPublishable: false,
-      createdAt: new Date().toISOString(),
-    };
-    this.artifacts.set(artifactId, { record, bytes: Buffer.from(input.bytes) });
+      bytes: input.bytes,
+      syntheticFixtureOnly: true,
+      sourceLineage: "synthetic_fixture",
+    });
+    if (this.artifacts.has(record.artifactId)) {
+      throw new Error(`Immutable synthetic artifact metadata already exists: ${record.artifactId}`);
+    }
+    this.artifacts.set(record.artifactId, { record });
     return record;
   }
 
   getArtifactBytes(artifactId: string) {
-    const stored = this.artifacts.get(artifactId);
-    if (!stored) return null;
-    return Buffer.from(stored.bytes);
+    return this.artifactStorage.getArtifactBytes(artifactId);
   }
 
   listArtifacts(attemptId: string) {
@@ -165,7 +161,8 @@ export class DtcPhaseCInMemoryStore {
   }
 }
 
-export const defaultDtcPhaseCStore = new DtcPhaseCInMemoryStore();
+export const defaultDtcPhaseCArtifactStore = new DtcPhaseCLocalArtifactStore();
+export const defaultDtcPhaseCStore = new DtcPhaseCInMemoryStore(defaultDtcPhaseCArtifactStore);
 
 export function phaseCRequestHash(value: unknown) {
   return createHash("sha256").update(JSON.stringify(value)).digest("hex");

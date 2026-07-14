@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { randomUUID } from "node:crypto";
 import { resolve } from "node:path";
 import { test } from "node:test";
+import { DtcPhaseCLocalArtifactStore } from "@/lib/dtcActive/localArtifactStore";
 import {
   DtcPhaseCInMemoryStore,
   phaseCRequestHash,
@@ -12,6 +14,7 @@ import {
   phaseCExpectedHashes,
   runSyntheticPhaseCGoldenCorpus,
 } from "@/lib/dtcActive/syntheticProcessingEngine";
+import { getApprovedSyntheticSourceBytes, sha256Hex } from "@/lib/dtcActive/syntheticFixtureSource";
 import type { DtcActiveFeatureFlags } from "@/lib/dtcActive/types";
 
 const enabledSyntheticFlags: DtcActiveFeatureFlags = {
@@ -50,6 +53,19 @@ function generate(codes: string[], store = new DtcPhaseCInMemoryStore(), idempot
     flags: enabledSyntheticFlags,
     store,
   });
+}
+
+function durableTestRoot() {
+  return resolve(process.cwd(), ".local", "dtc-test-artifacts", `node-test-${randomUUID()}`);
+}
+
+function durableStore(root = durableTestRoot()) {
+  const artifactStore = new DtcPhaseCLocalArtifactStore(root);
+  return {
+    root,
+    artifactStore,
+    store: new DtcPhaseCInMemoryStore(artifactStore),
+  };
 }
 
 test("DTC Phase C generates exact P0100 synthetic source, pre-integrity and final hashes", () => {
@@ -162,10 +178,12 @@ test("DTC Phase C lease fencing rejects concurrent and stale worker writes", () 
 });
 
 test("DTC Phase C artifact repository is immutable and returns isolated byte copies", () => {
-  const store = new DtcPhaseCInMemoryStore();
+  const { store } = durableStore();
   const report = generate(["P0100"], store, "artifact-test");
   const source = report.artifacts.find((artifact) => artifact.role === "source");
   assert.ok(source);
+  assert.equal(source.storageKind, "local_disposable_test");
+  assert.equal(source.artifactClassification, "INTERNAL_TEST_ONLY");
 
   const firstCopy = store.getArtifactBytes(source.artifactId);
   assert.ok(firstCopy);
@@ -178,6 +196,93 @@ test("DTC Phase C artifact repository is immutable and returns isolated byte cop
     () => store.putArtifact({ attemptId: report.attemptId, role: "source", bytes: secondCopy }),
     /already exists/
   );
+});
+
+test("DTC Phase C durable artifact store survives restart and verifies unchanged canonical hashes", () => {
+  const { root, artifactStore, store } = durableStore();
+  const report = generate(["P0100", "P0300"], store, `restart-${randomUUID()}`);
+  const finalArtifact = report.artifacts.find((artifact) => artifact.role === "final");
+  assert.ok(finalArtifact);
+  assert.equal(report.sourceSha256, phaseCExpectedHashes.source);
+  assert.equal(report.preIntegritySha256, phaseCExpectedHashes.combinedPreIntegrity);
+  assert.equal(report.finalSha256, phaseCExpectedHashes.combinedFinal);
+
+  const restartedArtifactStore = new DtcPhaseCLocalArtifactStore(root);
+  const afterRestart = restartedArtifactStore.getArtifactBytes(finalArtifact.artifactId);
+  assert.ok(afterRestart);
+  assert.equal(sha256Hex(afterRestart), phaseCExpectedHashes.combinedFinal);
+  assert.doesNotThrow(() => artifactStore.getPhysicalPathForTestOnly(finalArtifact.artifactId));
+});
+
+test("DTC Phase C durable artifact store rejects traversal, corrupt files, symlink escape and non-synthetic input", () => {
+  const { root, artifactStore, store } = durableStore();
+  const report = generate(["P0100"], store, `path-security-${randomUUID()}`);
+  const finalArtifact = report.artifacts.find((artifact) => artifact.role === "final");
+  assert.ok(finalArtifact);
+
+  assert.throws(
+    () => artifactStore.getArtifactBytes(`dtc-phase-c/${report.attemptId}/../final/${"a".repeat(64)}`),
+    /invalid|path traversal|escape/i
+  );
+
+  const finalPath = artifactStore.getPhysicalPathForTestOnly(finalArtifact.artifactId);
+  const bytes = readFileSync(finalPath);
+  bytes[32] ^= 0xff;
+  writeFileSync(finalPath, bytes);
+  assert.throws(
+    () => artifactStore.getArtifactBytes(finalArtifact.artifactId),
+    /hash verification failed|corrupt|tampered/i
+  );
+
+  const symlinkRoot = durableTestRoot();
+  const outside = resolve(process.cwd(), ".local", "dtc-test-artifacts", `outside-${randomUUID()}`);
+  const symlinkAttemptId = randomUUID();
+  mkdirSync(outside, { recursive: true });
+  mkdirSync(symlinkRoot, { recursive: true });
+  let symlinkCreated = false;
+  try {
+    symlinkSync(outside, resolve(symlinkRoot, symlinkAttemptId), "junction");
+    symlinkCreated = true;
+  } catch {
+    symlinkCreated = false;
+  }
+  if (symlinkCreated) {
+    const symlinkStore = new DtcPhaseCLocalArtifactStore(symlinkRoot);
+    assert.throws(
+      () => symlinkStore.putArtifact({
+        attemptId: symlinkAttemptId,
+        role: "source",
+        bytes: getApprovedSyntheticSourceBytes(),
+        syntheticFixtureOnly: true,
+        sourceLineage: "synthetic_fixture",
+      }),
+      /path traversal|escape|directory safety/i
+    );
+  }
+
+  assert.throws(
+    () => artifactStore.putArtifact({
+      attemptId: randomUUID(),
+      role: "source",
+      bytes: Buffer.alloc(4096),
+      syntheticFixtureOnly: true,
+      sourceLineage: "synthetic_fixture",
+    }),
+    /magic|digest|synthetic/i
+  );
+
+  assert.throws(
+    () => artifactStore.putArtifact({
+      attemptId: randomUUID(),
+      role: "source",
+      bytes: getApprovedSyntheticSourceBytes(),
+      syntheticFixtureOnly: false,
+      sourceLineage: "synthetic_fixture",
+    } as never),
+    /non-synthetic/i
+  );
+
+  rmSync(root, { recursive: true, force: true });
 });
 
 test("DTC Phase C negative source states fail without output artifacts", () => {
@@ -208,6 +313,7 @@ test("DTC Phase C negative source states fail without output artifacts", () => {
 
 test("DTC Phase C migration is additive, private, RLS-protected and stores no bytes", () => {
   const sql = readProjectFile("supabase", "migrations", "20260714212824_dtc_active_processing_phase_c_synthetic_test_output.sql");
+  const phaseC1Sql = readProjectFile("supabase", "migrations", "20260714220848_dtc_phase_c1_durable_synthetic_artifacts.sql");
   const executableSql = stripSqlComments(sql);
 
   assert.match(sql, /create table if not exists dtc_private\.dtc_phase_c_synthetic_attempts/i);
@@ -217,8 +323,12 @@ test("DTC Phase C migration is additive, private, RLS-protected and stores no by
   assert.match(sql, /customer_publishable boolean not null default false check \(customer_publishable is false\)/i);
   assert.match(sql, /customer_delivery_enabled boolean not null default false check \(customer_delivery_enabled is false\)/i);
   assert.match(sql, /before update or delete on dtc_private\.dtc_phase_c_synthetic_artifacts/i);
+  assert.match(phaseC1Sql, /artifact_classification text not null default 'INTERNAL_TEST_ONLY'/i);
+  assert.match(phaseC1Sql, /check \(artifact_classification = 'INTERNAL_TEST_ONLY'\)/i);
   assert.doesNotMatch(executableSql, /\b(drop|delete\s+from|truncate|drop\s+column)\b/i);
+  assert.doesNotMatch(stripSqlComments(phaseC1Sql), /\b(drop|delete\s+from|truncate|drop\s+column)\b/i);
   assert.doesNotMatch(sql, /\bbytea\b|base64|raw_firmware|hex_dump/i);
+  assert.doesNotMatch(phaseC1Sql, /\bbytea\b|base64|raw_firmware|hex_dump/i);
 });
 
 test("DTC Phase C local verification SQL checks RLS, grants and immutability", () => {
@@ -234,10 +344,15 @@ test("DTC Phase C local verification SQL checks RLS, grants and immutability", (
 
 test("DTC Phase C admin workflow is staff-only and has no customer delivery route", () => {
   const route = readProjectFile("src", "app", "api", "admin", "dtc", "test-processing", "generate", "route.ts");
+  const artifactRoute = readProjectFile("src", "app", "api", "admin", "dtc", "test-processing", "artifacts", "[...artifactId]", "route.ts");
   const page = readProjectFile("src", "app", "admin", "dtc", "test-processing", "page.tsx");
   const customerStatusRoute = readProjectFile("src", "app", "api", "requests", "[id]", "dtc-status", "route.ts");
 
   assert.match(route, /requireStaffPermission\(request,\s*"ai_training\.manage"\)/);
+  assert.match(artifactRoute, /requireStaffPermission\(request,\s*"ai_training\.manage"\)/);
+  assert.match(artifactRoute, /INTERNAL_TEST_ONLY/);
+  assert.match(artifactRoute, /x-customer-delivery-enabled/);
+  assert.doesNotMatch(artifactRoute, /physical|storageRoot|dtc-test-artifacts|service_role/i);
   assert.match(route, /generateSyntheticDtcTestOutput/);
   assert.doesNotMatch(route, /public|download|delivery|service_role/i);
   assert.match(page, /Generate Synthetic Test Output/);
