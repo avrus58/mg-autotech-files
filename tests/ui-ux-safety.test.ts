@@ -148,6 +148,31 @@ test("customer order detail shows delivery estimates only when explicitly set", 
   assert.doesNotMatch(page, /formatDeliveryEstimate\(order\.estimated_delivery_label\)/);
 });
 
+test("customer order detail shows safe live queue and honest ETA states", () => {
+  const page = readProjectFile("src", "app", "dashboard", "orders", "[id]", "page.tsx");
+  const route = readProjectFile("src", "app", "api", "requests", "[id]", "queue", "route.ts");
+  const queuePanel =
+    page.match(/function CustomerQueuePanel[\s\S]*?function CustomerDtcAnalysisPanel/)?.[0] ?? "";
+
+  assert.match(route, /requireApiUser\(request\)/);
+  assert.match(route, /getCustomerRequestQueueProjection\(id, auth\.user\.id\)/);
+  assert.match(page, /import type \{ CustomerRequestQueueProjection \}/);
+  assert.match(page, /const \[queueProjection, setQueueProjection\]/);
+  assert.match(page, /\/api\/requests\/\$\{orderId\}\/queue/);
+  assert.match(page, /<CustomerQueuePanel/);
+  assert.match(queuePanel, /Live Queue & ETA/);
+  assert.match(queuePanel, /Loading live queue state/);
+  assert.match(queuePanel, /Retry before treating queue state as unavailable/);
+  assert.match(queuePanel, /Queue state is not available yet/);
+  assert.match(queuePanel, /ETA remains pending review until MG AutoTech sets it/);
+  assert.match(queuePanel, /projection\.eta\.label/);
+  assert.match(queuePanel, /projection\.queuePosition\.label/);
+  assert.doesNotMatch(
+    queuePanel + route,
+    /request_internal_notes|internal_notes|risk_flags|training_sample_id|private_offsets|hex_preview|signed_url|storage_path|hash/i
+  );
+});
+
 test("customer order detail provides a safe support summary copy action", () => {
   const page = readProjectFile("src", "app", "dashboard", "orders", "[id]", "page.tsx");
   const helper = page.match(/function buildCustomerSupportSummary[\s\S]*?\n}\n/)?.[0] ?? "";

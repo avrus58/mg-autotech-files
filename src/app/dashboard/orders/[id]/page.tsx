@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { signOutIfEmailUnverified } from "@/lib/authGuards";
 import { supabase } from "@/lib/supabaseClient";
 import RequestChat from "@/components/RequestChat";
 import type { CustomerRequestDtcAnalysis } from "@/lib/dtcAnalyzer/requestIntegration";
+import type { CustomerRequestQueueProjection } from "@/lib/workOrders/queueEta";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -317,6 +318,9 @@ export default function OrderDetailPage() {
   const [dtcAnalysis, setDtcAnalysis] = useState<CustomerRequestDtcAnalysis | null>(null);
   const [dtcLoading, setDtcLoading] = useState(false);
   const [dtcError, setDtcError] = useState("");
+  const [queueProjection, setQueueProjection] = useState<CustomerRequestQueueProjection | null>(null);
+  const [queueLoading, setQueueLoading] = useState(false);
+  const [queueError, setQueueError] = useState("");
   const [additionalUploadPhase, setAdditionalUploadPhase] =
     useState<AdditionalUploadPhase>("idle");
   const additionalUploading = additionalUploadPhase !== "idle";
@@ -330,6 +334,35 @@ export default function OrderDetailPage() {
   const supportSummaryText = useMemo(
     () => buildCustomerSupportSummary(order, params?.id ?? ""),
     [order, params?.id]
+  );
+
+  const loadQueueProjection = useCallback(
+    async (orderId: string, token: string, options?: { silent?: boolean }) => {
+      if (!options?.silent) setQueueLoading(true);
+      setQueueError("");
+
+      try {
+        const response = await fetch(`/api/requests/${orderId}/queue`, {
+          headers: { Authorization: `Bearer ${token}` },
+          cache: "no-store",
+        });
+        const payload = (await response.json()) as {
+          queue?: CustomerRequestQueueProjection;
+          error?: string;
+        };
+
+        if (!response.ok || !payload.queue) {
+          throw new Error(payload.error || "Queue state could not be loaded.");
+        }
+
+        setQueueProjection(payload.queue);
+      } catch (error) {
+        setQueueError(error instanceof Error ? error.message : "Queue state could not be loaded.");
+      } finally {
+        if (!options?.silent) setQueueLoading(false);
+      }
+    },
+    []
   );
 
   useEffect(() => {
@@ -378,6 +411,14 @@ export default function OrderDetailPage() {
       setOrder(data as Order);
       setLoading(false);
       setLiveRefreshing(false);
+
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      if (token) {
+        void loadQueueProjection(orderId, token, options);
+      } else {
+        setQueueError("Queue state could not be loaded. Sign in again and retry.");
+      }
     };
 
     loadOrder();
@@ -426,7 +467,7 @@ export default function OrderDetailPage() {
       window.clearInterval(interval);
       supabase.removeChannel(channel);
     };
-  }, [params?.id, router]);
+  }, [params?.id, router, loadQueueProjection]);
 
   const downloadCompletedFile = async () => {
     const latestFilePath =
@@ -624,6 +665,17 @@ export default function OrderDetailPage() {
     } finally {
       setDtcLoading(false);
     }
+  };
+
+  const retryQueueProjection = async () => {
+    if (!order) return;
+    const { data } = await supabase.auth.getSession();
+    const token = data.session?.access_token;
+    if (!token) {
+      setQueueError("Queue state could not be loaded. Sign in again and retry.");
+      return;
+    }
+    await loadQueueProjection(order.id, token);
   };
 
   const copySupportSummary = async () => {
@@ -1008,6 +1060,13 @@ export default function OrderDetailPage() {
               </p>
             </section>
 
+            <CustomerQueuePanel
+              projection={queueProjection}
+              loading={queueLoading}
+              error={queueError}
+              onRetry={() => { void retryQueueProjection(); }}
+            />
+
             <section className="overflow-hidden rounded-[2rem] border border-white/10 bg-white/[0.04] p-6">
               <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
                 <div>
@@ -1158,6 +1217,96 @@ function confidenceClass(confidence: string) {
   }
   if (confidence === "low") return "border-amber-700/40 bg-amber-950/20 text-amber-100";
   return "border-zinc-700/50 bg-zinc-950/40 text-zinc-300";
+}
+
+function queueStateClass(projection: CustomerRequestQueueProjection | null) {
+  if (!projection) return "border-white/10 bg-black/25 text-zinc-300";
+  if (projection.isTerminal) return "border-emerald-700/30 bg-emerald-950/15 text-emerald-100";
+  if (projection.isBlocked) return "border-amber-700/40 bg-amber-950/20 text-amber-100";
+  if (projection.eta.availability === "available") return "border-blue-700/35 bg-blue-950/15 text-blue-100";
+  return "border-white/10 bg-black/25 text-zinc-300";
+}
+
+function CustomerQueuePanel({
+  projection,
+  loading,
+  error,
+  onRetry,
+}: {
+  projection: CustomerRequestQueueProjection | null;
+  loading: boolean;
+  error: string;
+  onRetry: () => void;
+}) {
+  return (
+    <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6">
+      <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <Clock3 className="h-7 w-7 text-red-400" />
+            <h2 className="break-words text-2xl font-black">Live Queue & ETA</h2>
+          </div>
+          <p className="mt-2 text-sm leading-6 text-zinc-400">
+            Queue state uses the current request status and MG AutoTech work-order review fields.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onRetry}
+          disabled={loading}
+          className="inline-flex items-center justify-center rounded-xl border border-white/10 bg-black/25 px-3 py-2 text-xs font-black text-zinc-200 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {loading ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : <RefreshCcw className="mr-2 h-3.5 w-3.5" />}
+          Refresh
+        </button>
+      </div>
+
+      {loading && !projection && (
+        <div role="status" aria-live="polite" className="rounded-2xl border border-blue-700/30 bg-blue-950/15 p-4 text-sm text-blue-100">
+          <Loader2 className="mr-2 inline h-4 w-4 animate-spin" />
+          Loading live queue state...
+        </div>
+      )}
+
+      {error && (
+        <div role="alert" className="mb-4 rounded-2xl border border-amber-700/40 bg-amber-950/20 p-4 text-sm leading-6 text-amber-100">
+          <AlertTriangle className="mr-2 inline h-4 w-4" />
+          {error} Retry before treating queue state as unavailable.
+        </div>
+      )}
+
+      {!projection && !loading ? (
+        <div className="rounded-2xl border border-dashed border-white/15 bg-black/25 p-5 text-sm leading-6 text-zinc-400">
+          Queue state is not available yet. ETA remains pending review until MG AutoTech sets it.
+        </div>
+      ) : projection ? (
+        <div aria-live="polite" className="space-y-3">
+          <div className={`rounded-2xl border p-4 ${queueStateClass(projection)}`}>
+            <div className="text-xs font-black uppercase tracking-[0.14em] opacity-80">Queue state</div>
+            <div className="mt-2 break-words text-xl font-black">{projection.stateLabel}</div>
+            <p className="mt-2 break-words text-sm leading-6 opacity-90">{projection.stateDescription}</p>
+          </div>
+
+          <div className="rounded-2xl border border-white/10 bg-black/25 p-4">
+            <div className="text-xs font-black uppercase tracking-[0.14em] text-zinc-500">Queue position</div>
+            <div className="mt-2 break-words text-lg font-black text-white">{projection.queuePosition.label}</div>
+            <p className="mt-2 break-words text-sm leading-6 text-zinc-400">{projection.queuePosition.description}</p>
+          </div>
+
+          <div className="rounded-2xl border border-white/10 bg-black/25 p-4">
+            <div className="text-xs font-black uppercase tracking-[0.14em] text-zinc-500">ETA availability</div>
+            <div className="mt-2 break-words text-lg font-black text-white">{projection.eta.label}</div>
+            <p className="mt-2 break-words text-sm leading-6 text-zinc-400">{projection.eta.description}</p>
+            {projection.eta.note && (
+              <p className="mt-3 rounded-xl border border-white/10 bg-white/[0.04] p-3 text-sm leading-6 text-zinc-300">
+                {projection.eta.note}
+              </p>
+            )}
+          </div>
+        </div>
+      ) : null}
+    </section>
+  );
 }
 
 function CustomerDtcAnalysisPanel({

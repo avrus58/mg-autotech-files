@@ -29,6 +29,14 @@ import {
   type WorkOrderNoteType,
   type WorkOrderPriority,
 } from "@/lib/workOrders/types";
+import {
+  buildRequestQueueProjection,
+  compareRequestQueuePlacement,
+  projectCustomerRequestQueueProjection,
+  withRequestQueuePosition,
+  type CustomerRequestQueueProjection,
+  type RequestQueueProjection,
+} from "@/lib/workOrders/queueEta";
 
 type DbError = { code?: string; message?: string } | null | undefined;
 
@@ -168,6 +176,7 @@ export type AdminRequestListItem = {
   order: OrderRow;
   customer: ProfileSummary | null;
   workOrder: WorkOrderRow | null;
+  queueProjection: RequestQueueProjection;
   requestedServices: string[];
   indicators: {
     hasOriginalFile: boolean;
@@ -271,6 +280,48 @@ function fallbackWorkOrder(order: OrderRow): WorkOrderRow {
   };
 }
 
+function hasDeliveredFile(order: OrderRow) {
+  return Boolean(order.modified_file_path || (Array.isArray(order.modified_files) && order.modified_files.length > 0));
+}
+
+function buildQueueProjection(order: OrderRow, workOrder: WorkOrderRow) {
+  return buildRequestQueueProjection({
+    requestId: order.id,
+    orderStatus: order.status,
+    priority: workOrder.priority,
+    adminStatus: workOrder.admin_status,
+    deliveryStatus: workOrder.delivery_status,
+    finalFileStatus: workOrder.final_file_status,
+    paymentReviewStatus: workOrder.payment_review_status,
+    qualityCheckStatus: workOrder.quality_check_status,
+    estimatedTurnaroundMinutes: workOrder.estimated_turnaround_minutes,
+    etaNote: workOrder.eta_note,
+    createdAt: order.created_at ?? workOrder.created_at,
+    updatedAt: workOrder.updated_at ?? order.updated_at ?? order.created_at,
+    hasOriginalFile: Boolean(order.original_file_path),
+    hasDeliveredFile: hasDeliveredFile(order),
+  });
+}
+
+function attachQueuePositions(items: AdminRequestListItem[]) {
+  const active = items
+    .filter((item) => item.queueProjection.participatesInQueue)
+    .sort((left, right) => compareRequestQueuePlacement(left.queueProjection, right.queueProjection));
+  const activeCount = active.length;
+  const placements = new Map(active.map((item, index) => [
+    item.order.id,
+    { position: index + 1, activeCount },
+  ]));
+
+  return items.map((item) => ({
+    ...item,
+    queueProjection: withRequestQueuePosition(
+      item.queueProjection,
+      placements.get(item.order.id) ?? null
+    ),
+  }));
+}
+
 async function fetchProfiles(ids: string[]) {
   if (ids.length === 0) return new Map<string, ProfileSummary>();
   const admin = getSupabaseAdmin();
@@ -329,14 +380,16 @@ function buildListItem(
   workOrder: WorkOrderRow | null,
   trainingSampleCount: number
 ): AdminRequestListItem {
+  const resolvedWorkOrder = workOrder ?? fallbackWorkOrder(order);
   return {
     order,
     customer: profile,
-    workOrder: workOrder ?? fallbackWorkOrder(order),
+    workOrder: resolvedWorkOrder,
+    queueProjection: buildQueueProjection(order, resolvedWorkOrder),
     requestedServices: splitServiceLabels(order.service_type),
     indicators: {
       hasOriginalFile: Boolean(order.original_file_path),
-      hasDeliveredFile: Boolean(order.modified_file_path || (Array.isArray(order.modified_files) && order.modified_files.length > 0)),
+      hasDeliveredFile: hasDeliveredFile(order),
       hasCustomerUpload: Array.isArray(order.customer_uploads) && order.customer_uploads.length > 0,
       trainingSampleCount,
       hasAiEvidence: trainingSampleCount > 0,
@@ -359,10 +412,47 @@ export async function getAdminRequestList() {
 
   return {
     migrationReady: workOrders.migrationReady,
-    items: orders.map((order) =>
+    items: attachQueuePositions(orders.map((order) =>
       buildListItem(order, order.customer_id ? profiles.get(order.customer_id) ?? null : null, workOrders.rows.get(order.id) ?? null, trainingCounts.get(order.id) ?? 0)
-    ),
+    )),
   };
+}
+
+export async function getCustomerRequestQueueProjection(
+  requestId: string,
+  customerId: string
+): Promise<CustomerRequestQueueProjection> {
+  const admin = getSupabaseAdmin();
+  const orderResult = await admin
+    .from("orders")
+    .select("*")
+    .eq("id", requestId)
+    .eq("customer_id", customerId)
+    .maybeSingle();
+
+  if (orderResult.error || !orderResult.data) {
+    throw new Error("Order not found or access denied.");
+  }
+
+  const currentOrder = orderResult.data as unknown as OrderRow;
+  const ordersResult = await admin
+    .from("orders")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(500);
+  const orders = ordersResult.error ? [currentOrder] : ((ordersResult.data ?? []) as unknown as OrderRow[]);
+  if (!orders.some((order) => order.id === currentOrder.id)) {
+    orders.push(currentOrder);
+  }
+
+  const ids = orders.map((order) => order.id);
+  const workOrders = await fetchWorkOrders(ids);
+  const items = attachQueuePositions(orders.map((order) =>
+    buildListItem(order, null, workOrders.rows.get(order.id) ?? null, 0)
+  ));
+  const current = items.find((item) => item.order.id === currentOrder.id);
+  if (!current) throw new Error("Queue state could not be loaded.");
+  return projectCustomerRequestQueueProjection(current.queueProjection);
 }
 
 async function fetchWorkOrderDetailRows(requestId: string) {

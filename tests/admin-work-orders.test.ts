@@ -19,6 +19,11 @@ import {
   mapLegacyOrderStatus,
   splitServiceLabels,
 } from "../src/lib/workOrders/types";
+import {
+  buildRequestQueueProjection,
+  projectCustomerRequestQueueProjection,
+  withRequestQueuePosition,
+} from "../src/lib/workOrders/queueEta";
 
 type SmokeUrlGuardModule = {
   NON_LOCAL_SMOKE_OVERRIDE_ENV: string;
@@ -83,11 +88,13 @@ test("anonymous users cannot call admin work-order APIs", async () => {
   const detail = await import("../src/app/api/admin/requests/[id]/route");
   const notes = await import("../src/app/api/admin/requests/[id]/notes/route");
   const dtcAnalysis = await import("../src/app/api/admin/requests/[id]/dtc-analysis/route");
+  const customerQueue = await import("../src/app/api/requests/[id]/queue/route");
   assert.equal((await list.GET(new Request("http://localhost/api/admin/requests"))).status, 401);
   assert.equal((await detail.GET(new Request("http://localhost/api/admin/requests/id"), { params: Promise.resolve({ id: "id" }) })).status, 401);
   assert.equal((await detail.PATCH(new Request("http://localhost/api/admin/requests/id", { method: "PATCH", body: "{}" }), { params: Promise.resolve({ id: "id" }) })).status, 401);
   assert.equal((await notes.POST(new Request("http://localhost/api/admin/requests/id/notes", { method: "POST", body: "{}" }), { params: Promise.resolve({ id: "id" }) })).status, 401);
   assert.equal((await dtcAnalysis.POST(new Request("http://localhost/api/admin/requests/id/dtc-analysis", { method: "POST" }), { params: Promise.resolve({ id: "id" }) })).status, 401);
+  assert.equal((await customerQueue.GET(new Request("http://localhost/api/requests/id/queue"), { params: Promise.resolve({ id: "id" }) })).status, 401);
   assert.equal((await detail.PATCH(new Request("http://localhost/api/admin/requests/id", { method: "PATCH", body: JSON.stringify({ message_visibility: { message_id: "00000000-0000-4000-8000-000000000001", action: "hide" } }) }), { params: Promise.resolve({ id: "id" }) })).status, 401);
 });
 
@@ -237,6 +244,83 @@ test("service labels are split conservatively for request summaries", () => {
   ]);
 });
 
+test("request queue helper keeps ETA honest when no estimate is set", () => {
+  const projection = buildRequestQueueProjection({
+    requestId: "request-1",
+    orderStatus: "new_request",
+    priority: "normal",
+    adminStatus: "new",
+    deliveryStatus: "not_ready",
+    finalFileStatus: "not_ready",
+    paymentReviewStatus: "not_checked",
+    qualityCheckStatus: "pending",
+    estimatedTurnaroundMinutes: null,
+    etaNote: null,
+    createdAt: "2026-01-01T00:00:00.000Z",
+    updatedAt: "2026-01-01T00:00:00.000Z",
+    hasOriginalFile: true,
+    hasDeliveredFile: false,
+  });
+  const customer = projectCustomerRequestQueueProjection(projection);
+
+  assert.equal(projection.state, "queued_for_review");
+  assert.equal(projection.eta.availability, "pending_review");
+  assert.equal(projection.eta.label, "ETA pending review");
+  assert.equal(projection.participatesInQueue, true);
+  assert.equal(JSON.stringify(customer).includes("priority"), false);
+  assert.equal(JSON.stringify(customer).includes("risk_flags"), false);
+});
+
+test("request queue helper shows only explicit admin ETA values", () => {
+  const projection = withRequestQueuePosition(buildRequestQueueProjection({
+    requestId: "request-2",
+    orderStatus: "in_progress",
+    priority: "high",
+    adminStatus: "in_progress",
+    deliveryStatus: "waiting_final_file",
+    finalFileStatus: "not_ready",
+    paymentReviewStatus: "paid",
+    qualityCheckStatus: "pending",
+    estimatedTurnaroundMinutes: 135,
+    etaNote: "After calibration review.",
+    createdAt: "2026-01-01T00:00:00.000Z",
+    updatedAt: "2026-01-01T00:30:00.000Z",
+    hasOriginalFile: true,
+    hasDeliveredFile: false,
+  }), { position: 2, activeCount: 5 });
+
+  assert.equal(projection.state, "in_progress");
+  assert.equal(projection.eta.availability, "available");
+  assert.equal(projection.eta.label, "Admin estimate: 2h 15m");
+  assert.equal(projection.eta.note, "After calibration review.");
+  assert.equal(projection.queuePosition.label, "Position 2 of 5");
+});
+
+test("request queue helper pauses blocked customer-visible states outside active queue", () => {
+  const projection = buildRequestQueueProjection({
+    requestId: "request-3",
+    orderStatus: "customer_info_needed",
+    priority: "urgent",
+    adminStatus: "waiting_for_customer",
+    deliveryStatus: "not_ready",
+    finalFileStatus: "not_ready",
+    paymentReviewStatus: "paid",
+    qualityCheckStatus: "pending",
+    estimatedTurnaroundMinutes: 45,
+    etaNote: "Waiting on customer read-method detail.",
+    createdAt: "2026-01-01T00:00:00.000Z",
+    updatedAt: "2026-01-01T00:30:00.000Z",
+    hasOriginalFile: true,
+    hasDeliveredFile: false,
+  });
+
+  assert.equal(projection.state, "waiting_for_customer");
+  assert.equal(projection.isBlocked, true);
+  assert.equal(projection.participatesInQueue, false);
+  assert.equal(projection.eta.availability, "unavailable");
+  assert.equal(projection.queuePosition.label, "Paused outside active queue");
+});
+
 test("admin work-order UI does not embed customer-forbidden fields directly in customer routes", () => {
   const customerDetail = readFileSync(resolve(process.cwd(), "src", "app", "dashboard", "orders", "[id]", "page.tsx"), "utf8");
   assert.doesNotMatch(customerDetail, /request_internal_notes|request_work_order_events|internal_notes|risk_flags|training_sample_id|private_offsets|hex_preview/i);
@@ -352,6 +436,19 @@ test("admin request list surfaces customer upload signal without upload internal
   assert.match(client, /Customer file/);
   assert.match(client, /Paperclip/);
   assert.doesNotMatch(client, /customer_uploads|signed_url|storage_path|file_name|hash/i);
+});
+
+test("admin request list surfaces queue and ETA state without file internals", () => {
+  const client = readFileSync(resolve(process.cwd(), "src", "app", "admin", "requests", "AdminRequestsClient.tsx"), "utf8");
+  const server = readFileSync(resolve(process.cwd(), "src", "lib", "workOrders", "server.ts"), "utf8");
+
+  assert.match(server, /queueProjection:\s*buildQueueProjection\(order, resolvedWorkOrder\)/);
+  assert.match(server, /attachQueuePositions\(orders\.map/);
+  assert.match(client, /item\.queueProjection\.stateLabel/);
+  assert.match(client, /item\.queueProjection\.queuePosition\.label/);
+  assert.match(client, /item\.queueProjection\.eta\.label/);
+  assert.match(client, /ETA:/);
+  assert.doesNotMatch(client, /customer_uploads|eta_note|estimated_turnaround_minutes|risk_flags|signed_url|storage_path|file_name|hash/i);
 });
 
 test("admin work-order fallback mode disables mutation controls", () => {

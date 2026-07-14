@@ -51,6 +51,24 @@ type ApiItem = {
     quality_check_status: string;
     updated_at: string;
   } | null;
+  queueProjection: {
+    state: string;
+    stateLabel: string;
+    stateDescription: string;
+    priorityLabel: string;
+    isBlocked: boolean;
+    eta: {
+      availability: string;
+      label: string;
+      description: string;
+    };
+    queuePosition: {
+      position: number | null;
+      activeCount: number | null;
+      label: string;
+      description: string;
+    };
+  };
   requestedServices: string[];
   indicators: {
     hasOriginalFile: boolean;
@@ -334,6 +352,18 @@ export default function AdminRequestsClient() {
                         <Indicator ok={item.indicators.hasOriginalFile} label="ORI" />
                         <Indicator ok={item.indicators.hasDeliveredFile} label="MOD" />
                         <Indicator ok={item.indicators.hasAiEvidence} label="AI" />
+                      </div>
+                      <div className="mt-3 grid gap-2 text-xs">
+                        <div className="flex min-w-0 items-start gap-2 rounded-xl border border-white/10 bg-black/25 px-3 py-2">
+                          <Clock3 className="mt-0.5 h-4 w-4 shrink-0 text-red-300" />
+                          <div className="min-w-0">
+                            <div className="break-words font-black text-white">{item.queueProjection.stateLabel}</div>
+                            <div className="mt-1 break-words text-zinc-500">{item.queueProjection.queuePosition.label}</div>
+                          </div>
+                        </div>
+                        <div className={`rounded-xl border px-3 py-2 ${badgeClass(item.queueProjection.eta.availability === "available" ? "in_progress" : item.queueProjection.state)}`}>
+                          <span className="font-black">ETA:</span> {item.queueProjection.eta.label}
+                        </div>
                       </div>
                     </div>
                     <div className="grid gap-2 text-right text-sm">
