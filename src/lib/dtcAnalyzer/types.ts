@@ -57,6 +57,73 @@ export type DtcAnalyzerFallbackState = {
   reason: string | null;
 };
 
+export type DtcAnalysisEvidenceSource =
+  | "input_normalization"
+  | "local_known_profile"
+  | "deterministic_code_family"
+  | "provider_state";
+
+export type DtcAnalysisEvidenceType =
+  | "dtc_code_detected"
+  | "known_code_context"
+  | "system_family"
+  | "standardization_scope"
+  | "input_validation"
+  | "provider_availability";
+
+export type DtcAnalysisSeverity = "info" | "caution" | "warning" | "critical";
+
+export type DtcAnalysisEvidenceItem = {
+  id: string;
+  code: string | null;
+  source: DtcAnalysisEvidenceSource;
+  type: DtcAnalysisEvidenceType;
+  severity: DtcAnalysisSeverity;
+  text: string;
+  customerSafe: true;
+};
+
+export type DtcRiskFlagKind =
+  | "diagnostic_uncertainty"
+  | "insufficient_context"
+  | "safety_relevance"
+  | "emissions_or_legal_review"
+  | "network_or_module_review"
+  | "provider_unavailable";
+
+export type DtcRiskFlag = {
+  id: string;
+  code: string | null;
+  kind: DtcRiskFlagKind;
+  severity: DtcAnalysisSeverity;
+  text: string;
+  requiresHumanReview: boolean;
+  customerSafe: true;
+};
+
+export type DtcRecommendationCategory =
+  | "diagnostic_check"
+  | "missing_information"
+  | "human_review_gate";
+
+export type DtcAnalyzerRecommendation = {
+  id: string;
+  code: string | null;
+  category: DtcRecommendationCategory;
+  priority: "normal" | "high";
+  text: string;
+  requiresHumanReview: boolean;
+  customerSafe: true;
+};
+
+export type DtcConfidenceReason = {
+  id: string;
+  code: string | null;
+  confidence: DtcAnalyzerConfidence;
+  text: string;
+  customerSafe: true;
+};
+
 export type DtcCodeAnalysis = {
   code: string;
   system: DtcSystem;
@@ -69,6 +136,10 @@ export type DtcCodeAnalysis = {
   recommendedChecks: string[];
   missingInformation: string[];
   confidence: DtcAnalyzerConfidence;
+  confidenceReasons: DtcConfidenceReason[];
+  evidence: DtcAnalysisEvidenceItem[];
+  riskFlags: DtcRiskFlag[];
+  recommendations: DtcAnalyzerRecommendation[];
   uncertainty: string[];
 };
 
@@ -85,9 +156,13 @@ export type DtcAnalyzerResponse = {
   fallback: DtcAnalyzerFallbackState;
   isAiGenerated: boolean;
   confidence: DtcAnalyzerConfidence;
+  confidenceReasons: DtcConfidenceReason[];
   normalizedInput: DtcAnalyzerNormalizedInput;
   summary: string;
   codes: DtcCodeAnalysis[];
+  evidence: DtcAnalysisEvidenceItem[];
+  riskFlags: DtcRiskFlag[];
+  recommendations: DtcAnalyzerRecommendation[];
   missingInformation: string[];
   humanReview: DtcAnalyzerHumanReview;
   safetyBoundaries: string[];

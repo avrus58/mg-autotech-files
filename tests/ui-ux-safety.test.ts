@@ -812,15 +812,26 @@ test("DTC analyzer provider boundary keeps fallback local and safety-scoped", ()
   assert.match(types, /provider_unavailable/);
   assert.match(types, /DtcAnalyzerFallbackState/);
   assert.match(types, /isAiGenerated: boolean/);
+  assert.match(types, /DtcAnalysisEvidenceItem/);
+  assert.match(types, /DtcRiskFlag/);
+  assert.match(types, /DtcAnalyzerRecommendation/);
+  assert.match(types, /DtcConfidenceReason/);
+  assert.match(types, /source: DtcAnalysisEvidenceSource/);
+  assert.match(types, /category: DtcRecommendationCategory/);
   assert.match(fallback, /Deterministic non-AI DTC fallback/);
   assert.match(fallback, /No DTC AI provider is configured for local analysis/);
   assert.match(fallback, /DTC-off decision/);
+  assert.match(fallback, /emissions_or_legal_review/);
+  assert.match(fallback, /safety_relevance/);
+  assert.match(fallback, /diagnostic_uncertainty/);
+  assert.match(fallback, /human_review_gate/);
+  assert.match(fallback, /Deterministic text-only fallback is capped at medium/);
   assert.match(fallback, /does not confirm a root cause, fix or legal suitability/);
   assert.match(index, /class UnavailableDtcAnalyzerProvider/);
   assert.match(index, /buildDeterministicDtcFallback/);
   assert.doesNotMatch(combined, /fetch\(|process\.env|OPENAI_API_KEY|SUPABASE_SERVICE_ROLE_KEY/i);
   assert.doesNotMatch(combined, /upload-session|createObjectURL|FileReader|writeFile|bytePatch/i);
-  assert.doesNotMatch(combined, /confirmed fix|customer-ready file|checksum result/i);
+  assert.doesNotMatch(combined, /confirmed fix|customer-ready file|checksum result|DTC-off approved|byte patch approved/i);
 });
 
 test("customer File Expert UI renders only customer-safe report details", () => {

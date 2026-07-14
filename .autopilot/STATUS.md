@@ -2,6 +2,33 @@
 
 Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
+## 2026-07-14 reviewer run RMAP-FILE-DTC-M2-ANALYSIS-SERVICE
+
+- Bitis: 2026-07-14 03:40:59 +01:00.
+- Gorev: RMAP-FILE-DTC-M2-ANALYSIS-SERVICE uncommitted worker degisikliklerini V4 roadmap/product/safety/quality gate olarak incelemek.
+- Sonuc: Accepted. Degisiklik Roadmap V2 `file-ai-dtc-analyzer` epic'inin M2 analysis-service milestone'una uyuyor; structured evidence, deterministic risk flags, recommendation categories ve confidence reasons contract'i mevcut local fallback uzerinde kuruldu.
+- Reviewer duzeltmesi: Yok.
+- Degisen dosyalar: `.autopilot/STATUS.md`, `.autopilot/runtime/review-result.json`.
+- Factuality gate: `AcceptedArchitectureOnly`; public `mgautotech.de` sayfasi, structured data veya publication-ready fault-code icerigi eklenmedi. Unsupported/conflicting publication claim yok; source coverage local contract + DTC fallback tests + V4 automotive policy/SBC manifests ile sinirli. Operator review, bu DTC metinleri public technical content olarak yayinlanmadan once gerekir.
+- Guvenlik/UI kontrolu: UI, API route, DB schema, migration, external provider, env checker, file upload/processing, MOD/checksum action, pricing, customer-data access veya live service cagrisi eklenmedi. Provider-unavailable/provider-error pathleri `isAiGenerated: false`, provider identity/status ve fallback reason davranisini korur; raw binary, signed URL, storage path, hash, service-role, provider secret, admin-only note veya free-text customer note echo edilmez.
+- Calistirilan kontroller: `.\node_modules\.bin\tsx.cmd --test tests\ecu-intelligence.test.ts` PASS (64/64); `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (55/55); `git diff --check` PASS (yalniz LF/CRLF uyarilari); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (293/293); `npm run build` PASS (228/228, Next build `.env.local` varligini raporladi ancak secret degeri okunmadi/loglanmadi).
+- Calistirilmayan kontroller: `npm run check:payments`, desktop normal env/dev/build/package, SQL migration/verification, smoke, scraper, live Supabase/Stripe/Resend/OpenAI/PayPal ve deploy islemleri calistirilmadi.
+- Kalan risk: M2 contract henuz customer/admin UI, request lifecycle, audit veya provider configuration'a bagli degil; bunlar M3/M4/M5 kapsaminda kalir. Public teknik DTC content yayinlanacaksa ayrica technical evidence/operator approval gerekir.
+
+## 2026-07-14 worker run RMAP-FILE-DTC-M2-ANALYSIS-SERVICE
+
+- Baslangic: 2026-07-14 03:16:45 +01:00; bitis: 2026-07-14 03:28:20 +01:00.
+- Gorev: AI DTC Analyzer analysis service contract.
+- Fingerprint: `ai-capability|dtc-analyzer|fallback-output-lacks-evidence-risk-confidence-model|analysis-service-contract`.
+- Secim nedeni: `.autopilot/runtime/roadmap-selection.json` selected roadmap task olarak `RMAP-FILE-DTC-M2-ANALYSIS-SERVICE` verdi ve `.autopilot/TASKS.md` Ready altinda ayni task tek Ready is olarak bulunuyordu.
+- Duplicate/evidence kontrolu: Package constitution dosyalari, roadmap docs/state/selection/spec, local `.autopilot/constitution/*`, AGENTS, PROJECT, ROADMAP, INBOX, FEATURE_PROPOSALS, TASKS, TASK_HISTORY, PRODUCT_SCORECARD, STATUS, current Git status ve son commitler okundu. Roadmap state `RMAP-FILE-DTC-M1` Done, `RMAP-FILE-DTC-M2-ANALYSIS-SERVICE` Planned/0 attempts olarak gosteriyordu; ayni fingerprint TASK_HISTORY/Done icinde yoktu. Evidence gecerliydi: M1 fallback contract vardi ama first-class evidence/risk/recommendation/confidence-reason modeli yoktu.
+- Degisen dosyalar: `src/lib/dtcAnalyzer/types.ts`, `src/lib/dtcAnalyzer/fallback.ts`, `tests/ecu-intelligence.test.ts`, `tests/ui-ux-safety.test.ts`, `.autopilot/TASKS.md`, `.autopilot/TASK_HISTORY.md`, `.autopilot/STATUS.md`, `.autopilot/runtime/last-result.json`.
+- Uygulama sonucu: `DtcAnalyzerResponse` ve per-code `DtcCodeAnalysis` alanlarina structured `evidence`, `riskFlags`, `recommendations` ve `confidenceReasons` eklendi. Fallback, known DTC'lerde `medium` ustune cikmaz, unknown valid DTC'lerde `low` kalir, invalid input'ta `none` kalir. Known/unknown kodlar diagnostic uncertainty ve insufficient context risklerini, aftertreatment kodlari emissions/legal review riskini, P0087 safety relevance riskini, network kodlari module/network review riskini customer-safe sekilde tasir. Recommendation kategorileri diagnostic check, missing information ve human review gate olarak ayrildi; DTC-off, file edit, byte patch, checksum veya customer-ready MOD output onayi uretilmedi.
+- Guvenlik/UI kontrolu: UI, API route, DB schema, migration, external provider, env checker, file processing, MOD/checksum action, pricing, customer-data access veya live service cagrisi eklenmedi. Provider-unavailable ve provider-error fallback pathleri provider identity/status, fallback reason ve `isAiGenerated: false` davranisini korur. Customer note/free text response evidence veya recommendation metnine echo edilmez.
+- Calistirilan kontroller: `.\node_modules\.bin\tsx.cmd --test tests\ecu-intelligence.test.ts` PASS (64/64); `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (55/55); `npm run lint` PASS; `npm run typecheck` ilk denemede mock provider test imzasi nedeniyle FAIL oldu, test double `DtcAnalyzerProvider` imzasina uyduruldu ve final `npm run typecheck` PASS; `npm test` PASS (293/293); `npm run build` PASS (228/228, Next build `.env.local` varligini raporladi ancak secret degeri okunmadi/loglanmadi); `git diff --check` PASS (yalniz CRLF uyarilari).
+- Calistirilmayan kontroller: `npm run check:payments` normal mod `.env.local` okuyabilecegi icin calistirilmadi. Desktop normal check-env/dev/build/package, SQL migration/verification, production smoke, scraper, live Supabase/Stripe/Resend/PayPal ve deploy islemleri calistirilmadi.
+- Kalan risk: DTC Analyzer M2 contract customer/admin UI veya request lifecycle'a baglanmadi; provider configuration, audit, expert-review integration ve rollout readiness M3/M4/M5 kapsaminda kalir. Commit/push/deploy yapilmadi.
+
 ## 2026-07-14 planner run V4 ROADMAP DTC ANALYSIS SERVICE
 
 - Baslangic/bitis: 2026-07-14 03:13:06 +01:00.
@@ -1195,9 +1222,9 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
 - Kurulum tarihi: 2026-07-12 (Europe/Berlin)
 - Aktif branch: codex/autopilot
-- Son basarili gorev: AUTO-058 Public preparation tools sitemap/robots discovery guclendirilsin
-- Son dogrulama: `node scripts/check-i18n-seo.mjs` PASS; `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (55/55); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (291/291); `npm run build` PASS (228/228); `node scripts/check-payment-env.js --schema-only` PASS; `npm audit --omit=dev --audit-level=high` PASS (0 vulnerabilities); `git diff --check` PASS (yalnizca CRLF uyarilari)
-- Insan mudahalesi gereken konu: Offline build icin Google Fonts/`next/font/google` stratejisi onayi; production smoke, SQL migration, deploy ve normal env kontrolleri insan onayi gerektirir.
+- Son basarili gorev: RMAP-FILE-DTC-M2-ANALYSIS-SERVICE AI DTC Analyzer analysis service contract
+- Son dogrulama: `.\node_modules\.bin\tsx.cmd --test tests\ecu-intelligence.test.ts` PASS (64/64); `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (55/55); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (293/293); `npm run build` PASS (228/228); `git diff --check` PASS (yalnizca CRLF uyarilari)
+- Insan mudahalesi gereken konu: Production smoke, SQL migration, deploy ve normal env kontrolleri insan onayi gerektirir.
 
 ## 2026-07-12 reviewer run AUTO-003
 

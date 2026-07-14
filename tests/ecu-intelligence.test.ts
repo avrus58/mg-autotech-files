@@ -70,6 +70,8 @@ import {
 } from "../src/lib/ecuIntelligence/mapDefinitions";
 import {
   analyzeDtcText,
+  type DtcAnalyzerProvider,
+  type DtcAnalyzerRequest,
   UnavailableDtcAnalyzerProvider,
 } from "../src/lib/dtcAnalyzer";
 
@@ -332,6 +334,11 @@ test("DTC analyzer exposes provider-unavailable state before fallback", async ()
   assert.equal(response.provider.unavailableReason, "Local DTC AI provider is disabled.");
   assert.equal(response.fallback.used, false);
   assert.equal(response.isAiGenerated, false);
+  assert.equal(response.confidence, "none");
+  assert.ok(response.confidenceReasons.some((item) => /provider is unavailable/i.test(item.text)));
+  assert.ok(response.evidence.some((item) => item.source === "provider_state" && item.type === "provider_availability"));
+  assert.ok(response.riskFlags.some((item) => item.kind === "provider_unavailable"));
+  assert.ok(response.recommendations.some((item) => item.category === "human_review_gate"));
   assert.deepEqual(response.normalizedInput.normalizedCodes, ["P0401"]);
   assert.ok(response.humanReview.required);
 });
@@ -354,13 +361,75 @@ test("DTC analyzer deterministic fallback handles valid DTC text safely", async 
   assert.equal(response.codes[0].code, "P0401");
   assert.match(response.codes[0].title, /EGR flow lower than expected/i);
   assert.ok(response.codes[0].recommendedChecks.some((item) => /commanded EGR/i.test(item)));
+  assert.ok(response.codes[0].evidence.some((item) => item.source === "local_known_profile"));
+  assert.ok(response.codes[0].riskFlags.some((item) => item.kind === "emissions_or_legal_review"));
+  assert.ok(response.codes[0].recommendations.some((item) => item.category === "diagnostic_check"));
+  assert.ok(response.codes[0].confidenceReasons.some((item) => /capped/i.test(item.text)));
   assert.ok(response.missingInformation.some((item) => /Freeze-frame/i.test(item)));
+  assert.ok(response.evidence.some((item) => item.type === "dtc_code_detected" && item.code === "P2002"));
+  assert.ok(response.riskFlags.some((item) => item.kind === "provider_unavailable"));
+  assert.ok(response.riskFlags.some((item) => item.code === "P2002" && item.kind === "emissions_or_legal_review"));
+  assert.ok(response.recommendations.some((item) => item.category === "human_review_gate" && /byte patches/i.test(item.text)));
+  assert.ok(response.confidenceReasons.some((item) => /Deterministic text-only fallback is capped at medium/i.test(item.text)));
   assert.ok(response.humanReview.required);
   assert.ok(response.humanReview.requiredBefore.some((item) => /DTC-off decision/i.test(item)));
   assert.ok(response.safetyBoundaries.some((item) => /does not approve DTC-off/i.test(item)));
   assert.doesNotMatch(serialized, /Customer reports limp mode/i);
   assert.doesNotMatch(serialized, /confirmed fix|customer-ready file|checksum result|byte patch approved/i);
   assert.doesNotMatch(serialized, /storage_path|signed_url|service_role|first_64_bytes_hex/i);
+});
+
+test("DTC analyzer deterministic fallback keeps unknown valid codes low-confidence", async () => {
+  const response = await analyzeDtcText({
+    source: "admin_text",
+    text: "Please check B1234 with a private workshop note.",
+  });
+  const code = response.codes[0];
+  const serialized = JSON.stringify(response);
+
+  assert.equal(response.status, "fallback");
+  assert.equal(response.confidence, "low");
+  assert.equal(code.code, "B1234");
+  assert.equal(code.confidence, "low");
+  assert.ok(code.evidence.some((item) => item.type === "known_code_context" && item.severity === "caution"));
+  assert.ok(code.riskFlags.some((item) => item.kind === "diagnostic_uncertainty"));
+  assert.ok(code.riskFlags.some((item) => item.kind === "insufficient_context"));
+  assert.ok(code.recommendations.some((item) => item.category === "missing_information"));
+  assert.ok(code.recommendations.some((item) => item.category === "human_review_gate"));
+  assert.ok(code.confidenceReasons.some((item) => /no trusted local definition/i.test(item.text)));
+  assert.ok(response.confidenceReasons.some((item) => /Overall confidence is low/i.test(item.text)));
+  assert.doesNotMatch(serialized, /private workshop note/i);
+  assert.doesNotMatch(serialized, /confirmed fix|DTC-off approved|customer-ready file|checksum result|byte patch approved/i);
+});
+
+test("DTC analyzer provider errors preserve provider identity and non-AI fallback", async () => {
+  class ThrowingDtcProvider implements DtcAnalyzerProvider {
+    readonly providerId = "throwing_test_provider";
+    readonly providerKind = "mock" as const;
+    readonly modelName = "local-test-model";
+
+    async analyzeDtc(_input: DtcAnalyzerRequest): Promise<never> {
+      void _input;
+      throw new Error("private provider failure detail");
+    }
+  }
+
+  const response = await analyzeDtcText({
+    source: "local_test",
+    text: "P0299",
+  }, { provider: new ThrowingDtcProvider() });
+  const serialized = JSON.stringify(response);
+
+  assert.equal(response.status, "fallback");
+  assert.equal(response.provider.providerId, "throwing_test_provider");
+  assert.equal(response.provider.providerStatus, "error");
+  assert.equal(response.fallback.used, true);
+  assert.match(response.fallback.reason ?? "", /provider failed locally/i);
+  assert.equal(response.isAiGenerated, false);
+  assert.equal(response.confidence, "medium");
+  assert.ok(response.evidence.some((item) => item.source === "provider_state" && item.severity === "warning"));
+  assert.ok(response.riskFlags.some((item) => item.kind === "provider_unavailable"));
+  assert.doesNotMatch(serialized, /private provider failure detail/i);
 });
 
 test("DTC analyzer deterministic fallback handles invalid and empty input", async () => {
@@ -377,9 +446,14 @@ test("DTC analyzer deterministic fallback handles invalid and empty input", asyn
   assert.equal(invalid.provider.providerId, "deterministic_rules");
   assert.equal(invalid.fallback.used, true);
   assert.equal(invalid.isAiGenerated, false);
+  assert.equal(invalid.confidence, "none");
+  assert.ok(invalid.confidenceReasons.some((item) => /No confidence/i.test(item.text)));
   assert.deepEqual(invalid.normalizedInput.normalizedCodes, []);
   assert.deepEqual(invalid.normalizedInput.rejectedCodeLikeTokens, ["P0XYZ"]);
   assert.match(invalid.summary, /No valid SAE-style DTC code/i);
+  assert.ok(invalid.evidence.some((item) => item.type === "input_validation"));
+  assert.ok(invalid.riskFlags.some((item) => item.kind === "insufficient_context"));
+  assert.ok(invalid.recommendations.some((item) => item.category === "missing_information"));
   assert.doesNotMatch(JSON.stringify(invalid), /random note/i);
 
   assert.equal(empty.status, "invalid_input");
