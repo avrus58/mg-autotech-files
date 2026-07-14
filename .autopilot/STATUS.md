@@ -2,6 +2,22 @@
 
 Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
+## 2026-07-14 planner run V4 ROADMAP AI TUNE ADVISOR FOUNDATION
+
+- Baslangic/bitis: 2026-07-14 07:39:30 +01:00.
+- Gorev: Strategic Planner planning-only run; uygulama kodu degistirilmeden V4 Roadmap selected task'ini Ready queue'ya cevirmek.
+- Proje tespiti: `.autopilot/PROJECT.md` bu repository'yi `file.mgautotech.de` File Platform olarak tanimliyor; File Platform constitution uygulandi.
+- Selected roadmap task: `.autopilot/runtime/roadmap-selection.json` `RMAP-FILE-AI-TUNE-ADVISOR-M1-FOUNDATION` task'ini secti. Product spec `C:\Users\gokka\Documents\MG-AI-OS-V4\artifacts\specs\rmap-file-ai-tune-advisor-m1-foundation.md`, AI Tune Advisor M1 icin rule fallback ve expert review istiyor.
+- Duplicate/evidence kontrolu: Package V4 constitution dosyalari, roadmap docs/state/markdown/selection/spec, automotive content evidence policy, repo-local `.autopilot/constitution/*`, AGENTS, PROJECT, ROADMAP, INBOX, FEATURE_PROPOSALS, TASKS, TASK_HISTORY, PLANNER_STATE, PRODUCT_SCORECARD, STATUS, package scripts, relevant request/service/AI calibration/DTC/File Expert code/docs/tests, current Git status ve son 100 commit okundu. `RMAP-FILE-AI-TUNE-ADVISOR-M1-FOUNDATION` veya ayni Tune Advisor fingerprint Ready/Done/TASK_HISTORY/Git gecmisinde bulunmadi.
+- Evidence sonucu: AI File Expert V2 dependency commit `f3954cb` ile tamamlanmis. `src/lib/desktopUpload/contracts.ts` ve `src/app/new-request/page.tsx` mevcut stage/eco/TCU/extra service taxonomy'sini sagliyor; `src/lib/aiCalibration/lowDataStage1Plan.ts` advisory-only/no-MOD/no-checksum calibration plan pattern'ini sagliyor; `src/lib/dtcAnalyzer/*` provider-unavailable deterministic fallback ve request projection pattern'ini sagliyor; `src/lib/fileExpert/reportStatus.ts` human-review/export-lock review gate pattern'ini sagliyor. Buna karsin Tune Advisor icin provider-neutral local contract, service guidance fallback, expert review gate ve runbook yok.
+- Eklenen Ready gorev: `RMAP-FILE-AI-TUNE-ADVISOR-M1-FOUNDATION - AI Tune Advisor rule fallback and expert review foundation`.
+- Deferred kaydi: `AUTO-009` ve `AUTO-010` Later altinda tutuldu; deferred reason/remediation metinleri yeni selected AI Tune Advisor M1 milestone'una gore guncellendi.
+- Degisen dosyalar: `.autopilot/ROADMAP.md`, `.autopilot/TASKS.md`, `.autopilot/PLANNER_STATE.json`, `.autopilot/STATUS.md`, `.autopilot/runtime/planner-result.json`.
+- Factuality gate: `AcceptedArchitectureOnly`; public `mgautotech.de` teknik content, structured data veya publication-ready automotive claim planlanmadi. Tune Advisor scope'u file platform local product contract ile sinirli; exact gains, pricing, warranty, legal/TUV, MOD generation, checksum completion, flash safety and delivery approval yasaklandi.
+- Calistirilan kontroller: V4 package constitution ve roadmap engine dosyalari okundu; roadmap selection/state PowerShell `ConvertFrom-Json` ile selected AI Tune Advisor task/epic/milestone parse edildi; selected product spec okundu; repository memory ve relevant code/docs/tests incelendi; `git status --short --branch`; `git log -100 --oneline --decorate`; root ve desktop `package.json` scriptleri incelendi; `.autopilot/PLANNER_STATE.json` JSON parse PASS; `.autopilot/runtime/planner-result.json` JSON parse PASS; Ready checkbox count 1 PASS; `git check-ignore -v .autopilot/runtime/planner-result.json` PASS; `git diff --name-only` yalniz izinli planning/runtime dosyalarini gosterdi; `git diff --check` PASS (yalniz LF/CRLF warnings).
+- Calistirilmayan kontroller: Planning-only run oldugu ve uygulama kodu degismedigi icin `npm run lint`, `npm run typecheck`, `npm test` ve `npm run build` calistirilmadi. `npm run build` ayrica bu repoda local Next env dosyalarini okuyabilir ve `next/font/google` nedeniyle Google Fonts ag istegi yapabilir.
+- Kalan risk: Ready queue intentionally 1 tasktir; bu, selected P1/M roadmap milestone icin planlama kurallarindaki kucuk kuyruk istisnasina dayanir. AI Tune Advisor uygulanana kadar request/service metadata icin safe advisory fallback ve expert review contract eksik kalir. Production deploy, live migration, `.env*`, secret, real customer data veya live service islemi yapilmadi.
+
 ## 2026-07-14 reviewer run RMAP-FILE-AI-EXPERT-V2-M1-FOUNDATION
 
 - Gorev: RMAP-FILE-AI-EXPERT-V2-M1-FOUNDATION uncommitted worker degisikliklerini V4 roadmap/product/safety/quality gate olarak incelemek.

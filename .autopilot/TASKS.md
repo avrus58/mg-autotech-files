@@ -4,6 +4,42 @@
 
 ## Ready
 
+- [ ] **P1 RMAP-FILE-AI-TUNE-ADVISOR-M1-FOUNDATION - AI Tune Advisor rule fallback and expert review foundation**
+  - Lane: AI Capability
+  - Roadmap: File Platform Roadmap (`file-platform`)
+  - Epic: AI Tune Advisor (`file-ai-tune-advisor`)
+  - Feature: Foundation Milestone (`file-ai-tune-advisor-m1-foundation-feature`)
+  - Roadmap task: `RMAP-FILE-AI-TUNE-ADVISOR-M1-FOUNDATION`
+  - Fingerprint: `ai-capability|tune-advisor|request-service-guidance-lacks-safe-rule-fallback|rule-fallback-expert-review-contract`
+  - Strategic score: 42
+  - Scope class: M
+  - Expected effort: M roadmap milestone slice
+  - Business impact: 5/5
+  - User impact: 4/5
+  - Admin impact: 4/5
+  - Strategic fit: 5/5
+  - Confidence: 4/5
+  - Effort: 3/5
+  - Risk: 2/5
+  - Evidence: `.autopilot/runtime/roadmap-selection.json` selected `RMAP-FILE-AI-TUNE-ADVISOR-M1-FOUNDATION` for `file.mgautotech.de`; product spec `C:\Users\gokka\Documents\MG-AI-OS-V4\artifacts\specs\rmap-file-ai-tune-advisor-m1-foundation.md` requires rule fallback and expert review; `src/lib/desktopUpload/contracts.ts:13` and `src/app/new-request/page.tsx:106` define stage/eco/TCU and extra service taxonomy; `src/lib/aiCalibration/lowDataStage1Plan.ts:7` already proves advisory-only/no-MOD/no-checksum calibration planning pattern; `src/lib/dtcAnalyzer/index.ts:18` and `src/lib/fileExpert/reportStatus.ts:3` provide provider-unavailable/fallback/review-gate patterns; duplicate search across TASKS, TASK_HISTORY, ROADMAP, STATUS, FEATURE_PROPOSALS and last 100 commits found no Tune Advisor task.
+  - Product value: Gives future Tune Advisor surfaces a safe local foundation that can explain missing evidence, recommended expert checks and blocked production actions without pretending to generate tuning output.
+  - Selection reason: Current V2 selected roadmap task; File Platform allocation pressure favors File Platform work and the AI File Expert V2 dependency has been completed in recent commit `f3954cb`.
+  - Scope: Add a bounded Tune Advisor local contract and deterministic rule fallback, reusing existing request/service metadata and calibration playbook patterns where appropriate. Keep it local-only and review-gated. Do not change pricing, credits, request submission, upload behavior, delivery, customer-ready MOD output, checksum workflow, public legal/commercial claims or production provider configuration.
+  - Acceptance criteria:
+    - A provider-neutral Tune Advisor contract exists with contract version, provider status, fallback state, confidence/readiness, missing information, risk flags, recommendation categories, safety boundaries and `humanReview.required === true`.
+    - Deterministic rule fallback handles stage/eco/TCU/only-options plus selected advanced service contexts using existing request/service metadata; provider unavailable/error states are explicit and fallback output is marked non-AI.
+    - Expert/admin projection exposes provider/fallback status, required human checks and blocked production actions; any customer-safe projection omits provider/model/prompt internals, storage paths, hashes, raw binary/hex, sample IDs and admin-only notes.
+    - Output never approves calibration bytes, MOD generation, checksum completion, flash safety, legal suitability, exact gains, pricing, delivery automation or unsupported tuning promises.
+    - Local tests cover valid service guidance, missing metadata, advanced/risky service flags, provider-unavailable fallback, provider-error fallback and no-leak/no-fake-AI boundaries.
+    - A short runbook documents safe local validation, blocked production actions and operator-only decisions for future provider/live rollout.
+  - Validation:
+    - `.\node_modules\.bin\tsx.cmd --test tests\ecu-intelligence.test.ts`
+    - `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts`
+    - `npm run lint`
+    - `npm run typecheck`
+    - `npm test`
+    - `git diff --check`
+
 ## In Progress
 
 ## Blocked
@@ -23,9 +59,9 @@ Kabul kriterleri:
 
 Dogrulama: Markdown diff incelemesi, `npm test` ilgili source assertion testleri.
 
-Deferred reason: Selected P1/M roadmap milestone `RMAP-FILE-AI-EXPERT-V2-M1-FOUNDATION` has higher strategic value and starts the next active File Platform AI milestone after DTC M5 completion; this is a low-priority documentation cleanup and does not unlock the selected milestone.
+Deferred reason: Selected P1/M roadmap milestone `RMAP-FILE-AI-TUNE-ADVISOR-M1-FOUNDATION` has higher strategic value and starts the next File Platform AI capability milestone; this is a low-priority documentation cleanup and does not unlock the selected Tune Advisor foundation.
 
-Remediation: Reconsider after the AI File Expert V2 M1 milestone is accepted, or if owner explicitly asks for production smoke documentation cleanup.
+Remediation: Reconsider after the AI Tune Advisor M1 milestone is accepted, or if owner explicitly asks for production smoke documentation cleanup.
 
 Expected validation command: `npm test` plus markdown diff review.
 
@@ -42,9 +78,9 @@ Kabul kriterleri:
 
 Dogrulama: Diff incelemesi, `npm run lint`, `npm run typecheck`.
 
-Deferred reason: Maintenance-only artifact cleanup is intentionally behind selected P1/M roadmap milestone `RMAP-FILE-AI-EXPERT-V2-M1-FOUNDATION` and should not consume the Ready queue while a high-impact roadmap slice is available.
+Deferred reason: Maintenance-only artifact cleanup is intentionally behind selected P1/M roadmap milestone `RMAP-FILE-AI-TUNE-ADVISOR-M1-FOUNDATION` and should not consume the Ready queue while a high-impact roadmap slice is available.
 
-Remediation: Batch with a future documentation/source-comment maintenance pass after the AI File Expert V2 M1 milestone is accepted, or when no P1/P2 product or roadmap milestone is ready.
+Remediation: Batch with a future documentation/source-comment maintenance pass after the AI Tune Advisor M1 milestone is accepted, or when no P1/P2 product or roadmap milestone is ready.
 
 Expected validation command: `npm run lint` and `npm run typecheck`.
 

@@ -45,6 +45,7 @@
   - Roadmap V2 selected task `RMAP-FILE-DTC-M4-ADMIN-CONFIGURATION`, AI DTC Analyzer icin provider availability, usage limit ve failure handling sinirlarini admin-safe configuration/status katmaniyla netlestirir.
   - Roadmap V2 selected task `RMAP-FILE-DTC-M5-ROLLOUT-READINESS`, AI DTC Analyzer icin regression suite, sanitized analytics/readiness summary ve operator-readable rollout dokumantasyonunu production/veri erisimi olmadan tamamlar.
   - Roadmap V2 selected task `RMAP-FILE-AI-EXPERT-V2-M1-FOUNDATION`, AI File Expert report flow icin provider/fallback status, deterministic fallback ve human-review/export-lock review gate sozlesmesini local-only foundation olarak netlestirir.
+  - Roadmap V2 selected task `RMAP-FILE-AI-TUNE-ADVISOR-M1-FOUNDATION`, AI Tune Advisor icin request/service metadata uzerinden deterministic rule fallback, provider-unavailable semantics, expert review gate ve no-MOD/no-checksum safety contract temelini local-only kurar.
 - Success signals:
   - Musteri, talebin gercek durumunu ve kendi aksiyon gereksinimini detay ekraninda ayri gorebilir.
   - Musteri, aksiyon bekleyen siparisi liste veya dashboard uzerinden hizlica bulabilir.
@@ -80,6 +81,7 @@
   - DTC Analyzer admin configuration milestone'u, provider unavailable/fallback durumunu ve usage limitlerini musteriye veya admine yaniltici AI basarisi gibi gostermeden aciklar.
   - DTC Analyzer rollout readiness milestone'u, regression coverage, local analytics/readiness signals and safe operator documentation ile future rollout kararini production access olmadan okunabilir hale getirir.
   - AI File Expert V2 foundation milestone'u, existing File Expert AI report provider/fallback akisini review-gate status, human review requirement ve export locked sinirlariyla operator-readable hale getirir.
+  - AI Tune Advisor foundation milestone'u, stage/eco/TCU/advanced service talepleri icin AI gibi davranmayan rule fallback, eksik evidence listesi, risk flags, required human checks ve blocked production actions sozlesmesini saglar.
   - Migration/fallback durumlarinda mutasyon aksiyonlari read-only davranir ve hata yerine acik mesaj verir.
 
 ## Owner priorities
