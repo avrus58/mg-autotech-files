@@ -106,6 +106,12 @@ test("DTC active foundation status exposes Phase A plus Phase B synthetic-only s
   assert.equal(status.phaseB.integrityAdapterExecutionEnabled, false);
   assert.equal(status.phaseB.sampleReport.outputArtifactCreated, false);
   assert.equal(status.phaseB.sampleReport.firmwareBytesMutated, false);
+  assert.equal(status.phaseC.syntheticOnly, true);
+  assert.equal(status.phaseC.customerDeliveryEnabled, false);
+  assert.equal(status.phaseC.realEcuFilesProcessed, false);
+  assert.equal(status.phaseC.nativeChecksumExecutionEnabled, false);
+  assert.equal(status.phaseC.goldenCorpusCases, 10);
+  assert.equal(status.phaseC.goldenCorpusPassed, 10);
   assert.equal(status.migration.status, "database_verified_local_not_production_applied");
   assert.equal(status.migration.localVerification, "database_verified_local_disposable");
 });
@@ -161,17 +167,19 @@ test("DTC active admin and customer APIs are scoped and do not expose processing
   assert.doesNotMatch(customerRoute, /rule|adapter|operation|offset|storage_path|bucket|checksum/i);
 });
 
-test("DTC active admin workbench is visible but cannot start generation, processing or publication", () => {
+test("DTC active admin workbench separates Phase C synthetic generation from production publication", () => {
   const adminPage = readProjectFile("src", "app", "admin", "dtc", "page.tsx");
   const adminHome = readProjectFile("src", "app", "admin", "page.tsx");
+  const phaseCPage = readProjectFile("src", "app", "admin", "dtc", "test-processing", "page.tsx");
 
   assert.match(adminHome, /href: "\/admin\/dtc"/);
   assert.match(adminPage, /Phase A\/B foundation control/);
   assert.match(adminPage, /No binary\s+mutation, checksum adapter execution,\s+customer delivery or A4\/A5 automation is enabled/i);
-  assert.match(adminPage, /no generate, process, publish/i);
   assert.match(adminPage, /Phase B synthetic registry/);
   assert.match(adminPage, /No output artifacts/);
-  assert.doesNotMatch(adminPage, /generate-test-output|authorize-a3|\/process|\/publish/);
+  assert.match(adminPage, /Phase C synthetic test output/);
+  assert.match(phaseCPage, /No customer file, real ECU checksum, native tool, delivery or A3\/A4\/A5 path is used/);
+  assert.doesNotMatch(adminPage + phaseCPage, /authorize-a3|\/process|\/publish/);
 });
 
 test("DTC active research package hash manifests are imported without enabling runtime fixtures", () => {

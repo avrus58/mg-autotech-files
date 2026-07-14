@@ -297,15 +297,45 @@ export const syntheticGoldenCorpus = attachManifestDigest({
   cases: [
     makeCase("p0100", "positive_single", syntheticPhaseBConstants.sourceSha256, ["P0100"], true, [
       "fixture.p0100.coordinated-disable",
-    ]),
+    ], undefined, {
+      preIntegritySha256: "e3c99d7798cc84255aded8e5593bf7bb0ec1243f17abd4d5f455e8a6e26bdd6c",
+      finalSha256: "6aafd3bec89c982a395d0935180257facb1f165c5b5d8d0b483d388c4aade3a5",
+      expectedChangedRegions: [
+        { regionRef: "semantic-and-integrity", start: 516, length: 1 },
+        { regionRef: "semantic-and-integrity", start: 770, length: 1 },
+        { regionRef: "semantic-and-integrity", start: 4092, length: 4 },
+      ],
+    }),
     makeCase("p0300", "positive_single", syntheticPhaseBConstants.sourceSha256, ["P0300"], true, [
       "fixture.p0300.coordinated-disable",
-    ]),
+    ], undefined, {
+      preIntegritySha256: "44a4d79f82526443c8a9a3e4a16b446adb9f658d82a259ad9d472eeff68c8da2",
+      finalSha256: "152baac460a39528977ecf2dfa86739165b016467b92afa3e75a595b41535ffd",
+      expectedChangedRegions: [
+        { regionRef: "semantic-and-integrity", start: 548, length: 1 },
+        { regionRef: "semantic-and-integrity", start: 786, length: 1 },
+        { regionRef: "semantic-and-integrity", start: 4092, length: 4 },
+      ],
+    }),
     makeCase("p0100-p0300", "positive_multi", syntheticPhaseBConstants.sourceSha256, ["P0100", "P0300"], true, [
       "fixture.p0100.coordinated-disable",
       "fixture.p0300.coordinated-disable",
-    ]),
-    makeCase("noop-roundtrip", "noop_roundtrip", syntheticPhaseBConstants.sourceSha256, [], true, []),
+    ], undefined, {
+      preIntegritySha256: "aee08c106549d591b7c48ee550b8b3a5139ad14315d3f3c87ab75bf0b8c5205b",
+      finalSha256: "0b1d77135352893df994b75da7c9948d6e954ba7f8fe4df78328d09ff20736e0",
+      expectedChangedRegions: [
+        { regionRef: "semantic-and-integrity", start: 516, length: 1 },
+        { regionRef: "semantic-and-integrity", start: 548, length: 1 },
+        { regionRef: "semantic-and-integrity", start: 770, length: 1 },
+        { regionRef: "semantic-and-integrity", start: 786, length: 1 },
+        { regionRef: "semantic-and-integrity", start: 4092, length: 4 },
+      ],
+    }),
+    makeCase("noop-roundtrip", "noop_roundtrip", syntheticPhaseBConstants.sourceSha256, [], true, [], undefined, {
+      preIntegritySha256: syntheticPhaseBConstants.sourceSha256,
+      finalSha256: syntheticPhaseBConstants.sourceSha256,
+      expectedChangedRegions: [],
+    }),
     makeCase("wrong-sw", "wrong_sw", syntheticPhaseBConstants.wrongSwSha256, ["P0100"], false, [], "EXACT_SW_NOT_ESTABLISHED"),
     makeCase("wrong-role", "wrong_role", syntheticPhaseBConstants.wrongRoleSha256, ["P0100"], false, [], "FILE_ROLE_UNKNOWN"),
     makeCase("source-mismatch", "source_mismatch", syntheticPhaseBConstants.sourceMismatchSha256, ["P0100"], false, [], "SOURCE_BYTES_MISMATCH"),
@@ -329,7 +359,8 @@ function makeCase(
   requestedCodes: string[],
   success: boolean,
   expectedOperationIds: string[],
-  expectedErrorCode?: DtcGoldenCorpusManifest["cases"][number]["expectedResult"]["expectedErrorCode"]
+  expectedErrorCode?: DtcGoldenCorpusManifest["cases"][number]["expectedResult"]["expectedErrorCode"],
+  phaseC?: Pick<DtcGoldenCorpusManifest["cases"][number]["expectedResult"], "preIntegritySha256" | "finalSha256" | "expectedChangedRegions">
 ): DtcGoldenCorpusManifest["cases"][number] {
   return {
     caseKey,
@@ -342,6 +373,7 @@ function makeCase(
     requestedCodes,
     expectedResult: {
       success,
+      ...phaseC,
       expectedOperationIds,
       expectedErrorCode,
       validationOutcome: success ? "pass" : "reject",

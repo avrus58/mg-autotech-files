@@ -2,6 +2,7 @@ import { compileSyntheticDtcDryRun } from "@/lib/dtcActive/dryRunCompiler";
 import { syntheticPhaseBConstants, syntheticPhaseBIdentity } from "@/lib/dtcActive/fixtures";
 import { buildDtcActiveModes, dtcActiveContractVersion, dtcActivePolicyVersion, resolveDtcActiveFeatureFlags } from "@/lib/dtcActive/policy";
 import { buildSyntheticPhaseBRegistry } from "@/lib/dtcActive/registry";
+import { runSyntheticPhaseCGoldenCorpus, phaseCExpectedHashes } from "@/lib/dtcActive/syntheticProcessingEngine";
 import type { DtcActiveFoundationStatus } from "@/lib/dtcActive/types";
 
 export function buildDtcActiveFoundationStatus(
@@ -36,6 +37,14 @@ export function buildDtcActiveFoundationStatus(
     }
   );
   const positiveCorpusCases = phaseBRegistry.corpus.cases.filter((corpusCase) => corpusCase.expectedResult.success).length;
+  const phaseCGoldenCorpus = runSyntheticPhaseCGoldenCorpus({
+    flags: {
+      ...effectiveFlags,
+      dtcInternalTestProcessing: true,
+      dtcSyntheticFixtures: true,
+      globalDtcKillSwitchEngaged: false,
+    },
+  });
 
   return {
     contractVersion: dtcActiveContractVersion,
@@ -104,6 +113,22 @@ export function buildDtcActiveFoundationStatus(
         outputArtifactCreated: false,
         firmwareBytesMutated: false,
       },
+    },
+    phaseC: {
+      status: "synthetic_test_output_processing",
+      syntheticOnly: true,
+      generateTestOutputEnabled: false,
+      artifactGenerationScope: "internal_synthetic_test_only",
+      sourceSha256: phaseCExpectedHashes.source,
+      p0100PreIntegritySha256: phaseCExpectedHashes.p0100PreIntegrity,
+      p0100FinalSha256: phaseCExpectedHashes.p0100Final,
+      combinedPreIntegritySha256: phaseCExpectedHashes.combinedPreIntegrity,
+      combinedFinalSha256: phaseCExpectedHashes.combinedFinal,
+      goldenCorpusCases: phaseCGoldenCorpus.totalCases,
+      goldenCorpusPassed: phaseCGoldenCorpus.passedCases,
+      customerDeliveryEnabled: false,
+      realEcuFilesProcessed: false,
+      nativeChecksumExecutionEnabled: false,
     },
   };
 }

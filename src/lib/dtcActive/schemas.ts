@@ -189,6 +189,13 @@ export const dtcGoldenCorpusManifestSchema = z.object({
     requestedCodes: z.array(z.string().regex(dtcCode)),
     expectedResult: z.object({
       success: z.boolean(),
+      preIntegritySha256: z.string().regex(sha256).optional(),
+      finalSha256: z.string().regex(sha256).optional(),
+      expectedChangedRegions: z.array(z.object({
+        regionRef: z.string().min(1),
+        start: z.number().int().nonnegative(),
+        length: z.number().int().positive(),
+      }).strict()).optional(),
       expectedOperationIds: z.array(z.string()).optional(),
       expectedErrorCode: z.string().optional(),
       validationOutcome: z.enum(["pass", "reject"]),

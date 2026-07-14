@@ -179,6 +179,13 @@ export type DtcGoldenCorpusCase = {
   requestedCodes: string[];
   expectedResult: {
     success: boolean;
+    preIntegritySha256?: string;
+    finalSha256?: string;
+    expectedChangedRegions?: Array<{
+      regionRef: string;
+      start: number;
+      length: number;
+    }>;
     expectedOperationIds?: string[];
     expectedErrorCode?: DtcActiveHardVetoCode;
     validationOutcome: "pass" | "reject";

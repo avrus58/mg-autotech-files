@@ -169,4 +169,20 @@ export type DtcActiveFoundationStatus = {
       firmwareBytesMutated: false;
     };
   };
+  phaseC: {
+    status: "synthetic_test_output_processing";
+    syntheticOnly: true;
+    generateTestOutputEnabled: false;
+    artifactGenerationScope: "internal_synthetic_test_only";
+    sourceSha256: string;
+    p0100PreIntegritySha256: string;
+    p0100FinalSha256: string;
+    combinedPreIntegritySha256: string;
+    combinedFinalSha256: string;
+    goldenCorpusCases: number;
+    goldenCorpusPassed: number;
+    customerDeliveryEnabled: false;
+    realEcuFilesProcessed: false;
+    nativeChecksumExecutionEnabled: false;
+  };
 };

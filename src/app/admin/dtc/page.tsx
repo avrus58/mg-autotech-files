@@ -10,6 +10,7 @@ import {
   FileWarning,
   Loader2,
   Lock,
+  PlayCircle,
   RefreshCcw,
   ShieldCheck,
   ShieldOff,
@@ -93,6 +94,13 @@ export default function AdminDtcFoundationPage() {
             {state.status === "loading" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCcw className="mr-2 h-4 w-4" />}
             Refresh status
           </button>
+          <Link
+            href="/admin/dtc/test-processing"
+            className="inline-flex h-11 items-center justify-center rounded-lg border border-red-500/30 bg-red-950/25 px-4 text-sm font-black text-red-100 hover:bg-red-900/30"
+          >
+            <PlayCircle className="mr-2 h-4 w-4" />
+            Phase C test output
+          </Link>
         </header>
 
         {state.status === "loading" && (
@@ -135,6 +143,32 @@ export default function AdminDtcFoundationPage() {
                     or A4/A5 automation action. Phase B is limited to synthetic document validation and dry-run reports.
                   </p>
                 </div>
+              </div>
+            </section>
+
+            <section className="rounded-lg border border-red-500/25 bg-red-950/10 p-5">
+              <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
+                <div>
+                  <div className="text-xs font-black uppercase tracking-[0.18em] text-red-300">Phase C synthetic test output</div>
+                  <h2 className="mt-2 text-xl font-black text-white">Exact fixture hashes and corpus are ready for admin-only test generation</h2>
+                  <p className="mt-2 max-w-4xl text-sm leading-6 text-red-50/70">
+                    Phase C is limited to the approved MGDTCFX1 synthetic fixture. Generated source, pre-integrity and final
+                    artifacts are internal-only metadata and are structurally ineligible for customer delivery.
+                  </p>
+                </div>
+                <Link
+                  href="/admin/dtc/test-processing"
+                  className="inline-flex h-11 items-center justify-center rounded-lg bg-red-600 px-4 text-sm font-black text-white hover:bg-red-500"
+                >
+                  <PlayCircle className="mr-2 h-4 w-4" />
+                  Open Generate Test Output
+                </Link>
+              </div>
+              <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                <MiniMetric label="Source SHA-256" value={state.data.phaseC.sourceSha256.slice(0, 16)} />
+                <MiniMetric label="P0100 final" value={state.data.phaseC.p0100FinalSha256.slice(0, 16)} />
+                <MiniMetric label="Combined final" value={state.data.phaseC.combinedFinalSha256.slice(0, 16)} />
+                <MiniMetric label="Corpus pass" value={`${state.data.phaseC.goldenCorpusPassed}/${state.data.phaseC.goldenCorpusCases}`} />
               </div>
             </section>
 

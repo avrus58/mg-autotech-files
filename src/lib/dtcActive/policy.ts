@@ -127,8 +127,8 @@ export function evaluateDtcActiveModeStatus(
           : []),
       ],
       notes: [
-        "Internal test processing is limited to Phase B synthetic dry-run reports.",
-        "It never mutates firmware, runs integrity adapters, creates artifacts or publishes to customers.",
+        "Internal test processing is limited to approved synthetic fixtures.",
+        "It never processes customer files, real ECU files, native checksum tools or customer-deliverable artifacts.",
       ],
     };
   }
