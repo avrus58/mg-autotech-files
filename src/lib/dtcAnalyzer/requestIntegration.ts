@@ -1,7 +1,12 @@
 import { analyzeDtcText } from "@/lib/dtcAnalyzer";
+import {
+  getDtcAnalyzerAdminConfigStatus,
+  type DtcAnalyzerAdminConfigStatus,
+} from "@/lib/dtcAnalyzer/config";
 import type {
   DtcAnalysisEvidenceItem,
   DtcAnalyzerConfidence,
+  DtcAnalyzerRequest,
   DtcAnalyzerProviderKind,
   DtcAnalyzerProviderStatus,
   DtcAnalyzerRecommendation,
@@ -73,6 +78,7 @@ export type CustomerRequestDtcAnalysis = {
 };
 
 export type ExpertRequestDtcAnalysis = CustomerRequestDtcAnalysis & {
+  configuration: DtcAnalyzerAdminConfigStatus;
   provider: {
     providerKind: DtcAnalyzerProviderKind;
     providerStatus: DtcAnalyzerProviderStatus;
@@ -94,7 +100,7 @@ function textValue(value: unknown) {
   return typeof value === "string" && value.trim() ? value.trim() : "";
 }
 
-function requestDtcInputText(order: RequestDtcOrderContext) {
+export function requestDtcInputText(order: RequestDtcOrderContext) {
   return [
     textValue(order.service_type) ? `Service request: ${textValue(order.service_type)}` : "",
     textValue(order.notes) ? `Request notes: ${textValue(order.notes)}` : "",
@@ -104,6 +110,23 @@ function requestDtcInputText(order: RequestDtcOrderContext) {
     textValue(order.read_method) ? `Read method: ${textValue(order.read_method)}` : "",
     textValue(order.hw_sw) ? `HW/SW: ${textValue(order.hw_sw)}` : "",
   ].filter(Boolean).join("\n");
+}
+
+export function buildRequestDtcAnalyzerRequest(
+  order: RequestDtcOrderContext,
+  source: "customer" | "admin"
+): DtcAnalyzerRequest {
+  return {
+    source: source === "admin" ? "admin_text" : "request_brief",
+    text: requestDtcInputText(order),
+    vehicle: {
+      brand: order.vehicle_brand,
+      model: order.vehicle_model,
+      engine: order.vehicle_engine,
+      ecuType: order.ecu,
+      readMethod: order.read_method,
+    },
+  };
 }
 
 function analysisState(response: DtcAnalyzerResponse): RequestDtcAnalysisState {
@@ -176,9 +199,13 @@ function projectCustomer(response: DtcAnalyzerResponse): CustomerRequestDtcAnaly
   };
 }
 
-function projectExpert(response: DtcAnalyzerResponse): ExpertRequestDtcAnalysis {
+function projectExpert(
+  response: DtcAnalyzerResponse,
+  configuration: DtcAnalyzerAdminConfigStatus
+): ExpertRequestDtcAnalysis {
   return {
     ...projectCustomer(response),
+    configuration,
     provider: {
       providerKind: response.provider.providerKind,
       providerStatus: response.provider.providerStatus,
@@ -206,6 +233,9 @@ function auditMetadata(response: DtcAnalyzerResponse, source: "customer" | "admi
     provider_kind: response.provider.providerKind,
     provider_status: response.provider.providerStatus,
     fallback_used: response.fallback.used,
+    provider_unavailable: response.provider.providerStatus === "unavailable",
+    provider_error: response.provider.providerStatus === "error",
+    analysis_success: response.status === "success" && response.isAiGenerated,
     evidence_count: response.evidence.length,
     risk_flag_count: response.riskFlags.length,
     recommendation_count: response.recommendations.length,
@@ -216,23 +246,15 @@ function auditMetadata(response: DtcAnalyzerResponse, source: "customer" | "admi
 
 export async function analyzeRequestDtc(
   order: RequestDtcOrderContext,
-  source: "customer" | "admin"
+  source: "customer" | "admin",
+  options: { configuration?: DtcAnalyzerAdminConfigStatus } = {}
 ): Promise<RequestDtcAnalysisProjection> {
-  const response = await analyzeDtcText({
-    source: source === "admin" ? "admin_text" : "request_brief",
-    text: requestDtcInputText(order),
-    vehicle: {
-      brand: order.vehicle_brand,
-      model: order.vehicle_model,
-      engine: order.vehicle_engine,
-      ecuType: order.ecu,
-      readMethod: order.read_method,
-    },
-  });
+  const response = await analyzeDtcText(buildRequestDtcAnalyzerRequest(order, source));
+  const configuration = options.configuration ?? getDtcAnalyzerAdminConfigStatus(source);
 
   return {
     customer: projectCustomer(response),
-    expert: projectExpert(response),
+    expert: projectExpert(response, configuration),
     auditMetadata: auditMetadata(response, source),
   };
 }

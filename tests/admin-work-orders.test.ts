@@ -103,9 +103,22 @@ test("request DTC analysis routes audit sanitized internal-only events", () => {
   assert.match(customerRoute, /customerVisible:\s*false/);
   assert.match(adminRoute, /mode:\s*"best_effort"/);
   assert.match(customerRoute, /mode:\s*"best_effort"/);
+  assert.match(adminRoute, /checkDtcAnalyzerUsage/);
+  assert.match(customerRoute, /checkDtcAnalyzerUsage/);
+  assert.match(adminRoute, /projectDtcUsageLimitForResponse\(usage\)/);
+  assert.match(customerRoute, /projectDtcUsageLimitForResponse\(usage\)/);
+  assert.match(adminRoute, /"Retry-After"/);
+  assert.match(customerRoute, /"Retry-After"/);
+  assert.match(adminRoute, /configuration:\s*usage\.configuration/);
+  assert.match(customerRoute, /configuration:\s*usage\.configuration/);
+  assert.ok(customerRoute.indexOf("if (!usage.allowed)") < customerRoute.indexOf("const projection = await analyzeRequestDtc"));
+  assert.ok(adminRoute.indexOf("if (!usage.allowed)") < adminRoute.indexOf("const projection = await analyzeRequestDtc"));
+  assert.ok(customerRoute.indexOf("if (!usage.allowed)") < customerRoute.indexOf("await recordWorkOrderEvent"));
+  assert.ok(adminRoute.indexOf("if (!usage.allowed)") < adminRoute.indexOf("await recordWorkOrderEvent"));
   assert.match(helper, /detected_code_count/);
   assert.match(helper, /provider_status/);
   assert.match(helper, /fallback_used/);
+  assert.match(helper, /analysis_success/);
   assert.doesNotMatch(
     combined,
     /request_messages|request_internal_notes|internal_notes|admin_notes|storage_path|signed_url|file_path|sha256|hash|first_64_bytes_hex|sample_id|rawHex|hex_preview/i

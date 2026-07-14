@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server";
 import { requireApiUser } from "@/lib/apiAuth";
 import {
+  checkDtcAnalyzerUsage,
+  projectDtcUsageLimitForResponse,
+} from "@/lib/dtcAnalyzer/config";
+import {
   analyzeRequestDtc,
+  buildRequestDtcAnalyzerRequest,
   requestDtcOrderSelect,
   type RequestDtcOrderContext,
 } from "@/lib/dtcAnalyzer/requestIntegration";
@@ -28,7 +33,30 @@ export async function POST(
     return NextResponse.json({ error: "Order not found or access denied." }, { status: 404 });
   }
 
-  const projection = await analyzeRequestDtc(order as RequestDtcOrderContext, "customer");
+  const orderContext = order as RequestDtcOrderContext;
+  const usage = checkDtcAnalyzerUsage({
+    request,
+    scope: "customer",
+    orderId: id,
+    actorUserId: auth.user.id,
+    text: buildRequestDtcAnalyzerRequest(orderContext, "customer").text,
+  });
+
+  if (!usage.allowed) {
+    return NextResponse.json(
+      { error: usage.error, limit: projectDtcUsageLimitForResponse(usage) },
+      {
+        status: usage.httpStatus,
+        headers: usage.retryAfterSeconds
+          ? { "Retry-After": String(usage.retryAfterSeconds) }
+          : undefined,
+      }
+    );
+  }
+
+  const projection = await analyzeRequestDtc(orderContext, "customer", {
+    configuration: usage.configuration,
+  });
 
   await recordWorkOrderEvent({
     requestId: id,

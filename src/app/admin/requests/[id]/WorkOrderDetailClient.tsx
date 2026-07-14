@@ -40,6 +40,10 @@ import {
   workOrderPriorities,
 } from "@/lib/workOrders/types";
 import type { ExpertRequestDtcAnalysis } from "@/lib/dtcAnalyzer/requestIntegration";
+import type {
+  DtcAnalyzerAdminConfigStatus,
+  DtcAnalyzerUsageLimitPublicProjection,
+} from "@/lib/dtcAnalyzer/config";
 
 type DetailPayload = {
   migrationReady: boolean;
@@ -153,6 +157,10 @@ export default function WorkOrderDetailClient() {
   const [dtcAnalysis, setDtcAnalysis] = useState<ExpertRequestDtcAnalysis | null>(null);
   const [dtcLoading, setDtcLoading] = useState(false);
   const [dtcError, setDtcError] = useState("");
+  const [dtcConfiguration, setDtcConfiguration] =
+    useState<DtcAnalyzerAdminConfigStatus | null>(null);
+  const [dtcLimit, setDtcLimit] =
+    useState<DtcAnalyzerUsageLimitPublicProjection | null>(null);
   const readOnlyFallback = payload?.migrationReady === false;
 
   function blockReadOnlyFallback() {
@@ -337,6 +345,7 @@ export default function WorkOrderDetailClient() {
     if (!requestId || dtcLoading) return;
     setDtcLoading(true);
     setDtcError("");
+    setDtcLimit(null);
     const accessToken = await token();
     if (!accessToken) {
       setDtcLoading(false);
@@ -349,10 +358,13 @@ export default function WorkOrderDetailClient() {
       });
       const result = await response.json();
       if (!response.ok) {
+        setDtcConfiguration(result.configuration ?? null);
+        setDtcLimit(result.limit ?? null);
         setDtcError(result.error || "DTC expert review could not be prepared.");
         return;
       }
       setDtcAnalysis(result.analysis);
+      setDtcConfiguration(result.analysis.configuration ?? null);
       await load();
     } catch {
       setDtcError("DTC expert review could not be prepared.");
@@ -551,6 +563,8 @@ export default function WorkOrderDetailClient() {
 
             <DtcExpertReviewPanel
               analysis={dtcAnalysis}
+              configuration={dtcConfiguration ?? dtcAnalysis?.configuration ?? null}
+              limit={dtcLimit}
               loading={dtcLoading}
               error={dtcError}
               onRun={() => { void loadDtcAnalysis(); }}
@@ -694,11 +708,15 @@ export default function WorkOrderDetailClient() {
 
 function DtcExpertReviewPanel({
   analysis,
+  configuration,
+  limit,
   loading,
   error,
   onRun,
 }: {
   analysis: ExpertRequestDtcAnalysis | null;
+  configuration: DtcAnalyzerAdminConfigStatus | null;
+  limit: DtcAnalyzerUsageLimitPublicProjection | null;
   loading: boolean;
   error: string;
   onRun: () => void;
@@ -738,10 +756,42 @@ function DtcExpertReviewPanel({
         </div>
       )}
 
+      {limit && (
+        <Warning
+          title="Usage limit state"
+          text={`${limit.statusLabel}${
+            limit.retryAfterSeconds ? ` Retry after ${limit.retryAfterSeconds} seconds.` : ""
+          }`}
+        />
+      )}
+
       {!analysis && !loading && !error && <Empty text="No DTC expert review has been generated for this request yet." />}
 
-      {analysis && (
+      {(analysis || configuration) && (
         <div aria-live="polite" className="space-y-5">
+          {configuration && (
+            <div className="rounded-2xl border border-blue-700/30 bg-blue-950/15 p-4">
+              <div className="mb-3 text-sm font-black text-blue-100">DTC analyzer configuration</div>
+              <div className="grid gap-3 md:grid-cols-2">
+                <Info label="Provider availability" value={configuration.provider.availabilityLabel} />
+                <Info label="Fallback mode" value={configuration.fallback.modeLabel} />
+                <Info
+                  label="Usage limit"
+                  value={`${configuration.usageLimits.requestsPerWindow} requests / ${Math.ceil(configuration.usageLimits.windowSeconds / 60)} min`}
+                />
+                <Info
+                  label="Text and code limits"
+                  value={`${configuration.usageLimits.maxRequestTextLength} request chars, ${configuration.usageLimits.maxAnalyzedTextLength} analyzed chars, ${configuration.usageLimits.maxCodesPerRequest} DTC codes`}
+                />
+              </div>
+              <div className="mt-3 rounded-xl border border-white/10 bg-black/25 p-3 text-xs leading-5 text-blue-100">
+                Failure handling: {configuration.failureHandling[0]}
+              </div>
+            </div>
+          )}
+
+          {analysis && (
+            <>
           <div className="grid gap-3 md:grid-cols-4">
             <Info label="State" value={analysis.stateLabel} />
             <Info label="Provider status" value={analysis.provider.providerStatus} />
@@ -813,6 +863,8 @@ function DtcExpertReviewPanel({
               </ul>
             </div>
           </div>
+            </>
+          )}
         </div>
       )}
     </Panel>

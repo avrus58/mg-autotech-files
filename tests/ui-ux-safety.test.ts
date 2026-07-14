@@ -806,7 +806,8 @@ test("DTC analyzer provider boundary keeps fallback local and safety-scoped", ()
   const types = readProjectFile("src", "lib", "dtcAnalyzer", "types.ts");
   const fallback = readProjectFile("src", "lib", "dtcAnalyzer", "fallback.ts");
   const index = readProjectFile("src", "lib", "dtcAnalyzer", "index.ts");
-  const combined = `${types}\n${fallback}\n${index}`;
+  const config = readProjectFile("src", "lib", "dtcAnalyzer", "config.ts");
+  const combined = `${types}\n${fallback}\n${index}\n${config}`;
 
   assert.match(types, /export interface DtcAnalyzerProvider/);
   assert.match(types, /provider_unavailable/);
@@ -829,6 +830,10 @@ test("DTC analyzer provider boundary keeps fallback local and safety-scoped", ()
   assert.match(fallback, /does not confirm a root cause, fix or legal suitability/);
   assert.match(index, /class UnavailableDtcAnalyzerProvider/);
   assert.match(index, /buildDeterministicDtcFallback/);
+  assert.match(config, /dtc-analyzer-config-v1/);
+  assert.match(config, /checkDtcAnalyzerUsage/);
+  assert.match(config, /maxCodesPerRequest/);
+  assert.match(config, /projectDtcUsageLimitForResponse/);
   assert.doesNotMatch(combined, /fetch\(|process\.env|OPENAI_API_KEY|SUPABASE_SERVICE_ROLE_KEY/i);
   assert.doesNotMatch(combined, /upload-session|createObjectURL|FileReader|writeFile|bytePatch/i);
   assert.doesNotMatch(combined, /confirmed fix|customer-ready file|checksum result|DTC-off approved|byte patch approved/i);
@@ -836,6 +841,7 @@ test("DTC analyzer provider boundary keeps fallback local and safety-scoped", ()
 
 test("request DTC integration keeps customer and admin projections bounded", () => {
   const helper = readProjectFile("src", "lib", "dtcAnalyzer", "requestIntegration.ts");
+  const config = readProjectFile("src", "lib", "dtcAnalyzer", "config.ts");
   const customerRoute = readProjectFile("src", "app", "api", "requests", "[id]", "dtc-analysis", "route.ts");
   const adminRoute = readProjectFile("src", "app", "api", "admin", "requests", "[id]", "dtc-analysis", "route.ts");
   const customerPage = readProjectFile("src", "app", "dashboard", "orders", "[id]", "page.tsx");
@@ -852,6 +858,12 @@ test("request DTC integration keeps customer and admin projections bounded", () 
   assert.match(customerRoute, /requireApiUser\(request\)/);
   assert.match(customerRoute, /\.eq\("customer_id", auth\.user\.id\)/);
   assert.match(adminRoute, /requireStaffPermission\(request,\s*"orders\.view"\)/);
+  assert.match(customerRoute, /checkDtcAnalyzerUsage/);
+  assert.match(adminRoute, /checkDtcAnalyzerUsage/);
+  assert.match(customerRoute, /projectDtcUsageLimitForResponse\(usage\)/);
+  assert.match(adminRoute, /projectDtcUsageLimitForResponse\(usage\)/);
+  assert.match(config, /No live DTC AI provider is configured/);
+  assert.match(config, /Over-limit requests are rejected before analysis/);
   assert.match(customerRoute, /customerVisible:\s*false/);
   assert.match(adminRoute, /customerVisible:\s*false/);
   assert.match(customerPanel, /DTC Diagnostic Guidance/);
@@ -861,9 +873,16 @@ test("request DTC integration keeps customer and admin projections bounded", () 
   assert.match(customerPanel, /Human review required/);
   assert.match(adminPanel, /DTC Expert Review/);
   assert.match(adminClient, /\/api\/admin\/requests\/\$\{requestId\}\/dtc-analysis/);
+  assert.match(adminPanel, /DTC analyzer configuration/);
+  assert.match(adminPanel, /Provider availability/);
+  assert.match(adminPanel, /Fallback mode/);
+  assert.match(adminPanel, /Usage limit/);
+  assert.match(adminPanel, /Text and code limits/);
+  assert.match(adminPanel, /Usage limit state/);
+  assert.match(adminPanel, /Retry after/);
   assert.match(adminPanel, /Provider status/);
   assert.match(adminPanel, /Fallback/);
-  assert.doesNotMatch(customerPanel, /providerId|modelName|promptVersion|providerKind|providerStatus/i);
+  assert.doesNotMatch(customerPanel, /configuration|usageLimits|providerId|modelName|promptVersion|providerKind|providerStatus/i);
   assert.doesNotMatch(
     combinedDtcSurface,
     /request_messages|request_internal_notes|admin_notes|storage_path|signed_url|sha256|first_64_bytes_hex|sample_id|rawHex|hex_preview|confirmed fix|DTC-off approved|customer-ready file|checksum result|byte patch approved/i

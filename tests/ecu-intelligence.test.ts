@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { randomUUID } from "node:crypto";
 import test from "node:test";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -74,6 +75,11 @@ import {
   type DtcAnalyzerRequest,
   UnavailableDtcAnalyzerProvider,
 } from "../src/lib/dtcAnalyzer";
+import {
+  checkDtcAnalyzerUsage,
+  getDtcAnalyzerAdminConfigStatus,
+  projectDtcUsageLimitForResponse,
+} from "../src/lib/dtcAnalyzer/config";
 import { analyzeRequestDtc } from "../src/lib/dtcAnalyzer/requestIntegration";
 
 function calibrationLikeBuffer(size = 16_384) {
@@ -415,6 +421,101 @@ test("request DTC projection separates customer and expert boundaries", async ()
     assert.doesNotMatch(serialized, /confirmed fix|DTC-off approved|customer-ready file|checksum result|byte patch approved/i);
   }
   assert.doesNotMatch(customerSerialized, /providerId|modelName|promptVersion|providerKind|providerStatus/i);
+});
+
+test("DTC analyzer configuration exposes provider and usage boundary locally", () => {
+  const customerConfig = getDtcAnalyzerAdminConfigStatus("customer");
+  const adminConfig = getDtcAnalyzerAdminConfigStatus("admin");
+  const serialized = JSON.stringify({ customerConfig, adminConfig });
+
+  assert.equal(customerConfig.contractVersion, "dtc-analyzer-config-v1");
+  assert.equal(customerConfig.provider.configured, false);
+  assert.equal(customerConfig.provider.providerStatus, "unavailable");
+  assert.equal(customerConfig.provider.providerKind, "unconfigured");
+  assert.equal(customerConfig.fallback.deterministicFallbackEnabled, true);
+  assert.equal(customerConfig.fallback.mode, "deterministic_rules");
+  assert.equal(customerConfig.usageLimits.maxAnalyzedTextLength, 2000);
+  assert.equal(customerConfig.usageLimits.maxCodesPerRequest, 8);
+  assert.equal(adminConfig.usageLimits.requestsPerWindow > customerConfig.usageLimits.requestsPerWindow, true);
+  assert.doesNotMatch(serialized, /modelName|promptVersion|providerId|OPENAI_API_KEY|SUPABASE_SERVICE_ROLE_KEY/i);
+});
+
+test("DTC analyzer usage guard rejects local text, code and request limits", () => {
+  const actorUserId = `user-${randomUUID()}`;
+  const orderId = `order-${randomUUID()}`;
+  const request = new Request("http://localhost/api/requests/test/dtc-analysis", {
+    headers: { "x-forwarded-for": `198.51.100.${Math.floor(Math.random() * 100) + 1}` },
+  });
+
+  const tooLong = checkDtcAnalyzerUsage({
+    request,
+    scope: "customer",
+    orderId: `${orderId}-long`,
+    actorUserId,
+    text: `P0401 ${"x".repeat(4100)}`,
+  });
+  assert.equal(tooLong.allowed, false);
+  if (tooLong.allowed) assert.fail("Expected long DTC text to be limited.");
+  assert.equal(tooLong.type, "request_text_length");
+  assert.equal(tooLong.httpStatus, 413);
+
+  const tooManyCodes = checkDtcAnalyzerUsage({
+    request,
+    scope: "customer",
+    orderId: `${orderId}-codes`,
+    actorUserId,
+    text: "P0001 P0002 P0003 P0004 P0005 P0006 P0007 P0008 P0009",
+  });
+  assert.equal(tooManyCodes.allowed, false);
+  if (tooManyCodes.allowed) assert.fail("Expected excessive DTC code count to be limited.");
+  assert.equal(tooManyCodes.type, "dtc_code_count");
+  assert.equal(tooManyCodes.httpStatus, 400);
+
+  const rateOrderId = `${orderId}-rate`;
+  for (let index = 0; index < 4; index += 1) {
+    const allowed = checkDtcAnalyzerUsage({
+      request,
+      scope: "customer",
+      orderId: rateOrderId,
+      actorUserId,
+      text: "P0401",
+    });
+    assert.equal(allowed.allowed, true);
+  }
+
+  const limited = checkDtcAnalyzerUsage({
+    request,
+    scope: "customer",
+    orderId: rateOrderId,
+    actorUserId,
+    text: "P0401",
+  });
+  assert.equal(limited.allowed, false);
+  if (limited.allowed) assert.fail("Expected repeated DTC usage to be rate limited.");
+  assert.equal(limited.type, "request_rate");
+  assert.equal(limited.httpStatus, 429);
+  assert.equal(typeof limited.retryAfterSeconds, "number");
+  assert.match(projectDtcUsageLimitForResponse(limited).retryAt ?? "", /^\d{4}-\d{2}-\d{2}T/);
+});
+
+test("admin DTC projection carries admin-safe configuration while customer projection stays bounded", async () => {
+  const projection = await analyzeRequestDtc({
+    id: "request-dtc-config",
+    vehicle_brand: "BMW",
+    vehicle_model: "5 Series",
+    service_type: "DTC review",
+    notes: "Please review P0401.",
+    ecu: "Bosch EDC17",
+  }, "admin", { configuration: getDtcAnalyzerAdminConfigStatus("admin") });
+  const customerSerialized = JSON.stringify(projection.customer);
+  const expertSerialized = JSON.stringify(projection.expert);
+
+  assert.equal(projection.expert.configuration.provider.providerStatus, "unavailable");
+  assert.equal(projection.expert.configuration.fallback.mode, "deterministic_rules");
+  assert.equal(projection.expert.configuration.usageLimits.scope, "admin");
+  assert.equal(projection.auditMetadata.analysis_success, false);
+  assert.match(expertSerialized, /usageLimits/);
+  assert.doesNotMatch(customerSerialized, /configuration|usageLimits|providerId|modelName|promptVersion|providerKind|providerStatus/i);
 });
 
 test("request DTC projection makes missing and invalid DTC input explicit", async () => {

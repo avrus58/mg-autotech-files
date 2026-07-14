@@ -4,43 +4,6 @@
 
 ## Ready
 
-- [ ] **P1 RMAP-FILE-DTC-M4-ADMIN-CONFIGURATION - AI DTC Analyzer admin configuration and usage limits**
-  - Lane: AI Capability
-  - Roadmap: file-platform
-  - Epic: file-ai-dtc-analyzer
-  - Feature: file-dtc-m4-admin-configuration-feature
-  - Roadmap task: RMAP-FILE-DTC-M4-ADMIN-CONFIGURATION
-  - Fingerprint: `ai-capability|dtc-analyzer|admin-provider-state-and-usage-limits-missing|admin-configuration-boundary`
-  - Strategic score: 46 (selection score 40.42)
-  - Scope class: M
-  - Expected effort: M roadmap milestone slice
-  - Business impact: 4/5
-  - User impact: 5/5
-  - Admin impact: 4/5
-  - Strategic fit: 5/5
-  - Confidence: 4/5
-  - Effort: 3/5
-  - Risk: 2/5
-  - Evidence: `.autopilot/runtime/roadmap-selection.json` selects `RMAP-FILE-DTC-M4-ADMIN-CONFIGURATION` with product spec `C:\Users\gokka\Documents\MG-AI-OS-V4\artifacts\specs\rmap-file-dtc-m4-admin-configuration.md`; roadmap state shows DTC M1, M2 and M3 Done while M4 is Planned with 0 attempts; `src/lib/dtcAnalyzer/index.ts` defaults to `UnavailableDtcAnalyzerProvider` and deterministic fallback; `src/lib/dtcAnalyzer/fallback.ts` has only a low-level `maxDtcTextLength` normalization cap; customer/admin DTC routes call `analyzeRequestDtc` directly without a shared usage-limit/config result; `src/app/admin/requests/[id]/WorkOrderDetailClient.tsx` displays provider status/fallback after analysis but not an admin-safe configuration or usage-limit state; `src/lib/rateLimit.ts` provides a local reusable rate-limit helper.
-  - Product value: Completes the next DTC Analyzer milestone by making provider availability, local usage limits and failure handling explicit before rollout readiness, reducing misleading AI behavior and uncontrolled repeated analysis calls.
-  - Selection reason: This is the selected Roadmap V2 task, continues the active File Platform AI DTC Analyzer epic after accepted M3 request integration, and has higher strategic value than deferred maintenance-only tasks.
-  - Scope: Add a local-only DTC analyzer configuration/usage boundary, apply it to the existing customer and admin DTC analysis routes, and surface admin-safe provider/limit/failure state in the existing DTC expert review UI. Do not add live provider integration, env reads, secrets, DB schema changes, migrations, pricing/payment logic, desktop activation, file processing, MOD generation, checksum work, public technical content or production calls.
-  - Acceptance criteria:
-    - A DTC analyzer config/status helper defines provider availability, deterministic fallback mode and request/text/code usage limits without reading `.env`, secrets or live services.
-    - Customer and admin DTC analysis routes use the same usage guard before analysis and return a customer/admin-safe limit response when the request exceeds the configured limit, including retry timing where applicable.
-    - Admin DTC expert review shows provider availability, fallback mode and usage-limit/failure state clearly while preserving loading, empty, error, retry and accessibility behavior.
-    - Customer projection keeps provider internals, model names, prompt versions, raw notes, admin notes, storage paths, hashes, binary/hex data, sample IDs and private metadata hidden.
-    - Audit events remain internal-only and sanitized; over-limit or unavailable states must not be recorded as successful AI analysis.
-    - Tests cover provider-unavailable, provider-error fallback, usage-limit rejection, admin-safe config display and customer/admin data boundaries.
-  - Validation:
-    - `.\node_modules\.bin\tsx.cmd --test tests\ecu-intelligence.test.ts`
-    - `.\node_modules\.bin\tsx.cmd --test tests\admin-work-orders.test.ts`
-    - `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts`
-    - `npm run lint`
-    - `npm run typecheck`
-    - `npm test`
-    - `npm run build`
-
 ## In Progress
 
 ## Blocked
@@ -86,6 +49,18 @@ Remediation: Batch with a future documentation/source-comment maintenance pass a
 Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
+
+### RMAP-FILE-DTC-M4-ADMIN-CONFIGURATION [P1] AI DTC Analyzer admin configuration and usage limits
+
+Durum: Done
+
+Fingerprint: `ai-capability|dtc-analyzer|admin-provider-state-and-usage-limits-missing|admin-configuration-boundary`
+
+Kapsam: Existing DTC Analyzer request routes now share a local-only admin configuration and usage-limit boundary before analysis.
+
+Sonuc: Added `src/lib/dtcAnalyzer/config.ts` with provider-unavailable status, deterministic fallback mode, local request/text/code limits and reusable usage guard. Customer/admin DTC routes now enforce the same guard before analysis, return safe over-limit payloads with retry timing where applicable, and skip generated-analysis audit writes for rejected usage. Admin DTC Expert Review now displays provider availability, fallback mode, configured usage limits and limit/failure state while preserving loading, empty, error, retry and accessibility behavior. Customer projection still hides provider/model/prompt/config internals, raw notes, storage paths, hashes, binary/hex data, sample ids and private metadata. Audit metadata marks provider unavailable/error and `analysis_success: false` for fallback/unavailable states.
+
+Dogrulama: `.\node_modules\.bin\tsx.cmd --test tests\ecu-intelligence.test.ts` PASS (69/69); `.\node_modules\.bin\tsx.cmd --test tests\admin-work-orders.test.ts` PASS (28/28); `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (56/56); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (300/300); `git diff --check` PASS (CRLF warnings only). `npm run build` not run because this repo build can load local env files and request Google Fonts, which is outside this run's no-env/no-live-network boundary.
 
 ### RMAP-FILE-DTC-M3-REQUEST-INTEGRATION [P1] AI DTC Analyzer request boundary and audit integration
 
