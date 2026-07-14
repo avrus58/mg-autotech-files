@@ -2,6 +2,21 @@
 
 Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
+## 2026-07-14 planner run V4 ROADMAP DTC ANALYSIS SERVICE
+
+- Baslangic/bitis: 2026-07-14 03:13:06 +01:00.
+- Gorev: Strategic Planner planning-only run; uygulama kodu degistirilmeden V4 Roadmap selected task'ini Ready queue'ya cevirmek.
+- Proje tespiti: `.autopilot/PROJECT.md` bu repository'yi `file.mgautotech.de` File Platform olarak tanimliyor; File Platform constitution uygulandi.
+- Selected roadmap task: `.autopilot/runtime/roadmap-selection.json` `RMAP-FILE-DTC-M2-ANALYSIS-SERVICE` task'ini secti. Product spec `C:\Users\gokka\Documents\MG-AI-OS-V4\artifacts\specs\rmap-file-dtc-m2-analysis-service.md`, DTC Analyzer M2 icin evidence model, risk flags ve confidence semantics istiyor.
+- Duplicate/evidence kontrolu: Package constitution dosyalari, roadmap docs/state/markdown/selection/spec, local `.autopilot/constitution/*`, AGENTS, PROJECT, ROADMAP, INBOX, FEATURE_PROPOSALS, TASKS, TASK_HISTORY, PLANNER_STATE, PRODUCT_SCORECARD, STATUS, package scripts, mevcut Git status ve son 100 commit okundu. `RMAP-FILE-DTC-M1` Done olarak bulundu; `RMAP-FILE-DTC-M2-ANALYSIS-SERVICE` veya ayni fingerprint Done/Ready icinde bulunmadi. `cb8cf1e feat: add deterministic DTC analyzer fallback` M1 kapsamidir, M2 analysis-service degildir.
+- Evidence sonucu: `src/lib/dtcAnalyzer/types.ts:60-94`, `src/lib/dtcAnalyzer/fallback.ts:231-289`, `src/lib/dtcAnalyzer/index.ts:39-64`, `tests/ecu-intelligence.test.ts:321-389` ve `tests/ui-ux-safety.test.ts:805-824` mevcut provider/fallback temelini kanitliyor; structured evidence, risk flag ve confidence reason semantics henuz yok.
+- Eklenen Ready gorev: `RMAP-FILE-DTC-M2-ANALYSIS-SERVICE - AI DTC Analyzer analysis service contract`.
+- Deferred kaydi: `AUTO-009` ve `AUTO-010` Later altinda tutuldu; her ikisine selected P1/L roadmap milestone nedeniyle deferred reason, remediation ve expected validation command eklendi.
+- Degisen dosyalar: `.autopilot/ROADMAP.md`, `.autopilot/TASKS.md`, `.autopilot/PLANNER_STATE.json`, `.autopilot/STATUS.md`, `.autopilot/runtime/planner-result.json`.
+- Calistirilan kontroller: V4 package constitution ve roadmap engine dosyalari okundu; roadmap state PowerShell `ConvertFrom-Json` ile selected task/epic/milestone/feature icin parse edildi; repository memory ve DTC source/test evidence arandi; `git status --short --branch`; `git log -100 --oneline --decorate`; root `package.json` scriptleri incelendi; `.autopilot/PLANNER_STATE.json` JSON parse PASS; `.autopilot/runtime/planner-result.json` JSON parse PASS; Ready checkbox count 1 PASS; `git check-ignore -v .autopilot/runtime/planner-result.json` PASS; `git diff --name-only` yalniz izinli planning dosyalarini gosterdi; `git diff --check` yalniz LF/CRLF uyarilariyla PASS.
+- Calistirilmayan kontroller: Planning-only run oldugu ve uygulama kodu degismedigi icin `npm run lint`, `npm run typecheck`, `npm test` ve `npm run build` calistirilmadi.
+- Kalan risk: Ready queue intentionally 1 tasktir; bu, selected high-impact P1/L milestone icin planlama kurallarindaki kucuk kuyruk istisnasina dayanir. DTC Analyzer M2 uygulanana kadar customer/admin UI entegrasyonu, provider configuration, audit ve expert-review workflow M3/M4 kapsaminda kalir. Production deploy, live migration, `.env*`, secret, real customer data veya live service islemi yapilmadi.
+
 ## 2026-07-14 worker run AUTO-058
 
 - Baslangic: 2026-07-14 02:07:55 +01:00; bitis: 2026-07-14 02:12:22 +01:00.

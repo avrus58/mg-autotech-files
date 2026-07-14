@@ -4,6 +4,42 @@
 
 ## Ready
 
+- [ ] **P1 RMAP-FILE-DTC-M2-ANALYSIS-SERVICE - AI DTC Analyzer analysis service contract**
+  - Lane: AI Capability
+  - Roadmap: `file-platform`
+  - Epic: `file-ai-dtc-analyzer`
+  - Feature: `file-dtc-m2-analysis-service-feature`
+  - Roadmap task: `RMAP-FILE-DTC-M2-ANALYSIS-SERVICE`
+  - Fingerprint: `ai-capability|dtc-analyzer|fallback-output-lacks-evidence-risk-confidence-model|analysis-service-contract`
+  - Strategic score: 50 weighted / 46.34 selected
+  - Scope class: L
+  - Expected effort: L roadmap milestone slice
+  - Business impact: 4/5
+  - User impact: 5/5
+  - Admin impact: 3/5
+  - Strategic fit: 5/5
+  - Confidence: 4/5
+  - Effort: 4/5
+  - Risk: 2/5
+  - Evidence: `.autopilot/runtime/roadmap-selection.json` selected `RMAP-FILE-DTC-M2-ANALYSIS-SERVICE`; product spec `C:\Users\gokka\Documents\MG-AI-OS-V4\artifacts\specs\rmap-file-dtc-m2-analysis-service.md` requires evidence model, risk flags and confidence semantics; `src/lib/dtcAnalyzer/types.ts:60`-`94` has code analysis and response fields but no first-class evidence/risk/recommendation model; `src/lib/dtcAnalyzer/fallback.ts:231`-`289` derives per-code context and confidence but does not expose structured evidence items or risk flags; `src/lib/dtcAnalyzer/index.ts:39`-`64` already provides the provider/fallback entrypoint from M1; `tests/ecu-intelligence.test.ts:321`-`389` and `tests/ui-ux-safety.test.ts:805`-`824` cover M1 provider/fallback safety but not M2 analysis semantics.
+  - Product value: Converts the DTC fallback from text guidance into an explainable analysis layer that future customer/admin surfaces can trust without pretending unavailable AI is intelligent.
+  - Selection reason: V2 roadmap selector picked this P1/L File Platform milestone to continue the active `file-ai-dtc-analyzer` epic and rebalance recent work toward File Platform AI capability.
+  - Scope: Add local-only DTC analysis service semantics for evidence entries, risk flags, recommendation categories and confidence reasons on top of the existing `src/lib/dtcAnalyzer` contract. Keep deterministic fallback, provider-unavailable handling and no-fake-AI behavior. Do not add UI, API routes, DB schema, migrations, external providers, env reads, file processing, MOD/checksum actions, pricing or customer-data access.
+  - Acceptance criteria:
+    - `DtcAnalyzerResponse` or a bounded exported analysis helper exposes structured evidence items with source/type/severity/customer-safe text and no raw customer note echo.
+    - Known and unknown valid DTCs receive deterministic risk flags such as diagnostic uncertainty, safety relevance, emissions/legal review need or insufficient context where applicable.
+    - Overall and per-code confidence semantics include explicit reasons and remain `none` for invalid input, `low` for unknown-code fallback, and at most `medium` for deterministic known-code fallback.
+    - Recommendation output distinguishes diagnostic checks, missing information and human review gates without approving DTC-off, file edits, byte patches, checksum work or customer-ready MOD output.
+    - Provider-unavailable and provider-error fallback paths preserve provider identity, fallback reason and `isAiGenerated: false`.
+    - Tests cover evidence model, risk flags, confidence reasons, unknown-code behavior, invalid input behavior and safety/private-data boundaries.
+  - Validation:
+    - `.\node_modules\.bin\tsx.cmd --test tests\ecu-intelligence.test.ts`
+    - `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts`
+    - `npm run lint`
+    - `npm run typecheck`
+    - `npm test`
+    - `npm run build`
+
 ## In Progress
 
 ## Blocked
@@ -23,6 +59,12 @@ Kabul kriterleri:
 
 Dogrulama: Markdown diff incelemesi, `npm test` ilgili source assertion testleri.
 
+Deferred reason: Selected P1/L roadmap milestone `RMAP-FILE-DTC-M2-ANALYSIS-SERVICE` has higher strategic value and directly continues the active File Platform AI epic; this is a low-priority documentation cleanup and does not unlock the selected milestone.
+
+Remediation: Reconsider after the DTC Analyzer M2 milestone is accepted, or if owner explicitly asks for production smoke documentation cleanup.
+
+Expected validation command: `npm test` plus markdown diff review.
+
 ### AUTO-010 [P3] Dar kapsamli encoding artifact temizligi yap
 
 Kapsam: Runtime stringlere dokunmadan yalnizca acikca bozulmus kaynak yorumlari veya teknik dokuman satirlarinda encoding artifactlerini temizle.
@@ -35,6 +77,12 @@ Kabul kriterleri:
 - Diff sadece yorum/dokuman karakter duzeltmesi icerir.
 
 Dogrulama: Diff incelemesi, `npm run lint`, `npm run typecheck`.
+
+Deferred reason: Maintenance-only artifact cleanup is intentionally behind the selected File Platform AI capability milestone and should not consume the Ready queue while a high-impact roadmap slice is available.
+
+Remediation: Batch with a future documentation/source-comment maintenance pass when no P1/P2 product or roadmap milestone is ready.
+
+Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
 
