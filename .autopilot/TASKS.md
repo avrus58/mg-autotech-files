@@ -4,44 +4,6 @@
 
 ## Ready
 
-- [ ] **P1 RMAP-FILE-QUALITY-SCORE-M1-FOUNDATION - AI File Quality Score deterministic baseline and explainability foundation**
-  - Lane: AI Capability
-  - Roadmap: file-platform
-  - Epic: file-quality-score
-  - Feature: file-quality-score-m1-foundation-feature
-  - Roadmap task: RMAP-FILE-QUALITY-SCORE-M1-FOUNDATION
-  - Fingerprint: `ai-capability|file-quality-score|file-request-quality-lacks-explainable-deterministic-baseline|deterministic-quality-score-foundation`
-  - Strategic score: 36
-  - Scope class: M
-  - Expected effort: M roadmap milestone slice
-  - Business impact: 4/5
-  - User impact: 4/5
-  - Admin impact: 4/5
-  - Strategic fit: 5/5
-  - Confidence: 4/5
-  - Effort: 3/5
-  - Risk: 2/5
-  - Evidence: `.autopilot/runtime/roadmap-selection.json` selects `RMAP-FILE-QUALITY-SCORE-M1-FOUNDATION` with acceptance criteria `Deterministic baseline` and `Explainability`; product spec `C:\Users\gokka\Documents\MG-AI-OS-V4\artifacts\specs\rmap-file-quality-score-m1-foundation.md` says the milestone reduces bad submissions and rework. `Test-Path src/lib/fileQualityScore` and `Test-Path docs/file-quality-score-foundation.md` are false. Existing `src/lib/fileExpert/types.ts`, `src/lib/fileExpert/reportStatus.ts`, `src/lib/fileExpert/publicResult.ts`, `src/lib/ecuIntelligence/quality.ts`, `src/lib/aiExplain/*`, and `tests/ecu-intelligence.test.ts` provide File Expert evidence, training quality, provider/fallback/review-gate and no-leak patterns, but no reusable request/file quality-score contract.
-  - Product value: Gives admins and future customer surfaces a consistent, explainable quality/readiness baseline before bad or incomplete file-service submissions become rework, while keeping AI evidence-only and human-review gated.
-  - Selection reason: Selected Roadmap V2 P1/M task is safe, new, local-only, and higher strategic value than deferred documentation/encoding maintenance. Owner inbox has no newer request.
-  - Scope: Create a local-only `file-quality-score-v1` domain module and runbook. Score deterministic quality/readiness from existing File Expert analyzer/request evidence, metadata completeness, integrity/risk signals and review blockers. Include customer-safe and expert/admin projections. Do not add UI/API routes, DB schema/migrations, live provider calls, production analytics persistence, pricing/payment policy, MOD output, checksum approval, deploy, package install, `.env*` reads or customer-data tests.
-  - Acceptance criteria:
-    - `src/lib/fileQualityScore` exposes typed request/response helpers for deterministic quality scoring with explicit provider unavailable/error/invalid-input states and `isAiGenerated: false` for fallback output.
-    - The deterministic baseline returns a bounded score, grade/readiness, factor breakdown, evidence reasons, missing-information list, risk flags, human-review gate, safety boundaries and blocked production actions.
-    - Scoring uses only existing structured File Expert/request metadata and never raw binary bytes, hex previews, offsets, storage paths, signed URLs, hashes, filenames, customer identifiers, sample IDs or admin-only notes in customer projection.
-    - Expert/admin projection may expose factor weights, provider/fallback status and required checks, but still treats the result as review support only.
-    - Invalid or insufficient input is explicit and does not look like successful AI analysis.
-    - A runbook documents local validation, privacy boundaries and operator-only future rollout decisions.
-    - Tests cover high-quality, weak/blocked, invalid-input, provider-unavailable fallback and customer projection no-leak behavior.
-  - Validation:
-    - `.\node_modules\.bin\tsx.cmd --test tests\ecu-intelligence.test.ts`
-    - `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts`
-    - `npm run lint`
-    - `npm run typecheck`
-    - `npm test`
-    - `git diff --check`
-    - Do not run `npm run build` in no-env/no-network Codex conditions unless explicitly approved; this repo build can load local Next env files and request Google Fonts.
-
 ## In Progress
 
 ## Blocked
@@ -87,6 +49,18 @@ Remediation: Batch with a future documentation/source-comment maintenance pass a
 Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
+
+### RMAP-FILE-QUALITY-SCORE-M1-FOUNDATION [P1] AI File Quality Score deterministic baseline and explainability foundation
+
+Durum: Done
+
+Fingerprint: `ai-capability|file-quality-score|file-request-quality-lacks-explainable-deterministic-baseline|deterministic-quality-score-foundation`
+
+Kapsam: AI File Quality Score M1 icin local-only `file-quality-score-v1` deterministic quality/readiness contract, factor scoring, provider/unavailable/fallback states, customer/expert projection boundary and operator runbook eklendi.
+
+Sonuc: `src/lib/fileQualityScore` request metadata, structured File Expert analyzer evidence, integrity/risk signals, service context and review blockers uzerinden bounded 0-100 score, grade, readiness, factor breakdown, evidence reasons, missing-information list, risk flags, recommendations, human-review gate, safety boundaries and blocked production actions uretir. Default provider unconfigured kalir ve deterministic non-AI fallback kullanir; provider unavailable, provider-unavailable fallback, provider-error fallback and invalid-input states explicit kalir ve fallback output `isAiGenerated: false` tasir. Customer projection provider id/kind/status, model name, prompt version, fallback internals, factor weights, raw binary/hex, offsets, hashes, filenames, storage paths, signed URLs, customer identifiers, sample IDs and admin-only notes tasimaz. Expert projection provider/fallback status, weighted factors, required human checks and blocked production actions tasir. No UI/API route, DB migration, live provider call, production analytics persistence, pricing/payment policy, MOD output, checksum approval, deploy, package install, `.env*`, secret, commit or push yapildi.
+
+Dogrulama: `.\node_modules\.bin\tsx.cmd --test tests\ecu-intelligence.test.ts` PASS (96/96); `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (62/62); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (333/333); `git diff --check` PASS (CRLF warnings only); new File Quality Score source forbidden live-service/env/secret pattern scan PASS; new-file trailing whitespace scan PASS. `npm run build` calistirilmadi; bu repo build'i local Next env dosyalarini okuyabilir ve `next/font/google` nedeniyle Google Fonts ag istegi yapabilir, bu no-env/no-live-network foundation run siniri icin guvenli degil.
 
 ### RMAP-FILE-AI-EXPLAIN-LAYER-M1-FOUNDATION [P1] AI Explain Layer source labels and unavailable-state foundation
 

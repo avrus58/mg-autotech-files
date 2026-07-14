@@ -1511,6 +1511,31 @@ test("AI Explain Layer foundation is local-only and projection-gated", () => {
   assert.doesNotMatch(combined, /customer-ready\s+file|safe to flash|checksum completed|automatic delivery is possible|MOD generation approved/i);
 });
 
+test("File Quality Score foundation is local-only and projection-gated", () => {
+  const types = readProjectFile("src", "lib", "fileQualityScore", "types.ts");
+  const service = readProjectFile("src", "lib", "fileQualityScore", "service.ts");
+  const projection = readProjectFile("src", "lib", "fileQualityScore", "projection.ts");
+  const runbook = readProjectFile("docs", "file-quality-score-foundation.md");
+  const combined = `${types}\n${service}\n${projection}\n${runbook}`;
+
+  assert.match(types, /file-quality-score-v1/);
+  assert.match(types, /provider_unavailable_fallback/);
+  assert.match(types, /provider_error_fallback/);
+  assert.match(service, /Deterministic non-AI File Quality Score/);
+  assert.match(service, /class UnavailableFileQualityScoreProvider/);
+  assert.match(service, /buildDeterministicFileQualityScoreFallback/);
+  assert.match(service, /metadata_completeness/);
+  assert.match(service, /integrity_compatibility/);
+  assert.match(projection, /export type CustomerFileQualityScoreProjection/);
+  assert.match(projection, /export type ExpertFileQualityScoreProjection/);
+  assert.match(projection, /weightedFactorBreakdown/);
+  assert.match(runbook, /RMAP-FILE-QUALITY-SCORE-M1-FOUNDATION/);
+  assert.match(runbook, /No raw binary or hex data/i);
+  assert.match(runbook, /operator approval/i);
+  assert.doesNotMatch(combined, /fetch\(|process\.env|getSupabaseAdmin|createClient|\.from\(|OPENAI_API_KEY|SUPABASE_SERVICE_ROLE_KEY|STRIPE_SECRET_KEY|RESEND_API_KEY/i);
+  assert.doesNotMatch(combined, /safe to flash|checksum completed|automatic delivery is possible|MOD generation approved/i);
+});
+
 test("i18n and SEO health script catches core multilingual requirements", () => {
   const script = readProjectFile("scripts", "check-i18n-seo.mjs");
   assert.match(script, /expectedLocales/);

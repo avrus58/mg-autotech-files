@@ -119,6 +119,17 @@ import {
   type AiExplainRequest,
   UnavailableAiExplainProvider,
 } from "../src/lib/aiExplain";
+import {
+  analyzeFileQualityScoreRequest,
+  fileQualityScoreBlockedProductionActions,
+  fileQualityScoreContractVersion,
+  hasFileQualityScoreCustomerLeak,
+  projectFileQualityScoreResponse,
+  type FileQualityScoreProvider,
+  type FileQualityScoreRequest,
+  UnavailableFileQualityScoreProvider,
+} from "../src/lib/fileQualityScore";
+import type { FileExpertAnalyzerResult } from "../src/lib/fileExpert/types";
 
 function calibrationLikeBuffer(size = 16_384) {
   const buffer = Buffer.alloc(size, 0xff);
@@ -1392,6 +1403,340 @@ test("AI Explain Layer expert projection keeps source labels hidden from custome
     true
   );
   assert.equal(hasAiExplainCustomerLeak(projection.customer), false);
+});
+
+function fileQualityScoreRequestFixture(): FileQualityScoreRequest {
+  const inspection: NonNullable<FileExpertAnalyzerResult["files"]["ori"]> = {
+    file_size: 4096,
+    sha256: "secret-quality-hash",
+    first_64_bytes_hex: "DE AD BE EF",
+    last_64_bytes_hex: "FE ED FA CE",
+    ff_ratio: 0.1,
+    zero_ratio: 0.05,
+    entropy: 7.1,
+    ascii_strings: ["private printable marker"],
+    ecu_identifiers: ["Bosch EDC17"],
+    file_format: "raw_binary",
+    read_scope: "full_read",
+    read_scope_confidence: 0.8,
+    hardware_numbers: ["private-hw"],
+    software_numbers: ["private-sw"],
+    calibration_ids: [],
+    vins: ["WBA00000000000000"],
+    engine_codes: [],
+  };
+
+  return {
+    source: "local_test",
+    metadata: {
+      brand: "BMW",
+      model: "5 Series",
+      engine: "530d",
+      ecuType: "Bosch EDC17C50",
+      ecuFamily: "EDC17",
+      readMethod: "bench",
+      hwSw: "SW1037550001",
+    },
+    service: {
+      serviceSummary: "Stage 1 review with checksum preparation",
+      requestedServiceLabels: ["Stage 1"],
+      selectedOptionLabels: ["Checksum"],
+      customerNotesPresent: true,
+    },
+    review: {
+      qualityCheckStatus: "needs_review",
+      humanReviewStatus: "in_review",
+    },
+    analyzerResult: {
+      job_id: "private-quality-job",
+      analysis_version: "test",
+      mode: "ori_mod_compare",
+      source: {
+        kind: "manual_file_expert",
+        ori_file_name: "private-ori.bin",
+        mod_file_name: "private-mod.bin",
+      },
+      metadata: {
+        brand: "BMW",
+        model: "5 Series",
+        engine: "530d",
+        ecu_type: "Bosch EDC17C50",
+        read_method: "Bench",
+      },
+      files: {
+        ori: inspection,
+        mod: {
+          ...inspection,
+          sha256: "secret-quality-mod-hash",
+          first_64_bytes_hex: "BA AD F0 0D",
+        },
+      },
+      comparison: {
+        same_size: true,
+        changed_bytes: 128,
+        changed_percent: 3.1,
+        raw_changed_blocks: 2,
+        merged_changed_blocks: 1,
+        changed_blocks: [],
+      },
+      active_regions: [],
+      map_candidates: [{
+        offset_hex: "0x00001000",
+        length: 256,
+        possible_type: "calibration",
+        reason: "private map reason",
+        confidence: 0.7,
+      }],
+      repeated_patterns: [],
+      possible_features: [{
+        feature: "stage1",
+        confidence: 0.7,
+        reasons: ["private feature reason"],
+      }],
+      ecu_identification: {
+        status: "detected",
+        module_type: "ECU",
+        supplier: "Bosch",
+        family: "EDC17",
+        variant: "C50",
+        display_name: "Bosch EDC17C50",
+        processor: null,
+        confidence: 0.82,
+        evidence: ["private ecu evidence"],
+        hardware_numbers: ["private-hw"],
+        software_numbers: ["private-sw"],
+        calibration_ids: [],
+        vins: ["WBA00000000000000"],
+        engine_codes: [],
+      },
+      vehicle_match: {
+        total_matches: 1,
+        exact_vehicle_identified: true,
+        summary: "private vehicle match",
+        candidates: [],
+      },
+      change_profile: {
+        classification: "focused_calibration",
+        label: "Focused calibration",
+        summary: "private profile",
+        confidence: 0.74,
+        affected_area_percent: 3.1,
+        changed_regions: 1,
+      },
+      findings: [],
+      integrity_assessment: {
+        file_size_match: true,
+        ecu_identity_match: true,
+        vin_match: null,
+        checksum_status: "not_checked",
+        issues: [],
+      },
+      risk_assessment: {
+        risk_level: "low",
+        confidence: 0.74,
+        reasons: ["private risk reason"],
+        warnings: [],
+      },
+      summary: {
+        stock_or_modified: "likely_modified",
+        main_conclusion: "Structured analyzer summary is present.",
+        recommended_next_steps: ["private next step"],
+      },
+    },
+    privateMetadata: {
+      customer_id: "customer-private",
+      storage_path: "customer/private/file.bin",
+      signed_url: "https://private.example/signed",
+      sample_id: "sample-private",
+      raw_hex: "DE AD BE EF",
+      admin_note: "private admin note",
+    },
+  };
+}
+
+test("File Quality Score exposes provider-unavailable state before fallback", async () => {
+  const provider = new UnavailableFileQualityScoreProvider("Local File Quality Score provider is disabled.");
+  const response = await provider.scoreFileQuality(fileQualityScoreRequestFixture());
+
+  assert.equal(response.contractVersion, fileQualityScoreContractVersion);
+  assert.equal(response.status, "provider_unavailable");
+  assert.equal(response.state, "provider_unavailable");
+  assert.equal(response.provider.providerId, "unconfigured_file_quality_score_provider");
+  assert.equal(response.provider.providerStatus, "unavailable");
+  assert.equal(response.provider.unavailableReason, "Local File Quality Score provider is disabled.");
+  assert.equal(response.fallback.used, false);
+  assert.equal(response.isAiGenerated, false);
+  assert.equal(response.score, 0);
+  assert.equal(response.grade, "not_scorable");
+  assert.equal(response.readiness, "unavailable");
+  assert.ok(response.factorBreakdown.some((factor) => factor.id === "provider_state"));
+  assert.ok(response.humanReview.required);
+});
+
+test("File Quality Score deterministic baseline grades strong structured evidence", async () => {
+  const response = await analyzeFileQualityScoreRequest(fileQualityScoreRequestFixture());
+  const factorIds = new Set(response.factorBreakdown.map((factor) => factor.id));
+
+  assert.equal(response.contractVersion, "file-quality-score-v1");
+  assert.equal(response.status, "fallback");
+  assert.equal(response.state, "provider_unavailable_fallback");
+  assert.equal(response.provider.providerStatus, "unavailable");
+  assert.equal(response.fallback.used, true);
+  assert.equal(response.isAiGenerated, false);
+  assert.ok(response.score >= 75);
+  assert.ok(["A", "B"].includes(response.grade));
+  assert.equal(response.readiness, "ready_for_expert_review");
+  assert.ok(factorIds.has("metadata_completeness"));
+  assert.ok(factorIds.has("file_evidence"));
+  assert.ok(factorIds.has("integrity_compatibility"));
+  assert.ok(factorIds.has("analysis_confidence"));
+  assert.ok(response.evidenceReasons.some((reason) => /ORI\/MOD comparison summary/i.test(reason)));
+  assert.ok(response.humanReview.required);
+  assert.ok(response.blockedProductionActions.includes("checksum_approval"));
+  assert.equal(fileQualityScoreBlockedProductionActions.includes("automatic_delivery"), true);
+});
+
+test("File Quality Score weak and blocked evidence stays explicit", async () => {
+  const request = fileQualityScoreRequestFixture();
+  const response = await analyzeFileQualityScoreRequest({
+    ...request,
+    metadata: { brand: "BMW" },
+    service: {
+      serviceSummary: null,
+      requestedServiceLabels: [],
+      selectedOptionLabels: [],
+      customerNotesPresent: false,
+    },
+    review: {
+      qualityCheckStatus: "failed",
+      reviewBlockers: ["private blocker with storage_path customer/private"],
+      humanReviewStatus: "rejected",
+    },
+    analyzerResult: {
+      ...(request.analyzerResult as FileExpertAnalyzerResult),
+      comparison: {
+        same_size: false,
+        changed_bytes: 0,
+        changed_percent: 0,
+        raw_changed_blocks: 0,
+        merged_changed_blocks: 0,
+        changed_blocks: [],
+      },
+      map_candidates: [],
+      possible_features: [],
+      change_profile: undefined,
+      integrity_assessment: {
+        file_size_match: false,
+        ecu_identity_match: null,
+        vin_match: null,
+        checksum_status: "not_checked",
+        issues: ["private integrity issue"],
+      },
+      findings: [{
+        id: "critical-integrity",
+        category: "integrity",
+        severity: "critical",
+        title: "Integrity review required",
+        summary: "private finding",
+        confidence: 0.9,
+        evidence: ["private finding evidence"],
+      }],
+      risk_assessment: {
+        risk_level: "high",
+        confidence: 0.2,
+        reasons: ["private risk reason"],
+        warnings: ["private warning"],
+      },
+      summary: {
+        stock_or_modified: "unknown",
+        main_conclusion: "",
+        recommended_next_steps: [],
+      },
+    },
+  });
+  const serialized = JSON.stringify(response);
+
+  assert.equal(response.status, "fallback");
+  assert.equal(response.readiness, "blocked");
+  assert.equal(response.confidence, "none");
+  assert.ok(response.score < 55);
+  assert.ok(response.riskFlags.some((flag) => flag.kind === "high_risk_file" && flag.severity === "critical"));
+  assert.ok(response.riskFlags.some((flag) => flag.kind === "review_blocker"));
+  assert.ok(response.missingInformation.some((item) => /Requested service/i.test(item)));
+  assert.doesNotMatch(serialized, /private blocker|customer\/private|private risk reason|private finding evidence/i);
+});
+
+test("File Quality Score invalid input does not look like successful AI analysis", async () => {
+  const response = await analyzeFileQualityScoreRequest({ source: "local_test" });
+
+  assert.equal(response.status, "invalid_input");
+  assert.equal(response.state, "invalid_input");
+  assert.equal(response.fallback.used, true);
+  assert.equal(response.isAiGenerated, false);
+  assert.equal(response.score, 0);
+  assert.equal(response.grade, "not_scorable");
+  assert.equal(response.readiness, "blocked");
+  assert.equal(response.confidence, "none");
+  assert.ok(response.riskFlags.some((flag) => flag.kind === "invalid_input"));
+  assert.match(response.summary, /structured File Expert output|request metadata/i);
+});
+
+test("File Quality Score provider errors preserve expert state without leaking thrown secrets", async () => {
+  class ThrowingQualityProvider implements FileQualityScoreProvider {
+    readonly providerId = "throwing_quality_provider";
+    readonly providerKind = "external_ai" as const;
+    readonly modelName = "private-quality-model";
+
+    async scoreFileQuality(_input: FileQualityScoreRequest): Promise<never> {
+      void _input;
+      throw new Error("provider failed with sk-quality-secret-token");
+    }
+  }
+
+  const response = await analyzeFileQualityScoreRequest(fileQualityScoreRequestFixture(), {
+    provider: new ThrowingQualityProvider(),
+  });
+  const serialized = JSON.stringify(response);
+
+  assert.equal(response.status, "fallback");
+  assert.equal(response.state, "provider_error_fallback");
+  assert.equal(response.provider.providerId, "throwing_quality_provider");
+  assert.equal(response.provider.providerStatus, "error");
+  assert.equal(response.provider.modelName, "private-quality-model");
+  assert.equal(response.fallback.used, true);
+  assert.equal(response.isAiGenerated, false);
+  assert.ok(response.riskFlags.some((flag) => flag.kind === "provider_unavailable"));
+  assert.doesNotMatch(serialized, /sk-quality-secret-token/);
+});
+
+test("File Quality Score projection separates customer and expert boundaries", async () => {
+  const response = await analyzeFileQualityScoreRequest(fileQualityScoreRequestFixture());
+  const projection = projectFileQualityScoreResponse(response);
+  const customerSerialized = JSON.stringify(projection.customer);
+  const expertSerialized = JSON.stringify(projection.expert);
+  const auditSerialized = JSON.stringify(projection.auditMetadata);
+
+  assert.equal(projection.customer.contractVersion, fileQualityScoreContractVersion);
+  assert.equal(projection.customer.isAiGenerated, false);
+  assert.equal(projection.customer.state, "provider_unavailable_fallback");
+  assert.equal(projection.customer.score, response.score);
+  assert.equal(hasFileQualityScoreCustomerLeak(projection.customer), false);
+  assert.equal(projection.expert.provider.providerStatus, "unavailable");
+  assert.equal(projection.expert.fallback.used, true);
+  assert.ok(projection.expert.weightedFactorBreakdown.some((factor) => factor.weight > 0));
+  assert.ok(projection.expert.blockedProductionActions.includes("checksum_approval"));
+  assert.equal(projection.auditMetadata.provider_status, "unavailable");
+  assert.equal(projection.auditMetadata.customer_id, undefined);
+
+  assert.doesNotMatch(customerSerialized, /providerId|providerKind|providerStatus|modelName|promptVersion|"fallback":|weightedFactorBreakdown/i);
+  for (const serialized of [customerSerialized, expertSerialized, auditSerialized]) {
+    assert.doesNotMatch(serialized, /private-ori\.bin|private-mod\.bin|secret-quality-hash|secret-quality-mod-hash/i);
+    assert.doesNotMatch(serialized, /DE AD BE EF|BA AD F0 0D|0x00001000|private map reason|private feature reason/i);
+    assert.doesNotMatch(serialized, /customer-private|private\.example|sample-private|storage_path|signed_url|raw_hex|admin note/i);
+  }
+  assert.match(expertSerialized, /providerStatus/);
+  assert.match(expertSerialized, /fallback/);
+  assert.match(expertSerialized, /weightedFactorBreakdown/);
 });
 
 test("model payload removes customer notes, filenames, VIN and printable strings", async () => {
