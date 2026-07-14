@@ -40,6 +40,10 @@ export function getLocalizedPublicPath(pathname: string, locale: LocaleCode) {
     return localizedPath(locale, "/how-it-works");
   }
 
+  if (parts[0] === "file-service") {
+    return localizedPath(locale, "/file-service");
+  }
+
   if (parts[0] && privateOrSystemSegments.has(parts[0])) {
     return pathname;
   }

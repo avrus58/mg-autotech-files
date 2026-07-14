@@ -6,13 +6,17 @@ const filesToScan = [
   "src/lib/i18n.ts",
   "src/lib/seo.ts",
   "src/lib/howItWorksI18n.ts",
+  "src/lib/fileServiceI18n.ts",
   "src/lib/i18nRoutes.ts",
+  "src/app/layout.tsx",
   "src/app/page.tsx",
   "src/app/[locale]/page.tsx",
   "src/app/[locale]/layout.tsx",
   "src/app/[locale]/services/[slug]/page.tsx",
   "src/app/[locale]/how-it-works/page.tsx",
+  "src/app/[locale]/file-service/page.tsx",
   "src/app/how-it-works/page.tsx",
+  "src/app/file-service/page.tsx",
   "src/app/sitemap.ts",
   "src/app/robots.ts",
 ];
@@ -74,6 +78,16 @@ if (!localizedHomePage.includes("localizedUrl(locale, `/services/${slug}`)")) {
 }
 
 const rootHomePage = readFileSync(join(root, "src/app/page.tsx"), "utf8");
+const rootLayout = readFileSync(join(root, "src/app/layout.tsx"), "utf8");
+if (!rootLayout.includes("Online ECU File Service")) {
+  failures.push("Root metadata is missing online ECU file service search wording.");
+}
+if (!rootLayout.includes("TCU File Service")) {
+  failures.push("Root metadata is missing TCU File Service search wording.");
+}
+if (!rootLayout.includes("ECU File Upload Service")) {
+  failures.push("Root metadata is missing ECU File Upload Service search wording.");
+}
 if (!rootHomePage.includes("homepagePageJsonLd")) {
   failures.push("Root homepage does not expose page-level WebPage structured data.");
 }
@@ -85,6 +99,246 @@ if (!rootHomePage.includes('JSON.stringify(homepagePageJsonLd)')) {
 }
 if (!rootHomePage.includes('publicResourceUrl("/#homepage-search-faq")')) {
   failures.push("Root homepage WebPage structured data is not linked to the FAQ graph.");
+}
+if (!rootHomePage.includes("homepageFileServiceJsonLd")) {
+  failures.push("Root homepage does not expose ECU/TCU file service structured data.");
+}
+if (!rootHomePage.includes("homepageQuickServicePaths")) {
+  failures.push("Root homepage does not expose quick file service paths.");
+}
+if (!rootHomePage.includes("homepageQuickPathJsonLd")) {
+  failures.push("Root homepage does not expose quick file service path structured data.");
+}
+if (!rootHomePage.includes('"@type": "SiteNavigationElement"')) {
+  failures.push("Root homepage quick file service paths are missing SiteNavigationElement structured data.");
+}
+if (!rootHomePage.includes("homepageFileServiceNavigator")) {
+  failures.push("Root homepage does not expose the file service navigator.");
+}
+if (!rootHomePage.includes("fileServiceAnswerLibrary")) {
+  failures.push("Root homepage does not expose the file service answer library.");
+}
+if (!rootHomePage.includes("fileServiceAnswerLibraryJsonLd")) {
+  failures.push("Root homepage does not expose file service answer library structured data.");
+}
+if (!rootHomePage.includes('JSON.stringify(fileServiceAnswerLibraryJsonLd)')) {
+  failures.push("Root homepage does not render file service answer library structured data.");
+}
+if (!rootHomePage.includes("fileServiceSearchRouteIndex")) {
+  failures.push("Root homepage does not expose the file service search route index.");
+}
+if (!rootHomePage.includes("fileServiceSnippetSummary")) {
+  failures.push("Root homepage does not expose the file service snippet summary.");
+}
+if (!rootHomePage.includes("fileServiceTrustComparison")) {
+  failures.push("Root homepage does not expose the professional file service comparison.");
+}
+if (!rootHomePage.includes("fileServiceVerificationCheckpoints")) {
+  failures.push("Root homepage does not expose the file service verification checkpoints.");
+}
+if (!rootHomePage.includes("fileServiceMythChecks")) {
+  failures.push("Root homepage does not expose the file service myth checks.");
+}
+if (!rootHomePage.includes("fileServicePlatformStack")) {
+  failures.push("Root homepage does not expose the file service platform stack.");
+}
+if (!rootHomePage.includes("fileServiceReadMethodRoutes")) {
+  failures.push("Root homepage does not expose file service read method routes.");
+}
+if (!rootHomePage.includes("fileServiceBriefRequirements")) {
+  failures.push("Root homepage does not expose file service brief requirements.");
+}
+if (!rootHomePage.includes("fileServiceFitChecks")) {
+  failures.push("Root homepage does not expose the file service fit checker.");
+}
+if (!rootHomePage.includes("fileServiceOutcomePreview")) {
+  failures.push("Root homepage does not expose the file service outcome preview.");
+}
+if (!rootHomePage.includes("fileServiceStatusGuide")) {
+  failures.push("Root homepage does not expose the file service status guide.");
+}
+if (!rootHomePage.includes("fileServicePrivacyControls")) {
+  failures.push("Root homepage does not expose secure file service privacy controls.");
+}
+if (!rootHomePage.includes("fileServiceUseCases")) {
+  failures.push("Root homepage does not expose the file service use case library.");
+}
+if (!rootHomePage.includes("fileServiceQualitySignals")) {
+  failures.push("Root homepage does not expose file service quality signals.");
+}
+if (!rootHomePage.includes("fileServiceWorkshopProfiles")) {
+  failures.push("Root homepage does not expose workshop file service profiles.");
+}
+if (!rootHomePage.includes("fileServiceKnowledgeMap")) {
+  failures.push("Root homepage does not expose the file service knowledge map.");
+}
+if (!rootHomePage.includes("fileServiceDecisionMatrix")) {
+  failures.push("Root homepage does not expose the file service decision matrix.");
+}
+if (!rootHomePage.includes("fileServiceOperatingStandard")) {
+  failures.push("Root homepage does not expose the file service operating standard.");
+}
+if (!rootHomePage.includes("fileServiceGlossaryTerms")) {
+  failures.push("Root homepage does not expose the file service terminology glossary.");
+}
+if (!rootHomePage.includes('"@type": "Service"')) {
+  failures.push("Root homepage file service structured data is missing Service type.");
+}
+if (!rootHomePage.includes('"@type": "DefinedTermSet"')) {
+  failures.push("Root homepage file service glossary structured data is missing DefinedTermSet.");
+}
+if (!rootHomePage.includes('publicResourceUrl("/#ecu-tcu-file-service")')) {
+  failures.push("Root homepage WebPage structured data is not linked to the ECU/TCU file service graph.");
+}
+if (!rootHomePage.includes("hasOfferCatalog")) {
+  failures.push("Root homepage file service structured data is missing offer catalog.");
+}
+if (!rootHomePage.includes('JSON.stringify(homepageFileServiceJsonLd)')) {
+  failures.push("Root homepage does not render ECU/TCU file service structured data.");
+}
+if (!rootHomePage.includes('JSON.stringify(homepageQuickPathJsonLd)')) {
+  failures.push("Root homepage does not render quick file service path structured data.");
+}
+if (!rootHomePage.includes('buildHomepageItemList("MG AutoTech homepage file service quick paths", homepageQuickServicePaths, "/#file-service-quick-paths")')) {
+  failures.push("Root homepage resource graph is missing the quick file service paths ItemList.");
+}
+if (!rootHomePage.includes('publicResourceUrl("/#file-service-quick-paths")')) {
+  failures.push("Root homepage WebPage structured data is not linked to the quick file service paths.");
+}
+if (!rootHomePage.includes('buildHomepageItemList("MG AutoTech file service homepage navigator", homepageFileServiceNavigator, "/#file-service-navigator")')) {
+  failures.push("Root homepage resource graph is missing the file service navigator ItemList.");
+}
+if (!rootHomePage.includes('publicResourceUrl("/#file-service-navigator")')) {
+  failures.push("Root homepage WebPage structured data is not linked to the file service navigator.");
+}
+if (!rootHomePage.includes('buildHomepageItemList("MG AutoTech file service answer library", fileServiceAnswerLibrary, "/#file-service-answer-library")')) {
+  failures.push("Root homepage resource graph is missing the file service answer library ItemList.");
+}
+if (!rootHomePage.includes('publicResourceUrl("/#file-service-answer-library")')) {
+  failures.push("Root homepage WebPage structured data is not linked to the file service answer library.");
+}
+if (!rootHomePage.includes('buildHomepageItemList("MG AutoTech file service search route index", fileServiceSearchRouteIndex, "/#file-service-search-index")')) {
+  failures.push("Root homepage resource graph is missing the file service search route index ItemList.");
+}
+if (!rootHomePage.includes('publicResourceUrl("/#file-service-search-index")')) {
+  failures.push("Root homepage WebPage structured data is not linked to the file service search route index.");
+}
+if (!rootHomePage.includes('buildHomepageItemList("MG AutoTech file service snippet summary", fileServiceSnippetSummary, "/#file-service-snippet-summary")')) {
+  failures.push("Root homepage resource graph is missing the file service snippet summary ItemList.");
+}
+if (!rootHomePage.includes('publicResourceUrl("/#file-service-snippet-summary")')) {
+  failures.push("Root homepage WebPage structured data is not linked to the file service snippet summary.");
+}
+if (!rootHomePage.includes('buildHomepageItemList("MG AutoTech professional file service comparison", fileServiceTrustComparison, "/#professional-file-service-comparison")')) {
+  failures.push("Root homepage resource graph is missing the professional file service comparison ItemList.");
+}
+if (!rootHomePage.includes('publicResourceUrl("/#professional-file-service-comparison")')) {
+  failures.push("Root homepage WebPage structured data is not linked to the professional file service comparison.");
+}
+if (!rootHomePage.includes('buildHomepageItemList("MG AutoTech file service verification checkpoints", fileServiceVerificationCheckpoints, "/#file-service-verification-checkpoints")')) {
+  failures.push("Root homepage resource graph is missing the file service verification checkpoints ItemList.");
+}
+if (!rootHomePage.includes('publicResourceUrl("/#file-service-verification-checkpoints")')) {
+  failures.push("Root homepage WebPage structured data is not linked to the file service verification checkpoints.");
+}
+if (!rootHomePage.includes('buildHomepageItemList("MG AutoTech file service myth checks", fileServiceMythChecks, "/#file-service-myth-checks")')) {
+  failures.push("Root homepage resource graph is missing the file service myth checks ItemList.");
+}
+if (!rootHomePage.includes('publicResourceUrl("/#file-service-myth-checks")')) {
+  failures.push("Root homepage WebPage structured data is not linked to the file service myth checks.");
+}
+if (!rootHomePage.includes('buildHomepageItemList("MG AutoTech file service platform stack", fileServicePlatformStack, "/#file-service-platform-stack")')) {
+  failures.push("Root homepage resource graph is missing the file service platform stack ItemList.");
+}
+if (!rootHomePage.includes('publicResourceUrl("/#file-service-platform-stack")')) {
+  failures.push("Root homepage WebPage structured data is not linked to the file service platform stack.");
+}
+if (!rootHomePage.includes('buildHomepageItemList("MG AutoTech file service read method routes", fileServiceReadMethodRoutes, "/#file-service-read-methods")')) {
+  failures.push("Root homepage resource graph is missing the file service read method routes ItemList.");
+}
+if (!rootHomePage.includes('publicResourceUrl("/#file-service-read-methods")')) {
+  failures.push("Root homepage WebPage structured data is not linked to the file service read method routes.");
+}
+if (!rootHomePage.includes('buildHomepageItemList("MG AutoTech file service brief requirements", fileServiceBriefRequirements, "/#file-service-brief-requirements")')) {
+  failures.push("Root homepage resource graph is missing the file service brief requirements ItemList.");
+}
+if (!rootHomePage.includes('publicResourceUrl("/#file-service-brief-requirements")')) {
+  failures.push("Root homepage WebPage structured data is not linked to the file service brief requirements.");
+}
+if (!rootHomePage.includes('buildHomepageItemList("MG AutoTech file service fit checker", fileServiceFitChecks, "/#file-service-fit-checker")')) {
+  failures.push("Root homepage resource graph is missing the file service fit checker ItemList.");
+}
+if (!rootHomePage.includes('publicResourceUrl("/#file-service-fit-checker")')) {
+  failures.push("Root homepage WebPage structured data is not linked to the file service fit checker.");
+}
+if (!rootHomePage.includes('buildHomepageItemList("MG AutoTech file service outcome preview", fileServiceOutcomePreview, "/#file-service-outcome-preview")')) {
+  failures.push("Root homepage resource graph is missing the file service outcome preview ItemList.");
+}
+if (!rootHomePage.includes('publicResourceUrl("/#file-service-outcome-preview")')) {
+  failures.push("Root homepage WebPage structured data is not linked to the file service outcome preview.");
+}
+if (!rootHomePage.includes('buildHomepageItemList("MG AutoTech file service status guide", fileServiceStatusGuide, "/#file-service-status-guide")')) {
+  failures.push("Root homepage resource graph is missing the file service status guide ItemList.");
+}
+if (!rootHomePage.includes('publicResourceUrl("/#file-service-status-guide")')) {
+  failures.push("Root homepage WebPage structured data is not linked to the file service status guide.");
+}
+if (!rootHomePage.includes('buildHomepageItemList("MG AutoTech secure file service privacy controls", fileServicePrivacyControls, "/#file-service-privacy-controls")')) {
+  failures.push("Root homepage resource graph is missing the secure file service privacy controls ItemList.");
+}
+if (!rootHomePage.includes('publicResourceUrl("/#file-service-privacy-controls")')) {
+  failures.push("Root homepage WebPage structured data is not linked to the secure file service privacy controls.");
+}
+if (!rootHomePage.includes('buildHomepageItemList("MG AutoTech file service use case library", fileServiceUseCases, "/#file-service-use-cases")')) {
+  failures.push("Root homepage resource graph is missing the file service use case library ItemList.");
+}
+if (!rootHomePage.includes('publicResourceUrl("/#file-service-use-cases")')) {
+  failures.push("Root homepage WebPage structured data is not linked to the file service use case library.");
+}
+if (!rootHomePage.includes('buildHomepageItemList("MG AutoTech file service quality signals", fileServiceQualitySignals, "/#file-service-quality-signals")')) {
+  failures.push("Root homepage resource graph is missing the file service quality signals ItemList.");
+}
+if (!rootHomePage.includes('publicResourceUrl("/#file-service-quality-signals")')) {
+  failures.push("Root homepage WebPage structured data is not linked to the file service quality signals.");
+}
+if (!rootHomePage.includes('buildHomepageItemList("MG AutoTech workshop file service profiles", fileServiceWorkshopProfiles, "/#file-service-workshop-profiles")')) {
+  failures.push("Root homepage resource graph is missing the workshop file service profiles ItemList.");
+}
+if (!rootHomePage.includes('publicResourceUrl("/#file-service-workshop-profiles")')) {
+  failures.push("Root homepage WebPage structured data is not linked to the workshop file service profiles.");
+}
+if (!rootHomePage.includes("homepageFileServiceGlossaryJsonLd")) {
+  failures.push("Root homepage does not expose file service glossary structured data.");
+}
+if (!rootHomePage.includes("hasDefinedTerm: fileServiceGlossaryTerms.map")) {
+  failures.push("Root homepage glossary structured data is not generated from visible terms.");
+}
+if (!rootHomePage.includes('JSON.stringify(homepageFileServiceGlossaryJsonLd)')) {
+  failures.push("Root homepage does not render file service glossary structured data.");
+}
+if (!rootHomePage.includes('buildHomepageItemList("MG AutoTech file service knowledge map", fileServiceKnowledgeMap, "/#file-service-knowledge-map")')) {
+  failures.push("Root homepage resource graph is missing the file service knowledge map ItemList.");
+}
+if (!rootHomePage.includes('publicResourceUrl("/#file-service-knowledge-map")')) {
+  failures.push("Root homepage WebPage structured data is not linked to the file service knowledge map.");
+}
+if (!rootHomePage.includes('buildHomepageItemList("MG AutoTech file service decision matrix", fileServiceDecisionMatrix, "/#file-service-decision-matrix")')) {
+  failures.push("Root homepage resource graph is missing the file service decision matrix ItemList.");
+}
+if (!rootHomePage.includes('publicResourceUrl("/#file-service-decision-matrix")')) {
+  failures.push("Root homepage WebPage structured data is not linked to the file service decision matrix.");
+}
+if (!rootHomePage.includes('buildHomepageItemList("MG AutoTech online file service operating standard", fileServiceOperatingStandard, "/#file-service-operating-standard")')) {
+  failures.push("Root homepage resource graph is missing the online file service operating standard ItemList.");
+}
+if (!rootHomePage.includes('publicResourceUrl("/#file-service-operating-standard")')) {
+  failures.push("Root homepage WebPage structured data is not linked to the online file service operating standard.");
+}
+if (!rootHomePage.includes('buildHomepageItemList("MG AutoTech file service glossary", fileServiceGlossaryTerms, "/#file-service-glossary")')) {
+  failures.push("Root homepage resource graph is missing the file service glossary ItemList.");
+}
+if (!rootHomePage.includes('publicResourceUrl("/#file-service-glossary")')) {
+  failures.push("Root homepage WebPage structured data is not linked to the file service glossary.");
 }
 if (!rootHomePage.includes("homepageRequestPreparationHowToJsonLd")) {
   failures.push("Root homepage does not expose request preparation HowTo structured data.");
@@ -101,15 +355,90 @@ if (!rootHomePage.includes('JSON.stringify(homepageRequestPreparationHowToJsonLd
 if (!rootHomePage.includes('publicResourceUrl("/#service-landing-pages")')) {
   failures.push("Root homepage WebPage structured data is not linked to service ItemList.");
 }
+if (!rootHomePage.includes('href="/file-service"')) {
+  failures.push("Root homepage does not link to the public file service hub.");
+}
+
+const fileServicePage = readFileSync(join(root, "src/app/file-service/page.tsx"), "utf8");
+if (!fileServicePage.includes("ECU & TCU File Service Hub")) {
+  failures.push("File service hub page is missing the visible H1/title signal.");
+}
+if (!fileServicePage.includes('"@type": "Service"')) {
+  failures.push("File service hub structured data is missing Service.");
+}
+if (!fileServicePage.includes('"@type": "FAQPage"')) {
+  failures.push("File service hub structured data is missing FAQPage.");
+}
+if (!fileServicePage.includes('"@type": "BreadcrumbList"')) {
+  failures.push("File service hub structured data is missing BreadcrumbList.");
+}
+if (!fileServicePage.includes('"@type": "ItemList"')) {
+  failures.push("File service hub structured data is missing resource ItemList.");
+}
+if (!fileServicePage.includes('absoluteUrl("/file-service")')) {
+  failures.push("File service hub metadata is missing canonical /file-service URL.");
+}
+if (!fileServicePage.includes('languageAlternates("/file-service")')) {
+  failures.push("File service hub metadata is missing language alternates.");
+}
+if (!fileServicePage.includes("JSON.stringify(jsonLd)")) {
+  failures.push("File service hub does not render structured data.");
+}
+if (!fileServicePage.includes("PublicSeoHeader") || !fileServicePage.includes("Footer")) {
+  failures.push("File service hub is missing shared public header/footer navigation.");
+}
+
+const localizedFileServicePage = readFileSync(join(root, "src/app/[locale]/file-service/page.tsx"), "utf8");
+if (!localizedFileServicePage.includes("getFileServiceCopy")) {
+  failures.push("Localized file service page is not using localized copy.");
+}
+if (!localizedFileServicePage.includes("fileServiceJsonLd")) {
+  failures.push("Localized file service page is missing structured data helper.");
+}
+if (!localizedFileServicePage.includes('localizedUrl(locale, "/file-service")')) {
+  failures.push("Localized file service page is missing canonical localized URL.");
+}
+if (!localizedFileServicePage.includes('languageAlternates("/file-service")')) {
+  failures.push("Localized file service page is missing File Service language alternates.");
+}
+if (!localizedFileServicePage.includes("LocalizedSeoFooter")) {
+  failures.push("Localized file service page is missing localized footer navigation.");
+}
+
+const fileServiceI18n = readFileSync(join(root, "src/lib/fileServiceI18n.ts"), "utf8");
+for (const marker of [
+  "ECU & TCU File Service Hub",
+  "ECU und TCU Dateiservice Hub",
+  "ECU ve TCU Dosya Servisi Merkezi",
+  "fileServiceJsonLd",
+]) {
+  if (!fileServiceI18n.includes(marker)) {
+    failures.push(`File Service i18n copy is missing ${marker}.`);
+  }
+}
+
+const i18nRoutes = readFileSync(join(root, "src/lib/i18nRoutes.ts"), "utf8");
+if (!i18nRoutes.includes('parts[0] === "file-service"')) {
+  failures.push("i18n route helper does not map File Service routes across locales.");
+}
 
 const sitemap = readFileSync(join(root, "src/app/sitemap.ts"), "utf8");
 if (!sitemap.includes("languageAlternates")) failures.push("Sitemap does not include language alternates.");
 if (!sitemap.includes("publicServiceSlugs")) failures.push("Sitemap does not include service slugs.");
+if (!sitemap.includes('"/file-service"')) {
+  failures.push("Sitemap does not include /file-service.");
+}
 if (!sitemap.includes('localizedUrl(locale, "/how-it-works")')) {
   failures.push("Sitemap does not include localized How It Works routes.");
 }
+if (!sitemap.includes('localizedUrl(locale, "/file-service")')) {
+  failures.push("Sitemap does not include localized File Service routes.");
+}
 if (!sitemap.includes('languageAlternates("/how-it-works")')) {
   failures.push("Sitemap does not include How It Works language alternates.");
+}
+if (!sitemap.includes('languageAlternates("/file-service")')) {
+  failures.push("Sitemap does not include File Service language alternates.");
 }
 for (const toolPath of [
   "/tools/file-readiness-check",
@@ -126,8 +455,14 @@ if (!robots.includes("sitemap")) failures.push("robots.ts does not expose sitema
 if (!robots.includes("/admin") || !robots.includes("/dashboard") || !robots.includes("/api")) {
   failures.push("robots.ts should block private/admin/dashboard/API crawling.");
 }
+if (!robots.includes('"/file-service"')) {
+  failures.push("robots.ts should allow /file-service.");
+}
 if (!robots.includes("/how-it-works") || !robots.includes('`/${locale}/how-it-works`')) {
   failures.push("robots.ts should allow root and localized How It Works routes.");
+}
+if (!robots.includes('`/${locale}/file-service`')) {
+  failures.push("robots.ts should allow localized File Service routes.");
 }
 for (const toolPath of [
   "/tools/file-readiness-check",

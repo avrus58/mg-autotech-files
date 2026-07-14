@@ -33,7 +33,7 @@ export const metadata: Metadata = {
   },
 
   description:
-    "Professional ECU and TCU file service for workshops with secure upload, tracked orders and portal delivery. Stage 1, DPF, EGR, AdBlue and DTC services.",
+    "Professional online ECU and TCU file service for workshops with secure upload, tracked orders and portal delivery. Stage 1, DPF, EGR, AdBlue and DTC services.",
 
   keywords: [
     "ECU Tuning",
@@ -45,6 +45,12 @@ export const metadata: Metadata = {
     "AdBlue OFF",
     "File Service",
     "ECU File Service",
+    "Online ECU File Service",
+    "ECU File Service Germany",
+    "TCU File Service",
+    "ECU File Upload Service",
+    "ECU Tuning File Service",
+    "TCU Tuning File Service",
     "BMW Tuning",
     "Mercedes Tuning",
     "VAG Tuning",
@@ -72,7 +78,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "ECU & TCU File Service for Workshops | MG AutoTech",
     description:
-      "Professional ECU and TCU file service for workshops with secure uploads, order tracking and controlled portal delivery.",
+      "Professional online ECU and TCU file service for workshops with secure uploads, order tracking and controlled portal delivery.",
     url: siteUrl,
     siteName,
     locale: "en_US",
@@ -90,9 +96,9 @@ export const metadata: Metadata = {
 
   twitter: {
     card: "summary_large_image",
-    title: siteName,
+    title: "MG AutoTech ECU & TCU File Service",
     description:
-      "Professional ECU & TCU File Service Platform.",
+      "Professional online ECU & TCU File Service Platform for workshops.",
     images: ["/opengraph-image"],
   },
 

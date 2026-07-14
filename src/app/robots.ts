@@ -8,11 +8,13 @@ export default function robots(): MetadataRoute.Robots {
         userAgent: "*",
         allow: [
           "/",
+          "/file-service",
           "/services",
           ...publicServiceSlugs.map((slug) => `/services/${slug}`),
           "/how-it-works",
           ...seoLocales.map((locale) => `/${locale}`),
           ...seoLocales.map((locale) => `/${locale}/how-it-works`),
+          ...seoLocales.map((locale) => `/${locale}/file-service`),
           ...seoLocales.flatMap((locale) =>
             publicServiceSlugs.map((slug) => `/${locale}/services/${slug}`)
           ),

@@ -12,11 +12,13 @@ import {
 } from "@/lib/seo";
 import { seoUiCopy } from "@/lib/seo-ui";
 import { getHowItWorksCopy } from "@/lib/howItWorksI18n";
+import { getFileServiceCopy } from "@/lib/fileServiceI18n";
 
 export function LocalizedSeoFooter({ locale }: { locale: LocaleCode }) {
   const labels = seoLabels[locale];
   const ui = seoUiCopy[locale];
   const howItWorks = getHowItWorksCopy(locale);
+  const fileService = getFileServiceCopy(locale);
 
   return (
     <footer className="border-t border-white/10 bg-[#07090d] text-white">
@@ -51,6 +53,7 @@ export function LocalizedSeoFooter({ locale }: { locale: LocaleCode }) {
           <div>
             <h2 className="text-sm font-black uppercase tracking-[0.16em] text-white">{ui.platform}</h2>
             <div className="mt-5 space-y-3">
+              <Link href={localizedPath(locale, "/file-service")} className="block text-sm text-zinc-400 hover:text-white">{fileService.nav.fileService}</Link>
               <Link href={localizedPath(locale, "/how-it-works")} className="block text-sm text-zinc-400 hover:text-white">{howItWorks.navLabel}</Link>
               <Link href="/tools" className="block text-sm text-zinc-400 hover:text-white">{ui.tools}</Link>
               <Link href="/widget" className="block text-sm text-zinc-400 hover:text-white">Vehicle Selector Widget</Link>

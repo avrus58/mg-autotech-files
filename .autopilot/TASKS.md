@@ -50,6 +50,306 @@ Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
 
+### AUTO-083 [P1] Homepage file-service platform stack eklensin
+
+Durum: Done
+
+Fingerprint: `public-seo|homepage-platform-proof-stack|platform-capabilities-not-grouped-as-trust-stack|visible-proof-stack-and-itemlist-schema`
+
+Kapsam: Root homepage'de MG AutoTech file service'in public service hub, preparation tools, vehicle context path, private account workflow, human review boundary and customer-safe information design katmanlarini tek gorunur platform stack bolumunde topla; ItemList and WebPage `hasPart` baglantilarini ekle.
+
+Sonuc: Ana sayfaya `File Service Platform Stack` bolumu eklendi. Bolum public service hub, preparation tools, vehicle context path, private account workflow, human review boundary and customer-safe information design kartlariyla public route, preparation, vehicle context, account-based follow-up and privacy boundary sinyallerini bir araya getirir. Kartlar `/file-service`, `/tools`, `/tools/request-brief-builder`, `/how-it-works`, `/#professional-file-service-comparison` and `/#file-service-privacy-controls` public rotalarina baglanir. `homepageResourceJsonLd` graph'i platform-stack `ItemList` icerir ve root `WebPage` schema'si `/#file-service-platform-stack` hasPart referansi tasir. Bolum public workflow capabilities only olarak files inspect etmedigini, account data acmadigini, requests degistirmedigini veya deliverable files create etmedigini belirtir. Payment, AI, vehicle, desktop, work-order, upload, MOD generation, checksum veya private metadata logic degismedi.
+
+Dogrulama: `node scripts/check-i18n-seo.mjs` PASS; `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts tests\i18n-routing.test.ts` PASS (92/92); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (365/365); `npm run build` PASS; `node scripts/check-payment-env.js --schema-only` PASS; `npm audit --omit=dev --audit-level=high` PASS (0 vulnerabilities). `npm run check:payments` normal modda local env dosyalari okudugu icin calistirilmadi.
+
+### AUTO-082 [P1] Homepage file-service reality check eklensin
+
+Durum: Done
+
+Fingerprint: `public-seo|homepage-reality-check|wrong-file-service-expectations-not-corrected|visible-myth-fact-and-itemlist-schema`
+
+Kapsam: Root homepage'de file service aramasindan gelen kullanicilarin yanlis beklentilerini customer-safe myth/fact bolumuyle duzelt; file drop, homepage editing, generic route, read method, status and public detail expectations icin public route linkleri ve ItemList/WebPage `hasPart` baglantilarini ekle.
+
+Sonuc: Ana sayfaya `File Service Reality Check` bolumu eklendi. Bolum "It is just a file drop", "The homepage edits files", "Every request uses one generic route", "Read method does not matter", "Status is just a support question" and "Public pages should expose every detail" beklentilerini safe reality cevaplariyla duzeltir. Kartlar `/tools/request-brief-builder`, `/tools/file-readiness-check`, `/file-service`, `/tools/ecu-read-method-advisor`, `/how-it-works` and `/#file-service-privacy-controls` public rotalarina baglanir. `homepageResourceJsonLd` graph'i myth-checks `ItemList` icerir ve root `WebPage` schema'si `/#file-service-myth-checks` hasPart referansi tasir. Bolum public expectation correction only olarak files inspect etmedigini, account handling baslatmadigini, orders degistirmedigini veya deliverable files create etmedigini belirtir. Payment, AI, vehicle, desktop, work-order, upload, MOD generation, checksum veya private metadata logic degismedi.
+
+Dogrulama: `node scripts/check-i18n-seo.mjs` PASS; `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts tests\i18n-routing.test.ts` PASS (91/91); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (364/364); `npm run build` PASS; `node scripts/check-payment-env.js --schema-only` PASS; `npm audit --omit=dev --audit-level=high` PASS (0 vulnerabilities). `npm run check:payments` normal modda local env dosyalari okudugu icin calistirilmadi.
+
+### AUTO-081 [P1] Homepage file-service verification checkpoints eklensin
+
+Durum: Done
+
+Fingerprint: `public-seo|homepage-verification-checkpoints|trust-verification-before-submit-not-visible|visible-checkpoints-and-itemlist-schema`
+
+Kapsam: Root homepage'de kullanicinin secure account flow'a girmeden once file-service workflow'unu nasil dogrulayacagini anlatan customer-safe verification checkpoints bolumu ekle; route clarity, vehicle context, read method, preparation, status tracking and human review boundary sinyallerini ItemList and WebPage `hasPart` ile bagla.
+
+Sonuc: Ana sayfaya `File Service Verification Checkpoints` bolumu eklendi. Bolum public route is clear, vehicle context is prepared, read method is understood, preparation happens before submission, status remains trackable and human review boundary is visible checkpointlerini aciklar. Kartlar `/file-service`, `/tools/request-brief-builder`, `/tools/ecu-read-method-advisor`, `/tools/file-readiness-check`, `/how-it-works` and `/#professional-file-service-comparison` public rotalarina baglanir. `homepageResourceJsonLd` graph'i verification-checkpoints `ItemList` icerir ve root `WebPage` schema'si `/#file-service-verification-checkpoints` hasPart referansi tasir. Bolum public guidance only olarak files inspect etmedigini, account data acmadigini, request handling baslatmadigini veya deliverable files create etmedigini belirtir. Payment, AI, vehicle, desktop, work-order, upload, MOD generation, checksum veya private metadata logic degismedi.
+
+Dogrulama: `node scripts/check-i18n-seo.mjs` PASS; `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts tests\i18n-routing.test.ts` PASS (90/90); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (363/363); `npm run build` PASS; `node scripts/check-payment-env.js --schema-only` PASS; `npm audit --omit=dev --audit-level=high` PASS (0 vulnerabilities). `npm run check:payments` normal modda local env dosyalari okudugu icin calistirilmadi.
+
+### AUTO-080 [P1] Homepage professional file-service comparison eklensin
+
+Durum: Done
+
+Fingerprint: `public-seo|homepage-trust-comparison|professional-file-service-differentiation-not-visible|visible-comparison-and-itemlist-schema`
+
+Kapsam: Root homepage'de MG AutoTech file service'in basit file handoff'tan farkini anlatan customer-safe professional comparison bolumu ekle; structured vehicle context, controller route, preparation, account workflow, human review boundary and public-site safety sinyallerini ItemList and WebPage `hasPart` ile bagla.
+
+Sonuc: Ana sayfaya `Professional File Service Standard` bolumu eklendi. Bolum structured vehicle context, controller-specific route, preparation before submission, account-tracked workflow, human review boundary and customer-safe public website sinyallerini "without structure" vs "MG AutoTech workflow" karsilastirmasiyla aciklar. Kartlar `/tools/request-brief-builder`, `/ecu-platforms/transmission-control-units`, `/tools/file-readiness-check`, `/how-it-works` and `/file-service` public rotalarina baglanir. `homepageResourceJsonLd` graph'i professional-file-service-comparison `ItemList` icerir ve root `WebPage` schema'si `/#professional-file-service-comparison` hasPart referansi tasir. Bolum public workflow standards only olarak account data acmadigini, customer files inspect etmedigini, technical changes yapmadigini veya deliverable files create etmedigini belirtir. Payment, AI, vehicle, desktop, work-order, upload, MOD generation, checksum veya private metadata logic degismedi.
+
+Dogrulama: `node scripts/check-i18n-seo.mjs` PASS; `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts tests\i18n-routing.test.ts` PASS (89/89); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (362/362); `npm run build` PASS; `node scripts/check-payment-env.js --schema-only` PASS; `npm audit --omit=dev --audit-level=high` PASS (0 vulnerabilities); `git diff --check` PASS (CRLF warnings only). `npm run check:payments` normal modda local env dosyalari okudugu icin calistirilmadi.
+
+### AUTO-079 [P1] Homepage file-service snippet summary eklensin
+
+Durum: Done
+
+Fingerprint: `public-seo|homepage-snippet-summary|file-service-summary-not-snippet-ready|visible-at-a-glance-summary-and-itemlist-schema`
+
+Kapsam: Root homepage'de "what it is / who it helps / what to prepare / where secure handling starts / what public tools do / what happens after submission" cevaplarini tek gorunur At A Glance bolumunde topla; ItemList and WebPage `hasPart` baglantilarini ekle.
+
+Sonuc: Ana sayfaya `File Service At A Glance` bolumu eklendi. Bolum 6 customer-safe kartla ECU/TCU file service'in ne oldugunu, kime yardim ettigini, hangi bilgilerin hazirlanacagini, secure handling'in nerede basladigini, public tools'un ne yaptigini ve submission sonrasi akisi aciklar. Kartlar `/file-service`, `/how-it-works`, `/tools/request-brief-builder`, `/tools/file-readiness-check` and `/tools/ecu-read-method-advisor` public rotalarina baglanir. `homepageResourceJsonLd` graph'i snippet-summary `ItemList` icerir ve root `WebPage` schema'si `/#file-service-snippet-summary` hasPart referansi tasir. Bolum public summary only olarak files inspect etmedigini, customer accounts degistirmedigini, requests create etmedigini veya deliverable files generate etmedigini belirtir. Payment, AI, vehicle, desktop, work-order, upload, MOD generation, checksum veya private metadata logic degismedi.
+
+Dogrulama: `node scripts/check-i18n-seo.mjs` PASS; `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts tests\i18n-routing.test.ts` PASS (88/88); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (361/361); `npm run build` PASS; `node scripts/check-payment-env.js --schema-only` PASS; `npm audit --omit=dev --audit-level=high` PASS (0 vulnerabilities); `git diff --check` PASS (CRLF warnings only). `npm run check:payments` normal modda local env dosyalari okudugu icin calistirilmadi.
+
+### AUTO-078 [P1] Homepage file-service search route index eklensin
+
+Durum: Done
+
+Fingerprint: `public-seo|homepage-search-route-index|long-tail-file-service-queries-lack-route-map|visible-route-index-and-itemlist-schema`
+
+Kapsam: Root homepage'de ECU file service online, TCU/gearbox file service, Stage 1 ECU file service, DTC file service request, DPF/EGR/AdBlue file request, ECU read method help, file readiness check and request brief aramalarini mevcut public route'lara baglayan gorunur long-tail route index ekle; ItemList and WebPage `hasPart` baglantilarini ekle.
+
+Sonuc: Ana sayfaya `File Service Search Index` bolumu eklendi. Bolum common search phrase, best route, what to prepare and open action kolonlariyla 8 arama niyetini `/file-service`, `/ecu-platforms/transmission-control-units`, `/services/stage-1`, `/services/dtc-off`, `/services/dpf-off`, `/tools/ecu-read-method-advisor`, `/tools/file-readiness-check` and `/tools/request-brief-builder` public rotalarina yonlendirir. `homepageResourceJsonLd` graph'i search-route-index `ItemList` icerir ve root `WebPage` schema'si `/#file-service-search-index` hasPart referansi tasir. Bolum existing public resources icin tek route index oldugunu ve requests create etmedigini, files inspect etmedigini, customer accounts acmadigini veya deliverable files generate etmedigini belirtir. Payment, AI, vehicle, desktop, work-order, upload, MOD generation, checksum veya private metadata logic degismedi.
+
+Dogrulama: `node scripts/check-i18n-seo.mjs` PASS; `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts tests\i18n-routing.test.ts` PASS (87/87); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (360/360); `npm run build` PASS; `node scripts/check-payment-env.js --schema-only` PASS; `npm audit --omit=dev --audit-level=high` PASS (0 vulnerabilities); `git diff --check` PASS (CRLF warnings only). `npm run check:payments` normal modda local env dosyalari okudugu icin calistirilmadi.
+
+### AUTO-077 [P1] Homepage file-service answer library eklensin
+
+Durum: Done
+
+Fingerprint: `public-seo|homepage-answer-library|file-service-faq-depth-limited|visible-answer-library-and-faq-schema`
+
+Kapsam: Root homepage'de online ECU file service, TCU file service, vehicle details, read method, Stage 1 route choice, diagnostic code context, homepage safety and post-submit workflow gibi arama niyetlerini cevaplayan gorunur answer library ekle; FAQPage, ItemList and WebPage `hasPart` baglantilarini ekle.
+
+Sonuc: Ana sayfaya `File Service Answer Library` bolumu eklendi. Bolum 8 customer-safe soru-cevap kartiyla kullaniciyi `/file-service`, `/ecu-platforms/transmission-control-units`, `/tools/request-brief-builder`, `/tools/ecu-read-method-advisor`, `/#file-service-decision-matrix`, `/services/dtc-off`, `/tools/file-readiness-check` and `/how-it-works` public rotalarina yonlendirir. `fileServiceAnswerLibraryJsonLd` FAQPage schema'si visible cevaplardan uretilir; `homepageResourceJsonLd` graph'i answer-library `ItemList` icerir ve root `WebPage` schema'si `/#file-service-answer-library` hasPart referansi tasir. Bolum public guidance only olarak files inspect etmedigini, private account records acmadigini, account balances degistirmedigini veya delivery assets yaratmadigini belirtir. Payment, AI, vehicle, desktop, work-order, upload, MOD generation, checksum veya private metadata logic degismedi.
+
+Dogrulama: `node scripts/check-i18n-seo.mjs` PASS; `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts tests\i18n-routing.test.ts` PASS (86/86); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (359/359); `npm run build` PASS; `node scripts/check-payment-env.js --schema-only` PASS; `npm audit --omit=dev --audit-level=high` PASS (0 vulnerabilities); `git diff --check` PASS (CRLF warnings only). `npm run check:payments` normal modda local env dosyalari okudugu icin calistirilmadi.
+
+### AUTO-076 [P1] Homepage file-service navigator eklensin
+
+Durum: Done
+
+Fingerprint: `public-seo|homepage-file-service-navigator|deep-homepage-sections-hard-to-scan|visible-anchor-directory-and-itemlist-schema`
+
+Kapsam: Root homepage'de zenginlesen file-service bolumlerini tek bir gorunur on-page navigator ile bagla; quick paths, decision matrix, use cases, workshop profiles, read methods, brief requirements, privacy controls and glossary bolumlerine customer-safe anchor linkleri ekle; ItemList and WebPage `hasPart` baglantilarini ekle.
+
+Sonuc: Ana sayfaya `File Service Navigator` bolumu eklendi. Bolum popular service paths, route decision matrix, workshop use cases, workshop profiles, read method routes, brief requirements, privacy controls and terminology glossary kartlariyla kullaniciyi mevcut on-page public bolumlere yonlendirir. `homepageResourceJsonLd` graph'i navigator `ItemList` icerir ve root `WebPage` schema'si `/#file-service-navigator` hasPart referansi tasir. Bolum public on-page navigation only olarak requests create etmedigini, customer files inspect etmedigini, account data acmadigini, payments degistirmedigini veya files deliver etmedigini belirtir. Payment, AI, vehicle, desktop, work-order, upload, MOD generation, checksum veya private metadata logic degismedi.
+
+Dogrulama: `node scripts/check-i18n-seo.mjs` PASS; `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts tests\i18n-routing.test.ts` PASS (85/85); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (358/358); `npm run build` PASS; `node scripts/check-payment-env.js --schema-only` PASS; `npm audit --omit=dev --audit-level=high` PASS (0 vulnerabilities); `git diff --check` PASS (CRLF warnings only). `npm run check:payments` normal modda local env dosyalari okudugu icin calistirilmadi.
+
+### AUTO-075 [P1] Homepage workshop file-service profiles eklensin
+
+Durum: Done
+
+Fingerprint: `public-seo|homepage-workshop-profiles|workshop-audience-intent-not-visible|visible-workshop-profiles-and-itemlist-schema`
+
+Kapsam: Root homepage'de performance workshop, diesel diagnostics workshop, transmission specialist, mobile technician, multi-brand workshop and first-time customer audience intentlerini public preparation route'larina baglayan gorunur workshop profile bolumu ekle; ItemList and WebPage `hasPart` baglantilarini ekle.
+
+Sonuc: Ana sayfaya `Workshop File Service Profiles` bolumu eklendi. Bolum performance workshop, diesel diagnostics workshop, transmission specialist, mobile technician, multi-brand workshop and first-time customer kartlariyla kullaniciyi `/services/stage-1`, `/services/dpf-off`, `/ecu-platforms/transmission-control-units`, `/tools/ecu-read-method-advisor`, `/brands` and `/how-it-works` public rotalarina yonlendirir. `homepageResourceJsonLd` graph'i workshop-profiles `ItemList` icerir ve root `WebPage` schema'si `/#file-service-workshop-profiles` hasPart referansi tasir. Bolum public routing guidance only olarak requests create etmedigini, customer files inspect etmedigini, customer records expose etmedigini, payments degistirmedigini veya files deliver etmedigini belirtir. Payment, AI, vehicle, desktop, work-order, upload, MOD generation, checksum veya private metadata logic degismedi.
+
+Dogrulama: `node scripts/check-i18n-seo.mjs` PASS; `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts tests\i18n-routing.test.ts` PASS (84/84); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (357/357); `npm run build` PASS; `node scripts/check-payment-env.js --schema-only` PASS; `npm audit --omit=dev --audit-level=high` PASS (0 vulnerabilities); `git diff --check` PASS (CRLF warnings only). `npm run check:payments` normal modda local env dosyalari okudugu icin calistirilmadi.
+
+### AUTO-074 [P1] Homepage file-service quality signals eklensin
+
+Durum: Done
+
+Fingerprint: `public-seo|homepage-quality-signals|review-readiness-quality-not-visible|visible-quality-signals-and-itemlist-schema`
+
+Kapsam: Root homepage'de ECU/TCU file-service request review clarity icin vehicle identity, controller context, service intent, file readiness, workshop notes and human review boundary sinyallerini aciklayan gorunur quality signals bolumu ekle; ItemList and WebPage `hasPart` baglantilarini ekle.
+
+Sonuc: Ana sayfaya `File Service Quality Signals` bolumu eklendi. Bolum vehicle identity is complete, controller context is clear, service intent is separated, file readiness is known, workshop notes are usable and human review boundary is clear kartlariyla kullaniciyi `/tools/request-brief-builder`, `/tools/ecu-read-method-advisor`, `/file-service`, `/tools/file-readiness-check` and `/how-it-works` public rotalarina yonlendirir. `homepageResourceJsonLd` graph'i quality-signals `ItemList` icerir ve root `WebPage` schema'si `/#file-service-quality-signals` hasPart referansi tasir. Bolum public preparation guidance only olarak customer files score etmedigini, uploaded content inspect etmedigini, learning evidence approve etmedigini, files generate etmedigini veya file integrity data degistirmedigini belirtir. Payment, AI, vehicle, desktop, work-order, upload, MOD generation, checksum veya private metadata logic degismedi.
+
+Dogrulama: `node scripts/check-i18n-seo.mjs` PASS; `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts tests\i18n-routing.test.ts` PASS (83/83); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (356/356); `npm run build` PASS; `node scripts/check-payment-env.js --schema-only` PASS; `npm audit --omit=dev --audit-level=high` PASS (0 vulnerabilities); `git diff --check` PASS (CRLF warnings only). `npm run check:payments` normal modda local env dosyalari okudugu icin calistirilmadi.
+
+### AUTO-073 [P1] Homepage file-service use case library eklensin
+
+Durum: Done
+
+Fingerprint: `public-seo|homepage-use-case-library|workshop-intents-not-mapped-to-public-routes|visible-use-case-library-and-itemlist-schema`
+
+Kapsam: Root homepage'de Stage 1 ECU request, TCU/gearbox request, diesel technical request, diagnostic code request, unknown read method and incomplete vehicle context gibi gercek workshop arama niyetlerini public route'lara baglayan gorunur use-case library ekle; ItemList and WebPage `hasPart` baglantilarini ekle.
+
+Sonuc: Ana sayfaya `File Service Use Case Library` bolumu eklendi. Bolum Stage 1 ECU request, TCU and gearbox request, diesel technical request, diagnostic code request, unknown read method and incomplete vehicle context kartlariyla kullaniciyi `/services/stage-1`, `/ecu-platforms/transmission-control-units`, `/services/dpf-off`, `/services/dtc-off`, `/tools/ecu-read-method-advisor` and `/tools/request-brief-builder` public rotalarina yonlendirir. `homepageResourceJsonLd` graph'i use-case-library `ItemList` icerir ve root `WebPage` schema'si `/#file-service-use-cases` hasPart referansi tasir. Bolum public routing guidance only olarak customer files inspect etmedigini, request yaratmadigini, upload action baslatmadigini veya files modify etmedigini belirtir. Payment, AI, vehicle, desktop, work-order, upload, MOD generation, checksum veya private metadata logic degismedi.
+
+Dogrulama: `node scripts/check-i18n-seo.mjs` PASS; `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts tests\i18n-routing.test.ts` PASS (82/82); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (355/355); `npm run build` PASS; `node scripts/check-payment-env.js --schema-only` PASS; `npm audit --omit=dev --audit-level=high` PASS (0 vulnerabilities); `git diff --check` PASS (CRLF warnings only). `npm run check:payments` normal modda local env dosyalari okudugu icin calistirilmadi.
+
+### AUTO-072 [P1] Homepage secure file-service privacy controls eklensin
+
+Durum: Done
+
+Fingerprint: `public-seo|homepage-privacy-controls|secure-file-service-boundaries-not-visible|visible-privacy-controls-and-itemlist-schema`
+
+Kapsam: Root homepage'de secure ECU/TCU file-service privacy ve public/private boundary controls bolumu ekle; authenticated portal, public education pages, customer-visible notes separation, technical context, private delivery and support-safe explanation maddelerini public route'lara bagla; ItemList and WebPage `hasPart` baglantilarini ekle.
+
+Sonuc: Ana sayfaya `Secure File Service Privacy Controls` bolumu eklendi. Bolum secure ECU/TCU file service icin authenticated portal first, public pages stay educational, customer-visible notes are separated, technical context is prepared first, private delivery path and support-safe explanation maddelerini aciklar ve `/how-it-works`, `/file-service` and `/tools/request-brief-builder` public rotalarina yonlendirir. `homepageResourceJsonLd` graph'i privacy-controls `ItemList` icerir ve root `WebPage` schema'si `/#file-service-privacy-controls` hasPart referansi tasir. Bolum public privacy boundary olarak customer identity, order records, internal notes, file paths, binary data, private review metadata or delivery assets expose etmedigini belirtir. Payment, AI, vehicle, desktop, work-order, upload, MOD generation, checksum veya private metadata logic degismedi.
+
+Dogrulama: `node scripts/check-i18n-seo.mjs` PASS; `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts tests\i18n-routing.test.ts` PASS (81/81); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (354/354); `npm run build` PASS; `node scripts/check-payment-env.js --schema-only` PASS; `npm audit --omit=dev --audit-level=high` PASS (0 vulnerabilities); `git diff --check` PASS (CRLF warnings only). `npm run check:payments` normal modda local env dosyalari okudugu icin calistirilmadi.
+
+### AUTO-071 [P1] Homepage file-service status guide eklensin
+
+Durum: Done
+
+Fingerprint: `public-seo|homepage-status-guide|status-meaning-not-visible|visible-status-guide-and-itemlist-schema`
+
+Kapsam: Root homepage'de ECU/TCU file-service request tracking durumlarini customer-safe sekilde aciklayan gorunur status guide ekle; received, access verified, in review, waiting for customer, in progress and completed/delivered durumlarini public route'lara bagla; ItemList and WebPage `hasPart` baglantilarini ekle.
+
+Sonuc: Ana sayfaya `File Service Status Guide` bolumu eklendi. Bolum request tracking durumlarinin public anlamini anlatir ve `/how-it-works`, `/file-service` and `/tools/request-brief-builder` public rotalarina yonlendirir. `homepageResourceJsonLd` graph'i status-guide `ItemList` icerir ve root `WebPage` schema'si `/#file-service-status-guide` hasPart referansi tasir. Bolum sadece status anlamlarini aciklar; live order state, customer messages, internal workflow notes, file paths, binary data or delivery assets expose etmez. Payment, AI, vehicle, desktop, work-order, upload, MOD generation, checksum veya private metadata logic degismedi.
+
+Dogrulama: `node scripts/check-i18n-seo.mjs` PASS; `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts tests\i18n-routing.test.ts` PASS (80/80); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (353/353); `npm run build` PASS; `node scripts/check-payment-env.js --schema-only` PASS; `npm audit --omit=dev --audit-level=high` PASS (0 vulnerabilities); `git diff --check` PASS (CRLF warnings only). `npm run check:payments` normal modda local env dosyalari okudugu icin calistirilmadi.
+
+### AUTO-070 [P1] Homepage file-service outcome preview eklensin
+
+Durum: Done
+
+Fingerprint: `public-seo|homepage-outcome-preview|post-submission-flow-not-visible|visible-outcome-preview-and-itemlist-schema`
+
+Kapsam: Root homepage'de secure ECU/TCU file-service request sonrasinda musteri tarafinda ne oldugunu anlatan gorunur outcome preview ekle; request received, human review, status tracking, customer messages, private delivery and support context adimlarini customer-safe public route'lara bagla; ItemList and WebPage `hasPart` baglantilarini ekle.
+
+Sonuc: Ana sayfaya `File Service Outcome Preview` bolumu eklendi. Bolum secure submission sonrasi request received, human review, status tracking, customer messages, private delivery and support context adimlarini `/how-it-works`, `/file-service` and `/tools/request-brief-builder` public rotalarina baglar. `homepageResourceJsonLd` graph'i outcome-preview `ItemList` icerir ve root `WebPage` schema'si `/#file-service-outcome-preview` hasPart referansi tasir. Bolum customer-visible boundary olarak order records, internal notes, file paths, binary data, private review metadata or generated ECU/TCU outputs expose etmedigini belirtir. Payment, AI, vehicle, desktop, work-order, upload, MOD generation, checksum veya private metadata logic degismedi.
+
+Dogrulama: `node scripts/check-i18n-seo.mjs` PASS; `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts tests\i18n-routing.test.ts` PASS (79/79); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (352/352); `npm run build` PASS; `node scripts/check-payment-env.js --schema-only` PASS; `npm audit --omit=dev --audit-level=high` PASS (0 vulnerabilities); `git diff --check` PASS (CRLF warnings only). `npm run check:payments` normal modda local env dosyalari okudugu icin calistirilmadi.
+
+### AUTO-069 [P1] Homepage file-service fit checker eklensin
+
+Durum: Done
+
+Fingerprint: `public-seo|homepage-fit-checker|customer-current-situation-not-routed|visible-fit-checker-and-itemlist-schema`
+
+Kapsam: Root homepage'de kullanicinin mevcut file-service durumunu secip dogru public preparation route'una gitmesini saglayan gorunur fit checker ekle; ready, missing data, unclear read method, gearbox request, unclear service category and workflow-first durumlarini customer-safe linklerle bagla; ItemList and WebPage `hasPart` baglantilarini ekle.
+
+Sonuc: Ana sayfaya `File Service Fit Checker` bolumu eklendi. Bolum kullanicinin mevcut durumunu `/file-service`, `/tools/request-brief-builder`, `/tools/ecu-read-method-advisor`, `/ecu-platforms/transmission-control-units`, `/tools/file-readiness-check` and `/how-it-works` public rotalarina yonlendirir. `homepageResourceJsonLd` graph'i fit-checker `ItemList` icerir ve root `WebPage` schema'si `/#file-service-fit-checker` hasPart referansi tasir. Bolum sadece public preparation page routing yapar; dosyalara erismez, request olusturmaz, storage acmaz, analysis calistirmaz veya delivery karari vermez. Payment, AI, vehicle, desktop, work-order, upload, MOD generation, checksum veya private metadata logic degismedi.
+
+Dogrulama: `node scripts/check-i18n-seo.mjs` PASS; `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts tests\i18n-routing.test.ts` PASS (78/78); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (351/351); `npm run build` PASS; `node scripts/check-payment-env.js --schema-only` PASS; `npm audit --omit=dev --audit-level=high` PASS (0 vulnerabilities); `git diff --check` PASS (CRLF warnings only). `npm run check:payments` normal modda local env dosyalari okudugu icin calistirilmadi.
+
+### AUTO-068 [P1] Homepage file-service brief requirements eklensin
+
+Durum: Done
+
+Fingerprint: `public-seo|homepage-brief-requirements|file-service-request-requirements-not-visible|visible-brief-requirements-and-itemlist-schema`
+
+Kapsam: Root homepage'de profesyonel ECU/TCU file-service request brief'inin hangi bilgi alanlariyla hazirlanacagini gorunur hale getir; vehicle identity, controller identity, service intent, file context, customer notes and delivery path maddelerini public preparation route'larina bagla; ItemList and WebPage `hasPart` baglantilarini ekle.
+
+Sonuc: Ana sayfaya `File Service Brief Requirements` bolumu eklendi. Bolum vehicle identity, controller identity, service intent, file context, customer notes and delivery path kartlariyla kullaniciyi `/tools/request-brief-builder`, `/tools/ecu-read-method-advisor`, `/file-service`, `/tools/file-readiness-check` and `/how-it-works` public rotalarina yonlendirir. `homepageResourceJsonLd` graph'i brief-requirements `ItemList` icerir ve root `WebPage` schema'si `/#file-service-brief-requirements` hasPart referansi tasir. Bolum acikca homepage'in dosya istemedigini, file content inspect etmedigini, private storage data gostermedigini veya ECU/TCU output yaratmadigini belirtir. Payment, AI, vehicle, desktop, work-order, upload, MOD generation, checksum veya private metadata logic degismedi.
+
+Dogrulama: `node scripts/check-i18n-seo.mjs` PASS; `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts tests\i18n-routing.test.ts` PASS (77/77); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (350/350); `npm run build` PASS; `node scripts/check-payment-env.js --schema-only` PASS; `npm audit --omit=dev --audit-level=high` PASS (0 vulnerabilities); `git diff --check` PASS (CRLF warnings only). `npm run check:payments` normal modda local env dosyalari okudugu icin calistirilmadi.
+
+### AUTO-067 [P1] Homepage read-method route finder eklensin
+
+Durum: Done
+
+Fingerprint: `public-seo|homepage-read-method-router|read-method-search-intent-lacks-visible-route-finder|visible-read-method-router-and-itemlist-schema`
+
+Kapsam: Root homepage'de OBD, bench, boot, virtual read, TCU and unknown read-method arama niyetlerini public, customer-safe preparation route'larina baglayan gorunur route finder ekle; ItemList and WebPage `hasPart` baglantilarini ekle.
+
+Sonuc: Ana sayfaya `Read Method Route Finder` bolumu eklendi. Bolum OBD read, bench read, boot mode context, virtual read/stock file, TCU/gearbox read and unknown read-method durumlarini `/tools/ecu-read-method-advisor`, `/tools/request-brief-builder`, `/file-service`, `/ecu-platforms/transmission-control-units` and `/tools/file-readiness-check` public rotalarina yonlendirir. `homepageResourceJsonLd` graph'i read-method route `ItemList` icerir ve root `WebPage` schema'si `/#file-service-read-methods` hasPart referansi tasir. Bolum acikca informational-only sinirini belirtir; file upload, file inspection, file editing, MOD generation, checksum, admin/private metadata, payment, AI, vehicle, desktop veya work-order logic degismedi.
+
+Dogrulama: `node scripts/check-i18n-seo.mjs` PASS; `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts tests\i18n-routing.test.ts` PASS (76/76); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (349/349); `npm run build` PASS; `node scripts/check-payment-env.js --schema-only` PASS; `npm audit --omit=dev --audit-level=high` PASS (0 vulnerabilities); `git diff --check` PASS (CRLF warnings only). `npm run check:payments` normal modda local env dosyalari okudugu icin calistirilmadi.
+
+### AUTO-066 [P1] Homepage above-the-fold file-service quick paths eklensin
+
+Durum: Done
+
+Fingerprint: `public-seo|homepage-file-service-quick-paths|above-fold-users-lack-direct-file-service-routing|visible-quick-path-navigation-and-sitenavigation-schema`
+
+Kapsam: Root homepage hero alanina ECU file service, TCU/gearbox, Stage 1, DTC, readiness tools and workflow icin gorunur quick-path navigasyonu ekle; customer-safe `SiteNavigationElement`, ItemList and WebPage `hasPart` baglantilarini ekle.
+
+Sonuc: Ana sayfa hero bolumune `Popular file-service paths` navigasyon bandi eklendi. Kullanici sayfaya girer girmez `/file-service`, `/ecu-platforms/transmission-control-units`, `/services/stage-1`, `/services/dtc-off`, `/tools/file-readiness-check` ve `/how-it-works` public rotalarina yonlenebilir. `homepageQuickPathJsonLd` `SiteNavigationElement` schema'si visible `homepageQuickServicePaths` listesinden uretilir; `homepageResourceJsonLd` graph'i quick-path `ItemList` icerir ve root `WebPage` schema'si `/#file-service-quick-paths` hasPart referansi tasir. Gated `/new-request` veya `/dashboard` route'lari bu quick-path schema'sina eklenmedi. File upload, raw/hex, MOD generation, checksum, admin/private metadata, payment, AI, vehicle, desktop veya work-order logic degismedi.
+
+Dogrulama: `node scripts/check-i18n-seo.mjs` PASS; `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts tests\i18n-routing.test.ts` PASS (75/75); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (348/348); `node scripts/check-payment-env.js --schema-only` PASS; `git diff --check` PASS (CRLF warnings only). `npm run build` calistirilmadi; bu repo build'i local Next env dosyalarini okuyabilir ve `next/font/google` nedeniyle Google Fonts ag istegi yapabilir. `npm run check:payments` normal modda local env dosyalari okudugu icin calistirilmadi.
+
+### AUTO-065 [P1] Homepage file-service glossary ve DefinedTermSet schema eklensin
+
+Durum: Done
+
+Fingerprint: `public-seo|homepage-file-service-glossary|technical-search-terms-lack-visible-explanations|visible-glossary-and-definedterm-schema`
+
+Kapsam: Root homepage'de ECU/TCU file service teknik terimlerini customer-safe bir glossary olarak gorunur hale getir; ORI, MOD, read method, DTC request, secure upload and private delivery gibi arama niyetlerini public route'lara bagla; `DefinedTermSet` structured data ve ItemList/WebPage baglantilarini ekle.
+
+Sonuc: Ana sayfaya `File Service Glossary` bolumu eklendi. Bolum ECU file service, TCU file service, ORI file, MOD file, read method, DTC request, secure upload ve private delivery terimlerini public, customer-safe copy ile aciklar ve mevcut public hub/tool/service/workflow rotalarina baglar. `homepageFileServiceGlossaryJsonLd` `DefinedTermSet` structured data'si visible `fileServiceGlossaryTerms` listesinden uretilir; `homepageResourceJsonLd` graph'i glossary `ItemList` icerir ve root `WebPage` schema'si `/#file-service-glossary` hasPart referansi tasir. File upload, raw/hex, MOD generation, checksum, admin/private metadata, payment, AI, vehicle, desktop veya work-order logic degismedi.
+
+Dogrulama: `node scripts/check-i18n-seo.mjs` PASS; `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts tests\i18n-routing.test.ts` PASS (74/74); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (347/347); `node scripts/check-payment-env.js --schema-only` PASS; `git diff --check` PASS (CRLF warnings only). `npm run build` calistirilmadi; bu repo build'i local Next env dosyalarini okuyabilir ve `next/font/google` nedeniyle Google Fonts ag istegi yapabilir. `npm run check:payments` normal modda local env dosyalari okudugu icin calistirilmadi.
+
+### AUTO-064 [P1] Homepage online file-service operating standard eklensin
+
+Durum: Done
+
+Fingerprint: `public-seo|homepage-file-service-operating-standard|trust-boundary-not-visible|visible-operating-standard-and-itemlist-schema`
+
+Kapsam: Root homepage'de online ECU/TCU file service icin guven ve operasyon standardini gorunur hale getir; secure intake, vehicle context, human review boundary ve private dashboard delivery ilkelerini public route'lara bagla; customer-safe ItemList structured data ve WebPage `hasPart` baglantisini ekle.
+
+Sonuc: Ana sayfaya `Online File Service Standard` bolumu eklendi. Bolum MG AutoTech file-service akisini sadece bir upload formu gibi degil, secure request intake, vehicle context before review, human review boundary ve private dashboard delivery standardi olarak anlatir. Kartlar public `/file-service`, `/tools/request-brief-builder` ve `/how-it-works` rotalarina baglanir; structured data ItemList icinde gated `/new-request` veya `/dashboard` route'u kullanilmaz. Public copy file okumaz, storage path acmaz, private metadata gostermeyiz veya customer-ready ECU/TCU output olusturmayiz sinirini netlestirir. Payment, AI, vehicle, desktop, work-order, upload, MOD generation, checksum veya private metadata logic degismedi.
+
+Dogrulama: `node scripts/check-i18n-seo.mjs` PASS; `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts tests\i18n-routing.test.ts` PASS (73/73); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (346/346); `node scripts/check-payment-env.js --schema-only` PASS; `git diff --check` PASS (CRLF warnings only). `npm run build` calistirilmadi; bu repo build'i local Next env dosyalarini okuyabilir ve `next/font/google` nedeniyle Google Fonts ag istegi yapabilir. `npm run check:payments` normal modda local env dosyalari okudugu icin calistirilmadi.
+
+### AUTO-063 [P1] Homepage file-service decision matrix ve metadata search variants eklensin
+
+Durum: Done
+
+Fingerprint: `public-seo|homepage-file-service-decision-matrix|broad-file-service-users-lack-route-selection|visible-decision-matrix-and-metadata-keywords`
+
+Kapsam: Root homepage'de broad online ECU/TCU file-service aramalarindan gelen kullaniciyi dogru public route'a yonlendiren gorunur karar matrisi ekle; root metadata/OG/Twitter alanlarina customer-safe online file-service arama varyantlarini ekle; checker ve UI safety testleriyle guardla.
+
+Sonuc: Ana sayfaya `File Service Decision Matrix` bolumu eklendi. Bolum online ECU file service, TCU file service, Stage 1 file service, diesel technical request, DTC request ve emin olmayan kullanici niyetlerini mevcut public hub/service/tool rotalarina baglar; her satir customer need, best path, upload oncesi hazirlik ve CTA gosterir. Root `metadata` artik online ECU File Service, TCU File Service, ECU File Upload Service ve ECU/TCU tuning file service varyantlarini hedefler; OpenGraph/Twitter copy daha net file-service odaklidir. `homepageResourceJsonLd` graph'i decision-matrix `ItemList` icerir ve root `WebPage` schema'si `/#file-service-decision-matrix` hasPart referansi tasir. File upload, raw/hex, MOD generation, checksum, admin/private metadata, payment, AI, vehicle, desktop veya work-order logic degismedi.
+
+Dogrulama: `node scripts/check-i18n-seo.mjs` PASS; `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts tests\i18n-routing.test.ts` PASS (72/72); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (345/345); `node scripts/check-payment-env.js --schema-only` PASS; `git diff --check` PASS (CRLF warnings only). `npm run build` calistirilmadi; bu repo build'i local Next env dosyalarini okuyabilir ve `next/font/google` nedeniyle Google Fonts ag istegi yapabilir. `npm run check:payments` normal modda local env dosyalari okudugu icin calistirilmadi.
+
+### AUTO-062 [P1] Homepage file-service knowledge map ve ItemList schema eklensin
+
+Durum: Done
+
+Fingerprint: `public-seo|homepage-file-service-knowledge-map|broad-file-service-intent-lacks-guided-topic-map|visible-topic-map-and-itemlist-schema`
+
+Kapsam: Root homepage'de broad `file service`, `ECU file service`, `TCU file service`, Stage 1, diesel/diagnostic request ve readiness intentlerini tek bir gorunur bilgi haritasinda topla; customer-safe ItemList structured data ve WebPage `hasPart` baglantisini ekle.
+
+Sonuc: Ana sayfaya `File Service Knowledge Map` bolumu eklendi. Bolum broad file-service aramalarini ECU file service, TCU file service, Stage 1 file preparation, diesel support request path, DTC request preparation ve request readiness tools rotalarina yonlendirir. `homepageResourceJsonLd` graph'i yeni knowledge-map `ItemList` icerir ve root `WebPage` schema'si `/#file-service-knowledge-map` parcasina baglanir. Checker ve UI safety testleri bu bolumu ve schema baglantisini guardlar. File upload, raw/hex, MOD generation, checksum, admin/private metadata, payment, AI, vehicle, desktop veya work-order logic degismedi.
+
+Dogrulama: `node scripts/check-i18n-seo.mjs` PASS; `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts tests\i18n-routing.test.ts` PASS (70/70); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (343/343); `git diff --check` PASS (CRLF warnings only). `npm run build` calistirilmadi; bu repo build'i local Next env dosyalarini okuyabilir ve `next/font/google` nedeniyle Google Fonts ag istegi yapabilir. `npm run check:payments` de AGENTS kurallari geregi acik onay olmadan calistirilmadi.
+
+### AUTO-061 [P1] Localized file-service hub hreflang ve route mapping eklensin
+
+Durum: Done
+
+Fingerprint: `public-seo|localized-file-service-hub|english-only-file-service-hub-lacks-hreflang-routes|localized-indexable-hub`
+
+Kapsam: `/file-service` public hub'ini localized SEO ailesine bagla; `/[locale]/file-service` route'u, reusable file-service copy/structured-data helper'i, localized homepage/footer linkleri, route switcher mapping, sitemap, robots, i18n checker ve tests guncellensin.
+
+Sonuc: `src/lib/fileServiceI18n.ts` ile English/German/Turkish-first File Service Hub copy ve `fileServiceJsonLd` structured data helper'i eklendi. `/de/file-service`, `/tr/file-service` ve tum supported SEO locale route'lari ayni customer-safe hub yapisini render eder; canonical/hreflang, Open Graph locale alternates, `CollectionPage`, `Service`, `FAQPage`, `BreadcrumbList` ve `ItemList` graph'i uretir. Localized homepage ve localized footer artik localized file-service hub'a link verir. Language switcher helper'i `/file-service` route'unu locale'ler arasinda korur. Root `/file-service` metadata'si de language alternates yayimlar. Sitemap ve robots localized file-service route'larini kapsar. Payment, AI, vehicle, desktop, work-order, upload, MOD generation, checksum, raw/hex veya private metadata logic degismedi.
+
+Dogrulama: `node scripts/check-i18n-seo.mjs` PASS; `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts tests\i18n-routing.test.ts` PASS (69/69); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (342/342); `git diff --check` PASS (CRLF warnings only). `npm run build` calistirilmadi; bu repo build'i local Next env dosyalarini okuyabilir ve `next/font/google` nedeniyle Google Fonts ag istegi yapabilir. `npm run check:payments` de AGENTS kurallari geregi acik onay olmadan calistirilmadi.
+
+### AUTO-060 [P1] Public file-service hub ve indexable SEO route eklensin
+
+Durum: Done
+
+Fingerprint: `public-seo|file-service-hub|generic-file-service-intent-lacks-indexable-hub|homepage-linked-public-hub`
+
+Kapsam: Root homepage'deki file-service arama niyeti bolumunu ayri, indexlenebilir `/file-service` public hub sayfasina bagla; header/footer, sitemap, robots ve SEO checker/test guardlarini guncelle.
+
+Sonuc: `/file-service` artik ECU & TCU File Service Hub olarak public, customer-safe landing/resource sayfasi sunar. Sayfa ECU File Service, TCU File Service, Stage 1 File Service ve Diesel/Diagnostic File Requests kategorilerini, request workflow adimlarini, public preparation tools/resource linklerini, safety boundary kartlarini ve FAQ icerigini gosterir. Header, footer ve homepage bu hub'a link verir; sitemap ve robots route'u public discoverable hale getirir. Sayfa `CollectionPage`, `Service`, `FAQPage`, `BreadcrumbList` ve `ItemList` structured data uretir. File upload, raw/hex, MOD generation, checksum, admin/private metadata, payment, vehicle DB, AI, desktop veya work-order logic degismedi.
+
+Dogrulama: `node scripts/check-i18n-seo.mjs` PASS; `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (66/66); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (341/341); `git diff --check` PASS (CRLF warnings only). `npm run build` calistirilmadi; bu repo build'i local Next env dosyalarini okuyabilir ve `next/font/google` nedeniyle Google Fonts ag istegi yapabilir.
+
+### AUTO-059 [P1] Homepage file-service search intent hub ve Service schema guclendirilsin
+
+Durum: Done
+
+Fingerprint: `public-seo|homepage-file-service-intent|generic-file-service-query-lacks-focused-section|visible-service-hub-and-service-schema`
+
+Kapsam: Root homepage'e ust akis icinde gorunur ECU/TCU file service intent hub'i, safe request checklist'i ve customer-safe `Service` JSON-LD eklendi.
+
+Sonuc: Ana sayfa Live Workload sonrasinda `Professional ECU & TCU file service for workshops` bolumu gosterir. Bolum ECU File Service, TCU File Service, Stage 1 File Service ve DPF/EGR/AdBlue/DTC file request kartlarini mevcut public request/service/platform rotalarina baglar. `homepageFileServiceJsonLd` Service schema'si `#ecu-tcu-file-service` id'siyle root WebPage graph'ina baglandi ve OfferCatalog mevcut public service landing page listesi uzerinden uretiliyor. Homepage veya schema file upload, raw/hex, MOD generation, checksum, admin/private metadata, payment change veya customer data icermiyor.
+
+Dogrulama: `node scripts/check-i18n-seo.mjs` PASS; `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (65/65); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (340/340); `git diff --check` PASS (CRLF warnings only). `npm run build` calistirilmadi; bu repo build'i local Next env dosyalarini okuyabilir ve `next/font/google` nedeniyle Google Fonts ag istegi yapabilir.
+
 ### RMAP-FILE-QUALITY-SCORE-M1-FOUNDATION [P1] AI File Quality Score deterministic baseline and explainability foundation
 
 Durum: Done

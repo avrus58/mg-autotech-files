@@ -10,6 +10,8 @@ test("i18n route helper maps equivalent public routes across locales", () => {
 
   assert.equal(getLocalizedPublicPath("/how-it-works", "de"), "/de/how-it-works");
   assert.equal(getLocalizedPublicPath("/de/how-it-works", "tr"), "/tr/how-it-works");
+  assert.equal(getLocalizedPublicPath("/file-service", "de"), "/de/file-service");
+  assert.equal(getLocalizedPublicPath("/de/file-service", "tr"), "/tr/file-service");
   assert.equal(getLocalizedPublicPath("/services/stage-1", "de"), "/de/services/stage-1");
   assert.equal(getLocalizedPublicPath("/de/services/dtc-off", "en"), "/en/services/dtc-off");
   assert.equal(getLocalizedPublicPath("/about", "tr"), "/tr");

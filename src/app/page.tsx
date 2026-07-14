@@ -25,6 +25,7 @@ import {
   Star,
   Upload,
   UserPlus,
+  Users,
   Wrench,
   Zap,
   Activity,
@@ -198,11 +199,461 @@ const homepageSearchIntentFaq = [
   },
 ];
 
+const fileServiceAnswerLibrary = [
+  {
+    intent: "File service meaning",
+    question: "What is an online ECU file service?",
+    answer:
+      "It is a secure workflow for preparing an ECU or TCU request with vehicle context, controller details, service intent and a clear customer brief before account handling begins.",
+    href: "/file-service",
+    action: "Open file service hub",
+    icon: FileCode2,
+  },
+  {
+    intent: "ECU vs TCU",
+    question: "What is the difference between ECU and TCU file service?",
+    answer:
+      "ECU requests focus on engine control context. TCU requests focus on gearbox control context and usually need transmission details, read method context and a separate service goal.",
+    href: "/ecu-platforms/transmission-control-units",
+    action: "View TCU guide",
+    icon: Cpu,
+  },
+  {
+    intent: "Vehicle details",
+    question: "Should I prepare vehicle details before opening a request?",
+    answer:
+      "Yes. Brand, model, generation, engine, fuel type, gearbox and controller notes help the review start with fewer clarification messages.",
+    href: "/tools/request-brief-builder",
+    action: "Build request brief",
+    icon: BadgeCheck,
+  },
+  {
+    intent: "Read method",
+    question: "Can I start if my read method is unclear?",
+    answer:
+      "Start with the read method advisor. If the method is still unclear, describe the tool, vehicle and controller context in the customer notes before secure handling.",
+    href: "/tools/ecu-read-method-advisor",
+    action: "Plan read method",
+    icon: Search,
+  },
+  {
+    intent: "Service selection",
+    question: "How do I choose between Stage 1, TCU and diesel technical requests?",
+    answer:
+      "Choose the route that matches the real job goal. Separate performance, gearbox and diesel technical goals so the request can be reviewed with a cleaner scope.",
+    href: "/#file-service-decision-matrix",
+    action: "Compare routes",
+    icon: Gauge,
+  },
+  {
+    intent: "DTC context",
+    question: "Where should diagnostic code information go?",
+    answer:
+      "Use the request notes to list the code numbers, workshop symptom and related service goal. This keeps diagnostic context connected to the selected public service route.",
+    href: "/services/dtc-off",
+    action: "Prepare DTC context",
+    icon: Wrench,
+  },
+  {
+    intent: "Public safety",
+    question: "Does the homepage analyze my file?",
+    answer:
+      "No. Homepage guidance and public tools are preparation pages only. Secure file handling starts only after the customer opens the authenticated request workflow.",
+    href: "/tools/file-readiness-check",
+    action: "Check readiness",
+    icon: ShieldCheck,
+  },
+  {
+    intent: "After submit",
+    question: "What happens after I submit a request?",
+    answer:
+      "The request stays tied to the customer account, where status updates, customer-visible messages and completed delivery remain separated from public website content.",
+    href: "/how-it-works",
+    action: "See workflow",
+    icon: LayoutDashboard,
+  },
+];
+
+const fileServiceSearchRouteIndex = [
+  {
+    query: "ECU file service online",
+    route: "Central file-service hub",
+    prepare:
+      "Use this when the customer needs the complete secure workflow overview before choosing a service category.",
+    href: "/file-service",
+    action: "Open hub",
+    tag: "Core",
+  },
+  {
+    query: "TCU file service or gearbox file service",
+    route: "Transmission controller guide",
+    prepare:
+      "Use this when the request is about gearbox controller context, TCU details, read method and transmission notes.",
+    href: "/ecu-platforms/transmission-control-units",
+    action: "Open TCU guide",
+    tag: "TCU",
+  },
+  {
+    query: "Stage 1 ECU file service",
+    route: "Stage 1 service page",
+    prepare:
+      "Use this when the request goal is a performance-focused ECU or TCU review with vehicle and engine context.",
+    href: "/services/stage-1",
+    action: "View Stage 1",
+    tag: "Performance",
+  },
+  {
+    query: "DTC file service request",
+    route: "Diagnostic code preparation",
+    prepare:
+      "Use this when the customer needs to organize code numbers, workshop symptoms and related service context.",
+    href: "/services/dtc-off",
+    action: "Prepare DTC notes",
+    tag: "Diagnostic",
+  },
+  {
+    query: "DPF EGR AdBlue file request",
+    route: "Diesel technical service route",
+    prepare:
+      "Use this when the request should be separated from performance work and documented with diesel system context.",
+    href: "/services/dpf-off",
+    action: "View diesel route",
+    tag: "Diesel",
+  },
+  {
+    query: "ECU read method help",
+    route: "Read method advisor",
+    prepare:
+      "Use this when OBD, bench, boot, virtual read or TCU read context needs clarification before secure handling.",
+    href: "/tools/ecu-read-method-advisor",
+    action: "Plan read method",
+    tag: "Read",
+  },
+  {
+    query: "ECU file readiness check",
+    route: "File readiness tool",
+    prepare:
+      "Use this when the customer wants to confirm that the request context is organized before account handling.",
+    href: "/tools/file-readiness-check",
+    action: "Check readiness",
+    tag: "Ready",
+  },
+  {
+    query: "What information should I send for file service",
+    route: "Request brief builder",
+    prepare:
+      "Use this when vehicle, controller, service intent and workshop notes need to be turned into a clearer brief.",
+    href: "/tools/request-brief-builder",
+    action: "Build brief",
+    tag: "Brief",
+  },
+];
+
+const fileServiceSnippetSummary = [
+  {
+    title: "What it is",
+    text:
+      "A secure online workflow for ECU and TCU file-service preparation, built around vehicle context, controller details, selected service intent and clear workshop notes.",
+    href: "/file-service",
+    action: "Open file-service hub",
+    icon: Cpu,
+  },
+  {
+    title: "Who it helps",
+    text:
+      "Workshops and customers who need a structured request path for performance, diesel technical, diagnostic-code or transmission controller work.",
+    href: "/how-it-works",
+    action: "See workflow",
+    icon: Users,
+  },
+  {
+    title: "What to prepare",
+    text:
+      "Vehicle identity, engine details, ECU or TCU context, read method, selected service category and notes from the workshop job.",
+    href: "/tools/request-brief-builder",
+    action: "Build a request brief",
+    icon: FileCode2,
+  },
+  {
+    title: "Where secure handling starts",
+    text:
+      "Public pages explain the process. Secure file handling starts only inside the authenticated request workflow after the customer chooses to proceed.",
+    href: "/tools/file-readiness-check",
+    action: "Check readiness",
+    icon: ShieldCheck,
+  },
+  {
+    title: "What public tools do",
+    text:
+      "They help clarify read method, service route and request context before submission. They do not inspect customer files or change account records.",
+    href: "/tools/ecu-read-method-advisor",
+    action: "Plan read method",
+    icon: Search,
+  },
+  {
+    title: "What happens after submission",
+    text:
+      "The customer follows status, customer-visible messages and final delivery from the account area while internal review details stay separate.",
+    href: "/how-it-works",
+    action: "Review next steps",
+    icon: LayoutDashboard,
+  },
+];
+
+const fileServiceTrustComparison = [
+  {
+    title: "Structured vehicle context",
+    typical:
+      "A generic file handoff can miss engine, controller, read-method or service-intent context.",
+    text:
+      "MG AutoTech guides the customer toward vehicle identity, ECU or TCU context, selected service category and workshop notes before secure handling begins.",
+    href: "/tools/request-brief-builder",
+    action: "Build context",
+    icon: BadgeCheck,
+  },
+  {
+    title: "Controller-specific route",
+    typical:
+      "A single generic route can mix ECU, TCU, diesel technical and diagnostic-code requests together.",
+    text:
+      "MG AutoTech separates performance, diesel technical, diagnostic-code and transmission controller intent into clearer public preparation routes.",
+    href: "/ecu-platforms/transmission-control-units",
+    action: "View TCU route",
+    icon: Cpu,
+  },
+  {
+    title: "Preparation before submission",
+    typical:
+      "Customers often submit before the read method, service goal or missing details are clear.",
+    text:
+      "MG AutoTech public tools help organize read method, request brief and readiness context before the customer chooses to proceed.",
+    href: "/tools/file-readiness-check",
+    action: "Check readiness",
+    icon: ShieldCheck,
+  },
+  {
+    title: "Account-tracked workflow",
+    typical:
+      "Unstructured communication can make status, customer messages and delivery expectations hard to follow.",
+    text:
+      "MG AutoTech keeps status updates, customer-visible messages and final delivery tied to the customer account workflow.",
+    href: "/how-it-works",
+    action: "See workflow",
+    icon: LayoutDashboard,
+  },
+  {
+    title: "Human review boundary",
+    typical:
+      "Public pages can create confusion when they look like automatic file processing tools.",
+    text:
+      "MG AutoTech keeps public pages educational. Technical handling remains separated from public website guidance and requires controlled review.",
+    href: "/file-service",
+    action: "Open hub",
+    icon: Users,
+  },
+  {
+    title: "Customer-safe public website",
+    typical:
+      "A public website should not reveal private account details or technical handling internals.",
+    text:
+      "MG AutoTech keeps the public website focused on service education, route selection and preparation guidance only.",
+    href: "/how-it-works",
+    action: "Review process",
+    icon: Lock,
+  },
+];
+
+const fileServiceVerificationCheckpoints = [
+  {
+    checkpoint: "01",
+    title: "Public route is clear",
+    text:
+      "The customer can see whether the job belongs to ECU, TCU, Stage 1, diesel technical, diagnostic-code or preparation guidance before secure handling starts.",
+    href: "/file-service",
+    action: "Check file-service route",
+    signal: "Route clarity",
+    icon: Search,
+  },
+  {
+    checkpoint: "02",
+    title: "Vehicle context is prepared",
+    text:
+      "The request should be supported by brand, model, generation, engine, controller notes and read-method context instead of a bare file handoff.",
+    href: "/tools/request-brief-builder",
+    action: "Prepare context",
+    signal: "Context quality",
+    icon: BadgeCheck,
+  },
+  {
+    checkpoint: "03",
+    title: "Read method is understood",
+    text:
+      "OBD, bench, boot, virtual read and TCU paths should be clarified early so the customer knows what information belongs in the request notes.",
+    href: "/tools/ecu-read-method-advisor",
+    action: "Review read method",
+    signal: "Read path",
+    icon: Cpu,
+  },
+  {
+    checkpoint: "04",
+    title: "Preparation happens before submission",
+    text:
+      "Public tools should help organize the job before account handling begins, without pretending to analyze, change or deliver technical output from the homepage.",
+    href: "/tools/file-readiness-check",
+    action: "Check readiness",
+    signal: "Safe preparation",
+    icon: ShieldCheck,
+  },
+  {
+    checkpoint: "05",
+    title: "Status remains trackable",
+    text:
+      "After submission, a professional workflow should keep status and customer-visible communication tied to the account flow.",
+    href: "/how-it-works",
+    action: "See workflow",
+    signal: "Tracked process",
+    icon: Clock3,
+  },
+  {
+    checkpoint: "06",
+    title: "Human review boundary is visible",
+    text:
+      "The website should explain preparation and routing while keeping technical decisions separated from public guidance.",
+    href: "/#professional-file-service-comparison",
+    action: "Compare standards",
+    signal: "Review boundary",
+    icon: Users,
+  },
+];
+
+const fileServiceMythChecks = [
+  {
+    myth: "It is just a file drop",
+    fact:
+      "A professional file service starts with vehicle context, service intent, read-method notes and account-tracked communication.",
+    href: "/tools/request-brief-builder",
+    action: "Prepare a better brief",
+    icon: FileCode2,
+  },
+  {
+    myth: "The homepage edits files",
+    fact:
+      "The public website is an education and preparation layer only. Technical handling stays separate from public pages.",
+    href: "/tools/file-readiness-check",
+    action: "Check readiness",
+    icon: ShieldCheck,
+  },
+  {
+    myth: "Every request uses one generic route",
+    fact:
+      "ECU, TCU, performance, diesel technical and diagnostic-code requests need different context before secure account handling.",
+    href: "/file-service",
+    action: "Open service hub",
+    icon: Search,
+  },
+  {
+    myth: "Read method does not matter",
+    fact:
+      "OBD, bench, boot, virtual read and TCU context can change what the customer should describe before submission.",
+    href: "/tools/ecu-read-method-advisor",
+    action: "Review read method",
+    icon: Cpu,
+  },
+  {
+    myth: "Status is just a support question",
+    fact:
+      "A serious workflow explains customer-visible status and communication flow so customers know where to look next.",
+    href: "/how-it-works",
+    action: "See status flow",
+    icon: MessageCircle,
+  },
+  {
+    myth: "Public pages should expose every detail",
+    fact:
+      "MG AutoTech keeps public pages focused on safe guidance while account workflow, review details and delivery stay separated.",
+    href: "/#file-service-privacy-controls",
+    action: "Review privacy controls",
+    icon: Lock,
+  },
+];
+
+const fileServicePlatformStack = [
+  {
+    title: "Public service hub",
+    text:
+      "Customers can understand ECU, TCU, performance, diesel technical and diagnostic-code routes before the secure account flow.",
+    href: "/file-service",
+    action: "Open service hub",
+    signal: "Route map",
+    icon: LayoutDashboard,
+  },
+  {
+    title: "Preparation tools",
+    text:
+      "Readiness, request brief and read-method tools help organize the job before submission.",
+    href: "/tools",
+    action: "View tools",
+    signal: "Preparation",
+    icon: Search,
+  },
+  {
+    title: "Vehicle context path",
+    text:
+      "Brand, model, engine, controller and read-method context are treated as request context, not an afterthought.",
+    href: "/tools/request-brief-builder",
+    action: "Build context",
+    signal: "Vehicle data",
+    icon: BadgeCheck,
+  },
+  {
+    title: "Private account workflow",
+    text:
+      "After submission, customer-visible status and messages stay tied to the account flow.",
+    href: "/how-it-works",
+    action: "See workflow",
+    signal: "Tracked flow",
+    icon: ShieldCheck,
+  },
+  {
+    title: "Human review boundary",
+    text:
+      "Public pages explain the process while technical handling remains separated from public guidance.",
+    href: "/#professional-file-service-comparison",
+    action: "Compare standards",
+    signal: "Review",
+    icon: Users,
+  },
+  {
+    title: "Customer-safe information design",
+    text:
+      "Public pages focus on education and preparation instead of private account or technical handling details.",
+    href: "/#file-service-privacy-controls",
+    action: "Review privacy",
+    signal: "Safety",
+    icon: Lock,
+  },
+];
+
 const homepageSearchIntentJsonLd = {
   "@context": "https://schema.org",
   "@type": "FAQPage",
   "@id": "https://file.mgautotech.de/#homepage-search-faq",
   mainEntity: homepageSearchIntentFaq.map((item) => ({
+    "@type": "Question",
+    name: item.question,
+    acceptedAnswer: {
+      "@type": "Answer",
+      text: item.answer,
+    },
+  })),
+};
+
+const fileServiceAnswerLibraryJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "@id": "https://file.mgautotech.de/#file-service-answer-library",
+  name: "MG AutoTech file service answer library",
+  mainEntity: fileServiceAnswerLibrary.map((item) => ({
     "@type": "Question",
     name: item.question,
     acceptedAnswer: {
@@ -376,9 +827,817 @@ const ecuPlatformLinks = [
   },
 ];
 
+const fileServiceSearchPillars = [
+  {
+    title: "ECU File Service",
+    text: "Secure original-file intake, vehicle context, service selection and dashboard delivery for ECU file requests.",
+    href: "/file-service",
+    action: "Open file service hub",
+    icon: Cpu,
+    intent: "ECU file service",
+  },
+  {
+    title: "TCU File Service",
+    text: "Gearbox and transmission-controller requests stay structured with TCU details, read method and notes.",
+    href: "/ecu-platforms/transmission-control-units",
+    action: "Open TCU guide",
+    icon: FileCode2,
+    intent: "TCU file service",
+  },
+  {
+    title: "Stage 1 File Service",
+    text: "Performance requests are prepared with vehicle data, engine details and the original ECU/TCU file context.",
+    href: "/services/stage-1",
+    action: "View Stage 1",
+    icon: Gauge,
+    intent: "Stage 1 file service",
+  },
+  {
+    title: "DPF / EGR / AdBlue / DTC File Requests",
+    text: "Technical request categories are separated clearly so the selected service, notes and evidence are review-ready.",
+    href: "/services/dpf-off",
+    action: "View diesel services",
+    icon: Wrench,
+    intent: "aftertreatment and DTC file requests",
+  },
+];
+
+const homepageQuickServicePaths = [
+  {
+    title: "ECU file service",
+    text: "Start from the central online ECU and TCU file-service hub.",
+    href: "/file-service",
+    label: "Core hub",
+  },
+  {
+    title: "TCU / gearbox files",
+    text: "Open the transmission controller guide for TCU request context.",
+    href: "/ecu-platforms/transmission-control-units",
+    label: "TCU",
+  },
+  {
+    title: "Stage 1 requests",
+    text: "Review the Stage 1 service page before opening a performance request.",
+    href: "/services/stage-1",
+    label: "Performance",
+  },
+  {
+    title: "DTC requests",
+    text: "Prepare diagnostic code context and notes before request submission.",
+    href: "/services/dtc-off",
+    label: "Diagnostics",
+  },
+  {
+    title: "Readiness tools",
+    text: "Check file request readiness before entering the secure portal flow.",
+    href: "/tools/file-readiness-check",
+    label: "Prepare",
+  },
+  {
+    title: "How it works",
+    text: "See the intake, review, status tracking and delivery workflow.",
+    href: "/how-it-works",
+    label: "Workflow",
+  },
+];
+
+const homepageFileServiceNavigator = [
+  {
+    title: "Popular service paths",
+    text: "Start with the fastest public routes for ECU, TCU, Stage 1, DTC and readiness guidance.",
+    href: "/#file-service-quick-paths",
+    tag: "Start",
+    icon: Search,
+  },
+  {
+    title: "Route decision matrix",
+    text: "Compare common file-service search intents and move to the most useful public route.",
+    href: "/#file-service-decision-matrix",
+    tag: "Choose",
+    icon: BadgeCheck,
+  },
+  {
+    title: "Workshop use cases",
+    text: "Match Stage 1, gearbox, diesel, diagnostic and unclear-read situations to the next step.",
+    href: "/#file-service-use-cases",
+    tag: "Use cases",
+    icon: Wrench,
+  },
+  {
+    title: "Workshop profiles",
+    text: "Pick the entry point for performance shops, diesel diagnostics, transmission specialists or first-time customers.",
+    href: "/#file-service-workshop-profiles",
+    tag: "Audience",
+    icon: Users,
+  },
+  {
+    title: "Read method routes",
+    text: "Find public guidance for OBD, bench, boot, virtual read, TCU and unknown read-method contexts.",
+    href: "/#file-service-read-methods",
+    tag: "Read",
+    icon: FileCode2,
+  },
+  {
+    title: "Brief requirements",
+    text: "Check the vehicle, controller, service, file context, notes and delivery details needed before request creation.",
+    href: "/#file-service-brief-requirements",
+    tag: "Brief",
+    icon: MessageCircle,
+  },
+  {
+    title: "Privacy controls",
+    text: "Understand the public/private boundary before moving from preparation pages into account-based request handling.",
+    href: "/#file-service-privacy-controls",
+    tag: "Trust",
+    icon: ShieldCheck,
+  },
+  {
+    title: "Terminology glossary",
+    text: "Review customer-safe definitions for ECU file service, TCU file service, ORI, MOD, read method and delivery.",
+    href: "/#file-service-glossary",
+    tag: "Terms",
+    icon: FileCode2,
+  },
+];
+
+const fileServiceReadMethodRoutes = [
+  {
+    title: "OBD read available",
+    text: "Use the read method advisor to confirm tool details, vehicle context and controller notes before opening a secure ECU file request.",
+    href: "/tools/ecu-read-method-advisor",
+    action: "Check OBD details",
+    tag: "OBD",
+  },
+  {
+    title: "Bench read available",
+    text: "Prepare ECU family, HW/SW numbers, tool information and read context before submitting a file-service brief.",
+    href: "/tools/request-brief-builder",
+    action: "Build bench brief",
+    tag: "Bench",
+  },
+  {
+    title: "Boot mode context",
+    text: "Keep controller family, read method and technical notes together so human review starts with the right context.",
+    href: "/tools/ecu-read-method-advisor",
+    action: "Review boot context",
+    tag: "Boot",
+  },
+  {
+    title: "Virtual read or stock file",
+    text: "Confirm vehicle, engine and source context before continuing from the public file-service hub into the secure portal.",
+    href: "/file-service",
+    action: "Open file-service hub",
+    tag: "Virtual",
+  },
+  {
+    title: "TCU or gearbox read",
+    text: "Use the transmission controller guide when the request is for DSG, ZF, VGS, DCT, PDK or another gearbox control unit.",
+    href: "/ecu-platforms/transmission-control-units",
+    action: "Open TCU guide",
+    tag: "TCU",
+  },
+  {
+    title: "Read method unknown",
+    text: "Use readiness tools first so missing vehicle, controller and service details are clear before secure request submission.",
+    href: "/tools/file-readiness-check",
+    action: "Check readiness",
+    tag: "Unknown",
+  },
+];
+
+const fileServiceBriefRequirements = [
+  {
+    title: "Vehicle identity",
+    text: "Brand, model, generation, engine, year, fuel type and gearbox context help the file-service request start from the right vehicle profile.",
+    href: "/tools/request-brief-builder",
+    action: "Prepare vehicle details",
+    tag: "Vehicle",
+  },
+  {
+    title: "Controller identity",
+    text: "ECU or TCU family, HW/SW numbers, read tool and read method reduce back-and-forth before human review.",
+    href: "/tools/ecu-read-method-advisor",
+    action: "Check controller context",
+    tag: "ECU / TCU",
+  },
+  {
+    title: "Service intent",
+    text: "Stage 1, TCU, diesel support, diagnostic request and selected options should be described before secure submission.",
+    href: "/file-service",
+    action: "Choose service route",
+    tag: "Service",
+  },
+  {
+    title: "File context",
+    text: "Original file source, read date, previous file history if known and important notes help the review stay traceable.",
+    href: "/tools/file-readiness-check",
+    action: "Check file readiness",
+    tag: "Context",
+  },
+  {
+    title: "Customer notes",
+    text: "Symptoms, diagnostic codes, workshop observations and special instructions should be written as customer-visible request notes.",
+    href: "/tools/request-brief-builder",
+    action: "Build note template",
+    tag: "Notes",
+  },
+  {
+    title: "Delivery path",
+    text: "Completed work belongs in the authenticated dashboard flow, with status tracking and private delivery instead of public file exchange.",
+    href: "/how-it-works",
+    action: "See workflow",
+    tag: "Delivery",
+  },
+];
+
+const fileServiceFitChecks = [
+  {
+    title: "I know the vehicle and service",
+    text: "You have the vehicle, engine, controller context and service objective ready.",
+    outcome: "Start from the file-service hub and continue into the secure portal when ready.",
+    href: "/file-service",
+    action: "Open file-service hub",
+    tag: "Ready",
+  },
+  {
+    title: "I am missing ECU or TCU details",
+    text: "You know the vehicle but need to organize controller, HW/SW, tool or read-method information.",
+    outcome: "Use the request brief builder before opening a customer request.",
+    href: "/tools/request-brief-builder",
+    action: "Build request brief",
+    tag: "Missing data",
+  },
+  {
+    title: "The read method is unclear",
+    text: "You are not sure whether the context is OBD, bench, boot, virtual stock file or gearbox read.",
+    outcome: "Use the read method advisor first so the technical context is clear.",
+    href: "/tools/ecu-read-method-advisor",
+    action: "Plan read method",
+    tag: "Read method",
+  },
+  {
+    title: "This is a gearbox request",
+    text: "The request is about DSG, ZF, VGS, DCT, PDK or another transmission controller.",
+    outcome: "Open the TCU platform guide before preparing request notes.",
+    href: "/ecu-platforms/transmission-control-units",
+    action: "Open TCU guide",
+    tag: "TCU",
+  },
+  {
+    title: "The service category is unclear",
+    text: "You need to separate performance, diesel support, diagnostic context or general file-service preparation.",
+    outcome: "Use the readiness checker to see which information is still missing.",
+    href: "/tools/file-readiness-check",
+    action: "Check readiness",
+    tag: "Unsure",
+  },
+  {
+    title: "I want the full workflow first",
+    text: "You want to understand account setup, request review, order tracking and private delivery.",
+    outcome: "Read the workflow page before opening a customer request.",
+    href: "/how-it-works",
+    action: "See how it works",
+    tag: "Workflow",
+  },
+];
+
+const fileServiceOutcomePreview = [
+  {
+    title: "Request received",
+    text: "The secure portal keeps the selected vehicle, service and customer notes attached to the request.",
+    href: "/how-it-works",
+    action: "See intake workflow",
+    tag: "Intake",
+    icon: BadgeCheck,
+  },
+  {
+    title: "Human review",
+    text: "Complex file-service requests stay review-led so unclear vehicle, controller or service context can be checked before delivery.",
+    href: "/file-service",
+    action: "Review file-service model",
+    tag: "Review",
+    icon: ShieldCheck,
+  },
+  {
+    title: "Status tracking",
+    text: "Customers follow the request state from the authenticated dashboard instead of guessing by email or public file exchange.",
+    href: "/how-it-works",
+    action: "See tracking workflow",
+    tag: "Tracking",
+    icon: Clock3,
+  },
+  {
+    title: "Customer messages",
+    text: "Customer-visible notes and additional information stay separated from internal workshop review notes.",
+    href: "/how-it-works",
+    action: "See communication flow",
+    tag: "Messages",
+    icon: MessageCircle,
+  },
+  {
+    title: "Private delivery",
+    text: "Completed work is delivered through the private customer area, with public pages staying educational only.",
+    href: "/file-service",
+    action: "Open service hub",
+    tag: "Delivery",
+    icon: Download,
+  },
+  {
+    title: "Support context",
+    text: "A prepared brief gives support the vehicle, controller and service context needed to answer faster.",
+    href: "/tools/request-brief-builder",
+    action: "Build support brief",
+    tag: "Support",
+    icon: MessageCircle,
+  },
+];
+
+const fileServiceStatusGuide = [
+  {
+    title: "Received",
+    text: "The request context has reached the secure portal and the customer can keep one reference point for the job.",
+    href: "/how-it-works",
+    action: "See request workflow",
+    tag: "Received",
+    icon: BadgeCheck,
+  },
+  {
+    title: "Access verified",
+    text: "The customer account and portal access are checked inside the authenticated workflow before the job continues.",
+    href: "/how-it-works",
+    action: "Understand portal access",
+    tag: "Access",
+    icon: Lock,
+  },
+  {
+    title: "In review",
+    text: "Vehicle, controller, service intent and customer notes are reviewed before technical work moves forward.",
+    href: "/tools/request-brief-builder",
+    action: "Prepare better notes",
+    tag: "Review",
+    icon: ShieldCheck,
+  },
+  {
+    title: "Waiting for customer",
+    text: "If details are missing, customer-visible messages can ask for the next piece of information without exposing workshop-only notes.",
+    href: "/how-it-works",
+    action: "See message flow",
+    tag: "Action needed",
+    icon: MessageCircle,
+  },
+  {
+    title: "In progress",
+    text: "The request is active in the private workflow while public pages remain educational and preparation-focused.",
+    href: "/file-service",
+    action: "Review service model",
+    tag: "Active",
+    icon: Activity,
+  },
+  {
+    title: "Completed / delivered",
+    text: "Finished work is handled through the private customer area, with public content staying separate from delivery.",
+    href: "/how-it-works",
+    action: "See delivery path",
+    tag: "Delivered",
+    icon: Download,
+  },
+];
+
+const fileServicePrivacyControls = [
+  {
+    title: "Authenticated portal first",
+    text: "File-service requests, tracking and delivery belong to the signed-in customer area, not public page interactions.",
+    href: "/how-it-works",
+    action: "See secure workflow",
+    tag: "Portal",
+    icon: Lock,
+  },
+  {
+    title: "Public pages stay educational",
+    text: "Homepage guides explain the workflow, preparation and service categories without exposing customer order information.",
+    href: "/file-service",
+    action: "Open service hub",
+    tag: "Public safe",
+    icon: ShieldCheck,
+  },
+  {
+    title: "Customer-visible notes are separated",
+    text: "Customer-facing messages are treated differently from internal workshop notes so communication stays clear.",
+    href: "/how-it-works",
+    action: "Review message flow",
+    tag: "Messages",
+    icon: MessageCircle,
+  },
+  {
+    title: "Technical context is prepared first",
+    text: "Vehicle, controller, read-method and service notes can be organized before secure request submission.",
+    href: "/tools/request-brief-builder",
+    action: "Prepare request brief",
+    tag: "Brief",
+    icon: FileCode2,
+  },
+  {
+    title: "Private delivery path",
+    text: "Completed work is handled in the customer area, with public content kept separate from delivery actions.",
+    href: "/how-it-works",
+    action: "See delivery workflow",
+    tag: "Delivery",
+    icon: Download,
+  },
+  {
+    title: "Support-safe explanation",
+    text: "Public content can explain the process while sensitive operational details remain out of the public page surface.",
+    href: "/file-service",
+    action: "Review boundaries",
+    tag: "Support",
+    icon: BadgeCheck,
+  },
+];
+
+const fileServiceRequestChecklist = [
+  "Vehicle, engine and ECU/TCU details are collected before upload.",
+  "Service category and customer notes stay attached to the request.",
+  "Credits and access are verified by the secure customer portal.",
+  "Complex or unclear files stay human-reviewed before delivery.",
+];
+
+const fileServiceUseCases = [
+  {
+    title: "Stage 1 ECU request",
+    text: "For performance-oriented ECU file service, start with the vehicle, engine, ECU family, read method and clear customer notes.",
+    href: "/services/stage-1",
+    action: "Open Stage 1 path",
+    tag: "Performance",
+    icon: Gauge,
+    searchIntent: "Stage 1 ECU file service",
+  },
+  {
+    title: "TCU and gearbox request",
+    text: "Transmission controller work needs gearbox context, TCU type, read method and vehicle details before review.",
+    href: "/ecu-platforms/transmission-control-units",
+    action: "Open TCU guide",
+    tag: "TCU",
+    icon: FileCode2,
+    searchIntent: "TCU file service",
+  },
+  {
+    title: "Diesel technical request",
+    text: "DPF, EGR and AdBlue requests stay easier to review when the service category and workshop note are separated from the start.",
+    href: "/services/dpf-off",
+    action: "Open diesel path",
+    tag: "Diesel",
+    icon: Wrench,
+    searchIntent: "diesel ECU file service",
+  },
+  {
+    title: "Diagnostic code request",
+    text: "DTC-related requests should include the code list, vehicle context and a short explanation of the workshop symptom.",
+    href: "/services/dtc-off",
+    action: "Open DTC path",
+    tag: "DTC",
+    icon: MessageCircle,
+    searchIntent: "DTC file service",
+  },
+  {
+    title: "Unknown read method",
+    text: "If the read method is unclear, use the public advisor first so the request starts with better technical context.",
+    href: "/tools/ecu-read-method-advisor",
+    action: "Use read advisor",
+    tag: "Read method",
+    icon: Search,
+    searchIntent: "OBD bench boot virtual read",
+  },
+  {
+    title: "Incomplete vehicle context",
+    text: "When the vehicle, engine or controller details are incomplete, prepare a structured brief before using the secure portal.",
+    href: "/tools/request-brief-builder",
+    action: "Build request brief",
+    tag: "Brief",
+    icon: BadgeCheck,
+    searchIntent: "ECU file service request preparation",
+  },
+];
+
+const fileServiceQualitySignals = [
+  {
+    title: "Vehicle identity is complete",
+    text: "Brand, model, generation, engine and fuel context make the file-service request easier to route and review.",
+    href: "/tools/request-brief-builder",
+    action: "Prepare vehicle details",
+    tag: "Vehicle",
+    icon: BadgeCheck,
+    searchIntent: "ECU file service vehicle details",
+  },
+  {
+    title: "Controller context is clear",
+    text: "ECU or TCU family, read method and software context help avoid vague requests before secure submission.",
+    href: "/tools/ecu-read-method-advisor",
+    action: "Check read context",
+    tag: "Controller",
+    icon: Cpu,
+    searchIntent: "ECU TCU read method",
+  },
+  {
+    title: "Service intent is separated",
+    text: "Performance, diesel technical and diagnostic-code requests should be described as separate service goals.",
+    href: "/file-service",
+    action: "Review service model",
+    tag: "Intent",
+    icon: Sparkles,
+    searchIntent: "ECU file service request type",
+  },
+  {
+    title: "File readiness is known",
+    text: "Customers can check extension, size and preparation expectations before moving to the authenticated portal.",
+    href: "/tools/file-readiness-check",
+    action: "Open readiness check",
+    tag: "Readiness",
+    icon: ShieldCheck,
+    searchIntent: "ECU file readiness check",
+  },
+  {
+    title: "Workshop notes are usable",
+    text: "Short notes about symptoms, goals or diagnostic context reduce back-and-forth during human review.",
+    href: "/tools/request-brief-builder",
+    action: "Build workshop note",
+    tag: "Notes",
+    icon: MessageCircle,
+    searchIntent: "file service workshop notes",
+  },
+  {
+    title: "Human review boundary is clear",
+    text: "Complex ECU and TCU work stays review-led; public pages explain preparation without promising automatic output.",
+    href: "/how-it-works",
+    action: "See review workflow",
+    tag: "Review",
+    icon: Lock,
+    searchIntent: "human reviewed ECU file service",
+  },
+];
+
+const fileServiceWorkshopProfiles = [
+  {
+    title: "Performance workshop",
+    text: "Stage 1 and performance-oriented work starts best with clear vehicle, engine, controller and service notes.",
+    href: "/services/stage-1",
+    action: "Open performance path",
+    tag: "Performance",
+    icon: Gauge,
+    searchIntent: "performance workshop file service",
+  },
+  {
+    title: "Diesel diagnostics workshop",
+    text: "DPF, EGR and AdBlue contexts benefit from separated service goals and workshop notes before review.",
+    href: "/services/dpf-off",
+    action: "Open diesel path",
+    tag: "Diesel",
+    icon: Wrench,
+    searchIntent: "diesel workshop ECU file service",
+  },
+  {
+    title: "Transmission specialist",
+    text: "TCU and gearbox requests need controller context, vehicle pairing and read-method information from the start.",
+    href: "/ecu-platforms/transmission-control-units",
+    action: "Open TCU path",
+    tag: "TCU",
+    icon: FileCode2,
+    searchIntent: "TCU gearbox file service",
+  },
+  {
+    title: "Mobile technician",
+    text: "When the read method or file context is unclear, public tools help prepare the request before the secure portal.",
+    href: "/tools/ecu-read-method-advisor",
+    action: "Check read method",
+    tag: "Mobile",
+    icon: Search,
+    searchIntent: "mobile technician ECU file service",
+  },
+  {
+    title: "Multi-brand workshop",
+    text: "Multi-brand teams can start from supported brand and platform guides before building a structured request brief.",
+    href: "/brands",
+    action: "Open brand guides",
+    tag: "Multi-brand",
+    icon: Cpu,
+    searchIntent: "multi brand ECU file service",
+  },
+  {
+    title: "First-time customer",
+    text: "New customers can review the workflow, privacy boundaries and next steps before creating a secure request.",
+    href: "/how-it-works",
+    action: "See workflow",
+    tag: "New customer",
+    icon: ShieldCheck,
+    searchIntent: "online file service workflow",
+  },
+];
+
+const fileServiceKnowledgeMap = [
+  {
+    title: "ECU file service workflow",
+    text: "Start with vehicle identification, ECU family, read method and the selected service so the request reaches the right review path.",
+    href: "/file-service",
+    action: "Open ECU workflow",
+    tag: "ECU file service",
+    icon: Cpu,
+    searchIntent: "ECU file service",
+  },
+  {
+    title: "TCU file service workflow",
+    text: "Transmission controller requests are routed through gearbox context, TCU notes and supported platform guidance.",
+    href: "/ecu-platforms/transmission-control-units",
+    action: "Open TCU guide",
+    tag: "TCU file service",
+    icon: FileCode2,
+    searchIntent: "TCU file service",
+  },
+  {
+    title: "Stage 1 file preparation",
+    text: "Performance requests work best when the vehicle, engine, controller and service objective are clear before submission.",
+    href: "/services/stage-1",
+    action: "Open Stage 1",
+    tag: "Stage 1",
+    icon: Gauge,
+    searchIntent: "Stage 1 tuning file service",
+  },
+  {
+    title: "Diesel support request path",
+    text: "DPF, EGR and AdBlue requests stay easier to review when the service type and diagnostic context are separated from the start.",
+    href: "/services/dpf-off",
+    action: "Open diesel services",
+    tag: "DPF / EGR / AdBlue",
+    icon: Wrench,
+    searchIntent: "diesel ECU file service",
+  },
+  {
+    title: "DTC request preparation",
+    text: "Diagnostic code requests should include the code list, vehicle context and a short workshop note for review.",
+    href: "/services/dtc-off",
+    action: "Open DTC service",
+    tag: "DTC request",
+    icon: FileCode2,
+    searchIntent: "DTC file service",
+  },
+  {
+    title: "Request readiness tools",
+    text: "Use the public preparation tools to organize vehicle details and request notes before opening the secure portal flow.",
+    href: "/tools/file-readiness-check",
+    action: "Check readiness",
+    tag: "Preparation",
+    icon: ShieldCheck,
+    searchIntent: "ECU file request checklist",
+  },
+];
+
+const fileServiceDecisionMatrix = [
+  {
+    title: "ECU file service",
+    customerNeed: "You have an original ECU read and need a structured file request.",
+    bestPath: "Start with the ECU file-service hub.",
+    requiredContext: "Vehicle, engine, ECU family, HW/SW if available, read method and selected service.",
+    href: "/file-service",
+    action: "Open ECU file service",
+    searchIntent: "online ECU file service",
+  },
+  {
+    title: "TCU file service",
+    customerNeed: "You need gearbox or transmission-controller support.",
+    bestPath: "Use the TCU and gearbox platform guide.",
+    requiredContext: "Gearbox type, TCU family, vehicle details, read method and technical notes.",
+    href: "/ecu-platforms/transmission-control-units",
+    action: "Open TCU guide",
+    searchIntent: "TCU file service",
+  },
+  {
+    title: "Stage 1 file service",
+    customerNeed: "You want a performance request for a stock vehicle.",
+    bestPath: "Open the Stage 1 service page before submitting.",
+    requiredContext: "Vehicle, engine, ECU/TCU file, fuel type and realistic service objective.",
+    href: "/services/stage-1",
+    action: "View Stage 1",
+    searchIntent: "Stage 1 ECU file service",
+  },
+  {
+    title: "Diesel technical request",
+    customerNeed: "You need DPF, EGR or AdBlue related technical support.",
+    bestPath: "Choose the exact diesel service category.",
+    requiredContext: "Fault context, vehicle details, selected system and customer notes.",
+    href: "/services/dpf-off",
+    action: "Open diesel services",
+    searchIntent: "diesel ECU file service",
+  },
+  {
+    title: "DTC request",
+    customerNeed: "You have diagnostic trouble codes that should be reviewed with the file request.",
+    bestPath: "Prepare the DTC list and open the DTC service page.",
+    requiredContext: "DTC codes, symptom notes, vehicle data and the original file context.",
+    href: "/services/dtc-off",
+    action: "View DTC service",
+    searchIntent: "DTC file service",
+  },
+  {
+    title: "Not sure yet",
+    customerNeed: "You are missing ECU, read method or vehicle details.",
+    bestPath: "Use the public readiness tools before opening a request.",
+    requiredContext: "Basic vehicle information, available read details and a short workshop note.",
+    href: "/tools/file-readiness-check",
+    action: "Check readiness",
+    searchIntent: "ECU file request preparation",
+  },
+];
+
+const fileServiceOperatingStandard = [
+  {
+    title: "Secure request intake",
+    text: "Online ECU file service requests start inside the authenticated portal with vehicle context, selected service and customer notes attached.",
+    href: "/file-service",
+    action: "Review intake workflow",
+    tag: "Portal first",
+    icon: Lock,
+  },
+  {
+    title: "Vehicle context before file review",
+    text: "Brand, model, engine, ECU or TCU family, read method and available HW/SW details make the request easier to review correctly.",
+    href: "/tools/request-brief-builder",
+    action: "Build request brief",
+    tag: "Better intake",
+    icon: MessageCircle,
+  },
+  {
+    title: "Human review boundary",
+    text: "Complex ECU and TCU file requests stay review-first. Public pages explain the workflow without promising automatic file output.",
+    href: "/how-it-works",
+    action: "See workflow",
+    tag: "Review first",
+    icon: ShieldCheck,
+  },
+  {
+    title: "Private dashboard delivery",
+    text: "Customers track status, receive customer-visible updates and access completed deliveries only through their own account dashboard.",
+    href: "/how-it-works",
+    action: "See delivery workflow",
+    tag: "Private delivery",
+    icon: LayoutDashboard,
+  },
+];
+
+const fileServiceGlossaryTerms = [
+  {
+    title: "ECU file service",
+    text: "An online workflow for ECU file requests with vehicle context, selected service, customer notes and dashboard tracking.",
+    href: "/file-service",
+    tag: "Workflow",
+  },
+  {
+    title: "TCU file service",
+    text: "Transmission-controller and gearbox file requests prepared with gearbox type, vehicle details, read method and technical notes.",
+    href: "/ecu-platforms/transmission-control-units",
+    tag: "Gearbox",
+  },
+  {
+    title: "ORI file",
+    text: "The original vehicle control-unit file submitted as the reference for review. It should remain unchanged before secure submission.",
+    href: "/tools/file-readiness-check",
+    tag: "Original",
+  },
+  {
+    title: "MOD file",
+    text: "A completed delivery file is handled through the private customer dashboard after the request has been reviewed and processed.",
+    href: "/how-it-works",
+    tag: "Delivery",
+  },
+  {
+    title: "Read method",
+    text: "The way a control-unit file was read, such as OBD, bench or boot, when that information is available from the tool or workshop.",
+    href: "/tools/ecu-read-method-advisor",
+    tag: "Context",
+  },
+  {
+    title: "DTC request",
+    text: "A diagnostic-code request should include the code list, symptoms, vehicle details and a short workshop note for review.",
+    href: "/services/dtc-off",
+    tag: "Diagnostics",
+  },
+  {
+    title: "Secure upload",
+    text: "File submission starts only inside the authenticated customer request flow after the vehicle and service context are prepared.",
+    href: "/file-service",
+    tag: "Portal",
+  },
+  {
+    title: "Private delivery",
+    text: "Customer-visible updates and completed delivery access stay inside the customer's own dashboard and account history.",
+    href: "/how-it-works",
+    tag: "Account",
+  },
+];
+
 type HomepageResourceLink = {
   title?: string;
   name?: string;
+  query?: string;
+  route?: string;
+  prepare?: string;
   text?: string;
   note?: string;
   searchIntent?: string;
@@ -397,8 +1656,8 @@ const buildHomepageItemList = (name: string, items: HomepageResourceLink[], id: 
     position: index + 1,
     item: {
       "@type": "WebPage",
-      name: item.title ?? item.name ?? `MG AutoTech resource ${index + 1}`,
-      description: item.text ?? item.note ?? item.searchIntent ?? item.tag,
+      name: item.title ?? item.name ?? item.query ?? `MG AutoTech resource ${index + 1}`,
+      description: item.text ?? item.note ?? item.searchIntent ?? item.prepare ?? item.route ?? item.tag,
       url: publicResourceUrl(item.href),
     },
   })),
@@ -407,10 +1666,63 @@ const buildHomepageItemList = (name: string, items: HomepageResourceLink[], id: 
 const homepageResourceJsonLd = {
   "@context": "https://schema.org",
   "@graph": [
+    buildHomepageItemList("MG AutoTech homepage file service quick paths", homepageQuickServicePaths, "/#file-service-quick-paths"),
+    buildHomepageItemList("MG AutoTech file service homepage navigator", homepageFileServiceNavigator, "/#file-service-navigator"),
+    buildHomepageItemList("MG AutoTech file service answer library", fileServiceAnswerLibrary, "/#file-service-answer-library"),
+    buildHomepageItemList("MG AutoTech file service search route index", fileServiceSearchRouteIndex, "/#file-service-search-index"),
+    buildHomepageItemList("MG AutoTech file service snippet summary", fileServiceSnippetSummary, "/#file-service-snippet-summary"),
+    buildHomepageItemList("MG AutoTech professional file service comparison", fileServiceTrustComparison, "/#professional-file-service-comparison"),
+    buildHomepageItemList("MG AutoTech file service verification checkpoints", fileServiceVerificationCheckpoints, "/#file-service-verification-checkpoints"),
+    buildHomepageItemList("MG AutoTech file service myth checks", fileServiceMythChecks, "/#file-service-myth-checks"),
+    buildHomepageItemList("MG AutoTech file service platform stack", fileServicePlatformStack, "/#file-service-platform-stack"),
+    buildHomepageItemList("MG AutoTech file service read method routes", fileServiceReadMethodRoutes, "/#file-service-read-methods"),
+    buildHomepageItemList("MG AutoTech file service brief requirements", fileServiceBriefRequirements, "/#file-service-brief-requirements"),
+    buildHomepageItemList("MG AutoTech file service fit checker", fileServiceFitChecks, "/#file-service-fit-checker"),
+    buildHomepageItemList("MG AutoTech file service outcome preview", fileServiceOutcomePreview, "/#file-service-outcome-preview"),
+    buildHomepageItemList("MG AutoTech file service status guide", fileServiceStatusGuide, "/#file-service-status-guide"),
+    buildHomepageItemList("MG AutoTech secure file service privacy controls", fileServicePrivacyControls, "/#file-service-privacy-controls"),
+    buildHomepageItemList("MG AutoTech file service use case library", fileServiceUseCases, "/#file-service-use-cases"),
+    buildHomepageItemList("MG AutoTech file service quality signals", fileServiceQualitySignals, "/#file-service-quality-signals"),
+    buildHomepageItemList("MG AutoTech workshop file service profiles", fileServiceWorkshopProfiles, "/#file-service-workshop-profiles"),
     buildHomepageItemList("MG AutoTech service landing pages", serviceLandingPageLinks, "/#service-landing-pages"),
+    buildHomepageItemList("MG AutoTech file service knowledge map", fileServiceKnowledgeMap, "/#file-service-knowledge-map"),
+    buildHomepageItemList("MG AutoTech file service decision matrix", fileServiceDecisionMatrix, "/#file-service-decision-matrix"),
+    buildHomepageItemList("MG AutoTech online file service operating standard", fileServiceOperatingStandard, "/#file-service-operating-standard"),
+    buildHomepageItemList("MG AutoTech file service glossary", fileServiceGlossaryTerms, "/#file-service-glossary"),
     buildHomepageItemList("MG AutoTech supported brand guides", supportedBrands, "/#supported-brand-guides"),
     buildHomepageItemList("MG AutoTech ECU and TCU platform guides", ecuPlatformLinks, "/#ecu-platform-guides"),
   ],
+};
+
+const homepageQuickPathJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "SiteNavigationElement",
+  "@id": publicResourceUrl("/#file-service-quick-paths"),
+  name: "MG AutoTech file service quick paths",
+  description: "Popular customer-safe navigation paths for online ECU and TCU file-service preparation.",
+  mainEntityOfPage: { "@id": publicResourceUrl("/#page") },
+  hasPart: homepageQuickServicePaths.map((path, index) => ({
+    "@type": "WebPage",
+    position: index + 1,
+    name: path.title,
+    description: path.text,
+    url: publicResourceUrl(path.href),
+  })),
+};
+
+const homepageFileServiceGlossaryJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "DefinedTermSet",
+  "@id": publicResourceUrl("/#file-service-glossary"),
+  name: "MG AutoTech file service terminology",
+  description: "Customer-safe glossary for online ECU and TCU file-service preparation terms.",
+  hasDefinedTerm: fileServiceGlossaryTerms.map((term) => ({
+    "@type": "DefinedTerm",
+    name: term.title,
+    description: term.text,
+    inDefinedTermSet: publicResourceUrl("/#file-service-glossary"),
+    url: publicResourceUrl(term.href),
+  })),
 };
 
 const homepagePageJsonLd = {
@@ -430,11 +1742,77 @@ const homepagePageJsonLd = {
   },
   hasPart: [
     { "@id": publicResourceUrl("/#homepage-search-faq") },
+    { "@id": publicResourceUrl("/#file-service-quick-paths") },
+    { "@id": publicResourceUrl("/#file-service-navigator") },
+    { "@id": publicResourceUrl("/#file-service-answer-library") },
+    { "@id": publicResourceUrl("/#file-service-search-index") },
+    { "@id": publicResourceUrl("/#file-service-snippet-summary") },
+    { "@id": publicResourceUrl("/#professional-file-service-comparison") },
+    { "@id": publicResourceUrl("/#file-service-verification-checkpoints") },
+    { "@id": publicResourceUrl("/#file-service-myth-checks") },
+    { "@id": publicResourceUrl("/#file-service-platform-stack") },
+    { "@id": publicResourceUrl("/#ecu-tcu-file-service") },
+    { "@id": publicResourceUrl("/#file-service-read-methods") },
+    { "@id": publicResourceUrl("/#file-service-brief-requirements") },
+    { "@id": publicResourceUrl("/#file-service-fit-checker") },
+    { "@id": publicResourceUrl("/#file-service-outcome-preview") },
+    { "@id": publicResourceUrl("/#file-service-status-guide") },
+    { "@id": publicResourceUrl("/#file-service-privacy-controls") },
+    { "@id": publicResourceUrl("/#file-service-use-cases") },
+    { "@id": publicResourceUrl("/#file-service-quality-signals") },
+    { "@id": publicResourceUrl("/#file-service-workshop-profiles") },
     { "@id": publicResourceUrl("/#request-readiness-howto") },
     { "@id": publicResourceUrl("/#service-landing-pages") },
+    { "@id": publicResourceUrl("/#file-service-knowledge-map") },
+    { "@id": publicResourceUrl("/#file-service-decision-matrix") },
+    { "@id": publicResourceUrl("/#file-service-operating-standard") },
+    { "@id": publicResourceUrl("/#file-service-glossary") },
     { "@id": publicResourceUrl("/#supported-brand-guides") },
     { "@id": publicResourceUrl("/#ecu-platform-guides") },
   ],
+};
+
+const homepageFileServiceJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "Service",
+  "@id": publicResourceUrl("/#ecu-tcu-file-service"),
+  name: "MG AutoTech ECU and TCU File Service",
+  serviceType: [
+    "ECU file service",
+    "TCU file service",
+    "Stage 1 file service",
+    "DPF, EGR, AdBlue and DTC file requests",
+  ],
+  description:
+    "Professional ECU and TCU file service workflow with secure request intake, tracked order status, customer dashboard delivery and human review for complex files.",
+  provider: { "@id": publicResourceUrl("/#organization") },
+  areaServed: {
+    "@type": "Place",
+    name: "Europe",
+  },
+  audience: {
+    "@type": "Audience",
+    audienceType: "Workshops, tuning professionals and vehicle owners",
+  },
+  url: publicResourceUrl("/"),
+  mainEntityOfPage: { "@id": publicResourceUrl("/#page") },
+  hasOfferCatalog: {
+    "@type": "OfferCatalog",
+    name: "MG AutoTech file service request categories",
+    itemListElement: serviceLandingPageLinks.map((service, index) => ({
+      "@type": "Offer",
+      position: index + 1,
+      itemOffered: {
+        "@type": "Service",
+        name: service.title,
+        serviceType: service.searchIntent,
+        description: service.text,
+        url: publicResourceUrl(service.href),
+        provider: { "@id": publicResourceUrl("/#organization") },
+      },
+    })),
+  },
+  termsOfService: publicResourceUrl("/agb"),
 };
 
 const homepageRequestPreparationHowToJsonLd = {
@@ -2268,6 +3646,48 @@ export default function HomePage() {
                 </>
               )}
             </div>
+
+            <nav
+              id="file-service-quick-paths"
+              aria-label="Popular file service paths"
+              className="mt-8 rounded-[1.75rem] border border-white/10 bg-white/[0.045] p-4 shadow-2xl shadow-black/20 backdrop-blur"
+            >
+              <div className="mb-4 flex items-center justify-between gap-4">
+                <div>
+                  <div className="text-xs font-black uppercase tracking-[0.18em] text-red-300">
+                    Popular file-service paths
+                  </div>
+                  <div className="mt-1 text-sm text-zinc-400">
+                    Choose the correct public route before secure submission.
+                  </div>
+                </div>
+                <Search className="hidden h-5 w-5 text-red-400 sm:block" />
+              </div>
+
+              <div className="grid gap-2 sm:grid-cols-2">
+                {homepageQuickServicePaths.map((path) => (
+                  <Link
+                    key={path.title}
+                    href={path.href}
+                    className="group rounded-2xl border border-white/10 bg-black/25 p-3 transition hover:-translate-y-0.5 hover:border-red-700/60 hover:bg-red-950/25 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-700"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="text-sm font-black text-white">
+                          {path.title}
+                        </div>
+                        <p className="mt-1 text-xs leading-5 text-zinc-400">
+                          {path.text}
+                        </p>
+                      </div>
+                      <span className="shrink-0 rounded-full border border-red-800/40 bg-red-950/30 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-red-200">
+                        {path.label}
+                      </span>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </nav>
           </motion.div>
 
           <div className="hidden min-w-0 lg:block">
@@ -2277,6 +3697,68 @@ export default function HomePage() {
 
         <PublicVehicleChecker />
       </section>
+
+      <AnimatedSection id="file-service-navigator" className="bg-[#f8fafc] py-16 text-[#111827]">
+        <div className="mx-auto max-w-7xl px-4">
+          <div className="mb-8 grid gap-5 lg:grid-cols-[0.78fr_1.22fr] lg:items-end">
+            <div>
+              <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-red-700 shadow-sm shadow-red-950/5">
+                <Search className="h-4 w-4" />
+                File Service Navigator
+              </div>
+              <h2 className="mt-5 max-w-3xl text-4xl font-black leading-tight md:text-5xl">
+                Jump straight to the file-service answer you need.
+              </h2>
+            </div>
+            <p className="max-w-3xl text-sm leading-7 text-slate-600 lg:justify-self-end">
+              The homepage now works like a guided file-service index: start
+              with a service path, compare request routes, check read method
+              context, prepare the brief or review privacy and delivery
+              boundaries before secure account handling.
+            </p>
+          </div>
+
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+            {homepageFileServiceNavigator.map((item) => {
+              const Icon = item.icon;
+
+              return (
+                <Link
+                  key={item.title}
+                  href={item.href}
+                  className="group flex min-h-56 flex-col rounded-3xl border border-slate-200 bg-white p-5 shadow-sm shadow-slate-950/5 transition duration-300 hover:-translate-y-1 hover:border-red-200 hover:shadow-lg hover:shadow-red-950/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-700"
+                >
+                  <div className="mb-5 flex items-start justify-between gap-4">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#111827] text-white">
+                      <Icon className="h-5 w-5" />
+                    </div>
+                    <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-black uppercase tracking-[0.14em] text-slate-500">
+                      {item.tag}
+                    </span>
+                  </div>
+                  <h3 className="text-lg font-black text-[#111827]">
+                    {item.title}
+                  </h3>
+                  <p className="mt-3 flex-1 text-sm leading-7 text-slate-600">
+                    {item.text}
+                  </p>
+                  <div className="mt-5 inline-flex items-center text-sm font-black text-red-700 transition group-hover:text-red-800">
+                    Open section
+                    <ArrowRight className="ml-2 h-4 w-4 transition group-hover:translate-x-1" />
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+
+          <div className="mt-6 rounded-3xl border border-slate-200 bg-white p-5 text-sm leading-7 text-slate-600 shadow-sm shadow-slate-950/5">
+            <span className="font-black text-[#111827]">Navigator boundary:</span>{" "}
+            this is public on-page navigation only. It does not create
+            requests, inspect customer files, open account data, change
+            payments or deliver files.
+          </div>
+        </div>
+      </AnimatedSection>
 
       <AnimatedSection className="bg-[#0b1226] py-12">
         <div className="mx-auto max-w-7xl px-4">
@@ -2341,6 +3823,1478 @@ export default function HomePage() {
                   );
                 })}
               </div>
+            </div>
+          </div>
+        </div>
+      </AnimatedSection>
+
+      <AnimatedSection id="file-service-answer-library" className="bg-white py-20 text-[#111827]">
+        <div className="mx-auto max-w-7xl px-4">
+          <div className="grid gap-8 lg:grid-cols-[0.82fr_1.18fr] lg:items-start">
+            <div className="lg:sticky lg:top-24">
+              <div className="inline-flex items-center gap-2 rounded-full border border-red-100 bg-red-50 px-3 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-red-700">
+                <MessageCircle className="h-4 w-4" />
+                File Service Answer Library
+              </div>
+              <h2 className="mt-5 text-4xl font-black leading-tight md:text-5xl">
+                Answers that match real workshop search intent.
+              </h2>
+              <p className="mt-5 max-w-xl text-sm leading-7 text-slate-600">
+                Customers often arrive with broad questions such as online ECU
+                file service, TCU file service, read method, Stage 1 context or
+                diagnostic code preparation. This library gives clear answers
+                before the secure account workflow starts.
+              </p>
+              <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
+                <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+                  <div className="text-3xl font-black text-red-700">
+                    {fileServiceAnswerLibrary.length}
+                  </div>
+                  <div className="mt-1 text-xs font-black uppercase tracking-[0.16em] text-slate-500">
+                    customer-safe answers
+                  </div>
+                </div>
+                <div className="rounded-3xl border border-emerald-200 bg-emerald-50 p-5 text-sm leading-7 text-emerald-900">
+                  <span className="font-black">Boundary:</span> public guidance
+                  only. It does not inspect files, open private account records,
+                  change account balances or create delivery assets.
+                </div>
+              </div>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              {fileServiceAnswerLibrary.map((item) => {
+                const Icon = item.icon;
+
+                return (
+                  <article
+                    key={item.question}
+                    className="group rounded-3xl border border-slate-200 bg-[#f8fafc] p-5 shadow-sm shadow-slate-950/5 transition duration-300 hover:-translate-y-1 hover:border-red-200 hover:bg-white hover:shadow-lg hover:shadow-red-950/10"
+                  >
+                    <div className="mb-5 flex items-start justify-between gap-4">
+                      <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#111827] text-white">
+                        <Icon className="h-5 w-5" />
+                      </div>
+                      <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-black uppercase tracking-[0.14em] text-slate-500">
+                        {item.intent}
+                      </span>
+                    </div>
+                    <h3 className="text-lg font-black leading-tight text-[#111827]">
+                      {item.question}
+                    </h3>
+                    <p className="mt-3 text-sm leading-7 text-slate-600">
+                      {item.answer}
+                    </p>
+                    <Link
+                      href={item.href}
+                      className="mt-5 inline-flex items-center text-sm font-black text-red-700 transition hover:text-red-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-700"
+                    >
+                      {item.action}
+                      <ArrowRight className="ml-2 h-4 w-4 transition group-hover:translate-x-1" />
+                    </Link>
+                  </article>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </AnimatedSection>
+
+      <AnimatedSection id="file-service-search-index" className="bg-[#111827] py-20 text-white">
+        <div className="mx-auto max-w-7xl px-4">
+          <div className="mb-10 grid gap-6 lg:grid-cols-[0.8fr_1.2fr] lg:items-end">
+            <div>
+              <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-3 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-red-200">
+                <Search className="h-4 w-4" />
+                File Service Search Index
+              </div>
+              <h2 className="mt-5 text-4xl font-black leading-tight md:text-5xl">
+                Match common file-service searches to the right public route.
+              </h2>
+            </div>
+            <p className="max-w-3xl text-sm leading-7 text-zinc-400 lg:justify-self-end">
+              Instead of creating duplicate landing pages for every search
+              phrase, MG AutoTech keeps one clean homepage index that routes
+              workshop intent to the best public guide, tool or service page.
+            </p>
+          </div>
+
+          <div className="overflow-hidden rounded-[2rem] border border-white/10 bg-white/[0.04] shadow-2xl shadow-black/20">
+            <div className="hidden grid-cols-[0.85fr_0.8fr_1.1fr_0.35fr] gap-4 border-b border-white/10 bg-black/20 px-5 py-4 text-xs font-black uppercase tracking-[0.16em] text-zinc-500 lg:grid">
+              <div>Search phrase</div>
+              <div>Best route</div>
+              <div>What to prepare</div>
+              <div className="text-right">Open</div>
+            </div>
+
+            <div className="divide-y divide-white/10">
+              {fileServiceSearchRouteIndex.map((item) => (
+                <div
+                  key={item.query}
+                  className="grid gap-4 px-5 py-5 transition hover:bg-white/[0.035] lg:grid-cols-[0.85fr_0.8fr_1.1fr_0.35fr] lg:items-center"
+                >
+                  <div>
+                    <div className="mb-2 inline-flex rounded-full border border-red-800/40 bg-red-950/30 px-3 py-1 text-[11px] font-black uppercase tracking-[0.14em] text-red-200">
+                      {item.tag}
+                    </div>
+                    <div className="text-lg font-black leading-tight">
+                      {item.query}
+                    </div>
+                  </div>
+                  <div className="text-sm font-black text-white">
+                    {item.route}
+                  </div>
+                  <p className="text-sm leading-7 text-zinc-400">
+                    {item.prepare}
+                  </p>
+                  <Link
+                    href={item.href}
+                    aria-label={`${item.action}: ${item.query}`}
+                    className="inline-flex items-center justify-between rounded-2xl border border-white/10 px-4 py-3 text-sm font-black text-white transition hover:border-red-700/60 hover:bg-red-950/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 lg:justify-end"
+                  >
+                    <span className="lg:hidden">{item.action}</span>
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-6 rounded-3xl border border-white/10 bg-black/20 p-5 text-sm leading-7 text-zinc-400">
+            <span className="font-black text-white">Index boundary:</span>{" "}
+            this is one public route index for existing resources. It does not
+            create requests, inspect files, open customer accounts or generate
+            deliverable files.
+          </div>
+        </div>
+      </AnimatedSection>
+
+      <AnimatedSection id="file-service-snippet-summary" className="bg-white py-20">
+        <div className="mx-auto max-w-7xl px-4">
+          <div className="grid gap-8 lg:grid-cols-[0.85fr_1.15fr] lg:items-start">
+            <div className="lg:sticky lg:top-24">
+              <div className="inline-flex items-center gap-2 rounded-full border border-red-100 bg-red-50 px-3 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-red-700">
+                <BadgeCheck className="h-4 w-4" />
+                File Service At A Glance
+              </div>
+              <h2 className="mt-5 text-4xl font-black leading-tight text-slate-950 md:text-5xl">
+                A snippet-ready summary for ECU and TCU file service.
+              </h2>
+              <p className="mt-5 text-base leading-8 text-slate-600">
+                This section gives customers and search engines the short,
+                direct answer first: what MG AutoTech file service is, who it
+                helps, what to prepare and where secure account handling begins.
+              </p>
+              <div className="mt-6 rounded-3xl border border-slate-200 bg-slate-50 p-5 text-sm leading-7 text-slate-600">
+                <span className="font-black text-slate-950">Public summary boundary:</span>{" "}
+                this overview is informational only. It does not inspect files,
+                change customer accounts, create requests or generate
+                deliverable files.
+              </div>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              {fileServiceSnippetSummary.map((item) => {
+                const Icon = item.icon;
+
+                return (
+                  <article
+                    key={item.title}
+                    className="group flex min-h-[260px] flex-col justify-between rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:border-red-200 hover:shadow-xl hover:shadow-red-950/10"
+                  >
+                    <div>
+                      <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-950 text-white shadow-lg shadow-slate-950/15">
+                        <Icon className="h-5 w-5" />
+                      </div>
+                      <h3 className="text-xl font-black text-slate-950">
+                        {item.title}
+                      </h3>
+                      <p className="mt-3 text-sm leading-7 text-slate-600">
+                        {item.text}
+                      </p>
+                    </div>
+                    <Link
+                      href={item.href}
+                      aria-label={`${item.action}: ${item.title}`}
+                      className="mt-6 inline-flex items-center gap-2 text-sm font-black text-red-700 transition group-hover:text-red-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+                    >
+                      {item.action}
+                      <ArrowRight className="h-4 w-4" />
+                    </Link>
+                  </article>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </AnimatedSection>
+
+      <AnimatedSection id="professional-file-service-comparison" className="bg-slate-50 py-20">
+        <div className="mx-auto max-w-7xl px-4">
+          <div className="mb-10 grid gap-6 lg:grid-cols-[0.8fr_1.2fr] lg:items-end">
+            <div>
+              <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-slate-700">
+                <ShieldCheck className="h-4 w-4 text-red-700" />
+                Professional File Service Standard
+              </div>
+              <h2 className="mt-5 text-4xl font-black leading-tight text-slate-950 md:text-5xl">
+                More than a basic file handoff.
+              </h2>
+            </div>
+            <p className="max-w-3xl text-sm leading-7 text-slate-600 lg:justify-self-end">
+              Customers searching for a professional ECU file service need to
+              know what makes the workflow controlled, traceable and easy to
+              prepare. This comparison explains the MG AutoTech process without
+              exposing private account or technical handling details.
+            </p>
+          </div>
+
+          <div className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-xl shadow-slate-950/5">
+            <div className="hidden grid-cols-[0.75fr_1fr_1fr_0.35fr] gap-4 border-b border-slate-200 bg-slate-950 px-5 py-4 text-xs font-black uppercase tracking-[0.16em] text-slate-400 lg:grid">
+              <div>Trust signal</div>
+              <div>Without structure</div>
+              <div>MG AutoTech workflow</div>
+              <div className="text-right">Route</div>
+            </div>
+
+            <div className="divide-y divide-slate-200">
+              {fileServiceTrustComparison.map((item) => {
+                const Icon = item.icon;
+
+                return (
+                  <article
+                    key={item.title}
+                    className="grid gap-5 px-5 py-6 transition hover:bg-red-50/40 lg:grid-cols-[0.75fr_1fr_1fr_0.35fr] lg:items-start"
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-red-700 text-white shadow-lg shadow-red-950/15">
+                        <Icon className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <div className="text-xs font-black uppercase tracking-[0.14em] text-red-700">
+                          Trust signal
+                        </div>
+                        <h3 className="mt-1 text-lg font-black leading-tight text-slate-950">
+                          {item.title}
+                        </h3>
+                      </div>
+                    </div>
+                    <div>
+                      <div className="mb-2 text-xs font-black uppercase tracking-[0.14em] text-slate-400 lg:hidden">
+                        Without structure
+                      </div>
+                      <p className="text-sm leading-7 text-slate-500">
+                        {item.typical}
+                      </p>
+                    </div>
+                    <div>
+                      <div className="mb-2 text-xs font-black uppercase tracking-[0.14em] text-slate-400 lg:hidden">
+                        MG AutoTech workflow
+                      </div>
+                      <p className="text-sm font-semibold leading-7 text-slate-700">
+                        {item.text}
+                      </p>
+                    </div>
+                    <Link
+                      href={item.href}
+                      aria-label={`${item.action}: ${item.title}`}
+                      className="inline-flex items-center justify-between rounded-2xl border border-slate-200 px-4 py-3 text-sm font-black text-slate-950 transition hover:border-red-200 hover:bg-white hover:text-red-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 lg:justify-end"
+                    >
+                      <span className="lg:hidden">{item.action}</span>
+                      <ArrowRight className="h-4 w-4" />
+                    </Link>
+                  </article>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="mt-6 grid gap-4 md:grid-cols-[1fr_0.8fr]">
+            <div className="rounded-3xl border border-slate-200 bg-white p-5 text-sm leading-7 text-slate-600">
+              <span className="font-black text-slate-950">Comparison boundary:</span>{" "}
+              this section explains public workflow standards only. It does not
+              open account data, inspect customer files, make technical changes
+              or create deliverable files.
+            </div>
+            <div className="rounded-3xl border border-red-100 bg-red-50 p-5 text-sm leading-7 text-red-950">
+              <span className="font-black">SEO purpose:</span> answer the
+              professional file service search intent with visible, customer-safe
+              process signals instead of duplicate doorway pages.
+            </div>
+          </div>
+        </div>
+      </AnimatedSection>
+
+      <AnimatedSection id="file-service-verification-checkpoints" className="bg-slate-950 py-20">
+        <div className="mx-auto max-w-7xl px-4">
+          <div className="mb-10 grid gap-6 lg:grid-cols-[0.85fr_1.15fr] lg:items-end">
+            <div>
+              <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-3 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-red-200">
+                <BadgeCheck className="h-4 w-4" />
+                File Service Verification Checkpoints
+              </div>
+              <h2 className="mt-5 text-4xl font-black leading-tight text-white md:text-5xl">
+                How to verify the workflow before you submit anything.
+              </h2>
+            </div>
+            <p className="max-w-3xl text-sm leading-7 text-slate-300 lg:justify-self-end">
+              A serious online file service should make the route, request
+              context, read method, status flow and review boundary easy to
+              understand before the customer enters the secure account flow.
+            </p>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {fileServiceVerificationCheckpoints.map((item) => {
+              const Icon = item.icon;
+
+              return (
+                <article
+                  key={item.title}
+                  className="group flex min-h-[300px] flex-col justify-between rounded-3xl border border-white/10 bg-white/[0.04] p-6 shadow-xl shadow-black/20 transition hover:-translate-y-1 hover:border-red-300/40 hover:bg-white/[0.07]"
+                >
+                  <div>
+                    <div className="mb-5 flex items-center justify-between gap-4">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-red-600 text-white shadow-lg shadow-red-950/30">
+                        <Icon className="h-5 w-5" />
+                      </div>
+                      <span className="rounded-full border border-white/10 bg-black/20 px-3 py-1 text-xs font-black uppercase tracking-[0.16em] text-slate-300">
+                        {item.checkpoint}
+                      </span>
+                    </div>
+                    <p className="text-xs font-black uppercase tracking-[0.18em] text-red-200">
+                      {item.signal}
+                    </p>
+                    <h3 className="mt-2 text-xl font-black leading-tight text-white">
+                      {item.title}
+                    </h3>
+                    <p className="mt-4 text-sm leading-7 text-slate-300">
+                      {item.text}
+                    </p>
+                  </div>
+                  <Link
+                    href={item.href}
+                    aria-label={`${item.action}: ${item.title}`}
+                    className="mt-6 inline-flex items-center gap-2 text-sm font-black text-red-200 transition group-hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
+                  >
+                    {item.action}
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </article>
+              );
+            })}
+          </div>
+
+          <div className="mt-6 rounded-3xl border border-white/10 bg-black/20 p-5 text-sm leading-7 text-slate-300">
+            <span className="font-black text-white">Verification boundary:</span>{" "}
+            this is public guidance only. It does not inspect files, open
+            account data, start request handling or create deliverable files.
+          </div>
+        </div>
+      </AnimatedSection>
+
+      <AnimatedSection id="file-service-myth-checks" className="bg-white py-20">
+        <div className="mx-auto max-w-7xl px-4">
+          <div className="mb-10 grid gap-6 lg:grid-cols-[0.8fr_1.2fr] lg:items-end">
+            <div>
+              <div className="inline-flex items-center gap-2 rounded-full border border-red-100 bg-red-50 px-3 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-red-700">
+                <ShieldCheck className="h-4 w-4" />
+                File Service Reality Check
+              </div>
+              <h2 className="mt-5 text-4xl font-black leading-tight text-slate-950 md:text-5xl">
+                Clear answers before the wrong expectation starts.
+              </h2>
+            </div>
+            <p className="max-w-3xl text-sm leading-7 text-slate-600 lg:justify-self-end">
+              Many file-service searches start with incomplete assumptions. This
+              section turns common misunderstandings into practical next steps
+              without opening private account or technical handling details.
+            </p>
+          </div>
+
+          <div className="grid gap-4 lg:grid-cols-2">
+            {fileServiceMythChecks.map((item) => {
+              const Icon = item.icon;
+
+              return (
+                <article
+                  key={item.myth}
+                  className="group grid gap-5 rounded-3xl border border-slate-200 bg-slate-50 p-6 transition hover:-translate-y-1 hover:border-red-200 hover:bg-white hover:shadow-xl hover:shadow-red-950/10 md:grid-cols-[0.28fr_1fr]"
+                >
+                  <div className="flex items-start justify-between gap-3 md:block">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-950 text-white shadow-lg shadow-slate-950/15">
+                      <Icon className="h-5 w-5" />
+                    </div>
+                    <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-slate-500 md:mt-5 md:inline-flex">
+                      Myth
+                    </span>
+                  </div>
+
+                  <div>
+                    <h3 className="text-xl font-black leading-tight text-slate-950">
+                      {item.myth}
+                    </h3>
+                    <p className="mt-3 text-sm leading-7 text-slate-600">
+                      <span className="font-black text-red-700">Reality:</span>{" "}
+                      {item.fact}
+                    </p>
+                    <Link
+                      href={item.href}
+                      aria-label={`${item.action}: ${item.myth}`}
+                      className="mt-5 inline-flex items-center gap-2 text-sm font-black text-red-700 transition group-hover:text-red-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+                    >
+                      {item.action}
+                      <ArrowRight className="h-4 w-4" />
+                    </Link>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+
+          <div className="mt-6 rounded-3xl border border-slate-200 bg-slate-50 p-5 text-sm leading-7 text-slate-600">
+            <span className="font-black text-slate-950">Reality-check boundary:</span>{" "}
+            this section corrects public expectations only. It does not inspect
+            files, start account handling, change orders or create deliverable
+            files.
+          </div>
+        </div>
+      </AnimatedSection>
+
+      <AnimatedSection id="file-service-platform-stack" className="bg-slate-950 py-20 text-white">
+        <div className="mx-auto max-w-7xl px-4">
+          <div className="mb-10 grid gap-6 lg:grid-cols-[0.85fr_1.15fr] lg:items-end">
+            <div>
+              <div className="inline-flex items-center gap-2 rounded-full border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-red-200">
+                <LayoutDashboard className="h-4 w-4" />
+                File Service Platform Stack
+              </div>
+              <h2 className="mt-5 text-4xl font-black leading-tight md:text-5xl">
+                The public website is connected to a real request workflow.
+              </h2>
+            </div>
+            <p className="max-w-3xl text-sm leading-7 text-slate-300 lg:justify-self-end">
+              A strong file service website should do more than advertise. It
+              should organize public guidance, preparation tools, vehicle
+              context and account-based follow-up into one clear platform path.
+            </p>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {fileServicePlatformStack.map((item) => {
+              const Icon = item.icon;
+
+              return (
+                <article
+                  key={item.title}
+                  className="group flex h-full flex-col rounded-3xl border border-white/10 bg-white/[0.04] p-6 shadow-2xl shadow-black/20 transition hover:-translate-y-1 hover:border-red-400/40 hover:bg-white/[0.07]"
+                >
+                  <div className="mb-5 flex items-center justify-between gap-4">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-slate-950 shadow-lg shadow-black/20">
+                      <Icon className="h-5 w-5" />
+                    </div>
+                    <span className="rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-slate-300">
+                      {item.signal}
+                    </span>
+                  </div>
+
+                  <h3 className="text-xl font-black leading-tight">
+                    {item.title}
+                  </h3>
+                  <p className="mt-3 flex-1 text-sm leading-7 text-slate-300">
+                    {item.text}
+                  </p>
+                  <Link
+                    href={item.href}
+                    aria-label={`${item.action}: ${item.title}`}
+                    className="mt-5 inline-flex items-center gap-2 text-sm font-black text-red-200 transition group-hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
+                  >
+                    {item.action}
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </article>
+              );
+            })}
+          </div>
+
+          <div className="mt-6 rounded-3xl border border-white/10 bg-black/20 p-5 text-sm leading-7 text-slate-300">
+            <span className="font-black text-white">Platform-stack boundary:</span>{" "}
+            this section describes public workflow capabilities only. It does
+            not inspect files, open account data, change requests or create
+            deliverable files.
+          </div>
+        </div>
+      </AnimatedSection>
+
+      <AnimatedSection id="file-service" className="bg-[#07090d] py-20">
+        <div className="mx-auto grid max-w-7xl gap-8 px-4 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
+          <div className="lg:sticky lg:top-24">
+            <div className="inline-flex items-center gap-2 rounded-full border border-red-800/50 bg-red-950/30 px-3 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-red-200">
+              <FileCode2 className="h-4 w-4" />
+              ECU file service
+            </div>
+            <h2 className="mt-5 text-4xl font-black leading-tight md:text-5xl">
+              Professional ECU & TCU file service for workshops.
+            </h2>
+            <p className="mt-5 max-w-xl text-sm leading-7 text-zinc-400">
+              MG AutoTech gives customers a clean file service workflow for ECU
+              file service, TCU file service, Stage 1 requests and technical
+              DPF, EGR, AdBlue or DTC file requests. Every request starts with
+              clear vehicle context, secure upload and tracked dashboard status.
+            </p>
+
+            <div className="mt-7 flex flex-wrap gap-3">
+              <Link
+                href="/new-request"
+                className="inline-flex items-center justify-center rounded-xl bg-[#b1121b] px-5 py-3 text-sm font-black text-white shadow-lg shadow-red-950/30 transition hover:-translate-y-0.5 hover:bg-[#c91824]"
+              >
+                Create file request
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+              <Link
+                href="/file-service"
+                className="inline-flex items-center justify-center rounded-xl border border-white/10 bg-white/[0.05] px-5 py-3 text-sm font-black text-white transition hover:-translate-y-0.5 hover:border-red-800/60 hover:bg-red-950/20"
+              >
+                Open file service hub
+              </Link>
+            </div>
+          </div>
+
+          <div className="grid gap-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              {fileServiceSearchPillars.map((pillar) => {
+                const Icon = pillar.icon;
+
+                return (
+                  <Link
+                    key={pillar.title}
+                    href={pillar.href}
+                    className="group rounded-3xl border border-white/10 bg-white/[0.04] p-6 transition duration-300 hover:-translate-y-1 hover:border-red-800/60 hover:bg-white/[0.07] focus:outline-none focus-visible:ring-2 focus-visible:ring-red-700"
+                  >
+                    <div className="mb-5 flex items-start justify-between gap-4">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-red-900/50 bg-red-950/25 text-red-300">
+                        <Icon className="h-6 w-6" />
+                      </div>
+                      <span className="rounded-full border border-white/10 bg-black/30 px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-zinc-400">
+                        {pillar.intent}
+                      </span>
+                    </div>
+                    <h3 className="text-xl font-black text-white">
+                      {pillar.title}
+                    </h3>
+                    <p className="mt-3 text-sm leading-6 text-zinc-400">
+                      {pillar.text}
+                    </p>
+                    <div className="mt-5 inline-flex items-center text-sm font-black text-red-300 transition group-hover:text-red-100">
+                      {pillar.action}
+                      <ArrowRight className="ml-2 h-4 w-4 transition group-hover:translate-x-1" />
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+
+            <div className="rounded-[2rem] border border-emerald-500/20 bg-[linear-gradient(145deg,rgba(16,185,129,0.12),rgba(255,255,255,0.04))] p-6">
+              <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
+                <div>
+                  <div className="text-sm font-black uppercase tracking-[0.18em] text-emerald-300">
+                    What makes a clean file-service request?
+                  </div>
+                  <p className="mt-3 max-w-2xl text-sm leading-7 text-zinc-400">
+                    The public homepage explains the workflow, but the real file
+                    action happens only after login inside the customer portal.
+                    No homepage section reads, uploads, modifies or generates
+                    customer files.
+                  </p>
+                </div>
+                <Link
+                  href="/tools/request-brief-builder"
+                  className="inline-flex shrink-0 items-center justify-center rounded-xl border border-emerald-500/25 bg-emerald-500/10 px-4 py-3 text-sm font-black text-emerald-100 transition hover:-translate-y-0.5 hover:bg-emerald-500/15"
+                >
+                  Build request brief
+                </Link>
+              </div>
+
+              <div className="mt-5 grid gap-3 md:grid-cols-2">
+                {fileServiceRequestChecklist.map((item) => (
+                  <div
+                    key={item}
+                    className="flex gap-3 rounded-2xl border border-white/10 bg-black/25 p-3 text-sm text-zinc-300"
+                  >
+                    <BadgeCheck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-300" />
+                    <span>{item}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </AnimatedSection>
+
+      <AnimatedSection id="file-service-read-methods" className="bg-[#0b1226] py-20">
+        <div className="mx-auto max-w-7xl px-4">
+          <div className="mb-10 grid gap-6 lg:grid-cols-[0.82fr_1.18fr] lg:items-end">
+            <div>
+              <div className="inline-flex items-center gap-2 rounded-full border border-sky-500/30 bg-sky-950/30 px-3 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-sky-200">
+                <Search className="h-4 w-4" />
+                Read Method Route Finder
+              </div>
+              <h2 className="mt-5 max-w-3xl text-4xl font-black leading-tight text-white md:text-5xl">
+                Route OBD, bench, boot, virtual and TCU file-service requests correctly.
+              </h2>
+            </div>
+            <p className="max-w-3xl text-sm leading-7 text-slate-300 lg:justify-self-end">
+              Workshops do not always start from the same read method. This
+              customer-safe route finder turns OBD, bench, boot, virtual stock
+              file and gearbox situations into the right public preparation path
+              before secure request submission.
+            </p>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {fileServiceReadMethodRoutes.map((route) => (
+              <Link
+                key={route.title}
+                href={route.href}
+                className="group flex min-h-64 flex-col rounded-3xl border border-white/10 bg-white/[0.045] p-6 transition duration-300 hover:-translate-y-1 hover:border-sky-500/50 hover:bg-white/[0.075] focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400"
+              >
+                <div className="mb-5 flex items-start justify-between gap-4">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-sky-500/30 bg-sky-950/35 text-sky-200">
+                    <ShieldCheck className="h-6 w-6" />
+                  </div>
+                  <span className="rounded-full border border-white/10 bg-black/30 px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-slate-300">
+                    {route.tag}
+                  </span>
+                </div>
+                <h3 className="text-xl font-black text-white">
+                  {route.title}
+                </h3>
+                <p className="mt-3 flex-1 text-sm leading-7 text-slate-300">
+                  {route.text}
+                </p>
+                <div className="mt-6 inline-flex items-center text-sm font-black text-sky-200 transition group-hover:text-white">
+                  {route.action}
+                  <ArrowRight className="ml-2 h-4 w-4 transition group-hover:translate-x-1" />
+                </div>
+              </Link>
+            ))}
+          </div>
+
+          <div className="mt-6 rounded-3xl border border-sky-500/20 bg-sky-950/20 p-5 text-sm leading-7 text-slate-300">
+            <span className="font-black text-sky-100">Safety boundary:</span>{" "}
+            this route finder is informational only. It does not inspect, upload,
+            edit or create ECU/TCU files; secure submission starts inside the
+            authenticated request flow.
+          </div>
+        </div>
+      </AnimatedSection>
+
+      <AnimatedSection id="file-service-brief-requirements" className="bg-[#f6f8fb] py-20 text-[#111827]">
+        <div className="mx-auto max-w-7xl px-4">
+          <div className="mb-10 grid gap-6 lg:grid-cols-[0.78fr_1.22fr] lg:items-end">
+            <div>
+              <div className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-3 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-slate-600">
+                <BadgeCheck className="h-4 w-4 text-red-700" />
+                File Service Brief Requirements
+              </div>
+              <h2 className="mt-5 max-w-3xl text-4xl font-black leading-tight md:text-5xl">
+                A stronger ECU or TCU file-service result starts with a stronger request brief.
+              </h2>
+            </div>
+            <p className="max-w-3xl text-sm leading-7 text-slate-600 lg:justify-self-end">
+              The best online file-service workflow is not a blind file drop.
+              MG AutoTech guides workshops to prepare the vehicle, controller,
+              service and file context before moving into the secure customer
+              portal.
+            </p>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {fileServiceBriefRequirements.map((item) => (
+              <Link
+                key={item.title}
+                href={item.href}
+                className="group flex min-h-64 flex-col rounded-3xl border border-slate-200 bg-white p-6 shadow-sm shadow-slate-200/70 transition duration-300 hover:-translate-y-1 hover:border-red-200 hover:shadow-lg hover:shadow-red-950/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-700"
+              >
+                <div className="mb-5 flex items-start justify-between gap-4">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-red-100 bg-red-50 text-red-700">
+                    <FileCode2 className="h-6 w-6" />
+                  </div>
+                  <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-slate-500">
+                    {item.tag}
+                  </span>
+                </div>
+                <h3 className="text-xl font-black text-slate-950">
+                  {item.title}
+                </h3>
+                <p className="mt-3 flex-1 text-sm leading-7 text-slate-600">
+                  {item.text}
+                </p>
+                <div className="mt-6 inline-flex items-center text-sm font-black text-red-700 transition group-hover:text-red-900">
+                  {item.action}
+                  <ArrowRight className="ml-2 h-4 w-4 transition group-hover:translate-x-1" />
+                </div>
+              </Link>
+            ))}
+          </div>
+
+          <div className="mt-6 rounded-3xl border border-slate-200 bg-white p-5 text-sm leading-7 text-slate-600">
+            <span className="font-black text-slate-950">Customer-safe boundary:</span>{" "}
+            this checklist prepares the request only. It does not request a file
+            on the homepage, inspect file contents, expose private storage data
+            or create ECU/TCU outputs.
+          </div>
+        </div>
+      </AnimatedSection>
+
+      <AnimatedSection id="file-service-fit-checker" className="bg-[#050505] py-20">
+        <div className="mx-auto max-w-7xl px-4">
+          <div className="mb-10 grid gap-6 lg:grid-cols-[0.8fr_1.2fr] lg:items-end">
+            <div>
+              <div className="inline-flex items-center gap-2 rounded-full border border-red-800/50 bg-red-950/30 px-3 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-red-200">
+                <Activity className="h-4 w-4" />
+                File Service Fit Checker
+              </div>
+              <h2 className="mt-5 max-w-3xl text-4xl font-black leading-tight text-white md:text-5xl">
+                Pick your current file-service situation and move to the right next step.
+              </h2>
+            </div>
+            <p className="max-w-3xl text-sm leading-7 text-zinc-400 lg:justify-self-end">
+              Not every workshop arrives with the same information. This
+              customer-safe checker turns the current situation into a public
+              preparation route before the secure request flow begins.
+            </p>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {fileServiceFitChecks.map((item) => (
+              <Link
+                key={item.title}
+                href={item.href}
+                className="group flex min-h-72 flex-col rounded-3xl border border-white/10 bg-white/[0.04] p-6 transition duration-300 hover:-translate-y-1 hover:border-red-700/70 hover:bg-white/[0.075] focus:outline-none focus-visible:ring-2 focus-visible:ring-red-700"
+              >
+                <div className="mb-5 flex items-start justify-between gap-4">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-red-900/50 bg-red-950/25 text-red-300">
+                    <Activity className="h-6 w-6" />
+                  </div>
+                  <span className="rounded-full border border-white/10 bg-black/30 px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-zinc-400">
+                    {item.tag}
+                  </span>
+                </div>
+                <h3 className="text-xl font-black text-white">
+                  {item.title}
+                </h3>
+                <p className="mt-3 text-sm leading-7 text-zinc-400">
+                  {item.text}
+                </p>
+                <div className="mt-5 flex-1 rounded-2xl border border-white/10 bg-black/25 p-4 text-sm leading-6 text-zinc-300">
+                  <span className="font-black text-red-200">Next step:</span>{" "}
+                  {item.outcome}
+                </div>
+                <div className="mt-6 inline-flex items-center text-sm font-black text-red-300 transition group-hover:text-red-100">
+                  {item.action}
+                  <ArrowRight className="ml-2 h-4 w-4 transition group-hover:translate-x-1" />
+                </div>
+              </Link>
+            ))}
+          </div>
+
+          <div className="mt-6 rounded-3xl border border-white/10 bg-white/[0.04] p-5 text-sm leading-7 text-zinc-400">
+            <span className="font-black text-white">Safe public guidance:</span>{" "}
+            this checker only routes users to public preparation pages. It does
+            not access files, create requests, open storage, run analysis or make
+            delivery decisions.
+          </div>
+        </div>
+      </AnimatedSection>
+
+      <AnimatedSection id="file-service-outcome-preview" className="bg-[#eef1f4] py-20 text-[#111827]">
+        <div className="mx-auto max-w-7xl px-4">
+          <div className="mb-10 grid gap-6 lg:grid-cols-[0.85fr_1.15fr] lg:items-end">
+            <div>
+              <div className="inline-flex items-center gap-2 rounded-full border border-red-200 bg-white px-3 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-red-700 shadow-sm">
+                <ShieldCheck className="h-4 w-4" />
+                File Service Outcome Preview
+              </div>
+              <h2 className="mt-5 max-w-3xl text-4xl font-black leading-tight text-slate-950 md:text-5xl">
+                Customers should always know what happens after a secure ECU or TCU file-service request.
+              </h2>
+            </div>
+            <p className="max-w-3xl text-sm leading-7 text-slate-600 lg:justify-self-end">
+              This preview explains the customer-visible operating model after
+              secure submission. It is not a public upload area and does not
+              expose internal review data.
+            </p>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {fileServiceOutcomePreview.map((item) => {
+              const Icon = item.icon;
+
+              return (
+                <Link
+                  key={item.title}
+                  href={item.href}
+                  className="group flex min-h-72 flex-col rounded-3xl border border-slate-200 bg-white p-6 shadow-sm shadow-slate-200/70 transition duration-300 hover:-translate-y-1 hover:border-red-200 hover:shadow-lg hover:shadow-red-950/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-700"
+                >
+                  <div className="mb-5 flex items-start justify-between gap-4">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-red-100 bg-red-50 text-red-700">
+                      <Icon className="h-6 w-6" />
+                    </div>
+                    <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-slate-500">
+                      {item.tag}
+                    </span>
+                  </div>
+                  <h3 className="text-xl font-black text-slate-950">
+                    {item.title}
+                  </h3>
+                  <p className="mt-3 flex-1 text-sm leading-7 text-slate-600">
+                    {item.text}
+                  </p>
+                  <div className="mt-6 inline-flex items-center text-sm font-black text-red-700 transition group-hover:text-red-900">
+                    {item.action}
+                    <ArrowRight className="ml-2 h-4 w-4 transition group-hover:translate-x-1" />
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+
+          <div className="mt-6 rounded-3xl border border-slate-200 bg-white p-5 text-sm leading-7 text-slate-600 shadow-sm shadow-slate-200/70">
+            <span className="font-black text-slate-950">Customer-visible boundary:</span>{" "}
+            this preview does not expose order records, internal notes, file
+            paths, binary data, private review metadata or generated ECU/TCU
+            outputs.
+          </div>
+        </div>
+      </AnimatedSection>
+
+      <AnimatedSection id="file-service-status-guide" className="bg-white py-20 text-slate-950">
+        <div className="mx-auto max-w-7xl px-4">
+          <div className="mb-10 grid gap-6 lg:grid-cols-[0.78fr_1.22fr] lg:items-end">
+            <div>
+              <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-slate-600">
+                <Clock3 className="h-4 w-4 text-red-700" />
+                File Service Status Guide
+              </div>
+              <h2 className="mt-5 max-w-3xl text-4xl font-black leading-tight md:text-5xl">
+                Clear status language keeps ECU and TCU file-service tracking understandable.
+              </h2>
+            </div>
+            <p className="max-w-3xl text-sm leading-7 text-slate-600 lg:justify-self-end">
+              Customers should not need to guess what a file-service status
+              means. This guide explains the public meaning of common request
+              states while private order data stays inside the authenticated
+              portal.
+            </p>
+          </div>
+
+          <div className="grid gap-4 lg:grid-cols-2">
+            {fileServiceStatusGuide.map((item, index) => {
+              const Icon = item.icon;
+
+              return (
+                <Link
+                  key={item.title}
+                  href={item.href}
+                  className="group grid gap-5 rounded-3xl border border-slate-200 bg-slate-50 p-6 transition duration-300 hover:-translate-y-1 hover:border-red-200 hover:bg-white hover:shadow-lg hover:shadow-red-950/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-700 sm:grid-cols-[auto_1fr]"
+                >
+                  <div className="flex items-start gap-4 sm:block">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-red-100 bg-white text-red-700">
+                      <Icon className="h-6 w-6" />
+                    </div>
+                    <div className="mt-0 sm:mt-4">
+                      <span className="inline-flex rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-slate-500">
+                        Step {index + 1}
+                      </span>
+                    </div>
+                  </div>
+                  <div>
+                    <div className="flex flex-wrap items-center gap-3">
+                      <h3 className="text-xl font-black text-slate-950">
+                        {item.title}
+                      </h3>
+                      <span className="rounded-full bg-red-50 px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-red-700">
+                        {item.tag}
+                      </span>
+                    </div>
+                    <p className="mt-3 text-sm leading-7 text-slate-600">
+                      {item.text}
+                    </p>
+                    <div className="mt-5 inline-flex items-center text-sm font-black text-red-700 transition group-hover:text-red-900">
+                      {item.action}
+                      <ArrowRight className="ml-2 h-4 w-4 transition group-hover:translate-x-1" />
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+
+          <div className="mt-6 rounded-3xl border border-slate-200 bg-slate-50 p-5 text-sm leading-7 text-slate-600">
+            <span className="font-black text-slate-950">Status privacy boundary:</span>{" "}
+            this guide explains meanings only. It does not expose live order
+            state, customer messages, internal workflow notes, file paths,
+            binary data or delivery assets.
+          </div>
+        </div>
+      </AnimatedSection>
+
+      <AnimatedSection id="file-service-privacy-controls" className="bg-[#050505] py-20 text-white">
+        <div className="mx-auto max-w-7xl px-4">
+          <div className="mb-10 grid gap-6 lg:grid-cols-[0.82fr_1.18fr] lg:items-end">
+            <div>
+              <div className="inline-flex items-center gap-2 rounded-full border border-red-800/50 bg-red-950/30 px-3 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-red-200">
+                <Lock className="h-4 w-4" />
+                Secure File Service Privacy Controls
+              </div>
+              <h2 className="mt-5 max-w-3xl text-4xl font-black leading-tight md:text-5xl">
+                Secure ECU and TCU file service needs clear public/private boundaries.
+              </h2>
+            </div>
+            <p className="max-w-3xl text-sm leading-7 text-zinc-400 lg:justify-self-end">
+              Search visitors should understand how MG AutoTech separates public
+              preparation guidance from authenticated request handling. This
+              section explains privacy controls without exposing customer or
+              workshop-only information.
+            </p>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {fileServicePrivacyControls.map((item) => {
+              const Icon = item.icon;
+
+              return (
+                <Link
+                  key={item.title}
+                  href={item.href}
+                  className="group flex min-h-72 flex-col rounded-3xl border border-white/10 bg-white/[0.045] p-6 transition duration-300 hover:-translate-y-1 hover:border-red-700/70 hover:bg-white/[0.075] focus:outline-none focus-visible:ring-2 focus-visible:ring-red-700"
+                >
+                  <div className="mb-5 flex items-start justify-between gap-4">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-red-900/50 bg-red-950/25 text-red-300">
+                      <Icon className="h-6 w-6" />
+                    </div>
+                    <span className="rounded-full border border-white/10 bg-black/30 px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-zinc-400">
+                      {item.tag}
+                    </span>
+                  </div>
+                  <h3 className="text-xl font-black text-white">
+                    {item.title}
+                  </h3>
+                  <p className="mt-3 flex-1 text-sm leading-7 text-zinc-400">
+                    {item.text}
+                  </p>
+                  <div className="mt-6 inline-flex items-center text-sm font-black text-red-300 transition group-hover:text-red-100">
+                    {item.action}
+                    <ArrowRight className="ml-2 h-4 w-4 transition group-hover:translate-x-1" />
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+
+          <div className="mt-6 rounded-3xl border border-white/10 bg-white/[0.04] p-5 text-sm leading-7 text-zinc-400">
+            <span className="font-black text-white">Public privacy boundary:</span>{" "}
+            this section does not expose customer identity, order records,
+            internal notes, file paths, binary data, private review metadata or
+            delivery assets.
+          </div>
+        </div>
+      </AnimatedSection>
+
+      <AnimatedSection id="file-service-use-cases" className="bg-white py-20 text-[#111827]">
+        <div className="mx-auto max-w-7xl px-4">
+          <div className="mb-10 grid gap-6 lg:grid-cols-[0.82fr_1.18fr] lg:items-end">
+            <div>
+              <div className="inline-flex items-center gap-2 rounded-full border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-red-700">
+                <Sparkles className="h-4 w-4" />
+                File Service Use Case Library
+              </div>
+              <h2 className="mt-5 max-w-3xl text-4xl font-black leading-tight md:text-5xl">
+                Match the workshop situation to the right file-service route.
+              </h2>
+            </div>
+            <p className="max-w-3xl text-sm leading-7 text-slate-600 lg:justify-self-end">
+              A strong file-service page should answer the real search intent
+              behind each request type. These use cases help customers choose
+              the correct public guide before moving into the secure portal.
+            </p>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {fileServiceUseCases.map((item) => {
+              const Icon = item.icon;
+
+              return (
+                <Link
+                  key={item.title}
+                  href={item.href}
+                  className="group flex min-h-72 flex-col rounded-3xl border border-slate-200 bg-slate-50 p-6 transition duration-300 hover:-translate-y-1 hover:border-red-200 hover:bg-white hover:shadow-lg hover:shadow-red-950/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-700"
+                >
+                  <div className="mb-6 flex items-start justify-between gap-4">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-red-100 bg-white text-red-700 shadow-sm shadow-red-950/5">
+                      <Icon className="h-6 w-6" />
+                    </div>
+                    <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-slate-500">
+                      {item.tag}
+                    </span>
+                  </div>
+                  <h3 className="text-xl font-black text-[#111827]">
+                    {item.title}
+                  </h3>
+                  <p className="mt-3 flex-1 text-sm leading-7 text-slate-600">
+                    {item.text}
+                  </p>
+                  <div className="mt-6 border-t border-slate-200 pt-5">
+                    <div className="text-xs font-black uppercase tracking-[0.16em] text-slate-400">
+                      {item.searchIntent}
+                    </div>
+                    <div className="mt-3 inline-flex items-center text-sm font-black text-red-700 transition group-hover:text-red-800">
+                      {item.action}
+                      <ArrowRight className="ml-2 h-4 w-4 transition group-hover:translate-x-1" />
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+
+          <div className="mt-6 rounded-3xl border border-slate-200 bg-slate-50 p-5 text-sm leading-7 text-slate-600">
+            <span className="font-black text-[#111827]">Use-case boundary:</span>{" "}
+            this library is public routing guidance only. It does not inspect
+            customer files, create requests, start upload actions or modify
+            files.
+          </div>
+        </div>
+      </AnimatedSection>
+
+      <AnimatedSection id="file-service-quality-signals" className="bg-[#f8fafc] py-20 text-[#111827]">
+        <div className="mx-auto max-w-7xl px-4">
+          <div className="mb-10 grid gap-6 lg:grid-cols-[0.78fr_1.22fr] lg:items-end">
+            <div>
+              <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-red-700 shadow-sm shadow-red-950/5">
+                <ShieldCheck className="h-4 w-4" />
+                File Service Quality Signals
+              </div>
+              <h2 className="mt-5 max-w-3xl text-4xl font-black leading-tight md:text-5xl">
+                Better request quality means faster, clearer file-service review.
+              </h2>
+            </div>
+            <p className="max-w-3xl text-sm leading-7 text-slate-600 lg:justify-self-end">
+              A professional ECU or TCU file-service request is easier to review
+              when the customer prepares the right context first. These signals
+              explain what improves review clarity before secure submission.
+            </p>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {fileServiceQualitySignals.map((item) => {
+              const Icon = item.icon;
+
+              return (
+                <Link
+                  key={item.title}
+                  href={item.href}
+                  className="group flex min-h-72 flex-col rounded-3xl border border-slate-200 bg-white p-6 shadow-sm shadow-slate-950/5 transition duration-300 hover:-translate-y-1 hover:border-red-200 hover:shadow-lg hover:shadow-red-950/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-700"
+                >
+                  <div className="mb-6 flex items-start justify-between gap-4">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#111827] text-white">
+                      <Icon className="h-6 w-6" />
+                    </div>
+                    <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-slate-500">
+                      {item.tag}
+                    </span>
+                  </div>
+                  <h3 className="text-xl font-black text-[#111827]">
+                    {item.title}
+                  </h3>
+                  <p className="mt-3 flex-1 text-sm leading-7 text-slate-600">
+                    {item.text}
+                  </p>
+                  <div className="mt-6 flex items-center justify-between gap-3 border-t border-slate-200 pt-5">
+                    <span className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">
+                      {item.searchIntent}
+                    </span>
+                    <span className="inline-flex items-center text-sm font-black text-red-700 transition group-hover:text-red-800">
+                      {item.action}
+                      <ArrowRight className="ml-2 h-4 w-4 transition group-hover:translate-x-1" />
+                    </span>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+
+          <div className="mt-6 rounded-3xl border border-slate-200 bg-white p-5 text-sm leading-7 text-slate-600 shadow-sm shadow-slate-950/5">
+            <span className="font-black text-[#111827]">Quality-signal boundary:</span>{" "}
+            this section is public preparation guidance only. It does not score
+            customer files, inspect uploaded content, approve learning evidence,
+            generate files or change file integrity data.
+          </div>
+        </div>
+      </AnimatedSection>
+
+      <AnimatedSection id="file-service-workshop-profiles" className="bg-white py-20 text-[#111827]">
+        <div className="mx-auto max-w-7xl px-4">
+          <div className="mb-10 grid gap-6 lg:grid-cols-[0.78fr_1.22fr] lg:items-end">
+            <div>
+              <div className="inline-flex items-center gap-2 rounded-full border border-red-100 bg-red-50 px-3 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-red-700">
+                <BadgeCheck className="h-4 w-4" />
+                Workshop File Service Profiles
+              </div>
+              <h2 className="mt-5 max-w-3xl text-4xl font-black leading-tight md:text-5xl">
+                Different workshop teams need different file-service entry points.
+              </h2>
+            </div>
+            <p className="max-w-3xl text-sm leading-7 text-slate-600 lg:justify-self-end">
+              Performance shops, diagnostic workshops and transmission
+              specialists should not land on the same vague path. These public
+              profiles route each customer type to the safest preparation page
+              before secure request handling.
+            </p>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {fileServiceWorkshopProfiles.map((item) => {
+              const Icon = item.icon;
+
+              return (
+                <Link
+                  key={item.title}
+                  href={item.href}
+                  className="group flex min-h-72 flex-col rounded-3xl border border-slate-200 bg-[#f8fafc] p-6 shadow-sm shadow-slate-950/5 transition duration-300 hover:-translate-y-1 hover:border-red-200 hover:bg-white hover:shadow-lg hover:shadow-red-950/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-700"
+                >
+                  <div className="mb-6 flex items-start justify-between gap-4">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-red-700 text-white shadow-sm shadow-red-950/20">
+                      <Icon className="h-6 w-6" />
+                    </div>
+                    <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-slate-500">
+                      {item.tag}
+                    </span>
+                  </div>
+                  <h3 className="text-xl font-black text-[#111827]">
+                    {item.title}
+                  </h3>
+                  <p className="mt-3 flex-1 text-sm leading-7 text-slate-600">
+                    {item.text}
+                  </p>
+                  <div className="mt-6 flex items-center justify-between gap-3 border-t border-slate-200 pt-5">
+                    <span className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">
+                      {item.searchIntent}
+                    </span>
+                    <span className="inline-flex items-center text-sm font-black text-red-700 transition group-hover:text-red-800">
+                      {item.action}
+                      <ArrowRight className="ml-2 h-4 w-4 transition group-hover:translate-x-1" />
+                    </span>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+
+          <div className="mt-6 rounded-3xl border border-red-100 bg-red-50/70 p-5 text-sm leading-7 text-slate-700">
+            <span className="font-black text-[#111827]">Workshop-profile boundary:</span>{" "}
+            this section is public routing guidance only. It does not create
+            requests, inspect customer files, expose customer records, change
+            payments or deliver files.
+          </div>
+        </div>
+      </AnimatedSection>
+
+      <AnimatedSection id="file-service-knowledge-map" className="bg-[#111827] py-20">
+        <div className="mx-auto max-w-7xl px-4">
+          <div className="mb-10 grid gap-6 lg:grid-cols-[0.78fr_1.22fr] lg:items-end">
+            <div>
+              <div className="inline-flex items-center gap-2 rounded-full border border-red-800/50 bg-red-950/30 px-3 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-red-200">
+                <Search className="h-4 w-4" />
+                File Service Knowledge Map
+              </div>
+              <h2 className="mt-5 max-w-3xl text-4xl font-black leading-tight md:text-5xl">
+                Find the right MG AutoTech file-service path before creating a request.
+              </h2>
+            </div>
+            <p className="max-w-3xl text-sm leading-7 text-zinc-400 lg:justify-self-end">
+              Customers often search broadly for file service, ECU file service
+              or TCU file service. This map turns that broad search into a clear
+              next step: choose the right public guide, prepare the request and
+              continue through the secure portal only when ready.
+            </p>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {fileServiceKnowledgeMap.map((item) => {
+              const Icon = item.icon;
+
+              return (
+                <Link
+                  key={item.title}
+                  href={item.href}
+                  className="group flex min-h-72 flex-col rounded-3xl border border-white/10 bg-white/[0.045] p-6 transition duration-300 hover:-translate-y-1 hover:border-red-700/70 hover:bg-white/[0.075] focus:outline-none focus-visible:ring-2 focus-visible:ring-red-700"
+                >
+                  <div className="mb-6 flex items-start justify-between gap-4">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-red-900/50 bg-red-950/25 text-red-300">
+                      <Icon className="h-6 w-6" />
+                    </div>
+                    <span className="rounded-full border border-white/10 bg-black/30 px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-zinc-400">
+                      {item.tag}
+                    </span>
+                  </div>
+                  <h3 className="text-xl font-black text-white">
+                    {item.title}
+                  </h3>
+                  <p className="mt-3 flex-1 text-sm leading-7 text-zinc-400">
+                    {item.text}
+                  </p>
+                  <div className="mt-6 flex items-center justify-between gap-3 border-t border-white/10 pt-5">
+                    <span className="text-xs font-bold uppercase tracking-[0.16em] text-zinc-500">
+                      {item.searchIntent}
+                    </span>
+                    <span className="inline-flex items-center text-sm font-black text-red-300 transition group-hover:text-red-100">
+                      {item.action}
+                      <ArrowRight className="ml-2 h-4 w-4 transition group-hover:translate-x-1" />
+                    </span>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+
+          <div className="mt-6 rounded-[2rem] border border-white/10 bg-black/25 p-6">
+            <div className="grid gap-5 lg:grid-cols-[1fr_auto] lg:items-center">
+              <div>
+                <h3 className="text-2xl font-black text-white">
+                  Broad search term, precise request path.
+                </h3>
+                <p className="mt-3 max-w-3xl text-sm leading-7 text-zinc-400">
+                  The public pages explain the file-service structure. Actual
+                  customer files, request ownership and delivery stay inside the
+                  authenticated dashboard.
+                </p>
+              </div>
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <Link
+                  href="/file-service"
+                  className="inline-flex items-center justify-center rounded-xl border border-white/10 bg-white/[0.06] px-5 py-3 text-sm font-black text-white transition hover:-translate-y-0.5 hover:border-red-800/60 hover:bg-red-950/20"
+                >
+                  File service hub
+                </Link>
+                <Link
+                  href="/new-request"
+                  className="inline-flex items-center justify-center rounded-xl bg-[#b1121b] px-5 py-3 text-sm font-black text-white shadow-lg shadow-red-950/30 transition hover:-translate-y-0.5 hover:bg-[#c91824]"
+                >
+                  Start secure request
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      </AnimatedSection>
+
+      <AnimatedSection id="file-service-decision-matrix" className="bg-[#eef1f4] py-20 text-[#111827]">
+        <div className="mx-auto max-w-7xl px-4">
+          <div className="mb-10 grid gap-6 lg:grid-cols-[0.82fr_1.18fr] lg:items-end">
+            <div>
+              <div className="inline-flex items-center gap-2 rounded-full border border-red-200 bg-white px-3 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-red-700">
+                <BadgeCheck className="h-4 w-4" />
+                File Service Decision Matrix
+              </div>
+              <h2 className="mt-5 max-w-3xl text-4xl font-black leading-tight md:text-5xl">
+                Choose the right file-service route in seconds.
+              </h2>
+            </div>
+            <p className="max-w-3xl text-sm leading-7 text-zinc-600 lg:justify-self-end">
+              A strong file-service workflow starts before upload. This matrix
+              turns common customer intent into the correct public page,
+              required context and secure next step, without exposing any file
+              data or starting an upload.
+            </p>
+          </div>
+
+          <div className="overflow-hidden rounded-[2rem] border border-zinc-200 bg-white shadow-2xl shadow-black/10">
+            <div className="grid border-b border-zinc-200 bg-zinc-50 px-5 py-4 text-xs font-black uppercase tracking-[0.14em] text-zinc-500 md:grid-cols-[0.8fr_1.15fr_1.05fr_1.25fr_auto]">
+              <div>Search intent</div>
+              <div className="hidden md:block">Customer need</div>
+              <div className="hidden md:block">Best path</div>
+              <div className="hidden md:block">Prepare before upload</div>
+              <div className="hidden md:block">Action</div>
+            </div>
+
+            {fileServiceDecisionMatrix.map((item) => (
+              <article
+                key={item.title}
+                className="grid gap-4 border-b border-zinc-100 px-5 py-5 last:border-b-0 md:grid-cols-[0.8fr_1.15fr_1.05fr_1.25fr_auto] md:items-center"
+              >
+                <div>
+                  <div className="text-lg font-black text-[#111827]">
+                    {item.title}
+                  </div>
+                  <div className="mt-2 rounded-full border border-red-100 bg-red-50 px-3 py-1 text-xs font-black uppercase tracking-[0.12em] text-red-700 md:inline-flex">
+                    {item.searchIntent}
+                  </div>
+                </div>
+                <p className="text-sm leading-6 text-zinc-600">
+                  {item.customerNeed}
+                </p>
+                <p className="text-sm font-bold leading-6 text-zinc-800">
+                  {item.bestPath}
+                </p>
+                <p className="text-sm leading-6 text-zinc-600">
+                  {item.requiredContext}
+                </p>
+                <Link
+                  href={item.href}
+                  className="inline-flex items-center justify-center whitespace-nowrap rounded-xl border border-zinc-200 px-4 py-3 text-sm font-black text-zinc-900 transition hover:-translate-y-0.5 hover:border-red-200 hover:bg-red-50 hover:text-red-700"
+                >
+                  {item.action}
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </article>
+            ))}
+          </div>
+
+          <div className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-5 text-sm leading-7 text-emerald-900">
+            <div className="flex gap-3">
+              <ShieldCheck className="mt-1 h-5 w-5 shrink-0 text-emerald-700" />
+              <p>
+                This decision matrix is informational only. It does not inspect,
+                upload, edit, checksum or generate ECU/TCU files; secure file
+                submission starts only inside the authenticated request flow.
+              </p>
+            </div>
+          </div>
+        </div>
+      </AnimatedSection>
+
+      <AnimatedSection id="file-service-operating-standard" className="bg-[#111827] py-20">
+        <div className="mx-auto grid max-w-7xl gap-8 px-4 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
+          <div className="lg:sticky lg:top-24">
+            <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-3 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-emerald-300">
+              <ShieldCheck className="h-4 w-4" />
+              Online File Service Standard
+            </div>
+            <h2 className="mt-5 text-4xl font-black leading-tight md:text-5xl">
+              A professional file-service workflow is more than a file upload form.
+            </h2>
+            <p className="mt-5 max-w-xl text-sm leading-7 text-zinc-400">
+              MG AutoTech structures every online ECU and TCU file-service
+              request around secure intake, vehicle context, human review
+              boundaries and private dashboard delivery.
+            </p>
+
+            <div className="mt-7 rounded-[2rem] border border-white/10 bg-white/[0.045] p-6">
+              <div className="text-sm font-black uppercase tracking-[0.18em] text-zinc-400">
+                Customer-safe operating boundary
+              </div>
+              <p className="mt-3 text-sm leading-7 text-zinc-400">
+                This public standard explains how requests are prepared and
+                tracked. It does not read files, open storage paths, expose
+                private metadata or create customer-ready ECU/TCU outputs.
+              </p>
+              <Link
+                href="/how-it-works"
+                className="mt-5 inline-flex items-center justify-center rounded-xl border border-white/10 bg-white/[0.06] px-4 py-3 text-sm font-black text-white transition hover:-translate-y-0.5 hover:border-emerald-500/35 hover:bg-emerald-500/10"
+              >
+                See full workflow
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+            </div>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            {fileServiceOperatingStandard.map((item) => {
+              const Icon = item.icon;
+
+              return (
+                <Link
+                  key={item.title}
+                  href={item.href}
+                  className="group flex min-h-72 flex-col rounded-3xl border border-white/10 bg-white/[0.045] p-6 transition duration-300 hover:-translate-y-1 hover:border-emerald-500/40 hover:bg-white/[0.075] focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                >
+                  <div className="mb-6 flex items-start justify-between gap-4">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-emerald-500/25 bg-emerald-500/10 text-emerald-300">
+                      <Icon className="h-6 w-6" />
+                    </div>
+                    <span className="rounded-full border border-white/10 bg-black/30 px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-zinc-400">
+                      {item.tag}
+                    </span>
+                  </div>
+                  <h3 className="text-xl font-black text-white">
+                    {item.title}
+                  </h3>
+                  <p className="mt-3 flex-1 text-sm leading-7 text-zinc-400">
+                    {item.text}
+                  </p>
+                  <div className="mt-6 inline-flex items-center text-sm font-black text-emerald-300 transition group-hover:text-emerald-100">
+                    {item.action}
+                    <ArrowRight className="ml-2 h-4 w-4 transition group-hover:translate-x-1" />
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      </AnimatedSection>
+
+      <AnimatedSection id="file-service-glossary" className="bg-[#eef1f4] py-20 text-[#111827]">
+        <div className="mx-auto max-w-7xl px-4">
+          <div className="mb-10 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <div className="inline-flex items-center gap-2 rounded-full border border-[#111827]/10 bg-white px-3 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-[#111827] shadow-sm">
+                <FileCode2 className="h-4 w-4 text-red-700" />
+                File Service Glossary
+              </div>
+              <h2 className="mt-5 max-w-4xl text-4xl font-black leading-tight md:text-5xl">
+                Understand the file-service terms before opening an ECU or TCU request.
+              </h2>
+              <p className="mt-5 max-w-3xl text-sm leading-7 text-slate-600">
+                A cleaner request starts with shared language. These customer-safe
+                definitions explain the terms workshops and vehicle owners see
+                before preparing an online MG AutoTech file-service request.
+              </p>
+            </div>
+
+            <Link
+              href="/file-service"
+              className="inline-flex items-center justify-center rounded-xl bg-[#111827] px-5 py-3 text-sm font-black text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-red-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-700"
+            >
+              Open file-service hub
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Link>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {fileServiceGlossaryTerms.map((term) => (
+              <Link
+                key={term.title}
+                href={term.href}
+                className="group flex min-h-64 flex-col rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition duration-300 hover:-translate-y-1 hover:border-red-200 hover:shadow-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-red-700"
+              >
+                <span className="mb-5 inline-flex w-fit rounded-full border border-red-100 bg-red-50 px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-red-800">
+                  {term.tag}
+                </span>
+                <h3 className="text-xl font-black text-[#111827]">
+                  {term.title}
+                </h3>
+                <p className="mt-3 flex-1 text-sm leading-7 text-slate-600">
+                  {term.text}
+                </p>
+                <div className="mt-6 inline-flex items-center text-sm font-black text-red-800 transition group-hover:text-red-700">
+                  Learn more
+                  <ArrowRight className="ml-2 h-4 w-4 transition group-hover:translate-x-1" />
+                </div>
+              </Link>
+            ))}
+          </div>
+
+          <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 text-sm leading-7 text-slate-700 shadow-sm">
+            <div className="flex gap-3">
+              <ShieldCheck className="mt-1 h-5 w-5 shrink-0 text-red-700" />
+              <p>
+                This glossary is educational and customer-safe. It does not
+                inspect, upload, edit or create ECU/TCU files; secure
+                submission starts only inside the authenticated request flow.
+              </p>
             </div>
           </div>
         </div>
@@ -3127,13 +6081,37 @@ export default function HomePage() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
+          __html: JSON.stringify(fileServiceAnswerLibraryJsonLd),
+        }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
           __html: JSON.stringify(homepageResourceJsonLd),
         }}
       />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
+          __html: JSON.stringify(homepageQuickPathJsonLd),
+        }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(homepageFileServiceGlossaryJsonLd),
+        }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
           __html: JSON.stringify(homepagePageJsonLd),
+        }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(homepageFileServiceJsonLd),
         }}
       />
       <script

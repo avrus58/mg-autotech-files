@@ -11,6 +11,7 @@ import {
 import { seoUiCopy } from "@/lib/seo-ui";
 import { LocalizedSeoFooter } from "@/components/LocalizedSeoFooter";
 import { getHowItWorksCopy } from "@/lib/howItWorksI18n";
+import { getFileServiceCopy } from "@/lib/fileServiceI18n";
 
 const brands = [
   ["BMW", "MD1 · EDC17 · MG1"],
@@ -29,6 +30,7 @@ export function LocalizedSeoHome({ locale }: { locale: LocaleCode }) {
   const ui = seoUiCopy[locale];
   const referenceService = getServiceSeo("stage-1", locale);
   const howItWorks = getHowItWorksCopy(locale);
+  const fileService = getFileServiceCopy(locale);
 
   return (
     <main className="min-h-screen bg-[#050505] text-white">
@@ -45,6 +47,7 @@ export function LocalizedSeoHome({ locale }: { locale: LocaleCode }) {
           </Link>
           <nav aria-label="Primary navigation" className="hidden items-center gap-6 text-sm font-bold text-zinc-300 md:flex">
             <Link href={localizedPath(locale)} className="text-red-500">{labels.navHome}</Link>
+            <Link href={localizedPath(locale, "/file-service")} className="hover:text-white">{fileService.nav.fileService}</Link>
             <Link href={localizedPath(locale, "/#services")} className="hover:text-white">{labels.navServices}</Link>
             <Link href={localizedPath(locale, "/how-it-works")} className="hover:text-white">{howItWorks.navLabel}</Link>
             <Link href="/tools" className="hover:text-white">{ui.tools}</Link>
@@ -73,6 +76,9 @@ export function LocalizedSeoHome({ locale }: { locale: LocaleCode }) {
               </Link>
               <Link href={localizedPath(locale, "/#services")} className="inline-flex items-center justify-center rounded-lg border border-white/15 bg-white/[0.04] px-6 py-4 text-sm font-black hover:bg-white/10">
                 {copy.secondaryCta}
+              </Link>
+              <Link href={localizedPath(locale, "/file-service")} className="inline-flex items-center justify-center rounded-lg border border-white/15 bg-white/[0.04] px-6 py-4 text-sm font-black hover:bg-white/10">
+                {fileService.nav.fileService}
               </Link>
               <Link href={localizedPath(locale, "/how-it-works")} className="inline-flex items-center justify-center rounded-lg border border-white/15 bg-white/[0.04] px-6 py-4 text-sm font-black hover:bg-white/10">
                 {howItWorks.navLabel}
