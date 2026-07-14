@@ -2,20 +2,70 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { LocalizedSeoHome } from "@/components/LocalizedSeoHome";
 import {
+  getServiceSeo,
   homeSeo,
   hreflangByLocale,
   isSeoLocale,
   languageAlternates,
   localizedUrl,
   organizationJsonLd,
+  publicServiceSlugs,
   seoLocales,
   siteName,
+  siteUrl,
   websiteJsonLd,
 } from "@/lib/seo";
 import type { LocaleCode } from "@/lib/i18n";
 
 export function generateStaticParams() {
   return seoLocales.map((locale) => ({ locale }));
+}
+
+function buildLocalizedHomepageJsonLd(locale: LocaleCode) {
+  const copy = homeSeo[locale];
+  const pageUrl = localizedUrl(locale, "/");
+
+  return {
+    "@context": "https://schema.org",
+    "@graph": [
+      organizationJsonLd(),
+      websiteJsonLd(locale),
+      {
+        "@type": "WebPage",
+        "@id": `${pageUrl}#page`,
+        name: copy.title,
+        description: copy.description,
+        url: pageUrl,
+        inLanguage: hreflangByLocale[locale],
+        isPartOf: { "@id": `${siteUrl}/#website` },
+        about: { "@id": `${siteUrl}/#organization` },
+        primaryImageOfPage: {
+          "@type": "ImageObject",
+          url: `${siteUrl}/opengraph-image`,
+        },
+        hasPart: { "@id": `${pageUrl}#service-list` },
+      },
+      {
+        "@type": "ItemList",
+        "@id": `${pageUrl}#service-list`,
+        name: copy.servicesTitle,
+        itemListElement: publicServiceSlugs.map((slug, index) => {
+          const service = getServiceSeo(slug, locale);
+
+          return {
+            "@type": "ListItem",
+            position: index + 1,
+            item: {
+              "@type": "WebPage",
+              name: service.name,
+              description: service.description,
+              url: localizedUrl(locale, `/services/${slug}`),
+            },
+          };
+        }),
+      },
+    ],
+  };
 }
 
 export async function generateMetadata({
@@ -75,10 +125,7 @@ export default async function LocalizedHomePage({
   if (!isSeoLocale(rawLocale)) notFound();
 
   const locale = rawLocale as LocaleCode;
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@graph": [organizationJsonLd(), websiteJsonLd(locale)],
-  };
+  const jsonLd = buildLocalizedHomepageJsonLd(locale);
 
   return (
     <>

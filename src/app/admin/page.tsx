@@ -179,6 +179,29 @@ const ADMIN_SYNC_ERROR_MESSAGE =
   "Admin operations could not be refreshed. The last loaded orders and customers are still shown.";
 type AdminOrderGroup = "open" | "completed" | "cancelled" | "all";
 
+type AdminStats = {
+  total: number;
+  customers: number;
+  suspendedCustomers: number;
+  newRequests: number;
+  fileCheck: number;
+  inProgress: number;
+  revisionRequested: number;
+  customerInfoNeeded: number;
+  completed: number;
+  completedToday: number;
+  withFile: number;
+  totalCredits: number;
+};
+
+type AdminCommandLink = {
+  href: string;
+  label: string;
+  detail: string;
+  badge: string;
+  icon: ReactNode;
+};
+
 const adminOrderGroups: Array<{
   value: AdminOrderGroup;
   label: string;
@@ -620,7 +643,7 @@ export default function AdminPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const stats = useMemo(() => {
+  const stats = useMemo<AdminStats>(() => {
     const total = orders.length;
     const newRequests = orders.filter((order) => order.status === "new_request").length;
     const fileCheck = orders.filter((order) => order.status === "file_check").length;
@@ -636,6 +659,52 @@ export default function AdminPage() {
   }, [orders, customers]);
 
   const customerById = useMemo(() => new Map(customers.map((customer) => [customer.id, customer])), [customers]);
+
+  const adminCommandLinks = useMemo<AdminCommandLink[]>(() => {
+    const links: AdminCommandLink[] = [];
+
+    if (hasStaffPermission(adminAccess, "orders.view")) {
+      links.push({
+        href: "/admin/requests",
+        label: "Work-order center",
+        detail: "Open the reviewed request queue and timeline view.",
+        badge: "Queue",
+        icon: <Clipboard className="h-5 w-5" />,
+      });
+    }
+
+    if (hasStaffPermission(adminAccess, "file_expert.manage")) {
+      links.push({
+        href: "/admin/file-expert",
+        label: "File Expert review",
+        detail: "Check customer-safe analysis jobs and review evidence.",
+        badge: "Evidence",
+        icon: <BrainCircuit className="h-5 w-5" />,
+      });
+    }
+
+    if (hasStaffPermission(adminAccess, "vehicles.manage")) {
+      links.push({
+        href: "/admin/vehicles",
+        label: "Vehicle database",
+        detail: "Review catalog quality, imports and enrichment drafts.",
+        badge: "Catalog",
+        icon: <Car className="h-5 w-5" />,
+      });
+    }
+
+    if (hasStaffPermission(adminAccess, "credits.manage")) {
+      links.push({
+        href: "/admin/payments",
+        label: "Revenue control",
+        detail: "Inspect payment and credit review panels.",
+        badge: "Finance",
+        icon: <CreditCard className="h-5 w-5" />,
+      });
+    }
+
+    return links;
+  }, [adminAccess]);
 
   const filteredOrders = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -1252,6 +1321,18 @@ export default function AdminPage() {
             <h1 className="text-4xl font-black md:text-5xl">Admin <span className="text-red-600">Control Panel</span></h1>
             <p className="mt-3 max-w-3xl text-zinc-400">Manage requests, customers, credits, account permissions and file workflows from one clean workspace.</p>
           </div>
+
+          <DailyCommandBrief
+            stats={stats}
+            lastSyncAt={lastSyncAt}
+            commandLinks={adminCommandLinks}
+            onFilter={(status) => {
+              setActiveTab("orders");
+              setSelectedStatus(status);
+              setSearch("");
+              setOnlyWithFile(false);
+            }}
+          />
 
           <AdminNotificationCenter
             stats={stats}
@@ -2058,16 +2139,197 @@ function MiniStat({ label, value }: { label: string; value: number }) {
   return <div className="rounded-xl bg-black/30 p-3"><div className="text-xs text-zinc-500">{label}</div><div className="mt-1 text-xl font-black">{value}</div></div>;
 }
 
+function DailyCommandBrief({
+  stats,
+  lastSyncAt,
+  commandLinks,
+  onFilter,
+}: {
+  stats: AdminStats;
+  lastSyncAt: Date | null;
+  commandLinks: AdminCommandLink[];
+  onFilter: (status: string) => void;
+}) {
+  const openWork =
+    stats.newRequests +
+    stats.fileCheck +
+    stats.inProgress +
+    stats.revisionRequested +
+    stats.customerInfoNeeded;
+  const fileCoverage = stats.total > 0 ? Math.round((stats.withFile / stats.total) * 100) : 0;
+  const blockedSignals = stats.customerInfoNeeded + stats.revisionRequested + stats.suspendedCustomers;
+  const syncLabel = lastSyncAt
+    ? lastSyncAt.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })
+    : "Not synced yet";
+
+  const primaryCommand =
+    stats.newRequests > 0
+      ? {
+          label: "Start with new file intake",
+          detail: "Review new requests before they sit in the queue.",
+          status: "new_request",
+          icon: <Upload className="h-6 w-6" />,
+          tone: "red",
+        }
+      : stats.customerInfoNeeded > 0
+      ? {
+          label: "Resolve customer info blockers",
+          detail: "Clear requests waiting for customer information.",
+          status: "customer_info_needed",
+          icon: <BellRing className="h-6 w-6" />,
+          tone: "amber",
+        }
+      : stats.revisionRequested > 0
+      ? {
+          label: "Clear revision requests",
+          detail: "Check returned files and revision notes before new work grows.",
+          status: "revision",
+          icon: <RefreshCcw className="h-6 w-6" />,
+          tone: "purple",
+        }
+      : stats.fileCheck > 0
+      ? {
+          label: "Move file checks forward",
+          detail: "Inspect files that are waiting for technical review.",
+          status: "file_check",
+          icon: <Search className="h-6 w-6" />,
+          tone: "blue",
+        }
+      : stats.inProgress > 0
+      ? {
+          label: "Monitor active work",
+          detail: "Keep in-progress files moving toward delivery.",
+          status: "in_progress",
+          icon: <Wrench className="h-6 w-6" />,
+          tone: "blue",
+        }
+      : {
+          label: "Queue under control",
+          detail: "No urgent order bucket is currently leading the queue.",
+          status: "all",
+          icon: <CheckCircle2 className="h-6 w-6" />,
+          tone: "emerald",
+        };
+
+  const toneClass =
+    primaryCommand.tone === "red"
+      ? "border-red-700/50 bg-red-950/25 text-red-100"
+      : primaryCommand.tone === "amber"
+      ? "border-amber-700/50 bg-amber-950/25 text-amber-100"
+      : primaryCommand.tone === "purple"
+      ? "border-purple-700/50 bg-purple-950/25 text-purple-100"
+      : primaryCommand.tone === "emerald"
+      ? "border-emerald-700/50 bg-emerald-950/25 text-emerald-100"
+      : "border-blue-700/50 bg-blue-950/25 text-blue-100";
+
+  return (
+    <section className="mb-8 overflow-hidden rounded-[2rem] border border-white/10 bg-[linear-gradient(135deg,rgba(177,18,27,0.16),rgba(255,255,255,0.045)_52%,rgba(5,5,5,0.72))] p-5 shadow-2xl shadow-black/25">
+      <div className="grid gap-5 xl:grid-cols-[1.05fr_0.95fr] xl:items-stretch">
+        <div className={`rounded-[1.5rem] border p-5 ${toneClass}`}>
+          <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <div className="text-xs font-black uppercase tracking-[0.2em] opacity-70">
+                Daily Command Brief
+              </div>
+              <h2 className="mt-2 text-3xl font-black text-white">
+                {primaryCommand.label}
+              </h2>
+              <p className="mt-3 max-w-2xl text-sm leading-6 opacity-80">
+                {primaryCommand.detail}
+              </p>
+            </div>
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-black/25 text-white">
+              {primaryCommand.icon}
+            </div>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-3">
+            <MiniInfo label="Open work" value={openWork} />
+            <MiniInfo label="Blocked signals" value={blockedSignals} />
+            <MiniInfo label="Last sync" value={syncLabel} />
+          </div>
+
+          <button
+            type="button"
+            onClick={() => onFilter(primaryCommand.status)}
+            className="mt-5 inline-flex h-11 items-center justify-center rounded-xl bg-white px-4 text-sm font-black text-black transition hover:-translate-y-0.5 hover:bg-zinc-100"
+          >
+            Open priority queue
+            <ArrowLeft className="ml-2 h-4 w-4 rotate-180" />
+          </button>
+        </div>
+
+        <div className="grid gap-4 lg:grid-cols-[0.85fr_1.15fr]">
+          <div className="rounded-[1.5rem] border border-white/10 bg-black/25 p-5">
+            <div className="text-xs font-black uppercase tracking-[0.18em] text-zinc-500">
+              Queue health
+            </div>
+            <div className="mt-4 flex items-end justify-between gap-4">
+              <div>
+                <div className="text-4xl font-black text-white">{fileCoverage}%</div>
+                <p className="mt-2 text-sm leading-6 text-zinc-500">
+                  File coverage across loaded orders.
+                </p>
+              </div>
+              <FileDown className="h-8 w-8 text-red-400" />
+            </div>
+            <div className="mt-5 h-2 overflow-hidden rounded-full bg-white/10">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-red-700 via-red-500 to-emerald-400"
+                style={{ width: `${fileCoverage}%` }}
+              />
+            </div>
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              <MiniStat label="With file" value={stats.withFile} />
+              <MiniStat label="Loaded" value={stats.total} />
+            </div>
+          </div>
+
+          <div className="rounded-[1.5rem] border border-white/10 bg-black/25 p-5">
+            <div className="mb-4 flex items-center justify-between gap-4">
+              <div>
+                <div className="text-xs font-black uppercase tracking-[0.18em] text-zinc-500">
+                  Operational links
+                </div>
+                <div className="mt-1 text-lg font-black text-white">
+                  Jump to the next control room
+                </div>
+              </div>
+              <ShieldCheck className="h-5 w-5 text-emerald-300" />
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              {commandLinks.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className="group rounded-2xl border border-white/10 bg-white/[0.04] p-4 transition hover:-translate-y-0.5 hover:border-red-800/60 hover:bg-white/[0.07]"
+                >
+                  <div className="mb-4 flex items-start justify-between gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-950/35 text-red-300">
+                      {link.icon}
+                    </div>
+                    <span className="rounded-full border border-white/10 bg-black/35 px-2 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-zinc-400">
+                      {link.badge}
+                    </span>
+                  </div>
+                  <div className="font-black text-white">{link.label}</div>
+                  <p className="mt-2 text-xs leading-5 text-zinc-500">{link.detail}</p>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function AdminNotificationCenter({
   stats,
   onFilter,
 }: {
-  stats: {
-    newRequests: number;
-    revisionRequested: number;
-    customerInfoNeeded: number;
-    completedToday: number;
-  };
+  stats: AdminStats;
   onFilter: (status: string) => void;
 }) {
   const items = [

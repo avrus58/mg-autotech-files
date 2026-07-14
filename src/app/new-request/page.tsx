@@ -905,16 +905,24 @@ export default function NewRequestPage() {
     (service) => service.id === mainService
   );
 
+  const selectedExtraServices = useMemo(
+    () =>
+      selectedExtras
+        .map((id) => extraServices.find((service) => service.id === id))
+        .filter((service): service is ExtraService => Boolean(service)),
+    [selectedExtras]
+  );
+
   const totalCredits = useMemo(() => {
     const mainCredits = selectedMainService?.credits ?? 0;
 
-    const extrasCredits = selectedExtras.reduce((sum, id) => {
-      const service = extraServices.find((item) => item.id === id);
-      return sum + (service?.credits ?? 0);
-    }, 0);
+    const extrasCredits = selectedExtraServices.reduce(
+      (sum, service) => sum + service.credits,
+      0
+    );
 
     return mainCredits + extrasCredits;
-  }, [selectedExtras, selectedMainService]);
+  }, [selectedExtraServices, selectedMainService]);
 
   const creditBalance = Number(customerProfile?.credit_balance ?? 0);
   const negativeCreditLimit = Number(customerProfile?.negative_credit_limit ?? 0);
@@ -929,12 +937,10 @@ export default function NewRequestPage() {
 
   const serviceSummary = useMemo(() => {
     const main = selectedMainService?.title ?? "Service";
-    const extras = selectedExtras
-      .map((id) => extraServices.find((item) => item.id === id)?.title)
-      .filter(Boolean);
+    const extras = selectedExtraServices.map((service) => service.title);
 
     return [main, ...extras].join(" + ");
-  }, [selectedExtras, selectedMainService]);
+  }, [selectedExtraServices, selectedMainService]);
 
   const selectedAdvancedExtraCount = advancedExtraServiceCategories.reduce(
     (sum, category) =>
@@ -942,14 +948,63 @@ export default function NewRequestPage() {
     0
   );
 
+  const hasRequestVehicle = Boolean(
+    requestVehicleBrand && requestVehicleModel && requestVehicleEngine
+  );
+  const selectedFileName = selectedFile?.name.toLowerCase() ?? "";
+  const hasValidSelectedFile = Boolean(
+    selectedFile &&
+      selectedFile.size <= maxRequestFileSize &&
+      allowedRequestFileExtensions.some((extension) =>
+        selectedFileName.endsWith(extension)
+      )
+  );
+
   const requestStepStates = getRequestFlowStepStates({
-    hasVehicle: Boolean(requestVehicleBrand && requestVehicleModel && requestVehicleEngine),
+    hasVehicle: hasRequestVehicle,
     hasService: Boolean(selectedMainService),
-    hasUpload: Boolean(selectedFile),
+    hasUpload: hasValidSelectedFile,
     hasNotes: Boolean(notes.trim()),
     hasPaymentAcceptance: paymentAccepted,
     hasFinalAcceptance: responsibilityAccepted,
   });
+
+  const submissionChecklist = [
+    {
+      id: "vehicle",
+      label: "Vehicle and engine selected",
+      complete: hasRequestVehicle,
+    },
+    {
+      id: "service",
+      label: "Service selected",
+      complete: Boolean(selectedMainService),
+    },
+    {
+      id: "file",
+      label: "Original file attached",
+      complete: hasValidSelectedFile,
+    },
+    {
+      id: "credits",
+      label: "Credits verified",
+      complete: !profileLoading && !accountBlocked && canCreateByCredits,
+    },
+    {
+      id: "payment",
+      label: "Credit use accepted",
+      complete: paymentAccepted,
+    },
+    {
+      id: "responsibility",
+      label: "Responsibility confirmed",
+      complete: responsibilityAccepted,
+    },
+  ];
+  const completedSubmissionChecklistItems = submissionChecklist.filter(
+    (item) => item.complete
+  ).length;
+  const isRequestReadyForSubmit = submissionChecklist.every((item) => item.complete);
 
   const switchToCatalogVehicleDetails = () => {
     setUseManualVehicleDetails(false);
@@ -1855,11 +1910,35 @@ export default function NewRequestPage() {
                   </span>
                 </div>
 
-                <div className="flex justify-between gap-4 rounded-2xl bg-white/[0.04] p-4">
-                  <span className="text-zinc-400">Extra Options</span>
-                  <span className="text-right font-bold">
-                    {selectedExtras.length}
-                  </span>
+                <div className="rounded-2xl bg-white/[0.04] p-4">
+                  <div className="flex justify-between gap-4">
+                    <span className="text-zinc-400">Extra Options</span>
+                    <span className="text-right font-bold">
+                      {selectedExtras.length}
+                    </span>
+                  </div>
+
+                  <div className="mt-3 space-y-2">
+                    {selectedExtraServices.length > 0 ? (
+                      selectedExtraServices.map((service) => (
+                        <div
+                          key={service.id}
+                          className="flex items-start justify-between gap-3 rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-xs"
+                        >
+                          <span className="min-w-0 break-words font-bold text-zinc-200">
+                            {service.title}
+                          </span>
+                          <span className="shrink-0 font-black text-red-300">
+                            {service.credits} cr
+                          </span>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-xs font-bold text-zinc-500">
+                        None selected
+                      </p>
+                    )}
+                  </div>
                 </div>
 
                 <div className="flex justify-between gap-4 rounded-2xl border border-red-900/40 bg-red-950/25 p-4">
@@ -1867,6 +1946,33 @@ export default function NewRequestPage() {
                   <span className="text-right text-xl font-black text-red-400">
                     {totalCredits} Credits
                   </span>
+                </div>
+
+                <div className="rounded-2xl border border-white/10 bg-black/25 p-4">
+                  <div className="flex items-center justify-between gap-4">
+                    <span className="text-zinc-400">Submit Readiness</span>
+                    <span className="text-xs font-black text-red-300">
+                      {completedSubmissionChecklistItems}/{submissionChecklist.length}
+                    </span>
+                  </div>
+
+                  <div className="mt-3 space-y-2">
+                    {submissionChecklist.map((item) => (
+                      <div
+                        key={item.id}
+                        className={`flex items-start gap-2 text-xs font-bold ${
+                          item.complete ? "text-emerald-200" : "text-zinc-500"
+                        }`}
+                      >
+                        <CheckCircle2
+                          className={`mt-0.5 h-4 w-4 shrink-0 ${
+                            item.complete ? "text-emerald-300" : "text-zinc-700"
+                          }`}
+                        />
+                        <span className="min-w-0 break-words">{item.label}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
 
@@ -1906,7 +2012,7 @@ export default function NewRequestPage() {
 
               <button
                 onClick={handleSubmit}
-                disabled={submitting || profileLoading || accountBlocked || !canCreateByCredits}
+                disabled={submitting || !isRequestReadyForSubmit}
                 className="mt-6 flex w-full items-center justify-center rounded-xl bg-[#b1121b] px-6 py-4 font-black text-white shadow-xl shadow-red-950/40 transition hover:bg-[#c91824] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {submitting ? (
@@ -1928,6 +2034,11 @@ export default function NewRequestPage() {
                   <>
                     <CreditCard className="mr-2 h-5 w-5" />
                     Not Enough Credits
+                  </>
+                ) : !isRequestReadyForSubmit ? (
+                  <>
+                    <CheckCircle2 className="mr-2 h-5 w-5" />
+                    Complete Required Steps
                   </>
                 ) : (
                   <>

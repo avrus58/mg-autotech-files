@@ -14,6 +14,9 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const legalUpdated = new Date("2026-06-30T00:00:00.000Z");
   const toolPaths = [
     "/tools",
+    "/tools/file-readiness-check",
+    "/tools/request-brief-builder",
+    "/tools/ecu-read-method-advisor",
     "/tools/torque-power-calculator",
     "/tools/autotuner-log-analyzer",
   ];

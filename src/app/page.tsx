@@ -48,33 +48,55 @@ const services = [
     title: "Stage 1",
     text: "Performance optimization for stock vehicles.",
     credits: "10 Credits",
+    href: "/services/stage-1",
+    action: "View Stage 1 service",
+    searchIntent: "Performance calibration",
   },
   {
     title: "DPF OFF",
     text: "Technical software solution for diesel vehicles.",
     credits: "6 Credits",
+    href: "/services/dpf-off",
+    action: "View DPF service",
+    searchIntent: "Diesel aftertreatment",
   },
   {
     title: "EGR / AGR OFF",
     text: "EGR related software solution and DTC support.",
     credits: "6 Credits",
+    href: "/services/egr-off",
+    action: "View EGR service",
+    searchIntent: "EGR / AGR solution",
   },
   {
     title: "AdBlue OFF",
     text: "SCR / AdBlue software solution for supported ECUs.",
     credits: "11 Credits",
+    href: "/services/adblue-off",
+    action: "View AdBlue service",
+    searchIntent: "SCR / AdBlue request",
   },
   {
     title: "DTC OFF",
     text: "Diagnostic trouble code removal by request.",
     credits: "4 Credits",
+    href: "/services/dtc-off",
+    action: "View DTC service",
+    searchIntent: "Diagnostic code request",
   },
   {
     title: "TCU Tuning",
     text: "Gearbox software optimization for supported TCUs.",
     credits: "Manual",
+    href: "/new-request",
+    action: "Request TCU review",
+    searchIntent: "Gearbox calibration",
   },
 ];
+
+const serviceLandingPageLinks = services.filter((service) =>
+  service.href.startsWith("/services/")
+);
 
 const steps = [
   {
@@ -98,6 +120,97 @@ const steps = [
     text: "Track the status and download the completed file.",
   },
 ];
+
+const requestReadinessSteps = [
+  {
+    eyebrow: "01",
+    title: "Check file readiness",
+    text: "Confirm file type, basic details and missing preparation before opening a request.",
+    href: "/tools/file-readiness-check",
+    action: "Open readiness check",
+    icon: ShieldCheck,
+  },
+  {
+    eyebrow: "02",
+    title: "Build request brief",
+    text: "Turn vehicle, ECU, read method and customer notes into a copy-ready technical brief.",
+    href: "/tools/request-brief-builder",
+    action: "Build request brief",
+    icon: MessageCircle,
+  },
+  {
+    eyebrow: "03",
+    title: "Plan read method",
+    text: "Check whether bench, boot or OBD context should be clarified before upload.",
+    href: "/tools/ecu-read-method-advisor",
+    action: "Plan read method",
+    icon: Search,
+  },
+  {
+    eyebrow: "04",
+    title: "Start secure request",
+    text: "Submit the file only through the authenticated customer portal when the brief is ready.",
+    href: "/new-request",
+    action: "Start secure request",
+    icon: Upload,
+  },
+];
+
+const requestReadinessBoundaries = [
+  "Tools do not upload or modify ECU files.",
+  "Credits are verified during secure request creation.",
+  "Delivered files stay inside the customer dashboard.",
+  "Complex requests stay human-reviewed before delivery.",
+];
+
+const homepageSearchIntentFaq = [
+  {
+    intent: "Before upload",
+    question: "What should I prepare before sending an ECU or TCU file request?",
+    answer:
+      "Prepare the vehicle brand, model, engine, ECU or TCU information when available, read method, selected service and a short technical note. The public preparation tools can help organize this before the secure request is created.",
+    href: "/tools/file-readiness-check",
+    action: "Check readiness",
+  },
+  {
+    intent: "Safe preparation",
+    question: "Do the public preparation tools upload or modify my ECU file?",
+    answer:
+      "No. The public preparation tools are browser guidance only. They do not read, upload, change, patch or generate ECU or TCU files. File upload starts only inside the authenticated request flow.",
+    href: "/tools",
+    action: "Open tools",
+  },
+  {
+    intent: "Order tracking",
+    question: "How is a completed file delivered?",
+    answer:
+      "Completed files are delivered through the private customer dashboard. Customers can track the request status, see customer-visible messages and download delivered files only from their own account.",
+    href: "/how-it-works",
+    action: "See workflow",
+  },
+  {
+    intent: "Vehicle coverage",
+    question: "Can I create a request if my vehicle is not in the public selector?",
+    answer:
+      "Yes. If the exact vehicle or engine is not available in the selector, customers can use the manual vehicle request path and provide the missing technical details for review.",
+    href: "/new-request",
+    action: "Start request",
+  },
+];
+
+const homepageSearchIntentJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "@id": "https://file.mgautotech.de/#homepage-search-faq",
+  mainEntity: homepageSearchIntentFaq.map((item) => ({
+    "@type": "Question",
+    name: item.question,
+    acceptedAnswer: {
+      "@type": "Answer",
+      text: item.answer,
+    },
+  })),
+};
 
 const workshopUseCases = [
   {
@@ -146,15 +259,217 @@ const securityItems = [
 ];
 
 const supportedBrands = [
-  { name: "BMW", note: "MD1, EDC17, MG1", initials: "BM" },
-  { name: "Mercedes-Benz", note: "CDI, MED, VGS", initials: "MB" },
-  { name: "Audi", note: "VAG ECU / TCU", initials: "AU" },
-  { name: "Volkswagen", note: "EDC, Simos, DSG", initials: "VW" },
-  { name: "Porsche", note: "Performance files", initials: "PO" },
-  { name: "Opel", note: "Diesel & petrol", initials: "OP" },
-  { name: "Renault", note: "ECU solutions", initials: "RE" },
-  { name: "Peugeot", note: "BlueHDi support", initials: "PE" },
+  {
+    name: "BMW",
+    note: "MD1, EDC17, MG1",
+    initials: "BM",
+    href: "/brands/bmw",
+    action: "View BMW files",
+  },
+  {
+    name: "Mercedes-Benz",
+    note: "CDI, MED, VGS",
+    initials: "MB",
+    href: "/brands/mercedes-benz",
+    action: "View Mercedes files",
+  },
+  {
+    name: "Audi",
+    note: "VAG ECU / TCU",
+    initials: "AU",
+    href: "/brands/audi",
+    action: "View Audi files",
+  },
+  {
+    name: "Volkswagen",
+    note: "EDC, Simos, DSG",
+    initials: "VW",
+    href: "/brands/volkswagen",
+    action: "View Volkswagen files",
+  },
+  {
+    name: "Porsche",
+    note: "Performance files",
+    initials: "PO",
+    href: "/brands/porsche",
+    action: "View Porsche files",
+  },
+  {
+    name: "Opel",
+    note: "Diesel & petrol",
+    initials: "OP",
+    href: "/brands/opel",
+    action: "View Opel files",
+  },
+  {
+    name: "Renault",
+    note: "ECU solutions",
+    initials: "RE",
+    href: "/brands/renault",
+    action: "View Renault files",
+  },
+  {
+    name: "Peugeot",
+    note: "BlueHDi support",
+    initials: "PE",
+    href: "/brands/peugeot",
+    action: "View Peugeot files",
+  },
 ];
+
+const ecuPlatformLinks = [
+  {
+    name: "Bosch EDC17",
+    tag: "Diesel ECU",
+    note: "Read-method, HW/SW and diesel request context for established European platforms.",
+    href: "/ecu-platforms/bosch-edc17",
+    action: "Open EDC17 guide",
+  },
+  {
+    name: "Bosch MD1",
+    tag: "Modern diesel",
+    note: "Modern diesel ECU identification notes for newer protected controller families.",
+    href: "/ecu-platforms/bosch-md1",
+    action: "Open MD1 guide",
+  },
+  {
+    name: "Bosch MG1",
+    tag: "Petrol ECU",
+    note: "Petrol and hybrid-era request context for MG1 vehicle and fuel details.",
+    href: "/ecu-platforms/bosch-mg1",
+    action: "Open MG1 guide",
+  },
+  {
+    name: "Continental SIMOS",
+    tag: "VAG petrol",
+    note: "SIMOS generation, engine-code and read-protocol context for TSI/TFSI requests.",
+    href: "/ecu-platforms/continental-simos",
+    action: "Open SIMOS guide",
+  },
+  {
+    name: "Continental SID",
+    tag: "Diesel ECU",
+    note: "SID family identification notes for diesel requests across supported workshops.",
+    href: "/ecu-platforms/continental-sid",
+    action: "Open SID guide",
+  },
+  {
+    name: "Delphi DCM",
+    tag: "Diesel ECU",
+    note: "DCM generation, read coverage and diagnostic context before file submission.",
+    href: "/ecu-platforms/delphi-dcm",
+    action: "Open DCM guide",
+  },
+  {
+    name: "Denso",
+    tag: "ECU family",
+    note: "Denso request preparation based on exact ECU and file identification.",
+    href: "/ecu-platforms/denso",
+    action: "Open Denso guide",
+  },
+  {
+    name: "TCU & Gearbox",
+    tag: "Transmission",
+    note: "Gearbox controller context for DSG, ZF, VGS, DCT and PDK requests.",
+    href: "/ecu-platforms/transmission-control-units",
+    action: "Open TCU guide",
+  },
+];
+
+type HomepageResourceLink = {
+  title?: string;
+  name?: string;
+  text?: string;
+  note?: string;
+  searchIntent?: string;
+  tag?: string;
+  href: string;
+};
+
+const publicResourceUrl = (href: string) => `https://file.mgautotech.de${href}`;
+
+const buildHomepageItemList = (name: string, items: HomepageResourceLink[], id: string) => ({
+  "@type": "ItemList",
+  "@id": publicResourceUrl(id),
+  name,
+  itemListElement: items.map((item, index) => ({
+    "@type": "ListItem",
+    position: index + 1,
+    item: {
+      "@type": "WebPage",
+      name: item.title ?? item.name ?? `MG AutoTech resource ${index + 1}`,
+      description: item.text ?? item.note ?? item.searchIntent ?? item.tag,
+      url: publicResourceUrl(item.href),
+    },
+  })),
+});
+
+const homepageResourceJsonLd = {
+  "@context": "https://schema.org",
+  "@graph": [
+    buildHomepageItemList("MG AutoTech service landing pages", serviceLandingPageLinks, "/#service-landing-pages"),
+    buildHomepageItemList("MG AutoTech supported brand guides", supportedBrands, "/#supported-brand-guides"),
+    buildHomepageItemList("MG AutoTech ECU and TCU platform guides", ecuPlatformLinks, "/#ecu-platform-guides"),
+  ],
+};
+
+const homepagePageJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "WebPage",
+  "@id": publicResourceUrl("/#page"),
+  name: "MG AutoTech ECU & TCU File Service",
+  description:
+    "Professional ECU and TCU file service for workshops with secure upload, tracked orders, public preparation tools and portal delivery.",
+  url: publicResourceUrl("/"),
+  inLanguage: "en",
+  isPartOf: { "@id": publicResourceUrl("/#website") },
+  about: { "@id": publicResourceUrl("/#organization") },
+  primaryImageOfPage: {
+    "@type": "ImageObject",
+    url: publicResourceUrl("/opengraph-image"),
+  },
+  hasPart: [
+    { "@id": publicResourceUrl("/#homepage-search-faq") },
+    { "@id": publicResourceUrl("/#request-readiness-howto") },
+    { "@id": publicResourceUrl("/#service-landing-pages") },
+    { "@id": publicResourceUrl("/#supported-brand-guides") },
+    { "@id": publicResourceUrl("/#ecu-platform-guides") },
+  ],
+};
+
+const homepageRequestPreparationHowToJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "HowTo",
+  "@id": publicResourceUrl("/#request-readiness-howto"),
+  name: "How to prepare an ECU or TCU file request",
+  description:
+    "A safe workshop preparation workflow for MG AutoTech file requests: check readiness, prepare a technical brief, confirm the read method and submit through the secure customer portal.",
+  inLanguage: "en",
+  mainEntityOfPage: { "@id": publicResourceUrl("/#page") },
+  tool: [
+    {
+      "@type": "HowToTool",
+      name: "MG AutoTech public preparation tools",
+    },
+  ],
+  supply: [
+    {
+      "@type": "HowToSupply",
+      name: "Vehicle, engine and ECU or TCU identification details",
+    },
+    {
+      "@type": "HowToSupply",
+      name: "Original file prepared for authenticated portal submission",
+    },
+  ],
+  step: requestReadinessSteps.map((step, index) => ({
+    "@type": "HowToStep",
+    position: index + 1,
+    name: step.title,
+    text: step.text,
+    url: publicResourceUrl(step.href),
+  })),
+};
 
 const trustHighlights = [
   {
@@ -2031,6 +2346,103 @@ export default function HomePage() {
         </div>
       </AnimatedSection>
 
+      <AnimatedSection className="bg-[#050505] py-20">
+        <div className="mx-auto max-w-7xl px-4">
+          <div className="mb-10 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <div className="text-sm font-black uppercase tracking-[0.25em] text-red-600">
+                Request preparation
+              </div>
+              <h2 className="mt-3 max-w-3xl text-4xl font-black md:text-5xl">
+                Request Readiness Cockpit
+              </h2>
+              <p className="mt-4 max-w-2xl text-sm leading-7 text-zinc-400">
+                Give every file request a cleaner start: check the basic
+                readiness, prepare a precise brief, confirm the read method and
+                then submit through the secure portal.
+              </p>
+            </div>
+
+            <Link
+              href="/tools"
+              className="inline-flex items-center justify-center rounded-xl border border-white/10 bg-white/[0.06] px-5 py-3 text-sm font-black text-white transition hover:-translate-y-0.5 hover:border-red-800/60 hover:bg-red-950/25"
+            >
+              Open all tools
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Link>
+          </div>
+
+          <div className="grid gap-6 lg:grid-cols-[1.35fr_0.65fr]">
+            <motion.div
+              variants={stagger}
+              initial="hidden"
+              whileInView="show"
+              viewport={{ once: true, amount: 0.18 }}
+              className="grid gap-4 md:grid-cols-2"
+            >
+              {requestReadinessSteps.map((step) => {
+                const Icon = step.icon;
+
+                return (
+                  <motion.div variants={fadeUp} key={step.title}>
+                    <Link
+                      href={step.href}
+                      className="group flex h-full flex-col rounded-3xl border border-white/10 bg-white/[0.04] p-6 transition duration-300 hover:-translate-y-1 hover:border-red-800/60 hover:bg-white/[0.07]"
+                    >
+                      <div className="mb-6 flex items-start justify-between gap-4">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-red-900/50 bg-red-950/25 text-red-400">
+                          <Icon className="h-6 w-6" />
+                        </div>
+                        <div className="rounded-full border border-white/10 bg-black/35 px-3 py-1 text-xs font-black text-zinc-400">
+                          {step.eyebrow}
+                        </div>
+                      </div>
+                      <h3 className="text-xl font-black text-white">
+                        {step.title}
+                      </h3>
+                      <p className="mt-3 flex-1 text-sm leading-6 text-zinc-400">
+                        {step.text}
+                      </p>
+                      <div className="mt-6 inline-flex items-center text-sm font-black text-red-300 transition group-hover:text-red-100">
+                        {step.action}
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                      </div>
+                    </Link>
+                  </motion.div>
+                );
+              })}
+            </motion.div>
+
+            <div className="rounded-[2rem] border border-red-900/50 bg-[linear-gradient(145deg,rgba(177,18,27,0.18),rgba(255,255,255,0.04))] p-7 shadow-2xl shadow-black/25">
+              <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-3 py-1.5 text-xs font-black uppercase tracking-[0.16em] text-emerald-300">
+                <ShieldCheck className="h-4 w-4" />
+                Safe by design
+              </div>
+              <h3 className="mt-5 text-2xl font-black">
+                Prepare better requests without hidden file actions.
+              </h3>
+              <p className="mt-3 text-sm leading-7 text-zinc-400">
+                The preparation cockpit is guidance only. It helps customers
+                arrive with the right vehicle context, but file upload and
+                processing stay inside the authenticated request workflow.
+              </p>
+
+              <div className="mt-6 space-y-3">
+                {requestReadinessBoundaries.map((item) => (
+                  <div
+                    key={item}
+                    className="flex gap-3 rounded-2xl border border-white/10 bg-black/25 p-3 text-sm text-zinc-300"
+                  >
+                    <BadgeCheck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-300" />
+                    <span>{item}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </AnimatedSection>
+
       <WorkshopCommandDesk />
 
       <PerformanceTools />
@@ -2064,20 +2476,28 @@ export default function HomePage() {
               <motion.div
                 variants={fadeUp}
                 key={brand.name}
-                className="group rounded-2xl border border-white/10 bg-white/[0.04] p-5 transition duration-300 hover:-translate-y-1 hover:border-red-800/60 hover:bg-white/[0.07]"
               >
-                <div className="mb-5 flex items-center justify-between gap-4">
-                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-red-900/50 bg-red-950/25 text-lg font-black text-red-200 shadow-lg shadow-red-950/20">
-                    {brand.initials}
+                <Link
+                  href={brand.href}
+                  className="group block h-full rounded-2xl border border-white/10 bg-white/[0.04] p-5 transition duration-300 hover:-translate-y-1 hover:border-red-800/60 hover:bg-white/[0.07] focus:outline-none focus-visible:ring-2 focus-visible:ring-red-700"
+                >
+                  <div className="mb-5 flex items-center justify-between gap-4">
+                    <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-red-900/50 bg-red-950/25 text-lg font-black text-red-200 shadow-lg shadow-red-950/20">
+                      {brand.initials}
+                    </div>
+
+                    <BadgeCheck className="h-5 w-5 text-emerald-400 opacity-80 transition group-hover:opacity-100" />
                   </div>
 
-                  <BadgeCheck className="h-5 w-5 text-emerald-400 opacity-80 transition group-hover:opacity-100" />
-                </div>
-
-                <h3 className="text-xl font-black">{brand.name}</h3>
-                <p className="mt-2 text-sm font-bold text-zinc-500">
-                  {brand.note}
-                </p>
+                  <h3 className="text-xl font-black">{brand.name}</h3>
+                  <p className="mt-2 text-sm font-bold text-zinc-500">
+                    {brand.note}
+                  </p>
+                  <div className="mt-5 inline-flex items-center text-sm font-black text-red-300 transition group-hover:text-red-100">
+                    {brand.action}
+                    <ArrowRight className="ml-2 h-4 w-4 transition group-hover:translate-x-1" />
+                  </div>
+                </Link>
               </motion.div>
             ))}
           </motion.div>
@@ -2102,6 +2522,87 @@ export default function HomePage() {
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </div>
+          </div>
+        </div>
+      </AnimatedSection>
+
+      <AnimatedSection id="ecu-platforms" className="bg-[#0b0b0d] py-20">
+        <div className="mx-auto max-w-7xl px-4">
+          <div className="mb-10 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <div className="text-sm font-black uppercase tracking-[0.25em] text-red-600">
+                ECU Platform Library
+              </div>
+              <h2 className="mt-3 max-w-3xl text-4xl font-black md:text-5xl">
+                Technical ECU and TCU guides for cleaner file requests.
+              </h2>
+              <p className="mt-4 max-w-2xl text-sm leading-7 text-zinc-400">
+                Model names are not enough for a professional file-service
+                request. These guides help workshops prepare controller family,
+                read method and identification details before submitting a file.
+              </p>
+            </div>
+
+            <Link
+              href="/ecu-platforms"
+              className="inline-flex items-center justify-center rounded-xl border border-white/10 bg-white/[0.06] px-5 py-3 text-sm font-black text-white transition hover:-translate-y-0.5 hover:border-red-800/60 hover:bg-red-950/25 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-700"
+            >
+              Open platform hub
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Link>
+          </div>
+
+          <motion.div
+            variants={stagger}
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, amount: 0.18 }}
+            className="grid gap-4 md:grid-cols-2 xl:grid-cols-4"
+          >
+            {ecuPlatformLinks.map((platform) => (
+              <motion.div variants={fadeUp} key={platform.name}>
+                <Link
+                  href={platform.href}
+                  className="group flex h-full flex-col rounded-2xl border border-white/10 bg-white/[0.04] p-5 transition duration-300 hover:-translate-y-1 hover:border-red-800/60 hover:bg-white/[0.07] focus:outline-none focus-visible:ring-2 focus-visible:ring-red-700"
+                >
+                  <div className="mb-5 flex items-center justify-between gap-4">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-red-900/50 bg-red-950/25 text-red-300">
+                      <Cpu className="h-6 w-6" />
+                    </div>
+                    <span className="rounded-full border border-white/10 bg-black/30 px-3 py-1 text-xs font-black text-zinc-400">
+                      {platform.tag}
+                    </span>
+                  </div>
+
+                  <h3 className="text-lg font-black text-white">
+                    {platform.name}
+                  </h3>
+                  <p className="mt-3 flex-1 text-sm leading-6 text-zinc-400">
+                    {platform.note}
+                  </p>
+                  <div className="mt-5 inline-flex items-center text-sm font-black text-red-300 transition group-hover:text-red-100">
+                    {platform.action}
+                    <ArrowRight className="ml-2 h-4 w-4 transition group-hover:translate-x-1" />
+                  </div>
+                </Link>
+              </motion.div>
+            ))}
+          </motion.div>
+
+          <div className="mt-8 grid gap-4 md:grid-cols-3">
+            {[
+              "Identify the ECU or TCU family before assuming support.",
+              "Submit original files only through the authenticated request workflow.",
+              "No public guide edits, generates or checksum-corrects customer files.",
+            ].map((item) => (
+              <div
+                key={item}
+                className="flex gap-3 rounded-2xl border border-white/10 bg-black/25 p-4 text-sm leading-6 text-zinc-300"
+              >
+                <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-300" />
+                <span>{item}</span>
+              </div>
+            ))}
           </div>
         </div>
       </AnimatedSection>
@@ -2329,21 +2830,31 @@ export default function HomePage() {
             className="grid gap-5 md:grid-cols-3"
           >
             {services.map((service) => (
-              <motion.div
-                variants={fadeUp}
-                key={service.title}
-                className="rounded-3xl bg-white p-6 shadow-xl shadow-black/5 transition duration-300 hover:-translate-y-2 hover:shadow-2xl"
-              >
-                <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-red-50 text-red-700">
-                  <FileCode2 />
-                </div>
-                <h3 className="text-xl font-black">{service.title}</h3>
-                <p className="mt-3 text-sm leading-6 text-zinc-600">
-                  {service.text}
-                </p>
-                <div className="mt-5 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-black text-red-700">
-                  {service.credits}
-                </div>
+              <motion.div variants={fadeUp} key={service.title}>
+                <Link
+                  href={service.href}
+                  className="group flex h-full flex-col rounded-3xl bg-white p-6 shadow-xl shadow-black/5 transition duration-300 hover:-translate-y-2 hover:shadow-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-red-700"
+                >
+                  <div className="mb-5 flex items-start justify-between gap-4">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-red-50 text-red-700">
+                      <FileCode2 />
+                    </div>
+                    <span className="rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1 text-xs font-black uppercase tracking-[0.12em] text-zinc-500">
+                      {service.searchIntent}
+                    </span>
+                  </div>
+                  <h3 className="text-xl font-black">{service.title}</h3>
+                  <p className="mt-3 flex-1 text-sm leading-6 text-zinc-600">
+                    {service.text}
+                  </p>
+                  <div className="mt-5 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-black text-red-700">
+                    {service.credits}
+                  </div>
+                  <div className="mt-5 inline-flex items-center text-sm font-black text-red-700 transition group-hover:text-red-900">
+                    {service.action}
+                    <ArrowRight className="ml-2 h-4 w-4 transition group-hover:translate-x-1" />
+                  </div>
+                </Link>
               </motion.div>
             ))}
           </motion.div>
@@ -2481,6 +2992,67 @@ export default function HomePage() {
         </div>
       </AnimatedSection>
 
+      <AnimatedSection className="bg-[#eef1f4] py-20 text-[#111827]">
+        <div className="mx-auto max-w-7xl px-4">
+          <div className="mb-10 grid gap-6 lg:grid-cols-[0.8fr_1.2fr] lg:items-end">
+            <div>
+              <div className="text-sm font-black uppercase tracking-[0.25em] text-red-700">
+                Workshop Search Guide
+              </div>
+              <h2 className="mt-3 text-4xl font-black md:text-5xl">
+                ECU file service questions answered before upload.
+              </h2>
+            </div>
+
+            <p className="max-w-3xl text-sm leading-7 text-zinc-600">
+              Workshops often search for the same answers before opening a file
+              request: what information is needed, when upload starts, how
+              delivery works and what to do when the exact vehicle is not yet in
+              the selector. This guide keeps those answers clear on the homepage.
+            </p>
+          </div>
+
+          <div className="grid gap-4 lg:grid-cols-2">
+            {homepageSearchIntentFaq.map((item) => (
+              <article
+                key={item.question}
+                className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-xl shadow-black/5"
+              >
+                <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+                  <span className="rounded-full border border-red-100 bg-red-50 px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-red-700">
+                    {item.intent}
+                  </span>
+                  <Link
+                    href={item.href}
+                    className="inline-flex items-center rounded-full border border-zinc-200 px-3 py-1 text-xs font-black text-zinc-700 transition hover:border-red-200 hover:text-red-700"
+                  >
+                    {item.action}
+                    <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+                  </Link>
+                </div>
+                <h3 className="text-xl font-black leading-tight">
+                  {item.question}
+                </h3>
+                <p className="mt-4 text-sm leading-7 text-zinc-600">
+                  {item.answer}
+                </p>
+              </article>
+            ))}
+          </div>
+
+          <div className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-5 text-sm leading-7 text-emerald-900">
+            <div className="flex gap-3">
+              <ShieldCheck className="mt-1 h-5 w-5 shrink-0 text-emerald-700" />
+              <p>
+                FAQ structured data is generated from the same customer-visible
+                answers. It does not include private file paths, customer data,
+                admin notes, source metadata or generation internals.
+              </p>
+            </div>
+          </div>
+        </div>
+      </AnimatedSection>
+
       <section id="contact" className="bg-[#b1121b] py-16">
         <div className="mx-auto flex max-w-7xl flex-col items-start justify-between gap-6 px-4 md:flex-row md:items-center">
           <div>
@@ -2546,6 +3118,30 @@ export default function HomePage() {
 
       <Footer />
       <OnlineStatus />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(homepageSearchIntentJsonLd),
+        }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(homepageResourceJsonLd),
+        }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(homepagePageJsonLd),
+        }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(homepageRequestPreparationHowToJsonLd),
+        }}
+      />
     </main>
   );
 }

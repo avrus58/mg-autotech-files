@@ -1,14 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { signOutIfEmailUnverified } from "@/lib/authGuards";
 import { supabase } from "@/lib/supabaseClient";
 import {
   ArrowLeft,
+  AlertTriangle,
   Building2,
   CheckCircle2,
+  Copy,
   CreditCard,
   Gauge,
   Loader2,
@@ -43,6 +45,69 @@ function formatCustomerReference(customerId: string | null) {
   return "MGA-10001";
 }
 
+const SETTINGS_LOAD_ERROR_MESSAGE = "Customer profile could not be synced. Please try again.";
+const SETTINGS_SAVE_ERROR_MESSAGE = "Settings could not be saved. Please try again. Your entered details are still shown.";
+
+function hasSettingsValue(value: string | null | undefined) {
+  return Boolean(value?.trim());
+}
+
+function getSettingsReadinessItems({
+  fullName,
+  phone,
+  invoiceEmail,
+  preferredContact,
+  accountType,
+  companyName,
+  street,
+  postalCode,
+  city,
+  country,
+}: {
+  fullName: string;
+  phone: string;
+  invoiceEmail: string;
+  preferredContact: string;
+  accountType: string;
+  companyName: string;
+  street: string;
+  postalCode: string;
+  city: string;
+  country: string;
+}) {
+  const addressComplete =
+    hasSettingsValue(street) &&
+    hasSettingsValue(postalCode) &&
+    hasSettingsValue(city) &&
+    hasSettingsValue(country);
+
+  return [
+    {
+      label: "Contact details",
+      detail: "Name, phone and preferred contact method are ready for support handover.",
+      complete: hasSettingsValue(fullName) && hasSettingsValue(phone) && hasSettingsValue(preferredContact),
+    },
+    {
+      label: "Invoice contact",
+      detail: "Invoice e-mail is available for payment and accounting follow-up.",
+      complete: hasSettingsValue(invoiceEmail),
+    },
+    {
+      label: "Billing address",
+      detail: "Address fields are ready for future invoice workflows.",
+      complete: addressComplete,
+    },
+    {
+      label: accountType === "company" ? "Company profile" : "Account type",
+      detail:
+        accountType === "company"
+          ? "Company / workshop name is available for B2B support context."
+          : "Private customer profile is selected.",
+      complete: accountType === "company" ? hasSettingsValue(companyName) : hasSettingsValue(accountType),
+    },
+  ];
+}
+
 export default function CustomerSettingsPage() {
   const router = useRouter();
 
@@ -65,64 +130,91 @@ export default function CustomerSettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+  const [loadError, setLoadError] = useState("");
+  const [settingsReady, setSettingsReady] = useState(false);
+  const [referenceCopied, setReferenceCopied] = useState(false);
   const customerReference = formatCustomerReference(customerId);
+  const readinessItems = useMemo(
+    () =>
+      getSettingsReadinessItems({
+        fullName,
+        phone,
+        invoiceEmail,
+        preferredContact,
+        accountType,
+        companyName,
+        street,
+        postalCode,
+        city,
+        country,
+      }),
+    [accountType, city, companyName, country, fullName, invoiceEmail, phone, postalCode, preferredContact, street]
+  );
+  const completedReadinessItems = readinessItems.filter((item) => item.complete).length;
+  const readinessPercent = Math.round((completedReadinessItems / readinessItems.length) * 100);
+
+  const loadSettings = useCallback(async () => {
+    setLoading(true);
+    setMessage("");
+    setLoadError("");
+
+    const { data: userData } = await supabase.auth.getUser();
+
+    if (!userData.user) {
+      router.push("/login");
+      return;
+    }
+
+    const user = userData.user;
+
+    if (await signOutIfEmailUnverified(user)) {
+      router.push("/login?verify_email=1");
+      return;
+    }
+
+    setEmail(user.email ?? null);
+
+    const { data: profile, error } = await supabase
+      .from("profiles")
+      .select(
+        "customer_id, credit_balance, full_name, account_type, company_name, phone, street, postal_code, city, country, vat_id, invoice_email, preferred_contact"
+      )
+      .eq("id", user.id)
+      .single();
+
+    if (error) {
+      setLoadError(SETTINGS_LOAD_ERROR_MESSAGE);
+      setSettingsReady(false);
+      setLoading(false);
+      return;
+    }
+
+    const data = profile as Profile;
+
+    setCustomerId(data.customer_id ?? null);
+    setCredits(Number(data.credit_balance ?? 0));
+    setFullName(data.full_name ?? "");
+    setAccountType(data.account_type ?? "private");
+    setCompanyName(data.company_name ?? "");
+    setPhone(data.phone ?? "");
+    setStreet(data.street ?? "");
+    setPostalCode(data.postal_code ?? "");
+    setCity(data.city ?? "");
+    setCountry(data.country ?? "Germany");
+    setVatId(data.vat_id ?? "");
+    setInvoiceEmail(data.invoice_email ?? user.email ?? "");
+    setPreferredContact(data.preferred_contact ?? "email");
+
+    setSettingsReady(true);
+    setLoading(false);
+  }, [router]);
 
   useEffect(() => {
-    const loadSettings = async () => {
-      setLoading(true);
-      setMessage("");
-
-      const { data: userData } = await supabase.auth.getUser();
-
-      if (!userData.user) {
-        router.push("/login");
-        return;
-      }
-
-      const user = userData.user;
-
-      if (await signOutIfEmailUnverified(user)) {
-        router.push("/login?verify_email=1");
-        return;
-      }
-
-      setEmail(user.email ?? null);
-
-      const { data: profile, error } = await supabase
-        .from("profiles")
-        .select(
-          "customer_id, credit_balance, full_name, account_type, company_name, phone, street, postal_code, city, country, vat_id, invoice_email, preferred_contact"
-        )
-        .eq("id", user.id)
-        .single();
-
-      if (error) {
-        setMessage(error.message);
-        setLoading(false);
-        return;
-      }
-
-      const data = profile as Profile;
-
-      setCustomerId(data.customer_id ?? null);
-      setCredits(Number(data.credit_balance ?? 0));
-      setFullName(data.full_name ?? "");
-      setAccountType(data.account_type ?? "private");
-      setCompanyName(data.company_name ?? "");
-      setPhone(data.phone ?? "");
-      setStreet(data.street ?? "");
-      setPostalCode(data.postal_code ?? "");
-      setCity(data.city ?? "");
-      setCountry(data.country ?? "Germany");
-      setVatId(data.vat_id ?? "");
-      setInvoiceEmail(data.invoice_email ?? user.email ?? "");
-      setPreferredContact(data.preferred_contact ?? "email");
-
-      setLoading(false);
-    };
-
-    loadSettings();
-  }, [router]);
+    const timeout = window.setTimeout(() => {
+      void loadSettings();
+    }, 0);
+    return () => window.clearTimeout(timeout);
+  }, [loadSettings]);
 
   const saveSettings = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -133,11 +225,13 @@ export default function CustomerSettingsPage() {
     const { data: userData } = await supabase.auth.getUser();
 
     if (!userData.user) {
+      setSaving(false);
       router.push("/login");
       return;
     }
 
     if (await signOutIfEmailUnverified(userData.user)) {
+      setSaving(false);
       router.push("/login?verify_email=1");
       return;
     }
@@ -162,11 +256,21 @@ export default function CustomerSettingsPage() {
     setSaving(false);
 
     if (error) {
-      setMessage(error.message);
+      setMessage(SETTINGS_SAVE_ERROR_MESSAGE);
       return;
     }
 
     setMessage("Settings saved successfully.");
+  };
+
+  const copyCustomerReference = async () => {
+    try {
+      await navigator.clipboard.writeText(customerReference);
+      setReferenceCopied(true);
+      window.setTimeout(() => setReferenceCopied(false), 2000);
+    } catch {
+      setMessage("Customer reference could not be copied. Please copy it manually.");
+    }
   };
 
   if (loading) {
@@ -178,6 +282,10 @@ export default function CustomerSettingsPage() {
         </div>
       </main>
     );
+  }
+
+  if (loadError && !settingsReady) {
+    return <SettingsLoadErrorState onRetry={() => void loadSettings()} />;
   }
 
   return (
@@ -277,6 +385,59 @@ export default function CustomerSettingsPage() {
         <form onSubmit={saveSettings} className="grid gap-6 lg:grid-cols-[1fr_0.8fr]">
           <section className="space-y-6">
             <div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6">
+              <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
+                <div>
+                  <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-xs font-black uppercase tracking-[0.16em] text-emerald-200">
+                    <ShieldCheck className="h-4 w-4" />
+                    Account Readiness
+                  </div>
+                  <h2 className="text-2xl font-black">Profile completion for faster handling</h2>
+                  <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-400">
+                    Complete customer details before high-touch file service workflows so support,
+                    billing and request review can move without extra back-and-forth.
+                  </p>
+                </div>
+
+                <div className="rounded-2xl border border-white/10 bg-black/30 px-5 py-4 text-right">
+                  <div className="text-xs font-black uppercase tracking-[0.16em] text-zinc-500">
+                    Ready
+                  </div>
+                  <div className="mt-1 text-3xl font-black text-emerald-300">
+                    {readinessPercent}%
+                  </div>
+                  <div className="mt-1 text-xs text-zinc-500">
+                    {completedReadinessItems}/{readinessItems.length} checks complete
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-6 grid gap-3 md:grid-cols-2">
+                {readinessItems.map((item) => (
+                  <div
+                    key={item.label}
+                    className={`rounded-2xl border p-4 ${
+                      item.complete
+                        ? "border-emerald-500/20 bg-emerald-500/10"
+                        : "border-amber-500/20 bg-amber-500/10"
+                    }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      {item.complete ? (
+                        <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-300" />
+                      ) : (
+                        <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-300" />
+                      )}
+                      <div>
+                        <div className="font-black text-white">{item.label}</div>
+                        <p className="mt-1 text-sm leading-6 text-zinc-400">{item.detail}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6">
               <div className="mb-6 flex items-center gap-3">
                 <User className="h-7 w-7 text-red-500" />
                 <div>
@@ -368,6 +529,14 @@ export default function CustomerSettingsPage() {
                 <div className="mt-2 text-2xl font-black text-red-400">
                   {customerReference}
                 </div>
+                <button
+                  type="button"
+                  onClick={copyCustomerReference}
+                  className="mt-4 inline-flex items-center rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2 text-xs font-black text-white transition hover:bg-white/10"
+                >
+                  <Copy className="mr-2 h-4 w-4" />
+                  {referenceCopied ? "Reference copied" : "Copy reference"}
+                </button>
               </div>
             </div>
 
@@ -391,6 +560,28 @@ export default function CustomerSettingsPage() {
           </aside>
         </form>
       </section>
+    </main>
+  );
+}
+
+function SettingsLoadErrorState({ onRetry }: { onRetry: () => void }) {
+  return (
+    <main className="flex min-h-screen items-center justify-center bg-[#050505] px-4 text-white">
+      <div className="w-full max-w-xl rounded-[2rem] border border-red-800/40 bg-red-950/20 p-8 text-center shadow-2xl shadow-black/30" role="alert">
+        <AlertTriangle className="mx-auto mb-5 h-10 w-10 text-red-300" />
+        <h1 className="text-2xl font-black">Customer settings sync failed</h1>
+        <p className="mt-3 leading-7 text-red-100/80">
+          Your profile form is not shown until customer settings load successfully. This prevents default profile values or an incorrect bank-transfer reference from being displayed.
+        </p>
+        <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row">
+          <button type="button" onClick={onRetry} className="rounded-xl bg-[#b1121b] px-5 py-3 text-sm font-black text-white hover:bg-[#c91824]">
+            Try again
+          </button>
+          <Link href="/dashboard" className="rounded-xl border border-white/10 bg-white/[0.04] px-5 py-3 text-sm font-black text-white hover:bg-white/10">
+            Back to dashboard
+          </Link>
+        </div>
+      </div>
     </main>
   );
 }

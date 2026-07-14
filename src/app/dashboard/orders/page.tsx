@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
@@ -45,6 +45,9 @@ const views: Array<{ value: View; label: string; description: string }> = [
   { value: "all", label: "All Orders", description: "Complete order archive" },
 ];
 
+const CUSTOMER_ORDERS_LOAD_ERROR_MESSAGE = "Order archive could not be synced. Please try again.";
+const CUSTOMER_ORDERS_SYNC_ERROR_MESSAGE = "Order archive sync needs retry. Your last loaded order list is still shown.";
+
 function statusLabel(status: string | null) {
   return (status || "new_request").replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
@@ -75,7 +78,9 @@ export default function CustomerOrdersPage() {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [message, setMessage] = useState("");
+  const [loadError, setLoadError] = useState("");
+  const [ordersReady, setOrdersReady] = useState(false);
+  const hasLoadedOrdersRef = useRef(false);
 
   useEffect(() => {
     const initial = new URLSearchParams(window.location.search).get("view");
@@ -136,13 +141,16 @@ export default function CustomerOrdersPage() {
     const nextPage = options?.targetPage ?? 1;
     if (nextPage > 1) setLoadingMore(true);
     else setLoading(true);
-    setMessage("");
+    setLoadError("");
     const { data, error, count } = await buildQuery(uid, view, search, nextPage * pageSize - 1);
-    if (error) setMessage(error.message);
-    else {
+    if (error) {
+      setLoadError(hasLoadedOrdersRef.current ? CUSTOMER_ORDERS_SYNC_ERROR_MESSAGE : CUSTOMER_ORDERS_LOAD_ERROR_MESSAGE);
+    } else {
       setOrders((data ?? []) as Order[]);
       setTotal(count ?? 0);
       setPage(nextPage);
+      setOrdersReady(true);
+      hasLoadedOrdersRef.current = true;
     }
     setLoading(false);
     setLoadingMore(false);
@@ -181,6 +189,18 @@ export default function CustomerOrdersPage() {
   }, [loadOrders, userId]);
 
   const currentView = useMemo(() => views.find((item) => item.value === view) ?? views[0], [view]);
+  const loadedOrdersSummary = useMemo(() => {
+    return {
+      loaded: orders.length,
+      needsResponse: orders.filter((order) => order.status === "customer_info_needed").length,
+      delivered: orders.filter((order) => Boolean(order.modified_file_path)).length,
+      creditsShown: orders.reduce(
+        (sum, order) => sum + Number(order.credits_required ?? 0),
+        0
+      ),
+    };
+  }, [orders]);
+  const showInitialLoadError = Boolean(loadError && !ordersReady);
 
   return (
     <main className="min-h-screen bg-[#050505] text-white">
@@ -227,12 +247,70 @@ export default function CustomerOrdersPage() {
 
             <section className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 sm:p-6">
               <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-                <div><h2 className="text-2xl font-black">{currentView.label}</h2><p className="mt-1 text-sm text-zinc-500">{total} requests in this view. Only {pageSize} are loaded at a time.</p></div>
+                <div><h2 className="text-2xl font-black">{currentView.label}</h2><p className="mt-1 text-sm text-zinc-500">{ordersReady ? `${total} requests in this view. Only ${pageSize} are loaded at a time.` : "Order archive sync is pending."}</p></div>
                 <div className="relative w-full sm:w-96"><Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search vehicle, engine or service..." className="h-12 w-full rounded-xl border border-white/10 bg-black/35 pl-11 pr-4 text-sm font-bold outline-none focus:border-red-700" /></div>
               </div>
 
-              {message && <div className="mb-4 rounded-xl border border-red-800/40 bg-red-950/25 p-4 text-sm text-red-200">{message}</div>}
-              {loading ? (
+              {ordersReady && (
+                <div className="mb-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                  <div className="rounded-2xl border border-white/10 bg-black/25 p-4">
+                    <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.16em] text-zinc-500">
+                      <FileText className="h-4 w-4" />
+                      Loaded page
+                    </div>
+                    <div className="mt-2 text-2xl font-black">
+                      {loadedOrdersSummary.loaded} / {total}
+                    </div>
+                    <div className="mt-1 text-xs text-zinc-500">Shown from this filtered view</div>
+                  </div>
+
+                  <div className="rounded-2xl border border-orange-700/35 bg-orange-950/15 p-4">
+                    <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.16em] text-orange-200">
+                      <Clock3 className="h-4 w-4" />
+                      Action needed
+                    </div>
+                    <div className="mt-2 text-2xl font-black text-orange-100">
+                      {loadedOrdersSummary.needsResponse}
+                    </div>
+                    <div className="mt-1 text-xs text-orange-100/70">Visible orders waiting for your info</div>
+                  </div>
+
+                  <div className="rounded-2xl border border-emerald-700/35 bg-emerald-950/15 p-4">
+                    <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.16em] text-emerald-200">
+                      <CheckCircle2 className="h-4 w-4" />
+                      Delivered files
+                    </div>
+                    <div className="mt-2 text-2xl font-black text-emerald-100">
+                      {loadedOrdersSummary.delivered}
+                    </div>
+                    <div className="mt-1 text-xs text-emerald-100/70">Completed files visible on this page</div>
+                  </div>
+
+                  <div className="rounded-2xl border border-red-800/35 bg-red-950/15 p-4">
+                    <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.16em] text-red-200">
+                      <CreditCard className="h-4 w-4" />
+                      Credits shown
+                    </div>
+                    <div className="mt-2 text-2xl font-black text-red-100">
+                      {loadedOrdersSummary.creditsShown}
+                    </div>
+                    <div className="mt-1 text-xs text-red-100/70">Credit value across loaded orders</div>
+                  </div>
+                </div>
+              )}
+
+              {loadError && ordersReady ? (
+                <div role="alert" className="mb-4 rounded-xl border border-amber-800/40 bg-amber-950/20 p-4 text-sm text-amber-100">
+                  <div className="font-black">Order archive sync needs retry</div>
+                  <div className="mt-1 text-amber-100/80">Your last loaded order list is still shown. Retry sync before treating the archive as fully up to date.</div>
+                  <button type="button" onClick={() => void loadOrders()} className="mt-3 rounded-lg border border-amber-600/40 bg-black/20 px-4 py-2 text-xs font-black text-amber-100 hover:bg-amber-950/35">
+                    Retry sync
+                  </button>
+                </div>
+              ) : null}
+              {showInitialLoadError ? (
+                <OrdersLoadErrorState onRetry={() => void loadOrders()} />
+              ) : loading && !ordersReady ? (
                 <div className="flex min-h-64 items-center justify-center text-zinc-500"><Loader2 className="mr-3 h-5 w-5 animate-spin" />Loading orders...</div>
               ) : orders.length === 0 ? (
                 <div className="min-h-64 rounded-xl border border-dashed border-white/15 p-10 text-center text-zinc-500"><Clock3 className="mx-auto mb-4 h-9 w-9" />No orders found in this view.</div>
@@ -259,6 +337,21 @@ export default function CustomerOrdersPage() {
         </section>
       </div>
     </main>
+  );
+}
+
+function OrdersLoadErrorState({ onRetry }: { onRetry: () => void }) {
+  return (
+    <div role="alert" className="min-h-64 rounded-xl border border-red-800/40 bg-red-950/20 p-8 text-center">
+      <Clock3 className="mx-auto mb-4 h-10 w-10 text-red-300" />
+      <h3 className="text-xl font-black text-white">Order archive sync failed</h3>
+      <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-red-100/80">
+        Your orders are not shown until the archive loads successfully. This is a connection or sync issue, not an empty order history.
+      </p>
+      <button type="button" onClick={onRetry} className="mt-6 rounded-xl bg-[#b1121b] px-5 py-3 text-sm font-black text-white hover:bg-[#c91824]">
+        Try again
+      </button>
+    </div>
   );
 }
 

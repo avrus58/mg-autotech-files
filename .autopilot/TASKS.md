@@ -4,85 +4,6 @@
 
 ## Ready
 
-- [ ] **P3 AUTO-025 - Desktop uploader local history statuslari okunabilir etiket kullansin**
-  - Lane: Product Evolution
-  - Domain: Desktop uploader customer clarity & support reduction
-  - Fingerprint: `desktop-uploader|local-upload-history|raw-status-values-in-history|human-readable-status-labels`
-  - Business impact: 2/5
-  - User impact: 3/5
-  - Admin impact: 2/5
-  - Strategic fit: 3/5
-  - Confidence: 5/5
-  - Effort: 1/5
-  - Risk: 1/5
-  - Evidence: `apps/customer-uploader/src/App.tsx:88-90` defines `statusLabel`, and current request details/list already use it at `apps/customer-uploader/src/App.tsx:685` and `apps/customer-uploader/src/App.tsx:722`. The dashboard local-history preview still renders `item.status` at `apps/customer-uploader/src/App.tsx:604-609`, and the full local upload history still renders raw stored status values in filter chips and rows at `apps/customer-uploader/src/App.tsx:730-754`, producing labels like `submitted` or `failed` instead of the same human-readable format.
-  - Product value: The desktop uploader feels more consistent and support-safe; customers can scan local upload history without seeing implementation-style status strings.
-  - Scope: Reuse the existing `statusLabel` helper for local history filter labels and history rows. Keep stored history values, filtering semantics, safe local-only storage, request links and diagnostic privacy unchanged.
-  - Acceptance criteria:
-    - Dashboard local-history preview uses the same human-readable status labels as request list/detail.
-    - Local history filter chips show human-readable status labels while still filtering by the original stored status value.
-    - Local history rows display the human-readable status label next to file size.
-    - Current request list/detail status labels remain unchanged.
-    - No raw local paths, storage paths, tokens, binary content, hashes beyond the existing customer-visible checksum row, or admin-only notes are exposed.
-    - Desktop UI tests cover the label consistency.
-  - Validation:
-    - `.\node_modules\.bin\tsx.cmd --test tests\customer-uploader.test.ts`
-    - `npm run lint`
-    - `npm run typecheck`
-    - `npm test`
-
-- [ ] **P2 AUTO-032 - Musteri siparis arsivi sorgu hatasini bos liste gibi gostermesin**
-  - Lane: Product Evolution
-  - Domain: Customer order archive reliability & status clarity
-  - Fingerprint: `customer-experience|order-archive|supabase-query-error-renders-with-empty-state|retryable-order-archive-error-state`
-  - Business impact: 2/5
-  - User impact: 4/5
-  - Admin impact: 2/5
-  - Strategic fit: 3/5
-  - Confidence: 5/5
-  - Effort: 2/5
-  - Risk: 2/5
-  - Evidence: `src/app/dashboard/orders/page.tsx:133-148` sets `message` when the customer-scoped orders query fails but still clears loading/loadingMore and leaves the list state unchanged. `src/app/dashboard/orders/page.tsx:234-239` then renders the error message and, when the current list is empty, also renders `No orders found in this view`, so an initial archive sync failure can be presented alongside the normal empty state without a retry action.
-  - Product value: Customers can distinguish a real empty order archive from a temporary sync failure and retry without assuming their requests disappeared.
-  - Scope: Add a customer-safe, retryable load-error state for the order archive. Preserve auth redirects, verified-email guard, `customer_id` scoping, view tabs, search, pagination, realtime refresh and existing order card fields.
-  - Acceptance criteria:
-    - Initial order archive query failures show a clear customer-safe error state with a retry action instead of the normal empty-order message.
-    - Successful zero-result loads still show the existing empty state for the selected view/search.
-    - Load-more or realtime refresh failures clear loading indicators and preserve the last successfully loaded order list.
-    - Supabase table internals, storage paths, signed URLs, raw binary metadata, payment internals, secrets and admin-only fields are not exposed.
-    - Existing Active, Needs Response, Completed, Cancelled and All views keep their current filters and URL behavior.
-  - Validation:
-    - `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts`
-    - `npm run lint`
-    - `npm run typecheck`
-    - `npm test`
-
-- [ ] **P2 AUTO-036 - Musteri settings profil hatasinda varsayilan form gostermesin**
-  - Lane: Product Evolution
-  - Domain: Customer profile reliability & support reduction
-  - Fingerprint: `customer-experience|settings-profile-load|supabase-profile-error-renders-default-editable-form|retryable-profile-settings-error-state`
-  - Business impact: 2/5
-  - User impact: 4/5
-  - Admin impact: 2/5
-  - Strategic fit: 3/5
-  - Confidence: 5/5
-  - Effort: 2/5
-  - Risk: 2/5
-  - Evidence: `src/app/dashboard/settings/page.tsx:99-101` sets raw `error.message` and exits loading when the customer profile query fails, while `src/app/dashboard/settings/page.tsx:37-43` and `src/app/dashboard/settings/page.tsx:68` can format a fallback `MGA-10001` customer reference from a null profile. The settings form still renders after loading at `src/app/dashboard/settings/page.tsx:277`, so an initial profile sync failure can show editable default/blank profile fields and a bank-transfer reference as if settings loaded correctly. Save failures also surface raw backend copy at `src/app/dashboard/settings/page.tsx:164-166`.
-  - Product value: Customers can distinguish a real editable profile from a temporary settings sync failure, avoiding wrong bank-transfer references and support confusion.
-  - Scope: Add a customer-safe retryable settings load-error state and customer-safe save-error copy. Preserve auth redirects, verified-email guard, own-profile `id` scoping, successful settings load/save behavior, bank reference behavior after successful load and existing profile fields.
-  - Acceptance criteria:
-    - Initial profile query failures show a clear retryable customer-safe error state instead of the settings form, default customer reference, blank loaded fields or raw backend error.
-    - Successful profile loads still render the existing settings form, customer ID card, bank-transfer reference and editable fields.
-    - Save failures show customer-safe copy and keep the user's entered form values available for retry.
-    - Supabase table/column internals, secrets, service-role details, payment internals, admin-only fields and raw backend messages are not exposed.
-    - Existing login redirect and unverified-email redirect behavior remains unchanged.
-  - Validation:
-    - `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts`
-    - `npm run lint`
-    - `npm run typecheck`
-    - `npm test`
-
 ## In Progress
 
 ## Blocked
@@ -116,6 +37,270 @@ Kabul kriterleri:
 Dogrulama: Diff incelemesi, `npm run lint`, `npm run typecheck`.
 
 ## Done
+
+### AUTO-058 [P2] Public preparation tools sitemap/robots discovery guclendirilsin
+
+Durum: Done
+
+Fingerprint: `public-seo|public-preparation-tools|homepage-linked-tools-not-crawler-discovered|sitemap-robots-discovery`
+
+Kapsam: Homepage ve tools hub'da one cikan guvenli hazirlik araclari, sitemap ve robots allow listesinde crawler-discoverable hale getirildi.
+
+Sonuc: `/tools/file-readiness-check`, `/tools/request-brief-builder` ve `/tools/ecu-read-method-advisor` `sitemap.ts` toolPaths listesine ve `robots.ts` public allow listesine eklendi. `scripts/check-i18n-seo.mjs` bu uc route'u sitemap/robots kontrati olarak zorunlu kontrol eder. Private/admin/dashboard/API/upload-session/raw/binary/checksum/MOD alanlari sitemap discovery'ye eklenmedi.
+
+Dogrulama: `node scripts/check-i18n-seo.mjs` PASS; `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (55/55); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (291/291); `npm run build` PASS (228/228); `node scripts/check-payment-env.js --schema-only` PASS; `npm audit --omit=dev --audit-level=high` PASS (0 vulnerabilities); `git diff --check` PASS (yalniz CRLF uyarilari).
+
+### AUTO-057 [P2] Homepage request preparation HowTo structured data eklensin
+
+Durum: Done
+
+Fingerprint: `public-seo|homepage-request-preparation|visible-readiness-steps-not-machine-readable|safe-howto-jsonld`
+
+Kapsam: Homepage'deki gorunur `Request Readiness Cockpit` adimlari, customer-safe `HowTo` structured data olarak arama motoru/AI search tarafina da anlatildi.
+
+Sonuc: `homepageRequestPreparationHowToJsonLd` eklendi ve mevcut `requestReadinessSteps` kaynagindan uretilir hale getirildi. Root `WebPage` graph'i bu HowTo graph'ini `hasPart` ile referanslar. HowTo yalniz dosya talebine hazirlik, teknik brief, read-method planlama ve secure portal submission adimlarini anlatir; file picker, upload session, binary read, raw/hex, checksum, MOD generation, payment veya admin/private metadata icermez.
+
+Dogrulama: `node scripts/check-i18n-seo.mjs` PASS; `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (54/54); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (290/290); `npm run build` PASS (228/228); `node scripts/check-payment-env.js --schema-only` PASS; `npm audit --omit=dev --audit-level=high` PASS (0 vulnerabilities); `git diff --check` PASS (yalniz CRLF uyarilari).
+
+### AUTO-056 [P2] Root homepage page-level structured data guclendirilsin
+
+Durum: Done
+
+Fingerprint: `public-seo|root-homepage|root-page-lacks-webpage-identity-schema|homepage-webpage-jsonld`
+
+Kapsam: Root `/` homepage, FAQPage ve resource ItemList graph'lerinin yaninda explicit WebPage identity JSON-LD basar hale getirildi.
+
+Sonuc: `homepagePageJsonLd` eklendi; root homepage canonical URL, language, Organization/WebSite linkleri, primary image ve FAQ/service/brand/platform schema part referanslariyla page-level identity kazanir. `homepageSearchIntentJsonLd` ve ItemList graph'leri stable `@id` degerleriyle baglandi. Private/admin/payment/AI/file-generation alanlari yok.
+
+Dogrulama: `node scripts/check-i18n-seo.mjs` PASS; `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (53/53); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (289/289); `npm run build` PASS (228/228); `node scripts/check-payment-env.js --schema-only` PASS; `npm audit --omit=dev --audit-level=high` PASS (0 vulnerabilities); `git diff --check` PASS (yalniz CRLF uyarilari).
+
+### AUTO-055 [P2] Localized homepage page-level structured data guclendirilsin
+
+Durum: Done
+
+Fingerprint: `public-seo|localized-homepage|locale-routes-lack-page-level-service-schema|localized-webpage-service-itemlist-jsonld`
+
+Kapsam: `/de`, `/tr`, `/fr` ve diger localized homepage route'lari, Organization/WebSite graph'inin yaninda locale-specific WebPage ve service ItemList structured data basar hale getirildi.
+
+Sonuc: `src/app/[locale]/page.tsx` icinde `buildLocalizedHomepageJsonLd` helper'i eklendi. Her localized homepage kendi canonical localized URL'si, language code'u, organization/website baglantisi, primary image ve localized public service listesiyle `WebPage` + `ItemList` JSON-LD uretir. Service listesi `publicServiceSlugs` ve `getServiceSeo(slug, locale)` kaynaklarindan gelir; fiyat/credit, payment, private/admin metadata, API call, DB query, AI generation, file upload veya vehicle import eklenmedi. `scripts/check-i18n-seo.mjs` bu kontrati regression olarak kontrol eder.
+
+Dogrulama: `node scripts/check-i18n-seo.mjs` PASS; `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (52/52); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (288/288); `npm run build` PASS (228/228); `node scripts/check-payment-env.js --schema-only` PASS; `npm audit --omit=dev --audit-level=high` PASS (0 vulnerabilities); `git diff --check` PASS (yalniz CRLF uyarilari).
+
+### AUTO-054 [P2] Homepage resource structured data public link hub'larini tanitsin
+
+Durum: Done
+
+Fingerprint: `public-seo|homepage-resource-structured-data|visible-link-hubs-not-described-as-itemlists|resource-itemlist-jsonld`
+
+Kapsam: Homepage'deki service, brand ve ECU platform public link hub'lari, ayni kaynak veriden uretilen customer-safe ItemList structured data ile arama motorlarina aciklandi.
+
+Sonuc: `/` artik FAQPage JSON-LD'nin yaninda service landing page, supported brand guide ve ECU/TCU platform guide ItemList JSON-LD graph'i basar. Service ItemList sadece mevcut `/services/...` landing page'leri kapsar; TCU `new-request` fallback'i structured data'ya resource gibi eklenmez. Fiyat/credit, raw/private/admin metadata, API call, DB query, payment/credit mutation, AI generation, vehicle import, email, desktop veya work-order logic eklenmedi.
+
+Dogrulama: `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (51/51); `node scripts/check-i18n-seo.mjs` PASS; `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (287/287); `npm run build` PASS (228/228); `node scripts/check-payment-env.js --schema-only` PASS; `npm audit --omit=dev --audit-level=high` PASS (0 vulnerabilities); `git diff --check` PASS (yalniz CRLF uyarilari).
+
+### AUTO-053 [P2] Homepage ECU platform library public guide ic linklerini guclendirsin
+
+Durum: Done
+
+Fingerprint: `public-seo|homepage-ecu-platform-library|platform-pages-not-linked-from-homepage|deep-linked-ecu-platform-hub`
+
+Kapsam: Public ana sayfaya, mevcut `/ecu-platforms/[slug]` technical guide sayfalarina dogrudan ic link veren `ECU Platform Library` bolumu eklendi.
+
+Sonuc: `/` artik Bosch EDC17, Bosch MD1, Bosch MG1, Continental SIMOS, Continental SID, Delphi DCM, Denso ve TCU & Gearbox public guide sayfalarina gorunur kartlarla link verir. Bolum controller family, read method ve identification bilgisi hazirlamayi anlatir; public guide'larin dosya edit/uretme/checksum-correct yapmadigi guvenli sinir olarak belirtilir. Yeni API, DB query, payment/credit mutation, AI generation, vehicle import, email, desktop veya work-order logic eklenmedi.
+
+Dogrulama: `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (50/50); `node scripts/check-i18n-seo.mjs` PASS; `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (286/286); `npm run build` PASS (228/228); `node scripts/check-payment-env.js --schema-only` PASS; `npm audit --omit=dev --audit-level=high` PASS (0 vulnerabilities); `git diff --check` PASS (yalniz CRLF uyarilari).
+
+### AUTO-052 [P2] Homepage brand cards public brand page ic linklerini guclendirsin
+
+Durum: Done
+
+Fingerprint: `public-seo|homepage-brand-cards|brand-pages-not-linked-from-homepage|deep-linked-brand-hub-cards`
+
+Kapsam: Public ana sayfadaki supported brand kartlari, mevcut `/brands/[slug]` landing page'lere dogrudan ic link veren tiklanabilir kartlara donusturuldu.
+
+Sonuc: `/` icindeki `Supported Brands` kartlari artik BMW, Mercedes-Benz, Audi, Volkswagen, Porsche, Opel, Renault ve Peugeot icin mevcut `/brands/...` sayfalarina gider. Kartlara net marka CTA'si eklendi; `Need another brand?` manual request yolu korunur. Yeni API, DB query, payment/credit mutation, AI generation, vehicle import, email, desktop veya work-order logic eklenmedi.
+
+Dogrulama: `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (49/49); `node scripts/check-i18n-seo.mjs` PASS; `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (285/285); `npm run build` PASS (228/228); `node scripts/check-payment-env.js --schema-only` PASS; `npm audit --omit=dev --audit-level=high` PASS (0 vulnerabilities); `git diff --check` PASS (yalniz CRLF uyarilari).
+
+### AUTO-051 [P2] Homepage servis kartlari public landing page ic linklerini guclendirsin
+
+Durum: Done
+
+Fingerprint: `public-seo|homepage-service-cards|service-pages-not-linked-from-cards|deep-linked-service-hub-cards`
+
+Kapsam: Public ana sayfadaki servis kartlari, mevcut public service landing page'lere dogrudan ic link veren tıklanabilir kartlara donusturuldu.
+
+Sonuc: `/` icindeki `Our Services` kartlari artik Stage 1, DPF OFF, EGR / AGR OFF, AdBlue OFF ve DTC OFF icin mevcut `/services/...` landing page'lerine gider. TCU Tuning karti, public service slug'i olmadigi icin yeni claim uretmeden mevcut `/new-request` review yoluna gider. Kartlara service intent rozeti ve net CTA eklendi. Fiyat/credit metinleri degistirilmedi. Yeni upload, file picker, API call, DB query, payment/credit mutation, AI generation, vehicle import, email, desktop veya work-order logic eklenmedi.
+
+Dogrulama: `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (48/48); `node scripts/check-i18n-seo.mjs` PASS; `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (284/284); `npm run build` PASS (228/228); `node scripts/check-payment-env.js --schema-only` PASS; `npm audit --omit=dev --audit-level=high` PASS (0 vulnerabilities); `git diff --check` PASS (yalniz CRLF uyarilari).
+
+### AUTO-050 [P2] Homepage search-intent FAQ schema ve workshop guide gostersin
+
+Durum: Done
+
+Fingerprint: `public-seo|homepage-search-intent|common-file-service-questions-hidden|faq-schema-workshop-guide`
+
+Kapsam: Public ana sayfa, dosya yuklemeden once aranan temel file-service sorularini gorunur `Workshop Search Guide` bolumu ve customer-safe `FAQPage` structured data ile cevaplar hale getirildi.
+
+Sonuc: `/` artik `Workshop Search Guide` bolumunde file request hazirligi, public preparation tools siniri, private dashboard delivery ve manual vehicle request yolunu net cevaplar. Ayni kaynak veriden `homepageSearchIntentJsonLd` uretilir ve `application/ld+json` olarak sayfaya eklenir. Bolum yalniz mevcut `/tools`, `/tools/file-readiness-check`, `/how-it-works` ve `/new-request` route'larina gider. Yeni upload, file picker, API call, DB query, payment/credit mutation, AI generation, vehicle import, email, desktop veya work-order logic eklenmedi.
+
+Dogrulama: `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (47/47); `node scripts/check-i18n-seo.mjs` PASS; `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (283/283); `npm run build` PASS (228/228); `node scripts/check-payment-env.js --schema-only` PASS; `npm audit --omit=dev --audit-level=high` PASS (0 vulnerabilities); `git diff --check` PASS (yalniz CRLF uyarilari).
+
+### AUTO-049 [P2] Musteri dashboard preparation-to-delivery workflow map gostersin
+
+Durum: Done
+
+Fingerprint: `customer-experience|dashboard-workflow|actions-scattered-without-end-to-end-map|preparation-to-delivery-workflow-map`
+
+Kapsam: Musteri dashboard, hazirlik araclari, secure request, order tracking ve delivery adimlarini tek bir `Customer Workflow Map` bolumunde siraladi.
+
+Sonuc: `/dashboard` artik `Customer Workflow Map` ile `Prepare file`, `Build request brief`, `Submit secure request`, `Track live work` ve `Review delivery` adimlarini gosterir. Adimlar yalniz mevcut public tool, new-request ve customer dashboard route'larina gider. `Track live work` needs-response varsa dogrudan response filtresine, yoksa order listesine gider. Bolum `No raw file is handled by these prep tools` sinirini aciklar. Yeni API, DB query, payment/credit policy, upload flow, AI, vehicle, email, desktop veya work-order logic degismedi.
+
+Dogrulama: `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (46/46); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (282/282); `npm run build` PASS (228/228); `node scripts/check-payment-env.js --schema-only` PASS; `npm audit --omit=dev --audit-level=high` PASS (0 vulnerabilities); `git diff --check` PASS (yalniz CRLF uyarilari).
+
+### AUTO-048 [P2] Musteri settings hesap hazirligini canli gostersin
+
+Durum: Done
+
+Fingerprint: `customer-experience|settings-profile|form-only-account-details|live-account-readiness-and-copy-reference`
+
+Kapsam: Musteri settings sayfasi, sadece editable profil formu olmaktan cikarak canli account readiness ozeti ve tek tik bank-transfer reference kopyalama aksiyonu kazandi.
+
+Sonuc: `/dashboard/settings` artik `Account Readiness` bolumunde contact details, invoice contact, billing address ve account type/company profile kontrollerini canli tamamlandi/eksik durumuyla gosterir. Readiness yuzdesi form alanlari degistikce hesaplanir. Bank Transfer Reference kartina `Copy reference` aksiyonu eklendi; kopyalama basariliysa `Reference copied`, basarisizsa customer-safe manuel kopyalama mesaji gosterir. Yeni API, DB query, payment mutation, email, vehicle, AI, desktop veya work-order logic degismedi; referans mevcut customer ID formatter'indan gelir.
+
+Dogrulama: `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (45/45); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (281/281); `npm run build` PASS (228/228); `node scripts/check-payment-env.js --schema-only` PASS; `npm audit --omit=dev --audit-level=high` PASS (0 vulnerabilities); `git diff --check` PASS (yalniz CRLF uyarilari).
+
+### AUTO-047 [P2] Legacy admin dashboard daily command brief gostersin
+
+Durum: Done
+
+Fingerprint: `admin-operations|legacy-admin-dashboard|priority-signals-scattered|daily-command-brief`
+
+Kapsam: Legacy `/admin` dashboard, mevcut order/customer metriklerini tek bir `Daily Command Brief` bolumunde oncelikli operasyon kararina cevirdi.
+
+Sonuc: Admin ana paneli artik `Daily Command Brief` ile `Start with new file intake`, `Resolve customer info blockers`, `Clear revision requests`, `Move file checks forward`, `Monitor active work` ve `Queue under control` onceliklerini otomatik siralar. `Open priority queue` mevcut order filtresini ayarlar; `Queue health` file coverage/open work/blocked signal/last sync gosterir. `Operational links` permission-gated olarak Work-order Center, File Expert, Vehicle Database ve Revenue Control'a gider. Yeni API, DB mutation, payment/credit policy, AI, vehicle, email, desktop veya work-order logic degismedi; customer email, internal note, file path, signed URL, storage, raw/hex gibi private alanlar bu brief'te kullanilmadi.
+
+Dogrulama: `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (44/44); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (280/280); `npm run build` PASS (228/228); `node scripts/check-payment-env.js --schema-only` PASS; `npm audit --omit=dev --audit-level=high` PASS (0 vulnerabilities); `git diff --check` PASS (yalniz CRLF uyarilari).
+
+### AUTO-046 [P2] Public homepage request readiness cockpit gostersin
+
+Durum: Done
+
+Fingerprint: `public-homepage|request-preparation|tools-hidden-below-fold|readiness-cockpit-before-upload`
+
+Kapsam: Public homepage, tools hub'daki guvenli hazirlik araclarini ana sayfada gorunur bir `Request Readiness Cockpit` bolumune bagladi.
+
+Sonuc: `/` artik live workload bolumunden sonra `Request Readiness Cockpit` gosterir. Bolum musteriyi sirayla file readiness check, request brief builder, ECU read method advisor ve secure new-request akisine yonlendirir. Yan panelde hazirlik araclarinin file upload/modification yapmadigi, kredilerin request creation sirasinda dogrulandigi, teslimlerin customer dashboard icinde kaldigi ve kompleks islerin human review altinda oldugu netlesir. Yeni bolum yalniz mevcut public tool/new-request linklerine gider; file picker, upload session, API/admin call, binary read, checksum veya MOD generation eklenmedi. Payment/credit policy, customer auth, AI, vehicle, email, desktop ve work-order mantigi degismedi.
+
+Dogrulama: `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (43/43); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (279/279); `npm run build` PASS (228/228); `node scripts/check-payment-env.js --schema-only` PASS; `npm audit --omit=dev --audit-level=high` PASS (0 vulnerabilities); `git diff --check` PASS (yalniz CRLF uyarilari).
+
+### AUTO-045 [P2] Public tools hub musteri hazirlik akisini gostersin
+
+Durum: Done
+
+Fingerprint: `public-tools|tools-hub|tool-list-without-guided-flow|recommended-request-prep-workflow`
+
+Kapsam: Public `/tools` sayfasi, tek tek arac listesinin yaninda musteriye dosya talebinden once hangi sirayla hazirlanacagini gosteren guvenli bir workflow seridi ve guncel SEO aciklamalariyla iyilestirildi.
+
+Sonuc: Tools hub artik `Recommended workflow` bolumunde `Check readiness`, `Build a clean brief`, `Plan the read method` ve `Submit the request` adimlarini gosterir. Hero, metadata, Open Graph, Twitter ve JSON-LD aciklamalari yalniz eski torque/log araclarina odaklanmak yerine mevcut readiness, brief builder, read method advisor ve browser-based calculator kapsamini yansitir. Yeni bolum yalniz mevcut public tool/new-request linklerine gider; file picker, upload session, API/admin call, binary read, checksum veya MOD generation eklenmedi. Payment/credit policy, customer auth, AI, vehicle, email, desktop ve work-order mantigi degismedi.
+
+Dogrulama: `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (42/42); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (278/278); `npm run build` PASS (228/228); `node scripts/check-payment-env.js --schema-only` PASS; `npm audit --omit=dev --audit-level=high` PASS (0 vulnerabilities); `git diff --check` PASS (yalniz CRLF uyarilari).
+
+### AUTO-044 [P2] Musteri order detayinda guvenli destek ozetini kopyalat
+
+Durum: Done
+
+Fingerprint: `customer-experience|order-detail-support-summary|manual-reference-copying|safe-copyable-support-summary`
+
+Kapsam: Musteri order detail destek bolumune, destek ekibine yazarken kullanilabilecek customer-safe siparis ozetini tek tikla kopyalama aksiyonu eklendi.
+
+Sonuc: `/dashboard/orders/[id]` Support karti artik `Support summary` bolumu ve `Copy safe summary` aksiyonu gosterir. Kopyalanan metin yalniz siparis referansi, durum, arac ozeti, hizmet ve olusturma tarihini icerir. Storage path, signed URL, raw/hex, hash, admin note, internal note, source/confidence veya dosya yolu gibi private alanlar ozete dahil edilmez. Mevcut mailto support linki, download, revision, additional upload, live sync ve customer-scoped order query davranisi korunur. Payment/credit policy, order mutation, AI, vehicle, email, desktop ve work-order mantigi degismedi.
+
+Dogrulama: `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (41/41); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (277/277); `npm run build` PASS (228/228); `node scripts/check-payment-env.js --schema-only` PASS; `npm audit --omit=dev --audit-level=high` PASS (0 vulnerabilities); `git diff --check` PASS (yalniz CRLF uyarilari).
+
+### AUTO-043 [P2] Musteri siparis arsivi yuklenen sayfa ozetini gostersin
+
+Durum: Done
+
+Fingerprint: `customer-experience|order-archive-loaded-summary|loaded-orders-hidden-context|safe-page-level-summary-strip`
+
+Kapsam: Musteri siparis arsivi, aktif filtrede yuklenen sayfanin kac kayit, kac aksiyon gereken is, kac teslim dosyasi ve kac kredi degeri icerdigini kompakt customer-safe ozet kartlariyla gosterir hale getirildi.
+
+Sonuc: `/dashboard/orders` artik order archive sync basarili oldugunda `Loaded page`, `Action needed`, `Delivered files` ve `Credits shown` kartlarini gosterir. Ozet sadece mevcut customer-scoped loaded orders listesinden hesaplanir ve tam arşiv toplamı gibi yaniltici iddia uretmez; `Loaded page` karti `loaded / total` gosterir. Search, view filtreleri, pagination, retryable error state, order detail linkleri ve existing order query scoping korunur. Payment/credit policy, order mutation, AI, vehicle, email, desktop ve work-order mantigi degismedi.
+
+Dogrulama: `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (40/40); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (276/276); `npm run build` PASS (228/228); `node scripts/check-payment-env.js --schema-only` PASS; `npm audit --omit=dev --audit-level=high` PASS (0 vulnerabilities); `git diff --check` PASS (yalniz CRLF uyarilari).
+
+### AUTO-042 [P2] Musteri dashboard'u tek oncelikli siradaki aksiyonu gostersin
+
+Durum: Done
+
+Fingerprint: `customer-experience|dashboard-next-action|scattered-action-signals|prioritized-next-best-action-card`
+
+Kapsam: Musteri dashboard'undaki profil, aksiyon gereken siparis, kredi, aktif is ve yeni talep sinyalleri tek bir `Next best action` kartinda onceliklendirildi.
+
+Sonuc: Dashboard artik customer-safe bir ust aksiyon karti gosterir. Oncelik sirasiyla eksik profil bilgileri, `customer_info_needed` siparisleri, 0 kredi bakiyesi, aktif is takibi ve yeni dosya talebi CTA'sina yonlendirir. Mevcut profil completion karti, kredi/siparis metrikleri, quick actions, credit ledger preview, realtime sync ve retryable dashboard hata state'i korunur. Payment/credit policy, request creation, order mutation, AI, vehicle, email, desktop ve work-order mantigi degismedi.
+
+Dogrulama: `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (39/39); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (275/275); `npm run build` PASS (228/228); `node scripts/check-payment-env.js --schema-only` PASS; `npm audit --omit=dev --audit-level=high` PASS (0 vulnerabilities); `git diff --check` PASS (yalniz CRLF uyarilari).
+
+### AUTO-041 [P2] Yeni istek formu submit oncesi hazirlik checklist'i gostersin
+
+Durum: Done
+
+Fingerprint: `customer-experience|new-request-submit|missing-required-step-visibility-before-click|live-submit-readiness-checklist`
+
+Kapsam: Yeni istek ekranindaki sticky `Request Summary`, submit butonuna tiklamadan once zorunlu adimlarin hangilerinin tamamlandigini canli checklist olarak gosterir hale getirildi.
+
+Sonuc: Summary kartinda `Submit Readiness` bolumu; arac/motor, servis, orijinal dosya, kredi uygunlugu, kredi kullanim onayi ve sorumluluk onayini tamamlandi/eksik olarak gosterir. `Create Request` butonu eksik zorunlu adimlar varken `Complete Required Steps` etiketiyle disabled kalir. `handleSubmit` icindeki mevcut validasyonlar korunur; payment/credit policy, kredi hesabi, upload flow, RPC payload shape, servis katalogu ve customer privacy davranisi degismedi.
+
+Dogrulama: `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (38/38); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (274/274); `npm run build` PASS (228/228); `node scripts/check-payment-env.js --schema-only` PASS; `npm audit --omit=dev --audit-level=high` PASS (0 vulnerabilities).
+
+### AUTO-040 [P2] Yeni istek ozeti secilen ekstra hizmetleri isimleriyle gostersin
+
+Durum: Done
+
+Fingerprint: `customer-experience|new-request-summary|extra-options-count-only|selected-extra-service-names`
+
+Kapsam: Yeni istek ekranindaki sticky `Request Summary`, secilen ekstra hizmetleri sadece adet olarak gostermek yerine isim ve krediyle customer-visible hale getirildi.
+
+Sonuc: Summary kartinda `Extra Options` satiri secili ekstra hizmetleri tek tek listeler ve hic secim yoksa `None selected` gosterir. Toplam kredi hesabi ve backend'e giden `serviceSummary` ayni `selectedExtraServices` kaynagindan beslenir. Kredi fiyatlari, submit validasyonu, payment/credit policy, RPC payload shape, servis katalogu ve advanced service collapse davranisi degismedi.
+
+Dogrulama: `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (37/37); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (273/273); `npm run build` PASS (228/228); `node scripts/check-payment-env.js --schema-only` PASS; `npm audit --omit=dev --audit-level=high` PASS (0 vulnerabilities).
+
+### AUTO-025 [P3] Desktop uploader local history statuslari okunabilir etiket kullansin
+
+Durum: Done
+
+Fingerprint: `desktop-uploader|local-upload-history|raw-status-values-in-history|human-readable-status-labels`
+
+Kapsam: Desktop uploader local upload history preview, filter chip ve row status gorunumleri mevcut `statusLabel` helper'iyle customer-readable hale getirildi.
+
+Sonuc: Dashboard local history preview ve full Local Upload History rows artik `Submitted`, `Failed` gibi okunabilir etiketler gosterir. Filter chip'leri de okunabilir etiket kullanir, ancak stored `row.status` degeri ve filtreleme semantigi degismeden kalir. Request list/detail status label davranisi, local-only history storage, request links, checksum satiri ve diagnostic privacy korunur.
+
+Dogrulama: `.\node_modules\.bin\tsx.cmd --test tests\customer-uploader.test.ts` PASS (23/23); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (272/272); `npm run build` PASS (228/228); `node scripts/check-payment-env.js --schema-only` PASS; `npm audit --omit=dev --audit-level=high` PASS (0 vulnerabilities).
+
+### AUTO-036 [P2] Musteri settings profil hatasinda varsayilan form gostermesin
+
+Durum: Done
+
+Fingerprint: `customer-experience|settings-profile-load|supabase-profile-error-renders-default-editable-form|retryable-profile-settings-error-state`
+
+Kapsam: Musteri settings profil yukleme hatasi, default editable profile formu ve varsayilan bank-transfer reference gostermeden retry edilebilir customer-safe hata state'iyle ayrildi.
+
+Sonuc: Ilk profile sync hatasinda `Customer settings sync failed` karti gorunur; settings formu, default `MGA-10001` customer reference ve bank-transfer reference render edilmez. Basarili profile yuklemesi sonrasi mevcut Customer ID, credits, contact/company/address fields ve save akisi korunur. Save failure raw backend mesajini basmaz; `Settings could not be saved...` customer-safe kopyasi kullanilir ve kullanicinin girdigi form degerleri retry icin korunur. Login redirect, verified-email guard ve own-profile `id` scoping degistirilmedi.
+
+Dogrulama: `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (36/36); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (271/271); `npm run build` PASS (228/228); `node scripts/check-payment-env.js --schema-only` PASS; `npm audit --omit=dev --audit-level=high` PASS (0 vulnerabilities).
+
+### AUTO-032 [P2] Musteri siparis arsivi sorgu hatasini bos liste gibi gostermesin
+
+Durum: Done
+
+Fingerprint: `customer-experience|order-archive|supabase-query-error-renders-with-empty-state|retryable-order-archive-error-state`
+
+Kapsam: Musteri siparis arsivi, ilk `orders` sorgu hatasini normal bos liste gibi gostermek yerine retry edilebilir customer-safe hata state'iyle ayiracak sekilde guncellendi.
+
+Sonuc: Ilk order archive sync hatasinda `Order archive sync failed` retry karti gorunur ve `No orders found in this view` bos state'i render edilmez. Basarili yukleme sonrasi load-more, search/reload veya realtime refresh hatasi olursa son yuklu order listesi korunur ve inline `Order archive sync needs retry` uyarisi gorunur. Basarili sifir-result yuklemelerinde mevcut bos state korunur. Active, Needs Response, Completed, Cancelled ve All view filtreleri, search, pagination, realtime refresh, customer_id scoping, login redirect ve verified-email guard davranislari korunur.
+
+Dogrulama: `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (35/35); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (270/270); `npm run build` PASS (228/228); `node scripts/check-payment-env.js --schema-only` PASS; `npm audit --omit=dev --audit-level=high` PASS (0 vulnerabilities).
 
 ### RMAP-FILE-DTC-M1 [P1] AI DTC Analyzer provider boundary and deterministic fallback
 

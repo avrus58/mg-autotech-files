@@ -70,6 +70,50 @@ test("new request flow exposes clear progress steps and keeps advanced services 
   assert.match(page, /let cancelled = false/);
 });
 
+test("new request summary names selected extra services before submit", () => {
+  const page = readProjectFile("src", "app", "new-request", "page.tsx");
+
+  assert.match(page, /const selectedExtraServices = useMemo/);
+  assert.match(page, /selectedExtras[\s\S]*\.map\(\(id\) => extraServices\.find\(\(service\) => service\.id === id\)\)/);
+  assert.match(page, /filter\(\(service\): service is ExtraService => Boolean\(service\)\)/);
+  assert.match(page, /const extrasCredits = selectedExtraServices\.reduce/);
+  assert.match(page, /const extras = selectedExtraServices\.map\(\(service\) => service\.title\)/);
+  assert.match(page, /selectedExtraServices\.map\(\(service\) =>/);
+  assert.match(page, /\{service\.title\}/);
+  assert.match(page, /\{service\.credits\} cr/);
+  assert.match(page, /None selected/);
+  assert.match(page, /\{selectedExtras\.length\}/);
+  assert.doesNotMatch(
+    page,
+    /storage_path|signed_url|service_role|SUPABASE_SERVICE_ROLE_KEY|admin_notes|internal_notes|source_reference|confidence_score/i
+  );
+});
+
+test("new request summary shows a live submit readiness checklist", () => {
+  const page = readProjectFile("src", "app", "new-request", "page.tsx");
+
+  assert.match(page, /const hasRequestVehicle = Boolean/);
+  assert.match(page, /const hasValidSelectedFile = Boolean/);
+  assert.match(page, /hasUpload: hasValidSelectedFile/);
+  assert.match(page, /const submissionChecklist = \[/);
+  assert.match(page, /Vehicle and engine selected/);
+  assert.match(page, /Original file attached/);
+  assert.match(page, /Credits verified/);
+  assert.match(page, /Credit use accepted/);
+  assert.match(page, /Responsibility confirmed/);
+  assert.match(page, /Submit Readiness/);
+  assert.match(page, /completedSubmissionChecklistItems/);
+  assert.match(page, /const isRequestReadyForSubmit = submissionChecklist\.every/);
+  assert.match(page, /disabled=\{submitting \|\| !isRequestReadyForSubmit\}/);
+  assert.match(page, /Complete Required Steps/);
+  assert.match(page, /Please upload your original ECU \/ TCU file\./);
+  assert.match(page, /Please accept payment and responsibility confirmation\./);
+  assert.doesNotMatch(
+    page,
+    /storage_path|signed_url|service_role|SUPABASE_SERVICE_ROLE_KEY|admin_notes|internal_notes|source_reference|confidence_score/i
+  );
+});
+
 test("customer order detail timeline shows action-needed and revision states separately", () => {
   const page = readProjectFile("src", "app", "dashboard", "orders", "[id]", "page.tsx");
 
@@ -102,6 +146,28 @@ test("customer order detail shows delivery estimates only when explicitly set", 
   assert.match(page, /max-w-full break-words text-3xl font-black/);
   assert.doesNotMatch(page, /labels\[value as DeliveryEstimate\] \?\? labels\.usually_30_min/);
   assert.doesNotMatch(page, /formatDeliveryEstimate\(order\.estimated_delivery_label\)/);
+});
+
+test("customer order detail provides a safe support summary copy action", () => {
+  const page = readProjectFile("src", "app", "dashboard", "orders", "[id]", "page.tsx");
+  const helper = page.match(/function buildCustomerSupportSummary[\s\S]*?\n}\n/)?.[0] ?? "";
+
+  assert.match(page, /function buildCustomerSupportSummary\(order: Order \| null, fallbackId: string\)/);
+  assert.match(helper, /MG AutoTech request/);
+  assert.match(helper, /Status:/);
+  assert.match(helper, /Vehicle:/);
+  assert.match(helper, /Service:/);
+  assert.match(helper, /Created:/);
+  assert.match(page, /const \[copiedSupportSummary, setCopiedSupportSummary\] = useState\(false\)/);
+  assert.match(page, /const supportSummaryText = useMemo/);
+  assert.match(page, /navigator\.clipboard\.writeText\(supportSummaryText\)/);
+  assert.match(page, /Support summary/);
+  assert.match(page, /Copy safe summary/);
+  assert.match(page, /Copied safe summary/);
+  assert.doesNotMatch(
+    helper,
+    /modified_file_path|original_file_path|file_path|storage_path|signed_url|service_role|admin_notes|internal_notes|source_reference|confidence_score|raw|hex|hash/i
+  );
 });
 
 test("legacy admin order modal requires an explicit delivery estimate before saving", () => {
@@ -150,6 +216,38 @@ test("legacy admin dashboard shows retryable sync errors instead of empty queues
   assert.match(adminPage, /onClick=\{\(\) => loadAdminData\(\)\}/);
   assert.doesNotMatch(adminPage, /if \(error\) \{\s*setMessage\(error\.message\);\s*setLoading\(false\);\s*setAutoRefreshing\(false\);/);
   assert.doesNotMatch(adminPage, /if \(customerError\) \{\s*setMessage\(customerError\.message\);/);
+});
+
+test("legacy admin dashboard shows a safe daily command brief", () => {
+  const adminPage = readProjectFile("src", "app", "admin", "page.tsx");
+  const brief =
+    adminPage.match(/function DailyCommandBrief[\s\S]*?function AdminNotificationCenter/)?.[0] ?? "";
+
+  assert.match(adminPage, /type AdminStats = \{/);
+  assert.match(adminPage, /type AdminCommandLink = \{/);
+  assert.match(adminPage, /const adminCommandLinks = useMemo<AdminCommandLink\[\]>/);
+  assert.match(adminPage, /href: "\/admin\/requests"/);
+  assert.match(adminPage, /href: "\/admin\/file-expert"/);
+  assert.match(adminPage, /href: "\/admin\/vehicles"/);
+  assert.match(adminPage, /href: "\/admin\/payments"/);
+  assert.match(adminPage, /<DailyCommandBrief/);
+  assert.match(adminPage, /commandLinks=\{adminCommandLinks\}/);
+  assert.match(brief, /Daily Command Brief/);
+  assert.match(brief, /Start with new file intake/);
+  assert.match(brief, /Resolve customer info blockers/);
+  assert.match(brief, /Clear revision requests/);
+  assert.match(brief, /Move file checks forward/);
+  assert.match(brief, /Monitor active work/);
+  assert.match(brief, /Queue under control/);
+  assert.match(brief, /Open priority queue/);
+  assert.match(brief, /Queue health/);
+  assert.match(brief, /File coverage across loaded orders/);
+  assert.match(brief, /Operational links/);
+  assert.match(brief, /Jump to the next control room/);
+  assert.doesNotMatch(
+    brief,
+    /customer_email|internal_admin_note|original_file_path|modified_file_path|file_path|signedUrl|signed_url|storage|staff_adjust_customer_credits|fetch\(|\.rpc\(/i
+  );
 });
 
 test("admin request control center shows retryable API load errors instead of empty filters", () => {
@@ -220,6 +318,56 @@ test("customer dashboard and order archive surface action-needed orders separate
   assert.match(orders, /active=\{\["completed", "cancelled", "all"\]\.includes\(view\)\}/);
 });
 
+test("customer order archive shows retryable sync errors instead of empty state", () => {
+  const orders = readProjectFile("src", "app", "dashboard", "orders", "page.tsx");
+
+  assert.match(orders, /const CUSTOMER_ORDERS_LOAD_ERROR_MESSAGE =/);
+  assert.match(orders, /const CUSTOMER_ORDERS_SYNC_ERROR_MESSAGE =/);
+  assert.match(orders, /const \[loadError, setLoadError\] = useState\(""\)/);
+  assert.match(orders, /const \[ordersReady, setOrdersReady\] = useState\(false\)/);
+  assert.match(orders, /const hasLoadedOrdersRef = useRef\(false\)/);
+  assert.match(
+    orders,
+    /setLoadError\(hasLoadedOrdersRef\.current \? CUSTOMER_ORDERS_SYNC_ERROR_MESSAGE : CUSTOMER_ORDERS_LOAD_ERROR_MESSAGE\)/
+  );
+  assert.match(orders, /setOrders\(\(data \?\? \[\]\) as Order\[\]\)/);
+  assert.match(orders, /setOrdersReady\(true\)/);
+  assert.match(orders, /hasLoadedOrdersRef\.current = true/);
+  assert.match(orders, /const showInitialLoadError = Boolean\(loadError && !ordersReady\)/);
+  assert.match(orders, /showInitialLoadError \? \(/);
+  assert.match(orders, /<OrdersLoadErrorState onRetry=\{\(\) => void loadOrders\(\)\}/);
+  assert.match(orders, /role="alert"[\s\S]*Order archive sync failed/);
+  assert.match(orders, /not an empty order history/);
+  assert.match(orders, /loadError && ordersReady \? \(/);
+  assert.match(orders, /Order archive sync needs retry/);
+  assert.match(orders, /Your last loaded order list is still shown/);
+  assert.match(orders, /Retry sync/);
+  assert.match(orders, /ordersReady \? `\$\{total\} requests in this view/);
+  assert.match(orders, /No orders found in this view/);
+  assert.doesNotMatch(orders, /setMessage\(error\.message\)|error\.message/);
+  assert.doesNotMatch(orders, /storage_path|signed_url|service_role|admin_note|metadata/i);
+});
+
+test("customer order archive summarizes the loaded page safely", () => {
+  const orders = readProjectFile("src", "app", "dashboard", "orders", "page.tsx");
+
+  assert.match(orders, /const loadedOrdersSummary = useMemo\(\(\) => \{/);
+  assert.match(orders, /loaded: orders\.length/);
+  assert.match(orders, /needsResponse: orders\.filter\(\(order\) => order\.status === "customer_info_needed"\)\.length/);
+  assert.match(orders, /delivered: orders\.filter\(\(order\) => Boolean\(order\.modified_file_path\)\)\.length/);
+  assert.match(orders, /creditsShown: orders\.reduce/);
+  assert.match(orders, /Loaded page/);
+  assert.match(orders, /\{loadedOrdersSummary\.loaded\} \/ \{total\}/);
+  assert.match(orders, /Shown from this filtered view/);
+  assert.match(orders, /Action needed/);
+  assert.match(orders, /Visible orders waiting for your info/);
+  assert.match(orders, /Delivered files/);
+  assert.match(orders, /Completed files visible on this page/);
+  assert.match(orders, /Credits shown/);
+  assert.match(orders, /Credit value across loaded orders/);
+  assert.doesNotMatch(orders, /loadedOrdersSummary[\s\S]*(storage_path|signed_url|service_role|admin_note|metadata)/);
+});
+
 test("customer dashboard load errors show retry without replacing last good data", () => {
   const dashboard = readProjectFile("src", "components", "dashboard", "DashboardClient.tsx");
 
@@ -275,6 +423,104 @@ test("customer dashboard surfaces missing profile details without changing setti
   assert.match(settings, /\.update\(\{\s*[\s\S]*full_name: fullName\.trim\(\) \|\| null/);
   assert.match(settings, /invoice_email: invoiceEmail\.trim\(\) \|\| email/);
   assert.match(settings, /preferred_contact: preferredContact/);
+});
+
+test("customer dashboard shows one prioritized next best action", () => {
+  const dashboard = readProjectFile("src", "components", "dashboard", "DashboardClient.tsx");
+
+  assert.match(dashboard, /const dashboardNextAction = useMemo\(\(\) => \{/);
+  assert.match(dashboard, /profileMissingItems\.length > 0[\s\S]*Complete your customer profile/);
+  assert.match(dashboard, /needsResponseCount > 0[\s\S]*Respond to requested order information/);
+  assert.match(dashboard, /credits <= 0[\s\S]*Add credits before your next file request/);
+  assert.match(dashboard, /activeCount > 0[\s\S]*Track your active file requests/);
+  assert.match(dashboard, /title: "Create a new file request"/);
+  assert.match(dashboard, /Next best action - \{dashboardNextAction\.eyebrow\}/);
+  assert.match(dashboard, /href=\{dashboardNextAction\.href\}/);
+  assert.match(dashboard, /\{dashboardNextAction\.cta\}/);
+  assert.match(dashboard, /const NextActionIcon =/);
+  assert.doesNotMatch(dashboard, /dashboardNextAction[\s\S]*(storage_path|signed_url|service_role|admin_note|metadata)/);
+});
+
+test("customer dashboard shows a safe preparation-to-delivery workflow map", () => {
+  const dashboard = readProjectFile("src", "components", "dashboard", "DashboardClient.tsx");
+  const workflowBlock =
+    dashboard.match(/const customerWorkflowSteps = useMemo[\s\S]*?<section className="mb-8 rounded-\[2rem\]/)?.[0] ??
+    "";
+
+  assert.match(dashboard, /const customerWorkflowSteps = useMemo/);
+  assert.match(dashboard, /Prepare file/);
+  assert.match(dashboard, /Build request brief/);
+  assert.match(dashboard, /Submit secure request/);
+  assert.match(dashboard, /Track live work/);
+  assert.match(dashboard, /Review delivery/);
+  assert.match(dashboard, /href: "\/tools\/file-readiness-check"/);
+  assert.match(dashboard, /href: "\/tools\/request-brief-builder"/);
+  assert.match(dashboard, /href: "\/new-request"/);
+  assert.match(dashboard, /needsResponseCount > 0 \? "\/dashboard\/orders\?view=needs_response" : "\/dashboard\/orders"/);
+  assert.match(dashboard, /href: "\/dashboard\/orders\?view=completed"/);
+  assert.match(dashboard, /Customer Workflow Map/);
+  assert.match(dashboard, /From preparation to delivery/);
+  assert.match(dashboard, /No raw file is handled by these prep tools/);
+  assert.match(dashboard, /customerWorkflowSteps\.map/);
+  assert.match(dashboard, /String\(index \+ 1\)\.padStart\(2, "0"\)/);
+  assert.doesNotMatch(
+    workflowBlock,
+    /storage_path|signed_url|service_role|admin_note|metadata|customer_email|raw|hex|fetch\(|\.rpc\(/i
+  );
+});
+
+test("customer settings profile load errors block default editable profile state", () => {
+  const settings = readProjectFile("src", "app", "dashboard", "settings", "page.tsx");
+
+  assert.match(settings, /const SETTINGS_LOAD_ERROR_MESSAGE = "Customer profile could not be synced\. Please try again\."/);
+  assert.match(settings, /const SETTINGS_SAVE_ERROR_MESSAGE =/);
+  assert.match(settings, /const \[loadError, setLoadError\] = useState\(""\)/);
+  assert.match(settings, /const \[settingsReady, setSettingsReady\] = useState\(false\)/);
+  assert.match(settings, /const loadSettings = useCallback\(async \(\) => \{/);
+  assert.match(settings, /setLoadError\(SETTINGS_LOAD_ERROR_MESSAGE\)/);
+  assert.match(settings, /setSettingsReady\(false\)/);
+  assert.match(settings, /setSettingsReady\(true\)/);
+  assert.match(settings, /if \(loadError && !settingsReady\) \{/);
+  assert.match(settings, /<SettingsLoadErrorState onRetry=\{\(\) => void loadSettings\(\)\}/);
+  assert.match(settings, /role="alert"[\s\S]*Customer settings sync failed/);
+  assert.match(settings, /profile form is not shown until customer settings load successfully/);
+  assert.match(settings, /incorrect bank-transfer reference/);
+  assert.match(settings, /Back to dashboard/);
+  assert.match(settings, /setMessage\(SETTINGS_SAVE_ERROR_MESSAGE\)/);
+  assert.match(settings, /Settings saved successfully/);
+  assert.match(settings, /formatCustomerReference\(customerId\)/);
+  assert.doesNotMatch(settings, /setMessage\(error\.message\)|error\.message/);
+  assert.doesNotMatch(settings, /storage_path|signed_url|service_role|admin_note|SUPABASE_SERVICE_ROLE_KEY|credit_transactions/i);
+});
+
+test("customer settings shows live account readiness and copyable bank reference", () => {
+  const settings = readProjectFile("src", "app", "dashboard", "settings", "page.tsx");
+  const readinessBlock =
+    settings.match(/function getSettingsReadinessItems[\s\S]*?<form onSubmit=\{saveSettings\}/)?.[0] ?? "";
+
+  assert.match(settings, /function getSettingsReadinessItems/);
+  assert.match(settings, /const readinessItems = useMemo/);
+  assert.match(settings, /const completedReadinessItems = readinessItems\.filter/);
+  assert.match(settings, /const readinessPercent = Math\.round/);
+  assert.match(settings, /Account Readiness/);
+  assert.match(settings, /Profile completion for faster handling/);
+  assert.match(settings, /Complete customer details before high-touch file service workflows/);
+  assert.match(settings, /Contact details/);
+  assert.match(settings, /Invoice contact/);
+  assert.match(settings, /Billing address/);
+  assert.match(settings, /Company profile/);
+  assert.match(settings, /\{readinessPercent\}%/);
+  assert.match(settings, /\{completedReadinessItems\}\/\{readinessItems\.length\} checks complete/);
+  assert.match(settings, /const \[referenceCopied, setReferenceCopied\] = useState\(false\)/);
+  assert.match(settings, /const copyCustomerReference = async \(\) => \{/);
+  assert.match(settings, /navigator\.clipboard\.writeText\(customerReference\)/);
+  assert.match(settings, /Customer reference could not be copied\. Please copy it manually\./);
+  assert.match(settings, /Reference copied/);
+  assert.match(settings, /Copy reference/);
+  assert.doesNotMatch(
+    readinessBlock,
+    /storage_path|signed_url|service_role|admin_note|credit_transactions|SUPABASE_SERVICE_ROLE_KEY|fetch\(|\.rpc\(/i
+  );
 });
 
 test("customer widget dashboard blocks duplicate pending domain-change requests", () => {
@@ -637,6 +883,31 @@ test("How It Works localization is wired for locale routes, homepage and footer"
   assert.match(sitemap, /languageAlternates\("\/how-it-works"\)/);
 });
 
+test("localized homepages expose page-level service structured data", () => {
+  const localizedHomeRoute = readProjectFile("src", "app", "[locale]", "page.tsx");
+  const structuredDataSource =
+    localizedHomeRoute.match(/function buildLocalizedHomepageJsonLd[\s\S]*?export async function generateMetadata/)?.[0] ??
+    "";
+
+  assert.match(localizedHomeRoute, /function buildLocalizedHomepageJsonLd\(locale: LocaleCode\)/);
+  assert.match(localizedHomeRoute, /const jsonLd = buildLocalizedHomepageJsonLd\(locale\)/);
+  assert.match(structuredDataSource, /"@type": "WebPage"/);
+  assert.match(structuredDataSource, /"@id": `\$\{pageUrl\}#page`/);
+  assert.match(structuredDataSource, /inLanguage: hreflangByLocale\[locale\]/);
+  assert.match(structuredDataSource, /isPartOf: \{ "@id": `\$\{siteUrl\}\/#website` \}/);
+  assert.match(structuredDataSource, /about: \{ "@id": `\$\{siteUrl\}\/#organization` \}/);
+  assert.match(structuredDataSource, /primaryImageOfPage/);
+  assert.match(structuredDataSource, /"@type": "ItemList"/);
+  assert.match(structuredDataSource, /"@id": `\$\{pageUrl\}#service-list`/);
+  assert.match(structuredDataSource, /itemListElement: publicServiceSlugs\.map/);
+  assert.match(structuredDataSource, /const service = getServiceSeo\(slug, locale\)/);
+  assert.match(structuredDataSource, /localizedUrl\(locale, `\/services\/\$\{slug\}`\)/);
+  assert.doesNotMatch(
+    structuredDataSource,
+    /credits|Credit|price|payment|storage_path|signed_url|service_role|SUPABASE_SERVICE_ROLE_KEY|admin_note|internal_note|customer_email|source_reference|confidence_score|sample_id|provider|raw|hex|bytePatch|generateMod|checksum|fetch\(|\.rpc\(/i
+  );
+});
+
 test("Windows upload assistant public page is beta-gated and exposes no installer", () => {
   const page = readProjectFile("src", "app", "download", "windows", "page.tsx");
   const footer = readProjectFile("src", "components", "Footer.tsx");
@@ -651,6 +922,297 @@ test("Windows upload assistant public page is beta-gated and exposes no installe
   assert.match(footer, /Windows App Beta/);
   assert.match(footer, /\/download\/windows/);
   assert.doesNotMatch(page, /\.exe|\.msi|release\/|win-unpacked|portable|nsis/i);
+});
+
+test("tools hub guides customers through a safe request preparation workflow", () => {
+  const tools = readProjectFile("src", "app", "tools", "page.tsx");
+
+  assert.match(tools, /const workflowSteps = \[/);
+  assert.match(tools, /Recommended workflow/);
+  assert.match(tools, /Go from unsure to upload-ready without guessing/);
+  assert.match(tools, /\/tools\/file-readiness-check/);
+  assert.match(tools, /Run readiness check/);
+  assert.match(tools, /\/tools\/request-brief-builder/);
+  assert.match(tools, /Build request brief/);
+  assert.match(tools, /\/tools\/ecu-read-method-advisor/);
+  assert.match(tools, /Plan read method/);
+  assert.match(tools, /\/new-request/);
+  assert.match(tools, /Start new request/);
+  assert.match(tools, /check file readiness, build request briefs, plan ECU read methods/i);
+  assert.doesNotMatch(
+    tools,
+    /type="file"|upload-session|api\/admin|fetch\(|createObjectURL|FileReader|generateMod|bytePatch|writeFile|checksum/i
+  );
+});
+
+test("public preparation tools are discoverable in sitemap and robots", () => {
+  const sitemap = readProjectFile("src", "app", "sitemap.ts");
+  const robots = readProjectFile("src", "app", "robots.ts");
+  const checker = readProjectFile("scripts", "check-i18n-seo.mjs");
+
+  for (const toolPath of [
+    "/tools/file-readiness-check",
+    "/tools/request-brief-builder",
+    "/tools/ecu-read-method-advisor",
+  ]) {
+    assert.match(sitemap, new RegExp(toolPath.replaceAll("/", "\\/")));
+    assert.match(robots, new RegExp(toolPath.replaceAll("/", "\\/")));
+    assert.match(checker, new RegExp(toolPath.replaceAll("/", "\\/")));
+  }
+
+  assert.match(sitemap, /priority: path === "\/tools" \? 0\.85 : 0\.8/);
+  assert.doesNotMatch(
+    sitemap,
+    /\/admin|\/dashboard|\/api\/admin|upload-session|storage_path|signed_url|service_role|generateMod|bytePatch|checksum\(/i
+  );
+  assert.doesNotMatch(
+    robots,
+    /upload-session|storage_path|signed_url|service_role|generateMod|bytePatch|checksum\(/i
+  );
+});
+
+test("homepage surfaces a safe request readiness cockpit before upload", () => {
+  const homepage = readProjectFile("src", "app", "page.tsx");
+  const readinessSource =
+    homepage.match(/const requestReadinessSteps = \[[\s\S]*?const homepageSearchIntentFaq = \[/)?.[0] ?? "";
+
+  assert.match(homepage, /Request Readiness Cockpit/);
+  assert.match(homepage, /Request preparation/);
+  assert.match(homepage, /Open all tools/);
+  assert.match(homepage, /href="\/tools"/);
+  assert.match(homepage, /\/tools\/file-readiness-check/);
+  assert.match(homepage, /Open readiness check/);
+  assert.match(homepage, /\/tools\/request-brief-builder/);
+  assert.match(homepage, /Build request brief/);
+  assert.match(homepage, /\/tools\/ecu-read-method-advisor/);
+  assert.match(homepage, /Plan read method/);
+  assert.match(homepage, /\/new-request/);
+  assert.match(homepage, /Start secure request/);
+  assert.match(homepage, /Tools do not upload or modify ECU files/);
+  assert.match(homepage, /Credits are verified during secure request creation/);
+  assert.match(homepage, /Complex requests stay human-reviewed before delivery/);
+  assert.doesNotMatch(
+    readinessSource,
+    /type="file"|upload-session|api\/admin|fetch\(|createObjectURL|FileReader|generateMod|bytePatch|writeFile|checksum/i
+  );
+});
+
+test("homepage provides customer-safe search intent FAQ structured data", () => {
+  const homepage = readProjectFile("src", "app", "page.tsx");
+  const faqSource =
+    homepage.match(/const homepageSearchIntentFaq = \[[\s\S]*?const workshopUseCases = \[/)?.[0] ?? "";
+
+  assert.match(homepage, /const homepageSearchIntentFaq = \[/);
+  assert.match(homepage, /const homepageSearchIntentJsonLd = \{/);
+  assert.match(homepage, /"@type": "FAQPage"/);
+  assert.match(homepage, /mainEntity: homepageSearchIntentFaq\.map/);
+  assert.match(homepage, /Workshop Search Guide/);
+  assert.match(homepage, /ECU file service questions answered before upload/);
+  assert.match(homepage, /What should I prepare before sending an ECU or TCU file request\?/);
+  assert.match(homepage, /Do the public preparation tools upload or modify my ECU file\?/);
+  assert.match(homepage, /How is a completed file delivered\?/);
+  assert.match(homepage, /Can I create a request if my vehicle is not in the public selector\?/);
+  assert.match(homepage, /href: "\/tools\/file-readiness-check"/);
+  assert.match(homepage, /href: "\/how-it-works"/);
+  assert.match(homepage, /href: "\/new-request"/);
+  assert.match(homepage, /type="application\/ld\+json"/);
+  assert.match(homepage, /JSON\.stringify\(homepageSearchIntentJsonLd\)/);
+  assert.match(homepage, /FAQ structured data is generated from the same customer-visible\s+answers/);
+  assert.doesNotMatch(
+    faqSource,
+    /storage_path|signed_url|service_role|SUPABASE_SERVICE_ROLE_KEY|admin_note|internal_note|customer_email|source_reference|confidence_score|sample_id|provider|raw|hex|bytePatch|generateMod|checksum|fetch\(|\.rpc\(/i
+  );
+});
+
+test("homepage service cards deep-link to public service landing pages", () => {
+  const homepage = readProjectFile("src", "app", "page.tsx");
+  const servicesSource =
+    homepage.match(/const services = \[[\s\S]*?const steps = \[/)?.[0] ?? "";
+  const serviceSection =
+    homepage.match(/<AnimatedSection id="services"[\s\S]*?<AnimatedSection className="bg-\[#050505\] py-20">/)?.[0] ??
+    "";
+
+  assert.match(servicesSource, /href: "\/services\/stage-1"/);
+  assert.match(servicesSource, /href: "\/services\/dpf-off"/);
+  assert.match(servicesSource, /href: "\/services\/egr-off"/);
+  assert.match(servicesSource, /href: "\/services\/adblue-off"/);
+  assert.match(servicesSource, /href: "\/services\/dtc-off"/);
+  assert.match(servicesSource, /href: "\/new-request"[\s\S]*Request TCU review/);
+  assert.match(servicesSource, /searchIntent: "Performance calibration"/);
+  assert.match(servicesSource, /searchIntent: "Diesel aftertreatment"/);
+  assert.match(servicesSource, /searchIntent: "Diagnostic code request"/);
+  assert.match(serviceSection, /<Link[\s\S]*href=\{service\.href\}/);
+  assert.match(serviceSection, /\{service\.searchIntent\}/);
+  assert.match(serviceSection, /\{service\.action\}/);
+  assert.match(serviceSection, /focus-visible:ring-2 focus-visible:ring-red-700/);
+  assert.doesNotMatch(
+    serviceSection,
+    /type="file"|upload-session|api\/admin|fetch\(|createObjectURL|FileReader|generateMod|bytePatch|writeFile|checksum|storage_path|signed_url|service_role/i
+  );
+});
+
+test("homepage brand cards deep-link to public brand landing pages", () => {
+  const homepage = readProjectFile("src", "app", "page.tsx");
+  const brandSource =
+    homepage.match(/const supportedBrands = \[[\s\S]*?const trustHighlights = \[/)?.[0] ?? "";
+  const brandSection =
+    homepage.match(/<AnimatedSection id="brands"[\s\S]*?<AnimatedSection id="ecu-platforms"/)?.[0] ??
+    "";
+
+  assert.match(brandSource, /href: "\/brands\/bmw"/);
+  assert.match(brandSource, /href: "\/brands\/mercedes-benz"/);
+  assert.match(brandSource, /href: "\/brands\/audi"/);
+  assert.match(brandSource, /href: "\/brands\/volkswagen"/);
+  assert.match(brandSource, /href: "\/brands\/porsche"/);
+  assert.match(brandSource, /href: "\/brands\/opel"/);
+  assert.match(brandSource, /href: "\/brands\/renault"/);
+  assert.match(brandSource, /href: "\/brands\/peugeot"/);
+  assert.match(brandSource, /action: "View BMW files"/);
+  assert.match(brandSource, /action: "View Mercedes files"/);
+  assert.match(brandSection, /<Link[\s\S]*href=\{brand\.href\}/);
+  assert.match(brandSection, /\{brand\.action\}/);
+  assert.match(brandSection, /focus-visible:ring-2 focus-visible:ring-red-700/);
+  assert.match(brandSection, /Need another brand\?/);
+  assert.match(brandSection, /href="\/new-request"/);
+  assert.doesNotMatch(
+    brandSection,
+    /type="file"|upload-session|api\/admin|fetch\(|createObjectURL|FileReader|generateMod|bytePatch|writeFile|checksum|storage_path|signed_url|service_role/i
+  );
+});
+
+test("homepage ECU platform library deep-links to public platform guides", () => {
+  const homepage = readProjectFile("src", "app", "page.tsx");
+  const platformSource =
+    homepage.match(/const ecuPlatformLinks = \[[\s\S]*?const trustHighlights = \[/)?.[0] ?? "";
+  const platformSection =
+    homepage.match(/<AnimatedSection id="ecu-platforms"[\s\S]*?<AnimatedSection className="bg-\[#eef1f4\] py-20 text-\[#111827\]">/)?.[0] ??
+    "";
+
+  assert.match(platformSource, /href: "\/ecu-platforms\/bosch-edc17"/);
+  assert.match(platformSource, /href: "\/ecu-platforms\/bosch-md1"/);
+  assert.match(platformSource, /href: "\/ecu-platforms\/bosch-mg1"/);
+  assert.match(platformSource, /href: "\/ecu-platforms\/continental-simos"/);
+  assert.match(platformSource, /href: "\/ecu-platforms\/continental-sid"/);
+  assert.match(platformSource, /href: "\/ecu-platforms\/delphi-dcm"/);
+  assert.match(platformSource, /href: "\/ecu-platforms\/denso"/);
+  assert.match(platformSource, /href: "\/ecu-platforms\/transmission-control-units"/);
+  assert.match(platformSection, /ECU Platform Library/);
+  assert.match(platformSection, /href="\/ecu-platforms"/);
+  assert.match(platformSection, /<Link[\s\S]*href=\{platform\.href\}/);
+  assert.match(platformSection, /\{platform\.action\}/);
+  assert.match(platformSection, /No public guide edits, generates or checksum-corrects customer files/);
+  assert.match(platformSection, /focus-visible:ring-2 focus-visible:ring-red-700/);
+  assert.doesNotMatch(
+    platformSection,
+    /type="file"|upload-session|api\/admin|fetch\(|createObjectURL|FileReader|generateMod|bytePatch|writeFile|checksum\(|storage_path|signed_url|service_role/i
+  );
+});
+
+test("homepage exposes customer-safe resource ItemList structured data", () => {
+  const homepage = readProjectFile("src", "app", "page.tsx");
+  const resourceSource =
+    homepage.match(/type HomepageResourceLink = \{[\s\S]*?const trustHighlights = \[/)?.[0] ?? "";
+  const resourceScript =
+    homepage.match(/<script[\s\S]*?JSON\.stringify\(homepageResourceJsonLd\)[\s\S]*?\/>/)?.[0] ?? "";
+
+  assert.match(homepage, /const serviceLandingPageLinks = services\.filter/);
+  assert.match(homepage, /service\.href\.startsWith\("\/services\/"\)/);
+  assert.match(resourceSource, /const homepageResourceJsonLd = \{/);
+  assert.match(resourceSource, /"@graph": \[/);
+  assert.match(
+    resourceSource,
+    /buildHomepageItemList\("MG AutoTech service landing pages", serviceLandingPageLinks, "\/#service-landing-pages"\)/
+  );
+  assert.match(
+    resourceSource,
+    /buildHomepageItemList\("MG AutoTech supported brand guides", supportedBrands, "\/#supported-brand-guides"\)/
+  );
+  assert.match(
+    resourceSource,
+    /buildHomepageItemList\("MG AutoTech ECU and TCU platform guides", ecuPlatformLinks, "\/#ecu-platform-guides"\)/
+  );
+  assert.match(resourceSource, /"@type": "ItemList"/);
+  assert.match(resourceSource, /"@type": "ListItem"/);
+  assert.match(resourceSource, /"@type": "WebPage"/);
+  assert.match(resourceSource, /https:\/\/file\.mgautotech\.de\$\{href\}/);
+  assert.match(resourceScript, /type="application\/ld\+json"/);
+  assert.match(homepage, /JSON\.stringify\(homepageResourceJsonLd\)/);
+  assert.doesNotMatch(resourceSource, /\/new-request/);
+  assert.doesNotMatch(
+    resourceSource,
+    /credits|Credit|price|payment|storage_path|signed_url|service_role|SUPABASE_SERVICE_ROLE_KEY|admin_note|internal_note|customer_email|source_reference|confidence_score|sample_id|provider|raw|hex|bytePatch|generateMod|checksum|fetch\(|\.rpc\(/i
+  );
+});
+
+test("homepage exposes page-level WebPage structured data identity", () => {
+  const homepage = readProjectFile("src", "app", "page.tsx");
+  const pageSchemaSource =
+    homepage.match(/const homepagePageJsonLd = \{[\s\S]*?const trustHighlights = \[/)?.[0] ?? "";
+  const pageScript =
+    homepage.match(/<script[\s\S]*?JSON\.stringify\(homepagePageJsonLd\)[\s\S]*?\/>/)?.[0] ?? "";
+
+  assert.match(pageSchemaSource, /"@type": "WebPage"/);
+  assert.match(pageSchemaSource, /"@id": publicResourceUrl\("\/#page"\)/);
+  assert.match(pageSchemaSource, /name: "MG AutoTech ECU & TCU File Service"/);
+  assert.match(pageSchemaSource, /inLanguage: "en"/);
+  assert.match(pageSchemaSource, /isPartOf: \{ "@id": publicResourceUrl\("\/#website"\) \}/);
+  assert.match(pageSchemaSource, /about: \{ "@id": publicResourceUrl\("\/#organization"\) \}/);
+  assert.match(pageSchemaSource, /primaryImageOfPage/);
+  assert.match(pageSchemaSource, /hasPart: \[/);
+  assert.match(pageSchemaSource, /publicResourceUrl\("\/#homepage-search-faq"\)/);
+  assert.match(pageSchemaSource, /publicResourceUrl\("\/#request-readiness-howto"\)/);
+  assert.match(pageSchemaSource, /publicResourceUrl\("\/#service-landing-pages"\)/);
+  assert.match(pageSchemaSource, /publicResourceUrl\("\/#supported-brand-guides"\)/);
+  assert.match(pageSchemaSource, /publicResourceUrl\("\/#ecu-platform-guides"\)/);
+  assert.match(homepage, /"@id": "https:\/\/file\.mgautotech\.de\/#homepage-search-faq"/);
+  assert.match(
+    homepage,
+    /buildHomepageItemList\("MG AutoTech service landing pages", serviceLandingPageLinks, "\/#service-landing-pages"\)/
+  );
+  assert.match(
+    homepage,
+    /buildHomepageItemList\("MG AutoTech supported brand guides", supportedBrands, "\/#supported-brand-guides"\)/
+  );
+  assert.match(
+    homepage,
+    /buildHomepageItemList\("MG AutoTech ECU and TCU platform guides", ecuPlatformLinks, "\/#ecu-platform-guides"\)/
+  );
+  assert.match(pageScript, /type="application\/ld\+json"/);
+  assert.match(homepage, /JSON\.stringify\(homepagePageJsonLd\)/);
+  assert.doesNotMatch(
+    pageSchemaSource,
+    /credits|Credit|price|payment|storage_path|signed_url|service_role|SUPABASE_SERVICE_ROLE_KEY|admin_note|internal_note|customer_email|source_reference|confidence_score|sample_id|provider|raw|hex|bytePatch|generateMod|checksum|fetch\(|\.rpc\(/i
+  );
+});
+
+test("homepage exposes request preparation HowTo structured data from visible steps", () => {
+  const homepage = readProjectFile("src", "app", "page.tsx");
+  const howToSource =
+    homepage.match(/const homepageRequestPreparationHowToJsonLd = \{[\s\S]*?const trustHighlights = \[/)?.[0] ?? "";
+  const howToScript =
+    homepage.match(/<script[\s\S]*?JSON\.stringify\(homepageRequestPreparationHowToJsonLd\)[\s\S]*?\/>/)?.[0] ?? "";
+
+  assert.match(howToSource, /"@type": "HowTo"/);
+  assert.match(howToSource, /"@id": publicResourceUrl\("\/#request-readiness-howto"\)/);
+  assert.match(howToSource, /name: "How to prepare an ECU or TCU file request"/);
+  assert.match(howToSource, /mainEntityOfPage: \{ "@id": publicResourceUrl\("\/#page"\) \}/);
+  assert.match(howToSource, /MG AutoTech public preparation tools/);
+  assert.match(howToSource, /Vehicle, engine and ECU or TCU identification details/);
+  assert.match(howToSource, /Original file prepared for authenticated portal submission/);
+  assert.match(howToSource, /step: requestReadinessSteps\.map/);
+  assert.match(howToSource, /"@type": "HowToStep"/);
+  assert.match(howToSource, /position: index \+ 1/);
+  assert.match(howToSource, /url: publicResourceUrl\(step\.href\)/);
+  assert.match(homepage, /Check file readiness/);
+  assert.match(homepage, /Build request brief/);
+  assert.match(homepage, /Plan read method/);
+  assert.match(homepage, /Start secure request/);
+  assert.match(howToScript, /type="application\/ld\+json"/);
+  assert.match(homepage, /JSON\.stringify\(homepageRequestPreparationHowToJsonLd\)/);
+  assert.doesNotMatch(
+    howToSource,
+    /credits|Credit|price|payment|storage_path|signed_url|service_role|SUPABASE_SERVICE_ROLE_KEY|admin_note|internal_note|customer_email|source_reference|confidence_score|sample_id|provider|raw|hex|bytePatch|generateMod|checksum|fetch\(|\.rpc\(|type="file"|upload-session|FileReader|writeFile/i
+  );
 });
 
 test("ECU file readiness checker is public, useful and does not upload files", () => {
@@ -756,6 +1318,13 @@ test("i18n and SEO health script catches core multilingual requirements", () => 
   const script = readProjectFile("scripts", "check-i18n-seo.mjs");
   assert.match(script, /expectedLocales/);
   assert.match(script, /language alternates/i);
+  assert.match(script, /buildLocalizedHomepageJsonLd/);
+  assert.match(script, /Localized homepage structured data is missing WebPage/);
+  assert.match(script, /Localized homepage structured data is missing service ItemList/);
+  assert.match(script, /homepagePageJsonLd/);
+  assert.match(script, /Root homepage does not expose page-level WebPage structured data/);
+  assert.match(script, /homepageRequestPreparationHowToJsonLd/);
+  assert.match(script, /Root homepage does not expose request preparation HowTo structured data/);
   assert.doesNotMatch(script, /SUPABASE_SERVICE_ROLE_KEY|STRIPE_SECRET_KEY|RESEND_API_KEY/);
   const output = execFileSync(process.execPath, ["scripts/check-i18n-seo.mjs"], {
     cwd: process.cwd(),

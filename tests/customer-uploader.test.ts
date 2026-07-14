@@ -330,6 +330,18 @@ test("desktop premium UI keeps local history, diagnostics and messages customer-
   assert.doesNotMatch(app, /localPath|absolutePath|storage_path|admin_notes|internal_notes|source_reference|confidence_score/);
 });
 
+test("desktop local upload history uses human-readable status labels", () => {
+  const app = readFileSync(resolve(process.cwd(), "apps/customer-uploader/src/App.tsx"), "utf8");
+
+  assert.match(app, /function statusLabel\(value: string \| null\)/);
+  assert.match(app, /statusLabel\(item\.status\)} \/ \{formatBytes\(item\.fileSize\)\}/);
+  assert.match(app, /statusLabel\(status\)\}<\/button>/);
+  assert.match(app, /history\.filter\(\(row\) => row\.status === filter\)/);
+  assert.match(app, /setFilter\(status\)/);
+  assert.doesNotMatch(app, /\{item\.status\} \/ \{formatBytes\(item\.fileSize\)\}/);
+  assert.doesNotMatch(app, /\{status\}<\/button>/);
+});
+
 test("desktop build validates public Vite env and renders missing-config screen instead of crashing", () => {
   const packageJson = JSON.parse(readFileSync(resolve(process.cwd(), "apps/customer-uploader/package.json"), "utf8"));
   const envExamplePath = resolve(process.cwd(), "apps/customer-uploader/.env.example");

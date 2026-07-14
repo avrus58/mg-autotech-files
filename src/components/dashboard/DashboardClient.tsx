@@ -433,8 +433,123 @@ export function DashboardClient() {
   const customerReference = formatCustomerReference(customerId);
   const profileCompletionSummary = formatMissingProfileItems(profileMissingItems);
 
+  const dashboardNextAction = useMemo(() => {
+    if (profileMissingItems.length > 0) {
+      return {
+        key: "profile",
+        eyebrow: "Account setup",
+        title: "Complete your customer profile",
+        description: `Add ${profileCompletionSummary} so support, billing and bank-transfer handling have the correct account details.`,
+        href: "/dashboard/settings",
+        cta: "Update Settings",
+        tone: "border-amber-700/40 bg-amber-950/20 text-amber-100",
+      };
+    }
+
+    if (needsResponseCount > 0) {
+      return {
+        key: "response",
+        eyebrow: "Action required",
+        title: "Respond to requested order information",
+        description: `${needsResponseCount} request${needsResponseCount === 1 ? "" : "s"} need your input before the file service can continue.`,
+        href: "/dashboard/orders?view=needs_response",
+        cta: "Review Requests",
+        tone: "border-orange-700/40 bg-orange-950/20 text-orange-100",
+      };
+    }
+
+    if (credits <= 0) {
+      return {
+        key: "credits",
+        eyebrow: "Credits",
+        title: "Add credits before your next file request",
+        description: "Your current balance is 0 credits. Top up first so your next request can move without payment delay.",
+        href: "/dashboard/credits",
+        cta: "Buy Credits",
+        tone: "border-red-800/45 bg-red-950/25 text-red-100",
+      };
+    }
+
+    if (activeCount > 0) {
+      return {
+        key: "orders",
+        eyebrow: "Live work",
+        title: "Track your active file requests",
+        description: `${activeCount} active request${activeCount === 1 ? "" : "s"} are still moving through the MG AutoTech workflow.`,
+        href: "/dashboard/orders",
+        cta: "Open Orders",
+        tone: "border-blue-700/35 bg-blue-950/20 text-blue-100",
+      };
+    }
+
+    return {
+      key: "new-request",
+      eyebrow: "Ready",
+      title: "Create a new file request",
+      description: "Your dashboard is ready. Start a new ECU/TCU file request when you have an original file prepared.",
+      href: "/new-request",
+      cta: "New Request",
+      tone: "border-emerald-700/35 bg-emerald-950/20 text-emerald-100",
+    };
+  }, [activeCount, credits, needsResponseCount, profileCompletionSummary, profileMissingItems.length]);
+
+  const customerWorkflowSteps = useMemo(
+    () => [
+      {
+        title: "Prepare file",
+        detail: "Check file type, size and request notes before starting a paid workflow.",
+        href: "/tools/file-readiness-check",
+        metric: "Browser-only check",
+        icon: ShieldCheck,
+      },
+      {
+        title: "Build request brief",
+        detail: "Create a clean copy-ready service brief for your ECU/TCU request.",
+        href: "/tools/request-brief-builder",
+        metric: "No upload required",
+        icon: Clipboard,
+      },
+      {
+        title: "Submit secure request",
+        detail: "Start the private upload flow after your vehicle, service and file are ready.",
+        href: "/new-request",
+        metric: `${credits} credits available`,
+        icon: Upload,
+      },
+      {
+        title: "Track live work",
+        detail: "Follow active requests and respond quickly if MG AutoTech needs more details.",
+        href: needsResponseCount > 0 ? "/dashboard/orders?view=needs_response" : "/dashboard/orders",
+        metric:
+          needsResponseCount > 0
+            ? `${needsResponseCount} response needed`
+            : `${activeCount} active request${activeCount === 1 ? "" : "s"}`,
+        icon: FileText,
+      },
+      {
+        title: "Review delivery",
+        detail: "Open completed requests and download delivered files from your private dashboard.",
+        href: "/dashboard/orders?view=completed",
+        metric: `${completedCount} completed`,
+        icon: Download,
+      },
+    ],
+    [activeCount, completedCount, credits, needsResponseCount]
+  );
+
   const firstName =
     email?.split("@")[0]?.replace(/[._-]/g, " ").split(" ")[0] ?? "Customer";
+
+  const NextActionIcon =
+    dashboardNextAction.key === "profile"
+      ? Settings
+      : dashboardNextAction.key === "response"
+        ? Clipboard
+        : dashboardNextAction.key === "credits"
+          ? CreditCard
+          : dashboardNextAction.key === "orders"
+            ? FileText
+            : Upload;
 
   const copyReference = async () => {
     if (!customerReference) return;
@@ -828,6 +943,92 @@ export function DashboardClient() {
                 </p>
               </div>
             </div>
+
+            <div
+              className={`mb-8 rounded-[2rem] border p-5 shadow-2xl shadow-black/20 ${dashboardNextAction.tone}`}
+            >
+              <div className="grid gap-5 lg:grid-cols-[auto_1fr_auto] lg:items-center">
+                <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-black/30">
+                  <NextActionIcon className="h-7 w-7" />
+                </div>
+
+                <div className="min-w-0">
+                  <div className="text-xs font-black uppercase tracking-[0.22em]">
+                    Next best action - {dashboardNextAction.eyebrow}
+                  </div>
+                  <h2 className="mt-2 break-words text-2xl font-black">
+                    {dashboardNextAction.title}
+                  </h2>
+                  <p className="mt-2 max-w-3xl text-sm leading-6 opacity-85">
+                    {dashboardNextAction.description}
+                  </p>
+                </div>
+
+                <Link
+                  href={dashboardNextAction.href}
+                  className="inline-flex w-full items-center justify-center rounded-2xl bg-white px-5 py-3 text-sm font-black text-black transition hover:-translate-y-0.5 hover:bg-zinc-100 lg:w-auto"
+                >
+                  {dashboardNextAction.cta}
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </div>
+            </div>
+
+            <section className="mb-8 rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 shadow-2xl shadow-black/20">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                <div>
+                  <div className="text-sm font-black uppercase tracking-[0.25em] text-red-600">
+                    Customer Workflow Map
+                  </div>
+                  <h2 className="mt-2 text-3xl font-black">
+                    From preparation to delivery
+                  </h2>
+                  <p className="mt-3 max-w-3xl text-sm leading-6 text-zinc-400">
+                    Use the safe preparation tools first, submit through the secure
+                    upload flow, then track every request from your private dashboard.
+                  </p>
+                </div>
+
+                <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-xs font-black uppercase tracking-[0.16em] text-emerald-200">
+                  No raw file is handled by these prep tools
+                </div>
+              </div>
+
+              <div className="mt-6 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+                {customerWorkflowSteps.map((step, index) => {
+                  const StepIcon = step.icon;
+
+                  return (
+                    <Link
+                      key={step.title}
+                      href={step.href}
+                      className="group flex min-h-[220px] flex-col rounded-3xl border border-white/10 bg-black/25 p-5 transition hover:-translate-y-1 hover:border-red-800/60 hover:bg-white/[0.05]"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-red-900/40 bg-red-950/25">
+                          <StepIcon className="h-6 w-6 text-red-400" />
+                        </div>
+                        <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs font-black text-zinc-400">
+                          {String(index + 1).padStart(2, "0")}
+                        </span>
+                      </div>
+
+                      <h3 className="mt-5 text-xl font-black">{step.title}</h3>
+                      <p className="mt-3 flex-1 text-sm leading-6 text-zinc-400">
+                        {step.detail}
+                      </p>
+
+                      <div className="mt-5 flex items-center justify-between gap-3 border-t border-white/10 pt-4">
+                        <span className="text-xs font-black uppercase tracking-[0.14em] text-red-300">
+                          {step.metric}
+                        </span>
+                        <ArrowRight className="h-4 w-4 text-zinc-500 transition group-hover:translate-x-1 group-hover:text-white" />
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            </section>
 
             {profileMissingItems.length > 0 && (
               <div className="mb-8 rounded-[2rem] border border-amber-700/40 bg-amber-950/20 p-5 shadow-2xl shadow-black/20">

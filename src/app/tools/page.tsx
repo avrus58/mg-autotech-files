@@ -70,15 +70,50 @@ const tools = [
   },
 ];
 
+const workflowSteps = [
+  {
+    href: "/tools/file-readiness-check",
+    step: "01",
+    title: "Check readiness",
+    description:
+      "Confirm that your vehicle details, file type and request context are ready before you start an upload.",
+    action: "Run readiness check",
+  },
+  {
+    href: "/tools/request-brief-builder",
+    step: "02",
+    title: "Build a clean brief",
+    description:
+      "Turn vehicle, service and diagnostic notes into a structured message that MG AutoTech can review faster.",
+    action: "Build request brief",
+  },
+  {
+    href: "/tools/ecu-read-method-advisor",
+    step: "03",
+    title: "Plan the read method",
+    description:
+      "Prepare OBD, bench, boot or unknown read situations with a practical checklist before submitting.",
+    action: "Plan read method",
+  },
+  {
+    href: "/new-request",
+    step: "04",
+    title: "Submit the request",
+    description:
+      "Create the file-service request only when your information, file and credit confirmation are ready.",
+    action: "Start new request",
+  },
+];
+
 export const metadata: Metadata = {
   title: "Free ECU Workshop Tools",
   description:
-    "Free automotive workshop tools from MG AutoTech: calculate torque-based power and analyze AutoTuner RPM and torque CSV logs in your browser.",
+    "Free automotive workshop tools from MG AutoTech: check file readiness, build request briefs, plan ECU read methods and run safe browser-based calculations.",
   alternates: { canonical: absoluteUrl("/tools") },
   openGraph: {
     title: "Free ECU Workshop Tools | MG AutoTech",
     description:
-      "Torque and power calculations, AutoTuner log analysis and downloadable workshop reports.",
+      "File-service readiness checks, request brief preparation, ECU read planning and browser-based workshop calculations.",
     url: absoluteUrl("/tools"),
     type: "website",
     siteName,
@@ -87,7 +122,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "Free ECU Workshop Tools | MG AutoTech",
-    description: "Torque calculator and AutoTuner log analyzer for workshop checks.",
+    description: "Readiness checks, request brief preparation and workshop calculators for ECU file-service requests.",
     images: ["/opengraph-image"],
   },
 };
@@ -100,7 +135,7 @@ export default function ToolsHubPage() {
         "@type": "CollectionPage",
         name: "MG AutoTech Workshop Tools",
         description:
-          "Free browser-based calculation and log-analysis tools for automotive workshops.",
+          "Free browser-based preparation, calculation and log-analysis tools for automotive workshops.",
         url: absoluteUrl("/tools"),
         isPartOf: { "@id": `${absoluteUrl("/")}#website` },
       },
@@ -137,11 +172,53 @@ export default function ToolsHubPage() {
                 MG AutoTech Tools
               </div>
               <h1 className="mt-4 text-4xl font-black leading-tight sm:text-6xl">
-                Practical performance tools for real workshop checks.
+                Practical ECU file-service tools for cleaner requests.
               </h1>
               <p className="mt-5 max-w-3xl text-base leading-8 text-zinc-400 sm:text-lg">
-                Calculate torque-based power, inspect AutoTuner log rows and create a readable report without creating an account. Your calculations stay inside your browser.
+                Check request readiness, build a cleaner brief, plan the read method and use browser-based workshop calculators before creating a file-service request.
               </p>
+            </div>
+          </div>
+        </section>
+
+        <section className="border-b border-white/10 bg-[#070707]">
+          <div className="mx-auto max-w-7xl px-4 py-14 sm:py-16">
+            <div className="mb-8 max-w-3xl">
+              <div className="text-xs font-black uppercase tracking-[0.2em] text-red-500">
+                Recommended workflow
+              </div>
+              <h2 className="mt-3 text-3xl font-black sm:text-4xl">
+                Go from unsure to upload-ready without guessing.
+              </h2>
+              <p className="mt-4 leading-7 text-zinc-400">
+                Use these tools before submitting a request so the order starts
+                with clearer vehicle context, a cleaner brief and fewer support
+                loops.
+              </p>
+            </div>
+
+            <div className="grid gap-4 lg:grid-cols-4">
+              {workflowSteps.map((step) => (
+                <Link
+                  key={step.href}
+                  href={step.href}
+                  className="group flex min-h-[260px] flex-col border border-white/10 bg-[#0b0b0c] p-6 transition hover:border-red-800/50 hover:bg-red-950/10"
+                >
+                  <div className="flex items-center justify-between gap-4">
+                    <span className="text-xs font-black uppercase tracking-[0.18em] text-red-400">
+                      {step.step}
+                    </span>
+                    <ArrowRight className="h-4 w-4 text-zinc-600 transition group-hover:text-red-400" />
+                  </div>
+                  <h3 className="mt-7 text-2xl font-black">{step.title}</h3>
+                  <p className="mt-4 flex-1 text-sm leading-6 text-zinc-400">
+                    {step.description}
+                  </p>
+                  <span className="mt-6 text-sm font-black text-white">
+                    {step.action}
+                  </span>
+                </Link>
+              ))}
             </div>
           </div>
         </section>

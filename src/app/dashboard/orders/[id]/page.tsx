@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { signOutIfEmailUnverified } from "@/lib/authGuards";
 import { supabase } from "@/lib/supabaseClient";
@@ -11,6 +11,7 @@ import {
   CalendarDays,
   CheckCircle2,
   Clock3,
+  Copy,
   CreditCard,
   Database,
   Download,
@@ -156,6 +157,27 @@ function shortId(id: string) {
   return id.slice(0, 8).toUpperCase();
 }
 
+function buildCustomerSupportSummary(order: Order | null, fallbackId: string) {
+  if (!order) return "";
+
+  const vehicleSummary = [
+    order.vehicle_brand,
+    order.vehicle_model,
+    order.vehicle_generation,
+    order.vehicle_engine,
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  return [
+    `MG AutoTech request: #${shortId(order.id || fallbackId)}`,
+    `Status: ${formatStatus(order.status)}`,
+    `Vehicle: ${vehicleSummary || "Vehicle not set"}`,
+    `Service: ${order.service_type || "Service not set"}`,
+    `Created: ${formatDate(order.created_at)}`,
+  ].join("\n");
+}
+
 function getModifiedFileVersions(order: Order) {
   const versions = Array.isArray(order.modified_files) ? order.modified_files : [];
 
@@ -286,6 +308,7 @@ export default function OrderDetailPage() {
   const [loading, setLoading] = useState(true);
   const [liveRefreshing, setLiveRefreshing] = useState(false);
   const [message, setMessage] = useState("");
+  const [copiedSupportSummary, setCopiedSupportSummary] = useState(false);
   const [revisionNote, setRevisionNote] = useState("");
   const [revisionSubmitting, setRevisionSubmitting] = useState(false);
   const [additionalUploadPhase, setAdditionalUploadPhase] =
@@ -298,6 +321,10 @@ export default function OrderDetailPage() {
     activeAdditionalUploadStepIndex >= 0
       ? additionalUploadSteps[activeAdditionalUploadStepIndex]
       : null;
+  const supportSummaryText = useMemo(
+    () => buildCustomerSupportSummary(order, params?.id ?? ""),
+    [order, params?.id]
+  );
 
   useEffect(() => {
     let currentUserId: string | null = null;
@@ -554,6 +581,18 @@ export default function OrderDetailPage() {
       setMessage("Additional file upload could not be completed.");
     } finally {
       setAdditionalUploadPhase("idle");
+    }
+  };
+
+  const copySupportSummary = async () => {
+    if (!supportSummaryText) return;
+
+    try {
+      await navigator.clipboard.writeText(supportSummaryText);
+      setCopiedSupportSummary(true);
+      window.setTimeout(() => setCopiedSupportSummary(false), 1800);
+    } catch {
+      setMessage("Support summary could not be copied. Please try again.");
     }
   };
 
@@ -1020,6 +1059,29 @@ export default function OrderDetailPage() {
                 For questions about this specific order, contact MG AutoTech and
                 include the order number.
               </p>
+
+              <div className="mt-5 rounded-2xl border border-white/10 bg-black/30 p-4">
+                <div className="flex items-start gap-3">
+                  <Copy className="mt-1 h-5 w-5 shrink-0 text-red-300" />
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm font-black text-white">
+                      Support summary
+                    </div>
+                    <p className="mt-1 text-sm leading-6 text-zinc-400">
+                      Copy a customer-safe reference with request, vehicle,
+                      service and current status only.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={copySupportSummary}
+                      className="mt-4 flex w-full items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-black text-white transition hover:bg-white/10"
+                    >
+                      <Copy className="mr-2 h-4 w-4" />
+                      {copiedSupportSummary ? "Copied safe summary" : "Copy safe summary"}
+                    </button>
+                  </div>
+                </div>
+              </div>
 
               <a
                 href={`mailto:info@mgautotech.de?subject=Order ${shortId(order.id)} Support`}

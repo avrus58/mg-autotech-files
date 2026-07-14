@@ -628,7 +628,7 @@ function DashboardHome({
           {history.slice(0, 4).map((item) => (
             <article key={item.requestId}>
               <strong>{item.fileName}</strong>
-              <span>{item.status} / {formatBytes(item.fileSize)}</span>
+              <span>{statusLabel(item.status)} / {formatBytes(item.fileSize)}</span>
             </article>
           ))}
           {!history.length && <p className="muted">No local upload metadata stored yet.</p>}
@@ -764,7 +764,7 @@ function HistoryPanel({ history, onClear }: { history: SafeUploadHistoryRow[]; o
       </div>
       <div className="filter-row">
         <button className={filter === "all" ? "chip active" : "chip"} onClick={() => setFilter("all")}>All</button>
-        {statuses.map((status) => <button key={status} className={filter === status ? "chip active" : "chip"} onClick={() => setFilter(status)}>{status}</button>)}
+        {statuses.map((status) => <button key={status} className={filter === status ? "chip active" : "chip"} onClick={() => setFilter(status)}>{statusLabel(status)}</button>)}
       </div>
       <div className="history-table">
         {filtered.map((item) => (
@@ -773,7 +773,7 @@ function HistoryPanel({ history, onClear }: { history: SafeUploadHistoryRow[]; o
             <span>{item.vehicleSummary || "Vehicle not available"}</span>
             <span>{item.serviceSummary || "Service not available"}</span>
             <code>{item.sha256}</code>
-            <em>{item.status} / {formatBytes(item.fileSize)}</em>
+            <em>{statusLabel(item.status)} / {formatBytes(item.fileSize)}</em>
             {item.requestId && !item.requestId.startsWith("local-") && (
               <button className="ghost" onClick={() => void window.mgDesktop?.openExternal(`${apiBaseUrl}/dashboard/orders/${item.requestId}`)}>Open Request <ExternalLink /></button>
             )}
