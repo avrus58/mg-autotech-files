@@ -2,6 +2,41 @@
 
 Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
+## 2026-07-14 manual run Homepage Hero Fit and Dark Surface Polish
+
+- Baslangic/bitis: 2026-07-14 17:55 - 18:02 +01:00.
+- Gorev: Ana sayfa hero yazilarinin tasmasini engellemek ve homepage'deki buyuk beyaz/light SEO yuzeylerini koyu MG AutoTech gorunumune almak.
+- Kapsam: `src/app/page.tsx` hero grid/typography/CTA layout ve ana homepage public SEO section theme classlari duzenlendi. `tests/ui-ux-safety.test.ts` hero overflow ve buyuk beyaz section regresyon guard'i ile guncellendi.
+- Sonuc: Hero H1 artik responsive clamp, text-balance, kontrollu max-width ve CTA grid kullanir; `md:text-7xl`/sabit `lg:h-[825px]` tasma riski kaldirildi. File-service navigator, answer library, snippet summary, comparison, myth checks, brief requirements, outcome preview, status guide, use cases, quality signals, workshop profiles, decision matrix, glossary, why section, services and FAQ alanlari koyu section/kart paletine tasindi.
+- Guvenlik kontrolu: Payment, AI, DTC, vehicle import, desktop, email, work-order, Supabase, production data, SQL, deploy veya push islemi yapilmadi. Mevcut DTC Phase A dirty files korunup dokunulmadi.
+- Calistirilan kontroller: `node scripts/check-i18n-seo.mjs` PASS; `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts tests\i18n-routing.test.ts` PASS (93/93); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (374/374); `npm run build` PASS; `node scripts/check-payment-env.js --schema-only` PASS; `npm audit --omit=dev --audit-level=high` PASS (0 vulnerabilities); `git diff --check` PASS (yalniz CRLF warning).
+- Calistirilmayan kontroller: `npm run check:payments` normal modda env dosyalari okuyabilecegi icin calistirilmadi; schema-only payment contract kullanildi. Production smoke/browser screenshot, deploy, push, SQL, live Supabase/Stripe/Resend islemleri calistirilmadi.
+- Kalan risk: Production'a deploy edilmedi. Lokal browser screenshot alinmadi; statik JSX/test/build kontrolleri temiz. Mevcut DTC Phase A dirty files bu calismadan once de vardi ve kapsam disi olarak korunuyor.
+
+## 2026-07-14 manual run DTC Active Phase A DB Verification
+
+- Baslangic/bitis: 2026-07-14 17:45 - 18:05 +01:00.
+- Gorev: Phase A database verification blocker'i kapatmadan Phase B'ye gecmeme kontrolu.
+- Kapsam: Repository local Supabase workflow, `package.json`, lockfile, migration konvansiyonu, Phase A SQL, auth/admin/tuner authorization, request ownership, storage varsayimlari ve `docs/dtc-active` incelendi. Supabase official CLI/local development docs kontrol edildi.
+- Sonuc: Disposable local Supabase database kurulamadi. `supabase --help`, `docker --version`, `docker compose version` ve `psql --version` komutlari ortamda bulunmadi. Repo'da tracked `supabase/config.toml` veya `supabase/migrations` dizini yok; mevcut migration pratigi `scripts/*.sql` dosyalari. `package-lock.json` Supabase CLI paketi icermiyor.
+- Guvenlik kontrolu: Production Supabase'e baglanilmadi, migration uygulanmadi, secret/env okunmadi, deploy/push yapilmadi. Phase B baslatilmadi.
+- Dokuman guncellemesi: `docs/dtc-active/IMPLEMENTATION_VALIDATION.md` Phase A DB verification attempt ve exact blocker listesiyle guncellendi.
+- Calistirilan kontroller: `Get-Content`/`Select-String`/`git status` ile local repo incelemesi; resmi Supabase CLI/local migration docs lookup; `supabase --help` FAIL expected missing command; `docker --version` FAIL expected missing command; `docker compose version` FAIL expected missing command; `psql --version` FAIL expected missing command.
+- Kalan risk: Phase A SQL halen file-level/test-level guvenli fakat gercek local database apply/reset/RLS/cross-tenant verification yapilmis sayilamaz. Phase B icin Supabase CLI + Docker veya esdeger disposable DB test harness gerekir.
+
+## 2026-07-14 manual run DTC Active Phase A
+
+- Baslangic/bitis: 2026-07-14 17:00 - 17:36 +01:00.
+- Gorev: MG AutoTech Active DTC Processing Platform Phase A only.
+- Kapsam: Research package okundu ve repository'ye Phase A read-only foundation olarak uyarlandi. Aktif DTC mutation, A4/A5 automation, real ECU rules, checksum adapter, customer delivery, MOD generation veya production Supabase islemi yapilmadi.
+- Degisen dosyalar: `src/lib/dtcActive/*`, `src/app/admin/dtc/page.tsx`, `src/app/api/admin/dtc/foundation/route.ts`, `src/app/api/requests/[id]/dtc-status/route.ts`, `src/app/admin/page.tsx`, `scripts/add-dtc-active-processing-phase-a.sql`, `tests/dtc-active-foundation.test.ts`, `docs/dtc-active/*`.
+- Sonuc: Phase A fail-closed policy helperlari, DTC code normalization/risk classification, customer-safe projection guard, admin read-only foundation API, customer-scoped status API, admin DTC foundation page, additive migration draft and operational docs eklendi.
+- Migration durumu: `scripts/add-dtc-active-processing-phase-a.sql` hazirlandi ancak uygulanmadi. Supabase CLI bu ortamda bulunmadigi icin local/disposable DB apply testi calistirilamadi. Production Supabase'e baglanilmadi.
+- Guvenlik kontrolu: Admin endpoint `ai_training.manage` guard'i altinda. Customer endpoint auth ve `customer_id` scope kullanir. Customer projection positive-only ve forbidden internal keys guard'i ile korunur. SQL yikici komut keyword taramasi bos dondu.
+- Calistirilan kontroller: `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (373/373); `npm run build` PASS; `node scripts/check-payment-env.js --schema-only` PASS; `npm audit --omit=dev --audit-level=high` PASS (0 vulnerabilities); `git diff --check` PASS (yalniz CRLF warning).
+- Calistirilmayan kontroller: `npm run check:payments` normal mod `.env.local` okuyabilecegi icin calistirilmadi. SQL migration/apply, production smoke, deploy, scraper, real dataset scan, real DTC processing ve live service islemleri calistirilmadi.
+- Kalan risk: Local/disposable Supabase apply ve policy inspection icin CLI/test DB gerekir. Phase B ancak bu review ve migration dry-run tamamlandiktan sonra baslamali.
+
 ## 2026-07-14 worker run AUTO-083
 
 - Baslangic/bitis: 2026-07-14 16:50:09 - 16:55:18 +01:00.
@@ -2022,3 +2057,45 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 - Offline build basarisiz; Google Fonts bagimliligi cozulmeden restricted Codex ortaminda `npm run build` gecmeyebilir.
 - Env checker scriptleri icin guvenli schema-only mod henuz uygulanmadi.
 - Smoke/scraper scriptleri non-local/dis ag guard'i henuz uygulamadi.
+
+## 2026-07-14 DTC Active Phase A database verification attempt
+
+- Gorev: DTC Active Processing Phase A icin production Supabase'e baglanmadan local/disposable database verification hazirligi ve denemesi.
+- Supabase CLI: `supabase@2.109.1` exact pinned devDependency olarak eklendi.
+- Supabase local project: `npx supabase init --yes` ile `supabase/config.toml` olusturuldu.
+- Local-only baseline: `supabase/migrations/20260714132000_dtc_phase_a_test_baseline.sql` eklendi; sadece Phase A SQL'in referans verdigi `public.orders`, `public.request_work_orders` ve `public.has_staff_permission` minimum nesnelerini kurar.
+- Verification harness: `scripts/verify-dtc-active-phase-a-local.sql` eklendi; table/RLS/grant/policy/cross-tenant RLS/append-only trigger kontrollerini local DB'de assert edecek sekilde hazirlandi.
+- Migration reconciliation: `scripts/add-dtc-active-processing-phase-a.sql` icine current Supabase davranisi icin explicit projection grants eklendi: `anon` revoke, `authenticated` select, `service_role` select/insert/update.
+- Production Supabase: dokunulmadi, link/push/reset/migration yok.
+- Docker sonucu: Docker Desktop process olarak baslatildi, fakat Docker daemon pipe'i erisilemedi (`docker ps` hem `desktop-linux` hem `default` context ile fail). `wsl --status`, WSL'nin yuklu olmadigini raporladi. Bu nedenle `npx supabase start` local DB'yi baslatamadi.
+- DATABASE_VERIFIED: hayir. Blocker uygulama semasi degil, lokal Docker Linux backend/WSL yoklugu.
+- Calistirilan kontroller: `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (375/375); `npm run build` PASS; `npm audit --omit=dev --audit-level=high` PASS; `git diff --check` PASS (sadece mevcut CRLF warning).
+- Calistirilmayan kontroller: `npm run check:payments` env dosyasi okuyabildigi icin bu DB verification gorevinde calistirilmadi.
+- Devam icin gerekenler: WSL2/Docker Linux backend kur/aktif et; `docker ps` PASS olduktan sonra `SUPABASE_TELEMETRY_DISABLED=1 npx supabase start`; sonra `npx supabase db query --local --file scripts/add-dtc-active-processing-phase-a.sql`; sonra `npx supabase db query --local --file scripts/verify-dtc-active-phase-a-local.sql`.
+
+## 2026-07-14 DTC Active Phase A database verification completed
+
+- Gorev: Docker/WSL2 aktif hale geldikten sonra Phase A migration'i disposable local Supabase DB uzerinde uygulayip RLS/grant/customer projection/cross-tenant isolation kontrollerini tamamlamak.
+- Supabase CLI/docs: `supabase@2.109.1`; komutlar `--help` ile dogrulandi. Supabase changelog incelendi; Data API auto exposure breaking change'i explicit grants ile karsilandi.
+- Local stack: `SUPABASE_TELEMETRY_DISABLED=1 npx supabase start -x edge-runtime,gotrue,imgproxy,kong,logflare,mailpit,postgres-meta,postgrest,realtime,storage-api,studio,supavisor,vector` PASS. Baseline migration local stack tarafindan uygulandi.
+- Migration apply: `scripts/add-dtc-active-processing-phase-a.sql`, local `supabase_db_mg-autotech-files` container icinde `psql -U postgres -d postgres -v ON_ERROR_STOP=1` ile PASS.
+- Verification SQL: `scripts/verify-dtc-active-phase-a-local.sql`, local `psql` ile PASS. Ilk denemede temp probe table role grant eksigi bulundu; sadece verification harness icinde `grant insert, select on dtc_phase_a_rls_probe to authenticated` eklenerek duzeltildi.
+- Dogrulanan DB davranisi: `dtc_private` schema/tables mevcut; private tables RLS enabled; `anon` projection select yetkisi yok; `authenticated` projection select yetkisi var; simulated customer cross-tenant query exactly one own row goruyor; `service_role` projection insert/update yetkisine sahip; append-only trigger rule document update'i engelliyor.
+- Local cleanup: `SUPABASE_TELEMETRY_DISABLED=1 npx supabase stop --no-backup` PASS; disposable local volumes temizlendi.
+- Production Supabase: dokunulmadi; `link`, `push`, remote reset/migration veya canli query yok.
+- DATABASE_VERIFIED: evet, local disposable Supabase icin.
+- Phase B: baslatilmadi.
+- Firmware/MOD output: uretilmedi; binary processing, checksum adapter, rule/adapter registry, A3/A4/A5 automation ve customer delivery eklenmedi.
+- Calistirilan kontroller: `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (375/375); `npm run build` PASS; `node scripts/check-payment-env.js --schema-only` PASS; `npm audit --omit=dev --audit-level=high` PASS; `git diff --check` PASS (sadece mevcut CRLF warning).
+
+## 2026-07-14 DTC Active Phase A migration packaging + Phase B synthetic dry-run
+
+- Gorev: Phase A SQL'i proper Supabase migration zincirine almak, temiz local reset ile dogrulamak ve sadece Phase B synthetic dry-run foundation'i uygulamak.
+- Migration packaging: `npx supabase migration new dtc_active_processing_phase_a` ile `supabase/migrations/20260714204125_dtc_active_processing_phase_a.sql` olusturuldu; icerik `scripts/add-dtc-active-processing-phase-a.sql` ile ayni additive/non-destructive SQL olarak paketlendi. Test baseline korunuyor.
+- Clean reset: `SUPABASE_TELEMETRY_DISABLED=1 npx supabase db reset --local` PASS; baseline ve Phase A migration zincirden sifirdan uygulandi.
+- Verification SQL: `scripts/verify-dtc-active-phase-a-local.sql`, local disposable `supabase_db_mg-autotech-files` container icinde PASS.
+- Phase B eklendi: strict synthetic rule/adapter/corpus validation, canonical JSON + SHA-256 digests, exact identity matching, approval/revocation gates, ambiguity rejection, hard veto checks, synthetic-only dry-run compiler, golden corpus runner, admin read-only summary, customer-safe dry-run projection.
+- Guvenlik siniri: real ECU rules yok; checksum/integrity adapter execution yok; native DLL/external executable yok; firmware byte mutation yok; pre-integrity/final artifact/MOD output yok; A3/A4/A5/customer delivery yok; production Supabase'e baglanilmadi.
+- Calistirilan kontroller: local Supabase clean reset PASS; Phase A verification SQL PASS; `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (387/387); `npm run build` PASS; `node scripts/check-payment-env.js --schema-only` PASS; `npm audit --omit=dev --audit-level=high` PASS; `git diff --check` PASS (sadece CRLF warning).
+- Local cleanup: `SUPABASE_TELEMETRY_DISABLED=1 npx supabase stop --no-backup` PASS.
+- Phase C: baslatilmadi.

@@ -683,6 +683,16 @@ export default function AdminPage() {
       });
     }
 
+    if (hasStaffPermission(adminAccess, "ai_training.manage")) {
+      links.push({
+        href: "/admin/dtc",
+        label: "DTC active foundation",
+        detail: "Review read-only active-processing gates before any future test engine.",
+        badge: "Read-only",
+        icon: <FileCode2 className="h-5 w-5" />,
+      });
+    }
+
     if (hasStaffPermission(adminAccess, "vehicles.manage")) {
       links.push({
         href: "/admin/vehicles",
