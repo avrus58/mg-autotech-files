@@ -21,6 +21,7 @@ import {
   trainingSafetyRatingKeys,
 } from "../src/lib/ecuIntelligence/types";
 import { generateAiFileExpertReport } from "../src/lib/ai";
+import type { AiReportProvider, AiReportRequest } from "../src/lib/ai/types";
 import { modelSafeAnalyzerResult, modelSafeMetadata } from "../src/lib/ai/prompt";
 import { hasStaffPermission } from "../src/lib/staffPermissions";
 import { isTransientAuthError } from "../src/lib/authGuards";
@@ -30,6 +31,10 @@ import {
   redactFileExpertResultForCustomer,
   sanitizeFileExpertJobForCustomer,
 } from "../src/lib/fileExpert/publicResult";
+import {
+  buildFileExpertAiReportStatus,
+  fileExpertReportGateContractVersion,
+} from "../src/lib/fileExpert/reportStatus";
 import {
   buildCreditQuote,
   defaultCommerceSettings,
@@ -321,6 +326,17 @@ test("AI reporting falls back to the rule-based provider when no provider is con
       metadata: {},
     });
     assert.equal(report.provider, "rule_based");
+    assert.equal(report.generation?.state, "deterministic_fallback");
+    assert.equal(report.generation?.fallback.used, true);
+    assert.equal(report.generation?.isAiGenerated, false);
+    const status = buildFileExpertAiReportStatus(report);
+    assert.equal(status.contractVersion, fileExpertReportGateContractVersion);
+    assert.equal(status.state, "deterministic_fallback");
+    assert.equal(status.fallback.reason, "no_configured_provider");
+    assert.equal(status.reviewGate.humanReviewRequired, true);
+    assert.equal(status.reviewGate.exportLocked, true);
+    assert.ok(status.reviewGate.blockedProductionActions.includes("customer_ready_mod_export"));
+    assert.ok(status.reviewGate.blockedProductionActions.includes("checksum_approval"));
     assert.match(report.report, /checksum/i);
     assert.match(report.report, /human|calibrator/i);
   } finally {
@@ -329,6 +345,84 @@ test("AI reporting falls back to the rule-based provider when no provider is con
     if (previousOpenAiKey === undefined) delete process.env.OPENAI_API_KEY;
     else process.env.OPENAI_API_KEY = previousOpenAiKey;
   }
+});
+
+test("AI reporting records provider-generated status without unlocking File Expert review", async () => {
+  const provider: AiReportProvider = {
+    name: "openai",
+    modelName: "unit-model",
+    async generateReport(input: AiReportRequest) {
+      return {
+        provider: "openai",
+        modelName: "unit-model",
+        promptVersion: "unit-prompt-v1",
+        executiveSummary: `Provider summary for ${input.result.job_id}`,
+        report: "Provider generated report. Human review and checksum verification remain required.",
+        outputJson: { generated: true },
+      };
+    },
+  };
+  const analysis = await analyzeFileExpertBuffers({
+    jobId: "provider-generated-status",
+    single: calibrationLikeBuffer(),
+  });
+  const report = await generateAiFileExpertReport({
+    sourceType: "file_expert_job",
+    sourceId: null,
+    result: analysis,
+    metadata: {},
+  }, { provider });
+  const status = buildFileExpertAiReportStatus(report);
+
+  assert.equal(report.provider, "openai");
+  assert.equal(report.generation?.state, "provider_generated");
+  assert.equal(report.generation?.isAiGenerated, true);
+  assert.equal(status.state, "provider_generated");
+  assert.equal(status.provider.requestedName, "openai");
+  assert.equal(status.provider.executedModelName, "unit-model");
+  assert.equal(status.provider.promptVersion, "unit-prompt-v1");
+  assert.equal(status.fallback.used, false);
+  assert.equal(status.reviewGate.humanReviewRequired, true);
+  assert.equal(status.reviewGate.exportLocked, true);
+  assert.ok(status.reviewGate.blockedProductionActions.includes("flash_safety_approval"));
+  assert.ok(status.reviewGate.customerSafeNotice.includes("human review"));
+});
+
+test("AI reporting records provider-error fallback and keeps binary analysis safe", async () => {
+  const provider: AiReportProvider = {
+    name: "openai",
+    modelName: "unit-provider",
+    async generateReport() {
+      throw new Error("unit provider failure sk-test-secret-token");
+    },
+  };
+  const analysis = await analyzeFileExpertBuffers({
+    jobId: "provider-error-fallback",
+    single: calibrationLikeBuffer(),
+  });
+  const report = await generateAiFileExpertReport({
+    sourceType: "file_expert_job",
+    sourceId: null,
+    result: analysis,
+    metadata: {},
+  }, { provider });
+  const status = buildFileExpertAiReportStatus(report);
+  const serialized = JSON.stringify(status);
+
+  assert.equal(report.provider, "rule_based");
+  assert.equal(report.generation?.state, "provider_error_fallback");
+  assert.equal(report.generation?.fallback.used, true);
+  assert.equal(report.generation?.fallback.reason, "provider_error");
+  assert.equal(report.generation?.isAiGenerated, false);
+  assert.equal(status.state, "provider_error_fallback");
+  assert.equal(status.provider.requestedName, "openai");
+  assert.equal(status.provider.status, "failed");
+  assert.equal(status.provider.executedName, "rule_based");
+  assert.equal(status.fallback.deterministicProvider, "rule_based");
+  assert.match(status.fallback.message ?? "", /deterministic local report/i);
+  assert.doesNotMatch(serialized, /sk-test-secret-token/);
+  assert.equal(status.reviewGate.exportLocked, true);
+  assert.ok(report.report.length > 0);
 });
 
 test("DTC analyzer exposes provider-unavailable state before fallback", async () => {
@@ -1432,6 +1526,33 @@ test("customer File Expert projection strips paths, hashes, offsets and admin fi
       return mod;
     })(),
   });
+  const reportStatus = buildFileExpertAiReportStatus({
+    provider: "openai",
+    modelName: "private-model",
+    promptVersion: "private-prompt-v1",
+    executiveSummary: "Private provider summary",
+    report: "Private provider report",
+    outputJson: { private_model_metadata: true },
+    generation: {
+      state: "provider_generated",
+      requestedProvider: {
+        name: "openai",
+        modelName: "private-model",
+        status: "available",
+      },
+      executedProvider: {
+        name: "openai",
+        modelName: "private-model",
+        promptVersion: "private-prompt-v1",
+      },
+      fallback: {
+        used: false,
+        reason: null,
+        message: null,
+      },
+      isAiGenerated: true,
+    },
+  });
   const safeJob = sanitizeFileExpertJobForCustomer({
     id: "job-1",
     user_id: "customer-1",
@@ -1449,7 +1570,10 @@ test("customer File Expert projection strips paths, hashes, offsets and admin fi
     provider: "private-provider",
     source_reference: "private-source",
     ai_report: "private report mentions 0x00001000",
-    result_json: analyzerResult,
+    result_json: {
+      ...analyzerResult,
+      ai_report_status: reportStatus,
+    },
     created_at: "2026-01-01T00:00:00.000Z",
     updated_at: "2026-01-01T00:00:00.000Z",
   });
@@ -1463,6 +1587,12 @@ test("customer File Expert projection strips paths, hashes, offsets and admin fi
   assert.equal(serialized.includes("offset"), false);
   assert.equal(serialized.includes("hex"), false);
   assert.equal(serialized.includes("private-provider"), false);
+  assert.equal(serialized.includes("private-model"), false);
+  assert.equal(serialized.includes("private-prompt-v1"), false);
+  assert.equal(serialized.includes("provider_generated"), false);
+  assert.equal(serialized.includes("fallback"), false);
+  assert.equal(serialized.includes("humanReviewRequired"), true);
+  assert.equal(serialized.includes("exportLocked"), true);
 });
 
 test("customer File Expert analyzer result keeps safe summary while hiding binary coordinates", async () => {

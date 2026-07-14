@@ -4,43 +4,6 @@
 
 ## Ready
 
-- [ ] **P1 RMAP-FILE-AI-EXPERT-V2-M1-FOUNDATION - AI File Expert V2 provider fallback and review gate foundation**
-  - Lane: AI Capability
-  - Roadmap: File Platform Roadmap (`file-platform`)
-  - Epic: AI File Expert V2 (`file-ai-expert-v2`)
-  - Feature: Foundation Milestone (`file-ai-expert-v2-m1-foundation-feature`)
-  - Roadmap task: `RMAP-FILE-AI-EXPERT-V2-M1-FOUNDATION`
-  - Fingerprint: `ai-capability|file-expert-v2|ai-report-lacks-explicit-review-gate-status-contract|provider-fallback-review-foundation`
-  - Strategic score: 45 roadmap weighted score; 38.9 selected score
-  - Scope class: M
-  - Expected effort: M roadmap milestone slice
-  - Business impact: 4/5
-  - User impact: 4/5
-  - Admin impact: 4/5
-  - Strategic fit: 5/5
-  - Confidence: 4/5
-  - Effort: 3/5
-  - Risk: 2/5
-  - Evidence: `.autopilot/runtime/roadmap-selection.json` selected `RMAP-FILE-AI-EXPERT-V2-M1-FOUNDATION`; product spec `C:\Users\gokka\Documents\MG-AI-OS-V4\artifacts\specs\rmap-file-ai-expert-v2-m1-foundation.md` requires provider interface, deterministic fallback and review gate. Existing `src/lib/ai/types.ts` and `src/lib/ai/index.ts` already provide `AiReportProvider` and rule-based fallback, and `tests/ecu-intelligence.test.ts` covers no-provider fallback. Existing `src/lib/fileExpert/server.ts` calls `generateAiFileExpertReport` and stores `ai_report` directly after analysis, while `docs/ai-generation-safety-gates.md` documents human review/export lock boundaries separately. No reusable File Expert V2 report readiness/review-gate status contract currently ties provider/fallback state, human-review requirement and export lock into one local code contract.
-  - Product value: Makes AI File Expert reporting safer and more operator-readable before future provider work by making provider success, fallback, unavailable state and human review/export lock explicit without calling live AI services.
-  - Selection reason: This is the exact selected Roadmap V2 P1/M task for `file.mgautotech.de`; DTC Analyzer M1-M5 is already done, and this milestone starts the next high-impact File Platform AI epic without production access.
-  - Scope: Add a narrow local File Expert V2 foundation contract around the existing AI report flow. Preserve current analyzer behavior and customer/admin data boundaries. Do not add a DB migration, package, live provider call, production analytics query, MOD generation, checksum approval, pricing/legal change or deploy.
-  - Acceptance criteria:
-    - Existing `AiReportProvider` adapters and `RuleBasedAiReportProvider` continue to work, and no configured-provider failure can break binary analysis.
-    - A reusable File Expert V2 report status/review-gate contract exists for provider name/model/prompt version, deterministic fallback state, fallback reason, human review requirement, export locked state and blocked production actions.
-    - Customer-safe projection continues to hide provider internals, raw binary/hex, offsets, storage paths, signed URLs, hashes, VIN/customer-identifying internals, sample IDs and admin-only notes.
-    - Admin/operator-facing status can distinguish provider-generated, deterministic fallback and provider-error fallback states without implying flash safety, checksum completion or customer-ready MOD output.
-    - Regression tests cover no-provider fallback, provider-error fallback, review-gate/export lock semantics and no customer leak from the new status contract.
-    - Documentation or inline runbook notes identify safe local validation commands and operator-only production decisions.
-  - Validation:
-    - `.\node_modules\.bin\tsx.cmd --test tests\ecu-intelligence.test.ts`
-    - `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts`
-    - `npm run lint`
-    - `npm run typecheck`
-    - `npm test`
-    - `git diff --check`
-    - `npm run build` only if the runner environment explicitly permits local env handling and Google Fonts network access; otherwise record the known environment skip in `STATUS.md`.
-
 ## In Progress
 
 ## Blocked
@@ -86,6 +49,18 @@ Remediation: Batch with a future documentation/source-comment maintenance pass a
 Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
+
+### RMAP-FILE-AI-EXPERT-V2-M1-FOUNDATION [P1] AI File Expert V2 provider fallback and review gate foundation
+
+Durum: Done
+
+Fingerprint: `ai-capability|file-expert-v2|ai-report-lacks-explicit-review-gate-status-contract|provider-fallback-review-foundation`
+
+Kapsam: Existing File Expert AI report flow now has a local V2 provider/fallback status and review-gate contract without DB migration, live provider call, production access or MOD/checksum export.
+
+Sonuc: `generateAiFileExpertReport` now attaches provider generation metadata for provider-generated, deterministic fallback and provider-error fallback states. `src/lib/fileExpert/reportStatus.ts` defines `file-expert-v2-report-gate-v1` with provider/model/prompt status, fallback reason, human-review requirement, export lock and blocked production actions. New analyses store the status in existing `result_json.ai_report_status`; admin File Expert shows the state and blocked production actions, while customer projection converts it to a provider-free human-review/export-lock notice. The runbook documents safe local validation and operator-only production decisions. No secrets, `.env*`, live service, production data, migration, package install, pricing/legal change, customer-ready MOD output, checksum approval, commit, push or deploy was performed.
+
+Dogrulama: `.\node_modules\.bin\tsx.cmd --test tests\ecu-intelligence.test.ts` PASS (73/73); `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (58/58); `.\node_modules\.bin\tsx.cmd --test tests\admin-work-orders.test.ts` PASS (28/28); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (306/306); `git diff --check` PASS (CRLF warnings only). `npm run build` not run because this repo build can load local Next env files and request Google Fonts, outside this run's no-env/no-live-network boundary.
 
 ### RMAP-FILE-DTC-M5-ROLLOUT-READINESS [P1] AI DTC Analyzer rollout readiness pack
 

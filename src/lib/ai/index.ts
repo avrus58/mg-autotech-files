@@ -3,7 +3,7 @@ import { OllamaReportProvider } from "@/lib/ai/providers/ollama";
 import { OpenAiReportProvider } from "@/lib/ai/providers/openAi";
 import { OpenAiCompatibleReportProvider } from "@/lib/ai/providers/openAiCompatible";
 import { RuleBasedAiReportProvider } from "@/lib/ai/providers/ruleBased";
-import type { AiReportProvider, AiReportRequest } from "@/lib/ai/types";
+import type { AiReportGenerationMetadata, AiReportProvider, AiReportRequest, AiReportResponse } from "@/lib/ai/types";
 import { modelSafeMetadata } from "@/lib/ai/prompt";
 
 function configuredProvider(): AiReportProvider {
@@ -63,8 +63,82 @@ async function auditRun(input: {
   }
 }
 
-export async function generateAiFileExpertReport(request: AiReportRequest) {
-  const provider = configuredProvider();
+function redactProviderError(message: string) {
+  return message
+    .replace(/Bearer\s+[A-Za-z0-9._-]+/g, "Bearer [redacted]")
+    .replace(/sk-[A-Za-z0-9_-]{8,}/g, "[redacted-api-key]")
+    .slice(0, 300);
+}
+
+function attachGeneration(
+  output: AiReportResponse,
+  generation: AiReportGenerationMetadata
+): AiReportResponse {
+  return {
+    ...output,
+    generation,
+  };
+}
+
+function successfulGenerationMetadata(
+  provider: AiReportProvider,
+  output: AiReportResponse
+): AiReportGenerationMetadata {
+  const usedRuleFallback = output.provider === "rule_based";
+  return {
+    state: usedRuleFallback ? "deterministic_fallback" : "provider_generated",
+    requestedProvider: {
+      name: provider.name,
+      modelName: provider.modelName,
+      status: usedRuleFallback ? "unavailable" : "available",
+    },
+    executedProvider: {
+      name: output.provider,
+      modelName: output.modelName,
+      promptVersion: output.promptVersion,
+    },
+    fallback: {
+      used: usedRuleFallback,
+      reason: usedRuleFallback ? "no_configured_provider" : null,
+      message: usedRuleFallback
+        ? "No external AI report provider is configured; a deterministic local report was generated."
+        : null,
+    },
+    isAiGenerated: !usedRuleFallback,
+  };
+}
+
+function providerErrorGenerationMetadata(input: {
+  provider: AiReportProvider;
+  output: AiReportResponse;
+  errorMessage: string;
+}): AiReportGenerationMetadata {
+  return {
+    state: "provider_error_fallback",
+    requestedProvider: {
+      name: input.provider.name,
+      modelName: input.provider.modelName,
+      status: "failed",
+    },
+    executedProvider: {
+      name: input.output.provider,
+      modelName: input.output.modelName,
+      promptVersion: input.output.promptVersion,
+    },
+    fallback: {
+      used: true,
+      reason: "provider_error",
+      message: `Configured AI report provider failed; deterministic local report was generated. ${redactProviderError(input.errorMessage)}`,
+    },
+    isAiGenerated: false,
+  };
+}
+
+export async function generateAiFileExpertReport(
+  request: AiReportRequest,
+  options: { provider?: AiReportProvider } = {}
+) {
+  const provider = options.provider ?? configuredProvider();
   const startedAt = Date.now();
 
   try {
@@ -76,10 +150,11 @@ export async function generateAiFileExpertReport(request: AiReportRequest) {
       outputText: output.report,
       outputJson: output.outputJson,
     });
-    return output;
+    return attachGeneration(output, successfulGenerationMetadata(provider, output));
   } catch (error) {
     const message = error instanceof Error ? error.message : "AI report provider failed.";
-    await auditRun({ request, provider, startedAt, error: message });
+    const safeMessage = redactProviderError(message);
+    await auditRun({ request, provider, startedAt, error: safeMessage });
 
     const fallback = new RuleBasedAiReportProvider();
     const fallbackStartedAt = Date.now();
@@ -89,9 +164,12 @@ export async function generateAiFileExpertReport(request: AiReportRequest) {
       provider: fallback,
       startedAt: fallbackStartedAt,
       outputText: output.report,
-      outputJson: { fallback_reason: message },
+      outputJson: { fallback_reason: safeMessage },
     });
-    return output;
+    return attachGeneration(
+      output,
+      providerErrorGenerationMetadata({ provider, output, errorMessage: safeMessage })
+    );
   }
 }
 

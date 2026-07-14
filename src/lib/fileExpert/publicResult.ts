@@ -1,4 +1,8 @@
 import type { FileExpertAnalyzerResult } from "@/lib/fileExpert/types";
+import {
+  projectFileExpertAiReportStatusForCustomer,
+  type FileExpertAiReportStatus,
+} from "@/lib/fileExpert/reportStatus";
 
 const customerSafeJobKeys = [
   "id",
@@ -29,6 +33,11 @@ const customerSafeJobKeys = [
 const forbiddenCustomerKeyPatterns = [
   /path/i,
   /provider/i,
+  /fallback/i,
+  /modelName/i,
+  /prompt/i,
+  /requestedName/i,
+  /executedName/i,
   /^source$/i,
   /source_type/i,
   /sourceType/,
@@ -135,6 +144,12 @@ export function redactFileExpertResultForCustomer(result: FileExpertAnalyzerResu
       repeated_patterns_summary: [],
       map_candidates_summary: [],
     };
+  }
+
+  if (safe.ai_report_status) {
+    safe.ai_report_status = projectFileExpertAiReportStatusForCustomer(
+      safe.ai_report_status as FileExpertAiReportStatus
+    ) as never;
   }
 
   return stripForbiddenCustomerKeys(safe);

@@ -10,6 +10,7 @@ import {
   runSimilarityForFileExpert,
 } from "@/lib/ecuIntelligence/similarity";
 import { fileExpertAllowedExtensions, fileExpertMaxFileSize } from "@/lib/fileExpert/limits";
+import { buildFileExpertAiReportStatus } from "@/lib/fileExpert/reportStatus";
 export { fileExpertMaxFileSize } from "@/lib/fileExpert/limits";
 
 export const fileExpertBucket = "file-expert";
@@ -282,6 +283,7 @@ export async function analyzeFileExpertJob(jobId: string) {
       },
       similarityEvidence: similarity ? buildPublicSimilarityEvidence(similarity) : null,
     });
+    result.ai_report_status = buildFileExpertAiReportStatus(generated);
 
     await supabaseAdmin
       .from("file_expert_binary_fingerprints")

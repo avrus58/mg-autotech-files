@@ -27,6 +27,7 @@ export type AiReportResponse = {
   executiveSummary: string;
   report: string;
   outputJson?: Record<string, unknown> | null;
+  generation?: AiReportGenerationMetadata;
 };
 
 export interface AiReportProvider {
@@ -34,3 +35,28 @@ export interface AiReportProvider {
   readonly modelName: string | null;
   generateReport(input: AiReportRequest): Promise<AiReportResponse>;
 }
+
+export type AiReportGenerationState =
+  | "provider_generated"
+  | "deterministic_fallback"
+  | "provider_error_fallback";
+
+export type AiReportGenerationMetadata = {
+  state: AiReportGenerationState;
+  requestedProvider: {
+    name: AiProviderName;
+    modelName: string | null;
+    status: "available" | "unavailable" | "failed";
+  };
+  executedProvider: {
+    name: AiProviderName;
+    modelName: string | null;
+    promptVersion: string;
+  };
+  fallback: {
+    used: boolean;
+    reason: "no_configured_provider" | "provider_error" | null;
+    message: string | null;
+  };
+  isAiGenerated: boolean;
+};

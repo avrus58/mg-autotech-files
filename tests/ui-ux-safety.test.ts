@@ -1405,6 +1405,32 @@ test("AI file intelligence roadmap keeps generation behind future safety gates",
   assert.match(roadmap, /AI-assisted evidence and review support/i);
 });
 
+test("admin File Expert exposes V2 report review gate without customer-ready output claims", () => {
+  const adminPage = readProjectFile("src", "app", "admin", "file-expert", "page.tsx");
+  const runbook = readProjectFile("docs", "file-expert-v2-review-gates.md");
+  const gateSource =
+    adminPage.match(/function getAiReportStatusSummary[\s\S]*?export default function AdminFileExpertPage/)?.[0] ?? "";
+  const gateUi =
+    adminPage.match(/<div className=\{`mt-4 rounded-2xl border p-4[\s\S]*?<div className="mt-4 grid gap-3 sm:grid-cols-2">/)?.[0] ?? "";
+
+  assert.match(adminPage, /ai_report_status/);
+  assert.match(gateSource, /Provider-generated report/);
+  assert.match(gateSource, /Provider error fallback/);
+  assert.match(gateSource, /Deterministic fallback/);
+  assert.match(gateUi, /AI review gate/);
+  assert.match(gateUi, /Human review required/);
+  assert.match(gateUi, /Blocked production actions/);
+  assert.match(gateUi, /requestedName/);
+  assert.match(gateUi, /executedName/);
+  assert.match(runbook, /provider_generated/);
+  assert.match(runbook, /deterministic_fallback/);
+  assert.match(runbook, /provider_error_fallback/);
+  assert.match(runbook, /exportLocked: true/);
+  assert.match(runbook, /operator-only decisions/i);
+  assert.doesNotMatch(gateUi + runbook, /customer-ready\s+file|safe to flash|checksum completed|automatic delivery is possible/i);
+  assert.doesNotMatch(runbook, /SUPABASE_SERVICE_ROLE_KEY|OPENAI_API_KEY|STRIPE_SECRET_KEY|RESEND_API_KEY/);
+});
+
 test("i18n and SEO health script catches core multilingual requirements", () => {
   const script = readProjectFile("scripts", "check-i18n-seo.mjs");
   assert.match(script, /expectedLocales/);

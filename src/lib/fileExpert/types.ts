@@ -1,3 +1,5 @@
+import type { FileExpertAiReportStatus } from "@/lib/fileExpert/reportStatus";
+
 export type FileExpertStatus = "pending" | "processing" | "completed" | "failed";
 export type FileExpertReadMethod = "OBD" | "Bench" | "Boot" | "VR" | "Unknown";
 export type FileExpertRiskLevel = "low" | "medium" | "high" | "unknown";
@@ -225,6 +227,7 @@ export type FileExpertAnalyzerResult = {
   vehicle_match?: FileExpertVehicleMatch;
   change_profile?: FileExpertChangeProfile;
   findings?: FileExpertFinding[];
+  ai_report_status?: FileExpertAiReportStatus;
   integrity_assessment?: FileExpertIntegrityAssessment;
   risk_assessment: {
     risk_level: FileExpertRiskLevel;

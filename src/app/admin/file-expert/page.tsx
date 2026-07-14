@@ -22,6 +22,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { hasStaffPermission, type StaffAccess } from "@/lib/staffPermissions";
 import type { FileExpertFeature, FileExpertJob } from "@/lib/fileExpert/types";
 import { fileExpertFeatureLabels } from "@/lib/fileExpert/types";
+import type { FileExpertAiReportStatus } from "@/lib/fileExpert/reportStatus";
 import { trainingSafetyRatingKeys } from "@/lib/ecuIntelligence/types";
 
 type Feedback = {
@@ -57,6 +58,46 @@ function formatDate(value: string) {
 function shortHash(value: string | null) {
   if (!value) return "-";
   return `${value.slice(0, 10)}...`;
+}
+
+function formatLabel(value: string | null | undefined) {
+  if (!value) return "Not available";
+  return value.replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function providerLabel(value: string | null | undefined) {
+  if (!value) return "No provider";
+  if (value === "rule_based") return "Rule-based local fallback";
+  return value.toUpperCase();
+}
+
+function getAiReportStatusSummary(status: FileExpertAiReportStatus | null | undefined) {
+  if (!status) {
+    return {
+      label: "Legacy status unavailable",
+      detail: "Re-analyze this job to attach the File Expert V2 provider and review-gate contract.",
+      tone: "border-zinc-700/40 bg-zinc-950/25 text-zinc-300",
+    };
+  }
+  if (status.state === "provider_generated") {
+    return {
+      label: "Provider-generated report",
+      detail: "A configured AI provider produced the report. Human review and export lock still apply.",
+      tone: "border-emerald-700/40 bg-emerald-950/20 text-emerald-200",
+    };
+  }
+  if (status.state === "provider_error_fallback") {
+    return {
+      label: "Provider error fallback",
+      detail: "The configured AI provider failed, so a deterministic local report was generated instead.",
+      tone: "border-amber-700/40 bg-amber-950/20 text-amber-100",
+    };
+  }
+  return {
+    label: "Deterministic fallback",
+    detail: "No external AI provider generated this report; the local rule-based report was used.",
+    tone: "border-blue-700/40 bg-blue-950/20 text-blue-100",
+  };
 }
 
 export default function AdminFileExpertPage() {
@@ -208,6 +249,8 @@ export default function AdminFileExpertPage() {
     });
   }, [jobs, search, statusFilter, featureFilter]);
   const selectedIdentity = selectedJob?.result_json?.ecu_identification;
+  const selectedReportStatus = selectedJob?.result_json?.ai_report_status;
+  const selectedReportSummary = getAiReportStatusSummary(selectedReportStatus);
 
   async function saveFeedback() {
     if (!selectedJob) return;
@@ -435,6 +478,48 @@ export default function AdminFileExpertPage() {
                     <MiniDetail icon={<Database />} label="ECU / TCU" value={selectedIdentity?.display_name || selectedJob.ecu_type || "-"} />
                     <MiniDetail icon={<BrainCircuit />} label="Confidence" value={selectedJob.confidence_score ? `${selectedJob.confidence_score}%` : "-"} />
                     <MiniDetail icon={<ShieldAlert />} label="Risk" value={selectedJob.risk_level || "unknown"} />
+                  </div>
+
+                  <div className={`mt-4 rounded-2xl border p-4 ${selectedReportSummary.tone}`}>
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="text-xs font-black uppercase tracking-[0.16em] opacity-70">AI review gate</div>
+                        <div className="mt-2 break-words text-lg font-black">{selectedReportSummary.label}</div>
+                      </div>
+                      <span className="rounded-full border border-current/20 bg-black/20 px-3 py-1 text-xs font-black">
+                        Human review required
+                      </span>
+                    </div>
+                    <p className="mt-3 text-sm leading-6 opacity-90">{selectedReportSummary.detail}</p>
+                    {selectedReportStatus ? (
+                      <div className="mt-4 grid gap-3 md:grid-cols-2">
+                        <div className="rounded-2xl border border-current/15 bg-black/20 p-3">
+                          <div className="text-xs font-black uppercase tracking-[0.14em] opacity-65">Provider path</div>
+                          <div className="mt-2 break-words text-sm font-bold">
+                            Requested: {providerLabel(selectedReportStatus.provider.requestedName)}
+                          </div>
+                          <div className="mt-1 break-words text-sm font-bold">
+                            Executed: {providerLabel(selectedReportStatus.provider.executedName)}
+                          </div>
+                          <div className="mt-1 break-words text-xs opacity-70">
+                            Prompt {selectedReportStatus.provider.promptVersion}
+                            {selectedReportStatus.provider.executedModelName
+                              ? ` / ${selectedReportStatus.provider.executedModelName}`
+                              : ""}
+                          </div>
+                        </div>
+                        <div className="rounded-2xl border border-current/15 bg-black/20 p-3">
+                          <div className="text-xs font-black uppercase tracking-[0.14em] opacity-65">Blocked production actions</div>
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            {selectedReportStatus.reviewGate.blockedProductionActions.map((action) => (
+                              <span key={action} className="rounded-full border border-current/20 bg-black/20 px-2.5 py-1 text-xs font-black">
+                                {formatLabel(action)}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    ) : null}
                   </div>
 
                   <div className="mt-4 grid gap-3 sm:grid-cols-2">
