@@ -74,6 +74,7 @@ import {
   type DtcAnalyzerRequest,
   UnavailableDtcAnalyzerProvider,
 } from "../src/lib/dtcAnalyzer";
+import { analyzeRequestDtc } from "../src/lib/dtcAnalyzer/requestIntegration";
 
 function calibrationLikeBuffer(size = 16_384) {
   const buffer = Buffer.alloc(size, 0xff);
@@ -377,6 +378,65 @@ test("DTC analyzer deterministic fallback handles valid DTC text safely", async 
   assert.doesNotMatch(serialized, /Customer reports limp mode/i);
   assert.doesNotMatch(serialized, /confirmed fix|customer-ready file|checksum result|byte patch approved/i);
   assert.doesNotMatch(serialized, /storage_path|signed_url|service_role|first_64_bytes_hex/i);
+});
+
+test("request DTC projection separates customer and expert boundaries", async () => {
+  const projection = await analyzeRequestDtc({
+    id: "request-dtc-safe",
+    customer_id: "customer-1",
+    vehicle_brand: "BMW",
+    vehicle_model: "5 Series",
+    vehicle_engine: "2.0d",
+    service_type: "DTC OFF review",
+    notes:
+      "Customer private workshop note with P0401. storage_path=customer/private/read.bin signed_url=https://private.example SHA256=secret-hash admin note sample-secret first_64_bytes_hex=DE AD BE EF",
+    ecu: "Bosch EDC17C50",
+    read_method: "bench",
+    hw_sw: "private-sw-marker",
+  }, "customer");
+  const customerSerialized = JSON.stringify(projection.customer);
+  const expertSerialized = JSON.stringify(projection.expert);
+  const auditSerialized = JSON.stringify(projection.auditMetadata);
+
+  assert.equal(projection.customer.state, "provider_unavailable_fallback");
+  assert.equal(projection.customer.isAiGenerated, false);
+  assert.deepEqual(projection.customer.detectedCodes, ["P0401"]);
+  assert.match(projection.customer.providerNotice, /deterministic non-AI fallback/i);
+  assert.ok(projection.customer.humanReview.required);
+  assert.equal(projection.expert.provider.providerStatus, "unavailable");
+  assert.equal(projection.expert.fallback.used, true);
+  assert.equal(projection.auditMetadata.customer_id, undefined);
+  assert.deepEqual(projection.auditMetadata.detected_codes, ["P0401"]);
+
+  for (const serialized of [customerSerialized, expertSerialized, auditSerialized]) {
+    assert.doesNotMatch(serialized, /private workshop note/i);
+    assert.doesNotMatch(serialized, /storage_path|signed_url|customer\/private|secret-hash|sample-secret/i);
+    assert.doesNotMatch(serialized, /first_64_bytes_hex|DE AD BE EF|admin note|private-sw-marker/i);
+    assert.doesNotMatch(serialized, /confirmed fix|DTC-off approved|customer-ready file|checksum result|byte patch approved/i);
+  }
+  assert.doesNotMatch(customerSerialized, /providerId|modelName|promptVersion|providerKind|providerStatus/i);
+});
+
+test("request DTC projection makes missing and invalid DTC input explicit", async () => {
+  const noCode = await analyzeRequestDtc({
+    id: "request-dtc-empty",
+    service_type: "DTC OFF review",
+    notes: "Customer asks for diagnostic review but did not provide a code.",
+  }, "customer");
+  const empty = await analyzeRequestDtc({ id: "request-dtc-no-text" }, "admin");
+
+  assert.equal(noCode.customer.state, "no_valid_dtc");
+  assert.equal(noCode.customer.status, "invalid_input");
+  assert.deepEqual(noCode.customer.detectedCodes, []);
+  assert.match(noCode.customer.stateLabel, /No valid DTC code/i);
+  assert.match(noCode.customer.summary, /No valid SAE-style DTC code/i);
+  assert.equal(noCode.customer.isAiGenerated, false);
+
+  assert.equal(empty.customer.state, "no_request_text");
+  assert.equal(empty.customer.status, "invalid_input");
+  assert.match(empty.customer.stateLabel, /No request text/i);
+  assert.match(empty.customer.summary, /Enter at least one diagnostic trouble code/i);
+  assert.equal(empty.expert.provider.providerStatus, "ready");
 });
 
 test("DTC analyzer deterministic fallback keeps unknown valid codes low-confidence", async () => {

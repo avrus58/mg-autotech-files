@@ -2,6 +2,33 @@
 
 Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
+## 2026-07-14 reviewer run RMAP-FILE-DTC-M3-REQUEST-INTEGRATION
+
+- Bitis: 2026-07-14 04:59:00 +01:00.
+- Gorev: RMAP-FILE-DTC-M3-REQUEST-INTEGRATION uncommitted worker degisikliklerini V4 roadmap/product/safety/quality gate olarak incelemek.
+- Sonuc: Accepted. Degisiklik selected Roadmap V2 `file-ai-dtc-analyzer` M3 Request Integration milestone'una uyuyor; customer-safe projection, expert/admin projection, authenticated request/admin routes ve internal-only best-effort audit event entegrasyonu kabul kriterlerini karsiliyor.
+- Reviewer duzeltmesi: Yok.
+- Degisen dosyalar: `.autopilot/STATUS.md`, `.autopilot/runtime/review-result.json`.
+- Factuality gate: `AcceptedArchitectureOnly`; public `mgautotech.de` sayfasi, structured data veya publication-ready automotive content eklenmedi. Unsupported/conflicting new public claim yok. Source coverage V4 automotive policy, MG business facts ve SBC knowledge manifests ile sinirli; DTC fallback teknik metinleri public MG AutoTech content olarak kullanilmadan once operator/technical evidence review gerekir.
+- Guvenlik/UI kontrolu: Customer route order ownership ile, admin route `orders.view` ile sinirli. Projection ve audit metadata raw notes, admin notes, storage path, signed URL, hash, binary/hex, sample id, provider secret veya private metadata tasimiyor. UI loading, empty, error, retry ve human-review states mevcut. DB schema, migration, live service, production deploy, payment, pricing, legal/commercial policy veya real customer data islemi yok.
+- Calistirilan kontroller: `.\node_modules\.bin\tsx.cmd --test tests\ecu-intelligence.test.ts` PASS (66/66); `.\node_modules\.bin\tsx.cmd --test tests\admin-work-orders.test.ts` PASS (28/28); `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (56/56); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (297/297); `git diff --check` PASS (yalniz CRLF warnings).
+- Calistirilmayan kontroller: `npm run build` reviewer tarafindan tekrar calistirilmadi; worker sonucu PASS olarak kayitli, ancak reviewer turunda `.env.local`/Google Fonts davranisi ve secret-okumama siniri nedeniyle tekrar edilmedi. `npm run check:payments`, desktop normal env/dev/build/package, SQL migration/verification, smoke, scraper, live Supabase/Stripe/Resend/OpenAI/PayPal ve deploy islemleri calistirilmadi.
+- Kalan risk: Roadmap state reconciliation runner commit/accept sonrasi M3 statusunu Done yapmalidir. M4 admin configuration ve M5 rollout readiness henuz uygulanmadi.
+
+## 2026-07-14 worker run RMAP-FILE-DTC-M3-REQUEST-INTEGRATION
+
+- Baslangic/bitis: 2026-07-14 04:32:09 +01:00.
+- Gorev: AI DTC Analyzer request boundary and audit integration.
+- Fingerprint: `ai-capability|dtc-analyzer|request-notes-not-connected-to-safe-analysis|request-boundary-audit-integration`.
+- Secim nedeni: `.autopilot/runtime/roadmap-selection.json` selected roadmap task olarak `RMAP-FILE-DTC-M3-REQUEST-INTEGRATION` verdi ve `.autopilot/TASKS.md` Ready/In Progress icinde ayni selected task bulundu. Roadmap V2 state M1 ve M2'yi Done/accepted, M3'u Planned/0 attempt olarak gosteriyordu.
+- Duplicate/evidence kontrolu: Package V4 constitution dosyalari, roadmap docs/state/selection/spec, local `.autopilot/constitution/*`, AGENTS, PROJECT, ROADMAP, INBOX, FEATURE_PROPOSALS, TASKS, TASK_HISTORY, PRODUCT_SCORECARD, STATUS, current Git status ve son commitler okundu. Ayni fingerprint TASK_HISTORY/Done icinde yoktu. Evidence gecerliydi: M2 DTC contract vardi fakat request lifecycle, customer/expert projection ve audit event entegrasyonu yoktu.
+- Degisen dosyalar: `src/lib/dtcAnalyzer/requestIntegration.ts`, `src/app/api/requests/[id]/dtc-analysis/route.ts`, `src/app/api/admin/requests/[id]/dtc-analysis/route.ts`, `src/app/dashboard/orders/[id]/page.tsx`, `src/app/admin/requests/[id]/WorkOrderDetailClient.tsx`, `tests/ecu-intelligence.test.ts`, `tests/admin-work-orders.test.ts`, `tests/ui-ux-safety.test.ts`, `.autopilot/TASKS.md`, `.autopilot/TASK_HISTORY.md`, `.autopilot/STATUS.md`, `.autopilot/runtime/last-result.json`.
+- Uygulama sonucu: Request-level DTC helper'i mevcut order text/service/vehicle alanlarindan analiz input'u olusturuyor, raw request notes veya private metadata'yi projection/audit payload'ina tasimadan customer-safe ve expert/admin-safe response uretiyor. Customer route order ownership ile, admin route `orders.view` staff permission ile korunur. Her analiz calismasi `dtc_analysis_generated` internal-only audit event'ini sanitized metadata ile best-effort kaydeder; migration/fallback eksikse request view bozulmaz. Customer order detail `DTC Diagnostic Guidance`, admin work-order detail `DTC Expert Review` paneli ekledi.
+- Guvenlik/UI kontrolu: Customer projection provider id/model/prompt internali, raw notes, admin notes, storage path, signed URL, hash, binary/hex, sample id veya private metadata dondurmez. Expert projection provider/fallback status ve evidence/risk/recommendation detaylarini gosterir fakat final diagnosis, DTC-off approval, file edit approval, checksum completion veya customer-ready MOD output iddia etmez. UI loading, empty, error, retry ve result state'leri `aria-live`/`role` attribute'leriyle eklendi. DB schema, migration execution, live provider call, desktop DTC activation, file processing, MOD/checksum action, pricing, legal/commercial policy, production deploy veya live service islemi yapilmadi.
+- Calistirilan kontroller: `.\node_modules\.bin\tsx.cmd --test tests\ecu-intelligence.test.ts` PASS (66/66); `.\node_modules\.bin\tsx.cmd --test tests\admin-work-orders.test.ts` PASS (28/28); `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts` PASS (56/56); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (297/297); `npm run build` PASS (228/228, Next build `.env.local` varligini raporladi ancak secret degeri okunmadi/loglanmadi); `git diff --check` PASS (yalniz CRLF uyarilari).
+- Calistirilmayan kontroller: `npm run check:payments` normal mod `.env.local` okuyabilecegi icin calistirilmadi. Desktop normal check-env/dev/package, SQL migration/verification, smoke, scraper, live Supabase/Stripe/Resend/OpenAI/PayPal ve deploy islemleri calistirilmadi.
+- Kalan risk: DTC Analyzer M4 admin configuration ve M5 rollout readiness henuz uygulanmadi; provider configuration, usage limits, analytics/rollout docs sonraki roadmap milestone'larinda kalir. Commit/push/deploy yapilmadi.
+
 ## 2026-07-14 planner run V4 ROADMAP DTC REQUEST INTEGRATION
 
 - Baslangic/bitis: 2026-07-14 04:16:18 +01:00.

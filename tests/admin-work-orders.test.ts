@@ -63,6 +63,7 @@ test("admin request routes require existing staff permissions", () => {
     ["src/app/api/admin/requests/[id]/route.ts", /requireStaffPermission\(request,\s*"orders\.view"\)/],
     ["src/app/api/admin/requests/[id]/route.ts", /requireStaffPermission\(request,\s*"orders\.manage"\)/],
     ["src/app/api/admin/requests/[id]/notes/route.ts", /requireStaffPermission\(request,\s*"orders\.manage"\)/],
+    ["src/app/api/admin/requests/[id]/dtc-analysis/route.ts", /requireStaffPermission\(request,\s*"orders\.view"\)/],
   ] as const;
   for (const [file, pattern] of routes) {
     const source = readFileSync(resolve(process.cwd(), file), "utf8");
@@ -81,11 +82,34 @@ test("anonymous users cannot call admin work-order APIs", async () => {
   const list = await import("../src/app/api/admin/requests/route");
   const detail = await import("../src/app/api/admin/requests/[id]/route");
   const notes = await import("../src/app/api/admin/requests/[id]/notes/route");
+  const dtcAnalysis = await import("../src/app/api/admin/requests/[id]/dtc-analysis/route");
   assert.equal((await list.GET(new Request("http://localhost/api/admin/requests"))).status, 401);
   assert.equal((await detail.GET(new Request("http://localhost/api/admin/requests/id"), { params: Promise.resolve({ id: "id" }) })).status, 401);
   assert.equal((await detail.PATCH(new Request("http://localhost/api/admin/requests/id", { method: "PATCH", body: "{}" }), { params: Promise.resolve({ id: "id" }) })).status, 401);
   assert.equal((await notes.POST(new Request("http://localhost/api/admin/requests/id/notes", { method: "POST", body: "{}" }), { params: Promise.resolve({ id: "id" }) })).status, 401);
+  assert.equal((await dtcAnalysis.POST(new Request("http://localhost/api/admin/requests/id/dtc-analysis", { method: "POST" }), { params: Promise.resolve({ id: "id" }) })).status, 401);
   assert.equal((await detail.PATCH(new Request("http://localhost/api/admin/requests/id", { method: "PATCH", body: JSON.stringify({ message_visibility: { message_id: "00000000-0000-4000-8000-000000000001", action: "hide" } }) }), { params: Promise.resolve({ id: "id" }) })).status, 401);
+});
+
+test("request DTC analysis routes audit sanitized internal-only events", () => {
+  const adminRoute = readFileSync(resolve(process.cwd(), "src", "app", "api", "admin", "requests", "[id]", "dtc-analysis", "route.ts"), "utf8");
+  const customerRoute = readFileSync(resolve(process.cwd(), "src", "app", "api", "requests", "[id]", "dtc-analysis", "route.ts"), "utf8");
+  const helper = readFileSync(resolve(process.cwd(), "src", "lib", "dtcAnalyzer", "requestIntegration.ts"), "utf8");
+  const combined = `${adminRoute}\n${customerRoute}\n${helper}`;
+
+  assert.match(adminRoute, /eventType:\s*"dtc_analysis_generated"/);
+  assert.match(customerRoute, /eventType:\s*"dtc_analysis_generated"/);
+  assert.match(adminRoute, /customerVisible:\s*false/);
+  assert.match(customerRoute, /customerVisible:\s*false/);
+  assert.match(adminRoute, /mode:\s*"best_effort"/);
+  assert.match(customerRoute, /mode:\s*"best_effort"/);
+  assert.match(helper, /detected_code_count/);
+  assert.match(helper, /provider_status/);
+  assert.match(helper, /fallback_used/);
+  assert.doesNotMatch(
+    combined,
+    /request_messages|request_internal_notes|internal_notes|admin_notes|storage_path|signed_url|file_path|sha256|hash|first_64_bytes_hex|sample_id|rawHex|hex_preview/i
+  );
 });
 
 test("request message visibility helper hides archived messages from customers", () => {

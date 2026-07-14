@@ -39,6 +39,7 @@ import {
   workOrderNoteTypes,
   workOrderPriorities,
 } from "@/lib/workOrders/types";
+import type { ExpertRequestDtcAnalysis } from "@/lib/dtcAnalyzer/requestIntegration";
 
 type DetailPayload = {
   migrationReady: boolean;
@@ -149,6 +150,9 @@ export default function WorkOrderDetailClient() {
   const [message, setMessage] = useState("");
   const [noteBody, setNoteBody] = useState("");
   const [noteType, setNoteType] = useState("internal");
+  const [dtcAnalysis, setDtcAnalysis] = useState<ExpertRequestDtcAnalysis | null>(null);
+  const [dtcLoading, setDtcLoading] = useState(false);
+  const [dtcError, setDtcError] = useState("");
   const readOnlyFallback = payload?.migrationReady === false;
 
   function blockReadOnlyFallback() {
@@ -327,6 +331,34 @@ export default function WorkOrderDetailClient() {
       return;
     }
     window.open(data.signedUrl, "_blank");
+  }
+
+  async function loadDtcAnalysis() {
+    if (!requestId || dtcLoading) return;
+    setDtcLoading(true);
+    setDtcError("");
+    const accessToken = await token();
+    if (!accessToken) {
+      setDtcLoading(false);
+      return;
+    }
+    try {
+      const response = await fetch(`/api/admin/requests/${requestId}/dtc-analysis`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        setDtcError(result.error || "DTC expert review could not be prepared.");
+        return;
+      }
+      setDtcAnalysis(result.analysis);
+      await load();
+    } catch {
+      setDtcError("DTC expert review could not be prepared.");
+    } finally {
+      setDtcLoading(false);
+    }
   }
 
   const modifiedFiles = useMemo(() => parseModifiedFiles(payload?.order.modified_files), [payload]);
@@ -517,6 +549,13 @@ export default function WorkOrderDetailClient() {
               </Panel>
             </section>
 
+            <DtcExpertReviewPanel
+              analysis={dtcAnalysis}
+              loading={dtcLoading}
+              error={dtcError}
+              onRun={() => { void loadDtcAnalysis(); }}
+            />
+
             <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
               <div className="mb-5 flex items-center gap-3"><MessageSquare className="h-7 w-7 text-red-400" /><h2 className="text-2xl font-black">Internal & Customer Notes</h2></div>
               <div className="grid gap-3 md:grid-cols-[220px_1fr_auto]">
@@ -650,6 +689,133 @@ export default function WorkOrderDetailClient() {
         </div>
       </section>
     </main>
+  );
+}
+
+function DtcExpertReviewPanel({
+  analysis,
+  loading,
+  error,
+  onRun,
+}: {
+  analysis: ExpertRequestDtcAnalysis | null;
+  loading: boolean;
+  error: string;
+  onRun: () => void;
+}) {
+  return (
+    <Panel title="DTC Expert Review" icon={<BrainCircuit />}>
+      <div className="mb-5 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+        <p className="text-sm leading-6 text-zinc-400">
+          Request-level DTC analysis uses existing request fields only. It never approves file edits, checksum work or customer-ready output.
+        </p>
+        <button
+          type="button"
+          onClick={onRun}
+          disabled={loading}
+          aria-busy={loading}
+          className="inline-flex items-center justify-center rounded-xl border border-red-800/40 bg-red-950/25 px-4 py-3 text-sm font-black text-red-100 transition hover:bg-red-900/30 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCcw className="mr-2 h-4 w-4" />}
+          {analysis ? "Refresh DTC review" : "Run DTC review"}
+        </button>
+      </div>
+
+      {loading && (
+        <div role="status" aria-live="polite" className="rounded-2xl border border-blue-700/30 bg-blue-950/15 p-4 text-sm text-blue-100">
+          <Loader2 className="mr-2 inline h-4 w-4 animate-spin" />
+          Preparing expert DTC review...
+        </div>
+      )}
+
+      {error && (
+        <div role="alert" className="rounded-2xl border border-red-800/50 bg-red-950/30 p-4 text-sm text-red-100">
+          <AlertTriangle className="mr-2 inline h-4 w-4" />
+          {error}
+          <button type="button" onClick={onRun} className="ml-3 font-black underline decoration-red-400 underline-offset-4">
+            Retry
+          </button>
+        </div>
+      )}
+
+      {!analysis && !loading && !error && <Empty text="No DTC expert review has been generated for this request yet." />}
+
+      {analysis && (
+        <div aria-live="polite" className="space-y-5">
+          <div className="grid gap-3 md:grid-cols-4">
+            <Info label="State" value={analysis.stateLabel} />
+            <Info label="Provider status" value={analysis.provider.providerStatus} />
+            <Info label="Provider kind" value={analysis.provider.providerKind} />
+            <Info label="Fallback" value={analysis.fallback.used ? "used" : "not used"} />
+            <Info label="Confidence" value={analysis.confidence} />
+            <Info label="Detected DTCs" value={analysis.detectedCodes.length > 0 ? analysis.detectedCodes.join(", ") : "None"} />
+            <Info label="Rejected token count" value={analysis.rejectedCodeLikeTokenCount} />
+            <Info label="AI generated" value={analysis.isAiGenerated ? "yes" : "no"} />
+          </div>
+
+          {analysis.fallback.reason && (
+            <Warning title="Fallback reason" text={analysis.fallback.reason} />
+          )}
+
+          <p className="rounded-2xl border border-white/10 bg-black/25 p-4 text-sm leading-6 text-zinc-300">
+            {analysis.summary}
+          </p>
+
+          {analysis.codes.length > 0 ? (
+            <div className="grid gap-4">
+              {analysis.codes.map((code) => (
+                <div key={code.code} className="rounded-2xl border border-white/10 bg-black/25 p-5">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="rounded-xl border border-red-800/40 bg-red-950/30 px-3 py-1 text-sm font-black text-red-100">{code.code}</span>
+                    <span className={`rounded-xl border px-3 py-1 text-xs font-black ${badgeClass(code.confidence)}`}>{code.confidence}</span>
+                    <span className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-1 text-xs font-black text-zinc-300">{code.standardizationLabel}</span>
+                  </div>
+                  <h3 className="mt-4 break-words text-lg font-black text-white">{code.title}</h3>
+                  <p className="mt-2 text-sm leading-6 text-zinc-300">{code.customerExplanation}</p>
+                  <div className="mt-4 grid gap-3 lg:grid-cols-3">
+                    <div>
+                      <div className="mb-2 text-xs font-black uppercase tracking-[0.14em] text-zinc-500">Evidence</div>
+                      <ul className="space-y-2 text-sm leading-6 text-zinc-300">
+                        {code.evidence.map((item) => <li key={item.id}>- {item.severity}: {item.text}</li>)}
+                      </ul>
+                    </div>
+                    <div>
+                      <div className="mb-2 text-xs font-black uppercase tracking-[0.14em] text-zinc-500">Risk Flags</div>
+                      <ul className="space-y-2 text-sm leading-6 text-zinc-300">
+                        {code.riskFlags.map((item) => <li key={item.id}>- {item.kind}: {item.text}</li>)}
+                      </ul>
+                    </div>
+                    <div>
+                      <div className="mb-2 text-xs font-black uppercase tracking-[0.14em] text-zinc-500">Recommendations</div>
+                      <ul className="space-y-2 text-sm leading-6 text-zinc-300">
+                        {code.recommendations.map((item) => <li key={item.id}>- {item.category}: {item.text}</li>)}
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <Empty text="No valid DTC code was detected in the current request fields." />
+          )}
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="rounded-2xl border border-white/10 bg-black/25 p-4">
+              <div className="mb-2 text-sm font-black text-white">Missing Information</div>
+              <ul className="space-y-2 text-sm leading-6 text-zinc-400">
+                {analysis.missingInformation.map((item) => <li key={item}>- {item}</li>)}
+              </ul>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-black/25 p-4">
+              <div className="mb-2 text-sm font-black text-white">Safety Boundaries</div>
+              <ul className="space-y-2 text-sm leading-6 text-zinc-400">
+                {analysis.safetyBoundaries.map((item) => <li key={item}>- {item}</li>)}
+              </ul>
+            </div>
+          </div>
+        </div>
+      )}
+    </Panel>
   );
 }
 

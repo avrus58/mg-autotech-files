@@ -6,8 +6,11 @@ import { useParams, useRouter } from "next/navigation";
 import { signOutIfEmailUnverified } from "@/lib/authGuards";
 import { supabase } from "@/lib/supabaseClient";
 import RequestChat from "@/components/RequestChat";
+import type { CustomerRequestDtcAnalysis } from "@/lib/dtcAnalyzer/requestIntegration";
 import {
+  AlertTriangle,
   ArrowLeft,
+  BrainCircuit,
   CalendarDays,
   CheckCircle2,
   Clock3,
@@ -311,6 +314,9 @@ export default function OrderDetailPage() {
   const [copiedSupportSummary, setCopiedSupportSummary] = useState(false);
   const [revisionNote, setRevisionNote] = useState("");
   const [revisionSubmitting, setRevisionSubmitting] = useState(false);
+  const [dtcAnalysis, setDtcAnalysis] = useState<CustomerRequestDtcAnalysis | null>(null);
+  const [dtcLoading, setDtcLoading] = useState(false);
+  const [dtcError, setDtcError] = useState("");
   const [additionalUploadPhase, setAdditionalUploadPhase] =
     useState<AdditionalUploadPhase>("idle");
   const additionalUploading = additionalUploadPhase !== "idle";
@@ -581,6 +587,42 @@ export default function OrderDetailPage() {
       setMessage("Additional file upload could not be completed.");
     } finally {
       setAdditionalUploadPhase("idle");
+    }
+  };
+
+  const loadDtcAnalysis = async () => {
+    if (!order || dtcLoading) return;
+
+    setDtcLoading(true);
+    setDtcError("");
+    try {
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token;
+      if (!token) {
+        setDtcError("Unauthorized");
+        return;
+      }
+
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user || (await signOutIfEmailUnverified(userData.user))) {
+        router.push("/login?verify_email=1");
+        return;
+      }
+
+      const response = await fetch(`/api/requests/${order.id}/dtc-analysis`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const payload = await response.json();
+      if (!response.ok) {
+        setDtcError(payload.error || "DTC guidance could not be prepared.");
+        return;
+      }
+      setDtcAnalysis(payload.analysis);
+    } catch {
+      setDtcError("DTC guidance could not be prepared.");
+    } finally {
+      setDtcLoading(false);
     }
   };
 
@@ -934,6 +976,13 @@ export default function OrderDetailPage() {
               </section>
             )}
 
+            <CustomerDtcAnalysisPanel
+              analysis={dtcAnalysis}
+              loading={dtcLoading}
+              error={dtcError}
+              onRun={loadDtcAnalysis}
+            />
+
             <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6">
               <RequestChat requestId={order.id} senderRole="customer" />
             </section>
@@ -1100,6 +1149,159 @@ export default function OrderDetailPage() {
         </div>
       </section>
     </main>
+  );
+}
+
+function confidenceClass(confidence: string) {
+  if (confidence === "medium" || confidence === "high") {
+    return "border-emerald-700/30 bg-emerald-950/20 text-emerald-200";
+  }
+  if (confidence === "low") return "border-amber-700/40 bg-amber-950/20 text-amber-100";
+  return "border-zinc-700/50 bg-zinc-950/40 text-zinc-300";
+}
+
+function CustomerDtcAnalysisPanel({
+  analysis,
+  loading,
+  error,
+  onRun,
+}: {
+  analysis: CustomerRequestDtcAnalysis | null;
+  loading: boolean;
+  error: string;
+  onRun: () => void;
+}) {
+  return (
+    <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6">
+      <div className="mb-5 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+        <div className="flex min-w-0 items-start gap-3">
+          <BrainCircuit className="mt-1 h-7 w-7 shrink-0 text-red-400" />
+          <div className="min-w-0">
+            <h2 className="break-words text-2xl font-black">DTC Diagnostic Guidance</h2>
+            <p className="mt-2 text-sm leading-6 text-zinc-400">
+              Customer-safe DTC summary from this request. Human review remains required.
+            </p>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={onRun}
+          disabled={loading}
+          aria-busy={loading}
+          className="inline-flex items-center justify-center rounded-xl border border-red-800/40 bg-red-950/25 px-4 py-3 text-sm font-black text-red-100 transition hover:bg-red-900/30 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCcw className="mr-2 h-4 w-4" />}
+          {analysis ? "Refresh DTC guidance" : "Run DTC guidance"}
+        </button>
+      </div>
+
+      {loading && (
+        <div role="status" aria-live="polite" className="rounded-2xl border border-blue-700/30 bg-blue-950/15 p-4 text-sm text-blue-100">
+          <Loader2 className="mr-2 inline h-4 w-4 animate-spin" />
+          Preparing deterministic DTC guidance...
+        </div>
+      )}
+
+      {error && (
+        <div role="alert" className="rounded-2xl border border-red-800/50 bg-red-950/30 p-4 text-sm text-red-100">
+          <AlertTriangle className="mr-2 inline h-4 w-4" />
+          {error}
+          <button type="button" onClick={onRun} className="ml-3 font-black underline decoration-red-400 underline-offset-4">
+            Retry
+          </button>
+        </div>
+      )}
+
+      {!analysis && !loading && !error && (
+        <div className="rounded-2xl border border-dashed border-white/15 bg-black/25 p-5 text-sm leading-6 text-zinc-400">
+          No request-level DTC guidance has been prepared yet.
+        </div>
+      )}
+
+      {analysis && (
+        <div aria-live="polite" className="space-y-5">
+          <div className="grid gap-3 md:grid-cols-3">
+            <div className="rounded-2xl border border-white/10 bg-black/25 p-4">
+              <div className="text-xs font-black uppercase tracking-[0.14em] text-zinc-500">State</div>
+              <div className="mt-2 text-sm font-black text-white">{analysis.stateLabel}</div>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-black/25 p-4">
+              <div className="text-xs font-black uppercase tracking-[0.14em] text-zinc-500">Detected DTCs</div>
+              <div className="mt-2 break-words text-sm font-black text-white">
+                {analysis.detectedCodes.length > 0 ? analysis.detectedCodes.join(", ") : "None"}
+              </div>
+            </div>
+            <div className={`rounded-2xl border p-4 ${confidenceClass(analysis.confidence)}`}>
+              <div className="text-xs font-black uppercase tracking-[0.14em]">Confidence</div>
+              <div className="mt-2 text-sm font-black">{analysis.confidence}</div>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-amber-700/30 bg-amber-950/15 p-4 text-sm leading-6 text-amber-100">
+            <ShieldCheck className="mr-2 inline h-4 w-4" />
+            {analysis.providerNotice}
+          </div>
+
+          <p className="rounded-2xl border border-white/10 bg-black/25 p-4 text-sm leading-6 text-zinc-300">
+            {analysis.summary}
+          </p>
+
+          {analysis.codes.length > 0 ? (
+            <div className="grid gap-4">
+              {analysis.codes.map((code) => (
+                <div key={code.code} className="rounded-2xl border border-white/10 bg-black/25 p-5">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="rounded-xl border border-red-800/40 bg-red-950/30 px-3 py-1 text-sm font-black text-red-100">{code.code}</span>
+                    <span className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-1 text-xs font-black text-zinc-300">{code.systemLabel}</span>
+                    <span className={`rounded-xl border px-3 py-1 text-xs font-black ${confidenceClass(code.confidence)}`}>{code.confidence}</span>
+                  </div>
+                  <h3 className="mt-4 break-words text-lg font-black text-white">{code.title}</h3>
+                  <p className="mt-2 text-sm leading-6 text-zinc-300">{code.customerExplanation}</p>
+                  <div className="mt-4 grid gap-3 md:grid-cols-2">
+                    <div>
+                      <div className="mb-2 text-xs font-black uppercase tracking-[0.14em] text-zinc-500">Evidence</div>
+                      <ul className="space-y-2 text-sm leading-6 text-zinc-300">
+                        {code.evidence.slice(0, 3).map((item) => <li key={item.id}>- {item.text}</li>)}
+                      </ul>
+                    </div>
+                    <div>
+                      <div className="mb-2 text-xs font-black uppercase tracking-[0.14em] text-zinc-500">Next Checks</div>
+                      <ul className="space-y-2 text-sm leading-6 text-zinc-300">
+                        {code.recommendations.slice(0, 3).map((item) => <li key={item.id}>- {item.text}</li>)}
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-2xl border border-dashed border-white/15 bg-black/25 p-5 text-sm leading-6 text-zinc-400">
+              No valid DTC code was detected in the current request fields.
+            </div>
+          )}
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="rounded-2xl border border-white/10 bg-black/25 p-4">
+              <div className="mb-2 text-sm font-black text-white">Missing Information</div>
+              <ul className="space-y-2 text-sm leading-6 text-zinc-400">
+                {analysis.missingInformation.slice(0, 6).map((item) => <li key={item}>- {item}</li>)}
+              </ul>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-black/25 p-4">
+              <div className="mb-2 text-sm font-black text-white">Safety Boundaries</div>
+              <ul className="space-y-2 text-sm leading-6 text-zinc-400">
+                {analysis.safetyBoundaries.map((item) => <li key={item}>- {item}</li>)}
+              </ul>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-amber-700/30 bg-amber-950/15 p-4 text-sm leading-6 text-amber-100">
+            <AlertTriangle className="mr-2 inline h-4 w-4" />
+            Human review required before {analysis.humanReview.requiredBefore.join(", ")}.
+          </div>
+        </div>
+      )}
+    </section>
   );
 }
 

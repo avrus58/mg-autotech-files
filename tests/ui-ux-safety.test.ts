@@ -834,6 +834,42 @@ test("DTC analyzer provider boundary keeps fallback local and safety-scoped", ()
   assert.doesNotMatch(combined, /confirmed fix|customer-ready file|checksum result|DTC-off approved|byte patch approved/i);
 });
 
+test("request DTC integration keeps customer and admin projections bounded", () => {
+  const helper = readProjectFile("src", "lib", "dtcAnalyzer", "requestIntegration.ts");
+  const customerRoute = readProjectFile("src", "app", "api", "requests", "[id]", "dtc-analysis", "route.ts");
+  const adminRoute = readProjectFile("src", "app", "api", "admin", "requests", "[id]", "dtc-analysis", "route.ts");
+  const customerPage = readProjectFile("src", "app", "dashboard", "orders", "[id]", "page.tsx");
+  const adminClient = readProjectFile("src", "app", "admin", "requests", "[id]", "WorkOrderDetailClient.tsx");
+  const customerPanel = customerPage.match(/function CustomerDtcAnalysisPanel[\s\S]*?\n}\n\nfunction Detail/)?.[0] ?? "";
+  const adminPanel = adminClient.match(/function DtcExpertReviewPanel[\s\S]*?\n}\n\nfunction Panel/)?.[0] ?? "";
+  const combinedDtcSurface = `${helper}\n${customerRoute}\n${adminRoute}\n${customerPanel}\n${adminPanel}`;
+
+  assert.match(helper, /export type CustomerRequestDtcAnalysis/);
+  assert.match(helper, /export type ExpertRequestDtcAnalysis/);
+  assert.match(helper, /requestDtcOrderSelect/);
+  assert.match(helper, /rejectedCodeLikeTokenCount/);
+  assert.match(helper, /auditMetadata/);
+  assert.match(customerRoute, /requireApiUser\(request\)/);
+  assert.match(customerRoute, /\.eq\("customer_id", auth\.user\.id\)/);
+  assert.match(adminRoute, /requireStaffPermission\(request,\s*"orders\.view"\)/);
+  assert.match(customerRoute, /customerVisible:\s*false/);
+  assert.match(adminRoute, /customerVisible:\s*false/);
+  assert.match(customerPanel, /DTC Diagnostic Guidance/);
+  assert.match(customerPage, /\/api\/requests\/\$\{order\.id\}\/dtc-analysis/);
+  assert.match(customerPanel, /role="status"[\s\S]*aria-live="polite"/);
+  assert.match(customerPanel, /role="alert"/);
+  assert.match(customerPanel, /Human review required/);
+  assert.match(adminPanel, /DTC Expert Review/);
+  assert.match(adminClient, /\/api\/admin\/requests\/\$\{requestId\}\/dtc-analysis/);
+  assert.match(adminPanel, /Provider status/);
+  assert.match(adminPanel, /Fallback/);
+  assert.doesNotMatch(customerPanel, /providerId|modelName|promptVersion|providerKind|providerStatus/i);
+  assert.doesNotMatch(
+    combinedDtcSurface,
+    /request_messages|request_internal_notes|admin_notes|storage_path|signed_url|sha256|first_64_bytes_hex|sample_id|rawHex|hex_preview|confirmed fix|DTC-off approved|customer-ready file|checksum result|byte patch approved/i
+  );
+});
+
 test("customer File Expert UI renders only customer-safe report details", () => {
   const page = readProjectFile("src", "app", "dashboard", "file-expert", "[id]", "page.tsx");
   assert.match(page, /Technical coordinate data, private file fingerprints and binary internals are hidden on customer reports/);
