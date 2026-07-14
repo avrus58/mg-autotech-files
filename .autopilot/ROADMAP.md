@@ -43,6 +43,7 @@
   - Roadmap V2 selected task `RMAP-FILE-DTC-M2-ANALYSIS-SERVICE`, AI DTC Analyzer icin evidence model, risk flags, recommendation categories ve confidence semantics katmanini mevcut local fallback uzerine kurar.
   - Roadmap V2 selected task `RMAP-FILE-DTC-M3-REQUEST-INTEGRATION`, AI DTC Analyzer sonucunu request lifecycle'a customer/expert boundary ve internal-only audit event ile guvenli sekilde baglar.
   - Roadmap V2 selected task `RMAP-FILE-DTC-M4-ADMIN-CONFIGURATION`, AI DTC Analyzer icin provider availability, usage limit ve failure handling sinirlarini admin-safe configuration/status katmaniyla netlestirir.
+  - Roadmap V2 selected task `RMAP-FILE-DTC-M5-ROLLOUT-READINESS`, AI DTC Analyzer icin regression suite, sanitized analytics/readiness summary ve operator-readable rollout dokumantasyonunu production/veri erisimi olmadan tamamlar.
 - Success signals:
   - Musteri, talebin gercek durumunu ve kendi aksiyon gereksinimini detay ekraninda ayri gorebilir.
   - Musteri, aksiyon bekleyen siparisi liste veya dashboard uzerinden hizlica bulabilir.
@@ -76,6 +77,7 @@
   - DTC Analyzer response'u musteri/admin yuzeylerine baglanmadan once structured evidence, risk flags ve confidence reasons tasir; provider unavailable durumunda AI gibi davranmaz.
   - DTC Analyzer request entegrasyonu, musteriye yalniz customer-safe aciklama gosterirken admine review icin evidence/risk detaylarini ve internal-only audit kaydini saglar.
   - DTC Analyzer admin configuration milestone'u, provider unavailable/fallback durumunu ve usage limitlerini musteriye veya admine yaniltici AI basarisi gibi gostermeden aciklar.
+  - DTC Analyzer rollout readiness milestone'u, regression coverage, local analytics/readiness signals and safe operator documentation ile future rollout kararini production access olmadan okunabilir hale getirir.
   - Migration/fallback durumlarinda mutasyon aksiyonlari read-only davranir ve hata yerine acik mesaj verir.
 
 ## Owner priorities

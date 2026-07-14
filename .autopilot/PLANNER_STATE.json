@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "planning_cycle": 18,
-  "last_planned_at": "2026-07-14T05:10:16+01:00",
+  "planning_cycle": 19,
+  "last_planned_at": "2026-07-14T05:59:53+01:00",
   "last_domains": [
     "AI Capability"
   ],
@@ -18,7 +18,7 @@
     "Maintainability": null,
     "DeveloperExperience": null,
     "Integrations": "2026-07-13T03:57:56+01:00",
-    "AI Capability": "2026-07-14T04:16:18+01:00",
+    "AI Capability": "2026-07-14T05:59:53+01:00",
     "Product Growth": "2026-07-13T22:33:07+01:00"
   }
 }

@@ -4,6 +4,42 @@
 
 ## Ready
 
+- [ ] **P1 RMAP-FILE-DTC-M5-ROLLOUT-READINESS - AI DTC Analyzer rollout readiness pack**
+  - Lane: AI Capability
+  - Roadmap: file-platform
+  - Epic: file-ai-dtc-analyzer
+  - Feature: file-dtc-m5-rollout-readiness-feature
+  - Roadmap task: RMAP-FILE-DTC-M5-ROLLOUT-READINESS
+  - Fingerprint: `ai-capability|dtc-analyzer|rollout-readiness-missing|regression-analytics-documentation-pack`
+  - Strategic score: 46 (V2 roadmap weighted score; runtime selection score 40.12)
+  - Scope class: M
+  - Expected effort: M roadmap milestone slice
+  - Business impact: 4/5
+  - User impact: 4/5
+  - Admin impact: 4/5
+  - Strategic fit: 5/5
+  - Confidence: 4/5
+  - Effort: 3/5
+  - Risk: 2/5
+  - Evidence: `.autopilot/runtime/roadmap-selection.json` selects `RMAP-FILE-DTC-M5-ROLLOUT-READINESS` and points to `C:\Users\gokka\Documents\MG-AI-OS-V4\artifacts\specs\rmap-file-dtc-m5-rollout-readiness.md`; roadmap state shows DTC M1-M4 Done/accepted and M5 Planned with 0 attempts; `src/app/api/requests/[id]/dtc-analysis/route.ts` and `src/app/api/admin/requests/[id]/dtc-analysis/route.ts` record sanitized `dtc_analysis_generated` audit events, but no DTC-specific rollout readiness report/runbook exists; `src/lib/dtcAnalyzer/requestIntegration.ts` exposes sanitized audit metadata fields such as `provider_status`, `fallback_used`, `analysis_success`, counts and human-review flags that can support local analytics without production queries; existing DTC regression coverage is split across `tests/ecu-intelligence.test.ts`, `tests/admin-work-orders.test.ts` and `tests/ui-ux-safety.test.ts`.
+  - Product value: Completes the active AI DTC Analyzer epic with a reviewable local readiness gate so future rollout decisions see regression status, safe analytics signals, known limitations and validation commands without touching production data.
+  - Selection reason: This is the selected V2 roadmap task, continues the accepted DTC M1-M4 sequence, and is higher strategic value than deferred maintenance/documentation cleanup.
+  - Scope: Add a local-only rollout readiness contract/report for the DTC Analyzer covering regression scenarios, sanitized analytics fields, provider/usage/fallback states, safety boundaries and operator/manual checks. Strengthen tests around the readiness contract and no-leak boundaries. Document exact safe validation and explicitly out-of-scope production actions. Do not add live provider calls, production analytics queries, migrations, package dependencies, desktop DTC activation, real customer data access, public automotive content publication, pricing/payment/legal changes or deploy steps.
+  - Acceptance criteria:
+    - A DTC rollout readiness artifact or helper summarizes current milestone readiness, required regression scenarios, known unavailable/fallback behavior, sanitized analytics fields and blocked production actions.
+    - Regression coverage verifies provider-unavailable fallback, provider-error fallback, invalid/no-code input, customer/admin projection boundaries, usage-limit responses, audit metadata safety and UI no-leak assumptions in the local test suite.
+    - Analytics/readiness output is derived only from local code contracts or fixture metadata and never queries Supabase, reads `.env*`, exposes storage paths, hashes, raw binary/hex, sample ids, provider secrets or customer notes.
+    - Documentation names the safe local validation commands, operator-only production rollout checks and remaining limitations before any real provider or customer-data rollout.
+    - Customer-facing DTC guidance remains customer-safe and admin-facing details remain permissioned; no output claims final diagnosis, DTC-off approval, checksum completion, byte patch approval or customer-ready MOD generation.
+  - Validation:
+    - `.\node_modules\.bin\tsx.cmd --test tests\ecu-intelligence.test.ts`
+    - `.\node_modules\.bin\tsx.cmd --test tests\admin-work-orders.test.ts`
+    - `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts`
+    - `npm run lint`
+    - `npm run typecheck`
+    - `npm test`
+    - `git diff --check`
+
 ## In Progress
 
 ## Blocked
@@ -23,9 +59,9 @@ Kabul kriterleri:
 
 Dogrulama: Markdown diff incelemesi, `npm test` ilgili source assertion testleri.
 
-Deferred reason: Selected P1/M roadmap milestone `RMAP-FILE-DTC-M4-ADMIN-CONFIGURATION` has higher strategic value and directly continues the active File Platform AI DTC epic; this is a low-priority documentation cleanup and does not unlock the selected milestone.
+Deferred reason: Selected P1/M roadmap milestone `RMAP-FILE-DTC-M5-ROLLOUT-READINESS` has higher strategic value and directly continues the active File Platform AI DTC epic; this is a low-priority documentation cleanup and does not unlock the selected milestone.
 
-Remediation: Reconsider after the DTC Analyzer M4 milestone is accepted, or if owner explicitly asks for production smoke documentation cleanup.
+Remediation: Reconsider after the DTC Analyzer M5 milestone is accepted, or if owner explicitly asks for production smoke documentation cleanup.
 
 Expected validation command: `npm test` plus markdown diff review.
 
@@ -42,9 +78,9 @@ Kabul kriterleri:
 
 Dogrulama: Diff incelemesi, `npm run lint`, `npm run typecheck`.
 
-Deferred reason: Maintenance-only artifact cleanup is intentionally behind selected P1/M roadmap milestone `RMAP-FILE-DTC-M4-ADMIN-CONFIGURATION` and should not consume the Ready queue while a high-impact roadmap slice is available.
+Deferred reason: Maintenance-only artifact cleanup is intentionally behind selected P1/M roadmap milestone `RMAP-FILE-DTC-M5-ROLLOUT-READINESS` and should not consume the Ready queue while a high-impact roadmap slice is available.
 
-Remediation: Batch with a future documentation/source-comment maintenance pass after the DTC Analyzer M4 milestone is accepted, or when no P1/P2 product or roadmap milestone is ready.
+Remediation: Batch with a future documentation/source-comment maintenance pass after the DTC Analyzer M5 milestone is accepted, or when no P1/P2 product or roadmap milestone is ready.
 
 Expected validation command: `npm run lint` and `npm run typecheck`.
 

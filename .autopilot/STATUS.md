@@ -2,6 +2,21 @@
 
 Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
+## 2026-07-14 planner run V4 ROADMAP DTC ROLLOUT READINESS
+
+- Baslangic/bitis: 2026-07-14 05:59:53 +01:00.
+- Gorev: Strategic Planner planning-only run; uygulama kodu degistirilmeden V4 Roadmap selected task'ini Ready queue'ya cevirmek.
+- Proje tespiti: `.autopilot/PROJECT.md` bu repository'yi `file.mgautotech.de` File Platform olarak tanimliyor; File Platform constitution uygulandi.
+- Selected roadmap task: `.autopilot/runtime/roadmap-selection.json` `RMAP-FILE-DTC-M5-ROLLOUT-READINESS` task'ini secti. Product spec `C:\Users\gokka\Documents\MG-AI-OS-V4\artifacts\specs\rmap-file-dtc-m5-rollout-readiness.md`, DTC Analyzer M5 icin regression suite, analytics, documentation and rollout readiness istiyor.
+- Duplicate/evidence kontrolu: Package V4 constitution dosyalari, roadmap docs/state/markdown/selection/spec, automotive content evidence policy, repo-local `.autopilot/constitution/*`, AGENTS, PROJECT, ROADMAP, INBOX, FEATURE_PROPOSALS, TASKS, TASK_HISTORY, PLANNER_STATE, PRODUCT_SCORECARD, STATUS, package scripts, relevant DTC/request/admin routes/tests/docs, current Git status ve son 100 commit okundu. `RMAP-FILE-DTC-M1`, `RMAP-FILE-DTC-M2-ANALYSIS-SERVICE`, `RMAP-FILE-DTC-M3-REQUEST-INTEGRATION` ve `RMAP-FILE-DTC-M4-ADMIN-CONFIGURATION` Done/accepted olarak bulundu; `RMAP-FILE-DTC-M5-ROLLOUT-READINESS` veya ayni fingerprint Done/Ready icinde bulunmadi.
+- Evidence sonucu: Roadmap state M1-M4'u Done/accepted, M5'i Planned/0 attempt olarak gosteriyor. `src/app/api/requests/[id]/dtc-analysis/route.ts` ve `src/app/api/admin/requests/[id]/dtc-analysis/route.ts` sanitized internal-only `dtc_analysis_generated` eventleri yaziyor; `src/lib/dtcAnalyzer/requestIntegration.ts` local analytics icin uygun `provider_status`, `fallback_used`, `analysis_success`, count ve human-review metadata alanlarini uretiyor; `tests/ecu-intelligence.test.ts`, `tests/admin-work-orders.test.ts` ve `tests/ui-ux-safety.test.ts` DTC safety/regression kapsamlarini tasiyor. Buna karsin DTC-specific rollout readiness report/runbook veya local analytics/readiness summary yok.
+- Eklenen Ready gorev: `RMAP-FILE-DTC-M5-ROLLOUT-READINESS - AI DTC Analyzer rollout readiness pack`.
+- Deferred kaydi: `AUTO-009` ve `AUTO-010` Later altinda tutuldu; deferred reason/remediation metinleri M5 selected milestone'a gore guncellendi.
+- Degisen dosyalar: `.autopilot/ROADMAP.md`, `.autopilot/TASKS.md`, `.autopilot/PLANNER_STATE.json`, `.autopilot/STATUS.md`, `.autopilot/runtime/planner-result.json`.
+- Calistirilan kontroller: V4 package constitution ve roadmap engine dosyalari okundu; roadmap state PowerShell `ConvertFrom-Json` ile DTC epic task listesi parse edildi; selected product spec okundu; repository memory ve relevant DTC request/admin routes/tests/docs incelendi; `git status --short --branch`; `git log -100 --oneline --decorate`; root ve desktop `package.json` scriptleri incelendi; `.autopilot/PLANNER_STATE.json` JSON parse PASS; `.autopilot/runtime/planner-result.json` JSON parse PASS; Ready checkbox count 1 PASS; `git check-ignore -v .autopilot/runtime/planner-result.json` PASS; `git diff --name-only` yalniz izinli planning dosyalarini gosterdi; `git diff --check` PASS.
+- Calistirilmayan kontroller: Planning-only run oldugu ve uygulama kodu degismedigi icin `npm run lint`, `npm run typecheck`, `npm test` ve `npm run build` calistirilmeyecek. `npm run build` ayrica bu repoda `.env.local` varligini raporlayabilir ve `next/font/google` nedeniyle ag isteyebilir.
+- Kalan risk: Ready queue intentionally 1 tasktir; bu, selected P1/M roadmap milestone icin planlama kurallarindaki kucuk kuyruk istisnasina dayanir. M5 uygulanana kadar DTC Analyzer rollout readiness report/regression/analytics dokumantasyon katmani eksik kalir. Production deploy, live migration, `.env*`, secret, real customer data veya live service islemi yapilmadi.
+
 ## 2026-07-14 reviewer run RMAP-FILE-DTC-M4-ADMIN-CONFIGURATION
 
 - Gorev: RMAP-FILE-DTC-M4-ADMIN-CONFIGURATION uncommitted worker degisikliklerini V4 roadmap/product/safety/quality gate olarak incelemek.
