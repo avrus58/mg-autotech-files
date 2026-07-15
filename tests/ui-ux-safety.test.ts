@@ -14,6 +14,15 @@ function readProjectFile(...segments: string[]) {
   return readFileSync(resolve(process.cwd(), ...segments), "utf8");
 }
 
+function readHomepageCompactResourceSection(homepage: string, id: string) {
+  const groupSource =
+    homepage.match(new RegExp(`\\n  \\{\\n    id: "${id}"[\\s\\S]*?\\n  \\},`))?.[0] ?? "";
+  return [
+    groupSource,
+    homepage.match(/function HomepageCompactResourceCenter\(\)[\s\S]*?export default function HomePage/)?.[0] ?? "",
+  ].join("\n");
+}
+
 test("compact operating UI is opt-in and attached to key customer/admin work screens", () => {
   const globals = readProjectFile("src", "app", "globals.css");
   assert.match(globals, /\.mg-compact-ui/);
@@ -1136,7 +1145,7 @@ test("homepage has a focused ECU and TCU file service search-intent section", ()
   const pillarSource =
     homepage.match(/const fileServiceSearchPillars = \[[\s\S]*?const fileServiceKnowledgeMap = \[/)?.[0] ?? "";
   const fileServiceSection =
-    homepage.match(/<AnimatedSection id="file-service"[\s\S]*?<AnimatedSection id="file-service-knowledge-map"/)?.[0] ?? "";
+    homepage.match(/function HomepageFileServiceCorePanel\(\)[\s\S]*?export default function HomePage/)?.[0] ?? "";
 
   assert.match(homepage, /const fileServiceSearchPillars = \[/);
   assert.match(homepage, /const fileServiceRequestChecklist = \[/);
@@ -1198,6 +1207,21 @@ test("homepage exposes above-the-fold quick file service paths", () => {
   );
 });
 
+test("homepage hero typography and major SEO sections avoid overflow and white expanses", () => {
+  const homepage = readProjectFile("src", "app", "page.tsx");
+  const heroSection =
+    homepage.match(/<section id="home"[\s\S]*?<PublicVehicleChecker \/>/)?.[0] ?? "";
+
+  assert.match(heroSection, /text-\[clamp\(2\.85rem,5\.7vw,5\.35rem\)\]/);
+  assert.match(heroSection, /max-w-\[42rem\] text-balance break-words/);
+  assert.match(heroSection, /grid w-full max-w-\[42rem\] grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3/);
+  assert.doesNotMatch(heroSection, /md:text-7xl|lg:h-\[825px\]/);
+  assert.doesNotMatch(
+    homepage,
+    /<AnimatedSection[^>]*className="[^"]*(?:bg-white py-20|bg-\[#eef1f4\]|bg-\[#f8fafc\]|bg-slate-50 py-20)[^"]*"/
+  );
+});
+
 test("homepage file service navigator indexes major sections safely", () => {
   const homepage = readProjectFile("src", "app", "page.tsx");
   const navigatorSource =
@@ -1242,8 +1266,7 @@ test("homepage file service answer library targets workshop search intent safely
   const homepage = readProjectFile("src", "app", "page.tsx");
   const answerLibrarySource =
     homepage.match(/const fileServiceAnswerLibrary = \[[\s\S]*?const homepageSearchIntentJsonLd = \{/)?.[0] ?? "";
-  const answerLibrarySection =
-    homepage.match(/<AnimatedSection id="file-service-answer-library"[\s\S]*?<AnimatedSection id="file-service"/)?.[0] ?? "";
+  const answerLibrarySection = readHomepageCompactResourceSection(homepage, "file-service-answer-library");
 
   assert.match(homepage, /const fileServiceAnswerLibrary = \[/);
   assert.match(answerLibrarySource, /question: "What is an online ECU file service\?"/);
@@ -1286,8 +1309,7 @@ test("homepage file service search route index maps long-tail intent to public r
   const homepage = readProjectFile("src", "app", "page.tsx");
   const routeIndexSource =
     homepage.match(/const fileServiceSearchRouteIndex = \[[\s\S]*?const fileServiceSnippetSummary = \[/)?.[0] ?? "";
-  const routeIndexSection =
-    homepage.match(/<AnimatedSection id="file-service-search-index"[\s\S]*?<AnimatedSection id="file-service"/)?.[0] ?? "";
+  const routeIndexSection = readHomepageCompactResourceSection(homepage, "file-service-search-index");
 
   assert.match(homepage, /const fileServiceSearchRouteIndex = \[/);
   assert.match(routeIndexSource, /query: "ECU file service online"/);
@@ -1312,13 +1334,13 @@ test("homepage file service search route index maps long-tail intent to public r
   assert.match(routeIndexSection, /Search phrase/);
   assert.match(routeIndexSection, /Best route/);
   assert.match(routeIndexSection, /What to prepare/);
-  assert.match(routeIndexSection, /aria-label=\{\`\$\{item\.action\}: \$\{item\.query\}\`\}/);
+  assert.match(routeIndexSection, /aria-label=\{\`\$\{item\.action\}: \$\{item\.title\}\`\}/);
   assert.match(routeIndexSection, /Index boundary/);
   assert.match(
     routeIndexSection,
     /does not\s+create requests, inspect files, open customer accounts or generate\s+deliverable files/
   );
-  assert.match(routeIndexSection, /focus-visible:ring-2 focus-visible:ring-red-500/);
+  assert.match(routeIndexSection, /focus-visible:ring-2 focus-visible:ring-red-700/);
   assert.doesNotMatch(routeIndexSource, /\/new-request|\/dashboard/);
   assert.doesNotMatch(
     routeIndexSource + routeIndexSection,
@@ -1330,8 +1352,7 @@ test("homepage file service snippet summary is direct and customer-safe", () => 
   const homepage = readProjectFile("src", "app", "page.tsx");
   const snippetSummarySource =
     homepage.match(/const fileServiceSnippetSummary = \[[\s\S]*?const fileServiceTrustComparison = \[/)?.[0] ?? "";
-  const snippetSummarySection =
-    homepage.match(/<AnimatedSection id="file-service-snippet-summary"[\s\S]*?<AnimatedSection id="file-service"/)?.[0] ?? "";
+  const snippetSummarySection = readHomepageCompactResourceSection(homepage, "file-service-snippet-summary");
 
   assert.match(homepage, /const fileServiceSnippetSummary = \[/);
   assert.match(snippetSummarySource, /title: "What it is"/);
@@ -1354,7 +1375,7 @@ test("homepage file service snippet summary is direct and customer-safe", () => 
     /does not inspect files,\s+change customer accounts, create requests or generate\s+deliverable files/
   );
   assert.match(snippetSummarySection, /aria-label=\{\`\$\{item\.action\}: \$\{item\.title\}\`\}/);
-  assert.match(snippetSummarySection, /focus-visible:ring-2 focus-visible:ring-red-500/);
+  assert.match(snippetSummarySection, /focus-visible:ring-2 focus-visible:ring-red-700/);
   assert.doesNotMatch(snippetSummarySource, /\/new-request|\/dashboard/);
   assert.doesNotMatch(
     snippetSummarySource + snippetSummarySection,
@@ -1366,8 +1387,7 @@ test("homepage professional file service comparison explains trust signals safel
   const homepage = readProjectFile("src", "app", "page.tsx");
   const comparisonSource =
     homepage.match(/const fileServiceTrustComparison = \[[\s\S]*?const fileServiceVerificationCheckpoints = \[/)?.[0] ?? "";
-  const comparisonSection =
-    homepage.match(/<AnimatedSection id="professional-file-service-comparison"[\s\S]*?<AnimatedSection id="file-service-verification-checkpoints"/)?.[0] ?? "";
+  const comparisonSection = readHomepageCompactResourceSection(homepage, "professional-file-service-comparison");
 
   assert.match(homepage, /const fileServiceTrustComparison = \[/);
   assert.match(comparisonSource, /title: "Structured vehicle context"/);
@@ -1394,7 +1414,7 @@ test("homepage professional file service comparison explains trust signals safel
   assert.match(comparisonSection, /SEO purpose/);
   assert.match(comparisonSection, /instead of duplicate doorway pages/);
   assert.match(comparisonSection, /aria-label=\{\`\$\{item\.action\}: \$\{item\.title\}\`\}/);
-  assert.match(comparisonSection, /focus-visible:ring-2 focus-visible:ring-red-500/);
+  assert.match(comparisonSection, /focus-visible:ring-2 focus-visible:ring-red-700/);
   assert.doesNotMatch(comparisonSource, /\/new-request|\/dashboard/);
   assert.doesNotMatch(
     comparisonSource + comparisonSection,
@@ -1406,8 +1426,7 @@ test("homepage file service verification checkpoints build trust safely", () => 
   const homepage = readProjectFile("src", "app", "page.tsx");
   const verificationSource =
     homepage.match(/const fileServiceVerificationCheckpoints = \[[\s\S]*?const fileServiceMythChecks = \[/)?.[0] ?? "";
-  const verificationSection =
-    homepage.match(/<AnimatedSection id="file-service-verification-checkpoints"[\s\S]*?<AnimatedSection id="file-service"/)?.[0] ?? "";
+  const verificationSection = readHomepageCompactResourceSection(homepage, "file-service-verification-checkpoints");
 
   assert.match(homepage, /const fileServiceVerificationCheckpoints = \[/);
   assert.match(verificationSource, /title: "Public route is clear"/);
@@ -1431,7 +1450,7 @@ test("homepage file service verification checkpoints build trust safely", () => 
     /does not inspect files, open\s+account data, start request handling or create deliverable files/
   );
   assert.match(verificationSection, /aria-label=\{\`\$\{item\.action\}: \$\{item\.title\}\`\}/);
-  assert.match(verificationSection, /focus-visible:ring-2 focus-visible:ring-red-400/);
+  assert.match(verificationSection, /focus-visible:ring-2 focus-visible:ring-red-700/);
   assert.doesNotMatch(verificationSource, /\/new-request|\/dashboard/);
   assert.doesNotMatch(
     verificationSource + verificationSection,
@@ -1443,8 +1462,7 @@ test("homepage file service myth checks correct wrong expectations safely", () =
   const homepage = readProjectFile("src", "app", "page.tsx");
   const mythSource =
     homepage.match(/const fileServiceMythChecks = \[[\s\S]*?const fileServicePlatformStack = \[/)?.[0] ?? "";
-  const mythSection =
-    homepage.match(/<AnimatedSection id="file-service-myth-checks"[\s\S]*?<AnimatedSection id="file-service-platform-stack"/)?.[0] ?? "";
+  const mythSection = readHomepageCompactResourceSection(homepage, "file-service-myth-checks");
 
   assert.match(homepage, /const fileServiceMythChecks = \[/);
   assert.match(mythSource, /myth: "It is just a file drop"/);
@@ -1467,8 +1485,8 @@ test("homepage file service myth checks correct wrong expectations safely", () =
     mythSection,
     /does not inspect\s+files, start account handling, change orders or create deliverable\s+files/
   );
-  assert.match(mythSection, /aria-label=\{\`\$\{item\.action\}: \$\{item\.myth\}\`\}/);
-  assert.match(mythSection, /focus-visible:ring-2 focus-visible:ring-red-500/);
+  assert.match(mythSection, /aria-label=\{\`\$\{item\.action\}: \$\{item\.title\}\`\}/);
+  assert.match(mythSection, /focus-visible:ring-2 focus-visible:ring-red-700/);
   assert.doesNotMatch(mythSource, /\/new-request|\/dashboard/);
   assert.doesNotMatch(
     mythSource + mythSection,
@@ -1480,8 +1498,7 @@ test("homepage file service platform stack shows public workflow capabilities sa
   const homepage = readProjectFile("src", "app", "page.tsx");
   const platformStackSource =
     homepage.match(/const fileServicePlatformStack = \[[\s\S]*?const homepageSearchIntentJsonLd = \{/)?.[0] ?? "";
-  const platformStackSection =
-    homepage.match(/<AnimatedSection id="file-service-platform-stack"[\s\S]*?<AnimatedSection id="file-service"/)?.[0] ?? "";
+  const platformStackSection = readHomepageCompactResourceSection(homepage, "file-service-platform-stack");
 
   assert.match(homepage, /const fileServicePlatformStack = \[/);
   assert.match(platformStackSource, /title: "Public service hub"/);
@@ -1505,7 +1522,7 @@ test("homepage file service platform stack shows public workflow capabilities sa
     /does\s+not inspect files, open account data, change requests or create\s+deliverable files/
   );
   assert.match(platformStackSection, /aria-label=\{\`\$\{item\.action\}: \$\{item\.title\}\`\}/);
-  assert.match(platformStackSection, /focus-visible:ring-2 focus-visible:ring-red-400/);
+  assert.match(platformStackSection, /focus-visible:ring-2 focus-visible:ring-red-700/);
   assert.doesNotMatch(platformStackSource, /\/new-request|\/dashboard/);
   assert.doesNotMatch(
     platformStackSource + platformStackSection,
@@ -1517,8 +1534,7 @@ test("homepage read method route finder guides file-service preparation safely",
   const homepage = readProjectFile("src", "app", "page.tsx");
   const readMethodSource =
     homepage.match(/const fileServiceReadMethodRoutes = \[[\s\S]*?const fileServiceRequestChecklist = \[/)?.[0] ?? "";
-  const readMethodSection =
-    homepage.match(/<AnimatedSection id="file-service-read-methods"[\s\S]*?<AnimatedSection id="file-service-knowledge-map"/)?.[0] ?? "";
+  const readMethodSection = readHomepageCompactResourceSection(homepage, "file-service-read-methods");
 
   assert.match(homepage, /const fileServiceReadMethodRoutes = \[/);
   assert.match(readMethodSource, /title: "OBD read available"/);
@@ -1537,7 +1553,7 @@ test("homepage read method route finder guides file-service preparation safely",
   assert.match(readMethodSection, /Safety boundary/);
   assert.match(readMethodSection, /informational only/);
   assert.match(readMethodSection, /does not inspect,\s+upload,\s+edit or create ECU\/TCU files/);
-  assert.match(readMethodSection, /focus-visible:ring-2 focus-visible:ring-sky-400/);
+  assert.match(readMethodSection, /focus-visible:ring-2 focus-visible:ring-red-700/);
   assert.doesNotMatch(
     readMethodSource + readMethodSection,
     /type="file"|upload-session|api\/admin|fetch\(|createObjectURL|FileReader|generateMod|bytePatch|writeFile|checksum|storage_path|signed_url|service_role|SUPABASE_SERVICE_ROLE_KEY|admin_note|internal_note|customer_email|source_reference|confidence_score|sample_id|raw|hex/i
@@ -1548,8 +1564,7 @@ test("homepage file service brief requirements reduce support questions safely",
   const homepage = readProjectFile("src", "app", "page.tsx");
   const briefSource =
     homepage.match(/const fileServiceBriefRequirements = \[[\s\S]*?const fileServiceFitChecks = \[/)?.[0] ?? "";
-  const briefSection =
-    homepage.match(/<AnimatedSection id="file-service-brief-requirements"[\s\S]*?<AnimatedSection id="file-service-fit-checker"/)?.[0] ?? "";
+  const briefSection = readHomepageCompactResourceSection(homepage, "file-service-brief-requirements");
 
   assert.match(homepage, /const fileServiceBriefRequirements = \[/);
   assert.match(briefSource, /title: "Vehicle identity"/);
@@ -1579,8 +1594,7 @@ test("homepage file service fit checker routes current customer situations safel
   const homepage = readProjectFile("src", "app", "page.tsx");
   const fitSource =
     homepage.match(/const fileServiceFitChecks = \[[\s\S]*?const fileServiceOutcomePreview = \[/)?.[0] ?? "";
-  const fitSection =
-    homepage.match(/<AnimatedSection id="file-service-fit-checker"[\s\S]*?<AnimatedSection id="file-service-outcome-preview"/)?.[0] ?? "";
+  const fitSection = readHomepageCompactResourceSection(homepage, "file-service-fit-checker");
 
   assert.match(homepage, /const fileServiceFitChecks = \[/);
   assert.match(fitSource, /title: "I know the vehicle and service"/);
@@ -1613,8 +1627,7 @@ test("homepage file service outcome preview explains the post-submission custome
   const homepage = readProjectFile("src", "app", "page.tsx");
   const outcomeSource =
     homepage.match(/const fileServiceOutcomePreview = \[[\s\S]*?const fileServiceStatusGuide = \[/)?.[0] ?? "";
-  const outcomeSection =
-    homepage.match(/<AnimatedSection id="file-service-outcome-preview"[\s\S]*?<AnimatedSection id="file-service-status-guide"/)?.[0] ?? "";
+  const outcomeSection = readHomepageCompactResourceSection(homepage, "file-service-outcome-preview");
 
   assert.match(homepage, /const fileServiceOutcomePreview = \[/);
   assert.match(outcomeSource, /title: "Request received"/);
@@ -1646,8 +1659,7 @@ test("homepage file service status guide explains tracking states without privat
   const homepage = readProjectFile("src", "app", "page.tsx");
   const statusSource =
     homepage.match(/const fileServiceStatusGuide = \[[\s\S]*?const fileServicePrivacyControls = \[/)?.[0] ?? "";
-  const statusSection =
-    homepage.match(/<AnimatedSection id="file-service-status-guide"[\s\S]*?<AnimatedSection id="file-service-privacy-controls"/)?.[0] ?? "";
+  const statusSection = readHomepageCompactResourceSection(homepage, "file-service-status-guide");
 
   assert.match(homepage, /const fileServiceStatusGuide = \[/);
   assert.match(statusSource, /title: "Received"/);
@@ -1679,8 +1691,7 @@ test("homepage secure file service privacy controls explain public and private b
   const homepage = readProjectFile("src", "app", "page.tsx");
   const privacySource =
     homepage.match(/const fileServicePrivacyControls = \[[\s\S]*?const fileServiceRequestChecklist = \[/)?.[0] ?? "";
-  const privacySection =
-    homepage.match(/<AnimatedSection id="file-service-privacy-controls"[\s\S]*?<AnimatedSection id="file-service-use-cases"/)?.[0] ?? "";
+  const privacySection = readHomepageCompactResourceSection(homepage, "file-service-privacy-controls");
 
   assert.match(homepage, /const fileServicePrivacyControls = \[/);
   assert.match(privacySource, /title: "Authenticated portal first"/);
@@ -1712,8 +1723,7 @@ test("homepage file service use case library maps workshop intents safely", () =
   const homepage = readProjectFile("src", "app", "page.tsx");
   const useCaseSource =
     homepage.match(/const fileServiceUseCases = \[[\s\S]*?const fileServiceQualitySignals = \[/)?.[0] ?? "";
-  const useCaseSection =
-    homepage.match(/<AnimatedSection id="file-service-use-cases"[\s\S]*?<AnimatedSection id="file-service-quality-signals"/)?.[0] ?? "";
+  const useCaseSection = readHomepageCompactResourceSection(homepage, "file-service-use-cases");
 
   assert.match(homepage, /const fileServiceUseCases = \[/);
   assert.match(useCaseSource, /title: "Stage 1 ECU request"/);
@@ -1748,8 +1758,7 @@ test("homepage file service quality signals explain review readiness safely", ()
   const homepage = readProjectFile("src", "app", "page.tsx");
   const qualitySource =
     homepage.match(/const fileServiceQualitySignals = \[[\s\S]*?const fileServiceWorkshopProfiles = \[/)?.[0] ?? "";
-  const qualitySection =
-    homepage.match(/<AnimatedSection id="file-service-quality-signals"[\s\S]*?<AnimatedSection id="file-service-workshop-profiles"/)?.[0] ?? "";
+  const qualitySection = readHomepageCompactResourceSection(homepage, "file-service-quality-signals");
 
   assert.match(homepage, /const fileServiceQualitySignals = \[/);
   assert.match(qualitySource, /title: "Vehicle identity is complete"/);
@@ -1783,8 +1792,7 @@ test("homepage workshop file service profiles route audience intent safely", () 
   const homepage = readProjectFile("src", "app", "page.tsx");
   const profileSource =
     homepage.match(/const fileServiceWorkshopProfiles = \[[\s\S]*?const fileServiceKnowledgeMap = \[/)?.[0] ?? "";
-  const profileSection =
-    homepage.match(/<AnimatedSection id="file-service-workshop-profiles"[\s\S]*?<AnimatedSection id="file-service-knowledge-map"/)?.[0] ?? "";
+  const profileSection = readHomepageCompactResourceSection(homepage, "file-service-workshop-profiles");
 
   assert.match(homepage, /const fileServiceWorkshopProfiles = \[/);
   assert.match(profileSource, /title: "Performance workshop"/);
@@ -1818,9 +1826,8 @@ test("homepage workshop file service profiles route audience intent safely", () 
 test("homepage file service knowledge map routes broad search intent to useful public paths", () => {
   const homepage = readProjectFile("src", "app", "page.tsx");
   const mapSource =
-    homepage.match(/const fileServiceKnowledgeMap = \[[\s\S]*?type HomepageResourceLink = \{/)?.[0] ?? "";
-  const mapSection =
-    homepage.match(/<AnimatedSection id="file-service-knowledge-map"[\s\S]*?<AnimatedSection id="file-service-decision-matrix"/)?.[0] ?? "";
+    homepage.match(/const fileServiceKnowledgeMap = \[[\s\S]*?const fileServiceDecisionMatrix = \[/)?.[0] ?? "";
+  const mapSection = readHomepageCompactResourceSection(homepage, "file-service-knowledge-map");
 
   assert.match(homepage, /const fileServiceKnowledgeMap = \[/);
   assert.match(mapSource, /title: "ECU file service workflow"/);
@@ -1849,9 +1856,8 @@ test("homepage file service knowledge map routes broad search intent to useful p
 test("homepage file service decision matrix guides users without starting file actions", () => {
   const homepage = readProjectFile("src", "app", "page.tsx");
   const matrixSource =
-    homepage.match(/const fileServiceDecisionMatrix = \[[\s\S]*?type HomepageResourceLink = \{/)?.[0] ?? "";
-  const matrixSection =
-    homepage.match(/<AnimatedSection id="file-service-decision-matrix"[\s\S]*?<AnimatedSection className="bg-\[#050505\] py-20">/)?.[0] ?? "";
+    homepage.match(/const fileServiceDecisionMatrix = \[[\s\S]*?const fileServiceOperatingStandard = \[/)?.[0] ?? "";
+  const matrixSection = readHomepageCompactResourceSection(homepage, "file-service-decision-matrix");
 
   assert.match(homepage, /const fileServiceDecisionMatrix = \[/);
   assert.match(matrixSource, /title: "ECU file service"/);
@@ -1881,9 +1887,8 @@ test("homepage file service decision matrix guides users without starting file a
 test("homepage online file service operating standard explains trust boundaries", () => {
   const homepage = readProjectFile("src", "app", "page.tsx");
   const standardSource =
-    homepage.match(/const fileServiceOperatingStandard = \[[\s\S]*?type HomepageResourceLink = \{/)?.[0] ?? "";
-  const standardSection =
-    homepage.match(/<AnimatedSection id="file-service-operating-standard"[\s\S]*?<AnimatedSection className="bg-\[#050505\] py-20">/)?.[0] ?? "";
+    homepage.match(/const fileServiceOperatingStandard = \[[\s\S]*?const fileServiceGlossaryTerms = \[/)?.[0] ?? "";
+  const standardSection = readHomepageCompactResourceSection(homepage, "file-service-operating-standard");
 
   assert.match(homepage, /const fileServiceOperatingStandard = \[/);
   assert.match(standardSource, /title: "Secure request intake"/);
@@ -1902,7 +1907,7 @@ test("homepage online file service operating standard explains trust boundaries"
   assert.match(standardSection, /secure intake, vehicle context, human review\s+boundaries and private dashboard delivery/);
   assert.match(standardSection, /Customer-safe operating boundary/);
   assert.match(standardSection, /does not read files, open storage paths, expose\s+private metadata or create customer-ready ECU\/TCU outputs/);
-  assert.match(standardSection, /focus-visible:ring-2 focus-visible:ring-emerald-500/);
+  assert.match(standardSection, /focus-visible:ring-2 focus-visible:ring-red-700/);
   assert.doesNotMatch(
     standardSource + standardSection,
     /type="file"|upload-session|api\/admin|fetch\(|createObjectURL|FileReader|generateMod|bytePatch|writeFile|checksum|storage_path|signed_url|service_role|SUPABASE_SERVICE_ROLE_KEY|admin_note|internal_note|customer_email|source_reference|confidence_score|sample_id|raw|hex/i
@@ -1912,9 +1917,8 @@ test("homepage online file service operating standard explains trust boundaries"
 test("homepage file service glossary explains terminology with DefinedTermSet schema", () => {
   const homepage = readProjectFile("src", "app", "page.tsx");
   const glossarySource =
-    homepage.match(/const fileServiceGlossaryTerms = \[[\s\S]*?type HomepageResourceLink = \{/)?.[0] ?? "";
-  const glossarySection =
-    homepage.match(/<AnimatedSection id="file-service-glossary"[\s\S]*?<AnimatedSection className="bg-\[#050505\] py-20">/)?.[0] ?? "";
+    homepage.match(/const fileServiceGlossaryTerms = \[[\s\S]*?type HomepageCompactResourceItem = \{/)?.[0] ?? "";
+  const glossarySection = readHomepageCompactResourceSection(homepage, "file-service-glossary");
 
   assert.match(homepage, /const fileServiceGlossaryTerms = \[/);
   assert.match(glossarySource, /title: "ECU file service"/);
@@ -2034,7 +2038,7 @@ test("homepage ECU platform library deep-links to public platform guides", () =>
   const platformSource =
     homepage.match(/const ecuPlatformLinks = \[[\s\S]*?const trustHighlights = \[/)?.[0] ?? "";
   const platformSection =
-    homepage.match(/<AnimatedSection id="ecu-platforms"[\s\S]*?<AnimatedSection className="bg-\[#eef1f4\] py-20 text-\[#111827\]">/)?.[0] ??
+    homepage.match(/<AnimatedSection id="ecu-platforms"[\s\S]*?<AnimatedSection className="bg-\[#07090d\] py-20 text-white">/)?.[0] ??
     "";
 
   assert.match(platformSource, /href: "\/ecu-platforms\/bosch-edc17"/);
