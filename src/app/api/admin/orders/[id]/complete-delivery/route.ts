@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireStaffPermission } from "@/lib/apiAuth";
-import { maybeCreateTrainingSampleForRequest } from "@/lib/ecuIntelligence/learning";
+import { createLearningPairCandidateForOrder } from "@/lib/ecuIntelligence/learningFlywheel";
 import { sendDeliveryCompletedEmail } from "@/lib/email/events";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { recordWorkOrderEvent } from "@/lib/workOrders/server";
@@ -120,19 +120,25 @@ export async function POST(
     fileName: parsed.data.fileName,
   });
 
-  let training: Awaited<ReturnType<typeof maybeCreateTrainingSampleForRequest>> | null = null;
-  let trainingWarning: string | null = null;
+  let learningPair: Awaited<ReturnType<typeof createLearningPairCandidateForOrder>> | null = null;
+  let learningWarning: string | null = null;
   try {
-    training = await maybeCreateTrainingSampleForRequest(id, {
+    learningPair = await createLearningPairCandidateForOrder({
+      requestId: id,
       modFilePath: version.file_path,
       modFileName: version.file_name,
-      revisionLabel: version.label,
       actorUserId: auth.user.id,
-      provider: "internal",
+      sourceType: "modified_output",
     });
   } catch (error) {
-    trainingWarning = error instanceof Error ? error.message : "Training capture failed.";
+    learningWarning = error instanceof Error ? error.message : "Learning pair candidate capture failed.";
   }
 
-  return NextResponse.json({ order: updated.data, training, trainingWarning });
+  return NextResponse.json({
+    order: updated.data,
+    learningPair,
+    learningWarning,
+    createsTrainingSampleAutomatically: false,
+    approvedForLearningAutomatically: false,
+  });
 }

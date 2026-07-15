@@ -232,6 +232,10 @@ export default function AiTrainingPage() {
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
+            <Link href="/admin/ecu-intelligence" className="inline-flex h-11 items-center justify-center rounded-lg border border-red-800/40 bg-red-950/20 px-4 text-sm font-black text-red-100 hover:bg-red-900/30">
+              <BrainCircuit className="mr-2 h-4 w-4" />
+              Intelligence Center
+            </Link>
             {data.demoEnabled && (
               <button onClick={() => void runDemo()} disabled={demoRunning || loading} className="inline-flex h-11 items-center justify-center rounded-lg bg-[#b1121b] px-4 text-sm font-black hover:bg-[#c91824] disabled:opacity-50">
                 {demoRunning ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <PlayCircle className="mr-2 h-4 w-4" />}
@@ -299,6 +303,9 @@ export default function AiTrainingPage() {
               </Link>
                 <Link href="/admin/ai-training/datasets" className="inline-flex h-11 items-center justify-center rounded-lg border border-white/10 bg-white/[0.03] px-4 text-sm font-black text-zinc-200 hover:bg-white/[0.06]">
                   <Database className="mr-2 h-4 w-4" /> Dataset importer
+                </Link>
+                <Link href="/admin/ai-training/corpus" className="inline-flex h-11 items-center justify-center rounded-lg border border-red-700/40 bg-red-950/20 px-4 text-sm font-black text-red-100 hover:bg-red-900/25">
+                  <BrainCircuit className="mr-2 h-4 w-4" /> Learning corpus
                 </Link>
                 <Link href="/admin/ai-training/calibration-assistant" className="inline-flex h-11 items-center justify-center rounded-lg border border-white/10 bg-white/[0.03] px-4 text-sm font-black text-zinc-200 hover:bg-white/[0.06]">
                   <Gauge className="mr-2 h-4 w-4" /> Calibration assistant

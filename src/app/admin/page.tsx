@@ -685,6 +685,13 @@ export default function AdminPage() {
 
     if (hasStaffPermission(adminAccess, "ai_training.manage")) {
       links.push({
+        href: "/admin/ecu-intelligence",
+        label: "ECU Intelligence",
+        detail: "Unified evidence center for uploads, File Expert, learning corpus, clusters, maps and review priority.",
+        badge: "Center",
+        icon: <BrainCircuit className="h-5 w-5" />,
+      });
+      links.push({
         href: "/admin/dtc",
         label: "DTC active foundation",
         detail: "Review read-only active-processing gates before any future test engine.",
@@ -1238,6 +1245,18 @@ export default function AdminPage() {
                   File Expert
                 </span>
                 <span className="rounded-full bg-red-950/40 px-2 py-1 text-xs text-red-200">AI</span>
+              </Link>
+            )}
+            {hasStaffPermission(adminAccess, "ai_training.manage") && (
+              <Link
+                href="/admin/ecu-intelligence"
+                className="flex w-full items-center justify-between gap-3 rounded-2xl px-4 py-3 text-left text-sm font-black text-zinc-400 transition hover:bg-white/[0.06] hover:text-white"
+              >
+                <span className="flex items-center gap-3">
+                  <BrainCircuit className="h-5 w-5" />
+                  ECU Intelligence
+                </span>
+                <span className="rounded-full bg-red-950/40 px-2 py-1 text-xs text-red-200">CENTER</span>
               </Link>
             )}
             {hasStaffPermission(adminAccess, "ai_training.manage") && (

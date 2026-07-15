@@ -13,6 +13,7 @@ import {
   validateDesktopCreditAccess,
   validateDesktopUploadFile,
 } from "@/lib/desktopUpload/contracts";
+import { createLearningFileCandidateForOrderUpload } from "@/lib/ecuIntelligence/learningFlywheel";
 import { sendRequestCreatedNotifications } from "@/lib/email/events";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 
@@ -179,6 +180,20 @@ export async function POST(request: Request) {
     });
   }
 
+  let learningCandidateStatus: string | null = null;
+  if (orderId) {
+    try {
+      const learningCandidate = await createLearningFileCandidateForOrderUpload({
+        requestId: orderId,
+        actorUserId: auth.user.id,
+        sourceType: "desktop_upload",
+      });
+      learningCandidateStatus = learningCandidate.status;
+    } catch {
+      learningCandidateStatus = "queued_failed";
+    }
+  }
+
   return NextResponse.json({
     request: {
       id: orderId,
@@ -191,6 +206,7 @@ export async function POST(request: Request) {
     submittedVia: "desktop_app",
     appVersion: app.info.appVersion,
     approvedForLearning: false,
+    learningCandidateStatus,
     rawHexReturned: false,
     privateMetadataReturned: false,
   });

@@ -1212,20 +1212,30 @@ export default function NewRequestPage() {
 
     try {
       const { data: sessionData } = await supabase.auth.getSession();
+      const authHeaders: Record<string, string> = sessionData.session?.access_token
+        ? { Authorization: `Bearer ${sessionData.session.access_token}` }
+        : {};
       await fetch("/api/email/new-order", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...(sessionData.session?.access_token
-            ? { Authorization: `Bearer ${sessionData.session.access_token}` }
-            : {}),
+          ...authHeaders,
         },
         body: JSON.stringify({
           orderId: String(createdOrderId || ""),
         }),
       });
+      if (createdOrderId && originalFilePath) {
+        await fetch(`/api/requests/${String(createdOrderId)}/learning-candidate`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...authHeaders,
+          },
+        });
+      }
     } catch {
-      // Email notification failure must not block the customer request.
+      // Notification or learning-candidate queue failure must not block the customer request.
     }
 
     router.push("/dashboard");
