@@ -60,7 +60,21 @@ export async function GET(request: Request) {
     email_enquiries_enabled: result.data.email_enquiries_enabled ?? Boolean(result.data.enquiry_email),
     whatsapp_enquiries_enabled: result.data.whatsapp_enquiries_enabled ?? Boolean(result.data.whatsapp_number),
   };
-  return NextResponse.json({ client, publicKey: keyResult.data?.public_key ?? null, domainRequests: domainResult.data ?? [], settings: settingsResult.settings });
+  const {
+    stripe_customer_id: stripeCustomerId,
+    stripe_subscription_id: stripeSubscriptionId,
+    ...customerSafeClient
+  } = client;
+  return NextResponse.json({
+    client: {
+      ...customerSafeClient,
+      billing_profile_linked: Boolean(stripeCustomerId || stripeSubscriptionId),
+      subscription_linked: Boolean(stripeSubscriptionId),
+    },
+    publicKey: keyResult.data?.public_key ?? null,
+    domainRequests: domainResult.data ?? [],
+    settings: settingsResult.settings,
+  });
 }
 
 export async function PATCH(request: Request) {
