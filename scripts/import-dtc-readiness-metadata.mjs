@@ -56,6 +56,8 @@ try {
     batch_id: outputs.batchId,
     accepted_count: accepted.length,
     quarantined_count: quarantine.length,
+    quarantine_reasons: outputs.audit.quarantine_reasons,
+    diagnostic_categories: outputs.audit.diagnostic.categories,
     accepted_path: outputs.acceptedPath,
     quarantine_path: outputs.quarantinePath,
     audit_path: outputs.auditPath,

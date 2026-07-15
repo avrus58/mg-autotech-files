@@ -128,6 +128,82 @@ The importer writes only under `.local/dtc-readiness-import/`:
 
 The importer rejects input paths outside `.local/dtc-readiness-import/`.
 
+## Deterministic Normalization
+
+The importer performs deterministic compatibility normalization before applying safety gates. This is not evidence promotion.
+
+### Authorization Quality
+
+Accepted `source_authorization_quality` values are:
+
+- `trusted`
+- `authorized_lab`
+
+Explicit aliases accepted as equivalent:
+
+- `trusted_source` -> `trusted`
+- `source_authorized` -> `trusted`
+- `source_authorised` -> `trusted`
+- `authorized_lab` / `authorised_lab` / `lab_authorized` / `lab_authorised` -> `authorized_lab`
+
+The observed exported values in the first local diagnostic export were:
+
+- `weak`
+- `unknown`
+
+Those are not mapped to an approved state. Null, unknown, weak, customer-unapproved, and ambiguous authorization values remain quarantined.
+
+### Array Fields
+
+`service_labels`, `exact_dtc_labels`, and `conflict_notes` are exported as deterministic JSON arrays.
+
+The importer accepts JSON arrays and supports legacy service-label object maps only to read older exports where service labels were emitted as `{ "dtc_off": true }`. For object maps, only keys with explicit `true` values are converted to label arrays. The importer does not invent `dtc_off` or DTC labels.
+
+Malformed arrays, unsupported service labels, and invalid DTC labels are quarantined.
+
+### Pair Review Status
+
+Accepted `pair_review_status` values are:
+
+- `approved`
+- `ready_for_human_label`
+- `confirmed`
+- `approved_for_learning`
+- `needs_review`
+- `pending_review`
+
+Explicit aliases:
+
+- `pending` -> `pending_review`
+- `review_required` -> `needs_review`
+- `unverified` -> `needs_review`
+
+Unknown review statuses are quarantined.
+
+### ECU Family / Type Aliases
+
+First-lab target family aliases are exact spelling, spacing, and punctuation variants only:
+
+- `ME7.5`, `ME75`, `Bosch ME7.5`, `Bosch ME75` -> `ME7.5`
+- `EDC15P`, `Bosch EDC15P` -> `EDC15P`
+- `EDC15VM`, `EDC15VM+`, `Bosch EDC15VM`, `Bosch EDC15VM+` -> `EDC15VM+`
+- `EDC16U34`, `Bosch EDC16U34` -> `EDC16U34`
+
+No fuzzy matching is used. For example, `EDC16`, `EDC16CP31`, `EDC17`, `MED17`, `SID`, and `Delco E-Series` remain out of scope unless a future approved lab target explicitly includes them.
+
+### Read Method
+
+The importer normalizes exact read-method spelling variants:
+
+- `Bench` -> `bench`
+- `OBD` -> `obd`
+- `VR` / `Virtual Read` -> `virtual_read`
+- `Boot` / `Boot mode` -> `boot`
+- `BDM` -> `bdm`
+- `JTAG` -> `jtag`
+
+It does not infer `read_method` from file size, ECU family, tool name, storage location, or filename. Missing or `Unknown` read methods remain quarantined.
+
 ## Quarantine Rules
 
 The importer quarantines records that are:

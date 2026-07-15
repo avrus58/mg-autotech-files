@@ -69,12 +69,89 @@ export const DTC_READINESS_EXCLUDED_FIELDS = [
 const ALLOWLIST = new Set(DTC_READINESS_EXPORT_FIELD_ALLOWLIST);
 const SOURCE_KINDS = new Set(["training_sample", "dataset_pair", "file_expert_job", "manual_lab_import"]);
 const FILE_ROLES = new Set(["ori", "pair"]);
-const AUTH_QUALITY = new Set(["trusted", "authorized_lab"]);
-const REVIEW_STATES = new Set(["approved", "ready_for_human_label", "confirmed", "approved_for_learning", "needs_review", "pending_review"]);
+export const DTC_READINESS_ALLOWED_AUTHORIZATION_VALUES = ["trusted", "authorized_lab"];
+export const DTC_READINESS_ALLOWED_PAIR_REVIEW_STATUSES = [
+  "approved",
+  "ready_for_human_label",
+  "confirmed",
+  "approved_for_learning",
+  "needs_review",
+  "pending_review",
+];
+
+const AUTH_QUALITY = new Set(DTC_READINESS_ALLOWED_AUTHORIZATION_VALUES);
+const REVIEW_STATES = new Set(DTC_READINESS_ALLOWED_PAIR_REVIEW_STATUSES);
 const CHANGED_REGION_STATES = new Set(["unknown", "consistent", "none"]);
 const SERVICE_LABELS = new Set(["stage1", "stage2", "egr_off", "dpf_off", "adblue_off", "dtc_off", "vmax", "tcu", "unknown"]);
 const HASH_PATTERN = /^[0-9a-f]{64}$/i;
 const DTC_PATTERN = /^[PCBU][0-9A-F]{4}$/i;
+const AUTHORIZATION_ALIASES = new Map([
+  ["trusted", "trusted"],
+  ["trusted_source", "trusted"],
+  ["source_authorized", "trusted"],
+  ["source_authorised", "trusted"],
+  ["authorized_lab", "authorized_lab"],
+  ["authorised_lab", "authorized_lab"],
+  ["lab_authorized", "authorized_lab"],
+  ["lab_authorised", "authorized_lab"],
+]);
+const REVIEW_STATUS_ALIASES = new Map([
+  ["approved", "approved"],
+  ["confirmed", "confirmed"],
+  ["approved_for_learning", "approved_for_learning"],
+  ["ready_for_human_label", "ready_for_human_label"],
+  ["pending_review", "pending_review"],
+  ["pending", "pending_review"],
+  ["needs_review", "needs_review"],
+  ["review_required", "needs_review"],
+  ["unverified", "needs_review"],
+]);
+const SERVICE_LABEL_ALIASES = new Map([
+  ["stage1", "stage1"],
+  ["stage_1", "stage1"],
+  ["stage2", "stage2"],
+  ["stage_2", "stage2"],
+  ["egr_off", "egr_off"],
+  ["egr", "egr_off"],
+  ["dpf_off", "dpf_off"],
+  ["dpf", "dpf_off"],
+  ["adblue_off", "adblue_off"],
+  ["ad_blue_off", "adblue_off"],
+  ["scr_off", "adblue_off"],
+  ["dtc_off", "dtc_off"],
+  ["dtc", "dtc_off"],
+  ["vmax", "vmax"],
+  ["vmax_off", "vmax"],
+  ["speed_limiter_off", "vmax"],
+  ["tcu", "tcu"],
+  ["tcu_tune", "tcu"],
+  ["tcu_shift", "tcu"],
+  ["tcu_lockup", "tcu"],
+  ["unknown", "unknown"],
+]);
+const READ_METHOD_ALIASES = new Map([
+  ["bench", "bench"],
+  ["obd", "obd"],
+  ["boot", "boot"],
+  ["boot_mode", "boot"],
+  ["bootmode", "boot"],
+  ["bdm", "bdm"],
+  ["jtag", "jtag"],
+  ["virtual_read", "virtual_read"],
+  ["vr", "virtual_read"],
+]);
+const FIRST_LAB_TARGET_FAMILY_ALIASES = new Map([
+  ["ME75", "ME7.5"],
+  ["BOSCHME75", "ME7.5"],
+  ["EDC15P", "EDC15P"],
+  ["BOSCHEDC15P", "EDC15P"],
+  ["EDC15VM", "EDC15VM+"],
+  ["BOSCHEDC15VM", "EDC15VM+"],
+  ["EDC15VM+", "EDC15VM+"],
+  ["BOSCHEDC15VM+", "EDC15VM+"],
+  ["EDC16U34", "EDC16U34"],
+  ["BOSCHEDC16U34", "EDC16U34"],
+]);
 
 export function importRoot(cwd = process.cwd()) {
   return resolve(cwd, IMPORT_ROOT_RELATIVE);
@@ -129,11 +206,13 @@ export function loadImportRecords(inputPath, options = {}) {
 
 export function validateReadinessRecord(raw, index = 0) {
   const reasons = [];
+  const normalizationNotes = [];
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
     return {
       ok: false,
       reason: "malformed",
       reasons: ["Record is not an object."],
+      normalization_notes: [],
       raw,
     };
   }
@@ -154,17 +233,17 @@ export function validateReadinessRecord(raw, index = 0) {
     file_role: enumString(raw.file_role, FILE_ROLES, "file_role", reasons),
     file_size: requiredPositiveInteger(raw.file_size, "file_size", reasons),
     segment_manifest_digest: requiredString(raw.segment_manifest_digest, "segment_manifest_digest", reasons),
-    read_method: requiredString(raw.read_method, "read_method", reasons),
+    read_method: readMethodValue(raw.read_method, "read_method", reasons, normalizationNotes),
     source_provenance: requiredString(raw.source_provenance, "source_provenance", reasons),
-    source_authorization_quality: enumString(raw.source_authorization_quality, AUTH_QUALITY, "source_authorization_quality", reasons),
+    source_authorization_quality: authorizationQuality(raw.source_authorization_quality, "source_authorization_quality", reasons, normalizationNotes),
     original_hash: optionalHash(raw.original_hash, "original_hash", reasons, true),
     mod_hash: optionalHash(raw.mod_hash, "mod_hash", reasons, false),
     exact_dtc_labels: dtcArray(raw.exact_dtc_labels, "exact_dtc_labels", reasons),
-    service_labels: labelArray(raw.service_labels, "service_labels", reasons),
+    service_labels: labelArray(raw.service_labels, "service_labels", reasons, normalizationNotes),
     human_verified: booleanValue(raw.human_verified),
     learning_approved: booleanValue(raw.learning_approved),
     pair_confidence: optionalNumber(raw.pair_confidence, "pair_confidence", reasons),
-    pair_review_status: optionalEnum(raw.pair_review_status, REVIEW_STATES, "pair_review_status", reasons),
+    pair_review_status: pairReviewStatus(raw.pair_review_status, "pair_review_status", reasons, normalizationNotes),
     pair_identity_consistent: booleanValue(raw.pair_identity_consistent, true),
     changed_region_signature: optionalString(raw.changed_region_signature),
     changed_region_consistency: optionalEnum(raw.changed_region_consistency, CHANGED_REGION_STATES, "changed_region_consistency", reasons) ?? "unknown",
@@ -187,8 +266,11 @@ export function validateReadinessRecord(raw, index = 0) {
   if (!/bosch/i.test(`${record.ecu_supplier} ${record.ecu_family} ${record.ecu_type}`)) {
     reasons.push("Only Bosch ME7.5, EDC15P/EDC15VM+ and EDC16U34 readiness targets are accepted.");
   }
-  if (!/ME7\.?5|ME75|EDC15P|EDC15VM\+?|EDC16U34/i.test(`${record.ecu_family} ${record.ecu_type}`)) {
+  const targetFamily = resolveFirstLabTargetFamily(record);
+  if (!targetFamily) {
     reasons.push("ECU family/type is outside the allowed first-lab target families.");
+  } else {
+    record.first_lab_target_family = targetFamily;
   }
   if (record.file_role === "pair" && !record.mod_hash) reasons.push("Pair records require a valid mod_hash.");
   if (record.file_role === "pair" && !record.service_labels.includes("dtc_off")) reasons.push("Pair records must include dtc_off in service_labels.");
@@ -208,6 +290,7 @@ export function validateReadinessRecord(raw, index = 0) {
     ok: reasons.length === 0,
     reason,
     reasons,
+    normalization_notes: normalizationNotes,
     record,
     raw,
     index,
@@ -260,6 +343,7 @@ export function buildAuditReport({ inputPath, accepted, quarantine, batchId }) {
   for (const item of quarantine) {
     quarantineReasons[item.reason] = (quarantineReasons[item.reason] ?? 0) + 1;
   }
+  const diagnostic = buildDiagnosticReport({ accepted, quarantine });
   return {
     batch_id: batchId,
     generated_at: new Date().toISOString(),
@@ -267,6 +351,7 @@ export function buildAuditReport({ inputPath, accepted, quarantine, batchId }) {
     accepted_count: accepted.length,
     quarantined_count: quarantine.length,
     quarantine_reasons: quarantineReasons,
+    diagnostic,
     exported_field_allowlist: DTC_READINESS_EXPORT_FIELD_ALLOWLIST,
     excluded_fields: DTC_READINESS_EXCLUDED_FIELDS,
     safety: {
@@ -276,6 +361,52 @@ export function buildAuditReport({ inputPath, accepted, quarantine, batchId }) {
       customer_identity_imported: false,
       storage_paths_imported: false,
       output_artifacts_created: false,
+    },
+  };
+}
+
+export function buildDiagnosticReport({ accepted = [], quarantine = [] }) {
+  const categories = {
+    serialization_schema_mismatch: 0,
+    deterministic_normalization_issue: 0,
+    genuinely_missing_metadata: 0,
+    genuinely_unauthorized_data: 0,
+    intentionally_excluded_ecu_family: 0,
+    hard_stop_safety_condition: 0,
+  };
+  for (const item of quarantine) {
+    const text = item.reasons.join(" ").toLowerCase();
+    if (/unknown or forbidden|invalid json array|invalid json object|invalid array field|invalid service labels|invalid dtc labels/.test(text)) {
+      categories.serialization_schema_mismatch += 1;
+    }
+    if (item.normalization_notes?.length) categories.deterministic_normalization_issue += 1;
+    if (/missing exact|not human verified|pair records require exact_dtc_labels|pair records must include dtc_off/.test(text)) {
+      categories.genuinely_missing_metadata += 1;
+    }
+    if (/source_authorization_quality|authorization|authorized|trusted/.test(text)) {
+      categories.genuinely_unauthorized_data += 1;
+    }
+    if (/outside the allowed first-lab target|only bosch/.test(text)) {
+      categories.intentionally_excluded_ecu_family += 1;
+    }
+    if (/identity is not consistent|unrelated changes|already-modified negative|wrong-pair negative|conflict notes|changed-region evidence is inconsistent/.test(text)) {
+      categories.hard_stop_safety_condition += 1;
+    }
+  }
+
+  return {
+    categories,
+    allowed_values: {
+      source_authorization_quality: DTC_READINESS_ALLOWED_AUTHORIZATION_VALUES,
+      pair_review_status: DTC_READINESS_ALLOWED_PAIR_REVIEW_STATUSES,
+      first_lab_target_families: ["ME7.5", "EDC15P", "EDC15VM+", "EDC16U34"],
+    },
+    actual_values: {
+      source_authorization_quality: countValues([...accepted, ...quarantine.map((item) => item.raw)], "source_authorization_quality"),
+      pair_review_status: countValues([...accepted, ...quarantine.map((item) => item.raw)], "pair_review_status"),
+      ecu_family: countValues([...accepted, ...quarantine.map((item) => item.raw)], "ecu_family"),
+      ecu_type: countValues([...accepted, ...quarantine.map((item) => item.raw)], "ecu_type"),
+      read_method: countValues([...accepted, ...quarantine.map((item) => item.raw)], "read_method"),
     },
   };
 }
@@ -463,6 +594,40 @@ function optionalEnum(value, allowed, field, reasons) {
   return parsed;
 }
 
+function authorizationQuality(value, field, reasons, normalizationNotes) {
+  const parsed = optionalString(value);
+  const normalized = aliasLookup(parsed, AUTHORIZATION_ALIASES);
+  if (!normalized || !AUTH_QUALITY.has(normalized)) {
+    reasons.push(`Invalid ${field}. Allowed values are ${DTC_READINESS_ALLOWED_AUTHORIZATION_VALUES.join(", ")}; weak, unknown, customer-unapproved and ambiguous sources remain quarantined.`);
+    return parsed;
+  }
+  if (normalized !== parsed) normalizationNotes.push(`${field}: ${parsed} -> ${normalized}`);
+  return normalized;
+}
+
+function pairReviewStatus(value, field, reasons, normalizationNotes) {
+  if (value === null || value === undefined || value === "") return null;
+  const parsed = String(value).trim();
+  const normalized = aliasLookup(parsed, REVIEW_STATUS_ALIASES);
+  if (!normalized || !REVIEW_STATES.has(normalized)) {
+    reasons.push(`Invalid ${field}.`);
+    return parsed;
+  }
+  if (normalized !== parsed) normalizationNotes.push(`${field}: ${parsed} -> ${normalized}`);
+  return normalized;
+}
+
+function readMethodValue(value, field, reasons, normalizationNotes) {
+  const parsed = optionalString(value);
+  const normalized = aliasLookup(parsed, READ_METHOD_ALIASES);
+  if (!normalized) {
+    reasons.push(`Missing exact ${field}.`);
+    return parsed;
+  }
+  if (normalized !== parsed) normalizationNotes.push(`${field}: ${parsed} -> ${normalized}`);
+  return normalized;
+}
+
 function requiredPositiveInteger(value, field, reasons) {
   const number = Number(value);
   if (!Number.isInteger(number) || number <= 0) reasons.push(`Invalid ${field}.`);
@@ -496,8 +661,12 @@ function dtcArray(value, field, reasons) {
   return [...new Set(values)].sort();
 }
 
-function labelArray(value, field, reasons) {
-  const values = stringArray(value, field, reasons).map((entry) => entry.toLowerCase());
+function labelArray(value, field, reasons, normalizationNotes) {
+  const values = serviceLabelValues(value, field, reasons, normalizationNotes).map((entry) => {
+    const normalized = aliasLookup(entry, SERVICE_LABEL_ALIASES);
+    if (normalized && normalized !== entry.toLowerCase()) normalizationNotes.push(`${field}: ${entry} -> ${normalized}`);
+    return normalized ?? entry.toLowerCase();
+  });
   const invalid = values.filter((entry) => !SERVICE_LABELS.has(entry));
   if (invalid.length) reasons.push(`Invalid service labels in ${field}: ${invalid.join(", ")}`);
   return [...new Set(values)].sort();
@@ -516,9 +685,41 @@ function stringArray(value, field, reasons) {
         return [];
       }
     }
-    return trimmed.split(/[;|,]/).map((entry) => entry.trim()).filter(Boolean);
+    if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
+      reasons.push(`Invalid JSON object in ${field}; expected a JSON array.`);
+      return [];
+    }
+    reasons.push(`Invalid array field ${field}; expected a JSON array.`);
+    return [];
   }
   if (value === null || value === undefined) return [];
+  reasons.push(`Invalid array field ${field}.`);
+  return [];
+}
+
+function serviceLabelValues(value, field, reasons, normalizationNotes) {
+  if (Array.isArray(value) || value === null || value === undefined) return stringArray(value, field, reasons);
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!trimmed) return [];
+    if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
+      try {
+        return serviceLabelValues(JSON.parse(trimmed), field, reasons, normalizationNotes);
+      } catch {
+        reasons.push(`Invalid JSON object in ${field}.`);
+        return [];
+      }
+    }
+    return stringArray(value, field, reasons);
+  }
+  if (typeof value === "object") {
+    normalizationNotes.push(`${field}: legacy object-map -> active JSON array`);
+    return Object.entries(value)
+      .filter(([, enabled]) => enabled === true || enabled === "true")
+      .map(([label]) => label)
+      .filter(Boolean)
+      .sort();
+  }
   reasons.push(`Invalid array field ${field}.`);
   return [];
 }
@@ -531,6 +732,37 @@ function classifyReasons(reasons) {
   if (/conflict|unrelated|negative|wrong-pair|already-modified|inconsistent/.test(text)) return "conflicting";
   if (/missing exact|unknown|outside|file_role|ambiguous|pair records require/.test(text)) return "ambiguous";
   return "malformed";
+}
+
+function aliasLookup(value, aliases) {
+  if (!value || typeof value !== "string") return null;
+  return aliases.get(aliasKey(value)) ?? null;
+}
+
+function aliasKey(value) {
+  return String(value).trim().toLowerCase().replace(/[^\p{L}\p{N}+]+/gu, "_").replace(/^_+|_+$/g, "");
+}
+
+function targetFamilyKey(value) {
+  return String(value).trim().toUpperCase().replace(/[^A-Z0-9+]/g, "");
+}
+
+function resolveFirstLabTargetFamily(record) {
+  for (const value of [record.ecu_type, record.ecu_family]) {
+    const key = targetFamilyKey(value ?? "");
+    if (FIRST_LAB_TARGET_FAMILY_ALIASES.has(key)) return FIRST_LAB_TARGET_FAMILY_ALIASES.get(key);
+  }
+  return null;
+}
+
+function countValues(records, field) {
+  const counts = {};
+  for (const record of records) {
+    const value = record?.[field];
+    const key = value === null || value === undefined || value === "" ? "null" : String(value);
+    counts[key] = (counts[key] ?? 0) + 1;
+  }
+  return counts;
 }
 
 function defaultBatchId() {

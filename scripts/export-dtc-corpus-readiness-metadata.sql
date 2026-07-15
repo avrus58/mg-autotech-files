@@ -37,12 +37,30 @@ training_sample_rows as (
     end as source_authorization_quality,
     lower(s.ori_sha256) as original_hash,
     lower(s.mod_sha256) as mod_hash,
-    coalesce(s.source_metadata->'exact_dtc_labels', s.source_metadata->'dtc_codes', s.source_metadata->'actual_dtc_codes', '[]'::jsonb) as exact_dtc_labels,
-    coalesce(to_jsonb(s.performed_service_labels), to_jsonb(s.requested_service_labels), '[]'::jsonb) as service_labels,
+    case
+      when jsonb_typeof(coalesce(s.source_metadata->'exact_dtc_labels', s.source_metadata->'dtc_codes', s.source_metadata->'actual_dtc_codes', '[]'::jsonb)) = 'array'
+        then coalesce(s.source_metadata->'exact_dtc_labels', s.source_metadata->'dtc_codes', s.source_metadata->'actual_dtc_codes', '[]'::jsonb)
+      else '[]'::jsonb
+    end as exact_dtc_labels,
+    case
+      when jsonb_typeof(coalesce(to_jsonb(s.performed_service_labels), to_jsonb(s.requested_service_labels), '[]'::jsonb)) = 'array'
+        then coalesce(to_jsonb(s.performed_service_labels), to_jsonb(s.requested_service_labels), '[]'::jsonb)
+      when jsonb_typeof(coalesce(to_jsonb(s.performed_service_labels), to_jsonb(s.requested_service_labels), '[]'::jsonb)) = 'object'
+        then (
+          select coalesce(jsonb_agg(label order by label), '[]'::jsonb)
+          from jsonb_each(coalesce(to_jsonb(s.performed_service_labels), to_jsonb(s.requested_service_labels), '{}'::jsonb)) as svc(label, enabled)
+          where enabled = 'true'::jsonb
+        )
+      else '[]'::jsonb
+    end as service_labels,
     (s.human_verification_status = 'confirmed') as human_verified,
     (s.learning_use_status = 'approved_for_learning') as learning_approved,
     coalesce(s.data_quality_score::numeric, 70) as pair_confidence,
-    case when s.learning_use_status = 'approved_for_learning' then 'approved_for_learning' else s.human_verification_status end as pair_review_status,
+    case
+      when s.learning_use_status = 'approved_for_learning' then 'approved_for_learning'
+      when s.human_verification_status in ('unverified', 'pending', 'pending_review', 'needs_review') then 'needs_review'
+      else s.human_verification_status
+    end as pair_review_status,
     coalesce((s.source_metadata->>'pair_identity_consistent') is distinct from 'false', true)
       and coalesce((s.diff_json #>> '{integrity_assessment,ecu_identity_match}') is distinct from 'false', true) as pair_identity_consistent,
     (
@@ -120,8 +138,22 @@ dataset_pair_rows as (
     end as source_authorization_quality,
     lower(ori.fingerprint) as original_hash,
     lower(mod.fingerprint) as mod_hash,
-    coalesce(ori.provider_metadata->'exact_dtc_labels', ori.provider_metadata->'dtc_codes', ori.provider_metadata->'actual_dtc_codes', '[]'::jsonb) as exact_dtc_labels,
-    coalesce(to_jsonb(p.actual_service_labels), to_jsonb(p.service_label_guess), to_jsonb(mod.service_label_guess), '[]'::jsonb) as service_labels,
+    case
+      when jsonb_typeof(coalesce(ori.provider_metadata->'exact_dtc_labels', ori.provider_metadata->'dtc_codes', ori.provider_metadata->'actual_dtc_codes', '[]'::jsonb)) = 'array'
+        then coalesce(ori.provider_metadata->'exact_dtc_labels', ori.provider_metadata->'dtc_codes', ori.provider_metadata->'actual_dtc_codes', '[]'::jsonb)
+      else '[]'::jsonb
+    end as exact_dtc_labels,
+    case
+      when jsonb_typeof(coalesce(to_jsonb(p.actual_service_labels), to_jsonb(p.service_label_guess), to_jsonb(mod.service_label_guess), '[]'::jsonb)) = 'array'
+        then coalesce(to_jsonb(p.actual_service_labels), to_jsonb(p.service_label_guess), to_jsonb(mod.service_label_guess), '[]'::jsonb)
+      when jsonb_typeof(coalesce(to_jsonb(p.actual_service_labels), to_jsonb(p.service_label_guess), to_jsonb(mod.service_label_guess), '[]'::jsonb)) = 'object'
+        then (
+          select coalesce(jsonb_agg(label order by label), '[]'::jsonb)
+          from jsonb_each(coalesce(to_jsonb(p.actual_service_labels), to_jsonb(p.service_label_guess), to_jsonb(mod.service_label_guess), '{}'::jsonb)) as svc(label, enabled)
+          where enabled = 'true'::jsonb
+        )
+      else '[]'::jsonb
+    end as service_labels,
     (p.review_status in ('approved', 'ready_for_human_label')) as human_verified,
     false as learning_approved,
     p.pair_confidence::numeric as pair_confidence,
