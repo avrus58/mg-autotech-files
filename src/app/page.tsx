@@ -1903,6 +1903,21 @@ const buildHomepageItemList = (name: string, items: HomepageResourceLink[], id: 
 const homepageResourceJsonLd = {
   "@context": "https://schema.org",
   "@graph": [
+    {
+      "@type": "ItemList",
+      "@id": publicResourceUrl("/#file-service-resource-center-data"),
+      name: "MG AutoTech file service resource source index",
+      itemListElement: homepageCompactResourceGroups.map((group, index) => ({
+        "@type": "ListItem",
+        position: index + 1,
+        item: {
+          "@type": "WebPage",
+          name: group.title,
+          description: group.summary,
+          url: publicResourceUrl(`/#${group.id}`),
+        },
+      })),
+    },
     buildHomepageItemList("MG AutoTech homepage file service quick paths", homepageQuickServicePaths, "/#file-service-quick-paths"),
     buildHomepageItemList("MG AutoTech file service homepage navigator", homepageFileServiceNavigator, "/#file-service-navigator"),
     buildHomepageItemList("MG AutoTech file service answer library", fileServiceAnswerLibrary, "/#file-service-answer-library"),
@@ -3534,128 +3549,6 @@ function PublicVehicleChecker() {
   );
 }
 
-function HomepageCompactResourceCenter() {
-  const totalItems = homepageCompactResourceGroups.reduce(
-    (total, group) => total + group.items.length,
-    0
-  );
-
-  return (
-    <AnimatedSection id="file-service-resource-center" className="bg-[#050607] py-10 text-white">
-      <div className="mx-auto max-w-7xl px-4">
-        <div className="mb-6 grid gap-5 lg:grid-cols-[0.82fr_1.18fr] lg:items-end">
-          <div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-red-900/50 bg-red-950/30 px-3 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-red-200">
-              <Search className="h-4 w-4" />
-              Compact File Service Library
-            </div>
-            <h2 className="mt-4 max-w-3xl text-3xl font-black leading-tight md:text-4xl">
-              Same SEO knowledge, much shorter homepage.
-            </h2>
-          </div>
-          <p className="max-w-3xl text-sm leading-7 text-zinc-300 lg:justify-self-end">
-            The detailed file-service guidance is still here, but grouped into
-            expandable panels so the homepage stays fast to scan. Open only the
-            section you need.
-          </p>
-        </div>
-
-        <div className="mb-5 grid gap-3 sm:grid-cols-3">
-          <div className="rounded-2xl border border-white/10 bg-white/[0.045] p-4">
-            <div className="text-2xl font-black text-red-200">
-              {homepageCompactResourceGroups.length}
-            </div>
-            <div className="mt-1 text-xs font-black uppercase tracking-[0.16em] text-zinc-400">
-              resource panels
-            </div>
-          </div>
-          <div className="rounded-2xl border border-white/10 bg-white/[0.045] p-4">
-            <div className="text-2xl font-black text-red-200">
-              {totalItems}
-            </div>
-            <div className="mt-1 text-xs font-black uppercase tracking-[0.16em] text-zinc-400">
-              preserved items
-            </div>
-          </div>
-          <div className="rounded-2xl border border-emerald-500/20 bg-emerald-950/20 p-4 text-sm leading-6 text-emerald-100">
-            <span className="font-black">Safety boundary:</span> public
-            guidance only. No upload, file inspection, MOD generation
-            or private metadata exposure.
-          </div>
-        </div>
-
-        <div className="grid gap-3 lg:grid-cols-2">
-          {homepageCompactResourceGroups.map((group, index) => (
-            <details
-              key={group.id}
-              id={group.id}
-              className="group rounded-2xl border border-white/10 bg-white/[0.045] shadow-2xl shadow-black/20 open:bg-white/[0.07]"
-              open={index < 2}
-            >
-              <summary className="flex cursor-pointer list-none items-start justify-between gap-4 rounded-2xl p-5 marker:hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-red-700">
-                <div className="min-w-0">
-                  <div className="text-[11px] font-black uppercase tracking-[0.18em] text-red-200">
-                    {group.eyebrow}
-                  </div>
-                  <h3 className="mt-2 text-xl font-black leading-tight text-white">
-                    {group.title}
-                  </h3>
-                  <p className="mt-2 text-sm leading-6 text-zinc-400">
-                    {group.summary}
-                  </p>
-                </div>
-                <span className="mt-1 shrink-0 rounded-full border border-white/10 bg-black/30 px-3 py-1 text-xs font-black uppercase tracking-[0.12em] text-zinc-300">
-                  {group.items.length} items
-                </span>
-              </summary>
-
-              <div className="border-t border-white/10 px-5 pb-5">
-                <div className="grid gap-3 pt-4 md:grid-cols-2">
-                  {group.items.map((item) => (
-                    <article
-                      key={`${group.id}-${item.title}`}
-                      className="rounded-2xl border border-white/10 bg-black/25 p-4"
-                    >
-                      <div className="mb-3 flex items-start justify-between gap-3">
-                        <h4 className="text-base font-black leading-snug text-white">
-                          {item.title}
-                        </h4>
-                        {item.tag ? (
-                          <span className="shrink-0 rounded-full border border-red-900/45 bg-red-950/30 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-red-200">
-                            {item.tag}
-                          </span>
-                        ) : null}
-                      </div>
-                      <p className="text-sm leading-6 text-zinc-400">
-                        {item.text}
-                      </p>
-                      {item.href && item.action ? (
-                        <Link
-                          href={item.href}
-                          aria-label={`${item.action}: ${item.title}`}
-                          className="mt-4 inline-flex items-center text-sm font-black text-red-300 transition hover:text-red-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-700"
-                        >
-                          {item.action}
-                          <ArrowRight className="ml-2 h-4 w-4" />
-                        </Link>
-                      ) : null}
-                    </article>
-                  ))}
-                </div>
-
-                <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-sm leading-6 text-zinc-300">
-                  <span className="font-black text-white">Boundary:</span>{" "}
-                  {group.boundary}
-                </div>
-              </div>
-            </details>
-          ))}
-        </div>
-      </div>
-    </AnimatedSection>
-  );
-}
-
 function HomepageFileServiceCorePanel() {
   return (
     <AnimatedSection id="file-service" className="bg-[#050607] py-12 text-white">
@@ -4276,7 +4169,6 @@ export default function HomePage() {
       </AnimatedSection>
 
       <HomepageFileServiceCorePanel />
-      <HomepageCompactResourceCenter />
       <AnimatedSection className="bg-[#050505] py-20">
         <div className="mx-auto max-w-7xl px-4">
           <div className="mb-10 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">

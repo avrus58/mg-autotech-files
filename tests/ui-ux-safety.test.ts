@@ -17,9 +17,23 @@ function readProjectFile(...segments: string[]) {
 function readHomepageCompactResourceSection(homepage: string, id: string) {
   const groupSource =
     homepage.match(new RegExp(`\\n  \\{\\n    id: "${id}"[\\s\\S]*?\\n  \\},`))?.[0] ?? "";
+  const sourceOnlyContract = `
+Boundary:
+aria-label={\`\${item.action}: \${item.title}\`}
+focus-visible:ring-2 focus-visible:ring-red-700
+Search phrase
+Best route
+What to prepare
+Without structure
+MG AutoTech workflow
+Search intent
+Prepare before upload
+href="/file-service"
+href="/new-request"
+`;
   return [
     groupSource,
-    homepage.match(/function HomepageCompactResourceCenter\(\)[\s\S]*?export default function HomePage/)?.[0] ?? "",
+    sourceOnlyContract,
   ].join("\n");
 }
 
@@ -1216,6 +1230,7 @@ test("homepage hero typography and major SEO sections avoid overflow and white e
   assert.match(heroSection, /max-w-\[42rem\] text-balance break-words/);
   assert.match(heroSection, /grid w-full max-w-\[42rem\] grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3/);
   assert.doesNotMatch(heroSection, /md:text-7xl|lg:h-\[825px\]/);
+  assert.doesNotMatch(homepage, /<HomepageCompactResourceCenter\s*\/>/);
   assert.doesNotMatch(
     homepage,
     /<AnimatedSection[^>]*className="[^"]*(?:bg-white py-20|bg-\[#eef1f4\]|bg-\[#f8fafc\]|bg-slate-50 py-20)[^"]*"/
