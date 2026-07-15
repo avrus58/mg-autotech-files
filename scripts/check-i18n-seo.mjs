@@ -388,6 +388,35 @@ if (!fileServicePage.includes("PublicSeoHeader") || !fileServicePage.includes("F
   failures.push("File service hub is missing shared public header/footer navigation.");
 }
 
+const servicesCatalogPage = readFileSync(join(root, "src/app/services/page.tsx"), "utf8");
+if (!servicesCatalogPage.includes("ECU & TCU Solution Catalog")) {
+  failures.push("Services catalog page is missing the visible H1/title signal.");
+}
+if (!servicesCatalogPage.includes('canonical: absoluteUrl("/services")')) {
+  failures.push("Services catalog page is missing canonical /services metadata.");
+}
+if (!servicesCatalogPage.includes('"@type": "CollectionPage"')) {
+  failures.push("Services catalog structured data is missing CollectionPage.");
+}
+if (!servicesCatalogPage.includes('"@type": "Service"')) {
+  failures.push("Services catalog structured data is missing Service.");
+}
+if (!servicesCatalogPage.includes('"@type": "OfferCatalog"')) {
+  failures.push("Services catalog structured data is missing OfferCatalog.");
+}
+if (!servicesCatalogPage.includes('"@type": "FAQPage"')) {
+  failures.push("Services catalog structured data is missing FAQPage.");
+}
+if (!servicesCatalogPage.includes('"@type": "BreadcrumbList"')) {
+  failures.push("Services catalog structured data is missing BreadcrumbList.");
+}
+if (!servicesCatalogPage.includes("JSON.stringify(catalogJsonLd)")) {
+  failures.push("Services catalog does not render structured data.");
+}
+if (!servicesCatalogPage.includes("PublicSeoHeader") || !servicesCatalogPage.includes("Footer")) {
+  failures.push("Services catalog is missing shared public header/footer navigation.");
+}
+
 const localizedFileServicePage = readFileSync(join(root, "src/app/[locale]/file-service/page.tsx"), "utf8");
 if (!localizedFileServicePage.includes("getFileServiceCopy")) {
   failures.push("Localized file service page is not using localized copy.");
@@ -427,6 +456,9 @@ if (!sitemap.includes("languageAlternates")) failures.push("Sitemap does not inc
 if (!sitemap.includes("publicServiceSlugs")) failures.push("Sitemap does not include service slugs.");
 if (!sitemap.includes('"/file-service"')) {
   failures.push("Sitemap does not include /file-service.");
+}
+if (!sitemap.includes('absoluteUrl("/services")')) {
+  failures.push("Sitemap does not include /services.");
 }
 if (!sitemap.includes('localizedUrl(locale, "/how-it-works")')) {
   failures.push("Sitemap does not include localized How It Works routes.");

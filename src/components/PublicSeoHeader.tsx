@@ -16,7 +16,7 @@ export function PublicSeoHeader() {
         </Link>
         <nav aria-label="Primary navigation" className="hidden items-center gap-6 text-sm font-bold text-zinc-300 lg:flex">
           <Link href="/file-service" className="hover:text-white">File service</Link>
-          <Link href="/services/stage-1" className="hover:text-white">Services</Link>
+          <Link href="/services" className="hover:text-white">Services</Link>
           <Link href="/how-it-works" className="hover:text-white">How it works</Link>
           <Link href="/brands" className="hover:text-white">Vehicle brands</Link>
           <Link href="/ecu-platforms" className="hover:text-white">ECU platforms</Link>

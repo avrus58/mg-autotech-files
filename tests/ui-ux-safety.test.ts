@@ -2440,6 +2440,75 @@ test("public file service hub is indexable, linked and customer-safe", () => {
   );
 });
 
+test("public services catalog is broad, indexable and customer-safe", () => {
+  const page = readProjectFile("src", "app", "services", "page.tsx");
+  const homepage = readProjectFile("src", "app", "page.tsx");
+  const header = readProjectFile("src", "components", "PublicSeoHeader.tsx");
+  const toolsHeader = readProjectFile("src", "components", "tools", "ToolsHeader.tsx");
+  const footer = readProjectFile("src", "components", "Footer.tsx");
+  const sitemap = readProjectFile("src", "app", "sitemap.ts");
+  const robots = readProjectFile("src", "app", "robots.ts");
+
+  assert.match(page, /export const metadata: Metadata/);
+  assert.match(page, /ECU & TCU Solution Catalog/);
+  assert.match(page, /Professional file-service catalog/);
+  assert.match(page, /More than a basic ECU solutions grid/);
+  assert.match(page, /canonical: absoluteUrl\("\/services"\)/);
+  assert.match(page, /const solutionCategories: SolutionCategory\[\]/);
+
+  for (const section of [
+    "Performance & drivability",
+    "Diesel & aftertreatment",
+    "Engine function requests",
+    "TCU & gearbox",
+    "Diagnostics & file services",
+    "Professional support add-ons",
+  ]) {
+    assert.match(page, new RegExp(section.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  }
+
+  for (const service of [
+    "Launch control",
+    "VMAX OFF",
+    "Pop and Bang",
+    "DPF",
+    "EGR / AGR",
+    "AdBlue / SCR",
+    "GPF / OPF",
+    "NOx",
+    "Lambda / O2",
+    "TCU tuning",
+    "Gearbox torque limit",
+    "File expertise",
+    "Readout verification",
+    "Priority processing",
+    "Log file review",
+  ]) {
+    assert.match(page, new RegExp(service.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  }
+
+  assert.match(page, /"@type": "CollectionPage"/);
+  assert.match(page, /"@type": "Service"/);
+  assert.match(page, /"@type": "OfferCatalog"/);
+  assert.match(page, /"@type": "ItemList"/);
+  assert.match(page, /"@type": "FAQPage"/);
+  assert.match(page, /"@type": "BreadcrumbList"/);
+  assert.match(page, /JSON\.stringify\(catalogJsonLd\)/);
+  assert.match(page, /<PublicSeoHeader \/>/);
+  assert.match(page, /<Footer \/>/);
+
+  assert.match(homepage, /href="\/services"/);
+  assert.match(header, /href="\/services"[\s\S]*Services/);
+  assert.match(toolsHeader, /href="\/services"[\s\S]*Services/);
+  assert.match(footer, /Services Overview/);
+  assert.match(sitemap, /absoluteUrl\("\/services"\)/);
+  assert.match(robots, /"\/services"/);
+  assert.doesNotMatch(
+    page,
+    /type="file"|upload-session|api\/admin|fetch\(|createObjectURL|FileReader|generateMod|bytePatch|writeFile|checksum\(|storage_path|signed_url|service_role|SUPABASE_SERVICE_ROLE_KEY|admin_note|internal_note|customer_email|source_reference|confidence_score|sample_id|raw|hex/i
+  );
+});
+
 test("localized file service hub is hreflang-ready and linked from localized surfaces", () => {
   const localizedPage = readProjectFile("src", "app", "[locale]", "file-service", "page.tsx");
   const copy = readProjectFile("src", "lib", "fileServiceI18n.ts");

@@ -3729,9 +3729,9 @@ export default function HomePage() {
           </div>
 
           <div className="ml-auto flex items-center gap-5">
-            <a href="#services" className="hover:text-white">
+            <Link href="/services" className="hover:text-white">
               Services
-            </a>
+            </Link>
             <a href="#brands" className="hover:text-white">
               Brands
             </a>
@@ -3795,9 +3795,9 @@ export default function HomePage() {
             <Link href="/how-it-works" className="hover:text-white">
               How It Works
             </Link>
-            <a href="#services" className="hover:text-white">
+            <Link href="/services" className="hover:text-white">
               Services
-            </a>
+            </Link>
             <a href="#brands" className="hover:text-white">
               Brands
             </a>

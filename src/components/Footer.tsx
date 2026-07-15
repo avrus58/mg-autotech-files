@@ -13,6 +13,7 @@ import {
 import { companyAddress, contactEmail, contactPhone } from "@/lib/seo";
 
 const services = [
+  { label: "Services Overview", href: "/services" },
   { label: "Stage 1 Tuning", href: "/services/stage-1" },
   { label: "DPF OFF", href: "/services/dpf-off" },
   { label: "EGR / AGR OFF", href: "/services/egr-off" },

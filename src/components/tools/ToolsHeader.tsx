@@ -23,7 +23,7 @@ export function ToolsHeader() {
           <Link href="/tools" className="text-white">
             Tools
           </Link>
-          <Link href="/services/stage-1" className="transition hover:text-white">
+          <Link href="/services" className="transition hover:text-white">
             Services
           </Link>
           <Link href="/widget" className="transition hover:text-white">

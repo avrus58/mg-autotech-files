@@ -48,6 +48,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
         languages: languageAlternates("/file-service"),
       },
     },
+    {
+      url: absoluteUrl("/services"),
+      lastModified: contentUpdated,
+      changeFrequency: "monthly",
+      priority: 0.9,
+    },
     ...publicServiceSlugs.map((slug) => {
       const path = `/services/${slug}`;
 
