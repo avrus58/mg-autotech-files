@@ -103,6 +103,50 @@ type MapDefinitionSetRow = {
   active: boolean | null;
 };
 
+type ReadinessImportRow = {
+  id: string;
+  import_batch_id: string;
+  record_id: string;
+  source_kind: DtcCorpusEvidenceItem["sourceKind"] | "manual_lab_import" | null;
+  ecu_supplier: string | null;
+  ecu_family: string | null;
+  ecu_type: string | null;
+  hw_number: string | null;
+  sw_number: string | null;
+  calibration_id: string | null;
+  representation_type: string | null;
+  file_role: string | null;
+  file_size: number | string | null;
+  segment_manifest_digest: string | null;
+  read_method: string | null;
+  source_provenance: string | null;
+  source_authorization_quality: DtcCorpusEvidenceItem["sourceAuthorizationQuality"] | null;
+  original_hash: string | null;
+  mod_hash: string | null;
+  exact_dtc_labels: string[] | null;
+  service_labels: string[] | null;
+  human_verified: boolean | null;
+  learning_approved: boolean | null;
+  pair_confidence: number | string | null;
+  pair_review_status: string | null;
+  pair_identity_consistent: boolean | null;
+  changed_region_signature: string | null;
+  changed_region_consistency: DtcCorpusEvidenceItem["changedRegionConsistency"] | null;
+  unrelated_change: boolean | null;
+  checksum_only_control: boolean | null;
+  already_modified_negative: boolean | null;
+  wrong_pair_negative: boolean | null;
+  pre_integrity_available: boolean | null;
+  final_mod_available: boolean | null;
+  map_definition_available: boolean | null;
+  integrity_evidence_available: boolean | null;
+  bench_verified: boolean | null;
+  successful_write_readback: boolean | null;
+  rollback_verified: boolean | null;
+  conflict_notes: string[] | null;
+  validation_status: string | null;
+};
+
 export async function loadDtcCorpusReadinessReport(): Promise<LoadResult> {
   const admin = getSupabaseAdmin();
   const warnings: string[] = [];
@@ -112,6 +156,7 @@ export async function loadDtcCorpusReadinessReport(): Promise<LoadResult> {
     datasetPairs,
     fileExpertJobs,
     mapDefinitions,
+    readinessImports,
   ] = await Promise.all([
     readRows<TrainingSampleRow>(
       admin.from("ai_training_samples").select([
@@ -216,12 +261,61 @@ export async function loadDtcCorpusReadinessReport(): Promise<LoadResult> {
       "ai_map_definition_sets",
       warnings
     ),
+    readRows<ReadinessImportRow>(
+      admin.from("dtc_readiness_import_records").select([
+        "id",
+        "import_batch_id",
+        "record_id",
+        "source_kind",
+        "ecu_supplier",
+        "ecu_family",
+        "ecu_type",
+        "hw_number",
+        "sw_number",
+        "calibration_id",
+        "representation_type",
+        "file_role",
+        "file_size",
+        "segment_manifest_digest",
+        "read_method",
+        "source_provenance",
+        "source_authorization_quality",
+        "original_hash",
+        "mod_hash",
+        "exact_dtc_labels",
+        "service_labels",
+        "human_verified",
+        "learning_approved",
+        "pair_confidence",
+        "pair_review_status",
+        "pair_identity_consistent",
+        "changed_region_signature",
+        "changed_region_consistency",
+        "unrelated_change",
+        "checksum_only_control",
+        "already_modified_negative",
+        "wrong_pair_negative",
+        "pre_integrity_available",
+        "final_mod_available",
+        "map_definition_available",
+        "integrity_evidence_available",
+        "bench_verified",
+        "successful_write_readback",
+        "rollback_verified",
+        "conflict_notes",
+        "validation_status",
+      ].join(", ")).eq("validation_status", "accepted").limit(5000),
+      "dtc_readiness_import_records",
+      warnings,
+      { optional: true }
+    ),
   ]);
 
   const rawEvidence: DtcCorpusEvidenceItem[] = [
     ...trainingSamples.map(trainingSampleToEvidence),
     ...datasetPairsToEvidence(datasetPairs, datasetFiles),
     ...fileExpertJobs.map(fileExpertJobToEvidence),
+    ...readinessImports.map(readinessImportToEvidence),
   ].filter((item) => item.ecuFamily || item.ecuType);
   const evidence = rawEvidence.map((item) => ({
     ...item,
@@ -237,6 +331,7 @@ export async function loadDtcCorpusReadinessReport(): Promise<LoadResult> {
       dataset_files: datasetFiles.length,
       file_expert_jobs: fileExpertJobs.length,
       map_definition_sets: mapDefinitions.length,
+      readiness_import_records: readinessImports.length,
       evidence_items: evidence.length,
     },
   };
@@ -245,12 +340,13 @@ export async function loadDtcCorpusReadinessReport(): Promise<LoadResult> {
 async function readRows<T>(
   query: PromiseLike<{ data: unknown[] | null; error: { code?: string; message?: string } | null }>,
   label: string,
-  warnings: string[]
+  warnings: string[],
+  options: { optional?: boolean } = {}
 ): Promise<T[]> {
   const result = await query;
   if (result.error) {
     if (tableMissing(result.error)) {
-      warnings.push(`${label} unavailable: ${result.error.message}`);
+      if (!options.optional) warnings.push(`${label} unavailable: ${result.error.message}`);
       return [];
     }
     throw new Error(result.error.message);
@@ -304,6 +400,49 @@ function trainingSampleToEvidence(sample: TrainingSampleRow): DtcCorpusEvidenceI
     successfulWriteReadback: bool(metadata.successful_write_readback),
     rollbackVerified: bool(metadata.rollback_verified),
     conflictNotes: stringArray(metadata.conflicts),
+  };
+}
+
+function readinessImportToEvidence(row: ReadinessImportRow): DtcCorpusEvidenceItem {
+  return {
+    id: `readiness_import:${row.import_batch_id}:${row.record_id}`,
+    sourceKind: row.source_kind === "manual_lab_import" ? "knowledge_profile" : row.source_kind || "knowledge_profile",
+    ecuSupplier: row.ecu_supplier,
+    ecuFamily: row.ecu_family,
+    ecuType: row.ecu_type,
+    hwNumber: row.hw_number,
+    swNumber: row.sw_number,
+    calibrationId: row.calibration_id,
+    representationType: row.representation_type,
+    fileRole: normalizeFileRole(row.file_role),
+    fileSize: numeric(row.file_size),
+    segmentManifestDigest: row.segment_manifest_digest,
+    readMethod: row.read_method,
+    sourceProvenance: row.source_provenance,
+    sourceAuthorizationQuality: row.source_authorization_quality,
+    originalHash: row.original_hash,
+    modHash: row.mod_hash,
+    exactDtcLabels: Array.isArray(row.exact_dtc_labels) ? row.exact_dtc_labels : [],
+    serviceLabels: Array.isArray(row.service_labels) ? row.service_labels : [],
+    humanVerified: row.human_verified === true,
+    learningApproved: row.learning_approved === true,
+    pairConfidence: numeric(row.pair_confidence),
+    pairReviewStatus: row.pair_review_status,
+    pairIdentityConsistent: row.pair_identity_consistent !== false,
+    changedRegionSignature: row.changed_region_signature,
+    changedRegionConsistency: row.changed_region_consistency,
+    unrelatedChange: row.unrelated_change === true,
+    checksumOnlyControl: row.checksum_only_control === true,
+    alreadyModifiedNegative: row.already_modified_negative === true,
+    wrongPairNegative: row.wrong_pair_negative === true,
+    preIntegrityAvailable: row.pre_integrity_available === true,
+    finalModAvailable: row.final_mod_available === true,
+    mapDefinitionAvailable: row.map_definition_available === true,
+    integrityEvidenceAvailable: row.integrity_evidence_available === true,
+    benchVerified: row.bench_verified === true,
+    successfulWriteReadback: row.successful_write_readback === true,
+    rollbackVerified: row.rollback_verified === true,
+    conflictNotes: Array.isArray(row.conflict_notes) ? row.conflict_notes : [],
   };
 }
 

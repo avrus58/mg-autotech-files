@@ -2141,3 +2141,19 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 - Calistirilan kontroller: targeted `npx tsx --test tests/dtc-active-corpus-readiness.test.ts` PASS (9/9); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (410/410); `npm run build` PASS; `node scripts/check-payment-env.js --schema-only` PASS; `npm audit --omit=dev --audit-level=high` PASS; `git diff --check` PASS (yalniz CRLF warning).
 - DATABASE_VERIFIED: Bu gorevde yeni SQL/migration yok; local/prod DB mutation yok. Phase A/B/C/C.1 verification status korunur.
 - Phase D customer processing: baslatilmadi.
+
+## 2026-07-15 DTC readiness metadata export/import bridge
+
+- Gorev: Corpus-readiness engine icin metadata-only export/import bridge eklemek; production'a baglanmadan manual Supabase Dashboard export + local disposable import akisini hazirlamak.
+- Export SQL: `scripts/export-dtc-corpus-readiness-metadata.sql` eklendi. Script SELECT-only; firmware bytes/raw hex/customer identity/notes/payment/credentials/storage path/signed URL/source URL/private provider metadata export etmez.
+- Local setup SQL: `scripts/setup-dtc-readiness-import-local.sql` eklendi. Sadece disposable local Supabase icin additive `public.dtc_readiness_import_records` staging table'i, RLS, anon/authenticated revoke ve service_role select/insert grant'i icerir.
+- Importer: `scripts/import-dtc-readiness-metadata.mjs` ve `scripts/lib/dtc-readiness-import.mjs` eklendi. Import dosyasini yalniz `.local/dtc-readiness-import/` altinda kabul eder; accepted/quarantine/audit/local-load SQL ciktilarini ayni kok altina yazar.
+- Git ignore: `.local/dtc-readiness-import/` eklendi. Testte olusan synthetic lokal import dosyalari Git'e girmez.
+- Loader entegrasyonu: `src/lib/dtcActive/corpusReadinessData.ts`, optional `dtc_readiness_import_records` staging tablosunu okur; tablo yoksa sessizce 0 sayar ve production davranisini bozmaz.
+- Validation: Strict allowlist disi alan, malformed hash/label, missing exact identity, target disi ECU, weak/unknown authorization, ambiguous file role, inconsistent pair, unrelated change, already-modified/wrong-pair negative ve conflict-note bearing records quarantine edilir.
+- Dokuman: `docs/dtc-readiness-export-import-bridge.md` manual Supabase Dashboard SELECT-only export, local import, quarantine/audit, local DB load ve cleanup akisini anlatir.
+- Testler: `tests/dtc-readiness-import-bridge.test.ts` export SQL SELECT-only/exclusion, local setup RLS/additive, path guard, synthetic JSON/CSV import, quarantine/audit/local SQL output davranisini kapsar.
+- Calistirilan kontroller: targeted `npx tsx --test tests/dtc-readiness-import-bridge.test.ts tests/dtc-active-corpus-readiness.test.ts` PASS (13/13); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (414/414); `npm run build` PASS; `node scripts/check-payment-env.js --schema-only` PASS; `npm audit --omit=dev --audit-level=high` PASS; `git diff --check` PASS (yalniz CRLF warning).
+- Production Supabase: baglanilmadi, SQL calistirilmadi, migration uygulanmadi.
+- Real metadata: commitlenmedi; sadece synthetic test verisi `.local` ignore altinda olustu.
+- Firmware/MOD: firmware modified yok; MOD output yok; real ECU rule/checksum adapter yok; A3/A4/A5/customer delivery yok.

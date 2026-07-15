@@ -56,3 +56,6 @@ next-env.d.ts
 
 # local-only DTC synthetic test artifacts
 .local/dtc-test-artifacts/
+
+# local-only DTC readiness metadata imports
+.local/dtc-readiness-import/
