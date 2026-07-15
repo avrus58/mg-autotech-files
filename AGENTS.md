@@ -82,3 +82,30 @@
 - Büyük fikirleri .autopilot/FEATURE_PROPOSALS.md içine yaz.
 - Product scorecard yalnız gerçek kanıtla güncellenir.
 - Production deploy, canlı migration, secret, gerçek müşteri verisi, fiyat ve hukuki iddia owner onayı olmadan yasaktır.
+
+## Explicit isolated staging release exception
+
+Only when the repository owner explicitly names the production project ref,
+isolated staging project ref, staging Git branch, and release commit, Codex may:
+
+- read the production database only through schema-only dump operations or
+  SELECT-only access to pg_catalog, information_schema, policy, function,
+  trigger, grant, extension, and migration-history metadata;
+- never read or export application rows, auth users, storage objects,
+  customer/order/payment data, firmware metadata, paths, credentials, or PII;
+- apply a reviewed schema-only baseline and additive migrations only to the
+  explicitly named isolated staging project after proving that its ref differs
+  from production and that it is bootstrap-safe;
+- use staging-only credentials in memory to configure branch-scoped Vercel
+  Preview variables, without printing, persisting, or committing their values;
+- create focused staging commits, push only the explicitly named staging branch,
+  and deploy only a Vercel Preview without --prod or promotion.
+
+This exception never permits production database mutation, production
+migration, production environment changes, production deployment, production
+branch merge, production data export, customer-data copying, real ECU
+processing, firmware/MOD generation, A3/A4/A5, real integrity adapters, or
+customer automatic delivery.
+
+Stop immediately if any target identity, credential scope, dump content, or
+environment scope is ambiguous.
