@@ -1162,24 +1162,31 @@ test("homepage has a focused ECU and TCU file service search-intent section", ()
     homepage.match(/function HomepageFileServiceCorePanel\(\)[\s\S]*?export default function HomePage/)?.[0] ?? "";
 
   assert.match(homepage, /const fileServiceSearchPillars = \[/);
-  assert.match(homepage, /const fileServiceRequestChecklist = \[/);
-  assert.match(fileServiceSection, /Professional ECU & TCU file service for workshops/);
-  assert.match(fileServiceSection, /ECU\s+file service, TCU file service, Stage 1 requests/);
-  assert.match(pillarSource, /title: "ECU File Service"/);
-  assert.match(pillarSource, /title: "TCU File Service"/);
-  assert.match(pillarSource, /title: "Stage 1 File Service"/);
-  assert.match(pillarSource, /title: "DPF \/ EGR \/ AdBlue \/ DTC File Requests"/);
+  assert.doesNotMatch(homepage, /const fileServiceRequestChecklist = \[/);
+  assert.match(fileServiceSection, /File-service routes/);
+  assert.match(fileServiceSection, /Choose the right request path\./);
+  assert.match(fileServiceSection, /Start with the closest route/);
+  assert.match(pillarSource, /title: "ECU"/);
+  assert.match(pillarSource, /title: "TCU"/);
+  assert.match(pillarSource, /title: "Stage 1"/);
+  assert.match(pillarSource, /title: "DTC \/ Diesel"/);
+  assert.match(pillarSource, /Engine-control files with vehicle context and workshop notes/);
+  assert.match(pillarSource, /Gearbox controller context, read method and request notes/);
+  assert.match(pillarSource, /Performance request preparation before secure submission/);
+  assert.match(pillarSource, /Diagnostic and aftertreatment context for human review/);
   assert.match(pillarSource, /href: "\/file-service"/);
   assert.match(pillarSource, /href: "\/ecu-platforms\/transmission-control-units"/);
   assert.match(pillarSource, /href: "\/services\/stage-1"/);
   assert.match(pillarSource, /href: "\/services\/dpf-off"/);
-  assert.match(fileServiceSection, /Create file request/);
+  assert.match(fileServiceSection, /New request/);
   assert.match(fileServiceSection, /Open file service hub/);
   assert.match(fileServiceSection, /href="\/file-service"/);
-  assert.match(fileServiceSection, /What makes a clean file-service request\?/);
-  assert.match(fileServiceSection, /Build request brief/);
-  assert.match(fileServiceSection, /No homepage section reads, uploads, modifies or generates\s+customer files/);
-  assert.match(pillarSource, /Complex or unclear files stay human-reviewed before delivery/);
+  assert.match(fileServiceSection, /Secure request boundary/);
+  assert.match(fileServiceSection, /uploads, credits and delivery stay inside the customer portal/);
+  assert.match(fileServiceSection, /Prepare a request brief/);
+  assert.doesNotMatch(fileServiceSection, /Professional ECU & TCU file service for workshops/);
+  assert.doesNotMatch(fileServiceSection, /What makes a clean file-service request\?/);
+  assert.doesNotMatch(fileServiceSection, /Compact checklist, same customer-safe preparation logic/);
   assert.doesNotMatch(
     pillarSource + fileServiceSection,
     /type="file"|upload-session|api\/admin|fetch\(|createObjectURL|FileReader|generateMod|bytePatch|writeFile|checksum|storage_path|signed_url|service_role|SUPABASE_SERVICE_ROLE_KEY|admin_note|internal_note|customer_email|source_reference|confidence_score|sample_id|raw|hex/i
@@ -1548,7 +1555,7 @@ test("homepage file service platform stack shows public workflow capabilities sa
 test("homepage read method route finder guides file-service preparation safely", () => {
   const homepage = readProjectFile("src", "app", "page.tsx");
   const readMethodSource =
-    homepage.match(/const fileServiceReadMethodRoutes = \[[\s\S]*?const fileServiceRequestChecklist = \[/)?.[0] ?? "";
+    homepage.match(/const fileServiceReadMethodRoutes = \[[\s\S]*?const fileServiceBriefRequirements = \[/)?.[0] ?? "";
   const readMethodSection = readHomepageCompactResourceSection(homepage, "file-service-read-methods");
 
   assert.match(homepage, /const fileServiceReadMethodRoutes = \[/);
@@ -1705,7 +1712,7 @@ test("homepage file service status guide explains tracking states without privat
 test("homepage secure file service privacy controls explain public and private boundaries", () => {
   const homepage = readProjectFile("src", "app", "page.tsx");
   const privacySource =
-    homepage.match(/const fileServicePrivacyControls = \[[\s\S]*?const fileServiceRequestChecklist = \[/)?.[0] ?? "";
+    homepage.match(/const fileServicePrivacyControls = \[[\s\S]*?const fileServiceUseCases = \[/)?.[0] ?? "";
   const privacySection = readHomepageCompactResourceSection(homepage, "file-service-privacy-controls");
 
   assert.match(homepage, /const fileServicePrivacyControls = \[/);

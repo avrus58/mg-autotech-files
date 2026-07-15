@@ -829,36 +829,36 @@ const ecuPlatformLinks = [
 
 const fileServiceSearchPillars = [
   {
-    title: "ECU File Service",
-    text: "Secure original-file intake, vehicle context, service selection and dashboard delivery for ECU file requests.",
+    title: "ECU",
+    text: "Engine-control files with vehicle context and workshop notes.",
     href: "/file-service",
-    action: "Open file service hub",
+    action: "Open hub",
     icon: Cpu,
-    intent: "ECU file service",
+    intent: "Original ECU file route",
   },
   {
-    title: "TCU File Service",
-    text: "Gearbox and transmission-controller requests stay structured with TCU details, read method and notes.",
+    title: "TCU",
+    text: "Gearbox controller context, read method and request notes.",
     href: "/ecu-platforms/transmission-control-units",
     action: "Open TCU guide",
     icon: FileCode2,
-    intent: "TCU file service",
+    intent: "Transmission file route",
   },
   {
-    title: "Stage 1 File Service",
-    text: "Performance requests are prepared with vehicle data, engine details and the original ECU/TCU file context.",
+    title: "Stage 1",
+    text: "Performance request preparation before secure submission.",
     href: "/services/stage-1",
     action: "View Stage 1",
     icon: Gauge,
-    intent: "Stage 1 file service",
+    intent: "Performance request route",
   },
   {
-    title: "DPF / EGR / AdBlue / DTC File Requests",
-    text: "Technical request categories are separated clearly so the selected service, notes and evidence are review-ready.",
+    title: "DTC / Diesel",
+    text: "Diagnostic and aftertreatment context for human review.",
     href: "/services/dpf-off",
-    action: "View diesel services",
+    action: "View route",
     icon: Wrench,
-    intent: "aftertreatment and DTC file requests",
+    intent: "Technical request route",
   },
 ];
 
@@ -1252,13 +1252,6 @@ const fileServicePrivacyControls = [
     tag: "Support",
     icon: BadgeCheck,
   },
-];
-
-const fileServiceRequestChecklist = [
-  "Vehicle, engine and ECU/TCU details are collected before upload.",
-  "Service category and customer notes stay attached to the request.",
-  "Credits and access are verified by the secure customer portal.",
-  "Complex or unclear files stay human-reviewed before delivery.",
 ];
 
 const fileServiceUseCases = [
@@ -3551,26 +3544,59 @@ function PublicVehicleChecker() {
 
 function HomepageFileServiceCorePanel() {
   return (
-    <AnimatedSection id="file-service" className="bg-[#050607] py-12 text-white">
-      <div className="mx-auto grid max-w-7xl gap-6 px-4 lg:grid-cols-[0.86fr_1.14fr] lg:items-start">
-        <div className="rounded-[1.5rem] border border-red-950/60 bg-gradient-to-br from-red-950/25 via-zinc-950 to-black p-6 shadow-2xl shadow-black/30">
-          <div className="text-xs font-black uppercase tracking-[0.22em] text-red-200">
-            ECU / TCU File Service
+    <AnimatedSection id="file-service" className="bg-[#050607] py-8 text-white">
+      <div className="mx-auto max-w-7xl px-4">
+        <div className="rounded-[1.35rem] border border-white/10 bg-gradient-to-br from-red-950/20 via-zinc-950 to-black p-5 shadow-2xl shadow-black/25">
+          <div className="grid gap-5 lg:grid-cols-[0.8fr_1.2fr] lg:items-center">
+            <div>
+              <div className="text-[0.72rem] font-black uppercase tracking-[0.22em] text-red-200">
+                File-service routes
+              </div>
+              <h2 className="mt-2 text-2xl font-black leading-tight md:text-3xl">
+                Choose the right request path.
+              </h2>
+              <p className="mt-3 max-w-xl text-sm leading-6 text-zinc-300">
+                Start with the closest route, then continue in the secure
+                portal with vehicle details, notes and upload.
+              </p>
+            </div>
+            <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+              {fileServiceSearchPillars.map((pillar) => {
+                const Icon = pillar.icon;
+
+                return (
+                  <Link
+                    key={pillar.title}
+                    href={pillar.href}
+                    className="group rounded-2xl border border-white/10 bg-white/[0.035] p-3 transition hover:border-red-500/35 hover:bg-white/[0.07] focus:outline-none focus-visible:ring-2 focus-visible:ring-red-700"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="grid h-8 w-8 place-items-center rounded-xl bg-red-950/45 text-red-200">
+                        <Icon className="h-4 w-4" />
+                      </span>
+                      <span className="text-sm font-black text-white">
+                        {pillar.title}
+                      </span>
+                    </div>
+                    <p className="mt-2 min-h-10 text-xs leading-5 text-zinc-400">
+                      {pillar.text}
+                    </p>
+                    <span className="mt-2 inline-flex items-center text-xs font-black text-red-200">
+                      {pillar.action}
+                      <ArrowRight className="ml-1 h-3.5 w-3.5 transition group-hover:translate-x-0.5" />
+                    </span>
+                  </Link>
+                );
+              })}
+            </div>
           </div>
-          <h2 className="mt-3 text-3xl font-black leading-tight md:text-4xl">
-            Professional ECU & TCU file service for workshops
-          </h2>
-          <p className="mt-4 text-sm leading-7 text-zinc-300">
-            ECU file service, TCU file service, Stage 1 requests and diesel
-            technical request paths stay visible here without turning the
-            homepage into a long encyclopedia.
-          </p>
-          <div className="mt-5 flex flex-wrap gap-3">
+
+          <div className="mt-5 flex flex-wrap items-center gap-3 border-t border-white/10 pt-4">
             <Link
               href="/new-request"
               className="inline-flex items-center rounded-xl bg-red-700 px-4 py-3 text-sm font-black text-white transition hover:bg-red-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-700"
             >
-              Create file request
+              New request
               <ArrowRight className="ml-2 h-4 w-4" />
             </Link>
             <Link
@@ -3580,55 +3606,18 @@ function HomepageFileServiceCorePanel() {
               Open file service hub
               <ArrowRight className="ml-2 h-4 w-4" />
             </Link>
-          </div>
-          <div className="mt-5 grid gap-2 sm:grid-cols-2">
-            {fileServiceSearchPillars.map((pillar) => (
-              <Link
-                key={pillar.title}
-                href={pillar.href}
-                className="rounded-2xl border border-white/10 bg-black/20 p-3 text-sm transition hover:bg-white/[0.06] focus:outline-none focus-visible:ring-2 focus-visible:ring-red-700"
-              >
-                <span className="block font-black text-white">
-                  {pillar.title}
-                </span>
-                <span className="mt-1 block leading-5 text-zinc-400">
-                  {pillar.intent}
-                </span>
-              </Link>
-            ))}
-          </div>
-        </div>
-
-        <div className="rounded-[1.5rem] border border-white/10 bg-white/[0.045] p-5">
-          <div className="mb-4 flex items-center justify-between gap-4">
-            <div>
-              <div className="text-xs font-black uppercase tracking-[0.18em] text-red-200">
-                What makes a clean file-service request?
-              </div>
-              <p className="mt-2 text-sm leading-6 text-zinc-400">
-                Compact checklist, same customer-safe preparation logic.
-              </p>
+            <div className="flex min-w-0 flex-1 items-center gap-2 rounded-xl border border-emerald-500/20 bg-emerald-950/15 px-4 py-3 text-xs leading-5 text-emerald-100">
+              <BadgeCheck className="h-4 w-4 shrink-0 text-emerald-300" />
+              <span>
+                <span className="font-black">Secure request boundary:</span>{" "}
+                uploads, credits and delivery stay inside the customer portal.
+              </span>
             </div>
-            <BadgeCheck className="h-6 w-6 shrink-0 text-red-300" />
-          </div>
-          <div className="grid gap-3 md:grid-cols-2">
-            {fileServiceRequestChecklist.map((item) => (
-              <div
-                key={item}
-                className="rounded-2xl border border-white/10 bg-black/25 p-4 text-sm leading-6 text-zinc-300"
-              >
-                {item}
-              </div>
-            ))}
-          </div>
-          <div className="mt-4 rounded-2xl border border-emerald-500/20 bg-emerald-950/20 p-4 text-sm leading-6 text-emerald-100">
-            <span className="font-black">Safety boundary:</span> No homepage section reads, uploads, modifies or generates
-            customer files.
             <Link
               href="/tools/request-brief-builder"
-              className="ml-2 inline-flex font-black text-emerald-50 underline decoration-emerald-300/50 underline-offset-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-700"
+              className="inline-flex rounded-xl border border-white/10 bg-white/[0.035] px-4 py-3 text-sm font-black text-white transition hover:bg-white/[0.08] focus:outline-none focus-visible:ring-2 focus-visible:ring-red-700"
             >
-              Build request brief
+              Prepare a request brief
             </Link>
           </div>
         </div>
