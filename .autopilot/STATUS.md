@@ -2,6 +2,22 @@
 
 Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
+## 2026-07-16 manual run Production Release Dry Run and Owner Approval Package
+
+- Baslangic/bitis: 2026-07-16, completed.
+- Gorev: Production mutation yapmadan final staging release verification, schema/catalog-only production comparison, valuesiz Production env-name inventory ve owner go/no-go/runbook/rollback paketi.
+- Hedef: Release branch `staging/ecu-intelligence-v1`, final handoff SHA `04b899df85f4ef5bb279cb11083974c70b82a8c8`, isolated staging `vxdxdvtsopsjatukdbuq`, read-only production metadata source `jujaeyvyaeesmipihrrw` ve Vercel Production env names/scope only.
+- Guvenlik: Production migration/env/deploy/promotion/merge yok; production application row/auth/storage/customer/payment/firmware/PII read yok; secret values okunmaz veya yazdirilmaz; real ECU/MOD/Stage/DTC/checksum/adapter/A3-A5/customer delivery, auto approval ve historical backfill yok.
+- Beklenen cikti: `docs/ecu-intelligence-center/` altinda production release plan, env matrix, migration plan, smoke tests, rollback ve owner go/no-go belgeleri; candidate capture yalniz `allowed_not_granted`, approval false, history not granted ve DTC kill switch engaged.
+- Staging re-verification: Branch ve origin `04b899df85f4ef5bb279cb11083974c70b82a8c8` match; Git-linked Preview `dpl_9dSqiXFaG5xzmGBMpvb8GYyHvHVx` target Preview/READY; current root `200`, anonymous corpus `401`, authorization config unavailable/null/default null. Staging `ACTIVE_HEALTHY`; 7 applied migration; exact 95 public/private + auth users + storage objects audit 97 relation/0 row/0 nonempty/0 temporary policy.
+- Schema comparison: Production `ACTIVE_HEALTHY`; current production history only 3 pre-existing migration. Production and staging base public schema exact 75 table/1120 column/digest `519517a0c008ccd5357376016588debe`; production'da 20 release table absent. Required dependencies and extensions present; production application row okunmadi.
+- Migration sonucu: Baseline ve managed overlay production'da already represented; fake DTC baseline local-test-only; Phase C/C.1 staging-only; Phase A + Learning candidates + hardening exact hash/order ile 3-file additive maintenance-window allowlist. Expected production end-state 14 table, 49 index, 87 constraint, 4 private trigger, 7 final policy, 1 private schema ve 1 private function.
+- Env dry run: Production'da mevcut Supabase/site/email/payment/widget adlari valuesiz ve scope-only goruldu. 21 release control adinin henuz Production'da olmadigi dogrulandi; owner matrix file/pair true, approval/backfill/capture false, terms absent, read-only DTC true, all processing/delivery false ve global kill switch true olarak hazirlandi. Hicbir value okunmadi veya degistirilmedi.
+- Advisors: Release-specific yeni WARN/ERROR yok. 13 private DTC no-policy INFO intentional deny-by-default; release tablelarda 11 unindexed-FK INFO ve 15 empty-staging unused-index INFO kaydi dokumante edildi. 47 inherited schema security ve 63 inherited performance WARN degismedi; production leaked-password-protection project warning owner acknowledgement olarak kaydedildi.
+- Dokumanlar: `PRODUCTION_RELEASE_PLAN.md`, `PRODUCTION_ENV_MATRIX.md`, `PRODUCTION_MIGRATION_PLAN.md`, `PRODUCTION_SMOKE_TESTS.md`, `PRODUCTION_ROLLBACK.md`, `OWNER_GO_NO_GO.md`. Authorization config/db/web/desktop/admin/revocation/history ve legal/implementation blocker'lari mevcut davranisa gore yazildi; legal wording uydurulmadi.
+- Dogrulama: `npm run lint` PASS (0 error; untracked `.autopilot/runtime/prepared-staging-e2e.mjs` icinde 1 existing unused-var warning); `npm run typecheck` PASS; `npm test` PASS 447/447; `npm run build` PASS 267 static pages; payment schema-only PASS/no env read; `npm audit --omit=dev --audit-level=high` PASS 0 vulnerabilities; sensitive-value scan ve diff review PASS.
+- Sonuc: Owner-run predeploy/database/env/Git-linked production deployment/post-smoke/60-minute + 24-hour monitoring runbook'u ve flags-first/no-record-deletion rollback agaci hazir. Production'da hicbir degisiklik yapilmadi. `PRODUCTION_GO_RECOMMENDATION: YES` yalniz hazirlik tavsiyesidir; explicit owner approvali olmadan deploy yetkisi vermez.
+
 ## 2026-07-16 manual run Production Readiness Hardening
 
 - Baslangic/bitis: 2026-07-16, completed.

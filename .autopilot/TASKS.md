@@ -50,6 +50,20 @@ Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
 
+### MANUAL-20260716-PRODUCTION-RELEASE-DRY-RUN [P0] Production release dry run and owner approval package
+
+Durum: Done
+
+Fingerprint: `release|production-dry-run-owner-package|schema-env-runbook-rollback-go-no-go`
+
+Kapsam: Final isolated staging release'i yeniden dogrulandi; production Supabase yalniz schema/catalog/migration metadata ile staging ve beklenen migration setine karsilastirildi; Production Vercel environment variable ad/scope bilgisi valuesiz incelendi; migration/env/smoke/rollback/runbook ve owner go/no-go belgeleri hazirlandi.
+
+Sonuc: Production base public catalog staging ile exact 75-table/1120-column/digest match; 20 release table production'da absent. Production icin baseline/overlay represented, fake local-only, Phase C/C.1 staging-only ve exact uc additive migration allowlist'i ayrildi. Existing Production env names valuesiz kaydedildi; 21 release controlu icin Production-only matrix hazirlandi. Candidate capture `not_granted`/pending, approval/backfill/authorization capture false ve DTC kill switch true. Owner checklist/revocation blocker/monitoring/flags-first rollback tamamlandi. `PRODUCTION_GO_RECOMMENDATION: YES`; bu deploy yetkisi degildir.
+
+Guvenlik siniri: Production mutation, migration, env degisikligi, deploy, promotion veya merge olmadi. Production application row/auth user/storage object/musteri/odeme/firmware/PII okunmadi; secret/value yazdirilmadi. Gercek ECU/MOD/Stage/DTC/checksum/adapter/A3-A5/customer automatic delivery, auto approval ve historical backfill yok.
+
+Dogrulama: Staging ref/Preview/current anonymous runtime probes, exact-empty 97-relation audit, catalog/RLS/policy/grant/default/migration comparison ve Supabase advisors PASS. `npm run lint` PASS (0 error, untracked runtime helper'da 1 warning); `npm run typecheck` PASS; `npm test` PASS (447/447); `npm run build` PASS (267 static pages); payment schema-only PASS; production dependency audit PASS (0 vulnerabilities); sensitive-value scan ve diff review PASS.
+
 ### MANUAL-20260716-PRODUCTION-READINESS-HARDENING [P0] ECU Intelligence production-readiness hardening
 
 Durum: Done
