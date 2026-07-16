@@ -39,6 +39,7 @@ test("managed overlays contain only the application auth trigger and storage pol
 
 test("staging bootstrap guard is ref-locked and excludes the local fake baseline", () => {
   const script = read("scripts/bootstrap-isolated-staging.mjs");
+  const vercelIgnore = read(".vercelignore");
 
   assert.match(script, new RegExp(`PRODUCTION_REF = "${productionRef}"`));
   assert.match(script, new RegExp(`STAGING_REF = "${stagingRef}"`));
@@ -50,6 +51,7 @@ test("staging bootstrap guard is ref-locked and excludes the local fake baseline
   assert.match(script, /MG_BOOTSTRAP_VERIFY=true/);
   assert.match(script, /credentialsPersisted: false/);
   assert.doesNotMatch(script, /dotenv|\.env\.local|\.env"|\.env'/);
+  assert.match(vercelIgnore, /^\/\.local\/$/m);
 });
 
 test("staging migrations keep learning authorization and DTC runtime defaults closed", () => {
