@@ -6,16 +6,6 @@
 
 ## In Progress
 
-### MANUAL-20260716-STAGING-ECU-INTELLIGENCE-V1 [P0] Isolated staging release
-
-Durum: In Progress
-
-Fingerprint: `release|isolated-staging|ecu-intelligence-v1-learning-flywheel|schema-only-bootstrap-preview-smoke`
-
-Kapsam: Owner tarafindan adlari verilen production/staging Supabase refleri, staging branch ve release/policy commitleriyle schema-only production inventory, local reconstruction, isolated staging bootstrap, branch-scoped Vercel Preview configuration, staging-only push/deploy ve smoke verification.
-
-Guvenlik siniri: Production mutation/deploy/veri exportu yok; production application row, auth user veya storage object okunmaz; local fake DTC baseline remote'a uygulanmaz; gercek firmware/MOD/checksum/A3-A5/customer delivery yok.
-
 ## Blocked
 
 ## Later
@@ -59,6 +49,20 @@ Remediation: Batch with a future documentation/source-comment maintenance pass a
 Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
+
+### MANUAL-20260716-STAGING-ECU-INTELLIGENCE-V1 [P0] Isolated staging release
+
+Durum: Done
+
+Fingerprint: `release|isolated-staging|ecu-intelligence-v1-learning-flywheel|schema-only-bootstrap-preview-smoke`
+
+Kapsam: Owner tarafindan adlari verilen production/staging Supabase refleri, staging branch ve release/policy commitleriyle schema-only production inventory, local reconstruction, isolated staging bootstrap, branch-scoped Vercel Preview configuration, staging-only push/deploy ve smoke verification.
+
+Sonuc: Production catalog metadata-only inventory ile ref-locked schema bootstrap paketi olusturuldu; disposable local PG17 reconstruction ve existing DB verifiers gecti; yalniz `vxdxdvtsopsjatukdbuq` staging projesi bootstrap edildi; 19 branch-scoped Preview variable configure edildi; yalniz `staging/ecu-intelligence-v1` push edildi; Git-linked Vercel Preview READY oldu; 29 maddelik staging smoke matrisi gecti. Synthetic smoke fixture/accountlari temizlendi ve 95 application/private/auth-user/storage-object table icin exact final row total `0` dogrulandi.
+
+Guvenlik siniri: Production mutation/deploy/veri exportu olmadi; production application row, auth user veya storage object okunmadi; local fake DTC baseline remote'a uygulanmadi; gercek firmware/MOD/checksum/A3-A5/customer delivery calismadi; historical backfill calistirilmadi; learning authorization `not_granted` ve approval gate fail-closed kaldi.
+
+Dogrulama: `npm run lint`, `npm run typecheck`, `npm test` (438/438), `npm run build` (267 static pages), payment schema-only check, production dependency audit, diff check, local reconstruction/verifiers, staging catalog/RLS/grant probes, Vercel Preview browser/API smoke ve post-smoke exact-empty audit PASS.
 
 ### AUTO-083 [P1] Homepage file-service platform stack eklensin
 
