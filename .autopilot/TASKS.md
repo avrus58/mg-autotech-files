@@ -6,16 +6,6 @@
 
 ## In Progress
 
-### MANUAL-20260716-PRODUCTION-READINESS-HARDENING [P0] ECU Intelligence production-readiness hardening
-
-Durum: In Progress
-
-Fingerprint: `release|production-readiness-hardening|learning-flywheel-flags-recovery-authorization-rls-observability-delivery-e2e`
-
-Kapsam: Yalniz `staging/ecu-intelligence-v1` uzerinde fail-closed Learning Flywheel flaglari, durable retry/audit recovery, versioned authorization capture infrastructure, DTC RLS warning remediation, staff-only observability, staging-safe complete-delivery E2E, versioned release policy, isolated staging migration ve Preview redeployment.
-
-Guvenlik siniri: Production Supabase/Vercel/branch mutation yok; owner/legal wording uydurulmaz; real firmware/MOD/Stage/DTC/checksum/A3-A5/customer delivery yok; historical backfill otomatik calistirilmaz.
-
 ## Blocked
 
 ## Later
@@ -59,6 +49,20 @@ Remediation: Batch with a future documentation/source-comment maintenance pass a
 Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
+
+### MANUAL-20260716-PRODUCTION-READINESS-HARDENING [P0] ECU Intelligence production-readiness hardening
+
+Durum: Done
+
+Fingerprint: `release|production-readiness-hardening|learning-flywheel-flags-recovery-authorization-rls-observability-delivery-e2e`
+
+Kapsam: Yalniz `staging/ecu-intelligence-v1` uzerinde fail-closed Learning Flywheel flaglari, durable retry/audit recovery, versioned authorization capture infrastructure, DTC RLS warning remediation, staff-only observability, staging-safe complete-delivery E2E, versioned release policy, isolated staging migration ve Preview redeployment.
+
+Sonuc: File/pair capture independently enabled; approval/backfill/authorization capture disabled; durable idempotent jobs, bounded failure isolation, versioned explicit authorization, current-terms approval gate, staff metrics, safe delivery/email behavior ve release policy tamamlandi. Additive migration yalniz `vxdxdvtsopsjatukdbuq` staging'e uygulandi; DTC auth init-plan ve multiple-permissive policy WARN'leri equivalent customer-OR-staff policy ile giderildi. Git-linked Preview `dpl_7LRaSjFxwbnXeiyHv6ks6UJt911C` READY; previous smoke 29/29, hardening E2E 31/31 ve repository smoke 13/13 PASS. Synthetic fixtures temizlendi; final 97-table exact row total `0`.
+
+Guvenlik siniri: Production Supabase/Vercel/branch mutation veya production deploy yok; owner/legal wording uydurulmadi; real firmware/MOD/Stage/DTC/checksum/A3-A5/customer delivery yok; historical backfill calistirilmadi. Production release owner approvali, production-scoped migration/env/deploy review ve authorization capture/approval istenirse owner/legal terms wording gerektirir.
+
+Dogrulama: Local Supabase reset/reconstruction, all DTC/Learning/RLS SQL, DB lint, complete-delivery 31/31, `npm run lint`, `npm run typecheck`, `npm test` 447/447, `npm run build` 268 pages, payment schema-only, audit 0 vulnerability, diff check, staging catalog/advisors/RLS probes, Preview smoke/E2E ve exact-empty cleanup audit PASS.
 
 ### MANUAL-20260716-STAGING-ECU-INTELLIGENCE-V1 [P0] Isolated staging release
 
