@@ -2,6 +2,19 @@
 
 Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
+## 2026-07-16 manual run Isolated ECU Intelligence Staging Release
+
+- Baslangic/durum: 2026-07-16, In Progress.
+- Gorev: Owner tarafindan yetkilendirilen `staging/ecu-intelligence-v1` branch'i icin ECU Intelligence Center v1 + Learning Flywheel schema-only isolated staging release.
+- Production erisimi: `jujaeyvyaeesmipihrrw` yalniz authenticated Supabase connector uzerinden `pg_catalog`, `information_schema`, policy/function/trigger/grant/extension/publication ve migration-history metadata SELECT sorgulariyla okundu. Application row, auth user, storage object, customer/order/payment/firmware/PII/path/credential okunmadi veya export edilmedi; production mutation yapilmadi.
+- Bootstrap paketi: `supabase/bootstrap/mg_autotech_schema_baseline.sql`, `managed_schema_overlays.sql`, preflight/verify SQL, README, ref-locked `scripts/bootstrap-isolated-staging.mjs` ve `tests/staging-bootstrap.test.ts` eklendi. Final baseline SHA-256 `0539BE5200B97859B74790A21EE7E8EE7203B3F6660B9060B5148C8D6A21DEE7`; final overlay SHA-256 `4654F13BC6095119E78F96408F864DA2DF7E932FD2FAF51F10BBC2A7F665C2B1`. Staging'e uygulanan reviewed payload ile final dosyalar arasindaki tek fark EOF bos satir normalization'idir; SQL statementlari aynidir. Sensitive-content scan PASS.
+- Local reconstruction: Fresh disposable Supabase PG17 ortaminda baseline, managed overlay ve dort additive migration sirayla PASS. `MG_BOOTSTRAP_VERIFY=true`; public table/RLS `80/80`, private DTC table/RLS `13/13`, public policy `106`, storage policy `11`, learning `not_granted` default `2`, closed DTC default `5`, `bytea` column `0`, auth trigger `1`. Exact application/auth/storage row count `0`. Supabase db lint/advisors error-level PASS. Existing DB verification scripts PASS; Phase A verifier production `orders.customer_id` semasini da destekleyecek sekilde genisletildi ve rollback PASS.
+- Isolated staging: Hedef `vxdxdvtsopsjatukdbuq` ACTIVE_HEALTHY ve production refinden farkli. Empty/bootstrap-safe preflight PASS. Applied migration history: `20260715225909 schema_baseline_20260716`, `20260715225927 managed_schema_overlays_20260716`, `20260715225944 dtc_active_processing_phase_a_20260714204125`, `20260715225946 dtc_active_processing_phase_c_synthetic_20260714212824`, `20260715225947 dtc_phase_c1_durable_synthetic_artifacts_20260714220848`, `20260715225948 learning_flywheel_candidates_20260715195048`. Remote fake baseline uygulanmadi. Staging exact row count `0`; RLS/anon/customer probes PASS; security advisor ERROR `0` ve production'a gore yeni security WARN `0`.
+- Vercel: Exact project `avrus58s-projects/mg-autotech-files` Git remote ile eslesti ve local link olusturuldu. Branch-scoped env yazimi remote branch henuz bulunmadigi icin Vercel tarafindan reddedildi; credential veya env mutation olusmadi. Focused commit/push sonrasi yalniz branch Preview override ve Preview deploy yapilacak.
+- Calistirilan kontroller: `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (438/438); `npm run build` PASS (267 static pages); `node scripts/check-payment-env.js --schema-only` PASS; `npm audit --omit=dev --audit-level=high` PASS (0 vulnerabilities); `git diff --check` PASS; local Supabase lint/advisors PASS.
+- Guvenlik durumu: DTC global kill switch ve A3/A4/A5/real rules/real adapters/customer delivery fail-closed kalacak. Gercek firmware islenmedi, MOD uretilmedi, historical backfill calistirilmadi, production deploy veya production env degisikligi yapilmadi.
+- Kalan is/risk: Authorized staging branch'i push et, branch-specific Preview vars configure et, Preview deploy et ve staging-only smoke matrisini calistir. Production'a gecis bu gorevin kapsami disinda ve bloklu kalir.
+
 ## 2026-07-14 manual run Homepage Hero Fit and Dark Surface Polish
 
 - Baslangic/bitis: 2026-07-14 17:55 - 18:02 +01:00.

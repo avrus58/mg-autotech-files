@@ -6,6 +6,16 @@
 
 ## In Progress
 
+### MANUAL-20260716-STAGING-ECU-INTELLIGENCE-V1 [P0] Isolated staging release
+
+Durum: In Progress
+
+Fingerprint: `release|isolated-staging|ecu-intelligence-v1-learning-flywheel|schema-only-bootstrap-preview-smoke`
+
+Kapsam: Owner tarafindan adlari verilen production/staging Supabase refleri, staging branch ve release/policy commitleriyle schema-only production inventory, local reconstruction, isolated staging bootstrap, branch-scoped Vercel Preview configuration, staging-only push/deploy ve smoke verification.
+
+Guvenlik siniri: Production mutation/deploy/veri exportu yok; production application row, auth user veya storage object okunmaz; local fake DTC baseline remote'a uygulanmaz; gercek firmware/MOD/checksum/A3-A5/customer delivery yok.
+
 ## Blocked
 
 ## Later

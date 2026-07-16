@@ -1,8 +1,7 @@
 -- Read/assert local verification for scripts/add-dtc-active-processing-phase-a.sql.
 --
--- Run only against a disposable local Supabase database after applying:
--- 1. supabase/migrations/20260714132000_dtc_phase_a_test_baseline.sql
--- 2. scripts/add-dtc-active-processing-phase-a.sql
+-- Run only against a disposable local Supabase database after applying Phase A to
+-- either the local-only test baseline or the production-derived schema baseline.
 
 begin;
 
@@ -143,10 +142,38 @@ insert into auth.users (
   )
 on conflict (id) do nothing;
 
-insert into public.orders (id, user_id) values
-  ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', '11111111-1111-4111-8111-111111111111'),
-  ('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', '22222222-2222-4222-8222-222222222222')
-on conflict (id) do nothing;
+do $$
+begin
+  if exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'orders'
+      and column_name = 'user_id'
+  ) then
+    execute $sql$
+      insert into public.orders (id, user_id) values
+        ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', '11111111-1111-4111-8111-111111111111'),
+        ('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', '22222222-2222-4222-8222-222222222222')
+      on conflict (id) do nothing
+    $sql$;
+  elsif exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'orders'
+      and column_name = 'customer_id'
+  ) then
+    execute $sql$
+      insert into public.orders (id, customer_id) values
+        ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', '11111111-1111-4111-8111-111111111111'),
+        ('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', '22222222-2222-4222-8222-222222222222')
+      on conflict (id) do nothing
+    $sql$;
+  else
+    raise exception 'orders customer ownership column missing';
+  end if;
+end $$;
 
 insert into public.dtc_request_status_public (
   request_id,
