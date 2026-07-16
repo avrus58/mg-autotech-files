@@ -15,8 +15,6 @@ const bodySchema = z.object({
   reviewStatus: z.enum(["pending_review", "needs_review", "human_verified", "approved", "quarantined", "excluded"]).optional(),
   performedServiceLabels: serviceLabelsSchema.optional(),
   learningUseStatus: z.enum(["pending", "approved_for_learning", "excluded"]).optional(),
-  learningAuthorizationStatus: z.enum(["not_granted", "granted", "revoked", "unknown"]).optional(),
-  learningAuthorizationTermsVersion: z.string().trim().max(80).nullable().optional(),
   markUnrelatedChanges: z.boolean().optional(),
   adminNotes: z.string().trim().max(3000).nullable().optional(),
 }).strict();

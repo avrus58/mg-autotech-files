@@ -13,6 +13,7 @@ const STAGING_MIGRATIONS = [
   "20260714212824_dtc_active_processing_phase_c_synthetic_test_output.sql",
   "20260714220848_dtc_phase_c1_durable_synthetic_artifacts.sql",
   "20260715195048_learning_flywheel_candidates.sql",
+  "20260716005208_learning_flywheel_production_readiness_hardening.sql",
 ];
 
 const root = process.cwd();

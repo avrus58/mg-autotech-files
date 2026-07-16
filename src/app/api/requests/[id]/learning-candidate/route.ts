@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireApiUser } from "@/lib/apiAuth";
-import { createLearningFileCandidateForOrderUpload } from "@/lib/ecuIntelligence/learningFlywheel";
+import { captureLearningFileCandidate } from "@/lib/ecuIntelligence/learningIngestion";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 
 export async function POST(
@@ -23,23 +23,24 @@ export async function POST(
   }
 
   try {
-    const result = await createLearningFileCandidateForOrderUpload({
+    const result = await captureLearningFileCandidate({
       requestId: id,
       actorUserId: auth.user.id,
       sourceType: "customer_upload",
     });
     return NextResponse.json({
-      learningCandidateCreated: result.status !== "skipped",
+      learningCandidateCreated: ["created", "updated", "duplicate"].includes(result.status),
       status: result.status,
+      retryable: result.retryable,
       approvedForLearning: false,
       customerSafe: true,
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json({
       learningCandidateCreated: false,
       approvedForLearning: false,
       customerSafe: true,
-      warning: error instanceof Error ? error.message : "Learning candidate could not be queued.",
+      warning: "Learning candidate could not be queued.",
     });
   }
 }

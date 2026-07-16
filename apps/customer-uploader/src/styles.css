@@ -746,6 +746,24 @@ code {
   color: #8b8b94;
 }
 
+.authorization-choice {
+  display: grid;
+  gap: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 12px;
+}
+
+.authorization-choice label {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.authorization-choice input {
+  width: 16px;
+  height: 16px;
+}
+
 .progress-bar {
   height: 10px;
   overflow: hidden;

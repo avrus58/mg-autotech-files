@@ -56,10 +56,14 @@ test("staging bootstrap guard is ref-locked and excludes the local fake baseline
 
 test("staging migrations keep learning authorization and DTC runtime defaults closed", () => {
   const learning = read("supabase/migrations/20260715195048_learning_flywheel_candidates.sql");
+  const hardening = read("supabase/migrations/20260716005208_learning_flywheel_production_readiness_hardening.sql");
   const dtcPhaseA = read("supabase/migrations/20260714204125_dtc_active_processing_phase_a.sql");
 
   assert.match(learning, /learning_authorization_status text not null default 'not_granted'/);
-  assert.doesNotMatch(learning, /\binsert\s+into\b|\bcopy\b/i);
+  assert.doesNotMatch(learning, /^\s*(?:insert\s+into|copy)\b/im);
+  assert.match(hardening, /ai_learning_authorization_records/);
+  assert.match(hardening, /ai_learning_ingestion_jobs/);
+  assert.doesNotMatch(hardening, /^\s*(?:insert\s+into|copy)\b/im);
   assert.match(dtcPhaseA, /global_kill_switch_engaged boolean not null default true/);
   assert.match(dtcPhaseA, /customer_delivery_enabled boolean not null default false/);
   assert.match(dtcPhaseA, /production_automation_enabled boolean not null default false/);

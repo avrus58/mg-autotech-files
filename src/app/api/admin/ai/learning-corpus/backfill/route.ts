@@ -2,10 +2,13 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireStaffPermission } from "@/lib/apiAuth";
 import { backfillCompletedLearningPairs } from "@/lib/ecuIntelligence/learningFlywheel";
+import { recoverFailedLearningIngestionJobs } from "@/lib/ecuIntelligence/learningIngestion";
+import { resolveLearningFlywheelFlags } from "@/lib/ecuIntelligence/learningConfig";
 
 const bodySchema = z.object({
   limit: z.number().int().min(1).max(200).optional(),
   dryRun: z.boolean().default(true),
+  mode: z.enum(["recovery_only", "recovery_and_historical"]).default("recovery_and_historical"),
 }).strict();
 
 export async function POST(request: Request) {
@@ -16,6 +19,24 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: parsed.error.issues[0]?.message || "Invalid backfill request." }, { status: 400 });
   }
   try {
+    if (!parsed.data.dryRun && !resolveLearningFlywheelFlags().backfillEnabled) {
+      return NextResponse.json({ error: "Learning backfill is disabled." }, { status: 403 });
+    }
+    const recovery = parsed.data.dryRun
+      ? { inspected: 0, recovered: 0, failed: 0, results: [] }
+      : await recoverFailedLearningIngestionJobs({
+          actorUserId: auth.user.id,
+          limit: parsed.data.limit,
+        });
+    if (!parsed.data.dryRun && parsed.data.mode === "recovery_only") {
+      return NextResponse.json({
+        dryRun: false,
+        recovery,
+        approvedLearningSamples: 0,
+        createsApprovedSamples: false,
+        message: "Failed candidate recovery completed without a historical scan.",
+      });
+    }
     const result = await backfillCompletedLearningPairs({
       actorUserId: auth.user.id,
       limit: parsed.data.limit,
@@ -23,6 +44,7 @@ export async function POST(request: Request) {
     });
     return NextResponse.json({
       ...result,
+      recovery,
       approvedLearningSamples: 0,
       createsApprovedSamples: false,
       message: parsed.data.dryRun

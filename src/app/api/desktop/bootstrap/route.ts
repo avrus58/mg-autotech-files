@@ -7,6 +7,7 @@ import {
   desktopPrimaryServices,
 } from "@/lib/desktopUpload/contracts";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
+import { getLearningAuthorizationPublicConfig } from "@/lib/ecuIntelligence/learningConfig";
 
 export async function GET(request: Request) {
   const auth = await requireApiUser(request);
@@ -60,6 +61,7 @@ export async function GET(request: Request) {
       maxFileSize: 32 * 1024 * 1024,
       allowedExtensions: [".bin", ".ori", ".mod", ".frf", ".hex", ".zip", ".sgo"],
     },
+    learningAuthorization: getLearningAuthorizationPublicConfig(),
     app: app.app,
   });
 }

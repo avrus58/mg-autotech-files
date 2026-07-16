@@ -13,7 +13,8 @@ import {
   validateDesktopCreditAccess,
   validateDesktopUploadFile,
 } from "@/lib/desktopUpload/contracts";
-import { createLearningFileCandidateForOrderUpload } from "@/lib/ecuIntelligence/learningFlywheel";
+import { captureLearningAuthorization } from "@/lib/ecuIntelligence/learningAuthorization";
+import { captureLearningFileCandidate } from "@/lib/ecuIntelligence/learningIngestion";
 import { sendRequestCreatedNotifications } from "@/lib/email/events";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 
@@ -43,6 +44,10 @@ const finalizeSchema = z.object({
   readMethod: z.string().trim().max(120).nullable().optional(),
   hwSw: z.string().trim().max(200).nullable().optional(),
   masterSlave: z.enum(["master", "slave"]).default("master"),
+  learningAuthorization: z.object({
+    choice: z.enum(["grant", "deny"]),
+    termsVersion: z.string().trim().min(1).max(80),
+  }).strict().optional(),
 }).strict();
 
 function bearerToken(request: Request) {
@@ -106,11 +111,28 @@ export async function POST(request: Request) {
     .maybeSingle();
   if (existingError) return NextResponse.json({ error: existingError.message }, { status: 500 });
   if (existingOrder?.id) {
+    let learningAuthorizationStatus: string | null = null;
+    if (parsed.data.learningAuthorization) {
+      try {
+        const captured = await captureLearningAuthorization({
+          requestId: existingOrder.id,
+          actorUserId: auth.user.id,
+          captureSource: "desktop",
+          choice: parsed.data.learningAuthorization.choice,
+          termsVersion: parsed.data.learningAuthorization.termsVersion,
+          sourceSha256: parsed.data.upload.sha256,
+        });
+        learningAuthorizationStatus = captured.status;
+      } catch {
+        learningAuthorizationStatus = "capture_failed";
+      }
+    }
     return NextResponse.json({
       request: existingOrder,
       duplicatePrevented: true,
       idempotencyKey: normalizeDesktopIdempotencyKey(parsed.data.idempotencyKey),
       approvedForLearning: false,
+      learningAuthorizationStatus,
       message: "Request already exists for this desktop upload session.",
     });
   }
@@ -181,16 +203,32 @@ export async function POST(request: Request) {
   }
 
   let learningCandidateStatus: string | null = null;
+  let learningAuthorizationStatus: string | null = null;
   if (orderId) {
+    if (parsed.data.learningAuthorization) {
+      try {
+        const captured = await captureLearningAuthorization({
+          requestId: orderId,
+          actorUserId: auth.user.id,
+          captureSource: "desktop",
+          choice: parsed.data.learningAuthorization.choice,
+          termsVersion: parsed.data.learningAuthorization.termsVersion,
+          sourceSha256: parsed.data.upload.sha256,
+        });
+        learningAuthorizationStatus = captured.status;
+      } catch {
+        learningAuthorizationStatus = "capture_failed";
+      }
+    }
     try {
-      const learningCandidate = await createLearningFileCandidateForOrderUpload({
+      const learningCandidate = await captureLearningFileCandidate({
         requestId: orderId,
         actorUserId: auth.user.id,
         sourceType: "desktop_upload",
       });
       learningCandidateStatus = learningCandidate.status;
     } catch {
-      learningCandidateStatus = "queued_failed";
+      learningCandidateStatus = "failed";
     }
   }
 
@@ -207,6 +245,7 @@ export async function POST(request: Request) {
     appVersion: app.info.appVersion,
     approvedForLearning: false,
     learningCandidateStatus,
+    learningAuthorizationStatus,
     rawHexReturned: false,
     privateMetadataReturned: false,
   });

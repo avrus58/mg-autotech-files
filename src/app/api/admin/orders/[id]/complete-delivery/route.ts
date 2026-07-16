@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireStaffPermission } from "@/lib/apiAuth";
-import { createLearningPairCandidateForOrder } from "@/lib/ecuIntelligence/learningFlywheel";
+import { captureLearningPairCandidate } from "@/lib/ecuIntelligence/learningIngestion";
 import { sendDeliveryCompletedEmail } from "@/lib/email/events";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { recordWorkOrderEvent } from "@/lib/workOrders/server";
@@ -115,29 +115,24 @@ export async function POST(
     },
     mode: "best_effort",
   });
-  await sendDeliveryCompletedEmail({
+  const notification = await sendDeliveryCompletedEmail({
     requestId: id,
     fileName: parsed.data.fileName,
   });
 
-  let learningPair: Awaited<ReturnType<typeof createLearningPairCandidateForOrder>> | null = null;
-  let learningWarning: string | null = null;
-  try {
-    learningPair = await createLearningPairCandidateForOrder({
-      requestId: id,
-      modFilePath: version.file_path,
-      modFileName: version.file_name,
-      actorUserId: auth.user.id,
-      sourceType: "modified_output",
-    });
-  } catch (error) {
-    learningWarning = error instanceof Error ? error.message : "Learning pair candidate capture failed.";
-  }
+  const learningPair = await captureLearningPairCandidate({
+    requestId: id,
+    modFilePath: version.file_path,
+    modFileName: version.file_name,
+    actorUserId: auth.user.id,
+    sourceType: "modified_output",
+  });
 
   return NextResponse.json({
     order: updated.data,
     learningPair,
-    learningWarning,
+    learningWarning: learningPair.status === "failed" ? "Learning pair candidate capture will require retry." : null,
+    notificationStatus: notification.status,
     createsTrainingSampleAutomatically: false,
     approvedForLearningAutomatically: false,
   });

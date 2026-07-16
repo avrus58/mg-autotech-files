@@ -78,9 +78,15 @@ begin
     from pg_policies
     where schemaname = 'public'
       and tablename = 'dtc_request_status_public'
-      and policyname = 'Customers can read own DTC status projection'
+      and policyname = 'Customers or staff can read DTC status projection'
   ) then
-    raise exception 'customer DTC status projection policy missing';
+    raise exception 'equivalent customer-or-staff DTC status projection policy missing';
+  end if;
+
+  if has_table_privilege('authenticated', 'public.dtc_request_status_public', 'INSERT')
+    or has_table_privilege('authenticated', 'public.dtc_request_status_public', 'UPDATE')
+    or has_table_privilege('authenticated', 'public.dtc_request_status_public', 'DELETE') then
+    raise exception 'authenticated role has unexpected DTC projection write grants';
   end if;
 
   foreach table_name in array array[

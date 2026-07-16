@@ -411,6 +411,7 @@ export default function App() {
             session={session}
             catalog={bootstrap.services}
             limits={bootstrap.limits}
+            learningAuthorization={bootstrap.learningAuthorization}
             creditVerified={creditVerified}
             history={history}
             verifyOnline={verifyOnline}
@@ -909,6 +910,7 @@ function RequestWizard({
   session,
   catalog,
   limits,
+  learningAuthorization,
   creditVerified,
   history,
   verifyOnline,
@@ -917,6 +919,7 @@ function RequestWizard({
   session: Session;
   catalog: ServiceCatalog;
   limits: BootstrapPayload["limits"];
+  learningAuthorization: BootstrapPayload["learningAuthorization"];
   creditVerified: boolean;
   history: SafeUploadHistoryRow[];
   verifyOnline(activeSession?: Session | null): Promise<AppCheckPayload>;
@@ -947,6 +950,7 @@ function RequestWizard({
   const [busy, setBusy] = useState(false);
   const [phase, setPhase] = useState<UploadPhase>("idle");
   const [submission, setSubmission] = useState<ActiveSubmission | null>(null);
+  const [learningAuthorizationChoice, setLearningAuthorizationChoice] = useState<"grant" | "deny" | null>(null);
 
   const loadOptions = useCallback(async (type: "brands" | "models" | "generations" | "engines", params: Record<string, string> = {}) => {
     await verifyOnline(session);
@@ -1053,6 +1057,7 @@ function RequestWizard({
     setFile(nextFile);
     setSha256("");
     setSubmission(null);
+    setLearningAuthorizationChoice(null);
     setBusy(true);
     setPhase("hashing");
     setStatusMessage(en.calculatingHash);
@@ -1181,6 +1186,14 @@ function RequestWizard({
         gearbox,
         readMethod,
         masterSlave: "master",
+        ...(learningAuthorization.available && learningAuthorization.termsVersion && learningAuthorizationChoice
+          ? {
+              learningAuthorization: {
+                choice: learningAuthorizationChoice,
+                termsVersion: learningAuthorization.termsVersion,
+              },
+            }
+          : {}),
       }, { maxStringLength: DESKTOP_TEXT_LIMITS.notes });
       const result = await apiFetch<{ request: { id: string; uploaded_file_name: string; credits_required: number; service_type: string }; duplicatePrevented?: boolean }>("/api/desktop/requests/finalize", session, {
         method: "POST",
@@ -1362,6 +1375,37 @@ function RequestWizard({
           <ReviewLine label="File" value={`${file?.name} / ${file ? formatBytes(file.size) : "-"}`} />
           <ReviewLine label="SHA-256" value={sha256 || "Not available"} />
           <ReviewLine label="Upload mode" value="Retry-safe upload. True chunked resume is not enabled yet." />
+          {learningAuthorization.available && learningAuthorization.termsUrl && (
+            <fieldset className="authorization-choice">
+              <legend>Optional learning authorization</legend>
+              <button
+                type="button"
+                className="ghost"
+                onClick={() => void window.mgDesktop?.openExternal(learningAuthorization.termsUrl as string)}
+              >
+                View configured terms <ExternalLink />
+              </button>
+              <label>
+                <input
+                  type="radio"
+                  name="learning-authorization"
+                  checked={learningAuthorizationChoice === "grant"}
+                  onChange={() => setLearningAuthorizationChoice("grant")}
+                />
+                Grant under the configured terms
+              </label>
+              <label>
+                <input
+                  type="radio"
+                  name="learning-authorization"
+                  checked={learningAuthorizationChoice === "deny"}
+                  onChange={() => setLearningAuthorizationChoice("deny")}
+                />
+                Deny authorization
+              </label>
+              <p className="muted tiny">This optional choice is separate from the service purchase.</p>
+            </fieldset>
+          )}
           {uploadProgress && <UploadProgressCard progress={uploadProgress} phase={phase} />}
           <div className="button-row"><button className="ghost" onClick={() => setStep("notes")}>{en.back}</button><button disabled={busy || !creditVerified || Boolean(textLimitError)} onClick={() => void submit()}>{busy ? <Loader2 className="spin" /> : <CheckCircle2 />} {busy && phase === "failed" ? en.retryUpload : en.submitRequest}</button></div>
         </div>

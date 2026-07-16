@@ -53,6 +53,7 @@ type PairCandidate = {
   review_status: string;
   learning_use_status: string;
   learning_authorization_status: string;
+  learning_authorization_terms_version: string | null;
   linked_training_sample_id: string | null;
   created_at: string;
 };
@@ -69,6 +70,29 @@ type CoveragePayload = {
     serviceCoverage: Record<string, number>;
     stageCoverage: { stage1: number; stage2: number; dtc: number };
     missingEvidence: Array<{ feature: string; reason: string }>;
+  };
+  observability: {
+    fileCandidateAttempts: number;
+    fileCandidateSuccesses: number;
+    fileCandidateFailures: number;
+    fileCandidateDuplicateHits: number;
+    pairCandidateAttempts: number;
+    pairCandidateSuccesses: number;
+    pairCandidateFailures: number;
+    pairCandidateDuplicateHits: number;
+    pendingReviewCount: number;
+    authorizationNotGrantedCount: number;
+    authorizationGrantedCount: number;
+    approvalBlockedCount: number;
+    backfillRecoveryCount: number;
+    oldestPendingCandidate: string | null;
+    ingestionEngineVersion: string;
+    configuration: {
+      fileCandidatesEnabled: boolean;
+      pairCandidatesEnabled: boolean;
+      approvalEnabled: boolean;
+      backfillEnabled: boolean;
+    };
   };
   files: FileCandidate[];
   pairs: PairCandidate[];
@@ -95,7 +119,6 @@ export default function LearningCorpusPage() {
   const [selectedPair, setSelectedPair] = useState<PairCandidate | null>(null);
   const [performedLabels, setPerformedLabels] = useState<TrainingServiceLabels>(emptyLabels);
   const [reviewNotes, setReviewNotes] = useState("");
-  const [authorizationGranted, setAuthorizationGranted] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -165,8 +188,6 @@ export default function LearningCorpusPage() {
     if (action === "approve_learning") {
       body.reviewStatus = "approved";
       body.learningUseStatus = "approved_for_learning";
-      body.learningAuthorizationStatus = authorizationGranted ? "granted" : "not_granted";
-      body.learningAuthorizationTermsVersion = authorizationGranted ? "customer-learning-terms-v1" : null;
     }
     const response = await authenticatedFetch(`/api/admin/ai/learning-corpus/pairs/${selectedPair.id}`, {
       method: "PATCH",
@@ -182,7 +203,6 @@ export default function LearningCorpusPage() {
     setSelectedPair(null);
     setPerformedLabels(emptyLabels);
     setReviewNotes("");
-    setAuthorizationGranted(false);
     await load();
   }
 
@@ -209,7 +229,7 @@ export default function LearningCorpusPage() {
               {backfillRunning ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Database className="mr-2 h-4 w-4" />}
               Backfill dry-run
             </button>
-            <button onClick={() => void runBackfill(false)} disabled={backfillRunning} className="inline-flex h-11 items-center justify-center rounded-lg bg-[#b1121b] px-4 text-sm font-black hover:bg-[#c91824] disabled:opacity-50">
+            <button onClick={() => void runBackfill(false)} disabled={backfillRunning || payload?.observability.configuration.backfillEnabled === false} className="inline-flex h-11 items-center justify-center rounded-lg bg-[#b1121b] px-4 text-sm font-black hover:bg-[#c91824] disabled:opacity-50">
               Create candidates
             </button>
             <button onClick={() => void load()} disabled={loading} className="inline-flex h-11 items-center justify-center rounded-lg border border-white/10 px-4 text-sm font-black hover:bg-white/5 disabled:opacity-50">
@@ -236,6 +256,39 @@ export default function LearningCorpusPage() {
           <Metric icon={<Sparkles />} label="Stage 1 evidence" value={payload?.coverage.stageCoverage.stage1 ?? 0} />
           <Metric icon={<Sparkles />} label="DTC evidence" value={payload?.coverage.stageCoverage.dtc ?? 0} />
         </section>
+
+        {payload?.observability && (
+          <section className="mt-6 border-y border-white/10 py-4">
+            <div className="flex flex-wrap items-end justify-between gap-3">
+              <div>
+                <h2 className="text-lg font-black">Ingestion observability</h2>
+                <p className="mt-1 font-mono text-xs text-zinc-500">{payload.observability.ingestionEngineVersion}</p>
+              </div>
+              <div className="flex flex-wrap gap-2 text-xs font-bold text-zinc-400">
+                <span>File {String(payload.observability.configuration.fileCandidatesEnabled)}</span>
+                <span>Pair {String(payload.observability.configuration.pairCandidatesEnabled)}</span>
+                <span>Approval {String(payload.observability.configuration.approvalEnabled)}</span>
+                <span>Backfill {String(payload.observability.configuration.backfillEnabled)}</span>
+              </div>
+            </div>
+            <dl className="mt-4 grid gap-x-5 gap-y-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
+              <Observation label="File attempts" value={payload.observability.fileCandidateAttempts} />
+              <Observation label="File successes" value={payload.observability.fileCandidateSuccesses} />
+              <Observation label="File failures" value={payload.observability.fileCandidateFailures} />
+              <Observation label="File duplicates" value={payload.observability.fileCandidateDuplicateHits} />
+              <Observation label="Pair attempts" value={payload.observability.pairCandidateAttempts} />
+              <Observation label="Pair successes" value={payload.observability.pairCandidateSuccesses} />
+              <Observation label="Pair failures" value={payload.observability.pairCandidateFailures} />
+              <Observation label="Pair duplicates" value={payload.observability.pairCandidateDuplicateHits} />
+              <Observation label="Pending review" value={payload.observability.pendingReviewCount} />
+              <Observation label="Not granted" value={payload.observability.authorizationNotGrantedCount} />
+              <Observation label="Granted" value={payload.observability.authorizationGrantedCount} />
+              <Observation label="Approval blocked" value={payload.observability.approvalBlockedCount} />
+              <Observation label="Recovered" value={payload.observability.backfillRecoveryCount} />
+              <Observation label="Oldest pending" value={payload.observability.oldestPendingCandidate ? new Date(payload.observability.oldestPendingCandidate).toLocaleString() : "None"} />
+            </dl>
+          </section>
+        )}
 
         <section className="mt-6 grid gap-5 xl:grid-cols-[0.9fr_1.1fr]">
           <div className="rounded-lg border border-white/10 bg-white/[0.025] p-4">
@@ -358,10 +411,10 @@ export default function LearningCorpusPage() {
               <div className="mb-2 text-xs font-black uppercase tracking-[0.16em] text-zinc-500">Admin notes</div>
               <textarea value={reviewNotes} onChange={(event) => setReviewNotes(event.target.value)} className="h-24 w-full rounded-lg border border-white/10 bg-black/40 p-3 text-sm outline-none focus:border-red-700" />
             </label>
-            <label className="mt-4 flex items-center gap-3 rounded-lg border border-amber-700/30 bg-amber-950/15 p-3 text-sm text-amber-100">
-              <input type="checkbox" checked={authorizationGranted} onChange={(event) => setAuthorizationGranted(event.target.checked)} />
-              Explicit learning authorization evidence is present for the current terms version.
-            </label>
+            <div className="mt-4 border-l-2 border-amber-600 px-3 text-sm text-amber-100">
+              Authorization: {selectedPair.learning_authorization_status}
+              {selectedPair.learning_authorization_terms_version ? ` (${selectedPair.learning_authorization_terms_version})` : ""}
+            </div>
             <div className="mt-5 flex flex-wrap gap-2">
               <button onClick={() => void updatePair("human_verified")} className="rounded-lg border border-white/10 px-4 py-3 text-sm font-black hover:bg-white/5">Mark human verified</button>
               <button onClick={() => void updatePair("approve_learning")} className="rounded-lg bg-[#b1121b] px-4 py-3 text-sm font-black hover:bg-[#c91824]">Approve for learning</button>
@@ -381,6 +434,15 @@ function Metric({ icon, label, value, tone = "default" }: { icon: ReactNode; lab
       <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-lg border border-red-900/40 bg-red-950/25 text-red-400">{icon}</div>
       <div className="text-xs font-black uppercase tracking-[0.16em] text-zinc-500">{label}</div>
       <div className={`mt-2 text-2xl font-black ${color}`}>{value}</div>
+    </div>
+  );
+}
+
+function Observation({ label, value }: { label: string; value: number | string }) {
+  return (
+    <div className="min-w-0">
+      <dt className="text-xs font-bold text-zinc-500">{label}</dt>
+      <dd className="mt-1 break-words text-sm font-black text-zinc-100">{value}</dd>
     </div>
   );
 }

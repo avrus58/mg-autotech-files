@@ -2,6 +2,19 @@
 
 Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
+## 2026-07-16 manual run Production Readiness Hardening
+
+- Baslangic/durum: 2026-07-16, In Progress.
+- Gorev: Successful isolated staging release sonrasi Learning Flywheel flags/recovery, versioned authorization, RLS performance review, complete-delivery E2E, production release policy ve staff-only observability hardening.
+- Hedef: Yalniz `staging/ecu-intelligence-v1`, isolated staging `vxdxdvtsopsjatukdbuq` ve Vercel Preview. Production ref `jujaeyvyaeesmipihrrw`, Production env/deploy ve production branch degistirilmeyecek.
+- Ilk kanit: DTC projection'da customer-own ve staff-read iki permissive SELECT policy OR semantics ile mevcut; customer policy `auth.uid()` direct call kullaniyor. Equivalent tek policy + `(select auth.uid())` ve authenticated write-grant daraltmasi review edilecek.
+- Guvenlik: Owner/legal authorization wording yok; capture/approval/backfill production defaults false; real firmware/MOD/checksum/Stage/DTC/A3-A5/customer delivery yok.
+- Implementation: Fail-closed server flags, durable idempotent ingestion jobs/audit/recovery, versioned explicit grant/deny authorization, current-terms approval gate, staff-only observability, delivery/email failure isolation, staging-safe E2E, additive RLS hardening migration ve versioned release policy tamamlandi.
+- Local verification: Fresh Supabase reset ve production-schema baseline reconstruction PASS; all DTC/Learning/RLS SQL PASS; complete-delivery E2E 31/31; bootstrap verify public table/RLS `82/82`, DTC `13/13`, policy `107`, storage policy `11`; DB lint PASS; `npm run lint`, `npm run typecheck`, `npm test` 447/447, `npm run build` 268 pages, payment schema-only, audit 0 vulnerability ve diff check PASS.
+- Isolated staging DB: Yalniz `vxdxdvtsopsjatukdbuq` hedefinde `20260716002344 learning_flywheel_production_readiness_hardening` applied. New private tables RLS enabled; anon grant yok; DTC policy equivalent customer-OR-staff tek SELECT policy olarak `(select auth.uid())` pattern'ine konsolide edildi ve authenticated writes revoked. Rollback-only anonymous/customer A/customer B/staff/service-role access probes PASS. Hedef iki advisor WARN'i giderildi; yeni WARN yok, yeni tablolarda yalniz fresh/unused index ve iki non-covering actor FK INFO kaydi var.
+- Preview config: Yalniz `staging/ecu-intelligence-v1` branch-scoped Preview overrides: file candidates `true`, pair candidates `true`, approval `false`, backfill `false`, authorization capture `false`, `EMAIL_DRY_RUN=true`. Owner/legal terms version/URL configure edilmedi; Production env degismedi.
+- Kalan is: Staging-only commit/push, Vercel Preview redeploy, onceki 29 smoke + yeni hardening smoke/E2E, cleanup audit ve final kayit.
+
 ## 2026-07-16 manual run Isolated ECU Intelligence Staging Release
 
 - Baslangic/bitis: 2026-07-16, completed. Gorev owner tarafindan yetkilendirilen `staging/ecu-intelligence-v1` branch'i icin ECU Intelligence Center v1 + Learning Flywheel schema-only isolated staging release idi.

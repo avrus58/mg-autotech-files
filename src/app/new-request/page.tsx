@@ -699,10 +699,34 @@ export default function NewRequestPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [paymentAccepted, setPaymentAccepted] = useState(false);
   const [responsibilityAccepted, setResponsibilityAccepted] = useState(false);
+  const [learningAuthorizationConfig, setLearningAuthorizationConfig] = useState<{
+    available: boolean;
+    termsVersion: string | null;
+    termsUrl: string | null;
+  }>({ available: false, termsVersion: null, termsUrl: null });
+  const [learningAuthorizationChoice, setLearningAuthorizationChoice] = useState<"grant" | "deny" | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState("");
   const [customerProfile, setCustomerProfile] = useState<CustomerProfile | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    void fetch("/api/learning-authorization/config", { cache: "no-store" })
+      .then(async (response) => response.ok ? response.json() : null)
+      .then((config) => {
+        if (!active || !config?.available) return;
+        setLearningAuthorizationConfig({
+          available: true,
+          termsVersion: typeof config.termsVersion === "string" ? config.termsVersion : null,
+          termsUrl: typeof config.termsUrl === "string" ? config.termsUrl : null,
+        });
+      })
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const selectedBrandName =
     brands.find((item) => item.id === vehicleBrandId)?.name ?? "";
@@ -1210,9 +1234,10 @@ export default function NewRequestPage() {
         : current
     );
 
+    let authHeaders: Record<string, string> = {};
     try {
       const { data: sessionData } = await supabase.auth.getSession();
-      const authHeaders: Record<string, string> = sessionData.session?.access_token
+      authHeaders = sessionData.session?.access_token
         ? { Authorization: `Bearer ${sessionData.session.access_token}` }
         : {};
       await fetch("/api/email/new-order", {
@@ -1225,7 +1250,12 @@ export default function NewRequestPage() {
           orderId: String(createdOrderId || ""),
         }),
       });
-      if (createdOrderId && originalFilePath) {
+    } catch {
+      // Notification failure must not block the customer request.
+    }
+
+    if (createdOrderId && originalFilePath) {
+      try {
         await fetch(`/api/requests/${String(createdOrderId)}/learning-candidate`, {
           method: "POST",
           headers: {
@@ -1233,9 +1263,32 @@ export default function NewRequestPage() {
             ...authHeaders,
           },
         });
+      } catch {
+        // Candidate ingestion is retryable and must not block the customer request.
       }
-    } catch {
-      // Notification or learning-candidate queue failure must not block the customer request.
+    }
+
+    if (
+      createdOrderId
+      && learningAuthorizationChoice
+      && learningAuthorizationConfig.available
+      && learningAuthorizationConfig.termsVersion
+    ) {
+      try {
+        await fetch(`/api/requests/${String(createdOrderId)}/learning-authorization`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...authHeaders,
+          },
+          body: JSON.stringify({
+            choice: learningAuthorizationChoice,
+            termsVersion: learningAuthorizationConfig.termsVersion,
+          }),
+        });
+      } catch {
+        // Optional authorization capture must not block the purchased service.
+      }
     }
 
     router.push("/dashboard");
@@ -2012,6 +2065,39 @@ export default function NewRequestPage() {
                     I confirm that I am responsible for legal use of the file.
                   </span>
                 </label>
+
+                {learningAuthorizationConfig.available && learningAuthorizationConfig.termsUrl && (
+                  <fieldset className="space-y-3 border-t border-white/10 pt-4">
+                    <legend className="text-sm font-bold text-zinc-200">Optional learning authorization</legend>
+                    <a
+                      href={learningAuthorizationConfig.termsUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-block text-sm font-semibold text-red-300 underline underline-offset-4"
+                    >
+                      View configured terms
+                    </a>
+                    <label className="flex items-center gap-3 text-sm text-zinc-300">
+                      <input
+                        type="radio"
+                        name="learning-authorization"
+                        checked={learningAuthorizationChoice === "grant"}
+                        onChange={() => setLearningAuthorizationChoice("grant")}
+                      />
+                      <span>Grant under the configured terms</span>
+                    </label>
+                    <label className="flex items-center gap-3 text-sm text-zinc-300">
+                      <input
+                        type="radio"
+                        name="learning-authorization"
+                        checked={learningAuthorizationChoice === "deny"}
+                        onChange={() => setLearningAuthorizationChoice("deny")}
+                      />
+                      <span>Deny authorization</span>
+                    </label>
+                    <p className="text-xs text-zinc-500">This optional choice is separate from the service purchase.</p>
+                  </fieldset>
+                )}
               </div>
 
               {message && (

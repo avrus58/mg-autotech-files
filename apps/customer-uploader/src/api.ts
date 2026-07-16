@@ -62,6 +62,13 @@ export type BootstrapPayload = {
   requests: DesktopRequest[];
   services: ServiceCatalog;
   limits: { maxFileSize: number; allowedExtensions: string[] };
+  learningAuthorization: {
+    available: boolean;
+    termsVersion: string | null;
+    termsUrl: string | null;
+    choiceRequiredForPurchase: false;
+    defaultChoice: null;
+  };
   app?: AppCheckPayload;
 };
 

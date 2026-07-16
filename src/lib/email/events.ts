@@ -245,8 +245,10 @@ export async function sendDeliveryCompletedEmail(input: {
 }) {
   try {
     const loaded = await loadOrderContext(input.requestId);
-    if (!loaded?.customerEmail) return;
-    await sendTransactionalEmail({
+    if (!loaded?.customerEmail) {
+      return { ok: false as const, status: "skipped" as const, reason: "recipient_unavailable" };
+    }
+    return await sendTransactionalEmail({
       eventType: "delivery_completed",
       to: loaded.customerEmail,
       context: { ...loaded.context, fileName: input.fileName ?? null },
@@ -257,7 +259,7 @@ export async function sendDeliveryCompletedEmail(input: {
       metadata: { source: "delivery" },
     });
   } catch {
-    // Best-effort notification.
+    return { ok: false as const, status: "failed" as const, reason: "notification_exception" };
   }
 }
 

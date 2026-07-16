@@ -72,11 +72,11 @@ auth_overlay as (
 select
   'MG_BOOTSTRAP_VERIFY=' ||
   (
-    public_inventory.table_count = 80
-    and public_inventory.rls_count = 80
+    public_inventory.table_count = 82
+    and public_inventory.rls_count = 82
     and dtc_inventory.table_count = 13
     and dtc_inventory.rls_count = 13
-    and policy_inventory.public_policy_count = 106
+    and policy_inventory.public_policy_count = 107
     and policy_inventory.storage_policy_count = 11
     and learning_defaults.not_granted_defaults = 2
     and dtc_defaults.closed_defaults = 5

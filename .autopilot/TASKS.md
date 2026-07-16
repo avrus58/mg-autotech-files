@@ -6,6 +6,16 @@
 
 ## In Progress
 
+### MANUAL-20260716-PRODUCTION-READINESS-HARDENING [P0] ECU Intelligence production-readiness hardening
+
+Durum: In Progress
+
+Fingerprint: `release|production-readiness-hardening|learning-flywheel-flags-recovery-authorization-rls-observability-delivery-e2e`
+
+Kapsam: Yalniz `staging/ecu-intelligence-v1` uzerinde fail-closed Learning Flywheel flaglari, durable retry/audit recovery, versioned authorization capture infrastructure, DTC RLS warning remediation, staff-only observability, staging-safe complete-delivery E2E, versioned release policy, isolated staging migration ve Preview redeployment.
+
+Guvenlik siniri: Production Supabase/Vercel/branch mutation yok; owner/legal wording uydurulmaz; real firmware/MOD/Stage/DTC/checksum/A3-A5/customer delivery yok; historical backfill otomatik calistirilmaz.
+
 ## Blocked
 
 ## Later

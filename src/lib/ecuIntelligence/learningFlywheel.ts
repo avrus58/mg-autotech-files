@@ -14,6 +14,12 @@ import {
   maybeCreateTrainingSampleForRequest,
   updateTrainingSampleVerification,
 } from "@/lib/ecuIntelligence/learning";
+import { recordLearningAuditEvent } from "@/lib/ecuIntelligence/learningAudit";
+import { getCurrentLearningAuthorizationForRequest } from "@/lib/ecuIntelligence/learningAuthorization";
+import {
+  resolveLearningAuthorizationConfig,
+  resolveLearningFlywheelFlags,
+} from "@/lib/ecuIntelligence/learningConfig";
 import type {
   FileExpertAnalyzerResult,
   FileExpertChangeClassification,
@@ -48,7 +54,13 @@ type OrderForLearning = {
 };
 
 export type LearningFileCandidateResult =
-  | { status: "created" | "updated"; candidateId: string; sha256: string | null }
+  | {
+      status: "created" | "updated";
+      candidateId: string;
+      sha256: string | null;
+      analysisStatus: "enriched" | "failed";
+      reason?: string;
+    }
   | { status: "skipped"; reason: string };
 
 export type LearningPairCandidateResult =
@@ -83,8 +95,6 @@ export type PairReviewUpdateInput = {
   reviewStatus?: LearningReviewStatus;
   performedServiceLabels?: TrainingServiceLabels;
   learningUseStatus?: "pending" | "approved_for_learning" | "excluded";
-  learningAuthorizationStatus?: "not_granted" | "granted" | "revoked" | "unknown";
-  learningAuthorizationTermsVersion?: string | null;
   adminNotes?: string | null;
   markUnrelatedChanges?: boolean;
 };
@@ -270,32 +280,6 @@ export function scoreLearningPair(input: {
   };
 }
 
-async function logLearningReviewEvent(input: {
-  requestId?: string | null;
-  fileCandidateId?: string | null;
-  pairCandidateId?: string | null;
-  action: string;
-  oldValue?: unknown;
-  newValue?: unknown;
-  actorUserId?: string | null;
-  notes?: string | null;
-}) {
-  try {
-    await getSupabaseAdmin().from("ai_learning_review_events").insert({
-      request_id: input.requestId ?? null,
-      file_candidate_id: input.fileCandidateId ?? null,
-      pair_candidate_id: input.pairCandidateId ?? null,
-      action: input.action,
-      old_value: input.oldValue ?? {},
-      new_value: input.newValue ?? {},
-      actor_id: input.actorUserId ?? null,
-      notes: input.notes ?? null,
-    });
-  } catch {
-    // Candidate/audit logging must not break customer request creation.
-  }
-}
-
 async function orderById(requestId: string): Promise<OrderForLearning | null> {
   const { data, error } = await getSupabaseAdmin()
     .from("orders")
@@ -329,6 +313,9 @@ async function upsertFileCandidate(input: {
   errors?: string[];
 }) {
   const requestedLabels = requestedLabelsForOrder(input.order);
+  const authorization = input.sourceType === "historical_backfill"
+    ? { status: "not_granted" as const, termsVersion: null }
+    : await getCurrentLearningAuthorizationForRequest(input.order.id);
   const primaryFile = input.result?.files.single ?? input.result?.files.ori ?? input.result?.files.mod;
   const identity = input.result?.ecu_identification;
   const submitted = submittedHwSw(input.order);
@@ -356,7 +343,8 @@ async function upsertFileCandidate(input: {
     requested_service_labels: requestedLabels,
     dtc_codes: dtcCodesFromText(`${input.order.service_type || ""} ${input.order.notes || ""}`),
     stock_or_modified_guess: input.result?.summary.stock_or_modified ?? "unknown",
-    learning_authorization_status: "not_granted",
+    learning_authorization_status: authorization.status,
+    learning_authorization_terms_version: authorization.termsVersion,
     analysis_status: input.errors?.length ? "failed" : input.result ? "enriched" : "pending",
     review_status: input.errors?.length ? "needs_review" : "pending_review",
     quality_score: Math.round((identity?.confidence ?? 0) * 65 + (sha256 ? 15 : 0) + (input.order.read_method ? 10 : 0)),
@@ -392,7 +380,7 @@ async function upsertFileCandidate(input: {
     .select("id, sha256")
     .single();
   if (error) throw new Error(error.message);
-  await logLearningReviewEvent({
+  await recordLearningAuditEvent({
     requestId: input.order.id,
     fileCandidateId: data?.id ?? null,
     action: input.errors?.length ? "file_candidate_failed" : "file_candidate_enriched",
@@ -436,7 +424,12 @@ export async function createLearningFileCandidateForOrderUpload(input: {
       result,
       buffer,
     });
-    return { status: "created", candidateId: saved.id, sha256: saved.sha256 };
+    return {
+      status: "created",
+      candidateId: saved.id,
+      sha256: saved.sha256,
+      analysisStatus: "enriched",
+    };
   } catch (error) {
     const message = error instanceof Error ? error.message : "File candidate enrichment failed.";
     const saved = await upsertFileCandidate({
@@ -448,7 +441,13 @@ export async function createLearningFileCandidateForOrderUpload(input: {
       actorUserId: input.actorUserId,
       errors: [message],
     });
-    return { status: "created", candidateId: saved.id, sha256: saved.sha256 };
+    return {
+      status: "created",
+      candidateId: saved.id,
+      sha256: saved.sha256,
+      analysisStatus: "failed",
+      reason: message,
+    };
   }
 }
 
@@ -531,6 +530,9 @@ export async function createLearningPairCandidateForOrder(input: {
   const classification = classifyLearningPair({ result, requestedLabels, sourceStockOrModified: sourceStock });
   const quality = scoreLearningPair({ result, requestedLabels, pairType: classification.pairType });
   const signature = result.pattern_signature || buildPatternSignature(result);
+  const authorization = input.sourceType === "historical_backfill"
+    ? { status: "not_granted" as const, termsVersion: null }
+    : await getCurrentLearningAuthorizationForRequest(order.id);
   const payload = {
     request_id: order.id,
     customer_id: order.customer_id,
@@ -550,7 +552,8 @@ export async function createLearningPairCandidateForOrder(input: {
     quality_reasons: quality.reasons,
     review_status: quality.score >= 60 ? "pending_review" : "needs_review",
     learning_use_status: "pending",
-    learning_authorization_status: "not_granted",
+    learning_authorization_status: authorization.status,
+    learning_authorization_terms_version: authorization.termsVersion,
     provenance: {
       source: input.sourceType ?? "modified_output",
       revision_label: mod.label,
@@ -573,7 +576,7 @@ export async function createLearningPairCandidateForOrder(input: {
     .select("id, pair_type, quality_score")
     .single();
   if (error) throw new Error(error.message);
-  await logLearningReviewEvent({
+  await recordLearningAuditEvent({
     requestId: order.id,
     pairCandidateId: data?.id ?? null,
     action: "pair_candidate_created",
@@ -619,14 +622,12 @@ export async function updateLearningPairReview(input: PairReviewUpdateInput) {
   const nextReviewStatus = input.reviewStatus ?? (existing.review_status as LearningReviewStatus);
   const nextPerformed = input.performedServiceLabels ?? (existing.performed_service_labels as TrainingServiceLabels | null) ?? emptyTrainingServiceLabels();
   const nextLearningUse = input.learningUseStatus ?? (existing.learning_use_status as "pending" | "approved_for_learning" | "excluded");
-  const nextAuthorization = input.learningAuthorizationStatus ?? (existing.learning_authorization_status as "not_granted" | "granted" | "revoked" | "unknown");
+  const nextAuthorization = existing.learning_authorization_status as "not_granted" | "granted" | "revoked" | "unknown";
   const nextQuality = Number(existing.quality_score ?? 0);
   const updatePayload: Record<string, unknown> = {
     review_status: nextReviewStatus,
     performed_service_labels: nextPerformed,
     learning_use_status: nextLearningUse,
-    learning_authorization_status: nextAuthorization,
-    learning_authorization_terms_version: input.learningAuthorizationTermsVersion ?? existing.learning_authorization_terms_version ?? null,
     updated_at: new Date().toISOString(),
   };
   if (input.markUnrelatedChanges) {
@@ -636,6 +637,24 @@ export async function updateLearningPairReview(input: PairReviewUpdateInput) {
   }
 
   if (nextLearningUse === "approved_for_learning") {
+    const flags = resolveLearningFlywheelFlags();
+    const authorizationConfig = resolveLearningAuthorizationConfig();
+    const currentAuthorization = existing.request_id
+      ? await getCurrentLearningAuthorizationForRequest(String(existing.request_id))
+      : { status: "not_granted" as const, termsVersion: null };
+    if (!flags.approvalEnabled) {
+      await recordLearningAuditEvent({
+        requestId: existing.request_id as string | null,
+        pairCandidateId: input.pairId,
+        action: "approval_blocked",
+        newValue: { reason: "approval_feature_disabled" },
+        actorUserId: input.actorUserId,
+      });
+      throw new Error("Learning approval is disabled.");
+    }
+    if (!authorizationConfig.available || !authorizationConfig.termsVersion) {
+      throw new Error("Learning approval is unavailable until approved authorization terms are configured.");
+    }
     if (!["human_verified", "approved"].includes(nextReviewStatus)) {
       throw new Error("Pair must be human-verified before approved_for_learning.");
     }
@@ -645,8 +664,14 @@ export async function updateLearningPairReview(input: PairReviewUpdateInput) {
     if (nextQuality < 60) {
       throw new Error("Quality score must be at least 60 before learning approval.");
     }
-    if (nextAuthorization !== "granted") {
+    if (nextAuthorization !== "granted" || currentAuthorization.status !== "granted") {
       throw new Error("Explicit learning authorization must be granted before learning approval.");
+    }
+    if (
+      existing.learning_authorization_terms_version !== authorizationConfig.termsVersion
+      || currentAuthorization.termsVersion !== authorizationConfig.termsVersion
+    ) {
+      throw new Error("Learning authorization must match the current configured terms version.");
     }
   }
 
@@ -691,7 +716,7 @@ export async function updateLearningPairReview(input: PairReviewUpdateInput) {
     }
   }
 
-  await logLearningReviewEvent({
+  await recordLearningAuditEvent({
     requestId: updated.data.request_id,
     pairCandidateId: input.pairId,
     action: "learning_pair_review_updated",
@@ -714,16 +739,23 @@ export async function backfillCompletedLearningPairs(input: {
   dryRun?: boolean;
 }) {
   const limit = Math.min(Math.max(Number(input.limit || 25), 1), 200);
+  if (!input.dryRun && !resolveLearningFlywheelFlags().backfillEnabled) {
+    await recordLearningAuditEvent({
+      action: "backfill_blocked",
+      actorUserId: input.actorUserId,
+      newValue: { reason: "backfill_feature_disabled" },
+    });
+    throw new Error("Learning backfill is disabled.");
+  }
   const admin = getSupabaseAdmin();
   const orders = await admin
     .from("orders")
     .select("id, original_file_path, modified_file_path, modified_files, status")
     .not("original_file_path", "is", null)
-    .or("modified_file_path.not.is.null,modified_files.not.is.null")
     .order("created_at", { ascending: false })
     .limit(limit);
   if (orders.error) throw new Error(orders.error.message);
-  const rows = (orders.data ?? []).filter((order) => order.original_file_path && (order.modified_file_path || (Array.isArray(order.modified_files) && order.modified_files.length)));
+  const rows = (orders.data ?? []).filter((order) => order.original_file_path);
   if (input.dryRun) {
     return {
       dryRun: true,
@@ -734,25 +766,50 @@ export async function backfillCompletedLearningPairs(input: {
       approvedLearningSamples: 0,
     };
   }
-  const results: Array<{ requestId: string; status: string; reason?: string; pairId?: string }> = [];
+  const results: Array<{
+    requestId: string;
+    fileStatus: string;
+    pairStatus: string;
+    reason?: string;
+    pairId?: string;
+  }> = [];
   for (const row of rows) {
     try {
-      const result = await createLearningPairCandidateForOrder({
+      const fileResult = await createLearningFileCandidateForOrderUpload({
         requestId: row.id,
         actorUserId: input.actorUserId,
         sourceType: "historical_backfill",
       });
-      results.push({ requestId: row.id, status: result.status, reason: "reason" in result ? result.reason : undefined, pairId: "pairId" in result ? result.pairId : undefined });
+      const hasModified = Boolean(row.modified_file_path || (Array.isArray(row.modified_files) && row.modified_files.length));
+      const pairResult = hasModified
+        ? await createLearningPairCandidateForOrder({
+            requestId: row.id,
+            actorUserId: input.actorUserId,
+            sourceType: "historical_backfill",
+          })
+        : { status: "skipped" as const, reason: "Modified output path is missing." };
+      results.push({
+        requestId: row.id,
+        fileStatus: fileResult.status,
+        pairStatus: pairResult.status,
+        reason: "reason" in pairResult ? pairResult.reason : undefined,
+        pairId: "pairId" in pairResult ? pairResult.pairId : undefined,
+      });
     } catch (error) {
-      results.push({ requestId: row.id, status: "error", reason: error instanceof Error ? error.message : "Backfill failed." });
+      results.push({
+        requestId: row.id,
+        fileStatus: "error",
+        pairStatus: "error",
+        reason: error instanceof Error ? error.message : "Backfill failed.",
+      });
     }
   }
   return {
     dryRun: false,
     inspected: rows.length,
-    created: results.filter((item) => item.status === "created" || item.status === "updated" || item.status === "duplicate").length,
-    skipped: results.filter((item) => item.status === "skipped").length,
-    errors: results.filter((item) => item.status === "error"),
+    created: results.filter((item) => ["created", "updated", "duplicate"].includes(item.fileStatus) || ["created", "updated", "duplicate"].includes(item.pairStatus)).length,
+    skipped: results.filter((item) => item.fileStatus === "skipped" && item.pairStatus === "skipped").length,
+    errors: results.filter((item) => item.fileStatus === "error" || item.pairStatus === "error"),
     approvedLearningSamples: 0,
     results,
   };

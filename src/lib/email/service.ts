@@ -81,6 +81,20 @@ export async function sendTransactionalEmail(
     input.language ?? "de"
   );
 
+  if (isTransactionalEmailDryRun() && process.env.EMAIL_DRY_RUN_FORCE_FAILURE === "true") {
+    await updateEmailEventLog(log.id, {
+      status: "failed",
+      errorMessage: "EMAIL_DRY_RUN forced failure",
+    });
+    return {
+      ok: false,
+      status: "failed",
+      provider: "dry_run",
+      error: "EMAIL_DRY_RUN forced failure",
+      idempotencyKey: input.idempotencyKey,
+    };
+  }
+
   if (isTransactionalEmailDryRun()) {
     await updateEmailEventLog(log.id, {
       status: "skipped",

@@ -82,10 +82,10 @@ test("customer upload and desktop finalize create candidates without exposing pr
 
   assert.match(customerRoute, /requireApiUser/i);
   assert.match(customerRoute, /order\.data\.customer_id !== auth\.user\.id/i);
-  assert.match(customerRoute, /createLearningFileCandidateForOrderUpload/i);
+  assert.match(customerRoute, /captureLearningFileCandidate/i);
   assert.doesNotMatch(customerRoute, /sha256|storage_path|file_expert|identity_conflicts/i);
 
-  assert.match(desktopFinalize, /createLearningFileCandidateForOrderUpload/i);
+  assert.match(desktopFinalize, /captureLearningFileCandidate/i);
   assert.match(desktopFinalize, /approvedForLearning:\s*false/i);
   assert.match(desktopFinalize, /rawHexReturned:\s*false/i);
   assert.match(desktopFinalize, /privateMetadataReturned:\s*false/i);
@@ -95,7 +95,7 @@ test("customer upload and desktop finalize create candidates without exposing pr
 
 test("delivery output creates ORI/MOD pair candidates instead of automatic training samples", () => {
   const route = file("src/app/api/admin/orders/[id]/complete-delivery/route.ts");
-  assert.match(route, /createLearningPairCandidateForOrder/i);
+  assert.match(route, /captureLearningPairCandidate/i);
   assert.doesNotMatch(route, /maybeCreateTrainingSampleForRequest/i);
   assert.match(route, /createsTrainingSampleAutomatically:\s*false/i);
   assert.match(route, /approvedForLearningAutomatically:\s*false/i);

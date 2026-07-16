@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireStaffPermission } from "@/lib/apiAuth";
 import { getLearningCorpusCoverage } from "@/lib/ecuIntelligence/learningFlywheel";
+import { getLearningFlywheelObservability } from "@/lib/ecuIntelligence/learningObservability";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 
 function tableMissing(error: { code?: string; message?: string } | null | undefined) {
@@ -16,8 +17,9 @@ export async function GET(request: Request) {
 
   try {
     const admin = getSupabaseAdmin();
-    const [coverage, files, pairs, events] = await Promise.all([
+    const [coverage, observability, files, pairs, events] = await Promise.all([
       getLearningCorpusCoverage(),
+      getLearningFlywheelObservability(),
       admin
         .from("ai_learning_file_candidates")
         .select("id, request_id, source_type, file_role_candidate, file_name, file_size, supplier, ecu_family, ecu_type, hw_number, sw_number, calibration_id, representation_type, read_method, identity_confidence, review_status, analysis_status, quality_score, stock_or_modified_guess, learning_authorization_status, created_at")
@@ -25,7 +27,7 @@ export async function GET(request: Request) {
         .limit(60),
       admin
         .from("ai_learning_pair_candidates")
-        .select("id, request_id, pair_type, pair_confidence, requested_service_labels, performed_service_labels, dtc_codes, quality_score, review_status, learning_use_status, learning_authorization_status, linked_training_sample_id, created_at")
+        .select("id, request_id, pair_type, pair_confidence, requested_service_labels, performed_service_labels, dtc_codes, quality_score, review_status, learning_use_status, learning_authorization_status, learning_authorization_terms_version, linked_training_sample_id, created_at")
         .order("created_at", { ascending: false })
         .limit(60),
       admin
@@ -43,6 +45,7 @@ export async function GET(request: Request) {
     }
     return NextResponse.json({
       coverage,
+      observability,
       files: files.data ?? [],
       pairs: pairs.data ?? [],
       events: events.data ?? [],
