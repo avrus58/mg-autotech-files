@@ -6,23 +6,23 @@
 
 ## In Progress
 
+## Blocked
+
 ### MANUAL-20260716-AUTH-SESSION-STABILITY-HOTFIX [P0] Auth session stability hotfix
 
-Durum: In Progress - owner-authorized isolated staging release verification
+Durum: Blocked - Preview normal-path soak PASS, zorunlu transient failure matrixi runtime'da guvenle enjekte edilemedi
 
 Fingerprint: `auth|supabase-browser-server-session|mixed-localstorage-cookie-refresh|canonical-cookie-session-stability`
 
 Kapsam: Customer dashboard ve diger authenticated yuzeylerdeki beklenmeyen session kaybini repository kanitiyla incele; Supabase browser/server/proxy session modelini canonical cookie tabanli akisa getir; dashboard sync failure ile gercek invalid session davranisini ayir; transient sync retry'larini bounded/cancellable yap.
 
-Yerel sonuc: Canonical `@supabase/ssr` browser/server cookie modeli, Proxy refresh propagation/no-store headers, legacy localStorage-to-cookie bridge, stale-session ve nested auth-listener race temizligi, serialized bounded dashboard retry ve privacy-safe diagnostic event uygulandi. Focused 11/11 ve complete 454/454 test, lint, typecheck, build, payment schema-only, audit ve diff check PASS.
+Sonuc: Focused hotfix commit `5ba1d98d67ceaf49390cb19a971b8a91cd1f09ff` yalniz `staging/ecu-intelligence-v1` branch'ine push edildi. Branch-bound Vercel Preview `dpl_A1nq9wza26NVArZLN4TRD9jquWgq` staging ref `vxdxdvtsopsjatukdbuq` ile bundle scan'i gecti. Customer session 916 saniye iki tabda stable kaldi; idle, coklu 30-second sync, reload, authenticated navigation, real logout, revoked session ve customer/anonymous admin denial PASS. Disposable users/profiles ve Preview deployment temizlendi.
 
-Owner authorization: Production ref identification-only `jujaeyvyaeesmipihrrw`; isolated staging ref `vxdxdvtsopsjatukdbuq`; authorized branch `staging/ecu-intelligence-v1`; authorized base/release commit `5ead41c09b9dc63dec8fcb329c80a9376f201aad`. Exactly one focused auth hotfix commit, branch-only push, Vercel Preview-only deploy ve en fazla bir disposable admin/staff ile bir disposable customer staging kullanicisi acikca yetkilendirildi.
+Blocker: Safe browser control surface network interception/offline emulation ve cookie-store inspection sunmuyor; repository'de staging-only fault-injection hook yok. Bu nedenle gercek Preview'da 429, 5xx ve timeout/network dashboard failure, retry banner'in exact endpoint/status'u, retry recovery ve foreground/background tab activationi runtime kanitiyla tamamlanamadi. Unit tests bu siniflandirma/retry davranisini kapsiyor fakat owner talebi unit-only basariyi yasakliyor; final verification `No` kalir.
 
-Kalan is: Yerel kontrolleri yeniden gecir; focused commit/push yap; Preview env ref kanitini valuesiz dogrula; Preview-only deploy; 15-minute idle/sync/reload/navigation/background/two-tab/transient-failure/invalid-session soak; staging test verisi cleanup; final operasyon kaydi.
+Remediation: Owner tarafindan onayli staging-only non-production fault-injection proxy/hook veya browser network-control surface sagla; 429/5xx/timeout/network case'lerini privacy-safe path/status/timing trace ile yeniden kos; sonra yeni Preview soak yap. Production'a gecme.
 
-Guvenlik siniri: Production Supabase, Production env, RLS, JWT lifetime, refresh rotation/reuse protection ve Production deploy degismedi.
-
-## Blocked
+Guvenlik siniri: Production Supabase/Vercel/env/backup/migration/deploy untouched. ECU firmware/MOD/learning approval/backfill/Stage/DTC/A3-A5/customer automatic delivery islemi yok.
 
 ## Later
 
