@@ -6,6 +6,22 @@
 
 ## In Progress
 
+### MANUAL-20260716-AUTH-SESSION-STABILITY-HOTFIX [P0] Auth session stability hotfix
+
+Durum: In Progress - owner-authorized isolated staging release verification
+
+Fingerprint: `auth|supabase-browser-server-session|mixed-localstorage-cookie-refresh|canonical-cookie-session-stability`
+
+Kapsam: Customer dashboard ve diger authenticated yuzeylerdeki beklenmeyen session kaybini repository kanitiyla incele; Supabase browser/server/proxy session modelini canonical cookie tabanli akisa getir; dashboard sync failure ile gercek invalid session davranisini ayir; transient sync retry'larini bounded/cancellable yap.
+
+Yerel sonuc: Canonical `@supabase/ssr` browser/server cookie modeli, Proxy refresh propagation/no-store headers, legacy localStorage-to-cookie bridge, stale-session ve nested auth-listener race temizligi, serialized bounded dashboard retry ve privacy-safe diagnostic event uygulandi. Focused 11/11 ve complete 454/454 test, lint, typecheck, build, payment schema-only, audit ve diff check PASS.
+
+Owner authorization: Production ref identification-only `jujaeyvyaeesmipihrrw`; isolated staging ref `vxdxdvtsopsjatukdbuq`; authorized branch `staging/ecu-intelligence-v1`; authorized base/release commit `5ead41c09b9dc63dec8fcb329c80a9376f201aad`. Exactly one focused auth hotfix commit, branch-only push, Vercel Preview-only deploy ve en fazla bir disposable admin/staff ile bir disposable customer staging kullanicisi acikca yetkilendirildi.
+
+Kalan is: Yerel kontrolleri yeniden gecir; focused commit/push yap; Preview env ref kanitini valuesiz dogrula; Preview-only deploy; 15-minute idle/sync/reload/navigation/background/two-tab/transient-failure/invalid-session soak; staging test verisi cleanup; final operasyon kaydi.
+
+Guvenlik siniri: Production Supabase, Production env, RLS, JWT lifetime, refresh rotation/reuse protection ve Production deploy degismedi.
+
 ## Blocked
 
 ## Later

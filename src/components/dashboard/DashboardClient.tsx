@@ -6,6 +6,12 @@ import { useRouter } from "next/navigation";
 import { getStableSession, signOutIfEmailUnverified, signOutStable } from "@/lib/authGuards";
 import { supabase } from "@/lib/supabaseClient";
 import {
+  classifyDashboardSyncFailure,
+  dashboardSyncRetryLimit,
+  getDashboardSyncRetryDelay,
+  recordDashboardSyncDiagnostic,
+} from "@/lib/dashboardSync";
+import {
   ArrowRight,
   AlertTriangle,
   BrainCircuit,
@@ -198,8 +204,30 @@ export function DashboardClient() {
 
   useEffect(() => {
     let currentUserId: string | null = null;
+    let disposed = false;
+    let loadInFlight: Promise<void> | null = null;
+    let retryAttempt = 0;
+    let retryTimer: number | null = null;
 
-    const loadDashboard = async (options?: { silent?: boolean }) => {
+    const clearScheduledRetry = () => {
+      if (retryTimer !== null) window.clearTimeout(retryTimer);
+      retryTimer = null;
+    };
+
+    const scheduleRetry = (error: unknown) => {
+      if (disposed || retryTimer !== null || retryAttempt >= dashboardSyncRetryLimit) return;
+
+      const nextAttempt = retryAttempt + 1;
+      const delay = getDashboardSyncRetryDelay(retryAttempt);
+      retryAttempt = nextAttempt;
+      recordDashboardSyncDiagnostic(classifyDashboardSyncFailure(error), nextAttempt);
+      retryTimer = window.setTimeout(() => {
+        retryTimer = null;
+        void loadDashboard({ silent: true });
+      }, delay);
+    };
+
+    const performDashboardLoad = async (options?: { silent?: boolean }) => {
       const silent = Boolean(options?.silent);
       let keepLoadingForRedirect = false;
 
@@ -212,9 +240,16 @@ export function DashboardClient() {
 
       try {
         if (!currentUserId) {
-          const { session } = await getStableSession();
+          const { session, error: sessionError } = await getStableSession();
           if (!session?.user) {
-            if (!silent) {
+            if (sessionError) {
+              setDashboardLoadError(
+                hasLoadedDashboardRef.current || silent
+                  ? DASHBOARD_SYNC_ERROR_MESSAGE
+                  : DASHBOARD_LOAD_ERROR_MESSAGE
+              );
+              scheduleRetry(sessionError);
+            } else if (!silent) {
               keepLoadingForRedirect = true;
               router.replace("/login");
             }
@@ -312,6 +347,7 @@ export function DashboardClient() {
               ? DASHBOARD_SYNC_ERROR_MESSAGE
               : DASHBOARD_LOAD_ERROR_MESSAGE
           );
+          scheduleRetry(queryFailed);
           return;
         }
 
@@ -340,12 +376,15 @@ export function DashboardClient() {
         setDashboardLoadError(null);
         setDashboardReady(true);
         hasLoadedDashboardRef.current = true;
-      } catch {
+        retryAttempt = 0;
+        clearScheduledRetry();
+      } catch (error) {
         setDashboardLoadError(
           hasLoadedDashboardRef.current || silent
             ? DASHBOARD_SYNC_ERROR_MESSAGE
             : DASHBOARD_LOAD_ERROR_MESSAGE
         );
+        scheduleRetry(error);
       } finally {
         if (silent) {
           setLiveRefreshing(false);
@@ -355,22 +394,24 @@ export function DashboardClient() {
       }
     };
 
-    loadDashboard();
+    function loadDashboard(options?: { silent?: boolean }) {
+      if (loadInFlight) return loadInFlight;
+
+      loadInFlight = performDashboardLoad(options).finally(() => {
+        loadInFlight = null;
+      });
+      return loadInFlight;
+    }
+
+    void loadDashboard();
 
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
       if (session?.user) {
         currentUserId = session.user.id;
         setEmail(session.user.email ?? null);
       } else if (event === "SIGNED_OUT") {
-        void getStableSession().then(({ session: recovered }) => {
-          if (recovered?.user) {
-            currentUserId = recovered.user.id;
-            setEmail(recovered.user.email ?? null);
-          } else {
-            currentUserId = null;
-            router.replace("/login");
-          }
-        });
+        currentUserId = null;
+        router.replace("/login");
       }
     });
 
@@ -420,6 +461,8 @@ export function DashboardClient() {
       .subscribe();
 
     return () => {
+      disposed = true;
+      clearScheduledRetry();
       window.clearInterval(interval);
       authListener.subscription.unsubscribe();
       supabase.removeChannel(channel);

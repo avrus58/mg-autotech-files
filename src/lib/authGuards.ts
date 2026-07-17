@@ -38,6 +38,8 @@ function initializeAuthMemoryListener() {
   supabase.auth.onAuthStateChange((event, session) => {
     if (session) {
       setCachedSession(session);
+    } else if (event === "SIGNED_OUT") {
+      setCachedSession(null);
     }
   });
 }
@@ -53,10 +55,7 @@ export async function getStableSession(): Promise<{ session: Session | null; err
   initializeAuthMemoryListener();
   let lastError: unknown = null;
 
-  // Cross-tab refresh can briefly expose an empty session while the refreshed
-  // token is being persisted. Treat that short window as indeterminate rather
-  // than logging the user out or rejecting an authenticated action.
-  for (let attempt = 0; attempt < 6; attempt += 1) {
+  for (let attempt = 0; attempt < 3; attempt += 1) {
     const { data, error } = await supabase.auth.getSession();
     if (data.session) {
       setCachedSession(data.session);
@@ -64,12 +63,17 @@ export async function getStableSession(): Promise<{ session: Session | null; err
     }
     lastError = error;
 
-    if (hasUsableCachedSession()) {
+    if (isTransientAuthError(error) && hasUsableCachedSession()) {
       return { session: getCachedSession(), error: null };
     }
 
-    if (attempt < 5) {
-      const delay = Math.min(250 * (attempt + 1), 750);
+    if (!isTransientAuthError(error)) {
+      setCachedSession(null);
+      return { session: null, error };
+    }
+
+    if (attempt < 2) {
+      const delay = 150 * (attempt + 1);
       await new Promise((resolve) => window.setTimeout(resolve, delay));
     }
   }
@@ -93,10 +97,13 @@ export async function authenticatedFetch(input: RequestInfo | URL, init?: Reques
   const response = await send(session.access_token);
   if (response.status !== 401) return response;
 
-  const { data, error } = await supabase.auth.refreshSession(
-    session.refresh_token ? { refresh_token: session.refresh_token } : undefined
-  );
-  if (error || !data.session?.access_token) return response;
+  const { data: userData, error: validationError } = await supabase.auth.getUser();
+  if (validationError || !userData.user) return response;
+
+  const { data } = await supabase.auth.getSession();
+  if (!data.session?.access_token || data.session.access_token === session.access_token) {
+    return response;
+  }
 
   setCachedSession(data.session);
   return send(data.session.access_token);
