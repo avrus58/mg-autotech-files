@@ -6,6 +6,22 @@
 
 ## In Progress
 
+### MANUAL-20260719-VEHICLE-DB-V2-SERVER-LIST [P1] Vehicle Database v2 server-side list foundation
+
+Durum: In Progress - owner-authorized isolated staging Preview release ve authenticated QA calisiyor
+
+Fingerprint: `vehicle-database|admin-list|client-filtered-150-row-subset|bounded-server-pagination-url-state`
+
+Kapsam: Mevcut overview sorgusundan kayit listesini ayir; ana admin listesine strict query parsing, exact total, bounded server-side pagination, deterministic ordering, root vehicle search, brand/model/generation/ECU-family/publish/verification filtreleri, URL senkronizasyonu, debounced/cancellable istekler ve accessible loading/error/empty/pagination durumlari ekle. Mevcut permission, schema, public API ve mutation davranisini koru; migration veya dependency ekleme.
+
+Sonuc: Release candidate yeni `GET /api/admin/vehicles/search` permission-guarded endpoint'i, strict/bounded query sozlesmesi, exact count + deterministic server pagination, guvenli root-engine search ve server-side hierarchy/ECU/publish/verification filtreleri ekliyor. Admin UI tum filtreleri URL ile senkron, 300 ms debounced, cancellable ve stale-response korumali kullaniyor; responsive table/card sunumu, loading/error/empty/retry/pagination/accessibility durumlari mevcut. Liste projection'i source reference, admin notes ve ayrintili ECU metadata'sini tasimiyor. Legacy `/api/admin/vehicles` 150-record compatibility korunurken validation, coverage ve enrichment karsilastirmalari explicit all-page iterator kullaniyor. Yeni dependency veya migration yok.
+
+Dogrulama: Updated focused 47/47, full 460/460, lint, web+uploader typecheck, 268-page production build, payment schema-only, online audit (0 vulnerability) ve diff-check PASS. Staging PostgREST nested `!inner` hierarchy/ECU filter syntax'i HTTP 200 ile dogrulandi. Commit-sonrasi real Preview authenticated QA henuz tamamlanmadi.
+
+Release gate: Yalniz isolated staging ref `vxdxdvtsopsjatukdbuq`, feature-branch scoped Preview vars, tek allowlisted commit/push ve disposable synthetic metadata/user QA yetkili. Production ref `jujaeyvyaeesmipihrrw` identity-only; Production mutation/env/deploy kesinlikle yok.
+
+Stop condition: Full local verification failure'inda commit etme. Basariliysa exact allowlist'i tek commit ile feature branch'e push et; Git-linked Preview'da auth/filter/pagination/URL/responsive/error matrixini dogrula, disposable data/users'i temizle ve Preview'i owner review icin birak.
+
 ## Blocked
 
 ### MANUAL-20260716-AUTH-SESSION-STABILITY-HOTFIX [P0] Auth session stability hotfix
@@ -65,6 +81,18 @@ Remediation: Batch with a future documentation/source-comment maintenance pass a
 Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
+
+### MANUAL-20260719-VEHICLE-DB-V2-OVERVIEW [P1] Vehicle Database v2 overview operational summary
+
+Durum: Done
+
+Fingerprint: `vehicle-database|admin-overview|operational-state-not-visible|dense-actionable-summary`
+
+Kapsam: Mevcut `/admin/vehicles` overview ekraninda canonical hierarchy, ECU variant, publish-state ve review-state exact metriklerini gorunur yap; mevcut API, permission ve tasarim dilini koru; yeni schema veya dependency ekleme.
+
+Sonuc: Exact server-side brand/model/generation/engine, ECU variant, published/draft/archived, verified/needs-review ve open validation metrikleri eklendi; duplicate-key sinyali gercek taranan key sayisiyla bounded screen olarak etiketlendi. Dense responsive overview, tabular numerals, semantic icon+text state ve explicit customer-safe publish boundary eklendi. Mevcut error/loading davranisi, permission boundary ve customer-safe projection korundu.
+
+Dogrulama: Focused overview assertion PASS; `npm run lint` PASS; `npm run typecheck` PASS (web + customer uploader); `npm test` PASS (455/455); `npm run build` PASS (267 static pages); payment schema-only PASS; offline production dependency audit PASS (0 vulnerabilities); `git diff --check` PASS. No schema/migration/local DB change.
 
 ### MANUAL-20260716-PRODUCTION-RELEASE-DRY-RUN [P0] Production release dry run and owner approval package
 

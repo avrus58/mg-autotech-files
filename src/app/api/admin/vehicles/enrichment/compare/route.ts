@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireStaffPermission } from "@/lib/apiAuth";
-import { getVehicleAdminOverview } from "@/lib/vehicleControl/admin";
+import { getAllVehicleAdminRecords } from "@/lib/vehicleControl/admin";
 import { buildVehicleEnrichmentPlan } from "@/lib/vehicleEnrichment";
 import type { VehicleEnrichmentInput } from "@/lib/vehicleEnrichment/types";
 
@@ -13,7 +13,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid enrichment payload. Provide source details and entries array." }, { status: 400 });
   }
 
-  const overview = await getVehicleAdminOverview();
+  const records = await getAllVehicleAdminRecords();
   const plan = buildVehicleEnrichmentPlan({
     sourceType: body.sourceType ?? "manual",
     sourceName: body.sourceName ?? null,
@@ -23,7 +23,7 @@ export async function POST(request: Request) {
     entries: body.entries,
     modernOnly: body.modernOnly !== false,
     yearCutoff: body.yearCutoff ?? 2020,
-  }, overview.records);
+  }, records);
 
   return NextResponse.json({ plan, dryRun: true, mutation: false });
 }

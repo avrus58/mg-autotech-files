@@ -2,16 +2,19 @@
 
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   AlertTriangle,
   ArrowLeft,
   CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
   Database,
   Eye,
   FileClock,
   Filter,
   Gauge,
+  GitBranch,
   Loader2,
   PlusCircle,
   RefreshCcw,
@@ -20,8 +23,16 @@ import {
   Sparkles,
   UploadCloud,
 } from "lucide-react";
-import { supabase } from "@/lib/supabaseClient";
-import type { VehicleControlRecord, VehicleImportSummary } from "@/lib/vehicleControl/types";
+import { authenticatedFetch } from "@/lib/authGuards";
+import {
+  vehicleAdminPageSizes,
+  type VehicleAdminListResponse,
+  type VehicleAdminPageSize,
+  type VehicleAdminPublishFilter,
+  type VehicleAdminVerificationFilter,
+  type VehicleImportSummary,
+} from "@/lib/vehicleControl/types";
+import { parseVehicleAdminListQuery, vehicleAdminListQueryDefaults } from "@/lib/vehicleControl/schema";
 import type { ExternalVehicleEntry, VehicleEnrichmentPlan } from "@/lib/vehicleEnrichment/types";
 import { parseVehicleEnrichmentEntries } from "@/lib/vehicleEnrichment/parseInput";
 
@@ -33,13 +44,17 @@ type OverviewPayload = {
     modelCount: number;
     generationCount: number;
     engineCount: number;
+    ecuVariantCount: number;
     publishedCount: number;
     draftCount: number;
+    archivedCount: number;
+    verifiedCount: number;
+    needsReviewCount: number;
     validationWarningCount: number;
     duplicateWarningCount: number;
+    duplicateScanRowCount: number;
     dataHealthScore: number;
   };
-  records: VehicleControlRecord[];
   recentAudit: Array<Record<string, unknown>>;
   importBatches: Array<Record<string, unknown>>;
   permissionWarnings?: string[];
@@ -89,29 +104,43 @@ const sectionLinks: Array<{ id: Section; label: string; href: string }> = [
 ];
 
 export default function VehicleControlCenter({ section = "overview" }: { section?: Section }) {
+  const showsVehicleList = section !== "import" && section !== "enrichment" && section !== "coverage" && section !== "audit";
+  const defaultVerificationStatus: VehicleAdminVerificationFilter = section === "validation" ? "needs_review" : "all";
   const [payload, setPayload] = useState<OverviewPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
   const [query, setQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+  const [brandFilter, setBrandFilter] = useState("");
+  const [debouncedBrandFilter, setDebouncedBrandFilter] = useState("");
+  const [modelFilter, setModelFilter] = useState("");
+  const [debouncedModelFilter, setDebouncedModelFilter] = useState("");
+  const [generationFilter, setGenerationFilter] = useState("");
+  const [debouncedGenerationFilter, setDebouncedGenerationFilter] = useState("");
+  const [ecuFamilyFilter, setEcuFamilyFilter] = useState("");
+  const [debouncedEcuFamilyFilter, setDebouncedEcuFamilyFilter] = useState("");
+  const [publishStatus, setPublishStatus] = useState<VehicleAdminPublishFilter>("all");
+  const [verificationStatus, setVerificationStatus] = useState<VehicleAdminVerificationFilter>(defaultVerificationStatus);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState<VehicleAdminPageSize>(vehicleAdminListQueryDefaults.pageSize);
+  const [listPayload, setListPayload] = useState<VehicleAdminListResponse | null>(null);
+  const [listLoading, setListLoading] = useState(false);
+  const [listError, setListError] = useState("");
+  const [listFiltersReady, setListFiltersReady] = useState(false);
+  const [listRefreshToken, setListRefreshToken] = useState(0);
   const [importSummary, setImportSummary] = useState<VehicleImportSummary | null>(null);
   const [busyAction, setBusyAction] = useState("");
   const [showCreate, setShowCreate] = useState(false);
   const [draft, setDraft] = useState<CreateDraftState>(blankDraft);
   const [importConfirm, setImportConfirm] = useState("");
 
-  const authFetch = useCallback(async (url: string, init?: RequestInit) => {
-    const session = await supabase.auth.getSession();
-    const token = session.data.session?.access_token;
-    if (!token) throw new Error("Unauthorized");
-    return fetch(url, { ...init, headers: { ...init?.headers, Authorization: `Bearer ${token}` } });
-  }, []);
+  const authFetch = authenticatedFetch;
 
-  const load = useCallback(async () => {
-    setLoading(true);
+  const load = useCallback(async (showInitialLoader = true) => {
+    if (showInitialLoader) setLoading(true);
     setMessage("");
     try {
-      const response = await authFetch("/api/admin/vehicles");
+      const response = await authFetch("/api/admin/vehicles?includeRecords=false");
       const data = await response.json();
       if (response.status === 401) {
         window.location.href = "/login?redirect=/admin/vehicles";
@@ -122,7 +151,7 @@ export default function VehicleControlCenter({ section = "overview" }: { section
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Vehicle database could not be loaded.");
     } finally {
-      setLoading(false);
+      if (showInitialLoader) setLoading(false);
     }
   }, [authFetch]);
 
@@ -131,26 +160,141 @@ export default function VehicleControlCenter({ section = "overview" }: { section
     return () => window.clearTimeout(timeout);
   }, [load]);
 
-  const records = useMemo(() => {
-    const term = query.trim().toLowerCase();
-    return (payload?.records ?? []).filter((record) => {
-      if (statusFilter === "published" && !record.published) return false;
-      if (statusFilter === "draft" && record.published) return false;
-      if (statusFilter === "verified" && record.verificationStatus !== "verified") return false;
-      if (!term) return true;
-      return [
-        record.brand,
-        record.model,
-        record.generation,
-        record.engine,
-        record.ecuType,
-        record.ecuFamily,
-        record.vehicleKey,
-        record.fuelType,
-        record.services.join(" "),
-      ].filter(Boolean).join(" ").toLowerCase().includes(term);
-    });
-  }, [payload, query, statusFilter]);
+  useEffect(() => {
+    if (!showsVehicleList) return;
+    const source = new URLSearchParams(window.location.search);
+    const listParams = new URLSearchParams();
+    for (const key of ["page", "pageSize", "q", "brand", "model", "generation", "ecuFamily", "publishStatus", "verificationStatus"]) {
+      const value = source.get(key);
+      if (value !== null) listParams.set(key, value);
+    }
+    const parsed = parseVehicleAdminListQuery(listParams);
+    const initial = parsed.success ? parsed.data : {
+      ...vehicleAdminListQueryDefaults,
+      verificationStatus: defaultVerificationStatus,
+    };
+    const initialVerification = source.has("verificationStatus") ? initial.verificationStatus : defaultVerificationStatus;
+    const timeout = window.setTimeout(() => {
+      setQuery(initial.q);
+      setDebouncedQuery(initial.q);
+      setBrandFilter(initial.brand);
+      setDebouncedBrandFilter(initial.brand);
+      setModelFilter(initial.model);
+      setDebouncedModelFilter(initial.model);
+      setGenerationFilter(initial.generation);
+      setDebouncedGenerationFilter(initial.generation);
+      setEcuFamilyFilter(initial.ecuFamily);
+      setDebouncedEcuFamilyFilter(initial.ecuFamily);
+      setPublishStatus(initial.publishStatus);
+      setVerificationStatus(initialVerification);
+      setPage(initial.page);
+      setPageSize(initial.pageSize);
+      setListFiltersReady(true);
+    }, 0);
+    return () => window.clearTimeout(timeout);
+  }, [defaultVerificationStatus, showsVehicleList]);
+
+  useEffect(() => {
+    if (!listFiltersReady) return;
+    const timeout = window.setTimeout(() => {
+      setDebouncedQuery(query.trim());
+      setDebouncedBrandFilter(brandFilter.trim());
+      setDebouncedModelFilter(modelFilter.trim());
+      setDebouncedGenerationFilter(generationFilter.trim());
+      setDebouncedEcuFamilyFilter(ecuFamilyFilter.trim());
+    }, 300);
+    return () => window.clearTimeout(timeout);
+  }, [brandFilter, ecuFamilyFilter, generationFilter, listFiltersReady, modelFilter, query]);
+
+  useEffect(() => {
+    if (!listFiltersReady || !showsVehicleList) return;
+    const params = new URLSearchParams(window.location.search);
+    const setOrDelete = (key: string, value: string, defaultValue: string) => {
+      if (value === defaultValue) params.delete(key);
+      else params.set(key, value);
+    };
+    setOrDelete("q", debouncedQuery, "");
+    setOrDelete("brand", debouncedBrandFilter, "");
+    setOrDelete("model", debouncedModelFilter, "");
+    setOrDelete("generation", debouncedGenerationFilter, "");
+    setOrDelete("ecuFamily", debouncedEcuFamilyFilter, "");
+    setOrDelete("publishStatus", publishStatus, "all");
+    setOrDelete("verificationStatus", verificationStatus, defaultVerificationStatus);
+    setOrDelete("page", String(page), "1");
+    setOrDelete("pageSize", String(pageSize), String(vehicleAdminListQueryDefaults.pageSize));
+    const next = params.toString();
+    window.history.replaceState(null, "", next ? `${window.location.pathname}?${next}` : window.location.pathname);
+  }, [debouncedBrandFilter, debouncedEcuFamilyFilter, debouncedGenerationFilter, debouncedModelFilter, debouncedQuery, defaultVerificationStatus, listFiltersReady, page, pageSize, publishStatus, showsVehicleList, verificationStatus]);
+
+  useEffect(() => {
+    if (!listFiltersReady || !showsVehicleList) return;
+    const controller = new AbortController();
+
+    async function loadList() {
+      const requestedQuery = {
+        page,
+        pageSize,
+        q: debouncedQuery,
+        brand: debouncedBrandFilter,
+        model: debouncedModelFilter,
+        generation: debouncedGenerationFilter,
+        ecuFamily: debouncedEcuFamilyFilter,
+        publishStatus,
+        verificationStatus,
+      };
+      setListPayload((current) => {
+        if (!current) return null;
+        const previous = current.query;
+        const sameQuery = previous.page === requestedQuery.page &&
+          previous.pageSize === requestedQuery.pageSize &&
+          previous.q === requestedQuery.q &&
+          previous.brand === requestedQuery.brand &&
+          previous.model === requestedQuery.model &&
+          previous.generation === requestedQuery.generation &&
+          previous.ecuFamily === requestedQuery.ecuFamily &&
+          previous.publishStatus === requestedQuery.publishStatus &&
+          previous.verificationStatus === requestedQuery.verificationStatus;
+        return sameQuery ? current : null;
+      });
+      setListLoading(true);
+      setListError("");
+      const params = new URLSearchParams({
+        page: String(page),
+        pageSize: String(pageSize),
+        q: debouncedQuery,
+        brand: debouncedBrandFilter,
+        model: debouncedModelFilter,
+        generation: debouncedGenerationFilter,
+        ecuFamily: debouncedEcuFamilyFilter,
+        publishStatus,
+        verificationStatus,
+      });
+      try {
+        const response = await authFetch(`/api/admin/vehicles/search?${params}`, { signal: controller.signal });
+        const data = await response.json();
+        if (response.status === 401) {
+          window.location.href = `/login?redirect=${encodeURIComponent(`${window.location.pathname}${window.location.search}`)}`;
+          return;
+        }
+        if (!response.ok) throw new Error(data.error || "Vehicle records could not be loaded.");
+        const result = data as VehicleAdminListResponse;
+        const normalizedPage = result.pagination.pageCount > 0 ? Math.min(result.pagination.page, result.pagination.pageCount) : 1;
+        if (result.pagination.page !== normalizedPage) {
+          setPage(normalizedPage);
+          return;
+        }
+        if (!controller.signal.aborted) setListPayload(result);
+      } catch (error) {
+        if (controller.signal.aborted || (error instanceof DOMException && error.name === "AbortError")) return;
+        setListError(error instanceof Error ? error.message : "Vehicle records could not be loaded.");
+      } finally {
+        if (!controller.signal.aborted) setListLoading(false);
+      }
+    }
+
+    void loadList();
+    return () => controller.abort();
+  }, [authFetch, debouncedBrandFilter, debouncedEcuFamilyFilter, debouncedGenerationFilter, debouncedModelFilter, debouncedQuery, listFiltersReady, listRefreshToken, page, pageSize, publishStatus, showsVehicleList, verificationStatus]);
 
   async function runImport(dryRun: boolean) {
     if (!dryRun && importConfirm.trim() !== "IMPORT") {
@@ -170,7 +314,10 @@ export default function VehicleControlCenter({ section = "overview" }: { section
       setImportSummary(data.summary);
       setMessage(dryRun ? "Dry-run completed. No production data was changed." : "Vehicle import completed.");
       if (!dryRun) setImportConfirm("");
-      if (!dryRun) await load();
+      if (!dryRun) {
+        setListRefreshToken((value) => value + 1);
+        await load(false);
+      }
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Import failed.");
     } finally {
@@ -186,7 +333,8 @@ export default function VehicleControlCenter({ section = "overview" }: { section
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Validation failed.");
       setMessage(`Validation completed: ${data.count} issue(s) recorded.`);
-      await load();
+      setListRefreshToken((value) => value + 1);
+      await load(false);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Validation failed.");
     } finally {
@@ -249,7 +397,8 @@ export default function VehicleControlCenter({ section = "overview" }: { section
       setMessage("Draft vehicle created.");
       setDraft(blankDraft);
       setShowCreate(false);
-      await load();
+      setListRefreshToken((value) => value + 1);
+      await load(false);
       if (nextId) window.location.href = `/admin/vehicles/${nextId}`;
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Vehicle draft could not be created.");
@@ -258,14 +407,39 @@ export default function VehicleControlCenter({ section = "overview" }: { section
     }
   }
 
+  function clearListFilters() {
+    setQuery("");
+    setDebouncedQuery("");
+    setBrandFilter("");
+    setDebouncedBrandFilter("");
+    setModelFilter("");
+    setDebouncedModelFilter("");
+    setGenerationFilter("");
+    setDebouncedGenerationFilter("");
+    setEcuFamilyFilter("");
+    setDebouncedEcuFamilyFilter("");
+    setPublishStatus("all");
+    setVerificationStatus(defaultVerificationStatus);
+    setPage(1);
+  }
+
   if (loading) {
-    return <main className="flex min-h-screen items-center justify-center bg-[#050505] text-white">
-      <Loader2 className="mr-3 h-5 w-5 animate-spin text-red-500" />Loading vehicle control center...
+    return <main role="status" aria-live="polite" className="flex min-h-screen items-center justify-center bg-[#050505] text-white">
+      <Loader2 aria-hidden="true" className="mr-3 h-5 w-5 animate-spin text-red-500 motion-reduce:animate-none" />Loading vehicle control center...
     </main>;
   }
 
   const stats = payload?.stats;
   const lastImport = payload?.importBatches?.[0];
+  const records = listPayload?.records ?? [];
+  const pagination = listPayload?.pagination;
+  const hasActiveListFilters = Boolean(
+    debouncedQuery ||
+    debouncedBrandFilter ||
+    debouncedModelFilter ||
+    debouncedGenerationFilter ||
+    debouncedEcuFamilyFilter
+  ) || publishStatus !== "all" || verificationStatus !== defaultVerificationStatus;
 
   return <main className="mg-compact-ui min-h-screen bg-[#050505] text-white">
     <header className="border-b border-white/10 bg-black/80">
@@ -280,7 +454,7 @@ export default function VehicleControlCenter({ section = "overview" }: { section
           <p className="mt-3 max-w-3xl text-sm leading-6 text-zinc-400">Manage published customer-safe vehicle data, imported source records, ECU metadata, service availability, validation and audit history without editing production JSON.</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <button onClick={() => void load()} className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-black hover:bg-white/10"><RefreshCcw className="mr-2 inline h-4 w-4" />Refresh</button>
+          <button onClick={() => { setListRefreshToken((value) => value + 1); void load(false); }} className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-black hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"><RefreshCcw className="mr-2 inline h-4 w-4" />Refresh</button>
           <button onClick={() => setShowCreate((value) => !value)} className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-black hover:bg-white/10"><PlusCircle className="mr-2 inline h-4 w-4" />Create draft</button>
           <button onClick={() => void runValidation()} disabled={busyAction === "validation"} className="rounded-xl border border-amber-800/40 bg-amber-950/20 px-4 py-3 text-sm font-black text-amber-200 disabled:opacity-50">{busyAction === "validation" ? <Loader2 className="mr-2 inline h-4 w-4 animate-spin" /> : <ShieldCheck className="mr-2 inline h-4 w-4" />}Run validation</button>
           <button onClick={() => void rebuildCatalogCache()} disabled={busyAction === "catalog-cache"} className="rounded-xl border border-sky-800/40 bg-sky-950/20 px-4 py-3 text-sm font-black text-sky-200 disabled:opacity-50">{busyAction === "catalog-cache" ? <Loader2 className="mr-2 inline h-4 w-4 animate-spin" /> : <Database className="mr-2 inline h-4 w-4" />}Rebuild Public Catalog Cache</button>
@@ -292,19 +466,30 @@ export default function VehicleControlCenter({ section = "overview" }: { section
     </header>
 
     <div className="mx-auto max-w-[1500px] px-4 py-6">
-      {message && <div className="mb-5 rounded-xl border border-red-800/40 bg-red-950/20 p-4 text-sm text-red-100">{message}</div>}
+      {message && <div role="alert" className="mb-5 rounded-xl border border-red-800/40 bg-red-950/20 p-4 text-sm text-red-100">{message}</div>}
       {payload?.permissionWarnings?.map((warning) => <div key={warning} className="mb-5 rounded-xl border border-amber-800/40 bg-amber-950/20 p-4 text-sm leading-6 text-amber-100">
         <ShieldCheck className="mr-2 inline h-4 w-4 text-amber-300" />{warning}
       </div>)}
-      <nav className="mb-6 flex gap-2 overflow-x-auto rounded-2xl border border-white/10 bg-white/[0.03] p-2">
-        {sectionLinks.map((item) => <Link key={item.id} href={item.href} className={`shrink-0 rounded-xl px-4 py-2 text-sm font-black transition ${section === item.id ? "bg-[#b1121b] text-white" : "text-zinc-400 hover:bg-white/10 hover:text-white"}`}>{item.label}</Link>)}
+      <nav aria-label="Vehicle database sections" className="mb-6 flex gap-2 overflow-x-auto rounded-2xl border border-white/10 bg-white/[0.03] p-2">
+        {sectionLinks.map((item) => <Link key={item.id} href={item.href} aria-current={section === item.id ? "page" : undefined} className={`inline-flex min-h-11 shrink-0 items-center rounded-xl px-4 py-2 text-sm font-black transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 ${section === item.id ? "bg-[#b1121b] text-white" : "text-zinc-400 hover:bg-white/10 hover:text-white"}`}>{item.label}</Link>)}
       </nav>
 
-      {stats && <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <Metric icon={<Database />} label="Brands / Models" value={`${stats.brandCount} / ${stats.modelCount}`} helper={`${stats.generationCount} generations`} />
-        <Metric icon={<Gauge />} label="Engines" value={stats.engineCount} helper={`${stats.publishedCount} published / ${stats.draftCount} draft`} />
-        <Metric icon={<AlertTriangle />} label="Warnings" value={stats.validationWarningCount + stats.duplicateWarningCount} helper={`${stats.duplicateWarningCount} duplicate keys`} />
-        <Metric icon={<CheckCircle2 />} label="Data Health" value={`${stats.dataHealthScore}%`} helper="Validation, publish and duplicate score" />
+      {stats && <section aria-labelledby="catalog-summary-title">
+        <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h2 id="catalog-summary-title" className="text-lg font-black">Catalogue operational summary</h2>
+            <p className="mt-1 text-sm text-zinc-400">Exact hierarchy, controller, publish and review counts; duplicate-key screening is bounded.</p>
+          </div>
+          <span className="text-xs font-bold text-zinc-400">Customer-safe publishing remains explicit and validation-gated.</span>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
+          <Metric icon={<GitBranch />} label="Canonical hierarchy" value={stats.engineCount} helper={`${stats.brandCount} brands · ${stats.modelCount} models · ${stats.generationCount} generations`} />
+          <Metric icon={<Gauge />} label="ECU variants" value={stats.ecuVariantCount} helper="Controller metadata records linked to engines" />
+          <Metric icon={<Eye />} label="Publish state" value={stats.publishedCount} helper={`${stats.draftCount} draft · ${stats.archivedCount} archived`} />
+          <Metric icon={<ShieldCheck />} label="Verification" value={stats.verifiedCount} helper={`${stats.needsReviewCount} explicitly need review`} tone={stats.needsReviewCount > 0 ? "amber" : "green"} />
+          <Metric icon={<AlertTriangle />} label="Open validation" value={stats.validationWarningCount} helper={`${stats.duplicateWarningCount} duplicate groups across ${stats.duplicateScanRowCount} screened keys`} tone={stats.validationWarningCount + stats.duplicateWarningCount > 0 ? "amber" : "green"} />
+          <Metric icon={<CheckCircle2 />} label="Data health" value={`${stats.dataHealthScore}%`} helper="Publish coverage and open validation score" tone={stats.dataHealthScore >= 90 ? "green" : "default"} />
+        </div>
       </section>}
 
       {lastImport && <section className="mt-6 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
@@ -401,33 +586,92 @@ export default function VehicleControlCenter({ section = "overview" }: { section
         </div>
       </section>}
 
-      {(section !== "import" && section !== "enrichment" && section !== "coverage" && section !== "audit") && <section className="mt-6 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+      {showsVehicleList && <section aria-labelledby="vehicle-records-title" aria-busy={listLoading} className="mt-6 rounded-2xl border border-white/10 bg-white/[0.03] p-4 sm:p-5">
+        <div className="flex flex-col gap-2 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <h2 className="text-2xl font-black">{section === "validation" ? "Records needing review" : "Vehicle records"}</h2>
-            <p className="mt-1 text-sm text-zinc-500">Customer selector only receives active and published safe fields.</p>
+            <h2 id="vehicle-records-title" className="text-2xl font-black">{section === "validation" ? "Records needing review" : "Vehicle records"}</h2>
+            <p className="mt-1 text-sm text-zinc-400">Server-filtered results. Customer selectors receive only active, published customer-safe fields.</p>
           </div>
-          <div className="grid gap-2 sm:grid-cols-[260px_180px]">
-            <label className="flex h-12 items-center gap-3 rounded-xl border border-white/10 bg-black/40 px-4"><Search className="h-4 w-4 text-zinc-500" /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search vehicle, ECU, key..." className="min-w-0 flex-1 bg-transparent text-sm font-bold outline-none placeholder:text-zinc-600" /></label>
-            <label className="flex h-12 items-center gap-3 rounded-xl border border-white/10 bg-black/40 px-4"><Filter className="h-4 w-4 text-zinc-500" /><select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} className="min-w-0 flex-1 bg-transparent text-sm font-bold outline-none"><option value="all">All records</option><option value="published">Published</option><option value="draft">Draft</option><option value="verified">Verified</option></select></label>
-          </div>
+          <p aria-live="polite" className="text-sm font-bold tabular-nums text-zinc-400">
+            {listLoading ? (listPayload ? `Updating page ${page}...` : "Loading records...") : `${pagination?.total ?? 0} matching record${pagination?.total === 1 ? "" : "s"}${pagination?.pageCount ? `, page ${pagination.page} of ${pagination.pageCount}` : ""}`}
+          </p>
         </div>
-        <div className="mt-5 overflow-hidden rounded-2xl border border-white/10">
-          <div className="hidden grid-cols-[1.2fr_1fr_1fr_1.1fr_150px_120px] gap-3 border-b border-white/10 bg-white/[0.04] px-4 py-3 text-xs font-black uppercase tracking-[0.14em] text-zinc-500 xl:grid">
-            <div>Vehicle</div><div>Generation</div><div>ECU</div><div>Services</div><div>Status</div><div>Action</div>
+
+        <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-5">
+          <label className="block md:col-span-2 xl:col-span-2 2xl:col-span-1">
+            <span className="mb-1.5 block text-xs font-black uppercase tracking-[0.12em] text-zinc-400">Search</span>
+            <span className="flex h-11 items-center gap-3 rounded-xl border border-white/10 bg-black/40 px-3 focus-within:border-red-700 focus-within:ring-2 focus-within:ring-red-900/50">
+              <Search aria-hidden="true" className="h-4 w-4 shrink-0 text-zinc-500" />
+              <input value={query} onChange={(event) => { setQuery(event.target.value); setPage(1); }} maxLength={120} placeholder="Vehicle, engine, key or source" className="min-w-0 flex-1 bg-transparent text-sm font-bold outline-none placeholder:text-zinc-600" />
+            </span>
+          </label>
+          <VehicleTextFilter label="Brand" value={brandFilter} placeholder="e.g. BMW" onChange={(value) => { setBrandFilter(value); setPage(1); }} />
+          <VehicleTextFilter label="Model" value={modelFilter} placeholder="e.g. 5 Series" onChange={(value) => { setModelFilter(value); setPage(1); }} />
+          <VehicleTextFilter label="Generation" value={generationFilter} placeholder="e.g. G30" onChange={(value) => { setGenerationFilter(value); setPage(1); }} />
+          <VehicleTextFilter label="ECU family" value={ecuFamilyFilter} placeholder="e.g. MD1" onChange={(value) => { setEcuFamilyFilter(value); setPage(1); }} />
+          <label className="block">
+            <span className="mb-1.5 block text-xs font-black uppercase tracking-[0.12em] text-zinc-400">Publish state</span>
+            <span className="flex h-11 items-center gap-2 rounded-xl border border-white/10 bg-black/40 px-3 focus-within:border-red-700 focus-within:ring-2 focus-within:ring-red-900/50">
+              <Filter aria-hidden="true" className="h-4 w-4 shrink-0 text-zinc-500" />
+              <select value={publishStatus} onChange={(event) => { setPublishStatus(event.target.value as VehicleAdminPublishFilter); setPage(1); }} className="min-w-0 flex-1 bg-[#070707] text-sm font-bold outline-none">
+                <option value="all">All states</option><option value="published">Published</option><option value="draft">Draft</option><option value="archived">Archived</option>
+              </select>
+            </span>
+          </label>
+          <label className="block">
+            <span className="mb-1.5 block text-xs font-black uppercase tracking-[0.12em] text-zinc-400">Verification</span>
+            <select value={verificationStatus} onChange={(event) => { setVerificationStatus(event.target.value as VehicleAdminVerificationFilter); setPage(1); }} className="h-11 w-full rounded-xl border border-white/10 bg-[#070707] px-3 text-sm font-bold outline-none focus-visible:border-red-700 focus-visible:ring-2 focus-visible:ring-red-900/50">
+              <option value="all">All verification</option><option value="verified">Verified</option><option value="needs_review">Needs review</option><option value="unverified">Unverified</option><option value="imported">Imported</option><option value="rejected">Rejected</option>
+            </select>
+          </label>
+          <label className="block">
+            <span className="mb-1.5 block text-xs font-black uppercase tracking-[0.12em] text-zinc-400">Page size</span>
+            <select value={pageSize} onChange={(event) => { const next = Number(event.target.value); if (vehicleAdminPageSizes.includes(next as VehicleAdminPageSize)) setPageSize(next as VehicleAdminPageSize); setPage(1); }} className="h-11 w-full rounded-xl border border-white/10 bg-[#070707] px-3 text-sm font-bold outline-none focus-visible:border-red-700 focus-visible:ring-2 focus-visible:ring-red-900/50">
+              {vehicleAdminPageSizes.map((size) => <option key={size} value={size}>{size} rows</option>)}
+            </select>
+          </label>
+          <button type="button" onClick={clearListFilters} disabled={!hasActiveListFilters} className="h-11 self-end rounded-xl border border-white/10 bg-white/[0.04] px-4 text-sm font-black text-zinc-200 transition hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 disabled:cursor-not-allowed disabled:opacity-40">Clear filters</button>
+        </div>
+
+        {listError && <div role="alert" className="mt-4 flex flex-col gap-3 rounded-xl border border-amber-800/40 bg-amber-950/20 p-4 text-sm text-amber-100 sm:flex-row sm:items-center sm:justify-between">
+          <span>{listError}{listPayload ? " Showing the last successful result." : ""}</span>
+          <button type="button" onClick={() => setListRefreshToken((value) => value + 1)} className="h-11 shrink-0 rounded-xl border border-amber-700/50 px-4 font-black hover:bg-amber-900/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400">Retry</button>
+        </div>}
+
+        <div role="table" aria-label="Vehicle record search results" aria-colcount={6} className="mt-5 overflow-hidden rounded-2xl border border-white/10">
+          <div role="row" className="sr-only grid-cols-[1.2fr_1fr_1fr_1.1fr_150px_120px] gap-3 border-b border-white/10 bg-white/[0.04] px-4 py-3 text-xs font-black uppercase tracking-[0.14em] text-zinc-400 xl:not-sr-only xl:grid">
+            <div role="columnheader">Vehicle</div><div role="columnheader">Generation</div><div role="columnheader">ECU</div><div role="columnheader">Services</div><div role="columnheader">Status</div><div role="columnheader">Action</div>
           </div>
-          <div className="divide-y divide-white/10">
-            {records.slice(0, 250).map((record) => <div key={record.id ?? record.vehicleKey} className="grid gap-3 px-4 py-4 xl:grid-cols-[1.2fr_1fr_1fr_1.1fr_150px_120px] xl:items-center">
-              <div><div className="text-lg font-black text-white">{record.brand} {record.model}</div><div className="mt-1 text-sm font-bold text-zinc-400">{record.engine}</div><div className="mt-1 text-xs text-zinc-600">{record.vehicleKey}</div></div>
-              <div className="text-sm text-zinc-300">{record.generation}<div className="mt-1 text-xs text-zinc-600">{[record.yearFrom, record.yearTo ?? "open"].filter(Boolean).join(" - ")}</div></div>
-              <div className="text-sm text-zinc-300">{record.ecuType || "-"}<div className="mt-1 text-xs text-zinc-600">{record.ecuFamily || "family unknown"}</div></div>
-              <div className="flex flex-wrap gap-1">{record.services.slice(0, 5).map((service) => <span key={service} className="rounded-full bg-red-950/30 px-2 py-1 text-[11px] font-black text-red-200">{service.replaceAll("_", " ").toUpperCase()}</span>)}</div>
-              <div><span className={`rounded-full px-3 py-1 text-xs font-black ${record.published ? "bg-emerald-950/30 text-emerald-300" : "bg-zinc-900 text-zinc-400"}`}>{record.published ? "Published" : "Draft"}</span><div className="mt-2 text-xs text-zinc-500">{record.verificationStatus} - {record.confidenceScore}%</div></div>
-              <Link href={`/admin/vehicles/${record.id}`} className="inline-flex h-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] px-3 text-sm font-black hover:bg-white/10"><Eye className="mr-2 h-4 w-4" />Open</Link>
+          <div role="rowgroup" className={`divide-y divide-white/10 transition-opacity ${listLoading && listPayload ? "opacity-60" : "opacity-100"}`}>
+            {listLoading && !listPayload && Array.from({ length: 6 }, (_, index) => <div role="row" key={index} className="grid gap-3 px-4 py-4 xl:grid-cols-[1.2fr_1fr_1fr_1.1fr_150px_120px]">
+              {Array.from({ length: 6 }, (__, cell) => <div role="cell" key={cell} className="h-11 animate-pulse rounded-lg bg-white/[0.06] motion-reduce:animate-none" />)}
             </div>)}
-            {records.length === 0 && <div className="p-8 text-center text-sm text-zinc-500">No matching vehicle records.</div>}
+            {records.map((record) => {
+              const publishTone = record.publishStatus === "published" ? "bg-emerald-950/30 text-emerald-300" : record.publishStatus === "archived" ? "bg-amber-950/30 text-amber-300" : "bg-zinc-900 text-zinc-400";
+              return <div role="row" key={record.id ?? record.vehicleKey} className="grid min-w-0 gap-4 px-4 py-4 xl:grid-cols-[1.2fr_1fr_1fr_1.1fr_150px_120px] xl:items-center">
+                <div role="cell" className="min-w-0"><div className="break-words text-lg font-black text-white">{record.brand} {record.model}</div><div className="mt-1 break-words text-sm font-bold text-zinc-300">{record.engine}</div><div className="mt-1 break-all text-xs text-zinc-400">{record.vehicleKey}</div></div>
+                <div role="cell" className="min-w-0 break-words text-sm text-zinc-300"><span className="mb-1 block text-[11px] font-black uppercase tracking-[0.12em] text-zinc-400 xl:hidden">Generation</span>{record.generation}<div className="mt-1 text-xs text-zinc-400">{[record.yearFrom, record.yearTo ?? "open"].filter(Boolean).join(" - ")}</div></div>
+                <div role="cell" className="min-w-0 break-words text-sm text-zinc-300"><span className="mb-1 block text-[11px] font-black uppercase tracking-[0.12em] text-zinc-400 xl:hidden">ECU</span>{record.ecuType || "Not recorded"}<div className="mt-1 break-all text-xs text-zinc-400">{record.ecuFamily || "Family unknown"}</div></div>
+                <div role="cell" className="min-w-0"><span className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-zinc-400 xl:hidden">Services</span><div className="flex flex-wrap gap-1">{record.services.slice(0, 5).map((service) => <span key={service} className="rounded-full bg-red-950/30 px-2 py-1 text-[11px] font-black text-red-200">{service.replaceAll("_", " ").toUpperCase()}</span>)}{record.services.length > 5 && <span className="rounded-full border border-white/10 px-2 py-1 text-[11px] font-black text-zinc-300">+{record.services.length - 5} more</span>}{record.services.length === 0 && <span className="text-xs text-zinc-400">None recorded</span>}</div></div>
+                <div role="cell"><span className="mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-zinc-400 xl:hidden">Status</span><span className={`rounded-full px-3 py-1 text-xs font-black capitalize ${publishTone}`}>{record.publishStatus}</span><div className="mt-2 text-xs text-zinc-400">{record.verificationStatus.replaceAll("_", " ")} - {record.confidenceScore}%</div></div>
+                <div role="cell"><Link href={`/admin/vehicles/${record.id}`} className="inline-flex h-11 w-full items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] px-3 text-sm font-black transition hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"><Eye className="mr-2 h-4 w-4" />Open</Link></div>
+              </div>;
+            })}
+            {!listLoading && !listError && records.length === 0 && <div role="row"><div role="cell" aria-colspan={6} className="p-8 text-center">
+              <div className="text-base font-black text-zinc-300">{hasActiveListFilters ? "No records match these filters." : "No vehicle records are available."}</div>
+              <p className="mt-2 text-sm text-zinc-400">{hasActiveListFilters ? "Clear the filters or try a broader vehicle or engine term." : "Create or import a draft to start the catalogue."}</p>
+              {hasActiveListFilters && <button type="button" onClick={clearListFilters} className="mt-4 h-11 rounded-xl border border-white/10 px-4 text-sm font-black hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500">Clear filters</button>}
+            </div></div>}
           </div>
         </div>
+
+        {pagination && pagination.total > 0 && <div className="mt-4 flex flex-col gap-3 border-t border-white/10 pt-4 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm tabular-nums text-zinc-400">Page <span className="font-black text-zinc-200">{pagination.page}</span> of <span className="font-black text-zinc-200">{pagination.pageCount}</span> - {pagination.total} total</p>
+          <div className="grid grid-cols-2 gap-2">
+            <button type="button" onClick={() => setPage((value) => Math.max(1, value - 1))} disabled={!pagination.hasPreviousPage || listLoading} className="inline-flex h-11 items-center justify-center rounded-xl border border-white/10 px-4 text-sm font-black transition hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 disabled:cursor-not-allowed disabled:opacity-40"><ChevronLeft className="mr-1 h-4 w-4" />Previous</button>
+            <button type="button" onClick={() => setPage((value) => value + 1)} disabled={!pagination.hasNextPage || listLoading} className="inline-flex h-11 items-center justify-center rounded-xl border border-white/10 px-4 text-sm font-black transition hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 disabled:cursor-not-allowed disabled:opacity-40">Next<ChevronRight className="ml-1 h-4 w-4" /></button>
+          </div>
+        </div>}
       </section>}
     </div>
   </main>;
@@ -818,12 +1062,20 @@ function EnrichmentSection({
   </section>;
 }
 
-function Metric({ icon, label, value, helper }: { icon: ReactNode; label: string; value: string | number; helper: string }) {
+function Metric({ icon, label, value, helper, tone = "default" }: { icon: ReactNode; label: string; value: string | number; helper: string; tone?: "default" | "green" | "amber" }) {
+  const iconTone = tone === "green" ? "bg-emerald-950/30 text-emerald-400" : tone === "amber" ? "bg-amber-950/30 text-amber-300" : "bg-red-950/30 text-red-400";
   return <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-5">
-    <div className="flex items-center justify-between"><div className="flex h-11 w-11 items-center justify-center rounded-xl bg-red-950/30 text-red-400">{icon}</div><div className="text-xs font-black uppercase tracking-[0.16em] text-zinc-500">{label}</div></div>
-    <div className="mt-5 text-3xl font-black">{value}</div>
-    <div className="mt-2 text-xs text-zinc-500">{helper}</div>
+    <div className="flex items-center justify-between gap-3"><div aria-hidden="true" className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${iconTone}`}>{icon}</div><div className="text-right text-xs font-black uppercase tracking-[0.16em] text-zinc-400">{label}</div></div>
+    <div className="mt-5 text-3xl font-black tabular-nums">{value}</div>
+    <div className="mt-2 text-xs leading-5 text-zinc-400">{helper}</div>
   </div>;
+}
+
+function VehicleTextFilter({ label, value, placeholder, onChange }: { label: string; value: string; placeholder: string; onChange: (value: string) => void }) {
+  return <label className="block">
+    <span className="mb-1.5 block text-xs font-black uppercase tracking-[0.12em] text-zinc-400">{label}</span>
+    <input value={value} onChange={(event) => onChange(event.target.value)} maxLength={120} placeholder={placeholder} className="h-11 w-full rounded-xl border border-white/10 bg-[#070707] px-3 text-sm font-bold outline-none placeholder:text-zinc-500 focus-visible:border-red-700 focus-visible:ring-2 focus-visible:ring-red-900/50" />
+  </label>;
 }
 
 function Mini({ label, value }: { label: string; value: string | number }) {

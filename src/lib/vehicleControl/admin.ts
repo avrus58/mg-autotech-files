@@ -1,8 +1,21 @@
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
-import type { VehicleControlRecord, VehicleServiceKey, VehicleValidationIssue, VerificationStatus } from "@/lib/vehicleControl/types";
+import type {
+  VehicleAdminListQuery,
+  VehicleAdminListRecord,
+  VehicleAdminListResponse,
+  VehicleControlRecord,
+  VehicleServiceKey,
+  VehicleValidationIssue,
+  VerificationStatus,
+} from "@/lib/vehicleControl/types";
 import { buildVehicleKey, canonicalizeVehicleModel, inferEcuFamily, normalizeToken } from "@/lib/vehicleControl/normalization";
 import { normalizeBrandName, normalizeGenerationName } from "@/lib/vehicleNormalization";
 import { validateVehicleRecord } from "@/lib/vehicleControl/validation";
+import {
+  buildVehicleAdminSearchPattern,
+  buildVehicleAdminPagination,
+  getVehicleAdminPageRange,
+} from "@/lib/vehicleControl/schema";
 
 export type VehicleAdminUpdate = {
   brand: string;
@@ -108,6 +121,35 @@ type AdminDbEngine = {
   }>;
 };
 
+type AdminListDbEngine = {
+  id: string;
+  vehicle_key: string;
+  engine_name: string;
+  year_from: number | null;
+  year_to: number | null;
+  active: boolean;
+  published: boolean;
+  confidence_score: number;
+  verification_status: VerificationStatus;
+  generation: null | {
+    name: string;
+    year_from: number | null;
+    year_to: number | null;
+    model: null | {
+      name: string;
+      brand: null | { name: string };
+    };
+  };
+  ecu_variants?: Array<{
+    ecu_family: string | null;
+    ecu_type: string | null;
+  }>;
+  service_capabilities?: Array<{
+    service_key: VehicleServiceKey;
+    available: boolean;
+  }>;
+};
+
 const engineSelect = `
   id, vehicle_key, engine_name, display_name, external_id, fuel_type, displacement_cc, stock_hp, stock_nm, year_from, year_to,
   customer_safe_notes, admin_technical_notes, active, published, source_type, source_reference, confidence_score, verification_status, created_at, updated_at,
@@ -120,6 +162,46 @@ const engineSelect = `
   service_capabilities:vehicle_service_capabilities(service_key, available),
   performance_profiles:vehicle_performance_profiles(stage, stock_hp, stock_nm, tuned_hp, tuned_nm, gain_hp, gain_nm)
 `;
+
+const listEngineSelect = `
+  id, vehicle_key, engine_name, year_from, year_to, active, published, confidence_score, verification_status,
+  generation:vehicle_generations!inner(name, year_from, year_to,
+    model:vehicle_models!inner(name,
+      brand:vehicle_brands!inner(name)
+    )
+  ),
+  ecu_variants:vehicle_ecu_variants(ecu_family, ecu_type),
+  service_capabilities:vehicle_service_capabilities(service_key, available)
+`;
+
+function getVehicleAdminListSelect(input: VehicleAdminListQuery) {
+  return input.ecuFamily
+    ? listEngineSelect.replace("ecu_variants:vehicle_ecu_variants(", "ecu_variants:vehicle_ecu_variants!inner(")
+    : listEngineSelect;
+}
+
+function adminListDbEngineToRecord(row: AdminListDbEngine): VehicleAdminListRecord {
+  const generation = row.generation;
+  const model = generation?.model;
+  const brand = model?.brand;
+  const ecu = row.ecu_variants?.[0];
+  return {
+    id: row.id,
+    brand: brand?.name ?? "Unknown brand",
+    model: model?.name ?? "Unknown model",
+    generation: generation?.name ?? "Unknown generation",
+    engine: row.engine_name,
+    vehicleKey: row.vehicle_key,
+    yearFrom: row.year_from ?? generation?.year_from ?? null,
+    yearTo: row.year_to ?? generation?.year_to ?? null,
+    ecuFamily: ecu?.ecu_family ?? inferEcuFamily(ecu?.ecu_type),
+    ecuType: ecu?.ecu_type ?? null,
+    services: (row.service_capabilities ?? []).filter((item) => item.available).map((item) => item.service_key),
+    confidenceScore: Number(row.confidence_score ?? 0),
+    verificationStatus: row.verification_status,
+    publishStatus: !row.active ? "archived" : row.published ? "published" : "draft",
+  };
+}
 
 export function adminDbEngineToRecord(row: AdminDbEngine): VehicleControlRecord {
   const generation = row.generation;
@@ -168,7 +250,7 @@ export function adminDbEngineToRecord(row: AdminDbEngine): VehicleControlRecord 
     sourceUrl: null,
     confidenceScore: Number(row.confidence_score ?? 0),
     verificationStatus: row.verification_status,
-    publishStatus: row.published ? "published" : row.active ? "draft" : "archived",
+    publishStatus: !row.active ? "archived" : row.published ? "published" : "draft",
     active: row.active,
     published: row.published,
     createdAt: row.created_at,
@@ -180,8 +262,87 @@ async function count(table: string, filters: Array<[string, unknown]> = []) {
   const admin = getSupabaseAdmin();
   let query = admin.from(table).select("id", { count: "exact", head: true });
   for (const [column, value] of filters) query = query.eq(column, value);
-  const { count: value } = await query;
+  const { count: value, error } = await query;
+  if (error) throw error;
   return value ?? 0;
+}
+
+export async function getVehicleAdminRecordPage(input: VehicleAdminListQuery): Promise<VehicleAdminListResponse> {
+  const admin = getSupabaseAdmin();
+  const { from, to } = getVehicleAdminPageRange(input);
+  let query = admin
+    .from("vehicle_engines")
+    .select(getVehicleAdminListSelect(input), { count: "exact" });
+
+  if (input.publishStatus === "published") query = query.eq("active", true).eq("published", true);
+  if (input.publishStatus === "draft") query = query.eq("active", true).eq("published", false);
+  if (input.publishStatus === "archived") query = query.eq("active", false);
+  if (input.verificationStatus !== "all") query = query.eq("verification_status", input.verificationStatus);
+
+  const brandPattern = buildVehicleAdminSearchPattern(input.brand);
+  const modelPattern = buildVehicleAdminSearchPattern(input.model);
+  const generationPattern = buildVehicleAdminSearchPattern(input.generation);
+  const ecuFamilyPattern = buildVehicleAdminSearchPattern(input.ecuFamily);
+  if (brandPattern) query = query.ilike("generation.model.brand.name", `%${brandPattern}%`);
+  if (modelPattern) query = query.ilike("generation.model.name", `%${modelPattern}%`);
+  if (generationPattern) query = query.ilike("generation.name", `%${generationPattern}%`);
+  if (ecuFamilyPattern) query = query.ilike("ecu_variants.ecu_family", `%${ecuFamilyPattern}%`);
+
+  const searchPattern = buildVehicleAdminSearchPattern(input.q);
+  if (searchPattern) {
+    query = query.or([
+      `vehicle_key.ilike.%${searchPattern}%`,
+      `display_name.ilike.%${searchPattern}%`,
+      `engine_name.ilike.%${searchPattern}%`,
+      `external_id.ilike.%${searchPattern}%`,
+      `fuel_type.ilike.%${searchPattern}%`,
+      `source_reference.ilike.%${searchPattern}%`,
+    ].join(","));
+  }
+
+  const result = await query
+    .order("updated_at", { ascending: false, nullsFirst: false })
+    .order("id", { ascending: false })
+    .range(from, to);
+  if (result.error) throw result.error;
+
+  return {
+    records: ((result.data as unknown as AdminListDbEngine[] | null) ?? []).map(adminListDbEngineToRecord),
+    pagination: buildVehicleAdminPagination(input, result.count),
+    query: input,
+  };
+}
+
+export async function getAllVehicleAdminRecords() {
+  const admin = getSupabaseAdmin();
+  const pageSize = 1000;
+  const records: VehicleControlRecord[] = [];
+
+  for (let from = 0; ; from += pageSize) {
+    const result = await admin
+      .from("vehicle_engines")
+      .select(engineSelect)
+      .order("id", { ascending: true })
+      .range(from, from + pageSize - 1);
+    if (result.error) throw result.error;
+    const rows = ((result.data as unknown as AdminDbEngine[] | null) ?? []);
+    records.push(...rows.map(adminDbEngineToRecord));
+    if (rows.length < pageSize) break;
+  }
+
+  return records;
+}
+
+export async function getVehicleAdminLegacyRecords() {
+  const admin = getSupabaseAdmin();
+  const result = await admin
+    .from("vehicle_engines")
+    .select(engineSelect)
+    .order("updated_at", { ascending: false, nullsFirst: false })
+    .order("id", { ascending: false })
+    .limit(150);
+  if (result.error) throw result.error;
+  return (((result.data as unknown as AdminDbEngine[] | null) ?? []).map(adminDbEngineToRecord));
 }
 
 export async function getVehicleAdminOverview() {
@@ -191,11 +352,14 @@ export async function getVehicleAdminOverview() {
     modelCount,
     generationCount,
     engineCount,
+    ecuVariantCount,
     publishedCount,
     draftCount,
+    archivedCount,
+    verifiedCount,
+    needsReviewCount,
     validationCount,
     duplicates,
-    engines,
     audit,
     batches,
   ] = await Promise.all([
@@ -203,21 +367,25 @@ export async function getVehicleAdminOverview() {
     count("vehicle_models"),
     count("vehicle_generations"),
     count("vehicle_engines"),
+    count("vehicle_ecu_variants"),
     count("vehicle_engines", [["published", true], ["active", true]]),
     count("vehicle_engines", [["published", false], ["active", true]]),
+    count("vehicle_engines", [["active", false]]),
+    count("vehicle_engines", [["verification_status", "verified"]]),
+    count("vehicle_engines", [["verification_status", "needs_review"]]),
     count("vehicle_validation_results", [["status", "open"]]),
     admin.from("vehicle_engines").select("vehicle_key").limit(10000),
-    admin.from("vehicle_engines").select(engineSelect).order("updated_at", { ascending: false }).limit(150),
     admin.from("vehicle_change_audit_log").select("*").order("created_at", { ascending: false }).limit(50),
     admin.from("vehicle_import_batches").select("*").order("created_at", { ascending: false }).limit(10),
   ]);
-  if (engines.error) throw engines.error;
+  if (duplicates.error) throw duplicates.error;
+  if (audit.error) throw audit.error;
+  if (batches.error) throw batches.error;
   const duplicateWarningCount = (() => {
     const map = new Map<string, number>();
     for (const row of duplicates.data ?? []) map.set(row.vehicle_key, (map.get(row.vehicle_key) ?? 0) + 1);
     return [...map.values()].filter((value) => value > 1).length;
   })();
-  const records = (engines.data as unknown as AdminDbEngine[] | null ?? []).map(adminDbEngineToRecord);
   const scoreBase = engineCount ? Math.round((publishedCount / Math.max(1, engineCount)) * 70 + Math.max(0, 30 - validationCount)) : 0;
   return {
     stats: {
@@ -225,13 +393,17 @@ export async function getVehicleAdminOverview() {
       modelCount,
       generationCount,
       engineCount,
+      ecuVariantCount,
       publishedCount,
       draftCount,
+      archivedCount,
+      verifiedCount,
+      needsReviewCount,
       validationWarningCount: validationCount,
       duplicateWarningCount,
+      duplicateScanRowCount: duplicates.data?.length ?? 0,
       dataHealthScore: Math.max(0, Math.min(100, scoreBase)),
     },
-    records,
     recentAudit: audit.data ?? [],
     importBatches: batches.data ?? [],
   };

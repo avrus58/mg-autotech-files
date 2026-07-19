@@ -30,6 +30,23 @@ export type RawVehicleRow = {
 
 export type VerificationStatus = "imported" | "unverified" | "needs_review" | "verified" | "rejected";
 export type PublishStatus = "draft" | "published" | "archived";
+export type VehicleAdminPublishFilter = "all" | PublishStatus;
+export type VehicleAdminVerificationFilter = "all" | VerificationStatus;
+
+export const vehicleAdminPageSizes = [25, 50, 100] as const;
+export type VehicleAdminPageSize = (typeof vehicleAdminPageSizes)[number];
+
+export type VehicleAdminListQuery = {
+  page: number;
+  pageSize: VehicleAdminPageSize;
+  q: string;
+  brand: string;
+  model: string;
+  generation: string;
+  ecuFamily: string;
+  publishStatus: VehicleAdminPublishFilter;
+  verificationStatus: VehicleAdminVerificationFilter;
+};
 export type VehicleServiceKey =
   | "stage1"
   | "stage2"
@@ -126,6 +143,36 @@ export type VehicleControlRecord = {
   published: boolean;
   updatedAt?: string | null;
   createdAt?: string | null;
+};
+
+export type VehicleAdminListRecord = Pick<VehicleControlRecord,
+  | "id"
+  | "brand"
+  | "model"
+  | "generation"
+  | "engine"
+  | "vehicleKey"
+  | "yearFrom"
+  | "yearTo"
+  | "ecuFamily"
+  | "ecuType"
+  | "services"
+  | "confidenceScore"
+  | "verificationStatus"
+  | "publishStatus"
+>;
+
+export type VehicleAdminListResponse = {
+  records: VehicleAdminListRecord[];
+  pagination: {
+    page: number;
+    pageSize: VehicleAdminPageSize;
+    total: number;
+    pageCount: number;
+    hasPreviousPage: boolean;
+    hasNextPage: boolean;
+  };
+  query: VehicleAdminListQuery;
 };
 
 export type PublicVehicleRecord = {

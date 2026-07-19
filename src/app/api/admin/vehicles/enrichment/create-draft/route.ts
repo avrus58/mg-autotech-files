@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireStaffPermission } from "@/lib/apiAuth";
-import { createVehicleAdminRecord, getVehicleAdminOverview } from "@/lib/vehicleControl/admin";
+import { createVehicleAdminRecord, getAllVehicleAdminRecords } from "@/lib/vehicleControl/admin";
 import { buildVehicleEnrichmentPlan } from "@/lib/vehicleEnrichment";
 import type { VehicleEnrichmentInput } from "@/lib/vehicleEnrichment/types";
 
@@ -21,7 +21,7 @@ export async function POST(request: Request) {
     }, { status: 400 });
   }
 
-  const overview = await getVehicleAdminOverview();
+  const records = await getAllVehicleAdminRecords();
   const plan = buildVehicleEnrichmentPlan({
     sourceType: body.sourceType ?? "manual",
     sourceName: body.sourceName ?? null,
@@ -31,7 +31,7 @@ export async function POST(request: Request) {
     entries: body.entries,
     modernOnly: body.modernOnly !== false,
     yearCutoff: body.yearCutoff ?? 2020,
-  }, overview.records);
+  }, records);
   const candidate = plan.engineCandidates.find((item) => item.id === body.engineCandidateId);
   const gap = plan.gaps.find((item) => item.engineCandidateId === body.engineCandidateId);
   if (!candidate) return NextResponse.json({ error: "Engine candidate not found.", mutation: false }, { status: 404 });

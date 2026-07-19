@@ -42,6 +42,13 @@ import {
   normalizeGenerationName,
   resolveAliasCandidate,
 } from "../src/lib/vehicleNormalization";
+import {
+  buildVehicleAdminSearchPattern,
+  buildVehicleAdminPagination,
+  getVehicleAdminPageRange,
+  parseVehicleAdminListQuery,
+  sanitizeVehicleAdminSearchTerm,
+} from "../src/lib/vehicleControl/schema";
 
 const rawRow: RawVehicleRow = {
   source: "carecufile_import",
@@ -597,6 +604,92 @@ test("anonymous users cannot call admin vehicle APIs", async () => {
   assert.equal(response.status, 401);
 });
 
+test("anonymous users cannot call paginated admin vehicle search", async () => {
+  const { GET } = await import("../src/app/api/admin/vehicles/search/route");
+  const response = await GET(new Request("http://localhost/api/admin/vehicles/search?page=1&pageSize=25"));
+  assert.equal(response.status, 401);
+});
+
+test("vehicle admin list query parser applies strict bounded defaults", () => {
+  const defaults = parseVehicleAdminListQuery(new URLSearchParams());
+  assert.equal(defaults.success, true);
+  if (!defaults.success) return;
+  assert.deepEqual(defaults.data, {
+    page: 1,
+    pageSize: 25,
+    q: "",
+    brand: "",
+    model: "",
+    generation: "",
+    ecuFamily: "",
+    publishStatus: "all",
+    verificationStatus: "all",
+  });
+
+  const valid = parseVehicleAdminListQuery(new URLSearchParams({
+    page: "3",
+    pageSize: "100",
+    q: "  BMW G30  ",
+    brand: " BMW ",
+    model: "5 Series",
+    generation: "G30",
+    ecuFamily: "Bosch MD1",
+    publishStatus: "archived",
+    verificationStatus: "needs_review",
+  }));
+  assert.equal(valid.success, true);
+  if (!valid.success) return;
+  assert.equal(valid.data.page, 3);
+  assert.equal(valid.data.pageSize, 100);
+  assert.equal(valid.data.q, "BMW G30");
+  assert.equal(valid.data.brand, "BMW");
+  assert.equal(valid.data.model, "5 Series");
+  assert.equal(valid.data.generation, "G30");
+  assert.equal(valid.data.ecuFamily, "Bosch MD1");
+  assert.equal(valid.data.publishStatus, "archived");
+  assert.equal(valid.data.verificationStatus, "needs_review");
+});
+
+test("vehicle admin list query parser rejects unsafe pagination and unknown parameters", () => {
+  const invalidQueries: Array<Record<string, string>> = [
+    { page: "0" },
+    { page: "10001" },
+    { pageSize: "30" },
+    { publishStatus: "deleted" },
+    { verificationStatus: "approved" },
+    { q: "x".repeat(121) },
+    { q: "%_(),." },
+    { brand: "%_(),." },
+    { ecuFamily: "x".repeat(121) },
+    { arbitrarySql: "active is true" },
+  ];
+  for (const params of invalidQueries) {
+    assert.equal(parseVehicleAdminListQuery(new URLSearchParams(params)).success, false);
+  }
+});
+
+test("vehicle admin list search sanitization and page math are deterministic", () => {
+  assert.equal(sanitizeVehicleAdminSearchTerm(" Bosch,(EDC17)% / 03L.906_022 "), "Bosch EDC17 / 03L.906 022");
+  assert.equal(buildVehicleAdminSearchPattern("vehicle_enrichment"), "vehicle%enrichment");
+  assert.deepEqual(getVehicleAdminPageRange({ page: 3, pageSize: 25 }), { from: 50, to: 74 });
+  assert.deepEqual(buildVehicleAdminPagination({ page: 3, pageSize: 25 }, 61), {
+    page: 3,
+    pageSize: 25,
+    total: 61,
+    pageCount: 3,
+    hasPreviousPage: true,
+    hasNextPage: false,
+  });
+  assert.deepEqual(buildVehicleAdminPagination({ page: 1, pageSize: 50 }, null), {
+    page: 1,
+    pageSize: 50,
+    total: 0,
+    pageCount: 0,
+    hasPreviousPage: false,
+    hasNextPage: false,
+  });
+});
+
 test("anonymous users cannot run vehicle imports", async () => {
   const { POST } = await import("../src/app/api/admin/vehicles/import/route");
   const response = await POST(new Request("http://localhost/api/admin/vehicles/import", {
@@ -616,6 +709,7 @@ test("customer role cannot satisfy vehicle database admin permission", () => {
 test("admin vehicle routes consistently require vehicles.manage permission", () => {
   for (const file of [
     "src/app/api/admin/vehicles/route.ts",
+    "src/app/api/admin/vehicles/search/route.ts",
     "src/app/api/admin/vehicles/[id]/route.ts",
     "src/app/api/admin/vehicles/import/route.ts",
     "src/app/api/admin/vehicles/catalog-cache/rebuild/route.ts",
@@ -747,6 +841,72 @@ test("admin dashboard surfaces owner profile edge warnings without weakening sec
   assert.match(routeSource, /permissionWarnings/);
   assert.match(routeSource, /staffRole !== "owner"/);
   assert.match(uiSource, /permissionWarnings/);
+});
+
+test("vehicle control overview exposes operational metrics and a bounded duplicate screen", () => {
+  const adminSource = readFileSync(resolve(process.cwd(), "src", "lib", "vehicleControl", "admin.ts"), "utf8");
+  const uiSource = readFileSync(resolve(process.cwd(), "src", "app", "admin", "vehicles", "VehicleControlCenter.tsx"), "utf8");
+
+  assert.match(adminSource, /count\("vehicle_ecu_variants"\)/);
+  assert.match(adminSource, /\[\["active", false\]\]/);
+  assert.match(adminSource, /\[\["verification_status", "verified"\]\]/);
+  assert.match(adminSource, /\[\["verification_status", "needs_review"\]\]/);
+  assert.match(uiSource, /Catalogue operational summary/);
+  assert.match(uiSource, /Customer-safe publishing remains explicit and validation-gated/);
+  assert.match(uiSource, /stats\.ecuVariantCount/);
+  assert.match(uiSource, /stats\.archivedCount/);
+  assert.match(uiSource, /stats\.needsReviewCount/);
+  assert.match(uiSource, /stats\.duplicateScanRowCount/);
+});
+
+test("vehicle admin list is server-paginated, deterministic and URL synchronized", () => {
+  const adminSource = readFileSync(resolve(process.cwd(), "src", "lib", "vehicleControl", "admin.ts"), "utf8");
+  const routeSource = readFileSync(resolve(process.cwd(), "src", "app", "api", "admin", "vehicles", "search", "route.ts"), "utf8");
+  const validationSource = readFileSync(resolve(process.cwd(), "src", "app", "api", "admin", "vehicles", "validation", "route.ts"), "utf8");
+  const uiSource = readFileSync(resolve(process.cwd(), "src", "app", "admin", "vehicles", "VehicleControlCenter.tsx"), "utf8");
+
+  assert.match(adminSource, /select\(getVehicleAdminListSelect\(input\), \{ count: "exact" \}\)/);
+  assert.match(adminSource, /vehicle_generations!inner/);
+  assert.match(adminSource, /vehicle_models!inner/);
+  assert.match(adminSource, /vehicle_brands!inner/);
+  assert.match(adminSource, /ecu_variants:vehicle_ecu_variants!inner/);
+  assert.match(adminSource, /ilike\("generation\.model\.brand\.name"/);
+  assert.match(adminSource, /ilike\("generation\.model\.name"/);
+  assert.match(adminSource, /ilike\("generation\.name"/);
+  assert.match(adminSource, /ilike\("ecu_variants\.ecu_family"/);
+  assert.match(adminSource, /order\("updated_at", \{ ascending: false, nullsFirst: false \}\)/);
+  assert.match(adminSource, /order\("id", \{ ascending: false \}\)/);
+  assert.match(adminSource, /range\(from, to\)/);
+  assert.match(adminSource, /publishStatus === "archived"[\s\S]*eq\("active", false\)/);
+  assert.match(adminSource, /publishStatus === "draft"[\s\S]*eq\("active", true\)\.eq\("published", false\)/);
+  assert.match(adminSource, /!row\.active \? "archived"/);
+  assert.match(adminSource, /getVehicleAdminLegacyRecords/);
+  assert.match(adminSource, /limit\(150\)/);
+
+  assert.match(routeSource, /parseVehicleAdminListQuery/);
+  assert.match(routeSource, /Cache-Control/);
+  assert.match(routeSource, /Vehicle records could not be loaded\./);
+  assert.doesNotMatch(routeSource, /error\.message/);
+  assert.match(validationSource, /getAllVehicleAdminRecords/);
+
+  assert.match(uiSource, /\/api\/admin\/vehicles\/search\?/);
+  assert.match(uiSource, /\/api\/admin\/vehicles\?includeRecords=false/);
+  assert.match(uiSource, /new AbortController\(\)/);
+  assert.match(uiSource, /controller\.abort\(\)/);
+  assert.match(uiSource, /window\.history\.replaceState/);
+  assert.match(uiSource, /setDebouncedQuery\(query\.trim\(\)\)/);
+  for (const filter of ["brand", "model", "generation", "ecuFamily"]) {
+    assert.match(uiSource, new RegExp(`setOrDelete\\(\"${filter}\"`));
+  }
+  assert.match(uiSource, /aria-busy=\{listLoading\}/);
+  assert.match(uiSource, /aria-live="polite"/);
+  assert.match(uiSource, /Clear filters/);
+  assert.match(uiSource, />Archived</);
+  assert.doesNotMatch(uiSource, /records\.slice\(/);
+  assert.doesNotMatch(uiSource, /payload\?\.records/);
+  const listSelect = adminSource.match(/const listEngineSelect = `([\s\S]*?)`;/)?.[1] ?? "";
+  assert.ok(listSelect);
+  assert.doesNotMatch(listSelect, /source_reference|admin_technical_notes|ecu_hardware|ecu_software|protection_notes|unlock_notes/i);
 });
 
 test("verification SQL is read-only and checks tables, RLS, policies and counts", () => {

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireStaffPermission } from "@/lib/apiAuth";
-import { getVehicleAdminOverview } from "@/lib/vehicleControl/admin";
+import { getAllVehicleAdminRecords } from "@/lib/vehicleControl/admin";
 import { buildVehicleEnrichmentPlan } from "@/lib/vehicleEnrichment";
 import { fetchAndExtractVehicleUrl } from "@/lib/vehicleEnrichment/urlImport";
 
@@ -28,7 +28,7 @@ export async function POST(request: Request) {
       sourceUrl: parsed.data.sourceUrl,
       sourceType: parsed.data.sourceType,
     });
-    const overview = await getVehicleAdminOverview();
+    const records = await getAllVehicleAdminRecords();
     const plan = buildVehicleEnrichmentPlan({
       sourceType: "url",
       sourceName: parsed.data.sourceName ?? extraction.title ?? "URL source",
@@ -36,7 +36,7 @@ export async function POST(request: Request) {
       entries: extraction.candidates,
       modernOnly: parsed.data.modernOnly !== false,
       yearCutoff: parsed.data.modernYearCutoff ?? 2020,
-    }, overview.records);
+    }, records);
 
     return NextResponse.json({
       fetch: {

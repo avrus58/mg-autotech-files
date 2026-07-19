@@ -1,5 +1,86 @@
 import { z } from "zod";
-import { vehicleServiceKeys } from "@/lib/vehicleControl/types";
+import {
+  vehicleAdminPageSizes,
+  vehicleServiceKeys,
+  type VehicleAdminListQuery,
+} from "@/lib/vehicleControl/types";
+
+export const vehicleAdminListQueryDefaults: VehicleAdminListQuery = {
+  page: 1,
+  pageSize: 25,
+  q: "",
+  brand: "",
+  model: "",
+  generation: "",
+  ecuFamily: "",
+  publishStatus: "all",
+  verificationStatus: "all",
+};
+
+const vehicleAdminPageSizeSchema = z.preprocess(
+  (value) => typeof value === "string" ? Number(value) : value,
+  z.union([z.literal(25), z.literal(50), z.literal(100)])
+);
+
+export const vehicleAdminListQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).max(10_000).default(vehicleAdminListQueryDefaults.page),
+  pageSize: vehicleAdminPageSizeSchema.default(vehicleAdminListQueryDefaults.pageSize),
+  q: z.string().trim().max(120).default(vehicleAdminListQueryDefaults.q),
+  brand: z.string().trim().max(120).default(vehicleAdminListQueryDefaults.brand),
+  model: z.string().trim().max(120).default(vehicleAdminListQueryDefaults.model),
+  generation: z.string().trim().max(120).default(vehicleAdminListQueryDefaults.generation),
+  ecuFamily: z.string().trim().max(120).default(vehicleAdminListQueryDefaults.ecuFamily),
+  publishStatus: z.enum(["all", "published", "draft", "archived"]).default(vehicleAdminListQueryDefaults.publishStatus),
+  verificationStatus: z.enum(["all", "imported", "unverified", "needs_review", "verified", "rejected"]).default(vehicleAdminListQueryDefaults.verificationStatus),
+}).strict().superRefine((query, context) => {
+  for (const key of ["q", "brand", "model", "generation", "ecuFamily"] as const) {
+    if (query[key] && !/[\p{L}\p{N}]/u.test(sanitizeVehicleAdminSearchTerm(query[key]))) {
+      context.addIssue({
+        code: "custom",
+        path: [key],
+        message: "Filter must contain at least one letter or number.",
+      });
+    }
+  }
+});
+
+export function parseVehicleAdminListQuery(searchParams: URLSearchParams) {
+  return vehicleAdminListQuerySchema.safeParse(Object.fromEntries(searchParams.entries()));
+}
+
+export function sanitizeVehicleAdminSearchTerm(value: string) {
+  return value
+    .normalize("NFKC")
+    .replace(/[^\p{L}\p{N}\s.:/+\-]/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+export function buildVehicleAdminSearchPattern(value: string) {
+  return sanitizeVehicleAdminSearchTerm(value).replace(/\s+/g, "%");
+}
+
+export function getVehicleAdminPageRange(query: Pick<VehicleAdminListQuery, "page" | "pageSize">) {
+  const from = (query.page - 1) * query.pageSize;
+  return { from, to: from + query.pageSize - 1 };
+}
+
+export function buildVehicleAdminPagination(query: Pick<VehicleAdminListQuery, "page" | "pageSize">, value: number | null) {
+  const total = Math.max(0, Math.trunc(value ?? 0));
+  const pageCount = total === 0 ? 0 : Math.ceil(total / query.pageSize);
+  return {
+    page: query.page,
+    pageSize: query.pageSize,
+    total,
+    pageCount,
+    hasPreviousPage: query.page > 1,
+    hasNextPage: query.page < pageCount,
+  };
+}
+
+export function isVehicleAdminPageSize(value: number): value is (typeof vehicleAdminPageSizes)[number] {
+  return vehicleAdminPageSizes.includes(value as (typeof vehicleAdminPageSizes)[number]);
+}
 
 export const vehicleAdminPayloadSchema = z.object({
   brand: z.string().min(1).max(120),
