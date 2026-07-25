@@ -24,31 +24,31 @@ export function BrowserAuthBoundary({
 
   useEffect(() => {
     let active = true;
-    const fallback = window.setTimeout(() => {
-      if (active) setAuthState("unauthenticated");
-    }, 8000);
-
     const resolveAuthState = (nextState: AuthState) => {
       if (!active) return;
-      window.clearTimeout(fallback);
       setAuthState(nextState);
     };
 
-    void getStableSession().then(({ session }) => {
-      resolveAuthState(session?.user ? "authenticated" : "unauthenticated");
-    }).catch(() => {
-      resolveAuthState("unauthenticated");
-    });
+    const checkSession = () => {
+      void getStableSession().then(({ session, error }) => {
+        if (session?.user) {
+          resolveAuthState("authenticated");
+        } else if (!error) {
+          resolveAuthState("unauthenticated");
+        }
+      }).catch(() => {
+        // A transient session-check failure is not proof of logout.
+      });
+    };
+
+    checkSession();
+    const fallback = window.setTimeout(checkSession, 8000);
 
     const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
       if (session?.user) {
         resolveAuthState("authenticated");
-      } else if (event === "INITIAL_SESSION") {
-        resolveAuthState("unauthenticated");
       } else if (event === "SIGNED_OUT") {
-        void getStableSession().then(({ session: recovered }) => {
-          resolveAuthState(recovered?.user ? "authenticated" : "unauthenticated");
-        });
+        resolveAuthState("unauthenticated");
       }
     });
 
