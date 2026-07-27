@@ -18,7 +18,8 @@ import {
   Settings,
   Upload,
 } from "lucide-react";
-import { signOutIfEmailUnverified } from "@/lib/authGuards";
+import { getStableUser, signOutIfEmailUnverified } from "@/lib/authGuards";
+import { resolveBrowserAuthCheck } from "@/lib/authBoundaryState";
 import { supabase } from "@/lib/supabaseClient";
 
 type Order = {
@@ -135,9 +136,46 @@ export default function CustomerOrdersPage() {
     return query;
   }, []);
 
+  const initializeAuth = useCallback(async () => {
+    setLoading(true);
+    setLoadError("");
+
+    const { user, error } = await getStableUser();
+    if (!user) {
+      const authState = resolveBrowserAuthCheck({
+        hasUser: false,
+        error,
+      });
+
+      if (authState === "unauthenticated") {
+        router.replace("/login");
+      } else {
+        setLoadError(CUSTOMER_ORDERS_LOAD_ERROR_MESSAGE);
+        setLoading(false);
+      }
+      return;
+    }
+
+    try {
+      if (await signOutIfEmailUnverified(user)) {
+        router.replace("/login?verify_email=1");
+        return;
+      }
+    } catch {
+      setLoadError(CUSTOMER_ORDERS_LOAD_ERROR_MESSAGE);
+      setLoading(false);
+      return;
+    }
+
+    setUserId(user.id);
+  }, [router]);
+
   const loadOrders = useCallback(async (options?: { targetPage?: number; uid?: string }) => {
     const uid = options?.uid || userId;
-    if (!uid) return;
+    if (!uid) {
+      await initializeAuth();
+      return;
+    }
     const nextPage = options?.targetPage ?? 1;
     if (nextPage > 1) setLoadingMore(true);
     else setLoading(true);
@@ -154,23 +192,14 @@ export default function CustomerOrdersPage() {
     }
     setLoading(false);
     setLoadingMore(false);
-  }, [buildQuery, search, userId, view]);
+  }, [buildQuery, initializeAuth, search, userId, view]);
 
   useEffect(() => {
-    async function initialize() {
-      const { data } = await supabase.auth.getUser();
-      if (!data.user) {
-        router.push("/login");
-        return;
-      }
-      if (await signOutIfEmailUnverified(data.user)) {
-        router.push("/login?verify_email=1");
-        return;
-      }
-      setUserId(data.user.id);
-    }
-    initialize();
-  }, [router]);
+    const timeout = window.setTimeout(() => {
+      void initializeAuth();
+    }, 0);
+    return () => window.clearTimeout(timeout);
+  }, [initializeAuth]);
 
   useEffect(() => {
     if (!userId) return;

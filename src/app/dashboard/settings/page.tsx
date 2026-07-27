@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { signOutIfEmailUnverified } from "@/lib/authGuards";
+import { getStableUser, signOutIfEmailUnverified } from "@/lib/authGuards";
+import { resolveBrowserAuthCheck } from "@/lib/authBoundaryState";
 import { supabase } from "@/lib/supabaseClient";
 import {
   ArrowLeft,
@@ -158,17 +159,30 @@ export default function CustomerSettingsPage() {
     setMessage("");
     setLoadError("");
 
-    const { data: userData } = await supabase.auth.getUser();
+    const { user, error: userError } = await getStableUser();
 
-    if (!userData.user) {
-      router.push("/login");
+    if (!user) {
+      const authState = resolveBrowserAuthCheck({
+        hasUser: false,
+        error: userError,
+      });
+      if (authState === "unauthenticated") {
+        router.replace("/login");
+      } else {
+        setLoadError(SETTINGS_LOAD_ERROR_MESSAGE);
+        setLoading(false);
+      }
       return;
     }
 
-    const user = userData.user;
-
-    if (await signOutIfEmailUnverified(user)) {
-      router.push("/login?verify_email=1");
+    try {
+      if (await signOutIfEmailUnverified(user)) {
+        router.replace("/login?verify_email=1");
+        return;
+      }
+    } catch {
+      setLoadError(SETTINGS_LOAD_ERROR_MESSAGE);
+      setLoading(false);
       return;
     }
 
@@ -222,17 +236,31 @@ export default function CustomerSettingsPage() {
     setSaving(true);
     setMessage("");
 
-    const { data: userData } = await supabase.auth.getUser();
+    const { user, error: userError } = await getStableUser();
 
-    if (!userData.user) {
+    if (!user) {
       setSaving(false);
-      router.push("/login");
+      const authState = resolveBrowserAuthCheck({
+        hasUser: false,
+        error: userError,
+      });
+      if (authState === "unauthenticated") {
+        router.replace("/login");
+      } else {
+        setMessage(SETTINGS_SAVE_ERROR_MESSAGE);
+      }
       return;
     }
 
-    if (await signOutIfEmailUnverified(userData.user)) {
+    try {
+      if (await signOutIfEmailUnverified(user)) {
+        setSaving(false);
+        router.replace("/login?verify_email=1");
+        return;
+      }
+    } catch {
       setSaving(false);
-      router.push("/login?verify_email=1");
+      setMessage(SETTINGS_SAVE_ERROR_MESSAGE);
       return;
     }
 
@@ -251,7 +279,7 @@ export default function CustomerSettingsPage() {
         invoice_email: invoiceEmail.trim() || email,
         preferred_contact: preferredContact,
       })
-      .eq("id", userData.user.id);
+      .eq("id", user.id);
 
     setSaving(false);
 

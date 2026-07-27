@@ -12,7 +12,12 @@ export function hasSupabasePublicConfig(
 
   try {
     const parsed = new URL(url);
-    return parsed.protocol === "https:" && parsed.hostname.endsWith(".supabase.co");
+    return (
+      parsed.protocol === "https:" &&
+      Boolean(parsed.hostname) &&
+      !parsed.username &&
+      !parsed.password
+    );
   } catch {
     return false;
   }

@@ -3,13 +3,23 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getStableSession, signOutIfEmailUnverified, signOutStable } from "@/lib/authGuards";
+import type { User as SupabaseUser } from "@supabase/supabase-js";
+import {
+  getStableSession,
+  getStableUser,
+  isEmailVerified,
+  signOutIfEmailUnverified,
+  signOutStable,
+} from "@/lib/authGuards";
 import { supabase } from "@/lib/supabaseClient";
 import {
   classifyDashboardSyncFailure,
   dashboardSyncRetryLimit,
+  dashboardSyncTimeoutMs,
   getDashboardSyncRetryDelay,
+  isDefinitiveInvalidSession,
   recordDashboardSyncDiagnostic,
+  shouldRevalidateDashboardSession,
 } from "@/lib/dashboardSync";
 import {
   ArrowRight,
@@ -83,6 +93,8 @@ const DASHBOARD_LOAD_ERROR_MESSAGE =
   "We could not load your dashboard data. Please try again.";
 const DASHBOARD_SYNC_ERROR_MESSAGE =
   "Dashboard sync failed. Your last loaded data is still shown.";
+const LOGOUT_ERROR_MESSAGE =
+  "Sign out could not be completed. Your session is still active; please try again.";
 
 function hasProfileValue(value: string | null | undefined) {
   return Boolean(value?.trim());
@@ -197,17 +209,42 @@ export function DashboardClient() {
   const [loading, setLoading] = useState(true);
   const [liveRefreshing, setLiveRefreshing] = useState(false);
   const [dashboardLoadError, setDashboardLoadError] = useState<string | null>(null);
+  const [logoutError, setLogoutError] = useState<string | null>(null);
   const [dashboardReady, setDashboardReady] = useState(false);
   const [dashboardRefreshKey, setDashboardRefreshKey] = useState(0);
   const [copiedReference, setCopiedReference] = useState(false);
   const hasLoadedDashboardRef = useRef(false);
+  const loadedDashboardUserIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     let currentUserId: string | null = null;
+    let currentAuthUser: SupabaseUser | null = null;
     let disposed = false;
     let loadInFlight: Promise<void> | null = null;
     let retryAttempt = 0;
     let retryTimer: number | null = null;
+    let activeQueryController: AbortController | null = null;
+    let authRevision = 0;
+
+    const clearDashboardState = () => {
+      setCustomerId(null);
+      setCredits(0);
+      setOrders([]);
+      setCreditTransactions([]);
+      setCompletedCount(0);
+      setActiveCount(0);
+      setNeedsResponseCount(0);
+      setPendingCount(0);
+      setInProgressCount(0);
+      setProfileMissingItems([]);
+      setDashboardLoadError(null);
+      setDashboardReady(false);
+      setLiveRefreshing(false);
+      setCopiedReference(false);
+      hasLoadedDashboardRef.current = false;
+      loadedDashboardUserIdRef.current = null;
+      currentAuthUser = null;
+    };
 
     const clearScheduledRetry = () => {
       if (retryTimer !== null) window.clearTimeout(retryTimer);
@@ -227,9 +264,56 @@ export function DashboardClient() {
       }, delay);
     };
 
+    const redirectIfSessionInvalid = async (
+      queryFailure: unknown,
+      expectedUserId: string,
+      expectedAuthRevision: number
+    ) => {
+      if (!shouldRevalidateDashboardSession(queryFailure)) return false;
+
+      try {
+        const validation = await getStableUser();
+        if (
+          !isDefinitiveInvalidSession({
+            hasUser: Boolean(validation.user),
+            error: validation.error,
+          })
+        ) {
+          return false;
+        }
+      } catch {
+        return false;
+      }
+
+      if (
+        disposed ||
+        currentUserId !== expectedUserId ||
+        authRevision !== expectedAuthRevision
+      ) {
+        return false;
+      }
+
+      authRevision += 1;
+      currentUserId = null;
+      clearScheduledRetry();
+      activeQueryController?.abort();
+      clearDashboardState();
+      setEmail(null);
+      setLoading(true);
+      void signOutStable({ scope: "local" }).catch(() => undefined);
+      router.replace("/login");
+      return true;
+    };
+
     const performDashboardLoad = async (options?: { silent?: boolean }) => {
       const silent = Boolean(options?.silent);
       let keepLoadingForRedirect = false;
+      let queryController: AbortController | null = null;
+      let queryTimeout: number | null = null;
+      let requestedUserId: string | null = null;
+      let requestedAuthRevision: number | null = null;
+      let queryTimedOut = false;
+      const authRevisionAtLoadStart = authRevision;
 
       if (silent) {
         setLiveRefreshing(true);
@@ -240,36 +324,107 @@ export function DashboardClient() {
 
       try {
         if (!currentUserId) {
-          const { session, error: sessionError } = await getStableSession();
+          const { session, error: sessionError } = await getStableSession({
+            maxAttempts: 1,
+          });
+          if (disposed || authRevision !== authRevisionAtLoadStart) return;
           if (!session?.user) {
-            if (sessionError) {
+            if (disposed) return;
+            if (
+              sessionError &&
+              !isDefinitiveInvalidSession({
+                hasUser: false,
+                error: sessionError,
+              })
+            ) {
               setDashboardLoadError(
                 hasLoadedDashboardRef.current || silent
                   ? DASHBOARD_SYNC_ERROR_MESSAGE
                   : DASHBOARD_LOAD_ERROR_MESSAGE
               );
               scheduleRetry(sessionError);
-            } else if (!silent) {
+            } else {
+              authRevision += 1;
+              clearDashboardState();
+              setEmail(null);
               keepLoadingForRedirect = true;
+              setLoading(true);
               router.replace("/login");
             }
             return;
           }
 
           const user = session.user;
+          authRevision += 1;
           currentUserId = user.id;
-
-          if (await signOutIfEmailUnverified(user)) {
-            keepLoadingForRedirect = true;
-            router.replace("/login?verify_email=1");
-            return;
-          }
-
+          currentAuthUser = user;
           setEmail(user.email ?? null);
         }
 
         const userId = currentUserId;
-        if (!userId) return;
+        if (!userId || disposed) return;
+        requestedUserId = userId;
+        requestedAuthRevision = authRevision;
+
+        const authUser = currentAuthUser;
+        if (!authUser || authUser.id !== userId) {
+          const missingUserError = new Error(
+            "Authenticated user details are unavailable"
+          );
+          setDashboardLoadError(
+            hasLoadedDashboardRef.current || silent
+              ? DASHBOARD_SYNC_ERROR_MESSAGE
+              : DASHBOARD_LOAD_ERROR_MESSAGE
+          );
+          scheduleRetry(missingUserError);
+          return;
+        }
+
+        if (!isEmailVerified(authUser)) {
+          try {
+            await signOutIfEmailUnverified(authUser);
+          } catch (error) {
+            if (
+              disposed ||
+              currentUserId !== userId ||
+              authRevision !== requestedAuthRevision
+            ) {
+              return;
+            }
+            setDashboardLoadError(
+              hasLoadedDashboardRef.current || silent
+                ? DASHBOARD_SYNC_ERROR_MESSAGE
+                : DASHBOARD_LOAD_ERROR_MESSAGE
+            );
+            scheduleRetry(error);
+            return;
+          }
+
+          if (
+            !disposed &&
+            (currentUserId === null || currentUserId === userId)
+          ) {
+            authRevision += 1;
+            currentUserId = null;
+            clearScheduledRetry();
+            clearDashboardState();
+            setEmail(null);
+            keepLoadingForRedirect = true;
+            setLoading(true);
+            router.replace("/login?verify_email=1");
+          }
+          return;
+        }
+
+        queryController = new AbortController();
+        activeQueryController = queryController;
+        queryTimeout = window.setTimeout(
+          () => {
+            queryTimedOut = true;
+            queryController?.abort();
+          },
+          dashboardSyncTimeoutMs
+        );
 
         const { data: profile, error: profileError } = await supabase
           .from("profiles")
@@ -277,6 +432,8 @@ export function DashboardClient() {
             "credit_balance, customer_id, full_name, account_type, company_name, phone, street, postal_code, city, country, invoice_email, preferred_contact"
           )
           .eq("id", userId)
+          .abortSignal(queryController.signal)
+          .retry(false)
           .single();
 
         const { data: recentOrders, error: recentOrdersError } = await supabase
@@ -286,49 +443,65 @@ export function DashboardClient() {
           )
           .eq("customer_id", userId)
           .order("created_at", { ascending: false })
-          .limit(5);
+          .limit(5)
+          .abortSignal(queryController.signal)
+          .retry(false);
 
         const { data: transactionRows, error: transactionRowsError } = await supabase
           .from("credit_transactions")
           .select("id, user_id, type, credits_delta, balance_after, description, created_at")
           .eq("user_id", userId)
           .order("created_at", { ascending: false })
-          .limit(6);
+          .limit(6)
+          .abortSignal(queryController.signal)
+          .retry(false);
 
         const { count: allOrders, error: allOrdersError } = await supabase
           .from("orders")
           .select("*", { count: "exact", head: true })
-          .eq("customer_id", userId);
+          .eq("customer_id", userId)
+          .abortSignal(queryController.signal)
+          .retry(false);
 
         const { count: completedOrders, error: completedOrdersError } = await supabase
           .from("orders")
           .select("*", { count: "exact", head: true })
           .eq("customer_id", userId)
-          .eq("status", "completed");
+          .eq("status", "completed")
+          .abortSignal(queryController.signal)
+          .retry(false);
 
         const { count: pendingOrders, error: pendingOrdersError } = await supabase
           .from("orders")
           .select("*", { count: "exact", head: true })
           .eq("customer_id", userId)
-          .in("status", ["new_request", "file_check"]);
+          .in("status", ["new_request", "file_check"])
+          .abortSignal(queryController.signal)
+          .retry(false);
 
         const { count: needsResponseOrders, error: needsResponseOrdersError } = await supabase
           .from("orders")
           .select("*", { count: "exact", head: true })
           .eq("customer_id", userId)
-          .eq("status", "customer_info_needed");
+          .eq("status", "customer_info_needed")
+          .abortSignal(queryController.signal)
+          .retry(false);
 
         const { count: progressOrders, error: progressOrdersError } = await supabase
           .from("orders")
           .select("*", { count: "exact", head: true })
           .eq("customer_id", userId)
-          .eq("status", "in_progress");
+          .eq("status", "in_progress")
+          .abortSignal(queryController.signal)
+          .retry(false);
 
         const { count: cancelledOrders, error: cancelledOrdersError } = await supabase
           .from("orders")
           .select("*", { count: "exact", head: true })
           .eq("customer_id", userId)
-          .eq("status", "cancelled");
+          .eq("status", "cancelled")
+          .abortSignal(queryController.signal)
+          .retry(false);
 
         const queryFailed =
           profileError ||
@@ -341,13 +514,50 @@ export function DashboardClient() {
           progressOrdersError ||
           cancelledOrdersError;
 
+        if (
+          disposed ||
+          currentUserId !== userId ||
+          authRevision !== requestedAuthRevision
+        ) {
+          return;
+        }
+
         if (queryFailed) {
+          const retryFailure = queryTimedOut
+            ? { name: "AbortError" }
+            : queryFailed;
+          if (
+            await redirectIfSessionInvalid(
+              retryFailure,
+              userId,
+              requestedAuthRevision
+            )
+          ) {
+            keepLoadingForRedirect = true;
+            return;
+          }
+
+          if (
+            disposed ||
+            currentUserId !== userId ||
+            authRevision !== requestedAuthRevision
+          ) {
+            return;
+          }
           setDashboardLoadError(
             hasLoadedDashboardRef.current || silent
               ? DASHBOARD_SYNC_ERROR_MESSAGE
               : DASHBOARD_LOAD_ERROR_MESSAGE
           );
-          scheduleRetry(queryFailed);
+          scheduleRetry(retryFailure);
+          return;
+        }
+
+        if (
+          disposed ||
+          currentUserId !== userId ||
+          authRevision !== requestedAuthRevision
+        ) {
           return;
         }
 
@@ -376,20 +586,36 @@ export function DashboardClient() {
         setDashboardLoadError(null);
         setDashboardReady(true);
         hasLoadedDashboardRef.current = true;
+        loadedDashboardUserIdRef.current = userId;
         retryAttempt = 0;
         clearScheduledRetry();
       } catch (error) {
+        if (
+          disposed ||
+          (requestedUserId === null &&
+            authRevision !== authRevisionAtLoadStart) ||
+          (requestedUserId !== null &&
+            (currentUserId !== requestedUserId ||
+              authRevision !== requestedAuthRevision))
+        ) {
+          return;
+        }
         setDashboardLoadError(
           hasLoadedDashboardRef.current || silent
             ? DASHBOARD_SYNC_ERROR_MESSAGE
             : DASHBOARD_LOAD_ERROR_MESSAGE
         );
-        scheduleRetry(error);
+        scheduleRetry(queryTimedOut ? { name: "AbortError" } : error);
       } finally {
-        if (silent) {
-          setLiveRefreshing(false);
-        } else if (!keepLoadingForRedirect) {
-          setLoading(false);
+        if (queryTimeout !== null) window.clearTimeout(queryTimeout);
+        if (activeQueryController === queryController) activeQueryController = null;
+
+        if (!disposed) {
+          if (silent) {
+            setLiveRefreshing(false);
+          } else if (!keepLoadingForRedirect) {
+            setLoading(false);
+          }
         }
       }
     };
@@ -403,14 +629,57 @@ export function DashboardClient() {
       return loadInFlight;
     }
 
-    void loadDashboard();
+    void loadDashboard({ silent: hasLoadedDashboardRef.current });
 
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
       if (session?.user) {
-        currentUserId = session.user.id;
+        const nextUserId = session.user.id;
+        const identityChanged = currentUserId !== nextUserId;
+        const accountChanged =
+          (currentUserId !== null && currentUserId !== nextUserId) ||
+          (loadedDashboardUserIdRef.current !== null &&
+            loadedDashboardUserIdRef.current !== nextUserId);
+
+        if (identityChanged) {
+          authRevision += 1;
+          activeQueryController?.abort();
+          clearScheduledRetry();
+        }
+        if (accountChanged) {
+          clearDashboardState();
+          setLoading(true);
+        }
+        currentUserId = nextUserId;
+        currentAuthUser = session.user;
         setEmail(session.user.email ?? null);
+
+        if (identityChanged) {
+          const expectedRevision = authRevision;
+          const startAccountLoad = () => {
+            if (
+              !disposed &&
+              currentUserId === nextUserId &&
+              authRevision === expectedRevision
+            ) {
+              void loadDashboard({ silent: hasLoadedDashboardRef.current });
+            }
+          };
+
+          if (loadInFlight) {
+            void loadInFlight.finally(startAccountLoad);
+          } else {
+            startAccountLoad();
+          }
+        }
       } else if (event === "SIGNED_OUT") {
+        authRevision += 1;
         currentUserId = null;
+        currentAuthUser = null;
+        activeQueryController?.abort();
+        clearScheduledRetry();
+        clearDashboardState();
+        setEmail(null);
+        setLoading(true);
         router.replace("/login");
       }
     });
@@ -463,6 +732,8 @@ export function DashboardClient() {
     return () => {
       disposed = true;
       clearScheduledRetry();
+      activeQueryController?.abort();
+      activeQueryController = null;
       window.clearInterval(interval);
       authListener.subscription.unsubscribe();
       supabase.removeChannel(channel);
@@ -606,8 +877,13 @@ export function DashboardClient() {
   };
 
   const handleLogout = async () => {
-    await signOutStable();
-    router.push("/login");
+    setLogoutError(null);
+    try {
+      await signOutStable();
+      router.push("/login");
+    } catch {
+      setLogoutError(LOGOUT_ERROR_MESSAGE);
+    }
   };
 
   const retryDashboardLoad = () => {
@@ -854,6 +1130,28 @@ export function DashboardClient() {
           </nav>
 
           <div className="px-4 py-8 lg:px-8">
+            {logoutError && (
+              <div
+                role="alert"
+                className="mb-6 flex flex-col gap-4 rounded-[2rem] border border-red-700/40 bg-red-950/20 p-5 shadow-2xl shadow-black/20 md:flex-row md:items-center md:justify-between"
+              >
+                <div className="min-w-0">
+                  <div className="text-xs font-black uppercase tracking-[0.2em] text-red-200">
+                    Sign out needs retry
+                  </div>
+                  <p className="mt-2 break-words text-sm leading-6 text-red-100/90">
+                    {logoutError}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="inline-flex shrink-0 items-center justify-center rounded-xl border border-red-500/40 bg-black/25 px-5 py-3 text-sm font-black text-red-100 transition hover:bg-red-900/30"
+                >
+                  Try logout again
+                </button>
+              </div>
+            )}
             {dashboardLoadError && dashboardReady && (
               <div
                 role="alert"

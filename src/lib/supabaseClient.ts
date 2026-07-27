@@ -1,8 +1,11 @@
-import { navigatorLock } from "@supabase/auth-js";
 import { createBrowserClient } from "@supabase/ssr";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { migrateLegacyBrowserSessionToCookies } from "@/lib/authSessionMigration";
 import { supabaseAuthCookieOptions } from "@/lib/supabaseAuthConfig";
+import {
+  createSupabaseAuthTimedFetch,
+  supabaseAuthRequestTimeoutMs,
+} from "@/lib/timedFetch";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -24,6 +27,9 @@ type SupabaseWindow = Window & typeof globalThis & {
 
 const browserWindow = typeof window === "undefined" ? null : window as SupabaseWindow;
 const validSupabaseUrl = getValidSupabaseUrl(supabaseUrl);
+const timedSupabaseFetch = createSupabaseAuthTimedFetch(
+  supabaseAuthRequestTimeoutMs
+);
 const existingCookieClient = browserWindow?.__mgAutotechSupabaseMode === "cookie-ssr"
   ? browserWindow.__mgAutotechSupabase
   : undefined;
@@ -40,13 +46,13 @@ export const supabase = existingCookieClient ?? createBrowserClient(
   supabaseAnonKey || "placeholder-anon-key",
   {
     cookieOptions: supabaseAuthCookieOptions,
+    global: {
+      fetch: timedSupabaseFetch,
+    },
     auth: {
       persistSession: true,
       autoRefreshToken: true,
       detectSessionInUrl: true,
-      // Supabase v2 still supports this lock and it prevents cross-tab refresh races.
-      lock: typeof navigator !== "undefined" && navigator.locks ? navigatorLock : undefined,
-      lockAcquireTimeout: 10_000,
     },
   }
 );

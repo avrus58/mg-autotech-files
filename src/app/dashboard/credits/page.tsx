@@ -3,7 +3,12 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { signOutIfEmailUnverified } from "@/lib/authGuards";
+import {
+  getStableSession,
+  getStableUser,
+  signOutIfEmailUnverified,
+} from "@/lib/authGuards";
+import { resolveBrowserAuthCheck } from "@/lib/authBoundaryState";
 import {
   CUSTOM_CREDIT_BASE_PRICE_EURO,
   CUSTOM_CREDIT_PRICE_EURO,
@@ -68,6 +73,9 @@ const fallbackQuote: CreditQuote = {
   packages: creditPackages.map((item) => ({ ...item, unitPriceEuro: item.priceEuro / item.credits })),
 };
 
+const CREDITS_AUTH_ERROR_MESSAGE =
+  "Your session could not be verified. Please try again.";
+
 function formatEuro(value: number) {
   return new Intl.NumberFormat("de-DE", {
     style: "currency",
@@ -97,8 +105,8 @@ export default function BuyCreditsPage() {
   useEffect(() => {
     let active = true;
     async function loadQuote() {
-      const session = await supabase.auth.getSession();
-      const token = session.data.session?.access_token;
+      const { session } = await getStableSession({ maxAttempts: 1 });
+      const token = session?.access_token;
       if (!token) {
         if (active) setQuoteLoading(false);
         return;
@@ -179,23 +187,55 @@ export default function BuyCreditsPage() {
     setLoadingPackage(loadingId);
     setMessage("");
 
-    const { data: sessionData } = await supabase.auth.getSession();
+    const { session, error: sessionError } = await getStableSession({
+      maxAttempts: 1,
+    });
 
-    if (!sessionData.session) {
-      router.push("/login");
+    if (!session) {
+      setLoadingPackage(null);
+      const authState = resolveBrowserAuthCheck({
+        hasUser: false,
+        error: sessionError,
+      });
+      if (authState === "unauthenticated") {
+        router.replace("/login");
+      } else {
+        setMessage(CREDITS_AUTH_ERROR_MESSAGE);
+      }
       return;
     }
 
-    const { data: userData } = await supabase.auth.getUser();
+    const { user, error: userError } = await getStableUser();
 
-    if (!userData.user || (await signOutIfEmailUnverified(userData.user))) {
-      router.push("/login?verify_email=1");
+    if (!user) {
+      setLoadingPackage(null);
+      const authState = resolveBrowserAuthCheck({
+        hasUser: false,
+        error: userError,
+      });
+      if (authState === "unauthenticated") {
+        router.replace("/login");
+      } else {
+        setMessage(CREDITS_AUTH_ERROR_MESSAGE);
+      }
+      return;
+    }
+
+    try {
+      if (await signOutIfEmailUnverified(user)) {
+        setLoadingPackage(null);
+        router.replace("/login?verify_email=1");
+        return;
+      }
+    } catch {
+      setLoadingPackage(null);
+      setMessage(CREDITS_AUTH_ERROR_MESSAGE);
       return;
     }
 
     if (paymentMethod === "bank") {
       try {
-        const reference = await getCustomerReference(userData.user.id);
+        const reference = await getCustomerReference(user.id);
         const selectedPackage = payload.packageId
           ? packages.find((item) => item.id === payload.packageId)
           : null;
@@ -207,7 +247,7 @@ export default function BuyCreditsPage() {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${sessionData.session.access_token}`,
+            Authorization: `Bearer ${session.access_token}`,
           },
           body: JSON.stringify({
             credits: selectedCredits,
@@ -234,7 +274,7 @@ export default function BuyCreditsPage() {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${sessionData.session.access_token}`,
+        Authorization: `Bearer ${session.access_token}`,
       },
       body: JSON.stringify(payload),
     });
@@ -266,24 +306,52 @@ export default function BuyCreditsPage() {
   };
 
   const copyBankReference = async () => {
-    const { data: sessionData } = await supabase.auth.getSession();
+    const { session, error: sessionError } = await getStableSession({
+      maxAttempts: 1,
+    });
 
-    if (!sessionData.session) {
-      router.push("/login");
+    if (!session) {
+      const authState = resolveBrowserAuthCheck({
+        hasUser: false,
+        error: sessionError,
+      });
+      if (authState === "unauthenticated") {
+        router.replace("/login");
+      } else {
+        setMessage(CREDITS_AUTH_ERROR_MESSAGE);
+      }
       return;
     }
 
-    const { data: userData } = await supabase.auth.getUser();
+    const { user, error: userError } = await getStableUser();
 
-    if (!userData.user || (await signOutIfEmailUnverified(userData.user))) {
-      router.push("/login?verify_email=1");
+    if (!user) {
+      const authState = resolveBrowserAuthCheck({
+        hasUser: false,
+        error: userError,
+      });
+      if (authState === "unauthenticated") {
+        router.replace("/login");
+      } else {
+        setMessage(CREDITS_AUTH_ERROR_MESSAGE);
+      }
+      return;
+    }
+
+    try {
+      if (await signOutIfEmailUnverified(user)) {
+        router.replace("/login?verify_email=1");
+        return;
+      }
+    } catch {
+      setMessage(CREDITS_AUTH_ERROR_MESSAGE);
       return;
     }
 
     let reference = "";
 
     try {
-      reference = await getCustomerReference(userData.user.id);
+      reference = await getCustomerReference(user.id);
     } catch (error) {
       setMessage(
         error instanceof Error ? error.message : "Customer ID could not be loaded."

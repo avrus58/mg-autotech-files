@@ -4,7 +4,8 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { signOutIfEmailUnverified } from "@/lib/authGuards";
+import { getStableUser, signOutIfEmailUnverified } from "@/lib/authGuards";
+import { resolveBrowserAuthCheck } from "@/lib/authBoundaryState";
 import { supabase } from "@/lib/supabaseClient";
 import RequestChat from "@/components/RequestChat";
 import {
@@ -487,41 +488,127 @@ export default function AdminPage() {
   const knownOrderIdsRef = useRef<Set<string>>(new Set());
   const initialOrdersLoadedRef = useRef(false);
   const hasLoadedAdminDataRef = useRef(false);
+  const adminUserIdRef = useRef<string | null>(null);
+  const adminAuthRevisionRef = useRef(0);
+  const adminLoadInFlightRef = useRef<Promise<void> | null>(null);
+  const adminLoadQueuedRef = useRef(false);
 
-  async function loadAdminData(options?: { silent?: boolean }) {
+  function clearPrivilegedAdminState() {
+    setOrders([]);
+    setCustomers([]);
+    setSelectedOrder(null);
+    setSelectedCustomer(null);
+    setCustomerForm(null);
+    setCreditInputs({});
+    setCreditNotes({});
+    setUpdatingId(null);
+    setCreditUpdatingId(null);
+    setCustomerSavingId(null);
+    setUploadingModifiedId(null);
+    setNewOrderNotice("");
+    setAdminAccess(null);
+    setAdminDataReady(false);
+    setLastSyncAt(null);
+    knownOrderIdsRef.current = new Set();
+    initialOrdersLoadedRef.current = false;
+    hasLoadedAdminDataRef.current = false;
+  }
+
+  async function performAdminDataLoad(options?: { silent?: boolean }) {
     const silent = Boolean(options?.silent);
+    let expectedAuthRevision = adminAuthRevisionRef.current;
+
     if (silent) setAutoRefreshing(true);
     else setLoading(true);
     setMessage("");
     setAdminLoadError("");
 
-    const { data: userData } = await supabase.auth.getUser();
-    if (!userData.user) {
-      router.push("/login");
+    const { user, error: userError } = await getStableUser();
+    if (adminAuthRevisionRef.current !== expectedAuthRevision) return;
+    if (!user) {
+      const authState = resolveBrowserAuthCheck({
+        hasUser: false,
+        error: userError,
+      });
+
+      if (authState === "unauthenticated") {
+        adminAuthRevisionRef.current += 1;
+        adminUserIdRef.current = null;
+        clearPrivilegedAdminState();
+        setLoading(true);
+        setAutoRefreshing(false);
+        router.replace("/login");
+      } else {
+        setAdminLoadError(
+          hasLoadedAdminDataRef.current
+            ? ADMIN_SYNC_ERROR_MESSAGE
+            : ADMIN_LOAD_ERROR_MESSAGE
+        );
+        setLoading(false);
+        setAutoRefreshing(false);
+      }
       return;
     }
 
-    if (await signOutIfEmailUnverified(userData.user)) {
-      router.push("/login?verify_email=1");
+    if (adminUserIdRef.current && adminUserIdRef.current !== user.id) {
+      clearPrivilegedAdminState();
+      adminAuthRevisionRef.current += 1;
+      expectedAuthRevision = adminAuthRevisionRef.current;
+    }
+    adminUserIdRef.current = user.id;
+
+    try {
+      if (await signOutIfEmailUnverified(user)) {
+        adminUserIdRef.current = null;
+        clearPrivilegedAdminState();
+        router.replace("/login?verify_email=1");
+        return;
+      }
+    } catch {
+      setAdminLoadError(
+        hasLoadedAdminDataRef.current
+          ? ADMIN_SYNC_ERROR_MESSAGE
+          : ADMIN_LOAD_ERROR_MESSAGE
+      );
+      setLoading(false);
+      setAutoRefreshing(false);
       return;
     }
 
     let { data: profile, error: profileError } = await supabase
       .from("profiles")
       .select("role, staff_role, staff_permissions")
-      .eq("id", userData.user.id)
+      .eq("id", user.id)
       .single();
 
     if (profileError?.code === "42703") {
       const legacy = await supabase
         .from("profiles")
         .select("role")
-        .eq("id", userData.user.id)
+        .eq("id", user.id)
         .single();
       profile = legacy.data
         ? { ...legacy.data, staff_role: null, staff_permissions: [] }
         : null;
       profileError = legacy.error;
+    }
+
+    if (
+      adminAuthRevisionRef.current !== expectedAuthRevision ||
+      adminUserIdRef.current !== user.id
+    ) {
+      return;
+    }
+
+    if (profileError) {
+      setAdminLoadError(
+        hasLoadedAdminDataRef.current
+          ? ADMIN_SYNC_ERROR_MESSAGE
+          : ADMIN_LOAD_ERROR_MESSAGE
+      );
+      setLoading(false);
+      setAutoRefreshing(false);
+      return;
     }
 
     const access: StaffAccess = {
@@ -532,7 +619,9 @@ export default function AdminPage() {
         : [],
     };
 
-    if (profileError || !isStaffMember(access) || !hasStaffPermission(access, "orders.view")) {
+    if (!isStaffMember(access) || !hasStaffPermission(access, "orders.view")) {
+      clearPrivilegedAdminState();
+      adminUserIdRef.current = user.id;
       setAdminLoadError("");
       setMessage("You are not authorized to access the admin panel.");
       setLoading(false);
@@ -540,9 +629,13 @@ export default function AdminPage() {
       return;
     }
 
-    setAdminAccess(access);
-
     const { data, error } = await supabase.from("orders").select("*").order("created_at", { ascending: false });
+    if (
+      adminAuthRevisionRef.current !== expectedAuthRevision ||
+      adminUserIdRef.current !== user.id
+    ) {
+      return;
+    }
     if (error) {
       setAdminLoadError(
         hasLoadedAdminDataRef.current ? ADMIN_SYNC_ERROR_MESSAGE : ADMIN_LOAD_ERROR_MESSAGE
@@ -584,6 +677,13 @@ export default function AdminPage() {
       customerError = fallback.error;
     }
 
+    if (
+      adminAuthRevisionRef.current !== expectedAuthRevision ||
+      adminUserIdRef.current !== user.id
+    ) {
+      return;
+    }
+
     if (customerError) {
       setAdminLoadError(
         hasLoadedAdminDataRef.current ? ADMIN_SYNC_ERROR_MESSAGE : ADMIN_LOAD_ERROR_MESSAGE
@@ -595,6 +695,8 @@ export default function AdminPage() {
 
     const nextOrders = (data ?? []) as Order[];
     const nextCustomers = (profileList ?? []) as unknown as Profile[];
+
+    if (adminUserIdRef.current !== user.id) return;
 
     if (initialOrdersLoadedRef.current) {
       const previousIds = knownOrderIdsRef.current;
@@ -612,6 +714,7 @@ export default function AdminPage() {
     initialOrdersLoadedRef.current = true;
     hasLoadedAdminDataRef.current = true;
 
+    setAdminAccess(access);
     setOrders(nextOrders);
     setCustomers(nextCustomers);
     setSelectedOrder((current) => (current ? nextOrders.find((order) => order.id === current.id) ?? current : null));
@@ -628,11 +731,85 @@ export default function AdminPage() {
     setAutoRefreshing(false);
   }
 
+  function loadAdminData(options?: { silent?: boolean }) {
+    if (adminLoadInFlightRef.current) {
+      adminLoadQueuedRef.current = true;
+      return adminLoadInFlightRef.current;
+    }
+
+    const loadAuthRevision = adminAuthRevisionRef.current;
+    const loadPromise = performAdminDataLoad(options)
+      .catch(() => {
+        if (adminAuthRevisionRef.current === loadAuthRevision) {
+          setAdminLoadError(
+            hasLoadedAdminDataRef.current
+              ? ADMIN_SYNC_ERROR_MESSAGE
+              : ADMIN_LOAD_ERROR_MESSAGE
+          );
+          setLoading(false);
+          setAutoRefreshing(false);
+        }
+      })
+      .finally(() => {
+        if (adminLoadInFlightRef.current === loadPromise) {
+          adminLoadInFlightRef.current = null;
+        }
+        if (adminLoadQueuedRef.current) {
+          adminLoadQueuedRef.current = false;
+          window.setTimeout(() => {
+            void loadAdminData({ silent: hasLoadedAdminDataRef.current });
+          }, 0);
+        }
+      });
+    adminLoadInFlightRef.current = loadPromise;
+    return loadPromise;
+  }
+
   useEffect(() => {
     const timeout = window.setTimeout(() => { void loadAdminData(); }, 0);
     return () => window.clearTimeout(timeout);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_OUT") {
+        adminAuthRevisionRef.current += 1;
+        adminLoadQueuedRef.current = false;
+        adminUserIdRef.current = null;
+        clearPrivilegedAdminState();
+        setMessage("");
+        setAdminLoadError("");
+        setLoading(true);
+        setAutoRefreshing(false);
+        router.replace("/login");
+        return;
+      }
+
+      const nextUserId = session?.user.id ?? null;
+      if (
+        event === "SIGNED_IN" &&
+        nextUserId &&
+        adminUserIdRef.current &&
+        adminUserIdRef.current !== nextUserId
+      ) {
+        adminAuthRevisionRef.current += 1;
+        clearPrivilegedAdminState();
+        adminUserIdRef.current = nextUserId;
+        setMessage("");
+        setAdminLoadError("");
+        setLoading(true);
+        window.setTimeout(() => {
+          void loadAdminData();
+        }, 0);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router]);
 
   useEffect(() => {
     const interval = window.setInterval(() => {

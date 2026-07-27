@@ -45,21 +45,35 @@ function initializeAuthMemoryListener() {
 }
 
 export function isTransientAuthError(error: unknown) {
-  return Boolean(
-    error && typeof error === "object" && "name" in error &&
-    transientAuthErrors.has(String(error.name))
-  );
+  if (error instanceof TypeError) return true;
+  if (!error || typeof error !== "object" || !("name" in error)) return false;
+
+  const name = String(error.name);
+  return name === "AbortError" || transientAuthErrors.has(name);
 }
 
-export async function getStableSession(): Promise<{ session: Session | null; error: unknown }> {
+export async function getStableSession(
+  options: { maxAttempts?: number } = {}
+): Promise<{ session: Session | null; error: unknown }> {
   initializeAuthMemoryListener();
   let lastError: unknown = null;
+  const maxAttempts = Math.max(1, Math.min(3, options.maxAttempts ?? 3));
 
-  for (let attempt = 0; attempt < 3; attempt += 1) {
-    const { data, error } = await supabase.auth.getSession();
-    if (data.session) {
-      setCachedSession(data.session);
-      return { session: data.session, error: null };
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    let session: Session | null = null;
+    let error: unknown = null;
+
+    try {
+      const result = await supabase.auth.getSession();
+      session = result.data.session;
+      error = result.error;
+    } catch (caughtError) {
+      error = caughtError;
+    }
+
+    if (session) {
+      setCachedSession(session);
+      return { session, error: null };
     }
     lastError = error;
 
@@ -72,7 +86,7 @@ export async function getStableSession(): Promise<{ session: Session | null; err
       return { session: null, error };
     }
 
-    if (attempt < 2) {
+    if (attempt < maxAttempts - 1) {
       const delay = 150 * (attempt + 1);
       await new Promise((resolve) => window.setTimeout(resolve, delay));
     }
@@ -82,6 +96,18 @@ export async function getStableSession(): Promise<{ session: Session | null; err
     session: hasUsableCachedSession() ? getCachedSession() : null,
     error: lastError,
   };
+}
+
+export async function getStableUser(): Promise<{
+  user: User | null;
+  error: unknown;
+}> {
+  try {
+    const { data, error } = await supabase.auth.getUser();
+    return { user: data.user, error };
+  } catch (error) {
+    return { user: null, error };
+  }
 }
 
 export async function authenticatedFetch(input: RequestInfo | URL, init?: RequestInit) {
@@ -97,21 +123,31 @@ export async function authenticatedFetch(input: RequestInfo | URL, init?: Reques
   const response = await send(session.access_token);
   if (response.status !== 401) return response;
 
-  const { data: userData, error: validationError } = await supabase.auth.getUser();
-  if (validationError || !userData.user) return response;
+  const { user, error: validationError } = await getStableUser();
+  if (validationError || !user) return response;
 
-  const { data } = await supabase.auth.getSession();
-  if (!data.session?.access_token || data.session.access_token === session.access_token) {
+  const { session: refreshedSession } = await getStableSession({ maxAttempts: 1 });
+  if (
+    !refreshedSession?.access_token ||
+    refreshedSession.access_token === session.access_token
+  ) {
     return response;
   }
 
-  setCachedSession(data.session);
-  return send(data.session.access_token);
+  setCachedSession(refreshedSession);
+  return send(refreshedSession.access_token);
 }
 
-export async function signOutStable() {
+export async function signOutStable(options?: { scope?: "global" | "local" }) {
+  const result = options?.scope
+    ? await supabase.auth.signOut({ scope: options.scope })
+    : await supabase.auth.signOut();
+
+  if (result.error) {
+    throw result.error;
+  }
+
   setCachedSession(null);
-  await supabase.auth.signOut();
 }
 
 export function isEmailVerified(user: User) {

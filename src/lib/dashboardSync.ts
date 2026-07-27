@@ -1,4 +1,5 @@
 export const dashboardSyncRetryLimit = 4;
+export const dashboardSyncTimeoutMs = 15_000;
 
 export type DashboardSyncFailureKind =
   | "aborted"
@@ -40,6 +41,39 @@ export function classifyDashboardSyncFailure(error: unknown): DashboardSyncFailu
   }
 
   return "unknown";
+}
+
+export function shouldRevalidateDashboardSession(error: unknown) {
+  return classifyDashboardSyncFailure(error) === "authentication";
+}
+
+export function isDefinitiveInvalidSession(input: {
+  hasUser: boolean;
+  error: unknown;
+}) {
+  if (input.hasUser) return false;
+  if (!input.error) return true;
+  if (typeof input.error !== "object") return false;
+
+  const candidate = input.error as { code?: unknown; name?: unknown };
+  const code = String(candidate.code ?? "");
+  const name = String(candidate.name ?? "");
+
+  return (
+    name === "AuthSessionMissingError" ||
+    name === "AuthInvalidTokenResponseError" ||
+    name === "AuthInvalidJwtError" ||
+    [
+      "bad_jwt",
+      "invalid_jwt",
+      "refresh_token_already_used",
+      "refresh_token_not_found",
+      "session_expired",
+      "session_not_found",
+      "user_banned",
+      "user_not_found",
+    ].includes(code)
+  );
 }
 
 export function recordDashboardSyncDiagnostic(

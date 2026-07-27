@@ -6,6 +6,7 @@ import {
   hasSupabasePublicConfig,
   supabaseAuthCookieOptions,
 } from "@/lib/supabaseAuthConfig";
+import { applySupabaseSessionRefresh } from "@/lib/supabaseProxySession";
 
 const localeCookie = "mg_locale";
 
@@ -46,20 +47,11 @@ export async function proxy(request: NextRequest) {
           return request.cookies.getAll();
         },
         setAll(cookiesToSet, responseHeaders) {
-          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
-          requestHeaders.set("cookie", request.cookies.toString());
-
-          response = NextResponse.next({
-            request: {
-              headers: requestHeaders,
-            },
-          });
-
-          cookiesToSet.forEach(({ name, value, options }) => {
-            response.cookies.set(name, value, options);
-          });
-          Object.entries(responseHeaders).forEach(([name, value]) => {
-            response.headers.set(name, value);
+          response = applySupabaseSessionRefresh({
+            request,
+            requestHeaders,
+            cookiesToSet,
+            responseHeaders,
           });
         },
       },
