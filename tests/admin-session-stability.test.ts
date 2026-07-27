@@ -20,8 +20,12 @@ test("admin background refresh uses the stable browser session instead of a fres
 test("a transient silent session gap keeps the loaded admin workspace visible", () => {
   const adminPage = readProjectFile("src", "app", "admin", "page.tsx");
 
-  assert.match(adminPage, /const ADMIN_SESSION_SYNC_ERROR_MESSAGE =/);
-  assert.match(adminPage, /if \(silent && hasLoadedAdminDataRef\.current\) \{\s*setAdminLoadError\(ADMIN_SESSION_SYNC_ERROR_MESSAGE\);\s*return;/);
+  assert.match(adminPage, /if \(silent && hasLoadedAdminDataRef\.current\) \{[\s\S]*?return;\s*\}/);
+  assert.doesNotMatch(adminPage, /ADMIN_SESSION_SYNC_ERROR_MESSAGE/);
+  assert.doesNotMatch(
+    adminPage,
+    /if \(silent && hasLoadedAdminDataRef\.current\) \{\s*setAdminLoadError/
+  );
   assert.match(adminPage, /router\.replace\("\/login\?redirect=\/admin"\)/);
   assert.doesNotMatch(
     adminPage,

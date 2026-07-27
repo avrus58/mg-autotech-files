@@ -177,8 +177,6 @@ const ADMIN_LOAD_ERROR_MESSAGE =
   "Admin operations could not be loaded. Retry before treating the queue as empty.";
 const ADMIN_SYNC_ERROR_MESSAGE =
   "Admin operations could not be refreshed. The last loaded orders and customers are still shown.";
-const ADMIN_SESSION_SYNC_ERROR_MESSAGE =
-  "The secure session could not be refreshed. Your admin data remains on screen while the connection recovers.";
 type AdminOrderGroup = "open" | "completed" | "cancelled" | "all";
 
 type AdminStats = {
@@ -506,7 +504,9 @@ export default function AdminPage() {
       setAutoRefreshing(false);
 
       if (silent && hasLoadedAdminDataRef.current) {
-        setAdminLoadError(ADMIN_SESSION_SYNC_ERROR_MESSAGE);
+        // A background auth refresh can briefly expose no session while the
+        // persisted token is being synchronized. Keep the last verified admin
+        // view and retry on the next polling cycle without alarming the user.
         return;
       }
 
