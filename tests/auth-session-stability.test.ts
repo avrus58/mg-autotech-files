@@ -577,18 +577,21 @@ test("Supabase Auth fetches are bounded without timing out Storage transfers", a
   assert.equal(storageSignal, callerController.signal);
 });
 
-test("Supabase browser, server and proxy clients share one cookie session model", () => {
+test("Supabase browser auth uses the lockless stable client while server cookies propagate safely", () => {
   const browserClient = readProjectFile("src", "lib", "supabaseClient.ts");
   const serverClient = readProjectFile("src", "lib", "supabaseServer.ts");
   const proxy = readProjectFile("src", "proxy.ts");
   const proxySession = readProjectFile("src", "lib", "supabaseProxySession.ts");
 
-  assert.match(browserClient, /createBrowserClient/);
-  assert.doesNotMatch(browserClient, /createClient\s*\(/);
-  assert.match(browserClient, /migrateLegacyBrowserSessionToCookies/);
-  assert.match(browserClient, /__mgAutotechSupabaseMode/);
+  assert.match(browserClient, /createClient\s*\(/);
+  assert.match(browserClient, /persistSession:\s*true/);
+  assert.match(browserClient, /autoRefreshToken:\s*true/);
+  assert.match(browserClient, /__mgAutotechSupabase/);
+  assert.doesNotMatch(browserClient, /createBrowserClient/);
+  assert.doesNotMatch(browserClient, /migrateLegacyBrowserSessionToCookies/);
+  assert.doesNotMatch(browserClient, /__mgAutotechSupabaseMode/);
   assert.doesNotMatch(browserClient, /navigatorLock|lockAcquireTimeout/);
-  assert.match(browserClient, /createSupabaseAuthTimedFetch/);
+  assert.doesNotMatch(browserClient, /createSupabaseAuthTimedFetch/);
   assert.match(serverClient, /createServerClient/);
   assert.match(serverClient, /getAll\(\)/);
   assert.match(serverClient, /setAll\(cookiesToSet\)/);
