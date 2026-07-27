@@ -2,12 +2,26 @@
 
 Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
+## 2026-07-27 worker run MANUAL-PROD-AUTH-RECOVERY-20260727
+
+- Baslangic: 2026-07-27, owner-authorized emergency Production auth recovery run.
+- Gorev: Basarili immediate-previous rollback sonrasi canlida yaklasik 30 saniyede bir `/admin` -> `/login` yapan, fakat `/admin` yeniden acilinca sifresiz devam eden session race'ini en kucuk auth-only degisiklikle gidermek; tam kontrol sonrasi tek Production release ve privacy-safe smoke uygulamak.
+- Fingerprint: `security|production-auth-session|dashboard-sync-login-loop|cookie-session-stability-hotfix`.
+- Durum: In Progress. Mikro-duzeltme ve tum pre-deployment kontrolleri basarili; odakli commit/push, tek Production deployment ve live smoke bekleniyor.
+- Onceki rollback: Owner'in yeni explicit yetkisiyle bad deployment `dpl_HBX9g7H2jv14E5P6zbGP2TuvtEdp`, ayni projenin immediately-previous deployment'i `dpl_yspCRTeUPdgEt4oQhsHK8Jyx8Lat` hedefine basariyla rollback edildi; `file.mgautotech.de` yeniden bu target tarafindan servis edildi. Kod, DB, migration, Supabase veya environment mutation yapilmadi.
+- Canli kanit: Privacy-safe browser probe'da yetkili admin verisi once basariyla yuklendi; ardindan refresh dongusu icinde gercek sign-out olmadan rota `/login` oldu. Bu, 10 saniyelik admin `getUser()` poll'u ile auth-js 30 saniyelik auto-refresh tick'inin deprecated `navigatorLock`/10 saniyelik acquire timeout yolunda cakismasi ve transient no-user sonucunun login redirect sayilmasi ile uyumludur.
+- Uygulama: Browser Supabase istemcisi bilinen-canli `createClient` persistence yolunda tutuldu; deprecated `navigatorLock` ve `lockAcquireTimeout` yoktur. Mevcut transient auth guardlari, serialize admin/dashboard yuklemeleri, last-good data, genuine `SIGNED_OUT` ve invalid-session redirect davranisi korunur. Rejected cookie-client cutover'i browser istemcisine yeniden alinmadi.
+- Degisen uygulama/test dosyalari: `src/lib/supabaseClient.ts`, `tests/auth-session-stability.test.ts`.
+- Kontroller: Focused auth/Proxy PASS 29/29; lint PASS; typecheck PASS; tam test PASS 397/397; `.env*` icermeyen izole sentetik-env Production build PASS 243/243; payment schema-only PASS; production dependency audit 0 vulnerability; installed production tree valid; diff check PASS.
+- Bundle/secret kontrolu: Izole `.next/static` 85 dosyada server-secret canary 0, server secret env-name 0, beklenen public canary 1 eslesme. Gercek env, cookie, token, credential veya musteri verisi okunmadi veya raporlanmadi.
+- Kapsam: Production Supabase, DB, migration, SQL, Supabase key/JWT secret ve Vercel environment degisikligi yoktur. ECU Intelligence, Vehicle Database, homepage, widget, billing, learning, DTC ve siparis verisi behavior degisikligi yoktur. Kritik smoke basarisizsa immediate-previous `dpl_yspCRTeUPdgEt4oQhsHK8Jyx8Lat` application rollback targetidir.
+
 ## 2026-07-27 worker run MANUAL-PROD-AUTH-20260727
 
 - Baslangic: 2026-07-27, emergency Production auth-only hotfix run.
 - Gorev: Authorization `MG-AUTOTECH-AUTH-HOTFIX-PROD-202607` ile mevcut auth/session hotfixini tamamlamak, odakli commit/push yapmak, tam validasyon sonrasi tek Production deployment ve privacy-safe live smoke uygulamak.
 - Fingerprint: `security|production-auth-session|dashboard-sync-login-loop|cookie-session-stability-hotfix`.
-- Durum: In Progress. Yerel uygulama ve tum pre-deployment kontrolleri basarili; commit/push/deployment/live smoke bekleniyor.
+- Durum: Blocked. Yerel uygulama, pre-deployment kontrolleri, odakli commit/push ve tek Production deployment tamamlandi; kritik admin-data smoke hatasi sonrasi kayitli rollback target Vercel 402 plan kisitlamasi nedeniyle uygulanamadi.
 - Hedef dogrulamasi: Worktree `C:\Users\gokka\Desktop\mg-autotech-auth-hotfix`; branch `hotfix/auth-session-stability`; verified Production source baseline `97a3535af16eb88b90adb5dada42da8f42793eb2`; proje `mg-autotech-files`; domain `file.mgautotech.de`; rollback target `dpl_ExRm3G6e1rd4m8dg64peFWiUSo6E` `READY/production`.
 - Uygulama sonucu: Cookie tabanli browser/server oturumu ve Proxy request/response cookie propagasyonu normalize edildi. Manual refresh-token replay, nested `SIGNED_OUT` recovery ve false 8-second unauthenticated fallback yoktur. Auth kontrolleri serialize edilmis ve bounded; transient dashboard sync hatalari valid session'i silmez, last-good data korunur, yalniz definitive invalid-session kaniti login redirecti uretir.
 - Admin sonucu: Tek in-flight load ve bir coalesced queued refresh ile stale identity publish'i engellenir. Transient auth/profile hatalari mevcut admin verisini korur; definitive nonstaff veya `SIGNED_OUT` privileged state'i temizler.
@@ -16,7 +30,12 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 - Secret kontrolu: 358 source/695 runtime edge/57 client entry type-aware import graph scan PASS; privileged-module client violation 0 ve credential-shaped source match 0. `.next/static` scan 85 dosyada server canary/env-name/secret/JWT/private-key match 0; yalniz beklenen public canary ve public URL birer kez bulundu. Gercek env, key, token, cookie veya credential okunmadi/yazdirilmadi.
 - Dependency sonucu: Mevcut dependency remediation commit `8900acc73819874ca5e56f1e74aefbb5bd2a6356`; production audit 0 vulnerability. Kurulu dependency tree lockfile ile uyumlu oldugu icin `npm ci` gerekli olmadi.
 - Production guvenligi: Production Supabase'e baglanilmadi, DB/migration/SQL uygulanmadi, Vercel environment okunmadi veya degistirilmedi. Vercel preflight salt okunur inspect ile dogru hesap/proje, live `READY/production` hedefi ve rollback target eligibility dogrulandi.
-- Kalan risk: Tek Production deployment ve zorunlu bes dakikalik authenticated smoke, tekrarlanan sync/reload/navigation/multi-tab/admin-customer/logout kontrolleri henuz tamamlanmadi. Kritik smoke hatasi olursa kayitli application deployment'a derhal rollback uygulanacak.
+- Commit/push sonucu: Dependency remediation `8900acc73819874ca5e56f1e74aefbb5bd2a6356`, auth implementation `d5871b4f066b5d7fcad4e5a35f7d878a37440e54` ve `118a7460d37a4c7caf9a85d6aded520bd4f15f3f`, policy `51d966b05716ba024097586ca8f944cb319bff0e`, pre-deployment ops `0e44da9e89436e8c1cdb385228605e7dc76bf884`. Yalniz `hotfix/auth-session-stability` push edildi ve deploy worktree'i temizdi.
+- Deployment sonucu: Tek release `dpl_HBX9g7H2jv14E5P6zbGP2TuvtEdp` `READY/production` oldu; `file.mgautotech.de` bu deployment'a baglandi. CLI ilk status poll sirasinda `ECONNRESET` verdi, ikinci deploy yapilmadi; ayni deployment `inspect --wait` ile `READY` dogrulandi.
+- Live smoke sonucu: Iki mevcut authenticated tabda `/dashboard` ve `/admin` login redirect olmadan acildi; dashboard ilk gozlemde retry/login loop gostermedi. Admin authorization basariliydi fakat initial admin data load ve bir explicit retry arka arkaya `Admin data sync failed` verdi; orders/customers verisi calisir durumda dogrulanamadi.
+- Smoke durdurma sonucu: Kritik admin-data failure nedeniyle bes dakikalik dashboard soak, tekrarli sync cycle, uc reload, tam orders/credits/settings/request navigation, ordinary-customer admin denial ve genuine logout smoke'lari tamamlanmadi.
+- Rollback sonucu: Kayitli `dpl_ExRm3G6e1rd4m8dg64peFWiUSo6E` targetina tek `vercel rollback` denemesi `402: To rollback further than the previous production deployment, upgrade to pro` ile reddedildi. Canli alias `dpl_HBX9g7H2jv14E5P6zbGP2TuvtEdp` uzerinde kaldi; ikinci rollback, alternatif promote veya yeni deploy yapilmadi.
+- Kalan risk/bloker: Kritik smoke gecmedi ve rollback tamamlanamadi. Emergency exception ilk tamamlanan rollback denemesiyle sona erdi; owner'in yeni acik yetkisi olmadan Production mutation, ikinci rollback/promote veya ek smoke yapilamaz.
 
 ## 2026-07-25 worker run MANUAL-SEC-20260725
 

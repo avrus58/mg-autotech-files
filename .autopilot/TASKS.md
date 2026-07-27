@@ -19,18 +19,22 @@ Kapsam:
 - Dependency remediation, auth regressions ve zorunlu operasyon dosyalari disindaki degisiklikleri Production kapsamindan cikar.
 - Authorization `MG-AUTOTECH-AUTH-HOTFIX-PROD-202607` sinirlarinda tek Production deployment yap; privacy-safe smoke basarisizsa kayitli deployment'a application rollback uygula.
 
-Kabul kriterleri:
+Recovery sonucu:
 
-- Focused auth testleri, lint, typecheck, tam test paketi, build, payment schema-only, production dependency audit, diff ve browser/server secret scan basarili olur.
-- Dashboard en az bes dakika authenticated kalir; tekrarlanan sync, uc reload, navigation, iki tab, admin/customer authorization ve genuine logout smoke'lari basarili olur.
-- Production Supabase, migration, DB, key/JWT secret veya Vercel environment degistirilmez; unrelated feature Production commitine girmez.
+- Bad deployment `dpl_HBX9g7H2jv14E5P6zbGP2TuvtEdp`, owner-authorized supported Hobby rollback ile immediately-previous `dpl_yspCRTeUPdgEt4oQhsHK8Jyx8Lat` hedefine basariyla geri alindi.
+- Canlida admin verisi yuklendikten sonra refresh dongusu icinde `/login` redirecti privacy-safe olarak yeniden uretildi; session silinmedigi icin `/admin` sifresiz yeniden acildi.
+- Kok neden, deprecated browser `navigatorLock`/10 saniyelik timeout ile auth-js 30 saniyelik auto-refresh ve 10 saniyelik admin `getUser()` kontrolunun cakismasidir.
+- Browser client bilinen-canli persistence yoluna donduruldu ve yalniz deprecated lock ayarlari kaldirildi; mevcut transient auth, last-good data, genuine logout ve invalid-session guardlari korundu.
 
 Pre-deployment sonucu:
 
-- Focused auth/Proxy testleri PASS (29/29); tam test paketi PASS (397/397); lint, typecheck ve sentetik canary env ile Production build PASS (243 static sayfa).
-- Payment schema-only PASS; production dependency audit 0 vulnerability; diff check ve type-aware browser/server secret scan PASS.
-- `npm ci` gerekli degildi: mevcut `node_modules` lockfile ile uyumlu ve production dependency tree valid.
-- Deployment ve live smoke sonucu bekleniyor.
+- Focused auth/Proxy 29/29, tam test 397/397, lint, typecheck, izole sentetik Production build 243/243, payment schema-only, production audit 0 vulnerability, dependency tree, diff ve browser bundle secret scan PASS.
+- `npm ci` gerekli degildir; kurulu production dependency tree lockfile ile valid durumdadir.
+- Odakli commit/push, temiz worktree Production preflight, tek deployment ve zorunlu live smoke bekleniyor.
+
+Kapsam/guvenlik:
+
+- Production Supabase, DB, migration, SQL, key/JWT secret ve Vercel environment degistirilmedi veya degerleri okunmadi. ECU Intelligence, Vehicle Database, homepage, widget, billing, learning ve DTC behavior degisikligi yoktur.
 
 ## Blocked
 
