@@ -6,7 +6,79 @@
 
 ## In Progress
 
+### MANUAL-PROD-AUTH-20260727 [P0] Emergency Production auth/session hotfixini tamamla
+
+Durum: In Progress
+
+Fingerprint: `security|production-auth-session|dashboard-sync-login-loop|cookie-session-stability-hotfix`
+
+Kapsam:
+
+- Mevcut auth/session hotfixini cookie tabanli Supabase browser/server uyumu, Proxy cookie propagasyonu ve transient dashboard sync toleransi icin tamamla.
+- Manual refresh-token replay, nested `SIGNED_OUT` recovery ve false unauthenticated fallback davranislarini kaldirirken genuine logout/invalid-session redirect davranisini koru.
+- Dependency remediation, auth regressions ve zorunlu operasyon dosyalari disindaki degisiklikleri Production kapsamindan cikar.
+- Authorization `MG-AUTOTECH-AUTH-HOTFIX-PROD-202607` sinirlarinda tek Production deployment yap; privacy-safe smoke basarisizsa kayitli deployment'a application rollback uygula.
+
+Kabul kriterleri:
+
+- Focused auth testleri, lint, typecheck, tam test paketi, build, payment schema-only, production dependency audit, diff ve browser/server secret scan basarili olur.
+- Dashboard en az bes dakika authenticated kalir; tekrarlanan sync, uc reload, navigation, iki tab, admin/customer authorization ve genuine logout smoke'lari basarili olur.
+- Production Supabase, migration, DB, key/JWT secret veya Vercel environment degistirilmez; unrelated feature Production commitine girmez.
+
+Pre-deployment sonucu:
+
+- Focused auth/Proxy testleri PASS (29/29); tam test paketi PASS (397/397); lint, typecheck ve sentetik canary env ile Production build PASS (243 static sayfa).
+- Payment schema-only PASS; production dependency audit 0 vulnerability; diff check ve type-aware browser/server secret scan PASS.
+- `npm ci` gerekli degildi: mevcut `node_modules` lockfile ile uyumlu ve production dependency tree valid.
+- Deployment ve live smoke sonucu bekleniyor.
+
 ## Blocked
+
+### MANUAL-SEC-20260725 [P0] Staging credential incident auth-only hotfixini yerel olarak dogrula
+
+Durum: Blocked
+
+Fingerprint: `security|staging-auth-incident|compromised-legacy-api-keys-and-session-instability|local-key-compatibility-and-auth-hotfix-validation`
+
+Kapsam:
+
+- Mevcut dependency ve auth commitlerini yeni Supabase publishable/secret API-key modeli, cookie SSR session modeli ve dashboard retry davranisi acisindan incele.
+- Secret degeri okumadan veya yazmadan focused API-key uyumluluk regresyonu ekle.
+- Lint, typecheck, test, isolated build, audit, diff ve canary secret bundle scan ile yerel hotfixi dogrula.
+- Repo politikasinin yasakladigi Supabase/Vercel key mutation, deploy, canli smoke, test-user ve audit-log operasyonlarini calistirma; kalan incident kapanisini Blocked olarak kaydet.
+
+Kabul kriterleri:
+
+- Browser istemcisi yalniz public key, admin istemcisi yalniz server secret kullanir.
+- Admin istemcisi cookie/SSR user session okuyamaz ve auth persistence/URL detection kapali olur.
+- Publishable ve secret key degerlerinin JWT olarak parse edilmedigi focused test ile korunur.
+- Yerel zorunlu kontroller basarili olur; gercek secret veya Production sistemine temas edilmez.
+
+Yerel sonuc:
+
+- Cookie tabanli browser/Proxy oturum akisi, legacy localStorage gecisi, serialize edilmis ve sinirli auth retry, 15 saniyelik Auth istegi deadline'i, dashboard fault classification ve son basarili veriyi koruyan sinirli retry davranisi sertlestirildi.
+- Proxy yenilenen cookie'leri request/response tarafina cookie secenekleriyle aktarir ve Supabase SSR response header'larini korur.
+- Admin client persistence, token refresh ve URL session detection kapali server credential client olarak kalir; 366 kaynak dosyali type-aware import graph incelemesinde privileged runtime modulune client erisimi bulunmadi.
+- Yeni API-key modeli JWT semantigine bagli olmadan fake/opaque test degerleriyle kapsandi; gercek anahtar okunmadi, yazilmadi veya loglanmadi.
+
+Dogrulama:
+
+- Focused auth/Proxy testleri PASS (26/26); tam test paketi PASS (394/394).
+- `npm run lint` PASS; `npm run typecheck` PASS.
+- Izole sentetik-env production build PASS (243/243 sayfa); server-secret canary `.next` icinde 0, public canary static bundle icinde beklenen 1 eslesme.
+- `node scripts/check-payment-env.js --schema-only` PASS; `git diff --check` PASS.
+- Production dependency audit 0 vulnerability; kurulu agac Next.js 16.2.11, PostCSS 8.5.18 ve Sharp 0.35.0 ile valid. Full auditte kalan 24 high ve 1 moderate bulgu dev/build toolchain ile sinirli ve onerilen cozumler breaking/downgrade oldugu icin uygulanmadi.
+
+Bloker:
+
+- Repository politikasi Supabase/Vercel credential mutation, branch env degisikligi, commit/push, deploy, canli smoke, disposable staging user, legacy key deactivation ve staging audit-log erisimini yasaklar. Bu nedenle staging incident kapatilamadi ve Preview olusturulamadi.
+- Cutover oncesi dis envanterde Vercel Preview env'leri, Edge Functions/workers/cron/Database Webhooks/pg_net/CI/third-party consumerlar dogrulanmalidir. Desktop public key build-time embed edilir; aktif dagitimlar ayrica kontrol edilmelidir.
+- `WIDGET_SESSION_SECRET` tanimli degilse widget HMAC oturumlari server Supabase secret'ina fallback eder; server key cutover'i aktif widget oturumlarini 30 dakikaya kadar gecersizlestirebilir.
+
+Remediation:
+
+- Yetkili insan kontrollu runner, yalniz staging hedeflerini tekrar dogrulayip yeni publishable/secret anahtarlari dogrudan branch-scoped Preview env'lerine aktarmali, tum dis consumerlari kesmeli ve auth-only Preview testleri basarili olduktan sonra legacy service-role/anon anahtarlarini sirayla devre disi birakmalidir.
+- JWT signing secret ve Production hedefleri degistirilmemelidir.
 
 ## Later
 
