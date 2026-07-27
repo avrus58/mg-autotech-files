@@ -695,6 +695,16 @@ export default function AdminPage() {
   }, [orders, customers]);
 
   const customerById = useMemo(() => new Map(customers.map((customer) => [customer.id, customer])), [customers]);
+  const latestOrders = useMemo(
+    () =>
+      [...orders]
+        .sort(
+          (left, right) =>
+            new Date(right.created_at ?? 0).getTime() - new Date(left.created_at ?? 0).getTime()
+        )
+        .slice(0, 5),
+    [orders]
+  );
 
   const adminCommandLinks = useMemo<AdminCommandLink[]>(() => {
     const links: AdminCommandLink[] = [];
@@ -783,6 +793,16 @@ export default function AdminPage() {
         .includes(term)
     );
   }, [customers, customerSearch]);
+
+  function focusOrderQueue(status: string) {
+    setActiveTab("orders");
+    setSelectedStatus(status);
+    setSearch("");
+    setOnlyWithFile(false);
+    window.requestAnimationFrame(() => {
+      document.getElementById("admin-order-list")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }
 
   const showInitialAdminLoadError = Boolean(adminLoadError && !adminDataReady);
 
@@ -1349,47 +1369,24 @@ export default function AdminPage() {
         </aside>
 
         <div className="min-w-0">
-          <div className="mb-8">
+          <div className="mb-5">
             <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-red-800/50 bg-red-950/25 px-4 py-2 text-sm font-semibold text-red-100">
               <Database className="h-4 w-4 text-red-500" />
               Live management
             </div>
-            <h1 className="text-4xl font-black md:text-5xl">Admin <span className="text-red-600">Control Panel</span></h1>
-            <p className="mt-3 max-w-3xl text-zinc-400">Manage requests, customers, credits, account permissions and file workflows from one clean workspace.</p>
+            <h1 className="text-3xl font-black md:text-4xl">Admin <span className="text-red-600">Control Panel</span></h1>
+            <p className="mt-2 max-w-3xl text-sm text-zinc-400">Live orders, queue priorities and operational controls in one workspace.</p>
           </div>
 
-          <DailyCommandBrief
+          <AdminOperationsOverview
             stats={stats}
+            latestOrders={latestOrders}
+            customerById={customerById}
             lastSyncAt={lastSyncAt}
             commandLinks={adminCommandLinks}
-            onFilter={(status) => {
-              setActiveTab("orders");
-              setSelectedStatus(status);
-              setSearch("");
-              setOnlyWithFile(false);
-            }}
+            onFilter={focusOrderQueue}
+            onOpenOrder={setSelectedOrder}
           />
-
-          <AdminNotificationCenter
-            stats={stats}
-            onFilter={(status) => {
-              setActiveTab("orders");
-              setSelectedStatus(status);
-              setSearch("");
-              setOnlyWithFile(false);
-            }}
-          />
-
-          <div className="mb-8 grid min-w-0 grid-cols-2 gap-3 md:grid-cols-2 xl:grid-cols-8 xl:gap-4">
-            <StatCard icon={<FileCode2 />} label="Orders" value={stats.total} />
-            <StatCard icon={<Users />} label="Customers" value={stats.customers} />
-            <StatCard icon={<Upload />} label="New" value={stats.newRequests} />
-            <StatCard icon={<Search />} label="File Check" value={stats.fileCheck} />
-            <StatCard icon={<Wrench />} label="In Progress" value={stats.inProgress} />
-            <StatCard icon={<CheckCircle2 />} label="Completed" value={stats.completed} />
-            <StatCard icon={<FileDown />} label="With File" value={stats.withFile} />
-            <StatCard icon={<CreditCard />} label="Credits Used" value={stats.totalCredits} highlight />
-          </div>
 
           {newOrderNotice && (
             <div className="mb-6 flex items-center gap-3 rounded-2xl border border-emerald-700/40 bg-emerald-950/30 p-4 text-sm font-black text-emerald-200 shadow-xl shadow-emerald-950/20">
@@ -1557,7 +1554,7 @@ function OrdersPanel({
   setSelectedOrder: (order: Order) => void;
   updateStatus: (orderId: string, newStatus: string) => void;
 }) {
-  const [orderGroup, setOrderGroup] = useState<AdminOrderGroup>("open");
+  const [orderGroup, setOrderGroup] = useState<AdminOrderGroup>("all");
   const [visibleCount, setVisibleCount] = useState(adminOrdersPageSize);
 
   const groupedOrders = useMemo(() => {
@@ -1619,7 +1616,7 @@ function OrdersPanel({
   }, [orderGroup, statusFilteredGroupedOrders.length, selectedStatus, search, onlyWithFile]);
 
   return (
-    <section className="min-w-0 rounded-[1.5rem] border border-white/10 bg-white/[0.04] p-4 shadow-2xl shadow-black/20 sm:rounded-[2rem] sm:p-5">
+    <section id="admin-order-list" className="min-w-0 scroll-mt-28 rounded-[1.5rem] border border-white/10 bg-white/[0.04] p-4 shadow-2xl shadow-black/20 sm:rounded-[2rem] sm:p-5">
       <div className="mb-5 flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
         <div className="min-w-0">
           <h2 className="text-2xl font-black">Orders</h2>
@@ -2175,16 +2172,22 @@ function MiniStat({ label, value }: { label: string; value: number }) {
   return <div className="rounded-xl bg-black/30 p-3"><div className="text-xs text-zinc-500">{label}</div><div className="mt-1 text-xl font-black">{value}</div></div>;
 }
 
-function DailyCommandBrief({
+function AdminOperationsOverview({
   stats,
+  latestOrders,
+  customerById,
   lastSyncAt,
   commandLinks,
   onFilter,
+  onOpenOrder,
 }: {
   stats: AdminStats;
+  latestOrders: Order[];
+  customerById: Map<string, Profile>;
   lastSyncAt: Date | null;
   commandLinks: AdminCommandLink[];
   onFilter: (status: string) => void;
+  onOpenOrder: (order: Order) => void;
 }) {
   const openWork =
     stats.newRequests +
@@ -2192,269 +2195,175 @@ function DailyCommandBrief({
     stats.inProgress +
     stats.revisionRequested +
     stats.customerInfoNeeded;
+  const attentionCount = stats.customerInfoNeeded + stats.revisionRequested;
   const fileCoverage = stats.total > 0 ? Math.round((stats.withFile / stats.total) * 100) : 0;
-  const blockedSignals = stats.customerInfoNeeded + stats.revisionRequested + stats.suspendedCustomers;
   const syncLabel = lastSyncAt
     ? lastSyncAt.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })
-    : "Not synced yet";
-
-  const primaryCommand =
-    stats.newRequests > 0
-      ? {
-          label: "Start with new file intake",
-          detail: "Review new requests before they sit in the queue.",
-          status: "new_request",
-          icon: <Upload className="h-6 w-6" />,
-          tone: "red",
-        }
-      : stats.customerInfoNeeded > 0
-      ? {
-          label: "Resolve customer info blockers",
-          detail: "Clear requests waiting for customer information.",
-          status: "customer_info_needed",
-          icon: <BellRing className="h-6 w-6" />,
-          tone: "amber",
-        }
-      : stats.revisionRequested > 0
-      ? {
-          label: "Clear revision requests",
-          detail: "Check returned files and revision notes before new work grows.",
-          status: "revision",
-          icon: <RefreshCcw className="h-6 w-6" />,
-          tone: "purple",
-        }
+    : "Waiting for sync";
+  const priority = stats.newRequests > 0
+    ? { label: `${stats.newRequests} new request${stats.newRequests === 1 ? "" : "s"}`, status: "new_request" }
+    : attentionCount > 0
+      ? { label: `${attentionCount} item${attentionCount === 1 ? "" : "s"} need attention`, status: stats.customerInfoNeeded > 0 ? "customer_info_needed" : "revision" }
       : stats.fileCheck > 0
-      ? {
-          label: "Move file checks forward",
-          detail: "Inspect files that are waiting for technical review.",
-          status: "file_check",
-          icon: <Search className="h-6 w-6" />,
-          tone: "blue",
-        }
-      : stats.inProgress > 0
-      ? {
-          label: "Monitor active work",
-          detail: "Keep in-progress files moving toward delivery.",
-          status: "in_progress",
-          icon: <Wrench className="h-6 w-6" />,
-          tone: "blue",
-        }
-      : {
-          label: "Queue under control",
-          detail: "No urgent order bucket is currently leading the queue.",
-          status: "all",
-          icon: <CheckCircle2 className="h-6 w-6" />,
-          tone: "emerald",
-        };
-
-  const toneClass =
-    primaryCommand.tone === "red"
-      ? "border-red-700/50 bg-red-950/25 text-red-100"
-      : primaryCommand.tone === "amber"
-      ? "border-amber-700/50 bg-amber-950/25 text-amber-100"
-      : primaryCommand.tone === "purple"
-      ? "border-purple-700/50 bg-purple-950/25 text-purple-100"
-      : primaryCommand.tone === "emerald"
-      ? "border-emerald-700/50 bg-emerald-950/25 text-emerald-100"
-      : "border-blue-700/50 bg-blue-950/25 text-blue-100";
-
-  return (
-    <section className="mb-8 overflow-hidden rounded-[2rem] border border-white/10 bg-[linear-gradient(135deg,rgba(177,18,27,0.16),rgba(255,255,255,0.045)_52%,rgba(5,5,5,0.72))] p-5 shadow-2xl shadow-black/25">
-      <div className="grid gap-5 xl:grid-cols-[1.05fr_0.95fr] xl:items-stretch">
-        <div className={`rounded-[1.5rem] border p-5 ${toneClass}`}>
-          <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <div className="text-xs font-black uppercase tracking-[0.2em] opacity-70">
-                Daily Command Brief
-              </div>
-              <h2 className="mt-2 text-3xl font-black text-white">
-                {primaryCommand.label}
-              </h2>
-              <p className="mt-3 max-w-2xl text-sm leading-6 opacity-80">
-                {primaryCommand.detail}
-              </p>
-            </div>
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-black/25 text-white">
-              {primaryCommand.icon}
-            </div>
-          </div>
-
-          <div className="grid gap-3 sm:grid-cols-3">
-            <MiniInfo label="Open work" value={openWork} />
-            <MiniInfo label="Blocked signals" value={blockedSignals} />
-            <MiniInfo label="Last sync" value={syncLabel} />
-          </div>
-
-          <button
-            type="button"
-            onClick={() => onFilter(primaryCommand.status)}
-            className="mt-5 inline-flex h-11 items-center justify-center rounded-xl bg-white px-4 text-sm font-black text-black transition hover:-translate-y-0.5 hover:bg-zinc-100"
-          >
-            Open priority queue
-            <ArrowLeft className="ml-2 h-4 w-4 rotate-180" />
-          </button>
-        </div>
-
-        <div className="grid gap-4 lg:grid-cols-[0.85fr_1.15fr]">
-          <div className="rounded-[1.5rem] border border-white/10 bg-black/25 p-5">
-            <div className="text-xs font-black uppercase tracking-[0.18em] text-zinc-500">
-              Queue health
-            </div>
-            <div className="mt-4 flex items-end justify-between gap-4">
-              <div>
-                <div className="text-4xl font-black text-white">{fileCoverage}%</div>
-                <p className="mt-2 text-sm leading-6 text-zinc-500">
-                  File coverage across loaded orders.
-                </p>
-              </div>
-              <FileDown className="h-8 w-8 text-red-400" />
-            </div>
-            <div className="mt-5 h-2 overflow-hidden rounded-full bg-white/10">
-              <div
-                className="h-full rounded-full bg-gradient-to-r from-red-700 via-red-500 to-emerald-400"
-                style={{ width: `${fileCoverage}%` }}
-              />
-            </div>
-            <div className="mt-4 grid grid-cols-2 gap-2">
-              <MiniStat label="With file" value={stats.withFile} />
-              <MiniStat label="Loaded" value={stats.total} />
-            </div>
-          </div>
-
-          <div className="rounded-[1.5rem] border border-white/10 bg-black/25 p-5">
-            <div className="mb-4 flex items-center justify-between gap-4">
-              <div>
-                <div className="text-xs font-black uppercase tracking-[0.18em] text-zinc-500">
-                  Operational links
-                </div>
-                <div className="mt-1 text-lg font-black text-white">
-                  Jump to the next control room
-                </div>
-              </div>
-              <ShieldCheck className="h-5 w-5 text-emerald-300" />
-            </div>
-
-            <div className="grid gap-3 sm:grid-cols-2">
-              {commandLinks.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className="group rounded-2xl border border-white/10 bg-white/[0.04] p-4 transition hover:-translate-y-0.5 hover:border-red-800/60 hover:bg-white/[0.07]"
-                >
-                  <div className="mb-4 flex items-start justify-between gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-950/35 text-red-300">
-                      {link.icon}
-                    </div>
-                    <span className="rounded-full border border-white/10 bg-black/35 px-2 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-zinc-400">
-                      {link.badge}
-                    </span>
-                  </div>
-                  <div className="font-black text-white">{link.label}</div>
-                  <p className="mt-2 text-xs leading-5 text-zinc-500">{link.detail}</p>
-                </Link>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function AdminNotificationCenter({
-  stats,
-  onFilter,
-}: {
-  stats: AdminStats;
-  onFilter: (status: string) => void;
-}) {
-  const items = [
-    {
-      label: "New requests",
-      value: stats.newRequests,
-      status: "new_request",
-      icon: Upload,
-      className: "border-red-800/50 bg-red-950/25 text-red-200",
-      iconClassName: "text-red-400",
-    },
-    {
-      label: "Revision requested",
-      value: stats.revisionRequested,
-      status: "revision",
-      icon: RefreshCcw,
-      className: "border-purple-700/50 bg-purple-950/25 text-purple-200",
-      iconClassName: "text-purple-300",
-    },
-    {
-      label: "Customer info needed",
-      value: stats.customerInfoNeeded,
-      status: "customer_info_needed",
-      icon: BellRing,
-      className: "border-orange-700/50 bg-orange-950/25 text-orange-200",
-      iconClassName: "text-orange-300",
-    },
-    {
-      label: "Completed today",
-      value: stats.completedToday,
-      status: "completed",
-      icon: CheckCircle2,
-      className: "border-emerald-700/50 bg-emerald-950/25 text-emerald-200",
-      iconClassName: "text-emerald-300",
-    },
+        ? { label: `${stats.fileCheck} file check${stats.fileCheck === 1 ? "" : "s"} waiting`, status: "file_check" }
+        : stats.inProgress > 0
+          ? { label: `${stats.inProgress} active order${stats.inProgress === 1 ? "" : "s"}`, status: "in_progress" }
+          : { label: "Queue under control", status: "all" };
+  const queueItems = [
+    { label: "New", value: stats.newRequests, status: "new_request", icon: Upload, tone: "text-red-300" },
+    { label: "File check", value: stats.fileCheck, status: "file_check", icon: Search, tone: "text-sky-300" },
+    { label: "In progress", value: stats.inProgress, status: "in_progress", icon: Wrench, tone: "text-amber-300" },
+    { label: "Needs attention", value: attentionCount, status: stats.customerInfoNeeded > 0 ? "customer_info_needed" : "revision", icon: BellRing, tone: "text-purple-300" },
+  ];
+  const compactStats = [
+    { label: "All orders", value: stats.total },
+    { label: "Open work", value: openWork },
+    { label: "Customers", value: stats.customers },
+    { label: "With file", value: stats.withFile },
+    { label: "Completed", value: stats.completed },
+    { label: "Credits used", value: stats.totalCredits },
   ];
 
   return (
-    <section className="mb-8 rounded-[2rem] border border-white/10 bg-white/[0.04] p-5 shadow-2xl shadow-black/20">
-      <div className="mb-5 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
-        <div>
-          <div className="text-sm font-black uppercase tracking-[0.22em] text-red-500">
-            Notification Center
-          </div>
-          <h2 className="mt-1 text-2xl font-black text-white">
-            Today&apos;s operational focus
-          </h2>
+    <section className="mb-6 overflow-hidden rounded-lg border border-white/10 bg-[#0b0b0c] shadow-2xl shadow-black/25">
+      <div className="flex flex-col gap-3 border-b border-white/10 bg-[linear-gradient(90deg,rgba(177,18,27,0.15),transparent_58%)] px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+        <div className="min-w-0">
+          <div className="text-[11px] font-black uppercase tracking-[0.18em] text-red-400">Live order desk</div>
+          <h2 className="mt-1 text-xl font-black text-white sm:text-2xl">Latest 5 orders</h2>
+          <p className="mt-1 text-xs text-zinc-500">Newest customer work across every status, always shown first.</p>
         </div>
-        <div className="text-sm text-zinc-500">
-          Click a card to filter the order list.
-        </div>
+        <button
+          type="button"
+          onClick={() => onFilter(priority.status)}
+          className="inline-flex h-10 shrink-0 items-center justify-center rounded-md border border-red-800/50 bg-red-950/35 px-4 text-xs font-black text-red-100 transition hover:border-red-600 hover:bg-red-950/55"
+        >
+          <BellRing className="mr-2 h-4 w-4" />
+          {priority.label}
+        </button>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {items.map((item) => {
-          const Icon = item.icon;
+      <div className="grid xl:grid-cols-[minmax(0,1.65fr)_minmax(300px,0.75fr)]">
+        <div className="min-w-0 xl:border-r xl:border-white/10">
+          <div className="hidden grid-cols-[110px_minmax(0,1fr)_minmax(0,1.25fr)_minmax(120px,0.8fr)_120px] gap-3 border-b border-white/10 bg-black/30 px-4 py-2.5 text-[10px] font-black uppercase tracking-[0.14em] text-zinc-600 md:grid">
+            <span>Order</span><span>Customer</span><span>Vehicle</span><span>Service</span><span>Status</span>
+          </div>
+          {latestOrders.length === 0 ? (
+            <div className="flex min-h-56 items-center justify-center px-5 text-center text-sm text-zinc-500">
+              No orders are available yet. New requests will appear here automatically.
+            </div>
+          ) : (
+            <div className="divide-y divide-white/10">
+              {latestOrders.map((order) => {
+                const customer = customerById.get(order.customer_id ?? "");
+                const customerLabel = customer?.customer_id || order.customer_email || "Customer unavailable";
+                const customerName = customer?.full_name || customer?.company_name || order.customer_email || "-";
+                const vehicle = [order.vehicle_brand, order.vehicle_model].filter(Boolean).join(" ") || "Vehicle not set";
+                const vehicleDetail = [order.vehicle_generation, order.vehicle_engine].filter(Boolean).join(" · ");
 
-          return (
-            <button
-              key={item.status}
-              type="button"
-              onClick={() => onFilter(item.status)}
-              className={`rounded-2xl border p-5 text-left transition hover:-translate-y-1 ${item.className}`}
-            >
-              <div className="mb-5 flex items-center justify-between gap-4">
-                <div className={`flex h-11 w-11 items-center justify-center rounded-2xl bg-black/25 ${item.iconClassName}`}>
-                  <Icon className="h-5 w-5" />
-                </div>
-                <div className="text-4xl font-black">{item.value}</div>
+                return (
+                  <button
+                    key={order.id}
+                    type="button"
+                    onClick={() => onOpenOrder(order)}
+                    aria-label={`Open order ${shortId(order.id)}`}
+                    className="group grid w-full min-w-0 gap-3 px-4 py-3 text-left transition hover:bg-white/[0.045] md:grid-cols-[110px_minmax(0,1fr)_minmax(0,1.25fr)_minmax(120px,0.8fr)_120px] md:items-center"
+                  >
+                    <div className="min-w-0">
+                      <div className="truncate font-black text-white">#{shortId(order.id)}</div>
+                      <div className="mt-0.5 truncate text-[11px] text-zinc-600">{formatDate(order.created_at)}</div>
+                    </div>
+                    <div className="min-w-0">
+                      <div className="truncate text-xs font-black text-red-300">{customerLabel}</div>
+                      <div className="mt-0.5 truncate text-xs text-zinc-500" title={customerName}>{customerName}</div>
+                    </div>
+                    <div className="min-w-0">
+                      <div className="truncate text-sm font-bold text-zinc-100" title={vehicle}>{vehicle}</div>
+                      <div className="mt-0.5 truncate text-xs text-zinc-500" title={vehicleDetail || "-"}>{vehicleDetail || "-"}</div>
+                    </div>
+                    <div className="min-w-0">
+                      <div className="truncate text-xs font-bold text-zinc-300" title={order.service_type || "-"}>{order.service_type || "-"}</div>
+                      <div className="mt-0.5 truncate text-[11px] text-zinc-600">{order.original_file_path ? "Original ready" : "No file yet"}</div>
+                    </div>
+                    <div className="flex min-w-0 items-center justify-between gap-2 md:justify-end">
+                      <span className={`truncate rounded-full border px-2.5 py-1 text-[10px] font-black ${statusClass(order.status)}`}>{statusLabel(order.status)}</span>
+                      <Eye className="h-4 w-4 shrink-0 text-zinc-600 transition group-hover:text-red-300" />
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        <aside className="min-w-0 bg-black/20 p-4 sm:p-5">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <div className="text-[11px] font-black uppercase tracking-[0.16em] text-zinc-500">Queue snapshot</div>
+              <div className="mt-1 text-sm font-black text-white">Work requiring attention</div>
+            </div>
+            <div className="text-right">
+              <div className="text-xl font-black text-white">{fileCoverage}%</div>
+              <div className="text-[10px] uppercase text-zinc-600">file ready</div>
+            </div>
+          </div>
+          <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/10">
+            <div className="h-full rounded-full bg-gradient-to-r from-red-700 via-red-500 to-emerald-400" style={{ width: `${fileCoverage}%` }} />
+          </div>
+
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            {queueItems.map((item) => {
+              const Icon = item.icon;
+              return (
+                <button
+                  key={item.label}
+                  type="button"
+                  onClick={() => onFilter(item.status)}
+                  className="min-w-0 rounded-md border border-white/10 bg-white/[0.025] p-3 text-left transition hover:border-red-800/50 hover:bg-white/[0.055]"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <Icon className={`h-4 w-4 ${item.tone}`} />
+                    <span className="text-lg font-black text-white">{item.value}</span>
+                  </div>
+                  <div className="mt-2 truncate text-[11px] font-bold text-zinc-400">{item.label}</div>
+                </button>
+              );
+            })}
+          </div>
+
+          {commandLinks.length > 0 && (
+            <div className="mt-5 border-t border-white/10 pt-4">
+              <div className="mb-2 flex items-center justify-between gap-3">
+                <div className="text-[11px] font-black uppercase tracking-[0.16em] text-zinc-500">Quick controls</div>
+                <span className="text-[10px] text-zinc-600">{lastSyncAt ? `Synced ${syncLabel}` : syncLabel}</span>
               </div>
-              <div className="font-black">{item.label}</div>
-              <div className="mt-1 text-xs font-bold opacity-70">
-                View matching orders
+              <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
+                {commandLinks.map((link) => (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    title={link.detail}
+                    className="flex min-w-0 items-center gap-2 rounded-md border border-white/10 bg-black/25 px-3 py-2.5 text-xs font-black text-zinc-300 transition hover:border-red-800/50 hover:text-white"
+                  >
+                    <span className="shrink-0 text-red-300">{link.icon}</span>
+                    <span className="min-w-0 flex-1 truncate">{link.label}</span>
+                    <span className="text-[9px] uppercase text-zinc-600">{link.badge}</span>
+                  </Link>
+                ))}
               </div>
-            </button>
-          );
-        })}
+            </div>
+          )}
+        </aside>
+      </div>
+
+      <div className="grid grid-cols-3 border-t border-white/10 bg-black/30 md:grid-cols-6">
+        {compactStats.map((item) => (
+          <div key={item.label} className="min-w-0 border-b border-r border-white/10 px-3 py-3 last:border-r-0 md:border-b-0">
+            <div className="truncate text-[10px] font-black uppercase tracking-[0.12em] text-zinc-600">{item.label}</div>
+            <div className="mt-1 text-lg font-black text-white">{item.value}</div>
+          </div>
+        ))}
       </div>
     </section>
-  );
-}
-
-function StatCard({ icon, label, value, highlight = false }: { icon: ReactNode; label: string; value: string | number; highlight?: boolean }) {
-  return (
-    <div className={`min-w-0 rounded-[1.5rem] border p-4 sm:rounded-[2rem] sm:p-5 ${highlight ? "border-red-900/40 bg-red-950/20" : "border-white/10 bg-white/[0.04]"}`}>
-      <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-2xl bg-red-950/40 text-red-400 sm:h-11 sm:w-11">{icon}</div>
-      <div className="break-words text-sm text-zinc-400">{label}</div>
-      <div className="mt-2 break-words text-3xl font-black">{value}</div>
-    </div>
   );
 }
 

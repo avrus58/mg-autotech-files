@@ -74,6 +74,20 @@ export async function getStableSession(): Promise<{ session: Session | null; err
     }
   }
 
+  // A persisted refresh token can still be recoverable even when getSession()
+  // briefly returns an empty value during a cross-tab refresh. Try the official
+  // refresh path once before treating the browser as signed out.
+  try {
+    const { data, error } = await supabase.auth.refreshSession();
+    if (data.session) {
+      setCachedSession(data.session);
+      return { session: data.session, error: null };
+    }
+    lastError = error ?? lastError;
+  } catch (error) {
+    lastError = error;
+  }
+
   return {
     session: hasUsableCachedSession() ? getCachedSession() : null,
     error: lastError,
@@ -93,13 +107,27 @@ export async function authenticatedFetch(input: RequestInfo | URL, init?: Reques
   const response = await send(session.access_token);
   if (response.status !== 401) return response;
 
-  const { data, error } = await supabase.auth.refreshSession(
-    session.refresh_token ? { refresh_token: session.refresh_token } : undefined
-  );
-  if (error || !data.session?.access_token) return response;
+  let refreshedSession: Session | null = null;
+  try {
+    const { data, error } = await supabase.auth.refreshSession(
+      session.refresh_token ? { refresh_token: session.refresh_token } : undefined
+    );
+    if (!error) refreshedSession = data.session;
+  } catch {
+    // A competing browser tab may own the refresh lock. Re-read the persisted
+    // session below instead of surfacing a false Unauthorized state.
+  }
 
-  setCachedSession(data.session);
-  return send(data.session.access_token);
+  if (!refreshedSession?.access_token) {
+    await new Promise((resolve) => window.setTimeout(resolve, 350));
+    const recovered = await getStableSession();
+    refreshedSession = recovered.session;
+  }
+
+  if (!refreshedSession?.access_token) return response;
+
+  setCachedSession(refreshedSession);
+  return send(refreshedSession.access_token);
 }
 
 export async function signOutStable() {

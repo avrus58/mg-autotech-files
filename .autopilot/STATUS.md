@@ -2022,3 +2022,11 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 - Offline build basarisiz; Google Fonts bagimliligi cozulmeden restricted Codex ortaminda `npm run build` gecmeyebilir.
 - Env checker scriptleri icin guvenli schema-only mod henuz uygulanmadi.
 - Smoke/scraper scriptleri non-local/dis ag guard'i henuz uygulamadi.
+
+## 2026-07-27 Admin live order desk and Learning session recovery
+
+- Gorev: Admin ana ekranindaki buyuk ozet bloklarini en yeni 5 siparisi dogrudan gosteren kompakt operasyon masasi ile degistirmek ve ECU Learning detayinda gecici auth senkronizasyonundan kaynaklanan ham `Unauthorized` durumunu gidermek.
+- Admin UI: `Latest 5 orders` listesi tum durumlar arasinda created_at sirasi ile gelir; siparis satiri mevcut detay modalini acar. Queue snapshot, quick controls, file coverage ve temel KPI'lar tek kompakt panelde korunur. Tam siparis listesi varsayilan olarak `All Orders` acilir.
+- Auth: Stable session guard persisted refresh token icin bir recovery denemesi yapar; 401 sonrasi cross-tab refresh yarisi tekrar okunur. Learning GET/PATCH/similarity akisi tek guvenli yeniden deneme yapar, staff `ai_training.manage` yetki kapisi degismez ve ham Unauthorized banner'i gosterilmez.
+- Test: Yeni `tests/admin-learning-session-stability.test.ts` auth recovery ve permission guardlarini kapsar; UI safety testi latest-order paneli, 5 kayit siniri ve kompakt kontroller icin guncellendi.
+- Kontroller: targeted tests PASS (98/98); lint PASS; typecheck PASS; full tests PASS (378/378); production build PASS; payment schema-only PASS; production dependency audit PASS (0 vulnerabilities); diff check PASS.

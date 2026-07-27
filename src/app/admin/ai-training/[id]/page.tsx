@@ -60,6 +60,8 @@ type DetailPayload = {
 const outcomes = ["unknown", "customer_ok", "issue_reported", "limp", "smoke", "knock", "dyno_confirmed", "needs_revision"];
 const changeTypes = ["identical", "focused_calibration", "distributed_calibration", "broad_rework", "structural_mismatch", "single_file", "unknown"] as const;
 const sourceTypes: TrainingSourceType[] = ["completed_request", "demo_fixture", "manual_capture", "file_expert"];
+const ADMIN_SESSION_RETRY_MESSAGE =
+  "Your secure admin session is reconnecting. Please try the action again.";
 
 export default function AiTrainingDetailPage() {
   const params = useParams<{ id: string }>();
@@ -82,14 +84,26 @@ export default function AiTrainingDetailPage() {
   const [saving, setSaving] = useState(false);
   const [similarityRunning, setSimilarityRunning] = useState(false);
   const [message, setMessage] = useState("");
+  const [messageTone, setMessageTone] = useState<"error" | "success" | "info">("info");
 
   const authFetch = useCallback(async (url: string, init?: RequestInit) => {
+    try {
+      const response = await authenticatedFetch(url, init);
+      if (response.status !== 401) return response;
+    } catch (error) {
+      if (!(error instanceof Error) || error.message !== "Unauthorized") throw error;
+    }
+
+    // A rejected request has not crossed the server authorization gate, so one
+    // delayed retry is safe for both reads and staff mutations.
+    await new Promise((resolve) => window.setTimeout(resolve, 450));
     return authenticatedFetch(url, init);
   }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
     setMessage("");
+    setMessageTone("info");
     try {
       const response = await authFetch(`/api/admin/ai-training/${id}`);
       const payload = await response.json();
@@ -116,6 +130,7 @@ export default function AiTrainingDetailPage() {
         window.location.href = `/login?redirect=/admin/ai-training/${id}`;
         return;
       }
+      setMessageTone("error");
       setMessage(error instanceof Error ? error.message : "Training sample could not be loaded.");
     }
     finally { setLoading(false); }
@@ -135,6 +150,7 @@ export default function AiTrainingDetailPage() {
   async function save() {
     setSaving(true);
     setMessage("");
+    setMessageTone("info");
     try {
       const response = await authFetch(`/api/admin/ai-training/${id}`, {
         method: "PATCH",
@@ -156,24 +172,47 @@ export default function AiTrainingDetailPage() {
         }),
       });
       const payload = await response.json();
+      if (response.status === 401) throw new Error(ADMIN_SESSION_RETRY_MESSAGE);
+      if (response.status === 403) throw new Error("Access denied. Your staff role cannot update ECU learning data.");
       if (!response.ok) throw new Error(payload.error || "Verification could not be saved.");
+      setMessageTone("success");
       setMessage("Human verification saved and the ECU knowledge profile was recalculated.");
       await load();
-    } catch (error) { setMessage(error instanceof Error ? error.message : "Verification could not be saved."); }
+    } catch (error) {
+      setMessageTone("error");
+      setMessage(
+        error instanceof Error && error.message === "Unauthorized"
+          ? ADMIN_SESSION_RETRY_MESSAGE
+          : error instanceof Error
+            ? error.message
+            : "Verification could not be saved."
+      );
+    }
     finally { setSaving(false); }
   }
 
   async function runSimilarity() {
     setSimilarityRunning(true);
     setMessage("");
+    setMessageTone("info");
     try {
       const response = await authFetch(`/api/admin/ai-training/${id}/similarity`, { method: "POST" });
       const payload = await response.json();
+      if (response.status === 401) throw new Error(ADMIN_SESSION_RETRY_MESSAGE);
+      if (response.status === 403) throw new Error("Access denied. Your staff role cannot run ECU similarity checks.");
       if (!response.ok) throw new Error(payload.error || "Similarity search could not be completed.");
+      setMessageTone("success");
       setMessage(payload.message || "Similarity evidence updated.");
       await load();
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Similarity search could not be completed.");
+      setMessageTone("error");
+      setMessage(
+        error instanceof Error && error.message === "Unauthorized"
+          ? ADMIN_SESSION_RETRY_MESSAGE
+          : error instanceof Error
+            ? error.message
+            : "Similarity search could not be completed."
+      );
     } finally {
       setSimilarityRunning(false);
     }
@@ -197,7 +236,20 @@ export default function AiTrainingDetailPage() {
 
       <div className="mx-auto grid max-w-[1500px] gap-6 px-4 py-7 xl:grid-cols-[minmax(0,1.2fr)_420px]">
         <div className="min-w-0 space-y-6">
-          {message && <div className="rounded-lg border border-red-800/40 bg-red-950/20 p-4 text-sm text-red-100">{message}</div>}
+          {message && (
+            <div
+              role={messageTone === "error" ? "alert" : "status"}
+              className={`rounded-lg border p-4 text-sm ${
+                messageTone === "success"
+                  ? "border-emerald-800/40 bg-emerald-950/20 text-emerald-100"
+                  : messageTone === "error"
+                    ? "border-red-800/40 bg-red-950/20 text-red-100"
+                    : "border-sky-800/40 bg-sky-950/20 text-sky-100"
+              }`}
+            >
+              {message}
+            </div>
+          )}
           <section className="rounded-lg border border-white/10 bg-white/[0.025] p-5">
             <div className="flex items-center gap-3"><Database className="h-6 w-6 text-red-400" /><div><div className="text-xs font-black uppercase tracking-[0.18em] text-red-400">Binary identity</div><h2 className="text-xl font-black">{identity?.display_name || sample.ecu_type || "ECU not identified"}</h2></div></div>
             <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4"><Info label="Family" value={sample.ecu_family || identity?.family} /><Info label="Hardware" value={sample.hw_number || identity?.hardware_numbers[0]} /><Info label="Software" value={sample.sw_number || identity?.software_numbers[0]} /><Info label="Read method" value={sample.read_method} /></div>

@@ -268,35 +268,38 @@ test("legacy admin dashboard shows retryable sync errors instead of empty queues
   assert.doesNotMatch(adminPage, /if \(customerError\) \{\s*setMessage\(customerError\.message\);/);
 });
 
-test("legacy admin dashboard shows a safe daily command brief", () => {
+test("legacy admin dashboard shows a compact latest-order operations desk", () => {
   const adminPage = readProjectFile("src", "app", "admin", "page.tsx");
-  const brief =
-    adminPage.match(/function DailyCommandBrief[\s\S]*?function AdminNotificationCenter/)?.[0] ?? "";
+  const overview =
+    adminPage.match(/function AdminOperationsOverview[\s\S]*?function MiniInfo/)?.[0] ?? "";
 
   assert.match(adminPage, /type AdminStats = \{/);
   assert.match(adminPage, /type AdminCommandLink = \{/);
   assert.match(adminPage, /const adminCommandLinks = useMemo<AdminCommandLink\[\]>/);
+  assert.match(adminPage, /const latestOrders = useMemo\([\s\S]*?\.slice\(0, 5\)/);
   assert.match(adminPage, /href: "\/admin\/requests"/);
   assert.match(adminPage, /href: "\/admin\/file-expert"/);
   assert.match(adminPage, /href: "\/admin\/vehicles"/);
   assert.match(adminPage, /href: "\/admin\/payments"/);
-  assert.match(adminPage, /<DailyCommandBrief/);
+  assert.match(adminPage, /<AdminOperationsOverview/);
+  assert.match(adminPage, /latestOrders=\{latestOrders\}/);
   assert.match(adminPage, /commandLinks=\{adminCommandLinks\}/);
-  assert.match(brief, /Daily Command Brief/);
-  assert.match(brief, /Start with new file intake/);
-  assert.match(brief, /Resolve customer info blockers/);
-  assert.match(brief, /Clear revision requests/);
-  assert.match(brief, /Move file checks forward/);
-  assert.match(brief, /Monitor active work/);
-  assert.match(brief, /Queue under control/);
-  assert.match(brief, /Open priority queue/);
-  assert.match(brief, /Queue health/);
-  assert.match(brief, /File coverage across loaded orders/);
-  assert.match(brief, /Operational links/);
-  assert.match(brief, /Jump to the next control room/);
+  assert.match(overview, /Live order desk/);
+  assert.match(overview, /Latest 5 orders/);
+  assert.match(overview, /Newest customer work across every status/);
+  assert.match(overview, /latestOrders\.map/);
+  assert.match(overview, /onOpenOrder\(order\)/);
+  assert.match(overview, /Queue snapshot/);
+  assert.match(overview, /Quick controls/);
+  assert.match(overview, /Queue under control/);
+  assert.match(overview, /All orders/);
+  assert.match(overview, /Credits used/);
+  assert.match(adminPage, /id="admin-order-list"/);
+  assert.match(adminPage, /useState<AdminOrderGroup>\("all"\)/);
+  assert.doesNotMatch(adminPage, /Daily Command Brief/);
   assert.doesNotMatch(
-    brief,
-    /customer_email|internal_admin_note|original_file_path|modified_file_path|file_path|signedUrl|signed_url|storage|staff_adjust_customer_credits|fetch\(|\.rpc\(/i
+    overview,
+    /internal_admin_note|modified_file_path|signedUrl|signed_url|storage|staff_adjust_customer_credits|fetch\(|\.rpc\(/i
   );
 });
 
