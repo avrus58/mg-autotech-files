@@ -26,3 +26,49 @@ export function resolveBrowserAuthCheck(input: {
   if (!input.error || isDefinitiveInvalidSession(input)) return "unauthenticated";
   return "retry";
 }
+
+export type BrowserAuthUserCheckResult<TUser> =
+  | { state: "authenticated"; user: TUser; error: null }
+  | { state: "unauthenticated"; user: null; error: unknown }
+  | { state: "unavailable"; user: null; error: unknown };
+
+export async function checkBrowserAuthUserWithRetry<TUser>(
+  checkUser: () => Promise<{ user: TUser | null; error: unknown }>,
+  waitForRetry: (delayMs: number) => Promise<void> = (delayMs) =>
+    new Promise((resolve) => globalThis.setTimeout(resolve, delayMs))
+): Promise<BrowserAuthUserCheckResult<TUser>> {
+  let lastError: unknown = null;
+
+  for (
+    let completedAttempts = 1;
+    completedAttempts <= browserAuthCheckRetryLimit;
+    completedAttempts += 1
+  ) {
+    let result: { user: TUser | null; error: unknown };
+
+    try {
+      result = await checkUser();
+    } catch (error) {
+      result = { user: null, error };
+    }
+
+    const decision = resolveBrowserAuthCheck({
+      hasUser: Boolean(result.user),
+      error: result.error,
+    });
+
+    if (decision === "authenticated" && result.user) {
+      return { state: "authenticated", user: result.user, error: null };
+    }
+    if (decision === "unauthenticated") {
+      return { state: "unauthenticated", user: null, error: result.error };
+    }
+
+    lastError = result.error;
+    if (completedAttempts < browserAuthCheckRetryLimit) {
+      await waitForRetry(getBrowserAuthCheckRetryDelay(completedAttempts));
+    }
+  }
+
+  return { state: "unavailable", user: null, error: lastError };
+}

@@ -10,6 +10,7 @@ import {
 } from "../src/lib/authSessionMigration";
 import {
   browserAuthCheckRetryLimit,
+  checkBrowserAuthUserWithRetry,
   getBrowserAuthCheckRetryDelay,
   resolveBrowserAuthCheck,
 } from "../src/lib/authBoundaryState";
@@ -21,6 +22,7 @@ import {
   isDefinitiveInvalidSession,
   shouldRevalidateDashboardSession,
 } from "../src/lib/dashboardSync";
+import { retryCustomerOrdersQueryAfterAuthCheck } from "../src/lib/customerOrdersAuthRecovery";
 import {
   createSupabaseAuthTimedFetch,
   supabaseAuthRequestTimeoutMs,
@@ -485,6 +487,112 @@ test("browser auth checks retry transient failures without converting them into 
   assert.equal(resolveBrowserAuthCheck({ hasUser: false, error: new TypeError("offline") }), "retry");
 });
 
+test("browser user checks recover transient failures with bounded retries", async () => {
+  const delays: number[] = [];
+  let attempts = 0;
+  const recovered = await checkBrowserAuthUserWithRetry(
+    async () => {
+      attempts += 1;
+      if (attempts < 3) {
+        return { user: null, error: new TypeError("temporary auth outage") };
+      }
+      return { user: { id: "user-1" }, error: null };
+    },
+    async (delayMs) => {
+      delays.push(delayMs);
+    }
+  );
+
+  assert.deepEqual(recovered, {
+    state: "authenticated",
+    user: { id: "user-1" },
+    error: null,
+  });
+  assert.equal(attempts, 3);
+  assert.deepEqual(delays, [1_000, 3_000]);
+
+  attempts = 0;
+  const missing = await checkBrowserAuthUserWithRetry(
+    async () => {
+      attempts += 1;
+      return { user: null, error: null };
+    },
+    async () => {
+      throw new Error("definitive logout must not retry");
+    }
+  );
+
+  assert.equal(missing.state, "unauthenticated");
+  assert.equal(attempts, 1);
+
+  attempts = 0;
+  const unavailable = await checkBrowserAuthUserWithRetry(
+    async () => {
+      attempts += 1;
+      throw new TypeError("temporary auth outage");
+    },
+    async () => undefined
+  );
+
+  assert.equal(unavailable.state, "unavailable");
+  assert.equal(attempts, browserAuthCheckRetryLimit);
+});
+
+test("customer order auth recovery retries one read only after valid revalidation", async () => {
+  let queryAttempts = 0;
+  const recovered = await retryCustomerOrdersQueryAfterAuthCheck(
+    async () => ({
+      state: "authenticated" as const,
+      user: { id: "user-1" },
+      error: null,
+    }),
+    async () => {
+      queryAttempts += 1;
+      return { data: [{ id: "order-1" }], error: null, count: 1 };
+    }
+  );
+
+  assert.equal(recovered.authCheck.state, "authenticated");
+  assert.deepEqual(recovered.queryResult, {
+    data: [{ id: "order-1" }],
+    error: null,
+    count: 1,
+  });
+  assert.equal(queryAttempts, 1);
+
+  const invalid = await retryCustomerOrdersQueryAfterAuthCheck(
+    async () => ({
+      state: "unauthenticated" as const,
+      user: null,
+      error: { code: "session_not_found" },
+    }),
+    async () => {
+      queryAttempts += 1;
+      return { data: [], error: null, count: 0 };
+    }
+  );
+
+  assert.equal(invalid.authCheck.state, "unauthenticated");
+  assert.equal(invalid.queryResult, null);
+  assert.equal(queryAttempts, 1);
+
+  const stale = await retryCustomerOrdersQueryAfterAuthCheck(
+    async () => ({
+      state: "authenticated" as const,
+      user: { id: "user-2" },
+      error: null,
+    }),
+    async () => {
+      queryAttempts += 1;
+      return { data: [], error: null, count: 0 };
+    },
+    () => false
+  );
+
+  assert.equal(stale.queryResult, null);
+  assert.equal(queryAttempts, 1);
+});
+
 test("thrown Auth lock failures are normalized into retryable session results", async () => {
   const lockError = new Error("simulated Auth lock contention");
   lockError.name = "NavigatorLockAcquireTimeoutError";
@@ -712,10 +820,12 @@ test("admin and required customer routes preserve sessions on transient Auth fai
   const settings = readProjectFile("src", "app", "dashboard", "settings", "page.tsx");
   const dashboard = readProjectFile("src", "components", "dashboard", "DashboardClient.tsx");
 
-  for (const source of [admin, orders, credits, settings]) {
+  for (const source of [admin, credits, settings]) {
     assert.match(source, /resolveBrowserAuthCheck/);
     assert.match(source, /getStableUser/);
   }
+
+  assert.match(orders, /getStableUser/);
 
   assert.match(admin, /function clearPrivilegedAdminState\(\)/);
   assert.match(admin, /adminAuthRevisionRef/);
@@ -734,7 +844,14 @@ test("admin and required customer routes preserve sessions on transient Auth fai
     admin,
     /event === "SIGNED_OUT"[\s\S]*clearPrivilegedAdminState\(\)[\s\S]*router\.replace\("\/login"\)/
   );
-  assert.match(orders, /const initializeAuth = useCallback[\s\S]*resolveBrowserAuthCheck/);
+  assert.match(orders, /const initializeAuth = useCallback[\s\S]*checkBrowserAuthUserWithRetry/);
+  assert.match(orders, /shouldRevalidateDashboardSession\(queryResult\.error\)/);
+  assert.match(orders, /retryCustomerOrdersQueryAfterAuthCheck/);
+  assert.match(orders, /event === "SIGNED_OUT"[\s\S]*clearOrdersForLogout\(\)[\s\S]*router\.replace\("\/login"\)/);
+  assert.match(orders, /currentUserId && currentUserId !== session\.user\.id[\s\S]*clearOrdersForLogout\(\)[\s\S]*initializeAuth\(\)/);
+  assert.match(orders, /ordersLoadRevisionRef\.current !== expectedLoadRevision/);
+  assert.match(orders, /authRevisionRef\.current !== expectedAuthRevision/);
+  assert.doesNotMatch(orders, /refreshSession|runCustomerOrdersSync/);
   assert.match(credits, /getStableSession\(\{[\s\S]*maxAttempts: 1/);
   assert.match(settings, /resolveBrowserAuthCheck[\s\S]*SETTINGS_LOAD_ERROR_MESSAGE/);
   assert.match(dashboard, /catch \{[\s\S]*setLogoutError\(LOGOUT_ERROR_MESSAGE\)/);

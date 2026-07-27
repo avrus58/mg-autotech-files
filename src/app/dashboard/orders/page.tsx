@@ -19,7 +19,12 @@ import {
   Upload,
 } from "lucide-react";
 import { getStableUser, signOutIfEmailUnverified } from "@/lib/authGuards";
-import { resolveBrowserAuthCheck } from "@/lib/authBoundaryState";
+import { checkBrowserAuthUserWithRetry } from "@/lib/authBoundaryState";
+import {
+  retryCustomerOrdersQueryAfterAuthCheck,
+  type CustomerOrdersQueryResult,
+} from "@/lib/customerOrdersAuthRecovery";
+import { shouldRevalidateDashboardSession } from "@/lib/dashboardSync";
 import { supabase } from "@/lib/supabaseClient";
 
 type Order = {
@@ -82,6 +87,24 @@ export default function CustomerOrdersPage() {
   const [loadError, setLoadError] = useState("");
   const [ordersReady, setOrdersReady] = useState(false);
   const hasLoadedOrdersRef = useRef(false);
+  const authRevisionRef = useRef(0);
+  const ordersLoadRevisionRef = useRef(0);
+  const ordersUserIdRef = useRef<string | null>(null);
+
+  const clearOrdersForLogout = useCallback(() => {
+    authRevisionRef.current += 1;
+    ordersLoadRevisionRef.current += 1;
+    ordersUserIdRef.current = null;
+    setUserId("");
+    setOrders([]);
+    setTotal(0);
+    setPage(1);
+    setLoadError("");
+    setOrdersReady(false);
+    setLoadingMore(false);
+    setLoading(true);
+    hasLoadedOrdersRef.current = false;
+  }, []);
 
   useEffect(() => {
     const initial = new URLSearchParams(window.location.search).get("view");
@@ -137,24 +160,23 @@ export default function CustomerOrdersPage() {
   }, []);
 
   const initializeAuth = useCallback(async () => {
+    const expectedAuthRevision = authRevisionRef.current;
     setLoading(true);
     setLoadError("");
 
-    const { user, error } = await getStableUser();
-    if (!user) {
-      const authState = resolveBrowserAuthCheck({
-        hasUser: false,
-        error,
-      });
-
-      if (authState === "unauthenticated") {
-        router.replace("/login");
-      } else {
-        setLoadError(CUSTOMER_ORDERS_LOAD_ERROR_MESSAGE);
-        setLoading(false);
-      }
+    const authCheck = await checkBrowserAuthUserWithRetry(getStableUser);
+    if (authRevisionRef.current !== expectedAuthRevision) return;
+    if (authCheck.state === "unauthenticated") {
+      clearOrdersForLogout();
+      router.replace("/login");
       return;
     }
+    if (authCheck.state === "unavailable") {
+      setLoadError(CUSTOMER_ORDERS_LOAD_ERROR_MESSAGE);
+      setLoading(false);
+      return;
+    }
+    const user = authCheck.user;
 
     try {
       if (await signOutIfEmailUnverified(user)) {
@@ -167,10 +189,14 @@ export default function CustomerOrdersPage() {
       return;
     }
 
+    if (authRevisionRef.current !== expectedAuthRevision) return;
+    ordersUserIdRef.current = user.id;
     setUserId(user.id);
-  }, [router]);
+  }, [clearOrdersForLogout, router]);
 
   const loadOrders = useCallback(async (options?: { targetPage?: number; uid?: string }) => {
+    const expectedLoadRevision = ++ordersLoadRevisionRef.current;
+    const expectedAuthRevision = authRevisionRef.current;
     const uid = options?.uid || userId;
     if (!uid) {
       await initializeAuth();
@@ -180,8 +206,63 @@ export default function CustomerOrdersPage() {
     if (nextPage > 1) setLoadingMore(true);
     else setLoading(true);
     setLoadError("");
-    const { data, error, count } = await buildQuery(uid, view, search, nextPage * pageSize - 1);
-    if (error) {
+    let queryResult: CustomerOrdersQueryResult<unknown>;
+    try {
+      const result = await buildQuery(uid, view, search, nextPage * pageSize - 1);
+      queryResult = {
+        data: result.data,
+        error: result.error,
+        count: result.count,
+      };
+    } catch (error) {
+      queryResult = { data: null, error, count: null };
+    }
+    if (
+      ordersLoadRevisionRef.current !== expectedLoadRevision ||
+      authRevisionRef.current !== expectedAuthRevision
+    ) {
+      return;
+    }
+
+    if (
+      queryResult.error &&
+      shouldRevalidateDashboardSession(queryResult.error)
+    ) {
+      const recovery = await retryCustomerOrdersQueryAfterAuthCheck(
+        () => checkBrowserAuthUserWithRetry(getStableUser),
+        async () => {
+          const result = await buildQuery(
+            uid,
+            view,
+            search,
+            nextPage * pageSize - 1
+          );
+          return {
+            data: result.data,
+            error: result.error,
+            count: result.count,
+          };
+        },
+        () =>
+          ordersLoadRevisionRef.current === expectedLoadRevision &&
+          authRevisionRef.current === expectedAuthRevision
+      );
+      if (
+        ordersLoadRevisionRef.current !== expectedLoadRevision ||
+        authRevisionRef.current !== expectedAuthRevision
+      ) {
+        return;
+      }
+      if (recovery.authCheck.state === "unauthenticated") {
+        clearOrdersForLogout();
+        router.replace("/login");
+        return;
+      }
+      if (recovery.queryResult) queryResult = recovery.queryResult;
+    }
+
+    const { data, error: queryError, count } = queryResult;
+    if (queryError) {
       setLoadError(hasLoadedOrdersRef.current ? CUSTOMER_ORDERS_SYNC_ERROR_MESSAGE : CUSTOMER_ORDERS_LOAD_ERROR_MESSAGE);
     } else {
       setOrders((data ?? []) as Order[]);
@@ -192,7 +273,7 @@ export default function CustomerOrdersPage() {
     }
     setLoading(false);
     setLoadingMore(false);
-  }, [buildQuery, initializeAuth, search, userId, view]);
+  }, [buildQuery, clearOrdersForLogout, initializeAuth, router, search, userId, view]);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
@@ -204,7 +285,10 @@ export default function CustomerOrdersPage() {
   useEffect(() => {
     if (!userId) return;
     const timeout = window.setTimeout(() => loadOrders({ uid: userId }), 250);
-    return () => window.clearTimeout(timeout);
+    return () => {
+      window.clearTimeout(timeout);
+      ordersLoadRevisionRef.current += 1;
+    };
   }, [loadOrders, userId]);
 
   useEffect(() => {
@@ -216,6 +300,30 @@ export default function CustomerOrdersPage() {
     ).subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [loadOrders, userId]);
+
+  useEffect(() => {
+    const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session?.user) {
+        const currentUserId = ordersUserIdRef.current;
+        if (currentUserId && currentUserId !== session.user.id) {
+          clearOrdersForLogout();
+          void initializeAuth();
+        }
+        return;
+      }
+
+      if (event === "SIGNED_OUT") {
+        clearOrdersForLogout();
+        router.replace("/login");
+      }
+    });
+
+    return () => {
+      authRevisionRef.current += 1;
+      ordersLoadRevisionRef.current += 1;
+      listener.subscription.unsubscribe();
+    };
+  }, [clearOrdersForLogout, initializeAuth, router]);
 
   const currentView = useMemo(() => views.find((item) => item.value === view) ?? views[0], [view]);
   const loadedOrdersSummary = useMemo(() => {
