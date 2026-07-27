@@ -252,7 +252,9 @@ test("legacy admin dashboard shows retryable sync errors instead of empty queues
   assert.match(adminPage, /if \(customerError\) \{[\s\S]*setAdminLoadError\([\s\S]*hasLoadedAdminDataRef\.current \? ADMIN_SYNC_ERROR_MESSAGE : ADMIN_LOAD_ERROR_MESSAGE/);
   assert.match(adminPage, /hasLoadedAdminDataRef\.current = true/);
   assert.match(adminPage, /setAdminDataReady\(true\)/);
-  assert.match(adminPage, /if \(!hasLoadedAdminDataRef\.current\) return;\s*void loadAdminData\(\{ silent: true \}\);/);
+  assert.match(adminPage, /const refreshAdminData = \(\) => \{/);
+  assert.match(adminPage, /!hasLoadedAdminDataRef\.current[\s\S]*adminRefreshInFlightRef\.current[\s\S]*document\.visibilityState !== "visible"/);
+  assert.match(adminPage, /void loadAdminData\(\{ silent: true \}\)\.finally/);
   assert.match(adminPage, /const showInitialAdminLoadError = Boolean\(adminLoadError && !adminDataReady\)/);
   assert.match(adminPage, /showInitialAdminLoadError \? \(/);
   assert.match(adminPage, /<AdminLoadErrorState/);

@@ -4,7 +4,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { signOutIfEmailUnverified } from "@/lib/authGuards";
+import { getStableSession, signOutIfEmailUnverified } from "@/lib/authGuards";
 import { supabase } from "@/lib/supabaseClient";
 import RequestChat from "@/components/RequestChat";
 import {
@@ -177,6 +177,8 @@ const ADMIN_LOAD_ERROR_MESSAGE =
   "Admin operations could not be loaded. Retry before treating the queue as empty.";
 const ADMIN_SYNC_ERROR_MESSAGE =
   "Admin operations could not be refreshed. The last loaded orders and customers are still shown.";
+const ADMIN_SESSION_SYNC_ERROR_MESSAGE =
+  "The secure session could not be refreshed. Your admin data remains on screen while the connection recovers.";
 type AdminOrderGroup = "open" | "completed" | "cancelled" | "all";
 
 type AdminStats = {
@@ -487,6 +489,7 @@ export default function AdminPage() {
   const knownOrderIdsRef = useRef<Set<string>>(new Set());
   const initialOrdersLoadedRef = useRef(false);
   const hasLoadedAdminDataRef = useRef(false);
+  const adminRefreshInFlightRef = useRef(false);
 
   async function loadAdminData(options?: { silent?: boolean }) {
     const silent = Boolean(options?.silent);
@@ -495,28 +498,40 @@ export default function AdminPage() {
     setMessage("");
     setAdminLoadError("");
 
-    const { data: userData } = await supabase.auth.getUser();
-    if (!userData.user) {
-      router.push("/login");
+    const { session } = await getStableSession();
+    const user = session?.user;
+
+    if (!user) {
+      setLoading(false);
+      setAutoRefreshing(false);
+
+      if (silent && hasLoadedAdminDataRef.current) {
+        setAdminLoadError(ADMIN_SESSION_SYNC_ERROR_MESSAGE);
+        return;
+      }
+
+      router.replace("/login?redirect=/admin");
       return;
     }
 
-    if (await signOutIfEmailUnverified(userData.user)) {
-      router.push("/login?verify_email=1");
+    if (await signOutIfEmailUnverified(user)) {
+      setLoading(false);
+      setAutoRefreshing(false);
+      router.replace("/login?verify_email=1");
       return;
     }
 
     let { data: profile, error: profileError } = await supabase
       .from("profiles")
       .select("role, staff_role, staff_permissions")
-      .eq("id", userData.user.id)
+      .eq("id", user.id)
       .single();
 
     if (profileError?.code === "42703") {
       const legacy = await supabase
         .from("profiles")
         .select("role")
-        .eq("id", userData.user.id)
+        .eq("id", user.id)
         .single();
       profile = legacy.data
         ? { ...legacy.data, staff_role: null, staff_permissions: [] }
@@ -635,11 +650,32 @@ export default function AdminPage() {
   }, []);
 
   useEffect(() => {
-    const interval = window.setInterval(() => {
-      if (!hasLoadedAdminDataRef.current) return;
-      void loadAdminData({ silent: true });
-    }, 10000);
-    return () => window.clearInterval(interval);
+    const refreshAdminData = () => {
+      if (
+        !hasLoadedAdminDataRef.current ||
+        adminRefreshInFlightRef.current ||
+        document.visibilityState !== "visible"
+      ) {
+        return;
+      }
+
+      adminRefreshInFlightRef.current = true;
+      void loadAdminData({ silent: true }).finally(() => {
+        adminRefreshInFlightRef.current = false;
+      });
+    };
+
+    const interval = window.setInterval(refreshAdminData, 10000);
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") refreshAdminData();
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
