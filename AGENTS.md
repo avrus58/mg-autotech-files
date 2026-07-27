@@ -82,3 +82,85 @@
 - Büyük fikirleri .autopilot/FEATURE_PROPOSALS.md içine yaz.
 - Product scorecard yalnız gerçek kanıtla güncellenir.
 - Production deploy, canlı migration, secret, gerçek müşteri verisi, fiyat ve hukuki iddia owner onayı olmadan yasaktır.
+
+## One-time owner-approved emergency auth-only production hotfix exception
+
+Authorization ID:
+MG-AUTOTECH-AUTH-HOTFIX-PROD-202607
+
+Required repository:
+C:\Users\gokka\Desktop\mg-autotech-auth-hotfix
+
+Required branch:
+hotfix/auth-session-stability
+
+Verified live production source baseline:
+97a3535af16eb88b90adb5dada42da8f42793eb2
+
+Current production deployment rollback target:
+dpl_ExRm3G6e1rd4m8dg64peFWiUSo6E
+
+Live domain:
+file.mgautotech.de
+
+This exception is valid only in a fresh Codex session started after this
+amendment has been committed.
+
+The fresh session may:
+
+- preserve and complete only the existing auth/session stability hotfix;
+- preserve the reviewed dependency-security remediation;
+- create focused dependency, auth and required operational-log commits;
+- push only hotfix/auth-session-stability;
+- deploy exactly one auth-only Vercel Production release;
+- use the existing Production environment variables without reading, printing,
+  changing or exporting their values;
+- run production auth/session smoke tests with harmless operator-controlled
+  accounts;
+- perform an immediate Vercel application rollback to the recorded previous
+  deployment if any critical smoke test fails.
+
+This exception never permits:
+
+- modifying Production Supabase;
+- applying any database migration;
+- changing Production Vercel environment variables;
+- rotating or reading Supabase API keys or JWT secrets;
+- including ECU Intelligence, Vehicle Database, homepage, widget, billing,
+  learning, DTC or unrelated feature changes;
+- processing ECU firmware;
+- generating MOD, Stage 1, Stage 2 or real DTC output;
+- enabling learning approval or historical backfill;
+- enabling A3, A4 or A5;
+- enabling customer automatic output delivery;
+- weakening authentication, authorization or RLS;
+- deploying a dirty worktree;
+- exposing credentials, cookies, tokens or customer data.
+
+Only the following application scope is authorized:
+
+- canonical cookie-based Supabase browser/server session handling;
+- Proxy request/response cookie propagation;
+- removal of manual refresh-token replay;
+- removal of nested SIGNED_OUT recovery;
+- removal of false unauthenticated fallback behavior;
+- preservation of valid sessions during transient dashboard synchronization
+  failures;
+- bounded retry and last-good-data behavior;
+- genuine logout and invalid-session handling;
+- directly required security-patched dependency versions;
+- regression tests for this exact behavior.
+
+The deployment must stop before Production if any validation fails.
+
+After deployment, rollback immediately if:
+
+- login fails;
+- the dashboard redirects unexpectedly to /login;
+- the Sync needs retry/login loop remains;
+- admin/customer authorization regresses;
+- existing request, order, credit or settings pages fail;
+- secrets appear in a browser bundle or log.
+
+This exception expires after the first successful auth-only Production
+deployment and smoke test, or after the first completed rollback attempt.
