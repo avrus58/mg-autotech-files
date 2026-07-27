@@ -25,12 +25,14 @@ Recovery sonucu:
 - Canlida admin verisi yuklendikten sonra refresh dongusu icinde `/login` redirecti privacy-safe olarak yeniden uretildi; session silinmedigi icin `/admin` sifresiz yeniden acildi.
 - Kok neden, deprecated browser `navigatorLock`/10 saniyelik timeout ile auth-js 30 saniyelik auto-refresh ve 10 saniyelik admin `getUser()` kontrolunun cakismasidir.
 - Browser client bilinen-canli persistence yoluna donduruldu ve yalniz deprecated lock ayarlari kaldirildi; mevcut transient auth, last-good data, genuine logout ve invalid-session guardlari korundu.
+- Sonraki auth release `dpl_AgpeHfGqNuHL4t8G6dJmmn4tPp5c` admin/dashboard/credits/settings smoke'larini gecti, fakat `/dashboard/orders` initial sync iki kez basarisiz oldugu icin immediately-previous `dpl_yspCRTeUPdgEt4oQhsHK8Jyx8Lat` hedefine basariyla rollback edildi.
+- Orders sorgusu verified baseline ile ayni kaldigi halde yeni bootstrap transient `getUser` sonucunu terminal sync error'a ceviriyordu. Bounded user retry, query-auth revalidation, tek authenticated read retry, genuine `SIGNED_OUT`, cross-account temizligi ve stale load revision guardlari commit `4ebfc77` ile eklendi.
 
 Pre-deployment sonucu:
 
-- Focused auth/Proxy 29/29, tam test 397/397, lint, typecheck, izole sentetik Production build 243/243, payment schema-only, production audit 0 vulnerability, dependency tree, diff ve browser bundle secret scan PASS.
+- Focused auth/Proxy/UI 123/123 (auth subset 26/26), tam test 399/399, lint, typecheck, izole sentetik Production build 243/243, payment schema-only, production audit 0 vulnerability, dependency tree, diff ve browser bundle secret scan PASS.
 - `npm ci` gerekli degildir; kurulu production dependency tree lockfile ile valid durumdadir.
-- Odakli commit/push, temiz worktree Production preflight, tek deployment ve zorunlu live smoke bekleniyor.
+- Auth commit `4ebfc77` tamamlandi; zorunlu ops commit/push, temiz worktree Production preflight, tek deployment ve zorunlu live smoke bekleniyor.
 
 Kapsam/guvenlik:
 

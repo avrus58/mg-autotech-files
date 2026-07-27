@@ -2,6 +2,22 @@
 
 Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
+## 2026-07-27 worker run MANUAL-PROD-AUTH-ORDERS-RECOVERY-20260727
+
+- Baslangic: 2026-07-27, owner'in `yayinla` talimatiyla onceki kritik orders smoke rollback'inden sonra baslatilan yeni emergency auth-only Production continuation.
+- Gorev: `dpl_AgpeHfGqNuHL4t8G6dJmmn4tPp5c` release'inde iki kez gorulen initial `/dashboard/orders` sync failure'ini, calisan sorgu seklini degistirmeden gidermek; tum kapilar gecerse tek yeni Production release ve privacy-safe smoke uygulamak.
+- Fingerprint: `security|production-auth-session|orders-bootstrap-transient-auth|bounded-revalidation-and-stale-data-guard`.
+- Durum: In Progress. Uygulama commit'i ve tum pre-deployment kontrolleri basarili; zorunlu ops commit/push, tek Production deployment ve live smoke bekleniyor.
+- Onceki release/rollback: `dpl_AgpeHfGqNuHL4t8G6dJmmn4tPp5c` admin/dashboard/credits/settings smoke'larini gecti, fakat `/dashboard/orders` initial sync iki kez basarisiz oldu. Kritik smoke nedeniyle supported rollback ile `dpl_yspCRTeUPdgEt4oQhsHK8Jyx8Lat` yeniden Production domain'e atandi. Preflight bu target'i `mg-autotech-files`, `production`, `READY` ve `file.mgautotech.de` tarafindan servis edilen deployment olarak tekrar dogruladi.
+- Kok neden/scope kaniti: Orders PostgREST select/filter/range sorgusu verified baseline `97a3535af16eb88b90adb5dada42da8f42793eb2` ile byte-for-byte aynidir. Regresyon, yeni orders bootstrap'in transient `getUser` sonucunu tek denemede terminal sync error'a cevirmesi ve ayni UI metninin Auth/query failure ayrimini gizlemesidir.
+- Uygulama: Browser user kontrolu 3 deneme ve 1s/3s gecikmeyle bounded hale getirildi. Yalniz definitive unauthenticated sonuc `/login` redirecti uretir. Query-level 401/PGRST auth failure'inda session yeniden dogrulanir; user hala authenticated ise ayni read query tam bir kez yeniden calisir. `SIGNED_OUT` ve cross-account `SIGNED_IN` eski order state'ini temizler; auth/load revision guardlari stale response publish'ini engeller. Manual refresh-token replay, nested Auth recovery veya genel/blind query retry eklenmedi.
+- Degisen uygulama/test dosyalari: `src/app/dashboard/orders/page.tsx`, `src/lib/authBoundaryState.ts`, `src/lib/customerOrdersAuthRecovery.ts`, `tests/auth-session-stability.test.ts`.
+- Commit: `4ebfc77` `fix(auth): stabilize production session and dashboard sync`.
+- Kontroller: Focused auth/Proxy/UI PASS 123/123 (auth-session subset 26/26); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS 399/399; `.env*` icermeyen sentetik-env izole Production build PASS 243/243; payment schema-only PASS; `git diff --check` PASS; installed production dependency tree PASS. `npm ci` gerekli degildir.
+- Dependency/security: `npm audit --omit=dev --audit-level=high` PASS, 0 vulnerability. Dependency manifest/lock degisikligi yoktur.
+- Bundle/secret kontrolu: 57 client source dosyasinda privileged secret boundary ihlali 0; izole build 85 static browser dosyasinda server secret env-name/literal ihlali 0; tum bundle'da `sb_secret_`, `sk_live_` veya private-key literal ihlali 0. Gercek env, cookie, token, credential veya musteri verisi okunmadi veya raporlanmadi.
+- Kapsam/guvenlik: Production Supabase, DB, migration, SQL, key/JWT secret ve Vercel environment degistirilmedi veya degerleri okunmadi. ECU Intelligence, Vehicle Database, homepage, widget, billing, learning ve DTC behavior degisikligi yoktur. Kritik smoke basarisizsa rollback target `dpl_yspCRTeUPdgEt4oQhsHK8Jyx8Lat` olarak kalir.
+
 ## 2026-07-27 worker run MANUAL-PROD-AUTH-RECOVERY-20260727
 
 - Baslangic: 2026-07-27, owner-authorized emergency Production auth recovery run.
