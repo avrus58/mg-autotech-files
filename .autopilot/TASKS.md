@@ -4,11 +4,11 @@
 
 ## Ready
 
-## In Progress
+## Blocked
 
 ### MANUAL-PROD-AUTH-20260727 [P0] Emergency Production auth/session hotfixini tamamla
 
-Durum: In Progress
+Durum: Blocked
 
 Fingerprint: `security|production-auth-session|dashboard-sync-login-loop|cookie-session-stability-hotfix`
 
@@ -32,13 +32,17 @@ Pre-deployment sonucu:
 
 - Focused auth/Proxy/UI 123/123 (auth subset 26/26), tam test 399/399, lint, typecheck, izole sentetik Production build 243/243, payment schema-only, production audit 0 vulnerability, dependency tree, diff ve browser bundle secret scan PASS.
 - `npm ci` gerekli degildir; kurulu production dependency tree lockfile ile valid durumdadir.
-- Auth commit `4ebfc77` tamamlandi; zorunlu ops commit/push, temiz worktree Production preflight, tek deployment ve zorunlu live smoke bekleniyor.
+- Auth commit `4ebfc77`, ops commit `5bbd0e4`, push ve temiz worktree Production preflight tamamlandi.
+
+Production sonucu:
+
+- Tek Production release `dpl_4zeDmgcqKJ1Pd6JoS5Z1obaaPqsQ` `READY` oldu. Ilk dashboard/orders, 3 dashboard reload, credits/settings ve authorized admin data load basariliydi; 5xx/error log 0 idi.
+- Dashboard 252 saniye ve admin 189 saniye sonunda login redirect olmadan sync failure state'i gosterdi. Bes dakikalik dashboard ve tekrarli sync kabul kriterleri gecmedi; genuine logout ve ordinary-customer live authorization tamamlanmadi.
+- Direct Hobby rollback 402 ile reddedilince yeni deployment olusturmadan mevcut `dpl_yspCRTeUPdgEt4oQhsHK8Jyx8Lat` READY targetina Production domain alias'i geri atanarak rollback tamamlandi. `file.mgautotech.de` bu targeti servis eder; rejected release korunur ve canli domain'den ayridir.
 
 Kapsam/guvenlik:
 
 - Production Supabase, DB, migration, SQL, key/JWT secret ve Vercel environment degistirilmedi veya degerleri okunmadi. ECU Intelligence, Vehicle Database, homepage, widget, billing, learning ve DTC behavior degisikligi yoktur.
-
-## Blocked
 
 ### MANUAL-SEC-20260725 [P0] Staging credential incident auth-only hotfixini yerel olarak dogrula
 
