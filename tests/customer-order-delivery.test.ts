@@ -5,6 +5,8 @@ import test from "node:test";
 import {
   CUSTOMER_FILE_DOWNLOAD_EVENT,
   buildCustomerDownloadAuditValue,
+  canDownloadCustomerOrder,
+  canReadCustomerOrder,
   getStoredModifiedFileVersions,
   isExpectedCustomerDeliveryPath,
   projectCustomerDeliveryHistory,
@@ -12,6 +14,7 @@ import {
   resolveCustomerDeliveryVersion,
   type CustomerOrderRecord,
 } from "../src/lib/customerOrderDelivery";
+import type { StaffAccess } from "../src/lib/staffPermissions";
 
 const root = process.cwd();
 
@@ -142,6 +145,26 @@ test("delivery resolution rejects ambiguous ids and path traversal", () => {
   );
 });
 
+test("customer order access preserves tenant isolation and explicit staff permissions", () => {
+  const customerAccess: StaffAccess = { role: "customer", staffRole: null, permissions: [] };
+  const supportAccess: StaffAccess = {
+    role: "staff",
+    staffRole: "support",
+    permissions: ["orders.view"],
+  };
+  const fileStaffAccess: StaffAccess = {
+    role: "staff",
+    staffRole: "calibrator",
+    permissions: ["orders.view", "files.download"],
+  };
+
+  assert.equal(canReadCustomerOrder("customer-a", "customer-a", customerAccess), true);
+  assert.equal(canReadCustomerOrder("customer-a", "customer-b", customerAccess), false);
+  assert.equal(canReadCustomerOrder("staff-a", "customer-b", supportAccess), true);
+  assert.equal(canDownloadCustomerOrder("staff-a", "customer-b", supportAccess), false);
+  assert.equal(canDownloadCustomerOrder("staff-a", "customer-b", fileStaffAccess), true);
+});
+
 test("legacy completed delivery stays available without leaking its path", () => {
   const order = fixtureOrder({ modified_files: null });
   const versions = getStoredModifiedFileVersions(order);
@@ -172,10 +195,10 @@ test("customer delivery API is ownership-bound, audited and version-id based", (
   const finalize = source("src", "app", "api", "requests", "[id]", "additional-file", "finalize", "route.ts");
 
   assert.match(detailRoute, /requireApiUser\(request\)/);
-  assert.match(detailRoute, /\.eq\("customer_id", auth\.user\.id\)/);
+  assert.match(detailRoute, /canReadCustomerOrder\(auth\.user\.id, order\.customer_id, auth\.access\)/);
   assert.match(detailRoute, /projectCustomerOrder\(order\)/);
   assert.match(deliveryRoute, /requireApiUser\(request\)/);
-  assert.match(deliveryRoute, /\.eq\("customer_id", customerId\)/);
+  assert.match(deliveryRoute, /canDownloadCustomerOrder\(auth\.user\.id, order\.customer_id, auth\.access\)/);
   assert.match(deliveryRoute, /versionId/);
   assert.match(deliveryRoute, /isExpectedCustomerDeliveryPath/);
   assert.match(deliveryRoute, /recordWorkOrderEvent/);

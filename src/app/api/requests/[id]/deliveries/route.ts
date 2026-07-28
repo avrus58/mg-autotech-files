@@ -4,6 +4,7 @@ import { requireApiUser } from "@/lib/apiAuth";
 import {
   CUSTOMER_FILE_DOWNLOAD_EVENT,
   buildCustomerDownloadAuditValue,
+  canDownloadCustomerOrder,
   customerOrderDetailSelect,
   isExpectedCustomerDeliveryPath,
   projectCustomerDeliveryHistory,
@@ -18,13 +19,12 @@ const downloadSchema = z.object({
   versionId: z.string().trim().min(1).max(100),
 });
 
-async function loadOwnedOrder(requestId: string, customerId: string) {
+async function loadOrder(requestId: string) {
   const admin = getSupabaseAdmin();
   const result = await admin
     .from("orders")
     .select(customerOrderDetailSelect)
     .eq("id", requestId)
-    .eq("customer_id", customerId)
     .maybeSingle();
 
   return {
@@ -59,8 +59,12 @@ export async function POST(
   }
 
   const { id } = await context.params;
-  const { admin, order, error } = await loadOwnedOrder(id, auth.user.id);
-  if (error || !order) {
+  const { admin, order, error } = await loadOrder(id);
+  if (
+    error ||
+    !order ||
+    !canDownloadCustomerOrder(auth.user.id, order.customer_id, auth.access)
+  ) {
     return NextResponse.json({ error: "Order not found." }, { status: 404 });
   }
 
@@ -69,7 +73,7 @@ export async function POST(
     return NextResponse.json({ error: "Delivery version not found." }, { status: 404 });
   }
 
-  if (!isExpectedCustomerDeliveryPath(version.file_path, auth.user.id, id)) {
+  if (!isExpectedCustomerDeliveryPath(version.file_path, order.customer_id, id)) {
     return NextResponse.json({ error: "Delivery file is unavailable." }, { status: 409 });
   }
 

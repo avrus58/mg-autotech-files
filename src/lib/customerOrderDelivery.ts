@@ -1,3 +1,9 @@
+import {
+  hasStaffPermission,
+  isStaffMember,
+  type StaffAccess,
+} from "@/lib/staffPermissions";
+
 export const CUSTOMER_FILE_DOWNLOAD_EVENT = "customer_file_downloaded";
 
 export type StoredModifiedFileVersion = {
@@ -88,6 +94,28 @@ export const customerOrderDetailSelect = [
   "customer_uploads",
   "created_at",
 ].join(",");
+
+export function canReadCustomerOrder(
+  actorUserId: string,
+  customerId: string,
+  access: StaffAccess
+) {
+  return (
+    actorUserId === customerId ||
+    (isStaffMember(access) && hasStaffPermission(access, "orders.view"))
+  );
+}
+
+export function canDownloadCustomerOrder(
+  actorUserId: string,
+  customerId: string,
+  access: StaffAccess
+) {
+  return (
+    actorUserId === customerId ||
+    (isStaffMember(access) && hasStaffPermission(access, "files.download"))
+  );
+}
 
 const versionLabels = new Set<StoredModifiedFileVersion["label"]>([
   "v1",

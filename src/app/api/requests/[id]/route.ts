@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireApiUser } from "@/lib/apiAuth";
 import {
+  canReadCustomerOrder,
   CUSTOMER_FILE_DOWNLOAD_EVENT,
   customerOrderDetailSelect,
   projectCustomerDeliveryHistory,
@@ -25,10 +26,14 @@ export async function GET(
     .from("orders")
     .select(customerOrderDetailSelect)
     .eq("id", id)
-    .eq("customer_id", auth.user.id)
     .maybeSingle();
 
-  if (orderResult.error || !orderResult.data) {
+  const order = orderResult.data as unknown as CustomerOrderRecord | null;
+  if (
+    orderResult.error ||
+    !order ||
+    !canReadCustomerOrder(auth.user.id, order.customer_id, auth.access)
+  ) {
     return NextResponse.json({ error: "Order not found." }, { status: 404 });
   }
 
@@ -46,7 +51,6 @@ export async function GET(
     );
   }
 
-  const order = orderResult.data as unknown as CustomerOrderRecord;
   return NextResponse.json(
     {
       order: projectCustomerOrder(order),
