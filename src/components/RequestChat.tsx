@@ -15,6 +15,7 @@ type RequestMessage = {
 type RequestChatProps = {
   requestId: string;
   senderRole: "customer" | "admin";
+  variant?: "default" | "workspace";
 };
 
 const MESSAGE_MAX_LENGTH = 4000;
@@ -59,6 +60,7 @@ function playNewMessageSound() {
 export default function RequestChat({
   requestId,
   senderRole,
+  variant = "default",
 }: RequestChatProps) {
   const [messages, setMessages] = useState<RequestMessage[]>([]);
   const [message, setMessage] = useState("");
@@ -246,7 +248,9 @@ export default function RequestChat({
         <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
           <div className="min-w-0">
             <div className="flex min-w-0 flex-wrap items-center gap-2">
-              <h3 className="text-lg font-black text-white">Request Chat</h3>
+              <h3 className="text-lg font-black text-white">
+                {variant === "workspace" ? "Order conversation" : "Request Chat"}
+              </h3>
 
               {newMessageCount > 0 ? (
                 <button
@@ -260,7 +264,9 @@ export default function RequestChat({
             </div>
 
             <p className="mt-1 text-sm text-zinc-400">
-              Communicate directly about this file request.
+              {variant === "workspace"
+                ? "Messages stay attached to this order and its technical context."
+                : "Communicate directly about this file request."}
             </p>
           </div>
 
@@ -277,7 +283,11 @@ export default function RequestChat({
 
       <div
         ref={scrollAreaRef}
-        className="max-h-96 min-h-64 space-y-3 overflow-y-auto overflow-x-hidden bg-black/25 p-3 sm:p-5"
+        className={`space-y-3 overflow-y-auto overflow-x-hidden bg-black/25 p-3 sm:p-5 ${
+          variant === "workspace"
+            ? "min-h-80 max-h-[34rem] lg:min-h-[30rem]"
+            : "min-h-64 max-h-96"
+        }`}
       >
         {initialLoading ? (
           <div className="flex h-40 items-center justify-center text-sm text-zinc-500">

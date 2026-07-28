@@ -16,7 +16,6 @@ import {
   CheckCircle2,
   Clock3,
   Copy,
-  CreditCard,
   Database,
   Download,
   FileCode2,
@@ -27,7 +26,6 @@ import {
   PackageCheck,
   RefreshCcw,
   ShieldCheck,
-  Sparkles,
   Upload,
   User,
   Wrench,
@@ -143,6 +141,80 @@ function getStatusStyle(status: string | null) {
   }
 
   return "border-red-700/40 bg-red-950/30 text-red-300";
+}
+
+function getCustomerStatusCopy(
+  order: Order,
+  completedFileReady: boolean,
+  revisionRequested: boolean
+) {
+  if (revisionRequested) {
+    return {
+      title: "Revision waiting for review",
+      description:
+        "MG AutoTech has received your revision note and will publish the next file version here when it is ready.",
+      panelClass: "border-purple-700/35 bg-purple-950/20",
+      iconClass: "text-purple-300",
+    };
+  }
+
+  if (completedFileReady) {
+    return {
+      title: "Completed file ready",
+      description:
+        "Your delivered file is available in the Files & delivery panel through a secure temporary download link.",
+      panelClass: "border-emerald-700/35 bg-emerald-950/20",
+      iconClass: "text-emerald-300",
+    };
+  }
+
+  if (order.status === "customer_info_needed") {
+    return {
+      title: "Your response is needed",
+      description:
+        "MG AutoTech needs more information or another file. Use the conversation and upload areas below to respond.",
+      panelClass: "border-orange-700/40 bg-orange-950/20",
+      iconClass: "text-orange-300",
+    };
+  }
+
+  if (order.status === "in_progress") {
+    return {
+      title: "Work is in progress",
+      description:
+        "Your request is being processed. Status and delivery updates will appear here automatically.",
+      panelClass: "border-blue-700/35 bg-blue-950/20",
+      iconClass: "text-blue-300",
+    };
+  }
+
+  if (order.status === "file_check") {
+    return {
+      title: "File review in progress",
+      description:
+        "MG AutoTech is checking the original file, vehicle details and requested service before processing.",
+      panelClass: "border-amber-700/35 bg-amber-950/20",
+      iconClass: "text-amber-300",
+    };
+  }
+
+  if (order.status === "cancelled" || order.status === "canceled") {
+    return {
+      title: "Request closed",
+      description:
+        "This request is no longer in the active work queue. Contact MG AutoTech support if you need clarification or a new request.",
+      panelClass: "border-zinc-700/40 bg-zinc-900/35",
+      iconClass: "text-zinc-300",
+    };
+  }
+
+  return {
+    title: "Request received",
+    description:
+      "Your order is in the secure MG AutoTech workflow and is waiting for its next review step.",
+    panelClass: "border-red-800/40 bg-red-950/20",
+    iconClass: "text-red-300",
+  };
 }
 
 function formatDate(date: string | null) {
@@ -711,13 +783,14 @@ export default function OrderDetailPage() {
     ? order.estimated_delivery_note ||
       "Most standard file requests are usually handled quickly. Complex projects can take longer depending on file and vehicle data."
     : "A delivery estimate will appear here after MG AutoTech reviews your request details.";
+  const statusCopy = getCustomerStatusCopy(order, completedFileReady, revisionRequested);
 
   return (
     <main className="min-h-screen bg-[#050505] text-white">
       <div className="fixed inset-0 -z-10 bg-[radial-gradient(circle_at_18%_0%,rgba(160,18,28,0.25),transparent_34%),linear-gradient(135deg,#050505,#0c0c0e_48%,#170507)]" />
 
       <header className="sticky top-0 z-50 border-b border-white/10 bg-black/80 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-5">
+        <div className="mx-auto flex max-w-[1600px] items-center justify-between px-4 py-4 sm:px-6">
           <Link href="/dashboard" className="flex items-center gap-3">
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-red-800/50 bg-[#111] shadow-lg shadow-red-950/40">
               <Gauge className="h-7 w-7 text-red-600" />
@@ -727,7 +800,7 @@ export default function OrderDetailPage() {
               <div className="text-xl font-black tracking-wide">
                 MG <span className="text-red-600">AUTOTECH</span>
               </div>
-              <div className="text-xs text-zinc-400">Order Details</div>
+              <div className="text-xs text-zinc-400">Secure order workspace</div>
             </div>
           </Link>
 
@@ -752,23 +825,19 @@ export default function OrderDetailPage() {
         </div>
       </header>
 
-      <section className="mx-auto max-w-7xl px-4 py-8">
+      <section className="mx-auto max-w-[1600px] px-4 py-6 sm:px-6 lg:py-8">
         {message && (
           <div className="mb-6 rounded-2xl border border-red-800/50 bg-red-950/30 p-4 text-sm text-red-200">
             {message}
           </div>
         )}
 
-        <div className="mb-8 rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 shadow-2xl shadow-black/20">
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-            <div>
+        <section className="mb-4 overflow-hidden rounded-2xl border border-white/10 bg-[#0c0d0f]/95 shadow-2xl shadow-black/30">
+          <div className="flex flex-col gap-5 p-5 sm:p-6 lg:flex-row lg:items-center lg:justify-between">
+            <div className="min-w-0">
               <div className="mb-4 flex flex-wrap items-center gap-2">
-                <span
-                  className={`rounded-full border px-3 py-1 text-xs font-black ${getStatusStyle(
-                    order.status
-                  )}`}
-                >
-                  {formatStatus(order.status)}
+                <span className="text-xs font-black uppercase tracking-[0.18em] text-red-400">
+                  Vehicle file request
                 </span>
 
                 <span className="rounded-full border border-white/10 bg-black/30 px-3 py-1 text-xs font-bold text-zinc-400">
@@ -776,86 +845,81 @@ export default function OrderDetailPage() {
                 </span>
               </div>
 
-              <h1 className="text-4xl font-black md:text-5xl">
+              <h1 className="break-words text-3xl font-black sm:text-4xl">
                 {order.vehicle_brand || "Vehicle"}{" "}
                 <span className="text-red-600">{order.vehicle_model || ""}</span>
               </h1>
 
-              <p className="mt-3 max-w-3xl text-zinc-400">
-                {order.vehicle_generation || "Generation not set"} ·{" "}
-                {order.vehicle_engine || "Engine not set"} · Created{" "}
-                {formatDate(order.created_at)}
+              <p className="mt-3 max-w-3xl break-words text-sm leading-6 text-zinc-400">
+                {order.vehicle_generation || "Generation not set"} / {order.vehicle_engine || "Engine not set"}
               </p>
             </div>
 
-            <div className="flex flex-col gap-3 sm:flex-row lg:flex-col">
+            <div className="flex flex-col gap-3 sm:flex-row lg:shrink-0">
               <Link
                 href="/new-request"
-                className="rounded-xl border border-white/10 bg-white/[0.04] px-5 py-3 text-center text-sm font-black text-white transition hover:bg-white/10"
+                className="inline-flex min-h-11 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] px-5 py-3 text-center text-sm font-black text-white transition hover:bg-white/10"
               >
                 <Upload className="mr-2 inline h-4 w-4" />
                 New Request
               </Link>
 
               <button
+                type="button"
                 onClick={downloadCompletedFile}
                 disabled={!completedFileReady}
-                className="rounded-xl bg-emerald-600 px-5 py-3 text-sm font-black text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:bg-zinc-800 disabled:text-zinc-500"
+                className="inline-flex min-h-11 items-center justify-center rounded-xl bg-emerald-600 px-5 py-3 text-sm font-black text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:bg-zinc-800 disabled:text-zinc-500"
               >
                 <Download className="mr-2 inline h-4 w-4" />
-                Download Completed File
+                Download latest file
               </button>
             </div>
           </div>
+
+          <div className="grid border-t border-white/10 sm:grid-cols-2 xl:grid-cols-4">
+            <WorkspaceMetric label="Current status" value={formatStatus(order.status)} accentClass={getStatusStyle(order.status)} />
+            <WorkspaceMetric label="Requested service" value={order.service_type || "Not set"} />
+            <WorkspaceMetric label="Created" value={formatDate(order.created_at)} />
+            <WorkspaceMetric label="Credits used" value={String(Number(order.credits_required ?? 0))} />
+          </div>
+        </section>
+
+        <div className={`mb-6 flex items-start gap-4 rounded-2xl border p-4 sm:p-5 ${statusCopy.panelClass}`}>
+          {completedFileReady && !revisionRequested ? (
+            <CheckCircle2 className={`mt-0.5 h-6 w-6 shrink-0 ${statusCopy.iconClass}`} />
+          ) : revisionRequested ? (
+            <RefreshCcw className={`mt-0.5 h-6 w-6 shrink-0 ${statusCopy.iconClass}`} />
+          ) : (
+            <Clock3 className={`mt-0.5 h-6 w-6 shrink-0 ${statusCopy.iconClass}`} />
+          )}
+          <div className="min-w-0">
+            <h2 className="break-words text-lg font-black text-white">{statusCopy.title}</h2>
+            <p className="mt-1 break-words text-sm leading-6 text-zinc-300">{statusCopy.description}</p>
+          </div>
         </div>
 
-        {revisionRequested ? (
-          <div className="mb-8 rounded-[2rem] border border-purple-700/30 bg-purple-950/20 p-6">
-            <div className="flex items-start gap-4">
-              <RefreshCcw className="mt-1 h-8 w-8 shrink-0 text-purple-300" />
-              <div>
-                <h2 className="text-2xl font-black">Revision requested</h2>
-                <p className="mt-2 text-sm leading-6 text-zinc-300">
-                  Your revision request has been sent. MG AutoTech will review
-                  your note and prepare the next file version if required.
-                </p>
-              </div>
-            </div>
-          </div>
-        ) : completedFileReady ? (
-          <div className="mb-8 rounded-[2rem] border border-emerald-700/30 bg-emerald-950/20 p-6">
-            <div className="flex items-start gap-4">
-              <CheckCircle2 className="mt-1 h-8 w-8 shrink-0 text-emerald-400" />
-              <div>
-                <h2 className="text-2xl font-black">Your modified file is ready</h2>
-                <p className="mt-2 text-sm leading-6 text-zinc-300">
-                  The completed file has been uploaded by MG AutoTech and can be
-                  downloaded securely with a temporary download link.
-                </p>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="mb-8 rounded-[2rem] border border-amber-700/30 bg-amber-950/20 p-6">
-            <div className="flex items-start gap-4">
-              <Clock3 className="mt-1 h-8 w-8 shrink-0 text-amber-400" />
-              <div>
-                <h2 className="text-2xl font-black">File is not ready yet</h2>
-                <p className="mt-2 text-sm leading-6 text-zinc-300">
-                  Your request is currently being checked or processed. The download
-                  button will appear automatically once the completed file is uploaded.
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
+        <div className="grid gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(320px,0.72fr)] xl:items-start">
+          <div className="grid min-w-0 gap-6 lg:grid-cols-2">
+            <div className="min-w-0 space-y-6">
+              <RequestChat requestId={order.id} senderRole="customer" variant="workspace" />
 
-        <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
-          <div className="space-y-6">
-            <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6">
-              <h2 className="mb-5 text-2xl font-black">Vehicle & ECU Data</h2>
+              <CustomerDtcAnalysisPanel
+                analysis={dtcAnalysis}
+                loading={dtcLoading}
+                error={dtcError}
+                onRun={loadDtcAnalysis}
+              />
+            </div>
 
-              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <div className="min-w-0 space-y-6">
+            <section className="rounded-2xl border border-white/10 bg-white/[0.04] p-5 sm:p-6">
+              <div className="mb-5">
+                <div className="text-xs font-black uppercase tracking-[0.16em] text-red-400">Request specification</div>
+                <h2 className="mt-2 text-2xl font-black">Vehicle & technical data</h2>
+                <p className="mt-1 text-sm leading-6 text-zinc-500">The exact information attached to this order.</p>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2">
                 <Detail icon={<Gauge />} label="Engine" value={order.vehicle_engine} />
                 <Detail icon={<FileCode2 />} label="Generation" value={order.vehicle_generation} />
                 <Detail icon={<CalendarDays />} label="Year" value={order.vehicle_year} />
@@ -866,28 +930,27 @@ export default function OrderDetailPage() {
                 <Detail icon={<PackageCheck />} label="Master / Slave" value={order.master_slave} />
                 <Detail icon={<FileDown />} label="Uploaded File" value={order.uploaded_file_name} />
               </div>
-            </section>
 
-            <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6">
-              <h2 className="mb-5 text-2xl font-black">Requested Service</h2>
-              <div className="rounded-2xl bg-black/30 p-5 text-sm leading-7 text-zinc-300">
-                {order.service_type || "-"}
+              <div className="mt-5 border-t border-white/10 pt-5">
+                <div className="text-xs font-black uppercase tracking-[0.14em] text-zinc-500">Requested service</div>
+                <div className="mt-2 break-words text-base font-black text-white">{order.service_type || "-"}</div>
+              </div>
+
+              <div className="mt-5 border-t border-white/10 pt-5">
+                <div className="text-xs font-black uppercase tracking-[0.14em] text-zinc-500">Your notes</div>
+                <div className="mt-2 min-h-20 whitespace-pre-wrap break-words text-sm leading-7 text-zinc-300">
+                  {order.notes || "No additional customer notes were provided."}
+                </div>
               </div>
             </section>
 
-            <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6">
-              <h2 className="mb-5 text-2xl font-black">Customer Notes</h2>
-              <div className="min-h-32 whitespace-pre-wrap rounded-2xl bg-black/30 p-5 text-sm leading-7 text-zinc-300">
-                {order.notes || "-"}
-              </div>
-            </section>
-
-            <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6">
+            <section className="rounded-2xl border border-white/10 bg-white/[0.04] p-5 sm:p-6">
               <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                 <div>
-                  <h2 className="text-2xl font-black">Modified File Versions</h2>
+                  <div className="text-xs font-black uppercase tracking-[0.16em] text-red-400">Secure delivery</div>
+                  <h2 className="mt-2 text-2xl font-black">Files & delivery</h2>
                   <p className="mt-1 text-sm text-zinc-500">
-                    Download every delivered version for this order.
+                    Source receipt and every delivered version in one place.
                   </p>
                 </div>
 
@@ -896,12 +959,25 @@ export default function OrderDetailPage() {
                 </div>
               </div>
 
+              <div className="mb-4 flex min-w-0 items-center gap-3 border-y border-white/10 py-4">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/[0.05] text-zinc-300">
+                  <FileDown className="h-5 w-5" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="text-xs font-black uppercase tracking-[0.12em] text-zinc-500">Original file received</div>
+                  <div title={order.uploaded_file_name || undefined} className="mt-1 truncate text-sm font-black text-white">
+                    {order.uploaded_file_name || "Filename not available"}
+                  </div>
+                </div>
+                <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-400" />
+              </div>
+
               {modifiedVersions.length > 0 ? (
-                <div className="grid gap-3 md:grid-cols-2">
+                <div className="grid gap-3">
                   {modifiedVersions.map((version) => (
                     <div
                       key={version.id}
-                      className="rounded-2xl border border-emerald-700/30 bg-emerald-950/15 p-4"
+                      className="rounded-xl border border-emerald-700/30 bg-emerald-950/15 p-4"
                     >
                       <div className="mb-4 flex items-start justify-between gap-3">
                         <div className="min-w-0">
@@ -940,7 +1016,7 @@ export default function OrderDetailPage() {
             </section>
 
             {(order.customer_upload_enabled || (order.customer_uploads?.length ?? 0) > 0) && (
-              <section className="rounded-[2rem] border border-blue-700/30 bg-blue-950/15 p-6">
+              <section className="rounded-2xl border border-blue-700/30 bg-blue-950/15 p-5 sm:p-6">
                 <div className="flex items-start gap-4">
                   <Upload className="mt-1 h-8 w-8 shrink-0 text-blue-300" />
                   <div className="min-w-0 flex-1">
@@ -1009,36 +1085,23 @@ export default function OrderDetailPage() {
               </section>
             )}
 
-            <CustomerDtcAnalysisPanel
-              analysis={dtcAnalysis}
-              loading={dtcLoading}
-              error={dtcError}
-              onRun={loadDtcAnalysis}
-            />
-
-            <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6">
-              <RequestChat requestId={order.id} senderRole="customer" />
-            </section>
+            </div>
           </div>
 
-          <aside className="space-y-6">
-            <section className="rounded-[2rem] border border-red-900/40 bg-red-950/20 p-6">
-              <CreditCard className="mb-4 h-8 w-8 text-red-400" />
-              <div className="text-sm text-zinc-400">Credits Used</div>
-              <div className="mt-2 text-5xl font-black">
-                {Number(order.credits_required ?? 0)}
-              </div>
-            </section>
-
-            <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6">
-              <Clock3 className="mb-4 h-8 w-8 text-red-400" />
-              <div className="text-sm text-zinc-400">Estimated Delivery</div>
-              <div className="mt-2 max-w-full break-words text-3xl font-black">
+          <aside className="min-w-0 space-y-6">
+            <section className="rounded-2xl border border-red-900/40 bg-red-950/15 p-5 sm:p-6">
+              <div className="flex items-start gap-3">
+                <Clock3 className="mt-0.5 h-6 w-6 shrink-0 text-red-400" />
+                <div className="min-w-0">
+                  <div className="text-xs font-black uppercase tracking-[0.16em] text-red-300">Delivery outlook</div>
+                  <div className="mt-2 max-w-full break-words text-2xl font-black">
                 {deliveryEstimate.label}
+                  </div>
+                  <p className="mt-3 break-words text-sm leading-6 text-zinc-400">
+                    {deliveryEstimateDescription}
+                  </p>
+                </div>
               </div>
-              <p className="mt-3 text-sm leading-6 text-zinc-400">
-                {deliveryEstimateDescription}
-              </p>
             </section>
 
             <CustomerQueuePanel
@@ -1048,10 +1111,10 @@ export default function OrderDetailPage() {
               onRetry={() => { void retryQueueProjection(); }}
             />
 
-            <section className="overflow-hidden rounded-[2rem] border border-white/10 bg-white/[0.04] p-6">
+            <section className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] p-5 sm:p-6">
               <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <h2 className="text-2xl font-black">Order Timeline</h2>
+                  <h2 className="text-xl font-black">Order timeline</h2>
                   <p className="mt-1 text-sm text-zinc-500">
                     Live status overview for your request.
                   </p>
@@ -1067,37 +1130,13 @@ export default function OrderDetailPage() {
               </div>
 
               <ProgressTimeline order={order} />
-
-              <div className="mt-5 rounded-2xl border border-white/10 bg-black/30 p-4">
-                <div className="flex items-start gap-3">
-                  <Sparkles className="mt-0.5 h-5 w-5 shrink-0 text-red-400" />
-                  <div>
-                    <div className="text-sm font-black text-white">
-                      Current step
-                    </div>
-                    <p className="mt-1 text-sm leading-6 text-zinc-400">
-                      {completedFileReady
-                        ? revisionRequested
-                          ? "Your revision request is waiting for review."
-                          : "Your modified file is ready. You can download it securely from this page."
-                        : order.status === "customer_info_needed"
-                        ? "MG AutoTech needs additional information from you to continue this request."
-                        : order.status === "in_progress"
-                        ? "Your file is currently being processed."
-                        : order.status === "file_check"
-                        ? "Your original file and vehicle data are being checked."
-                        : "Your request has been received and is waiting for review."}
-                    </p>
-                  </div>
-                </div>
-              </div>
             </section>
 
-            <section className="rounded-[2rem] border border-purple-700/30 bg-purple-950/15 p-6">
+            <section className="rounded-2xl border border-purple-700/30 bg-purple-950/15 p-5 sm:p-6">
               <div className="mb-5 flex items-start gap-3">
                 <RefreshCcw className="mt-1 h-7 w-7 shrink-0 text-purple-300" />
                 <div>
-                  <h2 className="text-2xl font-black">Request Revision</h2>
+                  <h2 className="text-xl font-black">Request revision</h2>
                   <p className="mt-1 text-sm leading-6 text-zinc-400">
                     If the delivered file needs an adjustment, send a clear
                     revision note directly to MG AutoTech.
@@ -1142,14 +1181,23 @@ export default function OrderDetailPage() {
               )}
             </section>
 
-            <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6">
-              <h2 className="mb-5 text-2xl font-black">Support</h2>
+            <section className="rounded-2xl border border-white/10 bg-white/[0.04] p-5 sm:p-6">
+              <div className="text-xs font-black uppercase tracking-[0.16em] text-red-400">Order support</div>
+              <h2 className="mt-2 text-xl font-black">Need help with this request?</h2>
               <p className="text-sm leading-6 text-zinc-400">
                 For questions about this specific order, contact MG AutoTech and
                 include the order number.
               </p>
 
-              <div className="mt-5 rounded-2xl border border-white/10 bg-black/30 p-4">
+              <div className="mt-4 flex min-w-0 items-center gap-3 border-y border-white/10 py-4">
+                <User className="h-5 w-5 shrink-0 text-zinc-500" />
+                <div className="min-w-0">
+                  <div className="text-xs font-black uppercase tracking-[0.12em] text-zinc-600">Account email</div>
+                  <div className="mt-1 truncate text-sm font-bold text-zinc-300">{order.customer_email || "-"}</div>
+                </div>
+              </div>
+
+              <div className="mt-4">
                 <div className="flex items-start gap-3">
                   <Copy className="mt-1 h-5 w-5 shrink-0 text-red-300" />
                   <div className="min-w-0 flex-1">
@@ -1180,15 +1228,33 @@ export default function OrderDetailPage() {
                 Contact Support
               </a>
             </section>
-
-            <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6">
-              <h2 className="mb-5 text-2xl font-black">Customer</h2>
-              <Detail icon={<User />} label="Email" value={order.customer_email} />
-            </section>
           </aside>
         </div>
       </section>
     </main>
+  );
+}
+
+function WorkspaceMetric({
+  label,
+  value,
+  accentClass,
+}: {
+  label: string;
+  value: string;
+  accentClass?: string;
+}) {
+  return (
+    <div className="min-w-0 border-b border-white/10 p-4 sm:border-r xl:border-b-0 last:border-r-0">
+      <div className="text-xs font-black uppercase tracking-[0.14em] text-zinc-600">{label}</div>
+      {accentClass ? (
+        <div className={`mt-2 inline-flex max-w-full rounded-full border px-3 py-1 text-xs font-black ${accentClass}`}>
+          <span className="truncate">{value}</span>
+        </div>
+      ) : (
+        <div className="mt-2 truncate text-sm font-black text-zinc-200" title={value}>{value}</div>
+      )}
+    </div>
   );
 }
 
@@ -1220,12 +1286,12 @@ function CustomerQueuePanel({
   onRetry: () => void;
 }) {
   return (
-    <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6">
+    <section className="rounded-2xl border border-white/10 bg-white/[0.04] p-5 sm:p-6">
       <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
             <Clock3 className="h-7 w-7 text-red-400" />
-            <h2 className="break-words text-2xl font-black">Live Queue & ETA</h2>
+            <h2 className="break-words text-xl font-black">Live queue & ETA</h2>
           </div>
           <p className="mt-2 text-sm leading-6 text-zinc-400">
             Queue state uses the current request status and MG AutoTech work-order review fields.
@@ -1302,7 +1368,7 @@ function CustomerDtcAnalysisPanel({
   onRun: () => void;
 }) {
   return (
-    <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6">
+    <section className="rounded-2xl border border-white/10 bg-white/[0.04] p-5 sm:p-6">
       <div className="mb-5 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div className="flex min-w-0 items-start gap-3">
           <BrainCircuit className="mt-1 h-7 w-7 shrink-0 text-red-400" />
@@ -1445,15 +1511,15 @@ function Detail({
   value: string | number | null | undefined;
 }) {
   return (
-    <div className="flex gap-3 rounded-2xl bg-white/[0.04] p-4">
-      <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-red-950/40 text-red-400">
+    <div className="flex min-h-20 min-w-0 gap-3 rounded-xl border border-white/[0.08] bg-black/25 p-3">
+      <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-red-950/40 text-red-400 [&>svg]:h-4 [&>svg]:w-4">
         {icon}
       </div>
-      <div>
+      <div className="min-w-0">
         <div className="text-xs uppercase tracking-[0.14em] text-zinc-500">
           {label}
         </div>
-        <div className="mt-1 break-words font-bold text-white">{value || "-"}</div>
+        <div className="mt-1 break-words text-sm font-bold text-white">{value || "-"}</div>
       </div>
     </div>
   );
@@ -1505,16 +1571,16 @@ function TimelineItem({
 }) {
   return (
     <div
-      className={`flex items-start gap-3 rounded-2xl border p-4 transition ${
+      className={`flex items-start gap-3 border-b border-white/10 py-3 last:border-b-0 ${
         current
-          ? "border-red-800/50 bg-red-950/25"
+          ? "text-white"
           : done
-          ? "border-emerald-700/30 bg-emerald-950/10"
-          : "border-white/10 bg-black/30"
+          ? "text-zinc-200"
+          : "text-zinc-600"
       }`}
     >
       <div
-        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border ${
+        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border ${
           done
             ? "border-emerald-700/40 bg-emerald-950/40 text-emerald-300"
             : "border-zinc-700/40 bg-zinc-900/40 text-zinc-500"
@@ -1531,13 +1597,13 @@ function TimelineItem({
         <div
           className={
             done
-              ? "break-words font-black text-white"
-              : "break-words font-black text-zinc-500"
+              ? "break-words text-sm font-black text-white"
+              : "break-words text-sm font-black text-zinc-500"
           }
         >
           {label}
         </div>
-        <div className="mt-1 break-words text-sm leading-5 text-zinc-500">
+        <div className="mt-1 break-words text-xs leading-5 text-zinc-500">
           {description}
         </div>
       </div>

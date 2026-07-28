@@ -166,7 +166,7 @@ test("customer order detail shows delivery estimates only when explicitly set", 
   assert.match(page, /label: label \?\? "Estimate not set yet"/);
   assert.match(page, /deliveryEstimate\.isExplicit[\s\S]*order\.estimated_delivery_note/);
   assert.match(page, /A delivery estimate will appear here after MG AutoTech reviews your request details\./);
-  assert.match(page, /max-w-full break-words text-3xl font-black/);
+  assert.match(page, /max-w-full break-words text-2xl font-black/);
   assert.doesNotMatch(page, /labels\[value as DeliveryEstimate\] \?\? labels\.usually_30_min/);
   assert.doesNotMatch(page, /formatDeliveryEstimate\(order\.estimated_delivery_label\)/);
 });
@@ -183,7 +183,7 @@ test("customer order detail shows safe live queue and honest ETA states", () => 
   assert.match(page, /const \[queueProjection, setQueueProjection\]/);
   assert.match(page, /\/api\/requests\/\$\{orderId\}\/queue/);
   assert.match(page, /<CustomerQueuePanel/);
-  assert.match(queuePanel, /Live Queue & ETA/);
+  assert.match(queuePanel, /Live queue & ETA/);
   assert.match(queuePanel, /Loading live queue state/);
   assert.match(queuePanel, /Retry before treating queue state as unavailable/);
   assert.match(queuePanel, /Queue state is not available yet/);
@@ -216,6 +216,30 @@ test("customer order detail provides a safe support summary copy action", () => 
     helper,
     /modified_file_path|original_file_path|file_path|storage_path|signed_url|service_role|admin_notes|internal_notes|source_reference|confidence_score|raw|hex|hash/i
   );
+});
+
+test("customer order detail uses a responsive MG AutoTech work-order workspace", () => {
+  const page = readProjectFile("src", "app", "dashboard", "orders", "[id]", "page.tsx");
+  const chat = readProjectFile("src", "components", "RequestChat.tsx");
+
+  assert.match(page, /Secure order workspace/);
+  assert.match(page, /max-w-\[1600px\]/);
+  assert.match(page, /xl:grid-cols-\[minmax\(0,2fr\)_minmax\(320px,0\.72fr\)\]/);
+  assert.match(page, /lg:grid-cols-2/);
+  assert.match(page, /<RequestChat requestId=\{order\.id\} senderRole="customer" variant="workspace"/);
+  assert.match(page, /Request specification/);
+  assert.match(page, /Files & delivery/);
+  assert.match(page, /Original file received/);
+  assert.match(page, /Order timeline/);
+  assert.match(page, /Order support/);
+  assert.match(page, /Download latest file/);
+  assert.match(page, /uploadAdditionalFile\(file\)/);
+  assert.match(page, /downloadModifiedVersion\(version\.file_path\)/);
+
+  assert.match(chat, /variant\?: "default" \| "workspace"/);
+  assert.match(chat, /Order conversation/);
+  assert.match(chat, /min-h-80 max-h-\[34rem\] lg:min-h-\[30rem\]/);
+  assert.doesNotMatch(page, /carecufile|panel\.carecufile/i);
 });
 
 test("legacy admin order modal requires an explicit delivery estimate before saving", () => {

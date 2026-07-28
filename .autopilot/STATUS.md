@@ -2105,3 +2105,12 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 - Degisen dosyalar: `src/app/api/admin/access/route.ts`, `src/app/admin/page.tsx`, `src/lib/adminAccess.ts`, `src/lib/adminAccessClient.ts`, `src/lib/apiAuth.ts`, `tests/admin-access-client.test.ts`, `tests/admin-session-stability.test.ts`, `.autopilot/STATUS.md`.
 - Kontroller: targeted auth/session tests PASS (17/17); lint PASS; typecheck PASS; full tests PASS (412/412); production build PASS (244 static/dynamic route entries generated); payment schema-only PASS; production dependency audit PASS (0 vulnerabilities); diff check PASS.
 - Kapsam: Code-only auth reliability hotfix. SQL migration, permission genisletme, production data mutation, payment, email, vehicle veya AI davranis degisikligi yok.
+
+## 2026-07-28 Customer order workspace redesign
+
+- Gorev: Musteri siparis takip ekranini mevcut islevleri koruyarak daha yogun, taranabilir ve profesyonel bir MG AutoTech work-order calisma alanina donusturmek.
+- UI: Ustte durum, hizmet, tarih ve kredi metrikleri olan kompakt siparis ozeti; masaustunde conversation, request specification/files ve queue/timeline/support kolonlari; mobilde tek kolon akisi eklendi. Durum aciklamalari siparis asamasina gore netlestirildi, teknik alanlar ve timeline kisaltildi.
+- Davranis korumasi: Mesajlasma, ek dosya yukleme, teslim surumu indirme, revizyon, queue/ETA, DTC guidance ve guvenli support summary davranislari degismedi. Yeni API, SQL veya musteri veri alani eklenmedi; private storage path ekranda gosterilmedi.
+- Degisen dosyalar: `src/app/dashboard/orders/[id]/page.tsx`, `src/components/RequestChat.tsx`, `tests/ui-ux-safety.test.ts`, `.autopilot/STATUS.md`.
+- Kontroller: targeted UI safety PASS (94/94); lint PASS; typecheck PASS; full tests PASS (413/413); production build PASS (244 page); production dependency audit PASS (0 vulnerabilities); diff check PASS.
+- Kapsam: Code-only local patch. Deploy, push, SQL veya production data mutation yapilmadi.
