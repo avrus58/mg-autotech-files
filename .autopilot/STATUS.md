@@ -2146,3 +2146,13 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 - Degisen dosyalar: `src/app/admin/layout.tsx`, `src/app/admin/page.tsx`, `src/app/api/admin/notifications/route.ts`, `src/components/CustomerNotifications.tsx`, `src/components/admin/AdminNotificationCenter.tsx`, `src/components/admin/AdminNotificationDock.tsx`, `src/lib/adminNotificationCenter.ts`, `tests/admin-notification-center.test.ts`, `.autopilot/STATUS.md`.
 - Kontroller: targeted notification tests PASS (5/5); lint PASS; typecheck PASS; full tests PASS (427/427); production build PASS (245 page/route entries); production dependency audit PASS (0 vulnerabilities); diff check PASS.
 - Kapsam: Code-only local patch. Deploy, push, SQL, Supabase production, payment, email, vehicle, AI veya musteri verisi mutation'i yapilmadi.
+
+## 2026-07-28 Admin verified snapshot stability
+
+- Gorev: Admin paneli acik beklerken siparis, musteri ve kuyruk metriklerinin bir anda sifira dusup sonraki yenilemede geri gelmesini engellemek.
+- Kok neden: Browser auth/RLS token senkronizasyonu sirasinda Supabase sorgusu hata vermeden gecici bos veya ciddi eksik satir listesi dondurebiliyordu. Mevcut polling bunu gecerli yeni snapshot kabul edip `orders` ve `customers` state'ini ezdigi icin ekran kisa sure bos gorunuyordu.
+- Uygulama: Son dogrulanmis order/customer kimlik snapshot'i ref uzerinde korunur. Sonraki sonuc onceki snapshot'in %75'inden azini koruyorsa veya tamamen bossa state'e uygulanmaz; ekrandaki dogrulanmis veri kalir ve normal polling sonraki okumayi dener. Her load benzersiz sequence numarasi tasir; gec tamamlanan eski bir istek daha yeni sonucu ezemez. Yeni kayitlar ve normal tekil arsiv farklari kabul edilir.
+- Guvenlik/davranis: Yetki reddi, session dogrulamasi, RLS ve gercek query hata davranisi gevsetilmedi. Veri uydurulmaz veya cache'e kalici yazilmaz; yalniz son basarili browser snapshot'i gorsel olarak korunur. SQL ve production mutation yoktur.
+- Degisen dosyalar: `src/app/admin/page.tsx`, `src/lib/adminDataStability.ts`, `tests/admin-session-stability.test.ts`, `.autopilot/STATUS.md`.
+- Kontroller: targeted admin stability tests PASS (9/9); lint PASS; web typecheck PASS; full tests PASS (428/428); production build PASS (245 page/route entries); production dependency audit PASS (0 vulnerabilities); diff check PASS.
+- Kapsam: Code-only local stability patch. Deploy veya push yapilmadi.

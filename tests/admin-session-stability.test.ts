@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import test from "node:test";
+import { hasAdminSnapshotRegression } from "../src/lib/adminDataStability";
 
 function readProjectFile(...segments: string[]) {
   return readFileSync(resolve(process.cwd(), ...segments), "utf8");
@@ -56,6 +57,29 @@ test("admin polling avoids overlapping refreshes and pauses in hidden tabs", () 
   assert.match(adminPage, /adminRefreshInFlightRef\.current = false/);
   assert.match(adminPage, /document\.addEventListener\("visibilitychange", handleVisibilityChange\)/);
   assert.match(adminPage, /document\.removeEventListener\("visibilitychange", handleVisibilityChange\)/);
+});
+
+test("verified admin snapshots cannot be replaced by empty, partial or older refresh data", () => {
+  assert.equal(hasAdminSnapshotRegression([], []), false);
+  assert.equal(hasAdminSnapshotRegression(["order-1"], ["order-1"]), false);
+  assert.equal(hasAdminSnapshotRegression(["order-1"], ["order-2", "order-1"]), false);
+  assert.equal(hasAdminSnapshotRegression(["order-1", "order-2"], []), true);
+  assert.equal(hasAdminSnapshotRegression(["order-1", "order-2"], ["order-2"]), true);
+  assert.equal(
+    hasAdminSnapshotRegression(["order-1", "order-2", "order-3", "order-4"], ["order-1", "order-2", "order-3"]),
+    false,
+    "a single legitimate archived row must not freeze an otherwise healthy snapshot"
+  );
+
+  const adminPage = readProjectFile("src", "app", "admin", "page.tsx");
+  assert.match(adminPage, /const adminLoadSequenceRef = useRef\(0\)/);
+  assert.match(adminPage, /const loadSequence = \+\+adminLoadSequenceRef\.current/);
+  assert.match(adminPage, /loadSequence !== adminLoadSequenceRef\.current/);
+  assert.match(adminPage, /hasAdminSnapshotRegression\(\s*knownOrderIdsRef\.current/);
+  assert.match(adminPage, /hasAdminSnapshotRegression\(\s*knownCustomerIdsRef\.current/);
+  assert.match(adminPage, /previously verified admin snapshot/);
+  assert.doesNotMatch(adminPage, /setOrders\(\[\]\)/);
+  assert.doesNotMatch(adminPage, /setCustomers\(\[\]\)/);
 });
 
 test("admin authorization remains profile and permission based", () => {

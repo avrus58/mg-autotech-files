@@ -15,6 +15,7 @@ import {
   type StaffAccess,
 } from "@/lib/staffPermissions";
 import { countCompletedToday } from "@/lib/adminDashboardMetrics";
+import { hasAdminSnapshotRegression } from "@/lib/adminDataStability";
 import {
   ArrowLeft,
   BadgeEuro,
@@ -485,11 +486,14 @@ export default function AdminPage() {
   const [adminAccessDenied, setAdminAccessDenied] = useState(false);
 
   const knownOrderIdsRef = useRef<Set<string>>(new Set());
+  const knownCustomerIdsRef = useRef<Set<string>>(new Set());
   const initialOrdersLoadedRef = useRef(false);
   const hasLoadedAdminDataRef = useRef(false);
   const adminRefreshInFlightRef = useRef(false);
+  const adminLoadSequenceRef = useRef(0);
 
   async function loadAdminData(options?: { silent?: boolean }) {
+    const loadSequence = ++adminLoadSequenceRef.current;
     const silent = Boolean(options?.silent);
     if (silent) setAutoRefreshing(true);
     else setLoading(true);
@@ -497,6 +501,7 @@ export default function AdminPage() {
     setAdminLoadError("");
 
     const { session } = await getStableSession();
+    if (loadSequence !== adminLoadSequenceRef.current) return;
     const user = session?.user;
 
     if (!user) {
@@ -522,6 +527,7 @@ export default function AdminPage() {
     }
 
     const accessResolution = await resolveAdminAccess();
+    if (loadSequence !== adminLoadSequenceRef.current) return;
 
     if (accessResolution.state === "unavailable") {
       if (!silent || !hasLoadedAdminDataRef.current) {
@@ -547,6 +553,7 @@ export default function AdminPage() {
     setAdminAccessDenied(false);
 
     const { data, error } = await supabase.from("orders").select("*").order("created_at", { ascending: false });
+    if (loadSequence !== adminLoadSequenceRef.current) return;
     if (error) {
       if (!silent || !hasLoadedAdminDataRef.current) setAdminLoadError(ADMIN_LOAD_ERROR_MESSAGE);
       setLoading(false);
@@ -567,6 +574,7 @@ export default function AdminPage() {
         .from("profiles")
         .select(customerSelect)
         .order("created_at", { ascending: false });
+      if (loadSequence !== adminLoadSequenceRef.current) return;
       profileList = customerResult.data;
       customerError = customerResult.error;
     }
@@ -576,6 +584,7 @@ export default function AdminPage() {
         .from("profiles")
         .select(fallbackCustomerSelect)
         .order("created_at", { ascending: false });
+      if (loadSequence !== adminLoadSequenceRef.current) return;
 
       profileList = fallback.data
         ? fallback.data.map((customer) => ({
@@ -595,6 +604,23 @@ export default function AdminPage() {
 
     const nextOrders = (data ?? []) as Order[];
     const nextCustomers = (profileList ?? []) as unknown as Profile[];
+    const orderSnapshotRegressed = hasAdminSnapshotRegression(
+      knownOrderIdsRef.current,
+      nextOrders.map((order) => order.id)
+    );
+    const customerSnapshotRegressed = hasStaffPermission(access, "customers.view") && hasAdminSnapshotRegression(
+      knownCustomerIdsRef.current,
+      nextCustomers.map((customer) => customer.id)
+    );
+
+    if (hasLoadedAdminDataRef.current && (orderSnapshotRegressed || customerSnapshotRegressed)) {
+      // Browser RLS can briefly return an empty or partial successful result
+      // while its refreshed token is being synchronized. Never replace a
+      // previously verified admin snapshot with that transient regression.
+      setLoading(false);
+      setAutoRefreshing(false);
+      return;
+    }
 
     if (initialOrdersLoadedRef.current) {
       const previousIds = knownOrderIdsRef.current;
@@ -609,6 +635,7 @@ export default function AdminPage() {
     }
 
     knownOrderIdsRef.current = new Set(nextOrders.map((order) => order.id));
+    knownCustomerIdsRef.current = new Set(nextCustomers.map((customer) => customer.id));
     initialOrdersLoadedRef.current = true;
     hasLoadedAdminDataRef.current = true;
 
