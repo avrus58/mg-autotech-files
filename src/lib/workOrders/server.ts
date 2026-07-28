@@ -798,11 +798,26 @@ export async function updateAdminWorkOrder(requestId: string, actorUserId: strin
     newValue: patch,
     message: "Work order fields updated.",
   });
-  if (patch.admin_status && patch.admin_status !== current.admin_status) {
-    await sendWorkOrderStatusEmail({ requestId, status: patch.admin_status });
-  }
-  if (patch.delivery_status && patch.delivery_status !== current.delivery_status && patch.delivery_status === "delivered") {
-    await sendWorkOrderStatusEmail({ requestId, status: "delivered" });
+  const deliveryChangedToDelivered =
+    patch.delivery_status === "delivered" && patch.delivery_status !== current.delivery_status;
+  const adminStatusChanged =
+    Boolean(patch.admin_status) && patch.admin_status !== current.admin_status;
+  if (deliveryChangedToDelivered) {
+    await sendWorkOrderStatusEmail({
+      requestId,
+      previousStatus: current.delivery_status,
+      status: "delivered",
+      source: "delivery",
+      transitionId: crypto.randomUUID(),
+    });
+  } else if (adminStatusChanged && patch.admin_status) {
+    await sendWorkOrderStatusEmail({
+      requestId,
+      previousStatus: current.admin_status,
+      status: patch.admin_status,
+      source: "work_order",
+      transitionId: crypto.randomUUID(),
+    });
   }
   return next;
 }

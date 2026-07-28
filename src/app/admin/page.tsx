@@ -960,10 +960,15 @@ export default function AdminPage() {
     }
     setUpdatingId(orderId);
     setMessage("");
-    const { error } = await supabase.from("orders").update({ status: newStatus }).eq("id", orderId);
+    const response = await authenticatedFetch(`/api/admin/orders/${orderId}/status`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: newStatus }),
+    });
+    const payload = await response.json().catch(() => ({}));
     setUpdatingId(null);
-    if (error) {
-      setMessage(error.message);
+    if (!response.ok) {
+      setMessage(payload.error || "Order status could not be updated.");
       return;
     }
     setOrders((current) => current.map((order) => (order.id === orderId ? { ...order, status: newStatus } : order)));

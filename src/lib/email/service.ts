@@ -19,14 +19,17 @@ function getResendClient() {
 }
 
 export function isTransactionalEmailDryRun() {
-  return process.env.EMAIL_DRY_RUN === "true" || process.env.NODE_ENV === "test";
+  return process.env.EMAIL_DRY_RUN !== "false" || process.env.NODE_ENV === "test";
 }
 
 export function getTransactionalEmailProviderStatus() {
+  const dryRun = isTransactionalEmailDryRun();
+  const configured = Boolean(process.env.RESEND_API_KEY);
   return {
     provider: "resend",
-    configured: Boolean(process.env.RESEND_API_KEY),
-    dryRun: isTransactionalEmailDryRun(),
+    configured,
+    dryRun,
+    sendingEnabled: configured && !dryRun,
     fromEmail,
   };
 }
@@ -71,6 +74,16 @@ export async function sendTransactionalEmail(
       status: "skipped",
       provider: "disabled",
       skippedReason: "duplicate_idempotency_key",
+      idempotencyKey: input.idempotencyKey,
+    };
+  }
+
+  if (!log.ok && !isTransactionalEmailDryRun()) {
+    return {
+      ok: true,
+      status: "skipped",
+      provider: "disabled",
+      skippedReason: "event_log_unavailable",
       idempotencyKey: input.idempotencyKey,
     };
   }

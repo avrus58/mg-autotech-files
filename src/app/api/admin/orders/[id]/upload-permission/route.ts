@@ -15,6 +15,21 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
 
   const { id } = await context.params;
   const admin = getSupabaseAdmin();
+  const current = await admin
+    .from("orders")
+    .select("id, customer_upload_enabled")
+    .eq("id", id)
+    .maybeSingle();
+  if (current.error?.code === "42703") {
+    return NextResponse.json({ error: "Additional file upload migration has not been installed." }, { status: 409 });
+  }
+  if (current.error || !current.data) {
+    return NextResponse.json({ error: current.error?.message || "Order not found." }, { status: 404 });
+  }
+  if (Boolean(current.data.customer_upload_enabled) === parsed.data.enabled) {
+    return NextResponse.json({ order: current.data, changed: false });
+  }
+  const transitionId = crypto.randomUUID();
   const { data, error } = await admin
     .from("orders")
     .update({ customer_upload_enabled: parsed.data.enabled })
@@ -34,8 +49,13 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
       ? "Admin enabled a one-time customer upload for this request."
       : "Admin disabled customer upload for this request.",
     newValue: { customer_upload_enabled: parsed.data.enabled },
+    metadata: { transition_id: transitionId },
     mode: "best_effort",
   });
-  await sendUploadPermissionEmail({ requestId: id, enabled: parsed.data.enabled });
-  return NextResponse.json({ order: data });
+  await sendUploadPermissionEmail({
+    requestId: id,
+    enabled: parsed.data.enabled,
+    transitionId,
+  });
+  return NextResponse.json({ order: data, changed: true });
 }

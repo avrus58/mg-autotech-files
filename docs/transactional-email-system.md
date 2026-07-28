@@ -20,6 +20,10 @@ Environment:
 - `SUPPORT_EMAIL`: footer contact email.
 - `EMAIL_DRY_RUN=true`: logs/skips without sending real emails.
 
+Real sending is explicit opt-in: the application remains in dry-run unless
+`EMAIL_DRY_RUN=false` is configured. If the `email_events` log is unavailable,
+live sending fails closed so idempotency cannot be bypassed.
+
 If `RESEND_API_KEY` is missing, emails are skipped safely and the request/payment/work-order flow continues.
 
 ## Email Event Log
@@ -46,10 +50,12 @@ The table has RLS enabled. Staff with `orders.view` can read logs; staff with `o
 
 Customer/request:
 
+- `customer_welcome` after verified registration
 - `request_created`
 - `request_received`
 - `file_uploaded`
 - `additional_file_requested`
+- `additional_file_uploaded_customer`
 - `request_in_review`
 - `request_in_progress`
 - `request_waiting_for_customer`
@@ -77,11 +83,18 @@ Admin:
 - `new_request_admin_notification`
 - `payment_needs_review_admin_notification`
 - `customer_replied_admin_notification`
+- `revision_requested_admin_notification`
 - `file_uploaded_admin_notification`
 - `failed_email_admin_alert`
 - `admin_email_test`
 
 ## Integrated Triggers
+
+- Account lifecycle:
+  - Supabase Auth sends signup verification and password recovery links.
+  - A verified new account receives the MG AutoTech welcome email.
+  - Admin registration notification is sent only after authenticated verification.
+  - Signup confirmation can be resent from the registration success screen.
 
 - New request:
   - customer confirmation
@@ -110,7 +123,15 @@ Admin:
   - customer upload instruction email
 
 - Customer additional file uploaded:
+  - customer receipt confirmation
   - admin notification
+
+- Customer reply or revision request:
+  - admin notification with a bounded customer-safe message preview
+
+- Legacy admin order status and Work Order status:
+  - both use the same allowlisted lifecycle mapping
+  - repeated saves do not send duplicate mail
 
 - Delivery completed:
   - customer delivery/completed email
@@ -156,12 +177,30 @@ Shows:
 - dry-run status
 - template list
 - recent email event logs
+- sent/skipped/failed/pending health metrics
+- Supabase Auth mail routes
+- exact request/work-order lifecycle coverage
 
 Admin test email:
 
 - requires `orders.manage`
 - sends only to the authenticated admin's own email
 - respects `EMAIL_DRY_RUN`
+
+## Supabase Auth Email Templates
+
+Authentication links are issued by Supabase Auth, not by a public MG AutoTech
+relay endpoint. Repository-managed template sources are:
+
+- `docs/email-templates/confirm-signup.html`
+- `docs/email-templates/reset-password.html`
+- `docs/email-templates/password-changed.html`
+
+For hosted Supabase, copy these reviewed templates into Authentication > Email
+Templates. Keep `https://file.mgautotech.de/auth/callback` in the Auth redirect
+allowlist and configure production SMTP in Authentication > SMTP Settings.
+Enable the password-changed security notification at project level. Never put a
+service-role key or SMTP credential into a template.
 
 ## Smoke Test Checklist
 

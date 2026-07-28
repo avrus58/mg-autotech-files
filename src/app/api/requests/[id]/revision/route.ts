@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSupabaseServer } from "@/lib/supabaseServer";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
+import { sendRevisionRequestedAdminEmail } from "@/lib/email/events";
 import { recordWorkOrderEvent } from "@/lib/workOrders/server";
 
 export async function POST(
@@ -75,17 +76,23 @@ export async function POST(
     return NextResponse.json({ error: updateError.message }, { status: 500 });
   }
 
-  const { error: messageError } = await supabaseAdmin
+  const { data: messageData, error: messageError } = await supabaseAdmin
     .from("request_messages")
     .insert({
       request_id: id,
       sender_id: user.id,
       sender_role: "customer",
       message: `Revision request:\n\n${revisionNote}`,
-    });
+      visibility_status: "visible",
+    })
+    .select("id")
+    .single();
 
-  if (messageError) {
-    return NextResponse.json({ error: messageError.message }, { status: 500 });
+  if (messageError || !messageData) {
+    return NextResponse.json(
+      { error: messageError?.message || "Revision message could not be saved." },
+      { status: 500 }
+    );
   }
 
   await recordWorkOrderEvent({
@@ -96,6 +103,10 @@ export async function POST(
     customerVisible: true,
     newValue: { status: "revision", note_length: revisionNote.length },
     mode: "best_effort",
+  });
+  await sendRevisionRequestedAdminEmail({
+    requestId: id,
+    messageId: String(messageData.id),
   });
 
   return NextResponse.json({ success: true, status: "revision" });

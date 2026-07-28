@@ -1,10 +1,12 @@
 export const transactionalEmailEventTypes = [
   "customer_registered",
+  "customer_welcome",
   "request_created",
   "request_received",
   "file_uploaded",
   "additional_file_requested",
   "additional_file_uploaded",
+  "additional_file_uploaded_customer",
   "request_in_review",
   "request_in_progress",
   "request_waiting_for_customer",
@@ -25,6 +27,7 @@ export const transactionalEmailEventTypes = [
   "new_request_admin_notification",
   "payment_needs_review_admin_notification",
   "customer_replied_admin_notification",
+  "revision_requested_admin_notification",
   "file_uploaded_admin_notification",
   "failed_email_admin_alert",
   "admin_email_test",
@@ -45,6 +48,8 @@ export type TransactionalEmailContext = {
   dashboardUrl?: string | null;
   adminUrl?: string | null;
   messagePreview?: string | null;
+  statusLabel?: string | null;
+  actionRequired?: string | null;
   fileName?: string | null;
   credits?: number | null;
   amountLabel?: string | null;

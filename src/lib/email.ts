@@ -1,6 +1,5 @@
 import { Resend } from "resend";
-import { sendRequestCreatedNotifications, sendDeliveryCompletedEmail as sendDeliveryCompletedTransactionalEmail } from "@/lib/email/events";
-import { sendTransactionalEmail } from "@/lib/email/service";
+import { sendRequestCreatedNotifications } from "@/lib/email/events";
 
 function getResendClient() {
   const apiKey = process.env.RESEND_API_KEY;
@@ -57,49 +56,6 @@ export async function sendOrderReceivedEmail({
     service,
     credits,
   });
-}
-
-export async function sendNewCustomerNotificationEmail({
-  customerEmail,
-  fullName,
-  accountType,
-  companyName,
-  phone,
-  source,
-}: {
-  customerEmail: string;
-  fullName: string;
-  accountType: string;
-  companyName: string;
-  phone: string;
-  source: string;
-}) {
-  await sendTransactionalEmail({
-    eventType: "customer_registered",
-    to: adminNotificationEmail,
-    context: {
-      customerEmail,
-      customerName: fullName,
-      companyName,
-      customerId: accountType,
-      adminUrl: `${siteUrl}/admin`,
-    },
-    idempotencyKey: `customer_registered:${customerEmail.toLowerCase()}:${source || "email"}`,
-    metadata: {
-      source: "customer_registration",
-      signup_source: source || "email",
-      phone_present: Boolean(phone),
-    },
-  });
-}
-
-export async function sendOrderCompletedEmail({
-  orderId,
-}: {
-  orderId: string;
-  customerEmail: string;
-}) {
-  await sendDeliveryCompletedTransactionalEmail({ requestId: orderId });
 }
 
 export async function sendWidgetLifecycleEmail({

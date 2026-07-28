@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireApiUser } from "@/lib/apiAuth";
+import {
+  sendCustomerReplyAdminEmail,
+  sendCustomerVisibleMessageEmail,
+} from "@/lib/email/events";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { hasStaffPermission, isStaffMember } from "@/lib/staffPermissions";
 import {
@@ -108,6 +112,12 @@ export async function POST(
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  if (access.senderRole === "customer") {
+    await sendCustomerReplyAdminEmail({ requestId: id, messageId: String(data.id) });
+  } else {
+    await sendCustomerVisibleMessageEmail({ requestId: id, messageId: String(data.id) });
   }
 
   return NextResponse.json({ message: data });

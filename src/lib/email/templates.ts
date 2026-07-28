@@ -23,6 +23,7 @@ const customerDetails = (context: TransactionalEmailContext) =>
   detailTable([
     ["Referenz", context.requestNumber],
     ["Kunden-ID", context.customerId],
+    ["Status", context.statusLabel],
     ["Fahrzeug", context.vehicleSummary],
     ["Leistungen", context.serviceSummary],
   ]);
@@ -52,7 +53,7 @@ function customerTemplate(input: {
     preheader: input.intro,
     title: input.title,
     intro: input.intro,
-    content: `${input.details ?? customerDetails(input.context)}${input.extraText ? `<p style="margin:18px 0 0;color:#3f3f46;line-height:1.65;">${escapeHtml(safeText(input.extraText))}</p>` : ""}`,
+    content: `${input.details ?? customerDetails(input.context)}${input.context.actionRequired ? `<div style="margin:18px 0 0;border:1px solid #f2c6ca;background:#fff7f8;padding:14px 16px;color:#7f1d1d;font-size:13px;line-height:1.65;"><strong>Aktion erforderlich:</strong> ${escapeHtml(safeText(input.context.actionRequired))}</div>` : ""}${input.extraText ? `<p style="margin:18px 0 0;color:#3f3f46;line-height:1.65;">${escapeHtml(safeText(input.extraText))}</p>` : ""}`,
     ctaLabel: input.ctaLabel || "Dashboard öffnen",
     ctaUrl: input.ctaUrl || input.context.dashboardUrl,
   });
@@ -62,8 +63,11 @@ function customerTemplate(input: {
     "",
     input.intro,
     "",
-    `Referenz: ${safeText(input.context.requestNumber)}`,
+    input.context.requestNumber && input.context.requestNumber !== "-"
+      ? `Referenz: ${safeText(input.context.requestNumber)}`
+      : null,
     input.context.customerId ? `Kunden-ID: ${safeText(input.context.customerId)}` : null,
+    input.context.statusLabel ? `Status: ${safeText(input.context.statusLabel)}` : null,
     input.context.vehicleSummary ? `Fahrzeug: ${safeText(input.context.vehicleSummary)}` : null,
     input.context.serviceSummary ? `Leistungen: ${safeText(input.context.serviceSummary)}` : null,
     input.context.amountLabel ? `Betrag: ${safeText(input.context.amountLabel)}` : null,
@@ -74,6 +78,7 @@ function customerTemplate(input: {
     input.context.bankIban ? `IBAN: ${safeText(input.context.bankIban)}` : null,
     input.context.bankBic ? `BIC: ${safeText(input.context.bankBic)}` : null,
     input.extraText || null,
+    input.context.actionRequired ? `Aktion erforderlich: ${safeText(input.context.actionRequired)}` : null,
     "",
     input.context.dashboardUrl ? `Dashboard: ${input.context.dashboardUrl}` : null,
     `Support: ${safeText(input.context.supportEmail)}`,
@@ -128,6 +133,22 @@ const deTemplates: Record<TransactionalEmailEventType, TemplateDefinition> = {
         ["Firma", context.companyName],
         ["Kunden-ID", context.customerId],
       ]),
+    }),
+  },
+  customer_welcome: {
+    label: "Konto bestätigt",
+    audience: "customer",
+    render: (context) => customerTemplate({
+      subject: "MG AutoTech – Ihr Kundenkonto ist bereit",
+      title: "Willkommen bei MG AutoTech",
+      intro: "Ihre E-Mail-Adresse wurde bestätigt und Ihr sicheres Kundenkonto ist jetzt einsatzbereit.",
+      context,
+      details: detailTable([
+        ["Kunden-ID", context.customerId],
+        ["Konto", context.customerEmail],
+        ["Unternehmen", context.companyName],
+      ]),
+      extraText: "Im Kundenportal können Sie Credits verwalten, ECU-/TCU-Anfragen erstellen, Dateien sicher hochladen und den Bearbeitungsstatus verfolgen.",
     }),
   },
   request_created: {
@@ -192,6 +213,22 @@ const deTemplates: Record<TransactionalEmailEventType, TemplateDefinition> = {
         ["Kunde", context.customerEmail],
         ["Fahrzeug", context.vehicleSummary],
       ]),
+    }),
+  },
+  additional_file_uploaded_customer: {
+    label: "Zusätzliche Datei bestätigt",
+    audience: "customer",
+    render: (context) => customerTemplate({
+      subject: `MG AutoTech – Zusätzliche Datei zu Anfrage ${context.requestNumber} erhalten`,
+      title: "Zusätzliche Datei erhalten",
+      intro: "Ihre zusätzliche Datei wurde sicher übernommen und der Anfrage zugeordnet.",
+      context,
+      details: detailTable([
+        ["Referenz", context.requestNumber],
+        ["Datei", context.fileName],
+        ["Fahrzeug", context.vehicleSummary],
+      ]),
+      extraText: "Unser Team setzt die Bearbeitung mit den aktualisierten Informationen fort.",
     }),
   },
   request_in_review: {
@@ -398,6 +435,17 @@ const deTemplates: Record<TransactionalEmailEventType, TemplateDefinition> = {
       intro: "Im Kundenportal wurde eine neue Nachricht erstellt.",
       context,
       details: `${customerDetails(context)}${detailTable([["Nachricht", context.messagePreview]])}`,
+    }),
+  },
+  revision_requested_admin_notification: {
+    label: "Revision angefordert Admin",
+    audience: "admin",
+    render: (context) => adminTemplate({
+      subject: `Revision angefordert zu Anfrage ${context.requestNumber}`,
+      title: "Kunde hat eine Revision angefordert",
+      intro: "Für eine ausgelieferte Anfrage ist eine neue Revisionsanfrage eingegangen.",
+      context,
+      details: `${customerDetails(context)}${detailTable([["Kundennachricht", context.messagePreview]])}`,
     }),
   },
   file_uploaded_admin_notification: {

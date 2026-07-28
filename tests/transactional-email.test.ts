@@ -4,6 +4,13 @@ import test from "node:test";
 import { resolve } from "node:path";
 import { renderTransactionalEmailTemplate } from "../src/lib/email/templates";
 import { sendTransactionalEmail } from "../src/lib/email/service";
+import {
+  buildLifecycleIdempotencyKey,
+  resolveStatusEmail,
+  shouldSendStatusTransition,
+} from "../src/lib/email/lifecycle";
+import { sanitizeEmailEventMetadata } from "../src/lib/email/logging";
+import { safeEmailUrl } from "../src/lib/email/render";
 import { filterCustomerVisibleRequestMessages } from "../src/lib/workOrders/messageVisibility";
 
 test("transactional email migration is additive, logged and RLS protected", () => {
@@ -36,6 +43,44 @@ test("request-created template renders German HTML and text without internal fie
   assert.equal(serialized.includes("hex"), false);
 });
 
+test("verified registration renders customer welcome and separate admin notice", () => {
+  const customer = renderTransactionalEmailTemplate("customer_welcome", {
+    customerId: "MGA-10001",
+    customerEmail: "customer@example.com",
+    customerName: "Example Workshop",
+    dashboardUrl: "https://file.mgautotech.de/dashboard",
+  });
+  const admin = renderTransactionalEmailTemplate("customer_registered", {
+    customerId: "MGA-10001",
+    customerEmail: "customer@example.com",
+    customerName: "Example Workshop",
+    adminUrl: "https://file.mgautotech.de/admin?view=customers",
+  });
+  assert.match(customer.subject, /Kundenkonto ist bereit/);
+  assert.match(customer.text, /Credits verwalten/);
+  assert.match(admin.subject, /Neuer MG AutoTech Kunde/);
+  assert.doesNotMatch(customer.text, /Referenz: -/);
+});
+
+test("status lifecycle maps meaningful legacy and work-order transitions only", () => {
+  assert.equal(resolveStatusEmail("customer_info_needed", "legacy_order")?.eventType, "request_waiting_for_customer");
+  assert.equal(resolveStatusEmail("file_check", "legacy_order")?.eventType, "request_in_review");
+  assert.equal(resolveStatusEmail("waiting_for_file", "work_order")?.eventType, "additional_file_requested");
+  assert.equal(resolveStatusEmail("delivered", "delivery")?.eventType, "request_delivered");
+  assert.equal(resolveStatusEmail("quality_check", "work_order"), null);
+  assert.equal(resolveStatusEmail("payment_review", "work_order"), null);
+  assert.equal(shouldSendStatusTransition({ previousStatus: "in_progress", nextStatus: "in_progress", source: "legacy_order" }), false);
+  assert.equal(shouldSendStatusTransition({ previousStatus: "file_check", nextStatus: "customer_info_needed", source: "legacy_order" }), true);
+});
+
+test("lifecycle idempotency key is deterministic and bounded", () => {
+  const first = buildLifecycleIdempotencyKey(["request_in_review", "ORDER-ID", "transition 1"]);
+  const second = buildLifecycleIdempotencyKey(["request_in_review", "ORDER-ID", "transition 1"]);
+  assert.equal(first, second);
+  assert.equal(first, "request_in_review:order-id:transition_1");
+  assert.ok(first.length <= 240);
+});
+
 test("customer-visible message email includes only visible safe message content", () => {
   const rows = filterCustomerVisibleRequestMessages([
     { id: "visible", request_id: "r1", sender_id: "admin", sender_role: "admin", message: "Bitte laden Sie eine neue ORI-Datei hoch.", created_at: "2026-07-11T00:00:00.000Z", visibility_status: "visible" },
@@ -50,6 +95,45 @@ test("customer-visible message email includes only visible safe message content"
   assert.equal(rows.length, 1);
   assert.match(serialized, /Bitte laden Sie/);
   assert.equal(serialized.includes("Hidden smoke test note"), false);
+});
+
+test("additional-file customer receipt and revision admin templates remain portal-safe", () => {
+  const receipt = renderTransactionalEmailTemplate("additional_file_uploaded_customer", {
+    requestId: "r1",
+    fileName: "safe-original.bin",
+    dashboardUrl: "https://file.mgautotech.de/dashboard/orders/r1",
+  });
+  const revision = renderTransactionalEmailTemplate("revision_requested_admin_notification", {
+    requestId: "r1",
+    messagePreview: "Please review the requested revision.",
+    adminUrl: "https://file.mgautotech.de/admin/requests/r1",
+  });
+  assert.match(receipt.subject, /Zusätzliche Datei/);
+  assert.match(revision.subject, /Revision angefordert/);
+  const serialized = JSON.stringify({ receipt, revision });
+  assert.doesNotMatch(serialized, /storage_path|service_role|raw_binary|hex_preview|admin_note/i);
+});
+
+test("email CTA accepts only http and https destinations", () => {
+  assert.equal(safeEmailUrl("javascript:alert(1)"), null);
+  assert.equal(safeEmailUrl("file:///private/customer.bin"), null);
+  assert.equal(safeEmailUrl("https://file.mgautotech.de/dashboard"), "https://file.mgautotech.de/dashboard");
+});
+
+test("email event metadata sanitizer removes nested private fields", () => {
+  const sanitized = sanitizeEmailEventMetadata({
+    source: "request_status",
+    nested: {
+      storage_path: "customer/private/file.bin",
+      raw_binary: "secret",
+      safe_status: "completed",
+    },
+    list: [{ sample_id: "private" }, { status: "ok" }],
+  });
+  const serialized = JSON.stringify(sanitized);
+  assert.match(serialized, /request_status/);
+  assert.match(serialized, /safe_status/);
+  assert.doesNotMatch(serialized, /storage_path|raw_binary|sample_id|private\/file/i);
 });
 
 test("bank transfer email includes payment reference and configured bank fields only", () => {
@@ -89,6 +173,12 @@ test("dry-run provider does not send real email and keeps idempotency key", asyn
   }
 });
 
+test("real email delivery requires explicit dry-run opt-out", () => {
+  const service = readFileSync(resolve(process.cwd(), "src", "lib", "email", "service.ts"), "utf8");
+  assert.match(service, /process\.env\.EMAIL_DRY_RUN !== "false"/);
+  assert.match(service, /process\.env\.NODE_ENV === "test"/);
+});
+
 test("email service rejects invalid recipients before provider access", async () => {
   const result = await sendTransactionalEmail({
     eventType: "admin_email_test",
@@ -103,9 +193,41 @@ test("email service rejects invalid recipients before provider access", async ()
 test("admin email and bank transfer email APIs reject anonymous users", async () => {
   const adminEmail = await import("../src/app/api/admin/email/route");
   const bankEmail = await import("../src/app/api/email/bank-transfer/route");
+  const registrationEmail = await import("../src/app/api/email/new-customer/route");
+  const orderStatus = await import("../src/app/api/admin/orders/[id]/status/route");
   assert.equal((await adminEmail.GET(new Request("http://localhost/api/admin/email"))).status, 401);
   assert.equal((await adminEmail.POST(new Request("http://localhost/api/admin/email", { method: "POST", body: "{}" }))).status, 401);
   assert.equal((await bankEmail.POST(new Request("http://localhost/api/email/bank-transfer", { method: "POST", body: "{}" }))).status, 401);
+  assert.equal((await registrationEmail.POST(new Request("http://localhost/api/email/new-customer", { method: "POST", body: "{}" }))).status, 401);
+  assert.equal((await orderStatus.PATCH(
+    new Request("http://localhost/api/admin/orders/r1/status", { method: "PATCH", body: "{}" }),
+    { params: Promise.resolve({ id: "r1" }) }
+  )).status, 401);
+});
+
+test("registration notifications happen only after verified auth callback", () => {
+  const register = readFileSync(resolve(process.cwd(), "src", "app", "register", "page.tsx"), "utf8");
+  const callback = readFileSync(resolve(process.cwd(), "src", "app", "auth", "callback", "page.tsx"), "utf8");
+  const route = readFileSync(resolve(process.cwd(), "src", "app", "api", "email", "new-customer", "route.ts"), "utf8");
+  assert.match(register, /supabase\.auth\.signUp/);
+  assert.match(register, /supabase\.auth\.resend/);
+  assert.match(register, /verificationPending/);
+  assert.doesNotMatch(register, /customerEmail:\s*cleanEmail[\s\S]{0,180}\/api\/email\/new-customer/);
+  assert.match(callback, /authenticatedFetch\("\/api\/email\/new-customer"/);
+  assert.match(callback, /isRecentEmailConfirmation/);
+  assert.match(route, /requireApiUser/);
+  assert.match(route, /auth\.user\.email/);
+  assert.doesNotMatch(route, /customerEmail:\s*z\.string/);
+});
+
+test("Supabase Auth templates contain only approved hosted-auth placeholders", () => {
+  const confirm = readFileSync(resolve(process.cwd(), "docs", "email-templates", "confirm-signup.html"), "utf8");
+  const recovery = readFileSync(resolve(process.cwd(), "docs", "email-templates", "reset-password.html"), "utf8");
+  const changed = readFileSync(resolve(process.cwd(), "docs", "email-templates", "password-changed.html"), "utf8");
+  assert.match(confirm, /\{\{ \.ConfirmationURL \}\}/);
+  assert.match(recovery, /\{\{ \.ConfirmationURL \}\}/);
+  assert.match(changed, /\{\{ \.Email \}\}/);
+  assert.doesNotMatch(confirm + recovery + changed, /service_role|RESEND_API_KEY|SUPABASE_SERVICE/i);
 });
 
 test("work-order email integration never triggers customer email for internal notes", () => {
@@ -114,6 +236,34 @@ test("work-order email integration never triggers customer email for internal no
   assert.match(source, /customerVisible && linkedMessageId/);
   assert.match(source, /internal_note_added/);
   assert.doesNotMatch(source, /internal_note_added[\s\S]{0,160}sendCustomerVisibleMessageEmail/);
+});
+
+test("customer replies, revisions, additional uploads and legacy status changes use server lifecycle mail", () => {
+  const messages = readFileSync(resolve(process.cwd(), "src", "app", "api", "requests", "[id]", "messages", "route.ts"), "utf8");
+  const revision = readFileSync(resolve(process.cwd(), "src", "app", "api", "requests", "[id]", "revision", "route.ts"), "utf8");
+  const additional = readFileSync(resolve(process.cwd(), "src", "app", "api", "requests", "[id]", "additional-file", "finalize", "route.ts"), "utf8");
+  const adminPage = readFileSync(resolve(process.cwd(), "src", "app", "admin", "page.tsx"), "utf8");
+  const statusRoute = readFileSync(resolve(process.cwd(), "src", "app", "api", "admin", "orders", "[id]", "status", "route.ts"), "utf8");
+  assert.match(messages, /sendCustomerReplyAdminEmail/);
+  assert.match(messages, /sendCustomerVisibleMessageEmail/);
+  assert.match(revision, /sendRevisionRequestedAdminEmail/);
+  assert.match(additional, /sendAdditionalFileUploadedNotifications/);
+  assert.match(adminPage, /\/api\/admin\/orders\/\$\{orderId\}\/status/);
+  assert.doesNotMatch(adminPage, /from\("orders"\)\.update\(\{ status: newStatus \}\)/);
+  assert.match(statusRoute, /requireStaffPermission\(request, "orders\.manage"\)/);
+  assert.match(statusRoute, /sendLegacyOrderStatusEmail/);
+});
+
+test("admin email control center exposes health, auth flows and lifecycle coverage", () => {
+  const page = readFileSync(resolve(process.cwd(), "src", "app", "admin", "email", "page.tsx"), "utf8");
+  const route = readFileSync(resolve(process.cwd(), "src", "app", "api", "admin", "email", "route.ts"), "utf8");
+  assert.match(page, /Lifecycle coverage/);
+  assert.match(page, /Authentication mail/);
+  assert.match(page, /Dry-run \/ skipped/);
+  assert.match(route, /eventSummary/);
+  assert.match(route, /authFlows/);
+  assert.match(route, /listLifecycleStatusCoverage/);
+  assert.doesNotMatch(route, /RESEND_API_KEY\s*:/);
 });
 
 test("payment email integration keeps Stripe and bank logic intact without email PayPal templates", () => {

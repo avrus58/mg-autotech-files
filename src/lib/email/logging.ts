@@ -6,14 +6,29 @@ type EmailEventInsertResult =
   | { ok: true; id: null; duplicate: true }
   | { ok: false; id: null; duplicate: false; error: string };
 
-function sanitizeMetadata(value: Record<string, unknown> | undefined) {
+const forbiddenMetadataKey = /raw|hex|storage|path|provider|source_reference|sample|offset|admin_note|internal|binary/i;
+
+function sanitizeMetadataValue(value: unknown, depth = 0): unknown {
+  if (depth > 3) return "[depth_limited]";
+  if (typeof value === "string") return value.slice(0, 500);
+  if (typeof value === "number" || typeof value === "boolean" || value === null) return value;
+  if (Array.isArray(value)) {
+    return value.slice(0, 25).map((item) => sanitizeMetadataValue(item, depth + 1));
+  }
+  if (typeof value === "object" && value) {
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>)
+        .filter(([key]) => !forbiddenMetadataKey.test(key))
+        .slice(0, 40)
+        .map(([key, item]) => [key, sanitizeMetadataValue(item, depth + 1)])
+    );
+  }
+  return String(value).slice(0, 200);
+}
+
+export function sanitizeEmailEventMetadata(value: Record<string, unknown> | undefined) {
   if (!value) return {};
-  const forbidden = /raw|hex|storage|path|provider|source_reference|sample|offset|admin_note|internal|binary/i;
-  return Object.fromEntries(
-    Object.entries(value)
-      .filter(([key]) => !forbidden.test(key))
-      .map(([key, item]) => [key, typeof item === "string" ? item.slice(0, 500) : item])
-  );
+  return sanitizeMetadataValue(value) as Record<string, unknown>;
 }
 
 export async function createEmailEventLog(input: EmailEventLogInput): Promise<EmailEventInsertResult> {
@@ -32,7 +47,7 @@ export async function createEmailEventLog(input: EmailEventLogInput): Promise<Em
         provider: input.provider,
         provider_message_id: input.providerMessageId ?? null,
         error_message: input.errorMessage ?? null,
-        metadata: sanitizeMetadata(input.metadata),
+        metadata: sanitizeEmailEventMetadata(input.metadata),
       })
       .select("id")
       .single();

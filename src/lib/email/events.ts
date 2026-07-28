@@ -1,6 +1,12 @@
 import { getAdminNotificationEmail, getSiteUrl, formatRequestReference } from "@/lib/email/render";
 import { sendTransactionalEmail } from "@/lib/email/service";
-import type { TransactionalEmailContext, TransactionalEmailEventType } from "@/lib/email/types";
+import {
+  buildLifecycleIdempotencyKey,
+  resolveStatusEmail,
+  shouldSendStatusTransition,
+  type EmailStatusSource,
+} from "@/lib/email/lifecycle";
+import type { TransactionalEmailContext } from "@/lib/email/types";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { filterCustomerVisibleRequestMessages, type RequestMessageVisibilityRow } from "@/lib/workOrders/messageVisibility";
 
@@ -76,6 +82,52 @@ async function loadOrderContext(requestId: string) {
   return { order, profile, context, customerEmail };
 }
 
+export async function sendRegistrationConfirmedNotifications(input: {
+  userId: string;
+  customerEmail: string;
+  source?: string | null;
+}) {
+  try {
+    const admin = getSupabaseAdmin();
+    const profileResult = await admin
+      .from("profiles")
+      .select("id,email,customer_id,full_name,company_name")
+      .eq("id", input.userId)
+      .maybeSingle();
+    const profile = profileResult.data as ProfileEmailRow | null;
+    const customerEmail = input.customerEmail || profile?.email || "";
+    const context: TransactionalEmailContext = {
+      customerEmail,
+      customerId: profile?.customer_id ?? null,
+      customerName: profile?.full_name || profile?.company_name || null,
+      companyName: profile?.company_name ?? null,
+      dashboardUrl: `${getSiteUrl()}/dashboard`,
+      adminUrl: `${getSiteUrl()}/admin?view=customers`,
+    };
+    const source = clean(input.source) || "email";
+
+    await Promise.allSettled([
+      sendTransactionalEmail({
+        eventType: "customer_welcome",
+        to: customerEmail,
+        context,
+        idempotencyKey: `customer_welcome:${input.userId}`,
+        recipientUserId: input.userId,
+        metadata: { source: "verified_registration", signup_source: source },
+      }),
+      sendTransactionalEmail({
+        eventType: "customer_registered",
+        to: getAdminNotificationEmail(),
+        context,
+        idempotencyKey: `customer_registered:${input.userId}`,
+        metadata: { source: "verified_registration", signup_source: source },
+      }),
+    ]);
+  } catch {
+    // Registration must remain successful if an email provider is unavailable.
+  }
+}
+
 export async function sendRequestCreatedNotifications(input: {
   requestId: string;
   customerEmail?: string | null;
@@ -98,66 +150,83 @@ export async function sendRequestCreatedNotifications(input: {
     const context = loaded?.context ?? fallbackContext;
     const recipient = loaded?.customerEmail || input.customerEmail || "";
 
-    await sendTransactionalEmail({
-      eventType: "request_created",
-      to: recipient,
-      context,
-      idempotencyKey: `request_created:${input.requestId}:${recipient}`,
-      recipientUserId: loaded?.order.customer_id ?? null,
-      relatedOrderId: input.requestId,
-      relatedRequestId: input.requestId,
-      metadata: { source: "request_creation" },
-    });
-
-    await sendTransactionalEmail({
-      eventType: "new_request_admin_notification",
-      to: getAdminNotificationEmail(),
-      context,
-      idempotencyKey: `admin_new_request:${input.requestId}`,
-      relatedOrderId: input.requestId,
-      relatedRequestId: input.requestId,
-      metadata: { source: "request_creation" },
-    });
+    await Promise.allSettled([
+      sendTransactionalEmail({
+        eventType: "request_created",
+        to: recipient,
+        context,
+        idempotencyKey: `request_created:${input.requestId}:${recipient}`,
+        recipientUserId: loaded?.order.customer_id ?? null,
+        relatedOrderId: input.requestId,
+        relatedRequestId: input.requestId,
+        metadata: { source: "request_creation" },
+      }),
+      sendTransactionalEmail({
+        eventType: "new_request_admin_notification",
+        to: getAdminNotificationEmail(),
+        context,
+        idempotencyKey: `admin_new_request:${input.requestId}`,
+        relatedOrderId: input.requestId,
+        relatedRequestId: input.requestId,
+        metadata: { source: "request_creation" },
+      }),
+    ]);
   } catch {
     // Transactional email must not block request creation.
   }
 }
 
-function workOrderStatusEvent(status: string): TransactionalEmailEventType | null {
-  const map: Record<string, TransactionalEmailEventType> = {
-    file_received: "file_uploaded",
-    in_analysis: "request_in_review",
-    in_progress: "request_in_progress",
-    waiting_for_customer: "request_waiting_for_customer",
-    delivered: "request_delivered",
-    completed: "request_completed",
-    cancelled: "request_cancelled",
-  };
-  return map[status] ?? null;
-}
-
 export async function sendWorkOrderStatusEmail(input: {
   requestId: string;
   status: string;
+  previousStatus?: string | null;
+  source?: EmailStatusSource;
+  transitionId?: string | null;
 }) {
   try {
-    const eventType = workOrderStatusEvent(input.status);
-    if (!eventType) return;
+    const source = input.source ?? "work_order";
+    if (!shouldSendStatusTransition({
+      previousStatus: input.previousStatus,
+      nextStatus: input.status,
+      source,
+    })) return;
+    const definition = resolveStatusEmail(input.status, source);
+    if (!definition) return;
     const loaded = await loadOrderContext(input.requestId);
     if (!loaded?.customerEmail) return;
     await sendTransactionalEmail({
-      eventType,
+      eventType: definition.eventType,
       to: loaded.customerEmail,
-      context: loaded.context,
-      idempotencyKey: `${eventType}:${input.requestId}:${input.status}`,
+      context: {
+        ...loaded.context,
+        statusLabel: definition.statusLabel,
+        actionRequired: definition.actionRequired ?? null,
+      },
+      idempotencyKey: buildLifecycleIdempotencyKey([
+        definition.eventType,
+        input.requestId,
+        input.transitionId || input.status,
+      ]),
       recipientUserId: loaded.order.customer_id,
       relatedOrderId: input.requestId,
       relatedRequestId: input.requestId,
-      metadata: { source: "work_order_status", status: input.status },
+      metadata: { source: `${source}_status`, status: input.status },
     });
   } catch {
     // Best-effort notification.
   }
+}
+
+export async function sendLegacyOrderStatusEmail(input: {
+  requestId: string;
+  previousStatus?: string | null;
+  status: string;
+  transitionId?: string | null;
+}) {
+  return sendWorkOrderStatusEmail({
+    ...input,
+    source: "legacy_order",
+  });
 }
 
 export async function sendCustomerVisibleMessageEmail(input: {
@@ -176,7 +245,7 @@ export async function sendCustomerVisibleMessageEmail(input: {
       .maybeSingle();
     if (messageResult.error || !messageResult.data) return;
     const [visible] = filterCustomerVisibleRequestMessages([messageResult.data as RequestMessageVisibilityRow]);
-    if (!visible) return;
+    if (!visible || visible.sender_role === "customer") return;
     await sendTransactionalEmail({
       eventType: "customer_visible_message_added",
       to: loaded.customerEmail,
@@ -195,9 +264,80 @@ export async function sendCustomerVisibleMessageEmail(input: {
   }
 }
 
+export async function sendCustomerReplyAdminEmail(input: {
+  requestId: string;
+  messageId: string;
+}) {
+  try {
+    const loaded = await loadOrderContext(input.requestId);
+    if (!loaded) return;
+    const admin = getSupabaseAdmin();
+    const messageResult = await admin
+      .from("request_messages")
+      .select("id,request_id,sender_id,sender_role,message,created_at,visibility_status")
+      .eq("id", input.messageId)
+      .eq("request_id", input.requestId)
+      .maybeSingle();
+    if (messageResult.error || !messageResult.data) return;
+    const [visible] = filterCustomerVisibleRequestMessages([messageResult.data as RequestMessageVisibilityRow]);
+    if (!visible || visible.sender_role !== "customer") return;
+
+    await sendTransactionalEmail({
+      eventType: "customer_replied_admin_notification",
+      to: getAdminNotificationEmail(),
+      context: {
+        ...loaded.context,
+        messagePreview: String(visible.message ?? "").slice(0, 600),
+      },
+      idempotencyKey: `admin_customer_reply:${input.requestId}:${input.messageId}`,
+      relatedOrderId: input.requestId,
+      relatedRequestId: input.requestId,
+      metadata: { source: "customer_message", message_id: input.messageId },
+    });
+  } catch {
+    // Customer messaging must not fail because of an admin notification.
+  }
+}
+
+export async function sendRevisionRequestedAdminEmail(input: {
+  requestId: string;
+  messageId: string;
+}) {
+  try {
+    const loaded = await loadOrderContext(input.requestId);
+    if (!loaded) return;
+    const admin = getSupabaseAdmin();
+    const messageResult = await admin
+      .from("request_messages")
+      .select("id,request_id,sender_id,sender_role,message,created_at,visibility_status")
+      .eq("id", input.messageId)
+      .eq("request_id", input.requestId)
+      .maybeSingle();
+    if (messageResult.error || !messageResult.data) return;
+    const [visible] = filterCustomerVisibleRequestMessages([messageResult.data as RequestMessageVisibilityRow]);
+    if (!visible || visible.sender_role !== "customer") return;
+
+    await sendTransactionalEmail({
+      eventType: "revision_requested_admin_notification",
+      to: getAdminNotificationEmail(),
+      context: {
+        ...loaded.context,
+        messagePreview: String(visible.message ?? "").slice(0, 600),
+      },
+      idempotencyKey: `admin_revision_requested:${input.requestId}:${input.messageId}`,
+      relatedOrderId: input.requestId,
+      relatedRequestId: input.requestId,
+      metadata: { source: "customer_revision", message_id: input.messageId },
+    });
+  } catch {
+    // Revision creation must not fail because of an email provider.
+  }
+}
+
 export async function sendUploadPermissionEmail(input: {
   requestId: string;
   enabled: boolean;
+  transitionId?: string | null;
 }) {
   try {
     if (!input.enabled) return;
@@ -207,7 +347,11 @@ export async function sendUploadPermissionEmail(input: {
       eventType: "upload_permission_enabled",
       to: loaded.customerEmail,
       context: loaded.context,
-      idempotencyKey: `upload_permission_enabled:${input.requestId}:${Date.now()}`,
+      idempotencyKey: buildLifecycleIdempotencyKey([
+        "upload_permission_enabled",
+        input.requestId,
+        input.transitionId || "enabled",
+      ]),
       recipientUserId: loaded.order.customer_id,
       relatedOrderId: input.requestId,
       relatedRequestId: input.requestId,
@@ -221,6 +365,7 @@ export async function sendUploadPermissionEmail(input: {
 export async function sendAdditionalFileUploadedAdminEmail(input: {
   requestId: string;
   fileName: string;
+  uploadId?: string | null;
 }) {
   try {
     const loaded = await loadOrderContext(input.requestId);
@@ -229,13 +374,39 @@ export async function sendAdditionalFileUploadedAdminEmail(input: {
       eventType: "additional_file_uploaded",
       to: getAdminNotificationEmail(),
       context: { ...loaded.context, fileName: input.fileName },
-      idempotencyKey: `admin_additional_file_uploaded:${input.requestId}:${input.fileName}`,
+      idempotencyKey: `admin_additional_file_uploaded:${input.requestId}:${input.uploadId || input.fileName}`,
       relatedOrderId: input.requestId,
       relatedRequestId: input.requestId,
       metadata: { source: "additional_file_uploaded" },
     });
   } catch {
     // Best-effort notification.
+  }
+}
+
+export async function sendAdditionalFileUploadedNotifications(input: {
+  requestId: string;
+  fileName: string;
+  uploadId?: string | null;
+}) {
+  try {
+    const loaded = await loadOrderContext(input.requestId);
+    if (!loaded) return;
+    await Promise.allSettled([
+      sendAdditionalFileUploadedAdminEmail(input),
+      sendTransactionalEmail({
+        eventType: "additional_file_uploaded_customer",
+        to: loaded.customerEmail,
+        context: { ...loaded.context, fileName: input.fileName },
+        idempotencyKey: `customer_additional_file_uploaded:${input.requestId}:${input.uploadId || input.fileName}`,
+        recipientUserId: loaded.order.customer_id,
+        relatedOrderId: input.requestId,
+        relatedRequestId: input.requestId,
+        metadata: { source: "additional_file_uploaded" },
+      }),
+    ]);
+  } catch {
+    // Upload finalization must not fail because of email notifications.
   }
 }
 

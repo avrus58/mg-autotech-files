@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Loader2, ShieldCheck, Upload } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
+import { authenticatedFetch } from "@/lib/authGuards";
 
 function safeNextPath(value: string | null) {
   return value?.startsWith("/") && !value.startsWith("//") ? value : "/dashboard";
@@ -41,35 +42,27 @@ export default function AuthCallbackPage() {
         session = data.session;
       }
 
-      const oauthSignupProvider = window.sessionStorage.getItem(
-        "mg_register_oauth_provider"
-      );
+      const oauthSignupProvider = window.sessionStorage.getItem("mg_register_oauth_provider");
+      if (oauthSignupProvider) window.sessionStorage.removeItem("mg_register_oauth_provider");
 
-      if (oauthSignupProvider && session?.user) {
-        window.sessionStorage.removeItem("mg_register_oauth_provider");
-
+      if (session?.user) {
         const createdAt = new Date(session.user.created_at).getTime();
         const isRecentSignup = Date.now() - createdAt < 15 * 60 * 1000;
-        const metadata = session.user.user_metadata || {};
+        const confirmedAt = new Date(
+          session.user.email_confirmed_at || session.user.confirmed_at || 0
+        ).getTime();
+        const isRecentEmailConfirmation =
+          confirmedAt > 0 && Date.now() - confirmedAt < 15 * 60 * 1000;
 
-        if (isRecentSignup) {
+        if (isRecentSignup || isRecentEmailConfirmation) {
           try {
-            await fetch("/api/email/new-customer", {
+            await authenticatedFetch("/api/email/new-customer", {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
               },
               body: JSON.stringify({
-                customerEmail: session.user.email || "",
-                fullName:
-                  metadata.full_name ||
-                  metadata.name ||
-                  metadata.user_name ||
-                  "",
-                accountType: "google",
-                companyName: metadata.company_name || "",
-                phone: metadata.phone || "",
-                source: oauthSignupProvider,
+                source: oauthSignupProvider === "google" ? "google" : "email",
               }),
             });
           } catch {

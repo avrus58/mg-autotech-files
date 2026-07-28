@@ -2071,3 +2071,17 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 - Degisen dosyalar: `src/app/admin/page.tsx`, `tests/ui-ux-safety.test.ts`, `.autopilot/STATUS.md`.
 - Kontroller: targeted UI safety PASS (93/93); lint PASS; typecheck PASS; full tests PASS (394/394); production build PASS (243 static page); payment schema-only PASS; production dependency audit PASS (0 vulnerabilities); diff check PASS.
 - Kapsam: Local code-only patch. Deploy veya push yapilmadi.
+
+## 2026-07-28 Transactional email lifecycle hardening
+
+- Gorev: MG AutoTech kayit, talep, is emri, musteri mesaji ve teslim e-posta akislarini merkezi, idempotent ve musteri-guvenli bir yasam dongusunde birlestirmek.
+- Auth: Supabase Auth signup verification ve password recovery akislarinin mevcut redirect sozlesmesi korundu; verification resend eklendi. Dogrulanmis yeni hesap icin musteri welcome ve ayri admin registration bildirimi yalnizca authenticated server endpointinden uretilir. Repository-managed confirm-signup, reset-password ve password-changed HTML template kaynaklari eklendi.
+- Talep/is emri: Yeni talep, legacy admin status, Work Order status, customer-info-needed, in-review, in-progress, completed, delivered ve cancelled gecisleri merkezi allowlist mapping kullanir. Tekrarlanan save/no-op gecisleri mail uretmez. Admin ana sayfasindaki status degisikligi dogrudan DB update yerine staff-permission, audit ve concurrency kontrolu olan server route'a tasindi.
+- Mesaj/dosya: Customer reply ve revision admin'e; gorunur admin mesaji musteriye; ek dosya upload'i hem admin hem musteriye bildirim uretir. Internal note, hidden message ve customer'in kendi mesaji musteri notification'i uretmez.
+- Guvenlik: `/api/email/new-customer` public relay olmaktan cikarildi; recipient ve profil authenticated server identity'den gelir. Email metadata nested olarak sanitize edilir, CTA yalniz HTTP/HTTPS kabul eder. Canli gonderim explicit opt-in'dir: `EMAIL_DRY_RUN=false` olmadikca dry-run. Canli modda email event log kullanilamiyorsa idempotency fail-closed davranir.
+- Admin UI: `/admin/email` provider/sending durumu, sent/skipped/failed/pending metrikleri, Auth mail akislarini, lifecycle coverage'i, template envanterini ve Berlin zamanli recent event tablosunu gosterir.
+- SQL: Yeni migration gerekmedi; mevcut additive `email_events` tablosu ve RLS sozlesmesi yeniden kullanildi. Production Supabase, Resend veya Vercel'e baglanilmadi; gercek e-posta gonderilmedi.
+- Degisen alanlar: `src/lib/email/**`, auth register/callback, admin email/status UI/API, request message/revision/additional-file route'lari, Work Order server integration, email template docs ve transactional email testleri.
+- Kontroller: targeted transactional email tests PASS (20/20); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (405/405); `npm run build` PASS (243 static page); `node scripts/check-payment-env.js --schema-only` PASS; `node scripts/check-i18n-seo.mjs` PASS (12 locale, 16 source file); `npm audit --omit=dev --audit-level=high` PASS (0 vulnerabilities); `git diff --check` PASS.
+- Gorsel QA: `/register` 1440x900 ve 390x844 viewportlarda kontrol edildi; horizontal overflow veya metin tasmasi yok. Chrome'daki tek hydration warning tarayici tema eklentisinin `<html>` attribute enjeksiyonundan kaynaklandi, uygulama diff'iyle ilgili degil.
+- Kapsam: Local code-only patch. Deploy, push, environment mutation veya real email yok.

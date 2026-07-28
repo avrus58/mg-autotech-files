@@ -10,6 +10,7 @@ import {
 } from "react";
 import { useRouter } from "next/navigation";
 import {
+  authenticatedFetch,
   getAuthenticatedHome,
   getAuthRedirect,
   signOutIfEmailUnverified,
@@ -31,6 +32,7 @@ import {
   Upload,
   User,
   Zap,
+  RefreshCw,
 } from "lucide-react";
 
 type AccountType = "private" | "company";
@@ -81,8 +83,10 @@ export default function RegisterPage() {
   const [step, setStep] = useState<StepId>(1);
   const [message, setMessage] = useState("");
   const [success, setSuccess] = useState(false);
+  const [verificationPending, setVerificationPending] = useState(false);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [resendingVerification, setResendingVerification] = useState(false);
   const [checkingAuth, setCheckingAuth] = useState(true);
 
   useEffect(() => {
@@ -175,6 +179,7 @@ export default function RegisterPage() {
     setLoading(true);
     setMessage("");
     setSuccess(false);
+    setVerificationPending(false);
 
     if (!validateAccountStep()) {
       setStep(1);
@@ -188,7 +193,7 @@ export default function RegisterPage() {
       return;
     }
 
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email: cleanEmail,
       password,
       options: {
@@ -217,32 +222,45 @@ export default function RegisterPage() {
       return;
     }
 
-    try {
-      await fetch("/api/email/new-customer", {
+    const isAlreadyVerified = Boolean(data.session && data.user?.email_confirmed_at);
+    if (isAlreadyVerified) {
+      void authenticatedFetch("/api/email/new-customer", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          customerEmail: cleanEmail,
-          fullName: cleanFullName,
-          accountType,
-          companyName: cleanCompanyName,
-          phone,
-          source: "email",
-        }),
-      });
-    } catch {
-      // Admin notification failure must not block customer registration.
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ source: "email" }),
+      }).catch(() => undefined);
     }
 
     setSuccess(true);
+    setVerificationPending(!isAlreadyVerified);
     setMessage(
-      "Account created. Please verify your e-mail address before logging in."
+      isAlreadyVerified
+        ? "Account created and verified. You can now open your customer dashboard."
+        : "Account created. Please verify your e-mail address before logging in."
     );
     setPassword("");
     setConfirmPassword("");
     setLoading(false);
+  };
+
+  const handleResendVerification = async () => {
+    if (resendingVerification || !cleanEmail) return;
+    setResendingVerification(true);
+    setMessage("");
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email: cleanEmail,
+      options: {
+        emailRedirectTo: getAuthRedirect("/auth/callback?next=/dashboard"),
+      },
+    });
+    setResendingVerification(false);
+    setSuccess(!error);
+    setMessage(
+      error
+        ? error.message
+        : "A new verification e-mail has been sent. Please also check your spam folder."
+    );
   };
 
   const handleGoogleRegister = async () => {
@@ -642,6 +660,22 @@ export default function RegisterPage() {
                   <span>{message}</span>
                 </div>
               </div>
+            )}
+
+            {success && verificationPending && cleanEmail && (
+              <button
+                type="button"
+                onClick={() => void handleResendVerification()}
+                disabled={resendingVerification}
+                className="mt-3 inline-flex items-center text-sm font-black text-red-400 transition hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {resendingVerification ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                )}
+                Resend verification e-mail
+              </button>
             )}
 
             <div className="mt-8 rounded-2xl border border-white/10 bg-black/30 p-5 text-center text-sm text-zinc-400">

@@ -4,10 +4,12 @@ import { requireStaffPermission } from "@/lib/apiAuth";
 import { getTransactionalEmailProviderStatus, sendTransactionalEmail } from "@/lib/email/service";
 import { listTransactionalEmailTemplates } from "@/lib/email/templates";
 import { getSiteUrl } from "@/lib/email/render";
+import { listLifecycleStatusCoverage } from "@/lib/email/lifecycle";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 
 const testSchema = z.object({
   eventType: z.literal("admin_email_test").optional().default("admin_email_test"),
+  testId: z.string().uuid().optional(),
 }).strict();
 
 export async function GET(request: Request) {
@@ -36,6 +38,33 @@ export async function GET(request: Request) {
     provider: getTransactionalEmailProviderStatus(),
     templates: listTransactionalEmailTemplates(),
     recentEvents,
+    eventSummary: {
+      sent: recentEvents.filter((event) => event.status === "sent").length,
+      skipped: recentEvents.filter((event) => event.status === "skipped").length,
+      failed: recentEvents.filter((event) => event.status === "failed").length,
+      pending: recentEvents.filter((event) => event.status === "pending").length,
+    },
+    authFlows: [
+      {
+        key: "confirm_signup",
+        label: "Signup verification",
+        managedBy: "Supabase Auth",
+        redirectPath: "/auth/callback?next=/dashboard",
+      },
+      {
+        key: "password_recovery",
+        label: "Password recovery",
+        managedBy: "Supabase Auth",
+        redirectPath: "/auth/callback?next=/reset-password",
+      },
+      {
+        key: "password_changed",
+        label: "Password changed security notice",
+        managedBy: "Supabase Auth",
+        redirectPath: null,
+      },
+    ],
+    lifecycleCoverage: listLifecycleStatusCoverage(),
     migrationReady,
   });
 }
@@ -55,7 +84,7 @@ export async function POST(request: Request) {
       customerEmail: recipient,
       adminUrl: `${getSiteUrl()}/admin/email`,
     },
-    idempotencyKey: `admin_email_test:${auth.user.id}:${new Date().toISOString().slice(0, 10)}`,
+    idempotencyKey: `admin_email_test:${auth.user.id}:${parsed.data.testId || new Date().toISOString().slice(0, 10)}`,
     recipientUserId: auth.user.id,
     metadata: { source: "admin_email_test" },
   });
