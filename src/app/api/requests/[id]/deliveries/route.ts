@@ -5,6 +5,7 @@ import {
   CUSTOMER_FILE_DOWNLOAD_EVENT,
   buildCustomerDownloadAuditValue,
   canDownloadCustomerOrder,
+  customerOrderDetailLegacySelect,
   customerOrderDetailSelect,
   isExpectedCustomerDeliveryPath,
   projectCustomerDeliveryHistory,
@@ -21,11 +22,19 @@ const downloadSchema = z.object({
 
 async function loadOrder(requestId: string) {
   const admin = getSupabaseAdmin();
-  const result = await admin
+  let result = await admin
     .from("orders")
     .select(customerOrderDetailSelect)
     .eq("id", requestId)
     .maybeSingle();
+
+  if (result.error?.code === "42703") {
+    result = await admin
+      .from("orders")
+      .select(customerOrderDetailLegacySelect)
+      .eq("id", requestId)
+      .maybeSingle();
+  }
 
   return {
     admin,

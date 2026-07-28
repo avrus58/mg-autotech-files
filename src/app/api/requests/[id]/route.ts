@@ -3,6 +3,7 @@ import { requireApiUser } from "@/lib/apiAuth";
 import {
   canReadCustomerOrder,
   CUSTOMER_FILE_DOWNLOAD_EVENT,
+  customerOrderDetailLegacySelect,
   customerOrderDetailSelect,
   projectCustomerDeliveryHistory,
   projectCustomerOrder,
@@ -22,11 +23,19 @@ export async function GET(
 
   const { id } = await context.params;
   const admin = getSupabaseAdmin();
-  const orderResult = await admin
+  let orderResult = await admin
     .from("orders")
     .select(customerOrderDetailSelect)
     .eq("id", id)
     .maybeSingle();
+
+  if (orderResult.error?.code === "42703") {
+    orderResult = await admin
+      .from("orders")
+      .select(customerOrderDetailLegacySelect)
+      .eq("id", id)
+      .maybeSingle();
+  }
 
   const order = orderResult.data as unknown as CustomerOrderRecord | null;
   if (

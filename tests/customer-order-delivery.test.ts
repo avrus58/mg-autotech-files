@@ -196,9 +196,12 @@ test("customer delivery API is ownership-bound, audited and version-id based", (
 
   assert.match(detailRoute, /requireApiUser\(request\)/);
   assert.match(detailRoute, /canReadCustomerOrder\(auth\.user\.id, order\.customer_id, auth\.access\)/);
+  assert.match(detailRoute, /orderResult\.error\?\.code === "42703"/);
+  assert.match(detailRoute, /customerOrderDetailLegacySelect/);
   assert.match(detailRoute, /projectCustomerOrder\(order\)/);
   assert.match(deliveryRoute, /requireApiUser\(request\)/);
   assert.match(deliveryRoute, /canDownloadCustomerOrder\(auth\.user\.id, order\.customer_id, auth\.access\)/);
+  assert.match(deliveryRoute, /result\.error\?\.code === "42703"/);
   assert.match(deliveryRoute, /versionId/);
   assert.match(deliveryRoute, /isExpectedCustomerDeliveryPath/);
   assert.match(deliveryRoute, /recordWorkOrderEvent/);

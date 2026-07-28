@@ -53,8 +53,8 @@ export type CustomerOrderRecord = {
   uploaded_file_name: string | null;
   modified_file_path: string | null;
   modified_files: unknown;
-  estimated_delivery_label: string | null;
-  estimated_delivery_note: string | null;
+  estimated_delivery_label?: string | null;
+  estimated_delivery_note?: string | null;
   customer_upload_enabled?: boolean | null;
   customer_uploads?: unknown;
   created_at: string;
@@ -66,7 +66,7 @@ export type CustomerDownloadEventRow = {
   created_at?: string | null;
 };
 
-export const customerOrderDetailSelect = [
+const customerOrderCoreFields = [
   "id",
   "customer_id",
   "customer_email",
@@ -88,12 +88,18 @@ export const customerOrderDetailSelect = [
   "uploaded_file_name",
   "modified_file_path",
   "modified_files",
-  "estimated_delivery_label",
-  "estimated_delivery_note",
   "customer_upload_enabled",
   "customer_uploads",
   "created_at",
+];
+
+export const customerOrderDetailSelect = [
+  ...customerOrderCoreFields,
+  "estimated_delivery_label",
+  "estimated_delivery_note",
 ].join(",");
+
+export const customerOrderDetailLegacySelect = customerOrderCoreFields.join(",");
 
 export function canReadCustomerOrder(
   actorUserId: string,
@@ -312,8 +318,8 @@ export function projectCustomerOrder(order: CustomerOrderRecord) {
     hw_sw: order.hw_sw,
     master_slave: order.master_slave,
     uploaded_file_name: order.uploaded_file_name,
-    estimated_delivery_label: order.estimated_delivery_label,
-    estimated_delivery_note: order.estimated_delivery_note,
+    estimated_delivery_label: order.estimated_delivery_label ?? null,
+    estimated_delivery_note: order.estimated_delivery_note ?? null,
     customer_upload_enabled: Boolean(order.customer_upload_enabled),
     customer_uploads: Array.isArray(order.customer_uploads)
       ? order.customer_uploads
