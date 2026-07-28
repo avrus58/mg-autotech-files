@@ -1,13 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { authenticatedFetch, getStableSession, notifySessionRequired, signOutIfEmailUnverified } from "@/lib/authGuards";
 import { supabase } from "@/lib/supabaseClient";
 import RequestChat from "@/components/RequestChat";
 import type { CustomerRequestDtcAnalysis } from "@/lib/dtcAnalyzer/requestIntegration";
-import type { CustomerRequestQueueProjection } from "@/lib/workOrders/queueEta";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -153,7 +152,6 @@ function getCustomerStatusCopy(
       title: "Revision waiting for review",
       description:
         "MG AutoTech has received your revision note and will publish the next file version here when it is ready.",
-      panelClass: "border-purple-700/35 bg-purple-950/20",
       iconClass: "text-purple-300",
     };
   }
@@ -163,7 +161,6 @@ function getCustomerStatusCopy(
       title: "Completed file ready",
       description:
         "Your delivered file is available in the Files & delivery panel through a secure temporary download link.",
-      panelClass: "border-emerald-700/35 bg-emerald-950/20",
       iconClass: "text-emerald-300",
     };
   }
@@ -173,7 +170,6 @@ function getCustomerStatusCopy(
       title: "Your response is needed",
       description:
         "MG AutoTech needs more information or another file. Use the conversation and upload areas below to respond.",
-      panelClass: "border-orange-700/40 bg-orange-950/20",
       iconClass: "text-orange-300",
     };
   }
@@ -183,7 +179,6 @@ function getCustomerStatusCopy(
       title: "Work is in progress",
       description:
         "Your request is being processed. Status and delivery updates will appear here automatically.",
-      panelClass: "border-blue-700/35 bg-blue-950/20",
       iconClass: "text-blue-300",
     };
   }
@@ -193,7 +188,6 @@ function getCustomerStatusCopy(
       title: "File review in progress",
       description:
         "MG AutoTech is checking the original file, vehicle details and requested service before processing.",
-      panelClass: "border-amber-700/35 bg-amber-950/20",
       iconClass: "text-amber-300",
     };
   }
@@ -203,7 +197,6 @@ function getCustomerStatusCopy(
       title: "Request closed",
       description:
         "This request is no longer in the active work queue. Contact MG AutoTech support if you need clarification or a new request.",
-      panelClass: "border-zinc-700/40 bg-zinc-900/35",
       iconClass: "text-zinc-300",
     };
   }
@@ -212,7 +205,6 @@ function getCustomerStatusCopy(
     title: "Request received",
     description:
       "Your order is in the secure MG AutoTech workflow and is waiting for its next review step.",
-    panelClass: "border-red-800/40 bg-red-950/20",
     iconClass: "text-red-300",
   };
 }
@@ -390,11 +382,7 @@ export default function OrderDetailPage() {
   const [dtcAnalysis, setDtcAnalysis] = useState<CustomerRequestDtcAnalysis | null>(null);
   const [dtcLoading, setDtcLoading] = useState(false);
   const [dtcError, setDtcError] = useState("");
-  const [queueProjection, setQueueProjection] = useState<CustomerRequestQueueProjection | null>(null);
-  const [queueLoading, setQueueLoading] = useState(false);
-  const [queueError, setQueueError] = useState("");
   const hasLoadedOrderRef = useRef(false);
-  const hasLoadedQueueProjectionRef = useRef(false);
   const [additionalUploadPhase, setAdditionalUploadPhase] =
     useState<AdditionalUploadPhase>("idle");
   const additionalUploading = additionalUploadPhase !== "idle";
@@ -408,38 +396,6 @@ export default function OrderDetailPage() {
   const supportSummaryText = useMemo(
     () => buildCustomerSupportSummary(order, params?.id ?? ""),
     [order, params?.id]
-  );
-
-  const loadQueueProjection = useCallback(
-    async (orderId: string, options?: { silent?: boolean }) => {
-      if (!options?.silent) setQueueLoading(true);
-      if (!options?.silent) setQueueError("");
-
-      try {
-        const response = await authenticatedFetch(`/api/requests/${orderId}/queue`, {
-          cache: "no-store",
-        });
-        const payload = (await response.json()) as {
-          queue?: CustomerRequestQueueProjection;
-          error?: string;
-        };
-
-        if (!response.ok || !payload.queue) {
-          throw new Error(payload.error || "Queue state could not be loaded.");
-        }
-
-        setQueueProjection(payload.queue);
-        setQueueError("");
-        hasLoadedQueueProjectionRef.current = true;
-      } catch (error) {
-        if (!options?.silent || !hasLoadedQueueProjectionRef.current) {
-          setQueueError(error instanceof Error ? error.message : "Queue state could not be loaded.");
-        }
-      } finally {
-        if (!options?.silent) setQueueLoading(false);
-      }
-    },
-    []
   );
 
   useEffect(() => {
@@ -493,7 +449,6 @@ export default function OrderDetailPage() {
       setLoading(false);
       setLiveRefreshing(false);
 
-      void loadQueueProjection(orderId, options);
     };
 
     loadOrder();
@@ -542,7 +497,7 @@ export default function OrderDetailPage() {
       window.clearInterval(interval);
       supabase.removeChannel(channel);
     };
-  }, [params?.id, router, loadQueueProjection]);
+  }, [params?.id, router]);
 
   const downloadCompletedFile = async () => {
     const latestFilePath =
@@ -726,11 +681,6 @@ export default function OrderDetailPage() {
     }
   };
 
-  const retryQueueProjection = async () => {
-    if (!order) return;
-    await loadQueueProjection(order.id);
-  };
-
   const copySupportSummary = async () => {
     if (!supportSummaryText) return;
 
@@ -779,10 +729,6 @@ export default function OrderDetailPage() {
   const revisionRequested = order.status === "revision";
   const canRequestRevision = completedFileReady && !revisionRequested;
   const deliveryEstimate = getDeliveryEstimateDisplay(order.estimated_delivery_label);
-  const deliveryEstimateDescription = deliveryEstimate.isExplicit
-    ? order.estimated_delivery_note ||
-      "Most standard file requests are usually handled quickly. Complex projects can take longer depending on file and vehicle data."
-    : "A delivery estimate will appear here after MG AutoTech reviews your request details.";
   const statusCopy = getCustomerStatusCopy(order, completedFileReady, revisionRequested);
 
   return (
@@ -825,7 +771,7 @@ export default function OrderDetailPage() {
         </div>
       </header>
 
-      <section className="mx-auto max-w-[1600px] px-4 py-6 sm:px-6 lg:py-8">
+      <section className="mx-auto max-w-[1480px] px-4 py-6 sm:px-6 lg:py-8">
         {message && (
           <div className="mb-6 rounded-2xl border border-red-800/50 bg-red-950/30 p-4 text-sm text-red-200">
             {message}
@@ -884,34 +830,56 @@ export default function OrderDetailPage() {
           </div>
         </section>
 
-        <div className={`mb-6 flex items-start gap-4 rounded-2xl border p-4 sm:p-5 ${statusCopy.panelClass}`}>
-          {completedFileReady && !revisionRequested ? (
-            <CheckCircle2 className={`mt-0.5 h-6 w-6 shrink-0 ${statusCopy.iconClass}`} />
-          ) : revisionRequested ? (
-            <RefreshCcw className={`mt-0.5 h-6 w-6 shrink-0 ${statusCopy.iconClass}`} />
-          ) : (
-            <Clock3 className={`mt-0.5 h-6 w-6 shrink-0 ${statusCopy.iconClass}`} />
-          )}
-          <div className="min-w-0">
-            <h2 className="break-words text-lg font-black text-white">{statusCopy.title}</h2>
-            <p className="mt-1 break-words text-sm leading-6 text-zinc-300">{statusCopy.description}</p>
+        <section className="mb-6 rounded-2xl border border-white/10 bg-white/[0.035] p-5 sm:p-6" aria-labelledby="order-progress-title">
+          <div className="mb-5 flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+            <div className="flex min-w-0 items-start gap-3">
+              {completedFileReady && !revisionRequested ? (
+                <CheckCircle2 className={`mt-0.5 h-6 w-6 shrink-0 ${statusCopy.iconClass}`} />
+              ) : revisionRequested ? (
+                <RefreshCcw className={`mt-0.5 h-6 w-6 shrink-0 ${statusCopy.iconClass}`} />
+              ) : (
+                <Clock3 className={`mt-0.5 h-6 w-6 shrink-0 ${statusCopy.iconClass}`} />
+              )}
+              <div className="min-w-0">
+                <div className="text-xs font-black uppercase tracking-[0.16em] text-zinc-500">Order progress</div>
+                <h2 id="order-progress-title" className="mt-1 break-words text-lg font-black text-white">{statusCopy.title}</h2>
+                <p className="mt-1 max-w-3xl break-words text-sm leading-6 text-zinc-400">{statusCopy.description}</p>
+              </div>
+            </div>
+            <span className={`inline-flex w-fit max-w-full rounded-full border px-3 py-1 text-xs font-black ${getStatusStyle(order.status)}`}>
+              {formatStatus(order.status)}
+            </span>
           </div>
-        </div>
+          <ProgressTimeline order={order} />
+        </section>
 
-        <div className="grid gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(320px,0.72fr)] xl:items-start">
-          <div className="grid min-w-0 gap-6 lg:grid-cols-2">
-            <div className="min-w-0 space-y-6">
+        <div className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(400px,0.85fr)] xl:items-start">
+          <div className="contents">
+            <div className="order-2 min-w-0 space-y-6 xl:sticky xl:top-28 xl:col-start-2 xl:row-start-1">
               <RequestChat requestId={order.id} senderRole="customer" variant="workspace" />
 
-              <CustomerDtcAnalysisPanel
-                analysis={dtcAnalysis}
-                loading={dtcLoading}
-                error={dtcError}
-                onRun={loadDtcAnalysis}
-              />
+              <details className="group rounded-2xl border border-white/10 bg-white/[0.035]">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 p-5 marker:hidden sm:p-6">
+                  <div className="min-w-0">
+                    <div className="text-xs font-black uppercase tracking-[0.16em] text-red-400">Optional diagnostic context</div>
+                    <div className="mt-2 text-lg font-black text-white">DTC guidance</div>
+                    <p className="mt-1 text-sm leading-6 text-zinc-500">Open only when diagnostic codes are part of this request.</p>
+                  </div>
+                  <span className="shrink-0 rounded-full border border-white/10 px-3 py-1 text-xs font-black text-zinc-400 group-open:text-white">Open</span>
+                </summary>
+                <div className="border-t border-white/10 p-3 sm:p-4">
+                  <CustomerDtcAnalysisPanel
+                    analysis={dtcAnalysis}
+                    loading={dtcLoading}
+                    error={dtcError}
+                    onRun={loadDtcAnalysis}
+                    embedded
+                  />
+                </div>
+              </details>
             </div>
 
-            <div className="min-w-0 space-y-6">
+            <div className="order-1 min-w-0 space-y-6 xl:col-start-1 xl:row-start-1">
             <section className="rounded-2xl border border-white/10 bg-white/[0.04] p-5 sm:p-6">
               <div className="mb-5">
                 <div className="text-xs font-black uppercase tracking-[0.16em] text-red-400">Request specification</div>
@@ -954,10 +922,23 @@ export default function OrderDetailPage() {
                   </p>
                 </div>
 
-                <div className="rounded-full border border-emerald-700/30 bg-emerald-950/20 px-3 py-1 text-xs font-black text-emerald-300">
-                  {modifiedVersions.length} version{modifiedVersions.length === 1 ? "" : "s"}
+                <div className="flex flex-wrap items-center gap-2">
+                  {deliveryEstimate.isExplicit && (
+                    <div className="rounded-full border border-blue-700/30 bg-blue-950/20 px-3 py-1 text-xs font-black text-blue-200">
+                      Delivery: {deliveryEstimate.label}
+                    </div>
+                  )}
+                  <div className="rounded-full border border-emerald-700/30 bg-emerald-950/20 px-3 py-1 text-xs font-black text-emerald-300">
+                    {modifiedVersions.length} version{modifiedVersions.length === 1 ? "" : "s"}
+                  </div>
                 </div>
               </div>
+
+              {deliveryEstimate.isExplicit && order.estimated_delivery_note && (
+                <p className="mb-4 rounded-xl border border-blue-700/20 bg-blue-950/10 px-4 py-3 text-sm leading-6 text-blue-100/80">
+                  {order.estimated_delivery_note}
+                </p>
+              )}
 
               <div className="mb-4 flex min-w-0 items-center gap-3 border-y border-white/10 py-4">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/[0.05] text-zinc-300">
@@ -1088,50 +1069,7 @@ export default function OrderDetailPage() {
             </div>
           </div>
 
-          <aside className="min-w-0 space-y-6">
-            <section className="rounded-2xl border border-red-900/40 bg-red-950/15 p-5 sm:p-6">
-              <div className="flex items-start gap-3">
-                <Clock3 className="mt-0.5 h-6 w-6 shrink-0 text-red-400" />
-                <div className="min-w-0">
-                  <div className="text-xs font-black uppercase tracking-[0.16em] text-red-300">Delivery outlook</div>
-                  <div className="mt-2 max-w-full break-words text-2xl font-black">
-                {deliveryEstimate.label}
-                  </div>
-                  <p className="mt-3 break-words text-sm leading-6 text-zinc-400">
-                    {deliveryEstimateDescription}
-                  </p>
-                </div>
-              </div>
-            </section>
-
-            <CustomerQueuePanel
-              projection={queueProjection}
-              loading={queueLoading}
-              error={queueError}
-              onRetry={() => { void retryQueueProjection(); }}
-            />
-
-            <section className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] p-5 sm:p-6">
-              <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <h2 className="text-xl font-black">Order timeline</h2>
-                  <p className="mt-1 text-sm text-zinc-500">
-                    Live status overview for your request.
-                  </p>
-                </div>
-
-                <div
-                  className={`max-w-full rounded-full border px-3 py-1 text-center text-xs font-black ${getStatusStyle(
-                    order.status
-                  )}`}
-                >
-                  {formatStatus(order.status)}
-                </div>
-              </div>
-
-              <ProgressTimeline order={order} />
-            </section>
-
+          <aside className="order-3 grid min-w-0 gap-6 md:grid-cols-2 xl:col-span-2">
             <section className="rounded-2xl border border-purple-700/30 bg-purple-950/15 p-5 sm:p-6">
               <div className="mb-5 flex items-start gap-3">
                 <RefreshCcw className="mt-1 h-7 w-7 shrink-0 text-purple-300" />
@@ -1266,109 +1204,27 @@ function confidenceClass(confidence: string) {
   return "border-zinc-700/50 bg-zinc-950/40 text-zinc-300";
 }
 
-function queueStateClass(projection: CustomerRequestQueueProjection | null) {
-  if (!projection) return "border-white/10 bg-black/25 text-zinc-300";
-  if (projection.isTerminal) return "border-emerald-700/30 bg-emerald-950/15 text-emerald-100";
-  if (projection.isBlocked) return "border-amber-700/40 bg-amber-950/20 text-amber-100";
-  if (projection.eta.availability === "available") return "border-blue-700/35 bg-blue-950/15 text-blue-100";
-  return "border-white/10 bg-black/25 text-zinc-300";
-}
-
-function CustomerQueuePanel({
-  projection,
-  loading,
-  error,
-  onRetry,
-}: {
-  projection: CustomerRequestQueueProjection | null;
-  loading: boolean;
-  error: string;
-  onRetry: () => void;
-}) {
-  return (
-    <section className="rounded-2xl border border-white/10 bg-white/[0.04] p-5 sm:p-6">
-      <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <Clock3 className="h-7 w-7 text-red-400" />
-            <h2 className="break-words text-xl font-black">Live queue & ETA</h2>
-          </div>
-          <p className="mt-2 text-sm leading-6 text-zinc-400">
-            Queue state uses the current request status and MG AutoTech work-order review fields.
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={onRetry}
-          disabled={loading}
-          className="inline-flex items-center justify-center rounded-xl border border-white/10 bg-black/25 px-3 py-2 text-xs font-black text-zinc-200 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {loading ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : <RefreshCcw className="mr-2 h-3.5 w-3.5" />}
-          Refresh
-        </button>
-      </div>
-
-      {loading && !projection && (
-        <div role="status" aria-live="polite" className="rounded-2xl border border-blue-700/30 bg-blue-950/15 p-4 text-sm text-blue-100">
-          <Loader2 className="mr-2 inline h-4 w-4 animate-spin" />
-          Loading live queue state...
-        </div>
-      )}
-
-      {error && (
-        <div role="alert" className="mb-4 rounded-2xl border border-amber-700/40 bg-amber-950/20 p-4 text-sm leading-6 text-amber-100">
-          <AlertTriangle className="mr-2 inline h-4 w-4" />
-          {error} Retry before treating queue state as unavailable.
-        </div>
-      )}
-
-      {!projection && !loading ? (
-        <div className="rounded-2xl border border-dashed border-white/15 bg-black/25 p-5 text-sm leading-6 text-zinc-400">
-          Queue state is not available yet. ETA remains pending review until MG AutoTech sets it.
-        </div>
-      ) : projection ? (
-        <div aria-live="polite" className="space-y-3">
-          <div className={`rounded-2xl border p-4 ${queueStateClass(projection)}`}>
-            <div className="text-xs font-black uppercase tracking-[0.14em] opacity-80">Queue state</div>
-            <div className="mt-2 break-words text-xl font-black">{projection.stateLabel}</div>
-            <p className="mt-2 break-words text-sm leading-6 opacity-90">{projection.stateDescription}</p>
-          </div>
-
-          <div className="rounded-2xl border border-white/10 bg-black/25 p-4">
-            <div className="text-xs font-black uppercase tracking-[0.14em] text-zinc-500">Queue position</div>
-            <div className="mt-2 break-words text-lg font-black text-white">{projection.queuePosition.label}</div>
-            <p className="mt-2 break-words text-sm leading-6 text-zinc-400">{projection.queuePosition.description}</p>
-          </div>
-
-          <div className="rounded-2xl border border-white/10 bg-black/25 p-4">
-            <div className="text-xs font-black uppercase tracking-[0.14em] text-zinc-500">ETA availability</div>
-            <div className="mt-2 break-words text-lg font-black text-white">{projection.eta.label}</div>
-            <p className="mt-2 break-words text-sm leading-6 text-zinc-400">{projection.eta.description}</p>
-            {projection.eta.note && (
-              <p className="mt-3 rounded-xl border border-white/10 bg-white/[0.04] p-3 text-sm leading-6 text-zinc-300">
-                {projection.eta.note}
-              </p>
-            )}
-          </div>
-        </div>
-      ) : null}
-    </section>
-  );
-}
-
 function CustomerDtcAnalysisPanel({
   analysis,
   loading,
   error,
   onRun,
+  embedded = false,
 }: {
   analysis: CustomerRequestDtcAnalysis | null;
   loading: boolean;
   error: string;
   onRun: () => void;
+  embedded?: boolean;
 }) {
   return (
-    <section className="rounded-2xl border border-white/10 bg-white/[0.04] p-5 sm:p-6">
+    <section
+      className={
+        embedded
+          ? "p-2 sm:p-3"
+          : "rounded-2xl border border-white/10 bg-white/[0.04] p-5 sm:p-6"
+      }
+    >
       <div className="mb-5 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div className="flex min-w-0 items-start gap-3">
           <BrainCircuit className="mt-1 h-7 w-7 shrink-0 text-red-400" />
@@ -1530,8 +1386,8 @@ function ProgressTimeline({ order }: { order: Order }) {
   const activeIndex = getTimelineIndex(order, timelineSteps);
 
   return (
-    <div className="space-y-3">
-      <div className="mb-5 h-2 overflow-hidden rounded-full bg-white/10">
+    <div>
+      <div className="mb-4 h-1.5 overflow-hidden rounded-full bg-white/10">
         <div
           className="h-full rounded-full bg-gradient-to-r from-red-800 via-red-600 to-emerald-500 transition-all duration-700"
           style={{
@@ -1540,20 +1396,22 @@ function ProgressTimeline({ order }: { order: Order }) {
         />
       </div>
 
-      {timelineSteps.map((step, index) => {
-        const done = index <= activeIndex;
-        const current = index === activeIndex;
+      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+        {timelineSteps.map((step, index) => {
+          const done = index <= activeIndex;
+          const current = index === activeIndex;
 
-        return (
-          <TimelineItem
-            key={step.key}
-            done={done}
-            current={current}
-            label={step.label}
-            description={step.description}
-          />
-        );
-      })}
+          return (
+            <TimelineItem
+              key={step.key}
+              done={done}
+              current={current}
+              label={step.label}
+              description={step.description}
+            />
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -1571,12 +1429,13 @@ function TimelineItem({
 }) {
   return (
     <div
-      className={`flex items-start gap-3 border-b border-white/10 py-3 last:border-b-0 ${
+      aria-current={current ? "step" : undefined}
+      className={`flex min-w-0 items-start gap-3 rounded-xl border p-3 ${
         current
-          ? "text-white"
+          ? "border-red-700/45 bg-red-950/20 text-white"
           : done
-          ? "text-zinc-200"
-          : "text-zinc-600"
+            ? "border-emerald-800/30 bg-emerald-950/10 text-zinc-200"
+            : "border-white/[0.07] bg-black/20 text-zinc-600"
       }`}
     >
       <div

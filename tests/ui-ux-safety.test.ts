@@ -164,34 +164,26 @@ test("customer order detail shows delivery estimates only when explicitly set", 
   assert.match(page, /manual_review: "Manual review"/);
   assert.match(page, /getDeliveryEstimateDisplay\(order\.estimated_delivery_label\)/);
   assert.match(page, /label: label \?\? "Estimate not set yet"/);
-  assert.match(page, /deliveryEstimate\.isExplicit[\s\S]*order\.estimated_delivery_note/);
-  assert.match(page, /A delivery estimate will appear here after MG AutoTech reviews your request details\./);
-  assert.match(page, /max-w-full break-words text-2xl font-black/);
+  assert.match(page, /deliveryEstimate\.isExplicit && \(/);
+  assert.match(page, /Delivery: \{deliveryEstimate\.label\}/);
+  assert.match(page, /deliveryEstimate\.isExplicit && order\.estimated_delivery_note/);
+  assert.doesNotMatch(page, /A delivery estimate will appear here after MG AutoTech reviews your request details\./);
   assert.doesNotMatch(page, /labels\[value as DeliveryEstimate\] \?\? labels\.usually_30_min/);
   assert.doesNotMatch(page, /formatDeliveryEstimate\(order\.estimated_delivery_label\)/);
 });
 
-test("customer order detail shows safe live queue and honest ETA states", () => {
+test("customer order detail keeps queue internals out of the customer workspace", () => {
   const page = readProjectFile("src", "app", "dashboard", "orders", "[id]", "page.tsx");
   const route = readProjectFile("src", "app", "api", "requests", "[id]", "queue", "route.ts");
-  const queuePanel =
-    page.match(/function CustomerQueuePanel[\s\S]*?function CustomerDtcAnalysisPanel/)?.[0] ?? "";
 
   assert.match(route, /requireApiUser\(request\)/);
   assert.match(route, /getCustomerRequestQueueProjection\(id, auth\.user\.id\)/);
-  assert.match(page, /import type \{ CustomerRequestQueueProjection \}/);
-  assert.match(page, /const \[queueProjection, setQueueProjection\]/);
-  assert.match(page, /\/api\/requests\/\$\{orderId\}\/queue/);
-  assert.match(page, /<CustomerQueuePanel/);
-  assert.match(queuePanel, /Live queue & ETA/);
-  assert.match(queuePanel, /Loading live queue state/);
-  assert.match(queuePanel, /Retry before treating queue state as unavailable/);
-  assert.match(queuePanel, /Queue state is not available yet/);
-  assert.match(queuePanel, /ETA remains pending review until MG AutoTech sets it/);
-  assert.match(queuePanel, /projection\.eta\.label/);
-  assert.match(queuePanel, /projection\.queuePosition\.label/);
+  assert.doesNotMatch(page, /CustomerRequestQueueProjection/);
+  assert.doesNotMatch(page, /queueProjection|CustomerQueuePanel/);
+  assert.doesNotMatch(page, /\/api\/requests\/\$\{orderId\}\/queue/);
+  assert.doesNotMatch(page, /Live queue & ETA|Queue state|Payment review/);
   assert.doesNotMatch(
-    queuePanel + route,
+    page + route,
     /request_internal_notes|internal_notes|risk_flags|training_sample_id|private_offsets|hex_preview|signed_url|storage_path|hash/i
   );
 });
@@ -223,18 +215,22 @@ test("customer order detail uses a responsive MG AutoTech work-order workspace",
   const chat = readProjectFile("src", "components", "RequestChat.tsx");
 
   assert.match(page, /Secure order workspace/);
-  assert.match(page, /max-w-\[1600px\]/);
-  assert.match(page, /xl:grid-cols-\[minmax\(0,2fr\)_minmax\(320px,0\.72fr\)\]/);
-  assert.match(page, /lg:grid-cols-2/);
+  assert.match(page, /max-w-\[1480px\]/);
+  assert.match(page, /xl:grid-cols-\[minmax\(0,1\.15fr\)_minmax\(400px,0\.85fr\)\]/);
+  assert.match(page, /xl:sticky xl:top-28/);
   assert.match(page, /<RequestChat requestId=\{order\.id\} senderRole="customer" variant="workspace"/);
+  assert.match(page, /Order progress/);
+  assert.match(page, /sm:grid-cols-2 lg:grid-cols-4/);
   assert.match(page, /Request specification/);
   assert.match(page, /Files & delivery/);
   assert.match(page, /Original file received/);
-  assert.match(page, /Order timeline/);
+  assert.match(page, /Optional diagnostic context/);
   assert.match(page, /Order support/);
   assert.match(page, /Download latest file/);
   assert.match(page, /uploadAdditionalFile\(file\)/);
   assert.match(page, /downloadModifiedVersion\(version\.file_path\)/);
+  assert.ok(page.indexOf("Order progress") < page.indexOf("Request specification"));
+  assert.doesNotMatch(page, /Live queue & ETA|Payment review/);
 
   assert.match(chat, /variant\?: "default" \| "workspace"/);
   assert.match(chat, /Order conversation/);

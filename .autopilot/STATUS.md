@@ -2114,3 +2114,12 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 - Degisen dosyalar: `src/app/dashboard/orders/[id]/page.tsx`, `src/components/RequestChat.tsx`, `tests/ui-ux-safety.test.ts`, `.autopilot/STATUS.md`.
 - Kontroller: targeted UI safety PASS (94/94); lint PASS; typecheck PASS; full tests PASS (413/413); production build PASS (244 page); production dependency audit PASS (0 vulnerabilities); diff check PASS.
 - Kapsam: Code-only local patch. Deploy, push, SQL veya production data mutation yapilmadi.
+
+## 2026-07-28 Customer order workspace balance refinement
+
+- Gorev: Musteri siparis detayini referans gorunumden ayirarak daha dengeli ve MG AutoTech'e ozgu bir calisma alanina donusturmek; customer-facing queue/payment review gurultusunu kaldirmak.
+- UI: Ust siparis ozeti ve yatay dort adimli ilerleme akisi korunurken ana govde 57/43 oranli iki sutuna cevrildi. Teknik talep ile dosya/teslim alani ana sutunda, canli siparis sohbeti masaustunde sabit kalan ikinci sutunda yer alir. Revizyon ve destek eylemleri alt sirada dengeli iki paneldir; DTC guidance istege bagli kapali ayrinti alanina tasindi.
+- Sadelestirme: Musteri sayfasindan queue projection istegi, `Live queue & ETA`, `Queue state` ve `Payment review` sunumu tamamen kaldirildi. Queue API'sinin mevcut auth/ownership guvenligi degistirilmedi. Teslim tahmini yalnizca admin tarafindan acikca belirlenmisse Files & delivery alaninda gosterilir; belirsiz tahmin uretilmez.
+- Degisen dosyalar: `src/app/dashboard/orders/[id]/page.tsx`, `tests/ui-ux-safety.test.ts`, `.autopilot/STATUS.md`.
+- Kontroller: targeted UI safety PASS (94/94); lint PASS; typecheck PASS; full tests PASS (413/413); production build PASS (244 page); payment schema-only PASS; production dependency audit PASS (0 vulnerabilities); diff check PASS.
+- Kapsam: Code-only local refinement. SQL, production data, payment, email, AI, vehicle veya work-order mutation degisikligi yok; deploy veya push yapilmadi.
