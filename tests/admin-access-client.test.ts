@@ -1,45 +1,54 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { classifyAdminAccessProfile } from "../src/lib/adminAccess";
+import { classifyAdminAccessApiResponse } from "../src/lib/adminAccess";
 
-test("admin access classification treats query errors as unavailable", () => {
-  assert.deepEqual(
-    classifyAdminAccessProfile(null, { code: "PGRST000", message: "temporary connection failure" }),
-    { state: "unavailable" }
-  );
-});
-
-test("admin access classification authorizes owners and explicitly permitted staff", () => {
-  const owner = classifyAdminAccessProfile(
-    { role: "admin", staff_role: "owner", staff_permissions: [] },
-    null
-  );
-  const support = classifyAdminAccessProfile(
-    { role: "staff", staff_role: "support", staff_permissions: ["orders.view"] },
-    null
-  );
+test("admin access API classification authorizes valid owner and staff payloads", () => {
+  const owner = classifyAdminAccessApiResponse(200, {
+    access: { role: "admin", staffRole: "owner", permissions: [] },
+  });
+  const support = classifyAdminAccessApiResponse(200, {
+    access: { role: "staff", staffRole: "support", permissions: ["orders.view"] },
+  });
 
   assert.equal(owner.state, "authorized");
   assert.equal(support.state, "authorized");
 });
 
-test("admin access classification denies only confirmed missing or insufficient profiles", () => {
-  assert.deepEqual(classifyAdminAccessProfile(null, null), {
+test("only an explicit server 403 becomes an admin access denial", () => {
+  assert.deepEqual(classifyAdminAccessApiResponse(403, { error: "Forbidden" }), {
     state: "denied",
-    reason: "profile_missing",
+    reason: "server_forbidden",
   });
-  assert.deepEqual(
-    classifyAdminAccessProfile(
-      { role: "customer", staff_role: null, staff_permissions: [] },
-      null
-    ),
-    { state: "denied", reason: "not_staff" }
-  );
-  assert.deepEqual(
-    classifyAdminAccessProfile(
-      { role: "staff", staff_role: "support", staff_permissions: ["messages.manage"] },
-      null
-    ),
-    { state: "denied", reason: "missing_orders_permission" }
-  );
+
+  for (const status of [0, 401, 408, 429, 500, 502, 503, 504]) {
+    assert.deepEqual(classifyAdminAccessApiResponse(status, null), {
+      state: "unavailable",
+    });
+  }
+});
+
+test("zero-row and malformed successful responses never create a false denial", () => {
+  for (const payload of [
+    null,
+    {},
+    { access: null },
+    { access: { role: "customer" } },
+    { access: { role: "admin", staffRole: "unexpected", permissions: [] } },
+    { access: { role: "admin", staffRole: null, permissions: [123] } },
+  ]) {
+    assert.deepEqual(classifyAdminAccessApiResponse(200, payload), {
+      state: "unavailable",
+    });
+  }
+});
+
+test("admin access API rejects anonymous requests without exposing access data", async () => {
+  const { GET } = await import("../src/app/api/admin/access/route");
+  const response = await GET(new Request("http://localhost/api/admin/access"));
+  const payload = await response.json();
+
+  assert.equal(response.status, 401);
+  assert.equal(response.headers.get("cache-control"), "private, no-store, max-age=0");
+  assert.deepEqual(payload, { error: "Unauthorized" });
+  assert.equal("access" in payload, false);
 });

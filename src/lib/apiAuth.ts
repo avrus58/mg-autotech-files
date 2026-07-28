@@ -49,7 +49,22 @@ export async function requireApiUser(request: Request): Promise<AuthResult> {
       .select("role")
       .eq("id", user.id)
       .maybeSingle();
+
+    if (legacy.error) {
+      return {
+        ok: false,
+        status: 503,
+        error: "Authorization service is temporarily unavailable.",
+      };
+    }
+
     profile = legacy.data;
+  } else if (current.error) {
+    return {
+      ok: false,
+      status: 503,
+      error: "Authorization service is temporarily unavailable.",
+    };
   } else {
     profile = current.data;
   }

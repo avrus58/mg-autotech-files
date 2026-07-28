@@ -5,42 +5,54 @@ import {
   type StaffRole,
 } from "@/lib/staffPermissions";
 
-export type AdminProfileRow = {
-  role: string | null;
-  staff_role: StaffRole | null;
-  staff_permissions: string[] | null;
-};
-
-export type AdminAccessQueryError = {
-  code?: string;
-  message?: string;
-} | null;
-
 export type AdminAccessResolution =
   | { state: "authorized"; access: StaffAccess }
-  | { state: "denied"; reason: "profile_missing" | "not_staff" | "missing_orders_permission" }
+  | { state: "denied"; reason: "server_forbidden" }
   | { state: "unavailable" };
 
-export function classifyAdminAccessProfile(
-  profile: AdminProfileRow | null,
-  error: AdminAccessQueryError
+const staffRoles = new Set<StaffRole>(["owner", "manager", "calibrator", "support"]);
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+export function classifyAdminAccessApiResponse(
+  status: number,
+  payload: unknown
 ): AdminAccessResolution {
-  // A failed query cannot prove that a previously verified permission was
-  // revoked. Only a successful profile read may produce a denial decision.
-  if (error) return { state: "unavailable" };
-  if (!profile) return { state: "denied", reason: "profile_missing" };
+  // Only the server can issue a definitive permission denial. Network,
+  // session synchronization and malformed-response states remain retryable.
+  if (status === 403) return { state: "denied", reason: "server_forbidden" };
+  if (status !== 200 || !isRecord(payload) || !isRecord(payload.access)) {
+    return { state: "unavailable" };
+  }
+
+  const role = payload.access.role;
+  const staffRole = payload.access.staffRole;
+  const permissions = payload.access.permissions;
+
+  if (
+    (role !== null && typeof role !== "string") ||
+    (staffRole !== null && (
+      typeof staffRole !== "string" || !staffRoles.has(staffRole as StaffRole)
+    )) ||
+    !Array.isArray(permissions) ||
+    permissions.some((value) => typeof value !== "string")
+  ) {
+    return { state: "unavailable" };
+  }
 
   const access: StaffAccess = {
-    role: profile.role,
-    staffRole: profile.staff_role,
-    permissions: Array.isArray(profile.staff_permissions)
-      ? profile.staff_permissions
-      : [],
+    role,
+    staffRole: staffRole as StaffRole | null,
+    permissions: permissions as string[],
   };
 
-  if (!isStaffMember(access)) return { state: "denied", reason: "not_staff" };
-  if (!hasStaffPermission(access, "orders.view")) {
-    return { state: "denied", reason: "missing_orders_permission" };
+  // A 200 response that does not satisfy the endpoint contract is not proof
+  // of revoked access. Fail closed for data loading without replacing an
+  // already verified workspace with a false Access Denied screen.
+  if (!isStaffMember(access) || !hasStaffPermission(access, "orders.view")) {
+    return { state: "unavailable" };
   }
 
   return { state: "authorized", access };

@@ -15,7 +15,7 @@ test("admin background refresh uses the stable browser session instead of a fres
   assert.match(adminPage, /const \{ session \} = await getStableSession\(\)/);
   assert.match(adminPage, /const user = session\?\.user/);
   assert.doesNotMatch(adminPage, /const \{ data: userData \} = await supabase\.auth\.getUser\(\)/);
-  assert.match(adminPage, /resolveAdminAccess\(user\.id\)/);
+  assert.match(adminPage, /resolveAdminAccess\(\)/);
 });
 
 test("a transient silent session gap keeps the loaded admin workspace visible", () => {
@@ -62,14 +62,18 @@ test("admin authorization remains profile and permission based", () => {
   const adminPage = readProjectFile("src", "app", "admin", "page.tsx");
   const accessClient = readProjectFile("src", "lib", "adminAccessClient.ts");
   const accessClassifier = readProjectFile("src", "lib", "adminAccess.ts");
+  const accessRoute = readProjectFile("src", "app", "api", "admin", "access", "route.ts");
 
-  assert.match(accessClient, /\.select\("role, staff_role, staff_permissions"\)/);
+  assert.match(accessClient, /authenticatedFetch\("\/api\/admin\/access"/);
+  assert.doesNotMatch(accessClient, /\.from\("profiles"\)/);
+  assert.match(accessRoute, /requireStaffPermission\(request, "orders\.view"\)/);
+  assert.match(accessRoute, /"Cache-Control": "private, no-store, max-age=0"/);
   assert.match(accessClassifier, /!isStaffMember\(access\)/);
   assert.match(accessClassifier, /!hasStaffPermission\(access, "orders\.view"\)/);
   assert.match(adminPage, /You are not authorized to access the admin panel/);
 });
 
-test("transient profile query failures never become a false access denial", () => {
+test("transient access API failures never become a false access denial", () => {
   const adminPage = readProjectFile("src", "app", "admin", "page.tsx");
   const accessClient = readProjectFile("src", "lib", "adminAccessClient.ts");
   const accessClassifier = readProjectFile("src", "lib", "adminAccess.ts");
@@ -78,8 +82,10 @@ test("transient profile query failures never become a false access denial", () =
       /if \(accessResolution\.state === "unavailable"\)[\s\S]*?if \(accessResolution\.state === "denied"\)/
     )?.[0] ?? "";
 
-  assert.match(accessClassifier, /if \(error\) return \{ state: "unavailable" \}/);
-  assert.match(accessClient, /ADMIN_ACCESS_RETRY_DELAYS_MS = \[0, 160, 420\]/);
+  assert.match(accessClassifier, /if \(status === 403\) return \{ state: "denied"/);
+  assert.match(accessClassifier, /status !== 200/);
+  assert.match(accessClient, /ADMIN_ACCESS_RETRY_DELAYS_MS = \[0, 180, 480\]/);
+  assert.match(accessClient, /catch \{\s*return \{ state: "unavailable" \}/);
   assert.match(adminPage, /if \(accessResolution\.state === "unavailable"\) \{/);
   assert.match(
     adminPage,
@@ -99,4 +105,16 @@ test("only a successful denied profile resolution closes the admin workspace", (
   assert.match(adminPage, /const access = accessResolution\.access;[\s\S]*setAdminAccessDenied\(false\)/);
   assert.match(adminPage, /if \(adminAccessDenied\) \{/);
   assert.doesNotMatch(adminPage, /if \(message === "You are not authorized/);
+});
+
+test("server-side profile lookup failures stay retryable instead of becoming 403", () => {
+  const apiAuth = readProjectFile("src", "lib", "apiAuth.ts");
+
+  assert.match(apiAuth, /else if \(current\.error\) \{/);
+  assert.match(apiAuth, /if \(legacy\.error\) \{/);
+  assert.equal(
+    (apiAuth.match(/status: 503/g) ?? []).length,
+    2,
+    "both current and legacy profile query failures must be service-unavailable responses"
+  );
 });

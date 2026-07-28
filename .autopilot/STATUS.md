@@ -2095,3 +2095,13 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 - Degisen dosyalar: `src/app/admin/page.tsx`, `src/lib/adminAccess.ts`, `src/lib/adminAccessClient.ts`, `tests/admin-access-client.test.ts`, `tests/admin-session-stability.test.ts`, `.autopilot/STATUS.md`.
 - Kontroller: targeted session/UI tests PASS (109/109); lint PASS; typecheck PASS; full tests PASS (399/399); production build PASS (243 static page); payment schema-only PASS; production dependency audit PASS (0 vulnerabilities); diff check PASS.
 - Kapsam: Ayrik code-only hotfix. SQL, Supabase production, payment, email, vehicle, AI veya musteri verisi degisikligi yok. Deploy veya push yapilmadi.
+
+## 2026-07-28 Authoritative admin access verification hotfix
+
+- Gorev: Production admin ekraninin, token yenileme aninda browser RLS sorgusunun gecici olarak sifir satir dondurmesini gercek yetki kaybi sanarak aralikli `Access Denied` gostermesini kokten ayirmak.
+- Kok neden: Browser-side `profiles.maybeSingle()` RLS sorgusu gecici auth senkronizasyonunda hata yerine bos sonuc verebiliyordu. Bos sonuc client tarafinda kesin `profile_missing` karari uretiyordu.
+- Uygulama: Yeni private/no-store `GET /api/admin/access` endpoint'i access token'i server-side dogrular ve profili service-role server client ile okur. Browser artik `profiles` tablosundan admin karari vermez. Yalniz endpoint'in kesin `403` yaniti erisimi kapatir; 401/retry, 408, 429, 5xx, network ve malformed yanitlar `unavailable` kalir ve dogrulanmis workspace korunur.
+- Server guvenilirligi: `requireApiUser` current veya legacy profile sorgusu gercek bir database hatasi verirse bunu yetkisizlik yerine `503 Authorization service is temporarily unavailable` olarak dondurur. Staff ve `orders.view` permission kontrolleri aynen korunur.
+- Degisen dosyalar: `src/app/api/admin/access/route.ts`, `src/app/admin/page.tsx`, `src/lib/adminAccess.ts`, `src/lib/adminAccessClient.ts`, `src/lib/apiAuth.ts`, `tests/admin-access-client.test.ts`, `tests/admin-session-stability.test.ts`, `.autopilot/STATUS.md`.
+- Kontroller: targeted auth/session tests PASS (17/17); lint PASS; typecheck PASS; full tests PASS (412/412); production build PASS (244 static/dynamic route entries generated); payment schema-only PASS; production dependency audit PASS (0 vulnerabilities); diff check PASS.
+- Kapsam: Code-only auth reliability hotfix. SQL migration, permission genisletme, production data mutation, payment, email, vehicle veya AI davranis degisikligi yok.

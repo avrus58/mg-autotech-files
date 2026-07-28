@@ -520,7 +520,7 @@ export default function AdminPage() {
       return;
     }
 
-    const accessResolution = await resolveAdminAccess(user.id);
+    const accessResolution = await resolveAdminAccess();
 
     if (accessResolution.state === "unavailable") {
       if (!silent || !hasLoadedAdminDataRef.current) {
