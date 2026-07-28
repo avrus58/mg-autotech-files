@@ -6,11 +6,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { authenticatedFetch, getStableSession, notifySessionRequired, signOutIfEmailUnverified } from "@/lib/authGuards";
 import { supabase } from "@/lib/supabaseClient";
+import { resolveAdminAccess } from "@/lib/adminAccessClient";
 import RequestChat from "@/components/RequestChat";
 import {
   hasStaffPermission,
   isPrimaryOwner,
-  isStaffMember,
   type StaffAccess,
 } from "@/lib/staffPermissions";
 import { countCompletedToday } from "@/lib/adminDashboardMetrics";
@@ -481,6 +481,7 @@ export default function AdminPage() {
   const [newOrderNotice, setNewOrderNotice] = useState("");
   const [lastSyncAt, setLastSyncAt] = useState<Date | null>(null);
   const [adminAccess, setAdminAccess] = useState<StaffAccess | null>(null);
+  const [adminAccessDenied, setAdminAccessDenied] = useState(false);
 
   const knownOrderIdsRef = useRef<Set<string>>(new Set());
   const initialOrdersLoadedRef = useRef(false);
@@ -519,41 +520,30 @@ export default function AdminPage() {
       return;
     }
 
-    let { data: profile, error: profileError } = await supabase
-      .from("profiles")
-      .select("role, staff_role, staff_permissions")
-      .eq("id", user.id)
-      .single();
+    const accessResolution = await resolveAdminAccess(user.id);
 
-    if (profileError?.code === "42703") {
-      const legacy = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", user.id)
-        .single();
-      profile = legacy.data
-        ? { ...legacy.data, staff_role: null, staff_permissions: [] }
-        : null;
-      profileError = legacy.error;
-    }
-
-    const access: StaffAccess = {
-      role: profile?.role ?? null,
-      staffRole: profile?.staff_role ?? null,
-      permissions: Array.isArray(profile?.staff_permissions)
-        ? profile.staff_permissions
-        : [],
-    };
-
-    if (profileError || !isStaffMember(access) || !hasStaffPermission(access, "orders.view")) {
-      setAdminLoadError("");
-      setMessage("You are not authorized to access the admin panel.");
+    if (accessResolution.state === "unavailable") {
+      if (!silent || !hasLoadedAdminDataRef.current) {
+        setAdminLoadError(ADMIN_LOAD_ERROR_MESSAGE);
+      }
       setLoading(false);
       setAutoRefreshing(false);
       return;
     }
 
+    if (accessResolution.state === "denied") {
+      setAdminAccess(null);
+      setAdminAccessDenied(true);
+      setAdminDataReady(false);
+      setAdminLoadError("");
+      setLoading(false);
+      setAutoRefreshing(false);
+      return;
+    }
+
+    const access = accessResolution.access;
     setAdminAccess(access);
+    setAdminAccessDenied(false);
 
     const { data, error } = await supabase.from("orders").select("*").order("created_at", { ascending: false });
     if (error) {
@@ -1173,13 +1163,13 @@ export default function AdminPage() {
     );
   }
 
-  if (message === "You are not authorized to access the admin panel.") {
+  if (adminAccessDenied) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-[#050505] px-4 text-white">
         <div className="max-w-md rounded-[2rem] border border-red-900/40 bg-red-950/20 p-8 text-center">
           <Lock className="mx-auto mb-5 h-12 w-12 text-red-500" />
           <h1 className="text-3xl font-black">Access Denied</h1>
-          <p className="mt-3 text-zinc-400">{message}</p>
+          <p className="mt-3 text-zinc-400">You are not authorized to access the admin panel.</p>
           <Link href="/dashboard" className="mt-6 inline-flex rounded-xl bg-[#b1121b] px-5 py-3 font-black text-white">
             Back to Dashboard
           </Link>

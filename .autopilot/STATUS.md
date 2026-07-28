@@ -2085,3 +2085,13 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 - Kontroller: targeted transactional email tests PASS (20/20); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (405/405); `npm run build` PASS (243 static page); `node scripts/check-payment-env.js --schema-only` PASS; `node scripts/check-i18n-seo.mjs` PASS (12 locale, 16 source file); `npm audit --omit=dev --audit-level=high` PASS (0 vulnerabilities); `git diff --check` PASS.
 - Gorsel QA: `/register` 1440x900 ve 390x844 viewportlarda kontrol edildi; horizontal overflow veya metin tasmasi yok. Chrome'daki tek hydration warning tarayici tema eklentisinin `<html>` attribute enjeksiyonundan kaynaklandi, uygulama diff'iyle ilgili degil.
 - Kapsam: Local code-only patch. Deploy, push, environment mutation veya real email yok.
+
+## 2026-07-28 Admin access-denial stability hotfix
+
+- Gorev: Admin panelinde arka plan yenilemesi sirasinda gecici profil/RLS/ag hatasinin yanlislikla `Access Denied` ekranina donusmesini engellemek.
+- Kok neden: 10 saniyelik admin polling akisi `profiles` sorgu hatasi ile gercek rol/permission reddini ayni kosulda ele aliyordu. Sonraki basarili sorgu ekrani kendiliginden duzelttigi icin kullanici yanlis bir yetki kaybi goruyordu.
+- Uygulama: Admin erisimi `authorized`, `denied` ve `unavailable` olarak ayrildi. Profil sorgusu sinirli arka plan retry uygular; gecici `unavailable` sonucu daha once dogrulanmis admin verisini korur. Yalniz basarili profil okumasi staff/`orders.view` yetkisinin olmadigini kanitlarsa `Access Denied` gosterilir.
+- Guvenlik: Staff permission kontrolu, e-posta dogrulamasi, Supabase RLS ve API guardlari gevsetilmedi. Gercek yetki iptali basarili profil yanitinda fail-closed davranmaya devam eder.
+- Degisen dosyalar: `src/app/admin/page.tsx`, `src/lib/adminAccess.ts`, `src/lib/adminAccessClient.ts`, `tests/admin-access-client.test.ts`, `tests/admin-session-stability.test.ts`, `.autopilot/STATUS.md`.
+- Kontroller: targeted session/UI tests PASS (109/109); lint PASS; typecheck PASS; full tests PASS (399/399); production build PASS (243 static page); payment schema-only PASS; production dependency audit PASS (0 vulnerabilities); diff check PASS.
+- Kapsam: Ayrik code-only hotfix. SQL, Supabase production, payment, email, vehicle, AI veya musteri verisi degisikligi yok. Deploy veya push yapilmadi.
