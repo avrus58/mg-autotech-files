@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { BrowserAuthBoundary } from "@/components/auth/BrowserAuthBoundary";
+import { AdminNotificationDock } from "@/components/admin/AdminNotificationDock";
 
 export const metadata: Metadata = {
   robots: {
@@ -19,6 +20,7 @@ export default function AdminLayout({
       description="MG AutoTech operations, customer records and internal controls require a verified staff session."
     >
       {children}
+      <AdminNotificationDock />
     </BrowserAuthBoundary>
   );
 }

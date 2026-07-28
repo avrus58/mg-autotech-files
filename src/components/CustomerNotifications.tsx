@@ -56,6 +56,7 @@ function timeLabel(value: string) {
 
 export function CustomerNotifications() {
   const pathname = usePathname();
+  const notificationsSuppressed = pathname === "/admin" || pathname.startsWith("/admin/") || pathname.startsWith("/embed/");
   const [userId, setUserId] = useState("");
   const [items, setItems] = useState<CustomerNotification[]>([]);
   const [open, setOpen] = useState(false);
@@ -72,12 +73,22 @@ export function CustomerNotifications() {
   const unread = useMemo(() => items.filter((item) => !item.read_at).length, [items]);
 
   useEffect(() => {
+    if (notificationsSuppressed) return;
+
+    let active = true;
+    let resolutionSequence = 0;
+
     async function resolveCustomer(id?: string) {
+      const resolution = ++resolutionSequence;
+      setUserId("");
+      setOpen(false);
+
       if (!id) {
-        setUserId("");
         return;
       }
-      const { data } = await supabase.from("profiles").select("role").eq("id", id).maybeSingle();
+
+      const { data, error } = await supabase.from("profiles").select("role").eq("id", id).maybeSingle();
+      if (!active || resolution !== resolutionSequence || error || !data) return;
       setUserId(data?.role === "admin" || data?.role === "staff" ? "" : id);
     }
 
@@ -91,11 +102,15 @@ export function CustomerNotifications() {
         setNotificationLoadError(null);
       }
     });
-    return () => data.subscription.unsubscribe();
-  }, []);
+    return () => {
+      active = false;
+      resolutionSequence += 1;
+      data.subscription.unsubscribe();
+    };
+  }, [notificationsSuppressed]);
 
   useEffect(() => {
-    if (!userId) return;
+    if (notificationsSuppressed || !userId) return;
     let active = true;
 
     async function loadNotifications(notify = false) {
@@ -152,7 +167,7 @@ export function CustomerNotifications() {
       knownIds.current = new Set();
       initialized.current = false;
     };
-  }, [notificationRefreshKey, soundEnabled, userId]);
+  }, [notificationRefreshKey, notificationsSuppressed, soundEnabled, userId]);
 
   async function markRead(ids: string[]) {
     if (!ids.length) return;
@@ -176,7 +191,7 @@ export function CustomerNotifications() {
     setNotificationRefreshKey((current) => current + 1);
   }
 
-  if (!userId || pathname.startsWith("/embed/")) return null;
+  if (notificationsSuppressed || !userId) return null;
 
   return (
     <div className="fixed right-4 top-20 z-[95] flex flex-col items-end gap-3">

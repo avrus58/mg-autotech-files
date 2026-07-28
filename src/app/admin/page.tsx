@@ -8,6 +8,7 @@ import { authenticatedFetch, getStableSession, notifySessionRequired, signOutIfE
 import { supabase } from "@/lib/supabaseClient";
 import { resolveAdminAccess } from "@/lib/adminAccessClient";
 import RequestChat from "@/components/RequestChat";
+import { AdminNotificationCenter } from "@/components/admin/AdminNotificationCenter";
 import {
   hasStaffPermission,
   isPrimaryOwner,
@@ -1198,6 +1199,19 @@ export default function AdminPage() {
             <div className="hidden rounded-xl border border-emerald-700/30 bg-emerald-950/20 px-4 py-3 text-xs font-black text-emerald-300 lg:block">
               {autoRefreshing ? "Syncing..." : lastSyncAt ? `Synced ${lastSyncAt.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}` : "Live Sync"}
             </div>
+            <AdminNotificationCenter
+              orders={orders}
+              loading={loading && !adminDataReady}
+              refreshing={autoRefreshing}
+              error={adminLoadError}
+              lastSyncAt={lastSyncAt}
+              onRefresh={() => { void loadAdminData({ silent: adminDataReady }); }}
+              onOpenOrder={(orderId) => {
+                const order = orders.find((candidate) => candidate.id === orderId);
+                if (order) setSelectedOrder(order);
+              }}
+              onFilterQueue={focusOrderQueue}
+            />
             <button onClick={() => loadAdminData()} className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-3 text-sm font-bold text-white transition hover:bg-white/10 sm:px-4">
               <RefreshCcw className={`mr-2 inline h-4 w-4 ${autoRefreshing ? "animate-spin" : ""}`} />
               <span className="hidden sm:inline">Refresh</span>
