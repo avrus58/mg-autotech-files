@@ -2052,3 +2052,13 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 - Test/SEO: UI safety testi hero kompaktligini, tek PerformanceTools instance'ini ve section sirasini dogrular. i18n/SEO guard kaldirilan panelin geri donmesini engeller ve performance tools bolumunun navigator'dan once render edilmesini zorunlu tutar.
 - Kapsam: Code-only homepage release; SQL, Supabase, payment, AI, vehicle, email, work-order veya desktop logic degisikligi yok.
 - Kontroller: i18n/SEO PASS (12 locale, 16 source file); lint PASS; typecheck PASS; full tests PASS (385/385); production build PASS (243 static page); payment schema-only PASS; production dependency audit PASS (0 vulnerabilities); diff check PASS.
+
+## 2026-07-28 Professional performance analysis workspace and report
+
+- Gorev: Homepage Torque/RPM aracini daha ciddi bir workshop analiz alanina donusturmek ve basit Dyno Report ciktisini detayli, denetlenebilir bir performans raporu ile degistirmek.
+- UI: AutoTuner CSV veya RPM/Nm satirlari icin yerel tarayici analizi, kabul/reddedilen satir ozeti, veri kalite skoru, peak torque, HP, PS/kW, ortalama tork, torque retention, RPM span, Curve/Data gorunumleri ve gercek cift egri grafigi eklendi. Calculator ve analyzer masaustu/mobil yerlesimi dengelenip yatay tasma engellendi.
+- Rapor: SVG ciktisi artik rapor kimligi, guvenli kaynak dosya adi, zaman damgasi, veri butunlugu, kalite sinifi, peak metrikleri, RPM araligi, tork/guc grafigi, yontem notlari ve temsili veri tablosu iceriyor. Yerel mutlak yol, raw dosya icerigi veya backend upload yok; rapor chassis-dyno sertifikasi olarak sunulmuyor.
+- Degisen dosyalar: `src/components/tools/PerformanceTools.tsx`, `src/lib/performanceReport.ts`, `tests/performance-report.test.ts`, `.autopilot/STATUS.md`.
+- Gorsel QA: 1440x1000 ve 390x844 viewportlarda kontrol edildi; metin/buton tasmasi ve sayfa yatay scroll'u yok. Indirilen SVG ayrica PNG olarak render edilip metric ve eksen cakismalari duzeltildi. In-app tarayicida app disi tema/extension kaynakli mevcut hydration warning disinda performance araci runtime hatasi gorulmedi.
+- Kontroller: lint PASS; typecheck PASS; full tests PASS (393/393); production build PASS (243 static page); payment schema-only PASS; i18n/SEO PASS (12 locale, 16 source file); production dependency audit PASS (0 vulnerabilities); diff check PASS.
+- Kapsam: Code-only local patch. Deploy, push, SQL, production data, payment, AI, vehicle, email, work-order veya desktop logic degisikligi yapilmadi.
