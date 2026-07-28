@@ -3,10 +3,8 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
-import { authenticatedFetch, getStableSession, notifySessionRequired, signOutIfEmailUnverified } from "@/lib/authGuards";
+import { authenticatedFetch } from "@/lib/authGuards";
 import { supabase } from "@/lib/supabaseClient";
-import { resolveAdminAccess } from "@/lib/adminAccessClient";
 import RequestChat from "@/components/RequestChat";
 import { AdminNotificationCenter } from "@/components/admin/AdminNotificationCenter";
 import {
@@ -457,8 +455,6 @@ function playAdminNotificationSound() {
 }
 
 export default function AdminPage() {
-  const router = useRouter();
-
   const [activeTab, setActiveTab] = useState<AdminTab>("orders");
   const [orders, setOrders] = useState<Order[]>([]);
   const [customers, setCustomers] = useState<Profile[]>([]);
@@ -500,36 +496,13 @@ export default function AdminPage() {
     setMessage("");
     setAdminLoadError("");
 
-    const { session } = await getStableSession();
-    if (loadSequence !== adminLoadSequenceRef.current) return;
-    const user = session?.user;
-
-    if (!user) {
-      setLoading(false);
-      setAutoRefreshing(false);
-
-      if (silent && hasLoadedAdminDataRef.current) {
-        // A background auth refresh can briefly expose no session while the
-        // persisted token is being synchronized. Keep the last verified admin
-        // view and retry on the next polling cycle without alarming the user.
-        return;
-      }
-
-      notifySessionRequired();
-      return;
-    }
-
-    if (await signOutIfEmailUnverified(user)) {
-      setLoading(false);
-      setAutoRefreshing(false);
-      router.replace("/login?verify_email=1");
-      return;
-    }
-
-    const accessResolution = await resolveAdminAccess();
-    if (loadSequence !== adminLoadSequenceRef.current) return;
-
-    if (accessResolution.state === "unavailable") {
+    let response: Response;
+    try {
+      response = await authenticatedFetch("/api/admin/dashboard", {
+        cache: "no-store",
+      });
+    } catch {
+      if (loadSequence !== adminLoadSequenceRef.current) return;
       if (!silent || !hasLoadedAdminDataRef.current) {
         setAdminLoadError(ADMIN_LOAD_ERROR_MESSAGE);
       }
@@ -538,7 +511,9 @@ export default function AdminPage() {
       return;
     }
 
-    if (accessResolution.state === "denied") {
+    if (loadSequence !== adminLoadSequenceRef.current) return;
+
+    if (response.status === 403) {
       setAdminAccess(null);
       setAdminAccessDenied(true);
       setAdminDataReady(false);
@@ -548,62 +523,35 @@ export default function AdminPage() {
       return;
     }
 
-    const access = accessResolution.access;
+    if (!response.ok) {
+      if (!silent || !hasLoadedAdminDataRef.current) setAdminLoadError(ADMIN_LOAD_ERROR_MESSAGE);
+      setLoading(false);
+      setAutoRefreshing(false);
+      return;
+    }
+
+    const payload = await response.json().catch(() => null) as {
+      access?: StaffAccess;
+      orders?: Order[];
+      customers?: Profile[];
+    } | null;
+    if (
+      loadSequence !== adminLoadSequenceRef.current ||
+      !payload?.access ||
+      !Array.isArray(payload.orders) ||
+      !Array.isArray(payload.customers)
+    ) {
+      if (!silent || !hasLoadedAdminDataRef.current) setAdminLoadError(ADMIN_LOAD_ERROR_MESSAGE);
+      setLoading(false);
+      setAutoRefreshing(false);
+      return;
+    }
+
+    const access = payload.access;
+    const nextOrders = payload.orders;
+    const nextCustomers = payload.customers;
     setAdminAccess(access);
     setAdminAccessDenied(false);
-
-    const { data, error } = await supabase.from("orders").select("*").order("created_at", { ascending: false });
-    if (loadSequence !== adminLoadSequenceRef.current) return;
-    if (error) {
-      if (!silent || !hasLoadedAdminDataRef.current) setAdminLoadError(ADMIN_LOAD_ERROR_MESSAGE);
-      setLoading(false);
-      setAutoRefreshing(false);
-      return;
-    }
-
-    const customerSelect =
-      "id, email, customer_id, full_name, role, credit_balance, account_type, company_name, phone, street, postal_code, city, country, vat_id, invoice_email, preferred_contact, allow_negative_credits, negative_credit_limit, account_status, customer_tags, internal_admin_note, created_at";
-    const fallbackCustomerSelect =
-      "id, email, customer_id, full_name, role, credit_balance, account_type, company_name, phone, street, postal_code, city, country, vat_id, invoice_email, preferred_contact, allow_negative_credits, negative_credit_limit, account_status, internal_admin_note, created_at";
-
-    let profileList: Record<string, unknown>[] | null = [];
-    let customerError = null as { code?: string; message: string } | null;
-
-    if (hasStaffPermission(access, "customers.view")) {
-      const customerResult = await supabase
-        .from("profiles")
-        .select(customerSelect)
-        .order("created_at", { ascending: false });
-      if (loadSequence !== adminLoadSequenceRef.current) return;
-      profileList = customerResult.data;
-      customerError = customerResult.error;
-    }
-
-    if (hasStaffPermission(access, "customers.view") && customerError?.code === "42703") {
-      const fallback = await supabase
-        .from("profiles")
-        .select(fallbackCustomerSelect)
-        .order("created_at", { ascending: false });
-      if (loadSequence !== adminLoadSequenceRef.current) return;
-
-      profileList = fallback.data
-        ? fallback.data.map((customer) => ({
-            ...customer,
-            customer_tags: [],
-          }))
-        : null;
-      customerError = fallback.error;
-    }
-
-    if (customerError) {
-      if (!silent || !hasLoadedAdminDataRef.current) setAdminLoadError(ADMIN_LOAD_ERROR_MESSAGE);
-      setLoading(false);
-      setAutoRefreshing(false);
-      return;
-    }
-
-    const nextOrders = (data ?? []) as Order[];
-    const nextCustomers = (profileList ?? []) as unknown as Profile[];
     const orderSnapshotRegressed = hasAdminSnapshotRegression(
       knownOrderIdsRef.current,
       nextOrders.map((order) => order.id)
@@ -658,7 +606,6 @@ export default function AdminPage() {
   useEffect(() => {
     const timeout = window.setTimeout(() => { void loadAdminData(); }, 0);
     return () => window.clearTimeout(timeout);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -688,7 +635,6 @@ export default function AdminPage() {
       window.clearInterval(interval);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const stats = useMemo<AdminStats>(() => {

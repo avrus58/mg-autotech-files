@@ -2156,3 +2156,12 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 - Degisen dosyalar: `src/app/admin/page.tsx`, `src/lib/adminDataStability.ts`, `tests/admin-session-stability.test.ts`, `.autopilot/STATUS.md`.
 - Kontroller: targeted admin stability tests PASS (9/9); lint PASS; web typecheck PASS; full tests PASS (428/428); production build PASS (245 page/route entries); production dependency audit PASS (0 vulnerabilities); diff check PASS.
 - Kapsam: Code-only local stability patch. Deploy veya push yapilmadi.
+
+## 2026-07-28 Admin hard-refresh verified snapshot hotfix
+
+- Gorev: `/admin` sayfasinda F5 sonrasi gercek siparisler yerine gecici olarak sifir siparis ve bos kuyruk gorunmesini engellemek.
+- Kok neden: Ilk admin yuklemesi tarayici Supabase istemcisinden dogrudan `orders` ve `profiles` RLS sorgulari calistiriyordu. Persisted oturum tokeni hard refresh sirasinda sorgu istemcisine henuz baglanmadiginda sorgu hata vermeden bos sonuc donebiliyor; ilk yuklemede onceki memory snapshot olmadigi icin ekran bunu dogrulanmis sifir durum olarak kabul ediyordu.
+- Uygulama: Yeni `GET /api/admin/dashboard` endpoint'i Bearer oturumunu `orders.view` ile dogrular, siparisleri server-side admin client ile yukler ve musteri verisini yalniz `customers.view` izni varsa ekler. Endpoint private/no-store kullanir ve service-role anahtarini istemciye aktarmaz. Admin sayfasi ilk yukleme ve polling icin yalniz bu dogrulanmis snapshot'i kullanir; tarayici RLS sorgulari kaldirildi. API hata verirse ilk bos durum gosterilmez, daha once yuklenen snapshot korunur.
+- Guvenlik: Anonymous/customer erisimi staff permission guard ile reddedilir. Mevcut staff yetkileri, alan gorunurlugu ve mutasyon rotalari degismedi. SQL, migration veya production veri mutasyonu yoktur.
+- Degisen dosyalar: `src/app/api/admin/dashboard/route.ts`, `src/app/admin/page.tsx`, `tests/admin-session-stability.test.ts`, `tests/ui-ux-safety.test.ts`, `.autopilot/STATUS.md`.
+- Kontroller: targeted stability tests PASS (10/10); lint PASS; full typecheck PASS; full tests PASS (429/429); production build PASS (246 page/route entries); payment schema-only PASS; production dependency audit PASS (0 vulnerabilities); diff check PASS.

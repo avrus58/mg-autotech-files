@@ -259,14 +259,19 @@ test("legacy admin order modal requires an explicit delivery estimate before sav
 
 test("legacy admin dashboard protects initial loading and keeps silent refresh failures in the background", () => {
   const adminPage = readProjectFile("src", "app", "admin", "page.tsx");
+  const dashboardRoute = readProjectFile("src", "app", "api", "admin", "dashboard", "route.ts");
 
   assert.match(adminPage, /const ADMIN_LOAD_ERROR_MESSAGE =/);
   assert.match(adminPage, /Retry before treating the queue as empty/);
   assert.match(adminPage, /const \[adminLoadError, setAdminLoadError\]/);
   assert.match(adminPage, /const \[adminDataReady, setAdminDataReady\]/);
   assert.match(adminPage, /const hasLoadedAdminDataRef = useRef\(false\)/);
-  assert.match(adminPage, /if \(error\) \{[\s\S]*if \(!silent \|\| !hasLoadedAdminDataRef\.current\) setAdminLoadError\(ADMIN_LOAD_ERROR_MESSAGE\)/);
-  assert.match(adminPage, /if \(customerError\) \{[\s\S]*if \(!silent \|\| !hasLoadedAdminDataRef\.current\) setAdminLoadError\(ADMIN_LOAD_ERROR_MESSAGE\)/);
+  assert.match(adminPage, /authenticatedFetch\("\/api\/admin\/dashboard"/);
+  assert.match(adminPage, /} catch \{[\s\S]*setAdminLoadError\(ADMIN_LOAD_ERROR_MESSAGE\)/);
+  assert.match(adminPage, /if \(!response\.ok\) \{[\s\S]*setAdminLoadError\(ADMIN_LOAD_ERROR_MESSAGE\)/);
+  assert.match(dashboardRoute, /requireStaffPermission\(request, "orders\.view"\)/);
+  assert.match(dashboardRoute, /Admin dashboard orders could not be loaded/);
+  assert.match(dashboardRoute, /Admin dashboard customers could not be loaded/);
   assert.match(adminPage, /hasLoadedAdminDataRef\.current = true/);
   assert.match(adminPage, /setAdminDataReady\(true\)/);
   assert.match(adminPage, /const refreshAdminData = \(\) => \{/);
@@ -281,8 +286,8 @@ test("legacy admin dashboard protects initial loading and keeps silent refresh f
   assert.doesNotMatch(adminPage, /ADMIN_SYNC_ERROR_MESSAGE/);
   assert.doesNotMatch(adminPage, /Admin sync needs retry/);
   assert.doesNotMatch(adminPage, /adminLoadError && adminDataReady/);
-  assert.doesNotMatch(adminPage, /if \(error\) \{\s*setMessage\(error\.message\);\s*setLoading\(false\);\s*setAutoRefreshing\(false\);/);
-  assert.doesNotMatch(adminPage, /if \(customerError\) \{\s*setMessage\(customerError\.message\);/);
+  assert.doesNotMatch(adminPage, /supabase\.from\("orders"\)\.select\("\*"\)/);
+  assert.doesNotMatch(adminPage, /supabase\s*\.from\("profiles"\)\s*\.select/);
 });
 
 test("legacy admin dashboard shows a compact latest-order operations desk", () => {
@@ -322,6 +327,7 @@ test("legacy admin dashboard shows a compact latest-order operations desk", () =
 
 test("admin customer management shows the account creation date read-only", () => {
   const adminPage = readProjectFile("src", "app", "admin", "page.tsx");
+  const dashboardRoute = readProjectFile("src", "app", "api", "admin", "dashboard", "route.ts");
 
   assert.match(
     adminPage,
@@ -330,7 +336,7 @@ test("admin customer management shows the account creation date read-only", () =
   assert.match(adminPage, /Account creation date unavailable/);
   assert.match(adminPage, /title="Customer account creation date"/);
   assert.match(
-    adminPage,
+    dashboardRoute,
     /internal_admin_note, created_at"/
   );
 });

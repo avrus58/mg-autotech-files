@@ -8,32 +8,35 @@ function readProjectFile(...segments: string[]) {
   return readFileSync(resolve(process.cwd(), ...segments), "utf8");
 }
 
-test("admin background refresh uses the stable browser session instead of a fresh user lookup", () => {
+test("admin dashboard reads a verified server snapshot instead of browser RLS queries", () => {
   const adminPage = readProjectFile("src", "app", "admin", "page.tsx");
+  const dashboardRoute = readProjectFile("src", "app", "api", "admin", "dashboard", "route.ts");
 
-  assert.match(adminPage, /import \{ authenticatedFetch, getStableSession, notifySessionRequired, signOutIfEmailUnverified \} from "@\/lib\/authGuards"/);
-  assert.match(adminPage, /import \{ resolveAdminAccess \} from "@\/lib\/adminAccessClient"/);
-  assert.match(adminPage, /const \{ session \} = await getStableSession\(\)/);
-  assert.match(adminPage, /const user = session\?\.user/);
-  assert.doesNotMatch(adminPage, /const \{ data: userData \} = await supabase\.auth\.getUser\(\)/);
-  assert.match(adminPage, /resolveAdminAccess\(\)/);
+  assert.match(adminPage, /authenticatedFetch\("\/api\/admin\/dashboard"/);
+  assert.doesNotMatch(adminPage, /supabase\.from\("orders"\)\.select\("\*"\)/);
+  assert.doesNotMatch(adminPage, /supabase\s*\.from\("profiles"\)\s*\.select\(customerSelect\)/);
+  assert.match(dashboardRoute, /requireStaffPermission\(request, "orders\.view"\)/);
+  assert.match(dashboardRoute, /getSupabaseAdmin\(\)/);
+  assert.match(dashboardRoute, /hasStaffPermission\(auth\.access, "customers\.view"\)/);
+  assert.match(dashboardRoute, /"Cache-Control": "private, no-store, max-age=0"/);
 });
 
-test("a transient silent session gap keeps the loaded admin workspace visible", () => {
+test("admin dashboard snapshot rejects anonymous requests", async () => {
+  const { GET } = await import("../src/app/api/admin/dashboard/route");
+
+  const response = await GET(new Request("http://localhost/api/admin/dashboard"));
+  assert.equal(response.status, 401);
+  assert.deepEqual(await response.json(), { error: "Unauthorized" });
+});
+
+test("a transient snapshot request failure keeps the loaded admin workspace visible", () => {
   const adminPage = readProjectFile("src", "app", "admin", "page.tsx");
 
-  assert.match(adminPage, /if \(silent && hasLoadedAdminDataRef\.current\) \{[\s\S]*?return;\s*\}/);
+  assert.match(adminPage, /if \(!silent \|\| !hasLoadedAdminDataRef\.current\) \{\s*setAdminLoadError\(ADMIN_LOAD_ERROR_MESSAGE\)/);
   assert.doesNotMatch(adminPage, /ADMIN_SESSION_SYNC_ERROR_MESSAGE/);
-  assert.doesNotMatch(
-    adminPage,
-    /if \(silent && hasLoadedAdminDataRef\.current\) \{\s*setAdminLoadError/
-  );
-  assert.match(adminPage, /notifySessionRequired\(\)/);
   assert.doesNotMatch(adminPage, /router\.replace\("\/login\?redirect=\/admin"\)/);
-  assert.doesNotMatch(
-    adminPage,
-    /if \(!user\) \{\s*router\.(?:push|replace)\("\/login"\)/
-  );
+  assert.doesNotMatch(adminPage, /setOrders\(\[\]\)/);
+  assert.doesNotMatch(adminPage, /setCustomers\(\[\]\)/);
 });
 
 test("silent admin refresh failures preserve the verified workspace without a recurring warning", () => {
@@ -84,13 +87,13 @@ test("verified admin snapshots cannot be replaced by empty, partial or older ref
 
 test("admin authorization remains profile and permission based", () => {
   const adminPage = readProjectFile("src", "app", "admin", "page.tsx");
-  const accessClient = readProjectFile("src", "lib", "adminAccessClient.ts");
   const accessClassifier = readProjectFile("src", "lib", "adminAccess.ts");
   const accessRoute = readProjectFile("src", "app", "api", "admin", "access", "route.ts");
+  const dashboardRoute = readProjectFile("src", "app", "api", "admin", "dashboard", "route.ts");
 
-  assert.match(accessClient, /authenticatedFetch\("\/api\/admin\/access"/);
-  assert.doesNotMatch(accessClient, /\.from\("profiles"\)/);
+  assert.match(adminPage, /authenticatedFetch\("\/api\/admin\/dashboard"/);
   assert.match(accessRoute, /requireStaffPermission\(request, "orders\.view"\)/);
+  assert.match(dashboardRoute, /requireStaffPermission\(request, "orders\.view"\)/);
   assert.match(accessRoute, /"Cache-Control": "private, no-store, max-age=0"/);
   assert.match(accessClassifier, /!isStaffMember\(access\)/);
   assert.match(accessClassifier, /!hasStaffPermission\(access, "orders\.view"\)/);
@@ -99,23 +102,22 @@ test("admin authorization remains profile and permission based", () => {
 
 test("transient access API failures never become a false access denial", () => {
   const adminPage = readProjectFile("src", "app", "admin", "page.tsx");
-  const accessClient = readProjectFile("src", "lib", "adminAccessClient.ts");
-  const accessClassifier = readProjectFile("src", "lib", "adminAccess.ts");
-  const unavailableBranch =
-    adminPage.match(
-      /if \(accessResolution\.state === "unavailable"\)[\s\S]*?if \(accessResolution\.state === "denied"\)/
-    )?.[0] ?? "";
+  const authGuards = readProjectFile("src", "lib", "authGuards.ts");
 
-  assert.match(accessClassifier, /if \(status === 403\) return \{ state: "denied"/);
-  assert.match(accessClassifier, /status !== 200/);
-  assert.match(accessClient, /ADMIN_ACCESS_RETRY_DELAYS_MS = \[0, 180, 480\]/);
-  assert.match(accessClient, /catch \{\s*return \{ state: "unavailable" \}/);
-  assert.match(adminPage, /if \(accessResolution\.state === "unavailable"\) \{/);
+  assert.match(authGuards, /requestRetryDelays = \[0, 250, 650\]/);
+  assert.match(adminPage, /response = await authenticatedFetch\("\/api\/admin\/dashboard"/);
   assert.match(
     adminPage,
-    /if \(!silent \|\| !hasLoadedAdminDataRef\.current\) \{\s*setAdminLoadError\(ADMIN_LOAD_ERROR_MESSAGE\)/
+    /} catch \{[\s\S]*?if \(!silent \|\| !hasLoadedAdminDataRef\.current\) \{\s*setAdminLoadError\(ADMIN_LOAD_ERROR_MESSAGE\)/
   );
-  assert.doesNotMatch(unavailableBranch, /setAdminAccessDenied\(true\)/);
+  assert.match(
+    adminPage,
+    /if \(!response\.ok\) \{[\s\S]*?setAdminLoadError\(ADMIN_LOAD_ERROR_MESSAGE\)/
+  );
+  assert.doesNotMatch(
+    adminPage,
+    /} catch \{[\s\S]*?setAdminAccessDenied\(true\)[\s\S]*?if \(loadSequence !== adminLoadSequenceRef\.current\)/
+  );
 });
 
 test("only a successful denied profile resolution closes the admin workspace", () => {
@@ -124,9 +126,9 @@ test("only a successful denied profile resolution closes the admin workspace", (
   assert.match(adminPage, /const \[adminAccessDenied, setAdminAccessDenied\] = useState\(false\)/);
   assert.match(
     adminPage,
-    /if \(accessResolution\.state === "denied"\) \{[\s\S]*setAdminAccessDenied\(true\)/
+    /if \(response\.status === 403\) \{[\s\S]*?setAdminAccessDenied\(true\)/
   );
-  assert.match(adminPage, /const access = accessResolution\.access;[\s\S]*setAdminAccessDenied\(false\)/);
+  assert.match(adminPage, /const access = payload\.access;[\s\S]*setAdminAccessDenied\(false\)/);
   assert.match(adminPage, /if \(adminAccessDenied\) \{/);
   assert.doesNotMatch(adminPage, /if \(message === "You are not authorized/);
 });
