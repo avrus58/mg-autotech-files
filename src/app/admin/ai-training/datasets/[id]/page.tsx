@@ -88,10 +88,6 @@ export default function DatasetBatchDetailPage({ params }: { params: Promise<{ i
     try {
       const response = await authenticatedFetch(`/api/admin/ai/datasets/${batchId}`);
       const data = await response.json();
-      if (response.status === 401) {
-        window.location.href = `/login?redirect=/admin/ai-training/datasets/${batchId}`;
-        return;
-      }
       if (!response.ok) throw new Error(data.error || "Dataset batch could not be loaded.");
       setDetail(data);
     } catch (error) {

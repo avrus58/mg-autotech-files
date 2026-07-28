@@ -52,10 +52,6 @@ export default function MapDefinitionsPage() {
     try {
       const response = await authenticatedFetch("/api/admin/ai-training/map-definitions");
       const data = await response.json();
-      if (response.status === 401) {
-        window.location.href = "/login?redirect=/admin/ai-training/map-definitions";
-        return;
-      }
       if (!response.ok) {
         setSetupRequired(Boolean(data.setupRequired));
         throw new Error(data.error || "Map definitions could not be loaded.");

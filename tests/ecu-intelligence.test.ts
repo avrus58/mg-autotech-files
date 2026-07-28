@@ -2108,11 +2108,12 @@ test("rate limiter keys requests by forwarded client IP and enforces limits", ()
   assert.ok(blocked.retryAfterSeconds > 0);
 });
 
-test("browser Supabase client persists and serializes cross-tab token refresh", () => {
+test("browser Supabase client persists sessions and uses supported default refresh coordination", () => {
   const source = readFileSync(resolve(process.cwd(), "src", "lib", "supabaseClient.ts"), "utf8");
   assert.match(source, /persistSession:\s*true/);
   assert.match(source, /autoRefreshToken:\s*true/);
-  assert.match(source, /lock:\s*typeof navigator[\s\S]*navigatorLock/);
+  assert.doesNotMatch(source, /navigatorLock/);
+  assert.doesNotMatch(source, /lockAcquireTimeout/);
   assert.match(source, /__mgAutotechSupabase/);
 });
 

@@ -16,8 +16,7 @@ import {
   UserCog,
   Users,
 } from "lucide-react";
-import { signOutIfEmailUnverified } from "@/lib/authGuards";
-import { supabase } from "@/lib/supabaseClient";
+import { authenticatedFetch, getStableSession, notifySessionRequired, signOutIfEmailUnverified } from "@/lib/authGuards";
 import {
   staffPermissionOptions,
   staffRoleDefaults,
@@ -55,28 +54,20 @@ export default function AdminTeamPage() {
   const [setupRequired, setSetupRequired] = useState(false);
 
   const authorizedFetch = useCallback(async (input: string, init?: RequestInit) => {
-    const { data } = await supabase.auth.getSession();
-    const token = data.session?.access_token;
-    if (!token) throw new Error("Unauthorized");
-    return fetch(input, {
-      ...init,
-      headers: {
-        ...(init?.headers ?? {}),
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    return authenticatedFetch(input, init);
   }, []);
 
   const loadTeam = useCallback(async () => {
     setLoading(true);
     setMessage("");
 
-    const { data: userData } = await supabase.auth.getUser();
-    if (!userData.user) {
-      router.push("/login");
+    const { session } = await getStableSession();
+    const user = session?.user;
+    if (!user) {
+      notifySessionRequired();
       return;
     }
-    if (await signOutIfEmailUnverified(userData.user)) {
+    if (await signOutIfEmailUnverified(user)) {
       router.push("/login?verify_email=1");
       return;
     }

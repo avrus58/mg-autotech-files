@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { signOutIfEmailUnverified } from "@/lib/authGuards";
+import { authenticatedFetch, getStableSession, notifySessionRequired, signOutIfEmailUnverified } from "@/lib/authGuards";
 import {
   CUSTOM_CREDIT_BASE_PRICE_EURO,
   CUSTOM_CREDIT_PRICE_EURO,
@@ -97,14 +97,8 @@ export default function BuyCreditsPage() {
   useEffect(() => {
     let active = true;
     async function loadQuote() {
-      const session = await supabase.auth.getSession();
-      const token = session.data.session?.access_token;
-      if (!token) {
-        if (active) setQuoteLoading(false);
-        return;
-      }
       try {
-        const response = await fetch("/api/credits/quote", { headers: { Authorization: `Bearer ${token}` } });
+        const response = await authenticatedFetch("/api/credits/quote");
         const payload = await response.json();
         if (!response.ok) throw new Error(payload.error || "Credit prices could not be loaded.");
         if (!active) return;
@@ -179,23 +173,22 @@ export default function BuyCreditsPage() {
     setLoadingPackage(loadingId);
     setMessage("");
 
-    const { data: sessionData } = await supabase.auth.getSession();
+    const user = (await getStableSession()).session?.user;
 
-    if (!sessionData.session) {
-      router.push("/login");
+    if (!user) {
+      setLoadingPackage(null);
+      notifySessionRequired();
       return;
     }
 
-    const { data: userData } = await supabase.auth.getUser();
-
-    if (!userData.user || (await signOutIfEmailUnverified(userData.user))) {
+    if (await signOutIfEmailUnverified(user)) {
       router.push("/login?verify_email=1");
       return;
     }
 
     if (paymentMethod === "bank") {
       try {
-        const reference = await getCustomerReference(userData.user.id);
+        const reference = await getCustomerReference(user.id);
         const selectedPackage = payload.packageId
           ? packages.find((item) => item.id === payload.packageId)
           : null;
@@ -203,11 +196,10 @@ export default function BuyCreditsPage() {
         const selectedAmount =
           selectedPackage?.priceEuro ??
           (payload.customCredits ? payload.customCredits * quote.customUnitPriceEuro : null);
-        await fetch("/api/email/bank-transfer", {
+        await authenticatedFetch("/api/email/bank-transfer", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${sessionData.session.access_token}`,
           },
           body: JSON.stringify({
             credits: selectedCredits,
@@ -230,11 +222,10 @@ export default function BuyCreditsPage() {
       return;
     }
 
-    const response = await fetch("/api/stripe/create-checkout-session", {
+    const response = await authenticatedFetch("/api/stripe/create-checkout-session", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${sessionData.session.access_token}`,
       },
       body: JSON.stringify(payload),
     });
@@ -266,16 +257,14 @@ export default function BuyCreditsPage() {
   };
 
   const copyBankReference = async () => {
-    const { data: sessionData } = await supabase.auth.getSession();
+    const user = (await getStableSession()).session?.user;
 
-    if (!sessionData.session) {
-      router.push("/login");
+    if (!user) {
+      notifySessionRequired();
       return;
     }
 
-    const { data: userData } = await supabase.auth.getUser();
-
-    if (!userData.user || (await signOutIfEmailUnverified(userData.user))) {
+    if (await signOutIfEmailUnverified(user)) {
       router.push("/login?verify_email=1");
       return;
     }
@@ -283,7 +272,7 @@ export default function BuyCreditsPage() {
     let reference = "";
 
     try {
-      reference = await getCustomerReference(userData.user.id);
+      reference = await getCustomerReference(user.id);
     } catch (error) {
       setMessage(
         error instanceof Error ? error.message : "Customer ID could not be loaded."

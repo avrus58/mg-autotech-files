@@ -18,7 +18,7 @@ import {
   Settings,
   Upload,
 } from "lucide-react";
-import { signOutIfEmailUnverified } from "@/lib/authGuards";
+import { getStableSession, notifySessionRequired, signOutIfEmailUnverified } from "@/lib/authGuards";
 import { supabase } from "@/lib/supabaseClient";
 
 type Order = {
@@ -46,7 +46,6 @@ const views: Array<{ value: View; label: string; description: string }> = [
 ];
 
 const CUSTOMER_ORDERS_LOAD_ERROR_MESSAGE = "Order archive could not be synced. Please try again.";
-const CUSTOMER_ORDERS_SYNC_ERROR_MESSAGE = "Order archive sync needs retry. Your last loaded order list is still shown.";
 
 function statusLabel(status: string | null) {
   return (status || "new_request").replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
@@ -135,16 +134,18 @@ export default function CustomerOrdersPage() {
     return query;
   }, []);
 
-  const loadOrders = useCallback(async (options?: { targetPage?: number; uid?: string }) => {
+  const loadOrders = useCallback(async (options?: { targetPage?: number; uid?: string; silent?: boolean }) => {
     const uid = options?.uid || userId;
     if (!uid) return;
     const nextPage = options?.targetPage ?? 1;
     if (nextPage > 1) setLoadingMore(true);
-    else setLoading(true);
-    setLoadError("");
+    else if (!options?.silent) setLoading(true);
+    if (!options?.silent) setLoadError("");
     const { data, error, count } = await buildQuery(uid, view, search, nextPage * pageSize - 1);
     if (error) {
-      setLoadError(hasLoadedOrdersRef.current ? CUSTOMER_ORDERS_SYNC_ERROR_MESSAGE : CUSTOMER_ORDERS_LOAD_ERROR_MESSAGE);
+      if (!options?.silent || !hasLoadedOrdersRef.current) {
+        setLoadError(CUSTOMER_ORDERS_LOAD_ERROR_MESSAGE);
+      }
     } else {
       setOrders((data ?? []) as Order[]);
       setTotal(count ?? 0);
@@ -152,22 +153,22 @@ export default function CustomerOrdersPage() {
       setOrdersReady(true);
       hasLoadedOrdersRef.current = true;
     }
-    setLoading(false);
+    if (!options?.silent) setLoading(false);
     setLoadingMore(false);
   }, [buildQuery, search, userId, view]);
 
   useEffect(() => {
     async function initialize() {
-      const { data } = await supabase.auth.getUser();
-      if (!data.user) {
-        router.push("/login");
+      const user = (await getStableSession()).session?.user;
+      if (!user) {
+        notifySessionRequired();
         return;
       }
-      if (await signOutIfEmailUnverified(data.user)) {
+      if (await signOutIfEmailUnverified(user)) {
         router.push("/login?verify_email=1");
         return;
       }
-      setUserId(data.user.id);
+      setUserId(user.id);
     }
     initialize();
   }, [router]);
@@ -183,7 +184,7 @@ export default function CustomerOrdersPage() {
     const channel = supabase.channel(`customer-order-archive-${userId}`).on(
       "postgres_changes",
       { event: "*", schema: "public", table: "orders", filter: `customer_id=eq.${userId}` },
-      () => loadOrders({ uid: userId })
+      () => loadOrders({ uid: userId, silent: true })
     ).subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [loadOrders, userId]);

@@ -3,14 +3,14 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ArrowLeft, Braces, Clipboard, ExternalLink, Loader2, Pause, Play, Search, Settings, ShieldOff } from "lucide-react";
-import { supabase } from "@/lib/supabaseClient";
+import { authenticatedFetch } from "@/lib/authGuards";
 
 type ClientRow = { id: string; company_name: string; email: string; website_domain: string; allowed_domain: string; status: string; widget_enabled: boolean; plan: string; monthly_price: number; currency: string; stripe_subscription_status: string | null; stripe_customer_id: string | null; public_key: string | null; usage_this_month: number; blocked_this_month: number; pending_domain_request_count: number; latest_requested_domain: string | null; created_at: string };
 
 export default function AdminWidgetClientsPage() {
   const [clients, setClients] = useState<ClientRow[]>([]); const [loading, setLoading] = useState(true); const [message, setMessage] = useState(""); const [search, setSearch] = useState("");
-  const authFetch = useCallback(async (url: string, init?: RequestInit) => { const token = (await supabase.auth.getSession()).data.session?.access_token; if (!token) throw new Error("Unauthorized"); return fetch(url, { ...init, headers: { ...(init?.headers ?? {}), Authorization: `Bearer ${token}` }, cache: "no-store" }); }, []);
-  const load = useCallback(async () => { try { const response = await authFetch("/api/admin/widget-clients"); const data = await response.json(); if (response.status === 401 || response.status === 403) { window.location.href = "/login"; return; } if (!response.ok) throw new Error(data.error); setClients(data.clients ?? []); } catch (error) { if (error instanceof Error && error.message === "Unauthorized") { window.location.href = "/login"; return; } setMessage(error instanceof Error ? error.message : "Widget clients could not be loaded."); } finally { setLoading(false); } }, [authFetch]);
+  const authFetch = useCallback((url: string, init?: RequestInit) => authenticatedFetch(url, { ...init, cache: "no-store" }), []);
+  const load = useCallback(async () => { try { const response = await authFetch("/api/admin/widget-clients"); const data = await response.json(); if (!response.ok) throw new Error(data.error); setClients(data.clients ?? []); } catch (error) { setMessage(error instanceof Error ? error.message : "Widget clients could not be loaded."); } finally { setLoading(false); } }, [authFetch]);
   useEffect(() => { void Promise.resolve().then(load); }, [load]);
   async function quickAction(id: string, action: "activate" | "suspend") { const response = await authFetch(`/api/admin/widget-clients/${id}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action }) }); const data = await response.json(); if (!response.ok) { setMessage(data.error || "Action failed."); return; } await load(); }
   async function copyEmbed(client: ClientRow) { if (!client.public_key) { setMessage("This client has no active public key."); return; } await navigator.clipboard.writeText(`<div id="mga-vehicle-lookup"></div>\n<script src="https://file.mgautotech.de/widget/vehicle-lookup.js" data-client-key="${client.public_key}" data-target="#mga-vehicle-lookup"></script>`); setMessage(`Embed code copied for ${client.company_name}.`); }

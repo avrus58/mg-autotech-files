@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { BrowserAuthBoundary } from "@/components/auth/BrowserAuthBoundary";
 
 export const metadata: Metadata = {
   robots: {
@@ -12,5 +13,12 @@ export default function AdminLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  return children;
+  return (
+    <BrowserAuthBoundary
+      title="Please log in to access the admin workspace"
+      description="MG AutoTech operations, customer records and internal controls require a verified staff session."
+    >
+      {children}
+    </BrowserAuthBoundary>
+  );
 }

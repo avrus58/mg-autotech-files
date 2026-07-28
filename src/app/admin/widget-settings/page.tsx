@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { ArrowLeft, Braces, CreditCard, Globe2, Loader2, Save, ShieldCheck, TriangleAlert } from "lucide-react";
-import { supabase } from "@/lib/supabaseClient";
+import { authenticatedFetch } from "@/lib/authGuards";
 import { defaultWidgetSettings, widgetLanguageCodes, type WidgetLanguage, type WidgetSettings } from "@/lib/widget/types";
 
 const names: Record<WidgetLanguage, string> = { de: "German", en: "English", tr: "Turkish", fr: "French", es: "Spanish", it: "Italian", nl: "Dutch", pl: "Polish", ro: "Romanian", pt: "Portuguese", ru: "Russian", ar: "Arabic" };
@@ -11,8 +11,8 @@ const names: Record<WidgetLanguage, string> = { de: "German", en: "English", tr:
 export default function AdminWidgetSettingsPage() {
   const [settings, setSettings] = useState<WidgetSettings>(defaultWidgetSettings);
   const [loading, setLoading] = useState(true); const [saving, setSaving] = useState(false); const [message, setMessage] = useState(""); const [setup, setSetup] = useState(false);
-  const authFetch = useCallback(async (url: string, init?: RequestInit) => { const token = (await supabase.auth.getSession()).data.session?.access_token; if (!token) throw new Error("Unauthorized"); return fetch(url, { ...init, headers: { ...(init?.headers ?? {}), Authorization: `Bearer ${token}` } }); }, []);
-  const load = useCallback(async () => { try { const response = await authFetch("/api/admin/widget-settings", { cache: "no-store" }); const data = await response.json(); if (response.status === 401 || response.status === 403) { window.location.href = "/login"; return; } if (!response.ok) { setSetup(Boolean(data.setupRequired)); throw new Error(data.error); } setSettings(data.settings); } catch (error) { if (error instanceof Error && error.message === "Unauthorized") { window.location.href = "/login"; return; } setMessage(error instanceof Error ? error.message : "Settings could not be loaded."); } finally { setLoading(false); } }, [authFetch]);
+  const authFetch = useCallback((url: string, init?: RequestInit) => authenticatedFetch(url, init), []);
+  const load = useCallback(async () => { try { const response = await authFetch("/api/admin/widget-settings", { cache: "no-store" }); const data = await response.json(); if (!response.ok) { setSetup(Boolean(data.setupRequired)); throw new Error(data.error); } setSettings(data.settings); } catch (error) { setMessage(error instanceof Error ? error.message : "Settings could not be loaded."); } finally { setLoading(false); } }, [authFetch]);
   useEffect(() => { void Promise.resolve().then(load); }, [load]);
   function set<K extends keyof WidgetSettings>(key: K, value: WidgetSettings[K]) { setSettings((current) => ({ ...current, [key]: value })); }
   function toggleLanguage(code: WidgetLanguage) { const next = settings.enabled_languages.includes(code) ? settings.enabled_languages.filter((item) => item !== code) : [...settings.enabled_languages, code]; if (next.length) set("enabled_languages", next); }

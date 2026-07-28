@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { BrowserAuthBoundary } from "@/components/auth/BrowserAuthBoundary";
 import { DashboardClient } from "@/components/dashboard/DashboardClient";
 
 export const metadata: Metadata = {
@@ -9,13 +8,5 @@ export const metadata: Metadata = {
 };
 
 export default function DashboardPage() {
-  return (
-    <BrowserAuthBoundary
-      title="Please log in to access your customer dashboard"
-      description="Your file requests, credits, messages and completed files are protected inside your MG AutoTech account."
-      nextPath="/dashboard"
-    >
-      <DashboardClient />
-    </BrowserAuthBoundary>
-  );
+  return <DashboardClient />;
 }

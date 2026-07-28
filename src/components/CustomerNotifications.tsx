@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Bell, CheckCheck, MessageSquareText, RefreshCw, Volume2, VolumeX, X } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
+import { getStableSession } from "@/lib/authGuards";
 
 type CustomerNotification = {
   id: string;
@@ -80,9 +81,9 @@ export function CustomerNotifications() {
       setUserId(data?.role === "admin" || data?.role === "staff" ? "" : id);
     }
 
-    supabase.auth.getUser().then(({ data }) => resolveCustomer(data.user?.id));
+    void getStableSession().then(({ session }) => resolveCustomer(session?.user?.id));
     const { data } = supabase.auth.onAuthStateChange((_event, session) => {
-      resolveCustomer(session?.user?.id);
+      window.setTimeout(() => { void resolveCustomer(session?.user?.id); }, 0);
       if (!session?.user) {
         setItems([]);
         setOpen(false);
@@ -113,7 +114,9 @@ export function CustomerNotifications() {
       if (!active) return;
       if (error) {
         setNotificationLoading(false);
-        setNotificationLoadError("Notifications could not be loaded. Please try again.");
+        if (!initialized.current) {
+          setNotificationLoadError("Notifications could not be loaded. Please try again.");
+        }
         return;
       }
       const next = (data ?? []) as CustomerNotification[];

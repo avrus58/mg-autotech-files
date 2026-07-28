@@ -5,7 +5,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, BadgeCheck, Braces, Check, Code2, CreditCard, DatabaseZap, Globe2, Loader2, LockKeyhole, ShieldCheck, X } from "lucide-react";
 import { PublicVehicleSelector } from "@/components/widget/PublicVehicleSelector";
-import { supabase } from "@/lib/supabaseClient";
+import { getStableSession } from "@/lib/authGuards";
 import { widgetT } from "@/lib/i18n/widget-translations";
 import { widgetLanguageCodes, type WidgetLanguage, type WidgetSettings, type WidgetTheme } from "@/lib/widget/types";
 
@@ -43,7 +43,7 @@ export function WidgetSalesPageClient({ initialSettings, databaseReady, initialL
 
   async function checkout(event: React.FormEvent) {
     event.preventDefault(); setSubmitting(true); setMessage("");
-    const session = (await supabase.auth.getSession()).data.session;
+    const session = (await getStableSession()).session;
     const response = await fetch("/api/stripe/widget-checkout", {
       method: "POST", headers: { "Content-Type": "application/json", ...(session ? { Authorization: `Bearer ${session.access_token}` } : {}) },
       body: JSON.stringify({ companyName, email, websiteDomain: domain, preferredLanguage: language }),

@@ -55,10 +55,6 @@ export default function SyntheticLabPage() {
     try {
       const response = await authenticatedFetch("/api/admin/ai-training/synthetic-lab");
       const data = await response.json();
-      if (response.status === 401) {
-        window.location.href = "/login?redirect=/admin/ai-training/synthetic-lab";
-        return;
-      }
       if (!response.ok) throw new Error(data.error || "Synthetic lab could not be loaded.");
       setPayload(data as Payload);
     } catch (error) {

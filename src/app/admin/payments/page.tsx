@@ -18,7 +18,7 @@ import {
   Search,
   ShieldCheck,
 } from "lucide-react";
-import { supabase } from "@/lib/supabaseClient";
+import { authenticatedFetch } from "@/lib/authGuards";
 
 type Provider = "stripe" | "paypal" | "bank";
 type Customer = {
@@ -199,29 +199,16 @@ export default function PaymentControlPage() {
   const [reviewNote, setReviewNote] = useState("");
   const [bankForm, setBankForm] = useState<BankForm>(emptyBankForm);
 
-  const authFetch = useCallback(async (init?: RequestInit) => {
-    const session = await supabase.auth.getSession();
-    const token = session.data.session?.access_token;
-    if (!token) {
-      window.location.href = "/login?redirect=/admin/payments";
-      throw new Error("Unauthorized");
-    }
-    return fetch("/api/admin/payments", {
-      ...init,
-      headers: { ...init?.headers, Authorization: `Bearer ${token}` },
-      cache: "no-store",
-    });
-  }, []);
+  const authFetch = useCallback(
+    (init?: RequestInit) => authenticatedFetch("/api/admin/payments", { ...init, cache: "no-store" }),
+    [],
+  );
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
       const response = await authFetch();
       const payload = await response.json();
-      if (response.status === 401 || response.status === 403) {
-        window.location.href = "/login?redirect=/admin/payments";
-        return;
-      }
       if (!response.ok) throw new Error(payload.error || "Payment data could not be loaded.");
       setData(payload);
     } catch (error) {

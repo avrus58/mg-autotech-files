@@ -16,8 +16,7 @@ import {
   Search,
   User,
 } from "lucide-react";
-import { signOutIfEmailUnverified } from "@/lib/authGuards";
-import { supabase } from "@/lib/supabaseClient";
+import { authenticatedFetch, getStableSession, notifySessionRequired, signOutIfEmailUnverified } from "@/lib/authGuards";
 import { labelFromToken } from "@/lib/workOrders/types";
 
 type ApiItem = {
@@ -151,25 +150,24 @@ export default function AdminRequestsClient() {
     setLoading(true);
     setMessage("");
     setLoadError("");
-    const { data: userData } = await supabase.auth.getUser();
-    if (!userData.user) {
-      router.push("/login?redirect=/admin/requests");
+    const { session } = await getStableSession();
+    const user = session?.user;
+    if (!user) {
+      notifySessionRequired();
       return;
     }
-    if (await signOutIfEmailUnverified(userData.user)) {
+    if (await signOutIfEmailUnverified(user)) {
       router.push("/login?verify_email=1");
       return;
     }
-    const { data } = await supabase.auth.getSession();
-    const token = data.session?.access_token;
+    const token = session.access_token;
     if (!token) {
-      setMessage("Unauthorized");
+      notifySessionRequired();
       setLoading(false);
       return;
     }
     try {
-      const response = await fetch("/api/admin/requests", {
-        headers: { Authorization: `Bearer ${token}` },
+      const response = await authenticatedFetch("/api/admin/requests", {
         cache: "no-store",
       });
       if (!response.ok) {

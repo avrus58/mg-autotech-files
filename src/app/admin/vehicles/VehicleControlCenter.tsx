@@ -20,7 +20,7 @@ import {
   Sparkles,
   UploadCloud,
 } from "lucide-react";
-import { supabase } from "@/lib/supabaseClient";
+import { authenticatedFetch } from "@/lib/authGuards";
 import type { VehicleControlRecord, VehicleImportSummary } from "@/lib/vehicleControl/types";
 import type { ExternalVehicleEntry, VehicleEnrichmentPlan } from "@/lib/vehicleEnrichment/types";
 import { parseVehicleEnrichmentEntries } from "@/lib/vehicleEnrichment/parseInput";
@@ -100,12 +100,10 @@ export default function VehicleControlCenter({ section = "overview" }: { section
   const [draft, setDraft] = useState<CreateDraftState>(blankDraft);
   const [importConfirm, setImportConfirm] = useState("");
 
-  const authFetch = useCallback(async (url: string, init?: RequestInit) => {
-    const session = await supabase.auth.getSession();
-    const token = session.data.session?.access_token;
-    if (!token) throw new Error("Unauthorized");
-    return fetch(url, { ...init, headers: { ...init?.headers, Authorization: `Bearer ${token}` } });
-  }, []);
+  const authFetch = useCallback(
+    (url: string, init?: RequestInit) => authenticatedFetch(url, init),
+    [],
+  );
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -113,10 +111,6 @@ export default function VehicleControlCenter({ section = "overview" }: { section
     try {
       const response = await authFetch("/api/admin/vehicles");
       const data = await response.json();
-      if (response.status === 401) {
-        window.location.href = "/login?redirect=/admin/vehicles";
-        return;
-      }
       if (!response.ok) throw new Error(data.error || "Vehicle database could not be loaded.");
       setPayload(data);
     } catch (error) {

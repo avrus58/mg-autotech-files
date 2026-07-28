@@ -4,7 +4,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getStableSession, signOutIfEmailUnverified } from "@/lib/authGuards";
+import { authenticatedFetch, getStableSession, notifySessionRequired, signOutIfEmailUnverified } from "@/lib/authGuards";
 import { supabase } from "@/lib/supabaseClient";
 import RequestChat from "@/components/RequestChat";
 import {
@@ -175,8 +175,6 @@ const accountStatusOptions = ["active", "suspended", "blocked"];
 const adminOrdersPageSize = 15;
 const ADMIN_LOAD_ERROR_MESSAGE =
   "Admin operations could not be loaded. Retry before treating the queue as empty.";
-const ADMIN_SYNC_ERROR_MESSAGE =
-  "Admin operations could not be refreshed. The last loaded orders and customers are still shown.";
 type AdminOrderGroup = "open" | "completed" | "cancelled" | "all";
 
 type AdminStats = {
@@ -510,7 +508,7 @@ export default function AdminPage() {
         return;
       }
 
-      router.replace("/login?redirect=/admin");
+      notifySessionRequired();
       return;
     }
 
@@ -559,9 +557,7 @@ export default function AdminPage() {
 
     const { data, error } = await supabase.from("orders").select("*").order("created_at", { ascending: false });
     if (error) {
-      setAdminLoadError(
-        hasLoadedAdminDataRef.current ? ADMIN_SYNC_ERROR_MESSAGE : ADMIN_LOAD_ERROR_MESSAGE
-      );
+      if (!silent || !hasLoadedAdminDataRef.current) setAdminLoadError(ADMIN_LOAD_ERROR_MESSAGE);
       setLoading(false);
       setAutoRefreshing(false);
       return;
@@ -600,9 +596,7 @@ export default function AdminPage() {
     }
 
     if (customerError) {
-      setAdminLoadError(
-        hasLoadedAdminDataRef.current ? ADMIN_SYNC_ERROR_MESSAGE : ADMIN_LOAD_ERROR_MESSAGE
-      );
+      if (!silent || !hasLoadedAdminDataRef.current) setAdminLoadError(ADMIN_LOAD_ERROR_MESSAGE);
       setLoading(false);
       setAutoRefreshing(false);
       return;
@@ -810,12 +804,7 @@ export default function AdminPage() {
     setSelectedCustomer(customer);
     setCustomerForm(makeCustomerForm(customer));
     try {
-      const session = await supabase.auth.getSession();
-      const token = session.data.session?.access_token;
-      if (!token) throw new Error("Unauthorized");
-      const response = await fetch(`/api/admin/customers/${customer.id}/commercial-policy`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await authenticatedFetch(`/api/admin/customers/${customer.id}/commercial-policy`);
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.error || "Customer pricing policy could not be loaded.");
       const policy = payload.policy;
@@ -928,12 +917,9 @@ export default function AdminPage() {
 
     if (hasStaffPermission(adminAccess, "credits.manage")) {
       try {
-        const session = await supabase.auth.getSession();
-        const token = session.data.session?.access_token;
-        if (!token) throw new Error("Unauthorized");
-        const response = await fetch(`/api/admin/customers/${selectedCustomer.id}/commercial-policy`, {
+        const response = await authenticatedFetch(`/api/admin/customers/${selectedCustomer.id}/commercial-policy`, {
           method: "PATCH",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             creditPriceOverrideEuro: customerForm.credit_price_override_eur.trim() ? Number(customerForm.credit_price_override_eur) : null,
             adjustmentType: customerForm.commercial_adjustment_type,
@@ -983,14 +969,9 @@ export default function AdminPage() {
     setOrders((current) => current.map((order) => (order.id === orderId ? { ...order, status: newStatus } : order)));
     setSelectedOrder((current) => (current?.id === orderId ? { ...current, status: newStatus } : current));
     if (newStatus === "completed") {
-      const { data } = await supabase.auth.getSession();
-      const token = data.session?.access_token;
-      if (token) {
-        void fetch(`/api/admin/orders/${orderId}/training-capture`, {
-          method: "POST",
-          headers: { Authorization: `Bearer ${token}` },
-        });
-      }
+      void authenticatedFetch(`/api/admin/orders/${orderId}/training-capture`, {
+        method: "POST",
+      }).catch(() => undefined);
     }
   }
 
@@ -1093,17 +1074,9 @@ export default function AdminPage() {
       uploaded_at: new Date().toISOString(),
     };
     const modifiedFiles = [...getModifiedFileVersions(order), version];
-    const { data: sessionData } = await supabase.auth.getSession();
-    const token = sessionData.session?.access_token;
-    if (!token) {
-      setUploadingModifiedId(null);
-      setMessage("Unauthorized");
-      return;
-    }
-    const deliveryResponse = await fetch(`/api/admin/orders/${order.id}/complete-delivery`, {
+    const deliveryResponse = await authenticatedFetch(`/api/admin/orders/${order.id}/complete-delivery`, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
@@ -1143,19 +1116,10 @@ export default function AdminPage() {
 
     setUpdatingId(orderId);
     setMessage("");
-    const { data } = await supabase.auth.getSession();
-    const token = data.session?.access_token;
-    if (!token) {
-      setUpdatingId(null);
-      setMessage("Unauthorized");
-      return;
-    }
-
-    const response = await fetch(`/api/admin/orders/${orderId}/upload-permission`, {
+    const response = await authenticatedFetch(`/api/admin/orders/${orderId}/upload-permission`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({ enabled }),
     });
@@ -1397,23 +1361,6 @@ export default function AdminPage() {
 
           {message && (
             <div className="mb-6 rounded-2xl border border-red-800/50 bg-red-950/30 p-4 text-sm text-red-200">{message}</div>
-          )}
-
-          {adminLoadError && adminDataReady && (
-            <div role="alert" className="mb-6 flex flex-col gap-4 rounded-2xl border border-amber-700/40 bg-amber-950/20 p-4 text-sm text-amber-100 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <div className="font-black text-amber-200">Admin sync needs retry</div>
-                <div className="mt-1 text-amber-100/80">{adminLoadError}</div>
-              </div>
-              <button
-                type="button"
-                onClick={() => loadAdminData()}
-                className="inline-flex h-10 items-center justify-center rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 text-sm font-black text-amber-100 transition hover:bg-amber-500/20"
-              >
-                <RefreshCcw className={`mr-2 h-4 w-4 ${autoRefreshing || loading ? "animate-spin" : ""}`} />
-                Try again
-              </button>
-            </div>
           )}
 
           {showInitialAdminLoadError ? (

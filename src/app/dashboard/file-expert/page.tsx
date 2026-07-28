@@ -16,8 +16,7 @@ import {
   ShieldCheck,
   Upload,
 } from "lucide-react";
-import { signOutIfEmailUnverified } from "@/lib/authGuards";
-import { getFileExpertAuthHeaders } from "@/lib/fileExpert/client";
+import { authenticatedFetch, getStableSession, notifySessionRequired, signOutIfEmailUnverified } from "@/lib/authGuards";
 import {
   fileExpertAllowedExtensions,
   fileExpertAllowedExtensionsLabel,
@@ -32,8 +31,6 @@ const readMethods: FileExpertReadMethod[] = ["OBD", "Bench", "Boot", "VR", "Unkn
 const fileExpertFileRequirements = `Allowed files: ${fileExpertAllowedExtensionsLabel}. Maximum ${fileExpertMaxFileSizeLabel} per file.`;
 const fileExpertAccept = fileExpertAllowedExtensions.join(",");
 const FILE_EXPERT_JOBS_LOAD_ERROR_MESSAGE = "File Expert analysis history could not be loaded. Please try again.";
-const FILE_EXPERT_JOBS_SYNC_ERROR_MESSAGE =
-  "File Expert analysis history could not be refreshed. Your last loaded analysis history is still shown.";
 
 type FileExpertFormState = {
   brand: string;
@@ -148,23 +145,22 @@ export default function FileExpertDashboardPage() {
     if (!options?.silent) setLoading(true);
     setMessage("");
 
-    const { data: userData } = await supabase.auth.getUser();
+    const user = (await getStableSession()).session?.user;
 
-    if (!userData.user) {
-      router.push("/login");
+    if (!user) {
+      notifySessionRequired();
+      setLoading(false);
       return;
     }
 
-    if (await signOutIfEmailUnverified(userData.user)) {
+    if (await signOutIfEmailUnverified(user)) {
       router.push("/login?verify_email=1");
       return;
     }
 
     try {
-      const headers = await getFileExpertAuthHeaders();
-      const response = await fetch("/api/file-expert/jobs", {
+      const response = await authenticatedFetch("/api/file-expert/jobs", {
         cache: "no-store",
-        headers,
       });
       const payload = (await response.json().catch(() => ({}))) as { jobs?: FileExpertJob[] };
 
@@ -177,9 +173,9 @@ export default function FileExpertDashboardPage() {
       setJobsReady(true);
       hasLoadedJobsRef.current = true;
     } catch {
-      setJobsLoadError(
-        hasLoadedJobsRef.current ? FILE_EXPERT_JOBS_SYNC_ERROR_MESSAGE : FILE_EXPERT_JOBS_LOAD_ERROR_MESSAGE
-      );
+      if (!options?.silent || !hasLoadedJobsRef.current) {
+        setJobsLoadError(FILE_EXPERT_JOBS_LOAD_ERROR_MESSAGE);
+      }
     } finally {
       setLoading(false);
     }
@@ -250,10 +246,9 @@ export default function FileExpertDashboardPage() {
 
     setSubmitting(true);
     setSubmissionStage("Preparing secure upload...");
-    const headers = await getFileExpertAuthHeaders();
-    const prepareResponse = await fetch("/api/file-expert/jobs/prepare", {
+    const prepareResponse = await authenticatedFetch("/api/file-expert/jobs/prepare", {
       method: "POST",
-      headers: { "Content-Type": "application/json", ...headers },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         ...form,
         oriFile: oriFile ? { name: oriFile.name, size: oriFile.size, type: oriFile.type } : null,
@@ -287,9 +282,8 @@ export default function FileExpertDashboardPage() {
     const uploadError = uploadResults.find((result) => result.error)?.error;
 
     if (uploadError) {
-      await fetch(`/api/file-expert/jobs/${prepared.jobId}/finalize`, {
+      await authenticatedFetch(`/api/file-expert/jobs/${prepared.jobId}/finalize`, {
         method: "POST",
-        headers: await getFileExpertAuthHeaders(),
       });
       setMessage(uploadError.message || "File upload failed.");
       setSubmissionStage("");
@@ -299,9 +293,8 @@ export default function FileExpertDashboardPage() {
     }
 
     setSubmissionStage("Identifying control unit...");
-    const finalizeResponse = await fetch(`/api/file-expert/jobs/${prepared.jobId}/finalize`, {
+    const finalizeResponse = await authenticatedFetch(`/api/file-expert/jobs/${prepared.jobId}/finalize`, {
       method: "POST",
-      headers: await getFileExpertAuthHeaders(),
     });
     const finalized = await finalizeResponse.json();
     setSubmissionStage("");

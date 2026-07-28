@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getStableSession, signOutIfEmailUnverified, signOutStable } from "@/lib/authGuards";
+import { getStableSession, notifySessionRequired, signOutIfEmailUnverified, signOutStable } from "@/lib/authGuards";
 import { supabase } from "@/lib/supabaseClient";
 import {
   ArrowRight,
@@ -75,8 +75,6 @@ type DashboardProfile = {
 
 const DASHBOARD_LOAD_ERROR_MESSAGE =
   "We could not load your dashboard data. Please try again.";
-const DASHBOARD_SYNC_ERROR_MESSAGE =
-  "Dashboard sync failed. Your last loaded data is still shown.";
 
 function hasProfileValue(value: string | null | undefined) {
   return Boolean(value?.trim());
@@ -215,8 +213,7 @@ export function DashboardClient() {
           const { session } = await getStableSession();
           if (!session?.user) {
             if (!silent) {
-              keepLoadingForRedirect = true;
-              router.replace("/login");
+              notifySessionRequired();
             }
             return;
           }
@@ -307,11 +304,9 @@ export function DashboardClient() {
           cancelledOrdersError;
 
         if (queryFailed) {
-          setDashboardLoadError(
-            hasLoadedDashboardRef.current || silent
-              ? DASHBOARD_SYNC_ERROR_MESSAGE
-              : DASHBOARD_LOAD_ERROR_MESSAGE
-          );
+          if (!silent || !hasLoadedDashboardRef.current) {
+            setDashboardLoadError(DASHBOARD_LOAD_ERROR_MESSAGE);
+          }
           return;
         }
 
@@ -341,11 +336,9 @@ export function DashboardClient() {
         setDashboardReady(true);
         hasLoadedDashboardRef.current = true;
       } catch {
-        setDashboardLoadError(
-          hasLoadedDashboardRef.current || silent
-            ? DASHBOARD_SYNC_ERROR_MESSAGE
-            : DASHBOARD_LOAD_ERROR_MESSAGE
-        );
+        if (!silent || !hasLoadedDashboardRef.current) {
+          setDashboardLoadError(DASHBOARD_LOAD_ERROR_MESSAGE);
+        }
       } finally {
         if (silent) {
           setLiveRefreshing(false);
@@ -362,15 +355,17 @@ export function DashboardClient() {
         currentUserId = session.user.id;
         setEmail(session.user.email ?? null);
       } else if (event === "SIGNED_OUT") {
-        void getStableSession().then(({ session: recovered }) => {
-          if (recovered?.user) {
-            currentUserId = recovered.user.id;
-            setEmail(recovered.user.email ?? null);
-          } else {
-            currentUserId = null;
-            router.replace("/login");
-          }
-        });
+        window.setTimeout(() => {
+          void getStableSession().then(({ session: recovered }) => {
+            if (recovered?.user) {
+              currentUserId = recovered.user.id;
+              setEmail(recovered.user.email ?? null);
+            } else {
+              currentUserId = null;
+              notifySessionRequired();
+            }
+          });
+        }, 0);
       }
     });
 

@@ -34,7 +34,6 @@ export default function PatternClusterDetailPage() {
     try {
       const response = await authFetch(`/api/admin/ai-training/clusters/${id}`);
       const payload = await response.json();
-      if (response.status === 401) { window.location.href = `/login?redirect=/admin/ai-training/clusters/${id}`; return; }
       if (!response.ok) throw new Error(payload.error || "Cluster could not be loaded.");
       setData(payload as Payload);
     } catch (error) { setMessage(error instanceof Error ? error.message : "Cluster could not be loaded."); }

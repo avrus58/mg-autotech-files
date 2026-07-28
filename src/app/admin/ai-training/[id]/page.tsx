@@ -60,9 +60,6 @@ type DetailPayload = {
 const outcomes = ["unknown", "customer_ok", "issue_reported", "limp", "smoke", "knock", "dyno_confirmed", "needs_revision"];
 const changeTypes = ["identical", "focused_calibration", "distributed_calibration", "broad_rework", "structural_mismatch", "single_file", "unknown"] as const;
 const sourceTypes: TrainingSourceType[] = ["completed_request", "demo_fixture", "manual_capture", "file_expert"];
-const ADMIN_SESSION_RETRY_MESSAGE =
-  "Your secure admin session is reconnecting. Please try the action again.";
-
 export default function AiTrainingDetailPage() {
   const params = useParams<{ id: string }>();
   const id = params.id;
@@ -86,19 +83,10 @@ export default function AiTrainingDetailPage() {
   const [message, setMessage] = useState("");
   const [messageTone, setMessageTone] = useState<"error" | "success" | "info">("info");
 
-  const authFetch = useCallback(async (url: string, init?: RequestInit) => {
-    try {
-      const response = await authenticatedFetch(url, init);
-      if (response.status !== 401) return response;
-    } catch (error) {
-      if (!(error instanceof Error) || error.message !== "Unauthorized") throw error;
-    }
-
-    // A rejected request has not crossed the server authorization gate, so one
-    // delayed retry is safe for both reads and staff mutations.
-    await new Promise((resolve) => window.setTimeout(resolve, 450));
-    return authenticatedFetch(url, init);
-  }, []);
+  const authFetch = useCallback(
+    (url: string, init?: RequestInit) => authenticatedFetch(url, init),
+    [],
+  );
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -107,7 +95,6 @@ export default function AiTrainingDetailPage() {
     try {
       const response = await authFetch(`/api/admin/ai-training/${id}`);
       const payload = await response.json();
-      if (response.status === 401) { window.location.href = `/login?redirect=/admin/ai-training/${id}`; return; }
       if (response.status === 403) throw new Error("Access denied. Your staff role cannot review ECU learning data.");
       if (!response.ok) throw new Error(payload.error || "Training sample could not be loaded.");
       const next = payload as DetailPayload;
@@ -126,10 +113,6 @@ export default function AiTrainingDetailPage() {
       setOutcome(next.sample.outcome || "unknown");
       setNotes(next.sample.admin_notes || "");
     } catch (error) {
-      if (error instanceof Error && error.message === "Unauthorized") {
-        window.location.href = `/login?redirect=/admin/ai-training/${id}`;
-        return;
-      }
       setMessageTone("error");
       setMessage(error instanceof Error ? error.message : "Training sample could not be loaded.");
     }
@@ -172,7 +155,6 @@ export default function AiTrainingDetailPage() {
         }),
       });
       const payload = await response.json();
-      if (response.status === 401) throw new Error(ADMIN_SESSION_RETRY_MESSAGE);
       if (response.status === 403) throw new Error("Access denied. Your staff role cannot update ECU learning data.");
       if (!response.ok) throw new Error(payload.error || "Verification could not be saved.");
       setMessageTone("success");
@@ -180,13 +162,7 @@ export default function AiTrainingDetailPage() {
       await load();
     } catch (error) {
       setMessageTone("error");
-      setMessage(
-        error instanceof Error && error.message === "Unauthorized"
-          ? ADMIN_SESSION_RETRY_MESSAGE
-          : error instanceof Error
-            ? error.message
-            : "Verification could not be saved."
-      );
+      setMessage(error instanceof Error ? error.message : "Verification could not be saved.");
     }
     finally { setSaving(false); }
   }
@@ -198,7 +174,6 @@ export default function AiTrainingDetailPage() {
     try {
       const response = await authFetch(`/api/admin/ai-training/${id}/similarity`, { method: "POST" });
       const payload = await response.json();
-      if (response.status === 401) throw new Error(ADMIN_SESSION_RETRY_MESSAGE);
       if (response.status === 403) throw new Error("Access denied. Your staff role cannot run ECU similarity checks.");
       if (!response.ok) throw new Error(payload.error || "Similarity search could not be completed.");
       setMessageTone("success");
@@ -206,13 +181,7 @@ export default function AiTrainingDetailPage() {
       await load();
     } catch (error) {
       setMessageTone("error");
-      setMessage(
-        error instanceof Error && error.message === "Unauthorized"
-          ? ADMIN_SESSION_RETRY_MESSAGE
-          : error instanceof Error
-            ? error.message
-            : "Similarity search could not be completed."
-      );
+      setMessage(error instanceof Error ? error.message : "Similarity search could not be completed.");
     } finally {
       setSimilarityRunning(false);
     }

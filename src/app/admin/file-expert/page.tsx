@@ -16,8 +16,7 @@ import {
   ShieldAlert,
   SlidersHorizontal,
 } from "lucide-react";
-import { signOutIfEmailUnverified } from "@/lib/authGuards";
-import { getFileExpertAuthHeaders } from "@/lib/fileExpert/client";
+import { authenticatedFetch, getStableSession, notifySessionRequired, signOutIfEmailUnverified } from "@/lib/authGuards";
 import { supabase } from "@/lib/supabaseClient";
 import { hasStaffPermission, type StaffAccess } from "@/lib/staffPermissions";
 import type { FileExpertFeature, FileExpertJob } from "@/lib/fileExpert/types";
@@ -122,13 +121,14 @@ export default function AdminFileExpertPage() {
     if (!options?.silent) setLoading(true);
     setMessage("");
 
-    const { data: userData } = await supabase.auth.getUser();
-    if (!userData.user) {
-      router.push("/login");
+    const { session } = await getStableSession();
+    const user = session?.user;
+    if (!user) {
+      notifySessionRequired();
       return;
     }
 
-    if (await signOutIfEmailUnverified(userData.user)) {
+    if (await signOutIfEmailUnverified(user)) {
       router.push("/login?verify_email=1");
       return;
     }
@@ -136,7 +136,7 @@ export default function AdminFileExpertPage() {
     const current = await supabase
       .from("profiles")
       .select("role, staff_role, staff_permissions")
-      .eq("id", userData.user.id)
+      .eq("id", user.id)
       .single();
 
     let access: StaffAccess = {
@@ -151,7 +151,7 @@ export default function AdminFileExpertPage() {
       const legacy = await supabase
         .from("profiles")
         .select("role")
-        .eq("id", userData.user.id)
+        .eq("id", user.id)
         .single();
       access = { role: legacy.data?.role ?? null, staffRole: null, permissions: [] };
     }
@@ -162,10 +162,8 @@ export default function AdminFileExpertPage() {
       return;
     }
 
-    const headers = await getFileExpertAuthHeaders();
-    const response = await fetch("/api/file-expert/jobs?all=1", {
+    const response = await authenticatedFetch("/api/file-expert/jobs?all=1", {
       cache: "no-store",
-      headers,
     });
     const payload = await response.json();
 
@@ -191,10 +189,8 @@ export default function AdminFileExpertPage() {
   async function openJob(job: FileExpertJob, options?: { silent?: boolean }) {
     if (!options?.silent) setMessage("");
     setSelectedJob(job);
-    const headers = await getFileExpertAuthHeaders();
-    const response = await fetch(`/api/file-expert/jobs/${job.id}`, {
+    const response = await authenticatedFetch(`/api/file-expert/jobs/${job.id}`, {
       cache: "no-store",
-      headers,
     });
     const payload = await response.json();
 
@@ -257,11 +253,10 @@ export default function AdminFileExpertPage() {
     setSaving(true);
     setMessage("");
 
-    const response = await fetch(`/api/admin/file-expert/jobs/${selectedJob.id}/feedback`, {
+    const response = await authenticatedFetch(`/api/admin/file-expert/jobs/${selectedJob.id}/feedback`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        ...(await getFileExpertAuthHeaders()),
       },
       body: JSON.stringify({
         actualFeatures,
@@ -287,10 +282,8 @@ export default function AdminFileExpertPage() {
     if (!selectedJob) return;
     setReanalyzing(true);
     setMessage("");
-    const headers = await getFileExpertAuthHeaders();
-    const response = await fetch(`/api/file-expert/jobs/${selectedJob.id}/analyze`, {
+    const response = await authenticatedFetch(`/api/file-expert/jobs/${selectedJob.id}/analyze`, {
       method: "POST",
-      headers,
     });
     const payload = await response.json();
     setReanalyzing(false);

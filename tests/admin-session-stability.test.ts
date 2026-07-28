@@ -10,7 +10,7 @@ function readProjectFile(...segments: string[]) {
 test("admin background refresh uses the stable browser session instead of a fresh user lookup", () => {
   const adminPage = readProjectFile("src", "app", "admin", "page.tsx");
 
-  assert.match(adminPage, /import \{ getStableSession, signOutIfEmailUnverified \} from "@\/lib\/authGuards"/);
+  assert.match(adminPage, /import \{ authenticatedFetch, getStableSession, notifySessionRequired, signOutIfEmailUnverified \} from "@\/lib\/authGuards"/);
   assert.match(adminPage, /const \{ session \} = await getStableSession\(\)/);
   assert.match(adminPage, /const user = session\?\.user/);
   assert.doesNotMatch(adminPage, /const \{ data: userData \} = await supabase\.auth\.getUser\(\)/);
@@ -26,11 +26,23 @@ test("a transient silent session gap keeps the loaded admin workspace visible", 
     adminPage,
     /if \(silent && hasLoadedAdminDataRef\.current\) \{\s*setAdminLoadError/
   );
-  assert.match(adminPage, /router\.replace\("\/login\?redirect=\/admin"\)/);
+  assert.match(adminPage, /notifySessionRequired\(\)/);
+  assert.doesNotMatch(adminPage, /router\.replace\("\/login\?redirect=\/admin"\)/);
   assert.doesNotMatch(
     adminPage,
     /if \(!user\) \{\s*router\.(?:push|replace)\("\/login"\)/
   );
+});
+
+test("silent admin refresh failures preserve the verified workspace without a recurring warning", () => {
+  const adminPage = readProjectFile("src", "app", "admin", "page.tsx");
+
+  assert.match(
+    adminPage,
+    /if \(!silent \|\| !hasLoadedAdminDataRef\.current\) setAdminLoadError\(ADMIN_LOAD_ERROR_MESSAGE\)/
+  );
+  assert.doesNotMatch(adminPage, /ADMIN_SYNC_ERROR_MESSAGE/);
+  assert.doesNotMatch(adminPage, /Admin sync needs retry/);
 });
 
 test("admin polling avoids overlapping refreshes and pauses in hidden tabs", () => {

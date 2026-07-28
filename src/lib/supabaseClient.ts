@@ -1,4 +1,3 @@
-import { navigatorLock } from "@supabase/auth-js";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -28,9 +27,6 @@ export const supabase = browserWindow?.__mgAutotechSupabase ?? createClient(
       persistSession: true,
       autoRefreshToken: true,
       detectSessionInUrl: true,
-      // Supabase v2 still supports this lock and it prevents cross-tab refresh races.
-      lock: typeof navigator !== "undefined" && navigator.locks ? navigatorLock : undefined,
-      lockAcquireTimeout: 10_000,
     },
   }
 );

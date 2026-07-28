@@ -1,11 +1,24 @@
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabaseClient";
 
+export const AUTH_SESSION_REQUIRED_EVENT = "mg-autotech:auth-session-required";
+export const AUTH_SESSION_REQUIRED_MESSAGE = "Your secure session has ended. Please log in again.";
+export const AUTH_SESSION_RECOVERY_MESSAGE =
+  "The secure session could not be synchronized. Please retry in a moment.";
+
 const transientAuthErrors = new Set([
   "AuthRefreshDiscardedError",
   "AuthRetryableFetchError",
   "NavigatorLockAcquireTimeoutError",
 ]);
+
+const sessionReadDelays = [0, 120, 280, 520] as const;
+const requestRetryDelays = [0, 250, 650] as const;
+
+type StableSessionResult = {
+  session: Session | null;
+  error: unknown;
+};
 
 type AuthMemoryWindow = Window & typeof globalThis & {
   __mgAutotechStableSession?: Session | null;
@@ -14,6 +27,16 @@ type AuthMemoryWindow = Window & typeof globalThis & {
 
 const authWindow = typeof window === "undefined" ? null : window as AuthMemoryWindow;
 let serverStableSession: Session | null = null;
+let sessionResolutionInFlight: Promise<StableSessionResult> | null = null;
+let sessionRefreshInFlight: Promise<StableSessionResult> | null = null;
+let sessionRequiredCheckInFlight: Promise<void> | null = null;
+
+class AuthSessionRecoveryPendingError extends Error {
+  constructor() {
+    super(AUTH_SESSION_RECOVERY_MESSAGE);
+    this.name = "AuthSessionRecoveryPendingError";
+  }
+}
 
 function getCachedSession() {
   return authWindow?.__mgAutotechStableSession ?? serverStableSession;
@@ -24,11 +47,11 @@ function setCachedSession(session: Session | null) {
   if (authWindow) authWindow.__mgAutotechStableSession = session;
 }
 
-function hasUsableCachedSession() {
+function hasUsableCachedSession(expiryBufferSeconds = 15) {
   const session = getCachedSession();
   if (!session) return false;
   if (!session.expires_at) return true;
-  return session.expires_at > Math.floor(Date.now() / 1000) + 15;
+  return session.expires_at > Math.floor(Date.now() / 1000) + expiryBufferSeconds;
 }
 
 function initializeAuthMemoryListener() {
@@ -38,54 +61,99 @@ function initializeAuthMemoryListener() {
   supabase.auth.onAuthStateChange((event, session) => {
     if (session) {
       setCachedSession(session);
+    } else if (event === "SIGNED_OUT") {
+      setCachedSession(null);
     }
   });
 }
 
 export function isTransientAuthError(error: unknown) {
-  return Boolean(
-    error && typeof error === "object" && "name" in error &&
-    transientAuthErrors.has(String(error.name))
-  );
+  if (error instanceof TypeError) return true;
+  if (!error || typeof error !== "object") return false;
+
+  const name = "name" in error ? String(error.name) : "";
+  const message = "message" in error ? String(error.message).toLowerCase() : "";
+
+  return transientAuthErrors.has(name) ||
+    message.includes("network") ||
+    message.includes("fetch") ||
+    message.includes("timeout") ||
+    message.includes("lock");
 }
 
-export async function getStableSession(): Promise<{ session: Session | null; error: unknown }> {
+function sleep(delay: number) {
+  return new Promise((resolve) => globalThis.setTimeout(resolve, delay));
+}
+
+async function refreshStableSession(): Promise<StableSessionResult> {
+  if (sessionRefreshInFlight) return sessionRefreshInFlight;
+
+  const operation = (async () => {
+    try {
+      // Read the newest persisted refresh token. Passing a captured token here
+      // can replay an already-rotated token when another tab refreshes first.
+      const { data, error } = await supabase.auth.refreshSession();
+      if (data.session) {
+        setCachedSession(data.session);
+        return { session: data.session, error: null };
+      }
+      return { session: null, error };
+    } catch (error) {
+      return { session: null, error };
+    }
+  })();
+
+  sessionRefreshInFlight = operation;
+  try {
+    return await operation;
+  } finally {
+    if (sessionRefreshInFlight === operation) sessionRefreshInFlight = null;
+  }
+}
+
+async function resolveStableSession(): Promise<StableSessionResult> {
   initializeAuthMemoryListener();
   let lastError: unknown = null;
 
-  // Cross-tab refresh can briefly expose an empty session while the refreshed
-  // token is being persisted. Treat that short window as indeterminate rather
-  // than logging the user out or rejecting an authenticated action.
-  for (let attempt = 0; attempt < 6; attempt += 1) {
-    const { data, error } = await supabase.auth.getSession();
-    if (data.session) {
-      setCachedSession(data.session);
-      return { session: data.session, error: null };
-    }
-    lastError = error;
+  for (let attempt = 0; attempt < sessionReadDelays.length; attempt += 1) {
+    if (sessionReadDelays[attempt] > 0) await sleep(sessionReadDelays[attempt]);
 
-    if (hasUsableCachedSession()) {
-      return { session: getCachedSession(), error: null };
-    }
+    try {
+      const { data, error } = await supabase.auth.getSession();
+      if (data.session) {
+        setCachedSession(data.session);
+        return { session: data.session, error: null };
+      }
+      lastError = error;
 
-    if (attempt < 5) {
-      const delay = Math.min(250 * (attempt + 1), 750);
-      await new Promise((resolve) => window.setTimeout(resolve, delay));
+      if (hasUsableCachedSession()) {
+        return { session: getCachedSession(), error: null };
+      }
+
+      // A storage read can briefly return null while another tab commits a
+      // refreshed session. Complete the bounded read sequence before treating
+      // this as a signed-out state.
+    } catch (error) {
+      lastError = error;
+      if (hasUsableCachedSession()) {
+        return { session: getCachedSession(), error: null };
+      }
     }
   }
 
-  // A persisted refresh token can still be recoverable even when getSession()
-  // briefly returns an empty value during a cross-tab refresh. Try the official
-  // refresh path once before treating the browser as signed out.
-  try {
-    const { data, error } = await supabase.auth.refreshSession();
-    if (data.session) {
-      setCachedSession(data.session);
-      return { session: data.session, error: null };
-    }
-    lastError = error ?? lastError;
-  } catch (error) {
-    lastError = error;
+  const cachedSession = getCachedSession();
+  if (cachedSession?.refresh_token) {
+    const refreshed = await refreshStableSession();
+    if (refreshed.session) return refreshed;
+    lastError = refreshed.error ?? lastError;
+  }
+
+  // A known browser session disappearing without a SIGNED_OUT event is an
+  // uncertain synchronization state, not proof that the user logged out.
+  // Keep protected routes in recovery mode while Supabase finishes rotating
+  // or persisting the token instead of replacing the workspace with login UI.
+  if (getCachedSession() && !lastError) {
+    lastError = new AuthSessionRecoveryPendingError();
   }
 
   return {
@@ -94,40 +162,67 @@ export async function getStableSession(): Promise<{ session: Session | null; err
   };
 }
 
-export async function authenticatedFetch(input: RequestInfo | URL, init?: RequestInit) {
-  const { session } = await getStableSession();
-  if (!session?.access_token) throw new Error("Unauthorized");
+export async function getStableSession(): Promise<StableSessionResult> {
+  if (sessionResolutionInFlight) return sessionResolutionInFlight;
 
+  const operation = resolveStableSession();
+  sessionResolutionInFlight = operation;
+  try {
+    return await operation;
+  } finally {
+    if (sessionResolutionInFlight === operation) sessionResolutionInFlight = null;
+  }
+}
+
+export async function getStableAccessToken() {
+  const { session } = await getStableSession();
+  return session?.access_token ?? null;
+}
+
+export function notifySessionRequired() {
+  if (typeof window === "undefined" || sessionRequiredCheckInFlight) return;
+
+  const operation = (async () => {
+    const { session, error } = await getStableSession();
+    if (!session?.user && !error) {
+      window.dispatchEvent(new Event(AUTH_SESSION_REQUIRED_EVENT));
+    }
+  })().catch(() => undefined);
+
+  sessionRequiredCheckInFlight = operation;
+  void operation.finally(() => {
+    if (sessionRequiredCheckInFlight === operation) sessionRequiredCheckInFlight = null;
+  });
+}
+
+export async function authenticatedFetch(input: RequestInfo | URL, init?: RequestInit) {
   const send = (accessToken: string) => {
     const headers = new Headers(init?.headers);
     headers.set("Authorization", `Bearer ${accessToken}`);
     return fetch(input, { ...init, headers });
   };
 
-  const response = await send(session.access_token);
-  if (response.status !== 401) return response;
+  for (let attempt = 0; attempt < requestRetryDelays.length; attempt += 1) {
+    if (requestRetryDelays[attempt] > 0) await sleep(requestRetryDelays[attempt]);
 
-  let refreshedSession: Session | null = null;
-  try {
-    const { data, error } = await supabase.auth.refreshSession(
-      session.refresh_token ? { refresh_token: session.refresh_token } : undefined
-    );
-    if (!error) refreshedSession = data.session;
-  } catch {
-    // A competing browser tab may own the refresh lock. Re-read the persisted
-    // session below instead of surfacing a false Unauthorized state.
+    const resolved = attempt === 0
+      ? await getStableSession()
+      : await refreshStableSession();
+    const session = resolved.session ?? (await getStableSession()).session;
+
+    if (!session?.access_token) continue;
+
+    const response = await send(session.access_token);
+    if (response.status !== 401) return response;
   }
 
-  if (!refreshedSession?.access_token) {
-    await new Promise((resolve) => window.setTimeout(resolve, 350));
-    const recovered = await getStableSession();
-    refreshedSession = recovered.session;
+  const finalState = await getStableSession();
+  if (finalState.session?.user || finalState.error) {
+    throw new Error(AUTH_SESSION_RECOVERY_MESSAGE);
   }
 
-  if (!refreshedSession?.access_token) return response;
-
-  setCachedSession(refreshedSession);
-  return send(refreshedSession.access_token);
+  notifySessionRequired();
+  throw new Error(AUTH_SESSION_REQUIRED_MESSAGE);
 }
 
 export async function signOutStable() {

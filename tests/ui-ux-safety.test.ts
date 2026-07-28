@@ -238,18 +238,16 @@ test("legacy admin order modal requires an explicit delivery estimate before sav
   assert.doesNotMatch(adminPage, /\?\?\s*"Usually around 30 min"/);
 });
 
-test("legacy admin dashboard shows retryable sync errors instead of empty queues", () => {
+test("legacy admin dashboard protects initial loading and keeps silent refresh failures in the background", () => {
   const adminPage = readProjectFile("src", "app", "admin", "page.tsx");
 
   assert.match(adminPage, /const ADMIN_LOAD_ERROR_MESSAGE =/);
-  assert.match(adminPage, /const ADMIN_SYNC_ERROR_MESSAGE =/);
   assert.match(adminPage, /Retry before treating the queue as empty/);
-  assert.match(adminPage, /last loaded orders and customers are still shown/);
   assert.match(adminPage, /const \[adminLoadError, setAdminLoadError\]/);
   assert.match(adminPage, /const \[adminDataReady, setAdminDataReady\]/);
   assert.match(adminPage, /const hasLoadedAdminDataRef = useRef\(false\)/);
-  assert.match(adminPage, /if \(error\) \{[\s\S]*setAdminLoadError\([\s\S]*hasLoadedAdminDataRef\.current \? ADMIN_SYNC_ERROR_MESSAGE : ADMIN_LOAD_ERROR_MESSAGE/);
-  assert.match(adminPage, /if \(customerError\) \{[\s\S]*setAdminLoadError\([\s\S]*hasLoadedAdminDataRef\.current \? ADMIN_SYNC_ERROR_MESSAGE : ADMIN_LOAD_ERROR_MESSAGE/);
+  assert.match(adminPage, /if \(error\) \{[\s\S]*if \(!silent \|\| !hasLoadedAdminDataRef\.current\) setAdminLoadError\(ADMIN_LOAD_ERROR_MESSAGE\)/);
+  assert.match(adminPage, /if \(customerError\) \{[\s\S]*if \(!silent \|\| !hasLoadedAdminDataRef\.current\) setAdminLoadError\(ADMIN_LOAD_ERROR_MESSAGE\)/);
   assert.match(adminPage, /hasLoadedAdminDataRef\.current = true/);
   assert.match(adminPage, /setAdminDataReady\(true\)/);
   assert.match(adminPage, /const refreshAdminData = \(\) => \{/);
@@ -261,9 +259,9 @@ test("legacy admin dashboard shows retryable sync errors instead of empty queues
   assert.match(adminPage, /role="alert"[\s\S]*Admin data sync failed/);
   assert.match(adminPage, /The queue is not shown until orders and customers load successfully/);
   assert.match(adminPage, /onRetry=\{\(\) => loadAdminData\(\)\}/);
-  assert.match(adminPage, /adminLoadError && adminDataReady/);
-  assert.match(adminPage, /Admin sync needs retry/);
-  assert.match(adminPage, /onClick=\{\(\) => loadAdminData\(\)\}/);
+  assert.doesNotMatch(adminPage, /ADMIN_SYNC_ERROR_MESSAGE/);
+  assert.doesNotMatch(adminPage, /Admin sync needs retry/);
+  assert.doesNotMatch(adminPage, /adminLoadError && adminDataReady/);
   assert.doesNotMatch(adminPage, /if \(error\) \{\s*setMessage\(error\.message\);\s*setLoading\(false\);\s*setAutoRefreshing\(false\);/);
   assert.doesNotMatch(adminPage, /if \(customerError\) \{\s*setMessage\(customerError\.message\);/);
 });
@@ -371,18 +369,16 @@ test("customer dashboard and order archive surface action-needed orders separate
   assert.match(orders, /active=\{\["completed", "cancelled", "all"\]\.includes\(view\)\}/);
 });
 
-test("customer order archive shows retryable sync errors instead of empty state", () => {
+test("customer order archive keeps verified data during silent realtime refresh failures", () => {
   const orders = readProjectFile("src", "app", "dashboard", "orders", "page.tsx");
 
   assert.match(orders, /const CUSTOMER_ORDERS_LOAD_ERROR_MESSAGE =/);
-  assert.match(orders, /const CUSTOMER_ORDERS_SYNC_ERROR_MESSAGE =/);
+  assert.doesNotMatch(orders, /CUSTOMER_ORDERS_SYNC_ERROR_MESSAGE/);
   assert.match(orders, /const \[loadError, setLoadError\] = useState\(""\)/);
   assert.match(orders, /const \[ordersReady, setOrdersReady\] = useState\(false\)/);
   assert.match(orders, /const hasLoadedOrdersRef = useRef\(false\)/);
-  assert.match(
-    orders,
-    /setLoadError\(hasLoadedOrdersRef\.current \? CUSTOMER_ORDERS_SYNC_ERROR_MESSAGE : CUSTOMER_ORDERS_LOAD_ERROR_MESSAGE\)/
-  );
+  assert.match(orders, /if \(!options\?\.silent \|\| !hasLoadedOrdersRef\.current\) \{[\s\S]*setLoadError\(CUSTOMER_ORDERS_LOAD_ERROR_MESSAGE\)/);
+  assert.match(orders, /loadOrders\(\{ uid: userId, silent: true \}\)/);
   assert.match(orders, /setOrders\(\(data \?\? \[\]\) as Order\[\]\)/);
   assert.match(orders, /setOrdersReady\(true\)/);
   assert.match(orders, /hasLoadedOrdersRef\.current = true/);
@@ -421,11 +417,11 @@ test("customer order archive summarizes the loaded page safely", () => {
   assert.doesNotMatch(orders, /loadedOrdersSummary[\s\S]*(storage_path|signed_url|service_role|admin_note|metadata)/);
 });
 
-test("customer dashboard load errors show retry without replacing last good data", () => {
+test("customer dashboard shows initial retry and keeps silent refresh failures in the background", () => {
   const dashboard = readProjectFile("src", "components", "dashboard", "DashboardClient.tsx");
 
   assert.match(dashboard, /const DASHBOARD_LOAD_ERROR_MESSAGE =/);
-  assert.match(dashboard, /const DASHBOARD_SYNC_ERROR_MESSAGE =/);
+  assert.doesNotMatch(dashboard, /DASHBOARD_SYNC_ERROR_MESSAGE/);
   assert.match(dashboard, /const \[dashboardLoadError, setDashboardLoadError\]/);
   assert.match(dashboard, /const \[dashboardReady, setDashboardReady\]/);
   assert.match(dashboard, /const \[dashboardRefreshKey, setDashboardRefreshKey\]/);
@@ -436,8 +432,8 @@ test("customer dashboard load errors show retry without replacing last good data
   assert.match(dashboard, /error: allOrdersError/);
   assert.match(dashboard, /error: needsResponseOrdersError/);
   assert.match(dashboard, /const queryFailed =[\s\S]*profileError[\s\S]*recentOrdersError[\s\S]*transactionRowsError[\s\S]*cancelledOrdersError/);
-  assert.match(dashboard, /if \(queryFailed\) \{[\s\S]*setDashboardLoadError/);
-  assert.match(dashboard, /hasLoadedDashboardRef\.current \|\| silent[\s\S]*DASHBOARD_SYNC_ERROR_MESSAGE[\s\S]*DASHBOARD_LOAD_ERROR_MESSAGE/);
+  assert.match(dashboard, /if \(queryFailed\) \{[\s\S]*if \(!silent \|\| !hasLoadedDashboardRef\.current\)[\s\S]*setDashboardLoadError\(DASHBOARD_LOAD_ERROR_MESSAGE\)/);
+  assert.match(dashboard, /catch \{[\s\S]*if \(!silent \|\| !hasLoadedDashboardRef\.current\)[\s\S]*setDashboardLoadError\(DASHBOARD_LOAD_ERROR_MESSAGE\)/);
   assert.match(dashboard, /setOrders\(\(recentOrders \?\? \[\]\) as Order\[\]\)/);
   assert.match(dashboard, /setCreditTransactions\(\(transactionRows \?\? \[\]\) as CreditTransaction\[\]\)/);
   assert.match(dashboard, /setDashboardReady\(true\)/);
@@ -451,7 +447,6 @@ test("customer dashboard load errors show retry without replacing last good data
   assert.match(dashboard, /onClick=\{retryDashboardLoad\}/);
   assert.match(dashboard, /Try again/);
   assert.match(dashboard, /dashboardLoadError && dashboardReady/);
-  assert.match(dashboard, /Your last loaded data is still shown/);
   assert.doesNotMatch(dashboard, /profileError\.message|recentOrdersError\.message|transactionRowsError\.message|allOrdersError\.message/);
   assert.doesNotMatch(dashboard, /storage_path|signed_url|service_role|admin_note|metadata/);
 });
@@ -654,6 +649,7 @@ test("request chat composer exposes and enforces the API message length contract
   assert.match(chat, /\{charactersRemaining\} characters remaining/);
   assert.match(chat, /Press Enter to send/);
   assert.match(chat, /Shift \+ Enter for a new line/);
+  assert.match(chat, /if \(!options\?\.silent \|\| !initialLoadDoneRef\.current\) \{[\s\S]*setError\(data\.error \|\| "Messages could not be loaded\."\)/);
   assert.doesNotMatch(chat, /disabled=\{sending \|\| !message\.trim\(\)\}/);
 });
 
@@ -666,6 +662,7 @@ test("customer notifications show retryable loading and error states", () => {
   assert.match(notifications, /\.from\("notifications"\)/);
   assert.match(notifications, /\.eq\("user_id", userId\)/);
   assert.match(notifications, /if \(error\) \{[\s\S]*setNotificationLoadError\("Notifications could not be loaded\. Please try again\."\)/);
+  assert.match(notifications, /if \(!initialized\.current\) \{[\s\S]*setNotificationLoadError\("Notifications could not be loaded\. Please try again\."\)/);
   assert.match(notifications, /setNotificationLoading\(false\);[\s\S]*setNotificationLoadError\(null\);[\s\S]*knownIds\.current = new Set/);
   assert.match(notifications, /function retryNotificationLoad\(\)/);
   assert.match(notifications, /setNotificationRefreshKey\(\(current\) => current \+ 1\)/);
@@ -705,11 +702,11 @@ test("customer dashboard credit history preview uses the customer credit ledger"
   assert.doesNotMatch(dashboard, /source_id|metadata/);
 });
 
-test("customer credit ledger history shows retryable load errors", () => {
+test("customer credit ledger shows initial retry and suppresses silent refresh noise", () => {
   const page = readProjectFile("src", "app", "dashboard", "credits", "history", "page.tsx");
 
   assert.match(page, /const CREDIT_LEDGER_LOAD_ERROR_MESSAGE =/);
-  assert.match(page, /const CREDIT_LEDGER_SYNC_ERROR_MESSAGE =/);
+  assert.doesNotMatch(page, /CREDIT_LEDGER_SYNC_ERROR_MESSAGE/);
   assert.match(page, /const \[ledgerLoadError, setLedgerLoadError\]/);
   assert.match(page, /const \[ledgerReady, setLedgerReady\]/);
   assert.match(page, /const hasLoadedLedgerRef = useRef\(false\)/);
@@ -718,7 +715,7 @@ test("customer credit ledger history shows retryable load errors", () => {
   assert.match(page, /if \(profileError \|\| transactionRowsError\) \{/);
   assert.match(
     page,
-    /setLedgerLoadError\([\s\S]*hasLoadedLedgerRef\.current[\s\S]*CREDIT_LEDGER_SYNC_ERROR_MESSAGE[\s\S]*CREDIT_LEDGER_LOAD_ERROR_MESSAGE/
+    /if \(!options\?\.silent \|\| !hasLoadedLedgerRef\.current\) \{[\s\S]*setLedgerLoadError\(CREDIT_LEDGER_LOAD_ERROR_MESSAGE\)/
   );
   assert.match(page, /setTransactions\(\(transactionRows \?\? \[\]\) as CreditTransaction\[\]\)/);
   assert.match(page, /setLedgerReady\(true\)/);
@@ -730,7 +727,7 @@ test("customer credit ledger history shows retryable load errors", () => {
   assert.match(page, /onClick=\{\(\) => loadHistory\(\)\}/);
   assert.match(page, /Try again/);
   assert.match(page, /ledgerLoadError && ledgerReady/);
-  assert.match(page, /Your last loaded balance and movements are still shown/);
+  assert.doesNotMatch(page, /Your last loaded balance and movements are still shown/);
   assert.match(page, /No credit ledger yet/);
   assert.doesNotMatch(page, /error\.message|profileError\.message|transactionRowsError\.message/);
   assert.doesNotMatch(page, /credit_transactions ledger table|metadata|storage_path|signed_url|service_role|admin_note/);
@@ -818,22 +815,22 @@ test("customer File Expert intake shows upload limits before prepare", () => {
   assert.match(page, /setMessage\("Please upload at least one valid ORI or MOD file\."\)/);
   assert.match(page, /disabled=\{!canSubmitAnalysis\}/);
   assert.match(page, /if \(textLimitError\) \{[\s\S]*setMessage\(textLimitError\)/);
-  assert.match(page, /if \(!oriFile && !modFile\) \{[\s\S]*fetch\("\/api\/file-expert\/jobs\/prepare"/);
+  assert.match(page, /if \(!oriFile && !modFile\) \{[\s\S]*authenticatedFetch\("\/api\/file-expert\/jobs\/prepare"/);
 });
 
-test("customer File Expert jobs history shows retryable load errors", () => {
+test("customer File Expert history shows initial retry and suppresses silent refresh noise", () => {
   const page = readProjectFile("src", "app", "dashboard", "file-expert", "page.tsx");
   const route = readProjectFile("src", "app", "api", "file-expert", "jobs", "route.ts");
 
   assert.match(page, /const FILE_EXPERT_JOBS_LOAD_ERROR_MESSAGE =/);
-  assert.match(page, /const FILE_EXPERT_JOBS_SYNC_ERROR_MESSAGE =/);
+  assert.doesNotMatch(page, /FILE_EXPERT_JOBS_SYNC_ERROR_MESSAGE/);
   assert.match(page, /const \[jobsLoadError, setJobsLoadError\] = useState\(""\)/);
   assert.match(page, /const \[jobsReady, setJobsReady\] = useState\(false\)/);
   assert.match(page, /const hasLoadedJobsRef = useRef\(false\)/);
   assert.match(page, /if \(!response\.ok\) \{[\s\S]*throw new Error\(FILE_EXPERT_JOBS_LOAD_ERROR_MESSAGE\)/);
   assert.match(
     page,
-    /setJobsLoadError\([\s\S]*hasLoadedJobsRef\.current \? FILE_EXPERT_JOBS_SYNC_ERROR_MESSAGE : FILE_EXPERT_JOBS_LOAD_ERROR_MESSAGE/
+    /if \(!options\?\.silent \|\| !hasLoadedJobsRef\.current\) \{[\s\S]*setJobsLoadError\(FILE_EXPERT_JOBS_LOAD_ERROR_MESSAGE\)/
   );
   assert.match(page, /setJobs\(payload\.jobs \?\? \[\]\)/);
   assert.match(page, /setJobs\(payload\.jobs \?\? \[\]\);\s*setJobsLoadError\(""\)/);

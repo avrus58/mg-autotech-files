@@ -2,9 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { ArrowLeft, Mail, RefreshCw, Send, ShieldCheck } from "lucide-react";
-import { supabase } from "@/lib/supabaseClient";
+import { authenticatedFetch } from "@/lib/authGuards";
 
 type EmailAdminData = {
   provider: {
@@ -19,53 +18,48 @@ type EmailAdminData = {
 };
 
 export default function AdminEmailPage() {
-  const router = useRouter();
   const [data, setData] = useState<EmailAdminData | null>(null);
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
 
-  async function authHeaders() {
-    const { data: sessionData } = await supabase.auth.getSession();
-    if (!sessionData.session) {
-      router.push("/login?verify_email=1");
-      return null;
-    }
-    return { Authorization: `Bearer ${sessionData.session.access_token}` };
-  }
-
   async function load() {
     setLoading(true);
     setMessage("");
-    const headers = await authHeaders();
-    if (!headers) return;
-    const response = await fetch("/api/admin/email", { headers });
-    const payload = await response.json();
-    if (!response.ok) setMessage(payload.error || "Email settings could not be loaded.");
-    else setData(payload);
-    setLoading(false);
+    try {
+      const response = await authenticatedFetch("/api/admin/email");
+      const payload = await response.json();
+      if (!response.ok) setMessage(payload.error || "Email settings could not be loaded.");
+      else setData(payload);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Email settings could not be loaded.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function sendTest() {
     setSending(true);
     setMessage("");
-    const headers = await authHeaders();
-    if (!headers) return;
-    const response = await fetch("/api/admin/email", {
-      method: "POST",
-      headers: { ...headers, "Content-Type": "application/json" },
-      body: JSON.stringify({ eventType: "admin_email_test" }),
-    });
-    const payload = await response.json();
-    setMessage(response.ok ? `Test email result: ${payload.result?.status || "ok"}` : payload.error || "Test email failed.");
-    setSending(false);
-    await load();
+    try {
+      const response = await authenticatedFetch("/api/admin/email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ eventType: "admin_email_test" }),
+      });
+      const payload = await response.json();
+      setMessage(response.ok ? `Test email result: ${payload.result?.status || "ok"}` : payload.error || "Test email failed.");
+      await load();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Test email failed.");
+    } finally {
+      setSending(false);
+    }
   }
 
   useEffect(() => {
     const timer = window.setTimeout(() => void load(), 0);
     return () => window.clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (

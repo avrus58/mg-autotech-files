@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { signOutIfEmailUnverified, signOutStable } from "@/lib/authGuards";
+import { getStableSession, notifySessionRequired, signOutIfEmailUnverified, signOutStable } from "@/lib/authGuards";
 import { supabase } from "@/lib/supabaseClient";
 import {
   ArrowLeft,
@@ -35,9 +35,6 @@ type CreditTransaction = {
 
 const CREDIT_LEDGER_LOAD_ERROR_MESSAGE =
   "We couldn't load your current balance or ledger movements. Try again before treating this history as empty.";
-
-const CREDIT_LEDGER_SYNC_ERROR_MESSAGE =
-  "Credit ledger sync needs retry. Your last loaded balance and movements are still shown.";
 
 function formatDate(date: string) {
   return new Intl.DateTimeFormat("de-DE", {
@@ -90,15 +87,12 @@ export default function CreditHistoryPage() {
     let isRedirecting = false;
 
     try {
-      const { data: userData } = await supabase.auth.getUser();
+      const user = (await getStableSession()).session?.user;
 
-      if (!userData.user) {
-        isRedirecting = true;
-        router.push("/login");
+      if (!user) {
+        notifySessionRequired();
         return;
       }
-
-      const user = userData.user;
 
       if (await signOutIfEmailUnverified(user)) {
         isRedirecting = true;
@@ -123,11 +117,9 @@ export default function CreditHistoryPage() {
         .order("created_at", { ascending: false });
 
       if (profileError || transactionRowsError) {
-        setLedgerLoadError(
-          hasLoadedLedgerRef.current
-            ? CREDIT_LEDGER_SYNC_ERROR_MESSAGE
-            : CREDIT_LEDGER_LOAD_ERROR_MESSAGE
-        );
+        if (!options?.silent || !hasLoadedLedgerRef.current) {
+          setLedgerLoadError(CREDIT_LEDGER_LOAD_ERROR_MESSAGE);
+        }
         return;
       }
 
@@ -138,11 +130,9 @@ export default function CreditHistoryPage() {
       setLedgerReady(true);
       hasLoadedLedgerRef.current = true;
     } catch {
-      setLedgerLoadError(
-        hasLoadedLedgerRef.current
-          ? CREDIT_LEDGER_SYNC_ERROR_MESSAGE
-          : CREDIT_LEDGER_LOAD_ERROR_MESSAGE
-      );
+      if (!options?.silent || !hasLoadedLedgerRef.current) {
+        setLedgerLoadError(CREDIT_LEDGER_LOAD_ERROR_MESSAGE);
+      }
     } finally {
       if (isRedirecting) return;
       setLoading(false);
@@ -154,9 +144,9 @@ export default function CreditHistoryPage() {
     let currentUserId: string | null = null;
 
     const loadLiveHistory = async (options?: { silent?: boolean }) => {
-      const { data: userData } = await supabase.auth.getUser();
+      const user = (await getStableSession()).session?.user;
 
-      if (userData.user) currentUserId = userData.user.id;
+      if (user) currentUserId = user.id;
 
       await loadHistory(options);
     };

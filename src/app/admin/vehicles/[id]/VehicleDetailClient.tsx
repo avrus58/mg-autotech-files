@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { ArrowLeft, CheckCircle2, Loader2, Save, ShieldAlert } from "lucide-react";
-import { supabase } from "@/lib/supabaseClient";
+import { authenticatedFetch } from "@/lib/authGuards";
 import type { VehicleControlRecord, VehicleServiceKey } from "@/lib/vehicleControl/types";
 import { vehicleServiceKeys, vehicleServiceLabels } from "@/lib/vehicleControl/types";
 
@@ -94,12 +94,10 @@ export default function VehicleDetailClient({ id }: { id: string }) {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
 
-  const authFetch = useCallback(async (url: string, init?: RequestInit) => {
-    const session = await supabase.auth.getSession();
-    const token = session.data.session?.access_token;
-    if (!token) throw new Error("Unauthorized");
-    return fetch(url, { ...init, headers: { ...init?.headers, Authorization: `Bearer ${token}` } });
-  }, []);
+  const authFetch = useCallback(
+    (url: string, init?: RequestInit) => authenticatedFetch(url, init),
+    [],
+  );
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -107,10 +105,6 @@ export default function VehicleDetailClient({ id }: { id: string }) {
     try {
       const response = await authFetch(`/api/admin/vehicles/${id}`);
       const data = await response.json();
-      if (response.status === 401) {
-        window.location.href = `/login?redirect=/admin/vehicles/${id}`;
-        return;
-      }
       if (!response.ok) throw new Error(data.error || "Vehicle could not be loaded.");
       setPayload(data);
       setForm(formFromRecord(data.record));

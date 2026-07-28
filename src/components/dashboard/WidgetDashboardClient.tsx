@@ -8,8 +8,7 @@ import { SubscriptionSummaryPanel } from "@/components/widget/SubscriptionSummar
 import { SubscriptionNotice } from "@/components/widget/SubscriptionNotice";
 import { VehicleLookupPreview } from "@/components/widget/VehicleLookupPreview";
 import { widgetEnquiryLabels, widgetT } from "@/lib/i18n/widget-translations";
-import { signOutIfEmailUnverified } from "@/lib/authGuards";
-import { supabase } from "@/lib/supabaseClient";
+import { authenticatedFetch, getStableSession, notifySessionRequired, signOutIfEmailUnverified } from "@/lib/authGuards";
 import type { CustomerWidgetClient, WidgetBillingSummary } from "@/lib/widget/customerTypes";
 import { widgetLanguageCodes, type WidgetClient, type WidgetLanguage, type WidgetSettings } from "@/lib/widget/types";
 
@@ -30,11 +29,10 @@ export function WidgetDashboardClient() {
   const [billingSummaryLoading, setBillingSummaryLoading] = useState(false);
   const [billingSummaryError, setBillingSummaryError] = useState("");
 
-  const authFetch = useCallback(async (url: string, init?: RequestInit) => {
-    const token = (await supabase.auth.getSession()).data.session?.access_token;
-    if (!token) throw new Error("Unauthorized");
-    return fetch(url, { ...init, headers: { ...(init?.headers ?? {}), Authorization: `Bearer ${token}` } });
-  }, []);
+  const authFetch = useCallback(
+    (url: string, init?: RequestInit) => authenticatedFetch(url, init),
+    [],
+  );
 
   const loadBillingSummary = useCallback(async () => {
     setBillingSummaryLoading(true);
@@ -58,8 +56,8 @@ export function WidgetDashboardClient() {
   const load = useCallback(async () => {
     setLoading(true);
     setWidgetLoadError("");
-    const user = (await supabase.auth.getUser()).data.user;
-    if (!user) { window.location.href = "/login"; return; }
+    const user = (await getStableSession()).session?.user;
+    if (!user) { notifySessionRequired(); setLoading(false); return; }
     if (await signOutIfEmailUnverified(user)) { window.location.href = "/login?verify_email=1"; return; }
     try {
       const response = await authFetch("/api/widget/client", { cache: "no-store" });

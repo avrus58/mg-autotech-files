@@ -26,7 +26,7 @@ import {
   User,
   Wrench,
 } from "lucide-react";
-import { signOutIfEmailUnverified } from "@/lib/authGuards";
+import { authenticatedFetch, getStableSession, notifySessionRequired, signOutIfEmailUnverified } from "@/lib/authGuards";
 import { supabase } from "@/lib/supabaseClient";
 import {
   adminWorkOrderStatuses,
@@ -170,17 +170,17 @@ export default function WorkOrderDetailClient() {
   }
 
   async function token() {
-    const { data: userData } = await supabase.auth.getUser();
-    if (!userData.user) {
-      router.push(`/login?redirect=/admin/requests/${requestId}`);
+    const { session } = await getStableSession();
+    const user = session?.user;
+    if (!user) {
+      notifySessionRequired();
       return null;
     }
-    if (await signOutIfEmailUnverified(userData.user)) {
+    if (await signOutIfEmailUnverified(user)) {
       router.push("/login?verify_email=1");
       return null;
     }
-    const { data } = await supabase.auth.getSession();
-    return data.session?.access_token ?? null;
+    return session.access_token ?? null;
   }
 
   async function load() {
@@ -189,12 +189,11 @@ export default function WorkOrderDetailClient() {
     setMessage("");
     const accessToken = await token();
     if (!accessToken) {
-      setMessage("Unauthorized");
+      setMessage("Your secure session has ended. Please log in again.");
       setLoading(false);
       return;
     }
-    const response = await fetch(`/api/admin/requests/${requestId}`, {
-      headers: { Authorization: `Bearer ${accessToken}` },
+    const response = await authenticatedFetch(`/api/admin/requests/${requestId}`, {
       cache: "no-store",
     });
     const result = await response.json();
@@ -223,9 +222,9 @@ export default function WorkOrderDetailClient() {
       setSaving(false);
       return;
     }
-    const response = await fetch(`/api/admin/requests/${requestId}`, {
+    const response = await authenticatedFetch(`/api/admin/requests/${requestId}`, {
       method: "PATCH",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(patch),
     });
     const result = await response.json();
@@ -249,9 +248,9 @@ export default function WorkOrderDetailClient() {
       setSaving(false);
       return;
     }
-    const response = await fetch(`/api/admin/requests/${requestId}/notes`, {
+    const response = await authenticatedFetch(`/api/admin/requests/${requestId}/notes`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ note_type: noteType, body: noteBody, pinned: noteType === "pinned" }),
     });
     const result = await response.json();
@@ -286,9 +285,9 @@ export default function WorkOrderDetailClient() {
       setSaving(false);
       return;
     }
-    const response = await fetch(`/api/admin/requests/${requestId}`, {
+    const response = await authenticatedFetch(`/api/admin/requests/${requestId}`, {
       method: "PATCH",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ message_visibility: { message_id: messageId, action, reason } }),
     });
     const result = await response.json();
@@ -312,9 +311,9 @@ export default function WorkOrderDetailClient() {
       setSaving(false);
       return;
     }
-    const response = await fetch(`/api/admin/orders/${requestId}/upload-permission`, {
+    const response = await authenticatedFetch(`/api/admin/orders/${requestId}/upload-permission`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ enabled }),
     });
     const result = await response.json();
@@ -352,9 +351,8 @@ export default function WorkOrderDetailClient() {
       return;
     }
     try {
-      const response = await fetch(`/api/admin/requests/${requestId}/dtc-analysis`, {
+      const response = await authenticatedFetch(`/api/admin/requests/${requestId}/dtc-analysis`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${accessToken}` },
       });
       const result = await response.json();
       if (!response.ok) {

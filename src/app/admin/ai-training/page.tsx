@@ -157,10 +157,6 @@ export default function AiTrainingPage() {
       if (ecuTypeFilter.trim()) query.set("ecuType", ecuTypeFilter.trim());
       const response = await authFetch(`/api/admin/ai-training?${query.toString()}`);
       const payload = await response.json();
-      if (response.status === 401) {
-        window.location.href = "/login?redirect=/admin/ai-training";
-        return;
-      }
       if (response.status === 403) {
         setData(emptyPayload);
         throw new Error("Access denied. Your staff role cannot review ECU learning data.");
@@ -172,10 +168,6 @@ export default function AiTrainingPage() {
       setSetupRequired(false);
       setData(payload as Payload);
     } catch (error) {
-      if (error instanceof Error && error.message === "Unauthorized") {
-        window.location.href = "/login?redirect=/admin/ai-training";
-        return;
-      }
       setMessage(error instanceof Error ? error.message : "ECU learning data could not be loaded.");
     } finally {
       setLoading(false);

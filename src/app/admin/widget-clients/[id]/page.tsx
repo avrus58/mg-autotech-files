@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import { ArrowLeft, Ban, CheckCircle2, ExternalLink, KeyRound, Loader2, RefreshCw, Save, XCircle } from "lucide-react";
 import { EmbedCodeBox } from "@/components/widget/EmbedCodeBox";
-import { supabase } from "@/lib/supabaseClient";
+import { authenticatedFetch } from "@/lib/authGuards";
 import { widgetLanguageCodes, type WidgetClient, type WidgetLanguage } from "@/lib/widget/types";
 
 type ApiKey = { id: string; public_key: string; is_active: boolean; created_at: string; revoked_at: string | null };
@@ -18,8 +18,8 @@ const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://file.mgautotech.de
 export default function AdminWidgetClientDetailPage() {
   const params = useParams<{ id: string }>(); const id = params.id;
   const [data, setData] = useState<DetailPayload | null>(null); const [loading, setLoading] = useState(true); const [saving, setSaving] = useState(false); const [message, setMessage] = useState("");
-  const authFetch = useCallback(async (url: string, init?: RequestInit) => { const token = (await supabase.auth.getSession()).data.session?.access_token; if (!token) throw new Error("Unauthorized"); return fetch(url, { ...init, headers: { ...(init?.headers ?? {}), Authorization: `Bearer ${token}` } }); }, []);
-  const load = useCallback(async () => { try { const response = await authFetch(`/api/admin/widget-clients/${id}`, { cache: "no-store" }); const payload = await response.json(); if (response.status === 401 || response.status === 403) { window.location.href = "/login"; return; } if (!response.ok) throw new Error(payload.error); setData(payload); } catch (error) { if (error instanceof Error && error.message === "Unauthorized") { window.location.href = "/login"; return; } setMessage(error instanceof Error ? error.message : "Client could not be loaded."); } finally { setLoading(false); } }, [authFetch, id]);
+  const authFetch = useCallback((url: string, init?: RequestInit) => authenticatedFetch(url, init), []);
+  const load = useCallback(async () => { try { const response = await authFetch(`/api/admin/widget-clients/${id}`, { cache: "no-store" }); const payload = await response.json(); if (!response.ok) throw new Error(payload.error); setData(payload); } catch (error) { setMessage(error instanceof Error ? error.message : "Client could not be loaded."); } finally { setLoading(false); } }, [authFetch, id]);
   useEffect(() => { void Promise.resolve().then(load); }, [load]);
   const client = data?.client; const activeKey = data?.keys.find((key) => key.is_active)?.public_key ?? "";
   const scriptCode = `<div id="mga-vehicle-lookup"></div>\n<script src="${siteUrl}/widget/vehicle-lookup.js" data-client-key="${activeKey}" data-target="#mga-vehicle-lookup"></script>`;

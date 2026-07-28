@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { ReactNode, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { signOutIfEmailUnverified } from "@/lib/authGuards";
+import { authenticatedFetch, getStableSession, notifySessionRequired, signOutIfEmailUnverified } from "@/lib/authGuards";
 import {
   getRequestFlowStepStates,
   isAdvancedRequestServiceCategory,
@@ -728,14 +728,15 @@ export default function NewRequestPage() {
   async function loadCustomerProfile() {
     setProfileLoading(true);
 
-    const { data: userData } = await supabase.auth.getUser();
+    const user = (await getStableSession()).session?.user;
 
-    if (!userData.user) {
-      router.push("/login");
+    if (!user) {
+      notifySessionRequired();
+      setProfileLoading(false);
       return;
     }
 
-    if (await signOutIfEmailUnverified(userData.user)) {
+    if (await signOutIfEmailUnverified(user)) {
       router.push("/login?verify_email=1");
       return;
     }
@@ -745,7 +746,7 @@ export default function NewRequestPage() {
       .select(
         "id, email, customer_id, credit_balance, allow_negative_credits, negative_credit_limit, account_status"
       )
-      .eq("id", userData.user.id)
+      .eq("id", user.id)
       .single();
 
     if (error) {
@@ -1109,24 +1110,25 @@ export default function NewRequestPage() {
 
     setSubmitting(true);
 
-    const { data: userData } = await supabase.auth.getUser();
+    const user = (await getStableSession()).session?.user;
 
-    if (!userData.user) {
-      router.push("/login");
+    if (!user) {
+      setSubmitting(false);
+      notifySessionRequired();
       return;
     }
 
-    if (await signOutIfEmailUnverified(userData.user)) {
+    if (await signOutIfEmailUnverified(user)) {
       router.push("/login?verify_email=1");
       return;
     }
 
-    const customerEmail = userData.user.email ?? "";
+    const customerEmail = user.email ?? "";
 
     let latestProfile: CustomerProfile;
 
     try {
-      latestProfile = await getLatestCustomerProfile(userData.user.id);
+      latestProfile = await getLatestCustomerProfile(user.id);
     } catch (error) {
       setSubmitting(false);
       setMessage(
@@ -1153,7 +1155,7 @@ export default function NewRequestPage() {
         .replaceAll(" ", "_")
         .replace(/[^a-zA-Z0-9._-]/g, "");
 
-      const filePath = `${userData.user.id}/${Date.now()}-${safeFileName}`;
+      const filePath = `${user.id}/${Date.now()}-${safeFileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from("customer-files")
@@ -1211,14 +1213,10 @@ export default function NewRequestPage() {
     );
 
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      await fetch("/api/email/new-order", {
+      await authenticatedFetch("/api/email/new-order", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...(sessionData.session?.access_token
-            ? { Authorization: `Bearer ${sessionData.session.access_token}` }
-            : {}),
         },
         body: JSON.stringify({
           orderId: String(createdOrderId || ""),

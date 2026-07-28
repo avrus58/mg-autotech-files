@@ -2,6 +2,20 @@
 
 Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
+## 2026-07-28 owner-requested admin/customer session resilience hardening
+
+- Baslangic/bitis: 2026-07-27 - 2026-07-28 00:53:00 +01:00.
+- Gorev: `/admin/ai-training` ve diger korumali sayfalarda Supabase'in 30 saniyelik token yenileme dongusu sirasinda gecerli kullaniciyi login ekranina dusuren session yarisi ile tekrar eden arka plan sync uyarilarini kokten gidermek.
+- Kapsam: `src/lib/authGuards.ts`, `src/lib/supabaseClient.ts`, ortak `BrowserAuthBoundary`, admin/dashboard/new-request layoutlari, korumali admin/musteri sayfalari, File Expert istekleri, mesaj/bildirim ve realtime/polling akislari ile auth/session regresyon testleri. Payment, database migration, SQL, production servis veya ticari kural degistirilmedi.
+- Kok neden: Browser Supabase client desteklenen varsayilan koordinasyon yerine deprecated custom `navigatorLock` kullaniyordu; bazi `onAuthStateChange` callbackleri callback icinde async Supabase islemi baslatiyordu; korumali ekranlar tek bir gecici null session veya 401 cevabini gercek logout olarak yorumluyordu. Admin polling dongusu auth auto-refresh aniyla cakistiginda ekran login gorunumune geciyor, fakat persisted session daha sonra hala gecerli oldugu icin URL tekrar acilinca sifresiz geri giriyordu.
+- Uygulama sonucu: Custom lock kaldirildi; supported Supabase coordination kullaniliyor. Stable session cache, bounded read, single-flight refresh, coordinated 401 retry ve confirmed-signout event kapisi eklendi. Bilinen session SIGNED_OUT olayi olmadan kaybolursa logout yerine recoverable synchronization durumu sayiliyor. Admin, dashboard ve new-request route aileleri ortak non-destructive auth boundary ile korunuyor; boundary URL degistirmiyor ve loaded workspace'i gecici auth/network hatasinda silmiyor.
+- Arka plan kararliligi: Admin dashboard, customer dashboard, order archive/detail, credit ledger, File Expert list/detail, request chat ve notifications basarili veriyi pasif polling/realtime hatasinda koruyor. Kullanici aksiyonu gerektirmeyen kisa dalgalanmalar gorunur sync alarmi veya login gecisi uretmiyor; ilk yukleme ve manuel aksiyon hatalari retry edilebilir kalmaya devam ediyor.
+- Guvenlik: Admin/staff permission kontrolleri, customer ownership, email verification ve server API authorization degismedi. Protected API fetchleri merkezi bearer refresh yoluna alindi; service-role key veya admin secret client tarafina eklenmedi. Gercek SIGNED_OUT/gercek oturumsuz durumda login gereksinimi korunuyor.
+- Testler: Yeni `tests/auth-session-resilience.test.ts`; guncellenen `tests/admin-learning-session-stability.test.ts`, `tests/admin-session-stability.test.ts`, `tests/ecu-intelligence.test.ts`, `tests/ui-ux-safety.test.ts` lock coordination, bounded recovery, confirmed signout, global boundaries, AI 403/401 ayrimi, silent refresh preservation ve customer-safe davranisi guardlar.
+- Kontroller: hedefli auth/UI testleri PASS (105/105); `npm run lint` PASS; `npm run typecheck` PASS (web + desktop); `npm test` PASS (385/385); `npm run build` PASS (243 page); `node scripts/check-payment-env.js --schema-only` PASS ve env dosyasi okunmadi; `npm audit --omit=dev --audit-level=high` PASS (0 vulnerability); `git diff --check` PASS.
+- Calistirilmayan islemler: Production smoke, deploy, commit, push, Supabase/Stripe/email canli cagri, migration ve gercek musteri verisi islemi yapilmadi.
+- Kalan risk: Gercek cok-sekmeli browser/token rotasyonu yalniz production-like authenticated smoke ile birebir gozlenebilir; kod ve statik regresyon paketi bu davranisi fail-recovering sekilde korur. Degisiklikler henuz commit veya deploy edilmedi.
+
 ## 2026-07-14 worker run AUTO-083
 
 - Baslangic/bitis: 2026-07-14 16:50:09 - 16:55:18 +01:00.

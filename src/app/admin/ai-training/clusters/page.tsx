@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Activity, ArrowLeft, CheckCircle2, ChevronRight, Layers3, Loader2, RefreshCcw, Search, ShieldAlert } from "lucide-react";
-import { authenticatedFetch, getStableSession } from "@/lib/authGuards";
+import { authenticatedFetch } from "@/lib/authGuards";
 import { patternClusterStatuses, trainingFeatureKeys, type AiAccuracyMetric, type AiPatternCluster, type PatternClusterStatus } from "@/lib/ecuIntelligence/types";
 
 type Payload = {
@@ -22,25 +22,10 @@ export default function PatternClustersPage() {
   const [status, setStatus] = useState<PatternClusterStatus | "all">("all");
   const [feature, setFeature] = useState("all");
   const [search, setSearch] = useState("");
-  const authTokenRef = useRef<string | null>(null);
-
-  const authFetch = useCallback(async (url: string, init?: RequestInit) => {
-    let token = authTokenRef.current;
-    if (!token) {
-      const { session } = await getStableSession();
-      token = session?.access_token ?? null;
-      if (!token) throw new Error("Unauthorized");
-      authTokenRef.current = token;
-    }
-
-    const headers = new Headers(init?.headers);
-    headers.set("Authorization", `Bearer ${token}`);
-    const response = await fetch(url, { ...init, headers });
-    if (response.status !== 401) return response;
-
-    authTokenRef.current = null;
-    return authenticatedFetch(url, init);
-  }, []);
+  const authFetch = useCallback(
+    (url: string, init?: RequestInit) => authenticatedFetch(url, init),
+    [],
+  );
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -49,15 +34,10 @@ export default function PatternClustersPage() {
       const query = new URLSearchParams({ status, feature, limit: "500" });
       const response = await authFetch(`/api/admin/ai-training/clusters?${query.toString()}`);
       const payload = await response.json();
-      if (response.status === 401) { window.location.href = "/login?redirect=/admin/ai-training/clusters"; return; }
       if (response.status === 403) throw new Error("Access denied. ECU learning permission is required.");
       if (!response.ok) throw new Error(payload.error || "Pattern clusters could not be loaded.");
       setData(payload as Payload);
     } catch (error) {
-      if (error instanceof Error && error.message === "Unauthorized") {
-        window.location.href = "/login?redirect=/admin/ai-training/clusters";
-        return;
-      }
       setMessage(error instanceof Error ? error.message : "Pattern clusters could not be loaded.");
     } finally { setLoading(false); }
   }, [authFetch, feature, status]);

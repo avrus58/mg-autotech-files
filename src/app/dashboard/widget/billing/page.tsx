@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { ArrowLeft, CreditCard, Loader2, ShieldCheck } from "lucide-react";
 import { SubscriptionSummaryPanel } from "@/components/widget/SubscriptionSummaryPanel";
-import { supabase } from "@/lib/supabaseClient";
+import { authenticatedFetch } from "@/lib/authGuards";
 import type { WidgetBillingSummary } from "@/lib/widget/customerTypes";
 
 export default function WidgetBillingPage() {
@@ -18,9 +18,7 @@ export default function WidgetBillingPage() {
   const loadSummary = useCallback(async () => {
     setSummaryLoading(true);
     setSummaryError("");
-    const token = (await supabase.auth.getSession()).data.session?.access_token;
-    const response = await fetch("/api/stripe/widget-subscription-summary", {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    const response = await authenticatedFetch("/api/stripe/widget-subscription-summary", {
       cache: "no-store",
     });
     const data = await response.json().catch(() => ({}));
@@ -40,10 +38,8 @@ export default function WidgetBillingPage() {
     setLoading(true);
     setMessage("");
     setShowPlanAction(false);
-    const token = (await supabase.auth.getSession()).data.session?.access_token;
-    const response = await fetch("/api/stripe/widget-customer-portal", {
+    const response = await authenticatedFetch("/api/stripe/widget-customer-portal", {
       method: "POST",
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
     });
     const data = await response.json();
     setLoading(false);

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
   AlertTriangle,
@@ -22,9 +22,7 @@ import {
   ShieldCheck,
   Wrench,
 } from "lucide-react";
-import { signOutIfEmailUnverified } from "@/lib/authGuards";
-import { getFileExpertAuthHeaders } from "@/lib/fileExpert/client";
-import { supabase } from "@/lib/supabaseClient";
+import { authenticatedFetch, getStableSession, notifySessionRequired, signOutIfEmailUnverified } from "@/lib/authGuards";
 import type {
   FileExpertAnalyzerResult,
   FileExpertFinding,
@@ -111,29 +109,32 @@ export default function FileExpertReportPage() {
   const [loading, setLoading] = useState(true);
   const [reanalyzing, setReanalyzing] = useState(false);
   const [message, setMessage] = useState("");
+  const hasLoadedJobRef = useRef(false);
 
   async function loadJob(options?: { silent?: boolean }) {
     if (!options?.silent) setLoading(true);
-    setMessage("");
+    if (!options?.silent) setMessage("");
 
-    const { data: userData } = await supabase.auth.getUser();
-    if (!userData.user) {
-      router.push("/login");
+    const user = (await getStableSession()).session?.user;
+    if (!user) {
+      if (!options?.silent) notifySessionRequired();
+      setLoading(false);
       return;
     }
-    if (await signOutIfEmailUnverified(userData.user)) {
+    if (await signOutIfEmailUnverified(user)) {
       router.push("/login?verify_email=1");
       return;
     }
 
-    const response = await fetch(`/api/file-expert/jobs/${jobId}`, {
+    const response = await authenticatedFetch(`/api/file-expert/jobs/${jobId}`, {
       cache: "no-store",
-      headers: await getFileExpertAuthHeaders(),
     });
     const payload = await response.json();
 
     if (!response.ok) {
-      setMessage(payload.error || "File Expert report could not be loaded.");
+      if (!options?.silent || !hasLoadedJobRef.current) {
+        setMessage(payload.error || "File Expert report could not be loaded.");
+      }
       setLoading(false);
       return;
     }
@@ -141,6 +142,8 @@ export default function FileExpertReportPage() {
     setJob(payload.job);
     setSimilarityEvidence(payload.similarityEvidence ?? null);
     setClusterEvidence(payload.clusterEvidence ?? null);
+    hasLoadedJobRef.current = true;
+    setMessage("");
     setLoading(false);
   }
 
@@ -186,9 +189,8 @@ export default function FileExpertReportPage() {
   async function reanalyze() {
     setReanalyzing(true);
     setMessage("");
-    const response = await fetch(`/api/file-expert/jobs/${jobId}/analyze`, {
+    const response = await authenticatedFetch(`/api/file-expert/jobs/${jobId}/analyze`, {
       method: "POST",
-      headers: await getFileExpertAuthHeaders(),
     });
     const payload = await response.json();
     setReanalyzing(false);

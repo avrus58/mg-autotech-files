@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import { authenticatedFetch } from "@/lib/authGuards";
 
 type RequestMessage = {
   id: string;
@@ -113,26 +113,16 @@ export default function RequestChat({
     }
 
     try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-
-      if (!session?.access_token) {
-        setError("Unauthorized");
-        return;
-      }
-
-      const res = await fetch(`/api/requests/${requestId}/messages`, {
+      const res = await authenticatedFetch(`/api/requests/${requestId}/messages`, {
         cache: "no-store",
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
       });
 
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error || "Messages could not be loaded.");
+        if (!options?.silent || !initialLoadDoneRef.current) {
+          setError(data.error || "Messages could not be loaded.");
+        }
         return;
       }
 
@@ -178,7 +168,9 @@ export default function RequestChat({
       initialLoadDoneRef.current = true;
       sendingOwnMessageRef.current = false;
     } catch {
-      setError("Messages could not be loaded.");
+      if (!options?.silent || !initialLoadDoneRef.current) {
+        setError("Messages could not be loaded.");
+      }
     } finally {
       setInitialLoading(false);
       setRefreshing(false);
@@ -215,21 +207,10 @@ export default function RequestChat({
     sendingOwnMessageRef.current = true;
 
     try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-
-      if (!session?.access_token) {
-        setError("Unauthorized");
-        sendingOwnMessageRef.current = false;
-        return;
-      }
-
-      const res = await fetch(`/api/requests/${requestId}/messages`, {
+      const res = await authenticatedFetch(`/api/requests/${requestId}/messages`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({ message: cleanMessage }),
       });

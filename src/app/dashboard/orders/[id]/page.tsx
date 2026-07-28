@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { signOutIfEmailUnverified } from "@/lib/authGuards";
+import { authenticatedFetch, getStableSession, notifySessionRequired, signOutIfEmailUnverified } from "@/lib/authGuards";
 import { supabase } from "@/lib/supabaseClient";
 import RequestChat from "@/components/RequestChat";
 import type { CustomerRequestDtcAnalysis } from "@/lib/dtcAnalyzer/requestIntegration";
@@ -321,6 +321,8 @@ export default function OrderDetailPage() {
   const [queueProjection, setQueueProjection] = useState<CustomerRequestQueueProjection | null>(null);
   const [queueLoading, setQueueLoading] = useState(false);
   const [queueError, setQueueError] = useState("");
+  const hasLoadedOrderRef = useRef(false);
+  const hasLoadedQueueProjectionRef = useRef(false);
   const [additionalUploadPhase, setAdditionalUploadPhase] =
     useState<AdditionalUploadPhase>("idle");
   const additionalUploading = additionalUploadPhase !== "idle";
@@ -337,13 +339,12 @@ export default function OrderDetailPage() {
   );
 
   const loadQueueProjection = useCallback(
-    async (orderId: string, token: string, options?: { silent?: boolean }) => {
+    async (orderId: string, options?: { silent?: boolean }) => {
       if (!options?.silent) setQueueLoading(true);
-      setQueueError("");
+      if (!options?.silent) setQueueError("");
 
       try {
-        const response = await fetch(`/api/requests/${orderId}/queue`, {
-          headers: { Authorization: `Bearer ${token}` },
+        const response = await authenticatedFetch(`/api/requests/${orderId}/queue`, {
           cache: "no-store",
         });
         const payload = (await response.json()) as {
@@ -356,8 +357,12 @@ export default function OrderDetailPage() {
         }
 
         setQueueProjection(payload.queue);
+        setQueueError("");
+        hasLoadedQueueProjectionRef.current = true;
       } catch (error) {
-        setQueueError(error instanceof Error ? error.message : "Queue state could not be loaded.");
+        if (!options?.silent || !hasLoadedQueueProjectionRef.current) {
+          setQueueError(error instanceof Error ? error.message : "Queue state could not be loaded.");
+        }
       } finally {
         if (!options?.silent) setQueueLoading(false);
       }
@@ -372,22 +377,24 @@ export default function OrderDetailPage() {
     const loadOrder = async (options?: { silent?: boolean }) => {
       if (options?.silent) setLiveRefreshing(true);
       else setLoading(true);
-      setMessage("");
+      if (!options?.silent) setMessage("");
 
-      const { data: userData } = await supabase.auth.getUser();
+      const user = (await getStableSession()).session?.user;
 
-      if (!userData.user) {
-        router.push("/login");
+      if (!user) {
+        if (!options?.silent) notifySessionRequired();
+        setLoading(false);
+        setLiveRefreshing(false);
         return;
       }
 
-      if (await signOutIfEmailUnverified(userData.user)) {
+      if (await signOutIfEmailUnverified(user)) {
         router.push("/login?verify_email=1");
         return;
       }
 
-      currentUserId = userData.user.id;
-      setEmail(userData.user.email ?? null);
+      currentUserId = user.id;
+      setEmail(user.email ?? null);
 
       if (!orderId) {
         setMessage("Order ID is missing.");
@@ -399,26 +406,22 @@ export default function OrderDetailPage() {
         .from("orders")
         .select("*")
         .eq("id", orderId)
-        .eq("customer_id", userData.user.id)
+        .eq("customer_id", user.id)
         .single();
 
       if (error) {
-        setMessage(error.message);
+        if (!options?.silent || !hasLoadedOrderRef.current) setMessage(error.message);
         setLoading(false);
+        setLiveRefreshing(false);
         return;
       }
 
       setOrder(data as Order);
+      hasLoadedOrderRef.current = true;
       setLoading(false);
       setLiveRefreshing(false);
 
-      const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData.session?.access_token;
-      if (token) {
-        void loadQueueProjection(orderId, token, options);
-      } else {
-        setQueueError("Queue state could not be loaded. Sign in again and retry.");
-      }
+      void loadQueueProjection(orderId, options);
     };
 
     loadOrder();
@@ -521,27 +524,22 @@ export default function OrderDetailPage() {
     setMessage("");
 
     try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
+      const user = (await getStableSession()).session?.user;
 
-      if (!session?.access_token) {
-        setMessage("Unauthorized");
+      if (!user) {
+        notifySessionRequired();
         return;
       }
 
-      const { data: userData } = await supabase.auth.getUser();
-
-      if (!userData.user || (await signOutIfEmailUnverified(userData.user))) {
+      if (await signOutIfEmailUnverified(user)) {
         router.push("/login?verify_email=1");
         return;
       }
 
-      const response = await fetch(`/api/requests/${order.id}/revision`, {
+      const response = await authenticatedFetch(`/api/requests/${order.id}/revision`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({ revisionNote: cleanNote }),
       });
@@ -575,16 +573,9 @@ export default function OrderDetailPage() {
     setAdditionalUploadPhase("preparing");
     setMessage("");
     try {
-      const { data } = await supabase.auth.getSession();
-      const token = data.session?.access_token;
-      if (!token) {
-        setMessage("Unauthorized");
-        return;
-      }
-
-      const prepareResponse = await fetch(`/api/requests/${order.id}/additional-file/prepare`, {
+      const prepareResponse = await authenticatedFetch(`/api/requests/${order.id}/additional-file/prepare`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ fileName: file.name, fileSize: file.size, contentType: file.type }),
       });
       const prepared = await prepareResponse.json();
@@ -607,9 +598,9 @@ export default function OrderDetailPage() {
       }
 
       setAdditionalUploadPhase("verifying");
-      const finalizeResponse = await fetch(`/api/requests/${order.id}/additional-file/finalize`, {
+      const finalizeResponse = await authenticatedFetch(`/api/requests/${order.id}/additional-file/finalize`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ path: prepared.upload.path, fileName: file.name, fileSize: file.size }),
       });
       const finalized = await finalizeResponse.json();
@@ -637,22 +628,18 @@ export default function OrderDetailPage() {
     setDtcLoading(true);
     setDtcError("");
     try {
-      const { data } = await supabase.auth.getSession();
-      const token = data.session?.access_token;
-      if (!token) {
-        setDtcError("Unauthorized");
+      const user = (await getStableSession()).session?.user;
+      if (!user) {
+        notifySessionRequired();
         return;
       }
-
-      const { data: userData } = await supabase.auth.getUser();
-      if (!userData.user || (await signOutIfEmailUnverified(userData.user))) {
+      if (await signOutIfEmailUnverified(user)) {
         router.push("/login?verify_email=1");
         return;
       }
 
-      const response = await fetch(`/api/requests/${order.id}/dtc-analysis`, {
+      const response = await authenticatedFetch(`/api/requests/${order.id}/dtc-analysis`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
       });
       const payload = await response.json();
       if (!response.ok) {
@@ -669,13 +656,7 @@ export default function OrderDetailPage() {
 
   const retryQueueProjection = async () => {
     if (!order) return;
-    const { data } = await supabase.auth.getSession();
-    const token = data.session?.access_token;
-    if (!token) {
-      setQueueError("Queue state could not be loaded. Sign in again and retry.");
-      return;
-    }
-    await loadQueueProjection(order.id, token);
+    await loadQueueProjection(order.id);
   };
 
   const copySupportSummary = async () => {

@@ -107,10 +107,6 @@ export default function DatasetWorkbenchPage() {
         body: payload,
       });
       const data = await response.json();
-      if (response.status === 401) {
-        window.location.href = "/login?redirect=/admin/ai-training/datasets";
-        return;
-      }
       if (!response.ok) throw new Error(data.error || "Dataset dry-run failed.");
       setResult(data as DryRunResult);
     } catch (error) {
@@ -137,10 +133,6 @@ export default function DatasetWorkbenchPage() {
         }),
       });
       const data = await response.json();
-      if (response.status === 401) {
-        window.location.href = "/login?redirect=/admin/ai-training/datasets";
-        return;
-      }
       if (!response.ok) throw new Error(data.error || "Scanner metadata import failed.");
       setImportResult(data);
       await loadBatches();

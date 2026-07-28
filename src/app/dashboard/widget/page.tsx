@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { BrowserAuthBoundary } from "@/components/auth/BrowserAuthBoundary";
 import { WidgetDashboardClient } from "@/components/dashboard/WidgetDashboardClient";
 
 export const metadata: Metadata = {
@@ -9,13 +8,5 @@ export const metadata: Metadata = {
 };
 
 export default function WidgetDashboardPage() {
-  return (
-    <BrowserAuthBoundary
-      title="Please log in to manage your Vehicle Selector Widget"
-      description="Widget settings, installation code, billing and domain controls are available only inside your customer account."
-      nextPath="/dashboard/widget"
-    >
-      <WidgetDashboardClient />
-    </BrowserAuthBoundary>
-  );
+  return <WidgetDashboardClient />;
 }
