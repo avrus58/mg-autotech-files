@@ -165,8 +165,8 @@ test("customer order detail shows delivery estimates only when explicitly set", 
   assert.match(page, /getDeliveryEstimateDisplay\(order\.estimated_delivery_label\)/);
   assert.match(page, /label: label \?\? "Estimate not set yet"/);
   assert.match(page, /deliveryEstimate\.isExplicit && \(/);
-  assert.match(page, /Delivery: \{deliveryEstimate\.label\}/);
-  assert.match(page, /deliveryEstimate\.isExplicit && order\.estimated_delivery_note/);
+  assert.match(page, /ETA: \{deliveryEstimate\.label\}/);
+  assert.match(page, /order\.estimated_delivery_note \? ` - \$\{order\.estimated_delivery_note\}` : ""/);
   assert.doesNotMatch(page, /A delivery estimate will appear here after MG AutoTech reviews your request details\./);
   assert.doesNotMatch(page, /labels\[value as DeliveryEstimate\] \?\? labels\.usually_30_min/);
   assert.doesNotMatch(page, /formatDeliveryEstimate\(order\.estimated_delivery_label\)/);
@@ -201,9 +201,8 @@ test("customer order detail provides a safe support summary copy action", () => 
   assert.match(page, /const \[copiedSupportSummary, setCopiedSupportSummary\] = useState\(false\)/);
   assert.match(page, /const supportSummaryText = useMemo/);
   assert.match(page, /navigator\.clipboard\.writeText\(supportSummaryText\)/);
-  assert.match(page, /Support summary/);
-  assert.match(page, /Copy safe summary/);
-  assert.match(page, /Copied safe summary/);
+  assert.match(page, /Copy summary/);
+  assert.match(page, /copiedSupportSummary \? "Copied" : "Copy summary"/);
   assert.doesNotMatch(
     helper,
     /modified_file_path|original_file_path|file_path|storage_path|signed_url|service_role|admin_notes|internal_notes|source_reference|confidence_score|raw|hex|hash/i
@@ -215,26 +214,26 @@ test("customer order detail uses a responsive MG AutoTech work-order workspace",
   const chat = readProjectFile("src", "components", "RequestChat.tsx");
 
   assert.match(page, /Secure order workspace/);
-  assert.match(page, /max-w-\[1480px\]/);
-  assert.match(page, /xl:grid-cols-\[minmax\(0,1\.15fr\)_minmax\(400px,0\.85fr\)\]/);
-  assert.match(page, /xl:sticky xl:top-28/);
+  assert.match(page, /max-w-\[1720px\]/);
+  assert.match(page, /xl:h-dvh xl:overflow-hidden/);
+  assert.match(page, /xl:grid-cols-\[minmax\(310px,0\.9fr\)_minmax\(390px,1\.12fr\)_minmax\(340px,0\.98fr\)\]/);
   assert.match(page, /<RequestChat requestId=\{order\.id\} senderRole="customer" variant="workspace"/);
-  assert.match(page, /Order progress/);
-  assert.match(page, /sm:grid-cols-2 lg:grid-cols-4/);
+  assert.match(page, /aria-label="Order progress"/);
+  assert.match(page, /xl:grid-cols-4/);
   assert.match(page, /Request specification/);
-  assert.match(page, /Files & delivery/);
-  assert.match(page, /Original file received/);
-  assert.match(page, /Optional diagnostic context/);
-  assert.match(page, /Order support/);
-  assert.match(page, /Download latest file/);
+  assert.match(page, /Delivery history/);
+  assert.match(page, /Original received/);
+  assert.match(page, /DTC diagnostic guidance/);
+  assert.match(page, /Copy summary/);
+  assert.match(page, /Download latest/);
   assert.match(page, /uploadAdditionalFile\(file\)/);
-  assert.match(page, /downloadModifiedVersion\(version\.file_path\)/);
-  assert.ok(page.indexOf("Order progress") < page.indexOf("Request specification"));
+  assert.match(page, /downloadModifiedVersion\(version\.id\)/);
+  assert.ok(page.indexOf("<ProgressTimeline") < page.indexOf("Request specification"));
   assert.doesNotMatch(page, /Live queue & ETA|Payment review/);
 
   assert.match(chat, /variant\?: "default" \| "workspace"/);
   assert.match(chat, /Order conversation/);
-  assert.match(chat, /min-h-80 max-h-\[34rem\] lg:min-h-\[30rem\]/);
+  assert.match(chat, /min-h-80 max-h-\[32rem\] xl:min-h-0 xl:max-h-none xl:flex-1/);
   assert.doesNotMatch(page, /carecufile|panel\.carecufile/i);
 });
 

@@ -88,5 +88,12 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     uploadId: uploaded.id,
   });
 
-  return NextResponse.json({ upload: uploaded });
+  return NextResponse.json({
+    upload: {
+      id: uploaded.id,
+      file_name: uploaded.file_name,
+      file_size: uploaded.file_size,
+      uploaded_at: uploaded.uploaded_at,
+    },
+  });
 }

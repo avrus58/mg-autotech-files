@@ -243,8 +243,8 @@ export default function RequestChat({
   }
 
   return (
-    <section className="min-w-0 overflow-hidden rounded-2xl border border-white/10 bg-[#0f1115] shadow-lg">
-      <div className="border-b border-white/10 bg-white/[0.03] px-4 py-4 sm:px-5">
+    <section className={`min-w-0 overflow-hidden rounded-xl border border-white/10 bg-[#0f1115] shadow-lg ${variant === "workspace" ? "xl:flex xl:h-full xl:min-h-0 xl:flex-col" : ""}`}>
+      <div className="shrink-0 border-b border-white/10 bg-white/[0.03] px-4 py-3">
         <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
           <div className="min-w-0">
             <div className="flex min-w-0 flex-wrap items-center gap-2">
@@ -263,7 +263,7 @@ export default function RequestChat({
               ) : null}
             </div>
 
-            <p className="mt-1 text-sm text-zinc-400">
+            <p className="mt-1 text-xs text-zinc-500">
               {variant === "workspace"
                 ? "Messages stay attached to this order and its technical context."
                 : "Communicate directly about this file request."}
@@ -276,7 +276,7 @@ export default function RequestChat({
           </div>
         </div>
 
-        <div className="mt-3 text-xs text-zinc-500">
+        <div className="mt-2 text-[11px] text-zinc-500">
           {messages.length} {messages.length === 1 ? "message" : "messages"}
         </div>
       </div>
@@ -285,7 +285,7 @@ export default function RequestChat({
         ref={scrollAreaRef}
         className={`space-y-3 overflow-y-auto overflow-x-hidden bg-black/25 p-3 sm:p-5 ${
           variant === "workspace"
-            ? "min-h-80 max-h-[34rem] lg:min-h-[30rem]"
+            ? "min-h-80 max-h-[32rem] xl:min-h-0 xl:max-h-none xl:flex-1"
             : "min-h-64 max-h-96"
         }`}
       >
@@ -353,7 +353,7 @@ export default function RequestChat({
         </div>
       ) : null}
 
-      <div className="border-t border-white/10 bg-white/[0.03] p-3 sm:p-4">
+      <div className="shrink-0 border-t border-white/10 bg-white/[0.03] p-3">
         <div className="flex min-w-0 flex-col gap-2 sm:flex-row">
           <textarea
             value={message}

@@ -2123,3 +2123,14 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 - Degisen dosyalar: `src/app/dashboard/orders/[id]/page.tsx`, `tests/ui-ux-safety.test.ts`, `.autopilot/STATUS.md`.
 - Kontroller: targeted UI safety PASS (94/94); lint PASS; typecheck PASS; full tests PASS (413/413); production build PASS (244 page); payment schema-only PASS; production dependency audit PASS (0 vulnerabilities); diff check PASS.
 - Kapsam: Code-only local refinement. SQL, production data, payment, email, AI, vehicle veya work-order mutation degisikligi yok; deploy veya push yapilmadi.
+
+## 2026-07-28 Compact customer delivery history workspace
+
+- Gorev: Musteri siparis detayini masaustunde sayfa kaydirmasi gerektirmeyen kompakt bir calisma alanina donusturmek; teslim edilen dosyalarin tarih/saat ve guvenli portal indirme sayisini gostermek.
+- UI: Siparis ozeti ve ilerleme tek kompakt ust bantta birlestirildi. Masaustunde conversation, teknik talep ve delivery history uc sabit sutunda; uzun icerikler panel icinde kayar. Mobilde mevcut tek kolon akisi korunur. Revizyon, ek dosya, DTC guidance ve destek islevleri kaldirilmadan kompakt acilir alanlara tasindi.
+- Teslim gecmisi: Orijinal dosyanin alinma zamani ve her teslim surumunun Berlin saat dilimindeki teslim zamani gosterilir. Her surum icin audit tabanli portal indirme sayisi ile son indirme zamani sunulur.
+- Guvenlik: Musteri siparis detaylari artik allowlist server API projeksiyonundan gelir. `customer_id`, `modified_file_path`, `modified_files` ve ek dosya storage pathleri musteri yanitindan cikarilir. Indirme yalniz `versionId` ile istenir; server auth, siparis sahipligi, exact version ve server-generated storage prefix kontrolunden sonra 60 saniyelik signed URL olusturur. Basarili link verilmeden once private `customer_file_downloaded` work-order eventi zorunlu kaydedilir; event metadata storage path icermez.
+- SQL: Yeni migration gerekmedi; mevcut `request_work_order_events` audit tablosu yeniden kullanildi.
+- Degisen alanlar: `src/lib/customerOrderDelivery.ts`, customer order/delivery API route'lari, additional-file safe response, customer order workspace, RequestChat ve ilgili testler.
+- Kontroller: targeted order/UI tests PASS (102/102); lint PASS; typecheck PASS; full tests PASS (421/421); production build PASS (244 page); payment schema-only PASS; production dependency audit PASS (0 vulnerabilities); diff check PASS.
+- Kapsam: Yalnizca customer order detail ve guvenli teslim gecmisi patch'i. SQL migration, payment, AI, vehicle, email veya admin workflow davranisi degismedi.
