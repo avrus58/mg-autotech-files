@@ -103,15 +103,6 @@ if (!rootHomePage.includes('publicResourceUrl("/#homepage-search-faq")')) {
 if (!rootHomePage.includes("homepageFileServiceJsonLd")) {
   failures.push("Root homepage does not expose ECU/TCU file service structured data.");
 }
-if (!rootHomePage.includes("homepageQuickServicePaths")) {
-  failures.push("Root homepage does not expose quick file service paths.");
-}
-if (!rootHomePage.includes("homepageQuickPathJsonLd")) {
-  failures.push("Root homepage does not expose quick file service path structured data.");
-}
-if (!rootHomePage.includes('"@type": "SiteNavigationElement"')) {
-  failures.push("Root homepage quick file service paths are missing SiteNavigationElement structured data.");
-}
 if (!rootHomePage.includes("homepageFileServiceNavigator")) {
   failures.push("Root homepage does not expose the file service navigator.");
 }
@@ -196,14 +187,13 @@ if (!rootHomePage.includes("hasOfferCatalog")) {
 if (!rootHomePage.includes('JSON.stringify(homepageFileServiceJsonLd)')) {
   failures.push("Root homepage does not render ECU/TCU file service structured data.");
 }
-if (!rootHomePage.includes('JSON.stringify(homepageQuickPathJsonLd)')) {
-  failures.push("Root homepage does not render quick file service path structured data.");
+const performanceToolsIndex = rootHomePage.indexOf("<PerformanceTools />");
+const fileServiceNavigatorIndex = rootHomePage.indexOf('<AnimatedSection id="file-service-navigator"');
+if (performanceToolsIndex < 0 || fileServiceNavigatorIndex < 0 || performanceToolsIndex > fileServiceNavigatorIndex) {
+  failures.push("Root homepage performance tools must render before the file service navigator.");
 }
-if (!rootHomePage.includes('buildHomepageItemList("MG AutoTech homepage file service quick paths", homepageQuickServicePaths, "/#file-service-quick-paths")')) {
-  failures.push("Root homepage resource graph is missing the quick file service paths ItemList.");
-}
-if (!rootHomePage.includes('publicResourceUrl("/#file-service-quick-paths")')) {
-  failures.push("Root homepage WebPage structured data is not linked to the quick file service paths.");
+if (rootHomePage.includes("file-service-quick-paths") || rootHomePage.includes("homepageQuickPathJsonLd")) {
+  failures.push("Root homepage still contains the removed hero quick-path panel.");
 }
 if (!rootHomePage.includes('buildHomepageItemList("MG AutoTech file service homepage navigator", homepageFileServiceNavigator, "/#file-service-navigator")')) {
   failures.push("Root homepage resource graph is missing the file service navigator ItemList.");

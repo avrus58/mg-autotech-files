@@ -2044,3 +2044,11 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 - Auth: Stable session guard persisted refresh token icin bir recovery denemesi yapar; 401 sonrasi cross-tab refresh yarisi tekrar okunur. Learning GET/PATCH/similarity akisi tek guvenli yeniden deneme yapar, staff `ai_training.manage` yetki kapisi degismez ve ham Unauthorized banner'i gosterilmez.
 - Test: Yeni `tests/admin-learning-session-stability.test.ts` auth recovery ve permission guardlarini kapsar; UI safety testi latest-order paneli, 5 kayit siniri ve kompakt kontroller icin guncellendi.
 - Kontroller: targeted tests PASS (98/98); lint PASS; typecheck PASS; full tests PASS (378/378); production build PASS; payment schema-only PASS; production dependency audit PASS (0 vulnerabilities); diff check PASS.
+
+## 2026-07-28 Homepage hero cleanup and performance-tools reorder
+
+- Gorev: Hero icindeki `Popular file-service paths` panelini kaldirmak ve mevcut Torque/RPM performance tools bolumunu file-service navigator bolumunun hemen ustune tasimak.
+- Uygulama: Hero quick-path paneli ile yalniz ona ait data, anchor ve structured-data kayitlari kaldirildi. `PerformanceTools` tek kopya olarak hero sonrasina tasindi. Navigator'daki gecersiz quick-path karti mevcut `#tools` bolumune baglanan Torque and power tools kartina cevrildi.
+- Test/SEO: UI safety testi hero kompaktligini, tek PerformanceTools instance'ini ve section sirasini dogrular. i18n/SEO guard kaldirilan panelin geri donmesini engeller ve performance tools bolumunun navigator'dan once render edilmesini zorunlu tutar.
+- Kapsam: Code-only homepage release; SQL, Supabase, payment, AI, vehicle, email, work-order veya desktop logic degisikligi yok.
+- Kontroller: i18n/SEO PASS (12 locale, 16 source file); lint PASS; typecheck PASS; full tests PASS (385/385); production build PASS (243 static page); payment schema-only PASS; production dependency audit PASS (0 vulnerabilities); diff check PASS.

@@ -1195,39 +1195,19 @@ test("homepage has a focused ECU and TCU file service search-intent section", ()
   );
 });
 
-test("homepage exposes above-the-fold quick file service paths", () => {
+test("homepage keeps the hero compact and places performance tools before the navigator", () => {
   const homepage = readProjectFile("src", "app", "page.tsx");
-  const quickPathSource =
-    homepage.match(/const homepageQuickServicePaths = \[[\s\S]*?const homepageFileServiceNavigator = \[/)?.[0] ?? "";
-  const quickPathSection =
-    homepage.match(/<nav[\s\S]*?id="file-service-quick-paths"[\s\S]*?<\/nav>/)?.[0] ?? "";
+  const heroSection =
+    homepage.match(/<section id="home"[\s\S]*?<PublicVehicleChecker \/>/)?.[0] ?? "";
+  const performanceToolsIndex = homepage.indexOf("<PerformanceTools />");
+  const navigatorIndex = homepage.indexOf('<AnimatedSection id="file-service-navigator"');
 
-  assert.match(homepage, /const homepageQuickServicePaths = \[/);
-  assert.match(quickPathSource, /title: "ECU file service"/);
-  assert.match(quickPathSource, /title: "TCU \/ gearbox files"/);
-  assert.match(quickPathSource, /title: "Stage 1 requests"/);
-  assert.match(quickPathSource, /title: "DTC requests"/);
-  assert.match(quickPathSource, /title: "Readiness tools"/);
-  assert.match(quickPathSource, /title: "How it works"/);
-  assert.match(quickPathSource, /href: "\/file-service"/);
-  assert.match(quickPathSource, /href: "\/ecu-platforms\/transmission-control-units"/);
-  assert.match(quickPathSource, /href: "\/services\/stage-1"/);
-  assert.match(quickPathSource, /href: "\/services\/dtc-off"/);
-  assert.match(quickPathSource, /href: "\/tools\/file-readiness-check"/);
-  assert.match(quickPathSource, /href: "\/how-it-works"/);
-  assert.match(quickPathSection, /Popular file-service paths/);
-  assert.match(quickPathSection, /Choose the correct public route before secure submission/);
-  assert.match(quickPathSection, /aria-label="Popular file service paths"/);
-  assert.match(quickPathSection, /focus-visible:ring-2 focus-visible:ring-red-700/);
-  assert.match(homepage, /const homepageQuickPathJsonLd = \{/);
-  assert.match(homepage, /"@type": "SiteNavigationElement"/);
-  assert.match(homepage, /hasPart: homepageQuickServicePaths\.map/);
-  assert.match(homepage, /JSON\.stringify\(homepageQuickPathJsonLd\)/);
-  assert.doesNotMatch(quickPathSource, /\/new-request|\/dashboard/);
-  assert.doesNotMatch(
-    quickPathSource + quickPathSection,
-    /type="file"|upload-session|api\/admin|fetch\(|createObjectURL|FileReader|generateMod|bytePatch|writeFile|checksum|storage_path|signed_url|service_role|SUPABASE_SERVICE_ROLE_KEY|admin_note|internal_note|customer_email|source_reference|confidence_score|sample_id|raw|hex/i
-  );
+  assert.doesNotMatch(heroSection, /Popular file-service paths/);
+  assert.doesNotMatch(homepage, /file-service-quick-paths|homepageQuickPathJsonLd|homepageQuickServicePaths/);
+  assert.equal(homepage.match(/<PerformanceTools \/>/g)?.length, 1);
+  assert.ok(performanceToolsIndex > 0);
+  assert.ok(navigatorIndex > performanceToolsIndex);
+  assert.match(homepage, /publicResourceUrl\("\/#tools"\)/);
 });
 
 test("homepage hero typography and major SEO sections avoid overflow and white expanses", () => {
@@ -1254,7 +1234,7 @@ test("homepage file service navigator indexes major sections safely", () => {
     homepage.match(/<AnimatedSection id="file-service-navigator"[\s\S]*?<AnimatedSection className="bg-\[#0b1226\] py-12"/)?.[0] ?? "";
 
   assert.match(homepage, /const homepageFileServiceNavigator = \[/);
-  assert.match(navigatorSource, /title: "Popular service paths"/);
+  assert.match(navigatorSource, /title: "Torque and power tools"/);
   assert.match(navigatorSource, /title: "Route decision matrix"/);
   assert.match(navigatorSource, /title: "Workshop use cases"/);
   assert.match(navigatorSource, /title: "Workshop profiles"/);
@@ -1262,7 +1242,7 @@ test("homepage file service navigator indexes major sections safely", () => {
   assert.match(navigatorSource, /title: "Brief requirements"/);
   assert.match(navigatorSource, /title: "Privacy controls"/);
   assert.match(navigatorSource, /title: "Terminology glossary"/);
-  assert.match(navigatorSource, /href: "\/#file-service-quick-paths"/);
+  assert.match(navigatorSource, /href: "\/#tools"/);
   assert.match(navigatorSource, /href: "\/#file-service-decision-matrix"/);
   assert.match(navigatorSource, /href: "\/#file-service-use-cases"/);
   assert.match(navigatorSource, /href: "\/#file-service-workshop-profiles"/);
@@ -2096,10 +2076,7 @@ test("homepage exposes customer-safe resource ItemList structured data", () => {
   assert.match(homepage, /service\.href\.startsWith\("\/services\/"\)/);
   assert.match(resourceSource, /const homepageResourceJsonLd = \{/);
   assert.match(resourceSource, /"@graph": \[/);
-  assert.match(
-    resourceSource,
-    /buildHomepageItemList\("MG AutoTech homepage file service quick paths", homepageQuickServicePaths, "\/#file-service-quick-paths"\)/
-  );
+  assert.doesNotMatch(resourceSource, /file service quick paths|file-service-quick-paths/);
   assert.match(
     resourceSource,
     /buildHomepageItemList\("MG AutoTech file service homepage navigator", homepageFileServiceNavigator, "\/#file-service-navigator"\)/
@@ -2225,7 +2202,7 @@ test("homepage exposes page-level WebPage structured data identity", () => {
   assert.match(pageSchemaSource, /primaryImageOfPage/);
   assert.match(pageSchemaSource, /hasPart: \[/);
   assert.match(pageSchemaSource, /publicResourceUrl\("\/#homepage-search-faq"\)/);
-  assert.match(pageSchemaSource, /publicResourceUrl\("\/#file-service-quick-paths"\)/);
+  assert.match(pageSchemaSource, /publicResourceUrl\("\/#tools"\)/);
   assert.match(pageSchemaSource, /publicResourceUrl\("\/#file-service-navigator"\)/);
   assert.match(pageSchemaSource, /publicResourceUrl\("\/#file-service-answer-library"\)/);
   assert.match(pageSchemaSource, /publicResourceUrl\("\/#file-service-search-index"\)/);
@@ -2253,10 +2230,7 @@ test("homepage exposes page-level WebPage structured data identity", () => {
   assert.match(pageSchemaSource, /publicResourceUrl\("\/#supported-brand-guides"\)/);
   assert.match(pageSchemaSource, /publicResourceUrl\("\/#ecu-platform-guides"\)/);
   assert.match(homepage, /"@id": "https:\/\/file\.mgautotech\.de\/#homepage-search-faq"/);
-  assert.match(
-    homepage,
-    /buildHomepageItemList\("MG AutoTech homepage file service quick paths", homepageQuickServicePaths, "\/#file-service-quick-paths"\)/
-  );
+  assert.doesNotMatch(homepage, /file-service-quick-paths|homepageQuickServicePaths|homepageQuickPathJsonLd/);
   assert.match(
     homepage,
     /buildHomepageItemList\("MG AutoTech file service homepage navigator", homepageFileServiceNavigator, "\/#file-service-navigator"\)/
@@ -2817,9 +2791,8 @@ test("i18n and SEO health script catches core multilingual requirements", () => 
   assert.match(script, /Root homepage does not expose page-level WebPage structured data/);
   assert.match(script, /homepageFileServiceJsonLd/);
   assert.match(script, /Root homepage does not expose ECU\/TCU file service structured data/);
-  assert.match(script, /Root homepage does not expose quick file service paths/);
-  assert.match(script, /Root homepage does not expose quick file service path structured data/);
-  assert.match(script, /Root homepage quick file service paths are missing SiteNavigationElement structured data/);
+  assert.match(script, /Root homepage performance tools must render before the file service navigator/);
+  assert.match(script, /Root homepage still contains the removed hero quick-path panel/);
   assert.match(script, /Root homepage does not expose the file service navigator/);
   assert.match(script, /Root homepage does not expose the file service answer library/);
   assert.match(script, /Root homepage does not expose file service answer library structured data/);
@@ -2846,9 +2819,6 @@ test("i18n and SEO health script catches core multilingual requirements", () => 
   assert.match(script, /Root homepage file service glossary structured data is missing DefinedTermSet/);
   assert.match(script, /Root homepage WebPage structured data is not linked to the ECU\/TCU file service graph/);
   assert.match(script, /Root homepage file service structured data is missing offer catalog/);
-  assert.match(script, /Root homepage does not render quick file service path structured data/);
-  assert.match(script, /Root homepage resource graph is missing the quick file service paths ItemList/);
-  assert.match(script, /Root homepage WebPage structured data is not linked to the quick file service paths/);
   assert.match(script, /Root homepage resource graph is missing the file service navigator ItemList/);
   assert.match(script, /Root homepage WebPage structured data is not linked to the file service navigator/);
   assert.match(script, /Root homepage resource graph is missing the file service answer library ItemList/);

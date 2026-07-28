@@ -862,52 +862,13 @@ const fileServiceSearchPillars = [
   },
 ];
 
-const homepageQuickServicePaths = [
-  {
-    title: "ECU file service",
-    text: "Start from the central online ECU and TCU file-service hub.",
-    href: "/file-service",
-    label: "Core hub",
-  },
-  {
-    title: "TCU / gearbox files",
-    text: "Open the transmission controller guide for TCU request context.",
-    href: "/ecu-platforms/transmission-control-units",
-    label: "TCU",
-  },
-  {
-    title: "Stage 1 requests",
-    text: "Review the Stage 1 service page before opening a performance request.",
-    href: "/services/stage-1",
-    label: "Performance",
-  },
-  {
-    title: "DTC requests",
-    text: "Prepare diagnostic code context and notes before request submission.",
-    href: "/services/dtc-off",
-    label: "Diagnostics",
-  },
-  {
-    title: "Readiness tools",
-    text: "Check file request readiness before entering the secure portal flow.",
-    href: "/tools/file-readiness-check",
-    label: "Prepare",
-  },
-  {
-    title: "How it works",
-    text: "See the intake, review, status tracking and delivery workflow.",
-    href: "/how-it-works",
-    label: "Workflow",
-  },
-];
-
 const homepageFileServiceNavigator = [
   {
-    title: "Popular service paths",
-    text: "Start with the fastest public routes for ECU, TCU, Stage 1, DTC and readiness guidance.",
-    href: "/#file-service-quick-paths",
-    tag: "Start",
-    icon: Search,
+    title: "Torque and power tools",
+    text: "Estimate power from torque and RPM or inspect workshop log rows before choosing the next route.",
+    href: "/#tools",
+    tag: "Tools",
+    icon: Gauge,
   },
   {
     title: "Route decision matrix",
@@ -1911,7 +1872,6 @@ const homepageResourceJsonLd = {
         },
       })),
     },
-    buildHomepageItemList("MG AutoTech homepage file service quick paths", homepageQuickServicePaths, "/#file-service-quick-paths"),
     buildHomepageItemList("MG AutoTech file service homepage navigator", homepageFileServiceNavigator, "/#file-service-navigator"),
     buildHomepageItemList("MG AutoTech file service answer library", fileServiceAnswerLibrary, "/#file-service-answer-library"),
     buildHomepageItemList("MG AutoTech file service search route index", fileServiceSearchRouteIndex, "/#file-service-search-index"),
@@ -1937,22 +1897,6 @@ const homepageResourceJsonLd = {
     buildHomepageItemList("MG AutoTech supported brand guides", supportedBrands, "/#supported-brand-guides"),
     buildHomepageItemList("MG AutoTech ECU and TCU platform guides", ecuPlatformLinks, "/#ecu-platform-guides"),
   ],
-};
-
-const homepageQuickPathJsonLd = {
-  "@context": "https://schema.org",
-  "@type": "SiteNavigationElement",
-  "@id": publicResourceUrl("/#file-service-quick-paths"),
-  name: "MG AutoTech file service quick paths",
-  description: "Popular customer-safe navigation paths for online ECU and TCU file-service preparation.",
-  mainEntityOfPage: { "@id": publicResourceUrl("/#page") },
-  hasPart: homepageQuickServicePaths.map((path, index) => ({
-    "@type": "WebPage",
-    position: index + 1,
-    name: path.title,
-    description: path.text,
-    url: publicResourceUrl(path.href),
-  })),
 };
 
 const homepageFileServiceGlossaryJsonLd = {
@@ -1987,7 +1931,7 @@ const homepagePageJsonLd = {
   },
   hasPart: [
     { "@id": publicResourceUrl("/#homepage-search-faq") },
-    { "@id": publicResourceUrl("/#file-service-quick-paths") },
+    { "@id": publicResourceUrl("/#tools") },
     { "@id": publicResourceUrl("/#file-service-navigator") },
     { "@id": publicResourceUrl("/#file-service-answer-library") },
     { "@id": publicResourceUrl("/#file-service-search-index") },
@@ -3976,47 +3920,6 @@ export default function HomePage() {
               )}
             </div>
 
-            <nav
-              id="file-service-quick-paths"
-              aria-label="Popular file service paths"
-              className="mt-8 rounded-[1.75rem] border border-white/10 bg-white/[0.045] p-4 shadow-2xl shadow-black/20 backdrop-blur"
-            >
-              <div className="mb-4 flex items-center justify-between gap-4">
-                <div>
-                  <div className="text-xs font-black uppercase tracking-[0.18em] text-red-300">
-                    Popular file-service paths
-                  </div>
-                  <div className="mt-1 text-sm text-zinc-400">
-                    Choose the correct public route before secure submission.
-                  </div>
-                </div>
-                <Search className="hidden h-5 w-5 text-red-400 sm:block" />
-              </div>
-
-              <div className="grid gap-2 sm:grid-cols-2">
-                {homepageQuickServicePaths.map((path) => (
-                  <Link
-                    key={path.title}
-                    href={path.href}
-                    className="group rounded-2xl border border-white/10 bg-black/25 p-3 transition hover:-translate-y-0.5 hover:border-red-700/60 hover:bg-red-950/25 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-700"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <div className="text-sm font-black text-white">
-                          {path.title}
-                        </div>
-                        <p className="mt-1 text-xs leading-5 text-zinc-400">
-                          {path.text}
-                        </p>
-                      </div>
-                      <span className="shrink-0 rounded-full border border-red-800/40 bg-red-950/30 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-red-200">
-                        {path.label}
-                      </span>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </nav>
           </motion.div>
 
           <div className="hidden min-w-0 lg:block">
@@ -4026,6 +3929,8 @@ export default function HomePage() {
 
         <PublicVehicleChecker />
       </section>
+
+      <PerformanceTools />
 
       <AnimatedSection id="file-service-navigator" className="bg-[#050607] py-16 text-white">
         <div className="mx-auto max-w-7xl px-4">
@@ -4256,8 +4161,6 @@ export default function HomePage() {
       </AnimatedSection>
 
       <WorkshopCommandDesk />
-
-      <PerformanceTools />
 
       <AnimatedSection id="brands" className="bg-[#050505] py-20">
         <div className="mx-auto max-w-7xl px-4">
@@ -4946,12 +4849,6 @@ export default function HomePage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{
           __html: JSON.stringify(homepageResourceJsonLd),
-        }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(homepageQuickPathJsonLd),
         }}
       />
       <script
