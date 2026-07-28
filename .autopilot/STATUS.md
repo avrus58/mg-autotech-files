@@ -2062,3 +2062,12 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 - Gorsel QA: 1440x1000 ve 390x844 viewportlarda kontrol edildi; metin/buton tasmasi ve sayfa yatay scroll'u yok. Indirilen SVG ayrica PNG olarak render edilip metric ve eksen cakismalari duzeltildi. In-app tarayicida app disi tema/extension kaynakli mevcut hydration warning disinda performance araci runtime hatasi gorulmedi.
 - Kontroller: lint PASS; typecheck PASS; full tests PASS (393/393); production build PASS (243 static page); payment schema-only PASS; i18n/SEO PASS (12 locale, 16 source file); production dependency audit PASS (0 vulnerabilities); diff check PASS.
 - Kapsam: Code-only local patch. Deploy, push, SQL, production data, payment, AI, vehicle, email, work-order veya desktop logic degisikligi yapilmadi.
+
+## 2026-07-28 Admin customer account creation visibility
+
+- Gorev: Admin Customers listesinden `Manage` acildiginda musteri hesabinin olusturulma tarihini gorunur yapmak.
+- Uygulama: Customer Manage modalinin ust bilgi alanina `profiles.created_at` degerinden uretilen, tarih ve saati gosteren salt-okunur `Account created` rozeti eklendi. Tarih bulunamazsa `Account creation date unavailable` fallback'i gosterilir.
+- Veri kapsami: Mevcut admin profile sorgusu `created_at` alanini zaten aliyordu; yeni API, SQL, migration veya production veri islemi gerekmedi. Musteri/public yuzeyine yeni veri acilmadi.
+- Degisen dosyalar: `src/app/admin/page.tsx`, `tests/ui-ux-safety.test.ts`, `.autopilot/STATUS.md`.
+- Kontroller: targeted UI safety PASS (93/93); lint PASS; typecheck PASS; full tests PASS (394/394); production build PASS (243 static page); payment schema-only PASS; production dependency audit PASS (0 vulnerabilities); diff check PASS.
+- Kapsam: Local code-only patch. Deploy veya push yapilmadi.

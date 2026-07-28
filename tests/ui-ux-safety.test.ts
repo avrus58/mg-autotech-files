@@ -301,6 +301,21 @@ test("legacy admin dashboard shows a compact latest-order operations desk", () =
   );
 });
 
+test("admin customer management shows the account creation date read-only", () => {
+  const adminPage = readProjectFile("src", "app", "admin", "page.tsx");
+
+  assert.match(
+    adminPage,
+    /Account created \$\{formatDate\(customer\.created_at\)\}/
+  );
+  assert.match(adminPage, /Account creation date unavailable/);
+  assert.match(adminPage, /title="Customer account creation date"/);
+  assert.match(
+    adminPage,
+    /internal_admin_note, created_at"/
+  );
+});
+
 test("admin request control center shows retryable API load errors instead of empty filters", () => {
   const client = readProjectFile("src", "app", "admin", "requests", "AdminRequestsClient.tsx");
   const route = readProjectFile("src", "app", "api", "admin", "requests", "route.ts");

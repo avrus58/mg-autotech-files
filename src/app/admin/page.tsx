@@ -1956,6 +1956,9 @@ function CustomerDetailModal({ customer, form, setForm, creditInput, setCreditIn
   onCustomAdjust: () => void;
   onCopyValue: (value: string | null | undefined, label: string) => void;
 }) {
+  const accountCreatedLabel = customer.created_at
+    ? `Account created ${formatDate(customer.created_at)}`
+    : "Account creation date unavailable";
   const updateForm = <K extends keyof CustomerForm>(key: K, value: CustomerForm[K]) => setForm((current) => current ? { ...current, [key]: value } : current);
   const toggleCustomerTag = (tag: CustomerTag) => {
     setForm((current) => {
@@ -1982,6 +1985,10 @@ function CustomerDetailModal({ customer, form, setForm, creditInput, setCreditIn
                 <span className="rounded-full border border-red-800/40 bg-red-950/25 px-3 py-1 text-xs font-black uppercase tracking-[0.16em] text-red-300">{customer.customer_id || customer.id}</span>
                 <span className={`rounded-full border px-3 py-1 text-xs font-black ${accountStatusClass(form.account_status)}`}>{statusLabel(form.account_status)}</span>
                 <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs font-bold text-zinc-400">Balance: {Number(customer.credit_balance ?? 0)} credits</span>
+                <span className="inline-flex items-center rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs font-bold text-zinc-400" title="Customer account creation date">
+                  <CalendarDays className="mr-1.5 h-3.5 w-3.5 text-red-400" />
+                  {accountCreatedLabel}
+                </span>
                 {form.customer_tags.map((tag) => (
                   <span key={tag} className={`rounded-full border px-3 py-1 text-xs font-black ${customerTagClass(tag)}`}>
                     {customerTagLabel(tag)}
