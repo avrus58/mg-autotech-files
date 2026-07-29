@@ -5,20 +5,38 @@ import { maybeCreateTrainingSampleForRequest } from "@/lib/ecuIntelligence/learn
 import { sendDeliveryCompletedEmail } from "@/lib/email/events";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { recordWorkOrderEvent } from "@/lib/workOrders/server";
+import {
+  buildFileVersionPathSegment,
+  normalizeFileVersionLabel,
+} from "@/lib/fileVersionLabels";
 
 export const maxDuration = 60;
+
+const versionLabelSchema = z
+  .string()
+  .transform((value, context) => {
+    const normalized = normalizeFileVersionLabel(value);
+    if (!normalized) {
+      context.addIssue({
+        code: "custom",
+        message: "Version label must use 1-40 letters, numbers, spaces, dots, underscores or hyphens.",
+      });
+      return z.NEVER;
+    }
+    return normalized;
+  });
 
 const bodySchema = z.object({
   filePath: z.string().min(1).max(1200),
   fileName: z.string().min(1).max(255),
-  label: z.enum(["v1", "revision", "final"]),
+  label: versionLabelSchema,
   versionId: z.string().min(1).max(100),
   uploadedAt: z.string().datetime(),
 });
 
 type StoredVersion = {
   id: string;
-  label: "v1" | "revision" | "final";
+  label: string;
   file_name: string;
   file_path: string;
   uploaded_at: string;
@@ -55,7 +73,14 @@ export async function POST(
 
   const customerFolder = orderResult.data.customer_id || "unknown-customer";
   const expectedPrefix = `${customerFolder}/modified/${id}/`;
-  if (!parsed.data.filePath.startsWith(expectedPrefix) || parsed.data.filePath.includes("..")) {
+  const labelPathSegment = buildFileVersionPathSegment(parsed.data.label);
+  const expectedVersionPrefix = `${expectedPrefix}${labelPathSegment}/`;
+  if (
+    !labelPathSegment ||
+    !parsed.data.filePath.startsWith(expectedVersionPrefix) ||
+    parsed.data.filePath.includes("..") ||
+    parsed.data.filePath.includes("\\")
+  ) {
     return NextResponse.json({ error: "Invalid completed-file path." }, { status: 400 });
   }
 

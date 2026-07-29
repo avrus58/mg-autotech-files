@@ -7,11 +7,9 @@ import { authenticatedFetch, getStableSession, notifySessionRequired, signOutIfE
 import { supabase } from "@/lib/supabaseClient";
 import RequestChat from "@/components/RequestChat";
 import workspaceStyles from "./order-workspace.module.css";
+import { formatFileVersionLabel } from "@/lib/fileVersionLabels";
 import type { CustomerRequestDtcAnalysis } from "@/lib/dtcAnalyzer/requestIntegration";
-import type {
-  CustomerDeliveryHistory,
-  CustomerDeliveryVersion,
-} from "@/lib/customerOrderDelivery";
+import type { CustomerDeliveryHistory } from "@/lib/customerOrderDelivery";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -237,12 +235,6 @@ function buildCustomerSupportSummary(order: Order | null, fallbackId: string) {
     `Service: ${order.service_type || "Service not set"}`,
     `Created: ${formatDate(order.created_at)}`,
   ].join("\n");
-}
-
-function formatFileVersionLabel(label: CustomerDeliveryVersion["label"]) {
-  if (label === "v1") return "V1";
-  if (label === "revision") return "Revision";
-  return "Final";
 }
 
 const deliveryEstimateLabels: Record<DeliveryEstimate, string> = {

@@ -15,6 +15,12 @@ import {
 import { countCompletedToday } from "@/lib/adminDashboardMetrics";
 import { hasAdminSnapshotRegression } from "@/lib/adminDataStability";
 import {
+  FILE_VERSION_LABEL_MAX_LENGTH,
+  buildFileVersionPathSegment,
+  formatFileVersionLabel,
+  normalizeFileVersionLabel,
+} from "@/lib/fileVersionLabels";
+import {
   ArrowLeft,
   BadgeEuro,
   BellRing,
@@ -99,7 +105,7 @@ type DeliveryEstimateSelection = DeliveryEstimate | "";
 
 type ModifiedFileVersion = {
   id: string;
-  label: "v1" | "revision" | "final";
+  label: string;
   file_name: string;
   file_path: string;
   uploaded_at: string;
@@ -367,12 +373,6 @@ function getModifiedFileVersions(order: Order) {
       uploaded_at: order.created_at || new Date().toISOString(),
     },
   ];
-}
-
-function formatFileVersionLabel(label: ModifiedFileVersion["label"]) {
-  if (label === "v1") return "V1";
-  if (label === "revision") return "Revision";
-  return "Final";
 }
 
 function formatDeliveryEstimate(value: DeliveryEstimateSelection | string | null) {
@@ -1015,19 +1015,27 @@ export default function AdminPage() {
   async function uploadModifiedFile(
     order: Order,
     file: File | null,
-    label: ModifiedFileVersion["label"]
+    label: string
   ) {
     if (!hasStaffPermission(adminAccess, "files.upload")) {
       setMessage("Your staff role cannot upload completed files.");
       return;
     }
     if (!file) return;
+    const normalizedLabel = normalizeFileVersionLabel(label);
+    const labelPathSegment = normalizedLabel
+      ? buildFileVersionPathSegment(normalizedLabel)
+      : null;
+    if (!normalizedLabel || !labelPathSegment) {
+      setMessage("Enter a valid version label before uploading the modified file.");
+      return;
+    }
     setUploadingModifiedId(order.id);
     setMessage("");
     const safeFileName = file.name.replaceAll(" ", "_").replace(/[^a-zA-Z0-9._-]/g, "");
     const customerFolder = order.customer_id ?? "unknown-customer";
     const timestamp = Date.now();
-    const filePath = `${customerFolder}/modified/${order.id}/${label}/${timestamp}-${safeFileName}`;
+    const filePath = `${customerFolder}/modified/${order.id}/${labelPathSegment}/${timestamp}-${safeFileName}`;
     const { error: uploadError } = await supabase.storage.from("customer-files").upload(filePath, file, { cacheControl: "3600", upsert: false });
     if (uploadError) {
       setUploadingModifiedId(null);
@@ -1036,8 +1044,8 @@ export default function AdminPage() {
     }
 
     const version: ModifiedFileVersion = {
-      id: `${label}-${timestamp}`,
-      label,
+      id: `${labelPathSegment}-${timestamp}`,
+      label: normalizedLabel,
       file_name: file.name,
       file_path: filePath,
       uploaded_at: new Date().toISOString(),
@@ -1051,7 +1059,7 @@ export default function AdminPage() {
       body: JSON.stringify({
         filePath,
         fileName: file.name,
-        label,
+        label: normalizedLabel,
         versionId: version.id,
         uploadedAt: version.uploaded_at,
       }),
@@ -1064,7 +1072,7 @@ export default function AdminPage() {
     }
     setOrders((current) => current.map((item) => (item.id === order.id ? { ...item, modified_file_path: filePath, modified_files: modifiedFiles, status: "completed" } : item)));
     setSelectedOrder((current) => (current?.id === order.id ? { ...current, modified_file_path: filePath, modified_files: modifiedFiles, status: "completed" } : current));
-    setMessage(`${formatFileVersionLabel(label)} modified file uploaded and the order was completed.`);
+    setMessage(`${formatFileVersionLabel(normalizedLabel)} modified file uploaded and the order was completed.`);
   }
 
   async function downloadModifiedFile(filePath: string) {
@@ -2349,7 +2357,7 @@ function OrderDetailModal({ order, customer, onClose, onDownload, onCopy, onCopy
   onCopyValue: (value: string | null | undefined, label: string) => void;
   onStatusChange: (status: string) => void;
   onDeliveryUpdate: (estimate: DeliveryEstimate, note: string) => void;
-  onUploadModified: (file: File | null, label: ModifiedFileVersion["label"]) => void;
+  onUploadModified: (file: File | null, label: string) => void;
   onDownloadModified: (filePath: string) => void;
   onCustomerUploadPermission: (enabled: boolean) => void;
   canManageOrders: boolean;
@@ -2362,8 +2370,18 @@ function OrderDetailModal({ order, customer, onClose, onDownload, onCopy, onCopy
   const serviceItems = splitServiceItems(order.service_type);
   const workflowStep = getWorkflowStep(order);
   const modifiedVersions = getModifiedFileVersions(order);
-  const [modifiedFileLabel, setModifiedFileLabel] =
-    useState<ModifiedFileVersion["label"]>("v1");
+  const [modifiedFileLabelMode, setModifiedFileLabelMode] =
+    useState<"v1" | "revision" | "final" | "custom">("v1");
+  const [customModifiedFileLabel, setCustomModifiedFileLabel] = useState("");
+  const modifiedFileLabel = normalizeFileVersionLabel(
+    modifiedFileLabelMode === "custom"
+      ? customModifiedFileLabel
+      : modifiedFileLabelMode
+  );
+  const customLabelInvalid =
+    modifiedFileLabelMode === "custom" &&
+    customModifiedFileLabel.length > 0 &&
+    !modifiedFileLabel;
   const [deliveryEstimate, setDeliveryEstimate] = useState<DeliveryEstimateSelection>(
     order.estimated_delivery_label ?? ""
   );
@@ -2387,7 +2405,7 @@ function OrderDetailModal({ order, customer, onClose, onDownload, onCopy, onCopy
             <div className="grid gap-2 sm:flex sm:flex-wrap">
               <button onClick={onCopy} className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-black text-white transition hover:bg-white/10"><Copy className="mr-2 inline h-4 w-4" />Copy Order ID</button>
               <button onClick={onDownload} disabled={!order.original_file_path || !canDownloadFiles} className="rounded-xl bg-[#b1121b] px-4 py-3 text-sm font-black text-white transition hover:bg-[#c91824] disabled:opacity-40"><Download className="mr-2 inline h-4 w-4" />Download Original</button>
-              {canUploadFiles && <label className="cursor-pointer rounded-xl border border-emerald-700/40 bg-emerald-950/30 px-4 py-3 text-sm font-black text-emerald-300 transition hover:bg-emerald-900/40">{uploadingModified ? <><Loader2 className="mr-2 inline h-4 w-4 animate-spin" />Uploading Modified</> : <><Upload className="mr-2 inline h-4 w-4" />Upload Modified</>}<input type="file" className="hidden" disabled={uploadingModified} onChange={(event) => { const file = event.target.files?.[0] ?? null; onUploadModified(file, modifiedFileLabel); event.target.value = ""; }} /></label>}
+              {canUploadFiles && <label aria-disabled={uploadingModified || !modifiedFileLabel} className={`rounded-xl border border-emerald-700/40 bg-emerald-950/30 px-4 py-3 text-sm font-black text-emerald-300 transition ${uploadingModified || !modifiedFileLabel ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:bg-emerald-900/40"}`}>{uploadingModified ? <><Loader2 className="mr-2 inline h-4 w-4 animate-spin" />Uploading Modified</> : <><Upload className="mr-2 inline h-4 w-4" />Upload Modified</>}<input type="file" className="hidden" disabled={uploadingModified || !modifiedFileLabel} onChange={(event) => { const file = event.target.files?.[0] ?? null; if (modifiedFileLabel) onUploadModified(file, modifiedFileLabel); event.target.value = ""; }} /></label>}
               <button onClick={onClose} className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-black text-white transition hover:bg-white/10"><X className="mr-2 inline h-4 w-4" />Close</button>
             </div>
           </div>
@@ -2487,12 +2505,23 @@ function OrderDetailModal({ order, customer, onClose, onDownload, onCopy, onCopy
 
               <div className="mt-4 rounded-2xl border border-white/10 bg-black/30 p-4">
                 <div className="mb-3 text-xs font-black uppercase tracking-[0.14em] text-zinc-500">Upload Version</div>
-                <select value={modifiedFileLabel} onChange={(event) => setModifiedFileLabel(event.target.value as ModifiedFileVersion["label"])} className="mb-3 h-11 w-full rounded-xl border border-white/10 bg-black/35 px-3 text-sm font-black text-white outline-none focus:border-red-700">
+                <select aria-label="Modified file version label" value={modifiedFileLabelMode} onChange={(event) => setModifiedFileLabelMode(event.target.value as "v1" | "revision" | "final" | "custom")} className="h-11 w-full rounded-xl border border-white/10 bg-black/35 px-3 text-sm font-black text-white outline-none focus:border-red-700">
                   <option value="v1" className="bg-[#111]">V1</option>
                   <option value="revision" className="bg-[#111]">Revision</option>
                   <option value="final" className="bg-[#111]">Final</option>
+                  <option value="custom" className="bg-[#111]">Custom label...</option>
                 </select>
-                {canUploadFiles ? <label className="flex w-full cursor-pointer items-center justify-center rounded-xl border border-emerald-700/40 bg-emerald-950/30 px-4 py-3 text-sm font-black text-emerald-300 transition hover:bg-emerald-900/40">{uploadingModified ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Uploading Modified</> : <><Upload className="mr-2 h-4 w-4" />Upload {formatFileVersionLabel(modifiedFileLabel)} File</>}<input type="file" className="hidden" disabled={uploadingModified} onChange={(event) => { const file = event.target.files?.[0] ?? null; onUploadModified(file, modifiedFileLabel); event.target.value = ""; }} /></label> : <div className="text-xs text-zinc-500">Your staff role cannot upload completed files.</div>}
+                {modifiedFileLabelMode === "custom" && (
+                  <div className="mt-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <label htmlFor={`custom-version-${order.id}`} className="text-xs font-black text-zinc-300">Custom customer-visible label</label>
+                      <span className="text-[11px] text-zinc-600">{customModifiedFileLabel.length}/{FILE_VERSION_LABEL_MAX_LENGTH}</span>
+                    </div>
+                    <input id={`custom-version-${order.id}`} aria-label="Custom version label" value={customModifiedFileLabel} onChange={(event) => setCustomModifiedFileLabel(event.target.value)} maxLength={FILE_VERSION_LABEL_MAX_LENGTH} placeholder="e.g. V15 or Final 2" autoComplete="off" className={`mt-2 h-11 w-full rounded-xl border bg-black/35 px-3 text-sm font-black text-white outline-none placeholder:text-zinc-600 ${customLabelInvalid ? "border-red-600 focus:border-red-500" : "border-white/10 focus:border-red-700"}`} />
+                    <p className={`mt-2 text-xs leading-5 ${customLabelInvalid ? "text-red-300" : "text-zinc-500"}`}>{customLabelInvalid ? "Use letters, numbers, spaces, dots, underscores or hyphens only." : "This label appears in the delivery history. Examples: V15, Dyno Fix, Final 2."}</p>
+                  </div>
+                )}
+                {canUploadFiles ? <label aria-disabled={uploadingModified || !modifiedFileLabel} className={`mt-3 flex w-full items-center justify-center rounded-xl border border-emerald-700/40 bg-emerald-950/30 px-4 py-3 text-sm font-black text-emerald-300 transition ${uploadingModified || !modifiedFileLabel ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:bg-emerald-900/40"}`}>{uploadingModified ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Uploading Modified</> : <><Upload className="mr-2 h-4 w-4" />{modifiedFileLabel ? `Upload ${formatFileVersionLabel(modifiedFileLabel)} File` : "Enter Version Label"}</>}<input type="file" className="hidden" disabled={uploadingModified || !modifiedFileLabel} onChange={(event) => { const file = event.target.files?.[0] ?? null; if (modifiedFileLabel) onUploadModified(file, modifiedFileLabel); event.target.value = ""; }} /></label> : <div className="mt-3 text-xs text-zinc-500">Your staff role cannot upload completed files.</div>}
               </div>
 
               {modifiedVersions.length > 0 && (

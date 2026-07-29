@@ -3,12 +3,13 @@ import {
   isStaffMember,
   type StaffAccess,
 } from "@/lib/staffPermissions";
+import { normalizeFileVersionLabel } from "@/lib/fileVersionLabels";
 
 export const CUSTOMER_FILE_DOWNLOAD_EVENT = "customer_file_downloaded";
 
 export type StoredModifiedFileVersion = {
   id: string;
-  label: "v1" | "revision" | "final";
+  label: string;
   file_name: string;
   file_path: string;
   uploaded_at: string;
@@ -123,12 +124,6 @@ export function canDownloadCustomerOrder(
   );
 }
 
-const versionLabels = new Set<StoredModifiedFileVersion["label"]>([
-  "v1",
-  "revision",
-  "final",
-]);
-
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
@@ -140,12 +135,11 @@ function isIsoDate(value: unknown): value is string {
 function normalizeStoredVersion(value: unknown): StoredModifiedFileVersion | null {
   if (!isRecord(value)) return null;
 
-  const label = value.label;
+  const label = normalizeFileVersionLabel(value.label);
   if (
     typeof value.id !== "string" ||
     !value.id.trim() ||
-    typeof label !== "string" ||
-    !versionLabels.has(label as StoredModifiedFileVersion["label"]) ||
+    !label ||
     typeof value.file_name !== "string" ||
     !value.file_name.trim() ||
     typeof value.file_path !== "string" ||
@@ -157,7 +151,7 @@ function normalizeStoredVersion(value: unknown): StoredModifiedFileVersion | nul
 
   return {
     id: value.id,
-    label: label as StoredModifiedFileVersion["label"],
+    label,
     file_name: value.file_name,
     file_path: value.file_path,
     uploaded_at: value.uploaded_at,

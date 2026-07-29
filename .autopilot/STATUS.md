@@ -2,6 +2,15 @@
 
 Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
+## 2026-07-29 Admin custom modified-file version labels
+
+- Gorev: Admin work-order `Upload Version` secimini V1/Revision/Final presetlerini koruyarak guvenli custom label destegiyle genisletmek.
+- Uygulama: `Custom label...` secenegi, 40 karakter sinirli customer-visible label alani, invalid/empty state upload kilidi ve central label normalization/format/path-segment helper'i eklendi. `V15`, `Dyno Fix` ve `Final 2` gibi guvenli etiketler desteklenir.
+- Server guvenligi: Complete-delivery API custom label'i server-side tekrar dogrular; storage path label metnini dogrudan kullanmaz ve deterministic safe segment ister. Traversal/backslash kontrolleri korunup guclendirildi.
+- Customer delivery: Custom label teslim gecmisinde aynen gorunur; storage path ve private delivery metadata customer projection'a eklenmez. Existing V1/Revision/Final ve legacy final fallback davranisi korunur.
+- SQL: Gerekmedi. Mevcut `orders.modified_files` JSONB yapisi kullanildi; production data mutation veya gercek dosya upload testi yapilmadi.
+- Kontroller: targeted tests PASS (13/13); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (433/433); `npm run build` PASS; `node scripts/check-payment-env.js --schema-only` PASS; `npm audit --omit=dev --audit-level=high` PASS (0 vulnerabilities); `git diff --check` PASS.
+
 ## 2026-07-28 owner-requested admin/customer session resilience hardening
 
 - Baslangic/bitis: 2026-07-27 - 2026-07-28 00:53:00 +01:00.
