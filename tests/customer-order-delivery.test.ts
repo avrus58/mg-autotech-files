@@ -241,10 +241,23 @@ test("anonymous users cannot load an order or request a delivery download", asyn
 
 test("desktop order workspace uses a bounded three-column layout while mobile remains stacked", () => {
   const page = source("src", "app", "dashboard", "orders", "[id]", "page.tsx");
+  const workspaceStyles = source(
+    "src",
+    "app",
+    "dashboard",
+    "orders",
+    "[id]",
+    "order-workspace.module.css"
+  );
   const chat = source("src", "components", "RequestChat.tsx");
 
-  assert.match(page, /xl:h-dvh xl:overflow-hidden/);
+  assert.match(page, /workspaceStyles\.viewportShell/);
+  assert.match(page, /workspaceStyles\.workspaceColumns/);
   assert.match(page, /xl:grid-cols-\[minmax\(310px,0\.9fr\)_minmax\(390px,1\.12fr\)_minmax\(340px,0\.98fr\)\]/);
+  assert.match(workspaceStyles, /@media \(min-width: 1280px\) and \(min-height: 841px\)/);
+  assert.match(workspaceStyles, /@media \(min-width: 1280px\) and \(max-height: 840px\)/);
+  assert.match(workspaceStyles, /height: 640px/);
+  assert.match(workspaceStyles, /overflow-y: auto/);
   assert.match(chat, /Order conversation/);
   assert.match(page, /Vehicle & technical data/);
   assert.match(page, /Delivery history/);

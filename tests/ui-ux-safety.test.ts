@@ -211,11 +211,22 @@ test("customer order detail provides a safe support summary copy action", () => 
 
 test("customer order detail uses a responsive MG AutoTech work-order workspace", () => {
   const page = readProjectFile("src", "app", "dashboard", "orders", "[id]", "page.tsx");
+  const workspaceStyles = readProjectFile(
+    "src",
+    "app",
+    "dashboard",
+    "orders",
+    "[id]",
+    "order-workspace.module.css"
+  );
   const chat = readProjectFile("src", "components", "RequestChat.tsx");
 
   assert.match(page, /Secure order workspace/);
   assert.match(page, /max-w-\[1720px\]/);
-  assert.match(page, /xl:h-dvh xl:overflow-hidden/);
+  assert.match(page, /import workspaceStyles from "\.\/order-workspace\.module\.css"/);
+  assert.match(page, /workspaceStyles\.viewportShell/);
+  assert.match(page, /workspaceStyles\.workspaceFrame/);
+  assert.match(page, /workspaceStyles\.workspaceColumns/);
   assert.match(page, /xl:grid-cols-\[minmax\(310px,0\.9fr\)_minmax\(390px,1\.12fr\)_minmax\(340px,0\.98fr\)\]/);
   assert.match(page, /<RequestChat requestId=\{order\.id\} senderRole="customer" variant="workspace"/);
   assert.match(page, /aria-label="Order progress"/);
@@ -234,6 +245,11 @@ test("customer order detail uses a responsive MG AutoTech work-order workspace",
   assert.match(chat, /variant\?: "default" \| "workspace"/);
   assert.match(chat, /Order conversation/);
   assert.match(chat, /min-h-80 max-h-\[32rem\] xl:min-h-0 xl:max-h-none xl:flex-1/);
+  assert.match(workspaceStyles, /@media \(min-width: 1280px\) and \(min-height: 841px\)/);
+  assert.match(workspaceStyles, /@media \(min-width: 1280px\) and \(max-height: 840px\)/);
+  assert.match(workspaceStyles, /overflow-y: auto/);
+  assert.match(workspaceStyles, /height: 640px/);
+  assert.match(workspaceStyles, /min-height: 640px/);
   assert.doesNotMatch(page, /carecufile|panel\.carecufile/i);
 });
 

@@ -6,6 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import { authenticatedFetch, getStableSession, notifySessionRequired, signOutIfEmailUnverified } from "@/lib/authGuards";
 import { supabase } from "@/lib/supabaseClient";
 import RequestChat from "@/components/RequestChat";
+import workspaceStyles from "./order-workspace.module.css";
 import type { CustomerRequestDtcAnalysis } from "@/lib/dtcAnalyzer/requestIntegration";
 import type {
   CustomerDeliveryHistory,
@@ -720,7 +721,7 @@ export default function OrderDetailPage() {
   const statusCopy = getCustomerStatusCopy(order, completedFileReady, revisionRequested);
 
   return (
-    <main className="min-h-screen bg-[#050505] text-white xl:h-dvh xl:overflow-hidden">
+    <main className={`${workspaceStyles.viewportShell} min-h-screen bg-[#050505] text-white`}>
       <div className="fixed inset-0 -z-10 bg-[radial-gradient(circle_at_18%_0%,rgba(160,18,28,0.25),transparent_34%),linear-gradient(135deg,#050505,#0c0c0e_48%,#170507)]" />
 
       <header className="sticky top-0 z-50 border-b border-white/10 bg-black/85 backdrop-blur-xl xl:h-[72px]">
@@ -759,7 +760,7 @@ export default function OrderDetailPage() {
         </div>
       </header>
 
-      <section className="mx-auto flex w-full max-w-[1720px] flex-col gap-3 px-3 py-3 sm:px-5 xl:h-[calc(100dvh-72px)] xl:overflow-hidden">
+      <section className={`${workspaceStyles.workspaceFrame} mx-auto flex w-full max-w-[1720px] flex-col gap-3 px-3 py-3 sm:px-5`}>
         {message && (
           <div role="status" className="shrink-0 rounded-xl border border-red-800/50 bg-red-950/30 px-4 py-3 text-sm text-red-200">
             {message}
@@ -835,7 +836,7 @@ export default function OrderDetailPage() {
           </div>
         </section>
 
-        <div className="grid gap-3 xl:min-h-0 xl:flex-1 xl:grid-cols-[minmax(310px,0.9fr)_minmax(390px,1.12fr)_minmax(340px,0.98fr)] xl:overflow-hidden">
+        <div className={`${workspaceStyles.workspaceColumns} grid gap-3 xl:grid-cols-[minmax(310px,0.9fr)_minmax(390px,1.12fr)_minmax(340px,0.98fr)]`}>
           <div className="min-h-[560px] min-w-0 xl:h-full xl:min-h-0">
             <RequestChat requestId={order.id} senderRole="customer" variant="workspace" />
           </div>

@@ -2165,3 +2165,12 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 - Guvenlik: Anonymous/customer erisimi staff permission guard ile reddedilir. Mevcut staff yetkileri, alan gorunurlugu ve mutasyon rotalari degismedi. SQL, migration veya production veri mutasyonu yoktur.
 - Degisen dosyalar: `src/app/api/admin/dashboard/route.ts`, `src/app/admin/page.tsx`, `tests/admin-session-stability.test.ts`, `tests/ui-ux-safety.test.ts`, `.autopilot/STATUS.md`.
 - Kontroller: targeted stability tests PASS (10/10); lint PASS; full typecheck PASS; full tests PASS (429/429); production build PASS (246 page/route entries); payment schema-only PASS; production dependency audit PASS (0 vulnerabilities); diff check PASS.
+
+## 2026-07-29 Customer order short-laptop workspace layout
+
+- Gorev: Tek ekranli musteri siparis calisma alaninin 1366x768 benzeri kisa laptop ekranlarinda mesaj, teknik bilgi ve teslimat panellerini kullanilamayacak kadar basmasini duzeltmek.
+- Kok neden: `xl` genisligi devreye girdiginde viewport yuksekligi kontrol edilmeden tum sayfa `100dvh` ve `overflow-hidden` ile kilitleniyordu. Siparis ozeti sonrasinda kalan dar alan uc panel arasinda paylasildigi icin mesaj ve dosya govdeleri gereksiz derecede kuculuyordu.
+- Uygulama: Yukseklik duyarliligi `order-workspace.module.css` icinde ayrildi. Genis ve en az 841 px yuksek ekranlarda mevcut tek-ekran duzeni aynen korunur. 840 px ve altindaki genis laptop ekranlarinda yalniz kisa bir dis sayfa kaydirmasi acilir, uc kolon yapisi korunur ve panel calisma alani 640 px olur; mesaj, teknik veri ve teslimat panelleri kendi kontrollu ic kaydirmalarini kullanmaya devam eder. Mobil dogal dikey siralama degismedi.
+- Degisen dosyalar: `src/app/dashboard/orders/[id]/page.tsx`, `src/app/dashboard/orders/[id]/order-workspace.module.css`, `tests/ui-ux-safety.test.ts`, `tests/customer-order-delivery.test.ts`, `.autopilot/STATUS.md`.
+- Kontroller: responsive/order targeted tests PASS (103/103); lint PASS; full typecheck PASS; full tests PASS (429/429); production build PASS (246 page/route entries); payment schema-only PASS; production dependency audit PASS (0 vulnerabilities); diff check PASS.
+- Kapsam: Yalniz customer order detail responsive yukseklik davranisi. Siparis/musteri verisi, mesajlasma, dosya teslimi, auth, payment, AI, vehicle, email, admin API veya database davranisi degismedi. Deploy, push, SQL veya production mutation yapilmadi.
