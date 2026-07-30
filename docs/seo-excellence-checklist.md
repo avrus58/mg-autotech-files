@@ -6,6 +6,8 @@ Use this checklist before every public content or language release.
 
 - `/robots.txt` blocks private routes: `/admin`, `/dashboard`, `/api`, auth and payment routes.
 - `/sitemap.xml` includes public home, service, tool, brand, ECU-platform and legal pages.
+- `/workshop-guides` provides a compact, indexable knowledge hub without adding
+  long answer libraries to the homepage.
 - Localized pages include language alternates for all supported locales.
 - Canonical URLs point to the intended public page.
 - Public pages have a unique title and description.
@@ -49,6 +51,17 @@ Priority topics:
 - ECU unlock
 - BMW ECU unlock
 - Mercedes ECU/TCU file service
+
+## Workshop Knowledge Center
+
+- Keep `/workshop-guides` focused on routing visitors to existing authoritative
+  service, readiness, read-method, platform, vehicle and tool pages.
+- Use structured `CollectionPage`, `ItemList`, `FAQPage`, and breadcrumb data
+  only when the visible page supports it.
+- Do not duplicate large answer libraries on the homepage.
+- Do not add thin doorway pages for keyword variants.
+- Keep public guidance customer-safe: no private file inspection, MOD
+  generation, account access, or internal data exposure.
 
 ## Safety And Trust
 

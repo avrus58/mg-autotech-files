@@ -8,6 +8,7 @@ import { supabase } from "@/lib/supabaseClient";
 import {
   ArrowRight,
   AlertTriangle,
+  BellRing,
   BrainCircuit,
   Braces,
   Car,
@@ -712,6 +713,14 @@ export function DashboardClient() {
               >
                 <History className="h-5 w-5" />
                 Credit History
+              </Link>
+
+              <Link
+                href="/dashboard/notifications"
+                className="flex items-center gap-3 rounded-2xl px-4 py-3 font-bold text-zinc-400 transition hover:bg-white/[0.06] hover:text-white"
+              >
+                <BellRing className="h-5 w-5" />
+                Notifications
               </Link>
 
               <Link

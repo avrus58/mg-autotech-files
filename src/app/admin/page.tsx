@@ -25,6 +25,7 @@ import {
   validateCustomerReplacementPassword,
 } from "@/lib/customerPasswordSecurity";
 import {
+  Activity,
   ArrowLeft,
   BadgeEuro,
   BellRing,
@@ -560,6 +561,9 @@ export default function AdminPage() {
     const nextCustomers = payload.customers;
     setAdminAccess(access);
     setAdminAccessDenied(false);
+    if (!silent && window.location.hash === "#customers" && hasStaffPermission(access, "customers.view")) {
+      setActiveTab("customers");
+    }
     const orderSnapshotRegressed = hasAdminSnapshotRegression(
       knownOrderIdsRef.current,
       nextOrders.map((order) => order.id)
@@ -1221,6 +1225,18 @@ export default function AdminPage() {
           </div>
           <nav className="space-y-2">
             <SidebarButton active={activeTab === "orders"} icon={<FileCode2 />} label="Orders" count={stats.total} onClick={() => setActiveTab("orders")} />
+            {hasStaffPermission(adminAccess, "orders.view") && (
+              <Link
+                href="/admin/operations"
+                className="flex w-full items-center justify-between gap-3 rounded-2xl px-4 py-3 text-left text-sm font-black text-zinc-400 transition hover:bg-white/[0.06] hover:text-white"
+              >
+                <span className="flex items-center gap-3">
+                  <Activity className="h-5 w-5" />
+                  Operations Intelligence
+                </span>
+                <span className="rounded-full bg-emerald-950/40 px-2 py-1 text-[10px] font-black text-emerald-200">LIVE</span>
+              </Link>
+            )}
             {hasStaffPermission(adminAccess, "orders.view") && (
               <Link
                 href="/admin/requests"

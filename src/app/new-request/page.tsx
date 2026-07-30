@@ -30,6 +30,7 @@ import {
   Wrench,
   Zap,
 } from "lucide-react";
+import { evaluateRequestIntelligence } from "@/lib/requestIntelligence";
 
 type Option = {
   id: string;
@@ -1006,6 +1007,23 @@ export default function NewRequestPage() {
     (item) => item.complete
   ).length;
   const isRequestReadyForSubmit = submissionChecklist.every((item) => item.complete);
+  const requestIntelligence = evaluateRequestIntelligence({
+    hasVehicle: hasRequestVehicle,
+    manualVehicle: useManualVehicleDetails,
+    hasService: Boolean(selectedMainService),
+    selectedServiceIds: [mainService, ...selectedExtras].filter(Boolean),
+    selectedServiceTitles: [
+      selectedMainService?.title ?? "",
+      ...selectedExtraServices.map((service) => service.title),
+    ].filter(Boolean),
+    hasValidFile: hasValidSelectedFile,
+    fileName: selectedFile?.name ?? null,
+    ecu,
+    readMethod,
+    notes,
+    accountVerified: !profileLoading && !accountBlocked,
+    creditsVerified: !profileLoading && !accountBlocked && canCreateByCredits,
+  });
 
   const switchToCatalogVehicleDetails = () => {
     setUseManualVehicleDetails(false);
@@ -1944,6 +1962,36 @@ export default function NewRequestPage() {
                   <span className="text-right text-xl font-black text-red-400">
                     {totalCredits} Credits
                   </span>
+                </div>
+
+                <div className={`rounded-2xl border p-4 ${
+                  requestIntelligence.status === "ready"
+                    ? "border-emerald-700/35 bg-emerald-950/15"
+                    : requestIntelligence.status === "needs_attention"
+                      ? "border-amber-700/35 bg-amber-950/15"
+                      : "border-red-800/40 bg-red-950/15"
+                }`}>
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <div className="text-xs font-black uppercase tracking-[0.15em] text-zinc-500">Request Preflight Advisor</div>
+                      <div className="mt-1 font-black text-white">{requestIntelligence.label}</div>
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <div className="text-2xl font-black text-white">{requestIntelligence.score}</div>
+                      <div className="text-[10px] font-black uppercase text-zinc-600">quality score</div>
+                    </div>
+                  </div>
+                  <p className="mt-2 text-xs leading-5 text-zinc-400">{requestIntelligence.summary}</p>
+                  {requestIntelligence.findings.length > 0 && (
+                    <div className="mt-3 space-y-2">
+                      {requestIntelligence.findings.slice(0, 4).map((finding) => (
+                        <div key={finding.key} className="flex items-start gap-2 text-xs">
+                          <span className={`mt-1 h-2 w-2 shrink-0 rounded-full ${finding.severity === "required" ? "bg-red-400" : finding.severity === "review" ? "bg-amber-300" : "bg-sky-300"}`} />
+                          <div className="min-w-0"><span className="font-black text-zinc-200">{finding.label}.</span> <span className="text-zinc-500">{finding.detail}</span></div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 <div className="rounded-2xl border border-white/10 bg-black/25 p-4">

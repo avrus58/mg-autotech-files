@@ -35,6 +35,7 @@ export default function robots(): MetadataRoute.Robots {
           "/tools/ecu-read-method-advisor",
           "/tools/torque-power-calculator",
           "/tools/autotuner-log-analyzer",
+          "/workshop-guides",
         ],
         disallow: [
           "/admin",

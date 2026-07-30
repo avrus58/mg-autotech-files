@@ -262,6 +262,15 @@ export function CustomerNotifications() {
                 </Link>
               ))}
             </div>
+            <div className="border-t border-white/10 p-3">
+              <Link
+                href="/dashboard/notifications"
+                onClick={() => setOpen(false)}
+                className="flex w-full items-center justify-center rounded-xl border border-white/10 px-4 py-2 text-sm font-black text-zinc-200 hover:bg-white/[0.06]"
+              >
+                Open Notification Center
+              </Link>
+            </div>
           </div>
         )}
       </div>

@@ -54,6 +54,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "monthly",
       priority: 0.9,
     },
+    {
+      url: absoluteUrl("/workshop-guides"),
+      lastModified: contentUpdated,
+      changeFrequency: "monthly",
+      priority: 0.86,
+    },
     ...publicServiceSlugs.map((slug) => {
       const path = `/services/${slug}`;
 
