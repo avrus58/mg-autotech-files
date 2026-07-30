@@ -17,6 +17,9 @@ const filesToScan = [
   "src/app/[locale]/file-service/page.tsx",
   "src/app/how-it-works/page.tsx",
   "src/app/file-service/page.tsx",
+  "src/app/workshop-guides/page.tsx",
+  "src/app/workshop-guides/[slug]/page.tsx",
+  "src/lib/workshopGuides.ts",
   "src/app/sitemap.ts",
   "src/app/robots.ts",
 ];
@@ -462,6 +465,9 @@ if (!sitemap.includes('languageAlternates("/how-it-works")')) {
 if (!sitemap.includes('languageAlternates("/file-service")')) {
   failures.push("Sitemap does not include File Service language alternates.");
 }
+if (!sitemap.includes("workshopGuideArticles.map")) {
+  failures.push("Sitemap does not include the workshop guide article collection.");
+}
 for (const toolPath of [
   "/tools/file-readiness-check",
   "/tools/request-brief-builder",
@@ -486,6 +492,9 @@ if (!robots.includes("/how-it-works") || !robots.includes('`/${locale}/how-it-wo
 if (!robots.includes('`/${locale}/file-service`')) {
   failures.push("robots.ts should allow localized File Service routes.");
 }
+if (!robots.includes('"/workshop-guides/"')) {
+  failures.push("robots.ts should allow workshop guide descendants.");
+}
 for (const toolPath of [
   "/tools/file-readiness-check",
   "/tools/request-brief-builder",
@@ -493,6 +502,32 @@ for (const toolPath of [
 ]) {
   if (!robots.includes(`"${toolPath}"`)) {
     failures.push(`robots.ts should allow public preparation tool route ${toolPath}.`);
+  }
+}
+
+const workshopGuideIndex = readFileSync(join(root, "src/app/workshop-guides/page.tsx"), "utf8");
+const workshopGuideRoute = readFileSync(join(root, "src/app/workshop-guides/[slug]/page.tsx"), "utf8");
+const workshopGuideContent = readFileSync(join(root, "src/lib/workshopGuides.ts"), "utf8");
+if (!workshopGuideIndex.includes("workshopGuideArticles.map")) {
+  failures.push("Workshop guide index does not render the cornerstone article collection.");
+}
+if (!workshopGuideIndex.includes("hasPart: workshopGuideArticles.map")) {
+  failures.push("Workshop guide CollectionPage is not linked to its visible articles.");
+}
+for (const marker of ["TechArticle", "BreadcrumbList", "FAQPage", "ItemList"]) {
+  if (!workshopGuideRoute.includes(marker)) {
+    failures.push(`Workshop guide article route is missing ${marker} structured data.`);
+  }
+}
+for (const slug of [
+  "ecu-file-service-online",
+  "tcu-file-service-workflow",
+  "obd-bench-boot-read-methods",
+  "ecu-file-request-checklist",
+  "ecu-hw-sw-identification",
+]) {
+  if (!workshopGuideContent.includes(`slug: "${slug}"`)) {
+    failures.push(`Workshop guide content is missing ${slug}.`);
   }
 }
 

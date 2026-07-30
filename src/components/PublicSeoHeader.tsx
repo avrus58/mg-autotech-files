@@ -14,12 +14,16 @@ export function PublicSeoHeader() {
             <span className="hidden text-[11px] text-zinc-400 sm:block">ECU / TCU File Service</span>
           </span>
         </Link>
-        <nav aria-label="Primary navigation" className="hidden items-center gap-6 text-sm font-bold text-zinc-300 lg:flex">
+        <nav
+          aria-label="Primary navigation"
+          className="hidden items-center gap-3 text-[13px] font-bold text-zinc-300 lg:flex xl:gap-4 [&_a]:whitespace-nowrap"
+        >
           <Link href="/file-service" className="hover:text-white">File service</Link>
           <Link href="/services" className="hover:text-white">Services</Link>
           <Link href="/how-it-works" className="hover:text-white">How it works</Link>
           <Link href="/brands" className="hover:text-white">Vehicle brands</Link>
           <Link href="/ecu-platforms" className="hover:text-white">ECU platforms</Link>
+          <Link href="/workshop-guides" className="hover:text-white">Workshop guides</Link>
           <Link href="/tools" className="hover:text-white">Workshop tools</Link>
           <Link href="/about" className="hover:text-white">About</Link>
           <Link href="/contact" className="hover:text-white">Contact</Link>

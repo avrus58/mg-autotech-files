@@ -8,9 +8,10 @@ import {
   siteUrl,
 } from "@/lib/seo";
 import { brandGuides, platformGuides } from "@/lib/industry-content";
+import { workshopGuideArticles } from "@/lib/workshopGuides";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const contentUpdated = new Date("2026-07-01T00:00:00.000Z");
+  const contentUpdated = new Date("2026-07-30T00:00:00.000Z");
   const legalUpdated = new Date("2026-06-30T00:00:00.000Z");
   const toolPaths = [
     "/tools",
@@ -60,6 +61,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "monthly",
       priority: 0.86,
     },
+    ...workshopGuideArticles.map((article) => ({
+      url: absoluteUrl(`/workshop-guides/${article.slug}`),
+      lastModified: new Date(article.updatedAt),
+      changeFrequency: "monthly" as const,
+      priority: 0.8,
+    })),
     ...publicServiceSlugs.map((slug) => {
       const path = `/services/${slug}`;
 

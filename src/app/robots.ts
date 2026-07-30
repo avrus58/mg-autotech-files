@@ -36,6 +36,7 @@ export default function robots(): MetadataRoute.Robots {
           "/tools/torque-power-calculator",
           "/tools/autotuner-log-analyzer",
           "/workshop-guides",
+          "/workshop-guides/",
         ],
         disallow: [
           "/admin",

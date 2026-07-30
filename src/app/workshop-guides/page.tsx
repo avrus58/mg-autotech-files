@@ -16,6 +16,7 @@ import {
 import { Footer } from "@/components/Footer";
 import { PublicSeoHeader } from "@/components/PublicSeoHeader";
 import { absoluteUrl, siteName } from "@/lib/seo";
+import { workshopGuideArticles } from "@/lib/workshopGuides";
 
 const title = "ECU & TCU Workshop Knowledge Center";
 const description = "A practical MG AutoTech knowledge center for ECU and TCU file-service preparation, vehicle and controller identification, read methods, service selection and workshop tools.";
@@ -108,16 +109,27 @@ const quickAnswers = [
 ];
 
 export default function WorkshopGuidesPage() {
-  const itemLinks = guideGroups.flatMap((group) => group.links);
+  const articleLinks = workshopGuideArticles.map((article) => ({
+    href: `/workshop-guides/${article.slug}`,
+    label: article.shortTitle,
+  }));
+  const itemLinks = [
+    ...articleLinks,
+    ...guideGroups.flatMap((group) => group.links),
+  ];
   const jsonLd = {
     "@context": "https://schema.org",
     "@graph": [
       {
         "@type": "CollectionPage",
+        "@id": `${absoluteUrl("/workshop-guides")}#collection`,
         name: title,
         description,
         url: absoluteUrl("/workshop-guides"),
         isPartOf: { "@id": `${absoluteUrl("/")}#website` },
+        hasPart: workshopGuideArticles.map((article) => ({
+          "@id": `${absoluteUrl(`/workshop-guides/${article.slug}`)}#article`,
+        })),
       },
       {
         "@type": "ItemList",
@@ -147,6 +159,36 @@ export default function WorkshopGuidesPage() {
           <div className="mx-auto grid max-w-7xl gap-8 px-4 py-14 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-end sm:py-20">
             <div><p className="text-xs font-black uppercase tracking-[0.22em] text-red-500">MG AutoTech Workshop Library</p><h1 className="mt-4 max-w-4xl text-4xl font-black leading-tight sm:text-6xl">Find the right file-service answer before you upload.</h1><p className="mt-5 max-w-3xl text-base leading-8 text-zinc-400 sm:text-lg">A compact index for request preparation, service selection, vehicle and controller identification, read methods and practical workshop tools.</p></div>
             <aside className="border-l-2 border-red-700 pl-5"><ShieldCheck className="h-6 w-6 text-emerald-400" /><h2 className="mt-3 text-lg font-black">Public guidance boundary</h2><p className="mt-2 text-sm leading-6 text-zinc-500">This page does not read, upload, inspect, modify or generate customer files. Secure actions remain inside the authenticated portal.</p></aside>
+          </div>
+        </section>
+
+        <section className="border-b border-white/10 bg-[#050505]">
+          <div className="mx-auto max-w-7xl px-4 py-14 sm:py-18">
+            <div className="grid gap-5 lg:grid-cols-[320px_minmax(0,1fr)]">
+              <div>
+                <BookOpenCheck className="h-7 w-7 text-red-500" />
+                <p className="mt-5 text-xs font-black uppercase tracking-[0.18em] text-red-400">Cornerstone guides</p>
+                <h2 className="mt-2 text-3xl font-black">Workshop answers with their own permanent route.</h2>
+                <p className="mt-3 text-sm leading-6 text-zinc-500">Focused guides for the questions that should be settled before a private ECU or TCU file request starts.</p>
+              </div>
+              <div className="grid gap-3 md:grid-cols-2">
+                {workshopGuideArticles.map((article, index) => (
+                  <Link
+                    key={article.slug}
+                    href={`/workshop-guides/${article.slug}`}
+                    className="group min-w-0 border border-white/10 bg-[#0b0b0c] p-5 transition hover:border-red-800/60 hover:bg-red-950/10"
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <span className="rounded-full border border-red-900/50 bg-red-950/20 px-3 py-1 text-[11px] font-black uppercase tracking-[0.14em] text-red-300">{article.intentLabel}</span>
+                      <span className="text-xs font-black text-zinc-700">{String(index + 1).padStart(2, "0")}</span>
+                    </div>
+                    <h3 className="mt-5 text-xl font-black">{article.shortTitle}</h3>
+                    <p className="mt-3 text-sm leading-6 text-zinc-500">{article.description}</p>
+                    <span className="mt-5 inline-flex items-center text-sm font-black text-red-300">Read workshop guide<ArrowRight className="ml-2 h-4 w-4 transition group-hover:translate-x-1" /></span>
+                  </Link>
+                ))}
+              </div>
+            </div>
           </div>
         </section>
 

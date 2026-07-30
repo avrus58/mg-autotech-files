@@ -56,8 +56,18 @@ Priority topics:
 
 - Keep `/workshop-guides` focused on routing visitors to existing authoritative
   service, readiness, read-method, platform, vehicle and tool pages.
+- Cornerstone articles live under `/workshop-guides/[slug]` and must answer one
+  distinct workshop search intent instead of repeating a service landing page.
+- Current cornerstone topics cover the online ECU workflow, TCU request
+  preparation, OBD/bench/boot read methods, request readiness and exact HW/SW
+  identification.
+- Every guide must be reachable through a descriptive HTML link from the
+  workshop index and must link back to relevant service, tool or platform pages.
 - Use structured `CollectionPage`, `ItemList`, `FAQPage`, and breadcrumb data
-  only when the visible page supports it.
+  only when the visible page supports it. Article pages additionally use
+  `TechArticle` with visible title, description, FAQ and related-resource data.
+- Do not add hreflang alternates for an article until its main content has been
+  professionally translated. A translated navigation shell is not enough.
 - Do not duplicate large answer libraries on the homepage.
 - Do not add thin doorway pages for keyword variants.
 - Keep public guidance customer-safe: no private file inspection, MOD
