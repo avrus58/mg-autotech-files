@@ -1214,7 +1214,7 @@ export default function AdminPage() {
       </header>
 
       <section className="mx-auto grid max-w-[1600px] min-w-0 gap-5 px-3 py-6 sm:px-4 sm:py-8 xl:grid-cols-[260px_1fr]">
-        <aside className="h-fit min-w-0 rounded-[1.5rem] border border-white/10 bg-white/[0.04] p-4 shadow-2xl shadow-black/20 sm:rounded-[2rem] xl:sticky xl:top-28">
+        <aside className="order-2 h-fit min-w-0 rounded-[1.5rem] border border-white/10 bg-white/[0.04] p-4 shadow-2xl shadow-black/20 sm:rounded-[2rem] xl:order-1 xl:sticky xl:top-28">
           <div className="mb-4 px-3">
             <div className="text-xs font-black uppercase tracking-[0.22em] text-zinc-500">Admin Workspace</div>
             <div className="mt-1 text-lg font-black text-white">Operations</div>
@@ -1330,7 +1330,7 @@ export default function AdminPage() {
           </div>
         </aside>
 
-        <div className="min-w-0">
+        <div className="order-1 min-w-0 xl:order-2">
           <div className="mb-5">
             <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-red-800/50 bg-red-950/25 px-4 py-2 text-sm font-semibold text-red-100">
               <Database className="h-4 w-4 text-red-500" />

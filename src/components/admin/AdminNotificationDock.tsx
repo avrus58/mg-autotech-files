@@ -64,7 +64,7 @@ export function AdminNotificationDock() {
   if (hiddenInMainWorkspace) return null;
 
   return (
-    <div className="fixed right-4 top-20 z-[70]">
+    <div className="fixed bottom-4 left-4 z-[70] sm:bottom-auto sm:left-auto sm:right-4 sm:top-20">
       <AdminNotificationCenter
         orders={orders}
         loading={loading}

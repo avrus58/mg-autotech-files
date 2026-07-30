@@ -320,7 +320,7 @@ export function OnlineStatus() {
   }, [locale, now]);
 
   return (
-    <div className="fixed bottom-3 left-3 z-[60] max-w-[calc(100vw-5.5rem)] sm:bottom-4 sm:left-4">
+    <div className="pointer-events-none fixed bottom-3 left-3 z-[60] max-w-[calc(100vw-5.5rem)] sm:bottom-4 sm:left-4">
       <div className="rounded-xl border border-white/10 bg-black/90 px-3 py-2 text-white shadow-2xl shadow-black/40 backdrop-blur-xl sm:px-4 sm:py-3">
         <div className="flex items-center gap-2 sm:gap-3">
           <span
@@ -331,10 +331,10 @@ export function OnlineStatus() {
             }`}
           />
           <div className="min-w-0 text-xs leading-tight sm:text-sm">
-            <div className="font-black">
+            <div className="hidden font-black sm:block">
               {status.time ? `${status.timePrefix} ${status.time}.` : status.title}
             </div>
-            <div className="text-xs text-zinc-300">
+            <div className="max-w-24 truncate text-xs font-black text-zinc-200 sm:max-w-none sm:font-normal sm:text-zinc-300">
               {status.label}
             </div>
           </div>

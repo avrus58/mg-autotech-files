@@ -104,18 +104,18 @@ export default function AdminEmailPage() {
   }, []);
 
   return (
-    <main className="min-h-screen bg-[#050505] text-white">
+    <main className="min-h-screen overflow-x-hidden bg-[#050505] text-white">
       <header className="border-b border-white/10 bg-black/70">
         <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-5 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <Link href="/admin" className="text-sm font-black text-zinc-500">
               <ArrowLeft className="mr-2 inline h-4 w-4" />Admin
             </Link>
-            <div className="mt-2 flex items-center gap-3">
+            <div className="mt-2 flex min-w-0 items-center gap-3 pr-12 sm:pr-0">
               <Mail className="h-7 w-7 text-red-500" />
-              <div>
+              <div className="min-w-0">
                 <p className="text-xs font-black uppercase tracking-[0.18em] text-red-500">Transactional Email</p>
-                <h1 className="text-2xl font-black">Email Control Center</h1>
+                <h1 className="text-xl font-black sm:text-2xl">Email Control Center</h1>
               </div>
             </div>
           </div>
@@ -130,21 +130,21 @@ export default function AdminEmailPage() {
         </div>
       </header>
 
-      <section className="mx-auto max-w-7xl px-4 py-6">
+      <section className="mx-auto min-w-0 max-w-7xl px-4 py-6">
         {message && <div className="mb-5 rounded-lg border border-amber-700/40 bg-amber-950/20 p-4 text-sm text-amber-200">{message}</div>}
         {loading && <div className="rounded-lg border border-white/10 p-5 text-sm text-zinc-400">Loading email settings...</div>}
         {data && (
-          <div className="space-y-5">
-            <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="min-w-0 space-y-5">
+            <section className="grid min-w-0 gap-3 sm:grid-cols-2 xl:grid-cols-4">
               <MetricCard label="Sent" value={data.eventSummary.sent} icon={<CheckCircle2 />} tone="text-emerald-300" />
               <MetricCard label="Dry-run / skipped" value={data.eventSummary.skipped} icon={<ShieldCheck />} tone="text-sky-300" />
               <MetricCard label="Failed" value={data.eventSummary.failed} icon={<AlertTriangle />} tone="text-red-300" />
               <MetricCard label="Pending" value={data.eventSummary.pending} icon={<Clock3 />} tone="text-amber-300" />
             </section>
 
-            <div className="grid gap-5 lg:grid-cols-[340px_1fr]">
-            <aside className="space-y-4">
-              <section className="rounded-lg border border-white/10 bg-white/[0.03] p-4">
+            <div className="grid min-w-0 gap-5 lg:grid-cols-[340px_minmax(0,1fr)]">
+            <aside className="min-w-0 space-y-4">
+              <section className="min-w-0 overflow-hidden rounded-lg border border-white/10 bg-white/[0.03] p-4">
                 <div className="mb-3 flex items-center gap-2 text-sm font-black">
                   <ShieldCheck className="h-4 w-4 text-emerald-400" />Provider
                 </div>
@@ -155,7 +155,7 @@ export default function AdminEmailPage() {
                 <Info label="Real sending" value={data.provider.sendingEnabled ? "Enabled" : "Safely disabled"} />
                 <Info label="Log table" value={data.migrationReady ? "Ready" : "Migration needed"} />
               </section>
-              <section className="rounded-lg border border-sky-800/30 bg-sky-950/10 p-4">
+              <section className="min-w-0 overflow-hidden rounded-lg border border-sky-800/30 bg-sky-950/10 p-4">
                 <div className="mb-3 flex items-center gap-2 text-sm font-black">
                   <LockKeyhole className="h-4 w-4 text-sky-300" />Authentication mail
                 </div>
@@ -172,7 +172,7 @@ export default function AdminEmailPage() {
                   ))}
                 </div>
               </section>
-              <section className="rounded-lg border border-white/10 bg-white/[0.03] p-4">
+              <section className="min-w-0 overflow-hidden rounded-lg border border-white/10 bg-white/[0.03] p-4">
                 <h2 className="text-sm font-black">Safety Rules</h2>
                 <ul className="mt-3 space-y-2 text-xs leading-5 text-zinc-400">
                   <li>No raw binary, hex or storage paths in customer emails.</li>
@@ -183,10 +183,10 @@ export default function AdminEmailPage() {
               </section>
             </aside>
 
-            <div className="space-y-5">
-              <section className="rounded-lg border border-white/10 bg-white/[0.03] p-4">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
+            <div className="min-w-0 space-y-5">
+              <section className="min-w-0 overflow-hidden rounded-lg border border-white/10 bg-white/[0.03] p-4">
+                <div className="flex min-w-0 flex-wrap items-start justify-between gap-4">
+                  <div className="min-w-0">
                     <div className="flex items-center gap-2 text-sm font-black"><Workflow className="h-4 w-4 text-red-400" />Lifecycle coverage</div>
                     <p className="mt-1 text-xs text-zinc-500">Meaningful status changes only; repeated saves and internal edits do not create customer mail.</p>
                   </div>
@@ -203,7 +203,7 @@ export default function AdminEmailPage() {
                 </div>
               </section>
 
-              <section className="rounded-lg border border-white/10 bg-white/[0.03] p-4">
+              <section className="min-w-0 overflow-hidden rounded-lg border border-white/10 bg-white/[0.03] p-4">
                 <h2 className="text-sm font-black">Templates</h2>
                 <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
                   {data.templates.map((template) => (
@@ -216,9 +216,9 @@ export default function AdminEmailPage() {
                 </div>
               </section>
 
-              <section className="rounded-lg border border-white/10 bg-white/[0.03] p-4">
+              <section className="min-w-0 overflow-hidden rounded-lg border border-white/10 bg-white/[0.03] p-4">
                 <h2 className="text-sm font-black">Recent Events</h2>
-                <div className="mt-3 overflow-x-auto">
+                <div className="mt-3 max-w-full overflow-x-auto">
                   <table className="w-full min-w-[760px] text-left text-sm">
                     <thead className="text-xs uppercase tracking-[0.12em] text-zinc-500">
                       <tr><th className="py-2 pr-3">Event</th><th className="py-2 pr-3">Recipient</th><th className="py-2 pr-3">Status</th><th className="py-2 pr-3">Provider</th><th className="py-2 pr-3">Created</th></tr>
@@ -282,9 +282,9 @@ function StatusBadge({ value }: { value: string }) {
 
 function Info({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-start justify-between gap-3 border-t border-white/10 py-2 text-sm first:border-t-0">
-      <span className="text-zinc-500">{label}</span>
-      <span className="break-words text-right font-bold">{value}</span>
+    <div className="flex min-w-0 items-start justify-between gap-3 border-t border-white/10 py-2 text-sm first:border-t-0">
+      <span className="shrink-0 text-zinc-500">{label}</span>
+      <span className="min-w-0 break-all text-right font-bold">{value}</span>
     </div>
   );
 }

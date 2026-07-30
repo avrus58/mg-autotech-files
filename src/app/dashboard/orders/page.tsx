@@ -234,8 +234,8 @@ export default function CustomerOrdersPage() {
           </header>
 
           <div className="mx-auto max-w-7xl px-4 py-7 lg:px-8">
-            <div className="mb-5 flex gap-2 overflow-x-auto pb-2 lg:hidden">
-              {views.map((item) => <button key={item.value} onClick={() => selectView(item.value)} className={`shrink-0 rounded-xl border px-4 py-3 text-sm font-black ${view === item.value ? "border-red-700 bg-red-950/35" : "border-white/10 bg-white/[0.04] text-zinc-400"}`}>{item.label}</button>)}
+            <div className="mb-5 grid grid-cols-2 gap-2 md:hidden">
+              {views.map((item) => <button key={item.value} onClick={() => selectView(item.value)} className={`min-w-0 rounded-xl border px-3 py-3 text-sm font-black last:col-span-2 ${view === item.value ? "border-red-700 bg-red-950/35" : "border-white/10 bg-white/[0.04] text-zinc-400"}`}>{item.label}</button>)}
             </div>
 
             <div className="mb-6 grid gap-3 md:grid-cols-5">
