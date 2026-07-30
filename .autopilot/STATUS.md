@@ -2183,3 +2183,13 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 - Degisen dosyalar: `src/app/dashboard/orders/[id]/page.tsx`, `src/app/dashboard/orders/[id]/order-workspace.module.css`, `tests/ui-ux-safety.test.ts`, `tests/customer-order-delivery.test.ts`, `.autopilot/STATUS.md`.
 - Kontroller: responsive/order targeted tests PASS (103/103); lint PASS; full typecheck PASS; full tests PASS (429/429); production build PASS (246 page/route entries); payment schema-only PASS; production dependency audit PASS (0 vulnerabilities); diff check PASS.
 - Kapsam: Yalniz customer order detail responsive yukseklik davranisi. Siparis/musteri verisi, mesajlasma, dosya teslimi, auth, payment, AI, vehicle, email, admin API veya database davranisi degismedi. Deploy, push, SQL veya production mutation yapilmadi.
+
+## 2026-07-30 Secure admin customer password controls
+
+- Gorev: Admin customer detail alanina guvenli hesap kurtarma ve Primary Owner kontrollu sifre yenileme akisi eklemek.
+- Guvenlik karari: Mevcut musteri sifresi gosterilmedi ve gosterilemez; Supabase Auth tek yonlu sifre dogrulayicisi saklar. UI maskeli alani `Not retrievable` olarak aciklar ve mevcut sifreyi acan bir endpoint veya buton sunmaz.
+- Uygulama: `customers.manage` yetkili staff kayitli adrese reset e-postasi gonderebilir. Yalniz Primary Owner, 12-128 karakterli guclu bir yeni sifreyi server-side Admin Auth API ile atayabilir. Admin/staff hedef hesaplari bu musteri akisindan reddedilir.
+- Audit ve gizlilik: Islemden once mevcut `staff_audit_log` tablosuna zorunlu kayit acilir; audit kullanilamiyorsa credential islemi fail-closed durur. Sifre degeri ve hash API yanitina, audit metadata'ya veya customer route'larina yazilmaz. Yanitlar private/no-store kullanir.
+- Degisen dosyalar: `src/app/admin/page.tsx`, `src/app/api/admin/customers/[id]/password/route.ts`, `src/lib/customerPasswordSecurity.ts`, `tests/admin-customer-password-security.test.ts`, `docs/admin-customer-password-security.md`, `.autopilot/STATUS.md`.
+- Kontroller: targeted security tests PASS (6/6); lint PASS; full typecheck PASS; full tests PASS (439/439); production build PASS (246 page/route entries); payment schema-only PASS; production dependency audit PASS (0 vulnerabilities); diff check PASS.
+- Kapsam: SQL migration yok; mevcut audit tablosu yeniden kullanildi. Gercek reset e-postasi gonderilmedi, gercek musteri sifresi degistirilmedi, production servisine baglanilmadi, deploy veya push yapilmadi.

@@ -21,6 +21,10 @@ import {
   normalizeFileVersionLabel,
 } from "@/lib/fileVersionLabels";
 import {
+  generateCustomerReplacementPassword,
+  validateCustomerReplacementPassword,
+} from "@/lib/customerPasswordSecurity";
+import {
   ArrowLeft,
   BadgeEuro,
   BellRing,
@@ -37,9 +41,11 @@ import {
   Database,
   Download,
   Eye,
+  EyeOff,
   FileCode2,
   FileDown,
   Gauge,
+  KeyRound,
   Loader2,
   Lock,
   Mail,
@@ -50,12 +56,14 @@ import {
   RefreshCcw,
   Save,
   Search,
+  Send,
   Settings,
   ShieldCheck,
   Tags,
   Upload,
   User,
   Users,
+  WandSparkles,
   Wrench,
   X,
 } from "lucide-react";
@@ -1432,6 +1440,8 @@ export default function AdminPage() {
           onQuickAdjust={(amount) => quickAdjustCredits(selectedCustomer, amount)}
           onCustomAdjust={() => handleCustomCreditAdjust(selectedCustomer)}
           onCopyValue={copyValue}
+          canManageSecurity={hasStaffPermission(adminAccess, "customers.manage")}
+          canReplacePassword={isPrimaryOwner(adminAccess)}
         />
       )}
     </main>
@@ -1930,7 +1940,7 @@ function CustomersPanel({
   );
 }
 
-function CustomerDetailModal({ customer, form, setForm, creditInput, setCreditInput, creditNote, setCreditNote, creditUpdating, saving, onClose, onSave, onQuickAdjust, onCustomAdjust, onCopyValue }: {
+function CustomerDetailModal({ customer, form, setForm, creditInput, setCreditInput, creditNote, setCreditNote, creditUpdating, saving, onClose, onSave, onQuickAdjust, onCustomAdjust, onCopyValue, canManageSecurity, canReplacePassword }: {
   customer: Profile;
   form: CustomerForm;
   setForm: React.Dispatch<React.SetStateAction<CustomerForm | null>>;
@@ -1945,6 +1955,8 @@ function CustomerDetailModal({ customer, form, setForm, creditInput, setCreditIn
   onQuickAdjust: (amount: number) => void;
   onCustomAdjust: () => void;
   onCopyValue: (value: string | null | undefined, label: string) => void;
+  canManageSecurity: boolean;
+  canReplacePassword: boolean;
 }) {
   const accountCreatedLabel = customer.created_at
     ? `Account created ${formatDate(customer.created_at)}`
@@ -2014,6 +2026,11 @@ function CustomerDetailModal({ customer, form, setForm, creditInput, setCreditIn
                 <FormSelect label="Account Status" value={form.account_status} onChange={(value) => updateForm("account_status", value)} options={accountStatusOptions} />
               </div>
             </section>
+            <CustomerPasswordSecurityPanel
+              customer={customer}
+              canManageSecurity={canManageSecurity}
+              canReplacePassword={canReplacePassword}
+            />
             <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
               <div className="mb-5 flex items-center gap-3">
                 <Tags className="h-6 w-6 text-red-500" />
@@ -2100,6 +2117,262 @@ function CustomerDetailModal({ customer, form, setForm, creditInput, setCreditIn
         </div>
       </div>
     </div>
+  );
+}
+
+function CustomerPasswordSecurityPanel({
+  customer,
+  canManageSecurity,
+  canReplacePassword,
+}: {
+  customer: Profile;
+  canManageSecurity: boolean;
+  canReplacePassword: boolean;
+}) {
+  const [replacementPassword, setReplacementPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showReplacementPassword, setShowReplacementPassword] = useState(false);
+  const [busyAction, setBusyAction] = useState<"reset" | "replace" | null>(null);
+  const [securityMessage, setSecurityMessage] = useState<{
+    tone: "success" | "error";
+    text: string;
+  } | null>(null);
+  const passwordValidation = useMemo(
+    () => validateCustomerReplacementPassword(replacementPassword),
+    [replacementPassword]
+  );
+  const passwordsMatch = replacementPassword === confirmPassword;
+  const canSubmitReplacement =
+    canReplacePassword &&
+    passwordValidation.valid &&
+    passwordsMatch &&
+    busyAction === null;
+
+  async function runSecurityAction(
+    action: "send_reset_email" | "set_replacement_password"
+  ) {
+    if (!canManageSecurity || busyAction) return;
+    if (action === "set_replacement_password" && !canSubmitReplacement) return;
+
+    const confirmed = window.confirm(
+      action === "send_reset_email"
+        ? `Send a secure password reset link to ${customer.email || "this customer"}?`
+        : "Replace this customer's login password now? The previous password cannot be recovered."
+    );
+    if (!confirmed) return;
+
+    setBusyAction(action === "send_reset_email" ? "reset" : "replace");
+    setSecurityMessage(null);
+    try {
+      const response = await authenticatedFetch(
+        `/api/admin/customers/${customer.id}/password`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(
+            action === "send_reset_email"
+              ? { action }
+              : { action, password: replacementPassword }
+          ),
+        }
+      );
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(payload.error || "Customer security action failed.");
+      }
+      setSecurityMessage({
+        tone: "success",
+        text: payload.message || "Customer security action completed.",
+      });
+      if (action === "set_replacement_password") {
+        setReplacementPassword("");
+        setConfirmPassword("");
+        setShowReplacementPassword(false);
+      }
+    } catch (error) {
+      setSecurityMessage({
+        tone: "error",
+        text: error instanceof Error ? error.message : "Customer security action failed.",
+      });
+    } finally {
+      setBusyAction(null);
+    }
+  }
+
+  function generateReplacementPassword() {
+    const generated = generateCustomerReplacementPassword();
+    setReplacementPassword(generated);
+    setConfirmPassword(generated);
+    setShowReplacementPassword(true);
+    setSecurityMessage(null);
+  }
+
+  return (
+    <section className="rounded-[2rem] border border-amber-700/30 bg-amber-950/10 p-5">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-amber-600/30 bg-amber-500/10 text-amber-300">
+              <KeyRound className="h-5 w-5" />
+            </div>
+            <div>
+              <h3 className="text-2xl font-black text-white">Account Security</h3>
+              <p className="mt-1 text-sm leading-6 text-zinc-500">
+                Recovery and credential controls for this customer account.
+              </p>
+            </div>
+          </div>
+        </div>
+        <span className="inline-flex shrink-0 items-center rounded-full border border-emerald-700/30 bg-emerald-950/20 px-3 py-1.5 text-xs font-black text-emerald-300">
+          <ShieldCheck className="mr-2 h-4 w-4" />Server protected
+        </span>
+      </div>
+
+      <div className="mt-5 grid gap-4 xl:grid-cols-2">
+        <div className="rounded-2xl border border-white/10 bg-black/35 p-4">
+          <div className="text-xs font-black uppercase tracking-[0.16em] text-zinc-500">
+            Current password
+          </div>
+          <div
+            aria-label="Current password is one-way protected and cannot be retrieved"
+            className="mt-3 flex min-h-12 items-center justify-between gap-3 rounded-xl border border-white/10 bg-black/45 px-4"
+          >
+            <span aria-hidden className="select-none font-mono tracking-[0.22em] text-zinc-500 blur-[2px]">
+              ••••••••••••••••
+            </span>
+            <span className="inline-flex items-center text-xs font-black text-zinc-500">
+              <EyeOff className="mr-2 h-4 w-4" />Not retrievable
+            </span>
+          </div>
+          <p className="mt-3 text-xs leading-5 text-zinc-500">
+            Supabase stores a one-way password hash. No admin, API or database view can reveal the existing password.
+          </p>
+        </div>
+
+        <div className="rounded-2xl border border-sky-800/30 bg-sky-950/10 p-4">
+          <div className="text-xs font-black uppercase tracking-[0.16em] text-sky-300">
+            Recommended recovery
+          </div>
+          <p className="mt-2 text-sm leading-6 text-zinc-400">
+            Send a single-use recovery link to <span className="font-black text-white">{customer.email || "the registered address"}</span>. The customer chooses the new password.
+          </p>
+          <button
+            type="button"
+            onClick={() => void runSecurityAction("send_reset_email")}
+            disabled={!canManageSecurity || !customer.email || busyAction !== null}
+            className="mt-4 inline-flex h-11 w-full items-center justify-center rounded-xl border border-sky-700/40 bg-sky-950/30 px-4 text-sm font-black text-sky-100 transition hover:bg-sky-900/35 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {busyAction === "reset" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+            Send Password Reset Email
+          </button>
+        </div>
+      </div>
+
+      <div className="mt-4 rounded-2xl border border-red-900/35 bg-black/35 p-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <div className="text-xs font-black uppercase tracking-[0.16em] text-red-300">
+              Owner-only replacement
+            </div>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-zinc-400">
+              Replaces the login password immediately. Prefer the reset email unless direct account recovery is necessary.
+            </p>
+          </div>
+          {!canReplacePassword ? (
+            <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs font-black text-zinc-500">
+              Primary Owner only
+            </span>
+          ) : null}
+        </div>
+
+        <div className="mt-4 grid gap-3 md:grid-cols-2">
+          <label className="block">
+            <span className="mb-2 block text-xs font-black uppercase tracking-[0.14em] text-zinc-500">
+              New password
+            </span>
+            <div className="relative">
+              <input
+                type={showReplacementPassword ? "text" : "password"}
+                value={replacementPassword}
+                onChange={(event) => setReplacementPassword(event.target.value)}
+                disabled={!canReplacePassword || busyAction !== null}
+                autoComplete="new-password"
+                spellCheck={false}
+                className="h-12 w-full rounded-xl border border-white/10 bg-black/45 px-4 pr-12 text-sm font-bold text-white outline-none transition focus:border-red-700 disabled:opacity-50"
+              />
+              <button
+                type="button"
+                onClick={() => setShowReplacementPassword((current) => !current)}
+                disabled={!canReplacePassword}
+                aria-label={showReplacementPassword ? "Hide new password" : "Show new password"}
+                className="absolute right-2 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-lg text-zinc-500 transition hover:bg-white/5 hover:text-white disabled:opacity-40"
+              >
+                {showReplacementPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+          </label>
+          <label className="block">
+            <span className="mb-2 block text-xs font-black uppercase tracking-[0.14em] text-zinc-500">
+              Confirm new password
+            </span>
+            <input
+              type={showReplacementPassword ? "text" : "password"}
+              value={confirmPassword}
+              onChange={(event) => setConfirmPassword(event.target.value)}
+              disabled={!canReplacePassword || busyAction !== null}
+              autoComplete="new-password"
+              spellCheck={false}
+              className="h-12 w-full rounded-xl border border-white/10 bg-black/45 px-4 text-sm font-bold text-white outline-none transition focus:border-red-700 disabled:opacity-50"
+            />
+          </label>
+        </div>
+
+        <div className="mt-3 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="text-xs leading-5 text-zinc-500">
+            {replacementPassword && !passwordValidation.valid
+              ? passwordValidation.errors[0]
+              : replacementPassword && !passwordsMatch
+                ? "Password confirmation does not match."
+                : "At least 12 characters with upper/lowercase, number and symbol."}
+          </div>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <button
+              type="button"
+              onClick={generateReplacementPassword}
+              disabled={!canReplacePassword || busyAction !== null}
+              className="inline-flex h-11 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] px-4 text-sm font-black text-white transition hover:bg-white/[0.08] disabled:opacity-50"
+            >
+              <WandSparkles className="mr-2 h-4 w-4" />Generate Secure Password
+            </button>
+            <button
+              type="button"
+              onClick={() => void runSecurityAction("set_replacement_password")}
+              disabled={!canSubmitReplacement}
+              className="inline-flex h-11 items-center justify-center rounded-xl bg-[#b1121b] px-4 text-sm font-black text-white transition hover:bg-[#c91824] disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {busyAction === "replace" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <KeyRound className="mr-2 h-4 w-4" />}
+              Replace Password
+            </button>
+          </div>
+        </div>
+        <p className="mt-3 text-xs leading-5 text-zinc-600">
+          Password values are kept only in this form until submission. They are never returned by the API or written to audit logs.
+        </p>
+      </div>
+
+      {securityMessage ? (
+        <div
+          role={securityMessage.tone === "error" ? "alert" : "status"}
+          className={`mt-4 rounded-xl border px-4 py-3 text-sm font-bold ${
+            securityMessage.tone === "error"
+              ? "border-red-700/40 bg-red-950/25 text-red-200"
+              : "border-emerald-700/40 bg-emerald-950/20 text-emerald-200"
+          }`}
+        >
+          {securityMessage.text}
+        </div>
+      ) : null}
+    </section>
   );
 }
 
