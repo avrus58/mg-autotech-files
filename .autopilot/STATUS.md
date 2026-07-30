@@ -2,6 +2,20 @@
 
 Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
+## 2026-07-30 Homepage vehicle widget instant and abuse-resistant catalog access
+
+- Gorev: Ana sayfadaki vehicle widget'in gorunmesine ragmen marka/model verilerinin bir sure sonra dolmasini gidermek.
+- Kok neden: `PublicVehicleChecker` marka state'ini bos baslatiyor ve `/api/vehicles?type=brands` istegini yalniz hydration sonrasindaki `useEffect` icinde yapiyordu. API hizli olsa bile ilk ziyaret icin bos dropdown araligi zorunluydu.
+- Uygulama: JSON fallback ve merkezi brand normalization ile ayni 102 canonical markadan customer-safe server-render seed olusturuldu. Marka dropdown'i artik ilk HTML'de placeholder + 102 option ile hazir. Model, generation, engine ve vehicle detail verileri yalniz secim zinciri ilerledikce mevcut per-URL memory/session cache uzerinden yuklenir.
+- Anti-enumeration: Tum katalogu tek istekte veren endpoint bilincli olarak kaldirildi. API yalniz exact parametre contract'ini kabul eder; unknown/duplicate/cache-bust parametrelerini ve traversal benzeri ID degerlerini DB yuklemeden once reddeder. Yuksek toleransli IP-temelli toplam, hierarchy ve distinct-route butceleri normal kullaniciyi rahatsiz etmeden hizli bulk enumeration'i 429 ile yavaslatir. Bu uygulama-katmani korumasi distributed edge WAF yerine gecmez.
+- Gizlilik: Public API yalniz mevcut customer-safe option/vehicle projectionlarini dondurur. Vehicle rows toplu olarak acilmaz; admin notes, source/reference, confidence, audit, storage veya private metadata public yanita girmez. Mevcut canonical Mercedes E alias davranisi ve cache -> DB -> JSON fallback zinciri korunur.
+- Performans kaniti: Yerel production server'in ilk homepage HTML'inde 102 marka server-render edildi. Marka kutusu network katalog istegini beklemeden hazirdi; alt seviyeler yalniz gercek secimde yuklenir ve tekrar ziyaretlerde 15 dakikalik browser cache kullanir.
+- Responsive/browser QA: Chrome'da 390x844, 768x1024 ve 1366x768 boyutlari kontrol edildi; her boyutta 103 marka option'i, enabled ilk dropdown ve sifir yatay tasma dogrulandi. Sayfa kaynakli console error bulunmadi. Anti-enumeration revizyonu markup/CSS degistirmedi.
+- Degisen dosyalar: `src/app/page.tsx`, `src/app/api/vehicles/route.ts`, `src/lib/vehicleControl/clientCatalog.ts`, `src/lib/vehicleControl/publicAccess.ts`, `src/lib/vehicleControl/publicVehicleBrandSeed.ts`, `tests/homepage-vehicle-catalog-performance.test.ts`, `docs/public-vehicle-catalog-protection.md`, `.autopilot/TASKS.md`, `.autopilot/STATUS.md`.
+- Kontroller: targeted vehicle tests PASS (47/47); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (465/465); `npm run build` PASS (259 pages); payment schema-only PASS; i18n/SEO PASS (12 locale, 19 source file); `npm audit --omit=dev --audit-level=high` PASS (0 vulnerabilities); `git diff --check` PASS.
+- Local HTTP smoke: Homepage 200 ve ilk brand select 103 option; bulk `catalog-index` 400; unknown cache-bust parametresi 400; BMW models 200/39 model; ayni BMW query'si 50 hizli tekrarda 50/50 basarili. Distinct-brand butcesi normal kullanici toleransi icin 40 olarak ayarlandi; 41'inci yeni rota 429 olur. QA yalniz localhost uzerinde yapildi.
+- Kapsam: SQL/migration, production/Supabase erisimi, production data mutation, payment/admin/order logic, deploy, push veya commit yok. Gercek customer verisi kullanilmadi.
+
 ## 2026-07-29 Admin custom modified-file version labels
 
 - Gorev: Admin work-order `Upload Version` secimini V1/Revision/Final presetlerini koruyarak guvenli custom label destegiyle genisletmek.

@@ -6,20 +6,46 @@ import {
   listGenerationsFromCatalog,
   listModelsFromCatalog,
 } from "@/lib/vehicleControl/public";
+import {
+  checkPublicVehicleAccess,
+  parsePublicVehicleQuery,
+} from "@/lib/vehicleControl/publicAccess";
 
 const vehicleCacheHeaders = {
   "Cache-Control": "public, max-age=60, s-maxage=60, stale-while-revalidate=300",
   "CDN-Cache-Control": "public, max-age=300, stale-while-revalidate=600",
   "Vercel-CDN-Cache-Control": "public, max-age=300, stale-while-revalidate=600",
+  "X-Content-Type-Options": "nosniff",
+  "X-Robots-Tag": "noindex, nofollow, noarchive",
+};
+
+const privateErrorHeaders = {
+  "Cache-Control": "private, no-store",
+  "X-Content-Type-Options": "nosniff",
+  "X-Robots-Tag": "noindex, nofollow, noarchive",
 };
 
 export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url);
-  const type = searchParams.get("type");
-  const brandId = searchParams.get("brandId") ?? "";
-  const modelId = searchParams.get("modelId") ?? "";
-  const generationId = searchParams.get("generationId") ?? "";
-  const engineId = searchParams.get("engineId") ?? "";
+  const parsed = parsePublicVehicleQuery(req.url);
+  if (!parsed.ok) {
+    return NextResponse.json({ error: parsed.error }, { status: 400, headers: privateErrorHeaders });
+  }
+
+  const access = checkPublicVehicleAccess(req, parsed.query);
+  if (!access.allowed) {
+    return NextResponse.json(
+      { error: "Vehicle catalog request limit reached. Please wait and try again." },
+      {
+        status: 429,
+        headers: {
+          ...privateErrorHeaders,
+          "Retry-After": String(access.retryAfterSeconds),
+        },
+      }
+    );
+  }
+
+  const { type, brandId, modelId, generationId, engineId } = parsed.query;
   const { payload, source } = await getSafePublishedVehicleCatalog();
   const headers = { ...vehicleCacheHeaders, "x-vehicle-source": source };
 
@@ -46,5 +72,5 @@ export async function GET(req: NextRequest) {
     });
   }
 
-  return NextResponse.json({ error: "Invalid type" }, { status: 400 });
+  return NextResponse.json({ error: "Invalid vehicle catalog request" }, { status: 400, headers: privateErrorHeaders });
 }

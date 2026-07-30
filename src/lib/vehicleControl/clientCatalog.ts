@@ -1,5 +1,7 @@
 "use client";
 
+import { publicVehicleBrandSeed } from "@/lib/vehicleControl/publicVehicleBrandSeed";
+
 export type VehicleSelectOption = {
   id: string;
   name: string;
@@ -46,6 +48,10 @@ function writeSessionOptions(url: string, options: VehicleSelectOption[]) {
   } catch {
     // Session storage can be unavailable in private browsing. Network cache still works.
   }
+}
+
+export function getInitialVehicleBrands(): VehicleSelectOption[] {
+  return publicVehicleBrandSeed.map((brand) => ({ ...brand }));
 }
 
 export async function fetchVehicleOptions(url: string, signal?: AbortSignal): Promise<VehicleSelectOption[]> {

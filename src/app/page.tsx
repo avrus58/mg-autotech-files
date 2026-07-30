@@ -34,7 +34,10 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { Footer } from "@/components/Footer";
-import { fetchVehicleOptions, preloadVehicleBrands } from "@/lib/vehicleControl/clientCatalog";
+import {
+  fetchVehicleOptions,
+  getInitialVehicleBrands,
+} from "@/lib/vehicleControl/clientCatalog";
 import { PerformanceTools } from "@/components/tools/PerformanceTools";
 import { OnlineStatus } from "@/components/OnlineStatus";
 import {
@@ -3135,7 +3138,7 @@ function ignoreVehicleFetchError() {
 
 function PublicVehicleChecker() {
   const copy = usePublicVehicleCopy();
-  const [brands, setBrands] = useState<VehicleOption[]>([]);
+  const [brands, setBrands] = useState<VehicleOption[]>(getInitialVehicleBrands);
   const [models, setModels] = useState<VehicleOption[]>([]);
   const [generations, setGenerations] = useState<VehicleOption[]>([]);
   const [engines, setEngines] = useState<VehicleOption[]>([]);
@@ -3222,13 +3225,18 @@ function PublicVehicleChecker() {
 
   useEffect(() => {
     const controller = new AbortController();
+    let active = true;
 
-    preloadVehicleBrands();
     fetchVehicleOptions("/api/vehicles?type=brands", controller.signal)
-      .then(setBrands)
+      .then((options) => {
+        if (active && options.length) setBrands(options);
+      })
       .catch(ignoreVehicleFetchError);
 
-    return () => controller.abort();
+    return () => {
+      active = false;
+      controller.abort();
+    };
   }, []);
 
   useEffect(() => {

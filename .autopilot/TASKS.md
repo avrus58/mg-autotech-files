@@ -50,6 +50,18 @@ Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
 
+### MANUAL-001 [P1] Homepage vehicle widget ilk acilista hazir olsun
+
+Durum: Done
+
+Fingerprint: `public-vehicle-widget|first-render-brand-bootstrap|hydration-delays-brand-options|safe-seed-and-progressive-access`
+
+Kapsam: Ana sayfa vehicle widget marka listesini hydration sonrasi network istegine bagimli olmaktan cikar; public-safe canonical brand seed ile ilk HTML'de hazirla. Model/generation/engine verisini yalniz kullanici secimi ilerledikce yukle; bulk katalog endpointi acma ve normal kullanimi etkilemeyecek sekilde hizli enumeration davranisini sinirla.
+
+Sonuc: 102 canonical marka ilk server render HTML'inde hazir gelir. Public API toplu katalog indirme sunmaz; yalniz exact brands -> models -> generations -> engines -> vehicle zincirini kabul eder. Bilinmeyen/tekrarlanan cache-bust parametreleri reddedilir. On dakikada 48 standart secim istegi regresyon testinde engellenmezken 41 farkli markayi hizla enumerate eden istemci sessiz anti-abuse kapisina takilir. Existing per-URL memory/session cache ile cache -> DB -> JSON fallback davranisi korunur.
+
+Dogrulama: Targeted vehicle tests PASS (47/47); lint PASS; full typecheck PASS; full tests PASS (465/465); production build PASS (259 pages); payment schema-only PASS; i18n/SEO PASS (12 locale, 19 source file); production dependency audit PASS (0 vulnerabilities); diff check PASS. Ilk HTML'de brand select 103 option (placeholder + 102 marka) tasir. BMW models endpointi 39 model dondurur. Ayni secime 50 hizli tekrar 200 kalirken 41 farkli marka enumeration isteginin 41'incisi 429 olur.
+
 ### AUTO-083 [P1] Homepage file-service platform stack eklensin
 
 Durum: Done
