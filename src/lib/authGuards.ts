@@ -54,6 +54,10 @@ function hasUsableCachedSession(expiryBufferSeconds = 15) {
   return session.expires_at > Math.floor(Date.now() / 1000) + expiryBufferSeconds;
 }
 
+export function getStableSessionSnapshot() {
+  return hasUsableCachedSession() ? getCachedSession() : null;
+}
+
 function initializeAuthMemoryListener() {
   if (!authWindow || authWindow.__mgAutotechAuthMemoryListenerReady) return;
   authWindow.__mgAutotechAuthMemoryListenerReady = true;
@@ -113,6 +117,16 @@ async function refreshStableSession(): Promise<StableSessionResult> {
 
 async function resolveStableSession(): Promise<StableSessionResult> {
   initializeAuthMemoryListener();
+
+  // Route transitions do not need to wait for another storage lock or network
+  // round-trip when this browser already holds a usable verified session. API
+  // authorization remains server-side and a confirmed SIGNED_OUT event clears
+  // this snapshot immediately.
+  const cachedSnapshot = getStableSessionSnapshot();
+  if (cachedSnapshot) {
+    return { session: cachedSnapshot, error: null };
+  }
+
   let lastError: unknown = null;
 
   for (let attempt = 0; attempt < sessionReadDelays.length; attempt += 1) {
@@ -163,6 +177,11 @@ async function resolveStableSession(): Promise<StableSessionResult> {
 }
 
 export async function getStableSession(): Promise<StableSessionResult> {
+  const cachedSnapshot = getStableSessionSnapshot();
+  if (cachedSnapshot) {
+    return { session: cachedSnapshot, error: null };
+  }
+
   if (sessionResolutionInFlight) return sessionResolutionInFlight;
 
   const operation = resolveStableSession();

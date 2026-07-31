@@ -50,6 +50,18 @@ Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
 
+### MANUAL-006 [P0] New Request gecici oturum kesintisi kaldirilsin
+
+Durum: Done
+
+Fingerprint: `customer-auth|new-request-transition|transient-session-check-shows-blocking-error|cached-session-and-background-recovery`
+
+Kapsam: `/new-request` gecisinde devam eden Supabase session baslatma veya token yenileme islemini gercek cikis gibi gosteren tam ekran kesinti durumunu kaldir; mevcut dogrulanmis oturumu aninda koru, gecici hatalari sinirli arka plan retry ile toparla ve yalniz dogrulanmis signed-out durumda login kapisini goster.
+
+Sonuc: Ortak `BrowserAuthBoundary`, kullanilabilir verified session snapshot'ini bekleyen network/storage kontrolunden once kullanir. Tek gecici hata artik eski tam ekran kesinti durumuna gecmez; otomatik bounded retry ve sakin `Restoring secure session...` progress durumu kullanilir. Manuel retry ancak 30 saniyelik surekli erisilemezlikten sonra gorunur. Confirmed signed-out AuthRequired davranisi, API auth, staff/customer authorization ve RLS sinirlari korunur.
+
+Dogrulama: targeted auth tests PASS (7/7); lint PASS; web+desktop typecheck PASS; full tests PASS (502/502); production build PASS (267 route/page entry); payment schema-only PASS; production dependency audit PASS (0 vulnerabilities); diff check PASS. Local browser QA `/new-request` login gate, eski transient mesajin yoklugu, console error olmamasi ve 390x844/1366x768 overflow kontrolleriyle PASS.
+
 ### MANUAL-005 [P1] ECU file-service search-intent architecture
 
 Durum: Done

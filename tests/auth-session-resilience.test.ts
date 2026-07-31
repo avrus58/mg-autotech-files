@@ -69,10 +69,28 @@ test("protected route layouts share one non-destructive browser auth boundary", 
   }
 
   const boundary = readProjectFile("src", "components", "auth", "BrowserAuthBoundary.tsx");
-  assert.match(boundary, /type AuthState = "checking" \| "authenticated" \| "recovering" \| "unauthenticated"/);
+  assert.match(boundary, /type AuthState = "checking" \| "authenticated" \| "recovering" \| "unavailable" \| "unauthenticated"/);
   assert.match(boundary, /window\.setTimeout\(verifySession, 0\)/);
   assert.doesNotMatch(boundary, /router\.(?:push|replace)\(/);
   assert.doesNotMatch(boundary, /window\.location/);
+});
+
+test("protected routes reuse a verified session and recover transient checks in the background", () => {
+  const guard = readProjectFile("src", "lib", "authGuards.ts");
+  const boundary = readProjectFile("src", "components", "auth", "BrowserAuthBoundary.tsx");
+
+  assert.match(guard, /export function getStableSessionSnapshot\(\)/);
+  assert.match(guard, /const cachedSnapshot = getStableSessionSnapshot\(\);[\s\S]*if \(cachedSnapshot\) \{[\s\S]*session: cachedSnapshot/);
+  assert.match(guard, /export async function getStableSession[\s\S]*const cachedSnapshot = getStableSessionSnapshot\(\);[\s\S]*if \(cachedSnapshot\)[\s\S]*if \(sessionResolutionInFlight\)/);
+  assert.match(boundary, /const hasCachedSession = Boolean\(getStableSessionSnapshot\(\)\?\.user\)/);
+  assert.match(boundary, /if \(!hasCachedSession\) startWaitTimers\(\)/);
+  assert.match(boundary, /const sessionRecoveryDelays = \[350, 800, 1600, 3200, 5000\] as const/);
+  assert.match(boundary, /current === "authenticated" \? current : nextState/);
+  assert.match(boundary, /unavailableSessionDelay = 30000/);
+  assert.match(boundary, /aria-live="polite"/);
+  assert.doesNotMatch(boundary, /setAuthState\("recovering"\);\s*\}, 8000\)/);
+  assert.doesNotMatch(boundary, /Secure session connection interrupted/);
+  assert.doesNotMatch(boundary, /Retry secure connection/);
 });
 
 test("protected clients do not treat one raw Supabase read as a logout", () => {
