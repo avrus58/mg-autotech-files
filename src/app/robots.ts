@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { publicServiceSlugs, seoLocales, siteUrl } from "@/lib/seo";
+import { serviceIntentGuideSlugs } from "@/lib/serviceIntentGuides";
 
 export default function robots(): MetadataRoute.Robots {
   return {
@@ -11,6 +12,9 @@ export default function robots(): MetadataRoute.Robots {
           "/file-service",
           "/services",
           ...publicServiceSlugs.map((slug) => `/services/${slug}`),
+          ...serviceIntentGuideSlugs.map((slug) => `/services/${slug}`),
+          "/feed.xml",
+          "/llms.txt",
           "/how-it-works",
           ...seoLocales.map((locale) => `/${locale}`),
           ...seoLocales.map((locale) => `/${locale}/how-it-works`),

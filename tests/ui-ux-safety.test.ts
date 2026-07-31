@@ -1381,7 +1381,7 @@ test("homepage file service search route index maps long-tail intent to public r
   assert.match(routeIndexSource, /query: "ECU file readiness check"/);
   assert.match(routeIndexSource, /query: "What information should I send for file service"/);
   assert.match(routeIndexSource, /href: "\/file-service"/);
-  assert.match(routeIndexSource, /href: "\/ecu-platforms\/transmission-control-units"/);
+  assert.match(routeIndexSource, /href: "\/services\/tcu-tuning"/);
   assert.match(routeIndexSource, /href: "\/services\/stage-1"/);
   assert.match(routeIndexSource, /href: "\/services\/dtc-off"/);
   assert.match(routeIndexSource, /href: "\/services\/dpf-off"/);
@@ -2050,7 +2050,7 @@ test("homepage service cards deep-link to public service landing pages", () => {
   assert.match(servicesSource, /href: "\/services\/egr-off"/);
   assert.match(servicesSource, /href: "\/services\/adblue-off"/);
   assert.match(servicesSource, /href: "\/services\/dtc-off"/);
-  assert.match(servicesSource, /href: "\/new-request"[\s\S]*Request TCU review/);
+  assert.match(servicesSource, /href: "\/services\/tcu-tuning"[\s\S]*View TCU service/);
   assert.match(servicesSource, /searchIntent: "Performance calibration"/);
   assert.match(servicesSource, /searchIntent: "Diesel aftertreatment"/);
   assert.match(servicesSource, /searchIntent: "Diagnostic code request"/);

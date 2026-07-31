@@ -2,6 +2,18 @@
 
 Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
+## 2026-07-31 Global high-intent SEO growth layer
+
+- Gorev: MG AutoTech'in global organik gorunurlugunu, ana sayfayi yeniden uzatmadan, gercek workshop arama niyetleri ve daha guclu public discovery ile artirmak.
+- Yeni servis otoriteleri: `/services/stage-2`, `/services/tcu-tuning` ve `/services/ecu-file-check` icin benzersiz English content, canonical/OG/Twitter metadata, visible review requirements, Service/WebPage/BreadcrumbList/ItemList structured data, FAQ, ilgili tool/guide linkleri ve secure request CTA eklendi. Compatibility her istekte ayri teyit edilir; garanti, evrensel destek veya otomatik onay iddiasi yoktur.
+- Kesfedilebilirlik: Yeni rotalar `/services`, `/file-service`, `/workshop-guides`, footer ve mevcut homepage TCU kartindan baglandi. Sitemap/robots guncellendi. Public-only RSS `/feed.xml` ve customer-safe route map `/llms.txt` eklendi; private/admin/customer/storage/source metadata ciktilara giremez.
+- Teknik SEO duzeltmesi: `/services`, `/file-service`, `/how-it-works` ve localized How It Works sayfalarinda root title template ile olusan cift `| MG AutoTech` suffix giderildi. Yeni English-only servis sayfalari icin profesyonel ceviri olmadan sahte localized rota veya hreflang uretilmedi.
+- Homepage siniri: Yeni homepage bolumu eklenmedi. Sadece mevcut TCU card/answer/search-index linkleri yeni authoritative TCU service rotasina tasindi; homepage uzunlugu ve bilgi mimarisi buyutulmedi.
+- Guvenlik: Public pages ve discovery documents file upload/inspection/modification/generation yapmaz; admin/private API, storage path, signed URL, source reference, confidence veya sample metadata yayinlamaz. SQL, migration, Supabase, payment, AI, work-order veya production data degisikligi yoktur.
+- Kontroller: Yeni SEO tests PASS (8/8); related UI/SEO PASS (102/102); `node scripts/check-i18n-seo.mjs` PASS (12 locale, 25 source file); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (473/473); `npm run build` PASS (264 page/route entries); payment schema-only PASS; `npm audit --omit=dev --audit-level=high` PASS (0 vulnerabilities); `git diff --check` PASS.
+- Responsive/browser QA: Shared service layout 1440x900 ve 390x844 ekranlarda; tum uc servis rotasi ve katalog 390x844 ekranda test edildi. Yatay tasma veya console warning/error yok. Canonical URL ve tek marka suffix'li title davranisi local production server uzerinde dogrulandi. Feed/llms/sitemap localhost smoke 200 ve private-route leak false.
+- Kapsam: Ayrik `codex/global-seo-growth` branch/worktree. Deploy, push veya production erisimi yapilmadi. SEO sonucu/ranking garanti edilemez; sonraki dis operasyon Google Search Console query/country takibi ve dogrulanmis industry authority/backlink calismasidir.
+
 ## 2026-07-30 Homepage vehicle widget instant and abuse-resistant catalog access
 
 - Gorev: Ana sayfadaki vehicle widget'in gorunmesine ragmen marka/model verilerinin bir sure sonra dolmasini gidermek.

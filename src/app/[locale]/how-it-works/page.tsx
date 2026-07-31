@@ -32,7 +32,7 @@ export async function generateMetadata({
   const pageUrl = localizedUrl(locale, "/how-it-works");
 
   return {
-    title: copy.pageTitle,
+    title: { absolute: copy.pageTitle },
     description: copy.description,
     alternates: {
       canonical: pageUrl,

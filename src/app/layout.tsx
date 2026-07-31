@@ -117,6 +117,9 @@ export const metadata: Metadata = {
   alternates: {
     canonical: absoluteUrl("/"),
     languages: languageAlternates("/"),
+    types: {
+      "application/rss+xml": absoluteUrl("/feed.xml"),
+    },
   },
 
   category: "automotive",

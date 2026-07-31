@@ -28,13 +28,14 @@ import {
   siteName,
   websiteJsonLd,
 } from "@/lib/seo";
+import { serviceIntentGuides } from "@/lib/serviceIntentGuides";
 
 const pageTitle = "ECU & TCU Solution Catalog";
 const pageDescription =
   "Professional MG AutoTech ECU and TCU file-service catalog for workshops: Stage 1, diesel aftertreatment, DTC, TCU, VMAX, launch control, diagnostics, file checks and support add-ons.";
 
 export const metadata: Metadata = {
-  title: `${pageTitle} | MG AutoTech`,
+  title: pageTitle,
   description: pageDescription,
   alternates: {
     canonical: absoluteUrl("/services"),
@@ -72,6 +73,22 @@ type SolutionCategory = {
 };
 
 const coreServices = publicServiceSlugs.map((slug) => getServiceSeo(slug, "en"));
+const coreServicePages = [
+  ...coreServices.map((service) => ({
+    slug: service.slug,
+    name: service.name,
+    description: service.description,
+    badge: `${service.credits} credits`,
+    detail: service.turnaround,
+  })),
+  ...serviceIntentGuides.map((service) => ({
+    slug: service.slug,
+    name: service.name,
+    description: service.description,
+    badge: service.cardLabel,
+    detail: "Exact vehicle and controller review",
+  })),
+];
 
 const requestPillars = [
   {
@@ -338,7 +355,7 @@ const catalogJsonLd = {
       "@id": absoluteUrl("/services#solution-catalog"),
       name: "MG AutoTech visible service solution catalog",
       itemListElement: [
-        ...coreServices.map((service, index) => ({
+        ...coreServicePages.map((service, index) => ({
           "@type": "ListItem",
           position: index + 1,
           name: service.name,
@@ -347,7 +364,7 @@ const catalogJsonLd = {
         ...solutionCategories.flatMap((category, categoryIndex) =>
           category.services.map((service, serviceIndex) => ({
             "@type": "ListItem",
-            position: coreServices.length + categoryIndex * 20 + serviceIndex + 1,
+            position: coreServicePages.length + categoryIndex * 20 + serviceIndex + 1,
             name: service,
             url: absoluteUrl("/services"),
           }))
@@ -450,8 +467,8 @@ export default function ServicesPage() {
           </p>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-          {coreServices.map((service) => (
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          {coreServicePages.map((service) => (
             <Link
               key={service.slug}
               href={`/services/${service.slug}`}
@@ -459,7 +476,7 @@ export default function ServicesPage() {
             >
               <div className="flex items-center justify-between gap-3">
                 <span className="rounded-full border border-red-500/25 bg-red-950/25 px-3 py-1 text-[0.68rem] font-black uppercase tracking-[0.16em] text-red-100">
-                  {service.credits} credits
+                  {service.badge}
                 </span>
                 <ArrowRight className="h-4 w-4 text-red-300 transition group-hover:translate-x-1" />
               </div>
@@ -468,7 +485,7 @@ export default function ServicesPage() {
                 {service.description}
               </p>
               <div className="mt-auto pt-5 text-xs font-black uppercase tracking-[0.14em] text-zinc-500">
-                {service.turnaround}
+                {service.detail}
               </div>
             </Link>
           ))}

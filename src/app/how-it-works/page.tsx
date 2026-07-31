@@ -7,7 +7,7 @@ const copy = getHowItWorksCopy("en");
 const pageUrl = absoluteUrl("/how-it-works");
 
 export const metadata: Metadata = {
-  title: copy.pageTitle,
+  title: { absolute: copy.pageTitle },
   description: copy.description,
   alternates: {
     canonical: "/how-it-works",

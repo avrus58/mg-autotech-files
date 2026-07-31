@@ -50,6 +50,18 @@ Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
 
+### MANUAL-002 [P1] Global high-intent SEO coverage guclendirilsin
+
+Durum: Done
+
+Fingerprint: `public-seo|global-service-intent-coverage|stage2-tcu-file-check-routes-missing|deep-intent-pages-and-safe-discovery`
+
+Kapsam: Ana sayfayi yeniden uzatmadan Stage 2, TCU tuning ve ECU file check arama niyetleri icin benzersiz, review-first English servis sayfalari ekle; servis katalogu, file-service hub, workshop guides, footer, sitemap, RSS ve public discovery baglantilarini kur. Duplicate title suffix sorunlarini gider ve private/customer metadata sinirini testlerle koru.
+
+Sonuc: `/services/stage-2`, `/services/tcu-tuning` ve `/services/ecu-file-check` statik servis rotalari; customer-safe `/feed.xml` ve `/llms.txt`; genisletilmis internal linking/sitemap/robots kesfi; services, file-service ve How It Works sayfalarinda tek marka suffix'li title davranisi eklendi. Ana sayfaya yeni bolum eklenmedi; yalniz mevcut TCU karti dogru public service rotasina baglandi.
+
+Dogrulama: Yeni SEO testleri PASS (8/8); ilgili UI/SEO testleri PASS (102/102); i18n/SEO PASS (12 locale, 25 source file); lint PASS; web + desktop typecheck PASS; full tests PASS (473/473); production build PASS (264 static/dynamic page entries); payment schema-only PASS; production dependency audit PASS (0 vulnerabilities); diff check PASS. Local browser QA 390x844 ve 1440x900 boyutlarinda yatay tasma ve console error olmadan tamamlandi.
+
 ### MANUAL-001 [P1] Homepage vehicle widget ilk acilista hazir olsun
 
 Durum: Done

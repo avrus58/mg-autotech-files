@@ -16,7 +16,12 @@ import {
 } from "lucide-react";
 import { Footer } from "@/components/Footer";
 import { OnlineStatus } from "@/components/OnlineStatus";
-import { languageAlternates } from "@/lib/seo";
+import { ServiceIntentPage } from "@/components/ServiceIntentPage";
+import { absoluteUrl, languageAlternates, siteName } from "@/lib/seo";
+import {
+  getServiceIntentGuide,
+  serviceIntentGuideSlugs,
+} from "@/lib/serviceIntentGuides";
 
 type ServicePage = {
   slug: string;
@@ -327,7 +332,10 @@ function getService(slug: string) {
 }
 
 export function generateStaticParams() {
-  return services.map((service) => ({ slug: service.slug }));
+  return [
+    ...services.map((service) => ({ slug: service.slug })),
+    ...serviceIntentGuideSlugs.map((slug) => ({ slug })),
+  ];
 }
 
 export async function generateMetadata({
@@ -336,6 +344,40 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
+  const intentGuide = getServiceIntentGuide(slug);
+
+  if (intentGuide) {
+    const canonical = absoluteUrl(`/services/${intentGuide.slug}`);
+    const socialTitle = `${intentGuide.metaTitle} | MG AutoTech`;
+
+    return {
+      title: intentGuide.metaTitle,
+      description: intentGuide.description,
+      alternates: { canonical },
+      openGraph: {
+        title: socialTitle,
+        description: intentGuide.description,
+        url: canonical,
+        siteName,
+        type: "website",
+        images: [
+          {
+            url: absoluteUrl("/opengraph-image"),
+            width: 1200,
+            height: 630,
+            alt: intentGuide.name,
+          },
+        ],
+      },
+      twitter: {
+        card: "summary_large_image",
+        title: socialTitle,
+        description: intentGuide.description,
+        images: [absoluteUrl("/opengraph-image")],
+      },
+    };
+  }
+
   const service = getService(slug);
 
   if (!service) return {};
@@ -376,6 +418,10 @@ export default async function ServicePage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
+  const intentGuide = getServiceIntentGuide(slug);
+
+  if (intentGuide) return <ServiceIntentPage guide={intentGuide} />;
+
   const service = getService(slug);
 
   if (!service) notFound();

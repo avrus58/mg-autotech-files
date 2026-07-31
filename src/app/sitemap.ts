@@ -9,6 +9,7 @@ import {
 } from "@/lib/seo";
 import { brandGuides, platformGuides } from "@/lib/industry-content";
 import { workshopGuideArticles } from "@/lib/workshopGuides";
+import { serviceIntentGuides } from "@/lib/serviceIntentGuides";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const contentUpdated = new Date("2026-07-30T00:00:00.000Z");
@@ -80,6 +81,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
         },
       };
     }),
+    ...serviceIntentGuides.map((guide) => ({
+      url: absoluteUrl(`/services/${guide.slug}`),
+      lastModified: new Date(guide.updatedAt),
+      changeFrequency: "monthly" as const,
+      priority: 0.84,
+    })),
   ];
 
   const localizedPages: MetadataRoute.Sitemap = seoLocales.flatMap((locale) => [

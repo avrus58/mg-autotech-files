@@ -8,6 +8,12 @@ Use this checklist before every public content or language release.
 - `/sitemap.xml` includes public home, service, tool, brand, ECU-platform and legal pages.
 - `/workshop-guides` provides a compact, indexable knowledge hub without adding
   long answer libraries to the homepage.
+- `/services/stage-2`, `/services/tcu-tuning` and `/services/ecu-file-check`
+  cover distinct high-intent English searches without manufacturing translated
+  alternates or extending the homepage.
+- `/feed.xml` publishes public guidance updates and `/llms.txt` provides a
+  customer-safe public route map. Neither document may include private portal,
+  storage, customer, admin or source metadata.
 - Localized pages include language alternates for all supported locales.
 - Canonical URLs point to the intended public page.
 - Public pages have a unique title and description.
@@ -70,6 +76,11 @@ Priority topics:
   professionally translated. A translated navigation shell is not enough.
 - Do not duplicate large answer libraries on the homepage.
 - Do not add thin doorway pages for keyword variants.
+- Service-intent pages must answer a genuinely different workshop decision and
+  link to the secure request route, relevant preparation tools and supporting
+  technical guides.
+- Keep FAQ answers visible when useful, but do not add `FAQPage` or `HowTo`
+  structured data solely to chase discontinued or restricted rich results.
 - Keep public guidance customer-safe: no private file inspection, MOD
   generation, account access, or internal data exposure.
 
@@ -91,3 +102,16 @@ npm run build
 ```
 
 The first script checks language coverage, core SEO files and common encoding/translation corruption markers. The build validates sitemap, robots and metadata generation through Next.js.
+
+## Measurement And Authority
+
+- Search ranking cannot be guaranteed by code or metadata alone.
+- Track indexed pages, impressions, clicks, queries and countries in Google
+  Search Console after each release.
+- Prefer verified workshop case studies, original technical research and
+  reputable automotive-industry links over bulk directory submissions or
+  purchased backlink schemes.
+- Expand a language only after the full service page has a professional native
+  translation and can receive a correct reciprocal hreflang mapping.
+- Review query data before creating another landing page; avoid near-duplicate
+  city, brand or keyword variants that do not add useful first-hand content.

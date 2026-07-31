@@ -70,6 +70,9 @@ const guideGroups: GuideGroup[] = [
     links: [
       { href: "/services", label: "Complete solution catalog", detail: "Performance, diesel, diagnostics, transmission and support categories." },
       { href: "/services/stage-1", label: "Stage 1 file service", detail: "Vehicle context, original-file preparation and review workflow." },
+      { href: "/services/stage-2", label: "Stage 2 file service", detail: "Hardware-specific request preparation for modified vehicles." },
+      { href: "/services/tcu-tuning", label: "TCU tuning file service", detail: "Gearbox identity, read method and torque-context preparation." },
+      { href: "/services/ecu-file-check", label: "ECU file check", detail: "Source-file, identity and read-coverage review route." },
       { href: "/services/dpf-off", label: "DPF request guidance", detail: "Required diagnostic and workshop context for a DPF request." },
       { href: "/services/egr-off", label: "EGR / AGR request guidance", detail: "Prepare the relevant vehicle, ECU and diagnostic details." },
       { href: "/services/adblue-off", label: "AdBlue / SCR request guidance", detail: "Structure the request with exact symptoms and controller context." },

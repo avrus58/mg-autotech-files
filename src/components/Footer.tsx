@@ -15,6 +15,9 @@ import { companyAddress, contactEmail, contactPhone } from "@/lib/seo";
 const services = [
   { label: "Services Overview", href: "/services" },
   { label: "Stage 1 Tuning", href: "/services/stage-1" },
+  { label: "Stage 2 File Service", href: "/services/stage-2" },
+  { label: "TCU Tuning", href: "/services/tcu-tuning" },
+  { label: "ECU File Check", href: "/services/ecu-file-check" },
   { label: "DPF OFF", href: "/services/dpf-off" },
   { label: "EGR / AGR OFF", href: "/services/egr-off" },
   { label: "AdBlue OFF", href: "/services/adblue-off" },

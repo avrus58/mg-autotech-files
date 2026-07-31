@@ -13,6 +13,8 @@ const filesToScan = [
   "src/app/[locale]/page.tsx",
   "src/app/[locale]/layout.tsx",
   "src/app/[locale]/services/[slug]/page.tsx",
+  "src/app/services/[slug]/page.tsx",
+  "src/app/services/page.tsx",
   "src/app/[locale]/how-it-works/page.tsx",
   "src/app/[locale]/file-service/page.tsx",
   "src/app/how-it-works/page.tsx",
@@ -20,6 +22,10 @@ const filesToScan = [
   "src/app/workshop-guides/page.tsx",
   "src/app/workshop-guides/[slug]/page.tsx",
   "src/lib/workshopGuides.ts",
+  "src/lib/serviceIntentGuides.ts",
+  "src/components/ServiceIntentPage.tsx",
+  "src/app/feed.xml/route.ts",
+  "src/app/llms.txt/route.ts",
   "src/app/sitemap.ts",
   "src/app/robots.ts",
 ];
@@ -63,6 +69,24 @@ for (const slug of ["stage-1", "dpf-off", "egr-off", "adblue-off", "dtc-off"]) {
   if (!seo.includes(`"${slug}"`)) failures.push(`Service slug ${slug} is missing from SEO metadata.`);
 }
 
+const serviceIntentGuides = readFileSync(join(root, "src/lib/serviceIntentGuides.ts"), "utf8");
+const rootServiceRoute = readFileSync(join(root, "src/app/services/[slug]/page.tsx"), "utf8");
+const serviceIntentPage = readFileSync(join(root, "src/components/ServiceIntentPage.tsx"), "utf8");
+for (const slug of ["stage-2", "tcu-tuning", "ecu-file-check"]) {
+  if (!serviceIntentGuides.includes(`slug: "${slug}"`)) {
+    failures.push(`Global service-intent slug ${slug} is missing.`);
+  }
+}
+if (!rootServiceRoute.includes("serviceIntentGuideSlugs.map")) {
+  failures.push("Root service route is not statically generating global service-intent pages.");
+}
+if (!serviceIntentPage.includes('"@type": "Service"')) {
+  failures.push("Global service-intent pages are missing visible Service structured data.");
+}
+if (serviceIntentPage.includes('"@type": "FAQPage"') || serviceIntentPage.includes('"@type": "HowTo"')) {
+  failures.push("Global service-intent pages use unsupported FAQPage or HowTo structured data.");
+}
+
 const localizedHomePage = readFileSync(join(root, "src/app/[locale]/page.tsx"), "utf8");
 if (!localizedHomePage.includes("buildLocalizedHomepageJsonLd")) {
   failures.push("Localized homepage does not build page-level structured data.");
@@ -82,6 +106,18 @@ if (!localizedHomePage.includes("localizedUrl(locale, `/services/${slug}`)")) {
 
 const rootHomePage = readFileSync(join(root, "src/app/page.tsx"), "utf8");
 const rootLayout = readFileSync(join(root, "src/app/layout.tsx"), "utf8");
+const rootServicesPage = readFileSync(join(root, "src/app/services/page.tsx"), "utf8");
+const rootFileServicePage = readFileSync(join(root, "src/app/file-service/page.tsx"), "utf8");
+const rootHowItWorksPage = readFileSync(join(root, "src/app/how-it-works/page.tsx"), "utf8");
+if (!rootServicesPage.includes("title: pageTitle,")) {
+  failures.push("Root services page can duplicate the global title template suffix.");
+}
+if (!rootFileServicePage.includes("title: pageTitle,")) {
+  failures.push("Root file-service page can duplicate the global title template suffix.");
+}
+if (!rootHowItWorksPage.includes("title: { absolute: copy.pageTitle }")) {
+  failures.push("How It Works title does not opt out of duplicate global title suffixing.");
+}
 if (!rootLayout.includes("Online ECU File Service")) {
   failures.push("Root metadata is missing online ECU file service search wording.");
 }

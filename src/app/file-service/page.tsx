@@ -23,7 +23,7 @@ const pageDescription =
   "Professional ECU and TCU file service workflow for workshops: secure request preparation, original file submission, service selection, order tracking and portal delivery.";
 
 export const metadata: Metadata = {
-  title: `${pageTitle} | MG AutoTech`,
+  title: pageTitle,
   description: pageDescription,
   alternates: {
     canonical: absoluteUrl("/file-service"),
@@ -73,8 +73,8 @@ const fileServiceCategories: HubCard[] = [
   {
     title: "TCU File Service",
     text: "Transmission-controller requests stay organized with gearbox context, controller notes and clear review status.",
-    href: "/ecu-platforms/transmission-control-units",
-    action: "Open TCU guide",
+    href: "/services/tcu-tuning",
+    action: "View TCU service",
     icon: FileCode2,
     tag: "TCU",
   },
@@ -167,6 +167,22 @@ const linkedResources: HubCard[] = [
     action: "View service",
     icon: Wrench,
     tag: "Service",
+  },
+  {
+    title: "Stage 2 Service",
+    text: "Prepare modified-vehicle requests with exact hardware, ECU and drivetrain context.",
+    href: "/services/stage-2",
+    action: "View Stage 2",
+    icon: Gauge,
+    tag: "Service",
+  },
+  {
+    title: "ECU File Check",
+    text: "Review source-file identity, read coverage and original-file context before the next step.",
+    href: "/services/ecu-file-check",
+    action: "View file check",
+    icon: Search,
+    tag: "Verification",
   },
 ];
 

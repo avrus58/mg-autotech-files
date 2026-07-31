@@ -92,8 +92,8 @@ const services = [
     title: "TCU Tuning",
     text: "Gearbox software optimization for supported TCUs.",
     credits: "Manual",
-    href: "/new-request",
-    action: "Request TCU review",
+    href: "/services/tcu-tuning",
+    action: "View TCU service",
     searchIntent: "Gearbox calibration",
   },
 ];
@@ -217,8 +217,8 @@ const fileServiceAnswerLibrary = [
     question: "What is the difference between ECU and TCU file service?",
     answer:
       "ECU requests focus on engine control context. TCU requests focus on gearbox control context and usually need transmission details, read method context and a separate service goal.",
-    href: "/ecu-platforms/transmission-control-units",
-    action: "View TCU guide",
+    href: "/services/tcu-tuning",
+    action: "View TCU service",
     icon: Cpu,
   },
   {
@@ -292,8 +292,8 @@ const fileServiceSearchRouteIndex = [
     route: "Transmission controller guide",
     prepare:
       "Use this when the request is about gearbox controller context, TCU details, read method and transmission notes.",
-    href: "/ecu-platforms/transmission-control-units",
-    action: "Open TCU guide",
+    href: "/services/tcu-tuning",
+    action: "Open TCU service",
     tag: "TCU",
   },
   {
