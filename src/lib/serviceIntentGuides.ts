@@ -1,5 +1,6 @@
 export const serviceIntentGuideSlugs = [
   "stage-2",
+  "stage-3",
   "tcu-tuning",
   "ecu-file-check",
 ] as const;
@@ -91,10 +92,101 @@ export const serviceIntentGuides: ServiceIntentGuide[] = [
     ],
     related: [
       { label: "Stage 1 ECU file service", href: "/services/stage-1" },
+      { label: "Stage 3 custom calibration", href: "/services/stage-3" },
       { label: "TCU tuning file service", href: "/services/tcu-tuning" },
       { label: "Request brief builder", href: "/tools/request-brief-builder" },
       { label: "ECU read-method advisor", href: "/tools/ecu-read-method-advisor" },
       { label: "Complete service catalog", href: "/services" },
+    ],
+    publishedAt: "2026-07-31",
+    updatedAt: "2026-07-31",
+  },
+  {
+    slug: "stage-3",
+    name: "Stage 3 Custom ECU Calibration",
+    metaTitle: "Stage 3 ECU File Service for Custom Builds",
+    description:
+      "Review-led Stage 3 ECU file service for extensively modified vehicles with exact turbo, fuel, engine, gearbox, ECU software and logging evidence.",
+    eyebrow: "Advanced calibration review",
+    heroTitle: "Stage 3 calibration starts with the complete build, not a generic file.",
+    lead:
+      "Stage 3 describes an extensively modified powertrain, not one universal software package. Feasibility and calibration scope depend on the exact turbocharger, injectors, fuel system, engine components, sensors, cooling, transmission, ECU identity and the quality of the available technical evidence.",
+    cardLabel: "Engineering review",
+    fitSignals: [
+      "The workshop can document every relevant engine, air, fuel, turbo, cooling and drivetrain modification.",
+      "The exact ECU supplier, family, HW/SW identity, calibration context and untouched source file are available.",
+      "The vehicle can be logged safely and the workshop can support a controlled validation and revision process.",
+      "The requested result is defined by the real build and operating limits rather than a generic Stage 3 label.",
+    ],
+    requiredInputs: [
+      "Vehicle, engine, model year, intended use and complete mechanical specification",
+      "Turbocharger, injectors, pumps, fuel system, sensors, intercooler and exhaust details",
+      "ECU supplier, family, HW/SW, calibration ID and original-file context when available",
+      "Transmission type, controller details, clutch or gearbox changes and relevant torque constraints",
+      "Fuel type, octane or blend, boost-control setup and known operating limits",
+      "Read method, current diagnostic state, baseline logs and an explicit technical target",
+    ],
+    reviewChecks: [
+      {
+        title: "Build identity",
+        text: "The declared hardware must describe the vehicle that will actually receive the calibration; incomplete or conflicting specifications stop the review.",
+      },
+      {
+        title: "Control-system fit",
+        text: "ECU software, sensors, actuators, fuel delivery and gearbox context are considered together before a viable calibration plan can be discussed.",
+      },
+      {
+        title: "Validation path",
+        text: "Logging conditions, human review and possible revisions are established before the request is treated as an advanced calibration project.",
+      },
+    ],
+    workflow: [
+      {
+        title: "Build the specification",
+        text: "Record every relevant component, controller identifier, fuel choice, read method, diagnostic condition and project target.",
+      },
+      {
+        title: "Submit for feasibility review",
+        text: "Open a secure request with the original ECU file and complete technical brief; availability is not assumed from the vehicle name.",
+      },
+      {
+        title: "Define the validation plan",
+        text: "MG AutoTech reviews the evidence, identifies missing information and confirms whether logs or additional checks are required.",
+      },
+      {
+        title: "Track review and revisions",
+        text: "Questions, customer-visible findings, delivered versions and any evidence-led revision remain attached to the private order.",
+      },
+    ],
+    faq: [
+      {
+        q: "Is Stage 3 available as an instant downloadable file?",
+        a: "No. Stage 3 is a custom technical review for a specific modified combination. The exact hardware, ECU software, fuel and validation path must be understood first.",
+      },
+      {
+        q: "Which hardware changes are required for Stage 3?",
+        a: "There is no universal parts list. Turbo, injector, pump, cooling, engine and gearbox requirements depend on the platform and target, so every installed change must be declared.",
+      },
+      {
+        q: "Are data logs required?",
+        a: "Advanced projects normally need a credible validation route. The exact log channels and conditions depend on the ECU, build and question being evaluated.",
+      },
+      {
+        q: "Can an unknown or previously modified source file be used?",
+        a: "Do not assume so. File history, identity and read coverage must be reviewed. An untouched original or verified source context may be required before work can continue.",
+      },
+      {
+        q: "How does Stage 3 differ from Stage 2?",
+        a: "Stage 2 is reviewed around documented supporting modifications. Stage 3 involves a substantially changed powertrain and a deeper engineering, logging and revision requirement.",
+      },
+    ],
+    related: [
+      { label: "Stage 1 ECU file service", href: "/services/stage-1" },
+      { label: "Stage 2 ECU file service", href: "/services/stage-2" },
+      { label: "ECU and TCU file-service hub", href: "/file-service" },
+      { label: "Request brief builder", href: "/tools/request-brief-builder" },
+      { label: "AutoTuner log analyzer", href: "/tools/autotuner-log-analyzer" },
+      { label: "TCU tuning file service", href: "/services/tcu-tuning" },
     ],
     publishedAt: "2026-07-31",
     updatedAt: "2026-07-31",

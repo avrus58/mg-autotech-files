@@ -4536,13 +4536,21 @@ export default function HomePage() {
 
       <AnimatedSection id="services" className="bg-[#050607] py-20 text-white">
         <div className="mx-auto max-w-7xl px-4">
-          <div className="mb-12">
-            <div className="text-sm font-black uppercase tracking-[0.25em] text-red-300">
-              Our Services
+          <div className="mb-12 flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
+            <div>
+              <div className="text-sm font-black uppercase tracking-[0.25em] text-red-300">
+                Our Services
+              </div>
+              <h2 className="mt-3 max-w-3xl text-4xl font-black md:text-5xl">
+                Professional ECU and TCU software solutions.
+              </h2>
             </div>
-            <h2 className="mt-3 max-w-3xl text-4xl font-black md:text-5xl">
-              Professional ECU and TCU software solutions.
-            </h2>
+            <div className="flex flex-wrap gap-2" aria-label="Performance calibration pages">
+              <Link href="/services/stage-1" className="rounded-lg border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-black text-zinc-200 hover:border-red-800/60 hover:text-white">Stage 1</Link>
+              <Link href="/services/stage-2" className="rounded-lg border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-black text-zinc-200 hover:border-red-800/60 hover:text-white">Stage 2</Link>
+              <Link href="/services/stage-3" className="rounded-lg border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-black text-zinc-200 hover:border-red-800/60 hover:text-white">Stage 3</Link>
+              <Link href="/file-service#stage-comparison" className="rounded-lg border border-red-800/60 bg-red-950/25 px-4 py-3 text-sm font-black text-red-200 hover:bg-red-950/40">Compare stages</Link>
+            </div>
           </div>
 
           <motion.div

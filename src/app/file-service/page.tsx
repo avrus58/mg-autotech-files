@@ -16,11 +16,13 @@ import {
 import { Footer } from "@/components/Footer";
 import { OnlineStatus } from "@/components/OnlineStatus";
 import { PublicSeoHeader } from "@/components/PublicSeoHeader";
+import { StageComparison } from "@/components/StageComparison";
+import { brandGuides } from "@/lib/industry-content";
 import { absoluteUrl, languageAlternates, organizationJsonLd, siteName, websiteJsonLd } from "@/lib/seo";
 
-const pageTitle = "ECU & TCU File Service Hub";
+const pageTitle = "ECU File Service for Custom Tuning Files";
 const pageDescription =
-  "Professional ECU and TCU file service workflow for workshops: secure request preparation, original file submission, service selection, order tracking and portal delivery.";
+  "Vehicle-specific ECU tuning files for Stage 1, Stage 2 and Stage 3, with secure original-file submission, technical review and customer portal delivery.";
 
 export const metadata: Metadata = {
   title: pageTitle,
@@ -63,8 +65,8 @@ type HubCard = {
 
 const fileServiceCategories: HubCard[] = [
   {
-    title: "ECU File Service",
-    text: "A structured request path for engine-control files with vehicle details, service choice and private dashboard status.",
+    title: "Custom ECU Calibration",
+    text: "Vehicle-specific ECU software requests built from the submitted controller identity, original file, vehicle setup and technical target.",
     href: "/new-request",
     action: "Start ECU request",
     icon: Cpu,
@@ -79,12 +81,12 @@ const fileServiceCategories: HubCard[] = [
     tag: "TCU",
   },
   {
-    title: "Stage 1 File Service",
-    text: "Performance requests can be prepared with engine, controller, read-method and original-file context before submission.",
-    href: "/services/stage-1",
-    action: "View Stage 1",
-    icon: Gauge,
-    tag: "Performance",
+    title: "ECU File Check",
+    text: "A verification-first route when source-file originality, identity, read coverage or software context needs review.",
+    href: "/services/ecu-file-check",
+    action: "Prepare file check",
+    icon: Search,
+    tag: "Verification",
   },
   {
     title: "Diesel & Diagnostic File Requests",
@@ -120,6 +122,22 @@ const workflowSteps = [
 ];
 
 const linkedResources: HubCard[] = [
+  {
+    title: "Stage 3 Calibration",
+    text: "Prepare an extensively modified build for engineering-led feasibility, logging and revision review.",
+    href: "/services/stage-3",
+    action: "View Stage 3",
+    icon: Gauge,
+    tag: "Advanced",
+  },
+  {
+    title: "Audi ECU Software",
+    text: "Audi-specific ECU and TCU request guidance for supported TDI, TFSI and controller families.",
+    href: "/brands/audi",
+    action: "View Audi guide",
+    icon: Cpu,
+    tag: "Brand guide",
+  },
   {
     title: "How It Works",
     text: "Understand the customer journey from account creation to delivery.",
@@ -193,6 +211,40 @@ const safetyBoundaries = [
   "Unclear or complex requests stay review-first before delivery.",
 ];
 
+const availableSolutions = [
+  { title: "Stage 1 ECU files", text: "Standard or near-standard vehicle calibration", href: "/services/stage-1" },
+  { title: "Stage 2 ECU files", text: "Hardware-aware modified-vehicle requests", href: "/services/stage-2" },
+  { title: "Stage 3 calibration", text: "Engineering review for extensively modified builds", href: "/services/stage-3" },
+  { title: "TCU tuning files", text: "Separate gearbox-controller identity and torque context", href: "/services/tcu-tuning" },
+  { title: "DPF-related requests", text: "Jurisdiction-sensitive diesel aftertreatment workflow", href: "/services/dpf-off" },
+  { title: "AdBlue / SCR requests", text: "Review-first SCR software request route", href: "/services/adblue-off" },
+  { title: "EGR / AGR requests", text: "Diagnostic context and lawful-use review", href: "/services/egr-off" },
+  { title: "DTC solutions", text: "Exact-code requests after root-cause diagnosis", href: "/services/dtc-off" },
+  { title: "VMAX and start-stop", text: "Supported applications confirmed per ECU and vehicle", href: "/services" },
+  { title: "Lambda / O2 solutions", text: "Application-specific review through the service catalog", href: "/services" },
+];
+
+const requestInformation = [
+  "Vehicle make, model, generation, engine and model year",
+  "Transmission and TCU context when torque coordination matters",
+  "ECU supplier, family, hardware and software identifiers when available",
+  "Untouched original ECU or TCU file and the explicit read method",
+  "Fuel type or octane, installed hardware and intended operating context",
+  "Requested services, exact fault codes, workshop observations and available logs",
+];
+
+const qualityChecks = [
+  "Source-file and controller identity are reviewed together instead of trusting a filename alone.",
+  "Compatibility is considered against the exact ECU software, read method and vehicle setup.",
+  "Requested calibration scope stays tied to declared hardware, fuel and drivetrain constraints.",
+  "Delivered versions, customer-visible messages and revision context remain attached to the private order.",
+];
+
+const supportedBrandLinks = brandGuides.slice(0, 12).map((brand) => ({
+  name: brand.name.replace(/ ECU.*$/, ""),
+  href: `/brands/${brand.slug}`,
+}));
+
 const fileServiceFaq = [
   {
     question: "What is an ECU file service?",
@@ -205,14 +257,64 @@ const fileServiceFaq = [
       "A TCU file service focuses on transmission-controller requests. The request should include gearbox or controller context, vehicle information, selected service and clear technical notes for review.",
   },
   {
-    question: "Does this public page upload or modify files?",
+    question: "What is the difference between Stage 1, Stage 2 and Stage 3?",
     answer:
-      "No. This page is a public guide and resource hub. File submission is available only after login through the secure customer request flow.",
+      "Stage 1 is generally reviewed for standard or near-standard hardware. Stage 2 is tied to documented supporting modifications. Stage 3 is an advanced custom project requiring a complete build specification, technical review and a credible logging or revision path.",
   },
   {
-    question: "What should a workshop prepare before creating a request?",
+    question: "Are ECU tuning files vehicle-specific?",
     answer:
-      "Prepare the vehicle brand, model, engine, ECU or TCU information when available, read method, desired service and a short technical note. The public preparation tools can help organize this information.",
+      "Yes. The request is reviewed against the submitted vehicle, engine, ECU software, original-file context, fuel, gearbox and hardware setup. A stage name alone is not enough.",
+  },
+  {
+    question: "Can I submit a file read by AutoTuner, KESS, Flex or another tool?",
+    answer:
+      "State the tool and the OBD, bench, boot or virtual-read method when submitting. Tool name alone does not prove file coverage or originality, so the controller identity and source context are still reviewed.",
+  },
+  {
+    question: "What information is needed for a tuning file?",
+    answer:
+      "Provide vehicle and engine data, transmission, ECU HW/SW where available, original file, read method, fuel, installed hardware, requested services and relevant fault or log context.",
+  },
+  {
+    question: "How do I receive and download the tuned ECU file?",
+    answer:
+      "Delivered versions appear inside the authenticated order page. The customer can track status, read customer-visible messages and download the completed file from the private portal.",
+  },
+  {
+    question: "Can a file be revised after testing or data logging?",
+    answer:
+      "Where a revision is appropriate, the request and supporting observations or logs remain attached to the same order so the delivered-version history stays traceable.",
+  },
+  {
+    question: "What happens if the uploaded file is not original?",
+    answer:
+      "Do not hide uncertain file history. Mention previous work and use the ECU file-check route when originality, identity or read coverage needs verification before another service is considered.",
+  },
+  {
+    question: "Do you support petrol and diesel engines?",
+    answer:
+      "Supported petrol and diesel applications can be reviewed, but controller families, operating strategies and evidence requirements differ. Exact support is confirmed from the submitted identity and file context.",
+  },
+  {
+    question: "Do you offer TCU tuning files?",
+    answer:
+      "Selected TCU and gearbox-controller requests are supported. Submit a separate original TCU file, exact controller identity and engine torque context where ECU and TCU behavior must be coordinated.",
+  },
+  {
+    question: "Can workshops and professional tuners use the service?",
+    answer:
+      "Yes. The workflow is designed to keep repeat file requests, technical notes, status, customer-visible communication, delivered versions and revisions connected to the correct account and order.",
+  },
+  {
+    question: "Is this an ECU file-management software product?",
+    answer:
+      "MG AutoTech provides a secure customer portal for file submission, order status, request history, messages, revisions and downloads. It is a service workflow, not a standalone ECU editing application.",
+  },
+  {
+    question: "Does this public page upload, inspect or modify files?",
+    answer:
+      "No. The public page explains the service. File submission and private technical handling begin only inside the authenticated customer request flow.",
   },
 ];
 
@@ -245,6 +347,8 @@ const serviceJsonLd = {
     "ECU file service",
     "TCU file service",
     "Stage 1 file service",
+    "Stage 2 file service",
+    "Stage 3 custom calibration",
     "DPF, EGR, AdBlue and DTC file requests",
   ],
   description: pageDescription,
@@ -262,13 +366,13 @@ const serviceJsonLd = {
   hasOfferCatalog: {
     "@type": "OfferCatalog",
     name: "MG AutoTech file service request categories",
-    itemListElement: fileServiceCategories.map((category, index) => ({
+    itemListElement: availableSolutions.map((category, index) => ({
       "@type": "Offer",
       position: index + 1,
       itemOffered: {
         "@type": "Service",
         name: category.title,
-        serviceType: category.tag,
+        serviceType: category.title,
         description: category.text,
         url: absoluteUrl(category.href),
         provider: { "@id": absoluteUrl("/#organization") },
@@ -371,37 +475,43 @@ export default function FileServicePage() {
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_78%_10%,rgba(177,18,27,0.32),transparent_30%),linear-gradient(90deg,rgba(255,255,255,0.04)_1px,transparent_1px),linear-gradient(0deg,rgba(255,255,255,0.035)_1px,transparent_1px)] bg-[size:auto,56px_56px,56px_56px]" />
         <div className="relative mx-auto grid max-w-7xl gap-10 px-4 py-20 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:py-24">
           <div>
+            <nav aria-label="Breadcrumb" className="mb-6 flex items-center gap-2 text-xs font-bold text-zinc-400">
+              <Link href="/" className="transition hover:text-white">Home</Link>
+              <span aria-hidden="true">/</span>
+              <span aria-current="page" className="text-zinc-200">ECU File Service</span>
+            </nav>
             <div className="inline-flex rounded-full border border-red-700/60 bg-red-950/35 px-4 py-2 text-sm font-black uppercase tracking-[0.18em] text-red-100">
-              ECU / TCU File Service Hub
+              MG AutoTech ECU File Service
             </div>
             <h1 className="mt-6 max-w-4xl text-5xl font-black leading-tight md:text-7xl">
-              Professional ECU & TCU file service workflow.
+              Professional ECU file service for custom tuning files.
             </h1>
             <p className="mt-6 max-w-2xl text-base leading-8 text-zinc-300">
-              A single customer-safe hub for file service requests: prepare the
-              vehicle context, understand the service path, use public workshop
-              tools and submit through the secure MG AutoTech portal.
+              Submit the original ECU or TCU file with exact vehicle, controller,
+              fuel and hardware context. MG AutoTech reviews Stage 1, Stage 2,
+              Stage 3 and supported software requests through one secure,
+              vehicle-specific workflow.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
                 href="/new-request"
                 className="inline-flex items-center justify-center rounded-xl bg-[#b1121b] px-6 py-4 text-sm font-black text-white shadow-lg shadow-red-950/30 transition hover:-translate-y-0.5 hover:bg-[#c91824]"
               >
-                Start secure request
+                Submit your original file
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
               <Link
-                href="/tools/request-brief-builder"
+                href="#stage-comparison"
                 className="inline-flex items-center justify-center rounded-xl border border-white/10 bg-white/[0.06] px-6 py-4 text-sm font-black text-white transition hover:-translate-y-0.5 hover:border-red-800/60 hover:bg-red-950/20"
               >
-                Prepare request brief
+                Compare Stage 1, 2 and 3
               </Link>
             </div>
           </div>
 
           <div className="rounded-[2rem] border border-white/10 bg-black/35 p-6 shadow-2xl shadow-black/40">
             <div className="mb-6 text-sm font-black uppercase tracking-[0.2em] text-red-300">
-              Request foundation
+              Vehicle-specific by design
             </div>
             <div className="space-y-3">
               {safetyBoundaries.map((item) => (
@@ -418,24 +528,52 @@ export default function FileServicePage() {
         </div>
       </section>
 
+      <StageComparison />
+
       <section className="bg-[#080b10] py-20">
         <div className="mx-auto max-w-7xl px-4">
           <div className="mb-10 max-w-3xl">
             <div className="text-sm font-black uppercase tracking-[0.25em] text-red-500">
-              Service categories
+              File-service routes
             </div>
             <h2 className="mt-3 text-4xl font-black md:text-5xl">
-              File service requests stay structured from the first click.
+              Choose the route that matches the real controller and job.
             </h2>
             <p className="mt-4 text-sm leading-7 text-zinc-400">
-              Customers can move from broad search intent to the correct MG
-              AutoTech flow without mixing service pages, platform guides and
-              secure request actions.
+              ECU calibration, transmission work, source-file verification and
+              diagnostic requests keep separate technical context while sharing
+              the same private order workflow.
             </p>
           </div>
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             {fileServiceCategories.map((item) => (
               <ResourceCard key={item.title} item={item} />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="border-y border-white/10 bg-[#050505] py-16">
+        <div className="mx-auto max-w-7xl px-4">
+          <div className="grid gap-8 lg:grid-cols-[0.72fr_1.28fr] lg:items-end">
+            <div>
+              <p className="text-xs font-black uppercase tracking-normal text-red-400">Available request types</p>
+              <h2 className="mt-3 text-3xl font-black sm:text-4xl">ECU and TCU file solutions, clearly separated.</h2>
+            </div>
+            <p className="max-w-3xl text-sm leading-7 text-zinc-400">
+              These are review routes, not universal compatibility claims. Exact support is confirmed from the vehicle,
+              ECU or TCU software, source file, read method and requested scope.
+            </p>
+          </div>
+          <div className="mt-8 grid gap-px overflow-hidden rounded-lg border border-white/10 bg-white/10 sm:grid-cols-2 lg:grid-cols-5">
+            {availableSolutions.map((solution) => (
+              <Link key={solution.title} href={solution.href} className="group min-w-0 bg-[#0b0d10] p-5 transition hover:bg-[#12151a] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-red-500">
+                <h3 className="text-base font-black text-white">{solution.title}</h3>
+                <p className="mt-2 text-sm leading-6 text-zinc-500">{solution.text}</p>
+                <span className="mt-4 inline-flex items-center text-xs font-black text-red-300">
+                  Review route<ArrowRight className="ml-2 h-3.5 w-3.5 transition group-hover:translate-x-1" aria-hidden="true" />
+                </span>
+              </Link>
             ))}
           </div>
         </div>
@@ -483,6 +621,57 @@ export default function FileServicePage() {
                 </article>
               );
             })}
+          </div>
+        </div>
+      </section>
+
+      <section className="border-b border-white/10 bg-[#090a0c] py-16">
+        <div className="mx-auto grid max-w-7xl gap-6 px-4 lg:grid-cols-2">
+          <article className="border-t-2 border-red-700 bg-[#0b0d10] p-6 sm:p-8">
+            <p className="text-xs font-black uppercase tracking-normal text-red-400">Request requirements</p>
+            <h2 className="mt-3 text-3xl font-black">Information that makes an ECU file request usable.</h2>
+            <ul className="mt-6 divide-y divide-white/10 border-y border-white/10">
+              {requestInformation.map((item) => (
+                <li key={item} className="flex gap-3 py-4 text-sm leading-7 text-zinc-300">
+                  <BadgeCheck className="mt-1 h-5 w-5 shrink-0 text-emerald-400" aria-hidden="true" />
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </article>
+          <article className="border-t-2 border-zinc-700 bg-[#0b0d10] p-6 sm:p-8">
+            <p className="text-xs font-black uppercase tracking-normal text-red-400">Quality and traceability</p>
+            <h2 className="mt-3 text-3xl font-black">Checks stay attached to the vehicle-specific workflow.</h2>
+            <ul className="mt-6 divide-y divide-white/10 border-y border-white/10">
+              {qualityChecks.map((item) => (
+                <li key={item} className="flex gap-3 py-4 text-sm leading-7 text-zinc-300">
+                  <ShieldCheck className="mt-1 h-5 w-5 shrink-0 text-red-400" aria-hidden="true" />
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <section className="border-b border-white/10 bg-[#050505] py-14">
+        <div className="mx-auto max-w-7xl px-4">
+          <div className="flex flex-col justify-between gap-5 md:flex-row md:items-end">
+            <div className="max-w-3xl">
+              <p className="text-xs font-black uppercase tracking-normal text-red-400">Supported-brand guidance</p>
+              <h2 className="mt-3 text-3xl font-black">Start with the vehicle, then confirm the exact ECU.</h2>
+              <p className="mt-3 text-sm leading-7 text-zinc-400">Brand guides provide request context only. Controller and software identification remain necessary for support confirmation.</p>
+            </div>
+            <Link href="/brands" className="inline-flex items-center text-sm font-black text-red-300 hover:text-red-100">
+              Browse all brand guides<ArrowRight className="ml-2 h-4 w-4" aria-hidden="true" />
+            </Link>
+          </div>
+          <div className="mt-7 flex flex-wrap gap-2">
+            {supportedBrandLinks.map((brand) => (
+              <Link key={brand.href} href={brand.href} className="rounded-lg border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-bold text-zinc-300 transition hover:border-red-800/60 hover:text-white">
+                {brand.name}
+              </Link>
+            ))}
           </div>
         </div>
       </section>

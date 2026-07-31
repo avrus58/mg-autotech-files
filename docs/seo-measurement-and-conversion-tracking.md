@@ -73,6 +73,20 @@ If the variable is absent or malformed, the analytics component, consent panel
 and event dispatch remain disabled. The website and request flow continue to
 work normally.
 
+The admin opportunity dashboard also supports read-only server reporting. Its
+server-only variables are:
+
+```text
+GOOGLE_SERVICE_ACCOUNT_EMAIL
+GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY
+GOOGLE_SEARCH_CONSOLE_SITE_URL=sc-domain:mgautotech.de
+GOOGLE_ANALYTICS_PROPERTY_ID
+```
+
+These values must never use a `NEXT_PUBLIC_` prefix. Missing server reporting
+configuration leaves the public website and event collection unchanged; the
+admin page shows a safe configuration-required state.
+
 ## Google Setup
 
 1. Create or select the GA4 web data stream for
@@ -116,15 +130,22 @@ the reports are aggregated and Google applies privacy filtering.
 
 ## Admin View
 
-`/admin/seo-performance` is a read-only measurement readiness view. It shows:
+`/admin/seo-performance` is a read-only opportunity and conversion center. It
+shows:
 
-- which system owns each metric;
-- whether a valid GA4 measurement ID is present;
-- the exact event allowlist;
+- Search Console and GA4 source readiness;
+- aggregate acquisition and request funnel metrics;
+- query opportunities in average positions 4-20;
+- low-CTR, content and page-level request-intent gaps based on aggregate CTA clicks;
+- country and landing-page performance;
+- canonical service, brand, platform, guide and tool coverage;
+- a deterministic weekly review queue;
 - direct links to Search Console and GA4;
-- the customer/private data exclusion boundary.
+- the customer/private data and attribution boundaries.
 
-It does not expose a measurement ID or any Google credential.
+It does not expose a measurement ID, service-account identity, private key,
+access token or any customer/request metadata. See
+`docs/seo-opportunity-conversion-center.md` for setup and operation.
 
 ## Smoke Checklist
 

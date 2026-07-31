@@ -31,8 +31,12 @@ export default async function BrandGuidePage({ params }: { params: Promise<{ slu
     ],
   };
   const related = [
+    { label: "ECU File Service", href: "/file-service" },
+    { label: "Stage 1 ECU tuning files", href: "/services/stage-1" },
+    { label: "Stage 2 ECU tuning files", href: "/services/stage-2" },
+    { label: "Stage 3 custom calibration", href: "/services/stage-3" },
     ...platformGuides.slice(0, 3).map((item) => ({ label: item.name, href: `/ecu-platforms/${item.slug}` })),
     ...brandGuides.filter((item) => item.slug !== guide.slug).slice(0, 3).map((item) => ({ label: item.name, href: `/brands/${item.slug}` })),
   ];
-  return <SeoGuidePage eyebrow="Vehicle-specific file service" title={guide.name} description={guide.description} intro={guide.intro} sections={[{ title: "Common ECU / TCU families", items: guide.ecuFamilies }, { title: "Typical vehicle ranges", items: guide.vehicleExamples }, { title: "What to submit", items: guide.requestChecks }]} faq={guide.faq} related={related} jsonLd={jsonLd} />;
+  return <SeoGuidePage eyebrow="Vehicle-specific file service" title={guide.name} description={guide.description} intro={guide.intro} sections={[{ title: "Common ECU / TCU families", items: guide.ecuFamilies }, { title: "Typical vehicle ranges", items: guide.vehicleExamples }, { title: "What to submit", items: guide.requestChecks }]} faq={guide.faq} related={related} jsonLd={jsonLd} breadcrumbs={[{ label: "Home", href: "/" }, { label: "Vehicle brands", href: "/brands" }, { label: guide.name }]} />;
 }

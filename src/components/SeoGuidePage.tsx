@@ -14,6 +14,7 @@ export function SeoGuidePage({
   faq,
   related,
   jsonLd,
+  breadcrumbs,
 }: {
   eyebrow: string;
   title: string;
@@ -23,6 +24,7 @@ export function SeoGuidePage({
   faq: { q: string; a: string }[];
   related: { label: string; href: string }[];
   jsonLd: object;
+  breadcrumbs?: { label: string; href?: string }[];
 }) {
   return (
     <main data-no-translate className="min-h-screen bg-[#050505] text-white">
@@ -31,6 +33,20 @@ export function SeoGuidePage({
 
       <section className="border-b border-white/10 bg-[radial-gradient(circle_at_80%_10%,rgba(177,18,27,0.24),transparent_30%),#050505]">
         <div className="mx-auto max-w-7xl px-4 py-16 lg:py-24">
+          {breadcrumbs && (
+            <nav aria-label="Breadcrumb" className="mb-6 flex flex-wrap items-center gap-2 text-xs font-bold text-zinc-500">
+              {breadcrumbs.map((item, index) => (
+                <span key={`${item.label}-${index}`} className="inline-flex items-center gap-2">
+                  {index > 0 && <span aria-hidden="true">/</span>}
+                  {item.href ? (
+                    <Link href={item.href} className="transition hover:text-white">{item.label}</Link>
+                  ) : (
+                    <span aria-current="page" className="text-zinc-300">{item.label}</span>
+                  )}
+                </span>
+              ))}
+            </nav>
+          )}
           <p className="inline-flex items-center gap-2 rounded-full border border-red-800/50 bg-red-950/20 px-4 py-2 text-sm font-black text-red-100">
             <BadgeCheck className="h-4 w-4 text-red-500" aria-hidden="true" />{eyebrow}
           </p>

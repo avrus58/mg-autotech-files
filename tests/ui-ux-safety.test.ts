@@ -2432,8 +2432,8 @@ test("public file service hub is indexable, linked and customer-safe", () => {
   assert.match(page, /title: `\$\{pageTitle\} \| MG AutoTech`/);
   assert.match(page, /canonical: absoluteUrl\("\/file-service"\)/);
   assert.match(page, /languageAlternates\("\/file-service"\)/);
-  assert.match(page, /ECU & TCU File Service Hub/);
-  assert.match(page, /Professional ECU & TCU file service workflow/);
+  assert.match(page, /ECU File Service for Custom Tuning Files/);
+  assert.match(page, /Professional ECU file service for custom tuning files/);
   assert.match(page, /const fileServiceCategories: HubCard\[\]/);
   assert.match(page, /const workflowSteps = \[/);
   assert.match(page, /const linkedResources: HubCard\[\]/);
@@ -2456,7 +2456,10 @@ test("public file service hub is indexable, linked and customer-safe", () => {
     "/ecu-platforms",
     "/brands",
     "/services/stage-1",
+    "/services/stage-2",
+    "/services/stage-3",
     "/services/dpf-off",
+    "/brands/audi",
   ]) {
     assert.match(page, new RegExp(`href: "${expectedLink.replace(/\//g, "\\/")}"|href="${expectedLink.replace(/\//g, "\\/")}"`));
   }

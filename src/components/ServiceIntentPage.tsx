@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { Footer } from "@/components/Footer";
 import { PublicSeoHeader } from "@/components/PublicSeoHeader";
+import { StageComparison } from "@/components/StageComparison";
 import {
   absoluteUrl,
   organizationJsonLd,
@@ -71,6 +72,18 @@ export function ServiceIntentPage({ guide }: { guide: ServiceIntentGuide }) {
           name: item,
         })),
       },
+      {
+        "@type": "FAQPage",
+        "@id": `${pageUrl}#faq`,
+        mainEntity: guide.faq.map((item) => ({
+          "@type": "Question",
+          name: item.q,
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: item.a,
+          },
+        })),
+      },
     ],
   };
 
@@ -82,6 +95,13 @@ export function ServiceIntentPage({ guide }: { guide: ServiceIntentGuide }) {
       <section className="border-b border-white/10 bg-[radial-gradient(circle_at_78%_18%,rgba(177,18,27,0.22),transparent_28%),#050505]">
         <div className="mx-auto grid max-w-7xl gap-10 px-4 py-14 lg:grid-cols-[minmax(0,1.15fr)_minmax(300px,.65fr)] lg:items-end lg:py-20">
           <div className="min-w-0">
+            <nav aria-label="Breadcrumb" className="mb-6 flex flex-wrap items-center gap-2 text-xs font-bold text-zinc-500">
+              <Link href="/" className="transition hover:text-white">Home</Link>
+              <span aria-hidden="true">/</span>
+              <Link href="/file-service" className="transition hover:text-white">ECU File Service</Link>
+              <span aria-hidden="true">/</span>
+              <span className="text-zinc-300" aria-current="page">{guide.name}</span>
+            </nav>
             <p className="inline-flex items-center gap-2 rounded-full border border-red-800/50 bg-red-950/25 px-4 py-2 text-xs font-black uppercase tracking-normal text-red-100">
               <BadgeCheck className="h-4 w-4 text-red-400" aria-hidden="true" />
               {guide.eyebrow}
@@ -110,6 +130,8 @@ export function ServiceIntentPage({ guide }: { guide: ServiceIntentGuide }) {
           </aside>
         </div>
       </section>
+
+      {(guide.slug === "stage-2" || guide.slug === "stage-3") && <StageComparison compact />}
 
       <section className="border-b border-white/10 bg-[#090a0c]">
         <div className="mx-auto grid max-w-7xl gap-10 px-4 py-14 lg:grid-cols-2 lg:py-18">

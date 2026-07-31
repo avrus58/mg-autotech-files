@@ -33,13 +33,13 @@ function guideWordCount(index: number) {
     .length;
 }
 
-test("global service-intent library exposes three distinct substantial guides", () => {
+test("global service-intent library exposes four distinct substantial guides", () => {
   assert.deepEqual(
     serviceIntentGuides.map((guide) => guide.slug),
-    ["stage-2", "tcu-tuning", "ecu-file-check"]
+    ["stage-2", "stage-3", "tcu-tuning", "ecu-file-check"]
   );
-  assert.equal(new Set(serviceIntentGuides.map((guide) => guide.metaTitle)).size, 3);
-  assert.equal(new Set(serviceIntentGuides.map((guide) => guide.description)).size, 3);
+  assert.equal(new Set(serviceIntentGuides.map((guide) => guide.metaTitle)).size, 4);
+  assert.equal(new Set(serviceIntentGuides.map((guide) => guide.description)).size, 4);
 
   for (const [index, guide] of serviceIntentGuides.entries()) {
     assert.match(guide.slug, /^[a-z0-9]+(?:-[a-z0-9]+)*$/);
@@ -68,7 +68,7 @@ test("service-intent routes publish canonical metadata and matching visible sche
   assert.match(page, /"@type": "BreadcrumbList"/);
   assert.match(page, /"@type": "ItemList"/);
   assert.match(page, /guide\.faq\.map/);
-  assert.doesNotMatch(page, /"@type": "FAQPage"/);
+  assert.match(page, /"@type": "FAQPage"/);
   assert.doesNotMatch(page, /"@type": "HowTo"/);
 });
 
@@ -80,7 +80,7 @@ test("service catalog and public discovery surfaces link to every new guide", ()
   const homepage = projectFile("src", "app", "page.tsx");
 
   assert.match(catalog, /serviceIntentGuides\.map/);
-  for (const slug of ["stage-2", "tcu-tuning", "ecu-file-check"]) {
+  for (const slug of ["stage-2", "stage-3", "tcu-tuning", "ecu-file-check"]) {
     assert.match(`${fileService}\n${guides}\n${footer}`, new RegExp(`/services/${slug}`));
   }
   assert.match(homepage, /href: "\/services\/tcu-tuning"/);

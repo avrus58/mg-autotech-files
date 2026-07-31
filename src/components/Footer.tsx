@@ -16,6 +16,8 @@ const services = [
   { label: "Services Overview", href: "/services" },
   { label: "Stage 1 Tuning", href: "/services/stage-1" },
   { label: "Stage 2 File Service", href: "/services/stage-2" },
+  { label: "Stage 3 Custom Calibration", href: "/services/stage-3" },
+  { label: "Audi ECU Software", href: "/brands/audi" },
   { label: "TCU Tuning", href: "/services/tcu-tuning" },
   { label: "ECU File Check", href: "/services/ecu-file-check" },
   { label: "DPF OFF", href: "/services/dpf-off" },

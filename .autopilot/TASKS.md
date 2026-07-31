@@ -50,6 +50,30 @@ Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
 
+### MANUAL-005 [P1] ECU file-service search-intent architecture
+
+Durum: Done
+
+Fingerprint: `public-seo|ecu-file-service-stage-audi-intents|canonical-coverage-and-conversion|review-led-content-cluster`
+
+Kapsam: Search Console'da gorunen `ecu file service`, `ecu files`, `audi ecu software`, Stage 1/2/3, DPF, AdBlue ve DTC arama niyetlerini mevcut canonical public rotalarda derinlestir; yeni Stage 3 rotasi, karsilastirma yuzeyi, gorunen breadcrumb/FAQ, tutarli metadata/schema ve taranabilir ic baglantilar ekle. Doorway sayfa, desteklenmeyen guc rakami, sahte ceviri, otomatik yazilim vaadi veya private veri aciklamasi olusturma.
+
+Sonuc: `/file-service` tek ana ECU file-service hub'i olarak korundu ve request odakli teknik bilgi, Stage karsilastirmasi, mevcut servis rotalari, marka baglantilari ve 12 gorunen FAQ ile guclendirildi. `/services/stage-3` benzersiz review-led advanced calibration rotasi olarak eklendi; Stage 1 ve Stage 2 mevcut canonical rotalarinda kaldi. `/brands/audi` exact HW/SW, original read, TDI/TFSI, SIMOS/Bosch ve S tronic baglamiyla benzersizlestirildi. DPF/EGR/AdBlue rotalarina jurisdiction duyurusu, DTC rotasina root-cause diagnostic siniri eklendi. Public selector, private routes, payment, AI, vehicle ve work-order akislari degismedi.
+
+Dogrulama: targeted SEO tests PASS (15/15); i18n/SEO checker PASS (12 locale, 25 source file); lint PASS; web + desktop typecheck PASS; full tests PASS (501/501); production build PASS (267 page/route entries); payment schema-only PASS ve env dosyasi okunmadi; production dependency audit PASS (0 vulnerabilities); responsive browser QA 390x844, 768x1024 ve 1440x900 boyutlarinda horizontal overflow, clipped controls ve console errors olmadan PASS; diff check PASS.
+
+### MANUAL-004 [P1] SEO firsat ve donusum merkezi
+
+Durum: Done
+
+Fingerprint: `admin-seo|google-reporting-opportunity-center|aggregate-data-siloed|privacy-safe-priority-and-coverage-dashboard`
+
+Kapsam: Google Search Console ve GA4 Data API aggregate raporlarini read-only admin merkezinde birlestir; positions 4-20 firsatlarini, CTR gaplerini, ulke talebini, public landing-page request intent sinyallerini, canonical route coverage'i ve kanita dayali haftalik aksiyon kuyrugunu hesapla. Customer/request/file/payment metadata kullanma, Search Console sorgularini tamamlanan taleplerle user-level eslestirme ve otomatik sayfa yayinlama yapma.
+
+Sonuc: `/admin/seo-performance` artik server-only Google service-account OAuth, strict source configuration, 28/90 gun araligi, fail-closed partial source states, 15 dakikalik aggregate report cache, deterministic opportunity scoring, mevcut canonical public route inventory ve responsive admin workbench sunar. Page-level firsatlar yalniz consented sessions + request CTA clicks kullanir; tamamlanan talepler ayri global funnel metrigi olarak kalir. Rapor API'si staff permission ile korunur, `private, no-store` dondurur ve credential/PII/customer metadata expose etmez.
+
+Dogrulama: SEO targeted tests PASS (21/21); lint PASS; web + desktop typecheck PASS; full tests PASS (494/494); production build PASS (266 page/route entries); i18n/SEO PASS (12 locale, 25 source file); payment schema-only PASS ve env dosyasi okunmadi; production dependency audit PASS (0 vulnerabilities); responsive browser QA 390x844, 768x1024, 1366x768 ve 1536x900 boyutlarinda horizontal page overflow/clipped UI/console error olmadan PASS; diff check PASS.
+
 ### MANUAL-003 [P1] SEO sorgu, ulke, tiklama ve talep donusumu olcumu
 
 Durum: Done

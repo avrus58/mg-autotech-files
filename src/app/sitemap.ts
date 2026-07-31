@@ -12,7 +12,7 @@ import { workshopGuideArticles } from "@/lib/workshopGuides";
 import { serviceIntentGuides } from "@/lib/serviceIntentGuides";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const contentUpdated = new Date("2026-07-30T00:00:00.000Z");
+  const contentUpdated = new Date("2026-07-31T00:00:00.000Z");
   const legalUpdated = new Date("2026-06-30T00:00:00.000Z");
   const toolPaths = [
     "/tools",

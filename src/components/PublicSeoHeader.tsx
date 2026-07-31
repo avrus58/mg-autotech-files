@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Cpu } from "lucide-react";
+import { Cpu, LayoutGrid } from "lucide-react";
 
 export function PublicSeoHeader() {
   return (
@@ -29,6 +29,14 @@ export function PublicSeoHeader() {
           <Link href="/contact" className="hover:text-white">Contact</Link>
         </nav>
         <div className="flex items-center gap-2">
+          <Link
+            href="/services"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-white/10 text-zinc-200 hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 lg:hidden"
+            aria-label="Browse ECU file services"
+            title="Services"
+          >
+            <LayoutGrid className="h-4 w-4" aria-hidden="true" />
+          </Link>
           <Link href="/login" className="hidden rounded-lg border border-white/10 px-4 py-2.5 text-sm font-bold hover:bg-white/10 sm:inline-flex">Login</Link>
           <Link href="/new-request" className="rounded-lg bg-[#b1121b] px-3 py-2.5 text-sm font-black hover:bg-[#c91824] sm:px-4"><span className="sm:hidden">Request</span><span className="hidden sm:inline">Start request</span></Link>
         </div>

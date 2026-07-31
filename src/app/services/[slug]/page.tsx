@@ -6,8 +6,8 @@ import {
   BadgeCheck,
   Car,
   CheckCircle2,
+  CircleAlert,
   Clock3,
-  Cpu,
   FileCode2,
   Gauge,
   ShieldCheck,
@@ -16,8 +16,16 @@ import {
 } from "lucide-react";
 import { Footer } from "@/components/Footer";
 import { OnlineStatus } from "@/components/OnlineStatus";
+import { PublicSeoHeader } from "@/components/PublicSeoHeader";
 import { ServiceIntentPage } from "@/components/ServiceIntentPage";
-import { absoluteUrl, languageAlternates, siteName } from "@/lib/seo";
+import { StageComparison } from "@/components/StageComparison";
+import {
+  absoluteUrl,
+  languageAlternates,
+  organizationJsonLd,
+  siteName,
+  websiteJsonLd,
+} from "@/lib/seo";
 import {
   getServiceIntentGuide,
   serviceIntentGuideSlugs,
@@ -37,28 +45,30 @@ type ServicePage = {
   supported: string[];
   requiredInfo: string[];
   faq: { q: string; a: string }[];
+  notice?: { title: string; text: string; kind: "legal" | "diagnostic" };
 };
 
 const services: ServicePage[] = [
   {
     slug: "stage-1",
-    title: "Stage 1 ECU File Service",
-    eyebrow: "Performance Calibration",
+    title: "Stage 1 ECU Tuning File Service",
+    eyebrow: "Vehicle-specific performance calibration",
     description:
-      "Professional Stage 1 ECU file preparation for workshops and tuning partners using a secure credit-based workflow.",
+      "Custom Stage 1 ECU tuning files for standard or near-standard vehicles, prepared from the original file, exact vehicle data and reviewed ECU context.",
     credits: "10 credits",
     turnaround: "Usually around 30 minutes for standard requests",
     hero:
-      "A clean Stage 1 file service workflow for stock vehicles where drivability, torque delivery and safe calibration structure matter.",
+      "A custom Stage 1 ECU file starts with the exact vehicle, controller software and original read rather than a generic one-file-fits-all calibration.",
     intro: [
-      "Stage 1 is designed for vehicles with original hardware or light supporting modifications. The goal is a stronger, smoother calibration while keeping the request process clear for the workshop.",
-      "MG AutoTech handles the file request through a controlled portal: the customer uploads the original ECU file, selects the vehicle and read method, adds technical notes, and receives the completed file through the dashboard.",
+      "Stage 1 is generally intended for a standard or near-standard engine setup. The review considers the vehicle condition, engine and ECU identity, source-file history, fuel, gearbox context and any existing hardware changes before suitability is confirmed.",
+      "Petrol and diesel engines use different control strategies, operating limits and diagnostic evidence. For that reason, the requested response and torque delivery are considered within the submitted platform instead of being described with universal power figures.",
+      "MG AutoTech keeps the complete workflow in the customer portal: submit the untouched original ECU file, record the read method and technical notes, follow customer-visible status, download delivered versions and request a revision when testing or logging provides useful evidence.",
     ],
     benefits: [
-      "Improved torque and power delivery for suitable stock hardware",
-      "Workshop-friendly request flow with file versions and revision support",
-      "Credit-based checkout with Stripe card payment and bank transfer options",
-      "Secure customer portal for uploads, status tracking and completed file delivery",
+      "Vehicle- and ECU-specific review for standard or near-standard hardware",
+      "Torque delivery, response and drivetrain context considered together",
+      "Petrol, diesel, fuel-quality and transmission constraints kept visible",
+      "Private request history, delivered versions and evidence-led revision support",
     ],
     process: [
       {
@@ -71,7 +81,7 @@ const services: ServicePage[] = [
       },
       {
         title: "File preparation",
-        text: "The request is checked and prepared according to the selected Stage 1 service and submitted technical notes.",
+        text: "The source-file context, ECU identity, vehicle condition, fuel and drivetrain constraints are reviewed before suitability is confirmed.",
       },
       {
         title: "Delivery and revision",
@@ -81,10 +91,11 @@ const services: ServicePage[] = [
     supported: ["BMW", "Mercedes-Benz", "Audi", "Volkswagen", "Porsche", "Opel", "Renault", "Peugeot"],
     requiredInfo: [
       "Original ECU file",
-      "Vehicle model and engine",
-      "ECU type or HW/SW where available",
-      "Read method such as OBD, Bench or Boot",
-      "Any hardware modifications or special notes",
+      "Vehicle make, model, engine, model year and transmission",
+      "ECU supplier, type and HW/SW identifiers where available",
+      "Read method such as OBD, bench, boot or virtual read",
+      "Fuel type or octane and every existing hardware modification",
+      "Current fault codes, workshop observations and logs when available",
     ],
     faq: [
       {
@@ -92,8 +103,20 @@ const services: ServicePage[] = [
         a: "No. Suitability depends on ECU type, file quality, vehicle condition and hardware setup. A file check may be needed for unclear requests.",
       },
       {
-        q: "How fast is delivery?",
-        a: "Standard Stage 1 requests are usually handled quickly, often around 30 minutes, but complex files or busy workload can take longer.",
+        q: "What is the difference between Stage 1 and Stage 2?",
+        a: "Stage 1 is generally reviewed for standard or near-standard hardware. Stage 2 depends on documented supporting modifications and may require additional logs or drivetrain context.",
+      },
+      {
+        q: "Can both petrol and diesel vehicles use this request route?",
+        a: "Supported petrol and diesel applications can be reviewed, but they do not share one generic calibration strategy. Exact ECU software, fuel, engine and vehicle condition remain decisive.",
+      },
+      {
+        q: "Why do transmission torque limits matter?",
+        a: "Engine torque delivery and gearbox protection strategies can interact. Include the gearbox type and any TCU work so the request is reviewed with the correct drivetrain context.",
+      },
+      {
+        q: "Can a file read by AutoTuner, KESS, Flex or another tool be submitted?",
+        a: "Use the secure request flow and state the tool and OBD, bench, boot or virtual-read method. Tool name alone does not prove read coverage or originality, so the file context is still reviewed.",
       },
     ],
   },
@@ -153,6 +176,11 @@ const services: ServicePage[] = [
         a: "Customers are responsible for legal use in their market. Certain solutions may be limited to motorsport, export, diagnostic or off-road contexts.",
       },
     ],
+    notice: {
+      title: "Legal use depends on the vehicle and jurisdiction",
+      text: "Emissions-related software changes may be restricted or prohibited on public roads. Requirements vary by jurisdiction. The customer is responsible for lawful use and for determining whether a request is limited to motorsport, export, off-road, development or diagnostic applications.",
+      kind: "legal",
+    },
   },
   {
     slug: "egr-off",
@@ -210,6 +238,11 @@ const services: ServicePage[] = [
         a: "The order can be marked as customer info needed so the workshop knows exactly what to provide.",
       },
     ],
+    notice: {
+      title: "Confirm lawful use before submission",
+      text: "EGR or AGR-related software changes may be restricted or prohibited for public-road vehicles. Legal requirements vary by jurisdiction, and the customer is responsible for confirming an allowed motorsport, export, off-road, development or diagnostic context.",
+      kind: "legal",
+    },
   },
   {
     slug: "adblue-off",
@@ -267,6 +300,11 @@ const services: ServicePage[] = [
         a: "SCR / AdBlue-related requests can require more review depending on vehicle platform, ECU and diagnostic context.",
       },
     ],
+    notice: {
+      title: "SCR and AdBlue requirements vary by jurisdiction",
+      text: "SCR or AdBlue deactivation may be restricted or prohibited for public-road use. The customer must confirm the lawful application and remains responsible for any motorsport, export, off-road, development or diagnostic use declared in the request.",
+      kind: "legal",
+    },
   },
   {
     slug: "dtc-off",
@@ -324,6 +362,11 @@ const services: ServicePage[] = [
         a: "Yes. Exact DTCs help avoid unclear requests and make the file review more efficient.",
       },
     ],
+    notice: {
+      title: "Diagnose the underlying fault first",
+      text: "A DTC software change does not repair a mechanical, electrical or emissions-system fault. Exact codes and diagnostic context must be supplied, and unresolved root causes should be investigated before a DTC request is considered.",
+      kind: "diagnostic",
+    },
   },
 ];
 
@@ -382,21 +425,25 @@ export async function generateMetadata({
 
   if (!service) return {};
 
+  const canonical = absoluteUrl(`/services/${service.slug}`);
+  const socialTitle = `${service.title} | MG AutoTech`;
+
   return {
     title: service.title,
     description: service.description,
     alternates: {
-      canonical: `/services/${service.slug}`,
+      canonical,
       languages: languageAlternates(`/services/${service.slug}`),
     },
     openGraph: {
-      title: service.title,
+      title: socialTitle,
       description: service.description,
-      url: `https://file.mgautotech.de/services/${service.slug}`,
+      url: canonical,
+      siteName,
       type: "website",
       images: [
         {
-          url: "/opengraph-image",
+          url: absoluteUrl("/opengraph-image"),
           width: 1200,
           height: 630,
           alt: service.title,
@@ -405,9 +452,9 @@ export async function generateMetadata({
     },
     twitter: {
       card: "summary_large_image",
-      title: service.title,
+      title: socialTitle,
       description: service.description,
-      images: ["/opengraph-image"],
+      images: [absoluteUrl("/opengraph-image")],
     },
   };
 }
@@ -426,37 +473,69 @@ export default async function ServicePage({
 
   if (!service) notFound();
 
+  const pageUrl = absoluteUrl(`/services/${service.slug}`);
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@graph": [
+      organizationJsonLd(),
+      websiteJsonLd("en"),
+      {
+        "@type": "WebPage",
+        "@id": `${pageUrl}#page`,
+        name: service.title,
+        description: service.description,
+        url: pageUrl,
+        inLanguage: "en",
+        isPartOf: { "@id": `${absoluteUrl("/")}#website` },
+        mainEntity: { "@id": `${pageUrl}#service` },
+        breadcrumb: { "@id": `${pageUrl}#breadcrumb` },
+      },
+      {
+        "@type": "Service",
+        "@id": `${pageUrl}#service`,
+        name: service.title,
+        description: service.description,
+        serviceType: service.title,
+        provider: { "@id": `${absoluteUrl("/")}#organization` },
+        url: pageUrl,
+      },
+      {
+        "@type": "BreadcrumbList",
+        "@id": `${pageUrl}#breadcrumb`,
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: "Home", item: absoluteUrl("/") },
+          { "@type": "ListItem", position: 2, name: "ECU File Service", item: absoluteUrl("/file-service") },
+          { "@type": "ListItem", position: 3, name: service.title, item: pageUrl },
+        ],
+      },
+      {
+        "@type": "FAQPage",
+        "@id": `${pageUrl}#faq`,
+        mainEntity: service.faq.map((item) => ({
+          "@type": "Question",
+          name: item.q,
+          acceptedAnswer: { "@type": "Answer", text: item.a },
+        })),
+      },
+    ],
+  };
+
   return (
     <main className="min-h-screen bg-[#050505] text-white">
       <div className="fixed inset-0 -z-10 bg-[radial-gradient(circle_at_20%_0%,rgba(160,18,28,0.26),transparent_32%),linear-gradient(135deg,#050505,#0d0d0f_48%,#160608)]" />
-
-      <header className="sticky top-0 z-50 border-b border-white/10 bg-black/80 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-5">
-          <Link href="/" className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-red-800/50 bg-[#111]">
-              <Cpu className="h-7 w-7 text-red-600" />
-            </div>
-            <div>
-              <div className="text-xl font-black tracking-wide">
-                MG <span className="text-red-600">AUTOTECH</span>
-              </div>
-              <div className="text-xs text-zinc-400">ECU / TCU File Service</div>
-            </div>
-          </Link>
-
-          <Link
-            href="/register"
-            className="rounded-xl bg-[#b1121b] px-5 py-3 text-sm font-black text-white transition hover:bg-[#c91824]"
-          >
-            Start Request
-            <ArrowRight className="ml-2 inline h-4 w-4" />
-          </Link>
-        </div>
-      </header>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <PublicSeoHeader />
 
       <section className="mx-auto max-w-7xl px-4 py-16">
         <div className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
           <div>
+            <nav aria-label="Breadcrumb" className="mb-6 flex flex-wrap items-center gap-2 text-xs font-bold text-zinc-500">
+              <Link href="/" className="transition hover:text-white">Home</Link>
+              <span aria-hidden="true">/</span>
+              <Link href="/file-service" className="transition hover:text-white">ECU File Service</Link>
+              <span aria-hidden="true">/</span>
+              <span className="text-zinc-300" aria-current="page">{service.title}</span>
+            </nav>
             <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-red-800/50 bg-red-950/25 px-4 py-2 text-sm font-black text-red-100">
               <BadgeCheck className="h-4 w-4 text-red-500" />
               {service.eyebrow}
@@ -495,6 +574,20 @@ export default async function ServicePage({
           </div>
         </div>
       </section>
+
+      {service.notice && (
+        <section className="mx-auto max-w-7xl px-4 pb-12" aria-label={service.notice.title}>
+          <div className={`flex items-start gap-4 rounded-lg border p-5 ${service.notice.kind === "legal" ? "border-amber-700/50 bg-amber-950/20" : "border-sky-800/50 bg-sky-950/20"}`}>
+            <CircleAlert className={`mt-0.5 h-6 w-6 shrink-0 ${service.notice.kind === "legal" ? "text-amber-300" : "text-sky-300"}`} aria-hidden="true" />
+            <div>
+              <h2 className="text-lg font-black">{service.notice.title}</h2>
+              <p className="mt-2 max-w-5xl text-sm leading-7 text-zinc-300">{service.notice.text}</p>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {service.slug === "stage-1" && <StageComparison compact />}
 
       <section className="mx-auto grid max-w-7xl gap-6 px-4 pb-20 lg:grid-cols-[0.9fr_1.1fr]">
         <div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6">

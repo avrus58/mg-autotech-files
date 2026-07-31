@@ -55,18 +55,21 @@ export const brandGuides: BrandGuide[] = [
   },
   {
     slug: "audi",
-    name: "Audi ECU & TCU File Service",
-    description: "Audi ECU and TCU file service for supported TDI, TFSI, Bosch EDC/MD1/MG1, Continental SIMOS and S tronic controller families.",
+    name: "Audi ECU Software & TCU File Service",
+    description: "Custom Audi ECU software and TCU file-service guidance for supported TDI, TFSI, Bosch, SIMOS and S tronic applications with exact HW/SW review.",
     intro: [
-      "Audi platforms share technology across the Volkswagen Group while retaining model-, engine- and software-specific calibrations. TDI and TFSI applications may use Bosch EDC17, MD1, MED17, MG1 or Continental SIMOS systems depending on generation.",
-      "A professional request should include the exact engine, ECU identification, read method and drivetrain notes. S tronic or other transmission work requires its own TCU file and controller details.",
+      "Audi platforms share powertrain technology across the Volkswagen Group, but that does not make ECU software interchangeable. Model generation, engine code, market, ECU hardware, software and calibration identifiers can all change the correct source-file and review context. Supported TDI and TFSI applications may use Bosch EDC17, MD1, MED17, MG1 or Continental SIMOS systems depending on generation.",
+      "Stage 1, Stage 2 and advanced custom calibration requests must be matched to the actual Audi setup. A useful order includes the untouched original read, explicit OBD, bench, boot or virtual-read method, fuel, installed hardware and current diagnostic condition. S tronic or other transmission work requires a separate TCU file and controller identity so engine and gearbox evidence remain traceable.",
     ],
     ecuFamilies: ["Bosch EDC17 / MD1", "Bosch MED17 / MG1", "Continental SIMOS", "Selected DL / DQ transmission controllers", "VAG diesel and petrol platforms"],
     vehicleExamples: ["A3 / S3", "A4 / S4", "A5", "A6 / A7", "Q3 / Q5 / Q7", "Selected RS applications"],
-    requestChecks: ["Engine code where available", "ECU HW/SW or identification", "Read tool and protocol", "Gearbox type for TCU work", "Hardware setup and fuel requirements"],
+    requestChecks: ["Exact Audi model, generation, engine code and model year", "ECU supplier, family, HW/SW and calibration identifiers where available", "Untouched original read with tool, protocol and read method", "Gearbox and separate TCU identity for S tronic work", "Installed hardware, fuel, fault codes and requested calibration scope"],
     faq: [
       { q: "Is an Audi file interchangeable with another VAG model?", a: "No assumption should be made. Hardware, software and calibration identifiers must match the submitted controller and vehicle." },
       { q: "Do you support S tronic TCU files?", a: "Selected controllers are supported after identification. Submit the TCU type and original read for confirmation." },
+      { q: "Can I request Stage 1, Stage 2 or Stage 3 Audi ECU software?", a: "The relevant route can be reviewed after the exact vehicle, ECU software, original file, fuel and hardware setup are supplied. A stage label alone does not confirm compatibility." },
+      { q: "Why are Audi ECU HW and SW numbers important?", a: "Audi models with similar badges can use different controller and software variants. Exact identification helps prevent the request from being reviewed against the wrong ECU context." },
+      { q: "Should I declare intake, exhaust, turbo or fuel-system changes?", a: "Yes. List every relevant modification and the intended fuel. Modified hardware changes the evidence needed for Stage 2 or Stage 3 review." },
     ],
   },
   {

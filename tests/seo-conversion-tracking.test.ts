@@ -147,13 +147,14 @@ test("root analytics loader is consent-aware, production-only and fail-closed wi
 
 test("admin SEO measurement center is protected by the admin layout and exposes no identifier", () => {
   const page = projectFile("src", "app", "admin", "seo-performance", "page.tsx");
+  const client = projectFile("src", "app", "admin", "seo-performance", "SeoPerformanceClient.tsx");
   const adminLayout = projectFile("src", "app", "admin", "layout.tsx");
   const admin = projectFile("src", "app", "admin", "page.tsx");
 
   assert.match(adminLayout, /BrowserAuthBoundary/);
   assert.match(admin, /href="\/admin\/seo-performance"/);
-  assert.match(page, /Search Console remains the source of truth/);
-  assert.match(page, /generate_lead/);
+  assert.match(client, /Search Console/);
+  assert.match(client, /Completed requests/);
   assert.match(page, /process\.env\.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID/);
   assert.doesNotMatch(page, /G-[A-Z0-9]{6,14}/);
   assert.doesNotMatch(page, /service_role|private_key|client_secret/i);

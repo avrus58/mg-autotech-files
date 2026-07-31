@@ -72,7 +72,7 @@ for (const slug of ["stage-1", "dpf-off", "egr-off", "adblue-off", "dtc-off"]) {
 const serviceIntentGuides = readFileSync(join(root, "src/lib/serviceIntentGuides.ts"), "utf8");
 const rootServiceRoute = readFileSync(join(root, "src/app/services/[slug]/page.tsx"), "utf8");
 const serviceIntentPage = readFileSync(join(root, "src/components/ServiceIntentPage.tsx"), "utf8");
-for (const slug of ["stage-2", "tcu-tuning", "ecu-file-check"]) {
+for (const slug of ["stage-2", "stage-3", "tcu-tuning", "ecu-file-check"]) {
   if (!serviceIntentGuides.includes(`slug: "${slug}"`)) {
     failures.push(`Global service-intent slug ${slug} is missing.`);
   }
@@ -83,8 +83,11 @@ if (!rootServiceRoute.includes("serviceIntentGuideSlugs.map")) {
 if (!serviceIntentPage.includes('"@type": "Service"')) {
   failures.push("Global service-intent pages are missing visible Service structured data.");
 }
-if (serviceIntentPage.includes('"@type": "FAQPage"') || serviceIntentPage.includes('"@type": "HowTo"')) {
-  failures.push("Global service-intent pages use unsupported FAQPage or HowTo structured data.");
+if (!serviceIntentPage.includes('"@type": "FAQPage"') || !serviceIntentPage.includes("guide.faq.map")) {
+  failures.push("Global service-intent pages are missing FAQPage data backed by visible guide FAQs.");
+}
+if (serviceIntentPage.includes('"@type": "HowTo"')) {
+  failures.push("Global service-intent pages use unsupported HowTo structured data.");
 }
 
 const localizedHomePage = readFileSync(join(root, "src/app/[locale]/page.tsx"), "utf8");
@@ -389,7 +392,7 @@ if (!rootHomePage.includes('href="/file-service"')) {
 }
 
 const fileServicePage = readFileSync(join(root, "src/app/file-service/page.tsx"), "utf8");
-if (!fileServicePage.includes("ECU & TCU File Service Hub")) {
+if (!fileServicePage.includes("Professional ECU file service for custom tuning files")) {
   failures.push("File service hub page is missing the visible H1/title signal.");
 }
 if (!fileServicePage.includes('"@type": "Service"')) {
