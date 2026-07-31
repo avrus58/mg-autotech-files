@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { CustomerNotifications } from "@/components/CustomerNotifications";
+import { PublicAnalytics } from "@/components/analytics/PublicAnalytics";
 import {
   absoluteUrl,
   hreflangByLocale,
@@ -130,6 +131,8 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const googleAnalyticsMeasurementId =
+    process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID?.trim() ?? "";
   const jsonLd = {
     "@context": "https://schema.org",
     "@graph": [organizationJsonLd(), websiteJsonLd(defaultLocale)],
@@ -148,6 +151,7 @@ export default function RootLayout({
           }}
         />
         {children}
+        <PublicAnalytics measurementId={googleAnalyticsMeasurementId} />
         <CustomerNotifications />
         <LanguageSwitcher />
       </body>

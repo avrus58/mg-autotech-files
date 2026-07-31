@@ -27,6 +27,7 @@ import {
 import {
   Activity,
   ArrowLeft,
+  BarChart3,
   BadgeEuro,
   BellRing,
   BrainCircuit,
@@ -1235,6 +1236,18 @@ export default function AdminPage() {
                   Operations Intelligence
                 </span>
                 <span className="rounded-full bg-emerald-950/40 px-2 py-1 text-[10px] font-black text-emerald-200">LIVE</span>
+              </Link>
+            )}
+            {hasStaffPermission(adminAccess, "orders.view") && (
+              <Link
+                href="/admin/seo-performance"
+                className="flex w-full items-center justify-between gap-3 rounded-2xl px-4 py-3 text-left text-sm font-black text-zinc-400 transition hover:bg-white/[0.06] hover:text-white"
+              >
+                <span className="flex items-center gap-3">
+                  <BarChart3 className="h-5 w-5" />
+                  SEO & Conversion
+                </span>
+                <span className="rounded-full bg-sky-950/40 px-2 py-1 text-[10px] font-black text-sky-200">MEASURE</span>
               </Link>
             )}
             {hasStaffPermission(adminAccess, "orders.view") && (

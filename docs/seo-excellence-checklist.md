@@ -1,5 +1,11 @@
 # MG AutoTech SEO Excellence Checklist
 
+The operational measurement contract for query, country, click and successful
+request conversion reporting is documented in
+`docs/seo-measurement-and-conversion-tracking.md`. Search Console remains the
+query/country/search-click source; consented GA4 events cover public navigation
+and the request funnel without private request metadata.
+
 Use this checklist before every public content or language release.
 
 ## Technical SEO

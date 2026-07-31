@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ReactNode, useEffect, useMemo, useState } from "react";
+import { ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { authenticatedFetch, getStableSession, notifySessionRequired, signOutIfEmailUnverified } from "@/lib/authGuards";
 import {
@@ -31,6 +31,7 @@ import {
   Zap,
 } from "lucide-react";
 import { evaluateRequestIntelligence } from "@/lib/requestIntelligence";
+import { trackRequestStarted, trackRequestSubmitted } from "@/lib/publicAnalytics";
 
 type Option = {
   id: string;
@@ -660,6 +661,7 @@ function VehicleHeroCard({
 
 export default function NewRequestPage() {
   const router = useRouter();
+  const requestStartTrackedRef = useRef(false);
 
   const [brands, setBrands] = useState<Option[]>([]);
   const [models, setModels] = useState<Option[]>([]);
@@ -765,6 +767,12 @@ export default function NewRequestPage() {
     return () => window.clearTimeout(timeout);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (!customerProfile || requestStartTrackedRef.current) return;
+    requestStartTrackedRef.current = true;
+    trackRequestStarted();
+  }, [customerProfile]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -1229,6 +1237,8 @@ export default function NewRequestPage() {
           }
         : current
     );
+
+    trackRequestSubmitted();
 
     try {
       await authenticatedFetch("/api/email/new-order", {

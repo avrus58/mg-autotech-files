@@ -50,6 +50,18 @@ Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
 
+### MANUAL-003 [P1] SEO sorgu, ulke, tiklama ve talep donusumu olcumu
+
+Durum: Done
+
+Fingerprint: `public-seo|search-console-ga4-measurement|query-country-click-request-conversion|consent-and-private-data-allowlist`
+
+Kapsam: Search Console sorgu, ulke, gosterim ve Google tiklama kaynagi olarak korundu. Izinli public sayfa/tiklama, request CTA, dogrulanmis request baslangici ve basarili talep donusumu icin merkezi, typed GA4 event katmani eklendi. `/admin/seo-performance` read-only olcum merkezi Search Console ve GA4 raporlarini, aktivasyon durumunu ve event allowlist'ini tek yerde gosterir.
+
+Sonuc: Google etiketi yalniz gecerli `NEXT_PUBLIC_GOOGLE_ANALYTICS_ID`, production host ve acik ziyaretci izni birlikte varsa yuklenir. Query/fragment, referrer ve private rota bilgisi gonderilmez; public URL'ler query-free olarak yeniden kurulur. Admin/dashboard/payment gibi private rotalara geciste analytics acikca reddedilir. Customer, order, vehicle, service, file, payment, note, admin veya AI metadata event contract'ina giremez. Config yoksa site ve request akisi etkilenmeden olcum fail-closed kalir.
+
+Dogrulama: Targeted analytics tests PASS (8/8); lint PASS; full web + desktop typecheck PASS; full tests PASS (481/481); production build PASS (265 page/route entries); i18n/SEO PASS (12 locale, 25 source file); payment schema-only PASS; production dependency audit PASS (0 vulnerabilities); diff check PASS.
+
 ### MANUAL-002 [P1] Global high-intent SEO coverage guclendirilsin
 
 Durum: Done
