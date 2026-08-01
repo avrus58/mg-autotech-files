@@ -8,6 +8,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "check:performance": "node scripts/check-web-performance.mjs",
     "build:customer-uploader": "npm run build --workspace apps/customer-uploader",
     "start": "next start",
     "check:payments": "node scripts/check-payment-env.js",

@@ -50,6 +50,18 @@ Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
 
+### MANUAL-009 [P0] Public web initial-load performance budget
+
+Durum: Done
+
+Fingerprint: `public-performance|homepage-initial-js-241kb-gzip|supabase-i18n-motion-eager|52kb-budgeted-runtime`
+
+Kapsam: Ana sayfanin ilk render yolundan buyuk ceviri kataloglarini, Supabase session/notification runtime'ini, Framer Motion runtime'ini ve below-the-fold performance tools modulunu cikarmak; arac marka secicisini ilk HTML'de hazir tutmak ve kalici bir build-time JavaScript butcesi eklemek.
+
+Sonuc: Locale tanimlari kucuk merkezi config'e ayrildi; buyuk ceviri kataloglari yalniz runtime cevirisi gercekten gereken rotalarda dinamik yuklenir. Public session bridge ve bildirimler idle/background yuklenir, authenticated/private rotalarda gerekli davranis korunur. Ana sayfa dekoratif motion kullanimi CSS tabanli hale getirildi; torque/log araclari viewport'a yaklasinca yuklenir. Ilk homepage JavaScript'i 241.4 KB gzip baseline'dan 52 KB gzip seviyesine indi. Public vehicle brand select ilk render'da placeholder + 102 canonical marka ile hazirdir.
+
+Dogrulama: `npm test` PASS (515/515); lint PASS; web + desktop typecheck PASS; production build PASS (267 route/page entry); performance budget PASS (3 initial chunk, 200.8 KB raw, 52 KB gzip, 80 KB budget, forbidden runtime yok); i18n/SEO PASS (12 locale, 25 source file); payment schema-only PASS; production dependency audit PASS (0 vulnerabilities); diff check PASS. Browser QA 390x844, 768x1024, 1366x768 ve 1920x1080 boyutlarinda sifir horizontal overflow, ilk render'da 103 marka option, viewport-yakin tool load ve sifir console error ile PASS.
+
 ### MANUAL-006 [P0] New Request gecici oturum kesintisi kaldirilsin
 
 Durum: Done

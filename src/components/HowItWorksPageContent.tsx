@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { Footer } from "@/components/Footer";
 import { LocalizedSeoFooter } from "@/components/LocalizedSeoFooter";
-import type { LocaleCode } from "@/lib/i18n";
+import type { LocaleCode } from "@/lib/i18nConfig";
 import type { HowItWorksCopy } from "@/lib/howItWorksI18n";
 import { localizedPath } from "@/lib/seo";
 

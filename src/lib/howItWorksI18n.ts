@@ -1,4 +1,4 @@
-import type { LocaleCode } from "@/lib/i18n";
+import type { LocaleCode } from "@/lib/i18nConfig";
 import { hreflangByLocale } from "@/lib/seo";
 
 export type HowItWorksItem = {

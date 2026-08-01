@@ -1253,16 +1253,19 @@ test("homepage has a focused ECU and TCU file service search-intent section", ()
 
 test("homepage keeps the hero compact and places performance tools before the navigator", () => {
   const homepage = readProjectFile("src", "app", "page.tsx");
+  const deferredPerformanceTools = readProjectFile("src", "components", "tools", "DeferredPerformanceTools.tsx");
   const heroSection =
     homepage.match(/<section id="home"[\s\S]*?<PublicVehicleChecker \/>/)?.[0] ?? "";
-  const performanceToolsIndex = homepage.indexOf("<PerformanceTools />");
+  const performanceToolsIndex = homepage.indexOf("<DeferredPerformanceTools />");
   const navigatorIndex = homepage.indexOf('<AnimatedSection id="file-service-navigator"');
 
   assert.doesNotMatch(heroSection, /Popular file-service paths/);
   assert.doesNotMatch(homepage, /file-service-quick-paths|homepageQuickPathJsonLd|homepageQuickServicePaths/);
-  assert.equal(homepage.match(/<PerformanceTools \/>/g)?.length, 1);
+  assert.equal(homepage.match(/<DeferredPerformanceTools \/>/g)?.length, 1);
   assert.ok(performanceToolsIndex > 0);
   assert.ok(navigatorIndex > performanceToolsIndex);
+  assert.match(deferredPerformanceTools, /import\("@\/components\/tools\/PerformanceTools"\)/);
+  assert.match(deferredPerformanceTools, /IntersectionObserver/);
   assert.match(homepage, /publicResourceUrl\("\/#tools"\)/);
 });
 

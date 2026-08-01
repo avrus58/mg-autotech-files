@@ -56,9 +56,9 @@ for (const relativePath of filesToScan) {
   }
 }
 
-const i18n = readFileSync(join(root, "src/lib/i18n.ts"), "utf8");
+const i18nConfig = readFileSync(join(root, "src/lib/i18nConfig.ts"), "utf8");
 for (const locale of expectedLocales) {
-  if (!i18n.includes(`code: "${locale}"`)) failures.push(`Locale ${locale} is missing from supportedLocales.`);
+  if (!i18nConfig.includes(`code: "${locale}"`)) failures.push(`Locale ${locale} is missing from supportedLocales.`);
 }
 
 const seo = readFileSync(join(root, "src/lib/seo.ts"), "utf8");
@@ -229,7 +229,7 @@ if (!rootHomePage.includes("hasOfferCatalog")) {
 if (!rootHomePage.includes('JSON.stringify(homepageFileServiceJsonLd)')) {
   failures.push("Root homepage does not render ECU/TCU file service structured data.");
 }
-const performanceToolsIndex = rootHomePage.indexOf("<PerformanceTools />");
+const performanceToolsIndex = rootHomePage.indexOf("<DeferredPerformanceTools />");
 const fileServiceNavigatorIndex = rootHomePage.indexOf('<AnimatedSection id="file-service-navigator"');
 if (performanceToolsIndex < 0 || fileServiceNavigatorIndex < 0 || performanceToolsIndex > fileServiceNavigatorIndex) {
   failures.push("Root homepage performance tools must render before the file service navigator.");

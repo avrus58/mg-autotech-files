@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ArrowRight, BadgeCheck, CheckCircle2, Clock3, Cpu, FileCheck2, ShieldCheck, Upload } from "lucide-react";
-import type { LocaleCode } from "@/lib/i18n";
+import type { LocaleCode } from "@/lib/i18nConfig";
 import {
   getServiceSeo,
   homeSeo,

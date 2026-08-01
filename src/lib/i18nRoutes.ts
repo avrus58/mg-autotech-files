@@ -1,4 +1,4 @@
-import type { LocaleCode } from "@/lib/i18n";
+import type { LocaleCode } from "@/lib/i18nConfig";
 import { isSeoLocale, localizedPath } from "@/lib/seo";
 
 const englishOnlySeoSegments = new Set(["about", "contact", "brands", "ecu-platforms", "tools"]);

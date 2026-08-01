@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { HowItWorksPageContent } from "@/components/HowItWorksPageContent";
 import { getHowItWorksCopy, howItWorksJsonLd } from "@/lib/howItWorksI18n";
-import type { LocaleCode } from "@/lib/i18n";
+import type { LocaleCode } from "@/lib/i18nConfig";
 import {
   hreflangByLocale,
   isSeoLocale,

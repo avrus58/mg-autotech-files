@@ -4,12 +4,10 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
   defaultLocale,
-  exactTranslations,
   normalizeLocale,
   supportedLocales,
-  termTranslations,
   type LocaleCode,
-} from "@/lib/i18n";
+} from "@/lib/i18nConfig";
 import { appendSafeQuery, getLocalizedPublicPath, splitLocalizedPath } from "@/lib/i18nRoutes";
 import { isSeoLocale } from "@/lib/seo";
 
@@ -18,6 +16,11 @@ const cookieKey = "mg_locale";
 const googleCookieKey = "googtrans";
 const originalText = new WeakMap<Text, string>();
 const originalAttributes = new WeakMap<Element, Record<string, string>>();
+
+type TranslationCatalog = {
+  exact: Record<LocaleCode, Record<string, string>>;
+  terms: Record<LocaleCode, Record<string, string>>;
+};
 
 function escapeRegExp(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -64,7 +67,11 @@ function persistLocale(locale: LocaleCode) {
   window.dispatchEvent(new CustomEvent("mg-locale-change", { detail: { locale } }));
 }
 
-function translateText(value: string, locale: LocaleCode) {
+function translateText(
+  value: string,
+  locale: LocaleCode,
+  catalog: TranslationCatalog
+) {
   if (locale === defaultLocale) return value;
 
   const leading = value.match(/^\s*/)?.[0] ?? "";
@@ -74,10 +81,10 @@ function translateText(value: string, locale: LocaleCode) {
 
   if (!normalized) return value;
 
-  const exact = exactTranslations[locale]?.[normalized];
+  const exact = catalog.exact[locale]?.[normalized];
   if (exact) return `${leading}${exact}${trailing}`;
 
-  const terms = termTranslations[locale] ?? {};
+  const terms = catalog.terms[locale] ?? {};
   const term =
     terms[normalized] ??
     Object.entries(terms).find(
@@ -111,7 +118,11 @@ function shouldSkip(node: Node) {
   );
 }
 
-function translateNode(root: ParentNode, locale: LocaleCode) {
+function translateNode(
+  root: ParentNode,
+  locale: LocaleCode,
+  catalog: TranslationCatalog
+) {
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
   const textNodes: Text[] = [];
 
@@ -122,7 +133,11 @@ function translateNode(root: ParentNode, locale: LocaleCode) {
 
   textNodes.forEach((node) => {
     if (!originalText.has(node)) originalText.set(node, node.nodeValue ?? "");
-    node.nodeValue = translateText(originalText.get(node) ?? "", locale);
+    node.nodeValue = translateText(
+      originalText.get(node) ?? "",
+      locale,
+      catalog
+    );
   });
 
   root.querySelectorAll?.("[placeholder], [aria-label], [title]").forEach((element) => {
@@ -135,7 +150,10 @@ function translateNode(root: ParentNode, locale: LocaleCode) {
       if (!value) return;
 
       if (!originals[attr]) originals[attr] = value;
-      element.setAttribute(attr, translateText(originals[attr], locale));
+      element.setAttribute(
+        attr,
+        translateText(originals[attr], locale, catalog)
+      );
     });
 
     originalAttributes.set(element, originals);
@@ -160,6 +178,13 @@ export function LanguageSwitcher() {
   useEffect(() => {
     persistLocale(locale);
 
+    // Locale-prefixed SEO routes already render translated content on the server.
+    // Avoid loading the large runtime translation catalog or walking that DOM.
+    if (getPathLocale(pathname)) {
+      translatedLocaleRef.current = locale;
+      return;
+    }
+
     if (
       locale === defaultLocale &&
       translatedLocaleRef.current === defaultLocale
@@ -168,40 +193,59 @@ export function LanguageSwitcher() {
     }
 
     let observer: MutationObserver | null = null;
+    let cancelled = false;
 
     const timer = window.setTimeout(() => {
-      translateNode(document.body, locale);
-      translatedLocaleRef.current = locale;
+      void import("@/lib/i18n").then(
+        ({ exactTranslations, termTranslations }) => {
+          if (cancelled) return;
 
-      if (locale === defaultLocale) return;
+          const catalog: TranslationCatalog = {
+            exact: exactTranslations,
+            terms: termTranslations,
+          };
 
-      observer = new MutationObserver((mutations) => {
-        mutations.forEach((mutation) => {
-          mutation.addedNodes.forEach((node) => {
-            if (node.nodeType === Node.TEXT_NODE && !shouldSkip(node)) {
-              const text = node as Text;
-              if (!originalText.has(text)) originalText.set(text, text.nodeValue ?? "");
-              text.nodeValue = translateText(originalText.get(text) ?? "", locale);
-            }
+          translateNode(document.body, locale, catalog);
+          translatedLocaleRef.current = locale;
 
-            if (node.nodeType === Node.ELEMENT_NODE) {
-              translateNode(node as Element, locale);
-            }
+          if (locale === defaultLocale) return;
+
+          observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+              mutation.addedNodes.forEach((node) => {
+                if (node.nodeType === Node.TEXT_NODE && !shouldSkip(node)) {
+                  const text = node as Text;
+                  if (!originalText.has(text)) {
+                    originalText.set(text, text.nodeValue ?? "");
+                  }
+                  text.nodeValue = translateText(
+                    originalText.get(text) ?? "",
+                    locale,
+                    catalog
+                  );
+                }
+
+                if (node.nodeType === Node.ELEMENT_NODE) {
+                  translateNode(node as Element, locale, catalog);
+                }
+              });
+            });
           });
-        });
-      });
 
-      observer.observe(document.body, {
-        childList: true,
-        subtree: true,
-      });
-    }, 500);
+          observer.observe(document.body, {
+            childList: true,
+            subtree: true,
+          });
+        }
+      );
+    }, 80);
 
     return () => {
+      cancelled = true;
       window.clearTimeout(timer);
       observer?.disconnect();
     };
-  }, [locale]);
+  }, [locale, pathname]);
 
   useEffect(() => {
     if (!isOpen) return;

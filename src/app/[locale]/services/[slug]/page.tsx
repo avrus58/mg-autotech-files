@@ -30,7 +30,7 @@ import {
   websiteJsonLd,
   type PublicServiceSlug,
 } from "@/lib/seo";
-import type { LocaleCode } from "@/lib/i18n";
+import type { LocaleCode } from "@/lib/i18nConfig";
 
 export function generateStaticParams() {
   return seoLocales.flatMap((locale) =>

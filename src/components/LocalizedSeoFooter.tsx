@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ArrowRight, Cpu, Mail, MapPin, Phone, ShieldCheck } from "lucide-react";
-import type { LocaleCode } from "@/lib/i18n";
+import type { LocaleCode } from "@/lib/i18nConfig";
 import {
   companyAddress,
   contactEmail,

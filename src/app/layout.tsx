@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
-import { CustomerNotifications } from "@/components/CustomerNotifications";
+import { CustomerNotificationsRuntime } from "@/components/CustomerNotificationsRuntime";
 import { PublicAnalytics } from "@/components/analytics/PublicAnalytics";
 import {
   absoluteUrl,
@@ -12,7 +12,7 @@ import {
   siteUrl,
   websiteJsonLd,
 } from "@/lib/seo";
-import { defaultLocale } from "@/lib/i18n";
+import { defaultLocale } from "@/lib/i18nConfig";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -152,7 +152,7 @@ export default function RootLayout({
         />
         {children}
         <PublicAnalytics measurementId={googleAnalyticsMeasurementId} />
-        <CustomerNotifications />
+        <CustomerNotificationsRuntime />
         <LanguageSwitcher />
       </body>
     </html>

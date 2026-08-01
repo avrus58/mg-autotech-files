@@ -18,7 +18,7 @@ import { LocalizedSeoFooter } from "@/components/LocalizedSeoFooter";
 import { OnlineStatus } from "@/components/OnlineStatus";
 import { getFileServiceCopy, fileServiceJsonLd } from "@/lib/fileServiceI18n";
 import type { FileServiceHubCard } from "@/lib/fileServiceI18n";
-import type { LocaleCode } from "@/lib/i18n";
+import type { LocaleCode } from "@/lib/i18nConfig";
 import {
   absoluteUrl,
   hreflangByLocale,

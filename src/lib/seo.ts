@@ -2,7 +2,7 @@ import {
   defaultLocale,
   supportedLocales,
   type LocaleCode,
-} from "@/lib/i18n";
+} from "@/lib/i18nConfig";
 
 export const siteUrl = "https://file.mgautotech.de";
 export const siteName = "MG AutoTech File Service";

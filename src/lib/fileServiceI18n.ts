@@ -1,5 +1,5 @@
 import { absoluteUrl, hreflangByLocale, isPublicServiceSlug, localizedUrl } from "@/lib/seo";
-import type { LocaleCode } from "@/lib/i18n";
+import type { LocaleCode } from "@/lib/i18nConfig";
 
 export type FileServiceHubCard = {
   title: string;

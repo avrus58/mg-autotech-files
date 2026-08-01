@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { defaultLocale, normalizeLocale } from "@/lib/i18n";
+import { defaultLocale, normalizeLocale } from "@/lib/i18nConfig";
 import { isSeoLocale } from "@/lib/seo";
 
 const localeCookie = "mg_locale";

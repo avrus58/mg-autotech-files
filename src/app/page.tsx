@@ -1,9 +1,15 @@
 "use client";
 
-import type { ReactNode } from "react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import type { HTMLAttributes, ReactNode } from "react";
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
-import { motion, type Variants } from "framer-motion";
 import {
   ArrowRight,
   BadgeCheck,
@@ -38,14 +44,77 @@ import {
   fetchVehicleOptions,
   getInitialVehicleBrands,
 } from "@/lib/vehicleControl/clientCatalog";
-import { PerformanceTools } from "@/components/tools/PerformanceTools";
-import { OnlineStatus } from "@/components/OnlineStatus";
+import { DeferredPerformanceTools } from "@/components/tools/DeferredPerformanceTools";
 import {
   CREDIT_PROMOTION_PERCENT,
   creditPackages as sharedCreditPackages,
 } from "@/lib/creditPackages";
-import { supabase } from "@/lib/supabaseClient";
-import { signOutStable } from "@/lib/authGuards";
+import {
+  homepageSessionEvent,
+  type HomepageSessionDetail,
+} from "@/lib/homepageSessionEvents";
+
+const HomepageSessionBridge = dynamic(
+  () =>
+    import("@/components/HomepageSessionBridge").then(
+      (module) => module.HomepageSessionBridge
+    ),
+  { ssr: false }
+);
+
+const OnlineStatus = dynamic(
+  () =>
+    import("@/components/OnlineStatus").then(
+      (module) => module.OnlineStatus
+    ),
+  { ssr: false }
+);
+
+type Variants = Record<string, unknown>;
+type StaticMotionProps<T extends HTMLElement> = HTMLAttributes<T> & {
+  animate?: unknown;
+  initial?: unknown;
+  transition?: unknown;
+  variants?: unknown;
+  viewport?: unknown;
+  whileHover?: unknown;
+  whileInView?: unknown;
+};
+
+function staticMotionProps<T extends HTMLElement>(
+  source: StaticMotionProps<T>
+): HTMLAttributes<T> {
+  const props = { ...source };
+  delete props.animate;
+  delete props.initial;
+  delete props.transition;
+  delete props.variants;
+  delete props.viewport;
+  delete props.whileHover;
+  delete props.whileInView;
+  return props;
+}
+
+const StaticMotionDiv = forwardRef<HTMLDivElement, StaticMotionProps<HTMLDivElement>>(
+  function StaticMotionDiv(props, ref) {
+    return <div ref={ref} {...staticMotionProps(props)} />;
+  }
+);
+
+const StaticMotionSection = forwardRef<
+  HTMLElement,
+  StaticMotionProps<HTMLElement>
+>(function StaticMotionSection(
+  props,
+  ref
+) {
+  return <section ref={ref} {...staticMotionProps(props)} />;
+});
+
+const motion = {
+  div: StaticMotionDiv,
+  section: StaticMotionSection,
+};
 
 const services = [
   {
@@ -2491,26 +2560,8 @@ function usePublicVehicleCopy() {
 }
 
 
-const fadeUp: Variants = {
-  hidden: { opacity: 0, y: 34 },
-  show: {
-    opacity: 1,
-    y: 0,
-    transition: {
-      duration: 0.65,
-      ease: [0.16, 1, 0.3, 1],
-    },
-  },
-};
-
-const stagger: Variants = {
-  hidden: {},
-  show: {
-    transition: {
-      staggerChildren: 0.1,
-    },
-  },
-};
+const fadeUp: Variants = {};
+const stagger: Variants = {};
 
 function AnimatedSection({
   children,
@@ -2528,7 +2579,7 @@ function AnimatedSection({
       initial="hidden"
       whileInView="show"
       viewport={{ once: true, amount: 0.16 }}
-      className={className}
+      className={`homepage-deferred-section ${className}`}
     >
       {children}
     </motion.section>
@@ -2547,7 +2598,7 @@ function FloatingTechBackground() {
           opacity: [0.16, 0.3, 0.16],
         }}
         transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
-        className="absolute left-[8%] top-[18%] h-72 w-72 rounded-full bg-red-900/30 blur-3xl"
+        className="absolute left-[8%] top-[18%] h-72 w-72 rounded-full bg-red-900/30 blur-3xl motion-safe:animate-pulse"
       />
 
       <motion.div
@@ -2557,7 +2608,7 @@ function FloatingTechBackground() {
           opacity: [0.1, 0.22, 0.1],
         }}
         transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
-        className="absolute right-[8%] top-[28%] h-96 w-96 rounded-full bg-red-800/25 blur-3xl"
+        className="absolute right-[8%] top-[28%] h-96 w-96 rounded-full bg-red-800/25 blur-3xl motion-safe:animate-pulse"
       />
 
       <motion.div
@@ -2631,7 +2682,7 @@ function TechnicalHeroPreview() {
             <motion.div
               animate={{ y: [0, -10, 0], rotate: [0, 1, 0] }}
               transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut" }}
-              className="relative flex h-56 w-56 items-center justify-center rounded-[2.5rem] border border-red-800/60 bg-black/80 shadow-2xl shadow-red-950/50"
+              className="relative flex h-56 w-56 items-center justify-center rounded-[2.5rem] border border-red-800/60 bg-black/80 shadow-2xl shadow-red-950/50 motion-safe:animate-pulse"
             >
               <div className="absolute inset-5 rounded-[1.8rem] border border-red-700/35" />
               <div className="absolute -left-10 top-14 h-px w-10 bg-red-700/70" />
@@ -3586,8 +3637,9 @@ export default function HomePage() {
   const [workloadSnapshot, setWorkloadSnapshot] = useState(() =>
     getWorkloadSnapshot(getGermanyNow())
   );
-  const [authReady, setAuthReady] = useState(false);
+  const [authReady, setAuthReady] = useState(true);
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [sessionRuntimeReady, setSessionRuntimeReady] = useState(false);
 
   useEffect(() => {
     const updateWorkload = () => {
@@ -3601,33 +3653,42 @@ export default function HomePage() {
   }, []);
 
   useEffect(() => {
-    let active = true;
-
-    const loadAuthState = async () => {
-      const { data } = await supabase.auth.getSession();
-
-      if (!active) return;
-
-      setUserEmail(data.session?.user.email ?? null);
+    const handleSession = (event: Event) => {
+      const detail = (event as CustomEvent<HomepageSessionDetail>).detail;
+      setUserEmail(detail.email);
       setAuthReady(true);
     };
 
-    loadAuthState();
+    window.addEventListener(homepageSessionEvent, handleSession);
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUserEmail(session?.user.email ?? null);
-      setAuthReady(true);
-    });
+    const idleWindow = window as typeof window & {
+      requestIdleCallback?: (
+        callback: () => void,
+        options?: { timeout: number }
+      ) => number;
+      cancelIdleCallback?: (handle: number) => void;
+    };
+
+    let cancelRuntime: () => void;
+    if (idleWindow.requestIdleCallback) {
+      const handle = idleWindow.requestIdleCallback(
+        () => setSessionRuntimeReady(true),
+        { timeout: 1600 }
+      );
+      cancelRuntime = () => idleWindow.cancelIdleCallback?.(handle);
+    } else {
+      const timer = window.setTimeout(() => setSessionRuntimeReady(true), 700);
+      cancelRuntime = () => window.clearTimeout(timer);
+    }
 
     return () => {
-      active = false;
-      subscription.unsubscribe();
+      cancelRuntime();
+      window.removeEventListener(homepageSessionEvent, handleSession);
     };
   }, []);
 
   const handleLogout = async () => {
+    const { signOutStable } = await import("@/lib/authGuards");
     await signOutStable();
     setUserEmail(null);
     setAuthReady(true);
@@ -3669,6 +3730,7 @@ export default function HomePage() {
 
   return (
     <main className="min-h-screen overflow-x-hidden bg-[#050505] text-white">
+      {sessionRuntimeReady && <HomepageSessionBridge />}
       <FloatingTechBackground />
 
       <header className="sticky top-0 z-50 border-b border-white/10 bg-black/80 backdrop-blur-xl">
@@ -3728,7 +3790,7 @@ export default function HomePage() {
           <Link href="/" className="flex min-w-0 items-center gap-2 sm:gap-3">
             <motion.div
               whileHover={{ scale: 1.05, rotate: -1 }}
-              className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-red-800/50 bg-[#111] shadow-lg shadow-red-950/40 sm:h-12 sm:w-12"
+              className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-red-800/50 bg-[#111] shadow-lg shadow-red-950/40 transition duration-300 hover:scale-105 sm:h-12 sm:w-12"
             >
               <div className="absolute -top-2 h-5 w-10 rounded-t-full border-t-2 border-red-700" />
               <Cpu className="h-6 w-6 text-red-600 sm:h-7 sm:w-7" />
@@ -3824,13 +3886,13 @@ export default function HomePage() {
         <motion.div
           animate={{ rotate: [0, 2, 0], scale: [1, 1.02, 1] }}
           transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute right-[-140px] top-14 -z-10 hidden h-[520px] w-[900px] rounded-full border-[32px] border-red-800/50 opacity-70 lg:block"
+          className="absolute right-[-140px] top-14 -z-10 hidden h-[520px] w-[900px] rounded-full border-[32px] border-red-800/50 opacity-70 motion-safe:animate-pulse lg:block"
         />
         <div className="absolute right-[-20px] top-36 -z-10 hidden h-[280px] w-[650px] rounded-[4rem] bg-[linear-gradient(135deg,#111,#050505)] opacity-80 shadow-2xl shadow-black lg:block" />
         <motion.div
           animate={{ opacity: [0.55, 1, 0.55], width: ["420px", "540px", "420px"] }}
           transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute right-20 top-52 -z-10 hidden h-3 rounded-full bg-red-700 blur-sm lg:block"
+          className="absolute right-20 top-52 -z-10 hidden h-3 w-[480px] rounded-full bg-red-700 blur-sm motion-safe:animate-pulse lg:block"
         />
         <motion.div
           animate={{ opacity: [0.55, 1, 0.55] }}
@@ -3942,7 +4004,7 @@ export default function HomePage() {
         <PublicVehicleChecker />
       </section>
 
-      <PerformanceTools />
+      <DeferredPerformanceTools />
 
       <AnimatedSection id="file-service-navigator" className="bg-[#050607] py-16 text-white">
         <div className="mx-auto max-w-7xl px-4">
