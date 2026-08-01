@@ -2,6 +2,7 @@ import type { NextConfig } from "next";
 
 const baselineSecurityHeaders = [
   { key: "X-Content-Type-Options", value: "nosniff" },
+  { key: "X-Permitted-Cross-Domain-Policies", value: "none" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   {
     key: "Permissions-Policy",
@@ -11,8 +12,25 @@ const baselineSecurityHeaders = [
 
 const privateWorkspaceHeaders = [
   { key: "X-Frame-Options", value: "DENY" },
-  { key: "Content-Security-Policy", value: "frame-ancestors 'none'" },
+  {
+    key: "Content-Security-Policy",
+    value: "frame-ancestors 'none'; base-uri 'self'; object-src 'none'",
+  },
   { key: "X-Robots-Tag", value: "noindex, nofollow, noarchive" },
+  { key: "Cache-Control", value: "private, no-store, max-age=0, must-revalidate" },
+  { key: "Pragma", value: "no-cache" },
+];
+
+const protectedPageSources = [
+  "/admin/:path*",
+  "/dashboard/:path*",
+  "/new-request",
+  "/payment/:path*",
+  "/login",
+  "/register",
+  "/forgot-password",
+  "/reset-password",
+  "/auth/:path*",
 ];
 
 const nextConfig: NextConfig = {
@@ -22,7 +40,7 @@ const nextConfig: NextConfig = {
         source: "/:path*",
         headers: baselineSecurityHeaders,
       },
-      ...["/admin/:path*", "/dashboard/:path*", "/new-request", "/payment/:path*"].map((source) => ({
+      ...protectedPageSources.map((source) => ({
         source,
         headers: privateWorkspaceHeaders,
       })),

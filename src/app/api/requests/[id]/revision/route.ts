@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getSupabaseServer } from "@/lib/supabaseServer";
+import { requireApiUser } from "@/lib/apiAuth";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { sendRevisionRequestedAdminEmail } from "@/lib/email/events";
 import { recordWorkOrderEvent } from "@/lib/workOrders/server";
@@ -8,34 +8,19 @@ export async function POST(
   request: Request,
   context: { params: Promise<{ id: string }> }
 ) {
+  const auth = await requireApiUser(request);
+  if (!auth.ok) {
+    return NextResponse.json({ error: auth.error }, { status: auth.status });
+  }
+
   const { id } = await context.params;
-  const body = await request.json();
+  const body = await request.json().catch(() => null);
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
+  }
 
-  const supabase = await getSupabaseServer();
   const supabaseAdmin = getSupabaseAdmin();
-
-  const authHeader = request.headers.get("authorization");
-  const token = authHeader?.replace("Bearer ", "");
-
-  if (!token) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser(token);
-
-  if (userError || !user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  if (!user.email_confirmed_at && !user.confirmed_at) {
-    return NextResponse.json(
-      { error: "Please verify your e-mail address first." },
-      { status: 403 }
-    );
-  }
+  const user = auth.user;
 
   const revisionNote = String(body.revisionNote || "").trim();
 

@@ -197,6 +197,16 @@ test("vehicle URL enrichment blocks unsafe SSRF targets before fetching", () => 
     "http://169.254.169.254/latest/meta-data",
     "http://[::1]/vehicles",
     "http://[fe80::1]/vehicles",
+    "http://[febf::1]/vehicles",
+    "http://[::ffff:127.0.0.1]/vehicles",
+    "http://[::ffff:10.0.0.1]/vehicles",
+    "http://[0:0:0:0:0:ffff:7f00:1]/vehicles",
+    "http://[0:0:0:0:0:ffff:a00:1]/vehicles",
+    "http://[::ffff:c0a8:1]/vehicles",
+    "http://192.0.2.1/vehicles",
+    "http://198.18.0.1/vehicles",
+    "http://198.51.100.1/vehicles",
+    "http://203.0.113.1/vehicles",
     "ftp://example.com/vehicles.csv",
   ]) {
     assert.equal(validateVehicleSourceUrl(url).ok, false, url);

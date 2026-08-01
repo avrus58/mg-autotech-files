@@ -42,15 +42,36 @@ test("public online status is compact and never intercepts mobile controls", () 
   assert.match(onlineStatus, /max-w-24 truncate/);
 });
 
+test("homepage vehicle controls and icon-only account link have accessible names", () => {
+  const homepage = readProjectFile("src", "app", "page.tsx");
+
+  assert.match(homepage, /<select\s+aria-label=\{placeholder\}/);
+  assert.match(homepage, /href="\/register"\s+aria-label="Create account"/);
+});
+
 test("baseline security headers protect private workspaces without blocking widget embedding", () => {
   const nextConfig = readProjectFile("next.config.ts");
 
   assert.match(nextConfig, /X-Content-Type-Options/);
+  assert.match(nextConfig, /X-Permitted-Cross-Domain-Policies/);
   assert.match(nextConfig, /strict-origin-when-cross-origin/);
   assert.match(nextConfig, /camera=\(\), microphone=\(\), geolocation=\(\)/);
   assert.match(nextConfig, /X-Frame-Options[\s\S]*DENY/);
-  assert.match(nextConfig, /frame-ancestors 'none'/);
-  assert.match(nextConfig, /"\/admin\/:path\*", "\/dashboard\/:path\*", "\/new-request", "\/payment\/:path\*"/);
+  assert.match(nextConfig, /frame-ancestors 'none'; base-uri 'self'; object-src 'none'/);
+  assert.match(nextConfig, /private, no-store, max-age=0, must-revalidate/);
+  for (const source of [
+    "/admin/:path*",
+    "/dashboard/:path*",
+    "/new-request",
+    "/payment/:path*",
+    "/login",
+    "/register",
+    "/forgot-password",
+    "/reset-password",
+    "/auth/:path*",
+  ]) {
+    assert.match(nextConfig, new RegExp(source.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  }
   assert.doesNotMatch(nextConfig, /"\/widget\/:path\*"/);
   assert.doesNotMatch(nextConfig, /"\/embed\/:path\*"/);
 });

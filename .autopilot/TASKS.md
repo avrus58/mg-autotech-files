@@ -50,6 +50,18 @@ Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
 
+### MANUAL-011 [P0] Platform guvenlik ve coklu cihaz assurance denetimi
+
+Durum: Done
+
+Fingerprint: `platform-security|anonymous-api-and-ssrf-boundaries|transient-auth-500-and-accessibility-gaps|local-production-assurance-suite`
+
+Kapsam: Production verisine veya secretlara dokunmadan tum admin API methodlarini, kritik customer API'lerini, SSRF sinirlarini, private page headerlarini, client bundle secret izlerini, dependency'leri, SEO rotalarini ve telefon/tablet/laptop/desktop responsive davranisini yerel production build uzerinde denetlemek.
+
+Sonuc: IPv4-mapped IPv6 ve ek non-public IP araliklari URL enrichment katmaninda bloklandi. File Expert admin feedback merkezi `file_expert.manage` guard'ina tasindi; anonim File Expert ve customer revision istekleri Supabase/client olusturmadan once reddediliyor. Revision malformed JSON davranisi bounded 400 oldu. Private/auth sayfalari frame-deny, no-store, noindex ve CSP ile sertlestirildi. Homepage vehicle selectleri ve icon-only registration linki accessible name kazandi. Local-only reusable security smoke ve static security assurance suite eklendi.
+
+Dogrulama: Local production smoke PASS (69 admin method 401/403 veya bilinen disabled demo 404; 16 customer API 401/403; 8 private page header; 4 public-safe validation); lint PASS; web+desktop typecheck PASS; full tests PASS (539/539); production build PASS (268 entry; ilk deneme gecici Google Fonts ag hatasi, tekrar PASS); performance budget PASS (3 chunk, 211.4 KB raw, 55.6 KB gzip / 80 KB); i18n/SEO PASS (12 locale, 25 source file); payment schema-only PASS; web+desktop production audit PASS (0 vulnerabilities); client bundle secret scan PASS; sitemap PASS (146 public URL, 0 private route); diff check PASS. Browser QA 390x844, 768x1024, 1366x768 ve 1920x1080 boyutlarinda sifir horizontal overflow, sifir unnamed control ve sifir console error ile PASS.
+
 ### MANUAL-010 [P0] Platform oturum, yenileme ve operasyon guvenilirligi
 
 Durum: Done

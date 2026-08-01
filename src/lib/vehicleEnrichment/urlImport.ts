@@ -267,10 +267,28 @@ function isPrivateIp(address: string) {
   if (!version) return false;
   if (version === 6) {
     const lower = normalizedAddress.toLowerCase();
-    return lower === "::1" || lower.startsWith("fc") || lower.startsWith("fd") || lower.startsWith("fe80:") || lower === "::";
+    const firstHextet = Number.parseInt(lower.split(":", 1)[0] || "0", 16);
+    const mappedMatch = lower.match(/^::(?:ffff:)?([0-9a-f]{1,4}):([0-9a-f]{1,4})$/);
+    if (mappedMatch) {
+      const high = Number.parseInt(mappedMatch[1], 16);
+      const low = Number.parseInt(mappedMatch[2], 16);
+      return isPrivateIp([
+        high >> 8,
+        high & 0xff,
+        low >> 8,
+        low & 0xff,
+      ].join("."));
+    }
+    return (
+      lower === "::1" ||
+      lower === "::" ||
+      (firstHextet >= 0xfc00 && firstHextet <= 0xfdff) ||
+      (firstHextet >= 0xfe80 && firstHextet <= 0xfeff) ||
+      firstHextet >= 0xff00
+    );
   }
   const parts = normalizedAddress.split(".").map((part) => Number.parseInt(part, 10));
-  const [a, b] = parts;
+  const [a, b, c] = parts;
   return (
     a === 0 ||
     a === 10 ||
@@ -279,6 +297,11 @@ function isPrivateIp(address: string) {
     (a === 172 && b >= 16 && b <= 31) ||
     (a === 192 && b === 168) ||
     (a === 100 && b >= 64 && b <= 127) ||
+    (a === 192 && b === 0 && c === 0) ||
+    (a === 192 && b === 0 && c === 2) ||
+    (a === 198 && (b === 18 || b === 19)) ||
+    (a === 198 && b === 51 && c === 100) ||
+    (a === 203 && b === 0 && c === 113) ||
     a >= 224
   );
 }

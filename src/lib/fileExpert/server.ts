@@ -1,5 +1,6 @@
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { getSupabaseServer } from "@/lib/supabaseServer";
+import { requireStaffPermission } from "@/lib/apiAuth";
 import { analyzeFileExpertBuffers, buildPatternSignature, sha256Buffer } from "@/lib/fileExpert/analyzer";
 import { generateAiFileExpertReport } from "@/lib/ai";
 import { findVehicleCandidates } from "@/lib/fileExpert/vehicleMatcher";
@@ -40,9 +41,13 @@ export function validateFileExpertDescriptor(file: { name: string; size: number 
 }
 
 export async function getCurrentServerUser(request?: Request) {
-  const supabase = await getSupabaseServer();
-
   const token = request?.headers.get("authorization")?.replace(/^Bearer\s+/i, "").trim();
+  const cookieHeader = request?.headers.get("cookie") ?? "";
+  const hasSupabaseAuthCookie = /(?:^|;\s*)sb-[^=;]+-auth-token(?:\.\d+)?=/.test(cookieHeader);
+
+  if (request && !token && !hasSupabaseAuthCookie) return null;
+
+  const supabase = await getSupabaseServer();
 
   if (token) {
     const {
@@ -86,13 +91,10 @@ export async function isFileExpertAdmin(userId: string) {
 }
 
 export async function requireFileExpertAdmin(request?: Request) {
-  const user = await getCurrentServerUser(request);
-  if (!user) return { error: "Unauthorized", status: 401 as const };
-
-  const isAdmin = await isFileExpertAdmin(user.id);
-  if (!isAdmin) return { error: "Admin access required", status: 403 as const };
-
-  return { user, status: 200 as const };
+  if (!request) return { ok: false as const, error: "Unauthorized", status: 401 as const };
+  const auth = await requireStaffPermission(request, "file_expert.manage");
+  if (!auth.ok) return { ok: false as const, error: auth.error, status: auth.status };
+  return { ok: true as const, user: auth.user, status: 200 as const };
 }
 
 async function downloadFile(path: string | null) {

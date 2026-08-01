@@ -2749,6 +2749,7 @@ function PublicVehicleSelect({
   return (
     <div className="relative">
       <select
+        aria-label={placeholder}
         value={value}
         disabled={disabled}
         onChange={(event) => onChange(event.target.value)}
@@ -4581,6 +4582,7 @@ export default function HomePage() {
 
             <Link
               href="/register"
+              aria-label="Create account"
               className="hidden rounded-xl bg-[#b1121b] p-4 text-white transition duration-300 hover:-translate-y-1 hover:bg-[#c91824] md:block"
             >
               <ArrowRight />
