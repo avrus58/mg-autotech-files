@@ -62,6 +62,18 @@ Sonuc: Ortak `BrowserAuthBoundary`, kullanilabilir verified session snapshot'ini
 
 Dogrulama: targeted auth tests PASS (7/7); lint PASS; web+desktop typecheck PASS; full tests PASS (502/502); production build PASS (267 route/page entry); payment schema-only PASS; production dependency audit PASS (0 vulnerabilities); diff check PASS. Local browser QA `/new-request` login gate, eski transient mesajin yoklugu, console error olmamasi ve 390x844/1366x768 overflow kontrolleriyle PASS.
 
+### MANUAL-007 [P1] Ana sayfa hazir kredi paketlerini ortak katalogla esitle
+
+Durum: Done
+
+Fingerprint: `homepage-commerce|ready-credit-package-catalog|four-card-filter-and-rounded-unit-price|shared-five-package-responsive-rail`
+
+Kapsam: Ana sayfadaki kredi fiyat bolumunu musteri kredi ekraninin kullandigi mevcut ortak hazir paket kataloguyla esitle; fiyat veya odeme davranisini degistirmeden tum paketleri, paket adlarini ve dogru kredi basi fiyat hassasiyetini goster. Telefon ve tablette ana sayfayi uzatmayan kontrollu yatay paket seridi kullan.
+
+Sonuc: Eski `<= 250` filtresi kaldirildi; Starter, Workshop, Professional, Partner ve Enterprise paketlerinin tamami `src/lib/creditPackages.ts` kaynagindan render ediliyor. Birim fiyatlar iki ondalik hassasiyetle gosteriliyor. Mobil/tablet tek satir snap rail, genis masaustu bes kolon kullaniyor; checkout hedefi mevcut `/dashboard/credits` olarak korundu.
+
+Dogrulama: Focused katalog testleri ve full suite PASS; lint PASS; web + desktop typecheck PASS; production build PASS; payment schema-only PASS; production dependency audit PASS; responsive browser QA 390x844, 768x1024 ve 1440x900 boyutlarinda yatay govde tasmasi olmadan PASS; diff check PASS.
+
 ### MANUAL-005 [P1] ECU file-service search-intent architecture
 
 Durum: Done

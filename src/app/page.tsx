@@ -693,15 +693,10 @@ const workshopUseCases = [
   },
 ];
 
-const creditPackages = sharedCreditPackages
-  .filter((pack) => pack.credits <= 250)
-  .map((pack) => ({
-    credits: String(pack.credits),
-    price: pack.priceEuro,
-    basePrice: pack.basePriceEuro,
-    each: pack.priceEuro / pack.credits,
-    popular: pack.highlight,
-  }));
+const homepageCreditPackages = sharedCreditPackages.map((pack) => ({
+  ...pack,
+  unitPriceEuro: pack.priceEuro / pack.credits,
+}));
 
 const securityItems = [
   { title: "Private Dashboard", icon: Lock },
@@ -2798,6 +2793,15 @@ function formatEuro(value: number) {
   }).format(value);
 }
 
+function formatCreditUnitEuro(value: number) {
+  return new Intl.NumberFormat("de-DE", {
+    style: "currency",
+    currency: "EUR",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value);
+}
+
 function WorkshopCommandDesk() {
   return (
     <AnimatedSection className="bg-[#07090d] py-20">
@@ -4650,38 +4654,50 @@ export default function HomePage() {
             </div>
           </div>
 
-          <div className="grid gap-5 md:grid-cols-4">
-            {creditPackages.map((pack) => (
+          <div className="-mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-4 xl:mx-0 xl:grid xl:grid-cols-5 xl:overflow-visible xl:px-0">
+            {homepageCreditPackages.map((pack) => (
               <div
-                key={pack.credits}
-                className={`relative rounded-3xl border p-7 transition duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-red-950/30 ${
-                  pack.popular
-                    ? "border-red-700 bg-white/[0.08]"
+                key={pack.id}
+                className={`relative flex min-h-[320px] min-w-[min(82vw,20rem)] snap-start flex-col rounded-3xl border p-6 transition duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-red-950/30 xl:min-w-0 ${
+                  pack.highlight
+                    ? "border-red-700 bg-gradient-to-b from-red-950/35 to-white/[0.06]"
                     : "border-white/10 bg-white/[0.04]"
                 }`}
               >
-                {pack.popular && (
-                  <div className="absolute right-5 top-5 rounded-full bg-[#b1121b] px-3 py-1 text-xs font-black">
-                    Popular
+                <div className="flex min-h-7 items-start justify-between gap-2">
+                  <div className="min-w-0 text-[11px] font-black uppercase tracking-[0.12em] text-red-300">
+                    {pack.name}
                   </div>
-                )}
-                <div className="text-sm text-zinc-400">
+                  {pack.highlight && (
+                    <div className="shrink-0 rounded-full bg-[#b1121b] px-2.5 py-1 text-[10px] font-black">
+                      Popular
+                    </div>
+                  )}
+                </div>
+                <div className="mt-2 text-lg font-black text-white">
                   {pack.credits} Credits
                 </div>
-                <div className="mt-4 text-sm font-bold text-zinc-500 line-through">
-                  {formatEuro(pack.basePrice)}
+
+                <div className="mt-6 text-sm font-bold text-zinc-500 line-through">
+                  {formatEuro(pack.basePriceEuro)}
                 </div>
                 <div className="mt-1 text-4xl font-black">
-                  {formatEuro(pack.price)}
+                  {formatEuro(pack.priceEuro)}
                 </div>
-                <div className="mt-3 text-sm text-zinc-400">
-                  {formatEuro(pack.each)} / Credit
+                <div className="mt-2 text-sm font-bold text-red-300">
+                  {formatCreditUnitEuro(pack.unitPriceEuro)} per credit
                 </div>
+
+                <p className="mt-5 flex-1 text-sm leading-6 text-zinc-400">
+                  {pack.description}
+                </p>
+
                 <Link
                   href="/dashboard/credits"
-                  className="mt-7 block rounded-xl border border-red-800/70 px-5 py-3 text-center font-black text-white transition duration-300 hover:bg-red-950/30"
+                  className="mt-6 flex min-h-12 items-center justify-center rounded-xl border border-red-800/70 px-5 py-3 text-center font-black text-white transition duration-300 hover:border-red-600 hover:bg-red-950/35 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-600"
+                  aria-label={`Select the ${pack.name} ${pack.credits} credit package`}
                 >
-                  Buy
+                  Select package
                 </Link>
               </div>
             ))}

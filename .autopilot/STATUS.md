@@ -2299,3 +2299,12 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 - Kontroller: targeted PASS (7/7); `npm run lint -- --quiet` PASS; `npm run typecheck` PASS; `npm test` PASS (502/502); `npm run build` PASS (267 route/page entry); `node scripts/check-payment-env.js --schema-only` PASS; `npm audit --omit=dev --audit-level=high` PASS (0 vulnerabilities); `git diff --check` PASS.
 - Local UI QA: `/new-request` unauthenticated login gate dogru render edildi; eski transient kesinti mesaji yok; console error yok; 390x844 mobil ve 1366x768 laptop boyutlarinda horizontal overflow yok.
 - Release: Commit, push ve deploy yapilmadi; owner bu turda release istemedi.
+
+## 2026-07-31 Homepage ready credit package alignment
+
+- Gorev: Ana sayfadaki kredi fiyat kartlarini mevcut musteri kredi ekranindaki hazir paket kataloguyla ayni kaynaga ve ayni paket kapsamina getirmek.
+- Uygulama: Ana sayfadaki dort paketle sinirlayan filtre kaldirildi. Ortak `creditPackages` kaynagindaki Starter 10, Workshop 50, Professional 100, Partner 250 ve Enterprise 500 paketleri ad, aciklama, liste fiyati, paket fiyati ve dogru iki ondalikli kredi basi fiyatla gosteriliyor. Satin alma hedefi mevcut `/dashboard/credits` akisidir; fiyat, Stripe, banka transferi veya checkout mantigi degismedi.
+- Responsive: 1280 px ve uzerinde bes esit kolon; telefon, tablet ve kucuk laptopta sayfayi uzatmayan yatay snap rail kullanildi. Kartlar sabit minimum boyut, klavye focus stili ve paket-adli aria label tasir.
+- Degisen dosyalar: `src/app/page.tsx`, `tests/homepage-credit-packages.test.ts`, `.autopilot/TASKS.md`, `.autopilot/STATUS.md`.
+- Kontroller: Full tests PASS (504/504); lint PASS; web + desktop typecheck PASS; production build PASS (267 page/route entries); payment schema-only PASS ve env dosyasi okunmadi; production dependency audit PASS (0 vulnerabilities); responsive browser QA 390x844, 768x1024 ve 1440x900 boyutlarinda body overflow olmadan PASS; diff check PASS.
+- Kapsam: Yeni dependency, SQL veya migration yoktur. Fiyat degeri, ticari kural, odeme davranisi, production verisi, deploy veya push degismedi.
