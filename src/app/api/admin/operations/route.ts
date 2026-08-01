@@ -10,6 +10,7 @@ import {
 import { hasStaffPermission } from "@/lib/staffPermissions";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { getAdminRequestList } from "@/lib/workOrders/server";
+import { getSeoGrowthConfiguration } from "@/lib/seoGrowth/config";
 
 const privateNoStoreHeaders = {
   "Cache-Control": "private, no-store, max-age=0",
@@ -148,6 +149,7 @@ export async function GET(request: Request) {
     };
     const provider = getTransactionalEmailProviderStatus();
     const desktop = getDesktopAppCheckPayload({ appVersion: desktopAppCurrentVersion });
+    const seoMeasurement = getSeoGrowthConfiguration();
 
     const latestOrders = requests.items.slice(0, 5).map((item) => ({
       id: item.order.id,
@@ -198,6 +200,14 @@ export async function GET(request: Request) {
         label: "Customer notifications",
         status: notifications.available ? "healthy" : "warning",
         detail: notifications.available ? `${notifications.data} customer notifications are currently unread.` : notifications.warning,
+      },
+      {
+        key: "seo_measurement",
+        label: "SEO index and conversion measurement",
+        status: seoMeasurement.searchConsoleConfigured && seoMeasurement.analyticsConfigured ? "healthy" : "warning",
+        detail: seoMeasurement.searchConsoleConfigured && seoMeasurement.analyticsConfigured
+          ? "Search Console query/index signals and aggregate GA4 request conversion reporting are configured."
+          : "Search Console or GA4 server reporting still needs configuration review; public consent controls remain active.",
       },
       {
         key: "desktop",

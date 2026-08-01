@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { authenticatedFetch } from "@/lib/authGuards";
+import { resolveAdminAccess } from "@/lib/adminAccessClient";
 import { supabase } from "@/lib/supabaseClient";
 import RequestChat from "@/components/RequestChat";
 import { AdminNotificationCenter } from "@/components/admin/AdminNotificationCenter";
@@ -524,10 +525,26 @@ export default function AdminPage() {
     if (loadSequence !== adminLoadSequenceRef.current) return;
 
     if (response.status === 403) {
-      setAdminAccess(null);
-      setAdminAccessDenied(true);
-      setAdminDataReady(false);
-      setAdminLoadError("");
+      const accessResolution = await resolveAdminAccess();
+      if (loadSequence !== adminLoadSequenceRef.current) return;
+
+      if (accessResolution.state === "denied") {
+        setAdminAccess(null);
+        setAdminAccessDenied(true);
+        setAdminDataReady(false);
+        setAdminLoadError("");
+        setLoading(false);
+        setAutoRefreshing(false);
+        return;
+      }
+
+      if (accessResolution.state === "authorized") {
+        setAdminAccess(accessResolution.access);
+        setAdminAccessDenied(false);
+      }
+      if (!silent || !hasLoadedAdminDataRef.current) {
+        setAdminLoadError(ADMIN_LOAD_ERROR_MESSAGE);
+      }
       setLoading(false);
       setAutoRefreshing(false);
       return;
@@ -637,7 +654,10 @@ export default function AdminPage() {
       });
     };
 
-    const interval = window.setInterval(refreshAdminData, 10000);
+    // Realtime actions and visibility recovery provide the immediate path;
+    // this slower safety poll avoids continuously reloading the entire admin
+    // snapshot on laptops and mobile networks.
+    const interval = window.setInterval(refreshAdminData, 20000);
     const handleVisibilityChange = () => {
       if (document.visibilityState === "visible") refreshAdminData();
     };

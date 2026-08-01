@@ -3,7 +3,11 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 import { resolve } from "node:path";
 import { renderTransactionalEmailTemplate } from "../src/lib/email/templates";
-import { sendTransactionalEmail } from "../src/lib/email/service";
+import {
+  buildProviderEmailIdempotencyKey,
+  isRetryableEmailProviderError,
+  sendTransactionalEmail,
+} from "../src/lib/email/service";
 import {
   buildLifecycleIdempotencyKey,
   resolveStatusEmail,
@@ -177,6 +181,29 @@ test("real email delivery requires explicit dry-run opt-out", () => {
   const service = readFileSync(resolve(process.cwd(), "src", "lib", "email", "service.ts"), "utf8");
   assert.match(service, /process\.env\.EMAIL_DRY_RUN !== "false"/);
   assert.match(service, /process\.env\.NODE_ENV === "test"/);
+});
+
+test("provider delivery uses a privacy-safe stable idempotency key", () => {
+  const first = buildProviderEmailIdempotencyKey("request-created:customer@example.com:order-1");
+  const second = buildProviderEmailIdempotencyKey("request-created:customer@example.com:order-1");
+  const other = buildProviderEmailIdempotencyKey("request-created:customer@example.com:order-2");
+
+  assert.equal(first, second);
+  assert.notEqual(first, other);
+  assert.match(first, /^mg_[a-f0-9]{64}$/);
+  assert.doesNotMatch(first, /customer|example|order/i);
+});
+
+test("email provider retries only transient failures", () => {
+  assert.equal(isRetryableEmailProviderError(new TypeError("fetch failed")), true);
+  assert.equal(isRetryableEmailProviderError({ statusCode: 429, name: "rate_limit_exceeded" }), true);
+  assert.equal(isRetryableEmailProviderError({ statusCode: 503, name: "application_error" }), true);
+  assert.equal(isRetryableEmailProviderError({ statusCode: 400, name: "validation_error" }), false);
+  assert.equal(isRetryableEmailProviderError({ statusCode: 401, name: "authentication_error" }), false);
+
+  const service = readFileSync(resolve(process.cwd(), "src", "lib", "email", "service.ts"), "utf8");
+  assert.match(service, /providerRetryDelays = \[0, 300, 900\]/);
+  assert.match(service, /emails\.send\(emailPayload, \{\s*idempotencyKey: providerIdempotencyKey/);
 });
 
 test("email service rejects invalid recipients before provider access", async () => {

@@ -122,15 +122,26 @@ test("transient access API failures never become a false access denial", () => {
 
 test("only a successful denied profile resolution closes the admin workspace", () => {
   const adminPage = readProjectFile("src", "app", "admin", "page.tsx");
+  const accessClient = readProjectFile("src", "lib", "adminAccessClient.ts");
 
   assert.match(adminPage, /const \[adminAccessDenied, setAdminAccessDenied\] = useState\(false\)/);
   assert.match(
     adminPage,
-    /if \(response\.status === 403\) \{[\s\S]*?setAdminAccessDenied\(true\)/
+    /if \(response\.status === 403\) \{[\s\S]*?resolveAdminAccess\(\)[\s\S]*?accessResolution\.state === "denied"[\s\S]*?setAdminAccessDenied\(true\)/
   );
+  assert.match(accessClient, /let pendingDenial = false/);
+  assert.match(accessClient, /if \(pendingDenial\) return resolution/);
+  assert.match(accessClient, /pendingDenial = false/);
   assert.match(adminPage, /const access = payload\.access;[\s\S]*setAdminAccessDenied\(false\)/);
   assert.match(adminPage, /if \(adminAccessDenied\) \{/);
   assert.doesNotMatch(adminPage, /if \(message === "You are not authorized/);
+});
+
+test("admin refresh is visibility aware and uses a moderate fallback interval", () => {
+  const adminPage = readProjectFile("src", "app", "admin", "page.tsx");
+
+  assert.match(adminPage, /window\.setInterval\(refreshAdminData, 20000\)/);
+  assert.doesNotMatch(adminPage, /window\.setInterval\(refreshAdminData, 10000\)/);
 });
 
 test("server-side profile lookup failures stay retryable instead of becoming 403", () => {

@@ -93,6 +93,14 @@ test("protected routes reuse a verified session and recover transient checks in 
   assert.doesNotMatch(boundary, /Retry secure connection/);
 });
 
+test("the stable session snapshot is browser-scoped and cannot leak through warm server memory", () => {
+  const guard = readProjectFile("src", "lib", "authGuards.ts");
+
+  assert.match(guard, /return authWindow\?\.__mgAutotechStableSession \?\? null/);
+  assert.doesNotMatch(guard, /serverStableSession/);
+  assert.doesNotMatch(guard, /globalThis\.__mgAutotechStableSession/);
+});
+
 test("protected clients do not treat one raw Supabase read as a logout", () => {
   const routeClients = ["admin", "dashboard", "new-request"]
     .flatMap((segment) => listClientFiles(resolve(process.cwd(), "src", "app", segment)));

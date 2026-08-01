@@ -25,10 +25,14 @@ export async function GET(request: Request) {
 
   try {
     const admin = getSupabaseAdmin();
-    const orderResult = await admin
+    const orderQuery = admin
       .from("orders")
       .select("*")
       .order("created_at", { ascending: false });
+    const customerQuery = hasStaffPermission(auth.access, "customers.view")
+      ? admin.from("profiles").select(customerSelect).order("created_at", { ascending: false })
+      : Promise.resolve(null);
+    const [orderResult, customerResult] = await Promise.all([orderQuery, customerQuery]);
 
     if (orderResult.error) {
       return NextResponse.json(
@@ -40,12 +44,7 @@ export async function GET(request: Request) {
     let customers: Record<string, unknown>[] = [];
 
     if (hasStaffPermission(auth.access, "customers.view")) {
-      const customerResult = await admin
-        .from("profiles")
-        .select(customerSelect)
-        .order("created_at", { ascending: false });
-
-      if (customerResult.error?.code === "42703") {
+      if (customerResult?.error?.code === "42703") {
         const fallbackResult = await admin
           .from("profiles")
           .select(fallbackCustomerSelect)
@@ -62,13 +61,13 @@ export async function GET(request: Request) {
           ...customer,
           customer_tags: [],
         }));
-      } else if (customerResult.error) {
+      } else if (customerResult?.error) {
         return NextResponse.json(
           { error: "Admin dashboard customers could not be loaded." },
           { status: 500, headers: privateNoStoreHeaders }
         );
       } else {
-        customers = customerResult.data ?? [];
+        customers = customerResult?.data ?? [];
       }
     }
 

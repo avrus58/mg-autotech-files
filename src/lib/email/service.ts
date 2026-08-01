@@ -1,4 +1,5 @@
 import { Resend } from "resend";
+import { createHash } from "node:crypto";
 import { createEmailEventLog, updateEmailEventLog } from "@/lib/email/logging";
 import { renderTransactionalEmailTemplate } from "@/lib/email/templates";
 import type {
@@ -10,6 +11,7 @@ const fromEmail =
   process.env.EMAIL_FROM || "MG AutoTech <noreply@file.mgautotech.de>";
 
 let resendClient: Resend | null = null;
+const providerRetryDelays = [0, 300, 900] as const;
 
 function getResendClient() {
   const apiKey = process.env.RESEND_API_KEY;
@@ -36,6 +38,37 @@ export function getTransactionalEmailProviderStatus() {
 
 export function isValidRecipientEmail(value: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim()) && value.length <= 250;
+}
+
+export function buildProviderEmailIdempotencyKey(value: string) {
+  return `mg_${createHash("sha256").update(value).digest("hex")}`;
+}
+
+export function isRetryableEmailProviderError(error: unknown) {
+  if (error instanceof TypeError) return true;
+  if (!error || typeof error !== "object") return false;
+  const candidate = error as { statusCode?: unknown; name?: unknown; message?: unknown };
+  const statusCode = Number(candidate.statusCode ?? 0);
+  const name = String(candidate.name ?? "").toLowerCase();
+  const message = String(candidate.message ?? "").toLowerCase();
+
+  return statusCode === 429 || statusCode >= 500 ||
+    ["rate_limit_exceeded", "concurrent_idempotent_requests", "application_error", "internal_server_error"].includes(name) ||
+    /rate limit|temporar|timeout|network|internal server|concurrent idempotent/.test(message);
+}
+
+function providerErrorMessage(error: unknown) {
+  if (error instanceof Error) return error.message.slice(0, 500);
+  if (error && typeof error === "object" && "message" in error) {
+    return String(error.message).slice(0, 500);
+  }
+  return "Transactional email failed";
+}
+
+function wait(delayMs: number) {
+  return delayMs > 0
+    ? new Promise<void>((resolve) => globalThis.setTimeout(resolve, delayMs))
+    : Promise.resolve();
 }
 
 export async function sendTransactionalEmail(
@@ -124,24 +157,47 @@ export async function sendTransactionalEmail(
   }
 
   try {
-    const result = await getResendClient().emails.send({
+    const emailPayload = {
       from: fromEmail,
       to: recipient,
       subject: rendered.subject,
       html: rendered.html,
       text: rendered.text,
-    });
-    if (result.error) throw new Error(result.error.message);
+    };
+    const providerIdempotencyKey = buildProviderEmailIdempotencyKey(input.idempotencyKey);
+    let providerMessageId: string | null = null;
+    let providerError: unknown = null;
+
+    for (let attempt = 0; attempt < providerRetryDelays.length; attempt += 1) {
+      await wait(providerRetryDelays[attempt]);
+      try {
+        const result = await getResendClient().emails.send(emailPayload, {
+          idempotencyKey: providerIdempotencyKey,
+        });
+        if (!result.error) {
+          providerMessageId = result.data?.id ?? null;
+          providerError = null;
+          break;
+        }
+        providerError = result.error;
+      } catch (error) {
+        providerError = error;
+      }
+
+      if (!isRetryableEmailProviderError(providerError)) break;
+    }
+
+    if (providerError) throw new Error(providerErrorMessage(providerError));
     await updateEmailEventLog(log.id, {
       status: "sent",
-      providerMessageId: result.data?.id ?? null,
+      providerMessageId,
       sentAt: new Date().toISOString(),
     });
     return {
       ok: true,
       status: "sent",
       provider: "resend",
-      messageId: result.data?.id ?? null,
+      messageId: providerMessageId,
       idempotencyKey: input.idempotencyKey,
     };
   } catch (error) {

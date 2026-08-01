@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { CustomerNotificationsRuntime } from "@/components/CustomerNotificationsRuntime";
 import { PublicAnalytics } from "@/components/analytics/PublicAnalytics";
+import { PlatformReliabilityMonitor } from "@/components/PlatformReliabilityMonitor";
 import {
   absoluteUrl,
   hreflangByLocale,
@@ -152,6 +153,7 @@ export default function RootLayout({
         />
         {children}
         <PublicAnalytics measurementId={googleAnalyticsMeasurementId} />
+        <PlatformReliabilityMonitor />
         <CustomerNotificationsRuntime />
         <LanguageSwitcher />
       </body>

@@ -24,10 +24,23 @@ async function requestAdminAccess(): Promise<AdminAccessResolution> {
 }
 
 export async function resolveAdminAccess(): Promise<AdminAccessResolution> {
+  let pendingDenial = false;
+
   for (const delayMs of ADMIN_ACCESS_RETRY_DELAYS_MS) {
     await wait(delayMs);
     const resolution = await requestAdminAccess();
-    if (resolution.state !== "unavailable") return resolution;
+    if (resolution.state === "authorized") return resolution;
+
+    if (resolution.state === "denied") {
+      // A single transient profile/read replica response must not replace an
+      // already verified workspace with Access Denied. The API remains the
+      // authority; we simply require the denial to be independently repeated.
+      if (pendingDenial) return resolution;
+      pendingDenial = true;
+      continue;
+    }
+
+    pendingDenial = false;
   }
 
   return { state: "unavailable" };

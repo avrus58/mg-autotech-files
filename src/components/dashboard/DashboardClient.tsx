@@ -194,6 +194,7 @@ export function DashboardClient() {
   const [dashboardRefreshKey, setDashboardRefreshKey] = useState(0);
   const [copiedReference, setCopiedReference] = useState(false);
   const hasLoadedDashboardRef = useRef(false);
+  const dashboardRefreshInFlightRef = useRef(false);
 
   useEffect(() => {
     let currentUserId: string | null = null;
@@ -201,6 +202,9 @@ export function DashboardClient() {
     const loadDashboard = async (options?: { silent?: boolean }) => {
       const silent = Boolean(options?.silent);
       let keepLoadingForRedirect = false;
+
+      if (dashboardRefreshInFlightRef.current) return;
+      dashboardRefreshInFlightRef.current = true;
 
       if (silent) {
         setLiveRefreshing(true);
@@ -234,64 +238,45 @@ export function DashboardClient() {
         const userId = currentUserId;
         if (!userId) return;
 
-        const { data: profile, error: profileError } = await supabase
-          .from("profiles")
-          .select(
-            "credit_balance, customer_id, full_name, account_type, company_name, phone, street, postal_code, city, country, invoice_email, preferred_contact"
-          )
-          .eq("id", userId)
-          .single();
-
-        const { data: recentOrders, error: recentOrdersError } = await supabase
-          .from("orders")
-          .select(
-            "id, customer_id, customer_email, vehicle_brand, vehicle_model, vehicle_generation, vehicle_engine, service_type, credits_required, status, notes, modified_file_path, created_at"
-          )
-          .eq("customer_id", userId)
-          .order("created_at", { ascending: false })
-          .limit(5);
-
-        const { data: transactionRows, error: transactionRowsError } = await supabase
-          .from("credit_transactions")
-          .select("id, user_id, type, credits_delta, balance_after, description, created_at")
-          .eq("user_id", userId)
-          .order("created_at", { ascending: false })
-          .limit(6);
-
-        const { count: allOrders, error: allOrdersError } = await supabase
-          .from("orders")
-          .select("*", { count: "exact", head: true })
-          .eq("customer_id", userId);
-
-        const { count: completedOrders, error: completedOrdersError } = await supabase
-          .from("orders")
-          .select("*", { count: "exact", head: true })
-          .eq("customer_id", userId)
-          .eq("status", "completed");
-
-        const { count: pendingOrders, error: pendingOrdersError } = await supabase
-          .from("orders")
-          .select("*", { count: "exact", head: true })
-          .eq("customer_id", userId)
-          .in("status", ["new_request", "file_check"]);
-
-        const { count: needsResponseOrders, error: needsResponseOrdersError } = await supabase
-          .from("orders")
-          .select("*", { count: "exact", head: true })
-          .eq("customer_id", userId)
-          .eq("status", "customer_info_needed");
-
-        const { count: progressOrders, error: progressOrdersError } = await supabase
-          .from("orders")
-          .select("*", { count: "exact", head: true })
-          .eq("customer_id", userId)
-          .eq("status", "in_progress");
-
-        const { count: cancelledOrders, error: cancelledOrdersError } = await supabase
-          .from("orders")
-          .select("*", { count: "exact", head: true })
-          .eq("customer_id", userId)
-          .eq("status", "cancelled");
+        const [
+          { data: profile, error: profileError },
+          { data: recentOrders, error: recentOrdersError },
+          { data: transactionRows, error: transactionRowsError },
+          { count: allOrders, error: allOrdersError },
+          { count: completedOrders, error: completedOrdersError },
+          { count: pendingOrders, error: pendingOrdersError },
+          { count: needsResponseOrders, error: needsResponseOrdersError },
+          { count: progressOrders, error: progressOrdersError },
+          { count: cancelledOrders, error: cancelledOrdersError },
+        ] = await Promise.all([
+          supabase
+            .from("profiles")
+            .select(
+              "credit_balance, customer_id, full_name, account_type, company_name, phone, street, postal_code, city, country, invoice_email, preferred_contact"
+            )
+            .eq("id", userId)
+            .single(),
+          supabase
+            .from("orders")
+            .select(
+              "id, customer_id, customer_email, vehicle_brand, vehicle_model, vehicle_generation, vehicle_engine, service_type, credits_required, status, notes, modified_file_path, created_at"
+            )
+            .eq("customer_id", userId)
+            .order("created_at", { ascending: false })
+            .limit(5),
+          supabase
+            .from("credit_transactions")
+            .select("id, user_id, type, credits_delta, balance_after, description, created_at")
+            .eq("user_id", userId)
+            .order("created_at", { ascending: false })
+            .limit(6),
+          supabase.from("orders").select("*", { count: "exact", head: true }).eq("customer_id", userId),
+          supabase.from("orders").select("*", { count: "exact", head: true }).eq("customer_id", userId).eq("status", "completed"),
+          supabase.from("orders").select("*", { count: "exact", head: true }).eq("customer_id", userId).in("status", ["new_request", "file_check"]),
+          supabase.from("orders").select("*", { count: "exact", head: true }).eq("customer_id", userId).eq("status", "customer_info_needed"),
+          supabase.from("orders").select("*", { count: "exact", head: true }).eq("customer_id", userId).eq("status", "in_progress"),
+          supabase.from("orders").select("*", { count: "exact", head: true }).eq("customer_id", userId).eq("status", "cancelled"),
+        ]);
 
         const queryFailed =
           profileError ||
@@ -341,6 +326,7 @@ export function DashboardClient() {
           setDashboardLoadError(DASHBOARD_LOAD_ERROR_MESSAGE);
         }
       } finally {
+        dashboardRefreshInFlightRef.current = false;
         if (silent) {
           setLiveRefreshing(false);
         } else if (!keepLoadingForRedirect) {
@@ -370,9 +356,16 @@ export function DashboardClient() {
       }
     });
 
-    const interval = window.setInterval(() => {
-      loadDashboard({ silent: true });
-    }, 30000);
+    const refreshVisibleDashboard = () => {
+      if (document.visibilityState === "visible") {
+        void loadDashboard({ silent: true });
+      }
+    };
+    const interval = window.setInterval(refreshVisibleDashboard, 30000);
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") refreshVisibleDashboard();
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     const channel = supabase
       .channel("customer-dashboard-live")
@@ -417,6 +410,7 @@ export function DashboardClient() {
 
     return () => {
       window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
       authListener.subscription.unsubscribe();
       supabase.removeChannel(channel);
     };

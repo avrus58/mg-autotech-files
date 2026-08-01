@@ -26,7 +26,6 @@ type AuthMemoryWindow = Window & typeof globalThis & {
 };
 
 const authWindow = typeof window === "undefined" ? null : window as AuthMemoryWindow;
-let serverStableSession: Session | null = null;
 let sessionResolutionInFlight: Promise<StableSessionResult> | null = null;
 let sessionRefreshInFlight: Promise<StableSessionResult> | null = null;
 let sessionRequiredCheckInFlight: Promise<void> | null = null;
@@ -39,11 +38,13 @@ class AuthSessionRecoveryPendingError extends Error {
 }
 
 function getCachedSession() {
-  return authWindow?.__mgAutotechStableSession ?? serverStableSession;
+  // Never retain a user session in module-level server memory. A warm Next.js
+  // process can serve different users, while this cache is intended only to
+  // bridge transient browser storage/refresh-token coordination.
+  return authWindow?.__mgAutotechStableSession ?? null;
 }
 
 function setCachedSession(session: Session | null) {
-  serverStableSession = session;
   if (authWindow) authWindow.__mgAutotechStableSession = session;
 }
 

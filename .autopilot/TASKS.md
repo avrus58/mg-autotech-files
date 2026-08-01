@@ -50,6 +50,18 @@ Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
 
+### MANUAL-010 [P0] Platform oturum, yenileme ve operasyon guvenilirligi
+
+Durum: Done
+
+Fingerprint: `platform-reliability|transient-auth-and-refresh-failures|visible-data-flash-and-silent-email-risk|fail-stable-observability-and-retry`
+
+Kapsam: Admin/customer oturum yenilemesini gecici ag hatalarina karsi fail-stable yapmak; veri polling cakismalarini azaltmak; public-safe crash/Web Vitals gozlemi, provider idempotent email retry davranisi ve operasyonel SEO konfigurasyon gorunurlugu eklemek.
+
+Sonuc: Browser session snapshot'i server modulunden ayrildi; admin authorization icin tekrarli kesin red gerekliligi eklendi. Admin ve customer dashboard veri yenilemeleri gorunmeyen sekmede durur, cakisan fetch baslatmaz ve mevcut dogrulanmis veriyi gecici hatada korur. Strict allowlistli, PII icermeyen runtime/Web Vitals gozlemi ile global error ekranlari eklendi. Resend gonderimleri ayni provider idempotency anahtariyla yalniz transient hatalarda sinirli retry yapar. Mevcut SEO/GA4/Search Console sistemi tekrar edilmeden admin operasyon sagligina konfigurasyon sinyali eklendi.
+
+Dogrulama: Targeted tests PASS (72/72); lint PASS; web + desktop typecheck PASS; full tests PASS (529/529); production build PASS (268 route/page entry); performance budget PASS (3 initial chunk, 211.4 KB raw, 55.6 KB gzip, 80 KB budget); i18n/SEO PASS (12 locale, 25 source file); production dependency audit PASS (0 vulnerabilities); diff check PASS. Browser QA 390x844, 768x1024, 1366x768 ve 1920x1080 boyutlarinda sifir horizontal overflow; `/admin`, `/new-request` ve `/dashboard` anonim login kapilari ve sifir console error ile PASS.
+
 ### MANUAL-009 [P0] Public web initial-load performance budget
 
 Durum: Done
