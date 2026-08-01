@@ -18,6 +18,7 @@ import {
   CheckCircle2,
   Clock3,
   Copy,
+  CopyPlus,
   Database,
   Download,
   FileCode2,
@@ -783,6 +784,14 @@ export default function OrderDetailPage() {
             </div>
 
             <div className="flex flex-wrap gap-2 lg:shrink-0">
+              <Link
+                href={`/new-request?repeat=${order.id}`}
+                className="inline-flex min-h-11 items-center justify-center rounded-lg border border-red-700/50 bg-red-950/30 px-4 text-center text-sm font-black text-red-100 transition hover:bg-red-950/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-400"
+              >
+                <CopyPlus className="mr-2 inline h-4 w-4" />
+                Create similar
+              </Link>
+
               <Link
                 href="/new-request"
                 className="inline-flex h-10 items-center justify-center rounded-lg border border-white/10 bg-white/[0.04] px-4 text-center text-sm font-black text-white transition hover:bg-white/10"

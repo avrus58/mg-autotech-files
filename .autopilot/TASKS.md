@@ -74,6 +74,18 @@ Sonuc: Eski `<= 250` filtresi kaldirildi; Starter, Workshop, Professional, Partn
 
 Dogrulama: Focused katalog testleri ve full suite PASS; lint PASS; web + desktop typecheck PASS; production build PASS; payment schema-only PASS; production dependency audit PASS; responsive browser QA 390x844, 768x1024 ve 1440x900 boyutlarinda yatay govde tasmasi olmadan PASS; diff check PASS.
 
+### MANUAL-008 [P1] Safe repeat request workflow ve world-class program
+
+Durum: Done
+
+Fingerprint: `customer-workflow|owned-order-repeat|safe-current-catalog-prefill|workshop-velocity-program`
+
+Kapsam: Musterinin kendi onceki siparisinden yeni bir talep baslatmasini hizlandiran, yalniz guvenli arac alanlarini ve guncel katalogda birebir eslesen hizmetleri tasiyan Create Similar akisi ile kanita dayali file-service urun programi.
+
+Sonuc: Order listesi ve order detail uzerinden yeni talep formuna guvenli repeat girisleri eklendi. Dosya, not, plaka, kredi, odeme, mesaj, teslimat, approval, AI ve admin metadatasi kopyalanmaz; servis fiyatlari mevcut katalogdan yeniden hesaplanir ve belirsiz/eski servisler tahmin edilmez. `docs/world-class-file-service-program.md` icinde guvenilirlik, workshop hizi, talep hazirligi, siparis seffafligi, guvenlik ve SEO icin olculebilir yol haritasi olusturuldu.
+
+Dogrulama: targeted repeat tests PASS (6/6); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (465/465); `npm run build` PASS (259 page/route entries); payment schema-only PASS; i18n/SEO PASS (12 locale, 19 source file); production dependency audit PASS (0 vulnerabilities); protected-route browser smoke PASS.
+
 ### MANUAL-005 [P1] ECU file-service search-intent architecture
 
 Durum: Done
@@ -133,7 +145,6 @@ Kapsam: Ana sayfa vehicle widget marka listesini hydration sonrasi network isteg
 Sonuc: 102 canonical marka ilk server render HTML'inde hazir gelir. Public API toplu katalog indirme sunmaz; yalniz exact brands -> models -> generations -> engines -> vehicle zincirini kabul eder. Bilinmeyen/tekrarlanan cache-bust parametreleri reddedilir. On dakikada 48 standart secim istegi regresyon testinde engellenmezken 41 farkli markayi hizla enumerate eden istemci sessiz anti-abuse kapisina takilir. Existing per-URL memory/session cache ile cache -> DB -> JSON fallback davranisi korunur.
 
 Dogrulama: Targeted vehicle tests PASS (47/47); lint PASS; full typecheck PASS; full tests PASS (465/465); production build PASS (259 pages); payment schema-only PASS; i18n/SEO PASS (12 locale, 19 source file); production dependency audit PASS (0 vulnerabilities); diff check PASS. Ilk HTML'de brand select 103 option (placeholder + 102 marka) tasir. BMW models endpointi 39 model dondurur. Ayni secime 50 hizli tekrar 200 kalirken 41 farkli marka enumeration isteginin 41'incisi 429 olur.
-
 ### AUTO-083 [P1] Homepage file-service platform stack eklensin
 
 Durum: Done

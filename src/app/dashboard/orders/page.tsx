@@ -8,6 +8,7 @@ import {
   BrainCircuit,
   CheckCircle2,
   Clock3,
+  CopyPlus,
   CreditCard,
   Eye,
   FileText,
@@ -322,7 +323,16 @@ export default function CustomerOrdersPage() {
                       <div className="min-w-0"><div className="break-words text-lg font-black">{order.vehicle_brand || "Vehicle"} {order.vehicle_model || ""}</div><div className="mt-1 break-words text-sm text-zinc-500">{order.vehicle_generation || "Generation not set"} · {order.vehicle_engine || "Engine not set"}</div><div className="mt-2 line-clamp-2 text-sm font-bold text-red-300">{order.service_type || "Service not set"}</div></div>
                       <div><span className={`inline-flex rounded-full border px-3 py-1 text-xs font-black ${statusClass(order.status)}`}>{statusLabel(order.status)}</span>{order.status === "customer_info_needed" && <div className="mt-2 break-words text-xs font-black text-orange-300">Needs your response</div>}{order.status === "revision" && <div className="mt-2 break-words text-xs font-black text-purple-300">Revision review in progress</div>}{order.modified_file_path && <div className="mt-2 text-xs font-black text-emerald-400"><CheckCircle2 className="mr-1 inline h-3 w-3" />File delivered</div>}</div>
                       <div><div className="font-black">{Number(order.credits_required ?? 0)} credits</div><div className="mt-1 text-xs text-zinc-500">{formatDate(order.created_at)}</div></div>
-                      <Link href={`/dashboard/orders/${order.id}`} className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-center text-sm font-black hover:bg-white/10"><Eye className="mr-2 inline h-4 w-4" />Details</Link>
+                      <div className="grid grid-cols-2 gap-2 md:grid-cols-1">
+                        <Link
+                          href={`/new-request?repeat=${order.id}`}
+                          aria-label={`Create a similar request for ${order.vehicle_brand || "this vehicle"} ${order.vehicle_model || ""}`.trim()}
+                          className="min-h-11 rounded-xl border border-red-800/45 bg-red-950/25 px-3 py-3 text-center text-xs font-black text-red-100 transition hover:bg-red-950/45 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-400"
+                        >
+                          <CopyPlus className="mr-1.5 inline h-4 w-4" />Repeat
+                        </Link>
+                        <Link href={`/dashboard/orders/${order.id}`} className="min-h-11 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-center text-sm font-black hover:bg-white/10"><Eye className="mr-2 inline h-4 w-4" />Details</Link>
+                      </div>
                     </article>
                   ))}
                 </div>

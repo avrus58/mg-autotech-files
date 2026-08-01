@@ -25,6 +25,7 @@ import {
   Gauge,
   Home,
   Loader2,
+  RefreshCcw,
   ShieldCheck,
   Upload,
   Wrench,
@@ -32,6 +33,12 @@ import {
 } from "lucide-react";
 import { evaluateRequestIntelligence } from "@/lib/requestIntelligence";
 import { trackRequestStarted, trackRequestSubmitted } from "@/lib/publicAnalytics";
+import {
+  buildRepeatRequestPrefill,
+  isRepeatRequestId,
+  type RepeatRequestOrder,
+  type RepeatRequestPrefill,
+} from "@/lib/repeatRequest";
 
 type Option = {
   id: string;
@@ -662,6 +669,7 @@ function VehicleHeroCard({
 export default function NewRequestPage() {
   const router = useRouter();
   const requestStartTrackedRef = useRef(false);
+  const repeatPrefillStartedRef = useRef(false);
 
   const [brands, setBrands] = useState<Option[]>([]);
   const [models, setModels] = useState<Option[]>([]);
@@ -706,6 +714,10 @@ export default function NewRequestPage() {
   const [message, setMessage] = useState("");
   const [customerProfile, setCustomerProfile] = useState<CustomerProfile | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
+  const [repeatPrefill, setRepeatPrefill] = useState<RepeatRequestPrefill | null>(null);
+  const [repeatPrefillLoading, setRepeatPrefillLoading] = useState(false);
+  const [repeatPrefillError, setRepeatPrefillError] = useState("");
+  const [repeatPrefillDismissed, setRepeatPrefillDismissed] = useState(false);
 
   const selectedBrandName =
     brands.find((item) => item.id === vehicleBrandId)?.name ?? "";
@@ -773,6 +785,102 @@ export default function NewRequestPage() {
     requestStartTrackedRef.current = true;
     trackRequestStarted();
   }, [customerProfile]);
+
+  useEffect(() => {
+    const repeatId = new URLSearchParams(window.location.search).get("repeat")?.trim() ?? "";
+    if (!repeatId || repeatPrefillStartedRef.current) return;
+
+    repeatPrefillStartedRef.current = true;
+
+    if (!isRepeatRequestId(repeatId)) {
+      const timeout = window.setTimeout(() => {
+        setRepeatPrefillError("The previous request reference is invalid. Start a blank request instead.");
+      }, 0);
+      return () => window.clearTimeout(timeout);
+    }
+
+    let cancelled = false;
+
+    async function loadRepeatPrefill() {
+      setRepeatPrefillLoading(true);
+      setRepeatPrefillError("");
+
+      try {
+        const response = await authenticatedFetch(`/api/requests/${encodeURIComponent(repeatId)}`, {
+          cache: "no-store",
+        });
+        const payload = (await response.json()) as {
+          order?: RepeatRequestOrder;
+          error?: string;
+        };
+
+        if (!response.ok || !payload.order) {
+          throw new Error(payload.error || "Previous request could not be loaded.");
+        }
+
+        const prefill = buildRepeatRequestPrefill(payload.order, {
+          mainServices,
+          extraServices,
+        });
+
+        if (cancelled) return;
+
+        setUseManualVehicleDetails(true);
+        setManualVehicleBrand(prefill.vehicle.brand);
+        setManualVehicleModel(prefill.vehicle.model);
+        setManualVehicleGeneration(prefill.vehicle.generation);
+        setManualVehicleEngine(prefill.vehicle.engine);
+        setEcu(prefill.technical.ecu);
+        setGearbox(prefill.technical.gearbox);
+        setYear(prefill.technical.year);
+        setReadMethod(prefill.technical.readMethod);
+        setHwSw(prefill.technical.hwSw);
+        setMasterSlave(prefill.technical.masterSlave);
+
+        if (prefill.services.fullyResolved && prefill.services.mainServiceId) {
+          setMainService(prefill.services.mainServiceId);
+          setSelectedExtras(prefill.services.extraServiceIds);
+          setOpenServiceCategories((current) => [
+            ...new Set([
+              ...current,
+              ...extraServiceCategories
+                .filter((category) =>
+                  category.services.some((service) =>
+                    prefill.services.extraServiceIds.includes(service.id)
+                  )
+                )
+                .map((category) => category.id),
+            ]),
+          ]);
+        } else {
+          setMainService("");
+          setSelectedExtras([]);
+        }
+
+        // A repeated request still requires a new file, notes, vehicle-specific identifiers and approvals.
+        setLicensePlate("");
+        setNotes("");
+        setFileName("");
+        setSelectedFile(null);
+        setPaymentAccepted(false);
+        setResponsibilityAccepted(false);
+        setRepeatPrefill(prefill);
+      } catch {
+        if (!cancelled) {
+          setRepeatPrefillError(
+            "The previous request could not be loaded securely. The blank request form is still available."
+          );
+        }
+      } finally {
+        if (!cancelled) setRepeatPrefillLoading(false);
+      }
+    }
+
+    void loadRepeatPrefill();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -1046,6 +1154,38 @@ export default function NewRequestPage() {
     }
   };
 
+  const clearRepeatPrefill = () => {
+    setUseManualVehicleDetails(false);
+    setVehicleBrandId("");
+    setVehicleModelId("");
+    setVehicleGenerationId("");
+    setVehicleEngineId("");
+    setManualVehicleBrand("");
+    setManualVehicleModel("");
+    setManualVehicleGeneration("");
+    setManualVehicleEngine("");
+    setSelectedVehicle(null);
+    setEcu("");
+    setGearbox("");
+    setYear("");
+    setReadMethod("");
+    setLicensePlate("");
+    setHwSw("");
+    setMasterSlave("master");
+    setMainService("stage_1");
+    setSelectedExtras([]);
+    setOpenServiceCategories(["emissions"]);
+    setNotes("");
+    setFileName("");
+    setSelectedFile(null);
+    setPaymentAccepted(false);
+    setResponsibilityAccepted(false);
+    setRepeatPrefill(null);
+    setRepeatPrefillError("");
+    setRepeatPrefillDismissed(false);
+    window.history.replaceState(null, "", window.location.pathname);
+  };
+
   const toggleExtra = (id: string) => {
     setSelectedExtras((current) =>
       current.includes(id)
@@ -1110,6 +1250,11 @@ export default function NewRequestPage() {
           ? "Please fill in manual brand, model and engine."
           : "Please fill in brand, model and engine."
       );
+      return;
+    }
+
+    if (!selectedMainService) {
+      setMessage("Please select the service required for this new request.");
       return;
     }
 
@@ -1298,6 +1443,102 @@ export default function NewRequestPage() {
       </header>
 
       <section className="mx-auto max-w-7xl px-4 py-8">
+        {(repeatPrefillLoading || repeatPrefillError || (repeatPrefill && !repeatPrefillDismissed)) && (
+          <section
+            aria-labelledby="repeat-request-title"
+            aria-live="polite"
+            className="mb-6 overflow-hidden rounded-2xl border border-red-800/45 bg-[linear-gradient(135deg,rgba(127,29,29,0.24),rgba(10,10,10,0.96)_58%)] shadow-xl shadow-black/25"
+          >
+            {repeatPrefillLoading ? (
+              <div className="flex min-h-24 items-center gap-3 px-5 py-4 text-sm font-bold text-zinc-300">
+                <span id="repeat-request-title" className="sr-only">Repeat request preparation</span>
+                <Loader2 className="h-5 w-5 animate-spin text-red-400" />
+                Securely preparing details from your previous request...
+              </div>
+            ) : repeatPrefillError ? (
+              <div role="alert" className="flex flex-col gap-4 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h2 id="repeat-request-title" className="font-black text-white">Previous request not applied</h2>
+                  <p className="mt-1 text-sm leading-6 text-zinc-400">{repeatPrefillError}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={clearRepeatPrefill}
+                    className="min-h-11 shrink-0 rounded-xl border border-white/10 bg-white/[0.05] px-4 text-sm font-black text-white transition hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-400"
+                >
+                  Start blank
+                </button>
+              </div>
+            ) : repeatPrefill ? (
+              <div className="grid gap-4 p-5 lg:grid-cols-[1fr_auto] lg:items-center">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="inline-flex items-center gap-2 rounded-full border border-red-700/45 bg-red-950/35 px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-red-100">
+                      <RefreshCcw className="h-3.5 w-3.5" />
+                      Repeat request
+                    </span>
+                    <span className="text-xs font-bold text-zinc-500">
+                      Source #{repeatPrefill.sourceOrderId.slice(0, 8).toUpperCase()}
+                    </span>
+                  </div>
+
+                  <h2 id="repeat-request-title" className="mt-3 text-xl font-black text-white">
+                    Previous workshop context is ready for review
+                  </h2>
+                  <p className="mt-1 text-sm leading-6 text-zinc-400">
+                    Vehicle, technical details and recognized services were prepared as editable values. Verify them before submitting this new job.
+                  </p>
+
+                  <div className="mt-4 flex flex-wrap gap-2 text-xs font-bold">
+                    <span className="rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-zinc-200">
+                      {[repeatPrefill.vehicle.brand, repeatPrefill.vehicle.model, repeatPrefill.vehicle.engine]
+                        .filter(Boolean)
+                        .join(" ") || "Vehicle details incomplete"}
+                    </span>
+                    <span className={`rounded-lg border px-3 py-2 ${
+                      repeatPrefill.services.fullyResolved
+                        ? "border-emerald-700/35 bg-emerald-950/20 text-emerald-200"
+                        : "border-amber-700/35 bg-amber-950/20 text-amber-200"
+                    }`}>
+                      {repeatPrefill.services.fullyResolved
+                        ? `${1 + repeatPrefill.services.extraServiceIds.length} service selection${repeatPrefill.services.extraServiceIds.length ? "s" : ""} matched`
+                        : "Select the current service again"}
+                    </span>
+                  </div>
+
+                  {(repeatPrefill.missingVehicleFields.length > 0 || !repeatPrefill.services.fullyResolved) && (
+                    <p className="mt-3 text-xs font-bold leading-5 text-amber-200">
+                      Some previous values could not be matched exactly. Review the highlighted vehicle and service fields before continuing.
+                    </p>
+                  )}
+
+                  <div className="mt-4 flex items-start gap-2 border-t border-white/10 pt-4 text-xs leading-5 text-zinc-500">
+                    <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
+                    A new original file is required. Files, notes, number plates, messages, credits, approvals and delivery data were not copied.
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 lg:w-52 lg:grid-cols-1">
+                  <button
+                    type="button"
+                    onClick={() => setRepeatPrefillDismissed(true)}
+                    className="min-h-11 rounded-xl border border-white/10 bg-white/[0.05] px-4 text-sm font-black text-white transition hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-400"
+                  >
+                    Hide summary
+                  </button>
+                  <button
+                    type="button"
+                    onClick={clearRepeatPrefill}
+                    className="min-h-11 rounded-xl border border-red-800/45 bg-red-950/25 px-4 text-sm font-black text-red-100 transition hover:bg-red-950/45 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-400"
+                  >
+                    Start blank
+                  </button>
+                </div>
+              </div>
+            ) : null}
+          </section>
+        )}
+
         <div className="mb-8 grid gap-6 lg:grid-cols-[1fr_360px]">
           <div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-7">
             <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-red-800/50 bg-red-950/25 px-4 py-2 text-sm font-semibold text-red-100">
