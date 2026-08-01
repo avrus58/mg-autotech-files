@@ -16,6 +16,11 @@ test("homepage keeps heavy public runtimes outside the initial client entry", ()
   assert.match(homepage, /import\("@\/components\/HomepageSessionBridge"\)/);
   assert.match(homepage, /import\("@\/components\/OnlineStatus"\)/);
   assert.match(homepage, /requestIdleCallback/);
+  assert.doesNotMatch(
+    homepage,
+    /useState\(\(\) =>\s*getWorkloadSnapshot\(getGermanyNow\(\)\)\)/
+  );
+  assert.match(homepage, /useState<WorkloadSnapshot>\(\s*initialWorkloadSnapshot/);
 });
 
 test("large translation catalogs are loaded only for runtime-translated routes", () => {

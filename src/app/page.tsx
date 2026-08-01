@@ -2316,6 +2316,15 @@ function getWorkloadSnapshot(date: Date) {
   };
 }
 
+type WorkloadSnapshot = ReturnType<typeof getWorkloadSnapshot>;
+
+const initialWorkloadSnapshot: WorkloadSnapshot = {
+  support: "Checking",
+  queue: "Synchronizing",
+  response: "Checking",
+  note: "Current workshop availability is synchronizing.",
+};
+
 type VehicleOption = {
   id: string;
   name: string;
@@ -3634,8 +3643,8 @@ function HomepageFileServiceCorePanel() {
 }
 
 export default function HomePage() {
-  const [workloadSnapshot, setWorkloadSnapshot] = useState(() =>
-    getWorkloadSnapshot(getGermanyNow())
+  const [workloadSnapshot, setWorkloadSnapshot] = useState<WorkloadSnapshot>(
+    initialWorkloadSnapshot
   );
   const [authReady, setAuthReady] = useState(true);
   const [userEmail, setUserEmail] = useState<string | null>(null);
@@ -3703,9 +3712,16 @@ export default function HomePage() {
       text:
         workloadSnapshot.support === "Offline"
           ? "Requests are accepted and reviewed from the 06:00 support window."
+          : workloadSnapshot.support === "Checking"
+          ? "Live support status is synchronizing."
           : "Customer requests are monitored during the 06:00-02:00 operation window.",
       icon: Activity,
-      tone: workloadSnapshot.support === "Offline" ? "red" : "emerald",
+      tone:
+        workloadSnapshot.support === "Offline"
+          ? "red"
+          : workloadSnapshot.support === "Checking"
+          ? "blue"
+          : "emerald",
     },
     {
       title: "Standard file queue",
@@ -4077,6 +4093,8 @@ export default function HomePage() {
                   className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-black uppercase tracking-[0.16em] ${
                     workloadSnapshot.support === "Offline"
                       ? "border-red-500/30 bg-red-500/10 text-red-300"
+                      : workloadSnapshot.support === "Checking"
+                      ? "border-blue-500/30 bg-blue-500/10 text-blue-300"
                       : "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
                   }`}
                 >
@@ -4084,6 +4102,8 @@ export default function HomePage() {
                     className={`h-2 w-2 rounded-full shadow-lg ${
                       workloadSnapshot.support === "Offline"
                         ? "bg-red-400 shadow-red-400/40"
+                        : workloadSnapshot.support === "Checking"
+                        ? "bg-blue-400 shadow-blue-400/40"
                         : "bg-emerald-400 shadow-emerald-400/40"
                     }`}
                   />

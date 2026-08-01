@@ -2338,3 +2338,10 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 - Kontroller: lint PASS (0 warning); full typecheck PASS; full tests PASS (515/515); production build PASS (267 route/page entry); performance budget PASS; i18n/SEO PASS (12 locale, 25 source file); payment schema-only PASS ve env okunmadi; audit PASS (0 vulnerabilities); diff check PASS.
 - Browser QA: 390x844 telefon, 768x1024 tablet, 1366x768 laptop ve 1920x1080 masaustunde horizontal overflow yok. Deferred tools viewport'a yaklasinca yuklendi; `/de` dogru server-localized icerik sundu; anonim `/new-request` sakin secure login gate gostermeye devam etti; browser console log/error bos kaldi. Local vehicle API 200 ve cache headers dondurdu; local test ortaminda DB env olmadigi icin beklenen JSON fallback kullanildi.
 - Kapsam: Yeni dependency, SQL, migration, fiyat, odeme, vehicle data veya admin/work-order davranisi yok. Production'a baglanilmadi; deploy, push veya commit yapilmadi.
+
+## 2026-08-01 Public performance production release
+
+- Release: `e0031b1` performance patch'i `main` dalina push edildi ve Vercel production deployment `dpl_4b8ndVenA22HxeaMuZLt4BSaCXUx` ile `file.mgautotech.de` aliasina yayinlandi.
+- Production smoke bulgusu: Root homepage static build sirasinda hesaplanan live workload metni ile browser Europe/Berlin saat bucket'i farkli olabildigi icin React hydration `#418` konsol hatasi olusuyordu. API, customer data veya request akisi etkilenmedi; sorun root UI metniyle sinirliydi.
+- Hotfix: Ilk server/client render icin deterministik `Checking / Synchronizing` snapshot'i kullanilir; gercek workload yalniz hydration sonrasi effect ile guncellenir. Live workload ozelligi korunur ve server/client text mismatch ortadan kalkar. Regression testi SSR state icinde zaman bazli initializer'in geri donmesini engeller.
+- Dogrulama: Targeted tests PASS (100/100); full tests PASS (515/515); lint PASS; full typecheck PASS; production build PASS; homepage performance budget PASS (52.1 KB gzip, 80 KB budget); diff check PASS. Yeni SQL, migration veya production data mutation yoktur.
