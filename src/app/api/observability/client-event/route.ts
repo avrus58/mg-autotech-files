@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { checkRateLimit, rateLimitKey } from "@/lib/rateLimit";
+import {
+  checkAdaptiveRateLimit,
+  rateLimitResponseHeaders,
+} from "@/lib/abuseProtection";
 import {
   normalizeReliabilityRoute,
   platformReliabilityCategories,
@@ -32,15 +35,27 @@ function deviceClass(userAgent: string) {
 }
 
 export async function POST(request: Request) {
-  const limit = checkRateLimit({
-    key: rateLimitKey(request, "client-observability"),
+  const limit = await checkAdaptiveRateLimit({
+    request,
+    scope: "client-observability",
     limit: 60,
     windowMs: 60_000,
   });
   if (!limit.allowed) {
     return NextResponse.json(
       { accepted: false },
-      { status: 429, headers: { "Retry-After": String(limit.retryAfterSeconds), "Cache-Control": "no-store" } }
+      {
+        status: 429,
+        headers: {
+          ...rateLimitResponseHeaders({
+            result: limit,
+            limit: 60,
+            windowMs: 60_000,
+            blocked: true,
+          }),
+          "Cache-Control": "no-store",
+        },
+      }
     );
   }
 

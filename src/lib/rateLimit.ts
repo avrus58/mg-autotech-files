@@ -1,9 +1,11 @@
+import { isIP } from "node:net";
+
 type RateLimitEntry = {
   count: number;
   resetAt: number;
 };
 
-type RateLimitResult = {
+export type RateLimitResult = {
   allowed: boolean;
   remaining: number;
   retryAfterSeconds: number;
@@ -31,15 +33,36 @@ function cleanupStore(store: RateLimitStore, now: number) {
   }
 }
 
+function normalizeIpCandidate(value: string | null) {
+  const firstValue = value?.split(",")[0]?.trim();
+  if (!firstValue || firstValue.length > 80) return null;
+
+  let candidate = firstValue;
+  const bracketedIpv6 = candidate.match(/^\[([^\]]+)\](?::\d{1,5})?$/);
+  if (bracketedIpv6) {
+    candidate = bracketedIpv6[1];
+  } else {
+    const ipv4WithPort = candidate.match(/^(\d{1,3}(?:\.\d{1,3}){3}):\d{1,5}$/);
+    if (ipv4WithPort) candidate = ipv4WithPort[1];
+  }
+
+  return isIP(candidate) ? candidate.toLowerCase() : null;
+}
+
 export function getClientIp(request: Request) {
-  const forwarded = request.headers.get("x-forwarded-for");
-  const firstForwarded = forwarded?.split(",")[0]?.trim();
-  return (
-    firstForwarded ||
-    request.headers.get("cf-connecting-ip") ||
-    request.headers.get("x-real-ip") ||
-    "unknown"
-  );
+  const candidates = [
+    request.headers.get("x-vercel-forwarded-for"),
+    request.headers.get("x-forwarded-for"),
+    request.headers.get("x-real-ip"),
+    request.headers.get("cf-connecting-ip"),
+  ];
+
+  for (const value of candidates) {
+    const normalized = normalizeIpCandidate(value);
+    if (normalized) return normalized;
+  }
+
+  return "unknown";
 }
 
 export function rateLimitKey(request: Request, scope: string, suffix?: string | null) {

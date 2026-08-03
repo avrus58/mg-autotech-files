@@ -61,7 +61,7 @@ test("client diagnostics never transmit messages, stacks, users or request metad
     assert.doesNotMatch(payloadContract, new RegExp(forbidden, "i"), forbidden);
   }
   assert.match(route, /\.strict\(\)/);
-  assert.match(route, /checkRateLimit/);
+  assert.match(route, /checkAdaptiveRateLimit/);
   assert.match(route, /"Cache-Control": "no-store"/);
   assert.doesNotMatch(route, /getSupabaseAdmin|\.from\(/);
 });

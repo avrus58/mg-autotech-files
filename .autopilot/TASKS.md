@@ -62,6 +62,18 @@ Sonuc: English root URL ailesi tek canonical kaynak oldu; `/en` ve `/en/*` perma
 
 Dogrulama: `npm run check:i18n` PASS (12 public locale, 477 customer source string); lint PASS; web+desktop typecheck PASS; full tests PASS (544/544); production build PASS (260 static page, `/en` static kopyasi yok); performance PASS (55.8 KB gzip / 80 KB); payment schema-only PASS; audit PASS (0 vulnerabilities); `git diff --check` PASS. Local production browser QA 12 locale root, legacy `/en` redirect, Turkish/Russian/Chinese/Albanian auth gate, unsupported service switcher davranisi ve 390x844/768x1024/1366x768 responsive boyutlarinda sifir horizontal overflow, sifir unnamed control ve sifir console error ile PASS.
 
+### MANUAL-013 [P0] Bot, scraper ve veri sizdirma savunmasi
+
+Durum: Done
+
+Fingerprint: `platform-security|instance-local-public-rate-limits|privacy-safe-distributed-counter-and-anomaly-signals|normal-user-tolerant-defense`
+
+Kapsam: Public katalog ve dusuk maliyetli API yuzeylerinde mevcut instance-local limitleri merkezi, gizlilik-korumali ve opsiyonel paylasilan sayacla guclendirmek; rate-limit cevaplarini standartlastirmak; PII icermeyen guvenlik sinyalleri ve WAF/MFA operasyon plani eklemek. Normal customer akislarini, cache/fallback davranisini, payment ve production konfigurasyonunu degistirmemek.
+
+Sonuc: Vercel anti-spoofing IP header'i onceliklendirildi ve IP degerleri dogrulandi. Ortak adaptive guard her zaman yerel sayaci, acikca etkinlestirildiginde atomik HTTPS Redis REST sayacini kullanir. Ortak anahtar yalniz salted HMAC fingerprint tasir; saglayici kesintisinde normal customer yerel korumayla devam eder. Public vehicle, client observability ve authenticated email trigger rotalari standart 429 kontratina tasindi. Security signal loglari allowlistli ve bes dakikalik cooldown'lidir. Canli WAF/MFA/Turnstile aktivasyonu yapilmadi; gozlem esikleri ve geri alinabilir rollout adimlari belgelendi.
+
+Dogrulama: Targeted PASS (20/20); lint PASS; web+desktop typecheck PASS; full tests PASS (546/546); production build PASS (268 route/page entry); performance budget PASS (55.6 KB gzip / 80 KB); i18n/SEO PASS (12 locale, 25 source file); payment schema-only PASS; production audit PASS (0 vulnerabilities); diff check PASS.
+
 ### MANUAL-011 [P0] Platform guvenlik ve coklu cihaz assurance denetimi
 
 Durum: Done

@@ -2,7 +2,10 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireApiUser } from "@/lib/apiAuth";
 import { sendRegistrationConfirmedNotifications } from "@/lib/email/events";
-import { checkRateLimit, rateLimitKey } from "@/lib/rateLimit";
+import {
+  checkAdaptiveRateLimit,
+  rateLimitResponseHeaders,
+} from "@/lib/abuseProtection";
 
 const registrationNotificationSchema = z.object({
   source: z.enum(["email", "google"]).optional().default("email"),
@@ -17,15 +20,25 @@ export async function POST(request: Request) {
     );
   }
 
-  const limit = checkRateLimit({
-    key: rateLimitKey(request, "verified-registration-email", auth.user.id),
+  const limit = await checkAdaptiveRateLimit({
+    request,
+    scope: "verified-registration-email",
+    suffix: auth.user.id,
     limit: 6,
     windowMs: 60 * 60 * 1000,
   });
   if (!limit.allowed) {
     return NextResponse.json(
       { success: false, error: "Registration notification already processed." },
-      { status: 429, headers: { "Retry-After": String(limit.retryAfterSeconds) } }
+      {
+        status: 429,
+        headers: rateLimitResponseHeaders({
+          result: limit,
+          limit: 6,
+          windowMs: 60 * 60 * 1000,
+          blocked: true,
+        }),
+      }
     );
   }
 

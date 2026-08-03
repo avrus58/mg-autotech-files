@@ -10,6 +10,7 @@ import {
   checkPublicVehicleAccess,
   parsePublicVehicleQuery,
 } from "@/lib/vehicleControl/publicAccess";
+import { rateLimitResponseHeaders } from "@/lib/abuseProtection";
 
 const vehicleCacheHeaders = {
   "Cache-Control": "public, max-age=60, s-maxage=60, stale-while-revalidate=300",
@@ -31,7 +32,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: parsed.error }, { status: 400, headers: privateErrorHeaders });
   }
 
-  const access = checkPublicVehicleAccess(req, parsed.query);
+  const access = await checkPublicVehicleAccess(req, parsed.query);
   if (!access.allowed) {
     return NextResponse.json(
       { error: "Vehicle catalog request limit reached. Please wait and try again." },
@@ -39,7 +40,12 @@ export async function GET(req: NextRequest) {
         status: 429,
         headers: {
           ...privateErrorHeaders,
-          "Retry-After": String(access.retryAfterSeconds),
+          ...rateLimitResponseHeaders({
+            result: access.result,
+            limit: access.limit,
+            windowMs: access.windowMs,
+            blocked: true,
+          }),
         },
       }
     );

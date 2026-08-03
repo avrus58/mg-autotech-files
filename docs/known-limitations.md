@@ -20,9 +20,10 @@ File Expert analysis and AI evidence rebuilds are still request-driven. This is 
 
 ## Rate Limiting
 
-Current in-memory rate limiting protects important public endpoints from simple abuse. At larger scale, move rate limits to a shared store so all Vercel instances share the same counters.
+Important public and transactional-trigger endpoints always use a high-tolerance in-memory guard and can use the optional privacy-safe shared counter documented in `docs/bot-and-data-exfiltration-defense.md`. The shared counter remains disabled until its server-only provider configuration is explicitly enabled and tested.
+
+Vercel WAF rules are still a separate operational control. They should be observed in disabled/log-only form before enforcement so workshop networks behind one public IP are not interrupted.
 
 ## Advanced RBAC
 
 The platform has staff permissions, but future scale should separate owner, manager, tuner, support and finance roles more explicitly in the admin UI.
-

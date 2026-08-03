@@ -1,4 +1,5 @@
-import { checkRateLimit, rateLimitKey } from "@/lib/rateLimit";
+import { checkAdaptiveRateLimit } from "@/lib/abuseProtection";
+import { checkRateLimit, rateLimitKey, type RateLimitResult } from "@/lib/rateLimit";
 
 export const publicVehicleAccessPolicy = {
   windowMs: 10 * 60_000,
@@ -144,14 +145,36 @@ function distinctRouteValue(query: PublicVehicleQuery) {
   return "brands";
 }
 
-export function checkPublicVehicleAccess(request: Request, query: PublicVehicleQuery) {
-  const total = checkRateLimit({
-    key: rateLimitKey(request, "public-vehicle-catalog"),
+type PublicVehicleAccessDenied = {
+  allowed: false;
+  retryAfterSeconds: number;
+  limit: number;
+  windowMs: number;
+  result: RateLimitResult;
+};
+
+function deniedAccess(input: {
+  result: RateLimitResult;
+  limit: number;
+}): PublicVehicleAccessDenied {
+  return {
+    allowed: false,
+    retryAfterSeconds: input.result.retryAfterSeconds,
+    limit: input.limit,
+    windowMs: publicVehicleAccessPolicy.windowMs,
+    result: input.result,
+  };
+}
+
+export async function checkPublicVehicleAccess(request: Request, query: PublicVehicleQuery) {
+  const total = await checkAdaptiveRateLimit({
+    request,
+    scope: "public-vehicle-catalog",
     limit: publicVehicleAccessPolicy.totalRequests,
     windowMs: publicVehicleAccessPolicy.windowMs,
   });
   if (!total.allowed) {
-    return { allowed: false as const, retryAfterSeconds: total.retryAfterSeconds };
+    return deniedAccess({ result: total, limit: publicVehicleAccessPolicy.totalRequests });
   }
 
   if (query.type === "brands") {
@@ -164,7 +187,10 @@ export function checkPublicVehicleAccess(request: Request, query: PublicVehicleQ
     windowMs: publicVehicleAccessPolicy.windowMs,
   });
   if (!hierarchy.allowed) {
-    return { allowed: false as const, retryAfterSeconds: hierarchy.retryAfterSeconds };
+    return deniedAccess({
+      result: hierarchy,
+      limit: publicVehicleAccessPolicy.hierarchyRequests,
+    });
   }
 
   const distinct = checkDistinctLimit({
@@ -173,7 +199,16 @@ export function checkPublicVehicleAccess(request: Request, query: PublicVehicleQ
     limit: publicVehicleAccessPolicy.distinctRoutes[query.type],
     windowMs: publicVehicleAccessPolicy.windowMs,
   });
-  return distinct.allowed
-    ? { allowed: true as const, retryAfterSeconds: 0 }
-    : { allowed: false as const, retryAfterSeconds: distinct.retryAfterSeconds };
+  if (distinct.allowed) return { allowed: true as const, retryAfterSeconds: 0 };
+
+  const resetAt = Date.now() + distinct.retryAfterSeconds * 1000;
+  return deniedAccess({
+    result: {
+      allowed: false,
+      remaining: 0,
+      retryAfterSeconds: distinct.retryAfterSeconds,
+      resetAt,
+    },
+    limit: publicVehicleAccessPolicy.distinctRoutes[query.type],
+  });
 }

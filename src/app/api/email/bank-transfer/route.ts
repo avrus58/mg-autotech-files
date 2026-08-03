@@ -2,7 +2,10 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireApiUser } from "@/lib/apiAuth";
 import { sendBankTransferInstructionsEmail } from "@/lib/email/events";
-import { checkRateLimit, rateLimitKey } from "@/lib/rateLimit";
+import {
+  checkAdaptiveRateLimit,
+  rateLimitResponseHeaders,
+} from "@/lib/abuseProtection";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 
 const bankTransferEmailSchema = z.object({
@@ -14,15 +17,25 @@ export async function POST(request: Request) {
   const auth = await requireApiUser(request);
   if (!auth.ok) return NextResponse.json({ success: false, error: auth.error }, { status: auth.status });
 
-  const limit = checkRateLimit({
-    key: rateLimitKey(request, "bank-transfer-email", auth.user.id),
+  const limit = await checkAdaptiveRateLimit({
+    request,
+    scope: "bank-transfer-email",
+    suffix: auth.user.id,
     limit: 4,
     windowMs: 60 * 60 * 1000,
   });
   if (!limit.allowed) {
     return NextResponse.json(
       { success: false, error: "Too many bank transfer email requests. Please try again later." },
-      { status: 429, headers: { "Retry-After": String(limit.retryAfterSeconds) } }
+      {
+        status: 429,
+        headers: rateLimitResponseHeaders({
+          result: limit,
+          limit: 4,
+          windowMs: 60 * 60 * 1000,
+          blocked: true,
+        }),
+      }
     );
   }
 

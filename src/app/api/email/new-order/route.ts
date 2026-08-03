@@ -3,7 +3,10 @@ import { z } from "zod";
 import { requireApiUser } from "@/lib/apiAuth";
 import { sendOrderReceivedEmail } from "@/lib/email";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
-import { checkRateLimit, rateLimitKey } from "@/lib/rateLimit";
+import {
+  checkAdaptiveRateLimit,
+  rateLimitResponseHeaders,
+} from "@/lib/abuseProtection";
 
 const newOrderEmailSchema = z.object({
   orderId: z.string().uuid(),
@@ -14,8 +17,10 @@ export async function POST(request: Request) {
     const auth = await requireApiUser(request);
     if (!auth.ok) return NextResponse.json({ success: false, error: auth.error }, { status: auth.status });
 
-    const limit = checkRateLimit({
-      key: rateLimitKey(request, "new-order-email", auth.user.id),
+    const limit = await checkAdaptiveRateLimit({
+      request,
+      scope: "new-order-email",
+      suffix: auth.user.id,
       limit: 12,
       windowMs: 60 * 60 * 1000,
     });
@@ -23,7 +28,15 @@ export async function POST(request: Request) {
     if (!limit.allowed) {
       return NextResponse.json(
         { success: false, error: "Too many order notification attempts. Please try again later." },
-        { status: 429, headers: { "Retry-After": String(limit.retryAfterSeconds) } }
+        {
+          status: 429,
+          headers: rateLimitResponseHeaders({
+            result: limit,
+            limit: 12,
+            windowMs: 60 * 60 * 1000,
+            blocked: true,
+          }),
+        }
       );
     }
 
@@ -64,12 +77,11 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json({ success: true });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       {
         success: false,
-        error:
-          error instanceof Error ? error.message : "Email could not be sent",
+        error: "Email could not be sent.",
       },
       { status: 500 }
     );

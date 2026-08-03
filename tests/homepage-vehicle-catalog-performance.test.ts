@@ -77,7 +77,7 @@ test("vehicle API accepts only the exact progressive selector query contract", (
   }
 });
 
-test("normal browsing stays comfortably below transparent catalog protection", () => {
+test("normal browsing stays comfortably below transparent catalog protection", async () => {
   const request = requestFrom("198.51.100.21");
   assert.equal(publicVehicleAccessPolicy.hierarchyRequests >= 100, true);
 
@@ -92,22 +92,22 @@ test("normal browsing stays comfortably below transparent catalog protection", (
       parsedQuery(`/api/vehicles?type=vehicle&brandId=bmw&modelId=${model}&generationId=${generation}&engineId=${engine}`),
     ];
     for (const query of queries) {
-      assert.equal(checkPublicVehicleAccess(request, query).allowed, true);
+      assert.equal((await checkPublicVehicleAccess(request, query)).allowed, true);
     }
   }
 });
 
-test("rapid enumeration of many distinct brands is stopped without blocking repeated normal choices", () => {
+test("rapid enumeration of many distinct brands is stopped without blocking repeated normal choices", async () => {
   const request = requestFrom("198.51.100.22");
   const limit = publicVehicleAccessPolicy.distinctRoutes.models;
 
   for (let index = 0; index < limit; index += 1) {
     const query = parsedQuery(`/api/vehicles?type=models&brandId=brand-${index}`);
-    assert.equal(checkPublicVehicleAccess(request, query).allowed, true);
-    assert.equal(checkPublicVehicleAccess(request, query).allowed, true);
+    assert.equal((await checkPublicVehicleAccess(request, query)).allowed, true);
+    assert.equal((await checkPublicVehicleAccess(request, query)).allowed, true);
   }
 
-  const blocked = checkPublicVehicleAccess(
+  const blocked = await checkPublicVehicleAccess(
     request,
     parsedQuery(`/api/vehicles?type=models&brandId=brand-${limit}`)
   );

@@ -23,6 +23,8 @@ The API does not provide a bulk catalog-index response.
 - IDs are length-limited and restricted to canonical safe characters.
 - A high-tolerance ten-minute request budget allows ordinary browsing but slows rapid enumeration.
 - Distinct-route budgets detect traversal across many brands and catalog branches while repeated use of the same selection remains allowed.
+- The total request budget can use an atomic shared counter across serverless instances. Shared keys are salted HMAC fingerprints and never contain a raw IP or selector value.
+- A shared-provider outage keeps the local guard active instead of blocking ordinary customers.
 - Error responses are private and non-cacheable; successful customer-safe responses retain the existing CDN and browser caching behavior.
 - API responses are marked `noindex`, `nofollow`, `noarchive` and `nosniff`.
 
@@ -39,8 +41,8 @@ Public responses may contain only published customer-safe selector options and t
 - private storage paths or signed URLs
 - unpublished or draft vehicle records
 
-## Operational limitation
+## Operational rollout
 
-The application-level limiter uses warm-instance memory and is intentionally best-effort in a serverless deployment. Before treating it as a strong distributed control, configure a Vercel Firewall rate-limit rule for `/api/vehicles` using matching high-tolerance thresholds and monitor 400/429 rates. A firewall rule should be tested in Preview first so shared workshop networks and the desktop uploader are not blocked.
+The memory limiter is always available. The optional shared counter requires the explicit server-only configuration described in `docs/bot-and-data-exfiltration-defense.md`; it is deliberately disabled when configuration is incomplete. Vercel Firewall remains the outer burst-control layer. A `/api/vehicles` rule should begin disabled or observation-only, use a substantially looser threshold than normal browsing, and be tested in Preview before enforcement.
 
 Robots directives, minified JavaScript and obfuscation are not security controls. They do not replace progressive data access, strict response allowlists, server-side monitoring or edge rate limiting.
