@@ -8,6 +8,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "check:i18n": "node scripts/check-i18n-seo.mjs && tsx scripts/check-customer-i18n.ts",
     "check:performance": "node scripts/check-web-performance.mjs",
     "build:customer-uploader": "npm run build --workspace apps/customer-uploader",
     "start": "next start",

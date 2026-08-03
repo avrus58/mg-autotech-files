@@ -8,7 +8,11 @@ import {
   supportedLocales,
   type LocaleCode,
 } from "@/lib/i18nConfig";
-import { appendSafeQuery, getLocalizedPublicPath, splitLocalizedPath } from "@/lib/i18nRoutes";
+import {
+  appendSafeQuery,
+  getLocalizedPublicPath,
+  isServerLocalizedPublicPath,
+} from "@/lib/i18nRoutes";
 import { isSeoLocale } from "@/lib/seo";
 
 const storageKey = "mg_locale";
@@ -54,11 +58,6 @@ function getPathLocale(pathname: string) {
   return firstSegment && isSeoLocale(firstSegment) ? firstSegment : null;
 }
 
-function isEnglishOnlySeoPath(pathname: string) {
-  const { parts } = splitLocalizedPath(pathname);
-  return Boolean(parts[0] && ["about", "contact", "brands", "ecu-platforms", "tools"].includes(parts[0]));
-}
-
 function persistLocale(locale: LocaleCode) {
   window.localStorage.setItem(storageKey, locale);
   document.cookie = `${cookieKey}=${locale}; path=/; max-age=31536000; samesite=lax`;
@@ -80,6 +79,7 @@ function translateText(
   const normalized = trimmed.replace(/\s+/g, " ");
 
   if (!normalized) return value;
+  if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/u.test(normalized)) return value;
 
   const exact = catalog.exact[locale]?.[normalized];
   if (exact) return `${leading}${exact}${trailing}`;
@@ -92,6 +92,9 @@ function translateText(
     )?.[1];
 
   if (term) return `${leading}${term}${trailing}`;
+
+  const wordCount = normalized.match(/\p{L}+/gu)?.length ?? 0;
+  if (wordCount > 6) return value;
 
   const replaced = Object.entries(terms)
     .sort((a, b) => b[0].length - a[0].length)
@@ -170,7 +173,7 @@ export function LanguageSwitcher() {
   useEffect(() => {
     const initial =
       getPathLocale(pathname) ??
-      (isEnglishOnlySeoPath(pathname) ? defaultLocale : getInitialLocale());
+      (isServerLocalizedPublicPath(pathname) ? defaultLocale : getInitialLocale());
     persistLocale(initial);
     void Promise.resolve().then(() => setLocale(initial));
   }, [pathname]);
@@ -270,7 +273,10 @@ export function LanguageSwitcher() {
   }, [isOpen]);
 
   const activeLocale = useMemo(
-    () => supportedLocales.find((item) => item.code === locale) ?? supportedLocales[1],
+    () =>
+      supportedLocales.find((item) => item.code === locale) ??
+      supportedLocales.find((item) => item.code === defaultLocale) ??
+      supportedLocales[0],
     [locale]
   );
 

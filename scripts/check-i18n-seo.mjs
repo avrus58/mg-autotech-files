@@ -4,10 +4,13 @@ import { join } from "node:path";
 const root = process.cwd();
 const filesToScan = [
   "src/lib/i18n.ts",
+  "src/lib/customerPortalTranslations.ts",
   "src/lib/seo.ts",
   "src/lib/howItWorksI18n.ts",
   "src/lib/fileServiceI18n.ts",
   "src/lib/i18nRoutes.ts",
+  "src/components/LanguageSwitcher.tsx",
+  "next.config.ts",
   "src/app/layout.tsx",
   "src/app/page.tsx",
   "src/app/[locale]/page.tsx",
@@ -67,6 +70,44 @@ for (const locale of expectedLocales) {
 }
 for (const slug of ["stage-1", "dpf-off", "egr-off", "adblue-off", "dtc-off"]) {
   if (!seo.includes(`"${slug}"`)) failures.push(`Service slug ${slug} is missing from SEO metadata.`);
+}
+if (!seo.includes("localizedSeoLocales") || !seo.includes("locale === defaultLocale")) {
+  failures.push("English canonical URLs are not isolated from prefixed localized SEO routes.");
+}
+
+const nextConfig = readFileSync(join(root, "next.config.ts"), "utf8");
+if (!nextConfig.includes('source: "/en"') || !nextConfig.includes('destination: "/"')) {
+  failures.push("Legacy /en does not permanently redirect to the canonical English root.");
+}
+if (!nextConfig.includes('source: "/en/:path*"') || !nextConfig.includes('destination: "/:path*"')) {
+  failures.push("Legacy /en descendants do not redirect to canonical English root paths.");
+}
+
+for (const relativePath of [
+  "src/app/[locale]/layout.tsx",
+  "src/app/[locale]/page.tsx",
+  "src/app/[locale]/how-it-works/page.tsx",
+  "src/app/[locale]/file-service/page.tsx",
+  "src/app/[locale]/services/[slug]/page.tsx",
+]) {
+  const localizedRoute = readFileSync(join(root, relativePath), "utf8");
+  if (!localizedRoute.includes("localizedSeoLocales")) {
+    failures.push(`${relativePath} can still generate duplicate English-prefixed routes.`);
+  }
+}
+
+const languageSwitcher = readFileSync(join(root, "src/components/LanguageSwitcher.tsx"), "utf8");
+if (!languageSwitcher.includes("isServerLocalizedPublicPath")) {
+  failures.push("Language switcher does not distinguish server-localized and runtime-localized routes.");
+}
+
+const customerTranslations = readFileSync(join(root, "src/lib/customerPortalTranslations.ts"), "utf8");
+const runtimeI18n = readFileSync(join(root, "src/lib/i18n.ts"), "utf8");
+if (!customerTranslations.includes("customerPortalLocaleOrder") || !customerTranslations.includes("customerPortalTranslations")) {
+  failures.push("Typed customer portal translation coverage is missing.");
+}
+if (!runtimeI18n.includes("customerPortalTranslations") || !runtimeI18n.includes("customerPortalLocaleOverrides")) {
+  failures.push("Customer portal translations are not registered in the runtime catalog.");
 }
 
 const serviceIntentGuides = readFileSync(join(root, "src/lib/serviceIntentGuides.ts"), "utf8");
@@ -484,6 +525,9 @@ if (!i18nRoutes.includes('parts[0] === "file-service"')) {
 }
 
 const sitemap = readFileSync(join(root, "src/app/sitemap.ts"), "utf8");
+if (!sitemap.includes("localizedSeoLocales") || sitemap.includes("seoLocales.flatMap")) {
+  failures.push("Sitemap can emit duplicate English-prefixed canonical pages.");
+}
 if (!sitemap.includes("languageAlternates")) failures.push("Sitemap does not include language alternates.");
 if (!sitemap.includes("publicServiceSlugs")) failures.push("Sitemap does not include service slugs.");
 if (!sitemap.includes('"/file-service"')) {
@@ -518,6 +562,9 @@ for (const toolPath of [
 }
 
 const robots = readFileSync(join(root, "src/app/robots.ts"), "utf8");
+if (!robots.includes("localizedSeoLocales")) {
+  failures.push("Robots allowlist is not aligned with canonical localized route generation.");
+}
 if (!robots.includes("sitemap")) failures.push("robots.ts does not expose sitemap.");
 if (!robots.includes("/admin") || !robots.includes("/dashboard") || !robots.includes("/api")) {
   failures.push("robots.ts should block private/admin/dashboard/API crawling.");

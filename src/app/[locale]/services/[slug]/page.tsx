@@ -19,6 +19,7 @@ import {
   isPublicServiceSlug,
   isSeoLocale,
   languageAlternates,
+  localizedSeoLocales,
   localizedPath,
   localizedUrl,
   organizationJsonLd,
@@ -33,7 +34,7 @@ import {
 import type { LocaleCode } from "@/lib/i18nConfig";
 
 export function generateStaticParams() {
-  return seoLocales.flatMap((locale) =>
+  return localizedSeoLocales.flatMap((locale) =>
     publicServiceSlugs.map((slug) => ({ locale, slug }))
   );
 }

@@ -7,6 +7,7 @@ import {
   hreflangByLocale,
   isSeoLocale,
   languageAlternates,
+  localizedSeoLocales,
   localizedUrl,
   organizationJsonLd,
   publicServiceSlugs,
@@ -18,7 +19,7 @@ import {
 import type { LocaleCode } from "@/lib/i18nConfig";
 
 export function generateStaticParams() {
-  return seoLocales.map((locale) => ({ locale }));
+  return localizedSeoLocales.map((locale) => ({ locale }));
 }
 
 function buildLocalizedHomepageJsonLd(locale: LocaleCode) {

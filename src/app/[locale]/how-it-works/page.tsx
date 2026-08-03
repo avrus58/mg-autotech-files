@@ -7,6 +7,7 @@ import {
   hreflangByLocale,
   isSeoLocale,
   languageAlternates,
+  localizedSeoLocales,
   localizedUrl,
   organizationJsonLd,
   seoLocales,
@@ -15,7 +16,7 @@ import {
 } from "@/lib/seo";
 
 export function generateStaticParams() {
-  return seoLocales.map((locale) => ({ locale }));
+  return localizedSeoLocales.map((locale) => ({ locale }));
 }
 
 export async function generateMetadata({

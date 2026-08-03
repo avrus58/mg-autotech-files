@@ -50,6 +50,18 @@ Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
 
+### MANUAL-012 [P0] File Service dil ve canonical URL stabilizasyonu
+
+Durum: Done
+
+Fingerprint: `file-service-i18n|duplicate-en-canonicals-and-route-fallbacks|customer-portal-translation-drift|typed-coverage-gate`
+
+Kapsam: Yalniz `file.mgautotech.de` icin root English canonical yapisini tekillestir; `/en` tekrarlarini kalici yonlendir; sitemap, robots, hreflang ve dil secici davranisini gercek ceviri rotalariyla hizala; dashboard, siparis, new request, auth ve payment yuzeylerindeki yeni metinleri 11 non-English dilde tamamla ve kalici source-string coverage kontrolu ekle.
+
+Sonuc: English root URL ailesi tek canonical kaynak oldu; `/en` ve `/en/*` permanent redirect ile kok esdegerlerine alindi. Static locale generation, sitemap ve robots yalniz 11 non-English prefix uretir. Dil secici cevirisi olmayan English-only public resource'u 404 veya ilgisiz homepage'e tasimaz. Kritik auth/new-request cumleleri ve compact customer portal etiketleri typed 11-locale katmanina alindi; uzun ve profesyonel cevirisi olmayan teknik metinler karisik dil uretmek yerine temiz English fallback olarak kalir. Admin, legal copy, payment business logic, vehicle data ve work-order davranisi degismedi.
+
+Dogrulama: `npm run check:i18n` PASS (12 public locale, 477 customer source string); lint PASS; web+desktop typecheck PASS; full tests PASS (544/544); production build PASS (260 static page, `/en` static kopyasi yok); performance PASS (55.8 KB gzip / 80 KB); payment schema-only PASS; audit PASS (0 vulnerabilities); `git diff --check` PASS. Local production browser QA 12 locale root, legacy `/en` redirect, Turkish/Russian/Chinese/Albanian auth gate, unsupported service switcher davranisi ve 390x844/768x1024/1366x768 responsive boyutlarinda sifir horizontal overflow, sifir unnamed control ve sifir console error ile PASS.
+
 ### MANUAL-011 [P0] Platform guvenlik ve coklu cihaz assurance denetimi
 
 Durum: Done

@@ -31,6 +31,10 @@ export const hreflangByLocale: Record<LocaleCode, string> = {
 };
 
 export const seoLocales = supportedLocales.map((locale) => locale.code);
+export const localizedSeoLocales = seoLocales.filter(
+  (locale): locale is Exclude<LocaleCode, typeof defaultLocale> =>
+    locale !== defaultLocale
+);
 
 export function isSeoLocale(value: string): value is LocaleCode {
   return seoLocales.includes(value as LocaleCode);
@@ -42,7 +46,11 @@ function normalizePath(path = "/") {
 }
 
 export function localizedPath(locale: LocaleCode, path = "/") {
-  return `/${locale}${normalizePath(path)}`;
+  const cleanPath = normalizePath(path);
+
+  if (locale === defaultLocale) return cleanPath || "/";
+
+  return `/${locale}${cleanPath}`;
 }
 
 export function absoluteUrl(path = "/") {
@@ -51,7 +59,7 @@ export function absoluteUrl(path = "/") {
 }
 
 export function localizedUrl(locale: LocaleCode, path = "/") {
-  return `${siteUrl}${localizedPath(locale, path)}`;
+  return absoluteUrl(localizedPath(locale, path));
 }
 
 export function languageAlternates(path = "/") {

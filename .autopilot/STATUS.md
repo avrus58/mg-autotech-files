@@ -2,6 +2,17 @@
 
 Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
+## 2026-08-03 File Service multilingual and canonical stabilization
+
+- Gorev: Yalniz `file.mgautotech.de` public site ve customer panel dil seceneklerini yeni ekranlarla birlikte denetlemek; duplicate English URL ailesini kaldirmak ve yeni customer metinlerinin ceviri drift'ini kalici olarak yakalamak.
+- SEO/canonical: English tek root canonical aileye alindi. `/en` ve `/en/*` permanent redirect olur; hreflang `en` ve `x-default` root esdegerini kullanir. Static generation, sitemap ve robots yalniz 11 non-English prefix uretir. Attachment'taki `mgautotech.de` bulgulari kapsama alinmadi.
+- Dil secici: Yalniz gercek server-localized rotalarda URL degisir. Stage 2/3, brand, platform, guide ve tool gibi reviewed locale esdegeri olmayan public kaynaklar ayni canonical English rotada kalir; 404 veya ilgisiz localized homepage acilmaz. Private customer rotalari URL degistirmeden runtime dil tercihini korur.
+- Customer portal: Dashboard, order, File Expert, new request, auth, payment ve widget billing yuzeylerinden 477 gorunur source string taranir. Kritik login/new-request metinleri her 11 non-English locale icin exact zorunludur. Compact labels deterministic term coverage kullanir; reviewed exact cevirisi olmayan uzun teknik metinler bozuk karisik dil yerine temiz English fallback olarak kalir. E-posta ornekleri ve ECU/TCU/DTC/HW/SW/IBAN/BIC gibi teknik degerler cevrilmez.
+- Yeni kalite kapisi: `npm run check:i18n`, mevcut SEO/i18n structural denetimi ile yeni AST tabanli customer source-string coverage denetimini birlikte calistirir. Baseline: NL/FR/IT/ES/PT/PL 347/477, DE/TR 355/477, RU/ZH/SQ 382/477 exact veya invariant; kalanlar acik temiz English fallback'tir.
+- Kontroller: lint PASS; web+desktop typecheck PASS; full tests PASS (544/544); `npm run check:i18n` PASS; production build PASS (260 static page); performance PASS (3 initial chunk, 211.8 KB raw, 55.8 KB gzip / 80 KB); payment schema-only PASS ve env okunmadi; production dependency audit PASS (0 vulnerabilities); diff check PASS.
+- Browser QA: 12 locale root dogru `lang`, canonical ve H1 ile PASS; `/en/services/stage-1` canonical root route'a redirect; English-only Stage 2 dil seciminde URL/icerik korunuyor. German login/new-request ve Turkish/Russian/Chinese/Albanian auth gate metinleri dogrulandi. 390x844, 768x1024 ve 1366x768 boyutlarinda `/de/file-service`, `/login`, `/new-request` sifir horizontal overflow, sifir unnamed control ve sifir console error ile PASS.
+- Kapsam disi/risk: Admin panel ve legal metinler bu customer/public pass'te cevrilmedi. Uzun technical customer guidance'in bir bolumu profesyonel human review yapilana kadar temiz English kalir. Deploy, push, production/Supabase erisimi, SQL, payment/vehicle/work-order business logic veya customer data islemi yapilmadi.
+
 ## 2026-07-31 SEO opportunity and conversion center
 
 - Gorev: Mevcut privacy-safe GA4 event katmanini Search Console ve GA4 aggregate reporting ile profesyonel bir SEO karar merkezine donusturmek; sorgu, ulke, tiklama, request funnel, public page coverage ve haftalik oncelikleri tek admin ekraninda toplamak.

@@ -25,6 +25,7 @@ import {
   isPublicServiceSlug,
   isSeoLocale,
   languageAlternates,
+  localizedSeoLocales,
   localizedPath,
   localizedUrl,
   organizationJsonLd,
@@ -38,7 +39,7 @@ const resourceIcons: LucideIcon[] = [BadgeCheck, Cpu, Gauge, ShieldCheck];
 const workflowIcons: LucideIcon[] = [Search, BadgeCheck, Upload, LayoutDashboard];
 
 export function generateStaticParams() {
-  return seoLocales.map((locale) => ({ locale }));
+  return localizedSeoLocales.map((locale) => ({ locale }));
 }
 
 export async function generateMetadata({

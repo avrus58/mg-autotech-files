@@ -1,5 +1,9 @@
 import type { LocaleCode } from "@/lib/i18nConfig";
-import { isSeoLocale, localizedPath } from "@/lib/seo";
+import {
+  isPublicServiceSlug,
+  isSeoLocale,
+  localizedPath,
+} from "@/lib/seo";
 
 const englishOnlySeoSegments = new Set(["about", "contact", "brands", "ecu-platforms", "tools"]);
 const privateOrSystemSegments = new Set([
@@ -32,9 +36,11 @@ export function getLocalizedPublicPath(pathname: string, locale: LocaleCode) {
 
   if (parts.length === 0) return localizedPath(locale);
 
-  if (parts[0] === "services" && parts[1]) {
+  if (parts[0] === "services" && parts[1] && isPublicServiceSlug(parts[1])) {
     return localizedPath(locale, `/services/${parts[1]}`);
   }
+
+  if (parts[0] === "services") return pathname;
 
   if (parts[0] === "how-it-works") {
     return localizedPath(locale, "/how-it-works");
@@ -49,10 +55,23 @@ export function getLocalizedPublicPath(pathname: string, locale: LocaleCode) {
   }
 
   if (parts[0] && englishOnlySeoSegments.has(parts[0])) {
-    return localizedPath(locale);
+    return pathname;
   }
 
-  return localizedPath(locale);
+  return pathname;
+}
+
+export function isServerLocalizedPublicPath(pathname: string) {
+  const { parts } = splitLocalizedPath(pathname);
+
+  if (parts.length === 0) return true;
+  if (parts[0] === "how-it-works" || parts[0] === "file-service") return true;
+
+  return Boolean(
+    parts[0] === "services" &&
+      parts[1] &&
+      isPublicServiceSlug(parts[1])
+  );
 }
 
 export function appendSafeQuery(pathname: string, search = "") {

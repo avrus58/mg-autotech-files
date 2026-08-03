@@ -14,7 +14,7 @@ export function AuthRequired({
   const registerHref = `/register?redirect=${encodeURIComponent(nextPath)}`;
 
   return (
-    <main data-no-translate className="flex min-h-screen items-center justify-center bg-[#050505] px-4 py-10 text-white">
+    <main className="flex min-h-screen items-center justify-center bg-[#050505] px-4 py-10 text-white">
       <section className="w-full max-w-xl border-y border-white/10 py-10 text-center">
         <Link href="/" className="mx-auto flex w-fit items-center gap-3">
           <span className="flex h-11 w-11 items-center justify-center rounded-lg border border-red-800/50 bg-[#111]">

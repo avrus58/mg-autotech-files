@@ -1,4 +1,9 @@
 import { panelV2LocaleOrder, panelV2Translations } from "@/lib/panelV2Translations";
+import {
+  customerPortalLocaleOrder,
+  customerPortalLocaleOverrides,
+  customerPortalTranslations,
+} from "@/lib/customerPortalTranslations";
 import type { LocaleCode } from "@/lib/i18nConfig";
 
 export {
@@ -6105,5 +6110,21 @@ Object.entries(panelV2Translations).forEach(([source, values]) => {
     if (!value) return;
     exactTranslations[locale][source] = value;
     termTranslations[locale][source] = value;
+  });
+});
+
+Object.entries(customerPortalTranslations).forEach(([source, values]) => {
+  customerPortalLocaleOrder.forEach((locale, index) => {
+    const value = values[index];
+    exactTranslations[locale][source] = value;
+    termTranslations[locale][source] = value;
+  });
+});
+
+Object.entries(customerPortalLocaleOverrides).forEach(([locale, entries]) => {
+  if (!entries) return;
+  Object.entries(entries).forEach(([source, value]) => {
+    exactTranslations[locale as LocaleCode][source] = value;
+    termTranslations[locale as LocaleCode][source] = value;
   });
 });

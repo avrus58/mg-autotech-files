@@ -2,9 +2,9 @@ import type { MetadataRoute } from "next";
 import {
   absoluteUrl,
   languageAlternates,
+  localizedSeoLocales,
   localizedUrl,
   publicServiceSlugs,
-  seoLocales,
   siteUrl,
 } from "@/lib/seo";
 import { brandGuides, platformGuides } from "@/lib/industry-content";
@@ -89,7 +89,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     })),
   ];
 
-  const localizedPages: MetadataRoute.Sitemap = seoLocales.flatMap((locale) => [
+  const localizedPages: MetadataRoute.Sitemap = localizedSeoLocales.flatMap((locale) => [
     {
       url: localizedUrl(locale, "/"),
       lastModified: contentUpdated,

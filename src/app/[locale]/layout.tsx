@@ -1,9 +1,13 @@
 import type { ReactNode } from "react";
 import { notFound } from "next/navigation";
-import { hreflangByLocale, isSeoLocale, seoLocales } from "@/lib/seo";
+import {
+  hreflangByLocale,
+  isSeoLocale,
+  localizedSeoLocales,
+} from "@/lib/seo";
 
 export function generateStaticParams() {
-  return seoLocales.map((locale) => ({ locale }));
+  return localizedSeoLocales.map((locale) => ({ locale }));
 }
 
 export default async function LocaleLayout({
