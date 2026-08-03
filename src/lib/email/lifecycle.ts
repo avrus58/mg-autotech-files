@@ -1,6 +1,15 @@
-import type { TransactionalEmailEventType } from "@/lib/email/types";
+import type {
+  TransactionalEmailEventType,
+  TransactionalEmailLanguage,
+} from "@/lib/email/types";
 
 export type EmailStatusSource = "legacy_order" | "work_order" | "delivery";
+
+type LocalizedStatusEmailDefinition = {
+  eventType: TransactionalEmailEventType;
+  statusLabel: Record<TransactionalEmailLanguage, string>;
+  actionRequired?: Record<TransactionalEmailLanguage, string>;
+};
 
 type StatusEmailDefinition = {
   eventType: TransactionalEmailEventType;
@@ -8,96 +17,120 @@ type StatusEmailDefinition = {
   actionRequired?: string;
 };
 
-const legacyOrderStatusEmails: Record<string, StatusEmailDefinition> = {
+const localized = (de: string, en: string, tr: string) => ({ de, en, tr });
+
+const legacyOrderStatusEmails: Record<string, LocalizedStatusEmailDefinition> = {
   file_check: {
     eventType: "request_in_review",
-    statusLabel: "Dateiprüfung",
+    statusLabel: localized("Dateiprüfung", "File review", "Dosya incelemesi"),
   },
   in_progress: {
     eventType: "request_in_progress",
-    statusLabel: "In Bearbeitung",
+    statusLabel: localized("In Bearbeitung", "In progress", "İşleniyor"),
   },
   customer_info_needed: {
     eventType: "request_waiting_for_customer",
-    statusLabel: "Rückmeldung erforderlich",
-    actionRequired: "Bitte öffnen Sie Ihre Anfrage und prüfen Sie die aktuelle Nachricht im Kundenportal.",
+    statusLabel: localized("Rückmeldung erforderlich", "Response required", "Yanıt gerekli"),
+    actionRequired: localized(
+      "Bitte öffnen Sie Ihre Anfrage und prüfen Sie die aktuelle Nachricht im Kundenportal.",
+      "Please open your request and review the latest message in the customer portal.",
+      "Lütfen talebinizi açın ve müşteri panelindeki son mesajı kontrol edin."
+    ),
   },
   revision: {
     eventType: "request_in_review",
-    statusLabel: "Revision in Prüfung",
+    statusLabel: localized("Revision in Prüfung", "Revision under review", "Revizyon inceleniyor"),
   },
   completed: {
     eventType: "request_completed",
-    statusLabel: "Abgeschlossen",
+    statusLabel: localized("Abgeschlossen", "Completed", "Tamamlandı"),
   },
   cancelled: {
     eventType: "request_cancelled",
-    statusLabel: "Storniert",
+    statusLabel: localized("Storniert", "Cancelled", "İptal edildi"),
   },
 };
 
-const workOrderStatusEmails: Record<string, StatusEmailDefinition> = {
+const workOrderStatusEmails: Record<string, LocalizedStatusEmailDefinition> = {
   waiting_for_file: {
     eventType: "additional_file_requested",
-    statusLabel: "Datei erforderlich",
-    actionRequired: "Bitte öffnen Sie Ihre Anfrage und laden Sie die angeforderte Datei ausschließlich über das Kundenportal hoch.",
+    statusLabel: localized("Datei erforderlich", "File required", "Dosya gerekli"),
+    actionRequired: localized(
+      "Bitte öffnen Sie Ihre Anfrage und laden Sie die angeforderte Datei ausschließlich über das Kundenportal hoch.",
+      "Please open your request and upload the requested file only through the customer portal.",
+      "Lütfen talebinizi açın ve istenen dosyayı yalnızca müşteri panelinden yükleyin."
+    ),
   },
   file_received: {
     eventType: "request_received",
-    statusLabel: "Datei erhalten",
+    statusLabel: localized("Datei erhalten", "File received", "Dosya alındı"),
   },
   in_analysis: {
     eventType: "request_in_review",
-    statusLabel: "Technische Prüfung",
+    statusLabel: localized("Technische Prüfung", "Technical review", "Teknik inceleme"),
   },
   in_progress: {
     eventType: "request_in_progress",
-    statusLabel: "In Bearbeitung",
+    statusLabel: localized("In Bearbeitung", "In progress", "İşleniyor"),
   },
   waiting_for_customer: {
     eventType: "request_waiting_for_customer",
-    statusLabel: "Rückmeldung erforderlich",
-    actionRequired: "Bitte öffnen Sie Ihre Anfrage und prüfen Sie die aktuelle Nachricht im Kundenportal.",
+    statusLabel: localized("Rückmeldung erforderlich", "Response required", "Yanıt gerekli"),
+    actionRequired: localized(
+      "Bitte öffnen Sie Ihre Anfrage und prüfen Sie die aktuelle Nachricht im Kundenportal.",
+      "Please open your request and review the latest message in the customer portal.",
+      "Lütfen talebinizi açın ve müşteri panelindeki son mesajı kontrol edin."
+    ),
   },
   ready_for_delivery: {
     eventType: "request_completed",
-    statusLabel: "Bereit zur Auslieferung",
+    statusLabel: localized("Bereit zur Auslieferung", "Ready for delivery", "Teslime hazır"),
   },
   delivered: {
     eventType: "request_delivered",
-    statusLabel: "Ausgeliefert",
+    statusLabel: localized("Ausgeliefert", "Delivered", "Teslim edildi"),
   },
   completed: {
     eventType: "request_completed",
-    statusLabel: "Abgeschlossen",
+    statusLabel: localized("Abgeschlossen", "Completed", "Tamamlandı"),
   },
   cancelled: {
     eventType: "request_cancelled",
-    statusLabel: "Storniert",
+    statusLabel: localized("Storniert", "Cancelled", "İptal edildi"),
   },
   needs_review: {
     eventType: "request_in_review",
-    statusLabel: "Manuelle Prüfung",
+    statusLabel: localized("Manuelle Prüfung", "Manual review", "Manuel inceleme"),
   },
 };
 
-const deliveryStatusEmails: Record<string, StatusEmailDefinition> = {
+const deliveryStatusEmails: Record<string, LocalizedStatusEmailDefinition> = {
   delivered: {
     eventType: "request_delivered",
-    statusLabel: "Ausgeliefert",
+    statusLabel: localized("Ausgeliefert", "Delivered", "Teslim edildi"),
   },
 };
 
 export function resolveStatusEmail(
   status: string | null | undefined,
-  source: EmailStatusSource
+  source: EmailStatusSource,
+  language: TransactionalEmailLanguage = "en"
 ): StatusEmailDefinition | null {
   const normalized = String(status || "").trim().toLowerCase();
   if (!normalized) return null;
 
-  if (source === "legacy_order") return legacyOrderStatusEmails[normalized] ?? null;
-  if (source === "delivery") return deliveryStatusEmails[normalized] ?? null;
-  return workOrderStatusEmails[normalized] ?? null;
+  const definition = source === "legacy_order"
+    ? legacyOrderStatusEmails[normalized]
+    : source === "delivery"
+      ? deliveryStatusEmails[normalized]
+      : workOrderStatusEmails[normalized];
+  if (!definition) return null;
+
+  return {
+    eventType: definition.eventType,
+    statusLabel: definition.statusLabel[language],
+    actionRequired: definition.actionRequired?.[language],
+  };
 }
 
 export function shouldSendStatusTransition(input: {

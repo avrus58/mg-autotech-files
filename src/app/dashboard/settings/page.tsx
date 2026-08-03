@@ -5,6 +5,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getStableSession, notifySessionRequired, signOutIfEmailUnverified } from "@/lib/authGuards";
 import { supabase } from "@/lib/supabaseClient";
+import { resolveTransactionalEmailLanguageFromMetadata } from "@/lib/email/language";
+import type { TransactionalEmailLanguage } from "@/lib/email/types";
 import {
   ArrowLeft,
   AlertTriangle,
@@ -13,6 +15,7 @@ import {
   Copy,
   CreditCard,
   Gauge,
+  Languages,
   Loader2,
   MapPin,
   Save,
@@ -126,6 +129,7 @@ export default function CustomerSettingsPage() {
   const [vatId, setVatId] = useState("");
   const [invoiceEmail, setInvoiceEmail] = useState("");
   const [preferredContact, setPreferredContact] = useState("email");
+  const [emailLanguage, setEmailLanguage] = useState<TransactionalEmailLanguage>("en");
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -172,6 +176,7 @@ export default function CustomerSettingsPage() {
     }
 
     setEmail(user.email ?? null);
+    setEmailLanguage(resolveTransactionalEmailLanguageFromMetadata(user.user_metadata));
 
     const { data: profile, error } = await supabase
       .from("profiles")
@@ -235,26 +240,31 @@ export default function CustomerSettingsPage() {
       return;
     }
 
-    const { error } = await supabase
-      .from("profiles")
-      .update({
-        full_name: fullName.trim() || null,
-        account_type: accountType,
-        company_name: companyName.trim() || null,
-        phone: phone.trim() || null,
-        street: street.trim() || null,
-        postal_code: postalCode.trim() || null,
-        city: city.trim() || null,
-        country: country.trim() || "Germany",
-        vat_id: vatId.trim() || null,
-        invoice_email: invoiceEmail.trim() || email,
-        preferred_contact: preferredContact,
-      })
-      .eq("id", user.id);
+    const [profileResult, languageResult] = await Promise.all([
+      supabase
+        .from("profiles")
+        .update({
+          full_name: fullName.trim() || null,
+          account_type: accountType,
+          company_name: companyName.trim() || null,
+          phone: phone.trim() || null,
+          street: street.trim() || null,
+          postal_code: postalCode.trim() || null,
+          city: city.trim() || null,
+          country: country.trim() || "Germany",
+          vat_id: vatId.trim() || null,
+          invoice_email: invoiceEmail.trim() || email,
+          preferred_contact: preferredContact,
+        })
+        .eq("id", user.id),
+      supabase.auth.updateUser({
+        data: { email_language: emailLanguage },
+      }),
+    ]);
 
     setSaving(false);
 
-    if (error) {
+    if (profileResult.error || languageResult.error) {
       setMessage(SETTINGS_SAVE_ERROR_MESSAGE);
       return;
     }
@@ -460,7 +470,21 @@ export default function CustomerSettingsPage() {
                     ["phone", "Phone"],
                   ]}
                 />
+                <SelectField
+                  label="E-mail Language"
+                  value={emailLanguage}
+                  onChange={(value) => setEmailLanguage(value as TransactionalEmailLanguage)}
+                  options={[
+                    ["en", "English"],
+                    ["de", "Deutsch"],
+                    ["tr", "Türkçe"],
+                  ]}
+                />
                 <Field label="Invoice E-mail" value={invoiceEmail} onChange={setInvoiceEmail} placeholder="invoice@example.com" type="email" />
+              </div>
+              <div className="mt-4 flex items-start gap-3 rounded-2xl border border-white/10 bg-black/25 p-4 text-sm leading-6 text-zinc-400">
+                <Languages className="mt-0.5 h-5 w-5 shrink-0 text-red-400" />
+                Account, request, payment and delivery emails use this language. Other website languages currently receive the English email version.
               </div>
             </div>
 

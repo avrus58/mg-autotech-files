@@ -14,6 +14,12 @@ import {
   shouldSendStatusTransition,
 } from "../src/lib/email/lifecycle";
 import { sanitizeEmailEventMetadata } from "../src/lib/email/logging";
+import {
+  normalizeTransactionalEmailLanguage,
+  resolveBrowserTransactionalEmailLanguage,
+  resolveTransactionalEmailLanguageFromCookie,
+  resolveTransactionalEmailLanguageFromMetadata,
+} from "../src/lib/email/language";
 import { safeEmailUrl } from "../src/lib/email/render";
 import { filterCustomerVisibleRequestMessages } from "../src/lib/workOrders/messageVisibility";
 
@@ -35,7 +41,7 @@ test("request-created template renders German HTML and text without internal fie
     vehicleSummary: "Mercedes-Benz E W214 E 220 d",
     serviceSummary: "Stage 1 + EGR OFF",
     dashboardUrl: "https://file.mgautotech.de/dashboard/orders/32007019-ac4b-48cb-a648-668ffa5e4d69",
-  });
+  }, "de");
   const serialized = JSON.stringify(rendered);
   assert.match(rendered.subject, /Ihre Anfrage/);
   assert.match(rendered.html, /MG AutoTech/);
@@ -53,13 +59,13 @@ test("verified registration renders customer welcome and separate admin notice",
     customerEmail: "customer@example.com",
     customerName: "Example Workshop",
     dashboardUrl: "https://file.mgautotech.de/dashboard",
-  });
+  }, "de");
   const admin = renderTransactionalEmailTemplate("customer_registered", {
     customerId: "MGA-10001",
     customerEmail: "customer@example.com",
     customerName: "Example Workshop",
     adminUrl: "https://file.mgautotech.de/admin?view=customers",
-  });
+  }, "de");
   assert.match(customer.subject, /Kundenkonto ist bereit/);
   assert.match(customer.text, /Credits verwalten/);
   assert.match(admin.subject, /Neuer MG AutoTech Kunde/);
@@ -72,13 +78,133 @@ test("password recovery template contains the secure action without internal met
     customerId: "MGA-10001",
     customerEmail: "customer@example.com",
     recoveryUrl,
-  });
+  }, "de");
   const serialized = JSON.stringify(rendered);
 
   assert.match(rendered.subject, /Passwort sicher/);
   assert.match(rendered.html, /Passwort sicher zurücksetzen/);
   assert.match(rendered.text, /example\.supabase\.co\/auth\/v1\/verify/);
   assert.doesNotMatch(serialized, /admin_note|storage_path|service_role|raw_binary|hex_preview|confidence_score/i);
+});
+
+test("customer transactional email language is explicit and defaults safely to English", () => {
+  const context = {
+    customerId: "MGA-10001",
+    customerEmail: "customer@example.com",
+    recoveryUrl: "https://example.supabase.co/auth/v1/verify?token=hashed-token&type=recovery",
+  };
+  const defaultEmail = renderTransactionalEmailTemplate("customer_password_reset", context);
+  const english = renderTransactionalEmailTemplate("customer_password_reset", context, "en");
+  const german = renderTransactionalEmailTemplate("customer_password_reset", context, "de");
+  const turkish = renderTransactionalEmailTemplate("customer_password_reset", context, "tr");
+
+  assert.equal(defaultEmail.subject, english.subject);
+  assert.match(english.subject, /Secure password reset/);
+  assert.match(english.html, /<html lang="en">/);
+  assert.match(english.html, /Reset your password securely/);
+  assert.doesNotMatch(english.html, /Passwort|Kundenkonto|Zurücksetzen/);
+  assert.match(german.subject, /Passwort sicher/);
+  assert.match(german.html, /<html lang="de">/);
+  assert.match(turkish.subject, /Güvenli şifre sıfırlama/);
+  assert.match(turkish.html, /<html lang="tr">/);
+  assert.match(turkish.html, /Şifrenizi güvenle sıfırlayın/);
+  assert.doesNotMatch(turkish.html, /Passwort|Kundenkonto/);
+});
+
+test("email language resolver accepts exact supported locales and never promotes unknown values", () => {
+  assert.equal(normalizeTransactionalEmailLanguage("de-DE"), "de");
+  assert.equal(normalizeTransactionalEmailLanguage("tr_TR"), "tr");
+  assert.equal(normalizeTransactionalEmailLanguage("en-GB"), "en");
+  assert.equal(normalizeTransactionalEmailLanguage("fr-FR"), "en");
+  assert.equal(normalizeTransactionalEmailLanguage(null), "en");
+  assert.equal(
+    resolveTransactionalEmailLanguageFromMetadata({ email_language: "tr-TR" }),
+    "tr"
+  );
+  assert.equal(
+    resolveTransactionalEmailLanguageFromMetadata({ preferred_language: "de" }),
+    "de"
+  );
+  assert.equal(
+    resolveTransactionalEmailLanguageFromMetadata({ email_language: "unknown", locale: "fr" }),
+    "en"
+  );
+  assert.equal(resolveTransactionalEmailLanguageFromCookie("foo=1; mg_locale=de; bar=2"), "de");
+  assert.equal(resolveTransactionalEmailLanguageFromCookie("mg_locale=fr"), "en");
+  assert.equal(
+    resolveBrowserTransactionalEmailLanguage({
+      storedLocale: "tr",
+      cookieHeader: "mg_locale=de",
+      browserLocale: "en-US",
+    }),
+    "tr"
+  );
+});
+
+test("request lifecycle copy follows the recipient email language", () => {
+  const english = resolveStatusEmail("customer_info_needed", "legacy_order", "en");
+  const german = resolveStatusEmail("customer_info_needed", "legacy_order", "de");
+  const turkish = resolveStatusEmail("customer_info_needed", "legacy_order", "tr");
+
+  assert.equal(english?.statusLabel, "Response required");
+  assert.match(english?.actionRequired ?? "", /review the latest message/);
+  assert.equal(german?.statusLabel, "Rückmeldung erforderlich");
+  assert.equal(turkish?.statusLabel, "Yanıt gerekli");
+  assert.match(turkish?.actionRequired ?? "", /son mesajı kontrol edin/);
+});
+
+test("every customer lifecycle template renders complete English and Turkish output", () => {
+  const customerEvents = [
+    "customer_welcome",
+    "customer_password_reset",
+    "request_created",
+    "request_received",
+    "file_uploaded",
+    "additional_file_requested",
+    "additional_file_uploaded_customer",
+    "request_in_review",
+    "request_in_progress",
+    "request_waiting_for_customer",
+    "request_completed",
+    "request_delivered",
+    "request_cancelled",
+    "request_rejected_or_not_possible",
+    "credit_purchase_started",
+    "bank_transfer_instructions",
+    "payment_received",
+    "credits_added",
+    "payment_failed",
+    "payment_pending_review",
+    "customer_visible_message_added",
+    "upload_permission_enabled",
+    "upload_permission_disabled",
+    "delivery_completed",
+  ] as const;
+  const context = {
+    requestId: "request-id",
+    requestNumber: "#REQ-100",
+    customerId: "MGA-10001",
+    customerEmail: "customer@example.com",
+    vehicleSummary: "Mercedes-Benz E W214",
+    serviceSummary: "Stage 1",
+    statusLabel: "In progress",
+    fileName: "original.bin",
+    messagePreview: "Please review the latest message.",
+    credits: 10,
+    amountLabel: "36.00 EUR",
+    recoveryUrl: "https://example.supabase.co/auth/v1/verify?token=hashed-token&type=recovery",
+    dashboardUrl: "https://file.mgautotech.de/dashboard",
+  };
+
+  for (const eventType of customerEvents) {
+    for (const language of ["en", "tr"] as const) {
+      const rendered = renderTransactionalEmailTemplate(eventType, context, language);
+      assert.ok(rendered.subject.trim(), `${eventType}:${language}:subject`);
+      assert.ok(rendered.text.trim(), `${eventType}:${language}:text`);
+      assert.match(rendered.html, new RegExp(`<html lang="${language}">`));
+      assert.doesNotMatch(rendered.html, /undefined|null/);
+    }
+  }
 });
 
 test("status lifecycle maps meaningful legacy and work-order transitions only", () => {
@@ -109,7 +235,7 @@ test("customer-visible message email includes only visible safe message content"
     requestId: "r1",
     messagePreview: rows[0].message,
     vehicleSummary: "BMW 530d",
-  });
+  }, "de");
   const serialized = JSON.stringify(rendered);
   assert.equal(rows.length, 1);
   assert.match(serialized, /Bitte laden Sie/);
@@ -121,12 +247,12 @@ test("additional-file customer receipt and revision admin templates remain porta
     requestId: "r1",
     fileName: "safe-original.bin",
     dashboardUrl: "https://file.mgautotech.de/dashboard/orders/r1",
-  });
+  }, "de");
   const revision = renderTransactionalEmailTemplate("revision_requested_admin_notification", {
     requestId: "r1",
     messagePreview: "Please review the requested revision.",
     adminUrl: "https://file.mgautotech.de/admin/requests/r1",
-  });
+  }, "de");
   assert.match(receipt.subject, /Zusätzliche Datei/);
   assert.match(revision.subject, /Revision angefordert/);
   const serialized = JSON.stringify({ receipt, revision });
@@ -167,7 +293,7 @@ test("bank transfer email includes payment reference and configured bank fields 
     bankName: "Example Bank",
     bankIban: "DE00TEST0000000000",
     bankBic: "TESTDE00",
-  });
+  }, "de");
   assert.match(rendered.text, /MGA-12345/);
   assert.match(rendered.text, /400.00 EUR/);
   assert.match(rendered.text, /DE00TEST/);
@@ -253,7 +379,9 @@ test("registration notifications happen only after verified auth callback", () =
   const register = readFileSync(resolve(process.cwd(), "src", "app", "register", "page.tsx"), "utf8");
   const callback = readFileSync(resolve(process.cwd(), "src", "app", "auth", "callback", "page.tsx"), "utf8");
   const route = readFileSync(resolve(process.cwd(), "src", "app", "api", "email", "new-customer", "route.ts"), "utf8");
+  const settings = readFileSync(resolve(process.cwd(), "src", "app", "dashboard", "settings", "page.tsx"), "utf8");
   assert.match(register, /supabase\.auth\.signUp/);
+  assert.match(register, /email_language: getSelectedEmailLanguage\(\)/);
   assert.match(register, /supabase\.auth\.resend/);
   assert.match(register, /verificationPending/);
   assert.doesNotMatch(register, /customerEmail:\s*cleanEmail[\s\S]{0,180}\/api\/email\/new-customer/);
@@ -261,6 +389,11 @@ test("registration notifications happen only after verified auth callback", () =
   assert.match(callback, /isRecentEmailConfirmation/);
   assert.match(route, /requireApiUser/);
   assert.match(route, /auth\.user\.email/);
+  assert.match(route, /resolveTransactionalEmailLanguageFromCookie/);
+  assert.match(route, /email_language: language/);
+  assert.match(settings, /E-mail Language/);
+  assert.match(settings, /supabase\.auth\.updateUser/);
+  assert.match(settings, /email_language: emailLanguage/);
   assert.doesNotMatch(route, /customerEmail:\s*z\.string/);
 });
 

@@ -2,7 +2,7 @@
 
 ## Purpose
 
-The transactional email system sends premium, customer-safe notifications for important MG AutoTech platform events. It is German-first, server-side only, and designed to avoid public relay abuse.
+The transactional email system sends premium, customer-safe notifications for important MG AutoTech platform events. It is server-side only, language-aware, and designed to avoid public relay abuse.
 
 The system never sends raw ECU/TCU files, binary previews, hex data, private storage paths, provider/private sample metadata, internal notes, risk flags, audit logs, private offsets, or hidden customer messages.
 
@@ -25,6 +25,25 @@ Real sending is explicit opt-in: the application remains in dry-run unless
 live sending fails closed so idempotency cannot be bypassed.
 
 If `RESEND_API_KEY` is missing, emails are skipped safely and the request/payment/work-order flow continues.
+
+## Customer Email Language
+
+Customer transactional templates are available in English, German and Turkish.
+
+Resolution order:
+
+1. The customer's explicit `E-mail Language` choice in `/dashboard/settings`.
+2. The locale selected during account registration or verification.
+3. Safe default: English.
+
+Unsupported website locales currently receive the English email version. They
+never fall back to German automatically. The preference is stored as
+`email_language` in Supabase Auth user metadata and is used only for content
+localization, never for authorization or RLS decisions.
+
+Admin notifications use English until a separate staff notification preference
+is introduced. Existing accounts without a stored preference receive English
+and can choose German or Turkish from customer settings.
 
 ## Email Event Log
 
@@ -51,6 +70,7 @@ The table has RLS enabled. Staff with `orders.view` can read logs; staff with `o
 Customer/request:
 
 - `customer_welcome` after verified registration
+- `customer_password_reset` for the audited admin customer-recovery action
 - `request_created`
 - `request_received`
 - `file_uploaded`

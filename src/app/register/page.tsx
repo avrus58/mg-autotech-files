@@ -16,6 +16,7 @@ import {
   signOutIfEmailUnverified,
 } from "@/lib/authGuards";
 import { supabase } from "@/lib/supabaseClient";
+import { resolveBrowserTransactionalEmailLanguage } from "@/lib/email/language";
 import {
   ArrowLeft,
   ArrowRight,
@@ -37,6 +38,14 @@ import {
 
 type AccountType = "private" | "company";
 type StepId = 1 | 2 | 3;
+
+function getSelectedEmailLanguage() {
+  return resolveBrowserTransactionalEmailLanguage({
+    storedLocale: window.localStorage.getItem("mg_locale"),
+    cookieHeader: document.cookie,
+    browserLocale: window.navigator.language,
+  });
+}
 
 const steps: { id: StepId; label: string; subLabel: string }[] = [
   { id: 1, label: "Account Setup", subLabel: "Customer type" },
@@ -211,6 +220,7 @@ export default function RegisterPage() {
           city: city.trim() || null,
           country: country.trim() || "Germany",
           preferred_contact: preferredContact,
+          email_language: getSelectedEmailLanguage(),
           role: "customer",
         },
       },

@@ -6,6 +6,7 @@ import {
   safeText,
   textBlock,
 } from "@/lib/email/render";
+import { renderLocalizedTransactionalEmailTemplate } from "@/lib/email/localizedTemplates";
 import type {
   RenderedTransactionalEmail,
   TransactionalEmailContext,
@@ -50,6 +51,7 @@ function customerTemplate(input: {
   extraText?: string;
 }) {
   const html = htmlLayout({
+    language: "de",
     preheader: input.intro,
     title: input.title,
     intro: input.intro,
@@ -94,6 +96,7 @@ function adminTemplate(input: {
   details?: string;
 }) {
   const html = htmlLayout({
+    language: "de",
     preheader: input.intro,
     title: input.title,
     intro: input.intro,
@@ -158,6 +161,7 @@ const deTemplates: Record<TransactionalEmailEventType, TemplateDefinition> = {
       const title = "Passwort sicher zurücksetzen";
       const intro = "Für Ihr MG AutoTech Kundenkonto wurde eine Passwort-Zurücksetzung angefordert.";
       const html = htmlLayout({
+        language: "de",
         preheader: intro,
         title,
         intro,
@@ -527,11 +531,13 @@ const deTemplates: Record<TransactionalEmailEventType, TemplateDefinition> = {
 export function renderTransactionalEmailTemplate(
   eventType: TransactionalEmailEventType,
   context: TransactionalEmailContext,
-  language: TransactionalEmailLanguage = "de"
+  language: TransactionalEmailLanguage = "en"
 ) {
   const fullContext = getDefaultEmailContext(context);
-  const templates = language === "de" ? deTemplates : deTemplates;
-  return templates[eventType].render(fullContext);
+  if (language !== "de") {
+    return renderLocalizedTransactionalEmailTemplate(eventType, fullContext, language);
+  }
+  return deTemplates[eventType].render(fullContext);
 }
 
 export function listTransactionalEmailTemplates() {

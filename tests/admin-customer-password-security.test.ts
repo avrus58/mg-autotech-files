@@ -61,6 +61,8 @@ test("customer password controls are protected, audited and fail closed", () => 
   assert.match(route, /auth\.admin\.generateLink/);
   assert.match(route, /type: "recovery"/);
   assert.match(route, /sendCustomerPasswordRecoveryEmail/);
+  assert.match(route, /resolveTransactionalEmailLanguageFromMetadata/);
+  assert.match(route, /language:\s*resolveTransactionalEmailLanguageFromMetadata/);
   assert.doesNotMatch(route, /auth\.resetPasswordForEmail/);
   assert.match(route, /auth\.admin\.updateUserById/);
   assert.match(route, /\.from\("staff_audit_log"\)/);

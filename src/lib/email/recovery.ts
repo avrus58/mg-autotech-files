@@ -1,4 +1,5 @@
 import { sendTransactionalEmail } from "@/lib/email/service";
+import type { TransactionalEmailLanguage } from "@/lib/email/types";
 
 export function validateRecoveryActionLink(value: unknown) {
   if (typeof value !== "string" || !value) return null;
@@ -25,6 +26,7 @@ export async function sendCustomerPasswordRecoveryEmail(input: {
   customerId: string;
   customerReference?: string | null;
   recoveryUrl: string;
+  language: TransactionalEmailLanguage;
 }) {
   const recoveryUrl = validateRecoveryActionLink(input.recoveryUrl);
   if (!recoveryUrl) {
@@ -38,6 +40,7 @@ export async function sendCustomerPasswordRecoveryEmail(input: {
   const result = await sendTransactionalEmail({
     eventType: "customer_password_reset",
     to: input.customerEmail,
+    language: input.language,
     context: {
       customerEmail: input.customerEmail,
       customerId: input.customerReference ?? null,

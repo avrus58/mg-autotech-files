@@ -3,6 +3,12 @@ import { z } from "zod";
 import { requireApiUser } from "@/lib/apiAuth";
 import { sendRegistrationConfirmedNotifications } from "@/lib/email/events";
 import {
+  normalizeTransactionalEmailLanguage,
+  resolveTransactionalEmailLanguageFromCookie,
+  resolveTransactionalEmailLanguageFromMetadata,
+} from "@/lib/email/language";
+import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
+import {
   checkAdaptiveRateLimit,
   rateLimitResponseHeaders,
 } from "@/lib/abuseProtection";
@@ -60,10 +66,31 @@ export async function POST(request: Request) {
     );
   }
 
+  const cookieHeader = request.headers.get("cookie");
+  const language = normalizeTransactionalEmailLanguage(
+    cookieHeader?.includes("mg_locale=")
+      ? resolveTransactionalEmailLanguageFromCookie(cookieHeader)
+      : null,
+    resolveTransactionalEmailLanguageFromMetadata(auth.user.user_metadata),
+    request.headers.get("accept-language")
+  );
+
+  try {
+    await getSupabaseAdmin().auth.admin.updateUserById(auth.user.id, {
+      user_metadata: {
+        ...auth.user.user_metadata,
+        email_language: language,
+      },
+    });
+  } catch {
+    // Email delivery can still use the resolved language for this request.
+  }
+
   await sendRegistrationConfirmedNotifications({
     userId: auth.user.id,
     customerEmail,
     source: parsed.data.source,
+    language,
   });
 
   return NextResponse.json({ success: true });

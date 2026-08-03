@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireStaffPermission } from "@/lib/apiAuth";
 import { validateCustomerReplacementPassword } from "@/lib/customerPasswordSecurity";
 import { sendCustomerPasswordRecoveryEmail } from "@/lib/email/recovery";
+import { resolveTransactionalEmailLanguageFromMetadata } from "@/lib/email/language";
 import { getSiteUrl } from "@/lib/email/render";
 import { isPrimaryOwner } from "@/lib/staffPermissions";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
@@ -157,6 +158,9 @@ export async function POST(
       customerId: idResult.data,
       customerReference: profileResult.data.customer_id,
       recoveryUrl: resetResult.data.properties.action_link,
+      language: resolveTransactionalEmailLanguageFromMetadata(
+        authUserResult.data.user.user_metadata
+      ),
     });
     if (!delivery.ok) {
       await finishAudit("failed");

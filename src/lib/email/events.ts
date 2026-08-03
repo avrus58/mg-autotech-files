@@ -1,4 +1,6 @@
 import { getAdminNotificationEmail, getSiteUrl, formatRequestReference } from "@/lib/email/render";
+import { defaultTransactionalEmailLanguage } from "@/lib/email/language";
+import { loadUserTransactionalEmailLanguage } from "@/lib/email/languageServer";
 import { sendTransactionalEmail } from "@/lib/email/service";
 import {
   buildLifecycleIdempotencyKey,
@@ -6,7 +8,10 @@ import {
   shouldSendStatusTransition,
   type EmailStatusSource,
 } from "@/lib/email/lifecycle";
-import type { TransactionalEmailContext } from "@/lib/email/types";
+import type {
+  TransactionalEmailContext,
+  TransactionalEmailLanguage,
+} from "@/lib/email/types";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { filterCustomerVisibleRequestMessages, type RequestMessageVisibilityRow } from "@/lib/workOrders/messageVisibility";
 
@@ -66,6 +71,7 @@ async function loadOrderContext(requestId: string) {
   const requestNumber = formatRequestReference(order.id);
   const siteUrl = getSiteUrl();
   const customerEmail = order.customer_email || profile?.email || "";
+  const language = await loadUserTransactionalEmailLanguage(order.customer_id);
   const context: TransactionalEmailContext = {
     requestId: order.id,
     requestNumber,
@@ -79,13 +85,14 @@ async function loadOrderContext(requestId: string) {
     dashboardUrl: `${siteUrl}/dashboard/orders/${order.id}`,
     adminUrl: `${siteUrl}/admin/requests/${order.id}`,
   };
-  return { order, profile, context, customerEmail };
+  return { order, profile, context, customerEmail, language };
 }
 
 export async function sendRegistrationConfirmedNotifications(input: {
   userId: string;
   customerEmail: string;
   source?: string | null;
+  language?: TransactionalEmailLanguage;
 }) {
   try {
     const admin = getSupabaseAdmin();
@@ -105,11 +112,13 @@ export async function sendRegistrationConfirmedNotifications(input: {
       adminUrl: `${getSiteUrl()}/admin?view=customers`,
     };
     const source = clean(input.source) || "email";
+    const language = input.language ?? await loadUserTransactionalEmailLanguage(input.userId);
 
     await Promise.allSettled([
       sendTransactionalEmail({
         eventType: "customer_welcome",
         to: customerEmail,
+        language,
         context,
         idempotencyKey: `customer_welcome:${input.userId}`,
         recipientUserId: input.userId,
@@ -118,6 +127,7 @@ export async function sendRegistrationConfirmedNotifications(input: {
       sendTransactionalEmail({
         eventType: "customer_registered",
         to: getAdminNotificationEmail(),
+        language: defaultTransactionalEmailLanguage,
         context,
         idempotencyKey: `customer_registered:${input.userId}`,
         metadata: { source: "verified_registration", signup_source: source },
@@ -149,11 +159,13 @@ export async function sendRequestCreatedNotifications(input: {
     };
     const context = loaded?.context ?? fallbackContext;
     const recipient = loaded?.customerEmail || input.customerEmail || "";
+    const language = loaded?.language ?? defaultTransactionalEmailLanguage;
 
     await Promise.allSettled([
       sendTransactionalEmail({
         eventType: "request_created",
         to: recipient,
+        language,
         context,
         idempotencyKey: `request_created:${input.requestId}:${recipient}`,
         recipientUserId: loaded?.order.customer_id ?? null,
@@ -164,6 +176,7 @@ export async function sendRequestCreatedNotifications(input: {
       sendTransactionalEmail({
         eventType: "new_request_admin_notification",
         to: getAdminNotificationEmail(),
+        language: defaultTransactionalEmailLanguage,
         context,
         idempotencyKey: `admin_new_request:${input.requestId}`,
         relatedOrderId: input.requestId,
@@ -190,13 +203,14 @@ export async function sendWorkOrderStatusEmail(input: {
       nextStatus: input.status,
       source,
     })) return;
-    const definition = resolveStatusEmail(input.status, source);
-    if (!definition) return;
     const loaded = await loadOrderContext(input.requestId);
     if (!loaded?.customerEmail) return;
+    const definition = resolveStatusEmail(input.status, source, loaded.language);
+    if (!definition) return;
     await sendTransactionalEmail({
       eventType: definition.eventType,
       to: loaded.customerEmail,
+      language: loaded.language,
       context: {
         ...loaded.context,
         statusLabel: definition.statusLabel,
@@ -249,6 +263,7 @@ export async function sendCustomerVisibleMessageEmail(input: {
     await sendTransactionalEmail({
       eventType: "customer_visible_message_added",
       to: loaded.customerEmail,
+      language: loaded.language,
       context: {
         ...loaded.context,
         messagePreview: String(visible.message ?? "").slice(0, 600),
@@ -285,6 +300,7 @@ export async function sendCustomerReplyAdminEmail(input: {
     await sendTransactionalEmail({
       eventType: "customer_replied_admin_notification",
       to: getAdminNotificationEmail(),
+      language: defaultTransactionalEmailLanguage,
       context: {
         ...loaded.context,
         messagePreview: String(visible.message ?? "").slice(0, 600),
@@ -320,6 +336,7 @@ export async function sendRevisionRequestedAdminEmail(input: {
     await sendTransactionalEmail({
       eventType: "revision_requested_admin_notification",
       to: getAdminNotificationEmail(),
+      language: defaultTransactionalEmailLanguage,
       context: {
         ...loaded.context,
         messagePreview: String(visible.message ?? "").slice(0, 600),
@@ -346,6 +363,7 @@ export async function sendUploadPermissionEmail(input: {
     await sendTransactionalEmail({
       eventType: "upload_permission_enabled",
       to: loaded.customerEmail,
+      language: loaded.language,
       context: loaded.context,
       idempotencyKey: buildLifecycleIdempotencyKey([
         "upload_permission_enabled",
@@ -373,6 +391,7 @@ export async function sendAdditionalFileUploadedAdminEmail(input: {
     await sendTransactionalEmail({
       eventType: "additional_file_uploaded",
       to: getAdminNotificationEmail(),
+      language: defaultTransactionalEmailLanguage,
       context: { ...loaded.context, fileName: input.fileName },
       idempotencyKey: `admin_additional_file_uploaded:${input.requestId}:${input.uploadId || input.fileName}`,
       relatedOrderId: input.requestId,
@@ -397,6 +416,7 @@ export async function sendAdditionalFileUploadedNotifications(input: {
       sendTransactionalEmail({
         eventType: "additional_file_uploaded_customer",
         to: loaded.customerEmail,
+        language: loaded.language,
         context: { ...loaded.context, fileName: input.fileName },
         idempotencyKey: `customer_additional_file_uploaded:${input.requestId}:${input.uploadId || input.fileName}`,
         recipientUserId: loaded.order.customer_id,
@@ -420,6 +440,7 @@ export async function sendDeliveryCompletedEmail(input: {
     await sendTransactionalEmail({
       eventType: "delivery_completed",
       to: loaded.customerEmail,
+      language: loaded.language,
       context: { ...loaded.context, fileName: input.fileName ?? null },
       idempotencyKey: `delivery_completed:${input.requestId}`,
       recipientUserId: loaded.order.customer_id,
@@ -439,9 +460,11 @@ export async function sendBankTransferInstructionsEmail(input: {
   credits?: number | null;
   amountLabel?: string | null;
 }) {
+  const language = await loadUserTransactionalEmailLanguage(input.userId);
   await sendTransactionalEmail({
     eventType: "bank_transfer_instructions",
     to: input.customerEmail,
+    language,
     context: {
       customerId: input.customerId ?? null,
       customerEmail: input.customerEmail,
@@ -478,6 +501,7 @@ export async function sendCreditsAddedEmail(input: {
       .maybeSingle();
     const email = input.customerEmail || profile.data?.email || "";
     if (!email) return;
+    const language = await loadUserTransactionalEmailLanguage(input.userId);
     const amountLabel =
       typeof input.amountTotal === "number" && input.amountTotal > 0
         ? `${(input.amountTotal / 100).toFixed(2)} ${(input.currency || "eur").toUpperCase()}`
@@ -485,6 +509,7 @@ export async function sendCreditsAddedEmail(input: {
     await sendTransactionalEmail({
       eventType: "credits_added",
       to: email,
+      language,
       context: {
         customerEmail: email,
         customerId: profile.data?.customer_id ?? null,

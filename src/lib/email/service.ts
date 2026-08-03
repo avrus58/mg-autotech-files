@@ -1,6 +1,7 @@
 import { Resend } from "resend";
 import { createHash } from "node:crypto";
 import { createEmailEventLog, updateEmailEventLog } from "@/lib/email/logging";
+import { defaultTransactionalEmailLanguage } from "@/lib/email/language";
 import { renderTransactionalEmailTemplate } from "@/lib/email/templates";
 import type {
   SendTransactionalEmailInput,
@@ -75,6 +76,7 @@ export async function sendTransactionalEmail(
   input: SendTransactionalEmailInput
 ): Promise<SendTransactionalEmailResult> {
   const recipient = input.to.trim().toLowerCase();
+  const language = input.language ?? defaultTransactionalEmailLanguage;
   if (!isValidRecipientEmail(recipient)) {
     return {
       ok: false,
@@ -97,6 +99,7 @@ export async function sendTransactionalEmail(
     metadata: {
       ...input.metadata,
       template: input.eventType,
+      language,
       has_request: Boolean(input.relatedRequestId || input.relatedOrderId),
     },
   });
@@ -124,7 +127,7 @@ export async function sendTransactionalEmail(
   const rendered = renderTransactionalEmailTemplate(
     input.eventType,
     input.context,
-    input.language ?? "de"
+    language
   );
 
   if (isTransactionalEmailDryRun()) {
