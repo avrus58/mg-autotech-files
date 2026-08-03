@@ -1,6 +1,7 @@
 export const transactionalEmailEventTypes = [
   "customer_registered",
   "customer_welcome",
+  "customer_password_reset",
   "request_created",
   "request_received",
   "file_uploaded",
@@ -61,6 +62,7 @@ export type TransactionalEmailContext = {
   nextSteps?: string[];
   supportEmail?: string | null;
   companyName?: string | null;
+  recoveryUrl?: string | null;
 };
 
 export type RenderedTransactionalEmail = {

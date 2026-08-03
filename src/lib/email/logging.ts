@@ -6,7 +6,7 @@ type EmailEventInsertResult =
   | { ok: true; id: null; duplicate: true }
   | { ok: false; id: null; duplicate: false; error: string };
 
-const forbiddenMetadataKey = /raw|hex|storage|path|provider|source_reference|sample|offset|admin_note|internal|binary/i;
+const forbiddenMetadataKey = /raw|hex|storage|path|provider|source_reference|sample|offset|admin_note|internal|binary|token|recovery_url|action_link/i;
 
 function sanitizeMetadataValue(value: unknown, depth = 0): unknown {
   if (depth > 3) return "[depth_limited]";

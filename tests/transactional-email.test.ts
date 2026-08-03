@@ -66,6 +66,21 @@ test("verified registration renders customer welcome and separate admin notice",
   assert.doesNotMatch(customer.text, /Referenz: -/);
 });
 
+test("password recovery template contains the secure action without internal metadata", () => {
+  const recoveryUrl = "https://example.supabase.co/auth/v1/verify?token=hashed-token&type=recovery";
+  const rendered = renderTransactionalEmailTemplate("customer_password_reset", {
+    customerId: "MGA-10001",
+    customerEmail: "customer@example.com",
+    recoveryUrl,
+  });
+  const serialized = JSON.stringify(rendered);
+
+  assert.match(rendered.subject, /Passwort sicher/);
+  assert.match(rendered.html, /Passwort sicher zurücksetzen/);
+  assert.match(rendered.text, /example\.supabase\.co\/auth\/v1\/verify/);
+  assert.doesNotMatch(serialized, /admin_note|storage_path|service_role|raw_binary|hex_preview|confidence_score/i);
+});
+
 test("status lifecycle maps meaningful legacy and work-order transitions only", () => {
   assert.equal(resolveStatusEmail("customer_info_needed", "legacy_order")?.eventType, "request_waiting_for_customer");
   assert.equal(resolveStatusEmail("file_check", "legacy_order")?.eventType, "request_in_review");
@@ -130,6 +145,8 @@ test("email event metadata sanitizer removes nested private fields", () => {
     nested: {
       storage_path: "customer/private/file.bin",
       raw_binary: "secret",
+      recovery_url: "https://example.supabase.co/auth/v1/verify?token=secret",
+      action_link: "https://example.supabase.co/auth/v1/verify?token=secret",
       safe_status: "completed",
     },
     list: [{ sample_id: "private" }, { status: "ok" }],
@@ -137,7 +154,7 @@ test("email event metadata sanitizer removes nested private fields", () => {
   const serialized = JSON.stringify(sanitized);
   assert.match(serialized, /request_status/);
   assert.match(serialized, /safe_status/);
-  assert.doesNotMatch(serialized, /storage_path|raw_binary|sample_id|private\/file/i);
+  assert.doesNotMatch(serialized, /storage_path|raw_binary|sample_id|recovery_url|action_link|token=secret|private\/file/i);
 });
 
 test("bank transfer email includes payment reference and configured bank fields only", () => {

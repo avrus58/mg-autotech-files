@@ -58,7 +58,10 @@ test("customer password controls are protected, audited and fail closed", () => 
   assert.match(route, /!isPrimaryOwner\(auth\.access\)/);
   assert.match(route, /\["admin", "staff"\]\.includes/);
   assert.match(route, /auth\.admin\.getUserById/);
-  assert.match(route, /auth\.resetPasswordForEmail/);
+  assert.match(route, /auth\.admin\.generateLink/);
+  assert.match(route, /type: "recovery"/);
+  assert.match(route, /sendCustomerPasswordRecoveryEmail/);
+  assert.doesNotMatch(route, /auth\.resetPasswordForEmail/);
   assert.match(route, /auth\.admin\.updateUserById/);
   assert.match(route, /\.from\("staff_audit_log"\)/);
   assert.match(route, /Security audit is unavailable\. No credential action was performed\./);
@@ -67,6 +70,24 @@ test("customer password controls are protected, audited and fail closed", () => 
   assert.doesNotMatch(route, /auth\.admin\.listUsers/);
   assert.doesNotMatch(route, /password_hash|encrypted_password/);
   assert.doesNotMatch(route, /return response\(\{\s*password:/);
+  assert.doesNotMatch(route, /\baction_link\s*:/);
+});
+
+test("password recovery email validates the generated link and keeps it out of metadata", async () => {
+  const { validateRecoveryActionLink } = await import("../src/lib/email/recovery");
+  const valid = "https://example.supabase.co/auth/v1/verify?token=hashed-token&type=recovery&redirect_to=https%3A%2F%2Ffile.mgautotech.de%2Fauth%2Fcallback";
+
+  assert.equal(validateRecoveryActionLink(valid), valid);
+  assert.equal(validateRecoveryActionLink("http://example.supabase.co/auth/v1/verify?token=x&type=recovery"), null);
+  assert.equal(validateRecoveryActionLink("https://example.supabase.co/auth/v1/verify?token=x&type=invite"), null);
+  assert.equal(validateRecoveryActionLink("https://example.supabase.co/auth/v1/verify?type=recovery"), null);
+  assert.equal(validateRecoveryActionLink("javascript:alert(1)"), null);
+
+  const recovery = readProjectFile("src", "lib", "email", "recovery.ts");
+  const metadata = recovery.split("metadata:")[1]?.split("},")[0] || "";
+  assert.notEqual(metadata, "");
+  assert.doesNotMatch(metadata, /recoveryUrl|action_link|token/i);
+  assert.match(recovery, /customer_password_reset:\$\{input\.customerId\}:\$\{input\.auditId\}/);
 });
 
 test("credential audit metadata never contains the submitted password", () => {

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireStaffPermission } from "@/lib/apiAuth";
 import { validateCustomerReplacementPassword } from "@/lib/customerPasswordSecurity";
+import { sendCustomerPasswordRecoveryEmail } from "@/lib/email/recovery";
 import { getSiteUrl } from "@/lib/email/render";
 import { isPrimaryOwner } from "@/lib/staffPermissions";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
@@ -103,7 +104,7 @@ export async function POST(
       new_access: {
         status: "requested",
         method: parsed.data.action === "send_reset_email"
-          ? "supabase_recovery_link"
+          ? "supabase_recovery_link_via_transactional_email"
           : "owner_password_replacement",
         password_logged: false,
         password_returned: false,
@@ -125,7 +126,7 @@ export async function POST(
         new_access: {
           status,
           method: parsed.data.action === "send_reset_email"
-            ? "supabase_recovery_link"
+            ? "supabase_recovery_link_via_transactional_email"
             : "owner_password_replacement",
           password_logged: false,
           password_returned: false,
@@ -135,8 +136,12 @@ export async function POST(
   };
 
   if (parsed.data.action === "send_reset_email") {
-    const resetResult = await admin.auth.resetPasswordForEmail(customerEmail, {
-      redirectTo: `${getSiteUrl()}/auth/callback?next=/reset-password`,
+    const resetResult = await admin.auth.admin.generateLink({
+      type: "recovery",
+      email: customerEmail,
+      options: {
+        redirectTo: `${getSiteUrl()}/auth/callback?next=/reset-password`,
+      },
     });
     if (resetResult.error) {
       await finishAudit("failed");
@@ -144,6 +149,20 @@ export async function POST(
       return response(
         { error: status === 429 ? "Password reset email rate limit reached. Try again later." : "Password reset email could not be sent." },
         status
+      );
+    }
+    const delivery = await sendCustomerPasswordRecoveryEmail({
+      auditId: String(auditResult.data.id),
+      customerEmail,
+      customerId: idResult.data,
+      customerReference: profileResult.data.customer_id,
+      recoveryUrl: resetResult.data.properties.action_link,
+    });
+    if (!delivery.ok) {
+      await finishAudit("failed");
+      return response(
+        { error: "Password reset email could not be sent." },
+        502
       );
     }
     await finishAudit("completed");

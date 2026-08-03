@@ -2389,3 +2389,22 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 - Operasyon: `docs/bot-and-data-exfiltration-defense.md` shared-counter env kontratini, yuksek toleransli WAF gozlem esiklerini, alert desenlerini, challenge sinirini ve AAL2 admin MFA rollout siralamasini kaydeder. Bu turda Vercel WAF rule publish edilmedi, MFA/Turnstile aktif edilmedi, environment degismedi ve production servisine baglanilmadi.
 - Kontroller: Targeted tests PASS (20/20); lint PASS; web+desktop typecheck PASS; full tests PASS (546/546); production build PASS (268 route/page entry); performance PASS (55.6 KB gzip / 80 KB); i18n/SEO PASS (12 locale, 25 source file); payment schema-only PASS ve env dosyasi okunmadi; production dependency audit PASS (0 vulnerabilities); git diff check PASS.
 - Release: Commit, push ve deploy yapilmadi.
+
+## 2026-08-03 Registration and request email end-to-end assurance
+
+- Gorev: Yeni dogrulanmis musteri kaydi ve yeni talep admin bildirimlerinin gercek musteri, kredi veya siparis verisi olusturmadan uctan uca guvence kontrolunu yapmak.
+- Canli teslim hatti: Production `EMAIL_DRY_RUN=false`, Resend configured ve real sending enabled olarak dogrulandi. Kontrollu `admin_email_test` olayi `sent` durumuna gecti; provider message acknowledgement mevcut ve error kaydi yoktur.
+- Uyelik akisi: Email/Google signup callback'i yalniz yeni veya yeni dogrulanmis authenticated kullanici icin `/api/email/new-customer` route'unu cagirir. Route kullanici e-postasini request body'sinden almaz; authenticated user'dan cozer. `customer_registered` admin adresine, `customer_welcome` dogrulanmis musteriye idempotent olarak gonderilir.
+- Talep akisi: Browser ve desktop request finalize akislari `sendRequestCreatedNotifications` kullanir. Server order ownership'ini dogrular; `new_request_admin_notification` configured admin adresine, `request_created` musteriye idempotent olarak gonderilir.
+- Production kaniti: Dry-run doneminde 4 `customer_registered` ve 2 `new_request_admin_notification` olayi olusmus; bu, trigger zincirinin canlida calistigini kanitlar. Eski skipped olaylar yeniden gonderilmedi.
+- Kontroller: Transactional email targeted tests PASS (22/22); lint PASS; web+desktop typecheck PASS; full tests PASS (551/551); production build PASS (260 static page generation); production dependency audit PASS (0 vulnerabilities); git diff check PASS.
+- Sinirlar: Test icin production'da sahte musteri, siparis, kredi veya dosya olusturulmadi. Gercek musteriye test e-postasi gonderilmedi; yalniz mevcut admin adresine kontrollu provider testi gonderildi. Kod, SQL, payment, customer order veya production data mutation yoktur.
+
+## 2026-08-03 Admin customer password recovery delivery fix
+
+- Gorev: Admin customer management uzerinden gonderilen parola sifirlama e-postalarinin Supabase default Auth SMTP kisitinda basarisiz olmasini gidermek.
+- Kok neden: Admin route `resetPasswordForEmail` ile Supabase Auth SMTP gonderimini dogrudan tetikliyordu. Production audit kayitlari ayni aksiyonun tekrarli `failed` oldugunu gosterdi; merkezi Resend transactional delivery hatti ise calisir durumdaydi.
+- Uygulama: Supabase Admin `generateLink({ type: "recovery" })` yalniz tek kullanimlik Auth recovery linkini uretir; yeni `customer_password_reset` sablonu bu linki mevcut auditli/idempotent transactional email servisiyle gonderir. Yalniz HTTPS `/auth/v1/verify`, `type=recovery` ve token tasiyan linkler kabul edilir.
+- Gizlilik: Recovery linki/token API cevabina, staff audit metadata'sina veya `email_events.metadata` alanina yazilmaz. Metadata sanitizer `token`, `recovery_url` ve `action_link` anahtarlarini defense-in-depth olarak reddeder. Staff hedef korumasi, `customers.manage`, owner-only direct replacement ve parola loglamama kurallari korunur.
+- Kontroller: Targeted password/email tests PASS (30/30); lint PASS; web+desktop typecheck PASS; full tests PASS (553/553); production build PASS (260 static page); i18n PASS (12 locale, 28 source file); payment schema-only PASS ve env okunmadi; high-severity audit threshold PASS (2 mevcut moderate PostCSS advisory); diff check PASS.
+- Sinirlar: SQL/migration, payment, customer order veya production data degismedi. Gercek customer e-postasi gonderilmedi. Commit, push ve deploy yapilmadi.

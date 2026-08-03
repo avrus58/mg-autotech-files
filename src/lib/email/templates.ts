@@ -151,6 +151,44 @@ const deTemplates: Record<TransactionalEmailEventType, TemplateDefinition> = {
       extraText: "Im Kundenportal können Sie Credits verwalten, ECU-/TCU-Anfragen erstellen, Dateien sicher hochladen und den Bearbeitungsstatus verfolgen.",
     }),
   },
+  customer_password_reset: {
+    label: "Passwort zurücksetzen",
+    audience: "customer",
+    render: (context) => {
+      const title = "Passwort sicher zurücksetzen";
+      const intro = "Für Ihr MG AutoTech Kundenkonto wurde eine Passwort-Zurücksetzung angefordert.";
+      const html = htmlLayout({
+        preheader: intro,
+        title,
+        intro,
+        content: `${detailTable([
+          ["Kunden-ID", context.customerId],
+          ["Konto", context.customerEmail],
+        ])}<p style="margin:18px 0 0;color:#3f3f46;line-height:1.65;">Wenn Sie diese Anfrage nicht erwartet haben, ignorieren Sie diese E-Mail. Ihr bestehendes Passwort bleibt unverändert.</p>`,
+        ctaLabel: "Passwort sicher zurücksetzen",
+        ctaUrl: context.recoveryUrl,
+        footerNote: "Der Sicherheitslink ist nur für das angegebene Kundenkonto bestimmt. Geben Sie ihn nicht an andere Personen weiter.",
+      });
+      const text = textBlock([
+        "MG AutoTech",
+        title,
+        "",
+        intro,
+        context.customerId ? `Kunden-ID: ${safeText(context.customerId)}` : null,
+        context.customerEmail ? `Konto: ${safeText(context.customerEmail)}` : null,
+        "",
+        context.recoveryUrl ? `Passwort zurücksetzen: ${context.recoveryUrl}` : null,
+        "",
+        "Wenn Sie diese Anfrage nicht erwartet haben, ignorieren Sie diese E-Mail. Ihr bestehendes Passwort bleibt unverändert.",
+        `Support: ${safeText(context.supportEmail)}`,
+      ]);
+      return {
+        subject: "MG AutoTech – Passwort sicher zurücksetzen",
+        html,
+        text,
+      };
+    },
+  },
   request_created: {
     label: "Anfrage erstellt",
     audience: "customer",
