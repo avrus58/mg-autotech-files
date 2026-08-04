@@ -8,6 +8,7 @@ import { resolveAdminAccess } from "@/lib/adminAccessClient";
 import { supabase } from "@/lib/supabaseClient";
 import RequestChat from "@/components/RequestChat";
 import { AdminNotificationCenter } from "@/components/admin/AdminNotificationCenter";
+import type { AdminEmailDeliveryIssue } from "@/lib/adminNotificationCenter";
 import {
   hasStaffPermission,
   isPrimaryOwner,
@@ -469,6 +470,7 @@ export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<AdminTab>("orders");
   const [orders, setOrders] = useState<Order[]>([]);
   const [customers, setCustomers] = useState<Profile[]>([]);
+  const [emailDeliveryIssues, setEmailDeliveryIssues] = useState<AdminEmailDeliveryIssue[]>([]);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [selectedCustomer, setSelectedCustomer] = useState<Profile | null>(null);
   const [customerForm, setCustomerForm] = useState<CustomerForm | null>(null);
@@ -561,6 +563,7 @@ export default function AdminPage() {
       access?: StaffAccess;
       orders?: Order[];
       customers?: Profile[];
+      emailIssues?: AdminEmailDeliveryIssue[];
     } | null;
     if (
       loadSequence !== adminLoadSequenceRef.current ||
@@ -577,6 +580,7 @@ export default function AdminPage() {
     const access = payload.access;
     const nextOrders = payload.orders;
     const nextCustomers = payload.customers;
+    const nextEmailIssues = Array.isArray(payload.emailIssues) ? payload.emailIssues : [];
     setAdminAccess(access);
     setAdminAccessDenied(false);
     if (!silent && window.location.hash === "#customers" && hasStaffPermission(access, "customers.view")) {
@@ -619,6 +623,7 @@ export default function AdminPage() {
 
     setOrders(nextOrders);
     setCustomers(nextCustomers);
+    setEmailDeliveryIssues(nextEmailIssues);
     setSelectedOrder((current) => (current ? nextOrders.find((order) => order.id === current.id) ?? current : null));
     setSelectedCustomer((current) => {
       if (!current) return null;
@@ -1215,6 +1220,7 @@ export default function AdminPage() {
             </div>
             <AdminNotificationCenter
               orders={orders}
+              emailIssues={emailDeliveryIssues}
               loading={loading && !adminDataReady}
               refreshing={autoRefreshing}
               error={adminLoadError}

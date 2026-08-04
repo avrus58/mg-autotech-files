@@ -18,6 +18,13 @@ export type AdminOperationalAlert = {
   priorityRank: number;
 };
 
+export type AdminEmailDeliveryIssue = {
+  id: string;
+  status: "delayed" | "bounced" | "complained" | "failed" | "suppressed";
+  eventType: string;
+  occurredAt: string;
+};
+
 const operationalStatusCopy: Record<
   string,
   Pick<AdminOperationalAlert, "title" | "detail" | "priority" | "priorityRank">
@@ -109,11 +116,15 @@ export function getAdminRecentOrderActivity(orders: AdminNotificationOrder[], li
     }));
 }
 
-export function getAdminNotificationSummary(orders: AdminNotificationOrder[]) {
+export function getAdminNotificationSummary(
+  orders: AdminNotificationOrder[],
+  emailIssues: AdminEmailDeliveryIssue[] = []
+) {
   const alerts = getAdminOperationalAlerts(orders);
   return {
-    activeAlerts: alerts.length,
-    urgentAlerts: alerts.filter((alert) => alert.priority === "urgent").length,
+    activeAlerts: alerts.length + emailIssues.length,
+    urgentAlerts: alerts.filter((alert) => alert.priority === "urgent").length +
+      emailIssues.filter((issue) => ["bounced", "complained", "suppressed"].includes(issue.status)).length,
     inProgress: orders.filter((order) => order.status === "in_progress").length,
   };
 }

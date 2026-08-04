@@ -1,6 +1,10 @@
 import { Resend } from "resend";
 import { createHash } from "node:crypto";
 import { createEmailEventLog, updateEmailEventLog } from "@/lib/email/logging";
+import {
+  getActiveEmailSuppression,
+  shouldBlockRecipientForSuppression,
+} from "@/lib/email/deliveryReliability";
 import { defaultTransactionalEmailLanguage } from "@/lib/email/language";
 import { renderTransactionalEmailTemplate } from "@/lib/email/templates";
 import type {
@@ -31,6 +35,7 @@ export function getTransactionalEmailProviderStatus() {
   return {
     provider: "resend",
     configured,
+    webhookConfigured: Boolean(process.env.RESEND_WEBHOOK_SECRET),
     dryRun,
     sendingEnabled: configured && !dryRun,
     fromEmail,
@@ -124,6 +129,25 @@ export async function sendTransactionalEmail(
     };
   }
 
+  const suppression = await getActiveEmailSuppression(recipient);
+  if (shouldBlockRecipientForSuppression(suppression, isTransactionalEmailDryRun())) {
+    const skippedReason = suppression.suppressed
+      ? "recipient_suppressed"
+      : "suppression_check_unavailable";
+    await updateEmailEventLog(log.id, {
+      status: "skipped",
+      deliveryStatus: "suppressed",
+      errorMessage: skippedReason,
+    });
+    return {
+      ok: true,
+      status: "skipped",
+      provider: "disabled",
+      skippedReason,
+      idempotencyKey: input.idempotencyKey,
+    };
+  }
+
   const rendered = renderTransactionalEmailTemplate(
     input.eventType,
     input.context,
@@ -133,6 +157,7 @@ export async function sendTransactionalEmail(
   if (isTransactionalEmailDryRun()) {
     await updateEmailEventLog(log.id, {
       status: "skipped",
+      deliveryStatus: "skipped",
       errorMessage: "EMAIL_DRY_RUN enabled",
       sentAt: new Date().toISOString(),
     });
@@ -148,6 +173,7 @@ export async function sendTransactionalEmail(
   if (!process.env.RESEND_API_KEY) {
     await updateEmailEventLog(log.id, {
       status: "skipped",
+      deliveryStatus: "skipped",
       errorMessage: "RESEND_API_KEY missing",
     });
     return {
@@ -193,6 +219,7 @@ export async function sendTransactionalEmail(
     if (providerError) throw new Error(providerErrorMessage(providerError));
     await updateEmailEventLog(log.id, {
       status: "sent",
+      deliveryStatus: "sent",
       providerMessageId,
       sentAt: new Date().toISOString(),
     });
@@ -207,6 +234,7 @@ export async function sendTransactionalEmail(
     const message = error instanceof Error ? error.message : "Transactional email failed";
     await updateEmailEventLog(log.id, {
       status: "failed",
+      deliveryStatus: "failed",
       errorMessage: message,
     });
     return {

@@ -15,6 +15,7 @@ Current provider: Resend
 Environment:
 
 - `RESEND_API_KEY`: enables real sending.
+- `RESEND_WEBHOOK_SECRET`: verifies signed Resend delivery events.
 - `EMAIL_FROM`: optional sender, default `MG AutoTech <noreply@file.mgautotech.de>`.
 - `ADMIN_NOTIFICATION_EMAIL` or `EMAIL_TO`: admin notification target.
 - `SUPPORT_EMAIL`: footer contact email.
@@ -64,6 +65,28 @@ Stores:
 - safe metadata only
 
 The table has RLS enabled. Staff with `orders.view` can read logs; staff with `orders.manage` can manage logs. Customer/public direct access is not intended.
+
+## Delivery Reliability
+
+Additive migration: `scripts/add-email-delivery-reliability.sql`
+
+Read-only verification: `scripts/verify-email-delivery-reliability.sql`
+
+Signed provider events arrive at `POST /api/webhooks/resend`. The route accepts
+only the reviewed delivery event allowlist, verifies the Svix signature with
+`RESEND_WEBHOOK_SECRET`, limits the raw request to 64 KB and stores only bounded
+delivery metadata plus a SHA-256 payload digest. It never stores the webhook
+payload or email body.
+
+Admin-visible delivery states are `sent`, `delivered`, `delayed`, `bounced`,
+`complained`, `failed` and `suppressed`. Permanent bounces, complaints and
+provider suppressions add the normalized recipient to the private suppression
+registry. Future application email attempts to that address are skipped. A
+temporary delay or generic provider failure does not suppress the recipient.
+
+The suppression check fails closed for real sending if the reliability table
+cannot be checked. Dry-run remains usable without a database connection so
+template QA never sends a real message.
 
 ## Implemented Templates
 
@@ -197,7 +220,10 @@ Shows:
 - dry-run status
 - template list
 - recent email event logs
-- sent/skipped/failed/pending health metrics
+- sent/delivered/delayed/bounced/complained/suppressed health metrics
+- latest signed provider delivery event per message
+- private active suppression list
+- safe EN/DE/TR template previews in a sandboxed frame
 - Supabase Auth mail routes
 - exact request/work-order lifecycle coverage
 
@@ -207,51 +233,64 @@ Admin test email:
 - sends only to the authenticated admin's own email
 - respects `EMAIL_DRY_RUN`
 
+Delivery failures also appear in the existing admin notification bell without
+recipient details. The full recipient and bounded provider reason remain only
+inside the permission-protected Email Control Center.
+
 ## Supabase Auth Email Templates
 
 Authentication links are issued by Supabase Auth, not by a public MG AutoTech
-relay endpoint. Repository-managed template sources are:
+relay endpoint. Repository-managed template sources cover signup confirmation,
+password recovery, invitations, magic links, email changes, reauthentication
+and all supported security notifications. The complete mapping, subject
+template and file name are recorded in `docs/email-templates/manifest.json`.
 
-- `docs/email-templates/confirm-signup.html`
-- `docs/email-templates/reset-password.html`
-- `docs/email-templates/password-changed.html`
+Every template selects English, German or Turkish from the reviewed
+`email_language` user metadata. Missing or unsupported metadata uses English.
+The language value affects content only; it is never an authorization input.
+Regenerate reviewed sources with:
 
-For hosted Supabase, copy these reviewed templates into Authentication > Email
-Templates. Keep `https://file.mgautotech.de/auth/callback` in the Auth redirect
-allowlist and configure production SMTP in Authentication > SMTP Settings.
-Enable the password-changed security notification at project level. Never put a
-service-role key or SMTP credential into a template.
+`tsx scripts/generate-supabase-auth-email-templates.ts`
+
+For hosted Supabase, apply each reviewed subject/body pair to its matching
+Authentication > Email Templates entry. Keep
+`https://file.mgautotech.de/auth/callback` in the Auth redirect allowlist and
+configure production SMTP in Authentication > SMTP Settings. Enable the
+reviewed security notifications at project level. Never put a service-role key
+or SMTP credential into a template. Repository generation alone does not alter
+the hosted Supabase project.
 
 ## Smoke Test Checklist
 
 1. Apply `scripts/add-transactional-email-system.sql` in Supabase.
-2. Set `EMAIL_DRY_RUN=true` in staging/local.
-3. Open `/admin/email` as owner/admin.
-4. Confirm provider status and template list load.
-5. Send admin test email in dry-run.
-6. Create a test request and confirm:
-   - customer request email event is logged
-   - admin new-request email event is logged
-7. Add an internal note:
-   - no customer email event should be created
-8. Add a customer-visible note:
-   - customer message email event should be created
-9. Hide the message:
-   - future customer API/message lists must not include it
-10. Select bank transfer on credits page:
-   - customer-only instruction email event is logged
-11. Confirm no PayPal UI/email behavior appears.
+2. Apply `scripts/add-email-delivery-reliability.sql` and run its read-only verification SQL.
+3. Keep `EMAIL_DRY_RUN=true` in staging/local.
+4. Open `/admin/email` as owner/admin.
+5. Preview one platform and one Supabase Auth template in EN, DE and TR.
+6. Send an admin test email in dry-run and confirm no provider delivery occurs.
+7. Configure a signed staging Resend webhook and verify sent/delivered events.
+8. Use provider test events to verify delayed/bounced/complained admin states.
+9. Confirm a bounced test recipient is suppressed and a delayed recipient is not.
+10. Confirm the admin bell contains the issue without recipient information.
+11. Create a test request and confirm customer/admin event logs are idempotent.
+12. Add an internal note and confirm no customer email event is created.
+13. Add a customer-visible note and confirm one customer email event is created.
+14. Confirm hidden messages and PayPal behavior are absent.
 
 ## Production Deployment Checklist
 
 1. Run tests/build/checks.
-2. Apply `scripts/add-transactional-email-system.sql`.
-3. Set production email env:
+2. Apply `scripts/add-transactional-email-system.sql` if not already present.
+3. Apply and verify `scripts/add-email-delivery-reliability.sql`.
+4. Set production email env:
    - `RESEND_API_KEY`
+   - `RESEND_WEBHOOK_SECRET`
    - `EMAIL_FROM`
    - `ADMIN_NOTIFICATION_EMAIL`
    - `SUPPORT_EMAIL`
-4. Keep `EMAIL_DRY_RUN=true` until a controlled admin test passes.
-5. Disable dry-run only after confirming sender domain/DNS.
-6. Deploy.
-7. Smoke test `/admin/email`, request creation, customer-visible note, bank transfer email and delivery completion.
+5. Apply all reviewed EN/DE/TR Auth subjects and bodies in hosted Supabase.
+6. Register the HTTPS Resend webhook for the seven tracked delivery events.
+7. Keep `EMAIL_DRY_RUN=true` until controlled template, log and webhook tests pass.
+8. Disable dry-run only after confirming sender domain/DNS and suppression behavior.
+9. Deploy.
+10. Smoke test `/admin/email`, Auth email languages, request creation, customer-visible note, bank transfer email and delivery completion.

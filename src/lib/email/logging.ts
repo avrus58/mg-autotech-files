@@ -74,6 +74,7 @@ export async function updateEmailEventLog(
   id: string | null,
   patch: {
     status: EmailDeliveryStatus;
+    deliveryStatus?: EmailDeliveryStatus | "delivered" | "delayed" | "bounced" | "complained" | "suppressed";
     providerMessageId?: string | null;
     errorMessage?: string | null;
     sentAt?: string | null;
@@ -82,14 +83,18 @@ export async function updateEmailEventLog(
   if (!id) return;
   try {
     const admin = getSupabaseAdmin();
+    const update: Record<string, unknown> = {
+      status: patch.status,
+    };
+    if (patch.deliveryStatus !== undefined) update.delivery_status = patch.deliveryStatus;
+    if (patch.providerMessageId !== undefined) update.provider_message_id = patch.providerMessageId;
+    if (patch.errorMessage !== undefined) update.error_message = patch.errorMessage;
+    if (patch.sentAt !== undefined) update.sent_at = patch.sentAt;
+    else if (patch.status === "sent") update.sent_at = new Date().toISOString();
+
     await admin
       .from("email_events")
-      .update({
-        status: patch.status,
-        provider_message_id: patch.providerMessageId ?? null,
-        error_message: patch.errorMessage ?? null,
-        sent_at: patch.sentAt ?? (patch.status === "sent" ? new Date().toISOString() : null),
-      })
+      .update(update)
       .eq("id", id);
   } catch {
     // Email logging must not break the customer/request/payment flow.

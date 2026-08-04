@@ -50,6 +50,18 @@ Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
 
+### MANUAL-014 [P0] Cok dilli Auth e-postalari ve teslimat guvenilirligi
+
+Durum: Done
+
+Fingerprint: `email-reliability|supabase-auth-en-de-tr|signed-resend-webhook|suppression-and-admin-delivery-visibility`
+
+Kapsam: Supabase Auth e-postalarini English, Deutsch ve Turkce olarak hazirlamak; Resend teslim durumlarini imzali webhook ile izlemek; kalici bounce, complaint ve provider suppression sonrasinda yeniden gonderimi engellemek; admin bildirim ve e-posta merkezinde teslim sorunlarini guvenli bicimde gostermek; yalniz admin hesabina gidebilen test ve sample-only onizleme akisini tamamlamak.
+
+Sonuc: On uc Supabase Auth sablonu EN/DE/TR ve English fallback ile olusturuldu. Signed/bounded Resend webhook yalniz allowlistli eventleri kabul eder; raw payload saklanmaz. `email_events` teslim durumu kazandi; private RLS-protected delivery event ve suppression kayitlari eklendi. Kalici bounce, complaint ve provider suppression yeni gercek gonderimleri fail-closed engeller; delayed durum engellemez. Admin merkezi sent/delivered/delayed/bounced/complained durumlarini, aktif teslim sorunlarini ve suppression kayitlarini recipient veya provider payload'i ifsa etmeden gosterir. Test gonderimi yalniz oturumdaki admin adresine ve mevcut `admin_email_test` olayina sinirlidir; Auth onizlemeleri sample veridir.
+
+Dogrulama: Targeted email reliability tests PASS; lint PASS; web+desktop typecheck PASS; full tests PASS (566/566); production build PASS (261 static page, `/api/webhooks/resend` dahil); payment schema-only PASS ve env okunmadi; high-severity audit threshold PASS (2 mevcut moderate PostCSS advisory); `git diff --check` PASS. Gercek e-posta gonderilmedi, production Supabase/Resend erisimi veya deploy yapilmadi.
+
 ### MANUAL-012 [P0] File Service dil ve canonical URL stabilizasyonu
 
 Durum: Done

@@ -1,0 +1,106 @@
+[
+  {
+    "key": "confirm_signup",
+    "supabaseKey": "confirmation",
+    "label": "Signup verification",
+    "category": "authentication",
+    "file": "confirm-signup.html",
+    "subject": "{{ if eq (index .Data \"email_language\") \"de\" }}MG AutoTech - E-Mail-Adresse bestätigen{{ else if eq (index .Data \"email_language\") \"tr\" }}MG AutoTech - E-posta adresinizi doğrulayın{{ else }}MG AutoTech - Confirm your email address{{ end }}"
+  },
+  {
+    "key": "password_recovery",
+    "supabaseKey": "recovery",
+    "label": "Password recovery",
+    "category": "authentication",
+    "file": "reset-password.html",
+    "subject": "{{ if eq (index .Data \"email_language\") \"de\" }}MG AutoTech - Passwort zurücksetzen{{ else if eq (index .Data \"email_language\") \"tr\" }}MG AutoTech - Şifrenizi sıfırlayın{{ else }}MG AutoTech - Reset your password{{ end }}"
+  },
+  {
+    "key": "invite_user",
+    "supabaseKey": "invite",
+    "label": "Account invitation",
+    "category": "authentication",
+    "file": "invite-user.html",
+    "subject": "{{ if eq (index .Data \"email_language\") \"de\" }}MG AutoTech - Einladung zum Kundenportal{{ else if eq (index .Data \"email_language\") \"tr\" }}MG AutoTech - Müşteri paneli daveti{{ else }}MG AutoTech - Customer portal invitation{{ end }}"
+  },
+  {
+    "key": "magic_link",
+    "supabaseKey": "magic_link",
+    "label": "Secure sign-in link",
+    "category": "authentication",
+    "file": "magic-link.html",
+    "subject": "{{ if eq (index .Data \"email_language\") \"de\" }}MG AutoTech - Sicherer Anmeldelink{{ else if eq (index .Data \"email_language\") \"tr\" }}MG AutoTech - Güvenli giriş bağlantısı{{ else }}MG AutoTech - Secure sign-in link{{ end }}"
+  },
+  {
+    "key": "email_change",
+    "supabaseKey": "email_change",
+    "label": "Email address change verification",
+    "category": "authentication",
+    "file": "email-change.html",
+    "subject": "{{ if eq (index .Data \"email_language\") \"de\" }}MG AutoTech - Neue E-Mail-Adresse bestätigen{{ else if eq (index .Data \"email_language\") \"tr\" }}MG AutoTech - Yeni e-posta adresinizi doğrulayın{{ else }}MG AutoTech - Confirm your new email address{{ end }}"
+  },
+  {
+    "key": "reauthentication",
+    "supabaseKey": "reauthentication",
+    "label": "Sensitive-action verification code",
+    "category": "authentication",
+    "file": "reauthentication.html",
+    "subject": "{{ if eq (index .Data \"email_language\") \"de\" }}MG AutoTech - Sicherheitscode{{ else if eq (index .Data \"email_language\") \"tr\" }}MG AutoTech - Güvenlik kodu{{ else }}MG AutoTech - Security code{{ end }}"
+  },
+  {
+    "key": "password_changed",
+    "supabaseKey": "password_changed",
+    "label": "Password changed",
+    "category": "security",
+    "file": "password-changed.html",
+    "subject": "{{ if eq (index .Data \"email_language\") \"de\" }}MG AutoTech - Ihr Passwort wurde geändert{{ else if eq (index .Data \"email_language\") \"tr\" }}MG AutoTech - Şifreniz değiştirildi{{ else }}MG AutoTech - Your password was changed{{ end }}"
+  },
+  {
+    "key": "email_changed",
+    "supabaseKey": "email_changed",
+    "label": "Email address changed",
+    "category": "security",
+    "file": "email-changed.html",
+    "subject": "{{ if eq (index .Data \"email_language\") \"de\" }}MG AutoTech - Ihre E-Mail-Adresse wurde geändert{{ else if eq (index .Data \"email_language\") \"tr\" }}MG AutoTech - E-posta adresiniz değiştirildi{{ else }}MG AutoTech - Your email address was changed{{ end }}"
+  },
+  {
+    "key": "phone_changed",
+    "supabaseKey": "phone_changed",
+    "label": "Phone number changed",
+    "category": "security",
+    "file": "phone-changed.html",
+    "subject": "{{ if eq (index .Data \"email_language\") \"de\" }}MG AutoTech - Ihre Telefonnummer wurde geändert{{ else if eq (index .Data \"email_language\") \"tr\" }}MG AutoTech - Telefon numaranız değiştirildi{{ else }}MG AutoTech - Your phone number was changed{{ end }}"
+  },
+  {
+    "key": "identity_linked",
+    "supabaseKey": "identity_linked",
+    "label": "Sign-in method linked",
+    "category": "security",
+    "file": "identity-linked.html",
+    "subject": "{{ if eq (index .Data \"email_language\") \"de\" }}MG AutoTech - Neue Anmeldemethode verknüpft{{ else if eq (index .Data \"email_language\") \"tr\" }}MG AutoTech - Giriş yöntemi bağlandı{{ else }}MG AutoTech - A sign-in method was linked{{ end }}"
+  },
+  {
+    "key": "identity_unlinked",
+    "supabaseKey": "identity_unlinked",
+    "label": "Sign-in method removed",
+    "category": "security",
+    "file": "identity-unlinked.html",
+    "subject": "{{ if eq (index .Data \"email_language\") \"de\" }}MG AutoTech - Anmeldemethode entfernt{{ else if eq (index .Data \"email_language\") \"tr\" }}MG AutoTech - Giriş yöntemi kaldırıldı{{ else }}MG AutoTech - A sign-in method was removed{{ end }}"
+  },
+  {
+    "key": "mfa_factor_enrolled",
+    "supabaseKey": "mfa_factor_enrolled",
+    "label": "Verification method added",
+    "category": "security",
+    "file": "mfa-factor-enrolled.html",
+    "subject": "{{ if eq (index .Data \"email_language\") \"de\" }}MG AutoTech - Neue Verifizierungsmethode hinzugefügt{{ else if eq (index .Data \"email_language\") \"tr\" }}MG AutoTech - Doğrulama yöntemi eklendi{{ else }}MG AutoTech - A verification method was added{{ end }}"
+  },
+  {
+    "key": "mfa_factor_unenrolled",
+    "supabaseKey": "mfa_factor_unenrolled",
+    "label": "Verification method removed",
+    "category": "security",
+    "file": "mfa-factor-unenrolled.html",
+    "subject": "{{ if eq (index .Data \"email_language\") \"de\" }}MG AutoTech - Verifizierungsmethode entfernt{{ else if eq (index .Data \"email_language\") \"tr\" }}MG AutoTech - Doğrulama yöntemi kaldırıldı{{ else }}MG AutoTech - A verification method was removed{{ end }}"
+  }
+]

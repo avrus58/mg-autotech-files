@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import {
   BellRing,
   CheckCircle2,
@@ -16,11 +17,13 @@ import {
   getAdminOperationalAlerts,
   getAdminRecentOrderActivity,
   type AdminNotificationOrder,
+  type AdminEmailDeliveryIssue,
   type AdminOperationalAlert,
 } from "@/lib/adminNotificationCenter";
 
 type AdminNotificationCenterProps = {
   orders: AdminNotificationOrder[];
+  emailIssues?: AdminEmailDeliveryIssue[];
   loading: boolean;
   refreshing: boolean;
   error?: string;
@@ -52,6 +55,7 @@ function priorityClasses(priority: AdminOperationalAlert["priority"]) {
 
 export function AdminNotificationCenter({
   orders,
+  emailIssues = [],
   loading,
   refreshing,
   error,
@@ -64,7 +68,10 @@ export function AdminNotificationCenter({
   const panelRef = useRef<HTMLDivElement>(null);
   const alerts = useMemo(() => getAdminOperationalAlerts(orders), [orders]);
   const recentActivity = useMemo(() => getAdminRecentOrderActivity(orders), [orders]);
-  const summary = useMemo(() => getAdminNotificationSummary(orders), [orders]);
+  const summary = useMemo(
+    () => getAdminNotificationSummary(orders, emailIssues),
+    [orders, emailIssues]
+  );
 
   useEffect(() => {
     if (!open) return;
@@ -129,7 +136,7 @@ export function AdminNotificationCenter({
                 <div className="text-[10px] font-black uppercase tracking-[0.2em] text-red-400">Operations inbox</div>
                 <h2 className="mt-1 text-lg font-black text-white">Admin notifications</h2>
                 <p className="mt-1 text-xs leading-5 text-zinc-400">
-                  Live priorities derived from the current work queue.
+                  Live priorities from the work queue and delivery systems.
                 </p>
               </div>
               <div className="flex shrink-0 items-center gap-1">
@@ -171,13 +178,13 @@ export function AdminNotificationCenter({
           </div>
 
           <div className="max-h-[calc(100vh-20rem)] overflow-y-auto overscroll-contain sm:max-h-[520px]">
-            {loading && orders.length === 0 ? (
+            {loading && orders.length === 0 && emailIssues.length === 0 ? (
               <div role="status" aria-live="polite" className="flex min-h-52 flex-col items-center justify-center px-6 text-center">
                 <RefreshCcw className="h-6 w-6 animate-spin text-red-400" />
                 <div className="mt-4 font-black text-white">Loading operations</div>
                 <div className="mt-1 text-sm text-zinc-500">The notification center will stay here while the queue loads.</div>
               </div>
-            ) : error && orders.length === 0 ? (
+            ) : error && orders.length === 0 && emailIssues.length === 0 ? (
               <div role="alert" className="flex min-h-52 flex-col items-center justify-center px-6 text-center">
                 <TriangleAlert className="h-7 w-7 text-amber-400" />
                 <div className="mt-4 font-black text-white">Queue connection unavailable</div>
@@ -193,6 +200,37 @@ export function AdminNotificationCenter({
               </div>
             ) : (
               <>
+                {emailIssues.length > 0 && (
+                  <section className="border-b border-white/10 px-3 py-4">
+                    <div className="flex items-center justify-between gap-3 px-1">
+                      <div>
+                        <h3 className="text-sm font-black text-white">Email delivery needs attention</h3>
+                        <p className="mt-0.5 text-xs text-zinc-500">Signed provider events only; recipient details stay in Email Control Center.</p>
+                      </div>
+                      <Link href="/admin/email" onClick={() => setOpen(false)} className="shrink-0 text-xs font-black text-red-400 hover:text-red-300">
+                        Review
+                      </Link>
+                    </div>
+                    <div className="mt-3 space-y-2">
+                      {emailIssues.slice(0, 4).map((issue) => (
+                        <Link
+                          key={issue.id}
+                          href="/admin/email"
+                          onClick={() => setOpen(false)}
+                          className="flex items-center gap-3 rounded-xl border border-red-800/30 bg-red-950/15 p-3 transition hover:border-red-700/50"
+                        >
+                          <TriangleAlert className="h-4 w-4 shrink-0 text-red-400" />
+                          <span className="min-w-0 flex-1">
+                            <span className="block text-sm font-black text-white">Email {issue.status.replaceAll("_", " ")}</span>
+                            <span className="mt-0.5 block text-[11px] text-zinc-500">{formatReceivedAt(issue.occurredAt)}</span>
+                          </span>
+                          <ChevronRight className="h-4 w-4 shrink-0 text-zinc-600" />
+                        </Link>
+                      ))}
+                    </div>
+                  </section>
+                )}
+
                 <section className="border-b border-white/10 px-3 py-4">
                   <div className="flex items-center justify-between gap-3 px-1">
                     <div>

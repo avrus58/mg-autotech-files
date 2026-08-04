@@ -3,11 +3,15 @@
 import { useCallback, useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { authenticatedFetch } from "@/lib/authGuards";
-import type { AdminNotificationOrder } from "@/lib/adminNotificationCenter";
+import type {
+  AdminEmailDeliveryIssue,
+  AdminNotificationOrder,
+} from "@/lib/adminNotificationCenter";
 import { AdminNotificationCenter } from "@/components/admin/AdminNotificationCenter";
 
 type NotificationPayload = {
   items?: AdminNotificationOrder[];
+  emailIssues?: AdminEmailDeliveryIssue[];
   error?: string;
 };
 
@@ -15,6 +19,7 @@ export function AdminNotificationDock() {
   const pathname = usePathname();
   const router = useRouter();
   const [orders, setOrders] = useState<AdminNotificationOrder[]>([]);
+  const [emailIssues, setEmailIssues] = useState<AdminEmailDeliveryIssue[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
@@ -34,6 +39,7 @@ export function AdminNotificationDock() {
       if (!response.ok) throw new Error(payload.error || "Notification queue unavailable.");
 
       setOrders(Array.isArray(payload.items) ? payload.items : []);
+      setEmailIssues(Array.isArray(payload.emailIssues) ? payload.emailIssues : []);
       setError("");
       setLastSyncAt(new Date());
     } catch {
@@ -67,6 +73,7 @@ export function AdminNotificationDock() {
     <div className="fixed bottom-4 left-4 z-[70] sm:bottom-auto sm:left-auto sm:right-4 sm:top-20">
       <AdminNotificationCenter
         orders={orders}
+        emailIssues={emailIssues}
         loading={loading}
         refreshing={refreshing}
         error={error}

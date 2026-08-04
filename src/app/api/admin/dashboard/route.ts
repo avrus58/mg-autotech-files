@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireStaffPermission } from "@/lib/apiAuth";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { hasStaffPermission } from "@/lib/staffPermissions";
+import { listAdminEmailDeliveryIssues } from "@/lib/email/deliveryReliability";
 
 const privateNoStoreHeaders = {
   "Cache-Control": "private, no-store, max-age=0",
@@ -32,7 +33,11 @@ export async function GET(request: Request) {
     const customerQuery = hasStaffPermission(auth.access, "customers.view")
       ? admin.from("profiles").select(customerSelect).order("created_at", { ascending: false })
       : Promise.resolve(null);
-    const [orderResult, customerResult] = await Promise.all([orderQuery, customerQuery]);
+    const [orderResult, customerResult, emailIssues] = await Promise.all([
+      orderQuery,
+      customerQuery,
+      listAdminEmailDeliveryIssues(),
+    ]);
 
     if (orderResult.error) {
       return NextResponse.json(
@@ -80,6 +85,7 @@ export async function GET(request: Request) {
         },
         orders: orderResult.data ?? [],
         customers,
+        emailIssues,
       },
       { headers: privateNoStoreHeaders }
     );

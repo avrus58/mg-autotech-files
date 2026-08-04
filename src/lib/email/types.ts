@@ -38,6 +38,25 @@ export type TransactionalEmailEventType = (typeof transactionalEmailEventTypes)[
 export type TransactionalEmailLanguage = "de" | "en" | "tr";
 export type EmailDeliveryStatus = "pending" | "sent" | "failed" | "skipped";
 
+export const providerEmailDeliveryStatuses = [
+  "sent",
+  "delivered",
+  "delayed",
+  "bounced",
+  "complained",
+  "failed",
+  "suppressed",
+] as const;
+
+export type ProviderEmailDeliveryStatus =
+  (typeof providerEmailDeliveryStatuses)[number];
+
+export type EmailSuppressionReason =
+  | "hard_bounce"
+  | "complaint"
+  | "provider_suppressed"
+  | "manual";
+
 export type TransactionalEmailContext = {
   requestId?: string | null;
   requestNumber?: string | null;

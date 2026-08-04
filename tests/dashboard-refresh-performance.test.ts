@@ -22,9 +22,10 @@ test("customer polling pauses in hidden tabs and refreshes when visible", () => 
   assert.match(dashboard, /document\.removeEventListener\("visibilitychange", handleVisibilityChange\)/);
 });
 
-test("admin dashboard server fetches order and customer snapshots concurrently", () => {
+test("admin dashboard server fetches operational snapshots concurrently", () => {
   const route = source("src", "app", "api", "admin", "dashboard", "route.ts");
-  assert.match(route, /const \[orderResult, customerResult\] = await Promise\.all\(\[orderQuery, customerQuery\]\)/);
+  assert.match(route, /const \[orderResult, customerResult, emailIssues\] = await Promise\.all\(\[/);
+  assert.match(route, /orderQuery,[\s\S]*customerQuery,[\s\S]*listAdminEmailDeliveryIssues\(\)/);
   assert.match(route, /requireStaffPermission\(request, "orders\.view"\)/);
   assert.match(route, /"Cache-Control": "private, no-store, max-age=0"/);
 });
