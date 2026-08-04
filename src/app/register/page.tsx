@@ -17,6 +17,7 @@ import {
 } from "@/lib/authGuards";
 import { supabase } from "@/lib/supabaseClient";
 import { resolveBrowserTransactionalEmailLanguage } from "@/lib/email/language";
+import { recordGrowthAccountCreated } from "@/lib/growth/client";
 import {
   ArrowLeft,
   ArrowRight,
@@ -234,6 +235,7 @@ export default function RegisterPage() {
 
     const isAlreadyVerified = Boolean(data.session && data.user?.email_confirmed_at);
     if (isAlreadyVerified) {
+      void recordGrowthAccountCreated();
       void authenticatedFetch("/api/email/new-customer", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

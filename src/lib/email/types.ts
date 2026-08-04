@@ -3,6 +3,7 @@ export const transactionalEmailEventTypes = [
   "customer_welcome",
   "customer_password_reset",
   "request_created",
+  "request_abandoned_reminder",
   "request_received",
   "file_uploaded",
   "additional_file_requested",

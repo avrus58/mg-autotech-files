@@ -34,6 +34,11 @@ import {
 import { evaluateRequestIntelligence } from "@/lib/requestIntelligence";
 import { trackRequestStarted, trackRequestSubmitted } from "@/lib/publicAnalytics";
 import {
+  recordGrowthRequestCreated,
+  recordGrowthRequestStarted,
+  updateGrowthReminderPreference,
+} from "@/lib/growth/client";
+import {
   buildRepeatRequestPrefill,
   isRepeatRequestId,
   type RepeatRequestOrder,
@@ -669,6 +674,7 @@ function VehicleHeroCard({
 export default function NewRequestPage() {
   const router = useRouter();
   const requestStartTrackedRef = useRef(false);
+  const growthAttemptIdRef = useRef("");
   const repeatPrefillStartedRef = useRef(false);
 
   const [brands, setBrands] = useState<Option[]>([]);
@@ -710,6 +716,9 @@ export default function NewRequestPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [paymentAccepted, setPaymentAccepted] = useState(false);
   const [responsibilityAccepted, setResponsibilityAccepted] = useState(false);
+  const [abandonedReminderEnabled, setAbandonedReminderEnabled] = useState(false);
+  const [reminderPreferenceSaving, setReminderPreferenceSaving] = useState(false);
+  const [reminderPreferenceError, setReminderPreferenceError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState("");
   const [customerProfile, setCustomerProfile] = useState<CustomerProfile | null>(null);
@@ -771,6 +780,14 @@ export default function NewRequestPage() {
     }
 
     setCustomerProfile(data as CustomerProfile);
+    const preference = await supabase
+      .from("growth_customer_preferences")
+      .select("abandoned_request_reminders")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!preference.error && preference.data) {
+      setAbandonedReminderEnabled(preference.data.abandoned_request_reminders === true);
+    }
     setProfileLoading(false);
   }
 
@@ -785,6 +802,46 @@ export default function NewRequestPage() {
     requestStartTrackedRef.current = true;
     trackRequestStarted();
   }, [customerProfile]);
+
+  useEffect(() => {
+    if (!customerProfile || growthAttemptIdRef.current) return;
+    const meaningfulStart = Boolean(
+      vehicleBrandId ||
+      manualVehicleBrand.trim() ||
+      selectedFile ||
+      notes.trim() ||
+      ecu.trim() ||
+      hwSw.trim() ||
+      selectedExtras.length ||
+      abandonedReminderEnabled
+    );
+    if (!meaningfulStart) return;
+    growthAttemptIdRef.current = window.crypto.randomUUID();
+    void recordGrowthRequestStarted(growthAttemptIdRef.current);
+  }, [
+    abandonedReminderEnabled,
+    customerProfile,
+    ecu,
+    hwSw,
+    manualVehicleBrand,
+    notes,
+    selectedExtras,
+    selectedFile,
+    vehicleBrandId,
+  ]);
+
+  const handleReminderPreference = async (enabled: boolean) => {
+    const previous = abandonedReminderEnabled;
+    setAbandonedReminderEnabled(enabled);
+    setReminderPreferenceSaving(true);
+    setReminderPreferenceError("");
+    const saved = await updateGrowthReminderPreference(enabled);
+    setReminderPreferenceSaving(false);
+    if (!saved) {
+      setAbandonedReminderEnabled(previous);
+      setReminderPreferenceError("Reminder preference could not be saved. Your request can still be submitted normally.");
+    }
+  };
 
   useEffect(() => {
     const repeatId = new URLSearchParams(window.location.search).get("repeat")?.trim() ?? "";
@@ -1384,6 +1441,9 @@ export default function NewRequestPage() {
     );
 
     trackRequestSubmitted();
+    if (createdOrderId && growthAttemptIdRef.current) {
+      void recordGrowthRequestCreated(String(createdOrderId), growthAttemptIdRef.current);
+    }
 
     try {
       await authenticatedFetch("/api/email/new-order", {
@@ -2299,6 +2359,25 @@ export default function NewRequestPage() {
                     I confirm that I am responsible for legal use of the file.
                   </span>
                 </label>
+
+                <label className="flex gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-sm text-zinc-300">
+                  <input
+                    type="checkbox"
+                    checked={abandonedReminderEnabled}
+                    disabled={reminderPreferenceSaving}
+                    onChange={(event) => void handleReminderPreference(event.target.checked)}
+                    className="mt-1"
+                  />
+                  <span>
+                    <strong className="block text-white">Optional request reminder</strong>
+                    Send one reminder if I leave this request unfinished. This can be turned off here before submitting.
+                  </span>
+                </label>
+                {reminderPreferenceError && (
+                  <p role="status" className="text-xs font-bold leading-5 text-amber-300">
+                    {reminderPreferenceError}
+                  </p>
+                )}
               </div>
 
               {message && (

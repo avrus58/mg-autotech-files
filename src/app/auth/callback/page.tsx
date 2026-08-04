@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Loader2, ShieldCheck, Upload } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import { authenticatedFetch } from "@/lib/authGuards";
+import { recordGrowthAccountCreated } from "@/lib/growth/client";
 
 function safeNextPath(value: string | null) {
   return value?.startsWith("/") && !value.startsWith("//") ? value : "/dashboard";
@@ -55,6 +56,7 @@ export default function AuthCallbackPage() {
           confirmedAt > 0 && Date.now() - confirmedAt < 15 * 60 * 1000;
 
         if (isRecentSignup || isRecentEmailConfirmation) {
+          void recordGrowthAccountCreated();
           try {
             await authenticatedFetch("/api/email/new-customer", {
               method: "POST",

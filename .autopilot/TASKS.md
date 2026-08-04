@@ -50,6 +50,18 @@ Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
 
+### MANUAL-015 [P0] Growth & Customer Success Center
+
+Durum: Done
+
+Fingerprint: `growth-ops|privacy-first-attribution-to-revenue|safe-abandonment-and-retention-actions|admin-center`
+
+Kapsam: Izinli ve takma kimlikli edinim izini mevcut SEO, profil, siparis, odeme ve e-posta verileriyle admin-only raporda birlestir; kayit/talep/odeme hunisi, tekrar siparis, gelir, hizmet/marka/ulke performansi, teslimat ve kayip riski gorunurlugu ekle. Yalniz acikca izin veren musteri icin idempotent, admin kontrollu yarim talep hatirlatmasi hazirla. Customer/public veri sizintisi ve otomatik spam olmasin.
+
+Sonuc: Admin-only Growth & Customer Success Center 30/90/180/365 gunluk huni, consented attribution, Search Console sorgu gorunurlugu, net/gross/refund gelir, retention, hizmet/marka/ulke performansi, e-posta teslimati ve gunluk aksiyonlari bir araya getirir. Attribution yalniz acik analytics izniyle, ham IP, tam referrer, e-posta, not veya dosya verisi olmadan tek yonlu HMAC kimlikle tutulur. Yarim talep hatirlatmasi varsayilan kapali, customer opt-in, admin onayli, 24 saat-14 gun pencereli, suppression/idempotency ve 30 gun customer cooldown korumalidir; otomatik gonderici yoktur. RLS, dar grant, service-role-only RPC ve advisory lock ile cift gonderim/cross-tenant erisim engellenir. Public ana sayfa growth istemcisi auth/Supabase runtime'dan ayrilarak ilk yuk performansi korunmustur.
+
+Dogrulama: Growth targeted testleri PASS (12/12); lint PASS; web+desktop typecheck PASS; full tests PASS (578/578); production build PASS (265 static page, `/admin/growth` ve growth API rotalari dahil); performance budget PASS (56.6 KB gzip / 80 KB, forbidden runtime yok); i18n/SEO PASS (12 locale, 28 source file); customer i18n PASS (11 non-English locale, 480 source string); payment schema-only PASS ve env okunmadi; high-severity audit threshold PASS (2 mevcut moderate PostCSS advisory); `git diff --check` PASS. Chrome QA 390x844, 768x1024, 1366x768 ve 1920x1080 boyutlarinda sifir document overflow, calisan source/country ve service/brand kontrolleri, anonim admin login gate ve sifir console error ile PASS. Gecici sentetik QA rotasi kaldirildi; production servisine, Supabase'e veya gercek e-postaya dokunulmadi.
+
 ### MANUAL-014 [P0] Cok dilli Auth e-postalari ve teslimat guvenilirligi
 
 Durum: Done

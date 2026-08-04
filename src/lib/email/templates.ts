@@ -204,6 +204,22 @@ const deTemplates: Record<TransactionalEmailEventType, TemplateDefinition> = {
       extraText: "Nächster Schritt: Unser Team prüft Datei, Fahrzeugdaten und gewünschte Leistungen. Bitte behalten Sie Ihr Dashboard im Blick.",
     }),
   },
+  request_abandoned_reminder: {
+    label: "Anfrage-Erinnerung",
+    audience: "customer",
+    render: (context) => customerTemplate({
+      subject: "MG AutoTech - Ihre angefangene Anfrage wartet auf Sie",
+      title: "Anfrage sicher fortsetzen",
+      intro: "Sie haben eine Dateianfrage begonnen, aber noch nicht abgeschlossen.",
+      context,
+      details: detailTable([
+        ["Kunden-ID", context.customerId],
+        ["Status", "Noch nicht eingereicht"],
+      ]),
+      extraText: "Wenn Sie fortfahren möchten, öffnen Sie das Kundenportal und starten Sie eine neue Anfrage. Falls die Anfrage nicht mehr benötigt wird, ist keine Aktion erforderlich.",
+      ctaLabel: "Anfrage fortsetzen",
+    }),
+  },
   request_received: {
     label: "Anfrage erhalten",
     audience: "customer",

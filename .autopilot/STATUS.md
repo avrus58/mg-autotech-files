@@ -2,6 +2,19 @@
 
 Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
+## 2026-08-04 Growth & Customer Success Center
+
+- Gorev: SEO ile gelen anonim ziyaretciden uyelik, talep, odeme, tekrar siparis ve e-posta sonucuna kadar gizlilik dostu buyume yolculugunu tek admin merkezinde olcmek; yalniz acik riza veren yarim kalmis talep sahiplerine guvenli ve manuel hatirlatma imkani vermek.
+- Urun: `/admin/growth` altinda donem secimli funnel, gross/refund/net gelir, musteri basi gelir, ilk/tekrar talep, retention/inactivity, source/country/landing page, service/brand, e-posta teslimati, aggregate Search Console sorgulari ve gunluk aksiyon sirasi eklendi. Loading, error, empty, source-readiness ve veri siniri uyarilari vardir.
+- Attribution: Public analytics yalniz analytics consent sonrasinda calisir. Raw query, referrer path, IP, customer PII veya customer-search-query join'i tutulmaz. Source, referrer hostname, public landing path, locale ve izinli UTM alanlari normalize edilir; visitor kimligi HMAC ile pseudonymous olur ve riza reddinde yerel kimlik temizlenir.
+- Yolculuk entegrasyonu: Signup confirmation, anlamli request baslangici ve basarili request olusturma idempotent event'lere baglandi. New Request ekranindaki hatirlatma izni varsayilan kapali, geri alinabilir ve talep akisindan bagimsiz fail-soft calisir.
+- Hatirlatma guvenligi: Otomatik gonderim yoktur. Yalniz admin tarafindan, explicit ve guncel opt-in, 24 saat-14 gun pencere, aktif customer rolu, sonraki siparis bulunmamasi ve kullanici basina 30 gun cooldown sartlariyla tekil gonderim rezerve edilir. Advisory lock ve idempotency key eszamanli cift gonderimi engeller; mevcut transactional e-posta suppression/dry-run kurallari korunur.
+- Veri ve guvenlik: Additive `scripts/add-growth-customer-success-center.sql` ile dort private tablo, RLS, staff-only read ve service-role-only write/RPC sinirlari hazirlandi. Public/customer direct table access yoktur. SQL hicbir ortama uygulanmadi; deploy oncesi disposable/staging DB'de migration, RLS ve verification SQL dogrulanmalidir.
+- Testler: Growth targeted testleri PASS (12/12); tum testler PASS (578/578); lint PASS; web+desktop typecheck PASS; production build PASS (265 static page); performance PASS (3 initial chunk, 214.7 KB raw, 56.6 KB gzip / 80 KB); SEO/i18n PASS; customer i18n PASS; payment schema-only PASS ve env okunmadi; high-severity production audit PASS; diff check PASS.
+- Browser QA: Chrome ile 390x844, 768x1024, 1366x768 ve 1920x1080 boyutlarinda dashboard; source/country ve service/brand gecisleri; internal table scroll; loading/empty/error yuzeyleri test edildi. Horizontal document overflow, adsiz kontrol veya console error yoktur. Anonymous `/admin/growth` secure login gate gosterir. QA icin kullanilan sentetik preview route final diff'ten silindi.
+- Kalan riskler: Migration henuz database seviyesinde uygulanip dogrulanmadi. Canli source readiness, gercek email provider outcome ve aggregate Search Console/GA4 baglantilari rollout sonrasi smoke gerektirir. `npm audit` high esiginde basarili olmakla birlikte mevcut Next/PostCSS zincirinde iki moderate advisory raporlar; bu gorevde dependency degisikligi yapilmadi.
+- Kapsam: Ayrik `codex/growth-customer-success` branch/worktree. Production/Supabase erisimi, migration, gercek e-posta, push veya deploy yapilmadi; payment, vehicle, AI ve firmware islemleri degistirilmedi.
+
 ## 2026-08-03 File Service multilingual and canonical stabilization
 
 - Gorev: Yalniz `file.mgautotech.de` public site ve customer panel dil seceneklerini yeni ekranlarla birlikte denetlemek; duplicate English URL ailesini kaldirmak ve yeni customer metinlerinin ceviri drift'ini kalici olarak yakalamak.

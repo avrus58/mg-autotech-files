@@ -19,6 +19,7 @@ import {
   writeAnalyticsConsent,
   type AnalyticsConsent,
 } from "@/lib/publicAnalytics";
+import { clearGrowthVisitorId, recordGrowthAttributionTouch } from "@/lib/growth/publicClient";
 
 type ConsentState = AnalyticsConsent | "unknown" | "loading";
 
@@ -32,6 +33,7 @@ export function PublicAnalytics({ measurementId }: { measurementId: string }) {
   const [consent, setConsent] = useState<ConsentState>("loading");
   const [preferencesOpen, setPreferencesOpen] = useState(false);
   const lastPageViewRef = useRef("");
+  const lastAttributionPathRef = useRef("");
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
@@ -73,6 +75,13 @@ export function PublicAnalytics({ measurementId }: { measurementId: string }) {
 
   useEffect(() => {
     if (!configured || !hostApproved || consent !== "granted" || !publicRoute) return;
+    if (lastAttributionPathRef.current === pathname) return;
+    lastAttributionPathRef.current = pathname;
+    void recordGrowthAttributionTouch();
+  }, [configured, consent, hostApproved, pathname, publicRoute]);
+
+  useEffect(() => {
+    if (!configured || !hostApproved || consent !== "granted" || !publicRoute) return;
 
     const trackClick = (click: MouseEvent) => {
       if (click.defaultPrevented || click.button !== 0) return;
@@ -91,7 +100,10 @@ export function PublicAnalytics({ measurementId }: { measurementId: string }) {
     writeAnalyticsConsent(next);
     setConsent(next);
     setPreferencesOpen(false);
-    if (next === "denied") denyGoogleAnalytics();
+    if (next === "denied") {
+      clearGrowthVisitorId();
+      denyGoogleAnalytics();
+    }
   };
 
   const showConsentPanel = publicRoute && (consent === "unknown" || preferencesOpen);

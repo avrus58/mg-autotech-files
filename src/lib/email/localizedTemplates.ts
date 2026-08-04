@@ -127,6 +127,14 @@ const customerCopy: Record<
       intro: "Thank you. Your file request has reached MG AutoTech and will be handled securely through the customer portal.",
       extraText: "Next step: our team will review the file, vehicle details and selected services. Please keep an eye on your dashboard.",
     },
+    request_abandoned_reminder: {
+      label: "Request reminder",
+      subject: "MG AutoTech - Your unfinished request is waiting",
+      title: "Continue your request securely",
+      intro: "You started a file request but did not submit it.",
+      extraText: "To continue, open the customer portal and start a new request. If you no longer need it, no action is required.",
+      ctaLabel: "Continue request",
+    },
     request_received: {
       label: "Request received",
       subject: (context) => `MG AutoTech - Request ${context.requestNumber} received`,
@@ -281,6 +289,14 @@ const customerCopy: Record<
       title: (context) => `${context.requestNumber} numaralı talebiniz oluşturuldu`,
       intro: "Teşekkür ederiz. Dosya talebiniz MG AutoTech'e ulaştı ve müşteri panelinde güvenli şekilde işlenecek.",
       extraText: "Sonraki adım: ekibimiz dosyayı, araç bilgilerini ve seçilen hizmetleri inceleyecek. Lütfen panelinizi takip edin.",
+    },
+    request_abandoned_reminder: {
+      label: "Talep hatirlatmasi",
+      subject: "MG AutoTech - Tamamlanmamis talebiniz sizi bekliyor",
+      title: "Talebinize guvenle devam edin",
+      intro: "Bir dosya talebi baslattiniz ancak henuz gondermediniz.",
+      extraText: "Devam etmek icin musteri panelini acip yeni talebi tamamlayin. Artik ihtiyaciniz yoksa herhangi bir islem yapmaniz gerekmez.",
+      ctaLabel: "Talebe devam et",
     },
     request_received: {
       label: "Talep alındı",
