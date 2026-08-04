@@ -10,8 +10,15 @@ import {
   isGrowthCustomerClassification,
   normalizeGrowthCustomerClassificationRecord,
 } from "../src/lib/growth/customerClassification";
+import {
+  buildGrowthClassificationChange,
+  validateGrowthClassificationChanges,
+} from "../src/lib/growth/customerClassificationReview";
 import type { GrowthMetricInput } from "../src/lib/growth/metrics";
-import type { GrowthCustomerClassificationRecord } from "../src/lib/growth/types";
+import type {
+  GrowthCustomerClassificationAdminRow,
+  GrowthCustomerClassificationRecord,
+} from "../src/lib/growth/types";
 import { isGrowthReminderEligible } from "../src/lib/growth/reminders";
 
 function source(...segments: string[]) {
@@ -177,8 +184,10 @@ test("excluded accounts cannot become reminder candidates", () => {
 
 test("classification migration is additive, private, audited and never auto-promotes profiles", () => {
   const sql = source("scripts", "add-growth-customer-classification.sql");
+  const bulkSql = source("scripts", "add-growth-customer-classification-bulk-review.sql");
   const verification = source("scripts", "verify-growth-customer-classification.sql");
-  assert.doesNotMatch(sql, /\b(drop table|delete from|truncate|drop column)\b/i);
+  const bulkVerification = source("scripts", "verify-growth-customer-classification-bulk-review.sql");
+  assert.doesNotMatch(`${sql}\n${bulkSql}`, /\b(drop table|delete from|truncate|drop column)\b/i);
   for (const table of ["growth_customer_classifications", "growth_customer_classification_events"]) {
     assert.match(sql, new RegExp(`alter table public\\.${table} enable row level security`, "i"));
     assert.match(sql, new RegExp(`revoke all on table public\\.${table} from public, anon, authenticated`, "i"));
@@ -187,21 +196,74 @@ test("classification migration is additive, private, audited and never auto-prom
   assert.match(sql, /grant all on table public\.growth_customer_classifications to service_role/i);
   assert.match(sql, /set_growth_customer_classification[\s\S]*pg_advisory_xact_lock/i);
   assert.match(sql, /insert into public\.growth_customer_classification_events/i);
+  assert.match(bulkSql, /set_growth_customer_classifications_batch[\s\S]*pg_advisory_xact_lock/i);
+  assert.match(bulkSql, /growth_customer_classification_stale/i);
+  assert.match(bulkSql, /expected_updated_at/i);
+  assert.match(bulkSql, /item_count < 1 or item_count > 100/i);
+  assert.match(bulkSql, /growth_customer_batch_duplicate/i);
+  assert.match(bulkSql, /jsonb_array_elements\(p_changes\)[\s\S]*order by value->>'user_id'/i);
+  assert.match(bulkSql, /growth_customer_classification_evidence_note_chk[\s\S]*not valid/i);
+  assert.match(bulkSql, /grant execute on function public\.set_growth_customer_classifications_batch\(jsonb, uuid\)[\s\S]*to service_role/i);
+  assert.match(bulkSql, /revoke all on function public\.set_growth_customer_classifications_batch\(jsonb, uuid\)[\s\S]*from public, anon, authenticated/i);
+  assert.match(bulkVerification, /anon_can_execute[\s\S]*customer_can_execute[\s\S]*service_role_can_execute/i);
   assert.match(sql, /analytics_excluded = true[\s\S]*return null/i);
   assert.doesNotMatch(sql, /insert into public\.growth_customer_classifications\s*\([^)]*\)\s*select/i);
-  assert.doesNotMatch(sql, /update public\.profiles/i);
-  assert.doesNotMatch(sql, /grant .* authenticated/i);
+  assert.doesNotMatch(`${sql}\n${bulkSql}`, /update public\.profiles/i);
+  assert.doesNotMatch(`${sql}\n${bulkSql}`, /grant .* authenticated/i);
+});
+
+test("bulk review requires evidence, rejects duplicates and carries optimistic versions", () => {
+  const row: GrowthCustomerClassificationAdminRow = {
+    userId: "00000000-0000-4000-8000-000000000001",
+    customerReference: "MGA-10001",
+    email: "synthetic@example.com",
+    fullName: "Synthetic Customer",
+    createdAt: "2026-01-01T00:00:00Z",
+    classification: "unreviewed",
+    analyticsExcluded: false,
+    reason: null,
+    verifiedAt: null,
+    updatedAt: null,
+    orderCount: 1,
+    completedOrderCount: 1,
+    paymentCount: 1,
+    revenue: [],
+    firstOrderAt: "2026-01-02T00:00:00Z",
+    lastOrderAt: "2026-01-02T00:00:00Z",
+  };
+  const valid = buildGrowthClassificationChange(row, {
+    classification: "real_customer",
+    reason: "Request and payment reviewed",
+  });
+  assert.deepEqual(valid, {
+    userId: row.userId,
+    classification: "real_customer",
+    reason: "Request and payment reviewed",
+    expectedUpdatedAt: null,
+  });
+  assert.equal(validateGrowthClassificationChanges([valid]), null);
+  assert.match(validateGrowthClassificationChanges([{ ...valid, reason: null }]) ?? "", /evidence note/i);
+  assert.match(validateGrowthClassificationChanges([valid, valid]) ?? "", /only once/i);
+  assert.match(validateGrowthClassificationChanges(Array.from({ length: 101 }, (_, index) => ({
+    ...valid,
+    userId: `00000000-0000-4000-8000-${String(index).padStart(12, "0")}`,
+  }))) ?? "", /at most 100/i);
 });
 
 test("classification APIs are admin-only and customer/public routes expose no classification metadata", async () => {
   const listRoute = await import("../src/app/api/admin/growth/customers/route");
   const detailRoute = await import("../src/app/api/admin/growth/customers/[id]/route");
   assert.equal((await listRoute.GET(new Request("http://localhost/api/admin/growth/customers"))).status, 401);
+  assert.equal((await listRoute.PATCH(new Request("http://localhost/api/admin/growth/customers", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ changes: [] }),
+  }))).status, 401);
   assert.equal((await detailRoute.PATCH(
     new Request("http://localhost/api/admin/growth/customers/00000000-0000-4000-8000-000000000001", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ classification: "real_customer", reason: null }),
+      body: JSON.stringify({ classification: "real_customer", reason: null, expectedUpdatedAt: null }),
     }),
     { params: Promise.resolve({ id: "00000000-0000-4000-8000-000000000001" }) }
   )).status, 401);
@@ -211,7 +273,16 @@ test("classification APIs are admin-only and customer/public routes expose no cl
   assert.match(listSource, /requireStaffPermission\(request, "customers\.manage"\)/);
   assert.match(detailSource, /requireStaffPermission\(request, "customers\.manage"\)/);
   assert.match(detailSource, /TextEncoder\(\)[\s\S]*2_048/);
-  assert.match(detailSource, /set_growth_customer_classification/);
+  assert.match(listSource, /TextEncoder\(\)[\s\S]*64_000/);
+  assert.match(listSource, /saveGrowthCustomerClassificationBatch/);
+  assert.match(detailSource, /saveGrowthCustomerClassificationBatch/);
+
+  const panelSource = source("src", "app", "admin", "growth", "CustomerDataQualityPanel.tsx");
+  const reviewSource = source("src", "lib", "growth", "customerClassificationReview.ts");
+  assert.match(panelSource, /Save all changes/);
+  assert.match(reviewSource, /expectedUpdatedAt/);
+  assert.match(panelSource, /beforeunload/);
+  assert.doesNotMatch(panelSource, /api\/admin\/growth\/customers\/\$\{row\.userId\}/);
 
   const publicRoutes = [
     source("src", "app", "api", "growth", "journey", "route.ts"),

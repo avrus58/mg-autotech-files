@@ -31,6 +31,8 @@ Customer data-quality extension:
 
 - `scripts/add-growth-customer-classification.sql`
 - `scripts/verify-growth-customer-classification.sql`
+- `scripts/add-growth-customer-classification-bulk-review.sql`
+- `scripts/verify-growth-customer-classification-bulk-review.sql`
 
 The migration creates:
 
@@ -46,7 +48,9 @@ The classification extension adds two private tables:
 - `growth_customer_classifications`: one explicit admin decision per customer account.
 - `growth_customer_classification_events`: application-append-only decision history with actor, old/new state, reason and timestamp.
 
-The allowed states are `unreviewed`, `real_customer`, `internal_test` and `staff_operated`. Existing accounts receive no row and remain unreviewed. No email pattern, payment amount, activity, filename, country or account age is used to classify an account. `internal_test` and `staff_operated` require a reason and are excluded from growth metrics and reminder candidates; account access, requests, credits, payments and stored business history remain unchanged.
+The allowed states are `unreviewed`, `real_customer`, `internal_test` and `staff_operated`. Existing accounts receive no row and remain unreviewed. No email pattern, payment amount, activity, filename, country or account age is used to classify an account. Every completed review state requires a short evidence note. `internal_test` and `staff_operated` are excluded from growth metrics and reminder candidates; account access, requests, credits, payments and stored business history remain unchanged.
+
+The review workspace stages changes in the browser and saves them through one bounded batch request. The server validates at most 100 unique customers and the database writes the batch atomically. Every row carries its expected `updated_at` value; if another admin changed any row after the page loaded, the complete batch is rejected instead of overwriting newer evidence. Each changed row creates an audit event linked by a batch ID. Existing reviewed rows that predate the evidence-note requirement are not rewritten or downgraded automatically; the admin UI reports them as evidence gaps until an admin reviews and saves a supported note.
 
 ## Funnel definitions
 
@@ -121,7 +125,9 @@ The application remains operational before the migration is applied:
 10. Confirm Search Console query rows contain only aggregate values.
 11. Inspect public and customer APIs for absence of attribution, visitor hashes, source metadata and reminder audit fields.
 12. Check 390x844, 768x1024, 1366x768 and 1920x1080 layouts for horizontal overflow and console errors.
-13. Apply the classification extension after the base Growth migration and run its SELECT-only verification script.
-14. In `/admin/growth`, classify one synthetic account as `internal_test` with a reason and confirm it disappears from growth totals and reminder candidates without changing the account or its orders.
+13. Apply the classification extension and then the bulk-review extension after the base Growth migration. Run both SELECT-only verification scripts.
+14. In `/admin/growth`, stage two synthetic decisions and save them with **Save all changes**. Confirm one batch ID and one audit event per changed customer.
 15. Mark one staging customer `real_customer` and confirm Real Growth Snapshot updates; confirm first revenue attribution says not captured when no consented source exists.
-16. Confirm anonymous and normal customer requests to `/api/admin/growth/customers` and its PATCH route are denied.
+16. Confirm an evidence note is required for every completed review state.
+17. Load the same row in two admin sessions, save from one and confirm the second receives a stale-review response without partially writing its batch.
+18. Confirm anonymous and normal customer requests to `/api/admin/growth/customers` and its PATCH routes are denied.

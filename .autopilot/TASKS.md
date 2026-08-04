@@ -1339,3 +1339,15 @@ Kabul kriterleri:
 - Fiyat, garanti, hukuki iddia veya yeni urun vaadi eklenmez.
 
 Dogrulama: Markdown diff incelemesi, `npm run lint`.
+
+### MANUAL-2026-08-04-GROWTH-BULK-REVIEW [P0] Growth musteri siniflandirmasini atomik toplu kayda tasima
+
+Durum: Done
+
+Fingerprint: `growth|customer-classification|per-row-unsaved-refresh-and-stale-write-gap|atomic-evidence-backed-bulk-review`
+
+Kapsam: Growth Center musteri siniflandirma masasindaki satir bazli kayit akisi; toplu taslak, kanit notu, optimistic concurrency ve toplu audit ile guclendirildi.
+
+Sonuc: Admin degisiklikleri once yerel taslak olarak gorur ve tek `Save all changes` aksiyonuyla atomik kaydeder. F5/navigation bekleyen degisiklikleri sessizce kaybettirmez. Incelenmis her durum kanit notu ister; stale ekran, duplicate customer, staff target, bilinmeyen durum ve 100 kayit siniri fail-closed reddedilir. Mevcut legacy siniflandirmalar otomatik degistirilmez; eksik kanitlar ayrica gosterilir.
+
+Dogrulama: Targeted tests PASS (8/8); lint PASS; web + desktop typecheck PASS; full tests PASS (586/586); production build PASS (266 page/route entry); i18n PASS (12 locale); payment schema-only PASS ve env okunmadi; local security smoke PASS (74 admin method, 16 customer API, 8 private page header, 4 public-safe endpoint); homepage performance PASS (56.6 KB gzip / 80 KB); high-severity audit threshold PASS (2 mevcut moderate PostCSS advisory); responsive anonymous admin gate QA PASS; diff check PASS.

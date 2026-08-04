@@ -180,6 +180,7 @@ export type GrowthCustomerClassificationAdminRow = {
   analyticsExcluded: boolean;
   reason: string | null;
   verifiedAt: string | null;
+  updatedAt: string | null;
   orderCount: number;
   completedOrderCount: number;
   paymentCount: number;
@@ -198,6 +199,7 @@ export type GrowthCustomerClassificationAdminResponse = {
     internalTest: number;
     staffOperated: number;
     excluded: number;
+    evidenceGaps: number;
   };
 };
 

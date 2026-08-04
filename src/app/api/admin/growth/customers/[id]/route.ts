@@ -1,14 +1,18 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireStaffPermission } from "@/lib/apiAuth";
-import { classificationExcludesAnalytics } from "@/lib/growth/customerClassification";
+import { classificationNeedsEvidenceNote } from "@/lib/growth/customerClassificationReview";
+import {
+  growthClassificationSaveError,
+  saveGrowthCustomerClassificationBatch,
+} from "@/lib/growth/customerClassificationReviewServer";
 import { isGrowthCustomerClassificationMigrationMissing } from "@/lib/growth/customerClassificationServer";
 import { growthCustomerClassifications } from "@/lib/growth/types";
-import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 
 const schema = z.object({
   classification: z.enum(growthCustomerClassifications),
   reason: z.string().trim().max(240).nullable().optional(),
+  expectedUpdatedAt: z.string().max(64).refine((value) => Number.isFinite(Date.parse(value))).nullable(),
 }).strict();
 
 const headers = {
@@ -44,39 +48,29 @@ export async function PATCH(
   }
 
   const reason = body.data.reason?.trim() || null;
-  if (classificationExcludesAnalytics(body.data.classification) && (!reason || reason.length < 3)) {
-    return response({ error: "A short reason is required for an excluded account." }, 400);
+  if (classificationNeedsEvidenceNote(body.data.classification) && (!reason || reason.length < 3)) {
+    return response({ error: "A short evidence note is required for every reviewed account." }, 400);
   }
 
-  const result = await getSupabaseAdmin().rpc("set_growth_customer_classification", {
-    p_user_id: userId.data,
-    p_classification: body.data.classification,
-    p_reason: reason,
-    p_actor_user_id: auth.user.id,
+  const result = await saveGrowthCustomerClassificationBatch({
+    changes: [{
+      userId: userId.data,
+      classification: body.data.classification,
+      reason,
+      expectedUpdatedAt: body.data.expectedUpdatedAt,
+    }],
+    actorUserId: auth.user.id,
   });
   if (result.error) {
     if (isGrowthCustomerClassificationMigrationMissing(result.error)) {
       return response({ error: "Customer classification migration is required." }, 503);
     }
-    const message = String(result.error.message ?? "");
-    if (message.includes("staff_accounts_are_already_excluded")) {
-      return response({ error: "Staff accounts are already excluded from customer analytics." }, 409);
-    }
-    if (message.includes("growth_customer_not_found")) {
-      return response({ error: "Customer account was not found." }, 404);
-    }
-    return response({ error: "Customer classification could not be saved." }, 503);
+    const mapped = growthClassificationSaveError(result.error);
+    return response({ error: mapped.message }, mapped.status);
   }
 
-  const saved = Array.isArray(result.data) ? result.data[0] : result.data;
   return response({
     ok: true,
-    classification: saved ? {
-      userId: String(saved.user_id),
-      classification: String(saved.classification),
-      analyticsExcluded: saved.analytics_excluded === true,
-      reason: typeof saved.reason === "string" ? saved.reason : null,
-      verifiedAt: typeof saved.verified_at === "string" ? saved.verified_at : null,
-    } : null,
+    savedCount: 1,
   });
 }

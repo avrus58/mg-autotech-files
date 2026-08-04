@@ -15,7 +15,8 @@ export function isGrowthCustomerClassificationMigrationMissing(error: unknown) {
   const message = String(candidate.message ?? "").toLowerCase();
   return missingCodes.has(code) ||
     message.includes("growth_customer_classifications") ||
-    message.includes("set_growth_customer_classification");
+    message.includes("set_growth_customer_classification") ||
+    message.includes("set_growth_customer_classifications_batch");
 }
 
 export async function loadGrowthCustomerClassificationAdminData(): Promise<GrowthCustomerClassificationAdminResponse> {
@@ -26,7 +27,7 @@ export async function loadGrowthCustomerClassificationAdminData(): Promise<Growt
       .order("created_at", { ascending: false })
       .limit(5_000),
     admin.from("growth_customer_classifications")
-      .select("user_id,classification,analytics_excluded,reason,verified_at")
+      .select("user_id,classification,analytics_excluded,reason,verified_at,updated_at")
       .limit(5_000),
     admin.from("orders")
       .select("id,customer_id,status,created_at")
@@ -42,7 +43,7 @@ export async function loadGrowthCustomerClassificationAdminData(): Promise<Growt
   const error = profilesResult.error || classificationResult.error || ordersResult.error || paymentsResult.error;
   if (error) throw error;
 
-  const classifications = new Map<string, GrowthCustomerClassificationRecord>();
+  const classifications = new Map<string, GrowthCustomerClassificationRecord & { updatedAt: string | null }>();
   for (const row of classificationResult.data ?? []) {
     const classification = String(row.classification ?? "unreviewed") as GrowthCustomerClassificationRecord["classification"];
     classifications.set(String(row.user_id), {
@@ -51,6 +52,7 @@ export async function loadGrowthCustomerClassificationAdminData(): Promise<Growt
       analyticsExcluded: row.analytics_excluded === true,
       reason: typeof row.reason === "string" ? row.reason : null,
       verifiedAt: typeof row.verified_at === "string" ? row.verified_at : null,
+      updatedAt: typeof row.updated_at === "string" ? row.updated_at : null,
     });
   }
 
@@ -93,6 +95,7 @@ export async function loadGrowthCustomerClassificationAdminData(): Promise<Growt
         analyticsExcluded: false,
         reason: null,
         verifiedAt: null,
+        updatedAt: null,
       };
       const orders = ordersByUser.get(userId) ?? [];
       const sortedOrders = [...orders].sort((left, right) =>
@@ -129,6 +132,9 @@ export async function loadGrowthCustomerClassificationAdminData(): Promise<Growt
       internalTest: customers.filter((row) => row.classification === "internal_test").length,
       staffOperated: customers.filter((row) => row.classification === "staff_operated").length,
       excluded: customers.filter((row) => row.analyticsExcluded).length,
+      evidenceGaps: customers.filter((row) =>
+        row.classification !== "unreviewed" && !(row.reason?.trim())
+      ).length,
     },
   };
 }
