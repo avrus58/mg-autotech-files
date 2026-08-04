@@ -11,6 +11,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { companyAddress, contactEmail, contactPhone } from "@/lib/seo";
+import { LocalizedHomepageTree } from "@/lib/homepageLocalization";
 
 const services = [
   { label: "Services Overview", href: "/services" },
@@ -64,7 +65,8 @@ const whatsappHref = whatsappNumber
 
 export function Footer() {
   return (
-    <footer className="relative overflow-hidden border-t border-white/10 bg-[#07090d] text-white">
+    <LocalizedHomepageTree>
+      <footer className="relative overflow-hidden border-t border-white/10 bg-[#07090d] text-white">
       <div className="absolute inset-0 opacity-40 bg-[radial-gradient(circle_at_80%_0%,rgba(177,18,27,0.24),transparent_32%),linear-gradient(135deg,#07090d,#10151f_55%,#08090d)]" />
 
       <div className="relative mx-auto max-w-7xl px-4 py-14">
@@ -226,6 +228,7 @@ export function Footer() {
           </div>
         </div>
       </div>
-    </footer>
+      </footer>
+    </LocalizedHomepageTree>
   );
 }

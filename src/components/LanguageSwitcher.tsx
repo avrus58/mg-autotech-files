@@ -181,9 +181,14 @@ export function LanguageSwitcher() {
   useEffect(() => {
     persistLocale(locale);
 
-    // Locale-prefixed SEO routes already render translated content on the server.
-    // Avoid loading the large runtime translation catalog or walking that DOM.
-    if (getPathLocale(pathname)) {
+    // Locale-prefixed SEO routes render translated content on the server. The
+    // unified homepage also contains deferred interactive tools, so keep the
+    // observer available there to translate content mounted after hydration.
+    const hasDeferredLocalizedHomepage = Boolean(
+      document.querySelector("[data-unified-localized-homepage]")
+    );
+
+    if (getPathLocale(pathname) && !hasDeferredLocalizedHomepage) {
       translatedLocaleRef.current = locale;
       return;
     }

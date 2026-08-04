@@ -1057,7 +1057,8 @@ test("How It Works localization is wired for locale routes, homepage and footer"
   const localizedPage = readProjectFile("src", "app", "[locale]", "how-it-works", "page.tsx");
   const copy = readProjectFile("src", "lib", "howItWorksI18n.ts");
   const localizedHomeRoute = readProjectFile("src", "app", "[locale]", "page.tsx");
-  const localizedHome = readProjectFile("src", "components", "LocalizedSeoHome.tsx");
+  const homepage = readProjectFile("src", "app", "page.tsx");
+  const homepageLocalization = readProjectFile("src", "lib", "homepageLocalization.tsx");
   const localizedFooter = readProjectFile("src", "components", "LocalizedSeoFooter.tsx");
   const sitemap = readProjectFile("src", "app", "sitemap.ts");
 
@@ -1071,10 +1072,11 @@ test("How It Works localization is wired for locale routes, homepage and footer"
   assert.match(copy, /Does the system automatically modify files\?/);
   assert.match(copy, /Ändert das System Dateien automatisch\?/);
   assert.match(copy, /Sistem dosyaları otomatik değiştirir mi\?/);
-  assert.match(localizedHomeRoute, /LocalizedSeoHome/);
-  assert.doesNotMatch(localizedHomeRoute, /import HomePage|<HomePage/);
-  assert.match(localizedHome, /getHowItWorksCopy/);
-  assert.match(localizedHome, /localizedPath\(locale, "\/how-it-works"\)/);
+  assert.match(localizedHomeRoute, /UnifiedHomePage/);
+  assert.match(localizedHomeRoute, /includeStructuredData=\{false\}/);
+  assert.doesNotMatch(localizedHomeRoute, /LocalizedSeoHome/);
+  assert.match(homepage, /href="\/how-it-works"/);
+  assert.match(homepageLocalization, /"\/how-it-works"/);
   assert.match(localizedFooter, /localizedPath\(locale, "\/how-it-works"\)/);
   assert.match(sitemap, /localizedUrl\(locale, "\/how-it-works"\)/);
   assert.match(sitemap, /languageAlternates\("\/how-it-works"\)/);
@@ -1276,6 +1278,7 @@ test("homepage hero typography and major SEO sections avoid overflow and white e
 
   assert.match(heroSection, /text-\[clamp\(2\.85rem,5\.7vw,5\.35rem\)\]/);
   assert.match(heroSection, /max-w-\[42rem\] text-balance break-words/);
+  assert.match(heroSection, /text-\[clamp\(2\.15rem,5\.2vw,5\.35rem\)\]/);
   assert.match(heroSection, /grid w-full max-w-\[42rem\] grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3/);
   assert.doesNotMatch(heroSection, /md:text-7xl|lg:h-\[825px\]/);
   assert.doesNotMatch(homepage, /<HomepageCompactResourceCenter\s*\/>/);
@@ -2550,7 +2553,8 @@ test("public services catalog is broad, indexable and customer-safe", () => {
 test("localized file service hub is hreflang-ready and linked from localized surfaces", () => {
   const localizedPage = readProjectFile("src", "app", "[locale]", "file-service", "page.tsx");
   const copy = readProjectFile("src", "lib", "fileServiceI18n.ts");
-  const localizedHome = readProjectFile("src", "components", "LocalizedSeoHome.tsx");
+  const localizedHomeRoute = readProjectFile("src", "app", "[locale]", "page.tsx");
+  const homepageLocalization = readProjectFile("src", "lib", "homepageLocalization.tsx");
   const localizedFooter = readProjectFile("src", "components", "LocalizedSeoFooter.tsx");
   const i18nRoutes = readProjectFile("src", "lib", "i18nRoutes.ts");
   const sitemap = readProjectFile("src", "app", "sitemap.ts");
@@ -2568,8 +2572,9 @@ test("localized file service hub is hreflang-ready and linked from localized sur
   assert.match(copy, /ECU und TCU Dateiservice Hub/);
   assert.match(copy, /ECU ve TCU Dosya Servisi Merkezi/);
   assert.match(copy, /fileServiceJsonLd/);
-  assert.match(localizedHome, /getFileServiceCopy/);
-  assert.match(localizedHome, /localizedPath\(locale, "\/file-service"\)/);
+  assert.match(localizedHomeRoute, /UnifiedHomePage/);
+  assert.match(localizedHomeRoute, /exactTranslations\[locale\]/);
+  assert.match(homepageLocalization, /"\/file-service"/);
   assert.match(localizedFooter, /getFileServiceCopy/);
   assert.match(localizedFooter, /localizedPath\(locale, "\/file-service"\)/);
   assert.match(i18nRoutes, /parts\[0\] === "file-service"/);

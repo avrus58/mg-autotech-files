@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { LocalizedSeoHome } from "@/components/LocalizedSeoHome";
+import { UnifiedHomePage } from "@/app/page";
+import { exactTranslations, termTranslations } from "@/lib/i18n";
+import { getFileServiceCopy } from "@/lib/fileServiceI18n";
+import { homepageHeroCopy } from "@/lib/homepageHeroI18n";
+import { seoUiCopy } from "@/lib/seo-ui";
 import {
   getServiceSeo,
   homeSeo,
@@ -17,6 +21,9 @@ import {
   websiteJsonLd,
 } from "@/lib/seo";
 import type { LocaleCode } from "@/lib/i18nConfig";
+
+const homepageHeroIntroSource =
+  "Upload original ECU/TCU files, select your service, track your order and download the completed file directly through the secure MG AutoTech customer portal.";
 
 export function generateStaticParams() {
   return localizedSeoLocales.map((locale) => ({ locale }));
@@ -127,6 +134,9 @@ export default async function LocalizedHomePage({
 
   const locale = rawLocale as LocaleCode;
   const jsonLd = buildLocalizedHomepageJsonLd(locale);
+  const fileServiceCopy = getFileServiceCopy(locale);
+  const heroCopy = homepageHeroCopy[locale];
+  const uiCopy = seoUiCopy[locale];
 
   return (
     <>
@@ -134,7 +144,31 @@ export default async function LocalizedHomePage({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <LocalizedSeoHome locale={locale} />
+      <UnifiedHomePage
+        locale={locale}
+        translationCatalog={{
+          exact: {
+            ...exactTranslations[locale],
+            [homepageHeroIntroSource]: homeSeo[locale].intro,
+            "Custom ECU & TCU": heroCopy.customTitle,
+            "Tuning Files": heroCopy.tuningFiles,
+            "Secure Portal": heroCopy.securePortal,
+            "Fast Handling": heroCopy.fastHandling,
+            "Workshop Ready": heroCopy.workshopReady,
+            "File Service": fileServiceCopy.nav.fileService,
+            Online: uiCopy.online,
+            Platform: uiCopy.platform,
+            Legal: uiCopy.legal,
+            Contact: uiCopy.contact,
+            "Secure customer dashboard and private file workflow.":
+              uiCopy.secureAccount,
+            "Ready to upload a file?": uiCopy.readyTitle,
+            "All rights reserved.": uiCopy.rights,
+          },
+          terms: termTranslations[locale],
+        }}
+        includeStructuredData={false}
+      />
     </>
   );
 }

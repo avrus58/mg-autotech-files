@@ -50,6 +50,18 @@ Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
 
+### MANUAL-017 [P0] Tum dillerde tek kaynakli ana sayfa paritesi
+
+Durum: Done
+
+Fingerprint: `public-i18n|localized-homepage|separate-layout-drift-from-english|single-layout-locale-copy`
+
+Kapsam: English kok ana sayfa ile 11 locale-prefixed ana sayfanin ayni React bilesen agacini, tasarimi, bolumleri ve responsive davranisi kullanmasini sagla. Yalnizca metin, locale-aware public baglantilar ve SEO metadata/JSON-LD dili farkli olsun; ayri localized homepage tasarimi kalmasin.
+
+Sonuc: `/`, `/de`, `/tr`, `/fr`, `/nl`, `/it`, `/es`, `/pt`, `/pl`, `/ru`, `/zh` ve `/sq` artik ayni 20 bolumlu `UnifiedHomePage` agacini kullanir. Eski ayri `LocalizedSeoHome` kaldirildi. Kritik hero, guven sinyalleri, public navigasyon ve footer server tarafinda locale-aware olur; deferred araclar mevcut translation observer ile ayni locale icinde kalir. Canonical, 13 hreflang ve localized JSON-LD korunur; localized public linkler yalniz gercek locale rotalarina yonelir, private rotalar degismez. Document language hydration oncesi locale'e ayarlanir. Uzun locale basliklari ve nav etiketleri telefon/kucuk laptop icin tasma yapmadan olceklenir.
+
+Dogrulama: Full tests PASS; lint PASS; web+desktop typecheck PASS; production build PASS (266 static page); i18n/SEO PASS (12 locale); payment schema-only PASS; performance PASS (57.9 KB gzip / 80 KB); high-severity audit PASS (2 mevcut moderate PostCSS advisory); static parity PASS (11 locale x 20 section, localized canonical, 13 hreflang); browser QA PASS (390x844 German, 768x1024 Turkish, 1366x768 German, 1920x1080 French ve uzun baslikli RU/NL/PL/SQ/ZH mobile); sifir horizontal overflow ve sifir console warning/error; diff check PASS. Production deploy, push, SQL veya customer data islemi yapilmadi.
+
 ### MANUAL-016 [P0] Growth customer data quality and first verified revenue
 
 Durum: Done

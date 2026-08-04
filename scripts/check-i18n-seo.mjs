@@ -9,6 +9,8 @@ const filesToScan = [
   "src/lib/howItWorksI18n.ts",
   "src/lib/fileServiceI18n.ts",
   "src/lib/i18nRoutes.ts",
+  "src/lib/homepageLocalization.tsx",
+  "src/lib/homepageHeroI18n.ts",
   "src/components/LanguageSwitcher.tsx",
   "next.config.ts",
   "src/app/layout.tsx",
@@ -146,6 +148,18 @@ if (!localizedHomePage.includes("publicServiceSlugs.map")) {
 }
 if (!localizedHomePage.includes("localizedUrl(locale, `/services/${slug}`)")) {
   failures.push("Localized homepage service ItemList is missing localized service URLs.");
+}
+if (!localizedHomePage.includes("UnifiedHomePage")) {
+  failures.push("Localized homepage is not using the canonical root homepage component tree.");
+}
+if (!localizedHomePage.includes("includeStructuredData={false}")) {
+  failures.push("Localized homepage can duplicate the English root structured-data graph.");
+}
+if (localizedHomePage.includes("LocalizedSeoHome")) {
+  failures.push("Localized homepage still depends on a separate drifting page design.");
+}
+if (existsSync(join(root, "src/components/LocalizedSeoHome.tsx"))) {
+  failures.push("Legacy standalone localized homepage component still exists.");
 }
 
 const rootHomePage = readFileSync(join(root, "src/app/page.tsx"), "utf8");

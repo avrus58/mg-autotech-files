@@ -24,6 +24,7 @@ import {
   type PerformanceLogAnalysis,
   type PerformanceLogPoint,
 } from "@/lib/performanceReport";
+import { LocalizedHomepageTree } from "@/lib/homepageLocalization";
 
 export type PerformanceToolsMode = "combined" | "calculator" | "log";
 
@@ -100,7 +101,8 @@ export function PerformanceTools({
   };
 
   return (
-    <section id="tools" className="overflow-x-clip bg-[#050505] py-16 md:py-20">
+    <LocalizedHomepageTree>
+      <section id="tools" className="overflow-x-clip bg-[#050505] py-16 md:py-20">
       <div className="mx-auto max-w-7xl px-4">
         <div className="mb-10 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div>
@@ -468,7 +470,8 @@ export function PerformanceTools({
           )}
         </div>
       </div>
-    </section>
+      </section>
+    </LocalizedHomepageTree>
   );
 }
 

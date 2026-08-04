@@ -2,6 +2,18 @@
 
 Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
+## 2026-08-05 Unified localized homepage parity
+
+- Gorev: Almanca ve diger 10 locale ana sayfasinin English root ana sayfadan ayri, daha dar ve eski bir tasarim kullanmasini kaldirmak; tum dillerde ayni urun deneyimini korumak.
+- Kok neden: `src/app/[locale]/page.tsx`, English `src/app/page.tsx` yerine bagimsiz `LocalizedSeoHome` bilesenini render ediyor ve iki ana sayfa zamanla farkli urunlere donusuyordu. Eski test de bu ayriligi zorunlu tutuyordu.
+- Uygulama: English sayfa `UnifiedHomePage` olarak tek kaynak yapildi. 11 locale route ayni 20 bolumlu agaci locale catalog ile render eder. Kritik hero metni, guven etiketleri, footer ve public linkler server tarafinda locale-aware olur; deferred Performance Tools mevcut translation observer icinde kalir. Locale esdegeri olmayan public ve tum private/customer rotalar mevcut canonical adreslerinde kalir.
+- SEO ve erisilebilirlik: Her locale kendi canonical, title/description, localized JSON-LD ve 13 hreflang kaydini korur. Locale document language hydration oncesi ayarlanir. Ayrik eski localized homepage kaldirildi; i18n/SEO denetimi ve yeni parity testleri bu mimariyi kalici olarak korur.
+- Responsive: Uzun Almanca/Rusca/Lehce/Arnavutca hero metni icin locale-aware fluid tipografi; Almanca laptop navigasyonu icin compact, nowrap header uygulandi. English ana sayfa icerigi ve urun akisi degismedi.
+- Browser QA: 390x844 Almanca, 768x1024 Turkce, 1366x768 Almanca, 1920x1080 Fransizca ve 390x844 RU/NL/PL/SQ/ZH test edildi. Tumunde document lang/canonical/hreflang dogru, 20 bolum mevcut, yatay overflow 0 ve console warning/error 0. German mobile kelime kirilmasi ve laptop nav sarmasi giderildi.
+- Kontroller: Full tests PASS; targeted UI/i18n PASS; lint PASS; web+desktop typecheck PASS; production build PASS (266 static page); `npm run check:i18n` PASS (12 locale); payment schema-only PASS; homepage performance PASS (3 initial chunk, 217.7 KB raw, 57.9 KB gzip / 80 KB); high audit threshold PASS (2 mevcut moderate PostCSS advisory); `git diff --check` PASS.
+- Kalan sinir: Locale catalogda insan tarafindan henuz cevrilmemis uzun teknik rehber paragraflari mevcut guvenli English fallback politikasini korur; bunlar bozuk otomatik/kismi ceviri yerine temiz English kalir. Bu calisma tasarim/parite drift'ini kaldirir, profesyonel copy-review yerine gecmez.
+- Kapsam: Ayrik `codex/unified-localized-homepage` branch/worktree. Register worktree, payment, customer/admin akislari, SQL, Supabase ve production verisi degistirilmedi. Push, commit veya deploy yapilmadi.
+
 ## 2026-08-04 Growth & Customer Success Center
 
 - Gorev: SEO ile gelen anonim ziyaretciden uyelik, talep, odeme, tekrar siparis ve e-posta sonucuna kadar gizlilik dostu buyume yolculugunu tek admin merkezinde olcmek; yalniz acik riza veren yarim kalmis talep sahiplerine guvenli ve manuel hatirlatma imkani vermek.

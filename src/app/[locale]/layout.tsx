@@ -21,5 +21,17 @@ export default async function LocaleLayout({
 
   if (!isSeoLocale(locale)) notFound();
 
-  return <div lang={hreflangByLocale[locale]}>{children}</div>;
+  const documentLanguage = hreflangByLocale[locale];
+
+  return (
+    <>
+      <script
+        data-locale-document-language
+        dangerouslySetInnerHTML={{
+          __html: `document.documentElement.lang=${JSON.stringify(documentLanguage)};`,
+        }}
+      />
+      <div lang={documentLanguage}>{children}</div>
+    </>
+  );
 }

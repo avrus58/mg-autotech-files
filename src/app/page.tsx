@@ -53,6 +53,12 @@ import {
   homepageSessionEvent,
   type HomepageSessionDetail,
 } from "@/lib/homepageSessionEvents";
+import type { LocaleCode } from "@/lib/i18nConfig";
+import {
+  HomepageLocalizationProvider,
+  LocalizedHomepageTree,
+  type HomepageTranslationCatalog,
+} from "@/lib/homepageLocalization";
 
 const HomepageSessionBridge = dynamic(
   () =>
@@ -2647,12 +2653,13 @@ function RatingStars() {
 
 function TechnicalHeroPreview() {
   return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.96, x: 24 }}
-      animate={{ opacity: 1, scale: 1, x: 0 }}
-      transition={{ duration: 0.75, delay: 0.12, ease: [0.16, 1, 0.3, 1] }}
-      className="hidden h-[685px] lg:block"
-    >
+    <LocalizedHomepageTree>
+      <motion.div
+        initial={{ opacity: 0, scale: 0.96, x: 24 }}
+        animate={{ opacity: 1, scale: 1, x: 0 }}
+        transition={{ duration: 0.75, delay: 0.12, ease: [0.16, 1, 0.3, 1] }}
+        className="hidden h-[685px] lg:block"
+      >
       <div className="relative h-[685px] overflow-hidden rounded-[2.25rem] border border-white/10 bg-[#07080b]/90 p-6 shadow-2xl shadow-black backdrop-blur-xl">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_36%,rgba(177,18,27,0.25),transparent_36%),linear-gradient(145deg,rgba(255,255,255,0.06),transparent_38%)]" />
         <div className="absolute -right-24 -top-24 h-80 w-80 rounded-full bg-red-700/20 blur-3xl" />
@@ -2727,7 +2734,8 @@ function TechnicalHeroPreview() {
           </div>
         </div>
       </div>
-    </motion.div>
+      </motion.div>
+    </LocalizedHomepageTree>
   );
 }
 
@@ -2865,7 +2873,8 @@ function formatCreditUnitEuro(value: number) {
 
 function WorkshopCommandDesk() {
   return (
-    <AnimatedSection className="bg-[#07090d] py-20">
+    <LocalizedHomepageTree>
+      <AnimatedSection className="bg-[#07090d] py-20">
       <div className="mx-auto max-w-7xl px-4">
         <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-stretch">
           <div className="flex flex-col justify-between rounded-[2rem] border border-white/10 bg-white/[0.04] p-7 shadow-2xl shadow-black/30">
@@ -2975,7 +2984,8 @@ function WorkshopCommandDesk() {
           </div>
         </div>
       </div>
-    </AnimatedSection>
+      </AnimatedSection>
+    </LocalizedHomepageTree>
   );
 }
 
@@ -2999,7 +3009,8 @@ function BusinessMarginCalculator() {
   };
 
   return (
-    <AnimatedSection className="bg-[#050505] py-20">
+    <LocalizedHomepageTree>
+      <AnimatedSection className="bg-[#050505] py-20">
       <div className="mx-auto max-w-7xl px-4">
         <div className="mb-10 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div>
@@ -3131,7 +3142,8 @@ function BusinessMarginCalculator() {
           </div>
         </div>
       </div>
-    </AnimatedSection>
+      </AnimatedSection>
+    </LocalizedHomepageTree>
   );
 }
 
@@ -3561,7 +3573,8 @@ function PublicVehicleChecker() {
 
 function HomepageFileServiceCorePanel() {
   return (
-    <AnimatedSection id="file-service" className="bg-[#050607] py-8 text-white">
+    <LocalizedHomepageTree>
+      <AnimatedSection id="file-service" className="bg-[#050607] py-8 text-white">
       <div className="mx-auto max-w-7xl px-4">
         <div className="rounded-[1.35rem] border border-white/10 bg-gradient-to-br from-red-950/20 via-zinc-950 to-black p-5 shadow-2xl shadow-black/25">
           <div className="grid gap-5 lg:grid-cols-[0.8fr_1.2fr] lg:items-center">
@@ -3639,11 +3652,26 @@ function HomepageFileServiceCorePanel() {
           </div>
         </div>
       </div>
-    </AnimatedSection>
+      </AnimatedSection>
+    </LocalizedHomepageTree>
   );
 }
 
 export default function HomePage() {
+  return <UnifiedHomePage />;
+}
+
+type UnifiedHomePageProps = {
+  locale?: LocaleCode;
+  translationCatalog?: HomepageTranslationCatalog;
+  includeStructuredData?: boolean;
+};
+
+export function UnifiedHomePage({
+  locale = "en",
+  translationCatalog,
+  includeStructuredData = true,
+}: UnifiedHomePageProps = {}) {
   const [workloadSnapshot, setWorkloadSnapshot] = useState<WorkloadSnapshot>(
     initialWorkloadSnapshot
   );
@@ -3746,12 +3774,17 @@ export default function HomePage() {
   ];
 
   return (
-    <main className="min-h-screen overflow-x-hidden bg-[#050505] text-white">
+    <HomepageLocalizationProvider locale={locale} catalog={translationCatalog}>
+      <LocalizedHomepageTree>
+        <main
+          data-unified-localized-homepage={locale === "en" ? undefined : locale}
+          className="min-h-screen overflow-x-hidden bg-[#050505] text-white"
+        >
       {sessionRuntimeReady && <HomepageSessionBridge />}
       <FloatingTechBackground />
 
       <header className="sticky top-0 z-50 border-b border-white/10 bg-black/80 backdrop-blur-xl">
-        <div className="mx-auto hidden max-w-7xl items-center justify-between px-4 py-2 text-xs text-zinc-300 lg:flex">
+        <div className="mx-auto hidden max-w-7xl items-center justify-between px-4 py-2 text-xs text-zinc-300 xl:flex">
           <div className="flex items-center gap-3">
             <RatingStars />
             <span className="rounded-md bg-[#b1121b] px-2 py-0.5 font-bold text-white">
@@ -3763,7 +3796,7 @@ export default function HomePage() {
             </span>
           </div>
 
-          <div className="ml-auto flex items-center gap-5">
+          <div className="ml-auto flex items-center gap-4 whitespace-nowrap">
             <Link href="/services" className="hover:text-white">
               Services
             </Link>
@@ -3804,7 +3837,7 @@ export default function HomePage() {
         </div>
 
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-4 sm:py-5">
-          <Link href="/" className="flex min-w-0 items-center gap-2 sm:gap-3">
+          <Link href="/" className="flex min-w-0 shrink-0 items-center gap-2 sm:gap-3">
             <motion.div
               whileHover={{ scale: 1.05, rotate: -1 }}
               className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-red-800/50 bg-[#111] shadow-lg shadow-red-950/40 transition duration-300 hover:scale-105 sm:h-12 sm:w-12"
@@ -3823,7 +3856,7 @@ export default function HomePage() {
             </div>
           </Link>
 
-          <nav className="hidden items-center gap-7 text-sm font-semibold text-zinc-300 lg:flex">
+          <nav className="hidden items-center gap-3 whitespace-nowrap text-xs font-semibold text-zinc-300 xl:flex">
             <a href="#home" className="text-red-500">
               Home
             </a>
@@ -3852,14 +3885,14 @@ export default function HomePage() {
 
           {!authReady ? (
             <div
-              className="flex items-center gap-2"
+              className="flex shrink-0 items-center gap-2"
               aria-hidden="true"
             >
               <div className="hidden h-11 w-28 rounded-xl border border-white/10 bg-white/[0.04] md:block" />
               <div className="h-11 w-28 rounded-xl bg-red-950/40" />
             </div>
           ) : isLoggedIn ? (
-            <div className="flex items-center gap-2">
+            <div className="flex shrink-0 items-center gap-2">
               <Link
                 href="/dashboard"
                 className="rounded-xl bg-[#b1121b] px-3 py-3 text-xs font-black text-white shadow-lg shadow-red-950/40 transition duration-300 hover:-translate-y-0.5 hover:bg-[#c91824] sm:px-5 sm:text-sm"
@@ -3878,7 +3911,7 @@ export default function HomePage() {
               </button>
             </div>
           ) : (
-            <div className="flex items-center gap-2">
+            <div className="flex shrink-0 items-center gap-2">
               <Link
                 href="/login"
                 className="hidden rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-bold text-white transition duration-300 hover:bg-white/10 md:flex"
@@ -3929,7 +3962,13 @@ export default function HomePage() {
               Professional online file service platform
             </div>
 
-            <h1 className="max-w-[42rem] text-balance break-words text-[clamp(2.85rem,5.7vw,5.35rem)] font-black uppercase leading-[0.96] tracking-[0.035em] sm:tracking-[0.055em]">
+            <h1
+              className={`max-w-[42rem] text-balance break-words font-black uppercase leading-[0.96] tracking-normal ${
+                locale === "en"
+                  ? "text-[clamp(2.85rem,5.7vw,5.35rem)]"
+                  : "text-[clamp(2.15rem,5.2vw,5.35rem)]"
+              }`}
+            >
               Custom ECU & TCU{" "}
               <span className="block text-red-600">Tuning Files</span>
             </h1>
@@ -4947,50 +4986,56 @@ export default function HomePage() {
         </div>
       </section>
 
-      <Footer />
-      <OnlineStatus />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(homepageSearchIntentJsonLd),
-        }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(fileServiceAnswerLibraryJsonLd),
-        }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(homepageResourceJsonLd),
-        }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(homepageFileServiceGlossaryJsonLd),
-        }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(homepagePageJsonLd),
-        }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(homepageFileServiceJsonLd),
-        }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(homepageRequestPreparationHowToJsonLd),
-        }}
-      />
-    </main>
+          <Footer />
+          <OnlineStatus />
+          {includeStructuredData && (
+            <>
+              <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{
+                  __html: JSON.stringify(homepageSearchIntentJsonLd),
+                }}
+              />
+              <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{
+                  __html: JSON.stringify(fileServiceAnswerLibraryJsonLd),
+                }}
+              />
+              <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{
+                  __html: JSON.stringify(homepageResourceJsonLd),
+                }}
+              />
+              <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{
+                  __html: JSON.stringify(homepageFileServiceGlossaryJsonLd),
+                }}
+              />
+              <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{
+                  __html: JSON.stringify(homepagePageJsonLd),
+                }}
+              />
+              <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{
+                  __html: JSON.stringify(homepageFileServiceJsonLd),
+                }}
+              />
+              <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{
+                  __html: JSON.stringify(homepageRequestPreparationHowToJsonLd),
+                }}
+              />
+            </>
+          )}
+        </main>
+      </LocalizedHomepageTree>
+    </HomepageLocalizationProvider>
   );
 }
