@@ -50,6 +50,18 @@ Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
 
+### MANUAL-016 [P0] Growth customer data quality and first verified revenue
+
+Durum: Done
+
+Fingerprint: `growth-analytics|customer-classification|internal-test-accounts-contaminate-metrics|audited-real-growth-snapshot`
+
+Kapsam: Admin, gercek musteri ile internal/test/staff-operated hesaplari acik kanitla siniflandirir; dislanan hesaplar Growth metrikleri ve terk edilmis talep hatirlatmalarindan cikarilir. Ilk dogrulanmis gelir yolculugu yalniz acikca gercek olarak dogrulanan hesap ve varsa consented first-touch attribution ile gosterilir.
+
+Sonuc: Iki private RLS tablosu, atomik auditli classification RPC'si, DB ve uygulama seviyesinde reminder engeli, admin data-quality workspace'i, strict Real Growth Snapshot ve ilk dogrulanmis revenue timeline'i eklendi. Mevcut hesap, siparis, kredi ve odeme kayitlari degistirilmez; mevcut hesaplar otomatik siniflandirilmaz ve kaynak gecmisi uydurulmaz.
+
+Dogrulama: Targeted tests PASS (19/19); full tests PASS (585/585); lint PASS; web+desktop typecheck PASS; production build PASS (266 static page); i18n PASS (12 locale); payment schema-only PASS ve env okunmadi; local security smoke PASS (73 admin API methodu, 16 customer API rotasi, 8 private page header kontrolu, 4 public-safe kontrol); browser responsive gate QA PASS (390x844, 768x1024, 1440x900); high-severity audit threshold PASS (2 mevcut moderate PostCSS advisory); diff check PASS. Docker engine ve `psql` kullanilabilir olmadigi icin migration yerel PostgreSQL uzerinde calistirilamadi; production erisimi yapilmadi.
+
 ### MANUAL-015 [P0] Growth & Customer Success Center
 
 Durum: Done

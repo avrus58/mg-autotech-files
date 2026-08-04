@@ -22,6 +22,7 @@ import {
   UserPlus,
 } from "lucide-react";
 import { authenticatedFetch } from "@/lib/authGuards";
+import CustomerDataQualityPanel from "@/app/admin/growth/CustomerDataQualityPanel";
 import {
   growthReportRanges,
   type GrowthActionItem,
@@ -58,6 +59,12 @@ function money(amountMinor: number, currency: string) {
   } catch {
     return `${(amountMinor / 100).toFixed(2)} ${currency}`;
   }
+}
+
+function durationHours(value: number | null) {
+  if (value === null) return "Not captured";
+  if (value < 24) return `${value.toFixed(value < 10 ? 1 : 0)} hours`;
+  return `${(value / 24).toFixed(value < 240 ? 1 : 0)} days`;
 }
 
 function Metric({ label, value, detail, icon }: { label: string; value: string; detail: string; icon: ReactNode }) {
@@ -259,6 +266,65 @@ export default function GrowthCustomerSuccessClient() {
               </div>
             )}
 
+            {!report.realGrowth.classificationReady && (
+              <div className="flex items-start gap-3 border border-amber-700/40 bg-amber-950/20 px-4 py-3 text-sm text-amber-100">
+                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                <div><strong>Customer classification migration required.</strong> No account has been guessed or promoted. Existing totals remain available, but verified-real and internal/test separation stays disabled until the additive migration is applied.</div>
+              </div>
+            )}
+
+            <section className="grid border border-emerald-800/35 bg-[#080d0b] xl:grid-cols-[1.15fr_0.85fr]" aria-labelledby="real-growth-title">
+              <div className="min-w-0 border-b border-emerald-900/35 xl:border-b-0 xl:border-r">
+                <div className="border-b border-emerald-900/35 px-5 py-4">
+                  <p className="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-400">Audited customer truth</p>
+                  <h2 id="real-growth-title" className="mt-1 text-lg font-black">Real Growth Snapshot</h2>
+                  <p className="mt-1 text-xs leading-5 text-zinc-500">Only explicitly verified real customers appear in this snapshot. The report range is {report.range}.</p>
+                </div>
+                <div className="grid sm:grid-cols-2 lg:grid-cols-4">
+                  <Metric label="Verified real" value={integer(report.realGrowth.verifiedRealCustomers)} detail={`${integer(report.realGrowth.unreviewedCustomers)} accounts still need review`} icon={<UserPlus className="h-4 w-4" />} />
+                  <Metric label="Real requesters" value={integer(report.realGrowth.customersWithRequests)} detail={`${integer(report.realGrowth.orders)} requests in range`} icon={<Target className="h-4 w-4" />} />
+                  <Metric label="Real payers" value={integer(report.realGrowth.payingCustomers)} detail={`${integer(report.realGrowth.repeatCustomers)} repeat customers all-time`} icon={<Activity className="h-4 w-4" />} />
+                  <Metric label="Excluded internal" value={integer(report.realGrowth.excludedInternalAccounts)} detail="Login, orders and payments remain untouched" icon={<ShieldCheck className="h-4 w-4" />} />
+                </div>
+                <div className="flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-emerald-900/35 px-5 py-4 text-xs text-zinc-500">
+                  <span><strong className="text-zinc-200">Real registrations:</strong> {integer(report.realGrowth.registrations)}</span>
+                  <span><strong className="text-zinc-200">Completed:</strong> {integer(report.realGrowth.completedOrders)}</span>
+                  <span><strong className="text-zinc-200">Revenue:</strong> {report.realGrowth.revenue.length ? report.realGrowth.revenue.map((row) => money(row.amountMinor, row.currency)).join(" / ") : "No verified revenue in range"}</span>
+                </div>
+              </div>
+
+              <div className="min-w-0">
+                <div className="border-b border-emerald-900/35 px-5 py-4">
+                  <p className="text-[10px] font-black uppercase tracking-[0.18em] text-sky-400">First verified revenue evidence</p>
+                  <h2 className="mt-1 text-lg font-black">Registration to payment journey</h2>
+                </div>
+                {report.firstRevenueJourney.status === "available" ? (
+                  <div className="px-5 py-4">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div><div className="text-xs font-black text-zinc-500">Customer reference</div><div className="mt-1 text-xl font-black">{report.firstRevenueJourney.customerReference}</div></div>
+                      <div className="border border-emerald-700/40 bg-emerald-950/25 px-3 py-2 text-right"><div className="text-[9px] font-black uppercase tracking-[0.14em] text-emerald-400">First payment</div><div className="mt-1 font-black text-emerald-100">{report.firstRevenueJourney.paymentAmountMinor !== null && report.firstRevenueJourney.paymentCurrency ? money(report.firstRevenueJourney.paymentAmountMinor, report.firstRevenueJourney.paymentCurrency) : "Recorded"}</div></div>
+                    </div>
+                    <div className="mt-4 grid gap-2 sm:grid-cols-3">
+                      <div className="border border-white/10 bg-black/20 px-3 py-3"><div className="text-[9px] font-black uppercase tracking-[0.14em] text-zinc-600">Registered</div><div className="mt-1 text-xs font-black">{dateTime(report.firstRevenueJourney.registeredAt)}</div></div>
+                      <div className="border border-white/10 bg-black/20 px-3 py-3"><div className="text-[9px] font-black uppercase tracking-[0.14em] text-zinc-600">First request</div><div className="mt-1 text-xs font-black">{dateTime(report.firstRevenueJourney.firstRequestAt)}</div><div className="mt-1 text-[10px] text-zinc-600">{durationHours(report.firstRevenueJourney.hoursRegistrationToRequest)} after registration</div></div>
+                      <div className="border border-white/10 bg-black/20 px-3 py-3"><div className="text-[9px] font-black uppercase tracking-[0.14em] text-zinc-600">First payment</div><div className="mt-1 text-xs font-black">{dateTime(report.firstRevenueJourney.firstPaymentAt)}</div><div className="mt-1 text-[10px] text-zinc-600">{durationHours(report.firstRevenueJourney.hoursRegistrationToPayment)} after registration</div></div>
+                    </div>
+                    <div className="mt-3 border border-sky-900/40 bg-sky-950/15 px-3 py-3 text-xs leading-5 text-zinc-400">
+                      {report.firstRevenueJourney.attributionStatus === "consented_first_touch" ? (
+                        <>Consented first touch: <strong className="text-sky-200">{report.firstRevenueJourney.source} / {report.firstRevenueJourney.medium}</strong>{report.firstRevenueJourney.countryCode ? `, ${report.firstRevenueJourney.countryCode}` : ""}{report.firstRevenueJourney.landingPath ? ` on ${report.firstRevenueJourney.landingPath}` : ""}.</>
+                      ) : (
+                        <>Acquisition source was not captured with consent. It remains unknown and is not inferred from the account or payment.</>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="px-5 py-10 text-center"><ShieldCheck className="mx-auto h-6 w-6 text-emerald-400" /><p className="mt-3 text-sm font-black">No verified-real payment journey yet</p><p className="mx-auto mt-1 max-w-md text-xs leading-5 text-zinc-500">Classify the known genuine paying customer as verified real. The system will then show the earliest recorded purchase without inventing missing source history.</p></div>
+                )}
+              </div>
+            </section>
+
+            <CustomerDataQualityPanel onUpdated={() => void load(range, true)} />
+
             <section className="border border-white/10 bg-[#0b0c0e]" aria-labelledby="growth-overview-title">
               <div className="flex flex-wrap items-end justify-between gap-3 border-b border-white/10 px-5 py-4">
                 <div><p className="text-[10px] font-black uppercase tracking-[0.18em] text-red-400">Verified operating picture</p><h2 id="growth-overview-title" className="mt-1 text-lg font-black">Customer journey overview</h2></div>
@@ -272,9 +338,10 @@ export default function GrowthCustomerSuccessClient() {
                 <Metric label="Paying customers" value={integer(report.funnel.payingCustomers)} detail={`${percent(report.funnel.registrationToRequestRate)} registration to request`} icon={<Activity className="h-4 w-4" />} />
                 <Metric label="Completed requests" value={integer(report.funnel.completedOrders)} detail={`${percent(report.funnel.completionRate)} period completion`} icon={<CheckCircle2 className="h-4 w-4" />} />
               </div>
-              <div className="grid border-t border-white/10 sm:grid-cols-2 xl:grid-cols-4">
+              <div className="grid border-t border-white/10 sm:grid-cols-2 xl:grid-cols-5">
                 <SourceStatus label="Business records" status={report.sources.coreBusiness} />
                 <SourceStatus label="Attribution" status={report.sources.attribution} />
+                <SourceStatus label="Customer classification" status={report.sources.customerClassification} />
                 <SourceStatus label="SEO reporting" status={report.sources.seo} />
                 <SourceStatus label="Email delivery" status={report.sources.emailDelivery} />
               </div>

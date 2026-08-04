@@ -119,6 +119,88 @@ export type GrowthSearchQueryRow = {
   position: number;
 };
 
+export const growthCustomerClassifications = [
+  "unreviewed",
+  "real_customer",
+  "internal_test",
+  "staff_operated",
+] as const;
+
+export type GrowthCustomerClassification =
+  (typeof growthCustomerClassifications)[number];
+
+export type GrowthCustomerClassificationRecord = {
+  userId: string;
+  classification: GrowthCustomerClassification;
+  analyticsExcluded: boolean;
+  reason: string | null;
+  verifiedAt: string | null;
+};
+
+export type GrowthRealCustomerSnapshot = {
+  classificationReady: boolean;
+  totalCustomerAccounts: number;
+  verifiedRealCustomers: number;
+  unreviewedCustomers: number;
+  excludedInternalAccounts: number;
+  registrations: number;
+  customersWithRequests: number;
+  repeatCustomers: number;
+  orders: number;
+  completedOrders: number;
+  payingCustomers: number;
+  revenue: GrowthRevenueCurrency[];
+};
+
+export type GrowthFirstRevenueJourney = {
+  status: "available" | "no_verified_payment";
+  customerReference: string | null;
+  registeredAt: string | null;
+  firstRequestAt: string | null;
+  firstPaymentAt: string | null;
+  hoursRegistrationToRequest: number | null;
+  hoursRegistrationToPayment: number | null;
+  paymentAmountMinor: number | null;
+  paymentCurrency: string | null;
+  source: string | null;
+  medium: string | null;
+  campaign: string | null;
+  landingPath: string | null;
+  countryCode: string | null;
+  attributionStatus: "consented_first_touch" | "not_captured";
+};
+
+export type GrowthCustomerClassificationAdminRow = {
+  userId: string;
+  customerReference: string;
+  email: string | null;
+  fullName: string | null;
+  createdAt: string | null;
+  classification: GrowthCustomerClassification;
+  analyticsExcluded: boolean;
+  reason: string | null;
+  verifiedAt: string | null;
+  orderCount: number;
+  completedOrderCount: number;
+  paymentCount: number;
+  revenue: GrowthRevenueCurrency[];
+  firstOrderAt: string | null;
+  lastOrderAt: string | null;
+};
+
+export type GrowthCustomerClassificationAdminResponse = {
+  generatedAt: string;
+  customers: GrowthCustomerClassificationAdminRow[];
+  summary: {
+    total: number;
+    unreviewed: number;
+    verifiedReal: number;
+    internalTest: number;
+    staffOperated: number;
+    excluded: number;
+  };
+};
+
 export type GrowthCustomerSuccessReport = {
   generatedAt: string;
   range: GrowthReportRange;
@@ -127,9 +209,12 @@ export type GrowthCustomerSuccessReport = {
   sources: {
     coreBusiness: "ready" | "partial" | "error";
     attribution: "ready" | "migration_required" | "error";
+    customerClassification: "ready" | "migration_required" | "error";
     seo: "ready" | "not_configured" | "partial" | "error";
     emailDelivery: "ready" | "partial" | "error";
   };
+  realGrowth: GrowthRealCustomerSnapshot;
+  firstRevenueJourney: GrowthFirstRevenueJourney;
   funnel: GrowthFunnelSummary;
   retention: GrowthRetentionSummary;
   revenue: GrowthRevenueCurrency[];

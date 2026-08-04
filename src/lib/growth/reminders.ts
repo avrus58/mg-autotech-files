@@ -3,6 +3,7 @@ import { loadUserTransactionalEmailLanguage } from "@/lib/email/languageServer";
 import { getSiteUrl } from "@/lib/email/render";
 import { sendTransactionalEmail } from "@/lib/email/service";
 import { recordGrowthReminderJourneyOutcome } from "@/lib/growth/server";
+import { isGrowthCustomerClassificationMigrationMissing } from "@/lib/growth/customerClassificationServer";
 import type { GrowthReminderSendResult } from "@/lib/growth/types";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 
@@ -40,6 +41,7 @@ export function isGrowthReminderEligible(input: {
   email: string | null;
   role: string | null;
   accountStatus: string | null;
+  analyticsExcluded?: boolean;
 }) {
   const startedAt = input.startedAt ? new Date(input.startedAt).getTime() : NaN;
   const age = input.now.getTime() - startedAt;
@@ -48,6 +50,7 @@ export function isGrowthReminderEligible(input: {
     input.preferenceEnabled &&
     !input.hasLaterOrder &&
     !input.hasReminderAction &&
+    input.analyticsExcluded !== true &&
     Boolean(input.email) &&
     !["admin", "staff"].includes(input.role ?? "customer") &&
     !["blocked", "disabled", "suspended"].includes(input.accountStatus ?? "active");
@@ -75,7 +78,7 @@ export async function getEligibleGrowthReminderCandidates(input?: {
   const userIds = [...new Set(events.map((row) => row.user_id).filter((id): id is string => Boolean(id)))];
   if (!events.length || !userIds.length) return [] as GrowthReminderCandidate[];
 
-  const [preferenceResult, actionResult, profileResult, orderResult] = await Promise.all([
+  const [preferenceResult, actionResult, profileResult, orderResult, classificationResult] = await Promise.all([
     admin.from("growth_customer_preferences").select("user_id,abandoned_request_reminders").in("user_id", userIds),
     admin.from("growth_reminder_actions")
       .select("source_event_id,user_id,created_at")
@@ -83,15 +86,24 @@ export async function getEligibleGrowthReminderCandidates(input?: {
       .gte("created_at", new Date(now.getTime() - reminderCooldownMs).toISOString()),
     admin.from("profiles").select("id,email,customer_id,role,account_status").in("id", userIds),
     admin.from("orders").select("customer_id,created_at").in("customer_id", userIds).gte("created_at", from),
+    admin.from("growth_customer_classifications")
+      .select("user_id,analytics_excluded")
+      .in("user_id", userIds),
   ]);
   const error = preferenceResult.error || actionResult.error || profileResult.error || orderResult.error;
   if (error) throw error;
+  if (classificationResult.error && !isGrowthCustomerClassificationMigrationMissing(classificationResult.error)) {
+    throw classificationResult.error;
+  }
 
   const enabled = new Set((preferenceResult.data ?? [])
     .filter((row) => row.abandoned_request_reminders === true)
     .map((row) => String(row.user_id)));
   const acted = new Set((actionResult.data ?? []).map((row) => String(row.source_event_id)));
   const actedUsers = new Set((actionResult.data ?? []).map((row) => String(row.user_id)).filter(Boolean));
+  const excludedUsers = new Set((classificationResult.data ?? [])
+    .filter((row) => row.analytics_excluded === true)
+    .map((row) => String(row.user_id)));
   const profiles = new Map(((profileResult.data ?? []) as ReminderProfileRow[]).map((row) => [row.id, row]));
   const orders = (orderResult.data ?? []) as Array<{ customer_id: string | null; created_at: string | null }>;
   const includedUsers = new Set<string>();
@@ -116,6 +128,7 @@ export async function getEligibleGrowthReminderCandidates(input?: {
       email: profile.email,
       role: profile.role,
       accountStatus: profile.account_status,
+      analyticsExcluded: excludedUsers.has(event.user_id),
     })) return [];
     includedUsers.add(event.user_id);
     return [{

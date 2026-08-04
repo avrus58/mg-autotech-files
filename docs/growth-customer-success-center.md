@@ -27,6 +27,11 @@ Read-only verification:
 
 `scripts/verify-growth-customer-success-center.sql`
 
+Customer data-quality extension:
+
+- `scripts/add-growth-customer-classification.sql`
+- `scripts/verify-growth-customer-classification.sql`
+
 The migration creates:
 
 - `growth_attribution_sessions`: consented pseudonymous first/last-touch attribution.
@@ -35,6 +40,13 @@ The migration creates:
 - `growth_reminder_actions`: admin action and send outcome audit.
 
 All four tables have RLS enabled. Anonymous access is revoked. Staff reads use `orders.view`; customer access is limited to the customer's own reminder preference; server writes use the service role. The public browser never receives table access or the service-role key.
+
+The classification extension adds two private tables:
+
+- `growth_customer_classifications`: one explicit admin decision per customer account.
+- `growth_customer_classification_events`: application-append-only decision history with actor, old/new state, reason and timestamp.
+
+The allowed states are `unreviewed`, `real_customer`, `internal_test` and `staff_operated`. Existing accounts receive no row and remain unreviewed. No email pattern, payment amount, activity, filename, country or account age is used to classify an account. `internal_test` and `staff_operated` require a reason and are excluded from growth metrics and reminder candidates; account access, requests, credits, payments and stored business history remain unchanged.
 
 ## Funnel definitions
 
@@ -75,8 +87,13 @@ The center includes:
 - sent/delivered/delayed/bounced/complained/failed email outcomes;
 - aggregate Search Console query visibility;
 - a prioritized daily action list for eligible reminders, payment review, delivery issues, onboarding friction, SEO opportunities and aggregate retention risk.
+- an audited real-customer classification workspace available only to staff with `customers.manage`;
+- a strict Real Growth Snapshot containing explicitly verified real customers only;
+- the first verified revenue journey from registration to request to payment, with acquisition source only when a consented first-touch record exists.
 
 Customer references may appear only inside the protected admin report. Public/customer APIs do not expose attribution, event IDs, reminder audits, revenue analysis, search queries or internal action metadata.
+
+The standard report removes accounts explicitly marked `internal_test` or `staff_operated` from linked profile, request, payment, customer-email, attribution and journey-event calculations. Unreviewed accounts are not silently treated as test accounts. The Real Growth Snapshot is stricter: only `real_customer` accounts appear. If the first paying real customer has no consented attribution row, the source is shown as not captured and is never reconstructed from other data.
 
 The 30-day report uses Search Console's 28-day window. Longer report ranges use the available 90-day Search Console window and label that window explicitly; query rows are never presented as individual-customer attribution.
 
@@ -104,3 +121,7 @@ The application remains operational before the migration is applied:
 10. Confirm Search Console query rows contain only aggregate values.
 11. Inspect public and customer APIs for absence of attribution, visitor hashes, source metadata and reminder audit fields.
 12. Check 390x844, 768x1024, 1366x768 and 1920x1080 layouts for horizontal overflow and console errors.
+13. Apply the classification extension after the base Growth migration and run its SELECT-only verification script.
+14. In `/admin/growth`, classify one synthetic account as `internal_test` with a reason and confirm it disappears from growth totals and reminder candidates without changing the account or its orders.
+15. Mark one staging customer `real_customer` and confirm Real Growth Snapshot updates; confirm first revenue attribution says not captured when no consented source exists.
+16. Confirm anonymous and normal customer requests to `/api/admin/growth/customers` and its PATCH route are denied.

@@ -1,4 +1,11 @@
 import { getEligibleGrowthReminderCandidates } from "@/lib/growth/reminders";
+import {
+  applyGrowthCustomerClassifications,
+  buildFirstVerifiedRevenueJourney,
+  buildRealCustomerSnapshot,
+  normalizeGrowthCustomerClassificationRecord,
+} from "@/lib/growth/customerClassification";
+import { isGrowthCustomerClassificationMigrationMissing } from "@/lib/growth/customerClassificationServer";
 import { buildGrowthMetrics } from "@/lib/growth/metrics";
 import { isGrowthMigrationMissing } from "@/lib/growth/server";
 import {
@@ -42,7 +49,7 @@ export async function buildGrowthCustomerSuccessReport(input?: {
   const admin = getSupabaseAdmin();
   const warnings: string[] = [];
 
-  const [profilesResult, ordersResult, revenueLedgerResult, paymentReviewResult] = await Promise.all([
+  const [profilesResult, ordersResult, revenueLedgerResult, paymentReviewResult, classificationResult] = await Promise.all([
     admin.from("profiles")
       .select("id,customer_id,role,country,account_status,created_at")
       .order("created_at", { ascending: false })
@@ -59,18 +66,28 @@ export async function buildGrowthCustomerSuccessReport(input?: {
       .order("created_at", { ascending: false })
       .limit(10_000),
     admin.from("payment_records")
-      .select("id,status,created_at")
+      .select("id,user_id,status,created_at")
       .eq("status", "requires_review")
       .gte("created_at", startAt.toISOString())
       .lte("created_at", endAt.toISOString())
       .order("created_at", { ascending: false })
       .limit(100),
+    admin.from("growth_customer_classifications")
+      .select("user_id,classification,analytics_excluded,reason,verified_at")
+      .limit(25_000),
   ]);
 
   if (profilesResult.error) warnings.push(warningMessage("Customer profiles"));
   if (ordersResult.error) warnings.push(warningMessage("Request history"));
   if (revenueLedgerResult.error) warnings.push(warningMessage("Revenue ledger"));
   if (paymentReviewResult.error) warnings.push(warningMessage("Payment review queue"));
+  const classificationMissing = isGrowthCustomerClassificationMigrationMissing(classificationResult.error);
+  const classificationReady = !classificationResult.error;
+  if (classificationMissing) {
+    warnings.push("Customer classification migration is not applied. No account is auto-classified; current totals can still include unreviewed internal/test accounts.");
+  } else if (classificationResult.error) {
+    warnings.push(warningMessage("Customer classification"));
+  }
   if ((profilesResult.data?.length ?? 0) === 25_000) warnings.push("Customer profile reporting reached its 25,000-row safety limit.");
   if ((ordersResult.data?.length ?? 0) === 25_000) warnings.push("Request reporting reached its 25,000-row safety limit.");
   if ((revenueLedgerResult.data?.length ?? 0) === 10_000) warnings.push("Revenue reporting reached its 10,000-row safety limit.");
@@ -121,19 +138,70 @@ export async function buildGrowthCustomerSuccessReport(input?: {
     journeyRows = journeyResult.data ?? [];
   }
 
-  const profiles = (profilesResult.data ?? []) as Array<Record<string, unknown>>;
-  const orders = (ordersResult.data ?? []) as Array<Record<string, unknown>>;
-  const revenueRows = (revenueLedgerResult.data ?? []) as Array<Record<string, unknown>>;
-  const paymentReviews = (paymentReviewResult.data ?? []) as Array<Record<string, unknown>>;
-  const metrics = buildGrowthMetrics({
+  const rawProfiles = (profilesResult.data ?? []) as Array<Record<string, unknown>>;
+  const rawOrders = (ordersResult.data ?? []) as Array<Record<string, unknown>>;
+  const rawRevenueRows = (revenueLedgerResult.data ?? []) as Array<Record<string, unknown>>;
+  const classifications = (classificationResult.data ?? [])
+    .map((row) => normalizeGrowthCustomerClassificationRecord(row))
+    .filter((row): row is NonNullable<typeof row> => Boolean(row));
+  const excludedCustomerIds = new Set(
+    classifications.filter((row) => row.analyticsExcluded).map((row) => row.userId)
+  );
+  const rawMetricInput = {
     startAt,
     endAt,
-    profiles: profiles as never,
-    orders: orders as never,
-    payments: revenueRows as never,
+    profiles: rawProfiles as never,
+    orders: rawOrders as never,
+    payments: rawRevenueRows as never,
     emails: emailRows as never,
     attribution: attributionRows as never,
     journeyEvents: journeyRows as never,
+  };
+  const metricInput = applyGrowthCustomerClassifications(rawMetricInput, classifications);
+  const profiles = metricInput.profiles as unknown as Array<Record<string, unknown>>;
+  const orders = metricInput.orders as unknown as Array<Record<string, unknown>>;
+  const metrics = buildGrowthMetrics(metricInput);
+  const realGrowth = buildRealCustomerSnapshot({
+    metricInput: rawMetricInput,
+    classifications,
+    classificationReady,
+  });
+  const paymentReviews = ((paymentReviewResult.data ?? []) as Array<Record<string, unknown>>)
+    .filter((row) => !row.user_id || !excludedCustomerIds.has(String(row.user_id)));
+
+  const verifiedRealIds = classifications
+    .filter((row) => row.classification === "real_customer" && !row.analyticsExcluded)
+    .map((row) => row.userId);
+  let firstVerifiedPayment: Record<string, unknown> | null = null;
+  let firstRevenueAttributionRows = attributionRows;
+  if (verifiedRealIds.length) {
+    const firstPaymentResult = await admin.from("credit_transactions")
+      .select("id,user_id,type,amount_total,currency,created_at")
+      .eq("type", "purchase")
+      .gt("amount_total", 0)
+      .in("user_id", verifiedRealIds)
+      .order("created_at", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    if (firstPaymentResult.error) warnings.push(warningMessage("First verified revenue journey"));
+    firstVerifiedPayment = firstPaymentResult.data as Record<string, unknown> | null;
+    if (firstVerifiedPayment?.user_id && migrationReady) {
+      const firstTouchResult = await admin.from("growth_attribution_sessions")
+        .select("user_id,first_source,first_medium,first_campaign,first_term,first_landing_path,first_country_code,first_seen_at")
+        .eq("user_id", String(firstVerifiedPayment.user_id))
+        .order("first_seen_at", { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      if (firstTouchResult.error) warnings.push(warningMessage("First verified revenue attribution"));
+      if (firstTouchResult.data) firstRevenueAttributionRows = [firstTouchResult.data, ...attributionRows];
+    }
+  }
+  const firstRevenueJourney = buildFirstVerifiedRevenueJourney({
+    profiles: rawMetricInput.profiles,
+    orders: rawMetricInput.orders,
+    firstPayment: firstVerifiedPayment as never,
+    attribution: firstRevenueAttributionRows as never,
+    classifications,
   });
 
   let seo: Awaited<ReturnType<typeof getCachedSeoGrowthReport>> | null = null;
@@ -282,9 +350,16 @@ export async function buildGrowthCustomerSuccessReport(input?: {
         ? "partial"
         : "ready",
       attribution: migrationReady ? "ready" : "migration_required",
+      customerClassification: classificationReady
+        ? "ready"
+        : classificationMissing
+          ? "migration_required"
+          : "error",
       seo: seoState,
       emailDelivery: emailError ? "partial" : "ready",
     },
+    realGrowth,
+    firstRevenueJourney,
     ...metrics,
     searchQueries: (seo?.queries ?? []).slice(0, 20),
     searchQueryWindow,
@@ -297,6 +372,8 @@ export async function buildGrowthCustomerSuccessReport(input?: {
       "Attribution includes only visitors who granted optional analytics consent; direct and unattributed totals are therefore conservative.",
       "Revenue uses successful payment records and remains separated by currency; currencies are never combined into a misleading total.",
       "Reminder conversion means a request was submitted within seven days after a reminder; it does not prove causation.",
+      "Internal/test and staff-operated customer accounts are excluded only after an authorized administrator classifies them; no account is classified from email, filename, payment amount or behavior.",
+      "The first revenue journey uses only an explicitly verified real customer and consented attribution. Missing acquisition history is shown as not captured and is never inferred.",
     ],
   };
 }
