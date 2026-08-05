@@ -2,6 +2,15 @@
 
 Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
+## 2026-08-05 Homepage product workflow polish
+
+- Gorev: Ana sayfaya yeni uzun bir bolum eklemeden ilk ekranin file-service urun degerini daha net gostermek ve kucuk laptop gorunumunu kompaktlastirmak.
+- Uygulama: Soyut ECU chip animasyonu yerine Register, Load Credits, Upload File ve Download File adimlarini gosteren dort kartli portal onizlemesi eklendi. CTA dizilimi dengeli iki sutuna alindi; preview ve hero yuksekligi viewport yuksekligine uyumlu `clamp` degerleriyle duzenlendi.
+- I18n: Load Credits etiketi DE/TR/NL/FR/IT/ES/PT/PL/SQ/RU/ZH icin exact ceviriye baglandi. Almanca kucuk-laptop gorunumundeki guven etiketi tasmasi kelime kirilimi ve kompakt tipografiyle giderildi.
+- Browser QA: 1440x900, 1366x768, 1024x768 ve 390x844 gorunumlerinde yatay overflow yok. 1366x768 preview ilk ekrana sigiyor; 1024px Almanca etiketlerde scrollWidth/clientWidth tasmasi yok; mobilde desktop preview gizli ve mevcut CTA akisi korunuyor. Fresh English local sayfada console error/warning yok. Localized route mimarisinden gelen mevcut development-only `html lang` hydration uyarisi bu kapsamda degistirilmedi.
+- Kontroller: Targeted PASS 101/101; full tests PASS 625/625; lint PASS; web+desktop typecheck PASS; production build PASS (266 static page); i18n/SEO PASS (12 locale, 30 source file); homepage performance PASS (60.9 KB gzip / 80 KB); payment schema-only PASS ve env okunmadi; high-severity audit threshold PASS (2 mevcut moderate PostCSS advisory); diff check PASS.
+- Kapsam: Payment, vehicle, admin, widget, email, customer request, SQL, Supabase ve production verisi degistirilmedi. Push veya deploy yapilmadi.
+
 ## 2026-08-05 Email journey certification and delivery health
 
 - Gorev: Yeni uyelikten talep teslimine kadar e-posta yolculugunu gercek aliciya mesaj gondermeden tek admin-only kapida sertifikalandirmak; provider delayed/bounce/complaint/failure/suppression sinyallerini PII'siz operasyon sagligi ozetine cevirmek.

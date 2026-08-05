@@ -1258,6 +1258,8 @@ test("homepage keeps the hero compact and places performance tools before the na
   const deferredPerformanceTools = readProjectFile("src", "components", "tools", "DeferredPerformanceTools.tsx");
   const heroSection =
     homepage.match(/<section id="home"[\s\S]*?<PublicVehicleChecker \/>/)?.[0] ?? "";
+  const heroPreview =
+    homepage.match(/function TechnicalHeroPreview\(\)[\s\S]*?function PublicVehicleSelect/)?.[0] ?? "";
   const performanceToolsIndex = homepage.indexOf("<DeferredPerformanceTools />");
   const navigatorIndex = homepage.indexOf('<AnimatedSection id="file-service-navigator"');
 
@@ -1269,6 +1271,16 @@ test("homepage keeps the hero compact and places performance tools before the na
   assert.match(deferredPerformanceTools, /import\("@\/components\/tools\/PerformanceTools"\)/);
   assert.match(deferredPerformanceTools, /IntersectionObserver/);
   assert.match(homepage, /publicResourceUrl\("\/#tools"\)/);
+  assert.match(heroSection, /lg:min-h-\[clamp\(640px,82vh,760px\)\]/);
+  assert.match(heroPreview, /h-\[clamp\(540px,68vh,620px\)\]/);
+  assert.match(heroPreview, /role="group"\s+aria-label="How It Works"/);
+  assert.match(heroPreview, /steps\.map\(\(step, index\)/);
+  assert.match(heroPreview, /grid w-full grid-cols-2 gap-3/);
+  assert.match(heroPreview, /min-w-0 break-words text-\[11px\] font-black/);
+  assert.doesNotMatch(heroPreview, /className="hidden h-\[685px\] lg:block"/);
+
+  const i18n = readProjectFile("src", "lib", "i18n.ts");
+  assert.equal((i18n.match(/"Load Credits":/g) ?? []).length, 11);
 });
 
 test("homepage hero typography and major SEO sections avoid overflow and white expanses", () => {
@@ -1279,7 +1291,8 @@ test("homepage hero typography and major SEO sections avoid overflow and white e
   assert.match(heroSection, /text-\[clamp\(2\.85rem,5\.7vw,5\.35rem\)\]/);
   assert.match(heroSection, /max-w-\[42rem\] text-balance break-words/);
   assert.match(heroSection, /text-\[clamp\(2\.15rem,5\.2vw,5\.35rem\)\]/);
-  assert.match(heroSection, /grid w-full max-w-\[42rem\] grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3/);
+  assert.match(heroSection, /grid w-full max-w-\[42rem\] grid-cols-1 gap-3 sm:grid-cols-2/);
+  assert.doesNotMatch(heroSection, /xl:grid-cols-3/);
   assert.doesNotMatch(heroSection, /md:text-7xl|lg:h-\[825px\]/);
   assert.doesNotMatch(homepage, /<HomepageCompactResourceCenter\s*\/>/);
   assert.doesNotMatch(

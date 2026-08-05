@@ -50,6 +50,16 @@ Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
 
+### MANUAL-20260805-HOMEPAGE-HERO [P1] Ana sayfa ilk ekranini urun odakli sadeleştir
+
+Durum: Done
+
+Fingerprint: `public-homepage|hero-product-preview|abstract-chip-visual-and-unbalanced-cta-grid|compact-four-step-workflow-preview`
+
+Sonuc: Hero sag panelindeki soyut ECU gorseli, Register, Load Credits, Upload File ve Download File adimlarini gosteren kompakt urun akisi onizlemesine cevrildi. CTA alani dengeli iki sutuna alindi; hero ve preview yuksekligi ekran yuksekligine uyumlu hale getirildi. Yeni Load Credits etiketi 11 non-English locale icin cevrildi. Kucuk laptopta Almanca guven etiketlerinin tasmasi giderildi; mevcut rota ve is mantiklari korunarak yeni alt bolum eklenmedi.
+
+Dogrulama: Targeted UI/i18n/performance testleri PASS (101/101); full tests PASS (625/625); lint PASS; web+desktop typecheck PASS; production build PASS (266 static page); i18n/SEO PASS (12 locale, 30 source file); homepage performance PASS (60.9 KB gzip / 80 KB); payment schema-only PASS ve env okunmadi; high-severity audit threshold PASS (Next/PostCSS zincirinde 2 mevcut moderate advisory); responsive browser QA PASS (1440x900, 1366x768, 1024x768, 390x844; sifir yatay tasma, fresh English console error yok); diff check PASS.
+
 ### MANUAL-021 [P0] Widget SaaS ticari kontrol merkezi ve guvenlik sertlestirmesi
 
 Durum: Done

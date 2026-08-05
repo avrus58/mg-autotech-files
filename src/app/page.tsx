@@ -2658,82 +2658,91 @@ function TechnicalHeroPreview() {
         initial={{ opacity: 0, scale: 0.96, x: 24 }}
         animate={{ opacity: 1, scale: 1, x: 0 }}
         transition={{ duration: 0.75, delay: 0.12, ease: [0.16, 1, 0.3, 1] }}
-        className="hidden h-[685px] lg:block"
+        className="hidden h-[clamp(540px,68vh,620px)] lg:block"
       >
-      <div className="relative h-[685px] overflow-hidden rounded-[2.25rem] border border-white/10 bg-[#07080b]/90 p-6 shadow-2xl shadow-black backdrop-blur-xl">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_36%,rgba(177,18,27,0.25),transparent_36%),linear-gradient(145deg,rgba(255,255,255,0.06),transparent_38%)]" />
-        <div className="absolute -right-24 -top-24 h-80 w-80 rounded-full bg-red-700/20 blur-3xl" />
-        <div className="absolute -bottom-24 -left-24 h-80 w-80 rounded-full bg-red-950/35 blur-3xl" />
-        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-red-500/70 to-transparent" />
+        <div
+          role="group"
+          aria-label="How It Works"
+          className="relative h-[clamp(540px,68vh,620px)] overflow-hidden rounded-[2rem] border border-white/10 bg-[#07080b]/95 p-5 shadow-2xl shadow-black backdrop-blur-xl"
+        >
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_36%,rgba(177,18,27,0.25),transparent_36%),linear-gradient(145deg,rgba(255,255,255,0.06),transparent_38%)]" />
+          <div className="absolute -right-24 -top-24 h-80 w-80 rounded-full bg-red-700/20 blur-3xl" />
+          <div className="absolute -bottom-24 -left-24 h-80 w-80 rounded-full bg-red-950/35 blur-3xl" />
+          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-red-500/70 to-transparent" />
 
-        <div className="relative flex h-full flex-col">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <div className="text-xs font-black uppercase tracking-[0.28em] text-red-500">
-                MG AutoTech
-              </div>
-              <div className="mt-2 text-4xl font-black tracking-wide">
-                File Service
-              </div>
-            </div>
-
-            <div className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-4 py-2 text-sm font-black text-emerald-300">
-              Online
-            </div>
-          </div>
-
-          <div className="relative mt-8 flex flex-1 items-center justify-center overflow-hidden rounded-[2rem] border border-white/10 bg-black/35">
-            <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,0.04)_1px,transparent_1px),linear-gradient(rgba(255,255,255,0.04)_1px,transparent_1px)] bg-[size:42px_42px] opacity-25" />
-            <div className="absolute left-8 top-8 rounded-full border border-red-800/50 bg-red-950/25 px-4 py-2 text-sm font-black text-red-100">
-              ECU / TCU
-            </div>
-            <div className="absolute bottom-8 right-8 rounded-full border border-white/10 bg-white/[0.05] px-4 py-2 text-sm font-black text-zinc-200">
-              OBD · Bench · Boot
-            </div>
-
-            <div className="absolute h-[420px] w-[420px] rounded-full border-[34px] border-red-700/20" />
-            <div className="absolute h-[300px] w-[300px] rounded-full border border-red-600/30" />
-            <div className="absolute h-[220px] w-[220px] rounded-full bg-red-700/15 blur-3xl" />
-
-            <motion.div
-              animate={{ y: [0, -10, 0], rotate: [0, 1, 0] }}
-              transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut" }}
-              className="relative flex h-56 w-56 items-center justify-center rounded-[2.5rem] border border-red-800/60 bg-black/80 shadow-2xl shadow-red-950/50 motion-safe:animate-pulse"
-            >
-              <div className="absolute inset-5 rounded-[1.8rem] border border-red-700/35" />
-              <div className="absolute -left-10 top-14 h-px w-10 bg-red-700/70" />
-              <div className="absolute -right-10 bottom-14 h-px w-10 bg-red-700/70" />
-              <div className="absolute -top-10 left-1/2 h-10 w-px -translate-x-1/2 bg-red-700/70" />
-              <div className="absolute -bottom-10 left-1/2 h-10 w-px -translate-x-1/2 bg-red-700/70" />
-              <Cpu className="h-24 w-24 text-red-500" />
-            </motion.div>
-          </div>
-
-          <div className="relative mt-5 grid h-[92px] grid-cols-3 gap-3">
-            {[
-              [ShieldCheck, "Secure Portal"],
-              [Zap, "Fast Handling"],
-              [Wrench, "Workshop Ready"],
-            ].map(([Icon, label]) => {
-              const LucideIcon = Icon as typeof ShieldCheck;
-
-              return (
-              <div
-                key={String(label)}
-                className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] px-4"
-              >
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-red-950/40 text-red-500">
-                  <LucideIcon className="h-5 w-5" />
+          <div className="relative flex h-full flex-col">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <div className="text-xs font-black uppercase tracking-[0.28em] text-red-500">
+                  MG AutoTech
                 </div>
-                <div className="text-sm font-black leading-tight text-white">
-                  {String(label)}
+                <div className="mt-2 text-3xl font-black tracking-normal">
+                  File Service
                 </div>
               </div>
-              );
-            })}
+
+              <div className="flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs font-black text-emerald-300">
+                <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.75)]" />
+                Online
+              </div>
+            </div>
+
+            <div className="relative mt-5 flex flex-1 items-center justify-center overflow-hidden rounded-[1.5rem] border border-white/10 bg-black/35">
+              <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,0.04)_1px,transparent_1px),linear-gradient(rgba(255,255,255,0.04)_1px,transparent_1px)] bg-[size:42px_42px] opacity-25" />
+              <div className="absolute left-8 top-8 rounded-full border border-red-800/50 bg-red-950/25 px-4 py-2 text-sm font-black text-red-100">
+                ECU / TCU
+              </div>
+              <div className="absolute bottom-8 right-8 rounded-full border border-white/10 bg-white/[0.05] px-4 py-2 text-sm font-black text-zinc-200">
+                OBD · Bench · Boot
+              </div>
+
+              <div className="relative z-10 grid w-full grid-cols-2 gap-3 px-5 pb-12 pt-16">
+                {steps.map((step, index) => {
+                  const Icon = step.icon;
+
+                  return (
+                    <div
+                      key={step.title}
+                      className="relative flex min-h-28 flex-col justify-between overflow-hidden rounded-2xl border border-white/10 bg-black/60 p-4 shadow-lg shadow-black/20"
+                    >
+                      <div className="absolute right-3 top-2 text-5xl font-black leading-none text-white/[0.04]">
+                        {String(index + 1).padStart(2, "0")}
+                      </div>
+                      <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-red-900/50 bg-red-950/35 text-red-400">
+                        <Icon className="h-4 w-4" />
+                      </div>
+                      <div className="mt-3 text-sm font-black leading-tight text-white">
+                        {step.title}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="relative mt-4 grid h-[74px] grid-cols-3 gap-2">
+              {[
+                [ShieldCheck, "Secure Portal"],
+                [Zap, "Fast Handling"],
+                [Wrench, "Workshop Ready"],
+              ].map(([Icon, label]) => {
+                const LucideIcon = Icon as typeof ShieldCheck;
+
+                return (
+                  <div
+                    key={String(label)}
+                    className="flex min-w-0 items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3"
+                  >
+                    <LucideIcon className="h-4 w-4 shrink-0 text-red-400" />
+                    <div className="min-w-0 break-words text-[11px] font-black leading-tight text-white">
+                      {String(label)}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
-      </div>
       </motion.div>
     </LocalizedHomepageTree>
   );
@@ -3950,9 +3959,9 @@ export function UnifiedHomePage({
           className="absolute right-32 top-52 -z-10 hidden h-1 w-[480px] rounded-full bg-red-500 lg:block"
         />
 
-        <div className="mx-auto grid min-h-[720px] max-w-[88rem] gap-10 px-4 py-14 sm:py-20 lg:min-h-[825px] lg:grid-cols-[minmax(0,1fr)_minmax(400px,0.88fr)] lg:items-center">
+        <div className="mx-auto grid min-h-[660px] max-w-[88rem] gap-10 px-4 py-10 sm:py-12 lg:min-h-[clamp(640px,82vh,760px)] lg:grid-cols-[minmax(0,1fr)_minmax(420px,0.88fr)] lg:items-center lg:py-6">
           <motion.div
-            className="min-w-0 lg:min-h-[520px] lg:max-w-[44rem]"
+            className="min-w-0 lg:min-h-[480px] lg:max-w-[44rem]"
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.55 }}
@@ -3979,7 +3988,7 @@ export function UnifiedHomePage({
               MG AutoTech customer portal.
             </p>
 
-            <div className="mt-9 grid w-full max-w-[42rem] grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            <div className="mt-9 grid w-full max-w-[42rem] grid-cols-1 gap-3 sm:grid-cols-2">
               {!authReady ? (
                 <>
                   <div className="h-14 w-36 rounded-xl border border-white/10 bg-white/[0.08]" />
