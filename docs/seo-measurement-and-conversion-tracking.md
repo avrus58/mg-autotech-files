@@ -79,7 +79,7 @@ server-only variables are:
 ```text
 GOOGLE_SERVICE_ACCOUNT_EMAIL
 GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY
-GOOGLE_SEARCH_CONSOLE_SITE_URL=sc-domain:mgautotech.de
+GOOGLE_SEARCH_CONSOLE_SITE_URL=https://file.mgautotech.de/
 GOOGLE_ANALYTICS_PROPERTY_ID
 ```
 
@@ -98,7 +98,9 @@ admin page shows a safe configuration-required state.
 4. Keep Enhanced Measurement form interactions and automatic page views
    disabled for this stream; the application sends the reviewed event allowlist.
 5. In GA4 Admin, open **Product links > Search Console Links**.
-6. Link the `sc-domain:mgautotech.de` property to the production web stream.
+6. Link the exact `https://file.mgautotech.de/` URL-prefix property to the
+   production web stream. Do not use the domain-wide property for this report;
+   it also contains unrelated `mgautotech.de` search traffic.
 7. Publish the Search Console report collection in GA4 Library if it is hidden.
 8. Mark `generate_lead` as a key event.
 

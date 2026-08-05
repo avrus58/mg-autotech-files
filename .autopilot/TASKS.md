@@ -50,6 +50,33 @@ Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
 
+### MANUAL-020 [P0] Search Console ve GA4 canli raporlama baglantisi
+
+Durum: Done
+
+Fingerprint: `seo-reporting|search-console-ga4|server-reporting-not-configured|least-privilege-live-connection`
+
+Kapsam: `file.mgautotech.de` icin Search Console sorgu/sayfa/ulke metriklerini ve
+GA4 consented public landing-page/request event metriklerini mevcut admin-only
+SEO Opportunity Center'a bagla. Servis hesabi yalniz dar okuma yetkisi alir;
+query-to-customer identity stitching, public veri ifsasi veya customer mutation
+yapilmaz.
+
+Sonuc: Dedicated Google Cloud raporlama projesinde Search Console API ve GA4
+Data API acildi. Exact URL-prefix Search Console mulku otomatik dogrulandi ve
+servis hesabina Restricted erisim verildi. GA4 erisimi Viewer + No Cost/Revenue
+Metrics ile sinirlandi. Dort server-only Vercel Production degiskeni sensitive
+olarak kaydedildi; private key istemciye veya repoya girmedi ve yerel key kopyasi
+aktarimdan sonra silindi. Canli panel Search Console sorgu, sayfa ve ulke
+satirlarini gosteriyor; GA4 kaynagi hazir fakat mulkte henuz tarihsel consented
+event satiri yok.
+
+Dogrulama: lint PASS; web+desktop typecheck PASS; full tests PASS (612/612);
+production build PASS (266 static page); i18n/SEO PASS (12 locale, 30 source
+file); payment schema-only PASS; high-severity audit PASS (2 mevcut moderate
+PostCSS advisory); anonymous SEO API 401; vehicle cache 200/cache; authenticated
+production SEO panelinde Search Console ve GA4 source state `ready`.
+
 ### MANUAL-019 [P0] E-posta yasam dongusu sertifikasyonu ve operasyon sagligi
 
 Durum: Done

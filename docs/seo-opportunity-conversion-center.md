@@ -58,7 +58,7 @@ Server reporting uses these server-only variables:
 ```text
 GOOGLE_SERVICE_ACCOUNT_EMAIL
 GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY
-GOOGLE_SEARCH_CONSOLE_SITE_URL=sc-domain:mgautotech.de
+GOOGLE_SEARCH_CONSOLE_SITE_URL=https://file.mgautotech.de/
 GOOGLE_ANALYTICS_PROPERTY_ID
 ```
 
@@ -71,9 +71,11 @@ Setup procedure:
 1. Enable the Search Console API and Google Analytics Data API in the approved
    Google Cloud project.
 2. Create a dedicated reporting service account.
-3. Give that account the minimum Search Console permission that can read the
-   `sc-domain:mgautotech.de` performance report.
-4. Add the account as a GA4 Viewer for the production property.
+3. Verify the exact `https://file.mgautotech.de/` URL-prefix property and give
+   that account Restricted read access. Domain-wide properties are not used by
+   this center because their country totals can include other hosts.
+4. Add the account as a GA4 Viewer for the production property. Cost and revenue
+   metrics can remain restricted because this report does not request them.
 5. Configure the four server-only variables in the intended deployment
    environment.
 6. Keep the private key newline-safe. A value with escaped `\n` is normalized
