@@ -2,6 +2,16 @@
 
 Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
+## 2026-08-05 Email journey certification and delivery health
+
+- Gorev: Yeni uyelikten talep teslimine kadar e-posta yolculugunu gercek aliciya mesaj gondermeden tek admin-only kapida sertifikalandirmak; provider delayed/bounce/complaint/failure/suppression sinyallerini PII'siz operasyon sagligi ozetine cevirmek.
+- Sertifikasyon: `/admin/email` icindeki `Certify journey` aksiyonu sabit sentetik context ile 10 kilometre tasini, 17 allowlistli status gecisini, tum customer transactional sablonlarini ve 13 Supabase Auth sablonunu 12 dilde render eder. Rapor 465 render, 4 guvenlik/kapsam kontrolu ve sifir send/DB write/customer read yan etkisi gosterir.
+- Teslimat: En yeni signed provider eventi message basina tek current state uretir. Daha yeni delivered eski delayed durumunu kapatir; unresolved delayed monitoring, failed/bounced/complained/suppressed action-required olur. Aktif sorunlar recipient gostermeden admin bildirim zilinde; detaylar yalniz permission-protected Email Control Center'da kalir.
+- Gizlilik: Request-created idempotency anahtari recipient e-posta adresini artik icermez. Customer API'leri delivery event/suppression tablolarini import etmez. Sertifikasyon, preview ve gercek admin test gonderimi UI'da birbirinden ayridir.
+- SEO/GA4: `/admin/seo-performance`, aggregate Search Console ve consented GA4 raporlama kodu mevcut ve fail-closed hazirdir. Canli satirlar icin external Google Cloud servis hesabina read-only Search Console erisimi, GA4 Viewer rolu ve dort server-only env gerekir; secret uydurulmadi veya okunmadi.
+- Kontroller: Targeted email tests PASS (43/43); lint PASS; web+desktop typecheck PASS; full tests PASS (612/612); production build PASS (266 static page); i18n/SEO PASS (12 locale, 30 source file); payment schema-only PASS ve env okunmadi; high-severity audit threshold PASS (2 mevcut moderate PostCSS advisory); `git diff --check` PASS.
+- Sinirlar: Production veri/e-posta/provider mutasyonu, gercek musteri yolculugu, test account mutation, push ve deploy yapilmadi. Authenticated responsive visual smoke ve provider test-event smoke, ayri onayli release turunda kontrollu test hesabi ile yapilmalidir.
+
 ## 2026-08-05 Multilingual customer conversion completion
 
 - Gorev: Kayit, auth, talep, panel, siparis, e-posta ve buyume olcumunu 12 dilde tek bir tamamlanmis musteri yolculuguna donusturmek; responsive sirket kaydini ve locale bazli donusum gorunumunu mevcut guvenlik sinirlari icinde tamamlamak.

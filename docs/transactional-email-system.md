@@ -239,6 +239,53 @@ Delivery failures also appear in the existing admin notification bell without
 recipient details. The full recipient and bounded provider reason remain only
 inside the permission-protected Email Control Center.
 
+## Safe Journey Certification
+
+The Email Control Center includes an admin-only **Certify journey** action. It
+renders the complete customer communication journey against fixed synthetic
+sample data and does not send mail, read customer records or write database
+rows.
+
+The certification covers:
+
+- verified registration and the separate admin registration notification;
+- request creation and receipt;
+- file receipt and technical review;
+- work in progress and customer-information-required states;
+- visible customer messages and additional upload permission;
+- completed delivery and cancellation;
+- all 17 allowlisted request/work-order lifecycle transitions;
+- every customer-facing platform template in all 12 supported languages;
+- all repository-managed Supabase Auth templates in all 12 languages;
+- customer-data and unsafe-link deny lists.
+
+Admin operational notifications are intentionally certified in English because
+they are internal control-room messages. Customer messages continue to follow
+the explicit account email language with English fallback.
+
+The result displays the number of templates, languages and transitions checked,
+plus an explicit side-effect counter. A passing report must show zero sends,
+zero database writes and zero customer reads. This is a deterministic rendering
+and safety certification; it does not claim that an external provider accepted
+or delivered a message.
+
+## Delivery Response Health
+
+The Email Control Center derives one current state per provider message from
+the signed delivery event stream:
+
+- a later `delivered` event resolves an earlier `delayed` event;
+- unresolved delays remain a monitoring signal;
+- failed, bounced, complained and permanently suppressed recipients require
+  admin action;
+- unavailable tracking is shown as unavailable rather than healthy.
+
+Active delivery incidents also appear in the admin notification bell without
+recipient details. Full recipient information and the bounded provider reason
+remain inside `/admin/email`. Hard bounces and complaints suppress repeated
+delivery attempts; a delayed event alone does not permanently suppress a
+recipient.
+
 ## Supabase Auth Email Templates
 
 Authentication links are issued by Supabase Auth, not by a public MG AutoTech
@@ -271,16 +318,20 @@ the hosted Supabase project.
 2. Apply `scripts/add-email-delivery-reliability.sql` and run its read-only verification SQL.
 3. Keep `EMAIL_DRY_RUN=true` in staging/local.
 4. Open `/admin/email` as owner/admin.
-5. Preview one platform and one Supabase Auth template in EN, DE, TR, FR and one non-Latin locale.
-6. Send an admin test email in dry-run and confirm no provider delivery occurs.
-7. Configure a signed staging Resend webhook and verify sent/delivered events.
-8. Use provider test events to verify delayed/bounced/complained admin states.
-9. Confirm a bounced test recipient is suppressed and a delayed recipient is not.
-10. Confirm the admin bell contains the issue without recipient information.
-11. Create a test request and confirm customer/admin event logs are idempotent.
-12. Add an internal note and confirm no customer email event is created.
-13. Add a customer-visible note and confirm one customer email event is created.
-14. Confirm hidden messages and PayPal behavior are absent.
+5. Run **Certify journey** and confirm every check passes with zero side effects.
+6. Preview one platform and one Supabase Auth template in EN, DE, TR, FR and one non-Latin locale.
+7. Send an admin test email in dry-run and confirm no provider delivery occurs.
+8. Configure a signed staging Resend webhook and verify sent/delivered events.
+9. Use provider test events to verify delayed/bounced/complained admin states.
+10. Confirm a bounced test recipient is suppressed and a delayed recipient is not.
+11. Confirm a later delivered event clears the earlier delayed warning.
+12. Confirm the admin bell contains the issue without recipient information.
+13. Create a controlled test request and confirm customer/admin event logs are idempotent.
+14. Move that request through in-review, in-progress, customer-information-required and completed states.
+15. Add an internal note and confirm no customer email event is created.
+16. Add a customer-visible note and confirm one customer email event is created.
+17. Confirm hidden messages and PayPal behavior are absent.
+18. Keep the controlled test account classified as internal/test or archive it through the approved account process; never classify it as verified-real growth.
 
 ## Production Deployment Checklist
 

@@ -9,7 +9,9 @@ import {
   CheckCircle2,
   Clock3,
   Eye,
+  FlaskConical,
   Languages,
+  ListChecks,
   LockKeyhole,
   Mail,
   RefreshCw,
@@ -63,6 +65,26 @@ type EmailAdminData = {
     status: string;
     eventType: string;
   }>;
+  journeyCoverage: Array<{
+    id: string;
+    label: string;
+    trigger: string;
+    eventTypes: Array<{
+      eventType: string;
+      audience: string;
+    }>;
+  }>;
+  deliveryHealth: {
+    state: "healthy" | "monitoring" | "action_required" | "unavailable";
+    activeIssueCount: number;
+    delayed: number;
+    failed: number;
+    bounced: number;
+    complained: number;
+    suppressed: number;
+    permanentSuppressions: number;
+    message: string;
+  };
   migrationReady: boolean;
   deliveryTrackingReady: boolean;
 };
@@ -71,6 +93,32 @@ type EmailPreview = {
   subject: string;
   html: string;
   text: string;
+};
+
+type EmailCertification = {
+  generatedAt: string;
+  mode: "sample_render_only";
+  sideEffects: {
+    emailsSent: 0;
+    databaseWrites: 0;
+    customerRecordsRead: 0;
+  };
+  summary: {
+    status: "passed" | "failed";
+    passedChecks: number;
+    failedChecks: number;
+    renderedTemplates: number;
+    languages: number;
+    milestones: number;
+    lifecycleTransitions: number;
+  };
+  checks: Array<{
+    id: string;
+    label: string;
+    status: "passed" | "failed";
+    checked: number;
+    failures: string[];
+  }>;
 };
 
 function formatBerlinDate(value: unknown) {
@@ -97,6 +145,8 @@ export default function AdminEmailPage() {
   const [previewTemplate, setPreviewTemplate] = useState("request_created");
   const [previewLanguage, setPreviewLanguage] = useState<TransactionalEmailLanguage>("en");
   const [preview, setPreview] = useState<EmailPreview | null>(null);
+  const [certification, setCertification] = useState<EmailCertification | null>(null);
+  const [certifying, setCertifying] = useState(false);
 
   async function load() {
     setLoading(true);
@@ -169,6 +219,33 @@ export default function AdminEmailPage() {
     }
   }
 
+  async function runCertification() {
+    setCertifying(true);
+    setMessage("");
+    try {
+      const response = await authenticatedFetch("/api/admin/email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "certify" }),
+      });
+      const payload = await response.json();
+      if (!response.ok || !payload.certification) {
+        setCertification(null);
+        setMessage(payload.error || "Email journey certification could not be completed.");
+      } else {
+        setCertification(payload.certification as EmailCertification);
+        setMessage(payload.certification.summary?.status === "passed"
+          ? "Email journey certification passed without sending any email."
+          : "Email journey certification found a blocking issue.");
+      }
+    } catch (error) {
+      setCertification(null);
+      setMessage(error instanceof Error ? error.message : "Email journey certification could not be completed.");
+    } finally {
+      setCertifying(false);
+    }
+  }
+
   function changePreviewSource(source: "transactional" | "supabase_auth") {
     setPreviewSource(source);
     setPreview(null);
@@ -209,6 +286,9 @@ export default function AdminEmailPage() {
             <button onClick={() => void load()} className="rounded-lg border border-white/10 px-3 py-2 text-sm font-black">
               <RefreshCw className="mr-2 inline h-4 w-4" />Refresh
             </button>
+            <button disabled={certifying} onClick={() => void runCertification()} className="rounded-lg border border-emerald-700/50 bg-emerald-950/20 px-3 py-2 text-sm font-black text-emerald-200 disabled:opacity-50">
+              <FlaskConical className="mr-2 inline h-4 w-4" />{certifying ? "Checking..." : "Certify journey"}
+            </button>
             <button disabled={sending} onClick={() => void sendTest()} className="rounded-lg bg-[#b1121b] px-3 py-2 text-sm font-black disabled:opacity-50">
               <Send className="mr-2 inline h-4 w-4" />Send admin test
             </button>
@@ -230,6 +310,67 @@ export default function AdminEmailPage() {
               <MetricCard label="Suppressed" value={data.activeSuppressions.length} icon={<LockKeyhole />} tone="text-sky-300" />
             </section>
 
+            <section className="grid min-w-0 overflow-hidden rounded-lg border border-white/10 bg-[#0b0c0e] xl:grid-cols-[minmax(0,1fr)_320px]">
+              <div className="min-w-0 border-b border-white/10 p-5 xl:border-b-0 xl:border-r">
+                <div className="flex min-w-0 flex-wrap items-start justify-between gap-4">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 text-sm font-black"><ListChecks className="h-4 w-4 text-emerald-300" />Customer email journey</div>
+                    <p className="mt-1 max-w-3xl text-xs leading-5 text-zinc-500">One sample-only gate covers registration, request intake, review, customer action, visible messages, uploads, delivery and cancellation. It never reads a customer or sends mail.</p>
+                  </div>
+                  <span className="rounded-full border border-white/10 px-3 py-1.5 text-[10px] font-black uppercase text-zinc-400">{data.journeyCoverage.length} milestones</span>
+                </div>
+                <div className="mt-4 grid gap-px overflow-hidden rounded-lg border border-white/10 bg-white/10 sm:grid-cols-2 lg:grid-cols-3">
+                  {data.journeyCoverage.map((milestone) => (
+                    <div key={milestone.id} className="min-w-0 bg-[#0b0c0e] p-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <h3 className="text-xs font-black text-white">{milestone.label}</h3>
+                        <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" />
+                      </div>
+                      <p className="mt-1 text-[10px] leading-4 text-zinc-600">{milestone.trigger}</p>
+                      <div className="mt-2 flex flex-wrap gap-1">
+                        {milestone.eventTypes.map((event) => (
+                          <span key={event.eventType} className="max-w-full truncate rounded border border-white/10 px-1.5 py-1 text-[8px] font-black uppercase text-zinc-500">{labelToken(event.eventType)} · {event.audience}</span>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="min-w-0 p-5">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-[0.16em] text-zinc-600">Safe certification</p>
+                    <h2 className="mt-1 text-lg font-black">{certification ? certification.summary.status === "passed" ? "All checks passed" : "Review required" : "Ready to run"}</h2>
+                  </div>
+                  <span className={`grid h-10 w-10 place-items-center rounded-lg border ${certification?.summary.status === "passed" ? "border-emerald-700/40 bg-emerald-950/30 text-emerald-300" : certification?.summary.status === "failed" ? "border-red-700/40 bg-red-950/30 text-red-300" : "border-white/10 text-zinc-600"}`}>
+                    {certification?.summary.status === "passed" ? <CheckCircle2 className="h-5 w-5" /> : certification?.summary.status === "failed" ? <AlertTriangle className="h-5 w-5" /> : <FlaskConical className="h-5 w-5" />}
+                  </span>
+                </div>
+                {certification ? (
+                  <>
+                    <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
+                      <CertificationMetric label="Rendered" value={certification.summary.renderedTemplates} />
+                      <CertificationMetric label="Languages" value={certification.summary.languages} />
+                      <CertificationMetric label="Transitions" value={certification.summary.lifecycleTransitions} />
+                      <CertificationMetric label="Side effects" value={0} />
+                    </div>
+                    <div className="mt-3 space-y-2">
+                      {certification.checks.map((check) => (
+                        <div key={check.id} className="flex items-start gap-2 rounded-lg border border-white/10 bg-black/25 p-2.5">
+                          {check.status === "passed" ? <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" /> : <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-400" />}
+                          <div className="min-w-0"><div className="text-[11px] font-black">{check.label}</div><div className="mt-0.5 text-[9px] text-zinc-600">{check.checked} checks · {check.failures.length} failures</div></div>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="mt-3 text-[10px] text-zinc-600">Last run {formatBerlinDate(certification.generatedAt)} · no sends, writes or customer reads</p>
+                  </>
+                ) : (
+                  <div className="mt-4 rounded-lg border border-dashed border-white/10 p-4 text-xs leading-5 text-zinc-500">Run the certification after template or lifecycle changes. It uses fixed sample content only.</div>
+                )}
+              </div>
+            </section>
+
             <div className="grid min-w-0 gap-5 lg:grid-cols-[340px_minmax(0,1fr)]">
               <aside className="min-w-0 space-y-4">
               <section className="min-w-0 overflow-hidden rounded-lg border border-white/10 bg-white/[0.03] p-4">
@@ -247,6 +388,20 @@ export default function AdminEmailPage() {
                 <Info label="Pending" value={String(data.eventSummary.pending)} />
                 <Info label="Failed" value={String(data.eventSummary.failed)} />
                 <Info label="Dry-run / skipped" value={String(data.eventSummary.skipped)} />
+              </section>
+              <section className={`min-w-0 overflow-hidden rounded-lg border p-4 ${data.deliveryHealth.state === "healthy" ? "border-emerald-800/30 bg-emerald-950/10" : data.deliveryHealth.state === "monitoring" ? "border-amber-800/30 bg-amber-950/10" : data.deliveryHealth.state === "action_required" ? "border-red-800/35 bg-red-950/15" : "border-white/10 bg-white/[0.03]"}`}>
+                <div className="flex items-start justify-between gap-3">
+                  <div><p className="text-[10px] font-black uppercase tracking-[0.15em] text-zinc-500">Delivery response</p><h2 className="mt-1 text-sm font-black">{labelToken(data.deliveryHealth.state)}</h2></div>
+                  {data.deliveryHealth.state === "healthy" ? <CheckCircle2 className="h-5 w-5 text-emerald-300" /> : <AlertTriangle className={`h-5 w-5 ${data.deliveryHealth.state === "action_required" ? "text-red-300" : "text-amber-300"}`} />}
+                </div>
+                <p className="mt-3 text-xs leading-5 text-zinc-400">{data.deliveryHealth.message}</p>
+                <div className="mt-3 grid grid-cols-2 gap-2 text-[10px]">
+                  <InfoTile label="Active issues" value={data.deliveryHealth.activeIssueCount} />
+                  <InfoTile label="Delayed" value={data.deliveryHealth.delayed} />
+                  <InfoTile label="Hard failures" value={data.deliveryHealth.failed + data.deliveryHealth.bounced + data.deliveryHealth.complained + data.deliveryHealth.suppressed} />
+                  <InfoTile label="Suppressed" value={data.deliveryHealth.permanentSuppressions} />
+                </div>
+                <p className="mt-3 text-[10px] leading-4 text-zinc-600">The admin notification bell reads this signed provider event stream. Delivered follow-up events automatically resolve earlier delays.</p>
               </section>
               <section className="min-w-0 overflow-hidden rounded-lg border border-sky-800/30 bg-sky-950/10 p-4">
                 <div className="mb-3 flex items-center gap-2 text-sm font-black">
@@ -501,4 +656,12 @@ function Info({ label, value }: { label: string; value: string }) {
       <span className="min-w-0 break-all text-right font-bold">{value}</span>
     </div>
   );
+}
+
+function CertificationMetric({ label, value }: { label: string; value: number }) {
+  return <div className="rounded-lg border border-white/10 bg-black/25 p-3"><div className="text-lg font-black">{value}</div><div className="mt-1 text-[9px] font-black uppercase tracking-[0.12em] text-zinc-600">{label}</div></div>;
+}
+
+function InfoTile({ label, value }: { label: string; value: number }) {
+  return <div className="rounded-lg border border-white/10 bg-black/20 p-2.5"><div className="text-base font-black text-white">{value}</div><div className="mt-0.5 uppercase tracking-[0.1em] text-zinc-600">{label}</div></div>;
 }

@@ -221,7 +221,7 @@ test("admin email controls expose delivery issues without leaking them to custom
   const delivery = readFileSync(resolve(process.cwd(), "src", "lib", "email", "deliveryReliability.ts"), "utf8");
   assert.match(adminRoute, /requireStaffPermission\(request, "orders\.view"\)/);
   assert.match(adminRoute, /requireStaffPermission\(request, "orders\.manage"\)/);
-  assert.match(adminRoute, /action: z\.enum\(\["send_test", "preview"\]\)/);
+  assert.match(adminRoute, /action: z\.enum\(\["send_test", "preview", "certify"\]\)/);
   assert.match(adminPage, /Provider delivery status/);
   assert.match(adminPage, /Suppressed recipients/);
   assert.match(adminPage, /sandbox=""/);

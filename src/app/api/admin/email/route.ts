@@ -19,6 +19,11 @@ import {
   type TransactionalEmailLanguage,
 } from "@/lib/email/types";
 import { supportedTransactionalEmailLanguages } from "@/lib/email/language";
+import {
+  getEmailJourneyCoverage,
+  runEmailJourneyCertification,
+} from "@/lib/email/certification";
+import { summarizeEmailDeliveryHealth } from "@/lib/email/deliveryReliability";
 
 const transactionalEmailLanguageSchema = z.custom<TransactionalEmailLanguage>(
   (value) => supportedTransactionalEmailLanguages.includes(value as TransactionalEmailLanguage),
@@ -26,7 +31,7 @@ const transactionalEmailLanguageSchema = z.custom<TransactionalEmailLanguage>(
 );
 
 const testSchema = z.object({
-  action: z.enum(["send_test", "preview"]).optional().default("send_test"),
+  action: z.enum(["send_test", "preview", "certify"]).optional().default("send_test"),
   source: z.enum(["transactional", "supabase_auth"]).optional().default("transactional"),
   eventType: z.string().trim().min(1).max(100).optional().default("admin_email_test"),
   language: transactionalEmailLanguageSchema.optional().default("en"),
@@ -153,6 +158,12 @@ export async function GET(request: Request) {
     if (status in eventSummary) eventSummary[status] += 1;
   }
 
+  const deliveryHealth = summarizeEmailDeliveryHealth(
+    deliveryEvents,
+    activeSuppressions.length,
+    deliveryTrackingReady
+  );
+
   return NextResponse.json({
     provider: getTransactionalEmailProviderStatus(),
     templates: listTransactionalEmailTemplates(),
@@ -178,6 +189,8 @@ export async function GET(request: Request) {
           : null,
     })),
     lifecycleCoverage: listLifecycleStatusCoverage(),
+    journeyCoverage: getEmailJourneyCoverage(),
+    deliveryHealth,
     migrationReady,
     deliveryTrackingReady,
   });
@@ -188,6 +201,10 @@ export async function POST(request: Request) {
   if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
   const parsed = testSchema.safeParse(await request.json().catch(() => ({})));
   if (!parsed.success) return NextResponse.json({ error: "Invalid email test payload." }, { status: 400 });
+
+  if (parsed.data.action === "certify") {
+    return NextResponse.json({ certification: runEmailJourneyCertification() });
+  }
 
   if (parsed.data.action === "preview") {
     if (parsed.data.source === "supabase_auth") {

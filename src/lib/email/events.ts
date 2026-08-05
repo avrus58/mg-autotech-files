@@ -167,7 +167,10 @@ export async function sendRequestCreatedNotifications(input: {
         to: recipient,
         language,
         context,
-        idempotencyKey: `request_created:${input.requestId}:${recipient}`,
+        idempotencyKey: buildLifecycleIdempotencyKey([
+          "request_created",
+          input.requestId,
+        ]),
         recipientUserId: loaded?.order.customer_id ?? null,
         relatedOrderId: input.requestId,
         relatedRequestId: input.requestId,

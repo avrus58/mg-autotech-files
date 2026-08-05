@@ -50,6 +50,18 @@ export type AdminEmailDeliveryIssue = {
   occurredAt: string;
 };
 
+export type EmailDeliveryHealthSummary = {
+  state: "healthy" | "monitoring" | "action_required" | "unavailable";
+  activeIssueCount: number;
+  delayed: number;
+  failed: number;
+  bounced: number;
+  complained: number;
+  suppressed: number;
+  permanentSuppressions: number;
+  message: string;
+};
+
 type ProviderDeliveryIssueRow = {
   provider_event_id?: unknown;
   provider_message_id?: unknown;
@@ -281,4 +293,55 @@ export function selectLatestAdminEmailDeliveryIssues(
     if (issues.length >= Math.max(1, Math.min(limit, 25))) break;
   }
   return issues;
+}
+
+export function summarizeEmailDeliveryHealth(
+  rows: ProviderDeliveryIssueRow[],
+  permanentSuppressions: number,
+  trackingReady = true
+): EmailDeliveryHealthSummary {
+  if (!trackingReady) {
+    return {
+      state: "unavailable",
+      activeIssueCount: 0,
+      delayed: 0,
+      failed: 0,
+      bounced: 0,
+      complained: 0,
+      suppressed: 0,
+      permanentSuppressions: Math.max(0, permanentSuppressions),
+      message: "Signed provider delivery tracking is not available.",
+    };
+  }
+
+  const issues = selectLatestAdminEmailDeliveryIssues(rows, 100);
+  const counts = {
+    delayed: 0,
+    failed: 0,
+    bounced: 0,
+    complained: 0,
+    suppressed: 0,
+  };
+  for (const issue of issues) counts[issue.status] += 1;
+
+  const permanent = counts.bounced + counts.complained + counts.suppressed;
+  const actionRequired = permanent > 0 || counts.failed > 0;
+  const state = actionRequired
+    ? "action_required"
+    : counts.delayed > 0
+      ? "monitoring"
+      : "healthy";
+  const message = state === "action_required"
+    ? "One or more recipients need delivery review. Permanent failures remain suppressed."
+    : state === "monitoring"
+      ? "The provider is still retrying one or more delayed messages."
+      : "No unresolved provider delivery issue is present in the current window.";
+
+  return {
+    state,
+    activeIssueCount: issues.length,
+    ...counts,
+    permanentSuppressions: Math.max(0, permanentSuppressions),
+    message,
+  };
 }
