@@ -1,5 +1,6 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import type { WidgetLanguage } from "@/lib/widget/types";
+import { getWidgetSessionSecret } from "@/lib/widget/security";
 
 type WidgetSessionPayload = {
   clientId: string;
@@ -10,14 +11,8 @@ type WidgetSessionPayload = {
   exp: number;
 };
 
-function sessionSecret() {
-  const secret = process.env.WIDGET_SESSION_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!secret) throw new Error("WIDGET_SESSION_SECRET is missing.");
-  return secret;
-}
-
 function sign(value: string) {
-  return createHmac("sha256", sessionSecret()).update(value).digest("base64url");
+  return createHmac("sha256", getWidgetSessionSecret()).update(value).digest("base64url");
 }
 
 export function createWidgetSession(payload: Omit<WidgetSessionPayload, "exp">, ttlSeconds = 1800) {
@@ -44,4 +39,3 @@ export function verifyWidgetSession(token: string): WidgetSessionPayload | null 
     return null;
   }
 }
-

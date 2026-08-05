@@ -1,10 +1,11 @@
 import { createHash } from "node:crypto";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
+import { getWidgetIpHashSalt } from "@/lib/widget/security";
 
 export function hashRequestIp(headers: Headers) {
   const forwarded = headers.get("x-forwarded-for")?.split(",")[0]?.trim();
   const ip = forwarded || headers.get("x-real-ip") || "unknown";
-  const salt = process.env.WIDGET_IP_HASH_SALT || process.env.WIDGET_SESSION_SECRET || "mg-widget";
+  const salt = getWidgetIpHashSalt();
   return createHash("sha256").update(`${salt}:${ip}`).digest("hex");
 }
 
@@ -30,7 +31,6 @@ export async function consumeWidgetRateLimit(clientId: string, limit = 120) {
     p_client_id: clientId,
     p_limit: limit,
   });
-  if (error) return true;
+  if (error) throw error;
   return Boolean(data);
 }
-

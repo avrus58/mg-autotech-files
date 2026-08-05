@@ -50,6 +50,43 @@ Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
 
+### MANUAL-021 [P0] Widget SaaS ticari kontrol merkezi ve guvenlik sertlestirmesi
+
+Durum: Done
+
+Fingerprint: `widget-saas|commercial-control-center|fragmented-client-operations-and-fail-open-edges|audited-professional-workspace`
+
+Kapsam: Widget Clients ve global Widget SaaS yonetimini ticari hesap sagligi,
+onboarding, kullanim, lead teslimi, domain/key yasam dongusu ve admin aksiyon
+kuyruguyla tek profesyonel merkezde birlestir. Musteri paneline kurulum hazirligi
+ve guvenli aggregate metrikler ekle; public/customer projection, domain, key,
+kota ve oran sinirlarini fail-closed hale getir. Fiyat ve Stripe sahipligi
+degistirilmez.
+
+Sonuc: Admin listesi ticari portfoy ozeti, aksiyon kuyrugu ve responsive hesap
+tablosu; detay ekrani Overview/Configuration/Security/Leads/Activity sekmeleri;
+global ayarlar kontrollu emergency stop ve server-only security readiness sunar.
+Musteri paneli dort adimli kurulum, aylik yukleme ve lead sagligini gosterir.
+Domain ve key islemleri atomik RPC, neden zorunlulugu, audit triggerlari ve tekil
+DB indeksleriyle korunur. Ham Stripe kimligi, IP hash, user-agent ve audit
+internalleri customer/public response'a cikmaz. Dedicated widget session secret
+ve IP hash salt zorunludur; kota/rate-limit altyapisi dogrulanamazsa widget
+fail-closed durur.
+
+Dogrulama: Targeted regression tests PASS (112/112); lint PASS; web+desktop typecheck PASS;
+full tests PASS (625/625); production build PASS (266 static page); i18n/SEO
+PASS (12 locale, 611/611); payment schema-only PASS ve env okunmadi; homepage
+performance PASS (60.9 KB gzip / 80 KB); high-severity audit threshold PASS
+(Next/PostCSS zincirinde 2 mevcut moderate advisory); local responsive browser
+gate QA PASS (1440x900, 1024x720, 768x1024, 390x844; sifir yatay tasma ve
+console error); diff check PASS.
+
+Release notu: `scripts/harden-widget-saas-commercial.sql` additif migration ve
+`scripts/verify-widget-saas-commercial.sql` read-only dogrulamadir. Migration
+calistirilmadi. Canli release oncesi dokumandaki conflict preflight, SQL,
+verification ve `WIDGET_SESSION_SECRET` / `WIDGET_IP_HASH_SALT` konfigurasyonu
+tamamlanmalidir. Push/deploy veya production mutation yapilmadi.
+
 ### MANUAL-020 [P0] Search Console ve GA4 canli raporlama baglantisi
 
 Durum: Done

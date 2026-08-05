@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { checkAdaptiveRateLimit, rateLimitResponseHeaders } from "@/lib/abuseProtection";
 import { sendWidgetEnquiryEmail } from "@/lib/email";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { widgetCorsHeaders, widgetOptions, widgetUnavailable } from "@/lib/widget/http";
 import { hashRequestIp } from "@/lib/widget/usage";
 import { validateWidgetClient } from "@/lib/widget/validation";
 import { widgetVehicle } from "@/lib/widget/vehicles";
+import { widgetAbuseSubject } from "@/lib/widget/security";
 
 const enquirySchema = z.object({
   key: z.string().min(10).max(120),
@@ -34,6 +36,17 @@ export async function POST(request: NextRequest) {
   const originHeader = request.headers.get("origin") ?? "";
   const parsed = enquirySchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return widgetUnavailable("en", originHeader, 400);
+  const requestLimit = await checkAdaptiveRateLimit({
+    request,
+    scope: "widget-enquiry",
+    limit: 12,
+    windowMs: 10 * 60 * 1000,
+    suffix: widgetAbuseSubject(parsed.data.key, parsed.data.email),
+  });
+  const requestLimitHeaders = rateLimitResponseHeaders({ result: requestLimit, limit: 12, windowMs: 10 * 60 * 1000, blocked: !requestLimit.allowed });
+  if (!requestLimit.allowed) {
+    return NextResponse.json({ error: "Too many requests." }, { status: 429, headers: { ...widgetCorsHeaders(originHeader), ...requestLimitHeaders } });
+  }
 
   const validation = await validateWidgetClient(parsed.data.key, request.headers, parsed.data.lang, {
     path: "/api/widget/enquiry",
@@ -67,7 +80,10 @@ export async function POST(request: NextRequest) {
     .eq("client_id", client.id)
     .eq("ip_hash", ipHash)
     .gte("created_at", since);
-  if (!recent.error && (recent.count ?? 0) >= 5) {
+  if (recent.error) {
+    return NextResponse.json({ error: "Enquiry service is unavailable." }, { status: 503, headers: widgetCorsHeaders(responseOrigin) });
+  }
+  if ((recent.count ?? 0) >= 5) {
     return NextResponse.json({ error: "Too many requests." }, { status: 429, headers: widgetCorsHeaders(responseOrigin) });
   }
 
@@ -87,14 +103,10 @@ export async function POST(request: NextRequest) {
     request_domain: validation.requestDomain ?? null,
     ip_hash: ipHash,
   }).select("id").single();
-  const missingEnquirySchema = Boolean(enquiry.error && (
-    ["42P01", "PGRST204", "PGRST205"].includes(enquiry.error.code ?? "") ||
-    enquiry.error.message.includes("widget_enquiries")
-  ));
-  if ((enquiry.error || !enquiry.data) && !missingEnquirySchema) {
+  if (enquiry.error || !enquiry.data) {
     return NextResponse.json({ error: "Enquiry service is unavailable." }, { status: 503, headers: widgetCorsHeaders(responseOrigin) });
   }
-  const enquiryId = enquiry.data?.id ?? null;
+  const enquiryId = enquiry.data.id;
 
   try {
     await sendWidgetEnquiryEmail({
@@ -112,11 +124,11 @@ export async function POST(request: NextRequest) {
       performance,
       requestDomain: validation.requestDomain ?? "",
     });
-    if (enquiryId) await admin.from("widget_enquiries").update({ status: "delivered" }).eq("id", enquiryId);
+    await admin.from("widget_enquiries").update({ status: "delivered" }).eq("id", enquiryId);
   } catch {
-    if (enquiryId) await admin.from("widget_enquiries").update({ status: "delivery_failed" }).eq("id", enquiryId);
+    await admin.from("widget_enquiries").update({ status: "delivery_failed" }).eq("id", enquiryId);
     return NextResponse.json({ error: "Enquiry could not be delivered." }, { status: 502, headers: widgetCorsHeaders(responseOrigin) });
   }
 
-  return NextResponse.json({ ok: true, enquiryId }, { headers: widgetCorsHeaders(responseOrigin) });
+  return NextResponse.json({ ok: true, enquiryId }, { headers: { ...widgetCorsHeaders(responseOrigin), ...requestLimitHeaders } });
 }

@@ -669,22 +669,22 @@ test("customer widget dashboard shows retryable load errors without plan fallbac
 test("admin widget clients list surfaces pending domain review signals safely", () => {
   const route = readProjectFile("src", "app", "api", "admin", "widget-clients", "route.ts");
   const page = readProjectFile("src", "app", "admin", "widget-clients", "page.tsx");
+  const dataLoader = readProjectFile("src", "lib", "widget", "adminData.ts");
+  const commercial = readProjectFile("src", "lib", "widget", "commercial.ts");
 
-  assert.match(route, /\.from\("widget_domain_change_requests"\)/);
-  assert.match(route, /\.select\("client_id, requested_domain, created_at"\)/);
-  assert.match(route, /\.eq\("status", "pending"\)/);
-  assert.match(route, /pending_domain_request_count/);
-  assert.match(route, /latest_requested_domain/);
-  assert.doesNotMatch(route, /admin_note|old_domain|widget_audit_logs|actor_user_id|resolved_at/);
+  assert.match(route, /loadAdminWidgetClients/);
+  assert.match(dataLoader, /\.from\("widget_domain_change_requests"\)/);
+  assert.match(dataLoader, /\.select\("requested_domain, created_at"\)/);
+  assert.match(dataLoader, /\.eq\("status", "pending"\)/);
+  assert.match(dataLoader, /pending_domain_request_count/);
+  assert.match(dataLoader, /latest_requested_domain/);
+  assert.match(commercial, /Domain review waiting/);
+  assert.doesNotMatch(route + dataLoader, /admin_note|old_domain|widget_audit_logs|actor_user_id|resolved_at/);
 
-  assert.match(page, /pending_domain_request_count: number/);
-  assert.match(page, /latest_requested_domain: string \| null/);
-  assert.match(page, /Pending domain requests/);
-  assert.match(page, /Domain review/);
-  assert.match(page, /PendingDomainSignal/);
-  assert.match(page, /href=\{`\/admin\/widget-clients\/\$\{clientId\}`\}/);
-  assert.match(page, /pending domain request domain review/);
-  assert.match(page, /label="Pending"/);
+  assert.match(page, /domain reviews/);
+  assert.match(page, /domain review/);
+  assert.match(page, /href=\{`\/admin\/widget-clients\/\$\{client\.id\}`\}/);
+  assert.match(page, /Commercial action queue/);
   assert.doesNotMatch(page, /admin_note|old_domain|widget_audit_logs|actor_user_id/);
 });
 

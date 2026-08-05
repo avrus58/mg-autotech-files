@@ -79,6 +79,26 @@ async function writeAccessLog(input: {
   }
 }
 
+async function recordVerifiedOrigin(client: WidgetClient, requestDomain: string) {
+  if (client.domain_verified) return;
+  const admin = getSupabaseAdmin();
+  const verified = await admin
+    .from("widget_clients")
+    .update({ domain_verified: true })
+    .eq("id", client.id)
+    .eq("domain_verified", false)
+    .select("id")
+    .maybeSingle();
+  if (!verified.data || verified.error) return;
+  client.domain_verified = true;
+  await admin.from("widget_audit_logs").insert({
+    actor_user_id: null,
+    client_id: client.id,
+    action: "system.live_origin_verified",
+    details: { domain: requestDomain },
+  });
+}
+
 export async function validateWidgetClient(
   publicKey: string,
   headers: Headers,
@@ -144,15 +164,27 @@ export async function validateWidgetClient(
   );
   if (!language) return block("language_disabled", client);
 
-  const usage = await getMonthlyWidgetUsage(client.id).catch(() => 0);
+  let usage: number;
+  try {
+    usage = await getMonthlyWidgetUsage(client.id);
+  } catch {
+    return block("usage_unavailable", client, language);
+  }
   if (client.monthly_usage_limit > 0 && usage >= client.monthly_usage_limit) {
     return block("usage_limit_exceeded", client, language);
   }
 
   if (options.rateLimit !== false) {
-    const withinRateLimit = await consumeWidgetRateLimit(client.id);
+    let withinRateLimit: boolean;
+    try {
+      withinRateLimit = await consumeWidgetRateLimit(client.id);
+    } catch {
+      return block("rate_limit_unavailable", client, language);
+    }
     if (!withinRateLimit) return block("usage_limit_exceeded", client, language);
   }
+
+  if (requestDomain) await recordVerifiedOrigin(client, requestDomain);
 
   if (shouldLog) {
     await writeAccessLog({

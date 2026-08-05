@@ -24,12 +24,14 @@ test("customer widget payload exposes billing state booleans instead of raw Stri
   const route = readProjectFile("src", "app", "api", "widget", "client", "route.ts");
   const customerType = readProjectFile("src", "lib", "widget", "customerTypes.ts");
 
-  assert.match(route, /stripe_customer_id: stripeCustomerId/);
-  assert.match(route, /stripe_subscription_id: stripeSubscriptionId/);
-  assert.match(route, /\.\.\.customerSafeClient/);
-  assert.match(route, /billing_profile_linked: Boolean\(stripeCustomerId \|\| stripeSubscriptionId\)/);
-  assert.match(route, /subscription_linked: Boolean\(stripeSubscriptionId\)/);
-  assert.match(customerType, /Omit<WidgetClient, "stripe_customer_id" \| "stripe_subscription_id">/);
+  assert.match(route, /WIDGET_CUSTOMER_CLIENT_FIELDS/);
+  assert.match(route, /Object\.fromEntries\(safeFields\.map/);
+  assert.match(route, /function customerSafeClient/);
+  assert.match(route, /client: customerSafeClient\(client\)/);
+  assert.match(route, /billing_profile_linked: Boolean\(row\.stripe_customer_id \|\| row\.stripe_subscription_id\)/);
+  assert.match(route, /subscription_linked: Boolean\(row\.stripe_subscription_id\)/);
+  assert.doesNotMatch(customerType.split("export const WIDGET_CUSTOMER_CLIENT_FIELDS")[1].split("\.join")[0], /stripe_customer_id|stripe_subscription_id|user_id|admin_suspended/);
+  assert.match(customerType, /"stripe_customer_id" \| "stripe_subscription_id" \| "user_id" \| "admin_suspended"/);
 });
 
 test("widget dashboard and billing UI do not show a dead manage button when billing is unlinked", () => {
