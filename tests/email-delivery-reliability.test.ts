@@ -196,7 +196,8 @@ test("all Supabase Auth templates render every supported language with English f
         `${template.key}:${language}:hosted service name`
       );
     }
-    assert.match(hostedSubject, /else/);
+    assert.equal(hostedSubject, template.copy.en.subject);
+    assert.ok(hostedSubject.length <= 255, `${template.key}:Supabase hosted subject limit`);
   }
 
   const manifest = JSON.parse(readFileSync(

@@ -5,7 +5,7 @@
     "label": "Signup verification",
     "category": "authentication",
     "file": "confirm-signup.html",
-    "subject": "{{ if eq (index .Data \"email_language\") \"nl\" }}MG AutoTech - E-mailadres bevestigen{{ else }}{{ if eq (index .Data \"email_language\") \"de\" }}MG AutoTech - E-Mail-Adresse bestätigen{{ else }}{{ if eq (index .Data \"email_language\") \"fr\" }}MG AutoTech - Confirmer l'adresse e-mail{{ else }}{{ if eq (index .Data \"email_language\") \"it\" }}MG AutoTech - Conferma indirizzo e-mail{{ else }}{{ if eq (index .Data \"email_language\") \"ru\" }}MG AutoTech - Подтвердите адрес почты{{ else }}{{ if eq (index .Data \"email_language\") \"es\" }}MG AutoTech - Confirmar correo electrónico{{ else }}{{ if eq (index .Data \"email_language\") \"tr\" }}MG AutoTech - E-posta adresinizi doğrulayın{{ else }}{{ if eq (index .Data \"email_language\") \"pt\" }}MG AutoTech - Confirmar endereço de e-mail{{ else }}{{ if eq (index .Data \"email_language\") \"zh\" }}MG AutoTech - 确认电子邮箱{{ else }}{{ if eq (index .Data \"email_language\") \"pl\" }}MG AutoTech - Potwierdź adres e-mail{{ else }}{{ if eq (index .Data \"email_language\") \"sq\" }}MG AutoTech - Konfirmoni emailin{{ else }}MG AutoTech - Confirm your email address{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}"
+    "subject": "MG AutoTech - Confirm your email address"
   },
   {
     "key": "password_recovery",
@@ -13,7 +13,7 @@
     "label": "Password recovery",
     "category": "authentication",
     "file": "reset-password.html",
-    "subject": "{{ if eq (index .Data \"email_language\") \"nl\" }}MG AutoTech - Nieuw wachtwoord instellen{{ else }}{{ if eq (index .Data \"email_language\") \"de\" }}MG AutoTech - Passwort zurücksetzen{{ else }}{{ if eq (index .Data \"email_language\") \"fr\" }}MG AutoTech - Définir un nouveau mot de passe{{ else }}{{ if eq (index .Data \"email_language\") \"it\" }}MG AutoTech - Imposta una nuova password{{ else }}{{ if eq (index .Data \"email_language\") \"ru\" }}MG AutoTech - Установите новый пароль{{ else }}{{ if eq (index .Data \"email_language\") \"es\" }}MG AutoTech - Establecer nueva contraseña{{ else }}{{ if eq (index .Data \"email_language\") \"tr\" }}MG AutoTech - Şifrenizi sıfırlayın{{ else }}{{ if eq (index .Data \"email_language\") \"pt\" }}MG AutoTech - Definir nova palavra-passe{{ else }}{{ if eq (index .Data \"email_language\") \"zh\" }}MG AutoTech - 设置新密码{{ else }}{{ if eq (index .Data \"email_language\") \"pl\" }}MG AutoTech - Ustaw nowe hasło{{ else }}{{ if eq (index .Data \"email_language\") \"sq\" }}MG AutoTech - Vendosni fjalëkalim të ri{{ else }}MG AutoTech - Reset your password{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}"
+    "subject": "MG AutoTech - Reset your password"
   },
   {
     "key": "invite_user",
@@ -21,7 +21,7 @@
     "label": "Account invitation",
     "category": "authentication",
     "file": "invite-user.html",
-    "subject": "{{ if eq (index .Data \"email_language\") \"nl\" }}MG AutoTech - Uw uitnodiging{{ else }}{{ if eq (index .Data \"email_language\") \"de\" }}MG AutoTech - Einladung zum Kundenportal{{ else }}{{ if eq (index .Data \"email_language\") \"fr\" }}MG AutoTech - Votre invitation{{ else }}{{ if eq (index .Data \"email_language\") \"it\" }}MG AutoTech - Il tuo invito{{ else }}{{ if eq (index .Data \"email_language\") \"ru\" }}MG AutoTech - Ваше приглашение{{ else }}{{ if eq (index .Data \"email_language\") \"es\" }}MG AutoTech - Tu invitación{{ else }}{{ if eq (index .Data \"email_language\") \"tr\" }}MG AutoTech - Müşteri paneli daveti{{ else }}{{ if eq (index .Data \"email_language\") \"pt\" }}MG AutoTech - O seu convite{{ else }}{{ if eq (index .Data \"email_language\") \"zh\" }}MG AutoTech - 您的邀请{{ else }}{{ if eq (index .Data \"email_language\") \"pl\" }}MG AutoTech - Twoje zaproszenie{{ else }}{{ if eq (index .Data \"email_language\") \"sq\" }}MG AutoTech - Ftesa juaj{{ else }}MG AutoTech - Customer portal invitation{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}"
+    "subject": "MG AutoTech - Customer portal invitation"
   },
   {
     "key": "magic_link",
@@ -29,7 +29,7 @@
     "label": "Secure sign-in link",
     "category": "authentication",
     "file": "magic-link.html",
-    "subject": "{{ if eq (index .Data \"email_language\") \"nl\" }}MG AutoTech - Veilig aanmelden{{ else }}{{ if eq (index .Data \"email_language\") \"de\" }}MG AutoTech - Sicherer Anmeldelink{{ else }}{{ if eq (index .Data \"email_language\") \"fr\" }}MG AutoTech - Connexion sécurisée{{ else }}{{ if eq (index .Data \"email_language\") \"it\" }}MG AutoTech - Accesso sicuro{{ else }}{{ if eq (index .Data \"email_language\") \"ru\" }}MG AutoTech - Безопасный вход{{ else }}{{ if eq (index .Data \"email_language\") \"es\" }}MG AutoTech - Inicio de sesión seguro{{ else }}{{ if eq (index .Data \"email_language\") \"tr\" }}MG AutoTech - Güvenli giriş bağlantısı{{ else }}{{ if eq (index .Data \"email_language\") \"pt\" }}MG AutoTech - Início de sessão seguro{{ else }}{{ if eq (index .Data \"email_language\") \"zh\" }}MG AutoTech - 安全登录{{ else }}{{ if eq (index .Data \"email_language\") \"pl\" }}MG AutoTech - Bezpieczne logowanie{{ else }}{{ if eq (index .Data \"email_language\") \"sq\" }}MG AutoTech - Hyrje e sigurt{{ else }}MG AutoTech - Secure sign-in link{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}"
+    "subject": "MG AutoTech - Secure sign-in link"
   },
   {
     "key": "email_change",
@@ -37,7 +37,7 @@
     "label": "Email address change verification",
     "category": "authentication",
     "file": "email-change.html",
-    "subject": "{{ if eq (index .Data \"email_language\") \"nl\" }}MG AutoTech - Nieuw e-mailadres bevestigen{{ else }}{{ if eq (index .Data \"email_language\") \"de\" }}MG AutoTech - Neue E-Mail-Adresse bestätigen{{ else }}{{ if eq (index .Data \"email_language\") \"fr\" }}MG AutoTech - Confirmer la nouvelle adresse{{ else }}{{ if eq (index .Data \"email_language\") \"it\" }}MG AutoTech - Conferma nuova e-mail{{ else }}{{ if eq (index .Data \"email_language\") \"ru\" }}MG AutoTech - Подтвердите новый адрес{{ else }}{{ if eq (index .Data \"email_language\") \"es\" }}MG AutoTech - Confirmar nuevo correo{{ else }}{{ if eq (index .Data \"email_language\") \"tr\" }}MG AutoTech - Yeni e-posta adresinizi doğrulayın{{ else }}{{ if eq (index .Data \"email_language\") \"pt\" }}MG AutoTech - Confirmar novo e-mail{{ else }}{{ if eq (index .Data \"email_language\") \"zh\" }}MG AutoTech - 确认新邮箱{{ else }}{{ if eq (index .Data \"email_language\") \"pl\" }}MG AutoTech - Potwierdź nowy e-mail{{ else }}{{ if eq (index .Data \"email_language\") \"sq\" }}MG AutoTech - Konfirmoni emailin e ri{{ else }}MG AutoTech - Confirm your new email address{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}"
+    "subject": "MG AutoTech - Confirm your new email address"
   },
   {
     "key": "reauthentication",
@@ -45,7 +45,7 @@
     "label": "Sensitive-action verification code",
     "category": "authentication",
     "file": "reauthentication.html",
-    "subject": "{{ if eq (index .Data \"email_language\") \"nl\" }}MG AutoTech - Bevestig uw identiteit{{ else }}{{ if eq (index .Data \"email_language\") \"de\" }}MG AutoTech - Sicherheitscode{{ else }}{{ if eq (index .Data \"email_language\") \"fr\" }}MG AutoTech - Confirmer votre identité{{ else }}{{ if eq (index .Data \"email_language\") \"it\" }}MG AutoTech - Conferma la tua identità{{ else }}{{ if eq (index .Data \"email_language\") \"ru\" }}MG AutoTech - Подтвердите личность{{ else }}{{ if eq (index .Data \"email_language\") \"es\" }}MG AutoTech - Confirma tu identidad{{ else }}{{ if eq (index .Data \"email_language\") \"tr\" }}MG AutoTech - Güvenlik kodu{{ else }}{{ if eq (index .Data \"email_language\") \"pt\" }}MG AutoTech - Confirmar identidade{{ else }}{{ if eq (index .Data \"email_language\") \"zh\" }}MG AutoTech - 确认您的身份{{ else }}{{ if eq (index .Data \"email_language\") \"pl\" }}MG AutoTech - Potwierdź tożsamość{{ else }}{{ if eq (index .Data \"email_language\") \"sq\" }}MG AutoTech - Konfirmoni identitetin{{ else }}MG AutoTech - Security code{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}"
+    "subject": "MG AutoTech - Security code"
   },
   {
     "key": "password_changed",
@@ -53,7 +53,7 @@
     "label": "Password changed",
     "category": "security",
     "file": "password-changed.html",
-    "subject": "{{ if eq (index .Data \"email_language\") \"nl\" }}MG AutoTech - Uw wachtwoord is gewijzigd{{ else }}{{ if eq (index .Data \"email_language\") \"de\" }}MG AutoTech - Ihr Passwort wurde geändert{{ else }}{{ if eq (index .Data \"email_language\") \"fr\" }}MG AutoTech - Votre mot de passe a été modifié{{ else }}{{ if eq (index .Data \"email_language\") \"it\" }}MG AutoTech - La password è stata modificata{{ else }}{{ if eq (index .Data \"email_language\") \"ru\" }}MG AutoTech - Пароль изменён{{ else }}{{ if eq (index .Data \"email_language\") \"es\" }}MG AutoTech - Tu contraseña cambió{{ else }}{{ if eq (index .Data \"email_language\") \"tr\" }}MG AutoTech - Şifreniz değiştirildi{{ else }}{{ if eq (index .Data \"email_language\") \"pt\" }}MG AutoTech - A palavra-passe foi alterada{{ else }}{{ if eq (index .Data \"email_language\") \"zh\" }}MG AutoTech - 密码已更改{{ else }}{{ if eq (index .Data \"email_language\") \"pl\" }}MG AutoTech - Hasło zostało zmienione{{ else }}{{ if eq (index .Data \"email_language\") \"sq\" }}MG AutoTech - Fjalëkalimi u ndryshua{{ else }}MG AutoTech - Your password was changed{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}"
+    "subject": "MG AutoTech - Your password was changed"
   },
   {
     "key": "email_changed",
@@ -61,7 +61,7 @@
     "label": "Email address changed",
     "category": "security",
     "file": "email-changed.html",
-    "subject": "{{ if eq (index .Data \"email_language\") \"nl\" }}MG AutoTech - Uw e-mailadres is gewijzigd{{ else }}{{ if eq (index .Data \"email_language\") \"de\" }}MG AutoTech - Ihre E-Mail-Adresse wurde geändert{{ else }}{{ if eq (index .Data \"email_language\") \"fr\" }}MG AutoTech - Votre adresse e-mail a été modifiée{{ else }}{{ if eq (index .Data \"email_language\") \"it\" }}MG AutoTech - L'indirizzo e-mail è stato modificato{{ else }}{{ if eq (index .Data \"email_language\") \"ru\" }}MG AutoTech - Адрес почты изменён{{ else }}{{ if eq (index .Data \"email_language\") \"es\" }}MG AutoTech - Tu correo cambió{{ else }}{{ if eq (index .Data \"email_language\") \"tr\" }}MG AutoTech - E-posta adresiniz değiştirildi{{ else }}{{ if eq (index .Data \"email_language\") \"pt\" }}MG AutoTech - O e-mail foi alterado{{ else }}{{ if eq (index .Data \"email_language\") \"zh\" }}MG AutoTech - 邮箱已更改{{ else }}{{ if eq (index .Data \"email_language\") \"pl\" }}MG AutoTech - Adres e-mail został zmieniony{{ else }}{{ if eq (index .Data \"email_language\") \"sq\" }}MG AutoTech - Emaili u ndryshua{{ else }}MG AutoTech - Your email address was changed{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}"
+    "subject": "MG AutoTech - Your email address was changed"
   },
   {
     "key": "phone_changed",
@@ -69,7 +69,7 @@
     "label": "Phone number changed",
     "category": "security",
     "file": "phone-changed.html",
-    "subject": "{{ if eq (index .Data \"email_language\") \"nl\" }}MG AutoTech - Uw telefoonnummer is gewijzigd{{ else }}{{ if eq (index .Data \"email_language\") \"de\" }}MG AutoTech - Ihre Telefonnummer wurde geändert{{ else }}{{ if eq (index .Data \"email_language\") \"fr\" }}MG AutoTech - Votre numéro a été modifié{{ else }}{{ if eq (index .Data \"email_language\") \"it\" }}MG AutoTech - Il numero di telefono è stato modificato{{ else }}{{ if eq (index .Data \"email_language\") \"ru\" }}MG AutoTech - Телефон изменён{{ else }}{{ if eq (index .Data \"email_language\") \"es\" }}MG AutoTech - Tu teléfono cambió{{ else }}{{ if eq (index .Data \"email_language\") \"tr\" }}MG AutoTech - Telefon numaranız değiştirildi{{ else }}{{ if eq (index .Data \"email_language\") \"pt\" }}MG AutoTech - O telefone foi alterado{{ else }}{{ if eq (index .Data \"email_language\") \"zh\" }}MG AutoTech - 手机号已更改{{ else }}{{ if eq (index .Data \"email_language\") \"pl\" }}MG AutoTech - Numer telefonu został zmieniony{{ else }}{{ if eq (index .Data \"email_language\") \"sq\" }}MG AutoTech - Telefoni u ndryshua{{ else }}MG AutoTech - Your phone number was changed{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}"
+    "subject": "MG AutoTech - Your phone number was changed"
   },
   {
     "key": "identity_linked",
@@ -77,7 +77,7 @@
     "label": "Sign-in method linked",
     "category": "security",
     "file": "identity-linked.html",
-    "subject": "{{ if eq (index .Data \"email_language\") \"nl\" }}MG AutoTech - Aanmeldmethode gekoppeld{{ else }}{{ if eq (index .Data \"email_language\") \"de\" }}MG AutoTech - Neue Anmeldemethode verknüpft{{ else }}{{ if eq (index .Data \"email_language\") \"fr\" }}MG AutoTech - Méthode de connexion ajoutée{{ else }}{{ if eq (index .Data \"email_language\") \"it\" }}MG AutoTech - Metodo di accesso collegato{{ else }}{{ if eq (index .Data \"email_language\") \"ru\" }}MG AutoTech - Способ входа добавлен{{ else }}{{ if eq (index .Data \"email_language\") \"es\" }}MG AutoTech - Método de acceso añadido{{ else }}{{ if eq (index .Data \"email_language\") \"tr\" }}MG AutoTech - Giriş yöntemi bağlandı{{ else }}{{ if eq (index .Data \"email_language\") \"pt\" }}MG AutoTech - Método de acesso associado{{ else }}{{ if eq (index .Data \"email_language\") \"zh\" }}MG AutoTech - 已添加登录方式{{ else }}{{ if eq (index .Data \"email_language\") \"pl\" }}MG AutoTech - Dodano metodę logowania{{ else }}{{ if eq (index .Data \"email_language\") \"sq\" }}MG AutoTech - Metoda e hyrjes u shtua{{ else }}MG AutoTech - A sign-in method was linked{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}"
+    "subject": "MG AutoTech - A sign-in method was linked"
   },
   {
     "key": "identity_unlinked",
@@ -85,7 +85,7 @@
     "label": "Sign-in method removed",
     "category": "security",
     "file": "identity-unlinked.html",
-    "subject": "{{ if eq (index .Data \"email_language\") \"nl\" }}MG AutoTech - Aanmeldmethode verwijderd{{ else }}{{ if eq (index .Data \"email_language\") \"de\" }}MG AutoTech - Anmeldemethode entfernt{{ else }}{{ if eq (index .Data \"email_language\") \"fr\" }}MG AutoTech - Méthode de connexion supprimée{{ else }}{{ if eq (index .Data \"email_language\") \"it\" }}MG AutoTech - Metodo di accesso rimosso{{ else }}{{ if eq (index .Data \"email_language\") \"ru\" }}MG AutoTech - Способ входа удалён{{ else }}{{ if eq (index .Data \"email_language\") \"es\" }}MG AutoTech - Método de acceso eliminado{{ else }}{{ if eq (index .Data \"email_language\") \"tr\" }}MG AutoTech - Giriş yöntemi kaldırıldı{{ else }}{{ if eq (index .Data \"email_language\") \"pt\" }}MG AutoTech - Método de acesso removido{{ else }}{{ if eq (index .Data \"email_language\") \"zh\" }}MG AutoTech - 已移除登录方式{{ else }}{{ if eq (index .Data \"email_language\") \"pl\" }}MG AutoTech - Usunięto metodę logowania{{ else }}{{ if eq (index .Data \"email_language\") \"sq\" }}MG AutoTech - Metoda e hyrjes u hoq{{ else }}MG AutoTech - A sign-in method was removed{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}"
+    "subject": "MG AutoTech - A sign-in method was removed"
   },
   {
     "key": "mfa_factor_enrolled",
@@ -93,7 +93,7 @@
     "label": "Verification method added",
     "category": "security",
     "file": "mfa-factor-enrolled.html",
-    "subject": "{{ if eq (index .Data \"email_language\") \"nl\" }}MG AutoTech - Verificatiemethode toegevoegd{{ else }}{{ if eq (index .Data \"email_language\") \"de\" }}MG AutoTech - Neue Verifizierungsmethode hinzugefügt{{ else }}{{ if eq (index .Data \"email_language\") \"fr\" }}MG AutoTech - Méthode de vérification ajoutée{{ else }}{{ if eq (index .Data \"email_language\") \"it\" }}MG AutoTech - Metodo di verifica aggiunto{{ else }}{{ if eq (index .Data \"email_language\") \"ru\" }}MG AutoTech - Способ проверки добавлен{{ else }}{{ if eq (index .Data \"email_language\") \"es\" }}MG AutoTech - Método de verificación añadido{{ else }}{{ if eq (index .Data \"email_language\") \"tr\" }}MG AutoTech - Doğrulama yöntemi eklendi{{ else }}{{ if eq (index .Data \"email_language\") \"pt\" }}MG AutoTech - Método de verificação adicionado{{ else }}{{ if eq (index .Data \"email_language\") \"zh\" }}MG AutoTech - 已添加验证方式{{ else }}{{ if eq (index .Data \"email_language\") \"pl\" }}MG AutoTech - Dodano metodę weryfikacji{{ else }}{{ if eq (index .Data \"email_language\") \"sq\" }}MG AutoTech - Metoda e verifikimit u shtua{{ else }}MG AutoTech - A verification method was added{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}"
+    "subject": "MG AutoTech - A verification method was added"
   },
   {
     "key": "mfa_factor_unenrolled",
@@ -101,6 +101,6 @@
     "label": "Verification method removed",
     "category": "security",
     "file": "mfa-factor-unenrolled.html",
-    "subject": "{{ if eq (index .Data \"email_language\") \"nl\" }}MG AutoTech - Verificatiemethode verwijderd{{ else }}{{ if eq (index .Data \"email_language\") \"de\" }}MG AutoTech - Verifizierungsmethode entfernt{{ else }}{{ if eq (index .Data \"email_language\") \"fr\" }}MG AutoTech - Méthode de vérification supprimée{{ else }}{{ if eq (index .Data \"email_language\") \"it\" }}MG AutoTech - Metodo di verifica rimosso{{ else }}{{ if eq (index .Data \"email_language\") \"ru\" }}MG AutoTech - Способ проверки удалён{{ else }}{{ if eq (index .Data \"email_language\") \"es\" }}MG AutoTech - Método de verificación eliminado{{ else }}{{ if eq (index .Data \"email_language\") \"tr\" }}MG AutoTech - Doğrulama yöntemi kaldırıldı{{ else }}{{ if eq (index .Data \"email_language\") \"pt\" }}MG AutoTech - Método de verificação removido{{ else }}{{ if eq (index .Data \"email_language\") \"zh\" }}MG AutoTech - 已移除验证方式{{ else }}{{ if eq (index .Data \"email_language\") \"pl\" }}MG AutoTech - Usunięto metodę weryfikacji{{ else }}{{ if eq (index .Data \"email_language\") \"sq\" }}MG AutoTech - Metoda e verifikimit u hoq{{ else }}MG AutoTech - A verification method was removed{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}{{ end }}"
+    "subject": "MG AutoTech - A verification method was removed"
   }
 ]

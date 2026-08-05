@@ -240,5 +240,8 @@ export function buildSupabaseAuthTemplateHtml(key: string) {
 export function buildSupabaseAuthTemplateSubject(key: string) {
   const template = getSupabaseAuthTemplateDefinition(key);
   if (!template) return null;
-  return buildLanguageConditional(template, (copy) => copy.subject);
+  // Hosted Supabase subjects are limited to 255 characters. The fully localized
+  // body remains language-aware; the short English subject is the safe fallback
+  // shared by every locale.
+  return template.copy.en.subject;
 }

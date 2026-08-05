@@ -18,6 +18,8 @@ import {
   Workflow,
 } from "lucide-react";
 import { authenticatedFetch } from "@/lib/authGuards";
+import { supportedLocales } from "@/lib/i18nConfig";
+import type { TransactionalEmailLanguage } from "@/lib/email/types";
 
 type EmailAdminData = {
   provider: {
@@ -93,7 +95,7 @@ export default function AdminEmailPage() {
   const [previewing, setPreviewing] = useState(false);
   const [previewSource, setPreviewSource] = useState<"transactional" | "supabase_auth">("transactional");
   const [previewTemplate, setPreviewTemplate] = useState("request_created");
-  const [previewLanguage, setPreviewLanguage] = useState<"en" | "de" | "tr">("en");
+  const [previewLanguage, setPreviewLanguage] = useState<TransactionalEmailLanguage>("en");
   const [preview, setPreview] = useState<EmailPreview | null>(null);
 
   async function load() {
@@ -251,7 +253,7 @@ export default function AdminEmailPage() {
                   <LockKeyhole className="h-4 w-4 text-sky-300" />Authentication mail
                 </div>
                 <p className="text-xs leading-5 text-zinc-400">
-                  Verification, recovery and security notices are issued by Supabase Auth. All 13 reviewed templates support English, German and Turkish with English as the safe fallback.
+                  Verification, recovery and security notices are issued by Supabase Auth. All 13 reviewed templates support every website language, with English as the safe fallback.
                 </p>
                 <div className="mt-3 divide-y divide-white/10 border-y border-white/10">
                   {data.authFlows.map((flow) => (
@@ -310,12 +312,12 @@ export default function AdminEmailPage() {
                     <span className="mb-2 block text-[10px] font-black uppercase tracking-[0.14em] text-zinc-500">Language</span>
                     <select
                       value={previewLanguage}
-                      onChange={(event) => { setPreviewLanguage(event.target.value as "en" | "de" | "tr"); setPreview(null); }}
+                      onChange={(event) => { setPreviewLanguage(event.target.value as TransactionalEmailLanguage); setPreview(null); }}
                       className="h-11 w-full rounded-lg border border-white/10 bg-[#0a0a0a] px-3 text-sm font-bold outline-none focus:border-red-700"
                     >
-                      <option value="en">English</option>
-                      <option value="de">Deutsch</option>
-                      <option value="tr">Turkce</option>
+                      {supportedLocales.map((locale) => (
+                        <option key={locale.code} value={locale.code}>{locale.name}</option>
+                      ))}
                     </select>
                   </label>
                   <button

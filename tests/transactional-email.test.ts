@@ -458,6 +458,11 @@ test("admin email control center exposes health, auth flows and lifecycle covera
   const route = readFileSync(resolve(process.cwd(), "src", "app", "api", "admin", "email", "route.ts"), "utf8");
   assert.match(page, /Lifecycle coverage/);
   assert.match(page, /Authentication mail/);
+  assert.match(page, /supportedLocales\.map/);
+  assert.match(page, /every website language/);
+  assert.doesNotMatch(page, /English, German and Turkish/);
+  assert.match(route, /supportedTransactionalEmailLanguages\.includes/);
+  assert.doesNotMatch(route, /z\.enum\(\["en", "de", "tr"\]\)/);
   assert.match(page, /Dry-run \/ skipped/);
   assert.match(route, /eventSummary/);
   assert.match(route, /authFlows/);

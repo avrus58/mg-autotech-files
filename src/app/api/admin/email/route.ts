@@ -18,12 +18,18 @@ import {
   transactionalEmailEventTypes,
   type TransactionalEmailLanguage,
 } from "@/lib/email/types";
+import { supportedTransactionalEmailLanguages } from "@/lib/email/language";
+
+const transactionalEmailLanguageSchema = z.custom<TransactionalEmailLanguage>(
+  (value) => supportedTransactionalEmailLanguages.includes(value as TransactionalEmailLanguage),
+  { message: "Unsupported email language." }
+);
 
 const testSchema = z.object({
   action: z.enum(["send_test", "preview"]).optional().default("send_test"),
   source: z.enum(["transactional", "supabase_auth"]).optional().default("transactional"),
   eventType: z.string().trim().min(1).max(100).optional().default("admin_email_test"),
-  language: z.enum(["en", "de", "tr"]).optional().default("en"),
+  language: transactionalEmailLanguageSchema.optional().default("en"),
   testId: z.string().uuid().optional(),
 }).strict();
 
@@ -190,7 +196,7 @@ export async function POST(request: Request) {
       }
       const preview = renderSupabaseAuthTemplatePreview(
         parsed.data.eventType,
-        parsed.data.language as TransactionalEmailLanguage
+        parsed.data.language
       );
       return NextResponse.json({ preview });
     }
@@ -202,7 +208,7 @@ export async function POST(request: Request) {
       preview: renderTransactionalEmailTemplate(
         parsed.data.eventType as (typeof transactionalEmailEventTypes)[number],
         sampleEmailContext(),
-        parsed.data.language as TransactionalEmailLanguage
+        parsed.data.language
       ),
     });
   }

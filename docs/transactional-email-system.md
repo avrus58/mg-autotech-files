@@ -247,9 +247,12 @@ password recovery, invitations, magic links, email changes, reauthentication
 and all supported security notifications. The complete mapping, subject
 template and file name are recorded in `docs/email-templates/manifest.json`.
 
-Every template selects one of the 12 reviewed languages from the
+Every template body selects one of the 12 reviewed languages from the
 `email_language` user metadata. Missing or unsupported metadata uses English.
-The language value affects content only; it is never an authorization input.
+Hosted Supabase subject lines use a short English action label because Supabase
+enforces a 255-character subject limit and a safe 12-language conditional cannot
+fit inside that boundary. The language value affects content only; it is never
+an authorization input.
 Regenerate reviewed sources with:
 
 `tsx scripts/generate-supabase-auth-email-templates.ts`
@@ -290,7 +293,7 @@ the hosted Supabase project.
    - `EMAIL_FROM`
    - `ADMIN_NOTIFICATION_EMAIL`
    - `SUPPORT_EMAIL`
-5. Apply all reviewed 12-language Auth subjects and bodies in hosted Supabase.
+5. Apply all reviewed short Auth subjects and 12-language bodies in hosted Supabase.
 6. Register the HTTPS Resend webhook for the seven tracked delivery events.
 7. Keep `EMAIL_DRY_RUN=true` until controlled template, log and webhook tests pass.
 8. Disable dry-run only after confirming sender domain/DNS and suppression behavior.
