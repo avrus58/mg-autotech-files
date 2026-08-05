@@ -44,6 +44,11 @@ import type {
   DtcAnalyzerAdminConfigStatus,
   DtcAnalyzerUsageLimitPublicProjection,
 } from "@/lib/dtcAnalyzer/config";
+import type {
+  CustomerDeliveryHistory,
+  CustomerDeliverySummary,
+} from "@/lib/customerOrderDelivery";
+import { formatFileVersionLabel } from "@/lib/fileVersionLabels";
 
 type DetailPayload = {
   migrationReady: boolean;
@@ -72,6 +77,10 @@ type DetailPayload = {
     created_at: string;
   }>;
   events: Array<{ id: string; event_type: string; message: string | null; created_at: string; customer_visible: boolean }>;
+  deliveryHistory: CustomerDeliveryHistory & {
+    summary: CustomerDeliverySummary;
+    trackingAvailable: boolean;
+  };
   fileExpert: { linked: boolean; job: Record<string, unknown> | null; warning: string | null };
   aiEvidence: {
     trainingSamples: Array<Record<string, unknown>>;
@@ -112,6 +121,7 @@ function text(value: unknown) {
 function formatDate(value: unknown) {
   if (typeof value !== "string" || !value) return "-";
   return new Intl.DateTimeFormat("de-DE", {
+    timeZone: "Europe/Berlin",
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
@@ -372,6 +382,17 @@ export default function WorkOrderDetailClient() {
   }
 
   const modifiedFiles = useMemo(() => parseModifiedFiles(payload?.order.modified_files), [payload]);
+  const modifiedFilePaths = useMemo(
+    () => new Map(
+      modifiedFiles
+        .filter((file): file is ModifiedFile & { id: string; file_path: string } =>
+          typeof file.id === "string" && Boolean(file.id) &&
+          typeof file.file_path === "string" && Boolean(file.file_path)
+        )
+        .map((file) => [file.id, file.file_path])
+    ),
+    [modifiedFiles]
+  );
 
   if (loading) {
     return (
@@ -403,6 +424,10 @@ export default function WorkOrderDetailClient() {
   const customerAdminNote = typeof customer?.internal_admin_note === "string" && customer.internal_admin_note.trim()
     ? customer.internal_admin_note
     : "";
+  const resolveDeliveryPath = (versionId: string) =>
+    versionId === "legacy-final"
+      ? order.modified_file_path
+      : modifiedFilePaths.get(versionId) ?? null;
 
   return (
     <main className="mg-compact-ui min-h-screen bg-[#050505] text-white">
@@ -498,18 +523,47 @@ export default function WorkOrderDetailClient() {
             </section>
 
             <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
-              <div className="mb-5 flex items-center gap-3"><FileDown className="h-7 w-7 text-red-400" /><h2 className="text-2xl font-black">Files</h2></div>
-              <div className="grid gap-3 md:grid-cols-2">
-                <FileCard title="Original file" ready={Boolean(order.original_file_path)} fileName={text(order.uploaded_file_name)} onDownload={() => downloadPrivateFile(order.original_file_path)} />
-                <FileCard title="Legacy latest modified" ready={Boolean(order.modified_file_path)} fileName={order.modified_file_path ? "Stored privately" : "Not delivered"} onDownload={() => downloadPrivateFile(order.modified_file_path)} />
+              <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                <div className="flex items-center gap-3"><FileDown className="h-7 w-7 text-red-400" /><div><h2 className="text-2xl font-black">Files & delivery</h2><p className="mt-1 text-sm text-zinc-500">Private source file and customer delivery activity.</p></div></div>
+                <span className={`w-fit rounded-full border px-3 py-1.5 text-xs font-black ${payload.deliveryHistory.trackingAvailable ? "border-emerald-700/35 bg-emerald-950/20 text-emerald-300" : "border-amber-700/35 bg-amber-950/20 text-amber-200"}`}>
+                  {payload.deliveryHistory.trackingAvailable ? "Download tracking active" : "Tracking temporarily unavailable"}
+                </span>
               </div>
-              {modifiedFiles.length > 0 && (
-                <div className="mt-4 grid gap-3 md:grid-cols-2">
-                  {modifiedFiles.map((file, index) => (
-                    <FileCard key={file.id || `${file.file_name}-${index}`} title={`Delivered ${labelFromToken(file.label || "file")}`} ready fileName={file.file_name || "Modified file"} onDownload={() => downloadPrivateFile(file.file_path)} />
-                  ))}
+              <FileCard title="Original file" ready={Boolean(order.original_file_path)} fileName={text(order.uploaded_file_name)} onDownload={() => downloadPrivateFile(order.original_file_path)} />
+
+              <div className="mt-4 overflow-hidden rounded-2xl border border-emerald-800/30 bg-emerald-950/[0.08]">
+                <div className="grid grid-cols-2 divide-x divide-y divide-white/10 sm:grid-cols-4 sm:divide-y-0">
+                  <DeliveryMetric label="Delivered versions" value={payload.deliveryHistory.summary.deliveredVersionCount} />
+                  <DeliveryMetric label="Portal downloads" value={payload.deliveryHistory.trackingAvailable ? payload.deliveryHistory.summary.totalDownloadCount : "Unavailable"} />
+                  <DeliveryMetric label="Latest delivery" value={formatDate(payload.deliveryHistory.summary.latestDeliveredAt)} compact />
+                  <DeliveryMetric label="Last download" value={payload.deliveryHistory.trackingAvailable ? formatDate(payload.deliveryHistory.summary.lastDownloadedAt) : "Unavailable"} compact />
                 </div>
-              )}
+                <div className="border-t border-white/10 p-3 text-[11px] leading-5 text-zinc-500">
+                  Times use Europe/Berlin. Portal downloads are counted when a secure temporary customer link is issued.
+                </div>
+              </div>
+
+              <div className="mt-4 space-y-3">
+                {payload.deliveryHistory.versions.length > 0 ? payload.deliveryHistory.versions.map((version, index) => {
+                  const filePath = resolveDeliveryPath(version.id);
+                  return (
+                    <DeliveryVersionCard
+                      key={version.id}
+                      versionNumber={index + 1}
+                      label={version.label}
+                      fileName={version.fileName}
+                      deliveredAt={version.deliveredAt}
+                      downloadCount={version.downloadCount}
+                      lastDownloadedAt={version.lastDownloadedAt}
+                      trackingAvailable={payload.deliveryHistory.trackingAvailable}
+                      ready={typeof filePath === "string" && Boolean(filePath)}
+                      onDownload={() => downloadPrivateFile(filePath)}
+                    />
+                  );
+                }) : (
+                  <Empty text="No modified version has been delivered yet." />
+                )}
+              </div>
               <div className="mt-4 rounded-2xl border border-blue-700/30 bg-blue-950/15 p-4">
                 <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                   <div>
@@ -917,6 +971,57 @@ function FileCard({ title, ready, fileName, onDownload }: { title: string; ready
         <Download className="mr-2 inline h-4 w-4" />Download
       </button>
     </div>
+  );
+}
+
+function DeliveryMetric({ label, value, compact = false }: { label: string; value: string | number; compact?: boolean }) {
+  return (
+    <div className="min-w-0 p-3 sm:p-4">
+      <div className="text-[10px] font-black uppercase tracking-[0.13em] text-zinc-500">{label}</div>
+      <div className={`mt-2 break-words font-black text-white ${compact ? "text-sm leading-5" : "text-2xl"}`}>{value}</div>
+    </div>
+  );
+}
+
+function DeliveryVersionCard({
+  versionNumber,
+  label,
+  fileName,
+  deliveredAt,
+  downloadCount,
+  lastDownloadedAt,
+  trackingAvailable,
+  ready,
+  onDownload,
+}: {
+  versionNumber: number;
+  label: string;
+  fileName: string;
+  deliveredAt: string;
+  downloadCount: number;
+  lastDownloadedAt: string | null;
+  trackingAvailable: boolean;
+  ready: boolean;
+  onDownload: () => void;
+}) {
+  return (
+    <article className="grid gap-4 rounded-2xl border border-emerald-800/30 bg-black/25 p-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
+      <div className="min-w-0">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="rounded-full border border-emerald-700/35 bg-emerald-950/25 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-emerald-300">Version {versionNumber}</span>
+          <span className="text-xs font-black uppercase tracking-[0.12em] text-zinc-300">{formatFileVersionLabel(label)}</span>
+        </div>
+        <div className="mt-2 truncate font-black text-white" title={fileName}>{fileName}</div>
+        <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-zinc-500">
+          <span>Delivered {formatDate(deliveredAt)}</span>
+          <span className="font-bold text-zinc-300">{trackingAvailable ? `${downloadCount} portal download${downloadCount === 1 ? "" : "s"}` : "Download count unavailable"}</span>
+          <span>{trackingAvailable ? (lastDownloadedAt ? `Last download ${formatDate(lastDownloadedAt)}` : "Not downloaded yet") : "Last download unavailable"}</span>
+        </div>
+      </div>
+      <button type="button" onClick={onDownload} disabled={!ready} aria-label={`Download delivered version ${versionNumber}`} className="h-11 rounded-xl border border-white/10 bg-white/[0.04] px-4 text-sm font-black hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40">
+        <Download className="mr-2 inline h-4 w-4" />Download
+      </button>
+    </article>
   );
 }
 

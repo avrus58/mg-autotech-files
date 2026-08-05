@@ -1,5 +1,13 @@
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import {
+  CUSTOMER_FILE_DOWNLOAD_EVENT,
+  projectCustomerDeliveryHistory,
+  summarizeCustomerDeliveryHistory,
+  type CustomerDeliveryHistory,
+  type CustomerDeliverySummary,
+  type CustomerDownloadEventRow,
+} from "@/lib/customerOrderDelivery";
+import {
   sendCustomerVisibleMessageEmail,
   sendWorkOrderStatusEmail,
 } from "@/lib/email/events";
@@ -192,6 +200,10 @@ export type AdminRequestDetail = AdminRequestListItem & {
   requestMessages: Array<ReturnType<typeof projectAdminRequestMessage>>;
   notes: WorkOrderNote[];
   events: WorkOrderEvent[];
+  deliveryHistory: CustomerDeliveryHistory & {
+    summary: CustomerDeliverySummary;
+    trackingAvailable: boolean;
+  };
   fileExpert: {
     linked: boolean;
     job: Record<string, unknown> | null;
@@ -457,10 +469,11 @@ export async function getCustomerRequestQueueProjection(
 
 async function fetchWorkOrderDetailRows(requestId: string) {
   const admin = getSupabaseAdmin();
-  const [notesResult, eventsResult, messagesResult] = await Promise.all([
+  const [notesResult, eventsResult, messagesResult, downloadEventsResult] = await Promise.all([
     admin.from("request_internal_notes").select("*").eq("request_id", requestId).is("deleted_at", null).order("pinned", { ascending: false }).order("created_at", { ascending: false }),
     admin.from("request_work_order_events").select("*").eq("request_id", requestId).order("created_at", { ascending: false }).limit(200),
     admin.from("request_messages").select("id,request_id,sender_id,sender_role,message,created_at,visibility_status,hidden_at,hidden_by,hidden_reason,restored_at,restored_by").eq("request_id", requestId).order("created_at", { ascending: true }).limit(200),
+    admin.from("request_work_order_events").select("event_type,new_value,created_at").eq("request_id", requestId).eq("event_type", CUSTOMER_FILE_DOWNLOAD_EVENT).order("created_at", { ascending: true }),
   ]);
   let requestMessages: Array<ReturnType<typeof projectAdminRequestMessage>> = [];
   if (messagesResult.error && isWorkOrderMigrationMissing(messagesResult.error)) {
@@ -515,6 +528,10 @@ async function fetchWorkOrderDetailRows(requestId: string) {
       metadata: row.metadata && typeof row.metadata === "object" && !Array.isArray(row.metadata) ? row.metadata as Record<string, unknown> : {},
       created_at: row.created_at ?? nowIso(),
     } satisfies WorkOrderEvent)),
+    downloadEvents: downloadEventsResult.error
+      ? []
+      : (downloadEventsResult.data ?? []) as CustomerDownloadEventRow[],
+    deliveryTrackingAvailable: !downloadEventsResult.error,
     messages: requestMessages,
     migrationReady: !(isWorkOrderMigrationMissing(notesResult.error) || isWorkOrderMigrationMissing(eventsResult.error)),
   };
@@ -700,12 +717,26 @@ export async function getAdminRequestDetail(requestId: string): Promise<AdminReq
     fetchVehicleDbSummary(order),
     fetchPaymentSummary(order, profile),
   ]);
+  const deliveryHistory = projectCustomerDeliveryHistory(
+    {
+      uploaded_file_name: order.uploaded_file_name,
+      created_at: order.created_at ?? nowIso(),
+      modified_files: order.modified_files,
+      modified_file_path: order.modified_file_path,
+    },
+    rows.downloadEvents
+  );
   return {
     ...buildListItem(order, profile, workOrder, trainingCounts.get(requestId) ?? 0),
     migrationReady: workOrders.migrationReady && rows.migrationReady,
     requestMessages: rows.messages,
     notes: rows.notes,
     events: rows.events,
+    deliveryHistory: {
+      ...deliveryHistory,
+      summary: summarizeCustomerDeliveryHistory(deliveryHistory),
+      trackingAvailable: rows.deliveryTrackingAvailable,
+    },
     fileExpert,
     aiEvidence,
     vehicleDb,

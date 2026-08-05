@@ -2,6 +2,15 @@
 
 Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
+## 2026-08-05 Delivery version metrics
+
+- Gorev: Admin is emrinde teslim edilen tum surumleri, teslim zamanini ve customer portal indirme aktivitesini mevcut private delivery altyapisindan profesyonelce gostermek.
+- Uygulama: Files bolumu `Files & delivery` operasyon ozetine cevrildi. Delivered versions, total portal downloads, latest delivery ve last download metrikleri; her surum icin custom label, dosya adi, teslim saati, indirme sayisi, son indirme ve admin download aksiyonu eklendi. Surumler teslim zamanina gore kronolojik siralanir; tum zamanlar Europe/Berlin olarak gosterilir.
+- Guvenilirlik: Audit sorgusu gecici olarak okunamazsa sifir indirme iddiasi yerine `Unavailable` gosterilir. Indirme sayaci yalniz customer portal icin uretilen secure temporary link audit olaylarini sayar; admin indirmeleri customer sayacini sisirmez.
+- Guvenlik: Admin API `orders.view` yetkisini korur. Yeni delivery projection storage path, signed URL, customer PII veya provider internali tasimaz. Private bucket ve mevcut server-generated signed download davranisi degismedi.
+- Kontroller: Targeted delivery tests PASS (11/11); full tests PASS (631/631); lint PASS; web+desktop typecheck PASS; production build PASS (266 static page); payment schema-only PASS ve env okunmadi; `npm audit --omit=dev --audit-level=high` exit 0 (0 high/critical, mevcut 2 moderate Next/PostCSS advisory); `git diff --check` PASS.
+- Sinirlar: Yeni dependency veya SQL gerekmedi. Payment, email, vehicle, AI, customer data ve production servisleri degistirilmedi; push/deploy yapilmadi.
+
 ## 2026-08-05 Request chat professional UX and access hardening
 
 - Gorev: Customer ve admin request chat deneyimini transient baglanti hatalarinda sabit kalan, responsive ve private bir order conversation yuzeyine donusturmek.

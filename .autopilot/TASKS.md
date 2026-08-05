@@ -50,6 +50,24 @@ Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
 
+### MANUAL-20260805-DELIVERY-METRICS [P1] Teslim edilen surumler ve indirme metrikleri
+
+Durum: Done
+
+Fingerprint: `admin-work-order|delivery-version-history|delivery-files-without-usage-visibility|safe-version-download-metrics`
+
+Sonuc: Admin is emrindeki Files alani teslim edilen surum sayisi, toplam portal
+indirme sayisi, son teslim ve son indirme zamanini tek ozet halinde gosterir. Her
+surum kronolojik olarak label, dosya adi, teslim zamani, indirme sayisi ve son
+indirme zamaniyla listelenir; custom version label korunur. Indirme audit kaydi
+gecici olarak okunamazsa yaniltici sifir yerine unavailable durumu gosterilir.
+Yeni projection storage path, signed URL veya provider metadata icermez.
+
+Dogrulama: Delivery tests PASS (11/11); full tests PASS (631/631); lint PASS;
+web+desktop typecheck PASS; production build PASS (266 static page); payment
+schema-only PASS ve env okunmadi; audit high threshold PASS (0 high/critical,
+mevcut 2 moderate Next/PostCSS advisory); diff check PASS. Yeni SQL gerekmez.
+
 ### MANUAL-20260805-REQUEST-CHAT [P0] Request chat professional UX and access hardening
 
 Durum: Done

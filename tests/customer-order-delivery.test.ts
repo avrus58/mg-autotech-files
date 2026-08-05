@@ -12,6 +12,7 @@ import {
   projectCustomerDeliveryHistory,
   projectCustomerOrder,
   resolveCustomerDeliveryVersion,
+  summarizeCustomerDeliveryHistory,
   type CustomerOrderRecord,
 } from "../src/lib/customerOrderDelivery";
 import type { StaffAccess } from "../src/lib/staffPermissions";
@@ -117,6 +118,51 @@ test("delivery projection reports delivered time and exact tracked download coun
   assert.doesNotMatch(JSON.stringify(history), /file_path|\/modified\//);
 });
 
+test("delivery summary combines every delivered version without private file metadata", () => {
+  const order = fixtureOrder({
+    modified_files: [
+      ...(fixtureOrder().modified_files as Array<Record<string, unknown>>),
+      {
+        id: "revision-2",
+        label: "V15",
+        file_name: "revision-2.bin",
+        file_path:
+          "00000000-0000-4000-8000-000000000002/modified/00000000-0000-4000-8000-000000000001/revision/revision-2.bin",
+        uploaded_at: "2026-07-29T09:00:00.000Z",
+      },
+    ],
+  });
+  const history = projectCustomerDeliveryHistory(order, [
+    {
+      event_type: CUSTOMER_FILE_DOWNLOAD_EVENT,
+      new_value: { version_id: "final-1" },
+      created_at: "2026-07-28T15:30:00.000Z",
+    },
+    {
+      event_type: CUSTOMER_FILE_DOWNLOAD_EVENT,
+      new_value: { version_id: "revision-2" },
+      created_at: "2026-07-29T10:00:00.000Z",
+    },
+    {
+      event_type: CUSTOMER_FILE_DOWNLOAD_EVENT,
+      new_value: { version_id: "revision-2" },
+      created_at: "2026-07-29T11:00:00.000Z",
+    },
+  ]);
+
+  assert.deepEqual(summarizeCustomerDeliveryHistory(history), {
+    deliveredVersionCount: 2,
+    totalDownloadCount: 3,
+    latestDeliveredAt: "2026-07-29T09:00:00.000Z",
+    lastDownloadedAt: "2026-07-29T11:00:00.000Z",
+  });
+  assert.equal(history.versions[1].label, "V15");
+  assert.doesNotMatch(
+    JSON.stringify(summarizeCustomerDeliveryHistory(history)),
+    /file_path|signedUrl|storage|\/modified\//
+  );
+});
+
 test("delivery resolution rejects ambiguous ids and path traversal", () => {
   const order = fixtureOrder();
   const resolved = resolveCustomerDeliveryVersion(order, "final-1");
@@ -215,6 +261,33 @@ test("customer delivery API is ownership-bound, audited and version-id based", (
 
   const responseProjection = finalize.slice(finalize.lastIndexOf("return NextResponse.json"));
   assert.doesNotMatch(responseProjection, /file_path/);
+});
+
+test("admin work order shows delivery versions, counts and Berlin delivery times", () => {
+  const server = source("src", "lib", "workOrders", "server.ts");
+  const adminPage = source(
+    "src",
+    "app",
+    "admin",
+    "requests",
+    "[id]",
+    "WorkOrderDetailClient.tsx"
+  );
+  const adminRoute = source("src", "app", "api", "admin", "requests", "[id]", "route.ts");
+
+  assert.match(adminRoute, /requireStaffPermission\(request, "orders\.view"\)/);
+  assert.match(server, /\.eq\("event_type", CUSTOMER_FILE_DOWNLOAD_EVENT\)/);
+  assert.match(server, /projectCustomerDeliveryHistory/);
+  assert.match(server, /summarizeCustomerDeliveryHistory/);
+  assert.match(server, /deliveryTrackingAvailable/);
+  assert.match(adminPage, /Files & delivery/);
+  assert.match(adminPage, /Delivered versions/);
+  assert.match(adminPage, /Portal downloads/);
+  assert.match(adminPage, /Latest delivery/);
+  assert.match(adminPage, /Last download/);
+  assert.match(adminPage, /Europe\/Berlin/);
+  assert.match(adminPage, /Not downloaded yet/);
+  assert.match(adminPage, /formatFileVersionLabel\(label\)/);
 });
 
 test("anonymous users cannot load an order or request a delivery download", async () => {

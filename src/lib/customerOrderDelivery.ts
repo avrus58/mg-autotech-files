@@ -32,6 +32,13 @@ export type CustomerDeliveryHistory = {
   versions: CustomerDeliveryVersion[];
 };
 
+export type CustomerDeliverySummary = {
+  deliveredVersionCount: number;
+  totalDownloadCount: number;
+  latestDeliveredAt: string | null;
+  lastDownloadedAt: string | null;
+};
+
 export type CustomerOrderRecord = {
   id: string;
   customer_id: string;
@@ -229,17 +236,53 @@ export function projectCustomerDeliveryHistory(
       fileName: order.uploaded_file_name,
       receivedAt: order.created_at,
     },
-    versions: getStoredModifiedFileVersions(order).map((version) => {
-      const stats = downloadStats.get(version.id);
-      return {
-        id: version.id,
-        label: version.label,
-        fileName: version.file_name,
-        deliveredAt: version.uploaded_at,
-        downloadCount: stats?.count ?? 0,
-        lastDownloadedAt: stats?.lastDownloadedAt ?? null,
-      };
-    }),
+    versions: [...getStoredModifiedFileVersions(order)]
+      .sort((left, right) => Date.parse(left.uploaded_at) - Date.parse(right.uploaded_at))
+      .map((version) => {
+        const stats = downloadStats.get(version.id);
+        return {
+          id: version.id,
+          label: version.label,
+          fileName: version.file_name,
+          deliveredAt: version.uploaded_at,
+          downloadCount: stats?.count ?? 0,
+          lastDownloadedAt: stats?.lastDownloadedAt ?? null,
+        };
+      }),
+  };
+}
+
+export function summarizeCustomerDeliveryHistory(
+  history: CustomerDeliveryHistory
+): CustomerDeliverySummary {
+  let latestDeliveredAt: string | null = null;
+  let lastDownloadedAt: string | null = null;
+  let totalDownloadCount = 0;
+
+  for (const version of history.versions) {
+    totalDownloadCount += version.downloadCount;
+
+    if (
+      !latestDeliveredAt ||
+      Date.parse(version.deliveredAt) > Date.parse(latestDeliveredAt)
+    ) {
+      latestDeliveredAt = version.deliveredAt;
+    }
+
+    if (
+      version.lastDownloadedAt &&
+      (!lastDownloadedAt ||
+        Date.parse(version.lastDownloadedAt) > Date.parse(lastDownloadedAt))
+    ) {
+      lastDownloadedAt = version.lastDownloadedAt;
+    }
+  }
+
+  return {
+    deliveredVersionCount: history.versions.length,
+    totalDownloadCount,
+    latestDeliveredAt,
+    lastDownloadedAt,
   };
 }
 
