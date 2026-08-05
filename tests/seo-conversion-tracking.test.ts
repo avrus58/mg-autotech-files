@@ -128,6 +128,7 @@ test("request analytics contains no customer, order, vehicle, file or payment me
 test("root analytics loader is consent-aware, production-only and fail-closed without config", () => {
   const layout = projectFile("src", "app", "layout.tsx");
   const component = projectFile("src", "components", "analytics", "PublicAnalytics.tsx");
+  const consentCopy = projectFile("src", "lib", "analyticsConsentI18n.ts");
   const analytics = projectFile("src", "lib", "publicAnalytics.ts");
 
   assert.match(layout, /NEXT_PUBLIC_GOOGLE_ANALYTICS_ID/);
@@ -136,8 +137,9 @@ test("root analytics loader is consent-aware, production-only and fail-closed wi
   assert.match(component, /consent === "granted" && analyticsRouteAllowed && \(/);
   assert.match(component, /analyticsRouteAllowed/);
   assert.match(component, /denyGoogleAnalytics\(\);/);
-  assert.match(component, /Necessary only/);
-  assert.match(component, /File names, vehicle details, account data and order IDs are never included/);
+  assert.match(component, /getAnalyticsConsentCopy\(pathname\)/);
+  assert.match(consentCopy, /Necessary only/);
+  assert.match(consentCopy, /File names, vehicle details, account data and order IDs are never included/);
   assert.match(analytics, /ad_storage: "denied"/);
   assert.match(analytics, /ad_user_data: "denied"/);
   assert.match(analytics, /ad_personalization: "denied"/);

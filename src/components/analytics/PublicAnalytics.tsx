@@ -20,6 +20,7 @@ import {
   type AnalyticsConsent,
 } from "@/lib/publicAnalytics";
 import { clearGrowthVisitorId, recordGrowthAttributionTouch } from "@/lib/growth/publicClient";
+import { getAnalyticsConsentCopy } from "@/lib/analyticsConsentI18n";
 
 type ConsentState = AnalyticsConsent | "unknown" | "loading";
 
@@ -30,6 +31,7 @@ export function PublicAnalytics({ measurementId }: { measurementId: string }) {
   const publicRoute = isPublicAnalyticsPath(pathname);
   const requestFlowRoute = pathname === "/new-request";
   const analyticsRouteAllowed = publicRoute || requestFlowRoute;
+  const consentCopy = getAnalyticsConsentCopy(pathname);
   const [consent, setConsent] = useState<ConsentState>("loading");
   const [preferencesOpen, setPreferencesOpen] = useState(false);
   const lastPageViewRef = useRef("");
@@ -130,9 +132,9 @@ export function PublicAnalytics({ measurementId }: { measurementId: string }) {
               <BarChart3 className="h-5 w-5" aria-hidden="true" />
             </span>
             <div className="min-w-0 flex-1">
-              <h2 id="analytics-consent-title" className="text-base font-black">Optional analytics</h2>
+              <h2 id="analytics-consent-title" className="text-base font-black">{consentCopy.title}</h2>
               <p className="mt-1 text-sm leading-6 text-zinc-400">
-                Analytics helps MG AutoTech understand public search traffic and improve the request flow. File names, vehicle details, account data and order IDs are never included.
+                {consentCopy.description}
               </p>
               <div className="mt-4 flex flex-col gap-2 sm:flex-row">
                 <button
@@ -140,17 +142,17 @@ export function PublicAnalytics({ measurementId }: { measurementId: string }) {
                   onClick={() => updateConsent("granted")}
                   className="inline-flex min-h-11 items-center justify-center rounded-lg bg-[#b1121b] px-4 text-sm font-black transition hover:bg-[#c91824] focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
                 >
-                  Allow analytics
+                  {consentCopy.allow}
                 </button>
                 <button
                   type="button"
                   onClick={() => updateConsent("denied")}
                   className="inline-flex min-h-11 items-center justify-center rounded-lg border border-white/15 bg-white/[0.04] px-4 text-sm font-black transition hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
                 >
-                  Necessary only
+                  {consentCopy.necessaryOnly}
                 </button>
                 <Link href="/datenschutz" className="inline-flex min-h-11 items-center justify-center px-3 text-sm font-bold text-zinc-400 hover:text-white">
-                  Privacy information
+                  {consentCopy.privacyInformation}
                 </Link>
               </div>
             </div>
@@ -162,8 +164,8 @@ export function PublicAnalytics({ measurementId }: { measurementId: string }) {
         <button
           type="button"
           onClick={() => setPreferencesOpen(true)}
-          aria-label="Open analytics preferences"
-          title="Analytics preferences"
+          aria-label={consentCopy.openPreferences}
+          title={consentCopy.preferencesTitle}
           className="fixed bottom-4 right-20 z-40 grid h-10 w-10 place-items-center rounded-full border border-white/10 bg-[#11151c]/95 text-zinc-400 shadow-lg transition hover:border-red-800/50 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
         >
           <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
@@ -171,7 +173,11 @@ export function PublicAnalytics({ measurementId }: { measurementId: string }) {
       )}
 
       <span className="sr-only" aria-live="polite">
-        {consent === "granted" ? "Optional analytics enabled." : consent === "denied" ? "Optional analytics disabled." : ""}
+        {consent === "granted"
+          ? consentCopy.enabledAnnouncement
+          : consent === "denied"
+            ? consentCopy.disabledAnnouncement
+            : ""}
       </span>
     </>
   );
