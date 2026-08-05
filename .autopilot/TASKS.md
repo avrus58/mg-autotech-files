@@ -50,6 +50,29 @@ Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
 
+### MANUAL-20260805-REQUEST-CHAT [P0] Request chat professional UX and access hardening
+
+Durum: Done
+
+Fingerprint: `request-chat|customer-admin-conversation|transient-sync-errors-and-broad-table-access|resilient-secure-professional-channel`
+
+Sonuc: Customer ve admin request chat tek, responsive ve erisilebilir bir secure
+conversation yuzeyine alindi. Initial loading/empty/failure, retry, silent reconnect,
+gun gruplama, sender identity, bounded composer, message stored state ve background
+sync bilgisi eklendi. Loaded history transient hatada korunur; hidden tab polling'i
+durur, overlapping fetch/send engellenir. API order ownership veya `messages.manage`
+yetkisiyle calisir; yalniz visible ve non-internal message projection'i dondurur,
+history'yi 200 satirla sinirlar ve private/no-store generic errors kullanir. Additive
+security migration'i anon/authenticated direct Data API grants ve broad policy'leri
+kaldirarak message table'i service-role server API sinirina alir.
+
+Dogrulama: Targeted tests PASS (115/115); full tests PASS (629/629); lint PASS;
+web+desktop typecheck PASS; production build PASS (266 static page); i18n/SEO PASS
+(12 locale, 30 source file); payment schema-only PASS ve env okunmadi; audit high
+threshold PASS (0 high/critical, Next/PostCSS zincirinde mevcut 2 moderate advisory);
+desktop/laptop sentetik browser visual QA PASS; git diff check PASS. Migration canliya
+uygulanmadi ve push/deploy yapilmadi.
+
 ### MANUAL-20260805-HOMEPAGE-FLOW [P1] Ana sayfa alt akis ve gorsel ritmini duzenle
 
 Durum: Done

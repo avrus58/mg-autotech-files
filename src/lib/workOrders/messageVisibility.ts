@@ -8,6 +8,7 @@ export type RequestMessageVisibilityRow = {
   sender_role: string;
   message: string;
   created_at: string;
+  is_internal?: boolean | null;
   visibility_status?: string | null;
   hidden_at?: string | null;
   hidden_by?: string | null;
@@ -22,8 +23,11 @@ export function normalizeRequestMessageVisibility(value: unknown): RequestMessag
     : "visible";
 }
 
-export function isCustomerVisibleRequestMessage(row: Pick<RequestMessageVisibilityRow, "visibility_status">) {
-  return normalizeRequestMessageVisibility(row.visibility_status) === "visible";
+export function isCustomerVisibleRequestMessage(
+  row: Pick<RequestMessageVisibilityRow, "is_internal" | "visibility_status">
+) {
+  return row.is_internal !== true
+    && normalizeRequestMessageVisibility(row.visibility_status) === "visible";
 }
 
 export function isHiddenFromCustomer(row: Pick<RequestMessageVisibilityRow, "visibility_status">) {

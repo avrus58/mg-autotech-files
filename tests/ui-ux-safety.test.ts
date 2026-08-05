@@ -698,14 +698,22 @@ test("request chat composer exposes and enforces the API message length contract
   assert.match(chat, /const charactersRemaining = MESSAGE_MAX_LENGTH - message\.length/);
   assert.match(chat, /const canSendMessage =[\s\S]*message\.trim\(\)\.length > 0[\s\S]*message\.length <= MESSAGE_MAX_LENGTH/);
   assert.match(chat, /maxLength=\{MESSAGE_MAX_LENGTH\}/);
-  assert.match(chat, /aria-describedby="request-chat-message-help request-chat-message-limit"/);
+  assert.match(chat, /aria-describedby="request-chat-message-help request-chat-message-limit request-chat-send-error"/);
   assert.match(chat, /disabled=\{!canSendMessage\}/);
   assert.match(chat, /id="request-chat-message-limit"/);
   assert.match(chat, /aria-live="polite"/);
   assert.match(chat, /\{charactersRemaining\} characters remaining/);
   assert.match(chat, /Press Enter to send/);
   assert.match(chat, /Shift \+ Enter for a new line/);
-  assert.match(chat, /if \(!options\?\.silent \|\| !initialLoadDoneRef\.current\) \{[\s\S]*setError\(data\.error \|\| "Messages could not be loaded\."\)/);
+  assert.match(chat, /const MESSAGE_REFRESH_INTERVAL_MS = 12000/);
+  assert.match(chat, /if \(fetchInFlightRef\.current\) return fetchInFlightRef\.current/);
+  assert.match(chat, /document\.visibilityState !== "visible"/);
+  assert.match(chat, /Reconnecting in the background\. Your loaded messages remain available\./);
+  assert.match(chat, /Conversation unavailable/);
+  assert.match(chat, /onClick=\{\(\) => void loadMessages\(\{ scrollAfterLoad: true \}\)\}/);
+  assert.match(chat, /disabled=\{!historyReady \|\| syncState === "unavailable"\}/);
+  assert.doesNotMatch(chat, /Messages could not be loaded\./);
+  assert.doesNotMatch(chat, /Â·/);
   assert.doesNotMatch(chat, /disabled=\{sending \|\| !message\.trim\(\)\}/);
 });
 

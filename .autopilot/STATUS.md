@@ -2,6 +2,17 @@
 
 Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
+## 2026-08-05 Request chat professional UX and access hardening
+
+- Gorev: Customer ve admin request chat deneyimini transient baglanti hatalarinda sabit kalan, responsive ve private bir order conversation yuzeyine donusturmek.
+- UI: Buyuk kirmizi hata bandi kaldirildi. Initial secure loading, retryable unavailable, sessiz reconnect, gun ayiricilari, You/MG AutoTech/Customer identity, message timestamp/stored state, latest-history bildirimi, karakter limiti, icon send ve send retry eklendi. Admin modalindaki gereksiz nested card kaldirildi. Mobil genislik korumasi ile laptop/desktop sabit composer ve bounded message scroll davranisi dogrulandi.
+- Stabilite: Polling 12 saniyelik fallback'e alindi; hidden/offline sekmelerde durur, visible/online donusunde yenilenir. Fetch ve send overlap engellenir, 12 saniyelik request timeout uygulanir. Silent refresh hatasi yuklenmis mesajlari silmez ve tum paneli hata ekranina cevirmez.
+- API ve privacy: Request owner veya `messages.manage` yetkisi korunur. Response yalniz visible, non-internal message safe projection'ini dondurur; hidden/internal/audit/storage metadata cikmaz. History en yeni 200 mesaja sinirlidir, private/no-store cache header ve generic 503 kullanir; raw provider/database error'u istemciye sizmaz.
+- Database paketi: `supabase/migrations/20260805201813_request_chat_security_hardening.sql` anon/authenticated direct grants ve broad policies'i kaldirir, server service-role akisini korur. `scripts/verify-request-chat-security.sql` RLS/grant/policy durumunu SELECT-only dogrular. Migration production'a uygulanmadi; code ve migration ayni kontrollu release'te alinmalidir.
+- Kontroller: Targeted tests PASS (115/115); full tests PASS (629/629); lint PASS; web+desktop typecheck PASS; production build PASS (266 static page); i18n/SEO PASS (12 locale, 30 source file); payment schema-only PASS ve env okunmadi; `npm audit --omit=dev --audit-level=high` exit 0 (0 high/critical, mevcut 2 moderate Next/PostCSS advisory); `git diff --check` PASS.
+- Browser QA: Sahte mesajlarla local 1440x900 ve 1024x768 visual QA yapildi; cards, message scroll ve composer dengeli. 390x844 icin component min-width/max-width ve wrapping guard'lari eklendi; authenticated production/customer mutation testi yapilmadi.
+- Sinirlar: Production Supabase mutation, gercek customer message, email, payment, push ve deploy yapilmadi. Docker local Postgres runtime kullanilabilir olmadigindan migration runtime uygulanmadi; release oncesi staging veya kontrollu production migration verification zorunludur.
+
 ## 2026-08-05 Homepage product workflow polish
 
 - Gorev: Ana sayfaya yeni uzun bir bolum eklemeden ilk ekranin file-service urun degerini daha net gostermek ve kucuk laptop gorunumunu kompaktlastirmak.

@@ -463,18 +463,6 @@ export default function OrderDetailPage() {
           loadOrder({ silent: true });
         }
       )
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "request_messages",
-          filter: `request_id=eq.${orderId}`,
-        },
-        () => {
-          loadOrder({ silent: true });
-        }
-      )
       .subscribe();
 
     return () => {

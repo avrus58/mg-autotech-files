@@ -16,6 +16,29 @@ const messageSchema = z.object({
   message: z.string().trim().min(1).max(4000),
 });
 
+const MESSAGE_HISTORY_LIMIT = 200;
+const privateResponseHeaders = {
+  "Cache-Control": "private, no-store, max-age=0",
+  Vary: "Authorization, Cookie",
+};
+
+function privateJson(body: unknown, init?: { status?: number; headers?: HeadersInit }) {
+  return NextResponse.json(body, {
+    ...init,
+    headers: {
+      ...privateResponseHeaders,
+      ...init?.headers,
+    },
+  });
+}
+
+function temporaryMessageFailure() {
+  return privateJson(
+    { error: "Messages are temporarily unavailable. Please try again." },
+    { status: 503, headers: { "Retry-After": "3" } }
+  );
+}
+
 async function authorizeRequest(request: Request, orderId: string) {
   const auth = await requireApiUser(request);
   if (!auth.ok) return auth;
@@ -27,7 +50,15 @@ async function authorizeRequest(request: Request, orderId: string) {
     .eq("id", orderId)
     .maybeSingle();
 
-  if (error || !order) {
+  if (error) {
+    return {
+      ok: false as const,
+      status: 503,
+      error: "The secure message channel is temporarily unavailable.",
+    };
+  }
+
+  if (!order) {
     return { ok: false as const, status: 404, error: "Order not found." };
   }
 
@@ -53,33 +84,50 @@ export async function GET(
   const { id } = await context.params;
   const access = await authorizeRequest(request, id);
   if (!access.ok) {
-    return NextResponse.json({ error: access.error }, { status: access.status });
+    return privateJson({ error: access.error }, { status: access.status });
   }
 
   const admin = getSupabaseAdmin();
   const { data, error } = await admin
     .from("request_messages")
-    .select("id, request_id, sender_id, sender_role, message, created_at, visibility_status")
+    .select("id, request_id, sender_id, sender_role, message, created_at, is_internal, visibility_status")
     .eq("request_id", id)
+    .eq("is_internal", false)
     .or("visibility_status.is.null,visibility_status.eq.visible")
-    .order("created_at", { ascending: true });
+    .order("created_at", { ascending: false })
+    .limit(MESSAGE_HISTORY_LIMIT + 1);
 
   if (error) {
     if (error.code === "42703") {
       const legacy = await admin
         .from("request_messages")
-        .select("id, request_id, sender_id, sender_role, message, created_at")
+        .select("id, request_id, sender_id, sender_role, message, created_at, is_internal")
         .eq("request_id", id)
-        .order("created_at", { ascending: true });
+        .eq("is_internal", false)
+        .order("created_at", { ascending: false })
+        .limit(MESSAGE_HISTORY_LIMIT + 1);
       if (legacy.error) {
-        return NextResponse.json({ error: legacy.error.message }, { status: 500 });
+        return temporaryMessageFailure();
       }
-      return NextResponse.json({ messages: filterCustomerVisibleRequestMessages((legacy.data ?? []) as RequestMessageVisibilityRow[]) });
+      const legacyRows = (legacy.data ?? []) as RequestMessageVisibilityRow[];
+      const historyLimited = legacyRows.length > MESSAGE_HISTORY_LIMIT;
+      const visibleRows = legacyRows.slice(0, MESSAGE_HISTORY_LIMIT).reverse();
+      return privateJson({
+        messages: filterCustomerVisibleRequestMessages(visibleRows),
+        history_limited: historyLimited,
+      });
     }
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return temporaryMessageFailure();
   }
 
-  return NextResponse.json({ messages: filterCustomerVisibleRequestMessages((data ?? []) as RequestMessageVisibilityRow[]) });
+  const rows = (data ?? []) as RequestMessageVisibilityRow[];
+  const historyLimited = rows.length > MESSAGE_HISTORY_LIMIT;
+  const visibleRows = rows.slice(0, MESSAGE_HISTORY_LIMIT).reverse();
+
+  return privateJson({
+    messages: filterCustomerVisibleRequestMessages(visibleRows),
+    history_limited: historyLimited,
+  });
 }
 
 export async function POST(
@@ -89,12 +137,16 @@ export async function POST(
   const { id } = await context.params;
   const access = await authorizeRequest(request, id);
   if (!access.ok) {
-    return NextResponse.json({ error: access.error }, { status: access.status });
+    return privateJson({ error: access.error }, { status: access.status });
   }
 
-  const parsed = messageSchema.safeParse(await request.json());
+  const body = await request.json().catch(() => null);
+  const parsed = messageSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: "Message must be between 1 and 4000 characters." }, { status: 400 });
+    return privateJson(
+      { error: "Message must be between 1 and 4000 characters." },
+      { status: 400 }
+    );
   }
 
   const admin = getSupabaseAdmin();
@@ -105,13 +157,14 @@ export async function POST(
       sender_id: access.user.id,
       sender_role: access.senderRole,
       message: parsed.data.message,
+      is_internal: false,
       visibility_status: "visible",
     })
     .select("id, request_id, sender_id, sender_role, message, created_at")
     .single();
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return temporaryMessageFailure();
   }
 
   if (access.senderRole === "customer") {
@@ -120,5 +173,5 @@ export async function POST(
     await sendCustomerVisibleMessageEmail({ requestId: id, messageId: String(data.id) });
   }
 
-  return NextResponse.json({ message: data });
+  return privateJson({ message: data }, { status: 201 });
 }
