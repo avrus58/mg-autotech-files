@@ -1262,12 +1262,22 @@ test("homepage keeps the hero compact and places performance tools before the na
     homepage.match(/function TechnicalHeroPreview\(\)[\s\S]*?function PublicVehicleSelect/)?.[0] ?? "";
   const performanceToolsIndex = homepage.indexOf("<DeferredPerformanceTools />");
   const navigatorIndex = homepage.indexOf('<AnimatedSection id="file-service-navigator"');
+  const servicesIndex = homepage.indexOf("<HomepageServicesSection />");
+  const workflowIndex = homepage.indexOf("<HomepageWorkflowSection />");
+  const liveWorkloadIndex = homepage.indexOf(
+    '<AnimatedSection className="border-y border-white/5 bg-[#0b0e14]'
+  );
 
   assert.doesNotMatch(heroSection, /Popular file-service paths/);
   assert.doesNotMatch(homepage, /file-service-quick-paths|homepageQuickPathJsonLd|homepageQuickServicePaths/);
   assert.equal(homepage.match(/<DeferredPerformanceTools \/>/g)?.length, 1);
   assert.ok(performanceToolsIndex > 0);
   assert.ok(navigatorIndex > performanceToolsIndex);
+  assert.ok(servicesIndex > navigatorIndex);
+  assert.ok(workflowIndex > servicesIndex);
+  assert.ok(liveWorkloadIndex > workflowIndex);
+  assert.equal((homepage.match(/A Clear File-Service Workflow/g) ?? []).length, 1);
+  assert.match(homepage, /snap-x snap-mandatory/);
   assert.match(deferredPerformanceTools, /import\("@\/components\/tools\/PerformanceTools"\)/);
   assert.match(deferredPerformanceTools, /IntersectionObserver/);
   assert.match(homepage, /publicResourceUrl\("\/#tools"\)/);
@@ -1306,7 +1316,7 @@ test("homepage file service navigator indexes major sections safely", () => {
   const navigatorSource =
     homepage.match(/const homepageFileServiceNavigator = \[[\s\S]*?const fileServiceReadMethodRoutes = \[/)?.[0] ?? "";
   const navigatorSection =
-    homepage.match(/<AnimatedSection id="file-service-navigator"[\s\S]*?<AnimatedSection className="bg-\[#0b1226\] py-12"/)?.[0] ?? "";
+    homepage.match(/<AnimatedSection id="file-service-navigator"[\s\S]*?<HomepageServicesSection \/>/)?.[0] ?? "";
 
   assert.match(homepage, /const homepageFileServiceNavigator = \[/);
   assert.match(navigatorSource, /title: "Torque and power tools"/);
@@ -2117,7 +2127,7 @@ test("homepage ECU platform library deep-links to public platform guides", () =>
   const platformSource =
     homepage.match(/const ecuPlatformLinks = \[[\s\S]*?const trustHighlights = \[/)?.[0] ?? "";
   const platformSection =
-    homepage.match(/<AnimatedSection id="ecu-platforms"[\s\S]*?<AnimatedSection className="bg-\[#07090d\] py-20 text-white">/)?.[0] ??
+    homepage.match(/<AnimatedSection id="ecu-platforms"[\s\S]*?<AnimatedSection className="bg-\[#07090d\] py-14 text-white md:py-16">/)?.[0] ??
     "";
 
   assert.match(platformSource, /href: "\/ecu-platforms\/bosch-edc17"/);

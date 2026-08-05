@@ -120,14 +120,16 @@ body {
   scrollbar-color: rgba(239, 68, 68, 0.6) rgba(255, 255, 255, 0.08);
 }
 
-/* Preserve indexable content while deferring below-the-fold layout and paint. */
+/* Keep below-the-fold sections at their natural height so scrolling never jumps. */
 .homepage-deferred-section {
-  content-visibility: auto;
-  contain-intrinsic-size: auto 760px;
+  content-visibility: visible;
 }
 
-@media (max-width: 768px) {
-  .homepage-deferred-section {
-    contain-intrinsic-size: auto 980px;
-  }
+.homepage-card-rail {
+  overscroll-behavior-inline: contain;
+  scrollbar-width: none;
+}
+
+.homepage-card-rail::-webkit-scrollbar {
+  display: none;
 }

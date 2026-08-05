@@ -2551,3 +2551,11 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 - Runtime: Production Vercel'de `WIDGET_SESSION_SECRET` ve `WIDGET_IP_HASH_SALT` mevcut. Harici Redis tabanli distributed limiter tanimli degildir; DB fail-closed quota/rate-limit ve yerel adaptive guard aktif kalir.
 - Kontroller: lint PASS; web+desktop typecheck PASS; full tests PASS (625/625); production build PASS (266 page/route); i18n PASS (12 locale, 611/611); performance PASS (60.9 KB gzip / 80 KB); payment schema-only PASS; high-severity audit threshold PASS; diff check PASS.
 - Sinirlar: Fiyat, Stripe urun/odeme mantigi ve musteri verisi degismedi. Production uygulama deploy'u bu kayit aninda henuz yapilmadi.
+
+## 2026-08-05 Homepage section flow and scroll stability
+
+- Gorev: Ana sayfanin hero sonrasindaki yogun ve tekrarli akisinin, mevcut icerik ve rotalar silinmeden daha kisa, tutarli ve scroll sirasinda sabit hale getirilmesi.
+- UI: Performance Tools, File Service Navigator, Services, tek dort-adimli workflow ve live workload net bir musteri yolculugu sirasina alindi. Tekrarlanan workflow bloklari birlestirildi; How It Works CTA'si ve tum public servis/marka/platform/fiyat/guvenlik rotalari korundu. Alt bolumlerde dikey bosluk, baslik olcegi ve koyu band gecisleri dengelenirken mobil kart koleksiyonlari gorunur snap rail yapisina alindi.
+- Stabilite: Her offscreen bolume 760/980px sahte yukseklik ayiran global `contain-intrinsic-size` kaldirildi. Boylece 1024x768 ve 390x844 tam sayfa scroll testlerinde ilk ve son `scrollHeight` ayni kaldi (delta 0). Agir Performance Tools bileseni mevcut IntersectionObserver tabanli lazy-load sinirini korur.
+- Kontroller: Targeted testler PASS (104/104); lint PASS; web+desktop typecheck PASS; full tests PASS (625/625); production build PASS (266 static page); i18n/SEO PASS (12 locale, 611/611); homepage performance PASS (61.1 KB gzip / 80 KB); high-severity audit threshold PASS (0 high, mevcut 2 moderate Next/PostCSS advisory); browser QA PASS (1440x900, 1024x768, 768x1024, 390x844; sifir yatay tasma ve console error); diff check PASS.
+- Sinirlar: Payment, vehicle API, auth, admin, customer, email, widget veya ticari fiyat mantigi degismedi. Dependency, SQL, production mutation, push veya deploy yoktur.

@@ -37,7 +37,7 @@ test("large translation catalogs are loaded only for runtime-translated routes",
   assert.match(config, /export const supportedLocales/);
 });
 
-test("notifications and below-the-fold tools are deferred without removing them", () => {
+test("notifications and heavy tools are deferred without destabilizing homepage layout", () => {
   const layout = source("src", "app", "layout.tsx");
   const notifications = source(
     "src",
@@ -57,7 +57,8 @@ test("notifications and below-the-fold tools are deferred without removing them"
   assert.match(notifications, /requestIdleCallback/);
   assert.match(tools, /IntersectionObserver/);
   assert.match(tools, /PerformanceTools/);
-  assert.match(styles, /content-visibility: auto/);
+  assert.match(styles, /\.homepage-deferred-section\s*{[\s\S]*?content-visibility: visible/);
+  assert.doesNotMatch(styles, /contain-intrinsic-size:\s*auto\s+(?:760|980)px/);
 });
 
 test("a build-time homepage JavaScript budget guards future regressions", () => {

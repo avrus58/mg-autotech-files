@@ -2601,6 +2601,136 @@ function AnimatedSection({
   );
 }
 
+function HomepageServicesSection() {
+  return (
+    <AnimatedSection id="services" className="border-y border-white/5 bg-[#050607] py-14 text-white md:py-16">
+      <div className="mx-auto max-w-7xl px-4">
+        <div className="mb-8 flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
+          <div>
+            <div className="text-sm font-black uppercase tracking-[0.25em] text-red-300">
+              Our Services
+            </div>
+            <h2 className="mt-3 max-w-3xl text-3xl font-black leading-tight md:text-4xl">
+              Professional ECU and TCU software solutions.
+            </h2>
+          </div>
+          <div className="flex flex-wrap gap-2" aria-label="Performance calibration pages">
+            <Link href="/services/stage-1" className="rounded-lg border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-black text-zinc-200 hover:border-red-800/60 hover:text-white">Stage 1</Link>
+            <Link href="/services/stage-2" className="rounded-lg border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-black text-zinc-200 hover:border-red-800/60 hover:text-white">Stage 2</Link>
+            <Link href="/services/stage-3" className="rounded-lg border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-black text-zinc-200 hover:border-red-800/60 hover:text-white">Stage 3</Link>
+            <Link href="/file-service#stage-comparison" className="rounded-lg border border-red-800/60 bg-red-950/25 px-4 py-3 text-sm font-black text-red-200 hover:bg-red-950/40">Compare stages</Link>
+          </div>
+        </div>
+
+        <motion.div
+          variants={stagger}
+          initial="hidden"
+          whileInView="show"
+          viewport={{ once: true, amount: 0.18 }}
+          className="homepage-card-rail -mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:mx-0 md:grid md:grid-cols-3 md:overflow-visible md:px-0 md:pb-0"
+        >
+          {services.map((service) => (
+            <motion.div
+              variants={fadeUp}
+              key={service.title}
+              className="min-w-[min(82vw,20rem)] snap-start md:min-w-0"
+            >
+              <Link
+                href={service.href}
+                className="group flex h-full min-h-[21rem] flex-col rounded-2xl border border-white/10 bg-white/[0.045] p-5 shadow-2xl shadow-black/20 transition duration-300 hover:-translate-y-1 hover:border-red-700/60 hover:bg-white/[0.075] focus:outline-none focus-visible:ring-2 focus-visible:ring-red-700"
+              >
+                <div className="mb-4 flex items-start justify-between gap-4">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-red-900/45 bg-red-950/35 text-red-200">
+                    <FileCode2 />
+                  </div>
+                  <span className="rounded-full border border-white/10 bg-black/30 px-3 py-1 text-xs font-black uppercase tracking-[0.12em] text-zinc-300">
+                    {service.searchIntent}
+                  </span>
+                </div>
+                <h3 className="text-xl font-black">{service.title}</h3>
+                <p className="mt-3 flex-1 text-sm leading-6 text-zinc-300">
+                  {service.text}
+                </p>
+                <div className="mt-4 rounded-xl border border-red-900/45 bg-red-950/25 px-4 py-3 text-sm font-black text-red-100">
+                  {service.credits}
+                </div>
+                <div className="mt-4 inline-flex items-center text-sm font-black text-red-300 transition group-hover:text-red-100">
+                  {service.action}
+                  <ArrowRight className="ml-2 h-4 w-4 transition group-hover:translate-x-1" />
+                </div>
+              </Link>
+            </motion.div>
+          ))}
+        </motion.div>
+      </div>
+    </AnimatedSection>
+  );
+}
+
+function HomepageWorkflowSection() {
+  return (
+    <AnimatedSection id="workflow" className="bg-[#090b0f] py-14 md:py-16">
+      <div className="mx-auto max-w-7xl px-4">
+        <div className="mb-8 grid gap-5 lg:grid-cols-[1fr_auto] lg:items-end">
+          <div>
+            <div className="text-sm font-black uppercase tracking-[0.25em] text-red-500">
+              Customer workflow
+            </div>
+            <h2 className="mt-3 max-w-3xl text-3xl font-black leading-tight md:text-4xl">
+              A Clear File-Service Workflow
+            </h2>
+            <p className="mt-3 max-w-3xl text-sm leading-7 text-zinc-400">
+              Get your files in 4 simple steps: select the vehicle, upload the
+              original file, follow the request and receive the completed
+              version through the secure customer portal.
+            </p>
+          </div>
+          <Link
+            href="/how-it-works"
+            className="inline-flex min-h-12 items-center justify-center rounded-xl border border-red-800/60 bg-red-950/25 px-5 py-3 text-sm font-black text-white transition hover:-translate-y-0.5 hover:bg-red-900/30"
+          >
+            See How It Works
+            <ArrowRight className="ml-2 h-4 w-4" />
+          </Link>
+        </div>
+
+        <motion.div
+          variants={stagger}
+          initial="hidden"
+          whileInView="show"
+          viewport={{ once: true, amount: 0.2 }}
+          className="homepage-card-rail -mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:mx-0 md:grid md:grid-cols-4 md:overflow-visible md:px-0 md:pb-0"
+        >
+          {steps.map((step, index) => {
+            const Icon = step.icon;
+
+            return (
+              <motion.div
+                variants={fadeUp}
+                key={step.title}
+                className="relative min-h-[15rem] min-w-[min(78vw,19rem)] snap-start rounded-2xl border border-white/10 bg-white/[0.04] p-6 transition duration-300 hover:-translate-y-1 hover:border-red-800/60 hover:bg-white/[0.07] md:min-w-0"
+              >
+                <div className="mb-6 flex items-start justify-between gap-4">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-red-900/50 bg-red-950/25 text-red-400">
+                    <Icon className="h-5 w-5" />
+                  </div>
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#b1121b] text-sm font-black shadow-lg shadow-red-950/40">
+                    {index + 1}
+                  </div>
+                </div>
+                <h3 className="text-lg font-black">{step.title}</h3>
+                <p className="mt-3 text-sm leading-6 text-zinc-400">
+                  {step.text}
+                </p>
+              </motion.div>
+            );
+          })}
+        </motion.div>
+      </div>
+    </AnimatedSection>
+  );
+}
+
 function FloatingTechBackground() {
   return (
     <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
@@ -3931,6 +4061,7 @@ export function UnifiedHomePage({
 
               <Link
                 href="/register"
+                aria-label="Create account"
                 className="rounded-xl bg-[#b1121b] px-3 py-3 text-xs font-black text-white shadow-lg shadow-red-950/40 transition duration-300 hover:-translate-y-0.5 hover:bg-[#c91824] sm:px-5 sm:text-sm"
               >
                 Register
@@ -4071,7 +4202,7 @@ export function UnifiedHomePage({
 
       <DeferredPerformanceTools />
 
-      <AnimatedSection id="file-service-navigator" className="bg-[#050607] py-16 text-white">
+      <AnimatedSection id="file-service-navigator" className="bg-[#050607] py-14 text-white md:py-16">
         <div className="mx-auto max-w-7xl px-4">
           <div className="mb-8 grid gap-5 lg:grid-cols-[0.78fr_1.22fr] lg:items-end">
             <div>
@@ -4091,7 +4222,7 @@ export function UnifiedHomePage({
             </p>
           </div>
 
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          <div className="homepage-card-rail -mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:mx-0 md:grid md:grid-cols-2 md:overflow-visible md:px-0 md:pb-0 xl:grid-cols-4">
             {homepageFileServiceNavigator.map((item) => {
               const Icon = item.icon;
 
@@ -4099,7 +4230,7 @@ export function UnifiedHomePage({
                 <Link
                   key={item.title}
                   href={item.href}
-                  className="group flex min-h-56 flex-col rounded-3xl border border-white/10 bg-white/[0.045] p-5 shadow-2xl shadow-black/20 transition duration-300 hover:-translate-y-1 hover:border-red-700/60 hover:bg-white/[0.075] focus:outline-none focus-visible:ring-2 focus-visible:ring-red-700"
+                  className="group flex min-h-48 min-w-[min(82vw,20rem)] snap-start flex-col rounded-2xl border border-white/10 bg-white/[0.045] p-5 shadow-2xl shadow-black/20 transition duration-300 hover:-translate-y-1 hover:border-red-700/60 hover:bg-white/[0.075] focus:outline-none focus-visible:ring-2 focus-visible:ring-red-700 md:min-w-0"
                 >
                   <div className="mb-5 flex items-start justify-between gap-4">
                     <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-red-900/45 bg-red-950/35 text-red-200">
@@ -4133,7 +4264,10 @@ export function UnifiedHomePage({
         </div>
       </AnimatedSection>
 
-      <AnimatedSection className="bg-[#0b1226] py-12">
+      <HomepageServicesSection />
+      <HomepageWorkflowSection />
+
+      <AnimatedSection className="border-y border-white/5 bg-[#0b0e14] py-10 md:py-12">
         <div className="mx-auto max-w-7xl px-4">
           <div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5 shadow-2xl shadow-black/20">
             <div className="grid gap-5 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
@@ -4206,14 +4340,14 @@ export function UnifiedHomePage({
       </AnimatedSection>
 
       <HomepageFileServiceCorePanel />
-      <AnimatedSection className="bg-[#050505] py-20">
+      <AnimatedSection className="bg-[#050505] py-14 md:py-16">
         <div className="mx-auto max-w-7xl px-4">
-          <div className="mb-10 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+          <div className="mb-8 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <div className="text-sm font-black uppercase tracking-[0.25em] text-red-600">
                 Request preparation
               </div>
-              <h2 className="mt-3 max-w-3xl text-4xl font-black md:text-5xl">
+              <h2 className="mt-3 max-w-3xl text-3xl font-black leading-tight md:text-4xl">
                 Request Readiness Cockpit
               </h2>
               <p className="mt-4 max-w-2xl text-sm leading-7 text-zinc-400">
@@ -4305,14 +4439,14 @@ export function UnifiedHomePage({
 
       <WorkshopCommandDesk />
 
-      <AnimatedSection id="brands" className="bg-[#050505] py-20">
+      <AnimatedSection id="brands" className="bg-[#050505] py-14 md:py-16">
         <div className="mx-auto max-w-7xl px-4">
-          <div className="mb-10 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+          <div className="mb-8 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <div className="text-sm font-black uppercase tracking-[0.25em] text-red-600">
                 Supported Brands
               </div>
-              <h2 className="mt-3 max-w-3xl text-4xl font-black md:text-5xl">
+              <h2 className="mt-3 max-w-3xl text-3xl font-black leading-tight md:text-4xl">
                 Popular ECU and TCU platforms for modern workshops.
               </h2>
             </div>
@@ -4328,12 +4462,13 @@ export function UnifiedHomePage({
             initial="hidden"
             whileInView="show"
             viewport={{ once: true, amount: 0.18 }}
-            className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
+            className="homepage-card-rail -mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-4"
           >
             {supportedBrands.map((brand) => (
               <motion.div
                 variants={fadeUp}
                 key={brand.name}
+                className="min-w-[min(78vw,18rem)] snap-start sm:min-w-0"
               >
                 <Link
                   href={brand.href}
@@ -4384,14 +4519,14 @@ export function UnifiedHomePage({
         </div>
       </AnimatedSection>
 
-      <AnimatedSection id="ecu-platforms" className="bg-[#0b0b0d] py-20">
+      <AnimatedSection id="ecu-platforms" className="bg-[#090b0f] py-14 md:py-16">
         <div className="mx-auto max-w-7xl px-4">
-          <div className="mb-10 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+          <div className="mb-8 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <div className="text-sm font-black uppercase tracking-[0.25em] text-red-600">
                 ECU Platform Library
               </div>
-              <h2 className="mt-3 max-w-3xl text-4xl font-black md:text-5xl">
+              <h2 className="mt-3 max-w-3xl text-3xl font-black leading-tight md:text-4xl">
                 Technical ECU and TCU guides for cleaner file requests.
               </h2>
               <p className="mt-4 max-w-2xl text-sm leading-7 text-zinc-400">
@@ -4415,10 +4550,14 @@ export function UnifiedHomePage({
             initial="hidden"
             whileInView="show"
             viewport={{ once: true, amount: 0.18 }}
-            className="grid gap-4 md:grid-cols-2 xl:grid-cols-4"
+            className="homepage-card-rail -mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:mx-0 md:grid md:grid-cols-2 md:overflow-visible md:px-0 md:pb-0 xl:grid-cols-4"
           >
             {ecuPlatformLinks.map((platform) => (
-              <motion.div variants={fadeUp} key={platform.name}>
+              <motion.div
+                variants={fadeUp}
+                key={platform.name}
+                className="min-w-[min(82vw,20rem)] snap-start md:min-w-0"
+              >
                 <Link
                   href={platform.href}
                   className="group flex h-full flex-col rounded-2xl border border-white/10 bg-white/[0.04] p-5 transition duration-300 hover:-translate-y-1 hover:border-red-800/60 hover:bg-white/[0.07] focus:outline-none focus-visible:ring-2 focus-visible:ring-red-700"
@@ -4465,14 +4604,14 @@ export function UnifiedHomePage({
         </div>
       </AnimatedSection>
 
-      <AnimatedSection className="bg-[#07090d] py-20 text-white">
+      <AnimatedSection className="bg-[#07090d] py-14 text-white md:py-16">
         <div className="mx-auto max-w-7xl px-4">
-          <div className="mb-10 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+          <div className="mb-8 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <div className="text-sm font-black uppercase tracking-[0.25em] text-red-300">
                 Why MG AutoTech?
               </div>
-              <h2 className="mt-3 max-w-3xl text-4xl font-black md:text-5xl">
+              <h2 className="mt-3 max-w-3xl text-3xl font-black leading-tight md:text-4xl">
                 A file service workflow built for serious workshop operations.
               </h2>
             </div>
@@ -4516,13 +4655,13 @@ export function UnifiedHomePage({
         </div>
       </AnimatedSection>
 
-      <AnimatedSection className="bg-[#050505] py-20">
+      <AnimatedSection className="bg-[#050505] py-14 md:py-16">
         <div className="mx-auto grid max-w-7xl gap-10 px-4 lg:grid-cols-[0.85fr_1.15fr] lg:items-center">
           <div>
             <div className="text-sm font-black uppercase tracking-[0.25em] text-red-600">
               Calibration Knowledge Base
             </div>
-            <h2 className="mt-3 text-4xl font-black md:text-5xl">
+            <h2 className="mt-3 text-3xl font-black leading-tight md:text-4xl">
               WinOLS based analysis with vehicle-specific file review.
             </h2>
             <p className="mt-5 max-w-xl text-sm leading-7 text-zinc-400">
@@ -4588,153 +4727,13 @@ export function UnifiedHomePage({
 
       <BusinessMarginCalculator />
 
-      <AnimatedSection className="border-y border-white/10 bg-[linear-gradient(135deg,#07090d,#111827_55%,#050505)] py-16">
-        <div className="mx-auto flex max-w-7xl flex-col gap-8 px-4 lg:flex-row lg:items-center lg:justify-between">
-          <div className="max-w-3xl">
-            <div className="text-sm font-black uppercase tracking-[0.25em] text-red-500">
-              Customer workflow
-            </div>
-            <h2 className="mt-3 text-4xl font-black md:text-5xl">
-              A Clear File-Service Workflow
-            </h2>
-            <p className="mt-4 text-sm leading-7 text-zinc-400">
-              From vehicle selection to secure file upload, request tracking and
-              final delivery, MG AutoTech gives customers a structured way to
-              manage ECU/TCU file requests.
-            </p>
-          </div>
-          <Link
-            href="/how-it-works"
-            className="inline-flex items-center justify-center rounded-xl bg-[#b1121b] px-6 py-4 text-sm font-black text-white shadow-lg shadow-red-950/30 transition hover:-translate-y-0.5 hover:bg-[#c91824]"
-          >
-            See How It Works
-            <ArrowRight className="ml-2 h-4 w-4" />
-          </Link>
-        </div>
-      </AnimatedSection>
-
-      <AnimatedSection id="workflow" className="bg-[#0b1226] py-20">
+      <AnimatedSection className="bg-[#050505] py-14 md:py-16">
         <div className="mx-auto max-w-7xl px-4">
-          <div className="mb-12 flex items-end justify-between gap-6">
-            <div>
-              <div className="text-sm font-black uppercase tracking-[0.25em] text-red-500">
-                Workflow
-              </div>
-              <h2 className="mt-3 text-4xl font-black uppercase tracking-wide md:text-5xl">
-                Get your files in 4 simple steps
-              </h2>
-              <p className="mt-3 text-zinc-400">
-                A clean process for customers, workshops and partners.
-              </p>
-            </div>
-
-            <Link
-              href="/register"
-              aria-label="Create account"
-              className="hidden rounded-xl bg-[#b1121b] p-4 text-white transition duration-300 hover:-translate-y-1 hover:bg-[#c91824] md:block"
-            >
-              <ArrowRight />
-            </Link>
-          </div>
-
-          <motion.div
-            variants={stagger}
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, amount: 0.2 }}
-            className="grid gap-5 md:grid-cols-4"
-          >
-            {steps.map((step, index) => {
-              const Icon = step.icon;
-
-              return (
-                <motion.div
-                  variants={fadeUp}
-                  key={step.title}
-                  className={`relative rounded-3xl border border-white/10 bg-white/[0.04] p-7 text-center transition duration-300 hover:-translate-y-2 hover:border-red-800/60 hover:bg-white/[0.07] ${
-                    index === 1 || index === 3 ? "md:mt-10" : ""
-                  }`}
-                >
-                  <Icon className="mx-auto mb-5 h-10 w-10 text-red-500" />
-                  <h3 className="text-xl font-black">{step.title}</h3>
-                  <p className="mt-3 text-sm leading-6 text-zinc-400">
-                    {step.text}
-                  </p>
-                  <div className="absolute -bottom-5 left-1/2 flex h-11 w-11 -translate-x-1/2 items-center justify-center rounded-full bg-[#b1121b] text-lg font-black shadow-lg shadow-red-950/40">
-                    {index + 1}
-                  </div>
-                </motion.div>
-              );
-            })}
-          </motion.div>
-        </div>
-      </AnimatedSection>
-
-      <AnimatedSection id="services" className="bg-[#050607] py-20 text-white">
-        <div className="mx-auto max-w-7xl px-4">
-          <div className="mb-12 flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
-            <div>
-              <div className="text-sm font-black uppercase tracking-[0.25em] text-red-300">
-                Our Services
-              </div>
-              <h2 className="mt-3 max-w-3xl text-4xl font-black md:text-5xl">
-                Professional ECU and TCU software solutions.
-              </h2>
-            </div>
-            <div className="flex flex-wrap gap-2" aria-label="Performance calibration pages">
-              <Link href="/services/stage-1" className="rounded-lg border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-black text-zinc-200 hover:border-red-800/60 hover:text-white">Stage 1</Link>
-              <Link href="/services/stage-2" className="rounded-lg border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-black text-zinc-200 hover:border-red-800/60 hover:text-white">Stage 2</Link>
-              <Link href="/services/stage-3" className="rounded-lg border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-black text-zinc-200 hover:border-red-800/60 hover:text-white">Stage 3</Link>
-              <Link href="/file-service#stage-comparison" className="rounded-lg border border-red-800/60 bg-red-950/25 px-4 py-3 text-sm font-black text-red-200 hover:bg-red-950/40">Compare stages</Link>
-            </div>
-          </div>
-
-          <motion.div
-            variants={stagger}
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, amount: 0.18 }}
-            className="grid gap-5 md:grid-cols-3"
-          >
-            {services.map((service) => (
-              <motion.div variants={fadeUp} key={service.title}>
-                <Link
-                  href={service.href}
-                  className="group flex h-full flex-col rounded-3xl border border-white/10 bg-white/[0.045] p-6 shadow-2xl shadow-black/20 transition duration-300 hover:-translate-y-2 hover:border-red-700/60 hover:bg-white/[0.075] focus:outline-none focus-visible:ring-2 focus-visible:ring-red-700"
-                >
-                  <div className="mb-5 flex items-start justify-between gap-4">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-red-900/45 bg-red-950/35 text-red-200">
-                      <FileCode2 />
-                    </div>
-                    <span className="rounded-full border border-white/10 bg-black/30 px-3 py-1 text-xs font-black uppercase tracking-[0.12em] text-zinc-300">
-                      {service.searchIntent}
-                    </span>
-                  </div>
-                  <h3 className="text-xl font-black">{service.title}</h3>
-                  <p className="mt-3 flex-1 text-sm leading-6 text-zinc-300">
-                    {service.text}
-                  </p>
-                  <div className="mt-5 rounded-xl border border-red-900/45 bg-red-950/25 px-4 py-3 text-sm font-black text-red-100">
-                    {service.credits}
-                  </div>
-                  <div className="mt-5 inline-flex items-center text-sm font-black text-red-300 transition group-hover:text-red-100">
-                    {service.action}
-                    <ArrowRight className="ml-2 h-4 w-4 transition group-hover:translate-x-1" />
-                  </div>
-                </Link>
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
-      </AnimatedSection>
-
-      <AnimatedSection className="bg-[#050505] py-20">
-        <div className="mx-auto max-w-7xl px-4">
-          <div className="mb-10">
+          <div className="mb-8">
             <div className="text-sm font-black uppercase tracking-[0.25em] text-red-600">
               Workshop Use Cases
             </div>
-            <h2 className="mt-3 text-4xl font-black md:text-5xl">
+            <h2 className="mt-3 text-3xl font-black leading-tight md:text-4xl">
               Built around real file service operations.
             </h2>
             <p className="mt-3 max-w-2xl text-sm leading-7 text-zinc-400">
@@ -4743,14 +4742,14 @@ export function UnifiedHomePage({
             </p>
           </div>
 
-          <div className="grid gap-5 md:grid-cols-4">
+          <div className="homepage-card-rail -mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:mx-0 md:grid md:grid-cols-4 md:overflow-visible md:px-0 md:pb-0">
             {workshopUseCases.map((item) => {
               const Icon = item.icon;
 
               return (
                 <div
                   key={item.title}
-                  className="rounded-2xl border border-red-900/50 bg-white/[0.03] p-6 transition duration-300 hover:-translate-y-1 hover:border-red-700 hover:bg-white/[0.06]"
+                  className="min-w-[min(78vw,18rem)] snap-start rounded-2xl border border-red-900/50 bg-white/[0.03] p-5 transition duration-300 hover:-translate-y-1 hover:border-red-700 hover:bg-white/[0.06] md:min-w-0"
                 >
                   <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl border border-red-900/50 bg-red-950/25 text-red-500">
                     <Icon className="h-6 w-6" />
@@ -4769,13 +4768,13 @@ export function UnifiedHomePage({
         </div>
       </AnimatedSection>
 
-      <AnimatedSection id="prices" className="bg-[#0b1226] py-20">
+      <AnimatedSection id="prices" className="bg-[#0b0e14] py-14 md:py-16">
         <div className="mx-auto max-w-7xl px-4">
-          <div className="mb-10">
+          <div className="mb-8">
             <div className="text-sm font-black uppercase tracking-[0.25em] text-red-500">
               Credit Prices
             </div>
-            <h2 className="mt-3 text-4xl font-black md:text-5xl">
+            <h2 className="mt-3 text-3xl font-black leading-tight md:text-4xl">
               Flexible credit packages
             </h2>
             <p className="mt-3 text-zinc-400">
@@ -4786,7 +4785,7 @@ export function UnifiedHomePage({
             </div>
           </div>
 
-          <div className="-mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-4 xl:mx-0 xl:grid xl:grid-cols-5 xl:overflow-visible xl:px-0">
+          <div className="homepage-card-rail -mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden xl:mx-0 xl:grid xl:grid-cols-5 xl:overflow-visible xl:px-0">
             {homepageCreditPackages.map((pack) => (
               <div
                 key={pack.id}
@@ -4837,13 +4836,13 @@ export function UnifiedHomePage({
         </div>
       </AnimatedSection>
 
-      <AnimatedSection id="security" className="bg-[#050505] py-20">
+      <AnimatedSection id="security" className="bg-[#050505] py-14 md:py-16">
         <div className="mx-auto grid max-w-7xl gap-10 px-4 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
           <div>
             <div className="text-sm font-black uppercase tracking-[0.25em] text-red-600">
               Security
             </div>
-            <h2 className="mt-3 text-4xl font-black md:text-5xl">
+            <h2 className="mt-3 text-3xl font-black leading-tight md:text-4xl">
               Secure customer portal with controlled file workflow.
             </h2>
             <p className="mt-5 leading-8 text-zinc-400">
@@ -4871,14 +4870,14 @@ export function UnifiedHomePage({
         </div>
       </AnimatedSection>
 
-      <AnimatedSection className="bg-[#07090d] py-20 text-white">
+      <AnimatedSection className="bg-[#07090d] py-14 text-white md:py-16">
         <div className="mx-auto max-w-7xl px-4">
-          <div className="mb-10 grid gap-6 lg:grid-cols-[0.8fr_1.2fr] lg:items-end">
+          <div className="mb-8 grid gap-6 lg:grid-cols-[0.8fr_1.2fr] lg:items-end">
             <div>
               <div className="text-sm font-black uppercase tracking-[0.25em] text-red-300">
                 Workshop Search Guide
               </div>
-              <h2 className="mt-3 text-4xl font-black md:text-5xl">
+              <h2 className="mt-3 text-3xl font-black leading-tight md:text-4xl">
                 ECU file service questions answered before upload.
               </h2>
             </div>

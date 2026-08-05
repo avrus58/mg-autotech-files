@@ -50,6 +50,16 @@ Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
 
+### MANUAL-20260805-HOMEPAGE-FLOW [P1] Ana sayfa alt akis ve gorsel ritmini duzenle
+
+Durum: Done
+
+Fingerprint: `public-homepage|section-order-and-density|repeated-workflow-route-and-trust-bands|coherent-customer-journey`
+
+Sonuc: Hero sonrasindaki ana sayfa akisi Performance Tools, File Service Navigator, Services, tek bir dort adimli workflow ve live workload sirasina alindi. Tekrarlanan workflow anlatimi tek bolumde birlestirildi; mevcut route ve CTA'lar korundu. Alt bolumlerin dikey bosluklari, baslik olcekleri ve koyu arka plan gecisleri dengelendi. Mobil servis, workflow, navigator, marka, ECU platformu, kullanim senaryosu ve fiyat kartlari snap rail davranisina alindi. Tum offscreen bolumlere ayni sahte yuksekligi veren `contain-intrinsic-size` kaldirilarak scroll sirasindaki yerlesim sicramasi kokten giderildi; agir performans araci ayrica lazy-load edilmeye devam eder.
+
+Dogrulama: Targeted responsive/UI/performance testleri PASS (104/104); full tests PASS (625/625); lint PASS; web+desktop typecheck PASS; production build PASS (266 static page); i18n/SEO PASS (12 locale, 611/611); homepage performance PASS (61.1 KB gzip / 80 KB); audit high threshold PASS (0 high, mevcut 2 moderate Next/PostCSS advisory); responsive browser QA PASS (1440x900, 1024x768, 768x1024, 390x844; sifir yatay tasma, scroll-height delta 0, console error yok); diff check PASS.
+
 ### MANUAL-20260805-HOMEPAGE-HERO [P1] Ana sayfa ilk ekranini urun odakli sadeleştir
 
 Durum: Done
