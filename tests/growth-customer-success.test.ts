@@ -87,9 +87,9 @@ test("growth metrics join aggregate acquisition, requests, payments, retention a
       { event_type: "request_created", recipient_user_id: "u2", status: "failed", delivery_status: "bounced", created_at: "2026-01-16T00:00:00Z" },
     ],
     attribution: [
-      { user_id: "u1", first_source: "google", first_medium: "organic", first_campaign: null, first_term: null, first_landing_path: "/services/stage-1", first_country_code: "DE", first_seen_at: "2026-01-01T00:00:00Z" },
-      { user_id: "u2", first_source: "direct", first_medium: "none", first_campaign: null, first_term: null, first_landing_path: "/", first_country_code: "TR", first_seen_at: "2026-01-02T00:00:00Z" },
-      { user_id: null, first_source: "google", first_medium: "organic", first_campaign: null, first_term: null, first_landing_path: "/services/stage-1", first_country_code: "DE", first_seen_at: "2026-01-03T00:00:00Z" },
+      { user_id: "u1", locale: "de", first_source: "google", first_medium: "organic", first_campaign: null, first_term: null, first_landing_path: "/services/stage-1", first_country_code: "DE", first_seen_at: "2026-01-01T00:00:00Z" },
+      { user_id: "u2", locale: "tr", first_source: "direct", first_medium: "none", first_campaign: null, first_term: null, first_landing_path: "/", first_country_code: "TR", first_seen_at: "2026-01-02T00:00:00Z" },
+      { user_id: null, locale: "de-DE", first_source: "google", first_medium: "organic", first_campaign: null, first_term: null, first_landing_path: "/services/stage-1", first_country_code: "DE", first_seen_at: "2026-01-03T00:00:00Z" },
     ],
     journeyEvents: [],
   });
@@ -107,6 +107,8 @@ test("growth metrics join aggregate acquisition, requests, payments, retention a
   assert.equal(metrics.email.delivered, 2);
   assert.equal(metrics.email.reminderConversions, 1);
   assert.equal(metrics.byCountry.find((row) => row.key === "de")?.orders, 2);
+  assert.equal(metrics.byLocale.find((row) => row.key === "de")?.orders, 2);
+  assert.equal(metrics.byLocale.find((row) => row.key === "tr")?.registrations, 1);
   assert.equal(metrics.byBrand.find((row) => row.key === "bmw")?.repeatCustomers, 1);
   assert.equal(metrics.byService.find((row) => row.key === "stage 1")?.orders, 2);
   assert.equal(metrics.byService.find((row) => row.key === "dtc off")?.label, "DTC OFF");

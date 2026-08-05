@@ -7,6 +7,10 @@ import { Loader2, ShieldCheck, Upload } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import { authenticatedFetch } from "@/lib/authGuards";
 import { recordGrowthAccountCreated } from "@/lib/growth/client";
+import {
+  OAUTH_REGISTRATION_PROFILE_KEY,
+  parseRegistrationProfileDraft,
+} from "@/lib/registrationProfile";
 
 function safeNextPath(value: string | null) {
   return value?.startsWith("/") && !value.startsWith("//") ? value : "/dashboard";
@@ -45,8 +49,34 @@ export default function AuthCallbackPage() {
 
       const oauthSignupProvider = window.sessionStorage.getItem("mg_register_oauth_provider");
       if (oauthSignupProvider) window.sessionStorage.removeItem("mg_register_oauth_provider");
+      const oauthProfile = parseRegistrationProfileDraft(
+        window.sessionStorage.getItem(OAUTH_REGISTRATION_PROFILE_KEY)
+      );
+      window.sessionStorage.removeItem(OAUTH_REGISTRATION_PROFILE_KEY);
 
       if (session?.user) {
+        if (oauthSignupProvider === "google" && oauthProfile) {
+          await Promise.all([
+            supabase.auth.updateUser({
+              data: {
+                ...session.user.user_metadata,
+                ...oauthProfile,
+                role: "customer",
+              },
+            }),
+            supabase
+              .from("profiles")
+              .update({
+                full_name: oauthProfile.full_name,
+                account_type: oauthProfile.account_type,
+                company_name: oauthProfile.company_name,
+                phone: oauthProfile.phone,
+                vat_id: oauthProfile.vat_id,
+              })
+              .eq("id", session.user.id),
+          ]);
+        }
+
         const createdAt = new Date(session.user.created_at).getTime();
         const isRecentSignup = Date.now() - createdAt < 15 * 60 * 1000;
         const confirmedAt = new Date(

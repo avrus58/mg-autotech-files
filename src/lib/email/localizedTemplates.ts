@@ -11,8 +11,12 @@ import type {
   TransactionalEmailEventType,
   TransactionalEmailLanguage,
 } from "@/lib/email/types";
+import {
+  renderExtendedLocalizedTransactionalEmailTemplate,
+  type ExtendedTransactionalEmailLanguage,
+} from "@/lib/email/extendedLocalizedTemplates";
 
-type LocalizedLanguage = Exclude<TransactionalEmailLanguage, "de">;
+type LocalizedLanguage = "en" | "tr";
 type CopyValue = string | ((context: TransactionalEmailContext) => string);
 
 type LocalizedEventCopy = {
@@ -703,10 +707,17 @@ const adminEventTypes = new Set<TransactionalEmailEventType>(
 export function renderLocalizedTransactionalEmailTemplate(
   eventType: TransactionalEmailEventType,
   context: TransactionalEmailContext,
-  language: LocalizedLanguage
+  language: Exclude<TransactionalEmailLanguage, "de">
 ) {
   if (adminEventTypes.has(eventType)) {
     return renderAdminTemplate(eventType as AdminEventType, context);
+  }
+  if (language !== "en" && language !== "tr") {
+    return renderExtendedLocalizedTransactionalEmailTemplate(
+      eventType,
+      context,
+      language as ExtendedTransactionalEmailLanguage
+    );
   }
   return renderCustomerTemplate(eventType as CustomerEventType, context, language);
 }

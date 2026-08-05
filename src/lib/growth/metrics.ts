@@ -45,6 +45,7 @@ export type GrowthEmailRow = {
 
 export type GrowthAttributionRow = {
   user_id: string | null;
+  locale?: string | null;
   first_source: string | null;
   first_medium: string | null;
   first_campaign: string | null;
@@ -391,6 +392,12 @@ export function buildGrowthMetrics(input: GrowthMetricInput) {
       ordersByCustomer: allOrdersByCustomer,
       paymentsByUser: periodPaymentsByUser,
       label: (row) => row.first_country_code || "Unknown",
+    }),
+    byLocale: buildAttributionPerformance({
+      attribution: periodAttribution,
+      ordersByCustomer: allOrdersByCustomer,
+      paymentsByUser: periodPaymentsByUser,
+      label: (row) => row.locale?.trim().toLowerCase() || "Unknown",
     }),
     byLandingPage: buildAttributionPerformance({
       attribution: periodAttribution,

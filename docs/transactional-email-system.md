@@ -29,7 +29,9 @@ If `RESEND_API_KEY` is missing, emails are skipped safely and the request/paymen
 
 ## Customer Email Language
 
-Customer transactional templates are available in English, German and Turkish.
+Customer transactional templates are available in all website languages:
+English, German, Turkish, Dutch, French, Italian, Spanish, Portuguese, Polish,
+Russian, Chinese and Albanian.
 
 Resolution order:
 
@@ -37,14 +39,14 @@ Resolution order:
 2. The locale selected during account registration or verification.
 3. Safe default: English.
 
-Unsupported website locales currently receive the English email version. They
+Malformed or unsupported locale values receive the English email version. They
 never fall back to German automatically. The preference is stored as
 `email_language` in Supabase Auth user metadata and is used only for content
 localization, never for authorization or RLS decisions.
 
 Admin notifications use English until a separate staff notification preference
-is introduced. Existing accounts without a stored preference receive English
-and can choose German or Turkish from customer settings.
+is introduced. Existing accounts without a stored preference receive English.
+Customers can choose any supported website language from customer settings.
 
 ## Email Event Log
 
@@ -223,7 +225,7 @@ Shows:
 - sent/delivered/delayed/bounced/complained/suppressed health metrics
 - latest signed provider delivery event per message
 - private active suppression list
-- safe EN/DE/TR template previews in a sandboxed frame
+- safe 12-language template previews in a sandboxed frame
 - Supabase Auth mail routes
 - exact request/work-order lifecycle coverage
 
@@ -245,7 +247,7 @@ password recovery, invitations, magic links, email changes, reauthentication
 and all supported security notifications. The complete mapping, subject
 template and file name are recorded in `docs/email-templates/manifest.json`.
 
-Every template selects English, German or Turkish from the reviewed
+Every template selects one of the 12 reviewed languages from the
 `email_language` user metadata. Missing or unsupported metadata uses English.
 The language value affects content only; it is never an authorization input.
 Regenerate reviewed sources with:
@@ -266,7 +268,7 @@ the hosted Supabase project.
 2. Apply `scripts/add-email-delivery-reliability.sql` and run its read-only verification SQL.
 3. Keep `EMAIL_DRY_RUN=true` in staging/local.
 4. Open `/admin/email` as owner/admin.
-5. Preview one platform and one Supabase Auth template in EN, DE and TR.
+5. Preview one platform and one Supabase Auth template in EN, DE, TR, FR and one non-Latin locale.
 6. Send an admin test email in dry-run and confirm no provider delivery occurs.
 7. Configure a signed staging Resend webhook and verify sent/delivered events.
 8. Use provider test events to verify delayed/bounced/complained admin states.
@@ -288,7 +290,7 @@ the hosted Supabase project.
    - `EMAIL_FROM`
    - `ADMIN_NOTIFICATION_EMAIL`
    - `SUPPORT_EMAIL`
-5. Apply all reviewed EN/DE/TR Auth subjects and bodies in hosted Supabase.
+5. Apply all reviewed 12-language Auth subjects and bodies in hosted Supabase.
 6. Register the HTTPS Resend webhook for the seven tracked delivery events.
 7. Keep `EMAIL_DRY_RUN=true` until controlled template, log and webhook tests pass.
 8. Disable dry-run only after confirming sender domain/DNS and suppression behavior.

@@ -7,6 +7,7 @@ import { getStableSession, notifySessionRequired, signOutIfEmailUnverified } fro
 import { supabase } from "@/lib/supabaseClient";
 import { resolveTransactionalEmailLanguageFromMetadata } from "@/lib/email/language";
 import type { TransactionalEmailLanguage } from "@/lib/email/types";
+import { supportedLocales } from "@/lib/i18nConfig";
 import {
   ArrowLeft,
   AlertTriangle,
@@ -474,17 +475,13 @@ export default function CustomerSettingsPage() {
                   label="E-mail Language"
                   value={emailLanguage}
                   onChange={(value) => setEmailLanguage(value as TransactionalEmailLanguage)}
-                  options={[
-                    ["en", "English"],
-                    ["de", "Deutsch"],
-                    ["tr", "Türkçe"],
-                  ]}
+                  options={supportedLocales.map(({ code, name }) => [code, name])}
                 />
                 <Field label="Invoice E-mail" value={invoiceEmail} onChange={setInvoiceEmail} placeholder="invoice@example.com" type="email" />
               </div>
               <div className="mt-4 flex items-start gap-3 rounded-2xl border border-white/10 bg-black/25 p-4 text-sm leading-6 text-zinc-400">
                 <Languages className="mt-0.5 h-5 w-5 shrink-0 text-red-400" />
-                Account, request, payment and delivery emails use this language. Other website languages currently receive the English email version.
+                Account, request, payment and delivery emails use this language. All supported website languages now have a matching customer email version.
               </div>
             </div>
 

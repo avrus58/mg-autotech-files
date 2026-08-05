@@ -154,7 +154,7 @@ export default function GrowthCustomerSuccessClient() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
-  const [attributionView, setAttributionView] = useState<"source" | "country" | "page">("source");
+  const [attributionView, setAttributionView] = useState<"source" | "country" | "language" | "page">("source");
   const [demandView, setDemandView] = useState<"service" | "brand">("service");
   const [actionBusy, setActionBusy] = useState("");
   const [feedback, setFeedback] = useState("");
@@ -206,6 +206,7 @@ export default function GrowthCustomerSuccessClient() {
   const attributionRows = useMemo(() => {
     if (!report) return [];
     if (attributionView === "country") return report.byCountry;
+    if (attributionView === "language") return report.byLocale;
     if (attributionView === "page") return report.byLandingPage;
     return report.bySource;
   }, [attributionView, report]);
@@ -405,10 +406,10 @@ export default function GrowthCustomerSuccessClient() {
               <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 px-5 py-4">
                 <div><p className="text-[10px] font-black uppercase tracking-[0.18em] text-sky-400">Consented first-touch attribution</p><h2 className="mt-1 text-lg font-black">What brings customers to MG AutoTech?</h2></div>
                 <div className="inline-flex rounded-lg border border-white/10 bg-black/20 p-1">
-                  {(["source", "country", "page"] as const).map((value) => <button key={value} type="button" onClick={() => setAttributionView(value)} aria-pressed={attributionView === value} className={`rounded-md px-3 py-2 text-xs font-black capitalize ${attributionView === value ? "bg-sky-900/60 text-sky-100" : "text-zinc-500 hover:text-white"}`}>{value}</button>)}
+                  {(["source", "country", "language", "page"] as const).map((value) => <button key={value} type="button" onClick={() => setAttributionView(value)} aria-pressed={attributionView === value} className={`rounded-md px-3 py-2 text-xs font-black capitalize ${attributionView === value ? "bg-sky-900/60 text-sky-100" : "text-zinc-500 hover:text-white"}`}>{value}</button>)}
                 </div>
               </div>
-              <PerformanceTable rows={attributionRows} dimension={attributionView === "source" ? "Source / medium" : attributionView === "country" ? "Country" : "Landing page"} />
+              <PerformanceTable rows={attributionRows} dimension={attributionView === "source" ? "Source / medium" : attributionView === "country" ? "Country" : attributionView === "language" ? "Language" : "Landing page"} />
               <div className="border-t border-white/10 px-5 py-3 text-xs leading-5 text-zinc-500"><ShieldCheck className="mr-2 inline h-4 w-4 text-emerald-400" />Only consented, pseudonymous first-touch data. No raw IP, full referrer URL, email, notes or file data.</div>
             </section>
 

@@ -62,6 +62,7 @@ The review workspace stages changes in the browser and saves them through one bo
 - **Paying customers:** distinct customers with successful payment records in the range.
 - **Revenue per customer:** net ledger revenue after recorded refunds divided by distinct paying customers, calculated separately for every currency. Gross purchases, refunds and net revenue remain visible separately.
 - **Reminder follow-through:** a request submitted within seven days after a recorded reminder. This is correlation, not proof of causation.
+- **Locale funnel:** consented attribution rows grouped by the normalized existing locale field, with unique visits, linked registrations, request customers and successful paying customers. Unknown or missing locale remains explicit and is never guessed from country.
 
 ## Reminder workflow
 
@@ -87,6 +88,7 @@ The center includes:
 - repeat-order and inactivity indicators;
 - successful revenue and revenue per paying customer by currency;
 - source, country and landing-page performance for consented attribution;
+- locale-level consented visits, registrations, request customers and paying customers;
 - service and vehicle-brand demand from real requests;
 - sent/delivered/delayed/bounced/complained/failed email outcomes;
 - aggregate Search Console query visibility;
@@ -131,3 +133,4 @@ The application remains operational before the migration is applied:
 16. Confirm an evidence note is required for every completed review state.
 17. Load the same row in two admin sessions, save from one and confirm the second receives a stale-review response without partially writing its batch.
 18. Confirm anonymous and normal customer requests to `/api/admin/growth/customers` and its PATCH routes are denied.
+19. Open the Language tab and confirm totals reconcile with the consented attribution summary without exposing customer identifiers.

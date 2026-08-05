@@ -2,10 +2,12 @@ import type {
   TransactionalEmailContext,
   TransactionalEmailLanguage,
 } from "@/lib/email/types";
+import { emailLocaleCopy } from "@/lib/email/localeCopy";
 
 const emailLayoutCopy: Record<
   TransactionalEmailLanguage,
   {
+    serviceName: string;
     portal: string;
     update: string;
     secureNotice: string;
@@ -13,7 +15,9 @@ const emailLayoutCopy: Record<
     contact: string;
   }
 > = {
+  ...emailLocaleCopy,
   de: {
+    serviceName: "Sicherer ECU-/TCU-Dateiservice",
     portal: "Kundenportal",
     update: "MG AutoTech Update",
     secureNotice:
@@ -23,6 +27,7 @@ const emailLayoutCopy: Record<
     contact: "Kontakt",
   },
   en: {
+    serviceName: "Secure ECU / TCU File Service",
     portal: "Customer Portal",
     update: "MG AutoTech Update",
     secureNotice:
@@ -32,6 +37,7 @@ const emailLayoutCopy: Record<
     contact: "Contact",
   },
   tr: {
+    serviceName: "Güvenli ECU / TCU Dosya Hizmeti",
     portal: "Müşteri Paneli",
     update: "MG AutoTech Güncellemesi",
     secureNotice:
@@ -128,7 +134,7 @@ export function htmlLayout(input: {
           <table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr>
             <td style="vertical-align:middle;">
               <div style="font-size:18px;font-weight:900;letter-spacing:0.02em;">MG <span style="color:#ff3445;">AUTOTECH</span></div>
-              <div style="margin-top:5px;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#a1a1aa;">Secure ECU / TCU File Service</div>
+              <div style="margin-top:5px;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#a1a1aa;">${escapeHtml(copy.serviceName)}</div>
             </td>
             <td style="vertical-align:middle;text-align:right;">
               <span style="display:inline-block;border:1px solid #3f3f46;border-radius:999px;padding:7px 10px;font-size:10px;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;color:#e4e4e7;">${escapeHtml(copy.portal)}</span>

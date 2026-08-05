@@ -50,6 +50,18 @@ Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
 
+### MANUAL-018 [P0] Cok dilli musteri donusum yolculugunu tamamla
+
+Durum: Done
+
+Fingerprint: `customer-conversion|register-auth-request-dashboard|english-fallback-and-locale-blind-funnel|complete-localized-journey`
+
+Kapsam: Kompakt ve responsive kayit akisini sirket profiliyle guclendir; auth, yeni talep ve musteri panelindeki gercek English fallback metinlerini desteklenen dillere tamamla; mevcut Growth Center icinde locale ve ulke bazli gizlilik-dostu kayit, talep ve odeme donusumunu gorunur yap. Mevcut payment, vehicle, AI, work-order ve authorization davranisi korunur.
+
+Sonuc: Private/company kaydi ayrildi; company name yalniz sirket hesabinda zorunlu ve Google OAuth callback boyunca bounded profile draft ile korunur. Customer auth, request, dashboard, order, delivery, File Expert, payment, widget ve teknik rehber yuzeylerindeki 611 gorunur metin 11 non-English locale icin exact veya intentional invariant hale geldi. Nested JSX ve visible custom prop metinleri de AST denetimine katildi. Customer lifecycle ve hosted Auth e-postalari 12 dili destekler; admin operasyon e-postasi English kalir. Growth Center mevcut privacy-safe locale alanindan visit, registration, request ve paid funnel dagilimi uretir; yeni PII veya SQL gerekmez.
+
+Dogrulama: Full tests PASS (605/605); lint PASS; web+desktop typecheck PASS; production build PASS (266 static page); i18n/SEO PASS (12 locale, 611/611 source string, 0 English fallback); payment schema-only PASS ve env okunmadi; performance PASS (60.9 KB gzip / 80 KB); high-severity audit PASS (2 mevcut moderate PostCSS advisory); Chrome QA PASS (390x844, 768x1024, 1366x768, 1440x900, private/company, Chinese register/login/password/new-request/dashboard gate); sifir horizontal overflow ve sifir console error; diff check PASS. SQL, production, push veya deploy islemi yapilmadi.
+
 ### MANUAL-017 [P0] Tum dillerde tek kaynakli ana sayfa paritesi
 
 Durum: Done

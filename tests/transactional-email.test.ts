@@ -19,7 +19,9 @@ import {
   resolveBrowserTransactionalEmailLanguage,
   resolveTransactionalEmailLanguageFromCookie,
   resolveTransactionalEmailLanguageFromMetadata,
+  supportedTransactionalEmailLanguages,
 } from "../src/lib/email/language";
+import { emailLocaleCopy } from "../src/lib/email/localeCopy";
 import { safeEmailUrl } from "../src/lib/email/render";
 import { filterCustomerVisibleRequestMessages } from "../src/lib/workOrders/messageVisibility";
 
@@ -115,8 +117,14 @@ test("email language resolver accepts exact supported locales and never promotes
   assert.equal(normalizeTransactionalEmailLanguage("de-DE"), "de");
   assert.equal(normalizeTransactionalEmailLanguage("tr_TR"), "tr");
   assert.equal(normalizeTransactionalEmailLanguage("en-GB"), "en");
-  assert.equal(normalizeTransactionalEmailLanguage("fr-FR"), "en");
+  assert.equal(normalizeTransactionalEmailLanguage("fr-FR"), "fr");
   assert.equal(normalizeTransactionalEmailLanguage(null), "en");
+  for (const language of supportedTransactionalEmailLanguages) {
+    assert.equal(
+      normalizeTransactionalEmailLanguage(`${language}-${language.toUpperCase()}`),
+      language
+    );
+  }
   assert.equal(
     resolveTransactionalEmailLanguageFromMetadata({ email_language: "tr-TR" }),
     "tr"
@@ -127,10 +135,10 @@ test("email language resolver accepts exact supported locales and never promotes
   );
   assert.equal(
     resolveTransactionalEmailLanguageFromMetadata({ email_language: "unknown", locale: "fr" }),
-    "en"
+    "fr"
   );
   assert.equal(resolveTransactionalEmailLanguageFromCookie("foo=1; mg_locale=de; bar=2"), "de");
-  assert.equal(resolveTransactionalEmailLanguageFromCookie("mg_locale=fr"), "en");
+  assert.equal(resolveTransactionalEmailLanguageFromCookie("mg_locale=fr"), "fr");
   assert.equal(
     resolveBrowserTransactionalEmailLanguage({
       storedLocale: "tr",
@@ -145,19 +153,24 @@ test("request lifecycle copy follows the recipient email language", () => {
   const english = resolveStatusEmail("customer_info_needed", "legacy_order", "en");
   const german = resolveStatusEmail("customer_info_needed", "legacy_order", "de");
   const turkish = resolveStatusEmail("customer_info_needed", "legacy_order", "tr");
+  const french = resolveStatusEmail("customer_info_needed", "legacy_order", "fr");
+  const chinese = resolveStatusEmail("customer_info_needed", "legacy_order", "zh");
 
   assert.equal(english?.statusLabel, "Response required");
   assert.match(english?.actionRequired ?? "", /review the latest message/);
   assert.equal(german?.statusLabel, "Rückmeldung erforderlich");
   assert.equal(turkish?.statusLabel, "Yanıt gerekli");
   assert.match(turkish?.actionRequired ?? "", /son mesajı kontrol edin/);
+  assert.equal(french?.statusLabel, "Réponse requise");
+  assert.equal(chinese?.statusLabel, "需要回复");
 });
 
-test("every customer lifecycle template renders complete English and Turkish output", () => {
+test("every customer lifecycle template renders complete output in all supported languages", () => {
   const customerEvents = [
     "customer_welcome",
     "customer_password_reset",
     "request_created",
+    "request_abandoned_reminder",
     "request_received",
     "file_uploaded",
     "additional_file_requested",
@@ -197,12 +210,21 @@ test("every customer lifecycle template renders complete English and Turkish out
   };
 
   for (const eventType of customerEvents) {
-    for (const language of ["en", "tr"] as const) {
+    for (const language of supportedTransactionalEmailLanguages) {
       const rendered = renderTransactionalEmailTemplate(eventType, context, language);
       assert.ok(rendered.subject.trim(), `${eventType}:${language}:subject`);
       assert.ok(rendered.text.trim(), `${eventType}:${language}:text`);
       assert.match(rendered.html, new RegExp(`<html lang="${language}">`));
-      assert.doesNotMatch(rendered.html, /undefined|null/);
+      assert.ok(
+        rendered.html.includes(emailLocaleCopy[language].serviceName),
+        `${eventType}:${language}:localized service name`
+      );
+      assert.doesNotMatch(rendered.html, />\s*(?:undefined|null)\s*</);
+      assert.doesNotMatch(rendered.text, /^(?:undefined|null)$/m);
+      assert.doesNotMatch(
+        JSON.stringify(rendered),
+        /admin_notes|storage_path|service_role|raw_binary|hex_preview|confidence_score/i
+      );
     }
   }
 });

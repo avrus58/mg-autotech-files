@@ -2,6 +2,17 @@
 
 Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
+## 2026-08-05 Multilingual customer conversion completion
+
+- Gorev: Kayit, auth, talep, panel, siparis, e-posta ve buyume olcumunu 12 dilde tek bir tamamlanmis musteri yolculuguna donusturmek; responsive sirket kaydini ve locale bazli donusum gorunumunu mevcut guvenlik sinirlari icinde tamamlamak.
+- Kayit: `/register` telefon, tablet, kucuk laptop ve masaustunde kompakt hale getirildi. Private ve workshop/company secimi aciktir; company name yalniz sirket hesabinda zorunlu, VAT optionaldir. Email/password ve Google OAuth callback ayni bounded/validated profile draft'i kullanir; locale yalniz sunum ve email tercihi olarak saklanir, yetki vermez.
+- Customer i18n: AST denetimi nested JSX conditional ve visible custom component prop metinlerini de tarar. Auth, new request, dashboard, order, delivery, File Expert, payment, widget billing ve technical guidance dahil 611 customer-visible source stringin tamami NL/DE/FR/IT/RU/ES/TR/PT/ZH/PL/SQ icin exact veya intentional invarianttir; temiz English fallback sayisi sifirdir.
+- E-posta: Customer lifecycle ve password recovery sablonlari HTML/plain-text olarak 12 dilde render edilir. On uc hosted Supabase Auth template artefacti ayni locale setini ve guvenli English fallback'i tasir. Teknik degerler ve kullanici girdileri cevrilmez; admin operasyon e-postasi English kalir. Repository artefactlari hosted Supabase ayarini otomatik degistirmez.
+- Growth: Mevcut consented `growth_attribution_sessions.locale` alani visit, registration, request ve successful payment funnelina eklendi. Admin Growth Center locale satirlarini aggregate ve PII'siz gosterir; query/customer join, yeni SQL veya customer data mutasyonu yoktur.
+- Browser QA: Chrome production build ile 390x844, 768x1024, 1366x768 ve 1440x900 kayit testi yapildi; yatay overflow yok, inputlar en az 44 px. Private/company gorunurlugu ve required state dogru. Chinese register, login, forgot/reset redirect, new-request ve dashboard auth gate metinleri yerellesmis; console error yok.
+- Kontroller: Full tests PASS (605/605); lint PASS; web+desktop typecheck PASS; production build PASS (266 static page); `npm run check:i18n` PASS (12 locale, 30 source file, 611/611, 0 fallback); payment schema-only PASS ve env okunmadi; performance PASS (3 initial chunk, 224.5 KB raw, 60.9 KB gzip / 80 KB); high-severity audit PASS (Next/PostCSS zincirinde 2 mevcut moderate advisory); `git diff --check` PASS.
+- Kalan sinirlar: Official legal metinler hukuki review olmadan Almancadan cevrilmez. English-only public technical resources sahte locale URL almaz. Hosted Auth artefactlarinin canli Supabase'e uygulanmasi ayri kontrollu release ister; 2026-06-03 sonrasi default SMTP kullanan yeni free Supabase projelerinde custom Auth template kisiti vardir. Production, Supabase, secret, push ve deploy erisimi yapilmadi.
+
 ## 2026-08-05 Unified localized homepage parity
 
 - Gorev: Almanca ve diger 10 locale ana sayfasinin English root ana sayfadan ayri, daha dar ve eski bir tasarim kullanmasini kaldirmak; tum dillerde ayni urun deneyimini korumak.

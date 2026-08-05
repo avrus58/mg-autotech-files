@@ -19,6 +19,10 @@ import { supabase } from "@/lib/supabaseClient";
 import { resolveBrowserTransactionalEmailLanguage } from "@/lib/email/language";
 import { recordGrowthAccountCreated } from "@/lib/growth/client";
 import {
+  createRegistrationProfileDraft,
+  OAUTH_REGISTRATION_PROFILE_KEY,
+} from "@/lib/registrationProfile";
+import {
   ArrowLeft,
   ArrowRight,
   Building2,
@@ -211,10 +215,10 @@ export default function RegisterPage() {
         data: {
           full_name: cleanFullName,
           account_type: accountType,
-          company_name: cleanCompanyName || null,
+          company_name: accountType === "company" ? cleanCompanyName : null,
           phone: phone.trim() || null,
-          vat_id: taxNumber.trim() || null,
-          tax_number: taxNumber.trim() || null,
+          vat_id: accountType === "company" ? taxNumber.trim() || null : null,
+          tax_number: accountType === "company" ? taxNumber.trim() || null : null,
           invoice_email: invoiceEmail.trim() || cleanEmail,
           street: street.trim() || null,
           postal_code: postalCode.trim() || null,
@@ -278,11 +282,30 @@ export default function RegisterPage() {
   const handleGoogleRegister = async () => {
     if (googleLoading) return;
 
+    if (!validateAccountStep()) {
+      setStep(1);
+      return;
+    }
+
     setGoogleLoading(true);
     setMessage("");
     setSuccess(false);
 
     window.sessionStorage.setItem("mg_register_oauth_provider", "google");
+    const profileDraft = createRegistrationProfileDraft({
+      fullName: cleanFullName,
+      accountType,
+      companyName: cleanCompanyName,
+      phone,
+      taxNumber,
+      emailLanguage: getSelectedEmailLanguage(),
+    });
+    if (profileDraft) {
+      window.sessionStorage.setItem(
+        OAUTH_REGISTRATION_PROFILE_KEY,
+        JSON.stringify(profileDraft)
+      );
+    }
 
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
@@ -293,6 +316,7 @@ export default function RegisterPage() {
 
     if (error) {
       window.sessionStorage.removeItem("mg_register_oauth_provider");
+      window.sessionStorage.removeItem(OAUTH_REGISTRATION_PROFILE_KEY);
       setMessage(error.message);
       setGoogleLoading(false);
     }
@@ -307,23 +331,23 @@ export default function RegisterPage() {
   }
 
   return (
-    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#050505] px-4 py-8 text-white sm:py-10">
+    <main className="relative flex min-h-screen items-start justify-center overflow-x-hidden bg-[#050505] px-3 py-3 text-white sm:px-4 sm:py-5 lg:items-center lg:py-2">
       <div className="fixed inset-0 -z-10 bg-[radial-gradient(circle_at_18%_0%,rgba(177,18,27,0.28),transparent_34%),radial-gradient(circle_at_82%_100%,rgba(177,18,27,0.18),transparent_30%),linear-gradient(135deg,#050505,#0d0d0f_48%,#160608)]" />
 
-      <div className="grid w-full max-w-7xl overflow-hidden rounded-[1.6rem] border border-white/10 bg-white/[0.04] shadow-2xl shadow-black/50 backdrop-blur-xl lg:grid-cols-[0.92fr_1.08fr] lg:rounded-[2rem]">
-        <section className="relative hidden min-h-[760px] overflow-hidden border-r border-white/10 bg-black/40 p-10 lg:block">
+      <div className="grid w-full max-w-[1180px] overflow-hidden rounded-[1.4rem] border border-white/10 bg-white/[0.04] shadow-2xl shadow-black/50 backdrop-blur-xl lg:grid-cols-[0.84fr_1.16fr] lg:rounded-[1.6rem]">
+        <section className="relative hidden min-h-[680px] overflow-hidden border-r border-white/10 bg-black/40 p-5 lg:block 2xl:min-h-[710px] 2xl:p-8">
           <div className="absolute -left-24 -top-24 h-80 w-80 rounded-full bg-red-700/20 blur-3xl" />
           <div className="absolute -bottom-24 -right-20 h-80 w-80 rounded-full bg-red-950/40 blur-3xl" />
           <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-red-500/60 to-transparent" />
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_68%_34%,rgba(177,18,27,0.16),transparent_22%),linear-gradient(140deg,transparent,rgba(255,255,255,0.04))]" />
 
           <Link href="/" className="relative flex items-center gap-3">
-            <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl border border-red-800/50 bg-[#111] shadow-lg shadow-red-950/40">
-              <Upload className="h-8 w-8 text-red-600" />
+            <div className="relative flex h-12 w-12 items-center justify-center rounded-xl border border-red-800/50 bg-[#111] shadow-lg shadow-red-950/40">
+              <Upload className="h-7 w-7 text-red-600" />
             </div>
 
             <div>
-              <div className="text-2xl font-black tracking-wide">
+              <div className="text-xl font-black tracking-wide">
                 MG <span className="text-red-600">AUTOTECH</span>
               </div>
               <div className="text-xs text-zinc-400">
@@ -332,23 +356,23 @@ export default function RegisterPage() {
             </div>
           </Link>
 
-          <div className="relative mt-20">
-            <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-red-800/50 bg-red-950/25 px-4 py-2 text-sm font-bold text-red-100">
+          <div className="relative mt-7 2xl:mt-10">
+            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-red-800/50 bg-red-950/25 px-3 py-1.5 text-xs font-bold text-red-100">
               <ShieldCheck className="h-4 w-4 text-red-500" />
               Verified customer workspace
             </div>
 
-            <h1 className="max-w-xl text-5xl font-black leading-tight">
+            <h1 className="max-w-xl text-3xl font-black leading-tight">
               File service account for workshops and drivers.
             </h1>
 
-            <p className="mt-6 max-w-lg leading-8 text-zinc-400">
+            <p className="mt-3 max-w-lg text-sm leading-6 text-zinc-400">
               Create a secure workspace for ECU / TCU uploads, credit balance,
               technical communication and completed file delivery.
             </p>
           </div>
 
-          <div className="relative mt-14 grid gap-4">
+          <div className="relative mt-5 grid gap-2.5">
             <FeatureCard
               icon={<Cpu className="h-6 w-6" />}
               title="Smart Vehicle Database"
@@ -366,11 +390,11 @@ export default function RegisterPage() {
             />
           </div>
 
-          <div className="relative mt-8 grid grid-cols-3 gap-3">
+          <div className="relative mt-3 grid grid-cols-3 gap-2">
             {["Secure upload", "Credit wallet", "Live order status"].map((item) => (
               <div
                 key={item}
-                className="rounded-2xl border border-red-900/30 bg-red-950/15 p-4 text-center text-xs font-black uppercase tracking-[0.14em] text-red-100"
+                className="rounded-lg border border-red-900/30 bg-red-950/15 px-2 py-2 text-center text-[10px] font-black uppercase tracking-[0.1em] text-red-100"
               >
                 {item}
               </div>
@@ -378,9 +402,9 @@ export default function RegisterPage() {
           </div>
         </section>
 
-        <section className="p-5 sm:p-8 lg:p-10">
-          <div className="mx-auto max-w-2xl">
-            <div className="mb-8 lg:hidden">
+        <section className="p-4 sm:p-6 2xl:p-8">
+          <div className="mx-auto max-w-[650px]">
+            <div className="mb-5 lg:hidden">
               <Link href="/" className="flex items-center gap-3">
                 <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-red-800/50 bg-[#111]">
                   <Upload className="h-7 w-7 text-red-600" />
@@ -394,66 +418,73 @@ export default function RegisterPage() {
               </Link>
             </div>
 
-            <div className="mb-8">
-              <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-red-900/50 bg-red-950/20 px-3 py-1.5 text-xs font-black uppercase tracking-[0.16em] text-red-200">
+            <div className="mb-4">
+              <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-red-900/50 bg-red-950/20 px-3 py-1.5 text-xs font-black uppercase tracking-[0.16em] text-red-200">
                 <ShieldCheck className="h-4 w-4" />
                 Start your file service account
               </div>
-              <h2 className="text-3xl font-black leading-tight sm:text-4xl">
+              <h2 className="text-2xl font-black leading-tight">
                 Create Account
               </h2>
-              <p className="mt-3 leading-7 text-zinc-400">
+              <p className="mt-1.5 text-sm leading-5 text-zinc-400">
                 A guided setup for private customers and professional workshops.
               </p>
             </div>
 
             <StepProgress step={step} onStepChange={setStep} />
 
-            {step !== 3 && (
+            {step === 2 && (
               <GoogleRegisterButton
                 loading={googleLoading}
                 onClick={handleGoogleRegister}
               />
             )}
 
-            <form onSubmit={handleRegister} className="space-y-5">
+            <form onSubmit={handleRegister} className="space-y-4">
               {step === 1 && (
-                <div className="space-y-5">
-                  <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-4">
+                  <div className="grid gap-3 sm:grid-cols-2" role="group" aria-label="Customer type">
                     {accountCards.map((item) => (
                       <button
                         key={item.id}
                         type="button"
                         onClick={() => setAccountType(item.id)}
-                        className={`rounded-3xl border p-5 text-left transition hover:-translate-y-0.5 sm:p-6 ${
+                        aria-pressed={accountType === item.id}
+                        className={`grid grid-cols-[2.5rem_minmax(0,1fr)_auto] items-start gap-3 rounded-xl border p-3 text-left transition hover:-translate-y-0.5 ${
                           accountType === item.id
                             ? "border-red-500 bg-red-950/25 shadow-xl shadow-red-950/20"
                             : "border-white/10 bg-black/25 hover:border-white/20"
                         }`}
                       >
-                        <div className="mb-5 flex items-center justify-between gap-3">
-                          <span className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] text-red-400">
-                            {item.icon}
+                        <span className="flex h-10 w-10 items-center justify-center rounded-lg border border-white/10 bg-white/[0.04] text-red-400">
+                          {item.icon}
+                        </span>
+                        <span className="min-w-0">
+                          <span className="block text-sm font-black sm:text-base">
+                            {item.title}
                           </span>
-                          {accountType === item.id && (
-                            <CheckCircle2 className="h-6 w-6 shrink-0 text-red-400" />
-                          )}
-                        </div>
-                        <div className="text-lg font-black">{item.title}</div>
-                        <p className="mt-2 text-sm leading-6 text-zinc-500">
-                          {item.text}
-                        </p>
+                          <span className="mt-1 block text-xs leading-5 text-zinc-500">
+                            {item.text}
+                          </span>
+                        </span>
+                        {accountType === item.id ? (
+                          <CheckCircle2 className="mt-1 h-5 w-5 shrink-0 text-red-400" />
+                        ) : (
+                          <span className="h-5 w-5" aria-hidden="true" />
+                        )}
                       </button>
                     ))}
                   </div>
 
-                  <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="grid gap-3 sm:grid-cols-2">
                     <TextField
                       label="Full Name"
                       value={fullName}
                       onChange={setFullName}
                       placeholder="Name and surname"
                       icon={<User className="h-5 w-5" />}
+                      autoComplete="name"
+                      maxLength={120}
                       required
                     />
                     <TextField
@@ -463,17 +494,21 @@ export default function RegisterPage() {
                       placeholder="+49 151 23456789"
                       icon={<Phone className="h-5 w-5" />}
                       type="tel"
+                      autoComplete="tel"
+                      maxLength={40}
                     />
                   </div>
 
                   {accountType === "company" && (
-                    <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="grid gap-3 sm:grid-cols-2">
                       <TextField
                         label="Company Name"
                         value={companyName}
                         onChange={setCompanyName}
                         placeholder="Workshop / company"
                         icon={<Building2 className="h-5 w-5" />}
+                        autoComplete="organization"
+                        maxLength={120}
                         required
                       />
                       <TextField
@@ -482,14 +517,17 @@ export default function RegisterPage() {
                         onChange={setTaxNumber}
                         placeholder="Optional"
                         icon={<FileCheck2 className="h-5 w-5" />}
+                        maxLength={80}
                       />
                     </div>
                   )}
 
-                  <InfoBox>
-                    Company details stay attached to requests for cleaner
-                    workshop administration.
-                  </InfoBox>
+                  {accountType === "company" && (
+                    <InfoBox>
+                      Company details stay attached to requests for cleaner
+                      workshop administration.
+                    </InfoBox>
+                  )}
 
                   <PrimaryButton type="button" onClick={goNext}>
                     Continue
@@ -499,7 +537,7 @@ export default function RegisterPage() {
               )}
 
               {step === 2 && (
-                <div className="space-y-5">
+                <div className="space-y-4">
                   <TextField
                     label="E-mail"
                     value={email}
@@ -507,10 +545,11 @@ export default function RegisterPage() {
                     placeholder="you@example.com"
                     icon={<Mail className="h-5 w-5" />}
                     type="email"
+                    autoComplete="email"
                     required
                   />
 
-                  <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="grid gap-3 sm:grid-cols-2">
                     <TextField
                       label="Password"
                       value={password}
@@ -518,6 +557,7 @@ export default function RegisterPage() {
                       placeholder="Minimum 6 characters"
                       icon={<Lock className="h-5 w-5" />}
                       type="password"
+                      autoComplete="new-password"
                       required
                     />
                     <TextField
@@ -527,11 +567,12 @@ export default function RegisterPage() {
                       placeholder="Repeat password"
                       icon={<ShieldCheck className="h-5 w-5" />}
                       type="password"
+                      autoComplete="new-password"
                       required
                     />
                   </div>
 
-                  <div className="rounded-2xl border border-emerald-900/40 bg-emerald-950/15 p-5">
+                  <div className="rounded-xl border border-emerald-900/40 bg-emerald-950/15 p-4">
                     <div className="flex items-start gap-3">
                       <ShieldCheck className="mt-1 h-5 w-5 shrink-0 text-emerald-400" />
                       <p className="text-sm leading-6 text-zinc-400">
@@ -556,9 +597,9 @@ export default function RegisterPage() {
               )}
 
               {step === 3 && (
-                <div className="space-y-5">
-                  <div className="rounded-3xl border border-white/10 bg-black/25 p-5">
-                    <div className="mb-5 flex items-start gap-3">
+                <div className="space-y-4">
+                  <div className="rounded-2xl border border-white/10 bg-black/25 p-4">
+                    <div className="mb-4 flex items-start gap-3">
                       <MapPin className="mt-1 h-6 w-6 shrink-0 text-red-400" />
                       <div>
                         <h3 className="text-xl font-black">Billing Profile</h3>
@@ -577,6 +618,7 @@ export default function RegisterPage() {
                         placeholder={cleanEmail || "invoice@example.com"}
                         icon={<Mail className="h-5 w-5" />}
                         type="email"
+                        autoComplete="email"
                       />
                       <TextField
                         label="Street / House Number"
@@ -584,6 +626,7 @@ export default function RegisterPage() {
                         onChange={setStreet}
                         placeholder="Street and number"
                         icon={<MapPin className="h-5 w-5" />}
+                        autoComplete="street-address"
                       />
                       <div className="grid gap-4 sm:grid-cols-[0.7fr_1fr]">
                         <TextField
@@ -591,12 +634,14 @@ export default function RegisterPage() {
                           value={postalCode}
                           onChange={setPostalCode}
                           placeholder="70437"
+                          autoComplete="postal-code"
                         />
                         <TextField
                           label="City"
                           value={city}
                           onChange={setCity}
                           placeholder="Stuttgart"
+                          autoComplete="address-level2"
                         />
                       </div>
                       <div className="grid gap-4 sm:grid-cols-2">
@@ -605,6 +650,7 @@ export default function RegisterPage() {
                           value={country}
                           onChange={setCountry}
                           placeholder="Germany"
+                          autoComplete="country-name"
                         />
                         <SelectField
                           label="Preferred Contact"
@@ -620,7 +666,7 @@ export default function RegisterPage() {
                     </div>
                   </div>
 
-                  <div className="rounded-2xl border border-red-900/40 bg-red-950/20 p-5">
+                  <div className="rounded-xl border border-red-900/40 bg-red-950/20 p-4">
                     <div className="text-xs font-black uppercase tracking-[0.16em] text-red-200">
                       Account summary
                     </div>
@@ -690,14 +736,14 @@ export default function RegisterPage() {
               </button>
             )}
 
-            <div className="mt-8 rounded-2xl border border-white/10 bg-black/30 p-5 text-center text-sm text-zinc-400">
+            <div className="mt-5 rounded-xl border border-white/10 bg-black/30 p-4 text-center text-sm text-zinc-400">
               Already have an account?{" "}
               <Link href="/login" className="font-black text-red-400">
                 Login
               </Link>
             </div>
 
-            <p className="mt-5 text-center text-xs leading-5 text-zinc-600">
+            <p className="mt-3 text-center text-xs leading-5 text-zinc-600">
               By creating an account, you can submit ECU / TCU file requests and
               manage your MG AutoTech credit balance securely.
             </p>
@@ -716,17 +762,17 @@ function StepProgress({
   onStepChange: (step: StepId) => void;
 }) {
   return (
-    <div className="mb-8">
+    <div className="mb-4">
       <div className="grid grid-cols-[1fr_auto_1fr_auto_1fr] items-start gap-2 sm:gap-3">
         {steps.map((item, index) => (
           <div key={item.id} className="contents">
             <button
               type="button"
               onClick={() => onStepChange(item.id)}
-              className="group flex min-w-0 flex-col items-center gap-2 text-center"
+              className="group flex min-w-0 flex-col items-center gap-1.5 text-center"
             >
               <span
-                className={`flex h-10 w-10 items-center justify-center rounded-full border text-sm font-black transition sm:h-11 sm:w-11 ${
+                className={`flex h-9 w-9 items-center justify-center rounded-full border text-sm font-black transition ${
                   step >= item.id
                     ? "border-red-500 bg-red-950/40 text-white shadow-lg shadow-red-950/30"
                     : "border-white/20 bg-black/35 text-zinc-500"
@@ -735,19 +781,19 @@ function StepProgress({
                 {item.id}
               </span>
               <span
-                className={`text-[10px] font-black uppercase tracking-[0.1em] sm:text-[11px] ${
+                className={`text-[9px] font-black uppercase tracking-[0.08em] sm:text-[10px] ${
                   step >= item.id ? "text-red-200" : "text-zinc-600"
                 }`}
               >
                 {item.label}
               </span>
-              <span className="hidden text-[11px] text-zinc-600 sm:block">
+              <span className="hidden text-[10px] text-zinc-600 2xl:block">
                 {item.subLabel}
               </span>
             </button>
             {index < steps.length - 1 && (
               <span
-                className={`mt-5 h-px w-full ${
+                className={`mt-[18px] h-px w-full ${
                   step > item.id ? "bg-red-700/70" : "bg-white/15"
                 }`}
               />
@@ -769,10 +815,14 @@ function FeatureCard({
   text: string;
 }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
-      <div className="mb-3 text-red-500">{icon}</div>
-      <div className="font-black">{title}</div>
-      <p className="mt-2 text-sm leading-6 text-zinc-500">{text}</p>
+    <div className="flex items-start gap-3 rounded-xl border border-white/10 bg-white/[0.04] p-3">
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-red-900/30 bg-red-950/20 text-red-500">
+        {icon}
+      </div>
+      <div className="min-w-0">
+        <div className="text-sm font-black">{title}</div>
+        <p className="mt-1 text-xs leading-5 text-zinc-500">{text}</p>
+      </div>
     </div>
   );
 }
@@ -784,6 +834,8 @@ function TextField({
   placeholder,
   icon,
   type = "text",
+  autoComplete,
+  maxLength,
   required = false,
 }: {
   label: string;
@@ -792,12 +844,19 @@ function TextField({
   placeholder: string;
   icon?: ReactNode;
   type?: string;
+  autoComplete?: string;
+  maxLength?: number;
   required?: boolean;
 }) {
   return (
     <label className="block min-w-0">
-      <div className="mb-2 text-xs font-black uppercase tracking-[0.16em] text-zinc-500">
+      <div className="mb-1.5 text-[11px] font-black uppercase tracking-[0.14em] text-zinc-500">
         {label}
+        {required && (
+          <span className="ml-1 text-red-400" aria-hidden="true">
+            *
+          </span>
+        )}
       </div>
       <div className="relative">
         {icon && (
@@ -810,8 +869,10 @@ function TextField({
           onChange={(event) => onChange(event.target.value)}
           placeholder={placeholder}
           type={type}
+          autoComplete={autoComplete}
+          maxLength={maxLength}
           required={required}
-          className={`h-14 w-full rounded-2xl border border-white/10 bg-black/35 px-4 text-sm font-bold text-white outline-none transition placeholder:text-zinc-600 focus:border-red-700 ${
+          className={`h-11 w-full rounded-xl border border-white/10 bg-black/35 px-4 text-sm font-bold text-white outline-none transition placeholder:text-zinc-600 focus:border-red-700 ${
             icon ? "pl-12" : ""
           }`}
         />
@@ -833,13 +894,13 @@ function SelectField({
 }) {
   return (
     <label className="block min-w-0">
-      <div className="mb-2 text-xs font-black uppercase tracking-[0.16em] text-zinc-500">
+      <div className="mb-1.5 text-[11px] font-black uppercase tracking-[0.14em] text-zinc-500">
         {label}
       </div>
       <select
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="h-14 w-full rounded-2xl border border-white/10 bg-black/35 px-4 text-sm font-bold text-white outline-none transition focus:border-red-700"
+        className="h-11 w-full rounded-xl border border-white/10 bg-black/35 px-4 text-sm font-bold text-white outline-none transition focus:border-red-700"
       >
         {options.map(([value, label]) => (
           <option key={value} value={value} className="bg-[#111]">
@@ -853,7 +914,7 @@ function SelectField({
 
 function InfoBox({ children }: { children: ReactNode }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-black/25 p-5">
+    <div className="rounded-xl border border-white/10 bg-black/25 p-3">
       <div className="flex items-start gap-3">
         <FileCheck2 className="mt-1 h-5 w-5 shrink-0 text-red-400" />
         <p className="text-sm leading-6 text-zinc-400">{children}</p>
@@ -874,7 +935,7 @@ function GoogleRegisterButton({
       type="button"
       onClick={onClick}
       disabled={loading}
-      className="mb-5 flex h-14 w-full items-center justify-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] px-5 font-black text-white transition hover:border-white/20 hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-60"
+      className="mb-4 flex h-12 w-full items-center justify-center gap-3 rounded-xl border border-white/10 bg-white/[0.04] px-5 font-black text-white transition hover:border-white/20 hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-60"
     >
       {loading ? (
         <Loader2 className="h-5 w-5 animate-spin" />
@@ -895,7 +956,7 @@ function PrimaryButton({
   return (
     <button
       {...props}
-      className={`group flex h-14 w-full items-center justify-center rounded-2xl bg-[#b1121b] px-5 font-black text-white shadow-xl shadow-red-950/40 transition hover:bg-[#c91824] disabled:cursor-not-allowed disabled:opacity-60 ${
+      className={`group flex h-12 w-full items-center justify-center rounded-xl bg-[#b1121b] px-5 font-black text-white shadow-xl shadow-red-950/40 transition hover:bg-[#c91824] disabled:cursor-not-allowed disabled:opacity-60 ${
         props.className ?? ""
       }`}
     >
@@ -911,7 +972,7 @@ function SecondaryButton({
   return (
     <button
       {...props}
-      className={`flex h-14 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] px-6 font-black text-white transition hover:bg-white/[0.08] ${
+      className={`flex h-12 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] px-6 font-black text-white transition hover:bg-white/[0.08] ${
         props.className ?? ""
       }`}
     >

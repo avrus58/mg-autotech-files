@@ -117,7 +117,7 @@ export async function buildGrowthCustomerSuccessReport(input?: {
   let migrationReady = true;
   const [attributionResult, journeyResult] = await Promise.all([
     admin.from("growth_attribution_sessions")
-      .select("user_id,first_source,first_medium,first_campaign,first_term,first_landing_path,first_country_code,first_seen_at")
+      .select("user_id,locale,first_source,first_medium,first_campaign,first_term,first_landing_path,first_country_code,first_seen_at")
       .gte("first_seen_at", startAt.toISOString())
       .lte("first_seen_at", endAt.toISOString())
       .order("first_seen_at", { ascending: false })

@@ -1,3 +1,5 @@
+import type { LocaleCode } from "@/lib/i18nConfig";
+
 export const transactionalEmailEventTypes = [
   "customer_registered",
   "customer_welcome",
@@ -36,7 +38,7 @@ export const transactionalEmailEventTypes = [
 ] as const;
 
 export type TransactionalEmailEventType = (typeof transactionalEmailEventTypes)[number];
-export type TransactionalEmailLanguage = "de" | "en" | "tr";
+export type TransactionalEmailLanguage = LocaleCode;
 export type EmailDeliveryStatus = "pending" | "sent" | "failed" | "skipped";
 
 export const providerEmailDeliveryStatuses = [

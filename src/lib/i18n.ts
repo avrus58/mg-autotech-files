@@ -4,6 +4,14 @@ import {
   customerPortalLocaleOverrides,
   customerPortalTranslations,
 } from "@/lib/customerPortalTranslations";
+import {
+  customerJourneyLocaleOrder,
+  customerJourneyTranslations,
+} from "@/lib/customerJourneyTranslations";
+import {
+  customerSurfaceLocaleOrder,
+  customerSurfaceTranslations,
+} from "@/lib/customerSurfaceTranslations";
 import type { LocaleCode } from "@/lib/i18nConfig";
 
 export {
@@ -6126,5 +6134,21 @@ Object.entries(customerPortalLocaleOverrides).forEach(([locale, entries]) => {
   Object.entries(entries).forEach(([source, value]) => {
     exactTranslations[locale as LocaleCode][source] = value;
     termTranslations[locale as LocaleCode][source] = value;
+  });
+});
+
+Object.entries(customerJourneyTranslations).forEach(([source, values]) => {
+  customerJourneyLocaleOrder.forEach((locale, index) => {
+    const value = values[index];
+    exactTranslations[locale][source] = value;
+    termTranslations[locale][source] = value;
+  });
+});
+
+Object.entries(customerSurfaceTranslations).forEach(([source, values]) => {
+  customerSurfaceLocaleOrder.forEach((locale, index) => {
+    const value = values[index];
+    exactTranslations[locale][source] = value;
+    termTranslations[locale][source] = value;
   });
 });

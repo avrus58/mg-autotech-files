@@ -1,5 +1,13 @@
-import { htmlLayout } from "@/lib/email/render";
+import { escapeHtml, htmlLayout } from "@/lib/email/render";
 import type { TransactionalEmailLanguage } from "@/lib/email/types";
+import { supportedTransactionalEmailLanguages } from "@/lib/email/language";
+import { emailLocaleCopy } from "@/lib/email/localeCopy";
+import {
+  getExtendedAuthTemplateCopy,
+  type AuthTemplateCopy,
+} from "@/lib/email/authLocaleCopy";
+
+type CoreAuthLanguage = "de" | "en" | "tr";
 
 type LocalizedAuthCopy = {
   subject: string;
@@ -17,7 +25,7 @@ type SupabaseAuthTemplateDefinition = {
   action: "link" | "code" | "none";
   linkVariable?: "{{ .ConfirmationURL }}";
   codeVariable?: "{{ .Token }}";
-  copy: Record<TransactionalEmailLanguage, LocalizedAuthCopy>;
+  copy: Record<CoreAuthLanguage, LocalizedAuthCopy>;
 };
 
 const commonFooter = {
@@ -138,6 +146,16 @@ export function getSupabaseAuthTemplateDefinition(key: string) {
   return supabaseAuthTemplateCatalog.find((template) => template.key === key) ?? null;
 }
 
+function resolveAuthTemplateCopy(
+  template: SupabaseAuthTemplateDefinition,
+  language: TransactionalEmailLanguage
+): AuthTemplateCopy {
+  if (language === "de" || language === "en" || language === "tr") {
+    return template.copy[language];
+  }
+  return getExtendedAuthTemplateCopy(template.key, language);
+}
+
 function replacePreviewVariables(value: string) {
   return value
     .replaceAll("{{ .Email }}", "customer@example.com")
@@ -155,7 +173,7 @@ export function renderSupabaseAuthTemplatePreview(
 ) {
   const template = getSupabaseAuthTemplateDefinition(key);
   if (!template) return null;
-  const copy = template.copy[language];
+  const copy = resolveAuthTemplateCopy(template, language);
   const content = template.action === "code"
     ? `<div style="margin:20px 0;padding:18px;text-align:center;background:#f4f4f5;border:1px solid #e4e4e7;border-radius:8px;font-size:25px;font-weight:900;letter-spacing:0.18em;">12345678</div>`
     : "";
@@ -184,15 +202,43 @@ function authEmailBody(copy: LocalizedAuthCopy, template: SupabaseAuthTemplateDe
   return `<h1 style="margin:0 0 13px;font-size:26px;line-height:1.25;color:#101114;">${copy.title}</h1><p style="margin:0;color:#52525b;font-size:15px;line-height:1.7;">${copy.intro}</p>${action}<p style="margin:22px 0 0;color:#71717a;font-size:12px;line-height:1.65;">${copy.footer}</p>`;
 }
 
+function buildLanguageConditional(
+  template: SupabaseAuthTemplateDefinition,
+  render: (copy: AuthTemplateCopy) => string
+) {
+  return buildSupportedLanguageConditional((language) =>
+    render(resolveAuthTemplateCopy(template, language))
+  );
+}
+
+function buildSupportedLanguageConditional(
+  render: (language: TransactionalEmailLanguage) => string
+) {
+  const fallback = render("en");
+  return supportedTransactionalEmailLanguages
+    .filter((language) => language !== "en")
+    .reverse()
+    .reduce(
+      (rest, language) => `{{ if eq (index .Data "email_language") "${language}" }}${render(language)}{{ else }}${rest}{{ end }}`,
+      fallback
+    );
+}
+
 export function buildSupabaseAuthTemplateHtml(key: string) {
   const template = getSupabaseAuthTemplateDefinition(key);
   if (!template) return null;
-  const body = `{{ if eq (index .Data "email_language") "de" }}${authEmailBody(template.copy.de, template)}{{ else if eq (index .Data "email_language") "tr" }}${authEmailBody(template.copy.tr, template)}{{ else }}${authEmailBody(template.copy.en, template)}{{ end }}`;
-  return `<!doctype html><html><body style="margin:0;background:#eceef1;font-family:Arial,Helvetica,sans-serif;color:#18181b;"><div style="padding:32px 14px;"><div style="max-width:640px;margin:0 auto;background:#fff;border:1px solid #dfe2e7;border-radius:12px;overflow:hidden;"><div style="height:4px;background:#d11221;"></div><div style="background:#08090b;color:#fff;padding:24px 26px;"><div style="font-size:18px;font-weight:900;">MG <span style="color:#ff3445;">AUTOTECH</span></div><div style="margin-top:5px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#a1a1aa;">Secure ECU / TCU File Service</div></div><div style="padding:30px 26px 32px;">${body}</div><div style="border-top:1px solid #e4e4e7;background:#f7f7f8;padding:19px 26px;color:#71717a;font-size:11px;line-height:1.7;">MG AutoTech &middot; Secure File Service &middot; {{ .SiteURL }}</div></div></div></body></html>`;
+  const serviceName = buildSupportedLanguageConditional((language) =>
+    escapeHtml(emailLocaleCopy[language].serviceName)
+  );
+  const body = buildLanguageConditional(
+    template,
+    (copy) => authEmailBody(copy, template)
+  );
+  return `<!doctype html><html><body style="margin:0;background:#eceef1;font-family:Arial,Helvetica,sans-serif;color:#18181b;"><div style="padding:32px 14px;"><div style="max-width:640px;margin:0 auto;background:#fff;border:1px solid #dfe2e7;border-radius:12px;overflow:hidden;"><div style="height:4px;background:#d11221;"></div><div style="background:#08090b;color:#fff;padding:24px 26px;"><div style="font-size:18px;font-weight:900;">MG <span style="color:#ff3445;">AUTOTECH</span></div><div style="margin-top:5px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#a1a1aa;">${serviceName}</div></div><div style="padding:30px 26px 32px;">${body}</div><div style="border-top:1px solid #e4e4e7;background:#f7f7f8;padding:19px 26px;color:#71717a;font-size:11px;line-height:1.7;">MG AutoTech &middot; ${serviceName} &middot; {{ .SiteURL }}</div></div></div></body></html>`;
 }
 
 export function buildSupabaseAuthTemplateSubject(key: string) {
   const template = getSupabaseAuthTemplateDefinition(key);
   if (!template) return null;
-  return `{{ if eq (index .Data "email_language") "de" }}${template.copy.de.subject}{{ else if eq (index .Data "email_language") "tr" }}${template.copy.tr.subject}{{ else }}${template.copy.en.subject}{{ end }}`;
+  return buildLanguageConditional(template, (copy) => copy.subject);
 }

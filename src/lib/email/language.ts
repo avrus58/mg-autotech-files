@@ -1,8 +1,15 @@
 import type { TransactionalEmailLanguage } from "@/lib/email/types";
+import { supportedLocales } from "@/lib/i18nConfig";
 
 export const defaultTransactionalEmailLanguage: TransactionalEmailLanguage = "en";
 
-const supportedLanguages = new Set<TransactionalEmailLanguage>(["de", "en", "tr"]);
+export const supportedTransactionalEmailLanguages = supportedLocales.map(
+  ({ code }) => code
+) as TransactionalEmailLanguage[];
+
+const supportedLanguages = new Set<TransactionalEmailLanguage>(
+  supportedTransactionalEmailLanguages
+);
 
 function normalizeCandidate(value: unknown) {
   if (typeof value !== "string") return null;

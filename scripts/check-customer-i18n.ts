@@ -101,6 +101,65 @@ function collectVisibleStrings() {
       ts.ScriptKind.TSX
     );
 
+    const visibleStringProps = new Set([
+      "aria-label",
+      "description",
+      "emptyText",
+      "emptyTitle",
+      "eyebrow",
+      "label",
+      "placeholder",
+      "text",
+      "title",
+    ]);
+
+    const jsxAttributeAncestor = (node: ts.Node) => {
+      let current = node.parent;
+      while (current && !ts.isSourceFile(current)) {
+        if (ts.isJsxAttribute(current)) return current;
+        current = current.parent;
+      }
+      return null;
+    };
+
+    const isMappedLiteralArray = (node: ts.Node) => {
+      let current = node.parent;
+      while (current && !ts.isSourceFile(current)) {
+        if (ts.isArrayLiteralExpression(current)) {
+          const access = current.parent;
+          return (
+            ts.isPropertyAccessExpression(access) &&
+            access.expression === current &&
+            access.name.text === "map" &&
+            ts.isCallExpression(access.parent)
+          );
+        }
+        if (ts.isJsxExpression(current)) break;
+        current = current.parent;
+      }
+      return false;
+    };
+
+    const isVisibleJsxExpressionString = (node: ts.Node) => {
+      if (jsxAttributeAncestor(node)) return false;
+      const mappedLiteral = isMappedLiteralArray(node);
+      let current = node.parent;
+      while (current && !ts.isSourceFile(current)) {
+        if (ts.isJsxExpression(current)) return true;
+        if (
+          ts.isBinaryExpression(current) ||
+          ts.isCallExpression(current) ||
+          ts.isArrowFunction(current) ||
+          ts.isFunctionExpression(current) ||
+          ts.isPropertyAssignment(current)
+        ) {
+          return mappedLiteral;
+        }
+        current = current.parent;
+      }
+      return false;
+    };
+
     const visit = (node: ts.Node) => {
       if (ts.isJsxText(node)) {
         const value = node.text.replace(/\s+/gu, " ").trim();
@@ -110,7 +169,7 @@ function collectVisibleStrings() {
       if (
         ts.isJsxAttribute(node) &&
         ts.isIdentifier(node.name) &&
-        ["placeholder", "title", "aria-label"].includes(node.name.text)
+        visibleStringProps.has(node.name.text)
       ) {
         const value = node.initializer;
         if (value && ts.isStringLiteral(value) && value.text.trim()) {
@@ -120,8 +179,7 @@ function collectVisibleStrings() {
 
       if (
         ts.isStringLiteral(node) &&
-        node.parent &&
-        ts.isJsxExpression(node.parent) &&
+        isVisibleJsxExpressionString(node) &&
         node.text.trim().length > 1
       ) {
         strings.add(node.text.trim());
@@ -217,7 +275,17 @@ for (const locale of locales) {
     `${locale}: ${exact.length}/${values.length} exact or invariant; ${reviewedEnglishFallbacks} clean English fallbacks`
   );
 
+  if (process.env.I18N_REPORT_FALLBACKS === "1") {
+    const fallbackValues = values.filter(
+      (value) => !isInvariant(value) && !dictionaryCovers(value, locale)
+    );
+    console.log(`${locale} fallbacks:\n- ${fallbackValues.join("\n- ")}`);
+  }
+
   if (exactRatio < 0.68) failures.push(`${locale}: exact coverage dropped below 68%`);
+  if (reviewedEnglishFallbacks > 0) {
+    failures.push(`${locale}: ${reviewedEnglishFallbacks} reviewed English fallback(s) remain`);
+  }
   if (compactMissing.length > 0) failures.push(`${locale} compact labels: ${compactMissing.join(" | ")}`);
   if (criticalMissing.length > 0) failures.push(`${locale} critical exact: ${criticalMissing.join(" | ")}`);
 }

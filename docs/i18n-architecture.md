@@ -19,6 +19,10 @@
 
 - Core locale definitions and runtime text replacement: `src/lib/i18n.ts`.
 - Critical customer portal coverage and typed 11-locale tuples: `src/lib/customerPortalTranslations.ts`.
+- Reviewed customer-journey copy for auth, registration, request creation and dashboard flows: `src/lib/customerJourneyTranslations.ts`.
+- Extended customer-surface copy for orders, delivery, File Expert, payments, vehicle context and technical guidance: `src/lib/customerSurfaceTranslations.ts`.
+- Transactional email locale vocabulary and lifecycle labels: `src/lib/email/localeCopy.ts`.
+- Hosted Supabase Auth copy for the extended locale set: `src/lib/email/authLocaleCopy.ts`.
 - SEO home/service metadata and localized service content: `src/lib/seo.ts`.
 - Public SEO UI labels: `src/lib/seo-ui.ts`.
 - How It Works page copy and FAQ JSON-LD copy: `src/lib/howItWorksI18n.ts`.
@@ -66,7 +70,11 @@ They should not be loosely translated without a legal review. Navigation can lin
 
 ## Customer Dashboard Routes
 
-Customer/dashboard, authentication, payment and request-flow routes are not locale-prefixed SEO routes. They preserve their private URL and use the global language switcher with the customer portal dictionary. Critical authentication and request-entry sentences require exact translations for every non-English locale. Compact labels may use deterministic term mappings; unmapped long technical or compliance guidance stays as clean English instead of producing mixed-language sentences. The baseline is enforced by `npm run check:i18n`.
+Customer/dashboard, authentication, payment and request-flow routes are not locale-prefixed SEO routes. They preserve their private URL and use the global language switcher with the customer portal dictionary. The source audit currently covers 611 customer-visible strings across authentication, registration, password recovery, new request, dashboard, order, delivery, File Expert, payment, widget and technical-guidance surfaces. Every non-English locale requires an exact reviewed or intentional invariant value; `npm run check:i18n` fails on any clean English fallback.
+
+The registration form uses the same locale for its visible copy, stored account preference and transactional email language. Company registration requires a company name. The validated profile draft is preserved through email/password registration and Google OAuth without using user metadata for authorization.
+
+Customer transactional and hosted Auth email content supports the same 12 locale codes. Missing, malformed or unsupported metadata falls back to English. Admin notification email remains English. Email language metadata controls presentation only and must never be used for authorization or RLS decisions.
 
 Technical identifiers and user-entered examples remain unchanged where translation would reduce accuracy, including ECU, TCU, DTC, ORI, MOD, HW/SW, IBAN/BIC, OBD/Bench/Boot, addresses and example vehicle identifiers.
 
@@ -81,6 +89,8 @@ The language switcher only changes the URL when a true equivalent localized rout
 ## Guardrails
 
 - Do not add locale prefixes to admin/API/private routes.
+- Do not translate user-entered notes, vehicle identifiers, filenames, bank references or technical evidence.
+- Do not use locale or email-language metadata as an authorization claim.
 - Do not create `/en` duplicates; English stays on root canonical URLs.
 - Do not expose admin/internal metadata in localized public content.
 - Do not invent legal translations.

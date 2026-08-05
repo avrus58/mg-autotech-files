@@ -223,6 +223,7 @@ export type GrowthCustomerSuccessReport = {
   email: GrowthEmailSummary;
   bySource: GrowthPerformanceRow[];
   byCountry: GrowthPerformanceRow[];
+  byLocale: GrowthPerformanceRow[];
   byLandingPage: GrowthPerformanceRow[];
   byService: GrowthDemandRow[];
   byBrand: GrowthDemandRow[];

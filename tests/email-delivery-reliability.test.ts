@@ -15,6 +15,8 @@ import {
   renderSupabaseAuthTemplatePreview,
   supabaseAuthTemplateCatalog,
 } from "../src/lib/email/supabaseAuthTemplates";
+import { supportedTransactionalEmailLanguages } from "../src/lib/email/language";
+import { emailLocaleCopy } from "../src/lib/email/localeCopy";
 
 function providerEvent(
   type: string,
@@ -163,7 +165,7 @@ test("Resend webhook is signed, bounded, idempotent and returns no recipient dat
   assert.doesNotMatch(route, /recipientEmail|recipient_email|payloadSha256/);
 });
 
-test("all Supabase Auth templates render EN, DE and TR with English fallback", () => {
+test("all Supabase Auth templates render every supported language with English fallback", () => {
   assert.equal(supabaseAuthTemplateCatalog.length, 13);
   const required = new Set([
     "confirm_signup", "password_recovery", "invite_user", "magic_link",
@@ -174,17 +176,26 @@ test("all Supabase Auth templates render EN, DE and TR with English fallback", (
   assert.deepEqual(new Set(supabaseAuthTemplateCatalog.map((item) => item.key)), required);
 
   for (const template of supabaseAuthTemplateCatalog) {
-    for (const language of ["en", "de", "tr"] as const) {
+    for (const language of supportedTransactionalEmailLanguages) {
       const preview = renderSupabaseAuthTemplatePreview(template.key, language);
       assert.ok(preview?.subject.trim(), `${template.key}:${language}:subject`);
       assert.match(preview?.html ?? "", new RegExp(`<html lang="${language}">`));
+      assert.ok(
+        preview?.html.includes(emailLocaleCopy[language].serviceName),
+        `${template.key}:${language}:localized service name`
+      );
       assert.doesNotMatch(JSON.stringify(preview), /service_role|RESEND_API_KEY|SUPABASE_SERVICE/i);
     }
     const hostedHtml = buildSupabaseAuthTemplateHtml(template.key) ?? "";
     const hostedSubject = buildSupabaseAuthTemplateSubject(template.key) ?? "";
     assert.match(hostedHtml, /email_language/);
-    assert.match(hostedHtml, /"de"/);
-    assert.match(hostedHtml, /"tr"/);
+    for (const language of supportedTransactionalEmailLanguages.filter((item) => item !== "en")) {
+      assert.ok(hostedHtml.includes(`"${language}"`), `${template.key}:${language}:hosted condition`);
+      assert.ok(
+        hostedHtml.includes(emailLocaleCopy[language].serviceName),
+        `${template.key}:${language}:hosted service name`
+      );
+    }
     assert.match(hostedSubject, /else/);
   }
 
