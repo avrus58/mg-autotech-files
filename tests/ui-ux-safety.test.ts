@@ -2469,7 +2469,10 @@ test("public file service hub is indexable, linked and customer-safe", () => {
   assert.match(page, /title: `\$\{pageTitle\} \| MG AutoTech`/);
   assert.match(page, /canonical: absoluteUrl\("\/file-service"\)/);
   assert.match(page, /languageAlternates\("\/file-service"\)/);
-  assert.match(page, /ECU File Service for Custom Tuning Files/);
+  assert.match(
+    page,
+    /Online ECU File Service for Custom ECU & TCU Tuning Files/,
+  );
   assert.match(page, /Professional ECU file service for custom tuning files/);
   assert.match(page, /const fileServiceCategories: HubCard\[\]/);
   assert.match(page, /const workflowSteps = \[/);
@@ -2522,7 +2525,10 @@ test("public services catalog is broad, indexable and customer-safe", () => {
   const robots = readProjectFile("src", "app", "robots.ts");
 
   assert.match(page, /export const metadata: Metadata/);
-  assert.match(page, /ECU & TCU Solution Catalog/);
+  assert.match(
+    page,
+    /ECU & TCU file services, organized for serious workshops\./,
+  );
   assert.match(page, /Professional file-service catalog/);
   assert.match(page, /More than a basic ECU solutions grid/);
   assert.match(page, /canonical: absoluteUrl\("\/services"\)/);

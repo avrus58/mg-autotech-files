@@ -20,9 +20,9 @@ import { StageComparison } from "@/components/StageComparison";
 import { brandGuides } from "@/lib/industry-content";
 import { absoluteUrl, languageAlternates, organizationJsonLd, siteName, websiteJsonLd } from "@/lib/seo";
 
-const pageTitle = "ECU File Service for Custom Tuning Files";
+const pageTitle = "Online ECU File Service for Custom ECU & TCU Tuning Files";
 const pageDescription =
-  "Vehicle-specific ECU tuning files for Stage 1, Stage 2 and Stage 3, with secure original-file submission, technical review and customer portal delivery.";
+  "Online ECU and TCU file service for workshops: vehicle-specific Stage 1-3 and gearbox tuning files, secure original-file upload and tracked portal delivery.";
 
 export const metadata: Metadata = {
   title: pageTitle,

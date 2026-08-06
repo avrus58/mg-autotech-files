@@ -476,7 +476,11 @@ if (!fileServicePage.includes("PublicSeoHeader") || !fileServicePage.includes("F
 }
 
 const servicesCatalogPage = readFileSync(join(root, "src/app/services/page.tsx"), "utf8");
-if (!servicesCatalogPage.includes("ECU & TCU Solution Catalog")) {
+if (
+  !servicesCatalogPage.includes(
+    "ECU & TCU file services, organized for serious workshops.",
+  )
+) {
   failures.push("Services catalog page is missing the visible H1/title signal.");
 }
 if (!servicesCatalogPage.includes('canonical: absoluteUrl("/services")')) {

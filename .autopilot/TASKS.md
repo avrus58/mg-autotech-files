@@ -50,6 +50,28 @@ Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
 
+### MANUAL-20260806-FILE-SERVICE-SEARCH-ARCHITECTURE [P1] Global file-service search intent architecture
+
+Durum: Done
+
+Fingerprint: `seo|file-service-search-architecture|fragmented-sector-vocabulary|canonical-intent-routing-without-doorways`
+
+Sonuc: Guncel sektor arastirmasi ve mevcut MG AutoTech urun gercekleriyle 121
+arama ifadesi, 32 public hedef ve 7 ticari niyet ailesi tek typed route ownership
+haritasina baglandi. `/services` server-rendered, crawlable ve kompakt accordion
+navigator aldi; yalniz ilk grup varsayilan acik, her kartta en fazla uc faydali
+es anlamli ifade gorunur. `/file-service` ile `/services` metadata ve gorunur H1
+dogal high-intent diline getirildi. Ayni hedefler JSON-LD ItemList ile eslesir;
+ana sayfa uzatilmadi, yeni thin/doorway rota veya `meta keywords` eklenmedi.
+
+Dogrulama: 641/641 test PASS; lint PASS; web+desktop typecheck PASS;
+production build PASS (266 static page); i18n/SEO PASS (12 locale, 611/611);
+homepage performance PASS (61.1 KB gzip / 80 KB); payment schema-only PASS ve
+env okunmadi; audit high threshold PASS (0 high/critical, mevcut 2 moderate
+Next/PostCSS advisory); 1280x720 ve 390x844 browser QA PASS, yatay tasma yok ve
+7 gruptan yalniz 1'i acik; diff check PASS. SQL, dependency, production mutation,
+push veya deploy yoktur.
+
 ### MANUAL-20260806-STAGE1-SEO-AUTHORITY [P1] Stage 1 organic search authority
 
 Durum: Done

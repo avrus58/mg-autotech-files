@@ -2,6 +2,17 @@
 
 Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
+## 2026-08-06 Global file-service search intent architecture
+
+- Gorev: ECU/TCU file-service sektorunde workshop ve tunerlarin kullandigi temel ticari arama dilini arastirip ana sayfayi uzatmadan kanonik, customer-safe ve olculebilir bir SEO mimarisine donusturmek.
+- Arastirma: Google Search Central people-first, title, crawlable-link ve spam politikasi; English, German, French ve Italian file-service sitelerindeki guncel terimler; mevcut MG AutoTech service/request gercekleri birlikte incelendi. Search volume veya ranking iddiasi uydurulmadi.
+- Mimari: `src/lib/fileServiceSearchIntents.ts` 7 niyet ailesi, 32 public hedef ve 121 normalize arama ifadesini tek sahiplik modelinde tutar. Genel ECU file service, Stage 1-3, TCU/gearbox, DPF/EGR/AdBlue/DTC, original-file/read-method, brand ve controller-platform sorgulari mevcut kanonik sayfalara gider; exact normalize ifade cakisina izin verilmez.
+- UI ve SEO: `/services` server-rendered crawlable search navigator, dogal H1/description ve ayni data kaynagindan ItemList JSON-LD aldi. Accordion yapisinda yalniz ilk grup aciktir; customer'a kart basina en fazla uc faydali es anlamli ifade gosterilir. `/file-service` exact online/custom tuning file metadata aldi. Homepage yeni bolum almadigi icin uzunluk ve initial JS butcesi degismedi.
+- Spam ve guvenlik siniri: Meta-keywords, hidden text, city/country doorway, mass model page, fake volume/ranking, best/number-one, free/cracked/download veya garanti iddiasi yoktur. Tum linkler public allowlist icindedir; admin/customer/storage/source metadata yoktur.
+- Kontroller: Full tests PASS (641/641); lint PASS; web+desktop typecheck PASS; production build PASS (266 static page); i18n/SEO PASS (12 locale, 611/611); homepage performance PASS (61.1 KB gzip / 80 KB); payment schema-only PASS ve env okunmadi; audit high threshold PASS (0 high/critical, Next/PostCSS zincirinde mevcut 2 moderate advisory); `git diff --check` PASS.
+- Browser QA: In-app browser 1280x720 ve Chrome CDP 390x844 ile test edildi. 7 accordion grubundan yalniz 1'i varsayilan acik; mobil `scrollWidth=clientWidth=390`, yatay tasma veya overflowing element yok. Local raw HTML beklenen English metni ve ASCII separator'u tasir.
+- Sinirlar: Yeni SQL, dependency, thin SEO page, payment/vehicle/admin/customer mantigi, production veri veya dis servis mutasyonu yoktur. Push/deploy yapilmadi. Search Console gercek sorgu, ulke, CTR ve request donusumu sonraki 28 gunluk iterasyonun kaynagidir; birinci sira garanti edilemez.
+
 ## 2026-08-05 Delivery version metrics
 
 - Gorev: Admin is emrinde teslim edilen tum surumleri, teslim zamanini ve customer portal indirme aktivitesini mevcut private delivery altyapisindan profesyonelce gostermek.

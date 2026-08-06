@@ -18,8 +18,10 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { Footer } from "@/components/Footer";
+import { FileServiceSearchNavigator } from "@/components/FileServiceSearchNavigator";
 import { OnlineStatus } from "@/components/OnlineStatus";
 import { PublicSeoHeader } from "@/components/PublicSeoHeader";
+import { fileServiceSearchDestinations } from "@/lib/fileServiceSearchIntents";
 import {
   absoluteUrl,
   getServiceSeo,
@@ -30,9 +32,9 @@ import {
 } from "@/lib/seo";
 import { serviceIntentGuides } from "@/lib/serviceIntentGuides";
 
-const pageTitle = "ECU & TCU Solution Catalog";
+const pageTitle = "ECU & TCU File Service Catalog for Workshops";
 const pageDescription =
-  "Professional MG AutoTech ECU and TCU file-service catalog for workshops: Stage 1, diesel aftertreatment, DTC, TCU, VMAX, launch control, diagnostics, file checks and support add-ons.";
+  "Find the right ECU or TCU file service for Stage 1-3, gearbox tuning, DPF, EGR, AdBlue, DTC, file checks and workshop read-method guidance.";
 
 export const metadata: Metadata = {
   title: pageTitle,
@@ -372,6 +374,18 @@ const catalogJsonLd = {
       ],
     },
     {
+      "@type": "ItemList",
+      "@id": absoluteUrl("/services#file-service-search-intent-map"),
+      name: "MG AutoTech workshop file-service search routes",
+      itemListElement: fileServiceSearchDestinations.map((destination, index) => ({
+        "@type": "ListItem",
+        position: index + 1,
+        name: destination.title,
+        description: destination.decision,
+        url: absoluteUrl(destination.href),
+      })),
+    },
+    {
       "@type": "FAQPage",
       "@id": absoluteUrl("/services#faq"),
       mainEntity: faq.map((item) => ({
@@ -404,13 +418,13 @@ export default function ServicesPage() {
               Professional file-service catalog
             </div>
             <h1 className="mt-6 max-w-4xl text-[clamp(2.4rem,7vw,5.8rem)] font-black leading-[0.96] tracking-normal">
-              ECU & TCU solutions, organized for serious workshops.
+              ECU & TCU file services, organized for serious workshops.
             </h1>
             <p className="mt-6 max-w-3xl text-base leading-8 text-zinc-300 md:text-lg">
-              A premium MG AutoTech service catalog for performance, diesel
-              aftertreatment, diagnostics, gearbox software and technical
-              support requests. Choose the right path first, then submit through
-              the secure customer portal.
+              Find the correct route for custom tuning files, performance,
+              diesel aftertreatment, diagnostics, gearbox software and technical
+              verification. Choose the real job context first, then submit
+              through the secure customer portal.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Link
@@ -457,7 +471,7 @@ export default function ServicesPage() {
               Main service pages
             </p>
             <h2 className="mt-3 text-3xl font-black md:text-5xl">
-              Core ECU solution paths
+              Core file-service routes
             </h2>
           </div>
           <p className="max-w-2xl text-sm leading-7 text-zinc-400">
@@ -491,6 +505,8 @@ export default function ServicesPage() {
           ))}
         </div>
       </section>
+
+      <FileServiceSearchNavigator />
 
       <section className="border-y border-white/10 bg-[#090b10] py-16">
         <div className="mx-auto max-w-7xl px-4">
