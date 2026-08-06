@@ -15,6 +15,15 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 export default async function PlatformGuidePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params; const guide = getPlatformGuide(slug); if (!guide) notFound(); const url = absoluteUrl(`/ecu-platforms/${guide.slug}`);
   const jsonLd = { "@context": "https://schema.org", "@graph": [organizationJsonLd(), websiteJsonLd("en"), { "@type": "TechArticle", "@id": `${url}#article`, headline: guide.name, description: guide.description, url, author: { "@id": `${absoluteUrl("/")}#organization` }, publisher: { "@id": `${absoluteUrl("/")}#organization` }, inLanguage: "en" }, { "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Home", item: absoluteUrl("/") }, { "@type": "ListItem", position: 2, name: "ECU platforms", item: absoluteUrl("/ecu-platforms") }, { "@type": "ListItem", position: 3, name: guide.name, item: url }] }, { "@type": "FAQPage", mainEntity: guide.faq.map((item) => ({ "@type": "Question", name: item.q, acceptedAnswer: { "@type": "Answer", text: item.a } })) }] };
-  const related = [...platformGuides.filter((item) => item.slug !== guide.slug).slice(0, 3).map((item) => ({ label: item.name, href: `/ecu-platforms/${item.slug}` })), ...brandGuides.slice(0, 3).map((item) => ({ label: item.name, href: `/brands/${item.slug}` }))];
+  const related = [
+    { label: "Stage 1 ECU tuning file service", href: "/services/stage-1" },
+    ...platformGuides
+      .filter((item) => item.slug !== guide.slug)
+      .slice(0, 3)
+      .map((item) => ({ label: item.name, href: `/ecu-platforms/${item.slug}` })),
+    ...brandGuides
+      .slice(0, 3)
+      .map((item) => ({ label: item.name, href: `/brands/${item.slug}` })),
+  ];
   return <SeoGuidePage eyebrow="ECU / TCU technical guide" title={guide.name} description={guide.description} intro={guide.intro} sections={[{ title: "Common applications", items: guide.commonApplications }, { title: "Identification data", items: guide.identification }, { title: "Workshop workflow notes", items: guide.workflowNotes }]} faq={guide.faq} related={related} jsonLd={jsonLd} />;
 }

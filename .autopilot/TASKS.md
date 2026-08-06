@@ -50,6 +50,27 @@ Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
 
+### MANUAL-20260806-STAGE1-SEO-AUTHORITY [P1] Stage 1 organic search authority
+
+Durum: Done
+
+Fingerprint: `stage-1-seo|exact-search-intent|thin-controller-context|canonical-authority-and-crawlable-guide-network`
+
+Sonuc: Mevcut `/services/stage-1` tek kanonik Stage 1 sayfasi olarak
+korundu. Exact-intent title, description, H1, workshop fit guidance, original
+file/read-method cevaplari, dogrudan request CTA'si, genisletilmis FAQ ve
+customer-safe ItemList semasi eklendi. Sekiz marka ve yedi ECU platform rehberi
+Stage 1 sayfasindan crawlable link alir; ECU platform rehberleri de Stage 1'e
+geri baglanir. Ana sayfaya yeni bolum veya yeni thin SEO rotasi eklenmedi.
+
+Dogrulama: Focused tests PASS (5/5); full tests PASS (636/636); lint PASS;
+web+desktop typecheck PASS; production build PASS (266 static page); i18n/SEO
+PASS (12 locale, 611/611); homepage performance PASS (61.1 KB gzip / 80 KB);
+payment schema-only PASS ve env okunmadi; audit high threshold PASS (0
+high/critical, mevcut 2 moderate Next/PostCSS advisory); responsive browser QA
+PASS (1440x1000 ve 390x844, yatay tasma ve console error yok); diff check PASS.
+SQL, dependency, production mutation, push veya deploy yoktur.
+
 ### MANUAL-20260805-DELIVERY-METRICS [P1] Teslim edilen surumler ve indirme metrikleri
 
 Durum: Done

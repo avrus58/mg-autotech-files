@@ -18,6 +18,11 @@ import { Footer } from "@/components/Footer";
 import { OnlineStatus } from "@/components/OnlineStatus";
 import { PublicSeoHeader } from "@/components/PublicSeoHeader";
 import { ServiceIntentPage } from "@/components/ServiceIntentPage";
+import {
+  Stage1Authority,
+  stage1BrandRoutes,
+  stage1PlatformRoutes,
+} from "@/components/Stage1Authority";
 import { StageComparison } from "@/components/StageComparison";
 import {
   absoluteUrl,
@@ -51,14 +56,14 @@ type ServicePage = {
 const services: ServicePage[] = [
   {
     slug: "stage-1",
-    title: "Stage 1 ECU Tuning File Service",
+    title: "Stage 1 Tuning File Service for Workshops",
     eyebrow: "Vehicle-specific performance calibration",
     description:
-      "Custom Stage 1 ECU tuning files for standard or near-standard vehicles, prepared from the original file, exact vehicle data and reviewed ECU context.",
+      "Online Stage 1 ECU tuning file service for workshops. Submit the original read, vehicle and ECU details for reviewed calibration and secure portal delivery.",
     credits: "10 credits",
     turnaround: "Usually around 30 minutes for standard requests",
     hero:
-      "A custom Stage 1 ECU file starts with the exact vehicle, controller software and original read rather than a generic one-file-fits-all calibration.",
+      "A professional Stage 1 file service starts with the exact vehicle, controller software and original ECU read rather than a generic one-file-fits-all calibration.",
     intro: [
       "Stage 1 is generally intended for a standard or near-standard engine setup. The review considers the vehicle condition, engine and ECU identity, source-file history, fuel, gearbox context and any existing hardware changes before suitability is confirmed.",
       "Petrol and diesel engines use different control strategies, operating limits and diagnostic evidence. For that reason, the requested response and torque delivery are considered within the submitted platform instead of being described with universal power figures.",
@@ -99,6 +104,14 @@ const services: ServicePage[] = [
     ],
     faq: [
       {
+        q: "What is a Stage 1 tuning file service?",
+        a: "It is an online workshop workflow for preparing a vehicle-specific ECU calibration from the submitted original read, exact controller identity, fuel, drivetrain and vehicle context. It is not a universal file selected only by model name.",
+      },
+      {
+        q: "What file do I need for a Stage 1 request?",
+        a: "Submit the untouched original ECU read and identify whether it was read by OBD, bench, boot or a supported virtual-read method. Include ECU HW/SW data where available so file coverage can be reviewed.",
+      },
+      {
         q: "Is Stage 1 suitable for every vehicle?",
         a: "No. Suitability depends on ECU type, file quality, vehicle condition and hardware setup. A file check may be needed for unclear requests.",
       },
@@ -117,6 +130,14 @@ const services: ServicePage[] = [
       {
         q: "Can a file read by AutoTuner, KESS, Flex or another tool be submitted?",
         a: "Use the secure request flow and state the tool and OBD, bench, boot or virtual-read method. Tool name alone does not prove read coverage or originality, so the file context is still reviewed.",
+      },
+      {
+        q: "Is a Stage 1 tuning file generic?",
+        a: "No. Vehicle model, ECU family, HW/SW identifiers, original-file history, fuel, gearbox and installed hardware can change the correct review context. Similar vehicle descriptions do not make files interchangeable.",
+      },
+      {
+        q: "Do I need logs for a Stage 1 file request?",
+        a: "Not every standard request needs a log before review, but current fault codes and useful workshop observations should be supplied. Logs are important when measured behaviour or a revision needs evidence.",
       },
     ],
   },
@@ -496,6 +517,10 @@ export default async function ServicePage({
         name: service.title,
         description: service.description,
         serviceType: service.title,
+        category: service.slug === "stage-1" ? "Stage 1 ECU tuning file service" : service.title,
+        audience: service.slug === "stage-1"
+          ? { "@type": "Audience", audienceType: "Automotive workshops and tuning professionals" }
+          : undefined,
         provider: { "@id": `${absoluteUrl("/")}#organization` },
         url: pageUrl,
       },
@@ -517,6 +542,21 @@ export default async function ServicePage({
           acceptedAnswer: { "@type": "Answer", text: item.a },
         })),
       },
+      ...(service.slug === "stage-1"
+        ? [
+            {
+              "@type": "ItemList",
+              "@id": `${pageUrl}#stage-1-technical-routes`,
+              name: "Stage 1 vehicle and ECU technical guides",
+              itemListElement: [...stage1BrandRoutes, ...stage1PlatformRoutes].map((item, index) => ({
+                "@type": "ListItem",
+                position: index + 1,
+                name: item.label,
+                url: absoluteUrl(item.href),
+              })),
+            },
+          ]
+        : []),
     ],
   };
 
@@ -549,17 +589,17 @@ export default async function ServicePage({
 
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Link
-                href="/register"
+                href="/new-request"
                 className="inline-flex items-center justify-center rounded-xl bg-[#b1121b] px-6 py-4 text-sm font-black text-white shadow-xl shadow-red-950/40 transition hover:bg-[#c91824]"
               >
-                Create Customer Account
+                {service.slug === "stage-1" ? "Start Stage 1 Request" : "Create File Request"}
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
               <Link
-                href="/#tools"
+                href="/register"
                 className="inline-flex items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] px-6 py-4 text-sm font-black text-white transition hover:bg-white/10"
               >
-                Check Log Tools
+                Create Customer Account
               </Link>
             </div>
           </div>
@@ -586,6 +626,8 @@ export default async function ServicePage({
           </div>
         </section>
       )}
+
+      {service.slug === "stage-1" && <Stage1Authority />}
 
       {service.slug === "stage-1" && <StageComparison compact />}
 
