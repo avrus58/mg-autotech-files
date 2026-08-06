@@ -8,6 +8,8 @@ Admin route: `/admin/growth`
 
 Required staff permission: `orders.view`. Sending a consented reminder additionally requires `orders.manage`.
 
+Individual customer evidence is available through Customer Intelligence 360 at `/admin/growth/customers/[customer-user-id]`. It requires `customers.view` and is documented in `docs/customer-intelligence-360.md`.
+
 ## Data boundaries
 
 The center deliberately separates two evidence classes:
@@ -96,6 +98,7 @@ The center includes:
 - an audited real-customer classification workspace available only to staff with `customers.manage`;
 - a strict Real Growth Snapshot containing explicitly verified real customers only;
 - the first verified revenue journey from registration to request to payment, with acquisition source only when a consented first-touch record exists.
+- a Customer Intelligence 360 link for each reviewed customer, joining existing profile, request, ledger, payment-state, communication, email and consented attribution evidence without adding another customer database.
 
 Customer references may appear only inside the protected admin report. Public/customer APIs do not expose attribution, event IDs, reminder audits, revenue analysis, search queries or internal action metadata.
 

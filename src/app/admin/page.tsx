@@ -2069,6 +2069,7 @@ function CustomerDetailModal({ customer, form, setForm, creditInput, setCreditIn
               <p className="mt-2 text-sm text-zinc-500">{customer.email}</p>
             </div>
             <div className="flex flex-wrap gap-2">
+              <Link href={`/admin/growth/customers/${customer.id}`} className="inline-flex items-center rounded-xl border border-cyan-800/40 bg-cyan-950/20 px-4 py-3 text-sm font-black text-cyan-200 transition hover:bg-cyan-950/40"><HeartHandshake className="mr-2 h-4 w-4" />Customer 360</Link>
               <button onClick={() => onCopyValue(customer.customer_id || customer.id, "Customer ID")} className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-black text-white transition hover:bg-white/10"><Copy className="mr-2 inline h-4 w-4" />Copy ID</button>
               <button onClick={onSave} disabled={saving} className="rounded-xl bg-[#b1121b] px-4 py-3 text-sm font-black text-white transition hover:bg-[#c91824] disabled:opacity-50">{saving ? <Loader2 className="mr-2 inline h-4 w-4 animate-spin" /> : <Save className="mr-2 inline h-4 w-4" />}Save Customer</button>
               <button onClick={onClose} className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-black text-white transition hover:bg-white/10"><X className="mr-2 inline h-4 w-4" />Close</button>

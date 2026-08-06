@@ -1,8 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
+  ArrowUpRight,
   CheckCircle2,
   RefreshCw,
   RotateCcw,
@@ -264,6 +266,9 @@ export default function CustomerDataQualityPanel({ onUpdated }: { onUpdated: () 
                       <div className="flex items-center gap-2"><span className="font-black text-white">{row.customerReference}</span>{changed && <span className="border border-amber-700/50 bg-amber-950/30 px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.1em] text-amber-200">Pending</span>}</div>
                       <div className="mt-1 max-w-[250px] break-all text-xs text-zinc-500">{row.email || "No email"}</div>
                       <div className="mt-1 text-[11px] text-zinc-600">Registered {date(row.createdAt)}</div>
+                      <Link href={`/admin/growth/customers/${row.userId}`} className="mt-3 inline-flex items-center gap-1.5 border border-white/10 px-2.5 py-1.5 text-[10px] font-black text-zinc-300 hover:border-red-700/50 hover:text-white">
+                        View Customer 360 <ArrowUpRight className="h-3 w-3" aria-hidden="true" />
+                      </Link>
                     </td>
                     <td className="px-4 py-4">
                       <div className="flex flex-wrap gap-2 text-[10px] font-black uppercase tracking-[0.08em]"><span className="border border-white/10 px-2 py-1 text-zinc-300">{row.orderCount} request{row.orderCount === 1 ? "" : "s"}</span><span className="border border-white/10 px-2 py-1 text-zinc-300">{row.paymentCount} payment{row.paymentCount === 1 ? "" : "s"}</span></div>

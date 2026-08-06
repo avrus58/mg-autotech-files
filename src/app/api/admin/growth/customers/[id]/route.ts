@@ -7,6 +7,7 @@ import {
   saveGrowthCustomerClassificationBatch,
 } from "@/lib/growth/customerClassificationReviewServer";
 import { isGrowthCustomerClassificationMigrationMissing } from "@/lib/growth/customerClassificationServer";
+import { loadCustomerIntelligenceReport } from "@/lib/growth/customerIntelligenceServer";
 import { growthCustomerClassifications } from "@/lib/growth/types";
 
 const schema = z.object({
@@ -25,6 +26,31 @@ const headers = {
 
 function response(body: Record<string, unknown>, status = 200) {
   return NextResponse.json(body, { status, headers });
+}
+
+export async function GET(
+  request: Request,
+  context: { params: Promise<{ id: string }> }
+) {
+  const auth = await requireStaffPermission(request, "customers.view");
+  if (!auth.ok) return response({ error: auth.error }, auth.status);
+
+  const { id } = await context.params;
+  const userId = z.string().uuid().safeParse(id);
+  if (!userId.success) return response({ error: "Invalid customer identifier." }, 400);
+
+  try {
+    const report = await loadCustomerIntelligenceReport(userId.data);
+    return report
+      ? response(report as unknown as Record<string, unknown>)
+      : response({ error: "Customer was not found." }, 404);
+  } catch (error) {
+    console.error("Customer intelligence report failed", {
+      customerIdPrefix: userId.data.slice(0, 8),
+      error: error instanceof Error ? error.message : "unknown",
+    });
+    return response({ error: "Customer intelligence is temporarily unavailable." }, 503);
+  }
 }
 
 export async function PATCH(
