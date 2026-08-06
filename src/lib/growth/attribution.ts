@@ -39,6 +39,7 @@ export function classifyGrowthSource(input: {
   utmSource?: string | null;
   utmMedium?: string | null;
   referrer?: string | null;
+  hasGoogleAdsClickSignal?: boolean;
 }) {
   const explicitSource = cleanCampaignValue(input.utmSource ?? null, 48)?.toLowerCase();
   const explicitMedium = cleanCampaignValue(input.utmMedium ?? null, 48)?.toLowerCase();
@@ -46,6 +47,14 @@ export function classifyGrowthSource(input: {
     return {
       source: explicitSource,
       medium: explicitMedium || "campaign",
+      referrerHost: normalizeReferrerHost(input.referrer),
+    };
+  }
+
+  if (input.hasGoogleAdsClickSignal) {
+    return {
+      source: "google",
+      medium: "cpc",
       referrerHost: normalizeReferrerHost(input.referrer),
     };
   }
@@ -77,6 +86,10 @@ export function buildGrowthAttributionTouch(input: {
     utmSource: parsed.searchParams.get("utm_source"),
     utmMedium: parsed.searchParams.get("utm_medium"),
     referrer: input.referrer,
+    hasGoogleAdsClickSignal: ["gclid", "gbraid", "wbraid"].some((key) => {
+      const value = parsed.searchParams.get(key);
+      return Boolean(value && value.length <= 200);
+    }),
   });
   const locale = input.locale?.trim().toLowerCase() ?? "";
 

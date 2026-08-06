@@ -134,6 +134,13 @@ export default function RootLayout({
 }>) {
   const googleAnalyticsMeasurementId =
     process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID?.trim() ?? "";
+  const googleAdsId = process.env.NEXT_PUBLIC_GOOGLE_ADS_ID?.trim() ?? "";
+  const googleAdsRegistrationLabel =
+    process.env.NEXT_PUBLIC_GOOGLE_ADS_REGISTRATION_LABEL?.trim() ?? "";
+  const googleAdsRequestLabel =
+    process.env.NEXT_PUBLIC_GOOGLE_ADS_REQUEST_LABEL?.trim() ?? "";
+  const googleAdsPurchaseLabel =
+    process.env.NEXT_PUBLIC_GOOGLE_ADS_PURCHASE_LABEL?.trim() ?? "";
   const jsonLd = {
     "@context": "https://schema.org",
     "@graph": [organizationJsonLd(), websiteJsonLd(defaultLocale)],
@@ -142,6 +149,7 @@ export default function RootLayout({
   return (
     <html
       lang={hreflangByLocale[defaultLocale]}
+      suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
@@ -152,7 +160,13 @@ export default function RootLayout({
           }}
         />
         {children}
-        <PublicAnalytics measurementId={googleAnalyticsMeasurementId} />
+        <PublicAnalytics
+          googleAnalyticsMeasurementId={googleAnalyticsMeasurementId}
+          googleAdsId={googleAdsId}
+          registrationLabel={googleAdsRegistrationLabel}
+          requestLabel={googleAdsRequestLabel}
+          purchaseLabel={googleAdsPurchaseLabel}
+        />
         <PlatformReliabilityMonitor />
         <CustomerNotificationsRuntime />
         <LanguageSwitcher />

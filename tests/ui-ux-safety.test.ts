@@ -2602,6 +2602,11 @@ test("localized file service hub is hreflang-ready and linked from localized sur
   assert.match(localizedPage, /fileServiceJsonLd/);
   assert.match(localizedPage, /localizedUrl\(locale, "\/file-service"\)/);
   assert.match(localizedPage, /languageAlternates\("\/file-service"\)/);
+  assert.match(localizedPage, /title: copy\.pageTitle/);
+  assert.doesNotMatch(
+    localizedPage,
+    /return \{\s*title: `\$\{copy\.pageTitle\} \| MG AutoTech`/
+  );
   assert.match(localizedPage, /LocalizedSeoFooter/);
   assert.match(localizedPage, /resolvePublicHref/);
   assert.match(localizedPage, /JSON\.stringify\(jsonLd\)/);

@@ -55,6 +55,7 @@ import {
   Lock,
   Mail,
   MapPin,
+  Megaphone,
   MinusCircle,
   PackageCheck,
   Phone,
@@ -714,6 +715,13 @@ export default function AdminPage() {
         badge: "Queue",
         icon: <Clipboard className="h-5 w-5" />,
       });
+      links.push({
+        href: "/admin/ads-performance",
+        label: "Ads readiness",
+        detail: "Verify consented registration, request and payment measurement.",
+        badge: "Acquire",
+        icon: <Megaphone className="h-5 w-5" />,
+      });
     }
 
     if (hasStaffPermission(adminAccess, "file_expert.manage")) {
@@ -1275,6 +1283,18 @@ export default function AdminPage() {
                   SEO & Conversion
                 </span>
                 <span className="rounded-full bg-sky-950/40 px-2 py-1 text-[10px] font-black text-sky-200">MEASURE</span>
+              </Link>
+            )}
+            {hasStaffPermission(adminAccess, "orders.view") && (
+              <Link
+                href="/admin/ads-performance"
+                className="flex w-full items-center justify-between gap-3 rounded-2xl px-4 py-3 text-left text-sm font-black text-zinc-400 transition hover:bg-white/[0.06] hover:text-white"
+              >
+                <span className="flex items-center gap-3">
+                  <Megaphone className="h-5 w-5" />
+                  Ads Readiness
+                </span>
+                <span className="rounded-full bg-red-950/40 px-2 py-1 text-[10px] font-black text-red-200">ACQUIRE</span>
               </Link>
             )}
             {hasStaffPermission(adminAccess, "orders.view") && (

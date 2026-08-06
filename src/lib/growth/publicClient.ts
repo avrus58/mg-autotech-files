@@ -1,6 +1,6 @@
 "use client";
 
-import { analyticsConsentStorageKey } from "@/lib/publicAnalytics";
+import { hasAnalyticsConsent } from "@/lib/publicAnalytics";
 import {
   buildGrowthAttributionTouch,
   growthConsentVersion,
@@ -9,11 +9,7 @@ import {
 } from "@/lib/growth/attribution";
 
 function analyticsAllowed() {
-  try {
-    return window.localStorage.getItem(analyticsConsentStorageKey) === "granted";
-  } catch {
-    return false;
-  }
+  return hasAnalyticsConsent();
 }
 
 export function getOrCreateGrowthVisitorId() {

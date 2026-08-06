@@ -6,7 +6,10 @@ import {
   buildPublicNavigationEvent,
   buildPublicPageView,
   isApprovedAnalyticsHost,
+  isConversionMeasurementPath,
   isPublicAnalyticsPath,
+  isValidGoogleAdsConversionLabel,
+  isValidGoogleAdsId,
   isValidGoogleAnalyticsMeasurementId,
   normalizeAnalyticsPath,
   publicAnalyticsContentGroup,
@@ -24,6 +27,19 @@ test("analytics configuration accepts only a GA4 measurement id on the productio
   assert.equal(isApprovedAnalyticsHost("file.mgautotech.de"), true);
   assert.equal(isApprovedAnalyticsHost("preview.vercel.app"), false);
   assert.equal(isApprovedAnalyticsHost("localhost"), false);
+  assert.equal(isValidGoogleAdsId("AW-123456789"), true);
+  assert.equal(isValidGoogleAdsId("G-ABC1234567"), false);
+  assert.equal(isValidGoogleAdsConversionLabel("AbCdEf_123-xy"), true);
+  assert.equal(isValidGoogleAdsConversionLabel("short"), false);
+});
+
+test("verified conversion routes are measurement-only and never become public page views", () => {
+  for (const path of ["/register", "/auth/callback", "/new-request", "/payment/success"]) {
+    assert.equal(isConversionMeasurementPath(path), true, path);
+    assert.equal(isPublicAnalyticsPath(path), false, path);
+    assert.equal(buildPublicPageView(path), null, path);
+  }
+  assert.equal(isConversionMeasurementPath("/dashboard/orders/private-id"), false);
 });
 
 test("analytics path normalization removes query and fragment data", () => {
@@ -114,15 +130,14 @@ test("request analytics contains no customer, order, vehicle, file or payment me
     "service_type",
     "file_name",
     "storage_path",
-    "credit",
     "notes",
   ]) {
     assert.doesNotMatch(contract, new RegExp(forbidden, "i"), forbidden);
   }
 
-  assert.match(requestPage, /if \(error\) \{[\s\S]*?return;[\s\S]*?trackRequestSubmitted\(\);/);
+  assert.match(requestPage, /if \(error\) \{[\s\S]*?return;[\s\S]*?trackRequestSubmitted\(conversionAttemptId\);/);
   assert.match(requestPage, /if \(!customerProfile \|\| requestStartTrackedRef\.current\) return;[\s\S]*?trackRequestStarted\(\);/);
-  assert.doesNotMatch(requestPage, /trackRequestSubmitted\([^)]/);
+  assert.doesNotMatch(requestPage, /trackRequestSubmitted\((?:createdOrderId|order\.id|customer)/);
 });
 
 test("root analytics loader is consent-aware, production-only and fail-closed without config", () => {
@@ -132,19 +147,35 @@ test("root analytics loader is consent-aware, production-only and fail-closed wi
   const analytics = projectFile("src", "lib", "publicAnalytics.ts");
 
   assert.match(layout, /NEXT_PUBLIC_GOOGLE_ANALYTICS_ID/);
-  assert.match(layout, /<PublicAnalytics measurementId=\{googleAnalyticsMeasurementId\}/);
+  assert.match(layout, /googleAnalyticsMeasurementId=\{googleAnalyticsMeasurementId\}/);
+  assert.match(layout, /googleAdsId=\{googleAdsId\}/);
   assert.match(component, /isApprovedAnalyticsHost\(window\.location\.hostname\)/);
-  assert.match(component, /consent === "granted" && analyticsRouteAllowed && \(/);
+  assert.match(component, /isConversionMeasurementPath\(pathname\)/);
   assert.match(component, /analyticsRouteAllowed/);
-  assert.match(component, /denyGoogleAnalytics\(\);/);
+  assert.match(component, /denyGoogleMeasurement\(\);/);
   assert.match(component, /getAnalyticsConsentCopy\(pathname\)/);
   assert.match(consentCopy, /Necessary only/);
   assert.match(consentCopy, /File names, vehicle details, account data and order IDs are never included/);
-  assert.match(analytics, /ad_storage: "denied"/);
-  assert.match(analytics, /ad_user_data: "denied"/);
+  assert.match(analytics, /ad_storage: preferences\.advertising \? "granted" : "denied"/);
+  assert.match(analytics, /ad_user_data: preferences\.advertising \? "granted" : "denied"/);
   assert.match(analytics, /ad_personalization: "denied"/);
   assert.match(analytics, /page_referrer: ""/);
   assert.doesNotMatch(analytics, /window\.location\.href/);
+});
+
+test("admin Ads readiness center is protected and never returns public configuration values", () => {
+  const route = projectFile("src", "app", "api", "admin", "ads-performance", "route.ts");
+  const readiness = projectFile("src", "lib", "googleAds", "readiness.ts");
+  const client = projectFile("src", "app", "admin", "ads-performance", "AdsPerformanceClient.tsx");
+  const adminLayout = projectFile("src", "app", "admin", "layout.tsx");
+
+  assert.match(route, /requireStaffPermission\(request, "orders\.view"\)/);
+  assert.match(route, /private, no-store/);
+  assert.match(adminLayout, /BrowserAuthBoundary/);
+  assert.match(client, /Google Ads Readiness & Conversion Center/);
+  assert.match(readiness, /rawClickIdsStored: false/);
+  assert.match(readiness, /customerIdentifiersExported: false/);
+  assert.doesNotMatch(route, /NEXT_PUBLIC_GOOGLE_ADS_ID|REGISTRATION_LABEL|PURCHASE_LABEL/);
 });
 
 test("admin SEO measurement center is protected by the admin layout and exposes no identifier", () => {

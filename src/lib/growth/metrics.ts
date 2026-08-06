@@ -387,6 +387,12 @@ export function buildGrowthMetrics(input: GrowthMetricInput) {
       paymentsByUser: periodPaymentsByUser,
       label: (row) => row.first_medium === "none" ? row.first_source || "Direct" : `${row.first_source || "Unknown"} / ${row.first_medium || "unknown"}`,
     }),
+    byCampaign: buildAttributionPerformance({
+      attribution: periodAttribution,
+      ordersByCustomer: allOrdersByCustomer,
+      paymentsByUser: periodPaymentsByUser,
+      label: (row) => row.first_campaign?.trim() || "Unlabelled",
+    }),
     byCountry: buildAttributionPerformance({
       attribution: periodAttribution,
       ordersByCustomer: allOrdersByCustomer,

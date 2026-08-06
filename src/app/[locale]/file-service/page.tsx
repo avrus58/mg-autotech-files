@@ -56,7 +56,7 @@ export async function generateMetadata({
   const pageUrl = localizedUrl(locale, "/file-service");
 
   return {
-    title: `${copy.pageTitle} | MG AutoTech`,
+    title: copy.pageTitle,
     description: copy.description,
     alternates: {
       canonical: pageUrl,

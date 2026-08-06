@@ -29,6 +29,10 @@ export async function POST(request: Request) {
       success: true,
       credits: result.credits,
       paymentStatus: session.payment_status,
+      conversion: {
+        value: Number(session.amount_total ?? 0) / 100,
+        currency: String(session.currency ?? "").toUpperCase(),
+      },
     });
   } catch (error) {
     const message =

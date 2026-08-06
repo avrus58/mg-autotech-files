@@ -19,6 +19,10 @@ import { supabase } from "@/lib/supabaseClient";
 import { resolveBrowserTransactionalEmailLanguage } from "@/lib/email/language";
 import { recordGrowthAccountCreated } from "@/lib/growth/client";
 import {
+  beginRegistrationConversion,
+  trackRegistrationCompleted,
+} from "@/lib/publicAnalytics";
+import {
   createRegistrationProfileDraft,
   OAUTH_REGISTRATION_PROFILE_KEY,
 } from "@/lib/registrationProfile";
@@ -207,6 +211,7 @@ export default function RegisterPage() {
       return;
     }
 
+    beginRegistrationConversion();
     const { data, error } = await supabase.auth.signUp({
       email: cleanEmail,
       password,
@@ -240,6 +245,7 @@ export default function RegisterPage() {
     const isAlreadyVerified = Boolean(data.session && data.user?.email_confirmed_at);
     if (isAlreadyVerified) {
       void recordGrowthAccountCreated();
+      void trackRegistrationCompleted();
       void authenticatedFetch("/api/email/new-customer", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -290,6 +296,7 @@ export default function RegisterPage() {
     setGoogleLoading(true);
     setMessage("");
     setSuccess(false);
+    beginRegistrationConversion();
 
     window.sessionStorage.setItem("mg_register_oauth_provider", "google");
     const profileDraft = createRegistrationProfileDraft({

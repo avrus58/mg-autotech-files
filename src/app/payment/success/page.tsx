@@ -9,6 +9,7 @@ import {
   Loader2,
   AlertTriangle,
 } from "lucide-react";
+import { trackPurchaseCompleted } from "@/lib/publicAnalytics";
 
 type ConfirmState = "checking" | "success" | "error" | "missing";
 
@@ -60,6 +61,15 @@ export default function PaymentSuccessPage() {
         setCredits(Number(data.credits ?? 0));
         setState("success");
         setMessage("Payment confirmed. Credits were added to your account.");
+        const conversionValue = Number(data.conversion?.value);
+        const conversionCurrency = String(data.conversion?.currency ?? "");
+        if (Number.isFinite(conversionValue) && conversionValue >= 0 && /^[A-Z]{3}$/.test(conversionCurrency)) {
+          void trackPurchaseCompleted({
+            anonymousPaymentSeed: sessionId,
+            value: conversionValue,
+            currency: conversionCurrency,
+          });
+        }
       } catch (error) {
         setState("error");
         setMessage(

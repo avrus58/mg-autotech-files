@@ -7,6 +7,7 @@ import { Loader2, ShieldCheck, Upload } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import { authenticatedFetch } from "@/lib/authGuards";
 import { recordGrowthAccountCreated } from "@/lib/growth/client";
+import { trackRegistrationCompleted } from "@/lib/publicAnalytics";
 import {
   OAUTH_REGISTRATION_PROFILE_KEY,
   parseRegistrationProfileDraft,
@@ -87,6 +88,7 @@ export default function AuthCallbackPage() {
 
         if (isRecentSignup || isRecentEmailConfirmation) {
           void recordGrowthAccountCreated();
+          void trackRegistrationCompleted();
           try {
             await authenticatedFetch("/api/email/new-customer", {
               method: "POST",

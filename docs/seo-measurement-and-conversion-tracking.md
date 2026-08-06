@@ -1,5 +1,9 @@
 # SEO Measurement and Request Conversion Tracking
 
+> Google Ads conversion hierarchy, Consent Mode v2, privacy boundaries and
+> launch verification are documented in
+> `docs/google-ads-readiness-and-conversion.md`.
+
 ## Purpose
 
 MG AutoTech uses two separate measurement sources because Google search data and

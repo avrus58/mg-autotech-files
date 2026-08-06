@@ -10,6 +10,7 @@ import {
 } from "../src/lib/homepageLocalization";
 
 const rootHomepage = readFileSync("src/app/page.tsx", "utf8");
+const rootLayout = readFileSync("src/app/layout.tsx", "utf8");
 const localizedHomepageRoute = readFileSync("src/app/[locale]/page.tsx", "utf8");
 const localizedLayout = readFileSync("src/app/[locale]/layout.tsx", "utf8");
 const languageSwitcher = readFileSync("src/components/LanguageSwitcher.tsx", "utf8");
@@ -34,6 +35,7 @@ test("localized homepage keeps locale metadata and one localized schema graph", 
 });
 
 test("localized routes set the browser document language before hydration", () => {
+  assert.match(rootLayout, /<html[\s\S]*suppressHydrationWarning/u);
   assert.match(localizedLayout, /data-locale-document-language/u);
   assert.match(localizedLayout, /document\.documentElement\.lang/u);
   assert.match(localizedLayout, /JSON\.stringify\(documentLanguage\)/u);

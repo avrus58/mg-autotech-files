@@ -219,7 +219,8 @@ test("instrumentation is fail-soft and reminders have no automatic sender", () =
   assert.match(requestPage, /const meaningfulStart = Boolean\(/);
   assert.match(requestPage, /void recordGrowthRequestCreated/);
   assert.match(requestPage, /abandonedReminderEnabled[\s\S]*useState\(false\)/);
-  assert.match(analytics, /consent !== "granted"/);
+  assert.match(analytics, /!preferences\?\.analytics/);
+  assert.match(analytics, /preferences\.advertising/);
   assert.match(reminderRoute, /export async function POST/);
   assert.doesNotMatch(reminderRoute, /export async function GET|cron|schedule/i);
   assert.match(docs, /There is no automatic reminder cron job/);
@@ -233,7 +234,7 @@ test("growth capture is bounded and consent revocation clears the local pseudony
   assert.match(route, /request\.text\(\)/);
   assert.match(route, /TextEncoder\(\)\.encode\(rawBody\)\.byteLength > 8_192/);
   assert.match(client, /removeItem\(growthVisitorStorageKey\)/);
-  assert.match(analytics, /next === "denied"[\s\S]*clearGrowthVisitorId\(\)/);
+  assert.match(analytics, /if \(!next\.analytics\) clearGrowthVisitorId\(\)/);
   assert.match(analytics, /@\/lib\/growth\/publicClient/);
   assert.doesNotMatch(client, /authGuards|supabase|service.role|service_role/i);
 });

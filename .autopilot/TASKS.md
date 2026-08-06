@@ -50,6 +50,30 @@ Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
 
+### MANUAL-20260806-GOOGLE-ADS-READINESS [P1] Google Ads readiness and verified conversion measurement
+
+Durum: Done
+
+Fingerprint: `growth|google-ads-readiness|organic-traffic-without-verified-paid-conversion-loop|consented-registration-request-payment-measurement`
+
+Sonuc: Mevcut GA4, Search Console ve gizlilik dostu Growth attribution altyapisi
+Consent Mode v2 ile genisletildi. Kayit, talep ve odeme donusumleri yalnizca
+sunucu tarafindan dogrulanan is akisi tamamlandiktan sonra, anonim SHA-256
+transaction kimlikleri ve tekrar gonderim korumasiyla olculur. Ham click ID, PII,
+siparis/dosya icerigi veya private metadata Google'a gonderilmez; reklam
+kisisellestirme kapali kalir. `/admin/ads-performance` konfigurasyon, donusum
+hiyerarsisi, landing-page ve izinli kampanya/kaynak performansini admin-only
+olarak gosterir. 12 dilde granular izin deneyimi ve localized belge dili
+duzeltildi.
+
+Dogrulama: 659/659 test PASS; lint PASS; web+desktop typecheck PASS; production
+build PASS (268 route); i18n/SEO PASS (12 locale, 30 source file); payment
+schema-only PASS ve env okunmadi; audit high threshold PASS (0 high/critical,
+mevcut Next/PostCSS zincirinde 2 moderate advisory); 1440x900, 1366x768,
+768x1024 ve 390x844 browser QA PASS; yatay tasma ve console error yok;
+git diff check PASS. SQL, dependency, production mutation, push veya deploy
+yoktur.
+
 ### MANUAL-20260806-FILE-SERVICE-SEARCH-ARCHITECTURE [P1] Global file-service search intent architecture
 
 Durum: Done
