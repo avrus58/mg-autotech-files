@@ -9,7 +9,9 @@ import {
   buildDesktopServiceSummary,
   calculateDesktopRequestCredits,
   customerSafeDesktopOrderSelect,
+  desktopPrimaryServices,
   desktopUploadSessionIdFor,
+  findDesktopPrimaryService,
   isValidSha256,
   normalizeDesktopIdempotencyKey,
   validateDesktopCreditAccess,
@@ -79,11 +81,34 @@ test("desktop idempotency and safe payload helpers avoid unsafe request data", (
 test("desktop service pricing and summary are computed server-side from known options", () => {
   assert.equal(calculateDesktopRequestCredits("stage_1", ["dpf_off", "egr_off", "dpf_off"]), 22);
   assert.equal(buildDesktopServiceSummary("stage_1", ["dpf_off"]), "Stage 1 + DPF Removal");
+  assert.deepEqual(
+    desktopPrimaryServices
+      .filter((service) => service.id.startsWith("tcu_stage_"))
+      .map(({ id, title, credits }) => ({ id, title, credits })),
+    [
+      { id: "tcu_stage_1", title: "TCU Stage 1", credits: 15 },
+      { id: "tcu_stage_2", title: "TCU Stage 2", credits: 20 },
+      { id: "tcu_stage_3", title: "TCU Stage 3", credits: 30 },
+    ],
+  );
+  assert.equal(calculateDesktopRequestCredits("tcu_stage_1", []), 15);
+  assert.equal(calculateDesktopRequestCredits("tcu_stage_2", []), 20);
+  assert.equal(calculateDesktopRequestCredits("tcu_stage_3", []), 30);
+  assert.equal(findDesktopPrimaryService("tcu_tuning"), null);
   assert.throws(() => calculateDesktopRequestCredits("stage_1", ["not_real"]));
   assert.equal(validateDesktopCreditAccess({ credit_balance: 30, account_status: "active" }, 22), null);
   assert.match(validateDesktopCreditAccess({ credit_balance: null, account_status: "active" }, 22) ?? "", /credit balance could not be verified/i);
   assert.match(validateDesktopCreditAccess({ credit_balance: 1, account_status: "active" }, 22) ?? "", /credit balance could not be verified/i);
   assert.match(validateDesktopCreditAccess({ credit_balance: 30, account_status: "blocked" }, 1) ?? "", /not active/i);
+});
+
+test("web request catalog exposes the same three TCU stage prices", () => {
+  const requestPage = readFileSync(resolve(process.cwd(), "src/app/new-request/page.tsx"), "utf8");
+
+  assert.match(requestPage, /id: "tcu_stage_1"[\s\S]*?title: "TCU Stage 1"[\s\S]*?credits: 15/);
+  assert.match(requestPage, /id: "tcu_stage_2"[\s\S]*?title: "TCU Stage 2"[\s\S]*?credits: 20/);
+  assert.match(requestPage, /id: "tcu_stage_3"[\s\S]*?title: "TCU Stage 3"[\s\S]*?credits: 30/);
+  assert.doesNotMatch(requestPage, /id: "tcu_tuning"[\s\S]*?credits: 10/);
 });
 
 test("desktop app-check supports version control without customer secrets", async () => {

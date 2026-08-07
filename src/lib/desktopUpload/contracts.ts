@@ -16,7 +16,9 @@ export type DesktopPrimaryServiceId =
   | "stage_2"
   | "stage_3"
   | "eco_tuning"
-  | "tcu_tuning"
+  | "tcu_stage_1"
+  | "tcu_stage_2"
+  | "tcu_stage_3"
   | "original_file";
 
 export type DesktopExtraServiceId =
@@ -95,7 +97,9 @@ export const desktopPrimaryServices: Array<DesktopServiceOption<DesktopPrimarySe
   { id: "stage_2", title: "Stage 2", credits: 15, description: "For vehicles with hardware modifications." },
   { id: "stage_3", title: "Stage 3", credits: 30, description: "For heavily modified setups, manual review recommended." },
   { id: "eco_tuning", title: "ECO Tuning", credits: 8, description: "Fuel economy optimization with smooth drivability." },
-  { id: "tcu_tuning", title: "TCU Tuning", credits: 10, description: "Gearbox software optimization and torque limiter adjustment." },
+  { id: "tcu_stage_1", title: "TCU Stage 1", credits: 15, description: "Gearbox software optimization for standard transmission setups." },
+  { id: "tcu_stage_2", title: "TCU Stage 2", credits: 20, description: "Advanced gearbox calibration for performance-focused setups." },
+  { id: "tcu_stage_3", title: "TCU Stage 3", credits: 30, description: "Custom gearbox calibration for heavily modified setups." },
   { id: "original_file", title: "Original File", credits: 4, description: "Original / stock file request." },
 ];
 

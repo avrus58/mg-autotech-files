@@ -50,6 +50,20 @@ Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
 
+### MANUAL-20260807-TCU-STAGE-PRICING [P1] Split TCU tuning into explicit stages
+
+Durum: Done
+
+Fingerprint: `request-catalog|tcu-stage-pricing|single-tcu-option|owner-defined-15-20-30`
+
+Sonuc: Web ve desktop request kataloglarinda TCU Stage 1 (15 kredi), TCU Stage 2
+(20 kredi) ve TCU Stage 3 (30 kredi) secenekleri eklendi. Server-side desktop
+kredi dogrulamasi ayni katalogu kullanir; Tune Advisor eski genel TCU inceleme
+etiketiyle geriye uyumlu kalir.
+
+Dogrulama: 660/660 test PASS; lint PASS; typecheck PASS; production build PASS;
+`git diff --check` PASS.
+
 ### MANUAL-20260806-GOOGLE-ADS-READINESS [P1] Google Ads readiness and verified conversion measurement
 
 Durum: Done

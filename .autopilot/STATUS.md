@@ -2,6 +2,13 @@
 
 Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
+## 2026-08-07 TCU stage service pricing
+
+- Gorev: Customer request ana hizmet katalogundaki tek `TCU Tuning` secenegini owner tarafindan verilen TCU Stage 1/2/3 kredi seviyelerine ayirmak.
+- Uygulama: Web ve desktop server-side kataloglari TCU Stage 1 = 15, TCU Stage 2 = 20, TCU Stage 3 = 30 kredi olacak sekilde ayni kaynaga getirildi. Eski genel `tcu_tuning` Tune Advisor etiketi geriye uyumlu dahili inceleme siniri olarak korundu; eski siparisler veya kayitlar yeniden yazilmadi.
+- Kontroller: Odak testleri PASS (25/25); full tests PASS (660/660); lint PASS; web+desktop typecheck PASS; production build PASS (268 route); `git diff --check` PASS.
+- Sinirlar: SQL, payment provider, production data, push veya deploy yoktur.
+
 ## 2026-08-06 Global file-service search intent architecture
 
 - Gorev: ECU/TCU file-service sektorunde workshop ve tunerlarin kullandigi temel ticari arama dilini arastirip ana sayfayi uzatmadan kanonik, customer-safe ve olculebilir bir SEO mimarisine donusturmek.

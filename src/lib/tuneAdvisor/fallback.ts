@@ -116,23 +116,36 @@ function normalizeServiceText(input: TuneAdvisorServiceContext | null | undefine
   ].filter(Boolean).join(" | ");
 }
 
+function resolveTcuPrimary(source: "id" | "label" | "summary", label = "TCU Tuning") {
+  return { id: "tcu_tuning", label, source };
+}
+
 function resolvePrimaryById(id: string | null | undefined) {
   const normalizedId = textValue(id);
   if (!normalizedId) return null;
+  if (normalizedId === "tcu_tuning") return resolveTcuPrimary("id");
   const service = desktopPrimaryServices.find((item) => item.id === normalizedId);
-  return service ? { id: service.id, label: service.title, source: "id" as const } : null;
+  if (!service) return null;
+  return service.id.startsWith("tcu_stage_")
+    ? resolveTcuPrimary("id", service.title)
+    : { id: service.id, label: service.title, source: "id" as const };
 }
 
 function resolvePrimaryByLabel(label: string | null | undefined) {
   const normalizedLabel = textValue(label).toLowerCase();
   if (!normalizedLabel) return null;
+  if (normalizedLabel === "tcu tuning") return resolveTcuPrimary("label");
   const service = desktopPrimaryServices.find((item) => item.title.toLowerCase() === normalizedLabel);
-  return service ? { id: service.id, label: service.title, source: "label" as const } : null;
+  if (!service) return null;
+  return service.id.startsWith("tcu_stage_")
+    ? resolveTcuPrimary("label", service.title)
+    : { id: service.id, label: service.title, source: "label" as const };
 }
 
 function resolvePrimaryBySummary(summary: string) {
   const match = primaryKeywordMap.find((entry) => entry.patterns.some((pattern) => pattern.test(summary)));
   if (!match) return null;
+  if (match.id === "tcu_tuning") return resolveTcuPrimary("summary");
   const service = desktopPrimaryServices.find((item) => item.id === match.id);
   return service ? { id: service.id, label: service.title, source: "summary" as const } : null;
 }

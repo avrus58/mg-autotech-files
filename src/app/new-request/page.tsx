@@ -149,10 +149,22 @@ const mainServices: MainService[] = [
     description: "Fuel economy optimization with smooth drivability.",
   },
   {
-    id: "tcu_tuning",
-    title: "TCU Tuning",
-    credits: 10,
-    description: "Gearbox software optimization and torque limiter adjustment.",
+    id: "tcu_stage_1",
+    title: "TCU Stage 1",
+    credits: 15,
+    description: "Gearbox software optimization for standard transmission setups.",
+  },
+  {
+    id: "tcu_stage_2",
+    title: "TCU Stage 2",
+    credits: 20,
+    description: "Advanced gearbox calibration for performance-focused setups.",
+  },
+  {
+    id: "tcu_stage_3",
+    title: "TCU Stage 3",
+    credits: 30,
+    description: "Custom gearbox calibration for heavily modified setups.",
   },
   {
     id: "original_file",

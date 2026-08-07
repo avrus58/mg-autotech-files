@@ -961,6 +961,11 @@ test("Tune Advisor handles ECO, TCU and Only Options service contexts", async ()
     vehicle: { brand: "Audi", model: "A6", engine: "3.0 TDI", ecuType: "TCU", readMethod: "bench", hwSw: "TCU-SW" },
     services: { serviceSummary: "TCU tuning with gearbox shift review" },
   });
+  const tcuStage = await analyzeTuneAdvisorRequest({
+    source: "local_test",
+    vehicle: { brand: "BMW", model: "M3", engine: "3.0", ecuType: "TCU", readMethod: "bench", hwSw: "TCU-SW2" },
+    services: { primaryServiceId: "tcu_stage_2" },
+  });
   const onlyOptions = await analyzeTuneAdvisorRequest({
     source: "local_test",
     services: { primaryServiceId: "only_options", extraServiceIds: ["vmax_off", "launch_control"] },
@@ -971,6 +976,8 @@ test("Tune Advisor handles ECO, TCU and Only Options service contexts", async ()
   assert.equal(tcu.normalizedService.primary?.id, "tcu_tuning");
   assert.ok(tcu.guidance.some((item) => item.category === "tcu_calibration"));
   assert.ok(tcu.riskFlags.some((item) => item.kind === "tcu_review"));
+  assert.equal(tcuStage.normalizedService.primary?.id, "tcu_tuning");
+  assert.equal(tcuStage.normalizedService.primary?.label, "TCU Stage 2");
   assert.equal(onlyOptions.normalizedService.primary?.id, "only_options");
   assert.ok(onlyOptions.guidance.some((item) => item.category === "options_only"));
   assert.ok(onlyOptions.riskFlags.some((item) => item.kind === "driveability_or_safety_review"));
