@@ -38,10 +38,24 @@ The public consent control offers:
 legacy analytics consent is migrated as analytics-only; it never silently grants
 advertising consent. An existing denial remains denied.
 
+Before any Google configuration command, the browser queue receives one
+default-denied Consent Mode v2 command with a short `wait_for_update` window.
+The saved customer choice is applied afterwards with an update command. The
+default is never reset to granted and is never emitted more than once per page
+runtime.
+
 The Google tag is loaded only on the production hostname and only after an
 applicable optional consent choice. Public page views use an explicit route
 allowlist. Registration, auth callback, request and payment success routes are
 measurement-only routes and never produce private page views.
+
+The initial public landing touch is captured as sanitized, ephemeral in-memory
+data before a choice is made. It is not written to browser storage and is not
+sent over the network until analytics consent is granted. This preserves the
+real first landing page and campaign when a visitor navigates before deciding.
+After consent, the initial and current public touches are sent in order. A
+temporary network failure receives at most three exponential retries plus an
+online retry; successful touches are deduplicated for the current app session.
 
 ## Production configuration
 
@@ -74,8 +88,11 @@ Google measurement never receives:
 - admin, File Expert, AI or work-order metadata.
 
 Registration, request and payment duplicate protection uses a browser-side
-SHA-256 transaction key derived from an anonymous attempt or provider seed. The
-source seed is not sent to Google.
+SHA-256 transaction key. Request conversion uses the successfully created order
+result when available; payment uses the Stripe session confirmed as paid;
+registration uses the registration attempt retained through verification. The
+source seed is never sent to Google. Registration creates no optional dedupe
+storage when neither analytics nor advertising measurement has been granted.
 
 `gclid`, `gbraid` and `wbraid` presence can classify a consented first-party visit
 as `google / cpc`. Their values are not stored in the Growth tables or admin
@@ -94,6 +111,12 @@ Create separate campaigns by language, country and exact service intent. Start
 with exact and phrase match. Review search terms and negative keywords before
 expanding match types. Ad language must match the landing page language.
 
+The admin Ads center includes an allowlisted campaign URL builder for all 12
+supported website languages. It accepts only a known MG AutoTech destination and
+restricted campaign/creative codes, then adds `utm_source=google`,
+`utm_medium=cpc`, `utm_campaign` and optional `utm_content`. It cannot generate an
+external redirect or add customer data.
+
 Avoid unsupported turnaround, compatibility, power, legality or guaranteed
 result claims. Policy-sensitive service campaigns, including emissions-related
 or diagnostic-code services, require separate Google Ads policy and legal review
@@ -107,8 +130,11 @@ The center shows:
 
 - GA4, Google Ads tag and conversion-label readiness;
 - Consent Mode v2 and personalization state;
+- observed funnel health, separately from configuration readiness;
+- consented visitor, registration, verified request and paying-customer counts;
 - paid source and campaign registrations, requests and verified revenue;
 - approved campaign landing-page candidates;
+- a language-matched, allowlisted campaign URL builder;
 - required account actions and known reporting limitations.
 
 The report uses existing consented Growth attribution and verified business
@@ -121,13 +147,16 @@ records. No new database migration is required.
 3. Deploy the matching application build.
 4. Use a fresh browser profile and test Necessary only, Analytics only and Accept all.
 5. In Google Tag Assistant, verify Consent Mode v2 defaults and updates.
-6. Confirm public page views contain only normalized paths and content groups.
-7. Complete one authorized test registration and verify one `sign_up` event.
-8. Create one authorized non-customer test request and verify one `generate_lead` event.
-9. Use a Stripe test environment for purchase validation; never create a live charge for smoke testing.
-10. Reload each success page and confirm transaction-ID deduplication prevents another conversion.
-11. Confirm `/api/admin/ads-performance` returns `401/403` anonymously.
-12. Confirm `/admin/ads-performance` contains aggregate rows only.
+6. Land on a tagged public URL, navigate once before accepting analytics, then
+   confirm the first-touch campaign and landing page remain the original values.
+7. Confirm public page views contain only normalized paths and content groups.
+8. Complete one authorized test registration and verify one `sign_up` event.
+9. Create one authorized non-customer test request and verify one `generate_lead` event.
+10. Use a Stripe test environment for purchase validation; never create a live charge for smoke testing.
+11. Reload each success page and confirm transaction-ID deduplication prevents another conversion.
+12. Confirm `/api/admin/ads-performance` returns `401/403` anonymously.
+13. Confirm `/admin/ads-performance` contains aggregate rows only and distinguishes
+    configured measurement from an observed funnel.
 
 Google Ads conversion diagnostics can take time to update. A delayed Ads UI does
 not justify bypassing consent, emitting duplicate events or exposing identifiers.
@@ -142,3 +171,8 @@ Campaign activation remains blocked until:
 - country, language, landing page and ad copy match;
 - billing, daily budget and account access are owner-approved;
 - policy-sensitive service groups have been reviewed separately.
+
+The site can prove that a conversion was queued after a verified business
+success. It cannot prove that Google accepted the event. Tag Assistant and the
+Google Ads conversion diagnostics are the external source of truth for receipt.
+See `docs/google-ads-campaign-launch-plan.md` for the account and campaign setup.

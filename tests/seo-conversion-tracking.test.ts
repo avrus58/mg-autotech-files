@@ -135,9 +135,9 @@ test("request analytics contains no customer, order, vehicle, file or payment me
     assert.doesNotMatch(contract, new RegExp(forbidden, "i"), forbidden);
   }
 
-  assert.match(requestPage, /if \(error\) \{[\s\S]*?return;[\s\S]*?trackRequestSubmitted\(conversionAttemptId\);/);
+  assert.match(requestPage, /if \(error\) \{[\s\S]*?return;[\s\S]*?createdOrderId \|\| growthAttemptIdRef[\s\S]*?trackRequestSubmitted\(conversionSeed\);/);
   assert.match(requestPage, /if \(!customerProfile \|\| requestStartTrackedRef\.current\) return;[\s\S]*?trackRequestStarted\(\);/);
-  assert.doesNotMatch(requestPage, /trackRequestSubmitted\((?:createdOrderId|order\.id|customer)/);
+  assert.match(analytics, /crypto\.subtle\.digest\("SHA-256", bytes\)/);
 });
 
 test("root analytics loader is consent-aware, production-only and fail-closed without config", () => {

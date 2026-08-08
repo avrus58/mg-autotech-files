@@ -239,6 +239,24 @@ test("growth capture is bounded and consent revocation clears the local pseudony
   assert.doesNotMatch(client, /authGuards|supabase|service.role|service_role/i);
 });
 
+test("growth attribution preserves a memory-only first touch and retries only after consent", () => {
+  const client = source("src", "lib", "growth", "publicClient.ts");
+  const analytics = source("src", "components", "analytics", "PublicAnalytics.tsx");
+  const captureBlock = client.slice(
+    client.indexOf("export function captureGrowthAttributionTouch"),
+    client.indexOf("export function recordGrowthAttributionTouch")
+  );
+
+  assert.doesNotMatch(captureBlock, /localStorage|sessionStorage|fetch\(/);
+  assert.match(client, /!analyticsAllowed\(\)[\s\S]*Promise\.resolve\(false\)/);
+  assert.match(analytics, /initialAttributionTouchRef/);
+  assert.match(analytics, /uniqueGrowthAttributionTouches/);
+  assert.match(analytics, /sentAttributionTouchesRef/);
+  assert.match(analytics, /attempts <= 3/);
+  assert.match(analytics, /addEventListener\("online", retryWhenOnline\)/);
+  assert.doesNotMatch(analytics, /sessionStorage\.setItem\([^)]*attribution|localStorage\.setItem\([^)]*attribution/i);
+});
+
 test("Search Console demand remains aggregate and explicitly unlinked from customers", () => {
   const report = source("src", "lib", "growth", "report.ts");
   const ui = source("src", "app", "admin", "growth", "GrowthCustomerSuccessClient.tsx");

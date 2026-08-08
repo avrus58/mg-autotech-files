@@ -34,15 +34,21 @@ export function clearGrowthVisitorId() {
   }
 }
 
-export function recordGrowthAttributionTouch() {
+export function captureGrowthAttributionTouch() {
+  if (typeof window === "undefined") return null;
+  return buildGrowthAttributionTouch({
+    url: window.location.href,
+    referrer: typeof document === "undefined" ? "" : document.referrer,
+    locale: window.navigator?.language ?? null,
+  });
+}
+
+export function recordGrowthAttributionTouch(
+  capturedTouch = captureGrowthAttributionTouch()
+) {
   if (typeof window === "undefined" || !analyticsAllowed()) return Promise.resolve(false);
   const visitorId = getOrCreateGrowthVisitorId();
-  const touch = buildGrowthAttributionTouch({
-    url: window.location.href,
-    referrer: document.referrer,
-    locale: window.navigator.language,
-  });
-  if (!visitorId || !touch) return Promise.resolve(false);
+  if (!visitorId || !capturedTouch) return Promise.resolve(false);
 
   return fetch("/api/growth/journey", {
     method: "POST",
@@ -52,7 +58,7 @@ export function recordGrowthAttributionTouch() {
       visitorId,
       consent: "granted",
       consentVersion: growthConsentVersion,
-      ...touch,
+      ...capturedTouch,
     }),
     keepalive: true,
     cache: "no-store",

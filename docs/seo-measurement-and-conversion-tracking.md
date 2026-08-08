@@ -51,15 +51,22 @@ is never part of an analytics event:
 - AI, training, source-provider or confidence metadata;
 - URL query strings or fragments.
 
-The Google tag is not loaded until the visitor chooses **Allow analytics**.
-Choosing **Necessary only** keeps the tag unloaded. Advertising storage, ad user
-data, ad personalization and Google Signals stay disabled. Analytics runs only
-on the exact production host `file.mgautotech.de`; localhost and Preview hosts
-do not contaminate production reports. Moving from an allowed public/request
-route into `/admin`, `/dashboard`, `/payment` or another private route sends an
-explicit analytics-consent denial update, so the loaded tag cannot continue
-measuring the private workspace. Event `page_location` values are rebuilt from
+The Google tag is not loaded until the visitor grants an applicable optional
+measurement choice. Choosing **Necessary only** keeps the tag unloaded.
+Advertising personalization and Google Signals remain disabled. Analytics runs
+only on the exact production host `file.mgautotech.de`; localhost and Preview
+hosts do not contaminate production reports. Moving from an allowlisted public
+or conversion-measurement route into `/admin`, `/dashboard` or another private
+workspace sends an explicit consent-denied update, so the loaded tag cannot
+continue measuring private pages. Event `page_location` values are rebuilt from
 the allowlisted path and `page_referrer` is intentionally blank.
+
+Before consent, the sanitized initial landing touch exists only in component
+memory. It is not persisted and no request is sent. When analytics consent is
+granted, the original touch is recorded before the current public route, which
+prevents a later consent decision from replacing the true campaign landing
+page. Temporary first-party attribution failures use bounded retries and never
+block the website, registration or request flow.
 
 ## Required Configuration
 

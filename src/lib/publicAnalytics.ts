@@ -83,6 +83,7 @@ type AnalyticsWindow = Window & {
   dataLayer?: unknown[][];
   gtag?: (...args: unknown[]) => void;
   __mgConfiguredGoogleTags?: string[];
+  __mgGoogleConsentDefaultSet?: boolean;
 };
 
 type VerifiedConversionName = "registration" | "request" | "purchase";
@@ -379,6 +380,17 @@ function consentCommand(preferences: MeasurementConsentPreferences) {
   } as const;
 }
 
+function ensureGoogleConsentDefault() {
+  const target = ensureGoogleTagQueue();
+  if (target.__mgGoogleConsentDefaultSet) return target;
+  target.gtag?.("consent", "default", {
+    ...consentCommand(necessaryOnlyPreferences()),
+    wait_for_update: 500,
+  });
+  target.__mgGoogleConsentDefaultSet = true;
+  return target;
+}
+
 export function initializeGoogleMeasurement(config: GoogleAdsPublicConfiguration) {
   if (typeof window === "undefined") return false;
   const preferences = readMeasurementConsent();
@@ -387,8 +399,7 @@ export function initializeGoogleMeasurement(config: GoogleAdsPublicConfiguration
   const adsConfigured = preferences.advertising && isValidGoogleAdsId(config.googleAdsId);
   if (!analyticsConfigured && !adsConfigured) return false;
 
-  const target = ensureGoogleTagQueue();
-  target.gtag?.("consent", "default", consentCommand(preferences));
+  const target = ensureGoogleConsentDefault();
   target.gtag?.("consent", "update", consentCommand(preferences));
   if (!target.__mgConfiguredGoogleTags?.length) target.gtag?.("js", new Date());
 
@@ -419,7 +430,7 @@ export function initializeGoogleAnalytics(measurementId: string) {
 
 export function denyGoogleMeasurement() {
   if (typeof window === "undefined") return;
-  const target = ensureGoogleTagQueue();
+  const target = ensureGoogleConsentDefault();
   target.gtag?.("consent", "update", consentCommand(necessaryOnlyPreferences()));
 }
 
@@ -574,6 +585,8 @@ async function dispatchVerifiedConversion(input: {
 
 export function beginRegistrationConversion() {
   if (typeof window === "undefined") return null;
+  const preferences = readMeasurementConsent();
+  if (!preferences.analytics && !preferences.advertising) return null;
   try {
     const seed = window.crypto.randomUUID();
     window.localStorage.setItem(registrationConversionSeedKey, seed);
@@ -585,6 +598,8 @@ export function beginRegistrationConversion() {
 
 export function trackRegistrationCompleted() {
   if (typeof window === "undefined") return Promise.resolve(false);
+  const preferences = readMeasurementConsent();
+  if (!preferences.analytics && !preferences.advertising) return Promise.resolve(false);
   let seed = "";
   try {
     seed = window.localStorage.getItem(registrationConversionSeedKey) ?? "";
@@ -610,8 +625,8 @@ export function trackRequestStarted() {
   });
 }
 
-export function trackRequestSubmitted(anonymousAttemptSeed: string) {
-  return dispatchVerifiedConversion({ name: "request", seed: anonymousAttemptSeed });
+export function trackRequestSubmitted(verifiedRequestSeed: string) {
+  return dispatchVerifiedConversion({ name: "request", seed: verifiedRequestSeed });
 }
 
 export function trackPurchaseCompleted(input: {

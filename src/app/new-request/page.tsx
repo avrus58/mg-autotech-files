@@ -1452,8 +1452,8 @@ export default function NewRequestPage() {
         : current
     );
 
-    const conversionAttemptId = growthAttemptIdRef.current ?? window.crypto.randomUUID();
-    void trackRequestSubmitted(conversionAttemptId);
+    const conversionSeed = String(createdOrderId || growthAttemptIdRef.current || window.crypto.randomUUID());
+    void trackRequestSubmitted(conversionSeed);
     if (createdOrderId && growthAttemptIdRef.current) {
       void recordGrowthRequestCreated(String(createdOrderId), growthAttemptIdRef.current);
     }

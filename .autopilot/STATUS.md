@@ -2629,3 +2629,54 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 - Kontroller: lint PASS; web+desktop typecheck PASS; full tests PASS (659/659); production build PASS (268 route); i18n/SEO PASS (12 locale, 30 source file); payment schema-only PASS ve env okunmadi; audit high threshold PASS (0 high/critical, Next/PostCSS zincirinde 2 mevcut moderate advisory); git diff check PASS.
 - Browser QA: 1440x900, 1366x768, 768x1024 ve 390x844 boyutlarinda ana sayfa ve temel campaign landing sayfalari yatay tasma ve console error olmadan render edildi. `/services/stage-1`, `/file-service`, `/de/services/stage-1` ve `/tr/file-service` canonical/title/H1/lang kontrolleri PASS.
 - Sinirlar ve kalan dis adimlar: SQL veya dependency gerekmedi. Production, Google Ads hesabi, Supabase, customer data, payment mutasyonu, commit, push veya deploy yapilmadi. Canli reklamdan once uc Google Ads conversion action'i olusturulmali, bes public measurement env degeri tanimlanmali ve Tag Assistant ile production consent/event smoke tamamlanmalidir. Search ranking, reklam onayi veya ticari performans garanti edilmez.
+
+## 2026-08-08 Consented growth measurement reliability
+
+- Gorev: Mevcut Growth, GA4 ve Google Ads altyapisinda gec verilen consent nedeniyle ilk campaign/landing temasinin kaybolmasini ve gecici ag hatasinda attribution kaydinin sessizce dusmesini gidermek.
+- Olcum davranisi: Ilk public touch izin oncesinde yalniz React belleginde tutulur; cookie, localStorage, sessionStorage veya network yazimi yapilmaz. Analytics izni verildikten sonra ilk ve mevcut touch deterministic olarak deduplicate edilip sirayla kaydedilir. Basarisiz kayitlar en fazla uc bounded exponential retry ve tarayici tekrar online oldugunda bir recovery denemesi alir; basarili touch ayni render oturumunda tekrar gonderilmez.
+- Admin gorunurlugu: `/admin/ads-performance` artik yalniz env/configuration boolean'larini degil, aggregate consented visitor, registration, verified request ve paying-customer kanitini da gosterir. Durumlar configuration required, awaiting consented traffic, traffic observed, requests observed ve verified revenue observed olarak ayrilir; customer identifier veya click ID cikmaz. GA4 measurement ID verified measurement hazirlik gate'ine dahil edildi.
+- Guvenlik ve veri minimizasyonu: Consent Mode v2 ve fail-closed siniri korunur. Ham gclid/gbraid/wbraid, e-posta, customer/order/file ID veya teknik dosya verisi saklanmaz ya da Google'a gonderilmez. Payment, AI, vehicle, work-order, email ve desktop davranisi degismedi.
+- Dependency hardening: Mevcut transitive `nanoid` 3.3.17 ve `postcss` 8.5.23 patch surumlerine override edildi. Yeni paket eklenmedi; production-only audit 0 vulnerability sonucuna dondu.
+- Kontroller: targeted analytics/growth tests PASS (36/36); full tests PASS (664/664); lint PASS; web+desktop typecheck PASS; production build PASS; i18n/SEO PASS (12 locale, 611/611); homepage performance PASS (66.2 KB gzip / 80 KB); payment schema-only PASS ve env okunmadi; `npm audit --omit=dev --audit-level=high` PASS (0 vulnerability); `git diff --check` PASS.
+- Degisen dosyalar: `.autopilot/TASKS.md`, `.autopilot/STATUS.md`, `src/components/analytics/PublicAnalytics.tsx`, `src/lib/growth/publicClient.ts`, `src/lib/growth/attribution.ts`, `src/lib/googleAds/readiness.ts`, `src/app/admin/ads-performance/AdsPerformanceClient.tsx`, iki growth/Ads test dosyasi, iki olcum dokumani, `package.json` ve `package-lock.json`.
+- Sinirlar: SQL gerekmez. Production servislerine baglanilmadi; customer data okunmadi veya degistirilmedi. Commit, push ve deploy yapilmadi. Canliya cikis sonrasinda gercek PII icermeyen bir consented test journey ile observed health durumunun `awaiting` seviyesinden ilerledigi ayrica smoke-test edilmelidir.
+
+## 2026-08-09 Google Ads launch gate and verified conversion hardening
+
+- Gorev: Reklam butcesi veya kampanya acmadan, File Service icin izin, conversion
+  tekillestirme, cok dilli landing ve account launch kontrollerindeki teknik
+  bosluklari kapatmak.
+- Consent: Google Consent Mode v2 default-denied komutu tek sefer ve tag
+  yuklenmeden once kuyruklanir. Kayitli tercih ancak bundan sonra update olarak
+  uygulanir. Necessary-only durumda Google tag/network yuklenmez; registration
+  conversion seed'i veya optional storage olusmaz.
+- Donusum dogrulugu: Registration yalniz dogrulanmis auth callback sonrasinda,
+  request yalniz basarili create RPC'sinden donen gercek order ID sonrasinda,
+  payment yalniz server-side confirmation sonrasinda olculur. Request order ID
+  tarayicida SHA-256 hash'e cevrilir; Google'a customer/order ID, e-posta,
+  click ID veya teknik dosya verisi gonderilmez.
+- Campaign kontrolu: `/admin/ads-performance` 12 dilde allowlistli Stage 1,
+  File Service ve How It Works hedefleri icin HTTPS campaign URL builder sunar.
+  Source/medium sabittir; campaign/creative tokenlari sinirli karakter ve
+  uzunluk validator'undan gecer. Arbitrary redirect veya PII eklenemez.
+- Account siniri: Chrome'da read-only incelemede `MG AutoTech File Service`
+  hesabinin setup-in-progress oldugu goruldu. Diger aktif MG AutoTech hesabinda
+  mevcut kampanya, conversion ve billing uyarilari vardir; bunlar File Service
+  olcumuyle karistirilmadi ve hicbir ayar degistirilmedi. Google Ads arayuzundeki
+  ad-blocker uyarisindan dolayi yeni conversion action kurulumu tamamlanamadi.
+- Production env siniri: Yalniz env adlari read-only kontrol edildi. GA4 public
+  measurement ID mevcut; Google Ads ID ile registration/request/purchase
+  conversion label'lari eksik. Degerler okunmadi veya raporlanmadi. Label'lar
+  dedicated hesapta olusturulmadan tahmin edilmemelidir.
+- Dokumantasyon: Consent sirasi, conversion rolleri, duplicate GA4 import
+  yasagi, dil/ulke/service campaign ayrimi, negatif keyword incelemesi,
+  pre-spend Tag Assistant gate'i ve ilk hafta operasyon plani tamamlandi.
+- Kontroller: targeted PASS (26/26); full tests PASS (667/667); lint PASS;
+  web+desktop typecheck PASS; production build PASS (268 route); i18n/SEO PASS
+  (12 locale, 611/611); performance PASS (66.3 KB gzip / 80 KB); payment
+  schema-only PASS ve env okunmadi; production audit PASS (0 vulnerability);
+  `git diff --check` PASS.
+- Sinirlar: SQL gerekmez. Google Ads account/campaign/budget/billing, Production
+  env, customer data, payment veya deploy mutasyonu yapilmadi. Commit, push ve
+  deploy yoktur. External receipt Google Ads Tag Assistant ve conversion
+  diagnostics ile owner-controlled canli testte dogrulanmalidir.

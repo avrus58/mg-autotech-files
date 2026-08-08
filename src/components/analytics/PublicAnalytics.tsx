@@ -23,7 +23,16 @@ import {
   type MeasurementConsentPreferences,
   type MeasurementConsentSnapshot,
 } from "@/lib/publicAnalytics";
-import { clearGrowthVisitorId, recordGrowthAttributionTouch } from "@/lib/growth/publicClient";
+import {
+  captureGrowthAttributionTouch,
+  clearGrowthVisitorId,
+  recordGrowthAttributionTouch,
+} from "@/lib/growth/publicClient";
+import {
+  growthAttributionTouchKey,
+  uniqueGrowthAttributionTouches,
+} from "@/lib/growth/attribution";
+import type { GrowthAttributionTouch } from "@/lib/growth/types";
 import { getAnalyticsConsentCopy } from "@/lib/analyticsConsentI18n";
 
 type ConsentState = MeasurementConsentSnapshot | "loading";
@@ -62,9 +71,17 @@ export function PublicAnalytics({
   const [draft, setDraft] = useState({ analytics: false, advertising: false });
   const lastPageViewRef = useRef("");
   const lastAttributionPathRef = useRef("");
+  const initialAttributionTouchRef = useRef<GrowthAttributionTouch | null>(null);
+  const sentAttributionTouchesRef = useRef(new Set<string>());
   const preferences = consent === "loading" ? null : consent.preferences;
 
   useEffect(() => {
+    if (isApprovedAnalyticsHost(window.location.hostname)) {
+      const initialTouch = captureGrowthAttributionTouch();
+      if (initialTouch && isPublicAnalyticsPath(initialTouch.landingPath)) {
+        initialAttributionTouchRef.current = initialTouch;
+      }
+    }
     const timeout = window.setTimeout(() => {
       setHostApproved(isApprovedAnalyticsHost(window.location.hostname));
     }, 0);
@@ -119,8 +136,62 @@ export function PublicAnalytics({
   useEffect(() => {
     if (!configured || !hostApproved || !preferences?.analytics || !publicRoute) return;
     if (lastAttributionPathRef.current === pathname) return;
-    lastAttributionPathRef.current = pathname;
-    void recordGrowthAttributionTouch();
+
+    let cancelled = false;
+    let inFlight = false;
+    let attempts = 0;
+    let retryTimer: number | null = null;
+
+    const sendTouches = async () => {
+      if (cancelled || inFlight) return;
+      inFlight = true;
+      const currentTouch = captureGrowthAttributionTouch();
+      const touches = uniqueGrowthAttributionTouches(
+        initialAttributionTouchRef.current,
+        currentTouch?.landingPath === pathname ? currentTouch : null
+      );
+      let completed = true;
+
+      for (const touch of touches) {
+        const key = growthAttributionTouchKey(touch);
+        if (sentAttributionTouchesRef.current.has(key)) continue;
+        const recorded = await recordGrowthAttributionTouch(touch);
+        if (cancelled) return;
+        if (!recorded) {
+          completed = false;
+          break;
+        }
+        sentAttributionTouchesRef.current.add(key);
+      }
+
+      inFlight = false;
+      if (completed) {
+        lastAttributionPathRef.current = pathname;
+        return;
+      }
+      attempts += 1;
+      if (attempts <= 3) {
+        retryTimer = window.setTimeout(
+          () => void sendTouches(),
+          Math.min(8_000, 1_500 * 2 ** (attempts - 1))
+        );
+      }
+    };
+
+    const retryWhenOnline = () => {
+      if (retryTimer !== null) window.clearTimeout(retryTimer);
+      retryTimer = null;
+      attempts = 0;
+      void sendTouches();
+    };
+
+    void sendTouches();
+    window.addEventListener("online", retryWhenOnline);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("online", retryWhenOnline);
+      if (retryTimer !== null) window.clearTimeout(retryTimer);
+    };
   }, [configured, hostApproved, pathname, preferences?.analytics, publicRoute]);
 
   useEffect(() => {

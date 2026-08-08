@@ -50,6 +50,55 @@ Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
 
+### MANUAL-20260809-GOOGLE-ADS-LAUNCH-GATE [P1] Complete verified conversion launch controls
+
+Durum: Done
+
+Fingerprint: `google-ads|verified-conversions|consent-default-and-language-destinations|launch-gate`
+
+Sonuc: Google Consent Mode v2 default-denied komutu tag yuklenmeden ve kayitli
+izin update'i uygulanmadan once tek sefer kuyruklanir. Analytics/reklam izni
+olmadan registration seed veya optional storage olusmaz. Request conversion
+tekillestirmesi yalniz basarili RPC'nin gercek order ID sonucundan turetilen
+browser-side SHA-256 transaction hash'i ile yapilir; Google'a order/customer ID
+gonderilmez. Admin Ads Performance merkezi, 12 dilde allowlistli HTTPS landing
+URL builder, account launch checklist ve external receipt sinirini gosterir.
+Campaign tokenlari allowlistlidir; arbitrary redirect veya customer data URL'ye
+eklenemez. Dedicated File Service Google Ads hesabi disindaki mevcut kampanya ve
+conversion hedeflerine dokunulmamistir.
+
+Dogrulama: targeted tests PASS (26/26); full tests PASS (667/667); lint PASS;
+web+desktop typecheck PASS; production build PASS (268 route); i18n/SEO PASS
+(12 locale, 611/611); homepage performance PASS (66.3 KB gzip / 80 KB);
+payment schema-only PASS ve env okunmadi; production audit PASS (0
+vulnerability); `git diff --check` PASS. SQL, account/campaign/budget/billing
+mutation, customer data access, push veya deploy yoktur. External blockers:
+dedicated File Service Ads hesabi setup'i tamamlanmali, browser ad blocker
+kapatilmali, conversion action ID/label'lari olusturulmali ve Production public
+measurement env'leri owner-controlled release sirasinda tanimlanmalidir.
+
+### MANUAL-20260808-GROWTH-MEASUREMENT [P1] Consented growth measurement reliability
+
+Durum: Done
+
+Fingerprint: `growth-measurement|public-attribution|delayed-consent-loses-first-touch|memory-preserved-first-touch-and-observed-health`
+
+Sonuc: Consent karari verilmeden onceki public landing/campaign temasi yalniz
+gecici bellekte korunur; storage veya network yazimi yapilmaz. Izin verildiginde
+ilk temas mevcut route temasindan once, deduplicate edilerek gonderilir. Gecici
+ag hatalari uc bounded retry ve online recovery alir. Ads Performance merkezi
+configuration, consented traffic, request ve verified revenue kanitlarini PII
+olmadan ayirir. GA4 hazirligi verified measurement gate'ine dahil edildi.
+Mevcut nanoid ve PostCSS transitive paketleri high/moderate advisory'leri kapatan
+patch surumlerine sabitlendi; yeni dependency eklenmedi.
+
+Dogrulama: targeted tests 36/36 PASS; full tests 664/664 PASS; lint PASS;
+web+desktop typecheck PASS; production build PASS; i18n/SEO PASS (12 locale,
+611/611 customer string); homepage performance PASS (66.2 KB gzip / 80 KB);
+payment schema-only PASS ve env okunmadi; production dependency audit PASS
+(0 vulnerability); `git diff --check` PASS. SQL, production mutation, push veya
+deploy yoktur.
+
 ### MANUAL-20260807-TCU-STAGE-PRICING [P1] Split TCU tuning into explicit stages
 
 Durum: Done

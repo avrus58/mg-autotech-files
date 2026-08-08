@@ -104,6 +104,33 @@ export function buildGrowthAttributionTouch(input: {
   };
 }
 
+export function growthAttributionTouchKey(touch: GrowthAttributionTouch) {
+  return JSON.stringify([
+    touch.landingPath,
+    touch.source,
+    touch.medium,
+    touch.campaign,
+    touch.term,
+    touch.referrerHost,
+    touch.locale,
+  ]);
+}
+
+export function uniqueGrowthAttributionTouches(
+  ...touches: Array<GrowthAttributionTouch | null | undefined>
+) {
+  const seen = new Set<string>();
+  const unique: GrowthAttributionTouch[] = [];
+  for (const touch of touches) {
+    if (!touch) continue;
+    const key = growthAttributionTouchKey(touch);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    unique.push(touch);
+  }
+  return unique;
+}
+
 export function isGrowthVisitorId(value: string) {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 }

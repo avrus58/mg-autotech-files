@@ -8,6 +8,7 @@ import {
   ArrowUpRight,
   BarChart3,
   CheckCircle2,
+  Copy,
   CircleDollarSign,
   CircleGauge,
   ExternalLink,
@@ -22,7 +23,13 @@ import {
 } from "lucide-react";
 import { authenticatedFetch } from "@/lib/authGuards";
 import type { AdsConfigurationStatus, AdsPerformanceReport } from "@/lib/googleAds/readiness";
+import {
+  buildGoogleAdsCampaignUrl,
+  googleAdsDestinationDefinitions,
+  type GoogleAdsDestinationKey,
+} from "@/lib/googleAds/campaignLinks";
 import type { GrowthPerformanceRow, GrowthReportRange } from "@/lib/growth/types";
+import type { LocaleCode } from "@/lib/i18nConfig";
 
 const ranges: GrowthReportRange[] = ["30d", "90d", "180d", "365d"];
 
@@ -81,6 +88,11 @@ export default function AdsPerformanceClient() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
+  const [campaignLocale, setCampaignLocale] = useState<LocaleCode>("en");
+  const [campaignDestination, setCampaignDestination] = useState<GoogleAdsDestinationKey>("stage1");
+  const [campaignCode, setCampaignCode] = useState("stage1_en");
+  const [creativeCode, setCreativeCode] = useState("rsa_01");
+  const [copied, setCopied] = useState(false);
 
   const load = useCallback(async (nextRange: GrowthReportRange, silent = false) => {
     if (silent) setRefreshing(true);
@@ -110,6 +122,23 @@ export default function AdsPerformanceClient() {
     () => report ? readinessCount(report.configuration) : 0,
     [report]
   );
+  const campaignUrl = useMemo(() => buildGoogleAdsCampaignUrl({
+    locale: campaignLocale,
+    destination: campaignDestination,
+    campaign: campaignCode,
+    creative: creativeCode,
+  }), [campaignCode, campaignDestination, campaignLocale, creativeCode]);
+
+  const copyCampaignUrl = async () => {
+    if (!campaignUrl) return;
+    try {
+      await navigator.clipboard.writeText(campaignUrl);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1_500);
+    } catch {
+      setCopied(false);
+    }
+  };
 
   return (
     <main className="mg-compact-ui min-h-screen overflow-x-hidden bg-[#050505] text-white">
@@ -211,6 +240,31 @@ export default function AdsPerformanceClient() {
               </section>
             ) : null}
 
+            <section className="overflow-hidden rounded-lg border border-white/10 bg-[#0b0c0e]">
+              <div className="flex flex-wrap items-start justify-between gap-4 border-b border-white/10 p-5">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.18em] text-red-400">Observed funnel health</p>
+                  <h2 className="mt-1 text-xl font-black">{report.measurementHealth.label}</h2>
+                  <p className="mt-1 max-w-3xl text-xs leading-5 text-zinc-500">{report.measurementHealth.detail}</p>
+                </div>
+                <span className={`rounded-full border px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] ${
+                  report.measurementHealth.status === "verified_revenue_observed"
+                    ? "border-emerald-700/40 bg-emerald-950/25 text-emerald-200"
+                    : report.measurementHealth.status === "configuration_required"
+                      ? "border-amber-700/40 bg-amber-950/25 text-amber-200"
+                      : "border-sky-700/40 bg-sky-950/25 text-sky-200"
+                }`}>
+                  {report.measurementHealth.status.replaceAll("_", " ")}
+                </span>
+              </div>
+              <div className="grid gap-px bg-white/10 sm:grid-cols-2 xl:grid-cols-4">
+                <MeasurementMetric label="Consented visitors" value={report.measurementHealth.consentedVisitors} />
+                <MeasurementMetric label="Registrations" value={report.measurementHealth.registrations} />
+                <MeasurementMetric label="Verified requests" value={report.measurementHealth.requests} />
+                <MeasurementMetric label="Paying customers" value={report.measurementHealth.payingCustomers} />
+              </div>
+            </section>
+
             <section className="grid gap-5 xl:grid-cols-[1.15fr_.85fr]">
               <PerformanceTable title="Campaign outcomes" eyebrow="First-party verified results" rows={report.campaigns} empty="No consented campaign journeys are available for this range yet." />
               <PerformanceTable title="Paid source outcomes" eyebrow="Channel quality" rows={report.paidSources} empty="No consented paid-search source journeys are available for this range yet." />
@@ -234,6 +288,51 @@ export default function AdsPerformanceClient() {
               </div>
             </section>
 
+            <section className="grid overflow-hidden rounded-lg border border-white/10 bg-[#0b0c0e] xl:grid-cols-[.72fr_1.28fr]">
+              <div className="border-b border-white/10 p-5 xl:border-b-0 xl:border-r">
+                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-red-400">Controlled campaign links</p>
+                <h2 className="mt-1 text-xl font-black">Language-matched URL builder</h2>
+                <p className="mt-2 text-xs leading-5 text-zinc-500">
+                  Generates allowlisted MG AutoTech destinations with consistent Google CPC attribution. It cannot create arbitrary redirects or include customer data.
+                </p>
+                <div className="mt-4 rounded-lg border border-emerald-800/30 bg-emerald-950/10 p-3 text-xs leading-5 text-emerald-100/75">
+                  {report.languageDestinations.length} supported language routes are available. Ad copy and destination language must always match.
+                </div>
+              </div>
+              <div className="p-5">
+                <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                  <label className="grid gap-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-zinc-500">
+                    Language
+                    <select value={campaignLocale} onChange={(event) => setCampaignLocale(event.target.value as LocaleCode)} className="h-11 rounded-lg border border-white/10 bg-black px-3 text-xs font-black normal-case tracking-normal text-white">
+                      {report.languageDestinations.map((item) => <option key={item.locale} value={item.locale}>{item.language} ({item.locale.toUpperCase()})</option>)}
+                    </select>
+                  </label>
+                  <label className="grid gap-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-zinc-500">
+                    Destination
+                    <select value={campaignDestination} onChange={(event) => setCampaignDestination(event.target.value as GoogleAdsDestinationKey)} className="h-11 rounded-lg border border-white/10 bg-black px-3 text-xs font-black normal-case tracking-normal text-white">
+                      {googleAdsDestinationDefinitions.map((item) => <option key={item.key} value={item.key}>{item.label}</option>)}
+                    </select>
+                  </label>
+                  <label className="grid gap-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-zinc-500">
+                    Campaign code
+                    <input value={campaignCode} onChange={(event) => setCampaignCode(event.target.value)} maxLength={64} spellCheck={false} className="h-11 rounded-lg border border-white/10 bg-black px-3 text-xs font-black normal-case tracking-normal text-white" />
+                  </label>
+                  <label className="grid gap-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-zinc-500">
+                    Creative code
+                    <input value={creativeCode} onChange={(event) => setCreativeCode(event.target.value)} maxLength={64} spellCheck={false} className="h-11 rounded-lg border border-white/10 bg-black px-3 text-xs font-black normal-case tracking-normal text-white" />
+                  </label>
+                </div>
+                <div className={`mt-4 flex min-w-0 items-center gap-3 rounded-lg border p-3 ${campaignUrl ? "border-white/10 bg-black/30" : "border-amber-700/40 bg-amber-950/15"}`}>
+                  <code className="min-w-0 flex-1 break-all text-[11px] leading-5 text-zinc-300">
+                    {campaignUrl ?? "Use 3-64 lowercase letters, numbers, underscores or hyphens for campaign and creative codes."}
+                  </code>
+                  <button type="button" onClick={() => void copyCampaignUrl()} disabled={!campaignUrl} className="inline-flex h-10 shrink-0 items-center gap-2 rounded-lg border border-red-800/50 bg-red-950/25 px-3 text-xs font-black text-red-100 transition hover:bg-red-900/35 disabled:cursor-not-allowed disabled:opacity-40">
+                    {copied ? <CheckCircle2 className="h-4 w-4" /> : <Copy className="h-4 w-4" />}{copied ? "Copied" : "Copy"}
+                  </button>
+                </div>
+              </div>
+            </section>
+
             <section className="grid gap-5 lg:grid-cols-2">
               <div className="rounded-lg border border-emerald-800/35 bg-emerald-950/10 p-5">
                 <div className="flex items-center gap-2"><ShieldCheck className="h-5 w-5 text-emerald-300" /><h2 className="font-black">Privacy boundary</h2></div>
@@ -247,10 +346,7 @@ export default function AdsPerformanceClient() {
               <div className="rounded-lg border border-white/10 bg-[#0b0c0e] p-5">
                 <div className="flex items-center justify-between gap-3"><div className="flex items-center gap-2"><Target className="h-5 w-5 text-red-400" /><h2 className="font-black">Launch discipline</h2></div><a href="https://ads.google.com/" target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs font-black text-zinc-500 hover:text-white">Google Ads <ExternalLink className="h-3.5 w-3.5" /></a></div>
                 <ol className="mt-4 grid gap-2 text-sm leading-6 text-zinc-400">
-                  <li>1. Create separate Search campaigns by language, country and exact service intent.</li>
-                  <li>2. Begin with exact and phrase match; maintain negative keywords and search-term review.</li>
-                  <li>3. Optimize toward verified payment only after enough clean volume exists.</li>
-                  <li>4. Review policy-sensitive service campaigns before activation.</li>
+                  {report.externalAccountChecks.map((item, index) => <li key={item}>{index + 1}. {item}</li>)}
                 </ol>
               </div>
             </section>
@@ -274,6 +370,15 @@ function HierarchyItem({ icon, label, title }: { icon: ReactNode; label: string;
 
 function StatusLine({ label, ready }: { label: string; ready: boolean }) {
   return <div className="flex items-center justify-between gap-3 text-xs"><span className="text-zinc-400">{label}</span><span className={`inline-flex items-center gap-1 font-black ${ready ? "text-emerald-300" : "text-amber-300"}`}>{ready ? <CheckCircle2 className="h-3.5 w-3.5" /> : <AlertTriangle className="h-3.5 w-3.5" />}{ready ? "Ready" : "Required"}</span></div>;
+}
+
+function MeasurementMetric({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="bg-[#0b0c0e] p-5">
+      <p className="text-[9px] font-black uppercase tracking-[0.16em] text-zinc-600">{label}</p>
+      <p className="mt-2 text-2xl font-black">{integer(value)}</p>
+    </div>
+  );
 }
 
 function PerformanceTable({ title, eyebrow, rows, empty }: { title: string; eyebrow: string; rows: GrowthPerformanceRow[]; empty: string }) {

@@ -2,15 +2,28 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import test from "node:test";
-import { buildGrowthAttributionTouch } from "../src/lib/growth/attribution";
-import type { GrowthCustomerSuccessReport, GrowthPerformanceRow } from "../src/lib/growth/types";
 import {
+  buildGrowthAttributionTouch,
+  growthAttributionTouchKey,
+  uniqueGrowthAttributionTouches,
+} from "../src/lib/growth/attribution";
+import type { GrowthCustomerSuccessReport, GrowthPerformanceRow } from "../src/lib/growth/types";
+import { recordGrowthAttributionTouch } from "../src/lib/growth/publicClient";
+import {
+  buildAdsMeasurementHealth,
   buildAdsPerformanceReport,
   getAdsConfigurationStatus,
 } from "../src/lib/googleAds/readiness";
 import {
+  buildGoogleAdsCampaignUrl,
+  googleAdsLanguageDestinations,
+} from "../src/lib/googleAds/campaignLinks";
+import {
   analyticsConsentStorageKey,
+  beginRegistrationConversion,
   createPrivateConversionId,
+  denyGoogleMeasurement,
+  initializeGoogleMeasurement,
   measurementConsentStorageKey,
   readMeasurementConsentSnapshot,
   writeMeasurementConsent,
@@ -82,6 +95,68 @@ test("Consent Mode v2 preferences persist analytics and advertising independentl
   });
 });
 
+test("Consent Mode v2 queues default denied before any granted update", async () => {
+  await withWindow(() => {
+    denyGoogleMeasurement();
+    writeMeasurementConsent({ analytics: true, advertising: true });
+    initializeGoogleMeasurement({
+      googleAnalyticsMeasurementId: "G-ABC1234567",
+      googleAdsId: "AW-123456789",
+      registrationLabel: "Register_123",
+      requestLabel: "Request_123",
+      purchaseLabel: "Purchase_123",
+    });
+
+    const dataLayer = (globalThis.window as unknown as { dataLayer?: unknown[][] }).dataLayer ?? [];
+    assert.deepEqual(dataLayer[0]?.slice(0, 2), ["consent", "default"]);
+    assert.equal((dataLayer[0]?.[2] as { analytics_storage?: string }).analytics_storage, "denied");
+    assert.equal((dataLayer[0]?.[2] as { ad_user_data?: string }).ad_user_data, "denied");
+    assert.equal((dataLayer[0]?.[2] as { wait_for_update?: number }).wait_for_update, 500);
+    assert.equal(dataLayer.filter((entry) => entry[0] === "consent" && entry[1] === "default").length, 1);
+    const grantedUpdate = [...dataLayer].reverse().find((entry) => entry[0] === "consent" && entry[1] === "update");
+    assert.equal((grantedUpdate?.[2] as { analytics_storage?: string }).analytics_storage, "granted");
+    assert.equal((grantedUpdate?.[2] as { ad_storage?: string }).ad_storage, "granted");
+    assert.equal((grantedUpdate?.[2] as { ad_personalization?: string }).ad_personalization, "denied");
+  });
+});
+
+test("captured attribution never sends before analytics consent", async () => {
+  const originalFetch = globalThis.fetch;
+  let fetchCalls = 0;
+  globalThis.fetch = (async () => {
+    fetchCalls += 1;
+    return new Response(null, { status: 202 });
+  }) as typeof fetch;
+  try {
+    await withWindow(async () => {
+      const sent = await recordGrowthAttributionTouch({
+        landingPath: "/services/stage-1",
+        source: "google",
+        medium: "organic",
+        campaign: null,
+        term: null,
+        referrerHost: "google.de",
+        locale: "de-de",
+      });
+      assert.equal(sent, false);
+      assert.equal(fetchCalls, 0);
+    });
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("registration conversion creates no optional browser storage before consent", async () => {
+  await withWindow((storage) => {
+    assert.equal(beginRegistrationConversion(), null);
+    assert.equal(storage.getItem("mg_registration_conversion_seed_v1"), null);
+
+    writeMeasurementConsent({ analytics: true, advertising: false });
+    assert.match(beginRegistrationConversion() ?? "", /^[0-9a-f-]{36}$/i);
+    assert.match(storage.getItem("mg_registration_conversion_seed_v1") ?? "", /^[0-9a-f-]{36}$/i);
+  });
+});
+
 test("conversion transaction IDs are stable hashes and never expose their source seed", async () => {
   await withWindow(async () => {
     const first = await createPrivateConversionId("purchase", "cs_live_private_payment_reference");
@@ -104,6 +179,53 @@ test("Google Ads click signals classify paid traffic without retaining raw click
   assert.equal(touch?.campaign, "stage1_de");
   assert.doesNotMatch(JSON.stringify(touch), new RegExp(clickId));
   assert.equal(Object.hasOwn(touch ?? {}, "gclid"), false);
+});
+
+test("delayed consent preserves the original campaign touch before the current public route", () => {
+  const firstTouch = buildGrowthAttributionTouch({
+    url: "https://file.mgautotech.de/de/services/stage-1?utm_source=google&utm_medium=cpc&utm_campaign=stage1_de&gclid=private-click",
+    referrer: "https://www.google.de/",
+    locale: "de-DE",
+  });
+  const currentTouch = buildGrowthAttributionTouch({
+    url: "https://file.mgautotech.de/de/how-it-works",
+    referrer: "https://www.google.de/",
+    locale: "de-DE",
+  });
+  const touches = uniqueGrowthAttributionTouches(firstTouch, currentTouch, firstTouch);
+
+  assert.equal(touches.length, 2);
+  assert.equal(touches[0]?.landingPath, "/de/services/stage-1");
+  assert.equal(touches[0]?.campaign, "stage1_de");
+  assert.equal(touches[1]?.landingPath, "/de/how-it-works");
+  assert.equal(new Set(touches.map(growthAttributionTouchKey)).size, 2);
+  assert.doesNotMatch(JSON.stringify(touches), /private-click/);
+});
+
+test("campaign URL builder keeps language, destination and UTM values on an allowlist", () => {
+  const german = buildGoogleAdsCampaignUrl({
+    locale: "de",
+    destination: "stage1",
+    campaign: "stage1_de",
+    creative: "rsa_01",
+  });
+  const english = buildGoogleAdsCampaignUrl({
+    locale: "en",
+    destination: "file_service",
+    campaign: "file_service_us",
+  });
+
+  assert.equal(
+    german,
+    "https://file.mgautotech.de/de/services/stage-1?utm_source=google&utm_medium=cpc&utm_campaign=stage1_de&utm_content=rsa_01"
+  );
+  assert.equal(
+    english,
+    "https://file.mgautotech.de/file-service?utm_source=google&utm_medium=cpc&utm_campaign=file_service_us"
+  );
+  assert.equal(googleAdsLanguageDestinations.length, 12);
+  assert.equal(buildGoogleAdsCampaignUrl({ locale: "de", destination: "stage1", campaign: "customer@example.com" }), null);
+  assert.equal(buildGoogleAdsCampaignUrl({ locale: "de", destination: "stage1", campaign: "ab" }), null);
 });
 
 test("Ads readiness fails closed until every public conversion label is configured", () => {
@@ -135,10 +257,73 @@ test("Ads readiness fails closed until every public conversion label is configur
   }
 });
 
+test("measurement health distinguishes configuration, traffic, request and revenue evidence", () => {
+  const configured = {
+    analyticsMeasurement: true,
+    googleAdsTag: true,
+    registrationConversion: true,
+    requestConversion: true,
+    purchaseConversion: true,
+    consentModeV2: true as const,
+    personalizedAdvertising: false as const,
+    readyForVerifiedMeasurement: true,
+  };
+
+  assert.equal(buildAdsMeasurementHealth({
+    configuration: configured,
+    consentedVisitors: 0,
+    registrations: 0,
+    requests: 0,
+    payingCustomers: 0,
+  }).status, "awaiting_consented_traffic");
+  assert.equal(buildAdsMeasurementHealth({
+    configuration: configured,
+    consentedVisitors: 4,
+    registrations: 1,
+    requests: 0,
+    payingCustomers: 0,
+  }).status, "traffic_observed");
+  assert.equal(buildAdsMeasurementHealth({
+    configuration: configured,
+    consentedVisitors: 4,
+    registrations: 1,
+    requests: 1,
+    payingCustomers: 0,
+  }).status, "requests_observed");
+  assert.equal(buildAdsMeasurementHealth({
+    configuration: configured,
+    consentedVisitors: 4,
+    registrations: 1,
+    requests: 1,
+    payingCustomers: 1,
+  }).status, "verified_revenue_observed");
+  assert.equal(buildAdsMeasurementHealth({
+    configuration: { ...configured, analyticsMeasurement: false, readyForVerifiedMeasurement: false },
+    consentedVisitors: 4,
+    registrations: 1,
+    requests: 1,
+    payingCustomers: 1,
+  }).status, "configuration_required");
+});
+
 test("admin report exposes aggregate paid results and no configuration values", () => {
   const report = buildAdsPerformanceReport({
     generatedAt: "2026-08-06T12:00:00.000Z",
     range: "30d",
+    funnel: {
+      consentedVisitors: 10,
+      registrations: 3,
+      customersWithRequests: 2,
+      firstRequestCustomers: 2,
+      repeatCustomers: 0,
+      orders: 2,
+      completedOrders: 1,
+      payingCustomers: 1,
+      visitorToRegistrationRate: 0.3,
+      registrationToRequestRate: 2 / 3,
+      requestToRepeatRate: 0,
+      completionRate: 0.5,
+    },
     bySource: [performanceRow({ key: "google / cpc", label: "google / cpc", consentedVisitors: 10, orders: 2 })],
     byCampaign: [performanceRow({ key: "stage1_de", label: "stage1_de", registrations: 3, orders: 2 })],
   } as GrowthCustomerSuccessReport);
@@ -147,6 +332,9 @@ test("admin report exposes aggregate paid results and no configuration values", 
   assert.equal(report.campaigns.length, 1);
   assert.equal(report.measurementPolicy.rawClickIdsStored, false);
   assert.equal(report.measurementPolicy.customerIdentifiersExported, false);
+  assert.equal(report.measurementHealth.status, "configuration_required");
+  assert.equal(report.measurementHealth.payingCustomers, 1);
+  assert.equal(report.languageDestinations.length, 12);
   assert.doesNotMatch(JSON.stringify(report), /AW-\d+|service_role|private_key|client_secret/i);
 });
 
@@ -160,7 +348,7 @@ test("verified conversion integration is ordered after business success and rema
 
   assert.match(register, /isAlreadyVerified[\s\S]*?trackRegistrationCompleted\(\)/);
   assert.match(callback, /isRecentSignup \|\| isRecentEmailConfirmation[\s\S]*?trackRegistrationCompleted\(\)/);
-  assert.match(request, /if \(error\) \{[\s\S]*?return;[\s\S]*?trackRequestSubmitted\(conversionAttemptId\)/);
+  assert.match(request, /if \(error\) \{[\s\S]*?return;[\s\S]*?createdOrderId \|\| growthAttemptIdRef[\s\S]*?trackRequestSubmitted\(conversionSeed\)/);
   assert.match(confirmation, /session\.payment_status !== "paid"[\s\S]*?completeStripeCreditPurchase\(session\)[\s\S]*?conversion:/);
   assert.match(payment, /if \(!response\.ok\)[\s\S]*?return;[\s\S]*?trackPurchaseCompleted/);
   assert.match(analytics, /process\.env\.NEXT_PUBLIC_GOOGLE_ADS_ID/);
