@@ -5,6 +5,7 @@ import {
   siteUrl,
 } from "@/lib/seo";
 import { serviceIntentGuideSlugs } from "@/lib/serviceIntentGuides";
+import { indexNowKeyPath } from "@/lib/searchEngineIndexing";
 
 export default function robots(): MetadataRoute.Robots {
   return {
@@ -19,6 +20,9 @@ export default function robots(): MetadataRoute.Robots {
           ...serviceIntentGuideSlugs.map((slug) => `/services/${slug}`),
           "/feed.xml",
           "/llms.txt",
+          "/robots.txt",
+          "/sitemap.xml",
+          indexNowKeyPath,
           "/how-it-works",
           ...localizedSeoLocales.map((locale) => `/${locale}`),
           ...localizedSeoLocales.map((locale) => `/${locale}/how-it-works`),

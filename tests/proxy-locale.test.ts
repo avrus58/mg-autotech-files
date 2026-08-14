@@ -53,8 +53,8 @@ test("proxy falls back to accept-language when no locale cookie exists", () => {
   assert.equal(response.cookies.get("mg_locale")?.value, "fr");
 });
 
-test("proxy keeps the existing non-api and non-static matcher contract", () => {
+test("proxy excludes APIs, static assets and deterministic search discovery resources", () => {
   assert.deepEqual(config.matcher, [
-    "/((?!api|_next/static|_next/image|favicon.ico|og-image.svg|opengraph-image).*)",
+    "/((?!api|_next/static|_next/image|favicon.ico|og-image.svg|opengraph-image|robots.txt|sitemap.xml|feed.xml|llms.txt|53478ab4be7faddc91a14935b2b35013051e4dfc9bb31c4a.txt).*)",
   ]);
 });

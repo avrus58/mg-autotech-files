@@ -21,6 +21,19 @@ const privateWorkspaceHeaders = [
   { key: "Pragma", value: "no-cache" },
 ];
 
+const publicDiscoveryHeaders = [
+  { key: "Cache-Control", value: "public, max-age=3600, stale-while-revalidate=86400" },
+  { key: "X-Content-Type-Options", value: "nosniff" },
+];
+
+const publicDiscoverySources = [
+  "/robots.txt",
+  "/sitemap.xml",
+  "/feed.xml",
+  "/llms.txt",
+  "/53478ab4be7faddc91a14935b2b35013051e4dfc9bb31c4a.txt",
+];
+
 const protectedPageSources = [
   "/admin/:path*",
   "/dashboard/:path*",
@@ -54,6 +67,10 @@ const nextConfig: NextConfig = {
         source: "/:path*",
         headers: baselineSecurityHeaders,
       },
+      ...publicDiscoverySources.map((source) => ({
+        source,
+        headers: publicDiscoveryHeaders,
+      })),
       ...protectedPageSources.map((source) => ({
         source,
         headers: privateWorkspaceHeaders,

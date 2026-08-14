@@ -19,6 +19,7 @@ import {
   MousePointerClick,
   RefreshCw,
   Search,
+  Send,
   ShieldCheck,
   Sparkles,
   Target,
@@ -31,6 +32,7 @@ import type {
   SeoOpportunity,
   SeoReportRange,
 } from "@/lib/seoGrowth/types";
+import type { SearchEngineVerificationReadiness } from "@/lib/searchEngineIndexing";
 
 const searchConsolePerformanceUrl =
   "https://search.google.com/search-console/performance/search-analytics?resource_id=sc-domain%3Amgautotech.de";
@@ -72,14 +74,19 @@ function sourceClass(state: SeoGrowthReport["sources"]["analytics"]["state"]) {
 
 export default function SeoPerformanceClient({
   measurementConfigured,
+  searchEngineVerification,
 }: {
   measurementConfigured: boolean;
+  searchEngineVerification: SearchEngineVerificationReadiness;
 }) {
   const [range, setRange] = useState<SeoReportRange>("28d");
   const [data, setData] = useState<SeoGrowthReport | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
+  const [indexing, setIndexing] = useState(false);
+  const [indexingMessage, setIndexingMessage] = useState("");
+  const [indexingError, setIndexingError] = useState("");
   const [opportunityFilter, setOpportunityFilter] = useState<"all" | SeoOpportunity["priority"]>("all");
 
   const load = useCallback(async (nextRange: SeoReportRange, silent = false) => {
@@ -112,6 +119,29 @@ export default function SeoPerformanceClient({
       ? opportunities
       : opportunities.filter((item) => item.priority === opportunityFilter);
   }, [data, opportunityFilter]);
+
+  const notifySearchEngines = useCallback(async () => {
+    setIndexing(true);
+    setIndexingMessage("");
+    setIndexingError("");
+    try {
+      const response = await authenticatedFetch("/api/admin/seo-performance/indexnow", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "Search engines could not be notified.");
+      setIndexingMessage(`${payload.submittedUrlCount} canonical public URLs were accepted for discovery.`);
+    } catch (notificationError) {
+      setIndexingError(
+        notificationError instanceof Error
+          ? notificationError.message
+          : "Search engines could not be notified."
+      );
+    } finally {
+      setIndexing(false);
+    }
+  }, []);
 
   return (
     <main className="mg-compact-ui min-h-screen overflow-x-hidden bg-[#050505] text-white">
@@ -183,6 +213,14 @@ export default function SeoPerformanceClient({
                 <ExternalButton href={googleAnalyticsUrl} label="GA4" />
               </div>
             </section>
+
+            <SearchEngineCoveragePanel
+              verification={searchEngineVerification}
+              indexing={indexing}
+              message={indexingMessage}
+              error={indexingError}
+              onNotify={() => void notifySearchEngines()}
+            />
 
             {data.sources.searchConsole.state === "not_configured" || data.sources.analytics.state === "not_configured" ? (
               <ConfigurationNotice data={data} />
@@ -270,6 +308,64 @@ export default function SeoPerformanceClient({
 
 function SourceBadge({ label, state }: { label: string; state: SeoGrowthReport["sources"]["analytics"]["state"] }) {
   return <span className={`rounded-full border px-3 py-2 text-[11px] font-black ${sourceClass(state)}`}>{label}: {state.replaceAll("_", " ")}</span>;
+}
+
+function SearchEngineCoveragePanel({
+  verification,
+  indexing,
+  message,
+  error,
+  onNotify,
+}: {
+  verification: SearchEngineVerificationReadiness;
+  indexing: boolean;
+  message: string;
+  error: string;
+  onNotify: () => void;
+}) {
+  const engines = [
+    { label: "Bing", ready: verification.bing, detail: "Bing Webmaster verification" },
+    { label: "Yandex", ready: verification.yandex, detail: "Yandex Webmaster verification" },
+    { label: "Baidu", ready: verification.baidu, detail: "Optional regional verification" },
+    { label: "Naver", ready: verification.naver, detail: "Optional regional verification" },
+  ];
+
+  return (
+    <section className="overflow-hidden rounded-lg border border-cyan-900/40 bg-[linear-gradient(135deg,rgba(8,31,40,.5),rgba(11,12,14,1)_60%)]">
+      <div className="grid gap-5 p-5 xl:grid-cols-[1fr_auto] xl:items-center">
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-cyan-300">Multi-engine discovery</p>
+          <h2 className="mt-1 text-xl font-black">Bing, partner engines and regional search</h2>
+          <p className="mt-1 max-w-4xl text-xs leading-6 text-zinc-400">
+            IndexNow sends only canonical public sitemap URLs. Admin, account, API, payment and customer routes are always excluded.
+          </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <span className="rounded-full border border-emerald-700/40 bg-emerald-950/25 px-3 py-1.5 text-[10px] font-black text-emerald-200">IndexNow key active</span>
+            {engines.map((engine) => (
+              <span
+                key={engine.label}
+                title={engine.detail}
+                className={`rounded-full border px-3 py-1.5 text-[10px] font-black ${engine.ready ? "border-emerald-700/40 bg-emerald-950/25 text-emerald-200" : "border-white/10 bg-white/[0.03] text-zinc-500"}`}
+              >
+                {engine.label}: {engine.ready ? "verified" : "verification pending"}
+              </span>
+            ))}
+          </div>
+          {message ? <p className="mt-3 text-xs font-bold text-emerald-300" role="status">{message}</p> : null}
+          {error ? <p className="mt-3 text-xs font-bold text-red-300" role="alert">{error}</p> : null}
+        </div>
+        <button
+          type="button"
+          onClick={onNotify}
+          disabled={indexing}
+          className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-cyan-700/50 bg-cyan-950/30 px-4 text-xs font-black text-cyan-100 transition hover:border-cyan-500 disabled:cursor-wait disabled:opacity-60"
+        >
+          <Send className={`h-4 w-4 ${indexing ? "animate-pulse" : ""}`} aria-hidden="true" />
+          {indexing ? "Notifying search engines..." : "Notify search engines"}
+        </button>
+      </div>
+    </section>
+  );
 }
 
 function ExternalButton({ href, label }: { href: string; label: string }) {

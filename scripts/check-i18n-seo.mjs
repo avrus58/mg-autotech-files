@@ -6,6 +6,7 @@ const filesToScan = [
   "src/lib/i18n.ts",
   "src/lib/customerPortalTranslations.ts",
   "src/lib/seo.ts",
+  "src/lib/searchEngineIndexing.ts",
   "src/lib/howItWorksI18n.ts",
   "src/lib/fileServiceI18n.ts",
   "src/lib/i18nRoutes.ts",
@@ -607,6 +608,43 @@ for (const toolPath of [
   if (!robots.includes(`"${toolPath}"`)) {
     failures.push(`robots.ts should allow public preparation tool route ${toolPath}.`);
   }
+}
+
+const searchEngineIndexing = readFileSync(join(root, "src/lib/searchEngineIndexing.ts"), "utf8");
+const indexNowScript = readFileSync(join(root, "scripts/submit-indexnow.ts"), "utf8");
+const rootProxy = readFileSync(join(root, "src/proxy.ts"), "utf8");
+const indexNowKeyMatch = searchEngineIndexing.match(/indexNowKey = "([a-f0-9]{32,128})"/);
+if (!indexNowKeyMatch) {
+  failures.push("IndexNow uses no valid public ownership key.");
+} else {
+  const keyPath = join(root, "public", `${indexNowKeyMatch[1]}.txt`);
+  if (!existsSync(keyPath) || readFileSync(keyPath, "utf8").trim() !== indexNowKeyMatch[1]) {
+    failures.push("IndexNow public ownership file is missing or does not match its configured key.");
+  }
+  if (!robots.includes("indexNowKeyPath")) {
+    failures.push("robots.ts does not expose the IndexNow ownership path.");
+  }
+  if (!rootProxy.includes(`${indexNowKeyMatch[1]}.txt`)) {
+    failures.push("IndexNow ownership verification still passes through locale middleware.");
+  }
+}
+if (!rootLayout.includes("buildSearchEngineVerification")) {
+  failures.push("Root metadata is missing multi-engine webmaster verification support.");
+}
+if (!searchEngineIndexing.includes('other["msvalidate.01"]')) {
+  failures.push("Bing webmaster verification metadata is missing.");
+}
+if (!searchEngineIndexing.includes('other["baidu-site-verification"]')) {
+  failures.push("Baidu webmaster verification metadata is missing.");
+}
+if (!searchEngineIndexing.includes('other["naver-site-verification"]')) {
+  failures.push("Naver webmaster verification metadata is missing.");
+}
+if (!searchEngineIndexing.includes("YANDEX_SITE_VERIFICATION")) {
+  failures.push("Yandex webmaster verification metadata is missing.");
+}
+if (!indexNowScript.includes('process.argv.includes("--submit")')) {
+  failures.push("IndexNow operator script is not fail-safe/dry-run by default.");
 }
 
 const workshopGuideIndex = readFileSync(join(root, "src/app/workshop-guides/page.tsx"), "utf8");

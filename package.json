@@ -10,6 +10,8 @@
     "build": "next build",
     "check:i18n": "node scripts/check-i18n-seo.mjs && tsx scripts/check-customer-i18n.ts",
     "check:performance": "node scripts/check-web-performance.mjs",
+    "seo:indexnow:check": "tsx scripts/submit-indexnow.ts --dry-run",
+    "seo:indexnow:submit": "tsx scripts/submit-indexnow.ts --submit",
     "build:customer-uploader": "npm run build --workspace apps/customer-uploader",
     "start": "next start",
     "check:payments": "node scripts/check-payment-env.js",

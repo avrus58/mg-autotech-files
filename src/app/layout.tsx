@@ -14,6 +14,7 @@ import {
   websiteJsonLd,
 } from "@/lib/seo";
 import { defaultLocale } from "@/lib/i18nConfig";
+import { buildSearchEngineVerification } from "@/lib/searchEngineIndexing";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -115,6 +116,8 @@ export const metadata: Metadata = {
       "max-video-preview": -1,
     },
   },
+
+  verification: buildSearchEngineVerification(),
 
   alternates: {
     canonical: absoluteUrl("/"),

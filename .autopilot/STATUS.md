@@ -2,6 +2,14 @@
 
 Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
+## 2026-08-14 Multi-engine search discovery
+
+- Gorev: file.mgautotech.de public sayfalarinin Google disindaki arama motorlari tarafindan daha hizli kesfedilmesi icin Bing/IndexNow ve bolgesel webmaster dogrulama altyapisini kurmak.
+- Uygulama: Public canonical sitemap URL'lerinden deterministik IndexNow payload'i uretilir. Public key dosyasi, admin-only manuel bildirim aksiyonu, dry-run varsayilan operator scripti ve Bing/Yandex/Baidu/Naver site verification metadata destegi eklendi. Robots, sitemap, feed, llms ve IndexNow key kaynaklari locale middleware disina alindi ve crawler-safe cache header'lariyla servis edilir.
+- Guvenlik: Yalniz HTTPS `file.mgautotech.de` public allowlist URL'leri kabul edilir. Admin, API, auth, dashboard, payment ve customer rotalari reddedilir; arbitrary URL relay yoktur. Admin aksiyonu `orders.manage` izni ve adaptive rate limit ister. Verification tokenlari sinirli karakter allowlist'i disindaysa metadata'ya girmez.
+- Kontroller: IndexNow dry-run PASS (138 public URL, 0 private URL); targeted tests PASS (8/8); full tests PASS (675/675); lint PASS; web+desktop typecheck PASS; production build PASS (269 page); i18n/SEO PASS (12 locale, 611/611); homepage performance PASS (66.3 KB gzip / 80 KB); payment schema-only PASS ve env okunmadi; audit PASS (0 vulnerability).
+- Sinirlar: Gercek IndexNow bildirimi, webmaster hesabi dogrulamasi, push ve deploy yapilmadi. Arama motoru indeksleme veya siralama garanti edilemez; Bing/Yandex/Baidu/Naver konsol dogrulamalari owner hesaplarinda tamamlanmalidir.
+
 ## 2026-08-07 TCU stage service pricing
 
 - Gorev: Customer request ana hizmet katalogundaki tek `TCU Tuning` secenegini owner tarafindan verilen TCU Stage 1/2/3 kredi seviyelerine ayirmak.
