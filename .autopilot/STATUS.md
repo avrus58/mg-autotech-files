@@ -2838,3 +2838,21 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
   henuz push edilmedi; staging migration, Preview deploy/smoke, Production
   backup/restore drill, Production migration/deploy ve `02449` cutover
   uygulanmadi. Production, Stripe, musteri verisi ve e-posta mutasyonu yok.
+
+## 2026-08-16 Guvenlik release Preview yayini
+
+- Git: `codex/security-hardening-release` branch'i GitHub'a push edildi ve
+  Production'a merge edilmeyen Draft PR #1 acildi. Release kapsami iki odakli
+  committe tutuldu; calisma agaci remote branch ile temiz ve senkron.
+- Vercel: Git entegrasyonu korumali branch Preview'unu basariyla olusturdu.
+  Deployment `Ready` durumuna 1 dakika 54 saniyede geldi; 300 satirlik build
+  logunda hata, uyari, failed/deprecated/vulnerability kaydi yok. Immutable ve
+  branch URL'leri Production domaininden ayridir.
+- Preview smoke: Ana sayfa ve login formu beklenen baslik/alanlarla acildi.
+  Yetkisiz `/admin` istegi dahili veriyi gostermeden guvenli login kapisinda
+  durdu. Production domainine veya Production Supabase'e smoke istegi yapilmadi.
+- Kalan release kapilari: Staging DB timeout nedeniyle migration/verifier ve
+  authenticated smoke yapilamadi. Upstash entegrasyonu ile Supabase destek
+  talebi dis hesap/izin/mesaj onayi bekliyor. Production icin geri yuklenebilir
+  logical backup/restore drill ve Stripe Widget webhook konfigurasyonu henuz
+  dogrulanmadi. Production migration/deploy ve `02449` cutover uygulanmadi.
