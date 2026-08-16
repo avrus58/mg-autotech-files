@@ -126,7 +126,7 @@ test("release SQL avoids schema-qualified special substring syntax", () => {
     "20260816002447_file_expert_atomic_completion.sql",
     "20260816002448_widget_checkout_atomic_claim.sql",
     "20260816002450_auth_customer_id_generator_hardening.sql",
-    "20260816002451_post_deploy_legacy_rpc_cutover.sql",
+    "20260816002452_post_deploy_legacy_rpc_cutover.sql",
   ].map((fileName) => source("supabase", "migrations", fileName));
   releaseSql.push(
     source("scripts", "preflight-integrated-security-release.sql"),

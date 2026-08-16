@@ -1,4 +1,4 @@
--- Read-only preflight for reviewed migrations 02443-02448 and 02450-02451.
+-- Read-only preflight for reviewed migrations 02443-02448 and 02450-02452.
 -- The result contains aggregate readiness only; it never returns customer rows,
 -- identifiers, e-mail addresses, object names, or file paths.
 
@@ -12,7 +12,8 @@ target_versions(version) as (
     ('20260816002447'),
     ('20260816002448'),
     ('20260816002450'),
-    ('20260816002451')
+    ('20260816002451'),
+    ('20260816002452')
 ),
 target_migration_names(migration_name) as (
   values
@@ -23,6 +24,7 @@ target_migration_names(migration_name) as (
     ('file_expert_atomic_completion'),
     ('widget_checkout_atomic_claim'),
     ('auth_customer_id_generator_hardening'),
+    ('credit_transaction_customer_access_hardening'),
     ('post_deploy_legacy_rpc_cutover')
 ),
 required_relations(schema_name, relation_name) as (
@@ -69,6 +71,19 @@ required_columns(schema_name, table_name, column_name) as (
     ('public', 'orders', 'credits_required'),
     ('public', 'orders', 'original_file_path'),
     ('public', 'orders', 'customer_upload_enabled'),
+    ('public', 'credit_transactions', 'id'),
+    ('public', 'credit_transactions', 'user_id'),
+    ('public', 'credit_transactions', 'type'),
+    ('public', 'credit_transactions', 'source_type'),
+    ('public', 'credit_transactions', 'source_id'),
+    ('public', 'credit_transactions', 'credits_delta'),
+    ('public', 'credit_transactions', 'balance_after'),
+    ('public', 'credit_transactions', 'description'),
+    ('public', 'credit_transactions', 'amount_total'),
+    ('public', 'credit_transactions', 'currency'),
+    ('public', 'credit_transactions', 'metadata'),
+    ('public', 'credit_transactions', 'created_by'),
+    ('public', 'credit_transactions', 'created_at'),
     ('public', 'payment_records', 'id'),
     ('public', 'payment_records', 'provider'),
     ('public', 'payment_records', 'external_id'),

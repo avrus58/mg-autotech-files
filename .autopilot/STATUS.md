@@ -2921,11 +2921,12 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
   empty-search-path ve schema-qualified yapar; fonksiyon/sequence Data API
   yetkilerini kapatir ve exact normal-enabled trigger sinirlarini zorunlu tutar.
   02443-02448 dosyalari degistirilmedi ve hicbir migration uygulanmadi.
-- Release sirasi: Uygulanmamis 02449 cutover body byte-identical olarak 02451'e
-  tasindi; 02450 -> Auth verifier/signup smoke -> app smoke -> 02451 sirasi
-  runbook/preflight/testlerde sabitlendi. SHA-256: 02450
-  `8131E02E582D5E16C18F6262515E402AEC2A4DBAFAA1E3029362E80EA8F8C792`,
-  02451 `5084DFD95DBD878FD1037F7CE497C1362E900ED5D3F931A2626CD448719C84CC`.
+- Release sirasi: Uygulanmamis cutover body byte-identical olarak 02452'ye
+  tasindi; 02450 -> Auth verifier/signup smoke -> 02451 ledger/Storage fix ->
+  app smoke -> 02452 sirasi runbook/preflight/testlerde sabitlendi. SHA-256:
+  02450 `8131E02E582D5E16C18F6262515E402AEC2A4DBAFAA1E3029362E80EA8F8C792`,
+  02451 `6DE1F340791C17D54621DFB9DDB3E6FBB39B0B5F322565B421B34D24EF15FFD9`,
+  02452 `5084DFD95DBD878FD1037F7CE497C1362E900ED5D3F931A2626CD448719C84CC`.
 - Kontroller: Odakli migration/release testleri 35/35 PASS; dort TypeScript
   kontrolu PASS; full ESLint PASS; tam test ana kosusu 729/730 PASS. Tek test
   kaynak hatasi degil, i18n alt `tsx` surecindeki Windows
@@ -2937,3 +2938,41 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 - Sinirlar: Staging'de yalniz PII'siz katalog metadata'si okundu. Staging veya
   Production migration/data mutation, fixture, deploy, env/secret ya da musteri
   satiri kullanilmadi.
+
+## 2026-08-16 Customer ledger ve Storage runtime erisim hotfix hazirligi
+
+- Staging kaniti: `02450`, hosted `20260816155149` olarak uygulanmis; SELECT-only
+  verifier 7/7 PASS ve disposable Auth signup sonrasi aggregate Auth/profile
+  sayilari 2/2, tek customer contract ve duplicate olmayan customer reference
+  dogrulanmistir. Fixture kalan authenticated smoke icin operator-private
+  oturumda tutuldu; PII veya secret kaydedilmedi.
+- Kok neden: Authenticated customer `credit_transactions` SELECT'i, eski admin
+  RLS policy'sinin artik Data API'ye verilmeyen `profiles.role` kolonuna
+  basvurmasi nedeniyle `42501 permission denied for table profiles` ile
+  kiriliyordu. `storage.objects` uzerinde ayni protected profile kolonuna
+  baglanan alti eski customer-files policy'si de canonical 13-policy gecis
+  matrisi disinda kalmisti.
+- Duzeltme: Yeni
+  `20260816002451_credit_transaction_customer_access_hardening.sql`, ledger
+  relation ve tum live column ACL'lerini sifirlar; authenticated role yalniz
+  `id,user_id,type,source_type,source_id,credits_delta,balance_after,description,amount_total,currency,created_at`
+  SELECT projeksiyonunu verir. PUBLIC/anon erisimi ve authenticated mutation
+  kapali, `metadata`/`created_by` private, service_role full authority olarak
+  kalir. Ledger RLS tam bir adet direct own-row SELECT policy'sine indirgenir.
+- Storage kapsami: Cleanup yalniz policy expression'inda `customer-files` veya
+  `file-expert` gecen ve reviewed transitional 13-name allowlist disinda kalan
+  policy'leri drop eder; diger bucket policy'lerine dokunmaz. Iki owner-prefix
+  INSERT policy'si matching app smoke sonrasindaki cutover'a kadar korunur.
+- Release sirasi: Eski uygulanmamis cutover dosyasi byte-identical olarak
+  `20260816002452_post_deploy_legacy_rpc_cutover.sql` adina tasindi. 02452
+  SHA-256 `5084DFD95DBD878FD1037F7CE497C1362E900ED5D3F931A2626CD448719C84CC`
+  ve Git blob `8690ec68bf51b5b8e39004a2e24482852cf4465c` olarak degismedi. 02451 SHA-256
+  `6DE1F340791C17D54621DFB9DDB3E6FBB39B0B5F322565B421B34D24EF15FFD9`.
+- Dogrulama: Yeni SELECT-only verifier ACL/RLS/Storage gecis matrisini aggregate
+  ve PII'siz kontrol eder; final security verifier post-cutover exact ledger ve
+  protected-policy sinirini da kapsar. Odakli release testleri 41/41 PASS; full
+  test 736/736 PASS; web ve customer-uploader TypeScript PASS; full ESLint PASS;
+  PostgreSQL resmi REVOKE grammar'i ile per-column ACL syntax'i dogrulandi.
+- Sinirlar: `02443`-`02448` ve uygulanmis `02450` degistirilmedi. Bu hazirlikte
+  remote migration, data/env/secret mutation, deploy veya Production islemi
+  yapilmadi; 02451/02452 uygulama karari release root akisina birakildi.

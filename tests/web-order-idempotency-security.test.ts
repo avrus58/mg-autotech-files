@@ -20,7 +20,7 @@ const stateMigration = source(
 const cutoverMigration = source(
   "supabase",
   "migrations",
-  "20260816002451_post_deploy_legacy_rpc_cutover.sql",
+  "20260816002452_post_deploy_legacy_rpc_cutover.sql",
 );
 
 test("customer Data API grants expose only reviewed profile and order columns", () => {

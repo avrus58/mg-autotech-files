@@ -237,7 +237,7 @@ test("signed-upload boundary documents prepared migration controls and the remai
   const cutoverMigration = source(
     "supabase",
     "migrations",
-    "20260816002451_post_deploy_legacy_rpc_cutover.sql",
+    "20260816002452_post_deploy_legacy_rpc_cutover.sql",
   );
   const verification = source("scripts", "verify-security-state-hardening.sql");
   assert.match(hardening, /file_size_limit = 33554432/);

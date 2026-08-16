@@ -1,6 +1,6 @@
 -- SELECT-only verification for the financial authority and recovery migrations.
 -- This verifier accepts both deliberate release phases: compatibility after
--- 02443-02450, and the final legacy-RPC cutover after 02451.
+-- 02443-02451, and the final legacy-RPC cutover after 02452.
 
 with deployment_phase(post_cutover) as (
   select coalesce(
@@ -211,7 +211,7 @@ checks(check_name, ok, details) as (
         and position('for update' in refund_definition) > 0
     end,
     case
-      when post_cutover then '02451 post-deploy cutover'
+      when post_cutover then '02452 post-deploy cutover'
       else '02443-02450 migration-first compatibility'
     end
   from legacy_function_state

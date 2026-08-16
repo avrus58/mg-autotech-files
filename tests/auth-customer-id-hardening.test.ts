@@ -106,13 +106,13 @@ test("customer ID verifier is SELECT-only and returns aggregate catalog state", 
   assert.doesNotMatch(verifier, /from\s+auth\.users\b/i);
 });
 
-test("release order fixes Auth before the byte-identical 02451 cutover", () => {
+test("release order fixes Auth and customer access before the byte-identical 02452 cutover", () => {
   const preflight = source("scripts", "preflight-integrated-security-release.sql");
   const runbook = source("docs", "integrated-security-release-runbook.md");
   const cutover = source(
     "supabase",
     "migrations",
-    "20260816002451_post_deploy_legacy_rpc_cutover.sql",
+    "20260816002452_post_deploy_legacy_rpc_cutover.sql",
   );
   const targetVersions = preflight.match(
     /target_versions\(version\) as \([\s\S]*?\n\)/i,
@@ -120,6 +120,7 @@ test("release order fixes Auth before the byte-identical 02451 cutover", () => {
 
   assert.match(targetVersions, /20260816002450/);
   assert.match(targetVersions, /20260816002451/);
+  assert.match(targetVersions, /20260816002452/);
   assert.doesNotMatch(targetVersions, /20260816002449/);
   assert.equal(
     createHash("sha256").update(migration).digest("hex"),
@@ -131,8 +132,12 @@ test("release order fixes Auth before the byte-identical 02451 cutover", () => {
       < runbook.indexOf("Deploy the matching application"),
   );
   assert.ok(
+    runbook.indexOf("20260816002451_credit_transaction_customer_access_hardening.sql")
+      < runbook.indexOf("Deploy the matching application"),
+  );
+  assert.ok(
     runbook.indexOf("Deploy the matching application")
-      < runbook.indexOf("20260816002451_post_deploy_legacy_rpc_cutover.sql"),
+      < runbook.indexOf("20260816002452_post_deploy_legacy_rpc_cutover.sql"),
   );
   assert.equal(
     createHash("sha256").update(cutover).digest("hex"),
@@ -145,6 +150,17 @@ test("release order fixes Auth before the byte-identical 02451 cutover", () => {
         "supabase",
         "migrations",
         "20260816002449_post_deploy_legacy_rpc_cutover.sql",
+      ),
+    ),
+    false,
+  );
+  assert.equal(
+    existsSync(
+      resolve(
+        process.cwd(),
+        "supabase",
+        "migrations",
+        "20260816002451_post_deploy_legacy_rpc_cutover.sql",
       ),
     ),
     false,

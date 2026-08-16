@@ -41,6 +41,20 @@ expected_storage_policies(policy_name, command_name, role_name, policy_mode) as 
     ('MG protected buckets anon update boundary', 'UPDATE', 'anon', 'RESTRICTIVE'),
     ('MG protected buckets anon delete boundary', 'DELETE', 'anon', 'RESTRICTIVE')
 ),
+expected_ledger_columns(column_name) as (
+  values
+    ('id'),
+    ('user_id'),
+    ('type'),
+    ('source_type'),
+    ('source_id'),
+    ('credits_delta'),
+    ('balance_after'),
+    ('description'),
+    ('amount_total'),
+    ('currency'),
+    ('created_at')
+),
 authority_counts as (
   select
     pg_catalog.count(*) filter (
@@ -218,6 +232,124 @@ checks(check_name, ok, details) as (
         ) as private_column(column_name)
       ),
     'Raw authority and storage metadata are reachable only through projected APIs'
+
+  union all
+
+  select
+    'customer credit ledger is own-row and projection-only',
+    exists (
+      select 1
+      from pg_catalog.pg_class as relation
+      join pg_catalog.pg_namespace as namespace
+        on namespace.oid = relation.relnamespace
+      where namespace.nspname = 'public'
+        and relation.relname = 'credit_transactions'
+        and relation.relrowsecurity
+    )
+      and not pg_catalog.has_table_privilege(
+        'authenticated', 'public.credit_transactions', 'SELECT'
+      )
+      and (
+        select pg_catalog.bool_and(
+          pg_catalog.has_column_privilege(
+            'authenticated',
+            'public.credit_transactions',
+            expected.column_name,
+            'SELECT'
+          )
+        )
+        from expected_ledger_columns as expected
+      )
+      and not exists (
+        select 1
+        from information_schema.columns as live
+        where live.table_schema = 'public'
+          and live.table_name = 'credit_transactions'
+          and not exists (
+            select 1
+            from expected_ledger_columns as expected
+            where expected.column_name = live.column_name
+          )
+          and pg_catalog.has_column_privilege(
+            'authenticated',
+            'public.credit_transactions',
+            live.column_name,
+            'SELECT'
+          )
+      )
+      and not exists (
+        select 1
+        from (values
+          ('INSERT'), ('UPDATE'), ('DELETE'),
+          ('TRUNCATE'), ('REFERENCES'), ('TRIGGER')
+        ) as privilege(privilege_name)
+        where pg_catalog.has_table_privilege(
+          'authenticated',
+          'public.credit_transactions',
+          privilege.privilege_name
+        )
+      )
+      and not exists (
+        select 1
+        from (values
+          ('authenticated'),
+          ('anon')
+        ) as api_role(role_name)
+        cross join information_schema.columns as live
+        cross join (values
+          ('SELECT'), ('INSERT'), ('UPDATE'), ('REFERENCES')
+        ) as privilege(privilege_name)
+        where live.table_schema = 'public'
+          and live.table_name = 'credit_transactions'
+          and (
+            api_role.role_name = 'anon'
+            and pg_catalog.has_column_privilege(
+              api_role.role_name,
+              'public.credit_transactions',
+              live.column_name,
+              privilege.privilege_name
+            )
+            or api_role.role_name = 'authenticated'
+            and privilege.privilege_name <> 'SELECT'
+            and pg_catalog.has_column_privilege(
+              api_role.role_name,
+              'public.credit_transactions',
+              live.column_name,
+              privilege.privilege_name
+            )
+          )
+      )
+      and (
+        select pg_catalog.bool_and(
+          pg_catalog.has_table_privilege(
+            'service_role',
+            'public.credit_transactions',
+            privilege.privilege_name
+          )
+        )
+        from (values
+          ('SELECT'), ('INSERT'), ('UPDATE'), ('DELETE'),
+          ('TRUNCATE'), ('REFERENCES'), ('TRIGGER')
+        ) as privilege(privilege_name)
+      )
+      and (
+        select pg_catalog.count(*) = 1
+          and pg_catalog.bool_and(
+            policy.policyname = 'Customers can read own credit transactions'
+            and policy.permissive = 'PERMISSIVE'
+            and policy.cmd = 'SELECT'
+            and policy.roles = array['authenticated']::name[]
+            and pg_catalog.lower(coalesce(policy.qual, '')) like '%auth.uid()%'
+            and pg_catalog.lower(coalesce(policy.qual, '')) like '%user_id%'
+            and pg_catalog.lower(coalesce(policy.qual, '')) not like '%profiles%'
+            and pg_catalog.lower(coalesce(policy.qual, '')) not like '% or %'
+            and policy.with_check is null
+          )
+        from pg_catalog.pg_policies as policy
+        where policy.schemaname = 'public'
+          and policy.tablename = 'credit_transactions'
+      ),
+    'Authenticated customers receive 11 safe columns from their own ledger rows only'
 
   union all
 
@@ -410,6 +542,25 @@ checks(check_name, ok, details) as (
           and pg_catalog.lower(
             coalesce(policy.qual, '') || ' ' || coalesce(policy.with_check, '')
           ) ~ '(customer-files|file-expert)'
+      )
+      and not exists (
+        select 1
+        from pg_catalog.pg_policies as policy
+        where policy.schemaname = 'storage'
+          and policy.tablename = 'objects'
+          and pg_catalog.lower(
+            coalesce(policy.qual, '') || ' ' || coalesce(policy.with_check, '')
+          ) ~ '(customer-files|file-expert)'
+          and (
+            not exists (
+              select 1
+              from expected_storage_policies as expected
+              where expected.policy_name = policy.policyname
+            )
+            or pg_catalog.lower(
+              coalesce(policy.qual, '') || ' ' || coalesce(policy.with_check, '')
+            ) ~ '(profiles|staff_role|staff_permissions)'
+          )
       ),
     'The exact restrictive command matrix prevents permissive OR-policies from bypassing protected-bucket access'
 

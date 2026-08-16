@@ -1,4 +1,4 @@
-# Integrated security release runbook (02443-02451)
+# Integrated security release runbook (02443-02452)
 
 This release is a coordinated database/application cutover. Migrations must be
 applied in this exact order:
@@ -12,16 +12,21 @@ applied in this exact order:
 7. `20260816002450_auth_customer_id_generator_hardening.sql`
 8. Run the customer-ID verifier and an Auth signup smoke with a disposable
    staging user before any application cutover.
-9. Deploy the matching application and complete the cutover smoke checks.
-10. `20260816002451_post_deploy_legacy_rpc_cutover.sql`
+9. `20260816002451_credit_transaction_customer_access_hardening.sql`
+10. Run the credit-ledger/customer Storage verifier before authenticated
+    customer smoke checks.
+11. Deploy the matching application and complete the cutover smoke checks.
+12. `20260816002452_post_deploy_legacy_rpc_cutover.sql`
 
 Version 02449 is intentionally unused. The reviewed cutover body was renamed
-without content changes to 02451 so numeric migration order cannot place it
-before the required 02450 Auth fix. Do not apply or record a 02449 version.
+without content changes from its unapplied 02451 filename to 02452 so numeric
+migration order places the customer ledger/Storage fix first. Do not apply or
+record the retired 02449 cutover or the old 02451 cutover name.
 Freeze and compare these SHA-256 values before each environment:
 
 - 02450: `8131E02E582D5E16C18F6262515E402AEC2A4DBAFAA1E3029362E80EA8F8C792`
-- 02451: `5084DFD95DBD878FD1037F7CE497C1362E900ED5D3F931A2626CD448719C84CC`
+- 02451: `6DE1F340791C17D54621DFB9DDB3E6FBB39B0B5F322565B421B34D24EF15FFD9`
+- 02452: `5084DFD95DBD878FD1037F7CE497C1362E900ED5D3F931A2626CD448719C84CC`
 
 Do not use an unreviewed `supabase db push`. The connected Production migration
 history contains applied versions that are not represented by identical local
@@ -49,14 +54,15 @@ do not repair or relabel a successful hosted migration to match it.
 ## Staging rehearsal
 
 1. For a fresh rehearsal, reconcile staging migration metadata without changing
-   schema. Confirm none of versions 02443-02448 or 02450-02451 is partially
+   schema. Confirm none of versions 02443-02448 or 02450-02452 is partially
    recorded and 02449 is absent. For a resumed rehearsal, accept only the
    previously archived exact name, generated version, checksum, and post-state
    verifier mapping; do not rerun the fresh-start absence preflight. Continue
    from the first missing migration and never repair or relabel history.
 2. On a fresh rehearsal, run the SELECT-only preflight and archive only its
    aggregate PASS/FAIL output.
-3. Apply 02443 through 02448 in order, then apply 02450. Do not apply 02451 yet.
+3. Apply 02443 through 02448 in order, then apply 02450. Do not apply 02451 or
+   02452 yet.
 4. Run the phase-appropriate SELECT-only verifiers:
    `verify-auth-customer-id-hardening.sql`,
    `verify-financial-authority-hardening.sql`,
@@ -67,14 +73,20 @@ do not repair or relabel a successful hosted migration to match it.
    aggregate counts. Retain this same exact fixture for the remaining smoke
    steps. Keep its exact identifiers only in operator-private ephemeral session
    state; never return its email, UUID, or customer reference in release evidence.
-6. Deploy the frozen application artifact. Using disposable staging fixtures,
+6. Apply 02451 and run
+   `verify-credit-transaction-customer-access-hardening.sql`. Every row must
+   pass. Confirm customer ledger SELECT exposes only the reviewed 11-column
+   projection, mutations remain unavailable, the own-row policy is unique, and
+   the protected Storage policy matrix contains only the 13 reviewed
+   transitional policies.
+7. Deploy the frozen application artifact. Using disposable staging fixtures,
    verify signed uploads for both protected buckets, web/desktop order retry
    idempotency, File Expert finalization, staff credit retry idempotency, Stripe
    credit recovery, refund recovery, and widget checkout/webhook claims.
-7. Apply 02451. Then run
+8. Apply 02452. Then run
    `verify-post-deploy-legacy-rpc-cutover.sql` and
    `verify-security-state-hardening.sql`. Every verifier row must pass.
-8. Run Supabase Security Advisor again and compare with the captured baseline.
+9. Run Supabase Security Advisor again and compare with the captured baseline.
    Resolve any new ERROR/WARN finding introduced by this release. Then delete
    the retained disposable user through the Auth Admin API so normal cascading
    cleanup runs, and confirm only aggregate zero-residue counts.
@@ -97,15 +109,16 @@ do not repair or relabel a successful hosted migration to match it.
    those admin mutations in a bounded maintenance window until the matching
    application is deployed.
 4. Run the pre-cutover verifiers listed in the staging sequence, including the
-   customer-ID verifier. Do not run the final Storage matrix verifier until
-   02451 removes transitional INSERT access.
+   customer-ID verifier. Apply 02451, then run the dedicated customer
+   ledger/Storage verifier. Do not run the final Storage matrix verifier until
+   02452 removes transitional INSERT access.
 5. Deploy the frozen application artifact. Perform immediate read-only
    Production health/auth/download checks; rely on the completed staging
    rehearsal for mutating payment and customer-data paths.
 6. Verify that the deployed application uses signed uploads, claim-bound
    financial RPCs, idempotent order wrappers, and atomic File Expert/widget
-   claims. Hold 02451 until logs and smoke checks show no critical regression.
-7. Apply 02451. Run both final verifiers and Security Advisor, then repeat the
+   claims. Hold 02452 until logs and smoke checks show no critical regression.
+7. Apply 02452. Run both final verifiers and Security Advisor, then repeat the
    read-only Production smoke checks.
 
 ## Failure and recovery
@@ -113,14 +126,15 @@ do not repair or relabel a successful hosted migration to match it.
 - Before 02443: deploy nothing; no compensation is required.
 - During a migration: each file is transactional. Stop after the failed file,
   preserve the error, and fix forward; never skip a version.
-- After 02443-02450 but before the application deploy: keep the previous build
+- After 02443-02451 but before the application deploy: keep the previous build
   live. The temporary role/prefix-bound compatibility layer remains available.
-  Keep 02450 in place: it is backward-compatible and reverting it would restore
-  the broken/broad customer-reference trigger chain.
-- After the application deploy but before 02451: roll back the application to
+  Keep 02450 and 02451 in place: both are backward-compatible; reverting them
+  would restore the broken customer-reference trigger chain and customer
+  ledger/Storage authorization failure.
+- After the application deploy but before 02452: roll back the application to
   the immediately preceding build if needed. No database down-migration is
   required because compatibility has not yet been removed.
-- After 02451: first apply
+- After 02452: first apply
   `scripts/recover-integrated-security-release-compatibility.sql` as one reviewed
   transaction, verify its exact grants/policies, and only then roll back the
   application. The compensation restores narrow upload/order/financial
@@ -128,7 +142,7 @@ do not repair or relabel a successful hosted migration to match it.
   remain unavailable in the preceding build. It does not restore broad
   `profiles`/`orders` grants, drop hardened objects, or overwrite customer rows.
 - After recovery, restore the hardened application by a new forward migration.
-  Do not edit or re-label an already-recorded 02450 or 02451 migration.
+  Do not edit or re-label an already-recorded 02450, 02451, or 02452 migration.
 - For suspected data corruption, stop traffic-changing operations and restore
   through the verified logical backup process. The compatibility compensation
   is not a substitute for database restoration.
