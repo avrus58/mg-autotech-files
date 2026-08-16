@@ -2856,3 +2856,28 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
   talebi dis hesap/izin/mesaj onayi bekliyor. Production icin geri yuklenebilir
   logical backup/restore drill ve Stripe Widget webhook konfigurasyonu henuz
   dogrulanmadi. Production migration/deploy ve `02449` cutover uygulanmadi.
+
+## 2026-08-16 Guvenlik release staging migration provasi
+
+- Altyapi: Vercel Production ve Preview icin hassas Upstash Redis entegrasyonu
+  olusturuldu ve distributed limiter bayragi etkinlestirildi; secret degerleri
+  okunmadi veya loglanmadi. Staging DB erisimi geri geldi. Daha once hazirlanan
+  Supabase destek talebi owner onayiyla gonderildi.
+- Staging baseline: Izole staging'de private, 32 MiB ve exact MIME allowlist'li
+  `file-expert` bucket ile yetki metadata'si tasimayan kalici staging owner anchor
+  olusturuldu. Aggregate/PII'siz preflight yeniden calisti ve 10/10 PASS oldu.
+- Migration mapping: Exact checksum'li `02443`-`02448` dosyalari runbook sirasiyla
+  tek tek uygulandi. Staging remote kayitlari sirasiyla `20260816143340`,
+  `20260816143359`, `20260816143505`, `20260816143523`, `20260816143541` ve
+  `20260816143600`; her adimda yalniz beklenen migration adi eklendi. `02449`
+  uygulama deploy ve authenticated smoke oncesinde bilerek bekletildi.
+- Dogrulama: Widget ACL matrisi ve File Expert atomic completion verifier'i PASS.
+  Finans verifier'indaki `lower(function_definition)` uzerinde buyuk harfli sabit
+  arayan iki case-sensitive kontrol duzeltildi; DB'de bes finans entry point'in
+  tum auth/lock/audit markerlari mevcut ve duzeltilmis verifier'in tum 25 satiri
+  PASS. Odak finans/Stripe testleri 12/12 PASS; diff check temiz.
+- Production kapilari: Production DB'ye mutation yapilmadi. Restorable logical
+  backup + izole restore drill henuz yoktur. Ayrica Production
+  `STRIPE_WIDGET_WEBHOOK_SECRET` ve iki Stripe Live webhook endpoint/event seti
+  owner login/MFA olmadan dogrulanamadi; bu kapilar gecmeden Production cutover
+  fail-closed kalir.

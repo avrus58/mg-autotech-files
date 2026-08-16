@@ -465,7 +465,7 @@ checks(check_name, ok, details) as (
           and position('for update' in definition) > 0
           and position('refund_claim_token' in definition) > 0
           and position('refund_processing' in definition) > 0
-          and position('Only Stripe credit purchases support automatic refunds' in definition) > 0
+          and position('only stripe credit purchases support automatic refunds' in definition) > 0
           and position('stripe_checkout' in definition) > 0
         when signature = 'public.admin_apply_payment_refund(uuid,uuid,text,text,uuid)' then
           position('service_role' in definition) > 0
@@ -474,7 +474,7 @@ checks(check_name, ok, details) as (
           and position('for update' in definition) > 0
           and position('refund_provider_succeeded' in definition) > 0
           and position('refund_claim_token' in definition) > 0
-          and position('Only Stripe credit purchases support automatic refunds' in definition) > 0
+          and position('only stripe credit purchases support automatic refunds' in definition) > 0
           and position('stripe_checkout' in definition) > 0
           and position('profile.role = ''customer''' in definition) > 0
           and position('insert into public.credit_transactions' in definition) > 0
