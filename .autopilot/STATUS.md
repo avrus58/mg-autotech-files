@@ -3072,3 +3072,21 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
   phase cleanup henuz kurulmadigi icin is token-CAS stale recovery'ye kadar en
   fazla on dakika `processing` kalabilir. Veri butunlugu ve tek completion CAS'i
   korunur; runbook bu availability sinirini artik acikca ayirir.
+
+## 2026-08-16 File Expert Vercel dependency hotfix
+
+- Exact `0909058` ana uygulama Preview build'i Vercel'de Ready oldu; root,
+  customer dashboard, admin yetki kapisi ve File Expert sayfasi smoke kontrolleri
+  hata vermeden gecti.
+- Ayri `mg-autotech-file-expert-analyzer` Vercel projesi fail-closed olusturuldu:
+  ilk eski-main build'i bilerek `exit 1` ile durduruldu, sonra proje yalniz
+  `codex/security-hardening-release` dalina, `file-expert-analyzer` root'una ve
+  staging Supabase host allowlist'ine baglandi. Gizli token degeri loglanmadi;
+  Production musteri verisi veya Production Supabase kullanilmadi.
+- Exact release commit worker build'i, requirements dosyasinda PyPI'da olmayan
+  `uvicorn[standard]==0.38.1` pini nedeniyle dependency resolution'da guvenli
+  bicimde durdu. Resmi PyPI'da yayinlanmis ayni minor surum
+  `uvicorn[standard]==0.38.0` ile dar patch yapildi; yeni dependency eklenmedi.
+- Kontroller: bundled Python `py_compile` PASS; File Expert guvenlik testleri
+  11/11 PASS; `git diff --check` PASS (yalniz CRLF uyarisi). Yeni worker build ve
+  sentetik analyzer smoke bu hotfix commit push'undan sonra tekrar kosulmalidir.
