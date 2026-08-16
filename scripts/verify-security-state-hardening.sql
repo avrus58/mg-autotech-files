@@ -1,31 +1,33 @@
 -- SELECT-only verification for the integrated security hotfix migrations.
 -- This returns aggregate authority counts only; it does not expose customer PII.
 
-with api_only_relations(relation_name) as (
+with api_only_relations(relation_name, required) as (
   values
-    ('request_messages'),
-    ('request_work_orders'),
-    ('request_work_order_events'),
-    ('request_internal_notes'),
-    ('email_delivery_events'),
-    ('email_suppressions'),
-    ('file_expert_jobs'),
-    ('file_expert_feedback'),
-    ('known_file_patterns'),
-    ('file_expert_binary_fingerprints'),
-    ('file_fingerprints'),
-    ('desktop_request_approvals'),
-    ('widget_settings'),
-    ('widget_plans'),
-    ('widget_clients'),
-    ('widget_api_keys'),
-    ('widget_access_logs'),
-    ('widget_domain_change_requests'),
-    ('widget_webhook_events'),
-    ('widget_webhook_effects'),
-    ('widget_audit_logs'),
-    ('widget_enquiries'),
-    ('widget_rate_limit_buckets')
+    ('request_messages', true),
+    ('request_work_orders', true),
+    ('request_work_order_events', true),
+    ('request_internal_notes', true),
+    ('email_delivery_events', true),
+    ('email_suppressions', true),
+    ('file_expert_jobs', true),
+    ('file_expert_feedback', true),
+    ('known_file_patterns', true),
+    ('file_expert_binary_fingerprints', true),
+    -- Historical installations may have this legacy predecessor. It has no
+    -- canonical DDL or runtime caller, but must remain private when present.
+    ('file_fingerprints', false),
+    ('desktop_request_approvals', true),
+    ('widget_settings', true),
+    ('widget_plans', true),
+    ('widget_clients', true),
+    ('widget_api_keys', true),
+    ('widget_access_logs', true),
+    ('widget_domain_change_requests', true),
+    ('widget_webhook_events', true),
+    ('widget_webhook_effects', true),
+    ('widget_audit_logs', true),
+    ('widget_enquiries', true),
+    ('widget_rate_limit_buckets', true)
 ),
 expected_storage_policies(policy_name, command_name, role_name, policy_mode) as (
   values
@@ -356,75 +358,79 @@ checks(check_name, ok, details) as (
   select
     'private operational relations are service API only',
     pg_catalog.bool_and(
-      pg_catalog.to_regclass('public.' || relation_name) is not null
-      and not pg_catalog.has_table_privilege(
-        'anon',
-        pg_catalog.to_regclass('public.' || relation_name),
-        'SELECT'
-      )
-      and not pg_catalog.has_table_privilege(
-        'anon',
-        pg_catalog.to_regclass('public.' || relation_name),
-        'INSERT'
-      )
-      and not pg_catalog.has_table_privilege(
-        'anon',
-        pg_catalog.to_regclass('public.' || relation_name),
-        'UPDATE'
-      )
-      and not pg_catalog.has_table_privilege(
-        'anon',
-        pg_catalog.to_regclass('public.' || relation_name),
-        'DELETE'
-      )
-      and not pg_catalog.has_table_privilege(
-        'authenticated',
-        pg_catalog.to_regclass('public.' || relation_name),
-        'SELECT'
-      )
-      and not pg_catalog.has_table_privilege(
-        'authenticated',
-        pg_catalog.to_regclass('public.' || relation_name),
-        'INSERT'
-      )
-      and not pg_catalog.has_table_privilege(
-        'authenticated',
-        pg_catalog.to_regclass('public.' || relation_name),
-        'UPDATE'
-      )
-      and not pg_catalog.has_table_privilege(
-        'authenticated',
-        pg_catalog.to_regclass('public.' || relation_name),
-        'DELETE'
-      )
-      and pg_catalog.has_table_privilege(
-        'service_role',
-        pg_catalog.to_regclass('public.' || relation_name),
-        'SELECT'
-      )
-      and pg_catalog.has_table_privilege(
-        'service_role',
-        pg_catalog.to_regclass('public.' || relation_name),
-        'INSERT'
-      )
-      and pg_catalog.has_table_privilege(
-        'service_role',
-        pg_catalog.to_regclass('public.' || relation_name),
-        'UPDATE'
-      )
-      and pg_catalog.has_table_privilege(
-        'service_role',
-        pg_catalog.to_regclass('public.' || relation_name),
-        'DELETE'
-      )
-      and exists (
-        select 1
-        from pg_catalog.pg_class as relation
-        where relation.oid = pg_catalog.to_regclass('public.' || relation_name)
-          and relation.relrowsecurity
+      (not required and pg_catalog.to_regclass('public.' || relation_name) is null)
+      or (
+        pg_catalog.to_regclass('public.' || relation_name) is not null
+        and not pg_catalog.has_table_privilege(
+          'anon',
+          pg_catalog.to_regclass('public.' || relation_name),
+          'SELECT'
+        )
+        and not pg_catalog.has_table_privilege(
+          'anon',
+          pg_catalog.to_regclass('public.' || relation_name),
+          'INSERT'
+        )
+        and not pg_catalog.has_table_privilege(
+          'anon',
+          pg_catalog.to_regclass('public.' || relation_name),
+          'UPDATE'
+        )
+        and not pg_catalog.has_table_privilege(
+          'anon',
+          pg_catalog.to_regclass('public.' || relation_name),
+          'DELETE'
+        )
+        and not pg_catalog.has_table_privilege(
+          'authenticated',
+          pg_catalog.to_regclass('public.' || relation_name),
+          'SELECT'
+        )
+        and not pg_catalog.has_table_privilege(
+          'authenticated',
+          pg_catalog.to_regclass('public.' || relation_name),
+          'INSERT'
+        )
+        and not pg_catalog.has_table_privilege(
+          'authenticated',
+          pg_catalog.to_regclass('public.' || relation_name),
+          'UPDATE'
+        )
+        and not pg_catalog.has_table_privilege(
+          'authenticated',
+          pg_catalog.to_regclass('public.' || relation_name),
+          'DELETE'
+        )
+        and pg_catalog.has_table_privilege(
+          'service_role',
+          pg_catalog.to_regclass('public.' || relation_name),
+          'SELECT'
+        )
+        and pg_catalog.has_table_privilege(
+          'service_role',
+          pg_catalog.to_regclass('public.' || relation_name),
+          'INSERT'
+        )
+        and pg_catalog.has_table_privilege(
+          'service_role',
+          pg_catalog.to_regclass('public.' || relation_name),
+          'UPDATE'
+        )
+        and pg_catalog.has_table_privilege(
+          'service_role',
+          pg_catalog.to_regclass('public.' || relation_name),
+          'DELETE'
+        )
+        and exists (
+          select 1
+          from pg_catalog.pg_class as relation
+          where relation.oid = pg_catalog.to_regclass('public.' || relation_name)
+            and relation.relrowsecurity
+        )
       )
     ),
-    pg_catalog.count(*)::text || ' API-only relations checked'
+    pg_catalog.count(*) filter (where required)::text
+      || ' canonical relations plus optional legacy relations checked'
   from api_only_relations
 
   union all

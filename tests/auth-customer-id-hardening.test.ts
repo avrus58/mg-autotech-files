@@ -106,7 +106,7 @@ test("customer ID verifier is SELECT-only and returns aggregate catalog state", 
   assert.doesNotMatch(verifier, /from\s+auth\.users\b/i);
 });
 
-test("release order fixes Auth and customer access before the byte-identical 02452 cutover", () => {
+test("release order fixes Auth and customer access before cutover and parity", () => {
   const preflight = source("scripts", "preflight-integrated-security-release.sql");
   const runbook = source("docs", "integrated-security-release-runbook.md");
   const cutover = source(
@@ -121,6 +121,7 @@ test("release order fixes Auth and customer access before the byte-identical 024
   assert.match(targetVersions, /20260816002450/);
   assert.match(targetVersions, /20260816002451/);
   assert.match(targetVersions, /20260816002452/);
+  assert.match(targetVersions, /20260816002453/);
   assert.doesNotMatch(targetVersions, /20260816002449/);
   assert.equal(
     createHash("sha256").update(migration).digest("hex"),
@@ -138,6 +139,10 @@ test("release order fixes Auth and customer access before the byte-identical 024
   assert.ok(
     runbook.indexOf("Deploy the matching application")
       < runbook.indexOf("20260816002452_post_deploy_legacy_rpc_cutover.sql"),
+  );
+  assert.ok(
+    runbook.indexOf("20260816002452_post_deploy_legacy_rpc_cutover.sql")
+      < runbook.indexOf("20260816002453_email_delivery_schema_parity.sql"),
   );
   assert.equal(
     createHash("sha256").update(cutover).digest("hex"),

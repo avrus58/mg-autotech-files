@@ -1,4 +1,4 @@
-# Integrated security release runbook (02443-02452)
+# Integrated security release runbook (02443-02453)
 
 This release is a coordinated database/application cutover. Migrations must be
 applied in this exact order:
@@ -17,6 +17,7 @@ applied in this exact order:
     customer smoke checks.
 11. Deploy the matching application and complete the cutover smoke checks.
 12. `20260816002452_post_deploy_legacy_rpc_cutover.sql`
+13. `20260816002453_email_delivery_schema_parity.sql`
 
 Version 02449 is intentionally unused. The reviewed cutover body was renamed
 without content changes from its unapplied 02451 filename to 02452 so numeric
@@ -27,6 +28,18 @@ Freeze and compare these SHA-256 values before each environment:
 - 02450: `8131E02E582D5E16C18F6262515E402AEC2A4DBAFAA1E3029362E80EA8F8C792`
 - 02451: `6DE1F340791C17D54621DFB9DDB3E6FBB39B0B5F322565B421B34D24EF15FFD9`
 - 02452: `5084DFD95DBD878FD1037F7CE497C1362E900ED5D3F931A2626CD448719C84CC`
+- 02453: `E88D700B4ACB0D051C6D563C3D52F1958074983D9127D413BB28901374DE4353`
+
+Migration 02453 closes a real environment-parity gap: the historical email
+delivery reliability schema exists in Production but was never captured in the
+versioned migration chain used by isolated staging. It adds only the canonical
+delivery columns, constraints, indexes, and two operational tables. It then
+reasserts the 02443 service-API-only boundary: no direct `PUBLIC`, `anon`, or
+`authenticated` table/column authority and no Data API policies remain on
+`email_delivery_events` or `email_suppressions`. Do not substitute the older
+standalone setup script, because that script predates the final API-only access
+model. The legacy `file_fingerprints` relation is optional and must not be
+created; the canonical runtime relation is `file_expert_binary_fingerprints`.
 
 Do not use an unreviewed `supabase db push`. The connected Production migration
 history contains applied versions that are not represented by identical local
@@ -78,15 +91,15 @@ do not repair or relabel a successful hosted migration to match it.
 ## Staging rehearsal
 
 1. For a fresh rehearsal, reconcile staging migration metadata without changing
-   schema. Confirm none of versions 02443-02448 or 02450-02452 is partially
+   schema. Confirm none of versions 02443-02448 or 02450-02453 is partially
    recorded and 02449 is absent. For a resumed rehearsal, accept only the
    previously archived exact name, generated version, checksum, and post-state
    verifier mapping; do not rerun the fresh-start absence preflight. Continue
    from the first missing migration and never repair or relabel history.
 2. On a fresh rehearsal, run the SELECT-only preflight and archive only its
    aggregate PASS/FAIL output.
-3. Apply 02443 through 02448 in order, then apply 02450. Do not apply 02451 or
-   02452 yet.
+3. Apply 02443 through 02448 in order, then apply 02450. Do not apply 02451,
+   02452, or 02453 yet.
 4. Run the phase-appropriate SELECT-only verifiers:
    `verify-auth-customer-id-hardening.sql`,
    `verify-financial-authority-hardening.sql`,
@@ -107,9 +120,12 @@ do not repair or relabel a successful hosted migration to match it.
    verify signed uploads for both protected buckets, web/desktop order retry
    idempotency, File Expert finalization, staff credit retry idempotency, Stripe
    credit recovery, refund recovery, and widget checkout/webhook claims.
-8. Apply 02452. Then run
-   `verify-post-deploy-legacy-rpc-cutover.sql` and
-   `verify-security-state-hardening.sql`. Every verifier row must pass.
+8. Apply 02452, then apply 02453. Run
+   `verify-post-deploy-legacy-rpc-cutover.sql`,
+   `verify-email-delivery-schema-parity.sql`, and
+   `verify-security-state-hardening.sql`. Every verifier row must pass. The
+   parity verifier reads schema/authority metadata only and must show both
+   email operational tables as RLS-enabled and service-API-only.
 9. Run Supabase Security Advisor again and compare with the captured baseline.
    Resolve any new ERROR/WARN finding introduced by this release. Then delete
    the retained disposable user through the Auth Admin API so normal cascading
@@ -142,8 +158,10 @@ do not repair or relabel a successful hosted migration to match it.
 6. Verify that the deployed application uses signed uploads, claim-bound
    financial RPCs, idempotent order wrappers, and atomic File Expert/widget
    claims. Hold 02452 until logs and smoke checks show no critical regression.
-7. Apply 02452. Run both final verifiers and Security Advisor, then repeat the
-   read-only Production smoke checks.
+7. Apply 02452, then 02453. Run all three final verifiers and Security Advisor,
+   then repeat the read-only Production smoke checks. Production already has
+   the historical email tables; 02453 must preserve their schema while removing
+   the retired direct staff Data API policies and grants.
 
 ## Failure and recovery
 
@@ -158,15 +176,18 @@ do not repair or relabel a successful hosted migration to match it.
 - After the application deploy but before 02452: roll back the application to
   the immediately preceding build if needed. No database down-migration is
   required because compatibility has not yet been removed.
-- After 02452: first apply
+- After 02452 or 02453: first apply
   `scripts/recover-integrated-security-release-compatibility.sql` as one reviewed
   transaction, verify its exact grants/policies, and only then roll back the
   application. The compensation restores narrow upload/order/financial
   wrappers and prefix-bound INSERT; admin profile and delivery-ETA mutations
   remain unavailable in the preceding build. It does not restore broad
   `profiles`/`orders` grants, drop hardened objects, or overwrite customer rows.
+- Migration 02453 is additive and remains compatible with the server API during
+  application recovery; do not recreate its retired direct staff table access.
 - After recovery, restore the hardened application by a new forward migration.
-  Do not edit or re-label an already-recorded 02450, 02451, or 02452 migration.
+  Do not edit or re-label an already-recorded 02450, 02451, 02452, or 02453
+  migration.
 - For suspected data corruption, stop traffic-changing operations and restore
   through the verified logical backup process. The compatibility compensation
   is not a substitute for database restoration.

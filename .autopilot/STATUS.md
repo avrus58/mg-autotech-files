@@ -3090,3 +3090,43 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 - Kontroller: bundled Python `py_compile` PASS; File Expert guvenlik testleri
   11/11 PASS; `git diff --check` PASS (yalniz CRLF uyarisi). Yeni worker build ve
   sentetik analyzer smoke bu hotfix commit push'undan sonra tekrar kosulmalidir.
+
+## 2026-08-16 Staging legacy RPC cutover ve e-posta schema parity hazirligi
+
+- Isolated staging `vxdxdvtsopsjatukdbuq` uzerinde, exact
+  `20260816002452_post_deploy_legacy_rpc_cutover.sql` yalniz File Expert Preview
+  runtime smoke PASS sonrasinda bir kez `post_deploy_legacy_rpc_cutover` adiyla
+  uygulandi. Uretilen remote history version'i `20260816175926`; Production'a
+  veya gercek musteri verisine dokunulmadi.
+- Post-cutover verifier 7/7 PASS; legacy staff-credit, Stripe-credit ve refund
+  RPC canary'leri beklenen `0A000` ile kapali. Security Advisor `INFO 42 / WARN
+  16 / ERROR 0` baseline'indan `INFO 42 / WARN 14 / ERROR 0` sonucuna indi;
+  yeni lint yok, iki legacy RPC uyarisi kalkti. Preview signed-upload/analyzer/
+  atomic-report akisi da cutover sonrasinda staging fixture ile PASS.
+- Final security verifier'in 17/18 sonucu gercek schema parity farkini ortaya
+  cikardi: Production katalogunda bulunan `email_delivery_events` ve
+  `email_suppressions`, tarihsel non-versioned e-posta reliability SQL'i
+  nedeniyle fresh staging migration zincirinde yoktu. `file_fingerprints` ise
+  hem staging hem Production'da olmayan legacy/opsiyonel isimdir; canonical
+  runtime relation `file_expert_binary_fingerprints` olarak kalir.
+- Yeni additive `20260816002453_email_delivery_schema_parity.sql`, iki e-posta
+  relation'ini ve canonical `email_events` delivery kolon/constraint/indexlerini
+  geri getirir; RLS acik, public/anon/authenticated ACL kapali ve yalniz
+  `service_role` table authority olacak sekilde 02443 son durumunu tekrar kurar.
+  SHA-256 `E88D700B4ACB0D051C6D563C3D52F1958074983D9127D413BB28901374DE4353`,
+  Git blob `4fd5b5ed74e6b9364c43c40460a7e54fb3c60c77`. Focused SELECT-only verifier
+  eklendi; integrated verifier 22 canonical relation'i zorunlu, yalniz legacy
+  `file_fingerprints` relation'ini absent-or-hardened opsiyonel kontrol eder.
+- Degisen dosyalar: 02453 migration, focused/integrated verifier ve preflight,
+  integrated release runbook'u, dort release test dosyasi ve bu durum kaydi.
+  Uygulanmis 02443-02452 migrationlari byte-identical korunmustur.
+- Kontroller: 02453/release odakli testler 23/23 PASS; web ve customer-uploader
+  uc TypeScript projesi PASS; full ESLint ve `git diff --check` PASS. Full test
+  paketinde kaynak kaynakli yeni hata yok; tek failure bilinen child `tsx`
+  Windows `uv_os_get_passwd/ENOMEM` ortam hatasi. Ayni gercek i18n audit'i
+  user-info preload ile ayri calisti ve 11 dilde 611/611 PASS oldu.
+- Kalan release adimi: 02453 bu hazirlikta remote'a uygulanmadi. Independent
+  review GO sonrasinda staging'e exact `email_delivery_schema_parity` adiyla bir
+  kez uygulanmali; focused verifier, final 18/18 verifier ve Advisor delta yeniden
+  kosulmalidir. Production, Stripe, e-posta gonderimi, secret veya fixture cleanup
+  bu gorevin kapsamina alinmadi.

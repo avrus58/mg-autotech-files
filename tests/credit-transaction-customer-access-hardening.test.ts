@@ -135,7 +135,7 @@ test("customer access verifier is SELECT-only and checks ACL, RLS, and Storage",
   assert.match(verifier, /13 transitional policies/i);
 });
 
-test("final verifier and release order include 02451 before the unchanged 02452 cutover", () => {
+test("release order keeps 02451 before cutover and 02453 parity last", () => {
   const finalVerifier = source("scripts", "verify-security-state-hardening.sql");
   const preflight = source("scripts", "preflight-integrated-security-release.sql");
   const runbook = source("docs", "integrated-security-release-runbook.md");
@@ -155,6 +155,7 @@ test("final verifier and release order include 02451 before the unchanged 02452 
   assert.match(targetVersions, /20260816002450/);
   assert.match(targetVersions, /20260816002451/);
   assert.match(targetVersions, /20260816002452/);
+  assert.match(targetVersions, /20260816002453/);
   assert.doesNotMatch(targetVersions, /20260816002449/);
   assert.match(preflight, /credit_transaction_customer_access_hardening/);
 
@@ -169,6 +170,10 @@ test("final verifier and release order include 02451 before the unchanged 02452 
   assert.ok(
     runbook.indexOf("Deploy the matching application")
       < runbook.indexOf("20260816002452_post_deploy_legacy_rpc_cutover.sql"),
+  );
+  assert.ok(
+    runbook.indexOf("20260816002452_post_deploy_legacy_rpc_cutover.sql")
+      < runbook.indexOf("20260816002453_email_delivery_schema_parity.sql"),
   );
 
   assert.equal(
