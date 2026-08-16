@@ -50,6 +50,30 @@ do not repair or relabel a successful hosted migration to match it.
   credentials.
 - Any failed migration, verifier row, Security Advisor error, or critical smoke
   regression stops the sequence.
+- Production File Expert is gated on a separate healthy
+  `file-expert-analyzer/` deployment, an exact Supabase signed-URL host allowlist,
+  a shared server-only analyzer token, and
+  `FILE_EXPERT_ANALYZER_DISTRIBUTED_ADMISSION_ENABLED=true` backed by the
+  server-only Upstash/KV REST connection. Keep both
+  `FILE_EXPERT_ANALYZER_GLOBAL_CONCURRENCY=1` and
+  `FILE_EXPERT_ANALYZER_MAX_CONCURRENT=1`; a higher value requires a reviewed
+  production-like load test and code change. Confirm `/health`, then run a synthetic
+  signed ORI/MOD analysis; missing analyzer or lease configuration must return a
+  retryable `503`, never invoke the in-process TypeScript fallback, and never
+  replace an already completed result after a failed re-analysis. Confirm the
+  lease Lua uses Redis `TIME` and stalled/oversized REST bodies fail closed.
+  After the claim response is acquired, a timed-out protected-phase job must
+  clear or restore its exact claim token before the 60-second route cap. A lost
+  response to the initial claim write is recovered by the token-bound stale
+  claim path (currently ten minutes); verify that recovery separately rather
+  than claiming every pre-claim timeout is cleaned up inside the route window.
+- Confirm the Vercel team plan permits commercial production use before either
+  application is released. The currently observed Hobby plan is non-commercial
+  only, so this release remains stopped until the owner approves and completes a
+  Pro/Enterprise upgrade (or selects another approved worker host with an
+  equivalent hard 35-second request cap). Do not use a
+  root `api/` catch-all as a shortcut around that gate; Vercel's isolated
+  multi-service routing is Private Beta and requires explicit account access.
 
 ## Staging rehearsal
 

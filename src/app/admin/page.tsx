@@ -3,7 +3,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { authenticatedFetch } from "@/lib/authGuards";
+import { authenticatedFetch, getStableSession } from "@/lib/authGuards";
 import { resolveAdminAccess } from "@/lib/adminAccessClient";
 import { supabase } from "@/lib/supabaseClient";
 import RequestChat from "@/components/RequestChat";
@@ -32,6 +32,14 @@ import {
   generateCustomerReplacementPassword,
   validateCustomerReplacementPassword,
 } from "@/lib/customerPasswordSecurity";
+import {
+  completeStaffCreditAdjustmentAttempt,
+  getStaffCreditAdjustmentSessionStorage,
+  hashStaffCreditAdjustmentPayload,
+  hashStaffCreditAdjustmentScope,
+  prepareStaffCreditAdjustmentAttempt,
+  StaffCreditAdjustmentOperationGuard,
+} from "@/lib/staffCreditAdjustmentRetry";
 import {
   Activity,
   ArrowLeft,
@@ -133,55 +141,6 @@ type ModifiedFileVersion = {
 
 type CustomerTag = "workshop" | "reseller" | "vip" | "blocked" | "negative_credit";
 type PaymentOverride = "inherit" | "enabled" | "disabled";
-
-type CreditAdjustmentAttempt = {
-  idempotencyKey: string;
-  payloadFingerprint: string;
-  createdAt: number;
-};
-
-const creditAdjustmentStoragePrefix = "mg:staff-credit-adjustment:v1:";
-const creditAdjustmentMaxAgeMs = 24 * 60 * 60 * 1000;
-
-async function hashCreditAdjustmentPayload(value: string) {
-  const digest = await window.crypto.subtle.digest(
-    "SHA-256",
-    new TextEncoder().encode(value),
-  );
-  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
-}
-
-function readCreditAdjustmentAttempt(customerId: string, payloadFingerprint: string) {
-  try {
-    const storageKey = `${creditAdjustmentStoragePrefix}${customerId}`;
-    const raw = window.sessionStorage.getItem(storageKey);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as Partial<CreditAdjustmentAttempt>;
-    if (
-      parsed.payloadFingerprint !== payloadFingerprint ||
-      typeof parsed.idempotencyKey !== "string" ||
-      !/^[0-9a-f-]{36}$/i.test(parsed.idempotencyKey) ||
-      typeof parsed.createdAt !== "number" ||
-      Date.now() - parsed.createdAt > creditAdjustmentMaxAgeMs
-    ) {
-      window.sessionStorage.removeItem(storageKey);
-      return null;
-    }
-    return parsed as CreditAdjustmentAttempt;
-  } catch {
-    return null;
-  }
-}
-
-function persistCreditAdjustmentAttempt(customerId: string, attempt: CreditAdjustmentAttempt | null) {
-  try {
-    const storageKey = `${creditAdjustmentStoragePrefix}${customerId}`;
-    if (attempt) window.sessionStorage.setItem(storageKey, JSON.stringify(attempt));
-    else window.sessionStorage.removeItem(storageKey);
-  } catch {
-    // The in-memory attempt still protects retries while this page remains open.
-  }
-}
 
 type Profile = {
   id: string;
@@ -539,7 +498,7 @@ export default function AdminPage() {
   const [creditNotes, setCreditNotes] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
-  const [creditUpdatingId, setCreditUpdatingId] = useState<string | null>(null);
+  const [creditUpdatingIds, setCreditUpdatingIds] = useState<Set<string>>(() => new Set());
   const [customerSavingId, setCustomerSavingId] = useState<string | null>(null);
   const [uploadingModifiedId, setUploadingModifiedId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
@@ -557,7 +516,7 @@ export default function AdminPage() {
   const hasLoadedAdminDataRef = useRef(false);
   const adminRefreshInFlightRef = useRef(false);
   const adminLoadSequenceRef = useRef(0);
-  const creditAdjustmentAttemptsRef = useRef<Map<string, CreditAdjustmentAttempt>>(new Map());
+  const creditAdjustmentGuardRef = useRef(new StaffCreditAdjustmentOperationGuard());
 
   async function loadAdminData(options?: { silent?: boolean }) {
     const loadSequence = ++adminLoadSequenceRef.current;
@@ -903,27 +862,56 @@ export default function AdminPage() {
       return;
     }
 
-    const resolvedNote = note || `Admin credit adjustment for ${customer.email ?? customer.customer_id ?? customer.id}`;
-    const payloadFingerprint = await hashCreditAdjustmentPayload(JSON.stringify([
-      customer.id,
-      amount,
-      resolvedNote,
-    ]));
-    const previousAttempt = creditAdjustmentAttemptsRef.current.get(customer.id);
-    const attempt = previousAttempt?.payloadFingerprint === payloadFingerprint
-      ? previousAttempt
-      : readCreditAdjustmentAttempt(customer.id, payloadFingerprint) ?? {
-          idempotencyKey: window.crypto.randomUUID(),
-          payloadFingerprint,
-          createdAt: Date.now(),
-        };
-    creditAdjustmentAttemptsRef.current.set(customer.id, attempt);
-    persistCreditAdjustmentAttempt(customer.id, attempt);
-
-    setCreditUpdatingId(customer.id);
+    const acquisition = creditAdjustmentGuardRef.current.tryAcquire(customer.id);
+    if (acquisition === "in-flight") {
+      setMessage("A credit adjustment for this customer is already running.");
+      return;
+    }
+    if (acquisition === "blocked") {
+      setMessage("Further credit adjustments for this customer are blocked in this tab until the ledger is reconciled and the page is reloaded.");
+      return;
+    }
+    setCreditUpdatingIds((current) => new Set(current).add(customer.id));
     setMessage("");
+    let retryAttemptPrepared = false;
 
     try {
+      const { session: actorSession, error: actorError } = await getStableSession();
+      if (actorError || !actorSession?.user.id) {
+        setMessage("Your staff session could not be verified. Sign in again before adjusting credits.");
+        return;
+      }
+      const actorId = actorSession.user.id;
+      const resolvedNote = note || "Admin credit adjustment";
+      const [scopeFingerprint, payloadFingerprint] = await Promise.all([
+        hashStaffCreditAdjustmentScope(actorId, customer.id),
+        hashStaffCreditAdjustmentPayload({
+          actorId,
+          customerId: customer.id,
+          amount,
+          note: resolvedNote,
+        }),
+      ]);
+
+      const storage = getStaffCreditAdjustmentSessionStorage();
+      const preparation = prepareStaffCreditAdjustmentAttempt(storage, {
+        scopeFingerprint,
+        payloadFingerprint,
+        legacyCustomerId: customer.id,
+      });
+      if (preparation.kind === "blocked") {
+        const blockedMessages = {
+          conflict: "A different unresolved credit adjustment exists for this customer. Restore its exact amount and note to retry, or reconcile the ledger before continuing.",
+          stale: "This customer's unresolved credit adjustment is outside the safe retry window. Reconcile the ledger before continuing.",
+          legacy: "This customer has an unresolved legacy credit adjustment in this tab. Reconcile it before continuing.",
+          capacity: "This tab already has 12 unresolved credit adjustments. Reconcile an existing adjustment before starting another.",
+          unavailable: "Secure retry storage is unavailable in this tab. Credits were not adjusted.",
+        } satisfies Record<typeof preparation.reason, string>;
+        setMessage(blockedMessages[preparation.reason]);
+        return;
+      }
+      const attempt = preparation.attempt;
+      retryAttemptPrepared = true;
       const { data, error } = await supabase.rpc("staff_adjust_customer_credits", {
         p_customer_id: customer.id,
         p_amount: amount,
@@ -932,24 +920,39 @@ export default function AdminPage() {
       });
 
       if (error) {
-        setMessage(`${error.message} Retry the unchanged adjustment safely, or change its amount or note to start a new operation.`);
+        setMessage(`${error.message} Retry the exact unchanged adjustment safely, or reconcile the ledger before changing its values.`);
         return;
       }
 
-      if (creditAdjustmentAttemptsRef.current.get(customer.id)?.idempotencyKey === attempt.idempotencyKey) {
-        creditAdjustmentAttemptsRef.current.delete(customer.id);
-        persistCreditAdjustmentAttempt(customer.id, null);
-      }
       const newBalance = Number(data ?? Number(customer.credit_balance ?? 0) + amount);
       setCustomers((current) => current.map((item) => (item.id === customer.id ? { ...item, credit_balance: newBalance } : item)));
       setSelectedCustomer((current) => (current?.id === customer.id ? { ...current, credit_balance: newBalance } : current));
+
+      const completion = completeStaffCreditAdjustmentAttempt(
+        storage,
+        scopeFingerprint,
+        attempt,
+      );
+      if (completion.kind !== "cleared") {
+        creditAdjustmentGuardRef.current.block(customer.id);
+        setMessage("Credits were adjusted, but secure retry cleanup could not be verified. Further changes for this customer are blocked in this tab; reconcile the ledger before reloading.");
+        return;
+      }
+
       setCreditInputs((current) => ({ ...current, [customer.id]: "" }));
       setCreditNotes((current) => ({ ...current, [customer.id]: "" }));
       setMessage(`${amount > 0 ? "+" : ""}${amount} credits adjusted for ${customer.customer_id ?? customer.email ?? "customer"}. Ledger entry created.`);
     } catch {
-      setMessage("The credit adjustment response was interrupted. Retry the unchanged adjustment; it will use the same safety key.");
+      setMessage(retryAttemptPrepared
+        ? "The credit adjustment response was interrupted. Retry the unchanged adjustment; it will use the same safety key."
+        : "Secure retry preparation failed. Credits were not adjusted; retry when browser storage is available.");
     } finally {
-      setCreditUpdatingId(null);
+      creditAdjustmentGuardRef.current.release(customer.id);
+      setCreditUpdatingIds((current) => {
+        const next = new Set(current);
+        next.delete(customer.id);
+        return next;
+      });
     }
   }
 
@@ -1556,7 +1559,7 @@ export default function AdminPage() {
               filteredCustomers={filteredCustomers}
               customerSearch={customerSearch}
               setCustomerSearch={setCustomerSearch}
-              creditUpdatingId={creditUpdatingId}
+              creditUpdatingIds={creditUpdatingIds}
               openCustomer={openCustomer}
               quickAdjustCredits={quickAdjustCredits}
             />
@@ -1597,15 +1600,13 @@ export default function AdminPage() {
           setForm={setCustomerForm}
           creditInput={creditInputs[selectedCustomer.id] ?? ""}
           setCreditInput={(value) => {
-            creditAdjustmentAttemptsRef.current.delete(selectedCustomer.id);
             setCreditInputs((current) => ({ ...current, [selectedCustomer.id]: value }));
           }}
           creditNote={creditNotes[selectedCustomer.id] ?? ""}
           setCreditNote={(value) => {
-            creditAdjustmentAttemptsRef.current.delete(selectedCustomer.id);
             setCreditNotes((current) => ({ ...current, [selectedCustomer.id]: value }));
           }}
-          creditUpdating={creditUpdatingId === selectedCustomer.id}
+          creditUpdating={creditUpdatingIds.has(selectedCustomer.id)}
           saving={customerSavingId === selectedCustomer.id}
           onClose={() => {
             setSelectedCustomer(null);
@@ -1981,7 +1982,7 @@ function CustomersPanel({
   filteredCustomers,
   customerSearch,
   setCustomerSearch,
-  creditUpdatingId,
+  creditUpdatingIds,
   openCustomer,
   quickAdjustCredits,
 }: {
@@ -1989,7 +1990,7 @@ function CustomersPanel({
   filteredCustomers: Profile[];
   customerSearch: string;
   setCustomerSearch: (value: string) => void;
-  creditUpdatingId: string | null;
+  creditUpdatingIds: ReadonlySet<string>;
   openCustomer: (customer: Profile) => void;
   quickAdjustCredits: (customer: Profile, amount: number) => void;
 }) {
@@ -2067,9 +2068,9 @@ function CustomersPanel({
                   <td className="px-4 py-4 align-top">
                     <div className="flex flex-wrap gap-2">
                       {[10, 25, 50, 100].map((amount) => (
-                        <button key={amount} onClick={() => quickAdjustCredits(customer, amount)} disabled={creditUpdatingId === customer.id} className="rounded-xl border border-emerald-700/40 bg-emerald-950/30 px-3 py-2 text-xs font-black text-emerald-300 transition hover:bg-emerald-900/40 disabled:opacity-50">+{amount}</button>
+                        <button key={amount} onClick={() => quickAdjustCredits(customer, amount)} disabled={creditUpdatingIds.has(customer.id)} className="rounded-xl border border-emerald-700/40 bg-emerald-950/30 px-3 py-2 text-xs font-black text-emerald-300 transition hover:bg-emerald-900/40 disabled:opacity-50">+{amount}</button>
                       ))}
-                      <button onClick={() => quickAdjustCredits(customer, -10)} disabled={creditUpdatingId === customer.id} className="rounded-xl border border-red-700/40 bg-red-950/30 px-3 py-2 text-xs font-black text-red-300 transition hover:bg-red-900/40 disabled:opacity-50">-10</button>
+                      <button onClick={() => quickAdjustCredits(customer, -10)} disabled={creditUpdatingIds.has(customer.id)} className="rounded-xl border border-red-700/40 bg-red-950/30 px-3 py-2 text-xs font-black text-red-300 transition hover:bg-red-900/40 disabled:opacity-50">-10</button>
                     </div>
                     <div className="mt-2 text-xs text-zinc-500">Custom amount and ledger note are inside Manage.</div>
                   </td>
@@ -2106,8 +2107,8 @@ function CustomersPanel({
               <div className="shrink-0 rounded-xl bg-red-950/30 px-3 py-2 text-center font-black text-red-300">{Number(customer.credit_balance ?? 0)}</div>
             </div>
             <div className="mb-4 flex flex-wrap gap-2">
-              {[10, 25, 50, 100].map((amount) => <button key={amount} onClick={() => quickAdjustCredits(customer, amount)} disabled={creditUpdatingId === customer.id} className="rounded-xl border border-emerald-700/40 bg-emerald-950/30 px-3 py-2 text-xs font-black text-emerald-300 disabled:opacity-50">+{amount}</button>)}
-              <button onClick={() => quickAdjustCredits(customer, -10)} disabled={creditUpdatingId === customer.id} className="rounded-xl border border-red-700/40 bg-red-950/30 px-3 py-2 text-xs font-black text-red-300 disabled:opacity-50">-10</button>
+              {[10, 25, 50, 100].map((amount) => <button key={amount} onClick={() => quickAdjustCredits(customer, amount)} disabled={creditUpdatingIds.has(customer.id)} className="rounded-xl border border-emerald-700/40 bg-emerald-950/30 px-3 py-2 text-xs font-black text-emerald-300 disabled:opacity-50">+{amount}</button>)}
+              <button onClick={() => quickAdjustCredits(customer, -10)} disabled={creditUpdatingIds.has(customer.id)} className="rounded-xl border border-red-700/40 bg-red-950/30 px-3 py-2 text-xs font-black text-red-300 disabled:opacity-50">-10</button>
             </div>
             <button onClick={() => openCustomer(customer)} className="h-11 w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 text-sm font-black text-white"><Settings className="mr-2 inline h-4 w-4" />Manage Customer</button>
           </div>

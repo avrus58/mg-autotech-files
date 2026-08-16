@@ -19,7 +19,13 @@ from pydantic import BaseModel, ConfigDict, Field
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 
-app = FastAPI(title="MG AutoTech File Expert Analyzer", version="1.0.0")
+app = FastAPI(
+    title="MG AutoTech File Expert Analyzer",
+    version="1.0.0",
+    docs_url=None,
+    redoc_url=None,
+    openapi_url=None,
+)
 
 HARD_MAX_SOURCE_BYTES = 32 * 1024 * 1024
 MAX_ANALYZE_BODY_BYTES = 64 * 1024
@@ -121,7 +127,7 @@ class AnalyzerRequestGuard:
 
 app.add_middleware(AnalyzerRequestGuard)
 analysis_slots = asyncio.Semaphore(
-    bounded_int("FILE_EXPERT_ANALYZER_MAX_CONCURRENT", 2, 1, 4)
+    bounded_int("FILE_EXPERT_ANALYZER_MAX_CONCURRENT", 1, 1, 1)
 )
 
 ECU_IDENTIFIERS = [
@@ -503,10 +509,13 @@ def read_local_source(value: str, maximum_bytes: int) -> bytes:
     return data
 
 
-async def download_remote_source(value: str, maximum_bytes: int) -> bytes:
+async def download_remote_source(
+    value: str,
+    maximum_bytes: int,
+    timeout_seconds: int,
+) -> bytes:
     hostname, port = validate_remote_url(value)
     await require_public_dns(hostname, port)
-    timeout_seconds = bounded_int("FILE_EXPERT_ANALYZER_TIMEOUT_SECONDS", 20, 3, 30)
     timeout = httpx.Timeout(timeout_seconds, connect=min(timeout_seconds, 10))
     content = bytearray()
     async with httpx.AsyncClient(
@@ -537,7 +546,11 @@ async def download_remote_source(value: str, maximum_bytes: int) -> bytes:
     return bytes(content)
 
 
-async def load_source(path: str | None, url: str | None) -> bytes | None:
+async def load_source(
+    path: str | None,
+    url: str | None,
+    timeout_seconds: int,
+) -> bytes | None:
     if path and url:
         raise SourceValidationError()
     maximum_bytes = bounded_int(
@@ -547,17 +560,36 @@ async def load_source(path: str | None, url: str | None) -> bytes | None:
         HARD_MAX_SOURCE_BYTES,
     )
     if url:
-        timeout_seconds = bounded_int("FILE_EXPERT_ANALYZER_TIMEOUT_SECONDS", 20, 3, 30)
-        try:
-            return await asyncio.wait_for(
-                download_remote_source(url, maximum_bytes),
-                timeout=timeout_seconds + 1,
-            )
-        except asyncio.TimeoutError as error:
-            raise SourceValidationError() from error
+        return await download_remote_source(url, maximum_bytes, timeout_seconds)
     if path:
         return await asyncio.to_thread(read_local_source, path, maximum_bytes)
     return None
+
+
+async def load_sources(request: AnalyzeRequest) -> tuple[bytes | None, bytes | None]:
+    """Load an ORI/MOD pair concurrently under one wall-clock deadline."""
+    timeout_seconds = bounded_int("FILE_EXPERT_ANALYZER_TIMEOUT_SECONDS", 20, 3, 30)
+    tasks = [
+        asyncio.create_task(
+            load_source(request.ori_file_path, request.ori_file_url, timeout_seconds)
+        ),
+        asyncio.create_task(
+            load_source(request.mod_file_path, request.mod_file_url, timeout_seconds)
+        ),
+    ]
+    try:
+        ori, mod = await asyncio.wait_for(
+            asyncio.gather(*tasks),
+            timeout=timeout_seconds,
+        )
+        return ori, mod
+    except asyncio.TimeoutError as error:
+        raise SourceValidationError() from error
+    finally:
+        for task in tasks:
+            if not task.done():
+                task.cancel()
+        await asyncio.gather(*tasks, return_exceptions=True)
 
 
 @app.exception_handler(RequestValidationError)
@@ -572,6 +604,12 @@ async def unexpected_error_handler(_request: Any, _error: Exception) -> JSONResp
 
 @app.get("/health")
 def health() -> dict[str, str]:
+    try:
+        analyzer_token().encode("ascii")
+    except (AnalyzerConfigurationError, UnicodeEncodeError) as error:
+        raise HTTPException(status_code=503, detail="Analyzer service is not configured.") from error
+    if not allowed_source_hosts():
+        raise HTTPException(status_code=503, detail="Analyzer service is not configured.")
     return {"status": "ok"}
 
 
@@ -634,8 +672,7 @@ async def analyze(request: AnalyzeRequest) -> dict[str, Any]:
 
     try:
         try:
-            ori = await load_source(request.ori_file_path, request.ori_file_url)
-            mod = await load_source(request.mod_file_path, request.mod_file_url)
+            ori, mod = await load_sources(request)
         except AnalyzerConfigurationError as error:
             raise HTTPException(status_code=503, detail="Analyzer service is not configured.") from error
         except (SourceValidationError, httpx.HTTPError) as error:

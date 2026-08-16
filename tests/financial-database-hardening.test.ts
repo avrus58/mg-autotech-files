@@ -185,6 +185,7 @@ test("financial RPCs use explicit least-privilege grants across the compatibilit
 test("staff credit adjustments are transactionally idempotent across retries", () => {
   const migration = source(...migrationPath);
   const page = source("src", "app", "admin", "page.tsx");
+  const retryHelper = source("src", "lib", "staffCreditAdjustmentRetry.ts");
   const verification = source("scripts", "verify-financial-authority-hardening.sql");
 
   assert.match(migration, /create table public\.staff_credit_adjustment_idempotency/i);
@@ -212,19 +213,37 @@ test("staff credit adjustments are transactionally idempotent across retries", (
   assert.match(migration, /pg_catalog\.gen_random_uuid\(\)/i);
   assert.match(cutoverMigration, /legacy credit adjustment RPC is disabled; an idempotency key is required/i);
 
-  assert.match(page, /creditAdjustmentAttemptsRef = useRef<Map<string, CreditAdjustmentAttempt>>\(new Map\(\)\)/);
-  assert.match(page, /const payloadFingerprint = await hashCreditAdjustmentPayload\(JSON\.stringify\(\[[\s\S]*customer\.id,[\s\S]*amount,[\s\S]*resolvedNote/);
-  assert.match(page, /previousAttempt\?\.payloadFingerprint === payloadFingerprint[\s\S]*previousAttempt[\s\S]*window\.crypto\.randomUUID\(\)/);
-  assert.match(page, /window\.sessionStorage\.setItem/);
-  assert.match(page, /readCreditAdjustmentAttempt\(customer\.id, payloadFingerprint\)/);
-  assert.match(page, /persistCreditAdjustmentAttempt\(customer\.id, null\)/);
+  assert.match(page, /creditAdjustmentGuardRef = useRef\(new StaffCreditAdjustmentOperationGuard\(\)\)/);
+  assert.match(page, /creditUpdatingIds, setCreditUpdatingIds] = useState<Set<string>>/);
+  assert.match(page, /getStableSession\(\)/);
+  assert.match(page, /hashStaffCreditAdjustmentScope\(actorId, customer\.id\)/);
+  assert.match(page, /hashStaffCreditAdjustmentPayload\(\{[\s\S]*actorId,[\s\S]*customerId: customer\.id,[\s\S]*amount,[\s\S]*note: resolvedNote/);
+  assert.match(page, /prepareStaffCreditAdjustmentAttempt\(storage, \{[\s\S]*scopeFingerprint,[\s\S]*payloadFingerprint,[\s\S]*legacyCustomerId: customer\.id/);
+  assert.match(page, /completeStaffCreditAdjustmentAttempt\([\s\S]*storage,[\s\S]*scopeFingerprint,[\s\S]*attempt/);
+  assert.ok(
+    page.indexOf("const acquisition = creditAdjustmentGuardRef.current.tryAcquire(customer.id)") <
+      page.indexOf("await getStableSession()"),
+  );
+  assert.ok(
+    page.indexOf("prepareStaffCreditAdjustmentAttempt(storage") <
+      page.indexOf('supabase.rpc("staff_adjust_customer_credits"'),
+  );
   assert.match(page, /p_idempotency_key: attempt\.idempotencyKey/);
-  assert.match(page, /creditAdjustmentAttemptsRef\.current\.delete\(customer\.id\)/);
+  assert.match(page, /creditAdjustmentGuardRef\.current\.block\(customer\.id\)/);
+  assert.match(page, /completion\.kind !== "cleared"/);
   assert.match(page, /Retry the unchanged adjustment; it will use the same safety key/i);
-  assert.match(page, /setCreditInput=\{\(value\) => \{[\s\S]*creditAdjustmentAttemptsRef\.current\.delete\(selectedCustomer\.id\)/);
-  assert.match(page, /setCreditNote=\{\(value\) => \{[\s\S]*creditAdjustmentAttemptsRef\.current\.delete\(selectedCustomer\.id\)/);
+  assert.doesNotMatch(page, /creditAdjustmentAttemptsRef|\.current\.clear\(\)/);
   assert.match(page, /<input type="number" value=\{creditInput\}[\s\S]*?disabled=\{creditUpdating\}/);
   assert.match(page, /<textarea value=\{creditNote\}[\s\S]*?disabled=\{creditUpdating\}/);
+  assert.match(retryHelper, /mg:staff-credit-adjustment:v2:/);
+  assert.match(retryHelper, /staffCreditAdjustmentMaxAgeMs = 24 \* 60 \* 60 \* 1000/);
+  assert.match(retryHelper, /staffCreditAdjustmentMaxStoredAttempts = 12/);
+  assert.match(retryHelper, /typeof window === "undefined"/);
+  assert.match(retryHelper, /kind: "absent"[\s\S]*kind: "exact"[\s\S]*kind: "conflict"[\s\S]*kind: "stale"[\s\S]*kind: "legacy"[\s\S]*kind: "unavailable"/);
+  assert.match(retryHelper, /storedScopeCount >= staffCreditAdjustmentMaxStoredAttempts/);
+  assert.match(retryHelper, /parsed\.attempt\.idempotencyKey !== expectedAttempt\.idempotencyKey/);
+  assert.match(retryHelper, /storage\.removeItem\(storageKey\)[\s\S]*storage\.getItem\(storageKey\) === null/);
+  assert.match(retryHelper, /storedFields\.join\(","\) !== "createdAt,idempotencyKey,payloadFingerprint"/);
 
   assert.match(verification, /staff credit adjustment idempotency claims are private and complete/i);
   assert.match(verification, /public\.staff_adjust_customer_credits\(uuid,numeric,text\)', false, true, false, true/i);

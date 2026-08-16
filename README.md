@@ -18,8 +18,8 @@ analysis service.
 - `tests`: Node `node:test` coverage run through `tsx`.
 - `apps/customer-uploader`: Separate Electron/Vite/React desktop uploader app
   with its own `package-lock.json`.
-- `file-expert-analyzer`: Optional FastAPI analyzer service for binary analysis
-  experiments.
+- `file-expert-analyzer`: Isolated FastAPI binary analyzer used by production
+  File Expert jobs; the in-process TypeScript implementation is local/test only.
 - `scripts`: Local checks, fixtures, smoke scripts, scraper utilities, and SQL
   files. Some scripts touch sensitive boundaries; see the safety notes below.
 
@@ -103,11 +103,16 @@ upload assistance. It is maintained as a separate npm project. Treat desktop
 environment checks, packaging, signing, and release outputs as sensitive
 operations unless a task explicitly asks for them.
 
-## Optional Analyzer
+## File Expert Analyzer
 
-`file-expert-analyzer` is an optional FastAPI service used for file-analysis
-experiments. Do not test it with real customer files, signed production URLs, or
-production storage paths.
+`file-expert-analyzer` is independently deployable as a FastAPI Vercel project.
+It is optional for local development, but production File Expert analysis fails
+closed unless this service and the distributed admission lease are configured.
+The lease uses Redis server time and treats a timed-out, stalled, malformed, or
+oversized provider response as an unknown acquire that remains fail-closed to
+its TTL.
+Do not test it with real customer files, signed production URLs, or production
+storage paths outside the reviewed release procedure.
 
 ## Development Rules
 

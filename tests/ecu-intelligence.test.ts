@@ -465,6 +465,42 @@ test("AI reporting records provider-error fallback and keeps binary analysis saf
   assert.ok(report.report.length > 0);
 });
 
+test("AI reporting aborts at its absolute deadline and degrades deterministically", async () => {
+  let observedSignal: AbortSignal | undefined;
+  const provider: AiReportProvider = {
+    name: "openai",
+    modelName: "hanging-unit-provider",
+    async generateReport(_input, options) {
+      observedSignal = options?.signal;
+      return await new Promise<never>((_resolve, reject) => {
+        options?.signal?.addEventListener(
+          "abort",
+          () => reject(new Error("deadline abort")),
+          { once: true }
+        );
+      });
+    },
+  };
+  const analysis = await analyzeFileExpertBuffers({
+    jobId: "provider-deadline-fallback",
+    single: calibrationLikeBuffer(),
+  });
+  const startedAt = Date.now();
+  const report = await generateAiFileExpertReport({
+    sourceType: "file_expert_job",
+    sourceId: null,
+    result: analysis,
+    metadata: {},
+  }, { provider, deadlineAt: startedAt + 850 });
+
+  assert.equal(observedSignal?.aborted, true);
+  assert.ok(Date.now() - startedAt < 1_250);
+  assert.equal(report.provider, "rule_based");
+  assert.equal(report.generation?.state, "provider_error_fallback");
+  assert.equal(report.generation?.fallback.reason, "provider_error");
+  assert.equal(report.generation?.isAiGenerated, false);
+});
+
 test("DTC analyzer exposes provider-unavailable state before fallback", async () => {
   const provider = new UnavailableDtcAnalyzerProvider("Local DTC AI provider is disabled.");
   const response = await provider.analyzeDtc({

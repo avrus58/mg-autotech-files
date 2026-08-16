@@ -2976,3 +2976,99 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 - Sinirlar: `02443`-`02448` ve uygulanmis `02450` degistirilmedi. Bu hazirlikte
   remote migration, data/env/secret mutation, deploy veya Production islemi
   yapilmadi; 02451/02452 uygulama karari release root akisina birakildi.
+
+## 2026-08-16 File Expert production worker hazirligi
+
+- Gorev: Production'da zorunlu dis File Expert analyzer'i guvenli bir Vercel
+  FastAPI paketi, global admission lease ve kayipsiz re-analysis davranisiyla
+  release'e hazirlamak.
+- Duzeltme: Next.js, server-only Upstash/KV uzerinde atomik, random tokenli ve
+  80 saniyelik TTL'li global analyzer lease edinir. TTL; 40 saniyelik caller,
+  35 saniyelik worker hard cap ve 5 saniyelik safety margin toplamidir; geciken
+  dispatch sirasinda worker CPU kullanirken kapasite erken acilmaz. Production'da dagitik config
+  yoksa fail-closed `503` verir; provider acquire belirsiz/timeout olursa remote
+  is baslatilmaz, analyzer cevabi kaybolursa lease erken birakilmaz. Global ve
+  worker concurrency sert olarak `1` ile sinirlidir; artis load test + code
+  review gerektirir. Lease skoru Redis `TIME` ile uretilir; Next clock skew'i
+  kapasiteyi erken dusuremez. Redis connection/header/body/JSON tek 1.2 saniyelik
+  deadline ve 8 KiB body cap altindadir; stalled/oversize cevap unknown acquire
+  olarak TTL'ye birakilir.
+- Analyzer: ORI/MOD signed source'lari paralel ancak tek 20 saniyelik overall
+  deadline altinda stream eder; 32 MiB/source, exact HTTPS host, public DNS,
+  redirect, token, local-root ve CPU-thread sinirlari korunur. Python 3.12
+  entrypoint ve 35 saniyelik Vercel function config'i eklendi; Next fetch 40,
+  lease TTL 80, route duration 60 saniye olarak siralandi. Route baslangicindan
+  itibaren 48 saniyelik operation budget, analyzer sonrasi 8 saniyelik post-work
+  payi, 3.5 saniyelik AI/deterministic-fallback deadline'i ve en fazla 8 saniyelik
+  abortable token-CAS cleanup, hard capten en az 4 saniye once bitecek sekilde
+  uygulanir.
+- Durum korumasi: Completed bir isin admin re-analysis'i hata verirse mevcut
+  tamamlanmis result/status korunur; stale veya rakip claim exact status/token
+  kosullari disinda commit ya da downgrade edemez.
+- Kontroller: Guncel File Expert/upload testleri 18/18 ve ECU intelligence
+  testleri 97/97 PASS; web TypeScript ve scoped ESLint PASS. Onceki kapsamli
+  kontrolde customer-uploader uc TypeScript projesi ve full ESLint PASS;
+  `git diff --check` PASS. Full suite 739/740 PASS; tek hata kaynak degil,
+  child `tsx` Windows `uv_os_get_passwd/ENOMEM` ortam hatasiydi ve ayni i18n
+  kontrolu izole data-URL user-info preload ile 11 dil/611 kaynak PASS oldu.
+  Bundled Python ile `py_compile` PASS. FastAPI/httpx dependency'leri bu yerel
+  runtime'da bulunmadigi icin import/runtime smoke calistirilamadi; Preview
+  worker build + sentetik signed-source smoke release kapisi olarak runbook'ta
+  tutuldu.
+- External gate: Mevcut Vercel team Hobby plani ticari Production kullanimina
+  uygun degildir. Owner Pro/Enterprise satin alma karari (veya onayli baska bir
+  worker hostu) olmadan Production GO verilmez. Vercel Services private beta
+  oldugu ve mevcut Next `/api` yuzeyiyle catch-all riski tasidigi icin ayni
+  proje polyglot kisayolu release yoluna eklenmedi. Remote env, deploy, secret,
+  musteri dosyasi veya Production servisi degistirilmedi.
+
+## 2026-08-16 Staff credit adjustment reload idempotency hardening
+
+- Calisma: staff retry review devri; bitis `2026-08-16 19:08:34 +02:00`.
+- Gorev: Admin kredi duzeltmesinin kayip RPC cevabi ve sayfa reload sonrasinda
+  ayni exact payload icin ayni idempotency UUID'sini kullanmasini; farkli staff,
+  musteri, amount veya note icin anahtar reuse olmamasini saglamak.
+- Duzeltme: `src/lib/staffCreditAdjustmentRetry.ts`, actor+customer scope ve
+  actor/customer/amount/note payload'ini SHA-256 ile ayirir. Session storage
+  yalniz idempotency UUID, payload fingerprint ve timestamp tutar; raw actor,
+  customer, email veya note saklamaz. Durable read `absent`, `exact`, `conflict`,
+  `stale`, `legacy` ve `unavailable` durumlarini ayirir; hicbir unresolved kaydi
+  sessizce silmez veya yenilemez. 12 unresolved scope kapasitesinde yeni scope
+  reddedilir, mevcut exact retry kullanilabilir.
+- Fail-closed sinir: Ayni musteri icin senkron kilit ilk `await` oncesinde alinir;
+  farkli musterilerin UI updating durumu Set ile bagimsiz tutulur. Ilk RPC'den
+  once pending attempt session storage'a yazilir ve exact geri okuma dogrulanir.
+  Mismatch, age, legacy, capacity, read/write hatasi veya sessiz write-drop'ta
+  finansal RPC baslatilmaz. Basarili RPC sonrasi yalniz exact storage key +
+  idempotency kaydi compare-remove edilir; cleanup dogrulanamazsa musteri bu
+  sekmede bloke edilir ve normal basari mesaji gosterilmez. SSR'da `window`
+  erisimi yoktur.
+- Degisen dosyalar: `src/app/admin/page.tsx`,
+  `src/lib/staffCreditAdjustmentRetry.ts`,
+  `tests/staff-credit-adjustment-retry.test.ts`,
+  `tests/financial-database-hardening.test.ts` ve bu durum kaydi.
+- Kontroller: Handler/state-machine ve financial odakli testler 18/18 PASS;
+  web TypeScript PASS; degisen dort kaynak/test dosyasinda ESLint PASS; scoped
+  `git diff --check` PASS.
+- Sinirlar: 02443-02452 migrationlari, ledger ve File Expert dosyalari bu gorev
+  tarafindan degistirilmedi. Remote servis, Supabase data, env/secret, push veya
+  deploy islemi yapilmadi.
+
+## 2026-08-16 Integrated release-candidate final validation
+
+- Birlesik snapshot'ta admin kredi actor cozumu ham Supabase user okumasindan
+  merkezi `getStableSession()` katmanina tasindi; gecici auth read/refresh yarisi
+  finansal islemi yanlis logout olarak yorumlamaz.
+- Kontroller: web ve customer-uploader uc TypeScript projesi PASS; full ESLint
+  PASS; File Expert/AI/upload odakli 115/115 PASS; staff-credit/auth/financial
+  odakli 26/26 PASS; `git diff --check` PASS. Full suite 751/752 PASS; tek kalan
+  child-process `tsx` Windows `uv_os_get_passwd/ENOMEM` ortam hatasidir. Ayni
+  i18n denetimi user-info preload ile ayri calistirildi ve 11 dilde 611/611 PASS
+  oldu. Bundled Python `py_compile` PASS; FastAPI dependency import/runtime
+  smoke'u Preview worker build ve sentetik signed-source kapisinda kalir.
+- Bu validation aninda Production migration/deploy, gercek Stripe, e-posta,
+  musteri verisi veya firmware islemi yapilmadi.
+- Kabul edilen P2: Ilk File Expert claim select/update cevabi kaybolursa protected
+  phase cleanup henuz kurulmadigi icin is token-CAS stale recovery'ye kadar en
+  fazla on dakika `processing` kalabilir. Veri butunlugu ve tek completion CAS'i
+  korunur; runbook bu availability sinirini artik acikca ayirir.

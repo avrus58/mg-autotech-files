@@ -12,11 +12,15 @@ import {
   redactFileExpertResultForCustomer,
 } from "@/lib/fileExpert/publicResult";
 import { checkFileExpertAnalysisRate } from "@/lib/fileExpert/requestSecurity";
+import { fileExpertRouteOperationBudgetMs } from "@/lib/fileExpert/executionBudget";
+
+export const maxDuration = 60;
 
 export async function POST(
   request: Request,
   context: { params: Promise<{ id: string }> }
 ) {
+  const operationDeadlineAt = Date.now() + fileExpertRouteOperationBudgetMs;
   const { id } = await context.params;
   const user = await getCurrentServerUser(request);
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -67,7 +71,7 @@ export async function POST(
     return NextResponse.json({ error: "Invalid upload path." }, { status: 403 });
   }
   try {
-    const result = await analyzeFileExpertJob(id);
+    const result = await analyzeFileExpertJob(id, { operationDeadlineAt });
     return NextResponse.json({
       status: "completed",
       result: isAdmin ? redactBinaryPreviews(result) : redactFileExpertResultForCustomer(result),

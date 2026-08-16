@@ -6,6 +6,28 @@ import {
   checkFileExpertAnalysisRate,
   checkFileExpertCreateRate,
 } from "../src/lib/fileExpert/requestSecurity";
+import {
+  acquireFileExpertAnalyzerAdmission,
+  fileExpertAnalyzerLeaseSafetyMarginMs,
+  fileExpertAnalyzerLeaseTtlMs,
+  fileExpertAnalyzerRequestTimeoutMs,
+  getFileExpertAnalyzerAdmissionConfig,
+  releaseFileExpertAnalyzerAdmission,
+  type FileExpertAnalyzerAdmissionConfig,
+} from "../src/lib/fileExpert/admissionLease";
+import {
+  failedFileExpertAnalysisState,
+  shouldPreserveCompletedFileExpertResult,
+} from "../src/lib/fileExpert/analysisState";
+import {
+  boundedFileExpertDeadline,
+  FileExpertAnalysisDeadlineError,
+  fileExpertCleanupTimeoutMs,
+  fileExpertPostAnalyzerReserveMs,
+  fileExpertRouteMaxDurationSeconds,
+  fileExpertRouteOperationBudgetMs,
+  settleFileExpertOperationBefore,
+} from "../src/lib/fileExpert/executionBudget";
 
 function source(...parts: string[]) {
   return readFileSync(resolve(process.cwd(), ...parts), "utf8");
@@ -107,10 +129,261 @@ test("legacy multipart intake is disabled and production CPU uses the isolated w
   assert.doesNotMatch(jobsRoute, /request\.formData\(\)|\.arrayBuffer\(\)/);
   assert.match(server, /!supportedExternalResult && process\.env\.NODE_ENV === "production"/);
   assert.match(server, /throw new FileExpertAnalyzerUnavailableError\(\)/);
+  assert.match(server, /acquireFileExpertAnalyzerAdmission\(\)/);
+  assert.match(server, /releaseFileExpertAnalyzerAdmission\(admission\.lease\)/);
+  assert.match(server, /!requestDispatched \|\| requestSettled/);
   assert.match(worker, /asyncio\.to_thread\(build_analysis_result/);
   assert.match(worker, /return await asyncio\.shield\(analysis_task\)/);
+  assert.match(worker, /asyncio\.wait_for\([\s\S]*?asyncio\.gather\(\*tasks\)/);
+  assert.match(worker, /await asyncio\.gather\(\*tasks, return_exceptions=True\)/);
   assert.match(worker, /def __init__\(self, app: ASGIApp\)/);
   assert.ok(worker.indexOf("await analysis_task") < worker.lastIndexOf("analysis_slots.release()"));
+
+  const workerVercel = JSON.parse(source("file-expert-analyzer", "vercel.json"));
+  assert.equal(workerVercel.framework, "fastapi");
+  assert.equal(workerVercel.functions["main.py"].maxDuration, 35);
+  assert.ok(fileExpertAnalyzerRequestTimeoutMs > workerVercel.functions["main.py"].maxDuration * 1000);
+  assert.equal(
+    fileExpertAnalyzerLeaseTtlMs,
+    fileExpertAnalyzerRequestTimeoutMs +
+      workerVercel.functions["main.py"].maxDuration * 1000 +
+      fileExpertAnalyzerLeaseSafetyMarginMs
+  );
+
+  for (const route of [
+    source("src", "app", "api", "file-expert", "jobs", "[id]", "analyze", "route.ts"),
+    source("src", "app", "api", "file-expert", "jobs", "[id]", "finalize", "route.ts"),
+  ]) {
+    assert.match(route, /export const maxDuration = 60/);
+  }
+});
+
+test("production analyzer admission requires a token-bound distributed lease", async () => {
+  const config: FileExpertAnalyzerAdmissionConfig = {
+    url: "https://lease.example.test",
+    token: "provider-token-never-logged",
+    capacity: 1,
+    namespace: "preview",
+    timeoutMs: 100,
+  };
+  const now = 2_000_000_000_000;
+  const leaseToken = "lease-token-1";
+  const requests: string[] = [];
+  const fetchImpl: typeof fetch = async (_input, init) => {
+    requests.push(String(init?.body ?? ""));
+    return Response.json({
+      result: requests.length === 1
+        ? [1, now + fileExpertAnalyzerLeaseTtlMs + 333]
+        : 1,
+    });
+  };
+
+  const admission = await acquireFileExpertAnalyzerAdmission({
+    environment: { NODE_ENV: "production" },
+    config,
+    fetchImpl,
+    leaseToken,
+  });
+  assert.equal(admission.status, "acquired");
+  if (admission.status !== "acquired") assert.fail("lease was not acquired");
+  assert.match(requests[0], /redis\.call\('TIME'\)/);
+  assert.match(requests[0], /ZREMRANGEBYSCORE/);
+  assert.match(requests[0], /ZADD/);
+  assert.match(requests[0], /mg:file-expert-analyzer:admission:v1:preview/);
+  assert.match(requests[0], /lease-token-1/);
+  assert.match(requests[0], new RegExp(String(fileExpertAnalyzerLeaseTtlMs)));
+  assert.match(requests[0], new RegExp(String(fileExpertAnalyzerLeaseTtlMs + 1_000)));
+  assert.doesNotMatch(requests[0], new RegExp(String(now)));
+
+  assert.equal(await releaseFileExpertAnalyzerAdmission(admission.lease, fetchImpl), true);
+  assert.match(requests[1], /ZREM/);
+  assert.match(requests[1], /lease-token-1/);
+
+  const missing = await acquireFileExpertAnalyzerAdmission({
+    environment: { NODE_ENV: "production" },
+    config: null,
+    fetchImpl,
+  });
+  assert.equal(missing.status, "unavailable");
+
+  const busy = await acquireFileExpertAnalyzerAdmission({
+    environment: { NODE_ENV: "production" },
+    config,
+    fetchImpl: async () => Response.json({ result: [0, now + 1_000] }),
+    leaseToken: "lease-token-2",
+  });
+  assert.equal(busy.status, "busy");
+
+  const implausibleServerClock = await acquireFileExpertAnalyzerAdmission({
+    environment: { NODE_ENV: "production" },
+    config,
+    fetchImpl: async () => Response.json({ result: [1, 123] }),
+    leaseToken: "lease-token-3",
+  });
+  assert.equal(implausibleServerClock.status, "unavailable");
+});
+
+test("analyzer admission configuration is explicit, HTTPS-only and environment-isolated", () => {
+  assert.equal(getFileExpertAnalyzerAdmissionConfig({}), null);
+  assert.equal(getFileExpertAnalyzerAdmissionConfig({
+    FILE_EXPERT_ANALYZER_DISTRIBUTED_ADMISSION_ENABLED: "true",
+    UPSTASH_REDIS_REST_URL: "http://unsafe.example.test",
+    UPSTASH_REDIS_REST_TOKEN: "token",
+  }), null);
+  assert.deepEqual(getFileExpertAnalyzerAdmissionConfig({
+    NODE_ENV: "production",
+    VERCEL_ENV: "preview",
+    FILE_EXPERT_ANALYZER_DISTRIBUTED_ADMISSION_ENABLED: "true",
+    FILE_EXPERT_ANALYZER_GLOBAL_CONCURRENCY: "3",
+    KV_REST_API_URL: "https://lease.example.test/",
+    KV_REST_API_TOKEN: "token",
+  }), {
+    url: "https://lease.example.test",
+    token: "token",
+    capacity: 1,
+    namespace: "preview",
+  });
+});
+
+test("analyzer admission timeout fails closed and leaves any unknown lease to its TTL", async () => {
+  let requestCount = 0;
+  const result = await acquireFileExpertAnalyzerAdmission({
+    environment: { NODE_ENV: "production" },
+    config: {
+      url: "https://lease.example.test",
+      token: "provider-token-never-logged",
+      capacity: 1,
+      namespace: "production",
+      timeoutMs: 10,
+    },
+    fetchImpl: async (_input, init) => {
+      requestCount += 1;
+      return await new Promise<Response>((_resolve, reject) => {
+        init?.signal?.addEventListener("abort", () => reject(new Error("aborted")), {
+          once: true,
+        });
+      });
+    },
+  });
+
+  assert.equal(result.status, "unavailable");
+  assert.equal(requestCount, 1);
+});
+
+test("analyzer admission deadline includes a stalled or oversized response body", async () => {
+  const config: FileExpertAnalyzerAdmissionConfig = {
+    url: "https://lease.example.test",
+    token: "provider-token-never-logged",
+    capacity: 1,
+    namespace: "production",
+    timeoutMs: 15,
+  };
+  const startedAt = Date.now();
+  const stalled = await acquireFileExpertAnalyzerAdmission({
+    environment: { NODE_ENV: "production" },
+    config,
+    fetchImpl: async (_input, init) => {
+      const body = new ReadableStream<Uint8Array>({
+        start(controller) {
+          controller.enqueue(new TextEncoder().encode('{"result":[1,'));
+          init?.signal?.addEventListener(
+            "abort",
+            () => controller.error(new Error("aborted")),
+            { once: true }
+          );
+        },
+      });
+      return new Response(body, { status: 200 });
+    },
+  });
+  assert.equal(stalled.status, "unavailable");
+  assert.ok(Date.now() - startedAt < 250);
+
+  const oversized = await acquireFileExpertAnalyzerAdmission({
+    environment: { NODE_ENV: "production" },
+    config,
+    fetchImpl: async () => new Response("{}", {
+      status: 200,
+      headers: { "content-length": String(8 * 1024 + 1) },
+    }),
+  });
+  assert.equal(oversized.status, "unavailable");
+  assert.equal(await releaseFileExpertAnalyzerAdmission({
+    config,
+    key: "mg:file-expert-analyzer:admission:v1:production",
+    token: "lease-token-with-unknown-release",
+  }, async () => new Response("{}", {
+    status: 200,
+    headers: { "content-length": String(8 * 1024 + 1) },
+  })), false);
+});
+
+test("File Expert operation budget expires before the route hard cap", async () => {
+  assert.equal(fileExpertRouteMaxDurationSeconds * 1_000 - fileExpertRouteOperationBudgetMs, 12_000);
+  const now = 2_000_000_000_000;
+  assert.equal(boundedFileExpertDeadline({
+    absoluteDeadlineAt: now + fileExpertRouteOperationBudgetMs,
+    maximumDurationMs: fileExpertAnalyzerRequestTimeoutMs,
+    reserveMs: fileExpertPostAnalyzerReserveMs,
+    now,
+  }), now + fileExpertAnalyzerRequestTimeoutMs);
+  assert.equal(fileExpertCleanupTimeoutMs(now + fileExpertRouteOperationBudgetMs, now), 8_000);
+  assert.equal(
+    fileExpertCleanupTimeoutMs(
+      now + fileExpertRouteOperationBudgetMs,
+      now + fileExpertRouteOperationBudgetMs + 7_500
+    ),
+    500
+  );
+
+  const startedAt = Date.now();
+  await assert.rejects(
+    settleFileExpertOperationBefore(
+      new Promise<never>(() => undefined),
+      startedAt + 15
+    ),
+    FileExpertAnalysisDeadlineError
+  );
+  assert.ok(Date.now() - startedAt < 250);
+
+  for (const route of [
+    source("src", "app", "api", "file-expert", "jobs", "[id]", "analyze", "route.ts"),
+    source("src", "app", "api", "file-expert", "jobs", "[id]", "finalize", "route.ts"),
+  ]) {
+    assert.match(route, /Date\.now\(\) \+ fileExpertRouteOperationBudgetMs/);
+    assert.match(route, /operationDeadlineAt/);
+  }
+  const server = source("src", "lib", "fileExpert", "server.ts");
+  assert.match(server, /reserveMs: fileExpertPostAnalyzerReserveMs/);
+  assert.match(server, /generateAiFileExpertReport\([\s\S]*?deadlineAt: aiReportDeadlineAt/);
+  assert.match(server, /settleFileExpertOperationBefore\([\s\S]*?complete_file_expert_analysis_atomic/);
+  assert.match(server, /abortSignal\(cleanupSignal\)/);
+  assert.match(server, /abortSignal\(cleanupSignal\)[\s\S]*?catch\(\(\) => undefined\)[\s\S]*?throw error/);
+});
+
+test("failed re-analysis preserves the last completed result state", () => {
+  assert.equal(shouldPreserveCompletedFileExpertResult({
+    claimedFromStatus: "completed",
+  }), true);
+  assert.equal(shouldPreserveCompletedFileExpertResult({
+    claimedFromStatus: "processing",
+    existingResult: { analysis_version: "2.0.0" },
+  }), true);
+  assert.equal(shouldPreserveCompletedFileExpertResult({
+    claimedFromStatus: "pending",
+    existingResult: null,
+  }), false);
+  assert.deepEqual(failedFileExpertAnalysisState({
+    preserveCompletedResult: true,
+    message: "retryable failure",
+  }), { status: "completed", error_message: null });
+
+  const server = source("src", "lib", "fileExpert", "server.ts");
+  const analysis = server.slice(server.indexOf("export async function analyzeFileExpertJob"));
+  assert.match(analysis, /\.eq\("status", currentStatus\)/);
+  assert.match(analysis, /existingResult: job\.result_json/);
+  assert.match(analysis, /preserveCompletedResult: completedResultMustSurviveFailure/);
+  assert.match(analysis, /\.eq\("analysis_claim_token", claimToken\)/);
 });
 
 test("external integrity and completion side effects use one token-bound transaction", () => {

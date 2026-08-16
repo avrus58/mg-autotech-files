@@ -200,14 +200,19 @@ test("File Expert analyzer and caller fail closed around auth, SSRF, limits, and
   assert.match(server, /url\.protocol === "http:" && isLoopback/);
   assert.match(server, /Authorization: `Bearer \$\{configuration\.token\}`/);
   assert.match(server, /redirect: "error"/);
-  assert.match(server, /AbortSignal\.timeout/);
+  assert.match(server, /fileExpertAnalyzerRequestTimeoutMs/);
   assert.match(server, /createSignedUrl\(path, 60\)/);
   assert.match(server, /isExpectedFileExpertStoragePath\(job\.ori_file_path, job\.user_id, job\.id\)/);
-  assert.match(server, /\.in\("status", options\.allowCompleted[\s\S]*?\["pending", "failed", "completed"\][\s\S]*?\["pending", "failed"\]\)/);
+  assert.match(server, /completedResultMustSurviveFailure/);
+  assert.match(server, /\.eq\("status", currentStatus\)/);
+  assert.match(server, /\.in\("status", \["pending", "failed"\]\)/);
   assert.match(server, /analysis_claim_token: claimToken/);
   assert.match(server, /analysis_started_at\.is\.null,analysis_started_at\.lt/);
   assert.match(server, /\.eq\("analysis_claim_token", claimToken\)/);
-  assert.match(analyzeRoute, /analyzeFileExpertJob\(id, \{ allowCompleted: isAdmin \}\)/);
+  assert.match(
+    analyzeRoute,
+    /analyzeFileExpertJob\(id, \{[\s\S]*?allowCompleted: isAdmin,[\s\S]*?operationDeadlineAt/
+  );
   assert.match(server, /\.eq\("status", "processing"\)/);
   assert.match(server, /exactStoredObjectMetadata/);
   const outboundPayload = server.slice(

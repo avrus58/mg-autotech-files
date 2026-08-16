@@ -9,7 +9,7 @@ export class OpenAiCompatibleReportProvider implements AiReportProvider {
     private readonly apiKey?: string
   ) {}
 
-  async generateReport(input: AiReportRequest) {
+  async generateReport(input: AiReportRequest, options?: { signal?: AbortSignal }) {
     const response = await fetch(`${this.baseUrl.replace(/\/$/, "")}/chat/completions`, {
       method: "POST",
       headers: {
@@ -28,7 +28,7 @@ export class OpenAiCompatibleReportProvider implements AiReportProvider {
           },
         ],
       }),
-      signal: AbortSignal.timeout(45_000),
+      signal: options?.signal ?? AbortSignal.timeout(45_000),
     });
 
     if (!response.ok) {

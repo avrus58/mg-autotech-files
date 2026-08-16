@@ -34,7 +34,7 @@ export class OpenAiReportProvider implements AiReportProvider {
     this.modelName = modelName;
   }
 
-  async generateReport(input: AiReportRequest) {
+  async generateReport(input: AiReportRequest, options?: { signal?: AbortSignal }) {
     const response = await fetch(`${this.baseUrl.replace(/\/$/, "")}/responses`, {
       method: "POST",
       headers: {
@@ -54,7 +54,7 @@ export class OpenAiReportProvider implements AiReportProvider {
           },
         },
       }),
-      signal: AbortSignal.timeout(45_000),
+      signal: options?.signal ?? AbortSignal.timeout(45_000),
     });
 
     if (!response.ok) {

@@ -32,7 +32,7 @@ Failures in the learning pipeline do not block customer delivery. They are recor
 
 The initial analyzer is TypeScript and exposes a stable structured result. It calculates hashes, file size, entropy, zero/FF ratios, printable strings, ECU identifiers, read scope, active regions, ORI/MOD changed blocks, map candidates, repeated patterns, integrity observations and evidence-based feature candidates.
 
-The adapter can call `FILE_EXPERT_ANALYZER_URL` only when a compatible endpoint and server-only `FILE_EXPERT_ANALYZER_TOKEN` are configured. The FastAPI service additionally requires an exact signed-URL host allowlist. Unsafe or incomplete configuration falls back to the TypeScript analyzer without creating external signed URLs.
+The adapter can call `FILE_EXPERT_ANALYZER_URL` only when a compatible endpoint and server-only `FILE_EXPERT_ANALYZER_TOKEN` are configured. The FastAPI service additionally requires an exact signed-URL host allowlist. Local development and tests may fall back to the TypeScript analyzer without creating external signed URLs. Production requires the isolated analyzer plus a token-bound distributed Upstash/KV admission lease and fails closed when either boundary is unavailable.
 
 Binary heuristics are evidence, not calibration definitions. A changed offset is never presented as a proven torque, boost, rail, lambda, emissions or transmission map without a verified ECU-specific definition.
 
@@ -46,6 +46,9 @@ AI receives structured analyzer JSON and submitted metadata, never an instructio
 - vLLM or another OpenAI-compatible self-hosted endpoint.
 
 Provider failures fall back to the rule-based report. Every attempted run can be written to `ai_model_runs` with provider, model, prompt version, latency and error information. Raw service credentials stay server-side.
+File Expert routes additionally pass an absolute short report deadline: a slow
+provider is aborted and the deterministic report is produced before the
+token-bound atomic completion or failure-restore window.
 
 ## Knowledge Profiles
 
