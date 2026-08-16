@@ -2881,3 +2881,30 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
   `STRIPE_WIDGET_WEBHOOK_SECRET` ve iki Stripe Live webhook endpoint/event seti
   owner login/MFA olmadan dogrulanamadi; bu kapilar gecmeden Production cutover
   fail-closed kalir.
+
+## 2026-08-16 Staging admin schema uyumluluk hotfix'i
+
+- Gorev: Guvenlik Preview'unda authenticated `/admin` acilisini 500 ile durduran
+  staging schema farkini musteri verisi okumadan izole edip dar kapsamli olarak
+  gidermek.
+- Kok neden: `service_role` ile PII'siz `LIMIT 0` kontrolde `orders` tablosunda
+  yalniz `estimated_delivery_label`, `estimated_delivery_note` ve `updated_at`
+  kolonlarinin eksik oldugu; diger order/profile kolonlari ile grant/RLS
+  sinirinin uyumlu oldugu dogrulandi. Eksik email delivery tablosu mevcut helper
+  tarafindan guvenli bicimde bos listeye dusuruldugu icin 500 nedeni degildi.
+- Duzeltme: Admin dashboard, request listesi ve request detay sorgulari yalniz
+  `42703`/`PGRST204` eksik-kolon sinyalinde, ayni explicit izin projeksiyonunu
+  koruyan legacy selector ile bir kez retry eder. Tablo, izin, ag veya diger
+  database hatalari yutulmaz. Eksik opsiyonel alanlar `null` kalir; `select(*)`
+  veya yeni veri yetkisi eklenmedi.
+- Degisen dosyalar: `src/lib/workOrders/server.ts`,
+  `src/app/api/admin/dashboard/route.ts`,
+  `tests/work-order-authorization.test.ts` ve bu durum kaydi.
+- Kontroller: Web TypeScript PASS; customer-uploader uc TypeScript projesi PASS;
+  full ESLint PASS; odakli admin/yetki testleri 18/18 PASS; full test ana kosusu
+  725/726 PASS. Tek kalan test kaynak hatasi degil, testin alt `tsx` surecinde
+  Windows `uv_os_get_passwd/ENOMEM` ortam hatasiydi; ayni 11 dil/611 kaynak
+  i18n kontrolu user-info shim ile ayri kosuda PASS. `git diff --check` temiz.
+- Sinirlar: Production DB, Production domaini, Stripe, odeme, e-posta veya
+  gercek musteri verisi kullanilmadi. Hotfix yeni Preview build ve authenticated
+  staging smoke gecmeden `02449` cutover veya Production release'e ilerlemez.

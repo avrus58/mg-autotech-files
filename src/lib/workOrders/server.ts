@@ -55,8 +55,9 @@ import {
 type DbError = { code?: string; message?: string } | null | undefined;
 
 const missingRelationCodes = new Set(["42P01", "42703"]);
+const optionalAdminOrderColumnErrorCodes = new Set(["42703", "PGRST204"]);
 
-export const adminOrderSelect = [
+const requiredAdminOrderColumns = [
   "id",
   "customer_id",
   "customer_email",
@@ -79,13 +80,19 @@ export const adminOrderSelect = [
   "original_file_path",
   "modified_file_path",
   "modified_files",
-  "estimated_delivery_label",
-  "estimated_delivery_note",
   "customer_upload_enabled",
   "customer_uploads",
   "created_at",
+];
+
+export const adminOrderSelect = [
+  ...requiredAdminOrderColumns,
+  "estimated_delivery_label",
+  "estimated_delivery_note",
   "updated_at",
 ].join(",");
+
+export const fallbackAdminOrderSelect = requiredAdminOrderColumns.join(",");
 
 export function isWorkOrderMigrationMissing(error: DbError) {
   return Boolean(error?.code && missingRelationCodes.has(error.code));
@@ -143,6 +150,81 @@ export type OrderRow = {
   created_at: string | null;
   updated_at?: string | null;
 };
+
+function normalizeAdminOrderRow(row: Record<string, unknown>): OrderRow {
+  return {
+    ...row,
+    estimated_delivery_label: row.estimated_delivery_label ?? null,
+    estimated_delivery_note: row.estimated_delivery_note ?? null,
+    updated_at: row.updated_at ?? null,
+  } as unknown as OrderRow;
+}
+
+export async function getAdminOrderRows(limit?: number) {
+  const admin = getSupabaseAdmin();
+  const createQuery = (select: string) => {
+    const query = admin
+      .from("orders")
+      .select(select)
+      .order("created_at", { ascending: false });
+    return typeof limit === "number" ? query.limit(limit) : query;
+  };
+
+  const primary = await createQuery(adminOrderSelect);
+  if (!primary.error) {
+    return {
+      rows: (primary.data ?? []).map((row) =>
+        normalizeAdminOrderRow(row as unknown as Record<string, unknown>)
+      ),
+      error: null,
+    };
+  }
+
+  if (!optionalAdminOrderColumnErrorCodes.has(primary.error.code)) {
+    return { rows: [] as OrderRow[], error: primary.error };
+  }
+
+  const fallback = await createQuery(fallbackAdminOrderSelect);
+  return {
+    rows: (fallback.data ?? []).map((row) =>
+      normalizeAdminOrderRow(row as unknown as Record<string, unknown>)
+    ),
+    error: fallback.error,
+  };
+}
+
+async function getAdminOrderRow(requestId: string) {
+  const admin = getSupabaseAdmin();
+  const primary = await admin
+    .from("orders")
+    .select(adminOrderSelect)
+    .eq("id", requestId)
+    .single();
+
+  if (!primary.error && primary.data) {
+    return {
+      row: normalizeAdminOrderRow(primary.data as unknown as Record<string, unknown>),
+      error: null,
+    };
+  }
+
+  if (!primary.error?.code || !optionalAdminOrderColumnErrorCodes.has(primary.error.code)) {
+    return { row: null, error: primary.error };
+  }
+
+  const fallback = await admin
+    .from("orders")
+    .select(fallbackAdminOrderSelect)
+    .eq("id", requestId)
+    .single();
+
+  return {
+    row: fallback.data
+      ? normalizeAdminOrderRow(fallback.data as unknown as Record<string, unknown>)
+      : null,
+    error: fallback.error,
+  };
+}
 
 export type ProfileSummary = {
   id: string;
@@ -463,14 +545,9 @@ function buildListItem(
 }
 
 export async function getAdminRequestList(access: AdminRequestAccess) {
-  const admin = getSupabaseAdmin();
-  const ordersResult = await admin
-    .from("orders")
-    .select(adminOrderSelect)
-    .order("created_at", { ascending: false })
-    .limit(500);
+  const ordersResult = await getAdminOrderRows(500);
   if (ordersResult.error) throw new Error(ordersResult.error.message);
-  const orders = (ordersResult.data ?? []) as unknown as OrderRow[];
+  const orders = ordersResult.rows;
   const ids = orders.map((order) => order.id);
   const customerIds = [...new Set(orders.map((order) => order.customer_id).filter((id): id is string => Boolean(id)))];
   const [profiles, workOrders, trainingCounts] = await Promise.all([
@@ -772,14 +849,9 @@ export async function getAdminRequestDetail(
   requestId: string,
   access: AdminRequestAccess
 ): Promise<AdminRequestDetail> {
-  const admin = getSupabaseAdmin();
-  const orderResult = await admin
-    .from("orders")
-    .select(adminOrderSelect)
-    .eq("id", requestId)
-    .single();
-  if (orderResult.error || !orderResult.data) throw new Error(orderResult.error?.message || "Request not found.");
-  const order = orderResult.data as unknown as OrderRow;
+  const orderResult = await getAdminOrderRow(requestId);
+  if (orderResult.error || !orderResult.row) throw new Error(orderResult.error?.message || "Request not found.");
+  const order = orderResult.row;
   const [profileMap, workOrders, trainingCounts] = await Promise.all([
     fetchProfiles(order.customer_id ? [order.customer_id] : [], access),
     fetchWorkOrders([requestId]),

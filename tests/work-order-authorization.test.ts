@@ -82,6 +82,12 @@ test("admin request APIs pass permission projections and gate cross-domain mutat
   assert.match(dtcRoute, /requireStaffPermissions\(request, \["orders\.view", "file_expert\.manage"\]\)/);
   assert.match(dashboardRoute, /projectAdminOrderRow/);
   assert.match(server, /\.select\(adminOrderSelect\)/);
+  assert.match(server, /optionalAdminOrderColumnErrorCodes = new Set\(\["42703", "PGRST204"\]\)/);
+  assert.match(server, /optionalAdminOrderColumnErrorCodes\.has\(primary\.error\.code\)/);
+  assert.match(server, /\.select\(fallbackAdminOrderSelect\)/);
+  assert.match(server, /fallbackAdminOrderSelect = requiredAdminOrderColumns\.join\(","\)/);
+  assert.match(server, /updated_at: row\.updated_at \?\? null/);
+  assert.match(dashboardRoute, /getAdminOrderRows\(\)/);
   assert.match(server, /metadata: \{\}/);
 });
 

@@ -7,7 +7,7 @@ import {
   buildAdminRequestAccess,
   projectAdminOrderRow,
 } from "@/lib/workOrders/access";
-import { adminOrderSelect } from "@/lib/workOrders/server";
+import { getAdminOrderRows } from "@/lib/workOrders/server";
 
 const privateNoStoreHeaders = {
   "Cache-Control": "private, no-store, max-age=0",
@@ -32,10 +32,7 @@ export async function GET(request: Request) {
   try {
     const admin = getSupabaseAdmin();
     const requestAccess = buildAdminRequestAccess(auth.access);
-    const orderQuery = admin
-      .from("orders")
-      .select(adminOrderSelect)
-      .order("created_at", { ascending: false });
+    const orderQuery = getAdminOrderRows();
     const customerQuery = hasStaffPermission(auth.access, "customers.view")
       ? admin.from("profiles")
         .select(customerSelect)
@@ -111,7 +108,7 @@ export async function GET(request: Request) {
           staffRole: auth.access.staffRole,
           permissions: auth.access.permissions,
         },
-        orders: (orderResult.data ?? []).map((order) =>
+        orders: orderResult.rows.map((order) =>
           projectAdminOrderRow(order as unknown as Record<string, unknown>, requestAccess)
         ),
         customers,
