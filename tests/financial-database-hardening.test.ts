@@ -16,7 +16,7 @@ const migrationPath = [
 const cutoverMigration = source(
   "supabase",
   "migrations",
-  "20260816002449_post_deploy_legacy_rpc_cutover.sql",
+  "20260816002451_post_deploy_legacy_rpc_cutover.sql",
 );
 const postCutoverVerification = source(
   "scripts",

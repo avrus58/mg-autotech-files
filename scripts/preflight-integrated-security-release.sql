@@ -1,4 +1,4 @@
--- Read-only preflight for migrations 20260816002443 through 20260816002449.
+-- Read-only preflight for reviewed migrations 02443-02448 and 02450-02451.
 -- The result contains aggregate readiness only; it never returns customer rows,
 -- identifiers, e-mail addresses, object names, or file paths.
 
@@ -11,12 +11,25 @@ target_versions(version) as (
     ('20260816002446'),
     ('20260816002447'),
     ('20260816002448'),
-    ('20260816002449')
+    ('20260816002450'),
+    ('20260816002451')
+),
+target_migration_names(migration_name) as (
+  values
+    ('financial_authority_hardening'),
+    ('security_state_hardening'),
+    ('widget_final_hardening'),
+    ('stripe_recovery_hardening'),
+    ('file_expert_atomic_completion'),
+    ('widget_checkout_atomic_claim'),
+    ('auth_customer_id_generator_hardening'),
+    ('post_deploy_legacy_rpc_cutover')
 ),
 required_relations(schema_name, relation_name) as (
   values
     ('auth', 'users'),
     ('public', 'profiles'),
+    ('public', 'customer_id_seq'),
     ('public', 'orders'),
     ('public', 'notifications'),
     ('public', 'credit_payments'),
@@ -41,6 +54,7 @@ required_relations(schema_name, relation_name) as (
 required_columns(schema_name, table_name, column_name) as (
   values
     ('public', 'profiles', 'id'),
+    ('public', 'profiles', 'customer_id'),
     ('public', 'profiles', 'role'),
     ('public', 'profiles', 'staff_role'),
     ('public', 'profiles', 'staff_permissions'),
@@ -144,8 +158,18 @@ checks(sort_order, check_name, ok, details) as (
       from supabase_migrations.schema_migrations as migration
       join target_versions as target
         on target.version = migration.version::text
-    ),
-    'No 02443-02449 version may already be recorded before this release starts'
+    )
+      and not exists (
+        select 1
+        from supabase_migrations.schema_migrations as migration
+        where migration.version::text = '20260816002449'
+          or exists (
+            select 1
+            from target_migration_names as target
+            where target.migration_name = migration.name
+          )
+      ),
+    'Reviewed names/versions are clean and retired version 02449 is absent'
 
   union all
 
@@ -209,9 +233,29 @@ checks(sort_order, check_name, ok, details) as (
 
   select
     50,
-    'Auth profile trigger baseline is singular',
-    pg_catalog.count(*) = 1,
-    pg_catalog.format('%s handle_new_user triggers found', pg_catalog.count(*))
+    'Auth customer-reference trigger baseline is complete',
+    pg_catalog.count(*) = 1
+      and pg_catalog.to_regprocedure('public.generate_customer_id()') is not null
+      and pg_catalog.to_regprocedure('public.set_customer_id()') is not null
+      and pg_catalog.to_regclass('public.customer_id_seq') is not null
+      and (
+        select pg_catalog.count(*) = 1
+        from pg_catalog.pg_trigger as profile_trigger
+        join pg_catalog.pg_class as profile_relation
+          on profile_relation.oid = profile_trigger.tgrelid
+        join pg_catalog.pg_namespace as profile_relation_namespace
+          on profile_relation_namespace.oid = profile_relation.relnamespace
+        join pg_catalog.pg_proc as profile_procedure
+          on profile_procedure.oid = profile_trigger.tgfoid
+        join pg_catalog.pg_namespace as profile_procedure_namespace
+          on profile_procedure_namespace.oid = profile_procedure.pronamespace
+        where profile_relation_namespace.nspname = 'public'
+          and profile_relation.relname = 'profiles'
+          and profile_procedure_namespace.nspname = 'public'
+          and profile_procedure.proname = 'set_customer_id'
+          and not profile_trigger.tgisinternal
+      ),
+    'Required Auth/profile triggers, functions, and customer ID sequence exist'
   from pg_catalog.pg_trigger as trigger_info
   join pg_catalog.pg_class as relation
     on relation.oid = trigger_info.tgrelid

@@ -2908,3 +2908,32 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 - Sinirlar: Production DB, Production domaini, Stripe, odeme, e-posta veya
   gercek musteri verisi kullanilmadi. Hotfix yeni Preview build ve authenticated
   staging smoke gecmeden `02449` cutover veya Production release'e ilerlemez.
+
+## 2026-08-16 Auth customer ID trigger zinciri hotfix hazirligi
+
+- Kok neden: Izole staging'de salt-okunur `pg_catalog` metadata'si, Auth
+  zincirinin `auth.users -> handle_new_user -> profiles INSERT -> set_customer_id`
+  oldugunu dogruladi. Eski `set_customer_id()` bos/fixed search path kullanmadan
+  unqualified `generate_customer_id()` cagiriyor; generator da unqualified
+  sequence kullaniyor ve fonksiyon/sequence Data API yetkileri genisti.
+- Duzeltme: Yeni `20260816002450_auth_customer_id_generator_hardening.sql`
+  generator ve profile trigger fonksiyonlarini postgres-owned, SECURITY DEFINER,
+  empty-search-path ve schema-qualified yapar; fonksiyon/sequence Data API
+  yetkilerini kapatir ve exact normal-enabled trigger sinirlarini zorunlu tutar.
+  02443-02448 dosyalari degistirilmedi ve hicbir migration uygulanmadi.
+- Release sirasi: Uygulanmamis 02449 cutover body byte-identical olarak 02451'e
+  tasindi; 02450 -> Auth verifier/signup smoke -> app smoke -> 02451 sirasi
+  runbook/preflight/testlerde sabitlendi. SHA-256: 02450
+  `8131E02E582D5E16C18F6262515E402AEC2A4DBAFAA1E3029362E80EA8F8C792`,
+  02451 `5084DFD95DBD878FD1037F7CE497C1362E900ED5D3F931A2626CD448719C84CC`.
+- Kontroller: Odakli migration/release testleri 35/35 PASS; dort TypeScript
+  kontrolu PASS; full ESLint PASS; tam test ana kosusu 729/730 PASS. Tek test
+  kaynak hatasi degil, i18n alt `tsx` surecindeki Windows
+  `uv_os_get_passwd/ENOMEM` ortam hatasiydi; ayni 11 dil/611 kaynak data-URL
+  user-info preload ile ayri kosuda PASS. `git diff --check` temiz.
+- Yeni SELECT-only verifier staging'de syntax/aggregate-output icin calisti:
+  7 katalog kontrolunun 3 mevcut trigger/existence baseline'i PASS, 4 adet
+  02450'nin kapatacagi path/ACL/sequence kontrolu beklendigi gibi FAIL oldu.
+- Sinirlar: Staging'de yalniz PII'siz katalog metadata'si okundu. Staging veya
+  Production migration/data mutation, fixture, deploy, env/secret ya da musteri
+  satiri kullanilmadi.

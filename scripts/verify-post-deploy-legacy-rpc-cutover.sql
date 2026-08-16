@@ -1,5 +1,5 @@
--- SELECT-only verification for 20260816002449_post_deploy_legacy_rpc_cutover.sql.
--- Run only after the matching application is deployed and 02449 is applied.
+-- SELECT-only verification for 20260816002451_post_deploy_legacy_rpc_cutover.sql.
+-- Run only after the matching application is deployed and 02451 is applied.
 
 with expected_access(signature, anon_execute, authenticated_execute, service_execute) as (
   values
