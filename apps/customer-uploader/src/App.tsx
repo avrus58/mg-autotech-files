@@ -38,7 +38,6 @@ import {
   getDesktopConfigurationStatus,
   getDesktopInstallationId,
   setDesktopInstallationId,
-  supabaseAnonKey,
   uploadToPrivateStorage,
   type AppCheckPayload,
   type BootstrapPayload,
@@ -72,7 +71,8 @@ type GateState = "checking" | "configuration_missing" | "server_unavailable" | "
 type UploadPhase = "idle" | "checking" | "hashing" | "preparing" | "uploading" | "verifying" | "finalizing" | "submitted" | "failed";
 
 type DesktopUploadSession = {
-  upload: { path: string; storageObjectUrl: string; contentType: string };
+  upload: { path: string; signedUploadUrl: string; contentType: string };
+  uploadContract: string;
   uploadSessionId: string;
   idempotencyKey: string;
   creditsRequired?: number;
@@ -1152,9 +1152,7 @@ function RequestWizard({
       setPhase("uploading");
       setStatusMessage(en.uploadInProgress);
       await uploadToPrivateStorage({
-        storageObjectUrl: uploadSession.upload.storageObjectUrl,
-        token: session.access_token,
-        anonKey: supabaseAnonKey,
+        signedUploadUrl: uploadSession.upload.signedUploadUrl,
         file,
         contentType: uploadSession.upload.contentType,
         onProgress: setUploadProgress,
@@ -1168,6 +1166,7 @@ function RequestWizard({
       const finalizePayload = safeUploadPayload({
         idempotencyKey: uploadSession.idempotencyKey,
         uploadSessionId: uploadSession.uploadSessionId,
+        uploadContract: uploadSession.uploadContract,
         upload: { path: uploadSession.upload.path, fileName: file.name, fileSize: file.size, sha256 },
         vehicle: {
           brand: vehicleNames.brand,

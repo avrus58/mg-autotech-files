@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { requireStaffPermission } from "@/lib/apiAuth";
+import { requireStaffPermission, requireStaffPermissions } from "@/lib/apiAuth";
 import { classificationNeedsEvidenceNote } from "@/lib/growth/customerClassificationReview";
+import { customerIntelligencePermissions } from "@/lib/growth/access";
 import {
   growthClassificationSaveError,
   saveGrowthCustomerClassificationBatch,
@@ -32,7 +33,7 @@ export async function GET(
   request: Request,
   context: { params: Promise<{ id: string }> }
 ) {
-  const auth = await requireStaffPermission(request, "customers.view");
+  const auth = await requireStaffPermissions(request, customerIntelligencePermissions);
   if (!auth.ok) return response({ error: auth.error }, auth.status);
 
   const { id } = await context.params;

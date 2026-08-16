@@ -350,7 +350,7 @@ test("verified conversion integration is ordered after business success and rema
   assert.match(callback, /isRecentSignup \|\| isRecentEmailConfirmation[\s\S]*?trackRegistrationCompleted\(\)/);
   assert.match(request, /if \(error\) \{[\s\S]*?return;[\s\S]*?createdOrderId \|\| growthAttemptIdRef[\s\S]*?trackRequestSubmitted\(conversionSeed\)/);
   assert.match(confirmation, /session\.payment_status !== "paid"[\s\S]*?completeStripeCreditPurchase\(session\)[\s\S]*?conversion:/);
-  assert.match(payment, /if \(!response\.ok\)[\s\S]*?return;[\s\S]*?trackPurchaseCompleted/);
+  assert.match(payment, /if \(!response\?\.ok\)[\s\S]*?return;[\s\S]*?trackPurchaseCompleted/);
   assert.match(analytics, /process\.env\.NEXT_PUBLIC_GOOGLE_ADS_ID/);
   assert.doesNotMatch(analytics, /customer_email|vehicle_brand|storage_path|file_name|order_id/i);
 });

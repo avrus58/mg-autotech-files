@@ -1,74 +1,88 @@
+import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { checkAdaptiveRateLimit, rateLimitResponseHeaders } from "@/lib/abuseProtection";
+import { requireApiUser } from "@/lib/apiAuth";
 import { getCreditPurchaseQuote } from "@/lib/commercialPolicy";
 import { safeAppendPaymentEvent, safeUpsertPaymentRecord } from "@/lib/paymentAudit";
 import { getStripe } from "@/lib/stripe";
+import {
+  STRIPE_CREDIT_PURCHASE_PRODUCT,
+  stripeCreditPurchaseAbuseSubject,
+} from "@/lib/stripePaymentSecurity";
+
+function stripeObjectId(value: string | { id: string } | null | undefined) {
+  return typeof value === "string" ? value : value?.id ?? null;
+}
+
+const privateNoStoreHeaders = {
+  "Cache-Control": "private, no-store, max-age=0",
+  Vary: "Authorization",
+};
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
-    const isPackagePurchase = Boolean(body.packageId);
-
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    const auth = await requireApiUser(request);
+    if (!auth.ok) {
+      return NextResponse.json(
+        { error: auth.error },
+        { status: auth.status, headers: privateNoStoreHeaders },
+      );
+    }
+    const body = await request.json().catch(() => null);
+    if (!body || typeof body !== "object" || Array.isArray(body)) {
+      return NextResponse.json(
+        { error: "Invalid checkout request." },
+        { status: 400, headers: privateNoStoreHeaders },
+      );
+    }
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
-
-    if (!supabaseUrl || !supabaseAnonKey) {
-      return NextResponse.json(
-        { error: "Supabase environment variables are missing." },
-        { status: 500 }
-      );
-    }
-
-    const authorization = request.headers.get("authorization");
-
-    if (!authorization) {
-      return NextResponse.json(
-        { error: "Missing authorization header." },
-        { status: 401 }
-      );
-    }
-
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      global: {
-        headers: {
-          Authorization: authorization,
-        },
-      },
+    const user = auth.user;
+    const rateLimit = await checkAdaptiveRateLimit({
+      request,
+      scope: "stripe-credit-checkout",
+      limit: 8,
+      windowMs: 60 * 60 * 1000,
+      suffix: stripeCreditPurchaseAbuseSubject(user.id),
+      includeClientIp: false,
     });
-
-    const { data: userData, error: userError } = await supabase.auth.getUser();
-
-    if (userError || !userData.user) {
+    const limitHeaders = {
+      ...privateNoStoreHeaders,
+      ...rateLimitResponseHeaders({
+        result: rateLimit,
+        limit: 8,
+        windowMs: 60 * 60 * 1000,
+        blocked: !rateLimit.allowed,
+      }),
+    };
+    if (!rateLimit.allowed) {
       return NextResponse.json(
-        { error: "You must be logged in to buy credits." },
-        { status: 401 }
-      );
-    }
-
-    const user = userData.user;
-
-    if (!user.email_confirmed_at && !user.confirmed_at) {
-      return NextResponse.json(
-        { error: "Please verify your e-mail address before buying credits." },
-        { status: 403 }
+        { error: "Too many checkout attempts. Please try again later." },
+        { status: 429, headers: limitHeaders },
       );
     }
 
     let selectedPackage;
     try {
       selectedPackage = await getCreditPurchaseQuote(user.id, body, "stripe");
-    } catch (error) {
-      return NextResponse.json({ error: error instanceof Error ? error.message : "Stripe is not available." }, { status: 403 });
+    } catch {
+      return NextResponse.json(
+        { error: "Stripe checkout is not available for this account." },
+        { status: 403, headers: limitHeaders },
+      );
     }
     if (!selectedPackage) {
-      return NextResponse.json({ error: "Credit package or valid custom credit amount is missing." }, { status: 400 });
+      return NextResponse.json(
+        { error: "Credit package or valid custom credit amount is missing." },
+        { status: 400, headers: limitHeaders },
+      );
     }
 
     const stripe = getStripe();
+    const checkoutCorrelationId = randomUUID();
 
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
+      payment_method_types: ["card"],
       customer_email: user.email ?? undefined,
       line_items: [
         {
@@ -78,7 +92,7 @@ export async function POST(request: Request) {
               name: `${selectedPackage.credits} MG AutoTech Credits`,
               description: selectedPackage.description,
             },
-            unit_amount: selectedPackage.priceEuro * 100,
+            unit_amount: Math.round(selectedPackage.priceEuro * 100),
           },
           quantity: 1,
         },
@@ -86,20 +100,24 @@ export async function POST(request: Request) {
       success_url: `${siteUrl}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${siteUrl}/payment/cancel`,
       metadata: {
+        product: STRIPE_CREDIT_PURCHASE_PRODUCT,
+        checkout_correlation_id: checkoutCorrelationId,
         user_id: user.id,
         user_email: user.email ?? "",
         package_id: selectedPackage.id,
         credits: String(selectedPackage.credits),
         price_euro: String(selectedPackage.priceEuro),
         unit_price_euro: String(selectedPackage.unitPriceEuro),
-        purchase_type: isPackagePurchase ? "package" : "custom",
+        purchase_type: selectedPackage.purchaseType,
       },
       payment_intent_data: {
         metadata: {
+          product: STRIPE_CREDIT_PURCHASE_PRODUCT,
+          checkout_correlation_id: checkoutCorrelationId,
           user_id: user.id,
           credits: String(selectedPackage.credits),
           package_id: selectedPackage.id,
-          purchase_type: isPackagePurchase ? "package" : "custom",
+          purchase_type: selectedPackage.purchaseType,
         },
       },
     });
@@ -107,16 +125,29 @@ export async function POST(request: Request) {
     const recordId = await safeUpsertPaymentRecord({
       provider: "stripe",
       externalId: session.id,
+      providerPaymentId: stripeObjectId(session.payment_intent),
       userId: user.id,
       status: "pending",
+      paymentType: "credit_purchase",
       credits: selectedPackage.credits,
       amountTotal: Math.round(selectedPackage.priceEuro * 100),
       currency: "eur",
       customerEmail: user.email ?? null,
       packageId: selectedPackage.id,
-      purchaseType: isPackagePurchase ? "package" : "custom",
-      metadata: { stripe_session_id: session.id, livemode: session.livemode },
+      purchaseType: selectedPackage.purchaseType,
+      metadata: {
+        stripe_session_id: session.id,
+        livemode: session.livemode,
+        product: STRIPE_CREDIT_PURCHASE_PRODUCT,
+        checkout_correlation_id: checkoutCorrelationId,
+      },
     });
+    if (!recordId) {
+      return NextResponse.json(
+        { error: "Checkout could not be prepared safely. Please try again later." },
+        { status: 503, headers: limitHeaders },
+      );
+    }
     await safeAppendPaymentEvent({
       paymentRecordId: recordId,
       provider: "stripe",
@@ -126,20 +157,18 @@ export async function POST(request: Request) {
       payload: { session_id: session.id },
     });
 
-    return NextResponse.json({ url: session.url });
-  } catch (error) {
-    const message =
-      error instanceof Error
-        ? error.message
-        : "Could not create checkout session.";
-
+    return NextResponse.json({ url: session.url }, { headers: limitHeaders });
+  } catch {
     await safeAppendPaymentEvent({
       provider: "stripe",
       eventType: "checkout_creation_failed",
       status: "failed",
-      message,
+      message: "Stripe checkout creation failed.",
     });
 
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json(
+      { error: "Could not create checkout session. Please try again later." },
+      { status: 500, headers: privateNoStoreHeaders },
+    );
   }
 }

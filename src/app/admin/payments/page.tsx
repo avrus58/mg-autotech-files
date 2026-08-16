@@ -42,6 +42,7 @@ type PaymentRecord = {
   customer_email: string | null;
   package_id: string | null;
   purchase_type: string | null;
+  failure_code: string | null;
   failure_message: string | null;
   reviewed_at: string | null;
   review_note: string | null;
@@ -117,6 +118,22 @@ const providerMeta = {
   paypal: { label: "Legacy", icon: Clock3 },
   bank: { label: "Bank", icon: Landmark },
 } as const;
+const recoverableRefundFailureCodes = new Set([
+  "refund_processing",
+  "refund_provider_failed",
+  "refund_provider_pending",
+  "refund_provider_succeeded",
+  "refund_reconciliation_failed",
+]);
+
+function canRunRefund(record: PaymentRecord) {
+  return record.creditMatched &&
+    record.provider === "stripe" &&
+    (
+      record.status === "succeeded" ||
+      (record.status === "requires_review" && recoverableRefundFailureCodes.has(record.failure_code ?? ""))
+    );
+}
 
 function money(cents: number | null | undefined, currency = "eur") {
   return new Intl.NumberFormat("de-DE", {
@@ -294,7 +311,7 @@ export default function PaymentControlPage() {
       setMessage("Enter an audit note before issuing a refund.");
       return;
     }
-    if (!window.confirm(`Issue a full ${providerMeta[record.provider].label} refund and reverse ${record.credits} credits?`)) return;
+    if (!window.confirm(`Issue a full Stripe refund and reverse ${record.credits} credits?`)) return;
     const success = await post({ action: "refund", paymentId: record.id, note: reviewNote.trim() });
     if (success) { setSelected(null); setReviewNote(""); }
   }
@@ -424,8 +441,9 @@ export default function PaymentControlPage() {
               <textarea value={reviewNote} onChange={(event) => setReviewNote(event.target.value)} placeholder="Required audit note" className="mt-4 min-h-24 w-full resize-none rounded-lg border border-white/10 bg-black/50 p-3 text-sm outline-none focus:border-red-700" />
               <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
                 <button disabled={saving || !reviewNote.trim()} onClick={() => void post({ action: "mark_reviewed", paymentId: selected.id, note: reviewNote.trim() })} className="h-11 rounded-lg border border-white/10 text-sm font-black disabled:opacity-40">Mark reviewed</button>
-                {selected.status === "succeeded" && selected.creditMatched && selected.provider !== "paypal" && <button disabled={saving || !reviewNote.trim()} onClick={() => void refundPayment(selected)} className="h-11 rounded-lg border border-red-800/50 bg-red-950/30 text-sm font-black text-red-200 disabled:opacity-40"><RotateCcw className="mr-2 inline h-4 w-4" />Full refund</button>}
+                {canRunRefund(selected) && <button disabled={saving || !reviewNote.trim()} onClick={() => void refundPayment(selected)} className="h-11 rounded-lg border border-red-800/50 bg-red-950/30 text-sm font-black text-red-200 disabled:opacity-40"><RotateCcw className="mr-2 inline h-4 w-4" />{selected.status === "succeeded" ? "Full refund" : "Retry refund recovery"}</button>}
               </div>
+              {selected.provider === "bank" && <p className="mt-3 rounded-lg border border-amber-700/40 bg-amber-950/20 p-3 text-xs leading-5 text-amber-100">Bank refunds are not automated. Complete and independently verify the bank transfer before recording a separate audited reconciliation.</p>}
               {selected.provider_payment_id && selected.provider === "stripe" && <a href={`https://dashboard.stripe.com/payments/${selected.provider_payment_id}`} target="_blank" rel="noreferrer" className="mt-3 flex h-11 items-center justify-center rounded-lg border border-white/10 text-sm font-black text-zinc-300">Open provider <ExternalLink className="ml-2 h-4 w-4" /></a>}
             </section>}
           </aside>

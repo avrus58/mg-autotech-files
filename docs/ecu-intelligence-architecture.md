@@ -32,7 +32,7 @@ Failures in the learning pipeline do not block customer delivery. They are recor
 
 The initial analyzer is TypeScript and exposes a stable structured result. It calculates hashes, file size, entropy, zero/FF ratios, printable strings, ECU identifiers, read scope, active regions, ORI/MOD changed blocks, map candidates, repeated patterns, integrity observations and evidence-based feature candidates.
 
-The adapter can call `FILE_EXPERT_ANALYZER_URL` when a compatible external service is configured. A future Python/FastAPI analyzer can therefore replace or supplement the TypeScript implementation without changing the database or UI contracts.
+The adapter can call `FILE_EXPERT_ANALYZER_URL` only when a compatible endpoint and server-only `FILE_EXPERT_ANALYZER_TOKEN` are configured. The FastAPI service additionally requires an exact signed-URL host allowlist. Unsafe or incomplete configuration falls back to the TypeScript analyzer without creating external signed URLs.
 
 Binary heuristics are evidence, not calibration definitions. A changed offset is never presented as a proven torque, boost, rail, lambda, emissions or transmission map without a verified ECU-specific definition.
 

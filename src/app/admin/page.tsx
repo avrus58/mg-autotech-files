@@ -10,6 +10,12 @@ import RequestChat from "@/components/RequestChat";
 import { AdminNotificationCenter } from "@/components/admin/AdminNotificationCenter";
 import type { AdminEmailDeliveryIssue } from "@/lib/adminNotificationCenter";
 import {
+  adsPerformancePermissions,
+  customerIntelligencePermissions,
+  growthReportPermissions,
+} from "@/lib/growth/access";
+import {
+  hasAllStaffPermissions,
   hasStaffPermission,
   isPrimaryOwner,
   type StaffAccess,
@@ -127,6 +133,55 @@ type ModifiedFileVersion = {
 
 type CustomerTag = "workshop" | "reseller" | "vip" | "blocked" | "negative_credit";
 type PaymentOverride = "inherit" | "enabled" | "disabled";
+
+type CreditAdjustmentAttempt = {
+  idempotencyKey: string;
+  payloadFingerprint: string;
+  createdAt: number;
+};
+
+const creditAdjustmentStoragePrefix = "mg:staff-credit-adjustment:v1:";
+const creditAdjustmentMaxAgeMs = 24 * 60 * 60 * 1000;
+
+async function hashCreditAdjustmentPayload(value: string) {
+  const digest = await window.crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(value),
+  );
+  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+function readCreditAdjustmentAttempt(customerId: string, payloadFingerprint: string) {
+  try {
+    const storageKey = `${creditAdjustmentStoragePrefix}${customerId}`;
+    const raw = window.sessionStorage.getItem(storageKey);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<CreditAdjustmentAttempt>;
+    if (
+      parsed.payloadFingerprint !== payloadFingerprint ||
+      typeof parsed.idempotencyKey !== "string" ||
+      !/^[0-9a-f-]{36}$/i.test(parsed.idempotencyKey) ||
+      typeof parsed.createdAt !== "number" ||
+      Date.now() - parsed.createdAt > creditAdjustmentMaxAgeMs
+    ) {
+      window.sessionStorage.removeItem(storageKey);
+      return null;
+    }
+    return parsed as CreditAdjustmentAttempt;
+  } catch {
+    return null;
+  }
+}
+
+function persistCreditAdjustmentAttempt(customerId: string, attempt: CreditAdjustmentAttempt | null) {
+  try {
+    const storageKey = `${creditAdjustmentStoragePrefix}${customerId}`;
+    if (attempt) window.sessionStorage.setItem(storageKey, JSON.stringify(attempt));
+    else window.sessionStorage.removeItem(storageKey);
+  } catch {
+    // The in-memory attempt still protects retries while this page remains open.
+  }
+}
 
 type Profile = {
   id: string;
@@ -502,6 +557,7 @@ export default function AdminPage() {
   const hasLoadedAdminDataRef = useRef(false);
   const adminRefreshInFlightRef = useRef(false);
   const adminLoadSequenceRef = useRef(0);
+  const creditAdjustmentAttemptsRef = useRef<Map<string, CreditAdjustmentAttempt>>(new Map());
 
   async function loadAdminData(options?: { silent?: boolean }) {
     const loadSequence = ++adminLoadSequenceRef.current;
@@ -715,6 +771,9 @@ export default function AdminPage() {
         badge: "Queue",
         icon: <Clipboard className="h-5 w-5" />,
       });
+    }
+
+    if (hasAllStaffPermissions(adminAccess, adsPerformancePermissions)) {
       links.push({
         href: "/admin/ads-performance",
         label: "Ads readiness",
@@ -839,32 +898,59 @@ export default function AdminPage() {
       setMessage("Your staff role cannot adjust customer credits.");
       return;
     }
-    if (!Number.isFinite(amount) || amount === 0) {
-      setMessage("Please enter a valid credit amount.");
+    if (!Number.isInteger(amount) || amount === 0 || Math.abs(amount) > 100000) {
+      setMessage("Please enter a non-zero whole credit amount within the supported range.");
       return;
     }
+
+    const resolvedNote = note || `Admin credit adjustment for ${customer.email ?? customer.customer_id ?? customer.id}`;
+    const payloadFingerprint = await hashCreditAdjustmentPayload(JSON.stringify([
+      customer.id,
+      amount,
+      resolvedNote,
+    ]));
+    const previousAttempt = creditAdjustmentAttemptsRef.current.get(customer.id);
+    const attempt = previousAttempt?.payloadFingerprint === payloadFingerprint
+      ? previousAttempt
+      : readCreditAdjustmentAttempt(customer.id, payloadFingerprint) ?? {
+          idempotencyKey: window.crypto.randomUUID(),
+          payloadFingerprint,
+          createdAt: Date.now(),
+        };
+    creditAdjustmentAttemptsRef.current.set(customer.id, attempt);
+    persistCreditAdjustmentAttempt(customer.id, attempt);
 
     setCreditUpdatingId(customer.id);
     setMessage("");
 
-    const { data, error } = await supabase.rpc("staff_adjust_customer_credits", {
-      p_customer_id: customer.id,
-      p_amount: amount,
-      p_note: note || `Admin credit adjustment for ${customer.email ?? customer.customer_id ?? customer.id}`,
-    });
+    try {
+      const { data, error } = await supabase.rpc("staff_adjust_customer_credits", {
+        p_customer_id: customer.id,
+        p_amount: amount,
+        p_note: resolvedNote,
+        p_idempotency_key: attempt.idempotencyKey,
+      });
 
-    setCreditUpdatingId(null);
-    if (error) {
-      setMessage(error.message);
-      return;
+      if (error) {
+        setMessage(`${error.message} Retry the unchanged adjustment safely, or change its amount or note to start a new operation.`);
+        return;
+      }
+
+      if (creditAdjustmentAttemptsRef.current.get(customer.id)?.idempotencyKey === attempt.idempotencyKey) {
+        creditAdjustmentAttemptsRef.current.delete(customer.id);
+        persistCreditAdjustmentAttempt(customer.id, null);
+      }
+      const newBalance = Number(data ?? Number(customer.credit_balance ?? 0) + amount);
+      setCustomers((current) => current.map((item) => (item.id === customer.id ? { ...item, credit_balance: newBalance } : item)));
+      setSelectedCustomer((current) => (current?.id === customer.id ? { ...current, credit_balance: newBalance } : current));
+      setCreditInputs((current) => ({ ...current, [customer.id]: "" }));
+      setCreditNotes((current) => ({ ...current, [customer.id]: "" }));
+      setMessage(`${amount > 0 ? "+" : ""}${amount} credits adjusted for ${customer.customer_id ?? customer.email ?? "customer"}. Ledger entry created.`);
+    } catch {
+      setMessage("The credit adjustment response was interrupted. Retry the unchanged adjustment; it will use the same safety key.");
+    } finally {
+      setCreditUpdatingId(null);
     }
-
-    const newBalance = Number(data ?? Number(customer.credit_balance ?? 0) + amount);
-    setCustomers((current) => current.map((item) => (item.id === customer.id ? { ...item, credit_balance: newBalance } : item)));
-    setSelectedCustomer((current) => (current?.id === customer.id ? { ...current, credit_balance: newBalance } : current));
-    setCreditInputs((current) => ({ ...current, [customer.id]: "" }));
-    setCreditNotes((current) => ({ ...current, [customer.id]: "" }));
-    setMessage(`${amount > 0 ? "+" : ""}${amount} credits adjusted for ${customer.customer_id ?? customer.email ?? "customer"}. Ledger entry created.`);
   }
 
   function quickAdjustCredits(customer: Profile, amount: number) {
@@ -896,33 +982,30 @@ export default function AdminPage() {
       vat_id: customerForm.vat_id.trim() || null,
       invoice_email: customerForm.invoice_email.trim() || null,
       preferred_contact: customerForm.preferred_contact.trim() || null,
-      allow_negative_credits: customerForm.allow_negative_credits,
-      negative_credit_limit: Number(customerForm.negative_credit_limit || 0),
       account_status: customerForm.account_status,
       customer_tags: customerForm.customer_tags,
       internal_admin_note: customerForm.internal_admin_note.trim() || null,
+      ...(hasStaffPermission(adminAccess, "credits.manage")
+        ? {
+            allow_negative_credits: customerForm.allow_negative_credits,
+            negative_credit_limit: Number(customerForm.negative_credit_limit || 0),
+          }
+        : {}),
     };
 
-    let { error } = await supabase.from("profiles").update(updatePayload).eq("id", selectedCustomer.id);
-    let tagsSkipped = false;
+    const profileResponse = await authenticatedFetch(
+      `/api/admin/customers/${selectedCustomer.id}/profile`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updatePayload),
+      }
+    );
+    const profilePayload = await profileResponse.json().catch(() => ({}));
 
-    if (error?.code === "42703") {
-      const payloadWithoutTags: Partial<typeof updatePayload> = {
-        ...updatePayload,
-      };
-      delete payloadWithoutTags.customer_tags;
-      const retry = await supabase
-        .from("profiles")
-        .update(payloadWithoutTags)
-        .eq("id", selectedCustomer.id);
-
-      error = retry.error;
-      tagsSkipped = true;
-    }
-
-    if (error) {
+    if (!profileResponse.ok) {
       setCustomerSavingId(null);
-      setMessage(error.message);
+      setMessage(profilePayload.error || "Customer profile could not be saved.");
       return;
     }
 
@@ -954,14 +1037,14 @@ export default function AdminPage() {
 
     setCustomerSavingId(null);
 
-    const updatedCustomer = { ...selectedCustomer, ...updatePayload } as Profile;
+    const updatedCustomer = {
+      ...selectedCustomer,
+      ...updatePayload,
+      ...(profilePayload.customer ?? {}),
+    } as Profile;
     setCustomers((current) => current.map((customer) => (customer.id === selectedCustomer.id ? updatedCustomer : customer)));
     setSelectedCustomer(updatedCustomer);
-    setMessage(
-      tagsSkipped
-        ? `${selectedCustomer.customer_id ?? selectedCustomer.email ?? "Customer"} updated. Customer tags need the Supabase SQL column before they can be saved.`
-        : `${selectedCustomer.customer_id ?? selectedCustomer.email ?? "Customer"} updated.`
-    );
+    setMessage(`${selectedCustomer.customer_id ?? selectedCustomer.email ?? "Customer"} updated.`);
   }
 
   async function updateStatus(orderId: string, newStatus: string) {
@@ -1003,25 +1086,23 @@ export default function AdminPage() {
     setUpdatingId(orderId);
     setMessage("");
 
-    const { error } = await supabase
-      .from("orders")
-      .update({
-        estimated_delivery_label: estimate,
-        estimated_delivery_note: note.trim() || null,
-      })
-      .eq("id", orderId);
+    const response = await authenticatedFetch(
+      `/api/admin/orders/${orderId}/delivery-estimate`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          estimate,
+          note: note.trim() || null,
+        }),
+      }
+    );
+    const payload = await response.json().catch(() => ({}));
 
     setUpdatingId(null);
 
-    if (error?.code === "42703") {
-      setMessage(
-        "Estimated delivery needs the Supabase SQL column before it can be saved."
-      );
-      return;
-    }
-
-    if (error) {
-      setMessage(error.message);
+    if (!response.ok) {
+      setMessage(payload.error || "Estimated delivery could not be saved.");
       return;
     }
 
@@ -1285,7 +1366,7 @@ export default function AdminPage() {
                 <span className="rounded-full bg-sky-950/40 px-2 py-1 text-[10px] font-black text-sky-200">MEASURE</span>
               </Link>
             )}
-            {hasStaffPermission(adminAccess, "orders.view") && (
+            {hasAllStaffPermissions(adminAccess, adsPerformancePermissions) && (
               <Link
                 href="/admin/ads-performance"
                 className="flex w-full items-center justify-between gap-3 rounded-2xl px-4 py-3 text-left text-sm font-black text-zinc-400 transition hover:bg-white/[0.06] hover:text-white"
@@ -1297,7 +1378,7 @@ export default function AdminPage() {
                 <span className="rounded-full bg-red-950/40 px-2 py-1 text-[10px] font-black text-red-200">ACQUIRE</span>
               </Link>
             )}
-            {hasStaffPermission(adminAccess, "orders.view") && (
+            {hasAllStaffPermissions(adminAccess, growthReportPermissions) && (
               <Link
                 href="/admin/growth"
                 className="flex w-full items-center justify-between gap-3 rounded-2xl px-4 py-3 text-left text-sm font-black text-zinc-400 transition hover:bg-white/[0.06] hover:text-white"
@@ -1515,9 +1596,15 @@ export default function AdminPage() {
           form={customerForm}
           setForm={setCustomerForm}
           creditInput={creditInputs[selectedCustomer.id] ?? ""}
-          setCreditInput={(value) => setCreditInputs((current) => ({ ...current, [selectedCustomer.id]: value }))}
+          setCreditInput={(value) => {
+            creditAdjustmentAttemptsRef.current.delete(selectedCustomer.id);
+            setCreditInputs((current) => ({ ...current, [selectedCustomer.id]: value }));
+          }}
           creditNote={creditNotes[selectedCustomer.id] ?? ""}
-          setCreditNote={(value) => setCreditNotes((current) => ({ ...current, [selectedCustomer.id]: value }))}
+          setCreditNote={(value) => {
+            creditAdjustmentAttemptsRef.current.delete(selectedCustomer.id);
+            setCreditNotes((current) => ({ ...current, [selectedCustomer.id]: value }));
+          }}
           creditUpdating={creditUpdatingId === selectedCustomer.id}
           saving={customerSavingId === selectedCustomer.id}
           onClose={() => {
@@ -1529,6 +1616,8 @@ export default function AdminPage() {
           onCustomAdjust={() => handleCustomCreditAdjust(selectedCustomer)}
           onCopyValue={copyValue}
           canManageSecurity={hasStaffPermission(adminAccess, "customers.manage")}
+          canManageCredits={hasStaffPermission(adminAccess, "credits.manage")}
+          canViewCustomerIntelligence={hasAllStaffPermissions(adminAccess, customerIntelligencePermissions)}
           canReplacePassword={isPrimaryOwner(adminAccess)}
         />
       )}
@@ -2028,7 +2117,7 @@ function CustomersPanel({
   );
 }
 
-function CustomerDetailModal({ customer, form, setForm, creditInput, setCreditInput, creditNote, setCreditNote, creditUpdating, saving, onClose, onSave, onQuickAdjust, onCustomAdjust, onCopyValue, canManageSecurity, canReplacePassword }: {
+function CustomerDetailModal({ customer, form, setForm, creditInput, setCreditInput, creditNote, setCreditNote, creditUpdating, saving, onClose, onSave, onQuickAdjust, onCustomAdjust, onCopyValue, canManageSecurity, canManageCredits, canViewCustomerIntelligence, canReplacePassword }: {
   customer: Profile;
   form: CustomerForm;
   setForm: React.Dispatch<React.SetStateAction<CustomerForm | null>>;
@@ -2044,6 +2133,8 @@ function CustomerDetailModal({ customer, form, setForm, creditInput, setCreditIn
   onCustomAdjust: () => void;
   onCopyValue: (value: string | null | undefined, label: string) => void;
   canManageSecurity: boolean;
+  canManageCredits: boolean;
+  canViewCustomerIntelligence: boolean;
   canReplacePassword: boolean;
 }) {
   const accountCreatedLabel = customer.created_at
@@ -2074,7 +2165,7 @@ function CustomerDetailModal({ customer, form, setForm, creditInput, setCreditIn
               <div className="mb-3 flex flex-wrap items-center gap-2">
                 <span className="rounded-full border border-red-800/40 bg-red-950/25 px-3 py-1 text-xs font-black uppercase tracking-[0.16em] text-red-300">{customer.customer_id || customer.id}</span>
                 <span className={`rounded-full border px-3 py-1 text-xs font-black ${accountStatusClass(form.account_status)}`}>{statusLabel(form.account_status)}</span>
-                <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs font-bold text-zinc-400">Balance: {Number(customer.credit_balance ?? 0)} credits</span>
+                {canManageCredits && <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs font-bold text-zinc-400">Balance: {Number(customer.credit_balance ?? 0)} credits</span>}
                 <span className="inline-flex items-center rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs font-bold text-zinc-400" title="Customer account creation date">
                   <CalendarDays className="mr-1.5 h-3.5 w-3.5 text-red-400" />
                   {accountCreatedLabel}
@@ -2089,7 +2180,7 @@ function CustomerDetailModal({ customer, form, setForm, creditInput, setCreditIn
               <p className="mt-2 text-sm text-zinc-500">{customer.email}</p>
             </div>
             <div className="flex flex-wrap gap-2">
-              <Link href={`/admin/growth/customers/${customer.id}`} className="inline-flex items-center rounded-xl border border-cyan-800/40 bg-cyan-950/20 px-4 py-3 text-sm font-black text-cyan-200 transition hover:bg-cyan-950/40"><HeartHandshake className="mr-2 h-4 w-4" />Customer 360</Link>
+              {canViewCustomerIntelligence && <Link href={`/admin/growth/customers/${customer.id}`} className="inline-flex items-center rounded-xl border border-cyan-800/40 bg-cyan-950/20 px-4 py-3 text-sm font-black text-cyan-200 transition hover:bg-cyan-950/40"><HeartHandshake className="mr-2 h-4 w-4" />Customer 360</Link>}
               <button onClick={() => onCopyValue(customer.customer_id || customer.id, "Customer ID")} className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-black text-white transition hover:bg-white/10"><Copy className="mr-2 inline h-4 w-4" />Copy ID</button>
               <button onClick={onSave} disabled={saving} className="rounded-xl bg-[#b1121b] px-4 py-3 text-sm font-black text-white transition hover:bg-[#c91824] disabled:opacity-50">{saving ? <Loader2 className="mr-2 inline h-4 w-4 animate-spin" /> : <Save className="mr-2 inline h-4 w-4" />}Save Customer</button>
               <button onClick={onClose} className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-black text-white transition hover:bg-white/10"><X className="mr-2 inline h-4 w-4" />Close</button>
@@ -2161,16 +2252,20 @@ function CustomerDetailModal({ customer, form, setForm, creditInput, setCreditIn
             </section>
             <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
               <h3 className="mb-5 text-2xl font-black">Credit Permissions</h3>
-              <div className="grid gap-4 md:grid-cols-2">
-                <label className="flex items-center justify-between gap-4 rounded-2xl border border-white/10 bg-black/30 p-4">
-                  <div><div className="font-black text-white">Allow Negative Credits</div><div className="mt-1 text-sm text-zinc-500">Customer can submit requests with insufficient balance.</div></div>
-                  <input type="checkbox" checked={form.allow_negative_credits} onChange={(event) => updateForm("allow_negative_credits", event.target.checked)} className="h-5 w-5 accent-red-600" />
-                </label>
-                <FormInput label="Negative Credit Limit" type="number" value={form.negative_credit_limit} onChange={(value) => updateForm("negative_credit_limit", value)} />
-              </div>
+              {canManageCredits ? (
+                <div className="grid gap-4 md:grid-cols-2">
+                  <label className="flex items-center justify-between gap-4 rounded-2xl border border-white/10 bg-black/30 p-4">
+                    <div><div className="font-black text-white">Allow Negative Credits</div><div className="mt-1 text-sm text-zinc-500">Customer can submit requests with insufficient balance.</div></div>
+                    <input type="checkbox" checked={form.allow_negative_credits} onChange={(event) => updateForm("allow_negative_credits", event.target.checked)} className="h-5 w-5 accent-red-600" />
+                  </label>
+                  <FormInput label="Negative Credit Limit" type="number" value={form.negative_credit_limit} onChange={(value) => updateForm("negative_credit_limit", value)} />
+                </div>
+              ) : (
+                <p className="rounded-2xl border border-white/10 bg-black/30 p-4 text-sm text-zinc-500">Your staff role cannot view or change negative-credit settings.</p>
+              )}
               <textarea value={form.internal_admin_note} onChange={(event) => updateForm("internal_admin_note", event.target.value)} placeholder="Internal admin note. Customer cannot see this." className="mt-4 min-h-32 w-full resize-none rounded-2xl border border-white/10 bg-black/35 px-4 py-3 text-sm font-bold text-white outline-none placeholder:text-zinc-600 focus:border-red-700" />
             </section>
-            <section className="rounded-[2rem] border border-red-900/40 bg-red-950/10 p-5">
+            {canManageCredits && <section className="rounded-[2rem] border border-red-900/40 bg-red-950/10 p-5">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div><h3 className="text-2xl font-black">Customer Pricing & Payments</h3><p className="mt-1 text-sm leading-6 text-zinc-500">A base-price override replaces the global result. The customer adjustment is applied after it.</p></div>
                 {form.effective_custom_unit_price_eur && <div className="rounded-xl border border-emerald-700/40 bg-emerald-950/20 px-4 py-3 text-right"><div className="text-xs font-black uppercase text-emerald-400">Effective custom credit</div><div className="mt-1 text-2xl font-black">EUR {Number(form.effective_custom_unit_price_eur).toFixed(2)}</div></div>}
@@ -2186,22 +2281,28 @@ function CustomerDetailModal({ customer, form, setForm, creditInput, setCreditIn
               </div>
               <p className="mt-4 text-xs leading-5 text-zinc-500">Positive adjustment values reduce the per-credit price; negative values increase it. “Inherit” follows the global payment setting.</p>
               <textarea value={form.commercial_internal_note} onChange={(event) => updateForm("commercial_internal_note", event.target.value)} placeholder="Internal pricing agreement or approval note. Customer cannot see this." className="mt-4 min-h-24 w-full resize-none rounded-2xl border border-white/10 bg-black/35 px-4 py-3 text-sm font-bold text-white outline-none placeholder:text-zinc-600 focus:border-red-700" />
-            </section>
+            </section>}
           </div>
           <aside className="min-w-0 space-y-5 sm:space-y-6">
-            <section className="rounded-[2rem] border border-red-900/40 bg-red-950/20 p-5">
-              <CreditCard className="mb-4 h-8 w-8 text-red-400" /><div className="text-sm text-zinc-400">Current Balance</div><div className="mt-2 text-5xl font-black">{Number(customer.credit_balance ?? 0)}</div><div className="mt-1 text-sm text-zinc-500">credits</div>
-            </section>
-            <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
-              <h3 className="mb-5 text-2xl font-black">Adjust Credits</h3>
-              <div className="mb-4 grid grid-cols-2 gap-2">
-                {[10, 25, 50, 100].map((amount) => <button key={amount} onClick={() => onQuickAdjust(amount)} disabled={creditUpdating} className="rounded-xl border border-emerald-700/40 bg-emerald-950/30 px-3 py-3 text-sm font-black text-emerald-300 transition hover:bg-emerald-900/40 disabled:opacity-50">+{amount}</button>)}
-                {[-10, -25, -50, -100].map((amount) => <button key={amount} onClick={() => onQuickAdjust(amount)} disabled={creditUpdating} className="rounded-xl border border-red-700/40 bg-red-950/30 px-3 py-3 text-sm font-black text-red-300 transition hover:bg-red-900/40 disabled:opacity-50">{amount}</button>)}
-              </div>
-              <input type="number" value={creditInput} onChange={(event) => setCreditInput(event.target.value)} placeholder="+/- custom amount" className="mb-3 h-12 w-full rounded-xl border border-white/10 bg-black/35 px-4 text-sm font-bold text-white outline-none placeholder:text-zinc-600 focus:border-red-700" />
-              <textarea value={creditNote} onChange={(event) => setCreditNote(event.target.value)} placeholder="Ledger note" className="mb-3 min-h-24 w-full resize-none rounded-xl border border-white/10 bg-black/35 px-4 py-3 text-sm font-bold text-white outline-none placeholder:text-zinc-600 focus:border-red-700" />
-              <button onClick={onCustomAdjust} disabled={creditUpdating} className="flex h-12 w-full items-center justify-center rounded-xl bg-[#b1121b] px-4 text-sm font-black text-white transition hover:bg-[#c91824] disabled:opacity-50">{creditUpdating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <MinusCircle className="mr-2 h-4 w-4" />}Apply Credit Adjustment</button>
-            </section>
+            {canManageCredits ? (
+              <>
+                <section className="rounded-[2rem] border border-red-900/40 bg-red-950/20 p-5">
+                  <CreditCard className="mb-4 h-8 w-8 text-red-400" /><div className="text-sm text-zinc-400">Current Balance</div><div className="mt-2 text-5xl font-black">{Number(customer.credit_balance ?? 0)}</div><div className="mt-1 text-sm text-zinc-500">credits</div>
+                </section>
+                <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
+                  <h3 className="mb-5 text-2xl font-black">Adjust Credits</h3>
+                  <div className="mb-4 grid grid-cols-2 gap-2">
+                    {[10, 25, 50, 100].map((amount) => <button key={amount} onClick={() => onQuickAdjust(amount)} disabled={creditUpdating} className="rounded-xl border border-emerald-700/40 bg-emerald-950/30 px-3 py-3 text-sm font-black text-emerald-300 transition hover:bg-emerald-900/40 disabled:opacity-50">+{amount}</button>)}
+                    {[-10, -25, -50, -100].map((amount) => <button key={amount} onClick={() => onQuickAdjust(amount)} disabled={creditUpdating} className="rounded-xl border border-red-700/40 bg-red-950/30 px-3 py-3 text-sm font-black text-red-300 transition hover:bg-red-900/40 disabled:opacity-50">{amount}</button>)}
+                  </div>
+                  <input type="number" value={creditInput} onChange={(event) => setCreditInput(event.target.value)} disabled={creditUpdating} placeholder="+/- custom amount" className="mb-3 h-12 w-full rounded-xl border border-white/10 bg-black/35 px-4 text-sm font-bold text-white outline-none placeholder:text-zinc-600 focus:border-red-700 disabled:cursor-not-allowed disabled:opacity-60" />
+                  <textarea value={creditNote} onChange={(event) => setCreditNote(event.target.value)} disabled={creditUpdating} placeholder="Ledger note" className="mb-3 min-h-24 w-full resize-none rounded-xl border border-white/10 bg-black/35 px-4 py-3 text-sm font-bold text-white outline-none placeholder:text-zinc-600 focus:border-red-700 disabled:cursor-not-allowed disabled:opacity-60" />
+                  <button onClick={onCustomAdjust} disabled={creditUpdating} className="flex h-12 w-full items-center justify-center rounded-xl bg-[#b1121b] px-4 text-sm font-black text-white transition hover:bg-[#c91824] disabled:opacity-50">{creditUpdating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <MinusCircle className="mr-2 h-4 w-4" />}Apply Credit Adjustment</button>
+                </section>
+              </>
+            ) : (
+              <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5 text-sm leading-6 text-zinc-500">Financial details require credits.manage.</section>
+            )}
           </aside>
         </div>
       </div>

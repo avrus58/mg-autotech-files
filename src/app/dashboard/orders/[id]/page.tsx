@@ -584,7 +584,7 @@ export default function OrderDetailPage() {
       setAdditionalUploadPhase("uploading");
       const { error: uploadError } = await supabase.storage
         .from("customer-files")
-        .upload(prepared.upload.path, file, {
+        .uploadToSignedUrl(prepared.upload.path, prepared.upload.token, file, {
           contentType: prepared.upload.contentType,
           cacheControl: "3600",
           upsert: false,
@@ -598,7 +598,12 @@ export default function OrderDetailPage() {
       const finalizeResponse = await authenticatedFetch(`/api/requests/${order.id}/additional-file/finalize`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ path: prepared.upload.path, fileName: file.name, fileSize: file.size }),
+        body: JSON.stringify({
+          uploadContract: prepared.uploadContract,
+          path: prepared.upload.path,
+          fileName: file.name,
+          fileSize: file.size,
+        }),
       });
       const finalized = await finalizeResponse.json();
       if (!finalizeResponse.ok) {

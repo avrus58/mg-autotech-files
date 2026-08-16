@@ -7,6 +7,8 @@ import {
   validateFileExpertDescriptor,
 } from "@/lib/fileExpert/server";
 import { fileExpertTextLimits } from "@/lib/fileExpert/limits";
+import { checkFileExpertCreateRate } from "@/lib/fileExpert/requestSecurity";
+import { BoundedRequestBodyError, readBoundedJsonBody } from "@/lib/boundedRequestBody";
 
 const fileDescriptorSchema = z.object({
   name: z.string().min(1).max(255),
@@ -31,8 +33,27 @@ export async function POST(request: Request) {
   if (!user.email_confirmed_at && !user.confirmed_at) {
     return NextResponse.json({ error: "Please verify your e-mail address first." }, { status: 403 });
   }
-
-  const parsed = prepareSchema.safeParse(await request.json().catch(() => null));
+  const rate = await checkFileExpertCreateRate(request, user.id);
+  if (rate.unavailable) {
+    return NextResponse.json(
+      { error: "Analysis capacity is temporarily unavailable." },
+      { status: 503, headers: rate.headers }
+    );
+  }
+  if (!rate.allowed) {
+    return NextResponse.json(
+      { error: "Too many analysis jobs. Please wait before trying again." },
+      { status: 429, headers: rate.headers }
+    );
+  }
+  let requestBody: unknown;
+  try {
+    requestBody = await readBoundedJsonBody(request, 64 * 1024);
+  } catch (error) {
+    const status = error instanceof BoundedRequestBodyError ? error.status : 400;
+    return NextResponse.json({ error: "Analysis metadata is invalid or too large." }, { status });
+  }
+  const parsed = prepareSchema.safeParse(requestBody);
   if (!parsed.success) {
     return NextResponse.json(
       { error: parsed.error.issues[0]?.message || "Invalid analysis data." },
@@ -72,7 +93,7 @@ export async function POST(request: Request) {
     .single();
 
   if (createError || !job) {
-    return NextResponse.json({ error: createError?.message || "Analysis job could not be created." }, { status: 500 });
+    return NextResponse.json({ error: "Analysis job could not be created." }, { status: 500 });
   }
 
   const basePath = `${user.id}/${job.id}`;
@@ -85,14 +106,37 @@ export async function POST(request: Request) {
 
   if (updateError) {
     await supabaseAdmin.from("file_expert_jobs").delete().eq("id", job.id);
-    return NextResponse.json({ error: updateError.message }, { status: 500 });
+    return NextResponse.json({ error: "Analysis job could not be prepared." }, { status: 500 });
+  }
+
+  let oriToken: string | null = null;
+  let modToken: string | null = null;
+  if (oriPath) {
+    const signed = await supabaseAdmin.storage
+      .from("file-expert")
+      .createSignedUploadUrl(oriPath, { upsert: false });
+    if (signed.error || !signed.data?.token) {
+      await supabaseAdmin.from("file_expert_jobs").delete().eq("id", job.id);
+      return NextResponse.json({ error: "ORI upload could not be prepared securely." }, { status: 503 });
+    }
+    oriToken = signed.data.token;
+  }
+  if (modPath) {
+    const signed = await supabaseAdmin.storage
+      .from("file-expert")
+      .createSignedUploadUrl(modPath, { upsert: false });
+    if (signed.error || !signed.data?.token) {
+      await supabaseAdmin.from("file_expert_jobs").delete().eq("id", job.id);
+      return NextResponse.json({ error: "MOD upload could not be prepared securely." }, { status: 503 });
+    }
+    modToken = signed.data.token;
   }
 
   return NextResponse.json({
     jobId: job.id,
     uploads: {
-      ori: oriFile ? { path: oriPath, contentType: oriFile.type || "application/octet-stream" } : null,
-      mod: modFile ? { path: modPath, contentType: modFile.type || "application/octet-stream" } : null,
+      ori: oriFile ? { path: oriPath, token: oriToken, contentType: oriFile.type || "application/octet-stream" } : null,
+      mod: modFile ? { path: modPath, token: modToken, contentType: modFile.type || "application/octet-stream" } : null,
     },
   });
 }

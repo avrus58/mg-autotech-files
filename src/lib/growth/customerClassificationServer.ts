@@ -24,6 +24,7 @@ export async function loadGrowthCustomerClassificationAdminData(): Promise<Growt
   const [profilesResult, classificationResult, ordersResult, paymentsResult] = await Promise.all([
     admin.from("profiles")
       .select("id,email,full_name,customer_id,role,created_at")
+      .eq("role", "customer")
       .order("created_at", { ascending: false })
       .limit(5_000),
     admin.from("growth_customer_classifications")

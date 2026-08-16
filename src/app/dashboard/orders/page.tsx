@@ -31,7 +31,6 @@ type Order = {
   service_type: string | null;
   credits_required: number | string | null;
   status: string | null;
-  modified_file_path: string | null;
   created_at: string;
 };
 
@@ -108,7 +107,7 @@ export default function CustomerOrdersPage() {
   const buildQuery = useCallback(async (uid: string, selectedView: View, term: string, rangeEnd: number) => {
     let query = supabase
       .from("orders")
-      .select("id, vehicle_brand, vehicle_model, vehicle_generation, vehicle_engine, service_type, credits_required, status, modified_file_path, created_at", { count: "exact" })
+      .select("id, vehicle_brand, vehicle_model, vehicle_generation, vehicle_engine, service_type, credits_required, status, created_at", { count: "exact" })
       .eq("customer_id", uid)
       .order("created_at", { ascending: false })
       .range(0, rangeEnd);
@@ -195,7 +194,7 @@ export default function CustomerOrdersPage() {
     return {
       loaded: orders.length,
       needsResponse: orders.filter((order) => order.status === "customer_info_needed").length,
-      delivered: orders.filter((order) => Boolean(order.modified_file_path)).length,
+      delivered: orders.filter((order) => order.status === "completed").length,
       creditsShown: orders.reduce(
         (sum, order) => sum + Number(order.credits_required ?? 0),
         0
@@ -321,7 +320,7 @@ export default function CustomerOrdersPage() {
                   {orders.map((order) => (
                     <article key={order.id} className="grid min-w-0 gap-4 rounded-xl border border-white/10 bg-black/25 p-4 transition hover:border-red-800/50 md:grid-cols-[1.4fr_.7fr_.5fr_auto] md:items-center">
                       <div className="min-w-0"><div className="break-words text-lg font-black">{order.vehicle_brand || "Vehicle"} {order.vehicle_model || ""}</div><div className="mt-1 break-words text-sm text-zinc-500">{order.vehicle_generation || "Generation not set"} · {order.vehicle_engine || "Engine not set"}</div><div className="mt-2 line-clamp-2 text-sm font-bold text-red-300">{order.service_type || "Service not set"}</div></div>
-                      <div><span className={`inline-flex rounded-full border px-3 py-1 text-xs font-black ${statusClass(order.status)}`}>{statusLabel(order.status)}</span>{order.status === "customer_info_needed" && <div className="mt-2 break-words text-xs font-black text-orange-300">Needs your response</div>}{order.status === "revision" && <div className="mt-2 break-words text-xs font-black text-purple-300">Revision review in progress</div>}{order.modified_file_path && <div className="mt-2 text-xs font-black text-emerald-400"><CheckCircle2 className="mr-1 inline h-3 w-3" />File delivered</div>}</div>
+                      <div><span className={`inline-flex rounded-full border px-3 py-1 text-xs font-black ${statusClass(order.status)}`}>{statusLabel(order.status)}</span>{order.status === "customer_info_needed" && <div className="mt-2 break-words text-xs font-black text-orange-300">Needs your response</div>}{order.status === "revision" && <div className="mt-2 break-words text-xs font-black text-purple-300">Revision review in progress</div>}{order.status === "completed" && <div className="mt-2 text-xs font-black text-emerald-400"><CheckCircle2 className="mr-1 inline h-3 w-3" />File delivered</div>}</div>
                       <div><div className="font-black">{Number(order.credits_required ?? 0)} credits</div><div className="mt-1 text-xs text-zinc-500">{formatDate(order.created_at)}</div></div>
                       <div className="grid grid-cols-2 gap-2 md:grid-cols-1">
                         <Link

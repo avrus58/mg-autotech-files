@@ -51,6 +51,16 @@ import type {
 import { formatFileVersionLabel } from "@/lib/fileVersionLabels";
 
 type DetailPayload = {
+  access: {
+    customersView: boolean;
+    filesDownload: boolean;
+    filesUpload: boolean;
+    messagesManage: boolean;
+    creditsManage: boolean;
+    fileExpertManage: boolean;
+    aiTrainingManage: boolean;
+    ordersManage: boolean;
+  };
   migrationReady: boolean;
   order: Record<string, unknown> & { id: string };
   customer: Record<string, unknown> | null;
@@ -590,7 +600,9 @@ export default function WorkOrderDetailClient() {
 
             <section className="grid gap-6 lg:grid-cols-2">
               <Panel title="File Expert" icon={<FileCode2 />}>
-                {payload.fileExpert.job ? (
+                {!payload.access.fileExpertManage ? (
+                  <Empty text="File Expert access is not assigned to this staff account." />
+                ) : payload.fileExpert.job ? (
                   <div className="space-y-3">
                     <Info label="Status" value={payload.fileExpert.job.status} />
                     <Info label="Confidence" value={payload.fileExpert.job.confidence_score != null ? `${payload.fileExpert.job.confidence_score}%` : "-"} />
@@ -600,33 +612,43 @@ export default function WorkOrderDetailClient() {
                 ) : <Empty text={payload.fileExpert.warning || "No File Expert job linked."} />}
               </Panel>
               <Panel title="AI Evidence" icon={<BrainCircuit />}>
-                <div className="grid gap-3">
-                  <Info label="Training samples" value={payload.aiEvidence.trainingSamples.length} />
-                  <Info label="Similarity runs" value={payload.aiEvidence.similarity.count} />
-                  <Info label="Best similarity" value={payload.aiEvidence.similarity.maxScore == null ? "-" : `${payload.aiEvidence.similarity.maxScore}%`} />
-                  <Info label="Cluster memberships" value={payload.aiEvidence.clusters.length} />
-                </div>
-                {payload.aiEvidence.warnings.map((warning) => <Warning key={warning} title="Evidence warning" text={warning} />)}
-                <p className="mt-4 rounded-2xl border border-amber-700/30 bg-amber-950/15 p-4 text-xs leading-5 text-amber-100">
-                  Evidence-only. Human tuner verification and checksum validation are required before any real file delivery.
-                </p>
+                {!payload.access.aiTrainingManage ? (
+                  <Empty text="AI training evidence access is not assigned to this staff account." />
+                ) : (
+                  <>
+                    <div className="grid gap-3">
+                      <Info label="Training samples" value={payload.aiEvidence.trainingSamples.length} />
+                      <Info label="Similarity runs" value={payload.aiEvidence.similarity.count} />
+                      <Info label="Best similarity" value={payload.aiEvidence.similarity.maxScore == null ? "-" : `${payload.aiEvidence.similarity.maxScore}%`} />
+                      <Info label="Cluster memberships" value={payload.aiEvidence.clusters.length} />
+                    </div>
+                    {payload.aiEvidence.warnings.map((warning) => <Warning key={warning} title="Evidence warning" text={warning} />)}
+                    <p className="mt-4 rounded-2xl border border-amber-700/30 bg-amber-950/15 p-4 text-xs leading-5 text-amber-100">
+                      Evidence-only. Human tuner verification and checksum validation are required before any real file delivery.
+                    </p>
+                  </>
+                )}
               </Panel>
             </section>
 
-            <DtcExpertReviewPanel
-              analysis={dtcAnalysis}
-              configuration={dtcConfiguration ?? dtcAnalysis?.configuration ?? null}
-              limit={dtcLimit}
-              loading={dtcLoading}
-              error={dtcError}
-              onRun={() => { void loadDtcAnalysis(); }}
-            />
+            {payload.access.fileExpertManage && (
+              <DtcExpertReviewPanel
+                analysis={dtcAnalysis}
+                configuration={dtcConfiguration ?? dtcAnalysis?.configuration ?? null}
+                limit={dtcLimit}
+                loading={dtcLoading}
+                error={dtcError}
+                onRun={() => { void loadDtcAnalysis(); }}
+              />
+            )}
 
             <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
               <div className="mb-5 flex items-center gap-3"><MessageSquare className="h-7 w-7 text-red-400" /><h2 className="text-2xl font-black">Internal & Customer Notes</h2></div>
               <div className="grid gap-3 md:grid-cols-[220px_1fr_auto]">
                 <select value={noteType} onChange={(event) => setNoteType(event.target.value)} disabled={readOnlyFallback} className="h-12 rounded-xl border border-white/10 bg-black/30 px-4 text-sm font-black outline-none disabled:cursor-not-allowed disabled:opacity-50">
-                  {workOrderNoteTypes.map((item) => <option key={item} value={item} className="bg-[#111]">{labelFromToken(item)}</option>)}
+                  {workOrderNoteTypes
+                    .filter((item) => item !== "customer_visible" || payload.access.messagesManage)
+                    .map((item) => <option key={item} value={item} className="bg-[#111]">{labelFromToken(item)}</option>)}
                 </select>
                 <input value={noteBody} onChange={(event) => setNoteBody(event.target.value)} disabled={readOnlyFallback} placeholder="Add internal, tuner, pinned or customer-visible note..." className="h-12 rounded-xl border border-white/10 bg-black/30 px-4 text-sm font-bold outline-none placeholder:text-zinc-600 disabled:cursor-not-allowed disabled:opacity-50" />
                 <button onClick={addNote} disabled={saving || readOnlyFallback || !noteBody.trim()} title={readOnlyFallback ? WORK_ORDER_READ_ONLY_FALLBACK_MESSAGE : undefined} className="rounded-xl bg-[#b1121b] px-5 py-3 text-sm font-black hover:bg-[#c91824] disabled:cursor-not-allowed disabled:opacity-50">
@@ -686,22 +708,28 @@ export default function WorkOrderDetailClient() {
               <ActionSelect disabled={readOnlyFallback} label="Admin status" value={String(workOrder.admin_status ?? "new")} options={adminWorkOrderStatuses} onChange={(value) => patchWorkOrder({ admin_status: value })} />
               <ActionSelect disabled={readOnlyFallback} label="Priority" value={String(workOrder.priority ?? "normal")} options={workOrderPriorities} onChange={(value) => patchWorkOrder({ priority: value })} />
               <ActionSelect disabled={readOnlyFallback} label="Tuner status" value={String(workOrder.tuner_status ?? "unassigned")} options={tunerStatuses} onChange={(value) => patchWorkOrder({ tuner_status: value })} />
-              <ActionSelect disabled={readOnlyFallback} label="Payment review" value={String(workOrder.payment_review_status ?? "not_checked")} options={paymentReviewStatuses} onChange={(value) => patchWorkOrder({ payment_review_status: value })} />
+              {payload.access.creditsManage && <ActionSelect disabled={readOnlyFallback} label="Payment review" value={String(workOrder.payment_review_status ?? "not_checked")} options={paymentReviewStatuses} onChange={(value) => patchWorkOrder({ payment_review_status: value })} />}
               <ActionSelect disabled={readOnlyFallback} label="Quality check" value={String(workOrder.quality_check_status ?? "pending")} options={qualityCheckStatuses} onChange={(value) => patchWorkOrder({ quality_check_status: value })} />
               <ActionSelect disabled={readOnlyFallback} label="Delivery" value={String(workOrder.delivery_status ?? "not_ready")} options={deliveryStatuses} onChange={(value) => patchWorkOrder({ delivery_status: value })} />
-              <ActionSelect disabled={readOnlyFallback} label="Final file" value={String(workOrder.final_file_status ?? "not_ready")} options={finalFileStatuses} onChange={(value) => patchWorkOrder({ final_file_status: value })} />
+              {payload.access.filesUpload && <ActionSelect disabled={readOnlyFallback} label="Final file" value={String(workOrder.final_file_status ?? "not_ready")} options={finalFileStatuses} onChange={(value) => patchWorkOrder({ final_file_status: value })} />}
               {saving && <div className="mt-3 text-xs text-zinc-500"><Loader2 className="mr-1 inline h-3 w-3 animate-spin" />Saving...</div>}
             </Panel>
 
             <Panel title="Payment / Credits" icon={<CreditCard />}>
-              <Info label="Credits required" value={payload.payment.summary.creditsRequired} />
-              <Info label="Customer balance" value={payload.payment.summary.customerBalance ?? "-"} />
-              <Info label="Payment status" value={payload.payment.summary.paymentStatus} />
-              <Info label="Payment records" value={payload.payment.paymentRecords.length} />
-              <Info label="Credit ledger rows" value={payload.payment.creditTransactions.length} />
-              <p className="mt-4 rounded-2xl border border-white/10 bg-black/25 p-4 text-xs leading-5 text-zinc-500">
-                Read-only summary. This screen does not mutate payments, credits or refunds.
-              </p>
+              {!payload.access.creditsManage ? (
+                <Empty text="Finance access is not assigned to this staff account." />
+              ) : (
+                <>
+                  <Info label="Credits required" value={payload.payment.summary.creditsRequired} />
+                  <Info label="Customer balance" value={payload.payment.summary.customerBalance ?? "-"} />
+                  <Info label="Payment status" value={payload.payment.summary.paymentStatus} />
+                  <Info label="Payment records" value={payload.payment.paymentRecords.length} />
+                  <Info label="Credit ledger rows" value={payload.payment.creditTransactions.length} />
+                  <p className="mt-4 rounded-2xl border border-white/10 bg-black/25 p-4 text-xs leading-5 text-zinc-500">
+                    Read-only summary. This screen does not mutate payments, credits or refunds.
+                  </p>
+                </>
+              )}
             </Panel>
 
             <Panel title="Quality Checklist" icon={<ClipboardCheck />}>
@@ -719,7 +747,9 @@ export default function WorkOrderDetailClient() {
             </Panel>
 
             <Panel title="Customer Messages" icon={<MessageSquare />}>
-              <div className="max-h-[420px] space-y-3 overflow-auto pr-1">
+              {!payload.access.messagesManage ? (
+                <Empty text="Message management access is not assigned to this staff account." />
+              ) : <div className="max-h-[420px] space-y-3 overflow-auto pr-1">
                 {payload.requestMessages.length === 0 ? <Empty text="No customer messages yet." /> : payload.requestMessages.map((entry) => {
                   const hidden = entry.visibility_status === "hidden" || entry.visibility_status === "archived";
                   return (
@@ -749,7 +779,7 @@ export default function WorkOrderDetailClient() {
                     </button>
                   </div>
                 );})}
-              </div>
+              </div>}
             </Panel>
           </aside>
         </div>

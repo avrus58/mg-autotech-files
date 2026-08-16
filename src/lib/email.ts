@@ -1,4 +1,5 @@
 import { Resend } from "resend";
+import { createHash } from "node:crypto";
 import { sendRequestCreatedNotifications } from "@/lib/email/events";
 
 function getResendClient() {
@@ -36,6 +37,13 @@ function formatOptional(value: string) {
   return trimmed ? escapeHtml(trimmed) : "-";
 }
 
+function widgetEmailRequestOptions(idempotencyKey?: string) {
+  if (!idempotencyKey) return undefined;
+  return {
+    idempotencyKey: `mg_widget_${createHash("sha256").update(idempotencyKey).digest("hex")}`,
+  };
+}
+
 export async function sendOrderReceivedEmail({
   orderId,
   customerEmail,
@@ -63,11 +71,13 @@ export async function sendWidgetLifecycleEmail({
   companyName,
   event,
   detail,
+  idempotencyKey,
 }: {
   customerEmail: string;
   companyName: string;
   event: "activated" | "payment_failed" | "domain_approved" | "domain_rejected" | "key_changed" | "cancelled";
   detail?: string;
+  idempotencyKey?: string;
 }) {
   if (!process.env.RESEND_API_KEY || !customerEmail) return;
   const content = {
@@ -78,12 +88,13 @@ export async function sendWidgetLifecycleEmail({
     key_changed: ["Widget public key changed", "A new public widget key was generated. Replace the old embed code on your website."],
     cancelled: ["Widget subscription cancelled", "Your vehicle widget subscription has ended and public widget access is disabled."],
   }[event];
-  await getResendClient().emails.send({
+  const result = await getResendClient().emails.send({
     from: fromEmail,
     to: customerEmail,
     subject: content[0],
     html: `<div style="font-family:Arial,sans-serif;background:#050505;color:#fff;padding:30px"><div style="max-width:650px;margin:auto;background:#111;border:1px solid #333;border-radius:18px;padding:26px"><p style="color:#ff4b5c;font-size:12px;font-weight:bold;letter-spacing:2px;text-transform:uppercase">MG AutoTech Vehicle Widget</p><h1 style="font-size:28px">${escapeHtml(content[0])}</h1><p style="color:#bbb;line-height:1.7">Hello ${escapeHtml(companyName || "Partner")},</p><p style="color:#ddd;line-height:1.7">${escapeHtml(content[1])}</p>${detail ? `<p style="background:#050505;border-radius:12px;padding:14px;color:#bbb">${escapeHtml(detail)}</p>` : ""}<a href="${siteUrl}/dashboard/widget" style="display:inline-block;margin-top:16px;background:#b1121b;color:white;text-decoration:none;padding:14px 20px;border-radius:12px;font-weight:bold">Open Widget Dashboard</a></div></div>`,
-  });
+  }, widgetEmailRequestOptions(idempotencyKey));
+  if (result.error) throw new Error(result.error.message);
 }
 
 export async function sendNewWidgetSubscriberNotification({
@@ -91,19 +102,22 @@ export async function sendNewWidgetSubscriberNotification({
   customerEmail,
   domain,
   subscriptionId,
+  idempotencyKey,
 }: {
   companyName: string;
   customerEmail: string;
   domain: string;
   subscriptionId: string | null;
+  idempotencyKey?: string;
 }) {
   if (!process.env.RESEND_API_KEY) return;
-  await getResendClient().emails.send({
+  const result = await getResendClient().emails.send({
     from: fromEmail,
     to: adminNotificationEmail,
     subject: `New Widget Subscriber: ${companyName}`,
     html: `<div style="font-family:Arial,sans-serif;background:#050505;color:#fff;padding:30px"><div style="max-width:650px;margin:auto;background:#111;border:1px solid #333;border-radius:18px;padding:26px"><p style="color:#ff4b5c;font-size:12px;font-weight:bold;letter-spacing:2px;text-transform:uppercase">MG AutoTech Vehicle Widget</p><h1>New widget subscriber</h1><p><strong>Company:</strong> ${escapeHtml(companyName)}</p><p><strong>E-mail:</strong> ${escapeHtml(customerEmail)}</p><p><strong>Allowed domain:</strong> ${escapeHtml(domain)}</p><p><strong>Stripe subscription:</strong> ${escapeHtml(subscriptionId || "pending")}</p><a href="${siteUrl}/admin/widget-clients" style="display:inline-block;margin-top:16px;background:#b1121b;color:white;text-decoration:none;padding:14px 20px;border-radius:12px;font-weight:bold">Open Widget Clients</a></div></div>`,
-  });
+  }, widgetEmailRequestOptions(idempotencyKey));
+  if (result.error) throw new Error(result.error.message);
 }
 
 export async function sendWidgetEnquiryEmail({

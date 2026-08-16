@@ -137,7 +137,7 @@ test("admin certification UI and route remain protected and render-only", async 
   assert.match(page, /xl:grid-cols-\[minmax\(0,1fr\)_320px\]/);
   assert.match(route, /action === "certify"/);
   assert.match(route, /runEmailJourneyCertification\(\)/);
-  assert.match(route, /requireStaffPermission\(request, "orders\.manage"\)/);
+  assert.match(route, /requireStaffPermission\(request, "messages\.manage"\)/);
 
   const adminEmail = await import("../src/app/api/admin/email/route");
   const response = await adminEmail.POST(new Request("http://localhost/api/admin/email", {

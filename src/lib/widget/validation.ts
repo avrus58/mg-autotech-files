@@ -3,7 +3,13 @@ import { normalizeWidgetLanguage } from "@/lib/i18n/widget-translations";
 import { extractRequestDomain, extractRequestOrigin, isDomainAllowed } from "@/lib/widget/domain";
 import { getWidgetSettings } from "@/lib/widget/settings";
 import { verifyWidgetSession } from "@/lib/widget/session";
-import { consumeWidgetRateLimit, getMonthlyWidgetUsage, hashRequestIp } from "@/lib/widget/usage";
+import {
+  consumeWidgetFrontDoorAbuseLimit,
+  consumeWidgetLayeredAbuseLimit,
+  consumeWidgetRateLimit,
+  getMonthlyWidgetUsage,
+  hashRequestIp,
+} from "@/lib/widget/usage";
 import {
   sanitizeWidgetLanguages,
   type WidgetClient,
@@ -17,6 +23,13 @@ type ValidationOptions = {
   log?: boolean;
   rateLimit?: boolean;
 };
+
+const widgetBootstrapPaths = new Set([
+  "/api/widget/config",
+  "/api/widget/validate",
+  "/embed/vehicle-selector",
+]);
+const widgetPublicKeyPattern = /^pk_mga_widget_[A-Za-z0-9_-]{24}$/;
 
 function mapClient(row: Record<string, unknown>): WidgetClient {
   return {
@@ -64,7 +77,7 @@ async function writeAccessLog(input: {
   try {
     await getSupabaseAdmin().from("widget_access_logs").insert({
       client_id: input.client?.id ?? null,
-      public_key: input.publicKey || null,
+      public_key: input.publicKey.slice(0, 64) || null,
       request_domain: input.requestDomain || null,
       allowed_domain: input.client?.allowed_domain ?? null,
       path: input.path,
@@ -79,39 +92,41 @@ async function writeAccessLog(input: {
   }
 }
 
-async function recordVerifiedOrigin(client: WidgetClient, requestDomain: string) {
-  if (client.domain_verified) return;
-  const admin = getSupabaseAdmin();
-  const verified = await admin
-    .from("widget_clients")
-    .update({ domain_verified: true })
-    .eq("id", client.id)
-    .eq("domain_verified", false)
-    .select("id")
-    .maybeSingle();
-  if (!verified.data || verified.error) return;
-  client.domain_verified = true;
-  await admin.from("widget_audit_logs").insert({
-    actor_user_id: null,
-    client_id: client.id,
-    action: "system.live_origin_verified",
-    details: { domain: requestDomain },
-  });
-}
-
 export async function validateWidgetClient(
   publicKey: string,
   headers: Headers,
   requestedLang?: string | null,
   options: ValidationOptions = {}
 ): Promise<WidgetValidationResult> {
-  const path = options.path ?? "/api/widget/config";
+  const path = options.path ?? "/api/widget/unknown";
   const shouldLog = options.log ?? true;
-  const settingsResult = await getWidgetSettings();
-  const settings = settingsResult.settings;
-  const session = options.sessionToken ? verifyWidgetSession(options.sessionToken) : null;
+  const sessionToken = options.sessionToken?.trim() ?? "";
+  let session: ReturnType<typeof verifyWidgetSession> = null;
+  let sessionValidationFailed = false;
+  if (sessionToken) {
+    try {
+      session = verifyWidgetSession(sessionToken);
+      sessionValidationFailed = !session;
+    } catch {
+      sessionValidationFailed = true;
+    }
+  }
+  const bootstrap = widgetBootstrapPaths.has(path);
   const requestDomain = session?.domain || extractRequestDomain(headers);
   const requestOrigin = session?.origin || extractRequestOrigin(headers);
+
+  if (options.rateLimit !== false) {
+    try {
+      if (!(await consumeWidgetFrontDoorAbuseLimit(headers))) {
+        return { valid: false, requestDomain, requestOrigin, reason: "ip_rate_limit_exceeded" };
+      }
+    } catch {
+      return { valid: false, requestDomain, requestOrigin, reason: "abuse_guard_unavailable" };
+    }
+  }
+
+  const settingsResult = await getWidgetSettings();
+  const settings = settingsResult.settings;
 
   const block = async (reason: string, client?: WidgetClient, language?: WidgetLanguage) => {
     if (shouldLog) {
@@ -124,7 +139,9 @@ export async function validateWidgetClient(
   };
 
   if (!settingsResult.databaseReady || !settings.widget_product_enabled) return block("global_disabled");
-  if (!publicKey) return block("invalid_key");
+  if (!widgetPublicKeyPattern.test(publicKey)) return block("invalid_key");
+  if (sessionValidationFailed) return block("invalid_session");
+  if (!bootstrap && !session) return block("session_required");
 
   const admin = getSupabaseAdmin();
   const keyResult = await admin
@@ -139,7 +156,9 @@ export async function validateWidgetClient(
   if (clientResult.error || !clientResult.data) return block("client_not_found");
   const client = mapClient(clientResult.data);
 
-  if (session && (session.publicKey !== publicKey || session.clientId !== client.id)) return block("invalid_key", client);
+  if (session && (session.publicKey !== publicKey || session.clientId !== client.id)) {
+    return block("invalid_session", client);
+  }
   if (client.status !== "active") return block("client_not_active", client);
   if (client.admin_suspended || !client.widget_enabled) return block("widget_disabled", client);
 
@@ -164,27 +183,41 @@ export async function validateWidgetClient(
   );
   if (!language) return block("language_disabled", client);
 
-  let usage: number;
-  try {
-    usage = await getMonthlyWidgetUsage(client.id);
-  } catch {
-    return block("usage_unavailable", client, language);
-  }
-  if (client.monthly_usage_limit > 0 && usage >= client.monthly_usage_limit) {
-    return block("usage_limit_exceeded", client, language);
-  }
-
   if (options.rateLimit !== false) {
-    let withinRateLimit: boolean;
     try {
-      withinRateLimit = await consumeWidgetRateLimit(client.id);
+      const layeredLimit = await consumeWidgetLayeredAbuseLimit({
+        headers,
+        clientId: client.id,
+        sessionToken,
+        bootstrap,
+      });
+      if (!layeredLimit.allowed) return block(layeredLimit.reason, client, language);
     } catch {
-      return block("rate_limit_unavailable", client, language);
+      return block("abuse_guard_unavailable", client, language);
     }
-    if (!withinRateLimit) return block("usage_limit_exceeded", client, language);
   }
 
-  if (requestDomain) await recordVerifiedOrigin(client, requestDomain);
+  if (path !== "/api/widget/validate") {
+    let usage: number;
+    try {
+      usage = await getMonthlyWidgetUsage(client.id);
+    } catch {
+      return block("usage_unavailable", client, language);
+    }
+    if (client.monthly_usage_limit > 0 && usage >= client.monthly_usage_limit) {
+      return block("usage_limit_exceeded", client, language);
+    }
+
+    if (options.rateLimit !== false) {
+      let withinRateLimit: boolean;
+      try {
+        withinRateLimit = await consumeWidgetRateLimit(client.id);
+      } catch {
+        return block("rate_limit_unavailable", client, language);
+      }
+      if (!withinRateLimit) return block("usage_limit_exceeded", client, language);
+    }
+  }
 
   if (shouldLog) {
     await writeAccessLog({

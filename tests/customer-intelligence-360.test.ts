@@ -229,7 +229,7 @@ test("customer intelligence API is admin-only, read-only and private by construc
   const server = source("src", "lib", "growth", "customerIntelligenceServer.ts");
   const ui = source("src", "app", "admin", "growth", "customers", "[id]", "CustomerIntelligenceClient.tsx");
   assert.match(route, /export async function GET/);
-  assert.match(route, /requireStaffPermission\(request, "customers\.view"\)/);
+  assert.match(route, /requireStaffPermissions\(request, customerIntelligencePermissions\)/);
   assert.match(route, /Cache-Control": "private, no-store/);
   assert.match(route, /X-Robots-Tag": "noindex, nofollow, noarchive/);
   assert.doesNotMatch(server, /\.(insert|update|upsert|delete|rpc)\(/);

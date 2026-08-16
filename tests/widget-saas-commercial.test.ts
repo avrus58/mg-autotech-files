@@ -156,13 +156,12 @@ test("customer configuration rejects unsupported languages, empty lead channels 
   assert.match(admin, /No client settings were provided/);
 });
 
-test("live domain verification is evidence-based and not admin editable", () => {
+test("request Origin is not promoted to domain ownership proof", () => {
   const validation = source("src", "lib", "widget", "validation.ts");
   const detailUi = source("src", "app", "admin", "widget-clients", "[id]", "page.tsx");
-  assert.match(validation, /system\.live_origin_verified/);
-  assert.match(validation, /eq\("domain_verified", false\)/);
-  assert.match(validation, /if \(requestDomain\) await recordVerifiedOrigin/);
-  assert.ok(validation.indexOf("if (requestDomain) await recordVerifiedOrigin") > validation.indexOf("withinRateLimit = await consumeWidgetRateLimit"));
+  assert.doesNotMatch(validation, /system\.live_origin_verified|recordVerifiedOrigin/);
+  assert.match(validation, /session\.publicKey !== publicKey \|\| session\.clientId !== client\.id/);
+  assert.match(validation, /consumeWidgetFrontDoorAbuseLimit/);
   assert.match(validation, /return block\("usage_unavailable"/);
   assert.match(validation, /return block\("rate_limit_unavailable"/);
   assert.match(source("src", "lib", "widget", "usage.ts"), /if \(error\) throw error/);

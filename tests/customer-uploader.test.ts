@@ -111,7 +111,7 @@ test("web request catalog exposes the same three TCU stage prices", () => {
   assert.doesNotMatch(requestPage, /id: "tcu_tuning"[\s\S]*?credits: 10/);
 });
 
-test("desktop app-check supports version control without customer secrets", async () => {
+test("desktop app-check enforces the secure protocol floor without customer secrets", async () => {
   const previousMin = process.env.DESKTOP_APP_MIN_VERSION;
   const previousLatest = process.env.DESKTOP_APP_LATEST_VERSION;
   const previousMaintenance = process.env.DESKTOP_APP_MAINTENANCE_MODE;
@@ -130,7 +130,8 @@ test("desktop app-check supports version control without customer secrets", asyn
     const body = await response.json();
     assert.equal(response.status, 200);
     assert.equal(body.server_ok, true);
-    assert.equal(body.update_required, false);
+    assert.equal(body.minimum_supported_version, "0.2.0");
+    assert.equal(body.update_required, true);
     assert.equal(body.update_available, true);
     assert.equal(body.latest_version, "0.2.0");
     assert.equal(body.update_url, "https://file.mgautotech.de/downloads/uploader.exe");
@@ -239,8 +240,10 @@ test("desktop APIs require customer auth and scope data to the authenticated cus
   const listRoute = readFileSync(resolve(process.cwd(), "src/app/api/desktop/requests/route.ts"), "utf8");
   const finalizeRoute = readFileSync(resolve(process.cwd(), "src/app/api/desktop/requests/finalize/route.ts"), "utf8");
   assert.match(listRoute, /\.eq\("customer_id", auth\.user\.id\)/);
-  assert.match(finalizeRoute, /\.eq\("customer_id", auth\.user\.id\)/);
-  assert.match(finalizeRoute, /expectedPath = uploadPathFor\(auth\.user\.id/);
+  assert.match(finalizeRoute, /\.eq\("id", auth\.user\.id\)/);
+  assert.match(finalizeRoute, /user_id: auth\.user\.id/);
+  assert.match(finalizeRoute, /create_desktop_order_with_credit_deduction/);
+  assert.match(finalizeRoute, /expectedPath = desktopUploadPathFor\(/);
   assert.match(finalizeRoute, /parsed\.data\.upload\.path !== expectedPath/);
   assert.match(finalizeRoute, /parsed\.data\.uploadSessionId !== desktopUploadSessionIdFor/);
   assert.match(finalizeRoute, /validateDesktopCreditAccess/);

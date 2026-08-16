@@ -22,6 +22,16 @@ export function normalizeDomainInput(value: string) {
   return normalizeHostname(value);
 }
 
+/**
+ * Domain allocations treat the conventional www host and the apex host as
+ * one billing/security boundary. Keep this in sync with the
+ * widget_clients canonical-domain trigger.
+ */
+export function canonicalWidgetDomain(value: string | null | undefined) {
+  const normalized = normalizeHostname(value);
+  return normalized.startsWith("www.") ? normalized.slice(4) : normalized;
+}
+
 export function extractRequestOrigin(headers: Headers) {
   const origin = headers.get("origin");
   if (origin && origin !== "null") {

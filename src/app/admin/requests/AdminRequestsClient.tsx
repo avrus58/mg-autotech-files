@@ -79,6 +79,16 @@ type ApiItem = {
 };
 
 type ApiPayload = {
+  access: {
+    customersView: boolean;
+    filesDownload: boolean;
+    filesUpload: boolean;
+    messagesManage: boolean;
+    creditsManage: boolean;
+    fileExpertManage: boolean;
+    aiTrainingManage: boolean;
+    ordersManage: boolean;
+  };
   migrationReady: boolean;
   items: ApiItem[];
 };
@@ -283,7 +293,11 @@ export default function AdminRequestsClient() {
               <Metric icon={<FileCode2 />} label="Total requests" value={stats.total} />
               <Metric icon={<Clock3 />} label="Open work" value={stats.open} />
               <Metric icon={<AlertTriangle />} label="Needs review" value={stats.review} />
-              <Metric icon={<CheckCircle2 />} label="Delivered files" value={stats.delivered} />
+              <Metric
+                icon={<CheckCircle2 />}
+                label={payload?.access.filesDownload ? "Delivered files" : "File visibility"}
+                value={payload?.access.filesDownload ? stats.delivered : "Restricted"}
+              />
             </div>
 
             <div className="mt-6 rounded-[2rem] border border-white/10 bg-white/[0.04] p-4">
@@ -331,8 +345,14 @@ export default function AdminRequestsClient() {
                       <p className="mt-1 truncate text-sm text-zinc-400">{item.order.vehicle_generation || "Generation not set"} - {item.order.vehicle_engine || "Engine not set"}</p>
                     </div>
                     <div className="min-w-0">
-                      <div className="flex items-center gap-2 text-sm font-black text-white"><User className="h-4 w-4 text-red-400" />{item.customer?.company_name || item.customer?.full_name || item.order.customer_email || "Unknown customer"}</div>
-                      <div className="mt-2 text-xs text-zinc-500">{item.customer?.customer_id || item.order.customer_id || "-"}</div>
+                      {payload?.access.customersView ? (
+                        <>
+                          <div className="flex items-center gap-2 text-sm font-black text-white"><User className="h-4 w-4 text-red-400" />{item.customer?.company_name || item.customer?.full_name || item.order.customer_email || "Unknown customer"}</div>
+                          <div className="mt-2 text-xs text-zinc-500">{item.customer?.customer_id || item.order.customer_id || "-"}</div>
+                        </>
+                      ) : (
+                        <div className="rounded-xl border border-white/10 bg-black/25 px-3 py-2 text-xs font-black text-zinc-500">Customer profile restricted</div>
+                      )}
                       <div className="mt-2 text-xs text-zinc-500">Created {formatDate(item.order.created_at)}</div>
                     </div>
                     <div className="min-w-0">
@@ -346,11 +366,13 @@ export default function AdminRequestsClient() {
                           </span>
                         )}
                       </div>
-                      <div className="grid grid-cols-3 gap-2 text-xs text-zinc-500">
-                        <Indicator ok={item.indicators.hasOriginalFile} label="ORI" />
-                        <Indicator ok={item.indicators.hasDeliveredFile} label="MOD" />
-                        <Indicator ok={item.indicators.hasAiEvidence} label="AI" />
-                      </div>
+                      {(payload?.access.filesDownload || payload?.access.aiTrainingManage) && (
+                        <div className="flex flex-wrap gap-2 text-xs text-zinc-500">
+                          {payload?.access.filesDownload && <Indicator ok={item.indicators.hasOriginalFile} label="ORI" />}
+                          {payload?.access.filesDownload && <Indicator ok={item.indicators.hasDeliveredFile} label="MOD" />}
+                          {payload?.access.aiTrainingManage && <Indicator ok={item.indicators.hasAiEvidence} label="AI" />}
+                        </div>
+                      )}
                       <div className="mt-3 grid gap-2 text-xs">
                         <div className="flex min-w-0 items-start gap-2 rounded-xl border border-white/10 bg-black/25 px-3 py-2">
                           <Clock3 className="mt-0.5 h-4 w-4 shrink-0 text-red-300" />
@@ -364,10 +386,14 @@ export default function AdminRequestsClient() {
                         </div>
                       </div>
                     </div>
-                    <div className="grid gap-2 text-right text-sm">
-                      <div className={`rounded-xl border px-3 py-2 font-black ${badgeClass(item.workOrder?.payment_review_status)}`}><CreditCard className="mr-1 inline h-4 w-4" />{labelFromToken(item.workOrder?.payment_review_status)}</div>
-                      <div className="rounded-xl border border-white/10 bg-black/25 px-3 py-2 font-black text-zinc-300">{Number(item.order.credits_required ?? 0)} credits</div>
-                    </div>
+                    {payload?.access.creditsManage ? (
+                      <div className="grid gap-2 text-right text-sm">
+                        <div className={`rounded-xl border px-3 py-2 font-black ${badgeClass(item.workOrder?.payment_review_status)}`}><CreditCard className="mr-1 inline h-4 w-4" />{labelFromToken(item.workOrder?.payment_review_status)}</div>
+                        <div className="rounded-xl border border-white/10 bg-black/25 px-3 py-2 font-black text-zinc-300">{Number(item.order.credits_required ?? 0)} credits</div>
+                      </div>
+                    ) : (
+                      <div className="rounded-xl border border-white/10 bg-black/25 px-3 py-2 text-center text-xs font-black text-zinc-500">Finance restricted</div>
+                    )}
                   </div>
                 </Link>
               ))}
@@ -405,7 +431,7 @@ function AdminRequestsLoadErrorState({ message, retrying, onRetry }: { message: 
   );
 }
 
-function Metric({ icon, label, value }: { icon: React.ReactNode; label: string; value: number }) {
+function Metric({ icon, label, value }: { icon: React.ReactNode; label: string; value: number | string }) {
   return (
     <div className="rounded-[1.5rem] border border-white/10 bg-white/[0.04] p-5">
       <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-2xl bg-red-950/40 text-red-400">{icon}</div>

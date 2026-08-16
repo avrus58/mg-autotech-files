@@ -9,6 +9,7 @@ import {
   Loader2,
   AlertTriangle,
 } from "lucide-react";
+import { authenticatedFetch } from "@/lib/authGuards";
 import { trackPurchaseCompleted } from "@/lib/publicAnalytics";
 
 type ConfirmState = "checking" | "success" | "error" | "missing";
@@ -19,6 +20,7 @@ export default function PaymentSuccessPage() {
   const [credits, setCredits] = useState<number | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
     const confirmPayment = async () => {
       const params = new URLSearchParams(window.location.search);
       const provider = params.get("provider") || "stripe";
@@ -42,27 +44,46 @@ export default function PaymentSuccessPage() {
       }
 
       try {
-        const response = await fetch(endpoint, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(payload),
-        });
+        let response: Response | null = null;
+        let data: Record<string, unknown> = {};
+        for (let attempt = 0; attempt < 4; attempt += 1) {
+          response = await authenticatedFetch(endpoint, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(payload),
+          });
+          data = await response.json();
+          if (response.ok) break;
+          if (response.status !== 409 || attempt === 3) break;
+          const retryAfter = Math.min(
+            5,
+            Math.max(1, Number(response.headers.get("Retry-After")) || 2)
+          );
+          if (!cancelled) {
+            setMessage("Payment is still being reconciled securely. Checking again...");
+          }
+          await new Promise((resolve) => window.setTimeout(resolve, retryAfter * 1000));
+          if (cancelled) return;
+        }
 
-        const data = await response.json();
-
-        if (!response.ok) {
-          setState("error");
-          setMessage(data.error ?? "Payment could not be confirmed.");
+        if (!response?.ok) {
+          if (!cancelled) {
+            setState("error");
+            setMessage(typeof data.error === "string" ? data.error : "Payment could not be confirmed.");
+          }
           return;
         }
 
         setCredits(Number(data.credits ?? 0));
         setState("success");
         setMessage("Payment confirmed. Credits were added to your account.");
-        const conversionValue = Number(data.conversion?.value);
-        const conversionCurrency = String(data.conversion?.currency ?? "");
+        const conversion = data.conversion && typeof data.conversion === "object"
+          ? data.conversion as { value?: unknown; currency?: unknown }
+          : null;
+        const conversionValue = Number(conversion?.value);
+        const conversionCurrency = String(conversion?.currency ?? "");
         if (Number.isFinite(conversionValue) && conversionValue >= 0 && /^[A-Z]{3}$/.test(conversionCurrency)) {
           void trackPurchaseCompleted({
             anonymousPaymentSeed: sessionId,
@@ -79,6 +100,9 @@ export default function PaymentSuccessPage() {
     };
 
     confirmPayment();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const isSuccess = state === "success";

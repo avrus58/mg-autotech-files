@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { requireStaffPermission } from "@/lib/apiAuth";
+import { requireStaffPermissions } from "@/lib/apiAuth";
+import { growthReportPermissions } from "@/lib/growth/access";
 import { buildGrowthCustomerSuccessReport, parseGrowthReportRange } from "@/lib/growth/report";
 
 const headers = {
@@ -11,7 +12,7 @@ const headers = {
 };
 
 export async function GET(request: Request) {
-  const auth = await requireStaffPermission(request, "orders.view");
+  const auth = await requireStaffPermissions(request, growthReportPermissions);
   if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status, headers });
 
   try {

@@ -169,7 +169,7 @@ test("admin Ads readiness center is protected and never returns public configura
   const client = projectFile("src", "app", "admin", "ads-performance", "AdsPerformanceClient.tsx");
   const adminLayout = projectFile("src", "app", "admin", "layout.tsx");
 
-  assert.match(route, /requireStaffPermission\(request, "orders\.view"\)/);
+  assert.match(route, /requireStaffPermissions\(request, adsPerformancePermissions\)/);
   assert.match(route, /private, no-store/);
   assert.match(adminLayout, /BrowserAuthBoundary/);
   assert.match(client, /Google Ads Readiness & Conversion Center/);

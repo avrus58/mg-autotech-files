@@ -219,13 +219,13 @@ test("admin email controls expose delivery issues without leaking them to custom
   const adminPage = readFileSync(resolve(process.cwd(), "src", "app", "admin", "email", "page.tsx"), "utf8");
   const notificationRoute = readFileSync(resolve(process.cwd(), "src", "app", "api", "admin", "notifications", "route.ts"), "utf8");
   const delivery = readFileSync(resolve(process.cwd(), "src", "lib", "email", "deliveryReliability.ts"), "utf8");
-  assert.match(adminRoute, /requireStaffPermission\(request, "orders\.view"\)/);
-  assert.match(adminRoute, /requireStaffPermission\(request, "orders\.manage"\)/);
+  assert.match(adminRoute, /requireStaffPermission\(request, "messages\.manage"\)/);
   assert.match(adminRoute, /action: z\.enum\(\["send_test", "preview", "certify"\]\)/);
   assert.match(adminPage, /Provider delivery status/);
   assert.match(adminPage, /Suppressed recipients/);
   assert.match(adminPage, /sandbox=""/);
   assert.match(notificationRoute, /requireStaffPermission\(request, "orders\.view"\)/);
+  assert.match(notificationRoute, /hasStaffPermission\(auth\.access, "messages\.manage"\)/);
   assert.match(delivery, /select\("provider_event_id,provider_message_id,provider_event_type,delivery_status,occurred_at"\)/);
   assert.match(delivery, /seenMessages/);
   assert.doesNotMatch(delivery, /listAdminEmailDeliveryIssues[\s\S]*select\([^)]*recipient_email/);

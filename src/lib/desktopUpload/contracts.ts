@@ -257,6 +257,18 @@ export function desktopUploadSessionIdFor(idempotencyKey: string) {
   return `desktop-upload-${normalizeDesktopIdempotencyKey(idempotencyKey)}`;
 }
 
+export function desktopUploadPathFor(input: {
+  userId: string;
+  idempotencyKey: string;
+  fileName: string;
+  sha256: string;
+}) {
+  const safeKey = normalizeDesktopIdempotencyKey(input.idempotencyKey);
+  const sha256 = input.sha256.toLowerCase();
+  if (!safeKey || !isValidSha256(sha256)) throw new Error("Invalid desktop upload identity.");
+  return `${input.userId}/desktop/${safeKey}/${sha256}-${safeDesktopFileName(input.fileName)}`;
+}
+
 export function validateDesktopCreditAccess(profile: {
   credit_balance: number | string | null;
   allow_negative_credits?: boolean | null;

@@ -10,7 +10,7 @@ export default defineConfig(({ mode }: ConfigEnv) => {
     VITE_SUPABASE_URL: appEnv.VITE_SUPABASE_URL || rootEnv.VITE_SUPABASE_URL || rootEnv.NEXT_PUBLIC_SUPABASE_URL || process.env.VITE_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || "",
     VITE_SUPABASE_ANON_KEY: appEnv.VITE_SUPABASE_ANON_KEY || rootEnv.VITE_SUPABASE_ANON_KEY || rootEnv.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "",
     VITE_API_BASE_URL: appEnv.VITE_API_BASE_URL || rootEnv.VITE_API_BASE_URL || process.env.VITE_API_BASE_URL || "https://file.mgautotech.de",
-    VITE_APP_VERSION: appEnv.VITE_APP_VERSION || process.env.VITE_APP_VERSION || "0.1.0",
+    VITE_APP_VERSION: appEnv.VITE_APP_VERSION || process.env.VITE_APP_VERSION || "0.2.0",
     VITE_APP_BUILD_CHANNEL: appEnv.VITE_APP_BUILD_CHANNEL || process.env.VITE_APP_BUILD_CHANNEL || "stable",
   };
 

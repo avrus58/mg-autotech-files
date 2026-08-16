@@ -16,7 +16,7 @@ function readProjectFile(...segments: string[]) {
 
 function readHomepageCompactResourceSection(homepage: string, id: string) {
   const groupSource =
-    homepage.match(new RegExp(`\\n  \\{\\n    id: "${id}"[\\s\\S]*?\\n  \\},`))?.[0] ?? "";
+    homepage.match(new RegExp(`\\r?\\n  \\{\\r?\\n    id: "${id}"[\\s\\S]*?\\r?\\n  \\},`))?.[0] ?? "";
   const sourceOnlyContract = `
 Boundary:
 aria-label={\`\${item.action}: \${item.title}\`}
@@ -190,7 +190,7 @@ test("customer order detail keeps queue internals out of the customer workspace"
 
 test("customer order detail provides a safe support summary copy action", () => {
   const page = readProjectFile("src", "app", "dashboard", "orders", "[id]", "page.tsx");
-  const helper = page.match(/function buildCustomerSupportSummary[\s\S]*?\n}\n/)?.[0] ?? "";
+  const helper = page.match(/function buildCustomerSupportSummary[\s\S]*?\r?\n}\r?\n/)?.[0] ?? "";
 
   assert.match(page, /function buildCustomerSupportSummary\(order: Order \| null, fallbackId: string\)/);
   assert.match(helper, /MG AutoTech request/);
@@ -397,7 +397,7 @@ test("customer additional file upload shows phase-aware retry-safe feedback", ()
   assert.match(page, /Uploading file/);
   assert.match(page, /Verifying upload/);
   assert.match(page, /setAdditionalUploadPhase\("preparing"\)[\s\S]*additional-file\/prepare/);
-  assert.match(page, /setAdditionalUploadPhase\("uploading"\)[\s\S]*\.upload\(prepared\.upload\.path, file/);
+  assert.match(page, /setAdditionalUploadPhase\("uploading"\)[\s\S]*\.uploadToSignedUrl\(prepared\.upload\.path, prepared\.upload\.token, file/);
   assert.match(page, /setAdditionalUploadPhase\("verifying"\)[\s\S]*additional-file\/finalize/);
   assert.match(page, /finally\s*\{\s*setAdditionalUploadPhase\("idle"\);/);
   assert.match(page, /aria-busy=\{additionalUploading\}/);
@@ -459,7 +459,7 @@ test("customer order archive summarizes the loaded page safely", () => {
   assert.match(orders, /const loadedOrdersSummary = useMemo\(\(\) => \{/);
   assert.match(orders, /loaded: orders\.length/);
   assert.match(orders, /needsResponse: orders\.filter\(\(order\) => order\.status === "customer_info_needed"\)\.length/);
-  assert.match(orders, /delivered: orders\.filter\(\(order\) => Boolean\(order\.modified_file_path\)\)\.length/);
+  assert.match(orders, /delivered: orders\.filter\(\(order\) => order\.status === "completed"\)\.length/);
   assert.match(orders, /creditsShown: orders\.reduce/);
   assert.match(orders, /Loaded page/);
   assert.match(orders, /\{loadedOrdersSummary\.loaded\} \/ \{total\}/);
@@ -960,8 +960,8 @@ test("request DTC integration keeps customer and admin projections bounded", () 
   const adminRoute = readProjectFile("src", "app", "api", "admin", "requests", "[id]", "dtc-analysis", "route.ts");
   const customerPage = readProjectFile("src", "app", "dashboard", "orders", "[id]", "page.tsx");
   const adminClient = readProjectFile("src", "app", "admin", "requests", "[id]", "WorkOrderDetailClient.tsx");
-  const customerPanel = customerPage.match(/function CustomerDtcAnalysisPanel[\s\S]*?\n}\n\nfunction Detail/)?.[0] ?? "";
-  const adminPanel = adminClient.match(/function DtcExpertReviewPanel[\s\S]*?\n}\n\nfunction Panel/)?.[0] ?? "";
+  const customerPanel = customerPage.match(/function CustomerDtcAnalysisPanel[\s\S]*?\r?\n}\r?\n\r?\nfunction Detail/)?.[0] ?? "";
+  const adminPanel = adminClient.match(/function DtcExpertReviewPanel[\s\S]*?\r?\n}\r?\n\r?\nfunction Panel/)?.[0] ?? "";
   const combinedDtcSurface = `${helper}\n${customerRoute}\n${adminRoute}\n${customerPanel}\n${adminPanel}`;
 
   assert.match(helper, /export type CustomerRequestDtcAnalysis/);
@@ -971,7 +971,7 @@ test("request DTC integration keeps customer and admin projections bounded", () 
   assert.match(helper, /auditMetadata/);
   assert.match(customerRoute, /requireApiUser\(request\)/);
   assert.match(customerRoute, /\.eq\("customer_id", auth\.user\.id\)/);
-  assert.match(adminRoute, /requireStaffPermission\(request,\s*"orders\.view"\)/);
+  assert.match(adminRoute, /requireStaffPermissions\(request,\s*\["orders\.view", "file_expert\.manage"\]\)/);
   assert.match(customerRoute, /checkDtcAnalyzerUsage/);
   assert.match(adminRoute, /checkDtcAnalyzerUsage/);
   assert.match(customerRoute, /projectDtcUsageLimitForResponse\(usage\)/);

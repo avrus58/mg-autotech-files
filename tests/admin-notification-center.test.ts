@@ -112,7 +112,8 @@ test("customer notification bell is synchronously suppressed across every admin 
   assert.match(component, /pathname === "\/admin"/);
   assert.match(component, /pathname\.startsWith\("\/admin\/"\)/);
   assert.match(component, /if \(notificationsSuppressed \|\| !userId\) return null/);
-  assert.match(component, /error \|\| !data/);
+  assert.match(component, /authenticatedFetch\("\/api\/account\/context"/);
+  assert.match(component, /payload\?\.home === "\/dashboard"/);
   assert.match(component, /resolution !== resolutionSequence/);
 });
 

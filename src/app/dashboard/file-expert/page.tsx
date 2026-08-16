@@ -267,16 +267,26 @@ export default function FileExpertDashboardPage() {
     setSubmissionStage("Uploading files securely...");
     const uploadResults = await Promise.all([
       oriFile && prepared.uploads?.ori
-        ? supabase.storage.from("file-expert").upload(prepared.uploads.ori.path, oriFile, {
+        ? supabase.storage.from("file-expert").uploadToSignedUrl(
+            prepared.uploads.ori.path,
+            prepared.uploads.ori.token,
+            oriFile,
+            {
             contentType: prepared.uploads.ori.contentType,
             upsert: false,
-          })
+            },
+          )
         : Promise.resolve({ error: null }),
       modFile && prepared.uploads?.mod
-        ? supabase.storage.from("file-expert").upload(prepared.uploads.mod.path, modFile, {
+        ? supabase.storage.from("file-expert").uploadToSignedUrl(
+            prepared.uploads.mod.path,
+            prepared.uploads.mod.token,
+            modFile,
+            {
             contentType: prepared.uploads.mod.contentType,
             upsert: false,
-          })
+            },
+          )
         : Promise.resolve({ error: null }),
     ]);
     const uploadError = uploadResults.find((result) => result.error)?.error;

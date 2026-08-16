@@ -14,10 +14,13 @@
 
 ## Required Supabase Step
 
-Run this SQL in Supabase SQL Editor:
+The base File Expert schema must exist before the integrated hardening
+migrations are applied:
 
 ```sql
 -- scripts/add-file-expert.sql
+-- supabase/migrations/20260816002443_financial_authority_hardening.sql
+-- supabase/migrations/20260816002444_security_state_hardening.sql
 ```
 
 The migration creates:
@@ -27,7 +30,8 @@ The migration creates:
 - `known_file_patterns`
 - `file_expert_binary_fingerprints`
 - `file-expert` storage bucket
-- RLS policies for customers and admins
+- private Storage/RLS foundations; hardened releases expose jobs through the
+  authenticated server API rather than direct customer/staff table grants
 
 ## Environment Variables
 
@@ -37,12 +41,14 @@ Required for the Next.js app:
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
+UPLOAD_INTEGRITY_SECRET=<random-server-only-secret-at-least-32-characters>
 ```
 
 Optional:
 
 ```bash
 FILE_EXPERT_ANALYZER_URL=http://localhost:8010
+FILE_EXPERT_ANALYZER_TOKEN=<random-server-only-token-at-least-32-characters>
 OPENAI_API_KEY=
 AI_PROVIDER_API_KEY=
 ```
@@ -80,9 +86,20 @@ Then set:
 
 ```bash
 FILE_EXPERT_ANALYZER_URL=http://localhost:8010
+FILE_EXPERT_ANALYZER_TOKEN=<same-token-on-Next-and-analyzer>
+FILE_EXPERT_ANALYZER_ALLOWED_HOSTS=<project-ref>.supabase.co
 ```
 
-If the external analyzer is unavailable or returns an error, the app falls back to the TypeScript analyzer.
+The token must never use a `NEXT_PUBLIC_*` or `VITE_*` name. Remote analyzer URLs
+must use HTTPS; HTTP is accepted only for an exact loopback host. The analyzer
+accepts signed URL downloads only from exact HTTPS hosts in
+`FILE_EXPERT_ANALYZER_ALLOWED_HOSTS`, rejects private DNS results and redirects,
+and enforces streaming size/time limits. Local paths remain disabled unless a
+dedicated `FILE_EXPERT_ANALYZER_LOCAL_ROOT` is configured.
+
+If the URL/token pair is absent or unsafe, if signed URL creation fails, or if
+the external analyzer rejects the request, the app uses the TypeScript analyzer
+without sending a signed URL externally.
 
 ## V2 Detection Coverage
 

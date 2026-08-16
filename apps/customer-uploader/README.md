@@ -20,7 +20,7 @@ Create `apps/customer-uploader/.env.local` from `apps/customer-uploader/.env.exa
 VITE_API_BASE_URL=https://file.mgautotech.de
 VITE_SUPABASE_URL=your-supabase-url
 VITE_SUPABASE_ANON_KEY=your-public-anon-key
-VITE_APP_VERSION=0.1.0
+VITE_APP_VERSION=0.2.0
 VITE_APP_BUILD_CHANNEL=stable
 ```
 
@@ -67,8 +67,8 @@ Electron Builder writes Windows artifacts to:
 
 Expected artifact names:
 
-- `MG AutoTech File Upload Assistant 0.1.0-nsis.exe`
-- `MG AutoTech File Upload Assistant 0.1.0-portable.exe`
+- `MG AutoTech File Upload Assistant 0.2.0-nsis.exe`
+- `MG AutoTech File Upload Assistant 0.2.0-portable.exe`
 
 `build/icon.ico` is currently generated from the temporary `public/mg-autotech-icon-placeholder.svg` style for internal beta work. It is already wired as the app, window, installer, taskbar and shortcut icon. Replace it with the final signed MG AutoTech Windows `.ico` before public release.
 
@@ -144,7 +144,15 @@ Local history is only a convenience view. It cannot create requests, spend credi
 8. Server validates app status, customer auth, current credits, service pricing, idempotency, and metadata.
 9. App uploads to the returned private Storage object URL.
 10. App calls `/api/desktop/requests/finalize`.
-11. Server verifies the private object, customer ownership, expected path, upload session ID, credits, and duplicate state.
+11. Server verifies the signed upload contract, real Storage size/content type, downloaded SHA-256, customer ownership, SHA-bound immutable path and credits.
+12. A database idempotency claim creates the debit and order in one transaction,
+    so concurrent finalization attempts return the same request instead of
+    spending credits twice.
+
+The web server requires a server-only `UPLOAD_INTEGRITY_SECRET` of at least 32
+characters. Upload paths include the submitted SHA-256. A Storage `409` can be
+treated as a retry only because finalization downloads that immutable path and
+recomputes the hash; a stale or changed object cannot create a request.
 
 ## Stored Locally
 

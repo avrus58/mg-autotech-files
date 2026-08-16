@@ -32,6 +32,7 @@ type AdaptiveRateLimitInput = {
   limit: number;
   windowMs: number;
   suffix?: string | null;
+  includeClientIp?: boolean;
   config?: DistributedRateLimitConfig | null;
   fetchImpl?: typeof fetch;
   emitSignals?: boolean;
@@ -118,10 +119,11 @@ export function buildRateLimitSubjectFingerprint(input: {
   scope: string;
   subjectSalt: string;
   suffix?: string | null;
+  includeClientIp?: boolean;
 }) {
   const subject = [
     normalizeScope(input.scope),
-    getClientIp(input.request),
+    input.includeClientIp === false ? "" : getClientIp(input.request),
     input.suffix?.trim().toLowerCase() ?? "",
   ].join("\u0000");
 
@@ -189,7 +191,11 @@ export async function checkAdaptiveRateLimit(
   input: AdaptiveRateLimitInput
 ): Promise<AdaptiveRateLimitResult> {
   const local = checkRateLimit({
-    key: rateLimitKey(input.request, input.scope, input.suffix),
+    key: input.includeClientIp === false
+      ? [normalizeScope(input.scope), input.suffix?.toLowerCase().trim()]
+          .filter(Boolean)
+          .join(":")
+      : rateLimitKey(input.request, input.scope, input.suffix),
     limit: input.limit,
     windowMs: input.windowMs,
   });
@@ -218,6 +224,7 @@ export async function checkAdaptiveRateLimit(
     scope: input.scope,
     subjectSalt: config.subjectSalt,
     suffix: input.suffix,
+    includeClientIp: input.includeClientIp,
   });
 
   try {

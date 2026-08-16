@@ -17,7 +17,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
   const admin = getSupabaseAdmin();
   const current = await admin
     .from("orders")
-    .select("id, customer_upload_enabled")
+    .select("id, customer_upload_enabled, customer_upload_grant_nonce")
     .eq("id", id)
     .maybeSingle();
   if (current.error?.code === "42703") {
@@ -30,9 +30,13 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     return NextResponse.json({ order: current.data, changed: false });
   }
   const transitionId = crypto.randomUUID();
+  const grantNonce = parsed.data.enabled ? crypto.randomUUID() : null;
   const { data, error } = await admin
     .from("orders")
-    .update({ customer_upload_enabled: parsed.data.enabled })
+    .update({
+      customer_upload_enabled: parsed.data.enabled,
+      customer_upload_grant_nonce: grantNonce,
+    })
     .eq("id", id)
     .select("id, customer_upload_enabled")
     .maybeSingle();

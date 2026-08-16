@@ -74,6 +74,7 @@ export const customerPortalTranslations: Record<
   "Create similar": ["Ähnliche Anfrage erstellen", "Benzer talep oluştur", "Vergelijkbare aanvraag maken", "Créer une demande similaire", "Crea richiesta simile", "Создать похожую заявку", "Crear solicitud similar", "Criar pedido semelhante", "创建类似请求", "Utwórz podobne zlecenie", "Krijo kërkesë të ngjashme"],
   "Read only": ["Nur lesen", "Salt okunur", "Alleen-lezen", "Lecture seule", "Sola lettura", "Только чтение", "Solo lectura", "Apenas leitura", "只读", "Tylko do odczytu", "Vetëm lexim"],
   "Open": ["Öffnen", "Aç", "Openen", "Ouvrir", "Apri", "Открыть", "Abrir", "Abrir", "打开", "Otwórz", "Hap"],
+  "Open Delivery": ["Lieferung öffnen", "Teslimatı aç", "Levering openen", "Ouvrir la livraison", "Apri consegna", "Открыть доставку", "Abrir entrega", "Abrir entrega", "打开交付", "Otwórz dostawę", "Hap dorëzimin"],
   "Uploaded": ["Hochgeladen", "Yüklendi", "Geüpload", "Envoyé", "Caricato", "Загружено", "Subido", "Carregado", "已上传", "Przesłano", "U ngarkua"],
   "DTC diagnostic guidance": ["DTC-Diagnosehinweise", "DTC teşhis rehberi", "DTC-diagnosehulp", "Guide de diagnostic DTC", "Guida diagnostica DTC", "Рекомендации по диагностике DTC", "Guía de diagnóstico DTC", "Orientação de diagnóstico DTC", "DTC 诊断指导", "Wskazówki diagnostyczne DTC", "Udhëzim diagnostik DTC"],
   "Secure delivery": ["Sichere Bereitstellung", "Güvenli teslimat", "Veilige levering", "Livraison sécurisée", "Consegna sicura", "Безопасная выдача", "Entrega segura", "Entrega segura", "安全交付", "Bezpieczne dostarczenie", "Dorëzim i sigurt"],

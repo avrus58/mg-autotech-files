@@ -17,8 +17,6 @@ import {
   SlidersHorizontal,
 } from "lucide-react";
 import { authenticatedFetch, getStableSession, notifySessionRequired, signOutIfEmailUnverified } from "@/lib/authGuards";
-import { supabase } from "@/lib/supabaseClient";
-import { hasStaffPermission, type StaffAccess } from "@/lib/staffPermissions";
 import type { FileExpertFeature, FileExpertJob } from "@/lib/fileExpert/types";
 import { fileExpertFeatureLabels } from "@/lib/fileExpert/types";
 import type { FileExpertAiReportStatus } from "@/lib/fileExpert/reportStatus";
@@ -133,35 +131,6 @@ export default function AdminFileExpertPage() {
       return;
     }
 
-    const current = await supabase
-      .from("profiles")
-      .select("role, staff_role, staff_permissions")
-      .eq("id", user.id)
-      .single();
-
-    let access: StaffAccess = {
-      role: current.data?.role ?? null,
-      staffRole: current.data?.staff_role ?? null,
-      permissions: Array.isArray(current.data?.staff_permissions)
-        ? current.data.staff_permissions
-        : [],
-    };
-
-    if (current.error?.code === "42703") {
-      const legacy = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", user.id)
-        .single();
-      access = { role: legacy.data?.role ?? null, staffRole: null, permissions: [] };
-    }
-
-    if (!hasStaffPermission(access, "file_expert.manage")) {
-      setMessage("Admin access required.");
-      setLoading(false);
-      return;
-    }
-
     const response = await authenticatedFetch("/api/file-expert/jobs?all=1", {
       cache: "no-store",
     });
@@ -169,6 +138,12 @@ export default function AdminFileExpertPage() {
 
     if (!response.ok) {
       setMessage(payload.error || "File Expert jobs could not be loaded.");
+      setLoading(false);
+      return;
+    }
+
+    if (payload.adminView !== true) {
+      setMessage("Admin access required.");
       setLoading(false);
       return;
     }

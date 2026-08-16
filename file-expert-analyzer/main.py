@@ -1,16 +1,128 @@
 from __future__ import annotations
 
+import asyncio
 import hashlib
+import hmac
+import ipaddress
 import math
+import os
+import socket
 from pathlib import Path
 from typing import Any, Literal
+from urllib.parse import urlsplit
 
 import httpx
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel, ConfigDict, Field
+from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 
 app = FastAPI(title="MG AutoTech File Expert Analyzer", version="1.0.0")
+
+HARD_MAX_SOURCE_BYTES = 32 * 1024 * 1024
+MAX_ANALYZE_BODY_BYTES = 64 * 1024
+
+
+class AnalyzerConfigurationError(Exception):
+    pass
+
+
+class SourceValidationError(Exception):
+    pass
+
+
+def bounded_int(name: str, default: int, minimum: int, maximum: int) -> int:
+    try:
+        value = int(os.getenv(name, str(default)))
+    except ValueError:
+        return default
+    return max(minimum, min(value, maximum))
+
+
+def analyzer_token() -> str:
+    token = os.getenv("FILE_EXPERT_ANALYZER_TOKEN", "").strip()
+    if len(token) < 32:
+        raise AnalyzerConfigurationError()
+    return token
+
+
+class AnalyzerRequestGuard:
+    """Authenticate and size-limit /analyze before FastAPI buffers its JSON body."""
+
+    def __init__(self, app: ASGIApp):
+        # Starlette constructs middleware with the wrapped application as the
+        # named `app` argument.
+        self.inner = app
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http" or scope.get("path") != "/analyze":
+            await self.inner(scope, receive, send)
+            return
+
+        try:
+            expected = analyzer_token()
+            expected_bytes = expected.encode("ascii")
+        except UnicodeEncodeError:
+            await JSONResponse(
+                {"error": "Analyzer service is not configured."}, status_code=503
+            )(scope, receive, send)
+            return
+        except AnalyzerConfigurationError:
+            await JSONResponse(
+                {"error": "Analyzer service is not configured."}, status_code=503
+            )(scope, receive, send)
+            return
+
+        headers = {key.lower(): value for key, value in scope.get("headers", [])}
+        authorization = headers.get(b"authorization", b"")
+        scheme, separator, supplied = authorization.partition(b" ")
+        if (
+            not separator
+            or scheme.lower() != b"bearer"
+            or not hmac.compare_digest(supplied.strip(), expected_bytes)
+        ):
+            await JSONResponse({"error": "Unauthorized."}, status_code=401)(
+                scope, receive, send
+            )
+            return
+
+        raw_length = headers.get(b"content-length", b"")
+        if not raw_length.isdigit():
+            await JSONResponse(
+                {"error": "A bounded request body is required."}, status_code=411
+            )(scope, receive, send)
+            return
+        if int(raw_length) > MAX_ANALYZE_BODY_BYTES:
+            await JSONResponse({"error": "Analyzer request is too large."}, status_code=413)(
+                scope, receive, send
+            )
+            return
+
+        consumed = 0
+
+        async def limited_receive() -> Message:
+            nonlocal consumed
+            message = await receive()
+            if message["type"] == "http.request":
+                consumed += len(message.get("body", b""))
+                if consumed > MAX_ANALYZE_BODY_BYTES:
+                    raise SourceValidationError()
+            return message
+
+        try:
+            await self.inner(scope, limited_receive, send)
+        except SourceValidationError:
+            await JSONResponse({"error": "Analyzer request is too large."}, status_code=413)(
+                scope, receive, send
+            )
+
+
+app.add_middleware(AnalyzerRequestGuard)
+analysis_slots = asyncio.Semaphore(
+    bounded_int("FILE_EXPERT_ANALYZER_MAX_CONCURRENT", 2, 1, 4)
+)
 
 ECU_IDENTIFIERS = [
     "Bosch",
@@ -50,13 +162,27 @@ ECU_IDENTIFIERS = [
 ]
 
 
+class AnalyzerMetadata(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    brand: str | None = Field(default=None, max_length=120)
+    model: str | None = Field(default=None, max_length=160)
+    engine: str | None = Field(default=None, max_length=220)
+    ecu_type: str | None = Field(default=None, max_length=200)
+    read_method: str | None = Field(default=None, max_length=120)
+    ori_file_name: str | None = Field(default=None, max_length=255)
+    mod_file_name: str | None = Field(default=None, max_length=255)
+
+
 class AnalyzeRequest(BaseModel):
-    job_id: str
-    ori_file_path: str | None = None
-    mod_file_path: str | None = None
-    ori_file_url: str | None = None
-    mod_file_url: str | None = None
-    metadata: dict[str, Any] = {}
+    model_config = ConfigDict(extra="forbid")
+
+    job_id: str = Field(min_length=1, max_length=128)
+    ori_file_path: str | None = Field(default=None, max_length=4096)
+    mod_file_path: str | None = Field(default=None, max_length=4096)
+    ori_file_url: str | None = Field(default=None, max_length=4096)
+    mod_file_url: str | None = Field(default=None, max_length=4096)
+    metadata: AnalyzerMetadata = Field(default_factory=AnalyzerMetadata)
 
 
 def hex_offset(offset: int) -> str:
@@ -92,7 +218,8 @@ def ascii_strings(data: bytes, limit: int = 60) -> list[str]:
     current: list[int] = []
     for value in data:
         if 32 <= value <= 126:
-            current.append(value)
+            if len(current) < 512:
+                current.append(value)
             continue
         if len(current) >= 4:
             strings.append(bytes(current).decode("ascii", errors="ignore"))
@@ -182,34 +309,52 @@ def changed_block(ori: bytes, mod: bytes, start: int, end: int) -> dict[str, Any
 
 def compare_files(ori: bytes, mod: bytes) -> dict[str, Any]:
     comparable_length = min(len(ori), len(mod))
-    raw_ranges: list[tuple[int, int]] = []
+    merged: list[tuple[int, int]] = []
     changed_bytes = abs(len(ori) - len(mod))
     current_start: int | None = None
+    merged_start: int | None = None
+    merged_end = 0
+    raw_range_count = 0
+    merged_range_count = 0
+
+    def flush_merged() -> None:
+        nonlocal merged_start, merged_range_count
+        if merged_start is None:
+            return
+        merged_range_count += 1
+        if len(merged) < 120:
+            merged.append((merged_start, merged_end))
+        merged_start = None
+
+    def consume_raw(start: int, end: int) -> None:
+        nonlocal raw_range_count, merged_start, merged_end
+        raw_range_count += 1
+        if merged_start is not None and start - merged_end <= 32:
+            merged_end = end
+            return
+        flush_merged()
+        merged_start = start
+        merged_end = end
+
     for index in range(comparable_length):
         if ori[index] != mod[index]:
             changed_bytes += 1
             if current_start is None:
                 current_start = index
         elif current_start is not None:
-            raw_ranges.append((current_start, index))
+            consume_raw(current_start, index)
             current_start = None
     if current_start is not None:
-        raw_ranges.append((current_start, comparable_length))
-
-    merged: list[tuple[int, int]] = []
-    for start, end in raw_ranges:
-        if merged and start - merged[-1][1] <= 32:
-            merged[-1] = (merged[-1][0], end)
-        else:
-            merged.append((start, end))
+        consume_raw(current_start, comparable_length)
+    flush_merged()
 
     return {
         "same_size": len(ori) == len(mod),
         "changed_bytes": changed_bytes,
         "changed_percent": round(changed_bytes / max(len(ori), len(mod), 1) * 100, 5),
-        "raw_changed_blocks": len(raw_ranges),
-        "merged_changed_blocks": len(merged),
-        "changed_blocks": [changed_block(ori, mod, start, end) for start, end in merged[:120]],
+        "raw_changed_blocks": raw_range_count,
+        "merged_changed_blocks": merged_range_count,
+        "changed_blocks": [changed_block(ori, mod, start, end) for start, end in merged],
     }
 
 
@@ -283,17 +428,146 @@ def feature_heuristics(mode: Literal["single_file", "ori_mod_compare"], comparis
     }
 
 
+def allowed_source_hosts() -> set[str]:
+    return {
+        item.strip().lower().rstrip(".")
+        for item in os.getenv("FILE_EXPERT_ANALYZER_ALLOWED_HOSTS", "").split(",")
+        if item.strip()
+    }
+
+
+async def require_public_dns(hostname: str, port: int) -> None:
+    try:
+        addresses = await asyncio.to_thread(
+            socket.getaddrinfo,
+            hostname,
+            port,
+            type=socket.SOCK_STREAM,
+        )
+    except OSError as error:
+        raise SourceValidationError() from error
+    resolved = {item[4][0].split("%", 1)[0] for item in addresses}
+    if not resolved:
+        raise SourceValidationError()
+    try:
+        if any(not ipaddress.ip_address(address).is_global for address in resolved):
+            raise SourceValidationError()
+    except ValueError as error:
+        raise SourceValidationError() from error
+
+
+def validate_remote_url(value: str) -> tuple[str, int]:
+    try:
+        parsed = urlsplit(value)
+        port = parsed.port or 443
+    except ValueError as error:
+        raise SourceValidationError() from error
+    hostname = (parsed.hostname or "").lower().rstrip(".")
+    if (
+        parsed.scheme != "https"
+        or not hostname
+        or parsed.username is not None
+        or parsed.password is not None
+        or parsed.fragment
+        or port != 443
+    ):
+        raise SourceValidationError()
+    hosts = allowed_source_hosts()
+    if not hosts:
+        raise AnalyzerConfigurationError()
+    if hostname not in hosts:
+        raise SourceValidationError()
+    return hostname, port
+
+
+def read_local_source(value: str, maximum_bytes: int) -> bytes:
+    configured_root = os.getenv("FILE_EXPERT_ANALYZER_LOCAL_ROOT", "").strip()
+    if not configured_root:
+        raise SourceValidationError()
+    try:
+        root = Path(configured_root).resolve(strict=True)
+        if root.parent == root:
+            raise AnalyzerConfigurationError()
+        source = Path(value).resolve(strict=True)
+        source.relative_to(root)
+    except AnalyzerConfigurationError:
+        raise
+    except (OSError, RuntimeError, ValueError) as error:
+        raise SourceValidationError() from error
+    if not source.is_file():
+        raise SourceValidationError()
+    with source.open("rb") as handle:
+        data = handle.read(maximum_bytes + 1)
+    if not data or len(data) > maximum_bytes:
+        raise SourceValidationError()
+    return data
+
+
+async def download_remote_source(value: str, maximum_bytes: int) -> bytes:
+    hostname, port = validate_remote_url(value)
+    await require_public_dns(hostname, port)
+    timeout_seconds = bounded_int("FILE_EXPERT_ANALYZER_TIMEOUT_SECONDS", 20, 3, 30)
+    timeout = httpx.Timeout(timeout_seconds, connect=min(timeout_seconds, 10))
+    content = bytearray()
+    async with httpx.AsyncClient(
+        timeout=timeout,
+        follow_redirects=False,
+        trust_env=False,
+    ) as client:
+        async with client.stream("GET", value) as response:
+            if 300 <= response.status_code < 400:
+                raise SourceValidationError()
+            try:
+                response.raise_for_status()
+            except httpx.HTTPError as error:
+                raise SourceValidationError() from error
+            raw_length = response.headers.get("content-length")
+            if raw_length:
+                try:
+                    if int(raw_length) <= 0 or int(raw_length) > maximum_bytes:
+                        raise SourceValidationError()
+                except ValueError as error:
+                    raise SourceValidationError() from error
+            async for chunk in response.aiter_bytes():
+                content.extend(chunk)
+                if len(content) > maximum_bytes:
+                    raise SourceValidationError()
+    if not content:
+        raise SourceValidationError()
+    return bytes(content)
+
+
 async def load_source(path: str | None, url: str | None) -> bytes | None:
+    if path and url:
+        raise SourceValidationError()
+    maximum_bytes = bounded_int(
+        "FILE_EXPERT_ANALYZER_MAX_SOURCE_BYTES",
+        HARD_MAX_SOURCE_BYTES,
+        1024,
+        HARD_MAX_SOURCE_BYTES,
+    )
     if url:
-        async with httpx.AsyncClient(timeout=60) as client:
-            response = await client.get(url)
-            response.raise_for_status()
-            return response.content
+        timeout_seconds = bounded_int("FILE_EXPERT_ANALYZER_TIMEOUT_SECONDS", 20, 3, 30)
+        try:
+            return await asyncio.wait_for(
+                download_remote_source(url, maximum_bytes),
+                timeout=timeout_seconds + 1,
+            )
+        except asyncio.TimeoutError as error:
+            raise SourceValidationError() from error
     if path:
-        local_path = Path(path)
-        if local_path.exists() and local_path.is_file():
-            return local_path.read_bytes()
+        return await asyncio.to_thread(read_local_source, path, maximum_bytes)
     return None
+
+
+@app.exception_handler(RequestValidationError)
+async def invalid_request_handler(_request: Any, _error: RequestValidationError) -> JSONResponse:
+    return JSONResponse({"error": "Invalid analyzer request."}, status_code=422)
+
+
+@app.exception_handler(Exception)
+async def unexpected_error_handler(_request: Any, _error: Exception) -> JSONResponse:
+    return JSONResponse({"error": "Analyzer request failed."}, status_code=500)
 
 
 @app.get("/health")
@@ -301,13 +575,12 @@ def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
-@app.post("/analyze")
-async def analyze(request: AnalyzeRequest) -> dict[str, Any]:
-    ori = await load_source(request.ori_file_path, request.ori_file_url)
-    mod = await load_source(request.mod_file_path, request.mod_file_url)
-    if not ori and not mod:
-        raise HTTPException(status_code=400, detail="No readable ORI or MOD file source was provided.")
-
+def build_analysis_result(
+    job_id: str,
+    ori: bytes | None,
+    mod: bytes | None,
+) -> dict[str, Any]:
+    """Run CPU-bound binary inspection outside the ASGI event-loop thread."""
     mode: Literal["single_file", "ori_mod_compare"] = "ori_mod_compare" if ori and mod else "single_file"
     files: dict[str, Any] = {}
     if ori:
@@ -325,8 +598,8 @@ async def analyze(request: AnalyzeRequest) -> dict[str, Any]:
     base_file = mod or ori or b""
 
     return {
-        "job_id": request.job_id,
-        "analysis_version": "1.0.0",
+        "job_id": job_id,
+        "analysis_version": "2.0.0",
         "mode": mode,
         "files": files,
         "comparison": comparison,
@@ -350,3 +623,35 @@ async def analyze(request: AnalyzeRequest) -> dict[str, Any]:
             ],
         },
     }
+
+
+@app.post("/analyze")
+async def analyze(request: AnalyzeRequest) -> dict[str, Any]:
+    try:
+        await asyncio.wait_for(analysis_slots.acquire(), timeout=0.25)
+    except asyncio.TimeoutError as error:
+        raise HTTPException(status_code=429, detail="Analyzer is busy.") from error
+
+    try:
+        try:
+            ori = await load_source(request.ori_file_path, request.ori_file_url)
+            mod = await load_source(request.mod_file_path, request.mod_file_url)
+        except AnalyzerConfigurationError as error:
+            raise HTTPException(status_code=503, detail="Analyzer service is not configured.") from error
+        except (SourceValidationError, httpx.HTTPError) as error:
+            raise HTTPException(status_code=400, detail="A file source could not be read safely.") from error
+        if not ori and not mod:
+            raise HTTPException(status_code=400, detail="No readable file source was provided.")
+
+        analysis_task = asyncio.create_task(
+            asyncio.to_thread(build_analysis_result, request.job_id, ori, mod)
+        )
+        try:
+            return await asyncio.shield(analysis_task)
+        except asyncio.CancelledError:
+            # A disconnected caller must not release the concurrency slot while
+            # its non-cancellable worker thread is still consuming CPU.
+            await analysis_task
+            raise
+    finally:
+        analysis_slots.release()

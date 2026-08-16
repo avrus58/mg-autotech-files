@@ -2688,3 +2688,125 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
   env, customer data, payment veya deploy mutasyonu yapilmadi. Commit, push ve
   deploy yoktur. External receipt Google Ads Tag Assistant ve conversion
   diagnostics ile owner-controlled canli testte dogrulanmalidir.
+
+## 2026-08-16 File Expert ve upload integrity guvenlik hotfix'i
+
+- Gorev: File Expert analyzer/job siniri ile desktop ve additional-file upload
+  butunlugundeki SSRF/LFI/DoS, service-role confused-deputy, paralel analiz ve
+  istemci metadata'sina guven aciklarini kapatmak.
+- Analyzer: `/analyze` JSON parse edilmeden once en az 32 karakterlik server-only
+  bearer token ister. Signed URL kaynaklari exact HTTPS host allowlist, public
+  DNS, redirects-off, proxy-env-off, stream byte cap ve timeout altindadir.
+  Local path varsayilan kapali, etkinse resolved dedicated root ile sinirlidir;
+  validation/exception cevaplari URL/path detayi sizdirmaz. Next caller guvenli
+  URL+token yoksa signed URL olusturmadan TypeScript fallback kullanir.
+- File Expert: Her ORI/MOD yolu exact `${user_id}/${job_id}/` klasorune baglidir;
+  bu kontrol admin/service-role analizinde de uygulanir. Storage metadata boyut
+  ve MIME kontrolu download oncesi yapilir. Prepare/analyze/finalize rate-limitli,
+  status-precondition'li; analysis baslangici conditional update ile tek
+  `processing` sahibi alir ve bitis de `processing` kosuluna baglidir.
+- Upload integrity: Desktop yolu SHA-256 ile content-addressed oldu; kisa omurlu
+  HMAC contract user/idempotency/path/name/size/MIME/SHA'yi baglar. Finalize
+  Storage metadata'sini, indirilen byte length'i ve SHA-256'yi yeniden hesaplar.
+  Desktop upload-session ve finalize, hardened order RPC ile uyumlu olarak
+  depolama veya siparis isleminden once kredi toplamini pozitif tamsayi olarak
+  dogrular.
+  Additional-file akisi ayni contract ile gercek size/MIME'i dogrular; izin
+  `customer_upload_enabled = true` conditional update ile yalniz bir kez
+  tuketilir. Active web file MIME/uzantilari reddedilir.
+- Konfigurasyon: Next server'da `UPLOAD_INTEGRITY_SECRET`; analyzer ve Next'te
+  ayni `FILE_EXPERT_ANALYZER_TOKEN`; analyzer'da exact
+  `FILE_EXPERT_ANALYZER_ALLOWED_HOSTS` gereklidir. Token/secret public env'e
+  konmaz. Detaylar analyzer README, File Expert setup ve upload hardening
+  dokumanindadir.
+- Kontroller: yeni `tests/upload-integrity-security.test.ts` bundled Node 24
+  type-strip runner ile PASS (6/6); 16 degisen `.ts` dosyasi syntax PASS; Python
+  AST parse PASS; `git diff --check` PASS. Standart `npm test`, `npm run
+  typecheck` ve `npm run lint` proje `node_modules` bos ve runner child PATH'inde
+  Node olmadigi icin baslayamadi; yeni package kurulmadı.
+- Kalan risk: Ana web `/new-request` halen browser direct-upload + RPC akisini
+  kullanir. Server finalize, one-time upload row/unique constraint ve bucket/RLS
+  migration taslagi `docs/upload-integrity-hardening.md` icinde somutlastirildi
+  fakat uygulanmadi. Distributed rate-limit ayari yoksa koruma instance-localdir;
+  crash sonrasi `processing` lease recovery ve Storage update/delete immutability
+  ayrica migration/queue gerektirir.
+- Sinirlar: Production/staging Supabase, migration, deploy, push, secret, env veya
+  gercek musteri dosyasi/verisi kullanilmadi.
+
+## 2026-08-16 Birlesik guvenlik hardening ve release-gate kapanisi
+
+- Gorev: Auth/RLS, finans, Stripe, Widget, upload, File Expert ve admin izin
+  sinirlarindaki kanitli P0/P1 aciklari birlikte kapatildi; son entegrasyon
+  incelemesinde kanitli P0/P1 kalmadi.
+- Veritabani: `20260816002443`-`20260816002448` migration zinciri finansal
+  authority/RPC grantlerini, kolon bazli Data API projeksiyonlarini, Storage
+  policy sinirini, web/desktop siparis idempotency claimlerini, Stripe
+  credit/refund recovery'yi, Widget checkout/webhook claimlerini ve File Expert
+  atomik completion'i versionlar. Dort SELECT-only verifier migration, grant,
+  RLS, policy, owner/search_path ve RPC imzalarini kontrol eder.
+- Uygulama: Signup rol metadata escalation'i ve legacy admin/null owner fallback
+  kapatildi. Admin cross-domain verileri composite permission ister. Web,
+  desktop, additional-file ve File Expert uploadlari kisa omurlu signed-upload
+  akisi, exact path/metadata/hash contractlari ve fail-closed production rate
+  limitleri kullanir. Stripe/webhook body cap, exact ownership/correlation,
+  durable replay/claim ve refund provider dogrulamasi eklendi; kanitsiz otomatik
+  bank refund'u kapatildi. Widget domain/checkout/webhook ve File Expert analyzer
+  SSRF/LFI/CPU/lease sinirlari atomik ve fail-closed hale getirildi.
+- Idempotency: Web request, desktop finalize, staff credit adjustment, Stripe
+  credit/refund ve Widget checkout kayip yanit, retry ve eszamanli isteklerde
+  exact payload/token claimine baglandi. Browser request anahtari reload boyunca
+  yalniz opaque key + payload digest olarak korunur.
+- Kontroller: Tum testler PASS (725/725); odakli guvenlik paketi PASS (54/54);
+  ESLint PASS; web TypeScript PASS; customer-uploader renderer/electron/node
+  TypeScript PASS; File Expert Python AST PASS; customer i18n PASS (12 dil);
+  `git diff --check` PASS. Windows CRLF kaynakli eski source-fixture regexleri
+  platform bagimsiz hale getirildi. Yeni dependency eklenmedi.
+- Calistirilmayan kontrol: Production/staging migration veya SQL runtime parse
+  calistirilmadi. Production env/secrets okunmadan ve `next/font/google` ag
+  erisimi gerektirebildigi icin build bu turda calistirilmadi.
+- Release gate: Once izole staging'de `02443`-`02448` sirasiyla uygulanmali,
+  tum verifierlar ve authenticated web/desktop/order/settings/staff-credit/
+  Stripe/widget/File-Expert smoke'lari gecmelidir. `02445` canonical-domain ve
+  `02448` legacy unbound-pending preflightlari bilincli fail-closed davranir.
+  `UPLOAD_INTEGRITY_SECRET` en az 32 karakter ve production distributed limiter
+  hazir degilse upload prepare rotalari 503 ile fail-closed kalir.
+- Sinirlar: Canli veya staging veritabani, Stripe, e-posta, env, customer data,
+  commit, push ve deploy islemi yapilmadi.
+
+## 2026-08-16 Entegre guvenlik release hazirligi ve dis release blokaji
+
+- Gorev: Owner'in push ve Production deploy talebi icin birlesik guvenlik
+  paketini release branch'inde izole etmek, staging/Production sirasini ve geri
+  donus yolunu dogrulamak.
+- Git kapsami: `codex/security-hardening-release` branch'i `dad28dd` tabaninda
+  olusturuldu. Tum gercek diff guvenlik release'ine aittir; kok
+  `package-lock.json` yalniz Windows stat/satir-sonu artefakti oldugu icin release
+  kapsamindan haric tutuldu.
+- Migration sirasi: `02443`-`02448` onceki uygulamayla dar, role/owner-bound
+  uyumluluk korur; matching uygulama deploy ve smoke sonrasinda yeni `02449`
+  eski RPC grantlerini ve gecici direct-upload policy'lerini fail-closed kapatir.
+  Hosted Supabase'in `storage.objects` privilege kisiti nedeniyle immutability
+  table revoke yerine exact restrictive RLS matrisiyle uygulanir.
+- Recovery: Aggregate ve PII'siz preflight, post-cutover verifier, dar acil
+  compatibility compensation SQL'i ve exact release runbook'u eklendi. Free
+  Supabase plani otomatik backup/PITR sunmadigi icin Production oncesi
+  geri yuklenebilir logical backup ayrica zorunludur.
+- Remote salt-okunur kontrol: Production PG17 preflight 10/10 PASS; prerequisite
+  relation/kolonlar, tek owner, finansal degerler, canonical Widget domainleri,
+  aktif unbound checkout penceresi ve private Storage baseline temizdir.
+  Production migration veya musteri satiri mutasyonu yapilmadi.
+- Kontroller: full tests PASS (726/726); ESLint PASS; web ve customer-uploader
+  renderer/electron/node typecheck PASS; Production Next build PASS (270 static/
+  dynamic route); i18n/SEO PASS (12 locale, 31 source file); payment ve desktop
+  env schema-only PASS ve env dosyasi okunmadi; performance budget PASS (66.3 KB
+  gzip / 80 KB); `git diff --check` PASS.
+- Dis hard blockerlar: Izole staging `ACTIVE_HEALTHY` gorunmesine ragmen SQL
+  baglantisi timeout oldugu icin rehearsal yapilamadi. Vercel oturumu/CLI tokeni
+  yok; Preview'in staging Supabase kullandigi ve Production'da
+  `UPLOAD_INTEGRITY_SECRET` ile distributed Redis limiter'in hazir oldugu
+  degerleri okumadan dogrulanamadi. Bu kapilar acilmadan branch push'u Preview'de
+  Production credential riski, Production deploy ise upload/File Expert 503
+  riski tasir.
+- Sonuc: Canli migration, push ve deploy guvenlik nedeniyle uygulanmadi. Yerel
+  release commit'i hazirlanabilir; remote release staging, Vercel config ve
+  restorable backup tamamlaninca runbook sirasiyla devam etmelidir.

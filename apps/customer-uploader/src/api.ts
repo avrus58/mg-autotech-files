@@ -3,7 +3,7 @@ import { createClient, type Session } from "@supabase/supabase-js";
 export const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "https://file.mgautotech.de";
 export const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "";
 export const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
-export const desktopAppVersion = import.meta.env.VITE_APP_VERSION || "0.1.0";
+export const desktopAppVersion = import.meta.env.VITE_APP_VERSION || "0.2.0";
 export const desktopPlatform = "win32";
 export const desktopBuildChannel = import.meta.env.VITE_APP_BUILD_CHANNEL || "stable";
 
@@ -168,9 +168,7 @@ export async function apiFetch<T>(path: string, session: Session, init?: Request
 }
 
 export async function uploadToPrivateStorage(input: {
-  storageObjectUrl: string;
-  token: string;
-  anonKey: string;
+  signedUploadUrl: string;
   file: File;
   contentType: string;
   onProgress(progress: UploadProgressSnapshot): void;
@@ -191,9 +189,7 @@ export async function uploadToPrivateStorage(input: {
       });
     };
 
-    xhr.open("POST", input.storageObjectUrl);
-    xhr.setRequestHeader("Authorization", `Bearer ${input.token}`);
-    xhr.setRequestHeader("apikey", input.anonKey);
+    xhr.open("PUT", input.signedUploadUrl);
     xhr.setRequestHeader("x-upsert", "false");
     xhr.setRequestHeader("content-type", input.contentType || "application/octet-stream");
     xhr.upload.onprogress = (event) => {

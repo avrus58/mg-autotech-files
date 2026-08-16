@@ -44,8 +44,13 @@ export function WidgetSalesPageClient({ initialSettings, databaseReady, initialL
   async function checkout(event: React.FormEvent) {
     event.preventDefault(); setSubmitting(true); setMessage("");
     const session = (await getStableSession()).session;
+    if (!session) {
+      setSubmitting(false);
+      setMessage("Please sign in with your verified billing e-mail before starting a subscription.");
+      return;
+    }
     const response = await fetch("/api/stripe/widget-checkout", {
-      method: "POST", headers: { "Content-Type": "application/json", ...(session ? { Authorization: `Bearer ${session.access_token}` } : {}) },
+      method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
       body: JSON.stringify({ companyName, email, websiteDomain: domain, preferredLanguage: language }),
     });
     const payload = await response.json().catch(() => ({}));

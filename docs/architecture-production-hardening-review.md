@@ -75,11 +75,14 @@ Migration difficulty: medium to high. Introduce queued background jobs.
 Estimated benefit: high.
 
 5. External File Expert analyzer trust boundary needs a shared secret.
-Status: remaining.
-Why: if `FILE_EXPERT_ANALYZER_URL` is configured, signed storage URLs are sent to the analyzer without an app-level authentication header.
-Impact: acceptable only if the analyzer is private and controlled; risky if exposed.
-Migration difficulty: low to medium.
-Estimated benefit: high.
+Status: completed in the 2026-08 upload-integrity hotfix.
+Control: the caller requires a safe analyzer URL plus a server-only token before
+creating signed URLs. The analyzer authenticates before parsing the body,
+allowlists exact HTTPS source hosts, rejects private DNS results and redirects,
+and streams sources under byte/time limits. Local paths are disabled unless a
+dedicated safe root is configured.
+Remaining operations requirement: configure the same token on both services and
+the exact signed-URL host allowlist on the analyzer.
 
 ### Medium
 

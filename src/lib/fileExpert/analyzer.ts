@@ -179,35 +179,53 @@ function buildChangedBlock(ori: Buffer, mod: Buffer, start: number, end: number)
 
 function compareFiles(ori: Buffer, mod: Buffer) {
   const comparableLength = Math.min(ori.length, mod.length);
-  const rawRanges: Array<{ start: number; end: number }> = [];
+  const mergedRanges: Array<{ start: number; end: number }> = [];
   let changedBytes = Math.abs(ori.length - mod.length);
   let currentStart: number | null = null;
+  let mergedStart: number | null = null;
+  let mergedEnd = 0;
+  let rawRangeCount = 0;
+  let mergedRangeCount = 0;
+
+  const flushMergedRange = () => {
+    if (mergedStart === null) return;
+    mergedRangeCount += 1;
+    if (mergedRanges.length < 120) {
+      mergedRanges.push({ start: mergedStart, end: mergedEnd });
+    }
+    mergedStart = null;
+  };
+
+  const consumeRawRange = (start: number, end: number) => {
+    rawRangeCount += 1;
+    if (mergedStart !== null && start - mergedEnd <= 32) {
+      mergedEnd = end;
+      return;
+    }
+    flushMergedRange();
+    mergedStart = start;
+    mergedEnd = end;
+  };
 
   for (let index = 0; index < comparableLength; index += 1) {
     if (ori[index] !== mod[index]) {
       changedBytes += 1;
       if (currentStart === null) currentStart = index;
     } else if (currentStart !== null) {
-      rawRanges.push({ start: currentStart, end: index });
+      consumeRawRange(currentStart, index);
       currentStart = null;
     }
   }
 
-  if (currentStart !== null) rawRanges.push({ start: currentStart, end: comparableLength });
-
-  const mergedRanges: Array<{ start: number; end: number }> = [];
-  for (const range of rawRanges) {
-    const previous = mergedRanges[mergedRanges.length - 1];
-    if (previous && range.start - previous.end <= 32) previous.end = range.end;
-    else mergedRanges.push({ ...range });
-  }
+  if (currentStart !== null) consumeRawRange(currentStart, comparableLength);
+  flushMergedRange();
 
   return {
     same_size: ori.length === mod.length,
     changed_bytes: changedBytes,
     changed_percent: Number(((changedBytes / Math.max(ori.length, mod.length, 1)) * 100).toFixed(5)),
-    raw_changed_blocks: rawRanges.length,
-    merged_changed_blocks: mergedRanges.length,
+    raw_changed_blocks: rawRangeCount,
+    merged_changed_blocks: mergedRangeCount,
     changed_blocks: mergedRanges
       .slice(0, 120)
       .map((range) => buildChangedBlock(ori, mod, range.start, range.end)),

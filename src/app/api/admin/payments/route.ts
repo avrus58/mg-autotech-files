@@ -1,4 +1,6 @@
+import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
+import type Stripe from "stripe";
 import { z } from "zod";
 import { requireStaffPermission } from "@/lib/apiAuth";
 import { sendCreditsAddedEmail } from "@/lib/email/events";
@@ -8,7 +10,6 @@ import {
   paymentAuditUnavailable,
   paymentProviderFromSource,
   safeAppendPaymentEvent,
-  safeUpdatePaymentRecord,
 } from "@/lib/paymentAudit";
 
 const actionSchema = z.discriminatedUnion("action", [
@@ -16,7 +17,7 @@ const actionSchema = z.discriminatedUnion("action", [
     action: z.literal("record_bank_payment"),
     customerUserId: z.string().uuid(),
     reference: z.string().trim().min(3).max(160),
-    credits: z.number().positive().max(100000),
+    credits: z.number().int().positive().max(100000),
     amountEuro: z.number().positive().max(1000000),
     note: z.string().trim().max(1000).nullable().optional(),
   }),
@@ -45,8 +46,143 @@ type PaymentRow = {
   customer_email: string | null;
   metadata: Record<string, unknown> | null;
   reviewed_at: string | null;
+  failure_code: string | null;
+  provider_refund_id: string | null;
   [key: string]: unknown;
 };
+
+type RefundClaimResult = Pick<
+  PaymentRow,
+  | "provider"
+  | "external_id"
+  | "provider_payment_id"
+  | "provider_refund_id"
+  | "user_id"
+  | "credits"
+  | "amount_total"
+  | "currency"
+> & {
+  state: "claimed" | "refunded";
+  payment_id: string;
+};
+
+const refundProcessingFailureCode = "refund_processing";
+const refundProviderSucceededFailureCode = "refund_provider_succeeded";
+
+function stripeObjectId(value: string | { id: string } | null | undefined) {
+  return typeof value === "string" ? value : value?.id ?? null;
+}
+
+function stripeRefundMatchesPayment(refund: Stripe.Refund, payment: RefundClaimResult) {
+  return refund.metadata?.payment_record_id === payment.payment_id &&
+    stripeObjectId(refund.payment_intent) === payment.provider_payment_id &&
+    refund.amount === Number(payment.amount_total) &&
+    refund.currency.toLowerCase() === String(payment.currency).toLowerCase();
+}
+
+async function findOrCreateStripeRefund(
+  payment: RefundClaimResult,
+  actorUserId: string,
+) {
+  if (!payment.provider_payment_id) throw new Error("Stripe PaymentIntent is missing.");
+  const expectedAmount = Number(payment.amount_total);
+  const expectedCurrency = String(payment.currency).toLowerCase();
+  if (!Number.isSafeInteger(expectedAmount) || expectedAmount <= 0) {
+    throw new Error("The Stripe payment amount is not safe to refund automatically.");
+  }
+  const stripe = getStripe();
+
+  const paymentIntent = await stripe.paymentIntents.retrieve(
+    payment.provider_payment_id,
+    { expand: ["latest_charge"] },
+  );
+  const latestCharge = typeof paymentIntent.latest_charge === "string"
+    ? await stripe.charges.retrieve(paymentIntent.latest_charge)
+    : paymentIntent.latest_charge;
+  if (
+    paymentIntent.id !== payment.provider_payment_id ||
+    paymentIntent.status !== "succeeded" ||
+    paymentIntent.amount !== expectedAmount ||
+    paymentIntent.amount_received !== expectedAmount ||
+    paymentIntent.currency.toLowerCase() !== expectedCurrency ||
+    !latestCharge ||
+    latestCharge.paid !== true ||
+    latestCharge.amount !== expectedAmount ||
+    latestCharge.amount_captured !== expectedAmount ||
+    latestCharge.currency.toLowerCase() !== expectedCurrency ||
+    stripeObjectId(latestCharge.payment_intent) !== payment.provider_payment_id
+  ) {
+    throw new Error("The Stripe charge does not exactly match this payment; manual reconciliation is required.");
+  }
+
+  const existing = await stripe.refunds.list({
+    payment_intent: payment.provider_payment_id,
+    limit: 100,
+  });
+  if (existing.has_more) {
+    throw new Error("Stripe has more refunds than can be verified automatically.");
+  }
+  const matching = existing.data.filter((refund) =>
+    refund.metadata?.payment_record_id === payment.payment_id
+  );
+  if (matching.length !== existing.data.length) {
+    throw new Error("Stripe contains an unrecognized refund; manual reconciliation is required.");
+  }
+  if (matching.length > 1) {
+    throw new Error("Multiple Stripe refunds match this payment; manual reconciliation is required.");
+  }
+
+  const succeededAmount = existing.data
+    .filter((refund) => refund.status === "succeeded")
+    .reduce((total, refund) => total + refund.amount, 0);
+  if (
+    succeededAmount > expectedAmount ||
+    latestCharge.amount_refunded !== succeededAmount
+  ) {
+    throw new Error("Stripe refund totals do not match the authoritative charge.");
+  }
+
+  if (payment.provider_refund_id) {
+    const stored = await stripe.refunds.retrieve(payment.provider_refund_id);
+    if (
+      !stripeRefundMatchesPayment(stored, payment) ||
+      matching.length !== 1 ||
+      matching[0]?.id !== stored.id
+    ) {
+      throw new Error("The stored Stripe refund does not match this payment.");
+    }
+    return stored;
+  }
+
+  if (matching.length === 1) {
+    const recovered = matching[0];
+    if (!stripeRefundMatchesPayment(recovered, payment)) {
+      throw new Error("The existing Stripe refund does not match this payment.");
+    }
+    return recovered;
+  }
+
+  if (latestCharge.amount_refunded !== 0 || latestCharge.refunded) {
+    throw new Error("The Stripe charge already has a refund that cannot be reconciled automatically.");
+  }
+
+  const created = await stripe.refunds.create(
+    {
+      payment_intent: payment.provider_payment_id,
+      amount: expectedAmount,
+      reason: "requested_by_customer",
+      metadata: {
+        payment_record_id: payment.payment_id,
+        actor_user_id: actorUserId,
+      },
+    },
+    { idempotencyKey: `mga-refund-${payment.payment_id}` },
+  );
+  if (!stripeRefundMatchesPayment(created, payment)) {
+    throw new Error("Stripe returned a refund that does not match this payment.");
+  }
+  return created;
+}
 
 function cents(value: unknown) {
   const parsed = Number(value ?? 0);
@@ -211,69 +347,200 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true });
   }
 
-  const paymentResult = await admin
-    .from("payment_records")
-    .select("*")
-    .eq("id", parsed.data.paymentId)
-    .single();
-  if (paymentResult.error || !paymentResult.data) {
-    return NextResponse.json({ error: paymentResult.error?.message || "Payment was not found." }, { status: 404 });
+  const refundClaimToken = randomUUID();
+  const claimResult = await admin.rpc("claim_payment_refund", {
+    p_actor_user_id: auth.user.id,
+    p_payment_record_id: parsed.data.paymentId,
+    p_refund_claim_token: refundClaimToken,
+  });
+  if (claimResult.error) {
+    const busy = claimResult.error.code === "55P03";
+    return NextResponse.json(
+      {
+        error: busy
+          ? "This refund is already being processed. Please try again shortly."
+          : "This payment cannot be refunded automatically; review its reconciliation state.",
+      },
+      { status: busy ? 409 : 400 },
+    );
   }
-  const payment = paymentResult.data as PaymentRow;
-  if (payment.status !== "succeeded") {
-    return NextResponse.json({ error: "Only successful payments can be refunded." }, { status: 400 });
+  if (!claimResult.data || typeof claimResult.data !== "object") {
+    return NextResponse.json({ error: "The refund claim could not be verified." }, { status: 503 });
   }
 
-  let providerRefundId = `bank-refund-${payment.id}`;
+  const payment = claimResult.data as RefundClaimResult;
+  if (payment.state === "refunded") {
+    return NextResponse.json({
+      success: true,
+      duplicatePrevented: true,
+      providerRefundId: payment.provider_refund_id,
+    });
+  }
+  if (
+    payment.state !== "claimed" ||
+    payment.payment_id !== parsed.data.paymentId ||
+    payment.provider !== "stripe"
+  ) {
+    return NextResponse.json({ error: "The refund claim did not match the payment." }, { status: 409 });
+  }
+
+  let providerRefundId = payment.provider_refund_id ?? "";
+  let providerSucceeded = false;
   try {
-    if (payment.provider === "stripe") {
-      if (!payment.provider_payment_id) throw new Error("Stripe PaymentIntent is missing.");
-      const refund = await getStripe().refunds.create(
-        {
-          payment_intent: payment.provider_payment_id,
-          reason: "requested_by_customer",
-          metadata: { payment_record_id: payment.id, actor_user_id: auth.user.id },
-        },
-        { idempotencyKey: `mga-refund-${payment.id}` }
-      );
-      providerRefundId = refund.id;
-      if (refund.status !== "succeeded") {
-        await safeUpdatePaymentRecord("stripe", payment.external_id, {
-          status: "requires_review",
-          failure_message: `Stripe refund status: ${refund.status}`,
-        });
-        return NextResponse.json({ error: `Stripe refund is ${refund.status}; manual review is required.` }, { status: 409 });
+    const refund = await findOrCreateStripeRefund(payment, auth.user.id);
+    providerRefundId = refund.id;
+    if (refund.status !== "succeeded") {
+      const recoverable = refund.status === "pending" || refund.status === "requires_action";
+      const providerState = await admin
+        .from("payment_records")
+        .update({
+          provider_refund_id: providerRefundId,
+          failure_code: recoverable ? "refund_provider_pending" : "refund_provider_terminal",
+          failure_message: `Stripe refund status: ${refund.status ?? "unknown"}`,
+          refund_claim_token: null,
+          refund_started_at: null,
+        })
+        .eq("id", payment.payment_id)
+        .eq("provider", "stripe")
+        .eq("external_id", payment.external_id)
+        .eq("status", "requires_review")
+        .eq("failure_code", refundProcessingFailureCode)
+        .eq("refund_claim_token", refundClaimToken)
+        .select("id")
+        .maybeSingle();
+      if (providerState.error || !providerState.data) {
+        throw new Error("The Stripe refund state could not be recorded.");
       }
-    } else if (payment.provider === "paypal") {
+      await safeAppendPaymentEvent({
+        paymentRecordId: payment.payment_id,
+        provider: "stripe",
+        eventType: "refund_provider_pending",
+        status: recoverable ? "received" : "failed",
+        message: `Stripe refund status: ${refund.status ?? "unknown"}.`,
+        payload: { actor_id: auth.user.id, provider_refund_id: providerRefundId },
+      });
       return NextResponse.json(
-        { error: "Legacy provider refunds are disabled. Handle this record manually." },
-        { status: 410 }
+        {
+          error: recoverable
+            ? "The Stripe refund is still pending. Retry after Stripe finishes processing it."
+            : "Stripe did not complete the refund; manual reconciliation is required.",
+        },
+        { status: 409 },
       );
     }
 
+    const providerState = await admin
+      .from("payment_records")
+      .update({
+        provider_refund_id: providerRefundId,
+        failure_code: refundProviderSucceededFailureCode,
+        failure_message: null,
+      })
+      .eq("id", payment.payment_id)
+      .eq("provider", payment.provider)
+      .eq("external_id", payment.external_id)
+      .eq("status", "requires_review")
+      .eq("failure_code", refundProcessingFailureCode)
+      .eq("refund_claim_token", refundClaimToken)
+      .select("id")
+      .maybeSingle();
+    if (providerState.error || !providerState.data) {
+      const recoveredState = await admin
+        .from("payment_records")
+        .select("status,failure_code,provider_refund_id,refund_claim_token")
+        .eq("id", payment.payment_id)
+        .maybeSingle();
+      if (
+        recoveredState.error ||
+        recoveredState.data?.status !== "requires_review" ||
+        recoveredState.data.failure_code !== refundProviderSucceededFailureCode ||
+        recoveredState.data.provider_refund_id !== providerRefundId ||
+        recoveredState.data.refund_claim_token !== refundClaimToken
+      ) {
+        throw new Error("The completed provider refund could not be bound to its payment claim.");
+      }
+    }
+    providerSucceeded = true;
+
     const reversal = await admin.rpc("admin_apply_payment_refund", {
       p_actor_user_id: auth.user.id,
-      p_payment_record_id: payment.id,
+      p_payment_record_id: payment.payment_id,
       p_provider_refund_id: providerRefundId,
       p_note: parsed.data.note,
+      p_refund_claim_token: refundClaimToken,
     });
-    if (reversal.error) throw new Error(`Provider refund completed, but credit reversal failed: ${reversal.error.message}`);
+    if (reversal.error) {
+      const terminal = await admin
+        .from("payment_records")
+        .select("status,provider_refund_id")
+        .eq("id", payment.payment_id)
+        .maybeSingle();
+      if (
+        !terminal.error &&
+        terminal.data?.status === "refunded" &&
+        terminal.data.provider_refund_id === providerRefundId
+      ) {
+        return NextResponse.json({
+          success: true,
+          duplicatePrevented: true,
+          providerRefundId,
+        });
+      }
+      throw new Error("Provider refund completed, but the credit reversal needs recovery.");
+    }
     return NextResponse.json({ success: true, providerRefundId, result: reversal.data });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Refund failed.";
-    await safeUpdatePaymentRecord(payment.provider, payment.external_id, {
-      status: "requires_review",
-      failure_message: message,
-      reviewed_at: null,
-    });
+    const reviewUpdate = await admin
+      .from("payment_records")
+      .update({
+        status: "requires_review",
+        failure_code: providerSucceeded ? "refund_reconciliation_failed" : "refund_provider_failed",
+        failure_message: message,
+        reviewed_at: null,
+        refund_claim_token: null,
+        refund_started_at: null,
+      })
+      .eq("id", payment.payment_id)
+      .eq("provider", payment.provider)
+      .eq("external_id", payment.external_id)
+      .eq("status", "requires_review")
+      .eq(
+        "failure_code",
+        providerSucceeded ? refundProviderSucceededFailureCode : refundProcessingFailureCode,
+      )
+      .eq("refund_claim_token", refundClaimToken)
+      .select("id")
+      .maybeSingle();
+    if (reviewUpdate.error || !reviewUpdate.data) {
+      const terminal = await admin
+        .from("payment_records")
+        .select("status,provider_refund_id")
+        .eq("id", payment.payment_id)
+        .maybeSingle();
+      if (
+        !terminal.error &&
+        terminal.data?.status === "refunded" &&
+        terminal.data.provider_refund_id === providerRefundId
+      ) {
+        return NextResponse.json({ success: true, duplicatePrevented: true, providerRefundId });
+      }
+    }
     await safeAppendPaymentEvent({
-      paymentRecordId: payment.id,
+      paymentRecordId: payment.payment_id,
       provider: payment.provider,
-      eventType: "refund_failed",
+      eventType: providerSucceeded ? "refund_reconciliation_failed" : "refund_provider_failed",
       status: "failed",
       message,
       payload: { actor_id: auth.user.id, provider_refund_id: providerRefundId },
     });
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json(
+      {
+        error: providerSucceeded
+          ? "The provider refund succeeded, but the credit reversal needs a safe retry."
+          : "The provider refund could not be completed safely.",
+      },
+      { status: providerSucceeded ? 503 : 502 },
+    );
   }
 }

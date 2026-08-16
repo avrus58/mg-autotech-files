@@ -1,8 +1,34 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { requireApiUser } from "@/lib/apiAuth";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { sendRevisionRequestedAdminEmail } from "@/lib/email/events";
 import { recordWorkOrderEvent } from "@/lib/workOrders/server";
+import {
+  checkAdaptiveRateLimit,
+  rateLimitResponseHeaders,
+} from "@/lib/abuseProtection";
+
+const revisionSchema = z.object({
+  revisionNote: z.string().trim().min(1).max(4000),
+}).strict();
+
+const REVISION_RATE_LIMIT = 5;
+const REVISION_RATE_WINDOW_MS = 60 * 60 * 1000;
+const privateResponseHeaders = {
+  "Cache-Control": "private, no-store, max-age=0",
+  Vary: "Authorization, Cookie",
+};
+
+function privateJson(body: unknown, init?: { status?: number; headers?: HeadersInit }) {
+  return NextResponse.json(body, {
+    ...init,
+    headers: {
+      ...privateResponseHeaders,
+      ...init?.headers,
+    },
+  });
+}
 
 export async function POST(
   request: Request,
@@ -10,26 +36,44 @@ export async function POST(
 ) {
   const auth = await requireApiUser(request);
   if (!auth.ok) {
-    return NextResponse.json({ error: auth.error }, { status: auth.status });
+    return privateJson({ error: auth.error }, { status: auth.status });
   }
 
   const { id } = await context.params;
-  const body = await request.json().catch(() => null);
-  if (!body || typeof body !== "object" || Array.isArray(body)) {
-    return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
+  const rateLimit = await checkAdaptiveRateLimit({
+    request,
+    scope: "request-revision-create",
+    suffix: `${auth.user.id}:${id}`,
+    limit: REVISION_RATE_LIMIT,
+    windowMs: REVISION_RATE_WINDOW_MS,
+  });
+  if (!rateLimit.allowed) {
+    return privateJson(
+      { error: "Too many revision attempts. Please wait before trying again." },
+      {
+        status: 429,
+        headers: rateLimitResponseHeaders({
+          result: rateLimit,
+          limit: REVISION_RATE_LIMIT,
+          windowMs: REVISION_RATE_WINDOW_MS,
+          blocked: true,
+        }),
+      }
+    );
+  }
+
+  const parsed = revisionSchema.safeParse(await request.json().catch(() => null));
+  if (!parsed.success) {
+    return privateJson(
+      { error: "Revision note must be between 1 and 4000 characters." },
+      { status: 400 }
+    );
   }
 
   const supabaseAdmin = getSupabaseAdmin();
   const user = auth.user;
 
-  const revisionNote = String(body.revisionNote || "").trim();
-
-  if (!revisionNote) {
-    return NextResponse.json(
-      { error: "Revision note is required." },
-      { status: 400 }
-    );
-  }
+  const revisionNote = parsed.data.revisionNote;
 
   const { data: order, error: orderError } = await supabaseAdmin
     .from("orders")
@@ -39,26 +83,52 @@ export async function POST(
     .single();
 
   if (orderError || !order) {
-    return NextResponse.json(
+    return privateJson(
       { error: "Order not found or access denied." },
       { status: 404 }
     );
   }
 
   if (!order.modified_file_path) {
-    return NextResponse.json(
+    return privateJson(
       { error: "Revision can only be requested after a modified file is delivered." },
       { status: 400 }
     );
   }
 
-  const { error: updateError } = await supabaseAdmin
+  if (order.status === "revision") {
+    return privateJson(
+      { error: "A revision request is already pending for this order." },
+      { status: 409 }
+    );
+  }
+  if (order.status !== "completed") {
+    return privateJson(
+      { error: "Revision can only be requested for a completed order." },
+      { status: 409 }
+    );
+  }
+
+  const { data: updatedOrder, error: updateError } = await supabaseAdmin
     .from("orders")
     .update({ status: "revision" })
-    .eq("id", id);
+    .eq("id", id)
+    .eq("customer_id", user.id)
+    .eq("status", "completed")
+    .select("id")
+    .maybeSingle();
 
   if (updateError) {
-    return NextResponse.json({ error: updateError.message }, { status: 500 });
+    return privateJson(
+      { error: "Revision request could not be saved. Please try again." },
+      { status: 503, headers: { "Retry-After": "3" } }
+    );
+  }
+  if (!updatedOrder) {
+    return privateJson(
+      { error: "A revision request is already pending or the order state changed." },
+      { status: 409 }
+    );
   }
 
   const { data: messageData, error: messageError } = await supabaseAdmin
@@ -74,9 +144,15 @@ export async function POST(
     .single();
 
   if (messageError || !messageData) {
-    return NextResponse.json(
-      { error: messageError?.message || "Revision message could not be saved." },
-      { status: 500 }
+    await supabaseAdmin
+      .from("orders")
+      .update({ status: "completed" })
+      .eq("id", id)
+      .eq("customer_id", user.id)
+      .eq("status", "revision");
+    return privateJson(
+      { error: "Revision message could not be saved. Please contact support." },
+      { status: 503, headers: { "Retry-After": "3" } }
     );
   }
 
@@ -94,5 +170,14 @@ export async function POST(
     messageId: String(messageData.id),
   });
 
-  return NextResponse.json({ success: true, status: "revision" });
+  return privateJson(
+    { success: true, status: "revision" },
+    {
+      headers: rateLimitResponseHeaders({
+        result: rateLimit,
+        limit: REVISION_RATE_LIMIT,
+        windowMs: REVISION_RATE_WINDOW_MS,
+      }),
+    }
+  );
 }
