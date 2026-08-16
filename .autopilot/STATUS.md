@@ -2810,3 +2810,31 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 - Sonuc: Canli migration, push ve deploy guvenlik nedeniyle uygulanmadi. Yerel
   release commit'i hazirlanabilir; remote release staging, Vercel config ve
   restorable backup tamamlaninca runbook sirasiyla devam etmelidir.
+
+## 2026-08-16 Vercel ortam izolasyonu ve staging destek hazirligi
+
+- Gorev: Guvenlik release branch'inin ilk push'undan once Preview ile Production
+  altyapisini birbirinden ayirmak ve staging veritabani erisim blokajini
+  Supabase destegine kanitli bir taleple hazirlamak.
+- Vercel: Uc Supabase baglanti degiskeninin ortak `Production and Preview`
+  kapsami ayrildi. Production kayitlari yalniz Production, izole staging
+  kayitlari tum Preview branch'leri icin kullanilir; degerler okunmadi veya
+  loglanmadi. Boylece yeni release branch'i ilk push'tan itibaren Production
+  Supabase kimlik bilgilerini miras almaz.
+- Guvenlik konfigurasyonu: Production ve Preview icin birbirinden ayri
+  `UPLOAD_INTEGRITY_SECRET` ve `SECURITY_RATE_LIMIT_SALT` kayitlari olusturuldu.
+  Eksik Preview `WIDGET_SESSION_SECRET` ve `WIDGET_IP_HASH_SALT` kayitlari da
+  ayri rastgele degerlerle eklendi. Gizli degerler uygulama disina cikarilmadi.
+- Limiter: Upstash for Redis Free entegrasyonu son `Accept and Create` ekranina
+  kadar hazirlandi. Bu adim dis hizmet hesabi, veri paylasimi ve kalici erisim
+  anahtari olusturdugu icin owner onayi olmadan tamamlanmadi;
+  `SECURITY_DISTRIBUTED_RATE_LIMIT_ENABLED` etkinlestirilmedi.
+- Staging: Proje kontrol duzleminde `ACTIVE_HEALTHY` gorunurken DB duzlemi uc
+  salt-okunur istekte de baglanti zaman asimina ugradi. Dashboard'da Restart ve
+  Pause kontrolleri disabled. `Database unresponsive / Normal` destek talebi
+  teknik kanitlarla hazirlandi; destek proje erisimi ve dis mesaj gonderimi icin
+  owner onayi beklediginden talep henuz gonderilmedi.
+- Release durumu: Branch commit'i temiz ve tum onceki kontroller PASS. Branch
+  henuz push edilmedi; staging migration, Preview deploy/smoke, Production
+  backup/restore drill, Production migration/deploy ve `02449` cutover
+  uygulanmadi. Production, Stripe, musteri verisi ve e-posta mutasyonu yok.
