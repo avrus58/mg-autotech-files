@@ -66,6 +66,7 @@ export function PublicAnalytics({
   const analyticsRouteAllowed = publicRoute || isConversionMeasurementPath(pathname);
   const consentCopy = getAnalyticsConsentCopy(pathname);
   const [consent, setConsent] = useState<ConsentState>("loading");
+  const [measurementReady, setMeasurementReady] = useState(false);
   const [preferencesOpen, setPreferencesOpen] = useState(false);
   const [customizing, setCustomizing] = useState(false);
   const [draft, setDraft] = useState({ analytics: false, advertising: false });
@@ -117,12 +118,30 @@ export function PublicAnalytics({
   }, []);
 
   useEffect(() => {
-    if (!configured || !hostApproved || !preferences) return;
+    let active = true;
+    const updateMeasurementReady = (ready: boolean) => {
+      queueMicrotask(() => {
+        if (active) setMeasurementReady(ready);
+      });
+    };
+
+    if (!configured || !hostApproved || !preferences) {
+      updateMeasurementReady(false);
+      return () => {
+        active = false;
+      };
+    }
     if (analyticsRouteAllowed && (preferences.analytics || preferences.advertising)) {
-      initializeGoogleMeasurement(configuration);
-      return;
+      updateMeasurementReady(initializeGoogleMeasurement(configuration));
+      return () => {
+        active = false;
+      };
     }
     denyGoogleMeasurement();
+    updateMeasurementReady(false);
+    return () => {
+      active = false;
+    };
   }, [analyticsRouteAllowed, configuration, configured, hostApproved, preferences]);
 
   useEffect(() => {
@@ -232,7 +251,7 @@ export function PublicAnalytics({
 
   return (
     <>
-      {scriptId && analyticsRouteAllowed ? (
+      {measurementReady && scriptId && analyticsRouteAllowed ? (
         <Script
           id="mg-google-measurement"
           src={`https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(scriptId)}`}

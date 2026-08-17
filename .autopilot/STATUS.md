@@ -2688,3 +2688,28 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
   env, customer data, payment veya deploy mutasyonu yapilmadi. Commit, push ve
   deploy yoktur. External receipt Google Ads Tag Assistant ve conversion
   diagnostics ile owner-controlled canli testte dogrulanmalidir.
+
+## 2026-08-17 Google Ads spend recovery and measurement ordering
+
+- Acil hesap islemi: Donusum uretmeden Display/YouTube envanterine harcama yapan
+  Performance Max kampanyasi owner onayi ile duraklatildi. Hesapta calisan reklam
+  kalmadigi ve gunluk kampanya butcesinin sifirlandigi Google Ads arayuzunde
+  dogrulandi; kampanya veya gecmis veri silinmedi.
+- Kontrollu taslak: `EN | File Service | Search | Paused` adli Search kampanyasi
+  yayinlanmadan `Save for later` ile kaydedildi. Yalniz Google Search Network,
+  English, United States/Canada/United Kingdom/Ireland presence hedeflemesi,
+  exact/phrase file-service kelimeleri, 0.75 EUR max CPC ve 5 EUR/gun taslak
+  butce kullanildi. AI Max ve ad-group genisletmesi kapali; Publish islemi yoktur.
+- Olcum duzeltmesi: Consent ile measurement queue kurulmadan dis Google tag'inin
+  render edilmesine izin veren siralama yarisi kapatildi. Script artik yalniz
+  `initializeGoogleMeasurement` basarili olduktan sonra eklenir; eski effect
+  tamamlanmalari yeni hazirlik durumunu ezemez.
+- Kontroller: lint PASS; web+desktop typecheck PASS; full tests PASS (675/675);
+  production build PASS (269 static page); i18n/SEO PASS (12 locale, 611/611);
+  homepage performance PASS (66.4 KB gzip / 80 KB); payment schema-only PASS ve
+  env okunmadi; production audit PASS (0 vulnerability); `git diff --check` PASS.
+- Release gate: Kod bu kayitla birlikte odakli bir release adayi olarak
+  hazirlandi. Search taslagi henuz aktif degildir; Production Supabase, customer
+  data, payment ayarlari veya secret degerler degistirilmedi. Canli aktivasyon
+  oncesinde olcum duzeltmesi deploy edilmeli, Tag Assistant receipt
+  dogrulanmali ve negatif keyword listesi kampanyaya uygulanmalidir.
