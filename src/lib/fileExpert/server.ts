@@ -72,12 +72,9 @@ export async function isFileExpertAdmin(userId: string) {
     .single();
 
   if (current.error?.code === "42703") {
-    const legacy = await supabaseAdmin
-      .from("profiles")
-      .select("role")
-      .eq("id", userId)
-      .single();
-    return legacy.data?.role === "admin";
+    // A legacy role value alone cannot prove Primary Owner or File Expert
+    // authority. Fail closed until the staff security columns are available.
+    return false;
   }
 
   const access: StaffAccess = {

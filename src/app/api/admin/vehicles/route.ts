@@ -8,11 +8,7 @@ export async function GET(request: Request) {
   if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
   try {
     const overview = await getVehicleAdminOverview();
-    const permissionWarnings: string[] = [];
-    if (auth.access.role === "admin" && auth.access.staffRole !== "owner") {
-      permissionWarnings.push("Primary admin access is allowed by the app guard, but the Supabase profile is not marked as staff_role=owner. Normalize this before relying on direct RLS checks or delegating staff access.");
-    }
-    return NextResponse.json({ ...overview, permissionWarnings });
+    return NextResponse.json({ ...overview, permissionWarnings: [] });
   } catch (error) {
     return NextResponse.json({
       error: error instanceof Error ? error.message : "Vehicle database could not be loaded.",
