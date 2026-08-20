@@ -98,6 +98,11 @@ test("request credits come from the existing shared service catalog", () => {
 test("order creation is caller-bound, locked, bounded and server-priced", () => {
   const migration = source(...migrationPath);
   const browser = source("src", "app", "new-request", "page.tsx");
+  const zeroCreditCompatibility = source(
+    "supabase",
+    "migrations",
+    "20260816002454_zero_credit_request_compatibility.sql",
+  );
 
   assert.match(migration, /v_user_id uuid := auth\.uid\(\)/i);
   assert.match(migration, /p_credits_required\s+is null[\s\S]*p_credits_required <= 0[\s\S]*p_credits_required > 100000/i);
@@ -112,8 +117,10 @@ test("order creation is caller-bound, locked, bounded and server-priced", () => 
   assert.match(migration, /mg_autotech\.order_credit_debit/i);
   assert.match(migration, /v_financial_marker not in \('order_debit', 'staff_adjustment'\)/i);
   assert.doesNotMatch(migration, /on conflict \(source_type, source_id\) do nothing/i);
-  assert.match(browser, /Number\.isInteger\(totalCredits\)[\s\S]*totalCredits > 0/);
-  assert.match(browser, /select at least one service with a positive credit value/i);
+  assert.match(zeroCreditCompatibility, /p_credits_required\s+is null[\s\S]*p_credits_required < 0[\s\S]*p_credits_required > 100000/i);
+  assert.match(zeroCreditCompatibility, /if v_expected_credits > 0 then[\s\S]*set credit_balance = v_new_balance/i);
+  assert.match(browser, /Boolean\(selectedMainService\)[\s\S]*Number\.isInteger\(totalCredits\)[\s\S]*totalCredits >= 0/);
+  assert.match(browser, /Please select a valid service combination/i);
 
   const createOrderGrant = migration.match(
     /grant execute on function public\.create_order_with_credit_deduction\([\s\S]*?;/i

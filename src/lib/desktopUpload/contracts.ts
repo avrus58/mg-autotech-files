@@ -275,6 +275,9 @@ export function validateDesktopCreditAccess(profile: {
   negative_credit_limit?: number | string | null;
   account_status?: string | null;
 }, requiredCredits: number) {
+  if (!Number.isInteger(requiredCredits) || requiredCredits < 0 || requiredCredits > 100000) {
+    return "The service credit amount is invalid.";
+  }
   if ((profile.account_status ?? "active") !== "active") {
     return "Customer account is not active.";
   }

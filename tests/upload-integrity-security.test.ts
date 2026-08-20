@@ -140,7 +140,7 @@ test("desktop paths are content-addressed and finalization verifies real bytes",
   assert.match(prepare, /readBoundedJsonBody\(request, 32 \* 1024\)/);
   assert.match(prepare, /createSignedUploadUrl\(path, \{ upsert: false \}\)/);
   assert.match(prepare, /rate\.source !== "distributed"/);
-  assert.match(prepare, /!Number\.isInteger\(creditsRequired\) \|\| creditsRequired <= 0/);
+  assert.match(prepare, /!Number\.isInteger\(creditsRequired\) \|\| creditsRequired < 0/);
   assert.match(finalize, /verifyUploadIntegrityContract/);
   assert.match(finalize, /exactStoredObjectMetadata/);
   assert.match(finalize, /createHash\("sha256"\)/);
@@ -148,8 +148,8 @@ test("desktop paths are content-addressed and finalization verifies real bytes",
   assert.match(finalize, /from\("desktop_request_approvals"\)\.insert/);
   assert.match(finalize, /p_approval_token: approvalToken/);
   assert.doesNotMatch(finalize, /\.like\("original_file_path"/);
-  assert.match(finalize, /!Number\.isInteger\(creditsRequired\) \|\| creditsRequired <= 0/);
-  assert.ok(finalize.indexOf("creditsRequired <= 0") < finalize.indexOf('const admin = getSupabaseAdmin()'));
+  assert.match(finalize, /!Number\.isInteger\(creditsRequired\) \|\| creditsRequired < 0/);
+  assert.ok(finalize.indexOf("creditsRequired < 0") < finalize.indexOf('const admin = getSupabaseAdmin()'));
   assert.match(app, /uploadContract: uploadSession\.uploadContract/);
   assert.match(app, /signedUploadUrl: uploadSession\.upload\.signedUploadUrl/);
   assert.match(stateMigration, /create table public\.desktop_request_approvals/);

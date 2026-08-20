@@ -3173,8 +3173,9 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
   `20260816002442_current_production_authority_emergency_hardening.sql` olarak
   hazirlandi. Migration SHA-256
   `BBE8117FAC45CE48D009A56B1DE3AD018B7564CF28D358BA9FD38E6F4DA628EA`,
-  `dad28dd` app patch SHA-256
-  `8E599D4F02EE3240AB69545278536D913DE57E29ECA681B64D65B3331B4666B6`.
+  Production base `9412a1a` uzerine uygulanan app patch SHA-256
+  `8E599D4F02EE3240AB69545278536D913DE57E29ECA681B64D65B3331B4666B6`;
+  deploy edilebilir exact uc-dosya emergency commit'i `0fb53b5`.
   Signup her zaman customer/zero-credit; admin ve delegated staff tuple'lari
   exact; 19 legacy admin policy owner-only; profiles/orders direct
   INSERT/DELETE siniri kapali; legacy order caller/storage/server-price/row-lock
@@ -3182,12 +3183,13 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
   degilse migration daha ilk adimda fail-closed olur. Production aggregate
   preflight: bir admin, bir exact owner, sifir authority/fractional/out-of-range
   anomali.
-- Emergency paket remote'a uygulanmadi. Current-Production-shape ve post-02453
+- Emergency paket remote'a uygulanmadi. Current-Production-shape ve post-02454
   iki izole SQL rehearsal, pinned checksum gate ve explicit Production release
-  yetkisi zorunlu. Acil app artifact'i yalnız `dad28dd + pinned patch`tir; bu
-  dirty/current feature branch Production'a karistirilamaz. Sonraki canonical
-  zincirde zero-credit `Only Options` uyumlulugu ayrıca additive/reviewed fix
-  veya release-sequence karari ister.
+  yetkisi zorunlu. Acil app artifact'i `9412a1a + pinned patch` ve exact
+  `0fb53b5` commit'idir; `dad28dd` eski validation baseline'idir ve deploy kimligi
+  degildir. Dirty/current feature branch Production'a karistirilamaz. Canonical
+  zero-credit `Only Options` / `Special Request` uyumlulugu additive 02454 ve
+  matching app degisikligiyle hazirlandi; izole runtime rehearsal bekliyor.
 - Download activity uygulamasi tamamlandi: original/additional customer source
   dosyalari owner-bound API ile yeniden indirilebilir; admin Work Order her
   source/delivery dosyasi için portal link-talep sayisi, son talep ve durum
@@ -3245,3 +3247,60 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
   data, payment ayarlari veya secret degerler degistirilmedi. Canli aktivasyon
   oncesinde olcum duzeltmesi deploy edilmeli, Tag Assistant receipt
   dogrulanmali ve negatif keyword listesi kampanyaya uygulanmalidir.
+
+## 2026-08-21 Canonical zero-credit request compatibility
+
+- Calisma: `2026-08-21 00:55-01:32 +02:00`; fingerprint
+  `request-creation|canonical-zero-credit-catalog|positive-only-release-drift|zero-order-without-financial-event`.
+- Sonuc: Canonical katalogda zaten aktif olan `Only Options` ve zero-credit
+  `Special Request / Other` secimleri web ve desktop tarafinda yeniden
+  gecerli. Negative veya katalogla eslesmeyen client tutari fail-closed kalir.
+  Exact zero total order olusturur; `profiles.credit_balance` update edilmez ve
+  `credit_transactions` usage satiri yazilmaz. Positive total mevcut row-lock,
+  debit marker, balance update ve tek ledger sozlesmesini korur.
+- Database: Uygulanmis 02443 degistirilmedi. Additive
+  `20260816002454_zero_credit_request_compatibility.sql` SHA-256
+  `958ED96EF6607397EA8839432D53FE64776FAA853FDB5994E02DD67B5046A6F0`.
+  Resolver/trigger private kalir. Core function ACL'si bilerek degistirilmez:
+  `CREATE OR REPLACE` pre-02452 legacy app grantini korur, post-02452 lexical
+  replay/staging durumunda revoked state'i yeniden acmaz.
+- Release sirasi: selected-file Production/staging cutover
+  `02443-02448 -> 02450 -> 02451 -> 02454 + focused verifier -> matching app ->
+  02452 -> 02453`; bos ve trafiksiz DB lexical replay sonunda 02454 verifier
+  kosar. 02443-02454 Production kapsamindaki 11 migration hash'i lokal
+  recompute edilip integrated runbook'ta pinlendi.
+- App: Web toplam ve submit guardlari ile desktop upload-session/finalize
+  guardlari zero'yu kabul, negative'i red eder. Desktop shared credit validator
+  integer `0..100000` sinirini explicit uygular. Web zero-credit onayi kredi
+  kullanimi iddiasi yerine exact zero-credit metni gosterir. Uc yeni metin 11
+  non-English locale icin exact ceviriyle `src/lib/i18n.ts` icine eklendi.
+- Verifier: `verify-zero-credit-request-compatibility.sql` SHA-256
+  `9DBF7A8D06C7B9BA21A838B2491DD0912725F9F5C6221F7B567914574AB5F1AD`;
+  yalniz katalog/pg_catalog okur. Isolated staging'de SELECT-only compile probe
+  7 satir dondurdu; mevcut pre-02454 body kontrolleri beklendigi gibi false,
+  post-02452 ACL phase kontrolu true. Migration apply veya remote mutation yok.
+- Evidence: Focused test SHA-256
+  `FF6E7FCA2B3345AE01947A9BE7E3C1D622DA5734281D353F6AEDAF02A431A3FA`.
+  Final auditin buldugu stale upload-integrity `<= 0` beklentisi canonical `< 0`
+  sozlesmesine cekildi; test SHA-256
+  `C7E58927D3D26EA4D855BCE01F2848D6D04926DF195CEDBEB347BD9900E72930`.
+  Yeni i18n kaydi SHA-256
+  `8236025D84B43C9028314F7DD1C7D01229D366463376B47D510945BCFAB8B781`.
+  Release/regression paketi 87/87 ve final focused paket 53/53 PASS; final full
+  suite 778/778 PASS. Bagimsiz paralel full run Windows child-process ENOMEM ile
+  777/778 kalirken ayni gercek i18n denetimi direct 11 locale x 613/613 PASS;
+  final local rerun child-process dahil tamamen PASS. Web + customer-uploader uc
+  TypeScript projesi PASS; scoped ESLint PASS; full ESLint PASS; Production Next
+  build PASS (270/270 static page); `git diff --check` PASS (yalniz CRLF
+  uyarilari).
+- Emergency identity duzeltmesi: deploy edilebilir containment app'i
+  `9412a1a + pinned uc-dosya patch = 0fb53b5`; `dad28dd` yalniz tarihsel
+  validation baseline. Emergency runbook SHA-256
+  `E591FE312EDFA1C022F15073E9ADDCD288F0149F1E6DE0ADD3CDDA79A9D49606`;
+  integrated runbook SHA-256
+  `6344A7A0B3A3753BF203F7C7461B100DF13AACA2000D5D675EFB9953DDF997BF`.
+- Kalan release gate: 02454 isolated branch'te apply edilip sentetik web ve
+  desktop zero-order, unchanged balance/no-ledger, positive one-debit/one-ledger
+  ve negative/mismatch rejection runtime smoke'lari gecmeli. Production veya
+  staging migration, deploy, secret, gercek musteri/veri ve odeme mutasyonu bu
+  calismada yapilmadi.

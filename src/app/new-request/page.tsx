@@ -1196,9 +1196,11 @@ export default function NewRequestPage() {
     ? creditBalance + Math.max(negativeCreditLimit, 0)
     : creditBalance;
   const balanceAfterRequest = creditBalance - totalCredits;
+  const isZeroCreditRequest = Boolean(selectedMainService) && totalCredits === 0;
   const canCreateByCredits =
+    Boolean(selectedMainService) &&
     Number.isInteger(totalCredits) &&
-    totalCredits > 0 &&
+    totalCredits >= 0 &&
     totalCredits <= availableCredits;
   const accountBlocked = accountStatus !== "active";
 
@@ -1254,12 +1256,12 @@ export default function NewRequestPage() {
     },
     {
       id: "credits",
-      label: "Credits verified",
+      label: isZeroCreditRequest ? "Zero-credit request verified" : "Credits verified",
       complete: !profileLoading && !accountBlocked && canCreateByCredits,
     },
     {
       id: "payment",
-      label: "Credit use accepted",
+      label: isZeroCreditRequest ? "Zero-credit request confirmed" : "Credit use accepted",
       complete: paymentAccepted,
     },
     {
@@ -1370,8 +1372,8 @@ export default function NewRequestPage() {
   function validateCreditAccess(profile: CustomerProfile, requiredCredits: number) {
     const status = profile.account_status ?? "active";
 
-    if (!Number.isInteger(requiredCredits) || requiredCredits <= 0) {
-      return "Please select at least one service with a positive credit value.";
+    if (!Number.isInteger(requiredCredits) || requiredCredits < 0) {
+      return "Please select a valid service combination.";
     }
 
     if (status !== "active") {
@@ -2548,7 +2550,11 @@ export default function NewRequestPage() {
                     }
                     className="mt-1"
                   />
-                  <span>I accept that the required credits will be used.</span>
+                  <span>
+                    {isZeroCreditRequest
+                      ? "I confirm this zero-credit request."
+                      : "I accept that the required credits will be used."}
+                  </span>
                 </label>
 
                 <label className="flex gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-sm text-zinc-300">

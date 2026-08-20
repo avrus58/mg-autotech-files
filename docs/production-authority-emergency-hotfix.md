@@ -3,7 +3,7 @@
 ## Scope
 
 This is the smallest database-first and application-guard containment for the
-application currently deployed from `origin/main` at `dad28dd`:
+application currently deployed from `origin/main` at `9412a1a`:
 
 - signup metadata can populate presentation fields only; every new profile is
   forced to `role = customer` and `credit_balance = 0`;
@@ -29,7 +29,7 @@ application currently deployed from `origin/main` at `dad28dd`:
   ledger row; negative and catalog-mismatched amounts fail closed;
 - the six catalog-confirmed finance RPCs lose implicit `PUBLIC`, `anon` and
   unreviewed `authenticated` execution. Only the legacy dependencies required
-  by `dad28dd` remain temporarily callable.
+  by `9412a1a` remain temporarily callable.
 
 The migration does not inspect or rewrite existing customer, order, payment or
 ledger rows. It cannot prove whether authority was abused before containment;
@@ -43,10 +43,13 @@ that is a separate incident review.
 - `scripts/verify-production-authority-emergency-hardening.sql`
 - `tests/production-authority-emergency-hardening.test.ts`
 
-The app patch is deliberately based on `dad28dd`; do not deploy the whole
-current development branch as the emergency app release. The emergency tables
-use `emergency_*` names so the immediately following `02443` migration can
-create its canonical relations without collision.
+The deployable emergency application is exact Production base `9412a1a` plus
+the pinned three-file patch, committed alone as `0fb53b5`. The same patch was
+first validated against `dad28dd`, which is retained only as historical
+validation evidence. Do not deploy the whole current development branch as the
+emergency app release. The emergency tables use `emergency_*` names so the
+immediately following `02443` migration can create its canonical relations
+without collision.
 
 ## Artifact integrity gate
 
@@ -77,7 +80,7 @@ set; never apply a modified migration or app patch under an earlier approval.
 
 ## Required release sequence
 
-1. Confirm Production still runs `dad28dd` and the exact legacy RPC signatures.
+1. Confirm Production still runs `9412a1a` and the exact legacy RPC signatures.
    Confirm the local emergency version slot is unused and ordered after the
    latest remote entry:
 
@@ -115,7 +118,7 @@ set; never apply a modified migration or app patch under an earlier approval.
    2026-08-20 confirmed all four absent. Counts 1-3 are a schema-contract NO-GO
    for this combined artifact. Stop and prepare phase-specific containment;
    never force the conditional compatibility grants. Count 4 is accepted only
-   for the explicit disposable post-`02453` rehearsal.
+   for the explicit disposable post-`02454` rehearsal.
 
 2. Run `preflight-production-authority-emergency-data.sql`. It is SELECT-only
    and returns aggregate counts, never identifiers, e-mail addresses, names,
@@ -137,10 +140,11 @@ set; never apply a modified migration or app patch under an earlier approval.
    Production preflight on 2026-08-20 returned one exact owner and zero
    authority, fractional and out-of-range anomalies.
 
-3. In a clean release worktree anchored exactly at `dad28dd`, verify and apply
-   only `20260816002442_current_production_authority_app_hotfix.patch`. Run the
-   focused tests, lint, typecheck and build there. Keep this app artifact ready;
-   do not mix current development-branch changes into it. The read-only source
+3. In a clean release worktree anchored exactly at `9412a1a`, verify and apply
+   only `20260816002442_current_production_authority_app_hotfix.patch`. The
+   resulting exact three-file artifact must be commit `0fb53b5`. Run the focused
+   tests, lint, typecheck and build there. Keep this app artifact ready; do not
+   mix current development-branch changes into it. The read-only source
    scan must still show zero direct `orders` insert/upsert calls; the 2026-08-20
    scan confirmed web new-request and desktop finalize both use the legacy RPC.
 
@@ -152,7 +156,7 @@ set; never apply a modified migration or app patch under an earlier approval.
    only in a reviewed low-traffic window. Never raise the bounds blindly.
 
 5. Separately test the worst case in a disposable isolated database already at
-   `02453`: execute the exact SQL file directly, not as a migration-history
+   `02454`: execute the exact SQL file directly, not as a migration-history
    repair, run the verifier, and discard/reset that database. This proves the
    compatibility guards do not recreate absent legacy policies or reopen the
    post-`02452` RPC cutover. Do not add `02442` retroactively to that disposable
@@ -165,10 +169,11 @@ set; never apply a modified migration or app patch under an earlier approval.
    protected/malformed authority writes fail; exact-priced and catalog-valid
    zero-total legacy orders succeed without debit/ledger; price and cross-user
    paths fail; a valid legacy staff adjustment writes one ledger row; and
-   anon/auth calls to private finance RPCs fail. On the post-`02453` rehearsal,
+   anon/auth calls to private finance RPCs fail. On the post-`02454` rehearsal,
    require the fully canonical 4-of-4 phase, every verifier row PASS, legacy
    entry points still closed and no recreated legacy policy; the canonical
-   resolver intentionally owns its own positive-total contract there. Use no
+   resolver accepts only catalog-authoritative nonnegative totals, including
+   the exact zero-credit compatibility branch. Use no
    real customer, Stripe, bank-payment or refund data in either rehearsal.
 
 7. Apply the exact `02442` SQL through the established selected-migration
@@ -178,27 +183,29 @@ set; never apply a modified migration or app patch under an earlier approval.
    confirm rollback and reschedule. Immediately run the catalog-only verifier;
    every row must be `PASS` before a functional canary.
 
-8. Immediately deploy only the prepared `dad28dd` app patch. Smoke registration,
-   settings, request creation, admin authorization denial/allow paths and File
-   Expert authorization. Do not execute a real payment/refund as a smoke test.
+8. Immediately deploy only exact emergency commit `0fb53b5` (`9412a1a` plus
+   the pinned patch). Smoke registration, settings, request creation, admin
+   authorization denial/allow paths and File Expert authorization. Do not
+   execute a real payment/refund as a smoke test.
    Rerun the aggregate preflight; normal operation requires
    `normal_operation_ready=true`.
 
 9. Continue the canonical release only through the established selected-file
    procedure in `integrated-security-release-runbook.md`. Re-list remote history
    first; pin every exact checksum and apply only the reviewed order:
-   `02443`-`02448`, `02450`, `02451`, matching application deploy, `02452`, and
-   `02453`. Do not use `--include-all`, blanket `db push`, or migration-history
+   `02443`-`02448`, `02450`, `02451`, `02454`, matching application deploy,
+   `02452`, and `02453`. Do not use
+   `--include-all`, blanket `db push`, or migration-history
    repair. The incident gate must be clean before canonical migrations may
-   replace transitional helpers. Before this later phase, confirm the business
-   contract for a zero-total `Only Options` / `Special Request` selection: the
-   current canonical app and resolver reject a zero total. If zero-only requests
-   must remain supported, a separate reviewed additive compatibility migration
-   and matching app change are required before canonical Production cutover.
+   replace transitional helpers. Additive 02454 and the matching application
+   preserve catalog-valid zero totals without a profile debit or usage-ledger
+   row; its focused verifier must pass before the application cutover.
 
-Fresh/full local replay order is `02442` followed by canonical `02443`-`02453`,
-so canonical definitions finish last. Conditional legacy grants remain
-fail-closed in the explicit post-`02453` rehearsal as an additional safeguard.
+Fresh/full local replay order is `02442` followed by canonical `02443`-`02454`,
+so canonical definitions finish last. The live selected-file cutover applies
+02454 after 02451 and before the matching app, then 02452/02453 as documented in
+the integrated runbook. Conditional legacy grants remain fail-closed in the
+explicit post-`02454` rehearsal as an additional safeguard.
 
 ## Recovery
 
@@ -224,7 +231,6 @@ fail-closed in the explicit post-`02453` rehearsal as an additional safeguard.
 - The old app still lacks stable client-provided idempotency for the legacy
   three-argument staff adjustment and request RPC. The canonical release is
   still required; this P0 is not the final financial architecture.
-- The emergency `dad28dd` phase preserves catalog-valid zero-total orders for
-  backward compatibility. The canonical branch currently rejects zero totals;
-  owner confirmation or a separate additive compatibility fix is a hard gate
-  for that later product-contract decision, not for applying this containment.
+- The emergency `9412a1a + pinned patch` phase and canonical 02454 both preserve
+  catalog-valid zero-total orders. The emergency commit is `0fb53b5`; `dad28dd`
+  is historical validation evidence only.

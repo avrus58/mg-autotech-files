@@ -107,7 +107,7 @@ export async function POST(request: Request) {
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "Invalid service selection." }, { status: 400 });
   }
-  if (!Number.isInteger(creditsRequired) || creditsRequired <= 0) {
+  if (!Number.isInteger(creditsRequired) || creditsRequired < 0) {
     return NextResponse.json(
       { error: "This service selection cannot be submitted through the desktop app." },
       { status: 400 }

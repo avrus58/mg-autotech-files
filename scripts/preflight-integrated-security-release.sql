@@ -1,4 +1,4 @@
--- Read-only preflight for reviewed migrations 02443-02448 and 02450-02453.
+-- Read-only preflight for reviewed migrations 02443-02448 and 02450-02454.
 -- The result contains aggregate readiness only; it never returns customer rows,
 -- identifiers, e-mail addresses, object names, or file paths.
 
@@ -14,7 +14,8 @@ target_versions(version) as (
     ('20260816002450'),
     ('20260816002451'),
     ('20260816002452'),
-    ('20260816002453')
+    ('20260816002453'),
+    ('20260816002454')
 ),
 target_migration_names(migration_name) as (
   values
@@ -27,7 +28,8 @@ target_migration_names(migration_name) as (
     ('auth_customer_id_generator_hardening'),
     ('credit_transaction_customer_access_hardening'),
     ('post_deploy_legacy_rpc_cutover'),
-    ('email_delivery_schema_parity')
+    ('email_delivery_schema_parity'),
+    ('zero_credit_request_compatibility')
 ),
 required_relations(schema_name, relation_name) as (
   values

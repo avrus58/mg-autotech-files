@@ -94,9 +94,13 @@ test("desktop service pricing and summary are computed server-side from known op
   assert.equal(calculateDesktopRequestCredits("tcu_stage_1", []), 15);
   assert.equal(calculateDesktopRequestCredits("tcu_stage_2", []), 20);
   assert.equal(calculateDesktopRequestCredits("tcu_stage_3", []), 30);
+  assert.equal(calculateDesktopRequestCredits("only_options", []), 0);
+  assert.equal(calculateDesktopRequestCredits("only_options", ["special_request"]), 0);
   assert.equal(findDesktopPrimaryService("tcu_tuning"), null);
   assert.throws(() => calculateDesktopRequestCredits("stage_1", ["not_real"]));
   assert.equal(validateDesktopCreditAccess({ credit_balance: 30, account_status: "active" }, 22), null);
+  assert.equal(validateDesktopCreditAccess({ credit_balance: 0, account_status: "active" }, 0), null);
+  assert.match(validateDesktopCreditAccess({ credit_balance: 30, account_status: "active" }, -1) ?? "", /invalid/i);
   assert.match(validateDesktopCreditAccess({ credit_balance: null, account_status: "active" }, 22) ?? "", /credit balance could not be verified/i);
   assert.match(validateDesktopCreditAccess({ credit_balance: 1, account_status: "active" }, 22) ?? "", /credit balance could not be verified/i);
   assert.match(validateDesktopCreditAccess({ credit_balance: 30, account_status: "blocked" }, 1) ?? "", /not active/i);
@@ -247,11 +251,13 @@ test("desktop APIs require customer auth and scope data to the authenticated cus
   assert.match(finalizeRoute, /parsed\.data\.upload\.path !== expectedPath/);
   assert.match(finalizeRoute, /parsed\.data\.uploadSessionId !== desktopUploadSessionIdFor/);
   assert.match(finalizeRoute, /validateDesktopCreditAccess/);
+  assert.match(finalizeRoute, /!Number\.isInteger\(creditsRequired\) \|\| creditsRequired < 0/);
 
   const uploadSessionRoute = readFileSync(resolve(process.cwd(), "src/app/api/desktop/upload-session/route.ts"), "utf8");
   assert.match(uploadSessionRoute, /service: z\.object/);
   assert.match(uploadSessionRoute, /calculateDesktopRequestCredits/);
   assert.match(uploadSessionRoute, /validateDesktopCreditAccess/);
+  assert.match(uploadSessionRoute, /!Number\.isInteger\(creditsRequired\) \|\| creditsRequired < 0/);
 });
 
 test("anonymous users cannot call desktop customer APIs", async () => {
