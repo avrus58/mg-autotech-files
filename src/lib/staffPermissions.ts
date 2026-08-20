@@ -58,9 +58,17 @@ export function isPrimaryOwner(access: StaffAccess | null | undefined) {
   return access.role === "admin" && access.staffRole === "owner";
 }
 
+function isDelegatedStaff(access: StaffAccess | null | undefined) {
+  return access?.role === "staff" && (
+    access.staffRole === "manager" ||
+    access.staffRole === "calibrator" ||
+    access.staffRole === "support"
+  );
+}
+
 export function isStaffMember(access: StaffAccess | null | undefined) {
   if (!access) return false;
-  return isPrimaryOwner(access) || access.role === "staff";
+  return isPrimaryOwner(access) || isDelegatedStaff(access);
 }
 
 export function hasStaffPermission(
@@ -68,8 +76,8 @@ export function hasStaffPermission(
   permission: StaffPermission
 ) {
   if (isPrimaryOwner(access)) return true;
-  if (access?.role !== "staff" || permission === "staff.manage") return false;
-  return Boolean(access.permissions?.includes(permission));
+  if (!isDelegatedStaff(access) || permission === "staff.manage") return false;
+  return Boolean(access?.permissions?.includes(permission));
 }
 
 export function hasAllStaffPermissions(

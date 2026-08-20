@@ -611,6 +611,10 @@ test("customer role cannot satisfy vehicle database admin permission", () => {
   assert.equal(hasStaffPermission({ role: "staff", staffRole: "support", permissions: [] }, "vehicles.manage"), false);
   assert.equal(hasStaffPermission({ role: "staff", staffRole: "manager", permissions: ["vehicles.manage"] }, "vehicles.manage"), true);
   assert.equal(hasStaffPermission({ role: "admin", staffRole: "owner", permissions: [] }, "vehicles.manage"), true);
+  assert.equal(hasStaffPermission({ role: "admin", staffRole: null, permissions: ["vehicles.manage"] }, "vehicles.manage"), false);
+  assert.equal(hasStaffPermission({ role: "staff", staffRole: null, permissions: ["vehicles.manage"] }, "vehicles.manage"), false);
+  assert.equal(hasStaffPermission({ role: "staff", staffRole: "owner", permissions: ["vehicles.manage"] }, "vehicles.manage"), false);
+  assert.equal(hasStaffPermission({ role: "staff", staffRole: "invalid" as never, permissions: ["vehicles.manage"] }, "vehicles.manage"), false);
 });
 
 test("admin vehicle routes consistently require vehicles.manage permission", () => {
@@ -741,11 +745,12 @@ test("real import UI requires explicit confirmation text", () => {
   assert.match(source, /Valid importable/);
 });
 
-test("admin dashboard surfaces owner profile edge warnings without weakening security", () => {
+test("admin dashboard does not describe malformed authority as app-guard allowed", () => {
   const routeSource = readFileSync(resolve(process.cwd(), "src", "app", "api", "admin", "vehicles", "route.ts"), "utf8");
   const uiSource = readFileSync(resolve(process.cwd(), "src", "app", "admin", "vehicles", "VehicleControlCenter.tsx"), "utf8");
   assert.match(routeSource, /permissionWarnings/);
-  assert.match(routeSource, /staffRole !== "owner"/);
+  assert.doesNotMatch(routeSource, /Primary admin access is allowed by the app guard/);
+  assert.doesNotMatch(routeSource, /staffRole !== "owner"/);
   assert.match(uiSource, /permissionWarnings/);
 });
 
