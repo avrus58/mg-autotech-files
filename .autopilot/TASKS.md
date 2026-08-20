@@ -8,6 +8,32 @@
 
 ## Blocked
 
+### MANUAL-20260820-PRODUCTION-AUTHORITY-EMERGENCY [P0] Production authority and finance containment
+
+Durum: Blocked
+
+Fingerprint: `production-security|signup-metadata-admin-and-direct-finance-authority|live-catalog-confirmed|pinned-emergency-containment`
+
+Kapsam: Production katalogunda doğrulanan müşteri kontrollü admin signup,
+doğrudan profil kredi/otorite güncellemesi, altı geniş SECURITY DEFINER finans
+RPC'si ve RPC dışı ücretsiz order INSERT yolunu mevcut `dad28dd` uygulamasıyla
+uyumlu en küçük migration + fail-closed app guard paketiyle kapat.
+
+Hazır sonuç: `20260816002442_current_production_authority_emergency_hardening.sql`,
+SELECT-only preflight/verifier, pinned `dad28dd` app patch'i, source testleri ve
+release runbook'u bağımsız review'dan geçti. Production aggregate preflight bir
+exact owner ve sıfır authority/fractional/out-of-range anomali gösterdi; kimlik
+ve müşteri satırı okunmadı.
+
+Blocked reason: Exact SQL henüz current-Production-shape ve post-02453 iki
+izole şema provasından geçmedi. Production apply ayrıca ayrı açık yayın yetkisi,
+pinli düşük-trafik sırası ve yalnız `dad28dd + emergency patch` deploy'u ister.
+Tam geliştirme branch'i bu acil pakete karıştırılamaz.
+
+Remediation: İki sentetik/izole rehearsal, 21/21 verifier ve fixture smokes;
+ardından explicit Production release authorization ile pinli migration/app
+hotfix, immediate smoke ve incident verification.
+
 ## Later
 
 ### AUTO-009 [P2] Production smoke dokumani ile local autopilot smoke ayrimini netlestir
@@ -49,6 +75,26 @@ Remediation: Batch with a future documentation/source-comment maintenance pass a
 Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
+
+### MANUAL-20260820-SOURCE-DOWNLOAD-ACTIVITY [P1] Customer source-file download activity
+
+Durum: Done
+
+Fingerprint: `admin-work-order|customer-source-files|missing-owner-download-surface-and-activity|tenant-bound-secure-link-request-metrics`
+
+Sonuc: Orijinal ve ek müşteri uploadları müşteri order ekranından exact
+tenant/request-bound kimlikle yeniden indirilebilir. Admin canonical Files &
+delivery görünümü her source/delivery dosyasında müşteri portal link talebi
+sayısı, son talep ve requested/not-requested durumunu gösterir. Staff indirmesi
+müşteri metriğine girmez; body ve distributed rate-limit fail-closed, audit
+private ve storage path/hash içermez. UI bunun byte-complete transfer değil,
+güvenli geçici link talebi olduğunu açıkça söyler. Yeni müşteri metinleri 11
+locale için mevcut translation sistemine eklendi.
+
+Dogrulama: Download/file-label testleri 18/18 PASS; birleşik ilgili testler
+163/163 PASS; customer i18n 11 locale x 612/612 PASS; web+uploader typecheck,
+full ESLint ve `git diff --check` PASS. Authenticated Preview/Chrome smoke,
+canonical DB/app release sırasından sonra ayrı yayın kapısı olarak kalır.
 
 ### MANUAL-20260809-GOOGLE-ADS-LAUNCH-GATE [P1] Complete verified conversion launch controls
 

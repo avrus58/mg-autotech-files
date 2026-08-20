@@ -3159,3 +3159,65 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
   canli e-posta gonderimine dokunulmadi. Production release; dogrulanmis backup /
   restore drill, ticari Vercel plan karari ve Stripe Live webhook kapilarini
   gecmeden fail-closed kalir.
+
+## 2026-08-21 Production authority incident, download activity and operational audit
+
+- Production Supabase yalniz katalog/function/policy ve aggregate-count
+  seviyesinde incelendi. Canli P0 olarak customer-controlled signup metadata'nin
+  `admin` rolü yazabilmesi, authenticated kullanicinin kendi `credit_balance`
+  ve account authority alanlarini update edebilmesi, altı geniş SECURITY
+  DEFINER finans RPC'si ve `orders` uzerindeki RPC/debit disi customer INSERT
+  yolu dogrulandi. Hiçbir finans RPC'si cagrilmadi, musteri kaydi/kimligi
+  okunmadi ve remote mutation yapilmadi.
+- En küçük current-Production paketi
+  `20260816002442_current_production_authority_emergency_hardening.sql` olarak
+  hazirlandi. Migration SHA-256
+  `BBE8117FAC45CE48D009A56B1DE3AD018B7564CF28D358BA9FD38E6F4DA628EA`,
+  `dad28dd` app patch SHA-256
+  `8E599D4F02EE3240AB69545278536D913DE57E29ECA681B64D65B3331B4666B6`.
+  Signup her zaman customer/zero-credit; admin ve delegated staff tuple'lari
+  exact; 19 legacy admin policy owner-only; profiles/orders direct
+  INSERT/DELETE siniri kapali; legacy order caller/storage/server-price/row-lock
+  bound; exposed finans ACL'leri least privilege. Modern contract state 0/4
+  degilse migration daha ilk adimda fail-closed olur. Production aggregate
+  preflight: bir admin, bir exact owner, sifir authority/fractional/out-of-range
+  anomali.
+- Emergency paket remote'a uygulanmadi. Current-Production-shape ve post-02453
+  iki izole SQL rehearsal, pinned checksum gate ve explicit Production release
+  yetkisi zorunlu. Acil app artifact'i yalnız `dad28dd + pinned patch`tir; bu
+  dirty/current feature branch Production'a karistirilamaz. Sonraki canonical
+  zincirde zero-credit `Only Options` uyumlulugu ayrıca additive/reviewed fix
+  veya release-sequence karari ister.
+- Download activity uygulamasi tamamlandi: original/additional customer source
+  dosyalari owner-bound API ile yeniden indirilebilir; admin Work Order her
+  source/delivery dosyasi için portal link-talep sayisi, son talep ve durum
+  gösterir. Staff istekleri count'a girmez. JSON 8 KiB, distributed limit
+  120/saat, private no-path/hash audit ve 60 saniyelik signed URL kullanilir.
+  Metrik byte-complete transfer degil secure-link issuance olarak dürüstçe
+  etiketlenir. Yeni metinler 11 locale'e eklendi.
+- E-posta read-only sertifikasyonu: yeni web/desktop talepte customer + tek
+  configured admin mailbox maili; anlamli allowlist status asamalarinda customer
+  maili; final delivery'de secure order page CTA; customer-admin chat iki yönde
+  mail PASS. Internal note mail üretmez. Kalanlar: web commit ile email call
+  arasinda durable outbox yok, revision sonrasi ikinci delivery maili order-wide
+  idempotency nedeniyle atlanabilir ve permanent provider hatasi icin async
+  retry queue yok.
+- Chrome Production read-only smoke: root, dashboard, admin, new-request ve File
+  Expert sayfalari desktop + 390x844 mobilde console/overflow hatasi vermedi;
+  form, ödeme, upload veya firmware islemi yapilmadi. Bu smoke mevcut Production
+  sürümünedir; yeni download feature authenticated Preview smoke'u değildir.
+- Google Ads Chrome hesabinda gorunen üç hesabın üçü de Cancelled; aktif MG
+  AutoTech kampanyasi ve güncel harcama yok. Bir hesapta yalnız eski/ilgisiz
+  TRY36.26 all-time harcama, 12 click ve 1,110 impression görüldü. Campaign,
+  budget, billing veya conversion ayari degistirilmedi. Dedicated MG Ads hesabı,
+  conversion receipt/labels ve live policy/billing gate hâlâ dis blocker.
+- Kontroller: frozen emergency focused security 24/24; download/integration
+  70/70 ve birleşik ilgili paket 163/163 PASS; full suite 771/772 PASS. Tek
+  failure Windows child-process `tsx` `uv_os_get_passwd/ENOMEM`; ayni gerçek
+  customer i18n denetimi preload ile 11 locale x 612/612 PASS. Web ve uploader
+  TypeScript PASS; full ESLint PASS; `npm audit --omit=dev` 0 vulnerability;
+  `git diff --check` PASS (yalniz CRLF uyarilari).
+- Degisen scope: download API/projection/customer+admin UI/test/translation
+  dosyalari; emergency migration/preflight/verifier/test/runbook/app patch ve
+  fail-closed staff app guardlari; bu STATUS/TASKS kaydi. Commit, push, deploy,
+  e-posta/Stripe/Ads mutation, secret okuma veya Production data mutation yok.

@@ -48,9 +48,10 @@ export async function GET(
 
   const eventResult = await admin
     .from("request_work_order_events")
-    .select("event_type, new_value, created_at")
+    .select("event_type, actor_user_id, new_value, created_at")
     .eq("request_id", id)
     .eq("event_type", CUSTOMER_FILE_DOWNLOAD_EVENT)
+    .eq("actor_user_id", order.customer_id)
     .order("created_at", { ascending: true });
 
   if (eventResult.error) {

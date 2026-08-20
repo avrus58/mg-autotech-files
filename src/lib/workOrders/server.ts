@@ -617,7 +617,7 @@ async function fetchWorkOrderDetailRows(
     admin.from("request_internal_notes").select("*").eq("request_id", requestId).is("deleted_at", null).order("pinned", { ascending: false }).order("created_at", { ascending: false }),
     admin.from("request_work_order_events").select("*").eq("request_id", requestId).order("created_at", { ascending: false }).limit(200),
     admin.from("request_messages").select("id,request_id,sender_id,sender_role,message,created_at,visibility_status,hidden_at,hidden_by,hidden_reason,restored_at,restored_by").eq("request_id", requestId).order("created_at", { ascending: true }).limit(200),
-    admin.from("request_work_order_events").select("event_type,new_value,created_at").eq("request_id", requestId).eq("event_type", CUSTOMER_FILE_DOWNLOAD_EVENT).order("created_at", { ascending: true }),
+    admin.from("request_work_order_events").select("event_type,actor_user_id,new_value,created_at").eq("request_id", requestId).eq("event_type", CUSTOMER_FILE_DOWNLOAD_EVENT).order("created_at", { ascending: true }),
   ]);
   let requestMessages: Array<ReturnType<typeof projectAdminRequestMessage>> = [];
   if (!access.messagesManage) {
@@ -887,7 +887,10 @@ export async function getAdminRequestDetail(
   ]);
   const deliveryHistory = projectCustomerDeliveryHistory(
     {
+      customer_id: order.customer_id ?? "",
       uploaded_file_name: access.filesDownload ? order.uploaded_file_name : null,
+      original_file_path: access.filesDownload ? order.original_file_path : null,
+      customer_uploads: access.filesDownload ? order.customer_uploads : null,
       created_at: order.created_at ?? nowIso(),
       modified_files: access.filesDownload ? order.modified_files : null,
       modified_file_path: access.filesDownload ? order.modified_file_path : null,
