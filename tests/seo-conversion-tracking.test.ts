@@ -152,6 +152,9 @@ test("root analytics loader is consent-aware, production-only and fail-closed wi
   assert.match(component, /isApprovedAnalyticsHost\(window\.location\.hostname\)/);
   assert.match(component, /isConversionMeasurementPath\(pathname\)/);
   assert.match(component, /analyticsRouteAllowed/);
+  assert.match(component, /updateMeasurementReady\(initializeGoogleMeasurement\(configuration\)\)/);
+  assert.match(component, /queueMicrotask\(\(\) =>/);
+  assert.match(component, /measurementReady && scriptId && analyticsRouteAllowed/);
   assert.match(component, /denyGoogleMeasurement\(\);/);
   assert.match(component, /getAnalyticsConsentCopy\(pathname\)/);
   assert.match(consentCopy, /Necessary only/);
