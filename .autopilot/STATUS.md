@@ -3276,9 +3276,9 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
   non-English locale icin exact ceviriyle `src/lib/i18n.ts` icine eklendi.
 - Verifier: `verify-zero-credit-request-compatibility.sql` SHA-256
   `9DBF7A8D06C7B9BA21A838B2491DD0912725F9F5C6221F7B567914574AB5F1AD`;
-  yalniz katalog/pg_catalog okur. Isolated staging'de SELECT-only compile probe
-  7 satir dondurdu; mevcut pre-02454 body kontrolleri beklendigi gibi false,
-  post-02452 ACL phase kontrolu true. Migration apply veya remote mutation yok.
+  yalniz katalog/pg_catalog okur. Exact 02454 isolated staging'e
+  `zero_credit_request_compatibility` adiyla bir kez uygulandi; hosted version
+  `20260820234412` olarak kaydedildi ve focused verifier 7/7 PASS oldu.
 - Evidence: Focused test SHA-256
   `FF6E7FCA2B3345AE01947A9BE7E3C1D622DA5734281D353F6AEDAF02A431A3FA`.
   Final auditin buldugu stale upload-integrity `<= 0` beklentisi canonical `< 0`
@@ -3299,8 +3299,16 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
   `E591FE312EDFA1C022F15073E9ADDCD288F0149F1E6DE0ADD3CDDA79A9D49606`;
   integrated runbook SHA-256
   `6344A7A0B3A3753BF203F7C7461B100DF13AACA2000D5D675EFB9953DDF997BF`.
-- Kalan release gate: 02454 isolated branch'te apply edilip sentetik web ve
-  desktop zero-order, unchanged balance/no-ledger, positive one-debit/one-ledger
-  ve negative/mismatch rejection runtime smoke'lari gecmeli. Production veya
-  staging migration, deploy, secret, gercek musteri/veri ve odeme mutasyonu bu
-  calismada yapilmadi.
+- Staging runtime: Web ve desktop wrapper'larinda sentetik zero-order, exact
+  idempotent replay, unchanged zero balance/no-ledger, positive one-debit/
+  one-ledger ve negative rejection kontratlari PASS. Her iki prova tek
+  transaction icinde `ROLLBACK` edildi; Auth/profile/order/ledger/idempotency/
+  approval residue kontrollerinin tamami sifir. Integrated security verifier
+  18/18 PASS ve Advisor baseline `INFO 44 / WARN 14 / ERROR 0` olarak korundu.
+- Exact `5c86def` Preview build'inde public root/login, disposable confirmed
+  customer dashboard, customer-to-admin deny guard ve zero-credit UI metni
+  console hatasi olmadan PASS. Disposable Auth/profile kaydi Dashboard/Auth
+  Admin ile silindi ve aggregate cleanup sifir olarak dogrulandi. Kaynak-dosya
+  upload/download smoke'u Vercel Protection altinda otomatik dosya secimi
+  kullanilamadigi icin ayri kapida kalir; Production'a, gercek musteri/veriye,
+  firmware'e, Stripe'a veya e-postaya dokunulmadi.
