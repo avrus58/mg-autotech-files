@@ -25,6 +25,20 @@ sending an auth request that cannot satisfy the project-wide CAPTCHA policy.
 | Web Google OAuth login/register | `signInWithOAuth` | Not changed; the SDK OAuth options do not use this password-flow token |
 | Windows uploader password login | `signInWithPassword` | Gets a fresh token from the hosted HTTPS challenge, then passes it in `options.captchaToken` |
 
+The shared web password login uses Cloudflare Managed Turnstile with
+`appearance: interaction-only`. The challenge runs for every protected fresh
+password attempt, but most legitimate visitors do not see a widget. Cloudflare
+can surface an interactive challenge whenever its risk checks require one.
+
+As an additional user-experience escalation, the web client keeps only a
+PII-free count and timestamp in same-origin browser storage. Five consecutive
+`invalid_credentials` results inside fifteen minutes switch the widget to
+`appearance: always`; a successful login or an expired window clears the
+count. Network, provider and unconfirmed-email errors do not increment it.
+This counter is intentionally not described as the security boundary: clearing
+browser storage or changing clients can bypass it, while the project-wide
+Supabase token validation still applies to every protected password attempt.
+
 Supabase documents CAPTCHA protection as project-wide for sign-in, sign-up and
 password reset. Refresh-token grants are exempt, so existing web sessions can
 refresh normally. The uploader intentionally does not persist sessions, which
@@ -112,19 +126,21 @@ For a no-secret contract report, run
 `node scripts/check-auth-captcha-readiness.mjs --schema-only`. It does not read
 `.env` files.
 
-## The requested “10 attempts” limit
+## Adaptive five-failure experience and hosted rate-limit boundary
 
 Supabase's hosted password token endpoint currently uses an IP-based limit of
 1,800 requests per hour with a burst allowance up to 30, and that password
 limit is not customizable. The dashboard's `10 per 5 minutes` Auth setting is
 still useful for signup, resend, magic-link and OTP traffic, but it does not
 turn password guessing into a strict ten-attempt limit. A browser/session
-counter of 10 would also be easy to clear or bypass by calling the public
+browser/session-only counter would also be easy to clear or bypass by calling the public
 Supabase endpoint directly, so no fake password security limit was added.
 
 Turnstile materially reduces automated guessing because every protected fresh
-attempt needs a valid, short-lived, single-use challenge token. A strict
-server-enforced limit of exactly 10 would require moving password exchange
+attempt needs a valid, short-lived, single-use challenge token. The visible
+widget is forced after five consecutive credential failures in the same
+browser, but that local escalation is not a global five-attempt lock. A strict
+server-enforced limit of exactly five would require moving password exchange
 behind an owned, non-bypassable auth gateway/proxy and is a separate
 architecture/security review.
 
@@ -133,5 +149,6 @@ architecture/security review.
 - [Supabase CAPTCHA protection](https://supabase.com/docs/guides/auth/auth-captcha)
 - [Supabase Auth rate limits](https://supabase.com/docs/guides/auth/rate-limits)
 - [Cloudflare Turnstile explicit rendering and token lifetime](https://developers.cloudflare.com/turnstile/get-started/client-side-rendering/)
+- [Cloudflare Turnstile appearance modes](https://developers.cloudflare.com/turnstile/get-started/client-side-rendering/widget-configurations/)
 - [Cloudflare hostname management](https://developers.cloudflare.com/turnstile/additional-configuration/hostname-management/)
 - [Cloudflare test keys](https://developers.cloudflare.com/turnstile/troubleshooting/testing/)

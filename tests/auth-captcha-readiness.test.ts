@@ -97,6 +97,12 @@ test("all active Supabase CAPTCHA auth clients pass a fresh token", () => {
 
   assert.match(login, /signInWithPassword[\s\S]*captchaToken/);
   assert.match(login, /\.finally\(\(\) =>/);
+  assert.match(login, /recordAuthLoginFailure/);
+  assert.match(login, /isInvalidPasswordCredentialError/);
+  assert.match(login, /clearAuthLoginFailures/);
+  assert.match(login, /role="alert"[\s\S]*AUTH_CAPTCHA_REQUIRED_MESSAGE/);
+  assert.match(login, /captchaEscalationNoticeRef\.current\?\.focus\(\)/);
+  assert.match(login, /"always"[\s\S]*"interaction-only"/);
   assert.match(register, /signUp[\s\S]*captchaToken/);
   assert.match(register, /resend[\s\S]*captchaToken/);
   assert.match(register, /authRequestInFlightRef/);
@@ -106,6 +112,26 @@ test("all active Supabase CAPTCHA auth clients pass a fresh token", () => {
   assert.match(desktop, /signInWithPassword\([\s\S]*captchaToken/);
   assert.match(passwordUpdate, /updateUser\(\{ password \}\)/);
   assert.doesNotMatch(passwordUpdate, /captchaToken/);
+});
+
+test("web password login uses Cloudflare interaction-only mode before escalation", () => {
+  const widget = readFileSync(
+    resolve("src/components/auth/TurnstileChallenge.tsx"),
+    "utf8"
+  );
+  const loginProtection = readFileSync(
+    resolve("src/lib/authLoginProtection.ts"),
+    "utf8"
+  );
+
+  assert.match(widget, /appearance:\s*TurnstileAppearance/);
+  assert.match(widget, /"response-field":\s*false/);
+  assert.match(widget, /"before-interactive-callback"/);
+  assert.match(widget, /"after-interactive-callback"/);
+  assert.match(loginProtection, /AUTH_LOGIN_FAILURE_THRESHOLD\s*=\s*5/);
+  assert.match(loginProtection, /AUTH_LOGIN_FAILURE_WINDOW_MS\s*=\s*15\s*\*\s*60/);
+  assert.match(loginProtection, /AUTH_LOGIN_FAILURE_STORAGE_KEY/);
+  assert.doesNotMatch(loginProtection, /email|password\s*:/i);
 });
 
 test("Electron CAPTCHA handoff is one-shot, state-bound and restricted to canonical HTTPS", () => {

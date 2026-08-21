@@ -10,10 +10,22 @@ import {
 } from "@/lib/authGuards";
 import { TurnstileChallenge } from "@/components/auth/TurnstileChallenge";
 import {
+  AUTH_CAPTCHA_REQUIRED_MESSAGE,
   authCaptchaBlocksSubmission,
   getAuthCaptchaToken,
   getPublicAuthCaptchaConfig,
 } from "@/lib/authCaptcha";
+import {
+  AUTH_LOGIN_FAILURE_STORAGE_KEY,
+  EMPTY_AUTH_LOGIN_FAILURE_STATE,
+  authLoginNeedsVisibleChallenge,
+  clearAuthLoginFailures,
+  getAuthLoginFailureWindowRemaining,
+  getBrowserAuthLoginFailureStorage,
+  isInvalidPasswordCredentialError,
+  readAuthLoginFailureState,
+  recordAuthLoginFailure,
+} from "@/lib/authLoginProtection";
 import { supabase } from "@/lib/supabaseClient";
 import {
   ArrowRight,
@@ -44,7 +56,49 @@ export default function LoginPage() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [captchaResetKey, setCaptchaResetKey] = useState(0);
+  const [passwordFailureState, setPasswordFailureState] = useState(
+    EMPTY_AUTH_LOGIN_FAILURE_STATE
+  );
   const authRequestInFlightRef = useRef(false);
+  const captchaEscalationNoticeRef = useRef<HTMLDivElement | null>(null);
+  const visibleCaptchaRequired =
+    authCaptchaConfig.status === "ready" &&
+    authLoginNeedsVisibleChallenge(passwordFailureState.failures);
+
+  useEffect(() => {
+    const storage = getBrowserAuthLoginFailureStorage();
+    const syncFailureState = () => {
+      setPasswordFailureState(readAuthLoginFailureState(storage));
+    };
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key !== AUTH_LOGIN_FAILURE_STORAGE_KEY) return;
+      syncFailureState();
+    };
+
+    syncFailureState();
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
+  }, []);
+
+  useEffect(() => {
+    const remaining = getAuthLoginFailureWindowRemaining(passwordFailureState);
+    if (remaining === null) return;
+
+    const timeoutId = window.setTimeout(() => {
+      setPasswordFailureState(
+        readAuthLoginFailureState(getBrowserAuthLoginFailureStorage())
+      );
+    }, remaining + 50);
+    return () => window.clearTimeout(timeoutId);
+  }, [passwordFailureState]);
+
+  useEffect(() => {
+    if (!visibleCaptchaRequired) return;
+    const frameId = window.requestAnimationFrame(() => {
+      captchaEscalationNoticeRef.current?.focus();
+    });
+    return () => window.cancelAnimationFrame(frameId);
+  }, [visibleCaptchaRequired]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -73,6 +127,8 @@ export default function LoginPage() {
         return;
       }
 
+      clearAuthLoginFailures(getBrowserAuthLoginFailureStorage());
+      setPasswordFailureState(EMPTY_AUTH_LOGIN_FAILURE_STATE);
       router.replace(requestedRedirect ?? (await getAuthenticatedHome(user.id)));
       router.refresh();
     };
@@ -131,6 +187,14 @@ export default function LoginPage() {
     const { data, error } = response;
 
     if (error) {
+      if (isInvalidPasswordCredentialError(error)) {
+        setPasswordFailureState((currentState) =>
+          recordAuthLoginFailure(
+            getBrowserAuthLoginFailureStorage(),
+            currentState
+          )
+        );
+      }
       setMessage(
         error.message.toLowerCase().includes("email not confirmed")
           ? "Please verify your e-mail address before logging in."
@@ -139,6 +203,9 @@ export default function LoginPage() {
       setLoading(false);
       return;
     }
+
+    clearAuthLoginFailures(getBrowserAuthLoginFailureStorage());
+    setPasswordFailureState(EMPTY_AUTH_LOGIN_FAILURE_STATE);
 
     if (data.user && (await signOutIfEmailUnverified(data.user))) {
       setMessage("Please verify your e-mail address before accessing your account.");
@@ -294,12 +361,24 @@ export default function LoginPage() {
                 </div>
               </label>
 
+              {visibleCaptchaRequired && (
+                <div
+                  ref={captchaEscalationNoticeRef}
+                  role="alert"
+                  tabIndex={-1}
+                  className="rounded-2xl border border-amber-700/50 bg-amber-950/25 p-4 text-sm font-bold text-amber-100 outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
+                >
+                  {AUTH_CAPTCHA_REQUIRED_MESSAGE}
+                </div>
+              )}
+
               {authCaptchaConfig.status === "ready" && (
                 <TurnstileChallenge
                   siteKey={authCaptchaConfig.siteKey}
                   action="auth_login"
                   resetKey={captchaResetKey}
                   onToken={setCaptchaToken}
+                  appearance={visibleCaptchaRequired ? "always" : "interaction-only"}
                 />
               )}
 

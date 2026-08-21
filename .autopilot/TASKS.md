@@ -76,6 +76,29 @@ Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
 
+### MANUAL-20260822-ADAPTIVE-AUTH-TURNSTILE [P1] Bes hatadan sonra gorunur Turnstile
+
+Durum: Done
+
+Fingerprint: `auth-security|shared-password-login|always-visible-captcha-friction|managed-interaction-only-with-five-failure-escalation`
+
+Sonuc: Shared web password logininde Cloudflare Managed Turnstile ilk durumda
+`interaction-only` calisir; normal ziyaretci icin bos CAPTCHA karti ayirmaz,
+Cloudflare risk gorurse daha erken challenge gosterebilir. Ayni browser origininde
+ilk hatadan baslayan sabit 15 dakikada bes `invalid_credentials` sonucu widget'i
+`always` moduna gecirir. PII/token icermeyen sayac sekmeler arasinda senkronize,
+sure dolumunda ve basarili giriste temiz; network/provider/e-mail-confirmation
+hatalari sayilmaz. Besinci hatada accessible alert + fokus challenge'i aciklar.
+Register/recovery/desktop varsayilan gorunur davranisi ve her-denemede tek
+kullanimli Supabase `captchaToken` yenilemesi korunur.
+
+Dogrulama: hedef CAPTCHA paketi 15/15 PASS; full suite 794/794 PASS; web ve
+customer-uploader TypeScript PASS; full ESLint PASS; customer i18n 11 locale x
+613/613 ve public i18n/SEO 12 locale PASS; Production Next build 271/271 PASS;
+CAPTCHA readiness default safe-off PASS; bagimsiz review P0/P1=0; `git diff
+--check` yalniz CRLF uyarilari. Remote Supabase CAPTCHA halen OFF; Cloudflare,
+Vercel, session, secret, push veya deploy mutation yapilmadi.
+
 ### MANUAL-20260821-AUTH-CAPTCHA-ROLLOUT [P1] Web ve desktop Auth CAPTCHA hazirligi
 
 Durum: Done

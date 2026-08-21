@@ -3400,3 +3400,39 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
   secret config, web release, signed/clean-installed desktop 0.2.1, server minimum
   0.2.1 enforcement, isolated staging valid/missing/reused/expired-token E2E ve
   immediate rollback plan receiptleri dis release kapilaridir.
+
+## 2026-08-22 Adaptive Cloudflare Turnstile login escalation
+
+- Shared web password loginindeki Turnstile gorunurlugu Cloudflare Managed
+  `interaction-only` moduna alindi. Ilk durumda bos CAPTCHA karti veya zorunlu
+  checkbox gosterilmez; Cloudflare risk denetimi etkileşim isterse widget daha
+  erken gorunebilir. Supabase CAPTCHA ready iken her fresh password denemesi
+  yine tek kullanimli `captchaToken` olmadan fail-closed kalir.
+- Yalniz Supabase `invalid_credentials` sonucunu sayan, e-posta/kullanici/IP/
+  parola/token/hata metni saklamayan same-origin localStorage state'i eklendi.
+  Pencere ilk hatadan baslayan sabit 15 dakikadir; besinci hata widget'i
+  `appearance: always` moduna gecirir. Sayac sekmeler arasi storage event ile
+  senkronize olur; pencere timer ile dolar ve dogrulanmis basarili credential/
+  mevcut authenticated session sonrasinda temizlenir. Network, CAPTCHA,
+  rate-limit, provider ve unconfirmed-email hatalari sayaci artirmaz.
+- Besinci hata sonrasi acilan challenge icin `role=alert`, programatik fokus ve
+  focus-visible siniri eklendi. Turnstile manuel token kullandigi icin hidden
+  response field kapatildi. Appearance degisiminde eski widget active guard ile
+  kaldirilir, parent token sifirlanir ve yeni token uretilir. Register,
+  recovery ve desktop challenge varsayilan `always` davranisini korur.
+- Degisen dosyalar: `src/lib/authLoginProtection.ts`,
+  `src/components/auth/TurnstileChallenge.tsx`, `src/app/login/page.tsx`,
+  `tests/auth-login-protection.test.ts`, `tests/auth-captcha-readiness.test.ts`,
+  `docs/auth-captcha-rollout.md`, `.autopilot/TASKS.md` ve bu STATUS kaydi.
+- Kontroller: focused auth CAPTCHA/login 15/15 PASS; full suite 794/794 PASS;
+  web + customer-uploader renderer/electron/node TypeScript PASS; full ESLint
+  PASS; `npm run check:i18n` public 12 locale + customer 11 locale x 613/613
+  PASS; Production Next build 271/271 PASS; `npm run check:auth-captcha`
+  default safe-off PASS; `git diff --check` yalniz CRLF uyarilari. Bagimsiz
+  security review fixed-window, token reset/remount, SSR, storage sync ve
+  accessibility icin P0=0/P1=0 verdi.
+- Bu besli browser sayaci UX escalation'dir, global/bypass-edilemez bes-deneme
+  kilidi degildir. Gercek bot siniri Production Supabase project-wide CAPTCHA
+  acildiginda her password isteginde token dogrulamasidir. Remote CAPTCHA OFF
+  kaldi; Cloudflare/Supabase/Vercel ayari, mevcut dokuz session, secret, musteri
+  verisi, push veya deploy degistirilmedi.

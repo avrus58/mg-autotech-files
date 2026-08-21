@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 
 type TurnstileWidgetId = string;
+type TurnstileAppearance = "always" | "interaction-only";
 
 type TurnstileApi = {
   render(
@@ -11,10 +12,14 @@ type TurnstileApi = {
       sitekey: string;
       action: string;
       theme: "dark";
+      appearance: TurnstileAppearance;
+      "response-field": false;
       callback(token: string): void;
       "error-callback"(code?: string): void;
       "expired-callback"(): void;
       "timeout-callback"(): void;
+      "before-interactive-callback"(): void;
+      "after-interactive-callback"(): void;
     }
   ): TurnstileWidgetId;
   reset(widgetId?: TurnstileWidgetId): void;
@@ -91,17 +96,20 @@ export function TurnstileChallenge({
   action,
   resetKey,
   onToken,
+  appearance = "always",
 }: {
   siteKey: string;
   action: "auth_login" | "auth_register" | "auth_recovery";
   resetKey: number;
   onToken(token: string | null): void;
+  appearance?: TurnstileAppearance;
 }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const widgetIdRef = useRef<TurnstileWidgetId | null>(null);
   const [status, setStatus] = useState("Loading security verification...");
   const [canRetry, setCanRetry] = useState(false);
   const [loadAttempt, setLoadAttempt] = useState(0);
+  const [interactive, setInteractive] = useState(false);
   const onTokenRef = useRef(onToken);
 
   useEffect(() => {
@@ -110,6 +118,7 @@ export function TurnstileChallenge({
 
   useEffect(() => {
     let active = true;
+    onTokenRef.current(null);
 
     void loadTurnstile()
       .then((turnstile) => {
@@ -118,29 +127,44 @@ export function TurnstileChallenge({
           sitekey: siteKey,
           action,
           theme: "dark",
+          appearance,
+          "response-field": false,
           callback(token) {
             if (!active) return;
             onTokenRef.current(token);
             setCanRetry(false);
+            setInteractive(false);
             setStatus("Security verification complete.");
           },
           "error-callback"() {
             if (!active) return;
             onTokenRef.current(null);
             setCanRetry(true);
+            setInteractive(true);
             setStatus("Security verification failed. Please try again.");
           },
           "expired-callback"() {
             if (!active) return;
             onTokenRef.current(null);
             setCanRetry(true);
+            setInteractive(true);
             setStatus("Security verification expired. Please complete it again.");
           },
           "timeout-callback"() {
             if (!active) return;
             onTokenRef.current(null);
             setCanRetry(true);
+            setInteractive(true);
             setStatus("Security verification timed out. Please complete it again.");
+          },
+          "before-interactive-callback"() {
+            if (!active) return;
+            setInteractive(true);
+            setStatus("Complete the security verification to continue.");
+          },
+          "after-interactive-callback"() {
+            if (!active || appearance === "always") return;
+            setInteractive(false);
           },
         });
         setStatus("Complete the security verification to continue.");
@@ -158,7 +182,7 @@ export function TurnstileChallenge({
       widgetIdRef.current = null;
       if (widgetId && window.turnstile) window.turnstile.remove(widgetId);
     };
-  }, [action, loadAttempt, siteKey]);
+  }, [action, appearance, loadAttempt, siteKey]);
 
   useEffect(() => {
     const widgetId = widgetIdRef.current;
@@ -167,7 +191,7 @@ export function TurnstileChallenge({
     window.turnstile.reset(widgetId);
     setCanRetry(false);
     setStatus("Complete the security verification to continue.");
-  }, [resetKey]);
+  }, [appearance, resetKey]);
 
   const retry = () => {
     onTokenRef.current(null);
@@ -183,10 +207,25 @@ export function TurnstileChallenge({
     setLoadAttempt((value) => value + 1);
   };
 
+  const showChallengeChrome = appearance === "always" || interactive || canRetry;
+
   return (
-    <div className="rounded-2xl border border-white/10 bg-black/25 p-3">
-      <div ref={containerRef} className="min-h-[65px] overflow-hidden" />
-      <p className="mt-2 text-xs leading-5 text-zinc-500" aria-live="polite">
+    <div
+      data-turnstile-appearance={appearance}
+      className={showChallengeChrome
+        ? "rounded-2xl border border-white/10 bg-black/25 p-3"
+        : "min-h-0"}
+    >
+      <div
+        ref={containerRef}
+        className={showChallengeChrome ? "min-h-[65px] overflow-hidden" : "overflow-hidden"}
+      />
+      <p
+        className={showChallengeChrome
+          ? "mt-2 text-xs leading-5 text-zinc-500"
+          : "sr-only"}
+        aria-live="polite"
+      >
         {status}
       </p>
       {canRetry && (
