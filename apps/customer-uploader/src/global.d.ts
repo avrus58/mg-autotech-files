@@ -7,6 +7,13 @@ declare global {
       readHistory(): Promise<SafeUploadHistoryRow[]>;
       writeHistory(rows: SafeUploadHistoryRow[]): Promise<boolean>;
       getInstallationId(): Promise<string>;
+      requestAuthCaptchaToken(input: {
+        challengeUrl: string;
+        action: "auth_login";
+      }): Promise<
+        | { ok: true; token: string }
+        | { ok: false; error: string }
+      >;
       closeApp(): Promise<boolean>;
       openAppDataFolder(): Promise<boolean>;
       checkNativeUpdate(): Promise<{

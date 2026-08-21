@@ -3,9 +3,15 @@ import { createClient, type Session } from "@supabase/supabase-js";
 export const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "https://file.mgautotech.de";
 export const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "";
 export const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
-export const desktopAppVersion = import.meta.env.VITE_APP_VERSION || "0.2.0";
+export const desktopAppVersion = import.meta.env.VITE_APP_VERSION || "0.2.1";
 export const desktopPlatform = "win32";
 export const desktopBuildChannel = import.meta.env.VITE_APP_BUILD_CHANNEL || "stable";
+export const desktopAuthCaptchaMode = (
+  import.meta.env.VITE_AUTH_CAPTCHA_MODE || "off"
+).trim().toLowerCase();
+export const desktopAuthCaptchaChallengeUrl =
+  import.meta.env.VITE_AUTH_CAPTCHA_CHALLENGE_URL ||
+  "https://file.mgautotech.de/desktop-auth/turnstile";
 
 let installationId = "";
 
@@ -70,6 +76,22 @@ export type DesktopConfigurationStatus = {
   missing: string[];
 };
 
+function isValidDesktopCaptchaChallengeUrl(value: string) {
+  try {
+    const url = new URL(value);
+    return (
+      url.origin === "https://file.mgautotech.de" &&
+      url.pathname === "/desktop-auth/turnstile" &&
+      !url.username &&
+      !url.password &&
+      !url.search &&
+      !url.hash
+    );
+  } catch {
+    return false;
+  }
+}
+
 export type CustomerVisibleMessage = {
   id: string;
   request_id: string;
@@ -116,7 +138,47 @@ export function getDesktopConfigurationStatus(): DesktopConfigurationStatus {
     ["VITE_API_BASE_URL", apiBaseUrl],
   ].filter(([, value]) => !String(value || "").trim()).map(([key]) => key);
 
+  if (desktopAuthCaptchaMode !== "off" && desktopAuthCaptchaMode !== "required") {
+    missing.push("VITE_AUTH_CAPTCHA_MODE");
+  }
+
+  if (
+    desktopAuthCaptchaMode === "required" &&
+    !isValidDesktopCaptchaChallengeUrl(desktopAuthCaptchaChallengeUrl)
+  ) {
+    missing.push("VITE_AUTH_CAPTCHA_CHALLENGE_URL");
+  }
+
   return { ok: missing.length === 0, missing };
+}
+
+export async function getDesktopAuthCaptchaToken() {
+  if (desktopAuthCaptchaMode === "off") return undefined;
+  if (desktopAuthCaptchaMode !== "required") {
+    throw new Error("Desktop security verification configuration is invalid.");
+  }
+  if (!isValidDesktopCaptchaChallengeUrl(desktopAuthCaptchaChallengeUrl)) {
+    throw new Error("Desktop security verification URL is invalid.");
+  }
+
+  const bridge = window.mgDesktop?.requestAuthCaptchaToken;
+  if (!bridge) {
+    throw new Error(
+      "This desktop version cannot complete the required security verification. Please update the application."
+    );
+  }
+
+  const result = await bridge({
+    challengeUrl: desktopAuthCaptchaChallengeUrl,
+    action: "auth_login",
+  });
+  if (!result.ok) throw new Error(result.error);
+
+  const token = result.token.trim();
+  if (!token || token.length > 2_048) {
+    throw new Error("Desktop security verification response was invalid.");
+  }
+  return token;
 }
 
 export function createSupabaseBrowserClient() {

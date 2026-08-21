@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-export const desktopAppCurrentVersion = "0.2.0";
+export const desktopAppCurrentVersion = "0.2.1";
 export const desktopUploadProtocolMinimumVersion = "0.2.0";
 export const desktopAppDefaultPlatform = "win32";
 
@@ -76,7 +76,7 @@ function allowedDesktopModules() {
 }
 
 export function getDesktopAppCheckPayload(info: Pick<DesktopClientInfo, "appVersion">): DesktopAppCheckPayload {
-  const configuredMinimum = process.env.DESKTOP_APP_MIN_VERSION || desktopAppCurrentVersion;
+  const configuredMinimum = process.env.DESKTOP_APP_MIN_VERSION || desktopUploadProtocolMinimumVersion;
   const minimum = compareDesktopVersions(configuredMinimum, desktopUploadProtocolMinimumVersion) < 0
     ? desktopUploadProtocolMinimumVersion
     : configuredMinimum;

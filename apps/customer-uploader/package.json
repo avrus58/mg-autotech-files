@@ -1,6 +1,6 @@
 {
   "name": "mg-autotech-customer-uploader",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "private": true,
   "description": "Secure file upload client for MG AutoTech customers.",
   "author": "MG AutoTech",

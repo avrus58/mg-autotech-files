@@ -35,6 +35,7 @@ import {
   desktopAppVersion,
   desktopBuildChannel,
   desktopPlatform,
+  getDesktopAuthCaptchaToken,
   getDesktopConfigurationStatus,
   getDesktopInstallationId,
   setDesktopInstallationId,
@@ -260,7 +261,12 @@ export default function App() {
     try {
       await verifyOnline(null);
       const supabase = createSupabaseBrowserClient();
-      const result = await supabase.auth.signInWithPassword({ email, password });
+      const captchaToken = await getDesktopAuthCaptchaToken();
+      const result = await supabase.auth.signInWithPassword({
+        email,
+        password,
+        options: captchaToken ? { captchaToken } : undefined,
+      });
       if (result.error || !result.data.session) throw new Error(result.error?.message || "Login failed.");
       setSession(result.data.session);
       await loadBootstrap(result.data.session);

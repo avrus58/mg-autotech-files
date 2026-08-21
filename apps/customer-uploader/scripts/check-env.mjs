@@ -25,6 +25,15 @@ const desktopEnvContract = [
     key: "VITE_API_BASE_URL",
     defaultValue: "https://file.mgautotech.de",
   },
+  {
+    key: "VITE_AUTH_CAPTCHA_MODE",
+    fallbackKeys: ["NEXT_PUBLIC_AUTH_CAPTCHA_MODE"],
+    defaultValue: "off",
+  },
+  {
+    key: "VITE_AUTH_CAPTCHA_CHALLENGE_URL",
+    defaultValue: "https://file.mgautotech.de/desktop-auth/turnstile",
+  },
 ];
 
 function parseEnvSource(source) {
@@ -66,11 +75,45 @@ function resolveDesktopEnv(env) {
     VITE_SUPABASE_URL: env.VITE_SUPABASE_URL || env.NEXT_PUBLIC_SUPABASE_URL || "",
     VITE_SUPABASE_ANON_KEY: env.VITE_SUPABASE_ANON_KEY || env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "",
     VITE_API_BASE_URL: env.VITE_API_BASE_URL || "https://file.mgautotech.de",
+    VITE_AUTH_CAPTCHA_MODE:
+      env.VITE_AUTH_CAPTCHA_MODE || env.NEXT_PUBLIC_AUTH_CAPTCHA_MODE || "off",
+    VITE_AUTH_CAPTCHA_CHALLENGE_URL:
+      env.VITE_AUTH_CAPTCHA_CHALLENGE_URL ||
+      "https://file.mgautotech.de/desktop-auth/turnstile",
   };
 }
 
 function getMissingDesktopEnv(resolved) {
-  return Object.entries(resolved).filter(([, value]) => !String(value || "").trim()).map(([key]) => key);
+  const missing = Object.entries(resolved)
+    .filter(([, value]) => !String(value || "").trim())
+    .map(([key]) => key);
+  const captchaMode = String(resolved.VITE_AUTH_CAPTCHA_MODE || "")
+    .trim()
+    .toLowerCase();
+
+  if (captchaMode !== "off" && captchaMode !== "required") {
+    missing.push("VITE_AUTH_CAPTCHA_MODE");
+  }
+
+  if (captchaMode === "required") {
+    try {
+      const challengeUrl = new URL(resolved.VITE_AUTH_CAPTCHA_CHALLENGE_URL);
+      if (
+        challengeUrl.origin !== "https://file.mgautotech.de" ||
+        challengeUrl.pathname !== "/desktop-auth/turnstile" ||
+        challengeUrl.username ||
+        challengeUrl.password ||
+        challengeUrl.search ||
+        challengeUrl.hash
+      ) {
+        missing.push("VITE_AUTH_CAPTCHA_CHALLENGE_URL");
+      }
+    } catch {
+      missing.push("VITE_AUTH_CAPTCHA_CHALLENGE_URL");
+    }
+  }
+
+  return [...new Set(missing)];
 }
 
 function printSchemaOnlyReport(log = console.log) {

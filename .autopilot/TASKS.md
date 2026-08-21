@@ -76,6 +76,33 @@ Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
 
+### MANUAL-20260821-AUTH-CAPTCHA-ROLLOUT [P1] Web ve desktop Auth CAPTCHA hazirligi
+
+Durum: Done
+
+Fingerprint: `auth-security|supabase-password-flows|project-wide-captcha-breaks-file-electron-client|hosted-turnstile-state-bound-handoff-and-release-gate`
+
+Sonuc: Web login, kayit, verification resend ve recovery request akislari
+Cloudflare Turnstile tokenini Supabase `captchaToken` sozlesmesiyle gonderecek
+sekilde configuration-ready. Windows uploader `0.2.1`, Turnstile'in
+desteklemedigi `file://` yerine canonical HTTPS challenge sayfasini sandbox
+BrowserWindow'da acar; exact renderer/mainFrame/origin/path, one-use random
+state, 2048 token siniri, 270 saniye timeout, navigation/permission deny ve
+listener cleanup ile tokeni desktop password loginine tasir. Env yoksa onceki
+login davranisi korunur; explicit required ama eksik config fail-closed kalir.
+Production remote toggle; 0.2.1 signed release, minimum-version enforcement,
+hostname/provider config, staging E2E ve readiness receiptleri tamamlanmadan
+acilamaz. Strict password 10-attempt siniri uydurulmadi: Supabase password token
+limiti 1800/saat ve burst 30 olarak sabittir; 10/5 dakika dashboard siniri
+signup/resend/magic-link/OTP icin faydalidir.
+
+Dogrulama: CAPTCHA/uploader/header hedefli paket 40/40 PASS; full test 788/788
+PASS; web ve uploader renderer/electron/node TypeScript PASS; full ESLint PASS;
+Production Next build PASS (271 static page); auth CAPTCHA schema-only/default
+safe-off gate PASS; `git diff --check` PASS (yalniz CRLF uyarilari). Remote
+Supabase/Cloudflare/Vercel mutation, secret okuma/loglama, push veya deploy
+yapilmadi.
+
 ### MANUAL-20260820-SOURCE-DOWNLOAD-ACTIVITY [P1] Customer source-file download activity
 
 Durum: Done

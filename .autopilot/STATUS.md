@@ -3347,3 +3347,56 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
   `/register` HTTP 200 HTML; unauthenticated `/api/admin/dashboard` HTTP 401 JSON.
   App kodu/hosting degismedi. Bu DB containment tam canonical 02443-02454 app
   release'i veya yeni download UI Production sertifikasi degildir.
+
+## 2026-08-21 Supabase Auth CAPTCHA web + desktop rollout preparation
+
+- Web password login, e-mail signup, verification resend ve recovery-link
+  issuance artik public config `required` oldugunda Cloudflare Turnstile
+  challenge ister ve tokeni Supabase `options.captchaToken` alanina gonderir.
+  Token auth cagrisi baslamadan UI state'inden tuketilir; success, provider error
+  veya thrown network exception ayrimi olmadan `finally` ile widget resetlenir.
+  Config yok/off ise mevcut davranis korunur; required ama eksik/invalid key
+  auth istegine gecmeden fail-closed olur. Recovery session icindeki
+  `updateUser({ password })`, OAuth code exchange, refresh-token ve Google OAuth
+  akislari desteklemedikleri CAPTCHA parametresiyle degistirilmedi.
+- Dependency eklenmeden explicit-render Turnstile component'i ve hosted
+  `/desktop-auth/turnstile` sayfasi eklendi. Script load/error retry, expired/
+  timeout reset, accessible status ve Production test-key deny korunur. Preview
+  test key ancak explicit public allowance ile calisir; Production readiness
+  bunu reddeder. Turnstile secret istemci/env kontratina eklenmedi; Siteverify
+  on-validasyonu yapilmaz, tek kullanimli tokeni Supabase Auth dogrular.
+- Windows uploader CAPTCHA-capable benzersiz `0.2.1` surumune cekildi. Packaged
+  `file://` renderer Turnstile calistirmak yerine exact
+  `https://file.mgautotech.de/desktop-auth/turnstile` sayfasini fixed ephemeral
+  partition'li sandbox BrowserWindow'da acar. Request yalniz exact primary
+  renderer/mainFrame'den; completion exact challenge webContents/mainFrame/
+  origin/path ve 32-byte random one-use state ile kabul edilir. Token URL,
+  storage veya log'a yazilmaz; trim + 2048 karakter, 270 saniye timeout,
+  navigation/window/permission deny ve settle listener cleanup uygulanir.
+- Server default latest `0.2.1`, protocol minimum `0.2.0` olarak rollout-safe
+  ayrildi: kod deploy'u eski desktop'u aniden kilitlemez. Canli CAPTCHA activation
+  gate'i ise explicit `DESKTOP_APP_MIN_VERSION=0.2.1`, latest/build 0.2.1,
+  signed desktop/web release receiptleri ve hostname verification ister; 0.2.0
+  min-version enforcement oncesinde token uretemedigi icin remote toggle acilamaz.
+- Supabase password `/token?grant_type=password` limiti 1800/saat/IP, burst 30
+  ve non-customizable. Dashboard 10/5 dakika siniri signup/resend/magic-link/OTP
+  abuse icin degerlidir ama password tahminini strict 10 yapmaz. Direct public
+  endpoint nedeniyle kolay bypass edilen browser sayaci eklenmedi; password bot
+  kontrolu icin project-wide Turnstile mandatory rollout siniri olarak kalir.
+- Degisen scope: web CAPTCHA config/component/login/register/recovery/hosted page,
+  Electron main/preloads/renderer/env contract ve 0.2.1 metadata, desktop server
+  version contract, readiness checker, docs/tests, protected-page header listesi
+  ve bu TASKS/STATUS kaydi. TOTP/AAL2 owner karariyla bu gorev disinda kaldi.
+- Kontroller: hedefli CAPTCHA + uploader + responsive header paketi 40/40 PASS;
+  full suite 788/788 PASS; web ve uploader renderer/electron/node TypeScript
+  PASS; full ESLint PASS; Production Next build 271/271 static page PASS;
+  CAPTCHA default safe-off/schema-only ve desktop schema-only check PASS;
+  `git diff --check` PASS (yalniz CRLF uyarilari). Desktop build/package komutu
+  env dosyasi okuyan precheck nedeniyle calistirilmadi; uc desktop TypeScript
+  projesi dogrudan dogrulandi.
+- Production Supabase CAPTCHA/Cloudflare/Vercel ayari degistirilmedi; push,
+  deploy, Supabase migration, musteri/secret/odeme/e-posta mutation yapilmadi.
+  Remote CAPTCHA halen OFF kalmali: Cloudflare widget hostname/sitekey + Supabase
+  secret config, web release, signed/clean-installed desktop 0.2.1, server minimum
+  0.2.1 enforcement, isolated staging valid/missing/reused/expired-token E2E ve
+  immediate rollback plan receiptleri dis release kapilaridir.

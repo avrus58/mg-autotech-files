@@ -43,6 +43,7 @@ const protectedPageSources = [
   "/register",
   "/forgot-password",
   "/reset-password",
+  "/desktop-auth/turnstile",
   "/auth/:path*",
 ];
 
