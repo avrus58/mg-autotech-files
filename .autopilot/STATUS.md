@@ -3312,3 +3312,38 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
   upload/download smoke'u Vercel Protection altinda otomatik dosya secimi
   kullanilamadigi icin ayri kapida kalir; Production'a, gercek musteri/veriye,
   firmware'e, Stripe'a veya e-postaya dokunulmadi.
+
+## 2026-08-21 Production authority emergency containment
+
+- Owner ucretli Vercel/Supabase planina gecmeyi reddetti ve kalan ucretsiz
+  release islemlerini onayladi. Supabase disposable branch denemesi Pro plan
+  gerektirdigi icin olusturulamadi; branch veya ucret dogmadi. Vercel Hobby
+  uzerinden yeni ticari Production app deploy'u yapilmadi.
+- Frozen `20260816002442_current_production_authority_emergency_hardening.sql`
+  SHA-256 `BBE8117FAC45CE48D009A56B1DE3AD018B7564CF28D358BA9FD38E6F4DA628EA`.
+  Current-Production shape ve post-02454 staging shape provalarinda dosyanin
+  yalniz final `COMMIT` terminatoru exact verifier + `ROLLBACK` ile degistirildi;
+  her iki prova 21/21 PASS oldu. Staging rollback sonrasi emergency tablo,
+  function, constraint ve migration kaydi kalmadi; zero verifier 7/7 ve
+  integrated verifier 18/18 PASS kaldi.
+- Production pre-apply aggregate gate: exact owner 1; modern contract 0/4;
+  fractional/out-of-range finance, customer authority ve malformed staff
+  anomaly sayilari 0; schema/finance/authority/normal-operation booleans true.
+  Baseline verifier beklenen 6 PASS / 15 FAIL ile aciklarin canli oldugunu ve
+  rollback provasinin kalici degisiklik birakmadigini dogruladi.
+- Exact migration Production'a `current_production_authority_emergency_hardening`
+  adiyla bir kez uygulandi; hosted version `20260821002453`. Post-apply exact
+  verifier 21/21 PASS: signup metadata role/credit zorla customer/0, owner-only
+  admin authority, own-profile finance/authority guardlari, orders direct INSERT
+  bypass kapisi, exposed finance RPC ACL/ownership ve caller-bound/locked/server-
+  priced legacy order contractlari korunuyor. Müşteri satiri, kredi bakiyesi,
+  siparis, odeme, dosya veya e-posta verisi degistirilmedi.
+- Post-apply aggregate gate yine exact owner 1, tum anomaly sayilari 0 ve
+  `normal_operation_ready=true`. Security Advisor `INFO 18 / WARN 44 / ERROR 0`
+  seviyesinden `INFO 20 / WARN 22 / ERROR 0` seviyesine indi: hedef authority/
+  finance SECURITY DEFINER ve mutable-path bulgularindan 22 tanesi kalkti; iki
+  yeni INFO service-only emergency relationlarda bilerek RLS-policy olmamasidir.
+- Immediate Production smoke: `https://file.mgautotech.de/`, `/login` ve
+  `/register` HTTP 200 HTML; unauthenticated `/api/admin/dashboard` HTTP 401 JSON.
+  App kodu/hosting degismedi. Bu DB containment tam canonical 02443-02454 app
+  release'i veya yeni download UI Production sertifikasi degildir.
