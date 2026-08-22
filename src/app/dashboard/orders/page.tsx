@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
+  Activity,
   ArrowLeft,
   BrainCircuit,
   CheckCircle2,
@@ -213,13 +214,14 @@ export default function CustomerOrdersPage() {
               <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-red-800/50 bg-[#111]"><Gauge className="h-7 w-7 text-red-600" /></div>
               <div><div className="text-xl font-black">MG <span className="text-red-600">AUTOTECH</span></div><div className="text-xs text-zinc-400">Customer Panel</div></div>
             </Link>
-            <nav className="space-y-2 text-sm">
+            <nav className="min-h-0 flex-1 space-y-2 overflow-y-auto pr-1 text-sm">
               <PortalLink href="/dashboard" icon={<ArrowLeft />} label="Dashboard" />
               <PortalLink href="/new-request" icon={<Upload />} label="New File Request" />
               <PortalLink href="/dashboard/orders" icon={<FileText />} label="Active Orders" active={view === "active"} />
               <PortalLink href="/dashboard/orders?view=needs_response" icon={<Clock3 />} label="Needs Response" active={view === "needs_response"} />
               <PortalLink href="/dashboard/orders?view=completed" icon={<History />} label="Order History" active={["completed", "cancelled", "all"].includes(view)} />
               <PortalLink href="/dashboard/file-expert" icon={<BrainCircuit />} label="AI File Expert" />
+              <PortalLink href="/dashboard/log-analysis" icon={<Activity />} label="Log Analysis Studio" />
               <PortalLink href="/dashboard/credits" icon={<CreditCard />} label="Buy Credits" />
               <PortalLink href="/dashboard/settings" icon={<Settings />} label="Settings" />
             </nav>

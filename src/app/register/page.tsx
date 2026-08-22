@@ -18,6 +18,7 @@ import {
 } from "@/lib/authGuards";
 import { TurnstileChallenge } from "@/components/auth/TurnstileChallenge";
 import { GoogleIdentityButton } from "@/components/auth/GoogleIdentityButton";
+import { AuthBackdrop } from "@/components/auth/AuthBackdrop";
 import { CountrySelect } from "@/components/CountrySelect";
 import { InternationalPhoneField } from "@/components/InternationalPhoneField";
 import {
@@ -612,10 +613,10 @@ export default function RegisterPage() {
   }
 
   return (
-    <main className="relative flex min-h-screen items-start justify-center overflow-x-hidden bg-[#050505] px-3 py-3 text-white sm:px-4 sm:py-5 lg:items-center lg:py-6">
-      <div className="fixed inset-0 -z-10 bg-[radial-gradient(circle_at_18%_0%,rgba(177,18,27,0.28),transparent_34%),radial-gradient(circle_at_82%_100%,rgba(177,18,27,0.18),transparent_30%),linear-gradient(135deg,#050505,#0d0d0f_48%,#160608)]" />
+    <main className="relative isolate flex min-h-screen items-start justify-center overflow-x-hidden bg-[#050505] px-3 py-3 text-white sm:px-4 sm:py-5 lg:items-center lg:py-6">
+      <AuthBackdrop />
 
-      <div className="w-full max-w-[760px] overflow-hidden rounded-[1.4rem] border border-white/10 bg-white/[0.04] shadow-2xl shadow-black/50 backdrop-blur-xl lg:rounded-[1.6rem]">
+      <div className="relative z-10 w-full max-w-[760px] overflow-hidden rounded-[1.4rem] border border-white/10 bg-white/[0.04] shadow-2xl shadow-black/50 backdrop-blur-xl lg:rounded-[1.6rem]">
         <header className="flex items-center justify-between gap-4 border-b border-white/10 bg-black/25 px-4 py-3.5 sm:px-6">
           <Link href="/" className="flex min-w-0 items-center gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-red-800/50 bg-[#111] shadow-lg shadow-red-950/30">

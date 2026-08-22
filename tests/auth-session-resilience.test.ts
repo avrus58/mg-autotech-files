@@ -35,6 +35,7 @@ const protectedClientFiles = [
   ["src", "app", "dashboard", "widget", "billing", "page.tsx"],
   ["src", "app", "new-request", "page.tsx"],
   ["src", "components", "dashboard", "DashboardClient.tsx"],
+  ["src", "components", "dashboard", "LogAnalysisStudio.tsx"],
   ["src", "components", "dashboard", "WidgetDashboardClient.tsx"],
   ["src", "components", "RequestChat.tsx"],
 ] as const;

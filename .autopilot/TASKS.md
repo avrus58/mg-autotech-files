@@ -50,6 +50,18 @@ Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
 
+### MANUAL-20260822-LOG-ANALYSIS-STUDIO [P0] Public Basic ve customer Log Analysis Studio
+
+Durum: Done
+
+Fingerprint: `performance-analysis|public-basic-and-customer-studio|complex-single-surface-and-flat-auth-background|local-multichannel-professional-workspaces`
+
+Sonuc: Login ve register sayfalari ortak, sabit ve erisilebilir premium arka planla guncellendi. Ana sayfadaki karmasik AutoTuner bolumu yerel dosya isleyen sade bir Basic Log Snapshot akisi oldu. Authenticated customer dashboard'a yeni sidebar/mobile nav girisiyle profesyonel Log Analysis Studio eklendi: CSV/TSV/TXT kanal tespiti, kalite ozeti, en fazla uc normalize kanal karsilastirmasi, satir inceleyici, kanal/veri tablolari, guvenli ve kanita bagli yorumlar, local vehicle context, kopyalanabilir ozet ve yalnizca uygun gercek baslikli RPM/Nm loglarinda local checklist/SVG rapor saglar. Dosyalar tarayicidan cikmaz; uygulama dyno sonucu, ariza teshisi, tuning onayi, flash guvenligi veya kesin kazanc iddiasi uretmez.
+
+Dogrulama: Hedefli log/public/auth/session testleri PASS; `npm run lint` PASS; `npm run typecheck` PASS (web + desktop); `npm run build -- --webpack` PASS (271 static page); `npm run check:i18n` PASS (11 non-English locale, 592/592 ve 0 English fallback); Chrome QA 390x844, 768x1024 ve 1440x900 boyutlarinda responsive/overflow, bos-yukleniyor-hata-hazir durumlari, klavye tab gezinimi, sentetik demo ve sifir layout animasyonu ile PASS; `git diff --check` PASS. Full suite 712/734; kalan 22 failure ayni onceden kayitli homepage `ui-ux-safety` kaynak-kontrat baseline'idir ve yeni/hedefli testler gecmistir.
+
+Sinirlar: Yeni dependency, SQL/migration, API/storage/persistence, env/secret okuma, Production Supabase/customer/payment/e-posta islemi, push veya deploy yapilmadi. Chrome native file chooser otomasyonu eklentinin file URL izni olmadigi icin calistirilamadi; parser unit testleri ve tarayici icindeki sentetik dosya akisi ayri ayri dogrulandi.
+
 ### MANUAL-20260822-LOGIN-LAYOUT-STABILITY [P0] Login Google butonu layout dongusu hotfix
 
 Durum: Done

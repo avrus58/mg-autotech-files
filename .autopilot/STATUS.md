@@ -2899,3 +2899,55 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
   6/6 ve ilgili hedefli toplam 23/23 gecmistir.
 - Sinirlar: Yeni dependency, SQL/migration, env/secret okuma, Production
   Supabase/customer/payment/e-posta islemi, push veya deploy yapilmadi.
+
+## 2026-08-22 Public Basic and customer Log Analysis Studio
+
+- Gorev: Login/register arka planini daha premium ama hareket etmeyen bir
+  yuzeye cevirmek; ana sayfadaki log aracini sade bir public Basic deneyime
+  ayirmak ve customer dashboard'a profesyonel bir log analiz calisma alani
+  eklemek.
+- Auth UI: `AuthBackdrop` iki auth sayfasinda ayni statik koyu-kirmizi radial,
+  linear ve grid katmanlarini kullanir. Arka plan `aria-hidden` ve
+  `pointer-events-none` kalir; animasyon, transform veya Google/Turnstile auth
+  davranisi degisikligi yoktur. Onceki negatif z-index nedeniyle gorunmeyen
+  dekor katmani kartin arkasindaki dogru stacking context'e alindi.
+- Public Basic: Ana sayfanin combined Performance Tools bolumu artik
+  `PublicLogSnapshot` render eder. CSV/TXT dosyasi tarayicida, 1 MB ve 2000 satir
+  siniriyla islenir; bos, yukleniyor, hata ve hazir durumlari; acik example ve
+  reset; peak torque/power/RPM, satir sayisi ve kompakt egri sunar. Ayrintili
+  eski arac kendi public route'unda korunur ve customer Studio'ya net gecis
+  verilir.
+- Customer Studio: `/dashboard/log-analysis` route'u dashboard auth layout'unu
+  miras alir ve desktop/mobile navigasyona eklenir. CSV/TSV/TXT loglarda zaman,
+  RPM, torque, boost/manifold actual-target, lambda/AFR, throttle, sicaklik,
+  rail pressure, airflow, speed, ignition ve diger sayisal kanallari algilar.
+  Yapısal kalite, min/max/ortalama/peak ozetleri, en fazla uc normalize kanal,
+  satir scrubber'i, kanal ve veri tablolari, local vehicle context ve
+  kanita-bagli yorumlar saglar. Tablist/tabpanel semantigi, roving tabindex ve
+  Left/Right/Home/End klavye gezinimi bulunur.
+- Guvenlik/sinirlar: Dosya 120 KB/2000 satir/24 kanal ile sinirli ve tamamen
+  tarayici icinde kalir; fetch, Supabase, storage veya persistence yoktur.
+  Yorumlar sadece gercek algilanan kanallara dayanir. Uygulama dyno sonucu,
+  ariza teshisi, tuning onayi, flash guvenligi, component limiti veya kesin
+  kazanc iddiasi uretmez. Headerless tahmini veride performance/checklist/report
+  kapali kalir. RPM/Nm checklist ve SVG rapor yalnizca uygun gercek basliklarda
+  local olarak uretilir.
+- Degisen alanlar: Auth sayfalari ve ortak backdrop; public Performance Tools
+  composition/Basic snapshot; log parser/analysis engine; yeni customer Studio
+  route/UI; dashboard ve orders navigasyonu; phrase-bank i18n; ilgili source
+  contract, parser ve session testleri.
+- Kontroller: Hedefli log/public/auth/session testleri PASS; `npm run lint` PASS;
+  `npm run typecheck` PASS (web + desktop); `npm run build -- --webpack` PASS
+  (271 static page); `npm run check:i18n` PASS (11 non-English locale, 592/592,
+  0 English fallback); `git diff --check` PASS. Chrome QA 390x844, 768x1024 ve
+  1440x900 boyutlarinda sifir page-level yatay tasma, sabit auth layout, empty /
+  example / ready Studio akisi, uc kanal overlay'i, row inspector ve klavye tab
+  gezinimiyle PASS. Native file chooser otomasyonu Chrome eklentisinin file URL
+  izni olmadigi icin sinirli kaldi; parser unit testleri ve sentetik tarayici
+  akisi ayri ayri dogrulandi.
+- Full suite: 712/734 PASS. Kalan 22 failure ayni onceden kayitli homepage
+  `ui-ux-safety` kaynak-kontrat baseline'idir; bu scope'un yeni ve hedefli
+  testleri gecmistir.
+- Sinirlar: Yeni dependency, SQL/migration, API/storage/persistence, env/secret
+  okuma, Production Supabase/customer/payment/e-posta islemi, push veya deploy
+  yapilmadi.

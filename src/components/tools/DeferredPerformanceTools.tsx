@@ -62,16 +62,16 @@ export function DeferredPerformanceTools() {
       ) : (
         <section
           aria-busy="true"
-          aria-label="Workshop performance tools loading"
-          className="min-h-[32rem] border-y border-white/5 bg-[#050505] px-4 py-14"
+          aria-label="Free log snapshot loading"
+          className="min-h-[38rem] border-y border-white/5 bg-[#050505] px-4 py-12 sm:py-14"
         >
           <div className="mx-auto max-w-7xl animate-pulse">
             <div className="h-3 w-32 rounded bg-red-950/70" />
-            <div className="mt-5 h-10 max-w-xl rounded bg-white/[0.07]" />
+            <div className="mt-5 h-10 max-w-2xl rounded bg-white/[0.07]" />
             <div className="mt-3 h-4 max-w-2xl rounded bg-white/[0.04]" />
-            <div className="mt-8 grid gap-4 lg:grid-cols-2">
-              <div className="h-72 rounded-2xl border border-white/5 bg-white/[0.025]" />
-              <div className="h-72 rounded-2xl border border-white/5 bg-white/[0.025]" />
+            <div className="mt-8 grid overflow-hidden rounded-[1.75rem] border border-white/5 lg:grid-cols-[0.78fr_1.22fr]">
+              <div className="h-80 border-b border-white/5 bg-white/[0.025] lg:border-b-0 lg:border-r" />
+              <div className="h-80 bg-white/[0.018]" />
             </div>
           </div>
         </section>
