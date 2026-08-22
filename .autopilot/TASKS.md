@@ -50,6 +50,16 @@ Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
 
+### MANUAL-20260822-REGISTER-PHONE-COUNTRY-CODE [P1] Auto-detect an editable calling code during registration
+
+Durum: Done
+
+Fingerprint: `customer-registration|phone-country-code|fixed-germany-placeholder|detected-editable-flag-and-calling-code`
+
+Sonuc: Kayit formundaki sabit Almanya ornekli telefon alani, mevcut ulke tespitiyle baslayan ve musteri tarafindan bagimsiz degistirilebilen native calling-code secicisine cevrildi. 243 operasyonel bolge dogrulanmis ulke kodu, Unicode bayragi ve localized ulke adiyla listelenir; ayri bir telefon plani bulunmayan 7 katalog bolgesine kod uydurulmaz. Tespit edilen `US` `+1`, `DE` `+49`, `TR` `+90` ile baslar. Manuel telefon ulkesi secimi gec tespit veya profil ulkesi degisikligiyle ezilmez. Telefon opsiyonel kalir, bos kod kaydedilmez ve e-posta/Google kayit yollarinin ikisi de ayni `+` ile baslayan formatlanmis degeri kullanir.
+
+Dogrulama: register/country/profile hedefli testleri PASS (23/23); `npm run lint` PASS; `npm run typecheck` PASS (web + desktop); `npm run build -- --webpack` PASS (270 route/page entry); `npm run check:i18n` PASS (12 locale, 596/596 ve 0 English fallback). Chrome QA 390x844, 768x1024 ve 1280x720 boyutlarinda 44px kontroller, sifir yatay tasma, profil ulkesinden `+90` senkronu, manuel `+1` seciminin korunmasi ve sifir console warning/error ile PASS. Local header smoke `US` -> `{countryCode:"US"}` PASS. Full suite 678/700 PASS; kalan ayni 22 ana dal `ui-ux-safety` kaynak-kontrat baseline failure'idir. Yeni dependency, SQL/migration, env/secret, Production data, push veya deploy yoktur.
+
 ### MANUAL-20260822-REGISTER-SIMPLIFICATION [P1] Focus registration on one clear form card
 
 Durum: Done

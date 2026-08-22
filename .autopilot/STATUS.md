@@ -2779,3 +2779,46 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
   kaynak-kontrat baseline'idir.
 - Sinirlar: Yeni dependency, SQL/migration, env/secret, Production Supabase,
   customer data, payment, push veya deploy islemi yapilmadi.
+
+## 2026-08-22 Registration phone country code and flag selector
+
+- Gorev: Kayit formundaki sabit `+49` ornegini kaldirip musterinin baglanti
+  ulkesinden baslayan, bayrak ve ulke kodu gosteren, bagimsiz degistirilebilir
+  bir telefon ulkesi secimi eklemek.
+- Katalog: Mevcut 250 ulke katalogu guncel ITU E.164/libphonenumber kaynakli
+  calling-code snapshot'uyla eslendi. 243 operasyonel bolge secilebilir;
+  `AQ`, `BV`, `GS`, `HM`, `PN`, `TF` ve `UM` icin ayri plan olmadigindan kod
+  uydurulmadi. `+1`, `+7`, `+39` ve `+44` gibi paylasilan kodlarda secimin
+  kimligi dial code degil ISO ulke kodudur. Bayraklar dis CDN olmadan Unicode
+  regional-indicator olarak render edilir; bayrak glyph'i olmayan platformda
+  iki harfli ISO fallback'i ve calling code okunabilir kalir.
+- Davranis: `/api/public/country` cevabi profil ulkesiyle birlikte telefon
+  ulkesini de baslatir (`US` -> `+1`, `DE` -> `+49`, `TR` -> `+90`). Musteri
+  telefon secicisini elle degistirdikten sonra gec IP cevabi veya profil ulkesi
+  degisikligi bu secimi ezmez. Telefon bos kalabilir ve tek basina prefix
+  serialize edilmez. Pasted `+`/`00` international deger yalniz secili calling
+  code ile uyusuyorsa normalize edilir. Libphonenumber metadata'sinda plain
+  domestic `0` kullanan allowlistli planlarda trunk zero kaldirilir; `IT`, `VA`,
+  `CI` gibi significant-zero planlari korunur ve ozel carrier prefixleri
+  tahmin edilmek yerine reddedilir.
+- Auth akislari: Formatlanan tek telefon degeri e-posta signup Auth metadata'si
+  ve Google OAuth registration profile draft'ina aynen verilir. Mevcut profile
+  kolonu, OAuth callback/completion sirasi ve ayarlar/admin legacy telefon
+  editorleri degistirilmedi; schema veya migration gerekmedi.
+- UI/erisilebilirlik: Telefon kodu native select olarak kalir; kapali durumda
+  bayrak/ISO fallback ve kod kompakt gorunur. Alanlar `tel-country-code` ve
+  `tel-national` autofill semantigine, `type/inputMode=tel`, acik aria label'lara,
+  44px dokunma hedeflerine ve responsive minmax duzenine sahiptir.
+- Kontroller: Register/country/profile targeted testleri PASS (23/23); `npm run
+  lint` PASS; `npm run typecheck` PASS (web + desktop); `npm run build --
+  --webpack` PASS (270 route/page entry); `npm run check:i18n` PASS (12 locale,
+  596/596 ve 0 English fallback); `git diff --check` PASS. Local endpoint header
+  smoke `US` -> `{countryCode:"US"}` PASS. Chrome QA 390x844, 768x1024 ve
+  1280x720 boyutlarinda sifir yatay tasma, 44px kontroller, `TR/+90` otomatik
+  senkronu, manuel `US/+1` seciminin `Germany` profil degisiminden sonra
+  korunmasi ve sifir console warning/error ile PASS.
+- Full suite: 678/700 PASS. Kalan 22 failure, ayni ana dalda onceden kayitli
+  `ui-ux-safety` kaynak-kontrat baseline'idir; yeni telefon/country testleri
+  6/6 ve ilgili hedefli toplam 23/23 gecmistir.
+- Sinirlar: Yeni dependency, SQL/migration, env/secret okuma, Production
+  Supabase/customer/payment/e-posta islemi, push veya deploy yapilmadi.

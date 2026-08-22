@@ -18,6 +18,7 @@ import {
 } from "@/lib/authGuards";
 import { TurnstileChallenge } from "@/components/auth/TurnstileChallenge";
 import { CountrySelect } from "@/components/CountrySelect";
+import { InternationalPhoneField } from "@/components/InternationalPhoneField";
 import {
   authCaptchaBlocksSubmission,
   getAuthCaptchaToken,
@@ -30,6 +31,11 @@ import {
   normalizeCountryName,
   resolveDetectedCountrySelection,
 } from "@/lib/countries";
+import {
+  formatInternationalPhone,
+  getCountryCallingCode,
+  resolveDetectedPhoneCountrySelection,
+} from "@/lib/phoneCountries";
 import { recordGrowthAccountCreated } from "@/lib/growth/client";
 import {
   beginRegistrationConversion,
@@ -50,7 +56,6 @@ import {
   Loader2,
   Mail,
   MapPin,
-  Phone,
   ShieldCheck,
   Upload,
   User,
@@ -103,6 +108,7 @@ export default function RegisterPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
+  const [phoneCountryCode, setPhoneCountryCode] = useState("");
   const [companyName, setCompanyName] = useState("");
   const [taxNumber, setTaxNumber] = useState("");
   const [invoiceEmail, setInvoiceEmail] = useState("");
@@ -126,6 +132,7 @@ export default function RegisterPage() {
   const [captchaResetKey, setCaptchaResetKey] = useState(0);
   const authRequestInFlightRef = useRef(false);
   const countryManuallySelectedRef = useRef(false);
+  const phoneCountryManuallySelectedRef = useRef(false);
   const countrySelectRef = useRef<HTMLSelectElement>(null);
 
   useEffect(() => {
@@ -186,6 +193,13 @@ export default function RegisterPage() {
             manuallySelected: countryManuallySelectedRef.current,
           })
         );
+        setPhoneCountryCode((currentCountryCode) =>
+          resolveDetectedPhoneCountrySelection({
+            currentCountryCode,
+            detectedCountryCode,
+            manuallySelected: phoneCountryManuallySelectedRef.current,
+          })
+        );
         setCountryDetection("detected");
       })
       .catch(() => {
@@ -205,6 +219,10 @@ export default function RegisterPage() {
   const cleanEmail = email.trim().toLowerCase();
   const displayName =
     accountType === "company" ? cleanCompanyName || cleanFullName : cleanFullName;
+  const formattedPhone = formatInternationalPhone({
+    countryCode: phoneCountryCode,
+    nationalNumber: phone,
+  });
   const countryHint =
     countryDetection === "detecting"
       ? "Detecting your country..."
@@ -226,6 +244,13 @@ export default function RegisterPage() {
 
     if (accountType === "company" && !cleanCompanyName) {
       setMessage("Please enter your company name.");
+      return false;
+    }
+
+    if (phone.trim() && !formattedPhone) {
+      setMessage(
+        "Please check the calling code and phone number. For special carrier plans, enter the complete international number beginning with +."
+      );
       return false;
     }
 
@@ -328,7 +353,7 @@ export default function RegisterPage() {
             full_name: cleanFullName,
             account_type: accountType,
             company_name: accountType === "company" ? cleanCompanyName : null,
-            phone: phone.trim() || null,
+            phone: formattedPhone,
             vat_id: accountType === "company" ? taxNumber.trim() || null : null,
             tax_number: accountType === "company" ? taxNumber.trim() || null : null,
             invoice_email: invoiceEmail.trim() || cleanEmail,
@@ -474,7 +499,7 @@ export default function RegisterPage() {
       fullName: cleanFullName,
       accountType,
       companyName: cleanCompanyName,
-      phone,
+      phone: formattedPhone ?? "",
       taxNumber,
       country: selectedCountry,
       emailLanguage: getSelectedEmailLanguage(),
@@ -602,15 +627,14 @@ export default function RegisterPage() {
                       maxLength={120}
                       required
                     />
-                    <TextField
-                      label="Phone Number"
-                      value={phone}
-                      onChange={setPhone}
-                      placeholder="+49 151 23456789"
-                      icon={<Phone className="h-5 w-5" />}
-                      type="tel"
-                      autoComplete="tel"
-                      maxLength={40}
+                    <InternationalPhoneField
+                      countryCode={phoneCountryCode}
+                      nationalNumber={phone}
+                      onCountryCodeChange={(countryCode) => {
+                        phoneCountryManuallySelectedRef.current = true;
+                        setPhoneCountryCode(countryCode);
+                      }}
+                      onNationalNumberChange={setPhone}
                     />
                   </div>
 
@@ -620,6 +644,12 @@ export default function RegisterPage() {
                       countryManuallySelectedRef.current = true;
                       setCountry(value);
                       setCountryDetection("manual");
+                    }}
+                    onCountryCodeChange={(countryCode) => {
+                      if (phoneCountryManuallySelectedRef.current) return;
+                      setPhoneCountryCode(
+                        getCountryCallingCode(countryCode) ? countryCode : ""
+                      );
                     }}
                     required
                     detecting={countryDetection === "detecting"}

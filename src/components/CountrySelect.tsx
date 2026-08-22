@@ -12,6 +12,7 @@ import { getCountryOptions, normalizeCountryName } from "@/lib/countries";
 type CountrySelectProps = {
   value: string;
   onChange: (value: string) => void;
+  onCountryCodeChange?: (countryCode: string) => void;
   required?: boolean;
   detecting?: boolean;
   hint?: string;
@@ -27,6 +28,7 @@ function currentDocumentLocale() {
 export function CountrySelect({
   value,
   onChange,
+  onCountryCodeChange,
   required = false,
   detecting = false,
   hint,
@@ -78,7 +80,12 @@ export function CountrySelect({
       <select
         ref={selectRef}
         value={normalizedValue}
-        onChange={(event) => onChange(event.target.value)}
+        onChange={(event) => {
+          onChange(event.target.value);
+          onCountryCodeChange?.(
+            event.currentTarget.selectedOptions[0]?.dataset.countryCode ?? ""
+          );
+        }}
         required={required}
         autoComplete="country-name"
         aria-busy={detecting}
@@ -100,6 +107,7 @@ export function CountrySelect({
             key={option.code}
             value={option.value}
             className="bg-[#111]"
+            data-country-code={option.code}
             data-no-translate
           >
             {option.label}
