@@ -195,6 +195,13 @@ test("Google Identity registration uses an official nonce-bound button", () => {
   assert.match(googleIdentityButton, /crypto\.subtle\.digest/);
   assert.match(googleIdentityButton, /nonce: hashedNonce/);
   assert.match(googleIdentityButton, /renderButton/);
+  assert.match(googleIdentityButton, /let renderedWidth: number \| null = null/);
+  assert.match(googleIdentityButton, /if \(!force && width === renderedWidth\) return/);
+  assert.match(googleIdentityButton, /if \(getButtonWidth\(\) === renderedWidth\) return/);
+  assert.match(googleIdentityButton, /resizeObserver\.observe\(wrapper\)/);
+  assert.doesNotMatch(googleIdentityButton, /resizeObserver\.observe\(container\)/);
+  assert.match(googleIdentityButton, /className="relative flex h-12 w-full/);
+  assert.match(googleIdentityButton, /flex h-10 w-full justify-center/);
   assert.match(googleIdentityButton, /googleIdentityScriptPromise/);
   assert.match(googleIdentityButton, /script\?\.remove\(\)/);
   assert.match(googleIdentityButton, /window\.setTimeout\(fail, 10_000\)/);

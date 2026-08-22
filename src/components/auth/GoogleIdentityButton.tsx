@@ -158,13 +158,15 @@ export function GoogleIdentityButton({
   }, [onCredential, onError, onReady]);
 
   useEffect(() => {
+    const wrapper = wrapperRef.current;
     const container = containerRef.current;
-    if (!container) return;
+    if (!wrapper || !container) return;
 
     let active = true;
     let focusFrameId: number | null = null;
     let resizeTimer: number | null = null;
     let resizeObserver: ResizeObserver | null = null;
+    let renderedWidth: number | null = null;
     queueMicrotask(() => {
       if (active) {
         setReady(false);
@@ -181,13 +183,18 @@ export function GoogleIdentityButton({
         if (!active) return;
         if (!window.google?.accounts.id) throw new Error("google");
 
-        const renderButton = () => {
-          if (!active || !window.google?.accounts.id) return;
-          container.replaceChildren();
-          const width = Math.max(
+        const getButtonWidth = () =>
+          Math.max(
             200,
-            Math.min(400, Math.floor(container.getBoundingClientRect().width))
+            Math.min(400, Math.floor(wrapper.getBoundingClientRect().width))
           );
+
+        const renderButton = (force = false) => {
+          if (!active || !window.google?.accounts.id) return;
+          const width = getButtonWidth();
+          if (!force && width === renderedWidth) return;
+          renderedWidth = width;
+          container.replaceChildren();
           window.google.accounts.id.renderButton(container, {
             type: "standard",
             theme: "filled_black",
@@ -225,12 +232,13 @@ export function GoogleIdentityButton({
           },
         });
 
-        renderButton();
+        renderButton(true);
         resizeObserver = new ResizeObserver(() => {
+          if (getButtonWidth() === renderedWidth) return;
           if (resizeTimer !== null) window.clearTimeout(resizeTimer);
           resizeTimer = window.setTimeout(renderButton, 80);
         });
-        resizeObserver.observe(container);
+        resizeObserver.observe(wrapper);
       } catch {
         if (active) {
           setFailed(true);
@@ -268,12 +276,14 @@ export function GoogleIdentityButton({
       aria-label="Google sign-in"
       aria-busy={!failed && (loading || !ready)}
       tabIndex={-1}
-      className="relative flex min-h-12 w-full items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-white/[0.04]"
+      className="relative flex h-12 w-full items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-white/[0.04]"
     >
       <div
         ref={containerRef}
         aria-hidden={showPlaceholder}
-        className={showPlaceholder ? "invisible" : "flex w-full justify-center"}
+        className={`flex h-10 w-full justify-center ${
+          showPlaceholder ? "invisible" : ""
+        }`}
       />
       {showPlaceholder && failed ? (
         <button
