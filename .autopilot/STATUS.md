@@ -28,6 +28,22 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
   sayfasinda `redirect_uri_mismatch` ile durdu ve session uretmedi. Vercel yeni
   deployment gerektirdigini dogruladi; Git push/deploy bu preflight kaydindan
   sonraki release adimidir.
+- Production release: `4894687 -> 86c0601` non-force fast-forward olarak
+  `main` dalina pushlandi. Vercel deployment
+  `6fZwxoGzjPvTh5XMxa6hE2zCTMdQ` 1m28s icinde `Ready`, `Production`, `Current`
+  oldu; commit `86c0601` ve `file.mgautotech.de` custom-domain atamasi dashboard
+  uzerinden dogrulandi.
+- Production smoke: Cookie'siz HTTP ile `/login`, `/register`, `/datenschutz`
+  ve `/agb` 200 HTML verdi. Canli login chunk'i resmi Google GIS loader ve
+  `renderButton`, yeni client ID, Turnstile loader ve `captchaToken` akisini
+  iceriyor; ayni uygulama chunk'inda `signInWithOAuth` yok. Eksik ve acikca
+  gecersiz CAPTCHA ile iki password grant istegi 400 dondu ve session uretmedi.
+  Eski dogrudan Google OAuth zinciri `/signin/oauth/error` uzerinde
+  `redirect_uri_mismatch` verdi, uygulamaya geri donmedi ve session uretmedi.
+  Production artefaktinin anonim login/register DOM kontrolunde tek H1,
+  masaustunde yatay tasma olmamasi ve ulke/bayrak/telefon kodu listeleri
+  dogrulandi. Mevcut Chrome admin oturumu veya gercek musteri hesabi
+  degistirilmedi; Production user, DB row, odeme ya da e-posta olusturulmadi.
 - Kontroller: Focused auth/register/CAPTCHA 26/26 PASS; lint PASS; web ve
   customer-uploader TypeScript PASS; Production Webpack build 270/270 PASS;
   i18n 12 locale ve customer 11 locale x 589/589 PASS; audit 0 vulnerability;
