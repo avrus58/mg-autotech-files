@@ -34,10 +34,13 @@ test("company registration requires and persists a bounded company identity", ()
 test("Google registration carries the validated customer and company profile", () => {
   assert.match(registerPage, /if \(!validateAccountStep\(\)\)/);
   assert.match(registerPage, /createRegistrationProfileDraft\(\{/);
+  assert.match(registerPage, /country: selectedCountry/);
   assert.match(registerPage, /OAUTH_REGISTRATION_PROFILE_KEY/);
   assert.match(authCallback, /parseRegistrationProfileDraft/);
   assert.match(authCallback, /oauthSignupProvider === "google" && oauthProfile/);
-  assert.match(authCallback, /company_name: oauthProfile\.company_name/);
+  assert.match(authCallback, /draft: oauthProfile/);
+  assert.match(authCallback, /country: oauthProfile\.country/);
+  assert.match(authCallback, /\.update\(updates\.profile\)/);
   assert.match(authCallback, /\.eq\("id", session\.user\.id\)/);
 });
 

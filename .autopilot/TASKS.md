@@ -50,6 +50,33 @@ Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
 
+### MANUAL-20260822-REGISTRATION-COUNTRY [P1] Require an auto-detected, editable registration country
+
+Durum: Done
+
+Fingerprint: `customer-registration|country-selection|silent-germany-default-and-oauth-gap|required-ip-assisted-editable-global-country`
+
+Sonuc: Kayit formunun ilk adimina 249 ISO 3166-1 ulkesi ve Kosovo secenegini
+iceren zorunlu native ulke secimi eklendi. Vercel'in iki harfli ulke basligi
+yalniz varsayilan secimi yapmak icin kullanilir; IP okunmaz, loglanmaz veya
+saklanmaz. Algilama basarisizsa Almanya varsayilmaz ve manuel secim zorunlu
+kalir; musteri otomatik secimi her zaman degistirebilir. E-posta kaydi, kayit
+sayfasi Google akisi ve login sayfasindan olusan yeni Google hesabi ayni ulke
+zorunluluguna baglandi. Eksik yeni Google hesaplari kalici pending metadata ve
+dashboard/new-request guard'i ile profil tamamlamaya yonlendirilir. Profil
+satiri dogrulanmadan Auth metadata'si tamamlanmis sayilmaz. Settings ulke alani
+da ayni tam katalogu kullanir ve bos profilde Almanya uydurmaz.
+
+Dogrulama: country/auth targeted tests PASS (25/25); `npm run lint` PASS;
+`npm run typecheck` PASS (web + desktop); `npm run build -- --webpack` PASS
+(270 route/page entry); `npm run check:i18n` PASS (12 locale, 11 non-English
+customer locale'de 0 English fallback); responsive Browser QA PASS (390x844 ve
+1366x768, yatay tasma ve console error yok); public country endpoint local
+header smoke PASS. Full suite 672/694 PASS; kalan 22 `ui-ux-safety` failure'i
+bu branch'in degistirmedigi ana dal kaynak-kontrat baseline'idir ve yeni hedefli
+ve auth session testlerine ek failure gelmemistir. Dependency, SQL, env,
+Production data, push veya deploy yoktur.
+
 ### MANUAL-20260809-GOOGLE-ADS-LAUNCH-GATE [P1] Complete verified conversion launch controls
 
 Durum: Done

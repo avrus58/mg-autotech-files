@@ -2713,3 +2713,47 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
   data, payment ayarlari veya secret degerler degistirilmedi. Canli aktivasyon
   oncesinde olcum duzeltmesi deploy edilmeli, Tag Assistant receipt
   dogrulanmali ve negatif keyword listesi kampanyaya uygulanmalidir.
+
+## 2026-08-22 Required registration country selection
+
+- Gorev: Yeni musteri kaydinda sessiz `Germany` varsayimini kaldirmak; baglanti
+  ulkesini otomatik secmek, degistirilebilir kilmak ve tam ulke listesinden
+  zorunlu secim istemek.
+- Uygulama: `/register` ilk adimi artik zorunlu `CountrySelect` kullanir. Katalog
+  249 ISO 3166-1 kodu ile yaygin `XK` Kosovo seceneginden olusur; etiketler
+  `Intl.DisplayNames` ile aktif dilde, profil degeri ise sabit English adla
+  uretilir. `/api/public/country` yalniz Vercel `x-vercel-ip-country` basligini
+  allowlistten gecirip iki harfli kod veya `null` doner; response private/no-store
+  ve noindex'tir. IP adresi okunmaz, donmez, loglanmaz veya saklanmaz.
+- Kayit akislari: E-posta ve kayit sayfasi Google akisi secilen ulkeyi Auth
+  metadata ve profile tasir. Login sayfasindan ilk kez Google ile olusan yeni
+  hesap da `/auth/complete-profile` onayina gider. Rollout sonrasi eksik Google
+  hesaplari sure asimiyla bu adimi atlayamaz; kalici required/confirmed metadata
+  ve dashboard/new-request `RegistrationCountryBoundary` kontrolu vardir.
+  Callback ve completion once profile update'in donen satirini dogrular, sonra
+  Auth metadata'yi tamamlanmis isaretler. Eski ulkesiz OAuth taslagi guvenli
+  alanlarini kaybetmeden completion'a aktarilir; rollout oncesi mevcut Google
+  hesaplari zorlanmaz.
+- Settings: Bos veya eksik profile artik `Germany` yazilmaz. Musteri ayarlari
+  ayni tam ulke dropdown'ini kullanir ve secilen canonical degeri profile/Auth
+  metadata'ya kaydeder.
+- Degisen dosyalar: `src/app/register/page.tsx`, `src/app/auth/callback/page.tsx`,
+  `src/app/auth/complete-profile/page.tsx`, `src/app/api/public/country/route.ts`,
+  customer dashboard/new-request layout'lari, settings sayfasi,
+  `CountrySelect`, `RegistrationCountryBoundary`, country/registration helper'lari,
+  customer translation catalogu ve uc registration test dosyasi.
+- Kontroller: targeted country/auth/session tests PASS (25/25); `npm run lint`
+  PASS; `npm run typecheck` PASS (web + desktop); `npm run build -- --webpack`
+  PASS (270 route/page entry); `npm run check:i18n` PASS (12 locale ve 11
+  non-English customer locale'de 0 English fallback); local endpoint header
+  smoke `US` -> `{countryCode:"US"}` ve private/no-store PASS; Browser QA
+  390x844 ve 1366x768 boyutlarinda zorunlu validation, 250 secenek, sonraki
+  kayit adimina gecis, yatay tasma olmamasi ve sifir console warning/error ile
+  PASS. Full suite 672/694 PASS; kalan 22 `ui-ux-safety` kaynak-kontrat failure'i
+  ana dalda onceden mevcut ve bu scope'un degistirmedigi baseline'dir.
+- Inceleme: Iki bagimsiz review turunda login Google signup bypass'i, kismi
+  profile/Auth yazim riski ve 15 dakikalik sure asimi bulundu ve duzeltildi.
+  Son review P0/P1 bulgusu raporlamadi.
+- Sinirlar: Yeni dependency veya SQL/migration gerekmedi. Env/secret okunmadi;
+  Production Supabase, customer data, payment, e-posta delivery, push veya deploy
+  islemi yapilmadi.

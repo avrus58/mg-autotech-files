@@ -1,4 +1,5 @@
 import { BrowserAuthBoundary } from "@/components/auth/BrowserAuthBoundary";
+import { RegistrationCountryBoundary } from "@/components/auth/RegistrationCountryBoundary";
 
 export default function NewRequestLayout({
   children,
@@ -11,7 +12,9 @@ export default function NewRequestLayout({
       description="Vehicle details, selected services and private uploads must stay connected to your verified MG AutoTech account."
       nextPath="/new-request"
     >
-      {children}
+      <RegistrationCountryBoundary nextPath="/new-request">
+        {children}
+      </RegistrationCountryBoundary>
     </BrowserAuthBoundary>
   );
 }

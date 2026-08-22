@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   createRegistrationProfileDraft,
+  parseRegistrationProfileCompletionDraft,
   parseRegistrationProfileDraft,
 } from "../src/lib/registrationProfile";
 
@@ -13,6 +14,7 @@ test("company registration profile keeps explicit company identity", () => {
       companyName: "Example Workshop GmbH",
       phone: "+49 151 1234567",
       taxNumber: "DE123456789",
+      country: "Germany",
       emailLanguage: "de",
     }),
     {
@@ -22,6 +24,7 @@ test("company registration profile keeps explicit company identity", () => {
       phone: "+49 151 1234567",
       vat_id: "DE123456789",
       tax_number: "DE123456789",
+      country: "Germany",
       email_language: "de",
     }
   );
@@ -34,6 +37,7 @@ test("private registration cannot retain stale company or VAT values", () => {
     companyName: "Stale Company",
     phone: "",
     taxNumber: "STALE-VAT",
+    country: "United States",
     emailLanguage: "en",
   });
 
@@ -49,6 +53,7 @@ test("registration profile preserves every reviewed email locale and rejects unk
     companyName: "Atelier Exemple",
     phone: "+33 1 23 45 67 89",
     taxNumber: "FR123456789",
+    country: "France",
     emailLanguage: "fr",
   });
 
@@ -73,6 +78,7 @@ test("registration profile parser rejects incomplete or oversized drafts", () =>
       phone: null,
       vat_id: null,
       tax_number: null,
+      country: "Germany",
       email_language: "en",
     })),
     null
@@ -85,8 +91,39 @@ test("registration profile parser rejects incomplete or oversized drafts", () =>
       phone: null,
       vat_id: null,
       tax_number: null,
+      country: "Germany",
       email_language: "en",
     })),
     null
+  );
+});
+
+test("registration profile requires a recognized country for OAuth handoff", () => {
+  const base = {
+    full_name: "Workshop Owner",
+    account_type: "private",
+    company_name: null,
+    phone: null,
+    vat_id: null,
+    tax_number: null,
+    email_language: "en",
+  };
+
+  assert.equal(
+    parseRegistrationProfileDraft(JSON.stringify({ ...base, country: "US" }))
+      ?.country,
+    "United States"
+  );
+  assert.equal(
+    parseRegistrationProfileDraft(JSON.stringify({ ...base, country: "" })),
+    null
+  );
+  assert.equal(
+    parseRegistrationProfileDraft(JSON.stringify({ ...base, country: "Unknownland" })),
+    null
+  );
+  assert.deepEqual(
+    parseRegistrationProfileCompletionDraft(JSON.stringify(base)),
+    { ...base, country: null }
   );
 });

@@ -17,6 +17,7 @@ import {
   signOutIfEmailUnverified,
 } from "@/lib/authGuards";
 import { TurnstileChallenge } from "@/components/auth/TurnstileChallenge";
+import { CountrySelect } from "@/components/CountrySelect";
 import {
   authCaptchaBlocksSubmission,
   getAuthCaptchaToken,
@@ -24,6 +25,11 @@ import {
 } from "@/lib/authCaptcha";
 import { supabase } from "@/lib/supabaseClient";
 import { resolveBrowserTransactionalEmailLanguage } from "@/lib/email/language";
+import {
+  normalizeCountryCode,
+  normalizeCountryName,
+  resolveDetectedCountrySelection,
+} from "@/lib/countries";
 import { recordGrowthAccountCreated } from "@/lib/growth/client";
 import {
   beginRegistrationConversion,
@@ -32,6 +38,7 @@ import {
 import {
   createRegistrationProfileDraft,
   OAUTH_REGISTRATION_PROFILE_KEY,
+  OAUTH_REGISTRATION_PROVIDER_KEY,
 } from "@/lib/registrationProfile";
 import {
   ArrowLeft,
@@ -54,6 +61,7 @@ import {
 
 type AccountType = "private" | "company";
 type StepId = 1 | 2 | 3;
+type CountryDetectionState = "detecting" | "detected" | "manual";
 
 function getSelectedEmailLanguage() {
   return resolveBrowserTransactionalEmailLanguage({
@@ -103,7 +111,9 @@ export default function RegisterPage() {
   const [street, setStreet] = useState("");
   const [postalCode, setPostalCode] = useState("");
   const [city, setCity] = useState("");
-  const [country, setCountry] = useState("Germany");
+  const [country, setCountry] = useState("");
+  const [countryDetection, setCountryDetection] =
+    useState<CountryDetectionState>("detecting");
   const [preferredContact, setPreferredContact] = useState("email");
   const [accountType, setAccountType] = useState<AccountType>("company");
   const [step, setStep] = useState<StepId>(1);
@@ -117,6 +127,8 @@ export default function RegisterPage() {
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [captchaResetKey, setCaptchaResetKey] = useState(0);
   const authRequestInFlightRef = useRef(false);
+  const countryManuallySelectedRef = useRef(false);
+  const countrySelectRef = useRef<HTMLSelectElement>(null);
 
   useEffect(() => {
     let active = true;
@@ -148,11 +160,59 @@ export default function RegisterPage() {
     };
   }, [router]);
 
+  useEffect(() => {
+    let active = true;
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 4_000);
+
+    void fetch("/api/public/country", {
+      cache: "no-store",
+      signal: controller.signal,
+    })
+      .then(async (response) => {
+        if (!response.ok) return null;
+        return (await response.json()) as { countryCode?: unknown };
+      })
+      .then((payload) => {
+        if (!active) return;
+        const detectedCountryCode = normalizeCountryCode(payload?.countryCode);
+        if (!detectedCountryCode || countryManuallySelectedRef.current) {
+          setCountryDetection("manual");
+          return;
+        }
+
+        setCountry((currentCountry) =>
+          resolveDetectedCountrySelection({
+            currentCountry,
+            detectedCountryCode,
+            manuallySelected: countryManuallySelectedRef.current,
+          })
+        );
+        setCountryDetection("detected");
+      })
+      .catch(() => {
+        if (active) setCountryDetection("manual");
+      })
+      .finally(() => window.clearTimeout(timeout));
+
+    return () => {
+      active = false;
+      window.clearTimeout(timeout);
+      controller.abort();
+    };
+  }, []);
+
   const cleanFullName = fullName.trim();
   const cleanCompanyName = companyName.trim();
   const cleanEmail = email.trim().toLowerCase();
   const displayName =
     accountType === "company" ? cleanCompanyName || cleanFullName : cleanFullName;
+  const countryHint =
+    countryDetection === "detecting"
+      ? "Detecting your country..."
+      : countryDetection === "detected"
+        ? "Country selected automatically. You can change it."
+        : "Select the country used for your customer profile.";
 
   const changeStep = (nextStep: StepId) => {
     if (loading || resendingVerification || authRequestInFlightRef.current) return;
@@ -168,6 +228,13 @@ export default function RegisterPage() {
 
     if (accountType === "company" && !cleanCompanyName) {
       setMessage("Please enter your company name.");
+      return false;
+    }
+
+    if (!normalizeCountryName(country)) {
+      setMessage("Please select your country.");
+      setCountryDetection("manual");
+      window.setTimeout(() => countrySelectRef.current?.focus(), 0);
       return false;
     }
 
@@ -211,22 +278,27 @@ export default function RegisterPage() {
 
     if (loading || resendingVerification || authRequestInFlightRef.current) return;
 
-    setLoading(true);
     setMessage("");
     setSuccess(false);
     setVerificationPending(false);
 
     if (!validateAccountStep()) {
-      changeStep(1);
-      setLoading(false);
+      setStep(1);
       return;
     }
 
     if (!validateLoginStep()) {
-      changeStep(2);
-      setLoading(false);
+      setStep(2);
       return;
     }
+
+    const selectedCountry = normalizeCountryName(country);
+    if (!selectedCountry) {
+      setStep(1);
+      return;
+    }
+
+    setLoading(true);
 
     let requestCaptchaToken: string | undefined;
     try {
@@ -265,9 +337,11 @@ export default function RegisterPage() {
             street: street.trim() || null,
             postal_code: postalCode.trim() || null,
             city: city.trim() || null,
-            country: country.trim() || "Germany",
+            country: selectedCountry,
             preferred_contact: preferredContact,
             email_language: getSelectedEmailLanguage(),
+            registration_country_required: false,
+            registration_country_confirmed: true,
             role: "customer",
           },
         },
@@ -386,18 +460,25 @@ export default function RegisterPage() {
       return;
     }
 
+    const selectedCountry = normalizeCountryName(country);
+    if (!selectedCountry) {
+      changeStep(1);
+      return;
+    }
+
     setGoogleLoading(true);
     setMessage("");
     setSuccess(false);
     beginRegistrationConversion();
 
-    window.sessionStorage.setItem("mg_register_oauth_provider", "google");
+    window.sessionStorage.setItem(OAUTH_REGISTRATION_PROVIDER_KEY, "google");
     const profileDraft = createRegistrationProfileDraft({
       fullName: cleanFullName,
       accountType,
       companyName: cleanCompanyName,
       phone,
       taxNumber,
+      country: selectedCountry,
       emailLanguage: getSelectedEmailLanguage(),
     });
     if (profileDraft) {
@@ -415,7 +496,7 @@ export default function RegisterPage() {
     });
 
     if (error) {
-      window.sessionStorage.removeItem("mg_register_oauth_provider");
+      window.sessionStorage.removeItem(OAUTH_REGISTRATION_PROVIDER_KEY);
       window.sessionStorage.removeItem(OAUTH_REGISTRATION_PROFILE_KEY);
       setMessage(error.message);
       setGoogleLoading(false);
@@ -599,6 +680,19 @@ export default function RegisterPage() {
                     />
                   </div>
 
+                  <CountrySelect
+                    value={country}
+                    onChange={(value) => {
+                      countryManuallySelectedRef.current = true;
+                      setCountry(value);
+                      setCountryDetection("manual");
+                    }}
+                    required
+                    detecting={countryDetection === "detecting"}
+                    hint={countryHint}
+                    selectRef={countrySelectRef}
+                  />
+
                   {accountType === "company" && (
                     <div className="grid gap-3 sm:grid-cols-2">
                       <TextField
@@ -744,25 +838,16 @@ export default function RegisterPage() {
                           autoComplete="address-level2"
                         />
                       </div>
-                      <div className="grid gap-4 sm:grid-cols-2">
-                        <TextField
-                          label="Country"
-                          value={country}
-                          onChange={setCountry}
-                          placeholder="Germany"
-                          autoComplete="country-name"
-                        />
-                        <SelectField
-                          label="Preferred Contact"
-                          value={preferredContact}
-                          onChange={setPreferredContact}
-                          options={[
-                            ["email", "E-mail"],
-                            ["whatsapp", "WhatsApp"],
-                            ["phone", "Phone"],
-                          ]}
-                        />
-                      </div>
+                      <SelectField
+                        label="Preferred Contact"
+                        value={preferredContact}
+                        onChange={setPreferredContact}
+                        options={[
+                          ["email", "E-mail"],
+                          ["whatsapp", "WhatsApp"],
+                          ["phone", "Phone"],
+                        ]}
+                      />
                     </div>
                   </div>
 
@@ -832,6 +917,8 @@ export default function RegisterPage() {
 
             {message && (
               <div
+                role={success ? "status" : "alert"}
+                aria-live={success ? "polite" : "assertive"}
                 className={`mt-5 rounded-2xl border p-4 text-sm ${
                   success
                     ? "border-green-800/50 bg-green-950/25 text-green-100"
