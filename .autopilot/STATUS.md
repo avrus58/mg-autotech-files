@@ -2,6 +2,15 @@
 
 Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
+## 2026-08-22 Login layout stability Production incident hotfix
+
+- Olay: Owner canli login sayfasinin surekli hareket ettigini acil olarak bildirdi. Anonim Production olcumunde 50 ornek/~5 saniye icinde 46 farkli resmi Google iframe kimligi, Google grubunda 48px ile 81.33px ve tum kartta 696.67px ile 730px arasinda tekrarli dikey degisim kanitlandi. Turnstile dis alani ayni sure boyunca 0px ve `interaction-only` kaldigi icin surekli hareketin Cloudflare CAPTCHA'dan gelmedigi dogrulandi.
+- Kok neden ve hotfix: `GoogleIdentityButton` kendi `replaceChildren()`/GIS render islemiyle degistirdigi container'i `ResizeObserver` ile izliyordu; iframe geometrisi her degistiginde 80ms sonra yeni iframe olusturan kendi kendini tetikleyen bir dongu meydana geliyordu. Observer sabit wrapper'a tasindi, son clamped genislik saklanarak ayni genislikte render kesildi, ilk nonce/reset render'i zorunlu tutuldu ve Google wrapper/container yukseklikleri sabitlendi. Regression source-contract kontrolleri ayni-genislik guard'ini, wrapper observation'i ve sabit boyutlari kapsiyor.
+- Kontroller: Hedefli login testi 8/8 PASS; auth login protection, Production CAPTCHA, premium login, registration-country ve session-resilience paketi 34/34 PASS; `npm run lint` PASS; web ve customer-uploader TypeScript PASS; `npm run build -- --webpack` PASS (270/270 route/page entry); `git diff --check` PASS. Full suite 686/708; kalan 22 failure ana daldaki ayni ilgisiz homepage `ui-ux-safety` kaynak-kontrat baseline'idir ve auth kapsaminda yeni failure yoktur.
+- Yayin: Hotfix `3417e68d7ea3fc3f476693ae3ff36a72be994654` commit'iyle `main` dalina non-force pushlandi. Vercel Production deployment `DhXes46NZer3H6GgmgLLp8PFwrJm` `Ready`, `Production`, `Current` oldu ve `file.mgautotech.de` domainine atandi.
+- Production smoke: Exact `https://file.mgautotech.de/login` uzerinde anonim 50-ornek/~5s tekrar olcumunde tek ve sabit Google iframe kimligi, 440x48px Google grubu, 560x696.67px sabit kart, 0px `interaction-only` Turnstile alani ve aktif login aksiyonu goruldu. Console warning/error, gorunur Google/Turnstile hatasi veya layout dongusu yoktur. Gercek hesaba girilmedi; form gonderilmedi; user, DB row, e-posta, payment veya customer data olusturulmadi/degistirilmedi.
+- Kurtarma: Eski `4894687` app-only rollback'i redirect-free Google/Supabase yapilandirmasiyla uyumsuz olabilecegi icin kullanilmadi. Kritik yeni regresyonda defectli surume donmek yerine `3417e68` uzerinden en kucuk forward-fix tercih edilir. Bu hotfix SQL/migration veya environment rollback'i gerektirmez.
+
 ## 2026-08-22 Premium auth Production release preflight
 
 - Owner, eksik release kapilari tamamlandiktan sonra premium login/register auth

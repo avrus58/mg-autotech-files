@@ -50,6 +50,16 @@ Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
 
+### MANUAL-20260822-LOGIN-LAYOUT-STABILITY [P0] Login Google butonu layout dongusu hotfix
+
+Durum: Done
+
+Fingerprint: `customer-auth|google-identity-button|self-triggering-resize-render-loop|stable-single-render-login-card`
+
+Sonuc: Canli login sayfasinda Google Identity Services butonunun kendi degistirdigi container'i `ResizeObserver` ile izleyip iframe'i tekrar tekrar silerek olusturmasi durduruldu. Observer sabit wrapper'a tasindi; ayni genislikte yeniden render engellendi; ilk render/reset davranisi korundu ve Google alani 48px sabit yukseklige alindi. Hotfix `3417e68` commit'iyle Production'a yayinlandi.
+
+Dogrulama: Hotfix oncesi canli 50-ornek/~5s olcumde 46 farkli Google iframe kimligi, 48-81.33px Google alani ve 696.67-730px kart yuksekligi goruldu. Production hotfix sonrasi ayni olcumde tek iframe kimligi, 48px Google alani ve 696.67px sabit kart yuksekligi PASS; console warning/error yok. Hedefli login testi 8/8, auth/CAPTCHA/register/session paketi 34/34, lint, web+customer-uploader typecheck, Webpack production build (270/270) ve diff check PASS. Full suite 686/708; kalan 22 failure ayni ilgisiz homepage `ui-ux-safety` baseline'idir. SQL/migration, env/secret, CAPTCHA ayari, payment veya customer-data degisikligi yoktur.
+
 ### MANUAL-20260822-PREMIUM-LOGIN-AUTH-PARITY [P1] Premium login ve kayit CAPTCHA esligi
 
 Durum: Done
