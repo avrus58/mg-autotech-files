@@ -3,6 +3,7 @@
 import Link from "next/link";
 import {
   useEffect,
+  useRef,
   useState,
   type ButtonHTMLAttributes,
   type FormEvent,
@@ -15,6 +16,12 @@ import {
   getAuthRedirect,
   signOutIfEmailUnverified,
 } from "@/lib/authGuards";
+import { TurnstileChallenge } from "@/components/auth/TurnstileChallenge";
+import {
+  authCaptchaBlocksSubmission,
+  getAuthCaptchaToken,
+  getPublicAuthCaptchaConfig,
+} from "@/lib/authCaptcha";
 import { supabase } from "@/lib/supabaseClient";
 import { resolveBrowserTransactionalEmailLanguage } from "@/lib/email/language";
 import { recordGrowthAccountCreated } from "@/lib/growth/client";
@@ -84,6 +91,7 @@ const accountCards: {
 
 export default function RegisterPage() {
   const router = useRouter();
+  const authCaptchaConfig = getPublicAuthCaptchaConfig();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -106,6 +114,9 @@ export default function RegisterPage() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [resendingVerification, setResendingVerification] = useState(false);
   const [checkingAuth, setCheckingAuth] = useState(true);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [captchaResetKey, setCaptchaResetKey] = useState(0);
+  const authRequestInFlightRef = useRef(false);
 
   useEffect(() => {
     let active = true;
@@ -142,6 +153,12 @@ export default function RegisterPage() {
   const cleanEmail = email.trim().toLowerCase();
   const displayName =
     accountType === "company" ? cleanCompanyName || cleanFullName : cleanFullName;
+
+  const changeStep = (nextStep: StepId) => {
+    if (loading || resendingVerification || authRequestInFlightRef.current) return;
+    if (nextStep !== 3) setCaptchaToken(null);
+    setStep(nextStep);
+  };
 
   const validateAccountStep = () => {
     if (!cleanFullName) {
@@ -180,8 +197,8 @@ export default function RegisterPage() {
     setMessage("");
     setSuccess(false);
 
-    if (step === 1 && validateAccountStep()) setStep(2);
-    if (step === 2 && validateLoginStep()) setStep(3);
+    if (step === 1 && validateAccountStep()) changeStep(2);
+    if (step === 2 && validateLoginStep()) changeStep(3);
   };
 
   const handleRegister = async (event: FormEvent) => {
@@ -192,7 +209,7 @@ export default function RegisterPage() {
       return;
     }
 
-    if (loading) return;
+    if (loading || resendingVerification || authRequestInFlightRef.current) return;
 
     setLoading(true);
     setMessage("");
@@ -200,41 +217,74 @@ export default function RegisterPage() {
     setVerificationPending(false);
 
     if (!validateAccountStep()) {
-      setStep(1);
+      changeStep(1);
       setLoading(false);
       return;
     }
 
     if (!validateLoginStep()) {
-      setStep(2);
+      changeStep(2);
       setLoading(false);
       return;
     }
 
+    let requestCaptchaToken: string | undefined;
+    try {
+      requestCaptchaToken = getAuthCaptchaToken(
+        authCaptchaConfig,
+        captchaToken
+      );
+    } catch (error) {
+      setMessage(
+        error instanceof Error ? error.message : "Security verification failed."
+      );
+      setLoading(false);
+      return;
+    }
+
+    authRequestInFlightRef.current = true;
+    if (requestCaptchaToken) setCaptchaToken(null);
+
     beginRegistrationConversion();
-    const { data, error } = await supabase.auth.signUp({
-      email: cleanEmail,
-      password,
-      options: {
-        emailRedirectTo: getAuthRedirect("/auth/callback?next=/dashboard"),
-        data: {
-          full_name: cleanFullName,
-          account_type: accountType,
-          company_name: accountType === "company" ? cleanCompanyName : null,
-          phone: phone.trim() || null,
-          vat_id: accountType === "company" ? taxNumber.trim() || null : null,
-          tax_number: accountType === "company" ? taxNumber.trim() || null : null,
-          invoice_email: invoiceEmail.trim() || cleanEmail,
-          street: street.trim() || null,
-          postal_code: postalCode.trim() || null,
-          city: city.trim() || null,
-          country: country.trim() || "Germany",
-          preferred_contact: preferredContact,
-          email_language: getSelectedEmailLanguage(),
-          role: "customer",
+    const response = await supabase.auth.signUp({
+        email: cleanEmail,
+        password,
+        options: {
+          emailRedirectTo: getAuthRedirect("/auth/callback?next=/dashboard"),
+          ...(requestCaptchaToken
+            ? { captchaToken: requestCaptchaToken }
+            : {}),
+          data: {
+            full_name: cleanFullName,
+            account_type: accountType,
+            company_name: accountType === "company" ? cleanCompanyName : null,
+            phone: phone.trim() || null,
+            vat_id: accountType === "company" ? taxNumber.trim() || null : null,
+            tax_number: accountType === "company" ? taxNumber.trim() || null : null,
+            invoice_email: invoiceEmail.trim() || cleanEmail,
+            street: street.trim() || null,
+            postal_code: postalCode.trim() || null,
+            city: city.trim() || null,
+            country: country.trim() || "Germany",
+            preferred_contact: preferredContact,
+            email_language: getSelectedEmailLanguage(),
+            role: "customer",
+          },
         },
-      },
-    });
+      })
+      .catch(() => null)
+      .finally(() => {
+        authRequestInFlightRef.current = false;
+        if (!requestCaptchaToken) return;
+        setCaptchaResetKey((value) => value + 1);
+      });
+
+    if (!response) {
+      setMessage("Account creation could not be completed. Please try again.");
+      setLoading(false);
+      return;
+    }
+    const { data, error } = response;
 
     if (error) {
       setMessage(error.message);
@@ -266,16 +316,54 @@ export default function RegisterPage() {
   };
 
   const handleResendVerification = async () => {
-    if (resendingVerification || !cleanEmail) return;
+    if (
+      resendingVerification ||
+      loading ||
+      authRequestInFlightRef.current ||
+      !cleanEmail
+    ) return;
+
+    let requestCaptchaToken: string | undefined;
+    try {
+      requestCaptchaToken = getAuthCaptchaToken(
+        authCaptchaConfig,
+        captchaToken
+      );
+    } catch (error) {
+      setMessage(
+        error instanceof Error ? error.message : "Security verification failed."
+      );
+      return;
+    }
+
+    authRequestInFlightRef.current = true;
+    if (requestCaptchaToken) setCaptchaToken(null);
+
     setResendingVerification(true);
     setMessage("");
-    const { error } = await supabase.auth.resend({
-      type: "signup",
-      email: cleanEmail,
-      options: {
-        emailRedirectTo: getAuthRedirect("/auth/callback?next=/dashboard"),
-      },
-    });
+    const response = await supabase.auth.resend({
+        type: "signup",
+        email: cleanEmail,
+        options: {
+          emailRedirectTo: getAuthRedirect("/auth/callback?next=/dashboard"),
+          ...(requestCaptchaToken
+            ? { captchaToken: requestCaptchaToken }
+            : {}),
+        },
+      })
+      .catch(() => null)
+      .finally(() => {
+        authRequestInFlightRef.current = false;
+        if (!requestCaptchaToken) return;
+        setCaptchaResetKey((value) => value + 1);
+      });
+    if (!response) {
+      setResendingVerification(false);
+      setSuccess(false);
+      setMessage("Verification e-mail could not be sent. Please try again.");
+      return;
+    }
+    const { error } = response;
     setResendingVerification(false);
     setSuccess(!error);
     setMessage(
@@ -286,10 +374,15 @@ export default function RegisterPage() {
   };
 
   const handleGoogleRegister = async () => {
-    if (googleLoading) return;
+    if (
+      googleLoading ||
+      loading ||
+      resendingVerification ||
+      authRequestInFlightRef.current
+    ) return;
 
     if (!validateAccountStep()) {
-      setStep(1);
+      changeStep(1);
       return;
     }
 
@@ -438,7 +531,7 @@ export default function RegisterPage() {
               </p>
             </div>
 
-            <StepProgress step={step} onStepChange={setStep} />
+            <StepProgress step={step} onStepChange={changeStep} />
 
             {step === 2 && (
               <GoogleRegisterButton
@@ -590,7 +683,7 @@ export default function RegisterPage() {
                   </div>
 
                   <div className="grid gap-3 sm:grid-cols-[auto_1fr]">
-                    <SecondaryButton type="button" onClick={() => setStep(1)}>
+                    <SecondaryButton type="button" onClick={() => changeStep(1)}>
                       <ArrowLeft className="mr-2 h-4 w-4" />
                       Back
                     </SecondaryButton>
@@ -687,12 +780,39 @@ export default function RegisterPage() {
                     </div>
                   </div>
 
+                  {authCaptchaConfig.status === "ready" && (
+                    <TurnstileChallenge
+                      siteKey={authCaptchaConfig.siteKey}
+                      action="auth_register"
+                      resetKey={captchaResetKey}
+                      onToken={setCaptchaToken}
+                    />
+                  )}
+
+                  {authCaptchaConfig.status === "misconfigured" && (
+                    <div
+                      role="alert"
+                      className="rounded-xl border border-red-800/50 bg-red-950/30 p-4 text-sm text-red-100"
+                    >
+                      {authCaptchaConfig.message}
+                    </div>
+                  )}
+
                   <div className="grid gap-3 sm:grid-cols-[auto_1fr]">
-                    <SecondaryButton type="button" onClick={() => setStep(2)}>
+                    <SecondaryButton type="button" onClick={() => changeStep(2)}>
                       <ArrowLeft className="mr-2 h-4 w-4" />
                       Back
                     </SecondaryButton>
-                    <PrimaryButton disabled={loading}>
+                    <PrimaryButton
+                      disabled={
+                        loading ||
+                        resendingVerification ||
+                        authCaptchaBlocksSubmission(
+                          authCaptchaConfig,
+                          captchaToken
+                        )
+                      }
+                    >
                       {loading ? (
                         <>
                           <Loader2 className="mr-2 h-5 w-5 animate-spin" />
@@ -731,7 +851,11 @@ export default function RegisterPage() {
               <button
                 type="button"
                 onClick={() => void handleResendVerification()}
-                disabled={resendingVerification}
+                disabled={
+                  resendingVerification ||
+                  loading ||
+                  authCaptchaBlocksSubmission(authCaptchaConfig, captchaToken)
+                }
                 className="mt-3 inline-flex items-center text-sm font-black text-red-400 transition hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {resendingVerification ? (

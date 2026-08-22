@@ -1,13 +1,31 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   getAuthenticatedHome,
   getAuthRedirect,
   signOutIfEmailUnverified,
 } from "@/lib/authGuards";
+import { TurnstileChallenge } from "@/components/auth/TurnstileChallenge";
+import {
+  AUTH_CAPTCHA_REQUIRED_MESSAGE,
+  authCaptchaBlocksSubmission,
+  getAuthCaptchaToken,
+  getPublicAuthCaptchaConfig,
+} from "@/lib/authCaptcha";
+import {
+  AUTH_LOGIN_FAILURE_STORAGE_KEY,
+  EMPTY_AUTH_LOGIN_FAILURE_STATE,
+  authLoginNeedsVisibleChallenge,
+  clearAuthLoginFailures,
+  getAuthLoginFailureWindowRemaining,
+  getBrowserAuthLoginFailureStorage,
+  isInvalidPasswordCredentialError,
+  readAuthLoginFailureState,
+  recordAuthLoginFailure,
+} from "@/lib/authLoginProtection";
 import { supabase } from "@/lib/supabaseClient";
 import {
   ArrowRight,
@@ -29,12 +47,58 @@ function getRequestedRedirect() {
 
 export default function LoginPage() {
   const router = useRouter();
+  const authCaptchaConfig = getPublicAuthCaptchaConfig();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [captchaResetKey, setCaptchaResetKey] = useState(0);
+  const [passwordFailureState, setPasswordFailureState] = useState(
+    EMPTY_AUTH_LOGIN_FAILURE_STATE
+  );
+  const authRequestInFlightRef = useRef(false);
+  const captchaEscalationNoticeRef = useRef<HTMLDivElement | null>(null);
+  const visibleCaptchaRequired =
+    authCaptchaConfig.status === "ready" &&
+    authLoginNeedsVisibleChallenge(passwordFailureState.failures);
+
+  useEffect(() => {
+    const storage = getBrowserAuthLoginFailureStorage();
+    const syncFailureState = () => {
+      setPasswordFailureState(readAuthLoginFailureState(storage));
+    };
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key !== AUTH_LOGIN_FAILURE_STORAGE_KEY) return;
+      syncFailureState();
+    };
+
+    syncFailureState();
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
+  }, []);
+
+  useEffect(() => {
+    const remaining = getAuthLoginFailureWindowRemaining(passwordFailureState);
+    if (remaining === null) return;
+
+    const timeoutId = window.setTimeout(() => {
+      setPasswordFailureState(
+        readAuthLoginFailureState(getBrowserAuthLoginFailureStorage())
+      );
+    }, remaining + 50);
+    return () => window.clearTimeout(timeoutId);
+  }, [passwordFailureState]);
+
+  useEffect(() => {
+    if (!visibleCaptchaRequired) return;
+    const frameId = window.requestAnimationFrame(() => {
+      captchaEscalationNoticeRef.current?.focus();
+    });
+    return () => window.cancelAnimationFrame(frameId);
+  }, [visibleCaptchaRequired]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -63,6 +127,8 @@ export default function LoginPage() {
         return;
       }
 
+      clearAuthLoginFailures(getBrowserAuthLoginFailureStorage());
+      setPasswordFailureState(EMPTY_AUTH_LOGIN_FAILURE_STATE);
       router.replace(requestedRedirect ?? (await getAuthenticatedHome(user.id)));
       router.refresh();
     };
@@ -77,17 +143,58 @@ export default function LoginPage() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (loading) return;
+    if (loading || authRequestInFlightRef.current) return;
+
+    let requestCaptchaToken: string | undefined;
+    try {
+      requestCaptchaToken = getAuthCaptchaToken(
+        authCaptchaConfig,
+        captchaToken
+      );
+    } catch (error) {
+      setMessage(
+        error instanceof Error ? error.message : "Security verification failed."
+      );
+      return;
+    }
+
+    authRequestInFlightRef.current = true;
+    if (requestCaptchaToken) setCaptchaToken(null);
 
     setLoading(true);
     setMessage("");
 
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
-      password,
-    });
+    const response = await supabase.auth
+      .signInWithPassword({
+        email: email.trim(),
+        password,
+        options: requestCaptchaToken
+          ? { captchaToken: requestCaptchaToken }
+          : undefined,
+      })
+      .catch(() => null)
+      .finally(() => {
+        authRequestInFlightRef.current = false;
+        if (!requestCaptchaToken) return;
+        setCaptchaResetKey((value) => value + 1);
+      });
+
+    if (!response) {
+      setMessage("Login could not be completed. Please try again.");
+      setLoading(false);
+      return;
+    }
+    const { data, error } = response;
 
     if (error) {
+      if (isInvalidPasswordCredentialError(error)) {
+        setPasswordFailureState((currentState) =>
+          recordAuthLoginFailure(
+            getBrowserAuthLoginFailureStorage(),
+            currentState
+          )
+        );
+      }
       setMessage(
         error.message.toLowerCase().includes("email not confirmed")
           ? "Please verify your e-mail address before logging in."
@@ -96,6 +203,9 @@ export default function LoginPage() {
       setLoading(false);
       return;
     }
+
+    clearAuthLoginFailures(getBrowserAuthLoginFailureStorage());
+    setPasswordFailureState(EMPTY_AUTH_LOGIN_FAILURE_STATE);
 
     if (data.user && (await signOutIfEmailUnverified(data.user))) {
       setMessage("Please verify your e-mail address before accessing your account.");
@@ -109,7 +219,7 @@ export default function LoginPage() {
   };
 
   const handleGoogleLogin = async () => {
-    if (googleLoading) return;
+    if (googleLoading || loading || authRequestInFlightRef.current) return;
 
     setGoogleLoading(true);
     setMessage("");
@@ -251,8 +361,41 @@ export default function LoginPage() {
                 </div>
               </label>
 
+              {visibleCaptchaRequired && (
+                <div
+                  ref={captchaEscalationNoticeRef}
+                  role="alert"
+                  tabIndex={-1}
+                  className="rounded-2xl border border-amber-700/50 bg-amber-950/25 p-4 text-sm font-bold text-amber-100 outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
+                >
+                  {AUTH_CAPTCHA_REQUIRED_MESSAGE}
+                </div>
+              )}
+
+              {authCaptchaConfig.status === "ready" && (
+                <TurnstileChallenge
+                  siteKey={authCaptchaConfig.siteKey}
+                  action="auth_login"
+                  resetKey={captchaResetKey}
+                  onToken={setCaptchaToken}
+                  appearance={visibleCaptchaRequired ? "always" : "interaction-only"}
+                />
+              )}
+
+              {authCaptchaConfig.status === "misconfigured" && (
+                <div
+                  role="alert"
+                  className="rounded-2xl border border-red-800/50 bg-red-950/30 p-4 text-sm text-red-100"
+                >
+                  {authCaptchaConfig.message}
+                </div>
+              )}
+
               <button
-                disabled={loading}
+                disabled={
+                  loading ||
+                  authCaptchaBlocksSubmission(authCaptchaConfig, captchaToken)
+                }
                 className="group flex h-14 w-full items-center justify-center rounded-2xl bg-[#b1121b] px-5 font-black text-white shadow-xl shadow-red-950/40 transition hover:bg-[#c91824] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {loading ? (
@@ -278,7 +421,7 @@ export default function LoginPage() {
             <button
               type="button"
               onClick={handleGoogleLogin}
-              disabled={googleLoading}
+              disabled={googleLoading || loading}
               className="mt-4 flex h-14 w-full items-center justify-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] px-5 font-black text-white transition hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {googleLoading ? (

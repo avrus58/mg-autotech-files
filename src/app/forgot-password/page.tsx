@@ -1,32 +1,72 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { ArrowLeft, CheckCircle2, Loader2, Mail, ShieldCheck, Upload } from "lucide-react";
+import { TurnstileChallenge } from "@/components/auth/TurnstileChallenge";
+import {
+  authCaptchaBlocksSubmission,
+  getAuthCaptchaToken,
+  getPublicAuthCaptchaConfig,
+} from "@/lib/authCaptcha";
 import { getAuthRedirect } from "@/lib/authGuards";
 import { supabase } from "@/lib/supabaseClient";
 
 export default function ForgotPasswordPage() {
+  const authCaptchaConfig = getPublicAuthCaptchaConfig();
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [captchaResetKey, setCaptchaResetKey] = useState(0);
+  const authRequestInFlightRef = useRef(false);
 
   const handleResetRequest = async (event: React.FormEvent) => {
     event.preventDefault();
 
-    if (loading) return;
+    if (loading || authRequestInFlightRef.current) return;
+
+    let requestCaptchaToken: string | undefined;
+    try {
+      requestCaptchaToken = getAuthCaptchaToken(
+        authCaptchaConfig,
+        captchaToken
+      );
+    } catch (error) {
+      setMessage(
+        error instanceof Error ? error.message : "Security verification failed."
+      );
+      return;
+    }
+
+    authRequestInFlightRef.current = true;
+    if (requestCaptchaToken) setCaptchaToken(null);
 
     setLoading(true);
     setMessage("");
     setSuccess(false);
 
-    const { error } = await supabase.auth.resetPasswordForEmail(
-      email.trim().toLowerCase(),
-      {
+    const response = await supabase.auth
+      .resetPasswordForEmail(email.trim().toLowerCase(), {
         redirectTo: getAuthRedirect("/auth/callback?next=/reset-password"),
-      }
-    );
+        ...(requestCaptchaToken
+          ? { captchaToken: requestCaptchaToken }
+          : {}),
+      })
+      .catch(() => null)
+      .finally(() => {
+        authRequestInFlightRef.current = false;
+        if (!requestCaptchaToken) return;
+        setCaptchaResetKey((value) => value + 1);
+      });
+
+    if (!response) {
+      setLoading(false);
+      setMessage("Password reset request could not be completed. Please try again.");
+      return;
+    }
+    const { error } = response;
 
     setLoading(false);
 
@@ -85,8 +125,29 @@ export default function ForgotPasswordPage() {
             </div>
           </label>
 
+          {authCaptchaConfig.status === "ready" && (
+            <TurnstileChallenge
+              siteKey={authCaptchaConfig.siteKey}
+              action="auth_recovery"
+              resetKey={captchaResetKey}
+              onToken={setCaptchaToken}
+            />
+          )}
+
+          {authCaptchaConfig.status === "misconfigured" && (
+            <div
+              role="alert"
+              className="rounded-2xl border border-red-800/50 bg-red-950/30 p-4 text-sm text-red-100"
+            >
+              {authCaptchaConfig.message}
+            </div>
+          )}
+
           <button
-            disabled={loading}
+            disabled={
+              loading ||
+              authCaptchaBlocksSubmission(authCaptchaConfig, captchaToken)
+            }
             className="flex h-14 w-full items-center justify-center rounded-2xl bg-[#b1121b] px-5 font-black text-white shadow-xl shadow-red-950/40 transition hover:bg-[#c91824] disabled:cursor-not-allowed disabled:opacity-60"
           >
             {loading ? (
