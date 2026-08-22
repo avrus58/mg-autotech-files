@@ -52,28 +52,38 @@ protection against every stolen-token scenario.
    `ok = true`; its output contains only schema/ACL/config aggregates.
 3. Deploy the matching application with a staging HMAC secret and real staging
    e-mail delivery. Do not activate enforcement yet.
-4. With disposable customers, verify password login, Google OAuth, confirmed
-   registration, callback resume, wrong-code attempts, expiry, resend cooldown,
-   simultaneous resend, and provider failure. An old sent code must remain valid
-   until a replacement message is accepted and atomically activated.
-5. Verify both choices: without trust, a later new session requests a code;
+4. While the config is still `shadow`, verify that ordinary disposable-customer
+   password login, Google OAuth, confirmed registration, and callback resume do
+   not regress. Also force a password-change verification and revoke one test
+   session; those two explicit deny states must remain fail-closed in `shadow`.
+   Normal new-device sessions intentionally return `not_required` in this mode,
+   so do not claim that pending-session or HTTP 428 behavior was tested yet.
+5. Call `activate_customer_device_assurance(0)` with service-role authority.
+   The function performs its own policy, ACL, RLS, and order-wrapper preflight.
+   Confirm the config is `enforced`, then create fresh post-activation password
+   and Google OAuth sessions. Verify new-device challenge, wrong-code attempts,
+   expiry, resend cooldown, simultaneous resend, and provider failure. An old
+   sent code must remain valid until a replacement message is accepted and
+   atomically activated.
+6. Verify both choices: without trust, a later new session requests a code;
    with trust, that browser may authorize a new session for at most 30 days.
    Incognito/another browser must still request a code.
-6. Revoke the current device, one other device, and all other devices. Confirm
+7. Revoke the current device, one other device, and all other devices. Confirm
    affected app sessions lose customer-data access immediately. Reset a
    password and use the admin password-replacement flow; both must revoke saved
    devices and app assurance.
-7. While a customer session is pending, test direct Data API reads, protected
+8. While a customer session is pending, test direct Data API reads, protected
    Storage operations, server customer endpoints, File Expert, and all web and
    desktop order RPCs. Every path must fail closed. Staff access must remain on
    the existing staff-permission boundary.
-8. Confirm the current desktop client receives an explicit HTTP 428 fail-closed
+9. Confirm the current desktop client receives an explicit HTTP 428 fail-closed
    message. Do not activate while an unsupported desktop version is allowed to
    serve customers; either publish a compatible client or keep desktop customer
    access disabled/minimum-version blocked.
-9. Call `activate_customer_device_assurance(24)` with service-role authority.
-   The function performs its own policy, ACL, RLS, and order-wrapper preflight.
-   Repeat the verifier and all authenticated smokes in enforced mode.
+10. Repeat the verifier and all authenticated smokes in enforced mode. Rehearse
+    `disable_customer_device_assurance()` and confirm the config returns to
+    `shadow`; then reactivate with `0` and repeat one fresh-session challenge so
+    the activation and recovery procedures are both proven.
 
 ## Production sequence
 
@@ -113,6 +123,10 @@ delete customer data. Explicitly revoked sessions and a password-change session
 that is waiting for its forced e-mail code remain blocked in `shadow`; rollback
 must not resurrect them. Never drop the restrictive policies first: an
 application rollback while mode remains `enforced` can lock customers out.
+After this migration, the rollback application must be the immediately prior
+device-aware canonical build (`755decc` or a verified descendant) because it
+uses the replacement web and desktop order RPCs. Never roll back to an older
+build that calls the legacy base RPC revoked by this migration.
 
 Mailbox compromise defeats an e-mail factor, and this custom step does not
 replace native phishing-resistant MFA for staff/admin accounts. Admin MFA and

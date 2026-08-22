@@ -2,6 +2,119 @@
 
 Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
+## 2026-08-22 Log Analysis Studio Production release
+
+- Release kapsami: `70afff4..3c4b931` tek fast-forward uygulama commit'idir.
+  Premium statik auth arka plani, public Basic Log Snapshot, customer Log
+  Analysis Studio, dashboard navigasyonu, i18n phrase-bank ekleri ve hedefli
+  testler disinda degisiklik yoktur. Package/lockfile, SQL/migration, env,
+  Supabase schema, payment, e-posta veya customer-data mutasyonu yoktur.
+- Preflight: Worktree temiz, `origin/main` release tabanina esit ve release
+  commit'i bir commit ahead/zero behind olarak dogrulandi. Hedefli log/public/
+  auth/session testleri 34/34 PASS; `npm run lint` PASS; `npm run typecheck`
+  PASS (web + desktop); `npm run build -- --webpack` PASS (271/271 route/page
+  entry). Onceki full suite sonucu 712/734'tur; kalan ayni 22 homepage
+  `ui-ux-safety` kaynak-kontrat baseline failure'idir.
+- Yayin: `3c4b9317315e59ea00cd9ee147d268961d47c30f` non-force fast-forward ile
+  `main` dalina pushlandi. Git-triggered Vercel deployment
+  `L8ooNmegzzz7oqgNRvffqWqLxVaH` 1m58s icinde `Ready`, `Production`, `Current`
+  oldu ve `file.mgautotech.de` domainine atandi.
+- Production smoke: Non-mutating public smoke `/`, `/new-request` ve 102 marka
+  donen public vehicle cache endpointinde PASS. Canli Basic snapshot explicit
+  sentetik demo ile 430 Nm, tahmini 192.1 HP ve 7/7 accepted row uretip local
+  privacy/dyno sinirini korudu. Izole oturumda login/register tek H1, gorunur
+  statik backdrop, 30-ornek/~3s tek kart geometrisi, sifir page overflow ve
+  sifir console warning/error ile PASS. Anonim `/dashboard/log-analysis`, Studio
+  kontrollerini gostermeden login ekranina gitti; noindex/nofollow ve redirect
+  hedefi dogrulandi. Yetkili Studio bos durum, explicit demo, Overview/Channels/
+  Data rows tablari, chart, row slider, clear-local-data ve 390px contained chart
+  scroll ile PASS; page-level overflow veya console warning/error yoktur. Gercek
+  customer logu yuklenmedi ve hicbir form/mutasyon gonderilmedi.
+- Rollback: Kritik regresyonda Vercel Instant Rollback hedefi
+  `2n47rqK99TEPrmKJGCq8TM2aqhSX` (`70afff4`) olur; ardindan force-push yerine
+  normal `git revert 3c4b931` main'e uygulanir. DB/env rollback gerekmez.
+- Non-blocking takip: Yeni public snapshot'in uzun aciklama metinleri phrase
+  bank disinda oldugu icin `/de`, `/tr` gibi localized homepage'lerde bolumun
+  bazi satirlari English kalabilir. Bu P2 i18n tamamlama notudur; release
+  guvenligi veya ana akislari engellemez.
+
+## 2026-08-22 Login layout stability Production incident hotfix
+
+- Olay: Owner canli login sayfasinin surekli hareket ettigini acil olarak bildirdi. Anonim Production olcumunde 50 ornek/~5 saniye icinde 46 farkli resmi Google iframe kimligi, Google grubunda 48px ile 81.33px ve tum kartta 696.67px ile 730px arasinda tekrarli dikey degisim kanitlandi. Turnstile dis alani ayni sure boyunca 0px ve `interaction-only` kaldigi icin surekli hareketin Cloudflare CAPTCHA'dan gelmedigi dogrulandi.
+- Kok neden ve hotfix: `GoogleIdentityButton` kendi `replaceChildren()`/GIS render islemiyle degistirdigi container'i `ResizeObserver` ile izliyordu; iframe geometrisi her degistiginde 80ms sonra yeni iframe olusturan kendi kendini tetikleyen bir dongu meydana geliyordu. Observer sabit wrapper'a tasindi, son clamped genislik saklanarak ayni genislikte render kesildi, ilk nonce/reset render'i zorunlu tutuldu ve Google wrapper/container yukseklikleri sabitlendi. Regression source-contract kontrolleri ayni-genislik guard'ini, wrapper observation'i ve sabit boyutlari kapsiyor.
+- Kontroller: Hedefli login testi 8/8 PASS; auth login protection, Production CAPTCHA, premium login, registration-country ve session-resilience paketi 34/34 PASS; `npm run lint` PASS; web ve customer-uploader TypeScript PASS; `npm run build -- --webpack` PASS (270/270 route/page entry); `git diff --check` PASS. Full suite 686/708; kalan 22 failure ana daldaki ayni ilgisiz homepage `ui-ux-safety` kaynak-kontrat baseline'idir ve auth kapsaminda yeni failure yoktur.
+- Yayin: Hotfix `3417e68d7ea3fc3f476693ae3ff36a72be994654` commit'iyle `main` dalina non-force pushlandi. Vercel Production deployment `DhXes46NZer3H6GgmgLLp8PFwrJm` `Ready`, `Production`, `Current` oldu ve `file.mgautotech.de` domainine atandi.
+- Production smoke: Exact `https://file.mgautotech.de/login` uzerinde anonim 50-ornek/~5s tekrar olcumunde tek ve sabit Google iframe kimligi, 440x48px Google grubu, 560x696.67px sabit kart, 0px `interaction-only` Turnstile alani ve aktif login aksiyonu goruldu. Console warning/error, gorunur Google/Turnstile hatasi veya layout dongusu yoktur. Gercek hesaba girilmedi; form gonderilmedi; user, DB row, e-posta, payment veya customer data olusturulmadi/degistirilmedi.
+- Kurtarma: Eski `4894687` app-only rollback'i redirect-free Google/Supabase yapilandirmasiyla uyumsuz olabilecegi icin kullanilmadi. Kritik yeni regresyonda defectli surume donmek yerine `3417e68` uzerinden en kucuk forward-fix tercih edilir. Bu hotfix SQL/migration veya environment rollback'i gerektirmez.
+
+## 2026-08-22 Premium auth Production release preflight
+
+- Owner, eksik release kapilari tamamlandiktan sonra premium login/register auth
+  diliminin Production'a yayinlanmasini istedi. Exact kod kapsami temiz
+  `4894687 -> 9135a97` fast-forward'udur; 12 auth UI/helper/test/autopilot
+  dosyasi disinda package, lockfile, env dosyasi, migration, payment veya
+  customer-data degisikligi yoktur. Kod rollback tabani `4894687` olarak
+  sabitlendi.
+- Canli altyapi: Production Supabase Bot and Abuse Protection, Cloudflare
+  Turnstile provider ve mevcut masked secret ile ON; eksik ve acikca gecersiz
+  CAPTCHA tokenli iki sentetik password istegi HTTP 400 `captcha_failed` verdi
+  ve session uretmedi. CAPTCHA mode/site-key kayitlari Vercel Production
+  kapsaminda mevcut. Secret okunmadi veya loglanmadi.
+- Google gate: Owner browser action-time onayini verdi. `MG AutoTech Reporting`
+  projesinde `MG AutoTech File Service` External OAuth uygulamasi Production'a
+  alindi; mevcut ana sayfa, `/datenschutz` ve `/agb` baglantilari ile
+  `mgautotech.de` authorized domain olarak kaydedildi. Yeni Web client yalniz
+  `https://file.mgautotech.de` JavaScript origin'ine sahiptir ve redirect URI
+  icermez. Yeni public client ID Supabase Production Google provider ve Vercel
+  Production `NEXT_PUBLIC_GOOGLE_CLIENT_ID` kaydinda birlikte guncellendi.
+  Google client secret okunmadi veya kopyalanmadi; Supabase'teki masked OAuth
+  secret alani acilmadi ya da degistirilmedi. Cookie'siz dogrudan Supabase
+  `/auth/v1/authorize?provider=google` zinciri Google `/signin/oauth/error`
+  sayfasinda `redirect_uri_mismatch` ile durdu ve session uretmedi. Vercel yeni
+  deployment gerektirdigini dogruladi; Git push/deploy bu preflight kaydindan
+  sonraki release adimidir.
+- Production release: `4894687 -> 86c0601` non-force fast-forward olarak
+  `main` dalina pushlandi. Vercel deployment
+  `6fZwxoGzjPvTh5XMxa6hE2zCTMdQ` 1m28s icinde `Ready`, `Production`, `Current`
+  oldu; commit `86c0601` ve `file.mgautotech.de` custom-domain atamasi dashboard
+  uzerinden dogrulandi.
+- Production smoke: Cookie'siz HTTP ile `/login`, `/register`, `/datenschutz`
+  ve `/agb` 200 HTML verdi. Canli login chunk'i resmi Google GIS loader ve
+  `renderButton`, yeni client ID, Turnstile loader ve `captchaToken` akisini
+  iceriyor; ayni uygulama chunk'inda `signInWithOAuth` yok. Eksik ve acikca
+  gecersiz CAPTCHA ile iki password grant istegi 400 dondu ve session uretmedi.
+  Eski dogrudan Google OAuth zinciri `/signin/oauth/error` uzerinde
+  `redirect_uri_mismatch` verdi, uygulamaya geri donmedi ve session uretmedi.
+  Production artefaktinin anonim login/register DOM kontrolunde tek H1,
+  masaustunde yatay tasma olmamasi ve ulke/bayrak/telefon kodu listeleri
+  dogrulandi. Mevcut Chrome admin oturumu veya gercek musteri hesabi
+  degistirilmedi; Production user, DB row, odeme ya da e-posta olusturulmadi.
+- Kontroller: Focused auth/register/CAPTCHA 26/26 PASS; lint PASS; web ve
+  customer-uploader TypeScript PASS; Production Webpack build 270/270 PASS;
+  i18n 12 locale ve customer 11 locale x 589/589 PASS; audit 0 vulnerability;
+  `git diff --check` PASS. Full suite 686/708; exact `4894687` baseline da ayni
+  22 unrelated failure'i veriyor. `check:performance` hem release hem exact
+  baseline build'inde Next manifest homepage client entry'sini bulamadigi icin
+  ayni mevcut baseline failure olarak kaydedildi.
+
+## 2026-08-22 Premium login and registration auth protection parity
+
+- Calisma araligi: 2026-08-22 18:00-19:05 (Europe/Berlin).
+- Gorev: Login ekranini register ile uyumlu, premium tek kartli bir deneyime donusturmek ve kayit tarafinda CAPTCHA/auth korumasinin zayif kalmamasini saglamak.
+- Uygulama: Login iki sutunlu tanitim duzeninden 560px ortalanmis tek karta alindi; tek H1, semantik label/name/autocomplete, 48px kontroller, focus-visible state'leri ve basari/hata live-region ayrimi eklendi. Login ve register Google aksiyonlari resmi Google Identity Services butonunu, 256-bit random nonce'i, Google'a SHA-256 hex nonce'i ve Supabase'e raw nonce'i kullanan `signInWithIdToken` akisini paylasir. Senkron request lock, stale-callback engeli, script timeout/error cleanup, klavye retry focus'u ve kontrollu network/storage hata durumlari eklendi. Register e-posta sign-up/resend `auth_register`, Google kaydi `auth_register_google`; login parola ve Google yolu `auth_login` Turnstile token'ini Supabase'e iletir.
+- Guvenlik: Login/register icinde `signInWithOAuth` kalmadi; boylece uygulamadaki Google yeni-hesap yolu CAPTCHA'li ID-token akisini dolasamaz. Production'da CAPTCHA modu eksik/`off`, site key eksik veya Cloudflare test key'i ise web auth UI fail-closed olur; public test-key bypass'i kaldirildi. Production Google client ID eksik/gecersizse Google butonu fail-closed kalirken e-posta akisi kullanilabilir. Turnstile dar alanda resmi compact, genis alanda flexible boyuta doner ve resize'da tokeni guvenli bicimde yeniler. Hosted Supabase provider/secret aktivasyonu repository'den kanitlanamaz. Release gate `NEXT_PUBLIC_GOOGLE_CLIENT_ID` degerinin Supabase Google provider Web Client ID'siyle ayni olmasini, `https://file.mgautotech.de` Authorized JavaScript origin'ini, her aktif Google Web client'indan Production Supabase Auth callback URI'sinin (`https://jujaeyvyaeesmipihrrw.supabase.co/auth/v1/callback` ve varsa custom Auth domain esdegeri) kaldirilmasini, dogrudan `/authorize` negatif smoke'u ve server-side missing/invalid CAPTCHA token reddini dogrulamalidir.
+- Kontroller: Hedefli auth/CAPTCHA/register/login/security testleri PASS (39/39); lint PASS; web+desktop typecheck PASS; production webpack build PASS (270); i18n PASS (12 locale, 589/589, 0 fallback); diff check PASS. In-app Browser QA 320, 360, 375, 390 ve 1280px genisliklerde sifir yatay tasma, tek H1, resmi 40px Google butonu, register step focus/`aria-current` ve sifir console error/warning ile PASS. Full suite 686/708; 22 failure ana daldaki ayni ilgisiz `ui-ux-safety` source-contract baseline'idir.
+- Sinirlar: Yeni dependency, SQL/migration, env/secret okuma, canli Supabase/Auth/CAPTCHA cagrisi, gercek hesap/musteri verisi, push veya deploy yoktur. Google/Supabase release konfigurasyonu bu turda degistirilmedi.
+
+## 2026-08-22 Registration phone country selector Production release
+
+- Gorev: Owner onayiyla `e5e5718` telefon ulke kodu secicisi degisikligini `file.mgautotech.de` Production'a yayinlamak.
+- Release kapsami: `ffef96d..e5e5718` tek fast-forward commit; register telefonu, paylasilan ulke secici callback'i, telefon ulke katalogu, hedefli testler ve autopilot kayitlari. SQL/migration, package/lockfile, env, payment veya customer-data degisikligi yoktur. Uygulama rollback hedefi `ffef96d` olarak dogrulandi.
+- Release gate: Registration/country/profile hedefli testler PASS (14/14); `npm run lint` PASS; `npm run typecheck` PASS; `npm run build -- --webpack` PASS (270 route/page entry); `git diff --check` PASS. Full suite 678/700; kalan 22 ayni `ui-ux-safety` ana dal kaynak-kontrat baseline failure'idir ve telefon kapsamina yeni failure eklenmedi.
+- Yayin: GitHub `main` `ffef96d` tabanindan `e5e5718` commit'ine fast-forward pushlandi. Vercel Production deployment `5Ei5imd79w8NjRVGqdJanx9wzGan` Ready/Current oldu ve `file.mgautotech.de` domainine atandi.
+- Production smoke: Public smoke PASS (`/` 200, `/new-request` 200, vehicle API 102 brand); unauthenticated admin smoke PASS (korumali API'ler 401, mutation route 405); `/register` 200. Anonim browser QA'da konuma gore DE / `+49`, bayrakli 243 operasyonel secenek, manuel US / `+1` seciminin profil ulkesi Turkiye yapildiginda korunmasi, sifir console error ve desktop yatay tasma olmamasi dogrulandi. Gercek hesap, CAPTCHA, e-posta, payment veya customer kaydi olusturulmadi.
+- Rollback: Kritik register regresyonunda Vercel Instant Rollback ile `ffef96d` deployment'i yeniden current yapilir; Git gecmisi force-push olmadan `e5e5718` revert commit'iyle eslenir. DB rollback gerekmez.
+
 ## 2026-08-14 Multi-engine search discovery
 
 - Gorev: file.mgautotech.de public sayfalarinin Google disindaki arama motorlari tarafindan daha hizli kesfedilmesi icin Bing/IndexNow ve bolgesel webmaster dogrulama altyapisini kurmak.
@@ -3475,3 +3588,163 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
   Auth-layer ayarı, gerçek e-posta kapasitesi, HMAC secret, desktop disable veya
   minimum-version kapısı tamamlanmadan enforcement açılmamalı. Secret, gerçek
   müşteri/e-posta, Supabase/Vercel, ödeme, push veya deploy mutation yapılmadı.
+## 2026-08-22 Required registration country selection
+
+- Gorev: Yeni musteri kaydinda sessiz `Germany` varsayimini kaldirmak; baglanti
+  ulkesini otomatik secmek, degistirilebilir kilmak ve tam ulke listesinden
+  zorunlu secim istemek.
+- Uygulama: `/register` ilk adimi artik zorunlu `CountrySelect` kullanir. Katalog
+  249 ISO 3166-1 kodu ile yaygin `XK` Kosovo seceneginden olusur; etiketler
+  `Intl.DisplayNames` ile aktif dilde, profil degeri ise sabit English adla
+  uretilir. `/api/public/country` yalniz Vercel `x-vercel-ip-country` basligini
+  allowlistten gecirip iki harfli kod veya `null` doner; response private/no-store
+  ve noindex'tir. IP adresi okunmaz, donmez, loglanmaz veya saklanmaz.
+- Kayit akislari: E-posta ve kayit sayfasi Google akisi secilen ulkeyi Auth
+  metadata ve profile tasir. Login sayfasindan ilk kez Google ile olusan yeni
+  hesap da `/auth/complete-profile` onayina gider. Rollout sonrasi eksik Google
+  hesaplari sure asimiyla bu adimi atlayamaz; kalici required/confirmed metadata
+  ve dashboard/new-request `RegistrationCountryBoundary` kontrolu vardir.
+  Callback ve completion once profile update'in donen satirini dogrular, sonra
+  Auth metadata'yi tamamlanmis isaretler. Eski ulkesiz OAuth taslagi guvenli
+  alanlarini kaybetmeden completion'a aktarilir; rollout oncesi mevcut Google
+  hesaplari zorlanmaz.
+- Settings: Bos veya eksik profile artik `Germany` yazilmaz. Musteri ayarlari
+  ayni tam ulke dropdown'ini kullanir ve secilen canonical degeri profile/Auth
+  metadata'ya kaydeder.
+- Degisen dosyalar: `src/app/register/page.tsx`, `src/app/auth/callback/page.tsx`,
+  `src/app/auth/complete-profile/page.tsx`, `src/app/api/public/country/route.ts`,
+  customer dashboard/new-request layout'lari, settings sayfasi,
+  `CountrySelect`, `RegistrationCountryBoundary`, country/registration helper'lari,
+  customer translation catalogu ve uc registration test dosyasi.
+- Kontroller: targeted country/auth/session tests PASS (25/25); `npm run lint`
+  PASS; `npm run typecheck` PASS (web + desktop); `npm run build -- --webpack`
+  PASS (270 route/page entry); `npm run check:i18n` PASS (12 locale ve 11
+  non-English customer locale'de 0 English fallback); local endpoint header
+  smoke `US` -> `{countryCode:"US"}` ve private/no-store PASS; Browser QA
+  390x844 ve 1366x768 boyutlarinda zorunlu validation, 250 secenek, sonraki
+  kayit adimina gecis, yatay tasma olmamasi ve sifir console warning/error ile
+  PASS. Full suite 672/694 PASS; kalan 22 `ui-ux-safety` kaynak-kontrat failure'i
+  ana dalda onceden mevcut ve bu scope'un degistirmedigi baseline'dir.
+- Inceleme: Iki bagimsiz review turunda login Google signup bypass'i, kismi
+  profile/Auth yazim riski ve 15 dakikalik sure asimi bulundu ve duzeltildi.
+  Son review P0/P1 bulgusu raporlamadi.
+- Sinirlar: Yeni dependency veya SQL/migration gerekmedi. Env/secret okunmadi;
+  Production Supabase, customer data, payment, e-posta delivery, push veya deploy
+  islemi yapilmadi.
+
+## 2026-08-22 Registration page simplification
+
+- Gorev: Kayit sayfasinin masaustu gorunumundeki gereksiz sol tanitim alanini
+  kaldirarak asil kayit akisini daha sade ve odakli hale getirmek.
+- Uygulama: Sol pazarlama sutunu, uc ozellik karti, alt durum etiketleri ve
+  tekrarlanan kayit rozeti kaldirildi. Form 760px genisliginde ortalanmis tek
+  karta tasindi. Kompakt MG AutoTech marka basligi karta dahil edildi,
+  `Create Account` tek H1 oldu ve mevcut login baglantisi sade metne cevrildi.
+- Korunan davranis: Private/business secimi, company alani, email/password ve
+  Google auth, zorunlu global ulke secimi, form adimlari, CAPTCHA ve tum submit
+  handler'lari degismedi.
+- Kontroller: register/country/CAPTCHA targeted tests PASS (17/17); `npm run
+  lint` PASS; `npm run typecheck` PASS (web + desktop); `npm run build --
+  --webpack` PASS (270 route/page entry); `npm run check:i18n` PASS (12 locale,
+  596/596 ve 0 English fallback). Browser QA 1280x720, 768x1024 ve 390x844
+  boyutlarinda yatay tasma olmamasi, tek H1, 250 secilebilir ulke, 48px mobil
+  ana aksiyon ve sifir console warning/error ile PASS. Full suite 672/694 PASS;
+  kalan 22 `ui-ux-safety` failure'i bu scope'un degistirmedigi ana dal
+  kaynak-kontrat baseline'idir.
+- Sinirlar: Yeni dependency, SQL/migration, env/secret, Production Supabase,
+  customer data, payment, push veya deploy islemi yapilmadi.
+
+## 2026-08-22 Registration phone country code and flag selector
+
+- Gorev: Kayit formundaki sabit `+49` ornegini kaldirip musterinin baglanti
+  ulkesinden baslayan, bayrak ve ulke kodu gosteren, bagimsiz degistirilebilir
+  bir telefon ulkesi secimi eklemek.
+- Katalog: Mevcut 250 ulke katalogu guncel ITU E.164/libphonenumber kaynakli
+  calling-code snapshot'uyla eslendi. 243 operasyonel bolge secilebilir;
+  `AQ`, `BV`, `GS`, `HM`, `PN`, `TF` ve `UM` icin ayri plan olmadigindan kod
+  uydurulmadi. `+1`, `+7`, `+39` ve `+44` gibi paylasilan kodlarda secimin
+  kimligi dial code degil ISO ulke kodudur. Bayraklar dis CDN olmadan Unicode
+  regional-indicator olarak render edilir; bayrak glyph'i olmayan platformda
+  iki harfli ISO fallback'i ve calling code okunabilir kalir.
+- Davranis: `/api/public/country` cevabi profil ulkesiyle birlikte telefon
+  ulkesini de baslatir (`US` -> `+1`, `DE` -> `+49`, `TR` -> `+90`). Musteri
+  telefon secicisini elle degistirdikten sonra gec IP cevabi veya profil ulkesi
+  degisikligi bu secimi ezmez. Telefon bos kalabilir ve tek basina prefix
+  serialize edilmez. Pasted `+`/`00` international deger yalniz secili calling
+  code ile uyusuyorsa normalize edilir. Libphonenumber metadata'sinda plain
+  domestic `0` kullanan allowlistli planlarda trunk zero kaldirilir; `IT`, `VA`,
+  `CI` gibi significant-zero planlari korunur ve ozel carrier prefixleri
+  tahmin edilmek yerine reddedilir.
+- Auth akislari: Formatlanan tek telefon degeri e-posta signup Auth metadata'si
+  ve Google OAuth registration profile draft'ina aynen verilir. Mevcut profile
+  kolonu, OAuth callback/completion sirasi ve ayarlar/admin legacy telefon
+  editorleri degistirilmedi; schema veya migration gerekmedi.
+- UI/erisilebilirlik: Telefon kodu native select olarak kalir; kapali durumda
+  bayrak/ISO fallback ve kod kompakt gorunur. Alanlar `tel-country-code` ve
+  `tel-national` autofill semantigine, `type/inputMode=tel`, acik aria label'lara,
+  44px dokunma hedeflerine ve responsive minmax duzenine sahiptir.
+- Kontroller: Register/country/profile targeted testleri PASS (23/23); `npm run
+  lint` PASS; `npm run typecheck` PASS (web + desktop); `npm run build --
+  --webpack` PASS (270 route/page entry); `npm run check:i18n` PASS (12 locale,
+  596/596 ve 0 English fallback); `git diff --check` PASS. Local endpoint header
+  smoke `US` -> `{countryCode:"US"}` PASS. Chrome QA 390x844, 768x1024 ve
+  1280x720 boyutlarinda sifir yatay tasma, 44px kontroller, `TR/+90` otomatik
+  senkronu, manuel `US/+1` seciminin `Germany` profil degisiminden sonra
+  korunmasi ve sifir console warning/error ile PASS.
+- Full suite: 678/700 PASS. Kalan 22 failure, ayni ana dalda onceden kayitli
+  `ui-ux-safety` kaynak-kontrat baseline'idir; yeni telefon/country testleri
+  6/6 ve ilgili hedefli toplam 23/23 gecmistir.
+- Sinirlar: Yeni dependency, SQL/migration, env/secret okuma, Production
+  Supabase/customer/payment/e-posta islemi, push veya deploy yapilmadi.
+
+## 2026-08-22 Public Basic and customer Log Analysis Studio
+
+- Gorev: Login/register arka planini daha premium ama hareket etmeyen bir
+  yuzeye cevirmek; ana sayfadaki log aracini sade bir public Basic deneyime
+  ayirmak ve customer dashboard'a profesyonel bir log analiz calisma alani
+  eklemek.
+- Auth UI: `AuthBackdrop` iki auth sayfasinda ayni statik koyu-kirmizi radial,
+  linear ve grid katmanlarini kullanir. Arka plan `aria-hidden` ve
+  `pointer-events-none` kalir; animasyon, transform veya Google/Turnstile auth
+  davranisi degisikligi yoktur. Onceki negatif z-index nedeniyle gorunmeyen
+  dekor katmani kartin arkasindaki dogru stacking context'e alindi.
+- Public Basic: Ana sayfanin combined Performance Tools bolumu artik
+  `PublicLogSnapshot` render eder. CSV/TXT dosyasi tarayicida, 1 MB ve 2000 satir
+  siniriyla islenir; bos, yukleniyor, hata ve hazir durumlari; acik example ve
+  reset; peak torque/power/RPM, satir sayisi ve kompakt egri sunar. Ayrintili
+  eski arac kendi public route'unda korunur ve customer Studio'ya net gecis
+  verilir.
+- Customer Studio: `/dashboard/log-analysis` route'u dashboard auth layout'unu
+  miras alir ve desktop/mobile navigasyona eklenir. CSV/TSV/TXT loglarda zaman,
+  RPM, torque, boost/manifold actual-target, lambda/AFR, throttle, sicaklik,
+  rail pressure, airflow, speed, ignition ve diger sayisal kanallari algilar.
+  Yapısal kalite, min/max/ortalama/peak ozetleri, en fazla uc normalize kanal,
+  satir scrubber'i, kanal ve veri tablolari, local vehicle context ve
+  kanita-bagli yorumlar saglar. Tablist/tabpanel semantigi, roving tabindex ve
+  Left/Right/Home/End klavye gezinimi bulunur.
+- Guvenlik/sinirlar: Dosya 120 KB/2000 satir/24 kanal ile sinirli ve tamamen
+  tarayici icinde kalir; fetch, Supabase, storage veya persistence yoktur.
+  Yorumlar sadece gercek algilanan kanallara dayanir. Uygulama dyno sonucu,
+  ariza teshisi, tuning onayi, flash guvenligi, component limiti veya kesin
+  kazanc iddiasi uretmez. Headerless tahmini veride performance/checklist/report
+  kapali kalir. RPM/Nm checklist ve SVG rapor yalnizca uygun gercek basliklarda
+  local olarak uretilir.
+- Degisen alanlar: Auth sayfalari ve ortak backdrop; public Performance Tools
+  composition/Basic snapshot; log parser/analysis engine; yeni customer Studio
+  route/UI; dashboard ve orders navigasyonu; phrase-bank i18n; ilgili source
+  contract, parser ve session testleri.
+- Kontroller: Hedefli log/public/auth/session testleri PASS; `npm run lint` PASS;
+  `npm run typecheck` PASS (web + desktop); `npm run build -- --webpack` PASS
+  (271 static page); `npm run check:i18n` PASS (11 non-English locale, 592/592,
+  0 English fallback); `git diff --check` PASS. Chrome QA 390x844, 768x1024 ve
+  1440x900 boyutlarinda sifir page-level yatay tasma, sabit auth layout, empty /
+  example / ready Studio akisi, uc kanal overlay'i, row inspector ve klavye tab
+  gezinimiyle PASS. Native file chooser otomasyonu Chrome eklentisinin file URL
+  izni olmadigi icin sinirli kaldi; parser unit testleri ve sentetik tarayici
+  akisi ayri ayri dogrulandi.
+- Full suite: 712/734 PASS. Kalan 22 failure ayni onceden kayitli homepage
+  `ui-ux-safety` kaynak-kontrat baseline'idir; bu scope'un yeni ve hedefli
+  testleri gecmistir.
+- Sinirlar: Yeni dependency, SQL/migration, API/storage/persistence, env/secret
+  okuma, Production Supabase/customer/payment/e-posta islemi, push veya deploy
+  yapilmadi.

@@ -175,6 +175,107 @@ Dogrulama: Download/file-label testleri 18/18 PASS; birleşik ilgili testler
 163/163 PASS; customer i18n 11 locale x 612/612 PASS; web+uploader typecheck,
 full ESLint ve `git diff --check` PASS. Authenticated Preview/Chrome smoke,
 canonical DB/app release sırasından sonra ayrı yayın kapısı olarak kalır.
+### MANUAL-20260822-LOG-STUDIO-PRODUCTION-RELEASE [P0] Log Analysis Studio Production release
+
+Durum: Done
+
+Fingerprint: `release|log-analysis-studio|validated-code-awaiting-production|ready-current-and-smoke-verified`
+
+Sonuc: `3c4b931` tek commit olarak `main` dalina non-force fast-forward pushlandi. Vercel deployment `L8ooNmegzzz7oqgNRvffqWqLxVaH` `Ready`, `Production`, `Current` oldu ve `file.mgautotech.de` domainine atandi. Public Basic demo, sabit login/register, anonim Studio auth guard'i ve yetkili Studio demo/grafik/tab/mobile akislarinin tamami canlida dogrulandi. Kritik rollback hedefi onceki current `2n47rqK99TEPrmKJGCq8TM2aqhSX` / `70afff4` olarak sabitlendi.
+
+Dogrulama: Hedefli testler 34/34 PASS; lint PASS; web+desktop typecheck PASS; Webpack Production build 271/271 PASS; non-mutating public smoke PASS; izole auth ve Studio browser smoke sifir page overflow/console warning/error ile PASS. SQL/migration, env, payment, e-posta, customer-data veya gercek log islemi yoktur.
+
+### MANUAL-20260822-LOG-ANALYSIS-STUDIO [P0] Public Basic ve customer Log Analysis Studio
+
+Durum: Done
+
+Fingerprint: `performance-analysis|public-basic-and-customer-studio|complex-single-surface-and-flat-auth-background|local-multichannel-professional-workspaces`
+
+Sonuc: Login ve register sayfalari ortak, sabit ve erisilebilir premium arka planla guncellendi. Ana sayfadaki karmasik AutoTuner bolumu yerel dosya isleyen sade bir Basic Log Snapshot akisi oldu. Authenticated customer dashboard'a yeni sidebar/mobile nav girisiyle profesyonel Log Analysis Studio eklendi: CSV/TSV/TXT kanal tespiti, kalite ozeti, en fazla uc normalize kanal karsilastirmasi, satir inceleyici, kanal/veri tablolari, guvenli ve kanita bagli yorumlar, local vehicle context, kopyalanabilir ozet ve yalnizca uygun gercek baslikli RPM/Nm loglarinda local checklist/SVG rapor saglar. Dosyalar tarayicidan cikmaz; uygulama dyno sonucu, ariza teshisi, tuning onayi, flash guvenligi veya kesin kazanc iddiasi uretmez.
+
+Dogrulama: Hedefli log/public/auth/session testleri PASS; `npm run lint` PASS; `npm run typecheck` PASS (web + desktop); `npm run build -- --webpack` PASS (271 static page); `npm run check:i18n` PASS (11 non-English locale, 592/592 ve 0 English fallback); Chrome QA 390x844, 768x1024 ve 1440x900 boyutlarinda responsive/overflow, bos-yukleniyor-hata-hazir durumlari, klavye tab gezinimi, sentetik demo ve sifir layout animasyonu ile PASS; `git diff --check` PASS. Full suite 712/734; kalan 22 failure ayni onceden kayitli homepage `ui-ux-safety` kaynak-kontrat baseline'idir ve yeni/hedefli testler gecmistir.
+
+Sinirlar: Yeni dependency, SQL/migration, API/storage/persistence, env/secret okuma, Production Supabase/customer/payment/e-posta islemi, push veya deploy yapilmadi. Chrome native file chooser otomasyonu eklentinin file URL izni olmadigi icin calistirilamadi; parser unit testleri ve tarayici icindeki sentetik dosya akisi ayri ayri dogrulandi.
+
+### MANUAL-20260822-LOGIN-LAYOUT-STABILITY [P0] Login Google butonu layout dongusu hotfix
+
+Durum: Done
+
+Fingerprint: `customer-auth|google-identity-button|self-triggering-resize-render-loop|stable-single-render-login-card`
+
+Sonuc: Canli login sayfasinda Google Identity Services butonunun kendi degistirdigi container'i `ResizeObserver` ile izleyip iframe'i tekrar tekrar silerek olusturmasi durduruldu. Observer sabit wrapper'a tasindi; ayni genislikte yeniden render engellendi; ilk render/reset davranisi korundu ve Google alani 48px sabit yukseklige alindi. Hotfix `3417e68` commit'iyle Production'a yayinlandi.
+
+Dogrulama: Hotfix oncesi canli 50-ornek/~5s olcumde 46 farkli Google iframe kimligi, 48-81.33px Google alani ve 696.67-730px kart yuksekligi goruldu. Production hotfix sonrasi ayni olcumde tek iframe kimligi, 48px Google alani ve 696.67px sabit kart yuksekligi PASS; console warning/error yok. Hedefli login testi 8/8, auth/CAPTCHA/register/session paketi 34/34, lint, web+customer-uploader typecheck, Webpack production build (270/270) ve diff check PASS. Full suite 686/708; kalan 22 failure ayni ilgisiz homepage `ui-ux-safety` baseline'idir. SQL/migration, env/secret, CAPTCHA ayari, payment veya customer-data degisikligi yoktur.
+
+### MANUAL-20260822-PREMIUM-LOGIN-AUTH-PARITY [P1] Premium login ve kayit CAPTCHA esligi
+
+Durum: Done
+
+Fingerprint: `customer-auth|login-register|split-screen-and-production-captcha-opt-out|premium-single-card-fail-closed-auth`
+
+Sonuc: Login sayfasindaki agir iki sutunlu tanitim duzeni, register tasarim diliyle uyumlu 560px ortalanmis premium tek karta cevrildi. Tek H1, acik label/name/autocomplete alanlari, 48px ana kontroller, klavye focus state'leri ve basari/hata live-region ayrimi eklendi. Mevcut adaptive 5-basarisiz-parola CAPTCHA gorunurluk esigi, Supabase `captchaToken`, yonlendirme ve hata sayaci korunurken login ve register Google akislari resmi Google Identity Services butonu + nonce bagli `signInWithIdToken` + Turnstile tokenina tasindi; iki UI'da da `signInWithOAuth` kaldirildi. Register e-posta sign-up/resend `auth_register`, Google kaydi `auth_register_google`, login parola/Google yolu `auth_login` tokenini kullanir. Google script timeout/error retry, stale callback engeli, senkron request lock, storage-error cleanup, dar ekranda compact/flexible Turnstile ve register step focus/`aria-current` eklendi. Production CAPTCHA/test-key bypass'i ve eksik/gecersiz Google client ID fail-closed olur.
+
+Dogrulama: Auth/CAPTCHA/register/login/security hedefli testler PASS (39/39); `npm run lint` PASS; `npm run typecheck` PASS (web + desktop); `npm run build -- --webpack` PASS (270 route/page entry); `npm run check:i18n` PASS (12 locale, 589/589 ve 0 English fallback); `git diff --check` PASS. In-app Browser QA 320, 360, 375, 390 ve 1280px genisliklerde sifir yatay tasma, tek H1, resmi 40px Google butonu, step focus/`aria-current` ve sifir console error/warning ile PASS. Full suite 686/708; kalan ayni 22 ana dal `ui-ux-safety` kaynak-kontrat baseline failure'idir. Release gate hosted Supabase CAPTCHA aktivasyonu ve missing/invalid-token reddi, `NEXT_PUBLIC_GOOGLE_CLIENT_ID` ile Supabase provider Web Client ID esitligi, Production JS origin, tum aktif Google Web client'larindan `https://jujaeyvyaeesmipihrrw.supabase.co/auth/v1/callback` (ve varsa custom Auth domain esdegeri) URI'sinin kaldirilmasi ve dogrudan `/authorize` negatif smoke ister. Yeni dependency, SQL/migration, env/secret, Production data, push veya deploy yoktur.
+
+### MANUAL-20260822-REGISTER-PHONE-COUNTRY-CODE [P1] Auto-detect an editable calling code during registration
+
+Durum: Done
+
+Fingerprint: `customer-registration|phone-country-code|fixed-germany-placeholder|detected-editable-flag-and-calling-code`
+
+Sonuc: Kayit formundaki sabit Almanya ornekli telefon alani, mevcut ulke tespitiyle baslayan ve musteri tarafindan bagimsiz degistirilebilen native calling-code secicisine cevrildi. 243 operasyonel bolge dogrulanmis ulke kodu, Unicode bayragi ve localized ulke adiyla listelenir; ayri bir telefon plani bulunmayan 7 katalog bolgesine kod uydurulmaz. Tespit edilen `US` `+1`, `DE` `+49`, `TR` `+90` ile baslar. Manuel telefon ulkesi secimi gec tespit veya profil ulkesi degisikligiyle ezilmez. Telefon opsiyonel kalir, bos kod kaydedilmez ve e-posta/Google kayit yollarinin ikisi de ayni `+` ile baslayan formatlanmis degeri kullanir.
+
+Dogrulama: register/country/profile hedefli testleri PASS (23/23); `npm run lint` PASS; `npm run typecheck` PASS (web + desktop); `npm run build -- --webpack` PASS (270 route/page entry); `npm run check:i18n` PASS (12 locale, 596/596 ve 0 English fallback). Chrome QA 390x844, 768x1024 ve 1280x720 boyutlarinda 44px kontroller, sifir yatay tasma, profil ulkesinden `+90` senkronu, manuel `+1` seciminin korunmasi ve sifir console warning/error ile PASS. Local header smoke `US` -> `{countryCode:"US"}` PASS. Full suite 678/700 PASS; kalan ayni 22 ana dal `ui-ux-safety` kaynak-kontrat baseline failure'idir. Yeni dependency, SQL/migration, env/secret, Production data, push veya deploy yoktur.
+
+### MANUAL-20260822-REGISTER-SIMPLIFICATION [P1] Focus registration on one clear form card
+
+Durum: Done
+
+Fingerprint: `customer-registration|register-layout|redundant-left-marketing-column|centered-single-card-form`
+
+Sonuc: Kayit sayfasindaki formu tekrar eden masaustu tanitim sutunu, uc ozellik
+karti ve durum etiketi kaldirildi. Kayit akisi 760px genisliginde ortalanmis tek
+bir karta toplandi; kart icine kompakt marka basligi ve masaustu/tablet guven
+etiketi eklendi. `Create Account` sayfanin tek ana basligi yapildi. Mevcut
+private/business secimi, form alanlari, ulke zorunlulugu, Google/e-posta auth
+akislari ve CAPTCHA davranisi degistirilmedi.
+
+Dogrulama: register/country/CAPTCHA targeted tests PASS (17/17); `npm run lint`
+PASS; `npm run typecheck` PASS (web + desktop); `npm run build -- --webpack`
+PASS (270 route/page entry); `npm run check:i18n` PASS (12 locale, 596/596 ve
+0 English fallback). Browser QA 1280x720, 768x1024 ve 390x844 boyutlarinda
+yatay tasma olmamasi, tek H1, 250 secilebilir ulke, 48px mobil ana aksiyon ve
+sifir console warning/error ile PASS. Full suite 672/694 PASS; kalan ayni 22
+`ui-ux-safety` failure'i ana dalda onceden mevcut kaynak-kontrat baseline'idir.
+Yeni dependency, SQL/migration, env/secret, Production data, push veya deploy
+yoktur.
+
+### MANUAL-20260822-REGISTRATION-COUNTRY [P1] Require an auto-detected, editable registration country
+
+Durum: Done
+
+Fingerprint: `customer-registration|country-selection|silent-germany-default-and-oauth-gap|required-ip-assisted-editable-global-country`
+
+Sonuc: Kayit formunun ilk adimina 249 ISO 3166-1 ulkesi ve Kosovo secenegini
+iceren zorunlu native ulke secimi eklendi. Vercel'in iki harfli ulke basligi
+yalniz varsayilan secimi yapmak icin kullanilir; IP okunmaz, loglanmaz veya
+saklanmaz. Algilama basarisizsa Almanya varsayilmaz ve manuel secim zorunlu
+kalir; musteri otomatik secimi her zaman degistirebilir. E-posta kaydi, kayit
+sayfasi Google akisi ve login sayfasindan olusan yeni Google hesabi ayni ulke
+zorunluluguna baglandi. Eksik yeni Google hesaplari kalici pending metadata ve
+dashboard/new-request guard'i ile profil tamamlamaya yonlendirilir. Profil
+satiri dogrulanmadan Auth metadata'si tamamlanmis sayilmaz. Settings ulke alani
+da ayni tam katalogu kullanir ve bos profilde Almanya uydurmaz.
+
+Dogrulama: country/auth targeted tests PASS (25/25); `npm run lint` PASS;
+`npm run typecheck` PASS (web + desktop); `npm run build -- --webpack` PASS
+(270 route/page entry); `npm run check:i18n` PASS (12 locale, 11 non-English
+customer locale'de 0 English fallback); responsive Browser QA PASS (390x844 ve
+1366x768, yatay tasma ve console error yok); public country endpoint local
+header smoke PASS. Full suite 672/694 PASS; kalan 22 `ui-ux-safety` failure'i
+bu branch'in degistirmedigi ana dal kaynak-kontrat baseline'idir ve yeni hedefli
+ve auth session testlerine ek failure gelmemistir. Dependency, SQL, env,
+Production data, push veya deploy yoktur.
 
 ### MANUAL-20260809-GOOGLE-ADS-LAUNCH-GATE [P1] Complete verified conversion launch controls
 

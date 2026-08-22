@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { getStableSession, notifySessionRequired, signOutIfEmailUnverified, signOutStable } from "@/lib/authGuards";
 import { supabase } from "@/lib/supabaseClient";
 import {
+  Activity,
   ArrowRight,
   AlertTriangle,
   BellRing,
@@ -617,7 +618,7 @@ export function DashboardClient() {
               </div>
             </Link>
 
-            <nav className="space-y-2 text-sm">
+            <nav className="min-h-0 flex-1 space-y-2 overflow-y-auto pr-1 text-sm">
               <Link
                 href="/dashboard"
                 className="flex items-center gap-3 rounded-2xl bg-red-950/35 px-4 py-3 font-bold text-white"
@@ -640,6 +641,14 @@ export function DashboardClient() {
               >
                 <BrainCircuit className="h-5 w-5" />
                 AI File Expert
+              </Link>
+
+              <Link
+                href="/dashboard/log-analysis"
+                className="flex items-center gap-3 rounded-2xl px-4 py-3 font-bold text-zinc-400 transition hover:bg-white/[0.06] hover:text-white"
+              >
+                <Activity className="h-5 w-5" />
+                Log Analysis Studio
               </Link>
 
               <Link
@@ -715,7 +724,7 @@ export function DashboardClient() {
               </a>
             </nav>
 
-            <div className="mt-auto rounded-3xl border border-red-900/40 bg-red-950/20 p-5">
+            <div className="mt-5 shrink-0 rounded-3xl border border-red-900/40 bg-red-950/20 p-5">
               <div className="text-xs font-bold uppercase tracking-[0.2em] text-red-400">
                 Current Balance
               </div>
@@ -778,6 +787,9 @@ export function DashboardClient() {
             <Link href="/new-request" className="shrink-0 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-xs font-black">
               <Upload className="mr-2 inline h-4 w-4" />New Request
             </Link>
+            <Link href="/dashboard/log-analysis" className="shrink-0 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-xs font-black">
+              <Activity className="mr-2 inline h-4 w-4" />Log Studio
+            </Link>
             <Link href="/dashboard/orders" className="shrink-0 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-xs font-black">
               <FileText className="mr-2 inline h-4 w-4" />Orders
             </Link>
@@ -839,7 +851,7 @@ export function DashboardClient() {
                     communication from your private MG AutoTech dashboard.
                   </p>
 
-                  <div className="mt-7 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+                  <div className="mt-7 grid gap-3 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
                     <Link
                       href="/new-request"
                       className="rounded-2xl bg-[#b1121b] px-5 py-4 text-center font-black text-white shadow-xl shadow-red-950/40 transition hover:-translate-y-1 hover:bg-[#c91824]"
@@ -862,6 +874,14 @@ export function DashboardClient() {
                     >
                       <BrainCircuit className="mr-2 inline h-5 w-5" />
                       AI File Expert
+                    </Link>
+
+                    <Link
+                      href="/dashboard/log-analysis"
+                      className="rounded-2xl border border-cyan-800/45 bg-cyan-950/20 px-5 py-4 text-center font-black text-white transition hover:-translate-y-1 hover:bg-cyan-950/35"
+                    >
+                      <Activity className="mr-2 inline h-5 w-5 text-cyan-300" />
+                      Log Analysis
                     </Link>
 
                     <Link

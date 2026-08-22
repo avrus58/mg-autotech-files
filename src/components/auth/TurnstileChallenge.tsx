@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 
 type TurnstileWidgetId = string;
 type TurnstileAppearance = "always" | "interaction-only";
+type TurnstileSize = "compact" | "flexible";
 
 type TurnstileApi = {
   render(
@@ -13,6 +14,7 @@ type TurnstileApi = {
       action: string;
       theme: "dark";
       appearance: TurnstileAppearance;
+      size: TurnstileSize;
       "response-field": false;
       callback(token: string): void;
       "error-callback"(code?: string): void;
@@ -99,22 +101,49 @@ export function TurnstileChallenge({
   appearance = "always",
 }: {
   siteKey: string;
-  action: "auth_login" | "auth_register" | "auth_recovery";
+  action:
+    | "auth_login"
+    | "auth_register"
+    | "auth_register_google"
+    | "auth_recovery";
   resetKey: number;
   onToken(token: string | null): void;
   appearance?: TurnstileAppearance;
 }) {
+  const outerRef = useRef<HTMLDivElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const widgetIdRef = useRef<TurnstileWidgetId | null>(null);
   const [status, setStatus] = useState("Loading security verification...");
   const [canRetry, setCanRetry] = useState(false);
   const [loadAttempt, setLoadAttempt] = useState(0);
   const [interactive, setInteractive] = useState(false);
+  const [widgetSize, setWidgetSize] = useState<TurnstileSize>("flexible");
   const onTokenRef = useRef(onToken);
 
   useEffect(() => {
     onTokenRef.current = onToken;
   }, [onToken]);
+
+  useEffect(() => {
+    const outer = outerRef.current;
+    if (!outer) return;
+    let active = true;
+    const updateSize = () => {
+      if (!active) return;
+      const nextSize: TurnstileSize =
+        outer.getBoundingClientRect().width < 324 ? "compact" : "flexible";
+      setWidgetSize((currentSize) =>
+        currentSize === nextSize ? currentSize : nextSize
+      );
+    };
+    const observer = new ResizeObserver(updateSize);
+    observer.observe(outer);
+    queueMicrotask(updateSize);
+    return () => {
+      active = false;
+      observer.disconnect();
+    };
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -128,6 +157,7 @@ export function TurnstileChallenge({
           action,
           theme: "dark",
           appearance,
+          size: widgetSize,
           "response-field": false,
           callback(token) {
             if (!active) return;
@@ -182,7 +212,7 @@ export function TurnstileChallenge({
       widgetIdRef.current = null;
       if (widgetId && window.turnstile) window.turnstile.remove(widgetId);
     };
-  }, [action, appearance, loadAttempt, siteKey]);
+  }, [action, appearance, loadAttempt, siteKey, widgetSize]);
 
   useEffect(() => {
     const widgetId = widgetIdRef.current;
@@ -211,6 +241,7 @@ export function TurnstileChallenge({
 
   return (
     <div
+      ref={outerRef}
       data-turnstile-appearance={appearance}
       className={showChallengeChrome
         ? "rounded-2xl border border-white/10 bg-black/25 p-3"
@@ -218,7 +249,9 @@ export function TurnstileChallenge({
     >
       <div
         ref={containerRef}
-        className={showChallengeChrome ? "min-h-[65px] overflow-hidden" : "overflow-hidden"}
+        className={showChallengeChrome
+          ? "min-h-[65px] w-full min-w-0"
+          : "w-full min-w-0 overflow-hidden"}
       />
       <p
         className={showChallengeChrome

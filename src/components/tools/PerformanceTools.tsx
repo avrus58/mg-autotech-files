@@ -25,6 +25,7 @@ import {
   type PerformanceLogPoint,
 } from "@/lib/performanceReport";
 import { LocalizedHomepageTree } from "@/lib/homepageLocalization";
+import { PublicLogSnapshot } from "@/components/tools/PublicLogSnapshot";
 
 export type PerformanceToolsMode = "combined" | "calculator" | "log";
 
@@ -32,6 +33,18 @@ export function PerformanceTools({
   mode = "combined",
 }: {
   mode?: PerformanceToolsMode;
+}) {
+  if (mode === "combined") {
+    return <PublicLogSnapshot />;
+  }
+
+  return <DetailedPerformanceTools mode={mode} />;
+}
+
+function DetailedPerformanceTools({
+  mode,
+}: {
+  mode: Exclude<PerformanceToolsMode, "combined">;
 }) {
   const [torqueNm, setTorqueNm] = useState(430);
   const [rpm, setRpm] = useState(3200);
@@ -134,7 +147,7 @@ export function PerformanceTools({
           </div>
         </div>
 
-        <div className={`grid min-w-0 items-start gap-6 ${mode === "combined" ? "lg:grid-cols-[0.78fr_1.22fr]" : "mx-auto max-w-5xl"}`}>
+        <div className="mx-auto grid min-w-0 max-w-5xl items-start gap-6">
           {showCalculator && <div className="min-w-0 overflow-hidden rounded-[1.5rem] border border-white/10 bg-white/[0.04] p-4 shadow-2xl shadow-black/20 sm:rounded-[2rem] sm:p-6">
             <div className="mb-5 flex min-w-0 items-start gap-3">
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-red-800/50 bg-red-950/30 text-red-400">

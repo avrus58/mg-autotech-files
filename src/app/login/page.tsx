@@ -5,11 +5,12 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   getAuthenticatedHome,
-  getAuthRedirect,
   signOutIfEmailUnverified,
 } from "@/lib/authGuards";
 import { TurnstileChallenge } from "@/components/auth/TurnstileChallenge";
 import { DeviceVerificationPanel } from "@/components/auth/DeviceVerificationPanel";
+import { GoogleIdentityButton } from "@/components/auth/GoogleIdentityButton";
+import { AuthBackdrop } from "@/components/auth/AuthBackdrop";
 import {
   AUTH_CAPTCHA_REQUIRED_MESSAGE,
   authCaptchaBlocksSubmission,
@@ -28,15 +29,14 @@ import {
   recordAuthLoginFailure,
 } from "@/lib/authLoginProtection";
 import { supabase } from "@/lib/supabaseClient";
+import { getPublicGoogleIdentityConfig } from "@/lib/googleIdentity";
 import {
   ArrowRight,
-  Cpu,
   Lock,
   Loader2,
   Mail,
   ShieldCheck,
   Upload,
-  Zap,
 } from "lucide-react";
 
 function getRequestedRedirect() {
@@ -49,10 +49,13 @@ function getRequestedRedirect() {
 export default function LoginPage() {
   const router = useRouter();
   const authCaptchaConfig = getPublicAuthCaptchaConfig();
+  const googleIdentityConfig = getPublicGoogleIdentityConfig();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
+  const [messageIsSuccess, setMessageIsSuccess] = useState(false);
+  const [googleMessage, setGoogleMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [deviceVerificationNextPath, setDeviceVerificationNextPath] = useState<string | null>(null);
@@ -107,6 +110,7 @@ export default function LoginPage() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const requestedRedirect = getRequestedRedirect();
+    const querySuccess = params.get("reset") === "success";
     const queryMessage = params.get("verify_email") === "1"
       ? "Please verify your e-mail address before accessing your account."
       : params.get("reset") === "success"
@@ -122,11 +126,13 @@ export default function LoginPage() {
       if (!active) return;
 
       if (!user) {
+        setMessageIsSuccess(querySuccess);
         setMessage(queryMessage);
         return;
       }
 
       if (await signOutIfEmailUnverified(user)) {
+        setMessageIsSuccess(false);
         setMessage("Please verify your e-mail address before accessing your account.");
         return;
       }
@@ -149,6 +155,7 @@ export default function LoginPage() {
     e.preventDefault();
 
     if (loading || authRequestInFlightRef.current) return;
+    setMessageIsSuccess(false);
 
     let requestCaptchaToken: string | undefined;
     try {
@@ -224,32 +231,82 @@ export default function LoginPage() {
     setLoading(false);
   };
 
-  const handleGoogleLogin = async () => {
+  const handleGoogleLogin = async (credential: string, nonce: string) => {
     if (googleLoading || loading || authRequestInFlightRef.current) return;
 
-    setGoogleLoading(true);
-    setMessage("");
-
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: getAuthRedirect(
-          `/auth/callback?next=${encodeURIComponent(getRequestedRedirect() ?? "/dashboard")}`
-        ),
-      },
-    });
-
-    if (error) {
-      setMessage(error.message);
-      setGoogleLoading(false);
+    if (googleIdentityConfig.status !== "ready") {
+      setGoogleMessage(
+        googleIdentityConfig.status === "misconfigured"
+          ? googleIdentityConfig.message
+          : "Google sign-in is temporarily unavailable. You can continue with e-mail."
+      );
+      return;
     }
+
+    let requestCaptchaToken: string | undefined;
+    try {
+      requestCaptchaToken = getAuthCaptchaToken(
+        authCaptchaConfig,
+        captchaToken
+      );
+    } catch (error) {
+      setGoogleMessage(
+        error instanceof Error ? error.message : "Security verification failed."
+      );
+      setCaptchaResetKey((value) => value + 1);
+      return;
+    }
+
+    authRequestInFlightRef.current = true;
+    if (requestCaptchaToken) setCaptchaToken(null);
+    setGoogleLoading(true);
+    setGoogleMessage("");
+
+    const response = await Promise.resolve()
+      .then(() =>
+        supabase.auth.signInWithIdToken({
+          provider: "google",
+          token: credential,
+          nonce,
+          ...(requestCaptchaToken
+            ? { options: { captchaToken: requestCaptchaToken } }
+            : {}),
+        })
+      )
+      .catch(() => null)
+      .finally(() => {
+        if (!requestCaptchaToken) return;
+        setCaptchaResetKey((value) => value + 1);
+      });
+
+    if (!response) {
+      authRequestInFlightRef.current = false;
+      setGoogleMessage("Google sign-in could not be completed. Please try again.");
+      setGoogleLoading(false);
+      return;
+    }
+
+    const { data, error } = response;
+
+    if (error || !data.session) {
+      authRequestInFlightRef.current = false;
+      setGoogleMessage("Google sign-in could not be completed. Please try again.");
+      setGoogleLoading(false);
+      return;
+    }
+
+    clearAuthLoginFailures(getBrowserAuthLoginFailureStorage());
+    setPasswordFailureState(EMPTY_AUTH_LOGIN_FAILURE_STATE);
+    router.replace(
+      `/auth/callback?next=${encodeURIComponent(getRequestedRedirect() ?? "/dashboard")}`
+    );
   };
 
   if (deviceVerificationNextPath) {
     return (
-      <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#050505] px-4 py-10 text-white">
-        <div className="fixed inset-0 -z-10 bg-[radial-gradient(circle_at_20%_0%,rgba(160,18,28,0.28),transparent_32%),radial-gradient(circle_at_80%_100%,rgba(160,18,28,0.18),transparent_30%),linear-gradient(135deg,#050505,#0d0d0f_48%,#160608)]" />
-        <div className="w-full max-w-md rounded-[2rem] border border-white/10 bg-white/[0.04] p-7 shadow-2xl shadow-black/50 backdrop-blur-xl sm:p-9">
+      <main className="relative isolate flex min-h-screen items-center justify-center overflow-x-hidden bg-[#050505] px-3 py-5 text-white sm:px-4">
+        <AuthBackdrop />
+        <div className="relative z-10 w-full max-w-md rounded-[1.6rem] border border-white/10 bg-white/[0.04] p-7 shadow-2xl shadow-black/50 backdrop-blur-xl sm:p-9">
           <DeviceVerificationPanel
             nextPath={deviceVerificationNextPath}
             allowRememberDevice={!passwordChangeVerification}
@@ -260,126 +317,93 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#050505] px-4 py-10 text-white">
-      <div className="fixed inset-0 -z-10 bg-[radial-gradient(circle_at_20%_0%,rgba(160,18,28,0.28),transparent_32%),radial-gradient(circle_at_80%_100%,rgba(160,18,28,0.18),transparent_30%),linear-gradient(135deg,#050505,#0d0d0f_48%,#160608)]" />
+    <main className="relative isolate flex min-h-screen items-start justify-center overflow-x-hidden bg-[#050505] px-3 py-3 text-white sm:px-4 sm:py-5 lg:items-center lg:py-6">
+      <AuthBackdrop />
 
-      <div className="grid w-full max-w-6xl overflow-hidden rounded-[2rem] border border-white/10 bg-white/[0.04] shadow-2xl shadow-black/50 backdrop-blur-xl lg:grid-cols-[1.1fr_0.9fr]">
-        <section className="relative hidden min-h-[620px] overflow-hidden border-r border-white/10 bg-black/40 p-10 lg:block">
-          <div className="absolute -left-20 -top-20 h-72 w-72 rounded-full bg-red-700/20 blur-3xl" />
-          <div className="absolute -bottom-20 -right-20 h-72 w-72 rounded-full bg-red-950/40 blur-3xl" />
-
-          <Link href="/" className="relative flex items-center gap-3">
-            <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl border border-red-800/50 bg-[#111] shadow-lg shadow-red-950/40">
-              <Upload className="h-8 w-8 text-red-600" />
+      <div className="relative z-10 w-full max-w-[560px] overflow-hidden rounded-[1.4rem] border border-white/10 bg-white/[0.04] shadow-2xl shadow-black/50 backdrop-blur-xl lg:rounded-[1.6rem]">
+        <header className="flex items-center justify-between gap-4 border-b border-white/10 bg-black/25 px-4 py-3.5 sm:px-6">
+          <Link
+            href="/"
+            className="flex min-w-0 items-center gap-3 rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-red-500/60"
+          >
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-red-800/50 bg-[#111] shadow-lg shadow-red-950/30">
+              <Upload className="h-5 w-5 text-red-600" />
             </div>
-
-            <div>
-              <div className="text-2xl font-black tracking-wide">
+            <div className="min-w-0">
+              <div className="text-lg font-black tracking-wide">
                 MG <span className="text-red-600">AUTOTECH</span>
               </div>
-              <div className="text-xs text-zinc-400">
-                ECU File Service Platform
+              <div className="truncate text-[11px] text-zinc-500">
+                Customer Login
               </div>
             </div>
           </Link>
 
-          <div className="relative mt-20">
-            <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-red-800/50 bg-red-950/25 px-4 py-2 text-sm font-bold text-red-100">
-              <ShieldCheck className="h-4 w-4 text-red-500" />
-              Secure customer access
-            </div>
-
-            <h1 className="max-w-xl text-5xl font-black leading-tight">
-              Professional ECU file service starts here.
-            </h1>
-
-            <p className="mt-6 max-w-lg leading-8 text-zinc-400">
-              Login to upload files, create tuning requests, manage credits and
-              track your MG AutoTech orders in one secure dashboard.
-            </p>
+          <div className="hidden shrink-0 items-center gap-2 rounded-full border border-red-900/40 bg-red-950/20 px-3 py-1.5 text-[11px] font-bold text-red-100 sm:inline-flex">
+            <ShieldCheck className="h-3.5 w-3.5 text-red-500" />
+            Secure customer access
           </div>
+        </header>
 
-          <div className="relative mt-14 grid gap-4">
-            <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
-              <Cpu className="mb-3 h-6 w-6 text-red-500" />
-              <div className="font-black">Vehicle Intelligence</div>
-              <p className="mt-2 text-sm leading-6 text-zinc-500">
-                Dynamic vehicle database with ECU, Stage and service data.
-              </p>
-            </div>
-
-            <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
-              <Zap className="mb-3 h-6 w-6 text-red-500" />
-              <div className="font-black">Fast File Workflow</div>
-              <p className="mt-2 text-sm leading-6 text-zinc-500">
-                Upload original files and receive modified files through your
-                dashboard.
-              </p>
-            </div>
-          </div>
-        </section>
-
-        <section className="p-6 sm:p-10">
-          <div className="mx-auto max-w-md">
-            <div className="mb-8 lg:hidden">
-              <Link href="/" className="flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-red-800/50 bg-[#111]">
-                  <Upload className="h-7 w-7 text-red-600" />
-                </div>
-                <div>
-                  <div className="text-xl font-black">
-                    MG <span className="text-red-600">AUTOTECH</span>
-                  </div>
-                  <div className="text-xs text-zinc-400">Customer Login</div>
-                </div>
-              </Link>
-            </div>
-
-            <div className="mb-8">
-              <div className="mb-3 text-sm font-bold text-red-400">
+        <section className="p-4 sm:p-6 lg:p-7">
+          <div className="mx-auto max-w-[440px]">
+            <div className="mb-6">
+              <div className="mb-2 text-xs font-black uppercase tracking-[0.16em] text-red-400">
                 Welcome back
               </div>
-              <h2 className="text-4xl font-black">Login</h2>
-              <p className="mt-3 leading-7 text-zinc-400">
+              <h1 className="text-3xl font-black leading-tight">Login</h1>
+              <p className="mt-2 text-sm leading-6 text-zinc-400">
                 Access your file service dashboard and continue your ECU tuning
                 requests.
               </p>
             </div>
 
             <form onSubmit={handleLogin} className="space-y-4">
-              <label className="block">
-                <div className="mb-2 text-xs font-black uppercase tracking-[0.16em] text-zinc-500">
+              <div>
+                <label
+                  htmlFor="login-email"
+                  className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-zinc-500"
+                >
                   E-mail
-                </div>
+                </label>
                 <div className="relative">
-                  <Mail className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-zinc-500" />
+                  <Mail className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-zinc-500" />
                   <input
+                    id="login-email"
+                    name="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="you@example.com"
                     type="email"
-                    className="h-14 w-full rounded-2xl border border-white/10 bg-black/35 pl-12 pr-4 text-sm font-bold text-white outline-none transition placeholder:text-zinc-600 focus:border-red-700"
+                    autoComplete="email"
+                    className="h-12 w-full rounded-xl border border-white/10 bg-black/35 pl-12 pr-4 text-sm font-bold text-white outline-none transition placeholder:text-zinc-600 hover:border-white/20 focus:border-red-700 focus-visible:ring-2 focus-visible:ring-red-500/25"
                     required
                   />
                 </div>
-              </label>
+              </div>
 
-              <label className="block">
-                <div className="mb-2 text-xs font-black uppercase tracking-[0.16em] text-zinc-500">
+              <div>
+                <label
+                  htmlFor="login-password"
+                  className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-zinc-500"
+                >
                   Password
-                </div>
+                </label>
                 <div className="relative">
-                  <Lock className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-zinc-500" />
+                  <Lock className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-zinc-500" />
                   <input
+                    id="login-password"
+                    name="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Your password"
                     type="password"
-                    className="h-14 w-full rounded-2xl border border-white/10 bg-black/35 pl-12 pr-4 text-sm font-bold text-white outline-none transition placeholder:text-zinc-600 focus:border-red-700"
+                    autoComplete="current-password"
+                    className="h-12 w-full rounded-xl border border-white/10 bg-black/35 pl-12 pr-4 text-sm font-bold text-white outline-none transition placeholder:text-zinc-600 hover:border-white/20 focus:border-red-700 focus-visible:ring-2 focus-visible:ring-red-500/25"
                     required
                   />
                 </div>
-              </label>
+              </div>
 
               {visibleCaptchaRequired && (
                 <div
@@ -412,11 +436,12 @@ export default function LoginPage() {
               )}
 
               <button
+                type="submit"
                 disabled={
                   loading ||
                   authCaptchaBlocksSubmission(authCaptchaConfig, captchaToken)
                 }
-                className="group flex h-14 w-full items-center justify-center rounded-2xl bg-[#b1121b] px-5 font-black text-white shadow-xl shadow-red-950/40 transition hover:bg-[#c91824] disabled:cursor-not-allowed disabled:opacity-60"
+                className="group flex h-12 w-full items-center justify-center rounded-xl bg-[#b1121b] px-5 font-black text-white shadow-xl shadow-red-950/40 outline-none transition hover:bg-[#c91824] focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0b0b0c] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {loading ? (
                   <>
@@ -438,37 +463,94 @@ export default function LoginPage() {
               <span className="h-px flex-1 bg-white/10" />
             </div>
 
-            <button
-              type="button"
-              onClick={handleGoogleLogin}
-              disabled={googleLoading || loading}
-              className="mt-4 flex h-14 w-full items-center justify-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] px-5 font-black text-white transition hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {googleLoading ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
-              ) : (
-                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white text-sm font-black text-black">
-                  G
-                </span>
+            <div className="mt-4 space-y-3">
+              {googleIdentityConfig.status === "ready" &&
+                authCaptchaConfig.status !== "misconfigured" && (
+                  <GoogleIdentityButton
+                    clientId={googleIdentityConfig.clientId}
+                    disabled={
+                      googleLoading ||
+                      loading ||
+                      authCaptchaBlocksSubmission(
+                        authCaptchaConfig,
+                        captchaToken
+                      )
+                    }
+                    loading={googleLoading}
+                    resetKey={captchaResetKey}
+                    onCredential={(credential, nonce) =>
+                      void handleGoogleLogin(credential, nonce)
+                    }
+                    onReady={() =>
+                      setGoogleMessage((current) =>
+                        current.startsWith("Google sign-in could not be loaded")
+                          ? ""
+                          : current
+                      )
+                    }
+                    onError={(reason) => {
+                      if (reason === "credential") {
+                        setCaptchaToken(null);
+                        setCaptchaResetKey((value) => value + 1);
+                      }
+                      setGoogleMessage(
+                        reason === "load"
+                          ? "Google sign-in could not be loaded. You can retry or continue with e-mail."
+                          : "Google sign-in could not be completed. Please try again."
+                      );
+                    }}
+                  />
+                )}
+
+              {googleIdentityConfig.status === "misconfigured" && (
+                <div
+                  role="alert"
+                  className="rounded-xl border border-red-800/50 bg-red-950/30 p-4 text-sm text-red-100"
+                >
+                  {googleIdentityConfig.message}
+                </div>
               )}
-              Continue with Google
-            </button>
+
+              {googleMessage && (
+                <div
+                  role="alert"
+                  aria-live="assertive"
+                  className="rounded-xl border border-red-800/50 bg-red-950/30 p-4 text-sm text-red-100"
+                >
+                  {googleMessage}
+                </div>
+              )}
+            </div>
 
             <div className="mt-5 text-center">
-              <Link href="/forgot-password" className="text-sm font-black text-red-400">
+              <Link
+                href="/forgot-password"
+                className="rounded-md text-sm font-black text-red-400 outline-none transition hover:text-red-300 focus-visible:ring-2 focus-visible:ring-red-500/50"
+              >
                 Forgot password?
               </Link>
             </div>
 
             {message && (
-              <div className="mt-5 rounded-2xl border border-red-800/50 bg-red-950/30 p-4 text-sm text-red-100">
+              <div
+                role={messageIsSuccess ? "status" : "alert"}
+                aria-live={messageIsSuccess ? "polite" : "assertive"}
+                className={`mt-5 rounded-xl border p-4 text-sm ${
+                  messageIsSuccess
+                    ? "border-green-800/50 bg-green-950/25 text-green-100"
+                    : "border-red-800/50 bg-red-950/30 text-red-100"
+                }`}
+              >
                 {message}
               </div>
             )}
 
-            <div className="mt-8 rounded-2xl border border-white/10 bg-black/30 p-5 text-center text-sm text-zinc-400">
+            <div className="mt-6 text-center text-sm text-zinc-400">
               No account yet?{" "}
-              <Link href="/register" className="font-black text-red-400">
+              <Link
+                href="/register"
+                className="rounded-md font-black text-red-400 outline-none transition hover:text-red-300 focus-visible:ring-2 focus-visible:ring-red-500/50"
+              >
                 Create customer account
               </Link>
             </div>

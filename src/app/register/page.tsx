@@ -17,13 +17,28 @@ import {
   signOutIfEmailUnverified,
 } from "@/lib/authGuards";
 import { TurnstileChallenge } from "@/components/auth/TurnstileChallenge";
+import { GoogleIdentityButton } from "@/components/auth/GoogleIdentityButton";
+import { AuthBackdrop } from "@/components/auth/AuthBackdrop";
+import { CountrySelect } from "@/components/CountrySelect";
+import { InternationalPhoneField } from "@/components/InternationalPhoneField";
 import {
   authCaptchaBlocksSubmission,
   getAuthCaptchaToken,
   getPublicAuthCaptchaConfig,
 } from "@/lib/authCaptcha";
 import { supabase } from "@/lib/supabaseClient";
+import { getPublicGoogleIdentityConfig } from "@/lib/googleIdentity";
 import { resolveBrowserTransactionalEmailLanguage } from "@/lib/email/language";
+import {
+  normalizeCountryCode,
+  normalizeCountryName,
+  resolveDetectedCountrySelection,
+} from "@/lib/countries";
+import {
+  formatInternationalPhone,
+  getCountryCallingCode,
+  resolveDetectedPhoneCountrySelection,
+} from "@/lib/phoneCountries";
 import { recordGrowthAccountCreated } from "@/lib/growth/client";
 import {
   beginRegistrationConversion,
@@ -32,6 +47,7 @@ import {
 import {
   createRegistrationProfileDraft,
   OAUTH_REGISTRATION_PROFILE_KEY,
+  OAUTH_REGISTRATION_PROVIDER_KEY,
 } from "@/lib/registrationProfile";
 import {
   CUSTOMER_REPLACEMENT_PASSWORD_MAX_LENGTH,
@@ -43,22 +59,20 @@ import {
   ArrowRight,
   Building2,
   CheckCircle2,
-  Cpu,
   FileCheck2,
   Lock,
   Loader2,
   Mail,
   MapPin,
-  Phone,
   ShieldCheck,
   Upload,
   User,
-  Zap,
   RefreshCw,
 } from "lucide-react";
 
 type AccountType = "private" | "company";
 type StepId = 1 | 2 | 3;
+type CountryDetectionState = "detecting" | "detected" | "manual";
 
 function getSelectedEmailLanguage() {
   return resolveBrowserTransactionalEmailLanguage({
@@ -66,6 +80,15 @@ function getSelectedEmailLanguage() {
     cookieHeader: document.cookie,
     browserLocale: window.navigator.language,
   });
+}
+
+function clearOAuthRegistrationDraft() {
+  try {
+    window.sessionStorage.removeItem(OAUTH_REGISTRATION_PROVIDER_KEY);
+    window.sessionStorage.removeItem(OAUTH_REGISTRATION_PROFILE_KEY);
+  } catch {
+    // Browser privacy settings may deny storage; auth cleanup must still finish.
+  }
 }
 
 const steps: { id: StepId; label: string; subLabel: string }[] = [
@@ -97,22 +120,27 @@ const accountCards: {
 export default function RegisterPage() {
   const router = useRouter();
   const authCaptchaConfig = getPublicAuthCaptchaConfig();
+  const googleIdentityConfig = getPublicGoogleIdentityConfig();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
+  const [phoneCountryCode, setPhoneCountryCode] = useState("");
   const [companyName, setCompanyName] = useState("");
   const [taxNumber, setTaxNumber] = useState("");
   const [invoiceEmail, setInvoiceEmail] = useState("");
   const [street, setStreet] = useState("");
   const [postalCode, setPostalCode] = useState("");
   const [city, setCity] = useState("");
-  const [country, setCountry] = useState("Germany");
+  const [country, setCountry] = useState("");
+  const [countryDetection, setCountryDetection] =
+    useState<CountryDetectionState>("detecting");
   const [preferredContact, setPreferredContact] = useState("email");
   const [accountType, setAccountType] = useState<AccountType>("company");
   const [step, setStep] = useState<StepId>(1);
   const [message, setMessage] = useState("");
+  const [googleMessage, setGoogleMessage] = useState("");
   const [success, setSuccess] = useState(false);
   const [verificationPending, setVerificationPending] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -122,6 +150,20 @@ export default function RegisterPage() {
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [captchaResetKey, setCaptchaResetKey] = useState(0);
   const authRequestInFlightRef = useRef(false);
+  const countryManuallySelectedRef = useRef(false);
+  const phoneCountryManuallySelectedRef = useRef(false);
+  const countrySelectRef = useRef<HTMLSelectElement>(null);
+  const stepPanelRef = useRef<HTMLDivElement>(null);
+  const previousStepRef = useRef<StepId>(step);
+
+  useEffect(() => {
+    if (previousStepRef.current === step) return;
+    previousStepRef.current = step;
+    const frameId = window.requestAnimationFrame(() => {
+      stepPanelRef.current?.focus();
+    });
+    return () => window.cancelAnimationFrame(frameId);
+  }, [step]);
 
   useEffect(() => {
     let active = true;
@@ -153,15 +195,78 @@ export default function RegisterPage() {
     };
   }, [router]);
 
+  useEffect(() => {
+    let active = true;
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 4_000);
+
+    void fetch("/api/public/country", {
+      cache: "no-store",
+      signal: controller.signal,
+    })
+      .then(async (response) => {
+        if (!response.ok) return null;
+        return (await response.json()) as { countryCode?: unknown };
+      })
+      .then((payload) => {
+        if (!active) return;
+        const detectedCountryCode = normalizeCountryCode(payload?.countryCode);
+        if (!detectedCountryCode || countryManuallySelectedRef.current) {
+          setCountryDetection("manual");
+          return;
+        }
+
+        setCountry((currentCountry) =>
+          resolveDetectedCountrySelection({
+            currentCountry,
+            detectedCountryCode,
+            manuallySelected: countryManuallySelectedRef.current,
+          })
+        );
+        setPhoneCountryCode((currentCountryCode) =>
+          resolveDetectedPhoneCountrySelection({
+            currentCountryCode,
+            detectedCountryCode,
+            manuallySelected: phoneCountryManuallySelectedRef.current,
+          })
+        );
+        setCountryDetection("detected");
+      })
+      .catch(() => {
+        if (active) setCountryDetection("manual");
+      })
+      .finally(() => window.clearTimeout(timeout));
+
+    return () => {
+      active = false;
+      window.clearTimeout(timeout);
+      controller.abort();
+    };
+  }, []);
+
   const cleanFullName = fullName.trim();
   const cleanCompanyName = companyName.trim();
   const cleanEmail = email.trim().toLowerCase();
   const displayName =
     accountType === "company" ? cleanCompanyName || cleanFullName : cleanFullName;
+  const formattedPhone = formatInternationalPhone({
+    countryCode: phoneCountryCode,
+    nationalNumber: phone,
+  });
+  const countryHint =
+    countryDetection === "detecting"
+      ? "Detecting your country..."
+      : countryDetection === "detected"
+        ? "Country selected automatically. You can change it."
+        : "Select the country used for your customer profile.";
 
   const changeStep = (nextStep: StepId) => {
     if (loading || resendingVerification || authRequestInFlightRef.current) return;
-    if (nextStep !== 3) setCaptchaToken(null);
+    if (nextStep !== step) {
+      setCaptchaToken(null);
+      setCaptchaResetKey((value) => value + 1);
+      setGoogleMessage("");
+    }
     setStep(nextStep);
   };
 
@@ -173,6 +278,20 @@ export default function RegisterPage() {
 
     if (accountType === "company" && !cleanCompanyName) {
       setMessage("Please enter your company name.");
+      return false;
+    }
+
+    if (phone.trim() && !formattedPhone) {
+      setMessage(
+        "Please check the calling code and phone number. For special carrier plans, enter the complete international number beginning with +."
+      );
+      return false;
+    }
+
+    if (!normalizeCountryName(country)) {
+      setMessage("Please select your country.");
+      setCountryDetection("manual");
+      window.setTimeout(() => countrySelectRef.current?.focus(), 0);
       return false;
     }
 
@@ -220,22 +339,27 @@ export default function RegisterPage() {
 
     if (loading || resendingVerification || authRequestInFlightRef.current) return;
 
-    setLoading(true);
     setMessage("");
     setSuccess(false);
     setVerificationPending(false);
 
     if (!validateAccountStep()) {
       changeStep(1);
-      setLoading(false);
       return;
     }
 
     if (!validateLoginStep()) {
       changeStep(2);
-      setLoading(false);
       return;
     }
+
+    const selectedCountry = normalizeCountryName(country);
+    if (!selectedCountry) {
+      changeStep(1);
+      return;
+    }
+
+    setLoading(true);
 
     let requestCaptchaToken: string | undefined;
     try {
@@ -254,32 +378,37 @@ export default function RegisterPage() {
     authRequestInFlightRef.current = true;
     if (requestCaptchaToken) setCaptchaToken(null);
 
-    beginRegistrationConversion();
-    const response = await supabase.auth.signUp({
-        email: cleanEmail,
-        password,
-        options: {
-          emailRedirectTo: getAuthRedirect("/auth/callback?next=/dashboard"),
-          ...(requestCaptchaToken
-            ? { captchaToken: requestCaptchaToken }
-            : {}),
-          data: {
-            full_name: cleanFullName,
-            account_type: accountType,
-            company_name: accountType === "company" ? cleanCompanyName : null,
-            phone: phone.trim() || null,
-            vat_id: accountType === "company" ? taxNumber.trim() || null : null,
-            tax_number: accountType === "company" ? taxNumber.trim() || null : null,
-            invoice_email: invoiceEmail.trim() || cleanEmail,
-            street: street.trim() || null,
-            postal_code: postalCode.trim() || null,
-            city: city.trim() || null,
-            country: country.trim() || "Germany",
-            preferred_contact: preferredContact,
-            email_language: getSelectedEmailLanguage(),
-            role: "customer",
+    const response = await Promise.resolve()
+      .then(() => {
+        beginRegistrationConversion();
+        return supabase.auth.signUp({
+          email: cleanEmail,
+          password,
+          options: {
+            emailRedirectTo: getAuthRedirect("/auth/callback?next=/dashboard"),
+            ...(requestCaptchaToken
+              ? { captchaToken: requestCaptchaToken }
+              : {}),
+            data: {
+              full_name: cleanFullName,
+              account_type: accountType,
+              company_name: accountType === "company" ? cleanCompanyName : null,
+              phone: formattedPhone,
+              vat_id: accountType === "company" ? taxNumber.trim() || null : null,
+              tax_number: accountType === "company" ? taxNumber.trim() || null : null,
+              invoice_email: invoiceEmail.trim() || cleanEmail,
+              street: street.trim() || null,
+              postal_code: postalCode.trim() || null,
+              city: city.trim() || null,
+              country: selectedCountry,
+              preferred_contact: preferredContact,
+              email_language: getSelectedEmailLanguage(),
+              registration_country_required: false,
+              registration_country_confirmed: true,
+              role: "customer",
+            },
           },
-        },
+        });
       })
       .catch(() => null)
       .finally(() => {
@@ -382,7 +511,7 @@ export default function RegisterPage() {
     );
   };
 
-  const handleGoogleRegister = async () => {
+  const handleGoogleRegister = async (credential: string, nonce: string) => {
     if (
       googleLoading ||
       loading ||
@@ -395,40 +524,93 @@ export default function RegisterPage() {
       return;
     }
 
-    setGoogleLoading(true);
-    setMessage("");
-    setSuccess(false);
-    beginRegistrationConversion();
-
-    window.sessionStorage.setItem("mg_register_oauth_provider", "google");
-    const profileDraft = createRegistrationProfileDraft({
-      fullName: cleanFullName,
-      accountType,
-      companyName: cleanCompanyName,
-      phone,
-      taxNumber,
-      emailLanguage: getSelectedEmailLanguage(),
-    });
-    if (profileDraft) {
-      window.sessionStorage.setItem(
-        OAUTH_REGISTRATION_PROFILE_KEY,
-        JSON.stringify(profileDraft)
+    if (googleIdentityConfig.status !== "ready") {
+      setGoogleMessage(
+        googleIdentityConfig.status === "misconfigured"
+          ? googleIdentityConfig.message
+          : "Google account creation is temporarily unavailable. You can continue with e-mail."
       );
+      return;
     }
 
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: getAuthRedirect("/auth/callback?next=/dashboard"),
-      },
-    });
+    const selectedCountry = normalizeCountryName(country);
+    if (!selectedCountry) {
+      changeStep(1);
+      return;
+    }
 
-    if (error) {
-      window.sessionStorage.removeItem("mg_register_oauth_provider");
-      window.sessionStorage.removeItem(OAUTH_REGISTRATION_PROFILE_KEY);
-      setMessage(error.message);
+    let requestCaptchaToken: string | undefined;
+    try {
+      requestCaptchaToken = getAuthCaptchaToken(
+        authCaptchaConfig,
+        captchaToken
+      );
+    } catch (error) {
+      setGoogleMessage(
+        error instanceof Error ? error.message : "Security verification failed."
+      );
+      setCaptchaResetKey((value) => value + 1);
+      return;
+    }
+
+    authRequestInFlightRef.current = true;
+    if (requestCaptchaToken) setCaptchaToken(null);
+    setGoogleLoading(true);
+    setGoogleMessage("");
+    setSuccess(false);
+    const response = await Promise.resolve()
+      .then(() => {
+        beginRegistrationConversion();
+        window.sessionStorage.setItem(OAUTH_REGISTRATION_PROVIDER_KEY, "google");
+        const profileDraft = createRegistrationProfileDraft({
+          fullName: cleanFullName,
+          accountType,
+          companyName: cleanCompanyName,
+          phone: formattedPhone ?? "",
+          taxNumber,
+          country: selectedCountry,
+          emailLanguage: getSelectedEmailLanguage(),
+        });
+        if (!profileDraft) throw new Error("registration-profile");
+        window.sessionStorage.setItem(
+          OAUTH_REGISTRATION_PROFILE_KEY,
+          JSON.stringify(profileDraft)
+        );
+
+        return supabase.auth.signInWithIdToken({
+          provider: "google",
+          token: credential,
+          nonce,
+          ...(requestCaptchaToken
+            ? { options: { captchaToken: requestCaptchaToken } }
+            : {}),
+        });
+      })
+      .catch(() => null)
+      .finally(() => {
+        if (!requestCaptchaToken) return;
+        setCaptchaResetKey((value) => value + 1);
+      });
+
+    if (!response) {
+      authRequestInFlightRef.current = false;
+      clearOAuthRegistrationDraft();
+      setGoogleMessage("Google account creation could not be completed. Please try again.");
       setGoogleLoading(false);
+      return;
     }
+
+    const { data, error } = response;
+
+    if (error || !data.session) {
+      authRequestInFlightRef.current = false;
+      clearOAuthRegistrationDraft();
+      setGoogleMessage("Google account creation could not be completed. Please try again.");
+      setGoogleLoading(false);
+      return;
+    }
+
+    router.replace("/auth/callback?next=/dashboard");
   };
 
   if (checkingAuth) {
@@ -440,101 +622,37 @@ export default function RegisterPage() {
   }
 
   return (
-    <main className="relative flex min-h-screen items-start justify-center overflow-x-hidden bg-[#050505] px-3 py-3 text-white sm:px-4 sm:py-5 lg:items-center lg:py-2">
-      <div className="fixed inset-0 -z-10 bg-[radial-gradient(circle_at_18%_0%,rgba(177,18,27,0.28),transparent_34%),radial-gradient(circle_at_82%_100%,rgba(177,18,27,0.18),transparent_30%),linear-gradient(135deg,#050505,#0d0d0f_48%,#160608)]" />
+    <main className="relative isolate flex min-h-screen items-start justify-center overflow-x-hidden bg-[#050505] px-3 py-3 text-white sm:px-4 sm:py-5 lg:items-center lg:py-6">
+      <AuthBackdrop />
 
-      <div className="grid w-full max-w-[1180px] overflow-hidden rounded-[1.4rem] border border-white/10 bg-white/[0.04] shadow-2xl shadow-black/50 backdrop-blur-xl lg:grid-cols-[0.84fr_1.16fr] lg:rounded-[1.6rem]">
-        <section className="relative hidden min-h-[680px] overflow-hidden border-r border-white/10 bg-black/40 p-5 lg:block 2xl:min-h-[710px] 2xl:p-8">
-          <div className="absolute -left-24 -top-24 h-80 w-80 rounded-full bg-red-700/20 blur-3xl" />
-          <div className="absolute -bottom-24 -right-20 h-80 w-80 rounded-full bg-red-950/40 blur-3xl" />
-          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-red-500/60 to-transparent" />
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_68%_34%,rgba(177,18,27,0.16),transparent_22%),linear-gradient(140deg,transparent,rgba(255,255,255,0.04))]" />
-
-          <Link href="/" className="relative flex items-center gap-3">
-            <div className="relative flex h-12 w-12 items-center justify-center rounded-xl border border-red-800/50 bg-[#111] shadow-lg shadow-red-950/40">
-              <Upload className="h-7 w-7 text-red-600" />
+      <div className="relative z-10 w-full max-w-[760px] overflow-hidden rounded-[1.4rem] border border-white/10 bg-white/[0.04] shadow-2xl shadow-black/50 backdrop-blur-xl lg:rounded-[1.6rem]">
+        <header className="flex items-center justify-between gap-4 border-b border-white/10 bg-black/25 px-4 py-3.5 sm:px-6">
+          <Link href="/" className="flex min-w-0 items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-red-800/50 bg-[#111] shadow-lg shadow-red-950/30">
+              <Upload className="h-5 w-5 text-red-600" />
             </div>
-
-            <div>
-              <div className="text-xl font-black tracking-wide">
+            <div className="min-w-0">
+              <div className="text-lg font-black tracking-wide">
                 MG <span className="text-red-600">AUTOTECH</span>
               </div>
-              <div className="text-xs text-zinc-400">
+              <div className="truncate text-[11px] text-zinc-500">
                 ECU File Service Platform
               </div>
             </div>
           </Link>
 
-          <div className="relative mt-7 2xl:mt-10">
-            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-red-800/50 bg-red-950/25 px-3 py-1.5 text-xs font-bold text-red-100">
-              <ShieldCheck className="h-4 w-4 text-red-500" />
-              Verified customer workspace
-            </div>
-
-            <h1 className="max-w-xl text-3xl font-black leading-tight">
-              File service account for workshops and drivers.
-            </h1>
-
-            <p className="mt-3 max-w-lg text-sm leading-6 text-zinc-400">
-              Create a secure workspace for ECU / TCU uploads, credit balance,
-              technical communication and completed file delivery.
-            </p>
+          <div className="hidden shrink-0 items-center gap-2 rounded-full border border-red-900/40 bg-red-950/20 px-3 py-1.5 text-[11px] font-bold text-red-100 sm:inline-flex">
+            <ShieldCheck className="h-3.5 w-3.5 text-red-500" />
+            Verified customer workspace
           </div>
+        </header>
 
-          <div className="relative mt-5 grid gap-2.5">
-            <FeatureCard
-              icon={<Cpu className="h-6 w-6" />}
-              title="Smart Vehicle Database"
-              text="Select brand, model, generation and engine with automatic ECU and performance data."
-            />
-            <FeatureCard
-              icon={<Zap className="h-6 w-6" />}
-              title="Premium File Workflow"
-              text="Submit original files, choose tuning services and receive your modified file through your dashboard."
-            />
-            <FeatureCard
-              icon={<Building2 className="h-6 w-6" />}
-              title="Private and business customers"
-              text="Built for clean order handling, credit tracking and professional ECU service communication."
-            />
-          </div>
-
-          <div className="relative mt-3 grid grid-cols-3 gap-2">
-            {["Secure upload", "Credit wallet", "Live order status"].map((item) => (
-              <div
-                key={item}
-                className="rounded-lg border border-red-900/30 bg-red-950/15 px-2 py-2 text-center text-[10px] font-black uppercase tracking-[0.1em] text-red-100"
-              >
-                {item}
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <section className="p-4 sm:p-6 2xl:p-8">
+        <section className="p-4 sm:p-6 lg:p-7">
           <div className="mx-auto max-w-[650px]">
-            <div className="mb-5 lg:hidden">
-              <Link href="/" className="flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-red-800/50 bg-[#111]">
-                  <Upload className="h-7 w-7 text-red-600" />
-                </div>
-                <div>
-                  <div className="text-xl font-black">
-                    MG <span className="text-red-600">AUTOTECH</span>
-                  </div>
-                  <div className="text-xs text-zinc-400">Customer Register</div>
-                </div>
-              </Link>
-            </div>
-
             <div className="mb-4">
-              <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-red-900/50 bg-red-950/20 px-3 py-1.5 text-xs font-black uppercase tracking-[0.16em] text-red-200">
-                <ShieldCheck className="h-4 w-4" />
-                Start your file service account
-              </div>
-              <h2 className="text-2xl font-black leading-tight">
+              <h1 className="text-2xl font-black leading-tight">
                 Create Account
-              </h2>
+              </h1>
               <p className="mt-1.5 text-sm leading-5 text-zinc-400">
                 A guided setup for private customers and professional workshops.
               </p>
@@ -542,14 +660,98 @@ export default function RegisterPage() {
 
             <StepProgress step={step} onStepChange={changeStep} />
 
-            {step === 2 && (
-              <GoogleRegisterButton
-                loading={googleLoading}
-                onClick={handleGoogleRegister}
-              />
-            )}
+            <div
+              ref={stepPanelRef}
+              role="region"
+              aria-labelledby="register-step-heading"
+              tabIndex={-1}
+              className="scroll-mt-4 outline-none"
+            >
+              <h2 id="register-step-heading" className="sr-only">
+                Step {step}: {steps.find((item) => item.id === step)?.label}
+              </h2>
 
-            <form onSubmit={handleRegister} className="space-y-4">
+              {step === 2 && (
+                <div className="mb-4 space-y-3">
+                  {googleIdentityConfig.status === "ready" &&
+                    authCaptchaConfig.status === "ready" && (
+                      <TurnstileChallenge
+                        siteKey={authCaptchaConfig.siteKey}
+                        action="auth_register_google"
+                        resetKey={captchaResetKey}
+                        onToken={setCaptchaToken}
+                        appearance="interaction-only"
+                      />
+                    )}
+
+                  {(authCaptchaConfig.status === "misconfigured" ||
+                    googleIdentityConfig.status === "misconfigured") && (
+                    <div
+                      role="alert"
+                      className="rounded-xl border border-red-800/50 bg-red-950/30 p-4 text-sm text-red-100"
+                    >
+                      {authCaptchaConfig.status === "misconfigured"
+                        ? authCaptchaConfig.message
+                        : googleIdentityConfig.status === "misconfigured"
+                          ? googleIdentityConfig.message
+                          : null}
+                    </div>
+                  )}
+
+                  {googleIdentityConfig.status === "ready" &&
+                    authCaptchaConfig.status !== "misconfigured" && (
+                      <GoogleIdentityButton
+                        clientId={googleIdentityConfig.clientId}
+                        disabled={
+                          googleLoading ||
+                          loading ||
+                          resendingVerification ||
+                          authCaptchaBlocksSubmission(
+                            authCaptchaConfig,
+                            captchaToken
+                          )
+                        }
+                        loading={googleLoading}
+                        resetKey={captchaResetKey}
+                        onCredential={(credential, nonce) =>
+                          void handleGoogleRegister(credential, nonce)
+                        }
+                        onReady={() =>
+                          setGoogleMessage((current) =>
+                            current.startsWith(
+                              "Google sign-in could not be loaded"
+                            )
+                              ? ""
+                              : current
+                          )
+                        }
+                        onError={(reason) => {
+                          if (reason === "credential") {
+                            setCaptchaToken(null);
+                            setCaptchaResetKey((value) => value + 1);
+                          }
+                          setGoogleMessage(
+                            reason === "load"
+                              ? "Google sign-in could not be loaded. You can retry or continue with e-mail."
+                              : "Google account creation could not be completed. Please try again."
+                          );
+                        }}
+                      />
+                    )}
+
+                  {googleMessage && (
+                    <div
+                      role="alert"
+                      aria-live="assertive"
+                      className="rounded-xl border border-red-800/50 bg-red-950/30 p-4 text-sm text-red-100"
+                    >
+                      {googleMessage}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <form onSubmit={handleRegister} className="space-y-4">
               {step === 1 && (
                 <div className="space-y-4">
                   <div className="grid gap-3 sm:grid-cols-2" role="group" aria-label="Customer type">
@@ -596,17 +798,35 @@ export default function RegisterPage() {
                       maxLength={120}
                       required
                     />
-                    <TextField
-                      label="Phone Number"
-                      value={phone}
-                      onChange={setPhone}
-                      placeholder="+49 151 23456789"
-                      icon={<Phone className="h-5 w-5" />}
-                      type="tel"
-                      autoComplete="tel"
-                      maxLength={40}
+                    <InternationalPhoneField
+                      countryCode={phoneCountryCode}
+                      nationalNumber={phone}
+                      onCountryCodeChange={(countryCode) => {
+                        phoneCountryManuallySelectedRef.current = true;
+                        setPhoneCountryCode(countryCode);
+                      }}
+                      onNationalNumberChange={setPhone}
                     />
                   </div>
+
+                  <CountrySelect
+                    value={country}
+                    onChange={(value) => {
+                      countryManuallySelectedRef.current = true;
+                      setCountry(value);
+                      setCountryDetection("manual");
+                    }}
+                    onCountryCodeChange={(countryCode) => {
+                      if (phoneCountryManuallySelectedRef.current) return;
+                      setPhoneCountryCode(
+                        getCountryCallingCode(countryCode) ? countryCode : ""
+                      );
+                    }}
+                    required
+                    detecting={countryDetection === "detecting"}
+                    hint={countryHint}
+                    selectRef={countrySelectRef}
+                  />
 
                   {accountType === "company" && (
                     <div className="grid gap-3 sm:grid-cols-2">
@@ -757,25 +977,16 @@ export default function RegisterPage() {
                           autoComplete="address-level2"
                         />
                       </div>
-                      <div className="grid gap-4 sm:grid-cols-2">
-                        <TextField
-                          label="Country"
-                          value={country}
-                          onChange={setCountry}
-                          placeholder="Germany"
-                          autoComplete="country-name"
-                        />
-                        <SelectField
-                          label="Preferred Contact"
-                          value={preferredContact}
-                          onChange={setPreferredContact}
-                          options={[
-                            ["email", "E-mail"],
-                            ["whatsapp", "WhatsApp"],
-                            ["phone", "Phone"],
-                          ]}
-                        />
-                      </div>
+                      <SelectField
+                        label="Preferred Contact"
+                        value={preferredContact}
+                        onChange={setPreferredContact}
+                        options={[
+                          ["email", "E-mail"],
+                          ["whatsapp", "WhatsApp"],
+                          ["phone", "Phone"],
+                        ]}
+                      />
                     </div>
                   </div>
 
@@ -799,6 +1010,7 @@ export default function RegisterPage() {
                       action="auth_register"
                       resetKey={captchaResetKey}
                       onToken={setCaptchaToken}
+                      appearance="interaction-only"
                     />
                   )}
 
@@ -841,10 +1053,13 @@ export default function RegisterPage() {
                   </div>
                 </div>
               )}
-            </form>
+              </form>
+            </div>
 
             {message && (
               <div
+                role={success ? "status" : "alert"}
+                aria-live={success ? "polite" : "assertive"}
                 className={`mt-5 rounded-2xl border p-4 text-sm ${
                   success
                     ? "border-green-800/50 bg-green-950/25 text-green-100"
@@ -880,14 +1095,14 @@ export default function RegisterPage() {
               </button>
             )}
 
-            <div className="mt-5 rounded-xl border border-white/10 bg-black/30 p-4 text-center text-sm text-zinc-400">
+            <div className="mt-5 text-center text-sm text-zinc-400">
               Already have an account?{" "}
               <Link href="/login" className="font-black text-red-400">
                 Login
               </Link>
             </div>
 
-            <p className="mt-3 text-center text-xs leading-5 text-zinc-600">
+            <p className="mt-3 text-center text-xs leading-5 text-zinc-500">
               By creating an account, you can submit ECU / TCU file requests and
               manage your MG AutoTech credit balance securely.
             </p>
@@ -913,6 +1128,7 @@ function StepProgress({
             <button
               type="button"
               onClick={() => onStepChange(item.id)}
+              aria-current={step === item.id ? "step" : undefined}
               className="group flex min-w-0 flex-col items-center gap-1.5 text-center"
             >
               <span
@@ -944,28 +1160,6 @@ function StepProgress({
             )}
           </div>
         ))}
-      </div>
-    </div>
-  );
-}
-
-function FeatureCard({
-  icon,
-  title,
-  text,
-}: {
-  icon: ReactNode;
-  title: string;
-  text: string;
-}) {
-  return (
-    <div className="flex items-start gap-3 rounded-xl border border-white/10 bg-white/[0.04] p-3">
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-red-900/30 bg-red-950/20 text-red-500">
-        {icon}
-      </div>
-      <div className="min-w-0">
-        <div className="text-sm font-black">{title}</div>
-        <p className="mt-1 text-xs leading-5 text-zinc-500">{text}</p>
       </div>
     </div>
   );
@@ -1067,32 +1261,6 @@ function InfoBox({ children }: { children: ReactNode }) {
         <p className="text-sm leading-6 text-zinc-400">{children}</p>
       </div>
     </div>
-  );
-}
-
-function GoogleRegisterButton({
-  loading,
-  onClick,
-}: {
-  loading: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={loading}
-      className="mb-4 flex h-12 w-full items-center justify-center gap-3 rounded-xl border border-white/10 bg-white/[0.04] px-5 font-black text-white transition hover:border-white/20 hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-60"
-    >
-      {loading ? (
-        <Loader2 className="h-5 w-5 animate-spin" />
-      ) : (
-        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white text-sm font-black text-black">
-          G
-        </span>
-      )}
-      Continue with Google
-    </button>
   );
 }
 

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireBaseApiUser } from "@/lib/apiAuth";
+import { buildRegistrationCompletionUpdates } from "@/lib/registrationCompletion";
 import { parseRegistrationProfileDraft } from "@/lib/registrationProfile";
 import { isStaffMember } from "@/lib/staffPermissions";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
@@ -60,16 +61,22 @@ export async function POST(request: Request) {
     );
   }
 
+  const updates = buildRegistrationCompletionUpdates({
+    country: profile.country,
+    draft: profile,
+    existingMetadata: auth.user.user_metadata,
+  });
+  if (!updates) {
+    return NextResponse.json(
+      { error: "Registration country is invalid." },
+      { status: 400, headers: responseHeaders }
+    );
+  }
+
   const admin = getSupabaseAdmin();
   const profileUpdate = await admin
     .from("profiles")
-    .update({
-      full_name: profile.full_name,
-      account_type: profile.account_type,
-      company_name: profile.company_name,
-      phone: profile.phone,
-      vat_id: profile.vat_id,
-    })
+    .update(updates.profile)
     .eq("id", auth.user.id)
     .select("id")
     .maybeSingle();
@@ -82,9 +89,7 @@ export async function POST(request: Request) {
 
   const metadataUpdate = await admin.auth.admin.updateUserById(auth.user.id, {
     user_metadata: {
-      ...auth.user.user_metadata,
-      ...profile,
-      role: "customer",
+      ...updates.metadata,
       oauth_registration_finalized: true,
     },
   });

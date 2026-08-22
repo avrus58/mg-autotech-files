@@ -283,7 +283,11 @@ test("login, OAuth bootstrap and protected layouts all stop at device verificati
       callback.indexOf("await startDeviceVerification()"),
     "the allowlisted OAuth bootstrap must finish before the assurance gate"
   );
-  assert.doesNotMatch(callback, /supabase\.auth\.updateUser/);
+  assert.match(
+    callback,
+    /supabase\.auth\.updateUser\(\{[\s\S]*buildPendingRegistrationCountryMetadata/
+  );
+  assert.doesNotMatch(callback, /\.from\("profiles"\)[\s\S]*\.update/);
   assert.match(boundary, /assurance\.status === "required"/);
   assert.match(boundary, /authState === "verification_required"/);
   assert.match(panel, /useState\(false\)/);
@@ -365,4 +369,13 @@ test("rollout documentation states the Supabase Auth-layer boundary", () => {
   assert.match(runbook, /does not raise the JWT to AAL2/);
   assert.match(runbook, /Secure Password Change/);
   assert.match(runbook, /apply[\s\S]{0,30}the migration[\s\S]*Only then[\s\S]*deploy the matching application/);
+  assert.ok(
+    runbook.indexOf("still `shadow`") <
+      runbook.indexOf("activate_customer_device_assurance(0)") &&
+      runbook.indexOf("activate_customer_device_assurance(0)") <
+        runbook.indexOf("fresh post-activation password"),
+    "staging must prove shadow compatibility before activation and test new-device behavior only after activation"
+  );
+  assert.match(runbook, /rollback application must be the immediately prior[\s\S]*755decc/);
+  assert.match(runbook, /Never roll back[\s\S]*legacy base RPC/);
 });
