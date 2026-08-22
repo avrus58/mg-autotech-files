@@ -2,6 +2,42 @@
 
 Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
+## 2026-08-22 Log Analysis Studio Production release
+
+- Release kapsami: `70afff4..3c4b931` tek fast-forward uygulama commit'idir.
+  Premium statik auth arka plani, public Basic Log Snapshot, customer Log
+  Analysis Studio, dashboard navigasyonu, i18n phrase-bank ekleri ve hedefli
+  testler disinda degisiklik yoktur. Package/lockfile, SQL/migration, env,
+  Supabase schema, payment, e-posta veya customer-data mutasyonu yoktur.
+- Preflight: Worktree temiz, `origin/main` release tabanina esit ve release
+  commit'i bir commit ahead/zero behind olarak dogrulandi. Hedefli log/public/
+  auth/session testleri 34/34 PASS; `npm run lint` PASS; `npm run typecheck`
+  PASS (web + desktop); `npm run build -- --webpack` PASS (271/271 route/page
+  entry). Onceki full suite sonucu 712/734'tur; kalan ayni 22 homepage
+  `ui-ux-safety` kaynak-kontrat baseline failure'idir.
+- Yayin: `3c4b9317315e59ea00cd9ee147d268961d47c30f` non-force fast-forward ile
+  `main` dalina pushlandi. Git-triggered Vercel deployment
+  `L8ooNmegzzz7oqgNRvffqWqLxVaH` 1m58s icinde `Ready`, `Production`, `Current`
+  oldu ve `file.mgautotech.de` domainine atandi.
+- Production smoke: Non-mutating public smoke `/`, `/new-request` ve 102 marka
+  donen public vehicle cache endpointinde PASS. Canli Basic snapshot explicit
+  sentetik demo ile 430 Nm, tahmini 192.1 HP ve 7/7 accepted row uretip local
+  privacy/dyno sinirini korudu. Izole oturumda login/register tek H1, gorunur
+  statik backdrop, 30-ornek/~3s tek kart geometrisi, sifir page overflow ve
+  sifir console warning/error ile PASS. Anonim `/dashboard/log-analysis`, Studio
+  kontrollerini gostermeden login ekranina gitti; noindex/nofollow ve redirect
+  hedefi dogrulandi. Yetkili Studio bos durum, explicit demo, Overview/Channels/
+  Data rows tablari, chart, row slider, clear-local-data ve 390px contained chart
+  scroll ile PASS; page-level overflow veya console warning/error yoktur. Gercek
+  customer logu yuklenmedi ve hicbir form/mutasyon gonderilmedi.
+- Rollback: Kritik regresyonda Vercel Instant Rollback hedefi
+  `2n47rqK99TEPrmKJGCq8TM2aqhSX` (`70afff4`) olur; ardindan force-push yerine
+  normal `git revert 3c4b931` main'e uygulanir. DB/env rollback gerekmez.
+- Non-blocking takip: Yeni public snapshot'in uzun aciklama metinleri phrase
+  bank disinda oldugu icin `/de`, `/tr` gibi localized homepage'lerde bolumun
+  bazi satirlari English kalabilir. Bu P2 i18n tamamlama notudur; release
+  guvenligi veya ana akislari engellemez.
+
 ## 2026-08-22 Login layout stability Production incident hotfix
 
 - Olay: Owner canli login sayfasinin surekli hareket ettigini acil olarak bildirdi. Anonim Production olcumunde 50 ornek/~5 saniye icinde 46 farkli resmi Google iframe kimligi, Google grubunda 48px ile 81.33px ve tum kartta 696.67px ile 730px arasinda tekrarli dikey degisim kanitlandi. Turnstile dis alani ayni sure boyunca 0px ve `interaction-only` kaldigi icin surekli hareketin Cloudflare CAPTCHA'dan gelmedigi dogrulandi.

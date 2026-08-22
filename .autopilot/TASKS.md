@@ -50,6 +50,16 @@ Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
 
+### MANUAL-20260822-LOG-STUDIO-PRODUCTION-RELEASE [P0] Log Analysis Studio Production release
+
+Durum: Done
+
+Fingerprint: `release|log-analysis-studio|validated-code-awaiting-production|ready-current-and-smoke-verified`
+
+Sonuc: `3c4b931` tek commit olarak `main` dalina non-force fast-forward pushlandi. Vercel deployment `L8ooNmegzzz7oqgNRvffqWqLxVaH` `Ready`, `Production`, `Current` oldu ve `file.mgautotech.de` domainine atandi. Public Basic demo, sabit login/register, anonim Studio auth guard'i ve yetkili Studio demo/grafik/tab/mobile akislarinin tamami canlida dogrulandi. Kritik rollback hedefi onceki current `2n47rqK99TEPrmKJGCq8TM2aqhSX` / `70afff4` olarak sabitlendi.
+
+Dogrulama: Hedefli testler 34/34 PASS; lint PASS; web+desktop typecheck PASS; Webpack Production build 271/271 PASS; non-mutating public smoke PASS; izole auth ve Studio browser smoke sifir page overflow/console warning/error ile PASS. SQL/migration, env, payment, e-posta, customer-data veya gercek log islemi yoktur.
+
 ### MANUAL-20260822-LOG-ANALYSIS-STUDIO [P0] Public Basic ve customer Log Analysis Studio
 
 Durum: Done
