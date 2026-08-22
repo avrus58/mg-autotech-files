@@ -12,6 +12,8 @@ import {
 } from "../src/lib/growth/customerClassification";
 import {
   buildGrowthClassificationChange,
+  defaultGrowthClassificationAuditNote,
+  normalizeGrowthClassificationReason,
   validateGrowthClassificationChanges,
 } from "../src/lib/growth/customerClassificationReview";
 import type { GrowthMetricInput } from "../src/lib/growth/metrics";
@@ -212,7 +214,7 @@ test("classification migration is additive, private, audited and never auto-prom
   assert.doesNotMatch(`${sql}\n${bulkSql}`, /grant .* authenticated/i);
 });
 
-test("bulk review requires evidence, rejects duplicates and carries optimistic versions", () => {
+test("bulk review creates audit notes automatically, rejects duplicates and carries optimistic versions", () => {
   const row: GrowthCustomerClassificationAdminRow = {
     userId: "00000000-0000-4000-8000-000000000001",
     customerReference: "MGA-10001",
@@ -233,16 +235,22 @@ test("bulk review requires evidence, rejects duplicates and carries optimistic v
   };
   const valid = buildGrowthClassificationChange(row, {
     classification: "real_customer",
-    reason: "Request and payment reviewed",
   });
   assert.deepEqual(valid, {
     userId: row.userId,
     classification: "real_customer",
-    reason: "Request and payment reviewed",
+    reason: "Manual Growth Center decision: verified real customer.",
     expectedUpdatedAt: null,
   });
+  assert.equal(defaultGrowthClassificationAuditNote("internal_test"), "Manual Growth Center decision: internal or test account.");
+  assert.equal(defaultGrowthClassificationAuditNote("staff_operated"), "Manual Growth Center decision: staff-operated account.");
+  assert.equal(defaultGrowthClassificationAuditNote("unreviewed"), null);
+  assert.equal(normalizeGrowthClassificationReason("real_customer", null), valid.reason);
+  assert.equal(normalizeGrowthClassificationReason("real_customer", "x"), valid.reason);
+  assert.equal(normalizeGrowthClassificationReason("real_customer", "Existing audit detail"), valid.reason);
+  assert.equal(normalizeGrowthClassificationReason("unreviewed", "Client supplied note"), null);
   assert.equal(validateGrowthClassificationChanges([valid]), null);
-  assert.match(validateGrowthClassificationChanges([{ ...valid, reason: null }]) ?? "", /evidence note/i);
+  assert.equal(validateGrowthClassificationChanges([{ ...valid, reason: null }]), null);
   assert.match(validateGrowthClassificationChanges([valid, valid]) ?? "", /only once/i);
   assert.match(validateGrowthClassificationChanges(Array.from({ length: 101 }, (_, index) => ({
     ...valid,
@@ -270,16 +278,27 @@ test("classification APIs are admin-only and customer/public routes expose no cl
 
   const listSource = source("src", "app", "api", "admin", "growth", "customers", "route.ts");
   const detailSource = source("src", "app", "api", "admin", "growth", "customers", "[id]", "route.ts");
+  const reviewServerSource = source("src", "lib", "growth", "customerClassificationReviewServer.ts");
   assert.match(listSource, /requireStaffPermission\(request, "customers\.manage"\)/);
   assert.match(detailSource, /requireStaffPermission\(request, "customers\.manage"\)/);
   assert.match(detailSource, /TextEncoder\(\)[\s\S]*2_048/);
   assert.match(listSource, /TextEncoder\(\)[\s\S]*64_000/);
   assert.match(listSource, /saveGrowthCustomerClassificationBatch/);
   assert.match(detailSource, /saveGrowthCustomerClassificationBatch/);
+  assert.match(listSource, /normalizeGrowthClassificationReason/);
+  assert.match(detailSource, /normalizeGrowthClassificationReason/);
+  assert.match(reviewServerSource, /normalizeGrowthClassificationReason/);
 
   const panelSource = source("src", "app", "admin", "growth", "CustomerDataQualityPanel.tsx");
   const reviewSource = source("src", "lib", "growth", "customerClassificationReview.ts");
-  assert.match(panelSource, /Save all changes/);
+  assert.match(panelSource, /Save changes/);
+  assert.doesNotMatch(panelSource, /Evidence \/ audit note|Required: evidence used|Classification reason/);
+  assert.doesNotMatch(panelSource, /draft\.reason|evidenceGap/);
+  assert.doesNotMatch(panelSource, /min-w-\[760px\]|sticky top-0/);
+  assert.match(panelSource, /fixed bottom-3/);
+  assert.match(panelSource, /disabled=\{busy\} aria-label=\{`Customer type for/);
+  assert.match(panelSource, /document\.addEventListener\("click", protectClientNavigation, true\)/);
+  assert.match(panelSource, /lg:grid-cols-\[minmax\(220px/);
   assert.match(reviewSource, /expectedUpdatedAt/);
   assert.match(panelSource, /beforeunload/);
   assert.doesNotMatch(panelSource, /api\/admin\/growth\/customers\/\$\{row\.userId\}/);

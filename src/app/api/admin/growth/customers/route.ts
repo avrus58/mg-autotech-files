@@ -4,6 +4,7 @@ import { requireStaffPermission, requireStaffPermissions } from "@/lib/apiAuth";
 import { growthClassificationReadPermissions } from "@/lib/growth/access";
 import {
   maxGrowthClassificationBatchSize,
+  normalizeGrowthClassificationReason,
   validateGrowthClassificationChanges,
 } from "@/lib/growth/customerClassificationReview";
 import {
@@ -22,7 +23,7 @@ const timestampSchema = z.string().max(64).refine((value) => Number.isFinite(Dat
 const changeSchema = z.object({
   userId: z.string().uuid(),
   classification: z.enum(growthCustomerClassifications),
-  reason: z.string().trim().max(240).nullable(),
+  reason: z.string().trim().max(240).nullable().optional(),
   expectedUpdatedAt: timestampSchema.nullable(),
 }).strict();
 const batchSchema = z.object({
@@ -66,13 +67,17 @@ export async function PATCH(request: Request) {
   if (!body.success) {
     return NextResponse.json({ error: "Invalid customer review batch." }, { status: 400, headers });
   }
-  const validationError = validateGrowthClassificationChanges(body.data.changes);
+  const changes = body.data.changes.map((change) => ({
+    ...change,
+    reason: normalizeGrowthClassificationReason(change.classification, change.reason),
+  }));
+  const validationError = validateGrowthClassificationChanges(changes);
   if (validationError) {
     return NextResponse.json({ error: validationError }, { status: 400, headers });
   }
 
   const result = await saveGrowthCustomerClassificationBatch({
-    changes: body.data.changes,
+    changes,
     actorUserId: auth.user.id,
   });
   if (result.error) {
@@ -89,6 +94,6 @@ export async function PATCH(request: Request) {
   return NextResponse.json({
     ok: true,
     batchId: typeof saved.batch_id === "string" ? saved.batch_id : null,
-    savedCount: Number(saved.saved_count ?? body.data.changes.length),
+    savedCount: Number(saved.saved_count ?? changes.length),
   }, { headers });
 }

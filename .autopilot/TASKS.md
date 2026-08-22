@@ -105,6 +105,27 @@ uygulanmadı; secret, gerçek e-posta/müşteri, Supabase/Vercel, push veya depl
 mutation yapılmadı. Production activation için isolated staging SQL/E2E provası,
 Secure Password Change/Auth-layer kontrolü ve desktop disable/min-version kapısı
 zorunludur; bu custom kontrol native MFA/AAL2 değildir.
+### MANUAL-20260822-GROWTH-CLASSIFICATION-SIMPLE-SAVE [P1] Growth müşteri tipi akışını sadeleştir
+
+Durum: Done
+
+Fingerprint: `admin-growth|customer-classification|mandatory-evidence-note-busywork|one-selection-standardized-audit-save`
+
+Sonuc: Growth & Customer Success Center icinde admin artik yalniz musteri tipini
+secer ve degisiklikleri kaydeder; evidence/reason yazma zorunlulugu, not alani,
+evidence-gap sayaci ve ilgili uyarilar kaldirildi. Audit kaydi istemciden gelen
+serbest metne guvenmeden sunucuda deterministik uretilir. `customers.manage`,
+service-role RPC, actor kaydi, atomik batch, optimistic concurrency ve 100
+degisiklik siniri korundu. Mobil/tablet kartlari yatay kaymadan calisir; kaydetme
+sirasinda secimler kilitlenir ve kaydedilmemis degisiklikler sayfa gecisinde
+uyarilir. Veritabani semasi ve canli veri degismedi.
+
+Dogrulama: hedef Growth paketi 34/34 PASS; full suite 794/794 PASS; web ve
+customer-uploader TypeScript PASS; ESLint PASS; Production Next webpack build
+271/271 PASS; responsive/erisilebilirlik ve bagimsiz review P0/P1=0; `git diff
+--check` yalniz CRLF uyarilari. Korunan admin route'u yerel browser'da staff
+login kapisina kadar hatasiz yuklendi; push, deploy veya canli servis mutation
+yapilmadi.
 
 ### MANUAL-20260822-ADAPTIVE-AUTH-TURNSTILE [P1] Bes hatadan sonra gorunur Turnstile
 

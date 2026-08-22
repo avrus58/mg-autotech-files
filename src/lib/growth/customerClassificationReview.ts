@@ -7,7 +7,6 @@ export const maxGrowthClassificationBatchSize = 100;
 
 export type GrowthCustomerClassificationDraft = {
   classification: GrowthCustomerClassification;
-  reason: string;
 };
 
 export type GrowthCustomerClassificationChange = {
@@ -17,27 +16,44 @@ export type GrowthCustomerClassificationChange = {
   expectedUpdatedAt: string | null;
 };
 
-export function classificationNeedsEvidenceNote(classification: GrowthCustomerClassification) {
-  return classification !== "unreviewed";
+export function defaultGrowthClassificationAuditNote(
+  classification: GrowthCustomerClassification
+) {
+  if (classification === "real_customer") {
+    return "Manual Growth Center decision: verified real customer.";
+  }
+  if (classification === "internal_test") {
+    return "Manual Growth Center decision: internal or test account.";
+  }
+  if (classification === "staff_operated") {
+    return "Manual Growth Center decision: staff-operated account.";
+  }
+  return null;
+}
+
+export function normalizeGrowthClassificationReason(
+  classification: GrowthCustomerClassification,
+  reason?: string | null
+) {
+  void reason; // Accepted for wire compatibility; the audit marker remains server-owned.
+  return defaultGrowthClassificationAuditNote(classification);
 }
 
 export function isGrowthClassificationDraftChanged(
   row: GrowthCustomerClassificationAdminRow,
   draft: GrowthCustomerClassificationDraft
 ) {
-  return draft.classification !== row.classification ||
-    draft.reason.trim() !== (row.reason ?? "").trim();
+  return draft.classification !== row.classification;
 }
 
 export function buildGrowthClassificationChange(
   row: GrowthCustomerClassificationAdminRow,
   draft: GrowthCustomerClassificationDraft
 ): GrowthCustomerClassificationChange {
-  const reason = draft.reason.trim();
   return {
     userId: row.userId,
     classification: draft.classification,
-    reason: reason || null,
+    reason: defaultGrowthClassificationAuditNote(draft.classification),
     expectedUpdatedAt: row.updatedAt,
   };
 }
@@ -51,12 +67,6 @@ export function validateGrowthClassificationChanges(
   }
   if (new Set(changes.map((change) => change.userId)).size !== changes.length) {
     return "A customer may appear only once in a review batch.";
-  }
-  const missingEvidence = changes.find((change) =>
-    classificationNeedsEvidenceNote(change.classification) && (change.reason?.trim().length ?? 0) < 3
-  );
-  if (missingEvidence) {
-    return "Add a short evidence note for every reviewed customer before saving.";
   }
   return null;
 }

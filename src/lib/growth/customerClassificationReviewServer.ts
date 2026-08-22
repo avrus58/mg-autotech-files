@@ -1,4 +1,7 @@
-import type { GrowthCustomerClassificationChange } from "@/lib/growth/customerClassificationReview";
+import {
+  normalizeGrowthClassificationReason,
+  type GrowthCustomerClassificationChange,
+} from "@/lib/growth/customerClassificationReview";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 
 export async function saveGrowthCustomerClassificationBatch(input: {
@@ -9,7 +12,7 @@ export async function saveGrowthCustomerClassificationBatch(input: {
     p_changes: input.changes.map((change) => ({
       user_id: change.userId,
       classification: change.classification,
-      reason: change.reason,
+      reason: normalizeGrowthClassificationReason(change.classification, change.reason),
       expected_updated_at: change.expectedUpdatedAt,
     })),
     p_actor_user_id: input.actorUserId,
@@ -26,7 +29,7 @@ export function growthClassificationSaveError(error: unknown) {
     return { status: 409, message: "Customer reviews changed on the server. Refresh before saving again." };
   }
   if (message.includes("growth_customer_classification_reason_required")) {
-    return { status: 400, message: "Every reviewed customer requires a short evidence note." };
+    return { status: 400, message: "Customer review audit data is incomplete. Refresh and try again." };
   }
   if (message.includes("growth_customer_batch_duplicate")) {
     return { status: 400, message: "A customer may appear only once in a review batch." };

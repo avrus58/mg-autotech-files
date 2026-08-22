@@ -3748,3 +3748,30 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 - Sinirlar: Yeni dependency, SQL/migration, API/storage/persistence, env/secret
   okuma, Production Supabase/customer/payment/e-posta islemi, push veya deploy
   yapilmadi.
+## 2026-08-22 Growth customer-type simple save
+
+- Growth & Customer Success Center musteri siniflandirmasi sec ve kaydet akisina
+  indirildi. Admin evidence/reason metni yazmaz; zorunlu not alani, evidence-gap
+  sayaci ve bunlara bagli uyarilar arayuzden kaldirildi.
+- Audit izi zayiflatilmadi: istemcinin opsiyonel legacy reason degeri yok
+  sayilir ve siniflandirmaya bagli deterministik audit isareti API ve son
+  service-role RPC sinirinda sunucu tarafindan uretilir. `customers.manage`,
+  actor kaydi, atomik toplu kayit, 100 degisiklik siniri, stale-write korumasi
+  ve mevcut veritabani kisitlari aynen korundu.
+- Mobil ve tablet gorunumu yatay tablo yerine dikey kartlara donustu; uc sutun
+  yalniz genis ekranda acilir. Kaydetme surerken secimler kilitlenir, kirli
+  durumda sabit alt kaydetme aksiyonu gorunur ve same-origin sayfa gecisleri
+  kaydedilmemis degisiklik uyarisi verir. Loading, error ve empty durumlari
+  korundu.
+- Degisen kapsam: Growth customer data quality paneli, tekli/toplu admin
+  customer-classification API'leri, client/server review yardimcilari, Growth
+  testleri ve dokumani ile TASKS/TASK_HISTORY/STATUS kayitlari. SQL, migration,
+  Production verisi, fiyat, odeme, kredi ve hesap yetkisi degismedi.
+- Kontroller: hedef Growth paketi 34/34 PASS; full suite 794/794 PASS; web ve
+  customer-uploader TypeScript PASS; full/targeted ESLint PASS; Production Next
+  webpack build 271/271 PASS; bagimsiz backend/security ve responsive UX review
+  P0=0/P1=0; `git diff --check` yalniz CRLF uyarilari.
+- Korunan `/admin/growth` route'u yerel browser'da staff login kapisina kadar
+  console hatasi olmadan yuklendi. Staff session/gercek musteri kullanilmadigi
+  icin korunan panelde veri mutasyonu yapilmadi. Push, deploy, Supabase
+  migration veya herhangi bir canli servis mutation yapilmadi.

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireStaffPermission, requireStaffPermissions } from "@/lib/apiAuth";
-import { classificationNeedsEvidenceNote } from "@/lib/growth/customerClassificationReview";
+import { normalizeGrowthClassificationReason } from "@/lib/growth/customerClassificationReview";
 import { customerIntelligencePermissions } from "@/lib/growth/access";
 import {
   growthClassificationSaveError,
@@ -74,10 +74,7 @@ export async function PATCH(
     return response({ error: "Invalid customer classification request." }, 400);
   }
 
-  const reason = body.data.reason?.trim() || null;
-  if (classificationNeedsEvidenceNote(body.data.classification) && (!reason || reason.length < 3)) {
-    return response({ error: "A short evidence note is required for every reviewed account." }, 400);
-  }
+  const reason = normalizeGrowthClassificationReason(body.data.classification, body.data.reason);
 
   const result = await saveGrowthCustomerClassificationBatch({
     changes: [{
