@@ -10,7 +10,6 @@ type AuthCaptchaEnvironment = {
   mode?: string | null;
   siteKey?: string | null;
   nodeEnv?: string | null;
-  allowTestKey?: boolean;
 };
 
 const TURNSTILE_TEST_SITE_KEYS = new Set([
@@ -44,8 +43,16 @@ export function resolveAuthCaptchaConfig(
 ): AuthCaptchaConfig {
   const mode = environment.mode?.trim().toLowerCase() ?? "";
   const siteKey = environment.siteKey?.trim() ?? "";
+  const production = environment.nodeEnv === "production";
 
   if (!mode || mode === "off") {
+    if (production) {
+      return {
+        status: "misconfigured",
+        siteKey: "",
+        message: AUTH_CAPTCHA_CONFIGURATION_MESSAGE,
+      };
+    }
     return { status: "off", siteKey: "", message: null };
   }
 
@@ -57,11 +64,7 @@ export function resolveAuthCaptchaConfig(
     };
   }
 
-  if (
-    environment.nodeEnv === "production" &&
-    !environment.allowTestKey &&
-    isTurnstileTestSiteKey(siteKey)
-  ) {
+  if (production && isTurnstileTestSiteKey(siteKey)) {
     return {
       status: "misconfigured",
       siteKey: "",
@@ -77,8 +80,6 @@ export function getPublicAuthCaptchaConfig() {
     mode: process.env.NEXT_PUBLIC_AUTH_CAPTCHA_MODE,
     siteKey: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY,
     nodeEnv: process.env.NODE_ENV,
-    allowTestKey:
-      process.env.NEXT_PUBLIC_AUTH_CAPTCHA_ALLOW_TEST_KEY === "true",
   });
 }
 
@@ -87,8 +88,6 @@ export function getHostedTurnstileConfig() {
     mode: "required",
     siteKey: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY,
     nodeEnv: process.env.NODE_ENV,
-    allowTestKey:
-      process.env.NEXT_PUBLIC_AUTH_CAPTCHA_ALLOW_TEST_KEY === "true",
   });
 }
 

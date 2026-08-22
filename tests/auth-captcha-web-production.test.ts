@@ -10,24 +10,35 @@ import {
 
 const productionSiteKey = "0x4AAAAAAAcaptchaProductionPublicKey";
 
-test("web auth CAPTCHA remains safely off without public configuration", () => {
-  const config = resolveAuthCaptchaConfig({});
+test("web auth CAPTCHA can remain off only outside Production", () => {
+  const config = resolveAuthCaptchaConfig({ nodeEnv: "development" });
 
   assert.equal(config.status, "off");
   assert.equal(getAuthCaptchaToken(config, null), undefined);
   assert.equal(authCaptchaBlocksSubmission(config, null), false);
 });
 
-test("required Production CAPTCHA fails closed for missing or test site keys", () => {
-  const missingKey = resolveAuthCaptchaConfig({ mode: "required" });
+test("Production CAPTCHA fails closed when disabled, missing or backed by a test key", () => {
+  const missingMode = resolveAuthCaptchaConfig({ nodeEnv: "production" });
+  const disabled = resolveAuthCaptchaConfig({
+    mode: "off",
+    nodeEnv: "production",
+  });
+  const missingKey = resolveAuthCaptchaConfig({
+    mode: "required",
+    nodeEnv: "production",
+  });
   const productionTestKey = resolveAuthCaptchaConfig({
     mode: "required",
     siteKey: "1x00000000000000000000AA",
     nodeEnv: "production",
   });
 
+  assert.equal(missingMode.status, "misconfigured");
+  assert.equal(disabled.status, "misconfigured");
   assert.equal(missingKey.status, "misconfigured");
   assert.equal(productionTestKey.status, "misconfigured");
+  assert.equal(authCaptchaBlocksSubmission(disabled, null), true);
   assert.equal(authCaptchaBlocksSubmission(missingKey, null), true);
   assert.throws(() => getAuthCaptchaToken(missingKey, null), /unavailable/i);
 });
@@ -44,7 +55,7 @@ test("a valid Production site key requires and normalizes a fresh token", () => 
   assert.equal(getAuthCaptchaToken(config, " token "), "token");
 });
 
-test("all Production web password entry points pass CAPTCHA tokens", () => {
+test("all Production web auth entry points pass CAPTCHA tokens", () => {
   const login = readFileSync(resolve("src/app/login/page.tsx"), "utf8");
   const register = readFileSync(resolve("src/app/register/page.tsx"), "utf8");
   const recovery = readFileSync(
@@ -61,8 +72,12 @@ test("all Production web password entry points pass CAPTCHA tokens", () => {
   assert.match(login, /isInvalidPasswordCredentialError/);
   assert.match(login, /clearAuthLoginFailures/);
   assert.match(login, /"always"[\s\S]*"interaction-only"/);
+  assert.match(login, /signInWithIdToken[\s\S]*captchaToken/);
+  assert.doesNotMatch(login, /signInWithOAuth/);
   assert.match(register, /signUp[\s\S]*captchaToken/);
   assert.match(register, /resend[\s\S]*captchaToken/);
+  assert.match(register, /signInWithIdToken[\s\S]*captchaToken/);
+  assert.doesNotMatch(register, /signInWithOAuth/);
   assert.match(register, /authRequestInFlightRef/);
   assert.match(recovery, /resetPasswordForEmail[\s\S]*captchaToken/);
   assert.match(passwordUpdate, /updateUser\(\{ password \}\)/);

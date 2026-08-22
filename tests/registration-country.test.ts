@@ -259,7 +259,9 @@ test("registration requires the auto-detected but editable country on every sign
   assert.match(countrySelect, /data-no-translate/);
   assert.match(registerPage, /registration_country_confirmed: true/);
   assert.match(registerPage, /registration_country_required: false/);
-  assert.match(loginPage, /signInWithOAuth\(\{[\s\S]*provider: "google"/);
+  assert.match(loginPage, /signInWithIdToken\(\{[\s\S]*provider: "google"/);
+  assert.match(loginPage, /captchaToken: requestCaptchaToken/);
+  assert.doesNotMatch(loginPage, /signInWithOAuth/);
   assert.match(authCallback, /requiresRegistrationCountryCompletion\(session\.user\)/);
   assert.match(authCallback, /router\.replace\(countryCompletionPath\(next\)\)/);
   assert.ok(

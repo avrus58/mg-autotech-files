@@ -2,6 +2,15 @@
 
 Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
+## 2026-08-22 Premium login and registration auth protection parity
+
+- Calisma araligi: 2026-08-22 18:00-19:05 (Europe/Berlin).
+- Gorev: Login ekranini register ile uyumlu, premium tek kartli bir deneyime donusturmek ve kayit tarafinda CAPTCHA/auth korumasinin zayif kalmamasini saglamak.
+- Uygulama: Login iki sutunlu tanitim duzeninden 560px ortalanmis tek karta alindi; tek H1, semantik label/name/autocomplete, 48px kontroller, focus-visible state'leri ve basari/hata live-region ayrimi eklendi. Login ve register Google aksiyonlari resmi Google Identity Services butonunu, 256-bit random nonce'i, Google'a SHA-256 hex nonce'i ve Supabase'e raw nonce'i kullanan `signInWithIdToken` akisini paylasir. Senkron request lock, stale-callback engeli, script timeout/error cleanup, klavye retry focus'u ve kontrollu network/storage hata durumlari eklendi. Register e-posta sign-up/resend `auth_register`, Google kaydi `auth_register_google`; login parola ve Google yolu `auth_login` Turnstile token'ini Supabase'e iletir.
+- Guvenlik: Login/register icinde `signInWithOAuth` kalmadi; boylece uygulamadaki Google yeni-hesap yolu CAPTCHA'li ID-token akisini dolasamaz. Production'da CAPTCHA modu eksik/`off`, site key eksik veya Cloudflare test key'i ise web auth UI fail-closed olur; public test-key bypass'i kaldirildi. Production Google client ID eksik/gecersizse Google butonu fail-closed kalirken e-posta akisi kullanilabilir. Turnstile dar alanda resmi compact, genis alanda flexible boyuta doner ve resize'da tokeni guvenli bicimde yeniler. Hosted Supabase provider/secret aktivasyonu repository'den kanitlanamaz. Release gate `NEXT_PUBLIC_GOOGLE_CLIENT_ID` degerinin Supabase Google provider Web Client ID'siyle ayni olmasini, `https://file.mgautotech.de` Authorized JavaScript origin'ini, her aktif Google Web client'indan Production Supabase Auth callback URI'sinin (`https://jujaeyvyaeesmipihrrw.supabase.co/auth/v1/callback` ve varsa custom Auth domain esdegeri) kaldirilmasini, dogrudan `/authorize` negatif smoke'u ve server-side missing/invalid CAPTCHA token reddini dogrulamalidir.
+- Kontroller: Hedefli auth/CAPTCHA/register/login/security testleri PASS (39/39); lint PASS; web+desktop typecheck PASS; production webpack build PASS (270); i18n PASS (12 locale, 589/589, 0 fallback); diff check PASS. In-app Browser QA 320, 360, 375, 390 ve 1280px genisliklerde sifir yatay tasma, tek H1, resmi 40px Google butonu, register step focus/`aria-current` ve sifir console error/warning ile PASS. Full suite 686/708; 22 failure ana daldaki ayni ilgisiz `ui-ux-safety` source-contract baseline'idir.
+- Sinirlar: Yeni dependency, SQL/migration, env/secret okuma, canli Supabase/Auth/CAPTCHA cagrisi, gercek hesap/musteri verisi, push veya deploy yoktur. Google/Supabase release konfigurasyonu bu turda degistirilmedi.
+
 ## 2026-08-22 Registration phone country selector Production release
 
 - Gorev: Owner onayiyla `e5e5718` telefon ulke kodu secicisi degisikligini `file.mgautotech.de` Production'a yayinlamak.

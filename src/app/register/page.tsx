@@ -17,6 +17,7 @@ import {
   signOutIfEmailUnverified,
 } from "@/lib/authGuards";
 import { TurnstileChallenge } from "@/components/auth/TurnstileChallenge";
+import { GoogleIdentityButton } from "@/components/auth/GoogleIdentityButton";
 import { CountrySelect } from "@/components/CountrySelect";
 import { InternationalPhoneField } from "@/components/InternationalPhoneField";
 import {
@@ -25,6 +26,7 @@ import {
   getPublicAuthCaptchaConfig,
 } from "@/lib/authCaptcha";
 import { supabase } from "@/lib/supabaseClient";
+import { getPublicGoogleIdentityConfig } from "@/lib/googleIdentity";
 import { resolveBrowserTransactionalEmailLanguage } from "@/lib/email/language";
 import {
   normalizeCountryCode,
@@ -74,6 +76,15 @@ function getSelectedEmailLanguage() {
   });
 }
 
+function clearOAuthRegistrationDraft() {
+  try {
+    window.sessionStorage.removeItem(OAUTH_REGISTRATION_PROVIDER_KEY);
+    window.sessionStorage.removeItem(OAUTH_REGISTRATION_PROFILE_KEY);
+  } catch {
+    // Browser privacy settings may deny storage; auth cleanup must still finish.
+  }
+}
+
 const steps: { id: StepId; label: string; subLabel: string }[] = [
   { id: 1, label: "Account Setup", subLabel: "Customer type" },
   { id: 2, label: "Login Details", subLabel: "E-mail & password" },
@@ -103,6 +114,7 @@ const accountCards: {
 export default function RegisterPage() {
   const router = useRouter();
   const authCaptchaConfig = getPublicAuthCaptchaConfig();
+  const googleIdentityConfig = getPublicGoogleIdentityConfig();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -122,6 +134,7 @@ export default function RegisterPage() {
   const [accountType, setAccountType] = useState<AccountType>("company");
   const [step, setStep] = useState<StepId>(1);
   const [message, setMessage] = useState("");
+  const [googleMessage, setGoogleMessage] = useState("");
   const [success, setSuccess] = useState(false);
   const [verificationPending, setVerificationPending] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -134,6 +147,17 @@ export default function RegisterPage() {
   const countryManuallySelectedRef = useRef(false);
   const phoneCountryManuallySelectedRef = useRef(false);
   const countrySelectRef = useRef<HTMLSelectElement>(null);
+  const stepPanelRef = useRef<HTMLDivElement>(null);
+  const previousStepRef = useRef<StepId>(step);
+
+  useEffect(() => {
+    if (previousStepRef.current === step) return;
+    previousStepRef.current = step;
+    const frameId = window.requestAnimationFrame(() => {
+      stepPanelRef.current?.focus();
+    });
+    return () => window.cancelAnimationFrame(frameId);
+  }, [step]);
 
   useEffect(() => {
     let active = true;
@@ -232,7 +256,11 @@ export default function RegisterPage() {
 
   const changeStep = (nextStep: StepId) => {
     if (loading || resendingVerification || authRequestInFlightRef.current) return;
-    if (nextStep !== 3) setCaptchaToken(null);
+    if (nextStep !== step) {
+      setCaptchaToken(null);
+      setCaptchaResetKey((value) => value + 1);
+      setGoogleMessage("");
+    }
     setStep(nextStep);
   };
 
@@ -340,34 +368,37 @@ export default function RegisterPage() {
     authRequestInFlightRef.current = true;
     if (requestCaptchaToken) setCaptchaToken(null);
 
-    beginRegistrationConversion();
-    const response = await supabase.auth.signUp({
-        email: cleanEmail,
-        password,
-        options: {
-          emailRedirectTo: getAuthRedirect("/auth/callback?next=/dashboard"),
-          ...(requestCaptchaToken
-            ? { captchaToken: requestCaptchaToken }
-            : {}),
-          data: {
-            full_name: cleanFullName,
-            account_type: accountType,
-            company_name: accountType === "company" ? cleanCompanyName : null,
-            phone: formattedPhone,
-            vat_id: accountType === "company" ? taxNumber.trim() || null : null,
-            tax_number: accountType === "company" ? taxNumber.trim() || null : null,
-            invoice_email: invoiceEmail.trim() || cleanEmail,
-            street: street.trim() || null,
-            postal_code: postalCode.trim() || null,
-            city: city.trim() || null,
-            country: selectedCountry,
-            preferred_contact: preferredContact,
-            email_language: getSelectedEmailLanguage(),
-            registration_country_required: false,
-            registration_country_confirmed: true,
-            role: "customer",
+    const response = await Promise.resolve()
+      .then(() => {
+        beginRegistrationConversion();
+        return supabase.auth.signUp({
+          email: cleanEmail,
+          password,
+          options: {
+            emailRedirectTo: getAuthRedirect("/auth/callback?next=/dashboard"),
+            ...(requestCaptchaToken
+              ? { captchaToken: requestCaptchaToken }
+              : {}),
+            data: {
+              full_name: cleanFullName,
+              account_type: accountType,
+              company_name: accountType === "company" ? cleanCompanyName : null,
+              phone: formattedPhone,
+              vat_id: accountType === "company" ? taxNumber.trim() || null : null,
+              tax_number: accountType === "company" ? taxNumber.trim() || null : null,
+              invoice_email: invoiceEmail.trim() || cleanEmail,
+              street: street.trim() || null,
+              postal_code: postalCode.trim() || null,
+              city: city.trim() || null,
+              country: selectedCountry,
+              preferred_contact: preferredContact,
+              email_language: getSelectedEmailLanguage(),
+              registration_country_required: false,
+              registration_country_confirmed: true,
+              role: "customer",
+            },
           },
-        },
+        });
       })
       .catch(() => null)
       .finally(() => {
@@ -470,7 +501,7 @@ export default function RegisterPage() {
     );
   };
 
-  const handleGoogleRegister = async () => {
+  const handleGoogleRegister = async (credential: string, nonce: string) => {
     if (
       googleLoading ||
       loading ||
@@ -483,47 +514,93 @@ export default function RegisterPage() {
       return;
     }
 
+    if (googleIdentityConfig.status !== "ready") {
+      setGoogleMessage(
+        googleIdentityConfig.status === "misconfigured"
+          ? googleIdentityConfig.message
+          : "Google account creation is temporarily unavailable. You can continue with e-mail."
+      );
+      return;
+    }
+
     const selectedCountry = normalizeCountryName(country);
     if (!selectedCountry) {
       changeStep(1);
       return;
     }
 
-    setGoogleLoading(true);
-    setMessage("");
-    setSuccess(false);
-    beginRegistrationConversion();
-
-    window.sessionStorage.setItem(OAUTH_REGISTRATION_PROVIDER_KEY, "google");
-    const profileDraft = createRegistrationProfileDraft({
-      fullName: cleanFullName,
-      accountType,
-      companyName: cleanCompanyName,
-      phone: formattedPhone ?? "",
-      taxNumber,
-      country: selectedCountry,
-      emailLanguage: getSelectedEmailLanguage(),
-    });
-    if (profileDraft) {
-      window.sessionStorage.setItem(
-        OAUTH_REGISTRATION_PROFILE_KEY,
-        JSON.stringify(profileDraft)
+    let requestCaptchaToken: string | undefined;
+    try {
+      requestCaptchaToken = getAuthCaptchaToken(
+        authCaptchaConfig,
+        captchaToken
       );
+    } catch (error) {
+      setGoogleMessage(
+        error instanceof Error ? error.message : "Security verification failed."
+      );
+      setCaptchaResetKey((value) => value + 1);
+      return;
     }
 
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: getAuthRedirect("/auth/callback?next=/dashboard"),
-      },
-    });
+    authRequestInFlightRef.current = true;
+    if (requestCaptchaToken) setCaptchaToken(null);
+    setGoogleLoading(true);
+    setGoogleMessage("");
+    setSuccess(false);
+    const response = await Promise.resolve()
+      .then(() => {
+        beginRegistrationConversion();
+        window.sessionStorage.setItem(OAUTH_REGISTRATION_PROVIDER_KEY, "google");
+        const profileDraft = createRegistrationProfileDraft({
+          fullName: cleanFullName,
+          accountType,
+          companyName: cleanCompanyName,
+          phone: formattedPhone ?? "",
+          taxNumber,
+          country: selectedCountry,
+          emailLanguage: getSelectedEmailLanguage(),
+        });
+        if (!profileDraft) throw new Error("registration-profile");
+        window.sessionStorage.setItem(
+          OAUTH_REGISTRATION_PROFILE_KEY,
+          JSON.stringify(profileDraft)
+        );
 
-    if (error) {
-      window.sessionStorage.removeItem(OAUTH_REGISTRATION_PROVIDER_KEY);
-      window.sessionStorage.removeItem(OAUTH_REGISTRATION_PROFILE_KEY);
-      setMessage(error.message);
+        return supabase.auth.signInWithIdToken({
+          provider: "google",
+          token: credential,
+          nonce,
+          ...(requestCaptchaToken
+            ? { options: { captchaToken: requestCaptchaToken } }
+            : {}),
+        });
+      })
+      .catch(() => null)
+      .finally(() => {
+        if (!requestCaptchaToken) return;
+        setCaptchaResetKey((value) => value + 1);
+      });
+
+    if (!response) {
+      authRequestInFlightRef.current = false;
+      clearOAuthRegistrationDraft();
+      setGoogleMessage("Google account creation could not be completed. Please try again.");
       setGoogleLoading(false);
+      return;
     }
+
+    const { data, error } = response;
+
+    if (error || !data.session) {
+      authRequestInFlightRef.current = false;
+      clearOAuthRegistrationDraft();
+      setGoogleMessage("Google account creation could not be completed. Please try again.");
+      setGoogleLoading(false);
+      return;
+    }
+
+    router.replace("/auth/callback?next=/dashboard");
   };
 
   if (checkingAuth) {
@@ -573,14 +650,98 @@ export default function RegisterPage() {
 
             <StepProgress step={step} onStepChange={changeStep} />
 
-            {step === 2 && (
-              <GoogleRegisterButton
-                loading={googleLoading}
-                onClick={handleGoogleRegister}
-              />
-            )}
+            <div
+              ref={stepPanelRef}
+              role="region"
+              aria-labelledby="register-step-heading"
+              tabIndex={-1}
+              className="scroll-mt-4 outline-none"
+            >
+              <h2 id="register-step-heading" className="sr-only">
+                Step {step}: {steps.find((item) => item.id === step)?.label}
+              </h2>
 
-            <form onSubmit={handleRegister} className="space-y-4">
+              {step === 2 && (
+                <div className="mb-4 space-y-3">
+                  {googleIdentityConfig.status === "ready" &&
+                    authCaptchaConfig.status === "ready" && (
+                      <TurnstileChallenge
+                        siteKey={authCaptchaConfig.siteKey}
+                        action="auth_register_google"
+                        resetKey={captchaResetKey}
+                        onToken={setCaptchaToken}
+                        appearance="interaction-only"
+                      />
+                    )}
+
+                  {(authCaptchaConfig.status === "misconfigured" ||
+                    googleIdentityConfig.status === "misconfigured") && (
+                    <div
+                      role="alert"
+                      className="rounded-xl border border-red-800/50 bg-red-950/30 p-4 text-sm text-red-100"
+                    >
+                      {authCaptchaConfig.status === "misconfigured"
+                        ? authCaptchaConfig.message
+                        : googleIdentityConfig.status === "misconfigured"
+                          ? googleIdentityConfig.message
+                          : null}
+                    </div>
+                  )}
+
+                  {googleIdentityConfig.status === "ready" &&
+                    authCaptchaConfig.status !== "misconfigured" && (
+                      <GoogleIdentityButton
+                        clientId={googleIdentityConfig.clientId}
+                        disabled={
+                          googleLoading ||
+                          loading ||
+                          resendingVerification ||
+                          authCaptchaBlocksSubmission(
+                            authCaptchaConfig,
+                            captchaToken
+                          )
+                        }
+                        loading={googleLoading}
+                        resetKey={captchaResetKey}
+                        onCredential={(credential, nonce) =>
+                          void handleGoogleRegister(credential, nonce)
+                        }
+                        onReady={() =>
+                          setGoogleMessage((current) =>
+                            current.startsWith(
+                              "Google sign-in could not be loaded"
+                            )
+                              ? ""
+                              : current
+                          )
+                        }
+                        onError={(reason) => {
+                          if (reason === "credential") {
+                            setCaptchaToken(null);
+                            setCaptchaResetKey((value) => value + 1);
+                          }
+                          setGoogleMessage(
+                            reason === "load"
+                              ? "Google sign-in could not be loaded. You can retry or continue with e-mail."
+                              : "Google account creation could not be completed. Please try again."
+                          );
+                        }}
+                      />
+                    )}
+
+                  {googleMessage && (
+                    <div
+                      role="alert"
+                      aria-live="assertive"
+                      className="rounded-xl border border-red-800/50 bg-red-950/30 p-4 text-sm text-red-100"
+                    >
+                      {googleMessage}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <form onSubmit={handleRegister} className="space-y-4">
               {step === 1 && (
                 <div className="space-y-4">
                   <div className="grid gap-3 sm:grid-cols-2" role="group" aria-label="Customer type">
@@ -835,6 +996,7 @@ export default function RegisterPage() {
                       action="auth_register"
                       resetKey={captchaResetKey}
                       onToken={setCaptchaToken}
+                      appearance="interaction-only"
                     />
                   )}
 
@@ -877,7 +1039,8 @@ export default function RegisterPage() {
                   </div>
                 </div>
               )}
-            </form>
+              </form>
+            </div>
 
             {message && (
               <div
@@ -951,6 +1114,7 @@ function StepProgress({
             <button
               type="button"
               onClick={() => onStepChange(item.id)}
+              aria-current={step === item.id ? "step" : undefined}
               className="group flex min-w-0 flex-col items-center gap-1.5 text-center"
             >
               <span
@@ -1080,32 +1244,6 @@ function InfoBox({ children }: { children: ReactNode }) {
         <p className="text-sm leading-6 text-zinc-400">{children}</p>
       </div>
     </div>
-  );
-}
-
-function GoogleRegisterButton({
-  loading,
-  onClick,
-}: {
-  loading: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={loading}
-      className="mb-4 flex h-12 w-full items-center justify-center gap-3 rounded-xl border border-white/10 bg-white/[0.04] px-5 font-black text-white transition hover:border-white/20 hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-60"
-    >
-      {loading ? (
-        <Loader2 className="h-5 w-5 animate-spin" />
-      ) : (
-        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white text-sm font-black text-black">
-          G
-        </span>
-      )}
-      Continue with Google
-    </button>
   );
 }
 

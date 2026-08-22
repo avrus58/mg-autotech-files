@@ -50,6 +50,16 @@ Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
 
+### MANUAL-20260822-PREMIUM-LOGIN-AUTH-PARITY [P1] Premium login ve kayit CAPTCHA esligi
+
+Durum: Done
+
+Fingerprint: `customer-auth|login-register|split-screen-and-production-captcha-opt-out|premium-single-card-fail-closed-auth`
+
+Sonuc: Login sayfasindaki agir iki sutunlu tanitim duzeni, register tasarim diliyle uyumlu 560px ortalanmis premium tek karta cevrildi. Tek H1, acik label/name/autocomplete alanlari, 48px ana kontroller, klavye focus state'leri ve basari/hata live-region ayrimi eklendi. Mevcut adaptive 5-basarisiz-parola CAPTCHA gorunurluk esigi, Supabase `captchaToken`, yonlendirme ve hata sayaci korunurken login ve register Google akislari resmi Google Identity Services butonu + nonce bagli `signInWithIdToken` + Turnstile tokenina tasindi; iki UI'da da `signInWithOAuth` kaldirildi. Register e-posta sign-up/resend `auth_register`, Google kaydi `auth_register_google`, login parola/Google yolu `auth_login` tokenini kullanir. Google script timeout/error retry, stale callback engeli, senkron request lock, storage-error cleanup, dar ekranda compact/flexible Turnstile ve register step focus/`aria-current` eklendi. Production CAPTCHA/test-key bypass'i ve eksik/gecersiz Google client ID fail-closed olur.
+
+Dogrulama: Auth/CAPTCHA/register/login/security hedefli testler PASS (39/39); `npm run lint` PASS; `npm run typecheck` PASS (web + desktop); `npm run build -- --webpack` PASS (270 route/page entry); `npm run check:i18n` PASS (12 locale, 589/589 ve 0 English fallback); `git diff --check` PASS. In-app Browser QA 320, 360, 375, 390 ve 1280px genisliklerde sifir yatay tasma, tek H1, resmi 40px Google butonu, step focus/`aria-current` ve sifir console error/warning ile PASS. Full suite 686/708; kalan ayni 22 ana dal `ui-ux-safety` kaynak-kontrat baseline failure'idir. Release gate hosted Supabase CAPTCHA aktivasyonu ve missing/invalid-token reddi, `NEXT_PUBLIC_GOOGLE_CLIENT_ID` ile Supabase provider Web Client ID esitligi, Production JS origin, tum aktif Google Web client'larindan `https://jujaeyvyaeesmipihrrw.supabase.co/auth/v1/callback` (ve varsa custom Auth domain esdegeri) URI'sinin kaldirilmasi ve dogrudan `/authorize` negatif smoke ister. Yeni dependency, SQL/migration, env/secret, Production data, push veya deploy yoktur.
+
 ### MANUAL-20260822-REGISTER-PHONE-COUNTRY-CODE [P1] Auto-detect an editable calling code during registration
 
 Durum: Done
