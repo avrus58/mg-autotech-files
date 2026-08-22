@@ -5,7 +5,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Loader2, ShieldCheck, Upload } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
-import { authenticatedFetch } from "@/lib/authGuards";
+import { authenticatedFetch, signOutLocalStable } from "@/lib/authGuards";
+import {
+  startDeviceVerification,
+  startPasswordChangeVerification,
+} from "@/lib/deviceVerificationClient";
 import { recordGrowthAccountCreated } from "@/lib/growth/client";
 import { trackRegistrationCompleted } from "@/lib/publicAnalytics";
 import {
@@ -49,33 +53,29 @@ export default function AuthCallbackPage() {
       }
 
       const oauthSignupProvider = window.sessionStorage.getItem("mg_register_oauth_provider");
-      if (oauthSignupProvider) window.sessionStorage.removeItem("mg_register_oauth_provider");
       const oauthProfile = parseRegistrationProfileDraft(
         window.sessionStorage.getItem(OAUTH_REGISTRATION_PROFILE_KEY)
       );
-      window.sessionStorage.removeItem(OAUTH_REGISTRATION_PROFILE_KEY);
 
       if (session?.user) {
         if (oauthSignupProvider === "google" && oauthProfile) {
-          await Promise.all([
-            supabase.auth.updateUser({
-              data: {
-                ...session.user.user_metadata,
-                ...oauthProfile,
-                role: "customer",
-              },
-            }),
-            supabase
-              .from("profiles")
-              .update({
-                full_name: oauthProfile.full_name,
-                account_type: oauthProfile.account_type,
-                company_name: oauthProfile.company_name,
-                phone: oauthProfile.phone,
-                vat_id: oauthProfile.vat_id,
-              })
-              .eq("id", session.user.id),
-          ]);
+          const profileResponse = await authenticatedFetch(
+            "/api/auth/oauth-registration/finalize",
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ profile: oauthProfile }),
+            }
+          );
+          if (!profileResponse.ok) {
+            const payload = await profileResponse.json().catch(() => ({})) as {
+              error?: string;
+            };
+            setMessage(payload.error || "Registration profile could not be finalized.");
+            return;
+          }
+          window.sessionStorage.removeItem("mg_register_oauth_provider");
+          window.sessionStorage.removeItem(OAUTH_REGISTRATION_PROFILE_KEY);
         }
 
         const createdAt = new Date(session.user.created_at).getTime();
@@ -87,21 +87,59 @@ export default function AuthCallbackPage() {
           confirmedAt > 0 && Date.now() - confirmedAt < 15 * 60 * 1000;
 
         if (isRecentSignup || isRecentEmailConfirmation) {
-          void recordGrowthAccountCreated();
-          void trackRegistrationCompleted();
           try {
             await authenticatedFetch("/api/email/new-customer", {
               method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
+              headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
                 source: oauthSignupProvider === "google" ? "google" : "email",
               }),
             });
           } catch {
-            // Admin notification failure must not block the auth redirect.
+            // Notification delivery is idempotent and can be retried on resume.
           }
+        }
+
+        try {
+          const deviceState = next === "/reset-password"
+            ? await startPasswordChangeVerification()
+            : await startDeviceVerification();
+          if (deviceState.status === "revoked") {
+            await signOutLocalStable();
+            router.replace("/login");
+            return;
+          }
+          if (deviceState.status === "required") {
+            const resumePath = `/auth/callback?next=${encodeURIComponent(next)}`;
+            const loginParams = new URLSearchParams({
+              device: "1",
+              redirect: resumePath,
+            });
+            if (next === "/reset-password") {
+              loginParams.set("purpose", "password_change");
+            }
+            router.replace(`/login?${loginParams.toString()}`);
+            return;
+          }
+        } catch (error) {
+          setMessage(
+            error instanceof Error
+              ? error.message
+              : "Account security verification is temporarily unavailable."
+          );
+          return;
+        }
+
+        if (oauthSignupProvider && oauthSignupProvider !== "google") {
+          window.sessionStorage.removeItem("mg_register_oauth_provider");
+        }
+        if (oauthSignupProvider !== "google") {
+          window.sessionStorage.removeItem(OAUTH_REGISTRATION_PROFILE_KEY);
+        }
+
+        if (isRecentSignup || isRecentEmailConfirmation) {
+          void recordGrowthAccountCreated();
+          void trackRegistrationCompleted();
         }
       }
 

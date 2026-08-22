@@ -69,7 +69,10 @@ test("protected route layouts share one non-destructive browser auth boundary", 
   }
 
   const boundary = readProjectFile("src", "components", "auth", "BrowserAuthBoundary.tsx");
-  assert.match(boundary, /type AuthState = "checking" \| "authenticated" \| "recovering" \| "unavailable" \| "unauthenticated"/);
+  assert.match(boundary, /type AuthState =[\s\S]*\| "verification_required"/);
+  assert.match(boundary, /getDeviceVerificationStatus/);
+  assert.match(boundary, /assurance\.status === "required"/);
+  assert.match(boundary, /<DeviceVerificationPanel/);
   assert.match(boundary, /window\.setTimeout\(verifySession, 0\)/);
   assert.doesNotMatch(boundary, /router\.(?:push|replace)\(/);
   assert.doesNotMatch(boundary, /window\.location/);
@@ -85,7 +88,8 @@ test("protected routes reuse a verified session and recover transient checks in 
   assert.match(boundary, /const hasCachedSession = Boolean\(getStableSessionSnapshot\(\)\?\.user\)/);
   assert.match(boundary, /if \(!hasCachedSession\) startWaitTimers\(\)/);
   assert.match(boundary, /const sessionRecoveryDelays = \[350, 800, 1600, 3200, 5000\] as const/);
-  assert.match(boundary, /current === "authenticated" \? current : nextState/);
+  assert.match(boundary, /authStateRef\.current = "checking";\s*setAuthState\("checking"\);\s*setRetryKey/);
+  assert.match(boundary, /AUTH_DEVICE_VERIFICATION_REQUIRED_EVENT/);
   assert.match(boundary, /unavailableSessionDelay = 30000/);
   assert.match(boundary, /aria-live="polite"/);
   assert.doesNotMatch(boundary, /setAuthState\("recovering"\);\s*\}, 8000\)/);

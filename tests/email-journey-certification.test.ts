@@ -20,7 +20,7 @@ test("email journey certification validates every milestone without side effects
   assert.equal(report.summary.languages, 12);
   assert.equal(report.summary.milestones, 10);
   assert.equal(report.summary.lifecycleTransitions, 17);
-  assert.equal(report.summary.renderedTemplates, 465);
+  assert.equal(report.summary.renderedTemplates, 477);
   assert.deepEqual(report.sideEffects, {
     emailsSent: 0,
     databaseWrites: 0,

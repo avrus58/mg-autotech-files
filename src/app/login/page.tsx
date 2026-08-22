@@ -9,6 +9,7 @@ import {
   signOutIfEmailUnverified,
 } from "@/lib/authGuards";
 import { TurnstileChallenge } from "@/components/auth/TurnstileChallenge";
+import { DeviceVerificationPanel } from "@/components/auth/DeviceVerificationPanel";
 import {
   AUTH_CAPTCHA_REQUIRED_MESSAGE,
   authCaptchaBlocksSubmission,
@@ -54,6 +55,9 @@ export default function LoginPage() {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [deviceVerificationNextPath, setDeviceVerificationNextPath] = useState<string | null>(null);
+  const passwordChangeVerification = typeof window !== "undefined" &&
+    new URLSearchParams(window.location.search).get("purpose") === "password_change";
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [captchaResetKey, setCaptchaResetKey] = useState(0);
   const [passwordFailureState, setPasswordFailureState] = useState(
@@ -129,8 +133,9 @@ export default function LoginPage() {
 
       clearAuthLoginFailures(getBrowserAuthLoginFailureStorage());
       setPasswordFailureState(EMPTY_AUTH_LOGIN_FAILURE_STATE);
-      router.replace(requestedRedirect ?? (await getAuthenticatedHome(user.id)));
-      router.refresh();
+      setDeviceVerificationNextPath(
+        requestedRedirect ?? (await getAuthenticatedHome(user.id))
+      );
     };
 
     void redirectAuthenticatedUser();
@@ -213,9 +218,10 @@ export default function LoginPage() {
       return;
     }
 
+    setDeviceVerificationNextPath(
+      getRequestedRedirect() ?? (await getAuthenticatedHome(data.user!.id))
+    );
     setLoading(false);
-    router.replace(getRequestedRedirect() ?? (await getAuthenticatedHome(data.user!.id)));
-    router.refresh();
   };
 
   const handleGoogleLogin = async () => {
@@ -238,6 +244,20 @@ export default function LoginPage() {
       setGoogleLoading(false);
     }
   };
+
+  if (deviceVerificationNextPath) {
+    return (
+      <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#050505] px-4 py-10 text-white">
+        <div className="fixed inset-0 -z-10 bg-[radial-gradient(circle_at_20%_0%,rgba(160,18,28,0.28),transparent_32%),radial-gradient(circle_at_80%_100%,rgba(160,18,28,0.18),transparent_30%),linear-gradient(135deg,#050505,#0d0d0f_48%,#160608)]" />
+        <div className="w-full max-w-md rounded-[2rem] border border-white/10 bg-white/[0.04] p-7 shadow-2xl shadow-black/50 backdrop-blur-xl sm:p-9">
+          <DeviceVerificationPanel
+            nextPath={deviceVerificationNextPath}
+            allowRememberDevice={!passwordChangeVerification}
+          />
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#050505] px-4 py-10 text-white">

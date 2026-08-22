@@ -3436,3 +3436,42 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
   acildiginda her password isteginde token dogrulamasidir. Remote CAPTCHA OFF
   kaldi; Cloudflare/Supabase/Vercel ayari, mevcut dokuz session, secret, musteri
   verisi, push veya deploy degistirilmedi.
+
+## 2026-08-23 Adaptive customer trusted-device verification
+
+- Müşteri parola veya Google girişinden sonra yeni/güvenilmeyen tarayıcı için
+  altı haneli e-posta kodu gerekir. Kod 10 dakika, 5 deneme ve 60 saniye resend
+  sınırına sahip; hesap bazında kalıcı 15 dakika/günlük kotalar ve supplemental
+  IP rate-limit uygulanır. Ham IP ve cihaz parmak izi tutulmaz.
+- İsteğe bağlı 30 günlük güven belirteci `__Host-`, HttpOnly, Secure ve
+  SameSite=Lax cookie'de; veritabanında yalnız domain-separated HMAC olarak
+  tutulur. Ham token API JSON cevabından çıkarıldı ve yalnız Set-Cookie yolunda
+  kalır. Ayar sayfasında mevcut/diğer cihazları görme ve iptal etme eklendi.
+- `20260823000000_customer_device_verification.sql` shadow-first assurance
+  tabloları, service-only RPC'ler, restrictive müşteri RLS/Storage politikaları
+  ve web/desktop sipariş RPC wrapper'ları ekler. Pending/revoked durum, trusted
+  cookie, shadow, legacy grace ve eşzamanlı reserve/consume/revoke akışlarında
+  fail-closed; aktivasyon kendi RLS/ACL/policy/wrapper preflight'ını çalıştırır.
+- Parola değişimi güvenilir tarayıcıyı da bypass etmez: 15 dakika içinde taze
+  e-posta kodu ister, ardından tüm cihaz güvenini parola mutasyonundan önce
+  iptal eder. Normal kayıt parolası aynı 12-128 upper/lower/number/symbol
+  kuralını kullanır. Google bootstrap yalnız doğrulanmış sağlayıcı ve 30 dakikalık
+  kayıt penceresinde; desteklenmeyen desktop 428 ile açıkça fail-closed kalır.
+- Değişen kapsam: device security library/contracts, auth/account API ve UI,
+  API/File Expert korumaları, callback/login/register/reset/settings, 11-locale
+  cihaz güvenliği metni/i18n kapısı, localized transactional mail, desktop hata
+  kontratı, migration, read-only verifier, rollout runbook ve güvenlik testleri.
+  Yeni production dependency eklenmedi.
+- Kontroller: hedef paket 12/12 PASS; full suite 806/806 PASS; full ESLint PASS;
+  web ve uploader renderer/electron/node TypeScript PASS; public i18n/SEO 12
+  locale ve customer 11 locale x 637/637 PASS; Next Production build 275/275
+  PASS; homepage performans 66.4 KB gzip / 80 KB PASS; bağımsız SQL ve TS/API/UI
+  review P0=0/P1=0; `git diff --check` PASS. Worktree junction'ını reddeden ilk
+  Turbopack denemesi için root yalnız doğrulama sırasında genişletildi ve config
+  aynen geri alındı; webpack ve varsayılan Turbopack build ayrı ayrı PASS.
+- Migration/verification SQL'i PostgreSQL üzerinde çalıştırılmadı; Production'a
+  uygulanmadı. Native Supabase MFA/AAL2 değildir ve GoTrue `/auth/v1/user`
+  önünde değildir. Isolated staging SQL/E2E provası, Secure Password Change ve
+  Auth-layer ayarı, gerçek e-posta kapasitesi, HMAC secret, desktop disable veya
+  minimum-version kapısı tamamlanmadan enforcement açılmamalı. Secret, gerçek
+  müşteri/e-posta, Supabase/Vercel, ödeme, push veya deploy mutation yapılmadı.

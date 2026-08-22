@@ -1,7 +1,10 @@
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabaseClient";
+import { CUSTOMER_SESSION_REVOKED_MESSAGE } from "@/lib/customerDeviceContracts";
 
 export const AUTH_SESSION_REQUIRED_EVENT = "mg-autotech:auth-session-required";
+export const AUTH_DEVICE_VERIFICATION_REQUIRED_EVENT =
+  "mg-autotech:device-verification-required";
 export const AUTH_SESSION_REQUIRED_MESSAGE = "Your secure session has ended. Please log in again.";
 export const AUTH_SESSION_RECOVERY_MESSAGE =
   "The secure session could not be synchronized. Please retry in a moment.";
@@ -215,6 +218,12 @@ export function notifySessionRequired() {
   });
 }
 
+export function notifyDeviceVerificationRequired() {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event(AUTH_DEVICE_VERIFICATION_REQUIRED_EVENT));
+  }
+}
+
 export async function authenticatedFetch(input: RequestInfo | URL, init?: RequestInit) {
   const send = (accessToken: string) => {
     const headers = new Headers(init?.headers);
@@ -233,6 +242,22 @@ export async function authenticatedFetch(input: RequestInfo | URL, init?: Reques
     if (!session?.access_token) continue;
 
     const response = await send(session.access_token);
+    if (response.status === 428) {
+      notifyDeviceVerificationRequired();
+      return response;
+    }
+    if (response.status === 401) {
+      const payload = await response.clone().json().catch(() => null) as
+        | { error?: unknown }
+        | null;
+      if (payload?.error === CUSTOMER_SESSION_REVOKED_MESSAGE) {
+        await signOutLocalStable();
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new Event(AUTH_SESSION_REQUIRED_EVENT));
+        }
+        return response;
+      }
+    }
     if (response.status !== 401) return response;
   }
 
@@ -248,6 +273,11 @@ export async function authenticatedFetch(input: RequestInfo | URL, init?: Reques
 export async function signOutStable() {
   setCachedSession(null);
   await supabase.auth.signOut();
+}
+
+export async function signOutLocalStable() {
+  setCachedSession(null);
+  await supabase.auth.signOut({ scope: "local" });
 }
 
 export function isEmailVerified(user: User) {

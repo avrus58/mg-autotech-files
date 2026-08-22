@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
-import { getCurrentServerUser, isFileExpertAdmin } from "@/lib/fileExpert/server";
+import { isFileExpertAdmin, requireFileExpertUser } from "@/lib/fileExpert/server";
 import {
   redactBinaryPreviews,
   sanitizeFileExpertJobForCustomer,
@@ -19,11 +19,9 @@ export async function GET(
   context: { params: Promise<{ id: string }> }
 ) {
   const { id } = await context.params;
-  const user = await getCurrentServerUser(request);
-
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const auth = await requireFileExpertUser(request);
+  if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
+  const user = auth.user;
 
   const supabaseAdmin = getSupabaseAdmin();
   const isAdmin = await isFileExpertAdmin(user.id);

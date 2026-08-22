@@ -124,6 +124,13 @@ const customerCopy: Record<
       ctaLabel: "Reset password securely",
       footerNote: "This security link is intended only for the specified customer account. Do not share it with anyone.",
     },
+    customer_device_verification: {
+      label: "Confirm security check",
+      subject: "MG AutoTech - Account security code",
+      title: "Confirm this security check",
+      intro: "Use this security code to continue securely with your MG AutoTech customer account.",
+      extraText: "If you did not start this action, change your password and contact support. Never share this code with anyone.",
+    },
     request_created: {
       label: "Request created",
       subject: (context) => `MG AutoTech - Your request ${context.requestNumber} was created`,
@@ -286,6 +293,13 @@ const customerCopy: Record<
       extraText: "Bu talebi siz oluşturmadıysanız e-postayı dikkate almayın. Mevcut şifreniz değişmeden kalacaktır.",
       ctaLabel: "Şifreyi güvenle sıfırla",
       footerNote: "Bu güvenlik bağlantısı yalnızca belirtilen müşteri hesabı içindir. Bağlantıyı hiç kimseyle paylaşmayın.",
+    },
+    customer_device_verification: {
+      label: "Güvenlik kontrolünü doğrula",
+      subject: "MG AutoTech - Hesap güvenlik kodu",
+      title: "Bu güvenlik kontrolünü doğrulayın",
+      intro: "MG AutoTech müşteri hesabınızda güvenle devam etmek için bu güvenlik kodunu kullanın.",
+      extraText: "Bu işlemi siz başlatmadıysanız şifrenizi değiştirin ve destekle iletişime geçin. Bu kodu hiç kimseyle paylaşmayın.",
     },
     request_created: {
       label: "Talep oluşturuldu",
@@ -536,6 +550,13 @@ function customerEventDetails(
       [copy.account, context.customerEmail],
     ]);
   }
+  if (eventType === "customer_device_verification") {
+    return detailTable([
+      ["Security code", context.verificationCode],
+      ["Device", context.deviceLabel],
+      ["Valid for", `${Number(context.verificationMinutes ?? 10)} minutes`],
+    ]);
+  }
   if (eventType === "file_uploaded") {
     return detailTable([
       [copy.reference, context.requestNumber],
@@ -578,7 +599,9 @@ function renderCustomerTemplate(
   const extraText = event.extraText ? value(event.extraText, context) : null;
   const ctaUrl = eventType === "customer_password_reset"
     ? context.recoveryUrl
-    : context.dashboardUrl;
+    : eventType === "customer_device_verification"
+      ? null
+      : context.dashboardUrl;
   const ctaLabel = event.ctaLabel || copy.openDashboard;
   const details = customerEventDetails(eventType, context, copy);
   const actionRequired = context.actionRequired
@@ -618,6 +641,8 @@ function renderCustomerTemplate(
     context.bankIban ? `IBAN: ${safeText(context.bankIban)}` : null,
     context.bankBic ? `BIC: ${safeText(context.bankBic)}` : null,
     context.messagePreview ? `${copy.message}: ${safeText(context.messagePreview)}` : null,
+    context.verificationCode ? `Security code: ${safeText(context.verificationCode)}` : null,
+    context.deviceLabel ? `Device: ${safeText(context.deviceLabel)}` : null,
     extraText,
     context.actionRequired ? `${copy.actionRequired}: ${safeText(context.actionRequired)}` : null,
     "",

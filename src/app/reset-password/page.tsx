@@ -5,7 +5,12 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Loader2, Lock, ShieldCheck, Upload } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
-import { signOutStable } from "@/lib/authGuards";
+import { authenticatedFetch, signOutLocalStable, signOutStable } from "@/lib/authGuards";
+import {
+  CUSTOMER_REPLACEMENT_PASSWORD_MAX_LENGTH,
+  CUSTOMER_REPLACEMENT_PASSWORD_MIN_LENGTH,
+  validateCustomerReplacementPassword,
+} from "@/lib/customerPasswordSecurity";
 
 export default function ResetPasswordPage() {
   const router = useRouter();
@@ -38,8 +43,9 @@ export default function ResetPasswordPage() {
 
     setMessage("");
 
-    if (password.length < 6) {
-      setMessage("Password must be at least 6 characters.");
+    const validation = validateCustomerReplacementPassword(password);
+    if (!validation.valid) {
+      setMessage(validation.errors[0] || "Password does not meet the security requirements.");
       return;
     }
 
@@ -50,10 +56,24 @@ export default function ResetPasswordPage() {
 
     setLoading(true);
 
-    const { error } = await supabase.auth.updateUser({ password });
-
-    if (error) {
-      setMessage(error.message);
+    const updateResponse = await authenticatedFetch(
+      "/api/account/security/password",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password }),
+      }
+    ).catch(() => null);
+    const payload = await updateResponse?.json().catch(() => ({})) as
+      | { error?: string; sessionRevoked?: boolean }
+      | undefined;
+    if (!updateResponse?.ok) {
+      if (payload?.sessionRevoked) {
+        await signOutLocalStable();
+        router.replace("/forgot-password?retry=security");
+        return;
+      }
+      setMessage(payload?.error || "Password could not be updated safely. Please try again.");
       setLoading(false);
       return;
     }
@@ -111,8 +131,11 @@ export default function ResetPasswordPage() {
               <input
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
-                placeholder="Minimum 6 characters"
+                placeholder={`Minimum ${CUSTOMER_REPLACEMENT_PASSWORD_MIN_LENGTH} characters`}
                 type="password"
+                minLength={CUSTOMER_REPLACEMENT_PASSWORD_MIN_LENGTH}
+                maxLength={CUSTOMER_REPLACEMENT_PASSWORD_MAX_LENGTH}
+                autoComplete="new-password"
                 className="h-14 w-full rounded-2xl border border-white/10 bg-black/35 pl-12 pr-4 text-sm font-bold text-white outline-none transition placeholder:text-zinc-600 focus:border-red-700"
                 required
               />
@@ -130,6 +153,9 @@ export default function ResetPasswordPage() {
                 onChange={(event) => setConfirmPassword(event.target.value)}
                 placeholder="Repeat new password"
                 type="password"
+                minLength={CUSTOMER_REPLACEMENT_PASSWORD_MIN_LENGTH}
+                maxLength={CUSTOMER_REPLACEMENT_PASSWORD_MAX_LENGTH}
+                autoComplete="new-password"
                 className="h-14 w-full rounded-2xl border border-white/10 bg-black/35 pl-12 pr-4 text-sm font-bold text-white outline-none transition placeholder:text-zinc-600 focus:border-red-700"
                 required
               />

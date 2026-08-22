@@ -1,4 +1,14 @@
 import type { User } from "@supabase/supabase-js";
+import {
+  CUSTOMER_DEVICE_VERIFICATION_REQUIRED_CODE,
+  CustomerDeviceSecurityUnavailableError,
+  extractSessionIdFromAccessToken,
+  getCustomerDeviceAssuranceState,
+} from "@/lib/customerDeviceSecurity";
+import {
+  CUSTOMER_SESSION_REVOKED_CODE,
+  CUSTOMER_SESSION_REVOKED_MESSAGE,
+} from "@/lib/customerDeviceContracts";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import {
   hasAllStaffPermissions,
@@ -10,16 +20,22 @@ import {
   type StaffRole,
 } from "@/lib/staffPermissions";
 
-type AuthResult =
-  | { ok: true; user: User; access: StaffAccess }
-  | { ok: false; status: number; error: string };
+export type AuthResult =
+  | {
+      ok: true;
+      user: User;
+      access: StaffAccess;
+      accessToken: string;
+      sessionId: string | null;
+    }
+  | { ok: false; status: number; error: string; code?: string };
 
 function bearerToken(request: Request) {
   const value = request.headers.get("authorization") ?? "";
   return value.toLowerCase().startsWith("bearer ") ? value.slice(7).trim() : "";
 }
 
-export async function requireApiUser(request: Request): Promise<AuthResult> {
+export async function requireBaseApiUser(request: Request): Promise<AuthResult> {
   const token = bearerToken(request);
   if (!token) return { ok: false, status: 401, error: "Unauthorized" };
 
@@ -73,6 +89,8 @@ export async function requireApiUser(request: Request): Promise<AuthResult> {
   return {
     ok: true,
     user,
+    accessToken: token,
+    sessionId: extractSessionIdFromAccessToken(token),
     access: {
       role: profile?.role ?? null,
       staffRole: profile?.staff_role ?? null,
@@ -81,6 +99,53 @@ export async function requireApiUser(request: Request): Promise<AuthResult> {
         : [],
     },
   };
+}
+
+export async function requireApiUser(request: Request): Promise<AuthResult> {
+  const auth = await requireBaseApiUser(request);
+  if (!auth.ok || isStaffMember(auth.access)) return auth;
+
+  if (!auth.access.role) {
+    return {
+      ok: false,
+      status: 503,
+      error: "Customer account access is temporarily unavailable.",
+    };
+  }
+
+  try {
+    const assurance = await getCustomerDeviceAssuranceState({
+      user: auth.user,
+      sessionId: auth.sessionId,
+    });
+    if (assurance.status === "required") {
+      return {
+        ok: false,
+        status: 428,
+        error: "Verify this device to continue.",
+        code: CUSTOMER_DEVICE_VERIFICATION_REQUIRED_CODE,
+      };
+    }
+    if (assurance.status === "revoked") {
+      return {
+        ok: false,
+        status: 401,
+        error: CUSTOMER_SESSION_REVOKED_MESSAGE,
+        code: CUSTOMER_SESSION_REVOKED_CODE,
+      };
+    }
+  } catch (error) {
+    if (error instanceof CustomerDeviceSecurityUnavailableError) {
+      return {
+        ok: false,
+        status: 503,
+        error: error.message,
+      };
+    }
+    throw error;
+  }
+
+  return auth;
 }
 
 export async function requireStaffPermission(

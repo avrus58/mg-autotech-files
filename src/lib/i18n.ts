@@ -12,6 +12,10 @@ import {
   customerSurfaceLocaleOrder,
   customerSurfaceTranslations,
 } from "@/lib/customerSurfaceTranslations";
+import {
+  customerDeviceLocaleOrder,
+  customerDeviceTranslations,
+} from "@/lib/customerDeviceTranslations";
 import type { LocaleCode } from "@/lib/i18nConfig";
 
 export {
@@ -6200,6 +6204,14 @@ Object.entries(customerJourneyTranslations).forEach(([source, values]) => {
 
 Object.entries(customerSurfaceTranslations).forEach(([source, values]) => {
   customerSurfaceLocaleOrder.forEach((locale, index) => {
+    const value = values[index];
+    exactTranslations[locale][source] = value;
+    termTranslations[locale][source] = value;
+  });
+});
+
+Object.entries(customerDeviceTranslations).forEach(([source, values]) => {
+  customerDeviceLocaleOrder.forEach((locale, index) => {
     const value = values[index];
     exactTranslations[locale][source] = value;
     termTranslations[locale][source] = value;

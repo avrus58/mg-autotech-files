@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import {
-  getCurrentServerUser,
   isFileExpertAdmin,
+  requireFileExpertUser,
 } from "@/lib/fileExpert/server";
 import { sanitizeFileExpertJobsForCustomer } from "@/lib/fileExpert/publicResult";
 
@@ -32,8 +32,9 @@ const jobListColumns = [
 ].join(",");
 
 export async function GET(request: Request) {
-  const user = await getCurrentServerUser(request);
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const auth = await requireFileExpertUser(request);
+  if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
+  const user = auth.user;
 
   const url = new URL(request.url);
   const includeAll = url.searchParams.get("all") === "1";

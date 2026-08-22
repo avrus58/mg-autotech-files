@@ -149,9 +149,8 @@ test("server-side profile lookup failures stay retryable instead of becoming 403
 
   assert.match(apiAuth, /else if \(current\.error\) \{/);
   assert.match(apiAuth, /if \(legacy\.error\) \{/);
-  assert.equal(
-    (apiAuth.match(/status: 503/g) ?? []).length,
-    2,
-    "both current and legacy profile query failures must be service-unavailable responses"
+  assert.ok(
+    (apiAuth.match(/status: 503/g) ?? []).length >= 2,
+    "profile and customer-security lookup failures must remain service-unavailable responses"
   );
 });

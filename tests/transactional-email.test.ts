@@ -169,6 +169,7 @@ test("every customer lifecycle template renders complete output in all supported
   const customerEvents = [
     "customer_welcome",
     "customer_password_reset",
+    "customer_device_verification",
     "request_created",
     "request_abandoned_reminder",
     "request_received",
@@ -206,6 +207,8 @@ test("every customer lifecycle template renders complete output in all supported
     credits: 10,
     amountLabel: "36.00 EUR",
     recoveryUrl: "https://example.supabase.co/auth/v1/verify?token=hashed-token&type=recovery",
+    verificationCode: "654321",
+    deviceLabel: "Chrome on Windows",
     dashboardUrl: "https://file.mgautotech.de/dashboard",
   };
 
@@ -213,6 +216,10 @@ test("every customer lifecycle template renders complete output in all supported
     for (const language of supportedTransactionalEmailLanguages) {
       const rendered = renderTransactionalEmailTemplate(eventType, context, language);
       assert.ok(rendered.subject.trim(), `${eventType}:${language}:subject`);
+      if (eventType === "customer_device_verification") {
+        assert.doesNotMatch(rendered.subject, /654321/, `${eventType}:${language}:subject must not expose the code`);
+        assert.match(rendered.text, /654321/, `${eventType}:${language}:text`);
+      }
       assert.ok(rendered.text.trim(), `${eventType}:${language}:text`);
       assert.match(rendered.html, new RegExp(`<html lang="${language}">`));
       assert.ok(
@@ -409,7 +416,7 @@ test("registration notifications happen only after verified auth callback", () =
   assert.doesNotMatch(register, /customerEmail:\s*cleanEmail[\s\S]{0,180}\/api\/email\/new-customer/);
   assert.match(callback, /authenticatedFetch\("\/api\/email\/new-customer"/);
   assert.match(callback, /isRecentEmailConfirmation/);
-  assert.match(route, /requireApiUser/);
+  assert.match(route, /requireBaseApiUser/);
   assert.match(route, /auth\.user\.email/);
   assert.match(route, /resolveTransactionalEmailLanguageFromCookie/);
   assert.match(route, /email_language: language/);

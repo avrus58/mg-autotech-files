@@ -34,6 +34,11 @@ import {
   OAUTH_REGISTRATION_PROFILE_KEY,
 } from "@/lib/registrationProfile";
 import {
+  CUSTOMER_REPLACEMENT_PASSWORD_MAX_LENGTH,
+  CUSTOMER_REPLACEMENT_PASSWORD_MIN_LENGTH,
+  validateCustomerReplacementPassword,
+} from "@/lib/customerPasswordSecurity";
+import {
   ArrowLeft,
   ArrowRight,
   Building2,
@@ -180,8 +185,12 @@ export default function RegisterPage() {
       return false;
     }
 
-    if (password.length < 6) {
-      setMessage("Password must be at least 6 characters.");
+    const passwordValidation = validateCustomerReplacementPassword(password);
+    if (!passwordValidation.valid) {
+      setMessage(
+        passwordValidation.errors[0] ||
+          "Password does not meet the security requirements."
+      );
       return false;
     }
 
@@ -654,10 +663,12 @@ export default function RegisterPage() {
                       label="Password"
                       value={password}
                       onChange={setPassword}
-                      placeholder="Minimum 6 characters"
+                      placeholder={`Minimum ${CUSTOMER_REPLACEMENT_PASSWORD_MIN_LENGTH} characters`}
                       icon={<Lock className="h-5 w-5" />}
                       type="password"
                       autoComplete="new-password"
+                      minLength={CUSTOMER_REPLACEMENT_PASSWORD_MIN_LENGTH}
+                      maxLength={CUSTOMER_REPLACEMENT_PASSWORD_MAX_LENGTH}
                       required
                     />
                     <TextField
@@ -668,6 +679,8 @@ export default function RegisterPage() {
                       icon={<ShieldCheck className="h-5 w-5" />}
                       type="password"
                       autoComplete="new-password"
+                      minLength={CUSTOMER_REPLACEMENT_PASSWORD_MIN_LENGTH}
+                      maxLength={CUSTOMER_REPLACEMENT_PASSWORD_MAX_LENGTH}
                       required
                     />
                   </div>
@@ -966,6 +979,7 @@ function TextField({
   icon,
   type = "text",
   autoComplete,
+  minLength,
   maxLength,
   required = false,
 }: {
@@ -976,6 +990,7 @@ function TextField({
   icon?: ReactNode;
   type?: string;
   autoComplete?: string;
+  minLength?: number;
   maxLength?: number;
   required?: boolean;
 }) {
@@ -1001,6 +1016,7 @@ function TextField({
           placeholder={placeholder}
           type={type}
           autoComplete={autoComplete}
+          minLength={minLength}
           maxLength={maxLength}
           required={required}
           className={`h-11 w-full rounded-xl border border-white/10 bg-black/35 px-4 text-sm font-bold text-white outline-none transition placeholder:text-zinc-600 focus:border-red-700 ${

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import {
-  getCurrentServerUser,
+  requireFileExpertUser,
   sanitizeFileExpertName,
   validateFileExpertDescriptor,
 } from "@/lib/fileExpert/server";
@@ -28,8 +28,9 @@ const prepareSchema = z.object({
 });
 
 export async function POST(request: Request) {
-  const user = await getCurrentServerUser(request);
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const auth = await requireFileExpertUser(request);
+  if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
+  const user = auth.user;
   if (!user.email_confirmed_at && !user.confirmed_at) {
     return NextResponse.json({ error: "Please verify your e-mail address first." }, { status: 403 });
   }

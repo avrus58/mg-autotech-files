@@ -11,6 +11,10 @@ const authCallback = readFileSync(
   resolve(process.cwd(), "src", "app", "auth", "callback", "page.tsx"),
   "utf8"
 );
+const oauthFinalizeRoute = readFileSync(
+  resolve(process.cwd(), "src", "app", "api", "auth", "oauth-registration", "finalize", "route.ts"),
+  "utf8"
+);
 
 test("registration uses a compact laptop layout without clipping vertical content", () => {
   assert.match(registerPage, /overflow-x-hidden/);
@@ -37,8 +41,10 @@ test("Google registration carries the validated customer and company profile", (
   assert.match(registerPage, /OAUTH_REGISTRATION_PROFILE_KEY/);
   assert.match(authCallback, /parseRegistrationProfileDraft/);
   assert.match(authCallback, /oauthSignupProvider === "google" && oauthProfile/);
-  assert.match(authCallback, /company_name: oauthProfile\.company_name/);
-  assert.match(authCallback, /\.eq\("id", session\.user\.id\)/);
+  assert.match(authCallback, /JSON\.stringify\(\{ profile: oauthProfile \}\)/);
+  assert.match(oauthFinalizeRoute, /company_name: profile\.company_name/);
+  assert.match(oauthFinalizeRoute, /\.eq\("id", auth\.user\.id\)/);
+  assert.match(oauthFinalizeRoute, /registrationAge > 30 \* 60 \* 1000/);
 });
 
 test("private registration keeps company-only controls and metadata out of the account", () => {

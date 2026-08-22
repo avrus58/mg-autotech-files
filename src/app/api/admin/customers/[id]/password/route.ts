@@ -7,6 +7,7 @@ import { resolveTransactionalEmailLanguageFromMetadata } from "@/lib/email/langu
 import { getSiteUrl } from "@/lib/email/render";
 import { isPrimaryOwner } from "@/lib/staffPermissions";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
+import { revokeAllCustomerDeviceTrust } from "@/lib/customerDeviceSecurity";
 
 const passwordActionSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("send_reset_email") }).strict(),
@@ -175,6 +176,16 @@ export async function POST(
       action: "send_reset_email",
       message: "Secure password reset email sent to the customer's registered address.",
     });
+  }
+
+  try {
+    await revokeAllCustomerDeviceTrust(idResult.data, admin);
+  } catch {
+    await finishAudit("failed");
+    return response(
+      { error: "Customer security sessions could not be revoked. The password was not changed." },
+      503
+    );
   }
 
   const updateResult = await admin.auth.admin.updateUserById(idResult.data, {

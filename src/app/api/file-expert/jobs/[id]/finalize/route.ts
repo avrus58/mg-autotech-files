@@ -2,9 +2,9 @@ import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import {
   analyzeFileExpertJob,
-  getCurrentServerUser,
   isExpectedFileExpertStoragePath,
   isFileExpertAdmin,
+  requireFileExpertUser,
   safeFileExpertAnalysisError,
 } from "@/lib/fileExpert/server";
 import {
@@ -22,8 +22,9 @@ export async function POST(
 ) {
   const operationDeadlineAt = Date.now() + fileExpertRouteOperationBudgetMs;
   const { id } = await context.params;
-  const user = await getCurrentServerUser(request);
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const auth = await requireFileExpertUser(request);
+  if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
+  const user = auth.user;
   if (!user.email_confirmed_at && !user.confirmed_at) {
     return NextResponse.json({ error: "Please verify your e-mail address first." }, { status: 403 });
   }

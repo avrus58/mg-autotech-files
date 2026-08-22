@@ -216,6 +216,16 @@ export function assertAppCheckAllowsWork(app: AppCheckPayload) {
   }
 }
 
+function desktopApiError(response: Response, data: { error?: unknown }) {
+  if (response.status === 428) {
+    return new Error(
+      "This desktop version cannot complete the required new-device verification. Use the web portal until a compatible desktop update is installed."
+    );
+  }
+  const message = typeof data.error === "string" ? data.error : "";
+  return new Error(message || `Request failed with ${response.status}`);
+}
+
 export async function apiFetch<T>(path: string, session: Session, init?: RequestInit): Promise<T> {
   const response = await fetch(`${apiBaseUrl}${path}`, {
     ...init,
@@ -225,7 +235,7 @@ export async function apiFetch<T>(path: string, session: Session, init?: Request
     },
   });
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data.error || `Request failed with ${response.status}`);
+  if (!response.ok) throw desktopApiError(response, data);
   return data as T;
 }
 

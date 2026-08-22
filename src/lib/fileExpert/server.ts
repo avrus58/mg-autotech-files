@@ -1,7 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
-import { getSupabaseServer } from "@/lib/supabaseServer";
-import { requireStaffPermission } from "@/lib/apiAuth";
+import { requireApiUser, requireStaffPermission } from "@/lib/apiAuth";
 import { analyzeFileExpertBuffers, buildPatternSignature, sha256Buffer } from "@/lib/fileExpert/analyzer";
 import { generateAiFileExpertReport } from "@/lib/ai";
 import { findVehicleCandidates } from "@/lib/fileExpert/vehicleMatcher";
@@ -108,26 +107,13 @@ export function validateFileExpertDescriptor(file: { name: string; size: number 
 }
 
 export async function getCurrentServerUser(request?: Request) {
-  const token = request?.headers.get("authorization")?.replace(/^Bearer\s+/i, "").trim();
-  const cookieHeader = request?.headers.get("cookie") ?? "";
-  const hasSupabaseAuthCookie = /(?:^|;\s*)sb-[^=;]+-auth-token(?:\.\d+)?=/.test(cookieHeader);
+  if (!request) return null;
+  const auth = await requireApiUser(request);
+  return auth.ok ? auth.user : null;
+}
 
-  if (request && !token && !hasSupabaseAuthCookie) return null;
-
-  const supabase = await getSupabaseServer();
-
-  if (token) {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser(token);
-
-    if (user) return user;
-  }
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  return user;
+export async function requireFileExpertUser(request: Request) {
+  return requireApiUser(request);
 }
 
 export async function isFileExpertAdmin(userId: string) {

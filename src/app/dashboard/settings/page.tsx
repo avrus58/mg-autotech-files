@@ -8,6 +8,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { resolveTransactionalEmailLanguageFromMetadata } from "@/lib/email/language";
 import type { TransactionalEmailLanguage } from "@/lib/email/types";
 import { supportedLocales } from "@/lib/i18nConfig";
+import { TrustedDevicesCard } from "@/components/account/TrustedDevicesCard";
 import {
   ArrowLeft,
   AlertTriangle,
@@ -579,6 +580,7 @@ export default function CustomerSettingsPage() {
             </button>
           </aside>
         </form>
+        <TrustedDevicesCard />
       </section>
     </main>
   );

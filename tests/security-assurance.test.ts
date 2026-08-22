@@ -61,9 +61,8 @@ test("customer-owned high-risk routes authenticate before using the admin client
 
 test("File Expert rejects anonymous requests before initializing Supabase", () => {
   const source = readProjectFile("src", "lib", "fileExpert", "server.ts");
-  const anonymousGuard = source.indexOf("if (request && !token && !hasSupabaseAuthCookie) return null");
-  const serverClient = source.indexOf("const supabase = await getSupabaseServer()");
-  assert.ok(anonymousGuard >= 0 && serverClient > anonymousGuard);
+  assert.match(source, /requireFileExpertUser\(request: Request\)[\s\S]*requireApiUser\(request\)/);
+  assert.doesNotMatch(source, /getSupabaseServer/);
   assert.match(source, /requireStaffPermission\(request, "file_expert\.manage"\)/);
 });
 

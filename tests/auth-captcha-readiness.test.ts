@@ -90,6 +90,10 @@ test("all active Supabase CAPTCHA auth clients pass a fresh token", () => {
     resolve("src/app/reset-password/page.tsx"),
     "utf8"
   );
+  const passwordUpdateRoute = readFileSync(
+    resolve("src/app/api/account/security/password/route.ts"),
+    "utf8"
+  );
   const desktop = readFileSync(
     resolve("apps/customer-uploader/src/App.tsx"),
     "utf8"
@@ -110,7 +114,10 @@ test("all active Supabase CAPTCHA auth clients pass a fresh token", () => {
   assert.match(recovery, /resetPasswordForEmail[\s\S]*captchaToken/);
   assert.match(desktop, /getDesktopAuthCaptchaToken/);
   assert.match(desktop, /signInWithPassword\([\s\S]*captchaToken/);
-  assert.match(passwordUpdate, /updateUser\(\{ password \}\)/);
+  assert.match(passwordUpdate, /\/api\/account\/security\/password/);
+  assert.doesNotMatch(passwordUpdate, /supabase\.auth\.updateUser\(\{ password/);
+  assert.match(passwordUpdateRoute, /requireApiUser\(request\)/);
+  assert.match(passwordUpdateRoute, /admin\.auth\.admin\.updateUserById/);
   assert.doesNotMatch(passwordUpdate, /captchaToken/);
 });
 

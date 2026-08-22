@@ -13,6 +13,8 @@ const customerSurfaceRoots = [
   "src/app/reset-password",
   "src/app/payment",
   "src/components/auth/AuthRequired.tsx",
+  "src/components/auth/DeviceVerificationPanel.tsx",
+  "src/components/account/TrustedDevicesCard.tsx",
   "src/components/dashboard/DashboardClient.tsx",
 ] as const;
 

@@ -4,6 +4,7 @@ export const transactionalEmailEventTypes = [
   "customer_registered",
   "customer_welcome",
   "customer_password_reset",
+  "customer_device_verification",
   "request_created",
   "request_abandoned_reminder",
   "request_received",
@@ -85,6 +86,9 @@ export type TransactionalEmailContext = {
   supportEmail?: string | null;
   companyName?: string | null;
   recoveryUrl?: string | null;
+  verificationCode?: string | null;
+  verificationMinutes?: number | null;
+  deviceLabel?: string | null;
 };
 
 export type RenderedTransactionalEmail = {

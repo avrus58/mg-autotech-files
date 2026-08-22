@@ -193,6 +193,44 @@ const deTemplates: Record<TransactionalEmailEventType, TemplateDefinition> = {
       };
     },
   },
+  customer_device_verification: {
+    label: "Sicherheitsprüfung bestätigen",
+    audience: "customer",
+    render: (context) => {
+      const code = safeText(context.verificationCode, "------");
+      const minutes = Number(context.verificationMinutes ?? 10);
+      const title = "Sicherheitsprüfung bestätigen";
+      const intro = "Verwenden Sie diesen Sicherheitscode, um sicher mit Ihrem MG AutoTech Kundenkonto fortzufahren.";
+      const html = htmlLayout({
+        language: "de",
+        preheader: "Bestätigen Sie die Sicherheitsprüfung für Ihr Kundenkonto.",
+        title,
+        intro,
+        content: `${detailTable([
+          ["Sicherheitscode", code],
+          ["Gerät", context.deviceLabel],
+          ["Gültigkeit", `${minutes} Minuten`],
+        ])}<p style="margin:18px 0 0;color:#3f3f46;line-height:1.65;">Wenn Sie diese Aktion nicht gestartet haben, ändern Sie Ihr Passwort und kontaktieren Sie den Support.</p>`,
+        footerNote: "Teilen Sie diesen Sicherheitscode niemals mit anderen Personen. MG AutoTech fragt nicht telefonisch oder im Chat danach.",
+      });
+      const text = textBlock([
+        "MG AutoTech",
+        title,
+        "",
+        `Sicherheitscode: ${code}`,
+        context.deviceLabel ? `Gerät: ${safeText(context.deviceLabel)}` : null,
+        `Gültigkeit: ${minutes} Minuten`,
+        "",
+        "Wenn Sie diese Aktion nicht gestartet haben, ändern Sie Ihr Passwort und kontaktieren Sie den Support.",
+        "Teilen Sie diesen Sicherheitscode niemals mit anderen Personen.",
+      ]);
+      return {
+        subject: "MG AutoTech – Sicherheitscode für Ihr Konto",
+        html,
+        text,
+      };
+    },
+  },
   request_created: {
     label: "Anfrage erstellt",
     audience: "customer",

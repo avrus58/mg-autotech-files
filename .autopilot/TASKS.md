@@ -76,6 +76,36 @@ Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
 
+### MANUAL-20260823-ADAPTIVE-CUSTOMER-DEVICE-VERIFICATION [P1] Tanınmayan cihazda müşteri e-posta doğrulaması
+
+Durum: Done
+
+Fingerprint: `auth-security|customer-password-login|unknown-device-session-accepted-without-step-up|server-enforced-email-device-verification`
+
+Sonuc: Müşteri parola/Google girişinden sonra yeni veya güvenilmeyen tarayıcı,
+10 dakika geçerli ve 5 denemeli tek kullanımlık e-posta koduyla doğrulanır.
+İsteğe bağlı 30 günlük güven HttpOnly/Secure/host-only cookie'de; sunucuda yalnız
+HMAC olarak tutulur ve ham token API JSON cevabına girmez. Müşteri cihaz listesini
+görüp tek cihazı veya diğer cihazları iptal edebilir. Parola değişimi her zaman
+15 dakika içinde taze e-posta kodu ister ve tüm cihaz güvenini iptal eder.
+
+Pending/revoked müşteri oturumları API, Data API, korumalı Storage ve sipariş
+RPC'lerinde migration/RLS/ACL katmanıyla fail-closed kalır; shadow, legacy grace,
+trusted-cookie ve eşzamanlı challenge kenarları kapatıldı. IP yalnız rate-limit
+sinyalidir; ham IP/parmak izi tutulmaz. Google bootstrap son kayıt penceresiyle
+sınırlı, desteklenmeyen desktop 428 ile kapalı ve güçlü müşteri parola kuralı
+12-128 karaktere yükseltildi.
+
+Dogrulama: Hedef güvenlik paketi 12/12 PASS; full suite 806/806 PASS; full ESLint
+PASS; web ve customer-uploader üç TypeScript projesi PASS; public 12 locale ve
+customer 11 locale x 637/637 PASS; Production Next build 275/275 PASS; homepage
+performans 66.4 KB gzip / 80 KB PASS; bağımsız SQL ve TS/API/UI review P0=0/P1=0;
+`git diff --check` PASS. Migration yalnız statik incelendi, shadow-first ve canlıya
+uygulanmadı; secret, gerçek e-posta/müşteri, Supabase/Vercel, push veya deploy
+mutation yapılmadı. Production activation için isolated staging SQL/E2E provası,
+Secure Password Change/Auth-layer kontrolü ve desktop disable/min-version kapısı
+zorunludur; bu custom kontrol native MFA/AAL2 değildir.
+
 ### MANUAL-20260822-ADAPTIVE-AUTH-TURNSTILE [P1] Bes hatadan sonra gorunur Turnstile
 
 Durum: Done
