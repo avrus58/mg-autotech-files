@@ -99,7 +99,7 @@ const guideGroups: GuideGroup[] = [
     links: [
       { href: "/tools", label: "All workshop tools", detail: "Open the complete preparation and calculation toolkit." },
       { href: "/tools/torque-power-calculator", label: "Torque and power calculator", detail: "Estimate kW, HP and PS from measured torque and RPM." },
-      { href: "/tools/autotuner-log-analyzer", label: "AutoTuner log analyzer", detail: "Inspect RPM and torque rows and create a local report." },
+      { href: "/#tools", label: "Quick datalog power check", detail: "Preview peak torque and estimated power from a compatible local text export." },
     ],
   },
 ];

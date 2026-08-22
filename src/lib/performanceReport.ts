@@ -1,3 +1,11 @@
+import {
+  analyzeLogStudio,
+  extractLogStudioPerformanceRows,
+  maxCalculatedEngineTorqueNm,
+  selectLogStudioPerformanceChannels,
+  type LogStudioAnalysis,
+} from "@/lib/logAnalysisStudio";
+
 export type PerformanceLogPoint = {
   rpm: number;
   torque: number;
@@ -7,6 +15,7 @@ export type PerformanceLogPoint = {
 
 export type PerformanceLogFormat =
   | "autotuner_csv"
+  | "generic_tabular_log"
   | "rpm_torque_rows"
   | "unknown";
 
@@ -43,75 +52,6 @@ export function calculatePowerFromTorque(torqueNm: number, rpm: number) {
   return { kw, hp };
 }
 
-function splitDelimitedLine(line: string, delimiter: string) {
-  const values: string[] = [];
-  let current = "";
-  let quoted = false;
-
-  for (let index = 0; index < line.length; index += 1) {
-    const char = line[index];
-    const next = line[index + 1];
-
-    if (char === '"' && next === '"') {
-      current += '"';
-      index += 1;
-      continue;
-    }
-
-    if (char === '"') {
-      quoted = !quoted;
-      continue;
-    }
-
-    if (char === delimiter && !quoted) {
-      values.push(current.trim());
-      current = "";
-      continue;
-    }
-
-    current += char;
-  }
-
-  values.push(current.trim());
-  return values;
-}
-
-function countDelimiter(line: string, delimiter: string) {
-  let count = 0;
-  let quoted = false;
-
-  for (let index = 0; index < line.length; index += 1) {
-    const char = line[index];
-    const next = line[index + 1];
-
-    if (char === '"' && next === '"') {
-      index += 1;
-      continue;
-    }
-
-    if (char === '"') {
-      quoted = !quoted;
-    } else if (char === delimiter && !quoted) {
-      count += 1;
-    }
-  }
-
-  return count;
-}
-
-function detectDelimiter(line: string) {
-  const candidates = [",", ";", "\t"];
-  return candidates.reduce((best, candidate) =>
-    countDelimiter(line, candidate) > countDelimiter(line, best)
-      ? candidate
-      : best
-  );
-}
-
-function normalizeHeader(value: string) {
-  return value.toLowerCase().replace(/[^a-z0-9]/g, "");
-}
-
 function parseNumber(value: string | undefined) {
   if (!value) return Number.NaN;
   return Number(value.trim().replace(/\s/g, "").replace(",", "."));
@@ -121,13 +61,16 @@ function toPerformancePoint(rpm: number, torque: number) {
   if (
     !Number.isFinite(rpm) ||
     !Number.isFinite(torque) ||
-    rpm <= 0 ||
-    torque <= 0
+    rpm < 100 ||
+    rpm > 30_000 ||
+    torque <= 0 ||
+    torque > maxCalculatedEngineTorqueNm
   ) {
     return null;
   }
 
   const power = calculatePowerFromTorque(torque, rpm);
+  if (!Number.isFinite(power.kw) || !Number.isFinite(power.hp)) return null;
   return { rpm, torque, kw: power.kw, hp: power.hp };
 }
 
@@ -146,49 +89,39 @@ export function parsePerformanceLog(input: string): ParsedPerformanceLog {
     };
   }
 
-  const delimiter = detectDelimiter(lines[0]);
-  const headers = splitDelimitedLine(lines[0], delimiter).map(normalizeHeader);
-  const rpmIndex = headers.findIndex(
-    (header) => header.includes("enginespeedrpm") || header === "rpm"
-  );
-  const torqueIndex = headers.findIndex(
-    (header) => header.includes("enginetorquenm") || header === "torquenm"
-  );
+  const headerlessFields = lines.map((line) => line.split(/[,;\t ]+/, 3));
+  const firstPair = headerlessFields[0].map((value) => parseNumber(value));
+  const headerlessRows =
+    firstPair.length === 2 &&
+    firstPair.every(Number.isFinite) &&
+    headerlessFields.every((fields) => fields.length === 2);
 
-  if (rpmIndex !== -1 && torqueIndex !== -1) {
-    const rows = lines.slice(1);
-    const points = rows
-      .map((line) => {
-        const values = splitDelimitedLine(line, delimiter);
-        return toPerformancePoint(
-          parseNumber(values[rpmIndex]),
-          parseNumber(values[torqueIndex])
-        );
+  if (headerlessRows) {
+    const points = headerlessFields
+      .map((fields) => {
+        const [rpmValue, torqueValue] = fields.map((value) => parseNumber(value));
+        return toPerformancePoint(rpmValue, torqueValue);
       })
       .filter((point): point is PerformanceLogPoint => Boolean(point));
 
     return {
       points,
-      format: "autotuner_csv",
-      sourceRowCount: rows.length,
-      rejectedRowCount: rows.length - points.length,
+      format: points.length ? "rpm_torque_rows" : "unknown",
+      sourceRowCount: lines.length,
+      rejectedRowCount: lines.length - points.length,
     };
   }
 
-  const points = lines
-    .map((line) => {
-      const [rpmValue, torqueValue] = line
-        .split(/[,;\t ]+/)
-        .map((value) => parseNumber(value));
-      return toPerformancePoint(rpmValue, torqueValue);
-    })
+  const studio = analyzeLogStudio(input, { profile: "performance" });
+  const points = extractLogStudioPerformanceRows(studio)
+    .map((row) => toPerformancePoint(row.rpm, row.torqueNm))
     .filter((point): point is PerformanceLogPoint => Boolean(point));
 
   return {
     points,
-    format: points.length ? "rpm_torque_rows" : "unknown",
-    sourceRowCount: lines.length,
-    rejectedRowCount: lines.length - points.length,
+    format: points.length ? "generic_tabular_log" : "unknown",
+    sourceRowCount: studio.source.sourceRowCount,
+    rejectedRowCount: Math.max(0, studio.source.sourceRowCount - points.length),
   };
 }
 
@@ -272,6 +205,73 @@ export function analyzePerformanceLog(
   };
 }
 
+export function performanceSourceFromStudioAnalysis(analysis: LogStudioAnalysis) {
+  const sourceChannels = selectLogStudioPerformanceChannels(analysis);
+  if (!sourceChannels) return null;
+  const loggedTorqueValuesNm = analysis.rows.flatMap((row) => {
+    const value = row.values[sourceChannels.torque.id];
+    if (
+      value === null ||
+      sourceChannels.torque.unit.toCanonicalFactor === null ||
+      sourceChannels.torque.unit.toCanonicalOffset === null
+    ) return [];
+    const converted = value * sourceChannels.torque.unit.toCanonicalFactor +
+      sourceChannels.torque.unit.toCanonicalOffset;
+    return Number.isFinite(converted) &&
+      converted > 0 &&
+      converted <= maxCalculatedEngineTorqueNm
+      ? [converted]
+      : [];
+  });
+  const loggedPeakTorqueNm = loggedTorqueValuesNm.length
+    ? Math.max(...loggedTorqueValuesNm)
+    : null;
+
+  return {
+    rpmChannelId: sourceChannels.rpm.id,
+    rpmLabel: sourceChannels.rpm.label,
+    torqueChannelId: sourceChannels.torque.id,
+    torqueLabel: sourceChannels.torque.label,
+    loggedPeakTorqueNm: loggedPeakTorqueNm !== null && Number.isFinite(loggedPeakTorqueNm)
+      ? loggedPeakTorqueNm
+      : null,
+  };
+}
+
+export function performanceFromStudioAnalysis(analysis: LogStudioAnalysis) {
+  const source = performanceSourceFromStudioAnalysis(analysis);
+  const performanceRows = extractLogStudioPerformanceRows(analysis);
+  if (!source || !performanceRows.length) return null;
+
+  const points = performanceRows.map((row) => ({
+    rpm: row.rpm,
+    torque: row.torqueNm,
+    ...calculatePowerFromTorque(row.torqueNm, row.rpm),
+  }));
+  const parsed: ParsedPerformanceLog = {
+    points,
+    format: "generic_tabular_log",
+    sourceRowCount: analysis.source.processedRowCount,
+    rejectedRowCount: Math.max(0, analysis.source.processedRowCount - points.length),
+  };
+  const performanceAnalysis = analyzePerformanceLog(parsed);
+  if (
+    analysis.truncated.rows &&
+    analysis.source.sourceRowCount > analysis.source.processedRowCount
+  ) {
+    performanceAnalysis.warnings = [
+      `Only the first ${analysis.source.processedRowCount.toLocaleString("en-US")} of ${analysis.source.sourceRowCount.toLocaleString("en-US")} source rows were analyzed within the local processing bounds. Unprocessed rows are not counted as rejected.`,
+      ...performanceAnalysis.warnings,
+    ];
+  }
+
+  return {
+    parsed,
+    analysis: performanceAnalysis,
+    source,
+  };
+}
+
 function escapeSvgText(value: string) {
   return value
     .replaceAll("&", "&amp;")
@@ -310,6 +310,27 @@ function representativePoints(points: PerformanceLogPoint[], limit = 6) {
   return indexes.map((index) => points[index]);
 }
 
+function representativeCurvePoints(
+  points: PerformanceLogPoint[],
+  requiredPoints: Array<PerformanceLogPoint | null>,
+  limit = 1_500
+) {
+  if (points.length <= limit) return points;
+  const indexes = new Set(
+    Array.from({ length: limit }, (_, index) =>
+      Math.round((index * (points.length - 1)) / (limit - 1))
+    )
+  );
+  requiredPoints.forEach((point) => {
+    if (!point) return;
+    const index = points.indexOf(point);
+    if (index >= 0) indexes.add(index);
+  });
+  return [...indexes]
+    .sort((left, right) => left - right)
+    .map((index) => points[index]);
+}
+
 export function buildPerformanceReportSvg({
   fileName,
   parsed,
@@ -338,10 +359,16 @@ export function buildPerformanceReportSvg({
       chart.width;
   const yFor = (value: number) =>
     chart.y + chart.height - (value / maxScale) * chart.height;
-  const torquePolyline = analysis.sortedPoints
+  const peakPower = analysis.peakPower;
+  const peakTorque = analysis.peakTorque;
+  const curvePoints = representativeCurvePoints(
+    analysis.sortedPoints,
+    [peakTorque, peakPower]
+  );
+  const torquePolyline = curvePoints
     .map((point) => `${xFor(point.rpm).toFixed(1)},${yFor(point.torque).toFixed(1)}`)
     .join(" ");
-  const hpPolyline = analysis.sortedPoints
+  const hpPolyline = curvePoints
     .map((point) => `${xFor(point.rpm).toFixed(1)},${yFor(point.hp).toFixed(1)}`)
     .join(" ");
   const gridLines = [0, 0.25, 0.5, 0.75, 1]
@@ -358,8 +385,6 @@ export function buildPerformanceReportSvg({
       return `<text x="${x}" y="${chart.y + chart.height + 34}" text-anchor="middle" fill="#a1a1aa" font-size="15">${Math.round(rpmValue)}</text>`;
     })
     .join("");
-  const peakPower = analysis.peakPower;
-  const peakTorque = analysis.peakTorque;
   const peakPs = peakPower ? peakPower.kw * 1.35962 : 0;
   const sourceName = safeSourceName(fileName);
   const sourceLabel =
@@ -398,7 +423,7 @@ export function buildPerformanceReportSvg({
   <text x="108" y="215" fill="#71717a" font-size="12" font-weight="700">SOURCE</text>
   <text x="108" y="240" fill="#ffffff" font-size="16" font-weight="800">${escapeSvgText(sourceLabel)}</text>
   <text x="470" y="215" fill="#71717a" font-size="12" font-weight="700">FORMAT</text>
-  <text x="470" y="240" fill="#ffffff" font-size="16" font-weight="800">${parsed.format === "autotuner_csv" ? "AutoTuner CSV" : "RPM / torque rows"}</text>
+  <text x="470" y="240" fill="#ffffff" font-size="16" font-weight="800">${parsed.format === "rpm_torque_rows" ? "RPM / torque rows" : "Delimited automotive log"}</text>
   <text x="720" y="215" fill="#71717a" font-size="12" font-weight="700">DATA INTEGRITY</text>
   <text x="720" y="240" fill="#ffffff" font-size="16" font-weight="800">${parsed.points.length}/${parsed.sourceRowCount} valid rows</text>
   <rect x="945" y="207" width="145" height="32" rx="16" fill="${analysis.quality === "strong" ? "#052e2b" : analysis.quality === "usable" ? "#422006" : "#450a0a"}" stroke="${analysis.quality === "strong" ? "#047857" : analysis.quality === "usable" ? "#b45309" : "#b91c1c"}"/>

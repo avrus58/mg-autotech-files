@@ -65,6 +65,7 @@ export type LogAnalyzerFallbackState = {
 export type LogAnalyzerSourceFormat =
   | "structured_rows"
   | "autotuner_csv"
+  | "generic_tabular_log"
   | "text_rows"
   | "empty"
   | "unsupported";

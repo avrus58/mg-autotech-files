@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
-import { LogAnalysisStudio } from "@/components/dashboard/LogAnalysisStudio";
+import { LogAnalysisStudioLoader } from "@/components/dashboard/LogAnalysisStudioLoader";
 
 export const metadata: Metadata = {
-  title: "Log Analysis Studio",
-  description: "Private browser-local multi-channel log review for MG AutoTech customers.",
+  title: "Datalog Analysis Studio",
+  description: "Private browser-local multi-channel datalog review for MG AutoTech customers.",
   robots: { index: false, follow: false },
 };
 
 export default function LogAnalysisStudioPage() {
-  return <LogAnalysisStudio />;
+  return <LogAnalysisStudioLoader />;
 }

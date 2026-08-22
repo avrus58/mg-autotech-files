@@ -20,7 +20,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/tools/request-brief-builder",
     "/tools/ecu-read-method-advisor",
     "/tools/torque-power-calculator",
-    "/tools/autotuner-log-analyzer",
   ];
   const publicPages: MetadataRoute.Sitemap = [
     {

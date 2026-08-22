@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRef, useState, type DragEvent } from "react";
+import { useEffect, useRef, useState, type DragEvent } from "react";
 import {
   ArrowRight,
   BarChart3,
@@ -14,18 +14,19 @@ import {
   Upload,
 } from "lucide-react";
 import {
-  analyzePerformanceLog,
-  parsePerformanceLog,
-  type ParsedPerformanceLog,
-  type PerformanceLogAnalysis,
-  type PerformanceLogPoint,
-} from "@/lib/performanceReport";
+  maxLogStudioCharacters,
+  maxLogStudioRows,
+} from "@/lib/logAnalysisStudio";
+import {
+  analyzePublicLogSnapshotInBrowser,
+  type PublicLogSnapshotAnalysis,
+} from "@/lib/analyzePublicLogSnapshotInBrowser";
 import { LocalizedHomepageTree } from "@/lib/homepageLocalization";
 
-export const publicLogSnapshotMaxFileBytes = 1_000_000;
-export const publicLogSnapshotMaxRows = 2_000;
+export const publicLogSnapshotMaxFileBytes = maxLogStudioCharacters;
 
 const exampleLog = [
+  "Engine Speed (rpm), Engine Torque Actual (Nm)",
   "1800, 320",
   "2200, 390",
   "2600, 430",
@@ -37,11 +38,7 @@ const exampleLog = [
 
 type SnapshotState = "idle" | "reading" | "ready" | "error";
 
-type SnapshotResult = {
-  sourceLabel: string;
-  parsed: ParsedPerformanceLog;
-  analysis: PerformanceLogAnalysis;
-};
+type SnapshotResult = Omit<PublicLogSnapshotAnalysis, "compatible">;
 
 function supportedLogFile(file: File) {
   const lowerName = file.name.toLowerCase();
@@ -49,62 +46,54 @@ function supportedLogFile(file: File) {
   return (
     lowerName.endsWith(".csv") ||
     lowerName.endsWith(".txt") ||
+    lowerName.endsWith(".tsv") ||
+    lowerName.endsWith(".log") ||
     lowerType === "text/csv" ||
-    lowerType === "text/plain"
+    lowerType === "text/plain" ||
+    lowerType === "text/tab-separated-values"
   );
 }
 
 function fileValidationMessage(file: File) {
   if (!supportedLogFile(file)) {
-    return "Choose a CSV or plain-text log file.";
+    return "Choose a CSV, TSV, TXT or LOG text export.";
   }
   if (file.size === 0) {
     return "This file is empty. Choose a log that contains RPM and torque rows.";
   }
   if (file.size > publicLogSnapshotMaxFileBytes) {
-    return "This file is too large for the quick snapshot. Use a CSV or TXT file up to 1 MB.";
+    return "This file is too large for the quick power check. Export a text log up to 5 MB, or shorten the capture window.";
   }
   return null;
-}
-
-function formatLabel(parsed: ParsedPerformanceLog) {
-  if (parsed.format === "autotuner_csv") return "AutoTuner CSV";
-  if (parsed.format === "rpm_torque_rows") return "RPM / Nm rows";
-  return "Unknown format";
 }
 
 export function PublicLogSnapshot() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const analysisRequestRef = useRef(0);
+  const analysisAbortRef = useRef<AbortController | null>(null);
   const [state, setState] = useState<SnapshotState>("idle");
   const [result, setResult] = useState<SnapshotResult | null>(null);
   const [error, setError] = useState("");
 
-  const analyzeText = (text: string, sourceLabel: string) => {
-    const parsed = parsePerformanceLog(text);
+  useEffect(() => () => analysisAbortRef.current?.abort(), []);
 
-    if (parsed.sourceRowCount > publicLogSnapshotMaxRows) {
+  const analyzeText = async (text: string, requestId: number, signal: AbortSignal) => {
+    const snapshot = await analyzePublicLogSnapshotInBrowser(text, signal);
+    if (requestId !== analysisRequestRef.current) return;
+
+    if (!snapshot.compatible) {
       setResult(null);
       setError(
-        "This quick snapshot supports up to 2,000 data rows. Use the full analyzer with a shorter export."
-      );
-      setState("error");
-      return;
-    }
-
-    if (!parsed.points.length) {
-      setResult(null);
-      setError(
-        "No valid RPM and torque rows were detected. Look for Engine Speed (rpm) and Engine Torque (Nm) columns."
+        "No compatible engine-speed and actual torque channels were detected. Use a delimited text export with RPM and torque stated in Nm or lb-ft."
       );
       setState("error");
       return;
     }
 
     setResult({
-      sourceLabel,
-      parsed,
-      analysis: analyzePerformanceLog(parsed),
+      peakTorqueNm: snapshot.peakTorqueNm,
+      peakPowerHp: snapshot.peakPowerHp,
+      truncated: snapshot.truncated,
     });
     setError("");
     setState("ready");
@@ -113,6 +102,7 @@ export function PublicLogSnapshot() {
   const handleFile = async (file: File | null) => {
     if (!file) return;
     const requestId = ++analysisRequestRef.current;
+    analysisAbortRef.current?.abort();
 
     const validationMessage = fileValidationMessage(file);
     if (validationMessage) {
@@ -125,20 +115,24 @@ export function PublicLogSnapshot() {
     setResult(null);
     setError("");
     setState("reading");
+    const controller = new AbortController();
+    analysisAbortRef.current = controller;
 
     try {
       const text = await file.text();
       if (requestId !== analysisRequestRef.current) return;
-      analyzeText(text, file.name);
+      await analyzeText(text, requestId, controller.signal);
     } catch {
       if (requestId !== analysisRequestRef.current) return;
-      setError("The file could not be read in this browser. Try exporting it as a CSV or TXT file.");
+      setError("The file could not be read or analyzed in this browser. Try exporting it again as CSV, TSV, TXT or LOG text.");
       setState("error");
     }
   };
 
   const reset = () => {
     analysisRequestRef.current += 1;
+    analysisAbortRef.current?.abort();
+    analysisAbortRef.current = null;
     setResult(null);
     setError("");
     setState("idle");
@@ -146,9 +140,19 @@ export function PublicLogSnapshot() {
   };
 
   const loadExample = () => {
-    analysisRequestRef.current += 1;
+    const requestId = ++analysisRequestRef.current;
+    analysisAbortRef.current?.abort();
+    const controller = new AbortController();
+    analysisAbortRef.current = controller;
     if (fileInputRef.current) fileInputRef.current.value = "";
-    analyzeText(exampleLog, "MG AutoTech example pull");
+    setResult(null);
+    setError("");
+    setState("reading");
+    void analyzeText(exampleLog, requestId, controller.signal).catch(() => {
+      if (requestId !== analysisRequestRef.current) return;
+      setError("The example could not be analyzed in this browser.");
+      setState("error");
+    });
   };
 
   const handleDrop = (event: DragEvent<HTMLLabelElement>) => {
@@ -163,13 +167,13 @@ export function PublicLogSnapshot() {
           <div className="grid gap-6 lg:grid-cols-[1fr_auto] lg:items-end">
             <div className="max-w-4xl">
               <div className="text-xs font-black uppercase tracking-[0.24em] text-red-500">
-                Free log snapshot
+                Quick power check
               </div>
               <h2 className="mt-3 text-3xl font-black leading-tight sm:text-4xl lg:text-5xl">
-                Turn an RPM and torque log into a clear first look.
+                Check peak horsepower and torque from a datalog.
               </h2>
               <p className="mt-4 max-w-3xl text-sm leading-7 text-zinc-400 sm:text-base">
-                Select a local CSV or text export to see the useful peaks and curve shape without creating an account or uploading the source file.
+                Try a compatible text export from any logging tool. The public result shows only peak torque and estimated peak power; detailed channels stay in the customer Studio.
               </p>
             </div>
             <Link
@@ -190,11 +194,11 @@ export function PublicLogSnapshot() {
                 </span>
                 <div className="min-w-0">
                   <div className="text-xs font-black uppercase tracking-[0.18em] text-red-400">
-                    01 · Select a log
+                    01 · Select a datalog
                   </div>
-                  <h3 className="mt-1 text-xl font-black">Quick browser analysis</h3>
-                  <p className="mt-2 text-xs leading-5 text-zinc-500">
-                    CSV or TXT · maximum 1 MB · up to 2,000 data rows
+                  <h3 className="mt-1 text-xl font-black">Local power snapshot</h3>
+                  <p id="public-log-file-requirements" className="mt-2 text-xs leading-5 text-zinc-500">
+                    CSV, TSV, TXT or LOG · maximum 5 MB · up to {maxLogStudioRows.toLocaleString("en-US")} rows
                   </p>
                 </div>
               </div>
@@ -208,18 +212,19 @@ export function PublicLogSnapshot() {
                 <span className="mt-3 text-sm font-black text-white">
                   Drop a file here or choose from your device
                 </span>
-                <span className="mt-1 text-xs leading-5 text-zinc-500">
-                  Engine Speed (rpm) and Engine Torque (Nm) are detected automatically.
+                <span id="public-log-unit-requirement" className="mt-1 text-xs leading-5 text-zinc-500">
+                  RPM and actual engine torque in Nm or lb-ft are detected automatically.
                 </span>
                 <span className="mt-4 rounded-xl bg-[#b1121b] px-4 py-2.5 text-xs font-black text-white shadow-lg shadow-red-950/30">
-                  Choose CSV or TXT
+                  Choose a text datalog
                 </span>
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept=".csv,.txt,text/csv,text/plain"
+                  accept=".csv,.tsv,.txt,.log,text/csv,text/plain,text/tab-separated-values"
                   disabled={state === "reading"}
-                  aria-label="Choose an RPM and torque log"
+                  aria-label="Choose a local datalog for the quick power check"
+                  aria-describedby="public-log-file-requirements public-log-unit-requirement"
                   onChange={(event) => void handleFile(event.target.files?.[0] ?? null)}
                   className="sr-only"
                 />
@@ -276,16 +281,10 @@ export function PublicLogSnapshot() {
             </div>
             <div className="flex flex-col gap-2 sm:flex-row">
               <Link
-                href="/tools/autotuner-log-analyzer"
-                className="inline-flex min-h-11 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] px-4 text-xs font-black text-white transition hover:border-red-800/60"
-              >
-                Open full free analyzer
-              </Link>
-              <Link
-                href="/dashboard/log-analysis"
+                href="/login?redirect=%2Fdashboard%2Flog-analysis"
                 className="inline-flex min-h-11 items-center justify-center rounded-xl bg-[#b1121b] px-4 text-xs font-black text-white transition hover:bg-[#c91824]"
               >
-                Customer analysis studio
+                Log in for full datalog analysis
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </div>
@@ -306,11 +305,11 @@ function SnapshotEmpty({ hasError }: { hasError: boolean }) {
         02 · Review the snapshot
       </div>
       <h3 className="mt-2 text-xl font-black text-white">
-        {hasError ? "The curve is waiting for a valid log." : "Your curve will appear here."}
+        {hasError ? "The snapshot is waiting for a compatible log." : "Your two results will appear here."}
       </h3>
       <p className="mt-3 max-w-md text-sm leading-6 text-zinc-500">
         {hasError
-          ? "Choose another CSV or TXT export, or try the example to confirm how the quick analysis works."
+          ? "Choose another CSV, TSV, TXT or LOG export, or try the example to confirm the required RPM and torque structure."
           : "Nothing is calculated until you choose a file or explicitly load the example dataset."}
       </p>
     </div>
@@ -322,8 +321,8 @@ function SnapshotLoading() {
     <div role="status" className="min-h-[22rem] animate-pulse rounded-2xl border border-white/5 bg-black/25 p-5">
       <span className="sr-only">Reading and analyzing the selected log</span>
       <div className="h-3 w-32 rounded bg-red-950/70" />
-      <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
-        {[0, 1, 2, 3].map((item) => (
+      <div className="mt-4 grid grid-cols-2 gap-2">
+        {[0, 1].map((item) => (
           <div key={item} className="h-20 rounded-xl bg-white/[0.05]" />
         ))}
       </div>
@@ -333,170 +332,61 @@ function SnapshotLoading() {
 }
 
 function SnapshotResults({ result }: { result: SnapshotResult }) {
-  const { parsed, analysis } = result;
-  const qualityTone =
-    analysis.quality === "strong"
-      ? "border-emerald-800/50 bg-emerald-950/25 text-emerald-300"
-      : analysis.quality === "usable"
-        ? "border-amber-800/50 bg-amber-950/25 text-amber-300"
-        : "border-red-800/50 bg-red-950/25 text-red-300";
-
   return (
     <div className="min-w-0">
-      <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div className="min-w-0">
-          <div className="text-xs font-black uppercase tracking-[0.18em] text-red-400">
-            02 · Snapshot ready
-          </div>
-          <h3 className="mt-1 truncate text-xl font-black" title={result.sourceLabel}>
-            {result.sourceLabel}
-          </h3>
-          <p className="mt-1 text-xs text-zinc-500">{formatLabel(parsed)} · local browser result</p>
-        </div>
-        <span className={`inline-flex shrink-0 items-center gap-2 self-start rounded-full border px-3 py-1.5 text-[0.68rem] font-black uppercase tracking-[0.12em] ${qualityTone}`}>
-          <CheckCircle2 className="h-3.5 w-3.5" />
-          {analysis.quality} structure · {analysis.qualityScore}/100
+      <div className="flex items-start gap-3">
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-emerald-800/45 bg-emerald-950/20 text-emerald-300">
+          <CheckCircle2 className="h-5 w-5" />
         </span>
+        <div>
+          <div className="text-xs font-black uppercase tracking-[0.18em] text-red-400">02 · Snapshot ready</div>
+          <h3 className="mt-1 text-xl font-black">Your public power result</h3>
+          <p className="mt-1 text-xs leading-5 text-zinc-500">Detailed curves, channels and row data are reserved for signed-in customers.</p>
+        </div>
       </div>
 
-      <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+      <div className="mt-5 grid gap-3 sm:grid-cols-2">
         <SnapshotMetric
           label="Peak torque"
-          value={analysis.peakTorque ? analysis.peakTorque.torque.toFixed(0) : "-"}
+          value={result.peakTorqueNm === null ? "-" : result.peakTorqueNm.toFixed(0)}
           unit="Nm"
         />
         <SnapshotMetric
           label="Est. peak power"
-          value={analysis.peakPower ? analysis.peakPower.hp.toFixed(1) : "-"}
+          value={result.peakPowerHp === null ? "-" : result.peakPowerHp.toFixed(1)}
           unit="HP"
         />
-        <SnapshotMetric
-          label="RPM window"
-          value={`${analysis.minRpm.toFixed(0)}–${analysis.maxRpm.toFixed(0)}`}
-          unit="rpm"
-        />
-        <SnapshotMetric
-          label="Accepted rows"
-          value={`${parsed.points.length}/${parsed.sourceRowCount}`}
-          unit="rows"
-        />
       </div>
 
-      <div className="mt-4 overflow-hidden rounded-2xl border border-white/10 bg-black/35">
-        <CompactPerformanceCurve analysis={analysis} />
-      </div>
+      {result.truncated && (
+        <p className="mt-3 border-l-2 border-amber-500 bg-amber-950/15 px-3 py-2 text-xs leading-5 text-amber-100">
+          The local safety limit was reached. These two peaks use the retained capture window; sign in to review the processing scope.
+        </p>
+      )}
 
-      <p className={`mt-3 flex items-start gap-2 border-l-2 px-3 py-2 text-xs leading-5 ${analysis.warnings.length ? "border-amber-500 bg-amber-950/15 text-amber-100" : "border-emerald-500 bg-emerald-950/15 text-emerald-100"}`}>
-        {analysis.warnings.length ? (
-          <Gauge className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-400" />
-        ) : (
-          <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-400" />
-        )}
-        {analysis.warnings[0] || "The row structure is suitable for a quick estimate. Expert interpretation still depends on the vehicle and logging conditions."}
-      </p>
+      <div className="mt-4 rounded-2xl border border-white/10 bg-black/30 p-4">
+        <div className="flex items-start gap-3">
+          <LockKeyhole className="mt-0.5 h-4 w-4 shrink-0 text-red-400" />
+          <div>
+            <div className="text-xs font-black uppercase tracking-[0.14em] text-zinc-400">Customer details</div>
+            <p className="mt-1 text-xs leading-5 text-zinc-600">Timeline, RPM curve, EGT and EGR observations, every detected numeric channel and downloadable workshop output unlock after login.</p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
 
 function SnapshotMetric({ label, value, unit }: { label: string; value: string; unit: string }) {
   return (
-    <div className="min-w-0 rounded-xl border border-white/10 bg-white/[0.035] p-3">
+    <div className="min-w-0 rounded-2xl border border-white/10 bg-gradient-to-br from-white/[0.055] to-white/[0.02] p-5 sm:p-6">
       <div className="text-[0.62rem] font-black uppercase tracking-[0.12em] text-zinc-600">
         {label}
       </div>
-      <div className="mt-2 min-w-0 truncate text-lg font-black text-white" title={`${value} ${unit}`}>
+      <div className="mt-3 min-w-0 break-words text-4xl font-black tracking-tight text-white sm:text-5xl" title={`${value} ${unit}`}>
         {value}
       </div>
-      <div className="mt-1 text-[0.65rem] font-bold text-red-300">{unit}</div>
-    </div>
-  );
-}
-
-function representativeCurvePoints(points: PerformanceLogPoint[], limit = 160) {
-  if (points.length <= limit) return points;
-  return Array.from({ length: limit }, (_, index) =>
-    points[Math.round((index * (points.length - 1)) / (limit - 1))]
-  );
-}
-
-function CompactPerformanceCurve({ analysis }: { analysis: PerformanceLogAnalysis }) {
-  const points = representativeCurvePoints(analysis.sortedPoints);
-  const width = 680;
-  const height = 210;
-  const chart = { x: 42, y: 20, width: 614, height: 154 };
-  const maxHp = Math.max(...points.map((point) => point.hp), 1);
-  const maxNm = Math.max(...points.map((point) => point.torque), 1);
-  const maxScale = Math.ceil(Math.max(maxHp, maxNm) / 50) * 50;
-  const xFor = (rpmValue: number) =>
-    chart.x +
-    ((rpmValue - analysis.minRpm) / Math.max(1, analysis.maxRpm - analysis.minRpm)) *
-      chart.width;
-  const yFor = (value: number) =>
-    chart.y + chart.height - (value / maxScale) * chart.height;
-  const torquePoints = points
-    .map((point) => `${xFor(point.rpm).toFixed(1)},${yFor(point.torque).toFixed(1)}`)
-    .join(" ");
-  const powerPoints = points
-    .map((point) => `${xFor(point.rpm).toFixed(1)},${yFor(point.hp).toFixed(1)}`)
-    .join(" ");
-
-  return (
-    <div className="min-w-0 p-3">
-      <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-[0.65rem] font-black">
-        <div className="flex items-center gap-4 text-zinc-400">
-          <span className="inline-flex items-center gap-2">
-            <span className="h-2 w-2 rounded-sm bg-sky-400" /> Torque Nm
-          </span>
-          <span className="inline-flex items-center gap-2">
-            <span className="h-2 w-2 rounded-sm bg-red-500" /> Estimated HP
-          </span>
-        </div>
-        <span className="text-zinc-600">{points.length} plotted points</span>
-      </div>
-      <svg
-        role="img"
-        aria-label="Quick torque and estimated power curve across engine speed"
-        viewBox={`0 0 ${width} ${height}`}
-        className="h-auto w-full"
-      >
-        <rect width={width} height={height} fill="#070708" />
-        {[0, 0.5, 1].map((ratio) => {
-          const y = chart.y + chart.height * ratio;
-          const label = Math.round(maxScale * (1 - ratio));
-          return (
-            <g key={ratio}>
-              <line x1={chart.x} y1={y} x2={chart.x + chart.width} y2={y} stroke="#27272a" />
-              <text x={chart.x - 8} y={y + 4} textAnchor="end" fill="#71717a" fontSize="10">
-                {label}
-              </text>
-            </g>
-          );
-        })}
-        <polyline
-          points={torquePoints}
-          fill="none"
-          stroke="#38bdf8"
-          strokeWidth="3"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          vectorEffect="non-scaling-stroke"
-        />
-        <polyline
-          points={powerPoints}
-          fill="none"
-          stroke="#ef4444"
-          strokeWidth="3"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          vectorEffect="non-scaling-stroke"
-        />
-        <text x={chart.x} y={height - 12} fill="#71717a" fontSize="10">
-          {analysis.minRpm.toFixed(0)} rpm
-        </text>
-        <text x={chart.x + chart.width} y={height - 12} textAnchor="end" fill="#71717a" fontSize="10">
-          {analysis.maxRpm.toFixed(0)} rpm
-        </text>
-      </svg>
+      <div className="mt-2 text-sm font-black text-red-300">{unit}</div>
     </div>
   );
 }

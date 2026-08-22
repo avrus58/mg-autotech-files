@@ -1146,7 +1146,7 @@ test("Log Analyzer deterministic fallback summarizes RPM and torque rows safely"
   assert.doesNotMatch(serialized, /customer-ready file|checksum completed|safe to flash|automatic delivery/i);
 });
 
-test("Log Analyzer handles AutoTuner CSV headers, invalid and empty input", async () => {
+test("Log Analyzer handles compatible datalog headers, invalid and empty input", async () => {
   const autotuner = await analyzeLogRequest({
     source: "browser_tool",
     text: '"Time","Engine Speed (rpm)","Engine Torque (Nm)"\n"0.1","1800","320"\n"0.2","2200","390"\n"0.3","bad","private"',
@@ -1161,7 +1161,7 @@ test("Log Analyzer handles AutoTuner CSV headers, invalid and empty input", asyn
   });
 
   assert.equal(autotuner.status, "fallback");
-  assert.equal(autotuner.normalizedInput.sourceFormat, "autotuner_csv");
+  assert.equal(autotuner.normalizedInput.sourceFormat, "generic_tabular_log");
   assert.equal(autotuner.normalizedInput.validRowCount, 2);
   assert.equal(autotuner.normalizedInput.rejectedRowCount, 1);
 

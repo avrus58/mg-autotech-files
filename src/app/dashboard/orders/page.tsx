@@ -220,7 +220,7 @@ export default function CustomerOrdersPage() {
               <PortalLink href="/dashboard/orders?view=needs_response" icon={<Clock3 />} label="Needs Response" active={view === "needs_response"} />
               <PortalLink href="/dashboard/orders?view=completed" icon={<History />} label="Order History" active={["completed", "cancelled", "all"].includes(view)} />
               <PortalLink href="/dashboard/file-expert" icon={<BrainCircuit />} label="AI File Expert" />
-              <PortalLink href="/dashboard/log-analysis" icon={<Activity />} label="Log Analysis Studio" />
+              <PortalLink href="/dashboard/log-analysis" icon={<Activity />} label="Datalog Analysis Studio" />
               <PortalLink href="/dashboard/credits" icon={<CreditCard />} label="Buy Credits" />
               <PortalLink href="/dashboard/settings" icon={<Settings />} label="Settings" />
             </nav>

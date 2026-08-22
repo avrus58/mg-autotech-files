@@ -7,7 +7,10 @@ import {
   buildPerformanceReportSvg,
   calculatePowerFromTorque,
   parsePerformanceLog,
+  performanceFromStudioAnalysis,
+  performanceSourceFromStudioAnalysis,
 } from "../src/lib/performanceReport";
+import { analyzeLogStudio } from "../src/lib/logAnalysisStudio";
 
 const sampleRows = [
   "1800, 320",
@@ -37,7 +40,18 @@ test("performance parser accepts simple RPM and torque rows", () => {
   assert.equal(parsed.points[2].torque, 430);
 });
 
-test("performance parser detects quoted AutoTuner CSV columns and rejected rows", () => {
+test("headerless performance rows require exactly two fields", () => {
+  const parsed = parsePerformanceLog([
+    "100,2000,300",
+    "101,2500,350",
+    "102,3000,400",
+  ].join("\n"));
+
+  assert.equal(parsed.format, "unknown");
+  assert.deepEqual(parsed.points, []);
+});
+
+test("performance parser detects quoted generic logger columns and rejected rows", () => {
   const parsed = parsePerformanceLog(
     [
       '"Time";"Engine Speed (rpm)";"Engine Torque (Nm)"',
@@ -47,11 +61,90 @@ test("performance parser detects quoted AutoTuner CSV columns and rejected rows"
     ].join("\n")
   );
 
-  assert.equal(parsed.format, "autotuner_csv");
+  assert.equal(parsed.format, "generic_tabular_log");
   assert.equal(parsed.sourceRowCount, 3);
   assert.equal(parsed.rejectedRowCount, 1);
   assert.equal(parsed.points.length, 2);
   assert.equal(parsed.points[0].torque, 320.5);
+});
+
+test("shared Studio projection calculates power from compatible generic log channels", () => {
+  const studio = analyzeLogStudio([
+    "Time [s];RPM;Requested Torque [Nm];Actual Engine Torque [Nm]",
+    "0,0;1800;500;280",
+    "0,5;2400;520;360",
+    "1,0;3200;540;410",
+  ].join("\n"));
+  const result = performanceFromStudioAnalysis(studio);
+
+  assert.ok(result);
+  assert.equal(result.parsed.format, "generic_tabular_log");
+  assert.equal(result.parsed.points.length, 3);
+  assert.equal(result.analysis.peakTorque?.torque, 410);
+  assert.equal(result.analysis.peakTorque?.rpm, 3200);
+  assert.equal(result.analysis.peakPower?.hp.toFixed(1), "184.3");
+  assert.equal(result.source.rpmLabel, "RPM");
+  assert.equal(result.source.torqueLabel, "Actual Engine Torque");
+  assert.equal(result.source.loggedPeakTorqueNm, 410);
+});
+
+test("Studio source metadata keeps the true logged torque maximum even when its row lacks RPM", () => {
+  const studio = analyzeLogStudio([
+    "Engine Speed [rpm],Engine Torque Actual [Nm]",
+    "1800,280",
+    "2400,360",
+    ",500",
+    "3200,410",
+  ].join("\n"));
+  const result = performanceFromStudioAnalysis(studio);
+
+  assert.ok(result);
+  assert.equal(result.analysis.peakTorque?.torque, 410);
+  assert.equal(result.source.loggedPeakTorqueNm, 500);
+});
+
+test("Studio source metadata keeps known-unit torque available without aligned RPM rows", () => {
+  const studio = analyzeLogStudio([
+    "Engine Speed [rpm],Engine Torque Actual [Nm]",
+    "1800,",
+    ",400",
+    "3200,",
+  ].join("\n"));
+  const source = performanceSourceFromStudioAnalysis(studio);
+
+  assert.equal(performanceFromStudioAnalysis(studio), null);
+  assert.equal(source?.loggedPeakTorqueNm, 400);
+  assert.equal(source?.torqueChannelId, "torque");
+  assert.equal(source?.rpmChannelId, "rpm");
+});
+
+test("public torque metadata excludes extreme and sentinel values rejected by the performance contract", () => {
+  const studio = analyzeLogStudio([
+    "Engine Speed [rpm],Engine Torque Actual [Nm]",
+    "1800,280",
+    "2400,1e308",
+    "2800,32767",
+    "3200,410",
+  ].join("\n"));
+  const result = performanceFromStudioAnalysis(studio);
+
+  assert.ok(result);
+  assert.equal(result.source.loggedPeakTorqueNm, 410);
+  assert.ok((result.source.loggedPeakTorqueNm ?? 0) <= 20_000);
+});
+
+test("Studio truncation is not mislabeled as rejected performance rows", () => {
+  const studio = analyzeLogStudio(
+    "Engine Speed [rpm],Engine Torque Actual [Nm]\n1800,280\n2400,360\n3200,410"
+  );
+  studio.source.sourceRowCount = 50_001;
+  studio.truncated.rows = true;
+  const result = performanceFromStudioAnalysis(studio);
+
+  assert.ok(result);
+  assert.equal(result.parsed.sourceRowCount, 3);
+  assert.equal(result.parsed.rejectedRowCount, 0);
+  assert.ok(result.analysis.warnings.some((warning) => /first 3 of 50,001 source rows.*not counted as rejected/i.test(warning)));
 });
 
 test("performance analysis exposes peak, range, retention and quality evidence", () => {
@@ -85,6 +178,13 @@ test("performance analysis flags structural limitations without inventing data",
   assert.ok(analysis.warnings.some((warning) => warning.includes("duplicate RPM")));
 });
 
+test("performance parser rejects values that would overflow an automotive power result", () => {
+  const parsed = parsePerformanceLog("30000,1e308");
+
+  assert.equal(parsed.points.length, 0);
+  assert.equal(parsed.rejectedRowCount, 1);
+});
+
 test("downloaded report is deterministic, detailed and strips private source paths", () => {
   const parsed = parsePerformanceLog(sampleRows);
   const analysis = analyzePerformanceLog(parsed);
@@ -109,6 +209,7 @@ test("downloaded report is deterministic, detailed and strips private source pat
   assert.match(report, /stroke="#ef4444"/);
   assert.match(report, /log&amp;&lt;review&gt;\.csv/);
   assert.doesNotMatch(report, /C:\\private|customer-42/);
+  assert.doesNotMatch(report, /AutoTuner/i);
   assert.doesNotMatch(
     report,
     /<script|javascript:|<image|<foreignObject|xlink:href|\shref=/i
@@ -125,19 +226,44 @@ test("report generation fails closed without valid log rows", () => {
   );
 });
 
-test("performance tools UI exposes professional curve, data and report states", () => {
+test("homepage performance tools ship only the public snapshot and manual calculator", () => {
   const source = readFileSync(
     path.join(process.cwd(), "src", "components", "tools", "PerformanceTools.tsx"),
     "utf8"
   );
 
-  assert.match(source, /Performance analysis workspace/);
-  assert.match(source, /Local browser analysis/);
-  assert.match(source, /Torque and power across engine speed/);
-  assert.match(source, /aria-label="Torque and estimated power curve across engine speed"/);
-  assert.match(source, /Detailed MG AutoTech performance report/);
-  assert.match(source, /Download detailed report/);
-  assert.match(source, /aria-pressed=\{reportView === "curve"\}/);
-  assert.match(source, /aria-pressed=\{reportView === "data"\}/);
-  assert.doesNotMatch(source, /Download Dyno Report|Power curve preview/);
+  assert.match(source, /type PerformanceToolsMode = "combined" \| "calculator"/);
+  assert.match(source, /return <PublicLogSnapshot \/>/);
+  assert.match(source, /Torque Power Calculator/);
+  assert.doesNotMatch(source, /DetailedPerformanceTools|parsePerformanceLog|analyzePerformanceLog/);
+  assert.doesNotMatch(source, /PerformanceCurveChart|PerformanceDataTable|buildPerformanceReportSvg/);
+  assert.doesNotMatch(source, /Manual data input|Download detailed report/);
+});
+
+test("downloaded long-log curve sampling preserves narrow torque extrema", () => {
+  const points = Array.from({ length: 15_000 }, (_, index) => {
+    const rpm = 1_000 + index;
+    const torque = index === 1 ? 900 : 300;
+    return { rpm, torque, ...calculatePowerFromTorque(torque, rpm) };
+  });
+  const parsed = {
+    points,
+    format: "rpm_torque_rows" as const,
+    sourceRowCount: points.length,
+    rejectedRowCount: 0,
+  };
+  const analysis = analyzePerformanceLog(parsed);
+  const report = buildPerformanceReportSvg({
+    fileName: "long-log.csv",
+    parsed,
+    analysis,
+    generatedAt: new Date("2026-08-22T10:00:00.000Z"),
+  });
+  const torquePolyline = report.match(
+    /<polyline points="([^"]+)" fill="none" stroke="#38bdf8"/
+  )?.[1];
+
+  assert.ok(torquePolyline);
+  assert.match(torquePolyline, /82\.1,354\.0/);
+  assert.ok(torquePolyline.split(" ").length > 1_500);
 });

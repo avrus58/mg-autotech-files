@@ -59,14 +59,14 @@ const tools = [
     action: "Open calculator",
   },
   {
-    href: "/tools/autotuner-log-analyzer",
-    eyebrow: "CSV analysis",
-    title: "AutoTuner Log Analyzer",
+    href: "/dashboard/log-analysis",
+    eyebrow: "Customer workspace",
+    title: "Datalog Analysis Studio",
     description:
-      "Read engine-speed and engine-torque rows, identify peak values and download a clean dyno-style SVG report.",
-    features: ["AutoTuner CSV support", "Peak torque and power", "Downloadable report"],
+      "Signed-in customers can review compatible multi-channel text datalogs, calculated power, timelines and every retained numeric channel.",
+    features: ["General text datalogs", "Multi-channel detail", "Browser-local processing"],
     icon: BarChart3,
-    action: "Analyze a log",
+    action: "Open customer Studio",
   },
 ];
 

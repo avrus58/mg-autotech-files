@@ -15,12 +15,15 @@ import type {
   LogAnalyzerSourceFormat,
   LogAnalyzerVehicleContext,
 } from "@/lib/logAnalyzer/types";
+import { maxCalculatedEngineTorqueNm } from "@/lib/logAnalysisStudio";
+import { parsePerformanceLog } from "@/lib/performanceReport";
 
 export const logAnalyzerContractVersion = "log-analyzer-v1" as const;
 export const logAnalyzerPromptVersion = "log-analyzer-v1";
 export const deterministicLogAnalyzerProviderId = "deterministic_rules" as const;
 export const unconfiguredLogAnalyzerProviderId = "unconfigured_log_analyzer_provider";
 export const maxLogAnalyzerRows = 2000;
+export const maxBrowserLogAnalyzerRows = 15_000;
 export const maxLogAnalyzerTextLength = 120_000;
 
 export const logAnalyzerBlockedProductionActions = [
@@ -91,11 +94,19 @@ export function calculateLogPowerEstimate(torqueNm: number, rpm: number) {
 function toPoint(row: LogAnalyzerInputRow): LogAnalyzerPeakPoint | null {
   const rpm = Number(row.rpm);
   const torqueNm = Number(row.torqueNm);
-  if (!Number.isFinite(rpm) || !Number.isFinite(torqueNm) || rpm <= 0 || torqueNm <= 0) {
+  if (
+    !Number.isFinite(rpm) ||
+    !Number.isFinite(torqueNm) ||
+    rpm < 100 ||
+    rpm > 30_000 ||
+    torqueNm <= 0 ||
+    torqueNm > maxCalculatedEngineTorqueNm
+  ) {
     return null;
   }
 
   const power = calculateLogPowerEstimate(torqueNm, rpm);
+  if (!Object.values(power).every(Number.isFinite)) return null;
   return {
     rpm: round(rpm, 0),
     torqueNm: round(torqueNm, 1),
@@ -105,52 +116,6 @@ function toPoint(row: LogAnalyzerInputRow): LogAnalyzerPeakPoint | null {
   };
 }
 
-function parseNumber(value: string | undefined) {
-  if (!value) return Number.NaN;
-  return Number(value.trim().replace(",", "."));
-}
-
-function splitCsvLine(line: string) {
-  const values: string[] = [];
-  let current = "";
-  let quoted = false;
-
-  for (let index = 0; index < line.length; index += 1) {
-    const char = line[index];
-    const next = line[index + 1];
-
-    if (char === '"' && next === '"') {
-      current += '"';
-      index += 1;
-      continue;
-    }
-
-    if (char === '"') {
-      quoted = !quoted;
-      continue;
-    }
-
-    if (char === "," && !quoted) {
-      values.push(current.trim());
-      current = "";
-      continue;
-    }
-
-    current += char;
-  }
-
-  values.push(current.trim());
-  return values;
-}
-
-function normalizeHeader(value: string) {
-  return value.toLowerCase().replace(/[^a-z0-9]/g, "");
-}
-
-function findHeaderIndex(headers: string[], options: string[]) {
-  return headers.findIndex((header) => options.some((option) => header.includes(option)));
-}
-
 export function parseLogAnalyzerText(input: string): {
   rows: LogAnalyzerInputRow[];
   rejectedRowCount: number;
@@ -158,64 +123,39 @@ export function parseLogAnalyzerText(input: string): {
   wasTruncated: boolean;
 } {
   const truncatedText = input.slice(0, maxLogAnalyzerTextLength);
-  const lines = truncatedText
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean);
-  const wasTruncated = input.length > maxLogAnalyzerTextLength || lines.length > maxLogAnalyzerRows;
+  const parsed = parsePerformanceLog(truncatedText);
+  const wasTruncated =
+    input.length > maxLogAnalyzerTextLength ||
+    parsed.sourceRowCount > maxLogAnalyzerRows ||
+    parsed.points.length > maxLogAnalyzerRows;
 
-  if (!lines.length) {
+  if (!truncatedText.trim()) {
     return { rows: [], rejectedRowCount: 0, sourceFormat: "empty", wasTruncated };
   }
 
-  const headers = splitCsvLine(lines[0]).map(normalizeHeader);
-  const rpmIndex = findHeaderIndex(headers, ["enginespeedrpm", "enginespeed", "rpm"]);
-  const torqueIndex = findHeaderIndex(headers, ["enginetorquenm", "enginetorque", "torquenm"]);
-  const looksLikeAutotunerCsv = rpmIndex !== -1 && torqueIndex !== -1 && lines.length > 1;
-  const rows: LogAnalyzerInputRow[] = [];
-  let rejectedRowCount = 0;
-
-  if (looksLikeAutotunerCsv) {
-    for (const line of lines.slice(1, maxLogAnalyzerRows + 1)) {
-      const values = splitCsvLine(line);
-      const rpm = parseNumber(values[rpmIndex]);
-      const torqueNm = parseNumber(values[torqueIndex]);
-      if (Number.isFinite(rpm) && Number.isFinite(torqueNm) && rpm > 0 && torqueNm > 0) {
-        rows.push({ rpm, torqueNm });
-      } else {
-        rejectedRowCount += 1;
-      }
-    }
-
-    return {
-      rows,
-      rejectedRowCount,
-      sourceFormat: "autotuner_csv",
-      wasTruncated,
-    };
-  }
-
-  for (const line of lines.slice(0, maxLogAnalyzerRows)) {
-    const [rpmValue, torqueValue] = line.split(/[,;\t ]+/);
-    const rpm = parseNumber(rpmValue);
-    const torqueNm = parseNumber(torqueValue);
-    if (Number.isFinite(rpm) && Number.isFinite(torqueNm) && rpm > 0 && torqueNm > 0) {
-      rows.push({ rpm, torqueNm });
-    } else {
-      rejectedRowCount += 1;
-    }
-  }
+  const rows = parsed.points.slice(0, maxLogAnalyzerRows).map((point) => ({
+    rpm: point.rpm,
+    torqueNm: point.torque,
+  }));
 
   return {
     rows,
-    rejectedRowCount,
-    sourceFormat: rows.length ? "text_rows" : "unsupported",
+    rejectedRowCount: parsed.rejectedRowCount,
+    sourceFormat:
+      parsed.format === "rpm_torque_rows"
+        ? "text_rows"
+        : parsed.format === "generic_tabular_log"
+          ? "generic_tabular_log"
+          : "unsupported",
     wasTruncated,
   };
 }
 
-function prepareStructuredRows(rows: LogAnalyzerInputRow[]): PreparedLogInput {
-  const limitedRows = rows.slice(0, maxLogAnalyzerRows);
+function prepareStructuredRows(
+  rows: LogAnalyzerInputRow[],
+  rowLimit = maxLogAnalyzerRows
+): PreparedLogInput {
+  const limitedRows = rows.slice(0, rowLimit);
   const points = limitedRows
     .map(toPoint)
     .filter((point): point is LogAnalyzerPeakPoint => Boolean(point));
@@ -229,7 +169,7 @@ function prepareStructuredRows(rows: LogAnalyzerInputRow[]): PreparedLogInput {
     normalized: {
       hasLogData: points.length > 0,
       sourceFormat: rows.length ? "structured_rows" : "empty",
-      wasTruncated: rows.length > maxLogAnalyzerRows,
+      wasTruncated: rows.length > rowLimit,
       validRowCount: points.length,
       rejectedRowCount,
       invalidReason,
@@ -265,7 +205,10 @@ function prepareTextRows(text: string): PreparedLogInput {
 
 function prepareLogAnalyzerInput(request: LogAnalyzerRequest): PreparedLogInput {
   if (request.rows && request.rows.length > 0) {
-    return prepareStructuredRows(request.rows);
+    return prepareStructuredRows(
+      request.rows,
+      request.source === "browser_tool" ? maxBrowserLogAnalyzerRows : maxLogAnalyzerRows
+    );
   }
 
   const text = textValue(request.text);

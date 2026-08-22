@@ -648,7 +648,7 @@ export function DashboardClient() {
                 className="flex items-center gap-3 rounded-2xl px-4 py-3 font-bold text-zinc-400 transition hover:bg-white/[0.06] hover:text-white"
               >
                 <Activity className="h-5 w-5" />
-                Log Analysis Studio
+                Datalog Analysis Studio
               </Link>
 
               <Link
@@ -788,7 +788,7 @@ export function DashboardClient() {
               <Upload className="mr-2 inline h-4 w-4" />New Request
             </Link>
             <Link href="/dashboard/log-analysis" className="shrink-0 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-xs font-black">
-              <Activity className="mr-2 inline h-4 w-4" />Log Studio
+              <Activity className="mr-2 inline h-4 w-4" />Datalog Studio
             </Link>
             <Link href="/dashboard/orders" className="shrink-0 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-xs font-black">
               <FileText className="mr-2 inline h-4 w-4" />Orders

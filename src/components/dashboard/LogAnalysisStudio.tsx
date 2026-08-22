@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useRef, useState, type DragEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type DragEvent } from "react";
 import {
   Activity,
   AlertTriangle,
@@ -29,7 +29,8 @@ import {
   analyzeLogStudio,
   maxLogStudioCharacters,
   maxLogStudioChannels,
-  maxLogStudioRows,
+  maxLogStudioCells,
+  maxLogStudioFullRows,
   type LogStudioAnalysis,
   type LogStudioChannel,
   type LogStudioChannelKind,
@@ -37,11 +38,11 @@ import {
   type LogStudioRow,
   type LogStudioUnit,
 } from "@/lib/logAnalysisStudio";
+import { analyzeLogStudioInBrowser } from "@/lib/analyzeLogStudioInBrowser";
 import {
-  analyzePerformanceLog,
   buildPerformanceReportSvg,
-  calculatePowerFromTorque,
-  type ParsedPerformanceLog,
+  performanceFromStudioAnalysis,
+  performanceSourceFromStudioAnalysis,
   type PerformanceLogAnalysis,
 } from "@/lib/performanceReport";
 import {
@@ -52,6 +53,9 @@ import {
 const emptyAnalysis = analyzeLogStudio("");
 const maxSelectedChannels = 3;
 const chartColors = ["#38bdf8", "#ef4444", "#a78bfa"];
+const studioChartWidth = 920;
+const studioChartHeight = 370;
+const studioChartPlot = { x: 56, y: 32, width: 828, height: 274 };
 
 type StudioState = "idle" | "reading" | "ready" | "error";
 type StudioView = "overview" | "channels" | "data";
@@ -74,7 +78,8 @@ const channelKindLabels: Record<LogStudioChannelKind, string> = {
   sample: "Sample",
   time: "Time",
   rpm: "Engine speed",
-  torque: "Torque",
+  torque: "Engine torque actual",
+  torque_target: "Engine torque requested",
   boost_actual: "Boost actual",
   boost_target: "Boost target",
   lambda: "Lambda",
@@ -84,16 +89,24 @@ const channelKindLabels: Record<LogStudioChannelKind, string> = {
   iat: "Intake air temperature",
   coolant: "Coolant temperature",
   egt: "Exhaust gas temperature",
+  egr_actual: "EGR actual signal",
+  egr_target: "EGR requested signal",
+  dpf_pressure: "DPF pressure",
+  oil_temperature: "Oil temperature",
   rail_actual: "Rail pressure actual",
   rail_target: "Rail pressure target",
+  fuel_quantity: "Fuel quantity",
   airflow: "Airflow",
   speed: "Vehicle speed",
   ignition: "Ignition timing",
+  voltage: "Voltage",
   other: "Other numeric channel",
 };
 
 const preferredChannelKinds: LogStudioChannelKind[] = [
   "torque",
+  "rpm",
+  "time",
   "boost_actual",
   "boost_target",
   "lambda",
@@ -101,12 +114,18 @@ const preferredChannelKinds: LogStudioChannelKind[] = [
   "throttle",
   "pedal",
   "iat",
+  "egt",
+  "egr_actual",
+  "egr_target",
+  "dpf_pressure",
+  "oil_temperature",
   "rail_actual",
   "rail_target",
+  "fuel_quantity",
   "airflow",
   "ignition",
-  "rpm",
-  "time",
+  "voltage",
+  "torque_target",
   "other",
 ];
 
@@ -121,6 +140,9 @@ function buildDemoLog() {
     "Throttle (%)",
     "IAT (degC)",
     "Coolant (degC)",
+    "EGT 1 (degC)",
+    "EGR Actual (%)",
+    "EGR Commanded (%)",
     "Rail Pressure Actual (bar)",
     "Rail Pressure Target (bar)",
     "Airflow (g/s)",
@@ -138,6 +160,9 @@ function buildDemoLog() {
     const throttle = Math.min(100, 38 + index * 2.25);
     const iat = 31 + progress * 17;
     const coolant = 86 + progress * 4;
+    const egt = 470 + Math.sin(progress * Math.PI) * 205 + progress * 35;
+    const egrTarget = Math.max(2, 38 - progress * 40);
+    const egrActual = Math.max(3, egrTarget + Math.sin(progress * Math.PI * 4) * 2.4);
     const railTarget = 455 + progress * 955;
     const railActual = railTarget - 28 + Math.sin(progress * Math.PI * 4) * 18;
     const airflow = 44 + progress * 218;
@@ -154,6 +179,9 @@ function buildDemoLog() {
       throttle.toFixed(1),
       iat.toFixed(1),
       coolant.toFixed(1),
+      egt.toFixed(1),
+      egrActual.toFixed(1),
+      egrTarget.toFixed(1),
       railActual.toFixed(1),
       railTarget.toFixed(1),
       airflow.toFixed(1),
@@ -172,6 +200,7 @@ function supportsLogFile(file: File) {
     name.endsWith(".csv") ||
     name.endsWith(".txt") ||
     name.endsWith(".tsv") ||
+    name.endsWith(".log") ||
     type === "text/csv" ||
     type === "text/plain" ||
     type === "text/tab-separated-values"
@@ -179,7 +208,7 @@ function supportsLogFile(file: File) {
 }
 
 function fileError(file: File) {
-  if (!supportsLogFile(file)) return "Choose a CSV, TSV or plain-text log export.";
+  if (!supportsLogFile(file)) return "Choose a CSV, TSV, TXT or LOG text export.";
   if (!file.size) return "This file is empty. Choose a log with a header and numeric rows.";
   if (file.size > maxLogStudioCharacters) {
     return `This local studio accepts files up to ${formatBytes(maxLogStudioCharacters)}.`;
@@ -189,6 +218,7 @@ function fileError(file: File) {
 
 function formatBytes(bytes: number) {
   if (bytes < 1_000) return `${bytes} B`;
+  if (bytes >= 1_000_000) return `${(bytes / 1_000_000).toFixed(1)} MB`;
   return `${(bytes / 1_000).toFixed(0)} KB`;
 }
 
@@ -208,11 +238,6 @@ function valueWithUnit(value: number | null | undefined, unit: LogStudioUnit, de
   return `${formatValue(value, decimals)}${suffix ? ` ${suffix}` : ""}`;
 }
 
-function canonicalValue(value: number | null, unit: LogStudioUnit) {
-  if (value === null || unit.toCanonicalFactor === null) return null;
-  return value * unit.toCanonicalFactor + (unit.toCanonicalOffset ?? 0);
-}
-
 function selectInitialChannels(analysis: LogStudioAnalysis) {
   const axisId = analysis.xAxis?.channelId;
   return [...analysis.channels]
@@ -226,37 +251,6 @@ function selectInitialChannels(analysis: LogStudioAnalysis) {
     .map((channel) => channel.id);
 }
 
-function performanceFromAnalysis(analysis: LogStudioAnalysis) {
-  if (analysis.warnings.some((warning) => warning.startsWith("No header was present"))) {
-    return null;
-  }
-  const rpm = analysis.channels.find(
-    (channel) => channel.kind === "rpm" && channel.unit.canonicalSymbol === "rpm"
-  );
-  const torque = analysis.channels.find(
-    (channel) => channel.kind === "torque" && channel.unit.canonicalSymbol === "Nm"
-  );
-  if (!rpm || !torque) return null;
-
-  const points = analysis.rows.flatMap((row) => {
-    const rpmValue = canonicalValue(row.values[rpm.id] ?? null, rpm.unit);
-    const torqueValue = canonicalValue(row.values[torque.id] ?? null, torque.unit);
-    if (rpmValue === null || torqueValue === null || rpmValue <= 0 || torqueValue <= 0) return [];
-    const power = calculatePowerFromTorque(torqueValue, rpmValue);
-    return [{ rpm: rpmValue, torque: torqueValue, ...power }];
-  });
-  if (!points.length) return null;
-
-  const parsed: ParsedPerformanceLog = {
-    points,
-    format: "autotuner_csv",
-    sourceRowCount: analysis.source.sourceRowCount,
-    rejectedRowCount: Math.max(0, analysis.source.sourceRowCount - points.length),
-  };
-
-  return { parsed, analysis: analyzePerformanceLog(parsed) };
-}
-
 function safeDownloadName(sourceName: string) {
   const base = sourceName.replace(/\.[^.]+$/, "").replace(/[^a-z0-9_-]+/gi, "-").replace(/^-+|-+$/g, "");
   return (base || "mg-autotech-log").slice(0, 70);
@@ -265,6 +259,7 @@ function safeDownloadName(sourceName: string) {
 export function LogAnalysisStudio() {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const analysisRequestRef = useRef(0);
+  const analysisAbortRef = useRef<AbortController | null>(null);
   const [state, setState] = useState<StudioState>("idle");
   const [analysis, setAnalysis] = useState<LogStudioAnalysis>(emptyAnalysis);
   const [sourceName, setSourceName] = useState("");
@@ -277,7 +272,9 @@ export function LogAnalysisStudio() {
   const [vehicle, setVehicle] = useState<VehicleContext>(emptyVehicleContext);
   const [copyStatus, setCopyStatus] = useState("");
 
-  const performance = useMemo(() => performanceFromAnalysis(analysis), [analysis]);
+  useEffect(() => () => analysisAbortRef.current?.abort(), []);
+
+  const performance = useMemo(() => performanceFromStudioAnalysis(analysis), [analysis]);
   const customerReview = useMemo(() => {
     if (!performance) return null;
     const rows = performance.parsed.points.map((point) => ({
@@ -305,31 +302,48 @@ export function LogAnalysisStudio() {
     ).customer;
   }, [performance, sourceName, vehicle]);
 
-  const analyzeText = (text: string, name: string, size: number | null, demo: boolean) => {
-    const next = analyzeLogStudio(text);
-    setAnalysis(next);
-    setSourceName(name);
-    setSourceSize(size);
-    setIsDemo(demo);
-    setActiveRowIndex(0);
-    setView("overview");
-    setCopyStatus("");
+  const analyzeText = async (
+    text: string,
+    name: string,
+    size: number | null,
+    demo: boolean,
+    requestId: number,
+    signal: AbortSignal
+  ) => {
+    try {
+      const next = await analyzeLogStudioInBrowser(text, signal);
+      if (requestId !== analysisRequestRef.current) return;
+      setAnalysis(next);
+      setSourceName(name);
+      setSourceSize(size);
+      setIsDemo(demo);
+      setActiveRowIndex(0);
+      setView("overview");
+      setCopyStatus("");
 
-    if (next.status !== "ready") {
+      if (next.status !== "ready") {
+        setSelectedChannelIds([]);
+        setError(next.warnings[0] ?? "No usable numeric log channels were detected.");
+        setState("error");
+        return;
+      }
+
+      setSelectedChannelIds(selectInitialChannels(next));
+      setError("");
+      setState("ready");
+    } catch {
+      if (requestId !== analysisRequestRef.current) return;
+      setAnalysis(emptyAnalysis);
       setSelectedChannelIds([]);
-      setError(next.warnings[0] ?? "No usable numeric log channels were detected.");
+      setError("The local datalog analysis could not be completed in this browser.");
       setState("error");
-      return;
     }
-
-    setSelectedChannelIds(selectInitialChannels(next));
-    setError("");
-    setState("ready");
   };
 
   const handleFile = async (file: File | null) => {
     if (!file) return;
     const requestId = ++analysisRequestRef.current;
+    analysisAbortRef.current?.abort();
     const validationError = fileError(file);
     if (validationError) {
       setAnalysis(emptyAnalysis);
@@ -345,14 +359,16 @@ export function LogAnalysisStudio() {
     setState("reading");
     setError("");
     setCopyStatus("");
+    const controller = new AbortController();
+    analysisAbortRef.current = controller;
     try {
       const text = await file.text();
       if (requestId !== analysisRequestRef.current) return;
-      analyzeText(text, file.name, file.size, false);
+      await analyzeText(text, file.name, file.size, false, requestId, controller.signal);
     } catch {
       if (requestId !== analysisRequestRef.current) return;
       setAnalysis(emptyAnalysis);
-      setError("The file could not be read in this browser. Export it again as CSV, TSV or TXT.");
+      setError("The file could not be read in this browser. Export it again as CSV, TSV, TXT or LOG text.");
       setState("error");
     }
   };
@@ -363,13 +379,27 @@ export function LogAnalysisStudio() {
   };
 
   const loadDemo = () => {
-    analysisRequestRef.current += 1;
+    const requestId = ++analysisRequestRef.current;
+    analysisAbortRef.current?.abort();
+    const controller = new AbortController();
+    analysisAbortRef.current = controller;
     if (inputRef.current) inputRef.current.value = "";
-    analyzeText(buildDemoLog(), "Synthetic multi-channel demo.csv", null, true);
+    setState("reading");
+    setError("");
+    void analyzeText(
+      buildDemoLog(),
+      "Synthetic multi-channel demo.csv",
+      null,
+      true,
+      requestId,
+      controller.signal
+    );
   };
 
   const clearLocalData = () => {
     analysisRequestRef.current += 1;
+    analysisAbortRef.current?.abort();
+    analysisAbortRef.current = null;
     if (inputRef.current) inputRef.current.value = "";
     setState("idle");
     setAnalysis(emptyAnalysis);
@@ -448,19 +478,23 @@ export function LogAnalysisStudio() {
               <div className="relative grid gap-6 xl:grid-cols-[1fr_auto] xl:items-end">
                 <div className="max-w-4xl">
                   <div className="flex flex-wrap items-center gap-2 text-xs font-black uppercase tracking-[0.2em] text-red-400">
-                    <Activity className="h-4 w-4" /> Customer Log Analysis Studio
+                    <Activity className="h-4 w-4" /> Customer Datalog Analysis Studio
                   </div>
                   <h2 className="mt-3 text-3xl font-black leading-tight sm:text-4xl xl:text-5xl">
                     See the channels. Understand the pull.
                   </h2>
                   <p className="mt-4 max-w-3xl text-sm leading-7 text-zinc-400 sm:text-base">
-                    Review aligned ECU log channels, compare actual and target traces, inspect capture quality and prepare a clearer workshop summary—all inside this browser tab.
+                    Review compatible text datalogs from any logging tool, compare actual and target traces, inspect every numeric channel and prepare a clearer workshop summary—all inside this browser tab.
                   </p>
                 </div>
                 <div className="grid gap-2 text-xs text-zinc-400 sm:grid-cols-2 xl:w-[26rem] xl:grid-cols-1">
                   <div className="flex items-center gap-3 rounded-2xl border border-emerald-800/35 bg-emerald-950/15 px-4 py-3">
                     <LockKeyhole className="h-4 w-4 shrink-0 text-emerald-400" />
                     No upload, cloud storage or request is created.
+                  </div>
+                  <div className="flex items-center gap-3 rounded-2xl border border-sky-800/35 bg-sky-950/15 px-4 py-3">
+                    <ShieldCheck className="h-4 w-4 shrink-0 text-sky-400" />
+                    Included with your customer account; no credits are used.
                   </div>
                   <div className="flex items-center gap-3 rounded-2xl border border-amber-800/35 bg-amber-950/15 px-4 py-3">
                     <Gauge className="h-4 w-4 shrink-0 text-amber-400" />
@@ -539,7 +573,7 @@ function StudioSidebar() {
           <SidebarLink href="/dashboard" icon={<LayoutDashboard />} label="Dashboard" />
           <SidebarLink href="/new-request" icon={<Upload />} label="New File Request" />
           <SidebarLink href="/dashboard/file-expert" icon={<BrainCircuit />} label="AI File Expert" />
-          <SidebarLink href="/dashboard/log-analysis" icon={<Activity />} label="Log Analysis Studio" active />
+          <SidebarLink href="/dashboard/log-analysis" icon={<Activity />} label="Datalog Analysis Studio" active />
           <SidebarLink href="/dashboard/orders" icon={<FileText />} label="Active Orders" />
           <SidebarLink href="/dashboard/credits" icon={<Gauge />} label="Buy Credits" />
           <SidebarLink href="/dashboard/settings" icon={<Settings />} label="Settings" />
@@ -578,7 +612,7 @@ function StudioHeader({ state }: { state: StudioState }) {
       <div className="flex min-h-[4.75rem] items-center justify-between gap-4 px-4 py-3 lg:px-8">
         <div className="min-w-0">
           <div className="truncate text-xs font-black uppercase tracking-[0.2em] text-red-500">Customer workspace</div>
-          <h1 className="mt-1 truncate text-xl font-black sm:text-2xl">Log Analysis Studio</h1>
+          <h1 className="mt-1 truncate text-xl font-black sm:text-2xl">Datalog Analysis Studio</h1>
         </div>
         <div className="flex shrink-0 items-center gap-2">
           <span className="hidden items-center gap-2 rounded-xl border border-emerald-800/30 bg-emerald-950/20 px-3 py-2 text-xs font-black text-emerald-300 sm:inline-flex">
@@ -599,7 +633,7 @@ function StudioMobileNav() {
     <nav className="flex gap-2 overflow-x-auto border-b border-white/10 bg-black/45 px-4 py-3 lg:hidden" aria-label="Customer dashboard">
       <Link href="/dashboard" className="shrink-0 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-xs font-black"><Home className="mr-2 inline h-4 w-4" />Dashboard</Link>
       <Link href="/new-request" className="shrink-0 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-xs font-black"><Upload className="mr-2 inline h-4 w-4" />New Request</Link>
-      <Link href="/dashboard/log-analysis" aria-current="page" className="shrink-0 rounded-xl border border-red-800/50 bg-red-950/30 px-4 py-2.5 text-xs font-black"><Activity className="mr-2 inline h-4 w-4" />Log Studio</Link>
+      <Link href="/dashboard/log-analysis" aria-current="page" className="shrink-0 rounded-xl border border-red-800/50 bg-red-950/30 px-4 py-2.5 text-xs font-black"><Activity className="mr-2 inline h-4 w-4" />Datalog Studio</Link>
       <Link href="/dashboard/orders" className="shrink-0 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-xs font-black"><FileText className="mr-2 inline h-4 w-4" />Orders</Link>
     </nav>
   );
@@ -631,9 +665,9 @@ function SourcePanel({
   return (
     <section className="overflow-hidden rounded-[1.5rem] border border-white/10 bg-[#0a0a0c] shadow-xl shadow-black/20">
       <div className="border-b border-white/10 p-5">
-        <div className="text-xs font-black uppercase tracking-[0.18em] text-red-400">01 · Source log</div>
-        <h3 className="mt-2 text-xl font-black">Start with the actual export</h3>
-        <p className="mt-2 text-xs leading-5 text-zinc-500">CSV, TSV or TXT · {formatBytes(maxLogStudioCharacters)} · up to {maxLogStudioRows.toLocaleString("en-US")} rows</p>
+        <div className="text-xs font-black uppercase tracking-[0.18em] text-red-400">01 · Source datalog</div>
+        <h3 className="mt-2 text-xl font-black">Start with a compatible text export</h3>
+        <p className="mt-2 text-xs leading-5 text-zinc-500">CSV, TSV, TXT or LOG · {formatBytes(maxLogStudioCharacters)} · up to {maxLogStudioFullRows.toLocaleString("en-US")} detailed rows within an adaptive local cell budget</p>
       </div>
 
       <div className="p-4">
@@ -657,9 +691,9 @@ function SourcePanel({
           <input
             ref={inputRef}
             type="file"
-            accept=".csv,.tsv,.txt,text/csv,text/plain,text/tab-separated-values"
+            accept=".csv,.tsv,.txt,.log,text/csv,text/plain,text/tab-separated-values"
             disabled={state === "reading"}
-            aria-label="Choose a local ECU log file"
+            aria-label="Choose a local automotive datalog file"
             onChange={(event) => void onFile(event.target.files?.[0] ?? null)}
             className="sr-only"
           />
@@ -724,10 +758,11 @@ function InputLimitsPanel() {
     <section className="rounded-[1.5rem] border border-white/10 bg-white/[0.025] p-5">
       <div className="text-xs font-black uppercase tracking-[0.16em] text-zinc-500">Supported structure</div>
       <div className="mt-3 grid grid-cols-3 gap-2 text-center">
-        <div className="rounded-xl bg-black/25 p-3"><div className="text-lg font-black">{maxLogStudioRows.toLocaleString("en-US")}</div><div className="mt-1 text-[0.62rem] font-bold text-zinc-600">rows</div></div>
+        <div className="rounded-xl bg-black/25 p-3"><div className="text-lg font-black">{maxLogStudioFullRows.toLocaleString("en-US")}</div><div className="mt-1 text-[0.62rem] font-bold text-zinc-600">detailed rows</div></div>
         <div className="rounded-xl bg-black/25 p-3"><div className="text-lg font-black">{maxLogStudioChannels}</div><div className="mt-1 text-[0.62rem] font-bold text-zinc-600">channels</div></div>
         <div className="rounded-xl bg-black/25 p-3"><div className="text-lg font-black">3</div><div className="mt-1 text-[0.62rem] font-bold text-zinc-600">overlays</div></div>
       </div>
+      <p className="mt-3 text-[0.68rem] leading-5 text-zinc-600">Wide logs are row-bounded to a {maxLogStudioCells.toLocaleString("en-US")}-cell local processing budget so mobile browsers remain responsive.</p>
       <p className="mt-3 text-[0.7rem] leading-5 text-zinc-600">Comma, semicolon and tab delimiters, quoted fields and decimal-comma values are supported.</p>
     </section>
   );
@@ -797,7 +832,7 @@ function StudioResults({
   onDownload,
 }: {
   analysis: LogStudioAnalysis;
-  performance: { parsed: ParsedPerformanceLog; analysis: PerformanceLogAnalysis } | null;
+  performance: NonNullable<ReturnType<typeof performanceFromStudioAnalysis>> | null;
   customerReview: ReturnType<typeof projectLogAnalyzerResponse>["customer"] | null;
   view: StudioView;
   selectedChannelIds: string[];
@@ -809,6 +844,24 @@ function StudioResults({
   onCopy: () => void;
   onDownload: () => void;
 }) {
+  const peakPower = performance?.analysis.peakPower ?? null;
+  const performanceSource = useMemo(
+    () => performance?.source ?? performanceSourceFromStudioAnalysis(analysis),
+    [analysis, performance]
+  );
+  const engineSpeedSummaries = analysis.summaries.filter(
+    (summary) => summary.kind === "rpm" && summary.unit.dimension === "engine_speed"
+  );
+  const rpmSummary = performanceSource
+    ? engineSpeedSummaries.find((summary) => summary.channelId === performanceSource.rpmChannelId)
+    : engineSpeedSummaries.length === 1
+      ? engineSpeedSummaries[0]
+      : undefined;
+  const torqueSummary = performanceSource
+    ? analysis.summaries.find((summary) => summary.channelId === performanceSource.torqueChannelId)
+    : undefined;
+  const loggedPeakTorqueNm = performanceSource?.loggedPeakTorqueNm ?? null;
+
   return (
     <section className="min-w-0 overflow-hidden rounded-[1.75rem] border border-white/10 bg-[#09090b] shadow-xl shadow-black/20">
       <div className="border-b border-white/10 p-4 sm:p-6">
@@ -817,17 +870,40 @@ function StudioResults({
             <div className="flex flex-wrap items-center gap-2 text-xs font-black uppercase tracking-[0.18em] text-red-400">
               <CheckCircle2 className="h-4 w-4" /> Analysis ready
             </div>
-            <h3 className="mt-2 text-2xl font-black">Multi-channel capture review</h3>
+            <h3 className="mt-2 text-2xl font-black">Complete datalog review</h3>
             <p className="mt-2 text-xs leading-5 text-zinc-500">{analysis.channels.length} numeric channels aligned against {analysis.xAxis?.label ?? "source row"}.</p>
           </div>
           <QualityBadge analysis={analysis} />
         </div>
 
-        <div className="mt-5 grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-white/10 bg-white/10 sm:grid-cols-4">
+        <div className="mt-5 grid gap-3 lg:grid-cols-3">
+          <PrimaryMetric
+            label="Estimated peak power"
+            value={peakPower ? formatValue(peakPower.hp, 1) : "Not available"}
+            unit={peakPower ? "HP" : ""}
+            detail={peakPower ? `${formatValue(peakPower.kw, 1)} kW · at ${formatValue(peakPower.rpm, 0)} rpm` : "Requires one unambiguous RPM channel and one actual engine-torque channel with a known unit"}
+            tone="red"
+          />
+          <PrimaryMetric
+            label="Highest logged torque"
+            value={loggedPeakTorqueNm !== null ? formatValue(loggedPeakTorqueNm, 0) : "Not available"}
+            unit={loggedPeakTorqueNm !== null ? "Nm" : ""}
+            detail={loggedPeakTorqueNm !== null && torqueSummary?.max ? `${peakContext(analysis, torqueSummary, performanceSource?.rpmChannelId)} · source: ${performanceSource?.torqueLabel}` : "Requested, non-engine, ambiguous or unitless torque is never used for power"}
+            tone="sky"
+          />
+          <PrimaryMetric
+            label="Engine-speed window"
+            value={rpmSummary?.min && rpmSummary.max ? `${formatValue(rpmSummary.min.value, 0)}–${formatValue(rpmSummary.max.value, 0)}` : "Not available"}
+            unit={rpmSummary?.unit.symbol ?? ""}
+            detail={analysis.xAxis?.kind === "time" ? `Timeline uses ${analysis.xAxis.label}` : `Chart axis uses ${analysis.xAxis?.label ?? "source order"}`}
+            tone="violet"
+          />
+        </div>
+
+        <div className="mt-3 grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-white/10 bg-white/10 sm:grid-cols-3">
           <Metric label="Rows retained" value={analysis.source.acceptedRowCount.toLocaleString("en-US")} detail={`${analysis.source.rejectedRowCount} rejected`} />
           <Metric label="Detected channels" value={analysis.channels.length.toString()} detail={`up to ${maxLogStudioChannels} retained`} />
-          <PerformanceMetric performance={performance} kind="torque" />
-          <PerformanceMetric performance={performance} kind="power" />
+          <div className="col-span-2 sm:col-span-1"><Metric label="Timeline axis" value={analysis.xAxis?.label ?? "Source order"} detail={analysis.xAxis?.synthetic ? "explicit fallback" : "uses logged values"} /></div>
         </div>
       </div>
 
@@ -890,13 +966,22 @@ function Metric({ label, value, detail }: { label: string; value: string; detail
   );
 }
 
-function PerformanceMetric({ performance, kind }: { performance: { analysis: PerformanceLogAnalysis } | null; kind: "torque" | "power" }) {
-  if (kind === "torque") {
-    const peak = performance?.analysis.peakTorque;
-    return <Metric label="Highest logged torque" value={peak ? `${formatValue(peak.torque, 0)} Nm` : "Not available"} detail={peak ? `at ${formatValue(peak.rpm, 0)} rpm` : "Needs RPM + torque with known units"} />;
-  }
-  const peak = performance?.analysis.peakPower;
-  return <Metric label="Estimated peak power" value={peak ? `${formatValue(peak.hp, 1)} HP` : "Not available"} detail={peak ? `${formatValue(peak.kw, 1)} kW · torque-derived` : "No power claim without valid inputs"} />;
+function PrimaryMetric({ label, value, unit, detail, tone }: { label: string; value: string; unit: string; detail: string; tone: "red" | "sky" | "violet" }) {
+  const toneClasses = {
+    red: "border-red-800/40 from-red-950/30 text-red-300",
+    sky: "border-sky-800/40 from-sky-950/25 text-sky-300",
+    violet: "border-violet-800/40 from-violet-950/25 text-violet-300",
+  }[tone];
+  return (
+    <article className={`min-w-0 rounded-2xl border bg-gradient-to-br ${toneClasses} to-black/20 p-5`}>
+      <div className="text-[0.65rem] font-black uppercase tracking-[0.14em] text-zinc-500">{label}</div>
+      <div className="mt-3 flex min-w-0 flex-wrap items-baseline gap-2">
+        <span className="break-words text-3xl font-black tracking-tight text-white sm:text-4xl">{value}</span>
+        {unit && <span className="text-sm font-black">{unit}</span>}
+      </div>
+      <p className="mt-3 text-[0.7rem] leading-5 text-zinc-500">{detail}</p>
+    </article>
+  );
 }
 
 function ViewTab({ value, activeView, onView, icon, label }: { value: StudioView; activeView: StudioView; onView: (view: StudioView) => void; icon: React.ReactNode; label: string }) {
@@ -975,6 +1060,8 @@ function OverviewView({
         </div>
       </div>
 
+      <MoreDetailsPanel analysis={analysis} />
+
       <div className="grid gap-5 xl:grid-cols-2">
         <ReviewChecklist customerReview={customerReview} hasPerformance={Boolean(performance)} />
         <ExportPanel
@@ -989,6 +1076,11 @@ function OverviewView({
 }
 
 function ChannelToggleBar({ analysis, selectedChannelIds, onToggle, compact = false }: { analysis: LogStudioAnalysis; selectedChannelIds: string[]; onToggle: (channelId: string) => void; compact?: boolean }) {
+  const visibleChannels = compact
+    ? analysis.channels.filter(
+        (channel, index) => index < 10 || selectedChannelIds.includes(channel.id)
+      )
+    : analysis.channels;
   return (
     <section className={compact ? "" : "rounded-2xl border border-white/10 bg-black/20 p-4"}>
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -999,7 +1091,7 @@ function ChannelToggleBar({ analysis, selectedChannelIds, onToggle, compact = fa
         <span className="rounded-full border border-white/10 bg-white/[0.035] px-3 py-1 text-[0.68rem] font-black text-zinc-400">{selectedChannelIds.length}/{maxSelectedChannels} selected</span>
       </div>
       <div className="mt-3 flex flex-wrap gap-2">
-        {analysis.channels.map((channel) => {
+        {visibleChannels.map((channel) => {
           const selectedIndex = selectedChannelIds.indexOf(channel.id);
           const selected = selectedIndex !== -1;
           const disabled = !selected && selectedChannelIds.length >= maxSelectedChannels;
@@ -1018,29 +1110,43 @@ function ChannelToggleBar({ analysis, selectedChannelIds, onToggle, compact = fa
           );
         })}
       </div>
+      {compact && visibleChannels.length < analysis.channels.length && (
+        <p className="mt-2 text-[0.68rem] leading-5 text-zinc-600">
+          {analysis.channels.length - visibleChannels.length} more channels are available in the Channels tab and More details.
+        </p>
+      )}
     </section>
   );
 }
 
 function StudioChart({ analysis, selectedChannelIds, activeRowIndex, onActiveRow }: { analysis: LogStudioAnalysis; selectedChannelIds: string[]; activeRowIndex: number; onActiveRow: (index: number) => void }) {
-  const selected = selectedChannelIds.flatMap((id) => {
+  const selected = useMemo(() => selectedChannelIds.flatMap((id) => {
     const channel = analysis.channels.find((item) => item.id === id);
     const summary = analysis.summaries.find((item) => item.channelId === id);
     return channel && summary ? [{ channel, summary }] : [];
-  });
-  const width = 920;
-  const height = 370;
-  const plot = { x: 56, y: 32, width: 828, height: 274 };
+  }), [analysis.channels, analysis.summaries, selectedChannelIds]);
+  const tracePaths = useMemo(
+    () => selected.map(({ channel, summary }) => ({
+      channel,
+      path: channelPath(analysis, channel, summary, studioChartPlot),
+    })),
+    [analysis, selected]
+  );
+  const width = studioChartWidth;
+  const height = studioChartHeight;
+  const plot = studioChartPlot;
   const activeIndex = Math.min(activeRowIndex, Math.max(0, analysis.rows.length - 1));
   const activeRow = analysis.rows[activeIndex];
-  const activeX = plot.x + (activeIndex / Math.max(1, analysis.rows.length - 1)) * plot.width;
+  const activeRatio = axisRatioForRow(activeRow, activeIndex, analysis);
+  const activeX = activeRatio === null ? null : plot.x + activeRatio * plot.width;
+  const scrubberValue = Math.round((activeRatio ?? 0) * 1_000);
 
   return (
     <section className="min-w-0 overflow-hidden rounded-2xl border border-white/10 bg-black/30">
       <div className="flex flex-col gap-3 border-b border-white/10 p-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <div className="text-xs font-black uppercase tracking-[0.15em] text-zinc-500">Normalized trend view</div>
-          <h4 className="mt-1 text-sm font-black">Aligned source-order traces</h4>
+          <h4 className="mt-1 text-sm font-black">Aligned time / RPM traces</h4>
         </div>
         <div className="text-[0.68rem] leading-5 text-zinc-600 sm:max-w-xs sm:text-right">Visual comparison only. Every selected channel uses its own minimum and maximum scale.</div>
       </div>
@@ -1048,9 +1154,10 @@ function StudioChart({ analysis, selectedChannelIds, activeRowIndex, onActiveRow
       {selected.length ? (
         <div className="min-w-0 p-3 sm:p-4">
           <div className="overflow-x-auto">
-            <svg viewBox={`0 0 ${width} ${height}`} className="w-full min-w-[42rem]" role="img" aria-labelledby="studio-chart-title studio-chart-description">
+            <div className="min-w-[42rem] sm:min-w-0">
+            <svg viewBox={`0 0 ${width} ${height}`} className="w-full" role="img" aria-labelledby="studio-chart-title studio-chart-description">
               <title id="studio-chart-title">Normalized multi-channel log chart</title>
-              <desc id="studio-chart-description">Up to three selected log channels plotted in source row order, each normalized to its own observed range.</desc>
+              <desc id="studio-chart-description">Up to three selected log channels plotted against the detected time, RPM or explicit sample axis, each normalized to its own observed range.</desc>
               <rect x={plot.x} y={plot.y} width={plot.width} height={plot.height} rx="16" fill="#08080a" stroke="#27272a" />
               {[0, 0.25, 0.5, 0.75, 1].map((ratio) => {
                 const y = plot.y + plot.height * ratio;
@@ -1058,19 +1165,17 @@ function StudioChart({ analysis, selectedChannelIds, activeRowIndex, onActiveRow
               })}
               {[0, 0.25, 0.5, 0.75, 1].map((ratio) => {
                 const x = plot.x + plot.width * ratio;
-                const rowIndex = Math.round((analysis.rows.length - 1) * ratio);
-                const row = analysis.rows[rowIndex];
                 return (
                   <g key={ratio}>
                     <line x1={x} x2={x} y1={plot.y} y2={plot.y + plot.height} stroke="#18181b" strokeWidth="1" />
-                    <text x={x} y={plot.y + plot.height + 28} textAnchor={ratio === 0 ? "start" : ratio === 1 ? "end" : "middle"} fill="#71717a" fontSize="13">{axisRowLabel(row, analysis)}</text>
+                    <text x={x} y={plot.y + plot.height + 28} textAnchor={ratio === 0 ? "start" : ratio === 1 ? "end" : "middle"} fill="#71717a" fontSize="13">{axisTickLabel(analysis, ratio)}</text>
                   </g>
                 );
               })}
-              {selected.map(({ channel, summary }, index) => (
+              {tracePaths.map(({ channel, path }, index) => (
                 <path
                   key={channel.id}
-                  d={channelPath(analysis.rows, channel, summary, plot)}
+                  d={path}
                   fill="none"
                   stroke={chartColors[index]}
                   strokeWidth="4"
@@ -1079,24 +1184,30 @@ function StudioChart({ analysis, selectedChannelIds, activeRowIndex, onActiveRow
                   vectorEffect="non-scaling-stroke"
                 />
               ))}
-              <line x1={activeX} x2={activeX} y1={plot.y} y2={plot.y + plot.height} stroke="#ffffff" strokeOpacity="0.55" strokeWidth="2" strokeDasharray="5 5" />
-              <circle cx={activeX} cy={plot.y + plot.height + 2} r="5" fill="#ffffff" />
+              {activeX !== null && (
+                <>
+                  <line x1={activeX} x2={activeX} y1={plot.y} y2={plot.y + plot.height} stroke="#ffffff" strokeOpacity="0.55" strokeWidth="2" strokeDasharray="5 5" />
+                  <circle cx={activeX} cy={plot.y + plot.height + 2} r="5" fill="#ffffff" />
+                </>
+              )}
               <text x={plot.x} y="19" fill="#52525b" fontSize="12" fontWeight="800">100% OF EACH OBSERVED RANGE</text>
-              <text x={plot.x + plot.width} y="19" textAnchor="end" fill="#52525b" fontSize="12" fontWeight="800">SOURCE ORDER · {analysis.xAxis?.label.toUpperCase()}</text>
+              <text x={plot.x + plot.width} y="19" textAnchor="end" fill="#52525b" fontSize="12" fontWeight="800">{analysis.xAxis?.synthetic ? "SOURCE ORDER" : "LOGGED AXIS"} · {analysis.xAxis?.label.toUpperCase()}</text>
             </svg>
-          </div>
 
-          <label className="mt-2 block">
-            <span className="sr-only">Inspect a retained log row</span>
-            <input
-              type="range"
-              min={0}
-              max={Math.max(0, analysis.rows.length - 1)}
-              value={activeIndex}
-              onChange={(event) => onActiveRow(Number(event.target.value))}
-              className="h-2 w-full cursor-ew-resize accent-red-600"
-            />
-          </label>
+              <label className="mt-2 block">
+                <span className="sr-only">Inspect a retained log row</span>
+                <input
+                  type="range"
+                  min={0}
+                  max={1_000}
+                  value={scrubberValue}
+                  aria-valuetext={activeRow ? `${axisRowLabel(activeRow, analysis, true)}, source row ${activeRow.rowNumber}` : "No retained row"}
+                  onChange={(event) => onActiveRow(nearestRowIndexForAxisRatio(Number(event.target.value) / 1_000, analysis))}
+                  className="h-2 w-full cursor-ew-resize accent-red-600"
+                />
+              </label>
+            </div>
+          </div>
 
           <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
             <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
@@ -1144,20 +1255,131 @@ function axisRowLabel(row: LogStudioRow | undefined, analysis: LogStudioAnalysis
   return detailed ? `${analysis.xAxis.label}: ${label}` : label;
 }
 
-function channelPath(rows: LogStudioRow[], channel: LogStudioChannel, summary: LogStudioChannelSummary, plot: { x: number; y: number; width: number; height: number }) {
-  if (!summary.min || !summary.max) return "";
-  const span = Math.max(1e-9, summary.max.value - summary.min.value);
+function rawSummaryRange(analysis: LogStudioAnalysis, summary: LogStudioChannelSummary | undefined) {
+  if (!summary?.min || !summary.max) return null;
+  const minimum = analysis.rows.find(
+    (row) => row.rowNumber === summary.min?.rowNumber
+  )?.values[summary.channelId];
+  const maximum = analysis.rows.find(
+    (row) => row.rowNumber === summary.max?.rowNumber
+  )?.values[summary.channelId];
+  if (
+    minimum === null ||
+    minimum === undefined ||
+    maximum === null ||
+    maximum === undefined ||
+    !Number.isFinite(minimum) ||
+    !Number.isFinite(maximum) ||
+    maximum < minimum
+  ) return null;
+  return { min: minimum, max: maximum };
+}
+
+function axisRange(analysis: LogStudioAnalysis) {
+  const axisId = analysis.xAxis?.channelId;
+  if (!axisId) return null;
+  const summary = analysis.summaries.find((item) => item.channelId === axisId);
+  const range = rawSummaryRange(analysis, summary);
+  return range && range.max !== range.min ? range : null;
+}
+
+function axisRatioForRowWithRange(
+  row: LogStudioRow | undefined,
+  rowIndex: number,
+  analysis: LogStudioAnalysis,
+  range: ReturnType<typeof axisRange>
+) {
+  const axisId = analysis.xAxis?.channelId;
+  const value = row && axisId ? row.values[axisId] : null;
+  if (!axisId || analysis.xAxis?.synthetic || !range) {
+    return rowIndex / Math.max(1, analysis.rows.length - 1);
+  }
+  if (
+    value === null ||
+    value === undefined ||
+    !Number.isFinite(value) ||
+    value < range.min ||
+    value > range.max
+  ) return null;
+  const ratio = (value - range.min) / (range.max - range.min);
+  return Number.isFinite(ratio) ? ratio : null;
+}
+
+export function axisRatioForRow(row: LogStudioRow | undefined, rowIndex: number, analysis: LogStudioAnalysis) {
+  const range = axisRange(analysis);
+  return axisRatioForRowWithRange(row, rowIndex, analysis, range);
+}
+
+function nearestRowIndexForAxisRatio(targetRatio: number, analysis: LogStudioAnalysis) {
+  let nearestIndex = 0;
+  let nearestDistance = Number.POSITIVE_INFINITY;
+  const range = axisRange(analysis);
+  analysis.rows.forEach((row, index) => {
+    const ratio = axisRatioForRowWithRange(row, index, analysis, range);
+    if (ratio === null) return;
+    const distance = Math.abs(ratio - targetRatio);
+    if (distance < nearestDistance) {
+      nearestDistance = distance;
+      nearestIndex = index;
+    }
+  });
+  return nearestIndex;
+}
+
+function axisTickLabel(analysis: LogStudioAnalysis, ratio: number) {
+  const range = axisRange(analysis);
+  if (!range || !analysis.xAxis) {
+    const rowIndex = Math.round((analysis.rows.length - 1) * ratio);
+    return analysis.xAxis?.synthetic ? `Sample ${rowIndex + 1}` : rowIndex + 1;
+  }
+  const value = range.min + (range.max - range.min) * ratio;
+  return valueWithUnit(value, analysis.xAxis.unit, analysis.xAxis.kind === "time" ? 2 : 0);
+}
+
+function representativeRowIndexes(length: number, limit = 1_500) {
+  if (length <= limit) return Array.from({ length }, (_, index) => index);
+  return Array.from({ length: limit }, (_, index) =>
+    Math.round((index * (length - 1)) / (limit - 1))
+  );
+}
+
+export function channelPath(analysis: LogStudioAnalysis, channel: LogStudioChannel, summary: LogStudioChannelSummary, plot: { x: number; y: number; width: number; height: number }) {
+  const channelRange = rawSummaryRange(analysis, summary);
+  if (!channelRange) return "";
+  const span = Math.max(1e-9, channelRange.max - channelRange.min);
+  const representativeIndexes = new Set(representativeRowIndexes(analysis.rows.length));
+  const minimumIndex = analysis.rows.findIndex(
+    (row) => row.rowNumber === summary.min?.rowNumber
+  );
+  const maximumIndex = analysis.rows.findIndex(
+    (row) => row.rowNumber === summary.max?.rowNumber
+  );
+  if (minimumIndex >= 0) representativeIndexes.add(minimumIndex);
+  if (maximumIndex >= 0) representativeIndexes.add(maximumIndex);
+  const range = axisRange(analysis);
   let path = "";
   let drawing = false;
-  rows.forEach((row, index) => {
+  analysis.rows.forEach((row, index) => {
     const value = row.values[channel.id];
-    if (value === null) {
+    const axisRatio = axisRatioForRowWithRange(row, index, analysis, range);
+    if (
+      value === null ||
+      !Number.isFinite(value) ||
+      value < channelRange.min ||
+      value > channelRange.max ||
+      axisRatio === null
+    ) {
       drawing = false;
       return;
     }
-    const x = plot.x + (index / Math.max(1, rows.length - 1)) * plot.width;
-    const normalized = (value - summary.min!.value) / span;
+    if (!representativeIndexes.has(index)) return;
+    const x = plot.x + axisRatio * plot.width;
+    const normalized = (value - channelRange.min) / span;
     const y = plot.y + plot.height - normalized * plot.height;
+    if (!Number.isFinite(x) || !Number.isFinite(y)) {
+      drawing = false;
+      return;
+    }
     path += `${drawing ? " L" : " M"}${x.toFixed(2)} ${y.toFixed(2)}`;
     drawing = true;
   });
@@ -1177,6 +1399,129 @@ function InsightPanel({ analysis }: { analysis: LogStudioAnalysis }) {
         ))}
       </div>
     </section>
+  );
+}
+
+export function peakContext(
+  analysis: LogStudioAnalysis,
+  summary: LogStudioChannelSummary | undefined,
+  preferredRpmChannelId?: string
+) {
+  if (!summary?.max) return "No peak context available";
+  const row = analysis.rows.find((item) => item.rowNumber === summary.max?.rowNumber);
+  if (!row) return summary.max.xLabel;
+  const contexts = (["time", "rpm"] as const).flatMap((kind) => {
+    const candidates = analysis.channels.filter((item) => item.kind === kind);
+    const preferredChannelId = kind === "rpm" && preferredRpmChannelId
+      ? preferredRpmChannelId
+      : analysis.xAxis?.kind === kind
+        ? analysis.xAxis.channelId ?? undefined
+        : undefined;
+    const channel = preferredChannelId
+      ? candidates.find((item) => item.id === preferredChannelId)
+      : candidates.length === 1
+        ? candidates[0]
+        : undefined;
+    if (!channel) return [];
+    const value = row.values[channel.id];
+    const channelSummary = analysis.summaries.find(
+      (item) => item.channelId === channel.id
+    );
+    const channelRange = rawSummaryRange(analysis, channelSummary);
+    if (
+      value === null ||
+      !Number.isFinite(value) ||
+      !channelRange ||
+      value < channelRange.min ||
+      value > channelRange.max
+    ) return [];
+    return [`${channel.label}: ${valueWithUnit(value, channel.unit, kind === "time" ? 3 : 0)}`];
+  });
+  return contexts.length ? contexts.join(" · ") : summary.max.xLabel;
+}
+
+function highestEgtSummary(analysis: LogStudioAnalysis) {
+  return analysis.summaries
+    .filter(
+      (summary) =>
+        summary.kind === "egt" &&
+        summary.unit.dimension === "temperature" &&
+        summary.max
+    )
+    .sort((left, right) => {
+      const leftCanonical = left.unit.toCanonicalFactor === null || !left.max
+        ? null
+        : left.max.value * left.unit.toCanonicalFactor + (left.unit.toCanonicalOffset ?? 0);
+      const rightCanonical = right.unit.toCanonicalFactor === null || !right.max
+        ? null
+        : right.max.value * right.unit.toCanonicalFactor + (right.unit.toCanonicalOffset ?? 0);
+      if (leftCanonical !== null && rightCanonical !== null) return rightCanonical - leftCanonical;
+      if (leftCanonical !== null) return -1;
+      if (rightCanonical !== null) return 1;
+      return (right.max?.value ?? Number.NEGATIVE_INFINITY) - (left.max?.value ?? Number.NEGATIVE_INFINITY);
+    })[0];
+}
+
+function MoreDetailsPanel({ analysis }: { analysis: LogStudioAnalysis }) {
+  const egt = highestEgtSummary(analysis);
+  const egr = analysis.insights.find((insight) => insight.kind === "egr_activity");
+  const egrComparison = analysis.insights.find(
+    (insight) => insight.kind === "actual_target_gap" && insight.title === "EGR signal actual vs target"
+  );
+
+  return (
+    <details className="group overflow-hidden rounded-2xl border border-white/10 bg-white/[0.025]">
+      <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-4 px-4 py-3 outline-none transition hover:bg-white/[0.035] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-red-800 sm:px-5">
+        <span>
+          <span className="block text-sm font-black">More details</span>
+          <span className="mt-1 block text-[0.68rem] leading-5 text-zinc-600">Every retained numeric channel, including temperatures, EGR, boost, rail pressure and unknown sensor columns.</span>
+        </span>
+        <span className="shrink-0 rounded-full border border-white/10 px-3 py-1 text-[0.68rem] font-black text-zinc-400 group-open:border-red-800/50 group-open:text-red-300">{analysis.channels.length} channels</span>
+      </summary>
+
+      <div className="border-t border-white/10 p-4 sm:p-5">
+        {(egt || egr) && (
+          <div className="mb-4 grid gap-3 lg:grid-cols-2">
+            {egt && (
+              <DetailHighlight
+                label="Highest logged EGT"
+                value={valueWithUnit(egt.max?.value, egt.unit, 1)}
+                detail={`${egt.label} · ${peakContext(analysis, egt)} · observed value only, not a component-limit verdict`}
+                tone="amber"
+              />
+            )}
+            {egr && (
+              <DetailHighlight
+                label="EGR signal observation"
+                value={egr.title}
+                detail={`${egr.text}${egrComparison ? ` ${egrComparison.text}` : ""}`}
+                tone={egr.severity === "caution" ? "amber" : "sky"}
+              />
+            )}
+          </div>
+        )}
+
+        <div className="grid gap-3 sm:grid-cols-2 2xl:grid-cols-3">
+          {analysis.channels.map((channel) => {
+            const summary = analysis.summaries.find((item) => item.channelId === channel.id);
+            return <ChannelCard key={channel.id} analysis={analysis} channel={channel} summary={summary} selectedIndex={-1} />;
+          })}
+        </div>
+      </div>
+    </details>
+  );
+}
+
+function DetailHighlight({ label, value, detail, tone }: { label: string; value: string; detail: string; tone: "amber" | "sky" }) {
+  const style = tone === "amber"
+    ? "border-amber-800/35 bg-amber-950/15 text-amber-300"
+    : "border-sky-800/35 bg-sky-950/15 text-sky-300";
+  return (
+    <article className={`rounded-2xl border p-4 ${style}`}>
+      <div className="text-[0.65rem] font-black uppercase tracking-[0.13em]">{label}</div>
+      <div className="mt-2 text-lg font-black text-white">{value}</div>
+      <p className="mt-2 text-[0.7rem] leading-5 text-zinc-500">{detail}</p>
+    </article>
   );
 }
 
@@ -1263,7 +1608,7 @@ function ChannelsView({ analysis, selectedChannelIds, onToggleChannel }: { analy
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {analysis.channels.map((channel) => {
           const summary = analysis.summaries.find((item) => item.channelId === channel.id);
-          return <ChannelCard key={channel.id} channel={channel} summary={summary} selectedIndex={selectedChannelIds.indexOf(channel.id)} />;
+          return <ChannelCard key={channel.id} analysis={analysis} channel={channel} summary={summary} selectedIndex={selectedChannelIds.indexOf(channel.id)} />;
         })}
       </div>
       {analysis.missingChannels.length > 0 && (
@@ -1279,7 +1624,7 @@ function ChannelsView({ analysis, selectedChannelIds, onToggleChannel }: { analy
   );
 }
 
-function ChannelCard({ channel, summary, selectedIndex }: { channel: LogStudioChannel; summary: LogStudioChannelSummary | undefined; selectedIndex: number }) {
+function ChannelCard({ analysis, channel, summary, selectedIndex }: { analysis: LogStudioAnalysis; channel: LogStudioChannel; summary: LogStudioChannelSummary | undefined; selectedIndex: number }) {
   return (
     <article className="min-w-0 rounded-2xl border border-white/10 bg-white/[0.025] p-4">
       <div className="flex min-w-0 items-start justify-between gap-3">
@@ -1298,6 +1643,7 @@ function ChannelCard({ channel, summary, selectedIndex }: { channel: LogStudioCh
         <span>{channel.numericValueCount} numeric values</span>
         <span>{formatValue(channel.coveragePercent, 1)}% coverage</span>
       </div>
+      {summary?.max && <div className="mt-2 text-[0.65rem] leading-5 text-zinc-700">Maximum at {peakContext(analysis, summary)}</div>}
     </article>
   );
 }

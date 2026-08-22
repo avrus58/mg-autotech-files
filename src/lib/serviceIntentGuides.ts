@@ -185,7 +185,7 @@ export const serviceIntentGuides: ServiceIntentGuide[] = [
       { label: "Stage 2 ECU file service", href: "/services/stage-2" },
       { label: "ECU and TCU file-service hub", href: "/file-service" },
       { label: "Request brief builder", href: "/tools/request-brief-builder" },
-      { label: "AutoTuner log analyzer", href: "/tools/autotuner-log-analyzer" },
+      { label: "Customer datalog analysis Studio", href: "/dashboard/log-analysis" },
       { label: "TCU tuning file service", href: "/services/tcu-tuning" },
     ],
     publishedAt: "2026-07-31",

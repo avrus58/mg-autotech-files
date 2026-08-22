@@ -2,6 +2,60 @@
 
 Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
+## 2026-08-22 Genel datalog denemesi ve customer Studio derinligi
+
+- Sonuc: Uygulama tamamlandi. Ana sayfadaki public browser-local deneme artik
+  AutoTuner'a ozel degildir; compatible CSV/TSV/TXT/LOG exportlarinda yalniz
+  gercek logdan bulunan peak actual torque ve RPM ile torque'dan hesaplanan
+  estimated peak HP gosterir. Eski 2.000 satir trial bariyeri kaldirildi;
+  public profile 50.000 satir/5 MB, detailed customer profile 15.000 satir ve
+  500.000-cell adaptive budget ile bounded kalir. Public sonuc source adi,
+  RPM penceresi, channel/quality/raw-row detayi, grafik veya rapor tasimaz.
+- Customer Studio: `/dashboard/log-analysis` ayri customer workspace olarak
+  genel delimited text loglarini analiz eder; calculated HP, actual torque ve
+  engine RPM ana metrikleri; gercek time/RPM/sample ekseni; EGT, cautious EGR
+  movement/actual-target gozlemi; actual-target farklari; tum retained numeric
+  channel min/average/max ozetleri, row inspector ve local report saglar.
+  Unknown/ambiguous unit veya engine-signal identity durumunda power ve
+  actual-target yorumu fail-closed kalir. EGR metni fonksiyon, ariza, diesel
+  tipi veya disable sonucu iddia etmez. Studio customer hesaba dahildir ve
+  kredi harcamaz.
+- Erisim ve gizlilik: Eski `/tools/autotuner-log-analyzer` kalici olarak
+  protected Studio'ya yonlenir ve sitemap/robots public discovery listesinden
+  cikarildi. Detailed Studio bundle'i lazy yuklenir ve yalniz
+  `supabase.auth.getUser()` ile dogrulanmis user sonrasinda render edilir;
+  forged local cached session tam arayuzu acamaz. Public worker yalniz iki peak
+  degerini geri dondurur. Log bytes, filename, row/channel data, vehicle context
+  veya rapor browser disina gonderilmez, saklanmaz ve request olusturmaz.
+- Parser hardening: Quoted delimiter, decimal comma, preamble/units row,
+  Nm/lb-ft, common RPM unitleri, sparse rows ve headerless legacy iki-kolon
+  kayitlari desteklenir. Requested/target/non-engine/ambiguous torque-RPM
+  sinyalleri performans girdisi olamaz. Common 16-bit ve kanitli scaled sentinel
+  degerler summary/chart'tan dislanir; chart extrema raw row identity ile
+  korunur; degenerate constant axis explicit source order'a duser. 5 MB malformed
+  wide-line tokenizer max-column sinirinda erken durur; adversarial kontrol
+  yaklasik 35 ms ve yaklasik 4 MB heap delta ile invalid sonuc verdi.
+- Kontroller: Hedefli customer/parser/report/public paket 85/85 PASS;
+  `ui-ux-safety.test.ts` haric tum repo 693/693 PASS; `npm run typecheck` PASS
+  (web + customer uploader); `npm run lint` PASS; `npm run check:i18n` PASS
+  (12 locale, customer 11 locale x 592/592, 0 English fallback);
+  `next build --webpack` Production build PASS (271 route/page entry);
+  `git diff --check` PASS (yalniz CRLF notices). Local browser QA public example
+  icin tam 430 Nm + 192.1 HP, sifir detailed/raw surface, tek H1, labelled file
+  input ve 1265/1265 scroll/client width ile PASS; legacy route protected
+  Studio'ya gitti ve anonim kullanici Studio DOM'unu gormedi. Onceki ayni
+  tasarim turundeki 390x844, 768x1024 ve 1440x900 responsive QA da overflow ve
+  console error olmadan PASS kaldi.
+- Acik validation gate: Zorunlu `npm test` 765/787 sonucunda, exact ana dalda
+  da bulunan ayni 22 eski `tests/ui-ux-safety.test.ts` source-extraction
+  assertion failure'i nedeniyle red kalir. Normal `npm run build`, bu worktree
+  `node_modules` symlink'inin Turbopack filesystem root'u disina isaret etmesi
+  nedeniyle kod derlenmeden environment panic verir; Webpack fallback tam
+  Production build'i gecmistir. Bu nedenle implementation complete olsa da
+  autopilot task kati kurala gore Done degil Blocked kaydedildi.
+- Kapsam disi: Yeni dependency, package/lockfile, SQL/migration, env/secret,
+  Production Supabase/customer/payment/e-posta verisi, push veya deploy yoktur.
+
 ## 2026-08-22 Log Analysis Studio Production release
 
 - Release kapsami: `70afff4..3c4b931` tek fast-forward uygulama commit'idir.

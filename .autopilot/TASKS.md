@@ -33,6 +33,47 @@ Tam geliştirme branch'i bu acil pakete karıştırılamaz.
 Remediation: İki sentetik/izole rehearsal, 21/21 verifier ve fixture smokes;
 ardından explicit Production release authorization ile pinli migration/app
 hotfix, immediate smoke ve incident verification.
+### MANUAL-20260822-GENERIC-DATALOG-STUDIO [P1] Genel datalog denemesi ve müşteri analiz derinliği
+
+Durum: Blocked (implementation complete; repository-wide baseline validation is red)
+
+Fingerprint: `performance-analysis|generic-datalog-access|autotuner-specific-public-bypass-and-2k-cap|public-two-metric-trial-and-customer-multichannel-studio`
+
+Kapsam: AutoTuner'a ozel ad, format ve public tam-surum gecidini kaldir; ana
+sayfadaki browser-local denemeyi gercekci boyuttaki genel CSV/TSV/TXT/LOG
+exportlarinda yalniz tepe Nm ve torque-derived HP gosterecek sekilde sinirla.
+Authenticated customer Studio'da yuksek ama bounded kaynak limitleri, tum
+sayisal kanallarin min/ortalama/maksimum ozeti, gercek time/RPM ekseni, EGT ve
+yalniz kayitta kanitlanan EGR hareketi/gap gozlemleri sagla.
+
+Kabul kriterleri:
+
+- 2.000 satiri asan desteklenen text dataloglari public denemede sirf satir
+  sayisi nedeniyle reddedilmez; file/row/channel limitleri local performans icin
+  acik ve bounded kalir.
+- Public hazir sonuc yalniz peak torque ve estimated peak power degerlerini
+  gosterir; source adi, RPM penceresi, satir/kalite detayi, grafik, raw data ve
+  indirilebilir rapor gostermez.
+- Eski public AutoTuner analyzer tam calisma alanini render etmez ve protected
+  `/dashboard/log-analysis` alanina yonlenir.
+- Studio common delimited loglarda marka/tool bagimsiz RPM, Nm/lb-ft, time,
+  EGT, EGR actual/target ve diger sayisal kanallari korur; unit bilinmiyorsa
+  power veya actual-target sonucu uydurmaz.
+- EGR metni yalniz observed channel movement/gap bildirir; fonksiyon, ariza,
+  diesel tipi veya disable durumu kesinlestirmez.
+- Hedefli testler, lint, typecheck, build, responsive/accessibility browser QA
+  ve diff review PASS olur.
+
+Blocked reason: Uygulama kapsami 85/85 hedefli ve `ui-ux-safety.test.ts`
+haric 693/693 testte PASS olsa da zorunlu `npm test`, exact `origin/main`
+baseline'inda da bulunan ayni 22 eski `ui-ux-safety` source-contract failure'i
+nedeniyle 765/787 sonucunda kalir. Normal Turbopack build de worktree
+`node_modules` symlink'i filesystem root disina isaret ettigi icin ortam kaynakli
+panic verir; ayni kaynak Webpack Production build'de PASS olur.
+
+Remediation: Eski 22 `ui-ux-safety` kaynak cikarma assertion'ini ayri ve kanitli
+bir test-baseline gorevinde duzelt; ardindan `npm test` ve normal non-symlink
+checkout'ta `npm run build` tekrar calistirilarak gorev Done'a tasinabilir.
 
 ## Later
 
