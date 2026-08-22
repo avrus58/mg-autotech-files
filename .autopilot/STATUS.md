@@ -2757,3 +2757,25 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 - Sinirlar: Yeni dependency veya SQL/migration gerekmedi. Env/secret okunmadi;
   Production Supabase, customer data, payment, e-posta delivery, push veya deploy
   islemi yapilmadi.
+
+## 2026-08-22 Registration page simplification
+
+- Gorev: Kayit sayfasinin masaustu gorunumundeki gereksiz sol tanitim alanini
+  kaldirarak asil kayit akisini daha sade ve odakli hale getirmek.
+- Uygulama: Sol pazarlama sutunu, uc ozellik karti, alt durum etiketleri ve
+  tekrarlanan kayit rozeti kaldirildi. Form 760px genisliginde ortalanmis tek
+  karta tasindi. Kompakt MG AutoTech marka basligi karta dahil edildi,
+  `Create Account` tek H1 oldu ve mevcut login baglantisi sade metne cevrildi.
+- Korunan davranis: Private/business secimi, company alani, email/password ve
+  Google auth, zorunlu global ulke secimi, form adimlari, CAPTCHA ve tum submit
+  handler'lari degismedi.
+- Kontroller: register/country/CAPTCHA targeted tests PASS (17/17); `npm run
+  lint` PASS; `npm run typecheck` PASS (web + desktop); `npm run build --
+  --webpack` PASS (270 route/page entry); `npm run check:i18n` PASS (12 locale,
+  596/596 ve 0 English fallback). Browser QA 1280x720, 768x1024 ve 390x844
+  boyutlarinda yatay tasma olmamasi, tek H1, 250 secilebilir ulke, 48px mobil
+  ana aksiyon ve sifir console warning/error ile PASS. Full suite 672/694 PASS;
+  kalan 22 `ui-ux-safety` failure'i bu scope'un degistirmedigi ana dal
+  kaynak-kontrat baseline'idir.
+- Sinirlar: Yeni dependency, SQL/migration, env/secret, Production Supabase,
+  customer data, payment, push veya deploy islemi yapilmadi.

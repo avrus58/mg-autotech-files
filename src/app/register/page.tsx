@@ -45,7 +45,6 @@ import {
   ArrowRight,
   Building2,
   CheckCircle2,
-  Cpu,
   FileCheck2,
   Lock,
   Loader2,
@@ -55,7 +54,6 @@ import {
   ShieldCheck,
   Upload,
   User,
-  Zap,
   RefreshCw,
 } from "lucide-react";
 
@@ -512,101 +510,37 @@ export default function RegisterPage() {
   }
 
   return (
-    <main className="relative flex min-h-screen items-start justify-center overflow-x-hidden bg-[#050505] px-3 py-3 text-white sm:px-4 sm:py-5 lg:items-center lg:py-2">
+    <main className="relative flex min-h-screen items-start justify-center overflow-x-hidden bg-[#050505] px-3 py-3 text-white sm:px-4 sm:py-5 lg:items-center lg:py-6">
       <div className="fixed inset-0 -z-10 bg-[radial-gradient(circle_at_18%_0%,rgba(177,18,27,0.28),transparent_34%),radial-gradient(circle_at_82%_100%,rgba(177,18,27,0.18),transparent_30%),linear-gradient(135deg,#050505,#0d0d0f_48%,#160608)]" />
 
-      <div className="grid w-full max-w-[1180px] overflow-hidden rounded-[1.4rem] border border-white/10 bg-white/[0.04] shadow-2xl shadow-black/50 backdrop-blur-xl lg:grid-cols-[0.84fr_1.16fr] lg:rounded-[1.6rem]">
-        <section className="relative hidden min-h-[680px] overflow-hidden border-r border-white/10 bg-black/40 p-5 lg:block 2xl:min-h-[710px] 2xl:p-8">
-          <div className="absolute -left-24 -top-24 h-80 w-80 rounded-full bg-red-700/20 blur-3xl" />
-          <div className="absolute -bottom-24 -right-20 h-80 w-80 rounded-full bg-red-950/40 blur-3xl" />
-          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-red-500/60 to-transparent" />
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_68%_34%,rgba(177,18,27,0.16),transparent_22%),linear-gradient(140deg,transparent,rgba(255,255,255,0.04))]" />
-
-          <Link href="/" className="relative flex items-center gap-3">
-            <div className="relative flex h-12 w-12 items-center justify-center rounded-xl border border-red-800/50 bg-[#111] shadow-lg shadow-red-950/40">
-              <Upload className="h-7 w-7 text-red-600" />
+      <div className="w-full max-w-[760px] overflow-hidden rounded-[1.4rem] border border-white/10 bg-white/[0.04] shadow-2xl shadow-black/50 backdrop-blur-xl lg:rounded-[1.6rem]">
+        <header className="flex items-center justify-between gap-4 border-b border-white/10 bg-black/25 px-4 py-3.5 sm:px-6">
+          <Link href="/" className="flex min-w-0 items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-red-800/50 bg-[#111] shadow-lg shadow-red-950/30">
+              <Upload className="h-5 w-5 text-red-600" />
             </div>
-
-            <div>
-              <div className="text-xl font-black tracking-wide">
+            <div className="min-w-0">
+              <div className="text-lg font-black tracking-wide">
                 MG <span className="text-red-600">AUTOTECH</span>
               </div>
-              <div className="text-xs text-zinc-400">
+              <div className="truncate text-[11px] text-zinc-500">
                 ECU File Service Platform
               </div>
             </div>
           </Link>
 
-          <div className="relative mt-7 2xl:mt-10">
-            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-red-800/50 bg-red-950/25 px-3 py-1.5 text-xs font-bold text-red-100">
-              <ShieldCheck className="h-4 w-4 text-red-500" />
-              Verified customer workspace
-            </div>
-
-            <h1 className="max-w-xl text-3xl font-black leading-tight">
-              File service account for workshops and drivers.
-            </h1>
-
-            <p className="mt-3 max-w-lg text-sm leading-6 text-zinc-400">
-              Create a secure workspace for ECU / TCU uploads, credit balance,
-              technical communication and completed file delivery.
-            </p>
+          <div className="hidden shrink-0 items-center gap-2 rounded-full border border-red-900/40 bg-red-950/20 px-3 py-1.5 text-[11px] font-bold text-red-100 sm:inline-flex">
+            <ShieldCheck className="h-3.5 w-3.5 text-red-500" />
+            Verified customer workspace
           </div>
+        </header>
 
-          <div className="relative mt-5 grid gap-2.5">
-            <FeatureCard
-              icon={<Cpu className="h-6 w-6" />}
-              title="Smart Vehicle Database"
-              text="Select brand, model, generation and engine with automatic ECU and performance data."
-            />
-            <FeatureCard
-              icon={<Zap className="h-6 w-6" />}
-              title="Premium File Workflow"
-              text="Submit original files, choose tuning services and receive your modified file through your dashboard."
-            />
-            <FeatureCard
-              icon={<Building2 className="h-6 w-6" />}
-              title="Private and business customers"
-              text="Built for clean order handling, credit tracking and professional ECU service communication."
-            />
-          </div>
-
-          <div className="relative mt-3 grid grid-cols-3 gap-2">
-            {["Secure upload", "Credit wallet", "Live order status"].map((item) => (
-              <div
-                key={item}
-                className="rounded-lg border border-red-900/30 bg-red-950/15 px-2 py-2 text-center text-[10px] font-black uppercase tracking-[0.1em] text-red-100"
-              >
-                {item}
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <section className="p-4 sm:p-6 2xl:p-8">
+        <section className="p-4 sm:p-6 lg:p-7">
           <div className="mx-auto max-w-[650px]">
-            <div className="mb-5 lg:hidden">
-              <Link href="/" className="flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-red-800/50 bg-[#111]">
-                  <Upload className="h-7 w-7 text-red-600" />
-                </div>
-                <div>
-                  <div className="text-xl font-black">
-                    MG <span className="text-red-600">AUTOTECH</span>
-                  </div>
-                  <div className="text-xs text-zinc-400">Customer Register</div>
-                </div>
-              </Link>
-            </div>
-
             <div className="mb-4">
-              <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-red-900/50 bg-red-950/20 px-3 py-1.5 text-xs font-black uppercase tracking-[0.16em] text-red-200">
-                <ShieldCheck className="h-4 w-4" />
-                Start your file service account
-              </div>
-              <h2 className="text-2xl font-black leading-tight">
+              <h1 className="text-2xl font-black leading-tight">
                 Create Account
-              </h2>
+              </h1>
               <p className="mt-1.5 text-sm leading-5 text-zinc-400">
                 A guided setup for private customers and professional workshops.
               </p>
@@ -954,14 +888,14 @@ export default function RegisterPage() {
               </button>
             )}
 
-            <div className="mt-5 rounded-xl border border-white/10 bg-black/30 p-4 text-center text-sm text-zinc-400">
+            <div className="mt-5 text-center text-sm text-zinc-400">
               Already have an account?{" "}
               <Link href="/login" className="font-black text-red-400">
                 Login
               </Link>
             </div>
 
-            <p className="mt-3 text-center text-xs leading-5 text-zinc-600">
+            <p className="mt-3 text-center text-xs leading-5 text-zinc-500">
               By creating an account, you can submit ECU / TCU file requests and
               manage your MG AutoTech credit balance securely.
             </p>
@@ -1018,28 +952,6 @@ function StepProgress({
             )}
           </div>
         ))}
-      </div>
-    </div>
-  );
-}
-
-function FeatureCard({
-  icon,
-  title,
-  text,
-}: {
-  icon: ReactNode;
-  title: string;
-  text: string;
-}) {
-  return (
-    <div className="flex items-start gap-3 rounded-xl border border-white/10 bg-white/[0.04] p-3">
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-red-900/30 bg-red-950/20 text-red-500">
-        {icon}
-      </div>
-      <div className="min-w-0">
-        <div className="text-sm font-black">{title}</div>
-        <p className="mt-1 text-xs leading-5 text-zinc-500">{text}</p>
       </div>
     </div>
   );

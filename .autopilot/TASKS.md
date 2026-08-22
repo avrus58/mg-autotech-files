@@ -50,6 +50,29 @@ Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
 
+### MANUAL-20260822-REGISTER-SIMPLIFICATION [P1] Focus registration on one clear form card
+
+Durum: Done
+
+Fingerprint: `customer-registration|register-layout|redundant-left-marketing-column|centered-single-card-form`
+
+Sonuc: Kayit sayfasindaki formu tekrar eden masaustu tanitim sutunu, uc ozellik
+karti ve durum etiketi kaldirildi. Kayit akisi 760px genisliginde ortalanmis tek
+bir karta toplandi; kart icine kompakt marka basligi ve masaustu/tablet guven
+etiketi eklendi. `Create Account` sayfanin tek ana basligi yapildi. Mevcut
+private/business secimi, form alanlari, ulke zorunlulugu, Google/e-posta auth
+akislari ve CAPTCHA davranisi degistirilmedi.
+
+Dogrulama: register/country/CAPTCHA targeted tests PASS (17/17); `npm run lint`
+PASS; `npm run typecheck` PASS (web + desktop); `npm run build -- --webpack`
+PASS (270 route/page entry); `npm run check:i18n` PASS (12 locale, 596/596 ve
+0 English fallback). Browser QA 1280x720, 768x1024 ve 390x844 boyutlarinda
+yatay tasma olmamasi, tek H1, 250 secilebilir ulke, 48px mobil ana aksiyon ve
+sifir console warning/error ile PASS. Full suite 672/694 PASS; kalan ayni 22
+`ui-ux-safety` failure'i ana dalda onceden mevcut kaynak-kontrat baseline'idir.
+Yeni dependency, SQL/migration, env/secret, Production data, push veya deploy
+yoktur.
+
 ### MANUAL-20260822-REGISTRATION-COUNTRY [P1] Require an auto-detected, editable registration country
 
 Durum: Done
