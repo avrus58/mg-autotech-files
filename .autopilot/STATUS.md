@@ -2,6 +2,15 @@
 
 Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
+## 2026-08-22 Registration phone country selector Production release
+
+- Gorev: Owner onayiyla `e5e5718` telefon ulke kodu secicisi degisikligini `file.mgautotech.de` Production'a yayinlamak.
+- Release kapsami: `ffef96d..e5e5718` tek fast-forward commit; register telefonu, paylasilan ulke secici callback'i, telefon ulke katalogu, hedefli testler ve autopilot kayitlari. SQL/migration, package/lockfile, env, payment veya customer-data degisikligi yoktur. Uygulama rollback hedefi `ffef96d` olarak dogrulandi.
+- Release gate: Registration/country/profile hedefli testler PASS (14/14); `npm run lint` PASS; `npm run typecheck` PASS; `npm run build -- --webpack` PASS (270 route/page entry); `git diff --check` PASS. Full suite 678/700; kalan 22 ayni `ui-ux-safety` ana dal kaynak-kontrat baseline failure'idir ve telefon kapsamina yeni failure eklenmedi.
+- Yayin: GitHub `main` `ffef96d` tabanindan `e5e5718` commit'ine fast-forward pushlandi. Vercel Production deployment `5Ei5imd79w8NjRVGqdJanx9wzGan` Ready/Current oldu ve `file.mgautotech.de` domainine atandi.
+- Production smoke: Public smoke PASS (`/` 200, `/new-request` 200, vehicle API 102 brand); unauthenticated admin smoke PASS (korumali API'ler 401, mutation route 405); `/register` 200. Anonim browser QA'da konuma gore DE / `+49`, bayrakli 243 operasyonel secenek, manuel US / `+1` seciminin profil ulkesi Turkiye yapildiginda korunmasi, sifir console error ve desktop yatay tasma olmamasi dogrulandi. Gercek hesap, CAPTCHA, e-posta, payment veya customer kaydi olusturulmadi.
+- Rollback: Kritik register regresyonunda Vercel Instant Rollback ile `ffef96d` deployment'i yeniden current yapilir; Git gecmisi force-push olmadan `e5e5718` revert commit'iyle eslenir. DB rollback gerekmez.
+
 ## 2026-08-14 Multi-engine search discovery
 
 - Gorev: file.mgautotech.de public sayfalarinin Google disindaki arama motorlari tarafindan daha hizli kesfedilmesi icin Bing/IndexNow ve bolgesel webmaster dogrulama altyapisini kurmak.
