@@ -2,6 +2,40 @@
 
 Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
+## 2026-08-22 Premium auth Production release preflight
+
+- Owner, eksik release kapilari tamamlandiktan sonra premium login/register auth
+  diliminin Production'a yayinlanmasini istedi. Exact kod kapsami temiz
+  `4894687 -> 9135a97` fast-forward'udur; 12 auth UI/helper/test/autopilot
+  dosyasi disinda package, lockfile, env dosyasi, migration, payment veya
+  customer-data degisikligi yoktur. Kod rollback tabani `4894687` olarak
+  sabitlendi.
+- Canli altyapi: Production Supabase Bot and Abuse Protection, Cloudflare
+  Turnstile provider ve mevcut masked secret ile ON; eksik ve acikca gecersiz
+  CAPTCHA tokenli iki sentetik password istegi HTTP 400 `captcha_failed` verdi
+  ve session uretmedi. CAPTCHA mode/site-key kayitlari Vercel Production
+  kapsaminda mevcut. Secret okunmadi veya loglanmadi.
+- Google gate: Owner browser action-time onayini verdi. `MG AutoTech Reporting`
+  projesinde `MG AutoTech File Service` External OAuth uygulamasi Production'a
+  alindi; mevcut ana sayfa, `/datenschutz` ve `/agb` baglantilari ile
+  `mgautotech.de` authorized domain olarak kaydedildi. Yeni Web client yalniz
+  `https://file.mgautotech.de` JavaScript origin'ine sahiptir ve redirect URI
+  icermez. Yeni public client ID Supabase Production Google provider ve Vercel
+  Production `NEXT_PUBLIC_GOOGLE_CLIENT_ID` kaydinda birlikte guncellendi.
+  Google client secret okunmadi veya kopyalanmadi; Supabase'teki masked OAuth
+  secret alani acilmadi ya da degistirilmedi. Cookie'siz dogrudan Supabase
+  `/auth/v1/authorize?provider=google` zinciri Google `/signin/oauth/error`
+  sayfasinda `redirect_uri_mismatch` ile durdu ve session uretmedi. Vercel yeni
+  deployment gerektirdigini dogruladi; Git push/deploy bu preflight kaydindan
+  sonraki release adimidir.
+- Kontroller: Focused auth/register/CAPTCHA 26/26 PASS; lint PASS; web ve
+  customer-uploader TypeScript PASS; Production Webpack build 270/270 PASS;
+  i18n 12 locale ve customer 11 locale x 589/589 PASS; audit 0 vulnerability;
+  `git diff --check` PASS. Full suite 686/708; exact `4894687` baseline da ayni
+  22 unrelated failure'i veriyor. `check:performance` hem release hem exact
+  baseline build'inde Next manifest homepage client entry'sini bulamadigi icin
+  ayni mevcut baseline failure olarak kaydedildi.
+
 ## 2026-08-22 Premium login and registration auth protection parity
 
 - Calisma araligi: 2026-08-22 18:00-19:05 (Europe/Berlin).
