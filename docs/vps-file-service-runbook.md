@@ -38,9 +38,34 @@ public Next build variables plus the existing server-only Supabase, upload,
 device, Widget and distributed-admission configuration. It must also set:
 
 ```text
+NEXT_PUBLIC_SITE_URL=https://file.mgautotech.de
+NEXT_PUBLIC_SUPABASE_URL=https://jujaeyvyaeesmipihrrw.supabase.co
+NEXT_PUBLIC_AUTH_CAPTCHA_MODE=required
+NEXT_PUBLIC_TURNSTILE_SITE_KEY=<real non-test Production site key>
+NEXT_PUBLIC_AUTH_CAPTCHA_ALLOW_TEST_KEY=false
+NEXT_PUBLIC_GOOGLE_CLIENT_ID=<Production Google OAuth client ID>
+EMAIL_DRY_RUN=false
+RESEND_API_KEY=<Production re_ credential>
+EMAIL_FROM=<verified Production sender>
+RESEND_WEBHOOK_SECRET=<Production whsec_ signing secret>
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=<Production pk_live_ credential>
+STRIPE_SECRET_KEY=<Production sk_live_ credential>
+STRIPE_WEBHOOK_SECRET=<credit webhook whsec_ signing secret>
+STRIPE_WIDGET_WEBHOOK_SECRET=<distinct widget webhook whsec_ signing secret>
+NEXT_PUBLIC_BANK_ACCOUNT_NAME=<existing Production value>
+NEXT_PUBLIC_BANK_NAME=<existing Production value>
+NEXT_PUBLIC_BANK_IBAN=<existing Production value>
+NEXT_PUBLIC_BANK_BIC=<existing Production value>
 REQUEST_NETWORK_PROVIDER=cloudflare-caddy
 REQUEST_NETWORK_PROXY_SECRET=<32-512 character server-only value>
 ```
+
+The widget schema defaults checkout to enabled and there is no server env kill
+switch that proves it disabled. A real, separately registered Stripe widget
+webhook secret is therefore a release requirement; never generate or reuse a
+placeholder merely to satisfy preflight. The Turnstile private secret remains
+only in the matching hosted Supabase Auth configuration and is not copied into
+the app or analyzer env files.
 
 Caddy must remove any client-supplied `X-MG-*` trust headers, then set
 `X-MG-Proxy-Secret`, `X-MG-Client-IP`, and `X-MG-Country` according to

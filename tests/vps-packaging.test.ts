@@ -528,10 +528,15 @@ test("Env preflight accepts the split least-privilege contract without echoing v
   const sharedToken = "synthetic-analyzer-token-0000000000000001";
   const proxySecret = "synthetic-proxy-secret-000000000000000001";
   const serviceSecret = "synthetic-service-role-0000000000000001";
+  const resendKey = "re_synthetic-resend-key-000000000000001";
+  const resendWebhookSecret = "whsec_synthetic-resend-webhook-000000000001";
+  const stripeSecret = "sk_live_synthetic-stripe-secret-000000000001";
+  const stripeWebhookSecret = "whsec_synthetic-credit-webhook-000000000001";
+  const widgetWebhookSecret = "whsec_synthetic-widget-webhook-000000000001";
   try {
-    writeFileSync(app, [
-      "NEXT_PUBLIC_SITE_URL=https://file.example.test",
-      "NEXT_PUBLIC_SUPABASE_URL=https://project.supabase.co",
+    const validAppEnvironment = [
+      "NEXT_PUBLIC_SITE_URL=https://file.mgautotech.de",
+      "NEXT_PUBLIC_SUPABASE_URL=https://jujaeyvyaeesmipihrrw.supabase.co",
       "NEXT_PUBLIC_SUPABASE_ANON_KEY=synthetic-public-key-0000000000000001",
       `SUPABASE_SERVICE_ROLE_KEY=${serviceSecret}`,
       "UPLOAD_INTEGRITY_SECRET=synthetic-upload-secret-000000000000001",
@@ -547,14 +552,31 @@ test("Env preflight accepts the split least-privilege contract without echoing v
       "WIDGET_IP_HASH_SALT=synthetic-widget-ip-salt-00000000000001",
       "UPSTASH_REDIS_REST_URL=https://redis.example.test",
       "UPSTASH_REDIS_REST_TOKEN=synthetic-redis-token-000000000000001",
+      "NEXT_PUBLIC_AUTH_CAPTCHA_MODE=required",
+      "NEXT_PUBLIC_TURNSTILE_SITE_KEY=0xSyntheticTurnstileSiteKey00000001",
       "NEXT_PUBLIC_AUTH_CAPTCHA_ALLOW_TEST_KEY=false",
+      "EMAIL_DRY_RUN=false",
+      `RESEND_API_KEY=${resendKey}`,
+      "EMAIL_FROM=MG AutoTech <noreply@file.mgautotech.de>",
+      `RESEND_WEBHOOK_SECRET=${resendWebhookSecret}`,
+      "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_live_synthetic-publishable-key-0000000001",
+      `STRIPE_SECRET_KEY=${stripeSecret}`,
+      `STRIPE_WEBHOOK_SECRET=${stripeWebhookSecret}`,
+      `STRIPE_WIDGET_WEBHOOK_SECRET=${widgetWebhookSecret}`,
+      "NEXT_PUBLIC_BANK_ACCOUNT_NAME=MG AutoTech",
+      "NEXT_PUBLIC_BANK_NAME=Synthetic Production Bank",
+      "NEXT_PUBLIC_BANK_IBAN=DE00000000000000000000",
+      "NEXT_PUBLIC_BANK_BIC=SYNTHDE0XXX",
+      "NEXT_PUBLIC_GOOGLE_CLIENT_ID=123456789012-syntheticclientid123.apps.googleusercontent.com",
       "",
-    ].join("\n"));
-    writeFileSync(analyzer, [
+    ].join("\n");
+    const validAnalyzerEnvironment = [
       `FILE_EXPERT_ANALYZER_TOKEN=${sharedToken}`,
-      "FILE_EXPERT_ANALYZER_ALLOWED_HOSTS=project.supabase.co",
+      "FILE_EXPERT_ANALYZER_ALLOWED_HOSTS=jujaeyvyaeesmipihrrw.supabase.co",
       "",
-    ].join("\n"));
+    ].join("\n");
+    writeFileSync(app, validAppEnvironment);
+    writeFileSync(analyzer, validAnalyzerEnvironment);
     const valid = spawnSync(bash, [shellPath(checker), shellPath(app), shellPath(analyzer)], {
       encoding: "utf8",
     });
@@ -564,14 +586,116 @@ test("Env preflight accepts the split least-privilege contract without echoing v
     assert.doesNotMatch(validOutput, new RegExp(sharedToken));
     assert.doesNotMatch(validOutput, new RegExp(proxySecret));
     assert.doesNotMatch(validOutput, new RegExp(serviceSecret));
+    assert.doesNotMatch(validOutput, new RegExp(resendKey));
+    assert.doesNotMatch(validOutput, new RegExp(stripeSecret));
 
-    writeFileSync(analyzer, `${readFileSync(analyzer, "utf8")}STRIPE_SECRET_KEY=synthetic-forbidden\n`);
+    writeFileSync(analyzer, `${validAnalyzerEnvironment}STRIPE_SECRET_KEY=synthetic-forbidden\n`);
     const invalid = spawnSync(bash, [shellPath(checker), shellPath(app), shellPath(analyzer)], {
       encoding: "utf8",
     });
     assert.notEqual(invalid.status, 0);
     assert.match(invalid.stderr, /STRIPE_SECRET_KEY: not allowed/);
     assert.doesNotMatch(invalid.stderr, /synthetic-forbidden/);
+
+    writeFileSync(analyzer, validAnalyzerEnvironment);
+    const invalidAppContracts = [
+      {
+        name: "canonical site",
+        source: validAppEnvironment.replace("https://file.mgautotech.de", "https://preview.example.test"),
+        expected: /NEXT_PUBLIC_SITE_URL/,
+      },
+      {
+        name: "Production Supabase",
+        source: validAppEnvironment.replace(
+          "https://jujaeyvyaeesmipihrrw.supabase.co",
+          "https://vxdxdvtsopsjatukdbuq.supabase.co"
+        ),
+        expected: /NEXT_PUBLIC_SUPABASE_URL/,
+      },
+      {
+        name: "required CAPTCHA mode",
+        source: validAppEnvironment.replace("NEXT_PUBLIC_AUTH_CAPTCHA_MODE=required", "NEXT_PUBLIC_AUTH_CAPTCHA_MODE=off"),
+        expected: /NEXT_PUBLIC_AUTH_CAPTCHA_MODE/,
+      },
+      {
+        name: "real Turnstile key",
+        source: validAppEnvironment.replace(
+          "NEXT_PUBLIC_TURNSTILE_SITE_KEY=0xSyntheticTurnstileSiteKey00000001",
+          "NEXT_PUBLIC_TURNSTILE_SITE_KEY=1x00000000000000000000AA"
+        ),
+        expected: /NEXT_PUBLIC_TURNSTILE_SITE_KEY/,
+      },
+      {
+        name: "live e-mail sending",
+        source: validAppEnvironment.replace("EMAIL_DRY_RUN=false", "EMAIL_DRY_RUN=true"),
+        expected: /EMAIL_DRY_RUN/,
+      },
+      {
+        name: "Resend key",
+        source: validAppEnvironment.replace(`RESEND_API_KEY=${resendKey}`, "RESEND_API_KEY="),
+        expected: /RESEND_API_KEY/,
+      },
+      {
+        name: "Resend webhook",
+        source: validAppEnvironment.replace(`RESEND_WEBHOOK_SECRET=${resendWebhookSecret}`, "RESEND_WEBHOOK_SECRET="),
+        expected: /RESEND_WEBHOOK_SECRET/,
+      },
+      {
+        name: "live Stripe secret",
+        source: validAppEnvironment.replace(`STRIPE_SECRET_KEY=${stripeSecret}`, "STRIPE_SECRET_KEY=sk_test_synthetic-key-000000000001"),
+        expected: /STRIPE_SECRET_KEY/,
+      },
+      {
+        name: "credit Stripe webhook",
+        source: validAppEnvironment.replace(`STRIPE_WEBHOOK_SECRET=${stripeWebhookSecret}`, "STRIPE_WEBHOOK_SECRET="),
+        expected: /STRIPE_WEBHOOK_SECRET/,
+      },
+      {
+        name: "widget Stripe webhook",
+        source: validAppEnvironment.replace(`STRIPE_WIDGET_WEBHOOK_SECRET=${widgetWebhookSecret}`, "STRIPE_WIDGET_WEBHOOK_SECRET="),
+        expected: /STRIPE_WIDGET_WEBHOOK_SECRET/,
+      },
+      {
+        name: "bank transfer",
+        source: validAppEnvironment.replace("NEXT_PUBLIC_BANK_IBAN=DE00000000000000000000", "NEXT_PUBLIC_BANK_IBAN="),
+        expected: /NEXT_PUBLIC_BANK_IBAN/,
+      },
+      {
+        name: "Google OAuth",
+        source: validAppEnvironment.replace(
+          "NEXT_PUBLIC_GOOGLE_CLIENT_ID=123456789012-syntheticclientid123.apps.googleusercontent.com",
+          "NEXT_PUBLIC_GOOGLE_CLIENT_ID=invalid"
+        ),
+        expected: /NEXT_PUBLIC_GOOGLE_CLIENT_ID/,
+      },
+    ];
+    for (const contract of invalidAppContracts) {
+      writeFileSync(app, contract.source);
+      const result = spawnSync(bash, [shellPath(checker), shellPath(app), shellPath(analyzer)], {
+        encoding: "utf8",
+      });
+      assert.notEqual(result.status, 0, `${contract.name} unexpectedly passed`);
+      assert.match(result.stderr, contract.expected, contract.name);
+      assert.doesNotMatch(result.stderr, new RegExp(resendKey));
+      assert.doesNotMatch(result.stderr, new RegExp(stripeSecret));
+    }
+
+    writeFileSync(app, validAppEnvironment);
+    writeFileSync(
+      analyzer,
+      validAnalyzerEnvironment.replace(
+        "jujaeyvyaeesmipihrrw.supabase.co",
+        "jujaeyvyaeesmipihrrw.supabase.co,files.example.test"
+      )
+    );
+    const expandedHosts = spawnSync(
+      bash,
+      [shellPath(checker), shellPath(app), shellPath(analyzer)],
+      { encoding: "utf8" }
+    );
+    assert.notEqual(expandedHosts.status, 0);
+    assert.match(expandedHosts.stderr, /exactly one normalized Production Supabase host/);
+    assert.doesNotMatch(expandedHosts.stderr, /files\.example\.test/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

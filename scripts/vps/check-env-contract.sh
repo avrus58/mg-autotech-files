@@ -96,6 +96,31 @@ require_exact() {
   fi
 }
 
+require_prefixed_value() {
+  local map_name=$1
+  local key=$2
+  local prefix=$3
+  local minimum=$4
+  local maximum=${5:-4096}
+  local -n source=$map_name
+  local value=${source[$key]-}
+  if (( ${#value} < minimum || ${#value} > maximum )) || [[ "$value" != "$prefix"* ]]; then
+    errors+=("${key}: missing or invalid Production credential shape")
+  fi
+}
+
+require_pattern() {
+  local map_name=$1
+  local key=$2
+  local pattern=$3
+  local message=$4
+  local -n source=$map_name
+  local value=${source[$key]-}
+  if [[ ! "$value" =~ $pattern ]]; then
+    errors+=("${key}: ${message}")
+  fi
+}
+
 require_https_url() {
   local map_name=$1
   local key=$2
@@ -109,8 +134,8 @@ require_https_url() {
 parse_env_file "$app_env_file" app_environment APP_ENV_FILE
 parse_env_file "$analyzer_env_file" analyzer_environment ANALYZER_ENV_FILE
 
-require_https_url app_environment NEXT_PUBLIC_SITE_URL
-require_https_url app_environment NEXT_PUBLIC_SUPABASE_URL
+require_exact app_environment NEXT_PUBLIC_SITE_URL https://file.mgautotech.de
+require_exact app_environment NEXT_PUBLIC_SUPABASE_URL https://jujaeyvyaeesmipihrrw.supabase.co
 require_value app_environment NEXT_PUBLIC_SUPABASE_ANON_KEY 20
 require_value app_environment SUPABASE_SERVICE_ROLE_KEY 32
 require_value app_environment UPLOAD_INTEGRITY_SECRET 32
@@ -124,6 +149,50 @@ require_exact app_environment FILE_EXPERT_ANALYZER_DISTRIBUTED_ADMISSION_ENABLED
 require_exact app_environment FILE_EXPERT_ANALYZER_GLOBAL_CONCURRENCY 1
 require_value app_environment WIDGET_SESSION_SECRET 32
 require_value app_environment WIDGET_IP_HASH_SALT 32
+
+require_exact app_environment NEXT_PUBLIC_AUTH_CAPTCHA_MODE required
+require_pattern \
+  app_environment \
+  NEXT_PUBLIC_TURNSTILE_SITE_KEY \
+  '^0x[A-Za-z0-9_-]{20,100}$' \
+  "must be a real Production Turnstile site key"
+
+turnstile_site_key=${app_environment[NEXT_PUBLIC_TURNSTILE_SITE_KEY]-}
+case "$turnstile_site_key" in
+  1x00000000000000000000AA|2x00000000000000000000AB|1x00000000000000000000BB|2x00000000000000000000BB|3x00000000000000000000FF)
+    errors+=("NEXT_PUBLIC_TURNSTILE_SITE_KEY: test keys are forbidden in Production")
+    ;;
+esac
+
+require_exact app_environment EMAIL_DRY_RUN false
+require_prefixed_value app_environment RESEND_API_KEY re_ 16 512
+require_value app_environment EMAIL_FROM 6 320
+require_pattern \
+  app_environment \
+  EMAIL_FROM \
+  '^([^[:space:]<>@]+@[^[:space:]<>@]+\.[^[:space:]<>@]+|[^<>]{1,100}<[^[:space:]<>@]+@[^[:space:]<>@]+\.[^[:space:]<>@]+>)$' \
+  "must be a valid Production sender address"
+require_prefixed_value app_environment RESEND_WEBHOOK_SECRET whsec_ 24 512
+
+require_prefixed_value app_environment NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY pk_live_ 24 512
+require_prefixed_value app_environment STRIPE_SECRET_KEY sk_live_ 24 512
+require_prefixed_value app_environment STRIPE_WEBHOOK_SECRET whsec_ 24 512
+require_prefixed_value app_environment STRIPE_WIDGET_WEBHOOK_SECRET whsec_ 24 512
+if [[ -n ${app_environment[STRIPE_WEBHOOK_SECRET]-} && \
+      ${app_environment[STRIPE_WEBHOOK_SECRET]} == ${app_environment[STRIPE_WIDGET_WEBHOOK_SECRET]-} ]]; then
+  errors+=("STRIPE_WIDGET_WEBHOOK_SECRET: must be distinct from the credit webhook secret")
+fi
+
+require_value app_environment NEXT_PUBLIC_BANK_ACCOUNT_NAME 2 200
+require_value app_environment NEXT_PUBLIC_BANK_NAME 2 200
+require_value app_environment NEXT_PUBLIC_BANK_IBAN 15 64
+require_value app_environment NEXT_PUBLIC_BANK_BIC 8 16
+
+require_pattern \
+  app_environment \
+  NEXT_PUBLIC_GOOGLE_CLIENT_ID \
+  '^[0-9]{6,}-[A-Za-z0-9_-]{8,}\.apps\.googleusercontent\.com$' \
+  "must be a valid Production Google OAuth client ID"
 
 captcha_bypass=${app_environment[NEXT_PUBLIC_AUTH_CAPTCHA_ALLOW_TEST_KEY]-}
 case "$captcha_bypass" in
@@ -164,22 +233,16 @@ supabase_authority=${supabase_url#https://}
 supabase_authority=${supabase_authority%%/*}
 supabase_host=${supabase_authority%%:*}
 supabase_host=${supabase_host,,}
-host_match=false
 IFS=',' read -r -a analyzer_hosts <<< "${analyzer_environment[FILE_EXPERT_ANALYZER_ALLOWED_HOSTS]-}"
-if (( ${#analyzer_hosts[@]} > 16 )); then
-  errors+=("FILE_EXPERT_ANALYZER_ALLOWED_HOSTS: too many hosts")
-fi
-for raw_host in "${analyzer_hosts[@]}"; do
-  host=$(trim "$raw_host")
-  host=${host,,}
-  if [[ ! "$host" =~ ^[a-z0-9][a-z0-9.-]{0,252}[a-z0-9]$ || "$host" == *..* ]]; then
-    errors+=("FILE_EXPERT_ANALYZER_ALLOWED_HOSTS: contains an invalid hostname")
-    continue
-  fi
-  [[ "$host" == "$supabase_host" ]] && host_match=true
-done
-if [[ "$host_match" != true ]]; then
-  errors+=("FILE_EXPERT_ANALYZER_ALLOWED_HOSTS: must include the configured Supabase host")
+raw_host=$(trim "${analyzer_hosts[0]-}")
+normalized_host=${raw_host,,}
+normalized_host=${normalized_host%.}
+if (( ${#analyzer_hosts[@]} != 1 )) || \
+   [[ ! "$normalized_host" =~ ^[a-z0-9][a-z0-9.-]{0,252}[a-z0-9]$ ]] || \
+   [[ "$normalized_host" == *..* ]] || \
+   [[ "$raw_host" != "$normalized_host" ]] || \
+   [[ "$normalized_host" != "$supabase_host" ]]; then
+  errors+=("FILE_EXPERT_ANALYZER_ALLOWED_HOSTS: must be exactly one normalized Production Supabase host")
 fi
 
 if (( ${#errors[@]} > 0 )); then
@@ -191,4 +254,3 @@ if (( ${#errors[@]} > 0 )); then
 fi
 
 printf 'VPS environment contract is valid (values were not printed).\n'
-
