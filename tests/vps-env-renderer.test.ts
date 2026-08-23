@@ -21,7 +21,7 @@ const timestamp = "2026-08-23T12:00:00.000Z";
 
 function fullVariables() {
   return {
-    NEXT_PUBLIC_SITE_URL: "https://file.mgautotech.de",
+    NEXT_PUBLIC_SITE_URL: "https://mg-autotech-files.vercel.app",
     NEXT_PUBLIC_SUPABASE_URL: "https://jujaeyvyaeesmipihrrw.supabase.co",
     NEXT_PUBLIC_SUPABASE_ANON_KEY: "synthetic-public-key-0000000000000001",
     SUPABASE_SERVICE_ROLE_KEY: "synthetic-service-role-0000000000000001",
@@ -58,6 +58,7 @@ function fullVariables() {
 
 function partialVariables() {
   return {
+    NEXT_PUBLIC_SITE_URL: "https://file.mgautotech.de",
     NEXT_PUBLIC_SUPABASE_URL: "https://jujaeyvyaeesmipihrrw.supabase.co",
     UPLOAD_INTEGRITY_SECRET: "partial-upload-secret-000000000000000001",
     SECURITY_RATE_LIMIT_SALT: "partial-rate-salt-00000000000000000001",
@@ -135,6 +136,7 @@ test("Production renderer preserves continuity values and overrides only VPS con
   );
   assert.equal(merged.DESKTOP_APP_PUBLIC_DOWNLOAD_ENABLED, "false");
   assert.equal(merged.DESKTOP_APP_UPLOAD_ENABLED, "false");
+  assert.equal(merged.NEXT_PUBLIC_SITE_URL, "https://file.mgautotech.de");
   assert.equal(merged.REQUEST_NETWORK_PROVIDER, "cloudflare-caddy");
   assert.equal(merged.SECURITY_DISTRIBUTED_RATE_LIMIT_ENABLED, "true");
   assert.equal(merged.SECURITY_DISTRIBUTED_RATE_LIMIT_REQUIRED, "true");
