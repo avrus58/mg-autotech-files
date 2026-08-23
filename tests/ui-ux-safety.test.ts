@@ -261,6 +261,22 @@ test("customer order detail uses a responsive MG AutoTech work-order workspace",
   assert.doesNotMatch(page, /carecufile|panel\.carecufile/i);
 });
 
+test("customer workspace uses the same MG AutoTech red tone as the existing portal pages", () => {
+  const dashboard = readProjectFile("src", "components", "dashboard", "DashboardClient.tsx");
+  const orderDetail = readProjectFile("src", "app", "dashboard", "orders", "[id]", "page.tsx");
+  const sidebar = readProjectFile("src", "components", "dashboard", "CustomerPortalSidebar.tsx");
+  const login = readProjectFile("src", "app", "login", "page.tsx");
+  const register = readProjectFile("src", "app", "register", "page.tsx");
+  const customerWorkspaceShell = [dashboard, orderDetail, sidebar].join("\n");
+
+  assert.match(login, /bg-\[#b1121b\][\s\S]*hover:bg-\[#c91824\]/);
+  assert.match(register, /bg-\[#b1121b\][\s\S]*hover:bg-\[#c91824\]/);
+  assert.match(customerWorkspaceShell, /bg-\[#b1121b\][\s\S]*hover:bg-\[#c91824\]/);
+  assert.match(sidebar, /border-\[rgba\(177,18,27,0\.55\)\] bg-\[rgba\(177,18,27,0\.18\)\]/);
+  assert.match(orderDetail, /rgba\(177,18,27,0\.25\)/);
+  assert.doesNotMatch(customerWorkspaceShell, /#2d1719|rgba\(160,18,28/);
+});
+
 test("legacy admin order modal requires an explicit delivery estimate before saving", () => {
   const adminPage = readProjectFile("src", "app", "admin", "page.tsx");
 

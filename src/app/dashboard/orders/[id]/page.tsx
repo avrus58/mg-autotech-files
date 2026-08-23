@@ -760,7 +760,7 @@ export default function OrderDetailPage() {
 
   return (
     <main className={`${workspaceStyles.viewportShell} mg-compact-ui min-h-screen bg-[#15181e] text-white lg:h-screen lg:overflow-hidden`}>
-      <div className="fixed inset-0 -z-10 bg-[radial-gradient(circle_at_18%_0%,rgba(160,18,28,0.25),transparent_34%),linear-gradient(135deg,#050505,#0c0c0e_48%,#170507)]" />
+      <div className="fixed inset-0 -z-10 bg-[radial-gradient(circle_at_18%_0%,rgba(177,18,27,0.25),transparent_34%),linear-gradient(135deg,#050505,#0c0c0e_48%,#170507)]" />
 
       <div className="flex min-h-screen lg:h-screen lg:overflow-hidden">
         <CustomerPortalSidebar activeItem="orders" credits={credits} />

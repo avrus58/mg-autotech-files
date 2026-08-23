@@ -93,7 +93,7 @@ function SidebarNavLink({
   active,
 }: SidebarLinkItem & { active: boolean }) {
   const className = active
-    ? "flex items-center gap-3 rounded-lg bg-[#2d1719] px-3 py-2.5 font-bold text-red-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
+    ? "flex items-center gap-3 rounded-lg border border-[rgba(177,18,27,0.55)] bg-[rgba(177,18,27,0.18)] px-3 py-2.5 font-bold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
     : "flex items-center gap-3 rounded-lg px-3 py-2.5 font-bold text-zinc-400 transition hover:bg-[#151515] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500";
 
   return (

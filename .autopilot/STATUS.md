@@ -4298,3 +4298,36 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 - Kapsam disi: SQL/migration, Production DB, env/secret, Caddy, DNS, payment,
   e-posta veya gercek musteri verisi degistirilmedi. Kritik regresyon gorulmedi;
   rollback uygulanmadi.
+
+## 2026-08-24 00:20 +02:00 Customer workspace brand tone baslangici
+
+- Owner, yeni yayindaki musteri tasariminin kirmizi tonunun mevcut canli site
+  sayfalariyla ayni durmadigini bildirdi.
+- Evidence: Login/register ve mevcut portal CTA'lari `#b1121b` / `#c91824`
+  brand ailesini kullaniyor. Yeni customer workspace'te ana CTA'lar bu ailede
+  olsa da aktif sidebar yuzeyi `#2d1719`, order-detail arka plan parlamasi
+  `rgba(160,18,28,...)` ile daha kahve/bordo algilaniyordu.
+- Kapsam yalniz yeni customer workspace renk tonlari ve regresyon testi; veri,
+  auth, route, odeme, package/lockfile, DB/migration, env/secret veya customer
+  data islemi yoktur.
+
+## 2026-08-24 00:20 +02:00 Customer workspace brand tone tamamlandi
+
+- Sonuc: Aktif customer sidebar secimi `#2d1719` kahve/bordo yuzeyinden
+  `rgba(177,18,27,0.18)` brand-red yuzeyine ve `rgba(177,18,27,0.55)` border'a
+  tasindi. Order-detail background parlamasi `rgba(160,18,28,0.25)` yerine
+  mevcut portal/CTA ailesiyle uyumlu `rgba(177,18,27,0.25)` oldu.
+- Regresyon testi: `tests/ui-ux-safety.test.ts` login/register `#b1121b` /
+  `#c91824` brand tokenlari ile yeni customer workspace shell'ini birlikte
+  kontrol ediyor; `#2d1719` ve `rgba(160,18,28,...)` geri gelirse test fail eder.
+- Degisen tracked dosyalar: `.autopilot/TASKS.md`, `.autopilot/STATUS.md`,
+  `src/components/dashboard/CustomerPortalSidebar.tsx`,
+  `src/app/dashboard/orders/[id]/page.tsx`, `tests/ui-ux-safety.test.ts`.
+- Kontroller: `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts`
+  PASS (97/97); `npm run lint` PASS; `npm run typecheck` PASS; `npm run build
+  -- --webpack` PASS (277/277 static pages); `git diff --check` PASS (yalniz
+  CRLF uyarilari). Typecheck oncesinde stale generated `.next/dev` cache'i
+  workspace icinde `.next/dev-stale-202608240020` olarak tasindi; kaynak kod veya
+  tracked dosya degisikligi degildir.
+- Kapsam disi: Production deploy, SQL/migration, Production DB, env/secret,
+  Caddy, DNS, payment, e-posta veya gercek musteri verisi degistirilmedi.

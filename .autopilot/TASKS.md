@@ -128,6 +128,25 @@ Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
 
+### MANUAL-20260824-CUSTOMER-WORKSPACE-BRAND-TONE [P1] Yeni musteri workspace kirmizi tonunu mevcut portalla esitle
+
+Durum: Done
+
+Fingerprint: `customer-experience|customer-workspace-brand-tone|new-sidebar-and-order-shell-red-drift|existing-portal-red-token-alignment`
+
+Sonuc: Yeni customer workspace'te aktif sidebar secimi kahve/bordo `#2d1719`
+tonundan cikti ve mevcut portal brand ailesiyle uyumlu `rgba(177,18,27,...)`
+surface/border kullaniyor. Order-detail background accent'i de
+`rgba(177,18,27,0.25)` ile login/register ve mevcut customer portal CTA
+kirmizisi `#b1121b` / `#c91824` ailesine hizalandi. Veri, auth, route, odeme,
+layout davranisi, package/lockfile, DB/migration, env/secret veya customer data
+akisi degismedi.
+
+Dogrulama: `.\node_modules\.bin\tsx.cmd --test tests\ui-ux-safety.test.ts`
+PASS (97/97); `npm run lint` PASS; `npm run typecheck` PASS; `npm run build
+-- --webpack` PASS (277/277 static pages); `git diff --check` PASS (yalniz CRLF
+uyarilari).
+
 ### MANUAL-20260823-CUSTOMER-WORKSPACE-CAREFILE-DENSITY [P1] Musteri paneli ve siparis detayini ferah calisma alanina yaklastir
 
 Durum: Done
