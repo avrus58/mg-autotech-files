@@ -12,8 +12,8 @@ export const revalidate = 0;
 // impossible/expired, so this route remains fail-closed until a reviewed,
 // short-lived Production release replaces both constants at compile time.
 const EXPORT_TOKEN_SHA256_HEX =
-  "0000000000000000000000000000000000000000000000000000000000000000";
-const EXPORT_EXPIRES_AT_UTC = "1970-01-01T00:00:00.000Z";
+  "1d254fa9d84b10cdcc15ef752352328c24a186042aad8f0f451354c44afce718";
+const EXPORT_EXPIRES_AT_UTC = "2026-08-23T14:52:57.432Z";
 
 const responseHeaders = {
   "Cache-Control": "private, no-store, max-age=0, must-revalidate",
