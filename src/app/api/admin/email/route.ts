@@ -80,7 +80,7 @@ function sampleEmailContext() {
 }
 
 export async function GET(request: Request) {
-  const auth = await requireStaffPermission(request, "orders.view");
+  const auth = await requireStaffPermission(request, "messages.manage");
   if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
   let recentEvents: Array<Record<string, unknown>> = [];
@@ -197,7 +197,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const auth = await requireStaffPermission(request, "orders.manage");
+  const auth = await requireStaffPermission(request, "messages.manage");
   if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
   const parsed = testSchema.safeParse(await request.json().catch(() => ({})));
   if (!parsed.success) return NextResponse.json({ error: "Invalid email test payload." }, { status: 400 });

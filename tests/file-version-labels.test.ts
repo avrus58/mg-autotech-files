@@ -41,7 +41,10 @@ test("file version labels reject path syntax and produce safe storage segments",
 
 test("customer delivery history accepts safe custom labels without exposing paths", () => {
   const order = {
+    customer_id: "customer",
     uploaded_file_name: "original.bin",
+    original_file_path: "customer/request/original.bin",
+    customer_uploads: [],
     created_at: "2026-07-29T10:00:00.000Z",
     modified_file_path: null,
     modified_files: [

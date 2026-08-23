@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireStaffPermission } from "@/lib/apiAuth";
+import { hasStaffPermission } from "@/lib/staffPermissions";
+import { buildAdminRequestAccess } from "@/lib/workOrders/access";
 import {
   getAdminRequestDetail,
   updateAdminWorkOrder,
@@ -51,12 +53,16 @@ export async function GET(
   const { id } = await context.params;
 
   try {
-    const result = await getAdminRequestDetail(id);
+    const result = await getAdminRequestDetail(
+      id,
+      buildAdminRequestAccess(auth.access)
+    );
     return NextResponse.json(result);
   } catch (error) {
+    const notFound = error instanceof Error && error.message === "Request not found.";
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Admin request could not be loaded." },
-      { status: 404 }
+      { error: notFound ? "Request not found." : "Admin request could not be loaded." },
+      { status: notFound ? 404 : 500 }
     );
   }
 }
@@ -78,6 +84,34 @@ export async function PATCH(
     return NextResponse.json(
       { error: "Work order update is empty." },
       { status: 400 }
+    );
+  }
+
+  if (
+    parsed.data.payment_review_status !== undefined &&
+    !hasStaffPermission(auth.access, "credits.manage")
+  ) {
+    return NextResponse.json(
+      { error: "Credit management permission is required for payment review updates." },
+      { status: 403 }
+    );
+  }
+  if (
+    (parsed.data.final_file_status !== undefined || parsed.data.delivery_method !== undefined) &&
+    !hasStaffPermission(auth.access, "files.upload")
+  ) {
+    return NextResponse.json(
+      { error: "File upload permission is required for delivery file updates." },
+      { status: 403 }
+    );
+  }
+  if (
+    (parsed.data.customer_visible_notes !== undefined || parsed.data.message_visibility !== undefined) &&
+    !hasStaffPermission(auth.access, "messages.manage")
+  ) {
+    return NextResponse.json(
+      { error: "Message management permission is required for customer-visible updates." },
+      { status: 403 }
     );
   }
 
@@ -108,7 +142,7 @@ export async function PATCH(
       return NextResponse.json({ error: error.message }, { status: 404 });
     }
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Work order could not be updated." },
+      { error: "Work order could not be updated." },
       { status: 500 }
     );
   }

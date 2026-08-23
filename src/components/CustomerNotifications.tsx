@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Bell, CheckCheck, MessageSquareText, RefreshCw, Volume2, VolumeX, X } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
-import { getStableSession } from "@/lib/authGuards";
+import { authenticatedFetch, getStableSession } from "@/lib/authGuards";
 
 type CustomerNotification = {
   id: string;
@@ -87,9 +87,19 @@ export function CustomerNotifications() {
         return;
       }
 
-      const { data, error } = await supabase.from("profiles").select("role").eq("id", id).maybeSingle();
-      if (!active || resolution !== resolutionSequence || error || !data) return;
-      setUserId(data?.role === "admin" || data?.role === "staff" ? "" : id);
+      try {
+        const response = await authenticatedFetch("/api/account/context", {
+          cache: "no-store",
+        });
+        const payload = response.ok
+          ? (await response.json()) as { home?: unknown }
+          : null;
+        if (!active || resolution !== resolutionSequence) return;
+        setUserId(payload?.home === "/dashboard" ? id : "");
+      } catch {
+        // Authority lookup fails closed: never show customer notifications to
+        // an account whose staff/customer classification is unavailable.
+      }
     }
 
     void getStableSession().then(({ session }) => resolveCustomer(session?.user?.id));

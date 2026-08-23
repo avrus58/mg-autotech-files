@@ -17,7 +17,10 @@ import {
   validateDesktopCreditAccess,
   validateDesktopUploadFile,
 } from "../src/lib/desktopUpload/contracts";
-import { compareDesktopVersions } from "../src/lib/desktopUpload/appCheck";
+import {
+  compareDesktopVersions,
+  getDesktopAppCheckPayload,
+} from "../src/lib/desktopUpload/appCheck";
 import {
   createIdempotencyKey,
   safeUploadPayload,
@@ -94,9 +97,13 @@ test("desktop service pricing and summary are computed server-side from known op
   assert.equal(calculateDesktopRequestCredits("tcu_stage_1", []), 15);
   assert.equal(calculateDesktopRequestCredits("tcu_stage_2", []), 20);
   assert.equal(calculateDesktopRequestCredits("tcu_stage_3", []), 30);
+  assert.equal(calculateDesktopRequestCredits("only_options", []), 0);
+  assert.equal(calculateDesktopRequestCredits("only_options", ["special_request"]), 0);
   assert.equal(findDesktopPrimaryService("tcu_tuning"), null);
   assert.throws(() => calculateDesktopRequestCredits("stage_1", ["not_real"]));
   assert.equal(validateDesktopCreditAccess({ credit_balance: 30, account_status: "active" }, 22), null);
+  assert.equal(validateDesktopCreditAccess({ credit_balance: 0, account_status: "active" }, 0), null);
+  assert.match(validateDesktopCreditAccess({ credit_balance: 30, account_status: "active" }, -1) ?? "", /invalid/i);
   assert.match(validateDesktopCreditAccess({ credit_balance: null, account_status: "active" }, 22) ?? "", /credit balance could not be verified/i);
   assert.match(validateDesktopCreditAccess({ credit_balance: 1, account_status: "active" }, 22) ?? "", /credit balance could not be verified/i);
   assert.match(validateDesktopCreditAccess({ credit_balance: 30, account_status: "blocked" }, 1) ?? "", /not active/i);
@@ -111,7 +118,7 @@ test("web request catalog exposes the same three TCU stage prices", () => {
   assert.doesNotMatch(requestPage, /id: "tcu_tuning"[\s\S]*?credits: 10/);
 });
 
-test("desktop app-check supports version control without customer secrets", async () => {
+test("desktop app-check enforces the secure protocol floor without customer secrets", async () => {
   const previousMin = process.env.DESKTOP_APP_MIN_VERSION;
   const previousLatest = process.env.DESKTOP_APP_LATEST_VERSION;
   const previousMaintenance = process.env.DESKTOP_APP_MAINTENANCE_MODE;
@@ -121,7 +128,7 @@ test("desktop app-check supports version control without customer secrets", asyn
   const route = await import("../src/app/api/desktop/app-check/route");
   try {
     process.env.DESKTOP_APP_MIN_VERSION = "0.1.0";
-    process.env.DESKTOP_APP_LATEST_VERSION = "0.2.0";
+    process.env.DESKTOP_APP_LATEST_VERSION = "0.2.1";
     process.env.DESKTOP_APP_MAINTENANCE_MODE = "false";
     process.env.DESKTOP_APP_UPDATE_URL = "https://file.mgautotech.de/downloads/uploader.exe";
     process.env.DESKTOP_APP_RELEASE_NOTES_URL = "http://unsafe.example.com/release-notes";
@@ -130,9 +137,10 @@ test("desktop app-check supports version control without customer secrets", asyn
     const body = await response.json();
     assert.equal(response.status, 200);
     assert.equal(body.server_ok, true);
-    assert.equal(body.update_required, false);
+    assert.equal(body.minimum_supported_version, "0.2.0");
+    assert.equal(body.update_required, true);
     assert.equal(body.update_available, true);
-    assert.equal(body.latest_version, "0.2.0");
+    assert.equal(body.latest_version, "0.2.1");
     assert.equal(body.update_url, "https://file.mgautotech.de/downloads/uploader.exe");
     assert.equal(body.release_notes_url, null);
     assert.deepEqual(body.allowed_modules, ["file_upload", "request_history"]);
@@ -166,6 +174,26 @@ test("desktop app-check forced update blocks old versions", async () => {
   } finally {
     if (previousMin === undefined) delete process.env.DESKTOP_APP_MIN_VERSION;
     else process.env.DESKTOP_APP_MIN_VERSION = previousMin;
+  }
+});
+
+test("desktop CAPTCHA release version can block 0.2.0 while allowing 0.2.1", () => {
+  const previousMin = process.env.DESKTOP_APP_MIN_VERSION;
+  const previousLatest = process.env.DESKTOP_APP_LATEST_VERSION;
+  try {
+    process.env.DESKTOP_APP_MIN_VERSION = "0.2.1";
+    process.env.DESKTOP_APP_LATEST_VERSION = "0.2.1";
+    const oldClient = getDesktopAppCheckPayload({ appVersion: "0.2.0" });
+    const captchaClient = getDesktopAppCheckPayload({ appVersion: "0.2.1" });
+    assert.equal(oldClient.update_required, true);
+    assert.equal(captchaClient.update_required, false);
+    assert.equal(captchaClient.minimum_supported_version, "0.2.1");
+    assert.equal(captchaClient.latest_version, "0.2.1");
+  } finally {
+    if (previousMin === undefined) delete process.env.DESKTOP_APP_MIN_VERSION;
+    else process.env.DESKTOP_APP_MIN_VERSION = previousMin;
+    if (previousLatest === undefined) delete process.env.DESKTOP_APP_LATEST_VERSION;
+    else process.env.DESKTOP_APP_LATEST_VERSION = previousLatest;
   }
 });
 
@@ -239,16 +267,20 @@ test("desktop APIs require customer auth and scope data to the authenticated cus
   const listRoute = readFileSync(resolve(process.cwd(), "src/app/api/desktop/requests/route.ts"), "utf8");
   const finalizeRoute = readFileSync(resolve(process.cwd(), "src/app/api/desktop/requests/finalize/route.ts"), "utf8");
   assert.match(listRoute, /\.eq\("customer_id", auth\.user\.id\)/);
-  assert.match(finalizeRoute, /\.eq\("customer_id", auth\.user\.id\)/);
-  assert.match(finalizeRoute, /expectedPath = uploadPathFor\(auth\.user\.id/);
+  assert.match(finalizeRoute, /\.eq\("id", auth\.user\.id\)/);
+  assert.match(finalizeRoute, /user_id: auth\.user\.id/);
+  assert.match(finalizeRoute, /create_desktop_order_with_credit_deduction/);
+  assert.match(finalizeRoute, /expectedPath = desktopUploadPathFor\(/);
   assert.match(finalizeRoute, /parsed\.data\.upload\.path !== expectedPath/);
   assert.match(finalizeRoute, /parsed\.data\.uploadSessionId !== desktopUploadSessionIdFor/);
   assert.match(finalizeRoute, /validateDesktopCreditAccess/);
+  assert.match(finalizeRoute, /!Number\.isInteger\(creditsRequired\) \|\| creditsRequired < 0/);
 
   const uploadSessionRoute = readFileSync(resolve(process.cwd(), "src/app/api/desktop/upload-session/route.ts"), "utf8");
   assert.match(uploadSessionRoute, /service: z\.object/);
   assert.match(uploadSessionRoute, /calculateDesktopRequestCredits/);
   assert.match(uploadSessionRoute, /validateDesktopCreditAccess/);
+  assert.match(uploadSessionRoute, /!Number\.isInteger\(creditsRequired\) \|\| creditsRequired < 0/);
 });
 
 test("anonymous users cannot call desktop customer APIs", async () => {

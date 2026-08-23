@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireStaffPermission } from "@/lib/apiAuth";
+import { requireStaffPermissions } from "@/lib/apiAuth";
 import {
   checkDtcAnalyzerUsage,
   projectDtcUsageLimitForResponse,
@@ -17,7 +17,7 @@ export async function POST(
   request: Request,
   context: { params: Promise<{ id: string }> }
 ) {
-  const auth = await requireStaffPermission(request, "orders.view");
+  const auth = await requireStaffPermissions(request, ["orders.view", "file_expert.manage"]);
   if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
   const { id } = await context.params;

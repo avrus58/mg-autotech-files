@@ -45,10 +45,54 @@ import {
   type CustomerRequestQueueProjection,
   type RequestQueueProjection,
 } from "@/lib/workOrders/queueEta";
+import {
+  internalAdminRequestAccess,
+  projectAdminOrderRow,
+  projectAdminProfileRow,
+  type AdminRequestAccess,
+} from "@/lib/workOrders/access";
 
 type DbError = { code?: string; message?: string } | null | undefined;
 
 const missingRelationCodes = new Set(["42P01", "42703"]);
+const optionalAdminOrderColumnErrorCodes = new Set(["42703", "PGRST204"]);
+
+const requiredAdminOrderColumns = [
+  "id",
+  "customer_id",
+  "customer_email",
+  "vehicle_brand",
+  "vehicle_model",
+  "vehicle_generation",
+  "vehicle_engine",
+  "service_type",
+  "credits_required",
+  "status",
+  "notes",
+  "ecu",
+  "gearbox",
+  "vehicle_year",
+  "read_method",
+  "license_plate",
+  "hw_sw",
+  "master_slave",
+  "uploaded_file_name",
+  "original_file_path",
+  "modified_file_path",
+  "modified_files",
+  "customer_upload_enabled",
+  "customer_uploads",
+  "created_at",
+];
+
+export const adminOrderSelect = [
+  ...requiredAdminOrderColumns,
+  "estimated_delivery_label",
+  "estimated_delivery_note",
+  "updated_at",
+].join(",");
+
+export const fallbackAdminOrderSelect = requiredAdminOrderColumns.join(",");
 
 export function isWorkOrderMigrationMissing(error: DbError) {
   return Boolean(error?.code && missingRelationCodes.has(error.code));
@@ -106,6 +150,81 @@ export type OrderRow = {
   created_at: string | null;
   updated_at?: string | null;
 };
+
+function normalizeAdminOrderRow(row: Record<string, unknown>): OrderRow {
+  return {
+    ...row,
+    estimated_delivery_label: row.estimated_delivery_label ?? null,
+    estimated_delivery_note: row.estimated_delivery_note ?? null,
+    updated_at: row.updated_at ?? null,
+  } as unknown as OrderRow;
+}
+
+export async function getAdminOrderRows(limit?: number) {
+  const admin = getSupabaseAdmin();
+  const createQuery = (select: string) => {
+    const query = admin
+      .from("orders")
+      .select(select)
+      .order("created_at", { ascending: false });
+    return typeof limit === "number" ? query.limit(limit) : query;
+  };
+
+  const primary = await createQuery(adminOrderSelect);
+  if (!primary.error) {
+    return {
+      rows: (primary.data ?? []).map((row) =>
+        normalizeAdminOrderRow(row as unknown as Record<string, unknown>)
+      ),
+      error: null,
+    };
+  }
+
+  if (!optionalAdminOrderColumnErrorCodes.has(primary.error.code)) {
+    return { rows: [] as OrderRow[], error: primary.error };
+  }
+
+  const fallback = await createQuery(fallbackAdminOrderSelect);
+  return {
+    rows: (fallback.data ?? []).map((row) =>
+      normalizeAdminOrderRow(row as unknown as Record<string, unknown>)
+    ),
+    error: fallback.error,
+  };
+}
+
+async function getAdminOrderRow(requestId: string) {
+  const admin = getSupabaseAdmin();
+  const primary = await admin
+    .from("orders")
+    .select(adminOrderSelect)
+    .eq("id", requestId)
+    .single();
+
+  if (!primary.error && primary.data) {
+    return {
+      row: normalizeAdminOrderRow(primary.data as unknown as Record<string, unknown>),
+      error: null,
+    };
+  }
+
+  if (!primary.error?.code || !optionalAdminOrderColumnErrorCodes.has(primary.error.code)) {
+    return { row: null, error: primary.error };
+  }
+
+  const fallback = await admin
+    .from("orders")
+    .select(fallbackAdminOrderSelect)
+    .eq("id", requestId)
+    .single();
+
+  return {
+    row: fallback.data
+      ? normalizeAdminOrderRow(fallback.data as unknown as Record<string, unknown>)
+      : null,
+    error: fallback.error,
+  };
+}
 
 export type ProfileSummary = {
   id: string;
@@ -196,6 +315,7 @@ export type AdminRequestListItem = {
 };
 
 export type AdminRequestDetail = AdminRequestListItem & {
+  access: AdminRequestAccess;
   migrationReady: boolean;
   requestMessages: Array<ReturnType<typeof projectAdminRequestMessage>>;
   notes: WorkOrderNote[];
@@ -334,8 +454,10 @@ function attachQueuePositions(items: AdminRequestListItem[]) {
   }));
 }
 
-async function fetchProfiles(ids: string[]) {
-  if (ids.length === 0) return new Map<string, ProfileSummary>();
+async function fetchProfiles(ids: string[], access: AdminRequestAccess) {
+  if (!access.customersView || ids.length === 0) {
+    return new Map<string, ProfileSummary>();
+  }
   const admin = getSupabaseAdmin();
   const result = await admin
     .from("profiles")
@@ -343,19 +465,12 @@ async function fetchProfiles(ids: string[]) {
     .in("id", ids);
 
   if (result.error) return new Map<string, ProfileSummary>();
-  return new Map((result.data ?? []).map((row) => [String(row.id), {
-    id: String(row.id),
-    email: row.email ?? null,
-    customer_id: row.customer_id ?? null,
-    full_name: row.full_name ?? null,
-    company_name: row.company_name ?? null,
-    phone: row.phone ?? null,
-    account_status: row.account_status ?? null,
-    customer_tags: cleanArray(row.customer_tags),
-    internal_admin_note: row.internal_admin_note ?? null,
-    credit_balance: row.credit_balance ?? null,
-    created_at: row.created_at ?? null,
-  } satisfies ProfileSummary]));
+  return new Map((result.data ?? []).flatMap((row) => {
+    const projected = projectAdminProfileRow(row as Record<string, unknown>, access);
+    return projected
+      ? [[String(projected.id), projected as unknown as ProfileSummary] as const]
+      : [];
+  }));
 }
 
 async function fetchWorkOrders(ids: string[]) {
@@ -373,9 +488,9 @@ async function fetchWorkOrders(ids: string[]) {
   return result;
 }
 
-async function fetchTrainingCounts(ids: string[]) {
+async function fetchTrainingCounts(ids: string[], enabled: boolean) {
   const counts = new Map<string, number>();
-  if (ids.length === 0) return counts;
+  if (!enabled || ids.length === 0) return counts;
   const admin = getSupabaseAdmin();
   const query = await admin.from("ai_training_samples").select("id,request_id").in("request_id", ids);
   if (query.error) return counts;
@@ -390,42 +505,68 @@ function buildListItem(
   order: OrderRow,
   profile: ProfileSummary | null,
   workOrder: WorkOrderRow | null,
-  trainingSampleCount: number
+  trainingSampleCount: number,
+  access: AdminRequestAccess
 ): AdminRequestListItem {
   const resolvedWorkOrder = workOrder ?? fallbackWorkOrder(order);
+  const projectedOrder = projectAdminOrderRow(
+    order as unknown as Record<string, unknown>,
+    access
+  ) as unknown as OrderRow;
+  const projectedWorkOrder = {
+    ...resolvedWorkOrder,
+    internal_notes: access.messagesManage
+      ? resolvedWorkOrder.internal_notes
+      : null,
+    customer_visible_notes: access.messagesManage
+      ? resolvedWorkOrder.customer_visible_notes
+      : null,
+    payment_review_status: access.creditsManage
+      ? resolvedWorkOrder.payment_review_status
+      : "not_checked" as const,
+    quality_check_json: access.aiTrainingManage
+      ? resolvedWorkOrder.quality_check_json
+      : {},
+  };
   return {
-    order,
+    order: projectedOrder,
     customer: profile,
-    workOrder: resolvedWorkOrder,
+    workOrder: projectedWorkOrder,
     queueProjection: buildQueueProjection(order, resolvedWorkOrder),
     requestedServices: splitServiceLabels(order.service_type),
     indicators: {
-      hasOriginalFile: Boolean(order.original_file_path),
-      hasDeliveredFile: hasDeliveredFile(order),
-      hasCustomerUpload: Array.isArray(order.customer_uploads) && order.customer_uploads.length > 0,
-      trainingSampleCount,
-      hasAiEvidence: trainingSampleCount > 0,
+      hasOriginalFile: access.filesDownload && Boolean(order.original_file_path),
+      hasDeliveredFile: access.filesDownload && hasDeliveredFile(order),
+      hasCustomerUpload: access.filesDownload && Array.isArray(order.customer_uploads) && order.customer_uploads.length > 0,
+      trainingSampleCount: access.aiTrainingManage ? trainingSampleCount : 0,
+      hasAiEvidence: access.aiTrainingManage && trainingSampleCount > 0,
     },
   };
 }
 
-export async function getAdminRequestList() {
-  const admin = getSupabaseAdmin();
-  const ordersResult = await admin.from("orders").select("*").order("created_at", { ascending: false }).limit(500);
+export async function getAdminRequestList(access: AdminRequestAccess) {
+  const ordersResult = await getAdminOrderRows(500);
   if (ordersResult.error) throw new Error(ordersResult.error.message);
-  const orders = (ordersResult.data ?? []) as unknown as OrderRow[];
+  const orders = ordersResult.rows;
   const ids = orders.map((order) => order.id);
   const customerIds = [...new Set(orders.map((order) => order.customer_id).filter((id): id is string => Boolean(id)))];
   const [profiles, workOrders, trainingCounts] = await Promise.all([
-    fetchProfiles(customerIds),
+    fetchProfiles(customerIds, access),
     fetchWorkOrders(ids),
-    fetchTrainingCounts(ids),
+    fetchTrainingCounts(ids, access.aiTrainingManage),
   ]);
 
   return {
+    access,
     migrationReady: workOrders.migrationReady,
     items: attachQueuePositions(orders.map((order) =>
-      buildListItem(order, order.customer_id ? profiles.get(order.customer_id) ?? null : null, workOrders.rows.get(order.id) ?? null, trainingCounts.get(order.id) ?? 0)
+      buildListItem(
+        order,
+        order.customer_id ? profiles.get(order.customer_id) ?? null : null,
+        workOrders.rows.get(order.id) ?? null,
+        trainingCounts.get(order.id) ?? 0,
+        access
+      )
     )),
   };
 }
@@ -460,23 +601,28 @@ export async function getCustomerRequestQueueProjection(
   const ids = orders.map((order) => order.id);
   const workOrders = await fetchWorkOrders(ids);
   const items = attachQueuePositions(orders.map((order) =>
-    buildListItem(order, null, workOrders.rows.get(order.id) ?? null, 0)
+    buildListItem(order, null, workOrders.rows.get(order.id) ?? null, 0, internalAdminRequestAccess)
   ));
   const current = items.find((item) => item.order.id === currentOrder.id);
   if (!current) throw new Error("Queue state could not be loaded.");
   return projectCustomerRequestQueueProjection(current.queueProjection);
 }
 
-async function fetchWorkOrderDetailRows(requestId: string) {
+async function fetchWorkOrderDetailRows(
+  requestId: string,
+  access: AdminRequestAccess
+) {
   const admin = getSupabaseAdmin();
   const [notesResult, eventsResult, messagesResult, downloadEventsResult] = await Promise.all([
     admin.from("request_internal_notes").select("*").eq("request_id", requestId).is("deleted_at", null).order("pinned", { ascending: false }).order("created_at", { ascending: false }),
     admin.from("request_work_order_events").select("*").eq("request_id", requestId).order("created_at", { ascending: false }).limit(200),
     admin.from("request_messages").select("id,request_id,sender_id,sender_role,message,created_at,visibility_status,hidden_at,hidden_by,hidden_reason,restored_at,restored_by").eq("request_id", requestId).order("created_at", { ascending: true }).limit(200),
-    admin.from("request_work_order_events").select("event_type,new_value,created_at").eq("request_id", requestId).eq("event_type", CUSTOMER_FILE_DOWNLOAD_EVENT).order("created_at", { ascending: true }),
+    admin.from("request_work_order_events").select("event_type,actor_user_id,new_value,created_at").eq("request_id", requestId).eq("event_type", CUSTOMER_FILE_DOWNLOAD_EVENT).order("created_at", { ascending: true }),
   ]);
   let requestMessages: Array<ReturnType<typeof projectAdminRequestMessage>> = [];
-  if (messagesResult.error && isWorkOrderMigrationMissing(messagesResult.error)) {
+  if (!access.messagesManage) {
+    requestMessages = [];
+  } else if (messagesResult.error && isWorkOrderMigrationMissing(messagesResult.error)) {
     const fallbackMessages = await admin
       .from("request_messages")
       .select("id,request_id,sender_id,sender_role,message,created_at")
@@ -496,21 +642,21 @@ async function fetchWorkOrderDetailRows(requestId: string) {
       );
   }
   return {
-    notes: notesResult.error ? [] : (notesResult.data ?? []).map((row) => ({
+    notes: !access.messagesManage || notesResult.error ? [] : (notesResult.data ?? []).map((row) => ({
       id: String(row.id),
       request_id: String(row.request_id),
       work_order_id: row.work_order_id ?? null,
-      author_user_id: row.author_user_id ?? null,
+      author_user_id: null,
       note_type: enumOrDefault(row.note_type, workOrderNoteTypes, "internal"),
       body: String(row.body ?? ""),
       pinned: Boolean(row.pinned),
       customer_visible: Boolean(row.customer_visible),
       visibility_status: normalizeRequestMessageVisibility(row.visibility_status),
       hidden_at: row.hidden_at ?? null,
-      hidden_by: row.hidden_by ?? null,
+      hidden_by: null,
       hidden_reason: row.hidden_reason ?? null,
       restored_at: row.restored_at ?? null,
-      restored_by: row.restored_by ?? null,
+      restored_by: null,
       linked_request_message_id: row.linked_request_message_id ?? null,
       created_at: row.created_at ?? nowIso(),
       updated_at: row.updated_at ?? row.created_at ?? nowIso(),
@@ -519,19 +665,19 @@ async function fetchWorkOrderDetailRows(requestId: string) {
       id: String(row.id),
       request_id: String(row.request_id),
       work_order_id: row.work_order_id ?? null,
-      actor_user_id: row.actor_user_id ?? null,
+      actor_user_id: null,
       event_type: String(row.event_type ?? "event"),
-      old_value: row.old_value ?? null,
-      new_value: row.new_value ?? null,
+      old_value: null,
+      new_value: null,
       customer_visible: Boolean(row.customer_visible),
-      message: row.message ?? null,
-      metadata: row.metadata && typeof row.metadata === "object" && !Array.isArray(row.metadata) ? row.metadata as Record<string, unknown> : {},
+      message: access.messagesManage ? row.message ?? null : null,
+      metadata: {},
       created_at: row.created_at ?? nowIso(),
     } satisfies WorkOrderEvent)),
-    downloadEvents: downloadEventsResult.error
+    downloadEvents: !access.filesDownload || downloadEventsResult.error
       ? []
       : (downloadEventsResult.data ?? []) as CustomerDownloadEventRow[],
-    deliveryTrackingAvailable: !downloadEventsResult.error,
+    deliveryTrackingAvailable: access.filesDownload && !downloadEventsResult.error,
     messages: requestMessages,
     migrationReady: !(isWorkOrderMigrationMissing(notesResult.error) || isWorkOrderMigrationMissing(eventsResult.error)),
   };
@@ -667,9 +813,10 @@ async function fetchPaymentSummary(order: OrderRow, profile: ProfileSummary | nu
     };
   }
   const admin = getSupabaseAdmin();
-  const [ledger, records] = await Promise.all([
+  const [ledger, records, balance] = await Promise.all([
     admin.from("credit_transactions").select("id,type,source_type,credits_delta,balance_after,description,amount_total,currency,created_at").eq("user_id", order.customer_id).order("created_at", { ascending: false }).limit(20),
     admin.from("payment_records").select("id,provider,status,payment_type,credits,amount_total,currency,created_at").eq("user_id", order.customer_id).order("created_at", { ascending: false }).limit(20),
+    admin.from("profiles").select("credit_balance").eq("id", order.customer_id).maybeSingle(),
   ]);
   const paymentRecords = records.error ? [] : ((records.data ?? []) as Array<Record<string, unknown>>);
   const succeeded = paymentRecords.some((record) => record.status === "succeeded");
@@ -679,7 +826,7 @@ async function fetchPaymentSummary(order: OrderRow, profile: ProfileSummary | nu
     paymentRecords,
     summary: {
       creditsRequired: Number(order.credits_required ?? 0),
-      customerBalance: numberOrNull(profile?.credit_balance),
+      customerBalance: numberOrNull(profile?.credit_balance ?? balance.data?.credit_balance),
       paymentStatus: succeeded ? "paid" : pending ? "pending" : "not_linked",
     },
   };
@@ -698,36 +845,67 @@ function buildQualityChecklist(order: OrderRow, workOrder: WorkOrderRow, profile
   ];
 }
 
-export async function getAdminRequestDetail(requestId: string): Promise<AdminRequestDetail> {
-  const admin = getSupabaseAdmin();
-  const orderResult = await admin.from("orders").select("*").eq("id", requestId).single();
-  if (orderResult.error || !orderResult.data) throw new Error(orderResult.error?.message || "Request not found.");
-  const order = orderResult.data as unknown as OrderRow;
+export async function getAdminRequestDetail(
+  requestId: string,
+  access: AdminRequestAccess
+): Promise<AdminRequestDetail> {
+  const orderResult = await getAdminOrderRow(requestId);
+  if (orderResult.error || !orderResult.row) throw new Error(orderResult.error?.message || "Request not found.");
+  const order = orderResult.row;
   const [profileMap, workOrders, trainingCounts] = await Promise.all([
-    fetchProfiles(order.customer_id ? [order.customer_id] : []),
+    fetchProfiles(order.customer_id ? [order.customer_id] : [], access),
     fetchWorkOrders([requestId]),
-    fetchTrainingCounts([requestId]),
+    fetchTrainingCounts([requestId], access.aiTrainingManage),
   ]);
   const profile = order.customer_id ? profileMap.get(order.customer_id) ?? null : null;
   const workOrder = workOrders.rows.get(requestId) ?? fallbackWorkOrder(order);
   const [rows, fileExpert, aiEvidence, vehicleDb, payment] = await Promise.all([
-    fetchWorkOrderDetailRows(requestId),
-    fetchFileExpertSummary(order),
-    fetchAiEvidence(requestId),
+    fetchWorkOrderDetailRows(requestId, access),
+    access.fileExpertManage
+      ? fetchFileExpertSummary(order)
+      : Promise.resolve({ linked: false, job: null, warning: null }),
+    access.aiTrainingManage
+      ? fetchAiEvidence(requestId)
+      : Promise.resolve({
+        trainingSamples: [],
+        similarity: { count: 0, maxScore: null },
+        clusters: [],
+        warnings: [],
+      }),
     fetchVehicleDbSummary(order),
-    fetchPaymentSummary(order, profile),
+    access.creditsManage
+      ? fetchPaymentSummary(order, profile)
+      : Promise.resolve({
+        creditTransactions: [],
+        paymentRecords: [],
+        summary: {
+          creditsRequired: 0,
+          customerBalance: null,
+          paymentStatus: "restricted",
+        },
+      }),
   ]);
   const deliveryHistory = projectCustomerDeliveryHistory(
     {
-      uploaded_file_name: order.uploaded_file_name,
+      customer_id: order.customer_id ?? "",
+      uploaded_file_name: access.filesDownload ? order.uploaded_file_name : null,
+      original_file_path: access.filesDownload ? order.original_file_path : null,
+      customer_uploads: access.filesDownload ? order.customer_uploads : null,
       created_at: order.created_at ?? nowIso(),
-      modified_files: order.modified_files,
-      modified_file_path: order.modified_file_path,
+      modified_files: access.filesDownload ? order.modified_files : null,
+      modified_file_path: access.filesDownload ? order.modified_file_path : null,
     },
     rows.downloadEvents
   );
+  const qualityChecklist = buildQualityChecklist(order, workOrder, profile).filter((item) => {
+    if (item.key === "file") return access.filesDownload;
+    if (item.key === "customer") return access.customersView;
+    if (item.key === "payment") return access.creditsManage;
+    return true;
+  });
   return {
-    ...buildListItem(order, profile, workOrder, trainingCounts.get(requestId) ?? 0),
+    ...buildListItem(order, profile, workOrder, trainingCounts.get(requestId) ?? 0, access),
+    access,
     migrationReady: workOrders.migrationReady && rows.migrationReady,
     requestMessages: rows.messages,
     notes: rows.notes,
@@ -741,7 +919,7 @@ export async function getAdminRequestDetail(requestId: string): Promise<AdminReq
     aiEvidence,
     vehicleDb,
     payment,
-    qualityChecklist: buildQualityChecklist(order, workOrder, profile),
+    qualityChecklist,
   };
 }
 

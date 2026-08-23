@@ -1,5 +1,6 @@
 import { checkAdaptiveRateLimit } from "@/lib/abuseProtection";
 import { checkRateLimit, rateLimitKey, type RateLimitResult } from "@/lib/rateLimit";
+import type { RequestNetworkEnvironment } from "@/lib/requestNetwork";
 
 export const publicVehicleAccessPolicy = {
   windowMs: 10 * 60_000,
@@ -166,12 +167,17 @@ function deniedAccess(input: {
   };
 }
 
-export async function checkPublicVehicleAccess(request: Request, query: PublicVehicleQuery) {
+export async function checkPublicVehicleAccess(
+  request: Request,
+  query: PublicVehicleQuery,
+  networkEnvironment: RequestNetworkEnvironment = process.env
+) {
   const total = await checkAdaptiveRateLimit({
     request,
     scope: "public-vehicle-catalog",
     limit: publicVehicleAccessPolicy.totalRequests,
     windowMs: publicVehicleAccessPolicy.windowMs,
+    networkEnvironment,
   });
   if (!total.allowed) {
     return deniedAccess({ result: total, limit: publicVehicleAccessPolicy.totalRequests });
@@ -182,7 +188,12 @@ export async function checkPublicVehicleAccess(request: Request, query: PublicVe
   }
 
   const hierarchy = checkRateLimit({
-    key: rateLimitKey(request, "public-vehicle-catalog-hierarchy"),
+    key: rateLimitKey(
+      request,
+      "public-vehicle-catalog-hierarchy",
+      undefined,
+      networkEnvironment
+    ),
     limit: publicVehicleAccessPolicy.hierarchyRequests,
     windowMs: publicVehicleAccessPolicy.windowMs,
   });
@@ -194,7 +205,12 @@ export async function checkPublicVehicleAccess(request: Request, query: PublicVe
   }
 
   const distinct = checkDistinctLimit({
-    key: rateLimitKey(request, `public-vehicle-catalog-distinct-${query.type}`),
+    key: rateLimitKey(
+      request,
+      `public-vehicle-catalog-distinct-${query.type}`,
+      undefined,
+      networkEnvironment
+    ),
     value: distinctRouteValue(query),
     limit: publicVehicleAccessPolicy.distinctRoutes[query.type],
     windowMs: publicVehicleAccessPolicy.windowMs,

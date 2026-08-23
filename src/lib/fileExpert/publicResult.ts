@@ -162,6 +162,10 @@ export function sanitizeFileExpertJobForCustomer(job: Record<string, unknown>) {
       safe.result_json = redactFileExpertResultForCustomer(job.result_json as FileExpertAnalyzerResult | null | undefined);
       continue;
     }
+    if (key === "error_message" && job.error_message) {
+      safe.error_message = "Analysis failed. Please retry or contact support.";
+      continue;
+    }
     if (key in job) safe[key] = job[key];
   }
   return stripForbiddenCustomerKeys(safe) as Record<string, unknown>;

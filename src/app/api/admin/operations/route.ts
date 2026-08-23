@@ -8,6 +8,7 @@ import {
   type OperationsProfile,
 } from "@/lib/operationsIntelligence";
 import { hasStaffPermission } from "@/lib/staffPermissions";
+import { buildAdminRequestAccess } from "@/lib/workOrders/access";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { getAdminRequestList } from "@/lib/workOrders/server";
 import { getSeoGrowthConfiguration } from "@/lib/seoGrowth/config";
@@ -112,7 +113,7 @@ export async function GET(request: Request) {
     const canManageVehicles = hasStaffPermission(auth.access, "vehicles.manage");
     const canViewSecurityAudit = hasStaffPermission(auth.access, "staff.manage");
     const [requests, profiles, emailEvents, vehicleCache, notifications, securityAudit] = await Promise.all([
-      getAdminRequestList(),
+      getAdminRequestList(buildAdminRequestAccess(auth.access)),
       loadProfiles(canViewCustomers),
       loadEmailEvents(),
       loadVehicleCache(canManageVehicles),

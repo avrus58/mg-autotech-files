@@ -68,6 +68,9 @@ LOCAL_AI_API_KEY=
 
 # Optional external binary analyzer
 FILE_EXPERT_ANALYZER_URL=
+FILE_EXPERT_ANALYZER_TOKEN=
+# Configure on the analyzer process for exact signed-URL source hosts:
+FILE_EXPERT_ANALYZER_ALLOWED_HOSTS=
 ```
 
-`NEXT_PUBLIC_SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` remain required by the existing server data layer. Never prefix AI keys or the Supabase service-role key with `NEXT_PUBLIC_`.
+`NEXT_PUBLIC_SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` remain required by the existing server data layer. Never prefix AI keys, analyzer tokens, upload-integrity secrets, or the Supabase service-role key with `NEXT_PUBLIC_`.

@@ -33,7 +33,10 @@ export type AiReportResponse = {
 export interface AiReportProvider {
   readonly name: AiProviderName;
   readonly modelName: string | null;
-  generateReport(input: AiReportRequest): Promise<AiReportResponse>;
+  generateReport(
+    input: AiReportRequest,
+    options?: { signal?: AbortSignal }
+  ): Promise<AiReportResponse>;
 }
 
 export type AiReportGenerationState =

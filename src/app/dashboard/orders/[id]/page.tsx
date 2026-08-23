@@ -353,6 +353,7 @@ export default function OrderDetailPage() {
   const [revisionNote, setRevisionNote] = useState("");
   const [revisionSubmitting, setRevisionSubmitting] = useState(false);
   const [downloadingVersionId, setDownloadingVersionId] = useState<string | null>(null);
+  const [downloadingSourceFileId, setDownloadingSourceFileId] = useState<string | null>(null);
   const [dtcAnalysis, setDtcAnalysis] = useState<CustomerRequestDtcAnalysis | null>(null);
   const [dtcLoading, setDtcLoading] = useState(false);
   const [dtcError, setDtcError] = useState("");
@@ -507,6 +508,33 @@ export default function OrderDetailPage() {
     }
   };
 
+  const downloadSourceFile = async (kind: "original" | "additional", fileId: string) => {
+    if (!order || downloadingSourceFileId) return;
+    const downloadKey = `${kind}:${fileId}`;
+    setMessage("");
+    setDownloadingSourceFileId(downloadKey);
+
+    try {
+      const response = await authenticatedFetch(`/api/requests/${order.id}/source-files`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ kind, fileId }),
+      });
+      const payload = await response.json();
+      if (!response.ok) {
+        setMessage(payload.error || "Secure source download could not be prepared.");
+        return;
+      }
+
+      setDelivery(payload.delivery as CustomerDeliveryHistory);
+      window.open(payload.signedUrl, "_blank", "noopener,noreferrer");
+    } catch {
+      setMessage("Secure source download could not be prepared.");
+    } finally {
+      setDownloadingSourceFileId(null);
+    }
+  };
+
   const requestRevision = async () => {
     if (!order || revisionSubmitting) return;
 
@@ -584,7 +612,7 @@ export default function OrderDetailPage() {
       setAdditionalUploadPhase("uploading");
       const { error: uploadError } = await supabase.storage
         .from("customer-files")
-        .upload(prepared.upload.path, file, {
+        .uploadToSignedUrl(prepared.upload.path, prepared.upload.token, file, {
           contentType: prepared.upload.contentType,
           cacheControl: "3600",
           upsert: false,
@@ -598,7 +626,12 @@ export default function OrderDetailPage() {
       const finalizeResponse = await authenticatedFetch(`/api/requests/${order.id}/additional-file/finalize`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ path: prepared.upload.path, fileName: file.name, fileSize: file.size }),
+        body: JSON.stringify({
+          uploadContract: prepared.uploadContract,
+          path: prepared.upload.path,
+          fileName: file.name,
+          fileSize: file.size,
+        }),
       });
       const finalized = await finalizeResponse.json();
       if (!finalizeResponse.ok) {
@@ -695,6 +728,9 @@ export default function OrderDetailPage() {
   }
 
   const modifiedVersions = delivery?.versions ?? [];
+  const customerSourceActivity = new Map(
+    (delivery?.customerUploads ?? []).map((file) => [file.id, file])
+  );
   const completedFileReady = modifiedVersions.length > 0;
   const revisionRequested = order.status === "revision";
   const canRequestRevision = completedFileReady && !revisionRequested;
@@ -851,8 +887,19 @@ export default function OrderDetailPage() {
                 <Detail icon={<Database />} label="Read Method" value={order.read_method} />
                 <Detail icon={<Database />} label="HW / SW" value={order.hw_sw} />
                 <Detail icon={<PackageCheck />} label="Master / Slave" value={order.master_slave} />
-                <Detail icon={<FileDown />} label="Uploaded File" value={order.uploaded_file_name} />
               </div>
+
+              {order.uploaded_file_name && (
+                <CustomerSourceFileRow
+                  title="Original uploaded file"
+                  fileName={order.uploaded_file_name}
+                  uploadedAt={delivery?.original.receivedAt ?? order.created_at}
+                  downloadCount={delivery?.original.downloadCount ?? 0}
+                  lastDownloadedAt={delivery?.original.lastDownloadedAt ?? null}
+                  downloading={downloadingSourceFileId === "original:original"}
+                  onDownload={() => downloadSourceFile("original", "original")}
+                />
+              )}
 
               <div className="rounded-xl border border-red-900/30 bg-red-950/15 p-3">
                 <div className="text-[11px] font-black uppercase tracking-[0.14em] text-red-400">Requested service</div>
@@ -902,8 +949,24 @@ export default function OrderDetailPage() {
                             <div className="min-w-0">
                               <div className="truncate text-sm font-black text-white">{file.file_name}</div>
                               <div className="mt-1 text-xs text-zinc-500">Uploaded {formatDate(file.uploaded_at)}</div>
+                              <div className="mt-1 grid gap-0.5 text-[11px] text-zinc-500">
+                                <span>Portal download requests: {customerSourceActivity.get(file.id)?.downloadCount ?? 0}</span>
+                                <span>
+                                  {customerSourceActivity.get(file.id)?.lastDownloadedAt
+                                    ? `Last request ${formatDate(customerSourceActivity.get(file.id)?.lastDownloadedAt ?? null)}`
+                                    : "No download request yet"}
+                                </span>
+                              </div>
                             </div>
-                            <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-400" />
+                            <button
+                              type="button"
+                              onClick={() => downloadSourceFile("additional", file.id)}
+                              disabled={downloadingSourceFileId !== null}
+                              aria-label={`Download uploaded file ${file.file_name}`}
+                              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-blue-600/35 bg-blue-950/30 text-blue-200 transition hover:bg-blue-900/40 disabled:cursor-wait disabled:opacity-50"
+                            >
+                              {downloadingSourceFileId === `additional:${file.id}` ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                            </button>
                           </div>
                         ))}
                       </div>
@@ -964,8 +1027,8 @@ export default function OrderDetailPage() {
                       <div title={version.fileName} className="mt-1 truncate text-sm font-black text-white">{version.fileName}</div>
                       <div className="mt-2 grid gap-1 text-xs text-zinc-500">
                         <span>Delivered {formatDate(version.deliveredAt)} (Berlin time)</span>
-                        <span className="font-bold text-zinc-300">Portal downloads: {version.downloadCount}</span>
-                        {version.lastDownloadedAt && <span>Last download {formatDate(version.lastDownloadedAt)}</span>}
+                        <span className="font-bold text-zinc-300">Portal download requests: {version.downloadCount}</span>
+                        {version.lastDownloadedAt && <span>Last request {formatDate(version.lastDownloadedAt)}</span>}
                       </div>
                     </div>
                     <button
@@ -984,7 +1047,7 @@ export default function OrderDetailPage() {
                 <div className="rounded-xl border border-dashed border-white/15 bg-black/25 p-5 text-center text-sm text-zinc-400">No modified file has been delivered yet.</div>
               )}
 
-              <p className="px-1 text-[11px] leading-5 text-zinc-600">Portal downloads are counted when MG AutoTech issues a secure temporary link.</p>
+              <p className="px-1 text-[11px] leading-5 text-zinc-600">A portal download request is counted when MG AutoTech issues a secure temporary link; it does not confirm byte-complete transfer.</p>
 
               <details className="group rounded-xl border border-purple-700/30 bg-purple-950/10">
                 <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-2.5 marker:hidden">
@@ -1197,6 +1260,50 @@ function CustomerDtcAnalysisPanel({
         </div>
       )}
     </section>
+  );
+}
+
+function CustomerSourceFileRow({
+  title,
+  fileName,
+  uploadedAt,
+  downloadCount,
+  lastDownloadedAt,
+  downloading,
+  onDownload,
+}: {
+  title: string;
+  fileName: string;
+  uploadedAt: string;
+  downloadCount: number;
+  lastDownloadedAt: string | null;
+  downloading: boolean;
+  onDownload: () => void;
+}) {
+  return (
+    <div className="flex min-w-0 items-center gap-3 rounded-lg border border-blue-700/25 bg-blue-950/10 p-3">
+      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-950/40 text-blue-300">
+        <FileDown className="h-4 w-4" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="text-[10px] font-black uppercase tracking-[0.14em] text-blue-300">{title}</div>
+        <div title={fileName} className="mt-1 truncate text-sm font-black text-white">{fileName}</div>
+        <div className="mt-1 grid gap-0.5 text-[11px] leading-5 text-zinc-500">
+          <span>Uploaded {formatDate(uploadedAt)}</span>
+          <span>Portal download requests: {downloadCount}</span>
+          <span>{lastDownloadedAt ? `Last request ${formatDate(lastDownloadedAt)}` : "No download request yet"}</span>
+        </div>
+      </div>
+      <button
+        type="button"
+        onClick={onDownload}
+        disabled={downloading}
+        aria-label={`Download ${fileName}`}
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-700 text-white transition hover:bg-blue-600 disabled:cursor-wait disabled:bg-zinc-800 disabled:text-zinc-500"
+      >
+        {downloading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+      </button>
+    </div>
   );
 }
 

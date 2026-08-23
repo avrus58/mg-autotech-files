@@ -9,7 +9,7 @@ export class OllamaReportProvider implements AiReportProvider {
     private readonly baseUrl = process.env.OLLAMA_BASE_URL || "http://127.0.0.1:11434"
   ) {}
 
-  async generateReport(input: AiReportRequest) {
+  async generateReport(input: AiReportRequest, options?: { signal?: AbortSignal }) {
     const response = await fetch(`${this.baseUrl.replace(/\/$/, "")}/api/chat`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -23,7 +23,7 @@ export class OllamaReportProvider implements AiReportProvider {
           { role: "user", content: JSON.stringify({ metadata: modelSafeMetadata(input.metadata), analyzer: modelSafeAnalyzerResult(input.result), similarity_evidence: input.similarityEvidence ?? null }) },
         ],
       }),
-      signal: AbortSignal.timeout(60_000),
+      signal: options?.signal ?? AbortSignal.timeout(60_000),
     });
 
     if (!response.ok) throw new Error(`Ollama report request failed (${response.status}).`);

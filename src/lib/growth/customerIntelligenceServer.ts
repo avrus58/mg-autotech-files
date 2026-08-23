@@ -90,6 +90,7 @@ export async function loadCustomerIntelligenceReport(userId: string) {
     admin.from("profiles")
       .select("id,customer_id,email,full_name,credit_balance,account_type,company_name,phone,city,country,preferred_contact,account_status,created_at")
       .eq("id", userId)
+      .eq("role", "customer")
       .maybeSingle(),
     admin.auth.admin.getUserById(userId),
     admin.from("growth_customer_classifications")

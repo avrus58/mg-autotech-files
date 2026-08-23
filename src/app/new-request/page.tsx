@@ -683,10 +683,87 @@ function VehicleHeroCard({
 }
 
 
+const webRequestSubmissionStoragePrefix = "mg:web-request-submission:v1:";
+const webRequestSubmissionMaxAgeMs = 24 * 60 * 60 * 1000;
+
+type WebRequestSubmission = {
+  signature: string;
+  fingerprint: string;
+  idempotencyKey: string;
+  filePath: string;
+  createdAt: number;
+};
+
+async function sha256Hex(value: BufferSource) {
+  const digest = await window.crypto.subtle.digest("SHA-256", value);
+  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+function fingerprintWebRequest(value: string) {
+  return sha256Hex(new TextEncoder().encode(value));
+}
+
+function readPersistedWebRequest(userId: string, fingerprint: string): WebRequestSubmission | null {
+  try {
+    const raw = window.sessionStorage.getItem(`${webRequestSubmissionStoragePrefix}${userId}`);
+    if (!raw) return null;
+    const value = JSON.parse(raw) as Partial<WebRequestSubmission>;
+    if (
+      value.fingerprint !== fingerprint ||
+      typeof value.idempotencyKey !== "string" ||
+      !/^[A-Za-z0-9._-]{12,96}$/.test(value.idempotencyKey) ||
+      typeof value.filePath !== "string" ||
+      typeof value.createdAt !== "number" ||
+      !Number.isFinite(value.createdAt) ||
+      Date.now() - value.createdAt > webRequestSubmissionMaxAgeMs ||
+      (value.filePath !== "" && !value.filePath.startsWith(`${userId}/${value.idempotencyKey}/`))
+    ) {
+      window.sessionStorage.removeItem(`${webRequestSubmissionStoragePrefix}${userId}`);
+      return null;
+    }
+    return {
+      signature: "",
+      fingerprint,
+      idempotencyKey: value.idempotencyKey,
+      filePath: value.filePath,
+      createdAt: value.createdAt,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function persistWebRequest(userId: string, submission: WebRequestSubmission) {
+  try {
+    // Persist only a digest and opaque identifiers; request notes and customer
+    // data never enter browser storage.
+    window.sessionStorage.setItem(
+      `${webRequestSubmissionStoragePrefix}${userId}`,
+      JSON.stringify({
+        fingerprint: submission.fingerprint,
+        idempotencyKey: submission.idempotencyKey,
+        filePath: submission.filePath,
+        createdAt: submission.createdAt,
+      }),
+    );
+  } catch {
+    // The in-memory key still protects ordinary retries when storage is denied.
+  }
+}
+
+function clearPersistedWebRequest(userId: string) {
+  try {
+    window.sessionStorage.removeItem(`${webRequestSubmissionStoragePrefix}${userId}`);
+  } catch {
+    // Navigation can continue after a confirmed server response.
+  }
+}
+
 export default function NewRequestPage() {
   const router = useRouter();
   const requestStartTrackedRef = useRef(false);
   const growthAttemptIdRef = useRef("");
+  const requestSubmissionRef = useRef<WebRequestSubmission | null>(null);
   const repeatPrefillStartedRef = useRef(false);
 
   const [brands, setBrands] = useState<Option[]>([]);
@@ -1119,7 +1196,12 @@ export default function NewRequestPage() {
     ? creditBalance + Math.max(negativeCreditLimit, 0)
     : creditBalance;
   const balanceAfterRequest = creditBalance - totalCredits;
-  const canCreateByCredits = totalCredits <= availableCredits;
+  const isZeroCreditRequest = Boolean(selectedMainService) && totalCredits === 0;
+  const canCreateByCredits =
+    Boolean(selectedMainService) &&
+    Number.isInteger(totalCredits) &&
+    totalCredits >= 0 &&
+    totalCredits <= availableCredits;
   const accountBlocked = accountStatus !== "active";
 
   const serviceSummary = useMemo(() => {
@@ -1174,12 +1256,12 @@ export default function NewRequestPage() {
     },
     {
       id: "credits",
-      label: "Credits verified",
+      label: isZeroCreditRequest ? "Zero-credit request verified" : "Credits verified",
       complete: !profileLoading && !accountBlocked && canCreateByCredits,
     },
     {
       id: "payment",
-      label: "Credit use accepted",
+      label: isZeroCreditRequest ? "Zero-credit request confirmed" : "Credit use accepted",
       complete: paymentAccepted,
     },
     {
@@ -1290,6 +1372,10 @@ export default function NewRequestPage() {
   function validateCreditAccess(profile: CustomerProfile, requiredCredits: number) {
     const status = profile.account_status ?? "active";
 
+    if (!Number.isInteger(requiredCredits) || requiredCredits < 0) {
+      return "Please select a valid service combination.";
+    }
+
     if (status !== "active") {
       return `Your account is currently ${status}. Please contact MG AutoTech support.`;
     }
@@ -1364,6 +1450,59 @@ export default function NewRequestPage() {
     }
 
     const customerEmail = user.email ?? "";
+    let selectedFileSha256: string;
+    try {
+      selectedFileSha256 = await sha256Hex(await selectedFile.arrayBuffer());
+    } catch {
+      setSubmitting(false);
+      setMessage("The selected file fingerprint could not be calculated.");
+      return;
+    }
+
+    const submissionSignature = JSON.stringify({
+      userId: user.id,
+      customerEmail,
+      vehicleBrand: requestVehicleBrand,
+      vehicleModel: requestVehicleModel,
+      vehicleGeneration: requestVehicleGeneration,
+      vehicleEngine: requestVehicleEngine,
+      serviceType: serviceSummary,
+      creditsRequired: totalCredits,
+      notes: notes || "-",
+      ecu: ecu || null,
+      gearbox: gearbox || null,
+      vehicleYear: year || null,
+      readMethod: readMethod || null,
+      licensePlate: licensePlate || null,
+      hwSw: hwSw || null,
+      masterSlave,
+      uploadedFileName: fileName || null,
+      file: {
+        name: selectedFile.name,
+        size: selectedFile.size,
+        type: selectedFile.type,
+        lastModified: selectedFile.lastModified,
+        sha256: selectedFileSha256,
+      },
+    });
+    const submissionFingerprint = await fingerprintWebRequest(submissionSignature);
+    const inMemorySubmission = requestSubmissionRef.current?.fingerprint === submissionFingerprint
+      ? requestSubmissionRef.current
+      : null;
+    const persistedSubmission = inMemorySubmission
+      ? null
+      : readPersistedWebRequest(user.id, submissionFingerprint);
+    const existingSubmission = inMemorySubmission ?? persistedSubmission;
+    const submission = existingSubmission ?? {
+      signature: submissionSignature,
+      fingerprint: submissionFingerprint,
+      idempotencyKey: window.crypto.randomUUID(),
+      filePath: "",
+      createdAt: Date.now(),
+    };
+    submission.signature = submissionSignature;
+    requestSubmissionRef.current = submission;
+    persistWebRequest(user.id, submission);
 
     let latestProfile: CustomerProfile;
 
@@ -1379,7 +1518,9 @@ export default function NewRequestPage() {
       return;
     }
 
-    const creditValidationError = validateCreditAccess(latestProfile, totalCredits);
+    const creditValidationError = existingSubmission
+      ? null
+      : validateCreditAccess(latestProfile, totalCredits);
 
     if (creditValidationError) {
       setSubmitting(false);
@@ -1388,34 +1529,71 @@ export default function NewRequestPage() {
       return;
     }
 
-    let originalFilePath: string | null = null;
+    const prepareResponse = await authenticatedFetch("/api/account/request-upload/prepare", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        idempotencyKey: submission.idempotencyKey,
+        fileName: selectedFile.name,
+        fileSize: selectedFile.size,
+        contentType: selectedFile.type || "application/octet-stream",
+        sha256: selectedFileSha256,
+      }),
+    });
+    const prepared = await prepareResponse.json().catch(() => null) as {
+      error?: string;
+      upload?: { path?: string; token?: string; contentType?: string };
+    } | null;
+    if (
+      !prepareResponse.ok ||
+      typeof prepared?.upload?.path !== "string" ||
+      typeof prepared.upload.token !== "string" ||
+      typeof prepared.upload.contentType !== "string"
+    ) {
+      setSubmitting(false);
+      setMessage(prepared?.error || "Secure upload could not be prepared.");
+      return;
+    }
+    if (submission.filePath && submission.filePath !== prepared.upload.path) {
+      setSubmitting(false);
+      setMessage("The saved request upload does not match this submission. Change the form and try again.");
+      return;
+    }
+    submission.filePath = prepared.upload.path;
+    requestSubmissionRef.current = submission;
+    persistWebRequest(user.id, submission);
 
-    if (selectedFile) {
-      const safeFileName = selectedFile.name
-        .replaceAll(" ", "_")
-        .replace(/[^a-zA-Z0-9._-]/g, "");
+    const originalFilePath = prepared.upload.path;
 
-      const filePath = `${user.id}/${Date.now()}-${safeFileName}`;
+    const { error: uploadError } = await supabase.storage
+      .from("customer-files")
+      .uploadToSignedUrl(originalFilePath, prepared.upload.token, selectedFile, {
+        contentType: prepared.upload.contentType,
+        cacheControl: "3600",
+        upsert: false,
+      });
 
-      const { error: uploadError } = await supabase.storage
-        .from("customer-files")
-        .upload(filePath, selectedFile, {
-          cacheControl: "3600",
-          upsert: false,
-        });
-
-      if (uploadError) {
-        setSubmitting(false);
-        setMessage(uploadError.message);
-        return;
-      }
-
-      originalFilePath = filePath;
+    const storageError = uploadError as {
+      status?: string | number;
+      statusCode?: string | number;
+    } | null;
+    const duplicateUpload = Boolean(
+      storageError && (
+        Number(storageError.status) === 409
+        || Number(storageError.statusCode) === 409
+        || String(storageError.statusCode ?? "").toLowerCase().includes("duplicate")
+      )
+    );
+    if (uploadError && !duplicateUpload) {
+      setSubmitting(false);
+      setMessage(uploadError.message);
+      return;
     }
 
-    const { data: createdOrderId, error } = await supabase.rpc(
-      "create_order_with_credit_deduction",
+    const { data: creationResult, error } = await supabase.rpc(
+      "create_web_order_with_credit_deduction",
       {
+        p_idempotency_key: submission.idempotencyKey,
         p_customer_email: customerEmail,
         p_vehicle_brand: requestVehicleBrand,
         p_vehicle_model: requestVehicleModel,
@@ -1443,13 +1621,27 @@ export default function NewRequestPage() {
       return;
     }
 
-    setCustomerProfile((current) =>
-      current
-        ? {
-            ...current,
-            credit_balance: Number(current.credit_balance ?? 0) - totalCredits,
+    const creation = creationResult as {
+      order_id?: unknown;
+      duplicate?: unknown;
+    } | null;
+    const createdOrderId = typeof creation?.order_id === "string"
+      ? creation.order_id
+      : "";
+    const duplicate = creation?.duplicate === true;
+
+    if (!createdOrderId) {
+      setMessage("The request was accepted but its confirmation could not be verified. Please retry safely.");
+      return;
+    }
+
+    setCustomerProfile(
+      duplicate
+        ? latestProfile
+        : {
+            ...latestProfile,
+            credit_balance: Number(latestProfile.credit_balance ?? 0) - totalCredits,
           }
-        : current
     );
 
     const conversionSeed = String(createdOrderId || growthAttemptIdRef.current || window.crypto.randomUUID());
@@ -1472,6 +1664,8 @@ export default function NewRequestPage() {
       // Email notification failure must not block the customer request.
     }
 
+    requestSubmissionRef.current = null;
+    clearPersistedWebRequest(user.id);
     router.push("/dashboard");
   };
 
@@ -2356,7 +2550,11 @@ export default function NewRequestPage() {
                     }
                     className="mt-1"
                   />
-                  <span>I accept that the required credits will be used.</span>
+                  <span>
+                    {isZeroCreditRequest
+                      ? "I confirm this zero-credit request."
+                      : "I accept that the required credits will be used."}
+                  </span>
                 </label>
 
                 <label className="flex gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-sm text-zinc-300">

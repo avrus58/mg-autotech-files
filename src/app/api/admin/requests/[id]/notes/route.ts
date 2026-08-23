@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireStaffPermission } from "@/lib/apiAuth";
+import { hasStaffPermission } from "@/lib/staffPermissions";
 import { addAdminWorkOrderNote } from "@/lib/workOrders/server";
 import { workOrderNoteTypes } from "@/lib/workOrders/types";
 
@@ -24,6 +25,15 @@ export async function POST(
       { status: 400 }
     );
   }
+  if (
+    parsed.data.note_type === "customer_visible" &&
+    !hasStaffPermission(auth.access, "messages.manage")
+  ) {
+    return NextResponse.json(
+      { error: "Message management permission is required for customer-visible notes." },
+      { status: 403 }
+    );
+  }
 
   const { id } = await context.params;
   try {
@@ -35,9 +45,9 @@ export async function POST(
       pinned: parsed.data.pinned,
     });
     return NextResponse.json({ note }, { status: 201 });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Work order note could not be saved." },
+      { error: "Work order note could not be saved." },
       { status: 500 }
     );
   }

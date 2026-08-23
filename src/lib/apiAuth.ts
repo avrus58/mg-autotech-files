@@ -1,6 +1,7 @@
 import type { User } from "@supabase/supabase-js";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import {
+  hasAllStaffPermissions,
   hasStaffPermission,
   isPrimaryOwner,
   isStaffMember,
@@ -89,6 +90,18 @@ export async function requireStaffPermission(
   const auth = await requireApiUser(request);
   if (!auth.ok) return auth;
   if (!isStaffMember(auth.access) || !hasStaffPermission(auth.access, permission)) {
+    return { ok: false, status: 403, error: "You do not have permission for this action." };
+  }
+  return auth;
+}
+
+export async function requireStaffPermissions(
+  request: Request,
+  permissions: readonly StaffPermission[]
+): Promise<AuthResult> {
+  const auth = await requireApiUser(request);
+  if (!auth.ok) return auth;
+  if (!isStaffMember(auth.access) || !hasAllStaffPermissions(auth.access, permissions)) {
     return { ok: false, status: 403, error: "You do not have permission for this action." };
   }
   return auth;

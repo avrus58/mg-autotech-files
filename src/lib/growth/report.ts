@@ -52,6 +52,7 @@ export async function buildGrowthCustomerSuccessReport(input?: {
   const [profilesResult, ordersResult, revenueLedgerResult, paymentReviewResult, classificationResult] = await Promise.all([
     admin.from("profiles")
       .select("id,customer_id,role,country,account_status,created_at")
+      .eq("role", "customer")
       .order("created_at", { ascending: false })
       .limit(25_000),
     admin.from("orders")

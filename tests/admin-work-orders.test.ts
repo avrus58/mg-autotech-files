@@ -68,7 +68,7 @@ test("admin request routes require existing staff permissions", () => {
     ["src/app/api/admin/requests/[id]/route.ts", /requireStaffPermission\(request,\s*"orders\.view"\)/],
     ["src/app/api/admin/requests/[id]/route.ts", /requireStaffPermission\(request,\s*"orders\.manage"\)/],
     ["src/app/api/admin/requests/[id]/notes/route.ts", /requireStaffPermission\(request,\s*"orders\.manage"\)/],
-    ["src/app/api/admin/requests/[id]/dtc-analysis/route.ts", /requireStaffPermission\(request,\s*"orders\.view"\)/],
+    ["src/app/api/admin/requests/[id]/dtc-analysis/route.ts", /requireStaffPermissions\(request,\s*\["orders\.view", "file_expert\.manage"\]\)/],
   ] as const;
   for (const [file, pattern] of routes) {
     const source = readFileSync(resolve(process.cwd(), file), "utf8");
@@ -431,7 +431,7 @@ test("admin request list surfaces customer upload signal without upload internal
   const client = readFileSync(resolve(process.cwd(), "src", "app", "admin", "requests", "AdminRequestsClient.tsx"), "utf8");
   const server = readFileSync(resolve(process.cwd(), "src", "lib", "workOrders", "server.ts"), "utf8");
 
-  assert.match(server, /hasCustomerUpload:\s*Array\.isArray\(order\.customer_uploads\)\s*&&\s*order\.customer_uploads\.length > 0/);
+  assert.match(server, /hasCustomerUpload:\s*access\.filesDownload\s*&&\s*Array\.isArray\(order\.customer_uploads\)\s*&&\s*order\.customer_uploads\.length > 0/);
   assert.match(client, /item\.indicators\.hasCustomerUpload/);
   assert.match(client, /Customer file/);
   assert.match(client, /Paperclip/);

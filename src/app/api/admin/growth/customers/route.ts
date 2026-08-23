@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { requireStaffPermission } from "@/lib/apiAuth";
+import { requireStaffPermission, requireStaffPermissions } from "@/lib/apiAuth";
+import { growthClassificationReadPermissions } from "@/lib/growth/access";
 import {
   maxGrowthClassificationBatchSize,
   validateGrowthClassificationChanges,
@@ -37,7 +38,7 @@ const headers = {
 };
 
 export async function GET(request: Request) {
-  const auth = await requireStaffPermission(request, "customers.manage");
+  const auth = await requireStaffPermissions(request, growthClassificationReadPermissions);
   if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status, headers });
 
   try {

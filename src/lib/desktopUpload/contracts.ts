@@ -257,12 +257,27 @@ export function desktopUploadSessionIdFor(idempotencyKey: string) {
   return `desktop-upload-${normalizeDesktopIdempotencyKey(idempotencyKey)}`;
 }
 
+export function desktopUploadPathFor(input: {
+  userId: string;
+  idempotencyKey: string;
+  fileName: string;
+  sha256: string;
+}) {
+  const safeKey = normalizeDesktopIdempotencyKey(input.idempotencyKey);
+  const sha256 = input.sha256.toLowerCase();
+  if (!safeKey || !isValidSha256(sha256)) throw new Error("Invalid desktop upload identity.");
+  return `${input.userId}/desktop/${safeKey}/${sha256}-${safeDesktopFileName(input.fileName)}`;
+}
+
 export function validateDesktopCreditAccess(profile: {
   credit_balance: number | string | null;
   allow_negative_credits?: boolean | null;
   negative_credit_limit?: number | string | null;
   account_status?: string | null;
 }, requiredCredits: number) {
+  if (!Number.isInteger(requiredCredits) || requiredCredits < 0 || requiredCredits > 100000) {
+    return "The service credit amount is invalid.";
+  }
   if ((profile.account_status ?? "active") !== "active") {
     return "Customer account is not active.";
   }

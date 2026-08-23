@@ -18,17 +18,57 @@ try {
   process.exit(1);
 }
 
-const pageEntry = manifest.match(
+const legacyPageEntry = manifest.match(
   /"entryJSFiles":\{[\s\S]*?"[^"\n]*\/src\/app\/page":\[(?<chunks>[^\]]*)\]/
 );
 
-if (!pageEntry?.groups?.chunks) {
+function readCurrentWebpackChunks() {
+  const assignment = 'globalThis.__RSC_MANIFEST["/page"]=';
+  const assignmentIndex = manifest.indexOf(assignment);
+  if (assignmentIndex < 0) return [];
+
+  try {
+    const routeManifest = JSON.parse(
+      manifest
+        .slice(assignmentIndex + assignment.length)
+        .replace(/;\s*$/, "")
+    );
+    const entries = Object.entries(routeManifest.clientModules ?? {});
+    const pageModule = entries.find(([modulePath]) =>
+      modulePath.replaceAll("\\", "/").endsWith("/src/app/page.tsx")
+    );
+    const routeEntries = entries.filter(([, value]) => {
+      const chunks = Array.isArray(value?.chunks) ? value.chunks : [];
+      return chunks.some(
+        (chunk) =>
+          typeof chunk === "string" &&
+          /static\/chunks\/app\/layout-[^/]+\.js$/.test(chunk)
+      );
+    });
+    if (pageModule) routeEntries.push(pageModule);
+    return routeEntries.flatMap(([, value]) =>
+      Array.isArray(value?.chunks) ? value.chunks : []
+    );
+  } catch {
+    return [];
+  }
+}
+
+const chunks = legacyPageEntry?.groups?.chunks
+  ? JSON.parse(`[${legacyPageEntry.groups.chunks}]`)
+  : readCurrentWebpackChunks();
+const uniqueChunks = [
+  ...new Set(
+    chunks.filter(
+      (chunk) => typeof chunk === "string" && chunk.endsWith(".js")
+    )
+  ),
+];
+
+if (!uniqueChunks.length) {
   console.error("Could not locate the homepage client entry in the Next.js manifest.");
   process.exit(1);
 }
-
-const chunks = JSON.parse(`[${pageEntry.groups.chunks}]`);
-const uniqueChunks = [...new Set(chunks)];
 const budgetBytes = 80 * 1024;
 const forbiddenMarkers = ["supabase-js", "motionValue", "panelV2Translations"];
 const rows = uniqueChunks.map((chunk) => {

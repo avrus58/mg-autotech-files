@@ -8,6 +8,7 @@ import {
 import { hasStaffPermission } from "@/lib/staffPermissions";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { getAdminRequestList } from "@/lib/workOrders/server";
+import { buildAdminRequestAccess } from "@/lib/workOrders/access";
 
 const privateNoStoreHeaders = {
   "Cache-Control": "private, no-store, max-age=0",
@@ -26,7 +27,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const requests = await getAdminRequestList();
+    const requests = await getAdminRequestList(buildAdminRequestAccess(auth.access));
     let profiles: OperationsProfile[] = [];
     if (hasStaffPermission(auth.access, "customers.view")) {
       const result = await getSupabaseAdmin()

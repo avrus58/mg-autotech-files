@@ -8,6 +8,7 @@ import {
   loadAdminWidgetClients,
   WIDGET_ADMIN_CLIENT_FIELDS,
 } from "@/lib/widget/adminData";
+import { canonicalWidgetDomain } from "@/lib/widget/domain";
 import { createWidgetPublicKey } from "@/lib/widget/keys";
 import { validatePublicWidgetDomain } from "@/lib/widget/security";
 import { sanitizeWidgetLanguages, widgetLanguageCodes, type WidgetClient } from "@/lib/widget/types";
@@ -95,7 +96,7 @@ async function findDomainConflict(domain: string, clientId: string) {
   const result = await getSupabaseAdmin()
     .from("widget_clients")
     .select("id, company_name")
-    .eq("allowed_domain", domain)
+    .eq("canonical_domain", canonicalWidgetDomain(domain))
     .neq("id", clientId)
     .neq("status", "cancelled")
     .limit(1)

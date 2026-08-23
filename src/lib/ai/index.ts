@@ -6,6 +6,8 @@ import { RuleBasedAiReportProvider } from "@/lib/ai/providers/ruleBased";
 import type { AiReportGenerationMetadata, AiReportProvider, AiReportRequest, AiReportResponse } from "@/lib/ai/types";
 import { modelSafeMetadata } from "@/lib/ai/prompt";
 
+const fileExpertDeterministicFallbackReserveMs = 750;
+
 function configuredProvider(): AiReportProvider {
   const provider = (process.env.AI_PROVIDER || "rule_based").toLowerCase();
 
@@ -134,42 +136,94 @@ function providerErrorGenerationMetadata(input: {
   };
 }
 
+async function settleBeforeDeadline<T>(operation: Promise<T>, deadlineAt: number) {
+  const remainingMs = deadlineAt - Date.now();
+  if (remainingMs <= 0) {
+    throw new Error("AI report provider exceeded the File Expert deadline.");
+  }
+
+  let timeout: ReturnType<typeof setTimeout> | null = null;
+  const deadline = new Promise<never>((_resolve, reject) => {
+    timeout = setTimeout(
+      () => reject(new Error("AI report provider exceeded the File Expert deadline.")),
+      remainingMs
+    );
+  });
+  try {
+    return await Promise.race([operation, deadline]);
+  } finally {
+    if (timeout) clearTimeout(timeout);
+  }
+}
+
+async function auditBeforeDeadline(
+  operations: Array<Promise<unknown>>,
+  deadlineAt: number | undefined
+) {
+  if (!deadlineAt) {
+    await Promise.allSettled(operations);
+    return;
+  }
+  if (Date.now() >= deadlineAt) return;
+  await settleBeforeDeadline(Promise.allSettled(operations), deadlineAt).catch(() => undefined);
+}
+
 export async function generateAiFileExpertReport(
   request: AiReportRequest,
-  options: { provider?: AiReportProvider } = {}
+  options: { provider?: AiReportProvider; deadlineAt?: number } = {}
 ) {
   const provider = options.provider ?? configuredProvider();
   const startedAt = Date.now();
+  const providerDeadlineAt = options.deadlineAt && provider.name !== "rule_based"
+    ? options.deadlineAt - fileExpertDeterministicFallbackReserveMs
+    : null;
+  const controller = providerDeadlineAt ? new AbortController() : null;
+  const abortDelayMs = providerDeadlineAt ? providerDeadlineAt - Date.now() : null;
+  if (controller && abortDelayMs !== null && abortDelayMs <= 0) controller.abort();
+  const abortTimeout = controller && abortDelayMs !== null && abortDelayMs > 0
+    ? setTimeout(() => controller.abort(), abortDelayMs)
+    : null;
 
   try {
-    const output = await provider.generateReport(request);
-    await auditRun({
-      request,
-      provider,
-      startedAt,
-      outputText: output.report,
-      outputJson: output.outputJson,
-    });
+    const generation = provider.generateReport(request, { signal: controller?.signal });
+    const output = providerDeadlineAt
+      ? await settleBeforeDeadline(generation, providerDeadlineAt)
+      : await generation;
+    await auditBeforeDeadline([
+      auditRun({
+        request,
+        provider,
+        startedAt,
+        outputText: output.report,
+        outputJson: output.outputJson,
+      }),
+    ], options.deadlineAt);
     return attachGeneration(output, successfulGenerationMetadata(provider, output));
   } catch (error) {
+    if (controller && !controller.signal.aborted) controller.abort();
     const message = error instanceof Error ? error.message : "AI report provider failed.";
     const safeMessage = redactProviderError(message);
-    await auditRun({ request, provider, startedAt, error: safeMessage });
 
     const fallback = new RuleBasedAiReportProvider();
     const fallbackStartedAt = Date.now();
     const output = await fallback.generateReport(request);
-    await auditRun({
-      request,
-      provider: fallback,
-      startedAt: fallbackStartedAt,
-      outputText: output.report,
-      outputJson: { fallback_reason: safeMessage },
-    });
+    await auditBeforeDeadline([
+      auditRun({ request, provider, startedAt, error: safeMessage }),
+      auditRun({
+        request,
+        provider: fallback,
+        startedAt: fallbackStartedAt,
+        outputText: output.report,
+        outputJson: { fallback_reason: safeMessage },
+      }),
+    ], options.deadlineAt);
     return attachGeneration(
       output,
       providerErrorGenerationMetadata({ provider, output, errorMessage: safeMessage })
     );
+  } finally {
+    if (abortTimeout) clearTimeout(abortTimeout);
+    if (controller && !controller.signal.aborted) controller.abort();
   }
 }
 

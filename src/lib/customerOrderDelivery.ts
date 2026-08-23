@@ -7,6 +7,9 @@ import { normalizeFileVersionLabel } from "@/lib/fileVersionLabels";
 
 export const CUSTOMER_FILE_DOWNLOAD_EVENT = "customer_file_downloaded";
 
+export const customerSourceFileKinds = ["original", "additional"] as const;
+export type CustomerSourceFileKind = (typeof customerSourceFileKinds)[number];
+
 export type StoredModifiedFileVersion = {
   id: string;
   label: string;
@@ -24,11 +27,24 @@ export type CustomerDeliveryVersion = {
   lastDownloadedAt: string | null;
 };
 
+export type CustomerSourceFileActivity = {
+  id: string;
+  kind: CustomerSourceFileKind;
+  fileName: string;
+  uploadedAt: string;
+  downloadCount: number;
+  lastDownloadedAt: string | null;
+};
+
 export type CustomerDeliveryHistory = {
   original: {
+    id: "original";
     fileName: string | null;
     receivedAt: string;
+    downloadCount: number;
+    lastDownloadedAt: string | null;
   };
+  customerUploads: CustomerSourceFileActivity[];
   versions: CustomerDeliveryVersion[];
 };
 
@@ -59,6 +75,7 @@ export type CustomerOrderRecord = {
   hw_sw: string | null;
   master_slave: string | null;
   uploaded_file_name: string | null;
+  original_file_path: string | null;
   modified_file_path: string | null;
   modified_files: unknown;
   estimated_delivery_label?: string | null;
@@ -70,8 +87,17 @@ export type CustomerOrderRecord = {
 
 export type CustomerDownloadEventRow = {
   event_type?: string | null;
+  actor_user_id?: string | null;
   new_value?: unknown;
   created_at?: string | null;
+};
+
+export type StoredCustomerSourceFile = {
+  id: string;
+  kind: CustomerSourceFileKind;
+  file_name: string;
+  file_path: string;
+  uploaded_at: string;
 };
 
 const customerOrderCoreFields = [
@@ -94,6 +120,7 @@ const customerOrderCoreFields = [
   "hw_sw",
   "master_slave",
   "uploaded_file_name",
+  "original_file_path",
   "modified_file_path",
   "modified_files",
   "customer_upload_enabled",
@@ -191,18 +218,139 @@ export function getStoredModifiedFileVersions(
   ];
 }
 
-function getEventVersionId(event: CustomerDownloadEventRow) {
+function getDownloadEventKey(event: CustomerDownloadEventRow, customerId: string) {
   if (event.event_type !== CUSTOMER_FILE_DOWNLOAD_EVENT) return null;
+  if (event.actor_user_id !== customerId) return null;
   if (!isRecord(event.new_value)) return null;
-  return typeof event.new_value.version_id === "string"
-    ? event.new_value.version_id
-    : null;
+  if (typeof event.new_value.version_id === "string") {
+    return `delivery:${event.new_value.version_id}`;
+  }
+  if (
+    typeof event.new_value.file_id === "string" &&
+    customerSourceFileKinds.includes(event.new_value.file_kind as CustomerSourceFileKind)
+  ) {
+    return `source:${event.new_value.file_kind}:${event.new_value.file_id}`;
+  }
+  return null;
+}
+
+function downloadStatsFor(
+  downloadStats: Map<string, { count: number; lastDownloadedAt: string | null }>,
+  key: string
+) {
+  return downloadStats.get(key) ?? { count: 0, lastDownloadedAt: null };
+}
+
+function normalizeStoredCustomerSourceFile(value: unknown): StoredCustomerSourceFile | null {
+  if (!isRecord(value)) return null;
+  if (
+    typeof value.id !== "string" ||
+    !value.id.trim() ||
+    typeof value.file_name !== "string" ||
+    !value.file_name.trim() ||
+    typeof value.file_path !== "string" ||
+    !value.file_path.trim() ||
+    !isIsoDate(value.uploaded_at)
+  ) {
+    return null;
+  }
+  return {
+    id: value.id,
+    kind: "additional",
+    file_name: value.file_name,
+    file_path: value.file_path,
+    uploaded_at: value.uploaded_at,
+  };
+}
+
+export function getStoredCustomerSourceFiles(
+  order: Pick<
+    CustomerOrderRecord,
+    | "uploaded_file_name"
+    | "original_file_path"
+    | "customer_uploads"
+    | "created_at"
+  >
+) {
+  const files: StoredCustomerSourceFile[] = [];
+  if (order.original_file_path?.trim()) {
+    files.push({
+      id: "original",
+      kind: "original",
+      file_name: order.uploaded_file_name?.trim() || "Original file",
+      file_path: order.original_file_path,
+      uploaded_at: order.created_at,
+    });
+  }
+  if (Array.isArray(order.customer_uploads)) {
+    files.push(
+      ...order.customer_uploads
+        .map(normalizeStoredCustomerSourceFile)
+        .filter((file): file is StoredCustomerSourceFile => Boolean(file))
+    );
+  }
+  return files;
+}
+
+export function resolveCustomerSourceFile(
+  order: Pick<
+    CustomerOrderRecord,
+    | "uploaded_file_name"
+    | "original_file_path"
+    | "customer_uploads"
+    | "created_at"
+  >,
+  kind: CustomerSourceFileKind,
+  fileId: string
+) {
+  const matches = getStoredCustomerSourceFiles(order).filter(
+    (file) => file.kind === kind && file.id === fileId
+  );
+  return matches.length === 1 ? matches[0] : null;
+}
+
+export function isExpectedCustomerSourcePath(
+  filePath: string,
+  customerId: string,
+  requestId: string,
+  kind: CustomerSourceFileKind
+) {
+  if (
+    !filePath ||
+    filePath.includes("\\") ||
+    filePath.includes("\0") ||
+    filePath.startsWith("/") ||
+    filePath.endsWith("/")
+  ) {
+    return false;
+  }
+  const parts = filePath.split("/");
+  if (parts.some((part) => !part || part === "." || part === "..")) return false;
+  if (parts[0] !== customerId) return false;
+  if (kind === "additional") {
+    return parts.length === 4 && parts[1] === "additional" && parts[2] === requestId;
+  }
+  return parts.length >= 2;
+}
+
+export function buildCustomerSourceDownloadAuditValue(file: StoredCustomerSourceFile) {
+  return {
+    file_kind: file.kind,
+    file_id: file.id,
+    file_name: file.file_name,
+  };
 }
 
 export function projectCustomerDeliveryHistory(
   order: Pick<
     CustomerOrderRecord,
-    "uploaded_file_name" | "created_at" | "modified_files" | "modified_file_path"
+    | "customer_id"
+    | "uploaded_file_name"
+    | "original_file_path"
+    | "customer_uploads"
+    | "created_at"
+    | "modified_files"
+    | "modified_file_path"
   >,
   events: CustomerDownloadEventRow[]
 ): CustomerDeliveryHistory {
@@ -212,10 +360,10 @@ export function projectCustomerDeliveryHistory(
   >();
 
   for (const event of events) {
-    const versionId = getEventVersionId(event);
-    if (!versionId || !isIsoDate(event.created_at)) continue;
+    const eventKey = getDownloadEventKey(event, order.customer_id);
+    if (!eventKey || !isIsoDate(event.created_at)) continue;
 
-    const current = downloadStats.get(versionId) ?? {
+    const current = downloadStats.get(eventKey) ?? {
       count: 0,
       lastDownloadedAt: null,
     };
@@ -225,28 +373,51 @@ export function projectCustomerDeliveryHistory(
         ? event.created_at
         : current.lastDownloadedAt;
 
-    downloadStats.set(versionId, {
+    downloadStats.set(eventKey, {
       count: current.count + 1,
       lastDownloadedAt,
     });
   }
 
+  const originalStats = downloadStatsFor(downloadStats, "source:original:original");
+  const customerUploads = getStoredCustomerSourceFiles(order)
+    .filter((file) => file.kind === "additional")
+    .sort((left, right) => Date.parse(left.uploaded_at) - Date.parse(right.uploaded_at))
+    .map((file) => {
+      const stats = downloadStatsFor(
+        downloadStats,
+        `source:additional:${file.id}`
+      );
+      return {
+        id: file.id,
+        kind: file.kind,
+        fileName: file.file_name,
+        uploadedAt: file.uploaded_at,
+        downloadCount: stats.count,
+        lastDownloadedAt: stats.lastDownloadedAt,
+      };
+    });
+
   return {
     original: {
+      id: "original",
       fileName: order.uploaded_file_name,
       receivedAt: order.created_at,
+      downloadCount: originalStats.count,
+      lastDownloadedAt: originalStats.lastDownloadedAt,
     },
+    customerUploads,
     versions: [...getStoredModifiedFileVersions(order)]
       .sort((left, right) => Date.parse(left.uploaded_at) - Date.parse(right.uploaded_at))
       .map((version) => {
-        const stats = downloadStats.get(version.id);
+        const stats = downloadStatsFor(downloadStats, `delivery:${version.id}`);
         return {
           id: version.id,
           label: version.label,
           fileName: version.file_name,
           deliveredAt: version.uploaded_at,
-          downloadCount: stats?.count ?? 0,
-          lastDownloadedAt: stats?.lastDownloadedAt ?? null,
+          downloadCount: stats.count,
+          lastDownloadedAt: stats.lastDownloadedAt,
         };
       }),
   };

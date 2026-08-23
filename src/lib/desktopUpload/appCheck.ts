@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
-export const desktopAppCurrentVersion = "0.1.0";
+export const desktopAppCurrentVersion = "0.2.1";
+export const desktopUploadProtocolMinimumVersion = "0.2.0";
 export const desktopAppDefaultPlatform = "win32";
 
 export type DesktopClientInfo = {
@@ -75,8 +76,14 @@ function allowedDesktopModules() {
 }
 
 export function getDesktopAppCheckPayload(info: Pick<DesktopClientInfo, "appVersion">): DesktopAppCheckPayload {
-  const minimum = process.env.DESKTOP_APP_MIN_VERSION || desktopAppCurrentVersion;
-  const latest = process.env.DESKTOP_APP_LATEST_VERSION || minimum;
+  const configuredMinimum = process.env.DESKTOP_APP_MIN_VERSION || desktopUploadProtocolMinimumVersion;
+  const minimum = compareDesktopVersions(configuredMinimum, desktopUploadProtocolMinimumVersion) < 0
+    ? desktopUploadProtocolMinimumVersion
+    : configuredMinimum;
+  const configuredLatest = process.env.DESKTOP_APP_LATEST_VERSION || desktopAppCurrentVersion;
+  const latest = compareDesktopVersions(configuredLatest, minimum) < 0
+    ? minimum
+    : configuredLatest;
   const maintenance = envFlag("DESKTOP_APP_MAINTENANCE_MODE", false);
   const enabled = envFlag("DESKTOP_APP_UPLOAD_ENABLED", envFlag("DESKTOP_UPLOAD_ENABLED", true));
   const hasVersion = info.appVersion.length > 0;

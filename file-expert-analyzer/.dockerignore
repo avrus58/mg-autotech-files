@@ -1,0 +1,6 @@
+*
+!Dockerfile
+!requirements.txt
+!execution.py
+!network_policy.py
+!main.py

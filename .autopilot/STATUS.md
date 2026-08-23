@@ -2802,6 +2802,540 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
   deploy yoktur. External receipt Google Ads Tag Assistant ve conversion
   diagnostics ile owner-controlled canli testte dogrulanmalidir.
 
+## 2026-08-16 File Expert ve upload integrity guvenlik hotfix'i
+
+- Gorev: File Expert analyzer/job siniri ile desktop ve additional-file upload
+  butunlugundeki SSRF/LFI/DoS, service-role confused-deputy, paralel analiz ve
+  istemci metadata'sina guven aciklarini kapatmak.
+- Analyzer: `/analyze` JSON parse edilmeden once en az 32 karakterlik server-only
+  bearer token ister. Signed URL kaynaklari exact HTTPS host allowlist, public
+  DNS, redirects-off, proxy-env-off, stream byte cap ve timeout altindadir.
+  Local path varsayilan kapali, etkinse resolved dedicated root ile sinirlidir;
+  validation/exception cevaplari URL/path detayi sizdirmaz. Next caller guvenli
+  URL+token yoksa signed URL olusturmadan TypeScript fallback kullanir.
+- File Expert: Her ORI/MOD yolu exact `${user_id}/${job_id}/` klasorune baglidir;
+  bu kontrol admin/service-role analizinde de uygulanir. Storage metadata boyut
+  ve MIME kontrolu download oncesi yapilir. Prepare/analyze/finalize rate-limitli,
+  status-precondition'li; analysis baslangici conditional update ile tek
+  `processing` sahibi alir ve bitis de `processing` kosuluna baglidir.
+- Upload integrity: Desktop yolu SHA-256 ile content-addressed oldu; kisa omurlu
+  HMAC contract user/idempotency/path/name/size/MIME/SHA'yi baglar. Finalize
+  Storage metadata'sini, indirilen byte length'i ve SHA-256'yi yeniden hesaplar.
+  Desktop upload-session ve finalize, hardened order RPC ile uyumlu olarak
+  depolama veya siparis isleminden once kredi toplamini pozitif tamsayi olarak
+  dogrular.
+  Additional-file akisi ayni contract ile gercek size/MIME'i dogrular; izin
+  `customer_upload_enabled = true` conditional update ile yalniz bir kez
+  tuketilir. Active web file MIME/uzantilari reddedilir.
+- Konfigurasyon: Next server'da `UPLOAD_INTEGRITY_SECRET`; analyzer ve Next'te
+  ayni `FILE_EXPERT_ANALYZER_TOKEN`; analyzer'da exact
+  `FILE_EXPERT_ANALYZER_ALLOWED_HOSTS` gereklidir. Token/secret public env'e
+  konmaz. Detaylar analyzer README, File Expert setup ve upload hardening
+  dokumanindadir.
+- Kontroller: yeni `tests/upload-integrity-security.test.ts` bundled Node 24
+  type-strip runner ile PASS (6/6); 16 degisen `.ts` dosyasi syntax PASS; Python
+  AST parse PASS; `git diff --check` PASS. Standart `npm test`, `npm run
+  typecheck` ve `npm run lint` proje `node_modules` bos ve runner child PATH'inde
+  Node olmadigi icin baslayamadi; yeni package kurulmadı.
+- Kalan risk: Ana web `/new-request` halen browser direct-upload + RPC akisini
+  kullanir. Server finalize, one-time upload row/unique constraint ve bucket/RLS
+  migration taslagi `docs/upload-integrity-hardening.md` icinde somutlastirildi
+  fakat uygulanmadi. Distributed rate-limit ayari yoksa koruma instance-localdir;
+  crash sonrasi `processing` lease recovery ve Storage update/delete immutability
+  ayrica migration/queue gerektirir.
+- Sinirlar: Production/staging Supabase, migration, deploy, push, secret, env veya
+  gercek musteri dosyasi/verisi kullanilmadi.
+
+## 2026-08-16 Birlesik guvenlik hardening ve release-gate kapanisi
+
+- Gorev: Auth/RLS, finans, Stripe, Widget, upload, File Expert ve admin izin
+  sinirlarindaki kanitli P0/P1 aciklari birlikte kapatildi; son entegrasyon
+  incelemesinde kanitli P0/P1 kalmadi.
+- Veritabani: `20260816002443`-`20260816002448` migration zinciri finansal
+  authority/RPC grantlerini, kolon bazli Data API projeksiyonlarini, Storage
+  policy sinirini, web/desktop siparis idempotency claimlerini, Stripe
+  credit/refund recovery'yi, Widget checkout/webhook claimlerini ve File Expert
+  atomik completion'i versionlar. Dort SELECT-only verifier migration, grant,
+  RLS, policy, owner/search_path ve RPC imzalarini kontrol eder.
+- Uygulama: Signup rol metadata escalation'i ve legacy admin/null owner fallback
+  kapatildi. Admin cross-domain verileri composite permission ister. Web,
+  desktop, additional-file ve File Expert uploadlari kisa omurlu signed-upload
+  akisi, exact path/metadata/hash contractlari ve fail-closed production rate
+  limitleri kullanir. Stripe/webhook body cap, exact ownership/correlation,
+  durable replay/claim ve refund provider dogrulamasi eklendi; kanitsiz otomatik
+  bank refund'u kapatildi. Widget domain/checkout/webhook ve File Expert analyzer
+  SSRF/LFI/CPU/lease sinirlari atomik ve fail-closed hale getirildi.
+- Idempotency: Web request, desktop finalize, staff credit adjustment, Stripe
+  credit/refund ve Widget checkout kayip yanit, retry ve eszamanli isteklerde
+  exact payload/token claimine baglandi. Browser request anahtari reload boyunca
+  yalniz opaque key + payload digest olarak korunur.
+- Kontroller: Tum testler PASS (725/725); odakli guvenlik paketi PASS (54/54);
+  ESLint PASS; web TypeScript PASS; customer-uploader renderer/electron/node
+  TypeScript PASS; File Expert Python AST PASS; customer i18n PASS (12 dil);
+  `git diff --check` PASS. Windows CRLF kaynakli eski source-fixture regexleri
+  platform bagimsiz hale getirildi. Yeni dependency eklenmedi.
+- Calistirilmayan kontrol: Production/staging migration veya SQL runtime parse
+  calistirilmadi. Production env/secrets okunmadan ve `next/font/google` ag
+  erisimi gerektirebildigi icin build bu turda calistirilmadi.
+- Release gate: Once izole staging'de `02443`-`02448` sirasiyla uygulanmali,
+  tum verifierlar ve authenticated web/desktop/order/settings/staff-credit/
+  Stripe/widget/File-Expert smoke'lari gecmelidir. `02445` canonical-domain ve
+  `02448` legacy unbound-pending preflightlari bilincli fail-closed davranir.
+  `UPLOAD_INTEGRITY_SECRET` en az 32 karakter ve production distributed limiter
+  hazir degilse upload prepare rotalari 503 ile fail-closed kalir.
+- Sinirlar: Canli veya staging veritabani, Stripe, e-posta, env, customer data,
+  commit, push ve deploy islemi yapilmadi.
+
+## 2026-08-16 Entegre guvenlik release hazirligi ve dis release blokaji
+
+- Gorev: Owner'in push ve Production deploy talebi icin birlesik guvenlik
+  paketini release branch'inde izole etmek, staging/Production sirasini ve geri
+  donus yolunu dogrulamak.
+- Git kapsami: `codex/security-hardening-release` branch'i `dad28dd` tabaninda
+  olusturuldu. Tum gercek diff guvenlik release'ine aittir; kok
+  `package-lock.json` yalniz Windows stat/satir-sonu artefakti oldugu icin release
+  kapsamindan haric tutuldu.
+- Migration sirasi: `02443`-`02448` onceki uygulamayla dar, role/owner-bound
+  uyumluluk korur; matching uygulama deploy ve smoke sonrasinda yeni `02449`
+  eski RPC grantlerini ve gecici direct-upload policy'lerini fail-closed kapatir.
+  Hosted Supabase'in `storage.objects` privilege kisiti nedeniyle immutability
+  table revoke yerine exact restrictive RLS matrisiyle uygulanir.
+- Recovery: Aggregate ve PII'siz preflight, post-cutover verifier, dar acil
+  compatibility compensation SQL'i ve exact release runbook'u eklendi. Free
+  Supabase plani otomatik backup/PITR sunmadigi icin Production oncesi
+  geri yuklenebilir logical backup ayrica zorunludur.
+- Remote salt-okunur kontrol: Production PG17 preflight 10/10 PASS; prerequisite
+  relation/kolonlar, tek owner, finansal degerler, canonical Widget domainleri,
+  aktif unbound checkout penceresi ve private Storage baseline temizdir.
+  Production migration veya musteri satiri mutasyonu yapilmadi.
+- Kontroller: full tests PASS (726/726); ESLint PASS; web ve customer-uploader
+  renderer/electron/node typecheck PASS; Production Next build PASS (270 static/
+  dynamic route); i18n/SEO PASS (12 locale, 31 source file); payment ve desktop
+  env schema-only PASS ve env dosyasi okunmadi; performance budget PASS (66.3 KB
+  gzip / 80 KB); `git diff --check` PASS.
+- Dis hard blockerlar: Izole staging `ACTIVE_HEALTHY` gorunmesine ragmen SQL
+  baglantisi timeout oldugu icin rehearsal yapilamadi. Vercel oturumu/CLI tokeni
+  yok; Preview'in staging Supabase kullandigi ve Production'da
+  `UPLOAD_INTEGRITY_SECRET` ile distributed Redis limiter'in hazir oldugu
+  degerleri okumadan dogrulanamadi. Bu kapilar acilmadan branch push'u Preview'de
+  Production credential riski, Production deploy ise upload/File Expert 503
+  riski tasir.
+- Sonuc: Canli migration, push ve deploy guvenlik nedeniyle uygulanmadi. Yerel
+  release commit'i hazirlanabilir; remote release staging, Vercel config ve
+  restorable backup tamamlaninca runbook sirasiyla devam etmelidir.
+
+## 2026-08-16 Vercel ortam izolasyonu ve staging destek hazirligi
+
+- Gorev: Guvenlik release branch'inin ilk push'undan once Preview ile Production
+  altyapisini birbirinden ayirmak ve staging veritabani erisim blokajini
+  Supabase destegine kanitli bir taleple hazirlamak.
+- Vercel: Uc Supabase baglanti degiskeninin ortak `Production and Preview`
+  kapsami ayrildi. Production kayitlari yalniz Production, izole staging
+  kayitlari tum Preview branch'leri icin kullanilir; degerler okunmadi veya
+  loglanmadi. Boylece yeni release branch'i ilk push'tan itibaren Production
+  Supabase kimlik bilgilerini miras almaz.
+- Guvenlik konfigurasyonu: Production ve Preview icin birbirinden ayri
+  `UPLOAD_INTEGRITY_SECRET` ve `SECURITY_RATE_LIMIT_SALT` kayitlari olusturuldu.
+  Eksik Preview `WIDGET_SESSION_SECRET` ve `WIDGET_IP_HASH_SALT` kayitlari da
+  ayri rastgele degerlerle eklendi. Gizli degerler uygulama disina cikarilmadi.
+- Limiter: Upstash for Redis Free entegrasyonu son `Accept and Create` ekranina
+  kadar hazirlandi. Bu adim dis hizmet hesabi, veri paylasimi ve kalici erisim
+  anahtari olusturdugu icin owner onayi olmadan tamamlanmadi;
+  `SECURITY_DISTRIBUTED_RATE_LIMIT_ENABLED` etkinlestirilmedi.
+- Staging: Proje kontrol duzleminde `ACTIVE_HEALTHY` gorunurken DB duzlemi uc
+  salt-okunur istekte de baglanti zaman asimina ugradi. Dashboard'da Restart ve
+  Pause kontrolleri disabled. `Database unresponsive / Normal` destek talebi
+  teknik kanitlarla hazirlandi; destek proje erisimi ve dis mesaj gonderimi icin
+  owner onayi beklediginden talep henuz gonderilmedi.
+- Release durumu: Branch commit'i temiz ve tum onceki kontroller PASS. Branch
+  henuz push edilmedi; staging migration, Preview deploy/smoke, Production
+  backup/restore drill, Production migration/deploy ve `02449` cutover
+  uygulanmadi. Production, Stripe, musteri verisi ve e-posta mutasyonu yok.
+
+## 2026-08-16 Guvenlik release Preview yayini
+
+- Git: `codex/security-hardening-release` branch'i GitHub'a push edildi ve
+  Production'a merge edilmeyen Draft PR #1 acildi. Release kapsami iki odakli
+  committe tutuldu; calisma agaci remote branch ile temiz ve senkron.
+- Vercel: Git entegrasyonu korumali branch Preview'unu basariyla olusturdu.
+  Deployment `Ready` durumuna 1 dakika 54 saniyede geldi; 300 satirlik build
+  logunda hata, uyari, failed/deprecated/vulnerability kaydi yok. Immutable ve
+  branch URL'leri Production domaininden ayridir.
+- Preview smoke: Ana sayfa ve login formu beklenen baslik/alanlarla acildi.
+  Yetkisiz `/admin` istegi dahili veriyi gostermeden guvenli login kapisinda
+  durdu. Production domainine veya Production Supabase'e smoke istegi yapilmadi.
+- Kalan release kapilari: Staging DB timeout nedeniyle migration/verifier ve
+  authenticated smoke yapilamadi. Upstash entegrasyonu ile Supabase destek
+  talebi dis hesap/izin/mesaj onayi bekliyor. Production icin geri yuklenebilir
+  logical backup/restore drill ve Stripe Widget webhook konfigurasyonu henuz
+  dogrulanmadi. Production migration/deploy ve `02449` cutover uygulanmadi.
+
+## 2026-08-16 Guvenlik release staging migration provasi
+
+- Altyapi: Vercel Production ve Preview icin hassas Upstash Redis entegrasyonu
+  olusturuldu ve distributed limiter bayragi etkinlestirildi; secret degerleri
+  okunmadi veya loglanmadi. Staging DB erisimi geri geldi. Daha once hazirlanan
+  Supabase destek talebi owner onayiyla gonderildi.
+- Staging baseline: Izole staging'de private, 32 MiB ve exact MIME allowlist'li
+  `file-expert` bucket ile yetki metadata'si tasimayan kalici staging owner anchor
+  olusturuldu. Aggregate/PII'siz preflight yeniden calisti ve 10/10 PASS oldu.
+- Migration mapping: Exact checksum'li `02443`-`02448` dosyalari runbook sirasiyla
+  tek tek uygulandi. Staging remote kayitlari sirasiyla `20260816143340`,
+  `20260816143359`, `20260816143505`, `20260816143523`, `20260816143541` ve
+  `20260816143600`; her adimda yalniz beklenen migration adi eklendi. `02449`
+  uygulama deploy ve authenticated smoke oncesinde bilerek bekletildi.
+- Dogrulama: Widget ACL matrisi ve File Expert atomic completion verifier'i PASS.
+  Finans verifier'indaki `lower(function_definition)` uzerinde buyuk harfli sabit
+  arayan iki case-sensitive kontrol duzeltildi; DB'de bes finans entry point'in
+  tum auth/lock/audit markerlari mevcut ve duzeltilmis verifier'in tum 25 satiri
+  PASS. Odak finans/Stripe testleri 12/12 PASS; diff check temiz.
+- Production kapilari: Production DB'ye mutation yapilmadi. Restorable logical
+  backup + izole restore drill henuz yoktur. Ayrica Production
+  `STRIPE_WIDGET_WEBHOOK_SECRET` ve iki Stripe Live webhook endpoint/event seti
+  owner login/MFA olmadan dogrulanamadi; bu kapilar gecmeden Production cutover
+  fail-closed kalir.
+
+## 2026-08-16 Staging admin schema uyumluluk hotfix'i
+
+- Gorev: Guvenlik Preview'unda authenticated `/admin` acilisini 500 ile durduran
+  staging schema farkini musteri verisi okumadan izole edip dar kapsamli olarak
+  gidermek.
+- Kok neden: `service_role` ile PII'siz `LIMIT 0` kontrolde `orders` tablosunda
+  yalniz `estimated_delivery_label`, `estimated_delivery_note` ve `updated_at`
+  kolonlarinin eksik oldugu; diger order/profile kolonlari ile grant/RLS
+  sinirinin uyumlu oldugu dogrulandi. Eksik email delivery tablosu mevcut helper
+  tarafindan guvenli bicimde bos listeye dusuruldugu icin 500 nedeni degildi.
+- Duzeltme: Admin dashboard, request listesi ve request detay sorgulari yalniz
+  `42703`/`PGRST204` eksik-kolon sinyalinde, ayni explicit izin projeksiyonunu
+  koruyan legacy selector ile bir kez retry eder. Tablo, izin, ag veya diger
+  database hatalari yutulmaz. Eksik opsiyonel alanlar `null` kalir; `select(*)`
+  veya yeni veri yetkisi eklenmedi.
+- Degisen dosyalar: `src/lib/workOrders/server.ts`,
+  `src/app/api/admin/dashboard/route.ts`,
+  `tests/work-order-authorization.test.ts` ve bu durum kaydi.
+- Kontroller: Web TypeScript PASS; customer-uploader uc TypeScript projesi PASS;
+  full ESLint PASS; odakli admin/yetki testleri 18/18 PASS; full test ana kosusu
+  725/726 PASS. Tek kalan test kaynak hatasi degil, testin alt `tsx` surecinde
+  Windows `uv_os_get_passwd/ENOMEM` ortam hatasiydi; ayni 11 dil/611 kaynak
+  i18n kontrolu user-info shim ile ayri kosuda PASS. `git diff --check` temiz.
+- Sinirlar: Production DB, Production domaini, Stripe, odeme, e-posta veya
+  gercek musteri verisi kullanilmadi. Hotfix yeni Preview build ve authenticated
+  staging smoke gecmeden `02449` cutover veya Production release'e ilerlemez.
+
+## 2026-08-16 Auth customer ID trigger zinciri hotfix hazirligi
+
+- Kok neden: Izole staging'de salt-okunur `pg_catalog` metadata'si, Auth
+  zincirinin `auth.users -> handle_new_user -> profiles INSERT -> set_customer_id`
+  oldugunu dogruladi. Eski `set_customer_id()` bos/fixed search path kullanmadan
+  unqualified `generate_customer_id()` cagiriyor; generator da unqualified
+  sequence kullaniyor ve fonksiyon/sequence Data API yetkileri genisti.
+- Duzeltme: Yeni `20260816002450_auth_customer_id_generator_hardening.sql`
+  generator ve profile trigger fonksiyonlarini postgres-owned, SECURITY DEFINER,
+  empty-search-path ve schema-qualified yapar; fonksiyon/sequence Data API
+  yetkilerini kapatir ve exact normal-enabled trigger sinirlarini zorunlu tutar.
+  02443-02448 dosyalari degistirilmedi ve hicbir migration uygulanmadi.
+- Release sirasi: Uygulanmamis cutover body byte-identical olarak 02452'ye
+  tasindi; 02450 -> Auth verifier/signup smoke -> 02451 ledger/Storage fix ->
+  app smoke -> 02452 sirasi runbook/preflight/testlerde sabitlendi. SHA-256:
+  02450 `8131E02E582D5E16C18F6262515E402AEC2A4DBAFAA1E3029362E80EA8F8C792`,
+  02451 `6DE1F340791C17D54621DFB9DDB3E6FBB39B0B5F322565B421B34D24EF15FFD9`,
+  02452 `5084DFD95DBD878FD1037F7CE497C1362E900ED5D3F931A2626CD448719C84CC`.
+- Kontroller: Odakli migration/release testleri 35/35 PASS; dort TypeScript
+  kontrolu PASS; full ESLint PASS; tam test ana kosusu 729/730 PASS. Tek test
+  kaynak hatasi degil, i18n alt `tsx` surecindeki Windows
+  `uv_os_get_passwd/ENOMEM` ortam hatasiydi; ayni 11 dil/611 kaynak data-URL
+  user-info preload ile ayri kosuda PASS. `git diff --check` temiz.
+- Yeni SELECT-only verifier staging'de syntax/aggregate-output icin calisti:
+  7 katalog kontrolunun 3 mevcut trigger/existence baseline'i PASS, 4 adet
+  02450'nin kapatacagi path/ACL/sequence kontrolu beklendigi gibi FAIL oldu.
+- Sinirlar: Staging'de yalniz PII'siz katalog metadata'si okundu. Staging veya
+  Production migration/data mutation, fixture, deploy, env/secret ya da musteri
+  satiri kullanilmadi.
+
+## 2026-08-16 Customer ledger ve Storage runtime erisim hotfix hazirligi
+
+- Staging kaniti: `02450`, hosted `20260816155149` olarak uygulanmis; SELECT-only
+  verifier 7/7 PASS ve disposable Auth signup sonrasi aggregate Auth/profile
+  sayilari 2/2, tek customer contract ve duplicate olmayan customer reference
+  dogrulanmistir. Fixture kalan authenticated smoke icin operator-private
+  oturumda tutuldu; PII veya secret kaydedilmedi.
+- Kok neden: Authenticated customer `credit_transactions` SELECT'i, eski admin
+  RLS policy'sinin artik Data API'ye verilmeyen `profiles.role` kolonuna
+  basvurmasi nedeniyle `42501 permission denied for table profiles` ile
+  kiriliyordu. `storage.objects` uzerinde ayni protected profile kolonuna
+  baglanan alti eski customer-files policy'si de canonical 13-policy gecis
+  matrisi disinda kalmisti.
+- Duzeltme: Yeni
+  `20260816002451_credit_transaction_customer_access_hardening.sql`, ledger
+  relation ve tum live column ACL'lerini sifirlar; authenticated role yalniz
+  `id,user_id,type,source_type,source_id,credits_delta,balance_after,description,amount_total,currency,created_at`
+  SELECT projeksiyonunu verir. PUBLIC/anon erisimi ve authenticated mutation
+  kapali, `metadata`/`created_by` private, service_role full authority olarak
+  kalir. Ledger RLS tam bir adet direct own-row SELECT policy'sine indirgenir.
+- Storage kapsami: Cleanup yalniz policy expression'inda `customer-files` veya
+  `file-expert` gecen ve reviewed transitional 13-name allowlist disinda kalan
+  policy'leri drop eder; diger bucket policy'lerine dokunmaz. Iki owner-prefix
+  INSERT policy'si matching app smoke sonrasindaki cutover'a kadar korunur.
+- Release sirasi: Eski uygulanmamis cutover dosyasi byte-identical olarak
+  `20260816002452_post_deploy_legacy_rpc_cutover.sql` adina tasindi. 02452
+  SHA-256 `5084DFD95DBD878FD1037F7CE497C1362E900ED5D3F931A2626CD448719C84CC`
+  ve Git blob `8690ec68bf51b5b8e39004a2e24482852cf4465c` olarak degismedi. 02451 SHA-256
+  `6DE1F340791C17D54621DFB9DDB3E6FBB39B0B5F322565B421B34D24EF15FFD9`.
+- Dogrulama: Yeni SELECT-only verifier ACL/RLS/Storage gecis matrisini aggregate
+  ve PII'siz kontrol eder; final security verifier post-cutover exact ledger ve
+  protected-policy sinirini da kapsar. Odakli release testleri 41/41 PASS; full
+  test 736/736 PASS; web ve customer-uploader TypeScript PASS; full ESLint PASS;
+  PostgreSQL resmi REVOKE grammar'i ile per-column ACL syntax'i dogrulandi.
+- Sinirlar: `02443`-`02448` ve uygulanmis `02450` degistirilmedi. Bu hazirlikte
+  remote migration, data/env/secret mutation, deploy veya Production islemi
+  yapilmadi; 02451/02452 uygulama karari release root akisina birakildi.
+
+## 2026-08-16 File Expert production worker hazirligi
+
+- Gorev: Production'da zorunlu dis File Expert analyzer'i guvenli bir Vercel
+  FastAPI paketi, global admission lease ve kayipsiz re-analysis davranisiyla
+  release'e hazirlamak.
+- Duzeltme: Next.js, server-only Upstash/KV uzerinde atomik, random tokenli ve
+  80 saniyelik TTL'li global analyzer lease edinir. TTL; 40 saniyelik caller,
+  35 saniyelik worker hard cap ve 5 saniyelik safety margin toplamidir; geciken
+  dispatch sirasinda worker CPU kullanirken kapasite erken acilmaz. Production'da dagitik config
+  yoksa fail-closed `503` verir; provider acquire belirsiz/timeout olursa remote
+  is baslatilmaz, analyzer cevabi kaybolursa lease erken birakilmaz. Global ve
+  worker concurrency sert olarak `1` ile sinirlidir; artis load test + code
+  review gerektirir. Lease skoru Redis `TIME` ile uretilir; Next clock skew'i
+  kapasiteyi erken dusuremez. Redis connection/header/body/JSON tek 1.2 saniyelik
+  deadline ve 8 KiB body cap altindadir; stalled/oversize cevap unknown acquire
+  olarak TTL'ye birakilir.
+- Analyzer: ORI/MOD signed source'lari paralel ancak tek 20 saniyelik overall
+  deadline altinda stream eder; 32 MiB/source, exact HTTPS host, public DNS,
+  redirect, token, local-root ve CPU-thread sinirlari korunur. Python 3.12
+  entrypoint ve 35 saniyelik Vercel function config'i eklendi; Next fetch 40,
+  lease TTL 80, route duration 60 saniye olarak siralandi. Route baslangicindan
+  itibaren 48 saniyelik operation budget, analyzer sonrasi 8 saniyelik post-work
+  payi, 3.5 saniyelik AI/deterministic-fallback deadline'i ve en fazla 8 saniyelik
+  abortable token-CAS cleanup, hard capten en az 4 saniye once bitecek sekilde
+  uygulanir.
+- Durum korumasi: Completed bir isin admin re-analysis'i hata verirse mevcut
+  tamamlanmis result/status korunur; stale veya rakip claim exact status/token
+  kosullari disinda commit ya da downgrade edemez.
+- Kontroller: Guncel File Expert/upload testleri 18/18 ve ECU intelligence
+  testleri 97/97 PASS; web TypeScript ve scoped ESLint PASS. Onceki kapsamli
+  kontrolde customer-uploader uc TypeScript projesi ve full ESLint PASS;
+  `git diff --check` PASS. Full suite 739/740 PASS; tek hata kaynak degil,
+  child `tsx` Windows `uv_os_get_passwd/ENOMEM` ortam hatasiydi ve ayni i18n
+  kontrolu izole data-URL user-info preload ile 11 dil/611 kaynak PASS oldu.
+  Bundled Python ile `py_compile` PASS. FastAPI/httpx dependency'leri bu yerel
+  runtime'da bulunmadigi icin import/runtime smoke calistirilamadi; Preview
+  worker build + sentetik signed-source smoke release kapisi olarak runbook'ta
+  tutuldu.
+- External gate: Mevcut Vercel team Hobby plani ticari Production kullanimina
+  uygun degildir. Owner Pro/Enterprise satin alma karari (veya onayli baska bir
+  worker hostu) olmadan Production GO verilmez. Vercel Services private beta
+  oldugu ve mevcut Next `/api` yuzeyiyle catch-all riski tasidigi icin ayni
+  proje polyglot kisayolu release yoluna eklenmedi. Remote env, deploy, secret,
+  musteri dosyasi veya Production servisi degistirilmedi.
+
+## 2026-08-16 Staff credit adjustment reload idempotency hardening
+
+- Calisma: staff retry review devri; bitis `2026-08-16 19:08:34 +02:00`.
+- Gorev: Admin kredi duzeltmesinin kayip RPC cevabi ve sayfa reload sonrasinda
+  ayni exact payload icin ayni idempotency UUID'sini kullanmasini; farkli staff,
+  musteri, amount veya note icin anahtar reuse olmamasini saglamak.
+- Duzeltme: `src/lib/staffCreditAdjustmentRetry.ts`, actor+customer scope ve
+  actor/customer/amount/note payload'ini SHA-256 ile ayirir. Session storage
+  yalniz idempotency UUID, payload fingerprint ve timestamp tutar; raw actor,
+  customer, email veya note saklamaz. Durable read `absent`, `exact`, `conflict`,
+  `stale`, `legacy` ve `unavailable` durumlarini ayirir; hicbir unresolved kaydi
+  sessizce silmez veya yenilemez. 12 unresolved scope kapasitesinde yeni scope
+  reddedilir, mevcut exact retry kullanilabilir.
+- Fail-closed sinir: Ayni musteri icin senkron kilit ilk `await` oncesinde alinir;
+  farkli musterilerin UI updating durumu Set ile bagimsiz tutulur. Ilk RPC'den
+  once pending attempt session storage'a yazilir ve exact geri okuma dogrulanir.
+  Mismatch, age, legacy, capacity, read/write hatasi veya sessiz write-drop'ta
+  finansal RPC baslatilmaz. Basarili RPC sonrasi yalniz exact storage key +
+  idempotency kaydi compare-remove edilir; cleanup dogrulanamazsa musteri bu
+  sekmede bloke edilir ve normal basari mesaji gosterilmez. SSR'da `window`
+  erisimi yoktur.
+- Degisen dosyalar: `src/app/admin/page.tsx`,
+  `src/lib/staffCreditAdjustmentRetry.ts`,
+  `tests/staff-credit-adjustment-retry.test.ts`,
+  `tests/financial-database-hardening.test.ts` ve bu durum kaydi.
+- Kontroller: Handler/state-machine ve financial odakli testler 18/18 PASS;
+  web TypeScript PASS; degisen dort kaynak/test dosyasinda ESLint PASS; scoped
+  `git diff --check` PASS.
+- Sinirlar: 02443-02452 migrationlari, ledger ve File Expert dosyalari bu gorev
+  tarafindan degistirilmedi. Remote servis, Supabase data, env/secret, push veya
+  deploy islemi yapilmadi.
+
+## 2026-08-16 Integrated release-candidate final validation
+
+- Birlesik snapshot'ta admin kredi actor cozumu ham Supabase user okumasindan
+  merkezi `getStableSession()` katmanina tasindi; gecici auth read/refresh yarisi
+  finansal islemi yanlis logout olarak yorumlamaz.
+- Kontroller: web ve customer-uploader uc TypeScript projesi PASS; full ESLint
+  PASS; File Expert/AI/upload odakli 115/115 PASS; staff-credit/auth/financial
+  odakli 26/26 PASS; `git diff --check` PASS. Full suite 751/752 PASS; tek kalan
+  child-process `tsx` Windows `uv_os_get_passwd/ENOMEM` ortam hatasidir. Ayni
+  i18n denetimi user-info preload ile ayri calistirildi ve 11 dilde 611/611 PASS
+  oldu. Bundled Python `py_compile` PASS; FastAPI dependency import/runtime
+  smoke'u Preview worker build ve sentetik signed-source kapisinda kalir.
+- Bu validation aninda Production migration/deploy, gercek Stripe, e-posta,
+  musteri verisi veya firmware islemi yapilmadi.
+- Kabul edilen P2: Ilk File Expert claim select/update cevabi kaybolursa protected
+  phase cleanup henuz kurulmadigi icin is token-CAS stale recovery'ye kadar en
+  fazla on dakika `processing` kalabilir. Veri butunlugu ve tek completion CAS'i
+  korunur; runbook bu availability sinirini artik acikca ayirir.
+
+## 2026-08-16 File Expert Vercel dependency hotfix
+
+- Exact `0909058` ana uygulama Preview build'i Vercel'de Ready oldu; root,
+  customer dashboard, admin yetki kapisi ve File Expert sayfasi smoke kontrolleri
+  hata vermeden gecti.
+- Ayri `mg-autotech-file-expert-analyzer` Vercel projesi fail-closed olusturuldu:
+  ilk eski-main build'i bilerek `exit 1` ile durduruldu, sonra proje yalniz
+  `codex/security-hardening-release` dalina, `file-expert-analyzer` root'una ve
+  staging Supabase host allowlist'ine baglandi. Gizli token degeri loglanmadi;
+  Production musteri verisi veya Production Supabase kullanilmadi.
+- Exact release commit worker build'i, requirements dosyasinda PyPI'da olmayan
+  `uvicorn[standard]==0.38.1` pini nedeniyle dependency resolution'da guvenli
+  bicimde durdu. Resmi PyPI'da yayinlanmis ayni minor surum
+  `uvicorn[standard]==0.38.0` ile dar patch yapildi; yeni dependency eklenmedi.
+- Kontroller: bundled Python `py_compile` PASS; File Expert guvenlik testleri
+  11/11 PASS; `git diff --check` PASS (yalniz CRLF uyarisi). Yeni worker build ve
+  sentetik analyzer smoke bu hotfix commit push'undan sonra tekrar kosulmalidir.
+
+## 2026-08-16 Staging legacy RPC cutover ve e-posta schema parity hazirligi
+
+- Isolated staging `vxdxdvtsopsjatukdbuq` uzerinde, exact
+  `20260816002452_post_deploy_legacy_rpc_cutover.sql` yalniz File Expert Preview
+  runtime smoke PASS sonrasinda bir kez `post_deploy_legacy_rpc_cutover` adiyla
+  uygulandi. Uretilen remote history version'i `20260816175926`; Production'a
+  veya gercek musteri verisine dokunulmadi.
+- Post-cutover verifier 7/7 PASS; legacy staff-credit, Stripe-credit ve refund
+  RPC canary'leri beklenen `0A000` ile kapali. Security Advisor `INFO 42 / WARN
+  16 / ERROR 0` baseline'indan `INFO 42 / WARN 14 / ERROR 0` sonucuna indi;
+  yeni lint yok, iki legacy RPC uyarisi kalkti. Preview signed-upload/analyzer/
+  atomic-report akisi da cutover sonrasinda staging fixture ile PASS.
+- Final security verifier'in 17/18 sonucu gercek schema parity farkini ortaya
+  cikardi: Production katalogunda bulunan `email_delivery_events` ve
+  `email_suppressions`, tarihsel non-versioned e-posta reliability SQL'i
+  nedeniyle fresh staging migration zincirinde yoktu. `file_fingerprints` ise
+  hem staging hem Production'da olmayan legacy/opsiyonel isimdir; canonical
+  runtime relation `file_expert_binary_fingerprints` olarak kalir.
+- Yeni additive `20260816002453_email_delivery_schema_parity.sql`, iki e-posta
+  relation'ini ve canonical `email_events` delivery kolon/constraint/indexlerini
+  geri getirir; RLS acik, public/anon/authenticated ACL kapali ve yalniz
+  `service_role` table authority olacak sekilde 02443 son durumunu tekrar kurar.
+  SHA-256 `E88D700B4ACB0D051C6D563C3D52F1958074983D9127D413BB28901374DE4353`,
+  Git blob `4fd5b5ed74e6b9364c43c40460a7e54fb3c60c77`. Focused SELECT-only verifier
+  eklendi; integrated verifier 22 canonical relation'i zorunlu, yalniz legacy
+  `file_fingerprints` relation'ini absent-or-hardened opsiyonel kontrol eder.
+- Degisen dosyalar: 02453 migration, focused/integrated verifier ve preflight,
+  integrated release runbook'u, dort release test dosyasi ve bu durum kaydi.
+  Uygulanmis 02443-02452 migrationlari byte-identical korunmustur.
+- Kontroller: 02453/release odakli testler 23/23 PASS; web ve customer-uploader
+  uc TypeScript projesi PASS; full ESLint ve `git diff --check` PASS. Full test
+  paketinde kaynak kaynakli yeni hata yok; tek failure bilinen child `tsx`
+  Windows `uv_os_get_passwd/ENOMEM` ortam hatasi. Ayni gercek i18n audit'i
+  user-info preload ile ayri calisti ve 11 dilde 611/611 PASS oldu.
+- Kalan release adimi: 02453 bu hazirlikta remote'a uygulanmadi. Independent
+  review GO sonrasinda staging'e exact `email_delivery_schema_parity` adiyla bir
+  kez uygulanmali; focused verifier, final 18/18 verifier ve Advisor delta yeniden
+  kosulmalidir. Production, Stripe, e-posta gonderimi, secret veya fixture cleanup
+  bu gorevin kapsamina alinmadi.
+
+## 2026-08-16 Staging 02453 uygulama, final dogrulama ve fixture cleanup
+
+- Exact `E88D700B4ACB0D051C6D563C3D52F1958074983D9127D413BB28901374DE4353`
+  SHA-256'li 02453 paketi `c9ac6f1` commit'iyle release dalina pushlandi.
+  Ana uygulama Preview'u ve ayri File Expert analyzer deployment'i ayni exact
+  committe Vercel `Ready` durumuna ulasti.
+- Isolated staging `vxdxdvtsopsjatukdbuq` uzerinde migration yalniz bir kez
+  `email_delivery_schema_parity` adiyla uygulandi. Hosted remote version
+  `20260816182037` olarak kaydedildi. Focused schema/ACL verifier 7/7, integrated
+  security verifier 18/18 PASS oldu.
+- Security Advisor sonucu `INFO 44 / WARN 14 / ERROR 0` oldu. Onceki post-cutover
+  `WARN 14 / ERROR 0` seti degismedi; iki yeni INFO, dogrudan Data API erisimi
+  olmayan `email_delivery_events` ve `email_suppressions` tablolarinda RLS acik,
+  policy yok final tasarimini beklendigi gibi raporlar.
+- Staging runtime smoke: service-role e-posta delivery/suppression yazma, baglama,
+  okuma ve exact cleanup sozlesmesi sentetik `.invalid` adresle PASS; dis e-posta
+  veya provider cagrisi yapilmadi. Exact Preview'da mevcut File Expert canary
+  raporu `Analysis 2.0.0` ile yeniden acildi ve hata durumu yoktu.
+- Cleanup: staging smoke'a ait tum File Expert/customer-file Storage objeleri ve
+  bos placeholder klasoru Storage API/Dashboard uzerinden silindi. Exact sentetik
+  is, fingerprint, siparis, kredi/idempotency ve ilgili child satirlari temizlendi;
+  disposable Auth kullanicisi Auth Admin/Dashboard uzerinden silindi. Son aggregate
+  kontrolde fixture Auth/profile/Storage sayilari sifir, canonical staging owner
+  sayisi bir olarak korundu.
+- Production Supabase'e, canli musteri verisine, gercek firmware'e, Stripe'a veya
+  canli e-posta gonderimine dokunulmadi. Production release; dogrulanmis backup /
+  restore drill, ticari Vercel plan karari ve Stripe Live webhook kapilarini
+  gecmeden fail-closed kalir.
+
+## 2026-08-21 Production authority incident, download activity and operational audit
+
+- Production Supabase yalniz katalog/function/policy ve aggregate-count
+  seviyesinde incelendi. Canli P0 olarak customer-controlled signup metadata'nin
+  `admin` rolü yazabilmesi, authenticated kullanicinin kendi `credit_balance`
+  ve account authority alanlarini update edebilmesi, altı geniş SECURITY
+  DEFINER finans RPC'si ve `orders` uzerindeki RPC/debit disi customer INSERT
+  yolu dogrulandi. Hiçbir finans RPC'si cagrilmadi, musteri kaydi/kimligi
+  okunmadi ve remote mutation yapilmadi.
+- En küçük current-Production paketi
+  `20260816002442_current_production_authority_emergency_hardening.sql` olarak
+  hazirlandi. Migration SHA-256
+  `BBE8117FAC45CE48D009A56B1DE3AD018B7564CF28D358BA9FD38E6F4DA628EA`,
+  Production base `9412a1a` uzerine uygulanan app patch SHA-256
+  `8E599D4F02EE3240AB69545278536D913DE57E29ECA681B64D65B3331B4666B6`;
+  deploy edilebilir exact uc-dosya emergency commit'i `0fb53b5`.
+  Signup her zaman customer/zero-credit; admin ve delegated staff tuple'lari
+  exact; 19 legacy admin policy owner-only; profiles/orders direct
+  INSERT/DELETE siniri kapali; legacy order caller/storage/server-price/row-lock
+  bound; exposed finans ACL'leri least privilege. Modern contract state 0/4
+  degilse migration daha ilk adimda fail-closed olur. Production aggregate
+  preflight: bir admin, bir exact owner, sifir authority/fractional/out-of-range
+  anomali.
+- Emergency paket remote'a uygulanmadi. Current-Production-shape ve post-02454
+  iki izole SQL rehearsal, pinned checksum gate ve explicit Production release
+  yetkisi zorunlu. Acil app artifact'i `9412a1a + pinned patch` ve exact
+  `0fb53b5` commit'idir; `dad28dd` eski validation baseline'idir ve deploy kimligi
+  degildir. Dirty/current feature branch Production'a karistirilamaz. Canonical
+  zero-credit `Only Options` / `Special Request` uyumlulugu additive 02454 ve
+  matching app degisikligiyle hazirlandi; izole runtime rehearsal bekliyor.
+- Download activity uygulamasi tamamlandi: original/additional customer source
+  dosyalari owner-bound API ile yeniden indirilebilir; admin Work Order her
+  source/delivery dosyasi için portal link-talep sayisi, son talep ve durum
+  gösterir. Staff istekleri count'a girmez. JSON 8 KiB, distributed limit
+  120/saat, private no-path/hash audit ve 60 saniyelik signed URL kullanilir.
+  Metrik byte-complete transfer degil secure-link issuance olarak dürüstçe
+  etiketlenir. Yeni metinler 11 locale'e eklendi.
+- E-posta read-only sertifikasyonu: yeni web/desktop talepte customer + tek
+  configured admin mailbox maili; anlamli allowlist status asamalarinda customer
+  maili; final delivery'de secure order page CTA; customer-admin chat iki yönde
+  mail PASS. Internal note mail üretmez. Kalanlar: web commit ile email call
+  arasinda durable outbox yok, revision sonrasi ikinci delivery maili order-wide
+  idempotency nedeniyle atlanabilir ve permanent provider hatasi icin async
+  retry queue yok.
+- Chrome Production read-only smoke: root, dashboard, admin, new-request ve File
+  Expert sayfalari desktop + 390x844 mobilde console/overflow hatasi vermedi;
+  form, ödeme, upload veya firmware islemi yapilmadi. Bu smoke mevcut Production
+  sürümünedir; yeni download feature authenticated Preview smoke'u değildir.
+- Google Ads Chrome hesabinda gorunen üç hesabın üçü de Cancelled; aktif MG
+  AutoTech kampanyasi ve güncel harcama yok. Bir hesapta yalnız eski/ilgisiz
+  TRY36.26 all-time harcama, 12 click ve 1,110 impression görüldü. Campaign,
+  budget, billing veya conversion ayari degistirilmedi. Dedicated MG Ads hesabı,
+  conversion receipt/labels ve live policy/billing gate hâlâ dis blocker.
+- Kontroller: frozen emergency focused security 24/24; download/integration
+  70/70 ve birleşik ilgili paket 163/163 PASS; full suite 771/772 PASS. Tek
+  failure Windows child-process `tsx` `uv_os_get_passwd/ENOMEM`; ayni gerçek
+  customer i18n denetimi preload ile 11 locale x 612/612 PASS. Web ve uploader
+  TypeScript PASS; full ESLint PASS; `npm audit --omit=dev` 0 vulnerability;
+  `git diff --check` PASS (yalniz CRLF uyarilari).
+- Degisen scope: download API/projection/customer+admin UI/test/translation
+  dosyalari; emergency migration/preflight/verifier/test/runbook/app patch ve
+  fail-closed staff app guardlari; bu STATUS/TASKS kaydi. Commit, push, deploy,
+  e-posta/Stripe/Ads mutation, secret okuma veya Production data mutation yok.
 ## 2026-08-17 Google Ads spend recovery and measurement ordering
 
 - Acil hesap islemi: Donusum uretmeden Display/YouTube envanterine harcama yapan
@@ -2987,3 +3521,34 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 - Sinirlar: Yeni dependency, SQL/migration, API/storage/persistence, env/secret
   okuma, Production Supabase/customer/payment/e-posta islemi, push veya deploy
   yapilmadi.
+
+## 2026-08-23 VPS cutover-compatible predecessor freeze
+
+- Gorev: Vercel'den VPS'e geciste 02452/02453 ve customer-device migrationlari
+  arasinda guvenli calisacak, Production UI'yi koruyan kesin predecessor
+  artifact'ini hazirlamak.
+- Artifact yapisi: `755decc` security tabanina current Production UI ucu
+  `3e6bcdd` merge edildi. Device-aware `b53e1e3` ancestry'ye alinmadi. Hardened
+  VPS/Cloudflare-Caddy request-network paketi ile ayri File Expert analyzer
+  runtime'i `e6ce2e4` kaynagindan device secret zorunlulugu olmadan tasindi.
+- Korunan davranis: Premium login/register, ulke ve bayrakli telefon secimi,
+  bes hatali parolada gorunen adaptive Turnstile ve mevcut Log Analysis Studio
+  korunur. Predecessor device migration/route/lib veya
+  `CUSTOMER_DEVICE_HMAC_SECRET` gerektirmez.
+- VPS/File Expert siniri: App Production portu host'a publish edilmez; yalniz
+  proof-bound Cloudflare-Caddy header contract'i kabul edilir. Analyzer private
+  Docker endpoint'inde non-root, read-only, tek concurrency, bellek/CPU ve wall
+  timeout sinirlariyla calisir; SSRF public-unicast Supabase allowlist'i ve ortak
+  server token'i fail-closed kalir.
+- Kontroller: `npm test` PASS (868/868); kritik auth/register/log/request-network/
+  VPS/File Expert paketi PASS (103/103); `npm run lint` PASS; `npm run typecheck`
+  PASS (web + desktop); `npm run build -- --webpack` PASS (273 route/page);
+  `npm run check:i18n` PASS (12 locale, 594/594); `npm run check:performance`
+  PASS (67.9 KiB gzip / 80 KiB budget, forbidden runtime yok); Python unittest
+  PASS (6/6), `py_compile` PASS ve VPS shell `bash -n` PASS; `git diff --check`
+  PASS. Yerel Windows'ta Docker CLI bulunmadigi icin Compose config ve image
+  build kapilari VPS'teki exact tracked archive uzerinde tamamlanacak.
+- Kalan operasyonel kapilar: Exact predecessor commit/archive checksum freeze,
+  staging-only env ile loopback app/analyzer E2E, Production logical backup,
+  Supabase/Auth dashboard kapilari, Caddy/DNS cutover ve immediate smoke. Bu
+  kayit Production deploy veya canli DB mutation yapmaz.

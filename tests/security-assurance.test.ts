@@ -71,10 +71,13 @@ test("desktop finalization enforces ownership, object existence, credits, and id
   const source = readProjectFile("src", "app", "api", "desktop", "requests", "finalize", "route.ts");
   assert.match(source, /parsed\.data\.upload\.path !== expectedPath/);
   assert.match(source, /uploadSessionId !== desktopUploadSessionIdFor/);
-  assert.match(source, /\.eq\("customer_id", auth\.user\.id\)/);
+  assert.match(source, /\.eq\("id", auth\.user\.id\)/);
+  assert.match(source, /user_id: auth\.user\.id/);
+  assert.match(source, /create_desktop_order_with_credit_deduction/);
   assert.match(source, /Uploaded file could not be verified in private storage/);
   assert.match(source, /validateDesktopCreditAccess/);
-  assert.match(source, /duplicatePrevented: true/);
+  assert.match(source, /const duplicatePrevented = rpcPayload\?\.duplicate === true/);
+  assert.match(source, /if \(!duplicatePrevented\) \{[\s\S]*sendRequestCreatedNotifications/);
   assert.match(source, /approvedForLearning: false/);
 });
 

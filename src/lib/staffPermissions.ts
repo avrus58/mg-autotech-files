@@ -55,12 +55,20 @@ export const staffRoleDefaults: Record<Exclude<StaffRole, "owner">, StaffPermiss
 
 export function isPrimaryOwner(access: StaffAccess | null | undefined) {
   if (!access) return false;
-  return access.role === "admin" && (access.staffRole === "owner" || !access.staffRole);
+  return access.role === "admin" && access.staffRole === "owner";
+}
+
+function isDelegatedStaff(access: StaffAccess | null | undefined) {
+  return access?.role === "staff" && (
+    access.staffRole === "manager" ||
+    access.staffRole === "calibrator" ||
+    access.staffRole === "support"
+  );
 }
 
 export function isStaffMember(access: StaffAccess | null | undefined) {
   if (!access) return false;
-  return access.role === "admin" || access.role === "staff";
+  return isPrimaryOwner(access) || isDelegatedStaff(access);
 }
 
 export function hasStaffPermission(
@@ -68,7 +76,17 @@ export function hasStaffPermission(
   permission: StaffPermission
 ) {
   if (isPrimaryOwner(access)) return true;
+  if (!isDelegatedStaff(access) || permission === "staff.manage") return false;
   return Boolean(access?.permissions?.includes(permission));
+}
+
+export function hasAllStaffPermissions(
+  access: StaffAccess | null | undefined,
+  permissions: readonly StaffPermission[]
+) {
+  return permissions.length > 0 && permissions.every((permission) =>
+    hasStaffPermission(access, permission)
+  );
 }
 
 export function sanitizeStaffPermissions(values: unknown): StaffPermission[] {

@@ -1,0 +1,75 @@
+diff --git a/src/app/api/admin/vehicles/route.ts b/src/app/api/admin/vehicles/route.ts
+--- a/src/app/api/admin/vehicles/route.ts
++++ b/src/app/api/admin/vehicles/route.ts
+@@ -8,11 +8,7 @@ export async function GET(request: Request) {
+   if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
+   try {
+     const overview = await getVehicleAdminOverview();
+-    const permissionWarnings: string[] = [];
+-    if (auth.access.role === "admin" && auth.access.staffRole !== "owner") {
+-      permissionWarnings.push("Primary admin access is allowed by the app guard, but the Supabase profile is not marked as staff_role=owner. Normalize this before relying on direct RLS checks or delegating staff access.");
+-    }
+-    return NextResponse.json({ ...overview, permissionWarnings });
++    return NextResponse.json({ ...overview, permissionWarnings: [] });
+   } catch (error) {
+     return NextResponse.json({
+       error: error instanceof Error ? error.message : "Vehicle database could not be loaded.",
+diff --git a/src/lib/fileExpert/server.ts b/src/lib/fileExpert/server.ts
+--- a/src/lib/fileExpert/server.ts
++++ b/src/lib/fileExpert/server.ts
+@@ -69,16 +69,13 @@ export async function isFileExpertAdmin(userId: string) {
+     .from("profiles")
+     .select("role, staff_role, staff_permissions")
+     .eq("id", userId)
+     .single();
+ 
+   if (current.error?.code === "42703") {
+-    const legacy = await supabaseAdmin
+-      .from("profiles")
+-      .select("role")
+-      .eq("id", userId)
+-      .single();
+-    return legacy.data?.role === "admin";
++    // A legacy role value alone cannot prove Primary Owner or File Expert
++    // authority. Fail closed until the staff security columns are available.
++    return false;
+   }
+ 
+   const access: StaffAccess = {
+     role: current.data?.role ?? null,
+diff --git a/src/lib/staffPermissions.ts b/src/lib/staffPermissions.ts
+--- a/src/lib/staffPermissions.ts
++++ b/src/lib/staffPermissions.ts
+@@ -55,12 +55,20 @@ export const staffRoleDefaults: Record<Exclude<StaffRole, "owner">, StaffPermiss
+ 
+ export function isPrimaryOwner(access: StaffAccess | null | undefined) {
+   if (!access) return false;
+-  return access.role === "admin" && (access.staffRole === "owner" || !access.staffRole);
++  return access.role === "admin" && access.staffRole === "owner";
++}
++
++function isDelegatedStaff(access: StaffAccess | null | undefined) {
++  return access?.role === "staff" && (
++    access.staffRole === "manager" ||
++    access.staffRole === "calibrator" ||
++    access.staffRole === "support"
++  );
+ }
+ 
+ export function isStaffMember(access: StaffAccess | null | undefined) {
+   if (!access) return false;
+-  return access.role === "admin" || access.role === "staff";
++  return isPrimaryOwner(access) || isDelegatedStaff(access);
+ }
+ 
+ export function hasStaffPermission(
+@@ -68,7 +76,8 @@ export function hasStaffPermission(
+   permission: StaffPermission
+ ) {
+   if (isPrimaryOwner(access)) return true;
+-  return Boolean(access?.permissions?.includes(permission));
++  if (!isDelegatedStaff(access) || permission === "staff.manage") return false;
++  return Boolean(access?.permissions?.includes(permission));
+ }
+ 
+ export function sanitizeStaffPermissions(values: unknown): StaffPermission[] {

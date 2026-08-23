@@ -36,7 +36,7 @@ export async function GET(
 
   if (error || !job) {
     return NextResponse.json(
-      { error: error?.message || "File Expert job not found." },
+      { error: "File Expert job not found." },
       { status: 404 }
     );
   }

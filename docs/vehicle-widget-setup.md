@@ -7,13 +7,17 @@ Apply the widget database scripts in this order:
 1. `scripts/add-vehicle-widget-saas.sql`
 2. `scripts/add-widget-enquiries.sql`
 3. `scripts/harden-widget-saas-commercial.sql`
-4. Run `scripts/verify-widget-saas-commercial.sql` as read-only verification.
+4. `supabase/migrations/20260816002443_financial_authority_hardening.sql`
+5. `supabase/migrations/20260816002444_security_state_hardening.sql`
+6. Run `scripts/verify-widget-saas-commercial.sql`,
+   `scripts/verify-financial-authority-hardening.sql` and
+   `scripts/verify-security-state-hardening.sql` as read-only verification.
 
 The migrations create global settings, plans, widget clients, public keys,
 access logs, enquiries, domain-change requests, webhook idempotency, audit logs,
-rate-limit buckets and the commercial operations aggregate. The hardening step
-also applies RLS/grant restrictions, uniqueness gates and atomic key/domain
-operations.
+rate-limit buckets and the commercial operations aggregate. The hardening steps
+also apply RLS/grant restrictions, recoverable checkout leases, monotonic Stripe
+event watermarks, uniqueness gates and atomic key/domain operations.
 
 The application fails closed before this migration is installed: the sales demo remains visible, checkout is disabled, and public widget requests return only the generic unavailable message.
 
@@ -45,8 +49,9 @@ Generate random values locally with:
 [Convert]::ToBase64String((1..48 | ForEach-Object { Get-Random -Maximum 256 }))
 ```
 
-For production-scale abuse protection, also configure the distributed limiter
-described in `docs/bot-and-data-exfiltration-defense.md`. Never reuse
+Production widget traffic fails closed unless the distributed limiter described
+in `docs/bot-and-data-exfiltration-defense.md` is configured and reachable.
+Never reuse
 `SUPABASE_SERVICE_ROLE_KEY` as a widget session secret or privacy salt.
 
 ## 3. Stripe webhook

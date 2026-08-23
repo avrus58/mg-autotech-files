@@ -5,6 +5,10 @@ import {
   rateLimitKey,
   type RateLimitResult,
 } from "@/lib/rateLimit";
+import {
+  getTrustedCountryCode,
+  type RequestNetworkEnvironment,
+} from "@/lib/requestNetwork";
 
 const distributedCounterScript = [
   "local count = redis.call('INCR', KEYS[1])",
@@ -32,9 +36,11 @@ type AdaptiveRateLimitInput = {
   limit: number;
   windowMs: number;
   suffix?: string | null;
+  includeClientIp?: boolean;
   config?: DistributedRateLimitConfig | null;
   fetchImpl?: typeof fetch;
   emitSignals?: boolean;
+  networkEnvironment?: RequestNetworkEnvironment;
 };
 
 type SecuritySignalKind =
@@ -50,9 +56,11 @@ function normalizeScope(scope: string) {
   return normalized || "unknown";
 }
 
-function signalCountry(request: Request) {
-  const country = request.headers.get("x-vercel-ip-country")?.trim().toUpperCase() ?? "";
-  return /^[A-Z]{2}$/.test(country) ? country : "unknown";
+function signalCountry(
+  request: Request,
+  environment: RequestNetworkEnvironment = process.env
+) {
+  return getTrustedCountryCode(request, environment) ?? "unknown";
 }
 
 function signalCooldownStore() {
@@ -69,6 +77,7 @@ function emitSecuritySignal(input: {
   scope: string;
   source: AdaptiveRateLimitResult["source"];
   subjectFingerprint?: string | null;
+  networkEnvironment?: RequestNetworkEnvironment;
 }) {
   const scope = normalizeScope(input.scope);
   const cooldownKey = `${input.kind}:${scope}:${input.source}`;
@@ -82,7 +91,7 @@ function emitSecuritySignal(input: {
     kind: input.kind,
     scope,
     source: input.source,
-    country: signalCountry(input.request),
+    country: signalCountry(input.request, input.networkEnvironment),
     subject: input.subjectFingerprint?.slice(0, 16) ?? null,
     occurred_at: new Date(now).toISOString(),
   }));
@@ -118,10 +127,14 @@ export function buildRateLimitSubjectFingerprint(input: {
   scope: string;
   subjectSalt: string;
   suffix?: string | null;
+  includeClientIp?: boolean;
+  networkEnvironment?: RequestNetworkEnvironment;
 }) {
   const subject = [
     normalizeScope(input.scope),
-    getClientIp(input.request),
+    input.includeClientIp === false
+      ? ""
+      : getClientIp(input.request, input.networkEnvironment),
     input.suffix?.trim().toLowerCase() ?? "",
   ].join("\u0000");
 
@@ -189,7 +202,16 @@ export async function checkAdaptiveRateLimit(
   input: AdaptiveRateLimitInput
 ): Promise<AdaptiveRateLimitResult> {
   const local = checkRateLimit({
-    key: rateLimitKey(input.request, input.scope, input.suffix),
+    key: input.includeClientIp === false
+      ? [normalizeScope(input.scope), input.suffix?.toLowerCase().trim()]
+          .filter(Boolean)
+          .join(":")
+      : rateLimitKey(
+          input.request,
+          input.scope,
+          input.suffix,
+          input.networkEnvironment
+        ),
     limit: input.limit,
     windowMs: input.windowMs,
   });
@@ -203,6 +225,7 @@ export async function checkAdaptiveRateLimit(
         kind: "rate_limit_blocked",
         scope: input.scope,
         source: result.source,
+        networkEnvironment: input.networkEnvironment,
       });
     }
     return result;
@@ -218,6 +241,8 @@ export async function checkAdaptiveRateLimit(
     scope: input.scope,
     subjectSalt: config.subjectSalt,
     suffix: input.suffix,
+    includeClientIp: input.includeClientIp,
+    networkEnvironment: input.networkEnvironment,
   });
 
   try {
@@ -236,6 +261,7 @@ export async function checkAdaptiveRateLimit(
         scope: input.scope,
         source: distributed.source,
         subjectFingerprint: fingerprint,
+        networkEnvironment: input.networkEnvironment,
       });
     }
     return distributed;
@@ -248,6 +274,7 @@ export async function checkAdaptiveRateLimit(
         scope: input.scope,
         source: fallback.source,
         subjectFingerprint: fingerprint,
+        networkEnvironment: input.networkEnvironment,
       });
     }
     return fallback;

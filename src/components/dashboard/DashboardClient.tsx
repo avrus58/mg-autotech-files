@@ -46,7 +46,6 @@ type Order = {
   credits_required: number | string | null;
   status: string | null;
   notes: string | null;
-  modified_file_path: string | null;
   created_at: string;
 };
 
@@ -260,7 +259,7 @@ export function DashboardClient() {
           supabase
             .from("orders")
             .select(
-              "id, customer_id, customer_email, vehicle_brand, vehicle_model, vehicle_generation, vehicle_engine, service_type, credits_required, status, notes, modified_file_path, created_at"
+              "id, customer_id, customer_email, vehicle_brand, vehicle_model, vehicle_generation, vehicle_engine, service_type, credits_required, status, notes, created_at"
             )
             .eq("customer_id", userId)
             .order("created_at", { ascending: false })
@@ -271,12 +270,12 @@ export function DashboardClient() {
             .eq("user_id", userId)
             .order("created_at", { ascending: false })
             .limit(6),
-          supabase.from("orders").select("*", { count: "exact", head: true }).eq("customer_id", userId),
-          supabase.from("orders").select("*", { count: "exact", head: true }).eq("customer_id", userId).eq("status", "completed"),
-          supabase.from("orders").select("*", { count: "exact", head: true }).eq("customer_id", userId).in("status", ["new_request", "file_check"]),
-          supabase.from("orders").select("*", { count: "exact", head: true }).eq("customer_id", userId).eq("status", "customer_info_needed"),
-          supabase.from("orders").select("*", { count: "exact", head: true }).eq("customer_id", userId).eq("status", "in_progress"),
-          supabase.from("orders").select("*", { count: "exact", head: true }).eq("customer_id", userId).eq("status", "cancelled"),
+          supabase.from("orders").select("id", { count: "exact", head: true }).eq("customer_id", userId),
+          supabase.from("orders").select("id", { count: "exact", head: true }).eq("customer_id", userId).eq("status", "completed"),
+          supabase.from("orders").select("id", { count: "exact", head: true }).eq("customer_id", userId).in("status", ["new_request", "file_check"]),
+          supabase.from("orders").select("id", { count: "exact", head: true }).eq("customer_id", userId).eq("status", "customer_info_needed"),
+          supabase.from("orders").select("id", { count: "exact", head: true }).eq("customer_id", userId).eq("status", "in_progress"),
+          supabase.from("orders").select("id", { count: "exact", head: true }).eq("customer_id", userId).eq("status", "cancelled"),
         ]);
 
         const queryFailed =
@@ -560,24 +559,6 @@ export function DashboardClient() {
 
   const retryDashboardLoad = () => {
     setDashboardRefreshKey((current) => current + 1);
-  };
-
-  const downloadCompletedFile = async (filePath: string | null) => {
-    if (!filePath) {
-      alert("Completed file is not available yet.");
-      return;
-    }
-
-    const { data, error } = await supabase.storage
-      .from("customer-files")
-      .createSignedUrl(filePath, 60);
-
-    if (error) {
-      alert(error.message);
-      return;
-    }
-
-    window.open(data.signedUrl, "_blank");
   };
 
   if (loading) {
@@ -1239,14 +1220,14 @@ export function DashboardClient() {
                           </div>
 
                           <div className="flex min-w-0 flex-col gap-2 text-left md:items-end md:text-right">
-                            {order.status === "completed" && order.modified_file_path ? (
-                              <button
-                                onClick={() => downloadCompletedFile(order.modified_file_path)}
+                            {order.status === "completed" ? (
+                              <Link
+                                href={`/dashboard/orders/${order.id}`}
                                 className="w-full rounded-xl border border-emerald-700/40 bg-emerald-950/30 px-4 py-3 text-xs font-black text-emerald-300 transition hover:bg-emerald-900/40 md:w-auto"
                               >
                                 <Download className="mr-2 inline h-4 w-4" />
-                                Download File
-                              </button>
+                                Open Delivery
+                              </Link>
                             ) : (
                               <span className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-center text-xs font-bold text-zinc-500 md:w-auto">
                                 Not Ready

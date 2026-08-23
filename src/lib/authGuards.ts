@@ -262,15 +262,19 @@ export async function signOutIfEmailUnverified(user: User) {
 }
 
 export async function getAuthenticatedHome(userId: string) {
-  const { data } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", userId)
-    .maybeSingle();
+  if (!userId) return "/dashboard";
 
-  return data?.role === "admin" || data?.role === "staff"
-    ? "/admin"
-    : "/dashboard";
+  try {
+    const response = await authenticatedFetch("/api/account/context", {
+      cache: "no-store",
+    });
+    if (!response.ok) return "/dashboard";
+
+    const payload = (await response.json()) as { home?: unknown };
+    return payload.home === "/admin" ? "/admin" : "/dashboard";
+  } catch {
+    return "/dashboard";
+  }
 }
 
 export function getAuthRedirect(path: string) {

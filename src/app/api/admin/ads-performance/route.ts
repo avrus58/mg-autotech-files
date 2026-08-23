@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { requireStaffPermission } from "@/lib/apiAuth";
+import { requireStaffPermissions } from "@/lib/apiAuth";
+import { adsPerformancePermissions } from "@/lib/growth/access";
 import { buildGrowthCustomerSuccessReport, parseGrowthReportRange } from "@/lib/growth/report";
 import { buildAdsPerformanceReport } from "@/lib/googleAds/readiness";
 
@@ -12,7 +13,7 @@ const privateNoStoreHeaders = {
 };
 
 export async function GET(request: Request) {
-  const auth = await requireStaffPermission(request, "orders.view");
+  const auth = await requireStaffPermissions(request, adsPerformancePermissions);
   if (!auth.ok) {
     return NextResponse.json(
       { error: auth.error },

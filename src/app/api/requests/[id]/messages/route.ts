@@ -11,12 +11,19 @@ import {
   filterCustomerVisibleRequestMessages,
   type RequestMessageVisibilityRow,
 } from "@/lib/workOrders/messageVisibility";
+import {
+  checkAdaptiveRateLimit,
+  rateLimitResponseHeaders,
+} from "@/lib/abuseProtection";
 
 const messageSchema = z.object({
   message: z.string().trim().min(1).max(4000),
 });
 
 const MESSAGE_HISTORY_LIMIT = 200;
+const CUSTOMER_MESSAGE_BURST_LIMIT = 5;
+const CUSTOMER_MESSAGE_BURST_WINDOW_MS = 10 * 60 * 1000;
+const CUSTOMER_MESSAGE_DAILY_LIMIT = 40;
 const privateResponseHeaders = {
   "Cache-Control": "private, no-store, max-age=0",
   Vary: "Authorization, Cookie",
@@ -37,6 +44,38 @@ function temporaryMessageFailure() {
     { error: "Messages are temporarily unavailable. Please try again." },
     { status: 503, headers: { "Retry-After": "3" } }
   );
+}
+
+async function checkCustomerMessageQuota(input: {
+  requestId: string;
+  userId: string;
+}) {
+  const admin = getSupabaseAdmin();
+  const now = Date.now();
+  const burstSince = new Date(now - CUSTOMER_MESSAGE_BURST_WINDOW_MS).toISOString();
+  const daySince = new Date(now - 24 * 60 * 60 * 1000).toISOString();
+  const [burst, daily] = await Promise.all([
+    admin
+      .from("request_messages")
+      .select("id", { count: "exact", head: true })
+      .eq("request_id", input.requestId)
+      .eq("sender_id", input.userId)
+      .gte("created_at", burstSince),
+    admin
+      .from("request_messages")
+      .select("id", { count: "exact", head: true })
+      .eq("sender_id", input.userId)
+      .gte("created_at", daySince),
+  ]);
+
+  if (burst.error || daily.error) return { ok: false as const, unavailable: true as const };
+  if ((burst.count ?? 0) >= CUSTOMER_MESSAGE_BURST_LIMIT) {
+    return { ok: false as const, unavailable: false as const, retryAfterSeconds: 600 };
+  }
+  if ((daily.count ?? 0) >= CUSTOMER_MESSAGE_DAILY_LIMIT) {
+    return { ok: false as const, unavailable: false as const, retryAfterSeconds: 3600 };
+  }
+  return { ok: true as const };
 }
 
 async function authorizeRequest(request: Request, orderId: string) {
@@ -140,6 +179,42 @@ export async function POST(
     return privateJson({ error: access.error }, { status: access.status });
   }
 
+  const adaptiveLimit = await checkAdaptiveRateLimit({
+    request,
+    scope: "request-message-create",
+    suffix: `${access.user.id}:${id}`,
+    limit: access.senderRole === "customer" ? 8 : 30,
+    windowMs: CUSTOMER_MESSAGE_BURST_WINDOW_MS,
+  });
+  if (!adaptiveLimit.allowed) {
+    return privateJson(
+      { error: "Too many messages were sent. Please wait before trying again." },
+      {
+        status: 429,
+        headers: rateLimitResponseHeaders({
+          result: adaptiveLimit,
+          limit: access.senderRole === "customer" ? 8 : 30,
+          windowMs: CUSTOMER_MESSAGE_BURST_WINDOW_MS,
+          blocked: true,
+        }),
+      }
+    );
+  }
+
+  if (access.senderRole === "customer") {
+    const quota = await checkCustomerMessageQuota({ requestId: id, userId: access.user.id });
+    if (!quota.ok) {
+      if (quota.unavailable) return temporaryMessageFailure();
+      return privateJson(
+        { error: "Message limit reached. Please wait before sending another message." },
+        {
+          status: 429,
+          headers: { "Retry-After": String(quota.retryAfterSeconds) },
+        }
+      );
+    }
+  }
+
   const body = await request.json().catch(() => null);
   const parsed = messageSchema.safeParse(body);
   if (!parsed.success) {
@@ -173,5 +248,15 @@ export async function POST(
     await sendCustomerVisibleMessageEmail({ requestId: id, messageId: String(data.id) });
   }
 
-  return privateJson({ message: data }, { status: 201 });
+  return privateJson(
+    { message: data },
+    {
+      status: 201,
+      headers: rateLimitResponseHeaders({
+        result: adaptiveLimit,
+        limit: access.senderRole === "customer" ? 8 : 30,
+        windowMs: CUSTOMER_MESSAGE_BURST_WINDOW_MS,
+      }),
+    }
+  );
 }

@@ -8,6 +8,32 @@
 
 ## Blocked
 
+### MANUAL-20260820-PRODUCTION-AUTHORITY-EMERGENCY [P0] Production authority and finance containment
+
+Durum: Blocked
+
+Fingerprint: `production-security|signup-metadata-admin-and-direct-finance-authority|live-catalog-confirmed|pinned-emergency-containment`
+
+Kapsam: Production katalogunda doğrulanan müşteri kontrollü admin signup,
+doğrudan profil kredi/otorite güncellemesi, altı geniş SECURITY DEFINER finans
+RPC'si ve RPC dışı ücretsiz order INSERT yolunu mevcut `dad28dd` uygulamasıyla
+uyumlu en küçük migration + fail-closed app guard paketiyle kapat.
+
+Hazır sonuç: `20260816002442_current_production_authority_emergency_hardening.sql`,
+SELECT-only preflight/verifier, pinned `dad28dd` app patch'i, source testleri ve
+release runbook'u bağımsız review'dan geçti. Production aggregate preflight bir
+exact owner ve sıfır authority/fractional/out-of-range anomali gösterdi; kimlik
+ve müşteri satırı okunmadı.
+
+Blocked reason: Exact SQL henüz current-Production-shape ve post-02453 iki
+izole şema provasından geçmedi. Production apply ayrıca ayrı açık yayın yetkisi,
+pinli düşük-trafik sırası ve yalnız `dad28dd + emergency patch` deploy'u ister.
+Tam geliştirme branch'i bu acil pakete karıştırılamaz.
+
+Remediation: İki sentetik/izole rehearsal, 21/21 verifier ve fixture smokes;
+ardından explicit Production release authorization ile pinli migration/app
+hotfix, immediate smoke ve incident verification.
+
 ## Later
 
 ### AUTO-009 [P2] Production smoke dokumani ile local autopilot smoke ayrimini netlestir
@@ -49,6 +75,19 @@ Remediation: Batch with a future documentation/source-comment maintenance pass a
 Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
+
+### MANUAL-20260823-VPS-CUTOVER-PREDECESSOR [P0] VPS cutover-compatible predecessor freeze
+
+Durum: Done
+
+Fingerprint: `release|vps-cutover-predecessor|current-production-ui-plus-security-base|device-independent-hardened-runtime`
+
+Sonuc: `755decc` security tabani ile `3e6bcdd` current Production UI birlestirildi;
+device-aware commit ancestry'ye alinmadan Cloudflare-Caddy request trust, hardened
+VPS Compose/rollback paketi ve ayri sinirli File Expert analyzer runtime'i tasindi.
+Tam suite 868/868, typecheck, lint, Webpack Production build, i18n, performance,
+Python ve shell kapilari gecti. Docker config/image/sentetik E2E exact archive ile
+VPS'te tamamlanmak uzere operasyonel release sirasinda kalir.
 
 ### MANUAL-20260822-LOG-STUDIO-PRODUCTION-RELEASE [P0] Log Analysis Studio Production release
 

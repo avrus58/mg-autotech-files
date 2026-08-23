@@ -3,6 +3,11 @@ import { requireStaffPermission } from "@/lib/apiAuth";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { hasStaffPermission } from "@/lib/staffPermissions";
 import { listAdminEmailDeliveryIssues } from "@/lib/email/deliveryReliability";
+import {
+  buildAdminRequestAccess,
+  projectAdminOrderRow,
+} from "@/lib/workOrders/access";
+import { getAdminOrderRows } from "@/lib/workOrders/server";
 
 const privateNoStoreHeaders = {
   "Cache-Control": "private, no-store, max-age=0",
@@ -26,17 +31,20 @@ export async function GET(request: Request) {
 
   try {
     const admin = getSupabaseAdmin();
-    const orderQuery = admin
-      .from("orders")
-      .select("*")
-      .order("created_at", { ascending: false });
+    const requestAccess = buildAdminRequestAccess(auth.access);
+    const orderQuery = getAdminOrderRows();
     const customerQuery = hasStaffPermission(auth.access, "customers.view")
-      ? admin.from("profiles").select(customerSelect).order("created_at", { ascending: false })
+      ? admin.from("profiles")
+        .select(customerSelect)
+        .eq("role", "customer")
+        .order("created_at", { ascending: false })
       : Promise.resolve(null);
     const [orderResult, customerResult, emailIssues] = await Promise.all([
       orderQuery,
       customerQuery,
-      listAdminEmailDeliveryIssues(),
+      requestAccess.messagesManage
+        ? listAdminEmailDeliveryIssues()
+        : Promise.resolve([]),
     ]);
 
     if (orderResult.error) {
@@ -53,6 +61,7 @@ export async function GET(request: Request) {
         const fallbackResult = await admin
           .from("profiles")
           .select(fallbackCustomerSelect)
+          .eq("role", "customer")
           .order("created_at", { ascending: false });
 
         if (fallbackResult.error) {
@@ -64,6 +73,13 @@ export async function GET(request: Request) {
 
         customers = (fallbackResult.data ?? []).map((customer) => ({
           ...customer,
+          credit_balance: requestAccess.creditsManage ? customer.credit_balance : null,
+          allow_negative_credits: requestAccess.creditsManage
+            ? customer.allow_negative_credits
+            : null,
+          negative_credit_limit: requestAccess.creditsManage
+            ? customer.negative_credit_limit
+            : null,
           customer_tags: [],
         }));
       } else if (customerResult?.error) {
@@ -72,7 +88,16 @@ export async function GET(request: Request) {
           { status: 500, headers: privateNoStoreHeaders }
         );
       } else {
-        customers = customerResult?.data ?? [];
+        customers = (customerResult?.data ?? []).map((customer) => ({
+          ...customer,
+          credit_balance: requestAccess.creditsManage ? customer.credit_balance : null,
+          allow_negative_credits: requestAccess.creditsManage
+            ? customer.allow_negative_credits
+            : null,
+          negative_credit_limit: requestAccess.creditsManage
+            ? customer.negative_credit_limit
+            : null,
+        }));
       }
     }
 
@@ -83,7 +108,9 @@ export async function GET(request: Request) {
           staffRole: auth.access.staffRole,
           permissions: auth.access.permissions,
         },
-        orders: orderResult.data ?? [],
+        orders: orderResult.rows.map((order) =>
+          projectAdminOrderRow(order as unknown as Record<string, unknown>, requestAccess)
+        ),
         customers,
         emailIssues,
       },

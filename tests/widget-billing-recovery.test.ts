@@ -7,12 +7,17 @@ function readProjectFile(...segments: string[]) {
   return readFileSync(resolve(process.cwd(), ...segments), "utf8");
 }
 
-test("widget billing portal recovers customer profile from subscription id before failing", () => {
+test("widget billing portal verifies account, subscription and customer binding", () => {
   const route = readProjectFile("src", "app", "api", "stripe", "widget-customer-portal", "route.ts");
 
-  assert.match(route, /select\("id, stripe_customer_id, stripe_subscription_id"\)/);
+  assert.match(route, /select\("id, email, stripe_customer_id, stripe_subscription_id"\)/);
   assert.match(route, /recoverCustomerIdFromSubscription/);
   assert.match(route, /stripe\.subscriptions\.retrieve\(subscriptionId\)/);
+  assert.match(route, /subscription\.metadata\.widget_client_id !== clientId/);
+  assert.match(route, /\.eq\("user_id", auth\.user\.id\)/);
+  assert.match(route, /subscriptionEmail[\s\S]*?clientEmail/);
+  assert.doesNotMatch(route, /auth\.user\.email/);
+  assert.match(route, /client\.data\.stripe_customer_id !== verifiedCustomerId/);
   assert.match(route, /billing\.customer_profile_recovered/);
   assert.match(route, /billingPortal\.sessions\.create/);
   assert.match(route, /action: "view_plans"/);
@@ -59,8 +64,10 @@ test("widget subscription summary endpoint exposes professional billing fields w
   assert.match(route, /requireApiUser/);
   assert.match(route, /widget_clients/);
   assert.match(route, /stripe\.subscriptions\.retrieve/);
-  assert.match(route, /stripe\.subscriptions\.list/);
+  assert.doesNotMatch(route, /stripe\.subscriptions\.list/);
   assert.match(route, /stripe\.invoices\.list/);
+  assert.match(route, /subscription\.metadata\.widget_client_id !== client\.id/);
+  assert.match(route, /client\.stripe_customer_id !== stripeCustomerId/);
   assert.match(route, /Cache-Control": "private, no-store"/);
   assert.match(route, /buildUnlinkedWidgetBillingSummary/);
   assert.match(route, /buildLocalWidgetBillingSummary/);

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { requireStaffPermission } from "@/lib/apiAuth";
+import { requireStaffPermissions } from "@/lib/apiAuth";
+import { growthReminderPermissions } from "@/lib/growth/access";
 import { sendGrowthAbandonedRequestReminder } from "@/lib/growth/reminders";
 
 const schema = z.object({ sourceEventId: z.string().uuid() }).strict();
@@ -13,7 +14,7 @@ const headers = {
 };
 
 export async function POST(request: Request) {
-  const auth = await requireStaffPermission(request, "orders.manage");
+  const auth = await requireStaffPermissions(request, growthReminderPermissions);
   if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status, headers });
 
   let body: unknown;

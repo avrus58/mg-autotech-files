@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { getSupabaseServer } from "@/lib/supabaseServer";
 import { requireStaffPermission } from "@/lib/apiAuth";
@@ -8,14 +9,80 @@ import type { FileExpertAnalyzerResult, FileExpertFeature, FileExpertJob } from 
 import { hasStaffPermission, type StaffAccess } from "@/lib/staffPermissions";
 import {
   buildPublicSimilarityEvidence,
-  runSimilarityForFileExpert,
+  findSimilarTrainingSamples,
+  similaritySourceFromFileExpert,
 } from "@/lib/ecuIntelligence/similarity";
 import { fileExpertAllowedExtensions, fileExpertMaxFileSize } from "@/lib/fileExpert/limits";
 import { buildFileExpertAiReportStatus } from "@/lib/fileExpert/reportStatus";
+import {
+  acquireFileExpertAnalyzerAdmission,
+  fileExpertAnalyzerRequestTimeoutMs,
+  releaseFileExpertAnalyzerAdmission,
+} from "@/lib/fileExpert/admissionLease";
+import {
+  failedFileExpertAnalysisState,
+  shouldPreserveCompletedFileExpertResult,
+} from "@/lib/fileExpert/analysisState";
+import {
+  boundedFileExpertDeadline,
+  fileExpertAiReportBudgetMs,
+  FileExpertAnalysisDeadlineError,
+  fileExpertCleanupTimeoutMs,
+  fileExpertCompletionReserveMs,
+  fileExpertPostAnalyzerReserveMs,
+  fileExpertRouteOperationBudgetMs,
+  fileExpertSimilarityBudgetMs,
+  requireFileExpertBudget,
+  settleFileExpertOperationBefore,
+} from "@/lib/fileExpert/executionBudget";
+import {
+  exactStoredObjectMetadata,
+  isCompatibleFirmwareUpload,
+  isExpectedFileExpertStoragePath,
+  splitStoragePath,
+} from "@/lib/uploadIntegrity";
 export { fileExpertMaxFileSize } from "@/lib/fileExpert/limits";
+export { isExpectedFileExpertStoragePath } from "@/lib/uploadIntegrity";
 
 export const fileExpertBucket = "file-expert";
 const allowedExtensions = new Set(fileExpertAllowedExtensions);
+
+export class FileExpertJobConflictError extends Error {
+  constructor() {
+    super("This analysis is already running or is not ready to start.");
+    this.name = "FileExpertJobConflictError";
+  }
+}
+
+export class FileExpertJobInputError extends Error {
+  constructor(message = "The uploaded file could not be verified safely.") {
+    super(message);
+    this.name = "FileExpertJobInputError";
+  }
+}
+
+export class FileExpertAnalyzerUnavailableError extends Error {
+  constructor() {
+    super("Analysis capacity is temporarily unavailable.");
+    this.name = "FileExpertAnalyzerUnavailableError";
+  }
+}
+
+export function safeFileExpertAnalysisError(error: unknown) {
+  if (error instanceof FileExpertJobConflictError) {
+    return { status: 409, message: error.message };
+  }
+  if (error instanceof FileExpertJobInputError) {
+    return { status: 400, message: error.message };
+  }
+  if (error instanceof FileExpertAnalyzerUnavailableError) {
+    return { status: 503, message: error.message };
+  }
+  if (error instanceof FileExpertAnalysisDeadlineError) {
+    return { status: 503, message: error.message };
+  }
+  return { status: 500, message: "Analysis failed. Please retry or contact support." };
+}
 
 export function sanitizeFileExpertName(name: string) {
   const cleaned = name.replaceAll(" ", "_").replace(/[^a-zA-Z0-9._-]/g, "");
@@ -72,12 +139,9 @@ export async function isFileExpertAdmin(userId: string) {
     .single();
 
   if (current.error?.code === "42703") {
-    const legacy = await supabaseAdmin
-      .from("profiles")
-      .select("role")
-      .eq("id", userId)
-      .single();
-    return legacy.data?.role === "admin";
+    // A legacy role value alone cannot prove Primary Owner or File Expert
+    // authority. Fail closed until the staff security columns are available.
+    return false;
   }
 
   const access: StaffAccess = {
@@ -97,65 +161,268 @@ export async function requireFileExpertAdmin(request?: Request) {
   return { ok: true as const, user: auth.user, status: 200 as const };
 }
 
-async function downloadFile(path: string | null) {
+async function downloadFile(input: {
+  path: string | null;
+  fileName: string | null;
+  expectedSize: number | string | null;
+  expectedSha256: string | null;
+}) {
+  const { path } = input;
   if (!path) return null;
   const supabaseAdmin = getSupabaseAdmin();
+  const { folder, name } = splitStoragePath(path);
+  const { data: objects, error: metadataError } = await supabaseAdmin.storage
+    .from(fileExpertBucket)
+    .list(folder, { search: name, limit: 5 });
+  const metadata = exactStoredObjectMetadata(objects, name);
+  const expectedSize = Number(input.expectedSize);
+  if (
+    metadataError ||
+    !metadata ||
+    metadata.size > fileExpertMaxFileSize ||
+    !Number.isInteger(expectedSize) ||
+    expectedSize <= 0 ||
+    metadata.size !== expectedSize ||
+    !isCompatibleFirmwareUpload(input.fileName ?? "", metadata.contentType)
+  ) {
+    throw new FileExpertJobInputError();
+  }
   const { data, error } = await supabaseAdmin.storage.from(fileExpertBucket).download(path);
   if (error || !data) {
-    throw new Error(error?.message || `File could not be downloaded: ${path}`);
+    throw new FileExpertJobInputError();
   }
   const buffer = Buffer.from(await data.arrayBuffer());
-  if (!buffer.length) throw new Error("Uploaded file is empty.");
-  if (buffer.length > fileExpertMaxFileSize) {
-    throw new Error("Uploaded file exceeds the 32 MB analysis limit.");
+  if (!buffer.length || buffer.length !== metadata.size || buffer.length > fileExpertMaxFileSize) {
+    throw new FileExpertJobInputError();
+  }
+  if (input.expectedSha256 && sha256Buffer(buffer) !== input.expectedSha256.toLowerCase()) {
+    throw new FileExpertJobInputError("The stored file changed after its previous analysis.");
   }
   return buffer;
 }
 
-async function callExternalAnalyzer(input: {
-  job: FileExpertJob;
-  ori?: Buffer | null;
-  mod?: Buffer | null;
-}) {
-  const analyzerUrl = process.env.FILE_EXPERT_ANALYZER_URL;
-  if (!analyzerUrl) return null;
-
+export function getExternalAnalyzerConfiguration(
+  environment: Readonly<Record<string, string | undefined>> = process.env
+) {
+  const rawUrl = environment.FILE_EXPERT_ANALYZER_URL?.trim() ?? "";
+  const token = environment.FILE_EXPERT_ANALYZER_TOKEN?.trim() ?? "";
+  if (!rawUrl || token.length < 32) return null;
   try {
-    const supabaseAdmin = getSupabaseAdmin();
-    const [oriSigned, modSigned] = await Promise.all([
-      input.job.ori_file_path
-        ? supabaseAdmin.storage.from(fileExpertBucket).createSignedUrl(input.job.ori_file_path, 300)
-        : Promise.resolve({ data: null }),
-      input.job.mod_file_path
-        ? supabaseAdmin.storage.from(fileExpertBucket).createSignedUrl(input.job.mod_file_path, 300)
-        : Promise.resolve({ data: null }),
-    ]);
-
-    const response = await fetch(`${analyzerUrl.replace(/\/$/, "")}/analyze`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        job_id: input.job.id,
-        ori_file_path: input.job.ori_file_path,
-        mod_file_path: input.job.mod_file_path,
-        ori_file_url: oriSigned.data?.signedUrl ?? null,
-        mod_file_url: modSigned.data?.signedUrl ?? null,
-        metadata: {
-          brand: input.job.brand,
-          model: input.job.model,
-          engine: input.job.engine,
-          ecu_type: input.job.ecu_type,
-          read_method: input.job.read_method,
-          ori_file_name: input.job.ori_file_name,
-          mod_file_name: input.job.mod_file_name,
-        },
-      }),
-    });
-
-    if (!response.ok) return null;
-    return (await response.json()) as FileExpertAnalyzerResult;
+    const url = new URL(rawUrl);
+    const loopbackHosts = new Set(["localhost", "127.0.0.1", "[::1]", "::1"]);
+    const isLoopback = loopbackHosts.has(url.hostname.toLowerCase());
+    const isExplicitPrivateDockerAnalyzer =
+      environment.FILE_EXPERT_ANALYZER_ALLOW_PRIVATE_DOCKER_HTTP === "true" &&
+      url.origin === "http://file-expert-analyzer:8010" &&
+      url.pathname === "/";
+    if (
+      url.username ||
+      url.password ||
+      url.search ||
+      url.hash ||
+      (
+        url.protocol !== "https:" &&
+        !(url.protocol === "http:" && (isLoopback || isExplicitPrivateDockerAnalyzer))
+      )
+    ) return null;
+    return { url: url.toString().replace(/\/$/, ""), token };
   } catch {
     return null;
+  }
+}
+
+async function readBoundedAnalyzerResponse(response: Response) {
+  const maximumBytes = 2 * 1024 * 1024;
+  const declaredLength = Number(response.headers.get("content-length"));
+  if (Number.isFinite(declaredLength) && declaredLength > maximumBytes) return null;
+  if (!response.body) return null;
+  const reader = response.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let length = 0;
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    length += value.byteLength;
+    if (length > maximumBytes) {
+      await reader.cancel();
+      return null;
+    }
+    chunks.push(value);
+  }
+  const payload = Buffer.concat(chunks.map((chunk) => Buffer.from(chunk))).toString("utf8");
+  try {
+    return JSON.parse(payload) as FileExpertAnalyzerResult;
+  } catch {
+    return null;
+  }
+}
+
+function isSupportedAnalyzerInspection(
+  value: unknown,
+  expectedSize: number | string | null,
+  expectedSha256: string | null
+) {
+  if (!value || typeof value !== "object") return false;
+  const inspection = value as Record<string, unknown>;
+  const size = Number(inspection.file_size);
+  const sha256 = typeof inspection.sha256 === "string"
+    ? inspection.sha256.toLowerCase()
+    : "";
+  return Number.isInteger(size) &&
+    size === Number(expectedSize) &&
+    /^[a-f0-9]{64}$/.test(sha256) &&
+    (!expectedSha256 || sha256 === expectedSha256.toLowerCase()) &&
+    typeof inspection.first_64_bytes_hex === "string" &&
+    typeof inspection.last_64_bytes_hex === "string" &&
+    Number.isFinite(Number(inspection.ff_ratio)) &&
+    Number.isFinite(Number(inspection.zero_ratio)) &&
+    Number.isFinite(Number(inspection.entropy)) &&
+    Array.isArray(inspection.ascii_strings) &&
+    Array.isArray(inspection.ecu_identifiers);
+}
+
+function isSupportedExternalAnalyzerResult(
+  result: FileExpertAnalyzerResult | null,
+  job: FileExpertJob
+): result is FileExpertAnalyzerResult {
+  if (!result || !/^2\.\d+\.\d+$/.test(result.analysis_version)) return false;
+  if (!result.files || typeof result.files !== "object") return false;
+
+  const hasOri = Boolean(job.ori_file_path);
+  const hasMod = Boolean(job.mod_file_path);
+  if (result.mode !== (hasOri && hasMod ? "ori_mod_compare" : "single_file")) return false;
+  if (hasOri !== Boolean(result.files.ori) || hasMod !== Boolean(result.files.mod)) return false;
+  if (hasOri && !isSupportedAnalyzerInspection(
+    result.files.ori,
+    job.ori_file_size,
+    job.ori_sha256
+  )) return false;
+  if (hasMod && !isSupportedAnalyzerInspection(
+    result.files.mod,
+    job.mod_file_size,
+    job.mod_sha256
+  )) return false;
+
+  const singleExpectedSize = hasOri ? job.ori_file_size : job.mod_file_size;
+  const singleExpectedHash = hasOri ? job.ori_sha256 : job.mod_sha256;
+  if (result.files.single && !isSupportedAnalyzerInspection(
+    result.files.single,
+    singleExpectedSize,
+    singleExpectedHash
+  )) return false;
+
+  return result.job_id === job.id &&
+    Array.isArray(result.active_regions) &&
+    Array.isArray(result.map_candidates) &&
+    Array.isArray(result.repeated_patterns) &&
+    Array.isArray(result.possible_features) &&
+    Boolean(result.risk_assessment) &&
+    Number.isFinite(Number(result.risk_assessment.confidence)) &&
+    Array.isArray(result.risk_assessment.reasons) &&
+    Array.isArray(result.risk_assessment.warnings) &&
+    Boolean(result.summary) &&
+    typeof result.summary.main_conclusion === "string" &&
+    Array.isArray(result.summary.recommended_next_steps);
+}
+
+async function callExternalAnalyzer(input: { job: FileExpertJob; deadlineAt: number }) {
+  const configuration = getExternalAnalyzerConfiguration();
+  if (!configuration) return null;
+
+  let admission: Awaited<ReturnType<typeof acquireFileExpertAnalyzerAdmission>> | null = null;
+  let requestDispatched = false;
+  let requestSettled = false;
+  let requestTimeout: ReturnType<typeof setTimeout> | null = null;
+  try {
+    const supabaseAdmin = getSupabaseAdmin();
+    const createAnalyzerUrl = async (path: string | null) => {
+      if (!path) return null;
+      const { data, error } = await supabaseAdmin.storage
+        .from(fileExpertBucket)
+        .createSignedUrl(path, 60);
+      return error ? null : data?.signedUrl ?? null;
+    };
+    const [oriSignedUrl, modSignedUrl] = await settleFileExpertOperationBefore(
+      Promise.all([
+        createAnalyzerUrl(input.job.ori_file_path),
+        createAnalyzerUrl(input.job.mod_file_path),
+      ]),
+      input.deadlineAt
+    );
+
+    if (
+      (input.job.ori_file_path && !oriSignedUrl) ||
+      (input.job.mod_file_path && !modSignedUrl)
+    ) return null;
+
+    admission = await settleFileExpertOperationBefore(
+      acquireFileExpertAnalyzerAdmission(),
+      input.deadlineAt
+    );
+    if (admission.status === "busy" || admission.status === "unavailable") return null;
+
+    const controller = new AbortController();
+    requireFileExpertBudget(input.deadlineAt);
+    requestTimeout = setTimeout(
+      () => controller.abort(),
+      Math.max(1, input.deadlineAt - Date.now())
+    );
+    requestDispatched = true;
+    const response = await settleFileExpertOperationBefore(
+      fetch(`${configuration.url}/analyze`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${configuration.token}`,
+          "Content-Type": "application/json",
+        },
+        cache: "no-store",
+        redirect: "error",
+        signal: controller.signal,
+        body: JSON.stringify({
+          job_id: input.job.id,
+          ori_file_url: oriSignedUrl,
+          mod_file_url: modSignedUrl,
+          metadata: {
+            brand: input.job.brand,
+            model: input.job.model,
+            engine: input.job.engine,
+            ecu_type: input.job.ecu_type,
+            read_method: input.job.read_method,
+            ori_file_name: input.job.ori_file_name,
+            mod_file_name: input.job.mod_file_name,
+          },
+        }),
+      }),
+      input.deadlineAt
+    );
+
+    if (!response.ok) {
+      requestSettled = true;
+      return null;
+    }
+    const result = await settleFileExpertOperationBefore(
+      readBoundedAnalyzerResponse(response),
+      input.deadlineAt
+    );
+    requestSettled = true;
+    return result?.job_id === input.job.id ? result : null;
+  } catch {
+    return null;
+  } finally {
+    if (requestTimeout) clearTimeout(requestTimeout);
+    if (
+      admission?.status === "acquired" &&
+      (!requestDispatched || requestSettled) &&
+      Date.now() < input.deadlineAt
+    ) {
+      await settleFileExpertOperationBefore(
+        releaseFileExpertAnalyzerAdmission(admission.lease),
+        input.deadlineAt
+      ).catch(() => undefined);
+    }
+    // If the analyzer request itself loses its response or times out, retain
+    // the token-bound lease until its TTL. The remote worker can still be using
+    // CPU after the caller disconnects.
   }
 }
 
@@ -195,36 +462,139 @@ function getPrimaryFingerprintEntries(result: FileExpertAnalyzerResult, job: Fil
   }));
 }
 
-export async function analyzeFileExpertJob(jobId: string) {
+export async function analyzeFileExpertJob(
+  jobId: string,
+  options: { allowCompleted?: boolean; operationDeadlineAt?: number } = {}
+) {
+  const operationDeadlineAt = options.operationDeadlineAt ??
+    Date.now() + fileExpertRouteOperationBudgetMs;
+  requireFileExpertBudget(operationDeadlineAt);
   const supabaseAdmin = getSupabaseAdmin();
+  const claimToken = randomUUID();
+  const claimStartedAt = new Date().toISOString();
+  const claimPayload = {
+    status: "processing",
+    error_message: null,
+    analysis_claim_token: claimToken,
+    analysis_started_at: claimStartedAt,
+  };
 
-  await supabaseAdmin
-    .from("file_expert_jobs")
-    .update({ status: "processing", error_message: null })
-    .eq("id", jobId);
-
-  const { data: jobData, error: jobError } = await supabaseAdmin
-    .from("file_expert_jobs")
-    .select("*")
-    .eq("id", jobId)
-    .single();
-
-  if (jobError || !jobData) {
-    throw new Error(jobError?.message || "File Expert job not found.");
+  let completedResultMustSurviveFailure = false;
+  let claim;
+  if (options.allowCompleted) {
+    const current = await supabaseAdmin
+      .from("file_expert_jobs")
+      .select("status")
+      .eq("id", jobId)
+      .maybeSingle();
+    if (current.error) throw new Error("File Expert analysis could not be started.");
+    const currentStatus = current.data?.status;
+    if (["pending", "failed", "completed"].includes(currentStatus ?? "")) {
+      completedResultMustSurviveFailure = shouldPreserveCompletedFileExpertResult({
+        claimedFromStatus: currentStatus,
+      });
+      claim = await supabaseAdmin
+        .from("file_expert_jobs")
+        .update(claimPayload)
+        .eq("id", jobId)
+        .eq("status", currentStatus)
+        .select("*")
+        .maybeSingle();
+    } else {
+      claim = await supabaseAdmin
+        .from("file_expert_jobs")
+        .update(claimPayload)
+        .eq("id", jobId)
+        .in("status", ["pending", "failed"])
+        .select("*")
+        .maybeSingle();
+    }
+  } else {
+    claim = await supabaseAdmin
+      .from("file_expert_jobs")
+      .update(claimPayload)
+      .eq("id", jobId)
+      .in("status", ["pending", "failed"])
+      .select("*")
+      .maybeSingle();
   }
 
-  const job = jobData as FileExpertJob;
+  if (!claim.error && !claim.data) {
+    const staleBefore = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+    claim = await supabaseAdmin
+      .from("file_expert_jobs")
+      .update(claimPayload)
+      .eq("id", jobId)
+      .eq("status", "processing")
+      .or(`analysis_started_at.is.null,analysis_started_at.lt.${staleBefore}`)
+      .select("*")
+      .maybeSingle();
+  }
+
+  if (claim.error) throw new Error("File Expert analysis could not be started.");
+  if (!claim.data) throw new FileExpertJobConflictError();
+
+  const job = claim.data as FileExpertJob;
+  completedResultMustSurviveFailure = completedResultMustSurviveFailure ||
+    shouldPreserveCompletedFileExpertResult({ existingResult: job.result_json });
 
   try {
-    const ori = await downloadFile(job.ori_file_path);
-    const mod = await downloadFile(job.mod_file_path);
-    const single = !ori && !mod ? null : ori && !mod ? ori : !ori && mod ? mod : null;
+    if (
+      !job.user_id ||
+      !isExpectedFileExpertStoragePath(job.ori_file_path, job.user_id, job.id) ||
+      !isExpectedFileExpertStoragePath(job.mod_file_path, job.user_id, job.id)
+    ) {
+      throw new FileExpertJobInputError("The job contains an invalid upload path.");
+    }
+    if (!job.ori_file_path && !job.mod_file_path) {
+      throw new FileExpertJobInputError("No uploaded file is attached to this job.");
+    }
+    for (const descriptor of [
+      job.ori_file_path ? { name: job.ori_file_name ?? "", size: Number(job.ori_file_size) } : null,
+      job.mod_file_path ? { name: job.mod_file_name ?? "", size: Number(job.mod_file_size) } : null,
+    ]) {
+      if (descriptor && validateFileExpertDescriptor(descriptor)) {
+        throw new FileExpertJobInputError();
+      }
+    }
+    const analyzerDeadlineAt = boundedFileExpertDeadline({
+      absoluteDeadlineAt: operationDeadlineAt,
+      maximumDurationMs: fileExpertAnalyzerRequestTimeoutMs,
+      reserveMs: fileExpertPostAnalyzerReserveMs,
+    });
+    requireFileExpertBudget(analyzerDeadlineAt);
+    const externalResult = await callExternalAnalyzer({ job, deadlineAt: analyzerDeadlineAt });
+    const supportedExternalResult = isSupportedExternalAnalyzerResult(externalResult, job)
+      ? externalResult
+      : null;
+    if (!supportedExternalResult && process.env.NODE_ENV === "production") {
+      // Keep the synchronous TypeScript implementation available for local
+      // development and tests only. Production binary CPU work must run in the
+      // isolated analyzer service, whose concurrency is bounded independently.
+      // Unsupported or integrity-mismatched 2.x responses fail closed too.
+      throw new FileExpertAnalyzerUnavailableError();
+    }
 
-    const externalResult = await callExternalAnalyzer({ job, ori, mod });
-    const result =
-      externalResult?.analysis_version?.startsWith("2.")
-        ? externalResult
-        : await analyzeFileExpertBuffers({
+    let result: FileExpertAnalyzerResult;
+    if (supportedExternalResult) {
+      // The analyzer downloads the signed sources itself and returns hashes and
+      // sizes bound to the job. Avoid buffering the same 32 MB sources in Next.
+      result = supportedExternalResult;
+    } else {
+      const ori = await downloadFile({
+        path: job.ori_file_path,
+        fileName: job.ori_file_name,
+        expectedSize: job.ori_file_size,
+        expectedSha256: job.ori_sha256,
+      });
+      const mod = await downloadFile({
+        path: job.mod_file_path,
+        fileName: job.mod_file_name,
+        expectedSize: job.mod_file_size,
+        expectedSha256: job.mod_sha256,
+      });
+      const single = !ori && !mod ? null : ori && !mod ? ori : !ori && mod ? mod : null;
+      result = await analyzeFileExpertBuffers({
         jobId: job.id,
         ori: ori ?? undefined,
         mod: mod ?? undefined,
@@ -243,6 +613,7 @@ export async function analyzeFileExpertJob(jobId: string) {
         },
         sourceKind: "manual_file_expert",
       });
+    }
 
     result.vehicle_match = findVehicleCandidates({
       identification: result.ecu_identification,
@@ -270,7 +641,24 @@ export async function analyzeFileExpertJob(jobId: string) {
       ];
     }
 
-    const similarity = await runSimilarityForFileExpert(job, result).catch(() => null);
+    const similaritySource = similaritySourceFromFileExpert(job, result);
+    const similarityDeadlineAt = boundedFileExpertDeadline({
+      absoluteDeadlineAt: operationDeadlineAt,
+      maximumDurationMs: fileExpertSimilarityBudgetMs,
+      reserveMs: fileExpertAiReportBudgetMs + fileExpertCompletionReserveMs,
+    });
+    const similarity = similarityDeadlineAt > Date.now()
+      ? await settleFileExpertOperationBefore(
+        findSimilarTrainingSamples(similaritySource),
+        similarityDeadlineAt
+      ).catch(() => null)
+      : null;
+    const aiReportDeadlineAt = boundedFileExpertDeadline({
+      absoluteDeadlineAt: operationDeadlineAt,
+      maximumDurationMs: fileExpertAiReportBudgetMs,
+      reserveMs: fileExpertCompletionReserveMs,
+    });
+    requireFileExpertBudget(aiReportDeadlineAt);
     const generated = await generateAiFileExpertReport({
       sourceType: "file_expert_job",
       sourceId: job.id,
@@ -284,62 +672,93 @@ export async function analyzeFileExpertJob(jobId: string) {
         customerNotes: job.customer_notes,
       },
       similarityEvidence: similarity ? buildPublicSimilarityEvidence(similarity) : null,
-    });
+    }, { deadlineAt: aiReportDeadlineAt });
     result.ai_report_status = buildFileExpertAiReportStatus(generated);
-
-    await supabaseAdmin
-      .from("file_expert_binary_fingerprints")
-      .delete()
-      .eq("job_id", job.id);
-
-    const fingerprints = getPrimaryFingerprintEntries(result, job);
-    if (fingerprints.length) {
-      const { error: fingerprintError } = await supabaseAdmin
-        .from("file_expert_binary_fingerprints")
-        .insert(fingerprints);
-      if (fingerprintError) throw fingerprintError;
-    }
 
     const exactVehicle = result.vehicle_match?.exact_vehicle_identified
       ? result.vehicle_match.candidates[0]
       : null;
-    const { error: updateError } = await supabaseAdmin
-      .from("file_expert_jobs")
-      .update({
-        status: "completed",
-        brand: job.brand || exactVehicle?.brand || null,
-        model: job.model || exactVehicle?.model || null,
-        engine: job.engine || exactVehicle?.engine || null,
-        ecu_type:
-          result.ecu_identification && result.ecu_identification.confidence >= 0.68
-            ? result.ecu_identification.display_name
-            : job.ecu_type,
-        ecu_family: result.ecu_identification?.family ?? job.ecu_family,
-        sw_number: result.ecu_identification?.software_numbers[0] ?? job.sw_number,
-        hw_number: result.ecu_identification?.hardware_numbers[0] ?? job.hw_number,
-        ori_sha256: result.files.ori?.sha256 ?? job.ori_sha256,
-        mod_sha256: result.files.mod?.sha256 ?? job.mod_sha256,
-        ori_file_size: result.files.ori?.file_size ?? job.ori_file_size,
-        mod_file_size: result.files.mod?.file_size ?? job.mod_file_size,
-        result_json: result,
-        ai_report: generated.report,
-        executive_summary: generated.executiveSummary,
-        detected_features: result.possible_features,
-        confidence_score: Math.round(result.risk_assessment.confidence * 100),
-        risk_level: result.risk_assessment.risk_level,
-        error_message: null,
-      })
-      .eq("id", job.id);
+    const fingerprints = getPrimaryFingerprintEntries(result, job);
+    const completion = {
+      analysis_version: result.analysis_version,
+      brand: job.brand || exactVehicle?.brand || null,
+      model: job.model || exactVehicle?.model || null,
+      engine: job.engine || exactVehicle?.engine || null,
+      ecu_type:
+        result.ecu_identification && result.ecu_identification.confidence >= 0.68
+          ? result.ecu_identification.display_name
+          : job.ecu_type,
+      ecu_family: result.ecu_identification?.family ?? job.ecu_family,
+      sw_number: result.ecu_identification?.software_numbers[0] ?? job.sw_number,
+      hw_number: result.ecu_identification?.hardware_numbers[0] ?? job.hw_number,
+      ori_sha256: result.files.ori?.sha256 ?? job.ori_sha256,
+      mod_sha256: result.files.mod?.sha256 ?? job.mod_sha256,
+      ori_file_size: result.files.ori?.file_size ?? job.ori_file_size,
+      mod_file_size: result.files.mod?.file_size ?? job.mod_file_size,
+      result_json: result,
+      ai_report: generated.report,
+      executive_summary: generated.executiveSummary,
+      detected_features: result.possible_features,
+      confidence_score: Math.round(result.risk_assessment.confidence * 100),
+      risk_level: result.risk_assessment.risk_level,
+    };
+    const similarityMatches = similarity?.matches.map((match) => ({
+      training_sample_id: match.training_sample_id,
+      score: match.score,
+      ecu_match_score: match.ecu_match_score,
+      file_size_score: match.file_size_score,
+      identifier_score: match.identifier_score,
+      pattern_score: match.pattern_score,
+      feature_label_score: match.feature_label_score,
+      reasons: match.reasons,
+      warnings: match.warnings,
+      compared_sample: match.compared_sample,
+    })) ?? [];
 
-    if (updateError) throw updateError;
+    // The RPC locks the job row, rechecks the exact token and live lease, then
+    // replaces fingerprints/similarity and completes the job in one transaction.
+    // A reclaimed worker cannot commit any derived row independently.
+    requireFileExpertBudget(operationDeadlineAt);
+    const { data: completedJob, error: completeError } = await settleFileExpertOperationBefore(
+      Promise.resolve(supabaseAdmin.rpc(
+        "complete_file_expert_analysis_atomic",
+        {
+          p_job_id: job.id,
+          p_claim_token: claimToken,
+          p_completion: completion,
+          p_fingerprints: fingerprints,
+          p_similarity_matches: similarityMatches,
+        }
+      )),
+      operationDeadlineAt
+    );
+
+    if (completeError) throw completeError;
+    if (completedJob !== true) throw new FileExpertJobConflictError();
 
     return result;
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Analysis failed.";
-    await supabaseAdmin
-      .from("file_expert_jobs")
-      .update({ status: "failed", error_message: message })
-      .eq("id", job.id);
+    const message = safeFileExpertAnalysisError(error).message;
+    const failureState = failedFileExpertAnalysisState({
+      preserveCompletedResult: completedResultMustSurviveFailure,
+      message,
+    });
+    const cleanupSignal = AbortSignal.timeout(
+      fileExpertCleanupTimeoutMs(operationDeadlineAt)
+    );
+    await Promise.resolve(
+      supabaseAdmin
+        .from("file_expert_jobs")
+        .update({
+          ...failureState,
+          analysis_claim_token: null,
+          analysis_started_at: null,
+        })
+        .eq("id", job.id)
+        .eq("status", "processing")
+        .eq("analysis_claim_token", claimToken)
+        .abortSignal(cleanupSignal)
+    ).catch(() => undefined);
     throw error;
   }
 }

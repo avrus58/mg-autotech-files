@@ -43,10 +43,12 @@ const protectedPageSources = [
   "/register",
   "/forgot-password",
   "/reset-password",
+  "/desktop-auth/turnstile",
   "/auth/:path*",
 ];
 
 const nextConfig: NextConfig = {
+  output: "standalone",
   async redirects() {
     return [
       {
