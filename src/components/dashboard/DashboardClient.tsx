@@ -595,184 +595,190 @@ export function DashboardClient() {
   }
 
   return (
-    <main className="mg-compact-ui min-h-screen bg-[#050505] text-white">
-      <div className="fixed inset-0 -z-10 bg-[radial-gradient(circle_at_20%_0%,rgba(160,18,28,0.24),transparent_32%),linear-gradient(135deg,#050505,#0d0d0f_48%,#160608)]" />
-
-      <div className="flex min-h-screen">
-        <aside className="hidden w-64 shrink-0 border-r border-white/10 bg-black/70 lg:block">
-          <div className="sticky top-0 flex h-screen flex-col px-4 py-5">
-            <Link href="/" className="mb-8 flex items-center gap-3">
-              <div className="relative flex h-12 w-12 items-center justify-center rounded-2xl border border-red-800/50 bg-[#111] shadow-lg shadow-red-950/40">
-                <div className="absolute -top-2 h-5 w-10 rounded-t-full border-t-2 border-red-700" />
-                <Gauge className="h-7 w-7 text-red-600" />
+    <main className="mg-compact-ui min-h-screen bg-[#070707] text-white lg:h-screen lg:overflow-hidden">
+      <div className="flex min-h-screen lg:h-screen lg:overflow-hidden">
+        <aside className="hidden w-64 shrink-0 border-r border-[#252525] bg-[#090909] lg:block">
+          <div className="sticky top-0 flex h-screen flex-col px-3 py-4">
+            <Link href="/" className="mb-6 flex items-center gap-3 px-2">
+              <div className="relative flex h-10 w-10 items-center justify-center rounded-lg border border-red-900/60 bg-[#111]">
+                <div className="absolute -top-1.5 h-3 w-8 rounded-t-full border-t border-red-700" />
+                <Gauge className="h-5 w-5 text-red-500" />
               </div>
 
               <div>
-                <div className="text-xl font-black tracking-wide">
+                <div className="text-base font-black tracking-wide">
                   MG <span className="text-red-600">AUTOTECH</span>
                 </div>
-                <div className="text-xs text-zinc-400">Customer Panel</div>
+                <div className="text-[11px] text-zinc-500">Customer Panel</div>
               </div>
             </Link>
 
             <nav
               aria-label="Customer Dashboard"
-              className="min-h-0 flex-1 space-y-2 overflow-y-auto pr-1 text-sm"
+              className="mg-dense-scroll min-h-0 flex-1 space-y-5 overflow-y-auto pr-1 text-sm"
             >
-              <Link
-                href="/dashboard"
-                aria-current="page"
-                className="flex items-center gap-3 rounded-2xl bg-red-950/35 px-4 py-3 font-bold text-white"
-              >
-                <LayoutDashboard className="h-5 w-5 text-red-500" />
-                Dashboard
-              </Link>
+              <div className="space-y-1">
+                <div className="px-3 pb-1 text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-600">
+                  File Service
+                </div>
+                <Link
+                  href="/dashboard"
+                  aria-current="page"
+                  className="flex items-center gap-3 rounded-lg bg-[#202020] px-3 py-2.5 font-bold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+                >
+                  <LayoutDashboard className="h-4 w-4 text-red-500" />
+                  Dashboard
+                </Link>
+                <Link
+                  href="/new-request"
+                  className="flex items-center gap-3 rounded-lg px-3 py-2.5 font-bold text-zinc-400 transition hover:bg-[#151515] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+                >
+                  <Upload className="h-4 w-4" />
+                  New File Request
+                </Link>
+                <Link
+                  href="/dashboard/orders"
+                  className="flex items-center gap-3 rounded-lg px-3 py-2.5 font-bold text-zinc-400 transition hover:bg-[#151515] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+                >
+                  <FileText className="h-4 w-4" />
+                  Active Orders
+                </Link>
+                <Link
+                  href="/dashboard/orders?view=needs_response"
+                  className="flex items-center gap-3 rounded-lg px-3 py-2.5 font-bold text-zinc-400 transition hover:bg-[#151515] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+                >
+                  <Clipboard className="h-4 w-4" />
+                  Needs Response
+                </Link>
+                <Link
+                  href="/dashboard/orders?view=completed"
+                  className="flex items-center gap-3 rounded-lg px-3 py-2.5 font-bold text-zinc-400 transition hover:bg-[#151515] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+                >
+                  <History className="h-4 w-4" />
+                  Order History
+                </Link>
+              </div>
 
-              <Link
-                href="/new-request"
-                className="flex items-center gap-3 rounded-2xl px-4 py-3 font-bold text-zinc-400 transition hover:bg-white/[0.06] hover:text-white"
-              >
-                <Upload className="h-5 w-5" />
-                New File Request
-              </Link>
+              <div className="space-y-1">
+                <div className="px-3 pb-1 text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-600">
+                  Quick Actions
+                </div>
+                <Link
+                  href="/dashboard/file-expert"
+                  className="flex items-center gap-3 rounded-lg px-3 py-2.5 font-bold text-zinc-400 transition hover:bg-[#151515] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+                >
+                  <BrainCircuit className="h-4 w-4" />
+                  AI File Expert
+                </Link>
+                <Link
+                  href="/dashboard/log-analysis"
+                  className="flex items-center gap-3 rounded-lg px-3 py-2.5 font-bold text-zinc-400 transition hover:bg-[#151515] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+                >
+                  <Activity className="h-4 w-4" />
+                  Datalog Analysis Studio
+                </Link>
+                <Link
+                  href="/dashboard/widget"
+                  className="flex items-center gap-3 rounded-lg px-3 py-2.5 font-bold text-zinc-400 transition hover:bg-[#151515] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+                >
+                  <Braces className="h-4 w-4" />
+                  Vehicle Widget
+                </Link>
+              </div>
 
-              <Link
-                href="/dashboard/file-expert"
-                className="flex items-center gap-3 rounded-2xl px-4 py-3 font-bold text-zinc-400 transition hover:bg-white/[0.06] hover:text-white"
-              >
-                <BrainCircuit className="h-5 w-5" />
-                AI File Expert
-              </Link>
-
-              <Link
-                href="/dashboard/log-analysis"
-                className="flex items-center gap-3 rounded-2xl px-4 py-3 font-bold text-zinc-400 transition hover:bg-white/[0.06] hover:text-white"
-              >
-                <Activity className="h-5 w-5" />
-                Datalog Analysis Studio
-              </Link>
-
-              <Link
-                href="/dashboard/widget"
-                className="flex items-center gap-3 rounded-2xl px-4 py-3 font-bold text-zinc-400 transition hover:bg-white/[0.06] hover:text-white"
-              >
-                <Braces className="h-5 w-5" />
-                Vehicle Widget
-              </Link>
-
-              <Link
-                href="/dashboard/orders"
-                className="flex items-center gap-3 rounded-2xl px-4 py-3 font-bold text-zinc-400 transition hover:bg-white/[0.06] hover:text-white"
-              >
-                <FileText className="h-5 w-5" />
-                Active Orders
-              </Link>
-
-              <Link
-                href="/dashboard/orders?view=needs_response"
-                className="flex items-center gap-3 rounded-2xl px-4 py-3 font-bold text-zinc-400 transition hover:bg-white/[0.06] hover:text-white"
-              >
-                <Clipboard className="h-5 w-5" />
-                Needs Response
-              </Link>
-
-              <Link
-                href="/dashboard/orders?view=completed"
-                className="flex items-center gap-3 rounded-2xl px-4 py-3 font-bold text-zinc-400 transition hover:bg-white/[0.06] hover:text-white"
-              >
-                <History className="h-5 w-5" />
-                Order History
-              </Link>
-
-              <Link
-                href="/dashboard/credits"
-                className="flex items-center gap-3 rounded-2xl px-4 py-3 font-bold text-zinc-400 transition hover:bg-white/[0.06] hover:text-white"
-              >
-                <CreditCard className="h-5 w-5" />
-                Buy Credits
-              </Link>
-
-              <Link
-                href="/dashboard/credits/history"
-                className="flex items-center gap-3 rounded-2xl px-4 py-3 font-bold text-zinc-400 transition hover:bg-white/[0.06] hover:text-white"
-              >
-                <History className="h-5 w-5" />
-                Credit History
-              </Link>
-
-              <Link
-                href="/dashboard/notifications"
-                className="flex items-center gap-3 rounded-2xl px-4 py-3 font-bold text-zinc-400 transition hover:bg-white/[0.06] hover:text-white"
-              >
-                <BellRing className="h-5 w-5" />
-                Notifications
-              </Link>
-
-              <Link
-                href="/dashboard/settings"
-                className="flex items-center gap-3 rounded-2xl px-4 py-3 font-bold text-zinc-400 transition hover:bg-white/[0.06] hover:text-white"
-              >
-                <Settings className="h-5 w-5" />
-                Settings
-              </Link>
-
-              <a
-                href="mailto:info@mgautotech.de"
-                className="flex items-center gap-3 rounded-2xl px-4 py-3 font-bold text-zinc-400 transition hover:bg-white/[0.06] hover:text-white"
-              >
-                <Wrench className="h-5 w-5" />
-                Support
-              </a>
+              <div className="space-y-1">
+                <div className="px-3 pb-1 text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-600">
+                  Account
+                </div>
+                <Link
+                  href="/dashboard/credits"
+                  className="flex items-center gap-3 rounded-lg px-3 py-2.5 font-bold text-zinc-400 transition hover:bg-[#151515] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+                >
+                  <CreditCard className="h-4 w-4" />
+                  Buy Credits
+                </Link>
+                <Link
+                  href="/dashboard/credits/history"
+                  className="flex items-center gap-3 rounded-lg px-3 py-2.5 font-bold text-zinc-400 transition hover:bg-[#151515] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+                >
+                  <History className="h-4 w-4" />
+                  Credit History
+                </Link>
+                <Link
+                  href="/dashboard/notifications"
+                  className="flex items-center gap-3 rounded-lg px-3 py-2.5 font-bold text-zinc-400 transition hover:bg-[#151515] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+                >
+                  <BellRing className="h-4 w-4" />
+                  Notifications
+                </Link>
+                <Link
+                  href="/dashboard/settings"
+                  className="flex items-center gap-3 rounded-lg px-3 py-2.5 font-bold text-zinc-400 transition hover:bg-[#151515] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+                >
+                  <Settings className="h-4 w-4" />
+                  Settings
+                </Link>
+                <a
+                  href="mailto:info@mgautotech.de"
+                  className="flex items-center gap-3 rounded-lg px-3 py-2.5 font-bold text-zinc-400 transition hover:bg-[#151515] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+                >
+                  <Wrench className="h-4 w-4" />
+                  Support
+                </a>
+              </div>
             </nav>
 
-            <div className="mt-5 shrink-0 rounded-3xl border border-red-900/40 bg-red-950/20 p-5">
-              <div className="text-xs font-bold uppercase tracking-[0.2em] text-red-400">
+            <div className="mt-4 shrink-0 rounded-lg border border-[#292929] bg-[#0d0d0d] p-4">
+              <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500">
                 Current Balance
               </div>
-              <div className="mt-2 text-4xl font-black">{credits}</div>
-              <div className="mt-1 text-xs text-zinc-400">Available Credits</div>
+              <div className="mt-2 flex items-end justify-between gap-3">
+                <div className="text-3xl font-black tabular-nums">{credits}</div>
+                <CreditCard className="mb-1 h-4 w-4 text-red-500" />
+              </div>
+              <div className="mt-1 text-[11px] text-zinc-500">Available Credits</div>
             </div>
           </div>
         </aside>
 
-        <section className="min-w-0 flex-1">
-          <header className="sticky top-0 z-40 border-b border-white/10 bg-black/75 backdrop-blur-xl">
-            <div className="flex items-center justify-between gap-4 px-4 py-3 lg:px-6 xl:px-8">
+        <section className="min-w-0 flex-1 lg:flex lg:h-screen lg:flex-col lg:overflow-hidden">
+          <header className="sticky top-0 z-40 shrink-0 border-b border-[#252525] bg-[#090909]/95 backdrop-blur-xl lg:static">
+            <div className="flex min-h-16 items-center justify-between gap-3 px-4 py-2.5 lg:px-5 xl:px-6">
               <div>
-                <div className="text-xs font-black uppercase tracking-[0.25em] text-red-600">
+                <div className="text-[10px] font-black uppercase tracking-[0.22em] text-zinc-500">
                   Customer Dashboard
                 </div>
-                <h1 className="mt-1 text-2xl font-black md:text-3xl">
+                <h1 className="mt-0.5 text-lg font-black md:text-xl">
                   File Service Panel
                 </h1>
               </div>
 
-              <div className="flex items-center gap-3">
-                <div className="hidden items-center gap-2 rounded-2xl border border-emerald-700/30 bg-emerald-950/20 px-4 py-3 text-xs font-black text-emerald-300 xl:flex">
+              <div className="flex items-center gap-2">
+                <div className="hidden items-center gap-2 rounded-lg border border-[#2b2b2b] bg-[#0d0d0d] px-3 py-2 text-[11px] font-black text-emerald-300 xl:flex">
                   <span className="h-2 w-2 rounded-full bg-emerald-400" />
                   {liveRefreshing ? "Syncing" : "Live sync"}
                 </div>
 
-                <div className="hidden rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 xl:block">
-                  <div className="text-xs text-zinc-500">Logged in as</div>
-                  <div className="max-w-[220px] truncate text-sm font-bold">
+                <div className="hidden rounded-lg border border-[#2b2b2b] bg-[#0d0d0d] px-3 py-2 xl:block">
+                  <div className="text-[10px] text-zinc-500">Logged in as</div>
+                  <div className="max-w-[200px] truncate text-xs font-bold">
                     {email}
                   </div>
                   {customerId && (
-                    <div className="mt-1 text-xs font-black text-red-400">
+                    <div className="mt-0.5 text-[10px] font-black text-red-400">
                       {customerId}
                     </div>
                   )}
                 </div>
 
-                <div className="rounded-2xl border border-red-900/40 bg-red-950/25 px-4 py-3">
-                  <div className="text-xs text-zinc-500">Credits</div>
-                  <div className="text-sm font-black text-white">{credits}</div>
+                <div className="rounded-lg border border-[#2b2b2b] bg-[#0d0d0d] px-3 py-2">
+                  <div className="text-[10px] text-zinc-500">Credits</div>
+                  <div className="text-xs font-black tabular-nums text-white">{credits}</div>
                 </div>
 
                 <button
                   onClick={handleLogout}
-                  className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-bold text-white transition hover:bg-white/10"
+                  className="rounded-lg border border-[#2b2b2b] bg-[#0d0d0d] px-3 py-2 text-xs font-bold text-white transition hover:border-zinc-600 hover:bg-[#151515] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
                 >
                   <LogOut className="mr-2 inline h-4 w-4" />
                   Logout
@@ -783,7 +789,7 @@ export function DashboardClient() {
 
           <nav
             aria-label="Customer Dashboard"
-            className="flex gap-2 overflow-x-auto border-b border-white/10 bg-black/45 px-4 py-3 lg:hidden"
+            className="mg-dense-scroll flex shrink-0 gap-2 overflow-x-auto border-b border-[#252525] bg-[#090909] px-4 py-2.5 lg:hidden"
           >
             <Link href="/dashboard" aria-current="page" className="shrink-0 rounded-xl border border-red-800/50 bg-red-950/30 px-4 py-2.5 text-xs font-black">
               <Home className="mr-2 inline h-4 w-4" />Dashboard
@@ -805,11 +811,11 @@ export function DashboardClient() {
             </Link>
           </nav>
 
-          <div className="px-4 py-5 lg:px-6 xl:px-8">
+          <div className="mg-dense-scroll overscroll-contain px-4 py-4 lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:px-5 xl:px-6">
             {dashboardLoadError && dashboardReady && (
               <div
                 role="alert"
-                className="mb-6 flex flex-col gap-4 rounded-[2rem] border border-amber-700/40 bg-amber-950/20 p-5 shadow-2xl shadow-black/20 md:flex-row md:items-center md:justify-between"
+                className="mb-4 flex flex-col gap-4 rounded-xl border border-amber-700/40 bg-amber-950/15 p-4 md:flex-row md:items-center md:justify-between"
               >
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2 text-xs font-black uppercase tracking-[0.2em] text-amber-200">
@@ -833,18 +839,18 @@ export function DashboardClient() {
 
             <div
               data-dashboard-primary="recent-requests"
-              className="mb-6 grid gap-5 min-[1180px]:grid-cols-[minmax(0,1fr)_20rem]"
+              className="mb-4 grid gap-4 min-[1180px]:grid-cols-[minmax(0,1fr)_20rem]"
             >
               <section
                 aria-labelledby="recent-requests-title"
-                className="min-w-0 rounded-3xl border border-white/10 bg-white/[0.04] p-4 shadow-2xl shadow-black/20 lg:p-5"
+                className="min-w-0 rounded-xl border border-[#292929] bg-[#0b0b0b] p-4 lg:p-5"
               >
                 <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <div className="text-xs font-black uppercase tracking-[0.2em] text-red-500">
                       Recent Requests
                     </div>
-                    <h2 id="recent-requests-title" className="mt-1 text-2xl font-black">
+                    <h2 id="recent-requests-title" className="mt-1 text-xl font-black">
                       Your latest file orders
                     </h2>
                   </div>
@@ -852,14 +858,14 @@ export function DashboardClient() {
                   <div className="flex flex-wrap gap-2">
                     <Link
                       href="/dashboard/orders"
-                      className="inline-flex items-center justify-center rounded-xl border border-white/10 bg-black/25 px-4 py-2.5 text-xs font-black text-white transition hover:bg-white/10"
+                      className="inline-flex items-center justify-center rounded-lg border border-[#303030] bg-[#111] px-3 py-2 text-xs font-black text-white transition hover:border-zinc-500 hover:bg-[#181818] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
                     >
                       <History className="mr-2 h-4 w-4" />
                       View All Orders
                     </Link>
                     <Link
                       href="/new-request"
-                      className="inline-flex items-center justify-center rounded-xl bg-[#b1121b] px-4 py-2.5 text-xs font-black text-white transition hover:bg-[#c91824]"
+                      className="inline-flex items-center justify-center rounded-lg bg-[#b1121b] px-3 py-2 text-xs font-black text-white transition hover:bg-[#c91824] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
                     >
                       <Plus className="mr-2 h-4 w-4" />
                       New Request
@@ -868,7 +874,7 @@ export function DashboardClient() {
                 </div>
 
                 {orders.length === 0 ? (
-                  <div className="rounded-2xl border border-dashed border-white/15 bg-black/25 p-6 text-center">
+                  <div className="rounded-lg border border-dashed border-[#303030] bg-[#090909] p-6 text-center">
                     <Upload className="mx-auto mb-3 h-8 w-8 text-red-500" />
                     <h3 className="text-lg font-black">No file request yet</h3>
                     <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-zinc-400">
@@ -876,14 +882,14 @@ export function DashboardClient() {
                     </p>
                     <Link
                       href="/new-request"
-                      className="mt-4 inline-flex rounded-xl bg-[#b1121b] px-4 py-2.5 text-sm font-black text-white transition hover:bg-[#c91824]"
+                      className="mt-4 inline-flex rounded-lg bg-[#b1121b] px-4 py-2.5 text-sm font-black text-white transition hover:bg-[#c91824] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
                     >
                       Create File Request
                     </Link>
                   </div>
                 ) : (
-                  <div className="min-w-0 overflow-hidden rounded-2xl border border-white/10">
-                    <div className="divide-y divide-white/10">
+                  <div className="min-w-0 overflow-hidden rounded-lg border border-[#292929]">
+                    <div className="divide-y divide-[#252525]">
                       {orders.map((order) => {
                         const isCompleted = order.status === "completed";
                         const needsCustomerResponse =
@@ -898,7 +904,7 @@ export function DashboardClient() {
                         return (
                           <article
                             key={order.id}
-                            className="grid min-w-0 gap-3 bg-black/20 p-4 transition hover:bg-white/[0.04] sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"
+                            className="grid min-w-0 gap-3 bg-[#090909] p-3 transition hover:bg-[#121212] sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"
                           >
                             <div className="min-w-0">
                               <div className="flex flex-wrap items-center gap-2">
@@ -944,7 +950,7 @@ export function DashboardClient() {
                             <Link
                               href={`/dashboard/orders/${order.id}`}
                               aria-label={`${isCompleted ? "Open delivery" : needsCustomerResponse ? "Respond to" : "View"} ${order.vehicle_brand || "vehicle"} ${order.vehicle_model || "request"}`}
-                              className="inline-flex w-full items-center justify-center rounded-xl border border-white/10 bg-white/[0.05] px-4 py-2.5 text-xs font-black text-white transition hover:border-red-800/60 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 sm:w-auto"
+                              className="inline-flex w-full items-center justify-center rounded-lg border border-[#303030] bg-[#111] px-3 py-2 text-xs font-black text-white transition hover:border-red-800/70 hover:bg-[#181818] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 sm:w-auto"
                             >
                               <OrderActionIcon className="mr-2 h-4 w-4" />
                               {isCompleted
@@ -966,10 +972,10 @@ export function DashboardClient() {
                 className="space-y-4"
               >
                 <div
-                  className={`rounded-3xl border p-4 shadow-2xl shadow-black/20 ${dashboardNextAction.tone}`}
+                  className={`rounded-xl border bg-[#0b0b0b] p-4 ${dashboardNextAction.tone}`}
                 >
                   <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-black/30">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-black/30">
                       <NextActionIcon className="h-5 w-5" />
                     </div>
                     <div className="min-w-0">
@@ -1002,7 +1008,7 @@ export function DashboardClient() {
 
                   <Link
                     href={dashboardNextAction.href}
-                    className="mt-4 inline-flex w-full items-center justify-center rounded-xl bg-white px-4 py-2.5 text-xs font-black text-black transition hover:bg-zinc-100"
+                    className="mt-4 inline-flex w-full items-center justify-center rounded-lg bg-white px-4 py-2.5 text-xs font-black text-black transition hover:bg-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
                   >
                     {dashboardNextAction.cta}
                     <ArrowRight className="ml-2 h-4 w-4" />
@@ -1012,11 +1018,11 @@ export function DashboardClient() {
                 <section
                   aria-label="Customer Dashboard"
                   data-dashboard-priority-summary
-                  className="grid grid-cols-2 gap-2 sm:grid-cols-4 min-[1180px]:grid-cols-2"
+                  className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-[#292929] bg-[#292929]"
                 >
                   <Link
                     href="/dashboard/orders"
-                    className="min-w-0 rounded-2xl border border-blue-800/35 bg-blue-950/15 p-3 transition hover:border-blue-500/60 hover:bg-blue-950/25"
+                    className="min-w-0 bg-[#0b0b0b] p-3 transition hover:bg-[#131313] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500"
                   >
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-2xl font-black">{activeCount}</span>
@@ -1038,7 +1044,7 @@ export function DashboardClient() {
 
                   <Link
                     href="/dashboard/orders?view=needs_response"
-                    className="min-w-0 rounded-2xl border border-orange-700/40 bg-orange-950/20 p-3 transition hover:border-orange-500/70 hover:bg-orange-950/30"
+                    className="min-w-0 bg-[#0b0b0b] p-3 transition hover:bg-[#131313] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-orange-500"
                   >
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-2xl font-black">{needsResponseCount}</span>
@@ -1054,7 +1060,7 @@ export function DashboardClient() {
 
                   <Link
                     href="/dashboard/orders?view=completed"
-                    className="min-w-0 rounded-2xl border border-emerald-800/35 bg-emerald-950/15 p-3 transition hover:border-emerald-600/60 hover:bg-emerald-950/25"
+                    className="min-w-0 bg-[#0b0b0b] p-3 transition hover:bg-[#131313] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-500"
                   >
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-2xl font-black">{completedCount}</span>
@@ -1067,7 +1073,7 @@ export function DashboardClient() {
 
                   <Link
                     href="/dashboard/credits"
-                    className="min-w-0 rounded-2xl border border-red-900/45 bg-red-950/20 p-3 transition hover:border-red-700/70 hover:bg-red-950/30"
+                    className="min-w-0 bg-[#0b0b0b] p-3 transition hover:bg-[#131313] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-red-500"
                   >
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-2xl font-black">{credits}</span>
@@ -1079,7 +1085,7 @@ export function DashboardClient() {
                   </Link>
                 </section>
 
-                <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-4">
+                <div className="rounded-xl border border-[#292929] bg-[#0b0b0b] p-4">
                   <div className="flex items-center justify-between gap-3">
                     <div className="min-w-0">
                       <div className="text-[11px] font-black uppercase tracking-[0.18em] text-red-500">
@@ -1096,7 +1102,7 @@ export function DashboardClient() {
                     type="button"
                     onClick={copyReference}
                     disabled={!customerReference}
-                    className="mt-3 inline-flex w-full items-center justify-center rounded-xl border border-white/10 bg-black/25 px-4 py-2.5 text-xs font-black text-white transition hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="mt-3 inline-flex w-full items-center justify-center rounded-lg border border-[#303030] bg-[#111] px-4 py-2.5 text-xs font-black text-white transition hover:border-zinc-500 hover:bg-[#181818] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <Clipboard className="mr-2 h-4 w-4" />
                     <span aria-live="polite">
@@ -1111,7 +1117,7 @@ export function DashboardClient() {
               </aside>
             </div>
 
-            <details className="group mb-4 overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04]">
+            <details className="group mb-3 overflow-hidden rounded-xl border border-[#292929] bg-[#0b0b0b]">
               <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-4 py-4 marker:hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-red-500">
                 <span className="min-w-0">
                   <span className="block break-words text-lg font-black">
@@ -1121,63 +1127,63 @@ export function DashboardClient() {
                 <ArrowRight className="h-5 w-5 shrink-0 text-zinc-400 transition group-open:rotate-90" />
               </summary>
 
-              <div className="border-t border-white/10 p-4">
+              <div className="border-t border-[#292929] p-4">
                 <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
-                <Link
-                  href="/dashboard/file-expert"
-                  className="flex min-w-0 items-center justify-between rounded-xl border border-white/10 bg-black/25 px-3 py-3 text-sm font-black transition hover:border-red-800/60 hover:bg-white/[0.06]"
-                >
-                  <span className="flex min-w-0 items-center gap-2">
-                    <BrainCircuit className="h-4 w-4 shrink-0 text-red-400" />
-                    <span className="break-words">AI File Expert</span>
-                  </span>
-                  <ArrowRight className="h-4 w-4 shrink-0 text-zinc-500" />
-                </Link>
-                <Link
-                  href="/dashboard/log-analysis"
-                  className="flex min-w-0 items-center justify-between rounded-xl border border-white/10 bg-black/25 px-3 py-3 text-sm font-black transition hover:border-cyan-800/60 hover:bg-white/[0.06]"
-                >
-                  <span className="flex min-w-0 items-center gap-2">
-                    <Activity className="h-4 w-4 shrink-0 text-cyan-300" />
-                    <span className="break-words">Datalog Studio</span>
-                  </span>
-                  <ArrowRight className="h-4 w-4 shrink-0 text-zinc-500" />
-                </Link>
-                <Link
-                  href="/dashboard/credits"
-                  className="flex min-w-0 items-center justify-between rounded-xl border border-white/10 bg-black/25 px-3 py-3 text-sm font-black transition hover:border-red-800/60 hover:bg-white/[0.06]"
-                >
-                  <span className="flex min-w-0 items-center gap-2">
-                    <CreditCard className="h-4 w-4 shrink-0 text-red-400" />
-                    <span className="break-words">Buy Credits</span>
-                  </span>
-                  <ArrowRight className="h-4 w-4 shrink-0 text-zinc-500" />
-                </Link>
-                <Link
-                  href="/dashboard/settings"
-                  className="flex min-w-0 items-center justify-between rounded-xl border border-white/10 bg-black/25 px-3 py-3 text-sm font-black transition hover:border-red-800/60 hover:bg-white/[0.06]"
-                >
-                  <span className="flex min-w-0 items-center gap-2">
-                    <Settings className="h-4 w-4 shrink-0 text-red-400" />
-                    <span className="break-words">Settings</span>
-                  </span>
-                  <ArrowRight className="h-4 w-4 shrink-0 text-zinc-500" />
-                </Link>
-                <a
-                  href="mailto:info@mgautotech.de"
-                  className="flex min-w-0 items-center justify-between rounded-xl border border-white/10 bg-black/25 px-3 py-3 text-sm font-black transition hover:border-red-800/60 hover:bg-white/[0.06]"
-                >
-                  <span className="flex min-w-0 items-center gap-2">
-                    <Wrench className="h-4 w-4 shrink-0 text-red-400" />
-                    <span className="break-words">Support</span>
-                  </span>
-                  <ArrowRight className="h-4 w-4 shrink-0 text-zinc-500" />
-                </a>
+                  <Link
+                    href="/dashboard/file-expert"
+                    className="flex min-w-0 items-center justify-between rounded-lg border border-[#292929] bg-[#090909] px-3 py-3 text-sm font-black transition hover:border-red-800/60 hover:bg-[#121212] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+                  >
+                    <span className="flex min-w-0 items-center gap-2">
+                      <BrainCircuit className="h-4 w-4 shrink-0 text-red-400" />
+                      <span className="break-words">AI File Expert</span>
+                    </span>
+                    <ArrowRight className="h-4 w-4 shrink-0 text-zinc-500" />
+                  </Link>
+                  <Link
+                    href="/dashboard/log-analysis"
+                    className="flex min-w-0 items-center justify-between rounded-lg border border-[#292929] bg-[#090909] px-3 py-3 text-sm font-black transition hover:border-cyan-800/60 hover:bg-[#121212] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500"
+                  >
+                    <span className="flex min-w-0 items-center gap-2">
+                      <Activity className="h-4 w-4 shrink-0 text-cyan-300" />
+                      <span className="break-words">Datalog Studio</span>
+                    </span>
+                    <ArrowRight className="h-4 w-4 shrink-0 text-zinc-500" />
+                  </Link>
+                  <Link
+                    href="/dashboard/credits"
+                    className="flex min-w-0 items-center justify-between rounded-lg border border-[#292929] bg-[#090909] px-3 py-3 text-sm font-black transition hover:border-red-800/60 hover:bg-[#121212] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+                  >
+                    <span className="flex min-w-0 items-center gap-2">
+                      <CreditCard className="h-4 w-4 shrink-0 text-red-400" />
+                      <span className="break-words">Buy Credits</span>
+                    </span>
+                    <ArrowRight className="h-4 w-4 shrink-0 text-zinc-500" />
+                  </Link>
+                  <Link
+                    href="/dashboard/settings"
+                    className="flex min-w-0 items-center justify-between rounded-lg border border-[#292929] bg-[#090909] px-3 py-3 text-sm font-black transition hover:border-red-800/60 hover:bg-[#121212] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+                  >
+                    <span className="flex min-w-0 items-center gap-2">
+                      <Settings className="h-4 w-4 shrink-0 text-red-400" />
+                      <span className="break-words">Settings</span>
+                    </span>
+                    <ArrowRight className="h-4 w-4 shrink-0 text-zinc-500" />
+                  </Link>
+                  <a
+                    href="mailto:info@mgautotech.de"
+                    className="flex min-w-0 items-center justify-between rounded-lg border border-[#292929] bg-[#090909] px-3 py-3 text-sm font-black transition hover:border-red-800/60 hover:bg-[#121212] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+                  >
+                    <span className="flex min-w-0 items-center gap-2">
+                      <Wrench className="h-4 w-4 shrink-0 text-red-400" />
+                      <span className="break-words">Support</span>
+                    </span>
+                    <ArrowRight className="h-4 w-4 shrink-0 text-zinc-500" />
+                  </a>
                 </div>
               </div>
             </details>
 
-            <details className="group mb-4 overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04]">
+            <details className="group mb-3 overflow-hidden rounded-xl border border-[#292929] bg-[#0b0b0b]">
               <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-4 py-4 marker:hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-red-500">
                 <span className="min-w-0">
                   <span className="block text-xs font-black uppercase tracking-[0.2em] text-red-500">
@@ -1190,7 +1196,7 @@ export function DashboardClient() {
                 <ArrowRight className="h-5 w-5 shrink-0 text-zinc-400 transition group-open:rotate-90" />
               </summary>
 
-              <div className="border-t border-white/10 p-4">
+              <div className="border-t border-[#292929] p-4">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <p className="max-w-3xl text-sm leading-6 text-zinc-400">
                     Use the safe preparation tools first, submit through the secure
@@ -1209,7 +1215,7 @@ export function DashboardClient() {
                       <Link
                         key={step.title}
                         href={step.href}
-                        className="group/step min-w-0 rounded-2xl border border-white/10 bg-black/25 p-3 transition hover:border-red-800/60 hover:bg-white/[0.05]"
+                        className="group/step min-w-0 rounded-lg border border-[#292929] bg-[#090909] p-3 transition hover:border-red-800/60 hover:bg-[#121212] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
                       >
                         <div className="flex items-center justify-between gap-3">
                           <StepIcon className="h-4 w-4 shrink-0 text-red-400" />
@@ -1233,7 +1239,7 @@ export function DashboardClient() {
               </div>
             </details>
 
-            <details className="group overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04]">
+            <details className="group overflow-hidden rounded-xl border border-[#292929] bg-[#0b0b0b]">
               <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-4 py-4 marker:hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-red-500">
                 <span className="min-w-0">
                   <span className="block text-xs font-black uppercase tracking-[0.2em] text-red-500">
@@ -1243,18 +1249,18 @@ export function DashboardClient() {
                 <ArrowRight className="h-5 w-5 shrink-0 text-zinc-400 transition group-open:rotate-90" />
               </summary>
 
-              <div className="border-t border-white/10 p-4">
+              <div className="border-t border-[#292929] p-4">
                 <div className="mb-4 flex justify-end">
                   <Link
                     href="/dashboard/credits/history"
-                    className="rounded-xl border border-white/10 bg-black/25 px-3 py-2 text-xs font-black text-white transition hover:bg-white/10"
+                    className="rounded-lg border border-[#303030] bg-[#111] px-3 py-2 text-xs font-black text-white transition hover:border-zinc-500 hover:bg-[#181818] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
                   >
                     View All
                   </Link>
                 </div>
 
                 {creditHistory.length === 0 ? (
-                  <div className="rounded-3xl border border-dashed border-white/15 bg-black/25 p-8 text-center">
+                  <div className="rounded-lg border border-dashed border-[#303030] bg-[#090909] p-8 text-center">
                     <CreditCard className="mx-auto mb-4 h-9 w-9 text-red-500" />
                     <h3 className="text-lg font-black text-white">
                       No credit ledger movements yet
@@ -1266,13 +1272,13 @@ export function DashboardClient() {
                     <div className="mt-5 flex flex-wrap justify-center gap-3">
                       <Link
                         href="/dashboard/credits"
-                        className="rounded-xl bg-[#b1121b] px-4 py-2.5 text-xs font-black text-white transition hover:bg-[#c91824]"
+                        className="rounded-lg bg-[#b1121b] px-4 py-2.5 text-xs font-black text-white transition hover:bg-[#c91824] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
                       >
                         Buy Credits
                       </Link>
                       <Link
                         href="/dashboard/credits/history"
-                        className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-xs font-black text-white transition hover:bg-white/10"
+                        className="rounded-lg border border-[#303030] bg-[#111] px-4 py-2.5 text-xs font-black text-white transition hover:border-zinc-500 hover:bg-[#181818] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
                       >
                         Full Ledger
                       </Link>
@@ -1288,7 +1294,7 @@ export function DashboardClient() {
                       return (
                         <div
                           key={item.id}
-                          className="flex flex-col gap-4 rounded-2xl bg-black/30 p-4 sm:flex-row sm:items-center sm:justify-between"
+                          className="flex flex-col gap-4 rounded-lg border border-[#252525] bg-[#090909] p-4 sm:flex-row sm:items-center sm:justify-between"
                         >
                           <div className="min-w-0">
                             <div className="break-words font-bold">

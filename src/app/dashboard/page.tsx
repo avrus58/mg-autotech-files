@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { DashboardClient } from "@/components/dashboard/DashboardClient";
+import { EfferdDashboard2 } from "@/components/ui/efferd-dashboard-2";
 
 export const metadata: Metadata = {
   title: "Customer Dashboard",
@@ -8,5 +8,5 @@ export const metadata: Metadata = {
 };
 
 export default function DashboardPage() {
-  return <DashboardClient />;
+  return <EfferdDashboard2 />;
 }

@@ -556,7 +556,7 @@ test("customer dashboard shows one prioritized next best action", () => {
 test("customer dashboard shows a safe preparation-to-delivery workflow map", () => {
   const dashboard = readProjectFile("src", "components", "dashboard", "DashboardClient.tsx");
   const workflowBlock =
-    dashboard.match(/<details className="group mb-4[\s\S]*?Customer Workflow Map[\s\S]*?customerWorkflowSteps\.map[\s\S]*?<\/details>/)?.[0] ??
+    dashboard.match(/<details className="group mb-\d[\s\S]*?Customer Workflow Map[\s\S]*?customerWorkflowSteps\.map[\s\S]*?<\/details>/)?.[0] ??
     "";
 
   assert.match(dashboard, /const customerWorkflowSteps = useMemo/);
@@ -619,6 +619,61 @@ test("customer dashboard keeps recent order status first and secondary tools col
   );
   assert.doesNotMatch(recentOrderProjection, /customer_email|notes/);
   assert.doesNotMatch(dashboard, /Not Ready|min-h-\[220px\]|text-5xl|Need a new tuning file\?|Secure File Workflow/);
+});
+
+test("customer dashboard uses the Efferd shell without losing routes or adding unused UI packages", () => {
+  const page = readProjectFile("src", "app", "dashboard", "page.tsx");
+  const shell = readProjectFile("src", "components", "app-shell.tsx");
+  const dashboardEntry = readProjectFile("src", "components", "dashboard", "index.tsx");
+  const efferd = readProjectFile("src", "components", "ui", "efferd-dashboard-2.tsx");
+  const dashboard = readProjectFile("src", "components", "dashboard", "DashboardClient.tsx");
+  const globals = readProjectFile("src", "app", "globals.css");
+  const i18nCheck = readProjectFile("scripts", "check-customer-i18n.ts");
+  const packageJson = readProjectFile("package.json");
+  const presentation = `${page}\n${shell}\n${dashboardEntry}\n${efferd}\n${dashboard}`;
+
+  assert.match(page, /import \{ EfferdDashboard2 \} from "@\/components\/ui\/efferd-dashboard-2"/);
+  assert.match(page, /return <EfferdDashboard2 \/>/);
+  assert.match(efferd, /import \{ AppShell \} from "@\/components\/app-shell"/);
+  assert.match(efferd, /import \{ Dashboard \} from "@\/components\/dashboard"/);
+  assert.match(efferd, /<AppShell>[\s\S]*<Dashboard \/>[\s\S]*<\/AppShell>/);
+  assert.match(dashboardEntry, /return <DashboardClient \/>/);
+  assert.match(shell, /data-dashboard-shell="efferd"/);
+  assert.match(shell, /mg-efferd-dashboard/);
+  assert.match(globals, /\.mg-efferd-dashboard \.mg-compact-ui/);
+  assert.match(globals, /border-radius: 0\.75rem !important/);
+  assert.match(dashboard, /lg:h-screen lg:overflow-hidden/);
+  assert.match(dashboard, /lg:flex lg:h-screen lg:flex-col lg:overflow-hidden/);
+  assert.match(dashboard, /lg:min-h-0 lg:flex-1 lg:overflow-y-auto/);
+  assert.match(dashboard, /grid grid-cols-2 gap-px overflow-hidden/);
+
+  for (const target of [
+    'href="/"',
+    'href="/dashboard"',
+    'href="/new-request"',
+    'href="/dashboard/file-expert"',
+    'href="/dashboard/log-analysis"',
+    'href="/dashboard/widget"',
+    'href="/dashboard/orders"',
+    'href="/dashboard/orders?view=needs_response"',
+    'href="/dashboard/orders?view=completed"',
+    'href="/dashboard/credits"',
+    'href="/dashboard/credits/history"',
+    'href="/dashboard/notifications"',
+    'href="/dashboard/settings"',
+    'href="mailto:info@mgautotech.de"',
+  ]) {
+    assert.ok(presentation.includes(target), `missing preserved customer dashboard target: ${target}`);
+  }
+
+  assert.match(dashboard, /href=\{`\/dashboard\/orders\/\$\{order\.id\}`\}/);
+  assert.match(dashboard, /href: "\/tools\/file-readiness-check"/);
+  assert.match(dashboard, /href: "\/tools\/request-brief-builder"/);
+  assert.match(i18nCheck, /"src\/components\/app-shell\.tsx"/);
+  assert.match(i18nCheck, /"src\/components\/dashboard\/index\.tsx"/);
+  assert.match(i18nCheck, /"src\/components\/ui\/efferd-dashboard-2\.tsx"/);
+  assert.doesNotMatch(presentation, /from ["'](?:recharts|@radix-ui\/)/);
+  assert.doesNotMatch(packageJson, /"(?:recharts|@radix-ui\/react-avatar|@radix-ui\/react-separator|@radix-ui\/react-collapsible|@radix-ui\/react-dropdown-menu)"/);
 });
 
 test("customer settings profile load errors block default editable profile state", () => {

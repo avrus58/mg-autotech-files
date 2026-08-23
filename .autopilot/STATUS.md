@@ -4105,3 +4105,51 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
   `Checking secure session`, unavailable state veya browser console hatasi yok.
 - Rollback uygulanmadi; kritik regresyon halinde exact geri donus
   `b82617a` app/analyzer ciftidir.
+
+## 2026-08-23 21:31 +02:00 Customer dashboard Efferd shell baslangici
+
+- Owner, status-first dashboard fonksiyonlari ve musteri panelindeki tum
+  sayfalar korunurken gorsel dilin Efferd Dashboard 2 promptuna uyarlanmasini
+  istedi.
+- Repo Next.js App Router, Tailwind CSS v4 ve strict TypeScript kullaniyor;
+  `@/* -> ./src/*` alias'i nedeniyle dogru shadcn-style UI yolu
+  `src/components/ui`. `components.json` ve mevcut UI klasoru yok.
+- Verilen snippet yalniz `AppShell + Dashboard` wrapper'i; public 21st preview
+  sabit sidebar/topbar, ince bolucu sinirlar, dusuk radius, 2x2 KPI gridi,
+  yogun tablo/liste ve tek scrollable main yuzeyini kanitladi. Kilitli kaynak
+  veya ornek analitik veri kopyalanmayacak.
+- `lucide-react` mevcut. Adaptasyon Recharts/Radix API kullanmadigi icin repo
+  kurali ve bundle hijyeni geregi kullanilmayan yeni dependency kurulmayacak;
+  native semantic details/list/link yuzeyleri korunacak.
+- Bu adim local implementasyon kapsamindadir; push, Preview veya Production
+  deploy yetkisi verilmedi.
+
+## 2026-08-23 21:51 +02:00 Customer dashboard Efferd shell tamamlandi
+
+- `/dashboard` route'u `EfferdDashboard2 -> AppShell -> Dashboard ->
+  DashboardClient` zincirine alindi. Dogru shadcn-style yol repo alias'i ile
+  `src/components/ui`; gercek route entegrasyonu bulunduğu icin tekrarlı
+  `demo.tsx` eklenmedi.
+- Dashboard'un auth, Supabase veri/realtime, loading/error/empty ve aksiyon
+  davranislari degismedi. Desktop'ta sabit sidebar/topbar ve yalniz ana icerik
+  scroll'u; mobile'da normal document akisi korundu. Son siparisler ilk alanda,
+  KPI'lar 2x2, ikincil arac/workflow/kredi yuzeyleri erisilebilir disclosure
+  olarak kaldi.
+- Degisen dosyalar: `.autopilot/TASKS.md`, `.autopilot/STATUS.md`,
+  `scripts/check-customer-i18n.ts`, `src/app/dashboard/page.tsx`,
+  `src/app/globals.css`, `src/components/app-shell.tsx`,
+  `src/components/dashboard/index.tsx`,
+  `src/components/dashboard/DashboardClient.tsx`,
+  `src/components/ui/efferd-dashboard-2.tsx`, `tests/ui-ux-safety.test.ts`.
+- Onceki ve sonraki href setleri 17/17 eslesti. Paket/lockfile diff'i yok;
+  kullanilmayan Recharts/Radix, stock image, fake chart veya uydurma veri
+  eklenmedi. Bagimsiz final review P0/P1 bulgu bildirmedi.
+- Kontroller: hedefli dashboard/UI 99/99 PASS; full test 965/965 PASS; full
+  ESLint PASS; web + customer-uploader TypeScript PASS; i18n/SEO 12 public dil
+  ve 11 customer dilinde 595/595 PASS; Webpack Production build 277/277 PASS;
+  performans 68.2 KB gzip / 80 KB PASS; diff check PASS.
+- Bu adimda push, Preview, Production deploy, DB/migration, env/secret veya
+  musteri verisi degisikligi yapilmadi. Yeni artifact'in oturumlu 1265x529,
+  1024x768 ve 390x844 browser smoke'u owner yayin talimatiyla release sirasinda
+  yapilacak; kaynak responsive/scroll contract'i statik ve bagimsiz review'da
+  PASS.

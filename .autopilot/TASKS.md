@@ -128,6 +128,30 @@ Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
 
+### MANUAL-20260823-CUSTOMER-DASHBOARD-EFFERD-SHELL [P1] Mevcut musteri dashboard'unu Efferd operating UI diline uyarla
+
+Durum: Done
+
+Fingerprint: `customer-experience|customer-dashboard-visual-shell|rounded-promotional-panels-and-mixed-density|efferd-inspired-dense-operating-workspace`
+
+Sonuc: `/dashboard`, `EfferdDashboard2 -> AppShell -> Dashboard ->
+DashboardClient` zinciriyle shadcn uyumlu `src/components/ui` girisine
+tasindi. Canli veri/auth/realtime/loading/error/empty akislari degismeden sabit
+desktop sidebar/topbar, yalniz ana yuzeyde scroll, yogun siparis listesi, 2x2
+KPI gridi, ince sinirlar ve dusuk radius'lu Efferd-inspired operating UI
+uygulandi. Onceki 17 sabit/dinamik hedefin 17'si, son bes siparis, baglamsal
+aksiyonlar, workflow, kredi, destek ve mobil nav korundu. Kullanilmayan demo,
+stock asset, Recharts/Radix veya yeni production dependency eklenmedi.
+
+Dogrulama: hedefli dashboard/UI 99/99 PASS; full test 965/965 PASS; full ESLint
+PASS; web + customer-uploader TypeScript PASS; public i18n/SEO 12 dil ve
+customer i18n 11 dilde 595/595 PASS; Webpack Production build 277/277 PASS;
+performans 68.2 KB gzip / 80 KB butce PASS; diff check PASS. Static responsive,
+scroll ve erisilebilir disclosure incelemesinde ve bagimsiz final review'da
+P0/P1 bulgu yok. Paket/lockfile, DB, migration, env/secret, push, Preview veya
+Production degisikligi yapilmadi; oturumlu browser smoke yayinlanmis artifact
+icin owner yayin talimatinda yapilacak.
+
 ### MANUAL-20260823-CUSTOMER-DASHBOARD-STATUS-FIRST [P1] Laptop dashboard'u siparis odakli sadelestir
 
 Durum: Done
