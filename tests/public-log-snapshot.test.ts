@@ -5,7 +5,9 @@ import test from "node:test";
 import {
   analyzePublicLogSnapshot,
   publicLogSnapshotMaximumEstimatedPowerHp,
+  publicLogSnapshotMaximumCharacters,
   publicLogSnapshotMaximumRpm,
+  publicLogSnapshotMaximumRows,
   publicLogSnapshotMaximumTorqueNm,
   publicLogSnapshotMinimumEstimatedPowerHp,
   publicLogSnapshotMinimumPairedRows,
@@ -41,7 +43,7 @@ test("public log snapshot validates bounded local files and does not introduce p
   const workerModule = source("src", "workers", "publicLogSnapshot.worker.ts");
   const snapshotPolicy = source("src", "lib", "publicLogSnapshot.ts");
 
-  assert.match(publicSnapshot, /publicLogSnapshotMaxFileBytes = maxLogStudioCharacters/);
+  assert.match(publicSnapshot, /publicLogSnapshotMaxFileBytes = publicLogSnapshotMaximumCharacters/);
   assert.match(publicSnapshot, /endsWith\("\.csv"\)/);
   assert.match(publicSnapshot, /endsWith\("\.txt"\)/);
   assert.match(publicSnapshot, /endsWith\("\.tsv"\)/);
@@ -57,12 +59,16 @@ test("public log snapshot validates bounded local files and does not introduce p
   assert.match(workerBridge, /worker\.terminate\(\)/);
   assert.match(workerBridge, /publicSnapshotTimeoutMs = 15_000/);
   assert.match(workerModule, /analyzePublicLogSnapshot\(event\.data\.text\)/);
-  assert.match(snapshotPolicy, /profile: "performance"/);
+  assert.match(snapshotPolicy, /publicLogSnapshotMaximumCharacters = 5_000_000/);
+  assert.match(snapshotPolicy, /publicLogSnapshotMaximumRows = 50_000/);
   assert.match(snapshotPolicy, /status: "incompatible" \| "insufficient_data" \| "unsupported_range"/);
-  assert.match(snapshotPolicy, /points\.length < publicLogSnapshotMinimumPairedRows/);
-  assert.match(snapshotPolicy, /performance\.analysis\.rpmSpan < publicLogSnapshotMinimumRpmSpan/);
-  assert.match(snapshotPolicy, /analysis\.quality\.label === "limited"/);
-  assert.match(snapshotPolicy, /performance\.analysis\.quality === "limited"/);
+  assert.match(snapshotPolicy, /pairedRows < publicLogSnapshotMinimumPairedRows/);
+  assert.match(snapshotPolicy, /maximumRpm - minimumRpm < publicLogSnapshotMinimumRpmSpan/);
+  assert.match(snapshotPolicy, /processedRows >= publicLogSnapshotMaximumRows/);
+  assert.match(snapshotPolicy, /torqueRaw \* \(columns\.torque\.torqueFactor/);
+  assert.doesNotMatch(snapshotPolicy, /^import /m);
+  assert.doesNotMatch(snapshotPolicy, /logAnalysisStudio|performanceReport|analyzeLogStudio/);
+  assert.doesNotMatch(publicSnapshot, /logAnalysisStudio|performanceReport|analyzeLogStudio/);
   assert.doesNotMatch(workerModule, /analysis:\s*analysis|LogStudioAnalysis/);
   assert.doesNotMatch(workerBridge, /logAnalysis\.worker|mode:\s*"full"/);
   assert.match(publicSnapshot, /aria-describedby="public-log-file-requirements public-log-unit-requirement"/);
@@ -172,6 +178,8 @@ test("public snapshot rejects absurd RPM and torque values without leaking calcu
 });
 
 test("public snapshot enforces explicit RPM, torque and estimated-power bounds", () => {
+  assert.equal(publicLogSnapshotMaximumCharacters, 5_000_000);
+  assert.equal(publicLogSnapshotMaximumRows, 50_000);
   assert.equal(publicLogSnapshotMinimumRpm, 400);
   assert.equal(publicLogSnapshotMaximumRpm, 12_000);
   assert.equal(publicLogSnapshotMinimumTorqueNm, 1);
@@ -212,4 +220,127 @@ test("public snapshot enforces explicit RPM, torque and estimated-power bounds",
     assert.equal(snapshot.peakTorqueNm, null);
     assert.equal(snapshot.peakPowerHp, null);
   }
+});
+
+test("public snapshot handles preambles, a separate units row and European semicolon exports", () => {
+  const snapshot = analyzePublicLogSnapshot([
+    "MG logger export",
+    "Zeit;Motordrehzahl;Drehmoment Ist",
+    "s;rpm;Nm",
+    "0,0;1.800;320,0",
+    "0,2;2.200;390,0",
+    "0,4;2.600;430,0",
+    "0,6;3.000;420,0",
+    "0,8;3.400;395,0",
+    "1,0;3.800;360,0",
+    "1,2;4.200;315,0",
+  ].join("\n"));
+
+  assert.equal(snapshot.status, "ready");
+  if (snapshot.status !== "ready") assert.fail("Expected a compatible European export");
+  assert.equal(snapshot.peakTorqueNm, 430);
+  assert.ok(snapshot.peakPowerHp > 190 && snapshot.peakPowerHp < 200);
+});
+
+test("public snapshot converts an explicit lb-ft actual-torque channel to Nm", () => {
+  const snapshot = analyzePublicLogSnapshot([
+    "Engine Speed [rpm]\tEngine Torque Actual [lb-ft]",
+    "1800\t240",
+    "2200\t285",
+    "2600\t310",
+    "3000\t305",
+    "3400\t290",
+    "3800\t265",
+    "4200\t230",
+  ].join("\n"));
+
+  assert.equal(snapshot.status, "ready");
+  if (snapshot.status !== "ready") assert.fail("Expected an explicit lb-ft export");
+  assert.ok(snapshot.peakTorqueNm > 420 && snapshot.peakTorqueNm < 421);
+});
+
+test("public snapshot tolerates a low-load row when the final peak remains eligible", () => {
+  const snapshot = analyzePublicLogSnapshot([
+    "Engine Speed [rpm],Engine Torque Actual [Nm]",
+    "500,5",
+    "1800,220",
+    "2200,250",
+    "2600,280",
+    "3000,270",
+    "3400,240",
+    "3800,210",
+  ].join("\n"));
+
+  assert.equal(snapshot.status, "ready");
+  if (snapshot.status !== "ready") assert.fail("Expected the eligible peak to win");
+  assert.equal(snapshot.peakTorqueNm, 280);
+  assert.ok(snapshot.peakPowerHp > 110 && snapshot.peakPowerHp < 120);
+});
+
+test("public snapshot rejects sparse pairs and ambiguous torque grouping", () => {
+  const sparse = analyzePublicLogSnapshot([
+    "Engine Speed [rpm],Engine Torque Actual [Nm]",
+    "1800,320",
+    "2000,",
+    "2200,390",
+    "2400,",
+    "2600,430",
+    "2800,",
+    "3000,420",
+    "3200,",
+    "3400,395",
+  ].join("\n"));
+  const ambiguous = analyzePublicLogSnapshot([
+    "Engine Speed [rpm];Engine Torque Actual [Nm]",
+    "1800;320.000",
+    "2200;390.000",
+    "2600;430.000",
+    "3000;420.000",
+    "3400;395.000",
+  ].join("\n"));
+
+  assert.equal(sparse.status, "insufficient_data");
+  assert.equal(ambiguous.status, "incompatible");
+});
+
+test("public snapshot fails closed for requested torque and ambiguous actual channels", () => {
+  const requested = analyzePublicLogSnapshot([
+    "Engine Speed [rpm],Engine Torque Requested [Nm]",
+    "1800,320",
+    "2200,390",
+    "2600,430",
+    "3000,420",
+    "3400,395",
+  ].join("\n"));
+  const ambiguous = analyzePublicLogSnapshot([
+    "Engine Speed [rpm],Engine Torque Actual A [Nm],Engine Torque Actual B [Nm]",
+    "1800,320,318",
+    "2200,390,388",
+    "2600,430,428",
+    "3000,420,418",
+    "3400,395,393",
+  ].join("\n"));
+  const unitless = analyzePublicLogSnapshot([
+    "Engine Speed [rpm],Engine Torque Actual",
+    "1800,320",
+    "2200,390",
+    "2600,430",
+    "3000,420",
+    "3400,395",
+  ].join("\n"));
+  const abbreviatedTarget = analyzePublicLogSnapshot([
+    "RPM SP,Driver’s Wish Torque [Nm]",
+    "1800,320",
+    "2200,390",
+    "2600,430",
+    "3000,420",
+    "3400,395",
+  ].join("\n"));
+
+  assert.equal(requested.status, "incompatible");
+  assert.equal(ambiguous.status, "incompatible");
+  assert.equal(unitless.status, "incompatible");
+  assert.equal(abbreviatedTarget.status, "incompatible");
+  assert.equal(requested.peakPowerHp, null);
+  assert.equal(ambiguous.peakTorqueNm, null);
 });

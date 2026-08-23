@@ -10,7 +10,7 @@
 
 ### MANUAL-20260823-INTEGRATED-PRODUCTION-RELEASE [P0] Son degisikliklerin guvenli Production yayini
 
-Durum: Blocked (code validated; operational release gates remain)
+Durum: Blocked (code and VPS runtime validated; secret/backup release gates remain)
 
 Fingerprint: `production-release|current-main-plus-growth-generic-datalog-device-assurance|validated-integrated-artifacts|hosting-backup-secret-and-entitlement-gated`
 
@@ -19,26 +19,32 @@ Google onboarding, customer device assurance ve canonical 02443-02454 guvenlik
 degisikliklerini tek denetlenebilir uygulama/veritabani sirasi olarak yayinla.
 
 Hazir sonuc: Birlesik branch tam test/lint/typecheck/i18n/Webpack/performance
-kapilarindan gecti; auth/device/order-verifier P0/P1 review'u temiz. Isolated
-staging Supabase'de canonical set ile iki device migration shadow modda
-uygulandi ve read-only device verifier 7/7 PASS oldu. Production'a bu turda
-kod, migration, secret veya hosting mutation yapilmadi.
+kapilarindan gecti; auth/device/order-verifier P0/P1 review'u temiz. Public
+datalog snapshot artik full customer motorunu import etmeyen, 12 KiB build
+butcesiyle korunan ayri bounded worker'dir. Exact predecessor ve public edge
+branch'leri pushlandi; app ile File Expert analyzer image'lari gercek VPS'te
+build ve izole non-root/read-only smoke kapilarindan gecti. Isolated staging
+Supabase'de canonical set ile iki device migration shadow modda uygulandi ve
+read-only device verifier 7/7 PASS oldu. Production DB, DNS, Caddy ve mevcut
+canli container'lar henuz degistirilmedi.
 
-Blocked reason: Vercel proje Hobby planda ve ticari kullanim uygun degil; owner
-ucretli plana gecmeyi reddetti. Production device HMAC secret'i yok, Supabase
-Auth password/change kapilari hazir degil ve Free planda restorable logical
-backup kaniti alinmadi. Ayrica public browser bundle'i full datalog motorunu
-iceriyor; UI kilidi strict customer-only entitlement saglamiyor. Shadow Preview
-uygulama/e-posta/E2E provasi ve exact iki-artifact freeze de tamamlanmadi.
+Blocked reason: Hostinger VPS ticari Production hedefi olarak secildi ancak
+mevcut Vercel Production env degerleri guvenli aktarilmadi; Production device
+HMAC/proxy/analyzer secret'lari ve Supabase Auth password/change kapilari hazir
+degil, restorable logical backup kaniti alinmadi. Shadow Preview uygulama,
+e-posta ve sentetik File Expert E2E provasi tamamlanmadi. Customer full datalog
+motoru browser-local calistigi icin route UI'si korumali olsa da strict kod
+gizliligi server-side authenticated isleme veya owner kabul karari gerektirir.
 
-Remediation: Ticari kullanima uygun host sec; server-only HMAC ve Auth ayarlarini
-hazirla; restorable logical backup al/provala; authenticated no-store datalog
-isleme veya client-code extractability icin owner karari ver; matching Preview
-ve shadow E2E'yi tamamla. Sonra runbook sirasiyla Production release ve smoke.
+Remediation: Vercel env'i deger yazdirmadan VPS'e aktar; server-only secret ve
+Auth ayarlarini hazirla; restorable logical backup al/provala; authenticated
+no-store datalog isleme veya browser-local kod extractability icin owner karari
+ver; matching Preview ve shadow E2E'yi tamamla. Sonra runbook sirasiyla
+Production release ve smoke.
 
 ### MANUAL-20260822-GENERIC-DATALOG-STUDIO [P1] Genel datalog denemesi ve müşteri analiz derinliği
 
-Durum: Blocked (implementation validated; strict entitlement architecture requires owner decision)
+Durum: Blocked (public split validated; strict browser-code secrecy requires owner decision)
 
 Fingerprint: `performance-analysis|generic-datalog-access|autotuner-specific-public-bypass-and-2k-cap|public-two-metric-trial-and-customer-multichannel-studio`
 
@@ -67,16 +73,18 @@ Kabul kriterleri:
 - Hedefli testler, lint, typecheck, build, responsive/accessibility browser QA
   ve diff review PASS olur.
 
-Blocked reason: Zorunlu full suite artik 929/929 PASS, Webpack Production build,
-lint, typecheck ve i18n temizdir. Ancak public snapshot ayni browser-local full
-parser/report dependency graph'ini anonim static asset'e dahil eder. Login/UI
-kilidi indirilebilir client kodu icin gercek customer-only entitlement siniri
-degildir. Full motoru authenticated server'a tasimak ise mevcut "dosya
+Blocked reason: Public snapshot full parser/report dependency graph'inden
+ayrildi; yalniz RPM + explicit actual torque ile iki sonuc ureten 6.5 KiB
+bounded worker ve 12 KiB build kapisi kullanir. Public UI/full-engine sizintisi
+kapandi. Ancak authenticated customer Studio'nun full motoru browser-local
+static worker'dir; route/UI korumasi kodun teknik olarak indirilebilir olmasini
+engellemez. Full motoru authenticated server'a tasimak mevcut "dosya
 tarayicidan cikmaz" urun/gizlilik vaadini degistirir.
 
-Remediation: Owner ya client kodunun teknik olarak extract edilebilir oldugunu
-acikca kabul edip UI entitlement'iyle yayinlamali ya da authenticated, no-store,
-ephemeral server analizi ve buna uygun gizlilik metni degisikligini onaylamali.
+Remediation: Owner ya browser-local customer kodunun teknik olarak extract
+edilebilir oldugunu acikca kabul edip korumali UI entitlement'iyle yayinlamali
+ya da authenticated, no-store, ephemeral server analizi ve buna uygun gizlilik
+metni degisikligini onaylamali.
 
 ## Later
 

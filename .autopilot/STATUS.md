@@ -4003,3 +4003,31 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 - Açık runtime kapısı: workstation'da Docker daemon olmadığı için gerçek image /
   Compose / FastAPI smoke VPS Preview'da yapılacak. Bu kapanışta server, DNS,
   Production DB, env/secret, customer data, push veya deploy değiştirilmedi.
+
+## 2026-08-23 Public datalog runtime split ve release hardening
+
+- Baslangic/bitis: 2026-08-23 14:45-15:37 Europe/Berlin. Ana sayfa basic
+  snapshot'i customer Log Analysis Studio parser/report graph'inden ayrildi.
+  Yeni public worker yalniz explicit engine RPM ile actual Nm/lb-ft torku
+  bounded olarak okur; peak Nm ve torque-derived HP disinda analiz detayi
+  uretmez. Dosya browser-local kalir, persistence/network yolu eklenmedi.
+- CSV/TSV/semicolon, quoted cell, preamble ve ayri unit row desteklenir.
+  Requested/target, unitless, non-engine, duplicate-ambiguous kanal, seyrek
+  aligned pair, belirsiz torque grouping ve fiziksel aralik disi inputlar
+  fail-closed kalir. Dusuk yuklu tek satir artik uygun final peak'i yanlislikla
+  reddetmez; minimum HP kapisi final peak'e uygulanir.
+- Build guard public source graph'inde full Studio importlarini ve built worker
+  markerlarini reddeder; public worker icin 12 KiB raw butce eklenmistir. Son
+  artifact 6.5 KiB, homepage 68.2 KiB gzip / 80 KiB butcedir.
+- Kontroller: hedefli datalog/runtime 25/25 PASS; full suite 954/954 PASS; full
+  ESLint PASS; web + customer-uploader renderer/electron/node TypeScript PASS;
+  public/customer i18n PASS; Webpack Production build 277/277 PASS;
+  `check:performance` PASS; iki bagimsiz review sonrasinda acik kod P0/P1 yok.
+  Default Turbopack Windows worktree disindaki `node_modules` symlink'ini
+  filesystem root disi sayarak ortam kaynakli durdu. Bu successor kodu yerel
+  Webpack Production build'inde PASS; exact successor Linux Docker image'i
+  commit/artifact freeze sonrasindaki runtime kapisidir.
+- Production DB, DNS, Caddy, env/secret, customer data ve mevcut canli
+  container'lar bu alt adimda degistirilmedi. Strict customer analyzer kod
+  gizliligi browser-local modelde mumkun degildir; server-side isleme mevcut
+  gizlilik vaadini degistirecegi icin owner urun karari olarak acik kalir.

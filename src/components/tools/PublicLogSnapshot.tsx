@@ -14,16 +14,16 @@ import {
   Upload,
 } from "lucide-react";
 import {
-  maxLogStudioCharacters,
-  maxLogStudioRows,
-} from "@/lib/logAnalysisStudio";
-import {
   analyzePublicLogSnapshotInBrowser,
   type PublicLogSnapshotAnalysis,
 } from "@/lib/analyzePublicLogSnapshotInBrowser";
+import {
+  publicLogSnapshotMaximumCharacters,
+  publicLogSnapshotMaximumRows,
+} from "@/lib/publicLogSnapshot";
 import { LocalizedHomepageTree } from "@/lib/homepageLocalization";
 
-export const publicLogSnapshotMaxFileBytes = maxLogStudioCharacters;
+export const publicLogSnapshotMaxFileBytes = publicLogSnapshotMaximumCharacters;
 
 const exampleLog = [
   "Engine Speed (rpm), Engine Torque Actual (Nm)",
@@ -202,7 +202,7 @@ export function PublicLogSnapshot() {
                   </div>
                   <h3 className="mt-1 text-xl font-black">Local power snapshot</h3>
                   <p id="public-log-file-requirements" className="mt-2 text-xs leading-5 text-zinc-500">
-                    CSV, TSV, TXT or LOG · maximum 5 MB · up to {maxLogStudioRows.toLocaleString("en-US")} rows
+                    CSV, TSV, TXT or LOG · maximum 5 MB · up to {publicLogSnapshotMaximumRows.toLocaleString("en-US")} rows
                   </p>
                 </div>
               </div>

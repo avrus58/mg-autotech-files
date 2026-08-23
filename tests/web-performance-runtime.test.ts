@@ -75,6 +75,14 @@ test("a build-time homepage JavaScript budget guards future regressions", () => 
   assert.match(script, /supabase-js/);
   assert.match(script, /motionValue/);
   assert.match(script, /panelV2Translations/);
+  assert.match(script, /forbiddenPublicSnapshotDependencies/);
+  assert.match(script, /@\/lib\/logAnalysisStudio/);
+  assert.match(script, /@\/lib\/performanceReport/);
+  assert.match(script, /mg-public-datalog-snapshot/);
+  assert.match(script, /log-analysis-studio-v1/);
+  assert.match(script, /forbiddenPublicSnapshotRuntime/);
+  assert.match(script, /publicSnapshotWorkerMaximumRawBytes = 12 \* 1024/);
+  assert.match(script, /oversizedPublicWorkers/);
   assert.match(script, /globalThis\.__RSC_MANIFEST\["\/page"\]/);
   assert.match(script, /clientModules/);
   assert.match(script, /static\\\/chunks\\\/app\\\/layout-/);
