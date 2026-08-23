@@ -4331,3 +4331,29 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
   tracked dosya degisikligi degildir.
 - Kapsam disi: Production deploy, SQL/migration, Production DB, env/secret,
   Caddy, DNS, payment, e-posta veya gercek musteri verisi degistirilmedi.
+
+## 2026-08-24 00:34 +02:00 Customer workspace brand tone Production release
+
+- Owner'in `yayinla` talimatiyla yalniz
+  `MANUAL-20260824-CUSTOMER-WORKSPACE-BRAND-TONE` code-only UI release kapsami
+  Production'a cikarildi. Remote `codex/production-release-20260823` branch'i
+  fast-forward olarak `02f1501` commitinden `0e54883` commitine tasindi.
+- Source archive exact `0e54883cccfcfdf038a822128be8bb92ec4db2a9`
+  commitinden uretildi; SHA-256
+  `a8e8fb8d2001ae4cc0ca2ce7e369f3298e8c09507d8b46055a4da4622b376843`.
+  Hash VPS upload sonrasi birebir dogrulandi ve kaynak
+  `/opt/mgautotech/file-service/releases/0e54883` altina acildi.
+- VPS env contract deger yazdirmadan PASS oldu. Immutable analyzer ve app
+  imajlari `mgautotech-file-expert-analyzer:0e54883` ve
+  `mgautotech-file-service:0e54883` olarak build edildi. Docker Production
+  build'i Next compile, TypeScript ve 277/277 static page kapilarini gecti.
+- Deploy script analyzer-first ve app-second health switch'i tamamlandi. Release
+  state current cifti `0e54883`, rollback/previous cifti `02f1501` olarak
+  kaydedildi. Iki container healthy, restart 0 ve host portu olmadan calisiyor.
+- Immediate Production smoke: `/api/health/ready`, `/`, `/login`, `/register`,
+  `/dashboard`, `/dashboard/orders` ve public vehicle API 200; anonim
+  `/api/admin/dashboard` 401. Son 10 dakika app/analyzer error-like log sayaci 0.
+- Gecici remote transfer archive'i silindi; canonical release klasoru korundu.
+  SQL/migration, Production DB, env/secret, Caddy, DNS, payment, e-posta veya
+  gercek musteri verisi degistirilmedi. Kritik regresyon gorulmedi; rollback
+  uygulanmadi.
