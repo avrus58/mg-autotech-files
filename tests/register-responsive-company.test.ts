@@ -49,14 +49,20 @@ test("Google registration carries the validated customer and company profile", (
   assert.match(registerPage, /country: selectedCountry/);
   assert.match(registerPage, /OAUTH_REGISTRATION_PROFILE_KEY/);
   assert.match(authCallback, /parseRegistrationProfileDraft/);
-  assert.match(authCallback, /oauthSignupProvider === "google" && oauthProfile/);
+  assert.match(
+    authCallback,
+    /oauthSignupProvider === "google" &&[\s\S]*oauthProfile &&[\s\S]*isGoogleRegistrationProfileFinalizationWindowOpen/
+  );
   assert.match(authCallback, /JSON\.stringify\(\{ profile: oauthProfile \}\)/);
   assert.match(authCallback, /buildRegistrationCompletionUpdates\(\{/);
   assert.match(authCallback, /country: oauthProfile\.country/);
   assert.match(oauthFinalizeRoute, /buildRegistrationCompletionUpdates\(\{/);
   assert.match(oauthFinalizeRoute, /\.update\(updates\.profile\)/);
   assert.match(oauthFinalizeRoute, /\.eq\("id", auth\.user\.id\)/);
-  assert.match(oauthFinalizeRoute, /registrationAge > 30 \* 60 \* 1000/);
+  assert.match(
+    oauthFinalizeRoute,
+    /isGoogleRegistrationProfileFinalizationWindowOpen\(auth\.user\)/
+  );
   assert.match(oauthFinalizeRoute, /\.\.\.updates\.metadata/);
   assert.match(registrationCompletion, /registration_country_required/);
   assert.match(registrationCompletion, /registration_country_confirmed/);

@@ -95,8 +95,11 @@ test("Stripe webhooks verify signatures before any payment processing", () => {
 test("login and auth callbacks reject external and protocol-relative redirects", () => {
   const login = readProjectFile("src", "app", "login", "page.tsx");
   const callback = readProjectFile("src", "app", "auth", "callback", "page.tsx");
-  assert.match(login, /startsWith\("\/"\) && !value\.startsWith\("\/\/"\)/);
-  assert.match(callback, /startsWith\("\/"\) && !value\.startsWith\("\/\/"\)/);
+  const redirectGuard = readProjectFile("src", "lib", "safeLocalRedirect.ts");
+  assert.match(login, /getSafeLocalRedirectPath\(value\)/);
+  assert.match(callback, /getSafeLocalRedirectPath\(params\.get\("next"\)\)/);
+  assert.match(redirectGuard, /parsed\.origin !== LOCAL_REDIRECT_ORIGIN/);
+  assert.match(redirectGuard, /UNSAFE_PERCENT_ESCAPE/);
 });
 
 test("local security smoke cannot target production or another remote host", () => {

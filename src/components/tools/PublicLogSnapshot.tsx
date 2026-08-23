@@ -38,7 +38,17 @@ const exampleLog = [
 
 type SnapshotState = "idle" | "reading" | "ready" | "error";
 
-type SnapshotResult = Omit<PublicLogSnapshotAnalysis, "compatible">;
+type SnapshotResult = Extract<PublicLogSnapshotAnalysis, { status: "ready" }>;
+
+function unavailableSnapshotMessage(status: Exclude<PublicLogSnapshotAnalysis["status"], "ready">) {
+  if (status === "insufficient_data") {
+    return "The public estimate needs at least 5 aligned RPM and torque rows across a 1,000 rpm window with usable capture quality.";
+  }
+  if (status === "unsupported_range") {
+    return "The detected RPM, torque or estimated power is outside the supported public-check range. Review the selected channels, units and export before relying on it.";
+  }
+  return "No compatible engine-speed and actual torque channels were detected. Use a delimited text export with RPM and torque stated in Nm or lb-ft.";
+}
 
 function supportedLogFile(file: File) {
   const lowerName = file.name.toLowerCase();
@@ -81,20 +91,14 @@ export function PublicLogSnapshot() {
     const snapshot = await analyzePublicLogSnapshotInBrowser(text, signal);
     if (requestId !== analysisRequestRef.current) return;
 
-    if (!snapshot.compatible) {
+    if (snapshot.status !== "ready") {
       setResult(null);
-      setError(
-        "No compatible engine-speed and actual torque channels were detected. Use a delimited text export with RPM and torque stated in Nm or lb-ft."
-      );
+      setError(unavailableSnapshotMessage(snapshot.status));
       setState("error");
       return;
     }
 
-    setResult({
-      peakTorqueNm: snapshot.peakTorqueNm,
-      peakPowerHp: snapshot.peakPowerHp,
-      truncated: snapshot.truncated,
-    });
+    setResult(snapshot);
     setError("");
     setState("ready");
   };
@@ -305,7 +309,7 @@ function SnapshotEmpty({ hasError }: { hasError: boolean }) {
         02 · Review the snapshot
       </div>
       <h3 className="mt-2 text-xl font-black text-white">
-        {hasError ? "The snapshot is waiting for a compatible log." : "Your two results will appear here."}
+        {hasError ? "The snapshot is waiting for a supported log." : "Your two results will appear here."}
       </h3>
       <p className="mt-3 max-w-md text-sm leading-6 text-zinc-500">
         {hasError
@@ -348,12 +352,12 @@ function SnapshotResults({ result }: { result: SnapshotResult }) {
       <div className="mt-5 grid gap-3 sm:grid-cols-2">
         <SnapshotMetric
           label="Peak torque"
-          value={result.peakTorqueNm === null ? "-" : result.peakTorqueNm.toFixed(0)}
+          value={result.peakTorqueNm.toFixed(0)}
           unit="Nm"
         />
         <SnapshotMetric
           label="Est. peak power"
-          value={result.peakPowerHp === null ? "-" : result.peakPowerHp.toFixed(1)}
+          value={result.peakPowerHp.toFixed(1)}
           unit="HP"
         />
       </div>

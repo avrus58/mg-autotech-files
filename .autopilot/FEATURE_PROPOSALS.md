@@ -2,6 +2,37 @@
 
 ## Proposed
 
+### PROPOSAL-20260823-AUTHENTICATED-DATALOG-ENTITLEMENT - Gercek customer-only detayli datalog analizi
+
+- Problem: Public iki-metrik snapshot ve customer Studio ayni browser-local
+  parser/report dependency graph'ini kullaniyor. UI route kilidi gorunumu
+  sinirliyor, fakat anonim static JavaScript icindeki full analiz motorunun
+  indirilmesini veya yeniden calistirilmasini engellemiyor.
+- Target user: Detayli Studio'yu musteri avantaji olarak sunmak isteyen owner ve
+  dosyasinin nasil islenecegini acikca bilmesi gereken musteri.
+- Proposed solution: Full analizi authenticated, device-assured, rate-limited,
+  no-store ve ephemeral bir server endpoint'ine tasi; public client'ta yalniz
+  iki-metrik icin ayri minimal motor birak. Ham logu loglama/persist etme,
+  response'u detayli entitlement sozlesmesiyle sinirla ve abuse/timeout/size
+  limitlerini server'da uygula.
+- Privacy/product tradeoff: Bu model strict entitlement saglar ama mevcut
+  "dosya tarayicidan cikmaz" vaadini degistirir. Owner, transfer/retention
+  metnini ve gerekli consent/gizlilik dilini onaylamadan uygulanmamalidir.
+- Alternative: Browser-local mimari korunur ve UI-only entitlement'in client
+  kodu extractability'sini engellemedigi acikca kabul edilir; bu secenek strict
+  customer-only teknik sinir olarak tanimlanamaz.
+- Acceptance criteria:
+  - Anonymous assets full Studio parser/report uygulamasini icermez.
+  - Detayli endpoint base auth + device assurance + tenant/rate/resource
+    sinirlarinda fail-closed kalir.
+  - Upload/log/persistence kapali oldugu test ve runtime header/log politikasi
+    ile kanitlanir.
+  - Public snapshot yalniz Nm ve estimated HP doner; detayli sonuc anonim veya
+    assurance'siz session'a verilmez.
+  - Gizlilik ve urun metni owner tarafindan onaylanir.
+- Owner decision required: Ephemeral server processing ve buna bagli gizlilik
+  metni degisikligini onayla veya browser-local extractability riskini kabul et.
+
 ### PROPOSAL-20260713-DESKTOP-RESUMABLE-UPLOAD - Desktop uploader true resumable chunked upload
 
 - Problem: Large ECU/TCU uploads can fail on unstable customer connections. The desktop app currently supports retry-safe idempotency, but not true chunked resume.

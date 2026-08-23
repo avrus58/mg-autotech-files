@@ -45,9 +45,18 @@ protection against every stolen-token scenario.
 
 ## Staging gates
 
-1. Freeze the application commit and migration checksum. Apply
-   `20260823000000_customer_device_verification.sql` to isolated staging. Confirm
-   the config row remains `shadow`.
+1. Freeze the application commit and both migration checksums. Apply these two
+   migrations to isolated staging in order, then confirm the config row remains
+   `shadow`:
+
+   - `20260823000000_customer_device_verification.sql` — SHA-256
+     `8F09E9B7E7A90FDA8696C0B7A6CBCC6454D08E4600AA835C1420CFD8C8E52262`
+   - `20260823000001_customer_device_verification_catalog_reconciliation.sql` —
+     SHA-256
+     `958B34C5E19CFD7FA2C7124100C2A29AEC465539228660B2AC82A462924A9668`
+
+   The second migration reconciles the activation preflight with PostgreSQL's
+   63-byte policy-identifier limit; activation must not proceed without it.
 2. Run `scripts/verify-customer-device-verification.sql`. Every row must return
    `ok = true`; its output contains only schema/ACL/config aggregates.
 3. Deploy the matching application with a staging HMAC secret and real staging
@@ -91,7 +100,8 @@ protection against every stolen-token scenario.
    checksums. Confirm e-mail capacity, rate-limit storage, rollback operator,
    and immediate smoke ownership.
 2. Configure the server-only HMAC secret (the previous build ignores it), apply
-   the migration, and confirm `shadow`. Run the read-only verifier. Only then
+   both migrations in the documented order, and confirm `shadow`. Run the
+   read-only verifier. Only then
    deploy the matching application; deploying it before the RPCs exist makes
    customer API guards fail closed with 503.
 3. Smoke status/start/verify against a controlled Production test account. Do

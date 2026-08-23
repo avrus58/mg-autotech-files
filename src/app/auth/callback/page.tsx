@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Loader2, ShieldCheck, Upload } from "lucide-react";
+import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabaseClient";
 import { authenticatedFetch, signOutLocalStable } from "@/lib/authGuards";
 import {
@@ -12,6 +13,7 @@ import {
 } from "@/lib/deviceVerificationClient";
 import { recordGrowthAccountCreated } from "@/lib/growth/client";
 import { trackRegistrationCompleted } from "@/lib/publicAnalytics";
+import { getSafeLocalRedirectPath } from "@/lib/safeLocalRedirect";
 import {
   OAUTH_REGISTRATION_PROFILE_KEY,
   OAUTH_REGISTRATION_PROVIDER_KEY,
@@ -20,12 +22,9 @@ import {
 import {
   buildPendingRegistrationCountryMetadata,
   buildRegistrationCompletionUpdates,
+  isGoogleRegistrationProfileFinalizationWindowOpen,
   requiresRegistrationCountryCompletion,
 } from "@/lib/registrationCompletion";
-
-function safeNextPath(value: string | null) {
-  return value?.startsWith("/") && !value.startsWith("//") ? value : "/dashboard";
-}
 
 function countryCompletionPath(next: string) {
   return `/auth/complete-profile?next=${encodeURIComponent(next)}`;
@@ -39,8 +38,8 @@ export default function AuthCallbackPage() {
     const handleCallback = async () => {
       const params = new URLSearchParams(window.location.search);
       const code = params.get("code");
-      const next = safeNextPath(params.get("next"));
-      let session = null;
+      const next = getSafeLocalRedirectPath(params.get("next")) ?? "/dashboard";
+      let session: Session | null = null;
 
       if (code) {
         const { data, error } = await supabase.auth.exchangeCodeForSession(code);
@@ -70,6 +69,7 @@ export default function AuthCallbackPage() {
       );
 
       if (session?.user) {
+        let currentSession: Session = session;
         let completedGoogleRegistration = false;
         const openCountryCompletion = async () => {
           try {
@@ -82,18 +82,22 @@ export default function AuthCallbackPage() {
           }
           await supabase.auth.updateUser({
             data: buildPendingRegistrationCountryMetadata(
-              session.user.user_metadata
+              currentSession.user.user_metadata
             ),
           });
           setMessage("Opening country confirmation...");
           router.replace(countryCompletionPath(next));
         };
 
-        if (oauthSignupProvider === "google" && oauthProfile) {
+        if (
+          oauthSignupProvider === "google" &&
+          oauthProfile &&
+          isGoogleRegistrationProfileFinalizationWindowOpen(currentSession.user)
+        ) {
           const updates = buildRegistrationCompletionUpdates({
             country: oauthProfile.country,
             draft: oauthProfile,
-            existingMetadata: session.user.user_metadata,
+            existingMetadata: currentSession.user.user_metadata,
           });
           if (!updates) {
             await openCountryCompletion();
@@ -115,6 +119,12 @@ export default function AuthCallbackPage() {
             setMessage(payload.error || "Registration profile could not be finalized.");
             return;
           }
+          const refreshedSession = await supabase.auth.refreshSession();
+          if (refreshedSession.error || !refreshedSession.data.session?.user) {
+            setMessage("Your updated account could not be verified. Please log in again.");
+            return;
+          }
+          currentSession = refreshedSession.data.session;
           completedGoogleRegistration = true;
           window.sessionStorage.removeItem(OAUTH_REGISTRATION_PROVIDER_KEY);
           window.sessionStorage.removeItem(OAUTH_REGISTRATION_PROFILE_KEY);
@@ -123,16 +133,16 @@ export default function AuthCallbackPage() {
         if (
           !completedGoogleRegistration &&
           ((oauthSignupProvider === "google") ||
-            requiresRegistrationCountryCompletion(session.user))
+            requiresRegistrationCountryCompletion(currentSession.user))
         ) {
           await openCountryCompletion();
           return;
         }
 
-        const createdAt = new Date(session.user.created_at).getTime();
+        const createdAt = new Date(currentSession.user.created_at).getTime();
         const isRecentSignup = Date.now() - createdAt < 15 * 60 * 1000;
         const confirmedAt = new Date(
-          session.user.email_confirmed_at || session.user.confirmed_at || 0
+          currentSession.user.email_confirmed_at || currentSession.user.confirmed_at || 0
         ).getTime();
         const isRecentEmailConfirmation =
           confirmedAt > 0 && Date.now() - confirmedAt < 15 * 60 * 1000;

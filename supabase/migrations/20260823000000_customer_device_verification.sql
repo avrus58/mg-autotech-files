@@ -67,7 +67,7 @@ create table public.customer_session_assurance (
   session_id uuid primary key,
   user_id uuid not null references auth.users(id) on delete cascade,
   trusted_device_id uuid,
-  state text not null default 'pending' check (state in ('pending', 'verified', 'revoked')),
+  state text not null default 'pending',
   verified_via text check (verified_via in ('trusted_device', 'email_code')),
   force_email_verification boolean not null default false,
   created_at timestamptz not null default pg_catalog.now(),
@@ -666,7 +666,7 @@ begin
   if found then
     v_retry := greatest(
       0,
-      60 - pg_catalog.floor(pg_catalog.extract(epoch from (v_now - v_active.issued_at)))::integer
+      60 - pg_catalog.floor(pg_catalog.date_part('epoch', v_now - v_active.issued_at))::integer
     );
     if not coalesce(p_force_resend, false) then
       return pg_catalog.jsonb_build_object(
@@ -723,7 +723,7 @@ begin
   if v_latest_issued_at is not null then
     v_retry := greatest(
       0,
-      60 - pg_catalog.floor(pg_catalog.extract(epoch from (v_now - v_latest_issued_at)))::integer
+      60 - pg_catalog.floor(pg_catalog.date_part('epoch', v_now - v_latest_issued_at))::integer
     );
     if v_retry > 0 then
       return pg_catalog.jsonb_build_object(
@@ -743,7 +743,7 @@ begin
     v_retry := greatest(
       1,
       pg_catalog.ceil(
-        pg_catalog.extract(epoch from (v_oldest_recent + interval '15 minutes' - v_now))
+        pg_catalog.date_part('epoch', v_oldest_recent + interval '15 minutes' - v_now)
       )::integer
     );
     return pg_catalog.jsonb_build_object(
@@ -764,7 +764,7 @@ begin
     v_retry := greatest(
       1,
       pg_catalog.ceil(
-        pg_catalog.extract(epoch from (v_oldest_daily + interval '24 hours' - v_now))
+        pg_catalog.date_part('epoch', v_oldest_daily + interval '24 hours' - v_now)
       )::integer
     );
     return pg_catalog.jsonb_build_object(

@@ -1,26 +1,37 @@
 -- Read-only, aggregate verifier for customer trusted-device assurance.
 -- Returns schema/config/ACL PASS/FAIL only; it reads no customer rows or PII.
 
-with required_relations(relation_name) as (
+with target_relations(relation_name, relation_required) as (
   values
-    ('public.customer_auth_assurance_config'),
-    ('public.customer_trusted_devices'),
-    ('public.customer_session_assurance'),
-    ('public.customer_device_email_challenges'),
-    ('public.profiles'),
-    ('public.orders'),
-    ('public.credit_transactions'),
-    ('public.notifications'),
-    ('public.growth_customer_preferences'),
-    ('public.widget_clients'),
-    ('public.widget_domain_change_requests'),
-    ('storage.objects')
+    ('public.customer_auth_assurance_config', true),
+    ('public.customer_trusted_devices', true),
+    ('public.customer_session_assurance', true),
+    ('public.customer_device_email_challenges', true),
+    ('public.profiles', true),
+    ('public.orders', true),
+    ('public.credit_transactions', true),
+    ('storage.objects', true),
+    ('public.notifications', false),
+    ('public.growth_customer_preferences', false),
+    ('public.widget_clients', false),
+    ('public.widget_domain_change_requests', false)
 ), result as (
   select
     'required_relations_exist'::text as check_name,
-    pg_catalog.bool_and(pg_catalog.to_regclass(relation_name) is not null) as ok,
-    pg_catalog.count(*)::text || ' required relations' as detail
-  from required_relations
+    pg_catalog.bool_and(
+      not relation_required
+      or pg_catalog.to_regclass(relation_name) is not null
+    ) as ok,
+    pg_catalog.count(*) filter (where relation_required)::text
+      || ' required relations; '
+      || pg_catalog.count(*) filter (
+        where not relation_required
+          and pg_catalog.to_regclass(relation_name) is not null
+      )::text
+      || '/'
+      || pg_catalog.count(*) filter (where not relation_required)::text
+      || ' optional relations present' as detail
+  from target_relations
 )
 select * from result;
 
@@ -94,7 +105,9 @@ select
       from pg_catalog.pg_policies as policy
       where policy.schemaname = applicable.schema_name
         and policy.tablename = applicable.table_name
-        and policy.policyname = applicable.policy_name
+        -- PostgreSQL stores identifiers in at most 63 bytes. These policy
+        -- names are ASCII, so the catalog form is their first 63 characters.
+        and policy.policyname = pg_catalog.substr(applicable.policy_name, 1, 63)
         and policy.permissive = 'RESTRICTIVE'
         and policy.cmd = applicable.command_name
         and policy.roles = array['authenticated']::name[]

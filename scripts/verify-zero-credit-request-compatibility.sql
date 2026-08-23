@@ -16,18 +16,50 @@ with deployment_phase(post_cutover) as (
     false
   )
 ),
-expected_functions(signature, authenticated_must_be_private) as (
+order_contract as (
+  select
+    'public.create_order_with_credit_deduction(text,text,text,text,text,text,integer,text,text,text,text,text,text,text,text,text,text)'::text
+      as wrapper_signature,
+    'public.create_order_with_credit_deduction_without_assurance(text,text,text,text,text,text,integer,text,text,text,text,text,text,text,text,text,text)'::text
+      as renamed_core_signature,
+    pg_catalog.to_regprocedure(
+      'public.create_order_with_credit_deduction(text,text,text,text,text,text,integer,text,text,text,text,text,text,text,text,text,text)'
+    ) as wrapper_oid,
+    pg_catalog.to_regprocedure(
+      'public.create_order_with_credit_deduction_without_assurance(text,text,text,text,text,text,integer,text,text,text,text,text,text,text,text,text,text)'
+    ) as renamed_core_oid
+),
+resolved_order_contract as (
+  select
+    contract.*,
+    coalesce(contract.renamed_core_oid, contract.wrapper_oid) as core_oid,
+    contract.renamed_core_oid is not null as device_assurance_installed
+  from order_contract as contract
+),
+expected_functions(function_kind, signature, authenticated_must_be_private) as (
   values
-    ('public.resolve_request_service_credits(text)', true),
-    ('public.log_order_credit_usage()', true),
-    ('public.create_order_with_credit_deduction(text,text,text,text,text,text,integer,text,text,text,text,text,text,text,text,text,text)', false)
+    ('catalog_resolver', 'public.resolve_request_service_credits(text)', true),
+    ('usage_ledger', 'public.log_order_credit_usage()', true)
 ),
 function_state as (
   select
+    expected.function_kind,
     expected.signature,
     expected.authenticated_must_be_private,
     pg_catalog.to_regprocedure(expected.signature) as function_oid
   from expected_functions as expected
+
+  union all
+
+  select
+    'order_core',
+    case
+      when contract.device_assurance_installed then contract.renamed_core_signature
+      else contract.wrapper_signature
+    end,
+    false,
+    contract.core_oid
+  from resolved_order_contract as contract
 ),
 function_definitions as (
   select
@@ -37,6 +69,26 @@ function_definitions as (
       else pg_catalog.lower(pg_catalog.pg_get_functiondef(state.function_oid))
     end as definition
   from function_state as state
+),
+order_wrapper_definition as (
+  select
+    contract.*,
+    case
+      when contract.wrapper_oid is null then ''
+      else pg_catalog.lower(pg_catalog.pg_get_functiondef(contract.wrapper_oid))
+    end as definition,
+    wrapper_procedure.prosecdef as security_definer,
+    exists (
+      select 1
+      from pg_catalog.unnest(wrapper_procedure.proconfig) as config(value)
+      where config.value in ('search_path=', 'search_path=""')
+    ) as fixed_path,
+    wrapper_owner.rolname as owner_role
+  from resolved_order_contract as contract
+  left join pg_catalog.pg_proc as wrapper_procedure
+    on wrapper_procedure.oid = contract.wrapper_oid
+  left join pg_catalog.pg_roles as wrapper_owner
+    on wrapper_owner.oid = wrapper_procedure.proowner
 ),
 checks(sort_order, check_name, ok, details) as (
   select
@@ -79,7 +131,7 @@ checks(sort_order, check_name, ok, details) as (
       and position('return v_total' in definition) > 0,
     'Zero is a valid authoritative total; malformed/negative totals remain closed'
   from function_definitions
-  where signature = 'public.resolve_request_service_credits(text)'
+  where function_kind = 'catalog_resolver'
 
   union all
 
@@ -95,7 +147,7 @@ checks(sort_order, check_name, ok, details) as (
       and position('for update of profile' in definition) > 0,
     'Catalog equality and profile lock remain; debit marker/update are positive-only'
   from function_definitions
-  where signature = 'public.create_order_with_credit_deduction(text,text,text,text,text,text,integer,text,text,text,text,text,text,text,text,text,text)'
+  where function_kind = 'order_core'
 
   union all
 
@@ -115,7 +167,7 @@ checks(sort_order, check_name, ok, details) as (
       ),
     'Zero creates no usage row; positive marked orders keep the canonical trigger'
   from function_definitions
-  where signature = 'public.log_order_credit_usage()'
+  where function_kind = 'usage_ledger'
 
   union all
 
@@ -159,15 +211,50 @@ checks(sort_order, check_name, ok, details) as (
       'authenticated',
       function_oid,
       'EXECUTE'
-    ) = (not phase.post_cutover),
+    ) = (
+      not phase.post_cutover
+      and not contract.device_assurance_installed
+    ),
     case
+      when contract.device_assurance_installed
+        then 'Device assurance is installed; the renamed core must remain private'
       when phase.post_cutover
-        then '02452 is active; authenticated core EXECUTE must remain revoked'
+        then '02452 is active; authenticated legacy-core EXECUTE must remain revoked'
       else 'Pre-02452 compatibility is active; authenticated core EXECUTE must remain available'
     end
   from function_state
   cross join deployment_phase as phase
-  where signature = 'public.create_order_with_credit_deduction(text,text,text,text,text,text,integer,text,text,text,text,text,text,text,text,text,text)'
+  cross join resolved_order_contract as contract
+  where function_kind = 'order_core'
+
+  union all
+
+  select
+    80,
+    'device assurance wrapper calls the exact renamed order core',
+    not device_assurance_installed
+      or (
+        wrapper_oid is not null
+        and wrapper_oid <> core_oid
+        and security_definer
+        and fixed_path
+        and owner_role = 'postgres'
+        and not pg_catalog.has_function_privilege('anon', wrapper_oid, 'EXECUTE')
+        and not pg_catalog.has_function_privilege('authenticated', wrapper_oid, 'EXECUTE')
+        and not pg_catalog.has_function_privilege('service_role', wrapper_oid, 'EXECUTE')
+        and position('current_customer_session_assured' in definition) > 0
+        and position('device verification is required.' in definition) > 0
+        and position(
+          'public.create_order_with_credit_deduction_without_assurance('
+          in definition
+        ) > 0
+      ),
+    case
+      when device_assurance_installed
+        then 'Legacy signature is the private assured wrapper; renamed core remains the inspected implementation'
+      else 'Before device migration, the legacy signature remains the inspected implementation'
+    end
+  from order_wrapper_definition
 )
 select check_name, ok, details
 from checks

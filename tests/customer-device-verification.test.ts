@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import test from "node:test";
@@ -153,6 +154,23 @@ test("database migration installs a shadow-first, server-enforced assurance boun
   assert.match(migration, /perform app_private\.assert_customer_device_assurance_ready\(\)/);
   assert.match(migration, /if v_mode = 'enforced' then[\s\S]*'unchanged', true/);
   assert.match(migration, /force_email_verification boolean not null default false/);
+  assert.equal(
+    (migration.match(/customer_session_assurance_state_check/g) ?? []).length,
+    1,
+    "the comprehensive assurance-state constraint must not collide with an inline state check"
+  );
+  assert.doesNotMatch(
+    migration,
+    /state text not null default 'pending' check/
+  );
+  const canonicalDigest = createHash("sha256")
+    .update(migration.replace(/\r\n?/g, "\n"))
+    .digest("hex")
+    .toUpperCase();
+  assert.equal(
+    canonicalDigest,
+    "8F09E9B7E7A90FDA8696C0B7A6CBCC6454D08E4600AA835C1420CFD8C8E52262"
+  );
 
   const helper = migration.slice(
     migration.indexOf("create or replace function app_private.current_customer_session_assured"),
@@ -197,6 +215,43 @@ test("database migration installs a shadow-first, server-enforced assurance boun
   assert.match(migration, /bucket_id not in \('customer-files', 'file-expert'\)/);
 });
 
+test("catalog reconciliation makes the shadow migration safely activatable", () => {
+  const reconciliation = readProjectFile(
+    "supabase",
+    "migrations",
+    "20260823000001_customer_device_verification_catalog_reconciliation.sql"
+  );
+  const verifier = readProjectFile(
+    "scripts",
+    "verify-customer-device-verification.sql"
+  );
+  const canonicalDigest = createHash("sha256")
+    .update(reconciliation.replace(/\r\n?/g, "\n"))
+    .digest("hex")
+    .toUpperCase();
+
+  assert.equal(
+    canonicalDigest,
+    "958B34C5E19CFD7FA2C7124100C2A29AEC465539228660B2AC82A462924A9668"
+  );
+  assert.match(
+    reconciliation,
+    /policy\.policyname = pg_catalog\.substr\(expected\.policy_name, 1, 63\)/
+  );
+  assert.match(
+    reconciliation,
+    /perform app_private\.assert_customer_device_assurance_ready\(\)/
+  );
+  assert.match(
+    verifier,
+    /\('public\.growth_customer_preferences', false\)/
+  );
+  assert.match(
+    verifier,
+    /policy\.policyname = pg_catalog\.substr\(applicable\.policy_name, 1, 63\)/
+  );
+});
+
 test("challenge lifecycle is single-use, rate-limited and preserves an old code until replacement delivery", () => {
   const migration = readProjectFile(
     "supabase",
@@ -213,6 +268,8 @@ test("challenge lifecycle is single-use, rate-limited and preserves an old code 
 
   assert.match(migration, /max_attempts smallint not null default 5 check \(max_attempts = 5\)/);
   assert.match(reserve, /60 - pg_catalog\.floor/);
+  assert.equal((reserve.match(/pg_catalog\.date_part\('epoch'/g) ?? []).length, 4);
+  assert.doesNotMatch(reserve, /pg_catalog\.extract\(/);
   assert.match(reserve, /v_now \+ interval '10 minutes'/);
   assert.match(reserve, /pg_catalog\.pg_advisory_xact_lock/);
   assert.match(reserve, /v_recent_count >= 3/);
@@ -272,12 +329,23 @@ test("application guards separate bootstrap identity from verified customer acce
 test("login, OAuth bootstrap and protected layouts all stop at device verification", () => {
   const login = readProjectFile("src", "app", "login", "page.tsx");
   const callback = readProjectFile("src", "app", "auth", "callback", "page.tsx");
+  const completeProfile = readProjectFile(
+    "src",
+    "app",
+    "auth",
+    "complete-profile",
+    "page.tsx"
+  );
   const boundary = readProjectFile("src", "components", "auth", "BrowserAuthBoundary.tsx");
   const panel = readProjectFile("src", "components", "auth", "DeviceVerificationPanel.tsx");
 
   assert.match(login, /<DeviceVerificationPanel[\s\S]*nextPath=\{deviceVerificationNextPath\}/);
   assert.match(callback, /await startDeviceVerification\(\)/);
   assert.match(callback, /startPasswordChangeVerification\(\)/);
+  assert.match(
+    completeProfile,
+    /router\.replace\(`\/auth\/callback\?next=\$\{encodeURIComponent\(next\)\}`\)/
+  );
   assert.ok(
     callback.indexOf('/api/auth/oauth-registration/finalize') <
       callback.indexOf("await startDeviceVerification()"),
@@ -368,7 +436,11 @@ test("rollout documentation states the Supabase Auth-layer boundary", () => {
   assert.match(runbook, /not Supabase native MFA/);
   assert.match(runbook, /does not raise the JWT to AAL2/);
   assert.match(runbook, /Secure Password Change/);
-  assert.match(runbook, /apply[\s\S]{0,30}the migration[\s\S]*Only then[\s\S]*deploy the matching application/);
+  assert.match(runbook, /8F09E9B7E7A90FDA8696C0B7A6CBCC6454D08E4600AA835C1420CFD8C8E52262/);
+  assert.match(runbook, /20260823000001_customer_device_verification_catalog_reconciliation\.sql/);
+  assert.match(runbook, /958B34C5E19CFD7FA2C7124100C2A29AEC465539228660B2AC82A462924A9668/);
+  assert.match(runbook, /apply[\s\S]{0,100}two[\s\S]{0,100}in order/i);
+  assert.match(runbook, /apply[\s\S]{0,40}both migrations[\s\S]*Only then[\s\S]*deploy the matching application/);
   assert.ok(
     runbook.indexOf("still `shadow`") <
       runbook.indexOf("activate_customer_device_assurance(0)") &&

@@ -307,6 +307,61 @@ function splitWhitespaceFields(line: string, valueLimit = maxCandidateColumns + 
   return trimmed ? trimmed.split(/\s+/, valueLimit) : [];
 }
 
+function visitNonEmptyLines(
+  input: string,
+  visitor: (line: string, lineIndex: number) => boolean | void
+) {
+  let lineStart = 0;
+  let nonEmptyLineCount = 0;
+
+  const visitLine = (lineEnd: number) => {
+    const line = input.slice(lineStart, lineEnd);
+    if (!line.trim()) return true;
+    const shouldContinue = visitor(line, nonEmptyLineCount);
+    nonEmptyLineCount += 1;
+    return shouldContinue !== false;
+  };
+
+  for (let index = 0; index < input.length; index += 1) {
+    const character = input[index];
+    if (character !== "\n" && character !== "\r") continue;
+    if (!visitLine(index)) return nonEmptyLineCount;
+    if (character === "\r" && input[index + 1] === "\n") index += 1;
+    lineStart = index + 1;
+  }
+
+  if (lineStart <= input.length) visitLine(input.length);
+  return nonEmptyLineCount;
+}
+
+function scanBoundedNonEmptyLines(input: string) {
+  const previewLines: string[] = [];
+  const previewLimit = maxPreambleLines + 4;
+  const nonEmptyLineCount = visitNonEmptyLines(input, (line) => {
+    if (previewLines.length < previewLimit) previewLines.push(line);
+  });
+
+  return { previewLines, nonEmptyLineCount };
+}
+
+function collectBoundedDataLines(
+  input: string,
+  dataStartIndex: number,
+  processedRowLimit: number,
+  whitespaceTableStart: number | null
+) {
+  const dataLines: string[] = [];
+  visitNonEmptyLines(input, (line, lineIndex) => {
+    if (lineIndex < dataStartIndex) return;
+    const normalized = whitespaceTableStart !== null && lineIndex >= whitespaceTableStart
+      ? splitWhitespaceFields(line).join("\t")
+      : line;
+    dataLines.push(normalized);
+    return dataLines.length < processedRowLimit;
+  });
+  return dataLines;
+}
+
 function parseNumericCell(value: string | undefined) {
   if (!value) return null;
 
@@ -1480,28 +1535,27 @@ export function analyzeLogStudio(
   input: string,
   options: { profile?: LogStudioAnalysisProfile } = {}
 ): LogStudioAnalysis {
-  if (!input.trim()) {
+  if (!/\S/.test(input)) {
     return emptyAnalysis("empty", ["Select a delimited log or paste numeric log rows to begin."]);
   }
 
   const charactersTruncated = input.length > maxLogStudioCharacters;
-  let bounded = input.slice(0, maxLogStudioCharacters).replace(/^\uFEFF/, "");
+  let bounded = input.slice(0, maxLogStudioCharacters);
+  if (bounded.charCodeAt(0) === 0xfeff) bounded = bounded.slice(1);
 
   if (charactersTruncated) {
     const lastCompleteLine = Math.max(bounded.lastIndexOf("\n"), bounded.lastIndexOf("\r"));
     if (lastCompleteLine > 0) bounded = bounded.slice(0, lastCompleteLine);
   }
 
-  let lines = bounded
-    .split(/\r?\n|\r/)
-    .filter((line) => Boolean(line.trim()));
-  let tableStart = findTableStart(lines);
+  const scanned = scanBoundedNonEmptyLines(bounded);
+  const previewLines = scanned.previewLines;
+  let tableStart = findTableStart(previewLines);
+  let whitespaceTableStart: number | null = null;
   if (!tableStart) {
-    const whitespaceStart = findHeaderlessWhitespaceTableStart(lines);
+    const whitespaceStart = findHeaderlessWhitespaceTableStart(previewLines);
     if (whitespaceStart !== null) {
-      lines = lines.map((line, index) =>
-        index < whitespaceStart ? line : splitWhitespaceFields(line).join("\t")
-      );
+      whitespaceTableStart = whitespaceStart;
       tableStart = { lineIndex: whitespaceStart, delimiter: "\t", score: 0 };
     }
   }
@@ -1513,8 +1567,15 @@ export function analyzeLogStudio(
     return result;
   }
 
-  const tableLines = lines.slice(tableStart.lineIndex);
-  const firstCells = splitDelimitedLine(tableLines[0] ?? "", delimiter);
+  const normalizeLine = (line: string, lineIndex: number) =>
+    whitespaceTableStart !== null && lineIndex >= whitespaceTableStart
+      ? splitWhitespaceFields(line).join("\t")
+      : line;
+  const firstTableLine = normalizeLine(
+    previewLines[tableStart.lineIndex] ?? "",
+    tableStart.lineIndex
+  );
+  const firstCells = splitDelimitedLine(firstTableLine, delimiter);
   const firstNumeric = firstCells.map((value, index) =>
     parseChannelNumericCell(value, index === 0 ? "rpm" : "torque")
   );
@@ -1526,13 +1587,17 @@ export function analyzeLogStudio(
   let headers = headerlessRpmTorque
     ? ["Engine Speed (rpm)", "Engine Torque"]
     : firstCells;
-  let dataLines = headerlessRpmTorque ? tableLines : tableLines.slice(1);
+  const preliminaryDataStartIndex = tableStart.lineIndex + (headerlessRpmTorque ? 0 : 1);
+  const firstDataLine = normalizeLine(
+    previewLines[preliminaryDataStartIndex] ?? "",
+    preliminaryDataStartIndex
+  );
   const unitsRow = headerlessRpmTorque
-    ? { headers, dataLines, detected: false }
-    : mergeSeparateUnitRow(headers, dataLines, delimiter);
+    ? { headers, detected: false }
+    : mergeSeparateUnitRow(headers, [firstDataLine], delimiter);
   headers = unitsRow.headers;
-  dataLines = unitsRow.dataLines;
-  const sourceRowCount = dataLines.length;
+  const dataStartIndex = preliminaryDataStartIndex + (unitsRow.detected ? 1 : 0);
+  const sourceRowCount = Math.max(0, scanned.nonEmptyLineCount - dataStartIndex);
   const candidateColumnCount = Math.min(headers.length, maxCandidateColumns);
   const allCandidateHeaders = headers.slice(0, candidateColumnCount);
   const allCandidateKinds = allCandidateHeaders.map(channelKindFromHeader);
@@ -1554,7 +1619,12 @@ export function analyzeLogStudio(
   const rowsTruncated = sourceRowCount > processedRowLimit;
   const cellBudgetTruncated =
     rowsTruncated && processedRowLimit === rowsWithinCellBudget && rowsWithinCellBudget < profileRowLimit;
-  const processedLines = dataLines.slice(0, processedRowLimit);
+  const processedLines = collectBoundedDataLines(
+    bounded,
+    dataStartIndex,
+    processedRowLimit,
+    whitespaceTableStart
+  );
 
   if (!headers.length || !processedLines.length) {
     const result = emptyAnalysis("invalid", ["The log needs a header and at least one numeric data row."], delimiter);

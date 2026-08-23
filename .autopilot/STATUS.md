@@ -3829,3 +3829,52 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
   console hatasi olmadan yuklendi. Staff session/gercek musteri kullanilmadigi
   icin korunan panelde veri mutasyonu yapilmadi. Push, deploy, Supabase
   migration veya herhangi bir canli servis mutation yapilmadi.
+
+## 2026-08-23 Integrated Production release preparation
+
+- Gorev: Owner'in son degisikliklerin tamamini yayinlama talebi icin current
+  Production uzerindeki Growth, genel datalog, auth/onboarding, device assurance
+  ve canonical guvenlik migration'larini tek denetlenebilir release kapsaminda
+  birlestirmek; Production mutation'dan once tum kod, DB sirasi ve operasyonel
+  kapilari dogrulamak.
+- Uygulama duzeltmeleri: Query-controlled auth yonlendirmeleri ortak canonical
+  same-origin fail-closed guard'a tasindi. Google profile/country finalizer
+  server-owned provider ve own-row allowlist sinirina alindi; session refresh ve
+  stale draft fallback'i eklendi. Country completion artik reset-password dahil
+  her next yolunu tekrar canonical callback/device gate'inden geciriyor.
+- Datalog hardening: Parser tum dosyayi satir array'ine cevirmek yerine iki
+  bounded scan kullaniyor; 1.25 milyon satir fixture'inda retained window ve
+  source count korunuyor. Public sonuc en az 5 paired row, 1000 RPM span,
+  kullanilabilir kalite ve acik RPM/torque/power araliklari olmadan sayi
+  yayinlamiyor; structured incompatible/insufficient/unsupported durumlari hem
+  worker hem fallback'te ayni.
+- DB/release sirasi: Device migration'daki duplicate state-check ve gecersiz
+  `pg_catalog.extract` kullanimi duzeltildi. PostgreSQL 63-byte policy-name
+  davranisi icin additive `20260823000001_customer_device_verification_catalog_reconciliation.sql`
+  eklendi. Post-cutover ve zero-credit verifier'lari device migration sonrasi
+  renamed private core + assurance wrapper'i dogru cozerken pre-device branch'i
+  koruyor; integrated runbook iki frozen application artifact sirasi kullaniyor.
+- Isolated staging: Canonical 02443-02454 seti ile device `00000` ve `00001`
+  staging Supabase ref'ine uygulandi; device mode `shadow` kaldi. Read-only
+  device verifier 7/7 PASS. Advisor sonucu device kapsaminda yeni WARN/ERROR
+  uretmedi (Security ERROR 0; Performance ERROR 0). Gercek musteri verisi
+  kopyalanmadi ve device enforcement aktive edilmedi.
+- Kontroller: auth/device/country focused 35/35 PASS; datalog focused 76/76
+  PASS; order/verifier focused 35/35 PASS; full suite 929/929 PASS; full ESLint
+  PASS; web + customer-uploader renderer/electron/node TypeScript PASS; public
+  i18n/SEO 12 locale ve customer 11 locale x 618/618, 0 fallback PASS; Webpack
+  Production build 277 route/page PASS; homepage 67.9 KB gzip / 80 KB PASS;
+  CAPTCHA readiness default safe-off PASS; `git diff --check` PASS (yalniz
+  line-ending uyarilari). Bagimsiz integrated auth/device/SQL review P0=0/P1=0.
+- Kalan risk/blocked: Vercel proje Hobby planda ve ticari kullanim icin uygun
+  degil; owner ucretli plana gecmeyi reddetti. Production
+  `CUSTOMER_DEVICE_HMAC_SECRET`, Supabase Auth password/change kapilari ve
+  restorable logical backup kaniti hazir degil. Staging app HMAC/real e-posta /
+  shadow-enforced E2E, desktop disable/minimum-version ve exact predecessor /
+  successor artifact freeze tamamlanmadi. Full datalog motoru anonim public
+  bundle'a dahil oldugu icin strict customer-only entitlement saglanmiyor;
+  authenticated ephemeral server processing gizlilik/urun karari gerektiriyor.
+  File Expert/distributed admission runbook kapilari da ayrica kanitlanmali.
+- Release sonucu: Production Supabase, Vercel/hosting, domain, secret, e-posta,
+  payment, customer data veya `main` dalina bu turda mutation yapilmadi; push ve
+  deploy bilincli olarak durduruldu. Validated local release branch'i korunuyor.

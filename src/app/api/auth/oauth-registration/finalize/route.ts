@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { requireBaseApiUser } from "@/lib/apiAuth";
-import { buildRegistrationCompletionUpdates } from "@/lib/registrationCompletion";
+import {
+  buildRegistrationCompletionUpdates,
+  isGoogleRegistrationAfterCountryEnforcement,
+  isGoogleRegistrationProfileFinalizationWindowOpen,
+} from "@/lib/registrationCompletion";
 import { parseRegistrationProfileDraft } from "@/lib/registrationProfile";
 import { isStaffMember } from "@/lib/staffPermissions";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
@@ -33,36 +37,57 @@ export async function POST(request: Request) {
       { status: 403, headers: responseHeaders }
     );
   }
-  if (auth.user.user_metadata?.oauth_registration_finalized === true) {
+  const body = await request.json().catch(() => null);
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
     return NextResponse.json(
-      { finalized: true, unchanged: true },
-      { headers: responseHeaders }
-    );
-  }
-  const createdAt = new Date(auth.user.created_at).getTime();
-  const registrationAge = Date.now() - createdAt;
-  if (!Number.isFinite(createdAt) || registrationAge < 0 || registrationAge > 30 * 60 * 1000) {
-    return NextResponse.json(
-      { error: "Google registration finalization has expired." },
-      { status: 403, headers: responseHeaders }
+      { error: "Registration completion details are invalid." },
+      { status: 400, headers: responseHeaders }
     );
   }
 
-  const body = await request.json().catch(() => null);
-  const profile = parseRegistrationProfileDraft(
-    body && typeof body === "object" && !Array.isArray(body)
-      ? JSON.stringify((body as { profile?: unknown }).profile ?? null)
-      : null
-  );
-  if (!profile) {
+  const input = body as Record<string, unknown>;
+  const inputKeys = Object.keys(input);
+  const isFullProfileCompletion =
+    inputKeys.length === 1 && inputKeys[0] === "profile";
+  const isCountryOnlyCompletion =
+    inputKeys.length === 1 && inputKeys[0] === "country";
+  if (!isFullProfileCompletion && !isCountryOnlyCompletion) {
+    return NextResponse.json(
+      { error: "Registration completion details are invalid." },
+      { status: 400, headers: responseHeaders }
+    );
+  }
+
+  const profile = isFullProfileCompletion
+    ? parseRegistrationProfileDraft(JSON.stringify(input.profile ?? null))
+    : null;
+  if (isFullProfileCompletion && !profile) {
     return NextResponse.json(
       { error: "Registration profile details are invalid." },
       { status: 400, headers: responseHeaders }
     );
   }
 
+  if (isFullProfileCompletion) {
+    if (!isGoogleRegistrationProfileFinalizationWindowOpen(auth.user)) {
+      return NextResponse.json(
+        { error: "Google registration finalization has expired." },
+        { status: 403, headers: responseHeaders }
+      );
+    }
+  } else if (!isGoogleRegistrationAfterCountryEnforcement(auth.user)) {
+    return NextResponse.json(
+      { error: "Country completion is not available for this account." },
+      { status: 403, headers: responseHeaders }
+    );
+  }
+
+  // Country is an ordinary customer-editable profile field. This exact,
+  // own-row bootstrap exception stays on base authentication so a new Google
+  // account can finish onboarding before the device-assurance RLS gate.
+
   const updates = buildRegistrationCompletionUpdates({
-    country: profile.country,
+    country: profile?.country ?? input.country,
     draft: profile,
     existingMetadata: auth.user.user_metadata,
   });

@@ -30,6 +30,7 @@ import {
 } from "@/lib/authLoginProtection";
 import { supabase } from "@/lib/supabaseClient";
 import { getPublicGoogleIdentityConfig } from "@/lib/googleIdentity";
+import { getSafeLocalRedirectPath } from "@/lib/safeLocalRedirect";
 import {
   ArrowRight,
   Lock,
@@ -43,7 +44,7 @@ function getRequestedRedirect() {
   if (typeof window === "undefined") return null;
 
   const value = new URLSearchParams(window.location.search).get("redirect");
-  return value?.startsWith("/") && !value.startsWith("//") ? value : null;
+  return getSafeLocalRedirectPath(value);
 }
 
 export default function LoginPage() {

@@ -1,7 +1,12 @@
-# Integrated security release runbook (02443-02454)
+# Integrated security and customer-device release runbook
 
-This release is a coordinated database/application cutover. Migrations must be
-applied in this exact order:
+This is the canonical combined order when the 02443-02454 hardening set and
+customer trusted-device protection ship in the same release window. Use the
+customer-device rollout document for its detailed smoke cases, but do not run
+it as an independent or conflicting sequence. The two application artifacts
+below are intentional: the cutover-compatible predecessor must remove legacy
+dependencies before the shadow-first device schema can safely precede the
+device-aware application. Apply these steps in this exact order:
 
 1. `20260816002443_financial_authority_hardening.sql`
 2. `20260816002444_security_state_hardening.sql`
@@ -18,9 +23,23 @@ applied in this exact order:
 11. `20260816002454_zero_credit_request_compatibility.sql`
 12. Run `verify-zero-credit-request-compatibility.sql` and keep zero-credit
     request creation in the maintenance window until every row passes.
-13. Deploy the matching application and complete the cutover smoke checks.
+13. Deploy the frozen cutover-compatible predecessor application and complete
+    its cutover smoke checks.
 14. `20260816002452_post_deploy_legacy_rpc_cutover.sql`
 15. `20260816002453_email_delivery_schema_parity.sql`
+16. Run the post-cutover, email parity, zero-credit and final security
+    verifiers. Every row must pass.
+17. `20260823000000_customer_device_verification.sql`
+18. `20260823000001_customer_device_verification_catalog_reconciliation.sql`
+19. Confirm device mode is still `shadow`, then run
+    `verify-customer-device-verification.sql` and rerun both
+    `verify-post-deploy-legacy-rpc-cutover.sql` and
+    `verify-zero-credit-request-compatibility.sql`. The latter two must now
+    resolve the renamed `create_order_with_credit_deduction_without_assurance`
+    core and verify the old signature as its private assurance wrapper.
+20. Configure the server-only device HMAC secret and deploy the frozen
+    device-aware application. Complete shadow-mode smoke checks before any
+    enforcement activation.
 
 Version 02449 is intentionally unused. The reviewed cutover body was renamed
 without content changes from its unapplied 02451 filename to 02452 so numeric
@@ -47,6 +66,8 @@ Freeze and compare these SHA-256 values before each environment:
 - 02452: `5084DFD95DBD878FD1037F7CE497C1362E900ED5D3F931A2626CD448719C84CC`
 - 02453: `E88D700B4ACB0D051C6D563C3D52F1958074983D9127D413BB28901374DE4353`
 - 02454: `958ED96EF6607397EA8839432D53FE64776FAA853FDB5994E02DD67B5046A6F0`
+- device migration: `8F09E9B7E7A90FDA8696C0B7A6CBCC6454D08E4600AA835C1420CFD8C8E52262`
+- device catalog reconciliation: `958B34C5E19CFD7FA2C7124100C2A29AEC465539228660B2AC82A462924A9668`
 
 Migration 02453 closes a real environment-parity gap: the historical email
 delivery reliability schema exists in Production but was never captured in the
@@ -86,9 +107,10 @@ do not repair or relabel a successful hosted migration to match it.
   Production. The current Free plan does not provide a verified automatic
   daily backup/PITR recovery point; do not treat an application rollback as a
   database backup.
-- Freeze the exact commit/artifact and migration checksums. Preview must use
-  only the isolated staging Supabase project and must not inherit Production
-  credentials.
+- Freeze both exact application artifacts (the cutover-compatible predecessor
+  and its device-aware successor) and every migration checksum. Preview must
+  use only the isolated staging Supabase project, with an independent device
+  HMAC secret, and must not inherit Production credentials.
 - Any failed migration, verifier row, Security Advisor error, or critical smoke
   regression stops the sequence.
 - Production File Expert is gated on a separate healthy
@@ -146,7 +168,8 @@ do not repair or relabel a successful hosted migration to match it.
    transitional policies. Then apply 02454 and run
    `verify-zero-credit-request-compatibility.sql`; every row must pass before
    application deployment.
-7. Deploy the frozen application artifact. Using disposable staging fixtures,
+7. Deploy the frozen cutover-compatible predecessor artifact. Using disposable
+   staging fixtures,
    verify signed uploads for both protected buckets, web/desktop order retry
    idempotency, File Expert finalization, staff credit retry idempotency, Stripe
    credit recovery, refund recovery, and widget checkout/webhook claims. With
@@ -163,16 +186,29 @@ do not repair or relabel a successful hosted migration to match it.
    `verify-security-state-hardening.sql`. Every verifier row must pass. The
    parity verifier reads schema/authority metadata only and must show both
    email operational tables as RLS-enabled and service-API-only.
-9. Run Supabase Security Advisor again and compare with the captured baseline.
+9. Apply `20260823000000_customer_device_verification.sql`, then
+   `20260823000001_customer_device_verification_catalog_reconciliation.sql`.
+   Confirm mode remains `shadow`. Run the customer-device verifier and rerun
+   both the post-cutover and zero-credit verifiers; all rows must pass against
+   the renamed private core plus legacy-signature assurance wrapper.
+10. Configure an isolated staging HMAC secret and real staging e-mail delivery,
+    then deploy the frozen device-aware successor. Prove the shadow-mode login,
+    OAuth, registration, password-change forced-code and explicit-revocation
+    cases from `customer-device-verification-rollout.md`. Only after those pass,
+    activate with `activate_customer_device_assurance(0)` and run its full
+    new-device, trusted-device, RLS, Storage, API and order-RPC suite. Rehearse
+    disable/reactivate before Production. Unsupported desktop access must stay
+    disabled or minimum-version blocked.
+11. Run Supabase Security Advisor again and compare with the captured baseline.
    Resolve any new ERROR/WARN finding introduced by this release. Then delete
    the retained disposable user through the Auth Admin API so normal cascading
    cleanup runs, and confirm only aggregate zero-residue counts.
 
 ## Production sequence
 
-1. Confirm the staging rehearsal passed for the same checksums and application
-   artifact. Capture the logical backup and verify that the restore procedure
-   and destination are known.
+1. Confirm the staging rehearsal passed for the same checksums and both frozen
+   application artifacts. Capture the logical backup and verify that the
+   restore procedure and destination are known.
 2. Run the aggregate preflight. Confirm the protected buckets are private,
    legacy canonical domains are valid/unique, the unbound checkout window is
    clear, and authority/financial invariants pass.
@@ -190,9 +226,9 @@ do not repair or relabel a successful hosted migration to match it.
    ledger/Storage verifier. Do not run the final Storage matrix verifier until
    02452 removes transitional INSERT access. Apply 02454 next and require every
    focused zero-credit verifier row to pass before deploying the application.
-5. Deploy the frozen application artifact. Perform immediate read-only
-   Production health/auth/download checks; rely on the completed staging
-   rehearsal for mutating payment and customer-data paths.
+5. Deploy the frozen cutover-compatible predecessor artifact. Perform immediate
+   read-only Production health/auth/download checks; rely on the completed
+   staging rehearsal for mutating payment and customer-data paths.
 6. Verify that the deployed application uses signed uploads, claim-bound
    financial RPCs, idempotent order wrappers, and atomic File Expert/widget
    claims. Hold 02452 until logs and smoke checks show no critical regression.
@@ -200,6 +236,17 @@ do not repair or relabel a successful hosted migration to match it.
    then repeat the read-only Production smoke checks. Production already has
    the historical email tables; 02453 must preserve their schema while removing
    the retired direct staff Data API policies and grants.
+8. Apply the customer-device migration and its catalog reconciliation in that
+   order. Confirm `shadow`; run the customer-device verifier and rerun the
+   post-cutover and zero-credit verifiers. Do not deploy the device-aware
+   successor until all rows pass and the server-only HMAC secret is configured.
+9. Deploy the frozen device-aware successor and complete non-mutating
+   Production shadow-mode smoke checks. Activate only after the detailed device
+   rollout gates are satisfied, including Secure Password Change/Auth-layer
+   controls, real e-mail capacity and desktop disable/minimum-version safety.
+   Immediately rerun the customer-device, post-cutover and zero-credit
+   verifiers after activation and monitor 428/401/429/5xx plus delivery failure
+   aggregates without recording customer identifiers, codes or raw tokens.
 
 ## Failure and recovery
 
@@ -226,6 +273,16 @@ do not repair or relabel a successful hosted migration to match it.
   API during application recovery. Do not recreate the direct staff table
   access retired by 02453 or the positive-only order rejection replaced by
   02454.
+- After both customer-device migrations but before the device-aware deploy,
+  keep mode `shadow` and continue with the verified cutover-compatible
+  predecessor. The verifier must still resolve the renamed private core and
+  assurance wrapper correctly in this phase.
+- After the device-aware deploy while still in `shadow`, roll the application
+  back to the frozen cutover-compatible predecessor if a critical regression
+  appears; keep the additive device schema in place. After enforcement is
+  active, first call `disable_customer_device_assurance()`, confirm `shadow`,
+  and only then roll back. Explicitly revoked sessions and forced password-code
+  sessions remain blocked in `shadow` and must not be resurrected.
 - After recovery, restore the hardened application by a new forward migration.
   Do not edit or re-label an already-recorded 02450, 02451, 02452, 02453, or 02454
   migration.

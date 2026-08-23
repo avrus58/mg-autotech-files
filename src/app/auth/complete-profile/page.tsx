@@ -14,7 +14,6 @@ import {
 import { recordGrowthAccountCreated } from "@/lib/growth/client";
 import { trackRegistrationCompleted } from "@/lib/publicAnalytics";
 import {
-  buildRegistrationCompletionUpdates,
   requiresRegistrationCountryCompletion,
 } from "@/lib/registrationCompletion";
 import {
@@ -23,14 +22,13 @@ import {
   parseRegistrationProfileCompletionDraft,
 } from "@/lib/registrationProfile";
 import { supabase } from "@/lib/supabaseClient";
+import { getSafeLocalRedirectPath } from "@/lib/safeLocalRedirect";
 
 type CountryDetectionState = "detecting" | "detected" | "manual";
 
 function safeNextPath() {
   const value = new URLSearchParams(window.location.search).get("next");
-  return value?.startsWith("/") && !value.startsWith("//")
-    ? value
-    : "/dashboard";
+  return getSafeLocalRedirectPath(value) ?? "/dashboard";
 }
 
 function readPendingDraft() {
@@ -187,41 +185,26 @@ export default function CompleteProfilePage() {
     setSaving(true);
     setMessage("");
 
-    const { data, error: userError } = await supabase.auth.getUser();
-    if (userError || !data.user) {
-      setMessage("Your session could not be verified. Please log in again.");
+    const completionResponse = await authenticatedFetch(
+      "/api/auth/oauth-registration/finalize",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ country: selectedCountry }),
+      }
+    );
+    if (!completionResponse.ok) {
+      const payload = (await completionResponse.json().catch(() => ({}))) as {
+        error?: string;
+      };
+      setMessage(payload.error || "Your country could not be saved. Please try again.");
       setSaving(false);
       return;
     }
 
-    const updates = buildRegistrationCompletionUpdates({
-      country: selectedCountry,
-      draft: readPendingDraft(),
-      existingMetadata: data.user.user_metadata,
-    });
-    if (!updates) {
-      setMessage("Please select your country.");
-      setSaving(false);
-      return;
-    }
-
-    const profileUpdate = await supabase
-      .from("profiles")
-      .update(updates.profile)
-      .eq("id", data.user.id)
-      .select("id")
-      .maybeSingle();
-    if (profileUpdate.error || !profileUpdate.data) {
-      setMessage("Your country could not be saved. Please try again.");
-      setSaving(false);
-      return;
-    }
-
-    const authUpdate = await supabase.auth.updateUser({
-      data: updates.metadata,
-    });
-    if (authUpdate.error) {
-      setMessage("Your country could not be saved. Please try again.");
+    const refreshedSession = await supabase.auth.refreshSession();
+    if (refreshedSession.error || !refreshedSession.data.session?.user) {
+      setMessage("Your updated account could not be verified. Please log in again.");
       setSaving(false);
       return;
     }
@@ -239,8 +222,8 @@ export default function CompleteProfilePage() {
       // Notification delivery must not block the completed registration.
     }
 
-    router.replace(safeNextPath());
-    router.refresh();
+    const next = safeNextPath();
+    router.replace(`/auth/callback?next=${encodeURIComponent(next)}`);
   };
 
   if (checkingUser) {

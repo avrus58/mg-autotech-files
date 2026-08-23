@@ -14,6 +14,57 @@ with expected_access(signature, anon_execute, authenticated_execute, service_exe
     ('public.create_web_order_with_credit_deduction(text,text,text,text,text,text,text,integer,text,text,text,text,text,text,text,text,text,text)', false, true, false),
     ('public.create_desktop_order_with_credit_deduction(text,uuid,text,text,text,text,text,text,text,integer,text,text,text,text,text,text,text,text,text,text)', false, true, false)
 ),
+order_contract as (
+  select
+    pg_catalog.to_regprocedure(
+      'public.create_order_with_credit_deduction(text,text,text,text,text,text,integer,text,text,text,text,text,text,text,text,text,text)'
+    ) as wrapper_oid,
+    pg_catalog.to_regprocedure(
+      'public.create_order_with_credit_deduction_without_assurance(text,text,text,text,text,text,integer,text,text,text,text,text,text,text,text,text,text)'
+    ) as renamed_core_oid
+),
+resolved_order_contract as (
+  select
+    contract.*,
+    coalesce(contract.renamed_core_oid, contract.wrapper_oid) as core_oid,
+    contract.renamed_core_oid is not null as device_assurance_installed
+  from order_contract as contract
+),
+order_definitions as (
+  select
+    contract.*,
+    case
+      when contract.core_oid is null then ''
+      else pg_catalog.lower(pg_catalog.pg_get_functiondef(contract.core_oid))
+    end as core_definition,
+    case
+      when contract.wrapper_oid is null then ''
+      else pg_catalog.lower(pg_catalog.pg_get_functiondef(contract.wrapper_oid))
+    end as wrapper_definition,
+    core_procedure.prosecdef as core_security_definer,
+    exists (
+      select 1
+      from pg_catalog.unnest(core_procedure.proconfig) as config(value)
+      where config.value in ('search_path=', 'search_path=""')
+    ) as core_fixed_path,
+    core_owner.rolname as core_owner,
+    wrapper_procedure.prosecdef as wrapper_security_definer,
+    exists (
+      select 1
+      from pg_catalog.unnest(wrapper_procedure.proconfig) as config(value)
+      where config.value in ('search_path=', 'search_path=""')
+    ) as wrapper_fixed_path,
+    wrapper_owner.rolname as wrapper_owner
+  from resolved_order_contract as contract
+  left join pg_catalog.pg_proc as core_procedure
+    on core_procedure.oid = contract.core_oid
+  left join pg_catalog.pg_roles as core_owner
+    on core_owner.oid = core_procedure.proowner
+  left join pg_catalog.pg_proc as wrapper_procedure
+    on wrapper_procedure.oid = contract.wrapper_oid
+  left join pg_catalog.pg_roles as wrapper_owner
+    on wrapper_owner.oid = wrapper_procedure.proowner
+),
 function_state as (
   select
     expected.*,
@@ -105,16 +156,51 @@ checks(check_name, ok, details) as (
 
   select
     'hardened order core is private but remains wrapper-callable',
-    not pg_catalog.has_function_privilege('anon', function_oid, 'EXECUTE')
-      and not pg_catalog.has_function_privilege('authenticated', function_oid, 'EXECUTE')
-      and not pg_catalog.has_function_privilege('service_role', function_oid, 'EXECUTE')
-      and position('auth.uid()' in definition) > 0
-      and position('resolve_request_service_credits' in definition) > 0
-      and position('for update of profile' in definition) > 0
-      and position('mg_autotech.order_credit_debit' in definition) > 0,
-    'Only postgres-owned idempotent wrappers may invoke the hardened core'
-  from function_definitions
-  where signature = 'public.create_order_with_credit_deduction(text,text,text,text,text,text,integer,text,text,text,text,text,text,text,text,text,text)'
+    core_oid is not null
+      and not pg_catalog.has_function_privilege('anon', core_oid, 'EXECUTE')
+      and not pg_catalog.has_function_privilege('authenticated', core_oid, 'EXECUTE')
+      and not pg_catalog.has_function_privilege('service_role', core_oid, 'EXECUTE')
+      and core_security_definer
+      and core_fixed_path
+      and core_owner = 'postgres'
+      and position('auth.uid()' in core_definition) > 0
+      and position('resolve_request_service_credits' in core_definition) > 0
+      and position('for update of profile' in core_definition) > 0
+      and position('mg_autotech.order_credit_debit' in core_definition) > 0,
+    case
+      when device_assurance_installed
+        then 'Renamed ungated core is private; only postgres-owned assured wrappers may invoke it'
+      else 'Legacy post-cutover core is private and remains wrapper-callable'
+    end
+  from order_definitions
+
+  union all
+
+  select
+    'device assurance wrapper calls the exact renamed order core',
+    not device_assurance_installed
+      or (
+        wrapper_oid is not null
+        and wrapper_oid <> core_oid
+        and wrapper_security_definer
+        and wrapper_fixed_path
+        and wrapper_owner = 'postgres'
+        and not pg_catalog.has_function_privilege('anon', wrapper_oid, 'EXECUTE')
+        and not pg_catalog.has_function_privilege('authenticated', wrapper_oid, 'EXECUTE')
+        and not pg_catalog.has_function_privilege('service_role', wrapper_oid, 'EXECUTE')
+        and position('current_customer_session_assured' in wrapper_definition) > 0
+        and position('device verification is required.' in wrapper_definition) > 0
+        and position(
+          'public.create_order_with_credit_deduction_without_assurance('
+          in wrapper_definition
+        ) > 0
+      ),
+    case
+      when device_assurance_installed
+        then 'Authenticated web/desktop entry points reach the private core only through the assured legacy-signature wrapper'
+      else 'Device migration is not installed; the legacy signature remains the resolved private core'
+    end
+  from order_definitions
 
   union all
 

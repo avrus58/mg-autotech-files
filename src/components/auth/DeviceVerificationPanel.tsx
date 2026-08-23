@@ -10,10 +10,7 @@ import {
   type DeviceVerificationState,
 } from "@/lib/deviceVerificationClient";
 import { signOutLocalStable } from "@/lib/authGuards";
-
-function safeNextPath(value: string | undefined) {
-  return value?.startsWith("/") && !value.startsWith("//") ? value : "/dashboard";
-}
+import { getSafeLocalRedirectPath } from "@/lib/safeLocalRedirect";
 
 function formatCountdown(totalSeconds: number) {
   const safeSeconds = Math.max(0, Math.ceil(totalSeconds));
@@ -46,7 +43,7 @@ export function DeviceVerificationPanel({
       onVerified();
       return;
     }
-    router.replace(safeNextPath(nextPath));
+    router.replace(getSafeLocalRedirectPath(nextPath) ?? "/dashboard");
     router.refresh();
   }, [nextPath, onVerified, router]);
 

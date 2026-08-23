@@ -157,6 +157,7 @@ test("generic logger exports may include preambles and a separate units row", ()
 
   assert.equal(result.status, "ready");
   assert.equal(result.delimiter, ";");
+  assert.equal(result.source.sourceRowCount, 3);
   assert.equal(result.source.acceptedRowCount, 3);
   assert.equal(result.xAxis?.kind, "time");
   assert.ok(result.warnings.some((warning) => /2 preamble lines were skipped/i.test(warning)));
@@ -177,6 +178,28 @@ test("generic logger exports may include preambles and a separate units row", ()
   assert.ok(egrObservation);
   assert.match(egrObservation.text, /Numeric movement is present/);
   assert.match(egrObservation.text, /does not confirm EGR function, health, disable state or commanded response/);
+});
+
+test("bounded line scanning preserves blank-line and newline-format semantics", () => {
+  const lines = [
+    "Logger preamble",
+    "",
+    "Time,Engine Speed,Engine Torque Actual",
+    "s,rpm,Nm",
+    "0,1800,300",
+    "1,2400,360",
+    "2,3000,400",
+    "",
+  ];
+
+  for (const separator of ["\n", "\r\n", "\r"]) {
+    const result = analyzeLogStudio(lines.join(separator));
+    assert.equal(result.status, "ready");
+    assert.equal(result.source.sourceRowCount, 3);
+    assert.equal(result.source.processedRowCount, 3);
+    assert.equal(result.source.acceptedRowCount, 3);
+    assert.equal(result.truncated.rows, false);
+  }
 });
 
 test("performance extraction uses logged actual torque, excludes requests and converts lb-ft", () => {
@@ -969,6 +992,24 @@ test("malformed wide delimiter and whitespace rows stay inside the tokenizer bou
   assert.ok(elapsedMs < 8_000, `Expected bounded tokenization, received ${elapsedMs} ms`);
 });
 
+test("high-line-count input preserves source counts while retaining only the processing window", () => {
+  const header = "Engine Speed (rpm),Engine Torque Actual (Nm)\n";
+  const row = "1,1\n";
+  const sourceRowCount = Math.floor((maxLogStudioCharacters - header.length) / row.length);
+  const log = header + row.repeat(sourceRowCount);
+
+  assert.ok(log.length <= maxLogStudioCharacters);
+  assert.ok(sourceRowCount > 1_000_000);
+
+  const result = analyzeLogStudio(log, { profile: "performance" });
+
+  assert.equal(result.truncated.characters, false);
+  assert.equal(result.truncated.rows, true);
+  assert.equal(result.source.sourceRowCount, sourceRowCount);
+  assert.equal(result.source.processedRowCount, maxLogStudioRows);
+  assert.equal(result.rows.length, maxLogStudioRows);
+});
+
 test("the full profile respects the cell budget while the public performance profile reads the full two-channel capture", () => {
   const columnCount = maxLogStudioChannels;
   const rowCount = Math.floor(maxLogStudioCells / columnCount) + 5;
@@ -1044,4 +1085,7 @@ test("the studio engine remains pure, browser-local and dependency-free", () => 
   assert.match(source, /maxLogStudioFullRows = 15_000/);
   assert.match(source, /maxLogStudioChannels = 64/);
   assert.match(source, /maxLogStudioCells = 500_000/);
+  assert.match(source, /function scanBoundedNonEmptyLines/);
+  assert.match(source, /function collectBoundedDataLines/);
+  assert.doesNotMatch(source, /bounded\s*\.split\(\/\\r\?\\n\|\\r\//);
 });

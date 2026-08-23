@@ -5,7 +5,10 @@ import { resolve } from "node:path";
 import test from "node:test";
 
 function source(...segments: string[]) {
-  return readFileSync(resolve(process.cwd(), ...segments), "utf8");
+  return readFileSync(resolve(process.cwd(), ...segments), "utf8").replace(
+    /\r\n?/g,
+    "\n",
+  );
 }
 
 const migration = source(
@@ -130,14 +133,14 @@ test("release order fixes Auth and customer access before cutover and parity", (
   assert.match(runbook, /8131E02E582D5E16C18F6262515E402AEC2A4DBAFAA1E3029362E80EA8F8C792/);
   assert.ok(
     runbook.indexOf("20260816002450_auth_customer_id_generator_hardening.sql")
-      < runbook.indexOf("Deploy the matching application"),
+      < runbook.indexOf("Deploy the frozen cutover-compatible predecessor application"),
   );
   assert.ok(
     runbook.indexOf("20260816002451_credit_transaction_customer_access_hardening.sql")
-      < runbook.indexOf("Deploy the matching application"),
+      < runbook.indexOf("Deploy the frozen cutover-compatible predecessor application"),
   );
   assert.ok(
-    runbook.indexOf("Deploy the matching application")
+    runbook.indexOf("Deploy the frozen cutover-compatible predecessor application")
       < runbook.indexOf("20260816002452_post_deploy_legacy_rpc_cutover.sql"),
   );
   assert.ok(

@@ -1,12 +1,9 @@
-import { analyzeLogStudio } from "@/lib/logAnalysisStudio";
-import { performanceFromStudioAnalysis } from "@/lib/performanceReport";
+import {
+  analyzePublicLogSnapshot,
+  type PublicLogSnapshotAnalysis,
+} from "@/lib/publicLogSnapshot";
 
-export type PublicLogSnapshotAnalysis = {
-  compatible: boolean;
-  peakTorqueNm: number | null;
-  peakPowerHp: number | null;
-  truncated: boolean;
-};
+export type { PublicLogSnapshotAnalysis } from "@/lib/publicLogSnapshot";
 
 type PublicLogSnapshotWorkerResponse =
   | { ok: true; snapshot: PublicLogSnapshotAnalysis }
@@ -19,14 +16,7 @@ export function analyzePublicLogSnapshotInBrowser(text: string, signal?: AbortSi
     return Promise.reject(new DOMException("Datalog snapshot was cancelled.", "AbortError"));
   }
   if (typeof Worker === "undefined") {
-    const analysis = analyzeLogStudio(text, { profile: "performance" });
-    const performance = performanceFromStudioAnalysis(analysis);
-    return Promise.resolve<PublicLogSnapshotAnalysis>({
-      compatible: Boolean(performance),
-      peakTorqueNm: performance?.source.loggedPeakTorqueNm ?? null,
-      peakPowerHp: performance?.analysis.peakPower?.hp ?? null,
-      truncated: analysis.truncated.rows || analysis.truncated.characters,
-    });
+    return Promise.resolve(analyzePublicLogSnapshot(text));
   }
 
   return new Promise<PublicLogSnapshotAnalysis>((resolve, reject) => {

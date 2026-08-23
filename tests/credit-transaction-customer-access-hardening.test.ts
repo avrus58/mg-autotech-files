@@ -5,7 +5,10 @@ import { resolve } from "node:path";
 import test from "node:test";
 
 function source(...segments: string[]) {
-  return readFileSync(resolve(process.cwd(), ...segments), "utf8");
+  return readFileSync(resolve(process.cwd(), ...segments), "utf8").replace(
+    /\r\n?/g,
+    "\n",
+  );
 }
 
 const migration = source(
@@ -135,7 +138,7 @@ test("customer access verifier is SELECT-only and checks ACL, RLS, and Storage",
   assert.match(verifier, /13 transitional policies/i);
 });
 
-test("release order keeps 02451 before cutover and 02453 parity last", () => {
+test("release order keeps 02451 before the predecessor cutover and 02453 before device assurance", () => {
   const finalVerifier = source("scripts", "verify-security-state-hardening.sql");
   const preflight = source("scripts", "preflight-integrated-security-release.sql");
   const runbook = source("docs", "integrated-security-release-runbook.md");
@@ -165,15 +168,19 @@ test("release order keeps 02451 before cutover and 02453 parity last", () => {
   );
   assert.ok(
     runbook.indexOf("20260816002451_credit_transaction_customer_access_hardening.sql")
-      < runbook.indexOf("Deploy the matching application"),
+      < runbook.indexOf("Deploy the frozen cutover-compatible predecessor application"),
   );
   assert.ok(
-    runbook.indexOf("Deploy the matching application")
+    runbook.indexOf("Deploy the frozen cutover-compatible predecessor application")
       < runbook.indexOf("20260816002452_post_deploy_legacy_rpc_cutover.sql"),
   );
   assert.ok(
     runbook.indexOf("20260816002452_post_deploy_legacy_rpc_cutover.sql")
       < runbook.indexOf("20260816002453_email_delivery_schema_parity.sql"),
+  );
+  assert.ok(
+    runbook.indexOf("20260816002453_email_delivery_schema_parity.sql")
+      < runbook.indexOf("20260823000000_customer_device_verification.sql"),
   );
 
   assert.equal(

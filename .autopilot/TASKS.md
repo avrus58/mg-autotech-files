@@ -8,34 +8,37 @@
 
 ## Blocked
 
-### MANUAL-20260820-PRODUCTION-AUTHORITY-EMERGENCY [P0] Production authority and finance containment
+### MANUAL-20260823-INTEGRATED-PRODUCTION-RELEASE [P0] Son degisikliklerin guvenli Production yayini
 
-Durum: Blocked
+Durum: Blocked (code validated; operational release gates remain)
 
-Fingerprint: `production-security|signup-metadata-admin-and-direct-finance-authority|live-catalog-confirmed|pinned-emergency-containment`
+Fingerprint: `production-release|current-main-plus-growth-generic-datalog-device-assurance|validated-integrated-artifacts|hosting-backup-secret-and-entitlement-gated`
 
-Kapsam: Production katalogunda doğrulanan müşteri kontrollü admin signup,
-doğrudan profil kredi/otorite güncellemesi, altı geniş SECURITY DEFINER finans
-RPC'si ve RPC dışı ücretsiz order INSERT yolunu mevcut `dad28dd` uygulamasıyla
-uyumlu en küçük migration + fail-closed app guard paketiyle kapat.
+Kapsam: Current Production uzerindeki son Growth, genel datalog, auth redirect /
+Google onboarding, customer device assurance ve canonical 02443-02454 guvenlik
+degisikliklerini tek denetlenebilir uygulama/veritabani sirasi olarak yayinla.
 
-Hazır sonuç: `20260816002442_current_production_authority_emergency_hardening.sql`,
-SELECT-only preflight/verifier, pinned `dad28dd` app patch'i, source testleri ve
-release runbook'u bağımsız review'dan geçti. Production aggregate preflight bir
-exact owner ve sıfır authority/fractional/out-of-range anomali gösterdi; kimlik
-ve müşteri satırı okunmadı.
+Hazir sonuc: Birlesik branch tam test/lint/typecheck/i18n/Webpack/performance
+kapilarindan gecti; auth/device/order-verifier P0/P1 review'u temiz. Isolated
+staging Supabase'de canonical set ile iki device migration shadow modda
+uygulandi ve read-only device verifier 7/7 PASS oldu. Production'a bu turda
+kod, migration, secret veya hosting mutation yapilmadi.
 
-Blocked reason: Exact SQL henüz current-Production-shape ve post-02453 iki
-izole şema provasından geçmedi. Production apply ayrıca ayrı açık yayın yetkisi,
-pinli düşük-trafik sırası ve yalnız `dad28dd + emergency patch` deploy'u ister.
-Tam geliştirme branch'i bu acil pakete karıştırılamaz.
+Blocked reason: Vercel proje Hobby planda ve ticari kullanim uygun degil; owner
+ucretli plana gecmeyi reddetti. Production device HMAC secret'i yok, Supabase
+Auth password/change kapilari hazir degil ve Free planda restorable logical
+backup kaniti alinmadi. Ayrica public browser bundle'i full datalog motorunu
+iceriyor; UI kilidi strict customer-only entitlement saglamiyor. Shadow Preview
+uygulama/e-posta/E2E provasi ve exact iki-artifact freeze de tamamlanmadi.
 
-Remediation: İki sentetik/izole rehearsal, 21/21 verifier ve fixture smokes;
-ardından explicit Production release authorization ile pinli migration/app
-hotfix, immediate smoke ve incident verification.
+Remediation: Ticari kullanima uygun host sec; server-only HMAC ve Auth ayarlarini
+hazirla; restorable logical backup al/provala; authenticated no-store datalog
+isleme veya client-code extractability icin owner karari ver; matching Preview
+ve shadow E2E'yi tamamla. Sonra runbook sirasiyla Production release ve smoke.
+
 ### MANUAL-20260822-GENERIC-DATALOG-STUDIO [P1] Genel datalog denemesi ve müşteri analiz derinliği
 
-Durum: Blocked (implementation complete; repository-wide baseline validation is red)
+Durum: Blocked (implementation validated; strict entitlement architecture requires owner decision)
 
 Fingerprint: `performance-analysis|generic-datalog-access|autotuner-specific-public-bypass-and-2k-cap|public-two-metric-trial-and-customer-multichannel-studio`
 
@@ -64,16 +67,16 @@ Kabul kriterleri:
 - Hedefli testler, lint, typecheck, build, responsive/accessibility browser QA
   ve diff review PASS olur.
 
-Blocked reason: Uygulama kapsami 85/85 hedefli ve `ui-ux-safety.test.ts`
-haric 693/693 testte PASS olsa da zorunlu `npm test`, exact `origin/main`
-baseline'inda da bulunan ayni 22 eski `ui-ux-safety` source-contract failure'i
-nedeniyle 765/787 sonucunda kalir. Normal Turbopack build de worktree
-`node_modules` symlink'i filesystem root disina isaret ettigi icin ortam kaynakli
-panic verir; ayni kaynak Webpack Production build'de PASS olur.
+Blocked reason: Zorunlu full suite artik 929/929 PASS, Webpack Production build,
+lint, typecheck ve i18n temizdir. Ancak public snapshot ayni browser-local full
+parser/report dependency graph'ini anonim static asset'e dahil eder. Login/UI
+kilidi indirilebilir client kodu icin gercek customer-only entitlement siniri
+degildir. Full motoru authenticated server'a tasimak ise mevcut "dosya
+tarayicidan cikmaz" urun/gizlilik vaadini degistirir.
 
-Remediation: Eski 22 `ui-ux-safety` kaynak cikarma assertion'ini ayri ve kanitli
-bir test-baseline gorevinde duzelt; ardindan `npm test` ve normal non-symlink
-checkout'ta `npm run build` tekrar calistirilarak gorev Done'a tasinabilir.
+Remediation: Owner ya client kodunun teknik olarak extract edilebilir oldugunu
+acikca kabul edip UI entitlement'iyle yayinlamali ya da authenticated, no-store,
+ephemeral server analizi ve buna uygun gizlilik metni degisikligini onaylamali.
 
 ## Later
 
@@ -116,6 +119,20 @@ Remediation: Batch with a future documentation/source-comment maintenance pass a
 Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
+
+### MANUAL-20260820-PRODUCTION-AUTHORITY-EMERGENCY [P0] Production authority and finance containment
+
+Durum: Done
+
+Fingerprint: `production-security|signup-metadata-admin-and-direct-finance-authority|live-catalog-confirmed|pinned-emergency-containment`
+
+Sonuc: Frozen emergency migration current-Production ve post-02454 staging
+sekillerinde rollback prova edildi; iki prova ve exact verifier 21/21 PASS oldu.
+Migration Production'a `current_production_authority_emergency_hardening`
+adiyla hosted version `20260821002453` olarak bir kez uygulandi. Post-apply
+verifier 21/21, aggregate normal-operation kapisi ve immediate public/auth-deny
+smoke PASS; app/hosting degismedi ve musteri, kredi, siparis, odeme, dosya veya
+e-posta verisi mutasyona ugramadi.
 
 ### MANUAL-20260823-ADAPTIVE-CUSTOMER-DEVICE-VERIFICATION [P1] Tanınmayan cihazda müşteri e-posta doğrulaması
 

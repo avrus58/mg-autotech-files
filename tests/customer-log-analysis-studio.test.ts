@@ -62,7 +62,9 @@ test("log files are processed locally with explicit format and resource bounds",
   assert.match(engine, /input\.slice\(0, maxLogStudioCharacters\)/);
   assert.match(engine, /profileRowLimit = options\.profile === "performance"/);
   assert.match(engine, /processedRowLimit = Math\.min\(profileRowLimit, rowsWithinCellBudget\)/);
-  assert.match(engine, /dataLines\.slice\(0, processedRowLimit\)/);
+  assert.match(engine, /scanBoundedNonEmptyLines\(bounded\)/);
+  assert.match(engine, /collectBoundedDataLines\(/);
+  assert.doesNotMatch(engine, /bounded\s*\.split\(\/\\r\?\\n\|\\r\//);
   assert.match(engine, /\.slice\(0, maxLogStudioChannels\)/);
 
   for (const source of [studio, engine]) {

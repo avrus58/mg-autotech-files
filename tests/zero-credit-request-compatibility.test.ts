@@ -5,7 +5,10 @@ import { resolve } from "node:path";
 import test from "node:test";
 
 function source(...segments: string[]) {
-  return readFileSync(resolve(process.cwd(), ...segments), "utf8");
+  return readFileSync(resolve(process.cwd(), ...segments), "utf8").replace(
+    /\r\n?/g,
+    "\n",
+  );
 }
 
 const migrationName = "20260816002454_zero_credit_request_compatibility.sql";
@@ -83,13 +86,20 @@ test("focused verifier is SELECT-only and checks metadata plus catalog rows", ()
   assert.match(verifier, /from public\.request_service_catalog as catalog/i);
   assert.match(
     verifier,
-    /function_state as \([\s\S]*?expected\.signature,[\s\S]*?expected\.authenticated_must_be_private,[\s\S]*?to_regprocedure/i,
+    /resolved_order_contract as \([\s\S]*?coalesce\(contract\.renamed_core_oid, contract\.wrapper_oid\) as core_oid/i,
   );
+  assert.match(verifier, /create_order_with_credit_deduction_without_assurance/i);
+  assert.match(verifier, /where function_kind = 'order_core'/i);
   assert.match(verifier, /zero-credit catalog contract is exact/i);
   assert.match(verifier, /order core skips financial writes only for exact zero/i);
   assert.match(verifier, /usage ledger ignores zero and rejects negative marked orders/i);
   assert.match(verifier, /order core authenticated access matches the cutover phase/i);
-  assert.equal((verifier.match(/\n\s*union all\n/gi) ?? []).length + 1, 7);
+  assert.match(verifier, /device assurance wrapper calls the exact renamed order core/i);
+  const checksBody = verifier.slice(
+    verifier.indexOf("checks(sort_order, check_name, ok, details) as ("),
+    verifier.lastIndexOf("\nselect check_name")
+  );
+  assert.equal((checksBody.match(/\n\s*union all\n/gi) ?? []).length + 1, 8);
 });
 
 test("release metadata places 02454 before app cutover and freezes its hash", () => {
@@ -103,15 +113,27 @@ test("release metadata places 02454 before app cutover and freezes its hash", ()
   );
   assert.ok(
     runbook.indexOf(migrationName)
-      < runbook.indexOf("Deploy the matching application"),
+      < runbook.indexOf("Deploy the frozen cutover-compatible predecessor application"),
   );
   assert.ok(
-    runbook.indexOf("Deploy the matching application")
+    runbook.indexOf("Deploy the frozen cutover-compatible predecessor application")
       < runbook.indexOf("20260816002452_post_deploy_legacy_rpc_cutover.sql"),
   );
   assert.ok(
     runbook.indexOf("20260816002452_post_deploy_legacy_rpc_cutover.sql")
       < runbook.indexOf("20260816002453_email_delivery_schema_parity.sql"),
+  );
+  assert.ok(
+    runbook.indexOf("20260816002453_email_delivery_schema_parity.sql")
+      < runbook.indexOf("20260823000000_customer_device_verification.sql"),
+  );
+  assert.ok(
+    runbook.indexOf("20260823000000_customer_device_verification.sql")
+      < runbook.indexOf("20260823000001_customer_device_verification_catalog_reconciliation.sql"),
+  );
+  assert.ok(
+    runbook.indexOf("20260823000001_customer_device_verification_catalog_reconciliation.sql")
+      < runbook.indexOf("deploy the frozen\n    device-aware application"),
   );
   assert.match(runbook, new RegExp(digest));
   assert.match(runbook, /verify-zero-credit-request-compatibility\.sql/i);

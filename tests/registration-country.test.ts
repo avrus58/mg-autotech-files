@@ -16,6 +16,7 @@ import {
   buildRegistrationCompletionUpdates,
   hasConfirmedRegistrationCountry,
   isGoogleRegistrationAfterCountryEnforcement,
+  isGoogleRegistrationProfileFinalizationWindowOpen,
   requiresRegistrationCountryCompletion,
 } from "../src/lib/registrationCompletion";
 
@@ -195,6 +196,39 @@ test("new Google accounts require country completion without a time limit", () =
   });
 });
 
+test("full Google profile bootstrap is time-limited but country-only completion is not", () => {
+  const createdAt = "2026-08-22T00:01:00.000Z";
+  const googleUser = {
+    created_at: createdAt,
+    app_metadata: { provider: "google", providers: ["google"] },
+    user_metadata: {},
+  };
+  const createdAtMs = Date.parse(createdAt);
+
+  assert.equal(
+    isGoogleRegistrationProfileFinalizationWindowOpen(
+      googleUser,
+      createdAtMs + 30 * 60 * 1000
+    ),
+    true
+  );
+  assert.equal(
+    isGoogleRegistrationProfileFinalizationWindowOpen(
+      googleUser,
+      createdAtMs + 30 * 60 * 1000 + 1
+    ),
+    false
+  );
+  assert.equal(
+    isGoogleRegistrationProfileFinalizationWindowOpen(
+      { ...googleUser, app_metadata: { provider: "email" } },
+      createdAtMs + 1
+    ),
+    false
+  );
+  assert.equal(isGoogleRegistrationAfterCountryEnforcement(googleUser), true);
+});
+
 test("country completion preserves a safe legacy OAuth draft", () => {
   const updates = buildRegistrationCompletionUpdates({
     country: "US",
@@ -227,6 +261,15 @@ test("country completion preserves a safe legacy OAuth draft", () => {
     buildRegistrationCompletionUpdates({ country: "XX", draft: null }),
     null
   );
+
+  const countryOnly = buildRegistrationCompletionUpdates({
+    country: "TR",
+    draft: null,
+    existingMetadata: { avatar_url: "https://example.test/avatar.png" },
+  });
+  assert.deepEqual(countryOnly?.profile, { country: "Türkiye" });
+  assert.equal(countryOnly?.metadata.country, "Türkiye");
+  assert.equal(countryOnly?.metadata.role, "customer");
 });
 
 test("public country endpoint returns only a normalized no-store country code", async () => {
@@ -275,9 +318,11 @@ test("registration requires the auto-detected but editable country on every sign
   assert.match(loginPage, /signInWithIdToken\(\{[\s\S]*provider: "google"/);
   assert.match(loginPage, /captchaToken: requestCaptchaToken/);
   assert.doesNotMatch(loginPage, /signInWithOAuth/);
-  assert.match(authCallback, /requiresRegistrationCountryCompletion\(session\.user\)/);
+  assert.match(authCallback, /requiresRegistrationCountryCompletion\(currentSession\.user\)/);
   assert.match(authCallback, /router\.replace\(countryCompletionPath\(next\)\)/);
   assert.match(authCallback, /\/api\/auth\/oauth-registration\/finalize/);
+  assert.match(authCallback, /isGoogleRegistrationProfileFinalizationWindowOpen\(currentSession\.user\)/);
+  assert.match(authCallback, /supabase\.auth\.refreshSession\(\)/);
   assert.doesNotMatch(authCallback, /\.from\("profiles"\)[\s\S]*\.update/);
   assert.ok(
     oauthFinalizeRoute.indexOf("const profileUpdate") <
@@ -285,14 +330,22 @@ test("registration requires the auto-detected but editable country on every sign
   );
   assert.match(oauthFinalizeRoute, /profileUpdate\.error \|\| !profileUpdate\.data/);
   assert.match(oauthFinalizeRoute, /if \(metadataUpdate\.error\)/);
+  assert.match(oauthFinalizeRoute, /inputKeys\.length === 1 && inputKeys\[0\] === "country"/);
+  assert.match(oauthFinalizeRoute, /isGoogleRegistrationAfterCountryEnforcement\(auth\.user\)/);
+  assert.match(oauthFinalizeRoute, /\.eq\("id", auth\.user\.id\)/);
+  assert.doesNotMatch(oauthFinalizeRoute, /oauth_registration_finalized === true/);
   assert.match(profileCompletionPage, /fetch\("\/api\/public\/country"/);
   assert.match(profileCompletionPage, /<CountrySelect[\s\S]*required/);
-  assert.match(profileCompletionPage, /buildRegistrationCompletionUpdates/);
   assert.match(profileCompletionPage, /requiresRegistrationCountryCompletion\(session\.user\)/);
-  assert.ok(
-    profileCompletionPage.indexOf("const profileUpdate") <
-      profileCompletionPage.indexOf("const authUpdate")
+  assert.match(profileCompletionPage, /authenticatedFetch\([\s\S]*\/api\/auth\/oauth-registration\/finalize/);
+  assert.match(profileCompletionPage, /JSON\.stringify\(\{ country: selectedCountry \}\)/);
+  assert.match(profileCompletionPage, /supabase\.auth\.refreshSession\(\)/);
+  assert.match(
+    profileCompletionPage,
+    /const next = safeNextPath\(\);[\s\S]*router\.replace\(`\/auth\/callback\?next=\$\{encodeURIComponent\(next\)\}`\)/
   );
+  assert.doesNotMatch(profileCompletionPage, /\.from\("profiles"\)/);
+  assert.doesNotMatch(profileCompletionPage, /auth\.updateUser/);
   assert.match(registrationCountryBoundary, /requiresRegistrationCountryCompletion\(session\.user\)/);
   assert.match(registrationCountryBoundary, /\/auth\/complete-profile\?next=/);
   assert.match(dashboardLayout, /<RegistrationCountryBoundary>/);

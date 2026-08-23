@@ -11,6 +11,8 @@ export const REGISTRATION_COUNTRY_REQUIRED_KEY =
 // country, even if they abandon the callback and return much later.
 export const REGISTRATION_COUNTRY_ENFORCEMENT_STARTED_AT =
   "2026-08-22T00:00:00.000Z";
+export const GOOGLE_REGISTRATION_PROFILE_FINALIZATION_WINDOW_MS =
+  30 * 60 * 1000;
 
 type RegistrationUser = {
   created_at: string;
@@ -35,6 +37,22 @@ export function isGoogleRegistrationAfterCountryEnforcement(
   }
 
   return createdAt >= Date.parse(REGISTRATION_COUNTRY_ENFORCEMENT_STARTED_AT);
+}
+
+export function isGoogleRegistrationProfileFinalizationWindowOpen(
+  user: RegistrationUser,
+  now = Date.now()
+) {
+  const createdAt = new Date(user.created_at).getTime();
+  if (!Number.isFinite(createdAt) || !isGoogleProvider(user.app_metadata)) {
+    return false;
+  }
+
+  const registrationAge = now - createdAt;
+  return (
+    registrationAge >= 0 &&
+    registrationAge <= GOOGLE_REGISTRATION_PROFILE_FINALIZATION_WINDOW_MS
+  );
 }
 
 export function hasConfirmedRegistrationCountry(
