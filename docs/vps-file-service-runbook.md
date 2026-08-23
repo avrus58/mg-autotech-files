@@ -89,6 +89,29 @@ The application rejects every other non-loopback HTTP analyzer URL even when
 that opt-in is present. Never put the Supabase service-role key, Stripe, Resend,
 Redis, or proxy secret in the analyzer env file.
 
+## One-time protected env rendering
+
+The reviewed cutover payloads can be converted into the two fixed env files
+without printing their values. Both JSON inputs must be distinct, root-owned
+regular files with mode `0600`; both output files must not exist yet. The
+renderer rejects symlinks, unknown/Vercel-internal variables, test credentials,
+and unsafe output parents, then creates both outputs as root-only `0600` files:
+
+```bash
+node scripts/vps/render-production-env.mjs \
+  /root/mg-release-transfer/full.json \
+  /root/mg-release-transfer/partial.json \
+  /etc/mgautotech/file-service.env \
+  /etc/mgautotech/file-expert-analyzer.env
+bash scripts/vps/check-env-contract.sh \
+  /etc/mgautotech/file-service.env \
+  /etc/mgautotech/file-expert-analyzer.env
+```
+
+The renderer is intentionally no-clobber. If either destination already
+exists, stop and use the separately reviewed recovery/rotation procedure; do
+not weaken its file checks or replace a live env file in place.
+
 ## Preflight and deploy
 
 Run from the reviewed release root as a user that can operate Docker and read
