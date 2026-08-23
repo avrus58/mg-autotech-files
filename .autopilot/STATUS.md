@@ -4206,3 +4206,27 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 - Kapsam disi: Yeni dependency/package/lockfile, image/stock asset, SQL/
   migration, env/secret, Production DB/customer/payment/e-posta verisi, push,
   Preview veya Production deploy yoktur.
+
+## 2026-08-23 Customer dashboard MG AutoTech red palette baslangici
+
+- Owner, referans yerlesimin korunmasini ancak MG AutoTech brand accent'inin
+  turuncu degil kirmizi olmasini istedi.
+- Kapsam yalniz dashboard renk tokenlari ve bunlarin contrast/focus durumudur;
+  veri, auth, route, metin hiyerarsisi veya layout degismeyecek.
+
+## 2026-08-23 Customer dashboard MG AutoTech red palette tamamlandi
+
+- Tum referans-turuncu brand accent'leri dashboard kaynagindan ve sentetik
+  preview'dan kaldirildi. Primary banner/CTA/notification icin `#b1121b`, hover
+  icin `#c91824`; dark yuzeylerde icon/metin icin erisilebilir `red-400/500`
+  tonlari kullanildi. Status semantikleri icin mavi, amber ve yesil korundu.
+- Ana kirmizi ustunde beyaz metin kontrasti 7.07:1; hover kirmizisinda 5.77:1
+  olarak AA sinirini gecer. Render edilen DOM'da orange class/hex literal sayisi
+  sifir, yatay overflow sifir ve final reload sonrasinda yeni console error yok.
+- Kontroller: dashboard testleri 8/8 PASS; scoped DashboardClient ESLint PASS;
+  `git diff --check` PASS; local browser computed banner ve CTA rengi
+  `rgb(177, 18, 27)` / beyaz metin ile PASS.
+- Yalniz `.autopilot/TASKS.md`, `.autopilot/STATUS.md` ve
+  `src/components/dashboard/DashboardClient.tsx` tracked olarak degisti. Auth,
+  veri, rota, layout, package/lockfile, SQL/migration, env/secret, push veya
+  Production deploy yoktur.

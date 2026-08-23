@@ -128,6 +128,24 @@ Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
 
+### MANUAL-20260823-CUSTOMER-DASHBOARD-BRAND-RED [P1] Dashboard vurgu rengini MG AutoTech kirmizisina geri al
+
+Durum: Done
+
+Fingerprint: `customer-experience|customer-dashboard-brand-color|reference-orange-accent|mg-autotech-red-accent`
+
+Sonuc: Referans layout ve tum dashboard davranislari korunurken buton, banner,
+logo, aktif navigasyon, focus ring, kredi ve request accent yuzeyleri MG AutoTech
+ana kirmizisi `#b1121b` ve hover kirmizisi `#c91824` paletine cevrildi. Mavi,
+amber ve yesil operasyon durumlari semantik anlamlariyla korundu. Primary
+yuzeylerde beyaz/kirmizi kontrasti 7.07:1'dir; render edilen dashboard'da turuncu
+brand token kalmadi.
+
+Dogrulama: hedefli dashboard 8/8 PASS; scoped ESLint PASS; `git diff --check`
+PASS; sentetik local browser 639x496'da sifir yatay tasma, exact red computed
+color, sifir turuncu literal ve sifir yeni console error ile PASS. Veri, auth,
+route, layout, package/lockfile, env, DB veya deploy degisikligi yoktur.
+
 ### MANUAL-20260823-CUSTOMER-DASHBOARD-REFERENCE-LAYOUT [P1] Musteri dashboard'unu owner referans duzenine uyarla
 
 Durum: Done
@@ -141,7 +159,7 @@ profil/kredi/aktif-is next-action mantigi, order aksiyonlari, Customer ID,
 quick actions, workflow, tum musteri rotalari, auth, Supabase/realtime ve
 loading/error/empty davranislari korundu. Referanstaki baska isletmeye ait
 calisma saati veya servis iddiasi kopyalanmadi; e-posta aksiyonu yalniz Support
-olarak adlandirildi. Turuncu CTA ve kucuk metin kontrasti, bildirim accessible
+olarak adlandirildi. Brand CTA ve kucuk metin kontrasti, bildirim accessible
 name'i ve saniyelik saat render kapsami final review sonrasinda duzeltildi.
 
 Dogrulama: hedefli dashboard 8/8 PASS; seri full test 965/965 PASS; ESLint PASS;

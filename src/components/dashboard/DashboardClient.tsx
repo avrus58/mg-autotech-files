@@ -475,7 +475,7 @@ export function DashboardClient() {
         description: `${needsResponseCount} request${needsResponseCount === 1 ? "" : "s"} need your input before the file service can continue.`,
         href: "/dashboard/orders?view=needs_response",
         cta: "Review Requests",
-        tone: "border-orange-700/40 bg-orange-950/20 text-orange-100",
+        tone: "border-red-800/50 bg-red-950/30 text-red-100",
       };
     }
 
@@ -647,14 +647,14 @@ export function DashboardClient() {
         <aside className="hidden w-64 shrink-0 border-r border-[#282d35] bg-[#0f1217] lg:block">
           <div className="sticky top-0 flex h-screen flex-col px-3 py-4">
             <Link href="/" className="mb-6 flex items-center gap-3 px-2">
-              <div className="relative flex h-10 w-10 items-center justify-center rounded-lg border border-orange-700/50 bg-[#171a20]">
-                <div className="absolute -top-1.5 h-3 w-8 rounded-t-full border-t border-[#f26422]" />
-                <Gauge className="h-5 w-5 text-[#f26422]" />
+              <div className="relative flex h-10 w-10 items-center justify-center rounded-lg border border-red-800/60 bg-[#171a20]">
+                <div className="absolute -top-1.5 h-3 w-8 rounded-t-full border-t border-[#b1121b]" />
+                <Gauge className="h-5 w-5 text-red-400" />
               </div>
 
               <div>
                 <div className="text-base font-black tracking-wide">
-                  MG <span className="text-[#f26422]">AUTOTECH</span>
+                  MG <span className="text-red-500">AUTOTECH</span>
                 </div>
                 <div className="text-[11px] text-zinc-400">Customer Panel</div>
               </div>
@@ -671,9 +671,9 @@ export function DashboardClient() {
                 <Link
                   href="/dashboard"
                   aria-current="page"
-                  className="flex items-center gap-3 rounded-lg bg-[#33231c] px-3 py-2.5 font-bold text-[#ff7a3c] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
+                  className="flex items-center gap-3 rounded-lg bg-[#2d1719] px-3 py-2.5 font-bold text-red-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
                 >
-                  <LayoutDashboard className="h-4 w-4 text-[#f26422]" />
+                  <LayoutDashboard className="h-4 w-4 text-red-400" />
                   Dashboard
                 </Link>
                 <Link
@@ -790,24 +790,24 @@ export function DashboardClient() {
 
         <section className="min-w-0 flex-1 lg:flex lg:h-screen lg:flex-col lg:overflow-hidden">
           <header className="sticky top-0 z-40 shrink-0 border-b border-[#2b2b2b] bg-[#12151b]/95 backdrop-blur-xl lg:static">
-            <div className="border-b border-orange-950/25 bg-[#f26422] px-4 py-2.5 text-[#111318] lg:px-5 xl:px-6">
+            <div className="border-b border-red-950/40 bg-[#b1121b] px-4 py-2.5 text-white lg:px-5 xl:px-6">
               <div className="flex items-center justify-between gap-4">
                 <div className="flex min-w-0 items-center gap-3">
-                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-black/35">
+                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/45">
                     <NextActionIcon className="h-4 w-4" />
                   </div>
                   <div className="min-w-0">
                     <div className="truncate text-xs font-black uppercase tracking-[0.12em] sm:text-sm">
                       Next best action - {dashboardNextAction.eyebrow}: {dashboardNextAction.title}
                     </div>
-                    <p className="hidden truncate text-xs text-black/75 xl:block">
+                    <p className="hidden truncate text-xs text-white/80 xl:block">
                       {dashboardNextAction.description}
                     </p>
                   </div>
                 </div>
                 <Link
                   href={dashboardNextAction.href}
-                  className="shrink-0 rounded-lg border border-black/35 bg-black/10 px-3 py-2 text-xs font-black transition hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black"
+                  className="shrink-0 rounded-lg border border-white/40 bg-black/10 px-3 py-2 text-xs font-black transition hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
                 >
                   {dashboardNextAction.cta}
                   <ArrowRight className="ml-2 inline h-4 w-4" />
@@ -819,18 +819,18 @@ export function DashboardClient() {
               <Link
                 href="/dashboard/credits"
                 aria-label="Buy Credits"
-                className="hidden min-w-[144px] items-center justify-between rounded-xl border border-[#f26422] bg-[#171a20] px-3 py-2.5 transition hover:bg-[#20242b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 md:flex"
+                className="hidden min-w-[144px] items-center justify-between rounded-xl border border-[#b1121b] bg-[#171a20] px-3 py-2.5 transition hover:bg-[#20242b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 md:flex"
               >
                 <span>
                   <span className="block text-[10px] font-bold text-zinc-400">Current Balance</span>
                   <span className="block text-sm font-black tabular-nums">{credits} Credits</span>
                 </span>
-                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#f26422] text-[#111318]">
+                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#b1121b] text-white">
                   <Plus className="h-4 w-4" />
                 </span>
               </Link>
 
-              <div className="hidden min-w-[126px] rounded-xl border border-[#f26422] bg-[#171a20] px-3 py-2.5 xl:block">
+              <div className="hidden min-w-[126px] rounded-xl border border-[#b1121b] bg-[#171a20] px-3 py-2.5 xl:block">
                 <div className="text-[10px] font-bold text-zinc-400">Local Time</div>
                 <div className="mt-0.5 flex items-center gap-2 text-sm font-black tabular-nums">
                   <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.8)]" />
@@ -846,7 +846,7 @@ export function DashboardClient() {
                   value={requestSearch}
                   onChange={(event) => setRequestSearch(event.target.value)}
                   placeholder="Search recent requests..."
-                  className="h-11 w-full rounded-xl border border-[#303640] bg-[#1c2028] pl-10 pr-3 text-sm text-white outline-none transition placeholder:text-zinc-400 focus:border-[#f26422] focus:ring-2 focus:ring-orange-500/20"
+                  className="h-11 w-full rounded-xl border border-[#303640] bg-[#1c2028] pl-10 pr-3 text-sm text-white outline-none transition placeholder:text-zinc-400 focus:border-[#b1121b] focus:ring-2 focus:ring-red-500/20"
                 />
               </label>
 
@@ -857,11 +857,11 @@ export function DashboardClient() {
                     ? `Notifications - ${needsResponseCount} requests. Waiting for your information`
                     : "Notifications"
                 }
-                className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-[#303640] bg-[#171a20] text-zinc-300 transition hover:border-zinc-500 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
+                className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-[#303640] bg-[#171a20] text-zinc-300 transition hover:border-zinc-500 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
               >
                 <BellRing className="h-4 w-4" />
                 {needsResponseCount > 0 && (
-                  <span className="absolute -right-1.5 -top-1.5 min-w-5 rounded-full bg-[#f26422] px-1.5 py-0.5 text-center text-[10px] font-black text-[#111318]">
+                  <span className="absolute -right-1.5 -top-1.5 min-w-5 rounded-full bg-[#b1121b] px-1.5 py-0.5 text-center text-[10px] font-black text-white">
                     {needsResponseCount}
                   </span>
                 )}
@@ -869,14 +869,14 @@ export function DashboardClient() {
 
               <a
                 href="mailto:info@mgautotech.de"
-                className="hidden h-11 shrink-0 items-center justify-center rounded-xl border border-[#303640] bg-[#171a20] px-4 text-xs font-black text-white transition hover:border-zinc-500 hover:bg-[#20242b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 2xl:inline-flex"
+                className="hidden h-11 shrink-0 items-center justify-center rounded-xl border border-[#303640] bg-[#171a20] px-4 text-xs font-black text-white transition hover:border-zinc-500 hover:bg-[#20242b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 2xl:inline-flex"
               >
                 <Wrench className="mr-2 h-4 w-4" />
                 Support
               </a>
 
               <div className="hidden min-w-0 items-center gap-2 rounded-xl border border-[#303640] bg-[#171a20] px-3 py-2 2xl:flex">
-                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#291b18] text-[#f26422]">
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-red-950/35 text-red-400">
                   <User className="h-4 w-4" />
                 </div>
                 <div className="min-w-0">
@@ -889,7 +889,7 @@ export function DashboardClient() {
                 type="button"
                 onClick={handleLogout}
                 aria-label="Log out"
-                className="flex h-11 shrink-0 items-center justify-center rounded-xl border border-[#303640] bg-[#171a20] px-3 text-xs font-bold text-white transition hover:border-zinc-500 hover:bg-[#20242b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
+                className="flex h-11 shrink-0 items-center justify-center rounded-xl border border-[#303640] bg-[#171a20] px-3 text-xs font-bold text-white transition hover:border-zinc-500 hover:bg-[#20242b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
               >
                 <LogOut className="h-4 w-4 sm:mr-2" />
                 <span className="hidden sm:inline">Logout</span>
@@ -913,7 +913,7 @@ export function DashboardClient() {
             <Link href="/dashboard/orders" className="shrink-0 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-xs font-black">
               <FileText className="mr-2 inline h-4 w-4" />Orders
             </Link>
-            <Link href="/dashboard/orders?view=needs_response" className="shrink-0 rounded-xl border border-orange-700/40 bg-orange-950/25 px-4 py-2.5 text-xs font-black text-orange-100">
+            <Link href="/dashboard/orders?view=needs_response" className="shrink-0 rounded-xl border border-red-800/50 bg-red-950/30 px-4 py-2.5 text-xs font-black text-red-100">
               <Clipboard className="mr-2 inline h-4 w-4" />Needs Response
             </Link>
             <Link href="/dashboard/credits" className="shrink-0 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-xs font-black">
@@ -925,7 +925,7 @@ export function DashboardClient() {
             role="region"
             aria-label="Dashboard content"
             tabIndex={0}
-            className="mg-dense-scroll overscroll-contain px-4 py-4 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-orange-400 lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:px-5 xl:px-6"
+            className="mg-dense-scroll overscroll-contain px-4 py-4 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-red-400 lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:px-5 xl:px-6"
           >
             {dashboardLoadError && dashboardReady && (
               <div
@@ -955,7 +955,7 @@ export function DashboardClient() {
             <section
               data-dashboard-welcome
               aria-labelledby="dashboard-welcome-title"
-              className="mb-3 rounded-xl border border-[#663218] bg-[linear-gradient(100deg,rgba(242,100,34,0.18),rgba(20,22,27,0.96)_55%)] px-4 py-4 lg:px-5"
+              className="mb-3 rounded-xl border border-red-900/60 bg-[linear-gradient(100deg,rgba(177,18,27,0.22),rgba(20,22,27,0.96)_55%)] px-4 py-4 lg:px-5"
             >
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="min-w-0">
@@ -970,7 +970,7 @@ export function DashboardClient() {
                 </div>
                 <Link
                   href="/new-request"
-                  className="inline-flex shrink-0 items-center justify-center rounded-xl bg-[#f26422] px-5 py-3 text-sm font-black text-[#111318] transition hover:bg-[#ff7535] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-300"
+                  className="inline-flex shrink-0 items-center justify-center rounded-xl bg-[#b1121b] px-5 py-3 text-sm font-black text-white transition hover:bg-[#c91824] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300"
                 >
                   <Plus className="mr-2 h-4 w-4" />
                   Create Request
@@ -1043,15 +1043,15 @@ export function DashboardClient() {
 
               <Link
                 href="/dashboard/credits"
-                className="group min-w-0 rounded-xl border border-[#303640] bg-[#20242c] p-4 transition hover:border-orange-500/40 hover:bg-[#252a33] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
+                className="group min-w-0 rounded-xl border border-[#303640] bg-[#20242c] p-4 transition hover:border-red-500/40 hover:bg-[#252a33] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
               >
                 <div className="flex items-center gap-3">
-                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-orange-500/10 text-[#f26422]">
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-red-500/10 text-red-400">
                     <CreditCard className="h-6 w-6" />
                   </span>
                   <span className="min-w-0">
                     <span className="block text-xs font-bold text-zinc-400">Balance</span>
-                    <span className="mt-0.5 block break-words text-2xl font-black tabular-nums text-[#f26422]">{credits} Credits</span>
+                    <span className="mt-0.5 block break-words text-2xl font-black tabular-nums text-red-400">{credits} Credits</span>
                   </span>
                 </div>
               </Link>
@@ -1068,7 +1068,7 @@ export function DashboardClient() {
                 <div className="flex flex-col gap-3 border-b border-[#303640] px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <h2 id="recent-requests-title" className="flex items-center gap-2 text-base font-black">
-                      <FileText className="h-5 w-5 text-[#f26422]" />
+                      <FileText className="h-5 w-5 text-red-400" />
                       My Recent Requests
                     </h2>
                     <p className="mt-1 text-xs text-zinc-400">Your latest file orders and their current status</p>
@@ -1084,7 +1084,7 @@ export function DashboardClient() {
                     </Link>
                     <Link
                       href="/new-request"
-                      className="inline-flex items-center justify-center rounded-lg bg-[#f26422] px-3 py-2 text-xs font-black text-[#111318] transition hover:bg-[#ff7535] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-300"
+                      className="inline-flex items-center justify-center rounded-lg bg-[#b1121b] px-3 py-2 text-xs font-black text-white transition hover:bg-[#c91824] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300"
                     >
                       <Plus className="mr-2 h-4 w-4" />
                       New Request
@@ -1094,21 +1094,21 @@ export function DashboardClient() {
 
                 {orders.length === 0 ? (
                   <div className="m-4 rounded-lg border border-dashed border-[#3b414b] bg-[#171a20] p-6 text-center">
-                    <Upload className="mx-auto mb-3 h-8 w-8 text-[#f26422]" />
+                    <Upload className="mx-auto mb-3 h-8 w-8 text-red-400" />
                     <h3 className="text-lg font-black">No file request yet</h3>
                     <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-zinc-400">
                       Create your first ECU/TCU file request and it will appear here.
                     </p>
                     <Link
                       href="/new-request"
-                      className="mt-4 inline-flex rounded-lg bg-[#f26422] px-4 py-2.5 text-sm font-black text-[#111318] transition hover:bg-[#ff7535] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-300"
+                      className="mt-4 inline-flex rounded-lg bg-[#b1121b] px-4 py-2.5 text-sm font-black text-white transition hover:bg-[#c91824] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300"
                     >
                       Create File Request
                     </Link>
                   </div>
                 ) : filteredOrders.length === 0 ? (
                   <div className="rounded-lg border border-dashed border-[#303640] bg-[#171a20] p-6 text-center">
-                    <Search className="mx-auto mb-3 h-8 w-8 text-[#f26422]" />
+                    <Search className="mx-auto mb-3 h-8 w-8 text-red-400" />
                     <h3 className="text-lg font-black">No matching recent request</h3>
                     <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-zinc-400">
                       Try a vehicle, engine, service or status name. Full order history remains available.
@@ -1116,7 +1116,7 @@ export function DashboardClient() {
                     <button
                       type="button"
                       onClick={() => setRequestSearch("")}
-                      className="mt-4 rounded-lg border border-[#3b414b] bg-[#20242c] px-4 py-2.5 text-sm font-black text-white transition hover:border-orange-500/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
+                      className="mt-4 rounded-lg border border-[#3b414b] bg-[#20242c] px-4 py-2.5 text-sm font-black text-white transition hover:border-red-500/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
                     >
                       Clear search
                     </button>
@@ -1148,7 +1148,7 @@ export function DashboardClient() {
                                 </h3>
                                 <span
                                   className={`rounded-full border px-2.5 py-1 text-[11px] font-black ${needsCustomerResponse
-                                    ? "border-orange-700/50 bg-orange-950/30 text-orange-200"
+                                    ? "border-red-800/50 bg-red-950/30 text-red-200"
                                     : isRevision
                                       ? "border-purple-700/50 bg-purple-950/30 text-purple-200"
                                       : getStatusStyle(order.status)}`}
@@ -1184,7 +1184,7 @@ export function DashboardClient() {
                             <Link
                               href={`/dashboard/orders/${order.id}`}
                               aria-label={`${isCompleted ? "Open delivery" : needsCustomerResponse ? "Respond to" : "View"} ${order.vehicle_brand || "vehicle"} ${order.vehicle_model || "request"}`}
-                              className="inline-flex w-full items-center justify-center rounded-lg border border-[#3b414b] bg-[#171a20] px-3 py-2 text-xs font-black text-white transition hover:border-orange-500/60 hover:bg-[#292f39] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 sm:w-auto"
+                              className="inline-flex w-full items-center justify-center rounded-lg border border-[#3b414b] bg-[#171a20] px-3 py-2 text-xs font-black text-white transition hover:border-red-500/60 hover:bg-[#292f39] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 sm:w-auto"
                             >
                               <OrderActionIcon className="mr-2 h-4 w-4" />
                               {isCompleted
@@ -1208,12 +1208,12 @@ export function DashboardClient() {
                 >
                   <div className="flex items-center justify-between gap-3 border-b border-[#303640] px-4 py-3.5">
                     <div className="flex min-w-0 items-center gap-3">
-                      <CreditCard className="h-5 w-5 shrink-0 text-[#f26422]" />
+                      <CreditCard className="h-5 w-5 shrink-0 text-red-400" />
                       <h2 id="credit-history-title" className="text-base font-black">Credit History</h2>
                     </div>
                     <Link
                       href="/dashboard/credits/history"
-                      className="shrink-0 text-xs font-black text-[#f26422] transition hover:text-orange-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
+                      className="shrink-0 text-xs font-black text-red-400 transition hover:text-red-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
                     >
                       View All
                     </Link>
@@ -1221,14 +1221,14 @@ export function DashboardClient() {
 
                   {creditHistory.length === 0 ? (
                     <div className="p-6 text-center">
-                      <CreditCard className="mx-auto mb-3 h-8 w-8 text-[#f26422]" />
+                      <CreditCard className="mx-auto mb-3 h-8 w-8 text-red-400" />
                       <h3 className="text-sm font-black text-white">No credit ledger movements yet</h3>
                       <p className="mt-2 text-xs leading-5 text-zinc-400">
                         Purchases, top-ups and file usage will appear here.
                       </p>
                       <Link
                         href="/dashboard/credits"
-                        className="mt-4 inline-flex rounded-lg bg-[#f26422] px-4 py-2 text-xs font-black text-[#111318] transition hover:bg-[#ff7535] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-300"
+                        className="mt-4 inline-flex rounded-lg bg-[#b1121b] px-4 py-2 text-xs font-black text-white transition hover:bg-[#c91824] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300"
                       >
                         Buy Credits
                       </Link>
@@ -1242,7 +1242,7 @@ export function DashboardClient() {
 
                         return (
                           <div key={item.id} className="flex min-w-0 items-center gap-3 px-4 py-3">
-                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#3a2924] text-[#f26422]">
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-950/40 text-red-400">
                               <CreditCard className="h-4 w-4" />
                             </div>
                             <div className="min-w-0 flex-1">
@@ -1273,21 +1273,21 @@ export function DashboardClient() {
                 <div className="rounded-xl border border-[#303640] bg-[#20242c] p-4">
                   <div className="flex items-center justify-between gap-3">
                     <div className="min-w-0">
-                      <div className="text-[11px] font-black uppercase tracking-[0.18em] text-[#f26422]">
+                      <div className="text-[11px] font-black uppercase tracking-[0.18em] text-red-400">
                         Customer ID
                       </div>
                       <div className="mt-1 break-words font-black">
                         {customerReference ?? "Not available"}
                       </div>
                     </div>
-                    <User className="h-5 w-5 shrink-0 text-[#f26422]" />
+                    <User className="h-5 w-5 shrink-0 text-red-400" />
                   </div>
 
                   <button
                     type="button"
                     onClick={copyReference}
                     disabled={!customerReference}
-                    className="mt-3 inline-flex w-full items-center justify-center rounded-lg border border-[#3b414b] bg-[#171a20] px-4 py-2.5 text-xs font-black text-white transition hover:border-orange-500/50 hover:bg-[#242932] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="mt-3 inline-flex w-full items-center justify-center rounded-lg border border-[#3b414b] bg-[#171a20] px-4 py-2.5 text-xs font-black text-white transition hover:border-red-500/50 hover:bg-[#242932] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <Clipboard className="mr-2 h-4 w-4" />
                     <span aria-live="polite">
