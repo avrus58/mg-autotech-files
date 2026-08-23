@@ -1,7 +1,9 @@
 import type { TransactionalEmailLanguage } from "@/lib/email/types";
 import { supportedTransactionalEmailLanguages } from "@/lib/email/language";
+import { normalizeCountryName } from "@/lib/countries";
 
 export const OAUTH_REGISTRATION_PROFILE_KEY = "mg_register_oauth_profile";
+export const OAUTH_REGISTRATION_PROVIDER_KEY = "mg_register_oauth_provider";
 
 export type RegistrationAccountType = "private" | "company";
 
@@ -12,7 +14,15 @@ export type RegistrationProfileDraft = {
   phone: string | null;
   vat_id: string | null;
   tax_number: string | null;
+  country: string;
   email_language: TransactionalEmailLanguage;
+};
+
+export type RegistrationProfileCompletionDraft = Omit<
+  RegistrationProfileDraft,
+  "country"
+> & {
+  country: string | null;
 };
 
 type RegistrationProfileInput = {
@@ -21,6 +31,7 @@ type RegistrationProfileInput = {
   companyName: string;
   phone: string;
   taxNumber: string;
+  country: string;
   emailLanguage: TransactionalEmailLanguage;
 };
 
@@ -53,6 +64,7 @@ export function createRegistrationProfileDraft(
     phone: input.phone,
     vat_id: input.accountType === "company" ? input.taxNumber : null,
     tax_number: input.accountType === "company" ? input.taxNumber : null,
+    country: input.country,
     email_language: input.emailLanguage,
   }));
 }
@@ -60,6 +72,18 @@ export function createRegistrationProfileDraft(
 export function parseRegistrationProfileDraft(
   serialized: string | null
 ): RegistrationProfileDraft | null {
+  const draft = parseRegistrationProfileCompletionDraft(serialized);
+  if (!draft?.country) return null;
+
+  return {
+    ...draft,
+    country: draft.country,
+  };
+}
+
+export function parseRegistrationProfileCompletionDraft(
+  serialized: string | null
+): RegistrationProfileCompletionDraft | null {
   if (!serialized || serialized.length > 2_000) return null;
 
   try {
@@ -70,6 +94,7 @@ export function parseRegistrationProfileDraft(
     const phone = optionalText(value.phone, 40);
     const vatId = optionalText(value.vat_id, 80);
     const taxNumber = optionalText(value.tax_number, 80);
+    const country = normalizeCountryName(value.country);
     const language = emailLanguage(value.email_language);
 
     if (
@@ -92,6 +117,7 @@ export function parseRegistrationProfileDraft(
       phone,
       vat_id: accountType === "company" ? vatId : null,
       tax_number: accountType === "company" ? taxNumber : null,
+      country: country ?? null,
       email_language: language,
     };
   } catch {

@@ -12,12 +12,16 @@ const authCallback = readFileSync(
   "utf8"
 );
 
-test("registration uses a compact laptop layout without clipping vertical content", () => {
+test("registration keeps one focused card without the redundant marketing column", () => {
   assert.match(registerPage, /overflow-x-hidden/);
   assert.doesNotMatch(registerPage, /<main className="[^"]*overflow-hidden[^"]*"/);
-  assert.match(registerPage, /max-w-\[1180px\]/);
-  assert.match(registerPage, /min-h-\[680px\]/);
-  assert.match(registerPage, /lg:grid-cols-\[0\.84fr_1\.16fr\]/);
+  assert.match(registerPage, /max-w-\[760px\]/);
+  assert.equal(registerPage.match(/<h1\b/g)?.length, 1);
+  assert.match(registerPage, /<h1[^>]*>[\s\S]*?Create Account[\s\S]*?<\/h1>/);
+  assert.doesNotMatch(registerPage, /FeatureCard/);
+  assert.doesNotMatch(registerPage, /Smart Vehicle Database/);
+  assert.doesNotMatch(registerPage, /Premium File Workflow/);
+  assert.doesNotMatch(registerPage, /lg:grid-cols-\[0\.84fr_1\.16fr\]/);
   assert.match(registerPage, /h-11 w-full rounded-xl/);
 });
 
@@ -34,10 +38,13 @@ test("company registration requires and persists a bounded company identity", ()
 test("Google registration carries the validated customer and company profile", () => {
   assert.match(registerPage, /if \(!validateAccountStep\(\)\)/);
   assert.match(registerPage, /createRegistrationProfileDraft\(\{/);
+  assert.match(registerPage, /country: selectedCountry/);
   assert.match(registerPage, /OAUTH_REGISTRATION_PROFILE_KEY/);
   assert.match(authCallback, /parseRegistrationProfileDraft/);
   assert.match(authCallback, /oauthSignupProvider === "google" && oauthProfile/);
-  assert.match(authCallback, /company_name: oauthProfile\.company_name/);
+  assert.match(authCallback, /draft: oauthProfile/);
+  assert.match(authCallback, /country: oauthProfile\.country/);
+  assert.match(authCallback, /\.update\(updates\.profile\)/);
   assert.match(authCallback, /\.eq\("id", session\.user\.id\)/);
 });
 

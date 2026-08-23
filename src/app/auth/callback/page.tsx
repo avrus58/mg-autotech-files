@@ -10,11 +10,21 @@ import { recordGrowthAccountCreated } from "@/lib/growth/client";
 import { trackRegistrationCompleted } from "@/lib/publicAnalytics";
 import {
   OAUTH_REGISTRATION_PROFILE_KEY,
+  OAUTH_REGISTRATION_PROVIDER_KEY,
   parseRegistrationProfileDraft,
 } from "@/lib/registrationProfile";
+import {
+  buildPendingRegistrationCountryMetadata,
+  buildRegistrationCompletionUpdates,
+  requiresRegistrationCountryCompletion,
+} from "@/lib/registrationCompletion";
 
 function safeNextPath(value: string | null) {
   return value?.startsWith("/") && !value.startsWith("//") ? value : "/dashboard";
+}
+
+function countryCompletionPath(next: string) {
+  return `/auth/complete-profile?next=${encodeURIComponent(next)}`;
 }
 
 export default function AuthCallbackPage() {
@@ -48,34 +58,74 @@ export default function AuthCallbackPage() {
         session = data.session;
       }
 
-      const oauthSignupProvider = window.sessionStorage.getItem("mg_register_oauth_provider");
-      if (oauthSignupProvider) window.sessionStorage.removeItem("mg_register_oauth_provider");
+      const oauthSignupProvider = window.sessionStorage.getItem(
+        OAUTH_REGISTRATION_PROVIDER_KEY
+      );
       const oauthProfile = parseRegistrationProfileDraft(
         window.sessionStorage.getItem(OAUTH_REGISTRATION_PROFILE_KEY)
       );
-      window.sessionStorage.removeItem(OAUTH_REGISTRATION_PROFILE_KEY);
 
       if (session?.user) {
+        let completedGoogleRegistration = false;
+        const openCountryCompletion = async () => {
+          try {
+            window.sessionStorage.setItem(
+              OAUTH_REGISTRATION_PROVIDER_KEY,
+              "google"
+            );
+          } catch {
+            // Persistent Auth metadata and the workspace guard remain active.
+          }
+          await supabase.auth.updateUser({
+            data: buildPendingRegistrationCountryMetadata(
+              session.user.user_metadata
+            ),
+          });
+          setMessage("Opening country confirmation...");
+          router.replace(countryCompletionPath(next));
+        };
+
         if (oauthSignupProvider === "google" && oauthProfile) {
-          await Promise.all([
-            supabase.auth.updateUser({
-              data: {
-                ...session.user.user_metadata,
-                ...oauthProfile,
-                role: "customer",
-              },
-            }),
-            supabase
-              .from("profiles")
-              .update({
-                full_name: oauthProfile.full_name,
-                account_type: oauthProfile.account_type,
-                company_name: oauthProfile.company_name,
-                phone: oauthProfile.phone,
-                vat_id: oauthProfile.vat_id,
-              })
-              .eq("id", session.user.id),
-          ]);
+          const updates = buildRegistrationCompletionUpdates({
+            country: oauthProfile.country,
+            draft: oauthProfile,
+            existingMetadata: session.user.user_metadata,
+          });
+          if (!updates) {
+            await openCountryCompletion();
+            return;
+          }
+          const profileUpdate = await supabase
+            .from("profiles")
+            .update(updates.profile)
+            .eq("id", session.user.id)
+            .select("id")
+            .maybeSingle();
+          if (profileUpdate.error || !profileUpdate.data) {
+            await openCountryCompletion();
+            return;
+          }
+
+          const authUpdate = await supabase.auth.updateUser({
+            data: updates.metadata,
+          });
+          if (authUpdate.error) {
+            await openCountryCompletion();
+            return;
+          }
+
+          completedGoogleRegistration = true;
+          window.sessionStorage.removeItem(OAUTH_REGISTRATION_PROVIDER_KEY);
+          window.sessionStorage.removeItem(OAUTH_REGISTRATION_PROFILE_KEY);
+        }
+
+        if (
+          !completedGoogleRegistration &&
+          ((oauthSignupProvider === "google") ||
+            requiresRegistrationCountryCompletion(session.user))
+        ) {
+          await openCountryCompletion();
+          return;
         }
 
         const createdAt = new Date(session.user.created_at).getTime();

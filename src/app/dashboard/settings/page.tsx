@@ -3,7 +3,9 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { CountrySelect } from "@/components/CountrySelect";
 import { getStableSession, notifySessionRequired, signOutIfEmailUnverified } from "@/lib/authGuards";
+import { normalizeCountryName } from "@/lib/countries";
 import { supabase } from "@/lib/supabaseClient";
 import { resolveTransactionalEmailLanguageFromMetadata } from "@/lib/email/language";
 import type { TransactionalEmailLanguage } from "@/lib/email/types";
@@ -126,7 +128,7 @@ export default function CustomerSettingsPage() {
   const [street, setStreet] = useState("");
   const [postalCode, setPostalCode] = useState("");
   const [city, setCity] = useState("");
-  const [country, setCountry] = useState("Germany");
+  const [country, setCountry] = useState("");
   const [vatId, setVatId] = useState("");
   const [invoiceEmail, setInvoiceEmail] = useState("");
   const [preferredContact, setPreferredContact] = useState("email");
@@ -205,7 +207,7 @@ export default function CustomerSettingsPage() {
     setStreet(data.street ?? "");
     setPostalCode(data.postal_code ?? "");
     setCity(data.city ?? "");
-    setCountry(data.country ?? "Germany");
+    setCountry(normalizeCountryName(data.country) ?? data.country?.trim() ?? "");
     setVatId(data.vat_id ?? "");
     setInvoiceEmail(data.invoice_email ?? user.email ?? "");
     setPreferredContact(data.preferred_contact ?? "email");
@@ -241,6 +243,13 @@ export default function CustomerSettingsPage() {
       return;
     }
 
+    const selectedCountry = normalizeCountryName(country) ?? country.trim();
+    if (!selectedCountry) {
+      setSaving(false);
+      setMessage("Please select your country.");
+      return;
+    }
+
     const [profileResult, languageResult] = await Promise.all([
       supabase
         .from("profiles")
@@ -252,14 +261,14 @@ export default function CustomerSettingsPage() {
           street: street.trim() || null,
           postal_code: postalCode.trim() || null,
           city: city.trim() || null,
-          country: country.trim() || "Germany",
+          country: selectedCountry,
           vat_id: vatId.trim() || null,
           invoice_email: invoiceEmail.trim() || email,
           preferred_contact: preferredContact,
         })
         .eq("id", user.id),
       supabase.auth.updateUser({
-        data: { email_language: emailLanguage },
+        data: { email_language: emailLanguage, country: selectedCountry },
       }),
     ]);
 
@@ -530,7 +539,12 @@ export default function CustomerSettingsPage() {
                   <Field label="Postcode" value={postalCode} onChange={setPostalCode} placeholder="70437" />
                   <Field label="City" value={city} onChange={setCity} placeholder="Stuttgart" />
                 </div>
-                <Field label="Country" value={country} onChange={setCountry} placeholder="Germany" />
+                <CountrySelect
+                  value={country}
+                  onChange={setCountry}
+                  required
+                  variant="settings"
+                />
               </div>
             </div>
 
