@@ -4274,3 +4274,27 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
   yalniz `.codex` oturum loglarinda ve OpenAI model dokumanindaki eski cache
   parametresi uyumsuzlugu ile eslesen Codex Desktop/model request sorunu olarak
   kaydedildi. Hata nedeniyle subagent/multi-turn genisletme yapilmadi.
+
+## 2026-08-24 00:14 +02:00 Customer workspace CarecuFile density Production release
+
+- Owner'in `yayinla` talimatiyla yalniz `MANUAL-20260823-CUSTOMER-WORKSPACE-
+  CAREFILE-DENSITY` code-only UI release kapsami Production'a cikarildi. Remote
+  `codex/production-release-20260823` branch'i fast-forward olarak `02f1501`
+  commitine tasindi.
+- Source archive exact `02f1501` commitinden uretildi; SHA-256
+  `63c282cb7b5a3e66ee46a9f1409629feba3747eaa260d8cce598fca97acd338d`. Hash
+  VPS upload sonrasi birebir dogrulandi ve kaynak
+  `/opt/mgautotech/file-service/releases/02f1501` altina acildi.
+- VPS env contract deger yazdirmadan iki kez PASS oldu. Immutable analyzer ve
+  app imajlari `mgautotech-file-expert-analyzer:02f1501` ve
+  `mgautotech-file-service:02f1501` olarak build edildi. Docker Production
+  build'i Next compile, TypeScript ve 277/277 static page kapilarini gecti.
+- Deploy script analyzer-first ve app-second health switch'i tamamlandi. Release
+  state current cifti `02f1501`, rollback/previous cifti `515afdd` olarak
+  kaydedildi. Iki container healthy, restart 0 ve host portu olmadan calisiyor.
+- Immediate Production smoke: `/api/health/ready`, `/`, `/login`, `/register`,
+  `/dashboard`, `/dashboard/orders` ve public vehicle API 200; anonim
+  `/api/admin/dashboard` 401. Son 10 dakika app/analyzer error-like log sayaci 0.
+- Kapsam disi: SQL/migration, Production DB, env/secret, Caddy, DNS, payment,
+  e-posta veya gercek musteri verisi degistirilmedi. Kritik regresyon gorulmedi;
+  rollback uygulanmadi.
