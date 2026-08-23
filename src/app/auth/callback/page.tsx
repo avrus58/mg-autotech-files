@@ -104,14 +104,20 @@ export default function AuthCallbackPage() {
             return;
           }
 
-          const profileResponse = await authenticatedFetch(
-            "/api/auth/oauth-registration/finalize",
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ profile: oauthProfile }),
-            }
-          );
+          let profileResponse: Response;
+          try {
+            profileResponse = await authenticatedFetch(
+              "/api/auth/oauth-registration/finalize",
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ profile: oauthProfile }),
+              }
+            );
+          } catch {
+            setMessage("Registration profile could not be finalized. Please try again.");
+            return;
+          }
           if (!profileResponse.ok) {
             const payload = await profileResponse.json().catch(() => ({})) as {
               error?: string;

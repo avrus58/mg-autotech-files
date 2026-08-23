@@ -321,6 +321,10 @@ test("registration requires the auto-detected but editable country on every sign
   assert.match(authCallback, /requiresRegistrationCountryCompletion\(currentSession\.user\)/);
   assert.match(authCallback, /router\.replace\(countryCompletionPath\(next\)\)/);
   assert.match(authCallback, /\/api\/auth\/oauth-registration\/finalize/);
+  assert.match(
+    authCallback,
+    /try \{[\s\S]*profileResponse = await authenticatedFetch[\s\S]*catch \{[\s\S]*Registration profile could not be finalized\. Please try again\./
+  );
   assert.match(authCallback, /isGoogleRegistrationProfileFinalizationWindowOpen\(currentSession\.user\)/);
   assert.match(authCallback, /supabase\.auth\.refreshSession\(\)/);
   assert.doesNotMatch(authCallback, /\.from\("profiles"\)[\s\S]*\.update/);
@@ -338,6 +342,10 @@ test("registration requires the auto-detected but editable country on every sign
   assert.match(profileCompletionPage, /<CountrySelect[\s\S]*required/);
   assert.match(profileCompletionPage, /requiresRegistrationCountryCompletion\(session\.user\)/);
   assert.match(profileCompletionPage, /authenticatedFetch\([\s\S]*\/api\/auth\/oauth-registration\/finalize/);
+  assert.match(
+    profileCompletionPage,
+    /try \{[\s\S]*completionResponse = await authenticatedFetch[\s\S]*catch \{[\s\S]*setSaving\(false\)/
+  );
   assert.match(profileCompletionPage, /JSON\.stringify\(\{ country: selectedCountry \}\)/);
   assert.match(profileCompletionPage, /supabase\.auth\.refreshSession\(\)/);
   assert.match(

@@ -185,14 +185,21 @@ export default function CompleteProfilePage() {
     setSaving(true);
     setMessage("");
 
-    const completionResponse = await authenticatedFetch(
-      "/api/auth/oauth-registration/finalize",
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ country: selectedCountry }),
-      }
-    );
+    let completionResponse: Response;
+    try {
+      completionResponse = await authenticatedFetch(
+        "/api/auth/oauth-registration/finalize",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ country: selectedCountry }),
+        }
+      );
+    } catch {
+      setMessage("Your country could not be saved. Please try again.");
+      setSaving(false);
+      return;
+    }
     if (!completionResponse.ok) {
       const payload = (await completionResponse.json().catch(() => ({}))) as {
         error?: string;

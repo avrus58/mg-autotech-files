@@ -3863,9 +3863,17 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
   PASS; order/verifier focused 35/35 PASS; full suite 929/929 PASS; full ESLint
   PASS; web + customer-uploader renderer/electron/node TypeScript PASS; public
   i18n/SEO 12 locale ve customer 11 locale x 618/618, 0 fallback PASS; Webpack
-  Production build 277 route/page PASS; homepage 67.9 KB gzip / 80 KB PASS;
+  Production build 277 route/page PASS; homepage 68.2 KB gzip / 80 KB PASS;
   CAPTCHA readiness default safe-off PASS; `git diff --check` PASS (yalniz
   line-ending uyarilari). Bagimsiz integrated auth/device/SQL review P0=0/P1=0.
+- Son tarayici ve metin dogrulamasi: Yerel Chrome smoke testinde ana sayfa
+  basic log snapshot'i yalniz iki tahmin gosterdi; login/register 390x844
+  gorunumunde yatay tasma olmadi, register ulke listesi 251 secenek ve telefon
+  ulke kodu secicisini korudu, external `next` denemeleri localhost disina
+  cikmadi ve console warning/error bos kaldi. Ana sayfa ile `llms.txt` dosya
+  siniri, secilen uyumlu metin logunun tarayicida yerel okunmasini dogru
+  aciklayacak sekilde duzeltildi. OAuth profile finalizer ag hatalari retryable
+  UI durumuna alindi; ilgili UI/SEO paketi 110/110 ve auth paketi 35/35 PASS.
 - Kalan risk/blocked: Vercel proje Hobby planda ve ticari kullanim icin uygun
   degil; owner ucretli plana gecmeyi reddetti. Production
   `CUSTOMER_DEVICE_HMAC_SECRET`, Supabase Auth password/change kapilari ve

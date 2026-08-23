@@ -2060,6 +2060,9 @@ test("homepage provides customer-safe search intent FAQ structured data", () => 
   assert.match(homepage, /ECU file service questions answered before upload/);
   assert.match(homepage, /What should I prepare before sending an ECU or TCU file request\?/);
   assert.match(homepage, /Do the public preparation tools upload or modify my ECU file\?/);
+  assert.match(homepage, /reads only the compatible text datalog you explicitly choose/);
+  assert.match(homepage, /Does the homepage analyze my file\?/);
+  assert.match(homepage, /public snapshot reads it locally in this browser/);
   assert.match(homepage, /How is a completed file delivered\?/);
   assert.match(homepage, /Can I create a request if my vehicle is not in the public selector\?/);
   assert.match(homepage, /href: "\/tools\/file-readiness-check"/);

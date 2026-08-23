@@ -135,7 +135,8 @@ test("llms discovery document contains only public routes and explicit privacy b
   assert.equal(response.status, 200);
   assert.match(response.headers.get("content-type") ?? "", /^text\/plain/);
   assert.match(body, /# MG AutoTech File Service/);
-  assert.match(body, /Public tools do not upload, inspect, modify, patch or generate/);
+  assert.match(body, /datalog snapshot reads only an explicitly selected compatible text log locally/i);
+  assert.match(body, /public tools do not upload, store, modify, patch or generate/i);
   for (const guide of serviceIntentGuides) {
     assert.match(body, new RegExp(`/services/${guide.slug}`));
   }

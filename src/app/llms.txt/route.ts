@@ -31,8 +31,8 @@ ${serviceLinks}
 ${guideLinks}
 
 ## Safety and privacy boundary
-- Public pages provide service-selection and request-preparation guidance only.
-- Public tools do not upload, inspect, modify, patch or generate ECU or TCU files.
+- Public pages provide service-selection and request-preparation guidance plus one browser-local text-datalog snapshot.
+- The datalog snapshot reads only an explicitly selected compatible text log locally; public tools do not upload, store, modify, patch or generate ECU or TCU calibration files.
 - Customer files and order details are not exposed through this discovery document.
 - Service compatibility remains subject to exact vehicle, controller, software, read-method and source-file review.
 `;

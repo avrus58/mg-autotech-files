@@ -255,7 +255,7 @@ const homepageSearchIntentFaq = [
     intent: "Safe preparation",
     question: "Do the public preparation tools upload or modify my ECU file?",
     answer:
-      "No. The public preparation tools are browser guidance only. They do not read, upload, change, patch or generate ECU or TCU files. File upload starts only inside the authenticated request flow.",
+      "No. A file-based public check reads only the compatible text datalog you explicitly choose and processes it locally in this browser. It does not upload, store, change, patch or generate ECU or TCU files. Original-file submission starts only inside the authenticated request flow.",
     href: "/tools",
     action: "Open tools",
   },
@@ -336,7 +336,7 @@ const fileServiceAnswerLibrary = [
     intent: "Public safety",
     question: "Does the homepage analyze my file?",
     answer:
-      "No. Homepage guidance and public tools are preparation pages only. Secure file handling starts only after the customer opens the authenticated request workflow.",
+      "Only when you explicitly choose a compatible CSV, TSV, TXT or LOG datalog. The public snapshot reads it locally in this browser to estimate peak torque and power without uploading or storing it. Original ECU or TCU file submission and calibration work stay inside the authenticated request workflow.",
     href: "/tools/file-readiness-check",
     action: "Check readiness",
     icon: ShieldCheck,
@@ -463,7 +463,7 @@ const fileServiceSnippetSummary = [
   {
     title: "What public tools do",
     text:
-      "They help clarify read method, service route and request context before submission. They do not inspect customer files or change account records.",
+      "They help clarify read method, service route and request context before submission. The optional datalog snapshot locally reads only an explicitly selected compatible text log; public tools do not upload files or change account records.",
     href: "/tools/ecu-read-method-advisor",
     action: "Plan read method",
     icon: Search,
@@ -524,7 +524,7 @@ const fileServiceTrustComparison = [
     typical:
       "Public pages can create confusion when they look like automatic file processing tools.",
     text:
-      "MG AutoTech keeps public pages educational. Technical handling remains separated from public website guidance and requires controlled review.",
+      "MG AutoTech keeps ECU and TCU calibration-file handling separate from public guidance and under controlled review. The optional public datalog snapshot is browser-local and limited to two estimates.",
     href: "/file-service",
     action: "Open hub",
     icon: Users,
@@ -534,7 +534,7 @@ const fileServiceTrustComparison = [
     typical:
       "A public website should not reveal private account details or technical handling internals.",
     text:
-      "MG AutoTech keeps the public website focused on service education, route selection and preparation guidance only.",
+      "MG AutoTech keeps the public website focused on service education, route selection, preparation guidance and one clearly bounded browser-local datalog snapshot without exposing private account data.",
     href: "/how-it-works",
     action: "Review process",
     icon: Lock,
@@ -576,7 +576,7 @@ const fileServiceVerificationCheckpoints = [
     checkpoint: "04",
     title: "Preparation happens before submission",
     text:
-      "Public tools should help organize the job before account handling begins, without pretending to analyze, change or deliver technical output from the homepage.",
+      "Public tools should help organize the job before account handling begins. The local datalog estimate must not be presented as diagnosis, calibration approval or delivered technical output.",
     href: "/tools/file-readiness-check",
     action: "Check readiness",
     signal: "Safe preparation",
@@ -695,7 +695,7 @@ const fileServicePlatformStack = [
   {
     title: "Human review boundary",
     text:
-      "Public pages explain the process while technical handling remains separated from public guidance.",
+      "Public pages explain the process while ECU and TCU request-file handling remains separated from public guidance; the optional log snapshot stays local and limited to two estimates.",
     href: "/#professional-file-service-comparison",
     action: "Compare standards",
     signal: "Review",
@@ -4417,8 +4417,9 @@ export function UnifiedHomePage({
               </h3>
               <p className="mt-3 text-sm leading-7 text-zinc-400">
                 The preparation cockpit is guidance only. It helps customers
-                arrive with the right vehicle context, but file upload and
-                processing stay inside the authenticated request workflow.
+                arrive with the right vehicle context, but original ECU or TCU
+                upload and calibration processing stay inside the authenticated
+                request workflow.
               </p>
 
               <div className="mt-6 space-y-3">
