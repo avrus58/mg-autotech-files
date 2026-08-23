@@ -128,6 +128,30 @@ Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
 
+### MANUAL-20260823-CUSTOMER-DASHBOARD-REFERENCE-LAYOUT [P1] Musteri dashboard'unu owner referans duzenine uyarla
+
+Durum: Done
+
+Fingerprint: `customer-experience|customer-dashboard-home|owner-reference-layout|sidebar-toolbar-kpi-recent-orders-ledger-first-fold`
+
+Sonuc: Dashboard owner referansindaki sabit sol navigasyon, kompakt ust kontrol
+cubugu, welcome/CTA, dort KPI ve masaustunde yan yana recent requests/gercek
+credit ledger hiyerarsisine uyarlandi. Son bes talep, needs-response onceligi,
+profil/kredi/aktif-is next-action mantigi, order aksiyonlari, Customer ID,
+quick actions, workflow, tum musteri rotalari, auth, Supabase/realtime ve
+loading/error/empty davranislari korundu. Referanstaki baska isletmeye ait
+calisma saati veya servis iddiasi kopyalanmadi; e-posta aksiyonu yalniz Support
+olarak adlandirildi. Turuncu CTA ve kucuk metin kontrasti, bildirim accessible
+name'i ve saniyelik saat render kapsami final review sonrasinda duzeltildi.
+
+Dogrulama: hedefli dashboard 8/8 PASS; seri full test 965/965 PASS; ESLint PASS;
+web + customer-uploader TypeScript PASS; public i18n/SEO 12 dil ve customer i18n
+11 dilde 607/607 PASS; Webpack Production build 277/277 PASS; performans 68.2 KB
+gzip / 80 KB butce PASS. Sentetik browser QA 1366x768, 1024x768, 390x844 ve
+son 639x496 gorunumlerinde yatay tasma olmadan PASS; final reload'da yeni console
+error yok; bagimsiz final review P0/P1/P2 temiz. Paket/lockfile, SQL/migration,
+env/secret, push veya Production deploy degisikligi yapilmadi.
+
 ### MANUAL-20260823-CUSTOMER-DASHBOARD-EFFERD-SHELL [P1] Mevcut musteri dashboard'unu Efferd operating UI diline uyarla
 
 Durum: Done

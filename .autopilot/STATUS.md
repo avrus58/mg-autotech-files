@@ -4153,3 +4153,56 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
   1024x768 ve 390x844 browser smoke'u owner yayin talimatiyla release sirasinda
   yapilacak; kaynak responsive/scroll contract'i statik ve bagimsiz review'da
   PASS.
+
+## 2026-08-23 Customer dashboard owner-reference layout baslangici
+
+- Owner onceki Efferd yerlesiminden vazgecip paylastigi operasyon paneli
+  referansindaki sidebar, ust toolbar, welcome/CTA, dort KPI ve yan yana son
+  talepler/kredi gecmisi hiyerarsisini istedi.
+- Kapsam yalniz dashboard sunumudur; auth, canli veri sorgulari, realtime,
+  krediler, siparis aksiyonlari ve mevcut musteri rotalari korunacak. Referanstaki
+  baska isletmeye ait calisma saati veya servis iddiasi kopyalanmayacak.
+- Gorev local implementasyon ve sentetik preview QA kapsamindadir; bu istekte
+  push veya Production deploy yetkisi verilmedi.
+
+## 2026-08-23 Customer dashboard owner-reference layout tamamlandi
+
+- Sonuc: `/dashboard` owner referansindaki sol navigasyon, ust aksiyon cubugu,
+  kompakt welcome/CTA, Pending/In Progress/Completed/Balance KPI sirasi ve
+  masaustunde yan yana son talepler/credit ledger hiyerarsisine uyarlandi. Dar
+  ekranlarda talepler once kalir; quick actions ve workflow mevcut ikincil
+  alaninda korunur.
+- Korunan davranislar: Auth/session kontrolu, Supabase profile/order/
+  credit_transactions sorgulari, realtime ve periyodik refresh, initial ve
+  silent error davranislari, empty state, son bes order, needs-response/
+  delivery/revision aksiyonlari, Customer ID copy, 17+ musteri hedefi ve logout
+  degismedi. Referanstaki uydurma calisma saati veya servis durumu alinmadi;
+  `mailto:` aksiyonu dogru olarak Support etiketinde kaldi ve basarisiz silent
+  refresh sonrasinda kanitsiz `up to date` iddiasi gosterilmez.
+- Erisilebilirlik/performance: Turuncu CTA metinleri 5.86:1 dark-on-orange
+  kontrasta, kucuk muted metinler daha acik tona alindi; bildirim accessible
+  name'i hedefi, sayiyi ve bekleyen aksiyonu birlikte soyler. Saniyelik saat
+  state'i buyuk DashboardClient'tan kucuk `LocalTime` bilesenine ayrildi. Main
+  scroll region, landmark isimleri, klavye focus ve arama no-result/clear akisi
+  korundu.
+- Degisen tracked dosyalar: `.autopilot/TASKS.md`, `.autopilot/STATUS.md`,
+  `src/components/dashboard/DashboardClient.tsx`,
+  `src/lib/customerPortalTranslations.ts`, `tests/ui-ux-safety.test.ts`.
+- Kontroller: hedefli dashboard 8/8 PASS; seri full suite 965/965 PASS; full
+  ESLint PASS; web ve customer-uploader TypeScript PASS; public i18n/SEO 12 dil
+  ve customer i18n 11 dilde 607/607, sifir English fallback PASS; Webpack
+  Production build 277/277 PASS; performance 68.2 KB gzip / 80 KB PASS;
+  `git diff --check` PASS. Varsayilan Turbopack
+  build, bu izole worktree'nin repo disina baglanan `node_modules` symlink'ini
+  filesystem-root disi sayarak kod derlenmeden environment panic verdi;
+  desteklenen `next build --webpack` ayni source icin tam production build'i
+  basariyla tamamladi.
+- Browser QA: sentetik, gercek musteri verisi icermeyen local preview 1366x768,
+  1024x768, 390x844 ve final 639x496 gorunumlerinde yatay tasma olmadan PASS;
+  welcome, dort KPI, ilk siparis, credit history ve arama no-match akislari
+  goruldu. Final hard reload sonrasinda yeni console error yoktu. Bagimsiz final
+  review'un buldugu dort kontrast/truthfulness/a11y/performance konusu ve son
+  hover kontrasti duzeltildikten sonra P0/P1/P2 temiz sonucu alindi.
+- Kapsam disi: Yeni dependency/package/lockfile, image/stock asset, SQL/
+  migration, env/secret, Production DB/customer/payment/e-posta verisi, push,
+  Preview veya Production deploy yoktur.

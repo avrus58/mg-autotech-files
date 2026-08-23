@@ -582,26 +582,36 @@ test("customer dashboard shows a safe preparation-to-delivery workflow map", () 
   );
 });
 
-test("customer dashboard keeps recent order status first and secondary tools collapsed", () => {
+test("customer dashboard follows the owner reference hierarchy without hiding operational data", () => {
   const dashboard = readProjectFile("src", "components", "dashboard", "DashboardClient.tsx");
+  const welcome = dashboard.indexOf("data-dashboard-welcome");
+  const prioritySummary = dashboard.indexOf("data-dashboard-priority-summary", welcome);
   const recentRequests = dashboard.indexOf('data-dashboard-primary="recent-requests"');
-  const prioritySummary = dashboard.indexOf("data-dashboard-priority-summary", recentRequests);
-  const quickActions = dashboard.indexOf("Quick Actions", prioritySummary);
+  const creditHistory = dashboard.indexOf('id="credit-history-title"', recentRequests);
+  const quickActions = dashboard.indexOf("Quick Actions", creditHistory);
   const workflow = dashboard.indexOf("Customer Workflow Map", quickActions);
-  const creditHistory = dashboard.indexOf("Credit History", workflow);
   const recentOrderProjection =
     dashboard.match(/\.from\("orders"\)[\s\S]*?\.limit\(5\)/)?.[0] ?? "";
 
+  assert.ok(welcome >= 0);
+  assert.ok(welcome < prioritySummary);
+  assert.ok(prioritySummary < recentRequests);
   assert.ok(recentRequests >= 0);
-  assert.ok(recentRequests < prioritySummary);
-  assert.ok(prioritySummary < quickActions);
+  assert.ok(recentRequests < creditHistory);
+  assert.ok(creditHistory < quickActions);
   assert.ok(quickActions < workflow);
-  assert.ok(workflow < creditHistory);
-  assert.match(dashboard, /<section[\s\S]*aria-labelledby="recent-requests-title"[\s\S]*orders\.map/);
-  assert.match(dashboard, /min-\[1180px\]:grid-cols-\[minmax\(0,1fr\)_20rem\]/);
+  assert.match(dashboard, /data-dashboard-welcome[\s\S]*Welcome, \{customerName\}/);
+  assert.match(dashboard, /data-dashboard-priority-summary[\s\S]*Pending Requests[\s\S]*In Progress[\s\S]*Completed[\s\S]*Balance/);
+  assert.match(dashboard, /<section[\s\S]*aria-labelledby="recent-requests-title"[\s\S]*filteredOrders\.map/);
+  assert.match(dashboard, /min-\[1180px\]:grid-cols-\[minmax\(0,1\.55fr\)_minmax\(20rem,0\.85fr\)\]/);
   assert.match(dashboard, /sm:grid-cols-\[minmax\(0,1fr\)_auto\]/);
   assert.match(dashboard, /hidden w-64 shrink-0/);
-  assert.match(dashboard, /text-emerald-300 xl:flex/);
+  assert.match(dashboard, /const \[requestSearch, setRequestSearch\]/);
+  assert.match(dashboard, /const filteredOrders = useMemo/);
+  assert.match(dashboard, /Search recent requests/);
+  assert.match(dashboard, /aria-label="Primary navigation"/);
+  assert.match(dashboard, /aria-label="Mobile navigation"/);
+  assert.match(dashboard, /aria-label="Dashboard content"[\s\S]*tabIndex=\{0\}/);
   assert.match(dashboard, /order\.status === "customer_info_needed"/);
   assert.match(dashboard, /Needs your response/);
   assert.match(dashboard, /order\.status === "revision"/);
@@ -609,7 +619,8 @@ test("customer dashboard keeps recent order status first and secondary tools col
   assert.match(dashboard, /Open Delivery/);
   assert.match(dashboard, /\? "Needs Response"[\s\S]*: "Details"/);
   assert.match(dashboard, /<details[\s\S]*Quick Actions/);
-  assert.match(dashboard, /<details[\s\S]*Credit History/);
+  assert.match(dashboard, /aria-labelledby="credit-history-title"[\s\S]*creditHistory\.map/);
+  assert.doesNotMatch(dashboard, /<details[\s\S]*Credit History/);
   assert.match(dashboard, /aria-live="polite"/);
   assert.match(dashboard, /if \(!customerId\) return null/);
   assert.match(dashboard, /disabled=\{!customerReference\}/);
@@ -645,7 +656,7 @@ test("customer dashboard uses the Efferd shell without losing routes or adding u
   assert.match(dashboard, /lg:h-screen lg:overflow-hidden/);
   assert.match(dashboard, /lg:flex lg:h-screen lg:flex-col lg:overflow-hidden/);
   assert.match(dashboard, /lg:min-h-0 lg:flex-1 lg:overflow-y-auto/);
-  assert.match(dashboard, /grid grid-cols-2 gap-px overflow-hidden/);
+  assert.match(dashboard, /grid grid-cols-2 gap-3 min-\[1180px\]:grid-cols-4/);
 
   for (const target of [
     'href="/"',

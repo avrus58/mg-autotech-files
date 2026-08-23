@@ -26,6 +26,7 @@ import {
   LogOut,
   Plus,
   RefreshCw,
+  Search,
   Settings,
   ShieldCheck,
   Upload,
@@ -169,10 +170,33 @@ function formatCustomerReference(customerId: string | null) {
   return null;
 }
 
+function LocalTime() {
+  const [localTime, setLocalTime] = useState("--:--:--");
+
+  useEffect(() => {
+    const updateLocalTime = () => {
+      setLocalTime(
+        new Intl.DateTimeFormat(undefined, {
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+        }).format(new Date())
+      );
+    };
+
+    updateLocalTime();
+    const interval = window.setInterval(updateLocalTime, 1000);
+    return () => window.clearInterval(interval);
+  }, []);
+
+  return <>{localTime}</>;
+}
+
 export function DashboardClient() {
   const router = useRouter();
 
   const [email, setEmail] = useState<string | null>(null);
+  const [customerName, setCustomerName] = useState("Customer");
   const [customerId, setCustomerId] = useState<string | null>(null);
   const [credits, setCredits] = useState<number>(0);
   const [orders, setOrders] = useState<Order[]>([]);
@@ -189,6 +213,7 @@ export function DashboardClient() {
   const [dashboardReady, setDashboardReady] = useState(false);
   const [dashboardRefreshKey, setDashboardRefreshKey] = useState(0);
   const [copiedReference, setCopiedReference] = useState(false);
+  const [requestSearch, setRequestSearch] = useState("");
   const hasLoadedDashboardRef = useRef(false);
   const dashboardRefreshInFlightRef = useRef(false);
 
@@ -296,10 +321,16 @@ export function DashboardClient() {
           const dashboardProfile = profile as DashboardProfile;
           setCredits(Number(dashboardProfile.credit_balance ?? 0));
           setCustomerId(dashboardProfile.customer_id ?? null);
+          setCustomerName(
+            dashboardProfile.full_name?.trim() ||
+              dashboardProfile.company_name?.trim() ||
+              "Customer"
+          );
           setProfileMissingItems(getProfileCompletionMissingItems(dashboardProfile));
         } else {
           setCredits(0);
           setCustomerId(null);
+          setCustomerName("Customer");
           setProfileMissingItems([]);
         }
 
@@ -415,6 +446,22 @@ export function DashboardClient() {
   const creditHistory = useMemo(() => {
     return creditTransactions.slice(0, 6);
   }, [creditTransactions]);
+
+  const filteredOrders = useMemo(() => {
+    const query = requestSearch.trim().toLowerCase();
+    if (!query) return orders;
+
+    return orders.filter((order) =>
+      [
+        order.vehicle_brand,
+        order.vehicle_model,
+        order.vehicle_generation,
+        order.vehicle_engine,
+        order.service_type,
+        formatStatus(order.status),
+      ].some((value) => value?.toLowerCase().includes(query))
+    );
+  }, [orders, requestSearch]);
 
   const customerReference = formatCustomerReference(customerId);
   const profileCompletionSummary = formatMissingProfileItems(profileMissingItems);
@@ -595,26 +642,26 @@ export function DashboardClient() {
   }
 
   return (
-    <main className="mg-compact-ui min-h-screen bg-[#070707] text-white lg:h-screen lg:overflow-hidden">
+    <main className="mg-compact-ui min-h-screen bg-[#15181e] text-white lg:h-screen lg:overflow-hidden">
       <div className="flex min-h-screen lg:h-screen lg:overflow-hidden">
-        <aside className="hidden w-64 shrink-0 border-r border-[#252525] bg-[#090909] lg:block">
+        <aside className="hidden w-64 shrink-0 border-r border-[#282d35] bg-[#0f1217] lg:block">
           <div className="sticky top-0 flex h-screen flex-col px-3 py-4">
             <Link href="/" className="mb-6 flex items-center gap-3 px-2">
-              <div className="relative flex h-10 w-10 items-center justify-center rounded-lg border border-red-900/60 bg-[#111]">
-                <div className="absolute -top-1.5 h-3 w-8 rounded-t-full border-t border-red-700" />
-                <Gauge className="h-5 w-5 text-red-500" />
+              <div className="relative flex h-10 w-10 items-center justify-center rounded-lg border border-orange-700/50 bg-[#171a20]">
+                <div className="absolute -top-1.5 h-3 w-8 rounded-t-full border-t border-[#f26422]" />
+                <Gauge className="h-5 w-5 text-[#f26422]" />
               </div>
 
               <div>
                 <div className="text-base font-black tracking-wide">
-                  MG <span className="text-red-600">AUTOTECH</span>
+                  MG <span className="text-[#f26422]">AUTOTECH</span>
                 </div>
-                <div className="text-[11px] text-zinc-500">Customer Panel</div>
+                <div className="text-[11px] text-zinc-400">Customer Panel</div>
               </div>
             </Link>
 
             <nav
-              aria-label="Customer Dashboard"
+              aria-label="Primary navigation"
               className="mg-dense-scroll min-h-0 flex-1 space-y-5 overflow-y-auto pr-1 text-sm"
             >
               <div className="space-y-1">
@@ -624,9 +671,9 @@ export function DashboardClient() {
                 <Link
                   href="/dashboard"
                   aria-current="page"
-                  className="flex items-center gap-3 rounded-lg bg-[#202020] px-3 py-2.5 font-bold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+                  className="flex items-center gap-3 rounded-lg bg-[#33231c] px-3 py-2.5 font-bold text-[#ff7a3c] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
                 >
-                  <LayoutDashboard className="h-4 w-4 text-red-500" />
+                  <LayoutDashboard className="h-4 w-4 text-[#f26422]" />
                   Dashboard
                 </Link>
                 <Link
@@ -661,7 +708,7 @@ export function DashboardClient() {
 
               <div className="space-y-1">
                 <div className="px-3 pb-1 text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-600">
-                  Quick Actions
+                  Tools
                 </div>
                 <Link
                   href="/dashboard/file-expert"
@@ -729,66 +776,129 @@ export function DashboardClient() {
             </nav>
 
             <div className="mt-4 shrink-0 rounded-lg border border-[#292929] bg-[#0d0d0d] p-4">
-              <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500">
+              <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-400">
                 Current Balance
               </div>
               <div className="mt-2 flex items-end justify-between gap-3">
                 <div className="text-3xl font-black tabular-nums">{credits}</div>
                 <CreditCard className="mb-1 h-4 w-4 text-red-500" />
               </div>
-              <div className="mt-1 text-[11px] text-zinc-500">Available Credits</div>
+              <div className="mt-1 text-[11px] text-zinc-400">Available Credits</div>
             </div>
           </div>
         </aside>
 
         <section className="min-w-0 flex-1 lg:flex lg:h-screen lg:flex-col lg:overflow-hidden">
-          <header className="sticky top-0 z-40 shrink-0 border-b border-[#252525] bg-[#090909]/95 backdrop-blur-xl lg:static">
-            <div className="flex min-h-16 items-center justify-between gap-3 px-4 py-2.5 lg:px-5 xl:px-6">
-              <div>
-                <div className="text-[10px] font-black uppercase tracking-[0.22em] text-zinc-500">
-                  Customer Dashboard
-                </div>
-                <h1 className="mt-0.5 text-lg font-black md:text-xl">
-                  File Service Panel
-                </h1>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <div className="hidden items-center gap-2 rounded-lg border border-[#2b2b2b] bg-[#0d0d0d] px-3 py-2 text-[11px] font-black text-emerald-300 xl:flex">
-                  <span className="h-2 w-2 rounded-full bg-emerald-400" />
-                  {liveRefreshing ? "Syncing" : "Live sync"}
-                </div>
-
-                <div className="hidden rounded-lg border border-[#2b2b2b] bg-[#0d0d0d] px-3 py-2 xl:block">
-                  <div className="text-[10px] text-zinc-500">Logged in as</div>
-                  <div className="max-w-[200px] truncate text-xs font-bold">
-                    {email}
+          <header className="sticky top-0 z-40 shrink-0 border-b border-[#2b2b2b] bg-[#12151b]/95 backdrop-blur-xl lg:static">
+            <div className="border-b border-orange-950/25 bg-[#f26422] px-4 py-2.5 text-[#111318] lg:px-5 xl:px-6">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex min-w-0 items-center gap-3">
+                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-black/35">
+                    <NextActionIcon className="h-4 w-4" />
                   </div>
-                  {customerId && (
-                    <div className="mt-0.5 text-[10px] font-black text-red-400">
-                      {customerId}
+                  <div className="min-w-0">
+                    <div className="truncate text-xs font-black uppercase tracking-[0.12em] sm:text-sm">
+                      Next best action - {dashboardNextAction.eyebrow}: {dashboardNextAction.title}
                     </div>
-                  )}
+                    <p className="hidden truncate text-xs text-black/75 xl:block">
+                      {dashboardNextAction.description}
+                    </p>
+                  </div>
                 </div>
-
-                <div className="rounded-lg border border-[#2b2b2b] bg-[#0d0d0d] px-3 py-2">
-                  <div className="text-[10px] text-zinc-500">Credits</div>
-                  <div className="text-xs font-black tabular-nums text-white">{credits}</div>
-                </div>
-
-                <button
-                  onClick={handleLogout}
-                  className="rounded-lg border border-[#2b2b2b] bg-[#0d0d0d] px-3 py-2 text-xs font-bold text-white transition hover:border-zinc-600 hover:bg-[#151515] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+                <Link
+                  href={dashboardNextAction.href}
+                  className="shrink-0 rounded-lg border border-black/35 bg-black/10 px-3 py-2 text-xs font-black transition hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black"
                 >
-                  <LogOut className="mr-2 inline h-4 w-4" />
-                  Logout
-                </button>
+                  {dashboardNextAction.cta}
+                  <ArrowRight className="ml-2 inline h-4 w-4" />
+                </Link>
               </div>
+            </div>
+
+            <div className="flex min-h-[72px] items-center gap-2 px-4 py-2.5 lg:px-5 xl:px-6">
+              <Link
+                href="/dashboard/credits"
+                aria-label="Buy Credits"
+                className="hidden min-w-[144px] items-center justify-between rounded-xl border border-[#f26422] bg-[#171a20] px-3 py-2.5 transition hover:bg-[#20242b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 md:flex"
+              >
+                <span>
+                  <span className="block text-[10px] font-bold text-zinc-400">Current Balance</span>
+                  <span className="block text-sm font-black tabular-nums">{credits} Credits</span>
+                </span>
+                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#f26422] text-[#111318]">
+                  <Plus className="h-4 w-4" />
+                </span>
+              </Link>
+
+              <div className="hidden min-w-[126px] rounded-xl border border-[#f26422] bg-[#171a20] px-3 py-2.5 xl:block">
+                <div className="text-[10px] font-bold text-zinc-400">Local Time</div>
+                <div className="mt-0.5 flex items-center gap-2 text-sm font-black tabular-nums">
+                  <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.8)]" />
+                  <LocalTime />
+                </div>
+              </div>
+
+              <label className="relative min-w-0 flex-1">
+                <span className="sr-only">Search recent requests</span>
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+                <input
+                  type="search"
+                  value={requestSearch}
+                  onChange={(event) => setRequestSearch(event.target.value)}
+                  placeholder="Search recent requests..."
+                  className="h-11 w-full rounded-xl border border-[#303640] bg-[#1c2028] pl-10 pr-3 text-sm text-white outline-none transition placeholder:text-zinc-400 focus:border-[#f26422] focus:ring-2 focus:ring-orange-500/20"
+                />
+              </label>
+
+              <Link
+                href="/dashboard/notifications"
+                aria-label={
+                  needsResponseCount > 0
+                    ? `Notifications - ${needsResponseCount} requests. Waiting for your information`
+                    : "Notifications"
+                }
+                className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-[#303640] bg-[#171a20] text-zinc-300 transition hover:border-zinc-500 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
+              >
+                <BellRing className="h-4 w-4" />
+                {needsResponseCount > 0 && (
+                  <span className="absolute -right-1.5 -top-1.5 min-w-5 rounded-full bg-[#f26422] px-1.5 py-0.5 text-center text-[10px] font-black text-[#111318]">
+                    {needsResponseCount}
+                  </span>
+                )}
+              </Link>
+
+              <a
+                href="mailto:info@mgautotech.de"
+                className="hidden h-11 shrink-0 items-center justify-center rounded-xl border border-[#303640] bg-[#171a20] px-4 text-xs font-black text-white transition hover:border-zinc-500 hover:bg-[#20242b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 2xl:inline-flex"
+              >
+                <Wrench className="mr-2 h-4 w-4" />
+                Support
+              </a>
+
+              <div className="hidden min-w-0 items-center gap-2 rounded-xl border border-[#303640] bg-[#171a20] px-3 py-2 2xl:flex">
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#291b18] text-[#f26422]">
+                  <User className="h-4 w-4" />
+                </div>
+                <div className="min-w-0">
+                  <div className="max-w-[155px] truncate text-xs font-black">{customerName}</div>
+                  <div className="max-w-[155px] truncate text-[10px] text-zinc-400">{email}</div>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleLogout}
+                aria-label="Log out"
+                className="flex h-11 shrink-0 items-center justify-center rounded-xl border border-[#303640] bg-[#171a20] px-3 text-xs font-bold text-white transition hover:border-zinc-500 hover:bg-[#20242b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
+              >
+                <LogOut className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Logout</span>
+              </button>
             </div>
           </header>
 
           <nav
-            aria-label="Customer Dashboard"
+            aria-label="Mobile navigation"
             className="mg-dense-scroll flex shrink-0 gap-2 overflow-x-auto border-b border-[#252525] bg-[#090909] px-4 py-2.5 lg:hidden"
           >
             <Link href="/dashboard" aria-current="page" className="shrink-0 rounded-xl border border-red-800/50 bg-red-950/30 px-4 py-2.5 text-xs font-black">
@@ -811,7 +921,12 @@ export function DashboardClient() {
             </Link>
           </nav>
 
-          <div className="mg-dense-scroll overscroll-contain px-4 py-4 lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:px-5 xl:px-6">
+          <div
+            role="region"
+            aria-label="Dashboard content"
+            tabIndex={0}
+            className="mg-dense-scroll overscroll-contain px-4 py-4 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-orange-400 lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:px-5 xl:px-6"
+          >
             {dashboardLoadError && dashboardReady && (
               <div
                 role="alert"
@@ -837,22 +952,126 @@ export function DashboardClient() {
               </div>
             )}
 
+            <section
+              data-dashboard-welcome
+              aria-labelledby="dashboard-welcome-title"
+              className="mb-3 rounded-xl border border-[#663218] bg-[linear-gradient(100deg,rgba(242,100,34,0.18),rgba(20,22,27,0.96)_55%)] px-4 py-4 lg:px-5"
+            >
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0">
+                  <h1 id="dashboard-welcome-title" className="break-words text-xl font-black sm:text-2xl">
+                    Welcome, {customerName}
+                  </h1>
+                  <p className="mt-1 text-sm text-zinc-400">
+                    {liveRefreshing
+                      ? "Refreshing your latest file-service activity..."
+                      : "Your requests, deliveries and credit activity in one place."}
+                  </p>
+                </div>
+                <Link
+                  href="/new-request"
+                  className="inline-flex shrink-0 items-center justify-center rounded-xl bg-[#f26422] px-5 py-3 text-sm font-black text-[#111318] transition hover:bg-[#ff7535] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-300"
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Create Request
+                </Link>
+              </div>
+
+              {dashboardNextAction.key === "profile" && profileMissingItems.length > 0 && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {profileMissingItems.map((item) => (
+                    <span
+                      key={item}
+                      className="max-w-full break-words rounded-full border border-amber-500/30 bg-black/25 px-2.5 py-1 text-[11px] font-bold text-amber-100"
+                    >
+                      {item}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </section>
+
+            <section
+              data-dashboard-priority-summary
+              aria-label="Request and credit summary"
+              className="mb-3 grid grid-cols-2 gap-3 min-[1180px]:grid-cols-4"
+            >
+              <Link
+                href="/dashboard/orders"
+                className="group min-w-0 rounded-xl border border-[#303640] bg-[#20242c] p-4 transition hover:border-blue-500/40 hover:bg-[#252a33] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-500/10 text-blue-400">
+                    <Clock3 className="h-6 w-6" />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-xs font-bold text-zinc-400">Pending Requests</span>
+                    <span className="mt-0.5 block text-3xl font-black tabular-nums text-blue-400">{pendingCount}</span>
+                  </span>
+                </div>
+              </Link>
+
+              <Link
+                href="/dashboard/orders"
+                className="group min-w-0 rounded-xl border border-[#303640] bg-[#20242c] p-4 transition hover:border-amber-500/40 hover:bg-[#252a33] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-500/10 text-amber-400">
+                    <RefreshCw className="h-6 w-6" />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-xs font-bold text-zinc-400">In Progress</span>
+                    <span className="mt-0.5 block text-3xl font-black tabular-nums text-amber-400">{inProgressCount}</span>
+                  </span>
+                </div>
+              </Link>
+
+              <Link
+                href="/dashboard/orders?view=completed"
+                className="group min-w-0 rounded-xl border border-[#303640] bg-[#20242c] p-4 transition hover:border-emerald-500/40 hover:bg-[#252a33] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400">
+                    <CheckCircle2 className="h-6 w-6" />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-xs font-bold text-zinc-400">Completed</span>
+                    <span className="mt-0.5 block text-3xl font-black tabular-nums text-emerald-400">{completedCount}</span>
+                  </span>
+                </div>
+              </Link>
+
+              <Link
+                href="/dashboard/credits"
+                className="group min-w-0 rounded-xl border border-[#303640] bg-[#20242c] p-4 transition hover:border-orange-500/40 hover:bg-[#252a33] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-orange-500/10 text-[#f26422]">
+                    <CreditCard className="h-6 w-6" />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-xs font-bold text-zinc-400">Balance</span>
+                    <span className="mt-0.5 block break-words text-2xl font-black tabular-nums text-[#f26422]">{credits} Credits</span>
+                  </span>
+                </div>
+              </Link>
+            </section>
+
             <div
               data-dashboard-primary="recent-requests"
-              className="mb-4 grid gap-4 min-[1180px]:grid-cols-[minmax(0,1fr)_20rem]"
+              className="mb-3 grid gap-3 min-[1180px]:grid-cols-[minmax(0,1.55fr)_minmax(20rem,0.85fr)]"
             >
               <section
                 aria-labelledby="recent-requests-title"
-                className="min-w-0 rounded-xl border border-[#292929] bg-[#0b0b0b] p-4 lg:p-5"
+                className="min-w-0 overflow-hidden rounded-xl border border-[#303640] bg-[#20242c]"
               >
-                <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-col gap-3 border-b border-[#303640] px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between">
                   <div>
-                    <div className="text-xs font-black uppercase tracking-[0.2em] text-red-500">
-                      Recent Requests
-                    </div>
-                    <h2 id="recent-requests-title" className="mt-1 text-xl font-black">
-                      Your latest file orders
+                    <h2 id="recent-requests-title" className="flex items-center gap-2 text-base font-black">
+                      <FileText className="h-5 w-5 text-[#f26422]" />
+                      My Recent Requests
                     </h2>
+                    <p className="mt-1 text-xs text-zinc-400">Your latest file orders and their current status</p>
                   </div>
 
                   <div className="flex flex-wrap gap-2">
@@ -865,7 +1084,7 @@ export function DashboardClient() {
                     </Link>
                     <Link
                       href="/new-request"
-                      className="inline-flex items-center justify-center rounded-lg bg-[#b1121b] px-3 py-2 text-xs font-black text-white transition hover:bg-[#c91824] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
+                      className="inline-flex items-center justify-center rounded-lg bg-[#f26422] px-3 py-2 text-xs font-black text-[#111318] transition hover:bg-[#ff7535] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-300"
                     >
                       <Plus className="mr-2 h-4 w-4" />
                       New Request
@@ -874,23 +1093,38 @@ export function DashboardClient() {
                 </div>
 
                 {orders.length === 0 ? (
-                  <div className="rounded-lg border border-dashed border-[#303030] bg-[#090909] p-6 text-center">
-                    <Upload className="mx-auto mb-3 h-8 w-8 text-red-500" />
+                  <div className="m-4 rounded-lg border border-dashed border-[#3b414b] bg-[#171a20] p-6 text-center">
+                    <Upload className="mx-auto mb-3 h-8 w-8 text-[#f26422]" />
                     <h3 className="text-lg font-black">No file request yet</h3>
                     <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-zinc-400">
                       Create your first ECU/TCU file request and it will appear here.
                     </p>
                     <Link
                       href="/new-request"
-                      className="mt-4 inline-flex rounded-lg bg-[#b1121b] px-4 py-2.5 text-sm font-black text-white transition hover:bg-[#c91824] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
+                      className="mt-4 inline-flex rounded-lg bg-[#f26422] px-4 py-2.5 text-sm font-black text-[#111318] transition hover:bg-[#ff7535] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-300"
                     >
                       Create File Request
                     </Link>
                   </div>
+                ) : filteredOrders.length === 0 ? (
+                  <div className="rounded-lg border border-dashed border-[#303640] bg-[#171a20] p-6 text-center">
+                    <Search className="mx-auto mb-3 h-8 w-8 text-[#f26422]" />
+                    <h3 className="text-lg font-black">No matching recent request</h3>
+                    <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-zinc-400">
+                      Try a vehicle, engine, service or status name. Full order history remains available.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setRequestSearch("")}
+                      className="mt-4 rounded-lg border border-[#3b414b] bg-[#20242c] px-4 py-2.5 text-sm font-black text-white transition hover:border-orange-500/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
+                    >
+                      Clear search
+                    </button>
+                  </div>
                 ) : (
-                  <div className="min-w-0 overflow-hidden rounded-lg border border-[#292929]">
-                    <div className="divide-y divide-[#252525]">
-                      {orders.map((order) => {
+                  <div className="min-w-0 overflow-hidden">
+                    <div className="divide-y divide-[#303640]">
+                      {filteredOrders.map((order) => {
                         const isCompleted = order.status === "completed";
                         const needsCustomerResponse =
                           order.status === "customer_info_needed";
@@ -904,7 +1138,7 @@ export function DashboardClient() {
                         return (
                           <article
                             key={order.id}
-                            className="grid min-w-0 gap-3 bg-[#090909] p-3 transition hover:bg-[#121212] sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"
+                            className="grid min-w-0 gap-3 bg-[#20242c] p-3.5 transition hover:bg-[#252a33] sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"
                           >
                             <div className="min-w-0">
                               <div className="flex flex-wrap items-center gap-2">
@@ -950,7 +1184,7 @@ export function DashboardClient() {
                             <Link
                               href={`/dashboard/orders/${order.id}`}
                               aria-label={`${isCompleted ? "Open delivery" : needsCustomerResponse ? "Respond to" : "View"} ${order.vehicle_brand || "vehicle"} ${order.vehicle_model || "request"}`}
-                              className="inline-flex w-full items-center justify-center rounded-lg border border-[#303030] bg-[#111] px-3 py-2 text-xs font-black text-white transition hover:border-red-800/70 hover:bg-[#181818] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 sm:w-auto"
+                              className="inline-flex w-full items-center justify-center rounded-lg border border-[#3b414b] bg-[#171a20] px-3 py-2 text-xs font-black text-white transition hover:border-orange-500/60 hover:bg-[#292f39] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 sm:w-auto"
                             >
                               <OrderActionIcon className="mr-2 h-4 w-4" />
                               {isCompleted
@@ -967,142 +1201,93 @@ export function DashboardClient() {
                 )}
               </section>
 
-              <aside
-                aria-label="Customer Dashboard"
-                className="space-y-4"
-              >
-                <div
-                  className={`rounded-xl border bg-[#0b0b0b] p-4 ${dashboardNextAction.tone}`}
+              <aside aria-label="Credit activity and customer reference" className="space-y-3">
+                <section
+                  aria-labelledby="credit-history-title"
+                  className="overflow-hidden rounded-xl border border-[#303640] bg-[#20242c]"
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-black/30">
-                      <NextActionIcon className="h-5 w-5" />
+                  <div className="flex items-center justify-between gap-3 border-b border-[#303640] px-4 py-3.5">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <CreditCard className="h-5 w-5 shrink-0 text-[#f26422]" />
+                      <h2 id="credit-history-title" className="text-base font-black">Credit History</h2>
                     </div>
-                    <div className="min-w-0">
-                      <div className="break-words text-[11px] font-black uppercase tracking-[0.18em]">
-                        Next best action - {dashboardNextAction.eyebrow}
-                      </div>
-                      <h2 className="mt-1 break-words text-lg font-black">
-                        {dashboardNextAction.title}
-                      </h2>
-                    </div>
+                    <Link
+                      href="/dashboard/credits/history"
+                      className="shrink-0 text-xs font-black text-[#f26422] transition hover:text-orange-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400"
+                    >
+                      View All
+                    </Link>
                   </div>
 
-                  <p className="mt-3 text-sm leading-6 opacity-85">
-                    {dashboardNextAction.description}
-                  </p>
+                  {creditHistory.length === 0 ? (
+                    <div className="p-6 text-center">
+                      <CreditCard className="mx-auto mb-3 h-8 w-8 text-[#f26422]" />
+                      <h3 className="text-sm font-black text-white">No credit ledger movements yet</h3>
+                      <p className="mt-2 text-xs leading-5 text-zinc-400">
+                        Purchases, top-ups and file usage will appear here.
+                      </p>
+                      <Link
+                        href="/dashboard/credits"
+                        className="mt-4 inline-flex rounded-lg bg-[#f26422] px-4 py-2 text-xs font-black text-[#111318] transition hover:bg-[#ff7535] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-300"
+                      >
+                        Buy Credits
+                      </Link>
+                    </div>
+                  ) : (
+                    <div className="divide-y divide-[#303640]">
+                      {creditHistory.map((item) => {
+                        const delta = Number(item.credits_delta ?? 0);
+                        const isPositive = delta >= 0;
+                        const typeLabel = formatCreditTransactionType(item.type);
 
-                  {dashboardNextAction.key === "profile" &&
-                    profileMissingItems.length > 0 && (
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        {profileMissingItems.map((item) => (
-                          <span
-                            key={item}
-                            className="max-w-full break-words rounded-full border border-amber-600/30 bg-black/25 px-2.5 py-1 text-[11px] font-bold text-amber-100"
-                          >
-                            {item}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-
-                  <Link
-                    href={dashboardNextAction.href}
-                    className="mt-4 inline-flex w-full items-center justify-center rounded-lg bg-white px-4 py-2.5 text-xs font-black text-black transition hover:bg-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
-                  >
-                    {dashboardNextAction.cta}
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Link>
-                </div>
-
-                <section
-                  aria-label="Customer Dashboard"
-                  data-dashboard-priority-summary
-                  className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-[#292929] bg-[#292929]"
-                >
-                  <Link
-                    href="/dashboard/orders"
-                    className="min-w-0 bg-[#0b0b0b] p-3 transition hover:bg-[#131313] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500"
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-2xl font-black">{activeCount}</span>
-                      <Clock3 className="h-4 w-4 shrink-0 text-blue-400" />
+                        return (
+                          <div key={item.id} className="flex min-w-0 items-center gap-3 px-4 py-3">
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#3a2924] text-[#f26422]">
+                              <CreditCard className="h-4 w-4" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <div className="truncate text-sm font-bold">{item.description || typeLabel}</div>
+                              <div className="mt-1 truncate text-[11px] text-zinc-400">
+                                {typeLabel} · {formatDate(item.created_at)}
+                              </div>
+                            </div>
+                            <div className="shrink-0 text-right">
+                              <div
+                                className={`text-sm font-black ${
+                                  isPositive ? "text-emerald-400" : "text-red-500"
+                                }`}
+                              >
+                                {isPositive ? "+" : ""}{delta} Credits
+                              </div>
+                              {item.balance_after !== null && item.balance_after !== undefined && (
+                                <div className="mt-1 text-[10px] text-zinc-400">Balance {item.balance_after}</div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
-                    <div className="mt-1 break-words text-[11px] font-black uppercase tracking-[0.12em] text-blue-200">
-                      Active Orders
-                    </div>
-                    <div className="mt-1 flex flex-wrap gap-x-1 text-[11px] text-zinc-400">
-                      <span>
-                        {pendingCount} <span>Pending Requests</span>
-                      </span>
-                      <span aria-hidden="true">·</span>
-                      <span>
-                        {inProgressCount} <span>In Progress</span>
-                      </span>
-                    </div>
-                  </Link>
-
-                  <Link
-                    href="/dashboard/orders?view=needs_response"
-                    className="min-w-0 bg-[#0b0b0b] p-3 transition hover:bg-[#131313] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-orange-500"
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-2xl font-black">{needsResponseCount}</span>
-                      <Clipboard className="h-4 w-4 shrink-0 text-orange-300" />
-                    </div>
-                    <div className="mt-1 break-words text-[11px] font-black uppercase tracking-[0.12em] text-orange-100">
-                      Needs Response
-                    </div>
-                    <div className="mt-1 break-words text-[11px] text-orange-200/80">
-                      Waiting for your information
-                    </div>
-                  </Link>
-
-                  <Link
-                    href="/dashboard/orders?view=completed"
-                    className="min-w-0 bg-[#0b0b0b] p-3 transition hover:bg-[#131313] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-500"
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-2xl font-black">{completedCount}</span>
-                      <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" />
-                    </div>
-                    <div className="mt-1 break-words text-[11px] font-black uppercase tracking-[0.12em] text-emerald-200">
-                      Completed
-                    </div>
-                  </Link>
-
-                  <Link
-                    href="/dashboard/credits"
-                    className="min-w-0 bg-[#0b0b0b] p-3 transition hover:bg-[#131313] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-red-500"
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-2xl font-black">{credits}</span>
-                      <CreditCard className="h-4 w-4 shrink-0 text-red-400" />
-                    </div>
-                    <div className="mt-1 break-words text-[11px] font-black uppercase tracking-[0.12em] text-red-200">
-                      Credits
-                    </div>
-                  </Link>
+                  )}
                 </section>
 
-                <div className="rounded-xl border border-[#292929] bg-[#0b0b0b] p-4">
+                <div className="rounded-xl border border-[#303640] bg-[#20242c] p-4">
                   <div className="flex items-center justify-between gap-3">
                     <div className="min-w-0">
-                      <div className="text-[11px] font-black uppercase tracking-[0.18em] text-red-500">
+                      <div className="text-[11px] font-black uppercase tracking-[0.18em] text-[#f26422]">
                         Customer ID
                       </div>
                       <div className="mt-1 break-words font-black">
                         {customerReference ?? "Not available"}
                       </div>
                     </div>
-                    <User className="h-5 w-5 shrink-0 text-red-400" />
+                    <User className="h-5 w-5 shrink-0 text-[#f26422]" />
                   </div>
 
                   <button
                     type="button"
                     onClick={copyReference}
                     disabled={!customerReference}
-                    className="mt-3 inline-flex w-full items-center justify-center rounded-lg border border-[#303030] bg-[#111] px-4 py-2.5 text-xs font-black text-white transition hover:border-zinc-500 hover:bg-[#181818] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="mt-3 inline-flex w-full items-center justify-center rounded-lg border border-[#3b414b] bg-[#171a20] px-4 py-2.5 text-xs font-black text-white transition hover:border-orange-500/50 hover:bg-[#242932] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <Clipboard className="mr-2 h-4 w-4" />
                     <span aria-live="polite">
@@ -1137,7 +1322,7 @@ export function DashboardClient() {
                       <BrainCircuit className="h-4 w-4 shrink-0 text-red-400" />
                       <span className="break-words">AI File Expert</span>
                     </span>
-                    <ArrowRight className="h-4 w-4 shrink-0 text-zinc-500" />
+                    <ArrowRight className="h-4 w-4 shrink-0 text-zinc-400" />
                   </Link>
                   <Link
                     href="/dashboard/log-analysis"
@@ -1147,7 +1332,7 @@ export function DashboardClient() {
                       <Activity className="h-4 w-4 shrink-0 text-cyan-300" />
                       <span className="break-words">Datalog Studio</span>
                     </span>
-                    <ArrowRight className="h-4 w-4 shrink-0 text-zinc-500" />
+                    <ArrowRight className="h-4 w-4 shrink-0 text-zinc-400" />
                   </Link>
                   <Link
                     href="/dashboard/credits"
@@ -1157,7 +1342,7 @@ export function DashboardClient() {
                       <CreditCard className="h-4 w-4 shrink-0 text-red-400" />
                       <span className="break-words">Buy Credits</span>
                     </span>
-                    <ArrowRight className="h-4 w-4 shrink-0 text-zinc-500" />
+                    <ArrowRight className="h-4 w-4 shrink-0 text-zinc-400" />
                   </Link>
                   <Link
                     href="/dashboard/settings"
@@ -1167,7 +1352,7 @@ export function DashboardClient() {
                       <Settings className="h-4 w-4 shrink-0 text-red-400" />
                       <span className="break-words">Settings</span>
                     </span>
-                    <ArrowRight className="h-4 w-4 shrink-0 text-zinc-500" />
+                    <ArrowRight className="h-4 w-4 shrink-0 text-zinc-400" />
                   </Link>
                   <a
                     href="mailto:info@mgautotech.de"
@@ -1177,7 +1362,7 @@ export function DashboardClient() {
                       <Wrench className="h-4 w-4 shrink-0 text-red-400" />
                       <span className="break-words">Support</span>
                     </span>
-                    <ArrowRight className="h-4 w-4 shrink-0 text-zinc-500" />
+                    <ArrowRight className="h-4 w-4 shrink-0 text-zinc-400" />
                   </a>
                 </div>
               </div>
@@ -1219,7 +1404,7 @@ export function DashboardClient() {
                       >
                         <div className="flex items-center justify-between gap-3">
                           <StepIcon className="h-4 w-4 shrink-0 text-red-400" />
-                          <span className="text-[11px] font-black text-zinc-500">
+                          <span className="text-[11px] font-black text-zinc-400">
                             {String(index + 1).padStart(2, "0")}
                           </span>
                         </div>
@@ -1239,96 +1424,6 @@ export function DashboardClient() {
               </div>
             </details>
 
-            <details className="group overflow-hidden rounded-xl border border-[#292929] bg-[#0b0b0b]">
-              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-4 py-4 marker:hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-red-500">
-                <span className="min-w-0">
-                  <span className="block text-xs font-black uppercase tracking-[0.2em] text-red-500">
-                    Credit History
-                  </span>
-                </span>
-                <ArrowRight className="h-5 w-5 shrink-0 text-zinc-400 transition group-open:rotate-90" />
-              </summary>
-
-              <div className="border-t border-[#292929] p-4">
-                <div className="mb-4 flex justify-end">
-                  <Link
-                    href="/dashboard/credits/history"
-                    className="rounded-lg border border-[#303030] bg-[#111] px-3 py-2 text-xs font-black text-white transition hover:border-zinc-500 hover:bg-[#181818] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
-                  >
-                    View All
-                  </Link>
-                </div>
-
-                {creditHistory.length === 0 ? (
-                  <div className="rounded-lg border border-dashed border-[#303030] bg-[#090909] p-8 text-center">
-                    <CreditCard className="mx-auto mb-4 h-9 w-9 text-red-500" />
-                    <h3 className="text-lg font-black text-white">
-                      No credit ledger movements yet
-                    </h3>
-                    <p className="mx-auto mt-3 max-w-sm text-sm leading-6 text-zinc-400">
-                      Credit purchases, admin top-ups and file usage will appear here
-                      once they are recorded in your ledger.
-                    </p>
-                    <div className="mt-5 flex flex-wrap justify-center gap-3">
-                      <Link
-                        href="/dashboard/credits"
-                        className="rounded-lg bg-[#b1121b] px-4 py-2.5 text-xs font-black text-white transition hover:bg-[#c91824] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
-                      >
-                        Buy Credits
-                      </Link>
-                      <Link
-                        href="/dashboard/credits/history"
-                        className="rounded-lg border border-[#303030] bg-[#111] px-4 py-2.5 text-xs font-black text-white transition hover:border-zinc-500 hover:bg-[#181818] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
-                      >
-                        Full Ledger
-                      </Link>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {creditHistory.map((item) => {
-                      const delta = Number(item.credits_delta ?? 0);
-                      const isPositive = delta >= 0;
-                      const typeLabel = formatCreditTransactionType(item.type);
-
-                      return (
-                        <div
-                          key={item.id}
-                          className="flex flex-col gap-4 rounded-lg border border-[#252525] bg-[#090909] p-4 sm:flex-row sm:items-center sm:justify-between"
-                        >
-                          <div className="min-w-0">
-                            <div className="break-words font-bold">
-                              {item.description || typeLabel}
-                            </div>
-                            <div className="mt-1 break-words text-xs text-zinc-500">
-                              {typeLabel} - {formatDate(item.created_at)}
-                            </div>
-                          </div>
-
-                          <div className="flex shrink-0 items-center justify-between gap-4 sm:flex-col sm:items-end sm:gap-1">
-                            {item.balance_after !== null && item.balance_after !== undefined && (
-                              <div className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs font-black text-zinc-300">
-                                Balance {item.balance_after}
-                              </div>
-                            )}
-
-                            <div
-                              className={`text-xl font-black ${
-                                isPositive ? "text-emerald-400" : "text-red-500"
-                              }`}
-                            >
-                              {isPositive ? "+" : ""}
-                              {delta}
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-
-            </details>
           </div>
         </section>
       </div>
