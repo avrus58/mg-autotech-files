@@ -6,17 +6,6 @@
 
 ## In Progress
 
-### MANUAL-20260823-AUTH-SESSION-INCIDENT [P0] Bound Production auth bootstrap waits
-
-Durum: In Progress
-
-Fingerprint: `production-auth|browser-session-bootstrap|unbounded-supabase-and-device-assurance-waits|bounded-fail-closed-recovery`
-
-Kapsam: Basarili parola/Google/OAuth oturumunu browser-memory snapshot'a hemen
-aktar; Supabase session bootstrap ve device-assurance isteklerini bounded tut;
-cached session dahil protected-route watchdog'unu her zaman calistir. Cihaz
-guvence kapisini veya server-side authorization'i gevsetme.
-
 ## Blocked
 
 ### MANUAL-20260823-INTEGRATED-PRODUCTION-RELEASE [P0] Son degisikliklerin guvenli Production yayini
@@ -138,6 +127,19 @@ Remediation: Batch with a future documentation/source-comment maintenance pass a
 Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
+
+### MANUAL-20260823-AUTH-SESSION-INCIDENT [P0] Bound Production auth bootstrap waits
+
+Durum: Done
+
+Fingerprint: `production-auth|browser-session-bootstrap|unbounded-supabase-and-device-assurance-waits|bounded-fail-closed-recovery`
+
+Sonuc: Basarili parola/Google/OAuth oturumu browser-memory snapshot'a hemen
+aktariliyor; Supabase session bootstrap, account-context ve device-assurance
+istekleri bounded. Cached session dahil protected-route watchdog her zaman
+calisiyor; timeout guvenlik kapisini gevsetmeden retry/unavailable ekranina
+geciyor. Production `b82617a` olarak yayinlandi, `1a5b46a` rollback cifti
+korundu ve gercek oturumlu Chrome'da iki temiz dashboard yenilemesi gecti.
 
 ### MANUAL-20260823-VPS-FILE-SERVICE-PACKAGING [P0] File Service bağımsız VPS stack paketi
 

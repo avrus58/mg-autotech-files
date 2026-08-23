@@ -4031,3 +4031,27 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
   container'lar bu alt adimda degistirilmedi. Strict customer analyzer kod
   gizliligi browser-local modelde mumkun degildir; server-side isleme mevcut
   gizlilik vaadini degistirecegi icin owner urun karari olarak acik kalir.
+
+## 2026-08-23 20:06 +02:00 Production auth session incident kapanisi
+
+- Production login/protected-route akisi Supabase Auth veri yolundaki gecici
+  takilma ile browser session/device-assurance bootstrap'inin bounded olmamasi
+  birlestiginde `Checking secure session...` ekraninda kalabiliyordu. Supabase
+  projesi kontrollu yeniden baslatildi; servis toparlandiktan sonra VPS'deki
+  kesinti sirasinda takili kalan File Service sureci ayni image ile yeniden
+  baslatildi. Ana `mgautotech.de`, analyzer, DNS/Caddy ve Production DB
+  degistirilmedi.
+- `authGuards`, `BrowserAuthBoundary`, login/OAuth callback ve device verification
+  client akislari fail-closed timeout, kosulsuz watchdog ve exact success-session
+  priming ile sertlestirildi. Timeout kullaniciyi authenticated saymiyor ve
+  cihaz guvence kapisini bypass etmiyor; sonsuz spinner yerine bounded retry /
+  unavailable durumu veriyor.
+- Kontroller: full suite 963/963 PASS; ESLint PASS; web ve customer-uploader
+  TypeScript PASS; Webpack Production build 277/277 PASS. Production release
+  `b82617a`; rollback cifti `1a5b46a`. Iki container healthy, host port binding
+  yok; public readiness, login, dashboard shell ve ana site HTTP 200.
+- Gercek oturumlu Chrome smoke'ta dashboard iki temiz yenilemede yaklasik 7.3
+  saniyede acildi; checking/recovering/unavailable veya login ekraninda kalmadi.
+  Production DB migration'i ve musteri verisi mutasyonu yapilmadi. Kalan risk,
+  dis Supabase Auth servisinin gelecekteki erisilebilirligidir; uygulama artik bu
+  durumda sinirsiz beklemiyor.
