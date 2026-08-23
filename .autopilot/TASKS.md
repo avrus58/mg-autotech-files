@@ -128,6 +128,32 @@ Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
 
+### MANUAL-20260823-CUSTOMER-DASHBOARD-STATUS-FIRST [P1] Laptop dashboard'u siparis odakli sadelestir
+
+Durum: Done
+
+Fingerprint: `customer-experience|customer-dashboard-first-fold|recent-orders-buried-behind-promotional-workflow|status-first-compact-laptop-home`
+
+Kapsam: Mevcut veri ve guvenlik akisini koruyarak laptop ilk gorunumunu son
+talepler, siparis durumu ve tek oncelikli aksiyon etrafinda yeniden sirala.
+Buyuk welcome/workflow/reference/metric tekrarlarini kompakt veya ikincil alana
+tasi; loading, error, empty, mobile ve erisilebilirlik davranislarini koru.
+
+Sonuc: Son bes talep ve musteriye acik durumlari dashboard'un ilk calisma
+alanina tasindi. 1180 px laptop breakpoint'inde talep listesi ile oncelikli
+aksiyon/sayaclar yan yana, daha dar ekranda talep listesi ilk sirada tam
+genislikte kalir. Tekrarlanan tanitim/CTA bloklari kaldirildi; araclar, workflow
+ve kredi gecmisi klavye erisimli disclosure alanlarina alindi. Musteri cevabi
+profil tamamlamadan once onceliklenir; revision ve delivery durumlari ayrik
+gosterilir. Gecersiz Customer ID artik sahte banka referansina donusmez ve son
+talep sorgusu yalniz gorunen alanlari getirir.
+
+Dogrulama: Chrome canli baseline 1265x529'da Recent Requests'in 2056 px asagida
+oldugunu dogruladi; hedefli dashboard/performance 98/98 PASS; full test 964/964
+PASS; ESLint PASS; web + customer-uploader TypeScript PASS; customer i18n 11
+dilde 595/595 PASS; Webpack Production build 277/277 PASS; diff check PASS.
+Production deploy yapilmadi.
+
 ### MANUAL-20260823-AUTH-SESSION-INCIDENT [P0] Bound Production auth bootstrap waits
 
 Durum: Done

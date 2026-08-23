@@ -531,6 +531,10 @@ test("customer dashboard surfaces missing profile details without changing setti
 
 test("customer dashboard shows one prioritized next best action", () => {
   const dashboard = readProjectFile("src", "components", "dashboard", "DashboardClient.tsx");
+  const needsResponsePriority = dashboard.indexOf("if (needsResponseCount > 0)");
+  const profilePriority = dashboard.indexOf("if (profileMissingItems.length > 0)");
+  const creditsPriority = dashboard.indexOf("if (credits <= 0)");
+  const activeOrdersPriority = dashboard.indexOf("if (activeCount > 0)");
 
   assert.match(dashboard, /const dashboardNextAction = useMemo\(\(\) => \{/);
   assert.match(dashboard, /profileMissingItems\.length > 0[\s\S]*Complete your customer profile/);
@@ -542,13 +546,17 @@ test("customer dashboard shows one prioritized next best action", () => {
   assert.match(dashboard, /href=\{dashboardNextAction\.href\}/);
   assert.match(dashboard, /\{dashboardNextAction\.cta\}/);
   assert.match(dashboard, /const NextActionIcon =/);
+  assert.ok(needsResponsePriority >= 0);
+  assert.ok(needsResponsePriority < profilePriority);
+  assert.ok(profilePriority < creditsPriority);
+  assert.ok(creditsPriority < activeOrdersPriority);
   assert.doesNotMatch(dashboard, /dashboardNextAction[\s\S]*(storage_path|signed_url|service_role|admin_note|metadata)/);
 });
 
 test("customer dashboard shows a safe preparation-to-delivery workflow map", () => {
   const dashboard = readProjectFile("src", "components", "dashboard", "DashboardClient.tsx");
   const workflowBlock =
-    dashboard.match(/const customerWorkflowSteps = useMemo[\s\S]*?<section className="mb-8 rounded-\[2rem\]/)?.[0] ??
+    dashboard.match(/<details className="group mb-4[\s\S]*?Customer Workflow Map[\s\S]*?customerWorkflowSteps\.map[\s\S]*?<\/details>/)?.[0] ??
     "";
 
   assert.match(dashboard, /const customerWorkflowSteps = useMemo/);
@@ -567,10 +575,50 @@ test("customer dashboard shows a safe preparation-to-delivery workflow map", () 
   assert.match(dashboard, /No raw file is handled by these prep tools/);
   assert.match(dashboard, /customerWorkflowSteps\.map/);
   assert.match(dashboard, /String\(index \+ 1\)\.padStart\(2, "0"\)/);
+  assert.match(workflowBlock, /<summary[\s\S]*focus-visible:ring-red-500/);
   assert.doesNotMatch(
     workflowBlock,
-    /storage_path|signed_url|service_role|admin_note|metadata|customer_email|raw|hex|fetch\(|\.rpc\(/i
+    /storage_path|signed_url|service_role|admin_note|metadata|customer_email|hex|fetch\(|\.rpc\(/i
   );
+});
+
+test("customer dashboard keeps recent order status first and secondary tools collapsed", () => {
+  const dashboard = readProjectFile("src", "components", "dashboard", "DashboardClient.tsx");
+  const recentRequests = dashboard.indexOf('data-dashboard-primary="recent-requests"');
+  const prioritySummary = dashboard.indexOf("data-dashboard-priority-summary", recentRequests);
+  const quickActions = dashboard.indexOf("Quick Actions", prioritySummary);
+  const workflow = dashboard.indexOf("Customer Workflow Map", quickActions);
+  const creditHistory = dashboard.indexOf("Credit History", workflow);
+  const recentOrderProjection =
+    dashboard.match(/\.from\("orders"\)[\s\S]*?\.limit\(5\)/)?.[0] ?? "";
+
+  assert.ok(recentRequests >= 0);
+  assert.ok(recentRequests < prioritySummary);
+  assert.ok(prioritySummary < quickActions);
+  assert.ok(quickActions < workflow);
+  assert.ok(workflow < creditHistory);
+  assert.match(dashboard, /<section[\s\S]*aria-labelledby="recent-requests-title"[\s\S]*orders\.map/);
+  assert.match(dashboard, /min-\[1180px\]:grid-cols-\[minmax\(0,1fr\)_20rem\]/);
+  assert.match(dashboard, /sm:grid-cols-\[minmax\(0,1fr\)_auto\]/);
+  assert.match(dashboard, /hidden w-64 shrink-0/);
+  assert.match(dashboard, /text-emerald-300 xl:flex/);
+  assert.match(dashboard, /order\.status === "customer_info_needed"/);
+  assert.match(dashboard, /Needs your response/);
+  assert.match(dashboard, /order\.status === "revision"/);
+  assert.match(dashboard, /Revision review in progress/);
+  assert.match(dashboard, /Open Delivery/);
+  assert.match(dashboard, /\? "Needs Response"[\s\S]*: "Details"/);
+  assert.match(dashboard, /<details[\s\S]*Quick Actions/);
+  assert.match(dashboard, /<details[\s\S]*Credit History/);
+  assert.match(dashboard, /aria-live="polite"/);
+  assert.match(dashboard, /if \(!customerId\) return null/);
+  assert.match(dashboard, /disabled=\{!customerReference\}/);
+  assert.match(
+    dashboard,
+    /\.select\(\s*"id, vehicle_brand, vehicle_model, vehicle_generation, vehicle_engine, service_type, credits_required, status, created_at"\s*\)/
+  );
+  assert.doesNotMatch(recentOrderProjection, /customer_email|notes/);
+  assert.doesNotMatch(dashboard, /Not Ready|min-h-\[220px\]|text-5xl|Need a new tuning file\?|Secure File Workflow/);
 });
 
 test("customer settings profile load errors block default editable profile state", () => {

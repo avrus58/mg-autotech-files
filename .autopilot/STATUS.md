@@ -4055,3 +4055,28 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
   Production DB migration'i ve musteri verisi mutasyonu yapilmadi. Kalan risk,
   dis Supabase Auth servisinin gelecekteki erisilebilirligidir; uygulama artik bu
   durumda sinirsiz beklemiyor.
+
+## 2026-08-23 21:00 +02:00 Customer dashboard laptop status-first sadelestirme
+
+- Canli dashboard 1265x529 laptop gorunumunde incelendi; `Recent Requests`
+  bolumunun yaklasik 2056 px asagida, ilk ekranin dort katindan sonra basladigi
+  dogrulandi.
+- Dashboard'un ilk calisma alani son bes talep, gorunen siparis asamasi ve tek
+  oncelikli aksiyon etrafinda yeniden siralandi. 1180 px ustunde talep listesi
+  ile kompakt aksiyon/sayac sutunu yan yana, daha dar laptoplarda talep listesi
+  ilk sirada tam genislikte kalir. Buyuk welcome/workflow/CTA tekrarlarinin
+  yerine araclar, workflow ve kredi gecmisi erisilebilir disclosure alanlarina
+  alindi.
+- `customer_info_needed`, revision ve completed durumlari ayri ve anlasilir
+  aksiyonlarla gosterildi. Musteri cevabi profil tamamlama aksiyonundan once
+  onceliklendirildi. Gecersiz Customer ID icin sahte referans uretilmesi
+  kaldirildi; son talep sorgusu yalniz ekranda kullanilan alanlarla sinirlandi.
+- Degisen dosyalar: `.autopilot/TASKS.md`, `.autopilot/STATUS.md`,
+  `src/components/dashboard/DashboardClient.tsx`,
+  `tests/ui-ux-safety.test.ts`.
+- Kontroller: hedefli dashboard/performance 98/98 PASS; full test 964/964 PASS;
+  ESLint PASS; web + customer-uploader renderer/electron/node TypeScript PASS;
+  customer i18n 11 dilde 595/595 PASS; Webpack Production build 277/277 PASS.
+- Production deploy, push, DB, env/secret ve musteri verisi degisikligi
+  yapilmadi. Degisiklik sonrasi oturumlu canli Chrome QA, owner Preview veya
+  Production yayin talimati verdiginde yayinlanmis artifact uzerinde yapilacak.

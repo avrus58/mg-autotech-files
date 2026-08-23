@@ -12,7 +12,6 @@ import {
   BellRing,
   BrainCircuit,
   Braces,
-  Car,
   CheckCircle2,
   Clipboard,
   Clock3,
@@ -36,8 +35,6 @@ import {
 
 type Order = {
   id: string;
-  customer_id: string;
-  customer_email: string | null;
   vehicle_brand: string | null;
   vehicle_model: string | null;
   vehicle_generation: string | null;
@@ -45,7 +42,6 @@ type Order = {
   service_type: string | null;
   credits_required: number | string | null;
   status: string | null;
-  notes: string | null;
   created_at: string;
 };
 
@@ -165,12 +161,12 @@ function formatDate(date: string) {
 }
 
 function formatCustomerReference(customerId: string | null) {
-  if (!customerId) return "MGA-10001";
+  if (!customerId) return null;
 
   const cleanId = customerId.trim().toUpperCase();
   if (/^MGA-\d{5,}$/.test(cleanId)) return cleanId;
   if (/^\d+$/.test(cleanId)) return `MGA-${cleanId.padStart(5, "0")}`;
-  return "MGA-10001";
+  return null;
 }
 
 export function DashboardClient() {
@@ -259,7 +255,7 @@ export function DashboardClient() {
           supabase
             .from("orders")
             .select(
-              "id, customer_id, customer_email, vehicle_brand, vehicle_model, vehicle_generation, vehicle_engine, service_type, credits_required, status, notes, created_at"
+              "id, vehicle_brand, vehicle_model, vehicle_generation, vehicle_engine, service_type, credits_required, status, created_at"
             )
             .eq("customer_id", userId)
             .order("created_at", { ascending: false })
@@ -424,18 +420,6 @@ export function DashboardClient() {
   const profileCompletionSummary = formatMissingProfileItems(profileMissingItems);
 
   const dashboardNextAction = useMemo(() => {
-    if (profileMissingItems.length > 0) {
-      return {
-        key: "profile",
-        eyebrow: "Account setup",
-        title: "Complete your customer profile",
-        description: `Add ${profileCompletionSummary} so support, billing and bank-transfer handling have the correct account details.`,
-        href: "/dashboard/settings",
-        cta: "Update Settings",
-        tone: "border-amber-700/40 bg-amber-950/20 text-amber-100",
-      };
-    }
-
     if (needsResponseCount > 0) {
       return {
         key: "response",
@@ -445,6 +429,18 @@ export function DashboardClient() {
         href: "/dashboard/orders?view=needs_response",
         cta: "Review Requests",
         tone: "border-orange-700/40 bg-orange-950/20 text-orange-100",
+      };
+    }
+
+    if (profileMissingItems.length > 0) {
+      return {
+        key: "profile",
+        eyebrow: "Account setup",
+        title: "Complete your customer profile",
+        description: `Add ${profileCompletionSummary} so support, billing and bank-transfer handling have the correct account details.`,
+        href: "/dashboard/settings",
+        cta: "Update Settings",
+        tone: "border-amber-700/40 bg-amber-950/20 text-amber-100",
       };
     }
 
@@ -527,9 +523,6 @@ export function DashboardClient() {
     [activeCount, completedCount, credits, needsResponseCount]
   );
 
-  const firstName =
-    email?.split("@")[0]?.replace(/[._-]/g, " ").split(" ")[0] ?? "Customer";
-
   const NextActionIcon =
     dashboardNextAction.key === "profile"
       ? Settings
@@ -544,12 +537,16 @@ export function DashboardClient() {
   const copyReference = async () => {
     if (!customerReference) return;
 
-    await navigator.clipboard.writeText(customerReference);
-    setCopiedReference(true);
+    try {
+      await navigator.clipboard.writeText(customerReference);
+      setCopiedReference(true);
 
-    window.setTimeout(() => {
+      window.setTimeout(() => {
+        setCopiedReference(false);
+      }, 1600);
+    } catch {
       setCopiedReference(false);
-    }, 1600);
+    }
   };
 
   const handleLogout = async () => {
@@ -602,8 +599,8 @@ export function DashboardClient() {
       <div className="fixed inset-0 -z-10 bg-[radial-gradient(circle_at_20%_0%,rgba(160,18,28,0.24),transparent_32%),linear-gradient(135deg,#050505,#0d0d0f_48%,#160608)]" />
 
       <div className="flex min-h-screen">
-        <aside className="hidden w-72 shrink-0 border-r border-white/10 bg-black/70 lg:block">
-          <div className="sticky top-0 flex h-screen flex-col px-5 py-6">
+        <aside className="hidden w-64 shrink-0 border-r border-white/10 bg-black/70 lg:block">
+          <div className="sticky top-0 flex h-screen flex-col px-4 py-5">
             <Link href="/" className="mb-8 flex items-center gap-3">
               <div className="relative flex h-12 w-12 items-center justify-center rounded-2xl border border-red-800/50 bg-[#111] shadow-lg shadow-red-950/40">
                 <div className="absolute -top-2 h-5 w-10 rounded-t-full border-t-2 border-red-700" />
@@ -618,9 +615,13 @@ export function DashboardClient() {
               </div>
             </Link>
 
-            <nav className="min-h-0 flex-1 space-y-2 overflow-y-auto pr-1 text-sm">
+            <nav
+              aria-label="Customer Dashboard"
+              className="min-h-0 flex-1 space-y-2 overflow-y-auto pr-1 text-sm"
+            >
               <Link
                 href="/dashboard"
+                aria-current="page"
                 className="flex items-center gap-3 rounded-2xl bg-red-950/35 px-4 py-3 font-bold text-white"
               >
                 <LayoutDashboard className="h-5 w-5 text-red-500" />
@@ -736,7 +737,7 @@ export function DashboardClient() {
 
         <section className="min-w-0 flex-1">
           <header className="sticky top-0 z-40 border-b border-white/10 bg-black/75 backdrop-blur-xl">
-            <div className="flex items-center justify-between gap-4 px-4 py-4 lg:px-8">
+            <div className="flex items-center justify-between gap-4 px-4 py-3 lg:px-6 xl:px-8">
               <div>
                 <div className="text-xs font-black uppercase tracking-[0.25em] text-red-600">
                   Customer Dashboard
@@ -747,12 +748,12 @@ export function DashboardClient() {
               </div>
 
               <div className="flex items-center gap-3">
-                <div className="hidden items-center gap-2 rounded-2xl border border-emerald-700/30 bg-emerald-950/20 px-4 py-3 text-xs font-black text-emerald-300 md:flex">
+                <div className="hidden items-center gap-2 rounded-2xl border border-emerald-700/30 bg-emerald-950/20 px-4 py-3 text-xs font-black text-emerald-300 xl:flex">
                   <span className="h-2 w-2 rounded-full bg-emerald-400" />
                   {liveRefreshing ? "Syncing" : "Live sync"}
                 </div>
 
-                <div className="hidden rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 md:block">
+                <div className="hidden rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 xl:block">
                   <div className="text-xs text-zinc-500">Logged in as</div>
                   <div className="max-w-[220px] truncate text-sm font-bold">
                     {email}
@@ -780,8 +781,11 @@ export function DashboardClient() {
             </div>
           </header>
 
-          <nav className="flex gap-2 overflow-x-auto border-b border-white/10 bg-black/45 px-4 py-3 lg:hidden">
-            <Link href="/dashboard" className="shrink-0 rounded-xl border border-red-800/50 bg-red-950/30 px-4 py-2.5 text-xs font-black">
+          <nav
+            aria-label="Customer Dashboard"
+            className="flex gap-2 overflow-x-auto border-b border-white/10 bg-black/45 px-4 py-3 lg:hidden"
+          >
+            <Link href="/dashboard" aria-current="page" className="shrink-0 rounded-xl border border-red-800/50 bg-red-950/30 px-4 py-2.5 text-xs font-black">
               <Home className="mr-2 inline h-4 w-4" />Dashboard
             </Link>
             <Link href="/new-request" className="shrink-0 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-xs font-black">
@@ -801,7 +805,7 @@ export function DashboardClient() {
             </Link>
           </nav>
 
-          <div className="px-4 py-8 lg:px-8">
+          <div className="px-4 py-5 lg:px-6 xl:px-8">
             {dashboardLoadError && dashboardReady && (
               <div
                 role="alert"
@@ -827,303 +831,20 @@ export function DashboardClient() {
               </div>
             )}
 
-            <div className="mb-8 grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
-              <div className="relative overflow-hidden rounded-[2rem] border border-red-900/50 bg-gradient-to-br from-red-950/30 via-white/[0.04] to-black p-7 shadow-2xl shadow-black/30">
-                <div className="absolute -right-24 -top-24 h-64 w-64 rounded-full bg-red-700/20 blur-3xl" />
-                <div className="absolute -bottom-24 -left-24 h-64 w-64 rounded-full bg-red-950/30 blur-3xl" />
-                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-red-500/60 to-transparent" />
-
-                <div className="relative">
-                  <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-red-800/50 bg-red-950/30 px-4 py-2 text-sm font-bold text-red-100">
-                    <ShieldCheck className="h-4 w-4 text-red-500" />
-                    Secure MG AutoTech customer workspace
-                  </div>
-
-                  <h2 className="text-4xl font-black md:text-5xl">
-                    Welcome back,{" "}
-                    <span className="text-red-500">
-                      {firstName.charAt(0).toUpperCase() + firstName.slice(1)}
-                    </span>
-                  </h2>
-
-                  <p className="mt-4 max-w-3xl leading-8 text-zinc-400">
-                    Manage file requests, credits, completed files and support
-                    communication from your private MG AutoTech dashboard.
-                  </p>
-
-                  <div className="mt-7 grid gap-3 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
-                    <Link
-                      href="/new-request"
-                      className="rounded-2xl bg-[#b1121b] px-5 py-4 text-center font-black text-white shadow-xl shadow-red-950/40 transition hover:-translate-y-1 hover:bg-[#c91824]"
-                    >
-                      <Upload className="mr-2 inline h-5 w-5" />
-                      New Request
-                    </Link>
-
-                    <Link
-                      href="/dashboard/credits"
-                      className="rounded-2xl border border-white/10 bg-white/[0.06] px-5 py-4 text-center font-black text-white transition hover:-translate-y-1 hover:bg-white/10"
-                    >
-                      <CreditCard className="mr-2 inline h-5 w-5" />
-                      Buy Credits
-                    </Link>
-
-                    <Link
-                      href="/dashboard/file-expert"
-                      className="rounded-2xl border border-red-800/50 bg-red-950/25 px-5 py-4 text-center font-black text-white transition hover:-translate-y-1 hover:bg-red-950/40"
-                    >
-                      <BrainCircuit className="mr-2 inline h-5 w-5" />
-                      AI File Expert
-                    </Link>
-
-                    <Link
-                      href="/dashboard/log-analysis"
-                      className="rounded-2xl border border-cyan-800/45 bg-cyan-950/20 px-5 py-4 text-center font-black text-white transition hover:-translate-y-1 hover:bg-cyan-950/35"
-                    >
-                      <Activity className="mr-2 inline h-5 w-5 text-cyan-300" />
-                      Log Analysis
-                    </Link>
-
-                    <Link
-                      href="/dashboard/settings"
-                      className="rounded-2xl border border-white/10 bg-white/[0.06] px-5 py-4 text-center font-black text-white transition hover:-translate-y-1 hover:bg-white/10"
-                    >
-                      <Settings className="mr-2 inline h-5 w-5" />
-                      Settings
-                    </Link>
-
-                    <a
-                      href="mailto:info@mgautotech.de"
-                      className="rounded-2xl border border-white/10 bg-white/[0.06] px-5 py-4 text-center font-black text-white transition hover:-translate-y-1 hover:bg-white/10"
-                    >
-                      <Wrench className="mr-2 inline h-5 w-5" />
-                      Support
-                    </a>
-                  </div>
-                </div>
-              </div>
-
-              <div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 shadow-2xl shadow-black/20">
-                <div className="mb-5 flex items-center justify-between">
-                  <div>
-                    <div className="text-sm font-black uppercase tracking-[0.22em] text-red-600">
-                      Customer ID
-                    </div>
-                    <h3 className="mt-2 text-2xl font-black">
-                      Payment / Support Reference
-                    </h3>
-                  </div>
-
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-red-900/40 bg-red-950/25">
-                    <User className="h-6 w-6 text-red-500" />
-                  </div>
-                </div>
-
-                <div className="rounded-2xl border border-white/10 bg-black/35 p-4">
-                  <div className="text-xs font-black uppercase tracking-[0.18em] text-zinc-500">
-                    Bank Transfer Reference
-                  </div>
-                  <div className="mt-2 break-words text-lg font-black">
-                    {customerReference}
-                  </div>
-                </div>
-
-                <button
-                  onClick={copyReference}
-                  className="mt-4 flex w-full items-center justify-center rounded-xl border border-white/10 bg-white/[0.06] px-4 py-3 text-sm font-black text-white transition hover:bg-white/10"
-                >
-                  <Clipboard className="mr-2 h-4 w-4" />
-                  {copiedReference ? "Copied" : "Copy Reference"}
-                </button>
-
-                <p className="mt-4 text-xs leading-5 text-zinc-500">
-                  Use this Customer ID as payment reference for bank transfer
-                  top-ups and support messages.
-                </p>
-              </div>
-            </div>
-
             <div
-              className={`mb-8 rounded-[2rem] border p-5 shadow-2xl shadow-black/20 ${dashboardNextAction.tone}`}
+              data-dashboard-primary="recent-requests"
+              className="mb-6 grid gap-5 min-[1180px]:grid-cols-[minmax(0,1fr)_20rem]"
             >
-              <div className="grid gap-5 lg:grid-cols-[auto_1fr_auto] lg:items-center">
-                <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-black/30">
-                  <NextActionIcon className="h-7 w-7" />
-                </div>
-
-                <div className="min-w-0">
-                  <div className="text-xs font-black uppercase tracking-[0.22em]">
-                    Next best action - {dashboardNextAction.eyebrow}
-                  </div>
-                  <h2 className="mt-2 break-words text-2xl font-black">
-                    {dashboardNextAction.title}
-                  </h2>
-                  <p className="mt-2 max-w-3xl text-sm leading-6 opacity-85">
-                    {dashboardNextAction.description}
-                  </p>
-                </div>
-
-                <Link
-                  href={dashboardNextAction.href}
-                  className="inline-flex w-full items-center justify-center rounded-2xl bg-white px-5 py-3 text-sm font-black text-black transition hover:-translate-y-0.5 hover:bg-zinc-100 lg:w-auto"
-                >
-                  {dashboardNextAction.cta}
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
-              </div>
-            </div>
-
-            <section className="mb-8 rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 shadow-2xl shadow-black/20">
-              <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-                <div>
-                  <div className="text-sm font-black uppercase tracking-[0.25em] text-red-600">
-                    Customer Workflow Map
-                  </div>
-                  <h2 className="mt-2 text-3xl font-black">
-                    From preparation to delivery
-                  </h2>
-                  <p className="mt-3 max-w-3xl text-sm leading-6 text-zinc-400">
-                    Use the safe preparation tools first, submit through the secure
-                    upload flow, then track every request from your private dashboard.
-                  </p>
-                </div>
-
-                <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-xs font-black uppercase tracking-[0.16em] text-emerald-200">
-                  No raw file is handled by these prep tools
-                </div>
-              </div>
-
-              <div className="mt-6 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
-                {customerWorkflowSteps.map((step, index) => {
-                  const StepIcon = step.icon;
-
-                  return (
-                    <Link
-                      key={step.title}
-                      href={step.href}
-                      className="group flex min-h-[220px] flex-col rounded-3xl border border-white/10 bg-black/25 p-5 transition hover:-translate-y-1 hover:border-red-800/60 hover:bg-white/[0.05]"
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-red-900/40 bg-red-950/25">
-                          <StepIcon className="h-6 w-6 text-red-400" />
-                        </div>
-                        <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs font-black text-zinc-400">
-                          {String(index + 1).padStart(2, "0")}
-                        </span>
-                      </div>
-
-                      <h3 className="mt-5 text-xl font-black">{step.title}</h3>
-                      <p className="mt-3 flex-1 text-sm leading-6 text-zinc-400">
-                        {step.detail}
-                      </p>
-
-                      <div className="mt-5 flex items-center justify-between gap-3 border-t border-white/10 pt-4">
-                        <span className="text-xs font-black uppercase tracking-[0.14em] text-red-300">
-                          {step.metric}
-                        </span>
-                        <ArrowRight className="h-4 w-4 text-zinc-500 transition group-hover:translate-x-1 group-hover:text-white" />
-                      </div>
-                    </Link>
-                  );
-                })}
-              </div>
-            </section>
-
-            {profileMissingItems.length > 0 && (
-              <div className="mb-8 rounded-[2rem] border border-amber-700/40 bg-amber-950/20 p-5 shadow-2xl shadow-black/20">
-                <div className="grid gap-5 lg:grid-cols-[1fr_auto] lg:items-center">
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-2 text-xs font-black uppercase tracking-[0.2em] text-amber-200">
-                      <User className="h-4 w-4 shrink-0" />
-                      Profile completion
-                    </div>
-
-                    <h2 className="mt-2 break-words text-2xl font-black">
-                      Complete your customer profile
-                    </h2>
-
-                    <p className="mt-2 max-w-3xl text-sm leading-6 text-amber-100/80">
-                      Add {profileCompletionSummary} so support and billing can
-                      use your saved account details.
-                    </p>
-
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      {profileMissingItems.map((item) => (
-                        <span
-                          key={item}
-                          className="max-w-full break-words rounded-full border border-amber-600/30 bg-black/25 px-3 py-1 text-xs font-bold text-amber-100"
-                        >
-                          {item}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-
-                  <Link
-                    href="/dashboard/settings"
-                    className="inline-flex w-full items-center justify-center rounded-2xl bg-amber-300 px-5 py-3 text-sm font-black text-black transition hover:bg-amber-200 lg:w-auto"
-                  >
-                    <Settings className="mr-2 h-4 w-4" />
-                    Update Settings
-                  </Link>
-                </div>
-              </div>
-            )}
-
-            <div className="mb-8 grid gap-5 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
-              <div className="rounded-3xl border border-red-900/50 bg-red-950/25 p-6 shadow-2xl shadow-black/20">
-                <CreditCard className="mb-4 h-8 w-8 text-red-500" />
-                <div className="text-sm text-zinc-400">Available Credits</div>
-                <div className="mt-2 text-5xl font-black">{credits}</div>
-              </div>
-
-              <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-6 transition hover:-translate-y-1 hover:border-red-800/60">
-                <Clock3 className="mb-4 h-8 w-8 text-blue-400" />
-                <div className="text-sm text-zinc-400">Active Orders</div>
-                <div className="mt-2 text-5xl font-black">{activeCount}</div>
-              </div>
-
-              <Link
-                href="/dashboard/orders?view=needs_response"
-                className="min-w-0 rounded-3xl border border-orange-700/40 bg-orange-950/20 p-6 transition hover:-translate-y-1 hover:border-orange-500/70"
+              <section
+                aria-labelledby="recent-requests-title"
+                className="min-w-0 rounded-3xl border border-white/10 bg-white/[0.04] p-4 shadow-2xl shadow-black/20 lg:p-5"
               >
-                <Clipboard className="mb-4 h-8 w-8 text-orange-300" />
-                <div className="break-words text-sm text-orange-100">
-                  Needs Response
-                </div>
-                <div className="mt-2 text-5xl font-black">{needsResponseCount}</div>
-                <div className="mt-2 break-words text-xs font-bold text-orange-200/80">
-                  Waiting for your information
-                </div>
-              </Link>
-
-              <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-6 transition hover:-translate-y-1 hover:border-red-800/60">
-                <FileText className="mb-4 h-8 w-8 text-amber-400" />
-                <div className="text-sm text-zinc-400">Pending Requests</div>
-                <div className="mt-2 text-5xl font-black">{pendingCount}</div>
-              </div>
-
-              <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-6 transition hover:-translate-y-1 hover:border-red-800/60">
-                <Gauge className="mb-4 h-8 w-8 text-red-500" />
-                <div className="text-sm text-zinc-400">In Progress</div>
-                <div className="mt-2 text-5xl font-black">{inProgressCount}</div>
-              </div>
-
-              <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-6 transition hover:-translate-y-1 hover:border-emerald-700/60">
-                <CheckCircle2 className="mb-4 h-8 w-8 text-emerald-400" />
-                <div className="text-sm text-zinc-400">Completed</div>
-                <div className="mt-2 text-5xl font-black">{completedCount}</div>
-              </div>
-            </div>
-
-            <div className="mb-8 grid gap-6 xl:grid-cols-[1.25fr_.75fr]">
-              <div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6">
-                <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
-                    <div className="text-sm font-black uppercase tracking-[0.25em] text-red-600">
+                    <div className="text-xs font-black uppercase tracking-[0.2em] text-red-500">
                       Recent Requests
                     </div>
-                    <h2 className="mt-2 text-3xl font-black">
+                    <h2 id="recent-requests-title" className="mt-1 text-2xl font-black">
                       Your latest file orders
                     </h2>
                   </div>
@@ -1131,208 +852,402 @@ export function DashboardClient() {
                   <div className="flex flex-wrap gap-2">
                     <Link
                       href="/dashboard/orders"
-                      className="rounded-xl border border-white/10 bg-white/[0.04] px-5 py-3 text-sm font-black text-white transition hover:bg-white/10"
+                      className="inline-flex items-center justify-center rounded-xl border border-white/10 bg-black/25 px-4 py-2.5 text-xs font-black text-white transition hover:bg-white/10"
                     >
-                      <History className="mr-2 inline h-4 w-4" />
+                      <History className="mr-2 h-4 w-4" />
                       View All Orders
                     </Link>
                     <Link
                       href="/new-request"
-                      className="rounded-xl bg-[#b1121b] px-5 py-3 text-sm font-black text-white transition hover:-translate-y-1 hover:bg-[#c91824]"
+                      className="inline-flex items-center justify-center rounded-xl bg-[#b1121b] px-4 py-2.5 text-xs font-black text-white transition hover:bg-[#c91824]"
                     >
-                      <Plus className="mr-2 inline h-4 w-4" />
+                      <Plus className="mr-2 h-4 w-4" />
                       New Request
                     </Link>
                   </div>
                 </div>
 
                 {orders.length === 0 ? (
-                  <div className="rounded-3xl border border-dashed border-white/15 bg-black/25 p-10 text-center">
-                    <Upload className="mx-auto mb-4 h-10 w-10 text-red-600" />
-                    <h3 className="text-xl font-black">No file request yet</h3>
-                    <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-zinc-400">
+                  <div className="rounded-2xl border border-dashed border-white/15 bg-black/25 p-6 text-center">
+                    <Upload className="mx-auto mb-3 h-8 w-8 text-red-500" />
+                    <h3 className="text-lg font-black">No file request yet</h3>
+                    <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-zinc-400">
                       Create your first ECU/TCU file request and it will appear here.
                     </p>
                     <Link
                       href="/new-request"
-                      className="mt-6 inline-flex rounded-xl bg-[#b1121b] px-5 py-3 font-black text-white transition hover:bg-[#c91824]"
+                      className="mt-4 inline-flex rounded-xl bg-[#b1121b] px-4 py-2.5 text-sm font-black text-white transition hover:bg-[#c91824]"
                     >
                       Create File Request
                     </Link>
                   </div>
                 ) : (
-                  <div className="min-w-0 overflow-hidden rounded-3xl border border-white/10">
-                    <div className="hidden grid-cols-[1.4fr_.8fr_.7fr_.7fr_.9fr] gap-4 bg-black/40 px-5 py-4 text-xs font-black uppercase tracking-[0.18em] text-zinc-500 md:grid">
-                      <div>Vehicle / Request</div>
-                      <div>Status</div>
-                      <div>Credit</div>
-                      <div>Date</div>
-                      <div className="text-right">Actions</div>
-                    </div>
-
+                  <div className="min-w-0 overflow-hidden rounded-2xl border border-white/10">
                     <div className="divide-y divide-white/10">
-                      {orders.map((order) => (
-                        <div
-                          key={order.id}
-                          className="grid min-w-0 grid-cols-1 gap-4 bg-black/20 px-4 py-5 transition hover:bg-white/[0.04] md:grid-cols-[1.4fr_.8fr_.7fr_.7fr_.9fr] md:items-center md:px-5 md:py-4"
-                        >
-                          <div className="min-w-0">
-                            <div className="break-words font-black">
-                              {order.vehicle_brand || "Vehicle"}{" "}
-                              {order.vehicle_model || ""}
+                      {orders.map((order) => {
+                        const isCompleted = order.status === "completed";
+                        const needsCustomerResponse =
+                          order.status === "customer_info_needed";
+                        const isRevision = order.status === "revision";
+                        const OrderActionIcon = isCompleted
+                          ? Download
+                          : needsCustomerResponse
+                            ? Clipboard
+                            : Eye;
+
+                        return (
+                          <article
+                            key={order.id}
+                            className="grid min-w-0 gap-3 bg-black/20 p-4 transition hover:bg-white/[0.04] sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"
+                          >
+                            <div className="min-w-0">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <h3 className="break-words font-black">
+                                  {order.vehicle_brand || "Vehicle"}{" "}
+                                  {order.vehicle_model || "request"}
+                                </h3>
+                                <span
+                                  className={`rounded-full border px-2.5 py-1 text-[11px] font-black ${needsCustomerResponse
+                                    ? "border-orange-700/50 bg-orange-950/30 text-orange-200"
+                                    : isRevision
+                                      ? "border-purple-700/50 bg-purple-950/30 text-purple-200"
+                                      : getStatusStyle(order.status)}`}
+                                >
+                                  {needsCustomerResponse
+                                    ? "Needs your response"
+                                    : isRevision
+                                      ? "Revision review in progress"
+                                      : formatStatus(order.status)}
+                                </span>
+                              </div>
+
+                              <p className="mt-1 break-words text-sm text-zinc-400">
+                                {order.vehicle_generation || "Generation not set"} ·{" "}
+                                {order.vehicle_engine || "Engine not set"}
+                              </p>
+                              <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs">
+                                <span className="font-bold text-red-300">
+                                  {order.service_type || "Service not set"}
+                                </span>
+                                <time
+                                  dateTime={order.created_at}
+                                  className="text-zinc-400"
+                                >
+                                  {formatDate(order.created_at)}
+                                </time>
+                                <span className="text-zinc-400">
+                                  {Number(order.credits_required ?? 0)} credits
+                                </span>
+                              </div>
                             </div>
-                            <div className="mt-1 break-words text-sm text-zinc-400">
-                              {order.vehicle_generation || "Generation not set"} ·{" "}
-                              {order.vehicle_engine || "Engine not set"}
-                            </div>
-                            <div className="mt-2 break-words text-xs font-bold text-red-400">
-                              {order.service_type || "Service not set"}
-                            </div>
-                          </div>
-
-                          <div className="flex flex-wrap items-center gap-3 md:block">
-                            <span className="text-xs font-black uppercase tracking-[0.14em] text-zinc-600 md:hidden">
-                              Status
-                            </span>
-                            <span
-                              className={`rounded-full border px-3 py-1 text-xs font-black ${getStatusStyle(
-                                order.status
-                              )}`}
-                            >
-                              {formatStatus(order.status)}
-                            </span>
-                          </div>
-
-                          <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-black/25 px-4 py-3 md:block md:border-0 md:bg-transparent md:px-0 md:py-0">
-                            <span className="text-xs font-black uppercase tracking-[0.14em] text-zinc-600 md:hidden">
-                              Credit
-                            </span>
-                            <span className="font-black">
-                              {Number(order.credits_required ?? 0)}
-                            </span>
-                          </div>
-
-                          <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-zinc-400 md:block md:border-0 md:bg-transparent md:px-0 md:py-0 md:text-left">
-                            <span className="text-xs font-black uppercase tracking-[0.14em] text-zinc-600 md:hidden">
-                              Date
-                            </span>
-                            <span>{formatDate(order.created_at)}</span>
-                          </div>
-
-                          <div className="flex min-w-0 flex-col gap-2 text-left md:items-end md:text-right">
-                            {order.status === "completed" ? (
-                              <Link
-                                href={`/dashboard/orders/${order.id}`}
-                                className="w-full rounded-xl border border-emerald-700/40 bg-emerald-950/30 px-4 py-3 text-xs font-black text-emerald-300 transition hover:bg-emerald-900/40 md:w-auto"
-                              >
-                                <Download className="mr-2 inline h-4 w-4" />
-                                Open Delivery
-                              </Link>
-                            ) : (
-                              <span className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-center text-xs font-bold text-zinc-500 md:w-auto">
-                                Not Ready
-                              </span>
-                            )}
 
                             <Link
                               href={`/dashboard/orders/${order.id}`}
-                              className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-center text-xs font-black text-white transition hover:bg-white/10 md:w-auto"
+                              aria-label={`${isCompleted ? "Open delivery" : needsCustomerResponse ? "Respond to" : "View"} ${order.vehicle_brand || "vehicle"} ${order.vehicle_model || "request"}`}
+                              className="inline-flex w-full items-center justify-center rounded-xl border border-white/10 bg-white/[0.05] px-4 py-2.5 text-xs font-black text-white transition hover:border-red-800/60 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 sm:w-auto"
                             >
-                              <Eye className="mr-2 inline h-4 w-4" />
-                              Details
+                              <OrderActionIcon className="mr-2 h-4 w-4" />
+                              {isCompleted
+                                ? "Open Delivery"
+                                : needsCustomerResponse
+                                  ? "Needs Response"
+                                  : "Details"}
                             </Link>
-                          </div>
-                        </div>
-                      ))}
+                          </article>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
-              </div>
+              </section>
 
-              <div className="space-y-6">
-                <div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6">
-                  <div className="text-sm font-black uppercase tracking-[0.25em] text-red-600">
-                    Quick Actions
+              <aside
+                aria-label="Customer Dashboard"
+                className="space-y-4"
+              >
+                <div
+                  className={`rounded-3xl border p-4 shadow-2xl shadow-black/20 ${dashboardNextAction.tone}`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-black/30">
+                      <NextActionIcon className="h-5 w-5" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="break-words text-[11px] font-black uppercase tracking-[0.18em]">
+                        Next best action - {dashboardNextAction.eyebrow}
+                      </div>
+                      <h2 className="mt-1 break-words text-lg font-black">
+                        {dashboardNextAction.title}
+                      </h2>
+                    </div>
                   </div>
 
-                  <div className="mt-5 grid gap-3">
-                    <Link
-                      href="/new-request"
-                      className="flex items-center justify-between rounded-2xl border border-white/10 bg-black/30 p-5 transition hover:-translate-y-1 hover:border-red-800/60"
-                    >
-                      <span className="flex items-center gap-3 font-black">
-                        <Upload className="h-5 w-5 text-red-600" />
-                        Upload New File
-                      </span>
-                      <ArrowRight className="h-5 w-5 text-zinc-500" />
-                    </Link>
+                  <p className="mt-3 text-sm leading-6 opacity-85">
+                    {dashboardNextAction.description}
+                  </p>
 
-                    <Link
-                      href="/dashboard/credits"
-                      className="flex items-center justify-between rounded-2xl border border-white/10 bg-black/30 p-5 transition hover:-translate-y-1 hover:border-red-800/60"
-                    >
-                      <span className="flex items-center gap-3 font-black">
-                        <CreditCard className="h-5 w-5 text-red-600" />
-                        Buy Credits
-                      </span>
-                      <ArrowRight className="h-5 w-5 text-zinc-500" />
-                    </Link>
+                  {dashboardNextAction.key === "profile" &&
+                    profileMissingItems.length > 0 && (
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {profileMissingItems.map((item) => (
+                          <span
+                            key={item}
+                            className="max-w-full break-words rounded-full border border-amber-600/30 bg-black/25 px-2.5 py-1 text-[11px] font-bold text-amber-100"
+                          >
+                            {item}
+                          </span>
+                        ))}
+                      </div>
+                    )}
 
-                    <Link
-                      href="/dashboard/file-expert"
-                      className="flex items-center justify-between rounded-2xl border border-white/10 bg-black/30 p-5 transition hover:-translate-y-1 hover:border-red-800/60"
-                    >
-                      <span className="flex items-center gap-3 font-black">
-                        <BrainCircuit className="h-5 w-5 text-red-600" />
-                        AI File Expert
-                      </span>
-                      <ArrowRight className="h-5 w-5 text-zinc-500" />
-                    </Link>
-
-                    <Link
-                      href="/dashboard/settings"
-                      className="flex items-center justify-between rounded-2xl border border-white/10 bg-black/30 p-5 transition hover:-translate-y-1 hover:border-red-800/60"
-                    >
-                      <span className="flex items-center gap-3 font-black">
-                        <Settings className="h-5 w-5 text-red-600" />
-                        Account Settings
-                      </span>
-                      <ArrowRight className="h-5 w-5 text-zinc-500" />
-                    </Link>
-
-                    <a
-                      href="mailto:info@mgautotech.de"
-                      className="flex items-center justify-between rounded-2xl border border-white/10 bg-black/30 p-5 transition hover:-translate-y-1 hover:border-red-800/60"
-                    >
-                      <span className="flex items-center gap-3 font-black">
-                        <Wrench className="h-5 w-5 text-red-600" />
-                        Technical Support
-                      </span>
-                      <ArrowRight className="h-5 w-5 text-zinc-500" />
-                    </a>
-                  </div>
+                  <Link
+                    href={dashboardNextAction.href}
+                    className="mt-4 inline-flex w-full items-center justify-center rounded-xl bg-white px-4 py-2.5 text-xs font-black text-black transition hover:bg-zinc-100"
+                  >
+                    {dashboardNextAction.cta}
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
                 </div>
 
-                <div className="rounded-[2rem] border border-red-900/40 bg-red-950/20 p-6">
-                  <ShieldCheck className="mb-5 h-10 w-10 text-red-500" />
-                  <h3 className="text-2xl font-black">Secure File Workflow</h3>
-                  <p className="mt-3 text-sm leading-6 text-zinc-400">
-                    Your orders, credits and file requests are connected to your
-                    customer account and protected with database access rules.
+                <section
+                  aria-label="Customer Dashboard"
+                  data-dashboard-priority-summary
+                  className="grid grid-cols-2 gap-2 sm:grid-cols-4 min-[1180px]:grid-cols-2"
+                >
+                  <Link
+                    href="/dashboard/orders"
+                    className="min-w-0 rounded-2xl border border-blue-800/35 bg-blue-950/15 p-3 transition hover:border-blue-500/60 hover:bg-blue-950/25"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-2xl font-black">{activeCount}</span>
+                      <Clock3 className="h-4 w-4 shrink-0 text-blue-400" />
+                    </div>
+                    <div className="mt-1 break-words text-[11px] font-black uppercase tracking-[0.12em] text-blue-200">
+                      Active Orders
+                    </div>
+                    <div className="mt-1 flex flex-wrap gap-x-1 text-[11px] text-zinc-400">
+                      <span>
+                        {pendingCount} <span>Pending Requests</span>
+                      </span>
+                      <span aria-hidden="true">·</span>
+                      <span>
+                        {inProgressCount} <span>In Progress</span>
+                      </span>
+                    </div>
+                  </Link>
+
+                  <Link
+                    href="/dashboard/orders?view=needs_response"
+                    className="min-w-0 rounded-2xl border border-orange-700/40 bg-orange-950/20 p-3 transition hover:border-orange-500/70 hover:bg-orange-950/30"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-2xl font-black">{needsResponseCount}</span>
+                      <Clipboard className="h-4 w-4 shrink-0 text-orange-300" />
+                    </div>
+                    <div className="mt-1 break-words text-[11px] font-black uppercase tracking-[0.12em] text-orange-100">
+                      Needs Response
+                    </div>
+                    <div className="mt-1 break-words text-[11px] text-orange-200/80">
+                      Waiting for your information
+                    </div>
+                  </Link>
+
+                  <Link
+                    href="/dashboard/orders?view=completed"
+                    className="min-w-0 rounded-2xl border border-emerald-800/35 bg-emerald-950/15 p-3 transition hover:border-emerald-600/60 hover:bg-emerald-950/25"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-2xl font-black">{completedCount}</span>
+                      <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" />
+                    </div>
+                    <div className="mt-1 break-words text-[11px] font-black uppercase tracking-[0.12em] text-emerald-200">
+                      Completed
+                    </div>
+                  </Link>
+
+                  <Link
+                    href="/dashboard/credits"
+                    className="min-w-0 rounded-2xl border border-red-900/45 bg-red-950/20 p-3 transition hover:border-red-700/70 hover:bg-red-950/30"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-2xl font-black">{credits}</span>
+                      <CreditCard className="h-4 w-4 shrink-0 text-red-400" />
+                    </div>
+                    <div className="mt-1 break-words text-[11px] font-black uppercase tracking-[0.12em] text-red-200">
+                      Credits
+                    </div>
+                  </Link>
+                </section>
+
+                <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="text-[11px] font-black uppercase tracking-[0.18em] text-red-500">
+                        Customer ID
+                      </div>
+                      <div className="mt-1 break-words font-black">
+                        {customerReference ?? "Not available"}
+                      </div>
+                    </div>
+                    <User className="h-5 w-5 shrink-0 text-red-400" />
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={copyReference}
+                    disabled={!customerReference}
+                    className="mt-3 inline-flex w-full items-center justify-center rounded-xl border border-white/10 bg-black/25 px-4 py-2.5 text-xs font-black text-white transition hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <Clipboard className="mr-2 h-4 w-4" />
+                    <span aria-live="polite">
+                      {copiedReference ? "Copied" : "Copy Reference"}
+                    </span>
+                  </button>
+                  <p className="mt-3 text-xs leading-5 text-zinc-400">
+                    Use this Customer ID as payment reference for bank transfer
+                    top-ups and support messages.
                   </p>
                 </div>
-              </div>
+              </aside>
             </div>
 
-            <div className="grid gap-6 xl:grid-cols-[.9fr_1.1fr]">
-              <div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6">
-                <div className="mb-5 flex items-center justify-between gap-3">
-                  <div className="text-sm font-black uppercase tracking-[0.25em] text-red-600">
+            <details className="group mb-4 overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04]">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-4 py-4 marker:hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-red-500">
+                <span className="min-w-0">
+                  <span className="block break-words text-lg font-black">
+                    Quick Actions
+                  </span>
+                </span>
+                <ArrowRight className="h-5 w-5 shrink-0 text-zinc-400 transition group-open:rotate-90" />
+              </summary>
+
+              <div className="border-t border-white/10 p-4">
+                <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
+                <Link
+                  href="/dashboard/file-expert"
+                  className="flex min-w-0 items-center justify-between rounded-xl border border-white/10 bg-black/25 px-3 py-3 text-sm font-black transition hover:border-red-800/60 hover:bg-white/[0.06]"
+                >
+                  <span className="flex min-w-0 items-center gap-2">
+                    <BrainCircuit className="h-4 w-4 shrink-0 text-red-400" />
+                    <span className="break-words">AI File Expert</span>
+                  </span>
+                  <ArrowRight className="h-4 w-4 shrink-0 text-zinc-500" />
+                </Link>
+                <Link
+                  href="/dashboard/log-analysis"
+                  className="flex min-w-0 items-center justify-between rounded-xl border border-white/10 bg-black/25 px-3 py-3 text-sm font-black transition hover:border-cyan-800/60 hover:bg-white/[0.06]"
+                >
+                  <span className="flex min-w-0 items-center gap-2">
+                    <Activity className="h-4 w-4 shrink-0 text-cyan-300" />
+                    <span className="break-words">Datalog Studio</span>
+                  </span>
+                  <ArrowRight className="h-4 w-4 shrink-0 text-zinc-500" />
+                </Link>
+                <Link
+                  href="/dashboard/credits"
+                  className="flex min-w-0 items-center justify-between rounded-xl border border-white/10 bg-black/25 px-3 py-3 text-sm font-black transition hover:border-red-800/60 hover:bg-white/[0.06]"
+                >
+                  <span className="flex min-w-0 items-center gap-2">
+                    <CreditCard className="h-4 w-4 shrink-0 text-red-400" />
+                    <span className="break-words">Buy Credits</span>
+                  </span>
+                  <ArrowRight className="h-4 w-4 shrink-0 text-zinc-500" />
+                </Link>
+                <Link
+                  href="/dashboard/settings"
+                  className="flex min-w-0 items-center justify-between rounded-xl border border-white/10 bg-black/25 px-3 py-3 text-sm font-black transition hover:border-red-800/60 hover:bg-white/[0.06]"
+                >
+                  <span className="flex min-w-0 items-center gap-2">
+                    <Settings className="h-4 w-4 shrink-0 text-red-400" />
+                    <span className="break-words">Settings</span>
+                  </span>
+                  <ArrowRight className="h-4 w-4 shrink-0 text-zinc-500" />
+                </Link>
+                <a
+                  href="mailto:info@mgautotech.de"
+                  className="flex min-w-0 items-center justify-between rounded-xl border border-white/10 bg-black/25 px-3 py-3 text-sm font-black transition hover:border-red-800/60 hover:bg-white/[0.06]"
+                >
+                  <span className="flex min-w-0 items-center gap-2">
+                    <Wrench className="h-4 w-4 shrink-0 text-red-400" />
+                    <span className="break-words">Support</span>
+                  </span>
+                  <ArrowRight className="h-4 w-4 shrink-0 text-zinc-500" />
+                </a>
+                </div>
+              </div>
+            </details>
+
+            <details className="group mb-4 overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04]">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-4 py-4 marker:hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-red-500">
+                <span className="min-w-0">
+                  <span className="block text-xs font-black uppercase tracking-[0.2em] text-red-500">
+                    Customer Workflow Map
+                  </span>
+                  <span className="mt-1 block break-words text-lg font-black">
+                    From preparation to delivery
+                  </span>
+                </span>
+                <ArrowRight className="h-5 w-5 shrink-0 text-zinc-400 transition group-open:rotate-90" />
+              </summary>
+
+              <div className="border-t border-white/10 p-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="max-w-3xl text-sm leading-6 text-zinc-400">
+                    Use the safe preparation tools first, submit through the secure
+                    upload flow, then track every request from your private dashboard.
+                  </p>
+                  <span className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-3 py-2 text-xs font-black text-emerald-200">
+                    No raw file is handled by these prep tools
+                  </span>
+                </div>
+
+                <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
+                  {customerWorkflowSteps.map((step, index) => {
+                    const StepIcon = step.icon;
+
+                    return (
+                      <Link
+                        key={step.title}
+                        href={step.href}
+                        className="group/step min-w-0 rounded-2xl border border-white/10 bg-black/25 p-3 transition hover:border-red-800/60 hover:bg-white/[0.05]"
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <StepIcon className="h-4 w-4 shrink-0 text-red-400" />
+                          <span className="text-[11px] font-black text-zinc-500">
+                            {String(index + 1).padStart(2, "0")}
+                          </span>
+                        </div>
+                        <h3 className="mt-3 break-words text-sm font-black">
+                          {step.title}
+                        </h3>
+                        <p className="mt-1 break-words text-xs leading-5 text-zinc-400">
+                          {step.detail}
+                        </p>
+                        <div className="mt-3 break-words text-[11px] font-black uppercase tracking-[0.12em] text-red-300">
+                          {step.metric}
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            </details>
+
+            <details className="group overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04]">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-4 py-4 marker:hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-red-500">
+                <span className="min-w-0">
+                  <span className="block text-xs font-black uppercase tracking-[0.2em] text-red-500">
                     Credit History
-                  </div>
+                  </span>
+                </span>
+                <ArrowRight className="h-5 w-5 shrink-0 text-zinc-400 transition group-open:rotate-90" />
+              </summary>
+
+              <div className="border-t border-white/10 p-4">
+                <div className="mb-4 flex justify-end">
                   <Link
                     href="/dashboard/credits/history"
-                    className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-black text-white transition hover:bg-white/10"
+                    className="rounded-xl border border-white/10 bg-black/25 px-3 py-2 text-xs font-black text-white transition hover:bg-white/10"
                   >
                     View All
                   </Link>
@@ -1407,34 +1322,7 @@ export function DashboardClient() {
                 )}
               </div>
 
-              <div className="rounded-[2rem] border border-white/10 bg-[#b1121b] p-7">
-                <Car className="mb-5 h-10 w-10 text-white" />
-                <h3 className="text-3xl font-black">
-                  Need a new tuning file?
-                </h3>
-                <p className="mt-3 max-w-2xl text-sm leading-6 text-red-100">
-                  Submit your vehicle data and original ECU/TCU file. MG AutoTech
-                  will check your request and prepare the right software solution.
-                </p>
-
-                <div className="mt-6 flex flex-wrap gap-3">
-                  <Link
-                    href="/new-request"
-                    className="rounded-xl bg-white px-5 py-3 font-black text-[#b1121b] transition hover:bg-zinc-100"
-                  >
-                    Start Request
-                  </Link>
-
-                  <Link
-                    href="/"
-                    className="rounded-xl border border-white/30 px-5 py-3 font-black text-white transition hover:bg-white/10"
-                  >
-                    <Home className="mr-2 inline h-4 w-4" />
-                    Back Home
-                  </Link>
-                </div>
-              </div>
-            </div>
+            </details>
           </div>
         </section>
       </div>
