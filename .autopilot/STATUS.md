@@ -4080,3 +4080,28 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 - Production deploy, push, DB, env/secret ve musteri verisi degisikligi
   yapilmadi. Degisiklik sonrasi oturumlu canli Chrome QA, owner Preview veya
   Production yayin talimati verdiginde yayinlanmis artifact uzerinde yapilacak.
+
+## 2026-08-23 21:15 +02:00 Customer dashboard Production release
+
+- Owner'in `yayinla` talimatiyla yalniz status-first customer dashboard release
+  kapsami Production'a cikarildi. `codex/production-release-20260823` remote
+  branch'i fast-forward olarak `9b75a5b` commitine tasindi; source archive
+  commit bloblarindan uretildi, SHA-256 upload eslesmesi dogrulandi ve VPS'te
+  izole `releases/9b75a5b` dizinine acildi.
+- VPS env contract degerleri yazdirilmadan PASS. Immutable app ve analyzer
+  imajlari Production Docker build'inde Next.js compile, TypeScript ve 277/277
+  static page kapilarini gecti. Analyzer-first switch tamamlandi; iki container
+  `9b75a5b`, healthy, restart 0, read-only root ve host portu olmadan calisiyor.
+- Release state current cifti `9b75a5b`, onceki/rollback cifti `b82617a` olarak
+  kaydedildi. Bu code-only release migration, Production DB, env/secret, Caddy,
+  DNS, odeme, e-posta veya musteri verisi degisikligi gerektirmedi.
+- Public readiness, login, dashboard, order archive ve ayri `mgautotech.de`
+  ana sitesi tekrarli HTTP smoke'ta 200 dondu. Caddy ve ana site rotasi
+  etkilenmedi.
+- Oturumlu Chrome smoke'ta 1265x529, 1024x768 ve 390x844 gorunumleri PASS:
+  son bes siparis ilk calisma alaninda, baglamsal durum/aksiyonlari gorunur,
+  yatay tasma yok ve disclosure alanlari kapali baslayip klavye Enter ile acilip
+  kapanir. Iki temiz dashboard yenilemesi 1.3 saniyenin altinda tamamlandi;
+  `Checking secure session`, unavailable state veya browser console hatasi yok.
+- Rollback uygulanmadi; kritik regresyon halinde exact geri donus
+  `b82617a` app/analyzer ciftidir.

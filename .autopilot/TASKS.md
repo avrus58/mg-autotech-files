@@ -152,7 +152,9 @@ Dogrulama: Chrome canli baseline 1265x529'da Recent Requests'in 2056 px asagida
 oldugunu dogruladi; hedefli dashboard/performance 98/98 PASS; full test 964/964
 PASS; ESLint PASS; web + customer-uploader TypeScript PASS; customer i18n 11
 dilde 595/595 PASS; Webpack Production build 277/277 PASS; diff check PASS.
-Production deploy yapilmadi.
+Production release `9b75a5b` PASS; rollback cifti `b82617a`. Oturumlu Chrome
+smoke 1265x529, 1024x768 ve 390x844 gorunumlerinde PASS; yatay tasma, session
+spinner veya console hatasi yok.
 
 ### MANUAL-20260823-AUTH-SESSION-INCIDENT [P0] Bound Production auth bootstrap waits
 
