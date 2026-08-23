@@ -65,6 +65,8 @@ function partialVariables() {
     WIDGET_IP_HASH_SALT: "partial-widget-ip-salt-0000000000000001",
     CUSTOMER_DEVICE_HMAC_SECRET:
       "partial-device-secret-000000000000000001",
+    DESKTOP_APP_PUBLIC_DOWNLOAD_ENABLED: "false",
+    DESKTOP_APP_UPLOAD_ENABLED: "false",
     FILE_EXPERT_ANALYZER_TOKEN:
       "partial-analyzer-token-00000000000000001",
     REQUEST_NETWORK_PROVIDER: "cloudflare-caddy",
@@ -131,6 +133,8 @@ test("Production renderer preserves continuity values and overrides only VPS con
     merged.FILE_EXPERT_ANALYZER_TOKEN,
     partialVariables().FILE_EXPERT_ANALYZER_TOKEN
   );
+  assert.equal(merged.DESKTOP_APP_PUBLIC_DOWNLOAD_ENABLED, "false");
+  assert.equal(merged.DESKTOP_APP_UPLOAD_ENABLED, "false");
   assert.equal(merged.REQUEST_NETWORK_PROVIDER, "cloudflare-caddy");
   assert.equal(merged.SECURITY_DISTRIBUTED_RATE_LIMIT_ENABLED, "true");
   assert.equal(merged.SECURITY_DISTRIBUTED_RATE_LIMIT_REQUIRED, "true");
