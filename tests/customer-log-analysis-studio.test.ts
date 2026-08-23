@@ -157,11 +157,13 @@ test("quality is described as capture structure with explicit technical boundari
 
 test("customer dashboard navigation exposes the Studio on dashboard and orders surfaces", () => {
   const dashboard = readProjectFile("src", "components", "dashboard", "DashboardClient.tsx");
+  const sidebar = readProjectFile("src", "components", "dashboard", "CustomerPortalSidebar.tsx");
   const orders = readProjectFile("src", "app", "dashboard", "orders", "page.tsx");
-  const dashboardLinks = dashboard.match(/href="\/dashboard\/log-analysis"/g) ?? [];
+  const dashboardNavigation = `${dashboard}\n${sidebar}`;
+  const dashboardLinks = dashboardNavigation.match(/(?:href="\/dashboard\/log-analysis"|href: "\/dashboard\/log-analysis")/g) ?? [];
 
   assert.ok(dashboardLinks.length >= 2, "dashboard should expose desktop and compact Studio navigation");
-  assert.match(dashboard, /Datalog Analysis Studio/);
+  assert.match(sidebar, /Datalog Analysis Studio/);
   assert.match(dashboard, /Datalog Studio/);
   assert.match(orders, /href="\/dashboard\/log-analysis"/);
   assert.match(orders, /label="Datalog Analysis Studio"/);

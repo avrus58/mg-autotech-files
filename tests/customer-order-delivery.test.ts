@@ -515,7 +515,7 @@ test("anonymous users cannot load an order or request a delivery download", asyn
   assert.equal(sourceDownloadResponse.status, 401);
 });
 
-test("desktop order workspace uses a bounded three-column layout while mobile remains stacked", () => {
+test("desktop order workspace uses shared navigation and a bounded chat aside while mobile remains stacked", () => {
   const page = source("src", "app", "dashboard", "orders", "[id]", "page.tsx");
   const workspaceStyles = source(
     "src",
@@ -529,14 +529,15 @@ test("desktop order workspace uses a bounded three-column layout while mobile re
 
   assert.match(page, /workspaceStyles\.viewportShell/);
   assert.match(page, /workspaceStyles\.workspaceColumns/);
-  assert.match(page, /xl:grid-cols-\[minmax\(310px,0\.9fr\)_minmax\(390px,1\.12fr\)_minmax\(340px,0\.98fr\)\]/);
-  assert.match(workspaceStyles, /@media \(min-width: 1280px\) and \(min-height: 841px\)/);
-  assert.match(workspaceStyles, /@media \(min-width: 1280px\) and \(max-height: 840px\)/);
-  assert.match(workspaceStyles, /height: 640px/);
-  assert.match(workspaceStyles, /overflow-y: auto/);
+  assert.match(page, /<CustomerPortalSidebar activeItem="orders" credits=\{credits\} \/>/);
+  assert.match(page, /lg:grid-cols-\[minmax\(0,1fr\)_minmax\(20rem,0\.42fr\)\]/);
+  assert.match(page, /workspaceStyles\.workspaceChatColumn/);
+  assert.match(workspaceStyles, /@media \(min-width: 1024px\)/);
+  assert.match(workspaceStyles, /position: sticky/);
+  assert.doesNotMatch(workspaceStyles, /height: 640px/);
   assert.match(chat, /Order conversation/);
   assert.match(page, /Vehicle & technical data/);
   assert.match(page, /Delivery history/);
-  assert.match(chat, /xl:flex xl:h-full xl:min-h-0 xl:flex-col/);
-  assert.match(chat, /xl:min-h-0 xl:max-h-none xl:flex-1/);
+  assert.match(chat, /lg:flex lg:max-h-\[calc\(100dvh-8\.25rem\)\] lg:min-h-\[31rem\] lg:flex-col/);
+  assert.match(chat, /lg:min-h-0 lg:max-h-none lg:flex-1/);
 });

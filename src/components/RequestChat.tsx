@@ -377,7 +377,7 @@ export default function RequestChat({
   return (
     <section
       className={`w-full min-w-0 max-w-full overflow-hidden rounded-lg border border-white/10 bg-[#101216] shadow-[0_18px_60px_rgba(0,0,0,0.28)] ${
-        variant === "workspace" ? "xl:flex xl:h-full xl:min-h-0 xl:flex-col" : ""
+        variant === "workspace" ? "lg:flex lg:max-h-[calc(100dvh-8.25rem)] lg:min-h-[31rem] lg:flex-col" : ""
       }`}
       aria-label="Secure request conversation"
     >
@@ -438,7 +438,7 @@ export default function RequestChat({
         aria-busy={syncState === "loading"}
         className={`relative overflow-y-auto overflow-x-hidden bg-[#0b0d10] px-3 py-4 sm:px-5 ${
           variant === "workspace"
-            ? "min-h-80 max-h-[32rem] xl:min-h-0 xl:max-h-none xl:flex-1"
+            ? "min-h-72 max-h-[30rem] lg:min-h-0 lg:max-h-none lg:flex-1"
             : "min-h-64 max-h-[26rem]"
         }`}
       >

@@ -4230,3 +4230,47 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
   `src/components/dashboard/DashboardClient.tsx` tracked olarak degisti. Auth,
   veri, rota, layout, package/lockfile, SQL/migration, env/secret, push veya
   Production deploy yoktur.
+
+## 2026-08-23 23:43 +02:00 Customer workspace CarecuFile density baslangici
+
+- Owner, CarecuFile panelinde oturum acikken istek detayi ve onceki istekler
+  duzenini inceleyip MG AutoTech musteri panelinin ozellikle PC/laptopta daha
+  ferah, daha az zoomlu ve daha kolay taranir olmasini istedi.
+- Kapsam: Mevcut dashboard, musteri rotalari, siparis detayi download/upload/
+  chat/revizyon/DTC fonksiyonlari korunarak sol navigasyon surekliligi, sol alt
+  bakiye + kredi alma aksiyonu ve tek ana scroll odakli daha kompakt siparis
+  workspace'i uygulanacak. CarecuFile metinleri, marka bilgisi, musteri verisi
+  veya ticari iddialari kopyalanmayacak.
+- Bu baslangic local implementasyon kapsamindadir; Production deploy, DB,
+  migration, env/secret, odeme, e-posta veya musteri verisi islemi yoktur.
+
+## 2026-08-24 00:03 +02:00 Customer workspace CarecuFile density tamamlandi
+
+- Sonuc: `CustomerPortalSidebar` ortak bileseni eklendi ve `/dashboard` ile
+  `/dashboard/orders/[id]` masaustu deneyimi ayni customer portal hissine
+  getirildi. Sol alt alanda guncel kredi bakiyesi ve `/dashboard/credits` kredi
+  alma CTA'si gorunur; mobilde mevcut alt/ust hizli rota davranisi korunur.
+- Siparis detayi: Eski detached workspace ve uc dar sutun/640px yukseklik
+  zorlamasi kaldirildi. Order sayfasi laptop/PC'de sol navigasyonlu, tek ana
+  scroll'lu, daha genis teknik/delivery alanli ve sagda sticky chat paneli olan
+  ferah duzene alindi. File input accessibility `sr-only`/focus ring ile
+  korundu.
+- Korunan akislar: Siparis download, source file link/indirme sinyali,
+  additional upload, revision request, DTC analysis, delivery history, request
+  chat, authenticated fetch, realtime/background refresh ve mevcut dashboard
+  veri sorgulari korunur. Profile credit balance okuma customer-scoped kalir.
+- Guvenlik/kapsam: CarecuFile yalniz layout/density referansi olarak kullanildi;
+  metin, marka, musteri verisi veya ticari iddia kopyalanmadi. Yeni dependency,
+  SQL/migration, env/secret, odeme ayari, production servis cagrisi, e-posta
+  islemi veya gercek musteri verisi mutasyonu yoktur.
+- Kontroller: hedefli dashboard/order/log-analysis testleri PASS; full test
+  suite dot reporter PASS; `npm run lint` PASS; `npm run typecheck` PASS
+  (web + customer-uploader); `npm run check:i18n` PASS (public 12 locale,
+  customer 11 locale x 605/605); `npm run check:performance` PASS (68.2 KB
+  gzip / 80 KB); `npm run build -- --webpack` PASS (277/277 static page);
+  `git diff --check` PASS (yalniz CRLF uyarilari).
+- Codex platform notu: Bu turda tekrar gorulen `prompt_cache_retention is not
+  supported on this model` hatasi proje kodunda veya repo config'inde bulunmadi;
+  yalniz `.codex` oturum loglarinda ve OpenAI model dokumanindaki eski cache
+  parametresi uyumsuzlugu ile eslesen Codex Desktop/model request sorunu olarak
+  kaydedildi. Hata nedeniyle subagent/multi-turn genisletme yapilmadi.

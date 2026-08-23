@@ -128,6 +128,16 @@ Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
 
+### MANUAL-20260823-CUSTOMER-WORKSPACE-CAREFILE-DENSITY [P1] Musteri paneli ve siparis detayini ferah calisma alanina yaklastir
+
+Durum: Done
+
+Fingerprint: `customer-experience|dashboard-and-order-detail-laptop-density|zoomed-workspace-and-detached-order-page|carecufile-informed-sidebar-balance-and-single-scroll`
+
+Sonuc: Dashboard ve siparis detayi ortak customer sidebar bilesenine tasindi; masaustu sol altta guncel kredi bakiyesi ve `/dashboard/credits` kredi alma CTA'si sabit gorunur. Siparis detayi eski detached/uc-dar-sutun ve 640px zorlamasindan cikarilip laptop/PC'de tek ana scroll, genis is emri alani ve sticky chat paneli kullanan daha ferah workspace'e donustu. Download, source file indirme gorunurlugu, additional upload, revision, DTC, delivery history, chat, auth ve realtime yenileme akislari korundu. CarecuFile yalniz density/layout referansi olarak kullanildi; baska markaya ait metin, veri veya ticari iddia kopyalanmadi.
+
+Dogrulama: targeted dashboard/order tests PASS; full test suite PASS; `npm run lint` PASS; `npm run typecheck` PASS; `npm run check:i18n` PASS; `npm run check:performance` PASS (68.2 KB gzip / 80 KB); `npm run build -- --webpack` PASS (277/277 static pages); `git diff --check` PASS (yalniz CRLF uyarilari). Yeni dependency, SQL/migration, env/secret, odeme ayari, production servis veya musteri verisi mutasyonu yoktur.
+
 ### MANUAL-20260823-CUSTOMER-DASHBOARD-BRAND-RED [P1] Dashboard vurgu rengini MG AutoTech kirmizisina geri al
 
 Durum: Done

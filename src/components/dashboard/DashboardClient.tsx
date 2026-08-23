@@ -5,13 +5,13 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getStableSession, notifySessionRequired, signOutIfEmailUnverified, signOutStable } from "@/lib/authGuards";
 import { supabase } from "@/lib/supabaseClient";
+import { CustomerPortalSidebar } from "@/components/dashboard/CustomerPortalSidebar";
 import {
   Activity,
   ArrowRight,
   AlertTriangle,
   BellRing,
   BrainCircuit,
-  Braces,
   CheckCircle2,
   Clipboard,
   Clock3,
@@ -19,10 +19,8 @@ import {
   Download,
   Eye,
   FileText,
-  Gauge,
   History,
   Home,
-  LayoutDashboard,
   LogOut,
   Plus,
   RefreshCw,
@@ -319,7 +317,8 @@ export function DashboardClient() {
 
         if (profile) {
           const dashboardProfile = profile as DashboardProfile;
-          setCredits(Number(dashboardProfile.credit_balance ?? 0));
+          const nextCreditBalance = Number(dashboardProfile.credit_balance ?? 0);
+          setCredits(Number.isFinite(nextCreditBalance) ? nextCreditBalance : 0);
           setCustomerId(dashboardProfile.customer_id ?? null);
           setCustomerName(
             dashboardProfile.full_name?.trim() ||
@@ -644,149 +643,7 @@ export function DashboardClient() {
   return (
     <main className="mg-compact-ui min-h-screen bg-[#15181e] text-white lg:h-screen lg:overflow-hidden">
       <div className="flex min-h-screen lg:h-screen lg:overflow-hidden">
-        <aside className="hidden w-64 shrink-0 border-r border-[#282d35] bg-[#0f1217] lg:block">
-          <div className="sticky top-0 flex h-screen flex-col px-3 py-4">
-            <Link href="/" className="mb-6 flex items-center gap-3 px-2">
-              <div className="relative flex h-10 w-10 items-center justify-center rounded-lg border border-red-800/60 bg-[#171a20]">
-                <div className="absolute -top-1.5 h-3 w-8 rounded-t-full border-t border-[#b1121b]" />
-                <Gauge className="h-5 w-5 text-red-400" />
-              </div>
-
-              <div>
-                <div className="text-base font-black tracking-wide">
-                  MG <span className="text-red-500">AUTOTECH</span>
-                </div>
-                <div className="text-[11px] text-zinc-400">Customer Panel</div>
-              </div>
-            </Link>
-
-            <nav
-              aria-label="Primary navigation"
-              className="mg-dense-scroll min-h-0 flex-1 space-y-5 overflow-y-auto pr-1 text-sm"
-            >
-              <div className="space-y-1">
-                <div className="px-3 pb-1 text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-600">
-                  File Service
-                </div>
-                <Link
-                  href="/dashboard"
-                  aria-current="page"
-                  className="flex items-center gap-3 rounded-lg bg-[#2d1719] px-3 py-2.5 font-bold text-red-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
-                >
-                  <LayoutDashboard className="h-4 w-4 text-red-400" />
-                  Dashboard
-                </Link>
-                <Link
-                  href="/new-request"
-                  className="flex items-center gap-3 rounded-lg px-3 py-2.5 font-bold text-zinc-400 transition hover:bg-[#151515] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
-                >
-                  <Upload className="h-4 w-4" />
-                  New File Request
-                </Link>
-                <Link
-                  href="/dashboard/orders"
-                  className="flex items-center gap-3 rounded-lg px-3 py-2.5 font-bold text-zinc-400 transition hover:bg-[#151515] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
-                >
-                  <FileText className="h-4 w-4" />
-                  Active Orders
-                </Link>
-                <Link
-                  href="/dashboard/orders?view=needs_response"
-                  className="flex items-center gap-3 rounded-lg px-3 py-2.5 font-bold text-zinc-400 transition hover:bg-[#151515] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
-                >
-                  <Clipboard className="h-4 w-4" />
-                  Needs Response
-                </Link>
-                <Link
-                  href="/dashboard/orders?view=completed"
-                  className="flex items-center gap-3 rounded-lg px-3 py-2.5 font-bold text-zinc-400 transition hover:bg-[#151515] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
-                >
-                  <History className="h-4 w-4" />
-                  Order History
-                </Link>
-              </div>
-
-              <div className="space-y-1">
-                <div className="px-3 pb-1 text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-600">
-                  Tools
-                </div>
-                <Link
-                  href="/dashboard/file-expert"
-                  className="flex items-center gap-3 rounded-lg px-3 py-2.5 font-bold text-zinc-400 transition hover:bg-[#151515] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
-                >
-                  <BrainCircuit className="h-4 w-4" />
-                  AI File Expert
-                </Link>
-                <Link
-                  href="/dashboard/log-analysis"
-                  className="flex items-center gap-3 rounded-lg px-3 py-2.5 font-bold text-zinc-400 transition hover:bg-[#151515] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
-                >
-                  <Activity className="h-4 w-4" />
-                  Datalog Analysis Studio
-                </Link>
-                <Link
-                  href="/dashboard/widget"
-                  className="flex items-center gap-3 rounded-lg px-3 py-2.5 font-bold text-zinc-400 transition hover:bg-[#151515] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
-                >
-                  <Braces className="h-4 w-4" />
-                  Vehicle Widget
-                </Link>
-              </div>
-
-              <div className="space-y-1">
-                <div className="px-3 pb-1 text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-600">
-                  Account
-                </div>
-                <Link
-                  href="/dashboard/credits"
-                  className="flex items-center gap-3 rounded-lg px-3 py-2.5 font-bold text-zinc-400 transition hover:bg-[#151515] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
-                >
-                  <CreditCard className="h-4 w-4" />
-                  Buy Credits
-                </Link>
-                <Link
-                  href="/dashboard/credits/history"
-                  className="flex items-center gap-3 rounded-lg px-3 py-2.5 font-bold text-zinc-400 transition hover:bg-[#151515] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
-                >
-                  <History className="h-4 w-4" />
-                  Credit History
-                </Link>
-                <Link
-                  href="/dashboard/notifications"
-                  className="flex items-center gap-3 rounded-lg px-3 py-2.5 font-bold text-zinc-400 transition hover:bg-[#151515] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
-                >
-                  <BellRing className="h-4 w-4" />
-                  Notifications
-                </Link>
-                <Link
-                  href="/dashboard/settings"
-                  className="flex items-center gap-3 rounded-lg px-3 py-2.5 font-bold text-zinc-400 transition hover:bg-[#151515] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
-                >
-                  <Settings className="h-4 w-4" />
-                  Settings
-                </Link>
-                <a
-                  href="mailto:info@mgautotech.de"
-                  className="flex items-center gap-3 rounded-lg px-3 py-2.5 font-bold text-zinc-400 transition hover:bg-[#151515] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
-                >
-                  <Wrench className="h-4 w-4" />
-                  Support
-                </a>
-              </div>
-            </nav>
-
-            <div className="mt-4 shrink-0 rounded-lg border border-[#292929] bg-[#0d0d0d] p-4">
-              <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-400">
-                Current Balance
-              </div>
-              <div className="mt-2 flex items-end justify-between gap-3">
-                <div className="text-3xl font-black tabular-nums">{credits}</div>
-                <CreditCard className="mb-1 h-4 w-4 text-red-500" />
-              </div>
-              <div className="mt-1 text-[11px] text-zinc-400">Available Credits</div>
-            </div>
-          </div>
-        </aside>
+        <CustomerPortalSidebar activeItem="dashboard" credits={credits} />
 
         <section className="min-w-0 flex-1 lg:flex lg:h-screen lg:flex-col lg:overflow-hidden">
           <header className="sticky top-0 z-40 shrink-0 border-b border-[#2b2b2b] bg-[#12151b]/95 backdrop-blur-xl lg:static">

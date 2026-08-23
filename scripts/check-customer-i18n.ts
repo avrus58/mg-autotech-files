@@ -16,6 +16,7 @@ const customerSurfaceRoots = [
   "src/components/auth/DeviceVerificationPanel.tsx",
   "src/components/account/TrustedDevicesCard.tsx",
   "src/components/app-shell.tsx",
+  "src/components/dashboard/CustomerPortalSidebar.tsx",
   "src/components/dashboard/index.tsx",
   "src/components/dashboard/DashboardClient.tsx",
   "src/components/ui/efferd-dashboard-2.tsx",

@@ -6,6 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import { authenticatedFetch, getStableSession, notifySessionRequired, signOutIfEmailUnverified } from "@/lib/authGuards";
 import { supabase } from "@/lib/supabaseClient";
 import RequestChat from "@/components/RequestChat";
+import { CustomerPortalSidebar } from "@/components/dashboard/CustomerPortalSidebar";
 import workspaceStyles from "./order-workspace.module.css";
 import { formatFileVersionLabel } from "@/lib/fileVersionLabels";
 import type { CustomerRequestDtcAnalysis } from "@/lib/dtcAnalyzer/requestIntegration";
@@ -19,11 +20,14 @@ import {
   Clock3,
   Copy,
   CopyPlus,
+  CreditCard,
   Database,
   Download,
   FileCode2,
   FileDown,
+  FileText,
   Gauge,
+  Home,
   Loader2,
   Mail,
   PackageCheck,
@@ -346,6 +350,7 @@ export default function OrderDetailPage() {
   const [order, setOrder] = useState<Order | null>(null);
   const [delivery, setDelivery] = useState<CustomerDeliveryHistory | null>(null);
   const [email, setEmail] = useState<string | null>(null);
+  const [credits, setCredits] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [liveRefreshing, setLiveRefreshing] = useState(false);
   const [message, setMessage] = useState("");
@@ -406,9 +411,23 @@ export default function OrderDetailPage() {
       }
 
       try {
-        const response = await authenticatedFetch(`/api/requests/${orderId}`, {
-          cache: "no-store",
-        });
+        const profileBalanceRequest = (async () => {
+          try {
+            return await supabase
+              .from("profiles")
+              .select("credit_balance")
+              .eq("id", user.id)
+              .single();
+          } catch {
+            return null;
+          }
+        })();
+        const [response, profileBalanceResult] = await Promise.all([
+          authenticatedFetch(`/api/requests/${orderId}`, {
+            cache: "no-store",
+          }),
+          profileBalanceRequest,
+        ]);
         const payload = await response.json();
 
         if (!response.ok) {
@@ -422,6 +441,8 @@ export default function OrderDetailPage() {
 
         setOrder(payload.order as Order);
         setDelivery(payload.delivery as CustomerDeliveryHistory);
+        const nextCreditBalance = Number(profileBalanceResult?.data?.credit_balance ?? 0);
+        setCredits(Number.isFinite(nextCreditBalance) ? nextCreditBalance : null);
         hasLoadedOrderRef.current = true;
       } catch {
         if (!options?.silent || !hasLoadedOrderRef.current) {
@@ -738,54 +759,113 @@ export default function OrderDetailPage() {
   const statusCopy = getCustomerStatusCopy(order, completedFileReady, revisionRequested);
 
   return (
-    <main className={`${workspaceStyles.viewportShell} min-h-screen bg-[#050505] text-white`}>
+    <main className={`${workspaceStyles.viewportShell} mg-compact-ui min-h-screen bg-[#15181e] text-white lg:h-screen lg:overflow-hidden`}>
       <div className="fixed inset-0 -z-10 bg-[radial-gradient(circle_at_18%_0%,rgba(160,18,28,0.25),transparent_34%),linear-gradient(135deg,#050505,#0c0c0e_48%,#170507)]" />
 
-      <header className="sticky top-0 z-50 border-b border-white/10 bg-black/85 backdrop-blur-xl xl:h-[72px]">
-        <div className="mx-auto flex h-full max-w-[1720px] items-center justify-between px-4 py-3 sm:px-6">
-          <Link href="/dashboard" className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-red-800/50 bg-[#111] shadow-lg shadow-red-950/40">
-              <Gauge className="h-6 w-6 text-red-600" />
-            </div>
+      <div className="flex min-h-screen lg:h-screen lg:overflow-hidden">
+        <CustomerPortalSidebar activeItem="orders" credits={credits} />
 
-            <div>
-              <div className="text-lg font-black tracking-wide">
-                MG <span className="text-red-600">AUTOTECH</span>
+        <section className="min-w-0 flex-1 lg:flex lg:h-screen lg:flex-col lg:overflow-hidden">
+          <header className="sticky top-0 z-50 shrink-0 border-b border-[#2b2b2b] bg-[#12151b]/95 backdrop-blur-xl lg:static">
+            <div className="border-b border-red-950/40 bg-[#b1121b] px-4 py-2 text-white lg:px-5 xl:px-6">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex min-w-0 items-center gap-3">
+                  {completedFileReady && !revisionRequested ? (
+                    <CheckCircle2 className={`h-4 w-4 shrink-0 ${statusCopy.iconClass}`} />
+                  ) : revisionRequested ? (
+                    <RefreshCcw className={`h-4 w-4 shrink-0 ${statusCopy.iconClass}`} />
+                  ) : (
+                    <Clock3 className={`h-4 w-4 shrink-0 ${statusCopy.iconClass}`} />
+                  )}
+                  <div className="min-w-0">
+                    <div className="truncate text-xs font-black uppercase tracking-[0.12em]">
+                      {statusCopy.title} - #{shortId(order.id)}
+                    </div>
+                    <p className="hidden truncate text-xs text-white/80 xl:block">
+                      {statusCopy.description}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={downloadCompletedFile}
+                  disabled={!completedFileReady || downloadingVersionId !== null}
+                  className="inline-flex h-9 shrink-0 items-center justify-center rounded-lg border border-white/35 bg-black/10 px-3 text-xs font-black text-white transition hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                >
+                  {downloadingVersionId ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+                  Download latest
+                </button>
               </div>
-              <div className="text-[11px] text-zinc-500">Secure order workspace</div>
-            </div>
-          </Link>
-
-          <div className="flex items-center gap-2">
-            <div className="hidden items-center gap-2 rounded-lg border border-emerald-700/30 bg-emerald-950/20 px-3 py-2 text-xs font-black text-emerald-300 md:flex">
-              <span className="h-2 w-2 rounded-full bg-emerald-400" />
-              {liveRefreshing ? "Syncing" : "Live sync"}
             </div>
 
-            <div className="hidden max-w-64 truncate rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-bold text-zinc-300 lg:block">
-              {email}
-            </div>
+            <div className="flex min-h-[62px] items-center justify-between gap-3 px-4 py-2.5 lg:px-5 xl:px-6">
+              <Link href="/dashboard" className="flex min-w-0 items-center gap-3">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-red-800/50 bg-[#171a20] shadow-lg shadow-red-950/30">
+                  <Gauge className="h-5 w-5 text-red-500" />
+                </div>
 
-            <Link
-              href="/dashboard"
-              className="rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-sm font-bold text-white transition hover:bg-white/10"
-            >
-              <ArrowLeft className="mr-2 inline h-4 w-4" />
-              Dashboard
+                <div className="min-w-0">
+                  <div className="truncate text-base font-black tracking-wide">
+                    MG <span className="text-red-600">AUTOTECH</span>
+                  </div>
+                  <div className="truncate text-[11px] text-zinc-500">Secure order workspace</div>
+                </div>
+              </Link>
+
+              <div className="flex min-w-0 items-center gap-2">
+                <div className="hidden items-center gap-2 rounded-lg border border-emerald-700/30 bg-emerald-950/20 px-3 py-2 text-xs font-black text-emerald-300 md:flex">
+                  <span className="h-2 w-2 rounded-full bg-emerald-400" />
+                  {liveRefreshing ? "Syncing" : "Live sync"}
+                </div>
+
+                <div className="hidden max-w-56 truncate rounded-lg border border-[#303640] bg-[#171a20] px-3 py-2 text-xs font-bold text-zinc-300 xl:block">
+                  {email}
+                </div>
+
+                <Link
+                  href="/dashboard"
+                  className="rounded-lg border border-[#303640] bg-[#171a20] px-3 py-2 text-sm font-bold text-white transition hover:border-zinc-500 hover:bg-[#20242b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
+                >
+                  <ArrowLeft className="mr-2 inline h-4 w-4" />
+                  Dashboard
+                </Link>
+              </div>
+            </div>
+          </header>
+
+          <nav
+            aria-label="Mobile navigation"
+            className="mg-dense-scroll flex shrink-0 gap-2 overflow-x-auto border-b border-[#252525] bg-[#090909] px-4 py-2.5 lg:hidden"
+          >
+            <Link href="/dashboard" className="shrink-0 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-xs font-black">
+              <Home className="mr-2 inline h-4 w-4" />Dashboard
             </Link>
-          </div>
-        </div>
-      </header>
+            <Link href="/dashboard/orders" aria-current="page" className="shrink-0 rounded-xl border border-red-800/50 bg-red-950/30 px-4 py-2.5 text-xs font-black text-red-100">
+              <FileText className="mr-2 inline h-4 w-4" />Orders
+            </Link>
+            <Link href="/new-request" className="shrink-0 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-xs font-black">
+              <Upload className="mr-2 inline h-4 w-4" />New Request
+            </Link>
+            <Link href="/dashboard/credits" className="shrink-0 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-xs font-black">
+              <CreditCard className="mr-2 inline h-4 w-4" />Buy Credits
+            </Link>
+          </nav>
 
-      <section className={`${workspaceStyles.workspaceFrame} mx-auto flex w-full max-w-[1720px] flex-col gap-3 px-3 py-3 sm:px-5`}>
-        {message && (
-          <div role="status" className="shrink-0 rounded-xl border border-red-800/50 bg-red-950/30 px-4 py-3 text-sm text-red-200">
-            {message}
-          </div>
-        )}
+          <div
+            role="region"
+            aria-label="Order detail content"
+            tabIndex={0}
+            className={`${workspaceStyles.workspaceFrame} mg-dense-scroll min-w-0 px-4 py-3 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-red-400 lg:flex-1 lg:overflow-y-auto lg:px-5 xl:px-6`}
+          >
+            <div className="mx-auto flex w-full max-w-[1480px] flex-col gap-3">
+              {message && (
+                <div role="status" className="shrink-0 rounded-lg border border-red-800/50 bg-red-950/30 px-4 py-3 text-sm text-red-200">
+                  {message}
+                </div>
+              )}
 
         <section className="shrink-0 overflow-hidden rounded-xl border border-white/10 bg-[#0c0d0f]/95 shadow-2xl shadow-black/30">
-          <div className="flex flex-col gap-3 p-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex flex-col gap-3 p-3 sm:p-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="min-w-0">
               <div className="mb-2 flex flex-wrap items-center gap-2">
                 <span className="text-xs font-black uppercase tracking-[0.18em] text-red-400">
@@ -797,7 +877,7 @@ export default function OrderDetailPage() {
                 </span>
               </div>
 
-              <h1 className="break-words text-2xl font-black sm:text-3xl">
+              <h1 className="break-words text-xl font-black sm:text-2xl">
                 {order.vehicle_brand || "Vehicle"}{" "}
                 <span className="text-red-600">{order.vehicle_model || ""}</span>
               </h1>
@@ -810,7 +890,7 @@ export default function OrderDetailPage() {
             <div className="flex flex-wrap gap-2 lg:shrink-0">
               <Link
                 href={`/new-request?repeat=${order.id}`}
-                className="inline-flex min-h-11 items-center justify-center rounded-lg border border-red-700/50 bg-red-950/30 px-4 text-center text-sm font-black text-red-100 transition hover:bg-red-950/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-400"
+                className="inline-flex h-10 items-center justify-center rounded-lg border border-red-700/50 bg-red-950/30 px-4 text-center text-sm font-black text-red-100 transition hover:bg-red-950/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-400"
               >
                 <CopyPlus className="mr-2 inline h-4 w-4" />
                 Create similar
@@ -836,7 +916,7 @@ export default function OrderDetailPage() {
             </div>
           </div>
 
-          <div className="grid border-t border-white/10 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="grid border-t border-white/10 sm:grid-cols-2 lg:grid-cols-4">
             <WorkspaceMetric label="Current status" value={formatStatus(order.status)} accentClass={getStatusStyle(order.status)} />
             <WorkspaceMetric label="Requested service" value={order.service_type || "Not set"} />
             <WorkspaceMetric label="Created" value={formatDate(order.created_at)} />
@@ -861,12 +941,9 @@ export default function OrderDetailPage() {
           </div>
         </section>
 
-        <div className={`${workspaceStyles.workspaceColumns} grid gap-3 xl:grid-cols-[minmax(310px,0.9fr)_minmax(390px,1.12fr)_minmax(340px,0.98fr)]`}>
-          <div className="min-h-[560px] min-w-0 xl:h-full xl:min-h-0">
-            <RequestChat requestId={order.id} senderRole="customer" variant="workspace" />
-          </div>
-
-          <section className="min-w-0 overflow-hidden rounded-xl border border-white/10 bg-[#0e0f12] xl:flex xl:min-h-0 xl:flex-col">
+        <div className={`${workspaceStyles.workspaceColumns} grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(20rem,0.42fr)] 2xl:grid-cols-[minmax(0,1fr)_minmax(23rem,0.36fr)]`}>
+          <div className="min-w-0 space-y-3">
+          <section className="min-w-0 overflow-hidden rounded-xl border border-white/10 bg-[#0e0f12]">
             <div className="shrink-0 border-b border-white/10 px-4 py-3">
               <div className="flex items-center justify-between gap-3">
                 <div>
@@ -877,7 +954,7 @@ export default function OrderDetailPage() {
               </div>
             </div>
 
-            <div className="space-y-3 overflow-y-auto p-3 sm:p-4 xl:min-h-0 xl:flex-1">
+            <div className="space-y-3 p-3 sm:p-4">
               <div className="grid gap-2 sm:grid-cols-2">
                 <Detail icon={<Gauge />} label="Engine" value={order.vehicle_engine} />
                 <Detail icon={<FileCode2 />} label="Generation" value={order.vehicle_generation} />
@@ -926,7 +1003,7 @@ export default function OrderDetailPage() {
                   <div className="border-t border-blue-700/20 p-3">
 
                     {order.customer_upload_enabled && (
-                      <label aria-busy={additionalUploading} className="flex min-h-20 cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-blue-500/40 bg-black/25 p-3 text-center transition hover:bg-blue-950/20">
+                      <label aria-busy={additionalUploading} className="flex min-h-20 cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-blue-500/40 bg-black/25 p-3 text-center transition hover:bg-blue-950/20 focus-within:ring-2 focus-within:ring-blue-300">
                         {additionalUploading ? <Loader2 className="mb-2 h-5 w-5 animate-spin text-blue-300" /> : <Upload className="mb-2 h-5 w-5 text-blue-300" />}
                         <span role={additionalUploading ? "status" : undefined} aria-live={additionalUploading ? "polite" : undefined} className="max-w-full break-words font-black text-white">
                           {activeAdditionalUploadStep?.label ?? "Upload requested file"}
@@ -934,7 +1011,7 @@ export default function OrderDetailPage() {
                         <span className="mt-1 max-w-full break-words text-xs text-zinc-500">
                           {activeAdditionalUploadStep?.description ?? "One file, maximum 32 MB"}
                         </span>
-                        <input type="file" disabled={additionalUploading} className="hidden" onChange={(event) => {
+                        <input type="file" disabled={additionalUploading} className="sr-only" onChange={(event) => {
                           const file = event.target.files?.[0] ?? null;
                           uploadAdditionalFile(file);
                           event.target.value = "";
@@ -987,7 +1064,7 @@ export default function OrderDetailPage() {
             </div>
           </section>
 
-          <section className="min-w-0 overflow-hidden rounded-xl border border-white/10 bg-[#0e0f12] xl:flex xl:min-h-0 xl:flex-col">
+          <section className="min-w-0 overflow-hidden rounded-xl border border-white/10 bg-[#0e0f12]">
             <div className="flex shrink-0 items-center justify-between gap-3 border-b border-white/10 px-4 py-3">
               <div>
                 <div className="text-xs font-black uppercase tracking-[0.16em] text-emerald-400">Secure delivery</div>
@@ -998,7 +1075,7 @@ export default function OrderDetailPage() {
               </div>
             </div>
 
-            <div className="space-y-3 overflow-y-auto p-3 sm:p-4 xl:min-h-0 xl:flex-1">
+            <div className="space-y-3 p-3 sm:p-4">
               {deliveryEstimate.isExplicit && (
                 <div className="rounded-xl border border-blue-700/25 bg-blue-950/15 px-3 py-2 text-xs text-blue-100/80">
                   <span className="font-black text-blue-200">ETA: {deliveryEstimate.label}</span>
@@ -1073,8 +1150,16 @@ export default function OrderDetailPage() {
               <div className="flex min-w-0 items-center gap-2 px-1 text-xs text-zinc-600"><User className="h-3.5 w-3.5 shrink-0" /><span className="truncate">{order.customer_email || "Account email unavailable"}</span></div>
             </div>
           </section>
+          </div>
+
+          <aside className={`${workspaceStyles.workspaceChatColumn} min-w-0`}>
+            <RequestChat requestId={order.id} senderRole="customer" variant="workspace" />
+          </aside>
         </div>
-      </section>
+            </div>
+          </div>
+        </section>
+      </div>
     </main>
   );
 }
@@ -1089,7 +1174,7 @@ function WorkspaceMetric({
   accentClass?: string;
 }) {
   return (
-    <div className="min-w-0 border-b border-white/10 px-4 py-3 sm:border-r xl:border-b-0 last:border-r-0">
+    <div className="min-w-0 border-b border-white/10 px-4 py-3 sm:border-r lg:border-b-0 last:border-r-0">
       <div className="text-xs font-black uppercase tracking-[0.14em] text-zinc-600">{label}</div>
       {accentClass ? (
         <div className={`mt-1.5 inline-flex max-w-full rounded-full border px-2.5 py-0.5 text-[11px] font-black ${accentClass}`}>

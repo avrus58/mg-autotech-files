@@ -220,17 +220,22 @@ test("customer order detail uses a responsive MG AutoTech work-order workspace",
     "order-workspace.module.css"
   );
   const chat = readProjectFile("src", "components", "RequestChat.tsx");
+  const sidebar = readProjectFile("src", "components", "dashboard", "CustomerPortalSidebar.tsx");
 
   assert.match(page, /Secure order workspace/);
-  assert.match(page, /max-w-\[1720px\]/);
+  assert.match(page, /max-w-\[1480px\]/);
   assert.match(page, /import workspaceStyles from "\.\/order-workspace\.module\.css"/);
   assert.match(page, /workspaceStyles\.viewportShell/);
   assert.match(page, /workspaceStyles\.workspaceFrame/);
   assert.match(page, /workspaceStyles\.workspaceColumns/);
-  assert.match(page, /xl:grid-cols-\[minmax\(310px,0\.9fr\)_minmax\(390px,1\.12fr\)_minmax\(340px,0\.98fr\)\]/);
+  assert.match(page, /<CustomerPortalSidebar activeItem="orders" credits=\{credits\} \/>/);
+  assert.match(page, /\.from\("profiles"\)[\s\S]*\.select\("credit_balance"\)/);
+  assert.match(page, /lg:grid-cols-\[minmax\(0,1fr\)_minmax\(20rem,0\.42fr\)\]/);
+  assert.match(page, /workspaceStyles\.workspaceChatColumn/);
   assert.match(page, /<RequestChat requestId=\{order\.id\} senderRole="customer" variant="workspace"/);
   assert.match(page, /aria-label="Order progress"/);
-  assert.match(page, /xl:grid-cols-4/);
+  assert.match(page, /aria-label="Order detail content"[\s\S]*tabIndex=\{0\}/);
+  assert.match(page, /lg:grid-cols-4/);
   assert.match(page, /Request specification/);
   assert.match(page, /Delivery history/);
   assert.match(page, /Original received/);
@@ -238,18 +243,21 @@ test("customer order detail uses a responsive MG AutoTech work-order workspace",
   assert.match(page, /Copy summary/);
   assert.match(page, /Download latest/);
   assert.match(page, /uploadAdditionalFile\(file\)/);
+  assert.match(page, /className="sr-only" onChange=\{\(event\) => \{/);
   assert.match(page, /downloadModifiedVersion\(version\.id\)/);
   assert.ok(page.indexOf("<ProgressTimeline") < page.indexOf("Request specification"));
   assert.doesNotMatch(page, /Live queue & ETA|Payment review/);
 
   assert.match(chat, /variant\?: "default" \| "workspace"/);
   assert.match(chat, /Order conversation/);
-  assert.match(chat, /min-h-80 max-h-\[32rem\] xl:min-h-0 xl:max-h-none xl:flex-1/);
-  assert.match(workspaceStyles, /@media \(min-width: 1280px\) and \(min-height: 841px\)/);
-  assert.match(workspaceStyles, /@media \(min-width: 1280px\) and \(max-height: 840px\)/);
-  assert.match(workspaceStyles, /overflow-y: auto/);
-  assert.match(workspaceStyles, /height: 640px/);
-  assert.match(workspaceStyles, /min-height: 640px/);
+  assert.match(chat, /min-h-72 max-h-\[30rem\] lg:min-h-0 lg:max-h-none lg:flex-1/);
+  assert.match(workspaceStyles, /@media \(min-width: 1024px\)/);
+  assert.match(workspaceStyles, /workspaceChatColumn/);
+  assert.match(workspaceStyles, /position: sticky/);
+  assert.doesNotMatch(workspaceStyles, /height: 640px/);
+  assert.doesNotMatch(workspaceStyles, /min-height: 640px/);
+  assert.match(sidebar, /w-60 shrink-0/);
+  assert.match(sidebar, /Current Balance[\s\S]*Available Credits[\s\S]*href="\/dashboard\/credits"[\s\S]*Buy Credits/);
   assert.doesNotMatch(page, /carecufile|panel\.carecufile/i);
 });
 
@@ -584,6 +592,7 @@ test("customer dashboard shows a safe preparation-to-delivery workflow map", () 
 
 test("customer dashboard follows the owner reference hierarchy without hiding operational data", () => {
   const dashboard = readProjectFile("src", "components", "dashboard", "DashboardClient.tsx");
+  const sidebar = readProjectFile("src", "components", "dashboard", "CustomerPortalSidebar.tsx");
   const welcome = dashboard.indexOf("data-dashboard-welcome");
   const prioritySummary = dashboard.indexOf("data-dashboard-priority-summary", welcome);
   const recentRequests = dashboard.indexOf('data-dashboard-primary="recent-requests"');
@@ -605,13 +614,16 @@ test("customer dashboard follows the owner reference hierarchy without hiding op
   assert.match(dashboard, /<section[\s\S]*aria-labelledby="recent-requests-title"[\s\S]*filteredOrders\.map/);
   assert.match(dashboard, /min-\[1180px\]:grid-cols-\[minmax\(0,1\.55fr\)_minmax\(20rem,0\.85fr\)\]/);
   assert.match(dashboard, /sm:grid-cols-\[minmax\(0,1fr\)_auto\]/);
-  assert.match(dashboard, /hidden w-64 shrink-0/);
+  assert.match(dashboard, /<CustomerPortalSidebar activeItem="dashboard" credits=\{credits\} \/>/);
+  assert.match(sidebar, /hidden w-60 shrink-0/);
+  assert.match(sidebar, /Current Balance[\s\S]*Available Credits[\s\S]*href="\/dashboard\/credits"[\s\S]*Buy Credits/);
   assert.match(dashboard, /const \[requestSearch, setRequestSearch\]/);
   assert.match(dashboard, /const filteredOrders = useMemo/);
   assert.match(dashboard, /Search recent requests/);
-  assert.match(dashboard, /aria-label="Primary navigation"/);
+  assert.match(sidebar, /aria-label="Primary navigation"/);
   assert.match(dashboard, /aria-label="Mobile navigation"/);
   assert.match(dashboard, /aria-label="Dashboard content"[\s\S]*tabIndex=\{0\}/);
+  assert.match(sidebar, /aria-label="Primary navigation"/);
   assert.match(dashboard, /order\.status === "customer_info_needed"/);
   assert.match(dashboard, /Needs your response/);
   assert.match(dashboard, /order\.status === "revision"/);
@@ -638,10 +650,11 @@ test("customer dashboard uses the Efferd shell without losing routes or adding u
   const dashboardEntry = readProjectFile("src", "components", "dashboard", "index.tsx");
   const efferd = readProjectFile("src", "components", "ui", "efferd-dashboard-2.tsx");
   const dashboard = readProjectFile("src", "components", "dashboard", "DashboardClient.tsx");
+  const sidebar = readProjectFile("src", "components", "dashboard", "CustomerPortalSidebar.tsx");
   const globals = readProjectFile("src", "app", "globals.css");
   const i18nCheck = readProjectFile("scripts", "check-customer-i18n.ts");
   const packageJson = readProjectFile("package.json");
-  const presentation = `${page}\n${shell}\n${dashboardEntry}\n${efferd}\n${dashboard}`;
+  const presentation = `${page}\n${shell}\n${dashboardEntry}\n${efferd}\n${dashboard}\n${sidebar}`;
 
   assert.match(page, /import \{ EfferdDashboard2 \} from "@\/components\/ui\/efferd-dashboard-2"/);
   assert.match(page, /return <EfferdDashboard2 \/>/);
@@ -659,28 +672,32 @@ test("customer dashboard uses the Efferd shell without losing routes or adding u
   assert.match(dashboard, /grid grid-cols-2 gap-3 min-\[1180px\]:grid-cols-4/);
 
   for (const target of [
-    'href="/"',
-    'href="/dashboard"',
-    'href="/new-request"',
-    'href="/dashboard/file-expert"',
-    'href="/dashboard/log-analysis"',
-    'href="/dashboard/widget"',
-    'href="/dashboard/orders"',
-    'href="/dashboard/orders?view=needs_response"',
-    'href="/dashboard/orders?view=completed"',
-    'href="/dashboard/credits"',
-    'href="/dashboard/credits/history"',
-    'href="/dashboard/notifications"',
-    'href="/dashboard/settings"',
-    'href="mailto:info@mgautotech.de"',
+    "/",
+    "/dashboard",
+    "/new-request",
+    "/dashboard/file-expert",
+    "/dashboard/log-analysis",
+    "/dashboard/widget",
+    "/dashboard/orders",
+    "/dashboard/orders?view=needs_response",
+    "/dashboard/orders?view=completed",
+    "/dashboard/credits",
+    "/dashboard/credits/history",
+    "/dashboard/notifications",
+    "/dashboard/settings",
+    "mailto:info@mgautotech.de",
   ]) {
-    assert.ok(presentation.includes(target), `missing preserved customer dashboard target: ${target}`);
+    assert.ok(
+      presentation.includes(`href="${target}"`) || presentation.includes(`href: "${target}"`),
+      `missing preserved customer dashboard target: ${target}`
+    );
   }
 
   assert.match(dashboard, /href=\{`\/dashboard\/orders\/\$\{order\.id\}`\}/);
   assert.match(dashboard, /href: "\/tools\/file-readiness-check"/);
   assert.match(dashboard, /href: "\/tools\/request-brief-builder"/);
   assert.match(i18nCheck, /"src\/components\/app-shell\.tsx"/);
+  assert.match(i18nCheck, /"src\/components\/dashboard\/CustomerPortalSidebar\.tsx"/);
   assert.match(i18nCheck, /"src\/components\/dashboard\/index\.tsx"/);
   assert.match(i18nCheck, /"src\/components\/ui\/efferd-dashboard-2\.tsx"/);
   assert.doesNotMatch(presentation, /from ["'](?:recharts|@radix-ui\/)/);
