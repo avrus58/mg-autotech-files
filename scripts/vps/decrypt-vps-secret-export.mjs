@@ -15,6 +15,8 @@ const ENVELOPE_MAX_BYTES = 128 * 1024;
 const PRIVATE_KEY_MAX_BYTES = 16 * 1024;
 const PLAINTEXT_MAX_BYTES = 64 * 1024;
 const ENV_VALUE_MAX_BYTES = 16 * 1024;
+const PAYLOAD_MAX_AGE_MS = 5 * 60 * 1000;
+const PAYLOAD_MAX_FUTURE_SKEW_MS = 30 * 1000;
 const EXPECTED_AAD = Buffer.from("mg-autotech:vps-secret-export:v1", "utf8");
 const EXACT_ENVELOPE_KEYS = [
   "aad",
@@ -85,6 +87,42 @@ async function readBoundedRegularFile(path, maximumBytes) {
   return content;
 }
 
+export function assertProtectedPrivateKeyMetadata(metadata) {
+  if (
+    !metadata.isFile() ||
+    metadata.size <= 0 ||
+    metadata.size > PRIVATE_KEY_MAX_BYTES ||
+    metadata.uid !== 0 ||
+    metadata.gid !== 0 ||
+    (metadata.mode & 0o777) !== 0o600
+  ) {
+    fail();
+  }
+}
+
+async function readProtectedPrivateKey(path) {
+  if (process.platform !== "linux" || !fsConstants.O_NOFOLLOW) fail();
+  const handle = await open(
+    path,
+    fsConstants.O_RDONLY | fsConstants.O_NOFOLLOW
+  );
+  try {
+    const metadata = await handle.stat();
+    assertProtectedPrivateKeyMetadata(metadata);
+    const content = await handle.readFile();
+    if (
+      content.byteLength <= 0 ||
+      content.byteLength > PRIVATE_KEY_MAX_BYTES
+    ) {
+      content.fill(0);
+      fail();
+    }
+    return content;
+  } finally {
+    await handle.close();
+  }
+}
+
 async function loadAllowlist() {
   const source = await readBoundedRegularFile(ALLOWLIST_PATH, 32 * 1024);
   try {
@@ -144,7 +182,7 @@ function parseEnvelope(source) {
   };
 }
 
-function validatePayload(plaintext, allowlist) {
+export function validatePayload(plaintext, allowlist, now = new Date()) {
   let payload;
   try {
     payload = JSON.parse(plaintext.toString("utf8"));
@@ -168,6 +206,15 @@ function validatePayload(plaintext, allowlist) {
     fail();
   }
   if (normalizedTimestamp !== payload.generatedAt) fail();
+  const generatedAt = Date.parse(payload.generatedAt);
+  const nowMs = now.getTime();
+  if (
+    !Number.isFinite(nowMs) ||
+    generatedAt < nowMs - PAYLOAD_MAX_AGE_MS ||
+    generatedAt > nowMs + PAYLOAD_MAX_FUTURE_SKEW_MS
+  ) {
+    fail();
+  }
 
   const variableEntries = Object.entries(payload.variables);
   if (variableEntries.length > allowlist.size) fail();
@@ -185,7 +232,7 @@ function validatePayload(plaintext, allowlist) {
   return payload;
 }
 
-async function writeProtectedAtomically(outputPath, content) {
+export async function writeProtectedAtomically(outputPath, content) {
   const directory = dirname(outputPath);
   const temporaryPath = resolve(
     directory,
@@ -219,6 +266,46 @@ async function writeProtectedAtomically(outputPath, content) {
   }
 }
 
+export function decryptEnvelope(envelopeSource, privateKey) {
+  const envelope = parseEnvelope(envelopeSource);
+  const decoded = [
+    envelope.aad,
+    envelope.encryptedKey,
+    envelope.iv,
+    envelope.tag,
+    envelope.ciphertext,
+  ];
+  let contentKey;
+
+  try {
+    contentKey = privateDecrypt(
+      {
+        key: privateKey,
+        oaepHash: "sha256",
+        padding: cryptoConstants.RSA_PKCS1_OAEP_PADDING,
+      },
+      envelope.encryptedKey
+    );
+    if (contentKey.byteLength !== 32) fail();
+
+    const decipher = createDecipheriv("aes-256-gcm", contentKey, envelope.iv);
+    decipher.setAAD(envelope.aad);
+    decipher.setAuthTag(envelope.tag);
+    const plaintext = Buffer.concat([
+      decipher.update(envelope.ciphertext),
+      decipher.final(),
+    ]);
+    if (plaintext.byteLength <= 0 || plaintext.byteLength > PLAINTEXT_MAX_BYTES) {
+      plaintext.fill(0);
+      fail();
+    }
+    return plaintext;
+  } finally {
+    contentKey?.fill(0);
+    for (const value of decoded) value.fill(0);
+  }
+}
+
 export async function decryptVpsSecretExport(
   envelopePathInput,
   privateKeyPathInput,
@@ -235,47 +322,18 @@ export async function decryptVpsSecretExport(
     fail();
   }
 
-  const [envelopeSource, privateKey, allowlist] = await Promise.all([
-    readBoundedRegularFile(envelopePath, ENVELOPE_MAX_BYTES),
-    readBoundedRegularFile(privateKeyPath, PRIVATE_KEY_MAX_BYTES),
-    loadAllowlist(),
-  ]);
-  let contentKey;
+  const allowlist = await loadAllowlist();
+  const envelopeSource = await readBoundedRegularFile(
+    envelopePath,
+    ENVELOPE_MAX_BYTES
+  );
+  let privateKey;
   let plaintext;
   let output;
-  const decoded = [];
 
   try {
-    const envelope = parseEnvelope(envelopeSource);
-    decoded.push(
-      envelope.aad,
-      envelope.encryptedKey,
-      envelope.iv,
-      envelope.tag,
-      envelope.ciphertext
-    );
-
-    contentKey = privateDecrypt(
-      {
-        key: privateKey,
-        oaepHash: "sha256",
-        padding: cryptoConstants.RSA_PKCS1_OAEP_PADDING,
-      },
-      envelope.encryptedKey
-    );
-    if (contentKey.byteLength !== 32) fail();
-
-    const decipher = createDecipheriv("aes-256-gcm", contentKey, envelope.iv);
-    decipher.setAAD(envelope.aad);
-    decipher.setAuthTag(envelope.tag);
-    plaintext = Buffer.concat([
-      decipher.update(envelope.ciphertext),
-      decipher.final(),
-    ]);
-    if (plaintext.byteLength <= 0 || plaintext.byteLength > PLAINTEXT_MAX_BYTES) {
-      fail();
-    }
-
+    privateKey = await readProtectedPrivateKey(privateKeyPath);
+    plaintext = decryptEnvelope(envelopeSource, privateKey);
     const payload = validatePayload(plaintext, allowlist);
     output = Buffer.from(`${JSON.stringify(payload, null, 2)}\n`, "utf8");
     if (output.byteLength > PLAINTEXT_MAX_BYTES) fail();
@@ -283,11 +341,9 @@ export async function decryptVpsSecretExport(
     return Object.keys(payload.variables).length;
   } finally {
     envelopeSource.fill(0);
-    privateKey.fill(0);
-    contentKey?.fill(0);
+    privateKey?.fill(0);
     plaintext?.fill(0);
     output?.fill(0);
-    for (const value of decoded) value.fill(0);
   }
 }
 

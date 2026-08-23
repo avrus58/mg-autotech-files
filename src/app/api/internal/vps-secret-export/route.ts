@@ -1,12 +1,19 @@
 import {
   buildVpsSecretExportPayload,
   encryptVpsSecretExportPayload,
-  isAuthorizedVpsSecretExport,
+  verifyVpsSecretExportAuthorization,
 } from "@/lib/vpsSecretExport";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
+
+// Release operator patch points. The committed placeholders are intentionally
+// impossible/expired, so this route remains fail-closed until a reviewed,
+// short-lived Production release replaces both constants at compile time.
+const EXPORT_TOKEN_SHA256_HEX =
+  "0000000000000000000000000000000000000000000000000000000000000000";
+const EXPORT_EXPIRES_AT_UTC = "1970-01-01T00:00:00.000Z";
 
 const responseHeaders = {
   "Cache-Control": "private, no-store, max-age=0, must-revalidate",
@@ -25,26 +32,42 @@ function jsonResponse(body: Record<string, unknown>, status: number) {
   return Response.json(body, { status, headers: responseHeaders });
 }
 
-export function GET(request: Request) {
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!serviceRoleKey) {
-    return jsonResponse({ error: "Unavailable." }, 503);
-  }
+export function createVpsSecretExportHandler(options: {
+  expectedTokenSha256Hex: string;
+  expiresAtUtc: string;
+  now?: () => Date;
+  environment?: Readonly<Record<string, string | undefined>>;
+}) {
+  return function vpsSecretExportHandler(request: Request) {
+    const authorization = verifyVpsSecretExportAuthorization({
+      authorization: request.headers.get("authorization"),
+      expectedTokenSha256Hex: options.expectedTokenSha256Hex,
+      expiresAtUtc: options.expiresAtUtc,
+      now: options.now?.(),
+    });
+    if (authorization === "expired") {
+      return jsonResponse({ error: "Gone." }, 410);
+    }
+    if (authorization === "unavailable") {
+      return jsonResponse({ error: "Unavailable." }, 503);
+    }
+    if (authorization !== "authorized") {
+      return jsonResponse({ error: "Unauthorized." }, 401);
+    }
 
-  if (
-    !isAuthorizedVpsSecretExport(
-      request.headers.get("authorization"),
-      serviceRoleKey
-    )
-  ) {
-    return jsonResponse({ error: "Unauthorized." }, 401);
-  }
-
-  try {
-    const payload = buildVpsSecretExportPayload(process.env);
-    const envelope = encryptVpsSecretExportPayload(payload);
-    return jsonResponse(envelope, 200);
-  } catch {
-    return jsonResponse({ error: "Unavailable." }, 503);
-  }
+    try {
+      const payload = buildVpsSecretExportPayload(
+        options.environment ?? process.env
+      );
+      const envelope = encryptVpsSecretExportPayload(payload);
+      return jsonResponse(envelope, 200);
+    } catch {
+      return jsonResponse({ error: "Unavailable." }, 503);
+    }
+  };
 }
+
+export const GET = createVpsSecretExportHandler({
+  expectedTokenSha256Hex: EXPORT_TOKEN_SHA256_HEX,
+  expiresAtUtc: EXPORT_EXPIRES_AT_UTC,
+});

@@ -2,48 +2,124 @@ import assert from "node:assert/strict";
 import {
   constants,
   createDecipheriv,
+  createHash,
   generateKeyPairSync,
   privateDecrypt,
+  randomBytes,
 } from "node:crypto";
-import { mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import {
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  statSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { spawnSync } from "node:child_process";
 import test from "node:test";
-import { GET } from "../src/app/api/internal/vps-secret-export/route";
+import { pathToFileURL } from "node:url";
+import {
+  GET,
+  createVpsSecretExportHandler,
+} from "../src/app/api/internal/vps-secret-export/route";
 import {
   VPS_SECRET_EXPORT_ENV_NAMES,
   buildVpsSecretExportPayload,
-  deriveVpsSecretExportToken,
   encryptVpsSecretExportPayload,
-  isAuthorizedVpsSecretExport,
+  verifyVpsSecretExportAuthorization,
 } from "../src/lib/vpsSecretExport";
 
-test("secret export authorization uses a purpose-scoped derived Bearer token", () => {
-  const expected = "service-role-test-value";
-  const exportToken = deriveVpsSecretExportToken(expected);
+function makeExportToken() {
+  return randomBytes(32).toString("base64url");
+}
 
-  assert.match(exportToken, /^[A-Za-z0-9_-]{43}$/);
-  assert.notEqual(exportToken, expected);
-  assert.equal(isAuthorizedVpsSecretExport(`Bearer ${exportToken}`, expected), true);
-  assert.equal(isAuthorizedVpsSecretExport(`Bearer ${expected}`, expected), false);
-  assert.equal(isAuthorizedVpsSecretExport(`bearer ${exportToken}`, expected), false);
-  assert.equal(isAuthorizedVpsSecretExport(`Bearer ${exportToken} `, expected), false);
-  assert.equal(isAuthorizedVpsSecretExport("Bearer wrong", expected), false);
-  assert.equal(isAuthorizedVpsSecretExport(null, expected), false);
-  assert.equal(isAuthorizedVpsSecretExport(`Bearer ${exportToken}`, undefined), false);
-  assert.equal(isAuthorizedVpsSecretExport(`Bearer ${"x".repeat(9 * 1024)}`, expected), false);
+function tokenDigest(token: string) {
+  return createHash("sha256").update(token, "utf8").digest("hex");
+}
+
+async function loadDecryptCli() {
+  const scriptUrl = pathToFileURL(
+    resolve(process.cwd(), "scripts/vps/decrypt-vps-secret-export.mjs")
+  ).href;
+  return import(scriptUrl);
+}
+
+test("export authorization accepts only the canonical random token before expiry", () => {
+  const token = makeExportToken();
+  const wrongToken = makeExportToken();
+  const now = new Date("2026-08-23T12:00:00.000Z");
+  const expiresAtUtc = "2026-08-23T12:05:00.000Z";
+  const expectedTokenSha256Hex = tokenDigest(token);
+
+  assert.match(token, /^[A-Za-z0-9_-]{43}$/);
+  assert.equal(
+    verifyVpsSecretExportAuthorization({
+      authorization: `Bearer ${token}`,
+      expectedTokenSha256Hex,
+      expiresAtUtc,
+      now,
+    }),
+    "authorized"
+  );
+  for (const authorization of [
+    `Bearer ${wrongToken}`,
+    `bearer ${token}`,
+    `Bearer ${token}=`,
+    `Bearer ${token} `,
+    "Bearer short",
+    null,
+  ]) {
+    assert.equal(
+      verifyVpsSecretExportAuthorization({
+        authorization,
+        expectedTokenSha256Hex,
+        expiresAtUtc,
+        now,
+      }),
+      "unauthorized"
+    );
+  }
+  assert.equal(
+    verifyVpsSecretExportAuthorization({
+      authorization: `Bearer ${token}`,
+      expectedTokenSha256Hex,
+      expiresAtUtc,
+      now: new Date(expiresAtUtc),
+    }),
+    "expired"
+  );
+  assert.equal(
+    verifyVpsSecretExportAuthorization({
+      authorization: `Bearer ${token}`,
+      expectedTokenSha256Hex: "not-a-digest",
+      expiresAtUtc,
+      now,
+    }),
+    "unavailable"
+  );
+  assert.equal(
+    verifyVpsSecretExportAuthorization({
+      authorization: `Bearer ${token}`,
+      expectedTokenSha256Hex,
+      expiresAtUtc: "2026-08-23T12:15:00.001Z",
+      now,
+    }),
+    "unavailable"
+  );
 });
 
-test("payload contains only non-empty allowlisted environment values", () => {
-  const generatedAt = new Date("2026-08-23T12:34:56.000Z");
+test("payload exports only current allowlisted values", () => {
+  const generatedAt = new Date("2026-08-23T12:00:00.000Z");
   const payload = buildVpsSecretExportPayload(
     {
       NEXT_PUBLIC_SITE_URL: "https://file.mgautotech.de",
       SUPABASE_SERVICE_ROLE_KEY: "service-role-sentinel",
+      UPLOAD_INTEGRITY_SECRET: "upload-integrity-sentinel",
       STRIPE_SECRET_KEY: "",
+      CUSTOMER_DEVICE_HMAC_SECRET: "vps-only-must-not-export",
+      REQUEST_NETWORK_PROXY_SECRET: "vps-only-must-not-export",
+      FILE_EXPERT_ANALYZER_TOKEN: "vps-only-must-not-export",
       VERCEL_AUTOMATION_BYPASS_SECRET: "must-not-export",
-      UNRELATED_SECRET: "must-not-export",
     },
     generatedAt
   );
@@ -54,13 +130,19 @@ test("payload contains only non-empty allowlisted environment values", () => {
     variables: {
       NEXT_PUBLIC_SITE_URL: "https://file.mgautotech.de",
       SUPABASE_SERVICE_ROLE_KEY: "service-role-sentinel",
+      UPLOAD_INTEGRITY_SECRET: "upload-integrity-sentinel",
     },
   });
-  assert.equal(VPS_SECRET_EXPORT_ENV_NAMES.includes("VERCEL" as never), false);
-  assert.equal(
-    VPS_SECRET_EXPORT_ENV_NAMES.includes("NEXT_PUBLIC_AUTH_CAPTCHA_ALLOW_TEST_KEY" as never),
-    false
-  );
+  assert.equal(VPS_SECRET_EXPORT_ENV_NAMES.includes("UPLOAD_INTEGRITY_SECRET"), true);
+  for (const excluded of [
+    "NEXT_PUBLIC_AUTH_CAPTCHA_ALLOW_TEST_KEY",
+    "CUSTOMER_DEVICE_HMAC_SECRET",
+    "REQUEST_NETWORK_PROXY_SECRET",
+    "FILE_EXPERT_ANALYZER_TOKEN",
+    "VERCEL",
+  ]) {
+    assert.equal(VPS_SECRET_EXPORT_ENV_NAMES.includes(excluded), false);
+  }
 });
 
 test("payload boundaries reject an oversized value before encryption", () => {
@@ -81,9 +163,8 @@ test("hybrid envelope decrypts only with RSA-OAEP-SHA256 and AES-256-GCM", () =>
     {
       NEXT_PUBLIC_SUPABASE_URL: "https://project-ref.supabase.co",
       SUPABASE_SERVICE_ROLE_KEY: "encrypted-service-role-sentinel",
-      RESEND_API_KEY: "encrypted-resend-sentinel",
     },
-    new Date("2026-08-23T12:34:56.000Z")
+    new Date("2026-08-23T12:00:00.000Z")
   );
   const envelope = encryptVpsSecretExportPayload(
     expectedPayload,
@@ -110,119 +191,193 @@ test("hybrid envelope decrypts only with RSA-OAEP-SHA256 and AES-256-GCM", () =>
     decipher.final(),
   ]);
 
-  assert.equal(envelope.version, 1);
   assert.equal(envelope.alg, "RSA-OAEP-SHA256");
   assert.equal(envelope.enc, "AES-256-GCM");
   assert.deepEqual(JSON.parse(plaintext.toString("utf8")), expectedPayload);
-
   plaintext.fill(0);
   contentKey.fill(0);
 });
 
-test("decrypt CLI validates the envelope and atomically writes protected JSON", () => {
-  const temporaryDirectory = mkdtempSync(
-    join(tmpdir(), "mg-vps-secret-export-test-")
+test("decrypt contract rejects stale, future, and non-allowlisted payloads", async () => {
+  const cli = await loadDecryptCli();
+  const now = new Date("2026-08-23T12:10:00.000Z");
+  const allowlist = new Set(VPS_SECRET_EXPORT_ENV_NAMES);
+  const fresh = Buffer.from(
+    JSON.stringify({
+      version: 1,
+      generatedAt: "2026-08-23T12:09:59.000Z",
+      variables: { UPLOAD_INTEGRITY_SECRET: "fresh-sentinel" },
+    })
   );
-  const envelopePath = join(temporaryDirectory, "envelope.json");
-  const privateKeyPath = join(temporaryDirectory, "recipient.key");
-  const outputPath = join(temporaryDirectory, "decrypted.json");
-  const invalidEnvelopePath = join(temporaryDirectory, "invalid-envelope.json");
-  const invalidOutputPath = join(temporaryDirectory, "invalid-output.json");
-  const scriptPath = resolve(
-    process.cwd(),
-    "scripts/vps/decrypt-vps-secret-export.mjs"
+  const stale = Buffer.from(
+    JSON.stringify({
+      version: 1,
+      generatedAt: "2026-08-23T12:04:59.999Z",
+      variables: { UPLOAD_INTEGRITY_SECRET: "stale-sentinel" },
+    })
+  );
+  const future = Buffer.from(
+    JSON.stringify({
+      version: 1,
+      generatedAt: "2026-08-23T12:10:30.001Z",
+      variables: { UPLOAD_INTEGRITY_SECRET: "future-sentinel" },
+    })
+  );
+  const unknown = Buffer.from(
+    JSON.stringify({
+      version: 1,
+      generatedAt: "2026-08-23T12:09:59.000Z",
+      variables: { REQUEST_NETWORK_PROXY_SECRET: "vps-only-sentinel" },
+    })
   );
 
   try {
-    const { publicKey, privateKey } = generateKeyPairSync("rsa", {
-      modulusLength: 2048,
+    assert.deepEqual(cli.validatePayload(fresh, allowlist, now).variables, {
+      UPLOAD_INTEGRITY_SECRET: "fresh-sentinel",
     });
-    const payload = buildVpsSecretExportPayload(
-      {
-        NEXT_PUBLIC_SITE_URL: "https://file.mgautotech.de",
-        SUPABASE_SERVICE_ROLE_KEY: "cli-service-role-sentinel",
-      },
-      new Date("2026-08-23T13:00:00.000Z")
-    );
-    const envelope = encryptVpsSecretExportPayload(
-      payload,
-      publicKey.export({ type: "spki", format: "pem" }).toString()
-    );
-    writeFileSync(envelopePath, JSON.stringify(envelope), { mode: 0o600 });
-    writeFileSync(
-      privateKeyPath,
-      privateKey.export({ type: "pkcs8", format: "pem" }),
-      { mode: 0o600 }
-    );
+    assert.throws(() => cli.validatePayload(stale, allowlist, now));
+    assert.throws(() => cli.validatePayload(future, allowlist, now));
+    assert.throws(() => cli.validatePayload(unknown, allowlist, now));
+  } finally {
+    fresh.fill(0);
+    stale.fill(0);
+    future.fill(0);
+    unknown.fill(0);
+  }
+});
 
-    const result = spawnSync(
-      process.execPath,
-      [scriptPath, envelopePath, privateKeyPath, outputPath],
-      { encoding: "utf8" }
-    );
-    assert.equal(result.status, 0, result.stderr);
-    assert.equal(result.stdout, "Decrypted 2 variables to protected output.\n");
-    assert.equal(result.stderr, "");
-    assert.deepEqual(JSON.parse(readFileSync(outputPath, "utf8")), payload);
-    assert.doesNotMatch(result.stdout, /cli-service-role-sentinel/);
+test("decrypt contract enforces root-owned 0600 key and rejects symlink metadata", async () => {
+  const cli = await loadDecryptCli();
+  const protectedMetadata = {
+    isFile: () => true,
+    size: 2048,
+    uid: 0,
+    gid: 0,
+    mode: 0o100600,
+  };
+
+  assert.doesNotThrow(() =>
+    cli.assertProtectedPrivateKeyMetadata(protectedMetadata)
+  );
+  assert.throws(() =>
+    cli.assertProtectedPrivateKeyMetadata({ ...protectedMetadata, uid: 1000 })
+  );
+  assert.throws(() =>
+    cli.assertProtectedPrivateKeyMetadata({ ...protectedMetadata, gid: 1000 })
+  );
+  assert.throws(() =>
+    cli.assertProtectedPrivateKeyMetadata({ ...protectedMetadata, mode: 0o100640 })
+  );
+  assert.throws(() =>
+    cli.assertProtectedPrivateKeyMetadata({
+      ...protectedMetadata,
+      isFile: () => false,
+    })
+  );
+});
+
+test("decrypt contract rejects authenticated-ciphertext tampering", async () => {
+  const cli = await loadDecryptCli();
+  const { publicKey, privateKey } = generateKeyPairSync("rsa", {
+    modulusLength: 2048,
+  });
+  const payload = buildVpsSecretExportPayload(
+    { UPLOAD_INTEGRITY_SECRET: "tamper-sentinel" },
+    new Date()
+  );
+  const envelope = encryptVpsSecretExportPayload(
+    payload,
+    publicKey.export({ type: "spki", format: "pem" }).toString()
+  );
+  const ciphertext = Buffer.from(envelope.ciphertext, "base64");
+  ciphertext[0] ^= 1;
+  const tampered = Buffer.from(
+    JSON.stringify({ ...envelope, ciphertext: ciphertext.toString("base64") })
+  );
+  const privateKeyPem = Buffer.from(
+    privateKey.export({ type: "pkcs8", format: "pem" })
+  );
+
+  try {
+    assert.throws(() => cli.decryptEnvelope(tampered, privateKeyPem));
+  } finally {
+    ciphertext.fill(0);
+    tampered.fill(0);
+    privateKeyPem.fill(0);
+  }
+});
+
+test("atomic writer creates protected output and never clobbers its target", async () => {
+  const cli = await loadDecryptCli();
+  const temporaryDirectory = mkdtempSync(
+    join(tmpdir(), "mg-vps-secret-export-test-")
+  );
+  const outputPath = join(temporaryDirectory, "decrypted.json");
+  const content = Buffer.from("complete-output");
+  const replacement = Buffer.from("must-not-clobber");
+
+  try {
+    await cli.writeProtectedAtomically(outputPath, content);
+    assert.equal(readFileSync(outputPath, "utf8"), "complete-output");
     if (process.platform !== "win32") {
       assert.equal(statSync(outputPath).mode & 0o777, 0o600);
     }
-
-    writeFileSync(
-      invalidEnvelopePath,
-      JSON.stringify({ ...envelope, alg: "RSA-OAEP-SHA1" }),
-      { mode: 0o600 }
+    await assert.rejects(() =>
+      cli.writeProtectedAtomically(outputPath, replacement)
     );
-    const invalid = spawnSync(
-      process.execPath,
-      [scriptPath, invalidEnvelopePath, privateKeyPath, invalidOutputPath],
-      { encoding: "utf8" }
-    );
-    assert.equal(invalid.status, 1);
-    assert.equal(invalid.stdout, "");
-    assert.equal(invalid.stderr, "VPS secret export decryption failed.\n");
+    assert.equal(readFileSync(outputPath, "utf8"), "complete-output");
+    assert.deepEqual(readdirSync(temporaryDirectory), ["decrypted.json"]);
   } finally {
+    content.fill(0);
+    replacement.fill(0);
     rmSync(temporaryDirectory, { recursive: true, force: true });
   }
 });
 
-test("route is fail-closed, no-store, and never returns plaintext values", async () => {
-  const previousServiceRole = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  const sentinel = "route-service-role-sentinel";
-  const exportToken = deriveVpsSecretExportToken(sentinel);
-  process.env.SUPABASE_SERVICE_ROLE_KEY = sentinel;
-
-  try {
-    const unauthorized = GET(
-      new Request("https://file.mgautotech.de/api/internal/vps-secret-export")
-    );
-    assert.equal(unauthorized.status, 401);
-    assert.equal(unauthorized.headers.get("cache-control")?.includes("no-store"), true);
-    assert.equal(await unauthorized.text(), '{"error":"Unauthorized."}');
-
-    const authorized = GET(
-      new Request("https://file.mgautotech.de/api/internal/vps-secret-export", {
-        headers: { Authorization: `Bearer ${exportToken}` },
-      })
-    );
-    const responseText = await authorized.text();
-    assert.equal(authorized.status, 200);
-    assert.equal(authorized.headers.get("cache-control")?.includes("no-store"), true);
-    assert.equal(authorized.headers.get("vercel-cdn-cache-control"), "no-store");
-    assert.ok(Buffer.byteLength(responseText, "utf8") < 128 * 1024);
-    assert.doesNotMatch(responseText, new RegExp(sentinel));
-    assert.equal(JSON.parse(responseText).alg, "RSA-OAEP-SHA256");
-  } finally {
-    if (previousServiceRole === undefined) {
-      delete process.env.SUPABASE_SERVICE_ROLE_KEY;
-    } else {
-      process.env.SUPABASE_SERVICE_ROLE_KEY = previousServiceRole;
-    }
-  }
+test("route is fail-closed by default and returns 410 at compile-time expiry", async () => {
+  const response = GET(
+    new Request("https://file.mgautotech.de/api/internal/vps-secret-export")
+  );
+  assert.equal(response.status, 410);
+  assert.equal(await response.text(), '{"error":"Gone."}');
+  assert.equal(response.headers.get("cache-control")?.includes("no-store"), true);
 });
 
-test("temporary route embeds no private key and contains no application logging", () => {
+test("reviewed handler returns only a bounded encrypted envelope", async () => {
+  const token = makeExportToken();
+  const now = new Date("2026-08-23T12:00:00.000Z");
+  const handler = createVpsSecretExportHandler({
+    expectedTokenSha256Hex: tokenDigest(token),
+    expiresAtUtc: "2026-08-23T12:05:00.000Z",
+    now: () => now,
+    environment: {
+      SUPABASE_SERVICE_ROLE_KEY: "route-service-role-sentinel",
+      UPLOAD_INTEGRITY_SECRET: "route-upload-integrity-sentinel",
+    },
+  });
+
+  const unauthorized = handler(
+    new Request("https://file.mgautotech.de/api/internal/vps-secret-export", {
+      headers: { Authorization: `Bearer ${makeExportToken()}` },
+    })
+  );
+  assert.equal(unauthorized.status, 401);
+
+  const authorized = handler(
+    new Request("https://file.mgautotech.de/api/internal/vps-secret-export", {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+  );
+  const responseText = await authorized.text();
+  assert.equal(authorized.status, 200);
+  assert.equal(authorized.headers.get("vercel-cdn-cache-control"), "no-store");
+  assert.ok(Buffer.byteLength(responseText, "utf8") < 128 * 1024);
+  assert.doesNotMatch(responseText, /route-(?:service-role|upload-integrity)-sentinel/);
+  assert.doesNotMatch(responseText, new RegExp(token));
+  assert.equal(JSON.parse(responseText).alg, "RSA-OAEP-SHA256");
+});
+
+test("source contains only fail-closed auth patch points and the public RSA key", () => {
   const helper = readFileSync(
     resolve(process.cwd(), "src/lib/vpsSecretExport.ts"),
     "utf8"
@@ -231,11 +386,28 @@ test("temporary route embeds no private key and contains no application logging"
     resolve(process.cwd(), "src/app/api/internal/vps-secret-export/route.ts"),
     "utf8"
   );
+  const cli = readFileSync(
+    resolve(process.cwd(), "scripts/vps/decrypt-vps-secret-export.mjs"),
+    "utf8"
+  );
   const combined = `${helper}\n${route}`;
 
   assert.match(helper, /BEGIN PUBLIC KEY/);
   assert.doesNotMatch(combined, /BEGIN (?:RSA )?PRIVATE KEY/);
-  assert.doesNotMatch(combined, /console\.|logger\.|request\.url/);
+  for (const forbiddenName of [
+    `create${"Hmac"}`,
+    `derive${"VpsSecretExportToken"}`,
+    `process.env.${"SUPABASE_SERVICE_ROLE_KEY"}`,
+  ]) {
+    assert.equal(combined.includes(forbiddenName), false);
+  }
+  assert.match(route, /"0{64}"/);
+  assert.match(route, /1970-01-01T00:00:00\.000Z/);
   assert.match(route, /runtime = "nodejs"/);
   assert.match(route, /Vercel-CDN-Cache-Control/);
+  assert.doesNotMatch(combined, /console\.|logger\.|request\.url/);
+  assert.match(cli, /O_NOFOLLOW/);
+  assert.match(cli, /metadata\.uid !== 0/);
+  assert.match(cli, /metadata\.gid !== 0/);
+  assert.match(cli, /metadata\.mode & 0o777/);
 });

@@ -2,7 +2,6 @@ import {
   constants,
   createCipheriv,
   createHash,
-  createHmac,
   publicEncrypt,
   randomBytes,
   timingSafeEqual,
@@ -45,8 +44,9 @@ e9a3QAuKm04YAH+Gm3xSl25I1rekeoddFEvbsuRy56xTAgMBAAE=
 -----END PUBLIC KEY-----`;
 
 const SECRET_EXPORT_AAD = "mg-autotech:vps-secret-export:v1";
-const SECRET_EXPORT_AUTH_CONTEXT = "mg-autotech:vps-secret-export:auth:v1";
-const MAX_AUTHORIZATION_BYTES = 8 * 1024;
+const EXPORT_TOKEN_BYTES = 32;
+const EXPORT_TOKEN_BASE64URL_LENGTH = 43;
+const MAX_EXPORT_AUTH_REMAINING_MS = 15 * 60 * 1000;
 const MAX_ENV_VALUE_BYTES = 16 * 1024;
 const MAX_PLAINTEXT_BYTES = 64 * 1024;
 const MAX_ENVELOPE_BYTES = 128 * 1024;
@@ -55,36 +55,64 @@ function byteLength(value: string) {
   return Buffer.byteLength(value, "utf8");
 }
 
-export function isAuthorizedVpsSecretExport(
-  authorization: string | null,
-  expectedServiceRoleKey: string | undefined
-) {
+export type VpsSecretExportAuthorizationResult =
+  | "authorized"
+  | "unauthorized"
+  | "expired"
+  | "unavailable";
+
+export function verifyVpsSecretExportAuthorization(input: {
+  authorization: string | null;
+  expectedTokenSha256Hex: string;
+  expiresAtUtc: string;
+  now?: Date;
+}): VpsSecretExportAuthorizationResult {
+  const expiresAt = Date.parse(input.expiresAtUtc);
+  const now = input.now ?? new Date();
   if (
-    !authorization ||
-    !expectedServiceRoleKey ||
-    byteLength(authorization) > MAX_AUTHORIZATION_BYTES ||
-    byteLength(expectedServiceRoleKey) > MAX_AUTHORIZATION_BYTES ||
-    !authorization.startsWith("Bearer ")
+    !Number.isFinite(expiresAt) ||
+    new Date(expiresAt).toISOString() !== input.expiresAtUtc ||
+    !Number.isFinite(now.getTime()) ||
+    !/^[a-f0-9]{64}$/.test(input.expectedTokenSha256Hex)
   ) {
-    return false;
+    return "unavailable";
+  }
+  if (now.getTime() >= expiresAt) return "expired";
+  if (expiresAt - now.getTime() > MAX_EXPORT_AUTH_REMAINING_MS) {
+    return "unavailable";
   }
 
-  const suppliedKey = authorization.slice("Bearer ".length);
-  if (!suppliedKey) return false;
+  if (!input.authorization?.startsWith("Bearer ")) return "unauthorized";
+  const suppliedToken = input.authorization.slice("Bearer ".length);
+  if (
+    suppliedToken.length !== EXPORT_TOKEN_BASE64URL_LENGTH ||
+    !/^[A-Za-z0-9_-]{43}$/.test(suppliedToken)
+  ) {
+    return "unauthorized";
+  }
 
-  const expectedExportToken = deriveVpsSecretExportToken(expectedServiceRoleKey);
-  const suppliedDigest = createHash("sha256").update(suppliedKey, "utf8").digest();
-  const expectedDigest = createHash("sha256")
-    .update(expectedExportToken, "utf8")
+  const decodedToken = Buffer.from(suppliedToken, "base64url");
+  if (
+    decodedToken.byteLength !== EXPORT_TOKEN_BYTES ||
+    decodedToken.toString("base64url") !== suppliedToken
+  ) {
+    decodedToken.fill(0);
+    return "unauthorized";
+  }
+  decodedToken.fill(0);
+
+  const suppliedDigest = createHash("sha256")
+    .update(suppliedToken, "utf8")
     .digest();
-
-  return timingSafeEqual(suppliedDigest, expectedDigest);
-}
-
-export function deriveVpsSecretExportToken(serviceRoleKey: string) {
-  return createHmac("sha256", serviceRoleKey)
-    .update(SECRET_EXPORT_AUTH_CONTEXT, "utf8")
-    .digest("base64url");
+  const expectedDigest = Buffer.from(input.expectedTokenSha256Hex, "hex");
+  try {
+    return timingSafeEqual(suppliedDigest, expectedDigest)
+      ? "authorized"
+      : "unauthorized";
+  } finally {
+    suppliedDigest.fill(0);
+    expectedDigest.fill(0);
+  }
 }
 
 export function buildVpsSecretExportPayload(
