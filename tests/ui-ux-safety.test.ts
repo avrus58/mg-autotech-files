@@ -220,6 +220,8 @@ test("customer order detail uses a responsive MG AutoTech work-order workspace",
     "order-workspace.module.css"
   );
   const chat = readProjectFile("src", "components", "RequestChat.tsx");
+  const layout = readProjectFile("src", "app", "dashboard", "layout.tsx");
+  const frame = readProjectFile("src", "components", "dashboard", "CustomerPortalFrame.tsx");
   const sidebar = readProjectFile("src", "components", "dashboard", "CustomerPortalSidebar.tsx");
 
   assert.match(page, /Secure order workspace/);
@@ -228,8 +230,10 @@ test("customer order detail uses a responsive MG AutoTech work-order workspace",
   assert.match(page, /workspaceStyles\.viewportShell/);
   assert.match(page, /workspaceStyles\.workspaceFrame/);
   assert.match(page, /workspaceStyles\.workspaceColumns/);
-  assert.match(page, /<CustomerPortalSidebar activeItem="orders" credits=\{credits\} \/>/);
-  assert.match(page, /\.from\("profiles"\)[\s\S]*\.select\("credit_balance"\)/);
+  assert.match(layout, /<CustomerPortalFrame>\{children\}<\/CustomerPortalFrame>/);
+  assert.match(frame, /pathname\.startsWith\("\/dashboard\/orders\/"\)[\s\S]*return "orders"/);
+  assert.match(frame, /\.from\("profiles"\)[\s\S]*\.select\("credit_balance"\)/);
+  assert.doesNotMatch(page, /CustomerPortalSidebar|aria-label="Mobile navigation"/);
   assert.match(page, /lg:grid-cols-\[minmax\(0,1fr\)_minmax\(20rem,0\.42fr\)\]/);
   assert.match(page, /workspaceStyles\.workspaceChatColumn/);
   assert.match(page, /<RequestChat requestId=\{order\.id\} senderRole="customer" variant="workspace"/);
@@ -432,11 +436,13 @@ test("customer additional file upload shows phase-aware retry-safe feedback", ()
 test("customer dashboard and order archive surface action-needed orders separately", () => {
   const dashboard = readProjectFile("src", "components", "dashboard", "DashboardClient.tsx");
   const orders = readProjectFile("src", "app", "dashboard", "orders", "page.tsx");
+  const frame = readProjectFile("src", "components", "dashboard", "CustomerPortalFrame.tsx");
+  const sidebar = readProjectFile("src", "components", "dashboard", "CustomerPortalSidebar.tsx");
 
   assert.match(dashboard, /const \[needsResponseCount, setNeedsResponseCount\]/);
   assert.match(dashboard, /\.eq\("status", "customer_info_needed"\)/);
   assert.match(dashboard, /setNeedsResponseCount\(needsResponseOrders \?\? 0\)/);
-  assert.match(dashboard, /href="\/dashboard\/orders\?view=needs_response"/);
+  assert.match(sidebar, /href: "\/dashboard\/orders\?view=needs_response"/);
   assert.match(dashboard, /Needs Response/);
   assert.match(dashboard, /Waiting for your information/);
 
@@ -446,7 +452,8 @@ test("customer dashboard and order archive surface action-needed orders separate
   assert.match(orders, /window\.history\.replaceState/);
   assert.match(orders, /Needs your response/);
   assert.match(orders, /Revision review in progress/);
-  assert.match(orders, /active=\{\["completed", "cancelled", "all"\]\.includes\(view\)\}/);
+  assert.match(frame, /view === "needs_response"[\s\S]*return "needs-response"/);
+  assert.match(frame, /view === "completed" \|\| view === "cancelled" \|\| view === "all"[\s\S]*return "order-history"/);
 });
 
 test("customer order archive keeps verified data during silent realtime refresh failures", () => {
@@ -608,6 +615,8 @@ test("customer dashboard shows a safe preparation-to-delivery workflow map", () 
 
 test("customer dashboard follows the owner reference hierarchy without hiding operational data", () => {
   const dashboard = readProjectFile("src", "components", "dashboard", "DashboardClient.tsx");
+  const dashboardLayout = readProjectFile("src", "app", "dashboard", "layout.tsx");
+  const frame = readProjectFile("src", "components", "dashboard", "CustomerPortalFrame.tsx");
   const sidebar = readProjectFile("src", "components", "dashboard", "CustomerPortalSidebar.tsx");
   const welcome = dashboard.indexOf("data-dashboard-welcome");
   const prioritySummary = dashboard.indexOf("data-dashboard-priority-summary", welcome);
@@ -630,14 +639,15 @@ test("customer dashboard follows the owner reference hierarchy without hiding op
   assert.match(dashboard, /<section[\s\S]*aria-labelledby="recent-requests-title"[\s\S]*filteredOrders\.map/);
   assert.match(dashboard, /min-\[1180px\]:grid-cols-\[minmax\(0,1\.55fr\)_minmax\(20rem,0\.85fr\)\]/);
   assert.match(dashboard, /sm:grid-cols-\[minmax\(0,1fr\)_auto\]/);
-  assert.match(dashboard, /<CustomerPortalSidebar activeItem="dashboard" credits=\{credits\} \/>/);
+  assert.match(dashboardLayout, /<CustomerPortalFrame>\{children\}<\/CustomerPortalFrame>/);
+  assert.match(frame, /<CustomerPortalDesktopNavigation pathname=\{pathname\} credits=\{credits\} \/>/);
   assert.match(sidebar, /hidden w-60 shrink-0/);
   assert.match(sidebar, /Current Balance[\s\S]*Available Credits[\s\S]*href="\/dashboard\/credits"[\s\S]*Buy Credits/);
   assert.match(dashboard, /const \[requestSearch, setRequestSearch\]/);
   assert.match(dashboard, /const filteredOrders = useMemo/);
   assert.match(dashboard, /Search recent requests/);
   assert.match(sidebar, /aria-label="Primary navigation"/);
-  assert.match(dashboard, /aria-label="Mobile navigation"/);
+  assert.match(frame, /<CustomerPortalMobileNavigation pathname=\{pathname\} \/>/);
   assert.match(dashboard, /aria-label="Dashboard content"[\s\S]*tabIndex=\{0\}/);
   assert.match(sidebar, /aria-label="Primary navigation"/);
   assert.match(dashboard, /order\.status === "customer_info_needed"/);
@@ -666,22 +676,35 @@ test("customer dashboard uses the Efferd shell without losing routes or adding u
   const dashboardEntry = readProjectFile("src", "components", "dashboard", "index.tsx");
   const efferd = readProjectFile("src", "components", "ui", "efferd-dashboard-2.tsx");
   const dashboard = readProjectFile("src", "components", "dashboard", "DashboardClient.tsx");
+  const dashboardLayout = readProjectFile("src", "app", "dashboard", "layout.tsx");
+  const newRequestLayout = readProjectFile("src", "app", "new-request", "layout.tsx");
+  const frame = readProjectFile("src", "components", "dashboard", "CustomerPortalFrame.tsx");
   const sidebar = readProjectFile("src", "components", "dashboard", "CustomerPortalSidebar.tsx");
   const globals = readProjectFile("src", "app", "globals.css");
   const i18nCheck = readProjectFile("scripts", "check-customer-i18n.ts");
   const packageJson = readProjectFile("package.json");
-  const presentation = `${page}\n${shell}\n${dashboardEntry}\n${efferd}\n${dashboard}\n${sidebar}`;
+  const presentation = `${page}\n${shell}\n${dashboardEntry}\n${efferd}\n${dashboardLayout}\n${newRequestLayout}\n${frame}\n${dashboard}\n${sidebar}`;
 
   assert.match(page, /import \{ EfferdDashboard2 \} from "@\/components\/ui\/efferd-dashboard-2"/);
   assert.match(page, /return <EfferdDashboard2 \/>/);
-  assert.match(efferd, /import \{ AppShell \} from "@\/components\/app-shell"/);
   assert.match(efferd, /import \{ Dashboard \} from "@\/components\/dashboard"/);
-  assert.match(efferd, /<AppShell>[\s\S]*<Dashboard \/>[\s\S]*<\/AppShell>/);
+  assert.match(efferd, /return <Dashboard \/>/);
+  assert.doesNotMatch(efferd, /AppShell/);
   assert.match(dashboardEntry, /return <DashboardClient \/>/);
   assert.match(shell, /data-dashboard-shell="efferd"/);
   assert.match(shell, /mg-efferd-dashboard/);
   assert.match(globals, /\.mg-efferd-dashboard \.mg-compact-ui/);
   assert.match(globals, /border-radius: 0\.75rem !important/);
+  assert.match(dashboardLayout, /<CustomerPortalFrame>\{children\}<\/CustomerPortalFrame>/);
+  assert.match(newRequestLayout, /<CustomerPortalFrame>\{children\}<\/CustomerPortalFrame>/);
+  assert.match(frame, /data-customer-portal-frame/);
+  assert.match(frame, /<AppShell>/);
+  assert.match(frame, /lg:h-screen lg:overflow-hidden/);
+  assert.match(frame, /routeOwnsDesktopScroll/);
+  assert.match(frame, /pathname === "\/dashboard" \|\| pathname\.startsWith\("\/dashboard\/orders\/"\)/);
+  assert.match(frame, /!isEmailVerified\(user\)/);
+  assert.doesNotMatch(frame, /signOutIfEmailUnverified/);
+  assert.match(frame, /<CustomerPortalMobileNavigation pathname=\{pathname\} \/>/);
   assert.match(dashboard, /lg:h-screen lg:overflow-hidden/);
   assert.match(dashboard, /lg:flex lg:h-screen lg:flex-col lg:overflow-hidden/);
   assert.match(dashboard, /lg:min-h-0 lg:flex-1 lg:overflow-y-auto/);
@@ -713,11 +736,45 @@ test("customer dashboard uses the Efferd shell without losing routes or adding u
   assert.match(dashboard, /href: "\/tools\/file-readiness-check"/);
   assert.match(dashboard, /href: "\/tools\/request-brief-builder"/);
   assert.match(i18nCheck, /"src\/components\/app-shell\.tsx"/);
+  assert.match(i18nCheck, /"src\/components\/dashboard\/CustomerPortalFrame\.tsx"/);
+  assert.match(i18nCheck, /"src\/components\/dashboard\/CustomerPortalPageHeader\.tsx"/);
   assert.match(i18nCheck, /"src\/components\/dashboard\/CustomerPortalSidebar\.tsx"/);
   assert.match(i18nCheck, /"src\/components\/dashboard\/index\.tsx"/);
   assert.match(i18nCheck, /"src\/components\/ui\/efferd-dashboard-2\.tsx"/);
   assert.doesNotMatch(presentation, /from ["'](?:recharts|@radix-ui\/)/);
   assert.doesNotMatch(packageJson, /"(?:recharts|@radix-ui\/react-avatar|@radix-ui\/react-separator|@radix-ui\/react-collapsible|@radix-ui\/react-dropdown-menu)"/);
+});
+
+test("customer destination routes share one compact page header without duplicate desktop branding", () => {
+  const header = readProjectFile("src", "components", "dashboard", "CustomerPortalPageHeader.tsx");
+  const sidebar = readProjectFile("src", "components", "dashboard", "CustomerPortalSidebar.tsx");
+  const globals = readProjectFile("src", "app", "globals.css");
+  const notifications = readProjectFile("src", "app", "dashboard", "notifications", "page.tsx");
+  const destinations = [
+    readProjectFile("src", "app", "new-request", "page.tsx"),
+    readProjectFile("src", "app", "dashboard", "orders", "page.tsx"),
+    readProjectFile("src", "app", "dashboard", "credits", "page.tsx"),
+    readProjectFile("src", "app", "dashboard", "credits", "history", "page.tsx"),
+    notifications,
+    readProjectFile("src", "app", "dashboard", "settings", "page.tsx"),
+    readProjectFile("src", "app", "dashboard", "file-expert", "page.tsx"),
+    readProjectFile("src", "app", "dashboard", "file-expert", "[id]", "page.tsx"),
+    readProjectFile("src", "components", "dashboard", "LogAnalysisStudio.tsx"),
+    readProjectFile("src", "components", "dashboard", "WidgetDashboardClient.tsx"),
+    readProjectFile("src", "app", "dashboard", "widget", "billing", "page.tsx"),
+  ];
+
+  assert.match(header, /min-h-\[4\.75rem\]/);
+  assert.match(header, /border-\[#2b2b2b\] bg-\[#12151b\]\/95/);
+  assert.match(header, /width\?: "6xl" \| "7xl" \| "wide"/);
+  for (const destination of destinations) {
+    assert.match(destination, /CustomerPortalPageHeader/);
+  }
+  assert.match(sidebar, /nav\.scrollTo\(\{ left: Math\.max\(0, centeredLeft\), behavior: "auto" \}\)/);
+  assert.match(sidebar, /aria-current=\{active \? "page" : undefined\}/);
+  assert.match(sidebar, /aria-label="Mobile navigation"[\s\S]*href="mailto:info@mgautotech\.de"/);
+  assert.match(globals, /min-height: calc\(100dvh - 3\.8125rem\) !important/);
+  assert.match(notifications, /signOutIfEmailUnverified\(user\)[\s\S]*router\.push\("\/login\?verify_email=1"\)/);
 });
 
 test("customer settings profile load errors block default editable profile state", () => {

@@ -1,0 +1,54 @@
+import type { ReactNode } from "react";
+import type { LucideIcon } from "lucide-react";
+
+type CustomerPortalPageHeaderProps = {
+  eyebrow: string;
+  title: ReactNode;
+  icon: LucideIcon;
+  actions?: ReactNode;
+  heading?: boolean;
+  width?: "6xl" | "7xl" | "wide";
+};
+
+const widthClasses = {
+  "6xl": "max-w-6xl",
+  "7xl": "max-w-7xl",
+  wide: "max-w-[1500px]",
+} as const;
+
+export function CustomerPortalPageHeader({
+  eyebrow,
+  title,
+  icon: Icon,
+  actions,
+  heading = false,
+  width = "7xl",
+}: CustomerPortalPageHeaderProps) {
+  const titleClassName = "truncate text-xl font-black text-white sm:text-2xl";
+
+  return (
+    <header className="sticky top-0 z-40 shrink-0 border-b border-[#2b2b2b] bg-[#12151b]/95 backdrop-blur-xl">
+      <div
+        className={`mx-auto flex min-h-[4.75rem] items-center justify-between gap-4 px-4 py-3 lg:px-6 ${widthClasses[width]}`}
+      >
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-red-800/50 bg-red-950/25 text-red-400">
+            <Icon className="h-5 w-5" />
+          </span>
+          <div className="min-w-0">
+            <div className="truncate text-[10px] font-black uppercase tracking-[0.18em] text-red-500 sm:text-xs">
+              {eyebrow}
+            </div>
+            {heading ? (
+              <h1 className={titleClassName}>{title}</h1>
+            ) : (
+              <div className={titleClassName}>{title}</div>
+            )}
+          </div>
+        </div>
+
+        {actions ? <div className="flex shrink-0 items-center gap-2">{actions}</div> : null}
+      </div>
+    </header>
+  );
+}

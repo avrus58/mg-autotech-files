@@ -12,7 +12,6 @@ import { supabase } from "@/lib/supabaseClient";
 import { fetchVehicleOptions, preloadVehicleBrands } from "@/lib/vehicleControl/clientCatalog";
 import {
   Activity,
-  ArrowLeft,
   BadgeCheck,
   Car,
   CarFront,
@@ -31,6 +30,7 @@ import {
   Wrench,
   Zap,
 } from "lucide-react";
+import { CustomerPortalPageHeader } from "@/components/dashboard/CustomerPortalPageHeader";
 import { evaluateRequestIntelligence } from "@/lib/requestIntelligence";
 import { trackRequestStarted, trackRequestSubmitted } from "@/lib/publicAnalytics";
 import {
@@ -1673,41 +1673,21 @@ export default function NewRequestPage() {
     <main className="mg-compact-ui min-h-screen bg-[#050505] text-white">
       <div className="fixed inset-0 -z-10 bg-[radial-gradient(circle_at_20%_0%,rgba(160,18,28,0.24),transparent_32%),linear-gradient(135deg,#050505,#0d0d0f_48%,#160608)]" />
 
-      <header className="sticky top-0 z-50 border-b border-white/10 bg-black/80 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-5">
-          <Link href="/dashboard" className="flex items-center gap-3">
-            <div className="relative flex h-12 w-12 items-center justify-center rounded-2xl border border-red-800/50 bg-[#111] shadow-lg shadow-red-950/40">
-              <div className="absolute -top-2 h-5 w-10 rounded-t-full border-t-2 border-red-700" />
-              <Upload className="h-7 w-7 text-red-600" />
-            </div>
-
-            <div>
-              <div className="text-xl font-black tracking-wide">
-                MG <span className="text-red-600">AUTOTECH</span>
-              </div>
-              <div className="text-xs text-zinc-400">New File Request</div>
-            </div>
+      <CustomerPortalPageHeader
+        eyebrow="File Service"
+        title="New File Request"
+        icon={Upload}
+        actions={(
+          <Link
+            href="/"
+            aria-label="Return to homepage"
+            className="inline-flex h-11 items-center rounded-lg border border-white/10 px-3 text-sm font-black text-zinc-300 transition hover:bg-white/10 hover:text-white"
+          >
+            <Home className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Home</span>
           </Link>
-
-          <div className="flex items-center gap-2">
-            <Link
-              href="/dashboard"
-              className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-bold text-white transition hover:bg-white/10"
-            >
-              <ArrowLeft className="mr-2 inline h-4 w-4" />
-              Dashboard
-            </Link>
-
-            <Link
-              href="/"
-              className="hidden rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-bold text-white transition hover:bg-white/10 md:inline-block"
-            >
-              <Home className="mr-2 inline h-4 w-4" />
-              Home
-            </Link>
-          </div>
-        </div>
-      </header>
+        )}
+      />
 
       <section className="mx-auto max-w-7xl px-4 py-8">
         {(repeatPrefillLoading || repeatPrefillError || (repeatPrefill && !repeatPrefillDismissed)) && (
@@ -1806,7 +1786,7 @@ export default function NewRequestPage() {
           </section>
         )}
 
-        <div className="mb-8 grid gap-6 lg:grid-cols-[1fr_360px]">
+        <div className="mb-8 grid gap-6 xl:grid-cols-[1fr_340px]">
           <div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-7">
             <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-red-800/50 bg-red-950/25 px-4 py-2 text-sm font-semibold text-red-100">
               <BadgeCheck className="h-4 w-4 text-red-500" />
@@ -1861,7 +1841,7 @@ export default function NewRequestPage() {
           </div>
         </div>
 
-        <div className="grid gap-8 lg:grid-cols-[1fr_360px]">
+        <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_340px]">
           <div className="space-y-8">
             <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6">
               <div className="mb-6 flex items-center gap-3">

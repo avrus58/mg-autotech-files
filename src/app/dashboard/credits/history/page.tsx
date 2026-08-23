@@ -5,11 +5,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getStableSession, notifySessionRequired, signOutIfEmailUnverified, signOutStable } from "@/lib/authGuards";
 import { supabase } from "@/lib/supabaseClient";
+import { CustomerPortalPageHeader } from "@/components/dashboard/CustomerPortalPageHeader";
 import {
   ArrowLeft,
   CreditCard,
   FileText,
-  Gauge,
   History,
   Loader2,
   LogOut,
@@ -229,25 +229,15 @@ export default function CreditHistoryPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#050505] text-white">
+    <main className="mg-compact-ui min-h-screen bg-[#15181e] text-white">
       <div className="fixed inset-0 -z-10 bg-[radial-gradient(circle_at_20%_0%,rgba(160,18,28,0.24),transparent_32%),linear-gradient(135deg,#050505,#0d0d0f_48%,#160608)]" />
 
-      <header className="sticky top-0 z-40 border-b border-white/10 bg-black/75 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4">
-          <Link href="/dashboard" className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-red-800/50 bg-[#111] shadow-lg shadow-red-950/40">
-              <Gauge className="h-7 w-7 text-red-600" />
-            </div>
-
-            <div>
-              <div className="text-xl font-black tracking-wide">
-                MG <span className="text-red-600">AUTOTECH</span>
-              </div>
-              <div className="text-xs text-zinc-400">Credit Ledger</div>
-            </div>
-          </Link>
-
-          <div className="flex items-center gap-3">
+      <CustomerPortalPageHeader
+        eyebrow="Account"
+        title="Credit History"
+        icon={History}
+        actions={(
+          <>
             <div className="hidden rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 md:block">
               <div className="text-xs text-zinc-500">Logged in as</div>
               <div className="max-w-[220px] truncate text-sm font-bold">
@@ -261,22 +251,23 @@ export default function CreditHistoryPage() {
             </div>
 
             <button
+              type="button"
               onClick={handleLogout}
-              className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-bold text-white transition hover:bg-white/10"
+              className="inline-flex h-11 items-center rounded-lg border border-white/10 px-3 text-sm font-black text-white transition hover:bg-white/10"
             >
               <LogOut className="mr-2 inline h-4 w-4" />
               Logout
             </button>
-          </div>
-        </div>
-      </header>
+          </>
+        )}
+      />
 
       <section className="mx-auto max-w-7xl px-4 py-8">
         <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div>
             <Link
               href="/dashboard"
-              className="mb-5 inline-flex items-center rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-black text-white transition hover:bg-white/10"
+              className="mb-5 inline-flex items-center rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-black text-white transition hover:bg-white/10 lg:hidden"
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back to Dashboard

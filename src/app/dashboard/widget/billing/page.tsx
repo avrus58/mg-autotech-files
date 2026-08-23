@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { ArrowLeft, CreditCard, Loader2, ShieldCheck } from "lucide-react";
+import { CustomerPortalPageHeader } from "@/components/dashboard/CustomerPortalPageHeader";
 import { SubscriptionSummaryPanel } from "@/components/widget/SubscriptionSummaryPanel";
 import { authenticatedFetch } from "@/lib/authGuards";
 import type { WidgetBillingSummary } from "@/lib/widget/customerTypes";
@@ -51,5 +52,76 @@ export default function WidgetBillingPage() {
     window.location.href = data.url;
   }
 
-  return <main className="min-h-screen bg-[#050505] p-4 text-white"><section className="mx-auto w-full max-w-5xl py-10"><Link href="/dashboard/widget" className="text-sm font-black text-zinc-400"><ArrowLeft className="mr-2 inline h-4 w-4" />Widget dashboard</Link><div className="mt-8 border-y border-white/10 py-8"><CreditCard className="h-10 w-10 text-red-500" /><h1 className="mt-5 text-4xl font-black">Widget billing</h1><p className="mt-4 max-w-3xl leading-7 text-zinc-400">Review the linked subscription, latest payment, next renewal and remaining period before opening the Stripe Customer Portal.</p><div className="mt-6 flex items-center gap-2 text-sm text-emerald-300"><ShieldCheck className="h-4 w-4" />Secure billing managed by Stripe</div></div>{message && <div className="mt-6 border border-red-800/40 bg-red-950/20 p-4 text-sm text-red-200">{message}</div>}{showPlanAction && <div className="mt-5 flex flex-wrap gap-2"><Link href="/widget" className="rounded-lg bg-white px-4 py-3 text-sm font-black text-black">View widget plans</Link><a href="mailto:info@mgautotech.de?subject=Widget%20billing%20support" className="rounded-lg border border-white/10 px-4 py-3 text-sm font-black">Contact support</a></div>}<div className="mt-8"><SubscriptionSummaryPanel summary={summary} loading={summaryLoading} error={summaryError} canManageBilling={Boolean(summary?.billing_profile_linked)} onManage={openPortal} onRefresh={() => void loadSummary()} /></div><button onClick={openPortal} disabled={loading || !summary?.billing_profile_linked} className="mt-7 flex h-13 items-center rounded-lg bg-[#b1121b] px-6 text-sm font-black disabled:cursor-not-allowed disabled:opacity-50">{loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Open billing portal"}</button></section></main>;
+  return (
+    <main className="mg-compact-ui min-h-screen bg-[#15181e] text-white">
+      <CustomerPortalPageHeader
+        eyebrow="Vehicle Widget"
+        title="Widget billing"
+        icon={CreditCard}
+        width="6xl"
+        actions={
+          <Link
+            href="/dashboard/widget"
+            className="inline-flex h-10 items-center justify-center rounded-lg border border-white/10 px-3 text-xs font-black text-white transition hover:bg-white/[0.06] sm:px-4 sm:text-sm"
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Widget dashboard
+          </Link>
+        }
+      />
+
+      <section className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6">
+        <div className="border-y border-white/10 py-8">
+          <h1 className="text-3xl font-black sm:text-4xl">Subscription and payments</h1>
+          <p className="mt-4 max-w-3xl leading-7 text-zinc-400">
+            Review the linked subscription, latest payment, next renewal and remaining period
+            before opening the Stripe Customer Portal.
+          </p>
+          <div className="mt-6 flex items-center gap-2 text-sm text-emerald-300">
+            <ShieldCheck className="h-4 w-4" />
+            Secure billing managed by Stripe
+          </div>
+        </div>
+
+        {message ? (
+          <div className="mt-6 border border-red-800/40 bg-red-950/20 p-4 text-sm text-red-200">
+            {message}
+          </div>
+        ) : null}
+
+        {showPlanAction ? (
+          <div className="mt-5 flex flex-wrap gap-2">
+            <Link href="/widget" className="rounded-lg bg-white px-4 py-3 text-sm font-black text-black">
+              View widget plans
+            </Link>
+            <a
+              href="mailto:info@mgautotech.de?subject=Widget%20billing%20support"
+              className="rounded-lg border border-white/10 px-4 py-3 text-sm font-black"
+            >
+              Contact support
+            </a>
+          </div>
+        ) : null}
+
+        <div className="mt-8">
+          <SubscriptionSummaryPanel
+            summary={summary}
+            loading={summaryLoading}
+            error={summaryError}
+            canManageBilling={Boolean(summary?.billing_profile_linked)}
+            onManage={openPortal}
+            onRefresh={() => void loadSummary()}
+          />
+        </div>
+        <button
+          type="button"
+          onClick={openPortal}
+          disabled={loading || !summary?.billing_profile_linked}
+          className="mt-7 flex h-13 items-center rounded-lg bg-[#b1121b] px-6 text-sm font-black disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Open billing portal"}
+        </button>
+      </section>
+    </main>
+  );
 }

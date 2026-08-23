@@ -22,6 +22,7 @@ import {
   ShieldCheck,
   Wrench,
 } from "lucide-react";
+import { CustomerPortalPageHeader } from "@/components/dashboard/CustomerPortalPageHeader";
 import { authenticatedFetch, getStableSession, notifySessionRequired, signOutIfEmailUnverified } from "@/lib/authGuards";
 import type {
   FileExpertAnalyzerResult,
@@ -231,12 +232,25 @@ export default function FileExpertReportPage() {
   return (
     <main className="mg-compact-ui min-h-screen overflow-x-hidden bg-[#050505] text-white">
       <div className="fixed inset-0 -z-10 bg-[radial-gradient(circle_at_20%_0%,rgba(160,18,28,0.22),transparent_32%),linear-gradient(135deg,#050505,#0d0d0f_48%,#160608)]" />
+
+      <CustomerPortalPageHeader
+        eyebrow="AI File Expert"
+        title="Analysis report"
+        icon={BrainCircuit}
+        actions={
+          <Link
+            href="/dashboard/file-expert"
+            className="inline-flex h-10 items-center justify-center rounded-lg border border-white/10 px-3 text-xs font-black text-white transition hover:bg-white/[0.06] sm:px-4 sm:text-sm"
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Analyses
+          </Link>
+        }
+      />
+
       <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-        <header className="mb-6 flex flex-col gap-5 border-b border-white/10 pb-6 xl:flex-row xl:items-end xl:justify-between">
+        <section className="mb-6 flex flex-col gap-5 border-b border-white/10 pb-6 xl:flex-row xl:items-end xl:justify-between">
           <div className="min-w-0">
-            <Link href="/dashboard/file-expert" className="mb-4 inline-flex items-center gap-2 text-sm font-bold text-zinc-400 transition hover:text-white">
-              <ArrowLeft className="h-4 w-4" /> Back to analyses
-            </Link>
             <div className="flex flex-wrap items-center gap-2">
               <span className={`rounded-full border px-3 py-1 text-xs font-black ${statusClass(job.status)}`}>{job.status.toUpperCase()}</span>
               <span className={`rounded-full border px-3 py-1 text-xs font-black ${riskClass(job.risk_level)}`}>REVIEW: {(job.risk_level || "standard").toUpperCase()}</span>
@@ -255,7 +269,7 @@ export default function FileExpertReportPage() {
               {reanalyzing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCcw className="mr-2 h-4 w-4" />} Re-analyze
             </button>
           </div>
-        </header>
+        </section>
 
         {message && <div className="mb-6 rounded-2xl border border-red-800/40 bg-red-950/30 p-4 text-sm font-bold text-red-200">{message}</div>}
 

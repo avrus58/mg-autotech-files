@@ -4,24 +4,19 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  Activity,
-  ArrowLeft,
-  BrainCircuit,
   CheckCircle2,
   Clock3,
   CopyPlus,
   CreditCard,
   Eye,
   FileText,
-  Gauge,
-  History,
   Loader2,
   Search,
-  Settings,
   Upload,
 } from "lucide-react";
 import { getStableSession, notifySessionRequired, signOutIfEmailUnverified } from "@/lib/authGuards";
 import { supabase } from "@/lib/supabaseClient";
+import { CustomerPortalPageHeader } from "@/components/dashboard/CustomerPortalPageHeader";
 
 type Order = {
   id: string;
@@ -51,7 +46,6 @@ const CUSTOMER_ORDERS_LOAD_ERROR_MESSAGE = "Order archive could not be synced. P
 function statusLabel(status: string | null) {
   return (status || "new_request").replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
-
 function statusClass(status: string | null) {
   if (status === "completed") return "border-emerald-700/40 bg-emerald-950/30 text-emerald-300";
   if (status === "in_progress") return "border-blue-700/40 bg-blue-950/30 text-blue-300";
@@ -61,7 +55,6 @@ function statusClass(status: string | null) {
   if (status === "cancelled") return "border-zinc-700/40 bg-zinc-900/50 text-zinc-400";
   return "border-red-800/40 bg-red-950/25 text-red-300";
 }
-
 function formatDate(value: string) {
   return new Date(value).toLocaleString("de-DE", {
     day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit",
@@ -205,44 +198,27 @@ export default function CustomerOrdersPage() {
   const showInitialLoadError = Boolean(loadError && !ordersReady);
 
   return (
-    <main className="min-h-screen bg-[#050505] text-white">
+    <main className="mg-compact-ui min-h-screen bg-[#15181e] text-white">
       <div className="flex min-h-screen">
-        <aside className="hidden w-72 shrink-0 border-r border-white/10 bg-black/70 lg:block">
-          <div className="sticky top-0 flex h-screen flex-col px-5 py-6">
-            <Link href="/dashboard" className="mb-8 flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-red-800/50 bg-[#111]"><Gauge className="h-7 w-7 text-red-600" /></div>
-              <div><div className="text-xl font-black">MG <span className="text-red-600">AUTOTECH</span></div><div className="text-xs text-zinc-400">Customer Panel</div></div>
-            </Link>
-            <nav className="min-h-0 flex-1 space-y-2 overflow-y-auto pr-1 text-sm">
-              <PortalLink href="/dashboard" icon={<ArrowLeft />} label="Dashboard" />
-              <PortalLink href="/new-request" icon={<Upload />} label="New File Request" />
-              <PortalLink href="/dashboard/orders" icon={<FileText />} label="Active Orders" active={view === "active"} />
-              <PortalLink href="/dashboard/orders?view=needs_response" icon={<Clock3 />} label="Needs Response" active={view === "needs_response"} />
-              <PortalLink href="/dashboard/orders?view=completed" icon={<History />} label="Order History" active={["completed", "cancelled", "all"].includes(view)} />
-              <PortalLink href="/dashboard/file-expert" icon={<BrainCircuit />} label="AI File Expert" />
-              <PortalLink href="/dashboard/log-analysis" icon={<Activity />} label="Datalog Analysis Studio" />
-              <PortalLink href="/dashboard/credits" icon={<CreditCard />} label="Buy Credits" />
-              <PortalLink href="/dashboard/settings" icon={<Settings />} label="Settings" />
-            </nav>
-          </div>
-        </aside>
-
         <section className="min-w-0 flex-1">
-          <header className="sticky top-0 z-40 border-b border-white/10 bg-black/80 px-4 py-4 backdrop-blur-xl lg:px-8">
-            <div className="mx-auto flex max-w-7xl items-center justify-between gap-4">
-              <div><div className="text-xs font-black uppercase tracking-[0.2em] text-red-500">File Service Archive</div><h1 className="mt-1 text-2xl font-black">{currentView.label}</h1></div>
-              <Link href="/new-request" className="rounded-xl bg-[#b1121b] px-4 py-3 text-sm font-black"><Upload className="mr-2 inline h-4 w-4" />New Request</Link>
-            </div>
-          </header>
+          <CustomerPortalPageHeader
+            eyebrow="File Service Archive"
+            title={currentView.label}
+            icon={FileText}
+            heading
+            actions={(
+              <Link href="/new-request" className="rounded-lg bg-[#b1121b] px-4 py-3 text-sm font-black hover:bg-[#c91824]"><Upload className="mr-2 inline h-4 w-4" />New Request</Link>
+            )}
+          />
 
           <div className="mx-auto max-w-7xl px-4 py-7 lg:px-8">
             <div className="mb-5 grid grid-cols-2 gap-2 md:hidden">
-              {views.map((item) => <button key={item.value} onClick={() => selectView(item.value)} className={`min-w-0 rounded-xl border px-3 py-3 text-sm font-black last:col-span-2 ${view === item.value ? "border-red-700 bg-red-950/35" : "border-white/10 bg-white/[0.04] text-zinc-400"}`}>{item.label}</button>)}
+              {views.map((item) => <button key={item.value} type="button" aria-pressed={view === item.value} onClick={() => selectView(item.value)} className={`min-w-0 rounded-xl border px-3 py-3 text-sm font-black last:col-span-2 ${view === item.value ? "border-red-700 bg-red-950/35" : "border-white/10 bg-white/[0.04] text-zinc-400"}`}>{item.label}</button>)}
             </div>
 
             <div className="mb-6 grid gap-3 md:grid-cols-5">
               {views.map((item) => (
-                <button key={item.value} onClick={() => selectView(item.value)} className={`hidden rounded-xl border p-4 text-left transition md:block ${view === item.value ? "border-red-700 bg-red-950/30" : "border-white/10 bg-white/[0.03] hover:bg-white/[0.06]"}`}>
+                <button key={item.value} type="button" aria-pressed={view === item.value} onClick={() => selectView(item.value)} className={`hidden rounded-xl border p-4 text-left transition md:block ${view === item.value ? "border-red-700 bg-red-950/30" : "border-white/10 bg-white/[0.03] hover:bg-white/[0.06]"}`}>
                   <div className="font-black">{item.label}</div><div className="mt-1 text-xs text-zinc-500">{item.description}</div>
                 </button>
               ))}
@@ -251,7 +227,7 @@ export default function CustomerOrdersPage() {
             <section className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 sm:p-6">
               <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                 <div><h2 className="text-2xl font-black">{currentView.label}</h2><p className="mt-1 text-sm text-zinc-500">{ordersReady ? `${total} requests in this view. Only ${pageSize} are loaded at a time.` : "Order archive sync is pending."}</p></div>
-                <div className="relative w-full sm:w-96"><Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search vehicle, engine or service..." className="h-12 w-full rounded-xl border border-white/10 bg-black/35 pl-11 pr-4 text-sm font-bold outline-none focus:border-red-700" /></div>
+                <label className="relative w-full sm:w-96"><span className="sr-only">Search</span><Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" /><input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search vehicle, engine or service..." className="h-12 w-full rounded-xl border border-white/10 bg-black/35 pl-11 pr-4 text-sm font-bold outline-none focus:border-red-700" /></label>
               </div>
 
               {ordersReady && (
@@ -314,7 +290,7 @@ export default function CustomerOrdersPage() {
               {showInitialLoadError ? (
                 <OrdersLoadErrorState onRetry={() => void loadOrders()} />
               ) : loading && !ordersReady ? (
-                <div className="flex min-h-64 items-center justify-center text-zinc-500"><Loader2 className="mr-3 h-5 w-5 animate-spin" />Loading orders...</div>
+                <div role="status" aria-live="polite" className="flex min-h-64 items-center justify-center text-zinc-500"><Loader2 className="mr-3 h-5 w-5 animate-spin" />Loading orders...</div>
               ) : orders.length === 0 ? (
                 <div className="min-h-64 rounded-xl border border-dashed border-white/15 p-10 text-center text-zinc-500"><Clock3 className="mx-auto mb-4 h-9 w-9" />No orders found in this view.</div>
               ) : (
@@ -365,8 +341,4 @@ function OrdersLoadErrorState({ onRetry }: { onRetry: () => void }) {
       </button>
     </div>
   );
-}
-
-function PortalLink({ href, icon, label, active = false }: { href: string; icon: React.ReactNode; label: string; active?: boolean }) {
-  return <Link href={href} className={`flex items-center gap-3 rounded-xl px-4 py-3 font-bold transition ${active ? "bg-red-950/35 text-white" : "text-zinc-400 hover:bg-white/[0.06] hover:text-white"}`}><span className="[&>svg]:h-5 [&>svg]:w-5">{icon}</span>{label}</Link>;
 }

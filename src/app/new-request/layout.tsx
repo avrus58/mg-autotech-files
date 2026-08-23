@@ -1,5 +1,6 @@
 import { BrowserAuthBoundary } from "@/components/auth/BrowserAuthBoundary";
 import { RegistrationCountryBoundary } from "@/components/auth/RegistrationCountryBoundary";
+import { CustomerPortalFrame } from "@/components/dashboard/CustomerPortalFrame";
 
 export default function NewRequestLayout({
   children,
@@ -13,7 +14,7 @@ export default function NewRequestLayout({
       nextPath="/new-request"
     >
       <RegistrationCountryBoundary nextPath="/new-request">
-        {children}
+        <CustomerPortalFrame>{children}</CustomerPortalFrame>
       </RegistrationCountryBoundary>
     </BrowserAuthBoundary>
   );

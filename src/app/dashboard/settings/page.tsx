@@ -11,14 +11,13 @@ import { resolveTransactionalEmailLanguageFromMetadata } from "@/lib/email/langu
 import type { TransactionalEmailLanguage } from "@/lib/email/types";
 import { supportedLocales } from "@/lib/i18nConfig";
 import { TrustedDevicesCard } from "@/components/account/TrustedDevicesCard";
+import { CustomerPortalPageHeader } from "@/components/dashboard/CustomerPortalPageHeader";
 import {
-  ArrowLeft,
   AlertTriangle,
   Building2,
   CheckCircle2,
   Copy,
   CreditCard,
-  Gauge,
   Languages,
   Loader2,
   MapPin,
@@ -309,36 +308,17 @@ export default function CustomerSettingsPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#050505] text-white">
+    <main className="mg-compact-ui min-h-screen bg-[#15181e] text-white">
       <div className="fixed inset-0 -z-10 bg-[radial-gradient(circle_at_18%_0%,rgba(160,18,28,0.25),transparent_34%),linear-gradient(135deg,#050505,#0c0c0e_48%,#170507)]" />
 
-      <header className="sticky top-0 z-50 border-b border-white/10 bg-black/80 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-5">
-          <Link href="/dashboard" className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-red-800/50 bg-[#111] shadow-lg shadow-red-950/40">
-              <Gauge className="h-7 w-7 text-red-600" />
-            </div>
-
-            <div>
-              <div className="text-xl font-black tracking-wide">
-                MG <span className="text-red-600">AUTOTECH</span>
-              </div>
-              <div className="text-xs text-zinc-400">Customer Settings</div>
-            </div>
-          </Link>
-
-          <Link
-            href="/dashboard"
-            className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-bold text-white transition hover:bg-white/10"
-          >
-            <ArrowLeft className="mr-2 inline h-4 w-4" />
-            Dashboard
-          </Link>
-        </div>
-      </header>
+      <CustomerPortalPageHeader
+        eyebrow="Account"
+        title="Customer Settings"
+        icon={User}
+      />
 
       <section className="mx-auto max-w-7xl px-4 py-8">
-        <div className="mb-8 grid gap-6 lg:grid-cols-[1fr_360px]">
+        <div className="mb-8 grid gap-6 xl:grid-cols-[1fr_340px]">
           <div className="relative overflow-hidden rounded-[2rem] border border-red-900/50 bg-gradient-to-br from-red-950/30 via-white/[0.04] to-black p-7 shadow-2xl shadow-black/30">
             <div className="absolute -right-24 -top-24 h-64 w-64 rounded-full bg-red-700/20 blur-3xl" />
             <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-red-500/60 to-transparent" />
@@ -402,7 +382,7 @@ export default function CustomerSettingsPage() {
           </div>
         )}
 
-        <form onSubmit={saveSettings} className="grid gap-6 lg:grid-cols-[1fr_0.8fr]">
+        <form onSubmit={saveSettings} className="grid gap-6 xl:grid-cols-[1fr_0.8fr]">
           <section className="space-y-6">
             <div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6">
               <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">

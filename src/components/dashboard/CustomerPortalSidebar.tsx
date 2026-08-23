@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useRef } from "react";
 import {
   Activity,
   BellRing,
@@ -19,31 +20,33 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
+export type CustomerPortalActiveItem =
+  | "dashboard"
+  | "new-request"
+  | "orders"
+  | "needs-response"
+  | "order-history"
+  | "file-expert"
+  | "log-analysis"
+  | "widget"
+  | "credits"
+  | "credit-history"
+  | "notifications"
+  | "settings";
+
 type CustomerPortalSidebarProps = {
-  activeItem?:
-    | "dashboard"
-    | "new-request"
-    | "orders"
-    | "needs-response"
-    | "order-history"
-    | "file-expert"
-    | "log-analysis"
-    | "widget"
-    | "credits"
-    | "credit-history"
-    | "notifications"
-    | "settings";
+  activeItem?: CustomerPortalActiveItem;
   credits: number | null;
 };
 
 type SidebarLinkItem = {
-  activeKey: NonNullable<CustomerPortalSidebarProps["activeItem"]>;
+  activeKey: CustomerPortalActiveItem;
   href: string;
   label: string;
   icon: LucideIcon;
 };
 
-const sidebarSections: Array<{
+export const customerPortalSidebarSections: Array<{
   label: string;
   items: SidebarLinkItem[];
 }> = [
@@ -131,7 +134,7 @@ export function CustomerPortalSidebar({
           aria-label="Primary navigation"
           className="mg-dense-scroll min-h-0 flex-1 space-y-5 overflow-y-auto pr-1 text-sm"
         >
-          {sidebarSections.map((section) => (
+          {customerPortalSidebarSections.map((section) => (
             <div key={section.label} className="space-y-1">
               <div className="px-3 pb-1 text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-600">
                 {section.label}
@@ -170,5 +173,63 @@ export function CustomerPortalSidebar({
         </div>
       </div>
     </aside>
+  );
+}
+
+export function CustomerPortalMobileNav({
+  activeItem,
+}: {
+  activeItem: CustomerPortalActiveItem;
+}) {
+  const navRef = useRef<HTMLElement | null>(null);
+  const activeLinkRef = useRef<HTMLAnchorElement | null>(null);
+
+  useEffect(() => {
+    const nav = navRef.current;
+    const activeLink = activeLinkRef.current;
+    if (!nav || !activeLink) return;
+
+    const centeredLeft =
+      activeLink.offsetLeft - (nav.clientWidth - activeLink.offsetWidth) / 2;
+    nav.scrollTo({ left: Math.max(0, centeredLeft), behavior: "auto" });
+  }, [activeItem]);
+
+  return (
+    <nav
+      ref={navRef}
+      aria-label="Mobile navigation"
+      className="mg-dense-scroll flex gap-2 overflow-x-auto border-b border-[#252525] bg-[#090909] px-4 py-2.5 lg:hidden"
+    >
+      {customerPortalSidebarSections.flatMap((section) =>
+        section.items.map((item) => {
+          const Icon = item.icon;
+          const active = item.activeKey === activeItem;
+
+          return (
+            <Link
+              ref={active ? activeLinkRef : undefined}
+              key={`${section.label}-${item.href}-${item.activeKey}`}
+              href={item.href}
+              aria-current={active ? "page" : undefined}
+              className={
+                active
+                  ? "inline-flex min-h-10 shrink-0 items-center rounded-lg border border-[rgba(177,18,27,0.55)] bg-[rgba(177,18,27,0.18)] px-3 py-2 text-xs font-black text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
+                  : "inline-flex min-h-10 shrink-0 items-center rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-black text-zinc-300 transition hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
+              }
+            >
+              <Icon className={`mr-2 h-4 w-4 ${active ? "text-red-400" : ""}`} />
+              {item.label}
+            </Link>
+          );
+        })
+      )}
+      <a
+        href="mailto:info@mgautotech.de"
+        className="inline-flex min-h-10 shrink-0 items-center rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-black text-zinc-300 transition hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
+      >
+        <Wrench className="mr-2 h-4 w-4" />
+        Support
+      </a>
+    </nav>
   );
 }

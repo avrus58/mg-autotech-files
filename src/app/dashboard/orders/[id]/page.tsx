@@ -6,7 +6,6 @@ import { useParams, useRouter } from "next/navigation";
 import { authenticatedFetch, getStableSession, notifySessionRequired, signOutIfEmailUnverified } from "@/lib/authGuards";
 import { supabase } from "@/lib/supabaseClient";
 import RequestChat from "@/components/RequestChat";
-import { CustomerPortalSidebar } from "@/components/dashboard/CustomerPortalSidebar";
 import workspaceStyles from "./order-workspace.module.css";
 import { formatFileVersionLabel } from "@/lib/fileVersionLabels";
 import type { CustomerRequestDtcAnalysis } from "@/lib/dtcAnalyzer/requestIntegration";
@@ -20,14 +19,11 @@ import {
   Clock3,
   Copy,
   CopyPlus,
-  CreditCard,
   Database,
   Download,
   FileCode2,
   FileDown,
-  FileText,
   Gauge,
-  Home,
   Loader2,
   Mail,
   PackageCheck,
@@ -350,7 +346,6 @@ export default function OrderDetailPage() {
   const [order, setOrder] = useState<Order | null>(null);
   const [delivery, setDelivery] = useState<CustomerDeliveryHistory | null>(null);
   const [email, setEmail] = useState<string | null>(null);
-  const [credits, setCredits] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [liveRefreshing, setLiveRefreshing] = useState(false);
   const [message, setMessage] = useState("");
@@ -411,23 +406,9 @@ export default function OrderDetailPage() {
       }
 
       try {
-        const profileBalanceRequest = (async () => {
-          try {
-            return await supabase
-              .from("profiles")
-              .select("credit_balance")
-              .eq("id", user.id)
-              .single();
-          } catch {
-            return null;
-          }
-        })();
-        const [response, profileBalanceResult] = await Promise.all([
-          authenticatedFetch(`/api/requests/${orderId}`, {
-            cache: "no-store",
-          }),
-          profileBalanceRequest,
-        ]);
+        const response = await authenticatedFetch(`/api/requests/${orderId}`, {
+          cache: "no-store",
+        });
         const payload = await response.json();
 
         if (!response.ok) {
@@ -441,8 +422,6 @@ export default function OrderDetailPage() {
 
         setOrder(payload.order as Order);
         setDelivery(payload.delivery as CustomerDeliveryHistory);
-        const nextCreditBalance = Number(profileBalanceResult?.data?.credit_balance ?? 0);
-        setCredits(Number.isFinite(nextCreditBalance) ? nextCreditBalance : null);
         hasLoadedOrderRef.current = true;
       } catch {
         if (!options?.silent || !hasLoadedOrderRef.current) {
@@ -763,8 +742,6 @@ export default function OrderDetailPage() {
       <div className="fixed inset-0 -z-10 bg-[radial-gradient(circle_at_18%_0%,rgba(177,18,27,0.25),transparent_34%),linear-gradient(135deg,#050505,#0c0c0e_48%,#170507)]" />
 
       <div className="flex min-h-screen lg:h-screen lg:overflow-hidden">
-        <CustomerPortalSidebar activeItem="orders" credits={credits} />
-
         <section className="min-w-0 flex-1 lg:flex lg:h-screen lg:flex-col lg:overflow-hidden">
           <header className="sticky top-0 z-50 shrink-0 border-b border-[#2b2b2b] bg-[#12151b]/95 backdrop-blur-xl lg:static">
             <div className="border-b border-red-950/40 bg-[#b1121b] px-4 py-2 text-white lg:px-5 xl:px-6">
@@ -832,24 +809,6 @@ export default function OrderDetailPage() {
               </div>
             </div>
           </header>
-
-          <nav
-            aria-label="Mobile navigation"
-            className="mg-dense-scroll flex shrink-0 gap-2 overflow-x-auto border-b border-[#252525] bg-[#090909] px-4 py-2.5 lg:hidden"
-          >
-            <Link href="/dashboard" className="shrink-0 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-xs font-black">
-              <Home className="mr-2 inline h-4 w-4" />Dashboard
-            </Link>
-            <Link href="/dashboard/orders" aria-current="page" className="shrink-0 rounded-xl border border-red-800/50 bg-red-950/30 px-4 py-2.5 text-xs font-black text-red-100">
-              <FileText className="mr-2 inline h-4 w-4" />Orders
-            </Link>
-            <Link href="/new-request" className="shrink-0 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-xs font-black">
-              <Upload className="mr-2 inline h-4 w-4" />New Request
-            </Link>
-            <Link href="/dashboard/credits" className="shrink-0 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-xs font-black">
-              <CreditCard className="mr-2 inline h-4 w-4" />Buy Credits
-            </Link>
-          </nav>
 
           <div
             role="region"

@@ -128,6 +128,32 @@ Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
 
+### MANUAL-20260824-CUSTOMER-WORKSPACE-UNIFICATION [P1] Musteri sayfalarini tek portal tasariminda birlestir
+
+Durum: Done
+
+Fingerprint: `customer-experience|authenticated-portal-routes|dashboard-and-destinations-use-conflicting-shells|shared-workspace-chrome-with-preserved-functions`
+
+Sonuc: `/dashboard` ve `/new-request` altindaki authenticated customer
+sayfalari tek `CustomerPortalFrame`, ortak desktop sidebar, ayni rota
+kaynagindan uretilen mobil nav ve ortak compact page header kullaniyor. Orders,
+File Expert, Datalog Studio, Vehicle Widget, credits/history, notifications,
+settings ve new-request icindeki legacy ikinci sidebar/logo/header kopyalari
+kaldirildi; mevcut form, upload, checkout, realtime, indirme, chat, analiz ve
+yonlendirme davranislari korundu. Aktif mobil hedef yatay eksende otomatik
+gorunur, Support mobilde de erisilebilir ve dashboard/order-detail kendi scroll
+alanini kullanirken diger rotalar ortak scroll sahibini kullaniyor.
+
+Dogrulama: `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS
+(967/967); `npm run check:i18n` PASS (11 dilde 603/603); `npm run build --
+--webpack` PASS (277/277 static pages); `git diff --check` PASS. Authenticated
+local route dogru auth sinirinda login gerektirdigi icin gercek hesapla lokal
+icerik QA yapilmadi; 1366x768 canli referans salt-okunur incelendi, responsive
+ve accessibility sozlesmeleri source/test/build ile dogrulandi.
+
+Kapsam disi: Production deploy, push, SQL/migration, Production DB,
+env/secret, payment, e-posta veya gercek musteri verisi degisikligi yapilmadi.
+
 ### MANUAL-20260824-CUSTOMER-WORKSPACE-BRAND-TONE [P1] Yeni musteri workspace kirmizi tonunu mevcut portalla esitle
 
 Durum: Done

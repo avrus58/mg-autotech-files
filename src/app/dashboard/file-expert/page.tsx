@@ -5,7 +5,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   AlertTriangle,
-  ArrowLeft,
   ArrowRight,
   BrainCircuit,
   CheckCircle2,
@@ -16,6 +15,7 @@ import {
   ShieldCheck,
   Upload,
 } from "lucide-react";
+import { CustomerPortalPageHeader } from "@/components/dashboard/CustomerPortalPageHeader";
 import { authenticatedFetch, getStableSession, notifySessionRequired, signOutIfEmailUnverified } from "@/lib/authGuards";
 import {
   fileExpertAllowedExtensions,
@@ -339,36 +339,32 @@ export default function FileExpertDashboardPage() {
     <main className="mg-compact-ui min-h-screen overflow-x-hidden bg-[#050505] text-white">
       <div className="fixed inset-0 -z-10 bg-[radial-gradient(circle_at_20%_0%,rgba(160,18,28,0.22),transparent_32%),linear-gradient(135deg,#050505,#0d0d0f_48%,#160608)]" />
 
-      <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-        <div className="mb-6 flex flex-col gap-4 border-b border-white/10 pb-6 md:flex-row md:items-center md:justify-between">
-          <div className="min-w-0">
-            <Link
-              href="/dashboard"
-              className="mb-4 inline-flex items-center gap-2 text-sm font-bold text-zinc-400 transition hover:text-white"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Back to dashboard
-            </Link>
-            <div className="text-xs font-black uppercase tracking-[0.28em] text-red-500">
-              MG AutoTech AI File Expert
-            </div>
-            <h1 className="mt-2 break-words text-4xl font-black md:text-5xl">
-              Automatic ECU / TCU identification
-            </h1>
-            <p className="mt-3 max-w-3xl text-sm leading-7 text-zinc-400">
-              Upload one file to identify the control unit, HW/SW information and file
-              profile. Add the matching ORI and MOD pair for a professional modification comparison.
-            </p>
-          </div>
-
+      <CustomerPortalPageHeader
+        eyebrow="Tools"
+        title="AI File Expert"
+        icon={BrainCircuit}
+        actions={
           <button
-            onClick={() => loadJobs({ silent: true })}
-            className="inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] px-5 py-3 text-sm font-black text-white transition hover:bg-white/10"
+            type="button"
+            onClick={() => void loadJobs({ silent: true })}
+            className="inline-flex h-10 items-center justify-center rounded-lg border border-white/10 px-3 text-xs font-black text-white transition hover:bg-white/[0.06] sm:px-4 sm:text-sm"
           >
             <RefreshCcw className="mr-2 h-4 w-4" />
             Refresh
           </button>
-        </div>
+        }
+      />
+
+      <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+        <section className="mb-6 border-b border-white/10 pb-6">
+          <h1 className="break-words text-3xl font-black sm:text-4xl">
+            Automatic ECU / TCU identification
+          </h1>
+          <p className="mt-3 max-w-3xl text-sm leading-7 text-zinc-400">
+            Upload one file to identify the control unit, HW/SW information and file
+            profile. Add the matching ORI and MOD pair for a professional modification comparison.
+          </p>
+        </section>
 
         {message && (
           <div className="mb-6 rounded-2xl border border-red-800/40 bg-red-950/30 p-4 text-sm font-bold text-red-200">

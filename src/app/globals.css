@@ -107,8 +107,8 @@ body {
   Efferd-inspired customer workspace
   ----------------------------------
   This scope intentionally sits after the shared compact UI rules. It keeps
-  the customer dashboard dense and operational without changing the admin or
-  the remaining customer pages.
+  the authenticated customer workspace dense and operational without changing
+  the admin or public pages.
 */
 .mg-efferd-dashboard .mg-compact-ui {
   --mg-panel-radius: 0.75rem;
@@ -138,6 +138,18 @@ body {
 .mg-efferd-dashboard ::selection {
   background: rgba(177, 18, 27, 0.55);
   color: #fff;
+}
+
+.mg-customer-workspace-content > .mg-compact-ui > header {
+  border-color: #2b2b2b;
+  background-color: rgba(18, 21, 27, 0.95);
+}
+
+@media (max-width: 1023px) {
+  .mg-customer-workspace-content > main,
+  .mg-customer-workspace-content > main > .flex.min-h-screen {
+    min-height: calc(100dvh - 3.8125rem) !important;
+  }
 }
 
 .mg-step-rail {

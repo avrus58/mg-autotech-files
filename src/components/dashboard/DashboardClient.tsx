@@ -5,7 +5,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getStableSession, notifySessionRequired, signOutIfEmailUnverified, signOutStable } from "@/lib/authGuards";
 import { supabase } from "@/lib/supabaseClient";
-import { CustomerPortalSidebar } from "@/components/dashboard/CustomerPortalSidebar";
 import {
   Activity,
   ArrowRight,
@@ -20,7 +19,6 @@ import {
   Eye,
   FileText,
   History,
-  Home,
   LogOut,
   Plus,
   RefreshCw,
@@ -643,8 +641,6 @@ export function DashboardClient() {
   return (
     <main className="mg-compact-ui min-h-screen bg-[#15181e] text-white lg:h-screen lg:overflow-hidden">
       <div className="flex min-h-screen lg:h-screen lg:overflow-hidden">
-        <CustomerPortalSidebar activeItem="dashboard" credits={credits} />
-
         <section className="min-w-0 flex-1 lg:flex lg:h-screen lg:flex-col lg:overflow-hidden">
           <header className="sticky top-0 z-40 shrink-0 border-b border-[#2b2b2b] bg-[#12151b]/95 backdrop-blur-xl lg:static">
             <div className="border-b border-red-950/40 bg-[#b1121b] px-4 py-2.5 text-white lg:px-5 xl:px-6">
@@ -753,30 +749,6 @@ export function DashboardClient() {
               </button>
             </div>
           </header>
-
-          <nav
-            aria-label="Mobile navigation"
-            className="mg-dense-scroll flex shrink-0 gap-2 overflow-x-auto border-b border-[#252525] bg-[#090909] px-4 py-2.5 lg:hidden"
-          >
-            <Link href="/dashboard" aria-current="page" className="shrink-0 rounded-xl border border-red-800/50 bg-red-950/30 px-4 py-2.5 text-xs font-black">
-              <Home className="mr-2 inline h-4 w-4" />Dashboard
-            </Link>
-            <Link href="/new-request" className="shrink-0 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-xs font-black">
-              <Upload className="mr-2 inline h-4 w-4" />New Request
-            </Link>
-            <Link href="/dashboard/log-analysis" className="shrink-0 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-xs font-black">
-              <Activity className="mr-2 inline h-4 w-4" />Datalog Studio
-            </Link>
-            <Link href="/dashboard/orders" className="shrink-0 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-xs font-black">
-              <FileText className="mr-2 inline h-4 w-4" />Orders
-            </Link>
-            <Link href="/dashboard/orders?view=needs_response" className="shrink-0 rounded-xl border border-red-800/50 bg-red-950/30 px-4 py-2.5 text-xs font-black text-red-100">
-              <Clipboard className="mr-2 inline h-4 w-4" />Needs Response
-            </Link>
-            <Link href="/dashboard/credits" className="shrink-0 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-xs font-black">
-              <CreditCard className="mr-2 inline h-4 w-4" />Credits
-            </Link>
-          </nav>
 
           <div
             role="region"

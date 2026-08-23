@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { BrowserAuthBoundary } from "@/components/auth/BrowserAuthBoundary";
 import { RegistrationCountryBoundary } from "@/components/auth/RegistrationCountryBoundary";
+import { CustomerPortalFrame } from "@/components/dashboard/CustomerPortalFrame";
 
 export const metadata: Metadata = {
   robots: {
@@ -20,7 +21,7 @@ export default function DashboardLayout({
       description="Your file requests, credits, messages and completed files are protected inside your MG AutoTech account."
     >
       <RegistrationCountryBoundary>
-        {children}
+        <CustomerPortalFrame>{children}</CustomerPortalFrame>
       </RegistrationCountryBoundary>
     </BrowserAuthBoundary>
   );

@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
-  ArrowLeft,
   BellRing,
   CheckCheck,
   Circle,
@@ -12,7 +12,8 @@ import {
   MessageSquareText,
   RefreshCw,
 } from "lucide-react";
-import { getStableSession, notifySessionRequired } from "@/lib/authGuards";
+import { CustomerPortalPageHeader } from "@/components/dashboard/CustomerPortalPageHeader";
+import { getStableSession, notifySessionRequired, signOutIfEmailUnverified } from "@/lib/authGuards";
 import { supabase } from "@/lib/supabaseClient";
 
 type NotificationType = "admin_message" | "order_status" | "file_ready" | "additional_upload_enabled" | "system";
@@ -59,6 +60,7 @@ function notificationIcon(type: NotificationType) {
 }
 
 export default function CustomerNotificationCenterPage() {
+  const router = useRouter();
   const [userId, setUserId] = useState("");
   const [items, setItems] = useState<NotificationRow[]>([]);
   const [filter, setFilter] = useState<NotificationFilter>("all");
@@ -85,14 +87,20 @@ export default function CustomerNotificationCenterPage() {
   useEffect(() => {
     let active = true;
     let channel: ReturnType<typeof supabase.channel> | null = null;
-    void getStableSession().then(({ session }) => {
+    void getStableSession().then(async ({ session }) => {
       if (!active) return;
-      const id = session?.user?.id;
-      if (!id) {
+      const user = session?.user;
+      if (!user) {
         notifySessionRequired();
         setLoading(false);
         return;
       }
+      if (await signOutIfEmailUnverified(user)) {
+        if (active) router.push("/login?verify_email=1");
+        return;
+      }
+      if (!active) return;
+      const id = user.id;
       setUserId(id);
       void load(id);
       channel = supabase
@@ -104,7 +112,7 @@ export default function CustomerNotificationCenterPage() {
       active = false;
       if (channel) void supabase.removeChannel(channel);
     };
-  }, [load]);
+  }, [load, router]);
 
   const unread = useMemo(() => items.filter((item) => !item.read_at).length, [items]);
   const visible = useMemo(() => items.filter((item) => matchesFilter(item, filter)), [filter, items]);
@@ -122,17 +130,16 @@ export default function CustomerNotificationCenterPage() {
 
   return (
     <main className="mg-compact-ui min-h-screen bg-[#050505] text-white">
-      <header className="border-b border-white/10 bg-black/80">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-4 py-5 sm:px-6">
-          <div>
-            <Link href="/dashboard" className="inline-flex items-center gap-2 text-xs font-black text-zinc-500 hover:text-white"><ArrowLeft className="h-4 w-4" />Dashboard</Link>
-            <div className="mt-2 flex items-center gap-3"><BellRing className="h-7 w-7 text-red-500" /><div><p className="text-xs font-black uppercase tracking-[0.18em] text-red-500">Customer Notification Center</p><h1 className="text-xl font-black sm:text-2xl">Updates that need your attention</h1></div></div>
-          </div>
-          <div className="flex items-center gap-2">
+      <CustomerPortalPageHeader
+        eyebrow="Customer Notification Center"
+        title="Updates that need your attention"
+        icon={BellRing}
+        heading
+        width="6xl"
+        actions={(
             <button type="button" onClick={() => userId && void load(userId, true)} disabled={refreshing} className="inline-flex items-center rounded-lg border border-white/10 px-3 py-2 text-sm font-black hover:bg-white/10 disabled:opacity-50"><RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />Refresh</button>
-          </div>
-        </div>
-      </header>
+        )}
+      />
 
       <section className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
         <div className="grid gap-px overflow-hidden rounded-lg border border-white/10 bg-white/10 sm:grid-cols-3">
@@ -142,12 +149,12 @@ export default function CustomerNotificationCenterPage() {
         </div>
 
         <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-y border-white/10 py-3">
-          <div className="flex items-center gap-2 overflow-x-auto"><Filter className="h-4 w-4 shrink-0 text-zinc-600" />{filters.map((item) => <button key={item.value} type="button" onClick={() => setFilter(item.value)} className={`shrink-0 rounded-lg px-3 py-2 text-xs font-black ${filter === item.value ? "bg-[#b1121b] text-white" : "bg-white/[0.04] text-zinc-400 hover:bg-white/10"}`}>{item.label}</button>)}</div>
+          <div className="flex items-center gap-2 overflow-x-auto"><Filter className="h-4 w-4 shrink-0 text-zinc-600" />{filters.map((item) => <button key={item.value} type="button" aria-pressed={filter === item.value} onClick={() => setFilter(item.value)} className={`shrink-0 rounded-lg px-3 py-2 text-xs font-black ${filter === item.value ? "bg-[#b1121b] text-white" : "bg-white/[0.04] text-zinc-400 hover:bg-white/10"}`}>{item.label}</button>)}</div>
           <button type="button" onClick={() => void markRead(items.filter((item) => !item.read_at).map((item) => item.id))} disabled={unread === 0} className="inline-flex items-center text-xs font-black text-red-300 disabled:text-zinc-700"><CheckCheck className="mr-2 h-4 w-4" />Mark all as read</button>
         </div>
 
         {error && <div role="alert" className="mt-5 rounded-lg border border-red-700/40 bg-red-950/20 p-4 text-sm text-red-200">{error}</div>}
-        {loading ? <div role="status" className="py-16 text-center text-sm text-zinc-500">Loading notifications...</div> : (
+        {loading ? <div role="status" aria-live="polite" className="py-16 text-center text-sm text-zinc-500">Loading notifications...</div> : (!error || visible.length > 0) && (
           <div className="divide-y divide-white/10 border-b border-white/10">
             {visible.length === 0 && <div className="py-16 text-center"><BellRing className="mx-auto h-6 w-6 text-zinc-700" /><div className="mt-3 font-black">No notifications in this view</div><p className="mt-1 text-sm text-zinc-500">New customer-safe order and message events will appear here.</p></div>}
             {visible.map((item) => {

@@ -1294,6 +1294,7 @@ const commonTerms: Partial<Record<LocaleCode, Dictionary>> = {
     Requests: "Talepler",
     Revision: "Revizyon",
     Save: "Kaydet",
+    Search: "Ara",
     Type: "Tip",
     Upload: "Yükle",
     Version: "Versiyon",
@@ -1384,6 +1385,15 @@ const commonTerms: Partial<Record<LocaleCode, Dictionary>> = {
     Upload: "Prześlij",
     Version: "Wersja",
     Work: "Praca",
+  },
+  ru: {
+    Search: "Поиск",
+  },
+  zh: {
+    Search: "搜索",
+  },
+  sq: {
+    Search: "Kërko",
   },
 };
 

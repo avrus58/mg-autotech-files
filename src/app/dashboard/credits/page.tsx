@@ -1,6 +1,5 @@
 ﻿"use client";
 
-import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { authenticatedFetch, getStableSession, notifySessionRequired, signOutIfEmailUnverified } from "@/lib/authGuards";
@@ -10,13 +9,12 @@ import {
   creditPackages,
 } from "@/lib/creditPackages";
 import { supabase } from "@/lib/supabaseClient";
+import { CustomerPortalPageHeader } from "@/components/dashboard/CustomerPortalPageHeader";
 import {
-  ArrowLeft,
   CheckCircle2,
   Copy,
   CreditCard,
   Crown,
-  Gauge,
   Landmark,
   Loader2,
   ShieldCheck,
@@ -292,33 +290,14 @@ export default function BuyCreditsPage() {
     <main className="mg-compact-ui min-h-screen bg-[#050505] text-white">
       <div className="fixed inset-0 -z-10 bg-[radial-gradient(circle_at_18%_0%,rgba(160,18,28,0.25),transparent_34%),radial-gradient(circle_at_80%_20%,rgba(177,18,27,0.15),transparent_28%),linear-gradient(135deg,#050505,#0c0c0e_48%,#170507)]" />
 
-      <header className="sticky top-0 z-50 border-b border-white/10 bg-black/80 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-5">
-          <Link href="/dashboard" className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-red-800/50 bg-[#111] shadow-lg shadow-red-950/40">
-              <Gauge className="h-7 w-7 text-red-600" />
-            </div>
-
-            <div>
-              <div className="text-xl font-black tracking-wide">
-                MG <span className="text-red-600">AUTOTECH</span>
-              </div>
-              <div className="text-xs text-zinc-400">Credit Checkout</div>
-            </div>
-          </Link>
-
-          <Link
-            href="/dashboard"
-            className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-bold text-white transition hover:bg-white/10"
-          >
-            <ArrowLeft className="mr-2 inline h-4 w-4" />
-            Dashboard
-          </Link>
-        </div>
-      </header>
+      <CustomerPortalPageHeader
+        eyebrow="Account"
+        title="Buy Credits"
+        icon={CreditCard}
+      />
 
       <section className="mx-auto max-w-7xl px-4 py-10">
-        <div className="mb-10 grid gap-6 lg:grid-cols-[1fr_420px] lg:items-end">
+        <div className="mb-10 grid gap-6 xl:grid-cols-[1fr_420px] xl:items-end">
           <div>
             <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-red-800/50 bg-red-950/25 px-4 py-2 text-sm font-semibold text-red-100">
               <CreditCard className="h-4 w-4 text-red-500" />
@@ -377,6 +356,7 @@ export default function BuyCreditsPage() {
                 <button
                   key={method.id}
                   type="button"
+                  aria-pressed={active}
                   onClick={() => {
                     setPaymentMethod(method.id);
                     setMessage("");
@@ -491,18 +471,18 @@ export default function BuyCreditsPage() {
         </div>
 
         {message && (
-          <div className="mb-6 rounded-2xl border border-red-800/50 bg-red-950/30 p-4 text-sm text-red-200">
+          <div role="status" aria-live="polite" className="mb-6 rounded-2xl border border-red-800/50 bg-red-950/30 p-4 text-sm text-red-200">
             {message}
           </div>
         )}
 
-        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-5">
+        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5">
           {packages.map((item) => (
             <div
               key={item.id}
               className={`relative flex min-h-[360px] flex-col rounded-[2rem] border p-6 shadow-2xl shadow-black/20 transition hover:-translate-y-1 ${
                 item.highlight
-                  ? "border-red-800/70 bg-red-950/30 xl:-mt-6"
+                  ? "border-red-800/70 bg-red-950/30 2xl:-mt-6"
                   : "border-white/10 bg-white/[0.04]"
               }`}
             >

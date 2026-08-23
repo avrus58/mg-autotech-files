@@ -1,30 +1,23 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, type DragEvent } from "react";
 import {
   Activity,
   AlertTriangle,
-  ArrowLeft,
   BarChart3,
-  BrainCircuit,
   CheckCircle2,
   Clipboard,
   Download,
   FileSpreadsheet,
-  FileText,
   Gauge,
-  Home,
   Info,
-  LayoutDashboard,
   LockKeyhole,
   RotateCcw,
-  Settings,
   ShieldCheck,
   Table2,
   Upload,
-  Wrench,
 } from "lucide-react";
+import { CustomerPortalPageHeader } from "@/components/dashboard/CustomerPortalPageHeader";
 import {
   analyzeLogStudio,
   maxLogStudioCharacters,
@@ -464,13 +457,10 @@ export function LogAnalysisStudio() {
   };
 
   return (
-    <main data-no-translate className="min-h-screen overflow-x-clip bg-[radial-gradient(circle_at_18%_0%,rgba(127,29,29,0.22),transparent_30%),radial-gradient(circle_at_90%_16%,rgba(8,47,73,0.16),transparent_28%),linear-gradient(135deg,#050505,#09090b_52%,#110607)] text-white">
+    <main data-no-translate className="mg-compact-ui min-h-screen overflow-x-clip bg-[#15181e] text-white">
       <div className="flex min-h-screen">
-        <StudioSidebar />
-
         <section className="min-w-0 flex-1">
           <StudioHeader state={state} />
-          <StudioMobileNav />
 
           <div className="mx-auto max-w-[1540px] px-4 py-6 sm:py-8 lg:px-7 xl:px-9">
             <section className="relative overflow-hidden rounded-[1.75rem] border border-white/10 bg-gradient-to-br from-red-950/30 via-[#0b0b0e] to-[#071018] p-5 shadow-2xl shadow-black/30 sm:p-7">
@@ -554,88 +544,23 @@ export function LogAnalysisStudio() {
   );
 }
 
-function StudioSidebar() {
-  return (
-    <aside className="hidden w-72 shrink-0 border-r border-white/10 bg-black/70 lg:block">
-      <div className="sticky top-0 flex h-screen flex-col px-5 py-6">
-        <Link href="/" className="mb-8 flex items-center gap-3">
-          <span className="relative flex h-12 w-12 items-center justify-center rounded-2xl border border-red-800/50 bg-[#111] shadow-lg shadow-red-950/40">
-            <span className="absolute -top-2 h-5 w-10 rounded-t-full border-t-2 border-red-700" />
-            <Gauge className="h-7 w-7 text-red-600" />
-          </span>
-          <span>
-            <span className="block text-xl font-black tracking-wide">MG <span className="text-red-600">AUTOTECH</span></span>
-            <span className="block text-xs text-zinc-400">Customer Panel</span>
-          </span>
-        </Link>
-
-        <nav className="min-h-0 flex-1 space-y-2 overflow-y-auto pr-1 text-sm" aria-label="Customer dashboard">
-          <SidebarLink href="/dashboard" icon={<LayoutDashboard />} label="Dashboard" />
-          <SidebarLink href="/new-request" icon={<Upload />} label="New File Request" />
-          <SidebarLink href="/dashboard/file-expert" icon={<BrainCircuit />} label="AI File Expert" />
-          <SidebarLink href="/dashboard/log-analysis" icon={<Activity />} label="Datalog Analysis Studio" active />
-          <SidebarLink href="/dashboard/orders" icon={<FileText />} label="Active Orders" />
-          <SidebarLink href="/dashboard/credits" icon={<Gauge />} label="Buy Credits" />
-          <SidebarLink href="/dashboard/settings" icon={<Settings />} label="Settings" />
-          <a href="mailto:info@mgautotech.de" className="flex items-center gap-3 rounded-2xl px-4 py-3 font-bold text-zinc-400 transition hover:bg-white/[0.06] hover:text-white">
-            <Wrench className="h-5 w-5" /> Support
-          </a>
-        </nav>
-
-        <div className="mt-5 shrink-0 rounded-3xl border border-sky-900/40 bg-sky-950/15 p-5">
-          <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.16em] text-sky-300">
-            <LockKeyhole className="h-4 w-4" /> Browser local
-          </div>
-          <p className="mt-2 text-xs leading-5 text-zinc-500">Closing or clearing this page removes the current analysis.</p>
-        </div>
-      </div>
-    </aside>
-  );
-}
-
-function SidebarLink({ href, icon, label, active = false }: { href: string; icon: React.ReactNode; label: string; active?: boolean }) {
-  return (
-    <Link
-      href={href}
-      aria-current={active ? "page" : undefined}
-      className={`flex items-center gap-3 rounded-2xl px-4 py-3 font-bold transition ${active ? "border border-red-800/40 bg-red-950/35 text-white" : "text-zinc-400 hover:bg-white/[0.06] hover:text-white"}`}
-    >
-      <span className={`[&>svg]:h-5 [&>svg]:w-5 ${active ? "text-red-400" : ""}`}>{icon}</span>
-      {label}
-    </Link>
-  );
-}
-
 function StudioHeader({ state }: { state: StudioState }) {
   return (
-    <header className="sticky top-0 z-40 border-b border-white/10 bg-black/80 backdrop-blur-xl">
-      <div className="flex min-h-[4.75rem] items-center justify-between gap-4 px-4 py-3 lg:px-8">
-        <div className="min-w-0">
-          <div className="truncate text-xs font-black uppercase tracking-[0.2em] text-red-500">Customer workspace</div>
-          <h1 className="mt-1 truncate text-xl font-black sm:text-2xl">Datalog Analysis Studio</h1>
-        </div>
+    <CustomerPortalPageHeader
+      eyebrow="Customer workspace"
+      title="Datalog Analysis Studio"
+      icon={Activity}
+      heading
+      width="wide"
+      actions={
         <div className="flex shrink-0 items-center gap-2">
           <span className="hidden items-center gap-2 rounded-xl border border-emerald-800/30 bg-emerald-950/20 px-3 py-2 text-xs font-black text-emerald-300 sm:inline-flex">
             <span className={`h-2 w-2 rounded-full ${state === "reading" ? "animate-pulse bg-amber-400" : "bg-emerald-400"}`} />
             {state === "reading" ? "Reading locally" : "Local mode"}
           </span>
-          <Link href="/dashboard" className="inline-flex min-h-10 items-center rounded-xl border border-white/10 bg-white/[0.04] px-3 text-xs font-black transition hover:bg-white/10 sm:px-4">
-            <ArrowLeft className="mr-2 h-4 w-4" /> Dashboard
-          </Link>
         </div>
-      </div>
-    </header>
-  );
-}
-
-function StudioMobileNav() {
-  return (
-    <nav className="flex gap-2 overflow-x-auto border-b border-white/10 bg-black/45 px-4 py-3 lg:hidden" aria-label="Customer dashboard">
-      <Link href="/dashboard" className="shrink-0 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-xs font-black"><Home className="mr-2 inline h-4 w-4" />Dashboard</Link>
-      <Link href="/new-request" className="shrink-0 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-xs font-black"><Upload className="mr-2 inline h-4 w-4" />New Request</Link>
-      <Link href="/dashboard/log-analysis" aria-current="page" className="shrink-0 rounded-xl border border-red-800/50 bg-red-950/30 px-4 py-2.5 text-xs font-black"><Activity className="mr-2 inline h-4 w-4" />Datalog Studio</Link>
-      <Link href="/dashboard/orders" className="shrink-0 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-xs font-black"><FileText className="mr-2 inline h-4 w-4" />Orders</Link>
-    </nav>
+      }
+    />
   );
 }
 

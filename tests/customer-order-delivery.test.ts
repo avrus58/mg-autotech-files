@@ -517,6 +517,8 @@ test("anonymous users cannot load an order or request a delivery download", asyn
 
 test("desktop order workspace uses shared navigation and a bounded chat aside while mobile remains stacked", () => {
   const page = source("src", "app", "dashboard", "orders", "[id]", "page.tsx");
+  const layout = source("src", "app", "dashboard", "layout.tsx");
+  const frame = source("src", "components", "dashboard", "CustomerPortalFrame.tsx");
   const workspaceStyles = source(
     "src",
     "app",
@@ -529,7 +531,10 @@ test("desktop order workspace uses shared navigation and a bounded chat aside wh
 
   assert.match(page, /workspaceStyles\.viewportShell/);
   assert.match(page, /workspaceStyles\.workspaceColumns/);
-  assert.match(page, /<CustomerPortalSidebar activeItem="orders" credits=\{credits\} \/>/);
+  assert.match(layout, /<CustomerPortalFrame>\{children\}<\/CustomerPortalFrame>/);
+  assert.match(frame, /pathname\.startsWith\("\/dashboard\/orders\/"\)[\s\S]*return "orders"/);
+  assert.match(frame, /<CustomerPortalDesktopNavigation pathname=\{pathname\} credits=\{credits\} \/>/);
+  assert.doesNotMatch(page, /CustomerPortalSidebar|aria-label="Mobile navigation"/);
   assert.match(page, /lg:grid-cols-\[minmax\(0,1fr\)_minmax\(20rem,0\.42fr\)\]/);
   assert.match(page, /workspaceStyles\.workspaceChatColumn/);
   assert.match(workspaceStyles, /@media \(min-width: 1024px\)/);

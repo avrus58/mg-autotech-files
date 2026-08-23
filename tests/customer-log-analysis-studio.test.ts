@@ -155,16 +155,17 @@ test("quality is described as capture structure with explicit technical boundari
   assert.doesNotMatch(studio, /(?:dyno|diagnosis|tune approval) (?:confirmed|validated|approved)/i);
 });
 
-test("customer dashboard navigation exposes the Studio on dashboard and orders surfaces", () => {
+test("shared customer navigation exposes the Studio across dashboard and orders surfaces", () => {
   const dashboard = readProjectFile("src", "components", "dashboard", "DashboardClient.tsx");
+  const frame = readProjectFile("src", "components", "dashboard", "CustomerPortalFrame.tsx");
   const sidebar = readProjectFile("src", "components", "dashboard", "CustomerPortalSidebar.tsx");
   const orders = readProjectFile("src", "app", "dashboard", "orders", "page.tsx");
-  const dashboardNavigation = `${dashboard}\n${sidebar}`;
-  const dashboardLinks = dashboardNavigation.match(/(?:href="\/dashboard\/log-analysis"|href: "\/dashboard\/log-analysis")/g) ?? [];
 
-  assert.ok(dashboardLinks.length >= 2, "dashboard should expose desktop and compact Studio navigation");
+  assert.match(frame, /<CustomerPortalDesktopNavigation pathname=\{pathname\} credits=\{credits\} \/>/);
+  assert.match(frame, /<CustomerPortalMobileNavigation pathname=\{pathname\} \/>/);
+  assert.match(frame, /pathname\.startsWith\("\/dashboard\/log-analysis"\)[\s\S]*return "log-analysis"/);
+  assert.match(sidebar, /href: "\/dashboard\/log-analysis"/);
   assert.match(sidebar, /Datalog Analysis Studio/);
   assert.match(dashboard, /Datalog Studio/);
-  assert.match(orders, /href="\/dashboard\/log-analysis"/);
-  assert.match(orders, /label="Datalog Analysis Studio"/);
+  assert.doesNotMatch(orders, /w-72 shrink-0|function PortalLink/);
 });

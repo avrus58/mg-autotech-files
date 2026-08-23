@@ -4357,3 +4357,61 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
   SQL/migration, Production DB, env/secret, Caddy, DNS, payment, e-posta veya
   gercek musteri verisi degistirilmedi. Kritik regresyon gorulmedi; rollback
   uygulanmadi.
+
+## 2026-08-24 Customer workspace unification baslangici
+
+- Owner, yeni ana customer dashboard'un ferah ve profesyonel oldugunu ancak sol
+  menuden acilan diger sayfalarin legacy shell, farkli sidebar genisligi, siyah
+  zemin, buyuk radius ve farkli header dili nedeniyle ayri bir urun gibi
+  gorundugunu bildirdi.
+- Evidence: Ortak `CustomerPortalSidebar` yalniz `/dashboard` ve
+  `/dashboard/orders/[id]` tarafinda kullaniliyor. Orders ve Datalog Studio kendi
+  `w-72` sidebar'ini ciziyor; new-request, credits/history, File Expert,
+  notifications, settings ve widget ekranlari standalone header kullaniyor.
+  `.mg-efferd-dashboard .mg-compact-ui` tokenlari da dashboard disinda scope'a
+  girmiyor.
+- Kapsam: Mevcut inner content ve tum islevler korunarak ortak customer portal
+  scaffold, tek rota kaynagi, mobil nav ve guvenli sidebar balance fallback'i
+  uygulanacak. Yeni dependency, SQL/migration, env/secret, Production servis
+  islemi, odeme ayari veya gercek musteri verisi yoktur.
+
+## 2026-08-24 01:27 +02:00 Customer workspace unification tamamlandi
+
+- Sonuc: `/dashboard` ve `/new-request` layoutlari tek
+  `CustomerPortalFrame` icinde ortak desktop sidebar ve mobil nav kullaniyor.
+  Orders, File Expert, Datalog Studio, Vehicle Widget, credits/history,
+  notifications, settings ve new-request icindeki legacy ikinci sidebar,
+  desktop logo ve kopuk header kopyalari ortak compact page header diline
+  tasindi. Dashboard referansindaki `#070707` taban, `#12151b` header,
+  `#2b2b2b` border ve mevcut `#b1121b` marka kirmizisi korunuyor.
+- Fonksiyon korumasi: Request olusturma, order filtre/detail/chat, upload ve
+  download, File Expert, browser-local datalog analizi, widget ayarlari/billing,
+  credits/ledger, notifications realtime ve settings akislari kaldirilmadi.
+  Shared balance sorgusu e-posta dogrulamasindan once calismiyor;
+  Notifications rotasi da mevcut dogrulanmamis e-posta yonlendirme kapisini
+  kullaniyor. Ortak auth boundary non-destructive kaldi.
+- Responsive/a11y: Aktif mobil nav hedefi yalniz yatay eksende merkeze geliyor,
+  sayfayi dikey kaydirmiyor; mobile Support aksiyonu eklendi. Dashboard ve order
+  detail kendi desktop scroll alanini, diger rotalar ortak scroll alanini
+  kullaniyor. Filtre secimleri `aria-pressed`, aramalar etiketli ve loading
+  durumlari live-region sozlesmesine sahip.
+- Degisen alanlar: customer dashboard/new-request layout ve route sayfalari,
+  `CustomerPortalFrame`, `CustomerPortalSidebar`, `CustomerPortalPageHeader`,
+  dashboard/log/widget componentleri, compact global CSS, customer i18n
+  kataloglari ve ilgili regresyon testleri. Yeni dependency, package/lockfile,
+  migration veya veri semasi yoktur.
+- Kontroller: `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS
+  (967/967); `npm run check:i18n` PASS (11 non-English locale, 603/603 source
+  string); `npm run build -- --webpack` PASS (277/277 static pages);
+  `git diff --check` PASS (yalniz Windows CRLF bilgilendirmeleri).
+- Browser QA: Authenticated local customer route mevcut guvenlik siniri
+  nedeniyle login ekrani disina gecmedi; auth bypass veya gercek musteri hesabi
+  kullanilmadi. Canli dashboard 1366x768 salt-okunur referans olarak
+  karsilastirildi. Local auth boundary dogru calisti, Chrome viewport override
+  sifirlandi ve dev server kapatildi.
+- Kalan risk: Bu nedenle yeni authenticated destination sayfalarinin gercek
+  veriyle piksel seviyesinde lokal ekran goruntusu alinamadi. Source responsive
+  sozlesmeleri, hedefli UI testleri, tam test paketi ve Production build temiz.
+- Kapsam disi: Production deploy/push, SQL/migration, Production DB,
+  env/secret, payment, e-posta, DNS/Caddy veya gercek musteri verisi islemi
+  yapilmadi.
