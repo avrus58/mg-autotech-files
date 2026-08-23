@@ -68,15 +68,15 @@ test("required auth CAPTCHA fails closed for missing, invalid and Production tes
   assert.throws(() => getAuthCaptchaToken(missingKey, null), /unavailable/i);
 });
 
-test("Preview can explicitly use a Turnstile test key while Production readiness rejects it", () => {
-  const preview = resolveAuthCaptchaConfig({
+test("hosted web builds reject Turnstile test keys without a public bypass", () => {
+  const hosted = resolveAuthCaptchaConfig({
     mode: "required",
     siteKey: "1x00000000000000000000AA",
     nodeEnv: "production",
-    allowTestKey: true,
   });
-  assert.equal(preview.status, "ready");
-  assert.equal(getAuthCaptchaToken(preview, " token "), "token");
+  assert.equal(hosted.status, "misconfigured");
+  assert.equal(authCaptchaBlocksSubmission(hosted, "token"), true);
+  assert.throws(() => getAuthCaptchaToken(hosted, "token"), /unavailable/i);
 });
 
 test("all active Supabase CAPTCHA auth clients pass a fresh token", () => {

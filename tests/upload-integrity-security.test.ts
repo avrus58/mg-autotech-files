@@ -178,6 +178,7 @@ test("additional upload finalization binds metadata and atomically consumes perm
 
 test("File Expert analyzer and caller fail closed around auth, SSRF, limits, and concurrency", () => {
   const analyzer = source("file-expert-analyzer", "main.py");
+  const analyzerNetworkPolicy = source("file-expert-analyzer", "network_policy.py");
   const server = source("src", "lib", "fileExpert", "server.ts");
   const analyzeRoute = source("src", "app", "api", "file-expert", "jobs", "[id]", "analyze", "route.ts");
   const finalizeRoute = source("src", "app", "api", "file-expert", "jobs", "[id]", "finalize", "route.ts");
@@ -186,7 +187,12 @@ test("File Expert analyzer and caller fail closed around auth, SSRF, limits, and
   assert.match(analyzer, /FILE_EXPERT_ANALYZER_TOKEN/);
   assert.match(analyzer, /hmac\.compare_digest/);
   assert.match(analyzer, /FILE_EXPERT_ANALYZER_ALLOWED_HOSTS/);
-  assert.match(analyzer, /ipaddress\.ip_address\(address\)\.is_global/);
+  assert.match(analyzer, /is_public_unicast_address\(address\)/);
+  assert.match(analyzerNetworkPolicy, /ipaddress\.ip_address\(value\)/);
+  assert.match(analyzerNetworkPolicy, /address\.is_global/);
+  assert.match(analyzerNetworkPolicy, /not address\.is_multicast/);
+  assert.match(analyzerNetworkPolicy, /not address\.is_reserved/);
+  assert.match(analyzerNetworkPolicy, /not address\.is_unspecified/);
   assert.match(analyzer, /follow_redirects=False/);
   assert.match(analyzer, /trust_env=False/);
   assert.match(analyzer, /client\.stream\("GET"/);
@@ -197,7 +203,9 @@ test("File Expert analyzer and caller fail closed around auth, SSRF, limits, and
 
   assert.match(server, /FILE_EXPERT_ANALYZER_TOKEN/);
   assert.match(server, /url\.protocol !== "https:"/);
-  assert.match(server, /url\.protocol === "http:" && isLoopback/);
+  assert.match(server, /FILE_EXPERT_ANALYZER_ALLOW_PRIVATE_DOCKER_HTTP === "true"/);
+  assert.match(server, /url\.origin === "http:\/\/file-expert-analyzer:8010"/);
+  assert.match(server, /url\.protocol === "http:" && \(isLoopback \|\| isExplicitPrivateDockerAnalyzer\)/);
   assert.match(server, /Authorization: `Bearer \$\{configuration\.token\}`/);
   assert.match(server, /redirect: "error"/);
   assert.match(server, /fileExpertAnalyzerRequestTimeoutMs/);

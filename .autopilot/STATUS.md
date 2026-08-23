@@ -3521,3 +3521,34 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 - Sinirlar: Yeni dependency, SQL/migration, API/storage/persistence, env/secret
   okuma, Production Supabase/customer/payment/e-posta islemi, push veya deploy
   yapilmadi.
+
+## 2026-08-23 VPS cutover-compatible predecessor freeze
+
+- Gorev: Vercel'den VPS'e geciste 02452/02453 ve customer-device migrationlari
+  arasinda guvenli calisacak, Production UI'yi koruyan kesin predecessor
+  artifact'ini hazirlamak.
+- Artifact yapisi: `755decc` security tabanina current Production UI ucu
+  `3e6bcdd` merge edildi. Device-aware `b53e1e3` ancestry'ye alinmadi. Hardened
+  VPS/Cloudflare-Caddy request-network paketi ile ayri File Expert analyzer
+  runtime'i `e6ce2e4` kaynagindan device secret zorunlulugu olmadan tasindi.
+- Korunan davranis: Premium login/register, ulke ve bayrakli telefon secimi,
+  bes hatali parolada gorunen adaptive Turnstile ve mevcut Log Analysis Studio
+  korunur. Predecessor device migration/route/lib veya
+  `CUSTOMER_DEVICE_HMAC_SECRET` gerektirmez.
+- VPS/File Expert siniri: App Production portu host'a publish edilmez; yalniz
+  proof-bound Cloudflare-Caddy header contract'i kabul edilir. Analyzer private
+  Docker endpoint'inde non-root, read-only, tek concurrency, bellek/CPU ve wall
+  timeout sinirlariyla calisir; SSRF public-unicast Supabase allowlist'i ve ortak
+  server token'i fail-closed kalir.
+- Kontroller: `npm test` PASS (868/868); kritik auth/register/log/request-network/
+  VPS/File Expert paketi PASS (103/103); `npm run lint` PASS; `npm run typecheck`
+  PASS (web + desktop); `npm run build -- --webpack` PASS (273 route/page);
+  `npm run check:i18n` PASS (12 locale, 594/594); `npm run check:performance`
+  PASS (67.9 KiB gzip / 80 KiB budget, forbidden runtime yok); Python unittest
+  PASS (6/6), `py_compile` PASS ve VPS shell `bash -n` PASS; `git diff --check`
+  PASS. Yerel Windows'ta Docker CLI bulunmadigi icin Compose config ve image
+  build kapilari VPS'teki exact tracked archive uzerinde tamamlanacak.
+- Kalan operasyonel kapilar: Exact predecessor commit/archive checksum freeze,
+  staging-only env ile loopback app/analyzer E2E, Production logical backup,
+  Supabase/Auth dashboard kapilari, Caddy/DNS cutover ve immediate smoke. Bu
+  kayit Production deploy veya canli DB mutation yapmaz.

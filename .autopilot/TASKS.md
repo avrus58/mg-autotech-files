@@ -76,6 +76,19 @@ Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
 
+### MANUAL-20260823-VPS-CUTOVER-PREDECESSOR [P0] VPS cutover-compatible predecessor freeze
+
+Durum: Done
+
+Fingerprint: `release|vps-cutover-predecessor|current-production-ui-plus-security-base|device-independent-hardened-runtime`
+
+Sonuc: `755decc` security tabani ile `3e6bcdd` current Production UI birlestirildi;
+device-aware commit ancestry'ye alinmadan Cloudflare-Caddy request trust, hardened
+VPS Compose/rollback paketi ve ayri sinirli File Expert analyzer runtime'i tasindi.
+Tam suite 868/868, typecheck, lint, Webpack Production build, i18n, performance,
+Python ve shell kapilari gecti. Docker config/image/sentetik E2E exact archive ile
+VPS'te tamamlanmak uzere operasyonel release sirasinda kalir.
+
 ### MANUAL-20260822-LOG-STUDIO-PRODUCTION-RELEASE [P0] Log Analysis Studio Production release
 
 Durum: Done

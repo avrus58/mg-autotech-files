@@ -206,6 +206,7 @@ test("session abuse fingerprints can remain stable across rotating IP addresses"
     subjectSalt: "s".repeat(32),
     suffix: "hashed-session-subject",
     includeClientIp: false,
+    networkEnvironment: { VERCEL: "1" } as const,
   };
   assert.equal(
     buildRateLimitSubjectFingerprint({ ...shared, request: request("192.0.2.10") }),

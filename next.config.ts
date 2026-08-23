@@ -48,6 +48,7 @@ const protectedPageSources = [
 ];
 
 const nextConfig: NextConfig = {
+  output: "standalone",
   async redirects() {
     return [
       {

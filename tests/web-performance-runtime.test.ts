@@ -75,4 +75,7 @@ test("a build-time homepage JavaScript budget guards future regressions", () => 
   assert.match(script, /supabase-js/);
   assert.match(script, /motionValue/);
   assert.match(script, /panelV2Translations/);
+  assert.match(script, /globalThis\.__RSC_MANIFEST\["\/page"\]/);
+  assert.match(script, /clientModules/);
+  assert.match(script, /static\\\/chunks\\\/app\\\/layout-/);
 });

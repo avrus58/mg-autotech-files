@@ -5,7 +5,10 @@ import { resolve } from "node:path";
 import test from "node:test";
 
 function source(...segments: string[]) {
-  return readFileSync(resolve(process.cwd(), ...segments), "utf8");
+  return readFileSync(resolve(process.cwd(), ...segments), "utf8").replace(
+    /\r\n?/g,
+    "\n",
+  );
 }
 
 const migrationName = "20260816002454_zero_credit_request_compatibility.sql";

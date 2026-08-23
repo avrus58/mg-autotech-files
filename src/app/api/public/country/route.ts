@@ -1,4 +1,7 @@
-import { normalizeCountryCode } from "@/lib/countries";
+import {
+  getTrustedCountryCode,
+  type RequestNetworkEnvironment,
+} from "@/lib/requestNetwork";
 
 export const dynamic = "force-dynamic";
 
@@ -9,10 +12,11 @@ const responseHeaders = {
   "X-Robots-Tag": "noindex, nofollow, noarchive",
 };
 
-export function GET(request: Request) {
-  const countryCode = normalizeCountryCode(
-    request.headers.get("x-vercel-ip-country")
-  );
+function countryResponse(
+  request: Request,
+  environment: RequestNetworkEnvironment = process.env
+) {
+  const countryCode = getTrustedCountryCode(request, environment);
 
   return Response.json(
     { countryCode },
@@ -20,4 +24,8 @@ export function GET(request: Request) {
       headers: responseHeaders,
     }
   );
+}
+
+export function GET(request: Request) {
+  return countryResponse(request);
 }

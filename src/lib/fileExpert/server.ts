@@ -211,12 +211,19 @@ export function getExternalAnalyzerConfiguration(
     const url = new URL(rawUrl);
     const loopbackHosts = new Set(["localhost", "127.0.0.1", "[::1]", "::1"]);
     const isLoopback = loopbackHosts.has(url.hostname.toLowerCase());
+    const isExplicitPrivateDockerAnalyzer =
+      environment.FILE_EXPERT_ANALYZER_ALLOW_PRIVATE_DOCKER_HTTP === "true" &&
+      url.origin === "http://file-expert-analyzer:8010" &&
+      url.pathname === "/";
     if (
       url.username ||
       url.password ||
       url.search ||
       url.hash ||
-      (url.protocol !== "https:" && !(url.protocol === "http:" && isLoopback))
+      (
+        url.protocol !== "https:" &&
+        !(url.protocol === "http:" && (isLoopback || isExplicitPrivateDockerAnalyzer))
+      )
     ) return null;
     return { url: url.toString().replace(/\/$/, ""), token };
   } catch {

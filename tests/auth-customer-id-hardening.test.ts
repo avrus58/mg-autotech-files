@@ -5,7 +5,10 @@ import { resolve } from "node:path";
 import test from "node:test";
 
 function source(...segments: string[]) {
-  return readFileSync(resolve(process.cwd(), ...segments), "utf8");
+  return readFileSync(resolve(process.cwd(), ...segments), "utf8").replace(
+    /\r\n?/g,
+    "\n",
+  );
 }
 
 const migration = source(

@@ -19,6 +19,7 @@ import {
   failedFileExpertAnalysisState,
   shouldPreserveCompletedFileExpertResult,
 } from "../src/lib/fileExpert/analysisState";
+import { getExternalAnalyzerConfiguration } from "../src/lib/fileExpert/server";
 import {
   boundedFileExpertDeadline,
   FileExpertAnalysisDeadlineError,
@@ -40,6 +41,36 @@ function requestFrom(ip: string) {
 }
 
 const mutableEnvironment = process.env as unknown as Record<string, string | undefined>;
+
+test("VPS analyzer HTTP is limited to the exact private Docker endpoint and explicit opt-in", () => {
+  const token = "private-analyzer-token-used-only-in-tests-123456";
+  const privateDocker = {
+    FILE_EXPERT_ANALYZER_URL: "http://file-expert-analyzer:8010",
+    FILE_EXPERT_ANALYZER_TOKEN: token,
+  };
+
+  assert.equal(getExternalAnalyzerConfiguration(privateDocker), null);
+  assert.deepEqual(getExternalAnalyzerConfiguration({
+    ...privateDocker,
+    FILE_EXPERT_ANALYZER_ALLOW_PRIVATE_DOCKER_HTTP: "true",
+  }), {
+    url: "http://file-expert-analyzer:8010",
+    token,
+  });
+
+  for (const url of [
+    "http://file-expert-analyzer:8011",
+    "http://file-expert-analyzer:8010/private",
+    "http://other-analyzer:8010",
+    "http://file-expert-analyzer.:8010",
+  ]) {
+    assert.equal(getExternalAnalyzerConfiguration({
+      FILE_EXPERT_ANALYZER_URL: url,
+      FILE_EXPERT_ANALYZER_TOKEN: token,
+      FILE_EXPERT_ANALYZER_ALLOW_PRIVATE_DOCKER_HTTP: "true",
+    }), null);
+  }
+});
 
 test("File Expert account limits cannot be multiplied by rotating client IPs", async () => {
   const previousNodeEnv = process.env.NODE_ENV;
@@ -120,6 +151,9 @@ test("legacy multipart intake is disabled and production CPU uses the isolated w
   const requestSecurity = source("src", "lib", "fileExpert", "requestSecurity.ts");
   const server = source("src", "lib", "fileExpert", "server.ts");
   const worker = source("file-expert-analyzer", "main.py");
+  const workerExecution = source("file-expert-analyzer", "execution.py");
+  const workerReadme = source("file-expert-analyzer", "README.md");
+  const workerDockerfile = source("file-expert-analyzer", "Dockerfile");
 
   assert.match(requestSecurity, /scope: "file-expert-job-create"[\s\S]*?includeClientIp: false/);
   assert.match(requestSecurity, /process\.env\.NODE_ENV === "production"/);
@@ -132,12 +166,37 @@ test("legacy multipart intake is disabled and production CPU uses the isolated w
   assert.match(server, /acquireFileExpertAnalyzerAdmission\(\)/);
   assert.match(server, /releaseFileExpertAnalyzerAdmission\(admission\.lease\)/);
   assert.match(server, /!requestDispatched \|\| requestSettled/);
-  assert.match(worker, /asyncio\.to_thread\(build_analysis_result/);
+  assert.match(worker, /analysis_slots = asyncio\.Semaphore\(1\)/);
+  assert.match(worker, /require_single_concurrency_configuration/);
+  assert.match(worker, /try_acquire_analyzer_lease/);
+  assert.match(worker, /asyncio\.to_thread\([\s\S]*?run_in_terminated_process/);
   assert.match(worker, /return await asyncio\.shield\(analysis_task\)/);
   assert.match(worker, /asyncio\.wait_for\([\s\S]*?asyncio\.gather\(\*tasks\)/);
   assert.match(worker, /await asyncio\.gather\(\*tasks, return_exceptions=True\)/);
   assert.match(worker, /def __init__\(self, app: ASGIApp\)/);
   assert.ok(worker.indexOf("await analysis_task") < worker.lastIndexOf("analysis_slots.release()"));
+  assert.match(worker, /FILE_EXPERT_ANALYZER_WALL_TIMEOUT_SECONDS", 30, 5, 30/);
+  assert.match(workerExecution, /multiprocessing\.get_context\("spawn"\)/);
+  assert.match(workerExecution, /fcntl\.LOCK_EX \| fcntl\.LOCK_NB/);
+  assert.match(workerExecution, /process\.terminate\(\)/);
+  assert.match(workerExecution, /process\.kill\(\)/);
+  assert.match(workerExecution, /receiver\.poll\(timeout_seconds\)/);
+  assert.match(workerReadme, /uvicorn main:app[\s\S]*?--workers 1[\s\S]*?--limit-concurrency 4/);
+  assert.doesNotMatch(worker, /asyncio\.to_thread\(build_analysis_result/);
+  assert.match(workerDockerfile, /^FROM python:3\.12-slim-bookworm/m);
+  assert.match(workerDockerfile, /PYTHONDONTWRITEBYTECODE=1/);
+  assert.match(workerDockerfile, /PYTHONUNBUFFERED=1/);
+  assert.match(workerDockerfile, /USER 10001:10001/);
+  assert.match(workerDockerfile, /EXPOSE 8010/);
+  assert.match(workerDockerfile, /HEALTHCHECK[\s\S]*?127\.0\.0\.1:8010\/health/);
+  assert.match(workerDockerfile, /"--workers", "1"/);
+  assert.match(workerDockerfile, /"--limit-concurrency", "4"/);
+  assert.doesNotMatch(workerDockerfile, /FILE_EXPERT_ANALYZER_TOKEN|SUPABASE_SERVICE_ROLE_KEY|NEXT_PUBLIC_/);
+  assert.doesNotMatch(workerDockerfile, /COPY\s+\.\s/);
+  assert.ok(
+    workerDockerfile.indexOf("COPY --chown=analyzer:analyzer requirements.txt") <
+      workerDockerfile.indexOf("COPY --chown=analyzer:analyzer execution.py network_policy.py main.py")
+  );
 
   const workerVercel = JSON.parse(source("file-expert-analyzer", "vercel.json"));
   assert.equal(workerVercel.framework, "fastapi");
