@@ -4415,3 +4415,31 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 - Kapsam disi: Production deploy/push, SQL/migration, Production DB,
   env/secret, payment, e-posta, DNS/Caddy veya gercek musteri verisi islemi
   yapilmadi.
+
+## 2026-08-24 01:58 +02:00 Customer workspace unification Production release
+
+- Owner'in `yayinla` talimatiyla yalniz
+  `MANUAL-20260824-CUSTOMER-WORKSPACE-UNIFICATION` code-only UI release kapsami
+  Production'a cikarildi. Remote `codex/production-release-20260823` branch'i
+  force kullanilmadan `0e54883` commitinden `2c90f1e` commitine fast-forward
+  tasindi; ayrismis `main` release yoluna dahil edilmedi.
+- Exact `2c90f1e3922c7485d32b463e5a52ee1d00dbc5f5` kaynagindan uretilen archive'in
+  SHA-256 degeri
+  `7e09447c15e5cd699999ef99091e5d2e55a98f8a9663bfab3371676f3867de1a` olarak
+  yerel ve VPS tarafinda birebir dogrulandi; kaynak
+  `/opt/mgautotech/file-service/releases/2c90f1e` altina acildi.
+- VPS env contract deger yazdirilmadan iki kez PASS oldu. Immutable analyzer ve
+  app imajlari `mgautotech-file-expert-analyzer:2c90f1e` ve
+  `mgautotech-file-service:2c90f1e` olarak build edildi; Next.js production
+  compile ve TypeScript kapilari PASS oldu.
+- Deploy script analyzer-first ve app-second health switch'ini tamamladi.
+  Release state current cifti `2c90f1e`, rollback/previous cifti `0e54883`;
+  iki container `healthy`, restart sayilari 0.
+- Immediate Production smoke PASS: `/api/health/ready`, `/`, `/login`,
+  `/register`, `/dashboard` ve `/dashboard/orders` 200; anonim
+  `/api/admin/dashboard` 401. Son 10 dakikadaki app/analyzer error-like log
+  sayaclari 0.
+- Gecici yerel ve remote transfer archive'lari silindi; canonical release ve
+  rollback klasorlari korundu. SQL/migration, Production DB, env/secret,
+  Caddy/DNS, payment, e-posta veya gercek musteri verisi degistirilmedi; kritik
+  regresyon gorulmedigi icin rollback uygulanmadi.
