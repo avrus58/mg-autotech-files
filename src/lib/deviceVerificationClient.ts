@@ -1,5 +1,11 @@
 import { authenticatedFetch } from "@/lib/authGuards";
 
+const deviceVerificationRequestTimeoutMs = 12_000;
+
+function deviceVerificationRequestSignal() {
+  return AbortSignal.timeout(deviceVerificationRequestTimeoutMs);
+}
+
 export type DeviceVerificationState = {
   status: "not_required" | "verified" | "required" | "revoked";
   maskedEmail: string;
@@ -26,6 +32,7 @@ export async function getDeviceVerificationStatus() {
   return readDeviceVerificationResponse(
     await authenticatedFetch("/api/auth/device-verification/status", {
       cache: "no-store",
+      signal: deviceVerificationRequestSignal(),
     })
   );
 }
@@ -35,6 +42,7 @@ export async function startDeviceVerification() {
     await authenticatedFetch("/api/auth/device-verification/start", {
       method: "POST",
       cache: "no-store",
+      signal: deviceVerificationRequestSignal(),
     })
   );
 }
@@ -46,6 +54,7 @@ export async function startPasswordChangeVerification() {
       {
         method: "POST",
         cache: "no-store",
+        signal: deviceVerificationRequestSignal(),
       }
     )
   );
@@ -61,6 +70,7 @@ export async function verifyDeviceCode(input: {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(input),
+      signal: deviceVerificationRequestSignal(),
     })
   );
 }
@@ -71,6 +81,7 @@ export async function resendDeviceCode(challengeId: string) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ challengeId }),
+      signal: deviceVerificationRequestSignal(),
     })
   );
 }

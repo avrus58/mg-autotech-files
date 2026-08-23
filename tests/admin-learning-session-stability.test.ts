@@ -31,7 +31,10 @@ test("authenticated fetch coordinates reads and refreshes before declaring the s
   assert.match(guard, /let sessionRefreshInFlight: Promise<StableSessionResult> \| null = null/);
   assert.match(guard, /const sessionReadDelays = \[0, 120, 280, 520\] as const/);
   assert.match(guard, /const requestRetryDelays = \[0, 250, 650\] as const/);
-  assert.match(guard, /await supabase\.auth\.refreshSession\(\)/);
+  assert.match(
+    guard,
+    /await withAuthSdkOperationTimeout\(\s*supabase\.auth\.refreshSession\(\)\s*\)/
+  );
   assert.doesNotMatch(guard, /refreshSession\(\s*\{/);
   assert.match(guard, /headers\.set\("Authorization", `Bearer \$\{accessToken\}`\)/);
   assert.match(guard, /if \(response\.status !== 401\) return response/);

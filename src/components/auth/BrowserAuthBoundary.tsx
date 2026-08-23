@@ -12,7 +12,6 @@ import {
   AUTH_DEVICE_VERIFICATION_REQUIRED_EVENT,
   AUTH_SESSION_REQUIRED_EVENT,
   getStableSession,
-  getStableSessionSnapshot,
   signOutLocalStable,
 } from "@/lib/authGuards";
 
@@ -131,9 +130,7 @@ export function BrowserAuthBoundary({
       scheduleRecovery();
     });
 
-    const hasCachedSession = Boolean(getStableSessionSnapshot()?.user);
-    if (!hasCachedSession) startWaitTimers();
-
+    startWaitTimers();
     verifySession();
 
     const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {

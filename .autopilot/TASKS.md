@@ -6,6 +6,17 @@
 
 ## In Progress
 
+### MANUAL-20260823-AUTH-SESSION-INCIDENT [P0] Bound Production auth bootstrap waits
+
+Durum: In Progress
+
+Fingerprint: `production-auth|browser-session-bootstrap|unbounded-supabase-and-device-assurance-waits|bounded-fail-closed-recovery`
+
+Kapsam: Basarili parola/Google/OAuth oturumunu browser-memory snapshot'a hemen
+aktar; Supabase session bootstrap ve device-assurance isteklerini bounded tut;
+cached session dahil protected-route watchdog'unu her zaman calistir. Cihaz
+guvence kapisini veya server-side authorization'i gevsetme.
+
 ## Blocked
 
 ### MANUAL-20260823-INTEGRATED-PRODUCTION-RELEASE [P0] Son degisikliklerin guvenli Production yayini

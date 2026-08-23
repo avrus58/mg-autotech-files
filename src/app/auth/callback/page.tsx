@@ -6,7 +6,11 @@ import { useRouter } from "next/navigation";
 import { Loader2, ShieldCheck, Upload } from "lucide-react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabaseClient";
-import { authenticatedFetch, signOutLocalStable } from "@/lib/authGuards";
+import {
+  authenticatedFetch,
+  primeStableSession,
+  signOutLocalStable,
+} from "@/lib/authGuards";
 import {
   startDeviceVerification,
   startPasswordChangeVerification,
@@ -50,6 +54,7 @@ export default function AuthCallbackPage() {
         }
 
         session = data.session;
+        primeStableSession(session);
       } else {
         const { data } = await supabase.auth.getSession();
 
@@ -59,6 +64,7 @@ export default function AuthCallbackPage() {
         }
 
         session = data.session;
+        primeStableSession(session);
       }
 
       const oauthSignupProvider = window.sessionStorage.getItem(
@@ -131,6 +137,7 @@ export default function AuthCallbackPage() {
             return;
           }
           currentSession = refreshedSession.data.session;
+          primeStableSession(currentSession);
           completedGoogleRegistration = true;
           window.sessionStorage.removeItem(OAUTH_REGISTRATION_PROVIDER_KEY);
           window.sessionStorage.removeItem(OAUTH_REGISTRATION_PROFILE_KEY);

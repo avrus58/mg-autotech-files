@@ -17,6 +17,8 @@ const transientAuthErrors = new Set([
 
 const sessionReadDelays = [0, 120, 280, 520] as const;
 const requestRetryDelays = [0, 250, 650] as const;
+const authSdkOperationTimeoutMs = 8_000;
+const authenticatedHomeTimeoutMs = 10_000;
 
 type StableSessionResult = {
   session: Session | null;
@@ -40,6 +42,31 @@ class AuthSessionRecoveryPendingError extends Error {
   }
 }
 
+class AuthSdkOperationTimeoutError extends Error {
+  constructor() {
+    super(AUTH_SESSION_RECOVERY_MESSAGE);
+    this.name = "AuthRetryableFetchError";
+  }
+}
+
+async function withAuthSdkOperationTimeout<T>(operation: PromiseLike<T>): Promise<T> {
+  let timeoutId: ReturnType<typeof globalThis.setTimeout> | null = null;
+
+  try {
+    return await Promise.race([
+      Promise.resolve(operation),
+      new Promise<never>((_, reject) => {
+        timeoutId = globalThis.setTimeout(
+          () => reject(new AuthSdkOperationTimeoutError()),
+          authSdkOperationTimeoutMs
+        );
+      }),
+    ]);
+  } finally {
+    if (timeoutId !== null) globalThis.clearTimeout(timeoutId);
+  }
+}
+
 function getCachedSession() {
   // Never retain a user session in module-level server memory. A warm Next.js
   // process can serve different users, while this cache is intended only to
@@ -49,6 +76,11 @@ function getCachedSession() {
 
 function setCachedSession(session: Session | null) {
   if (authWindow) authWindow.__mgAutotechStableSession = session;
+}
+
+export function primeStableSession(session: Session | null) {
+  initializeAuthMemoryListener();
+  setCachedSession(session);
 }
 
 function hasUsableCachedSession(expiryBufferSeconds = 15) {
@@ -100,7 +132,9 @@ async function refreshStableSession(): Promise<StableSessionResult> {
     try {
       // Read the newest persisted refresh token. Passing a captured token here
       // can replay an already-rotated token when another tab refreshes first.
-      const { data, error } = await supabase.auth.refreshSession();
+      const { data, error } = await withAuthSdkOperationTimeout(
+        supabase.auth.refreshSession()
+      );
       if (data.session) {
         setCachedSession(data.session);
         return { session: data.session, error: null };
@@ -137,7 +171,9 @@ async function resolveStableSession(): Promise<StableSessionResult> {
     if (sessionReadDelays[attempt] > 0) await sleep(sessionReadDelays[attempt]);
 
     try {
-      const { data, error } = await supabase.auth.getSession();
+      const { data, error } = await withAuthSdkOperationTimeout(
+        supabase.auth.getSession()
+      );
       if (data.session) {
         setCachedSession(data.session);
         return { session: data.session, error: null };
@@ -156,6 +192,7 @@ async function resolveStableSession(): Promise<StableSessionResult> {
       if (hasUsableCachedSession()) {
         return { session: getCachedSession(), error: null };
       }
+      if (error instanceof AuthSdkOperationTimeoutError) break;
     }
   }
 
@@ -297,6 +334,7 @@ export async function getAuthenticatedHome(userId: string) {
   try {
     const response = await authenticatedFetch("/api/account/context", {
       cache: "no-store",
+      signal: AbortSignal.timeout(authenticatedHomeTimeoutMs),
     });
     if (!response.ok) return "/dashboard";
 

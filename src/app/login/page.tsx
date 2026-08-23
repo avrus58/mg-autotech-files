@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   getAuthenticatedHome,
+  primeStableSession,
   signOutIfEmailUnverified,
 } from "@/lib/authGuards";
 import { TurnstileChallenge } from "@/components/auth/TurnstileChallenge";
@@ -217,6 +218,8 @@ export default function LoginPage() {
       return;
     }
 
+    primeStableSession(data.session);
+
     clearAuthLoginFailures(getBrowserAuthLoginFailureStorage());
     setPasswordFailureState(EMPTY_AUTH_LOGIN_FAILURE_STATE);
 
@@ -295,6 +298,8 @@ export default function LoginPage() {
       setGoogleLoading(false);
       return;
     }
+
+    primeStableSession(data.session);
 
     clearAuthLoginFailures(getBrowserAuthLoginFailureStorage());
     setPasswordFailureState(EMPTY_AUTH_LOGIN_FAILURE_STATE);

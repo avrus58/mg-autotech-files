@@ -86,8 +86,8 @@ test("protected routes reuse a verified session and recover transient checks in 
   assert.match(guard, /export function getStableSessionSnapshot\(\)/);
   assert.match(guard, /const cachedSnapshot = getStableSessionSnapshot\(\);[\s\S]*if \(cachedSnapshot\) \{[\s\S]*session: cachedSnapshot/);
   assert.match(guard, /export async function getStableSession[\s\S]*const cachedSnapshot = getStableSessionSnapshot\(\);[\s\S]*if \(cachedSnapshot\)[\s\S]*if \(sessionResolutionInFlight\)/);
-  assert.match(boundary, /const hasCachedSession = Boolean\(getStableSessionSnapshot\(\)\?\.user\)/);
-  assert.match(boundary, /if \(!hasCachedSession\) startWaitTimers\(\)/);
+  assert.match(boundary, /startWaitTimers\(\);\s*verifySession\(\)/);
+  assert.doesNotMatch(boundary, /if \(!hasCachedSession\) startWaitTimers\(\)/);
   assert.match(boundary, /const sessionRecoveryDelays = \[350, 800, 1600, 3200, 5000\] as const/);
   assert.match(boundary, /authStateRef\.current = "checking";\s*setAuthState\("checking"\);\s*setRetryKey/);
   assert.match(boundary, /AUTH_DEVICE_VERIFICATION_REQUIRED_EVENT/);
@@ -96,6 +96,25 @@ test("protected routes reuse a verified session and recover transient checks in 
   assert.doesNotMatch(boundary, /setAuthState\("recovering"\);\s*\}, 8000\)/);
   assert.doesNotMatch(boundary, /Secure session connection interrupted/);
   assert.doesNotMatch(boundary, /Retry secure connection/);
+});
+
+test("auth bootstrap operations are bounded and successful sign-ins prime browser memory", () => {
+  const guard = readProjectFile("src", "lib", "authGuards.ts");
+  const boundary = readProjectFile("src", "components", "auth", "BrowserAuthBoundary.tsx");
+  const login = readProjectFile("src", "app", "login", "page.tsx");
+  const callback = readProjectFile("src", "app", "auth", "callback", "page.tsx");
+  const deviceVerification = readProjectFile("src", "lib", "deviceVerificationClient.ts");
+
+  assert.match(guard, /class AuthSdkOperationTimeoutError extends Error/);
+  assert.match(guard, /withAuthSdkOperationTimeout\(\s*supabase\.auth\.getSession\(\)\s*\)/);
+  assert.match(guard, /withAuthSdkOperationTimeout\(\s*supabase\.auth\.refreshSession\(\)\s*\)/);
+  assert.match(guard, /export function primeStableSession\(session: Session \| null\)/);
+  assert.match(login, /primeStableSession\(data\.session\)[\s\S]*getAuthenticatedHome\(data\.user!\.id\)/);
+  assert.match(callback, /session = data\.session;\s*primeStableSession\(session\)/);
+  assert.match(deviceVerification, /signal: deviceVerificationRequestSignal\(\)/);
+  assert.match(guard, /signal: AbortSignal\.timeout\(authenticatedHomeTimeoutMs\)/);
+  assert.match(boundary, /const assurance = await getDeviceVerificationStatus\(\)/);
+  assert.doesNotMatch(boundary, /catch[\s\S]{0,120}resolveAuthState\("authenticated"\)/);
 });
 
 test("the stable session snapshot is browser-scoped and cannot leak through warm server memory", () => {
