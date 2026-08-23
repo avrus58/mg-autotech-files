@@ -15,6 +15,7 @@ import type { RawVehicleRow } from "../src/lib/vehicleControl/types";
 import { normalizeBrandName } from "../src/lib/vehicleNormalization";
 
 const root = process.cwd();
+const vercelNetworkEnvironment = { VERCEL: "1" } as const;
 
 function source(...parts: string[]) {
   return fs.readFileSync(path.join(root, ...parts), "utf8");
@@ -42,7 +43,7 @@ function parsedQuery(url: string): PublicVehicleQuery {
 
 function requestFrom(ip: string) {
   return new Request("https://file.mgautotech.de/api/vehicles", {
-    headers: { "x-forwarded-for": ip },
+    headers: { "x-vercel-forwarded-for": ip },
   });
 }
 
@@ -92,7 +93,16 @@ test("normal browsing stays comfortably below transparent catalog protection", a
       parsedQuery(`/api/vehicles?type=vehicle&brandId=bmw&modelId=${model}&generationId=${generation}&engineId=${engine}`),
     ];
     for (const query of queries) {
-      assert.equal((await checkPublicVehicleAccess(request, query)).allowed, true);
+      assert.equal(
+        (
+          await checkPublicVehicleAccess(
+            request,
+            query,
+            vercelNetworkEnvironment
+          )
+        ).allowed,
+        true
+      );
     }
   }
 });
@@ -103,13 +113,32 @@ test("rapid enumeration of many distinct brands is stopped without blocking repe
 
   for (let index = 0; index < limit; index += 1) {
     const query = parsedQuery(`/api/vehicles?type=models&brandId=brand-${index}`);
-    assert.equal((await checkPublicVehicleAccess(request, query)).allowed, true);
-    assert.equal((await checkPublicVehicleAccess(request, query)).allowed, true);
+    assert.equal(
+      (
+        await checkPublicVehicleAccess(
+          request,
+          query,
+          vercelNetworkEnvironment
+        )
+      ).allowed,
+      true
+    );
+    assert.equal(
+      (
+        await checkPublicVehicleAccess(
+          request,
+          query,
+          vercelNetworkEnvironment
+        )
+      ).allowed,
+      true
+    );
   }
 
   const blocked = await checkPublicVehicleAccess(
     request,
-    parsedQuery(`/api/vehicles?type=models&brandId=brand-${limit}`)
+    parsedQuery(`/api/vehicles?type=models&brandId=brand-${limit}`),
+    vercelNetworkEnvironment
   );
   assert.equal(blocked.allowed, false);
   assert.equal(blocked.retryAfterSeconds > 0, true);

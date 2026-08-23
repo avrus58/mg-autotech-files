@@ -3886,3 +3886,120 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 - Release sonucu: Production Supabase, Vercel/hosting, domain, secret, e-posta,
   payment, customer data veya `main` dalina bu turda mutation yapilmadi; push ve
   deploy bilincli olarak durduruldu. Validated local release branch'i korunuyor.
+
+## 2026-08-23 VPS proxy trust and File Expert execution hardening
+
+- Baslangic/bitis: 2026-08-23 13:35-14:02 Europe/Berlin. Gorev, mevcut File
+  Service uygulamasini Cloudflare -> Caddy -> private Docker network akisina
+  guvenli hazirlamak ve 1-vCPU VPS'te File Expert CPU isini bounded tutmakti.
+- Ortak request-network resolver eklendi. Vercel metadata'si yalniz `VERCEL=1`
+  altinda; VPS metadata'si yalniz explicit `cloudflare-caddy` mode, en az 32
+  karakter server-only proxy proof ve Caddy'nin ezdigi `X-MG-Client-IP` /
+  `X-MG-Country` basliklariyla kabul edilir. Ham `X-Forwarded-For`, `X-Real-IP`
+  ve `CF-*` basliklari fail-closed yok sayilir. Country detector, Growth,
+  observability, security signals, rate-limit fingerprints ve widget IP hash'i
+  ayni resolver'a tasindi.
+- File Expert analyzer exact tek semaphore + process-wide OS file lock kullanir.
+  CPU analizi thread yerine spawned disposable process'te calisir; kaynagi
+  indirme dahil 30 saniyelik wall budget sonunda process once terminate, sonra
+  gerekirse kill edilmeden slot serbest birakilmaz. `MAX_CONCURRENT` degeri `1`
+  disinda health/analyze fail-closed olur. 1-vCPU icin tek Uvicorn worker ve
+  private analyzer portu sozlesmesi dokumante edildi.
+- Analyzer icin Python 3.12 slim, UID/GID 10001, requirements-first cache,
+  read-only root + `/tmp` tmpfs uyumu, internal 8010 healthcheck ve exact tek
+  Uvicorn worker iceren ayri Dockerfile eklendi. Dar `.dockerignore` yalniz
+  runtime icin gereken dort build dosyasini context'e alir; image'a secret veya
+  env degeri gomulmez.
+- Degisen kapsam: request network kutuphanesi ve tum IP/country tuketicileri;
+  analyzer `main.py`, yeni stdlib execution modulu/behavior testleri, analyzer
+  README/Dockerfile, proxy trust dokumani ve ilgili TypeScript testleri. Root
+  Docker/compose/Caddy, `next.config`, deploy scripti, SQL, env/secret,
+  Production verisi ve canli servis bu alt gorevde degistirilmedi; yeni
+  dependency eklenmedi.
+- Kontroller: request-network/auth-country/File Expert/platform/ECU focused
+  TypeScript paketi 136/136 PASS; son dar regresyon 25/25 PASS; Python stdlib
+  process-kill/file-lock behavior 4/4 PASS; Python `py_compile` PASS; targeted
+  ESLint PASS; web TypeScript PASS; `git diff --check` yalniz line-ending
+  uyarilari. Calisma sirasinda uretilen iki `__pycache__` exact worktree
+  sinirinda dogrulanarak silindi.
+- Dockerfile kaynak sozlesmesini de kapsayan File Expert paketi son olarak
+  11/11 PASS oldu. Bu ortamda Docker image build/pull calistirilmadi.
+- Ham forwarded-IP kabul eden iki legacy fixture, resolver'a test-only Vercel
+  environment enjeksiyonu kullanacak sekilde duzeltildi; production fallback
+  geri acilmadi. Vehicle enumeration ve widget fingerprint regresyon paketi
+  26/26 PASS oldu.
+- Tum repository test paketi son entegre worktree halinde 934/934 PASS oldu.
+- Kalan risk: Yerel bundled Python'da FastAPI/httpx kurulu olmadigi icin tam
+  ASGI endpoint entegrasyonu calistirilmadi. VPS Preview'da Caddy'nin uc ozel
+  basligi gercekten overwrite etmesi, immediate peer'in Cloudflare ile
+  sinirlanmasi, app/analyzer portlarinin public olmamasi, shared secret
+  aktarimi, distributed admission ve sentetik (musteri olmayan) dosyayla
+  busy/timeout/kill/resource smoke zorunludur.
+
+## 2026-08-23 File Service bağımsız VPS paketleme hazırlığı
+
+- Next `output: standalone` açıldı; hardened multi-stage Node 22 Alpine image
+  yalnız allowlistli `NEXT_PUBLIC_*` build arg'larını kabul eder. Server
+  secret'ları build arg/image katmanlarına girmez ve Production CAPTCHA test-key
+  bypass'i image build'inde fail-closed reddedilir.
+- `compose.vps.yml`, external `mgautotech_file_service_edge` üzerinde
+  `file-service:3000` upstream'ini host portu olmadan sunar. App ayrıca outbound
+  backend bridge'e, analyzer yalnız `file-expert-analyzer:8010` backend alias'ına
+  bağlanır; backend egress açık ve app lifecycle analyzer health'e bağlı
+  değildir. Ayrı least-privilege analyzer env'i, non-root/read-only root,
+  cap-drop, no-new-privileges, tmpfs, log rotation, düşük CPU shares ve KVM1'e
+  uygun memory/PID/hard CPU cap'leri sabitlendi.
+- `/api/health/ready` yalnız local process readiness verir; env/provider/DB
+  kontrol etmez ve minimal no-store/noindex JSON döndürür. Ayrı bounded env
+  preflight, değer yazdırmadan Cloudflare-Caddy proxy proof'unu, core Supabase /
+  upload/device/distributed sınırlarını, analyzer token/host eşleşmesini ve
+  analyzer env least-privilege allowlist'ini doğrular.
+- Named static volume current + iki önceki hashed asset manifest'inin union'unu
+  atomik taşır. Manifest okuması 2 MiB, 10.000 dosya ve 16 state entry ile
+  sınırlıdır; stale dosyalar bu üç-release union dışına çıkınca budanır.
+  Manifest state public static tree dışında ayrı volume'dadır. `.next/cache`
+  yalnız release-local 128 MiB tmpfs'tir ve incompatible build'e taşınmaz.
+- Clean Git SHA veya yalnız non-Git archive için explicit tag kullanan
+  analyzer-first deploy ve idempotent paired rollback scriptleri eklendi. Yeni
+  analyzer sağlıklı olmazsa mevcut app değiştirilmez; app switch başarısızsa
+  önceki local pair mümkün olduğunda geri yüklenir. Scriptler Caddy/DNS/SQL/env
+  dosyası değiştirmez ve volume silmez.
+- Kontroller: focused VPS packaging 10/10 PASS; dört Bash dosyası `bash -n` PASS;
+  iki Compose YAML dosyası parse PASS; full ESLint PASS; web TypeScript PASS;
+  Webpack Production standalone build 277/277 PASS. `.next/standalone/server.js`
+  mevcut; manifest 302 dosya / 17.171 byte ve build ID eşleşmesi PASS. Standalone
+  localhost health smoke HTTP 200, exact `{"status":"ok"}`, no-store ve noindex
+  PASS. `git diff --check` yalnız line-ending uyarıları verdi.
+- Sınırlar: Docker daemon bu workstation'da yoktu; image/Compose runtime build
+  yapılmadı. VPS, Caddy, Cloudflare, env/secret, Supabase/DB, customer data,
+  network, push veya deploy mutation yapılmadı. İlk cutover öncesi gerçek Docker
+  build, env preflight, loopback/SSH smoke, Caddy header overwrite receipt'i,
+  outbound provider ve sentetik analyzer busy/timeout/resource smoke zorunludur.
+
+## 2026-08-23 VPS entegrasyonu son review ve doğrulama kapanışı
+
+- Üç bağımsız review sonucunda canlı davranışı bozacak dört P1 yayın/recovery
+  hatası giderildi: private Docker analyzer HTTP adresi exact server-only opt-in
+  ile kabul edildi; ambient shell değişkenlerinin Compose proje/build değerlerini
+  ezmesi kapatıldı; başarısız `compose up` ve stale healthy container yeni sürüm
+  gibi kabul edilmiyor; yarım app/analyzer switch'i completed rollback çifti
+  olarak kaydedilmiyor. Explicit current rollback, runtime drift varsa recorded
+  çifti analyzer-first onarıyor ve release history'yi değiştirmiyor.
+- Analyzer DNS politikası Python 3.12'de global sayılabilen multicast adresleri de
+  reddedecek şekilde global-unicast sınırına çekildi. Exact allowlist, HTTPS,
+  redirect deny, token, body, semaphore, OS lock ve terminate/kill sınırları
+  korundu.
+- Public edge tarafında candidate Caddy config canlı recreate öncesi doğrulanır;
+  başarısız deploy önceki stack'i gerçekten yeniden deploy eder. DNS cutover
+  marker'i pre-edge Caddy rollback'ini engeller ve public/File Service proxy
+  secret'ları değer yazdırmadan 64-hex equality gate'inden geçer.
+- Son doğrulama: File Service full test 949/949, VPS packaging/recovery 14/14,
+  Python execution/network 6/6, public edge full test 329/329 PASS. Her iki
+  repoda lint ve TypeScript PASS; File Service i18n 12 public + 11 customer
+  locale, CAPTCHA safe-off ve 68.2 KB gzip/80 KB performans kapısı PASS.
+  Webpack Production standalone build 277/277 PASS; 302 static asset manifesti
+  build ID ile eşleşti; standalone readiness smoke HTTP 200, no-store/noindex ve
+  exact minimal JSON PASS. Shell syntax, edge-mode matrisi ve diff-check PASS.
+- Açık runtime kapısı: workstation'da Docker daemon olmadığı için gerçek image /
+  Compose / FastAPI smoke VPS Preview'da yapılacak. Bu kapanışta server, DNS,
+  Production DB, env/secret, customer data, push veya deploy değiştirilmedi.

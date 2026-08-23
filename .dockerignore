@@ -1,0 +1,29 @@
+.git
+.github
+.autopilot
+.vercel
+.next
+node_modules
+coverage
+out
+build
+
+# Runtime configuration must be supplied from the root-owned VPS env file.
+.env*
+*.pem
+*.pfx
+*.p12
+
+# Non-web build outputs and the separately deployed analyzer are out of scope.
+apps/customer-uploader/node_modules
+apps/customer-uploader/dist
+apps/customer-uploader/dist-electron
+apps/customer-uploader/release
+file-expert-analyzer
+
+# Development-only material is not required by the standalone web image.
+docs
+tests
+*.log
+npm-debug.log*
+

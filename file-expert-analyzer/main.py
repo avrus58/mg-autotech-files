@@ -3,10 +3,10 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import hmac
-import ipaddress
 import math
 import os
 import socket
+import time
 from pathlib import Path
 from typing import Any, Literal
 from urllib.parse import urlsplit
@@ -17,6 +17,16 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict, Field
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
+
+from execution import (
+    AnalyzerExecutionConfigurationError,
+    AnalyzerExecutionFailure,
+    AnalyzerExecutionTimeout,
+    analyzer_lock_path,
+    run_in_terminated_process,
+    try_acquire_analyzer_lease,
+)
+from network_policy import is_public_unicast_address
 
 
 app = FastAPI(
@@ -126,9 +136,24 @@ class AnalyzerRequestGuard:
 
 
 app.add_middleware(AnalyzerRequestGuard)
-analysis_slots = asyncio.Semaphore(
-    bounded_int("FILE_EXPERT_ANALYZER_MAX_CONCURRENT", 1, 1, 1)
-)
+analysis_slots = asyncio.Semaphore(1)
+
+
+def require_single_concurrency_configuration() -> None:
+    configured = os.getenv("FILE_EXPERT_ANALYZER_MAX_CONCURRENT", "1").strip()
+    if configured != "1":
+        raise AnalyzerConfigurationError()
+
+
+def configured_analysis_lock_path() -> Path:
+    try:
+        return analyzer_lock_path(os.getenv("FILE_EXPERT_ANALYZER_LOCK_FILE"))
+    except AnalyzerExecutionConfigurationError as error:
+        raise AnalyzerConfigurationError() from error
+
+
+def analysis_wall_timeout_seconds() -> int:
+    return bounded_int("FILE_EXPERT_ANALYZER_WALL_TIMEOUT_SECONDS", 30, 5, 30)
 
 ECU_IDENTIFIERS = [
     "Bosch",
@@ -455,11 +480,8 @@ async def require_public_dns(hostname: str, port: int) -> None:
     resolved = {item[4][0].split("%", 1)[0] for item in addresses}
     if not resolved:
         raise SourceValidationError()
-    try:
-        if any(not ipaddress.ip_address(address).is_global for address in resolved):
-            raise SourceValidationError()
-    except ValueError as error:
-        raise SourceValidationError() from error
+    if any(not is_public_unicast_address(address) for address in resolved):
+        raise SourceValidationError()
 
 
 def validate_remote_url(value: str) -> tuple[str, int]:
@@ -610,6 +632,13 @@ def health() -> dict[str, str]:
         raise HTTPException(status_code=503, detail="Analyzer service is not configured.") from error
     if not allowed_source_hosts():
         raise HTTPException(status_code=503, detail="Analyzer service is not configured.")
+    try:
+        require_single_concurrency_configuration()
+        lease = try_acquire_analyzer_lease(configured_analysis_lock_path())
+        if lease is not None:
+            lease.release()
+    except (AnalyzerConfigurationError, AnalyzerExecutionConfigurationError) as error:
+        raise HTTPException(status_code=503, detail="Analyzer service is not configured.") from error
     return {"status": "ok"}
 
 
@@ -618,7 +647,7 @@ def build_analysis_result(
     ori: bytes | None,
     mod: bytes | None,
 ) -> dict[str, Any]:
-    """Run CPU-bound binary inspection outside the ASGI event-loop thread."""
+    """Build bounded analysis output inside a disposable worker process."""
     mode: Literal["single_file", "ori_mod_compare"] = "ori_mod_compare" if ori and mod else "single_file"
     files: dict[str, Any] = {}
     if ori:
@@ -670,7 +699,21 @@ async def analyze(request: AnalyzeRequest) -> dict[str, Any]:
     except asyncio.TimeoutError as error:
         raise HTTPException(status_code=429, detail="Analyzer is busy.") from error
 
+    process_lease = None
     try:
+        try:
+            require_single_concurrency_configuration()
+            lock_path = configured_analysis_lock_path()
+            process_lease = await asyncio.to_thread(
+                try_acquire_analyzer_lease,
+                lock_path,
+            )
+        except (AnalyzerConfigurationError, AnalyzerExecutionConfigurationError) as error:
+            raise HTTPException(status_code=503, detail="Analyzer service is not configured.") from error
+        if process_lease is None:
+            raise HTTPException(status_code=429, detail="Analyzer is busy.")
+
+        wall_deadline = time.monotonic() + analysis_wall_timeout_seconds()
         try:
             ori, mod = await load_sources(request)
         except AnalyzerConfigurationError as error:
@@ -680,15 +723,29 @@ async def analyze(request: AnalyzeRequest) -> dict[str, Any]:
         if not ori and not mod:
             raise HTTPException(status_code=400, detail="No readable file source was provided.")
 
+        remaining_seconds = wall_deadline - time.monotonic()
+        if remaining_seconds <= 0:
+            raise HTTPException(status_code=504, detail="Analyzer deadline exceeded.")
         analysis_task = asyncio.create_task(
-            asyncio.to_thread(build_analysis_result, request.job_id, ori, mod)
+            asyncio.to_thread(
+                run_in_terminated_process,
+                build_analysis_result,
+                (request.job_id, ori, mod),
+                remaining_seconds,
+            )
         )
         try:
             return await asyncio.shield(analysis_task)
+        except AnalyzerExecutionTimeout as error:
+            raise HTTPException(status_code=504, detail="Analyzer deadline exceeded.") from error
+        except AnalyzerExecutionFailure as error:
+            raise HTTPException(status_code=500, detail="Analyzer request failed.") from error
         except asyncio.CancelledError:
-            # A disconnected caller must not release the concurrency slot while
-            # its non-cancellable worker thread is still consuming CPU.
+            # A disconnected caller must not release either admission lock
+            # until the disposable worker exits or is force-terminated.
             await analysis_task
             raise
     finally:
+        if process_lease is not None:
+            process_lease.release()
         analysis_slots.release()

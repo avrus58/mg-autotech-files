@@ -28,22 +28,22 @@ function requestFrom(ip: string, extraHeaders?: Record<string, string>) {
   });
 }
 
-test("client IP parsing prefers Vercel's anti-spoofing header and rejects malformed values", () => {
+test("client IP parsing trusts only the active provider contract", () => {
   const trusted = requestFrom("203.0.113.9", { "x-forwarded-for": "198.51.100.8" });
-  assert.equal(getClientIp(trusted), "203.0.113.9");
+  assert.equal(getClientIp(trusted, { VERCEL: "1" }), "203.0.113.9");
 
-  const fallback = new Request("https://file.mgautotech.de", {
+  const spoofedFallback = new Request("https://file.mgautotech.de", {
     headers: {
       "x-vercel-forwarded-for": "not-an-ip",
       "x-forwarded-for": "198.51.100.10, 10.0.0.2",
     },
   });
-  assert.equal(getClientIp(fallback), "198.51.100.10");
+  assert.equal(getClientIp(spoofedFallback, { VERCEL: "1" }), "unknown");
 
-  const bracketedIpv6 = new Request("https://file.mgautotech.de", {
+  const spoofedRealIp = new Request("https://file.mgautotech.de", {
     headers: { "x-real-ip": "[2001:db8::2]:443" },
   });
-  assert.equal(getClientIp(bracketedIpv6), "2001:db8::2");
+  assert.equal(getClientIp(spoofedRealIp), "unknown");
   assert.equal(getClientIp(new Request("https://file.mgautotech.de")), "unknown");
 });
 

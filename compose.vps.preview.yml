@@ -1,0 +1,5 @@
+services:
+  file-service:
+    ports:
+      - 127.0.0.1:${FILE_SERVICE_PREVIEW_PORT:-3100}:3000
+

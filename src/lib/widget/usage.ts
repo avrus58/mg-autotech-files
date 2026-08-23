@@ -2,6 +2,10 @@ import { createHash } from "node:crypto";
 import { checkAdaptiveRateLimit } from "@/lib/abuseProtection";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { getWidgetIpHashSalt, widgetAbuseSubject } from "@/lib/widget/security";
+import {
+  getTrustedClientIp,
+  type RequestNetworkEnvironment,
+} from "@/lib/requestNetwork";
 
 function distributedWidgetLimitRequired() {
   return process.env.NODE_ENV === "production" ||
@@ -13,9 +17,11 @@ function usableWidgetLimit(result: { allowed: boolean; source: string }) {
     (!distributedWidgetLimitRequired() || result.source === "distributed");
 }
 
-export function hashRequestIp(headers: Headers) {
-  const forwarded = headers.get("x-forwarded-for")?.split(",")[0]?.trim();
-  const ip = forwarded || headers.get("x-real-ip") || "unknown";
+export function hashRequestIp(
+  headers: Headers,
+  environment: RequestNetworkEnvironment = process.env
+) {
+  const ip = getTrustedClientIp({ headers }, environment);
   const salt = getWidgetIpHashSalt();
   return createHash("sha256").update(`${salt}:${ip}`).digest("hex");
 }

@@ -10,6 +10,7 @@ import {
   platformReliabilityEventKinds,
   platformWebVitalNames,
 } from "@/lib/platformReliability";
+import { getTrustedCountryCode } from "@/lib/requestNetwork";
 
 const payloadSchema = z.object({
   kind: z.enum(platformReliabilityEventKinds),
@@ -77,8 +78,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ accepted: false }, { status: 400, headers: { "Cache-Control": "no-store" } });
   }
 
-  const countryHeader = request.headers.get("x-vercel-ip-country") ?? "";
-  const country = /^[A-Z]{2}$/.test(countryHeader) ? countryHeader : "unknown";
+  const country = getTrustedCountryCode(request) ?? "unknown";
   const event = {
     source: "web_client",
     kind: parsed.data.kind,

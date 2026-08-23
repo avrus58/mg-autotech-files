@@ -273,31 +273,47 @@ test("country completion preserves a safe legacy OAuth draft", () => {
 });
 
 test("public country endpoint returns only a normalized no-store country code", async () => {
-  const response = GET(
-    new Request("https://file.example/api/public/country", {
-      headers: {
-        "x-vercel-ip-country": " us ",
-        "x-forwarded-for": "203.0.113.10",
-      },
-    })
-  );
-  assert.equal(response.status, 200);
-  assert.deepEqual(await response.json(), { countryCode: "US" });
-  assert.equal(response.headers.get("cache-control"), "private, no-store, max-age=0");
-  assert.equal(response.headers.get("x-content-type-options"), "nosniff");
-  assert.match(response.headers.get("x-robots-tag") ?? "", /noindex/);
+  const mutableEnvironment = process.env as Record<string, string | undefined>;
+  const previousVercel = mutableEnvironment.VERCEL;
+  const previousProvider = mutableEnvironment.REQUEST_NETWORK_PROVIDER;
+  mutableEnvironment.VERCEL = "1";
+  delete mutableEnvironment.REQUEST_NETWORK_PROVIDER;
 
-  const invalidResponse = GET(
-    new Request("https://file.example/api/public/country", {
-      headers: { "x-vercel-ip-country": "XX" },
-    })
-  );
-  assert.deepEqual(await invalidResponse.json(), { countryCode: null });
+  try {
+    const response = GET(
+      new Request("https://file.example/api/public/country", {
+        headers: {
+          "x-vercel-ip-country": " us ",
+          "x-forwarded-for": "203.0.113.10",
+        },
+      })
+    );
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), { countryCode: "US" });
+    assert.equal(response.headers.get("cache-control"), "private, no-store, max-age=0");
+    assert.equal(response.headers.get("x-content-type-options"), "nosniff");
+    assert.match(response.headers.get("x-robots-tag") ?? "", /noindex/);
 
-  const missingResponse = GET(
-    new Request("https://file.example/api/public/country")
-  );
-  assert.deepEqual(await missingResponse.json(), { countryCode: null });
+    const invalidResponse = GET(
+      new Request("https://file.example/api/public/country", {
+        headers: { "x-vercel-ip-country": "XX" },
+      })
+    );
+    assert.deepEqual(await invalidResponse.json(), { countryCode: null });
+
+    const missingResponse = GET(
+      new Request("https://file.example/api/public/country")
+    );
+    assert.deepEqual(await missingResponse.json(), { countryCode: null });
+  } finally {
+    if (previousVercel === undefined) delete mutableEnvironment.VERCEL;
+    else mutableEnvironment.VERCEL = previousVercel;
+    if (previousProvider === undefined) {
+      delete mutableEnvironment.REQUEST_NETWORK_PROVIDER;
+    } else {
+      mutableEnvironment.REQUEST_NETWORK_PROVIDER = previousProvider;
+    }
+  }
 });
 
 test("registration requires the auto-detected but editable country on every signup path", () => {

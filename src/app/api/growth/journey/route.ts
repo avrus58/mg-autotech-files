@@ -8,6 +8,7 @@ import {
   updateGrowthCustomerPreference,
 } from "@/lib/growth/server";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
+import { getTrustedCountryCode } from "@/lib/requestNetwork";
 
 const noStoreHeaders = {
   "Cache-Control": "private, no-store, max-age=0",
@@ -100,7 +101,7 @@ export async function POST(request: Request) {
       await recordGrowthAttributionTouchServer({
         visitorId: parsed.data.visitorId,
         touch: parsed.data,
-        countryCode: request.headers.get("x-vercel-ip-country"),
+        countryCode: getTrustedCountryCode(request),
         consentVersion: parsed.data.consentVersion,
       });
       return response({ accepted: true }, 202, limitHeaders);

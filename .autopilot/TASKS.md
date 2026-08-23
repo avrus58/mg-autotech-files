@@ -120,6 +120,31 @@ Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
 
+### MANUAL-20260823-VPS-FILE-SERVICE-PACKAGING [P0] File Service bağımsız VPS stack paketi
+
+Durum: Done
+
+Fingerprint: `hosting|vercel-commercial-blocker|existing-caddy-kvm1|hardened-standalone-app-analyzer-stack`
+
+Sonuc: Next standalone ve tek-worker File Expert analyzer, host portu
+yayinlamayan Production Compose stack'inde birlestirildi. App exact external
+Caddy edge agi ile outbound backend agina; analyzer yalniz backend agina
+baglanir. Ayri root-owned env dosyalari, non-root/read-only container sinirlari,
+dusuk CPU shares + hard resource cap, process-local health, uc release'lik
+hashed static asset union'u ve release-bazli ephemeral Next cache'i korunur.
+Env preflight deger yazdirmadan proxy/analyzer/core Production sozlesmesini
+dogrular; analyzer-first deploy ve rollback scriptleri clean-Git, health ve
+idempotency kapilarini uygular. Docker/VPS/Caddy/DB/env/push/deploy mutation
+yapilmadi.
+
+Dogrulama: Paketleme/recovery testleri 14/14, full repository 949/949 ve Python
+execution/network 6/6 PASS; Bash syntax ve Compose YAML parse PASS; full ESLint,
+web + desktop TypeScript, i18n ve performans kapilari PASS; Webpack Production
+standalone build 277/277 PASS. Build manifest 302 static dosya ve build-ID match;
+standalone localhost readiness smoke 200 + minimal no-store/noindex JSON PASS;
+iki bagimsiz review sonrasinda acik P0/P1 kalmadi. `git diff --check` yalniz
+line-ending uyarilari verdi.
+
 ### MANUAL-20260820-PRODUCTION-AUTHORITY-EMERGENCY [P0] Production authority and finance containment
 
 Durum: Done
