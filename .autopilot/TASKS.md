@@ -128,6 +128,29 @@ Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
 
+### MANUAL-20260824-CUSTOMER-PORTAL-BLACK-PALETTE [P1] Musteri portalini public/auth siyah paletine hizala
+
+Durum: Done
+
+Fingerprint: `customer-experience|authenticated-portal-palette|blue-gray-surfaces-drift-from-public-auth-black|shared-black-graphite-theme-with-preserved-layout`
+
+Sonuc: Mevcut customer portal layoutu ve tum islevleri korunurken merkezi
+`--mg-portal-*` tokenlariyla canvas `#050505`, sidebar `#090909`, siyah-grafit
+header, auth benzeri yari saydam kartlar, `#111111` kontroller ve beyaz/10
+border ailesine tasindi. Dashboard, orders/detail/chat, credits/history,
+settings, File Expert, Datalog Studio, Vehicle Widget ve new-request ayni renk
+dilini kullaniyor. Eski mavi-gri workspace ailesi kaldirildi; MG AutoTech
+`#b1121b` CTA tonu ile mavi/amber/yesil operasyon durumlari korundu.
+
+Dogrulama: hedefli UI safety testi PASS (99/99); `npm run lint` PASS; `npm run
+typecheck` PASS; `npm test` PASS (968/968); `npm run check:i18n` PASS (11
+non-English locale, 603/603); `npm run build -- --webpack` PASS (277/277 static
+pages); `git diff --check` PASS. Bagimsiz diff incelemesindeki welcome gradient
+ve test kapsami bulgulari giderildi; tekrar inceleme blocking bulgu vermedi.
+
+Kapsam disi: Production deploy/push, SQL/migration, Production DB, env/secret,
+payment, e-posta, auth veya gercek musteri verisi islemi yapilmadi.
+
 ### MANUAL-20260824-CUSTOMER-WORKSPACE-UNIFICATION [P1] Musteri sayfalarini tek portal tasariminda birlestir
 
 Durum: Done

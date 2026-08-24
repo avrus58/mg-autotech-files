@@ -114,10 +114,10 @@ export function CustomerPortalSidebar({
   const creditDisplay = formatSidebarCredits(credits);
 
   return (
-    <aside className="hidden w-60 shrink-0 border-r border-[#282d35] bg-[#0f1217] lg:block">
+    <aside className="hidden w-60 shrink-0 border-r border-[var(--mg-portal-border)] bg-[var(--mg-portal-sidebar)] lg:block">
       <div className="sticky top-0 flex h-screen flex-col px-3 py-4">
         <Link href="/" className="mb-6 flex items-center gap-3 px-2">
-          <div className="relative flex h-10 w-10 items-center justify-center rounded-lg border border-red-800/60 bg-[#171a20]">
+          <div className="relative flex h-10 w-10 items-center justify-center rounded-lg border border-red-800/60 bg-[var(--mg-portal-control)]">
             <div className="absolute -top-1.5 h-3 w-8 rounded-t-full border-t border-[#b1121b]" />
             <Gauge className="h-5 w-5 text-red-400" />
           </div>
@@ -154,7 +154,7 @@ export function CustomerPortalSidebar({
           </a>
         </nav>
 
-        <div className="mt-4 shrink-0 rounded-lg border border-[#292929] bg-[#0d0d0d] p-3">
+        <div className="mt-4 shrink-0 rounded-lg border border-[var(--mg-portal-border)] bg-[var(--mg-portal-surface)] p-3">
           <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-400">
             Current Balance
           </div>
@@ -198,7 +198,7 @@ export function CustomerPortalMobileNav({
     <nav
       ref={navRef}
       aria-label="Mobile navigation"
-      className="mg-dense-scroll flex gap-2 overflow-x-auto border-b border-[#252525] bg-[#090909] px-4 py-2.5 lg:hidden"
+      className="mg-dense-scroll flex gap-2 overflow-x-auto border-b border-[var(--mg-portal-border)] bg-[var(--mg-portal-sidebar)] px-4 py-2.5 lg:hidden"
     >
       {customerPortalSidebarSections.flatMap((section) =>
         section.items.map((item) => {

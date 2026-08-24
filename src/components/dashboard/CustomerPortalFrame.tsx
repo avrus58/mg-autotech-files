@@ -114,7 +114,7 @@ export function CustomerPortalFrame({ children }: { children: ReactNode }) {
     <AppShell>
       <div
         data-customer-portal-frame
-        className="flex min-h-screen bg-[#070707] lg:h-screen lg:overflow-hidden"
+        className="flex min-h-screen bg-[var(--mg-portal-canvas)] lg:h-screen lg:overflow-hidden"
       >
         <Suspense
           fallback={

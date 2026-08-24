@@ -457,7 +457,7 @@ export function LogAnalysisStudio() {
   };
 
   return (
-    <main data-no-translate className="mg-compact-ui min-h-screen overflow-x-clip bg-[#15181e] text-white">
+    <main data-no-translate className="mg-compact-ui min-h-screen overflow-x-clip bg-[var(--mg-portal-canvas)] text-white">
       <div className="flex min-h-screen">
         <section className="min-w-0 flex-1">
           <StudioHeader state={state} />

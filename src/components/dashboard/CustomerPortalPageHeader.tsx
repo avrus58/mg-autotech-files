@@ -27,7 +27,7 @@ export function CustomerPortalPageHeader({
   const titleClassName = "truncate text-xl font-black text-white sm:text-2xl";
 
   return (
-    <header className="sticky top-0 z-40 shrink-0 border-b border-[#2b2b2b] bg-[#12151b]/95 backdrop-blur-xl">
+    <header className="sticky top-0 z-40 shrink-0 border-b border-[var(--mg-portal-border)] bg-[var(--mg-portal-header)] backdrop-blur-xl">
       <div
         className={`mx-auto flex min-h-[4.75rem] items-center justify-between gap-4 px-4 py-3 lg:px-6 ${widthClasses[width]}`}
       >

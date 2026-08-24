@@ -281,6 +281,58 @@ test("customer workspace uses the same MG AutoTech red tone as the existing port
   assert.doesNotMatch(customerWorkspaceShell, /#2d1719|rgba\(160,18,28/);
 });
 
+test("customer portal uses the public and auth black palette without legacy blue-gray surfaces", () => {
+  const globals = readProjectFile("src", "app", "globals.css");
+  const shell = readProjectFile("src", "components", "app-shell.tsx");
+  const frame = readProjectFile("src", "components", "dashboard", "CustomerPortalFrame.tsx");
+  const header = readProjectFile("src", "components", "dashboard", "CustomerPortalPageHeader.tsx");
+  const sidebar = readProjectFile("src", "components", "dashboard", "CustomerPortalSidebar.tsx");
+  const dashboard = readProjectFile("src", "components", "dashboard", "DashboardClient.tsx");
+  const datalogStudio = readProjectFile("src", "components", "dashboard", "LogAnalysisStudio.tsx");
+  const widgetDashboard = readProjectFile("src", "components", "dashboard", "WidgetDashboardClient.tsx");
+  const orders = readProjectFile("src", "app", "dashboard", "orders", "page.tsx");
+  const orderDetail = readProjectFile("src", "app", "dashboard", "orders", "[id]", "page.tsx");
+  const creditHistory = readProjectFile("src", "app", "dashboard", "credits", "history", "page.tsx");
+  const settings = readProjectFile("src", "app", "dashboard", "settings", "page.tsx");
+  const widgetBilling = readProjectFile("src", "app", "dashboard", "widget", "billing", "page.tsx");
+  const newRequest = readProjectFile("src", "app", "new-request", "page.tsx");
+  const requestChat = readProjectFile("src", "components", "RequestChat.tsx");
+  const customerPaletteSources = [
+    shell,
+    frame,
+    header,
+    sidebar,
+    dashboard,
+    datalogStudio,
+    widgetDashboard,
+    orders,
+    orderDetail,
+    creditHistory,
+    settings,
+    widgetBilling,
+    newRequest,
+  ].join("\n");
+
+  assert.match(globals, /--mg-portal-canvas: #050505/);
+  assert.match(globals, /--mg-portal-sidebar: #090909/);
+  assert.match(globals, /--mg-portal-header: rgba\(0, 0, 0, 0\.82\)/);
+  assert.match(globals, /--mg-portal-surface: rgba\(255, 255, 255, 0\.04\)/);
+  assert.match(globals, /--mg-portal-border: rgba\(255, 255, 255, 0\.1\)/);
+  assert.match(globals, /radial-gradient[\s\S]*var\(--mg-portal-canvas\)/);
+  assert.match(shell, /bg-\[#050505\]/);
+  assert.match(frame, /bg-\[var\(--mg-portal-canvas\)\]/);
+  assert.match(header, /border-\[var\(--mg-portal-border\)\] bg-\[var\(--mg-portal-header\)\]/);
+  assert.match(sidebar, /bg-\[var\(--mg-portal-sidebar\)\]/);
+  assert.match(dashboard, /bg-\[var\(--mg-portal-surface\)\]/);
+  assert.match(dashboard, /linear-gradient\(100deg,rgba\(177,18,27,0\.22\),var\(--mg-portal-surface-solid\)_55%\)/);
+  assert.match(orderDetail, /bg-\[var\(--mg-portal-header\)\]/);
+  assert.match(requestChat, /variant === "workspace"[\s\S]*bg-\[var\(--mg-portal-surface\)\]/);
+  assert.doesNotMatch(
+    customerPaletteSources,
+    /#15181e|#12151b|#0f1217|#20242c|#303640|#282d35|#171a20|#1c2028|#252a33|rgba\(20,\s*22,\s*27/i
+  );
+});
+
 test("legacy admin order modal requires an explicit delivery estimate before saving", () => {
   const adminPage = readProjectFile("src", "app", "admin", "page.tsx");
 
@@ -765,7 +817,7 @@ test("customer destination routes share one compact page header without duplicat
   ];
 
   assert.match(header, /min-h-\[4\.75rem\]/);
-  assert.match(header, /border-\[#2b2b2b\] bg-\[#12151b\]\/95/);
+  assert.match(header, /border-\[var\(--mg-portal-border\)\] bg-\[var\(--mg-portal-header\)\]/);
   assert.match(header, /width\?: "6xl" \| "7xl" \| "wide"/);
   for (const destination of destinations) {
     assert.match(destination, /CustomerPortalPageHeader/);

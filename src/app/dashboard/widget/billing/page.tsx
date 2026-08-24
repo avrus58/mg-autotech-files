@@ -53,7 +53,7 @@ export default function WidgetBillingPage() {
   }
 
   return (
-    <main className="mg-compact-ui min-h-screen bg-[#15181e] text-white">
+    <main className="mg-compact-ui min-h-screen bg-[var(--mg-portal-canvas)] text-white">
       <CustomerPortalPageHeader
         eyebrow="Vehicle Widget"
         title="Widget billing"

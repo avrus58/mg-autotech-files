@@ -4443,3 +4443,45 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
   rollback klasorlari korundu. SQL/migration, Production DB, env/secret,
   Caddy/DNS, payment, e-posta veya gercek musteri verisi degistirilmedi; kritik
   regresyon gorulmedigi icin rollback uygulanmadi.
+
+## 2026-08-24 02:05 +02:00 Customer portal black palette baslangici
+
+- Owner, yeni ortak customer portal tasarimini ve mevcut marka kirmizisini
+  koruyup tum panelin ana sayfa/login ekranlarindaki koyu siyah-grafit renk
+  tonuna tasinmasini istedi.
+- Evidence: Customer workspace'te `#15181e` canvas 8, `#12151b` header 3,
+  `#0f1217` sidebar 1, `#20242c` panel 9 ve `#303640` border 19 kez kullaniliyor;
+  bu mavi-gri aile public/auth tarafindaki `#050505`, `#0b0b0d`, `#111` ve
+  `#b1121b` paletinden belirgin sekilde ayriliyor.
+- Kapsam yalniz authenticated customer palette/token, ilgili regresyon testleri
+  ve responsive visual QA'dir. Layout, route, auth, Supabase sorgusu, upload,
+  download, chat, analiz, widget, kredi/odeme davranisi, package/lockfile,
+  migration, env/secret ve Production servisleri degistirilmeyecek.
+
+## 2026-08-24 02:22 +02:00 Customer portal black palette tamamlandi
+
+- Sonuc: Authenticated customer workspace icin merkezi `--mg-portal-*` paleti
+  eklendi. Canvas `#050505`, sidebar `#090909`, header siyah/blur, kartlar
+  auth ekranindaki beyaz yari saydam yuzey dilinde, kontroller `#111111` ve
+  borderlar beyaz/10 seviyesinde birlestirildi. Dashboard, order liste/detail,
+  workspace chat, credits/history, settings, File Expert, Datalog Studio,
+  Vehicle Widget ve new-request ayni siyah-grafit aileyi kullaniyor.
+- Fonksiyon/scope korumasi: Layout, route, auth, Supabase sorgulari, upload,
+  download, chat, analiz, widget, kredi/odeme, loading/error/empty state ve
+  responsive scroll siniflari degismedi. RequestChat'in admin/default varyanti
+  eski rengiyle korundu; yalnız customer workspace varyanti portal tokenlarina
+  baglandi. Marka kirmizisi ve semantik mavi/amber/yesil status renkleri ayni.
+- Kontroller: hedefli UI safety testi PASS (99/99); `npm run lint` PASS; `npm
+  run typecheck` PASS; `npm test` PASS (968/968); `npm run check:i18n` PASS (11
+  non-English locale, 603/603); `npm run build -- --webpack` PASS (277/277
+  static pages); `git diff --check` PASS (yalniz Windows CRLF uyarilari).
+- Review: Bagimsiz diff review welcome bandinda kalan bir blue-gray RGBA stop
+  ve dar regresyon taramasi buldu. Stop merkezi solid tokena tasindi, test tum
+  customer hedeflerini ve RGBA ailesini kapsayacak sekilde genisletildi; tekrar
+  review blocking bulgu vermedi.
+- Browser QA: Public/login siyah referansi local browserda dogrulandi. Local
+  authenticated icerik beklenen auth sinirinda kaldigi icin auth bypass veya
+  gercek musteri hesabi kullanilmadi; layout degismedigi ve palette source/test/
+  Production build kapilari temiz oldugu dogrulandi. Dev server kapatildi.
+- Kapsam disi: Production deploy/push, SQL/migration, Production DB,
+  env/secret, payment, e-posta veya gercek musteri verisi islemi yapilmadi.

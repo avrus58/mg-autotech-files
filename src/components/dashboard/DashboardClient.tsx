@@ -639,10 +639,10 @@ export function DashboardClient() {
   }
 
   return (
-    <main className="mg-compact-ui min-h-screen bg-[#15181e] text-white lg:h-screen lg:overflow-hidden">
+    <main className="mg-compact-ui min-h-screen bg-[var(--mg-portal-canvas)] text-white lg:h-screen lg:overflow-hidden">
       <div className="flex min-h-screen lg:h-screen lg:overflow-hidden">
         <section className="min-w-0 flex-1 lg:flex lg:h-screen lg:flex-col lg:overflow-hidden">
-          <header className="sticky top-0 z-40 shrink-0 border-b border-[#2b2b2b] bg-[#12151b]/95 backdrop-blur-xl lg:static">
+          <header className="sticky top-0 z-40 shrink-0 border-b border-[var(--mg-portal-border)] bg-[var(--mg-portal-header)] backdrop-blur-xl lg:static">
             <div className="border-b border-red-950/40 bg-[#b1121b] px-4 py-2.5 text-white lg:px-5 xl:px-6">
               <div className="flex items-center justify-between gap-4">
                 <div className="flex min-w-0 items-center gap-3">
@@ -672,7 +672,7 @@ export function DashboardClient() {
               <Link
                 href="/dashboard/credits"
                 aria-label="Buy Credits"
-                className="hidden min-w-[144px] items-center justify-between rounded-xl border border-[#b1121b] bg-[#171a20] px-3 py-2.5 transition hover:bg-[#20242b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 md:flex"
+                className="hidden min-w-[144px] items-center justify-between rounded-xl border border-[#b1121b] bg-[var(--mg-portal-control)] px-3 py-2.5 transition hover:bg-[var(--mg-portal-control-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 md:flex"
               >
                 <span>
                   <span className="block text-[10px] font-bold text-zinc-400">Current Balance</span>
@@ -683,7 +683,7 @@ export function DashboardClient() {
                 </span>
               </Link>
 
-              <div className="hidden min-w-[126px] rounded-xl border border-[#b1121b] bg-[#171a20] px-3 py-2.5 xl:block">
+              <div className="hidden min-w-[126px] rounded-xl border border-[#b1121b] bg-[var(--mg-portal-control)] px-3 py-2.5 xl:block">
                 <div className="text-[10px] font-bold text-zinc-400">Local Time</div>
                 <div className="mt-0.5 flex items-center gap-2 text-sm font-black tabular-nums">
                   <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.8)]" />
@@ -699,7 +699,7 @@ export function DashboardClient() {
                   value={requestSearch}
                   onChange={(event) => setRequestSearch(event.target.value)}
                   placeholder="Search recent requests..."
-                  className="h-11 w-full rounded-xl border border-[#303640] bg-[#1c2028] pl-10 pr-3 text-sm text-white outline-none transition placeholder:text-zinc-400 focus:border-[#b1121b] focus:ring-2 focus:ring-red-500/20"
+                  className="h-11 w-full rounded-xl border border-[var(--mg-portal-border)] bg-[var(--mg-portal-input)] pl-10 pr-3 text-sm text-white outline-none transition placeholder:text-zinc-400 focus:border-[#b1121b] focus:ring-2 focus:ring-red-500/20"
                 />
               </label>
 
@@ -710,7 +710,7 @@ export function DashboardClient() {
                     ? `Notifications - ${needsResponseCount} requests. Waiting for your information`
                     : "Notifications"
                 }
-                className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-[#303640] bg-[#171a20] text-zinc-300 transition hover:border-zinc-500 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
+                className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-[var(--mg-portal-border)] bg-[var(--mg-portal-control)] text-zinc-300 transition hover:border-zinc-500 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
               >
                 <BellRing className="h-4 w-4" />
                 {needsResponseCount > 0 && (
@@ -722,13 +722,13 @@ export function DashboardClient() {
 
               <a
                 href="mailto:info@mgautotech.de"
-                className="hidden h-11 shrink-0 items-center justify-center rounded-xl border border-[#303640] bg-[#171a20] px-4 text-xs font-black text-white transition hover:border-zinc-500 hover:bg-[#20242b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 2xl:inline-flex"
+                className="hidden h-11 shrink-0 items-center justify-center rounded-xl border border-[var(--mg-portal-border)] bg-[var(--mg-portal-control)] px-4 text-xs font-black text-white transition hover:border-zinc-500 hover:bg-[var(--mg-portal-control-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 2xl:inline-flex"
               >
                 <Wrench className="mr-2 h-4 w-4" />
                 Support
               </a>
 
-              <div className="hidden min-w-0 items-center gap-2 rounded-xl border border-[#303640] bg-[#171a20] px-3 py-2 2xl:flex">
+              <div className="hidden min-w-0 items-center gap-2 rounded-xl border border-[var(--mg-portal-border)] bg-[var(--mg-portal-control)] px-3 py-2 2xl:flex">
                 <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-red-950/35 text-red-400">
                   <User className="h-4 w-4" />
                 </div>
@@ -742,7 +742,7 @@ export function DashboardClient() {
                 type="button"
                 onClick={handleLogout}
                 aria-label="Log out"
-                className="flex h-11 shrink-0 items-center justify-center rounded-xl border border-[#303640] bg-[#171a20] px-3 text-xs font-bold text-white transition hover:border-zinc-500 hover:bg-[#20242b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
+                className="flex h-11 shrink-0 items-center justify-center rounded-xl border border-[var(--mg-portal-border)] bg-[var(--mg-portal-control)] px-3 text-xs font-bold text-white transition hover:border-zinc-500 hover:bg-[var(--mg-portal-control-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
               >
                 <LogOut className="h-4 w-4 sm:mr-2" />
                 <span className="hidden sm:inline">Logout</span>
@@ -784,7 +784,7 @@ export function DashboardClient() {
             <section
               data-dashboard-welcome
               aria-labelledby="dashboard-welcome-title"
-              className="mb-3 rounded-xl border border-red-900/60 bg-[linear-gradient(100deg,rgba(177,18,27,0.22),rgba(20,22,27,0.96)_55%)] px-4 py-4 lg:px-5"
+              className="mb-3 rounded-xl border border-red-900/60 bg-[linear-gradient(100deg,rgba(177,18,27,0.22),var(--mg-portal-surface-solid)_55%)] px-4 py-4 lg:px-5"
             >
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="min-w-0">
@@ -827,7 +827,7 @@ export function DashboardClient() {
             >
               <Link
                 href="/dashboard/orders"
-                className="group min-w-0 rounded-xl border border-[#303640] bg-[#20242c] p-4 transition hover:border-blue-500/40 hover:bg-[#252a33] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                className="group min-w-0 rounded-xl border border-[var(--mg-portal-border)] bg-[var(--mg-portal-surface)] p-4 transition hover:border-blue-500/40 hover:bg-[var(--mg-portal-surface-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
               >
                 <div className="flex items-center gap-3">
                   <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-500/10 text-blue-400">
@@ -842,7 +842,7 @@ export function DashboardClient() {
 
               <Link
                 href="/dashboard/orders"
-                className="group min-w-0 rounded-xl border border-[#303640] bg-[#20242c] p-4 transition hover:border-amber-500/40 hover:bg-[#252a33] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
+                className="group min-w-0 rounded-xl border border-[var(--mg-portal-border)] bg-[var(--mg-portal-surface)] p-4 transition hover:border-amber-500/40 hover:bg-[var(--mg-portal-surface-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
               >
                 <div className="flex items-center gap-3">
                   <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-500/10 text-amber-400">
@@ -857,7 +857,7 @@ export function DashboardClient() {
 
               <Link
                 href="/dashboard/orders?view=completed"
-                className="group min-w-0 rounded-xl border border-[#303640] bg-[#20242c] p-4 transition hover:border-emerald-500/40 hover:bg-[#252a33] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                className="group min-w-0 rounded-xl border border-[var(--mg-portal-border)] bg-[var(--mg-portal-surface)] p-4 transition hover:border-emerald-500/40 hover:bg-[var(--mg-portal-surface-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
               >
                 <div className="flex items-center gap-3">
                   <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400">
@@ -872,7 +872,7 @@ export function DashboardClient() {
 
               <Link
                 href="/dashboard/credits"
-                className="group min-w-0 rounded-xl border border-[#303640] bg-[#20242c] p-4 transition hover:border-red-500/40 hover:bg-[#252a33] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+                className="group min-w-0 rounded-xl border border-[var(--mg-portal-border)] bg-[var(--mg-portal-surface)] p-4 transition hover:border-red-500/40 hover:bg-[var(--mg-portal-surface-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
               >
                 <div className="flex items-center gap-3">
                   <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-red-500/10 text-red-400">
@@ -892,9 +892,9 @@ export function DashboardClient() {
             >
               <section
                 aria-labelledby="recent-requests-title"
-                className="min-w-0 overflow-hidden rounded-xl border border-[#303640] bg-[#20242c]"
+                className="min-w-0 overflow-hidden rounded-xl border border-[var(--mg-portal-border)] bg-[var(--mg-portal-surface)]"
               >
-                <div className="flex flex-col gap-3 border-b border-[#303640] px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-col gap-3 border-b border-[var(--mg-portal-border)] px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <h2 id="recent-requests-title" className="flex items-center gap-2 text-base font-black">
                       <FileText className="h-5 w-5 text-red-400" />
@@ -922,7 +922,7 @@ export function DashboardClient() {
                 </div>
 
                 {orders.length === 0 ? (
-                  <div className="m-4 rounded-lg border border-dashed border-[#3b414b] bg-[#171a20] p-6 text-center">
+                  <div className="m-4 rounded-lg border border-dashed border-[var(--mg-portal-border-strong)] bg-[var(--mg-portal-control)] p-6 text-center">
                     <Upload className="mx-auto mb-3 h-8 w-8 text-red-400" />
                     <h3 className="text-lg font-black">No file request yet</h3>
                     <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-zinc-400">
@@ -936,7 +936,7 @@ export function DashboardClient() {
                     </Link>
                   </div>
                 ) : filteredOrders.length === 0 ? (
-                  <div className="rounded-lg border border-dashed border-[#303640] bg-[#171a20] p-6 text-center">
+                  <div className="rounded-lg border border-dashed border-[var(--mg-portal-border)] bg-[var(--mg-portal-control)] p-6 text-center">
                     <Search className="mx-auto mb-3 h-8 w-8 text-red-400" />
                     <h3 className="text-lg font-black">No matching recent request</h3>
                     <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-zinc-400">
@@ -945,14 +945,14 @@ export function DashboardClient() {
                     <button
                       type="button"
                       onClick={() => setRequestSearch("")}
-                      className="mt-4 rounded-lg border border-[#3b414b] bg-[#20242c] px-4 py-2.5 text-sm font-black text-white transition hover:border-red-500/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
+                      className="mt-4 rounded-lg border border-[var(--mg-portal-border-strong)] bg-[var(--mg-portal-surface)] px-4 py-2.5 text-sm font-black text-white transition hover:border-red-500/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
                     >
                       Clear search
                     </button>
                   </div>
                 ) : (
                   <div className="min-w-0 overflow-hidden">
-                    <div className="divide-y divide-[#303640]">
+                    <div className="divide-y divide-[var(--mg-portal-border)]">
                       {filteredOrders.map((order) => {
                         const isCompleted = order.status === "completed";
                         const needsCustomerResponse =
@@ -967,7 +967,7 @@ export function DashboardClient() {
                         return (
                           <article
                             key={order.id}
-                            className="grid min-w-0 gap-3 bg-[#20242c] p-3.5 transition hover:bg-[#252a33] sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"
+                            className="grid min-w-0 gap-3 bg-[var(--mg-portal-surface)] p-3.5 transition hover:bg-[var(--mg-portal-surface-hover)] sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"
                           >
                             <div className="min-w-0">
                               <div className="flex flex-wrap items-center gap-2">
@@ -1013,7 +1013,7 @@ export function DashboardClient() {
                             <Link
                               href={`/dashboard/orders/${order.id}`}
                               aria-label={`${isCompleted ? "Open delivery" : needsCustomerResponse ? "Respond to" : "View"} ${order.vehicle_brand || "vehicle"} ${order.vehicle_model || "request"}`}
-                              className="inline-flex w-full items-center justify-center rounded-lg border border-[#3b414b] bg-[#171a20] px-3 py-2 text-xs font-black text-white transition hover:border-red-500/60 hover:bg-[#292f39] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 sm:w-auto"
+                              className="inline-flex w-full items-center justify-center rounded-lg border border-[var(--mg-portal-border-strong)] bg-[var(--mg-portal-control)] px-3 py-2 text-xs font-black text-white transition hover:border-red-500/60 hover:bg-[var(--mg-portal-control-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 sm:w-auto"
                             >
                               <OrderActionIcon className="mr-2 h-4 w-4" />
                               {isCompleted
@@ -1033,9 +1033,9 @@ export function DashboardClient() {
               <aside aria-label="Credit activity and customer reference" className="space-y-3">
                 <section
                   aria-labelledby="credit-history-title"
-                  className="overflow-hidden rounded-xl border border-[#303640] bg-[#20242c]"
+                  className="overflow-hidden rounded-xl border border-[var(--mg-portal-border)] bg-[var(--mg-portal-surface)]"
                 >
-                  <div className="flex items-center justify-between gap-3 border-b border-[#303640] px-4 py-3.5">
+                  <div className="flex items-center justify-between gap-3 border-b border-[var(--mg-portal-border)] px-4 py-3.5">
                     <div className="flex min-w-0 items-center gap-3">
                       <CreditCard className="h-5 w-5 shrink-0 text-red-400" />
                       <h2 id="credit-history-title" className="text-base font-black">Credit History</h2>
@@ -1063,7 +1063,7 @@ export function DashboardClient() {
                       </Link>
                     </div>
                   ) : (
-                    <div className="divide-y divide-[#303640]">
+                    <div className="divide-y divide-[var(--mg-portal-border)]">
                       {creditHistory.map((item) => {
                         const delta = Number(item.credits_delta ?? 0);
                         const isPositive = delta >= 0;
@@ -1099,7 +1099,7 @@ export function DashboardClient() {
                   )}
                 </section>
 
-                <div className="rounded-xl border border-[#303640] bg-[#20242c] p-4">
+                <div className="rounded-xl border border-[var(--mg-portal-border)] bg-[var(--mg-portal-surface)] p-4">
                   <div className="flex items-center justify-between gap-3">
                     <div className="min-w-0">
                       <div className="text-[11px] font-black uppercase tracking-[0.18em] text-red-400">
@@ -1116,7 +1116,7 @@ export function DashboardClient() {
                     type="button"
                     onClick={copyReference}
                     disabled={!customerReference}
-                    className="mt-3 inline-flex w-full items-center justify-center rounded-lg border border-[#3b414b] bg-[#171a20] px-4 py-2.5 text-xs font-black text-white transition hover:border-red-500/50 hover:bg-[#242932] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="mt-3 inline-flex w-full items-center justify-center rounded-lg border border-[var(--mg-portal-border-strong)] bg-[var(--mg-portal-control)] px-4 py-2.5 text-xs font-black text-white transition hover:border-red-500/50 hover:bg-[var(--mg-portal-control-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <Clipboard className="mr-2 h-4 w-4" />
                     <span aria-live="polite">

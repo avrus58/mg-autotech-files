@@ -198,7 +198,7 @@ export default function CustomerOrdersPage() {
   const showInitialLoadError = Boolean(loadError && !ordersReady);
 
   return (
-    <main className="mg-compact-ui min-h-screen bg-[#15181e] text-white">
+    <main className="mg-compact-ui min-h-screen bg-[var(--mg-portal-canvas)] text-white">
       <div className="flex min-h-screen">
         <section className="min-w-0 flex-1">
           <CustomerPortalPageHeader

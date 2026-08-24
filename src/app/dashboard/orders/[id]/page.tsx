@@ -738,12 +738,12 @@ export default function OrderDetailPage() {
   const statusCopy = getCustomerStatusCopy(order, completedFileReady, revisionRequested);
 
   return (
-    <main className={`${workspaceStyles.viewportShell} mg-compact-ui min-h-screen bg-[#15181e] text-white lg:h-screen lg:overflow-hidden`}>
+    <main className={`${workspaceStyles.viewportShell} mg-compact-ui min-h-screen bg-[var(--mg-portal-canvas)] text-white lg:h-screen lg:overflow-hidden`}>
       <div className="fixed inset-0 -z-10 bg-[radial-gradient(circle_at_18%_0%,rgba(177,18,27,0.25),transparent_34%),linear-gradient(135deg,#050505,#0c0c0e_48%,#170507)]" />
 
       <div className="flex min-h-screen lg:h-screen lg:overflow-hidden">
         <section className="min-w-0 flex-1 lg:flex lg:h-screen lg:flex-col lg:overflow-hidden">
-          <header className="sticky top-0 z-50 shrink-0 border-b border-[#2b2b2b] bg-[#12151b]/95 backdrop-blur-xl lg:static">
+          <header className="sticky top-0 z-50 shrink-0 border-b border-[var(--mg-portal-border)] bg-[var(--mg-portal-header)] backdrop-blur-xl lg:static">
             <div className="border-b border-red-950/40 bg-[#b1121b] px-4 py-2 text-white lg:px-5 xl:px-6">
               <div className="flex items-center justify-between gap-4">
                 <div className="flex min-w-0 items-center gap-3">
@@ -777,7 +777,7 @@ export default function OrderDetailPage() {
 
             <div className="flex min-h-[62px] items-center justify-between gap-3 px-4 py-2.5 lg:px-5 xl:px-6">
               <Link href="/dashboard" className="flex min-w-0 items-center gap-3">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-red-800/50 bg-[#171a20] shadow-lg shadow-red-950/30">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-red-800/50 bg-[var(--mg-portal-control)] shadow-lg shadow-red-950/30">
                   <Gauge className="h-5 w-5 text-red-500" />
                 </div>
 
@@ -795,13 +795,13 @@ export default function OrderDetailPage() {
                   {liveRefreshing ? "Syncing" : "Live sync"}
                 </div>
 
-                <div className="hidden max-w-56 truncate rounded-lg border border-[#303640] bg-[#171a20] px-3 py-2 text-xs font-bold text-zinc-300 xl:block">
+                <div className="hidden max-w-56 truncate rounded-lg border border-[var(--mg-portal-border)] bg-[var(--mg-portal-control)] px-3 py-2 text-xs font-bold text-zinc-300 xl:block">
                   {email}
                 </div>
 
                 <Link
                   href="/dashboard"
-                  className="rounded-lg border border-[#303640] bg-[#171a20] px-3 py-2 text-sm font-bold text-white transition hover:border-zinc-500 hover:bg-[#20242b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
+                  className="rounded-lg border border-[var(--mg-portal-border)] bg-[var(--mg-portal-control)] px-3 py-2 text-sm font-bold text-white transition hover:border-zinc-500 hover:bg-[var(--mg-portal-control-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
                 >
                   <ArrowLeft className="mr-2 inline h-4 w-4" />
                   Dashboard
@@ -823,7 +823,7 @@ export default function OrderDetailPage() {
                 </div>
               )}
 
-        <section className="shrink-0 overflow-hidden rounded-xl border border-white/10 bg-[#0c0d0f]/95 shadow-2xl shadow-black/30">
+        <section className="shrink-0 overflow-hidden rounded-xl border border-white/10 bg-[var(--mg-portal-surface)] shadow-2xl shadow-black/30">
           <div className="flex flex-col gap-3 p-3 sm:p-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="min-w-0">
               <div className="mb-2 flex flex-wrap items-center gap-2">
@@ -902,7 +902,7 @@ export default function OrderDetailPage() {
 
         <div className={`${workspaceStyles.workspaceColumns} grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(20rem,0.42fr)] 2xl:grid-cols-[minmax(0,1fr)_minmax(23rem,0.36fr)]`}>
           <div className="min-w-0 space-y-3">
-          <section className="min-w-0 overflow-hidden rounded-xl border border-white/10 bg-[#0e0f12]">
+          <section className="min-w-0 overflow-hidden rounded-xl border border-white/10 bg-[var(--mg-portal-surface)]">
             <div className="shrink-0 border-b border-white/10 px-4 py-3">
               <div className="flex items-center justify-between gap-3">
                 <div>
@@ -1023,7 +1023,7 @@ export default function OrderDetailPage() {
             </div>
           </section>
 
-          <section className="min-w-0 overflow-hidden rounded-xl border border-white/10 bg-[#0e0f12]">
+          <section className="min-w-0 overflow-hidden rounded-xl border border-white/10 bg-[var(--mg-portal-surface)]">
             <div className="flex shrink-0 items-center justify-between gap-3 border-b border-white/10 px-4 py-3">
               <div>
                 <div className="text-xs font-black uppercase tracking-[0.16em] text-emerald-400">Secure delivery</div>

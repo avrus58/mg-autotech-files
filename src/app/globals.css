@@ -110,12 +110,27 @@ body {
   the authenticated customer workspace dense and operational without changing
   the admin or public pages.
 */
+.mg-efferd-dashboard {
+  --mg-portal-canvas: #050505;
+  --mg-portal-sidebar: #090909;
+  --mg-portal-header: rgba(0, 0, 0, 0.82);
+  --mg-portal-surface: rgba(255, 255, 255, 0.04);
+  --mg-portal-surface-solid: #0b0b0d;
+  --mg-portal-surface-hover: rgba(255, 255, 255, 0.075);
+  --mg-portal-control: #111111;
+  --mg-portal-control-hover: #18181b;
+  --mg-portal-input: rgba(0, 0, 0, 0.35);
+  --mg-portal-border: rgba(255, 255, 255, 0.1);
+  --mg-portal-border-strong: rgba(255, 255, 255, 0.2);
+  color-scheme: dark;
+}
+
 .mg-efferd-dashboard .mg-compact-ui {
   --mg-panel-radius: 0.75rem;
   --mg-panel-radius-sm: 0.5rem;
   background:
     radial-gradient(circle at 92% -8%, rgba(177, 18, 27, 0.08), transparent 28rem),
-    #070707;
+    var(--mg-portal-canvas);
   font-variant-numeric: tabular-nums;
 }
 
@@ -141,8 +156,8 @@ body {
 }
 
 .mg-customer-workspace-content > .mg-compact-ui > header {
-  border-color: #2b2b2b;
-  background-color: rgba(18, 21, 27, 0.95);
+  border-color: var(--mg-portal-border);
+  background-color: var(--mg-portal-header);
 }
 
 @media (max-width: 1023px) {

@@ -229,7 +229,7 @@ export default function CreditHistoryPage() {
   }
 
   return (
-    <main className="mg-compact-ui min-h-screen bg-[#15181e] text-white">
+    <main className="mg-compact-ui min-h-screen bg-[var(--mg-portal-canvas)] text-white">
       <div className="fixed inset-0 -z-10 bg-[radial-gradient(circle_at_20%_0%,rgba(160,18,28,0.24),transparent_32%),linear-gradient(135deg,#050505,#0d0d0f_48%,#160608)]" />
 
       <CustomerPortalPageHeader

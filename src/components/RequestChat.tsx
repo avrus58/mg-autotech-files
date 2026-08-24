@@ -373,15 +373,24 @@ export default function RequestChat({
     : syncState === "unavailable"
       ? WifiOff
       : RefreshCw;
+  const workspacePanelClass = variant === "workspace"
+    ? "bg-[var(--mg-portal-surface)]"
+    : "bg-[#101216]";
+  const workspaceChromeClass = variant === "workspace"
+    ? "bg-[var(--mg-portal-control)]"
+    : "bg-[#15171c]";
+  const workspaceConversationClass = variant === "workspace"
+    ? "bg-[var(--mg-portal-canvas)]"
+    : "bg-[#0b0d10]";
 
   return (
     <section
-      className={`w-full min-w-0 max-w-full overflow-hidden rounded-lg border border-white/10 bg-[#101216] shadow-[0_18px_60px_rgba(0,0,0,0.28)] ${
+      className={`w-full min-w-0 max-w-full overflow-hidden rounded-lg border border-white/10 shadow-[0_18px_60px_rgba(0,0,0,0.28)] ${workspacePanelClass} ${
         variant === "workspace" ? "lg:flex lg:max-h-[calc(100dvh-8.25rem)] lg:min-h-[31rem] lg:flex-col" : ""
       }`}
       aria-label="Secure request conversation"
     >
-      <div className="shrink-0 border-b border-white/10 bg-[#15171c] px-4 py-3.5 sm:px-5">
+      <div className={`shrink-0 border-b border-white/10 px-4 py-3.5 sm:px-5 ${workspaceChromeClass}`}>
         <div className="flex min-w-0 flex-wrap items-start justify-between gap-3 sm:flex-nowrap sm:gap-4">
           <div className="flex min-w-0 items-start gap-3">
             <span className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-red-500/25 bg-red-500/10 text-red-300">
@@ -436,7 +445,7 @@ export default function RequestChat({
         role="log"
         aria-live="polite"
         aria-busy={syncState === "loading"}
-        className={`relative overflow-y-auto overflow-x-hidden bg-[#0b0d10] px-3 py-4 sm:px-5 ${
+        className={`relative overflow-y-auto overflow-x-hidden px-3 py-4 sm:px-5 ${workspaceConversationClass} ${
           variant === "workspace"
             ? "min-h-72 max-h-[30rem] lg:min-h-0 lg:max-h-none lg:flex-1"
             : "min-h-64 max-h-[26rem]"
@@ -556,7 +565,7 @@ export default function RequestChat({
         ) : null}
       </div>
 
-      <div className="shrink-0 border-t border-white/10 bg-[#15171c] p-3 sm:p-4">
+      <div className={`shrink-0 border-t border-white/10 p-3 sm:p-4 ${workspaceChromeClass}`}>
         {syncState === "reconnecting" ? (
           <div className="mb-2 flex items-center gap-2 text-[11px] text-amber-200" role="status">
             <RefreshCw aria-hidden="true" className="animate-spin" size={12} />
