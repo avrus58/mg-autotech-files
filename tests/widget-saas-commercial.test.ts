@@ -97,6 +97,22 @@ test("commercial health reports usage risk without changing pricing or billing",
   assert.equal(health.issues.some((issue) => issue.code === "usage_limit"), true);
 });
 
+test("React, embed and enquiry widget paths support Stage 3 consistently", () => {
+  const reactWidget = source("src", "components", "widget", "PublicVehicleSelector.tsx");
+  const embedWidget = source("src", "app", "widget", "vehicle-lookup.js", "route.ts");
+  const enquiry = source("src", "app", "api", "widget", "enquiry", "route.ts");
+  const projection = source("src", "lib", "widget", "vehicles.ts");
+
+  assert.match(reactWidget, /label: "Stage 3", data: vehicle\.stage3/);
+  assert.match(reactWidget, /\^stage\\s\*\[123\]\$/);
+  assert.match(embedWidget, /name: "Stage 3", data: vehicle\.stage3/);
+  assert.match(embedWidget, /stage === "Stage 3" \? vehicle\.stage3/);
+  assert.match(embedWidget, /\^stage\\s\*\[123\]\$/);
+  assert.match(enquiry, /z\.enum\(\["Stage 1", "Stage 2", "Stage 3"\]\)/);
+  assert.match(enquiry, /"Stage 3": vehicle\.stage3/);
+  assert.match(projection, /stage3: row\.stage3 \?\? null/);
+});
+
 test("admin widget APIs are permission protected and expose safe list projections", () => {
   const listRoute = source("src", "app", "api", "admin", "widget-clients", "route.ts");
   const detailRoute = source("src", "app", "api", "admin", "widget-clients", "[id]", "route.ts");

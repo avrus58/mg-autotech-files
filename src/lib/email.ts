@@ -144,7 +144,7 @@ export async function sendWidgetEnquiryEmail({
   vehicleRegistration?: string;
   message?: string;
   vehicleName: string;
-  stage: "Stage 1" | "Stage 2";
+  stage: "Stage 1" | "Stage 2" | "Stage 3";
   services: string[];
   performance: { stockHp: number | null; tunedHp: number | null; gainHp: number | null; stockNm: number | null; tunedNm: number | null; gainNm: number | null };
   requestDomain: string;

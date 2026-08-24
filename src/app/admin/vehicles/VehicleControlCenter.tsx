@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -10,7 +10,6 @@ import {
   Database,
   Eye,
   FileClock,
-  Filter,
   Gauge,
   Loader2,
   PlusCircle,
@@ -21,7 +20,13 @@ import {
   UploadCloud,
 } from "lucide-react";
 import { authenticatedFetch } from "@/lib/authGuards";
-import type { VehicleControlRecord, VehicleImportSummary } from "@/lib/vehicleControl/types";
+import type {
+  VehicleAdminListQuery,
+  VehicleAdminListResponse,
+  VehicleAdminPageSize,
+  VehicleImportSummary,
+} from "@/lib/vehicleControl/types";
+import { vehicleAdminPageSizes } from "@/lib/vehicleControl/types";
 import type { ExternalVehicleEntry, VehicleEnrichmentPlan } from "@/lib/vehicleEnrichment/types";
 import { parseVehicleEnrichmentEntries } from "@/lib/vehicleEnrichment/parseInput";
 
@@ -39,7 +44,6 @@ type OverviewPayload = {
     duplicateWarningCount: number;
     dataHealthScore: number;
   };
-  records: VehicleControlRecord[];
   recentAudit: Array<Record<string, unknown>>;
   importBatches: Array<Record<string, unknown>>;
   permissionWarnings?: string[];
@@ -76,24 +80,33 @@ const blankDraft: CreateDraftState = {
 };
 
 const sectionLinks: Array<{ id: Section; label: string; href: string }> = [
-  { id: "overview", label: "Overview", href: "/admin/vehicles" },
-  { id: "brands", label: "Brands", href: "/admin/vehicles/brands" },
-  { id: "models", label: "Models", href: "/admin/vehicles/models" },
-  { id: "generations", label: "Generations", href: "/admin/vehicles/generations" },
-  { id: "engines", label: "Engines", href: "/admin/vehicles/engines" },
+  { id: "overview", label: "Vehicle catalog", href: "/admin/vehicles" },
+  { id: "validation", label: "Needs review", href: "/admin/vehicles/validation" },
+];
+
+const advancedLinks: Array<{ id: Section; label: string; href: string }> = [
   { id: "import", label: "Import", href: "/admin/vehicles/import" },
   { id: "enrichment", label: "Enrichment", href: "/admin/vehicles/enrichment" },
   { id: "coverage", label: "Coverage", href: "/admin/vehicles/coverage" },
-  { id: "validation", label: "Validation", href: "/admin/vehicles/validation" },
-  { id: "audit", label: "Audit", href: "/admin/vehicles/audit" },
+  { id: "audit", label: "Audit history", href: "/admin/vehicles/audit" },
 ];
 
 export default function VehicleControlCenter({ section = "overview" }: { section?: Section }) {
   const [payload, setPayload] = useState<OverviewPayload | null>(null);
+  const [listPayload, setListPayload] = useState<VehicleAdminListResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [listLoading, setListLoading] = useState(true);
+  const [listError, setListError] = useState("");
   const [message, setMessage] = useState("");
   const [query, setQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [brandFilter, setBrandFilter] = useState("");
+  const [modelFilter, setModelFilter] = useState("");
+  const [generationFilter, setGenerationFilter] = useState("");
+  const [ecuFilter, setEcuFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState<VehicleAdminListQuery["publishStatus"]>("all");
+  const [verificationFilter, setVerificationFilter] = useState<VehicleAdminListQuery["verificationStatus"]>(section === "validation" ? "needs_review" : "all");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState<VehicleAdminPageSize>(25);
   const [importSummary, setImportSummary] = useState<VehicleImportSummary | null>(null);
   const [busyAction, setBusyAction] = useState("");
   const [showCreate, setShowCreate] = useState(false);
@@ -125,26 +138,47 @@ export default function VehicleControlCenter({ section = "overview" }: { section
     return () => window.clearTimeout(timeout);
   }, [load]);
 
-  const records = useMemo(() => {
-    const term = query.trim().toLowerCase();
-    return (payload?.records ?? []).filter((record) => {
-      if (statusFilter === "published" && !record.published) return false;
-      if (statusFilter === "draft" && record.published) return false;
-      if (statusFilter === "verified" && record.verificationStatus !== "verified") return false;
-      if (!term) return true;
-      return [
-        record.brand,
-        record.model,
-        record.generation,
-        record.engine,
-        record.ecuType,
-        record.ecuFamily,
-        record.vehicleKey,
-        record.fuelType,
-        record.services.join(" "),
-      ].filter(Boolean).join(" ").toLowerCase().includes(term);
-    });
-  }, [payload, query, statusFilter]);
+  const loadList = useCallback(async () => {
+    setListLoading(true);
+    setListError("");
+    try {
+      const params = new URLSearchParams({
+        page: String(page),
+        pageSize: String(pageSize),
+        q: query,
+        brand: brandFilter,
+        model: modelFilter,
+        generation: generationFilter,
+        ecuFamily: ecuFilter,
+        publishStatus: statusFilter,
+        verificationStatus: verificationFilter,
+      });
+      const response = await authFetch(`/api/admin/vehicles/search?${params.toString()}`);
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Vehicle records could not be loaded.");
+      setListPayload(data);
+    } catch (error) {
+      setListError(error instanceof Error ? error.message : "Vehicle records could not be loaded.");
+    } finally {
+      setListLoading(false);
+    }
+  }, [authFetch, brandFilter, ecuFilter, generationFilter, modelFilter, page, pageSize, query, statusFilter, verificationFilter]);
+
+  useEffect(() => {
+    const timeout = window.setTimeout(() => void loadList(), 300);
+    return () => window.clearTimeout(timeout);
+  }, [loadList]);
+
+  function resetFilters() {
+    setQuery("");
+    setBrandFilter("");
+    setModelFilter("");
+    setGenerationFilter("");
+    setEcuFilter("");
+    setStatusFilter("all");
+    setVerificationFilter(section === "validation" ? "needs_review" : "all");
+    setPage(1);
+  }
 
   async function runImport(dryRun: boolean) {
     if (!dryRun && importConfirm.trim() !== "IMPORT") {
@@ -260,6 +294,9 @@ export default function VehicleControlCenter({ section = "overview" }: { section
 
   const stats = payload?.stats;
   const lastImport = payload?.importBatches?.[0];
+  const records = listPayload?.records ?? [];
+  const pagination = listPayload?.pagination;
+  const catalogSection = ["overview", "brands", "models", "generations", "engines"].includes(section);
 
   return <main className="mg-compact-ui min-h-screen bg-[#050505] text-white">
     <header className="border-b border-white/10 bg-black/80">
@@ -270,38 +307,44 @@ export default function VehicleControlCenter({ section = "overview" }: { section
             <span className="rounded-full border border-red-800/40 bg-red-950/30 px-3 py-1 text-xs font-black uppercase tracking-[0.18em] text-red-300">Vehicle Database</span>
             <span className="rounded-full border border-emerald-800/40 bg-emerald-950/20 px-3 py-1 text-xs font-black text-emerald-300">DB-first control center</span>
           </div>
-          <h1 className="mt-4 text-4xl font-black tracking-tight md:text-5xl">Vehicle Database Control Center</h1>
-          <p className="mt-3 max-w-3xl text-sm leading-6 text-zinc-400">Manage published customer-safe vehicle data, imported source records, ECU metadata, service availability, validation and audit history without editing production JSON.</p>
+          <h1 className="mt-4 text-3xl font-black tracking-tight md:text-4xl">Vehicle catalog</h1>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-zinc-400">Find a brand, model, generation or engine; then manage its ECU, Stage 1–2–3 and service data from one simple editor.</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <button onClick={() => void load()} className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-black hover:bg-white/10"><RefreshCcw className="mr-2 inline h-4 w-4" />Refresh</button>
-          <button onClick={() => setShowCreate((value) => !value)} className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-black hover:bg-white/10"><PlusCircle className="mr-2 inline h-4 w-4" />Create draft</button>
-          <button onClick={() => void runValidation()} disabled={busyAction === "validation"} className="rounded-xl border border-amber-800/40 bg-amber-950/20 px-4 py-3 text-sm font-black text-amber-200 disabled:opacity-50">{busyAction === "validation" ? <Loader2 className="mr-2 inline h-4 w-4 animate-spin" /> : <ShieldCheck className="mr-2 inline h-4 w-4" />}Run validation</button>
-          <button onClick={() => void rebuildCatalogCache()} disabled={busyAction === "catalog-cache"} className="rounded-xl border border-sky-800/40 bg-sky-950/20 px-4 py-3 text-sm font-black text-sky-200 disabled:opacity-50">{busyAction === "catalog-cache" ? <Loader2 className="mr-2 inline h-4 w-4 animate-spin" /> : <Database className="mr-2 inline h-4 w-4" />}Rebuild Public Catalog Cache</button>
-          <Link href="/admin/vehicles/coverage" className="rounded-xl border border-violet-800/40 bg-violet-950/20 px-4 py-3 text-sm font-black text-violet-200 hover:bg-violet-900/30"><Sparkles className="mr-2 inline h-4 w-4" />Coverage</Link>
-          <Link href="/admin/vehicles/enrichment" className="rounded-xl border border-emerald-800/40 bg-emerald-950/20 px-4 py-3 text-sm font-black text-emerald-200 hover:bg-emerald-900/30"><Sparkles className="mr-2 inline h-4 w-4" />Enrichment</Link>
-          <Link href="/admin/vehicles/import" className="rounded-xl bg-[#b1121b] px-4 py-3 text-sm font-black text-white hover:bg-[#c91824]"><UploadCloud className="mr-2 inline h-4 w-4" />Import tools</Link>
+          <button onClick={() => { void load(); void loadList(); }} className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-black hover:bg-white/10"><RefreshCcw className="mr-2 inline h-4 w-4" />Refresh</button>
+          <button onClick={() => setShowCreate((value) => !value)} className="rounded-xl bg-[#b1121b] px-4 py-3 text-sm font-black hover:bg-[#c91824]"><PlusCircle className="mr-2 inline h-4 w-4" />New vehicle</button>
         </div>
       </div>
     </header>
 
     <div className="mx-auto max-w-[1500px] px-4 py-6">
-      {message && <div className="mb-5 rounded-xl border border-red-800/40 bg-red-950/20 p-4 text-sm text-red-100">{message}</div>}
+      {message && <div role="status" aria-live="polite" className="mb-5 rounded-xl border border-red-800/40 bg-red-950/20 p-4 text-sm text-red-100">{message}</div>}
       {payload?.permissionWarnings?.map((warning) => <div key={warning} className="mb-5 rounded-xl border border-amber-800/40 bg-amber-950/20 p-4 text-sm leading-6 text-amber-100">
         <ShieldCheck className="mr-2 inline h-4 w-4 text-amber-300" />{warning}
       </div>)}
-      <nav className="mb-6 flex gap-2 overflow-x-auto rounded-2xl border border-white/10 bg-white/[0.03] p-2">
-        {sectionLinks.map((item) => <Link key={item.id} href={item.href} className={`shrink-0 rounded-xl px-4 py-2 text-sm font-black transition ${section === item.id ? "bg-[#b1121b] text-white" : "text-zinc-400 hover:bg-white/10 hover:text-white"}`}>{item.label}</Link>)}
+      <nav aria-label="Vehicle catalog navigation" className="mb-6 flex flex-wrap items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] p-2">
+        {sectionLinks.map((item) => {
+          const active = item.id === "overview" ? catalogSection : section === item.id;
+          return <Link key={item.id} aria-current={active ? "page" : undefined} href={item.href} className={`rounded-xl px-4 py-2 text-sm font-black transition ${active ? "bg-[#b1121b] text-white" : "text-zinc-400 hover:bg-white/10 hover:text-white"}`}>{item.label}</Link>;
+        })}
+        <details className="relative ml-auto">
+          <summary className="cursor-pointer list-none rounded-xl px-4 py-2 text-sm font-black text-zinc-400 hover:bg-white/10 hover:text-white">Advanced tools</summary>
+          <div className="absolute right-0 z-30 mt-2 grid min-w-56 gap-1 rounded-xl border border-white/10 bg-[#0a0a0a] p-2 shadow-2xl">
+            {advancedLinks.map((item) => <Link key={item.id} href={item.href} className={`rounded-lg px-3 py-2 text-sm font-bold ${section === item.id ? "bg-red-950/40 text-red-200" : "text-zinc-400 hover:bg-white/10 hover:text-white"}`}>{item.label}</Link>)}
+            <button onClick={() => void runValidation()} disabled={busyAction === "validation"} className="rounded-lg px-3 py-2 text-left text-sm font-bold text-zinc-400 hover:bg-white/10 hover:text-white disabled:opacity-50">Run validation</button>
+            <button onClick={() => void rebuildCatalogCache()} disabled={busyAction === "catalog-cache"} className="rounded-lg px-3 py-2 text-left text-sm font-bold text-zinc-400 hover:bg-white/10 hover:text-white disabled:opacity-50">Rebuild public cache</button>
+          </div>
+        </details>
       </nav>
 
-      {stats && <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      {stats && catalogSection && <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <Metric icon={<Database />} label="Brands / Models" value={`${stats.brandCount} / ${stats.modelCount}`} helper={`${stats.generationCount} generations`} />
         <Metric icon={<Gauge />} label="Engines" value={stats.engineCount} helper={`${stats.publishedCount} published / ${stats.draftCount} draft`} />
         <Metric icon={<AlertTriangle />} label="Warnings" value={stats.validationWarningCount + stats.duplicateWarningCount} helper={`${stats.duplicateWarningCount} duplicate keys`} />
         <Metric icon={<CheckCircle2 />} label="Data Health" value={`${stats.dataHealthScore}%`} helper="Validation, publish and duplicate score" />
       </section>}
 
-      {lastImport && <section className="mt-6 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+      {lastImport && section === "import" && <section className="mt-6 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <div className="text-xs font-black uppercase tracking-[0.18em] text-zinc-500">Last import batch</div>
@@ -337,7 +380,7 @@ export default function VehicleControlCenter({ section = "overview" }: { section
         </div>
       </section>}
 
-      {(section === "import" || section === "overview") && <section className="mt-6 grid gap-4 lg:grid-cols-[1fr_420px]">
+      {section === "import" && <section className="mt-6 grid gap-4 lg:grid-cols-[1fr_420px]">
         <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-5">
           <div className="flex items-center gap-3"><UploadCloud className="h-6 w-6 text-red-400" /><div><h2 className="text-2xl font-black">CareEcuFile Import</h2><p className="mt-1 text-sm text-zinc-500">Dry-run first. Real import is valid-only, additive and avoids overwriting verified manual data.</p></div></div>
           <div className="mt-5 rounded-xl border border-amber-800/30 bg-amber-950/10 p-4 text-sm leading-6 text-amber-100">
@@ -384,7 +427,7 @@ export default function VehicleControlCenter({ section = "overview" }: { section
 
       {(section === "enrichment" || section === "coverage") && <EnrichmentSection mode={section} authFetch={authFetch} setMessage={setMessage} />}
 
-      {(section === "audit" || section === "overview") && <section className="mt-6 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+      {section === "audit" && <section className="mt-6 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
         <h2 className="text-2xl font-black">Recent audit history</h2>
         <div className="mt-4 grid gap-2">
           {(payload?.recentAudit ?? []).slice(0, section === "audit" ? 50 : 6).map((row) => <div key={String(row.id)} className="rounded-xl border border-white/10 bg-black/30 p-4 text-sm">
@@ -395,33 +438,46 @@ export default function VehicleControlCenter({ section = "overview" }: { section
         </div>
       </section>}
 
-      {(section !== "import" && section !== "enrichment" && section !== "coverage" && section !== "audit") && <section className="mt-6 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+      {(catalogSection || section === "validation") && <section className="mt-6 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <h2 className="text-2xl font-black">{section === "validation" ? "Records needing review" : "Vehicle records"}</h2>
-            <p className="mt-1 text-sm text-zinc-500">Customer selector only receives active and published safe fields.</p>
+            <h2 className="text-2xl font-black">{section === "validation" ? "Vehicles needing review" : "Find a vehicle"}</h2>
+            <p className="mt-1 text-sm text-zinc-500">Filter in order: brand → model → generation → engine or ECU.</p>
           </div>
-          <div className="grid gap-2 sm:grid-cols-[260px_180px]">
-            <label className="flex h-12 items-center gap-3 rounded-xl border border-white/10 bg-black/40 px-4"><Search className="h-4 w-4 text-zinc-500" /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search vehicle, ECU, key..." className="min-w-0 flex-1 bg-transparent text-sm font-bold outline-none placeholder:text-zinc-600" /></label>
-            <label className="flex h-12 items-center gap-3 rounded-xl border border-white/10 bg-black/40 px-4"><Filter className="h-4 w-4 text-zinc-500" /><select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} className="min-w-0 flex-1 bg-transparent text-sm font-bold outline-none"><option value="all">All records</option><option value="published">Published</option><option value="draft">Draft</option><option value="verified">Verified</option></select></label>
-          </div>
+          <button type="button" onClick={resetFilters} className="h-11 rounded-xl border border-white/10 px-4 text-sm font-black text-zinc-400 hover:bg-white/10 hover:text-white">Clear filters</button>
         </div>
+
+        <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          <FilterField label="1. Brand" value={brandFilter} onChange={(value) => { setBrandFilter(value); setPage(1); }} placeholder="BMW, Mercedes-Benz..." />
+          <FilterField label="2. Model" value={modelFilter} onChange={(value) => { setModelFilter(value); setPage(1); }} placeholder="3 Series, E-Class..." />
+          <FilterField label="3. Generation" value={generationFilter} onChange={(value) => { setGenerationFilter(value); setPage(1); }} placeholder="G20, W213..." />
+          <FilterField label="4. Engine / key" value={query} onChange={(value) => { setQuery(value); setPage(1); }} placeholder="2.0 TDI, B57, vehicle key..." icon={<Search className="h-4 w-4" />} />
+          <FilterField label="ECU family" value={ecuFilter} onChange={(value) => { setEcuFilter(value); setPage(1); }} placeholder="Bosch EDC17..." />
+          <label className="block text-xs font-black uppercase tracking-[0.12em] text-zinc-500">Publish status<select value={statusFilter} onChange={(event) => { setStatusFilter(event.target.value as VehicleAdminListQuery["publishStatus"]); setPage(1); }} className="mt-2 h-12 w-full rounded-xl border border-white/10 bg-black/40 px-4 text-sm font-bold normal-case text-white outline-none focus:border-red-700"><option value="all">All records</option><option value="published">Published</option><option value="draft">Draft</option><option value="archived">Archived</option></select></label>
+          <label className="block text-xs font-black uppercase tracking-[0.12em] text-zinc-500">Verification<select value={verificationFilter} onChange={(event) => { setVerificationFilter(event.target.value as VehicleAdminListQuery["verificationStatus"]); setPage(1); }} className="mt-2 h-12 w-full rounded-xl border border-white/10 bg-black/40 px-4 text-sm font-bold normal-case text-white outline-none focus:border-red-700"><option value="all">All verification states</option><option value="verified">Verified</option><option value="needs_review">Needs review</option><option value="unverified">Unverified</option><option value="imported">Imported</option><option value="rejected">Rejected</option></select></label>
+          <label className="block text-xs font-black uppercase tracking-[0.12em] text-zinc-500">Rows per page<select value={pageSize} onChange={(event) => { setPageSize(Number(event.target.value) as VehicleAdminPageSize); setPage(1); }} className="mt-2 h-12 w-full rounded-xl border border-white/10 bg-black/40 px-4 text-sm font-bold normal-case text-white outline-none focus:border-red-700">{vehicleAdminPageSizes.map((size) => <option key={size} value={size}>{size} vehicles</option>)}</select></label>
+        </div>
+
+        {listError && <div role="alert" className="mt-5 flex flex-col gap-3 rounded-xl border border-red-800/50 bg-red-950/20 p-4 text-sm text-red-100 sm:flex-row sm:items-center sm:justify-between"><span>{listError}</span><button type="button" onClick={() => void loadList()} className="h-10 rounded-lg bg-[#b1121b] px-4 font-black">Try again</button></div>}
         <div className="mt-5 overflow-hidden rounded-2xl border border-white/10">
-          <div className="hidden grid-cols-[1.2fr_1fr_1fr_1.1fr_150px_120px] gap-3 border-b border-white/10 bg-white/[0.04] px-4 py-3 text-xs font-black uppercase tracking-[0.14em] text-zinc-500 xl:grid">
-            <div>Vehicle</div><div>Generation</div><div>ECU</div><div>Services</div><div>Status</div><div>Action</div>
+          <div className="hidden grid-cols-[1.25fr_1fr_1fr_1fr_150px_110px] gap-3 border-b border-white/10 bg-white/[0.04] px-4 py-3 text-xs font-black uppercase tracking-[0.14em] text-zinc-500 xl:grid">
+            <div>Brand / model</div><div>Generation / engine</div><div>Primary ECU</div><div>Stage data</div><div>Status</div><div>Action</div>
           </div>
           <div className="divide-y divide-white/10">
-            {records.slice(0, 250).map((record) => <div key={record.id ?? record.vehicleKey} className="grid gap-3 px-4 py-4 xl:grid-cols-[1.2fr_1fr_1fr_1.1fr_150px_120px] xl:items-center">
-              <div><div className="text-lg font-black text-white">{record.brand} {record.model}</div><div className="mt-1 text-sm font-bold text-zinc-400">{record.engine}</div><div className="mt-1 text-xs text-zinc-600">{record.vehicleKey}</div></div>
-              <div className="text-sm text-zinc-300">{record.generation}<div className="mt-1 text-xs text-zinc-600">{[record.yearFrom, record.yearTo ?? "open"].filter(Boolean).join(" - ")}</div></div>
-              <div className="text-sm text-zinc-300">{record.ecuType || "-"}<div className="mt-1 text-xs text-zinc-600">{record.ecuFamily || "family unknown"}</div></div>
-              <div className="flex flex-wrap gap-1">{record.services.slice(0, 5).map((service) => <span key={service} className="rounded-full bg-red-950/30 px-2 py-1 text-[11px] font-black text-red-200">{service.replaceAll("_", " ").toUpperCase()}</span>)}</div>
-              <div><span className={`rounded-full px-3 py-1 text-xs font-black ${record.published ? "bg-emerald-950/30 text-emerald-300" : "bg-zinc-900 text-zinc-400"}`}>{record.published ? "Published" : "Draft"}</span><div className="mt-2 text-xs text-zinc-500">{record.verificationStatus} - {record.confidenceScore}%</div></div>
-              <Link href={`/admin/vehicles/${record.id}`} className="inline-flex h-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] px-3 text-sm font-black hover:bg-white/10"><Eye className="mr-2 h-4 w-4" />Open</Link>
+            {listLoading && <div className="flex min-h-40 items-center justify-center p-8 text-sm font-bold text-zinc-400"><Loader2 className="mr-2 h-4 w-4 animate-spin text-red-400" />Loading matching vehicles...</div>}
+            {!listLoading && records.map((record) => <div key={record.id ?? record.vehicleKey} className="grid gap-4 px-4 py-4 xl:grid-cols-[1.25fr_1fr_1fr_1fr_150px_110px] xl:items-center">
+              <div><div className="text-base font-black text-white">{record.brand}</div><div className="mt-1 text-sm font-bold text-zinc-300">{record.model}</div><div className="mt-1 truncate text-xs text-zinc-600">{record.vehicleKey}</div></div>
+              <div><div className="text-sm font-black text-zinc-200">{record.generation}</div><div className="mt-1 text-sm text-zinc-400">{record.engine}</div><div className="mt-1 text-xs text-zinc-600">{[record.yearFrom, record.yearTo ?? "present"].filter(Boolean).join(" – ")}</div></div>
+              <div className="text-sm text-zinc-300"><span className="xl:hidden text-xs font-black uppercase text-zinc-600">ECU · </span>{record.ecuType || "Not set"}<div className="mt-1 text-xs text-zinc-600">{record.ecuFamily || "Family not set"}</div></div>
+              <div className="flex flex-wrap gap-1">{(["stage1", "stage2", "stage3"] as const).map((stage, index) => <span key={stage} className={`rounded-full border px-2 py-1 text-[11px] font-black ${record.stages.includes(stage) ? "border-red-800/40 bg-red-950/30 text-red-200" : "border-white/10 text-zinc-700"}`}>S{index + 1}</span>)}</div>
+              <div><span className={`rounded-full px-3 py-1 text-xs font-black ${record.publishStatus === "published" ? "bg-emerald-950/30 text-emerald-300" : record.publishStatus === "archived" ? "bg-red-950/30 text-red-300" : "bg-zinc-900 text-zinc-400"}`}>{record.publishStatus}</span><div className="mt-2 text-xs text-zinc-500">{record.verificationStatus} · {record.confidenceScore}%</div></div>
+              <Link href={`/admin/vehicles/${record.id}`} className="inline-flex h-11 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] px-3 text-sm font-black hover:bg-white/10"><Eye className="mr-2 h-4 w-4" />Edit</Link>
             </div>)}
-            {records.length === 0 && <div className="p-8 text-center text-sm text-zinc-500">No matching vehicle records.</div>}
+            {!listLoading && records.length === 0 && !listError && <div className="p-10 text-center"><div className="text-sm font-black text-zinc-300">No matching vehicles</div><p className="mt-2 text-sm text-zinc-600">Clear a filter or create a new draft vehicle.</p></div>}
           </div>
         </div>
+
+        {pagination && <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div className="text-sm text-zinc-500">{pagination.total.toLocaleString()} vehicles · Page {pagination.page} of {Math.max(1, pagination.pageCount)}</div><div className="flex gap-2"><button type="button" disabled={!pagination.hasPreviousPage || listLoading} onClick={() => setPage((value) => Math.max(1, value - 1))} className="h-11 rounded-xl border border-white/10 px-4 text-sm font-black disabled:opacity-40">Previous</button><button type="button" disabled={!pagination.hasNextPage || listLoading} onClick={() => setPage((value) => value + 1)} className="h-11 rounded-xl bg-[#b1121b] px-4 text-sm font-black disabled:opacity-40">Next</button></div></div>}
       </section>}
     </div>
   </main>;
@@ -835,4 +891,8 @@ function ImportExampleList({ title, items }: { title: string; items: string[] })
 
 function DraftField({ label, value, onChange, type = "text" }: { label: string; value: string; onChange: (value: string) => void; type?: string }) {
   return <label className="block text-xs font-black uppercase tracking-[0.14em] text-zinc-500">{label}<input type={type} value={value} onChange={(event) => onChange(event.target.value)} className="mt-2 h-12 w-full rounded-xl border border-white/10 bg-black/40 px-4 text-sm font-bold normal-case text-white outline-none focus:border-red-700" /></label>;
+}
+
+function FilterField({ label, value, onChange, placeholder, icon }: { label: string; value: string; onChange: (value: string) => void; placeholder: string; icon?: ReactNode }) {
+  return <label className="block text-xs font-black uppercase tracking-[0.12em] text-zinc-500">{label}<span className="mt-2 flex h-12 items-center gap-2 rounded-xl border border-white/10 bg-black/40 px-4 text-zinc-500 focus-within:border-red-700">{icon}<input value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} className="min-w-0 flex-1 bg-transparent text-sm font-bold normal-case text-white outline-none placeholder:text-zinc-700" /></span></label>;
 }

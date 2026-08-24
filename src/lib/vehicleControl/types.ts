@@ -7,6 +7,22 @@ export type StageData = {
   gainNm: number | null;
 };
 
+export const vehiclePerformanceStages = ["stage1", "stage2", "stage3"] as const;
+export type VehiclePerformanceStage = (typeof vehiclePerformanceStages)[number];
+
+export type VehiclePerformanceProfile = StageData & {
+  stage: VehiclePerformanceStage;
+  active: boolean;
+  published: boolean;
+};
+
+export type VehiclePerformanceProfileInput = {
+  stage: VehiclePerformanceStage;
+  tunedHp: number | null;
+  tunedNm: number | null;
+  active?: boolean;
+};
+
 export type RawVehicleRow = {
   source?: string;
   sourceUrl?: string;
@@ -22,6 +38,7 @@ export type RawVehicleRow = {
   ecu?: string[];
   stage1?: StageData | null;
   stage2?: StageData | null;
+  stage3?: StageData | null;
   readMethods?: string[];
   services?: string[];
   imageUrl?: string | null;
@@ -30,6 +47,23 @@ export type RawVehicleRow = {
 
 export type VerificationStatus = "imported" | "unverified" | "needs_review" | "verified" | "rejected";
 export type PublishStatus = "draft" | "published" | "archived";
+export type VehicleAdminPublishFilter = "all" | PublishStatus;
+export type VehicleAdminVerificationFilter = "all" | VerificationStatus;
+
+export const vehicleAdminPageSizes = [25, 50, 100] as const;
+export type VehicleAdminPageSize = (typeof vehicleAdminPageSizes)[number];
+
+export type VehicleAdminListQuery = {
+  page: number;
+  pageSize: VehicleAdminPageSize;
+  q: string;
+  brand: string;
+  model: string;
+  generation: string;
+  ecuFamily: string;
+  publishStatus: VehicleAdminPublishFilter;
+  verificationStatus: VehicleAdminVerificationFilter;
+};
 export type VehicleServiceKey =
   | "stage1"
   | "stage2"
@@ -88,6 +122,7 @@ export type VehicleControlRecord = {
   modelId?: string | null;
   generation: string;
   generationId?: string | null;
+  generationRecordId?: string | null;
   engine: string;
   engineId?: string | null;
   vehicleKey: string;
@@ -102,6 +137,8 @@ export type VehicleControlRecord = {
   stockNm: number | null;
   tunedHp: number | null;
   tunedNm: number | null;
+  performanceProfiles?: VehiclePerformanceProfile[];
+  ecuVariantId?: string | null;
   ecuFamily: string | null;
   ecuType: string | null;
   ecuHardware: string | null;
@@ -128,6 +165,38 @@ export type VehicleControlRecord = {
   createdAt?: string | null;
 };
 
+export type VehicleAdminListRecord = Pick<VehicleControlRecord,
+  | "id"
+  | "brand"
+  | "model"
+  | "generation"
+  | "engine"
+  | "vehicleKey"
+  | "yearFrom"
+  | "yearTo"
+  | "ecuFamily"
+  | "ecuType"
+  | "services"
+  | "confidenceScore"
+  | "verificationStatus"
+  | "publishStatus"
+> & {
+  stages: VehiclePerformanceStage[];
+};
+
+export type VehicleAdminListResponse = {
+  records: VehicleAdminListRecord[];
+  pagination: {
+    page: number;
+    pageSize: VehicleAdminPageSize;
+    total: number;
+    pageCount: number;
+    hasPreviousPage: boolean;
+    hasNextPage: boolean;
+  };
+  query: VehicleAdminListQuery;
+};
+
 export type PublicVehicleRecord = {
   id: string;
   brand: string;
@@ -142,6 +211,7 @@ export type PublicVehicleRecord = {
   ecu: string[];
   stage1: StageData | null;
   stage2: StageData | null;
+  stage3: StageData | null;
   readMethods: string[];
   services: string[];
   vehicleKey?: string;

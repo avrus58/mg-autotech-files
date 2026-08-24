@@ -48,6 +48,7 @@ export async function widgetVehicle(make: string, model: string, year: string, e
     powerHp: row.stage1?.stockHp ?? null,
     stage1: row.stage1,
     stage2: row.stage2,
+    stage3: row.stage3 ?? null,
     services: row.services.slice(0, 24),
     readMethods: row.readMethods.slice(0, 8),
   };

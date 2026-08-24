@@ -20,6 +20,7 @@ type VehicleResult = {
   powerHp: number | null;
   stage1: StageData | null;
   stage2: StageData | null;
+  stage3: StageData | null;
   services: string[];
   readMethods: string[];
 };
@@ -149,7 +150,7 @@ export function PublicVehicleSelector({
     if (demo) {
       const vehicleName = `${makes.find((item) => item.value === make)?.label} ${models.find((item) => item.value === model)?.label} ${engines.find((item) => item.value === engine)?.label}`;
       setSelectedName(vehicleName);
-      setSelectedVehicle({ vehicleId: "demo", vehicleName, make: makes.find((item) => item.value === make)?.label ?? "BMW", model: models.find((item) => item.value === model)?.label ?? "3 Series", year: years.find((item) => item.value === year)?.label ?? "G20", engine: engines.find((item) => item.value === engine)?.label ?? "320d", fuelType: engines.find((item) => item.value === engine)?.fuelType ?? null, ecu: "Bosch MD1CP002", ecuFamilies: ["Bosch MD1CP002"], powerHp: 190, stage1: { stockHp: 190, tunedHp: 225, gainHp: 35, stockNm: 400, tunedNm: 460, gainNm: 60 }, stage2: { stockHp: 190, tunedHp: 250, gainHp: 60, stockNm: 400, tunedNm: 500, gainNm: 100 }, services: ["Stage 1", "Stage 2", "DPF OFF", "EGR OFF", "DTC OFF", "VMAX OFF"], readMethods: ["Autotuner OBD", "Autotuner Bench"] });
+      setSelectedVehicle({ vehicleId: "demo", vehicleName, make: makes.find((item) => item.value === make)?.label ?? "BMW", model: models.find((item) => item.value === model)?.label ?? "3 Series", year: years.find((item) => item.value === year)?.label ?? "G20", engine: engines.find((item) => item.value === engine)?.label ?? "320d", fuelType: engines.find((item) => item.value === engine)?.fuelType ?? null, ecu: "Bosch MD1CP002", ecuFamilies: ["Bosch MD1CP002"], powerHp: 190, stage1: { stockHp: 190, tunedHp: 225, gainHp: 35, stockNm: 400, tunedNm: 460, gainNm: 60 }, stage2: { stockHp: 190, tunedHp: 250, gainHp: 60, stockNm: 400, tunedNm: 500, gainNm: 100 }, stage3: null, services: ["Stage 1", "Stage 2", "DPF OFF", "EGR OFF", "DTC OFF", "VMAX OFF"], readMethods: ["Autotuner OBD", "Autotuner Bench"] });
       return;
     }
     setLoading(true);
@@ -222,11 +223,12 @@ function VehicleResultPanel({ vehicle, language, accent, dark, emailEnabled, wha
   const availableStages = ([
     { key: "stage1", label: "Stage 1", data: vehicle.stage1 },
     { key: "stage2", label: "Stage 2", data: vehicle.stage2 },
+    { key: "stage3", label: "Stage 3", data: vehicle.stage3 },
   ] as const).filter((stage) => stage.data && (stage.data.tunedHp !== null || stage.data.tunedNm !== null));
   const initialStage = availableStages[0]?.key ?? "stage1";
-  const [activeStage, setActiveStage] = useState<"stage1" | "stage2">(initialStage);
+  const [activeStage, setActiveStage] = useState<"stage1" | "stage2" | "stage3">(initialStage);
   const selectedStage = availableStages.find((stage) => stage.key === activeStage) ?? availableStages[0];
-  const extraServices = vehicle.services.filter((service) => !/^stage\s*[12]$/i.test(service.trim()));
+  const extraServices = vehicle.services.filter((service) => !/^stage\s*[123]$/i.test(service.trim()));
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
   const [contactMode, setContactMode] = useState<"closed" | "choose" | "email" | "success">("closed");
   const [submitting, setSubmitting] = useState(false);

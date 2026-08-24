@@ -36,6 +36,12 @@ import type {
 } from "../src/lib/vehicleControl/types";
 import { validateVehicleCollection, validateVehicleRecord } from "../src/lib/vehicleControl/validation";
 import {
+  buildVehicleAdminPagination,
+  buildVehicleAdminSearchPattern,
+  vehicleAdminListQuerySchema,
+  vehicleAdminPayloadSchema,
+} from "../src/lib/vehicleControl/schema";
+import {
   buildCanonicalVehicleKey,
   compareNormalizedNames,
   normalizeBrandName,
@@ -250,6 +256,87 @@ test("vehicle validation blocks unrealistic performance values and warns on susp
   assert.ok(validateVehicleRecord(lowTune).some((issue) => issue.code === "tuned_hp_below_stock"));
   assert.equal(validateVehicleRecord(missingEcu).some((issue) => issue.code === "missing_ecu_info" && issue.severity === "warning"), true);
   assert.equal(validateVehicleRecord(missingTuned).some((issue) => issue.code === "missing_tuned_performance" && issue.severity === "warning"), true);
+});
+
+test("admin vehicle payload accepts one independent profile for each Stage and rejects duplicate stages", () => {
+  const base = {
+    brand: "BMW",
+    model: "3 Series",
+    generation: "G20",
+    engine: "330d",
+    stockHp: 286,
+    stockNm: 650,
+    services: ["stage1", "stage2", "stage3"],
+  };
+  const threeStages = vehicleAdminPayloadSchema.safeParse({
+    ...base,
+    performanceProfiles: [
+      { stage: "stage1", tunedHp: 340, tunedNm: 720, active: true },
+      { stage: "stage2", tunedHp: 370, tunedNm: 760, active: true },
+      { stage: "stage3", tunedHp: 410, tunedNm: 800, active: true },
+    ],
+  });
+  assert.equal(threeStages.success, true);
+
+  const duplicate = vehicleAdminPayloadSchema.safeParse({
+    ...base,
+    performanceProfiles: [
+      { stage: "stage1", tunedHp: 340, tunedNm: 720 },
+      { stage: "stage1", tunedHp: 350, tunedNm: 730 },
+    ],
+  });
+  assert.equal(duplicate.success, false);
+
+  const omittedServices = vehicleAdminPayloadSchema.safeParse({
+    brand: "BMW",
+    model: "3 Series",
+    generation: "G20",
+    engine: "330d",
+    stockHp: 286,
+    stockNm: 650,
+    performanceProfiles: [{ stage: "stage1", tunedHp: 340, tunedNm: 720, active: true }],
+  });
+  assert.equal(omittedServices.success, true);
+  assert.equal(omittedServices.success && omittedServices.data.services, undefined);
+});
+
+test("public projection carries a real active Stage 3 profile without exposing admin metadata", () => {
+  const publicRecord = controlRecordToPublicVehicle(controlRecord({
+    services: ["stage1", "stage3"],
+    performanceProfiles: [
+      { stage: "stage1", stockHp: 265, stockNm: 620, tunedHp: 320, tunedNm: 700, gainHp: 55, gainNm: 80, active: true, published: true },
+      { stage: "stage3", stockHp: 265, stockNm: 620, tunedHp: 410, tunedNm: 820, gainHp: 145, gainNm: 200, active: true, published: true },
+    ],
+  }));
+  assert.equal(publicRecord.stage3?.tunedHp, 410);
+  assert.equal(publicRecord.stage3?.gainNm, 200);
+  assert.equal("performanceProfiles" in publicRecord, false);
+});
+
+test("admin vehicle list filters are bounded, sanitized and page ranges are stable", () => {
+  const parsed = vehicleAdminListQuerySchema.safeParse({
+    page: "2",
+    pageSize: "25",
+    q: " B57 / 330d ",
+    brand: "BMW",
+    model: "3 Series",
+    generation: "G20",
+    ecuFamily: "MD1",
+    publishStatus: "published",
+    verificationStatus: "verified",
+  });
+  assert.equal(parsed.success, true);
+  assert.equal(parsed.success && parsed.data.page, 2);
+  assert.equal(buildVehicleAdminSearchPattern(" B57, <script> "), "B57%script");
+  assert.deepEqual(buildVehicleAdminPagination({ page: 2, pageSize: 25 }, 63), {
+    page: 2,
+    pageSize: 25,
+    total: 63,
+    pageCount: 3,
+    hasPreviousPage: true,
+    hasNextPage: true,
+  });
+  assert.equal(vehicleAdminListQuerySchema.safeParse({ page: 1, pageSize: 500 }).success, false);
 });
 
 test("customer public vehicle projection strips admin-only data", () => {
@@ -597,6 +684,12 @@ test("anonymous users cannot call admin vehicle APIs", async () => {
   assert.equal(response.status, 401);
 });
 
+test("anonymous users cannot search the full admin vehicle catalog", async () => {
+  const { GET } = await import("../src/app/api/admin/vehicles/search/route");
+  const response = await GET(new Request("http://localhost/api/admin/vehicles/search?page=1&pageSize=25"));
+  assert.equal(response.status, 401);
+});
+
 test("anonymous users cannot run vehicle imports", async () => {
   const { POST } = await import("../src/app/api/admin/vehicles/import/route");
   const response = await POST(new Request("http://localhost/api/admin/vehicles/import", {
@@ -620,6 +713,7 @@ test("customer role cannot satisfy vehicle database admin permission", () => {
 test("admin vehicle routes consistently require vehicles.manage permission", () => {
   for (const file of [
     "src/app/api/admin/vehicles/route.ts",
+    "src/app/api/admin/vehicles/search/route.ts",
     "src/app/api/admin/vehicles/[id]/route.ts",
     "src/app/api/admin/vehicles/import/route.ts",
     "src/app/api/admin/vehicles/catalog-cache/rebuild/route.ts",
@@ -724,6 +818,42 @@ test("admin update path writes audit log entries", () => {
   assert.match(source, /vehicle_change_audit_log/);
   assert.match(source, /admin\.updated/);
   assert.match(source, /admin\.created/);
+});
+
+test("admin catalog is server-paginated and the editor manages ECU plus all three Stage profiles", () => {
+  const adminSource = readFileSync(resolve(process.cwd(), "src", "lib", "vehicleControl", "admin.ts"), "utf8");
+  const searchRoute = readFileSync(resolve(process.cwd(), "src", "app", "api", "admin", "vehicles", "search", "route.ts"), "utf8");
+  const catalogUi = readFileSync(resolve(process.cwd(), "src", "app", "admin", "vehicles", "VehicleControlCenter.tsx"), "utf8");
+  const detailUi = readFileSync(resolve(process.cwd(), "src", "app", "admin", "vehicles", "[id]", "VehicleDetailClient.tsx"), "utf8");
+
+  assert.match(adminSource, /getVehicleAdminRecordPage/);
+  assert.match(adminSource, /\.range\(from, to\)/);
+  assert.match(adminSource, /gainHp: tunedHp != null && update\.stockHp != null \? tunedHp - update\.stockHp/);
+  assert.match(adminSource, /\.eq\("id", update\.ecuVariantId\)\.eq\("engine_id", id\)/);
+  assert.match(adminSource, /const hierarchyChanged =/);
+  assert.match(adminSource, /generationRecordId/);
+  assert.match(adminSource, /for \(const profile of nextPerformanceProfiles\)/);
+  assert.match(adminSource, /const engineId = engine\.data\.id/);
+  assert.match(adminSource, /await updateVehicleAdminRecord\(engineId, update, actorUserId, "admin\.created"\)/);
+  assert.match(adminSource, /from\("vehicle_engines"\)\.delete\(\)\.eq\("id", engineId\)/);
+  assert.match(adminSource, /catch \(error\)[\s\S]*await removeFailedDraft\(\)/);
+  assert.match(adminSource, /if \(update\.services\)/);
+  assert.match(searchRoute, /parseVehicleAdminListQuery/);
+  assert.match(searchRoute, /Cache-Control": "no-store/);
+  assert.match(catalogUi, /brand → model → generation → engine or ECU/);
+  assert.match(catalogUi, /Advanced tools/);
+  assert.match(catalogUi, /Loading matching vehicles/);
+  assert.match(catalogUi, /No matching vehicles/);
+  assert.match(detailUi, /vehiclePerformanceStages\.map/);
+  assert.match(detailUi, /Stage 1–2–3/);
+  assert.match(detailUi, /Primary ECU & gearbox/);
+  assert.match(detailUi, /ecuVariantId: form\.ecuVariantId \|\| null/);
+  assert.match(detailUi, /if \(profile\.active\) stageServices\.add\(profile\.stage\)/);
+  assert.match(detailUi, /else stageServices\.delete\(profile\.stage\)/);
+  assert.match(detailUi, /services: \[\.\.\.stageServices\]/);
+  assert.match(detailUi, /aria-pressed/);
+  assert.match(detailUi, /Unsaved changes/);
+  assert.match(detailUi, /Try again/);
 });
 
 test("importer protects verified manual records and writes import audit events", () => {

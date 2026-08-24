@@ -26,6 +26,7 @@ import { vehicleServiceLabels } from "@/lib/vehicleControl/types";
 type PerformanceOverride = {
   stage1?: StageData;
   stage2?: StageData;
+  stage3?: StageData;
   services?: string[];
 };
 
@@ -196,6 +197,7 @@ function withOverrides(row: RawVehicleRow): PublicVehicleRecord {
     ...publicRow,
     stage1: override?.stage1 ?? publicRow.stage1,
     stage2: override?.stage2 ?? row.stage2 ?? publicRow.stage2,
+    stage3: override?.stage3 ?? row.stage3 ?? publicRow.stage3,
     services: [...new Set([...(publicRow.services ?? []), ...(override?.services ?? [])])],
   };
 }
@@ -238,6 +240,7 @@ function dbEngineToPublic(row: DbVehicleEngineBase, detail: DbVehicleDetail = {}
     .filter((value): value is string => Boolean(value));
   const stage1 = (detail.performance_profiles ?? []).find((item) => item.stage === "stage1" && item.active && item.published) ?? null;
   const stage2 = (detail.performance_profiles ?? []).find((item) => item.stage === "stage2" && item.active && item.published) ?? null;
+  const stage3 = (detail.performance_profiles ?? []).find((item) => item.stage === "stage3" && item.active && item.published) ?? null;
   const services = (detail.service_capabilities ?? [])
     .filter((item) => item.available)
     .map((item) => vehicleServiceLabels[item.service_key] ?? item.service_key);
@@ -268,6 +271,14 @@ function dbEngineToPublic(row: DbVehicleEngineBase, detail: DbVehicleDetail = {}
       tunedNm: stage2.tuned_nm,
       gainHp: stage2.gain_hp,
       gainNm: stage2.gain_nm,
+    } : null,
+    stage3: stage3 ? {
+      stockHp: stage3.stock_hp ?? row.stock_hp,
+      stockNm: stage3.stock_nm ?? row.stock_nm,
+      tunedHp: stage3.tuned_hp,
+      tunedNm: stage3.tuned_nm,
+      gainHp: stage3.gain_hp,
+      gainNm: stage3.gain_nm,
     } : null,
     readMethods: [],
     services: [...new Set(services)].slice(0, 24),

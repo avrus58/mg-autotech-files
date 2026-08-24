@@ -47,10 +47,10 @@ const script = String.raw`(function () {
   function vehicleResult(vehicle) {
     var labels = state.config.resultLabels || {};
     var enquiry = state.config.enquiryLabels || {};
-    var stageItems = [{ key: "stage1", name: "Stage 1", data: vehicle.stage1 }, { key: "stage2", name: "Stage 2", data: vehicle.stage2 }].filter(function (stage) { return stage.data && (numeric(stage.data.tunedHp) != null || numeric(stage.data.tunedNm) != null); });
+    var stageItems = [{ key: "stage1", name: "Stage 1", data: vehicle.stage1 }, { key: "stage2", name: "Stage 2", data: vehicle.stage2 }, { key: "stage3", name: "Stage 3", data: vehicle.stage3 }].filter(function (stage) { return stage.data && (numeric(stage.data.tunedHp) != null || numeric(stage.data.tunedNm) != null); });
     var stageTabs = stageItems.map(function (stage, index) { return '<button type="button" data-mga-stage="' + stage.key + '" class="mga-stage-tab' + (index === 0 ? ' is-active' : '') + '">' + esc(stage.name) + '</button>'; }).join("");
     var stagePanels = stageItems.map(function (stage, index) { return stagePanel(stage.key, stage.name, stage.data, labels, index === 0); }).join("");
-    var services = (vehicle.services || []).filter(function (service) { return !/^stage\s*[12]$/i.test(String(service).trim()); }).map(function (service) { return '<label class="mga-option"><input type="checkbox" data-mga-service value="' + esc(service) + '"><span>' + esc(service) + '</span></label>'; }).join("");
+    var services = (vehicle.services || []).filter(function (service) { return !/^stage\s*[123]$/i.test(String(service).trim()); }).map(function (service) { return '<label class="mga-option"><input type="checkbox" data-mga-service value="' + esc(service) + '"><span>' + esc(service) + '</span></label>'; }).join("");
     var ecuValues = Array.isArray(vehicle.ecuFamilies) ? vehicle.ecuFamilies : (Array.isArray(vehicle.ecu) ? vehicle.ecu : (vehicle.ecu ? [vehicle.ecu] : []));
     var ecus = ecuValues.map(esc).join(" &middot; ");
     var emailEnabled = Boolean(state.config.email_enquiries_enabled);
@@ -86,7 +86,7 @@ const script = String.raw`(function () {
       var stage = selectedStage();
       var services = selectedServices();
       var labels = state.config.resultLabels || {};
-      var performance = stage === "Stage 2" ? vehicle.stage2 : vehicle.stage1;
+      var performance = stage === "Stage 3" ? vehicle.stage3 : stage === "Stage 2" ? vehicle.stage2 : vehicle.stage1;
       var lines = [vehicle.vehicleName, stage];
       if (performance) {
         lines.push((labels.power || "Power") + ": " + (performance.stockHp == null ? "-" : performance.stockHp) + " -> " + (performance.tunedHp == null ? "-" : performance.tunedHp) + " HP");

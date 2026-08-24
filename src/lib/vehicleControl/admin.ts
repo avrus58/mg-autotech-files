@@ -1,8 +1,25 @@
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
-import type { VehicleControlRecord, VehicleServiceKey, VehicleValidationIssue, VerificationStatus } from "@/lib/vehicleControl/types";
+import type {
+  VehicleAdminListQuery,
+  VehicleAdminListRecord,
+  VehicleAdminListResponse,
+  VehicleControlRecord,
+  VehiclePerformanceProfile,
+  VehiclePerformanceProfileInput,
+  VehiclePerformanceStage,
+  VehicleServiceKey,
+  VehicleValidationIssue,
+  VerificationStatus,
+} from "@/lib/vehicleControl/types";
+import { vehiclePerformanceStages } from "@/lib/vehicleControl/types";
 import { buildVehicleKey, canonicalizeVehicleModel, inferEcuFamily, normalizeToken } from "@/lib/vehicleControl/normalization";
 import { normalizeBrandName, normalizeGenerationName } from "@/lib/vehicleNormalization";
 import { validateVehicleRecord } from "@/lib/vehicleControl/validation";
+import {
+  buildVehicleAdminPagination,
+  buildVehicleAdminSearchPattern,
+  getVehicleAdminPageRange,
+} from "@/lib/vehicleControl/schema";
 
 export type VehicleAdminUpdate = {
   brand: string;
@@ -18,6 +35,8 @@ export type VehicleAdminUpdate = {
   stockNm?: number | null;
   tunedHp?: number | null;
   tunedNm?: number | null;
+  performanceProfiles?: VehiclePerformanceProfileInput[];
+  ecuVariantId?: string | null;
   ecuFamily?: string | null;
   ecuType?: string | null;
   ecuHardware?: string | null;
@@ -82,6 +101,7 @@ type AdminDbEngine = {
   };
   ecu_variants?: Array<{
     id: string;
+    created_at: string | null;
     ecu_family: string | null;
     ecu_type: string | null;
     ecu_hardware: string | null;
@@ -98,13 +118,51 @@ type AdminDbEngine = {
     available: boolean;
   }>;
   performance_profiles?: Array<{
-    stage: string;
+    stage: "stock" | VehiclePerformanceStage;
     tuned_hp: number | null;
     tuned_nm: number | null;
     gain_hp: number | null;
     gain_nm: number | null;
     stock_hp: number | null;
     stock_nm: number | null;
+    active: boolean;
+    published: boolean;
+  }>;
+};
+
+type AdminListDbEngine = {
+  id: string;
+  vehicle_key: string;
+  engine_name: string;
+  year_from: number | null;
+  year_to: number | null;
+  active: boolean;
+  published: boolean;
+  confidence_score: number;
+  verification_status: VerificationStatus;
+  generation: null | {
+    name: string;
+    year_from: number | null;
+    year_to: number | null;
+    model: null | {
+      name: string;
+      brand: null | { name: string };
+    };
+  };
+  ecu_variants?: Array<{
+    created_at: string | null;
+    ecu_family: string | null;
+    ecu_type: string | null;
+  }>;
+  service_capabilities?: Array<{
+    service_key: VehicleServiceKey;
+    available: boolean;
+  }>;
+  performance_profiles?: Array<{
+    stage: "stock" | VehiclePerformanceStage;
+    tuned_hp: number | null;
+    tuned_nm: number | null;
+    active: boolean;
   }>;
 };
 
@@ -116,17 +174,89 @@ const engineSelect = `
       brand:vehicle_brands(id, name, external_id)
     )
   ),
-  ecu_variants:vehicle_ecu_variants(id, ecu_family, ecu_type, ecu_hardware, ecu_software, ecu_notes, protection_notes, unlock_notes, gearbox_type, tcu_type, tcu_notes),
+  ecu_variants:vehicle_ecu_variants(id, created_at, ecu_family, ecu_type, ecu_hardware, ecu_software, ecu_notes, protection_notes, unlock_notes, gearbox_type, tcu_type, tcu_notes),
   service_capabilities:vehicle_service_capabilities(service_key, available),
-  performance_profiles:vehicle_performance_profiles(stage, stock_hp, stock_nm, tuned_hp, tuned_nm, gain_hp, gain_nm)
+  performance_profiles:vehicle_performance_profiles(stage, stock_hp, stock_nm, tuned_hp, tuned_nm, gain_hp, gain_nm, active, published)
 `;
+
+const listEngineSelect = `
+  id, vehicle_key, engine_name, year_from, year_to, active, published, confidence_score, verification_status,
+  generation:vehicle_generations!inner(name, year_from, year_to,
+    model:vehicle_models!inner(name,
+      brand:vehicle_brands!inner(name)
+    )
+  ),
+  ecu_variants:vehicle_ecu_variants(created_at, ecu_family, ecu_type),
+  service_capabilities:vehicle_service_capabilities(service_key, available),
+  performance_profiles:vehicle_performance_profiles(stage, tuned_hp, tuned_nm, active)
+`;
+
+function getVehicleAdminListSelect(input: VehicleAdminListQuery) {
+  return input.ecuFamily
+    ? listEngineSelect.replace("ecu_variants:vehicle_ecu_variants(", "ecu_variants:vehicle_ecu_variants!inner(")
+    : listEngineSelect;
+}
+
+function adminListDbEngineToRecord(row: AdminListDbEngine): VehicleAdminListRecord {
+  const generation = row.generation;
+  const model = generation?.model;
+  const brand = model?.brand;
+  const ecu = [...(row.ecu_variants ?? [])].sort((left, right) => (left.created_at ?? "").localeCompare(right.created_at ?? ""))[0];
+  const stages = (row.performance_profiles ?? [])
+    .filter((profile) => profile.active && vehiclePerformanceStages.includes(profile.stage as VehiclePerformanceStage) && (profile.tuned_hp != null || profile.tuned_nm != null))
+    .map((profile) => profile.stage as VehiclePerformanceStage)
+    .sort((left, right) => vehiclePerformanceStages.indexOf(left) - vehiclePerformanceStages.indexOf(right));
+  return {
+    id: row.id,
+    brand: brand?.name ?? "Unknown brand",
+    model: model?.name ?? "Unknown model",
+    generation: generation?.name ?? "Unknown generation",
+    engine: row.engine_name,
+    vehicleKey: row.vehicle_key,
+    yearFrom: row.year_from ?? generation?.year_from ?? null,
+    yearTo: row.year_to ?? generation?.year_to ?? null,
+    ecuFamily: ecu?.ecu_family ?? inferEcuFamily(ecu?.ecu_type),
+    ecuType: ecu?.ecu_type ?? null,
+    services: (row.service_capabilities ?? []).filter((item) => item.available).map((item) => item.service_key),
+    stages,
+    confidenceScore: Number(row.confidence_score ?? 0),
+    verificationStatus: row.verification_status,
+    publishStatus: !row.active ? "archived" : row.published ? "published" : "draft",
+  };
+}
+
+function dbPerformanceProfileToRecord(
+  profile: NonNullable<AdminDbEngine["performance_profiles"]>[number],
+  stockHp: number | null,
+  stockNm: number | null,
+): VehiclePerformanceProfile | null {
+  if (!vehiclePerformanceStages.includes(profile.stage as VehiclePerformanceStage)) return null;
+  return {
+    stage: profile.stage as VehiclePerformanceStage,
+    stockHp: profile.stock_hp ?? stockHp,
+    stockNm: profile.stock_nm ?? stockNm,
+    tunedHp: profile.tuned_hp,
+    tunedNm: profile.tuned_nm,
+    gainHp: profile.gain_hp,
+    gainNm: profile.gain_nm,
+    active: profile.active,
+    published: profile.published,
+  };
+}
 
 export function adminDbEngineToRecord(row: AdminDbEngine): VehicleControlRecord {
   const generation = row.generation;
   const model = generation?.model;
   const brand = model?.brand;
-  const ecu = row.ecu_variants?.[0];
-  const stage1 = row.performance_profiles?.find((profile) => profile.stage === "stage1");
+  const ecu = [...(row.ecu_variants ?? [])].sort((left, right) => {
+    const byCreatedAt = (left.created_at ?? "").localeCompare(right.created_at ?? "");
+    return byCreatedAt || left.id.localeCompare(right.id);
+  })[0];
+  const performanceProfiles = (row.performance_profiles ?? [])
+    .map((profile) => dbPerformanceProfileToRecord(profile, row.stock_hp, row.stock_nm))
+    .filter((profile): profile is VehiclePerformanceProfile => profile !== null)
+    .sort((left, right) => vehiclePerformanceStages.indexOf(left.stage) - vehiclePerformanceStages.indexOf(right.stage));
+  const stage1 = performanceProfiles.find((profile) => profile.stage === "stage1");
   return {
     id: row.id,
     brand: brand?.name ?? "Unknown brand",
@@ -135,6 +265,7 @@ export function adminDbEngineToRecord(row: AdminDbEngine): VehicleControlRecord 
     modelId: model?.external_id ?? model?.id ?? null,
     generation: generation?.name ?? "Unknown generation",
     generationId: generation?.external_id ?? generation?.id ?? null,
+    generationRecordId: generation?.id ?? null,
     engine: row.engine_name,
     engineId: row.external_id,
     vehicleKey: row.vehicle_key,
@@ -145,10 +276,12 @@ export function adminDbEngineToRecord(row: AdminDbEngine): VehicleControlRecord 
     isLci: generation?.is_lci ?? false,
     fuelType: row.fuel_type,
     displacementCc: row.displacement_cc,
-    stockHp: row.stock_hp ?? stage1?.stock_hp ?? null,
-    stockNm: row.stock_nm ?? stage1?.stock_nm ?? null,
-    tunedHp: stage1?.tuned_hp ?? null,
-    tunedNm: stage1?.tuned_nm ?? null,
+    stockHp: row.stock_hp ?? stage1?.stockHp ?? null,
+    stockNm: row.stock_nm ?? stage1?.stockNm ?? null,
+    tunedHp: stage1?.tunedHp ?? null,
+    tunedNm: stage1?.tunedNm ?? null,
+    performanceProfiles,
+    ecuVariantId: ecu?.id ?? null,
     ecuFamily: ecu?.ecu_family ?? inferEcuFamily(ecu?.ecu_type),
     ecuType: ecu?.ecu_type ?? null,
     ecuHardware: ecu?.ecu_hardware ?? null,
@@ -180,8 +313,55 @@ async function count(table: string, filters: Array<[string, unknown]> = []) {
   const admin = getSupabaseAdmin();
   let query = admin.from(table).select("id", { count: "exact", head: true });
   for (const [column, value] of filters) query = query.eq(column, value);
-  const { count: value } = await query;
+  const { count: value, error } = await query;
+  if (error) throw error;
   return value ?? 0;
+}
+
+export async function getVehicleAdminRecordPage(input: VehicleAdminListQuery): Promise<VehicleAdminListResponse> {
+  const admin = getSupabaseAdmin();
+  const { from, to } = getVehicleAdminPageRange(input);
+  let query = admin
+    .from("vehicle_engines")
+    .select(getVehicleAdminListSelect(input), { count: "exact" });
+
+  if (input.publishStatus === "published") query = query.eq("active", true).eq("published", true);
+  if (input.publishStatus === "draft") query = query.eq("active", true).eq("published", false);
+  if (input.publishStatus === "archived") query = query.eq("active", false);
+  if (input.verificationStatus !== "all") query = query.eq("verification_status", input.verificationStatus);
+
+  const brandPattern = buildVehicleAdminSearchPattern(input.brand);
+  const modelPattern = buildVehicleAdminSearchPattern(input.model);
+  const generationPattern = buildVehicleAdminSearchPattern(input.generation);
+  const ecuFamilyPattern = buildVehicleAdminSearchPattern(input.ecuFamily);
+  if (brandPattern) query = query.ilike("generation.model.brand.name", `%${brandPattern}%`);
+  if (modelPattern) query = query.ilike("generation.model.name", `%${modelPattern}%`);
+  if (generationPattern) query = query.ilike("generation.name", `%${generationPattern}%`);
+  if (ecuFamilyPattern) query = query.ilike("ecu_variants.ecu_family", `%${ecuFamilyPattern}%`);
+
+  const searchPattern = buildVehicleAdminSearchPattern(input.q);
+  if (searchPattern) {
+    query = query.or([
+      `vehicle_key.ilike.%${searchPattern}%`,
+      `display_name.ilike.%${searchPattern}%`,
+      `engine_name.ilike.%${searchPattern}%`,
+      `external_id.ilike.%${searchPattern}%`,
+      `fuel_type.ilike.%${searchPattern}%`,
+      `source_reference.ilike.%${searchPattern}%`,
+    ].join(","));
+  }
+
+  const result = await query
+    .order("updated_at", { ascending: false, nullsFirst: false })
+    .order("id", { ascending: false })
+    .range(from, to);
+  if (result.error) throw result.error;
+
+  return {
+    records: ((result.data as unknown as AdminListDbEngine[] | null) ?? []).map(adminListDbEngineToRecord),
+    pagination: buildVehicleAdminPagination(input, result.count),
+    query: input,
+  };
 }
 
 export async function getVehicleAdminOverview() {
@@ -266,7 +446,49 @@ async function auditChange(actorUserId: string | null, entityId: string, oldValu
   });
 }
 
-export async function updateVehicleAdminRecord(id: string, update: VehicleAdminUpdate, actorUserId: string | null) {
+function performanceProfilesForRecord(
+  update: VehicleAdminUpdate,
+  existing: VehiclePerformanceProfile[] | undefined,
+  currentlyPublished: boolean,
+): VehiclePerformanceProfile[] {
+  const submitted = new Map((update.performanceProfiles ?? []).map((profile) => [profile.stage, profile]));
+  const existingByStage = new Map((existing ?? []).map((profile) => [profile.stage, profile]));
+  const legacyStage1Submitted = update.performanceProfiles === undefined
+    && (Object.hasOwn(update, "tunedHp") || Object.hasOwn(update, "tunedNm"));
+
+  return vehiclePerformanceStages.flatMap((stage) => {
+    const submittedProfile = submitted.get(stage);
+    const existingProfile = existingByStage.get(stage);
+    if (!submittedProfile && !existingProfile && !(stage === "stage1" && legacyStage1Submitted)) return [];
+    const tunedHp = submittedProfile
+      ? submittedProfile.tunedHp
+      : stage === "stage1" && Object.hasOwn(update, "tunedHp") ? update.tunedHp ?? null : existingProfile?.tunedHp ?? null;
+    const tunedNm = submittedProfile
+      ? submittedProfile.tunedNm
+      : stage === "stage1" && Object.hasOwn(update, "tunedNm") ? update.tunedNm ?? null : existingProfile?.tunedNm ?? null;
+    const active = update.services
+      ? update.services.includes(stage)
+      : submittedProfile?.active ?? existingProfile?.active ?? true;
+    return [{
+      stage,
+      stockHp: update.stockHp ?? null,
+      stockNm: update.stockNm ?? null,
+      tunedHp,
+      tunedNm,
+      gainHp: tunedHp != null && update.stockHp != null ? tunedHp - update.stockHp : null,
+      gainNm: tunedNm != null && update.stockNm != null ? tunedNm - update.stockNm : null,
+      active,
+      published: Boolean((update.published ?? currentlyPublished) && active && (tunedHp != null || tunedNm != null)),
+    }];
+  });
+}
+
+export async function updateVehicleAdminRecord(
+  id: string,
+  update: VehicleAdminUpdate,
+  actorUserId: string | null,
+  auditAction = "admin.updated",
+) {
   const admin = getSupabaseAdmin();
   const before = await getVehicleAdminDetail(id);
   const oldRecord = before.record;
@@ -277,6 +499,8 @@ export async function updateVehicleAdminRecord(id: string, update: VehicleAdminU
     engine: update.engine,
     ecuType: update.ecuType,
   });
+  const nextPerformanceProfiles = performanceProfilesForRecord(update, oldRecord.performanceProfiles, oldRecord.published);
+  const submittedStage1 = update.performanceProfiles?.find((profile) => profile.stage === "stage1");
   const validationTarget: VehicleControlRecord = {
     ...oldRecord,
     brand: update.brand,
@@ -291,8 +515,9 @@ export async function updateVehicleAdminRecord(id: string, update: VehicleAdminU
     displacementCc: update.displacementCc ?? null,
     stockHp: update.stockHp ?? null,
     stockNm: update.stockNm ?? null,
-    tunedHp: update.tunedHp ?? null,
-    tunedNm: update.tunedNm ?? null,
+    tunedHp: submittedStage1 ? submittedStage1.tunedHp : update.tunedHp ?? null,
+    tunedNm: submittedStage1 ? submittedStage1.tunedNm : update.tunedNm ?? null,
+    performanceProfiles: nextPerformanceProfiles,
     ecuFamily: update.ecuFamily || inferEcuFamily(update.ecuType),
     ecuType: update.ecuType ?? null,
     ecuHardware: update.ecuHardware ?? null,
@@ -303,7 +528,7 @@ export async function updateVehicleAdminRecord(id: string, update: VehicleAdminU
     gearboxType: update.gearboxType ?? null,
     tcuType: update.tcuType ?? null,
     tcuNotes: update.tcuNotes ?? null,
-    services: update.services ?? [],
+    services: update.services ?? oldRecord.services,
     customerSafeNotes: update.customerSafeNotes ?? null,
     adminTechnicalNotes: update.adminTechnicalNotes ?? null,
     confidenceScore: update.confidenceScore ?? 60,
@@ -316,9 +541,16 @@ export async function updateVehicleAdminRecord(id: string, update: VehicleAdminU
     return { ok: false as const, issues };
   }
 
-  const generation = (await admin.from("vehicle_generations").select("id, model:vehicle_models(id, brand:vehicle_brands(id))").eq("id", before.record.generationId || "").maybeSingle()).data;
-  let generationId = oldRecord.generationId && /^[0-9a-f-]{36}$/i.test(oldRecord.generationId) ? oldRecord.generationId : null;
-  if (!generationId || !generation) {
+  const currentGenerationId = oldRecord.generationRecordId ?? null;
+  const currentGeneration = currentGenerationId
+    ? await admin.from("vehicle_generations").select("id").eq("id", currentGenerationId).maybeSingle()
+    : { data: null, error: null };
+  if (currentGeneration.error) throw currentGeneration.error;
+  const hierarchyChanged = normalizeToken(update.brand) !== normalizeToken(oldRecord.brand)
+    || normalizeToken(update.model) !== normalizeToken(oldRecord.model)
+    || normalizeToken(update.generation) !== normalizeToken(oldRecord.generation);
+  let generationId = currentGeneration.data?.id ?? null;
+  if (!generationId || hierarchyChanged) {
     const canonicalBrand = normalizeBrandName(update.brand);
     const canonicalModel = canonicalizeVehicleModel(update.brand, update.model);
     const canonicalGeneration = normalizeGenerationName(update.brand, update.model, update.generation);
@@ -331,8 +563,9 @@ export async function updateVehicleAdminRecord(id: string, update: VehicleAdminU
       verification_status: "verified",
       updated_by: actorUserId,
     }, { onConflict: "slug" }).select("id").single();
+    if (brand.error) throw brand.error;
     const model = await admin.from("vehicle_models").upsert({
-      brand_id: brand.data?.id,
+      brand_id: brand.data.id,
       name: canonicalModel.normalized ? canonicalModel.displayName : update.model,
       slug: canonicalModel.slug || normalizeToken(update.model),
       active: true,
@@ -341,8 +574,9 @@ export async function updateVehicleAdminRecord(id: string, update: VehicleAdminU
       verification_status: "verified",
       updated_by: actorUserId,
     }, { onConflict: "brand_id,slug" }).select("id").single();
+    if (model.error) throw model.error;
     const generationRow = await admin.from("vehicle_generations").upsert({
-      model_id: model.data?.id,
+      model_id: model.data.id,
       name: canonicalGeneration.canonicalName || update.generation,
       slug: canonicalGeneration.aliasMatched ? canonicalGeneration.normalizedKey : normalizeToken(update.generation),
       year_from: update.yearFrom ?? null,
@@ -353,8 +587,10 @@ export async function updateVehicleAdminRecord(id: string, update: VehicleAdminU
       verification_status: "verified",
       updated_by: actorUserId,
     }, { onConflict: "model_id,slug" }).select("id").single();
-    generationId = generationRow.data?.id ?? null;
+    if (generationRow.error) throw generationRow.error;
+    generationId = generationRow.data.id;
   }
+  if (!generationId) throw new Error("Vehicle generation could not be resolved.");
 
   const saved = await admin.from("vehicle_engines").update({
     generation_id: generationId,
@@ -379,7 +615,11 @@ export async function updateVehicleAdminRecord(id: string, update: VehicleAdminU
   }).eq("id", id).select("id").single();
   if (saved.error) throw saved.error;
 
-  const ecu = await admin.from("vehicle_ecu_variants").select("id").eq("engine_id", id).limit(1).maybeSingle();
+  const ecu = update.ecuVariantId
+    ? await admin.from("vehicle_ecu_variants").select("id").eq("id", update.ecuVariantId).eq("engine_id", id).maybeSingle()
+    : await admin.from("vehicle_ecu_variants").select("id").eq("engine_id", id).order("created_at", { ascending: true }).order("id", { ascending: true }).limit(1).maybeSingle();
+  if (ecu.error) throw ecu.error;
+  if (update.ecuVariantId && !ecu.data) throw new Error("The selected ECU variant no longer belongs to this vehicle.");
   const ecuPayload = {
     engine_id: id,
     ecu_family: update.ecuFamily || inferEcuFamily(update.ecuType),
@@ -397,42 +637,53 @@ export async function updateVehicleAdminRecord(id: string, update: VehicleAdminU
     verification_status: update.verificationStatus ?? "unverified",
     updated_by: actorUserId,
   };
-  if (ecu.data?.id) await admin.from("vehicle_ecu_variants").update(ecuPayload).eq("id", ecu.data.id);
-  else await admin.from("vehicle_ecu_variants").insert({ ...ecuPayload, created_by: actorUserId });
+  const ecuWrite = ecu.data?.id
+    ? await admin.from("vehicle_ecu_variants").update(ecuPayload).eq("id", ecu.data.id)
+    : await admin.from("vehicle_ecu_variants").insert({ ...ecuPayload, created_by: actorUserId });
+  if (ecuWrite.error) throw ecuWrite.error;
 
-  await admin.from("vehicle_service_capabilities").update({
-    available: false,
-    updated_by: actorUserId,
-  }).eq("engine_id", id);
+  if (update.services) {
+    const disabledServices = await admin.from("vehicle_service_capabilities").update({
+      available: false,
+      updated_by: actorUserId,
+    }).eq("engine_id", id);
+    if (disabledServices.error) throw disabledServices.error;
 
-  for (const service of update.services ?? []) {
-    await admin.from("vehicle_service_capabilities").upsert({
+    for (const service of update.services) {
+      const serviceWrite = await admin.from("vehicle_service_capabilities").upsert({
+        engine_id: id,
+        service_key: service,
+        available: true,
+        source_type: "manual",
+        confidence_score: update.confidenceScore ?? 60,
+        verification_status: update.verificationStatus ?? "unverified",
+        updated_by: actorUserId,
+      }, { onConflict: "engine_id,service_key" });
+      if (serviceWrite.error) throw serviceWrite.error;
+    }
+  }
+
+  for (const profile of nextPerformanceProfiles) {
+    const profileWrite = await admin.from("vehicle_performance_profiles").upsert({
       engine_id: id,
-      service_key: service,
-      available: true,
+      stage: profile.stage,
+      stock_hp: profile.stockHp,
+      stock_nm: profile.stockNm,
+      tuned_hp: profile.tunedHp,
+      tuned_nm: profile.tunedNm,
+      gain_hp: profile.gainHp,
+      gain_nm: profile.gainNm,
+      active: profile.active,
+      published: profile.published,
       source_type: "manual",
       confidence_score: update.confidenceScore ?? 60,
       verification_status: update.verificationStatus ?? "unverified",
       updated_by: actorUserId,
-    }, { onConflict: "engine_id,service_key" });
+    }, { onConflict: "engine_id,stage" });
+    if (profileWrite.error) throw profileWrite.error;
   }
 
-  await admin.from("vehicle_performance_profiles").upsert({
-    engine_id: id,
-    stage: "stage1",
-    stock_hp: update.stockHp ?? null,
-    stock_nm: update.stockNm ?? null,
-    tuned_hp: update.tunedHp ?? null,
-    tuned_nm: update.tunedNm ?? null,
-    gain_hp: update.tunedHp != null && update.stockHp != null ? update.tunedHp - update.stockHp : null,
-    gain_nm: update.tunedNm != null && update.stockNm != null ? update.tunedNm - update.stockNm : null,
-    source_type: "manual",
-    confidence_score: update.confidenceScore ?? 60,
-    verification_status: update.verificationStatus ?? "unverified",
-    updated_by: actorUserId,
-  }, { onConflict: "engine_id,stage" });
-
-  await auditChange(actorUserId, id, oldRecord, validationTarget);
+  await auditChange(actorUserId, id, oldRecord, validationTarget, auditAction);
   const detail = await getVehicleAdminDetail(id);
   return { ok: true as const, detail, issues };
 }
@@ -445,6 +696,8 @@ export async function createVehicleAdminRecord(update: VehicleAdminUpdate, actor
   const brandName = canonicalBrand.canonicalName || update.brand;
   const modelName = canonicalModel.normalized ? canonicalModel.displayName : update.model;
   const generationName = canonicalGeneration.canonicalName || update.generation;
+  const initialProfiles = performanceProfilesForRecord(update, [], Boolean(update.published));
+  const initialStage1 = initialProfiles.find((profile) => profile.stage === "stage1");
   const record: VehicleControlRecord = {
     brand: brandName,
     brandId: canonicalBrand.aliasMatched ? canonicalBrand.normalizedKey : null,
@@ -452,6 +705,7 @@ export async function createVehicleAdminRecord(update: VehicleAdminUpdate, actor
     modelId: canonicalModel.normalized ? canonicalModel.slug : null,
     generation: generationName,
     generationId: canonicalGeneration.aliasMatched ? canonicalGeneration.normalizedKey : null,
+    generationRecordId: null,
     engine: update.engine,
     engineId: null,
     vehicleKey: buildVehicleKey({ brand: update.brand, model: update.model, generation: update.generation, engine: update.engine, ecuType: update.ecuType }),
@@ -464,8 +718,10 @@ export async function createVehicleAdminRecord(update: VehicleAdminUpdate, actor
     displacementCc: update.displacementCc ?? null,
     stockHp: update.stockHp ?? null,
     stockNm: update.stockNm ?? null,
-    tunedHp: update.tunedHp ?? null,
-    tunedNm: update.tunedNm ?? null,
+    tunedHp: initialStage1?.tunedHp ?? update.tunedHp ?? null,
+    tunedNm: initialStage1?.tunedNm ?? update.tunedNm ?? null,
+    performanceProfiles: initialProfiles,
+    ecuVariantId: null,
     ecuFamily: update.ecuFamily || inferEcuFamily(update.ecuType),
     ecuType: update.ecuType ?? null,
     ecuHardware: update.ecuHardware ?? null,
@@ -547,10 +803,21 @@ export async function createVehicleAdminRecord(update: VehicleAdminUpdate, actor
     created_by: actorUserId,
     updated_by: actorUserId,
   }).select("id").single();
-  if (engine.error) throw engine.error;
-  await auditChange(actorUserId, engine.data.id, null, record, "admin.created");
-  await updateVehicleAdminRecord(engine.data.id, update, actorUserId);
-  return { ok: true as const, detail: await getVehicleAdminDetail(engine.data.id), issues };
+  if (engine.error || !engine.data) throw engine.error ?? new Error("Vehicle engine could not be created.");
+  const engineId = engine.data.id;
+  async function removeFailedDraft() {
+    const rollback = await admin.from("vehicle_engines").delete().eq("id", engineId);
+    if (rollback.error) throw rollback.error;
+  }
+  let updated: Awaited<ReturnType<typeof updateVehicleAdminRecord>>;
+  try {
+    updated = await updateVehicleAdminRecord(engineId, update, actorUserId, "admin.created");
+  } catch (error) {
+    await removeFailedDraft();
+    throw error;
+  }
+  if (!updated.ok) await removeFailedDraft();
+  return updated;
 }
 
 export async function persistVehicleValidationResults(records: VehicleControlRecord[], actorUserId: string | null) {

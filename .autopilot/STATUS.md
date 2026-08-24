@@ -4891,3 +4891,57 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
   degisikligi, admin save, musteri kaydi veya dosyasi olusturulmadi. Kritik
   regresyon gorulmedigi icin rollback uygulanmadi; gerekirse DB migration yerinde
   birakilarak exact `d39ab2c8140e` app/analyzer cifti guvenle geri alinabilir.
+
+## 2026-08-25 Arac katalogu admin ve Stage 1/2/3 calismasi basladi
+
+- Owner arac widget katalogunun admin tarafini sade, duzenli ve anlasilir
+  yapmayi; marka/model/ECU ile Stage 1/2/3 verilerini yonetebilmeyi istedi.
+- Duplicate/evidence kontrolunde mevcut DB semasinin Stage 1, Stage 2 ve Stage 3
+  performans profillerini zaten destekledigi; admin kayit akisinin yalniz Stage
+  1'i yazdigi ve public React/script widget'in yalniz Stage 1/2'yi gosterdigi
+  dogrulandi. Yeni tablo veya uydurma performans verisi gerekmiyor.
+- Temiz `codex/vehicle-catalog-admin` dali, canlidaki son kod kaydi olan
+  `e2bf713` uzerinden ayri worktree'de acildi. Dirty ana worktree ve owner
+  degisikliklerine dokunulmadi.
+- Kapsam MANUAL-20260825-VEHICLE-CATALOG-ADMIN olarak In Progress kaydedildi.
+  Production deploy, canli migration/veri, gercek e-posta, odeme veya musteri
+  islemi bu implementasyon turunda yapilmayacak.
+
+## 2026-08-25 Arac katalogu admin ve Stage 1/2/3 calismasi tamamlandi
+
+- Admin katalog ana ekrani tam veri setinde server-side arama, marka/model/
+  nesil/ECU filtreleri, yayin ve dogrulama filtreleri, sayfalama ve S1/S2/S3
+  hazirlik rozetleriyle sade bir gunluk operasyon ekranina donusturuldu. Mevcut
+  import, enrichment, coverage, validation ve audit yetenekleri silinmeden
+  `Advanced tools` altinda korundu.
+- Arac detay editoru marka, model, nesil, motor, stock HP/Nm, Stage 1/2/3 tuned
+  HP/Nm, birincil ECU/TCU, diger hizmetler, notlar ve yayin/kalite alanlarina
+  ayrildi. Kazanclar istemciden kabul edilmek yerine sunucuda hesaplanir. Exact
+  ECU ID'si ve generation FK'i dogrulanir; eski Stage 1 payload'i ve gonderilmeyen
+  Stage 2/3 profilleri korunur. Legacy service/profile uyumsuzlugunda mevcut
+  profil durumu esas alinir; servis alani gonderilmezse capability'ler kapanmaz.
+- Yeni kayit sonrasi child write veya validation basarisizliginda yeni engine
+  taslagi temizlenir. Public-safe React widget, script embed, enquiry route ve
+  e-posta ozeti active+published ve gercek tuned verisi bulunan Stage 3'u ayni
+  allowlist ile destekler. Mevcut JSON fallback'ta Stage 3 kaniti olmadigi icin
+  ticari performans degeri uydurulmadi; DB migration veya dependency gerekmedi.
+- Degisen ana dosyalar: `src/app/admin/vehicles/VehicleControlCenter.tsx`,
+  `src/app/admin/vehicles/[id]/VehicleDetailClient.tsx`, yeni
+  `src/app/api/admin/vehicles/search/route.ts`, `src/lib/vehicleControl/{admin,
+  schema,types,validation,normalization,public}.ts`, widget/enquiry/e-posta
+  projeksiyonlari ve ilgili testler.
+- Kontroller: hedefli vehicle/widget testleri PASS (60/60); `npm run lint` PASS;
+  `npm run typecheck` PASS; `npm test` PASS (1011/1011); `npm run build --
+  --webpack` PASS (278/278); `git diff --check` PASS. Bagimsiz final incelemede
+  feature-specific release blocker bulunmadi.
+- Yerel browser QA: public marka -> model -> nesil -> motor zinciri BMW 3 serie
+  G2x/330d ile sonuc kartina kadar calisti. 1366x768 laptop ve 390x844 mobil
+  viewport'ta yatay overflow yok. Admin rotasi staff oturumu olmadiginda dogru
+  sekilde secure login sinirinda kaldi; authenticated admin UI tarayicida veri
+  degistirilerek test edilmedi.
+- Kalan mimari risk: mevcut kayit guncellemesi birden cok tabloya transaction
+  disi yaziyor; gec bir child write hatasi partial update birakabilir ve audit
+  insert hatasi su anda fail-closed degil. Bu degisiklikle olusmayan risk ileride
+  transactional RPC/audit-hardening goreviyle kapatilmalidir. Production deploy,
+  canli DB/katalog/musteri mutasyonu, fiyat, odeme, e-posta, env/secret veya
+  dependency degisikligi yapilmadi.

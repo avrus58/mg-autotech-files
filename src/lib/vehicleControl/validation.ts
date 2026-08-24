@@ -98,6 +98,42 @@ export function validateVehicleRecord(record: VehicleControlRecord): VehicleVali
     });
   }
 
+  for (const profile of (record.performanceProfiles ?? []).filter((item) => item.stage !== "stage1")) {
+    const stageLabel = profile.stage.replace("stage", "Stage ");
+    for (const [field, value, max] of [
+      ["tuned_hp", profile.tunedHp, vehiclePerformanceLimits.maxTunedHp],
+      ["tuned_nm", profile.tunedNm, vehiclePerformanceLimits.maxTunedNm],
+    ] as const) {
+      if (value != null && (!Number.isFinite(value) || value <= 0 || value > max)) {
+        add(issues, {
+          severity: "error",
+          code: "invalid_power_value",
+          message: `${stageLabel} ${field} has an invalid value.`,
+          vehicleKey,
+          metadata: { stage: profile.stage, field, value, max, suggestedFix: "Use a verified positive value or leave the field empty." },
+        });
+      }
+    }
+    if (record.stockHp != null && profile.tunedHp != null && profile.tunedHp > record.stockHp * vehiclePerformanceLimits.maxTunedHpMultiplier) {
+      add(issues, {
+        severity: "error",
+        code: "unrealistic_tuned_hp_gain",
+        message: `${stageLabel} horsepower is unrealistically high compared with stock horsepower.`,
+        vehicleKey,
+        metadata: { stage: profile.stage, stockHp: record.stockHp, tunedHp: profile.tunedHp, suggestedFix: "Verify this stage value before publishing." },
+      });
+    }
+    if (record.stockNm != null && profile.tunedNm != null && profile.tunedNm > record.stockNm * vehiclePerformanceLimits.maxTunedNmMultiplier) {
+      add(issues, {
+        severity: "error",
+        code: "unrealistic_tuned_nm_gain",
+        message: `${stageLabel} torque is unrealistically high compared with stock torque.`,
+        vehicleKey,
+        metadata: { stage: profile.stage, stockNm: record.stockNm, tunedNm: profile.tunedNm, suggestedFix: "Verify this stage value before publishing." },
+      });
+    }
+  }
+
   if (record.yearFrom != null && (record.yearFrom < 1950 || record.yearFrom > 2050)) {
     add(issues, { severity: "warning", code: "suspicious_year_from", message: "Generation start year looks suspicious.", vehicleKey, metadata: { suggestedFix: "Verify the generation start year." } });
   }
@@ -116,6 +152,19 @@ export function validateVehicleRecord(record: VehicleControlRecord): VehicleVali
   }
   if (record.services.includes("stage1") && !record.tunedHp && !record.tunedNm) {
     add(issues, { severity: "warning", code: "missing_tuned_performance", message: "Stage 1 is available but tuned power or torque is missing.", vehicleKey, metadata: { suggestedFix: "Add Stage 1 HP/NM or remove Stage 1 availability until known." } });
+  }
+  for (const stage of ["stage2", "stage3"] as const) {
+    const profile = record.performanceProfiles?.find((item) => item.stage === stage);
+    if (record.services.includes(stage) && !profile?.tunedHp && !profile?.tunedNm) {
+      const stageLabel = stage === "stage2" ? "Stage 2" : "Stage 3";
+      add(issues, {
+        severity: "warning",
+        code: `missing_${stage}_performance`,
+        message: `${stageLabel} is available but tuned power or torque is missing.`,
+        vehicleKey,
+        metadata: { stage, suggestedFix: `Add verified ${stageLabel} HP/NM or remove its availability until known.` },
+      });
+    }
   }
   if (record.published && issues.some((issue) => issue.severity === "error")) {
     add(issues, { severity: "error", code: "published_incomplete", message: "Published vehicle has blocking validation errors.", vehicleKey, metadata: { suggestedFix: "Resolve error-level issues or unpublish this record." } });

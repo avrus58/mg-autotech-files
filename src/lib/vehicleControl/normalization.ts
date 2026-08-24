@@ -201,7 +201,19 @@ export function controlRecordToPublicVehicle(record: VehicleControlRecord): Publ
   const canonicalBrand = normalizeBrandName(record.brand);
   const canonicalModel = canonicalizeVehicleModel(record.brand, record.model);
   const canonicalGeneration = normalizeGenerationName(record.brand, record.model, record.generation);
-  const stage1: StageData | null = record.stockHp || record.stockNm || record.tunedHp || record.tunedNm
+  const profileData = (stage: "stage1" | "stage2" | "stage3"): StageData | null => {
+    const profile = record.performanceProfiles?.find((item) => item.stage === stage && item.active && item.published);
+    if (!profile || (profile.tunedHp == null && profile.tunedNm == null)) return null;
+    return {
+      stockHp: profile.stockHp ?? record.stockHp,
+      stockNm: profile.stockNm ?? record.stockNm,
+      tunedHp: profile.tunedHp,
+      tunedNm: profile.tunedNm,
+      gainHp: profile.gainHp,
+      gainNm: profile.gainNm,
+    };
+  };
+  const legacyStage1: StageData | null = record.stockHp || record.stockNm || record.tunedHp || record.tunedNm
     ? {
         stockHp: record.stockHp,
         stockNm: record.stockNm,
@@ -211,6 +223,7 @@ export function controlRecordToPublicVehicle(record: VehicleControlRecord): Publ
         gainNm: record.tunedNm != null && record.stockNm != null ? record.tunedNm - record.stockNm : null,
       }
     : null;
+  const stage1 = profileData("stage1") ?? legacyStage1;
   return {
     id: record.vehicleKey,
     brand: canonicalBrand.canonicalName || record.brand,
@@ -224,7 +237,8 @@ export function controlRecordToPublicVehicle(record: VehicleControlRecord): Publ
     fuelType: record.fuelType,
     ecu: [record.ecuType, record.ecuFamily].filter((value): value is string => Boolean(value)),
     stage1,
-    stage2: null,
+    stage2: profileData("stage2"),
+    stage3: profileData("stage3"),
     readMethods: record.readMethods.slice(0, 8),
     services: record.services.map((key) => vehicleServiceLabels[key]).slice(0, 24),
     vehicleKey: record.vehicleKey,

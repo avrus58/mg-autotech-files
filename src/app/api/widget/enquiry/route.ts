@@ -17,7 +17,7 @@ const enquirySchema = z.object({
   model: z.string().min(1).max(120),
   year: z.string().min(1).max(120),
   engine: z.string().min(1).max(120),
-  stage: z.enum(["Stage 1", "Stage 2"]),
+  stage: z.enum(["Stage 1", "Stage 2", "Stage 3"]),
   selectedServices: z.array(z.string().trim().min(1).max(100)).max(24).default([]),
   name: z.string().trim().min(2).max(120),
   email: z.string().trim().email().max(250),
@@ -64,12 +64,16 @@ export async function POST(request: NextRequest) {
 
   const vehicle = await widgetVehicle(parsed.data.make, parsed.data.model, parsed.data.year, parsed.data.engine);
   if (!vehicle) return widgetUnavailable(validation.language, responseOrigin, 404);
-  const performance = parsed.data.stage === "Stage 2" ? vehicle.stage2 : vehicle.stage1;
+  const performance = {
+    "Stage 1": vehicle.stage1,
+    "Stage 2": vehicle.stage2,
+    "Stage 3": vehicle.stage3,
+  }[parsed.data.stage];
   if (!performance || (performance.tunedHp === null && performance.tunedNm === null)) {
     return widgetUnavailable(validation.language, responseOrigin, 400);
   }
 
-  const allowedServices = new Set(vehicle.services.filter((service) => !/^stage\s*[12]$/i.test(service.trim())));
+  const allowedServices = new Set(vehicle.services.filter((service) => !/^stage\s*[123]$/i.test(service.trim())));
   const selectedServices = [...new Set(parsed.data.selectedServices.filter((service) => allowedServices.has(service)))];
   const admin = getSupabaseAdmin();
   const ipHash = hashRequestIp(request.headers);

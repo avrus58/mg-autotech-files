@@ -128,6 +128,34 @@ Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
 
+### MANUAL-20260825-VEHICLE-CATALOG-ADMIN [P1] Arac widget katalogunu sade ve Stage 1/2/3 yonetilebilir yap
+
+Durum: Done
+
+Fingerprint: `vehicle-catalog|admin-editor-and-public-widget|stage3-already-stored-but-admin-and-widget-incomplete|simple-hierarchical-three-stage-management`
+
+Sonuc: Admin arac katalogu tum veri setinde server-side arama, hiyerarsik
+filtreleme, sayfalama, yayin/dogrulama ve Stage hazirlik rozetleriyle
+sadelestirildi; import, enrichment, coverage, validation ve audit araclari
+silinmeden `Advanced tools` altinda toplandi. Arac detayinda marka, model,
+nesil, motor, birincil ECU/TCU ve diger hizmetlerle birlikte Stage 1, Stage 2
+ve Stage 3 tuned HP/Nm profilleri ayri kartlardan yonetilir. Kazanclar sunucuda
+stock/tuned degerlerinden hesaplanir; exact ECU kimligi ve gercek hiyerarsi FK'i
+korunur; eski payload, eksik profil ve eski service/profile uyumsuzluklari veri
+kaybetmeden ele alinir. React widget, script widget ve enquiry/e-posta akisi
+yalniz gercek active+published Stage 3 verisini ayni allowlist ile destekler;
+uydurma Stage 3 degeri eklenmedi ve migration gerekmedi.
+
+Kontroller: Hedefli vehicle/widget testleri PASS (60/60); `npm run lint` PASS;
+`npm run typecheck` PASS; `npm test` PASS (1011/1011); `npm run build --
+--webpack` PASS (278/278); `git diff --check` PASS. Public marka -> model ->
+nesil -> motor secimi ile sonuc karti yerel tarayicida calisti; 1366x768 laptop
+ve 390x844 mobil viewport'larda yatay overflow yok. Authenticated admin ekranina
+yerel staff oturumu olmadigi icin browser dogrulamasi login guvenlik sinirinda
+kaldi; derleme, kaynak kontrolleri ve permission testleri bu yolu dogruladi.
+Production deploy, canli migration/veri, gercek musteri/katalog mutasyonu,
+fiyat, odeme, e-posta, env/secret veya dependency degisikligi yapilmadi.
+
 ### MANUAL-20260824-CREDIT-PRICING-STABILITY [P0] Global ve musteri-ozel kredi fiyatini tek otoritede sabitle
 
 Durum: Done (Production deployed and verified)

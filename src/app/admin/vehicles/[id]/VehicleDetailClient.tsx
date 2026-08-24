@@ -1,17 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
-import { ArrowLeft, CheckCircle2, Loader2, Save, ShieldAlert } from "lucide-react";
+import type { ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { ArrowLeft, CheckCircle2, Cpu, Gauge, Loader2, RotateCcw, Save, ShieldAlert, Wrench } from "lucide-react";
 import { authenticatedFetch } from "@/lib/authGuards";
-import type { VehicleControlRecord, VehicleServiceKey } from "@/lib/vehicleControl/types";
-import { vehicleServiceKeys, vehicleServiceLabels } from "@/lib/vehicleControl/types";
+import type { VehicleControlRecord, VehiclePerformanceStage, VehicleServiceKey } from "@/lib/vehicleControl/types";
+import { vehiclePerformanceStages, vehicleServiceKeys, vehicleServiceLabels } from "@/lib/vehicleControl/types";
 
 type DetailPayload = {
   record: VehicleControlRecord;
   audit: Array<Record<string, unknown>>;
   validations: Array<Record<string, unknown>>;
 };
+
+type StageForm = { tunedHp: string; tunedNm: string; active: boolean };
 
 type FormState = {
   brand: string;
@@ -25,8 +28,8 @@ type FormState = {
   displacementCc: string;
   stockHp: string;
   stockNm: string;
-  tunedHp: string;
-  tunedNm: string;
+  stageProfiles: Record<VehiclePerformanceStage, StageForm>;
+  ecuVariantId: string;
   ecuFamily: string;
   ecuType: string;
   ecuHardware: string;
@@ -46,7 +49,28 @@ type FormState = {
   active: boolean;
 };
 
+type Notice = { kind: "success" | "error"; text: string } | null;
+
+const stageLabels: Record<VehiclePerformanceStage, string> = { stage1: "Stage 1", stage2: "Stage 2", stage3: "Stage 3" };
+const otherServiceKeys = vehicleServiceKeys.filter(
+  (service): service is Exclude<VehicleServiceKey, VehiclePerformanceStage> => !vehiclePerformanceStages.includes(service as VehiclePerformanceStage),
+);
+
 function formFromRecord(record: VehicleControlRecord): FormState {
+  const stageServices = new Set<VehicleServiceKey>(record.services);
+  for (const profile of record.performanceProfiles ?? []) {
+    if (profile.active) stageServices.add(profile.stage);
+    else stageServices.delete(profile.stage);
+  }
+
+  function stage(stageKey: VehiclePerformanceStage): StageForm {
+    const profile = record.performanceProfiles?.find((item) => item.stage === stageKey);
+    return {
+      tunedHp: profile?.tunedHp == null ? stageKey === "stage1" && record.tunedHp != null ? String(record.tunedHp) : "" : String(profile.tunedHp),
+      tunedNm: profile?.tunedNm == null ? stageKey === "stage1" && record.tunedNm != null ? String(record.tunedNm) : "" : String(profile.tunedNm),
+      active: stageServices.has(stageKey),
+    };
+  }
   return {
     brand: record.brand,
     model: record.model,
@@ -59,8 +83,8 @@ function formFromRecord(record: VehicleControlRecord): FormState {
     displacementCc: record.displacementCc == null ? "" : String(record.displacementCc),
     stockHp: record.stockHp == null ? "" : String(record.stockHp),
     stockNm: record.stockNm == null ? "" : String(record.stockNm),
-    tunedHp: record.tunedHp == null ? "" : String(record.tunedHp),
-    tunedNm: record.tunedNm == null ? "" : String(record.tunedNm),
+    stageProfiles: { stage1: stage("stage1"), stage2: stage("stage2"), stage3: stage("stage3") },
+    ecuVariantId: record.ecuVariantId ?? "",
     ecuFamily: record.ecuFamily ?? "",
     ecuType: record.ecuType ?? "",
     ecuHardware: record.ecuHardware ?? "",
@@ -71,7 +95,7 @@ function formFromRecord(record: VehicleControlRecord): FormState {
     gearboxType: record.gearboxType ?? "",
     tcuType: record.tcuType ?? "",
     tcuNotes: record.tcuNotes ?? "",
-    services: record.services,
+    services: [...stageServices],
     customerSafeNotes: record.customerSafeNotes ?? "",
     adminTechnicalNotes: record.adminTechnicalNotes ?? "",
     confidenceScore: String(record.confidenceScore ?? 60),
@@ -87,29 +111,34 @@ function numberOrNull(value: string) {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+function gain(stock: string, tuned: string) {
+  const stockValue = numberOrNull(stock);
+  const tunedValue = numberOrNull(tuned);
+  return stockValue != null && tunedValue != null ? tunedValue - stockValue : null;
+}
+
 export default function VehicleDetailClient({ id }: { id: string }) {
   const [payload, setPayload] = useState<DetailPayload | null>(null);
   const [form, setForm] = useState<FormState | null>(null);
+  const [savedForm, setSavedForm] = useState<FormState | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState("");
-
-  const authFetch = useCallback(
-    (url: string, init?: RequestInit) => authenticatedFetch(url, init),
-    [],
-  );
+  const [notice, setNotice] = useState<Notice>(null);
+  const authFetch = useCallback((url: string, init?: RequestInit) => authenticatedFetch(url, init), []);
 
   const load = useCallback(async () => {
     setLoading(true);
-    setMessage("");
+    setNotice(null);
     try {
       const response = await authFetch(`/api/admin/vehicles/${id}`);
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Vehicle could not be loaded.");
+      const nextForm = formFromRecord(data.record);
       setPayload(data);
-      setForm(formFromRecord(data.record));
+      setForm(nextForm);
+      setSavedForm(nextForm);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Vehicle could not be loaded.");
+      setNotice({ kind: "error", text: error instanceof Error ? error.message : "Vehicle could not be loaded." });
     } finally {
       setLoading(false);
     }
@@ -120,23 +149,56 @@ export default function VehicleDetailClient({ id }: { id: string }) {
     return () => window.clearTimeout(timeout);
   }, [load]);
 
+  const dirty = useMemo(() => Boolean(form && savedForm && JSON.stringify(form) !== JSON.stringify(savedForm)), [form, savedForm]);
+  useEffect(() => {
+    function protectUnsavedChanges(event: BeforeUnloadEvent) {
+      if (!dirty) return;
+      event.preventDefault();
+    }
+    window.addEventListener("beforeunload", protectUnsavedChanges);
+    return () => window.removeEventListener("beforeunload", protectUnsavedChanges);
+  }, [dirty]);
+
   function update<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((current) => current ? { ...current, [key]: value } : current);
   }
 
+  function updateStage(stage: VehiclePerformanceStage, field: keyof StageForm, value: string | boolean) {
+    setForm((current) => current ? {
+      ...current,
+      stageProfiles: { ...current.stageProfiles, [stage]: { ...current.stageProfiles[stage], [field]: value } },
+    } : current);
+  }
+
+  function toggleStage(stage: VehiclePerformanceStage) {
+    setForm((current) => {
+      if (!current) return current;
+      const active = !current.stageProfiles[stage].active;
+      return {
+        ...current,
+        stageProfiles: { ...current.stageProfiles, [stage]: { ...current.stageProfiles[stage], active } },
+        services: active ? [...new Set([...current.services, stage])] : current.services.filter((item) => item !== stage),
+      };
+    });
+  }
+
   function toggleService(service: VehicleServiceKey) {
     if (!form) return;
-    update("services", form.services.includes(service)
-      ? form.services.filter((item) => item !== service)
-      : [...form.services, service]
-    );
+    update("services", form.services.includes(service) ? form.services.filter((item) => item !== service) : [...form.services, service]);
+  }
+
+  function reset() {
+    if (!savedForm) return;
+    setForm(savedForm);
+    setNotice(null);
   }
 
   async function save() {
     if (!form) return;
     setSaving(true);
-    setMessage("");
+    setNotice(null);
     try {
+      const stage1 = form.stageProfiles.stage1;
       const response = await authFetch(`/api/admin/vehicles/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -152,8 +214,15 @@ export default function VehicleDetailClient({ id }: { id: string }) {
           displacementCc: numberOrNull(form.displacementCc),
           stockHp: numberOrNull(form.stockHp),
           stockNm: numberOrNull(form.stockNm),
-          tunedHp: numberOrNull(form.tunedHp),
-          tunedNm: numberOrNull(form.tunedNm),
+          tunedHp: numberOrNull(stage1.tunedHp),
+          tunedNm: numberOrNull(stage1.tunedNm),
+          performanceProfiles: vehiclePerformanceStages.map((stage) => ({
+            stage,
+            tunedHp: numberOrNull(form.stageProfiles[stage].tunedHp),
+            tunedNm: numberOrNull(form.stageProfiles[stage].tunedNm),
+            active: form.stageProfiles[stage].active,
+          })),
+          ecuVariantId: form.ecuVariantId || null,
           ecuFamily: form.ecuFamily || null,
           ecuType: form.ecuType || null,
           ecuHardware: form.ecuHardware || null,
@@ -174,123 +243,119 @@ export default function VehicleDetailClient({ id }: { id: string }) {
         }),
       });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Vehicle could not be saved.");
+      if (!response.ok) {
+        const firstIssue = Array.isArray(data.issues) ? data.issues[0]?.message : null;
+        throw new Error(firstIssue || data.error || "Vehicle could not be saved.");
+      }
+      const nextForm = formFromRecord(data.record);
       setPayload(data);
-      setForm(formFromRecord(data.record));
-      setMessage("Vehicle record saved and audit log updated.");
+      setForm(nextForm);
+      setSavedForm(nextForm);
+      setNotice({ kind: "success", text: "Vehicle, ECU and Stage data saved." });
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Vehicle could not be saved.");
+      setNotice({ kind: "error", text: error instanceof Error ? error.message : "Vehicle could not be saved." });
     } finally {
       setSaving(false);
     }
   }
 
   if (loading) return <main className="flex min-h-screen items-center justify-center bg-[#050505] text-white"><Loader2 className="mr-3 h-5 w-5 animate-spin text-red-500" />Loading vehicle record...</main>;
-  if (!form || !payload) return <main className="min-h-screen bg-[#050505] p-8 text-white"><Link href="/admin/vehicles">Back</Link><div className="mt-6 text-red-200">{message}</div></main>;
 
-  return <main className="min-h-screen bg-[#050505] text-white">
-    <header className="border-b border-white/10 bg-black/80">
-      <div className="mx-auto flex max-w-[1400px] flex-col gap-4 px-4 py-6 lg:flex-row lg:items-center lg:justify-between">
-        <div>
-          <Link href="/admin/vehicles" className="text-sm font-bold text-zinc-500 hover:text-white"><ArrowLeft className="mr-2 inline h-4 w-4" />Vehicle control center</Link>
-          <h1 className="mt-4 text-4xl font-black">{payload.record.displayName}</h1>
-          <p className="mt-2 text-sm text-zinc-500">{payload.record.vehicleKey}</p>
+  if (!form || !payload) return <main className="flex min-h-screen items-center justify-center bg-[#050505] p-6 text-white">
+    <div className="w-full max-w-lg rounded-2xl border border-red-900/50 bg-red-950/15 p-6 text-center" role="alert">
+      <ShieldAlert className="mx-auto h-8 w-8 text-red-400" />
+      <h1 className="mt-4 text-xl font-black">Vehicle record could not be opened</h1>
+      <p className="mt-2 text-sm text-red-100">{notice?.text || "Please try again."}</p>
+      <div className="mt-5 flex justify-center gap-2"><Link href="/admin/vehicles" className="rounded-xl border border-white/10 px-4 py-3 text-sm font-black">Back</Link><button onClick={() => void load()} className="rounded-xl bg-[#b1121b] px-4 py-3 text-sm font-black">Try again</button></div>
+    </div>
+  </main>;
+
+  return <main className="min-h-screen bg-[#050505] pb-24 text-white">
+    <header className="border-b border-white/10 bg-black/90">
+      <div className="mx-auto flex max-w-[1440px] flex-col gap-4 px-4 py-5 lg:flex-row lg:items-center lg:justify-between">
+        <div className="min-w-0">
+          <Link href="/admin/vehicles" className="text-sm font-bold text-zinc-500 hover:text-white"><ArrowLeft className="mr-2 inline h-4 w-4" />Vehicle catalog</Link>
+          <div className="mt-3 flex flex-wrap items-center gap-2"><h1 className="truncate text-2xl font-black md:text-3xl">{payload.record.displayName}</h1><StatusBadge status={form.published ? "Published" : form.active ? "Draft" : "Archived"} positive={form.published} /></div>
+          <p className="mt-1 truncate text-xs text-zinc-600">{payload.record.vehicleKey}</p>
         </div>
-        <button onClick={() => void save()} disabled={saving} className="h-12 rounded-xl bg-[#b1121b] px-5 text-sm font-black hover:bg-[#c91824] disabled:opacity-50">{saving ? <Loader2 className="mr-2 inline h-4 w-4 animate-spin" /> : <Save className="mr-2 inline h-4 w-4" />}Save vehicle</button>
+        <div className="flex items-center gap-2">{dirty && <span className="text-xs font-black text-amber-300">Unsaved changes</span>}<button onClick={reset} disabled={!dirty || saving} className="h-11 rounded-xl border border-white/10 px-4 text-sm font-black text-zinc-300 disabled:opacity-40"><RotateCcw className="mr-2 inline h-4 w-4" />Reset</button><button onClick={() => void save()} disabled={!dirty || saving} className="h-11 rounded-xl bg-[#b1121b] px-5 text-sm font-black hover:bg-[#c91824] disabled:opacity-40">{saving ? <Loader2 className="mr-2 inline h-4 w-4 animate-spin" /> : <Save className="mr-2 inline h-4 w-4" />}Save</button></div>
       </div>
     </header>
 
-    <div className="mx-auto grid max-w-[1400px] gap-6 px-4 py-6 xl:grid-cols-[1fr_360px]">
-      <div className="space-y-6">
-        {message && <div className="rounded-xl border border-red-800/40 bg-red-950/20 p-4 text-sm text-red-100">{message}</div>}
-        <section className="rounded-2xl border border-white/10 bg-white/[0.035] p-5">
-          <h2 className="text-2xl font-black">Vehicle identity</h2>
-          <div className="mt-5 grid gap-4 md:grid-cols-2">
-            <Field label="Brand" value={form.brand} onChange={(value) => update("brand", value)} />
-            <Field label="Model" value={form.model} onChange={(value) => update("model", value)} />
-            <Field label="Generation" value={form.generation} onChange={(value) => update("generation", value)} />
-            <Field label="Engine" value={form.engine} onChange={(value) => update("engine", value)} />
-            <Field label="Display name" value={form.displayName} onChange={(value) => update("displayName", value)} />
-            <Field label="Fuel type" value={form.fuelType} onChange={(value) => update("fuelType", value)} />
-            <Field label="Year from" value={form.yearFrom} onChange={(value) => update("yearFrom", value)} type="number" />
-            <Field label="Year to" value={form.yearTo} onChange={(value) => update("yearTo", value)} type="number" />
-          </div>
-        </section>
+    <nav aria-label="Vehicle editor sections" className="sticky top-0 z-20 border-b border-white/10 bg-[#080808]/95 backdrop-blur"><div className="mx-auto flex max-w-[1440px] gap-2 overflow-x-auto px-4 py-2 text-sm font-black"><a href="#vehicle" className="shrink-0 rounded-lg px-3 py-2 text-zinc-300 hover:bg-white/10">Vehicle</a><a href="#stages" className="shrink-0 rounded-lg px-3 py-2 text-zinc-300 hover:bg-white/10">Stage 1–2–3</a><a href="#ecu" className="shrink-0 rounded-lg px-3 py-2 text-zinc-300 hover:bg-white/10">ECU & gearbox</a><a href="#services" className="shrink-0 rounded-lg px-3 py-2 text-zinc-300 hover:bg-white/10">Services</a><a href="#publish" className="shrink-0 rounded-lg px-3 py-2 text-zinc-300 hover:bg-white/10">Publish</a></div></nav>
 
-        <section className="rounded-2xl border border-white/10 bg-white/[0.035] p-5">
-          <h2 className="text-2xl font-black">Performance and ECU data</h2>
-          <div className="mt-5 grid gap-4 md:grid-cols-4">
-            <Field label="Displacement CC" value={form.displacementCc} onChange={(value) => update("displacementCc", value)} type="number" />
-            <Field label="Stock HP" value={form.stockHp} onChange={(value) => update("stockHp", value)} type="number" />
-            <Field label="Stock NM" value={form.stockNm} onChange={(value) => update("stockNm", value)} type="number" />
-            <Field label="Tuned HP" value={form.tunedHp} onChange={(value) => update("tunedHp", value)} type="number" />
-            <Field label="Tuned NM" value={form.tunedNm} onChange={(value) => update("tunedNm", value)} type="number" />
-            <Field label="ECU family" value={form.ecuFamily} onChange={(value) => update("ecuFamily", value)} />
-            <Field label="ECU type" value={form.ecuType} onChange={(value) => update("ecuType", value)} />
-            <Field label="ECU hardware" value={form.ecuHardware} onChange={(value) => update("ecuHardware", value)} />
-            <Field label="ECU software" value={form.ecuSoftware} onChange={(value) => update("ecuSoftware", value)} />
-            <Field label="Gearbox" value={form.gearboxType} onChange={(value) => update("gearboxType", value)} />
-            <Field label="TCU type" value={form.tcuType} onChange={(value) => update("tcuType", value)} />
-          </div>
-          <div className="mt-5 grid gap-4 md:grid-cols-2">
-            <TextArea label="ECU notes" value={form.ecuNotes} onChange={(value) => update("ecuNotes", value)} />
-            <TextArea label="Unlock notes" value={form.unlockNotes} onChange={(value) => update("unlockNotes", value)} />
-            <TextArea label="Protection notes" value={form.protectionNotes} onChange={(value) => update("protectionNotes", value)} />
-            <TextArea label="TCU notes" value={form.tcuNotes} onChange={(value) => update("tcuNotes", value)} />
-          </div>
-        </section>
+    <div className="mx-auto grid max-w-[1440px] gap-5 px-4 py-5 xl:grid-cols-[minmax(0,1fr)_330px]">
+      <div className="min-w-0 space-y-5">
+        {notice && <div role={notice.kind === "error" ? "alert" : "status"} aria-live="polite" className={`rounded-xl border p-4 text-sm font-bold ${notice.kind === "error" ? "border-red-800/50 bg-red-950/20 text-red-100" : "border-emerald-800/50 bg-emerald-950/20 text-emerald-200"}`}>{notice.text}</div>}
 
-        <section className="rounded-2xl border border-white/10 bg-white/[0.035] p-5">
-          <h2 className="text-2xl font-black">Supported services</h2>
-          <div className="mt-5 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-            {vehicleServiceKeys.map((service) => <button key={service} type="button" onClick={() => toggleService(service)} className={`rounded-xl border px-4 py-3 text-left text-sm font-black transition ${form.services.includes(service) ? "border-emerald-700/40 bg-emerald-950/20 text-emerald-200" : "border-white/10 bg-black/30 text-zinc-400 hover:bg-white/10"}`}>
-              {form.services.includes(service) && <CheckCircle2 className="mr-2 inline h-4 w-4" />}{vehicleServiceLabels[service]}
-            </button>)}
+        <EditorSection id="vehicle" icon={<Gauge />} title="Vehicle" description="Brand, model, generation and stock engine data.">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <Field label="Brand" value={form.brand} onChange={(value) => update("brand", value)} required /><Field label="Model" value={form.model} onChange={(value) => update("model", value)} required /><Field label="Generation" value={form.generation} onChange={(value) => update("generation", value)} required /><Field label="Engine" value={form.engine} onChange={(value) => update("engine", value)} required />
+            <div className="sm:col-span-2"><Field label="Display name" value={form.displayName} onChange={(value) => update("displayName", value)} /></div><Field label="Fuel type" value={form.fuelType} onChange={(value) => update("fuelType", value)} /><Field label="Displacement (cc)" value={form.displacementCc} onChange={(value) => update("displacementCc", value)} type="number" />
+            <Field label="Year from" value={form.yearFrom} onChange={(value) => update("yearFrom", value)} type="number" /><Field label="Year to" value={form.yearTo} onChange={(value) => update("yearTo", value)} type="number" /><Field label="Stock HP" value={form.stockHp} onChange={(value) => update("stockHp", value)} type="number" /><Field label="Stock Nm" value={form.stockNm} onChange={(value) => update("stockNm", value)} type="number" />
           </div>
-        </section>
+        </EditorSection>
 
-        <section className="rounded-2xl border border-white/10 bg-white/[0.035] p-5">
-          <h2 className="text-2xl font-black">Notes</h2>
-          <div className="mt-5 grid gap-4 md:grid-cols-2">
-            <TextArea label="Customer-safe notes" value={form.customerSafeNotes} onChange={(value) => update("customerSafeNotes", value)} />
-            <TextArea label="Admin-only technical notes" value={form.adminTechnicalNotes} onChange={(value) => update("adminTechnicalNotes", value)} />
-          </div>
-        </section>
+        <EditorSection id="stages" icon={<Gauge />} title="Stage performance" description="Engine-level output values. Enter only verified figures; gains are calculated automatically.">
+          <div className="mb-4 grid grid-cols-2 gap-3 sm:max-w-md"><ValueCard label="Stock power" value={form.stockHp ? `${form.stockHp} HP` : "Not set"} /><ValueCard label="Stock torque" value={form.stockNm ? `${form.stockNm} Nm` : "Not set"} /></div>
+          <div className="grid gap-4 lg:grid-cols-3">{vehiclePerformanceStages.map((stage) => {
+            const profile = form.stageProfiles[stage];
+            const hpGain = gain(form.stockHp, profile.tunedHp);
+            const nmGain = gain(form.stockNm, profile.tunedNm);
+            return <fieldset key={stage} className={`rounded-2xl border p-4 ${profile.active ? "border-red-800/50 bg-red-950/15" : "border-white/10 bg-black/25"}`}><legend className="sr-only">{stageLabels[stage]} performance</legend><div className="flex items-center justify-between gap-3"><div><div className="text-lg font-black">{stageLabels[stage]}</div><div className="mt-1 text-xs text-zinc-500">{profile.active ? "Available" : "Not offered"}</div></div><button type="button" aria-pressed={profile.active} onClick={() => toggleStage(stage)} className={`min-h-11 rounded-xl px-3 text-xs font-black ${profile.active ? "bg-[#b1121b] text-white" : "border border-white/10 text-zinc-400"}`}>{profile.active ? "Enabled" : "Enable"}</button></div><div className="mt-4 grid grid-cols-2 gap-3"><StageField label="Tuned HP" value={profile.tunedHp} onChange={(value) => updateStage(stage, "tunedHp", value)} disabled={!profile.active} /><StageField label="Tuned Nm" value={profile.tunedNm} onChange={(value) => updateStage(stage, "tunedNm", value)} disabled={!profile.active} /></div><div className="mt-3 grid grid-cols-2 gap-2 text-xs"><div className="rounded-lg bg-black/35 p-2 text-zinc-400">HP gain <strong className="float-right text-white">{hpGain == null ? "—" : `${hpGain >= 0 ? "+" : ""}${hpGain}`}</strong></div><div className="rounded-lg bg-black/35 p-2 text-zinc-400">Nm gain <strong className="float-right text-white">{nmGain == null ? "—" : `${nmGain >= 0 ? "+" : ""}${nmGain}`}</strong></div></div></fieldset>;
+          })}</div>
+        </EditorSection>
+
+        <EditorSection id="ecu" icon={<Cpu />} title="Primary ECU & gearbox" description="The main ECU variant for this engine. Existing additional ECU variants remain preserved.">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"><Field label="ECU family" value={form.ecuFamily} onChange={(value) => update("ecuFamily", value)} /><Field label="ECU type" value={form.ecuType} onChange={(value) => update("ecuType", value)} /><Field label="ECU hardware" value={form.ecuHardware} onChange={(value) => update("ecuHardware", value)} /><Field label="ECU software" value={form.ecuSoftware} onChange={(value) => update("ecuSoftware", value)} /><Field label="Gearbox" value={form.gearboxType} onChange={(value) => update("gearboxType", value)} /><Field label="TCU type" value={form.tcuType} onChange={(value) => update("tcuType", value)} /></div>
+          <details className="mt-4 rounded-xl border border-white/10 bg-black/25 p-4"><summary className="cursor-pointer text-sm font-black text-zinc-300">Technical notes</summary><div className="mt-4 grid gap-4 md:grid-cols-2"><TextArea label="ECU notes" value={form.ecuNotes} onChange={(value) => update("ecuNotes", value)} /><TextArea label="Unlock notes" value={form.unlockNotes} onChange={(value) => update("unlockNotes", value)} /><TextArea label="Protection notes" value={form.protectionNotes} onChange={(value) => update("protectionNotes", value)} /><TextArea label="TCU notes" value={form.tcuNotes} onChange={(value) => update("tcuNotes", value)} /></div></details>
+        </EditorSection>
+
+        <EditorSection id="services" icon={<Wrench />} title="Other services" description="Stage availability is managed in the Stage cards above.">
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">{otherServiceKeys.map((service) => { const selected = form.services.includes(service); return <button key={service} type="button" aria-pressed={selected} onClick={() => toggleService(service)} className={`min-h-12 rounded-xl border px-4 py-3 text-left text-sm font-black transition ${selected ? "border-emerald-700/40 bg-emerald-950/20 text-emerald-200" : "border-white/10 bg-black/30 text-zinc-400 hover:bg-white/10"}`}>{selected && <CheckCircle2 className="mr-2 inline h-4 w-4" />}{vehicleServiceLabels[service]}</button>; })}</div>
+        </EditorSection>
+
+        <EditorSection id="notes" icon={<ShieldAlert />} title="Notes" description="Customer notes are public-safe; technical notes stay admin-only."><div className="grid gap-4 md:grid-cols-2"><TextArea label="Customer-safe notes" value={form.customerSafeNotes} onChange={(value) => update("customerSafeNotes", value)} /><TextArea label="Admin-only technical notes" value={form.adminTechnicalNotes} onChange={(value) => update("adminTechnicalNotes", value)} /></div></EditorSection>
       </div>
 
-      <aside className="space-y-5">
-        <section className="rounded-2xl border border-red-900/40 bg-red-950/10 p-5">
-          <h2 className="text-xl font-black">Publishing control</h2>
-          <label className="mt-5 flex items-center justify-between rounded-xl border border-white/10 bg-black/30 p-4 text-sm font-black">Published<input type="checkbox" checked={form.published} onChange={(event) => update("published", event.target.checked)} /></label>
-          <label className="mt-3 flex items-center justify-between rounded-xl border border-white/10 bg-black/30 p-4 text-sm font-black">Active<input type="checkbox" checked={form.active} onChange={(event) => update("active", event.target.checked)} /></label>
-          <label className="mt-4 block text-xs font-black uppercase tracking-[0.14em] text-zinc-500">Verification status<select value={form.verificationStatus} onChange={(event) => update("verificationStatus", event.target.value as FormState["verificationStatus"])} className="mt-2 h-12 w-full rounded-xl border border-white/10 bg-black/40 px-3 text-sm normal-case text-white"><option value="imported">Imported</option><option value="unverified">Unverified</option><option value="needs_review">Needs review</option><option value="verified">Verified</option><option value="rejected">Rejected</option></select></label>
-          <Field label="Confidence score" value={form.confidenceScore} onChange={(value) => update("confidenceScore", value)} type="number" />
-        </section>
-
-        <section className="rounded-2xl border border-white/10 bg-white/[0.035] p-5">
-          <h2 className="flex items-center gap-2 text-xl font-black"><ShieldAlert className="h-5 w-5 text-amber-400" />Validation</h2>
-          <div className="mt-4 space-y-2">
-            {payload.validations.slice(0, 8).map((item, index) => <div key={String(item.id ?? index)} className="rounded-xl border border-amber-800/30 bg-amber-950/10 p-3 text-sm text-amber-100">{String(item.message ?? item.code ?? "Validation note")}</div>)}
-            {!payload.validations.length && <div className="rounded-xl border border-emerald-800/30 bg-emerald-950/10 p-3 text-sm text-emerald-200">No validation entries for this record.</div>}
-          </div>
-        </section>
-
-        <section className="rounded-2xl border border-white/10 bg-white/[0.035] p-5">
-          <h2 className="text-xl font-black">Audit history</h2>
-          <div className="mt-4 space-y-2">
-            {payload.audit.slice(0, 8).map((item, index) => <div key={String(item.id ?? index)} className="rounded-xl border border-white/10 bg-black/30 p-3 text-sm"><div className="font-black">{String(item.action ?? "change")}</div><div className="mt-1 text-xs text-zinc-500">{String(item.created_at ?? "-")}</div></div>)}
-            {!payload.audit.length && <div className="rounded-xl border border-white/10 bg-black/30 p-3 text-sm text-zinc-500">No audit entries yet.</div>}
-          </div>
-        </section>
+      <aside id="publish" className="space-y-4 xl:sticky xl:top-16 xl:self-start">
+        <section className="rounded-2xl border border-red-900/40 bg-red-950/10 p-5"><h2 className="text-lg font-black">Publish & quality</h2><p className="mt-1 text-xs leading-5 text-zinc-500">Keep unverified records as drafts until the values are checked.</p><Toggle label="Active record" checked={form.active} onChange={(value) => update("active", value)} /><Toggle label="Published to customers" checked={form.published} onChange={(value) => update("published", value)} /><label className="mt-4 block text-xs font-black uppercase tracking-[0.12em] text-zinc-500">Verification<select value={form.verificationStatus} onChange={(event) => update("verificationStatus", event.target.value as FormState["verificationStatus"])} className="mt-2 h-12 w-full rounded-xl border border-white/10 bg-black/50 px-3 text-sm font-bold normal-case text-white outline-none focus:border-red-700"><option value="imported">Imported</option><option value="unverified">Unverified</option><option value="needs_review">Needs review</option><option value="verified">Verified</option><option value="rejected">Rejected</option></select></label><div className="mt-4"><Field label="Confidence score (0–100)" value={form.confidenceScore} onChange={(value) => update("confidenceScore", value)} type="number" /></div></section>
+        <ReviewList title="Validation" rows={payload.validations} empty="No validation entries for this record." warning /><ReviewList title="Audit history" rows={payload.audit} empty="No audit entries yet." />
       </aside>
     </div>
+
+    <div className="fixed inset-x-0 bottom-0 z-30 border-t border-white/10 bg-black/95 px-4 py-3 backdrop-blur"><div className="mx-auto flex max-w-[1440px] items-center justify-between gap-3"><div className={`text-sm font-black ${dirty ? "text-amber-300" : "text-zinc-500"}`}>{dirty ? "Unsaved changes" : "All changes saved"}</div><div className="flex gap-2"><button onClick={reset} disabled={!dirty || saving} className="h-11 rounded-xl border border-white/10 px-4 text-sm font-black disabled:opacity-40">Reset</button><button onClick={() => void save()} disabled={!dirty || saving} className="h-11 rounded-xl bg-[#b1121b] px-5 text-sm font-black disabled:opacity-40">{saving ? <Loader2 className="mr-2 inline h-4 w-4 animate-spin" /> : <Save className="mr-2 inline h-4 w-4" />}Save vehicle</button></div></div></div>
   </main>;
 }
 
-function Field({ label, value, onChange, type = "text" }: { label: string; value: string; onChange: (value: string) => void; type?: string }) {
-  return <label className="block text-xs font-black uppercase tracking-[0.14em] text-zinc-500">{label}<input type={type} value={value} onChange={(event) => onChange(event.target.value)} className="mt-2 h-12 w-full rounded-xl border border-white/10 bg-black/40 px-4 text-sm font-bold normal-case text-white outline-none focus:border-red-700" /></label>;
+function EditorSection({ id, icon, title, description, children }: { id: string; icon: ReactNode; title: string; description: string; children: ReactNode }) {
+  return <section id={id} className="scroll-mt-20 rounded-2xl border border-white/10 bg-white/[0.03] p-5"><div className="flex items-start gap-3"><span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-red-950/30 text-red-400">{icon}</span><div><h2 className="text-xl font-black">{title}</h2><p className="mt-1 text-sm text-zinc-500">{description}</p></div></div><div className="mt-5">{children}</div></section>;
+}
+
+function Field({ label, value, onChange, type = "text", required = false }: { label: string; value: string; onChange: (value: string) => void; type?: string; required?: boolean }) {
+  return <label className="block text-xs font-black uppercase tracking-[0.12em] text-zinc-500">{label}<input required={required} type={type} min={type === "number" ? 0 : undefined} value={value} onChange={(event) => onChange(event.target.value)} className="mt-2 h-12 w-full rounded-xl border border-white/10 bg-black/45 px-4 text-sm font-bold normal-case text-white outline-none focus:border-red-700" /></label>;
+}
+
+function StageField({ label, value, onChange, disabled }: { label: string; value: string; onChange: (value: string) => void; disabled: boolean }) {
+  return <label className="block text-[11px] font-black uppercase tracking-[0.1em] text-zinc-500">{label}<input type="number" min="1" disabled={disabled} value={value} onChange={(event) => onChange(event.target.value)} className="mt-2 h-11 w-full rounded-xl border border-white/10 bg-black/45 px-3 text-sm font-bold normal-case text-white outline-none focus:border-red-700 disabled:opacity-40" /></label>;
 }
 
 function TextArea({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
-  return <label className="block text-xs font-black uppercase tracking-[0.14em] text-zinc-500">{label}<textarea value={value} onChange={(event) => onChange(event.target.value)} className="mt-2 min-h-32 w-full resize-y rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-sm font-bold normal-case text-white outline-none focus:border-red-700" /></label>;
+  return <label className="block text-xs font-black uppercase tracking-[0.12em] text-zinc-500">{label}<textarea value={value} onChange={(event) => onChange(event.target.value)} className="mt-2 min-h-28 w-full resize-y rounded-xl border border-white/10 bg-black/45 px-4 py-3 text-sm font-bold normal-case text-white outline-none focus:border-red-700" /></label>;
+}
+
+function Toggle({ label, checked, onChange }: { label: string; checked: boolean; onChange: (checked: boolean) => void }) {
+  return <label className="mt-3 flex min-h-12 items-center justify-between rounded-xl border border-white/10 bg-black/35 px-4 text-sm font-black"><span>{label}</span><input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} className="h-5 w-5 accent-red-700" /></label>;
+}
+
+function ValueCard({ label, value }: { label: string; value: string }) {
+  return <div className="rounded-xl border border-white/10 bg-black/30 p-3"><div className="text-[11px] font-black uppercase tracking-[0.12em] text-zinc-500">{label}</div><div className="mt-1 text-lg font-black">{value}</div></div>;
+}
+
+function StatusBadge({ status, positive }: { status: string; positive: boolean }) {
+  return <span className={`rounded-full px-3 py-1 text-xs font-black ${positive ? "bg-emerald-950/30 text-emerald-300" : "bg-zinc-900 text-zinc-400"}`}>{status}</span>;
+}
+
+function ReviewList({ title, rows, empty, warning = false }: { title: string; rows: Array<Record<string, unknown>>; empty: string; warning?: boolean }) {
+  return <details className="rounded-2xl border border-white/10 bg-white/[0.03] p-5" open={warning && rows.length > 0}><summary className="cursor-pointer text-lg font-black">{title} <span className="ml-1 text-xs text-zinc-500">({rows.length})</span></summary><div className="mt-4 space-y-2">{rows.slice(0, 8).map((item, index) => <div key={String(item.id ?? index)} className={`rounded-xl border p-3 text-sm ${warning ? "border-amber-800/30 bg-amber-950/10 text-amber-100" : "border-white/10 bg-black/30 text-zinc-300"}`}><div className="font-black">{String(item.message ?? item.action ?? item.code ?? "Change")}</div>{item.created_at ? <div className="mt-1 text-xs text-zinc-600">{String(item.created_at)}</div> : null}</div>)}{!rows.length && <div className="rounded-xl border border-white/10 bg-black/30 p-3 text-sm text-zinc-500">{empty}</div>}</div></details>;
 }
