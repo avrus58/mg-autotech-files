@@ -31,23 +31,26 @@ test("admin dashboard snapshot rejects anonymous requests", async () => {
 
 test("a transient snapshot request failure keeps the loaded admin workspace visible", () => {
   const adminPage = readProjectFile("src", "app", "admin", "page.tsx");
+  const resilience = readProjectFile("src", "lib", "adminSyncResilience.ts");
 
-  assert.match(adminPage, /if \(!silent \|\| !hasLoadedAdminDataRef\.current\) \{\s*setAdminLoadError\(ADMIN_LOAD_ERROR_MESSAGE\)/);
+  assert.match(adminPage, /const hasVerifiedSnapshot = hasLoadedAdminDataRef\.current/);
+  assert.match(adminPage, /setAdminSyncIssue\(\{/);
+  assert.match(adminPage, /adminDataReady && adminSyncIssue/);
+  assert.match(resilience, /Verified data remains visible while recovery continues/);
   assert.doesNotMatch(adminPage, /ADMIN_SESSION_SYNC_ERROR_MESSAGE/);
   assert.doesNotMatch(adminPage, /router\.replace\("\/login\?redirect=\/admin"\)/);
   assert.doesNotMatch(adminPage, /setOrders\(\[\]\)/);
   assert.doesNotMatch(adminPage, /setCustomers\(\[\]\)/);
 });
 
-test("silent admin refresh failures preserve the verified workspace without a recurring warning", () => {
+test("silent admin refresh failures preserve verified data and surface a bounded warning", () => {
   const adminPage = readProjectFile("src", "app", "admin", "page.tsx");
 
-  assert.match(
-    adminPage,
-    /if \(!silent \|\| !hasLoadedAdminDataRef\.current\) setAdminLoadError\(ADMIN_LOAD_ERROR_MESSAGE\)/
-  );
-  assert.doesNotMatch(adminPage, /ADMIN_SYNC_ERROR_MESSAGE/);
-  assert.doesNotMatch(adminPage, /Admin sync needs retry/);
+  assert.match(adminPage, /getAdminSyncRetryDelay\(consecutiveFailures\)/);
+  assert.match(adminPage, /setAdminSyncState\("reconnecting"\)/);
+  assert.match(adminPage, /function AdminSyncWarningState/);
+  assert.match(adminPage, /Support reference/);
+  assert.doesNotMatch(adminPage, /setLastSyncAt\(null\)/);
 });
 
 test("admin polling avoids overlapping refreshes and pauses in hidden tabs", () => {
@@ -56,10 +59,16 @@ test("admin polling avoids overlapping refreshes and pauses in hidden tabs", () 
   assert.match(adminPage, /const adminRefreshInFlightRef = useRef\(false\)/);
   assert.match(adminPage, /adminRefreshInFlightRef\.current \|\|\s*document\.visibilityState !== "visible"/);
   assert.match(adminPage, /adminRefreshInFlightRef\.current = true/);
-  assert.match(adminPage, /loadAdminData\(\{ silent: true \}\)\.finally/);
   assert.match(adminPage, /adminRefreshInFlightRef\.current = false/);
+  assert.match(adminPage, /void loadAdminDataActionRef\.current\(\{ silent: hasLoadedAdminDataRef\.current, automatic: true \}\)/);
   assert.match(adminPage, /document\.addEventListener\("visibilitychange", handleVisibilityChange\)/);
   assert.match(adminPage, /document\.removeEventListener\("visibilitychange", handleVisibilityChange\)/);
+  assert.match(adminPage, /window\.addEventListener\("online", handleOnline\)/);
+  assert.match(adminPage, /window\.addEventListener\("offline", handleOffline\)/);
+  assert.match(adminPage, /window\.removeEventListener\("online", handleOnline\)/);
+  assert.match(adminPage, /window\.removeEventListener\("offline", handleOffline\)/);
+  assert.match(adminPage, /!recoveryEvent && adminRetryTimerRef\.current !== null/);
+  assert.doesNotMatch(adminPage, /!recoveryEvent && adminRetryFailureCountRef\.current > 0/);
 });
 
 test("verified admin snapshots cannot be replaced by empty, partial or older refresh data", () => {
@@ -80,7 +89,8 @@ test("verified admin snapshots cannot be replaced by empty, partial or older ref
   assert.match(adminPage, /loadSequence !== adminLoadSequenceRef\.current/);
   assert.match(adminPage, /hasAdminSnapshotRegression\(\s*knownOrderIdsRef\.current/);
   assert.match(adminPage, /hasAdminSnapshotRegression\(\s*knownCustomerIdsRef\.current/);
-  assert.match(adminPage, /previously verified admin snapshot/);
+  assert.match(adminPage, /Never replace a verified snapshot/);
+  assert.match(adminPage, /handleAdminSyncFailure\(\{ kind: "invalid_response"/);
   assert.doesNotMatch(adminPage, /setOrders\(\[\]\)/);
   assert.doesNotMatch(adminPage, /setCustomers\(\[\]\)/);
 });
@@ -94,6 +104,8 @@ test("admin authorization remains profile and permission based", () => {
   assert.match(adminPage, /authenticatedFetch\("\/api\/admin\/dashboard"/);
   assert.match(accessRoute, /requireStaffPermission\(request, "orders\.view"\)/);
   assert.match(dashboardRoute, /requireStaffPermission\(request, "orders\.view"\)/);
+  assert.match(dashboardRoute, /try \{\s*auth = await requireStaffPermission\(request, "orders\.view"\)/);
+  assert.match(dashboardRoute, /kind: "authorization_profile",\s*error: "Admin authorization could not be verified\."/);
   assert.match(accessRoute, /"Cache-Control": "private, no-store, max-age=0"/);
   assert.match(accessClassifier, /!isStaffMember\(access\)/);
   assert.match(accessClassifier, /!hasStaffPermission\(access, "orders\.view"\)/);
@@ -105,19 +117,18 @@ test("transient access API failures never become a false access denial", () => {
   const authGuards = readProjectFile("src", "lib", "authGuards.ts");
 
   assert.match(authGuards, /requestRetryDelays = \[0, 250, 650\]/);
-  assert.match(adminPage, /response = await authenticatedFetch\("\/api\/admin\/dashboard"/);
+  assert.match(adminPage, /const response = await authenticatedFetch\("\/api\/admin\/dashboard"/);
   assert.match(
     adminPage,
-    /} catch \{[\s\S]*?if \(!silent \|\| !hasLoadedAdminDataRef\.current\) \{\s*setAdminLoadError\(ADMIN_LOAD_ERROR_MESSAGE\)/
+    /errorMessage === AUTH_SESSION_REQUIRED_MESSAGE[\s\S]*?"session_required"[\s\S]*?errorMessage === AUTH_SESSION_RECOVERY_MESSAGE[\s\S]*?"session_recovery"/
   );
   assert.match(
     adminPage,
-    /if \(!response\.ok\) \{[\s\S]*?setAdminLoadError\(ADMIN_LOAD_ERROR_MESSAGE\)/
+    /if \(!response\.ok\) \{[\s\S]*?handleAdminSyncFailure\(\{ kind: failureKind/
   );
-  assert.doesNotMatch(
-    adminPage,
-    /} catch \{[\s\S]*?setAdminAccessDenied\(true\)[\s\S]*?if \(loadSequence !== adminLoadSequenceRef\.current\)/
-  );
+  const requestCatch = adminPage.match(/} catch \(error\) \{[\s\S]*?\n    } finally/)?.[0] ?? "";
+  assert.notEqual(requestCatch, "");
+  assert.doesNotMatch(requestCatch, /setAdminAccessDenied\(true\)/);
 });
 
 test("only a successful denied profile resolution closes the admin workspace", () => {
@@ -140,7 +151,7 @@ test("only a successful denied profile resolution closes the admin workspace", (
 test("admin refresh is visibility aware and uses a moderate fallback interval", () => {
   const adminPage = readProjectFile("src", "app", "admin", "page.tsx");
 
-  assert.match(adminPage, /window\.setInterval\(refreshAdminData, 20000\)/);
+  assert.match(adminPage, /const interval = window\.setInterval\(\(\) => \{[\s\S]*?hasLoadedAdminDataRef\.current[\s\S]*?refreshAdminData\(\)[\s\S]*?\}, 20000\)/);
   assert.doesNotMatch(adminPage, /window\.setInterval\(refreshAdminData, 10000\)/);
 });
 

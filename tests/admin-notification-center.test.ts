@@ -87,6 +87,10 @@ test("admin notification UI is persistent, responsive and derived from the admin
   assert.match(component, /Loading operations/);
   assert.match(component, /Operations are clear/);
   assert.match(component, /Queue connection unavailable/);
+  assert.match(component, /Admin notifications unavailable/);
+  assert.match(component, /hasVerifiedSnapshot \? summary\.activeAlerts : "—"/);
+  assert.match(component, /hasVerifiedSnapshot \? summary\.urgentAlerts : "—"/);
+  assert.match(component, /hasVerifiedSnapshot \? summary\.inProgress : "—"/);
   assert.match(component, /Recent order activity/);
   assert.match(component, /document\.addEventListener\("mousedown"/);
   assert.match(component, /event\.key === "Escape"/);

@@ -72,6 +72,12 @@ export function AdminNotificationCenter({
     () => getAdminNotificationSummary(orders, emailIssues),
     [orders, emailIssues]
   );
+  const hasVerifiedSnapshot = Boolean(lastSyncAt);
+  const notificationLabel = !hasVerifiedSnapshot && error
+    ? "Admin notifications unavailable"
+    : !hasVerifiedSnapshot
+      ? "Admin notifications connecting"
+      : `Admin notifications, ${summary.activeAlerts} active`;
 
   useEffect(() => {
     if (!open) return;
@@ -107,7 +113,7 @@ export function AdminNotificationCenter({
       <button
         type="button"
         onClick={() => setOpen((current) => !current)}
-        aria-label={`Admin notifications, ${summary.activeAlerts} active`}
+        aria-label={notificationLabel}
         aria-expanded={open}
         aria-haspopup="dialog"
         className={`relative flex h-11 w-11 items-center justify-center rounded-xl border text-white shadow-lg transition sm:h-12 sm:w-12 ${
@@ -163,15 +169,15 @@ export function AdminNotificationCenter({
 
             <div className="mt-4 grid grid-cols-3 gap-2">
               <div className="rounded-xl border border-red-800/30 bg-red-950/20 p-3">
-                <div className="text-xl font-black text-white">{summary.activeAlerts}</div>
+                <div className="text-xl font-black text-white">{hasVerifiedSnapshot ? summary.activeAlerts : "—"}</div>
                 <div className="mt-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-red-300">Active</div>
               </div>
               <div className="rounded-xl border border-amber-800/30 bg-amber-950/15 p-3">
-                <div className="text-xl font-black text-white">{summary.urgentAlerts}</div>
+                <div className="text-xl font-black text-white">{hasVerifiedSnapshot ? summary.urgentAlerts : "—"}</div>
                 <div className="mt-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-amber-300">Urgent</div>
               </div>
               <div className="rounded-xl border border-blue-800/30 bg-blue-950/15 p-3">
-                <div className="text-xl font-black text-white">{summary.inProgress}</div>
+                <div className="text-xl font-black text-white">{hasVerifiedSnapshot ? summary.inProgress : "—"}</div>
                 <div className="mt-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-blue-300">In work</div>
               </div>
             </div>

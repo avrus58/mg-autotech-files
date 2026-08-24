@@ -353,7 +353,7 @@ test("legacy admin order modal requires an explicit delivery estimate before sav
   assert.doesNotMatch(adminPage, /\?\?\s*"Usually around 30 min"/);
 });
 
-test("legacy admin dashboard protects initial loading and keeps silent refresh failures in the background", () => {
+test("legacy admin dashboard protects initial loading and exposes truthful recovery state", () => {
   const adminPage = readProjectFile("src", "app", "admin", "page.tsx");
   const dashboardRoute = readProjectFile("src", "app", "api", "admin", "dashboard", "route.ts");
 
@@ -363,25 +363,29 @@ test("legacy admin dashboard protects initial loading and keeps silent refresh f
   assert.match(adminPage, /const \[adminDataReady, setAdminDataReady\]/);
   assert.match(adminPage, /const hasLoadedAdminDataRef = useRef\(false\)/);
   assert.match(adminPage, /authenticatedFetch\("\/api\/admin\/dashboard"/);
-  assert.match(adminPage, /} catch \{[\s\S]*setAdminLoadError\(ADMIN_LOAD_ERROR_MESSAGE\)/);
-  assert.match(adminPage, /if \(!response\.ok\) \{[\s\S]*setAdminLoadError\(ADMIN_LOAD_ERROR_MESSAGE\)/);
+  assert.match(adminPage, /handleAdminSyncFailure\(\{ kind: failureKind/);
+  assert.match(adminPage, /AUTH_SESSION_RECOVERY_MESSAGE/);
+  assert.match(adminPage, /AUTH_SESSION_REQUIRED_MESSAGE/);
   assert.match(dashboardRoute, /requireStaffPermission\(request, "orders\.view"\)/);
   assert.match(dashboardRoute, /Admin dashboard orders could not be loaded/);
   assert.match(dashboardRoute, /Admin dashboard customers could not be loaded/);
   assert.match(adminPage, /hasLoadedAdminDataRef\.current = true/);
   assert.match(adminPage, /setAdminDataReady\(true\)/);
-  assert.match(adminPage, /const refreshAdminData = \(\) => \{/);
-  assert.match(adminPage, /!hasLoadedAdminDataRef\.current[\s\S]*adminRefreshInFlightRef\.current[\s\S]*document\.visibilityState !== "visible"/);
-  assert.match(adminPage, /void loadAdminData\(\{ silent: true \}\)\.finally/);
+  assert.match(adminPage, /const refreshAdminData = \(recoveryEvent = false\) => \{/);
+  assert.match(adminPage, /adminRefreshInFlightRef\.current[\s\S]*document\.visibilityState !== "visible"[\s\S]*!navigator\.onLine/);
+  assert.match(adminPage, /void loadAdminDataActionRef\.current\(\{ silent: hasLoadedAdminDataRef\.current, automatic: true \}\)/);
   assert.match(adminPage, /const showInitialAdminLoadError = Boolean\(adminLoadError && !adminDataReady\)/);
   assert.match(adminPage, /showInitialAdminLoadError \? \(/);
   assert.match(adminPage, /<AdminLoadErrorState/);
   assert.match(adminPage, /role="alert"[\s\S]*Admin data sync failed/);
   assert.match(adminPage, /The queue is not shown until orders and customers load successfully/);
-  assert.match(adminPage, /onRetry=\{\(\) => loadAdminData\(\)\}/);
+  assert.match(adminPage, /onRetry=\{\(\) => loadAdminData\(\{ manual: true \}\)\}/);
+  assert.match(adminPage, /adminDataReady \? stats\.total : "—"/);
+  assert.match(adminPage, /adminDataReady && \(\s*<AdminOperationsOverview/);
+  assert.doesNotMatch(adminPage, /: "Live Sync"/);
   assert.doesNotMatch(adminPage, /ADMIN_SYNC_ERROR_MESSAGE/);
   assert.doesNotMatch(adminPage, /Admin sync needs retry/);
-  assert.doesNotMatch(adminPage, /adminLoadError && adminDataReady/);
+  assert.match(adminPage, /adminDataReady && adminSyncIssue/);
   assert.doesNotMatch(adminPage, /supabase\.from\("orders"\)\.select\("\*"\)/);
   assert.doesNotMatch(adminPage, /supabase\s*\.from\("profiles"\)\s*\.select/);
 });

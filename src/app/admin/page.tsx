@@ -2,9 +2,23 @@
 
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { authenticatedFetch, getStableSession } from "@/lib/authGuards";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  AUTH_SESSION_RECOVERY_MESSAGE,
+  AUTH_SESSION_REQUIRED_MESSAGE,
+  authenticatedFetch,
+  getStableSession,
+} from "@/lib/authGuards";
 import { resolveAdminAccess } from "@/lib/adminAccessClient";
+import {
+  ADMIN_SYNC_INCIDENT_HEADER,
+  getAdminSyncPresentation,
+  getAdminSyncRetryDelay,
+  isRetryableAdminSyncFailure,
+  readAdminSyncIncidentCode,
+  type AdminSyncFailureKind,
+  type AdminSyncState,
+} from "@/lib/adminSyncResilience";
 import { supabase } from "@/lib/supabaseClient";
 import RequestChat from "@/components/RequestChat";
 import { AdminNotificationCenter } from "@/components/admin/AdminNotificationCenter";
@@ -66,6 +80,7 @@ import {
   HeartHandshake,
   KeyRound,
   Loader2,
+  LogIn,
   Lock,
   Mail,
   MapPin,
@@ -80,10 +95,12 @@ import {
   Settings,
   ShieldCheck,
   Tags,
+  TriangleAlert,
   Upload,
   User,
   Users,
   WandSparkles,
+  WifiOff,
   Wrench,
   X,
 } from "lucide-react";
@@ -209,6 +226,14 @@ const accountStatusOptions = ["active", "suspended", "blocked"];
 const adminOrdersPageSize = 15;
 const ADMIN_LOAD_ERROR_MESSAGE =
   "Admin operations could not be loaded. Retry before treating the queue as empty.";
+type AdminSyncIssue = {
+  kind: AdminSyncFailureKind;
+  incidentCode: string | null;
+  consecutiveFailures: number;
+  retryDelayMs: number | null;
+};
+type AdminLoadOptions = { silent?: boolean; automatic?: boolean; manual?: boolean };
+type AdminSyncFailureInput = { kind: AdminSyncFailureKind; incidentCode?: string | null };
 type AdminOrderGroup = "open" | "completed" | "cancelled" | "all";
 
 type AdminStats = {
@@ -368,6 +393,13 @@ function formatDate(value: string | null) {
   });
 }
 
+function adminSyncToneClass(tone: ReturnType<typeof getAdminSyncPresentation>["tone"]) {
+  if (tone === "success") return "border-emerald-700/30 bg-emerald-950/20 text-emerald-300";
+  if (tone === "warning") return "border-amber-700/35 bg-amber-950/20 text-amber-200";
+  if (tone === "danger") return "border-red-700/40 bg-red-950/25 text-red-200";
+  return "border-white/10 bg-white/[0.04] text-zinc-300";
+}
+
 function shortId(id: string) {
   return id.slice(0, 8).toUpperCase();
 }
@@ -503,6 +535,8 @@ export default function AdminPage() {
   const [uploadingModifiedId, setUploadingModifiedId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [adminLoadError, setAdminLoadError] = useState("");
+  const [adminSyncIssue, setAdminSyncIssue] = useState<AdminSyncIssue | null>(null);
+  const [adminSyncState, setAdminSyncState] = useState<AdminSyncState>("connecting");
   const [adminDataReady, setAdminDataReady] = useState(false);
   const [autoRefreshing, setAutoRefreshing] = useState(false);
   const [newOrderNotice, setNewOrderNotice] = useState("");
@@ -516,179 +550,331 @@ export default function AdminPage() {
   const hasLoadedAdminDataRef = useRef(false);
   const adminRefreshInFlightRef = useRef(false);
   const adminLoadSequenceRef = useRef(0);
+  const adminRetryTimerRef = useRef<number | null>(null);
+  const adminRetryFailureCountRef = useRef(0);
+  const adminPageMountedRef = useRef(false);
+  const loadAdminDataActionRef = useRef<(options?: AdminLoadOptions) => Promise<void>>(async () => undefined);
+  const handleAdminSyncFailureActionRef = useRef<(input: AdminSyncFailureInput) => void>(() => undefined);
   const creditAdjustmentGuardRef = useRef(new StaffCreditAdjustmentOperationGuard());
 
-  async function loadAdminData(options?: { silent?: boolean }) {
+  const clearAdminRetryTimer = useCallback(() => {
+    if (adminRetryTimerRef.current !== null) {
+      window.clearTimeout(adminRetryTimerRef.current);
+      adminRetryTimerRef.current = null;
+    }
+  }, []);
+
+  const resetAdminRetryBudget = useCallback(() => {
+    clearAdminRetryTimer();
+    adminRetryFailureCountRef.current = 0;
+  }, [clearAdminRetryTimer]);
+
+  const handleAdminSyncFailure = useCallback((input: AdminSyncFailureInput) => {
+    const incidentCode = readAdminSyncIncidentCode(input.incidentCode);
+    const hasVerifiedSnapshot = hasLoadedAdminDataRef.current;
+
+    if (input.kind === "offline") {
+      clearAdminRetryTimer();
+      setAdminLoadError("This device is offline. Verified admin data will remain visible and sync will resume automatically when the connection returns.");
+      setAdminSyncIssue({
+        kind: input.kind,
+        incidentCode,
+        consecutiveFailures: adminRetryFailureCountRef.current,
+        retryDelayMs: null,
+      });
+      setAdminSyncState("offline");
+      return;
+    }
+
+    if (input.kind === "session_required") {
+      resetAdminRetryBudget();
+      setAdminLoadError(AUTH_SESSION_REQUIRED_MESSAGE);
+      setAdminSyncIssue({
+        kind: input.kind,
+        incidentCode,
+        consecutiveFailures: 0,
+        retryDelayMs: null,
+      });
+      setAdminSyncState("session_required");
+      return;
+    }
+
+    const consecutiveFailures = adminRetryFailureCountRef.current + 1;
+    adminRetryFailureCountRef.current = consecutiveFailures;
+    const retryDelayMs = isRetryableAdminSyncFailure(input.kind)
+      ? getAdminSyncRetryDelay(consecutiveFailures)
+      : null;
+
+    setAdminLoadError(
+      input.kind === "session_recovery"
+        ? AUTH_SESSION_RECOVERY_MESSAGE
+        : ADMIN_LOAD_ERROR_MESSAGE
+    );
+    setAdminSyncIssue({
+      kind: input.kind,
+      incidentCode,
+      consecutiveFailures,
+      retryDelayMs,
+    });
+
+    if (input.kind === "session_recovery" && retryDelayMs !== null) {
+      setAdminSyncState("session_recovering");
+    } else if (retryDelayMs !== null) {
+      setAdminSyncState("reconnecting");
+    } else {
+      setAdminSyncState(hasVerifiedSnapshot ? "degraded" : "unavailable");
+    }
+
+    clearAdminRetryTimer();
+    if (retryDelayMs === null) return;
+
+    adminRetryTimerRef.current = window.setTimeout(() => {
+      adminRetryTimerRef.current = null;
+      if (!adminPageMountedRef.current) return;
+      if (!navigator.onLine) {
+        handleAdminSyncFailureActionRef.current({ kind: "offline", incidentCode });
+        return;
+      }
+      if (document.visibilityState !== "visible") {
+        setAdminSyncState(hasLoadedAdminDataRef.current ? "degraded" : "reconnecting");
+        return;
+      }
+      void loadAdminDataActionRef.current({ silent: hasLoadedAdminDataRef.current, automatic: true });
+    }, retryDelayMs);
+  }, [clearAdminRetryTimer, resetAdminRetryBudget]);
+
+  const loadAdminData = useCallback(async (options?: AdminLoadOptions) => {
+    if (adminRefreshInFlightRef.current) return;
+    if (options?.manual) {
+      resetAdminRetryBudget();
+      setAdminLoadError("");
+      setAdminSyncIssue(null);
+    }
+
     const loadSequence = ++adminLoadSequenceRef.current;
-    const silent = Boolean(options?.silent);
+    const hasVerifiedSnapshot = hasLoadedAdminDataRef.current;
+    const silent = Boolean(options?.silent || options?.automatic || hasVerifiedSnapshot);
+    adminRefreshInFlightRef.current = true;
     if (silent) setAutoRefreshing(true);
     else setLoading(true);
     setMessage("");
-    setAdminLoadError("");
+    setAdminSyncState(hasVerifiedSnapshot ? "syncing" : options?.automatic ? "reconnecting" : "connecting");
 
-    let response: Response;
     try {
-      response = await authenticatedFetch("/api/admin/dashboard", {
-        cache: "no-store",
-      });
-    } catch {
-      if (loadSequence !== adminLoadSequenceRef.current) return;
-      if (!silent || !hasLoadedAdminDataRef.current) {
-        setAdminLoadError(ADMIN_LOAD_ERROR_MESSAGE);
-      }
-      setLoading(false);
-      setAutoRefreshing(false);
-      return;
-    }
-
-    if (loadSequence !== adminLoadSequenceRef.current) return;
-
-    if (response.status === 403) {
-      const accessResolution = await resolveAdminAccess();
-      if (loadSequence !== adminLoadSequenceRef.current) return;
-
-      if (accessResolution.state === "denied") {
-        setAdminAccess(null);
-        setAdminAccessDenied(true);
-        setAdminDataReady(false);
-        setAdminLoadError("");
-        setLoading(false);
-        setAutoRefreshing(false);
+      if (!navigator.onLine) {
+        handleAdminSyncFailure({ kind: "offline" });
         return;
       }
 
-      if (accessResolution.state === "authorized") {
-        setAdminAccess(accessResolution.access);
-        setAdminAccessDenied(false);
+      const response = await authenticatedFetch("/api/admin/dashboard", {
+        cache: "no-store",
+      });
+      if (loadSequence !== adminLoadSequenceRef.current) return;
+
+      const payload = await response.json().catch(() => null) as {
+        access?: StaffAccess;
+        orders?: Order[];
+        customers?: Profile[];
+        emailIssues?: AdminEmailDeliveryIssue[];
+        incidentCode?: unknown;
+      } | null;
+      const responseIncidentCode = readAdminSyncIncidentCode(
+        response.headers.get(ADMIN_SYNC_INCIDENT_HEADER)
+      ) ?? readAdminSyncIncidentCode(payload?.incidentCode);
+
+      if (response.status === 403) {
+        const accessResolution = await resolveAdminAccess();
+        if (loadSequence !== adminLoadSequenceRef.current) return;
+
+        if (accessResolution.state === "denied") {
+          resetAdminRetryBudget();
+          setAdminAccess(null);
+          setAdminAccessDenied(true);
+          setAdminDataReady(false);
+          setAdminLoadError("");
+          setAdminSyncIssue(null);
+          return;
+        }
+
+        if (accessResolution.state === "authorized") {
+          setAdminAccess(accessResolution.access);
+          setAdminAccessDenied(false);
+          handleAdminSyncFailure({ kind: "session_recovery", incidentCode: responseIncidentCode });
+        } else {
+          handleAdminSyncFailure({ kind: "network", incidentCode: responseIncidentCode });
+        }
+        return;
       }
-      if (!silent || !hasLoadedAdminDataRef.current) {
-        setAdminLoadError(ADMIN_LOAD_ERROR_MESSAGE);
+
+      if (!response.ok) {
+        const failureKind: AdminSyncFailureKind = response.status === 429
+          ? "rate_limited"
+          : response.status >= 500
+            ? "server"
+            : "invalid_response";
+        handleAdminSyncFailure({ kind: failureKind, incidentCode: responseIncidentCode });
+        return;
       }
-      setLoading(false);
-      setAutoRefreshing(false);
-      return;
-    }
 
-    if (!response.ok) {
-      if (!silent || !hasLoadedAdminDataRef.current) setAdminLoadError(ADMIN_LOAD_ERROR_MESSAGE);
-      setLoading(false);
-      setAutoRefreshing(false);
-      return;
-    }
-
-    const payload = await response.json().catch(() => null) as {
-      access?: StaffAccess;
-      orders?: Order[];
-      customers?: Profile[];
-      emailIssues?: AdminEmailDeliveryIssue[];
-    } | null;
-    if (
-      loadSequence !== adminLoadSequenceRef.current ||
-      !payload?.access ||
-      !Array.isArray(payload.orders) ||
-      !Array.isArray(payload.customers)
-    ) {
-      if (!silent || !hasLoadedAdminDataRef.current) setAdminLoadError(ADMIN_LOAD_ERROR_MESSAGE);
-      setLoading(false);
-      setAutoRefreshing(false);
-      return;
-    }
-
-    const access = payload.access;
-    const nextOrders = payload.orders;
-    const nextCustomers = payload.customers;
-    const nextEmailIssues = Array.isArray(payload.emailIssues) ? payload.emailIssues : [];
-    setAdminAccess(access);
-    setAdminAccessDenied(false);
-    if (!silent && window.location.hash === "#customers" && hasStaffPermission(access, "customers.view")) {
-      setActiveTab("customers");
-    }
-    const orderSnapshotRegressed = hasAdminSnapshotRegression(
-      knownOrderIdsRef.current,
-      nextOrders.map((order) => order.id)
-    );
-    const customerSnapshotRegressed = hasStaffPermission(access, "customers.view") && hasAdminSnapshotRegression(
-      knownCustomerIdsRef.current,
-      nextCustomers.map((customer) => customer.id)
-    );
-
-    if (hasLoadedAdminDataRef.current && (orderSnapshotRegressed || customerSnapshotRegressed)) {
-      // Browser RLS can briefly return an empty or partial successful result
-      // while its refreshed token is being synchronized. Never replace a
-      // previously verified admin snapshot with that transient regression.
-      setLoading(false);
-      setAutoRefreshing(false);
-      return;
-    }
-
-    if (initialOrdersLoadedRef.current) {
-      const previousIds = knownOrderIdsRef.current;
-      const newOrders = nextOrders.filter((order) => !previousIds.has(order.id));
-      if (newOrders.length > 0) {
-        const newestOrder = newOrders[0];
-        const vehicle = [newestOrder.vehicle_brand, newestOrder.vehicle_model].filter(Boolean).join(" ");
-        setNewOrderNotice(`${newOrders.length} new request${newOrders.length > 1 ? "s" : ""} received${vehicle ? ` · ${vehicle}` : ""}`);
-        playAdminNotificationSound();
-        window.setTimeout(() => setNewOrderNotice(""), 9000);
+      if (
+        !payload?.access ||
+        !Array.isArray(payload.orders) ||
+        !Array.isArray(payload.customers)
+      ) {
+        handleAdminSyncFailure({ kind: "invalid_response", incidentCode: responseIncidentCode });
+        return;
       }
+
+      const access = payload.access;
+      const nextOrders = payload.orders;
+      const nextCustomers = payload.customers;
+      const nextEmailIssues = Array.isArray(payload.emailIssues) ? payload.emailIssues : [];
+      setAdminAccess(access);
+      setAdminAccessDenied(false);
+      if (!silent && window.location.hash === "#customers" && hasStaffPermission(access, "customers.view")) {
+        setActiveTab("customers");
+      }
+      const orderSnapshotRegressed = hasAdminSnapshotRegression(
+        knownOrderIdsRef.current,
+        nextOrders.map((order) => order.id)
+      );
+      const customerSnapshotRegressed = hasStaffPermission(access, "customers.view") && hasAdminSnapshotRegression(
+        knownCustomerIdsRef.current,
+        nextCustomers.map((customer) => customer.id)
+      );
+
+      if (hasLoadedAdminDataRef.current && (orderSnapshotRegressed || customerSnapshotRegressed)) {
+        // Never replace a verified snapshot with a transient empty/partial
+        // response while a refreshed token or read replica catches up.
+        handleAdminSyncFailure({ kind: "invalid_response", incidentCode: responseIncidentCode });
+        return;
+      }
+
+      if (initialOrdersLoadedRef.current) {
+        const previousIds = knownOrderIdsRef.current;
+        const newOrders = nextOrders.filter((order) => !previousIds.has(order.id));
+        if (newOrders.length > 0) {
+          const newestOrder = newOrders[0];
+          const vehicle = [newestOrder.vehicle_brand, newestOrder.vehicle_model].filter(Boolean).join(" ");
+          setNewOrderNotice(`${newOrders.length} new request${newOrders.length > 1 ? "s" : ""} received${vehicle ? ` · ${vehicle}` : ""}`);
+          playAdminNotificationSound();
+          window.setTimeout(() => setNewOrderNotice(""), 9000);
+        }
+      }
+
+      knownOrderIdsRef.current = new Set(nextOrders.map((order) => order.id));
+      knownCustomerIdsRef.current = new Set(nextCustomers.map((customer) => customer.id));
+      initialOrdersLoadedRef.current = true;
+      hasLoadedAdminDataRef.current = true;
+      resetAdminRetryBudget();
+
+      setOrders(nextOrders);
+      setCustomers(nextCustomers);
+      setEmailDeliveryIssues(nextEmailIssues);
+      setSelectedOrder((current) => (current ? nextOrders.find((order) => order.id === current.id) ?? current : null));
+      setSelectedCustomer((current) => {
+        if (!current) return null;
+        const updated = nextCustomers.find((customer) => customer.id === current.id) ?? current;
+        setCustomerForm(makeCustomerForm(updated));
+        return updated;
+      });
+      setAdminLoadError("");
+      setAdminSyncIssue(null);
+      setAdminDataReady(true);
+      setLastSyncAt(new Date());
+      setAdminSyncState("live");
+    } catch (error) {
+      if (loadSequence !== adminLoadSequenceRef.current) return;
+      const errorMessage = error instanceof Error ? error.message : "";
+      const failureKind: AdminSyncFailureKind = !navigator.onLine
+        ? "offline"
+        : errorMessage === AUTH_SESSION_REQUIRED_MESSAGE
+          ? "session_required"
+          : errorMessage === AUTH_SESSION_RECOVERY_MESSAGE
+            ? "session_recovery"
+            : "network";
+      handleAdminSyncFailure({ kind: failureKind });
+    } finally {
+      if (loadSequence === adminLoadSequenceRef.current) {
+        setLoading(false);
+        setAutoRefreshing(false);
+      }
+      adminRefreshInFlightRef.current = false;
     }
-
-    knownOrderIdsRef.current = new Set(nextOrders.map((order) => order.id));
-    knownCustomerIdsRef.current = new Set(nextCustomers.map((customer) => customer.id));
-    initialOrdersLoadedRef.current = true;
-    hasLoadedAdminDataRef.current = true;
-
-    setOrders(nextOrders);
-    setCustomers(nextCustomers);
-    setEmailDeliveryIssues(nextEmailIssues);
-    setSelectedOrder((current) => (current ? nextOrders.find((order) => order.id === current.id) ?? current : null));
-    setSelectedCustomer((current) => {
-      if (!current) return null;
-      const updated = nextCustomers.find((customer) => customer.id === current.id) ?? current;
-      setCustomerForm(makeCustomerForm(updated));
-      return updated;
-    });
-    setAdminLoadError("");
-    setAdminDataReady(true);
-    setLastSyncAt(new Date());
-    setLoading(false);
-    setAutoRefreshing(false);
-  }
+  }, [handleAdminSyncFailure, resetAdminRetryBudget]);
 
   useEffect(() => {
-    const timeout = window.setTimeout(() => { void loadAdminData(); }, 0);
-    return () => window.clearTimeout(timeout);
+    loadAdminDataActionRef.current = loadAdminData;
+    handleAdminSyncFailureActionRef.current = handleAdminSyncFailure;
+  }, [loadAdminData, handleAdminSyncFailure]);
+
+  useEffect(() => {
+    adminPageMountedRef.current = true;
+    const timeout = window.setTimeout(() => {
+      if (navigator.onLine) void loadAdminDataActionRef.current({ manual: true });
+      else {
+        setLoading(false);
+        handleAdminSyncFailureActionRef.current({ kind: "offline" });
+      }
+    }, 0);
+    return () => {
+      adminPageMountedRef.current = false;
+      window.clearTimeout(timeout);
+      if (adminRetryTimerRef.current !== null) {
+        window.clearTimeout(adminRetryTimerRef.current);
+        adminRetryTimerRef.current = null;
+      }
+    };
   }, []);
 
   useEffect(() => {
-    const refreshAdminData = () => {
+    const refreshAdminData = (recoveryEvent = false) => {
       if (
-        !hasLoadedAdminDataRef.current ||
         adminRefreshInFlightRef.current ||
-        document.visibilityState !== "visible"
+        document.visibilityState !== "visible" ||
+        !navigator.onLine ||
+        (!recoveryEvent && adminRetryTimerRef.current !== null)
       ) {
         return;
       }
 
-      adminRefreshInFlightRef.current = true;
-      void loadAdminData({ silent: true }).finally(() => {
-        adminRefreshInFlightRef.current = false;
-      });
+      if (adminRetryTimerRef.current !== null) {
+        window.clearTimeout(adminRetryTimerRef.current);
+        adminRetryTimerRef.current = null;
+      }
+      void loadAdminDataActionRef.current({ silent: hasLoadedAdminDataRef.current, automatic: true });
     };
 
-    // Realtime actions and visibility recovery provide the immediate path;
-    // this slower safety poll avoids continuously reloading the entire admin
-    // snapshot on laptops and mobile networks.
-    const interval = window.setInterval(refreshAdminData, 20000);
+    // Successful snapshots keep a low-frequency safety poll. Connection and
+    // visibility events recover immediately even before the first success.
+    const interval = window.setInterval(() => {
+      if (hasLoadedAdminDataRef.current) refreshAdminData();
+    }, 20000);
     const handleVisibilityChange = () => {
-      if (document.visibilityState === "visible") refreshAdminData();
+      if (document.visibilityState === "visible") refreshAdminData(true);
+    };
+    const handleOnline = () => {
+      if (adminRetryTimerRef.current !== null) {
+        window.clearTimeout(adminRetryTimerRef.current);
+        adminRetryTimerRef.current = null;
+      }
+      adminRetryFailureCountRef.current = 0;
+      setAdminSyncState(hasLoadedAdminDataRef.current ? "syncing" : "reconnecting");
+      refreshAdminData(true);
+    };
+    const handleOffline = () => {
+      handleAdminSyncFailureActionRef.current({ kind: "offline" });
     };
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
 
     return () => {
       window.clearInterval(interval);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
     };
   }, []);
 
@@ -828,6 +1014,14 @@ export default function AdminPage() {
   }
 
   const showInitialAdminLoadError = Boolean(adminLoadError && !adminDataReady);
+  const lastSyncLabel = lastSyncAt
+    ? lastSyncAt.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })
+    : null;
+  const adminSyncPresentation = getAdminSyncPresentation({
+    state: adminSyncState,
+    lastSyncLabel,
+    retryDelayMs: adminSyncIssue?.retryDelayMs,
+  });
 
   async function openCustomer(customer: Profile) {
     setSelectedCustomer(customer);
@@ -1268,9 +1462,9 @@ export default function AdminPage() {
   if (loading) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-[#050505] text-white">
-        <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] px-6 py-5">
+        <div role="status" aria-live="polite" className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] px-6 py-5">
           <Loader2 className="h-5 w-5 animate-spin text-red-500" />
-          Loading admin panel...
+          {adminSyncPresentation.label}
         </div>
       </main>
     );
@@ -1308,8 +1502,13 @@ export default function AdminPage() {
           </div>
 
           <div className="flex shrink-0 items-center gap-2">
-            <div className="hidden rounded-xl border border-emerald-700/30 bg-emerald-950/20 px-4 py-3 text-xs font-black text-emerald-300 lg:block">
-              {autoRefreshing ? "Syncing..." : lastSyncAt ? `Synced ${lastSyncAt.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}` : "Live Sync"}
+            <div
+              role="status"
+              aria-live="polite"
+              title={adminSyncPresentation.detail}
+              className={`hidden rounded-xl border px-4 py-3 text-xs font-black md:block ${adminSyncToneClass(adminSyncPresentation.tone)}`}
+            >
+              {adminSyncPresentation.label}
             </div>
             <AdminNotificationCenter
               orders={orders}
@@ -1318,15 +1517,15 @@ export default function AdminPage() {
               refreshing={autoRefreshing}
               error={adminLoadError}
               lastSyncAt={lastSyncAt}
-              onRefresh={() => { void loadAdminData({ silent: adminDataReady }); }}
+              onRefresh={() => { void loadAdminData({ silent: adminDataReady, manual: true }); }}
               onOpenOrder={(orderId) => {
                 const order = orders.find((candidate) => candidate.id === orderId);
                 if (order) setSelectedOrder(order);
               }}
               onFilterQueue={focusOrderQueue}
             />
-            <button onClick={() => loadAdminData()} className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-3 text-sm font-bold text-white transition hover:bg-white/10 sm:px-4">
-              <RefreshCcw className={`mr-2 inline h-4 w-4 ${autoRefreshing ? "animate-spin" : ""}`} />
+            <button onClick={() => loadAdminData({ silent: adminDataReady, manual: true })} disabled={loading || autoRefreshing} className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-3 text-sm font-bold text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60 sm:px-4">
+              <RefreshCcw className={`mr-2 inline h-4 w-4 ${loading || autoRefreshing ? "animate-spin" : ""}`} />
               <span className="hidden sm:inline">Refresh</span>
             </button>
             <Link href="/dashboard" className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-3 text-sm font-bold text-white transition hover:bg-white/10 sm:px-4">
@@ -1344,7 +1543,7 @@ export default function AdminPage() {
             <div className="mt-1 text-lg font-black text-white">Operations</div>
           </div>
           <nav className="space-y-2">
-            <SidebarButton active={activeTab === "orders"} icon={<FileCode2 />} label="Orders" count={stats.total} onClick={() => setActiveTab("orders")} />
+            <SidebarButton active={activeTab === "orders"} icon={<FileCode2 />} label="Orders" count={adminDataReady ? stats.total : "—"} onClick={() => setActiveTab("orders")} />
             {hasStaffPermission(adminAccess, "orders.view") && (
               <Link
                 href="/admin/operations"
@@ -1406,7 +1605,7 @@ export default function AdminPage() {
               </Link>
             )}
             {hasStaffPermission(adminAccess, "customers.view") && (
-              <SidebarButton active={activeTab === "customers"} icon={<Users />} label="Customers" count={stats.customers} onClick={() => setActiveTab("customers")} />
+              <SidebarButton active={activeTab === "customers"} icon={<Users />} label="Customers" count={adminDataReady ? stats.customers : "—"} onClick={() => setActiveTab("customers")} />
             )}
             {hasStaffPermission(adminAccess, "file_expert.manage") && (
               <Link
@@ -1496,8 +1695,8 @@ export default function AdminPage() {
           <div className="mt-5 rounded-2xl border border-red-900/40 bg-red-950/20 p-4">
             <div className="text-xs font-black uppercase tracking-[0.18em] text-red-300">Open Work</div>
             <div className="mt-3 grid grid-cols-2 gap-2 text-center">
-              <MiniStat label="New" value={stats.newRequests} />
-              <MiniStat label="Progress" value={stats.inProgress} />
+              <MiniStat label="New" value={adminDataReady ? stats.newRequests : "—"} />
+              <MiniStat label="Progress" value={adminDataReady ? stats.inProgress : "—"} />
             </div>
           </div>
         </aside>
@@ -1506,21 +1705,32 @@ export default function AdminPage() {
           <div className="mb-5">
             <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-red-800/50 bg-red-950/25 px-4 py-2 text-sm font-semibold text-red-100">
               <Database className="h-4 w-4 text-red-500" />
-              Live management
+              Admin operations
             </div>
             <h1 className="text-3xl font-black md:text-4xl">Admin <span className="text-red-600">Control Panel</span></h1>
             <p className="mt-2 max-w-3xl text-sm text-zinc-400">Live orders, queue priorities and operational controls in one workspace.</p>
           </div>
 
-          <AdminOperationsOverview
-            stats={stats}
-            latestOrders={latestOrders}
-            customerById={customerById}
-            lastSyncAt={lastSyncAt}
-            commandLinks={adminCommandLinks}
-            onFilter={focusOrderQueue}
-            onOpenOrder={setSelectedOrder}
-          />
+          {adminDataReady && adminSyncIssue && (
+            <AdminSyncWarningState
+              presentation={adminSyncPresentation}
+              issue={adminSyncIssue}
+              retrying={autoRefreshing}
+              onRetry={() => loadAdminData({ silent: true, manual: true })}
+            />
+          )}
+
+          {adminDataReady && (
+            <AdminOperationsOverview
+              stats={stats}
+              latestOrders={latestOrders}
+              customerById={customerById}
+              lastSyncAt={lastSyncAt}
+              commandLinks={adminCommandLinks}
+              onFilter={focusOrderQueue}
+              onOpenOrder={setSelectedOrder}
+            />
+          )}
 
           {newOrderNotice && (
             <div className="mb-6 flex items-center gap-3 rounded-2xl border border-emerald-700/40 bg-emerald-950/30 p-4 text-sm font-black text-emerald-200 shadow-xl shadow-emerald-950/20">
@@ -1536,8 +1746,10 @@ export default function AdminPage() {
           {showInitialAdminLoadError ? (
             <AdminLoadErrorState
               message={adminLoadError}
+              presentation={adminSyncPresentation}
+              issue={adminSyncIssue}
               retrying={loading || autoRefreshing}
-              onRetry={() => loadAdminData()}
+              onRetry={() => loadAdminData({ manual: true })}
             />
           ) : activeTab === "orders" ? (
             <OrdersPanel
@@ -1626,29 +1838,109 @@ export default function AdminPage() {
   );
 }
 
-function AdminLoadErrorState({ message, retrying, onRetry }: { message: string; retrying: boolean; onRetry: () => void }) {
+function AdminSyncWarningState({
+  presentation,
+  issue,
+  retrying,
+  onRetry,
+}: {
+  presentation: ReturnType<typeof getAdminSyncPresentation>;
+  issue: AdminSyncIssue;
+  retrying: boolean;
+  onRetry: () => void;
+}) {
+  return (
+    <section role="alert" className="mb-5 rounded-lg border border-amber-700/35 bg-amber-950/15 p-4 text-amber-100">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex min-w-0 items-start gap-3">
+          {issue.kind === "offline" ? (
+            <WifiOff className="mt-0.5 h-5 w-5 shrink-0 text-amber-300" />
+          ) : (
+            <TriangleAlert className="mt-0.5 h-5 w-5 shrink-0 text-amber-300" />
+          )}
+          <div className="min-w-0">
+            <div className="font-black text-white">{presentation.label}</div>
+            <p className="mt-1 text-sm leading-6 text-amber-100/75">{presentation.detail}</p>
+            {issue.incidentCode && (
+              <p className="mt-1 text-xs text-zinc-500">
+                Support reference <code className="font-black text-zinc-300">{issue.incidentCode}</code>
+              </p>
+            )}
+          </div>
+        </div>
+        {issue.kind === "session_required" ? (
+          <Link href="/login?redirect=%2Fadmin" className="inline-flex h-10 shrink-0 items-center justify-center rounded-xl bg-red-600 px-4 text-sm font-black text-white transition hover:bg-red-500">
+            <LogIn className="mr-2 h-4 w-4" /> Sign in again
+          </Link>
+        ) : (
+          <button type="button" onClick={onRetry} disabled={retrying} className="inline-flex h-10 shrink-0 items-center justify-center rounded-xl border border-amber-500/30 bg-amber-950/30 px-4 text-sm font-black text-white transition hover:bg-amber-900/40 disabled:cursor-not-allowed disabled:opacity-60">
+            <RefreshCcw className={`mr-2 h-4 w-4 ${retrying ? "animate-spin" : ""}`} /> Retry now
+          </button>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function AdminLoadErrorState({
+  message,
+  presentation,
+  issue,
+  retrying,
+  onRetry,
+}: {
+  message: string;
+  presentation: ReturnType<typeof getAdminSyncPresentation>;
+  issue: AdminSyncIssue | null;
+  retrying: boolean;
+  onRetry: () => void;
+}) {
+  const retrySeconds = issue?.retryDelayMs ? Math.ceil(issue.retryDelayMs / 1_000) : null;
+  const title = issue?.kind === "session_required"
+    ? "Secure session ended"
+    : issue?.kind === "offline"
+      ? "Admin panel is offline"
+      : "Admin data sync failed";
+
   return (
     <section role="alert" className="rounded-[2rem] border border-red-800/50 bg-red-950/20 p-6 text-red-100 sm:p-8">
       <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl border border-red-700/40 bg-red-950/40 text-red-200">
-            <Database className="h-6 w-6" />
+            {issue?.kind === "offline" ? <WifiOff className="h-6 w-6" /> : <Database className="h-6 w-6" />}
           </div>
-          <h2 className="break-words text-2xl font-black text-white">Admin data sync failed</h2>
+          <h2 className="break-words text-2xl font-black text-white">{title}</h2>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-red-100/80">{message}</p>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-400">
             The queue is not shown until orders and customers load successfully, so this screen cannot be mistaken for an empty operation list.
           </p>
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-400">{presentation.detail}</p>
+          {retrySeconds && (
+            <p className="mt-2 text-sm font-bold text-amber-200">
+              Automatic retry in {retrySeconds} seconds · attempt {Math.min((issue?.consecutiveFailures ?? 0) + 1, 4)} of 4
+            </p>
+          )}
+          {issue?.incidentCode && (
+            <p className="mt-3 text-xs text-zinc-500">
+              Support reference <code className="font-black text-zinc-300">{issue.incidentCode}</code>
+            </p>
+          )}
         </div>
-        <button
-          type="button"
-          onClick={onRetry}
-          disabled={retrying}
-          className="inline-flex h-11 shrink-0 items-center justify-center rounded-xl border border-red-500/40 bg-red-600 px-4 text-sm font-black text-white transition hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          <RefreshCcw className={`mr-2 h-4 w-4 ${retrying ? "animate-spin" : ""}`} />
-          Try again
-        </button>
+        {issue?.kind === "session_required" ? (
+          <Link href="/login?redirect=%2Fadmin" className="inline-flex h-11 shrink-0 items-center justify-center rounded-xl border border-red-500/40 bg-red-600 px-4 text-sm font-black text-white transition hover:bg-red-500">
+            <LogIn className="mr-2 h-4 w-4" /> Sign in again
+          </Link>
+        ) : (
+          <button
+            type="button"
+            onClick={onRetry}
+            disabled={retrying}
+            className="inline-flex h-11 shrink-0 items-center justify-center rounded-xl border border-red-500/40 bg-red-600 px-4 text-sm font-black text-white transition hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <RefreshCcw className={`mr-2 h-4 w-4 ${retrying ? "animate-spin" : ""}`} />
+            Try again
+          </button>
+        )}
       </div>
     </section>
   );
@@ -2567,7 +2859,7 @@ function CustomerPasswordSecurityPanel({
   );
 }
 
-function SidebarButton({ active, icon, label, count, onClick }: { active: boolean; icon: ReactNode; label: string; count: number; onClick: () => void }) {
+function SidebarButton({ active, icon, label, count, onClick }: { active: boolean; icon: ReactNode; label: string; count: number | string; onClick: () => void }) {
   return (
     <button onClick={onClick} className={`flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left text-sm font-black transition ${active ? "border-red-700/50 bg-red-950/35 text-white" : "border-white/10 bg-black/25 text-zinc-400 hover:bg-white/[0.04] hover:text-white"}`}>
       <span className="flex items-center gap-3"><span className={active ? "text-red-400" : "text-zinc-500"}>{icon}</span>{label}</span>
@@ -2576,7 +2868,7 @@ function SidebarButton({ active, icon, label, count, onClick }: { active: boolea
   );
 }
 
-function MiniStat({ label, value }: { label: string; value: number }) {
+function MiniStat({ label, value }: { label: string; value: number | string }) {
   return <div className="rounded-xl bg-black/30 p-3"><div className="text-xs text-zinc-500">{label}</div><div className="mt-1 text-xl font-black">{value}</div></div>;
 }
 
