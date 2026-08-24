@@ -6,6 +6,32 @@
 
 ## In Progress
 
+### MANUAL-20260824-ADS-MEASUREMENT-FUNNEL [P1] Google Ads olcum ve musteri edinim sistemini guvenilir hale getir
+
+Durum: In Progress (live Ads cleanup complete; validated code-only Hostinger Production release in progress)
+
+Fingerprint: `google-ads-measurement|consent-queue-auth-intent-b2b-landing|verified-site-outcomes-zero-ads-receipts|retry-safe-client-handoff-and-account-cleanup`
+
+Kapsam: Google Ads kaynakli kayit, gercek dosya istegi ve dogrulanmis kredi
+odemesi sinyallerini izinli ve PII icermeyen bicimde kuyrukla; Google tag
+yukleme/rota/izin hatalarinda kaybi onle; kayit niyetini e-posta ve Google auth
+akislari boyunca koru; public file-service hero'sunu workshop/professional tuner
+niyetine netlestir; VPS public measurement env sozlesmesini fail-closed yap ve
+admin Ads ekraninda site sonuclariyla Google Ads teslimat kanitini ayir.
+
+Hazir sonuc: Kod, auth funnel, mobile landing, VPS env contract ve admin
+truthfulness degisiklikleri clean release worktree'inde tamamlandi. Full test,
+lint, typecheck, i18n, Webpack build, performance budget, responsive Chrome QA
+ve diff check PASS. Google Ads hesabi salt-okunur denetlendi: Search-only,
+presence location, broad/AI Max/auto assets off ve EUR 5/day korundu; PMax
+paused kaldi. Sekiz dar exact/phrase negatif canlıda kaydedildi; negative liste
+32'den 40'a cikti. Verified purchase Primary/Every olarak korundu; verified
+file request ve registration Secondary/One olarak kaydedildi.
+
+Kalan adim: Validated code-only paket Hostinger Production'a release edilecek;
+ardindan public smoke, rollback-state kontrolu, Tag Assistant ve Google Ads
+diagnostics ile gercek teslimat tekrar dogrulanacak.
+
 ## Blocked
 
 ### MANUAL-20260823-INTEGRATED-PRODUCTION-RELEASE [P0] Son degisikliklerin guvenli Production yayini

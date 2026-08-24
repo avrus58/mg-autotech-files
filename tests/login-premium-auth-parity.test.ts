@@ -64,7 +64,10 @@ test("premium login keeps accessible account entry controls", () => {
   assert.match(loginPage, /type="submit"[\s\S]*?Logging in\.\.\./);
   assert.match(loginPage, /h-12 w-full rounded-xl/);
   assert.match(loginPage, /href="\/forgot-password"/);
-  assert.match(loginPage, /href="\/register"/);
+  assert.match(
+    loginPage,
+    /href=\{buildAuthEntryPath\("\/register", requestedRedirectPath\)\}/
+  );
   assert.match(loginPage, /role=\{messageIsSuccess \? "status" : "alert"\}/);
   assert.match(loginPage, /aria-live=\{messageIsSuccess \? "polite" : "assertive"\}/);
   assert.match(loginPage, /focus-visible:ring/);

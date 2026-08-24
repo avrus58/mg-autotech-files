@@ -18,7 +18,14 @@ export type AdsConfigurationStatus = {
   purchaseConversion: boolean;
   consentModeV2: true;
   personalizedAdvertising: false;
-  readyForVerifiedMeasurement: boolean;
+  configurationComplete: boolean;
+};
+
+export type AdsDeliveryVerification = {
+  status: "external_verification_required";
+  label: "Google Ads delivery not verified";
+  detail: string;
+  sourceOfTruth: "google_ads_and_tag_assistant";
 };
 
 export type AdsLandingPageReadiness = {
@@ -58,6 +65,7 @@ export type AdsPerformanceReport = {
     rawClickIdsStored: false;
     customerIdentifiersExported: false;
   };
+  deliveryVerification: AdsDeliveryVerification;
   measurementHealth: AdsMeasurementHealth;
   paidSources: GrowthPerformanceRow[];
   campaigns: GrowthPerformanceRow[];
@@ -90,7 +98,7 @@ export function getAdsConfigurationStatus(): AdsConfigurationStatus {
     purchaseConversion,
     consentModeV2: true,
     personalizedAdvertising: false,
-    readyForVerifiedMeasurement:
+    configurationComplete:
       analyticsMeasurement && googleAdsTag && registrationConversion && requestConversion && purchaseConversion,
   };
 }
@@ -113,7 +121,7 @@ export function buildAdsMeasurementHealth(input: {
     payingCustomers: safeCount(input.payingCustomers),
   };
 
-  if (!input.configuration.readyForVerifiedMeasurement) {
+  if (!input.configuration.configurationComplete) {
     return {
       ...metrics,
       status: "configuration_required",
@@ -125,31 +133,31 @@ export function buildAdsMeasurementHealth(input: {
     return {
       ...metrics,
       status: "awaiting_consented_traffic",
-      label: "Configured, awaiting data",
-      detail: "The measurement stack is ready, but no consented first-party journey has been observed in this range.",
+      label: "Configured, waiting for visitors",
+      detail: "The website measurement settings are complete, but no consented visit has been recorded in this range.",
     };
   }
   if (!metrics.requests) {
     return {
       ...metrics,
       status: "traffic_observed",
-      label: "Consented traffic observed",
-      detail: "Public journeys are arriving. No verified file request is linked to this range yet.",
+      label: "Website traffic recorded",
+      detail: "Consented visits are arriving. No verified file request is linked to this range yet.",
     };
   }
   if (!metrics.payingCustomers) {
     return {
       ...metrics,
       status: "requests_observed",
-      label: "Verified requests observed",
-      detail: "The measured funnel reaches file requests. Verified payment evidence has not appeared in this range yet.",
+      label: "File requests recorded",
+      detail: "Verified file requests are recorded. A verified payment has not appeared in this range yet.",
     };
   }
   return {
     ...metrics,
     status: "verified_revenue_observed",
-    label: "Verified revenue observed",
-    detail: "Consented acquisition, request and verified payment evidence are present in this range.",
+    label: "Website revenue recorded",
+    detail: "The website recorded file requests and verified payments. This does not yet confirm that Google Ads received the conversion signal.",
   };
 }
 
@@ -230,6 +238,13 @@ export function buildAdsPerformanceReport(
       observationConversion: "verified_registration",
       rawClickIdsStored: false,
       customerIdentifiersExported: false,
+    },
+    deliveryVerification: {
+      status: "external_verification_required",
+      label: "Google Ads delivery not verified",
+      detail:
+        "Website results are visible, but Google Ads has not confirmed receiving the conversion signals yet. Check Google Ads diagnostics and Tag Assistant.",
+      sourceOfTruth: "google_ads_and_tag_assistant",
     },
     measurementHealth,
     paidSources: growth.bySource.filter(paidSource),

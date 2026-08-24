@@ -80,7 +80,7 @@ export type PublicAnalyticsEvent =
 export type PublicPageViewEvent = Extract<PublicAnalyticsEvent, { name: "page_view" }>;
 
 type AnalyticsWindow = Window & {
-  dataLayer?: unknown[][];
+  dataLayer?: Array<IArguments | unknown[]>;
   gtag?: (...args: unknown[]) => void;
   __mgConfiguredGoogleTags?: string[];
   __mgGoogleConsentDefaultSet?: boolean;
@@ -102,6 +102,7 @@ const privatePathPrefixes = [
 
 const conversionMeasurementPaths = new Set([
   "/auth/callback",
+  "/auth/complete-profile",
   "/new-request",
   "/payment/success",
   "/register",
@@ -143,6 +144,34 @@ const publicRouteRoots = new Set([
 
 const registrationConversionSeedKey = "mg_registration_conversion_seed_v1";
 const conversionDedupePrefix = "mg_verified_conversion_v1";
+export const googleAdsConversionOutboxStorageKey =
+  "mg_google_ads_conversion_outbox_v1";
+const googleAdsConversionOutboxVersion = 1 as const;
+const googleAdsConversionOutboxLimit = 24;
+const googleAdsConversionOutboxTtlMs = 7 * 24 * 60 * 60 * 1000;
+const googleAdsConversionRetryDelays = [2_500, 10_000] as const;
+
+type GoogleAdsConversionOutboxEntry = {
+  version: typeof googleAdsConversionOutboxVersion;
+  name: VerifiedConversionName;
+  transactionId: string;
+  createdAt: number;
+  value?: number;
+  currency?: string;
+};
+
+let initializedMeasurementConfiguration: GoogleAdsPublicConfiguration | null = null;
+let googleMeasurementScriptState: "idle" | "loaded" | "failed" = "idle";
+const googleAdsConversionsInFlight = new Set<string>();
+const googleAdsConversionMemoryOutbox = new Map<
+  string,
+  GoogleAdsConversionOutboxEntry
+>();
+const googleAdsConversionRetryCounts = new Map<string, number>();
+const googleAdsConversionRetryTimers = new Map<
+  string,
+  ReturnType<typeof globalThis.setTimeout>
+>();
 
 function analyticsWindow() {
   return window as AnalyticsWindow;
@@ -349,6 +378,7 @@ export function writeMeasurementConsent(input: Pick<MeasurementConsentPreference
   } catch {
     // A blocked storage API keeps optional measurement disabled for the next page view.
   }
+  if (!preferences.advertising) clearGoogleAdsConversionOutbox();
 }
 
 export function readAnalyticsConsent(): AnalyticsConsent | null {
@@ -364,7 +394,12 @@ export function writeAnalyticsConsent(consent: AnalyticsConsent) {
 function ensureGoogleTagQueue() {
   const target = analyticsWindow();
   target.dataLayer = target.dataLayer ?? [];
-  target.gtag = target.gtag ?? ((...args: unknown[]) => target.dataLayer?.push(args));
+  // Match Google's documented queue contract exactly so gtag.js and Consent
+  // Mode receive the command tuple in the format they expect.
+  target.gtag = target.gtag ?? function gtag() {
+    // eslint-disable-next-line prefer-rest-params -- gtag.js documents this exact queue shape.
+    target.dataLayer?.push(arguments);
+  };
   target.__mgConfiguredGoogleTags = target.__mgConfiguredGoogleTags ?? [];
   return target;
 }
@@ -393,10 +428,21 @@ function ensureGoogleConsentDefault() {
 
 export function initializeGoogleMeasurement(config: GoogleAdsPublicConfiguration) {
   if (typeof window === "undefined") return false;
+  initializedMeasurementConfiguration = {
+    googleAnalyticsMeasurementId: config.googleAnalyticsMeasurementId.trim(),
+    googleAdsId: config.googleAdsId.trim(),
+    registrationLabel: config.registrationLabel.trim(),
+    requestLabel: config.requestLabel.trim(),
+    purchaseLabel: config.purchaseLabel.trim(),
+  };
   const preferences = readMeasurementConsent();
   const analyticsConfigured =
-    preferences.analytics && isValidGoogleAnalyticsMeasurementId(config.googleAnalyticsMeasurementId);
-  const adsConfigured = preferences.advertising && isValidGoogleAdsId(config.googleAdsId);
+    preferences.analytics && isValidGoogleAnalyticsMeasurementId(
+      initializedMeasurementConfiguration.googleAnalyticsMeasurementId
+    );
+  const adsConfigured = preferences.advertising && isValidGoogleAdsId(
+    initializedMeasurementConfiguration.googleAdsId
+  );
   if (!analyticsConfigured && !adsConfigured) return false;
 
   const target = ensureGoogleConsentDefault();
@@ -404,8 +450,10 @@ export function initializeGoogleMeasurement(config: GoogleAdsPublicConfiguration
   if (!target.__mgConfiguredGoogleTags?.length) target.gtag?.("js", new Date());
 
   for (const tagId of [
-    analyticsConfigured ? config.googleAnalyticsMeasurementId : "",
-    adsConfigured ? config.googleAdsId : "",
+    analyticsConfigured
+      ? initializedMeasurementConfiguration.googleAnalyticsMeasurementId
+      : "",
+    adsConfigured ? initializedMeasurementConfiguration.googleAdsId : "",
   ].filter(Boolean)) {
     if (target.__mgConfiguredGoogleTags?.includes(tagId)) continue;
     target.gtag?.("config", tagId, {
@@ -444,6 +492,9 @@ export function dispatchPublicAnalyticsEvent(event: PublicAnalyticsEvent | null)
 }
 
 function publicMeasurementConfiguration(): GoogleAdsPublicConfiguration {
+  if (initializedMeasurementConfiguration) {
+    return initializedMeasurementConfiguration;
+  }
   return {
     googleAnalyticsMeasurementId:
       process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID?.trim() ?? "",
@@ -453,6 +504,254 @@ function publicMeasurementConfiguration(): GoogleAdsPublicConfiguration {
     requestLabel: process.env.NEXT_PUBLIC_GOOGLE_ADS_REQUEST_LABEL?.trim() ?? "",
     purchaseLabel: process.env.NEXT_PUBLIC_GOOGLE_ADS_PURCHASE_LABEL?.trim() ?? "",
   };
+}
+
+function googleAdsConversionKey(
+  name: VerifiedConversionName,
+  transactionId: string
+) {
+  return `${name}:${transactionId}`;
+}
+
+function isGoogleAdsConversionOutboxEntry(
+  value: unknown,
+  now: number
+): value is GoogleAdsConversionOutboxEntry {
+  if (!value || typeof value !== "object") return false;
+  const entry = value as Partial<GoogleAdsConversionOutboxEntry>;
+  if (
+    entry.version !== googleAdsConversionOutboxVersion ||
+    !["registration", "request", "purchase"].includes(String(entry.name)) ||
+    !/^[a-f0-9]{64}$/.test(String(entry.transactionId ?? "")) ||
+    typeof entry.createdAt !== "number" ||
+    !Number.isFinite(entry.createdAt) ||
+    entry.createdAt > now + 60_000 ||
+    now - entry.createdAt > googleAdsConversionOutboxTtlMs
+  ) {
+    return false;
+  }
+  if (entry.value !== undefined && safeConversionValue(entry.value) === null) {
+    return false;
+  }
+  if (entry.currency !== undefined && safeCurrency(entry.currency) === null) {
+    return false;
+  }
+  return true;
+}
+
+function readGoogleAdsConversionOutbox() {
+  if (typeof window === "undefined") return [] as GoogleAdsConversionOutboxEntry[];
+  const now = Date.now();
+  let raw: string | null = null;
+  let persisted: unknown[] = [];
+  try {
+    raw = window.localStorage.getItem(googleAdsConversionOutboxStorageKey);
+    const parsed = JSON.parse(raw ?? "[]") as unknown;
+    if (Array.isArray(parsed)) persisted = parsed;
+  } catch {
+    // The in-memory queue still covers the current page when storage is blocked.
+  }
+
+  const merged = new Map<string, GoogleAdsConversionOutboxEntry>();
+  for (const candidate of [
+    ...persisted,
+    ...googleAdsConversionMemoryOutbox.values(),
+  ]) {
+    if (!isGoogleAdsConversionOutboxEntry(candidate, now)) continue;
+    merged.set(
+      googleAdsConversionKey(candidate.name, candidate.transactionId),
+      candidate
+    );
+  }
+  const entries = [...merged.values()].slice(-googleAdsConversionOutboxLimit);
+  googleAdsConversionMemoryOutbox.clear();
+  for (const entry of entries) {
+    googleAdsConversionMemoryOutbox.set(
+      googleAdsConversionKey(entry.name, entry.transactionId),
+      entry
+    );
+  }
+
+  try {
+    const sanitized = JSON.stringify(entries);
+    if (entries.length === 0 && raw !== null) {
+      window.localStorage.removeItem(googleAdsConversionOutboxStorageKey);
+    } else if (entries.length > 0 && raw !== sanitized) {
+      window.localStorage.setItem(googleAdsConversionOutboxStorageKey, sanitized);
+    }
+  } catch {
+    // Optional persistence may be blocked; the memory queue remains usable.
+  }
+  return entries;
+}
+
+function writeGoogleAdsConversionOutbox(
+  entries: GoogleAdsConversionOutboxEntry[]
+) {
+  if (typeof window === "undefined") return;
+  const boundedEntries = entries.slice(-googleAdsConversionOutboxLimit);
+  googleAdsConversionMemoryOutbox.clear();
+  for (const entry of boundedEntries) {
+    googleAdsConversionMemoryOutbox.set(
+      googleAdsConversionKey(entry.name, entry.transactionId),
+      entry
+    );
+  }
+  try {
+    if (boundedEntries.length === 0) {
+      window.localStorage.removeItem(googleAdsConversionOutboxStorageKey);
+      return;
+    }
+    window.localStorage.setItem(
+      googleAdsConversionOutboxStorageKey,
+      JSON.stringify(boundedEntries)
+    );
+  } catch {
+    // Provider transaction IDs still protect retries when storage is blocked.
+  }
+}
+
+function clearGoogleAdsConversionRetry(key: string) {
+  const timer = googleAdsConversionRetryTimers.get(key);
+  if (timer !== undefined) globalThis.clearTimeout(timer);
+  googleAdsConversionRetryTimers.delete(key);
+  googleAdsConversionRetryCounts.delete(key);
+  googleAdsConversionsInFlight.delete(key);
+}
+
+export function clearGoogleAdsConversionOutbox() {
+  googleAdsConversionMemoryOutbox.clear();
+  if (typeof window !== "undefined") {
+    try {
+      window.localStorage.removeItem(googleAdsConversionOutboxStorageKey);
+      const adsDedupePrefix = `${conversionDedupePrefix}:ads:`;
+      for (let index = window.localStorage.length - 1; index >= 0; index -= 1) {
+        const key = window.localStorage.key(index);
+        if (key?.startsWith(adsDedupePrefix)) {
+          window.localStorage.removeItem(key);
+        }
+      }
+    } catch {
+      // A blocked storage API already prevents optional persistence.
+    }
+  }
+  for (const key of [...googleAdsConversionRetryTimers.keys()]) {
+    clearGoogleAdsConversionRetry(key);
+  }
+  googleAdsConversionsInFlight.clear();
+}
+
+function enqueueGoogleAdsConversion(
+  entry: GoogleAdsConversionOutboxEntry
+) {
+  const entries = readGoogleAdsConversionOutbox();
+  const key = googleAdsConversionKey(entry.name, entry.transactionId);
+  if (
+    entries.some(
+      (candidate) =>
+        googleAdsConversionKey(candidate.name, candidate.transactionId) === key
+    )
+  ) {
+    return true;
+  }
+  writeGoogleAdsConversionOutbox([...entries, entry]);
+  return true;
+}
+
+function removeGoogleAdsConversion(
+  name: VerifiedConversionName,
+  transactionId: string
+) {
+  const key = googleAdsConversionKey(name, transactionId);
+  writeGoogleAdsConversionOutbox(
+    readGoogleAdsConversionOutbox().filter(
+      (entry) => googleAdsConversionKey(entry.name, entry.transactionId) !== key
+    )
+  );
+  clearGoogleAdsConversionRetry(key);
+}
+
+function scheduleGoogleAdsConversionRetry(key: string) {
+  const retryCount = googleAdsConversionRetryCounts.get(key) ?? 0;
+  const delay = googleAdsConversionRetryDelays[retryCount];
+  if (delay === undefined) {
+    googleAdsConversionsInFlight.delete(key);
+    return;
+  }
+  googleAdsConversionRetryCounts.set(key, retryCount + 1);
+  const timer = globalThis.setTimeout(() => {
+    googleAdsConversionRetryTimers.delete(key);
+    googleAdsConversionsInFlight.delete(key);
+    void flushGoogleAdsConversionOutbox();
+  }, delay);
+  googleAdsConversionRetryTimers.set(key, timer);
+}
+
+export function notifyGoogleMeasurementScriptFailed() {
+  googleMeasurementScriptState = "failed";
+  for (const key of [...googleAdsConversionsInFlight]) {
+    clearGoogleAdsConversionRetry(key);
+  }
+}
+
+export async function notifyGoogleMeasurementScriptLoaded() {
+  googleMeasurementScriptState = "loaded";
+  return flushGoogleAdsConversionOutbox();
+}
+
+export async function flushGoogleAdsConversionOutbox() {
+  if (
+    typeof window === "undefined" ||
+    googleMeasurementScriptState !== "loaded" ||
+    !hasAdvertisingMeasurementConsent() ||
+    (!isPublicAnalyticsPath(window.location.pathname) &&
+      !isConversionMeasurementPath(window.location.pathname))
+  ) {
+    return 0;
+  }
+
+  const config = publicMeasurementConfiguration();
+  if (!isValidGoogleAdsId(config.googleAdsId)) return 0;
+  const target = ensureGoogleTagQueue();
+  let dispatched = 0;
+
+  for (const entry of readGoogleAdsConversionOutbox()) {
+    if (conversionWasQueued("ads", entry.name, entry.transactionId)) {
+      removeGoogleAdsConversion(entry.name, entry.transactionId);
+      continue;
+    }
+    const label = conversionLabel(config, entry.name);
+    if (!isValidGoogleAdsConversionLabel(label)) continue;
+    const key = googleAdsConversionKey(entry.name, entry.transactionId);
+    if (googleAdsConversionsInFlight.has(key)) continue;
+
+    googleAdsConversionsInFlight.add(key);
+    const adsParams: Record<string, unknown> = {
+      send_to: `${config.googleAdsId}/${label}`,
+      transaction_id: entry.transactionId,
+      event_timeout: 2_000,
+      event_callback: () => {
+        if (!hasAdvertisingMeasurementConsent()) {
+          clearGoogleAdsConversionRetry(key);
+          return;
+        }
+        markConversionQueued("ads", entry.name, entry.transactionId);
+        removeGoogleAdsConversion(entry.name, entry.transactionId);
+      },
+    };
+    if (entry.currency && entry.value !== undefined) {
+      adsParams.currency = entry.currency;
+      adsParams.value = entry.value;
+    }
+    scheduleGoogleAdsConversionRetry(key);
+    try {
+      target.gtag?.("event", "conversion", adsParams);
+      dispatched += 1;
+    } catch {
+      // Keep the hashed outbox entry for the scheduled retry.
+    }
+  }
+  return dispatched;
 }
 
 function conversionLabel(
@@ -486,7 +785,24 @@ export async function createPrivateConversionId(name: VerifiedConversionName, se
 
 function conversionWasQueued(destination: "ga4" | "ads", name: VerifiedConversionName, id: string) {
   try {
-    return window.localStorage.getItem(`${conversionDedupePrefix}:${destination}:${name}:${id}`) === "1";
+    const key = `${conversionDedupePrefix}:${destination}:${name}:${id}`;
+    const value = window.localStorage.getItem(key);
+    if (destination === "ga4") return value === "1";
+    if (value === "1") {
+      window.localStorage.setItem(key, String(Date.now()));
+      return true;
+    }
+    const handedOffAt = Number(value);
+    if (
+      Number.isFinite(handedOffAt) &&
+      handedOffAt > 0 &&
+      handedOffAt <= Date.now() + 60_000 &&
+      Date.now() - handedOffAt <= googleAdsConversionOutboxTtlMs
+    ) {
+      return true;
+    }
+    if (value !== null) window.localStorage.removeItem(key);
+    return false;
   } catch {
     return false;
   }
@@ -494,7 +810,10 @@ function conversionWasQueued(destination: "ga4" | "ads", name: VerifiedConversio
 
 function markConversionQueued(destination: "ga4" | "ads", name: VerifiedConversionName, id: string) {
   try {
-    window.localStorage.setItem(`${conversionDedupePrefix}:${destination}:${name}:${id}`, "1");
+    window.localStorage.setItem(
+      `${conversionDedupePrefix}:${destination}:${name}:${id}`,
+      destination === "ads" ? String(Date.now()) : "1"
+    );
   } catch {
     // Provider-side transaction IDs remain the final duplicate defense.
   }
@@ -561,23 +880,23 @@ async function dispatchVerifiedConversion(input: {
     }
   }
 
-  const label = conversionLabel(config, input.name);
   if (
     preferences.advertising &&
     isValidGoogleAdsId(config.googleAdsId) &&
-    isValidGoogleAdsConversionLabel(label) &&
     !conversionWasQueued("ads", input.name, transactionId)
   ) {
-    const adsParams: Record<string, string | number> = {
-      send_to: `${config.googleAdsId}/${label}`,
-      transaction_id: transactionId,
+    const entry: GoogleAdsConversionOutboxEntry = {
+      version: googleAdsConversionOutboxVersion,
+      name: input.name,
+      transactionId,
+      createdAt: Date.now(),
     };
     if (currency && value !== null) {
-      adsParams.currency = currency;
-      adsParams.value = value;
+      entry.currency = currency;
+      entry.value = value;
     }
-    target.gtag?.("event", "conversion", adsParams);
-    markConversionQueued("ads", input.name, transactionId);
+    enqueueGoogleAdsConversion(entry);
+    void flushGoogleAdsConversionOutbox();
     queued = true;
   }
   return queued;

@@ -473,36 +473,39 @@ export default function FileServicePage() {
 
       <section className="relative overflow-hidden border-b border-white/10 bg-[linear-gradient(135deg,#050505,#101827_52%,#2b080d)]">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_78%_10%,rgba(177,18,27,0.32),transparent_30%),linear-gradient(90deg,rgba(255,255,255,0.04)_1px,transparent_1px),linear-gradient(0deg,rgba(255,255,255,0.035)_1px,transparent_1px)] bg-[size:auto,56px_56px,56px_56px]" />
-        <div className="relative mx-auto grid max-w-7xl gap-10 px-4 py-20 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:py-24">
-          <div>
-            <nav aria-label="Breadcrumb" className="mb-6 flex items-center gap-2 text-xs font-bold text-zinc-400">
+        <div className="relative mx-auto grid max-w-7xl gap-10 px-4 pb-16 pt-6 sm:py-20 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:py-24">
+          <div className="min-w-0">
+            <nav aria-label="Breadcrumb" className="mb-4 flex items-center gap-2 text-xs font-bold text-zinc-400 sm:mb-6">
               <Link href="/" className="transition hover:text-white">Home</Link>
               <span aria-hidden="true">/</span>
               <span aria-current="page" className="text-zinc-200">ECU File Service</span>
             </nav>
-            <div className="inline-flex rounded-full border border-red-700/60 bg-red-950/35 px-4 py-2 text-sm font-black uppercase tracking-[0.18em] text-red-100">
-              MG AutoTech ECU File Service
+            <div className="inline-block max-w-full rounded-full border border-red-700/60 bg-red-950/35 px-3 py-1.5 text-center text-[11px] font-black uppercase leading-5 tracking-[0.06em] text-red-100 sm:px-4 sm:py-2 sm:text-sm sm:tracking-[0.18em]">
+              For workshops &amp; professional tuners
             </div>
-            <h1 className="mt-6 max-w-4xl text-5xl font-black leading-tight md:text-7xl">
+            <h1 className="mt-5 max-w-4xl text-[2.5rem] font-black leading-[1.04] sm:mt-6 sm:text-5xl sm:leading-tight md:text-7xl">
               Professional ECU file service for custom tuning files.
             </h1>
-            <p className="mt-6 max-w-2xl text-base leading-8 text-zinc-300">
-              Submit the original ECU or TCU file with exact vehicle, controller,
-              fuel and hardware context. MG AutoTech reviews Stage 1, Stage 2,
-              Stage 3 and supported software requests through one secure,
-              vehicle-specific workflow.
+            <p className="mt-5 max-w-2xl text-sm leading-7 text-zinc-300 sm:mt-6 sm:text-base sm:leading-8">
+              Built for workshops and professional tuners: submit the original
+              ECU or TCU file with exact vehicle, controller, fuel and hardware
+              context. MG AutoTech reviews Stage 1, Stage 2, Stage 3 and supported
+              software requests through one secure, vehicle-specific workflow.
             </p>
-            <div className="mt-8 flex flex-wrap gap-3">
+            <div
+              data-file-service-hero-actions
+              className="mb-[calc(5.5rem+env(safe-area-inset-bottom))] mt-6 flex flex-col gap-3 sm:mb-0 sm:mt-8 sm:flex-row sm:flex-wrap"
+            >
               <Link
                 href="/new-request"
-                className="inline-flex items-center justify-center rounded-xl bg-[#b1121b] px-6 py-4 text-sm font-black text-white shadow-lg shadow-red-950/30 transition hover:-translate-y-0.5 hover:bg-[#c91824]"
+                className="inline-flex scroll-mb-[calc(5.5rem+env(safe-area-inset-bottom))] items-center justify-center rounded-xl bg-[#b1121b] px-6 py-3.5 text-sm font-black text-white shadow-lg shadow-red-950/30 transition hover:-translate-y-0.5 hover:bg-[#c91824] sm:py-4"
               >
                 Submit your original file
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
               <Link
                 href="#stage-comparison"
-                className="inline-flex items-center justify-center rounded-xl border border-white/10 bg-white/[0.06] px-6 py-4 text-sm font-black text-white transition hover:-translate-y-0.5 hover:border-red-800/60 hover:bg-red-950/20"
+                className="inline-flex scroll-mb-[calc(5.5rem+env(safe-area-inset-bottom))] items-center justify-center rounded-xl border border-white/10 bg-white/[0.06] px-6 py-3.5 text-sm font-black text-white transition hover:-translate-y-0.5 hover:border-red-800/60 hover:bg-red-950/20 sm:py-4"
               >
                 Compare Stage 1, 2 and 3
               </Link>

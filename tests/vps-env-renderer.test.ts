@@ -51,6 +51,11 @@ function fullVariables() {
     NEXT_PUBLIC_BANK_NAME: "Synthetic Production Bank",
     NEXT_PUBLIC_BANK_IBAN: "DE00000000000000000000",
     NEXT_PUBLIC_BANK_BIC: "SYNTHDE0XXX",
+    NEXT_PUBLIC_GOOGLE_ANALYTICS_ID: "G-ABC1234567",
+    NEXT_PUBLIC_GOOGLE_ADS_ID: "AW-123456789",
+    NEXT_PUBLIC_GOOGLE_ADS_REGISTRATION_LABEL: "Register_123",
+    NEXT_PUBLIC_GOOGLE_ADS_REQUEST_LABEL: "Request_123",
+    NEXT_PUBLIC_GOOGLE_ADS_PURCHASE_LABEL: "Purchase_123",
     NEXT_PUBLIC_GOOGLE_CLIENT_ID:
       "123456789012-syntheticclientid123.apps.googleusercontent.com",
   };
@@ -137,6 +142,18 @@ test("Production renderer preserves continuity values and overrides only VPS con
   assert.equal(merged.DESKTOP_APP_PUBLIC_DOWNLOAD_ENABLED, "false");
   assert.equal(merged.DESKTOP_APP_UPLOAD_ENABLED, "false");
   assert.equal(merged.NEXT_PUBLIC_SITE_URL, "https://file.mgautotech.de");
+  assert.equal(
+    merged.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID,
+    fullVariables().NEXT_PUBLIC_GOOGLE_ANALYTICS_ID
+  );
+  assert.equal(
+    merged.NEXT_PUBLIC_GOOGLE_ADS_ID,
+    fullVariables().NEXT_PUBLIC_GOOGLE_ADS_ID
+  );
+  assert.equal(
+    merged.NEXT_PUBLIC_GOOGLE_ADS_PURCHASE_LABEL,
+    fullVariables().NEXT_PUBLIC_GOOGLE_ADS_PURCHASE_LABEL
+  );
   assert.equal(merged.REQUEST_NETWORK_PROVIDER, "cloudflare-caddy");
   assert.equal(merged.SECURITY_DISTRIBUTED_RATE_LIMIT_ENABLED, "true");
   assert.equal(merged.SECURITY_DISTRIBUTED_RATE_LIMIT_REQUIRED, "true");
@@ -286,6 +303,39 @@ test("Rendered files pass the existing VPS environment contract", (context) => {
       `${result.stdout}${result.stderr}`,
       new RegExp(partialVariables().FILE_EXPERT_ANALYZER_TOKEN)
     );
+
+    const measurementContracts = [
+      ["NEXT_PUBLIC_GOOGLE_ANALYTICS_ID", "invalid-ga4-value"],
+      ["NEXT_PUBLIC_GOOGLE_ADS_ID", "invalid-ads-id"],
+      ["NEXT_PUBLIC_GOOGLE_ADS_REGISTRATION_LABEL", "bad label"],
+      ["NEXT_PUBLIC_GOOGLE_ADS_REQUEST_LABEL", "short"],
+      ["NEXT_PUBLIC_GOOGLE_ADS_PURCHASE_LABEL", "invalid/label"],
+    ] as const;
+    for (const [key, invalidValue] of measurementContracts) {
+      for (const mode of ["missing", "invalid"] as const) {
+        const variables = { ...fullVariables() };
+        if (mode === "missing") delete variables[key];
+        else variables[key] = invalidValue;
+        const candidate = renderProductionEnvironmentFiles(
+          fullSource(variables),
+          partialSource()
+        );
+        writeFileSync(app, candidate.appContent);
+        const rejected = spawnSync(
+          bash,
+          [shellPath(checker), shellPath(app), shellPath(analyzer)],
+          { encoding: "utf8" }
+        );
+        assert.notEqual(
+          rejected.status,
+          0,
+          `${key} ${mode} configuration unexpectedly passed`
+        );
+        const output = `${rejected.stdout}${rejected.stderr}`;
+        assert.match(output, new RegExp(key));
+        assert.doesNotMatch(output, new RegExp(invalidValue.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+      }
+    }
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

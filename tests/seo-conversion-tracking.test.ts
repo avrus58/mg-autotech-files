@@ -34,7 +34,13 @@ test("analytics configuration accepts only a GA4 measurement id on the productio
 });
 
 test("verified conversion routes are measurement-only and never become public page views", () => {
-  for (const path of ["/register", "/auth/callback", "/new-request", "/payment/success"]) {
+  for (const path of [
+    "/register",
+    "/auth/callback",
+    "/auth/complete-profile",
+    "/new-request",
+    "/payment/success",
+  ]) {
     assert.equal(isConversionMeasurementPath(path), true, path);
     assert.equal(isPublicAnalyticsPath(path), false, path);
     assert.equal(buildPublicPageView(path), null, path);
@@ -155,6 +161,11 @@ test("root analytics loader is consent-aware, production-only and fail-closed wi
   assert.match(component, /updateMeasurementReady\(initializeGoogleMeasurement\(configuration\)\)/);
   assert.match(component, /queueMicrotask\(\(\) =>/);
   assert.match(component, /measurementReady && scriptId && analyticsRouteAllowed/);
+  assert.match(component, /googleMeasurementScriptRetryDelays/);
+  assert.match(component, /mg_retry_attempt=\$\{measurementScriptAttempt\}/);
+  assert.match(component, /onLoad=\{\(\) => \{[\s\S]*?notifyGoogleMeasurementScriptLoaded/);
+  assert.match(component, /onError=\{\(\) => \{[\s\S]*?notifyGoogleMeasurementScriptFailed/);
+  assert.doesNotMatch(component, /onReady=\{/);
   assert.match(component, /denyGoogleMeasurement\(\);/);
   assert.match(component, /getAnalyticsConsentCopy\(pathname\)/);
   assert.match(consentCopy, /Necessary only/);
@@ -176,6 +187,9 @@ test("admin Ads readiness center is protected and never returns public configura
   assert.match(route, /private, no-store/);
   assert.match(adminLayout, /BrowserAuthBoundary/);
   assert.match(client, /Google Ads Readiness & Conversion Center/);
+  assert.match(client, /Configuration complete/);
+  assert.match(client, /deliveryVerification\.detail/);
+  assert.doesNotMatch(client, /Measurement ready|of 7 verified/);
   assert.match(readiness, /rawClickIdsStored: false/);
   assert.match(readiness, /customerIdentifiersExported: false/);
   assert.doesNotMatch(route, /NEXT_PUBLIC_GOOGLE_ADS_ID|REGISTRATION_LABEL|PURCHASE_LABEL/);

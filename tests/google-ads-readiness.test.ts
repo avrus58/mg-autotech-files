@@ -21,11 +21,16 @@ import {
 import {
   analyticsConsentStorageKey,
   beginRegistrationConversion,
+  clearGoogleAdsConversionOutbox,
   createPrivateConversionId,
   denyGoogleMeasurement,
+  googleAdsConversionOutboxStorageKey,
   initializeGoogleMeasurement,
   measurementConsentStorageKey,
+  notifyGoogleMeasurementScriptFailed,
+  notifyGoogleMeasurementScriptLoaded,
   readMeasurementConsentSnapshot,
+  trackRequestSubmitted,
   writeMeasurementConsent,
 } from "../src/lib/publicAnalytics";
 
@@ -35,9 +40,12 @@ function projectFile(...segments: string[]) {
 
 class MemoryStorage {
   private readonly values = new Map<string, string>();
+  get length() { return this.values.size; }
   getItem(key: string) { return this.values.get(key) ?? null; }
+  key(index: number) { return [...this.values.keys()][index] ?? null; }
   setItem(key: string, value: string) { this.values.set(key, value); }
   removeItem(key: string) { this.values.delete(key); }
+  keys() { return [...this.values.keys()]; }
 }
 
 async function withWindow<T>(run: (storage: MemoryStorage) => T | Promise<T>) {
@@ -45,11 +53,17 @@ async function withWindow<T>(run: (storage: MemoryStorage) => T | Promise<T>) {
   const storage = new MemoryStorage();
   Object.defineProperty(globalThis, "window", {
     configurable: true,
-    value: { localStorage: storage, crypto: globalThis.crypto },
+    value: {
+      localStorage: storage,
+      crypto: globalThis.crypto,
+      location: { pathname: "/new-request" },
+    },
   });
   try {
     return await run(storage);
   } finally {
+    clearGoogleAdsConversionOutbox();
+    notifyGoogleMeasurementScriptFailed();
     if (descriptor) Object.defineProperty(globalThis, "window", descriptor);
     else Reflect.deleteProperty(globalThis, "window");
   }
@@ -107,7 +121,10 @@ test("Consent Mode v2 queues default denied before any granted update", async ()
       purchaseLabel: "Purchase_123",
     });
 
-    const dataLayer = (globalThis.window as unknown as { dataLayer?: unknown[][] }).dataLayer ?? [];
+    const queuedCommands = (
+      globalThis.window as unknown as { dataLayer?: Array<ArrayLike<unknown>> }
+    ).dataLayer ?? [];
+    const dataLayer = queuedCommands.map((entry) => Array.from(entry));
     assert.deepEqual(dataLayer[0]?.slice(0, 2), ["consent", "default"]);
     assert.equal((dataLayer[0]?.[2] as { analytics_storage?: string }).analytics_storage, "denied");
     assert.equal((dataLayer[0]?.[2] as { ad_user_data?: string }).ad_user_data, "denied");
@@ -117,6 +134,203 @@ test("Consent Mode v2 queues default denied before any granted update", async ()
     assert.equal((grantedUpdate?.[2] as { analytics_storage?: string }).analytics_storage, "granted");
     assert.equal((grantedUpdate?.[2] as { ad_storage?: string }).ad_storage, "granted");
     assert.equal((grantedUpdate?.[2] as { ad_personalization?: string }).ad_personalization, "denied");
+  });
+});
+
+test("Google Ads conversions survive script failure and dedupe only after tag handoff callback", async () => {
+  await withWindow(async (storage) => {
+    const privateSeed = "private-order-reference-must-never-be-persisted";
+    const configuration = {
+      googleAnalyticsMeasurementId: "G-ABC1234567",
+      googleAdsId: "AW-123456789",
+      registrationLabel: "Register_123",
+      requestLabel: "Request_123",
+      purchaseLabel: "Purchase_123",
+    };
+
+    writeMeasurementConsent({ analytics: false, advertising: true });
+    initializeGoogleMeasurement(configuration);
+    notifyGoogleMeasurementScriptFailed();
+
+    assert.equal(await trackRequestSubmitted(privateSeed), true);
+    const persisted = storage.getItem(googleAdsConversionOutboxStorageKey) ?? "";
+    assert.match(persisted, /[a-f0-9]{64}/);
+    assert.doesNotMatch(persisted, new RegExp(privateSeed));
+
+    await notifyGoogleMeasurementScriptLoaded();
+    const target = globalThis.window as unknown as {
+      dataLayer?: Array<ArrayLike<unknown>>;
+    };
+    const commands = (target.dataLayer ?? []).map((entry) => Array.from(entry));
+    const conversion = commands.find(
+      (entry) => entry[0] === "event" && entry[1] === "conversion"
+    );
+    assert.ok(conversion);
+    const params = conversion[2] as {
+      send_to?: string;
+      transaction_id?: string;
+      event_callback?: () => void;
+    };
+    assert.equal(params.send_to, "AW-123456789/Request_123");
+    assert.match(params.transaction_id ?? "", /^[a-f0-9]{64}$/);
+    assert.doesNotMatch(params.transaction_id ?? "", new RegExp(privateSeed));
+    assert.equal(typeof params.event_callback, "function");
+
+    params.event_callback?.();
+    assert.equal(storage.getItem(googleAdsConversionOutboxStorageKey), null);
+
+    const beforeRepeat = commands.filter(
+      (entry) => entry[0] === "event" && entry[1] === "conversion"
+    ).length;
+    assert.equal(await trackRequestSubmitted(privateSeed), false);
+    const afterRepeat = (target.dataLayer ?? [])
+      .map((entry) => Array.from(entry))
+      .filter((entry) => entry[0] === "event" && entry[1] === "conversion")
+      .length;
+    assert.equal(afterRepeat, beforeRepeat);
+  });
+});
+
+test("revoking advertising consent clears pending conversion retries", async () => {
+  await withWindow(async (storage) => {
+    writeMeasurementConsent({ analytics: false, advertising: true });
+    initializeGoogleMeasurement({
+      googleAnalyticsMeasurementId: "G-ABC1234567",
+      googleAdsId: "AW-123456789",
+      registrationLabel: "Register_123",
+      requestLabel: "Request_123",
+      purchaseLabel: "Purchase_123",
+    });
+    notifyGoogleMeasurementScriptFailed();
+    assert.equal(await trackRequestSubmitted("pending-private-request"), true);
+    assert.notEqual(storage.getItem(googleAdsConversionOutboxStorageKey), null);
+
+    denyGoogleMeasurement();
+    assert.notEqual(storage.getItem(googleAdsConversionOutboxStorageKey), null);
+
+    writeMeasurementConsent({ analytics: true, advertising: false });
+    assert.equal(storage.getItem(googleAdsConversionOutboxStorageKey), null);
+  });
+});
+
+test("pending conversions pause on private routes and resume on an allowed measurement route", async () => {
+  await withWindow(async (storage) => {
+    const target = globalThis.window as unknown as {
+      location: { pathname: string };
+      dataLayer?: Array<ArrayLike<unknown>>;
+    };
+    writeMeasurementConsent({ analytics: false, advertising: true });
+    initializeGoogleMeasurement({
+      googleAnalyticsMeasurementId: "G-ABC1234567",
+      googleAdsId: "AW-123456789",
+      registrationLabel: "Register_123",
+      requestLabel: "Request_123",
+      purchaseLabel: "Purchase_123",
+    });
+    notifyGoogleMeasurementScriptFailed();
+    assert.equal(await trackRequestSubmitted("route-paused-request"), true);
+
+    target.location.pathname = "/dashboard";
+    assert.equal(await notifyGoogleMeasurementScriptLoaded(), 0);
+    assert.notEqual(storage.getItem(googleAdsConversionOutboxStorageKey), null);
+    assert.equal(
+      (target.dataLayer ?? [])
+        .map((entry) => Array.from(entry))
+        .filter((entry) => entry[0] === "event" && entry[1] === "conversion")
+        .length,
+      0
+    );
+
+    target.location.pathname = "/new-request";
+    assert.equal(await notifyGoogleMeasurementScriptLoaded(), 1);
+    const conversion = (target.dataLayer ?? [])
+      .map((entry) => Array.from(entry))
+      .find((entry) => entry[0] === "event" && entry[1] === "conversion");
+    const params = conversion?.[2] as { event_callback?: () => void } | undefined;
+    assert.equal(typeof params?.event_callback, "function");
+    params?.event_callback?.();
+  });
+});
+
+test("a late tag callback cannot recreate Ads measurement state after consent revocation", async () => {
+  await withWindow(async (storage) => {
+    const target = globalThis.window as unknown as {
+      dataLayer?: Array<ArrayLike<unknown>>;
+    };
+    writeMeasurementConsent({ analytics: false, advertising: true });
+    initializeGoogleMeasurement({
+      googleAnalyticsMeasurementId: "G-ABC1234567",
+      googleAdsId: "AW-123456789",
+      registrationLabel: "Register_123",
+      requestLabel: "Request_123",
+      purchaseLabel: "Purchase_123",
+    });
+    notifyGoogleMeasurementScriptFailed();
+    assert.equal(await trackRequestSubmitted("late-callback-request"), true);
+    assert.equal(await notifyGoogleMeasurementScriptLoaded(), 1);
+    const conversion = (target.dataLayer ?? [])
+      .map((entry) => Array.from(entry))
+      .find((entry) => entry[0] === "event" && entry[1] === "conversion");
+    const params = conversion?.[2] as { event_callback?: () => void } | undefined;
+    assert.equal(typeof params?.event_callback, "function");
+
+    writeMeasurementConsent({ analytics: true, advertising: false });
+    params?.event_callback?.();
+
+    assert.equal(storage.getItem(googleAdsConversionOutboxStorageKey), null);
+    assert.equal(storage.keys().some((key) => key.includes(":ads:")), false);
+  });
+});
+
+test("a throwing gtag keeps the hashed conversion queued for retry", async () => {
+  await withWindow(async (storage) => {
+    const target = globalThis.window as unknown as {
+      gtag?: (...args: unknown[]) => void;
+    };
+    writeMeasurementConsent({ analytics: false, advertising: true });
+    initializeGoogleMeasurement({
+      googleAnalyticsMeasurementId: "G-ABC1234567",
+      googleAdsId: "AW-123456789",
+      registrationLabel: "Register_123",
+      requestLabel: "Request_123",
+      purchaseLabel: "Purchase_123",
+    });
+    notifyGoogleMeasurementScriptFailed();
+    assert.equal(await trackRequestSubmitted("throwing-gtag-request"), true);
+    target.gtag = () => {
+      throw new Error("synthetic blocked tag");
+    };
+
+    assert.equal(await notifyGoogleMeasurementScriptLoaded(), 0);
+    assert.notEqual(storage.getItem(googleAdsConversionOutboxStorageKey), null);
+    writeMeasurementConsent({ analytics: true, advertising: false });
+  });
+});
+
+test("a synchronous tag handoff callback clears its retry timer and outbox", async () => {
+  await withWindow(async (storage) => {
+    const target = globalThis.window as unknown as {
+      gtag?: (...args: unknown[]) => void;
+    };
+    writeMeasurementConsent({ analytics: false, advertising: true });
+    initializeGoogleMeasurement({
+      googleAnalyticsMeasurementId: "G-ABC1234567",
+      googleAdsId: "AW-123456789",
+      registrationLabel: "Register_123",
+      requestLabel: "Request_123",
+      purchaseLabel: "Purchase_123",
+    });
+    notifyGoogleMeasurementScriptFailed();
+    assert.equal(await trackRequestSubmitted("sync-callback-request"), true);
+    target.gtag = (...args: unknown[]) => {
+      if (args[0] === "event" && args[1] === "conversion") {
+        (args[2] as { event_callback?: () => void }).event_callback?.();
+      }
+    };
+
+    assert.equal(await notifyGoogleMeasurementScriptLoaded(), 1);
+    assert.equal(storage.getItem(googleAdsConversionOutboxStorageKey), null);
+    writeMeasurementConsent({ analytics: true, advertising: false });
   });
 });
 
@@ -243,10 +457,10 @@ test("Ads readiness fails closed until every public conversion label is configur
     process.env.NEXT_PUBLIC_GOOGLE_ADS_REGISTRATION_LABEL = "Register_123";
     process.env.NEXT_PUBLIC_GOOGLE_ADS_REQUEST_LABEL = "Request_123";
     delete process.env.NEXT_PUBLIC_GOOGLE_ADS_PURCHASE_LABEL;
-    assert.equal(getAdsConfigurationStatus().readyForVerifiedMeasurement, false);
+    assert.equal(getAdsConfigurationStatus().configurationComplete, false);
     process.env.NEXT_PUBLIC_GOOGLE_ADS_PURCHASE_LABEL = "Purchase_123";
     const ready = getAdsConfigurationStatus();
-    assert.equal(ready.readyForVerifiedMeasurement, true);
+    assert.equal(ready.configurationComplete, true);
     assert.equal(ready.personalizedAdvertising, false);
   } finally {
     for (const key of keys) {
@@ -266,7 +480,7 @@ test("measurement health distinguishes configuration, traffic, request and reven
     purchaseConversion: true,
     consentModeV2: true as const,
     personalizedAdvertising: false as const,
-    readyForVerifiedMeasurement: true,
+    configurationComplete: true,
   };
 
   assert.equal(buildAdsMeasurementHealth({
@@ -290,15 +504,18 @@ test("measurement health distinguishes configuration, traffic, request and reven
     requests: 1,
     payingCustomers: 0,
   }).status, "requests_observed");
-  assert.equal(buildAdsMeasurementHealth({
+  const revenueHealth = buildAdsMeasurementHealth({
     configuration: configured,
     consentedVisitors: 4,
     registrations: 1,
     requests: 1,
     payingCustomers: 1,
-  }).status, "verified_revenue_observed");
+  });
+  assert.equal(revenueHealth.status, "verified_revenue_observed");
+  assert.equal(revenueHealth.label, "Website revenue recorded");
+  assert.match(revenueHealth.detail, /does not yet confirm.*Google Ads received/i);
   assert.equal(buildAdsMeasurementHealth({
-    configuration: { ...configured, analyticsMeasurement: false, readyForVerifiedMeasurement: false },
+    configuration: { ...configured, analyticsMeasurement: false, configurationComplete: false },
     consentedVisitors: 4,
     registrations: 1,
     requests: 1,
@@ -332,15 +549,28 @@ test("admin report exposes aggregate paid results and no configuration values", 
   assert.equal(report.campaigns.length, 1);
   assert.equal(report.measurementPolicy.rawClickIdsStored, false);
   assert.equal(report.measurementPolicy.customerIdentifiersExported, false);
+  assert.equal(report.deliveryVerification.status, "external_verification_required");
+  assert.match(report.deliveryVerification.detail, /Google Ads has not confirmed receiving/i);
   assert.equal(report.measurementHealth.status, "configuration_required");
   assert.equal(report.measurementHealth.payingCustomers, 1);
   assert.equal(report.languageDestinations.length, 12);
   assert.doesNotMatch(JSON.stringify(report), /AW-\d+|service_role|private_key|client_secret/i);
 });
 
+test("admin Ads UI separates configuration from delivery and first-party outcomes", () => {
+  const client = projectFile("src", "app", "admin", "ads-performance", "AdsPerformanceClient.tsx");
+
+  assert.match(client, /Configuration complete/);
+  assert.match(client, /Google Ads delivery not verified|deliveryVerification\.label/);
+  assert.match(client, /Website results/);
+  assert.match(client, /of 7 configured/);
+  assert.doesNotMatch(client, /Measurement ready|of 7 verified/);
+});
+
 test("verified conversion integration is ordered after business success and remains fail-soft", () => {
   const register = projectFile("src", "app", "register", "page.tsx");
   const callback = projectFile("src", "app", "auth", "callback", "page.tsx");
+  const completeProfile = projectFile("src", "app", "auth", "complete-profile", "page.tsx");
   const request = projectFile("src", "app", "new-request", "page.tsx");
   const payment = projectFile("src", "app", "payment", "success", "page.tsx");
   const confirmation = projectFile("src", "app", "api", "stripe", "confirm-session", "route.ts");
@@ -348,6 +578,7 @@ test("verified conversion integration is ordered after business success and rema
 
   assert.match(register, /isAlreadyVerified[\s\S]*?trackRegistrationCompleted\(\)/);
   assert.match(callback, /isRecentSignup \|\| isRecentEmailConfirmation[\s\S]*?trackRegistrationCompleted\(\)/);
+  assert.match(completeProfile, /await trackRegistrationCompleted\(\)\.catch\(\(\) => false\)/);
   assert.match(request, /if \(error\) \{[\s\S]*?return;[\s\S]*?createdOrderId \|\| growthAttemptIdRef[\s\S]*?trackRequestSubmitted\(conversionSeed\)/);
   assert.match(confirmation, /session\.payment_status !== "paid"[\s\S]*?completeStripeCreditPurchase\(session\)[\s\S]*?conversion:/);
   assert.match(payment, /if \(!response\?\.ok\)[\s\S]*?return;[\s\S]*?trackPurchaseCompleted/);

@@ -213,7 +213,7 @@ export default function AuthCallbackPage() {
 
         if (isRecentSignup || isRecentEmailConfirmation) {
           void recordGrowthAccountCreated();
-          void trackRegistrationCompleted();
+          await trackRegistrationCompleted().catch(() => false);
         }
       }
 

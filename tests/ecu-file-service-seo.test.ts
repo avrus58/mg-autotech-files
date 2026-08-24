@@ -26,6 +26,8 @@ test("the existing file-service URL remains the single canonical general ECU fil
 
   const source = projectFile("src", "app", "file-service", "page.tsx");
   assert.match(source, /Professional ECU file service for custom tuning files/);
+  assert.match(source, /For workshops &amp; professional tuners/);
+  assert.match(source, /Built for workshops and professional tuners/);
   assert.match(source, /Submit your original file/);
   assert.match(source, /<StageComparison/);
   assert.match(source, /"@type": "FAQPage"/);

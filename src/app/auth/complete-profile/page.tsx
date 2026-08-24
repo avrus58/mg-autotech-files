@@ -218,7 +218,7 @@ export default function CompleteProfilePage() {
 
     clearPendingDraft();
     void recordGrowthAccountCreated();
-    void trackRegistrationCompleted();
+    await trackRegistrationCompleted().catch(() => false);
     try {
       await authenticatedFetch("/api/email/new-customer", {
         method: "POST",

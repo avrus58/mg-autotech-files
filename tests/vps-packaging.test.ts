@@ -567,6 +567,11 @@ test("Env preflight accepts the split least-privilege contract without echoing v
       "NEXT_PUBLIC_BANK_NAME=Synthetic Production Bank",
       "NEXT_PUBLIC_BANK_IBAN=DE00000000000000000000",
       "NEXT_PUBLIC_BANK_BIC=SYNTHDE0XXX",
+      "NEXT_PUBLIC_GOOGLE_ANALYTICS_ID=G-ABC1234567",
+      "NEXT_PUBLIC_GOOGLE_ADS_ID=AW-123456789",
+      "NEXT_PUBLIC_GOOGLE_ADS_REGISTRATION_LABEL=Register_123",
+      "NEXT_PUBLIC_GOOGLE_ADS_REQUEST_LABEL=Request_123",
+      "NEXT_PUBLIC_GOOGLE_ADS_PURCHASE_LABEL=Purchase_123",
       "NEXT_PUBLIC_GOOGLE_CLIENT_ID=123456789012-syntheticclientid123.apps.googleusercontent.com",
       "",
     ].join("\n");
@@ -667,6 +672,46 @@ test("Env preflight accepts the split least-privilege contract without echoing v
           "NEXT_PUBLIC_GOOGLE_CLIENT_ID=invalid"
         ),
         expected: /NEXT_PUBLIC_GOOGLE_CLIENT_ID/,
+      },
+      {
+        name: "GA4 measurement",
+        source: validAppEnvironment.replace(
+          "NEXT_PUBLIC_GOOGLE_ANALYTICS_ID=G-ABC1234567",
+          "NEXT_PUBLIC_GOOGLE_ANALYTICS_ID=invalid"
+        ),
+        expected: /NEXT_PUBLIC_GOOGLE_ANALYTICS_ID/,
+      },
+      {
+        name: "Google Ads tag",
+        source: validAppEnvironment.replace(
+          "NEXT_PUBLIC_GOOGLE_ADS_ID=AW-123456789",
+          "NEXT_PUBLIC_GOOGLE_ADS_ID=invalid"
+        ),
+        expected: /NEXT_PUBLIC_GOOGLE_ADS_ID/,
+      },
+      {
+        name: "Google Ads registration conversion",
+        source: validAppEnvironment.replace(
+          "NEXT_PUBLIC_GOOGLE_ADS_REGISTRATION_LABEL=Register_123",
+          "NEXT_PUBLIC_GOOGLE_ADS_REGISTRATION_LABEL="
+        ),
+        expected: /NEXT_PUBLIC_GOOGLE_ADS_REGISTRATION_LABEL/,
+      },
+      {
+        name: "Google Ads request conversion",
+        source: validAppEnvironment.replace(
+          "NEXT_PUBLIC_GOOGLE_ADS_REQUEST_LABEL=Request_123",
+          "NEXT_PUBLIC_GOOGLE_ADS_REQUEST_LABEL=bad/label"
+        ),
+        expected: /NEXT_PUBLIC_GOOGLE_ADS_REQUEST_LABEL/,
+      },
+      {
+        name: "Google Ads purchase conversion",
+        source: validAppEnvironment.replace(
+          "NEXT_PUBLIC_GOOGLE_ADS_PURCHASE_LABEL=Purchase_123",
+          "NEXT_PUBLIC_GOOGLE_ADS_PURCHASE_LABEL=short"
+        ),
+        expected: /NEXT_PUBLIC_GOOGLE_ADS_PURCHASE_LABEL/,
       },
     ];
     for (const contract of invalidAppContracts) {

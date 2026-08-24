@@ -11,12 +11,15 @@ import {
   buildPublicPageView,
   denyGoogleMeasurement,
   dispatchPublicAnalyticsEvent,
+  flushGoogleAdsConversionOutbox,
   initializeGoogleMeasurement,
   isApprovedAnalyticsHost,
   isConversionMeasurementPath,
   isPublicAnalyticsPath,
   isValidGoogleAdsId,
   isValidGoogleAnalyticsMeasurementId,
+  notifyGoogleMeasurementScriptFailed,
+  notifyGoogleMeasurementScriptLoaded,
   readMeasurementConsentSnapshot,
   writeMeasurementConsent,
   type GoogleAdsPublicConfiguration,
@@ -38,6 +41,7 @@ import { getAnalyticsConsentCopy } from "@/lib/analyticsConsentI18n";
 type ConsentState = MeasurementConsentSnapshot | "loading";
 
 type PublicAnalyticsProps = GoogleAdsPublicConfiguration;
+const googleMeasurementScriptRetryDelays = [2_500, 10_000] as const;
 
 function savedSnapshot(preferences: MeasurementConsentPreferences): MeasurementConsentSnapshot {
   return { preferences, source: "v2", needsDecision: false };
@@ -74,7 +78,16 @@ export function PublicAnalytics({
   const lastAttributionPathRef = useRef("");
   const initialAttributionTouchRef = useRef<GrowthAttributionTouch | null>(null);
   const sentAttributionTouchesRef = useRef(new Set<string>());
+  const measurementScriptStateRef = useRef<"idle" | "loading" | "loaded" | "failed">("idle");
+  const measurementScriptRetryCountRef = useRef(0);
+  const measurementScriptRetryTimerRef = useRef<number | null>(null);
+  const [measurementScriptAttempt, setMeasurementScriptAttempt] = useState(0);
   const preferences = consent === "loading" ? null : consent.preferences;
+  const scriptId = preferences?.analytics && isValidGoogleAnalyticsMeasurementId(googleAnalyticsMeasurementId)
+    ? googleAnalyticsMeasurementId
+    : preferences?.advertising && isValidGoogleAdsId(googleAdsId)
+      ? googleAdsId
+      : "";
 
   useEffect(() => {
     if (isApprovedAnalyticsHost(window.location.hostname)) {
@@ -214,6 +227,63 @@ export function PublicAnalytics({
   }, [configured, hostApproved, pathname, preferences?.analytics, publicRoute]);
 
   useEffect(() => {
+    if (!measurementReady || !scriptId || !analyticsRouteAllowed) {
+      if (measurementScriptRetryTimerRef.current !== null) {
+        window.clearTimeout(measurementScriptRetryTimerRef.current);
+        measurementScriptRetryTimerRef.current = null;
+      }
+      return;
+    }
+    if (measurementScriptStateRef.current === "failed") {
+      measurementScriptRetryCountRef.current = 0;
+      measurementScriptStateRef.current = "loading";
+      setMeasurementScriptAttempt((current) => current + 1);
+    } else if (measurementScriptStateRef.current === "idle") {
+      measurementScriptStateRef.current = "loading";
+    }
+  }, [analyticsRouteAllowed, measurementReady, scriptId]);
+
+  useEffect(() => {
+    if (
+      !configured ||
+      !hostApproved ||
+      (!preferences?.analytics && !preferences?.advertising)
+    ) return;
+    const retryPendingConversions = () => {
+      if (
+        measurementScriptStateRef.current === "failed" &&
+        analyticsRouteAllowed
+      ) {
+        if (measurementScriptRetryTimerRef.current !== null) {
+          window.clearTimeout(measurementScriptRetryTimerRef.current);
+          measurementScriptRetryTimerRef.current = null;
+        }
+        measurementScriptRetryCountRef.current = 0;
+        measurementScriptStateRef.current = "loading";
+        setMeasurementScriptAttempt((current) => current + 1);
+        return;
+      }
+      if (preferences.advertising) {
+        void flushGoogleAdsConversionOutbox().catch(() => 0);
+      }
+    };
+    window.addEventListener("online", retryPendingConversions);
+    return () => window.removeEventListener("online", retryPendingConversions);
+  }, [
+    analyticsRouteAllowed,
+    configured,
+    hostApproved,
+    preferences?.advertising,
+    preferences?.analytics,
+  ]);
+
+  useEffect(() => () => {
+    if (measurementScriptRetryTimerRef.current !== null) {
+      window.clearTimeout(measurementScriptRetryTimerRef.current);
+    }
+  }, []);
+
+  useEffect(() => {
     if (!configured || !hostApproved || !preferences?.analytics || !publicRoute) return;
 
     const trackClick = (click: MouseEvent) => {
@@ -243,19 +313,42 @@ export function PublicAnalytics({
   const showConsentPanel = publicRoute && (
     preferencesOpen || (consent !== "loading" && consent.needsDecision)
   );
-  const scriptId = preferences?.analytics && isValidGoogleAnalyticsMeasurementId(googleAnalyticsMeasurementId)
-    ? googleAnalyticsMeasurementId
-    : preferences?.advertising && isValidGoogleAdsId(googleAdsId)
-      ? googleAdsId
-      : "";
-
   return (
     <>
       {measurementReady && scriptId && analyticsRouteAllowed ? (
         <Script
-          id="mg-google-measurement"
-          src={`https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(scriptId)}`}
+          key={`${scriptId}-${measurementScriptAttempt}`}
+          id={`mg-google-measurement-${measurementScriptAttempt}`}
+          src={`https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(scriptId)}&mg_retry_attempt=${measurementScriptAttempt}`}
           strategy="afterInteractive"
+          onLoad={() => {
+            measurementScriptStateRef.current = "loaded";
+            measurementScriptRetryCountRef.current = 0;
+            if (measurementScriptRetryTimerRef.current !== null) {
+              window.clearTimeout(measurementScriptRetryTimerRef.current);
+              measurementScriptRetryTimerRef.current = null;
+            }
+            void notifyGoogleMeasurementScriptLoaded().catch(() => 0);
+          }}
+          onError={() => {
+            measurementScriptStateRef.current = "failed";
+            notifyGoogleMeasurementScriptFailed();
+            const retryIndex = measurementScriptRetryCountRef.current;
+            const retryDelay = googleMeasurementScriptRetryDelays[retryIndex];
+            if (retryDelay === undefined || measurementScriptRetryTimerRef.current !== null) return;
+            measurementScriptRetryCountRef.current = retryIndex + 1;
+            measurementScriptRetryTimerRef.current = window.setTimeout(() => {
+              measurementScriptRetryTimerRef.current = null;
+              if (
+                !isPublicAnalyticsPath(window.location.pathname) &&
+                !isConversionMeasurementPath(window.location.pathname)
+              ) {
+                return;
+              }
+              measurementScriptStateRef.current = "loading";
+              setMeasurementScriptAttempt((current) => current + 1);
+            }, retryDelay);
+          }}
         />
       ) : null}
 

@@ -42,6 +42,41 @@ test("public online status is compact and never intercepts mobile controls", () 
   assert.match(onlineStatus, /max-w-24 truncate/);
 });
 
+test("file-service hero actions preserve mobile clearance from the fixed control dock", () => {
+  const page = readProjectFile("src", "app", "file-service", "page.tsx");
+  const languageSwitcher = readProjectFile("src", "components", "LanguageSwitcher.tsx");
+  const privacyControl = readProjectFile("src", "components", "analytics", "PublicAnalytics.tsx");
+  const heroActions =
+    page.match(/data-file-service-hero-actions[\s\S]*?className="([^"]+)"/)?.[1] ?? "";
+
+  assert.match(page, /grid max-w-7xl gap-10 px-4 pb-16 pt-6 sm:py-20/);
+  assert.match(page, /text-\[2\.5rem\][^"\n]*sm:text-5xl/);
+  assert.match(page, /inline-block max-w-full[^"\n]*text-\[11px\]/);
+  assert.match(heroActions, /flex flex-col/);
+  assert.match(heroActions, /mt-6/);
+  assert.match(heroActions, /sm:mt-8/);
+  assert.match(heroActions, /sm:flex-row sm:flex-wrap/);
+  assert.match(
+    heroActions,
+    /mb-\[calc\(5\.5rem\+env\(safe-area-inset-bottom\)\)\]/,
+  );
+  assert.match(heroActions, /sm:mb-0/);
+  assert.equal(
+    (
+      page.match(
+        /scroll-mb-\[calc\(5\.5rem\+env\(safe-area-inset-bottom\)\)\]/g,
+      ) ?? []
+    ).length,
+    2,
+  );
+  assert.match(languageSwitcher, /fixed bottom-4 right-4/);
+  assert.match(privacyControl, /fixed bottom-4 right-20/);
+
+  for (const viewportWidth of [320, 375, 390, 430]) {
+    assert.ok(viewportWidth < 640, `${viewportWidth}px must retain the mobile CTA clearance`);
+  }
+});
+
 test("homepage vehicle controls and icon-only account link have accessible names", () => {
   const homepage = readProjectFile("src", "app", "page.tsx");
 

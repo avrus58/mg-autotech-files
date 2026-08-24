@@ -4485,3 +4485,68 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
   Production build kapilari temiz oldugu dogrulandi. Dev server kapatildi.
 - Kapsam disi: Production deploy/push, SQL/migration, Production DB,
   env/secret, payment, e-posta veya gercek musteri verisi islemi yapilmadi.
+
+## 2026-08-24 09:21 +02:00 Google Ads measurement ve funnel hardening hazir
+
+- Sonuc: Google Ads donusumleri artik Google'in dokumante `dataLayer.push(arguments)`
+  kuyruk bicimini kullaniyor. Registration, verified request ve verified credit
+  purchase sinyalleri yalniz advertising consent ile, SHA-256 transaction ID ve
+  PII icermeyen 7 gunluk bounded outbox uzerinden gonderiliyor. Script load
+  hatasi iki kademeli backoff ve online retry ile yeni cache key uzerinden tekrar
+  deneniyor; tag handoff callback'inden once dedupe yazilmiyor.
+- Guvenlik/gizlilik: Pending conversions dashboard/admin gibi private rotalarda
+  gonderilmiyor ve normal route pause bunlari silmiyor. Advertising consent
+  revoke outbox, timer ve Ads dedupe anahtarlarini temizliyor; gec callback
+  bunlari yeniden olusturamiyor. Gtag throw, sync callback, TTL ve blocked
+  persistence durumlari fail-soft/bounded. Server-side/offline conversion veya
+  customer identifier export eklenmedi.
+- Auth funnel: `/register?redirect=/new-request` niyeti e-posta signup, resend,
+  Google callback ve login/register capraz linklerinde fail-closed local redirect
+  olarak korunuyor. Register auth bootstrap `getStableSession` ve 8 saniye
+  watchdog ile sonsuz spinner'dan cikiyor. Auth callback ve OAuth complete
+  profile, registration outbox enqueue tamamlanmadan yonlendirmiyor.
+- Landing/UI: `/file-service` hero workshop ve professional tuner kitlesini
+  acikca nitelendiriyor. Mobile spacing/typography, fixed language/privacy/status
+  kontrolleriyle CTA cakismayacak sekilde daraltildi; mevcut SEO, servis, fiyat
+  ve hukuki metinler korunuyor. Chrome 320/375/390/430 x 844 QA'da overflow ve
+  CTA overlap yok, console error/warning yok.
+- Operasyon: VPS env contract artik GA4 ID, Ads ID ve uc conversion label'i
+  zorunlu/pattern-valid kiliyor; hata ciktilari deger sizdirmiyor. Admin Ads
+  ekranindaki yaniltici `Measurement ready` kaldirildi; configuration, website
+  results ve external Google Ads delivery verification ayri gosteriliyor.
+- Ads salt-okunur audit: All-time Search 895 impressions, 51 clicks, EUR 36.29,
+  5.70% CTR ve Ads tarafinda 0 reported conversions; first-party 30d kayitlari
+  `file_service_en` icin 41 visitor, 2 registration, 2 verified request ve EUR
+  135 verified revenue gosteriyor. Search-only network, presence location,
+  phrase/exact keywords, broad match off, AI Max off, automatic assets off,
+  EUR 5/day ve 32 mevcut negative dogru; PMax paused korundu. Yedi dar consumer/
+  competitor exact negatif ve `near me` phrase adayi kaydedilmedi; live Save
+  action-time owner confirmation bekliyor.
+- Kontroller: `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS
+  (979/979); degisen alan hedefli testleri PASS (72/72); `npm run check:i18n`
+  PASS (12 locales ve customer 603/603); `npm run build -- --webpack` PASS
+  (277/277); `npm run check:performance` PASS (homepage 69.5 KiB gzip / 80 KiB
+  budget); `git diff --check` PASS (yalniz Windows LF/CRLF bilgilendirmeleri).
+- Kapsam disi: Production deploy/push, Production DB/migration, payment/billing,
+  e-posta gonderimi, secret okuma/yazma, gercek musteri verisi mutasyonu ve live
+  Google Ads Save yapilmadi. Production Tag Assistant tekrar testi kod canliya
+  ciktiktan sonra yapilacak.
+
+## 2026-08-24 09:37 +02:00 Google Ads canli kampanya temizligi tamamlandi
+
+- Owner canli Google Ads Save ve Production release icin action-time onayi
+  verdi. Search kampanyasinin EUR 5/gun butcesi, Search-only agi, presence
+  konumu, mevcut phrase/exact keywordleri ve paused PMax durumu korunarak sekiz
+  dar negatif kaydedildi: phrase `near me`; exact `stage 1 remap`, `bmw 518d
+  remap`, `effective tuning`, `remap my car stage 2`, `stage 1 remap cost uk`,
+  `audi sq2 remap` ve `stgfiles com`.
+- Google Ads negatif listesi canli basari bildirimi ve tabloyla 32'den 40'a
+  ciktigi dogrulandi. Verified credit purchase Primary/Every olarak korundu;
+  verified file request ile verified registration Secondary/One olarak
+  kaydedildi ve detay ekranlarinda tekrar dogrulandi.
+- Butce artisi, billing/payment degisikligi, kampanya/ag degisikligi, PMax
+  aktivasyonu, customer data aktarimi veya reklam metni degisikligi yapilmadi.
+- Son release gate GO: package/lockfile, migration/SQL, payment, secret/PII ve
+  Production DB degisikligi yok. Hostinger VPS code-only release icin mevcut
+  release-state ve fail-closed public measurement env contract kontrolu sonraki
+  kapidir; rollback mevcut immutable previous image ciftine yapilabilir.

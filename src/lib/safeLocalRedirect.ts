@@ -40,3 +40,24 @@ export function getSafeLocalRedirectPath(value: unknown): string | null {
     return null;
   }
 }
+
+type AuthEntryPath = "/login" | "/register";
+
+export function buildAuthEntryPath(
+  entryPath: AuthEntryPath,
+  redirectValue: unknown,
+  extraParams: Readonly<Record<string, string>> = {}
+) {
+  const params = new URLSearchParams(extraParams);
+  const redirectPath = getSafeLocalRedirectPath(redirectValue);
+  if (redirectPath) params.set("redirect", redirectPath);
+
+  const query = params.toString();
+  return query ? `${entryPath}?${query}` : entryPath;
+}
+
+export function buildAuthCallbackPath(redirectValue: unknown) {
+  const nextPath = getSafeLocalRedirectPath(redirectValue) ?? "/dashboard";
+  const params = new URLSearchParams({ next: nextPath });
+  return `/auth/callback?${params.toString()}`;
+}

@@ -198,8 +198,11 @@ export default function AdsPerformanceClient() {
             <section className="grid overflow-hidden rounded-lg border border-white/10 bg-[#0b0c0e] xl:grid-cols-[1fr_380px]">
               <div className="p-5 sm:p-6">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className={`rounded-full border px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] ${report.configuration.readyForVerifiedMeasurement ? "border-emerald-700/40 bg-emerald-950/25 text-emerald-200" : "border-amber-700/40 bg-amber-950/25 text-amber-200"}`}>
-                    {report.configuration.readyForVerifiedMeasurement ? "Measurement ready" : "Configuration required"}
+                  <span className={`rounded-full border px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] ${report.configuration.configurationComplete ? "border-sky-700/40 bg-sky-950/25 text-sky-200" : "border-amber-700/40 bg-amber-950/25 text-amber-200"}`}>
+                    {report.configuration.configurationComplete ? "Configuration complete" : "Configuration required"}
+                  </span>
+                  <span className="rounded-full border border-amber-700/40 bg-amber-950/25 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-amber-200">
+                    {report.deliveryVerification.label}
                   </span>
                   <span className="text-[11px] text-zinc-600">Updated {formatDate(report.generatedAt)}</span>
                 </div>
@@ -207,6 +210,10 @@ export default function AdsPerformanceClient() {
                 <p className="mt-3 max-w-3xl text-sm leading-6 text-zinc-400">
                   Payment is the primary conversion, a successfully created file request is secondary, and verified registration is observation-only. Measurement failures never block registration, requests or payments.
                 </p>
+                <div className="mt-4 flex max-w-3xl items-start gap-2 rounded-lg border border-amber-800/35 bg-amber-950/10 p-3 text-xs leading-5 text-amber-100/75">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-300" aria-hidden="true" />
+                  <p>{report.deliveryVerification.detail}</p>
+                </div>
                 <div className="mt-5 grid gap-2 sm:grid-cols-3">
                   <HierarchyItem icon={<CircleDollarSign />} label="Primary" title="Verified payment" />
                   <HierarchyItem icon={<Flag />} label="Secondary" title="Verified request" />
@@ -215,7 +222,7 @@ export default function AdsPerformanceClient() {
               </div>
               <div className="border-t border-white/10 bg-black/25 p-5 xl:border-l xl:border-t-0">
                 <div className="flex items-end justify-between gap-4">
-                  <div><p className="text-[10px] font-black uppercase tracking-[0.16em] text-zinc-500">Readiness controls</p><p className="mt-1 text-lg font-black">{readiness} of 7 verified</p></div>
+                  <div><p className="text-[10px] font-black uppercase tracking-[0.16em] text-zinc-500">Configuration controls</p><p className="mt-1 text-lg font-black">{readiness} of 7 configured</p></div>
                   <span className="text-3xl font-black text-red-400">{Math.round(readiness / 7 * 100)}%</span>
                 </div>
                 <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/10"><div className="h-full bg-red-600" style={{ width: `${readiness / 7 * 100}%` }} /></div>
@@ -233,7 +240,7 @@ export default function AdsPerformanceClient() {
 
             {report.accountActions.length ? (
               <section className="rounded-lg border border-amber-700/40 bg-amber-950/15 p-5">
-                <div className="flex items-center gap-2"><CircleGauge className="h-5 w-5 text-amber-300" /><h2 className="font-black">Account setup still required</h2></div>
+                <div className="flex items-center gap-2"><CircleGauge className="h-5 w-5 text-amber-300" /><h2 className="font-black">Next measurement actions</h2></div>
                 <div className="mt-3 grid gap-2 md:grid-cols-2">
                   {report.accountActions.map((action) => <div key={action} className="rounded-lg border border-amber-800/25 bg-black/20 p-3 text-xs leading-5 text-amber-100/80">{action}</div>)}
                 </div>
@@ -243,7 +250,7 @@ export default function AdsPerformanceClient() {
             <section className="overflow-hidden rounded-lg border border-white/10 bg-[#0b0c0e]">
               <div className="flex flex-wrap items-start justify-between gap-4 border-b border-white/10 p-5">
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.18em] text-red-400">Observed funnel health</p>
+                  <p className="text-[10px] font-black uppercase tracking-[0.18em] text-red-400">Website results</p>
                   <h2 className="mt-1 text-xl font-black">{report.measurementHealth.label}</h2>
                   <p className="mt-1 max-w-3xl text-xs leading-5 text-zinc-500">{report.measurementHealth.detail}</p>
                 </div>
@@ -369,7 +376,7 @@ function HierarchyItem({ icon, label, title }: { icon: ReactNode; label: string;
 }
 
 function StatusLine({ label, ready }: { label: string; ready: boolean }) {
-  return <div className="flex items-center justify-between gap-3 text-xs"><span className="text-zinc-400">{label}</span><span className={`inline-flex items-center gap-1 font-black ${ready ? "text-emerald-300" : "text-amber-300"}`}>{ready ? <CheckCircle2 className="h-3.5 w-3.5" /> : <AlertTriangle className="h-3.5 w-3.5" />}{ready ? "Ready" : "Required"}</span></div>;
+  return <div className="flex items-center justify-between gap-3 text-xs"><span className="text-zinc-400">{label}</span><span className={`inline-flex items-center gap-1 font-black ${ready ? "text-emerald-300" : "text-amber-300"}`}>{ready ? <CheckCircle2 className="h-3.5 w-3.5" /> : <AlertTriangle className="h-3.5 w-3.5" />}{ready ? "Configured" : "Missing"}</span></div>;
 }
 
 function MeasurementMetric({ label, value }: { label: string; value: number }) {
@@ -393,5 +400,5 @@ function PerformanceTable({ title, eyebrow, rows, empty }: { title: string; eyeb
 }
 
 function LoadingState() {
-  return <div className="grid min-h-[420px] place-items-center rounded-lg border border-white/10 bg-[#0b0c0e]"><div className="text-center"><RefreshCw className="mx-auto h-7 w-7 animate-spin text-red-400" /><p className="mt-3 text-sm font-black">Loading verified advertising readiness...</p></div></div>;
+  return <div className="grid min-h-[420px] place-items-center rounded-lg border border-white/10 bg-[#0b0c0e]"><div className="text-center"><RefreshCw className="mx-auto h-7 w-7 animate-spin text-red-400" /><p className="mt-3 text-sm font-black">Loading advertising configuration and outcomes...</p></div></div>;
 }

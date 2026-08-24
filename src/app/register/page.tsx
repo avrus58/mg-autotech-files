@@ -14,6 +14,7 @@ import {
   authenticatedFetch,
   getAuthenticatedHome,
   getAuthRedirect,
+  getStableSession,
   signOutIfEmailUnverified,
 } from "@/lib/authGuards";
 import { TurnstileChallenge } from "@/components/auth/TurnstileChallenge";
@@ -55,6 +56,11 @@ import {
   validateCustomerReplacementPassword,
 } from "@/lib/customerPasswordSecurity";
 import {
+  buildAuthCallbackPath,
+  buildAuthEntryPath,
+  getSafeLocalRedirectPath,
+} from "@/lib/safeLocalRedirect";
+import {
   ArrowLeft,
   ArrowRight,
   Building2,
@@ -73,6 +79,18 @@ import {
 type AccountType = "private" | "company";
 type StepId = 1 | 2 | 3;
 type CountryDetectionState = "detecting" | "detected" | "manual";
+const REGISTER_AUTH_BOOTSTRAP_TIMEOUT_MS = 8_000;
+
+function getRequestedRedirect() {
+  if (typeof window === "undefined") return null;
+
+  const value = new URLSearchParams(window.location.search).get("redirect");
+  return getSafeLocalRedirectPath(value);
+}
+
+function getRegistrationCallbackPath() {
+  return buildAuthCallbackPath(getRequestedRedirect());
+}
 
 function getSelectedEmailLanguage() {
   return resolveBrowserTransactionalEmailLanguage({
@@ -147,6 +165,9 @@ export default function RegisterPage() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [resendingVerification, setResendingVerification] = useState(false);
   const [checkingAuth, setCheckingAuth] = useState(true);
+  const [requestedRedirectPath, setRequestedRedirectPath] = useState<
+    string | null
+  >(null);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [captchaResetKey, setCaptchaResetKey] = useState(0);
   const authRequestInFlightRef = useRef(false);
@@ -167,31 +188,57 @@ export default function RegisterPage() {
 
   useEffect(() => {
     let active = true;
+    let bootstrapOpen = true;
+    const requestedRedirect = getRequestedRedirect();
+    const redirectStateTimeout = window.setTimeout(() => {
+      if (active) setRequestedRedirectPath(requestedRedirect);
+    }, 0);
+    const failSoftTimeout = window.setTimeout(() => {
+      bootstrapOpen = false;
+      if (active) setCheckingAuth(false);
+    }, REGISTER_AUTH_BOOTSTRAP_TIMEOUT_MS);
 
     const redirectAuthenticatedUser = async () => {
-      const { data } = await supabase.auth.getUser();
-      const user = data.user;
+      try {
+        const { session } = await getStableSession();
+        const user = session?.user;
 
-      if (!active) return;
+        if (!active || !bootstrapOpen) return;
 
-      if (!user) {
-        setCheckingAuth(false);
-        return;
+        if (!user) {
+          setCheckingAuth(false);
+          return;
+        }
+
+        if (await signOutIfEmailUnverified(user)) {
+          if (!active || !bootstrapOpen) return;
+          router.replace(
+            buildAuthEntryPath("/login", requestedRedirect, {
+              verify_email: "1",
+            })
+          );
+          return;
+        }
+
+        const destination =
+          requestedRedirect ?? (await getAuthenticatedHome(user.id));
+        if (!active || !bootstrapOpen) return;
+        router.replace(destination);
+        router.refresh();
+      } catch {
+        if (active && bootstrapOpen) setCheckingAuth(false);
+      } finally {
+        window.clearTimeout(failSoftTimeout);
       }
-
-      if (await signOutIfEmailUnverified(user)) {
-        router.replace("/login?verify_email=1");
-        return;
-      }
-
-      router.replace(await getAuthenticatedHome(user.id));
-      router.refresh();
     };
 
     void redirectAuthenticatedUser();
 
     return () => {
       active = false;
+      bootstrapOpen = false;
+      window.clearTimeout(redirectStateTimeout);
+      window.clearTimeout(failSoftTimeout);
     };
   }, [router]);
 
@@ -385,7 +432,7 @@ export default function RegisterPage() {
           email: cleanEmail,
           password,
           options: {
-            emailRedirectTo: getAuthRedirect("/auth/callback?next=/dashboard"),
+            emailRedirectTo: getAuthRedirect(getRegistrationCallbackPath()),
             ...(requestCaptchaToken
               ? { captchaToken: requestCaptchaToken }
               : {}),
@@ -483,7 +530,7 @@ export default function RegisterPage() {
         type: "signup",
         email: cleanEmail,
         options: {
-          emailRedirectTo: getAuthRedirect("/auth/callback?next=/dashboard"),
+          emailRedirectTo: getAuthRedirect(getRegistrationCallbackPath()),
           ...(requestCaptchaToken
             ? { captchaToken: requestCaptchaToken }
             : {}),
@@ -610,7 +657,7 @@ export default function RegisterPage() {
       return;
     }
 
-    router.replace("/auth/callback?next=/dashboard");
+    router.replace(getRegistrationCallbackPath());
   };
 
   if (checkingAuth) {
@@ -1097,7 +1144,10 @@ export default function RegisterPage() {
 
             <div className="mt-5 text-center text-sm text-zinc-400">
               Already have an account?{" "}
-              <Link href="/login" className="font-black text-red-400">
+              <Link
+                href={buildAuthEntryPath("/login", requestedRedirectPath)}
+                className="font-black text-red-400"
+              >
                 Login
               </Link>
             </div>

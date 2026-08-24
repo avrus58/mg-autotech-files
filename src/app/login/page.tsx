@@ -31,7 +31,10 @@ import {
 } from "@/lib/authLoginProtection";
 import { supabase } from "@/lib/supabaseClient";
 import { getPublicGoogleIdentityConfig } from "@/lib/googleIdentity";
-import { getSafeLocalRedirectPath } from "@/lib/safeLocalRedirect";
+import {
+  buildAuthEntryPath,
+  getSafeLocalRedirectPath,
+} from "@/lib/safeLocalRedirect";
 import {
   ArrowRight,
   Lock,
@@ -60,6 +63,9 @@ export default function LoginPage() {
   const [googleMessage, setGoogleMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [requestedRedirectPath, setRequestedRedirectPath] = useState<
+    string | null
+  >(null);
   const [deviceVerificationNextPath, setDeviceVerificationNextPath] = useState<string | null>(null);
   const passwordChangeVerification = typeof window !== "undefined" &&
     new URLSearchParams(window.location.search).get("purpose") === "password_change";
@@ -112,14 +118,16 @@ export default function LoginPage() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const requestedRedirect = getRequestedRedirect();
+    let active = true;
+    const redirectStateTimeout = window.setTimeout(() => {
+      if (active) setRequestedRedirectPath(requestedRedirect);
+    }, 0);
     const querySuccess = params.get("reset") === "success";
     const queryMessage = params.get("verify_email") === "1"
       ? "Please verify your e-mail address before accessing your account."
       : params.get("reset") === "success"
         ? "Password updated successfully. You can login now."
         : "";
-
-    let active = true;
 
     const redirectAuthenticatedUser = async () => {
       const { data } = await supabase.auth.getUser();
@@ -150,6 +158,7 @@ export default function LoginPage() {
 
     return () => {
       active = false;
+      window.clearTimeout(redirectStateTimeout);
     };
   }, [router]);
 
@@ -554,7 +563,7 @@ export default function LoginPage() {
             <div className="mt-6 text-center text-sm text-zinc-400">
               No account yet?{" "}
               <Link
-                href="/register"
+                href={buildAuthEntryPath("/register", requestedRedirectPath)}
                 className="rounded-md font-black text-red-400 outline-none transition hover:text-red-300 focus-visible:ring-2 focus-visible:ring-red-500/50"
               >
                 Create customer account

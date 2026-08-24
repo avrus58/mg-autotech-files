@@ -190,6 +190,28 @@ require_value app_environment NEXT_PUBLIC_BANK_BIC 8 16
 
 require_pattern \
   app_environment \
+  NEXT_PUBLIC_GOOGLE_ANALYTICS_ID \
+  '^G-[A-Z0-9]{6,14}$' \
+  "must be a valid Production GA4 measurement ID"
+require_pattern \
+  app_environment \
+  NEXT_PUBLIC_GOOGLE_ADS_ID \
+  '^AW-[0-9]{6,15}$' \
+  "must be a valid Production Google Ads tag ID"
+for google_ads_conversion_label_key in \
+  NEXT_PUBLIC_GOOGLE_ADS_REGISTRATION_LABEL \
+  NEXT_PUBLIC_GOOGLE_ADS_REQUEST_LABEL \
+  NEXT_PUBLIC_GOOGLE_ADS_PURCHASE_LABEL
+do
+  require_pattern \
+    app_environment \
+    "$google_ads_conversion_label_key" \
+    '^[A-Za-z0-9_-]{6,40}$' \
+    "must be a valid Production Google Ads conversion label"
+done
+
+require_pattern \
+  app_environment \
   NEXT_PUBLIC_GOOGLE_CLIENT_ID \
   '^[0-9]{6,}-[A-Za-z0-9_-]{8,}\.apps\.googleusercontent\.com$' \
   "must be a valid Production Google OAuth client ID"
