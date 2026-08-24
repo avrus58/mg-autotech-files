@@ -16,12 +16,12 @@ with expected_tables(table_name) as (
     pg_catalog.has_table_privilege(
       'authenticated',
       'public.' || expected.table_name,
-      'INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER'
+      'INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER, MAINTAIN'
     ) as authenticated_write,
     pg_catalog.has_table_privilege(
       'anon',
       'public.' || expected.table_name,
-      'SELECT, INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER'
+      'SELECT, INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER, MAINTAIN'
     ) as anon_access,
     pg_catalog.has_table_privilege(
       'service_role', 'public.' || expected.table_name, 'SELECT'
