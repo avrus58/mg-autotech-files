@@ -1,5 +1,7 @@
 # Otonom calisma gunlugu
 
+
+
 Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
 ## 2026-08-22 Genel datalog denemesi ve customer Studio derinligi
@@ -4665,3 +4667,40 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 - Kapsam dışı: SQL/migration, Production DB, env/secret, Caddy/DNS, Ads
   kampanya/bütçe/billing, payment/e-posta ve gerçek müşteri verisi işlemi
   yapılmadı; kritik regresyon görülmediği için rollback uygulanmadı.
+
+## 2026-08-24 21:41 +02:00 Admin dashboard sync resilience Production release tamamlandi
+
+- Owner `yayinla` diyerek Production action-time onayi verdi. Release kapsami
+  yalniz admin dashboard senkronizasyon dayanıklılığına ait 5 runtime ve 4 test
+  dosyasi olarak izole edildi; Strix upload, registration ve diger dirty worktree
+  degisiklikleri release'e alinmadi.
+- Exact runtime commit `9e72861c8a19ae07720444577c534d7ace8617b6`
+  `codex/admin-sync-vps-production` branch'ine force kullanmadan pushlandi.
+  Exact Git archive SHA-256
+  `92401680a8c28142f5c8a175da5c86ae0dfcedfc65c16c2bf0ada1827d331fe8`
+  yerel ve VPS tarafinda eslesti; kaynak
+  `/opt/mgautotech/file-service/releases/9e72861c8a19` altina acildi.
+- Release kapilari: hedefli admin resilience/UI testleri 122/122 PASS; `npm run
+  lint` PASS; `npm run typecheck` PASS; full `npm test` 988/988 PASS;
+  `npm run build -- --webpack` 277/277 PASS; `git diff --check` PASS.
+  Bagimsiz final review P0/P1 bulmadi ve GO verdi. Auth guard exception yolu ile
+  bounded retry sonrasi 20 saniyelik safety recovery de final turda kapatildi.
+- VPS preflight mevcut `8f0f4b8ce6d8` app/analyzer ciftinin healthy ve restart
+  0 oldugunu, env contract'i, root-only env modlarini, external edge network'u,
+  rollback image'larini ve disk headroom'u deger yazdirmadan dogruladi.
+- Immutable `mgautotech-file-service:9e72861c8a19` ve
+  `mgautotech-file-expert-analyzer:9e72861c8a19` image'lari build edildi;
+  analyzer-first ve app-second switch healthy tamamlandi. Release state current
+  `9e72861c8a19`, previous/rollback `8f0f4b8ce6d8`; iki container healthy,
+  restart 0 ve host port publish yok.
+- Immediate Production smoke PASS: `/api/health/ready`, `/`, `/file-service`,
+  `/login`, `/register`, `/new-request`, `/admin`, `/dashboard`,
+  `/dashboard/orders`, `/dashboard/file-expert` ve `https://mgautotech.de/`
+  200. Anonim `/api/admin/dashboard` 401 dondu ve incident header uretmedi.
+  Canli Chrome admin oturumunda panel gorundu, status `Live · 21:40`, load
+  error/session-ended state yok, yatay overflow yok ve console error/warning 0.
+  App/analyzer log taramasi temiz ve admin 5xx incident sayaci 0.
+- SQL/migration, Production DB, env/secret, Caddy/DNS, payment/billing, Ads,
+  gercek musteri verisi veya File Expert davranisi degistirilmedi. Alarm e-postasi
+  icin bilerek Production 5xx uretilmedi; kritik regresyon gorulmedigi icin
+  rollback uygulanmadi.
