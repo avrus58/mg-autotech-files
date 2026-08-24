@@ -4740,6 +4740,50 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
   `Checking secure session...` terminal kalis 0 ve console warning/error 0.
 - Review/risk: Iki bagimsiz reviewer P0/P1 bulmadi. Supabase/RLS/API/SQL,
   dependency, env/secret, musteri verisi ve gorunur UI degismedi. Production
-  deploy yapilmadi. Release oncesinden acik kalan eski sekme yeni guard'i
-  icermedigi icin deploy sonrasi yalniz bir defa manuel hard refresh
-  gerektirebilir; sonraki history donusleri self-heal olur.
+  release sonucu asagida kayitlidir. Release oncesinden acik kalan eski sekme
+  yeni guard'i icermedigi icin deploy sonrasi yalniz bir defa manuel hard
+  refresh gerektirebilir; sonraki history donusleri self-heal olur.
+
+## 2026-08-24 22:37 +02:00 Admin back navigation hotfix Production release
+
+- Owner `Yayinla` diyerek Production action-time onayi verdi. Exact hotfix
+  commit `d39ab2c8140ece2c9cc923c7fb2738d6195dd0b4`, canli runtime
+  `9e72861c8a1959f3ba313364e459e691f3c3e1b2` cizgisinin temiz devamidir.
+  Runtime farki yalniz ortak admin layout restore guard'i ve saf navigation
+  helper'idir; package/lockfile, SQL/migration, API, env contract, Compose,
+  Dockerfile, payment ve musteri verisi degismedi.
+- Remote `codex/admin-back-navigation-recovery` branch'i force kullanmadan exact
+  commite pushlandi. Git metadata icermeyen source archive'in yerel ve VPS
+  SHA-256 degeri
+  `139be90bda8b9849f101831fa7232196d4e0799d85d0a6f326ea6dea39226fdb`
+  olarak eslesti; source
+  `/opt/mgautotech/file-service/releases/d39ab2c8140e` altina acildi.
+- VPS preflight current `9e72861c8a19` app/analyzer ciftinin healthy/restart 0
+  oldugunu, rollback `8f0f4b8ce6d8` image'larini, root-only 0600 env
+  dosyalarini, deger yazdirmayan env contract'i, external edge network'u ve 19
+  GiB disk headroom'u dogruladi.
+- Immutable `mgautotech-file-service:d39ab2c8140e` ve
+  `mgautotech-file-expert-analyzer:d39ab2c8140e` image'lari build edildi;
+  Production compile, TypeScript ve 277/277 static page kapilari PASS oldu.
+  Analyzer-first ve app-second switch healthy tamamlandi. Release-state current
+  `d39ab2c8140e`, previous/rollback `9e72861c8a19`; iki container healthy,
+  restart 0 ve host port publish yok.
+- Immediate smoke PASS: internal app/analyzer readiness 200; public `/`,
+  `/new-request`, `/login`, `/register`, `/admin`, `/dashboard`,
+  `/dashboard/orders`, `/dashboard/file-expert`, `/api/health/ready` ve ayri
+  `https://mgautotech.de/` 200. Public vehicle cache 102 brand dondurdu. Anonim
+  admin smoke 401/405 sinirlarini korudu; `/api/admin/dashboard` 401, no-store
+  ve incident headersiz kaldi.
+- Canli browser smoke'ta `/admin/operations` -> Back akisi uc ardışık turda
+  `/admin` login gate'e tamamladi; terminal sync error 0, legacy `Live Sync` 0,
+  terminal `Checking secure session...` 0 ve console warning/error 0. Chrome
+  uzanti baglantisi oturumlu smoke icin kullanilabilir kalmadigindan owner
+  credential/session'i okunmadi veya degistirilmedi; guard auth sinirinin
+  disinda ayni Production bundle uzerinde dogrulandi.
+- Son 15 dakika app/analyzer error-like sayaclari 0, admin 5xx sayaci 0; memory
+  113.2 MiB/1 GiB ve 44.04 MiB/768 MiB. SQL/migration, Production DB,
+  env/secret, Caddy/DNS, payment/billing, Ads, e-posta, gercek musteri verisi ve
+  File Expert davranisi degistirilmedi. Kritik regresyon gorulmedigi icin
+  rollback uygulanmadi. Release oncesinden acik kalmis eski admin sekmesi bir
+  defa `Ctrl+Shift+R` isteyebilir; yeni bundle sonraki history donuslerini
+  otomatik toparlar.

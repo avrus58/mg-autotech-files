@@ -148,7 +148,11 @@ Kontroller: Hedefli admin navigation/session/sync testleri PASS (21/21);
 ardisik tur PASS, terminal sync karti 0 ve console warning/error 0; iki bagimsiz
 review P0/P1 temiz; `git diff --check` PASS (yalniz Windows CRLF
 bilgilendirmeleri). Yeni dependency, migration, env/secret veya canli veri
-islemi yoktur; Production deploy bu gorev kapsaminda yapilmadi.
+islemi yoktur. Exact `d39ab2c8140e` source archive SHA-256 eslesmesiyle
+Hostinger VPS Production'a deploy edildi; current app/analyzer cifti
+`d39ab2c8140e`, rollback/previous cifti `9e72861c8a19`, iki container healthy ve
+restart 0. Public/admin smoke, canli uc turlu Back testi ve bounded log kontrolu
+PASS; kritik regresyon gorulmedigi icin rollback uygulanmadi.
 
 ### MANUAL-20260824-ADS-CONVERSION-PREDIRECT-HANDOFF [P0] Dönüşümü özel route yönlendirmesinden önce Google kuyruğuna aktar
 
