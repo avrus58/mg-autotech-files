@@ -4621,3 +4621,47 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 - Kapsam disi: Production deploy/push, SQL/migration, Production DB, env/secret,
   Ads hesabi/butcesi, payment/billing, e-posta ve gercek musteri verisi islemi
   yapilmadi.
+
+## 2026-08-24 11:28 +02:00 Ads conversion handoff Production release tamamlandi
+
+- Release araligi: 2026-08-24 11:19–11:28 (Europe/Berlin). Owner `yayinla`
+  diyerek Production action-time onayi verdi.
+- Kapsam: Canli `512921b18659` → docs-only `3a9eab2` → fix
+  `8f0f4b8ce6d821184cbea52e20c0d09916b996d2` ancestry'si doğrusal ve
+  merge/sapma olmadan doğrulandı. Runtime farkı yalnız analytics helper ile
+  registration/request/payment success çağrı noktalarıdır; package/lockfile,
+  SQL/migration, env contract, Compose/Dockerfile, payment doğrulaması ve File
+  Expert analyzer kodu değişmedi.
+- Remote `codex/ads-conversion-delivery-fix` branch'i force kullanmadan exact
+  fix commitine pushlandı. Exact committen Git metadata içermeyen archive
+  üretildi; yerel ve VPS SHA-256 değeri
+  `21acd71d3a530cf8e6aad51dc56f370419ee08af1b8c939f626393cddadec47a`
+  olarak eşleşti. Kaynak
+  `/opt/mgautotech/file-service/releases/8f0f4b8ce6d8` altına açıldı.
+- VPS preflight: current çift `512921b18659`, iki container healthy, restart 0,
+  env dosyaları root:root/0600, external edge network hazır, rollback image'ları
+  mevcut ve disk headroom 21 GiB. Yeni kaynak env contract değer yazdırmadan
+  PASS oldu.
+- Deploy: Immutable `mgautotech-file-service:8f0f4b8ce6d8` ve
+  `mgautotech-file-expert-analyzer:8f0f4b8ce6d8` image'ları build edildi;
+  Production Next compile, TypeScript ve 277/277 static page kapıları PASS.
+  Analyzer-first ve app-second switch healthy tamamlandı. Release state current
+  `8f0f4b8ce6d8`, previous/rollback `512921b18659`; iki container healthy,
+  restart 0, host port publish yok.
+- Immediate smoke: public platform ve anonim admin scriptleri PASS; `/`,
+  `/file-service`, `/login`, `/register`, `/new-request`, `/dashboard`,
+  `/dashboard/orders`, `/api/health/ready` ve `https://mgautotech.de/` PASS;
+  anonim `/api/admin/ads-performance` 401. Son 10 dakika app/analyzer error-like
+  log sayaçları 0; memory 117.3 MiB/1 GiB ve 45.14 MiB/768 MiB.
+- Browser smoke: Taze necessary-only Production oturumunda Google script/event
+  yüklenmedi ve console error/warning yok. Canlı `/_next/static` analytics
+  bundle'ında bounded outbox anahtarı, query-free callback/payment canonical
+  URL'leri ve `page_referrer` gizlilik imzası bulundu. Sahte kayıt, talep,
+  payment veya müşteri verisi oluşturulmadı.
+- Kalan kanıt: İlk gerçek ve advertising-consent verilmiş registration/request
+  olayında Tag Assistant `event=conversion` receipt'i ayrıca izlenmeli. Google
+  Ads `Inactive` durumunun gecikmeli güncellenmesi tek başına rollback nedeni
+  değildir; sahte payment testi yapılmayacaktır.
+- Kapsam dışı: SQL/migration, Production DB, env/secret, Caddy/DNS, Ads
+  kampanya/bütçe/billing, payment/e-posta ve gerçek müşteri verisi işlemi
+  yapılmadı; kritik regresyon görülmediği için rollback uygulanmadı.

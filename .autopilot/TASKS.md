@@ -149,7 +149,9 @@ PASS; `npm run typecheck` PASS; `npm test` PASS (981/981); `npm run build --
 --webpack` PASS (277/277); bağımsız privacy/release review GO; `git diff
 --check` PASS (yalnız Windows CRLF bilgilendirmeleri). DB/migration, package,
 env/secret, Ads hesabı/bütçesi, payment doğrulaması, e-posta veya müşteri verisi
-değişmedi; Production deploy bu görev kapsamında yapılmadı.
+değişmedi. Exact `8f0f4b8ce6d8` source archive SHA-256 eşleşmesiyle Hostinger
+VPS Production'a deploy edildi; app/analyzer healthy, restart 0, smoke PASS ve
+rollback çifti `512921b18659` olarak korundu.
 
 ### MANUAL-20260824-ADS-MEASUREMENT-FUNNEL [P1] Google Ads olcum ve musteri edinim sistemini guvenilir hale getir
 
