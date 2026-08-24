@@ -141,9 +141,31 @@ test("request analytics contains no customer, order, vehicle, file or payment me
     assert.doesNotMatch(contract, new RegExp(forbidden, "i"), forbidden);
   }
 
-  assert.match(requestPage, /if \(error\) \{[\s\S]*?return;[\s\S]*?createdOrderId \|\| growthAttemptIdRef[\s\S]*?trackRequestSubmitted\(conversionSeed\);/);
+  assert.match(requestPage, /if \(error\) \{[\s\S]*?return;[\s\S]*?createdOrderId \|\| growthAttemptIdRef[\s\S]*?await trackRequestSubmitted\(conversionSeed\)\.catch\(\(\) => false\);/);
   assert.match(requestPage, /if \(!customerProfile \|\| requestStartTrackedRef\.current\) return;[\s\S]*?trackRequestStarted\(\);/);
   assert.match(analytics, /crypto\.subtle\.digest\("SHA-256", bytes\)/);
+});
+
+test("verified conversion routes await local queue insertion before customer navigation", () => {
+  const requestPage = projectFile("src", "app", "new-request", "page.tsx");
+  const paymentPage = projectFile("src", "app", "payment", "success", "page.tsx");
+  const registerPage = projectFile("src", "app", "register", "page.tsx");
+  const authCallback = projectFile("src", "app", "auth", "callback", "page.tsx");
+  const completeProfile = projectFile("src", "app", "auth", "complete-profile", "page.tsx");
+
+  assert.match(requestPage, /await trackRequestSubmitted\(conversionSeed\)\.catch\(\(\) => false\);/);
+  assert.ok(
+    requestPage.indexOf("await trackRequestSubmitted(conversionSeed)") <
+      requestPage.indexOf('router.push("/dashboard")')
+  );
+  assert.match(paymentPage, /await trackPurchaseCompleted\(\{[\s\S]*?\}\)\.catch\(\(\) => false\);/);
+  assert.ok(
+    paymentPage.indexOf("await trackPurchaseCompleted({") <
+      paymentPage.indexOf('setState("success")')
+  );
+  assert.match(registerPage, /await trackRegistrationCompleted\(\)\.catch\(\(\) => false\);/);
+  assert.match(authCallback, /await trackRegistrationCompleted\(\)\.catch\(\(\) => false\);[\s\S]*?router\.replace\(next\);/);
+  assert.match(completeProfile, /await trackRegistrationCompleted\(\)\.catch\(\(\) => false\);[\s\S]*?router\.replace\(`/);
 });
 
 test("root analytics loader is consent-aware, production-only and fail-closed without config", () => {

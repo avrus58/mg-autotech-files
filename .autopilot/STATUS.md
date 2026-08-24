@@ -4580,3 +4580,44 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
   `codex/production-release-20260823` branch'leri exact release commitine
   pushlandi. SQL/migration, Production DB, payment/billing, e-posta, Caddy/DNS,
   customer data, reklam butcesi veya PMax durumu degistirilmedi.
+
+## 2026-08-24 10:52 +02:00 Ads conversion pre-redirect handoff tamamlandi
+
+- Calisma araligi: 2026-08-24 10:28–10:52 (Europe/Berlin). Gorev:
+  `MANUAL-20260824-ADS-CONVERSION-PREDIRECT-HANDOFF`.
+- Canli salt-okunur kanit: Google Ads conversion tablosunda registration,
+  verified request ve verified purchase `Inactive` gorunurken Production Tag
+  Assistant GA4 `G-PX085CX6M0`, Ads `AW-18379047445`, consent default/update,
+  Ads config ve page-view teslimini dogruladi. Google Ads event snippet'leri ile
+  public configteki uc label birebir eslesti. Kok neden env/label degil; auth,
+  request ve payment basarisindan sonra private dashboard'a gecisin harici
+  Google script `load` callback'inden once olmasiydi. Private route guard'i
+  sonraki outbox flush'ini durdurabiliyordu.
+- Sonuc: `flushGoogleAdsConversionOutbox` artik advertising consent ve izinli
+  conversion route sinirlari icinde, harici script yuklenmeden standart
+  gtag/dataLayer kuyruguna conversion komutunu ekliyor. Registration, request ve
+  payment success yuzeyleri yalniz yerel SHA-256/persistence/queue adimini
+  fail-soft bekleyip sonra yonleniyor; payment success linkleri de bu aktarimdan
+  once acilmiyor.
+- Gizlilik: Ads ve paralel GA4 `sign_up`, `generate_lead`, `purchase` olaylari
+  sabit query-free canonical `page_location` ve bos `page_referrer` kullaniyor.
+  Sentetik Supabase callback code ve Stripe `session_id` regresyon testi event
+  payloadlarinda bu degerlerin bulunmadigini dogruluyor. Outbox yalniz conversion
+  tipi, SHA-256 transaction ID, timestamp ve opsiyonel value/currency tasiyor;
+  musteri, order, arac, dosya veya raw payment seed tasimiyor.
+- Degisen dosyalar: `src/lib/publicAnalytics.ts`, `src/app/register/page.tsx`,
+  `src/app/new-request/page.tsx`, `src/app/payment/success/page.tsx`,
+  `tests/google-ads-readiness.test.ts`, `tests/seo-conversion-tracking.test.ts`,
+  `.autopilot/TASKS.md`, `.autopilot/TASK_HISTORY.md`, `.autopilot/STATUS.md`.
+- Kontroller: hedefli testler PASS 34/34; `npm run lint` PASS; `npm run
+  typecheck` PASS; `npm test` PASS 981/981; `npm run build -- --webpack` PASS
+  277/277; uc bagimsiz privacy/release review final GO; `git diff --check` PASS
+  (yalniz Windows LF/CRLF bilgilendirmeleri).
+- Kalan risk: Google `event_callback`, dataLayer handoff'unu kanitlar; Ads
+  sunucusunun receipt'ini tek basina kanitlamaz. Kod canliya ciktiktan sonra ilk
+  izinli gercek/owner-approved test registration veya request Tag Assistant ile
+  dogrulanmali; sahte payment olusturulmamalidir. Ads durumunun guncellenmesi
+  Google tarafinda gecikmeli olabilir.
+- Kapsam disi: Production deploy/push, SQL/migration, Production DB, env/secret,
+  Ads hesabi/butcesi, payment/billing, e-posta ve gercek musteri verisi islemi
+  yapilmadi.

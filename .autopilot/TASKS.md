@@ -128,6 +128,29 @@ Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
 
+### MANUAL-20260824-ADS-CONVERSION-PREDIRECT-HANDOFF [P0] Dönüşümü özel route yönlendirmesinden önce Google kuyruğuna aktar
+
+Durum: Done
+
+Fingerprint: `google-ads|verified-conversion-handoff|script-load-after-private-route-redirect|allowed-route-queue-before-navigation`
+
+Sonuc: Advertising consent verilmiş kayıt, doğrulanmış talep ve doğrulanmış
+kredi satın alımı artık dış Google betiğinin yüklenmesini beklemeden standart
+gtag/dataLayer kuyruğuna aktarılıyor. Kayıt, talep ve ödeme başarı yüzeyleri
+yalnız yerel SHA-256/persistence/queue adımını fail-soft bekleyip sonra özel
+dashboard rotasına geçiyor; ödeme başarı bağlantıları da bu adımdan önce
+açılmıyor. GA4 ve Ads olayları sabit, query içermeyen canonical URL ile boş
+referrer kullanıyor; callback code, Stripe session ID, müşteri, sipariş, araç ve
+dosya verisi payload veya outbox'a girmiyor. Consent revoke, private-route pause,
+retry, dedupe, provider throw ve senkron callback davranışları korunuyor.
+
+Kontroller: Hedefli auth/analytics/Ads testleri PASS (34/34); `npm run lint`
+PASS; `npm run typecheck` PASS; `npm test` PASS (981/981); `npm run build --
+--webpack` PASS (277/277); bağımsız privacy/release review GO; `git diff
+--check` PASS (yalnız Windows CRLF bilgilendirmeleri). DB/migration, package,
+env/secret, Ads hesabı/bütçesi, payment doğrulaması, e-posta veya müşteri verisi
+değişmedi; Production deploy bu görev kapsamında yapılmadı.
+
 ### MANUAL-20260824-ADS-MEASUREMENT-FUNNEL [P1] Google Ads olcum ve musteri edinim sistemini guvenilir hale getir
 
 Durum: Done

@@ -1645,7 +1645,7 @@ export default function NewRequestPage() {
     );
 
     const conversionSeed = String(createdOrderId || growthAttemptIdRef.current || window.crypto.randomUUID());
-    void trackRequestSubmitted(conversionSeed);
+    await trackRequestSubmitted(conversionSeed).catch(() => false);
     if (createdOrderId && growthAttemptIdRef.current) {
       void recordGrowthRequestCreated(String(createdOrderId), growthAttemptIdRef.current);
     }

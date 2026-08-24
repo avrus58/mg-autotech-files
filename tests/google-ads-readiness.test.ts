@@ -30,6 +30,8 @@ import {
   notifyGoogleMeasurementScriptFailed,
   notifyGoogleMeasurementScriptLoaded,
   readMeasurementConsentSnapshot,
+  trackPurchaseCompleted,
+  trackRegistrationCompleted,
   trackRequestSubmitted,
   writeMeasurementConsent,
 } from "../src/lib/publicAnalytics";
@@ -137,7 +139,7 @@ test("Consent Mode v2 queues default denied before any granted update", async ()
   });
 });
 
-test("Google Ads conversions survive script failure and dedupe only after tag handoff callback", async () => {
+test("Google Ads conversions enter the tag queue before script load and dedupe after handoff callback", async () => {
   await withWindow(async (storage) => {
     const privateSeed = "private-order-reference-must-never-be-persisted";
     const configuration = {
@@ -157,7 +159,6 @@ test("Google Ads conversions survive script failure and dedupe only after tag ha
     assert.match(persisted, /[a-f0-9]{64}/);
     assert.doesNotMatch(persisted, new RegExp(privateSeed));
 
-    await notifyGoogleMeasurementScriptLoaded();
     const target = globalThis.window as unknown as {
       dataLayer?: Array<ArrayLike<unknown>>;
     };
@@ -169,12 +170,17 @@ test("Google Ads conversions survive script failure and dedupe only after tag ha
     const params = conversion[2] as {
       send_to?: string;
       transaction_id?: string;
+      page_location?: string;
+      page_referrer?: string;
       event_callback?: () => void;
     };
     assert.equal(params.send_to, "AW-123456789/Request_123");
+    assert.equal(params.page_location, "https://file.mgautotech.de/new-request");
+    assert.equal(params.page_referrer, "");
     assert.match(params.transaction_id ?? "", /^[a-f0-9]{64}$/);
     assert.doesNotMatch(params.transaction_id ?? "", new RegExp(privateSeed));
     assert.equal(typeof params.event_callback, "function");
+    assert.equal(await notifyGoogleMeasurementScriptLoaded(), 0);
 
     params.event_callback?.();
     assert.equal(storage.getItem(googleAdsConversionOutboxStorageKey), null);
@@ -213,7 +219,7 @@ test("revoking advertising consent clears pending conversion retries", async () 
   });
 });
 
-test("pending conversions pause on private routes and resume on an allowed measurement route", async () => {
+test("queued conversions survive a private-route transition and keep consent command ordering", async () => {
   await withWindow(async (storage) => {
     const target = globalThis.window as unknown as {
       location: { pathname: string };
@@ -230,25 +236,143 @@ test("pending conversions pause on private routes and resume on an allowed measu
     notifyGoogleMeasurementScriptFailed();
     assert.equal(await trackRequestSubmitted("route-paused-request"), true);
 
+    const beforePrivateRoute = (target.dataLayer ?? []).map((entry) => Array.from(entry));
+    const conversionIndex = beforePrivateRoute.findIndex(
+      (entry) => entry[0] === "event" && entry[1] === "conversion"
+    );
+    assert.ok(conversionIndex >= 0);
+
     target.location.pathname = "/dashboard";
+    denyGoogleMeasurement();
     assert.equal(await notifyGoogleMeasurementScriptLoaded(), 0);
     assert.notEqual(storage.getItem(googleAdsConversionOutboxStorageKey), null);
-    assert.equal(
-      (target.dataLayer ?? [])
-        .map((entry) => Array.from(entry))
-        .filter((entry) => entry[0] === "event" && entry[1] === "conversion")
-        .length,
-      0
+    const afterPrivateRoute = (target.dataLayer ?? []).map((entry) => Array.from(entry));
+    const grantedIndex = afterPrivateRoute.findIndex(
+      (entry) =>
+        entry[0] === "consent" &&
+        entry[1] === "update" &&
+        (entry[2] as { ad_storage?: string }).ad_storage === "granted"
     );
+    const deniedIndex = afterPrivateRoute.findIndex(
+      (entry, index) =>
+        index > conversionIndex &&
+        entry[0] === "consent" &&
+        entry[1] === "update" &&
+        (entry[2] as { ad_storage?: string }).ad_storage === "denied"
+    );
+    assert.ok(grantedIndex >= 0 && grantedIndex < conversionIndex);
+    assert.ok(deniedIndex > conversionIndex);
 
-    target.location.pathname = "/new-request";
-    assert.equal(await notifyGoogleMeasurementScriptLoaded(), 1);
-    const conversion = (target.dataLayer ?? [])
-      .map((entry) => Array.from(entry))
-      .find((entry) => entry[0] === "event" && entry[1] === "conversion");
+    const conversion = afterPrivateRoute[conversionIndex];
     const params = conversion?.[2] as { event_callback?: () => void } | undefined;
     assert.equal(typeof params?.event_callback, "function");
     params?.event_callback?.();
+    assert.equal(storage.getItem(googleAdsConversionOutboxStorageKey), null);
+  });
+});
+
+test("verified conversion types use fixed non-sensitive canonical locations for GA4 and Ads", async () => {
+  await withWindow(async () => {
+    const target = globalThis.window as unknown as {
+      dataLayer?: Array<ArrayLike<unknown>>;
+      location: { pathname: string; href?: string; search?: string };
+    };
+    writeMeasurementConsent({ analytics: true, advertising: true });
+    initializeGoogleMeasurement({
+      googleAnalyticsMeasurementId: "G-ABC1234567",
+      googleAdsId: "AW-123456789",
+      registrationLabel: "Register_123",
+      requestLabel: "Request_123",
+      purchaseLabel: "Purchase_123",
+    });
+    notifyGoogleMeasurementScriptFailed();
+
+    const callbackQuerySeed = "callback-code-must-never-reach-google";
+    const paymentQuerySeed = "cs_live_payment-seed-must-never-reach-google";
+    target.location.pathname = "/auth/callback";
+    target.location.search = `?code=${callbackQuerySeed}&next=%2Fdashboard`;
+    target.location.href = `https://file.mgautotech.de/auth/callback${target.location.search}`;
+    assert.match(beginRegistrationConversion() ?? "", /^[0-9a-f-]{36}$/i);
+    assert.equal(await trackRegistrationCompleted(), true);
+    target.location.pathname = "/new-request";
+    target.location.search = "";
+    target.location.href = "https://file.mgautotech.de/new-request";
+    assert.equal(await trackRequestSubmitted("canonical-request-seed"), true);
+    target.location.pathname = "/payment/success";
+    target.location.search = `?session_id=${paymentQuerySeed}`;
+    target.location.href = `https://file.mgautotech.de/payment/success${target.location.search}`;
+    assert.equal(
+      await trackPurchaseCompleted({
+        anonymousPaymentSeed: paymentQuerySeed,
+        value: 125,
+        currency: "EUR",
+      }),
+      true
+    );
+
+    const conversions = (target.dataLayer ?? [])
+      .map((entry) => Array.from(entry))
+      .filter((entry) => entry[0] === "event" && entry[1] === "conversion");
+    assert.equal(conversions.length, 3);
+    const locations = new Map(
+      conversions.map((entry) => {
+        const params = entry[2] as {
+          send_to?: string;
+          page_location?: string;
+          page_referrer?: string;
+          transaction_id?: string;
+          event_callback?: () => void;
+        };
+        assert.equal(params.page_referrer, "");
+        assert.match(params.transaction_id ?? "", /^[a-f0-9]{64}$/);
+        return [params.send_to, params.page_location];
+      })
+    );
+    assert.deepEqual(
+      Object.fromEntries(locations),
+      {
+        "AW-123456789/Register_123": "https://file.mgautotech.de/auth/callback",
+        "AW-123456789/Request_123": "https://file.mgautotech.de/new-request",
+        "AW-123456789/Purchase_123": "https://file.mgautotech.de/payment/success",
+      }
+    );
+
+    const ga4Locations = new Map(
+      (target.dataLayer ?? [])
+        .map((entry) => Array.from(entry))
+        .filter(
+          (entry) =>
+            entry[0] === "event" &&
+            ["sign_up", "generate_lead", "purchase"].includes(String(entry[1]))
+        )
+        .map((entry) => {
+          const params = entry[2] as {
+            page_location?: string;
+            page_referrer?: string;
+            transaction_id?: string;
+          };
+          assert.equal(params.page_referrer, "");
+          assert.match(params.transaction_id ?? "", /^[a-f0-9]{64}$/);
+          return [entry[1], params.page_location];
+        })
+    );
+    assert.deepEqual(Object.fromEntries(ga4Locations), {
+      sign_up: "https://file.mgautotech.de/auth/callback",
+      generate_lead: "https://file.mgautotech.de/new-request",
+      purchase: "https://file.mgautotech.de/payment/success",
+    });
+    const serializedEvents = JSON.stringify(
+      (target.dataLayer ?? [])
+        .map((entry) => Array.from(entry))
+        .filter((entry) => entry[0] === "event")
+        .map((entry) => entry[2])
+    );
+    assert.doesNotMatch(serializedEvents, new RegExp(callbackQuerySeed));
+    assert.doesNotMatch(serializedEvents, new RegExp(paymentQuerySeed));
+
+    for (const entry of conversions) {
+      (entry[2] as { event_callback?: () => void }).event_callback?.();
+    }
   });
 });
 
@@ -267,7 +391,7 @@ test("a late tag callback cannot recreate Ads measurement state after consent re
     });
     notifyGoogleMeasurementScriptFailed();
     assert.equal(await trackRequestSubmitted("late-callback-request"), true);
-    assert.equal(await notifyGoogleMeasurementScriptLoaded(), 1);
+    assert.equal(await notifyGoogleMeasurementScriptLoaded(), 0);
     const conversion = (target.dataLayer ?? [])
       .map((entry) => Array.from(entry))
       .find((entry) => entry[0] === "event" && entry[1] === "conversion");
@@ -287,7 +411,7 @@ test("a throwing gtag keeps the hashed conversion queued for retry", async () =>
     const target = globalThis.window as unknown as {
       gtag?: (...args: unknown[]) => void;
     };
-    writeMeasurementConsent({ analytics: false, advertising: true });
+    writeMeasurementConsent({ analytics: true, advertising: true });
     initializeGoogleMeasurement({
       googleAnalyticsMeasurementId: "G-ABC1234567",
       googleAdsId: "AW-123456789",
@@ -296,11 +420,11 @@ test("a throwing gtag keeps the hashed conversion queued for retry", async () =>
       purchaseLabel: "Purchase_123",
     });
     notifyGoogleMeasurementScriptFailed();
-    assert.equal(await trackRequestSubmitted("throwing-gtag-request"), true);
     target.gtag = () => {
       throw new Error("synthetic blocked tag");
     };
 
+    assert.equal(await trackRequestSubmitted("throwing-gtag-request"), true);
     assert.equal(await notifyGoogleMeasurementScriptLoaded(), 0);
     assert.notEqual(storage.getItem(googleAdsConversionOutboxStorageKey), null);
     writeMeasurementConsent({ analytics: true, advertising: false });
@@ -321,14 +445,14 @@ test("a synchronous tag handoff callback clears its retry timer and outbox", asy
       purchaseLabel: "Purchase_123",
     });
     notifyGoogleMeasurementScriptFailed();
-    assert.equal(await trackRequestSubmitted("sync-callback-request"), true);
     target.gtag = (...args: unknown[]) => {
       if (args[0] === "event" && args[1] === "conversion") {
         (args[2] as { event_callback?: () => void }).event_callback?.();
       }
     };
 
-    assert.equal(await notifyGoogleMeasurementScriptLoaded(), 1);
+    assert.equal(await trackRequestSubmitted("sync-callback-request"), true);
+    assert.equal(await notifyGoogleMeasurementScriptLoaded(), 0);
     assert.equal(storage.getItem(googleAdsConversionOutboxStorageKey), null);
     writeMeasurementConsent({ analytics: true, advertising: false });
   });

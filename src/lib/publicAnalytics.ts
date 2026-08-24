@@ -65,6 +65,8 @@ export type PublicAnalyticsEvent =
         method: "customer_portal";
         content_group: "account_entry";
         transaction_id: string;
+        page_location: "https://file.mgautotech.de/auth/callback";
+        page_referrer: "";
       };
     }
   | {
@@ -74,6 +76,8 @@ export type PublicAnalyticsEvent =
         value: number;
         transaction_id: string;
         content_group: "credit_purchase";
+        page_location: "https://file.mgautotech.de/payment/success";
+        page_referrer: "";
       };
     };
 
@@ -161,7 +165,6 @@ type GoogleAdsConversionOutboxEntry = {
 };
 
 let initializedMeasurementConfiguration: GoogleAdsPublicConfiguration | null = null;
-let googleMeasurementScriptState: "idle" | "loaded" | "failed" = "idle";
 const googleAdsConversionsInFlight = new Set<string>();
 const googleAdsConversionMemoryOutbox = new Map<
   string,
@@ -688,21 +691,18 @@ function scheduleGoogleAdsConversionRetry(key: string) {
 }
 
 export function notifyGoogleMeasurementScriptFailed() {
-  googleMeasurementScriptState = "failed";
   for (const key of [...googleAdsConversionsInFlight]) {
     clearGoogleAdsConversionRetry(key);
   }
 }
 
 export async function notifyGoogleMeasurementScriptLoaded() {
-  googleMeasurementScriptState = "loaded";
   return flushGoogleAdsConversionOutbox();
 }
 
 export async function flushGoogleAdsConversionOutbox() {
   if (
     typeof window === "undefined" ||
-    googleMeasurementScriptState !== "loaded" ||
     !hasAdvertisingMeasurementConsent() ||
     (!isPublicAnalyticsPath(window.location.pathname) &&
       !isConversionMeasurementPath(window.location.pathname))
@@ -729,6 +729,8 @@ export async function flushGoogleAdsConversionOutbox() {
     const adsParams: Record<string, unknown> = {
       send_to: `${config.googleAdsId}/${label}`,
       transaction_id: entry.transactionId,
+      page_location: verifiedConversionPageLocation(entry.name),
+      page_referrer: "",
       event_timeout: 2_000,
       event_callback: () => {
         if (!hasAdvertisingMeasurementConsent()) {
@@ -761,6 +763,12 @@ function conversionLabel(
   if (name === "registration") return config.registrationLabel;
   if (name === "request") return config.requestLabel;
   return config.purchaseLabel;
+}
+
+function verifiedConversionPageLocation(name: VerifiedConversionName) {
+  if (name === "registration") return "https://file.mgautotech.de/auth/callback";
+  if (name === "request") return "https://file.mgautotech.de/new-request";
+  return "https://file.mgautotech.de/payment/success";
 }
 
 function safeCurrency(value: string | null | undefined) {
@@ -831,7 +839,12 @@ async function dispatchVerifiedConversion(input: {
 
   const preferences = readMeasurementConsent();
   const config = publicMeasurementConfiguration();
-  initializeGoogleMeasurement(config);
+  try {
+    initializeGoogleMeasurement(config);
+  } catch {
+    // A blocked or replaced provider function must not prevent the privacy-safe
+    // Ads outbox from retaining this verified conversion for a later retry.
+  }
   const target = ensureGoogleTagQueue();
   let queued = false;
   const currency = safeCurrency(input.currency);
@@ -849,6 +862,8 @@ async function dispatchVerifiedConversion(input: {
             method: "customer_portal",
             content_group: "account_entry",
             transaction_id: transactionId,
+            page_location: "https://file.mgautotech.de/auth/callback",
+            page_referrer: "",
           },
         }
       : input.name === "request"
@@ -870,13 +885,19 @@ async function dispatchVerifiedConversion(input: {
                 value,
                 transaction_id: transactionId,
                 content_group: "credit_purchase",
+                page_location: "https://file.mgautotech.de/payment/success",
+                page_referrer: "",
               },
             }
           : null;
     if (event) {
-      target.gtag?.("event", event.name, event.params);
-      markConversionQueued("ga4", input.name, transactionId);
-      queued = true;
+      try {
+        target.gtag?.("event", event.name, event.params);
+        markConversionQueued("ga4", input.name, transactionId);
+        queued = true;
+      } catch {
+        // Ads delivery below remains independently retryable.
+      }
     }
   }
 
@@ -896,7 +917,7 @@ async function dispatchVerifiedConversion(input: {
       entry.value = value;
     }
     enqueueGoogleAdsConversion(entry);
-    void flushGoogleAdsConversionOutbox();
+    await flushGoogleAdsConversionOutbox();
     queued = true;
   }
   return queued;

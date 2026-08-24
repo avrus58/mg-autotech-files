@@ -480,7 +480,7 @@ export default function RegisterPage() {
     const isAlreadyVerified = Boolean(data.session && data.user?.email_confirmed_at);
     if (isAlreadyVerified) {
       void recordGrowthAccountCreated();
-      void trackRegistrationCompleted();
+      await trackRegistrationCompleted().catch(() => false);
       void authenticatedFetch("/api/email/new-customer", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

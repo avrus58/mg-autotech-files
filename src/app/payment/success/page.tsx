@@ -76,21 +76,22 @@ export default function PaymentSuccessPage() {
           return;
         }
 
-        setCredits(Number(data.credits ?? 0));
-        setState("success");
-        setMessage("Payment confirmed. Credits were added to your account.");
         const conversion = data.conversion && typeof data.conversion === "object"
           ? data.conversion as { value?: unknown; currency?: unknown }
           : null;
         const conversionValue = Number(conversion?.value);
         const conversionCurrency = String(conversion?.currency ?? "");
         if (Number.isFinite(conversionValue) && conversionValue >= 0 && /^[A-Z]{3}$/.test(conversionCurrency)) {
-          void trackPurchaseCompleted({
+          await trackPurchaseCompleted({
             anonymousPaymentSeed: sessionId,
             value: conversionValue,
             currency: conversionCurrency,
-          });
+          }).catch(() => false);
         }
+        if (cancelled) return;
+        setCredits(Number(data.credits ?? 0));
+        setState("success");
+        setMessage("Payment confirmed. Credits were added to your account.");
       } catch (error) {
         setState("error");
         setMessage(
