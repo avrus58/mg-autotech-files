@@ -4704,3 +4704,42 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
   gercek musteri verisi veya File Expert davranisi degistirilmedi. Alarm e-postasi
   icin bilerek Production 5xx uretilmedi; kritik regresyon gorulmedigi icin
   rollback uygulanmadi.
+
+## 2026-08-24 Admin back/forward navigation recovery
+
+- Baslangic: 2026-08-24 (Europe/Berlin). Gorev:
+  `MANUAL-20260824-ADMIN-BACK-NAVIGATION-RECOVERY`; admin alt sayfasindan geri
+  donuste eski panel ve terminal `Admin data sync failed` ekraninin tekrar
+  gorunmesini engelle.
+- Kanit: Owner ekranindaki `Live Sync` ve `Live management` metinleri current
+  `9e72861` runtime'inda yok, onceki `8f0f4b8` istemci paketinde birebir var.
+  Chrome BFCache ve Next App Router browser history cache, acik sekmedeki eski
+  JavaScript heap/route segmentini yeniden gosterebilir; VPS de gecis guvenligi
+  icin uc static release paketini kasitli olarak tutar. Bu bir bos production
+  kuyrugu veya veri silinmesi kaniti degildir.
+- Plan: Ortak admin layout seviyesinde persisted BFCache ve browser history ile
+  alt rotadan `/admin` kokune donusu algilayip yalniz bir kez hard refresh yap;
+  ilk acilisi ve normal link navigasyonunu koru. Supabase auth/RLS, API, musteri
+  verisi, SQL ve operasyon mutasyonlari kapsam disidir.
+- Sonuc: `AdminWorkspaceRestoreGuard` ortak admin layout'a auth sinirinin
+  disinda eklendi. Persisted BFCache, current document ile eslesen gercek
+  `back_forward` restore ve admin child-to-root `popstate` donusu tek sefer
+  temiz reload ile toparlaniyor. Normal Link/child-to-child navigasyonu ve daha
+  onceki baska bir document traversal'indan sonra admin'e client girisi reload
+  etmiyor. Cift tetikleme ref ile engelleniyor; listener'lar temizleniyor.
+- Degisen dosyalar: `src/app/admin/layout.tsx`,
+  `src/components/admin/AdminWorkspaceRestoreGuard.tsx`,
+  `src/lib/adminNavigationRecovery.ts`,
+  `tests/admin-navigation-recovery.test.ts`, `.autopilot/TASKS.md` ve bu
+  status kaydi.
+- Kontroller: hedefli navigation/session/sync testleri 21/21 PASS; `npm run
+  lint` PASS; `npm run typecheck` PASS; `npm test` 991/991 PASS; `npm run build
+  -- --webpack` 277/277 PASS; `git diff --check` PASS (yalniz CRLF
+  bilgilendirmeleri). Yerel browser smoke'ta `/admin/operations` -> Back akisi
+  uc ardışık turda `/admin` login gate'e tamamladi, `Admin data sync failed` 0,
+  `Checking secure session...` terminal kalis 0 ve console warning/error 0.
+- Review/risk: Iki bagimsiz reviewer P0/P1 bulmadi. Supabase/RLS/API/SQL,
+  dependency, env/secret, musteri verisi ve gorunur UI degismedi. Production
+  deploy yapilmadi. Release oncesinden acik kalan eski sekme yeni guard'i
+  icermedigi icin deploy sonrasi yalniz bir defa manuel hard refresh
+  gerektirebilir; sonraki history donusleri self-heal olur.

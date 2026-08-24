@@ -128,6 +128,28 @@ Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
 
+### MANUAL-20260824-ADMIN-BACK-NAVIGATION-RECOVERY [P1] Admin geri/ileri navigasyonunda eski panel geri yuklenmesin
+
+Durum: Done
+
+Fingerprint: `admin-operations|browser-back-forward-navigation|pre-release-admin-bundle-and-terminal-sync-error-restored|fresh-protected-workspace-on-history-return`
+
+Sonuc: Ortak admin layout artik persisted BFCache restore'u, gercek document
+`back_forward` donusunu ve admin alt rotasindan `/admin` kokune browser-history
+donusunu ayirt ederek tek sefer temiz reload yapiyor. Ilk dogrudan admin
+acilisi, normal Link navigasyonu ve admin child-to-child gecisleri reload
+etmiyor; cift reload korumasi ve listener cleanup mevcut. Guard auth sinirinin
+disinda yalniz lifecycle recovery uygular; Supabase session/RLS, API, SQL,
+musteri verisi ve gorunur UI degismedi.
+
+Kontroller: Hedefli admin navigation/session/sync testleri PASS (21/21);
+`npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS (991/991);
+`npm run build -- --webpack` PASS (277/277); gercek browser Back smoke uc
+ardisik tur PASS, terminal sync karti 0 ve console warning/error 0; iki bagimsiz
+review P0/P1 temiz; `git diff --check` PASS (yalniz Windows CRLF
+bilgilendirmeleri). Yeni dependency, migration, env/secret veya canli veri
+islemi yoktur; Production deploy bu gorev kapsaminda yapilmadi.
+
 ### MANUAL-20260824-ADS-CONVERSION-PREDIRECT-HANDOFF [P0] Dönüşümü özel route yönlendirmesinden önce Google kuyruğuna aktar
 
 Durum: Done
