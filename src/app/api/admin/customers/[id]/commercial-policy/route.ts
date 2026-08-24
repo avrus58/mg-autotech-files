@@ -1,11 +1,16 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireStaffPermission } from "@/lib/apiAuth";
-import { buildCreditQuote, getCommercialContext } from "@/lib/commercialPolicy";
+import { buildCreditQuote } from "@/lib/commercialPricing";
+import {
+  getCommerceSettings,
+  getCustomerCommercialPolicy,
+  normalizeCustomerCommercialPolicy,
+} from "@/lib/commercialPolicy";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 
 const schema = z.object({
-  creditPriceOverrideEuro: z.number().positive().max(1000).nullable(),
+  creditPriceOverrideEuro: z.number().min(0.01).max(1000).nullable(),
   adjustmentType: z.enum(["none", "percentage", "fixed"]),
   adjustmentValue: z.number().min(-1000).max(1000),
   paymentMethods: z.object({
@@ -13,59 +18,201 @@ const schema = z.object({
     bank: z.boolean().nullable(),
   }),
   internalNote: z.string().trim().max(2000).nullable(),
-}).superRefine((value, context) => {
+  expectedUpdatedAt: z.string().datetime({ offset: true }).nullable(),
+}).strict().superRefine((value, context) => {
   if (value.adjustmentType === "percentage" && Math.abs(value.adjustmentValue) > 100) {
-    context.addIssue({ code: "custom", path: ["adjustmentValue"], message: "Percentage adjustment must be between -100 and 100." });
+    context.addIssue({
+      code: "custom",
+      path: ["adjustmentValue"],
+      message: "Percentage adjustment must be between -100 and 100.",
+    });
+  }
+  if (value.adjustmentType === "none" && value.adjustmentValue !== 0) {
+    context.addIssue({
+      code: "custom",
+      path: ["adjustmentValue"],
+      message: "Adjustment value must be zero when no adjustment is selected.",
+    });
+  }
+  if (value.creditPriceOverrideEuro != null && value.adjustmentType !== "none") {
+    context.addIssue({
+      code: "custom",
+      path: ["creditPriceOverrideEuro"],
+      message: "Choose either a fixed customer price or an adjustment to the global price.",
+    });
   }
 });
 
+const privateNoStoreHeaders = {
+  "Cache-Control": "private, no-store, max-age=0",
+  Vary: "Authorization",
+};
+
+const selectedColumns = "user_id,credit_price_override_eur,adjustment_type,adjustment_value,payment_bank_enabled,payment_stripe_enabled,internal_note,updated_at";
+
+function json(body: unknown, status = 200) {
+  return NextResponse.json(body, { status, headers: privateNoStoreHeaders });
+}
+
+async function customerExists(id: string) {
+  const admin = getSupabaseAdmin();
+  const customer = await admin
+    .from("profiles")
+    .select("id,role")
+    .eq("id", id)
+    .eq("role", "customer")
+    .maybeSingle();
+  return customer.error ? "error" as const : customer.data ? "yes" as const : "no" as const;
+}
+
 export async function GET(
   request: Request,
-  context: { params: Promise<{ id: string }> }
+  context: { params: Promise<{ id: string }> },
 ) {
   const auth = await requireStaffPermission(request, "credits.manage");
-  if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
+  if (!auth.ok) return json({ error: auth.error }, auth.status);
   const { id } = await context.params;
+  if (!z.string().uuid().safeParse(id).success) {
+    return json({ error: "Invalid customer identifier." }, 400);
+  }
+
+  const existence = await customerExists(id);
+  if (existence === "error") return json({ error: "Customer pricing could not be loaded." }, 503);
+  if (existence === "no") return json({ error: "Customer not found." }, 404);
+
   try {
-    const commercial = await getCommercialContext(id);
-    return NextResponse.json({
-      policy: commercial.customerPolicy,
-      effectiveQuote: buildCreditQuote(commercial.settings, commercial.customerPolicy),
-      migrationReady: commercial.migrationReady,
+    const [settings, customerPolicy] = await Promise.all([
+      getCommerceSettings(),
+      getCustomerCommercialPolicy(id),
+    ]);
+    return json({
+      policy: customerPolicy,
+      effectiveQuote: buildCreditQuote(settings, customerPolicy),
+      migrationReady: true,
     });
-  } catch (error) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : "Customer commercial policy could not be loaded." }, { status: 500 });
+  } catch {
+    return json(
+      { error: "Customer pricing is temporarily unavailable. Retry before making changes." },
+      503,
+    );
   }
 }
 
 export async function PATCH(
   request: Request,
-  context: { params: Promise<{ id: string }> }
+  context: { params: Promise<{ id: string }> },
 ) {
   const auth = await requireStaffPermission(request, "credits.manage");
-  if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
-  const parsed = schema.safeParse(await request.json().catch(() => null));
-  if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0]?.message || "Invalid customer commercial policy." }, { status: 400 });
+  if (!auth.ok) return json({ error: auth.error }, auth.status);
+  const body = await request.json().catch(() => null);
+  const parsed = schema.safeParse(body);
+  if (!parsed.success) {
+    return json(
+      { error: parsed.error.issues[0]?.message || "Invalid customer commercial policy." },
+      400,
+    );
+  }
+
   const { id } = await context.params;
+  if (!z.string().uuid().safeParse(id).success) {
+    return json({ error: "Invalid customer identifier." }, 400);
+  }
+
+  const existence = await customerExists(id);
+  if (existence === "error") return json({ error: "Customer pricing could not be saved." }, 503);
+  if (existence === "no") return json({ error: "Customer not found." }, 404);
+
+  let settings;
+  try {
+    settings = await getCommerceSettings();
+  } catch {
+    return json(
+      { error: "Global pricing is temporarily unavailable. Nothing was changed." },
+      503,
+    );
+  }
+
   const admin = getSupabaseAdmin();
-  const customer = await admin.from("profiles").select("id").eq("id", id).maybeSingle();
-  if (customer.error || !customer.data) return NextResponse.json({ error: customer.error?.message || "Customer not found." }, { status: 404 });
-  const current = await admin.from("customer_commercial_policies").select("*").eq("user_id", id).maybeSingle();
-  if (current.error) return NextResponse.json({ error: current.error.message }, { status: 500 });
+  const current = await admin
+    .from("customer_commercial_policies")
+    .select(selectedColumns)
+    .eq("user_id", id)
+    .maybeSingle();
+  if (current.error) {
+    return json({ error: "Customer pricing could not be saved. Nothing was changed." }, 503);
+  }
+
+  const currentUpdatedAt = typeof current.data?.updated_at === "string"
+    ? current.data.updated_at
+    : null;
+  if (parsed.data.expectedUpdatedAt !== currentUpdatedAt) {
+    return json(
+      {
+        error: "This customer pricing policy changed in another session. Reload it before saving.",
+        code: "customer_commercial_policy_conflict",
+      },
+      409,
+    );
+  }
+
   const payload = {
     user_id: id,
     credit_price_override_eur: parsed.data.creditPriceOverrideEuro,
-    adjustment_type: parsed.data.adjustmentType,
-    adjustment_value: parsed.data.adjustmentValue,
+    adjustment_type: parsed.data.creditPriceOverrideEuro != null
+      ? "none"
+      : parsed.data.adjustmentType,
+    adjustment_value: parsed.data.creditPriceOverrideEuro != null || parsed.data.adjustmentType === "none"
+      ? 0
+      : parsed.data.adjustmentValue,
     payment_stripe_enabled: parsed.data.paymentMethods.stripe,
     payment_paypal_enabled: false,
     payment_bank_enabled: parsed.data.paymentMethods.bank,
     internal_note: parsed.data.internalNote || null,
     updated_by: auth.user.id,
   };
-  const saved = await admin.from("customer_commercial_policies").upsert(payload, { onConflict: "user_id" }).select("*").single();
-  if (saved.error) return NextResponse.json({ error: saved.error.message }, { status: 500 });
-  await admin.from("commerce_policy_events").insert({
+
+  let saved;
+  if (current.data) {
+    const updated = await admin
+      .from("customer_commercial_policies")
+      .update(payload)
+      .eq("user_id", id)
+      .eq("updated_at", currentUpdatedAt as string)
+      .select(selectedColumns)
+      .maybeSingle();
+    saved = updated;
+  } else {
+    const inserted = await admin
+      .from("customer_commercial_policies")
+      .insert(payload)
+      .select(selectedColumns)
+      .single();
+    saved = inserted;
+  }
+
+  if (saved.error) {
+    if (saved.error.code === "23505") {
+      return json(
+        {
+          error: "This customer pricing policy changed in another session. Reload it before saving.",
+          code: "customer_commercial_policy_conflict",
+        },
+        409,
+      );
+    }
+    return json({ error: "Customer pricing could not be saved. Nothing was confirmed." }, 503);
+  }
+  if (!saved.data) {
+    return json(
+      {
+        error: "This customer pricing policy changed in another session. Reload it before saving.",
+        code: "customer_commercial_policy_conflict",
+      },
+      409,
+    );
+  }
+
+  const audit = await admin.from("commerce_policy_events").insert({
     scope: "customer",
     customer_id: id,
     actor_user_id: auth.user.id,
@@ -73,6 +220,14 @@ export async function PATCH(
     before_json: current.data,
     after_json: saved.data,
   });
-  const commercial = await getCommercialContext(id);
-  return NextResponse.json({ policy: commercial.customerPolicy, effectiveQuote: buildCreditQuote(commercial.settings, commercial.customerPolicy) });
+  const policy = normalizeCustomerCommercialPolicy(
+    id,
+    saved.data as Record<string, unknown>,
+  );
+
+  return json({
+    policy,
+    effectiveQuote: buildCreditQuote(settings, policy),
+    auditRecorded: !audit.error,
+  });
 }

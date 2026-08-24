@@ -128,6 +128,34 @@ Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
 
+### MANUAL-20260824-CREDIT-PRICING-STABILITY [P0] Global ve musteri-ozel kredi fiyatini tek otoritede sabitle
+
+Durum: Done (implementation verified; Production release not requested)
+
+Fingerprint: `commerce-pricing|global-inheritance-and-customer-fixed-rate|admin-partial-save-race-and-checkout-drift|authoritative-versioned-quote-fail-closed`
+
+Sonuc: Global ve musteri-ozel kredi fiyatlari tek server-side teklif otoritesine
+baglandi. Explicit musteri sabit fiyati nihai birim fiyat olarak kalir; policy
+satiri olmayan yeni ve mevcut hesaplar en guncel global ayari miras alir.
+Admin profil ve fiyat kayitlari ayrildi; gec A/B musteri cevaplari, stale yazma
+ve kismi form kaybi engellendi. Homepage, musteri kredi ekrani, Stripe ve banka
+havalesi ayni versioned quote'u kullanir; browser tutari kabul edilmez ve
+altyapi/stale quote durumlari eski fiyatla odeme acmak yerine fail-closed olur.
+Authenticated dogrudan tablo yazma yolunu kapatan additive migration ile
+SELECT-only verifier hazirdir; gelecekteki Production release migration'i
+uygulamayla birlikte calistirmali ve verifier'in tum sonuclarini true
+gormelidir.
+
+Kontroller: `npm run lint` PASS; `npm run typecheck` PASS; `npm run
+check:i18n` PASS (11 non-English locale, 608/608); `npm test` PASS
+(1005/1005); `npm run build -- --webpack` PASS (277/277); `npm run
+check:performance` PASS (70.1 KiB gzip / 80 KiB budget); `git diff --check`
+PASS. Bagimsiz final audit GO ve P0/P1 temiz. Yerel browser QA'da 1366x768 ve
+390x844 gorunumlerde yatay overflow yok; local fiyat servisi kullanilamazken
+stale fiyat yerine erisilebilir hata/retry durumu gorundu. Canli DB mutation,
+gercek musteri verisi, fiyat degeri, env/secret, package/dependency veya
+Production deploy yapilmadi.
+
 ### MANUAL-20260824-ADMIN-BACK-NAVIGATION-RECOVERY [P1] Admin geri/ileri navigasyonunda eski panel geri yuklenmesin
 
 Durum: Done

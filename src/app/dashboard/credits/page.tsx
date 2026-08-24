@@ -1,13 +1,13 @@
 ﻿"use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { authenticatedFetch, getStableSession, notifySessionRequired, signOutIfEmailUnverified } from "@/lib/authGuards";
+import type { CreditPackage } from "@/lib/creditPackages";
 import {
-  CUSTOM_CREDIT_BASE_PRICE_EURO,
-  CUSTOM_CREDIT_PRICE_EURO,
-  creditPackages,
-} from "@/lib/creditPackages";
+  calculateCreditTotalEuro,
+  isStripeEuroAmountSupported,
+} from "@/lib/commercialPricing";
 import { supabase } from "@/lib/supabaseClient";
 import { CustomerPortalPageHeader } from "@/components/dashboard/CustomerPortalPageHeader";
 import {
@@ -48,37 +48,105 @@ const paymentMethods = [
 ] as const;
 
 type PaymentMethod = (typeof paymentMethods)[number]["id"];
+type PricingSource = "global" | "customer_adjustment" | "customer_fixed";
 type CreditQuote = {
+  quoteId: string;
+  currency: string;
   promotionLabel: string | null;
   customBaseUnitPriceEuro: number;
+  globalCustomUnitPriceEuro: number;
   customUnitPriceEuro: number;
+  pricingSource: PricingSource;
   customerPricingActive: boolean;
+  customerPaymentPolicyActive: boolean;
   paymentMethods: Record<PaymentMethod, boolean>;
-  packages: Array<(typeof creditPackages)[number] & { unitPriceEuro: number }>;
+  packages: Array<CreditPackage & { priceEuro: number; unitPriceEuro: number }>;
 };
 
-const fallbackQuote: CreditQuote = {
-  promotionLabel: "Limited time -20% on all credit purchases",
-  customBaseUnitPriceEuro: CUSTOM_CREDIT_BASE_PRICE_EURO,
-  customUnitPriceEuro: CUSTOM_CREDIT_PRICE_EURO,
-  customerPricingActive: false,
-  paymentMethods: { stripe: true, bank: true },
-  packages: creditPackages.map((item) => ({ ...item, unitPriceEuro: item.priceEuro / item.credits })),
-};
+type QuoteState = "loading" | "ready" | "error";
+type PageNotice = { kind: "success" | "error" | "info"; text: string };
+
+function isFinitePositive(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value) && value > 0;
+}
+
+function isCreditQuote(value: unknown): value is CreditQuote {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const quote = value as Partial<CreditQuote>;
+  if (
+    typeof quote.quoteId !== "string" ||
+    !/^[a-f0-9]{40}$/.test(quote.quoteId) ||
+    quote.currency !== "EUR" ||
+    !(
+      quote.promotionLabel === null ||
+      typeof quote.promotionLabel === "string"
+    ) ||
+    !isFinitePositive(quote.customBaseUnitPriceEuro) ||
+    !isFinitePositive(quote.globalCustomUnitPriceEuro) ||
+    !isFinitePositive(quote.customUnitPriceEuro) ||
+    !["global", "customer_adjustment", "customer_fixed"].includes(
+      quote.pricingSource ?? "",
+    ) ||
+    typeof quote.customerPricingActive !== "boolean" ||
+    typeof quote.customerPaymentPolicyActive !== "boolean" ||
+    !quote.paymentMethods ||
+    typeof quote.paymentMethods.stripe !== "boolean" ||
+    typeof quote.paymentMethods.bank !== "boolean" ||
+    !Array.isArray(quote.packages) ||
+    quote.packages.length === 0
+  ) {
+    return false;
+  }
+
+  return quote.packages.every(
+    (item) =>
+      item &&
+      typeof item.id === "string" &&
+      typeof item.name === "string" &&
+      Number.isInteger(item.credits) &&
+      item.credits > 0 &&
+      isFinitePositive(item.basePriceEuro) &&
+      isFinitePositive(item.priceEuro) &&
+      isFinitePositive(item.unitPriceEuro) &&
+      typeof item.description === "string" &&
+      (item.highlight === undefined || typeof item.highlight === "boolean"),
+  );
+}
+
+async function readResponseBody(response: Response) {
+  return (await response.json().catch(() => ({}))) as Record<string, unknown>;
+}
+
+function responseError(payload: Record<string, unknown>, fallback: string) {
+  return typeof payload.error === "string" && payload.error.trim()
+    ? payload.error
+    : fallback;
+}
 
 function formatEuro(value: number) {
   return new Intl.NumberFormat("de-DE", {
     style: "currency",
     currency: "EUR",
+    minimumFractionDigits: 0,
     maximumFractionDigits: value % 1 === 0 ? 0 : 2,
+  }).format(value);
+}
+
+function formatCreditUnitEuro(value: number) {
+  return new Intl.NumberFormat("de-DE", {
+    style: "currency",
+    currency: "EUR",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 4,
   }).format(value);
 }
 
 function formatCustomerReference(customerId: string) {
   const cleanId = customerId.trim().toUpperCase();
+  if (!cleanId) throw new Error("Customer ID could not be verified.");
   if (/^MGA-\d{5,}$/.test(cleanId)) return cleanId;
   if (/^\d+$/.test(cleanId)) return `MGA-${cleanId.padStart(5, "0")}`;
-  return "MGA-10001";
+  return cleanId;
 }
 
 export default function BuyCreditsPage() {
@@ -86,32 +154,70 @@ export default function BuyCreditsPage() {
 
   const [loadingPackage, setLoadingPackage] = useState<string | null>(null);
   const [customCredits, setCustomCredits] = useState("17");
-  const [message, setMessage] = useState("");
+  const [notice, setNotice] = useState<PageNotice | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("stripe");
   const [copiedBankReference, setCopiedBankReference] = useState(false);
-  const [quote, setQuote] = useState<CreditQuote>(fallbackQuote);
-  const [quoteLoading, setQuoteLoading] = useState(true);
+  const [quote, setQuote] = useState<CreditQuote | null>(null);
+  const [quoteState, setQuoteState] = useState<QuoteState>("loading");
+  const [quoteError, setQuoteError] = useState("");
+  const quoteRequestId = useRef(0);
+  const checkoutInFlight = useRef(false);
+
+  const loadQuote = useCallback(async (preserveNotice = false) => {
+    const requestId = ++quoteRequestId.current;
+    setQuote(null);
+    setQuoteState("loading");
+    setQuoteError("");
+    if (!preserveNotice) setNotice(null);
+
+    try {
+      const response = await authenticatedFetch("/api/credits/quote", {
+        cache: "no-store",
+      });
+      const payload = await readResponseBody(response);
+      if (!response.ok) {
+        throw new Error(
+          responseError(payload, "Credit prices could not be loaded."),
+        );
+      }
+      if (!isCreditQuote(payload.quote)) {
+        throw new Error("Credit prices could not be verified. Please retry.");
+      }
+      if (requestId !== quoteRequestId.current) return null;
+
+      const nextQuote = payload.quote;
+      setQuote(nextQuote);
+      setPaymentMethod((current) =>
+        nextQuote.paymentMethods[current]
+          ? current
+          : paymentMethods.find(
+              (method) => nextQuote.paymentMethods[method.id],
+            )?.id ?? current,
+      );
+      setQuoteState("ready");
+      return nextQuote;
+    } catch (error) {
+      if (requestId !== quoteRequestId.current) return null;
+      setQuote(null);
+      setQuoteState("error");
+      setQuoteError(
+        error instanceof Error
+          ? error.message
+          : "Credit prices could not be loaded.",
+      );
+      return null;
+    }
+  }, []);
 
   useEffect(() => {
-    let active = true;
-    async function loadQuote() {
-      try {
-        const response = await authenticatedFetch("/api/credits/quote");
-        const payload = await response.json();
-        if (!response.ok) throw new Error(payload.error || "Credit prices could not be loaded.");
-        if (!active) return;
-        const nextQuote = payload.quote as CreditQuote;
-        setQuote(nextQuote);
-        setPaymentMethod((current) => nextQuote.paymentMethods[current] ? current : paymentMethods.find((method) => nextQuote.paymentMethods[method.id])?.id || current);
-      } catch (error) {
-        if (active) setMessage(error instanceof Error ? error.message : "Credit prices could not be loaded.");
-      } finally {
-        if (active) setQuoteLoading(false);
-      }
-    }
-    void loadQuote();
-    return () => { active = false; };
-  }, []);
+    const timeoutId = window.setTimeout(() => {
+      void loadQuote();
+    }, 0);
+    return () => {
+      window.clearTimeout(timeoutId);
+      quoteRequestId.current += 1;
+    };
+  }, [loadQuote]);
 
   const customCreditAmount = Number(customCredits);
   const customValid =
@@ -121,16 +227,24 @@ export default function BuyCreditsPage() {
     Number.isInteger(customCreditAmount);
 
   const customPrice = useMemo(() => {
-    if (!customValid) return 0;
-    return customCreditAmount * quote.customUnitPriceEuro;
-  }, [customCreditAmount, customValid, quote.customUnitPriceEuro]);
+    if (!customValid || !quote) return 0;
+    return calculateCreditTotalEuro(customCreditAmount, quote.customUnitPriceEuro);
+  }, [customCreditAmount, customValid, quote]);
 
-  const selectedPayment = paymentMethods.find(
-    (method) => method.id === paymentMethod
+  const packages = quote?.packages ?? [];
+  const availablePaymentMethods = paymentMethods.filter(
+    (method) => quote?.paymentMethods[method.id],
   );
-  const packages = quote.packages;
-  const availablePaymentMethods = paymentMethods.filter((method) => quote.paymentMethods[method.id]);
+  const selectedPayment = availablePaymentMethods.find(
+    (method) => method.id === paymentMethod,
+  );
   const bestValuePackage = packages.find((pack) => pack.credits === 500);
+  const pricingLabel =
+    quote?.pricingSource === "customer_fixed"
+      ? "Your fixed partner rate is active on this account."
+      : quote?.pricingSource === "customer_adjustment"
+        ? "Your account-specific partner adjustment is active."
+        : null;
 
   const bankDetails = {
     accountName: process.env.NEXT_PUBLIC_BANK_ACCOUNT_NAME || "MG AutoTech",
@@ -161,97 +275,172 @@ export default function BuyCreditsPage() {
     return formatCustomerReference(data.customer_id as string);
   };
 
+  const refreshStaleQuote = async () => {
+    setNotice({
+      kind: "info",
+      text: "Credit prices changed while you were reviewing them. Loading the latest verified prices now.",
+    });
+    const refreshedQuote = await loadQuote(true);
+    if (refreshedQuote) {
+      setNotice({
+        kind: "info",
+        text: "Credit prices were refreshed. Please review the latest total before continuing.",
+      });
+    } else {
+      setNotice({
+        kind: "error",
+        text: "Credit prices changed, but the latest prices could not be loaded. Retry before continuing.",
+      });
+    }
+  };
+
   const startCheckout = async (payload: {
     packageId?: string;
     customCredits?: number;
   }) => {
+    if (quoteState !== "ready" || !quote) {
+      setNotice({
+        kind: "error",
+        text: "Verified credit prices are not available yet. Retry before starting a payment.",
+      });
+      return;
+    }
+    if (checkoutInFlight.current) return;
+
+    const checkoutQuote = quote;
+    const checkoutAmount = payload.packageId
+      ? checkoutQuote.packages.find((item) => item.id === payload.packageId)?.priceEuro
+      : payload.customCredits
+        ? calculateCreditTotalEuro(payload.customCredits, checkoutQuote.customUnitPriceEuro)
+        : null;
+    if (!checkoutAmount) {
+      setNotice({ kind: "error", text: "The selected credit total could not be verified." });
+      return;
+    }
+    if (paymentMethod === "stripe" && !isStripeEuroAmountSupported(checkoutAmount)) {
+      setNotice({
+        kind: "error",
+        text: "This total is outside Stripe's supported EUR range. Choose Bank Transfer or change the amount.",
+      });
+      return;
+    }
     const loadingId =
       payload.packageId ?? `custom_${payload.customCredits ?? "credits"}`;
 
+    checkoutInFlight.current = true;
     setLoadingPackage(loadingId);
-    setMessage("");
+    setNotice(null);
 
-    const user = (await getStableSession()).session?.user;
+    try {
+      const user = (await getStableSession()).session?.user;
 
-    if (!user) {
-      setLoadingPackage(null);
-      notifySessionRequired();
-      return;
-    }
+      if (!user) {
+        notifySessionRequired();
+        return;
+      }
 
-    if (await signOutIfEmailUnverified(user)) {
-      router.push("/login?verify_email=1");
-      return;
-    }
+      if (await signOutIfEmailUnverified(user)) {
+        router.push("/login?verify_email=1");
+        return;
+      }
 
-    if (paymentMethod === "bank") {
-      try {
-        const reference = await getCustomerReference(user.id);
-        const selectedPackage = payload.packageId
-          ? packages.find((item) => item.id === payload.packageId)
-          : null;
-        const selectedCredits = selectedPackage?.credits ?? payload.customCredits ?? null;
-        const selectedAmount =
-          selectedPackage?.priceEuro ??
-          (payload.customCredits ? payload.customCredits * quote.customUnitPriceEuro : null);
-        await authenticatedFetch("/api/email/bank-transfer", {
+      if (paymentMethod === "bank") {
+        const response = await authenticatedFetch("/api/email/bank-transfer", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            credits: selectedCredits,
-            amountEuro: selectedAmount,
+            ...payload,
+            quoteId: checkoutQuote.quoteId,
           }),
-        }).catch(() => null);
-        setMessage(
-          `Bank transfer selected. Use your Customer ID as payment reference: ${reference}. Credits are added manually after payment is received.`
-        );
-      } catch (error) {
-        setMessage(
-          error instanceof Error
-            ? error.message
-            : "Customer ID could not be loaded."
-        );
-      } finally {
-        setLoadingPackage(null);
+        });
+        const data = await readResponseBody(response);
+
+        if (response.status === 409 || data.code === "credit_quote_stale") {
+          await refreshStaleQuote();
+          return;
+        }
+        if (!response.ok) {
+          throw new Error(
+            responseError(
+              data,
+              "Bank transfer instructions could not be prepared.",
+            ),
+          );
+        }
+        if (
+          data.success !== true ||
+          typeof data.customerId !== "string" ||
+          !Number.isInteger(data.credits) ||
+          !isFinitePositive(data.amountEuro)
+        ) {
+          throw new Error(
+            "Bank transfer instructions could not be verified. Please retry.",
+          );
+        }
+
+        const reference = formatCustomerReference(data.customerId);
+        setNotice({
+          kind: "success",
+          text: `Bank transfer instructions were sent for ${data.credits} credits (${formatEuro(data.amountEuro)}). Use your Customer ID as payment reference: ${reference}. Credits are added manually after payment is received.`,
+        });
+        return;
       }
 
-      return;
+      const response = await authenticatedFetch(
+        "/api/stripe/create-checkout-session",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            ...payload,
+            quoteId: checkoutQuote.quoteId,
+          }),
+        },
+      );
+      const data = await readResponseBody(response);
+
+      if (response.status === 409 || data.code === "credit_quote_stale") {
+        await refreshStaleQuote();
+        return;
+      }
+      if (!response.ok) {
+        throw new Error(
+          responseError(data, "Could not start Stripe checkout."),
+        );
+      }
+      if (typeof data.url !== "string" || !data.url) {
+        throw new Error("Stripe checkout URL was not returned.");
+      }
+
+      window.location.assign(data.url);
+    } catch (error) {
+      setNotice({
+        kind: "error",
+        text:
+          error instanceof Error
+            ? error.message
+            : "Credit purchase could not be started.",
+      });
+    } finally {
+      checkoutInFlight.current = false;
+      setLoadingPackage(null);
     }
-
-    const response = await authenticatedFetch("/api/stripe/create-checkout-session", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
-    });
-
-    const data = await response.json();
-
-    setLoadingPackage(null);
-
-    if (!response.ok) {
-      setMessage(data.error ?? "Could not start Stripe checkout.");
-      return;
-    }
-
-    if (!data.url) {
-      setMessage("Stripe checkout URL was not returned.");
-      return;
-    }
-
-    window.location.assign(data.url);
   };
 
   const startCustomCheckout = () => {
     if (!customValid) {
-      setMessage("Please enter a whole number between 1 and 1000 credits.");
+      setNotice({
+        kind: "error",
+        text: "Please enter a whole number between 1 and 1000 credits.",
+      });
       return;
     }
 
-    startCheckout({ customCredits: customCreditAmount });
+    void startCheckout({ customCredits: customCreditAmount });
   };
 
   const copyBankReference = async () => {
@@ -272,14 +461,27 @@ export default function BuyCreditsPage() {
     try {
       reference = await getCustomerReference(user.id);
     } catch (error) {
-      setMessage(
-        error instanceof Error ? error.message : "Customer ID could not be loaded."
-      );
+      setNotice({
+        kind: "error",
+        text:
+          error instanceof Error
+            ? error.message
+            : "Customer ID could not be loaded.",
+      });
       return;
     }
 
-    await navigator.clipboard.writeText(reference);
-    setCopiedBankReference(true);
+    try {
+      await navigator.clipboard.writeText(reference);
+      setCopiedBankReference(true);
+      setNotice({ kind: "success", text: "Payment reference copied." });
+    } catch {
+      setNotice({
+        kind: "error",
+        text: "Payment reference could not be copied. Please copy it manually.",
+      });
+      return;
+    }
 
     window.setTimeout(() => {
       setCopiedBankReference(false);
@@ -312,8 +514,16 @@ export default function BuyCreditsPage() {
               Choose a package or enter a custom credit amount. Package prices
               get cheaper as the volume increases.
             </p>
-            {quote.promotionLabel && <div className="mt-5 inline-flex rounded-full border border-red-700/60 bg-red-950/40 px-4 py-2 text-sm font-black text-red-100">{quote.promotionLabel}</div>}
-            {quote.customerPricingActive && <div className="mt-3 text-sm font-bold text-emerald-300">Your partner pricing is active on this account.</div>}
+            {quote?.promotionLabel && (
+              <div className="mt-5 inline-flex rounded-full border border-red-700/60 bg-red-950/40 px-4 py-2 text-sm font-black text-red-100">
+                {quote.promotionLabel}
+              </div>
+            )}
+            {pricingLabel && (
+              <div className="mt-3 text-sm font-bold text-emerald-300">
+                {pricingLabel}
+              </div>
+            )}
           </div>
 
           <div className="rounded-[2rem] border border-red-900/50 bg-red-950/20 p-6 shadow-2xl shadow-black/30">
@@ -332,7 +542,68 @@ export default function BuyCreditsPage() {
           </div>
         </div>
 
-        <div className="mb-8 rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
+        {notice && (
+          <div
+            role={notice.kind === "success" ? "status" : "alert"}
+            aria-live={notice.kind === "success" ? "polite" : "assertive"}
+            className={`mb-6 rounded-2xl border p-4 text-sm ${
+              notice.kind === "success"
+                ? "border-emerald-800/50 bg-emerald-950/25 text-emerald-200"
+                : notice.kind === "info"
+                  ? "border-amber-700/50 bg-amber-950/25 text-amber-100"
+                  : "border-red-800/50 bg-red-950/30 text-red-200"
+            }`}
+          >
+            {notice.text}
+          </div>
+        )}
+
+        {quoteState === "loading" && (
+          <div
+            role="status"
+            aria-live="polite"
+            aria-busy="true"
+            className="mb-8 flex min-h-40 items-center justify-center rounded-[2rem] border border-white/10 bg-white/[0.04] p-8 text-center"
+          >
+            <div>
+              <Loader2 className="mx-auto h-8 w-8 animate-spin text-red-500" />
+              <div className="mt-4 text-lg font-black">
+                Loading verified credit prices
+              </div>
+              <p className="mt-2 text-sm text-zinc-400">
+                Purchase options will appear after the latest account pricing
+                is verified.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {quoteState === "error" && (
+          <div
+            role="alert"
+            aria-live="assertive"
+            className="mb-8 rounded-[2rem] border border-red-800/60 bg-red-950/30 p-6"
+          >
+            <div className="text-lg font-black text-red-100">
+              Credit prices are temporarily unavailable
+            </div>
+            <p className="mt-2 text-sm leading-6 text-red-200/80">
+              {quoteError ||
+                "No payment can be started until verified prices are loaded."}
+            </p>
+            <button
+              type="button"
+              onClick={() => void loadQuote()}
+              className="mt-5 inline-flex items-center justify-center rounded-xl bg-[#b1121b] px-5 py-3 text-sm font-black text-white transition hover:bg-[#c91824]"
+            >
+              Retry verified prices
+            </button>
+          </div>
+        )}
+
+        {quoteState === "ready" && quote && (
+          <>
+            <div className="mb-8 rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
           <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <div className="text-sm font-black uppercase tracking-[0.2em] text-red-400">
@@ -342,8 +613,15 @@ export default function BuyCreditsPage() {
                 Choose how you want to pay
               </h2>
             </div>
-            <div className="text-sm font-bold text-zinc-500">
-              Selected: {selectedPayment?.title}
+            <div className="text-right text-sm font-bold text-zinc-500">
+              <div>
+                Selected: {selectedPayment?.title ?? "No payment method available"}
+              </div>
+              {quote.customerPaymentPolicyActive && (
+                <div className="mt-1 text-xs text-emerald-300">
+                  Account-specific payment policy active
+                </div>
+              )}
             </div>
           </div>
 
@@ -357,11 +635,12 @@ export default function BuyCreditsPage() {
                   key={method.id}
                   type="button"
                   aria-pressed={active}
+                  disabled={loadingPackage !== null}
                   onClick={() => {
                     setPaymentMethod(method.id);
-                    setMessage("");
+                    setNotice(null);
                   }}
-                  className={`rounded-2xl border p-4 text-left transition ${
+                  className={`rounded-2xl border p-4 text-left transition disabled:cursor-not-allowed disabled:opacity-60 ${
                     active
                       ? "border-red-700 bg-red-950/30"
                       : "border-white/10 bg-black/30 hover:border-white/20 hover:bg-white/[0.06]"
@@ -390,7 +669,12 @@ export default function BuyCreditsPage() {
             })}
           </div>
 
-          {!availablePaymentMethods.length && <div className="mt-4 rounded-xl border border-amber-700/40 bg-amber-950/20 p-4 text-sm text-amber-200">Online credit purchases are currently disabled for this account. Please contact support.</div>}
+          {!availablePaymentMethods.length && (
+            <div className="mt-4 rounded-xl border border-amber-700/40 bg-amber-950/20 p-4 text-sm text-amber-200">
+              Online credit purchases are currently disabled for this account.
+              Please contact support.
+            </div>
+          )}
 
           {paymentMethod === "bank" && quote.paymentMethods.bank && (
             <div className="mt-5 rounded-2xl border border-white/10 bg-black/30 p-5">
@@ -428,7 +712,8 @@ export default function BuyCreditsPage() {
               <button
                 type="button"
                 onClick={copyBankReference}
-                className="mt-5 inline-flex items-center rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-black text-white transition hover:bg-white/10"
+                disabled={loadingPackage !== null}
+                className="mt-5 inline-flex items-center rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-black text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <Copy className="mr-2 h-4 w-4" />
                 {copiedBankReference
@@ -470,12 +755,6 @@ export default function BuyCreditsPage() {
           </div>
         </div>
 
-        {message && (
-          <div role="status" aria-live="polite" className="mb-6 rounded-2xl border border-red-800/50 bg-red-950/30 p-4 text-sm text-red-200">
-            {message}
-          </div>
-        )}
-
         <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5">
           {packages.map((item) => (
             <div
@@ -501,16 +780,18 @@ export default function BuyCreditsPage() {
                 {item.credits} Credit
               </div>
 
-              <div className="mt-3 text-sm font-bold text-zinc-500 line-through">
-                {formatEuro(item.basePriceEuro)}
-              </div>
+              {item.basePriceEuro !== item.priceEuro && (
+                <div className="mt-3 text-sm font-bold text-zinc-500 line-through">
+                  {formatEuro(item.basePriceEuro)}
+                </div>
+              )}
 
-              <div className="mt-1 text-4xl font-black">
+              <div className={`${item.basePriceEuro === item.priceEuro ? "mt-8" : "mt-1"} text-4xl font-black`}>
                 {formatEuro(item.priceEuro)}
               </div>
 
               <div className="mt-2 text-sm font-bold text-red-400">
-                Each Credit {formatEuro(item.unitPriceEuro)}
+                Each Credit {formatCreditUnitEuro(item.unitPriceEuro)}
               </div>
 
               <p className="mt-5 flex-1 text-sm leading-6 text-zinc-400">
@@ -537,8 +818,14 @@ export default function BuyCreditsPage() {
               </div>
 
               <button
-                onClick={() => startCheckout({ packageId: item.id })}
-                disabled={quoteLoading || !availablePaymentMethods.length || loadingPackage === item.id}
+                type="button"
+                onClick={() => void startCheckout({ packageId: item.id })}
+                disabled={
+                  !selectedPayment ||
+                  loadingPackage !== null ||
+                  (paymentMethod === "stripe" &&
+                    !isStripeEuroAmountSupported(item.priceEuro))
+                }
                 className="mt-7 flex w-full items-center justify-center rounded-xl border border-red-700 bg-transparent px-5 py-4 text-sm font-black text-white transition hover:bg-red-950/40 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {loadingPackage === item.id ? (
@@ -554,6 +841,12 @@ export default function BuyCreditsPage() {
                   </>
                 )}
               </button>
+              {paymentMethod === "stripe" &&
+                !isStripeEuroAmountSupported(item.priceEuro) && (
+                  <p className="mt-2 text-xs font-bold leading-5 text-amber-300" role="status">
+                    {"This total is outside Stripe's supported EUR range. Choose Bank Transfer or change the amount."}
+                  </p>
+                )}
             </div>
           ))}
         </div>
@@ -571,7 +864,7 @@ export default function BuyCreditsPage() {
 
             <p className="mt-3 text-sm leading-6 text-zinc-400">
               Enter any credit amount. Custom credit purchases are calculated at{" "}
-              {formatEuro(quote.customUnitPriceEuro)} per credit for your account.
+              {formatCreditUnitEuro(quote.customUnitPriceEuro)} per credit for your account.
             </p>
 
             <div className="mt-6 grid gap-4 sm:grid-cols-[1fr_180px]">
@@ -595,13 +888,19 @@ export default function BuyCreditsPage() {
                 <div className="text-xs font-black uppercase tracking-[0.16em] text-zinc-500">
                   Total Price
                 </div>
-                {customValid && (
-                  <div className="mt-2 text-sm font-bold text-zinc-500 line-through">
-                    {formatEuro(
-                      customCreditAmount * quote.customBaseUnitPriceEuro
-                    )}
-                  </div>
-                )}
+                {customValid &&
+                  quote.customerPricingActive &&
+                  quote.globalCustomUnitPriceEuro !==
+                    quote.customUnitPriceEuro && (
+                    <div className="mt-2 text-sm font-bold text-zinc-500 line-through">
+                      {formatEuro(
+                        calculateCreditTotalEuro(
+                          customCreditAmount,
+                          quote.globalCustomUnitPriceEuro,
+                        ),
+                      )}
+                    </div>
+                  )}
                 <div className="mt-2 text-3xl font-black text-red-400">
                   {customValid ? formatEuro(customPrice) : "-"}
                 </div>
@@ -609,8 +908,16 @@ export default function BuyCreditsPage() {
             </div>
 
             <button
+              type="button"
               onClick={startCustomCheckout}
-              disabled={quoteLoading || !availablePaymentMethods.length || !customValid || Boolean(loadingPackage?.startsWith("custom_"))}
+              disabled={
+                !availablePaymentMethods.length ||
+                !selectedPayment ||
+                !customValid ||
+                loadingPackage !== null ||
+                (paymentMethod === "stripe" &&
+                  !isStripeEuroAmountSupported(customPrice))
+              }
               className="mt-6 flex w-full items-center justify-center rounded-xl bg-[#b1121b] px-5 py-4 text-sm font-black text-white shadow-xl shadow-red-950/40 transition hover:bg-[#c91824] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {loadingPackage?.startsWith("custom_") ? (
@@ -627,41 +934,50 @@ export default function BuyCreditsPage() {
                 </>
               )}
             </button>
+            {customValid &&
+              paymentMethod === "stripe" &&
+              !isStripeEuroAmountSupported(customPrice) && (
+                <p className="mt-3 text-sm font-bold leading-6 text-amber-300" role="status">
+                  {"This total is outside Stripe's supported EUR range. Choose Bank Transfer or change the amount."}
+                </p>
+              )}
           </div>
 
           <div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-7">
             <ShieldCheck className="mb-5 h-10 w-10 text-red-500" />
             <h2 className="text-2xl font-black">Important</h2>
             <p className="mt-3 text-sm leading-7 text-zinc-400">
-              Package purchases use discounted package pricing. Custom credit
-              purchases are calculated at{" "}
-              {formatEuro(quote.customUnitPriceEuro)} per credit for this account. Stripe payments add
-              credits automatically after payment confirmation. Bank transfer
-              requires admin verification before credits are added.
+              Package purchases use the verified package rate shown above.
+              Custom credit purchases are calculated at{" "}
+              {formatCreditUnitEuro(quote.customUnitPriceEuro)} per credit for this
+              account. Stripe payments add credits automatically after payment
+              confirmation. Bank transfer requires admin verification before
+              credits are added.
             </p>
 
             <div className="mt-6 grid gap-3 sm:grid-cols-2">
               <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
                 <div className="text-sm font-black">Example</div>
                 <div className="mt-1 text-sm text-zinc-400">
-                  17 Credits × {formatEuro(quote.customUnitPriceEuro)} ={" "}
-                  {formatEuro(17 * quote.customUnitPriceEuro)}
+                  17 Credits × {formatCreditUnitEuro(quote.customUnitPriceEuro)} ={" "}
+                  {formatEuro(calculateCreditTotalEuro(17, quote.customUnitPriceEuro))}
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
-                <div className="text-sm font-black">Best Value</div>
-                <div className="mt-1 text-sm text-zinc-400">
-                  500 Credits ={" "}
-                  {formatEuro(
-                    (bestValuePackage?.priceEuro ?? 1200) / 500
-                  )}{" "}
-                  / Credit
+              {bestValuePackage && (
+                <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
+                  <div className="text-sm font-black">Best Value</div>
+                  <div className="mt-1 text-sm text-zinc-400">
+                    {bestValuePackage.credits} Credits ={" "}
+                    {formatCreditUnitEuro(bestValuePackage.unitPriceEuro)} / Credit
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
-        </div>
+            </div>
+          </>
+        )}
       </section>
     </main>
   );

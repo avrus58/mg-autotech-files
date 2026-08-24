@@ -462,9 +462,10 @@ export async function sendBankTransferInstructionsEmail(input: {
   customerId?: string | null;
   credits?: number | null;
   amountLabel?: string | null;
+  deliveryRequestId: string;
 }) {
   const language = await loadUserTransactionalEmailLanguage(input.userId);
-  await sendTransactionalEmail({
+  return sendTransactionalEmail({
     eventType: "bank_transfer_instructions",
     to: input.customerEmail,
     language,
@@ -480,7 +481,7 @@ export async function sendBankTransferInstructionsEmail(input: {
       bankBic: process.env.NEXT_PUBLIC_BANK_BIC || null,
       dashboardUrl: `${getSiteUrl()}/dashboard/credits`,
     },
-    idempotencyKey: `bank_transfer:${input.userId}:${input.credits ?? "custom"}:${input.amountLabel ?? "amount"}`,
+    idempotencyKey: `bank_transfer:${input.userId}:${input.deliveryRequestId}`,
     recipientUserId: input.userId,
     metadata: { source: "bank_transfer_selection" },
   });

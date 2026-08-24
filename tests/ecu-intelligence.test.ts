@@ -2032,22 +2032,30 @@ test("Level 1 migration prevents duplicate comparisons and grants no customer re
   assert.doesNotMatch(sql, /Customers can read AI similarity/i);
 });
 
-test("commercial pricing applies customer override before customer adjustment", () => {
+test("commercial pricing treats an explicit customer price as the final rate", () => {
   const globalQuote = buildCreditQuote(defaultCommerceSettings, emptyCustomerCommercialPolicy("customer-a"));
   assert.equal(globalQuote.customUnitPriceEuro, 4);
+  assert.equal(globalQuote.pricingSource, "global");
 
   const customerFive = emptyCustomerCommercialPolicy("customer-b");
   customerFive.credit_price_override_eur = 5;
   customerFive.adjustment_type = "fixed";
   customerFive.adjustment_value = 1;
-  assert.equal(buildCreditQuote(defaultCommerceSettings, customerFive).customUnitPriceEuro, 4);
+  assert.equal(buildCreditQuote(defaultCommerceSettings, customerFive).customUnitPriceEuro, 5);
 
   const customerFour = { ...customerFive, user_id: "customer-c", credit_price_override_eur: 4 };
-  assert.equal(buildCreditQuote(defaultCommerceSettings, customerFour).customUnitPriceEuro, 3);
+  assert.equal(buildCreditQuote(defaultCommerceSettings, customerFour).customUnitPriceEuro, 4);
   customerFour.payment_paypal_enabled = true;
   const quote = buildCreditQuote(defaultCommerceSettings, customerFour);
+  assert.equal(quote.pricingSource, "customer_fixed");
+  assert.equal(quote.packages.every((item) => item.unitPriceEuro === 4), true);
   assert.deepEqual(Object.keys(quote.paymentMethods).sort(), ["bank", "stripe"]);
   assert.equal(quote.paymentMethods.stripe, true);
+
+  const adjustmentOnly = emptyCustomerCommercialPolicy("customer-d");
+  adjustmentOnly.adjustment_type = "fixed";
+  adjustmentOnly.adjustment_value = 1;
+  assert.equal(buildCreditQuote(defaultCommerceSettings, adjustmentOnly).customUnitPriceEuro, 3);
 });
 
 test("payment ledger sources map to supported and legacy finance providers", () => {

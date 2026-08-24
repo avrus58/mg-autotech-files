@@ -3,14 +3,9 @@ export type CreditPackage = {
   name: string;
   credits: number;
   basePriceEuro: number;
-  priceEuro: number;
   description: string;
   highlight?: boolean;
 };
-
-export const CREDIT_PROMOTION_PERCENT = 20;
-export const CUSTOM_CREDIT_BASE_PRICE_EURO = 5;
-export const CUSTOM_CREDIT_PRICE_EURO = 4;
 
 export const creditPackages: CreditPackage[] = [
   {
@@ -18,7 +13,6 @@ export const creditPackages: CreditPackage[] = [
     name: "Starter",
     credits: 10,
     basePriceEuro: 45,
-    priceEuro: 36,
     description: "Perfect for testing the platform or a small single request.",
   },
   {
@@ -26,7 +20,6 @@ export const creditPackages: CreditPackage[] = [
     name: "Workshop",
     credits: 50,
     basePriceEuro: 225,
-    priceEuro: 180,
     description: "Better price for regular customers and workshops.",
   },
   {
@@ -34,7 +27,6 @@ export const creditPackages: CreditPackage[] = [
     name: "Professional",
     credits: 100,
     basePriceEuro: 400,
-    priceEuro: 320,
     description: "Strong value for recurring file service requests.",
     highlight: true,
   },
@@ -43,7 +35,6 @@ export const creditPackages: CreditPackage[] = [
     name: "Partner",
     credits: 250,
     basePriceEuro: 875,
-    priceEuro: 700,
     description: "High-volume package for workshops and partners.",
   },
   {
@@ -51,7 +42,6 @@ export const creditPackages: CreditPackage[] = [
     name: "Enterprise",
     credits: 500,
     basePriceEuro: 1500,
-    priceEuro: 1200,
     description: "Best value package for professional users.",
   },
 ];

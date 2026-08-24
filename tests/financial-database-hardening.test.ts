@@ -323,7 +323,8 @@ test("admin clients use permission-checked server mutation routes", () => {
   );
   const paymentsRoute = source("src", "app", "api", "admin", "payments", "route.ts");
 
-  assert.match(page, /\/api\/admin\/customers\/\$\{selectedCustomer\.id\}\/profile/);
+  assert.match(page, /const customerId = selectedCustomer\.id/);
+  assert.match(page, /\/api\/admin\/customers\/\$\{customerId\}\/profile/);
   assert.match(page, /\/api\/admin\/orders\/\$\{orderId\}\/delivery-estimate/);
   assert.doesNotMatch(page, /from\("profiles"\)\.update/);
   assert.doesNotMatch(page, /from\("orders"\)[\s\S]{0,80}\.update/);

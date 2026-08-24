@@ -158,6 +158,24 @@ type ModifiedFileVersion = {
 
 type CustomerTag = "workshop" | "reseller" | "vip" | "blocked" | "negative_credit";
 type PaymentOverride = "inherit" | "enabled" | "disabled";
+type CustomerPricingMode = "inherit" | "fixed" | "adjustment";
+type CustomerPricingLoadState = "idle" | "loading" | "ready" | "error";
+
+type CustomerCommercialPolicyPayload = {
+  user_id: string;
+  credit_price_override_eur: number | null;
+  adjustment_type: "none" | "percentage" | "fixed";
+  adjustment_value: number;
+  payment_stripe_enabled: boolean | null;
+  payment_bank_enabled: boolean | null;
+  internal_note: string | null;
+  updated_at?: string;
+};
+
+type CustomerCommercialQuotePayload = {
+  customUnitPriceEuro?: number;
+  globalCustomUnitPriceEuro?: number;
+};
 
 type Profile = {
   id: string;
@@ -201,12 +219,14 @@ type CustomerForm = {
   account_status: string;
   customer_tags: CustomerTag[];
   internal_admin_note: string;
+  commercial_pricing_mode: CustomerPricingMode;
   credit_price_override_eur: string;
   commercial_adjustment_type: "none" | "percentage" | "fixed";
   commercial_adjustment_value: string;
   payment_stripe: PaymentOverride;
   payment_bank: PaymentOverride;
   commercial_internal_note: string;
+  global_custom_unit_price_eur: string;
   effective_custom_unit_price_eur: string;
 };
 
@@ -467,13 +487,50 @@ function makeCustomerForm(customer: Profile): CustomerForm {
       ? customer.customer_tags
       : [],
     internal_admin_note: customer.internal_admin_note ?? "",
+    commercial_pricing_mode: "inherit",
     credit_price_override_eur: "",
     commercial_adjustment_type: "none",
     commercial_adjustment_value: "0",
     payment_stripe: "inherit",
     payment_bank: "inherit",
     commercial_internal_note: "",
+    global_custom_unit_price_eur: "",
     effective_custom_unit_price_eur: "",
+  };
+}
+
+function formatCreditUnitAmount(value: number) {
+  return value.toLocaleString("de-DE", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 4,
+  });
+}
+
+function customerPricingMode(policy: CustomerCommercialPolicyPayload): CustomerPricingMode {
+  if (policy.credit_price_override_eur != null) return "fixed";
+  if (policy.adjustment_type !== "none") return "adjustment";
+  return "inherit";
+}
+
+function applyCustomerPricingPayload(
+  current: CustomerForm,
+  policy: CustomerCommercialPolicyPayload,
+  quote?: CustomerCommercialQuotePayload,
+): CustomerForm {
+  return {
+    ...current,
+    commercial_pricing_mode: customerPricingMode(policy),
+    credit_price_override_eur:
+      policy.credit_price_override_eur == null
+        ? ""
+        : String(policy.credit_price_override_eur),
+    commercial_adjustment_type: policy.adjustment_type || "none",
+    commercial_adjustment_value: String(policy.adjustment_value ?? 0),
+    payment_stripe: paymentOverride(policy.payment_stripe_enabled),
+    payment_bank: paymentOverride(policy.payment_bank_enabled),
+    commercial_internal_note: policy.internal_note || "",
+    global_custom_unit_price_eur: String(quote?.globalCustomUnitPriceEuro ?? ""),
+    effective_custom_unit_price_eur: String(quote?.customUnitPriceEuro ?? ""),
   };
 }
 
@@ -532,6 +589,11 @@ export default function AdminPage() {
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [creditUpdatingIds, setCreditUpdatingIds] = useState<Set<string>>(() => new Set());
   const [customerSavingId, setCustomerSavingId] = useState<string | null>(null);
+  const [customerPricingSavingId, setCustomerPricingSavingId] = useState<string | null>(null);
+  const [customerPricingLoadState, setCustomerPricingLoadState] = useState<CustomerPricingLoadState>("idle");
+  const [customerPricingError, setCustomerPricingError] = useState("");
+  const [customerPricingMessage, setCustomerPricingMessage] = useState("");
+  const [customerPricingUpdatedAt, setCustomerPricingUpdatedAt] = useState<string | null>(null);
   const [uploadingModifiedId, setUploadingModifiedId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [adminLoadError, setAdminLoadError] = useState("");
@@ -556,6 +618,9 @@ export default function AdminPage() {
   const loadAdminDataActionRef = useRef<(options?: AdminLoadOptions) => Promise<void>>(async () => undefined);
   const handleAdminSyncFailureActionRef = useRef<(input: AdminSyncFailureInput) => void>(() => undefined);
   const creditAdjustmentGuardRef = useRef(new StaffCreditAdjustmentOperationGuard());
+  const customerPricingLoadRequestRef = useRef(0);
+  const customerPricingSaveRequestRef = useRef(0);
+  const selectedCustomerIdRef = useRef<string | null>(null);
 
   const clearAdminRetryTimer = useCallback(() => {
     if (adminRetryTimerRef.current !== null) {
@@ -1023,26 +1088,196 @@ export default function AdminPage() {
     retryDelayMs: adminSyncIssue?.retryDelayMs,
   });
 
-  async function openCustomer(customer: Profile) {
+  async function loadCustomerPricing(customerId: string) {
+    const requestId = ++customerPricingLoadRequestRef.current;
+    setCustomerPricingLoadState("loading");
+    setCustomerPricingError("");
+    setCustomerPricingMessage("");
+    setCustomerPricingUpdatedAt(null);
+
+    try {
+      const response = await authenticatedFetch(
+        `/api/admin/customers/${customerId}/commercial-policy`,
+        { cache: "no-store" },
+      );
+      const payload = await response.json().catch(() => null) as {
+        error?: string;
+        policy?: CustomerCommercialPolicyPayload;
+        effectiveQuote?: CustomerCommercialQuotePayload;
+      } | null;
+
+      if (
+        customerPricingLoadRequestRef.current !== requestId ||
+        selectedCustomerIdRef.current !== customerId
+      ) return;
+      if (!response.ok || !payload?.policy || payload.policy.user_id !== customerId) {
+        throw new Error(payload?.error || "Customer pricing policy could not be loaded.");
+      }
+      const policyHasSavedValues =
+        payload.policy.credit_price_override_eur != null ||
+        payload.policy.adjustment_type !== "none" ||
+        payload.policy.payment_stripe_enabled != null ||
+        payload.policy.payment_bank_enabled != null ||
+        payload.policy.internal_note != null;
+      if (policyHasSavedValues && typeof payload.policy.updated_at !== "string") {
+        throw new Error("Customer pricing revision could not be verified. Reload before making changes.");
+      }
+
+      setCustomerForm((current) => current
+        ? applyCustomerPricingPayload(current, payload.policy as CustomerCommercialPolicyPayload, payload.effectiveQuote)
+        : current);
+      setCustomerPricingUpdatedAt(
+        typeof payload.policy.updated_at === "string" ? payload.policy.updated_at : null,
+      );
+      setCustomerPricingLoadState("ready");
+    } catch (error) {
+      if (
+        customerPricingLoadRequestRef.current !== requestId ||
+        selectedCustomerIdRef.current !== customerId
+      ) return;
+      setCustomerPricingLoadState("error");
+      setCustomerPricingError(
+        error instanceof Error
+          ? error.message
+          : "Customer pricing policy could not be loaded.",
+      );
+    }
+  }
+
+  function openCustomer(customer: Profile) {
+    customerPricingSaveRequestRef.current += 1;
+    selectedCustomerIdRef.current = customer.id;
+    setCustomerPricingSavingId(null);
     setSelectedCustomer(customer);
     setCustomerForm(makeCustomerForm(customer));
+    void loadCustomerPricing(customer.id);
+  }
+
+  async function saveCustomerPricing() {
+    if (!hasStaffPermission(adminAccess, "credits.manage")) {
+      setCustomerPricingError("Your staff role cannot update customer pricing.");
+      return;
+    }
+    if (!selectedCustomer || !customerForm) return;
+    if (selectedCustomerIdRef.current !== selectedCustomer.id) {
+      setCustomerPricingLoadState("error");
+      setCustomerPricingError("The selected customer changed. Reopen the customer before saving pricing.");
+      return;
+    }
+    if (customerPricingLoadState !== "ready") {
+      setCustomerPricingError("Load the current customer pricing policy before saving.");
+      return;
+    }
+
+    const customerId = selectedCustomer.id;
+    const pricingMode = customerForm.commercial_pricing_mode;
+    let creditPriceOverrideEuro: number | null = null;
+    let adjustmentType: CustomerForm["commercial_adjustment_type"] = "none";
+    let adjustmentValue = 0;
+
+    if (pricingMode === "fixed") {
+      creditPriceOverrideEuro = Number(customerForm.credit_price_override_eur);
+      if (
+        !customerForm.credit_price_override_eur.trim() ||
+        !Number.isFinite(creditPriceOverrideEuro) ||
+        creditPriceOverrideEuro < 0.01 ||
+        creditPriceOverrideEuro > 1000
+      ) {
+        setCustomerPricingError("Enter a fixed price between EUR 0.01 and EUR 1,000.");
+        return;
+      }
+    } else if (pricingMode === "adjustment") {
+      adjustmentType = customerForm.commercial_adjustment_type;
+      adjustmentValue = Number(customerForm.commercial_adjustment_value);
+      const maximum = adjustmentType === "percentage" ? 100 : 1000;
+      if (
+        adjustmentType === "none" ||
+        !Number.isFinite(adjustmentValue) ||
+        Math.abs(adjustmentValue) > maximum
+      ) {
+        setCustomerPricingError(
+          adjustmentType === "percentage"
+            ? "Enter a percentage adjustment between -100 and 100."
+            : "Enter a fixed adjustment between EUR -1,000 and EUR 1,000.",
+        );
+        return;
+      }
+    }
+
+    const requestId = ++customerPricingSaveRequestRef.current;
+    setCustomerPricingSavingId(customerId);
+    setCustomerPricingError("");
+    setCustomerPricingMessage("");
+
     try {
-      const response = await authenticatedFetch(`/api/admin/customers/${customer.id}/commercial-policy`);
-      const payload = await response.json();
-      if (!response.ok) throw new Error(payload.error || "Customer pricing policy could not be loaded.");
-      const policy = payload.policy;
-      setCustomerForm((current) => current ? {
-        ...current,
-        credit_price_override_eur: policy.credit_price_override_eur == null ? "" : String(policy.credit_price_override_eur),
-        commercial_adjustment_type: policy.adjustment_type || "none",
-        commercial_adjustment_value: String(policy.adjustment_value || 0),
-        payment_stripe: paymentOverride(policy.payment_stripe_enabled),
-        payment_bank: paymentOverride(policy.payment_bank_enabled),
-        commercial_internal_note: policy.internal_note || "",
-        effective_custom_unit_price_eur: String(payload.effectiveQuote?.customUnitPriceEuro ?? ""),
-      } : current);
+      const response = await authenticatedFetch(
+        `/api/admin/customers/${customerId}/commercial-policy`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            creditPriceOverrideEuro,
+            adjustmentType,
+            adjustmentValue,
+            paymentMethods: {
+              stripe: paymentOverrideValue(customerForm.payment_stripe),
+              bank: paymentOverrideValue(customerForm.payment_bank),
+            },
+            internalNote: customerForm.commercial_internal_note.trim() || null,
+            expectedUpdatedAt: customerPricingUpdatedAt,
+          }),
+        },
+      );
+      const payload = await response.json().catch(() => null) as {
+        error?: string;
+        policy?: CustomerCommercialPolicyPayload;
+        effectiveQuote?: CustomerCommercialQuotePayload;
+      } | null;
+
+      if (
+        customerPricingSaveRequestRef.current !== requestId ||
+        selectedCustomerIdRef.current !== customerId
+      ) return;
+      if (!response.ok || !payload?.policy || payload.policy.user_id !== customerId) {
+        if (response.status === 409) setCustomerPricingLoadState("error");
+        throw new Error(payload?.error || "Customer pricing policy could not be saved.");
+      }
+      if (typeof payload.policy.updated_at !== "string") {
+        setCustomerPricingLoadState("error");
+        throw new Error("Saved pricing revision could not be verified. Reload before making another change.");
+      }
+
+      setCustomerForm((current) => current
+        ? applyCustomerPricingPayload(current, payload.policy as CustomerCommercialPolicyPayload, payload.effectiveQuote)
+        : current);
+      setCustomerPricingUpdatedAt(
+        typeof payload.policy.updated_at === "string" ? payload.policy.updated_at : null,
+      );
+      setCustomerPricingLoadState("ready");
+      setCustomerPricingMessage(
+        pricingMode === "inherit"
+          ? "Customer pricing now follows the current global tariff."
+          : pricingMode === "fixed"
+            ? "Fixed customer price saved. Global tariff changes will not alter it."
+            : "Customer adjustment saved against the global tariff.",
+      );
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Customer pricing policy could not be loaded.");
+      if (
+        customerPricingSaveRequestRef.current !== requestId ||
+        selectedCustomerIdRef.current !== customerId
+      ) return;
+      setCustomerPricingError(
+        error instanceof Error
+          ? error.message
+          : "Customer pricing policy could not be saved.",
+      );
+    } finally {
+      if (
+        customerPricingSaveRequestRef.current === requestId &&
+        selectedCustomerIdRef.current === customerId
+      ) {
+        setCustomerPricingSavingId(null);
+      }
     }
   }
 
@@ -1164,7 +1399,9 @@ export default function AdminPage() {
       return;
     }
     if (!selectedCustomer || !customerForm) return;
-    setCustomerSavingId(selectedCustomer.id);
+    const customerId = selectedCustomer.id;
+    const customerSnapshot = selectedCustomer;
+    setCustomerSavingId(customerId);
     setMessage("");
 
     const updatePayload = {
@@ -1190,58 +1427,45 @@ export default function AdminPage() {
         : {}),
     };
 
-    const profileResponse = await authenticatedFetch(
-      `/api/admin/customers/${selectedCustomer.id}/profile`,
-      {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updatePayload),
-      }
-    );
-    const profilePayload = await profileResponse.json().catch(() => ({}));
-
-    if (!profileResponse.ok) {
-      setCustomerSavingId(null);
-      setMessage(profilePayload.error || "Customer profile could not be saved.");
-      return;
-    }
-
-    if (hasStaffPermission(adminAccess, "credits.manage")) {
-      try {
-        const response = await authenticatedFetch(`/api/admin/customers/${selectedCustomer.id}/commercial-policy`, {
+    try {
+      const profileResponse = await authenticatedFetch(
+        `/api/admin/customers/${customerId}/profile`,
+        {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            creditPriceOverrideEuro: customerForm.credit_price_override_eur.trim() ? Number(customerForm.credit_price_override_eur) : null,
-            adjustmentType: customerForm.commercial_adjustment_type,
-            adjustmentValue: Number(customerForm.commercial_adjustment_value || 0),
-            paymentMethods: {
-              stripe: paymentOverrideValue(customerForm.payment_stripe),
-              bank: paymentOverrideValue(customerForm.payment_bank),
-            },
-            internalNote: customerForm.commercial_internal_note.trim() || null,
-          }),
-        });
-        const payload = await response.json();
-        if (!response.ok) throw new Error(payload.error || "Customer commercial policy could not be saved.");
-        setCustomerForm((current) => current ? { ...current, effective_custom_unit_price_eur: String(payload.effectiveQuote?.customUnitPriceEuro ?? "") } : current);
-      } catch (commercialError) {
-        setCustomerSavingId(null);
-        setMessage(`Customer profile saved, but pricing policy failed: ${commercialError instanceof Error ? commercialError.message : "Unknown error"}`);
+          body: JSON.stringify(updatePayload),
+        },
+      );
+      const profilePayload = await profileResponse.json().catch(() => ({}));
+
+      if (!profileResponse.ok) {
+        if (selectedCustomerIdRef.current === customerId) {
+          setMessage(profilePayload.error || "Customer profile could not be saved.");
+        }
         return;
       }
+
+      const updatedCustomer = {
+        ...customerSnapshot,
+        ...updatePayload,
+        ...(profilePayload.customer ?? {}),
+        id: customerId,
+      } as Profile;
+      setCustomers((current) => current.map((customer) => (
+        customer.id === customerId ? updatedCustomer : customer
+      )));
+      if (selectedCustomerIdRef.current !== customerId) return;
+      setSelectedCustomer((current) => (
+        current?.id === customerId ? updatedCustomer : current
+      ));
+      setMessage(`${customerSnapshot.customer_id ?? customerSnapshot.email ?? "Customer"} updated.`);
+    } catch {
+      if (selectedCustomerIdRef.current === customerId) {
+        setMessage("Customer profile could not be saved. Check the connection and retry.");
+      }
+    } finally {
+      setCustomerSavingId((current) => current === customerId ? null : current);
     }
-
-    setCustomerSavingId(null);
-
-    const updatedCustomer = {
-      ...selectedCustomer,
-      ...updatePayload,
-      ...(profilePayload.customer ?? {}),
-    } as Profile;
-    setCustomers((current) => current.map((customer) => (customer.id === selectedCustomer.id ? updatedCustomer : customer)));
-    setSelectedCustomer(updatedCustomer);
-    setMessage(`${selectedCustomer.customer_id ?? selectedCustomer.email ?? "Customer"} updated.`);
   }
 
   async function updateStatus(orderId: string, newStatus: string) {
@@ -1821,10 +2045,25 @@ export default function AdminPage() {
           creditUpdating={creditUpdatingIds.has(selectedCustomer.id)}
           saving={customerSavingId === selectedCustomer.id}
           onClose={() => {
+            customerPricingLoadRequestRef.current += 1;
+            customerPricingSaveRequestRef.current += 1;
+            selectedCustomerIdRef.current = null;
             setSelectedCustomer(null);
             setCustomerForm(null);
+            setCustomerPricingLoadState("idle");
+            setCustomerPricingError("");
+            setCustomerPricingMessage("");
+            setCustomerPricingUpdatedAt(null);
+            setCustomerPricingSavingId(null);
           }}
           onSave={saveCustomerSettings}
+          pricingLoadState={customerPricingLoadState}
+          pricingError={customerPricingError}
+          pricingMessage={customerPricingMessage}
+          pricingUpdatedAt={customerPricingUpdatedAt}
+          pricingSaving={customerPricingSavingId === selectedCustomer.id}
+          onReloadPricing={() => void loadCustomerPricing(selectedCustomer.id)}
+          onSavePricing={() => void saveCustomerPricing()}
           onQuickAdjust={(amount) => quickAdjustCredits(selectedCustomer, amount)}
           onCustomAdjust={() => handleCustomCreditAdjust(selectedCustomer)}
           onCopyValue={copyValue}
@@ -2410,7 +2649,7 @@ function CustomersPanel({
   );
 }
 
-function CustomerDetailModal({ customer, form, setForm, creditInput, setCreditInput, creditNote, setCreditNote, creditUpdating, saving, onClose, onSave, onQuickAdjust, onCustomAdjust, onCopyValue, canManageSecurity, canManageCredits, canViewCustomerIntelligence, canReplacePassword }: {
+function CustomerDetailModal({ customer, form, setForm, creditInput, setCreditInput, creditNote, setCreditNote, creditUpdating, saving, onClose, onSave, pricingLoadState, pricingError, pricingMessage, pricingUpdatedAt, pricingSaving, onReloadPricing, onSavePricing, onQuickAdjust, onCustomAdjust, onCopyValue, canManageSecurity, canManageCredits, canViewCustomerIntelligence, canReplacePassword }: {
   customer: Profile;
   form: CustomerForm;
   setForm: React.Dispatch<React.SetStateAction<CustomerForm | null>>;
@@ -2422,6 +2661,13 @@ function CustomerDetailModal({ customer, form, setForm, creditInput, setCreditIn
   saving: boolean;
   onClose: () => void;
   onSave: () => void;
+  pricingLoadState: CustomerPricingLoadState;
+  pricingError: string;
+  pricingMessage: string;
+  pricingUpdatedAt: string | null;
+  pricingSaving: boolean;
+  onReloadPricing: () => void;
+  onSavePricing: () => void;
   onQuickAdjust: (amount: number) => void;
   onCustomAdjust: () => void;
   onCopyValue: (value: string | null | undefined, label: string) => void;
@@ -2433,7 +2679,64 @@ function CustomerDetailModal({ customer, form, setForm, creditInput, setCreditIn
   const accountCreatedLabel = customer.created_at
     ? `Account created ${formatDate(customer.created_at)}`
     : "Account creation date unavailable";
+  const customerPricingLoading = pricingLoadState === "loading";
+  const customerPricingReady = pricingLoadState === "ready";
+  const pricingControlsDisabled = customerPricingLoading || pricingSaving || !customerPricingReady;
+  const globalCustomerPrice = Number(form.global_custom_unit_price_eur);
+  const customerPricingPreview = (() => {
+    if (!Number.isFinite(globalCustomerPrice) || globalCustomerPrice < 0.01) return null;
+    if (form.commercial_pricing_mode === "inherit") return globalCustomerPrice;
+    if (form.commercial_pricing_mode === "fixed") {
+      const fixedPrice = Number(form.credit_price_override_eur);
+      return Number.isFinite(fixedPrice) && fixedPrice >= 0.01 && fixedPrice <= 1000
+        ? fixedPrice
+        : null;
+    }
+
+    const adjustment = Number(form.commercial_adjustment_value);
+    if (!Number.isFinite(adjustment)) return null;
+    if (form.commercial_adjustment_type === "percentage") {
+      if (Math.abs(adjustment) > 100) return null;
+      return Math.max(0.01, globalCustomerPrice * (1 - adjustment / 100));
+    }
+    if (form.commercial_adjustment_type === "fixed") {
+      if (Math.abs(adjustment) > 1000) return null;
+      return Math.max(0.01, globalCustomerPrice - adjustment);
+    }
+    return null;
+  })();
   const updateForm = <K extends keyof CustomerForm>(key: K, value: CustomerForm[K]) => setForm((current) => current ? { ...current, [key]: value } : current);
+  const updatePricingMode = (mode: CustomerPricingMode) => {
+    setForm((current) => {
+      if (!current) return current;
+      if (mode === "inherit") {
+        return {
+          ...current,
+          commercial_pricing_mode: mode,
+          credit_price_override_eur: "",
+          commercial_adjustment_type: "none",
+          commercial_adjustment_value: "0",
+        };
+      }
+      if (mode === "fixed") {
+        return {
+          ...current,
+          commercial_pricing_mode: mode,
+          commercial_adjustment_type: "none",
+          commercial_adjustment_value: "0",
+        };
+      }
+      return {
+        ...current,
+        commercial_pricing_mode: mode,
+        credit_price_override_eur: "",
+        commercial_adjustment_type:
+          current.commercial_adjustment_type === "none"
+            ? "percentage"
+            : current.commercial_adjustment_type,
+      };
+    });
+  };
   const toggleCustomerTag = (tag: CustomerTag) => {
     setForm((current) => {
       if (!current) return current;
@@ -2558,22 +2861,103 @@ function CustomerDetailModal({ customer, form, setForm, creditInput, setCreditIn
               )}
               <textarea value={form.internal_admin_note} onChange={(event) => updateForm("internal_admin_note", event.target.value)} placeholder="Internal admin note. Customer cannot see this." className="mt-4 min-h-32 w-full resize-none rounded-2xl border border-white/10 bg-black/35 px-4 py-3 text-sm font-bold text-white outline-none placeholder:text-zinc-600 focus:border-red-700" />
             </section>
-            {canManageCredits && <section className="rounded-[2rem] border border-red-900/40 bg-red-950/10 p-5">
+            {canManageCredits && <section className="rounded-[2rem] border border-red-900/40 bg-red-950/10 p-5" aria-labelledby="customer-pricing-title">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                <div><h3 className="text-2xl font-black">Customer Pricing & Payments</h3><p className="mt-1 text-sm leading-6 text-zinc-500">A base-price override replaces the global result. The customer adjustment is applied after it.</p></div>
-                {form.effective_custom_unit_price_eur && <div className="rounded-xl border border-emerald-700/40 bg-emerald-950/20 px-4 py-3 text-right"><div className="text-xs font-black uppercase text-emerald-400">Effective custom credit</div><div className="mt-1 text-2xl font-black">EUR {Number(form.effective_custom_unit_price_eur).toFixed(2)}</div></div>}
+                <div>
+                  <h3 id="customer-pricing-title" className="text-2xl font-black">Customer Pricing & Payments</h3>
+                  <p className="mt-1 text-sm leading-6 text-zinc-500">Choose one price rule. A fixed customer price is final; it never receives another adjustment and does not change with the global tariff.</p>
+                </div>
+                <div className="grid shrink-0 gap-2 sm:grid-cols-2">
+                  <div className="rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-right">
+                    <div className="text-xs font-black uppercase text-zinc-500">Global tariff</div>
+                    <div className="mt-1 text-lg font-black text-white">
+                      {Number.isFinite(globalCustomerPrice) && form.global_custom_unit_price_eur
+                        ? `EUR ${formatCreditUnitAmount(globalCustomerPrice)}`
+                        : "—"}
+                    </div>
+                  </div>
+                  <div className="rounded-xl border border-emerald-700/40 bg-emerald-950/20 px-4 py-3 text-right">
+                    <div className="text-xs font-black uppercase text-emerald-400">Live preview</div>
+                    <div className="mt-1 text-lg font-black">
+                      {customerPricingPreview != null
+                        ? `EUR ${formatCreditUnitAmount(customerPricingPreview)}`
+                        : "—"}
+                    </div>
+                    <div className="mt-1 text-[10px] font-bold uppercase tracking-[0.12em] text-emerald-300/70">Unsaved until confirmed</div>
+                  </div>
+                </div>
               </div>
-              <div className="mt-5 grid gap-4 md:grid-cols-3">
-                <FormInput label="Base Price Override (EUR)" type="number" value={form.credit_price_override_eur} onChange={(value) => updateForm("credit_price_override_eur", value)} />
-                <FormSelect label="Customer Adjustment" value={form.commercial_adjustment_type} onChange={(value) => updateForm("commercial_adjustment_type", value as CustomerForm["commercial_adjustment_type"])} options={["none", "percentage", "fixed"]} />
-                <FormInput label={form.commercial_adjustment_type === "percentage" ? "Adjustment (%)" : "Adjustment (EUR / credit)"} type="number" value={form.commercial_adjustment_value} onChange={(value) => updateForm("commercial_adjustment_value", value)} />
+
+              {customerPricingLoading && (
+                <div role="status" className="mt-5 flex items-center rounded-xl border border-white/10 bg-black/30 p-4 text-sm font-bold text-zinc-300">
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin text-red-400" />Loading the current customer pricing policy…
+                </div>
+              )}
+              {pricingError && (
+                <div role="alert" className="mt-5 rounded-xl border border-red-700/50 bg-red-950/30 p-4 text-sm text-red-100">
+                  <div className="font-black">Customer pricing was not confirmed</div>
+                  <p className="mt-1 leading-6 text-red-100/80">{pricingError}</p>
+                  {pricingLoadState === "error" && (
+                    <button type="button" onClick={onReloadPricing} disabled={customerPricingLoading || pricingSaving} className="mt-3 inline-flex h-10 items-center justify-center rounded-lg border border-red-500/40 px-4 text-xs font-black text-white disabled:opacity-50">
+                      <RefreshCcw className={`mr-2 h-4 w-4 ${customerPricingLoading ? "animate-spin" : ""}`} />Reload pricing
+                    </button>
+                  )}
+                </div>
+              )}
+              {pricingMessage && (
+                <div role="status" className="mt-5 rounded-xl border border-emerald-700/40 bg-emerald-950/20 p-4 text-sm font-bold text-emerald-200">{pricingMessage}</div>
+              )}
+
+              <fieldset disabled={pricingControlsDisabled} className="mt-5 disabled:opacity-60">
+                <legend className="text-xs font-black uppercase tracking-[0.14em] text-zinc-500">Pricing rule</legend>
+                <div className="mt-2 grid gap-3 md:grid-cols-3">
+                  {([
+                    ["inherit", "Inherit global", "Always follows the current global tariff."],
+                    ["fixed", "Fixed customer price", "A permanent exact price for this customer."],
+                    ["adjustment", "Global + adjustment", "Discount or surcharge against the global tariff."],
+                  ] as const).map(([value, label, description]) => (
+                    <label key={value} className={`cursor-pointer rounded-xl border p-4 ${form.commercial_pricing_mode === value ? "border-red-700 bg-red-950/30" : "border-white/10 bg-black/30"}`}>
+                      <span className="flex items-center gap-2 font-black text-white">
+                        <input type="radio" name={`customer-pricing-mode-${customer.id}`} value={value} checked={form.commercial_pricing_mode === value} onChange={() => updatePricingMode(value)} className="h-4 w-4 accent-red-600" />
+                        {label}
+                      </span>
+                      <span className="mt-2 block text-xs leading-5 text-zinc-500">{description}</span>
+                    </label>
+                  ))}
+                </div>
+
+                {form.commercial_pricing_mode === "fixed" && (
+                  <div className="mt-5 max-w-md">
+                    <FormInput label="Exact Customer Price (EUR / credit)" type="number" min="0.01" max="1000" step="0.0001" inputMode="decimal" value={form.credit_price_override_eur} onChange={(value) => updateForm("credit_price_override_eur", value)} disabled={pricingControlsDisabled} />
+                    <p className="mt-2 text-xs leading-5 text-zinc-500">This exact unit price applies to custom amounts and every package for this customer until you switch back to the global tariff.</p>
+                  </div>
+                )}
+
+                {form.commercial_pricing_mode === "adjustment" && (
+                  <div className="mt-5 grid gap-4 md:grid-cols-2">
+                    <FormSelect label="Adjustment type" value={form.commercial_adjustment_type} onChange={(value) => updateForm("commercial_adjustment_type", value as CustomerForm["commercial_adjustment_type"])} options={["percentage", "fixed"]} disabled={pricingControlsDisabled} />
+                    <FormInput label={form.commercial_adjustment_type === "percentage" ? "Adjustment (%)" : "Adjustment (EUR / credit)"} type="number" min={form.commercial_adjustment_type === "percentage" ? "-100" : "-1000"} max={form.commercial_adjustment_type === "percentage" ? "100" : "1000"} step="0.0001" inputMode="decimal" value={form.commercial_adjustment_value} onChange={(value) => updateForm("commercial_adjustment_value", value)} disabled={pricingControlsDisabled} />
+                    <p className="text-xs leading-5 text-zinc-500 md:col-span-2">Positive values reduce the inherited price. Negative values create a surcharge.</p>
+                  </div>
+                )}
+
+                <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                  <PaymentPolicySelect label="Stripe" value={form.payment_stripe} onChange={(value) => updateForm("payment_stripe", value)} disabled={pricingControlsDisabled} />
+                  <PaymentPolicySelect label="Bank transfer" value={form.payment_bank} onChange={(value) => updateForm("payment_bank", value)} disabled={pricingControlsDisabled} />
+                </div>
+                <p className="mt-4 text-xs leading-5 text-zinc-500">Payment method “Inherit” follows the global payment setting.</p>
+                <textarea value={form.commercial_internal_note} onChange={(event) => updateForm("commercial_internal_note", event.target.value)} disabled={pricingControlsDisabled} maxLength={2000} aria-label="Internal pricing agreement note" placeholder="Internal pricing agreement or approval note. Customer cannot see this." className="mt-4 min-h-24 w-full resize-none rounded-2xl border border-white/10 bg-black/35 px-4 py-3 text-sm font-bold text-white outline-none placeholder:text-zinc-600 focus:border-red-700 disabled:cursor-not-allowed disabled:opacity-60" />
+              </fieldset>
+
+              <div className="mt-5 flex flex-col gap-3 border-t border-white/10 pt-5 sm:flex-row sm:items-center sm:justify-between">
+                <div className="text-xs leading-5 text-zinc-500">
+                  {pricingUpdatedAt ? `Last saved ${formatDate(pricingUpdatedAt)}` : "No customer-specific pricing row is saved yet."}
+                </div>
+                <button type="button" onClick={onSavePricing} disabled={!customerPricingReady || customerPricingLoading || pricingSaving} className="inline-flex h-11 items-center justify-center rounded-xl bg-[#b1121b] px-5 text-sm font-black text-white transition hover:bg-[#c91824] disabled:cursor-not-allowed disabled:opacity-50">
+                  {pricingSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                  {pricingSaving ? "Saving pricing…" : "Save customer pricing"}
+                </button>
               </div>
-              <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                <PaymentPolicySelect label="Stripe" value={form.payment_stripe} onChange={(value) => updateForm("payment_stripe", value)} />
-                <PaymentPolicySelect label="Bank transfer" value={form.payment_bank} onChange={(value) => updateForm("payment_bank", value)} />
-              </div>
-              <p className="mt-4 text-xs leading-5 text-zinc-500">Positive adjustment values reduce the per-credit price; negative values increase it. “Inherit” follows the global payment setting.</p>
-              <textarea value={form.commercial_internal_note} onChange={(event) => updateForm("commercial_internal_note", event.target.value)} placeholder="Internal pricing agreement or approval note. Customer cannot see this." className="mt-4 min-h-24 w-full resize-none rounded-2xl border border-white/10 bg-black/35 px-4 py-3 text-sm font-bold text-white outline-none placeholder:text-zinc-600 focus:border-red-700" />
             </section>}
           </div>
           <aside className="min-w-0 space-y-5 sm:space-y-6">
@@ -3071,28 +3455,28 @@ function MiniInfo({ label, value }: { label: string; value: string | number | nu
   return <div className="min-w-0 rounded-xl bg-white/[0.04] p-3"><div className="text-xs uppercase tracking-[0.12em] text-zinc-500">{label}</div><div className="mt-1 break-words font-bold text-white">{value || "-"}</div></div>;
 }
 
-function FormInput({ label, value, onChange, type = "text" }: { label: string; value: string; onChange: (value: string) => void; type?: string }) {
+function FormInput({ label, value, onChange, type = "text", min, max, step, inputMode, disabled = false }: { label: string; value: string; onChange: (value: string) => void; type?: string; min?: string; max?: string; step?: string; inputMode?: "decimal" | "numeric"; disabled?: boolean }) {
   return (
     <label>
       <div className="mb-2 text-xs font-black uppercase tracking-[0.14em] text-zinc-500">{label}</div>
-      <input type={type} value={value} onChange={(event) => onChange(event.target.value)} className="h-12 w-full rounded-xl border border-white/10 bg-black/35 px-4 text-sm font-bold text-white outline-none placeholder:text-zinc-600 focus:border-red-700" />
+      <input type={type} min={min} max={max} step={step} inputMode={inputMode} value={value} onChange={(event) => onChange(event.target.value)} disabled={disabled} className="h-12 w-full rounded-xl border border-white/10 bg-black/35 px-4 text-sm font-bold text-white outline-none placeholder:text-zinc-600 focus:border-red-700 disabled:cursor-not-allowed disabled:opacity-60" />
     </label>
   );
 }
 
-function FormSelect({ label, value, onChange, options }: { label: string; value: string; onChange: (value: string) => void; options: string[] }) {
+function FormSelect({ label, value, onChange, options, disabled = false }: { label: string; value: string; onChange: (value: string) => void; options: string[]; disabled?: boolean }) {
   return (
     <label>
       <div className="mb-2 text-xs font-black uppercase tracking-[0.14em] text-zinc-500">{label}</div>
-      <select value={value} onChange={(event) => onChange(event.target.value)} className="h-12 w-full rounded-xl border border-white/10 bg-black/35 px-4 text-sm font-bold text-white outline-none focus:border-red-700">
+      <select value={value} onChange={(event) => onChange(event.target.value)} disabled={disabled} className="h-12 w-full rounded-xl border border-white/10 bg-black/35 px-4 text-sm font-bold text-white outline-none focus:border-red-700 disabled:cursor-not-allowed disabled:opacity-60">
         {options.map((option) => <option key={option} value={option} className="bg-[#111]">{statusLabel(option)}</option>)}
       </select>
     </label>
   );
 }
 
-function PaymentPolicySelect({ label, value, onChange }: { label: string; value: PaymentOverride; onChange: (value: PaymentOverride) => void }) {
-  return <label className="text-xs font-black uppercase tracking-[0.12em] text-zinc-500">{label}<select value={value} onChange={(event) => onChange(event.target.value as PaymentOverride)} className="mt-2 h-12 w-full rounded-xl border border-white/10 bg-black/35 px-4 text-sm font-black normal-case text-white outline-none focus:border-red-700"><option value="inherit">Inherit global</option><option value="enabled">Enabled</option><option value="disabled">Disabled</option></select></label>;
+function PaymentPolicySelect({ label, value, onChange, disabled = false }: { label: string; value: PaymentOverride; onChange: (value: PaymentOverride) => void; disabled?: boolean }) {
+  return <label className="text-xs font-black uppercase tracking-[0.12em] text-zinc-500">{label}<select value={value} onChange={(event) => onChange(event.target.value as PaymentOverride)} disabled={disabled} className="mt-2 h-12 w-full rounded-xl border border-white/10 bg-black/35 px-4 text-sm font-black normal-case text-white outline-none focus:border-red-700 disabled:cursor-not-allowed disabled:opacity-60"><option value="inherit">Inherit global</option><option value="enabled">Enabled</option><option value="disabled">Disabled</option></select></label>;
 }
 
 function Detail({ icon, label, value }: { icon: ReactNode; label: string; value: string | number | null | undefined }) {

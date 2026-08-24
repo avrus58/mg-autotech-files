@@ -46,10 +46,6 @@ import {
 } from "@/lib/vehicleControl/clientCatalog";
 import { DeferredPerformanceTools } from "@/components/tools/DeferredPerformanceTools";
 import {
-  CREDIT_PROMOTION_PERCENT,
-  creditPackages as sharedCreditPackages,
-} from "@/lib/creditPackages";
-import {
   homepageSessionEvent,
   type HomepageSessionDetail,
 } from "@/lib/homepageSessionEvents";
@@ -768,10 +764,67 @@ const workshopUseCases = [
   },
 ];
 
-const homepageCreditPackages = sharedCreditPackages.map((pack) => ({
-  ...pack,
-  unitPriceEuro: pack.priceEuro / pack.credits,
-}));
+type PublicCreditPackage = {
+  id: string;
+  name: string;
+  credits: number;
+  basePriceEuro: number;
+  priceEuro: number;
+  unitPriceEuro: number;
+  description: string;
+  highlight: boolean;
+};
+
+type PublicCreditQuote = {
+  currency: "EUR";
+  promotionLabel: string | null;
+  customUnitPriceEuro: number;
+  packages: PublicCreditPackage[];
+};
+
+type PublicCreditQuoteState =
+  | { status: "loading"; quote: null; message: "" }
+  | { status: "ready"; quote: PublicCreditQuote; message: "" }
+  | { status: "error"; quote: null; message: string };
+
+function isPositiveFiniteNumber(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value) && value > 0;
+}
+
+function parsePublicCreditQuote(value: unknown): PublicCreditQuote | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const quote = value as Partial<PublicCreditQuote>;
+  if (
+    quote.currency !== "EUR" ||
+    !isPositiveFiniteNumber(quote.customUnitPriceEuro) ||
+    (quote.promotionLabel !== null && typeof quote.promotionLabel !== "string") ||
+    !Array.isArray(quote.packages) ||
+    quote.packages.length === 0
+  ) {
+    return null;
+  }
+
+  const packages = quote.packages.filter((item): item is PublicCreditPackage => (
+    Boolean(item) &&
+    typeof item.id === "string" &&
+    typeof item.name === "string" &&
+    typeof item.description === "string" &&
+    typeof item.highlight === "boolean" &&
+    Number.isInteger(item.credits) &&
+    item.credits > 0 &&
+    isPositiveFiniteNumber(item.basePriceEuro) &&
+    isPositiveFiniteNumber(item.priceEuro) &&
+    isPositiveFiniteNumber(item.unitPriceEuro)
+  ));
+
+  if (packages.length !== quote.packages.length) return null;
+  return {
+    currency: "EUR",
+    promotionLabel: quote.promotionLabel,
+    customUnitPriceEuro: quote.customUnitPriceEuro,
+    packages,
+  };
+}
 
 const securityItems = [
   { title: "Private Dashboard", icon: Lock },
@@ -2997,7 +3050,8 @@ function formatEuro(value: number) {
   return new Intl.NumberFormat("de-DE", {
     style: "currency",
     currency: "EUR",
-    maximumFractionDigits: 0,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
   }).format(value);
 }
 
@@ -3006,7 +3060,7 @@ function formatCreditUnitEuro(value: number) {
     style: "currency",
     currency: "EUR",
     minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
+    maximumFractionDigits: 4,
   }).format(value);
 }
 
@@ -3817,6 +3871,56 @@ export function UnifiedHomePage({
   const [authReady, setAuthReady] = useState(true);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [sessionRuntimeReady, setSessionRuntimeReady] = useState(false);
+  const [publicCreditQuote, setPublicCreditQuote] = useState<PublicCreditQuoteState>({
+    status: "loading",
+    quote: null,
+    message: "",
+  });
+  const publicCreditQuoteRequest = useRef(0);
+
+  const loadPublicCreditQuote = useCallback(async () => {
+    const requestId = publicCreditQuoteRequest.current + 1;
+    publicCreditQuoteRequest.current = requestId;
+    setPublicCreditQuote({ status: "loading", quote: null, message: "" });
+
+    try {
+      const response = await fetch("/api/credits/public-quote", {
+        cache: "no-store",
+        headers: { Accept: "application/json" },
+      });
+      const payload = await response.json().catch(() => null);
+      if (!response.ok) {
+        throw new Error(
+          payload && typeof payload.error === "string"
+            ? payload.error
+            : "Live credit pricing is temporarily unavailable."
+        );
+      }
+      const quote = parsePublicCreditQuote(payload?.quote);
+      if (!quote) throw new Error("Live credit pricing could not be verified.");
+      if (publicCreditQuoteRequest.current === requestId) {
+        setPublicCreditQuote({ status: "ready", quote, message: "" });
+      }
+    } catch (error) {
+      if (publicCreditQuoteRequest.current === requestId) {
+        setPublicCreditQuote({
+          status: "error",
+          quote: null,
+          message: error instanceof Error
+            ? error.message
+            : "Live credit pricing is temporarily unavailable.",
+        });
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    const timeout = window.setTimeout(() => void loadPublicCreditQuote(), 0);
+    return () => {
+      window.clearTimeout(timeout);
+      publicCreditQuoteRequest.current += 1;
+    };
+  }, [loadPublicCreditQuote]);
 
   useEffect(() => {
     const updateWorkload = () => {
@@ -4781,13 +4885,57 @@ export function UnifiedHomePage({
             <p className="mt-3 text-zinc-400">
               Volume based pricing for customers, workshops and partners.
             </p>
-            <div className="mt-4 inline-flex rounded-full border border-red-700/60 bg-red-950/40 px-4 py-2 text-sm font-black text-red-100">
-              Limited time -{CREDIT_PROMOTION_PERCENT}% on all credit packages
-            </div>
+            {publicCreditQuote.status === "ready" && publicCreditQuote.quote.promotionLabel && (
+              <div className="mt-4 inline-flex rounded-full border border-red-700/60 bg-red-950/40 px-4 py-2 text-sm font-black text-red-100">
+                {publicCreditQuote.quote.promotionLabel}
+              </div>
+            )}
           </div>
 
+          {publicCreditQuote.status === "loading" && (
+            <div
+              className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5"
+              role="status"
+              aria-live="polite"
+              aria-label="Loading current credit prices"
+            >
+              {Array.from({ length: 5 }, (_, index) => (
+                <div
+                  key={index}
+                  className="min-h-[320px] animate-pulse rounded-3xl border border-white/10 bg-white/[0.04] p-6"
+                >
+                  <div className="h-4 w-24 rounded bg-white/10" />
+                  <div className="mt-5 h-7 w-32 rounded bg-white/10" />
+                  <div className="mt-12 h-10 w-40 rounded bg-white/10" />
+                  <div className="mt-8 h-20 rounded bg-white/[0.06]" />
+                </div>
+              ))}
+              <span className="sr-only">Loading current credit prices...</span>
+            </div>
+          )}
+
+          {publicCreditQuote.status === "error" && (
+            <div
+              className="rounded-2xl border border-red-800/70 bg-red-950/25 p-6"
+              role="alert"
+            >
+              <h3 className="text-lg font-black text-white">Current prices could not be verified</h3>
+              <p className="mt-2 text-sm leading-6 text-red-100">
+                {publicCreditQuote.message} No outdated price is being shown.
+              </p>
+              <button
+                type="button"
+                onClick={() => void loadPublicCreditQuote()}
+                className="mt-5 min-h-11 rounded-xl border border-red-700 px-5 py-2 text-sm font-black text-white transition hover:bg-red-950/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+              >
+                Retry live prices
+              </button>
+            </div>
+          )}
+
+          {publicCreditQuote.status === "ready" && (
           <div className="homepage-card-rail -mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden xl:mx-0 xl:grid xl:grid-cols-5 xl:overflow-visible xl:px-0">
-            {homepageCreditPackages.map((pack) => (
+            {publicCreditQuote.quote.packages.map((pack) => (
               <div
                 key={pack.id}
                 className={`relative flex min-h-[320px] min-w-[min(82vw,20rem)] snap-start flex-col rounded-3xl border p-6 transition duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-red-950/30 xl:min-w-0 ${
@@ -4810,10 +4958,12 @@ export function UnifiedHomePage({
                   {pack.credits} Credits
                 </div>
 
-                <div className="mt-6 text-sm font-bold text-zinc-500 line-through">
-                  {formatEuro(pack.basePriceEuro)}
-                </div>
-                <div className="mt-1 text-4xl font-black">
+                {pack.basePriceEuro !== pack.priceEuro && (
+                  <div className="mt-6 text-sm font-bold text-zinc-500 line-through">
+                    {formatEuro(pack.basePriceEuro)}
+                  </div>
+                )}
+                <div className={`${pack.basePriceEuro === pack.priceEuro ? "mt-12" : "mt-1"} text-4xl font-black`}>
                   {formatEuro(pack.priceEuro)}
                 </div>
                 <div className="mt-2 text-sm font-bold text-red-300">
@@ -4834,6 +4984,7 @@ export function UnifiedHomePage({
               </div>
             ))}
           </div>
+          )}
         </div>
       </AnimatedSection>
 

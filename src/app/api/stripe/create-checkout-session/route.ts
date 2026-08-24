@@ -2,7 +2,16 @@ import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { checkAdaptiveRateLimit, rateLimitResponseHeaders } from "@/lib/abuseProtection";
 import { requireApiUser } from "@/lib/apiAuth";
-import { getCreditPurchaseQuote } from "@/lib/commercialPolicy";
+import {
+  CommercialPricingUnavailableError,
+  getCreditPurchaseQuote,
+  PaymentMethodUnavailableError,
+  StaleCreditQuoteError,
+} from "@/lib/commercialPolicy";
+import {
+  euroAmountToCents,
+  isStripeEuroAmountSupported,
+} from "@/lib/commercialPricing";
 import { safeAppendPaymentEvent, safeUpsertPaymentRecord } from "@/lib/paymentAudit";
 import { getStripe } from "@/lib/stripe";
 import {
@@ -64,10 +73,34 @@ export async function POST(request: Request) {
     let selectedPackage;
     try {
       selectedPackage = await getCreditPurchaseQuote(user.id, body, "stripe");
-    } catch {
+    } catch (error) {
+      if (error instanceof StaleCreditQuoteError) {
+        return NextResponse.json(
+          {
+            error: "Credit prices changed. Review the refreshed quote before continuing.",
+            code: error.code,
+          },
+          { status: 409, headers: limitHeaders },
+        );
+      }
+      if (error instanceof PaymentMethodUnavailableError) {
+        return NextResponse.json(
+          { error: "Stripe checkout is not available for this account.", code: error.code },
+          { status: 403, headers: limitHeaders },
+        );
+      }
+      if (error instanceof CommercialPricingUnavailableError) {
+        return NextResponse.json(
+          {
+            error: "Credit pricing is temporarily unavailable. No payment was started.",
+            code: error.code,
+          },
+          { status: 503, headers: limitHeaders },
+        );
+      }
       return NextResponse.json(
-        { error: "Stripe checkout is not available for this account." },
-        { status: 403, headers: limitHeaders },
+        { error: "Credit checkout could not be prepared safely." },
+        { status: 503, headers: limitHeaders },
       );
     }
     if (!selectedPackage) {
@@ -76,6 +109,16 @@ export async function POST(request: Request) {
         { status: 400, headers: limitHeaders },
       );
     }
+    if (!isStripeEuroAmountSupported(selectedPackage.priceEuro)) {
+      return NextResponse.json(
+        {
+          error: "This total is outside Stripe's supported EUR range. Choose Bank Transfer or change the amount.",
+          code: "stripe_amount_unsupported",
+        },
+        { status: 422, headers: limitHeaders },
+      );
+    }
+    const amountCents = euroAmountToCents(selectedPackage.priceEuro);
 
     const stripe = getStripe();
     const checkoutCorrelationId = randomUUID();
@@ -92,7 +135,7 @@ export async function POST(request: Request) {
               name: `${selectedPackage.credits} MG AutoTech Credits`,
               description: selectedPackage.description,
             },
-            unit_amount: Math.round(selectedPackage.priceEuro * 100),
+            unit_amount: amountCents,
           },
           quantity: 1,
         },
@@ -109,6 +152,7 @@ export async function POST(request: Request) {
         price_euro: String(selectedPackage.priceEuro),
         unit_price_euro: String(selectedPackage.unitPriceEuro),
         purchase_type: selectedPackage.purchaseType,
+        pricing_quote_id: selectedPackage.quoteId,
       },
       payment_intent_data: {
         metadata: {
@@ -118,6 +162,7 @@ export async function POST(request: Request) {
           credits: String(selectedPackage.credits),
           package_id: selectedPackage.id,
           purchase_type: selectedPackage.purchaseType,
+          pricing_quote_id: selectedPackage.quoteId,
         },
       },
     });
@@ -130,7 +175,7 @@ export async function POST(request: Request) {
       status: "pending",
       paymentType: "credit_purchase",
       credits: selectedPackage.credits,
-      amountTotal: Math.round(selectedPackage.priceEuro * 100),
+      amountTotal: amountCents,
       currency: "eur",
       customerEmail: user.email ?? null,
       packageId: selectedPackage.id,
@@ -140,6 +185,7 @@ export async function POST(request: Request) {
         livemode: session.livemode,
         product: STRIPE_CREDIT_PURCHASE_PRODUCT,
         checkout_correlation_id: checkoutCorrelationId,
+        pricing_quote_id: selectedPackage.quoteId,
       },
     });
     if (!recordId) {

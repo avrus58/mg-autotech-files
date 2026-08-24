@@ -4787,3 +4787,56 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
   rollback uygulanmadi. Release oncesinden acik kalmis eski admin sekmesi bir
   defa `Ctrl+Shift+R` isteyebilir; yeni bundle sonraki history donuslerini
   otomatik toparlar.
+
+## 2026-08-24 23:45 +02:00 Kredi fiyatlandirma otoritesi stabilizasyonu
+
+- Gorev: `MANUAL-20260824-CREDIT-PRICING-STABILITY`; global varsayilan kredi
+  fiyatinin ozel policy olmayan tum yeni/mevcut hesaplara uygulanmasini,
+  explicit musteri sabit fiyatinin global degisikliklerden bagimsiz kalmasini
+  ve admin kayitlarinin eksiksiz/istikrarli olmasini sagla.
+- Tek client-safe hesap motoru eklendi. Kesin musteri sabit fiyatinin nihai
+  oldugu, global/customer adjustment mirasinin tek yerde uygulandigi ve EUR
+  toplamlarinin integer ten-thousandths uzerinden ayni cent sonucuna yuvarlandigi
+  canonical quote akisi kuruldu. Runtime fallback fiyat kaldirildi; eksik veya
+  bozuk ayar eski fiyatla odeme acmak yerine 503 verir.
+- Global ve musteri admin API'leri strict validate, canonical response ve
+  `updated_at` tabanli optimistic concurrency kullanir. Profil ile ticari policy
+  kaydi ayrildi; musteri A/B gecisinde gec cevap ve gec save sonucunun yanlis
+  profile yazmasi ref guard'larla engellendi. Inherit, fixed ve adjustment
+  durumlari formda birbirinden ayrildi; 4 ondalikli birim fiyat tam gorunur.
+- Homepage, authenticated kredi ekrani, Stripe checkout ve banka havalesi ayni
+  kullaniciya bagli SHA-256 quote revision'ini kullanir. Client amount/credit
+  kabul edilmez; stale quote 409, kapali odeme yontemi 403, fiyat altyapi hatasi
+  503 ve Stripe EUR alt/ust siniri 422 olarak fail-closed doner. Banka e-postasi
+  server quote'u ile kurulur ve gercek gonderim basarisi olmadan basarili
+  sayilmaz. Public endpoint yalniz sanitize global fiyat alanlarini dondurur.
+- Additive `20260824000000_commercial_pricing_write_authority.sql` migration'i
+  authenticated direct DML grant/policy yolunu kapatir, staff SELECT ile
+  service-role write ayrimini korur, semantik/bounds constraintlerini validate
+  eder. Read-only Production preflight yalniz aggregate olarak bir adet
+  `adjustment_type='none'` eski pasif deger buldu; migration bu etkisiz degeri
+  audit ederek sifira normalize eder ve runtime code-first durumda da bunu
+  sifir sayar. `scripts/verify-commercial-pricing-authority.sql` sadece SELECT
+  kullanir ve grant/policy/constraint/normalizasyon sonucunu denetler.
+- Degisen ana alanlar: `src/lib/commercialPricing.ts`,
+  `src/lib/commercialPolicy.ts`, global/customer commercial admin API ve UI,
+  public/auth quote endpointleri, homepage fiyat alani, dashboard credit alimi,
+  Stripe/banka route'lari, e-posta event helper'i, i18n katalogu, additive
+  migration/verifier ve ilgili testler. Eski ikinci pricing otoritesi
+  `src/lib/paymentSelection.ts` kaldirildi.
+- Kontroller: `npm run lint` PASS; `npm run typecheck` PASS; `npm run
+  check:i18n` PASS (11 non-English locale, 608/608); `npm test` PASS
+  (1005/1005); `npm run build -- --webpack` PASS (277/277); `npm run
+  check:performance` PASS (70.1 KiB gzip / 80 KiB budget); `git diff --check`
+  PASS. Bagimsiz final audit GO, P0/P1 temiz.
+- Responsive/accessibility browser QA: 1366x768 laptop ve 390x844 mobil
+  viewport'larda yatay overflow yok. Yerel ortam verified pricing kaynagina
+  ulasamadiginda public alan stale/sahte fiyat gostermedi; gorunur status,
+  aciklama ve retry CTA ile fail-closed error state'e gecti. Basarili fiyat
+  projeksiyonu saf motor/API testleriyle kapsandi.
+- Kalan release kapisi: Gelecekteki Production release app-only olamaz;
+  migration uygulamadan once veya uygulamayla atomik uygulanmali, ardindan
+  SELECT-only verifier'daki her sonuc true olmalidir. Bu turda owner Production
+  yayini istemedi; migration uygulanmadi, deploy/push yapilmadi, Production DB
+  mutation'i, gercek musteri verisi, mevcut ticari fiyat degerleri, env/secret,
+  dependency veya payment provider ayari degistirilmedi.
