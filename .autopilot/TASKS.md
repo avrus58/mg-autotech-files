@@ -6,32 +6,6 @@
 
 ## In Progress
 
-### MANUAL-20260824-ADS-MEASUREMENT-FUNNEL [P1] Google Ads olcum ve musteri edinim sistemini guvenilir hale getir
-
-Durum: In Progress (live Ads cleanup complete; validated code-only Hostinger Production release in progress)
-
-Fingerprint: `google-ads-measurement|consent-queue-auth-intent-b2b-landing|verified-site-outcomes-zero-ads-receipts|retry-safe-client-handoff-and-account-cleanup`
-
-Kapsam: Google Ads kaynakli kayit, gercek dosya istegi ve dogrulanmis kredi
-odemesi sinyallerini izinli ve PII icermeyen bicimde kuyrukla; Google tag
-yukleme/rota/izin hatalarinda kaybi onle; kayit niyetini e-posta ve Google auth
-akislari boyunca koru; public file-service hero'sunu workshop/professional tuner
-niyetine netlestir; VPS public measurement env sozlesmesini fail-closed yap ve
-admin Ads ekraninda site sonuclariyla Google Ads teslimat kanitini ayir.
-
-Hazir sonuc: Kod, auth funnel, mobile landing, VPS env contract ve admin
-truthfulness degisiklikleri clean release worktree'inde tamamlandi. Full test,
-lint, typecheck, i18n, Webpack build, performance budget, responsive Chrome QA
-ve diff check PASS. Google Ads hesabi salt-okunur denetlendi: Search-only,
-presence location, broad/AI Max/auto assets off ve EUR 5/day korundu; PMax
-paused kaldi. Sekiz dar exact/phrase negatif canlıda kaydedildi; negative liste
-32'den 40'a cikti. Verified purchase Primary/Every olarak korundu; verified
-file request ve registration Secondary/One olarak kaydedildi.
-
-Kalan adim: Validated code-only paket Hostinger Production'a release edilecek;
-ardindan public smoke, rollback-state kontrolu, Tag Assistant ve Google Ads
-diagnostics ile gercek teslimat tekrar dogrulanacak.
-
 ## Blocked
 
 ### MANUAL-20260823-INTEGRATED-PRODUCTION-RELEASE [P0] Son degisikliklerin guvenli Production yayini
@@ -153,6 +127,39 @@ Remediation: Batch with a future documentation/source-comment maintenance pass a
 Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
+
+### MANUAL-20260824-ADS-MEASUREMENT-FUNNEL [P1] Google Ads olcum ve musteri edinim sistemini guvenilir hale getir
+
+Durum: Done
+
+Fingerprint: `google-ads-measurement|consent-queue-auth-intent-b2b-landing|verified-site-outcomes-zero-ads-receipts|retry-safe-client-handoff-and-account-cleanup`
+
+Sonuc: Google Ads registration, verified file request ve verified credit
+purchase sinyalleri consent-aware, PII icermeyen bounded outbox ve retry-safe
+Google tag yukleme akisi ile guvenilir hale getirildi. Auth redirect niyeti,
+register fail-soft bootstrap, workshop landing niteligi, VPS measurement env
+contract ve admin Ads truthfulness ayni release'te tamamlandi.
+
+Canli Ads: Search-only, presence targeting, EUR 5/gun ve paused PMax korundu.
+Sekiz dar negatif kaydedildi; liste 32'den 40'a cikti. Verified credit purchase
+Primary/Every; verified file request ve registration Secondary/One olarak
+dogrulandi. Billing, butce, reklam metni veya payment ayari degismedi.
+
+Production: Exact `512921b18659` code-only archive SHA-256 ile VPS'te
+dogrulandi ve Hostinger Production'a healthy olarak deploy edildi. Current
+release `512921b18659`, rollback/previous `bc1e7d7`; iki container healthy,
+restart 0 ve host port publish yok. Public/admin smoke PASS, ana mgautotech.de
+200 ve son 10 dakika error-like log sayaclari 0.
+
+Olcum kaniti: Production Tag Assistant iki tag buldu (`G-PX085CX6M0` ve
+`AW-18379047445`). Consent Default ad/analytics/ad-user-data/personalization
+Denied; izin sonrasi ad, analytics ve ad-user-data Granted, personalization
+Denied. Google Ads config Page View hit'i `AW-18379047445` hedefiyle goruldu.
+
+Dogrulama: `npm run lint`, `npm run typecheck`, `npm test` (979/979), hedefli
+testler (72/72), `npm run check:i18n`, `npm run build -- --webpack` (277/277),
+`npm run check:performance`, diff check, responsive Chrome QA, VPS env
+preflight, Production smoke ve Tag Assistant PASS.
 
 ### MANUAL-20260824-CUSTOMER-PORTAL-BLACK-PALETTE [P1] Musteri portalini public/auth siyah paletine hizala
 

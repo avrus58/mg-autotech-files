@@ -4550,3 +4550,33 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
   Production DB degisikligi yok. Hostinger VPS code-only release icin mevcut
   release-state ve fail-closed public measurement env contract kontrolu sonraki
   kapidir; rollback mevcut immutable previous image ciftine yapilabilir.
+
+## 2026-08-24 09:46 +02:00 Ads measurement funnel Production release tamamlandi
+
+- Exact `512921b18659` commitinden Git metadata icermeyen source archive
+  uretildi. SHA-256
+  `aa0aff56c792b0589a99ec6de90a40d686d483d4bcc938778b9479496d4d726b`
+  yerel ve VPS tarafinda birebir dogrulandi; kaynak
+  `/opt/mgautotech/file-service/releases/512921b18659` altina acildi.
+- Yeni fail-closed measurement env contract deger yazdirmadan PASS oldu.
+  Immutable `mgautotech-file-service:512921b18659` ve
+  `mgautotech-file-expert-analyzer:512921b18659` imajlari build edildi; Next.js
+  compile, TypeScript ve 277/277 static page kapilari PASS oldu.
+- Analyzer-first ve app-second health switch tamamlandi. Release state current
+  cifti `512921b18659`, rollback/previous cifti `bc1e7d7`; iki container healthy,
+  restart 0 ve host port publish yok. Kritik regresyon gorulmedigi icin rollback
+  uygulanmadi.
+- Immediate Production smoke PASS: `/api/health/ready`, `/`, `/file-service`,
+  `/login`, `/register`, `/new-request` ve vehicle API 200; anonim admin API'leri
+  401/405. `https://mgautotech.de/` 200 ve ayri site etkilenmedi. Son 10 dakika
+  app/analyzer error-like log sayaclari 0.
+- Production Tag Assistant `Connected`, iki Google tag buldu:
+  `G-PX085CX6M0` (GA4) ve `AW-18379047445` (Google Ads). Consent Default
+  ad/analytics/ad-user-data/ad-personalization icin Denied; mevcut kullanici
+  izni sonrasi ad, analytics ve ad-user-data Granted, personalization Denied.
+  Google Ads containerinda `gtag("config", "AW-18379047445", {...})` ve Page
+  View hit'i goruldu; onceki 0-tag/Consent-not-configured sorunu giderildi.
+- Remote `codex/ads-marketing-system` ve
+  `codex/production-release-20260823` branch'leri exact release commitine
+  pushlandi. SQL/migration, Production DB, payment/billing, e-posta, Caddy/DNS,
+  customer data, reklam butcesi veya PMax durumu degistirilmedi.
