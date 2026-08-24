@@ -43,7 +43,9 @@ with expected_tables(table_name) as (
       where policy.cmd = 'SELECT'
         and policy.roles = array['authenticated']::name[]
         and pg_catalog.strpos(
-          pg_catalog.lower(coalesce(policy.qual, '')),
+          pg_catalog.lower(
+            pg_catalog.replace(coalesce(policy.qual, ''), '::text', '')
+          ),
           'has_staff_permission(''credits.manage'')'
         ) > 0
     ) as staff_select_policies,
