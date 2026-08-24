@@ -4840,3 +4840,54 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
   yayini istemedi; migration uygulanmadi, deploy/push yapilmadi, Production DB
   mutation'i, gercek musteri verisi, mevcut ticari fiyat degerleri, env/secret,
   dependency veya payment provider ayari degistirilmedi.
+
+## 2026-08-25 00:01 +02:00 Kredi fiyatlandirma Production release tamamlandi
+
+- Owner `Yayinla hizlica` diyerek Production action-time onayi verdi. Exact
+  final source `5e6a96b8a4fa4c25a9ba29a2962aae1ba80079b9`, canli
+  `d39ab2c8140e` runtime'inin dogrusal devamidir. Kapsam yalniz kredi
+  fiyatlandirma otoritesi, admin commercial akislari, public/private quote,
+  Stripe/banka server-side dogrulamasi, ilgili testler ve DB grant/RLS
+  hardening'idir; package/lockfile, env, Compose, Dockerfile, auth, Ads, upload
+  ve File Expert davranisi degismedi.
+- Release branch'i `origin/codex/credit-pricing-stability` hedefine force
+  kullanmadan pushlandi. Git metadata icermeyen exact archive'in yerel ve VPS
+  SHA-256 degeri
+  `3015994d91497856bb2a884624a94ea7324f07fe8f962df55e457ae12c0c7b88`
+  olarak eslesti; source
+  `/opt/mgautotech/file-service/releases/5e6a96b8a4fa` altina acildi.
+- DB-first rehearsal: ayni migration isolated staging
+  `vxdxdvtsopsjatukdbuq` projesine uygulandi. PostgreSQL policy qual
+  ifadesindeki otomatik `::text` cast'i icin verifier false-negative'i
+  duzeltildi ve PG17 `MAINTAIN` privilege denetimi eklendi; final staging
+  verifier'i uc tablonun tum alanlarinda true dondu.
+- Production migration `commercial_pricing_write_authority`, hosted version
+  `20260824215434` olarak `jujaeyvyaeesmipihrrw` projesine transaction icinde
+  uygulandi. Uygulama oncesi ilgili tablolarda bekleyen veya write/DDL lock 0
+  idi. Migration satir silmedi; 1 semantik olarak etkisiz legacy
+  `none/nonzero` adjustment degerini audit ederek 0'a normalize etti. Son durum:
+  1 global ayar, 4 customer policy, 0 pasif uyumsuz satir, 11 audit event ve 1
+  normalization event. Exact SELECT-only verifier Production'da uc satirin
+  tum alanlarinda true; ilgili security advisor bulgusu 0.
+- VPS preflight current `d39ab2c8140e` app/analyzer ciftinin healthy/restart 0
+  oldugunu, rollback image/source'larini, root-only 0600 env dosyalarini,
+  external edge network'u, serbest release lock'ini ve yaklasik 18.1 GiB disk
+  headroom'u deger yazdirmadan dogruladi. Production env contract PASS.
+- Immutable `mgautotech-file-service:5e6a96b8a4fa` ve
+  `mgautotech-file-expert-analyzer:5e6a96b8a4fa` image'lari build edildi;
+  Production Next compile, TypeScript ve 277/277 static page PASS. Analyzer-first
+  ve app-second switch healthy tamamlandi. Release-state current
+  `5e6a96b8a4fa`, previous/rollback `d39ab2c8140e`; iki container healthy,
+  restart 0 ve host port publish yok.
+- Immediate smoke PASS: `/`, `/new-request`, `/login`, `/register`, `/dashboard`,
+  `/dashboard/credits`, `/admin`, `/admin/commercial`, `/api/health/ready` ve
+  public vehicle cache 102 brand. Anonymous admin/commercial, private quote,
+  Stripe ve banka endpointleri 401/405 sinirlarini korudu. Public quote 200,
+  `no-store`, EUR, 5 package ve forbidden internal/customer/payment-policy alani
+  0. Son bounded app/analyzer error-like log sayaci 0.
+- Canli browser smoke'ta public fiyat kartlari verified quote ile yuklendi,
+  console warning/error 0, 1366x768 laptop ve 390x844 mobil viewport'ta yatay
+  overflow 0 ve bes package CTA'si gorunur kaldı. Gercek odeme/e-posta, fiyat
+  degisikligi, admin save, musteri kaydi veya dosyasi olusturulmadi. Kritik
+  regresyon gorulmedigi icin rollback uygulanmadi; gerekirse DB migration yerinde
+  birakilarak exact `d39ab2c8140e` app/analyzer cifti guvenle geri alinabilir.

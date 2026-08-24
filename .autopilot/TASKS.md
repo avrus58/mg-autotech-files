@@ -130,7 +130,7 @@ Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ### MANUAL-20260824-CREDIT-PRICING-STABILITY [P0] Global ve musteri-ozel kredi fiyatini tek otoritede sabitle
 
-Durum: Done (implementation verified; Production release not requested)
+Durum: Done (Production deployed and verified)
 
 Fingerprint: `commerce-pricing|global-inheritance-and-customer-fixed-rate|admin-partial-save-race-and-checkout-drift|authoritative-versioned-quote-fail-closed`
 
@@ -153,8 +153,10 @@ check:performance` PASS (70.1 KiB gzip / 80 KiB budget); `git diff --check`
 PASS. Bagimsiz final audit GO ve P0/P1 temiz. Yerel browser QA'da 1366x768 ve
 390x844 gorunumlerde yatay overflow yok; local fiyat servisi kullanilamazken
 stale fiyat yerine erisilebilir hata/retry durumu gorundu. Canli DB mutation,
-gercek musteri verisi, fiyat degeri, env/secret, package/dependency veya
-Production deploy yapilmadi.
+gercek musteri verisi, fiyat degeri, env/secret veya package/dependency
+degismedi. Exact `5e6a96b8a4fa` uygulama/analyzer cifti, reviewed additive
+Production migration'i ve all-true verifier kapisiyla Hostinger VPS'e deploy
+edildi; rollback cifti `d39ab2c8140e`, iki container healthy ve restart 0.
 
 ### MANUAL-20260824-ADMIN-BACK-NAVIGATION-RECOVERY [P1] Admin geri/ileri navigasyonunda eski panel geri yuklenmesin
 
