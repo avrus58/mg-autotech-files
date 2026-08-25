@@ -128,6 +128,30 @@ Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
 
+### MANUAL-20260825-VEHICLE-PUBLICATION-SYNC-FIX [P0] Yayinlanan arac verisini musteri kataloguna guvenilir aktar
+
+Durum: Done (yerelde dogrulandi; Production release ve mevcut cache icin tek
+seferlik rebuild owner'in action-time yayin onayini bekliyor)
+
+Fingerprint: `vehicle-catalog|admin-publish-public-projection|published-verified-stage-values-fall-back-to-stale-cache-review-state|stable-engine-resolution-automatic-cache-sync-and-fresh-detail`
+
+Sonuc: Public exact arac cozumu artik degisebilen cached `vehicleKey` yerine once
+kalici engine UUID, sonra benzersiz external ID ve son olarak guncel vehicle key
+ile active+published DB kaydini arar. Cache kaynakli eski satir guncel DB detayi
+dogrulanamazsa performans degeri fail-closed olur; eski bos Stage satiri musteriye
+sessizce basarili sonuc gibi sunulmaz. Admin create/update sonrasinda public
+katalog otomatik senkronize edilir ve senkron sonucu API/UI'da acikca gosterilir.
+DB kaydi basarili fakat cache senkronu basarisizsa sabit footer uyarisi ile tekrar
+deneme aksiyonu gorunur. Exact detay no-store, hiyerarsi ve istemci secenek cache'i
+60 saniyedir; eski 15 dakikalik session cache anahtari versiyonlanarak gecersiz
+kilinmistir.
+
+Kontroller: Hedefli vehicle/public katalog testleri PASS (55/55); `npm run lint`
+PASS; `npm run typecheck` PASS; `npm test` PASS (1014/1014); `npm run build --
+--webpack` PASS (278/278); `git diff --check` PASS. Yeni dependency, schema veya
+migration yoktur. Production deploy, canli DB/katalog/musteri mutasyonu, env,
+secret, fiyat, odeme veya e-posta degisikligi yapilmadi.
+
 ### MANUAL-20260825-VEHICLE-MANUAL-PERFORMANCE-ENTRY [P1] Yeni araci ECU ve manuel Stage kazanciyla tek adimda ekle
 
 Durum: Done (Production deployed and verified)

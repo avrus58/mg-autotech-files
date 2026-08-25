@@ -15,6 +15,7 @@ import type {
   PublicVehicleCatalogRebuildResult,
   PublicVehicleCatalogResult,
   PublicVehicleCatalogSource,
+  PublicVehicleCatalogSyncResult,
   PublicVehicleOption,
   PublicVehicleRecord,
   RawVehicleRow,
@@ -35,6 +36,7 @@ const overrides = performanceOverrides as Record<string, PerformanceOverride>;
 const databasePageSize = 1000;
 const cacheTtlMs = 60_000;
 const catalogCacheId = "published";
+const databaseUuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 type DbVehicleEngineBase = {
   id: string;
@@ -107,6 +109,27 @@ type DbCatalogCacheRow = {
   generated_at: string | null;
   is_active: boolean | null;
 };
+
+export type PublicVehicleDetailLookup = {
+  column: "id" | "external_id" | "vehicle_key";
+  value: string;
+};
+
+export function buildPublicVehicleDetailLookups(
+  row: Pick<PublicVehicleRecord, "id" | "engineId" | "vehicleKey">,
+): PublicVehicleDetailLookup[] {
+  const engineId = row.engineId.trim();
+  const vehicleKey = (row.vehicleKey || row.id).trim();
+  const lookups: PublicVehicleDetailLookup[] = [];
+
+  if (databaseUuidPattern.test(engineId)) lookups.push({ column: "id", value: engineId });
+  if (engineId) lookups.push({ column: "external_id", value: engineId });
+  if (vehicleKey) lookups.push({ column: "vehicle_key", value: vehicleKey });
+
+  return lookups.filter((lookup, index) => (
+    lookups.findIndex((candidate) => candidate.column === lookup.column && candidate.value === lookup.value) === index
+  ));
+}
 
 function catalogModelKey(brandId: string, modelId: string) {
   return `${brandId}::${modelId}`;
@@ -312,26 +335,36 @@ async function publishedBaseRowsFromDatabase() {
   }
 }
 
-async function publishedVehicleDetailFromDatabase(vehicleKey: string) {
+async function publishedVehicleDetailFromDatabase(base: PublicVehicleRecord) {
   try {
     const admin = getSupabaseAdmin();
-    const { data: engine, error } = await admin
-      .from("vehicle_engines")
-      .select(`
-        id, vehicle_key, generation_id, engine_name, external_id, fuel_type, stock_hp, stock_nm, customer_safe_notes, active, published,
-        generation:vehicle_generations(id, name, external_id, active, published,
-          model:vehicle_models(id, name, external_id, active, published,
-            brand:vehicle_brands(id, name, external_id, active, published)
-          )
+    const select = `
+      id, vehicle_key, generation_id, engine_name, external_id, fuel_type, stock_hp, stock_nm, customer_safe_notes, active, published,
+      generation:vehicle_generations(id, name, external_id, active, published,
+        model:vehicle_models(id, name, external_id, active, published,
+          brand:vehicle_brands(id, name, external_id, active, published)
         )
-      `)
-      .eq("vehicle_key", vehicleKey)
-      .eq("active", true)
-      .eq("published", true)
-      .maybeSingle();
-    if (error || !engine) return null;
+      )
+    `;
+    let engine: DbVehicleEngineBase | null = null;
 
-    const engineId = (engine as { id: string }).id;
+    for (const lookup of buildPublicVehicleDetailLookups(base)) {
+      const { data, error } = await admin
+        .from("vehicle_engines")
+        .select(select)
+        .eq(lookup.column, lookup.value)
+        .eq("active", true)
+        .eq("published", true)
+        .limit(2);
+      if (error) return null;
+      if (data?.length === 1) {
+        engine = data[0] as unknown as DbVehicleEngineBase;
+        break;
+      }
+    }
+    if (!engine) return null;
+
+    const engineId = engine.id;
     const [ecu, services, performance] = await Promise.all([
       admin
         .from("vehicle_ecu_variants")
@@ -353,7 +386,7 @@ async function publishedVehicleDetailFromDatabase(vehicleKey: string) {
     ]);
     if (ecu.error || services.error || performance.error) return null;
 
-    return dbEngineToPublic(engine as unknown as DbVehicleEngineBase, {
+    return dbEngineToPublic(engine, {
       ecu_variants: ecu.data ?? [],
       service_capabilities: (services.data ?? []) as DbVehicleDetail["service_capabilities"],
       performance_profiles: (performance.data ?? []) as DbVehicleDetail["performance_profiles"],
@@ -459,6 +492,22 @@ export async function rebuildPublicVehicleCatalogCache(generatedBy?: string | nu
   };
 }
 
+export async function synchronizePublicVehicleCatalogCache(generatedBy?: string | null): Promise<PublicVehicleCatalogSyncResult> {
+  try {
+    return {
+      ok: true,
+      status: "synchronized",
+      result: await rebuildPublicVehicleCatalogCache(generatedBy),
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      status: "failed",
+      error: error instanceof Error ? error.message : "Public vehicle catalog could not be synchronized.",
+    };
+  }
+}
+
 function uniqueBy<T>(items: T[], keyFn: (item: T) => string) {
   const map = new Map<string, T>();
   for (const item of items) {
@@ -519,5 +568,6 @@ export async function getSafePublishedVehicle(brandId: string, modelId: string, 
   const base = findVehicleFromRows(list.rows, brandId, modelId, generationId, engineId);
   if (!base) return { source: list.source, row: null };
   if (list.source === "json") return { source: list.source, row: base };
-  return { source: list.source, row: await publishedVehicleDetailFromDatabase(base.vehicleKey ?? base.id) ?? base };
+  const detail = await publishedVehicleDetailFromDatabase(base);
+  return { source: list.source, row: detail ?? (list.source === "database" ? base : null) };
 }

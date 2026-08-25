@@ -170,6 +170,6 @@ test("existing cache, DB, JSON fallback and canonical Mercedes behavior remain i
   assert.match(publicLoader, /publicCatalogPayloadFromDatabaseCache/);
   assert.match(normalization, /canonicalName: "E"/);
   assert.match(normalization, /"e-class"/);
-  assert.match(route, /stale-while-revalidate=300/);
+  assert.match(route, /stale-while-revalidate=60/);
   assert.match(route, /x-vehicle-source/);
 });

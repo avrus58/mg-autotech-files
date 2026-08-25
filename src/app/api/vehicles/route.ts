@@ -13,15 +13,23 @@ import {
 import { rateLimitResponseHeaders } from "@/lib/abuseProtection";
 
 const vehicleCacheHeaders = {
-  "Cache-Control": "public, max-age=60, s-maxage=60, stale-while-revalidate=300",
-  "CDN-Cache-Control": "public, max-age=300, stale-while-revalidate=600",
-  "Vercel-CDN-Cache-Control": "public, max-age=300, stale-while-revalidate=600",
+  "Cache-Control": "public, max-age=60, s-maxage=60, stale-while-revalidate=60",
+  "CDN-Cache-Control": "public, max-age=60, stale-while-revalidate=60",
+  "Vercel-CDN-Cache-Control": "public, max-age=60, stale-while-revalidate=60",
   "X-Content-Type-Options": "nosniff",
   "X-Robots-Tag": "noindex, nofollow, noarchive",
 };
 
 const privateErrorHeaders = {
   "Cache-Control": "private, no-store",
+  "X-Content-Type-Options": "nosniff",
+  "X-Robots-Tag": "noindex, nofollow, noarchive",
+};
+
+const vehicleDetailCacheHeaders = {
+  "Cache-Control": "private, no-store, max-age=0",
+  "CDN-Cache-Control": "no-store",
+  "Vercel-CDN-Cache-Control": "no-store",
   "X-Content-Type-Options": "nosniff",
   "X-Robots-Tag": "noindex, nofollow, noarchive",
 };
@@ -74,7 +82,7 @@ export async function GET(req: NextRequest) {
   if (type === "vehicle") {
     const vehicle = await getSafePublishedVehicle(brandId, modelId, generationId, engineId);
     return NextResponse.json(vehicle.row, {
-      headers: { ...vehicleCacheHeaders, "x-vehicle-source": vehicle.source },
+      headers: { ...vehicleDetailCacheHeaders, "x-vehicle-source": vehicle.source },
     });
   }
 

@@ -5014,3 +5014,43 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
   odeme/e-posta, env/secret, Caddy/DNS veya Production DB degisikligi yapilmadi.
   Kritik regresyon gorulmedigi icin rollback uygulanmadi; exact
   `5e6a96b8a4fa` app/analyzer cifti hazir rollback hedefidir.
+## 2026-08-25 Arac yayinlama ve public katalog senkron hotfix basladi
+
+- Owner, admin editorunde active + published + verified gorunen ve Stage degerleri
+  kayitli araclarin musteri tarafinda `Performance data under review` durumunda
+  kaldigini bildirdi.
+- Production Supabase'de yalniz teknik alanlarla yapilan read-only inceleme,
+  ornek Mercedes-Benz E 63 S kaydinin motor ve Stage 1/2 satirlarinin gercekten
+  active/published/verified oldugunu; public katalog cache'inin ise 10 Temmuz'dan
+  kalma eski `e-class` vehicleKey ve bos Stage projeksiyonu tasidigini dogruladi.
+- Kod izi, exact public detay resolver'inin kalici engine kimligi yerine yalniz
+  eski cached vehicleKey ile DB aradigini ve eslesmeyince sessizce bos cache
+  satirina dustugunu; admin Save akisinin de public cache rebuild yapmadigini
+  gostermektedir. Kapsam `MANUAL-20260825-VEHICLE-PUBLICATION-SYNC-FIX` olarak
+  In Progress kaydedildi. Bu implementasyon turunda Production mutasyonu veya
+  deploy yapilmayacak.
+
+## 2026-08-25 11:29 +02:00 Arac yayinlama ve public katalog senkron hotfix tamamlandi
+
+- Public exact detay resolver'i kalici engine UUID, benzersiz external ID ve
+  guncel vehicle key sirasi ile active+published DB kaydini cozecek sekilde
+  guclendirildi. Cache kaynakli bir sonuc guncel DB ile dogrulanamazsa stale
+  performans verisi fail-closed olur; JSON fallback davranisi korunur.
+- Admin arac create/update akisina otomatik public katalog senkronu eklendi.
+  Veritabani kaydi basarili olup senkron basarisiz olursa API bunu ayri sonuc
+  olarak bildirir; sabit editor footer'i gorunur uyarida kalir ve korumali rebuild
+  endpointiyle tekrar deneme sunar. Eszamanli Save/Retry yarisi engellendi.
+- Exact vehicle cevabi no-store yapildi. Hiyerarsi ve client option cache TTL'i
+  60 saniyeye dusuruldu; istemci storage anahtari `v2` ile eski 15 dakikalik
+  session girdileri gecersiz kilindi.
+- Degisen dosyalar: `src/lib/vehicleControl/public.ts`,
+  `src/lib/vehicleControl/types.ts`, `src/lib/vehicleControl/clientCatalog.ts`,
+  admin vehicle create/update rotalari, public vehicle rotasi, arac detay
+  editoru, iki ilgili test dosyasi ve autopilot kayitlari.
+- Kontroller: hedefli testler PASS (55/55); `npm run lint` PASS; `npm run
+  typecheck` PASS; `npm test` PASS (1014/1014); `npm run build -- --webpack`
+  PASS (278/278); `git diff --check` PASS. Bagimsiz incelemede bulunan legacy
+  client cache, eszamanli rebuild ve mobil sabit footer riskleri kapatildi.
+- Yeni dependency, schema veya migration yoktur. Production halen degismedi;
+  release sonrasinda mevcut 10 Temmuz snapshot'ini temizlemek icin bir kez public
+  katalog rebuild calistirilmali ve E 63 S ile E 300 e detaylari smoke edilmelidir.

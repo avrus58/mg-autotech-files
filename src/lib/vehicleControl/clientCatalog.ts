@@ -8,12 +8,12 @@ export type VehicleSelectOption = {
   fuelType?: string | null;
 };
 
-const clientCacheTtlMs = 15 * 60_000;
+const clientCacheTtlMs = 60_000;
 const memoryCache = new Map<string, { expiresAt: number; options: VehicleSelectOption[] }>();
 const pendingRequests = new Map<string, Promise<VehicleSelectOption[]>>();
 
 function storageKey(url: string) {
-  return `mg_vehicle_catalog:${url}`;
+  return `mg_vehicle_catalog:v2:${url}`;
 }
 
 function isOptionList(value: unknown): value is VehicleSelectOption[] {

@@ -254,6 +254,22 @@ export type PublicVehicleCatalogRebuildResult = {
   generatedAt: string;
 };
 
+export type PublicVehicleCatalogSyncResult =
+  | {
+      ok: true;
+      status: "synchronized";
+      result: PublicVehicleCatalogRebuildResult;
+    }
+  | {
+      ok: true;
+      status: "not_required";
+    }
+  | {
+      ok: false;
+      status: "failed";
+      error: string;
+    };
+
 export type VehicleValidationIssue = {
   severity: "info" | "warning" | "error";
   code: string;

@@ -3,16 +3,18 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ArrowLeft, CheckCircle2, Cpu, Gauge, Loader2, RotateCcw, Save, ShieldAlert, Wrench } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Cpu, Gauge, Loader2, RefreshCcw, RotateCcw, Save, ShieldAlert, Wrench } from "lucide-react";
 import { authenticatedFetch } from "@/lib/authGuards";
 import { calculatePerformanceGain, calculateTunedFromGain, isWholePerformanceInput } from "@/lib/vehicleControl/performance";
 import type { VehicleControlRecord, VehiclePerformanceStage, VehicleServiceKey } from "@/lib/vehicleControl/types";
+import type { PublicVehicleCatalogSyncResult } from "@/lib/vehicleControl/types";
 import { vehiclePerformanceStages, vehicleServiceKeys, vehicleServiceLabels } from "@/lib/vehicleControl/types";
 
 type DetailPayload = {
   record: VehicleControlRecord;
   audit: Array<Record<string, unknown>>;
   validations: Array<Record<string, unknown>>;
+  publicCatalogSync?: PublicVehicleCatalogSyncResult;
 };
 
 type StageForm = { tunedHp: string; tunedNm: string; active: boolean };
@@ -50,7 +52,7 @@ type FormState = {
   active: boolean;
 };
 
-type Notice = { kind: "success" | "error"; text: string } | null;
+type Notice = { kind: "success" | "warning" | "error"; text: string } | null;
 
 const stageLabels: Record<VehiclePerformanceStage, string> = { stage1: "Stage 1", stage2: "Stage 2", stage3: "Stage 3" };
 const otherServiceKeys = vehicleServiceKeys.filter(
@@ -118,6 +120,7 @@ export default function VehicleDetailClient({ id }: { id: string }) {
   const [savedForm, setSavedForm] = useState<FormState | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [syncingCatalog, setSyncingCatalog] = useState(false);
   const [notice, setNotice] = useState<Notice>(null);
   const authFetch = useCallback((url: string, init?: RequestInit) => authenticatedFetch(url, init), []);
 
@@ -212,7 +215,7 @@ export default function VehicleDetailClient({ id }: { id: string }) {
   }
 
   async function save() {
-    if (!form) return;
+    if (!form || saving || syncingCatalog) return;
     setSaving(true);
     setNotice(null);
     try {
@@ -277,11 +280,41 @@ export default function VehicleDetailClient({ id }: { id: string }) {
       setPayload(data);
       setForm(nextForm);
       setSavedForm(nextForm);
-      setNotice({ kind: "success", text: "Vehicle, ECU and Stage data saved." });
+      if (data.publicCatalogSync?.ok === false) {
+        setNotice({
+          kind: "warning",
+          text: `Vehicle, ECU and Stage data were saved, but the customer catalog could not be synchronized: ${data.publicCatalogSync.error}`,
+        });
+      } else {
+        setNotice({
+          kind: "success",
+          text: form.published
+            ? "Vehicle, ECU and Stage data saved and synchronized to customers."
+            : "Vehicle, ECU and Stage data saved; the customer catalog was synchronized.",
+        });
+      }
     } catch (error) {
       setNotice({ kind: "error", text: error instanceof Error ? error.message : "Vehicle could not be saved." });
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function retryCatalogSync() {
+    if (syncingCatalog || saving) return;
+    setSyncingCatalog(true);
+    try {
+      const response = await authFetch("/api/admin/vehicles/catalog-cache/rebuild", { method: "POST" });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Customer catalog could not be synchronized.");
+      setNotice({ kind: "success", text: "Customer catalog synchronized successfully." });
+    } catch (error) {
+      setNotice({
+        kind: "warning",
+        text: `Vehicle data is saved, but customer catalog sync still failed: ${error instanceof Error ? error.message : "Please try again."}`,
+      });
+    } finally {
+      setSyncingCatalog(false);
     }
   }
 
@@ -296,7 +329,7 @@ export default function VehicleDetailClient({ id }: { id: string }) {
     </div>
   </main>;
 
-  return <main className="min-h-screen bg-[#050505] pb-24 text-white">
+  return <main className="min-h-screen bg-[#050505] pb-40 text-white sm:pb-24">
     <header className="border-b border-white/10 bg-black/90">
       <div className="mx-auto flex max-w-[1440px] flex-col gap-4 px-4 py-5 lg:flex-row lg:items-center lg:justify-between">
         <div className="min-w-0">
@@ -304,7 +337,7 @@ export default function VehicleDetailClient({ id }: { id: string }) {
           <div className="mt-3 flex flex-wrap items-center gap-2"><h1 className="truncate text-2xl font-black md:text-3xl">{payload.record.displayName}</h1><StatusBadge status={form.published ? "Published" : form.active ? "Draft" : "Archived"} positive={form.published} /></div>
           <p className="mt-1 truncate text-xs text-zinc-600">{payload.record.vehicleKey}</p>
         </div>
-        <div className="flex items-center gap-2">{dirty && <span className="text-xs font-black text-amber-300">Unsaved changes</span>}<button onClick={reset} disabled={!dirty || saving} className="h-11 rounded-xl border border-white/10 px-4 text-sm font-black text-zinc-300 disabled:opacity-40"><RotateCcw className="mr-2 inline h-4 w-4" />Reset</button><button onClick={() => void save()} disabled={!dirty || saving} className="h-11 rounded-xl bg-[#b1121b] px-5 text-sm font-black hover:bg-[#c91824] disabled:opacity-40">{saving ? <Loader2 className="mr-2 inline h-4 w-4 animate-spin" /> : <Save className="mr-2 inline h-4 w-4" />}Save</button></div>
+        <div className="flex items-center gap-2">{dirty && <span className="text-xs font-black text-amber-300">Unsaved changes</span>}<button onClick={reset} disabled={!dirty || saving || syncingCatalog} className="h-11 rounded-xl border border-white/10 px-4 text-sm font-black text-zinc-300 disabled:opacity-40"><RotateCcw className="mr-2 inline h-4 w-4" />Reset</button><button onClick={() => void save()} disabled={!dirty || saving || syncingCatalog} className="h-11 rounded-xl bg-[#b1121b] px-5 text-sm font-black hover:bg-[#c91824] disabled:opacity-40">{saving ? <Loader2 className="mr-2 inline h-4 w-4 animate-spin" /> : <Save className="mr-2 inline h-4 w-4" />}Save</button></div>
       </div>
     </header>
 
@@ -312,7 +345,7 @@ export default function VehicleDetailClient({ id }: { id: string }) {
 
     <div className="mx-auto grid max-w-[1440px] gap-5 px-4 py-5 xl:grid-cols-[minmax(0,1fr)_330px]">
       <div className="min-w-0 space-y-5">
-        {notice && <div role={notice.kind === "error" ? "alert" : "status"} aria-live="polite" className={`rounded-xl border p-4 text-sm font-bold ${notice.kind === "error" ? "border-red-800/50 bg-red-950/20 text-red-100" : "border-emerald-800/50 bg-emerald-950/20 text-emerald-200"}`}>{notice.text}</div>}
+        {notice && <div role={notice.kind === "error" ? "alert" : "status"} aria-live="polite" className={`rounded-xl border p-4 text-sm font-bold ${notice.kind === "error" ? "border-red-800/50 bg-red-950/20 text-red-100" : notice.kind === "warning" ? "border-amber-800/50 bg-amber-950/20 text-amber-100" : "border-emerald-800/50 bg-emerald-950/20 text-emerald-200"}`}>{notice.text}</div>}
 
         <EditorSection id="vehicle" icon={<Gauge />} title="Vehicle" description="Brand, model, generation and stock engine data.">
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -350,7 +383,7 @@ export default function VehicleDetailClient({ id }: { id: string }) {
       </aside>
     </div>
 
-    <div className="fixed inset-x-0 bottom-0 z-30 border-t border-white/10 bg-black/95 px-4 py-3 backdrop-blur"><div className="mx-auto flex max-w-[1440px] items-center justify-between gap-3"><div className={`text-sm font-black ${dirty ? "text-amber-300" : "text-zinc-500"}`}>{dirty ? "Unsaved changes" : "All changes saved"}</div><div className="flex gap-2"><button onClick={reset} disabled={!dirty || saving} className="h-11 rounded-xl border border-white/10 px-4 text-sm font-black disabled:opacity-40">Reset</button><button onClick={() => void save()} disabled={!dirty || saving} className="h-11 rounded-xl bg-[#b1121b] px-5 text-sm font-black disabled:opacity-40">{saving ? <Loader2 className="mr-2 inline h-4 w-4 animate-spin" /> : <Save className="mr-2 inline h-4 w-4" />}Save vehicle</button></div></div></div>
+    <div className="fixed inset-x-0 bottom-0 z-30 border-t border-white/10 bg-black/95 px-4 py-3 backdrop-blur"><div className="mx-auto flex max-w-[1440px] flex-col items-stretch justify-between gap-2 sm:flex-row sm:items-center sm:gap-3"><div className={`text-sm font-black ${dirty || notice?.kind === "warning" ? "text-amber-300" : "text-zinc-500"}`}>{dirty ? "Unsaved changes" : notice?.kind === "warning" ? "Saved — customer sync failed" : "All changes saved"}</div><div className="flex flex-wrap justify-end gap-2">{notice?.kind === "warning" && <button onClick={() => void retryCatalogSync()} disabled={syncingCatalog || saving} className="h-10 rounded-xl border border-amber-700/50 bg-amber-950/20 px-3 text-xs font-black text-amber-100 disabled:opacity-40 sm:h-11 sm:px-4 sm:text-sm">{syncingCatalog ? <Loader2 className="mr-2 inline h-4 w-4 animate-spin" /> : <RefreshCcw className="mr-2 inline h-4 w-4" />}Retry customer sync</button>}<button onClick={reset} disabled={!dirty || saving || syncingCatalog} className="h-10 rounded-xl border border-white/10 px-3 text-xs font-black disabled:opacity-40 sm:h-11 sm:px-4 sm:text-sm">Reset</button><button onClick={() => void save()} disabled={!dirty || saving || syncingCatalog} className="h-10 rounded-xl bg-[#b1121b] px-4 text-xs font-black disabled:opacity-40 sm:h-11 sm:px-5 sm:text-sm">{saving ? <Loader2 className="mr-2 inline h-4 w-4 animate-spin" /> : <Save className="mr-2 inline h-4 w-4" />}Save vehicle</button></div></div></div>
   </main>;
 }
 

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireStaffPermission } from "@/lib/apiAuth";
 import { createVehicleAdminRecord, getVehicleAdminOverview } from "@/lib/vehicleControl/admin";
+import { synchronizePublicVehicleCatalogCache } from "@/lib/vehicleControl/public";
 import { vehicleAdminPayloadSchema } from "@/lib/vehicleControl/schema";
 
 export async function GET(request: Request) {
@@ -25,7 +26,10 @@ export async function POST(request: Request) {
   try {
     const result = await createVehicleAdminRecord(parsed.data, auth.user.id);
     if (!result.ok) return NextResponse.json({ error: "Vehicle has validation errors.", issues: result.issues }, { status: 400 });
-    return NextResponse.json(result.detail, { status: 201 });
+    const publicCatalogSync = result.detail.record.published
+      ? await synchronizePublicVehicleCatalogCache(auth.user.id)
+      : { ok: true as const, status: "not_required" as const };
+    return NextResponse.json({ ...result.detail, publicCatalogSync }, { status: 201 });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "Vehicle could not be created." }, { status: 500 });
   }

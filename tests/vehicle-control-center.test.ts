@@ -12,6 +12,7 @@ import {
 } from "../src/lib/vehicleControl/normalization";
 import {
   buildPublicVehicleCatalogPayload,
+  buildPublicVehicleDetailLookups,
   fetchPagedRowsForVehicleSelector,
   getSafePublishedVehicleRows,
   listEnginesFromCatalog,
@@ -697,6 +698,27 @@ test("anonymous users cannot call admin vehicle APIs", async () => {
   assert.equal(response.status, 401);
 });
 
+test("public vehicle detail prefers stable engine identity before a stale cached vehicle key", () => {
+  const staleCachedRow = {
+    id: "mercedes-benz:e-class:w214:e-63-s-4matic",
+    engineId: "013f9d4b-98f8-4d71-8a40-d0719842cf2e",
+    vehicleKey: "mercedes-benz:e-class:w214:e-63-s-4matic",
+  };
+
+  assert.deepEqual(buildPublicVehicleDetailLookups(staleCachedRow), [
+    { column: "id", value: staleCachedRow.engineId },
+    { column: "external_id", value: staleCachedRow.engineId },
+    { column: "vehicle_key", value: staleCachedRow.vehicleKey },
+  ]);
+  assert.deepEqual(buildPublicVehicleDetailLookups({
+    ...staleCachedRow,
+    engineId: "external-engine-63",
+  }), [
+    { column: "external_id", value: "external-engine-63" },
+    { column: "vehicle_key", value: staleCachedRow.vehicleKey },
+  ]);
+});
+
 test("anonymous users cannot search the full admin vehicle catalog", async () => {
   const { GET } = await import("../src/app/api/admin/vehicles/search/route");
   const response = await GET(new Request("http://localhost/api/admin/vehicles/search?page=1&pageSize=25"));
@@ -807,12 +829,27 @@ test("public vehicle catalog cache verification SQL is read-only", () => {
   assert.doesNotMatch(sql, /\binsert\b|\bupdate\b|\bdelete\b|\bdrop\b|\btruncate\b|\balter\b|\brevoke\b|\bgrant\b/i);
 });
 
-test("vehicles API is cache-first and still exposes stale-while-revalidate headers", () => {
+test("vehicles API keeps hierarchy cache bounded and exact vehicle details fresh", () => {
   const source = readFileSync(resolve(process.cwd(), "src", "app", "api", "vehicles", "route.ts"), "utf8");
   assert.match(source, /getSafePublishedVehicleCatalog/);
   assert.match(source, /payload\.brands/);
-  assert.match(source, /stale-while-revalidate=300/);
+  assert.match(source, /stale-while-revalidate=60/);
   assert.match(source, /x-vehicle-source/);
+  assert.match(source, /vehicleDetailCacheHeaders/);
+  assert.match(source, /"Cache-Control": "private, no-store, max-age=0"/);
+  assert.match(readFileSync(resolve(process.cwd(), "src", "lib", "vehicleControl", "public.ts"), "utf8"), /list\.source === "database" \? base : null/);
+});
+
+test("admin vehicle saves synchronize the customer catalog without hiding a completed database save", () => {
+  const createRoute = readFileSync(resolve(process.cwd(), "src", "app", "api", "admin", "vehicles", "route.ts"), "utf8");
+  const updateRoute = readFileSync(resolve(process.cwd(), "src", "app", "api", "admin", "vehicles", "[id]", "route.ts"), "utf8");
+  const detailUi = readFileSync(resolve(process.cwd(), "src", "app", "admin", "vehicles", "[id]", "VehicleDetailClient.tsx"), "utf8");
+
+  assert.match(createRoute, /synchronizePublicVehicleCatalogCache/);
+  assert.match(updateRoute, /synchronizePublicVehicleCatalogCache/);
+  assert.match(updateRoute, /publicCatalogSync/);
+  assert.match(detailUi, /were saved, but the customer catalog could not be synchronized/);
+  assert.match(detailUi, /Retry customer sync/);
 });
 
 test("public selector uses memory and session storage cache for vehicle options", () => {
@@ -821,6 +858,8 @@ test("public selector uses memory and session storage cache for vehicle options"
   const homepage = readFileSync(resolve(process.cwd(), "src", "app", "page.tsx"), "utf8");
   assert.match(helper, /sessionStorage/);
   assert.match(helper, /memoryCache/);
+  assert.match(helper, /clientCacheTtlMs = 60_000/);
+  assert.match(helper, /mg_vehicle_catalog:v2:/);
   assert.match(newRequest, /fetchVehicleOptions/);
   assert.match(newRequest, /Loading vehicles/);
   assert.match(homepage, /fetchVehicleOptions/);
