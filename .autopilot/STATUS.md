@@ -4945,3 +4945,38 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
   transactional RPC/audit-hardening goreviyle kapatilmalidir. Production deploy,
   canli DB/katalog/musteri mutasyonu, fiyat, odeme, e-posta, env/secret veya
   dependency degisikligi yapilmadi.
+
+## 2026-08-25 Manuel ECU ve Stage kazanc girisi calismasi basladi
+
+- Owner yeni araci admin katalogundan manuel eklerken ECU bilgisini, Stage 1
+  sonrasi HP/Nm degerlerini ve kazanci dogrudan duzenlemek istedigini netlestirdi.
+- Mevcut yeni-kayit panelinin yalniz ECU type ile legacy Stage 1 tuned alanlarini
+  aldigi, `services: []` gonderdigi icin girilen Stage 1 profilini aktif hizmet
+  yapmadigi ve detay editorunde kazancin salt-okunur hesap etiketi oldugu
+  dogrulandi.
+- Kapsam `MANUAL-20260825-VEHICLE-MANUAL-PERFORMANCE-ENTRY` olarak In Progress
+  kaydedildi. Supabase changelog ve update dokumani kontrol edildi; mevcut
+  server-only update/upsert yapisini veya DB semasini degistiren bir ihtiyac yok.
+  Migration, canli DB/veri, dependency veya Production deploy yapilmayacak.
+
+## 2026-08-25 Manuel ECU ve Stage kazanc girisi tamamlandi
+
+- Admin yeni arac taslagina ECU family/type/hardware/software ve Stage 1/2/3
+  after-tuning HP/Nm alanlari eklendi. Her Stage ayri etkinlestirilir ve etkin
+  Stage profiliyle hizmet listesi ayni state'ten uretilir; onceki `services: []`
+  uyumsuzlugu kapatildi.
+- Yeni kayit ve mevcut arac detayinda `+HP`/`+Nm` kazanc alanlari manuel
+  duzenlenebilir. Kazanc -> after-tuning ve after-tuning -> kazanc hesaplari
+  birlikte hareket eder; tam sayi sozlesmesi UI, helper, Zod/API ve mevcut DB
+  yapisiyla uyumludur. Sunucu canonical kazanci stock/tuned degerinden uretmeye
+  devam eder; migration veya yeni dependency gerekmedi.
+- Degisen dosyalar: `src/app/admin/vehicles/VehicleControlCenter.tsx`,
+  `src/app/admin/vehicles/[id]/VehicleDetailClient.tsx`, yeni
+  `src/lib/vehicleControl/performance.ts`,
+  `tests/vehicle-control-center.test.ts`, `.autopilot/TASKS.md` ve bu durum
+  kaydi.
+- Kontroller: hedefli vehicle-control testleri PASS (47/47); `npm run lint`
+  PASS; `npm run typecheck` PASS; `npm test` PASS (1012/1012); `npm run build --
+  --webpack` PASS (278/278); `git diff --check` PASS. Bagimsiz reviewer P0/P1
+  engel bulmadi. Canli DB/katalog/musteri mutasyonu, fiyat, odeme, e-posta,
+  env/secret veya Production deploy yapilmadi.

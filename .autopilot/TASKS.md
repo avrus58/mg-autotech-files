@@ -128,6 +128,28 @@ Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
 
+### MANUAL-20260825-VEHICLE-MANUAL-PERFORMANCE-ENTRY [P1] Yeni araci ECU ve manuel Stage kazanciyla tek adimda ekle
+
+Durum: Done
+
+Fingerprint: `vehicle-catalog|admin-manual-create-and-stage-editor|new-draft-only-captures-one-inactive-stage-and-gains-read-only|complete-safe-ecu-and-three-stage-manual-entry`
+
+Sonuc: Admin yeni arac formu marka/model/nesil/motor ve stock degerleriyle
+birlikte ECU family, type, hardware ve software alanlarini kaydeder. Stage 1,
+Stage 2 ve Stage 3 ayri ayri etkinlestirilir; her Stage icin after-tuning HP/Nm
+veya dogrudan `+HP`/`+Nm` kazanci girilebilir. Kazanc girisi stock degerine gore
+after-tuning sonucunu aninda gunceller; sonuc girisi de gorunen kazanci yeniden
+hesaplar. Ayni davranis mevcut arac detay editorunde de vardir. Etkin Stage
+profili ve hizmet listesi tek kaynaktan gonderilir; kayit unpublished ve
+unverified olarak guvenli taslak kalir. Sunucu canonical kazanci stock/tuned
+degerlerinden hesaplamayi surdurur; schema veya migration gerekmedi.
+
+Kontroller: Hedefli vehicle-control testleri PASS (47/47); `npm run lint` PASS;
+`npm run typecheck` PASS; `npm test` PASS (1012/1012); `npm run build --
+--webpack` PASS (278/278); `git diff --check` PASS. Bagimsiz incelemede P0/P1
+engel bulunmadi. Yeni dependency, canli DB/katalog/musteri mutasyonu, fiyat,
+odeme, e-posta, env/secret veya Production deploy yapilmadi.
+
 ### MANUAL-20260825-VEHICLE-CATALOG-ADMIN [P1] Arac widget katalogunu sade ve Stage 1/2/3 yonetilebilir yap
 
 Durum: Done

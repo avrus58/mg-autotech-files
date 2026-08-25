@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ArrowLeft, CheckCircle2, Cpu, Gauge, Loader2, RotateCcw, Save, ShieldAlert, Wrench } from "lucide-react";
 import { authenticatedFetch } from "@/lib/authGuards";
+import { calculatePerformanceGain, calculateTunedFromGain, isWholePerformanceInput } from "@/lib/vehicleControl/performance";
 import type { VehicleControlRecord, VehiclePerformanceStage, VehicleServiceKey } from "@/lib/vehicleControl/types";
 import { vehiclePerformanceStages, vehicleServiceKeys, vehicleServiceLabels } from "@/lib/vehicleControl/types";
 
@@ -111,12 +112,6 @@ function numberOrNull(value: string) {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-function gain(stock: string, tuned: string) {
-  const stockValue = numberOrNull(stock);
-  const tunedValue = numberOrNull(tuned);
-  return stockValue != null && tunedValue != null ? tunedValue - stockValue : null;
-}
-
 export default function VehicleDetailClient({ id }: { id: string }) {
   const [payload, setPayload] = useState<DetailPayload | null>(null);
   const [form, setForm] = useState<FormState | null>(null);
@@ -170,6 +165,29 @@ export default function VehicleDetailClient({ id }: { id: string }) {
     } : current);
   }
 
+  function updateStageGain(stage: VehiclePerformanceStage, output: "hp" | "nm", value: string) {
+    if (!isWholePerformanceInput(value)) {
+      setNotice({ kind: "error", text: "Stage gain must be a whole HP/Nm number." });
+      return;
+    }
+    setNotice(null);
+    setForm((current) => {
+      if (!current) return current;
+      const stock = numberOrNull(output === "hp" ? current.stockHp : current.stockNm);
+      const requestedGain = numberOrNull(value);
+      const tuned = value.trim() === "" ? "" : calculateTunedFromGain(stock, requestedGain);
+      if (tuned === null) return current;
+      const field = output === "hp" ? "tunedHp" : "tunedNm";
+      return {
+        ...current,
+        stageProfiles: {
+          ...current.stageProfiles,
+          [stage]: { ...current.stageProfiles[stage], [field]: tuned === "" ? "" : String(tuned) },
+        },
+      };
+    });
+  }
+
   function toggleStage(stage: VehiclePerformanceStage) {
     setForm((current) => {
       if (!current) return current;
@@ -198,6 +216,14 @@ export default function VehicleDetailClient({ id }: { id: string }) {
     setSaving(true);
     setNotice(null);
     try {
+      const performanceInputs = [
+        form.stockHp,
+        form.stockNm,
+        ...vehiclePerformanceStages.flatMap((stage) => [form.stageProfiles[stage].tunedHp, form.stageProfiles[stage].tunedNm]),
+      ];
+      if (!performanceInputs.every(isWholePerformanceInput)) {
+        throw new Error("Stock, Stage output and gain values must be whole HP/Nm numbers.");
+      }
       const stage1 = form.stageProfiles.stage1;
       const response = await authFetch(`/api/admin/vehicles/${id}`, {
         method: "PATCH",
@@ -296,13 +322,13 @@ export default function VehicleDetailClient({ id }: { id: string }) {
           </div>
         </EditorSection>
 
-        <EditorSection id="stages" icon={<Gauge />} title="Stage performance" description="Engine-level output values. Enter only verified figures; gains are calculated automatically.">
+        <EditorSection id="stages" icon={<Gauge />} title="Stage performance" description="Enter the after-tuning output or edit the gain directly. Both stay synchronized and the server verifies the final values.">
           <div className="mb-4 grid grid-cols-2 gap-3 sm:max-w-md"><ValueCard label="Stock power" value={form.stockHp ? `${form.stockHp} HP` : "Not set"} /><ValueCard label="Stock torque" value={form.stockNm ? `${form.stockNm} Nm` : "Not set"} /></div>
           <div className="grid gap-4 lg:grid-cols-3">{vehiclePerformanceStages.map((stage) => {
             const profile = form.stageProfiles[stage];
-            const hpGain = gain(form.stockHp, profile.tunedHp);
-            const nmGain = gain(form.stockNm, profile.tunedNm);
-            return <fieldset key={stage} className={`rounded-2xl border p-4 ${profile.active ? "border-red-800/50 bg-red-950/15" : "border-white/10 bg-black/25"}`}><legend className="sr-only">{stageLabels[stage]} performance</legend><div className="flex items-center justify-between gap-3"><div><div className="text-lg font-black">{stageLabels[stage]}</div><div className="mt-1 text-xs text-zinc-500">{profile.active ? "Available" : "Not offered"}</div></div><button type="button" aria-pressed={profile.active} onClick={() => toggleStage(stage)} className={`min-h-11 rounded-xl px-3 text-xs font-black ${profile.active ? "bg-[#b1121b] text-white" : "border border-white/10 text-zinc-400"}`}>{profile.active ? "Enabled" : "Enable"}</button></div><div className="mt-4 grid grid-cols-2 gap-3"><StageField label="Tuned HP" value={profile.tunedHp} onChange={(value) => updateStage(stage, "tunedHp", value)} disabled={!profile.active} /><StageField label="Tuned Nm" value={profile.tunedNm} onChange={(value) => updateStage(stage, "tunedNm", value)} disabled={!profile.active} /></div><div className="mt-3 grid grid-cols-2 gap-2 text-xs"><div className="rounded-lg bg-black/35 p-2 text-zinc-400">HP gain <strong className="float-right text-white">{hpGain == null ? "—" : `${hpGain >= 0 ? "+" : ""}${hpGain}`}</strong></div><div className="rounded-lg bg-black/35 p-2 text-zinc-400">Nm gain <strong className="float-right text-white">{nmGain == null ? "—" : `${nmGain >= 0 ? "+" : ""}${nmGain}`}</strong></div></div></fieldset>;
+            const hpGain = calculatePerformanceGain(numberOrNull(form.stockHp), numberOrNull(profile.tunedHp));
+            const nmGain = calculatePerformanceGain(numberOrNull(form.stockNm), numberOrNull(profile.tunedNm));
+            return <fieldset key={stage} className={`rounded-2xl border p-4 ${profile.active ? "border-red-800/50 bg-red-950/15" : "border-white/10 bg-black/25"}`}><legend className="sr-only">{stageLabels[stage]} performance</legend><div className="flex items-center justify-between gap-3"><div><div className="text-lg font-black">{stageLabels[stage]}</div><div className="mt-1 text-xs text-zinc-500">{profile.active ? "Available" : "Not offered"}</div></div><button type="button" aria-pressed={profile.active} onClick={() => toggleStage(stage)} className={`min-h-11 rounded-xl px-3 text-xs font-black ${profile.active ? "bg-[#b1121b] text-white" : "border border-white/10 text-zinc-400"}`}>{profile.active ? "Enabled" : "Enable"}</button></div><div className="mt-4 grid grid-cols-2 gap-3"><StageField label="After tuning HP" value={profile.tunedHp} onChange={(value) => updateStage(stage, "tunedHp", value)} disabled={!profile.active} min="1" /><StageField label="After tuning Nm" value={profile.tunedNm} onChange={(value) => updateStage(stage, "tunedNm", value)} disabled={!profile.active} min="1" /><StageField label="Gain +HP" value={hpGain == null ? "" : String(hpGain)} onChange={(value) => updateStageGain(stage, "hp", value)} disabled={!profile.active || !form.stockHp} min="0" /><StageField label="Gain +Nm" value={nmGain == null ? "" : String(nmGain)} onChange={(value) => updateStageGain(stage, "nm", value)} disabled={!profile.active || !form.stockNm} min="0" /></div><p className="mt-3 text-[11px] leading-5 text-zinc-500">Enter either the final output or the gain. Gain entry needs the stock value above and updates the final output immediately.</p></fieldset>;
           })}</div>
         </EditorSection>
 
@@ -336,8 +362,8 @@ function Field({ label, value, onChange, type = "text", required = false }: { la
   return <label className="block text-xs font-black uppercase tracking-[0.12em] text-zinc-500">{label}<input required={required} type={type} min={type === "number" ? 0 : undefined} value={value} onChange={(event) => onChange(event.target.value)} className="mt-2 h-12 w-full rounded-xl border border-white/10 bg-black/45 px-4 text-sm font-bold normal-case text-white outline-none focus:border-red-700" /></label>;
 }
 
-function StageField({ label, value, onChange, disabled }: { label: string; value: string; onChange: (value: string) => void; disabled: boolean }) {
-  return <label className="block text-[11px] font-black uppercase tracking-[0.1em] text-zinc-500">{label}<input type="number" min="1" disabled={disabled} value={value} onChange={(event) => onChange(event.target.value)} className="mt-2 h-11 w-full rounded-xl border border-white/10 bg-black/45 px-3 text-sm font-bold normal-case text-white outline-none focus:border-red-700 disabled:opacity-40" /></label>;
+function StageField({ label, value, onChange, disabled, min }: { label: string; value: string; onChange: (value: string) => void; disabled: boolean; min: string }) {
+  return <label className="block text-[11px] font-black uppercase tracking-[0.1em] text-zinc-500">{label}<input type="number" min={min} step="1" disabled={disabled} value={value} onChange={(event) => onChange(event.target.value)} className="mt-2 h-11 w-full rounded-xl border border-white/10 bg-black/45 px-3 text-sm font-bold normal-case text-white outline-none focus:border-red-700 disabled:opacity-40" /></label>;
 }
 
 function TextArea({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {

@@ -20,13 +20,15 @@ import {
   UploadCloud,
 } from "lucide-react";
 import { authenticatedFetch } from "@/lib/authGuards";
+import { calculatePerformanceGain, calculateTunedFromGain, isWholePerformanceInput } from "@/lib/vehicleControl/performance";
 import type {
   VehicleAdminListQuery,
   VehicleAdminListResponse,
   VehicleAdminPageSize,
   VehicleImportSummary,
+  VehiclePerformanceStage,
 } from "@/lib/vehicleControl/types";
-import { vehicleAdminPageSizes } from "@/lib/vehicleControl/types";
+import { vehicleAdminPageSizes, vehiclePerformanceStages } from "@/lib/vehicleControl/types";
 import type { ExternalVehicleEntry, VehicleEnrichmentPlan } from "@/lib/vehicleEnrichment/types";
 import { parseVehicleEnrichmentEntries } from "@/lib/vehicleEnrichment/parseInput";
 
@@ -59,9 +61,11 @@ type CreateDraftState = {
   fuelType: string;
   stockHp: string;
   stockNm: string;
-  tunedHp: string;
-  tunedNm: string;
+  stageProfiles: Record<VehiclePerformanceStage, { tunedHp: string; tunedNm: string; active: boolean }>;
+  ecuFamily: string;
   ecuType: string;
+  ecuHardware: string;
+  ecuSoftware: string;
 };
 
 const blankDraft: CreateDraftState = {
@@ -74,10 +78,18 @@ const blankDraft: CreateDraftState = {
   fuelType: "",
   stockHp: "",
   stockNm: "",
-  tunedHp: "",
-  tunedNm: "",
+  stageProfiles: {
+    stage1: { tunedHp: "", tunedNm: "", active: false },
+    stage2: { tunedHp: "", tunedNm: "", active: false },
+    stage3: { tunedHp: "", tunedNm: "", active: false },
+  },
+  ecuFamily: "",
   ecuType: "",
+  ecuHardware: "",
+  ecuSoftware: "",
 };
+
+const stageLabels: Record<VehiclePerformanceStage, string> = { stage1: "Stage 1", stage2: "Stage 2", stage3: "Stage 3" };
 
 const sectionLinks: Array<{ id: Section; label: string; href: string }> = [
   { id: "overview", label: "Vehicle catalog", href: "/admin/vehicles" },
@@ -244,10 +256,78 @@ export default function VehicleControlCenter({ section = "overview" }: { section
     return Number.isFinite(parsed) ? parsed : null;
   }
 
+  function updateDraftStage(stage: VehiclePerformanceStage, field: "tunedHp" | "tunedNm", value: string) {
+    setDraft((current) => ({
+      ...current,
+      stageProfiles: {
+        ...current.stageProfiles,
+        [stage]: {
+          ...current.stageProfiles[stage],
+          [field]: value,
+          active: current.stageProfiles[stage].active || value.trim() !== "",
+        },
+      },
+    }));
+  }
+
+  function updateDraftStageGain(stage: VehiclePerformanceStage, output: "hp" | "nm", value: string) {
+    if (!isWholePerformanceInput(value)) {
+      setMessage("Stage gain must be a whole HP/Nm number.");
+      return;
+    }
+    setMessage("");
+    setDraft((current) => {
+      const stock = numberOrNull(output === "hp" ? current.stockHp : current.stockNm);
+      const requestedGain = numberOrNull(value);
+      const tuned = value.trim() === "" ? "" : calculateTunedFromGain(stock, requestedGain);
+      if (tuned === null) return current;
+      const field = output === "hp" ? "tunedHp" : "tunedNm";
+      return {
+        ...current,
+        stageProfiles: {
+          ...current.stageProfiles,
+          [stage]: {
+            ...current.stageProfiles[stage],
+            [field]: tuned === "" ? "" : String(tuned),
+            active: current.stageProfiles[stage].active || value.trim() !== "",
+          },
+        },
+      };
+    });
+  }
+
+  function toggleDraftStage(stage: VehiclePerformanceStage) {
+    setDraft((current) => ({
+      ...current,
+      stageProfiles: {
+        ...current.stageProfiles,
+        [stage]: { ...current.stageProfiles[stage], active: !current.stageProfiles[stage].active },
+      },
+    }));
+  }
+
   async function createDraft() {
     setBusyAction("create");
     setMessage("");
     try {
+      const performanceInputs = [
+        draft.stockHp,
+        draft.stockNm,
+        ...vehiclePerformanceStages.flatMap((stage) => [draft.stageProfiles[stage].tunedHp, draft.stageProfiles[stage].tunedNm]),
+      ];
+      if (!performanceInputs.every(isWholePerformanceInput)) {
+        throw new Error("Stock, Stage output and gain values must be whole HP/Nm numbers.");
+      }
+      const performanceProfiles = vehiclePerformanceStages
+        .map((stage) => ({
+          stage,
+          tunedHp: numberOrNull(draft.stageProfiles[stage].tunedHp),
+          tunedNm: numberOrNull(draft.stageProfiles[stage].tunedNm),
+          active: draft.stageProfiles[stage].active,
+        }))
+        .filter((profile) => profile.active || profile.tunedHp != null || profile.tunedNm != null);
+      const activeStageServices = vehiclePerformanceStages.filter((stage) => draft.stageProfiles[stage].active);
+      const stage1 = draft.stageProfiles.stage1;
       const response = await authFetch("/api/admin/vehicles", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -261,10 +341,14 @@ export default function VehicleControlCenter({ section = "overview" }: { section
           fuelType: draft.fuelType || null,
           stockHp: numberOrNull(draft.stockHp),
           stockNm: numberOrNull(draft.stockNm),
-          tunedHp: numberOrNull(draft.tunedHp),
-          tunedNm: numberOrNull(draft.tunedNm),
+          tunedHp: numberOrNull(stage1.tunedHp),
+          tunedNm: numberOrNull(stage1.tunedNm),
+          performanceProfiles,
+          ecuFamily: draft.ecuFamily || null,
           ecuType: draft.ecuType || null,
-          services: [],
+          ecuHardware: draft.ecuHardware || null,
+          ecuSoftware: draft.ecuSoftware || null,
+          services: activeStageServices,
           confidenceScore: 60,
           verificationStatus: "unverified",
           published: false,
@@ -272,7 +356,10 @@ export default function VehicleControlCenter({ section = "overview" }: { section
         }),
       });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Vehicle draft could not be created.");
+      if (!response.ok) {
+        const firstIssue = Array.isArray(data.issues) ? data.issues[0]?.message : null;
+        throw new Error(firstIssue || data.error || "Vehicle draft could not be created.");
+      }
       const nextId = data?.record?.id;
       setMessage("Draft vehicle created.");
       setDraft(blankDraft);
@@ -364,19 +451,34 @@ export default function VehicleControlCenter({ section = "overview" }: { section
           </div>
           <button onClick={() => void createDraft()} disabled={busyAction === "create"} className="rounded-xl bg-[#b1121b] px-5 py-3 text-sm font-black text-white hover:bg-[#c91824] disabled:opacity-50">{busyAction === "create" ? <Loader2 className="mr-2 inline h-4 w-4 animate-spin" /> : <PlusCircle className="mr-2 inline h-4 w-4" />}Create draft</button>
         </div>
-        <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-          <DraftField label="Brand" value={draft.brand} onChange={(value) => setDraft((current) => ({ ...current, brand: value }))} />
-          <DraftField label="Model" value={draft.model} onChange={(value) => setDraft((current) => ({ ...current, model: value }))} />
-          <DraftField label="Generation" value={draft.generation} onChange={(value) => setDraft((current) => ({ ...current, generation: value }))} />
-          <DraftField label="Engine" value={draft.engine} onChange={(value) => setDraft((current) => ({ ...current, engine: value }))} />
-          <DraftField label="Year from" value={draft.yearFrom} onChange={(value) => setDraft((current) => ({ ...current, yearFrom: value }))} type="number" />
-          <DraftField label="Year to" value={draft.yearTo} onChange={(value) => setDraft((current) => ({ ...current, yearTo: value }))} type="number" />
-          <DraftField label="Fuel type" value={draft.fuelType} onChange={(value) => setDraft((current) => ({ ...current, fuelType: value }))} />
-          <DraftField label="ECU type" value={draft.ecuType} onChange={(value) => setDraft((current) => ({ ...current, ecuType: value }))} />
-          <DraftField label="Stock HP" value={draft.stockHp} onChange={(value) => setDraft((current) => ({ ...current, stockHp: value }))} type="number" />
-          <DraftField label="Stock NM" value={draft.stockNm} onChange={(value) => setDraft((current) => ({ ...current, stockNm: value }))} type="number" />
-          <DraftField label="Stage 1 HP" value={draft.tunedHp} onChange={(value) => setDraft((current) => ({ ...current, tunedHp: value }))} type="number" />
-          <DraftField label="Stage 1 NM" value={draft.tunedNm} onChange={(value) => setDraft((current) => ({ ...current, tunedNm: value }))} type="number" />
+        <div className="mt-5 rounded-2xl border border-white/10 bg-black/25 p-4">
+          <h3 className="text-sm font-black">Vehicle & primary ECU</h3>
+          <p className="mt-1 text-xs leading-5 text-zinc-500">Enter the exact controller details you know now; the full record remains editable after creation.</p>
+          <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+            <DraftField label="Brand" value={draft.brand} onChange={(value) => setDraft((current) => ({ ...current, brand: value }))} />
+            <DraftField label="Model" value={draft.model} onChange={(value) => setDraft((current) => ({ ...current, model: value }))} />
+            <DraftField label="Generation" value={draft.generation} onChange={(value) => setDraft((current) => ({ ...current, generation: value }))} />
+            <DraftField label="Engine" value={draft.engine} onChange={(value) => setDraft((current) => ({ ...current, engine: value }))} />
+            <DraftField label="Year from" value={draft.yearFrom} onChange={(value) => setDraft((current) => ({ ...current, yearFrom: value }))} type="number" min="0" />
+            <DraftField label="Year to" value={draft.yearTo} onChange={(value) => setDraft((current) => ({ ...current, yearTo: value }))} type="number" min="0" />
+            <DraftField label="Fuel type" value={draft.fuelType} onChange={(value) => setDraft((current) => ({ ...current, fuelType: value }))} />
+            <DraftField label="ECU family" value={draft.ecuFamily} onChange={(value) => setDraft((current) => ({ ...current, ecuFamily: value }))} />
+            <DraftField label="ECU type" value={draft.ecuType} onChange={(value) => setDraft((current) => ({ ...current, ecuType: value }))} />
+            <DraftField label="ECU hardware" value={draft.ecuHardware} onChange={(value) => setDraft((current) => ({ ...current, ecuHardware: value }))} />
+            <DraftField label="ECU software" value={draft.ecuSoftware} onChange={(value) => setDraft((current) => ({ ...current, ecuSoftware: value }))} />
+            <DraftField label="Stock HP" value={draft.stockHp} onChange={(value) => setDraft((current) => ({ ...current, stockHp: value }))} type="number" min="1" />
+            <DraftField label="Stock Nm" value={draft.stockNm} onChange={(value) => setDraft((current) => ({ ...current, stockNm: value }))} type="number" min="1" />
+          </div>
+        </div>
+        <div className="mt-4 rounded-2xl border border-white/10 bg-black/25 p-4">
+          <h3 className="text-sm font-black">Stage 1–2–3 performance</h3>
+          <p className="mt-1 text-xs leading-5 text-zinc-500">Enter either the final HP/Nm or the gain. Editing gain calculates the final output from the stock value automatically.</p>
+          <div className="mt-4 grid gap-4 lg:grid-cols-3">{vehiclePerformanceStages.map((stage) => {
+            const profile = draft.stageProfiles[stage];
+            const hpGain = calculatePerformanceGain(numberOrNull(draft.stockHp), numberOrNull(profile.tunedHp));
+            const nmGain = calculatePerformanceGain(numberOrNull(draft.stockNm), numberOrNull(profile.tunedNm));
+            return <fieldset key={stage} className={`rounded-xl border p-4 ${profile.active ? "border-red-800/50 bg-red-950/15" : "border-white/10 bg-black/30"}`}><legend className="sr-only">{stageLabels[stage]} manual performance</legend><div className="flex items-center justify-between gap-3"><div><div className="font-black">{stageLabels[stage]}</div><div className="mt-1 text-xs text-zinc-600">{profile.active ? "Included in services" : "Not offered"}</div></div><button type="button" aria-pressed={profile.active} onClick={() => toggleDraftStage(stage)} className={`min-h-11 rounded-xl px-3 text-xs font-black ${profile.active ? "bg-[#b1121b] text-white" : "border border-white/10 text-zinc-400"}`}>{profile.active ? "Enabled" : "Enable"}</button></div><div className="mt-4 grid grid-cols-2 gap-3"><DraftField label="After tuning HP" value={profile.tunedHp} onChange={(value) => updateDraftStage(stage, "tunedHp", value)} type="number" min="1" disabled={!profile.active} /><DraftField label="After tuning Nm" value={profile.tunedNm} onChange={(value) => updateDraftStage(stage, "tunedNm", value)} type="number" min="1" disabled={!profile.active} /><DraftField label="Gain +HP" value={hpGain == null ? "" : String(hpGain)} onChange={(value) => updateDraftStageGain(stage, "hp", value)} type="number" min="0" disabled={!profile.active || !draft.stockHp} /><DraftField label="Gain +Nm" value={nmGain == null ? "" : String(nmGain)} onChange={(value) => updateDraftStageGain(stage, "nm", value)} type="number" min="0" disabled={!profile.active || !draft.stockNm} /></div></fieldset>;
+          })}</div>
         </div>
       </section>}
 
@@ -889,8 +991,8 @@ function ImportExampleList({ title, items }: { title: string; items: string[] })
   </div>;
 }
 
-function DraftField({ label, value, onChange, type = "text" }: { label: string; value: string; onChange: (value: string) => void; type?: string }) {
-  return <label className="block text-xs font-black uppercase tracking-[0.14em] text-zinc-500">{label}<input type={type} value={value} onChange={(event) => onChange(event.target.value)} className="mt-2 h-12 w-full rounded-xl border border-white/10 bg-black/40 px-4 text-sm font-bold normal-case text-white outline-none focus:border-red-700" /></label>;
+function DraftField({ label, value, onChange, type = "text", min, disabled = false }: { label: string; value: string; onChange: (value: string) => void; type?: string; min?: string; disabled?: boolean }) {
+  return <label className="block text-xs font-black uppercase tracking-[0.14em] text-zinc-500">{label}<input type={type} min={min} step={type === "number" ? "1" : undefined} disabled={disabled} value={value} onChange={(event) => onChange(event.target.value)} className="mt-2 h-12 w-full rounded-xl border border-white/10 bg-black/40 px-4 text-sm font-bold normal-case text-white outline-none focus:border-red-700 disabled:cursor-not-allowed disabled:opacity-40" /></label>;
 }
 
 function FilterField({ label, value, onChange, placeholder, icon }: { label: string; value: string; onChange: (value: string) => void; placeholder: string; icon?: ReactNode }) {

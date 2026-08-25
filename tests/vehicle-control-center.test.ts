@@ -22,6 +22,7 @@ import {
   listModelsFromCatalog,
   listModelsFromRows,
 } from "../src/lib/vehicleControl/public";
+import { calculatePerformanceGain, calculateTunedFromGain, isWholePerformanceInput } from "../src/lib/vehicleControl/performance";
 import {
   buildVehicleImportSummary,
   createVehicleImportPlan,
@@ -298,6 +299,18 @@ test("admin vehicle payload accepts one independent profile for each Stage and r
   });
   assert.equal(omittedServices.success, true);
   assert.equal(omittedServices.success && omittedServices.data.services, undefined);
+});
+
+test("manual Stage gain entry stays consistent with stock and after-tuning output", () => {
+  assert.equal(calculateTunedFromGain(265, 45), 310);
+  assert.equal(calculateTunedFromGain(580, 140), 720);
+  assert.equal(calculatePerformanceGain(265, 310), 45);
+  assert.equal(calculatePerformanceGain(580, 720), 140);
+  assert.equal(calculatePerformanceGain(null, 310), null);
+  assert.equal(calculateTunedFromGain(265, null), null);
+  assert.equal(isWholePerformanceInput("310"), true);
+  assert.equal(isWholePerformanceInput(""), true);
+  assert.equal(isWholePerformanceInput("310.5"), false);
 });
 
 test("public projection carries a real active Stage 3 profile without exposing admin metadata", () => {
@@ -844,6 +857,12 @@ test("admin catalog is server-paginated and the editor manages ECU plus all thre
   assert.match(catalogUi, /Advanced tools/);
   assert.match(catalogUi, /Loading matching vehicles/);
   assert.match(catalogUi, /No matching vehicles/);
+  assert.match(catalogUi, /const performanceProfiles = vehiclePerformanceStages/);
+  assert.match(catalogUi, /services: activeStageServices/);
+  assert.match(catalogUi, /ECU hardware/);
+  assert.match(catalogUi, /Stage 1–2–3 performance/);
+  assert.match(catalogUi, /updateDraftStageGain/);
+  assert.match(catalogUi, /Gain \+HP/);
   assert.match(detailUi, /vehiclePerformanceStages\.map/);
   assert.match(detailUi, /Stage 1–2–3/);
   assert.match(detailUi, /Primary ECU & gearbox/);
@@ -851,6 +870,9 @@ test("admin catalog is server-paginated and the editor manages ECU plus all thre
   assert.match(detailUi, /if \(profile\.active\) stageServices\.add\(profile\.stage\)/);
   assert.match(detailUi, /else stageServices\.delete\(profile\.stage\)/);
   assert.match(detailUi, /services: \[\.\.\.stageServices\]/);
+  assert.match(detailUi, /updateStageGain/);
+  assert.match(detailUi, /calculateTunedFromGain/);
+  assert.match(detailUi, /After tuning HP/);
   assert.match(detailUi, /aria-pressed/);
   assert.match(detailUi, /Unsaved changes/);
   assert.match(detailUi, /Try again/);
