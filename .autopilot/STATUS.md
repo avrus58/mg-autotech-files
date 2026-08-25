@@ -5131,3 +5131,46 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
   verisiyle interaktif lokal test yapilmadi. Responsive geometri 390, 768, 1024,
   1280, 1366, 1440, 1536 ve 1920px icin kaynak ve layout hesabiyla incelendi;
   canli veri, Production DB ve deploy degismedi.
+
+## 2026-08-25 10:39 +02:00 Portal laptop yogunluk iyilestirmesi baslangici
+
+- Owner canli admin ekraninda musteri detay penceresinin cok buyuk gorundugunu,
+  az satir gosterdigini ve surekli dikey kaydirma gerektirdigini; admin siparis
+  masasinin da laptopta sag tarafa tam oturmadigini bildirdi. Ayni okunabilir ve
+  kompakt yogunluk musteri paneli ile ortak sayfalarda da istendi.
+- Kapsam `MANUAL-20260825-PORTAL-DENSITY-REFINEMENT` olarak In Progress
+  kaydedildi. Ekran goruntusu ve kod incelemesi, ozellikle admin musteri modal
+  basligi/aksiyonlari, fiyatlama kartlari, form araliklari ve masaustu kolon
+  olculerini kanitli hedefler olarak belirledi.
+- Calisma `codex/portal-density-refinement` dalindaki temiz, izole worktree'de
+  yurutuluyor. Kredi/fiyat/odeme mantigi, musteri verisi, auth/izin, mevcut
+  islemler ve mobil dokunma hedefleri kapsam disinda degistirilmeyecek.
+
+## 2026-08-25 11:01 +02:00 Portal laptop yogunluk iyilestirmesi tamamlandi
+
+- Admin workspace maksimum kullanilabilir genisligi artirildi ve sol navigasyon,
+  filtreler, Latest 5 Orders ile kuyruk ozetinin laptop ritmi sikilastirildi.
+  Dokuz kolonlu siparis tablosu yalniz `2xl` ekranda; 1024-1535px araliginda
+  durum ve detay aksiyonlarini kesmeyen tek satir kompakt gorunum kullaniliyor.
+- Admin musteri ve siparis detay pencereleri `96rem` calisma alanina, ince sticky
+  basliga ve sirasiyla 280px/310px sticky islem sutununa tasindi. Profil laptopta
+  uc kolon; fiyatlama, kredi, guvenlik, teslimat, dosya surumleri, yukleme izni,
+  mesaj ve iletisim alanlari ayni kompakt ritimde. Mevcut handler, izin ve veri
+  akislari degismedi; mobil ana kontroller en az 44px tutuldu.
+- Ortak musteri shell'i desktop-only `mg-customer-density` kapsamina alindi.
+  Sidebar 216px, ortak header 64px ve dashboard ust bar/KPI/aksiyon ritmi
+  kompaktlasti. Kredi satin alma, kredi gecmisi, ayarlar ve yeni talep
+  sayfalarindaki ikinci buyuk hero alanlari operasyonel bilgi seritlerine
+  donusturuldu; mobil input/CTA olculeri 44-48px korundu.
+- Degisen urun dosyalari: `src/app/admin/page.tsx`, `src/app/globals.css`,
+  `src/components/app-shell.tsx`, ortak dashboard header/sidebar/client,
+  `src/app/dashboard/credits/page.tsx`, kredi gecmisi, ayarlar ve
+  `src/app/new-request/page.tsx`. `tests/ui-ux-safety.test.ts` laptop tablo/modal,
+  desktop-only musteri density ve mobil hedef sozlesmeleriyle genisletildi.
+- Kontroller: `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS
+  (1014/1014); hedefli UI suite PASS (101/101); `npm run build -- --webpack`
+  PASS (278/278); `git diff --check` PASS. Bagimsiz final review P0/P1 bulmadi.
+- Canli musteri verisi, fiyat/odeme kurali, auth, env/secret, veritabani,
+  migration veya Production degistirilmedi. Chrome oturum koprusu bu turda yanit
+  vermedigi icin gercek authenticated viewport kaydi alinmadi; source contract,
+  breakpoint hesabi, responsive test ve Production build kapilari temizdir.

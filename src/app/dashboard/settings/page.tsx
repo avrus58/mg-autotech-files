@@ -315,51 +315,52 @@ export default function CustomerSettingsPage() {
         eyebrow="Account"
         title="Customer Settings"
         icon={User}
+        heading
       />
 
-      <section className="mx-auto max-w-7xl px-4 py-8">
-        <div className="mb-8 grid gap-6 xl:grid-cols-[1fr_340px]">
-          <div className="relative overflow-hidden rounded-[2rem] border border-red-900/50 bg-gradient-to-br from-red-950/30 via-white/[0.04] to-black p-7 shadow-2xl shadow-black/30">
+      <section className="mx-auto max-w-7xl px-4 py-5 lg:py-4">
+        <div className="mb-4 grid gap-3 xl:grid-cols-[1fr_300px]">
+          <div className="relative overflow-hidden rounded-xl border border-red-900/50 bg-gradient-to-br from-red-950/30 via-white/[0.04] to-black p-4">
             <div className="absolute -right-24 -top-24 h-64 w-64 rounded-full bg-red-700/20 blur-3xl" />
             <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-red-500/60 to-transparent" />
 
             <div className="relative">
-              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-red-800/50 bg-red-950/30 px-4 py-2 text-sm font-bold text-red-100">
+              <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-red-800/50 bg-red-950/30 px-3 py-1.5 text-xs font-bold text-red-100">
                 <ShieldCheck className="h-4 w-4 text-red-500" />
                 Private customer profile
               </div>
 
-              <h1 className="text-4xl font-black md:text-5xl">
+              <h2 className="text-xl font-black sm:text-2xl">
                 Account <span className="text-red-500">Settings</span>
-              </h1>
+              </h2>
 
-              <p className="mt-4 max-w-3xl leading-8 text-zinc-400">
+              <p className="mt-2 max-w-3xl text-sm leading-6 text-zinc-400">
                 Manage your billing, company and contact details for file
                 service requests, support and future invoice workflows.
               </p>
             </div>
           </div>
 
-          <div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 shadow-2xl shadow-black/20">
-            <div className="mb-5 flex items-center gap-3">
-              <User className="h-8 w-8 text-red-500" />
+          <div className="rounded-xl border border-white/10 bg-white/[0.04] p-4">
+            <div className="mb-3 flex items-center gap-2.5">
+              <User className="h-5 w-5 text-red-500" />
               <div>
                 <div className="text-sm font-black uppercase tracking-[0.2em] text-red-600">
                   Customer ID
                 </div>
-                <div className="mt-1 text-2xl font-black">
+                <div className="mt-1 text-lg font-black">
                   {customerReference}
                 </div>
               </div>
             </div>
 
             <div className="space-y-3 text-sm">
-              <div className="flex items-center justify-between rounded-2xl bg-black/30 p-4">
+              <div className="flex items-center justify-between rounded-xl bg-black/30 p-2.5">
                 <span className="text-zinc-500">Login E-mail</span>
                 <span className="max-w-[180px] truncate font-bold">{email}</span>
               </div>
 
-              <div className="flex items-center justify-between rounded-2xl bg-black/30 p-4">
+              <div className="flex items-center justify-between rounded-xl bg-black/30 p-2.5">
                 <span className="text-zinc-500">Credits</span>
                 <span className="font-black text-red-400">{credits}</span>
               </div>
@@ -382,8 +383,8 @@ export default function CustomerSettingsPage() {
           </div>
         )}
 
-        <form onSubmit={saveSettings} className="grid gap-6 xl:grid-cols-[1fr_0.8fr]">
-          <section className="space-y-6">
+        <form onSubmit={saveSettings} className="grid gap-4 xl:grid-cols-[1fr_0.8fr]">
+          <section className="space-y-4">
             <div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6">
               <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
                 <div>
@@ -502,7 +503,7 @@ export default function CustomerSettingsPage() {
             </div>
           </section>
 
-          <aside className="space-y-6">
+          <aside className="space-y-4">
             <div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6">
               <div className="mb-6 flex items-center gap-3">
                 <MapPin className="h-7 w-7 text-red-500" />
@@ -558,7 +559,7 @@ export default function CustomerSettingsPage() {
             <button
               type="submit"
               disabled={saving}
-              className="flex w-full items-center justify-center rounded-2xl bg-[#b1121b] px-5 py-5 text-sm font-black text-white shadow-xl shadow-red-950/40 transition hover:bg-[#c91824] disabled:cursor-not-allowed disabled:opacity-60"
+              className="flex min-h-11 w-full items-center justify-center rounded-2xl bg-[#b1121b] px-5 py-3 text-sm font-black text-white shadow-xl shadow-red-950/40 transition hover:bg-[#c91824] disabled:cursor-not-allowed disabled:opacity-60 lg:py-2"
             >
               {saving ? (
                 <>
@@ -625,7 +626,7 @@ function Field({
         value={value}
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
-        className="h-14 w-full rounded-2xl border border-white/10 bg-black/35 px-4 text-sm font-bold text-white outline-none transition placeholder:text-zinc-600 focus:border-red-700"
+        className="h-12 w-full rounded-2xl border border-white/10 bg-black/35 px-4 text-sm font-bold text-white outline-none transition placeholder:text-zinc-600 focus:border-red-700 lg:h-10"
       />
     </label>
   );
@@ -650,7 +651,7 @@ function SelectField({
       <select
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="h-14 w-full rounded-2xl border border-white/10 bg-black/35 px-4 text-sm font-bold text-white outline-none transition focus:border-red-700"
+        className="h-12 w-full rounded-2xl border border-white/10 bg-black/35 px-4 text-sm font-bold text-white outline-none transition focus:border-red-700 lg:h-10"
       >
         {options.map(([value, label]) => (
           <option key={value} value={value} className="bg-[#111]">

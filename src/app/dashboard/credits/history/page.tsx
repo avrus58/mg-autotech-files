@@ -236,6 +236,7 @@ export default function CreditHistoryPage() {
         eyebrow="Account"
         title="Credit History"
         icon={History}
+        heading
         actions={(
           <>
             <div className="hidden rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 md:block">
@@ -262,8 +263,8 @@ export default function CreditHistoryPage() {
         )}
       />
 
-      <section className="mx-auto max-w-7xl px-4 py-8">
-        <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+      <section className="mx-auto max-w-7xl px-4 py-5 lg:py-4">
+        <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
             <Link
               href="/dashboard"
@@ -273,13 +274,13 @@ export default function CreditHistoryPage() {
               Back to Dashboard
             </Link>
 
-            <div className="text-sm font-black uppercase tracking-[0.25em] text-red-600">
+            <div className="text-xs font-black uppercase tracking-[0.18em] text-red-500">
               Customer Credits
             </div>
-            <h1 className="mt-2 text-4xl font-black md:text-6xl">
+            <h2 className="mt-1 text-xl font-black sm:text-2xl">
               Credit <span className="text-red-600">Ledger</span>
-            </h1>
-            <p className="mt-4 max-w-2xl text-sm leading-6 text-zinc-400">
+            </h2>
+            <p className="mt-1 max-w-2xl text-sm leading-6 text-zinc-400">
               Every credit top-up, Stripe purchase, manual adjustment and file
               request usage is recorded here.
             </p>
@@ -288,7 +289,7 @@ export default function CreditHistoryPage() {
           <button
             onClick={() => loadHistory()}
             disabled={refreshing}
-            className="rounded-xl bg-[#b1121b] px-5 py-3 text-sm font-black text-white transition hover:bg-[#c91824] disabled:opacity-60"
+            className="min-h-11 rounded-xl bg-[#b1121b] px-5 py-3 text-sm font-black text-white transition hover:bg-[#c91824] disabled:opacity-60 lg:min-h-0 lg:py-2"
           >
             {refreshing ? (
               <Loader2 className="mr-2 inline h-4 w-4 animate-spin" />
@@ -362,39 +363,39 @@ export default function CreditHistoryPage() {
               </div>
             )}
 
-        <div className="mb-8 grid gap-5 md:grid-cols-3">
-          <div className="rounded-3xl border border-red-900/50 bg-red-950/25 p-6">
-            <CreditCard className="mb-4 h-8 w-8 text-red-500" />
+        <div className="mb-4 grid gap-3 md:grid-cols-3">
+          <div className="rounded-3xl border border-red-900/50 bg-red-950/25 p-4">
+            <CreditCard className="mb-2 h-5 w-5 text-red-500" />
             <div className="text-sm text-zinc-400">Current Balance</div>
-            <div className="mt-2 text-5xl font-black">{credits}</div>
+            <div className="mt-1 text-3xl font-black">{credits}</div>
           </div>
 
-          <div className="rounded-3xl border border-emerald-700/30 bg-emerald-950/20 p-6">
-            <PlusCircle className="mb-4 h-8 w-8 text-emerald-400" />
+          <div className="rounded-3xl border border-emerald-700/30 bg-emerald-950/20 p-4">
+            <PlusCircle className="mb-2 h-5 w-5 text-emerald-400" />
             <div className="text-sm text-zinc-400">Positive Credits</div>
-            <div className="mt-2 text-5xl font-black">{positiveCredits}</div>
+            <div className="mt-1 text-3xl font-black">{positiveCredits}</div>
           </div>
 
-          <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-6">
-            <MinusCircle className="mb-4 h-8 w-8 text-red-400" />
+          <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-4">
+            <MinusCircle className="mb-2 h-5 w-5 text-red-400" />
             <div className="text-sm text-zinc-400">Used Credits</div>
-            <div className="mt-2 text-5xl font-black">{usedCredits}</div>
+            <div className="mt-1 text-3xl font-black">{usedCredits}</div>
           </div>
         </div>
 
-        <div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6">
-          <div className="mb-6 flex items-center gap-3">
-            <History className="h-7 w-7 text-red-500" />
+        <div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
+          <div className="mb-4 flex items-center gap-3">
+            <History className="h-5 w-5 text-red-500" />
             <div>
               <div className="text-sm font-black uppercase tracking-[0.25em] text-red-600">
                 Transactions
               </div>
-              <h2 className="mt-1 text-3xl font-black">All credit movements</h2>
+              <h2 className="mt-1 text-xl font-black">All credit movements</h2>
             </div>
           </div>
 
           {transactions.length === 0 ? (
-            <div className="rounded-3xl border border-dashed border-white/15 bg-black/25 p-10 text-center">
+            <div className="rounded-3xl border border-dashed border-white/15 bg-black/25 p-6 text-center">
               <FileText className="mx-auto mb-4 h-10 w-10 text-red-600" />
               <h3 className="text-xl font-black">No credit ledger yet</h3>
               <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-zinc-400">
@@ -424,11 +425,11 @@ export default function CreditHistoryPage() {
                   return (
                     <div
                       key={item.id}
-                      className="grid grid-cols-1 gap-4 bg-black/20 px-5 py-4 transition hover:bg-white/[0.04] md:grid-cols-[1.4fr_.7fr_.7fr_.7fr] md:items-center"
+                      className="grid grid-cols-1 gap-4 bg-black/20 px-5 py-4 transition hover:bg-white/[0.04] md:grid-cols-[1.4fr_.7fr_.7fr_.7fr] md:items-center lg:py-2.5"
                     >
                       <div className="flex items-start gap-3">
                         <div
-                          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${
+                          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl lg:h-9 lg:w-9 ${
                             isPositive
                               ? "bg-emerald-500/10 text-emerald-400"
                               : "bg-red-500/10 text-red-400"
@@ -485,10 +486,10 @@ export default function CreditHistoryPage() {
           </>
         )}
 
-        <div className="mt-8 rounded-[2rem] border border-red-900/40 bg-red-950/20 p-6">
-          <ShieldCheck className="mb-4 h-9 w-9 text-red-500" />
-          <h3 className="text-2xl font-black">Ledger based credit tracking</h3>
-          <p className="mt-3 text-sm leading-6 text-zinc-400">
+        <div className="mt-5 rounded-[2rem] border border-red-900/40 bg-red-950/20 p-4">
+          <ShieldCheck className="mb-2 h-6 w-6 text-red-500" />
+          <h3 className="text-xl font-black">Ledger based credit tracking</h3>
+          <p className="mt-2 text-sm leading-6 text-zinc-400">
             This page is based on your credit ledger records. Manual admin
             credits, Stripe purchases and order usage can all be tracked from one
             transaction source.

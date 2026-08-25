@@ -1714,10 +1714,10 @@ export default function AdminPage() {
       <div className="fixed inset-0 -z-10 bg-[radial-gradient(circle_at_18%_0%,rgba(160,18,28,0.25),transparent_34%),linear-gradient(135deg,#050505,#0c0c0e_48%,#170507)]" />
 
       <header className="sticky top-0 z-50 border-b border-white/10 bg-black/80 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-3 px-4 py-4 sm:py-5">
+        <div className="mx-auto flex max-w-[1760px] items-center justify-between gap-3 px-3 py-2.5 sm:px-4 sm:py-3">
           <div className="flex min-w-0 items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-red-800/50 bg-[#111] shadow-lg shadow-red-950/40 sm:h-12 sm:w-12">
-              <ShieldCheck className="h-6 w-6 text-red-600 sm:h-7 sm:w-7" />
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-red-800/50 bg-[#111] shadow-lg shadow-red-950/40 sm:h-10 sm:w-10">
+              <ShieldCheck className="h-5 w-5 text-red-600 sm:h-6 sm:w-6" />
             </div>
             <div className="min-w-0">
               <div className="truncate text-lg font-black tracking-wide sm:text-xl">MG <span className="text-red-600">AUTOTECH</span></div>
@@ -1730,7 +1730,7 @@ export default function AdminPage() {
               role="status"
               aria-live="polite"
               title={adminSyncPresentation.detail}
-              className={`hidden rounded-xl border px-4 py-3 text-xs font-black md:block ${adminSyncToneClass(adminSyncPresentation.tone)}`}
+              className={`hidden rounded-lg border px-3 py-2 text-xs font-black md:block ${adminSyncToneClass(adminSyncPresentation.tone)}`}
             >
               {adminSyncPresentation.label}
             </div>
@@ -1748,11 +1748,11 @@ export default function AdminPage() {
               }}
               onFilterQueue={focusOrderQueue}
             />
-            <button onClick={() => loadAdminData({ silent: adminDataReady, manual: true })} disabled={loading || autoRefreshing} className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-3 text-sm font-bold text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60 sm:px-4">
+            <button onClick={() => loadAdminData({ silent: adminDataReady, manual: true })} disabled={loading || autoRefreshing} className="h-11 rounded-lg border border-white/10 bg-white/[0.04] px-3 text-sm font-bold text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60 lg:h-10">
               <RefreshCcw className={`mr-2 inline h-4 w-4 ${loading || autoRefreshing ? "animate-spin" : ""}`} />
               <span className="hidden sm:inline">Refresh</span>
             </button>
-            <Link href="/dashboard" className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-3 text-sm font-bold text-white transition hover:bg-white/10 sm:px-4">
+            <Link href="/dashboard" className="inline-flex h-11 items-center rounded-lg border border-white/10 bg-white/[0.04] px-3 text-sm font-bold text-white transition hover:bg-white/10 lg:h-10">
               <ArrowLeft className="mr-2 inline h-4 w-4" />
               <span className="hidden sm:inline">Dashboard</span>
             </Link>
@@ -1916,7 +1916,7 @@ export default function AdminPage() {
               </Link>
             )}
           </nav>
-          <div className="mt-5 rounded-2xl border border-red-900/40 bg-red-950/20 p-4">
+          <div className="mt-4 rounded-xl border border-red-900/40 bg-red-950/20 p-3">
             <div className="text-xs font-black uppercase tracking-[0.18em] text-red-300">Open Work</div>
             <div className="mt-3 grid grid-cols-2 gap-2 text-center">
               <MiniStat label="New" value={adminDataReady ? stats.newRequests : "—"} />
@@ -1926,13 +1926,13 @@ export default function AdminPage() {
         </aside>
 
         <div className="order-1 min-w-0 xl:order-2">
-          <div className="mb-5">
-            <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-red-800/50 bg-red-950/25 px-4 py-2 text-sm font-semibold text-red-100">
+          <div className="mb-4">
+            <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-red-800/50 bg-red-950/25 px-3 py-1.5 text-xs font-semibold text-red-100">
               <Database className="h-4 w-4 text-red-500" />
               Admin operations
             </div>
-            <h1 className="text-3xl font-black md:text-4xl">Admin <span className="text-red-600">Control Panel</span></h1>
-            <p className="mt-2 max-w-3xl text-sm text-zinc-400">Live orders, queue priorities and operational controls in one workspace.</p>
+            <h1 className="text-2xl font-black md:text-3xl">Admin <span className="text-red-600">Control Panel</span></h1>
+            <p className="mt-1 max-w-3xl text-sm text-zinc-400">Live orders, queue priorities and operational controls in one workspace.</p>
           </div>
 
           {adminDataReady && adminSyncIssue && (
@@ -1957,14 +1957,14 @@ export default function AdminPage() {
           )}
 
           {newOrderNotice && (
-            <div className="mb-6 flex items-center gap-3 rounded-2xl border border-emerald-700/40 bg-emerald-950/30 p-4 text-sm font-black text-emerald-200 shadow-xl shadow-emerald-950/20">
+            <div className="mb-4 flex items-center gap-3 rounded-xl border border-emerald-700/40 bg-emerald-950/30 p-3 text-sm font-black text-emerald-200 shadow-xl shadow-emerald-950/20">
               <BellRing className="h-5 w-5 text-emerald-300" />
               {newOrderNotice}
             </div>
           )}
 
           {message && (
-            <div className="mb-6 rounded-2xl border border-red-800/50 bg-red-950/30 p-4 text-sm text-red-200">{message}</div>
+            <div className="mb-4 rounded-xl border border-red-800/50 bg-red-950/30 p-3 text-sm text-red-200">{message}</div>
           )}
 
           {showInitialAdminLoadError ? (
@@ -2272,29 +2272,29 @@ function OrdersPanel({
   }, [orderGroup, statusFilteredGroupedOrders.length, selectedStatus, search, onlyWithFile]);
 
   return (
-    <section id="admin-order-list" className="min-w-0 scroll-mt-28 rounded-[1.5rem] border border-white/10 bg-white/[0.04] p-4 shadow-2xl shadow-black/20 sm:rounded-[2rem] sm:p-5">
-      <div className="mb-5 flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+    <section id="admin-order-list" className="min-w-0 scroll-mt-20 rounded-xl border border-white/10 bg-white/[0.04] p-3 shadow-2xl shadow-black/20 sm:p-4">
+      <div className="mb-4 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
         <div className="min-w-0">
-          <h2 className="text-2xl font-black">Orders</h2>
+          <h2 className="text-xl font-black">Orders</h2>
           <p className="mt-1 text-sm text-zinc-500">
             Showing {visibleOrders.length} of {statusFilteredGroupedOrders.length} in this view.
           </p>
         </div>
 
-        <div className="flex min-w-0 flex-col gap-3 md:flex-row md:items-center">
+        <div className="flex min-w-0 flex-col gap-2 md:flex-row md:items-center">
           <div className="relative min-w-0">
             <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
             <input
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               placeholder="Search customer, vehicle, ECU, file..."
-              className="h-12 w-full rounded-xl border border-white/10 bg-black/35 pl-11 pr-4 text-sm font-bold text-white outline-none transition placeholder:text-zinc-600 focus:border-red-700 md:w-96"
+              className="h-11 w-full rounded-lg border border-white/10 bg-black/35 pl-11 pr-3 text-sm font-bold text-white outline-none transition placeholder:text-zinc-600 focus:border-red-700 md:w-80 lg:h-10 2xl:w-96"
             />
           </div>
 
           <button
             onClick={() => setOnlyWithFile((current) => !current)}
-            className={`h-12 rounded-xl border px-4 text-sm font-black transition ${
+            className={`h-11 rounded-lg border px-3 text-xs font-black transition lg:h-10 ${
               onlyWithFile
                 ? "border-red-700 bg-red-950/40 text-red-200"
                 : "border-white/10 bg-black/35 text-zinc-400 hover:text-white"
@@ -2306,7 +2306,7 @@ function OrdersPanel({
         </div>
       </div>
 
-      <div className="mb-5 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="mb-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
         {adminOrderGroups.map((group) => {
           const active = orderGroup === group.value;
           const count = groupCounts[group.value];
@@ -2319,7 +2319,7 @@ function OrdersPanel({
                 setOrderGroup(group.value);
                 setSelectedStatus("all");
               }}
-              className={`min-w-0 rounded-2xl border p-4 text-left transition ${
+              className={`min-w-0 rounded-lg border p-3 text-left transition ${
                 active
                   ? "border-red-700 bg-red-950/35 text-white"
                   : "border-white/10 bg-black/30 text-zinc-400 hover:border-red-800/50 hover:text-white"
@@ -2331,7 +2331,7 @@ function OrdersPanel({
                   {count}
                 </span>
               </div>
-              <div className="mt-2 text-xs leading-5 text-zinc-500">
+              <div className="mt-1 line-clamp-1 text-[11px] leading-4 text-zinc-500">
                 {group.description}
               </div>
             </button>
@@ -2339,7 +2339,7 @@ function OrdersPanel({
         })}
       </div>
 
-      <div className="mb-5 flex min-w-0 flex-wrap gap-2 pb-1">
+      <div className="mb-4 flex min-w-0 flex-wrap gap-2 pb-1">
         {visibleStatusOptions.map((status) => {
           const active = selectedStatus === status;
           const count =
@@ -2350,7 +2350,7 @@ function OrdersPanel({
             <button
               key={status}
               onClick={() => setSelectedStatus(status)}
-              className={`rounded-xl border px-3 py-3 text-sm font-black transition sm:px-4 ${
+              className={`min-h-11 rounded-lg border px-3 py-2 text-xs font-black transition lg:min-h-0 ${
                 active ? "border-red-700 bg-red-950/40 text-white" : "border-white/10 bg-black/30 text-zinc-400 hover:text-white"
               }`}
             >
@@ -2368,7 +2368,7 @@ function OrdersPanel({
             <col className="w-[14%]" />
             <col className="w-[12%]" />
             <col className="w-[13%]" />
-            <col className="w-[11%]" />
+            <col className="w-[10%]" />
             <col className="w-[7%]" />
             <col className="w-[13%]" />
             <col className="w-[12%]" />
@@ -2395,14 +2395,14 @@ function OrdersPanel({
             ) : (
               visibleOrders.map((order) => (
                 <tr key={order.id} className="bg-black/20 transition hover:bg-white/[0.04]">
-                  <td className="px-3 py-4 align-top">
+                  <td className="px-2 py-3 align-top 2xl:px-3">
                     <div className="truncate font-black text-white">#{shortId(order.id)}</div>
                     <div className="mt-1 flex items-center gap-1 text-xs text-zinc-500">
                       <CalendarDays className="h-3 w-3" />
                       {formatDate(order.created_at)}
                     </div>
                   </td>
-                  <td className="px-3 py-4 align-top">
+                  <td className="px-2 py-3 align-top 2xl:px-3">
                     <div className="truncate font-bold text-white">{order.customer_email || "-"}</div>
                     <div className="mt-1 text-xs font-black text-red-400">
                       {customerById.get(order.customer_id ?? "")?.customer_id || (order.customer_id ? order.customer_id.slice(0, 8) : "-")}
@@ -2411,17 +2411,17 @@ function OrdersPanel({
                       {customerById.get(order.customer_id ?? "")?.full_name || customerById.get(order.customer_id ?? "")?.company_name || "-"}
                     </div>
                   </td>
-                  <td className="px-3 py-4 align-top">
+                  <td className="px-2 py-3 align-top 2xl:px-3">
                     <div className="line-clamp-2 font-black">{order.vehicle_brand || "-"} {order.vehicle_model || ""}</div>
                     <div className="mt-1 line-clamp-2 text-xs text-zinc-500">{order.vehicle_generation || "-"} · {order.vehicle_engine || "-"}</div>
                   </td>
-                  <td className="px-3 py-4 align-top">
+                  <td className="px-2 py-3 align-top 2xl:px-3">
                     <div className="line-clamp-3 font-bold">{order.ecu || "-"}</div>
                     <div className="mt-1 line-clamp-2 text-xs text-zinc-500">{order.read_method || "-"} · {order.gearbox || "-"}</div>
                   </td>
-                  <td className="px-3 py-4 align-top"><div className="line-clamp-2 font-bold text-zinc-200">{order.service_type || "-"}</div></td>
-                  <td className="px-3 py-4 align-top"><div className="rounded-xl bg-red-950/30 px-3 py-2 text-center font-black text-red-300">{order.credits_required ?? 0}</div></td>
-                  <td className="px-3 py-4 align-top">
+                  <td className="px-2 py-3 align-top 2xl:px-3"><div className="line-clamp-2 font-bold text-zinc-200">{order.service_type || "-"}</div></td>
+                  <td className="px-2 py-3 align-top 2xl:px-3"><div className="rounded-lg bg-red-950/30 px-2 py-1.5 text-center font-black text-red-300">{order.credits_required ?? 0}</div></td>
+                  <td className="px-2 py-3 align-top 2xl:px-3">
                     <select
                       value={order.status ?? "new_request"}
                       onChange={(event) => updateStatus(order.id, event.target.value)}
@@ -2432,13 +2432,13 @@ function OrdersPanel({
                       {editableStatusOptions.map((status) => <option key={status} value={status} className="bg-[#111]">{statusLabel(status)}</option>)}
                     </select>
                   </td>
-                  <td className="px-3 py-4 align-top">
+                  <td className="px-2 py-3 align-top 2xl:px-3">
                     {order.original_file_path ? (
-                      <div className="rounded-xl border border-emerald-700/40 bg-emerald-950/25 px-3 py-2 text-xs font-bold text-emerald-300">Original Ready</div>
+                      <div className="rounded-lg border border-emerald-700/40 bg-emerald-950/25 px-2 py-1.5 text-[11px] font-bold text-emerald-300">Original Ready</div>
                     ) : (
-                      <div className="rounded-xl border border-zinc-700/40 bg-zinc-900/40 px-3 py-2 text-xs font-bold text-zinc-500">No Original</div>
+                      <div className="rounded-lg border border-zinc-700/40 bg-zinc-900/40 px-2 py-1.5 text-[11px] font-bold text-zinc-500">No Original</div>
                     )}
-                    {order.modified_file_path && <div className="mt-1 rounded-xl border border-blue-700/40 bg-blue-950/25 px-3 py-2 text-xs font-bold text-blue-300">Modified Ready</div>}
+                    {order.modified_file_path && <div className="mt-1 rounded-lg border border-blue-700/40 bg-blue-950/25 px-2 py-1.5 text-[11px] font-bold text-blue-300">Modified Ready</div>}
                     <div title={order.uploaded_file_name || "-"} className="mt-1 max-w-full truncate text-xs text-zinc-500">{order.uploaded_file_name || "-"}</div>
                   </td>
                   <td className="px-2 py-4 text-center align-top">
@@ -2776,41 +2776,41 @@ function CustomerDetailModal({ customer, form, setForm, creditInput, setCreditIn
   };
 
   return (
-    <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/75 px-4 py-6 backdrop-blur-sm">
-      <div className="max-h-[94vh] w-full max-w-6xl overflow-auto rounded-[2rem] border border-white/10 bg-[#090909] shadow-2xl shadow-black">
-        <div className="sticky top-0 z-10 border-b border-white/10 bg-[#090909]/95 p-5 backdrop-blur-xl">
-          <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-            <div>
-              <div className="mb-3 flex flex-wrap items-center gap-2">
-                <span className="rounded-full border border-red-800/40 bg-red-950/25 px-3 py-1 text-xs font-black uppercase tracking-[0.16em] text-red-300">{customer.customer_id || customer.id}</span>
-                <span className={`rounded-full border px-3 py-1 text-xs font-black ${accountStatusClass(form.account_status)}`}>{statusLabel(form.account_status)}</span>
-                {canManageCredits && <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs font-bold text-zinc-400">Balance: {Number(customer.credit_balance ?? 0)} credits</span>}
-                <span className="inline-flex items-center rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs font-bold text-zinc-400" title="Customer account creation date">
+    <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/75 p-2 backdrop-blur-sm sm:p-3">
+      <div role="dialog" aria-modal="true" aria-labelledby="customer-detail-title" className="max-h-[calc(100dvh-1rem)] w-full max-w-[96rem] overflow-auto rounded-xl border border-white/10 bg-[#090909] shadow-2xl shadow-black sm:max-h-[calc(100dvh-1.5rem)]">
+        <div className="sticky top-0 z-20 border-b border-white/10 bg-[#090909]/95 p-3 backdrop-blur-xl sm:p-4">
+          <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+            <div className="min-w-0">
+              <div className="mb-2 flex flex-wrap items-center gap-1.5">
+                <span className="rounded-full border border-red-800/40 bg-red-950/25 px-2.5 py-1 text-[11px] font-black uppercase tracking-[0.14em] text-red-300">{customer.customer_id || customer.id}</span>
+                <span className={`rounded-full border px-2.5 py-1 text-[11px] font-black ${accountStatusClass(form.account_status)}`}>{statusLabel(form.account_status)}</span>
+                {canManageCredits && <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[11px] font-bold text-zinc-400">Balance: {Number(customer.credit_balance ?? 0)} credits</span>}
+                <span className="inline-flex items-center rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[11px] font-bold text-zinc-400" title="Customer account creation date">
                   <CalendarDays className="mr-1.5 h-3.5 w-3.5 text-red-400" />
                   {accountCreatedLabel}
                 </span>
                 {form.customer_tags.map((tag) => (
-                  <span key={tag} className={`rounded-full border px-3 py-1 text-xs font-black ${customerTagClass(tag)}`}>
+                  <span key={tag} className={`rounded-full border px-2.5 py-1 text-[11px] font-black ${customerTagClass(tag)}`}>
                     {customerTagLabel(tag)}
                   </span>
                 ))}
               </div>
-              <h2 className="text-3xl font-black md:text-4xl">{customer.full_name || customer.company_name || customer.email || "Customer"}</h2>
-              <p className="mt-2 text-sm text-zinc-500">{customer.email}</p>
+              <h2 id="customer-detail-title" className="truncate text-2xl font-black md:text-3xl">{customer.full_name || customer.company_name || customer.email || "Customer"}</h2>
+              <p className="mt-1 truncate text-sm text-zinc-500">{customer.email}</p>
             </div>
-            <div className="flex flex-wrap gap-2">
-              {canViewCustomerIntelligence && <Link href={`/admin/growth/customers/${customer.id}`} className="inline-flex items-center rounded-xl border border-cyan-800/40 bg-cyan-950/20 px-4 py-3 text-sm font-black text-cyan-200 transition hover:bg-cyan-950/40"><HeartHandshake className="mr-2 h-4 w-4" />Customer 360</Link>}
-              <button onClick={() => onCopyValue(customer.customer_id || customer.id, "Customer ID")} className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-black text-white transition hover:bg-white/10"><Copy className="mr-2 inline h-4 w-4" />Copy ID</button>
-              <button onClick={onSave} disabled={saving} className="rounded-xl bg-[#b1121b] px-4 py-3 text-sm font-black text-white transition hover:bg-[#c91824] disabled:opacity-50">{saving ? <Loader2 className="mr-2 inline h-4 w-4 animate-spin" /> : <Save className="mr-2 inline h-4 w-4" />}Save Customer</button>
-              <button onClick={onClose} className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-black text-white transition hover:bg-white/10"><X className="mr-2 inline h-4 w-4" />Close</button>
+            <div className="flex flex-wrap gap-1.5">
+              {canViewCustomerIntelligence && <Link href={`/admin/growth/customers/${customer.id}`} className="inline-flex min-h-11 items-center rounded-lg border border-cyan-800/40 bg-cyan-950/20 px-3 text-xs font-black text-cyan-200 transition hover:bg-cyan-950/40 lg:h-9 lg:min-h-0"><HeartHandshake className="mr-1.5 h-4 w-4" />Customer 360</Link>}
+              <button onClick={() => onCopyValue(customer.customer_id || customer.id, "Customer ID")} className="min-h-11 rounded-lg border border-white/10 bg-white/[0.04] px-3 text-xs font-black text-white transition hover:bg-white/10 lg:h-9 lg:min-h-0"><Copy className="mr-1.5 inline h-4 w-4" />Copy ID</button>
+              <button onClick={onSave} disabled={saving} className="min-h-11 rounded-lg bg-[#b1121b] px-3 text-xs font-black text-white transition hover:bg-[#c91824] disabled:opacity-50 lg:h-9 lg:min-h-0">{saving ? <Loader2 className="mr-1.5 inline h-4 w-4 animate-spin" /> : <Save className="mr-1.5 inline h-4 w-4" />}Save Customer</button>
+              <button onClick={onClose} className="min-h-11 rounded-lg border border-white/10 bg-white/[0.04] px-3 text-xs font-black text-white transition hover:bg-white/10 lg:h-9 lg:min-h-0"><X className="mr-1.5 inline h-4 w-4" />Close</button>
             </div>
           </div>
         </div>
-        <div className="grid gap-6 p-5 xl:grid-cols-[1fr_360px]">
-          <div className="space-y-6">
-            <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
-              <h3 className="mb-5 text-2xl font-black">Customer Profile</h3>
-              <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-4 p-3 sm:p-4 xl:grid-cols-[minmax(0,1fr)_280px]">
+          <div className="space-y-4">
+            <section className="rounded-xl border border-white/10 bg-white/[0.04] p-4">
+              <h3 className="mb-3 text-lg font-black">Customer Profile</h3>
+              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
                 <FormInput label="Full Name" value={form.full_name} onChange={(value) => updateForm("full_name", value)} />
                 <FormSelect label="Account Type" value={form.account_type} onChange={(value) => updateForm("account_type", value)} options={["private", "company"]} />
                 <FormInput label="Company Name" value={form.company_name} onChange={(value) => updateForm("company_name", value)} />
@@ -2830,18 +2830,18 @@ function CustomerDetailModal({ customer, form, setForm, creditInput, setCreditIn
               canManageSecurity={canManageSecurity}
               canReplacePassword={canReplacePassword}
             />
-            <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
-              <div className="mb-5 flex items-center gap-3">
-                <Tags className="h-6 w-6 text-red-500" />
+            <section className="rounded-xl border border-white/10 bg-white/[0.04] p-4">
+              <div className="mb-3 flex items-center gap-2.5">
+                <Tags className="h-5 w-5 text-red-500" />
                 <div>
-                  <h3 className="text-2xl font-black">Customer Tags</h3>
+                  <h3 className="text-lg font-black">Customer Tags</h3>
                   <p className="mt-1 text-sm text-zinc-500">
                     Internal labels for workflow priority, pricing and account handling.
                   </p>
                 </div>
               </div>
 
-              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+              <div className="grid gap-2 sm:grid-cols-3 2xl:grid-cols-5">
                 {customerTagOptions.map((option) => {
                   const active = form.customer_tags.includes(option.value);
 
@@ -2850,7 +2850,7 @@ function CustomerDetailModal({ customer, form, setForm, creditInput, setCreditIn
                       key={option.value}
                       type="button"
                       onClick={() => toggleCustomerTag(option.value)}
-                      className={`rounded-2xl border p-4 text-left transition hover:-translate-y-0.5 ${
+                      className={`rounded-lg border p-3 text-left transition hover:-translate-y-0.5 ${
                         active
                           ? option.className
                           : "border-white/10 bg-black/30 text-zinc-400 hover:border-red-800/60 hover:text-white"
@@ -2869,11 +2869,11 @@ function CustomerDetailModal({ customer, form, setForm, creditInput, setCreditIn
                 })}
               </div>
             </section>
-            <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
-              <h3 className="mb-5 text-2xl font-black">Credit Permissions</h3>
+            <section className="rounded-xl border border-white/10 bg-white/[0.04] p-4">
+              <h3 className="mb-3 text-lg font-black">Credit Permissions</h3>
               {canManageCredits ? (
                 <div className="grid gap-4 md:grid-cols-2">
-                  <label className="flex items-center justify-between gap-4 rounded-2xl border border-white/10 bg-black/30 p-4">
+                  <label className="flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-black/30 p-3">
                     <div><div className="font-black text-white">Allow Negative Credits</div><div className="mt-1 text-sm text-zinc-500">Customer can submit requests with insufficient balance.</div></div>
                     <input type="checkbox" checked={form.allow_negative_credits} onChange={(event) => updateForm("allow_negative_credits", event.target.checked)} className="h-5 w-5 accent-red-600" />
                   </label>
@@ -2882,42 +2882,42 @@ function CustomerDetailModal({ customer, form, setForm, creditInput, setCreditIn
               ) : (
                 <p className="rounded-2xl border border-white/10 bg-black/30 p-4 text-sm text-zinc-500">Your staff role cannot view or change negative-credit settings.</p>
               )}
-              <textarea value={form.internal_admin_note} onChange={(event) => updateForm("internal_admin_note", event.target.value)} placeholder="Internal admin note. Customer cannot see this." className="mt-4 min-h-32 w-full resize-none rounded-2xl border border-white/10 bg-black/35 px-4 py-3 text-sm font-bold text-white outline-none placeholder:text-zinc-600 focus:border-red-700" />
+              <textarea value={form.internal_admin_note} onChange={(event) => updateForm("internal_admin_note", event.target.value)} placeholder="Internal admin note. Customer cannot see this." className="mt-3 min-h-20 w-full resize-y rounded-lg border border-white/10 bg-black/35 px-3 py-2.5 text-sm font-bold text-white outline-none placeholder:text-zinc-600 focus:border-red-700" />
             </section>
-            {canManageCredits && <section className="rounded-[2rem] border border-red-900/40 bg-red-950/10 p-5" aria-labelledby="customer-pricing-title">
+            {canManageCredits && <section className="rounded-xl border border-red-900/40 bg-red-950/10 p-4" aria-labelledby="customer-pricing-title">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                  <h3 id="customer-pricing-title" className="text-2xl font-black">Customer Pricing & Payments</h3>
-                  <p className="mt-1 text-sm leading-6 text-zinc-500">Choose one price rule. A fixed customer price is final; it never receives another adjustment and does not change with the global tariff.</p>
+                  <h3 id="customer-pricing-title" className="text-lg font-black">Customer Pricing & Payments</h3>
+                  <p className="mt-1 max-w-2xl text-xs leading-5 text-zinc-500">Choose one price rule. A fixed customer price is final; it never receives another adjustment and does not change with the global tariff.</p>
                 </div>
                 <div className="grid shrink-0 gap-2 sm:grid-cols-2">
-                  <div className="rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-right">
+                  <div className="rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-right">
                     <div className="text-xs font-black uppercase text-zinc-500">Global tariff</div>
-                    <div className="mt-1 text-lg font-black text-white">
+                    <div className="mt-0.5 text-base font-black text-white">
                       {Number.isFinite(globalCustomerPrice) && form.global_custom_unit_price_eur
                         ? `EUR ${formatCreditUnitAmount(globalCustomerPrice)}`
                         : "—"}
                     </div>
                   </div>
-                  <div className="rounded-xl border border-emerald-700/40 bg-emerald-950/20 px-4 py-3 text-right">
+                  <div className="rounded-lg border border-emerald-700/40 bg-emerald-950/20 px-3 py-2 text-right">
                     <div className="text-xs font-black uppercase text-emerald-400">Live preview</div>
-                    <div className="mt-1 text-lg font-black">
+                    <div className="mt-0.5 text-base font-black">
                       {customerPricingPreview != null
                         ? `EUR ${formatCreditUnitAmount(customerPricingPreview)}`
                         : "—"}
                     </div>
-                    <div className="mt-1 text-[10px] font-bold uppercase tracking-[0.12em] text-emerald-300/70">Unsaved until confirmed</div>
+                    <div className="mt-0.5 text-[9px] font-bold uppercase tracking-[0.1em] text-emerald-300/70">Unsaved until confirmed</div>
                   </div>
                 </div>
               </div>
 
               {customerPricingLoading && (
-                <div role="status" className="mt-5 flex items-center rounded-xl border border-white/10 bg-black/30 p-4 text-sm font-bold text-zinc-300">
+                <div role="status" className="mt-3 flex items-center rounded-lg border border-white/10 bg-black/30 p-3 text-sm font-bold text-zinc-300">
                   <Loader2 className="mr-2 h-4 w-4 animate-spin text-red-400" />Loading the current customer pricing policy…
                 </div>
               )}
               {pricingError && (
-                <div role="alert" className="mt-5 rounded-xl border border-red-700/50 bg-red-950/30 p-4 text-sm text-red-100">
+                <div role="alert" className="mt-3 rounded-lg border border-red-700/50 bg-red-950/30 p-3 text-sm text-red-100">
                   <div className="font-black">Customer pricing was not confirmed</div>
                   <p className="mt-1 leading-6 text-red-100/80">{pricingError}</p>
                   {pricingLoadState === "error" && (
@@ -2928,10 +2928,10 @@ function CustomerDetailModal({ customer, form, setForm, creditInput, setCreditIn
                 </div>
               )}
               {pricingMessage && (
-                <div role="status" className="mt-5 rounded-xl border border-emerald-700/40 bg-emerald-950/20 p-4 text-sm font-bold text-emerald-200">{pricingMessage}</div>
+                <div role="status" className="mt-3 rounded-lg border border-emerald-700/40 bg-emerald-950/20 p-3 text-sm font-bold text-emerald-200">{pricingMessage}</div>
               )}
 
-              <fieldset disabled={pricingControlsDisabled} className="mt-5 disabled:opacity-60">
+              <fieldset disabled={pricingControlsDisabled} className="mt-4 disabled:opacity-60">
                 <legend className="text-xs font-black uppercase tracking-[0.14em] text-zinc-500">Pricing rule</legend>
                 <div className="mt-2 grid gap-3 md:grid-cols-3">
                   {([
@@ -2939,65 +2939,65 @@ function CustomerDetailModal({ customer, form, setForm, creditInput, setCreditIn
                     ["fixed", "Fixed customer price", "A permanent exact price for this customer."],
                     ["adjustment", "Global + adjustment", "Discount or surcharge against the global tariff."],
                   ] as const).map(([value, label, description]) => (
-                    <label key={value} className={`cursor-pointer rounded-xl border p-4 ${form.commercial_pricing_mode === value ? "border-red-700 bg-red-950/30" : "border-white/10 bg-black/30"}`}>
+                    <label key={value} className={`cursor-pointer rounded-lg border p-3 ${form.commercial_pricing_mode === value ? "border-red-700 bg-red-950/30" : "border-white/10 bg-black/30"}`}>
                       <span className="flex items-center gap-2 font-black text-white">
                         <input type="radio" name={`customer-pricing-mode-${customer.id}`} value={value} checked={form.commercial_pricing_mode === value} onChange={() => updatePricingMode(value)} className="h-4 w-4 accent-red-600" />
                         {label}
                       </span>
-                      <span className="mt-2 block text-xs leading-5 text-zinc-500">{description}</span>
+                      <span className="mt-1 block text-[11px] leading-4 text-zinc-500">{description}</span>
                     </label>
                   ))}
                 </div>
 
                 {form.commercial_pricing_mode === "fixed" && (
-                  <div className="mt-5 max-w-md">
+                  <div className="mt-4 max-w-md">
                     <FormInput label="Exact Customer Price (EUR / credit)" type="number" min="0.01" max="1000" step="0.0001" inputMode="decimal" value={form.credit_price_override_eur} onChange={(value) => updateForm("credit_price_override_eur", value)} disabled={pricingControlsDisabled} />
                     <p className="mt-2 text-xs leading-5 text-zinc-500">This exact unit price applies to custom amounts and every package for this customer until you switch back to the global tariff.</p>
                   </div>
                 )}
 
                 {form.commercial_pricing_mode === "adjustment" && (
-                  <div className="mt-5 grid gap-4 md:grid-cols-2">
+                  <div className="mt-4 grid gap-3 md:grid-cols-2">
                     <FormSelect label="Adjustment type" value={form.commercial_adjustment_type} onChange={(value) => updateForm("commercial_adjustment_type", value as CustomerForm["commercial_adjustment_type"])} options={["percentage", "fixed"]} disabled={pricingControlsDisabled} />
                     <FormInput label={form.commercial_adjustment_type === "percentage" ? "Adjustment (%)" : "Adjustment (EUR / credit)"} type="number" min={form.commercial_adjustment_type === "percentage" ? "-100" : "-1000"} max={form.commercial_adjustment_type === "percentage" ? "100" : "1000"} step="0.0001" inputMode="decimal" value={form.commercial_adjustment_value} onChange={(value) => updateForm("commercial_adjustment_value", value)} disabled={pricingControlsDisabled} />
                     <p className="text-xs leading-5 text-zinc-500 md:col-span-2">Positive values reduce the inherited price. Negative values create a surcharge.</p>
                   </div>
                 )}
 
-                <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
                   <PaymentPolicySelect label="Stripe" value={form.payment_stripe} onChange={(value) => updateForm("payment_stripe", value)} disabled={pricingControlsDisabled} />
                   <PaymentPolicySelect label="Bank transfer" value={form.payment_bank} onChange={(value) => updateForm("payment_bank", value)} disabled={pricingControlsDisabled} />
                 </div>
-                <p className="mt-4 text-xs leading-5 text-zinc-500">Payment method “Inherit” follows the global payment setting.</p>
-                <textarea value={form.commercial_internal_note} onChange={(event) => updateForm("commercial_internal_note", event.target.value)} disabled={pricingControlsDisabled} maxLength={2000} aria-label="Internal pricing agreement note" placeholder="Internal pricing agreement or approval note. Customer cannot see this." className="mt-4 min-h-24 w-full resize-none rounded-2xl border border-white/10 bg-black/35 px-4 py-3 text-sm font-bold text-white outline-none placeholder:text-zinc-600 focus:border-red-700 disabled:cursor-not-allowed disabled:opacity-60" />
+                <p className="mt-3 text-xs leading-5 text-zinc-500">Payment method “Inherit” follows the global payment setting.</p>
+                <textarea value={form.commercial_internal_note} onChange={(event) => updateForm("commercial_internal_note", event.target.value)} disabled={pricingControlsDisabled} maxLength={2000} aria-label="Internal pricing agreement note" placeholder="Internal pricing agreement or approval note. Customer cannot see this." className="mt-3 min-h-16 w-full resize-y rounded-lg border border-white/10 bg-black/35 px-3 py-2.5 text-sm font-bold text-white outline-none placeholder:text-zinc-600 focus:border-red-700 disabled:cursor-not-allowed disabled:opacity-60" />
               </fieldset>
 
-              <div className="mt-5 flex flex-col gap-3 border-t border-white/10 pt-5 sm:flex-row sm:items-center sm:justify-between">
+              <div className="mt-4 flex flex-col gap-2 border-t border-white/10 pt-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="text-xs leading-5 text-zinc-500">
                   {pricingUpdatedAt ? `Last saved ${formatDate(pricingUpdatedAt)}` : "No customer-specific pricing row is saved yet."}
                 </div>
-                <button type="button" onClick={onSavePricing} disabled={!customerPricingReady || customerPricingLoading || pricingSaving} className="inline-flex h-11 items-center justify-center rounded-xl bg-[#b1121b] px-5 text-sm font-black text-white transition hover:bg-[#c91824] disabled:cursor-not-allowed disabled:opacity-50">
+                <button type="button" onClick={onSavePricing} disabled={!customerPricingReady || customerPricingLoading || pricingSaving} className="inline-flex h-11 items-center justify-center rounded-lg bg-[#b1121b] px-4 text-sm font-black text-white transition hover:bg-[#c91824] disabled:cursor-not-allowed disabled:opacity-50 lg:h-10">
                   {pricingSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                   {pricingSaving ? "Saving pricing…" : "Save customer pricing"}
                 </button>
               </div>
             </section>}
           </div>
-          <aside className="min-w-0 space-y-5 sm:space-y-6">
+          <aside className="min-w-0 self-start space-y-3 xl:sticky xl:top-[7.5rem] xl:h-fit">
             {canManageCredits ? (
               <>
-                <section className="rounded-[2rem] border border-red-900/40 bg-red-950/20 p-5">
-                  <CreditCard className="mb-4 h-8 w-8 text-red-400" /><div className="text-sm text-zinc-400">Current Balance</div><div className="mt-2 text-5xl font-black">{Number(customer.credit_balance ?? 0)}</div><div className="mt-1 text-sm text-zinc-500">credits</div>
+                <section className="rounded-xl border border-red-900/40 bg-red-950/20 p-4">
+                  <CreditCard className="mb-2 h-6 w-6 text-red-400" /><div className="text-xs text-zinc-400">Current Balance</div><div className="mt-1 text-3xl font-black">{Number(customer.credit_balance ?? 0)}</div><div className="text-xs text-zinc-500">credits</div>
                 </section>
-                <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
-                  <h3 className="mb-5 text-2xl font-black">Adjust Credits</h3>
-                  <div className="mb-4 grid grid-cols-2 gap-2">
-                    {[10, 25, 50, 100].map((amount) => <button key={amount} onClick={() => onQuickAdjust(amount)} disabled={creditUpdating} className="rounded-xl border border-emerald-700/40 bg-emerald-950/30 px-3 py-3 text-sm font-black text-emerald-300 transition hover:bg-emerald-900/40 disabled:opacity-50">+{amount}</button>)}
-                    {[-10, -25, -50, -100].map((amount) => <button key={amount} onClick={() => onQuickAdjust(amount)} disabled={creditUpdating} className="rounded-xl border border-red-700/40 bg-red-950/30 px-3 py-3 text-sm font-black text-red-300 transition hover:bg-red-900/40 disabled:opacity-50">{amount}</button>)}
+                <section className="rounded-xl border border-white/10 bg-white/[0.04] p-4">
+                  <h3 className="mb-3 text-lg font-black">Adjust Credits</h3>
+                  <div className="mb-3 grid grid-cols-4 gap-1.5">
+                    {[10, 25, 50, 100].map((amount) => <button key={amount} onClick={() => onQuickAdjust(amount)} disabled={creditUpdating} className="min-h-11 rounded-lg border border-emerald-700/40 bg-emerald-950/30 px-1.5 py-2 text-xs font-black text-emerald-300 transition hover:bg-emerald-900/40 disabled:opacity-50 lg:min-h-0">+{amount}</button>)}
+                    {[-10, -25, -50, -100].map((amount) => <button key={amount} onClick={() => onQuickAdjust(amount)} disabled={creditUpdating} className="min-h-11 rounded-lg border border-red-700/40 bg-red-950/30 px-1.5 py-2 text-xs font-black text-red-300 transition hover:bg-red-900/40 disabled:opacity-50 lg:min-h-0">{amount}</button>)}
                   </div>
-                  <input type="number" value={creditInput} onChange={(event) => setCreditInput(event.target.value)} disabled={creditUpdating} placeholder="+/- custom amount" className="mb-3 h-12 w-full rounded-xl border border-white/10 bg-black/35 px-4 text-sm font-bold text-white outline-none placeholder:text-zinc-600 focus:border-red-700 disabled:cursor-not-allowed disabled:opacity-60" />
-                  <textarea value={creditNote} onChange={(event) => setCreditNote(event.target.value)} disabled={creditUpdating} placeholder="Ledger note" className="mb-3 min-h-24 w-full resize-none rounded-xl border border-white/10 bg-black/35 px-4 py-3 text-sm font-bold text-white outline-none placeholder:text-zinc-600 focus:border-red-700 disabled:cursor-not-allowed disabled:opacity-60" />
-                  <button onClick={onCustomAdjust} disabled={creditUpdating} className="flex h-12 w-full items-center justify-center rounded-xl bg-[#b1121b] px-4 text-sm font-black text-white transition hover:bg-[#c91824] disabled:opacity-50">{creditUpdating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <MinusCircle className="mr-2 h-4 w-4" />}Apply Credit Adjustment</button>
+                  <input type="number" value={creditInput} onChange={(event) => setCreditInput(event.target.value)} disabled={creditUpdating} placeholder="+/- custom amount" className="mb-2 h-11 w-full rounded-lg border border-white/10 bg-black/35 px-3 text-sm font-bold text-white outline-none placeholder:text-zinc-600 focus:border-red-700 disabled:cursor-not-allowed disabled:opacity-60 lg:h-10" />
+                  <textarea value={creditNote} onChange={(event) => setCreditNote(event.target.value)} disabled={creditUpdating} placeholder="Ledger note" className="mb-2 min-h-16 w-full resize-y rounded-lg border border-white/10 bg-black/35 px-3 py-2.5 text-sm font-bold text-white outline-none placeholder:text-zinc-600 focus:border-red-700 disabled:cursor-not-allowed disabled:opacity-60" />
+                  <button onClick={onCustomAdjust} disabled={creditUpdating} className="flex h-11 w-full items-center justify-center rounded-lg bg-[#b1121b] px-3 text-xs font-black text-white transition hover:bg-[#c91824] disabled:opacity-50 lg:h-10">{creditUpdating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <MinusCircle className="mr-2 h-4 w-4" />}Apply Credit Adjustment</button>
                 </section>
               </>
             ) : (
@@ -3098,16 +3098,16 @@ function CustomerPasswordSecurityPanel({
   }
 
   return (
-    <section className="rounded-[2rem] border border-amber-700/30 bg-amber-950/10 p-5">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+    <section className="rounded-xl border border-amber-700/30 bg-amber-950/10 p-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
-          <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-amber-600/30 bg-amber-500/10 text-amber-300">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-amber-600/30 bg-amber-500/10 text-amber-300">
               <KeyRound className="h-5 w-5" />
             </div>
             <div>
-              <h3 className="text-2xl font-black text-white">Account Security</h3>
-              <p className="mt-1 text-sm leading-6 text-zinc-500">
+              <h3 className="text-lg font-black text-white">Account Security</h3>
+              <p className="mt-0.5 text-xs leading-5 text-zinc-500">
                 Recovery and credential controls for this customer account.
               </p>
             </div>
@@ -3118,14 +3118,14 @@ function CustomerPasswordSecurityPanel({
         </span>
       </div>
 
-      <div className="mt-5 grid gap-4 xl:grid-cols-2">
-        <div className="rounded-2xl border border-white/10 bg-black/35 p-4">
+      <div className="mt-4 grid gap-3 xl:grid-cols-2">
+        <div className="rounded-lg border border-white/10 bg-black/35 p-3">
           <div className="text-xs font-black uppercase tracking-[0.16em] text-zinc-500">
             Current password
           </div>
           <div
             aria-label="Current password is one-way protected and cannot be retrieved"
-            className="mt-3 flex min-h-12 items-center justify-between gap-3 rounded-xl border border-white/10 bg-black/45 px-4"
+            className="mt-2 flex min-h-10 items-center justify-between gap-3 rounded-lg border border-white/10 bg-black/45 px-3"
           >
             <span aria-hidden className="select-none font-mono tracking-[0.22em] text-zinc-500 blur-[2px]">
               ••••••••••••••••
@@ -3134,12 +3134,12 @@ function CustomerPasswordSecurityPanel({
               <EyeOff className="mr-2 h-4 w-4" />Not retrievable
             </span>
           </div>
-          <p className="mt-3 text-xs leading-5 text-zinc-500">
+          <p className="mt-2 text-xs leading-5 text-zinc-500">
             Supabase stores a one-way password hash. No admin, API or database view can reveal the existing password.
           </p>
         </div>
 
-        <div className="rounded-2xl border border-sky-800/30 bg-sky-950/10 p-4">
+        <div className="rounded-lg border border-sky-800/30 bg-sky-950/10 p-3">
           <div className="text-xs font-black uppercase tracking-[0.16em] text-sky-300">
             Recommended recovery
           </div>
@@ -3150,7 +3150,7 @@ function CustomerPasswordSecurityPanel({
             type="button"
             onClick={() => void runSecurityAction("send_reset_email")}
             disabled={!canManageSecurity || !customer.email || busyAction !== null}
-            className="mt-4 inline-flex h-11 w-full items-center justify-center rounded-xl border border-sky-700/40 bg-sky-950/30 px-4 text-sm font-black text-sky-100 transition hover:bg-sky-900/35 disabled:cursor-not-allowed disabled:opacity-50"
+            className="mt-3 inline-flex h-11 w-full items-center justify-center rounded-lg border border-sky-700/40 bg-sky-950/30 px-3 text-sm font-black text-sky-100 transition hover:bg-sky-900/35 disabled:cursor-not-allowed disabled:opacity-50 lg:h-10"
           >
             {busyAction === "reset" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
             Send Password Reset Email
@@ -3158,7 +3158,7 @@ function CustomerPasswordSecurityPanel({
         </div>
       </div>
 
-      <div className="mt-4 rounded-2xl border border-red-900/35 bg-black/35 p-4">
+      <div className="mt-3 rounded-lg border border-red-900/35 bg-black/35 p-3">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <div className="text-xs font-black uppercase tracking-[0.16em] text-red-300">
@@ -3175,9 +3175,9 @@ function CustomerPasswordSecurityPanel({
           ) : null}
         </div>
 
-        <div className="mt-4 grid gap-3 md:grid-cols-2">
+        <div className="mt-3 grid gap-3 md:grid-cols-2">
           <label className="block">
-            <span className="mb-2 block text-xs font-black uppercase tracking-[0.14em] text-zinc-500">
+            <span className="mb-1.5 block text-xs font-black uppercase tracking-[0.14em] text-zinc-500">
               New password
             </span>
             <div className="relative">
@@ -3188,7 +3188,7 @@ function CustomerPasswordSecurityPanel({
                 disabled={!canReplacePassword || busyAction !== null}
                 autoComplete="new-password"
                 spellCheck={false}
-                className="h-12 w-full rounded-xl border border-white/10 bg-black/45 px-4 pr-12 text-sm font-bold text-white outline-none transition focus:border-red-700 disabled:opacity-50"
+                className="h-11 w-full rounded-lg border border-white/10 bg-black/45 px-3 pr-11 text-sm font-bold text-white outline-none transition focus:border-red-700 disabled:opacity-50 lg:h-10"
               />
               <button
                 type="button"
@@ -3202,7 +3202,7 @@ function CustomerPasswordSecurityPanel({
             </div>
           </label>
           <label className="block">
-            <span className="mb-2 block text-xs font-black uppercase tracking-[0.14em] text-zinc-500">
+            <span className="mb-1.5 block text-xs font-black uppercase tracking-[0.14em] text-zinc-500">
               Confirm new password
             </span>
             <input
@@ -3212,12 +3212,12 @@ function CustomerPasswordSecurityPanel({
               disabled={!canReplacePassword || busyAction !== null}
               autoComplete="new-password"
               spellCheck={false}
-              className="h-12 w-full rounded-xl border border-white/10 bg-black/45 px-4 text-sm font-bold text-white outline-none transition focus:border-red-700 disabled:opacity-50"
+              className="h-11 w-full rounded-lg border border-white/10 bg-black/45 px-3 text-sm font-bold text-white outline-none transition focus:border-red-700 disabled:opacity-50 lg:h-10"
             />
           </label>
         </div>
 
-        <div className="mt-3 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div className="mt-3 flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
           <div className="text-xs leading-5 text-zinc-500">
             {replacementPassword && !passwordValidation.valid
               ? passwordValidation.errors[0]
@@ -3230,7 +3230,7 @@ function CustomerPasswordSecurityPanel({
               type="button"
               onClick={generateReplacementPassword}
               disabled={!canReplacePassword || busyAction !== null}
-              className="inline-flex h-11 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] px-4 text-sm font-black text-white transition hover:bg-white/[0.08] disabled:opacity-50"
+              className="inline-flex h-11 items-center justify-center rounded-lg border border-white/10 bg-white/[0.04] px-3 text-xs font-black text-white transition hover:bg-white/[0.08] disabled:opacity-50 lg:h-10"
             >
               <WandSparkles className="mr-2 h-4 w-4" />Generate Secure Password
             </button>
@@ -3238,7 +3238,7 @@ function CustomerPasswordSecurityPanel({
               type="button"
               onClick={() => void runSecurityAction("set_replacement_password")}
               disabled={!canSubmitReplacement}
-              className="inline-flex h-11 items-center justify-center rounded-xl bg-[#b1121b] px-4 text-sm font-black text-white transition hover:bg-[#c91824] disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex h-11 items-center justify-center rounded-lg bg-[#b1121b] px-3 text-xs font-black text-white transition hover:bg-[#c91824] disabled:cursor-not-allowed disabled:opacity-50 lg:h-10"
             >
               {busyAction === "replace" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <KeyRound className="mr-2 h-4 w-4" />}
               Replace Password
@@ -3268,15 +3268,15 @@ function CustomerPasswordSecurityPanel({
 
 function SidebarButton({ active, icon, label, count, onClick }: { active: boolean; icon: ReactNode; label: string; count: number | string; onClick: () => void }) {
   return (
-    <button onClick={onClick} className={`flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left text-sm font-black transition ${active ? "border-red-700/50 bg-red-950/35 text-white" : "border-white/10 bg-black/25 text-zinc-400 hover:bg-white/[0.04] hover:text-white"}`}>
-      <span className="flex items-center gap-3"><span className={active ? "text-red-400" : "text-zinc-500"}>{icon}</span>{label}</span>
+    <button onClick={onClick} className={`flex min-h-11 w-full items-center justify-between rounded-lg border px-3 py-2.5 text-left text-sm font-black transition lg:min-h-0 ${active ? "border-red-700/50 bg-red-950/35 text-white" : "border-white/10 bg-black/25 text-zinc-400 hover:bg-white/[0.04] hover:text-white"}`}>
+      <span className="flex items-center gap-2.5"><span className={active ? "text-red-400" : "text-zinc-500"}>{icon}</span>{label}</span>
       <span className="rounded-full bg-white/10 px-2 py-0.5 text-xs">{count}</span>
     </button>
   );
 }
 
 function MiniStat({ label, value }: { label: string; value: number | string }) {
-  return <div className="rounded-xl bg-black/30 p-3"><div className="text-xs text-zinc-500">{label}</div><div className="mt-1 text-xl font-black">{value}</div></div>;
+  return <div className="rounded-lg bg-black/30 p-2.5"><div className="text-[11px] text-zinc-500">{label}</div><div className="mt-0.5 text-lg font-black">{value}</div></div>;
 }
 
 function AdminOperationsOverview({
@@ -3332,26 +3332,26 @@ function AdminOperationsOverview({
   ];
 
   return (
-    <section className="mb-6 overflow-hidden rounded-lg border border-white/10 bg-[#0b0b0c] shadow-2xl shadow-black/25">
-      <div className="flex flex-col gap-3 border-b border-white/10 bg-[linear-gradient(90deg,rgba(177,18,27,0.15),transparent_58%)] px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+    <section className="mb-4 min-w-0 overflow-hidden rounded-lg border border-white/10 bg-[#0b0b0c] shadow-2xl shadow-black/25">
+      <div className="flex flex-col gap-2 border-b border-white/10 bg-[linear-gradient(90deg,rgba(177,18,27,0.15),transparent_58%)] px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-4">
         <div className="min-w-0">
           <div className="text-[11px] font-black uppercase tracking-[0.18em] text-red-400">Live order desk</div>
-          <h2 className="mt-1 text-xl font-black text-white sm:text-2xl">Latest 5 orders</h2>
+          <h2 className="mt-0.5 text-lg font-black text-white sm:text-xl">Latest 5 orders</h2>
           <p className="mt-1 text-xs text-zinc-500">Newest customer work across every status, always shown first.</p>
         </div>
         <button
           type="button"
           onClick={() => onFilter(priority.status)}
-          className="inline-flex h-10 shrink-0 items-center justify-center rounded-md border border-red-800/50 bg-red-950/35 px-4 text-xs font-black text-red-100 transition hover:border-red-600 hover:bg-red-950/55"
+          className="inline-flex h-11 shrink-0 items-center justify-center rounded-md border border-red-800/50 bg-red-950/35 px-3 text-xs font-black text-red-100 transition hover:border-red-600 hover:bg-red-950/55 lg:h-9"
         >
           <BellRing className="mr-2 h-4 w-4" />
           {priority.label}
         </button>
       </div>
 
-      <div className="grid xl:grid-cols-[minmax(0,1.65fr)_minmax(300px,0.75fr)]">
+      <div className="grid xl:grid-cols-[minmax(0,1fr)_260px]">
         <div className="min-w-0 xl:border-r xl:border-white/10">
-          <div className="hidden grid-cols-[110px_minmax(0,1fr)_minmax(0,1.25fr)_minmax(120px,0.8fr)_120px] gap-3 border-b border-white/10 bg-black/30 px-4 py-2.5 text-[10px] font-black uppercase tracking-[0.14em] text-zinc-600 md:grid">
+          <div className="hidden grid-cols-[92px_minmax(0,1fr)_minmax(0,1.15fr)_minmax(90px,0.7fr)_96px] gap-2 border-b border-white/10 bg-black/30 px-3 py-2 text-[10px] font-black uppercase tracking-[0.12em] text-zinc-600 md:grid">
             <span>Order</span><span>Customer</span><span>Vehicle</span><span>Service</span><span>Status</span>
           </div>
           {latestOrders.length === 0 ? (
@@ -3373,7 +3373,7 @@ function AdminOperationsOverview({
                     type="button"
                     onClick={() => onOpenOrder(order)}
                     aria-label={`Open order ${shortId(order.id)}`}
-                    className="group grid w-full min-w-0 gap-3 px-4 py-3 text-left transition hover:bg-white/[0.045] md:grid-cols-[110px_minmax(0,1fr)_minmax(0,1.25fr)_minmax(120px,0.8fr)_120px] md:items-center"
+                    className="group grid w-full min-w-0 gap-2 px-3 py-2.5 text-left transition hover:bg-white/[0.045] md:grid-cols-[92px_minmax(0,1fr)_minmax(0,1.15fr)_minmax(90px,0.7fr)_96px] md:items-center"
                   >
                     <div className="min-w-0">
                       <div className="truncate font-black text-white">#{shortId(order.id)}</div>
@@ -3402,7 +3402,7 @@ function AdminOperationsOverview({
           )}
         </div>
 
-        <aside className="min-w-0 bg-black/20 p-4 sm:p-5">
+        <aside className="min-w-0 bg-black/20 p-3 sm:p-4">
           <div className="flex items-center justify-between gap-3">
             <div>
               <div className="text-[11px] font-black uppercase tracking-[0.16em] text-zinc-500">Queue snapshot</div>
@@ -3425,7 +3425,7 @@ function AdminOperationsOverview({
                   key={item.label}
                   type="button"
                   onClick={() => onFilter(item.status)}
-                  className="min-w-0 rounded-md border border-white/10 bg-white/[0.025] p-3 text-left transition hover:border-red-800/50 hover:bg-white/[0.055]"
+                  className="min-w-0 rounded-md border border-white/10 bg-white/[0.025] p-2.5 text-left transition hover:border-red-800/50 hover:bg-white/[0.055]"
                 >
                   <div className="flex items-center justify-between gap-2">
                     <Icon className={`h-4 w-4 ${item.tone}`} />
@@ -3438,7 +3438,7 @@ function AdminOperationsOverview({
           </div>
 
           {commandLinks.length > 0 && (
-            <div className="mt-5 border-t border-white/10 pt-4">
+            <div className="mt-4 border-t border-white/10 pt-3">
               <div className="mb-2 flex items-center justify-between gap-3">
                 <div className="text-[11px] font-black uppercase tracking-[0.16em] text-zinc-500">Quick controls</div>
                 <span className="text-[10px] text-zinc-600">{lastSyncAt ? `Synced ${syncLabel}` : syncLabel}</span>
@@ -3449,7 +3449,7 @@ function AdminOperationsOverview({
                     key={link.href}
                     href={link.href}
                     title={link.detail}
-                    className="flex min-w-0 items-center gap-2 rounded-md border border-white/10 bg-black/25 px-3 py-2.5 text-xs font-black text-zinc-300 transition hover:border-red-800/50 hover:text-white"
+                    className="flex min-h-11 min-w-0 items-center gap-2 rounded-md border border-white/10 bg-black/25 px-2.5 py-2 text-xs font-black text-zinc-300 transition hover:border-red-800/50 hover:text-white lg:min-h-0"
                   >
                     <span className="shrink-0 text-red-300">{link.icon}</span>
                     <span className="min-w-0 flex-1 truncate">{link.label}</span>
@@ -3464,7 +3464,7 @@ function AdminOperationsOverview({
 
       <div className="grid grid-cols-3 border-t border-white/10 bg-black/30 md:grid-cols-6">
         {compactStats.map((item) => (
-          <div key={item.label} className="min-w-0 border-b border-r border-white/10 px-3 py-3 last:border-r-0 md:border-b-0">
+          <div key={item.label} className="min-w-0 border-b border-r border-white/10 px-3 py-2.5 last:border-r-0 md:border-b-0">
             <div className="truncate text-[10px] font-black uppercase tracking-[0.12em] text-zinc-600">{item.label}</div>
             <div className="mt-1 text-lg font-black text-white">{item.value}</div>
           </div>
@@ -3481,8 +3481,8 @@ function MiniInfo({ label, value }: { label: string; value: string | number | nu
 function FormInput({ label, value, onChange, type = "text", min, max, step, inputMode, disabled = false }: { label: string; value: string; onChange: (value: string) => void; type?: string; min?: string; max?: string; step?: string; inputMode?: "decimal" | "numeric"; disabled?: boolean }) {
   return (
     <label>
-      <div className="mb-2 text-xs font-black uppercase tracking-[0.14em] text-zinc-500">{label}</div>
-      <input type={type} min={min} max={max} step={step} inputMode={inputMode} value={value} onChange={(event) => onChange(event.target.value)} disabled={disabled} className="h-12 w-full rounded-xl border border-white/10 bg-black/35 px-4 text-sm font-bold text-white outline-none placeholder:text-zinc-600 focus:border-red-700 disabled:cursor-not-allowed disabled:opacity-60" />
+      <div className="mb-1.5 text-[11px] font-black uppercase tracking-[0.12em] text-zinc-500">{label}</div>
+      <input type={type} min={min} max={max} step={step} inputMode={inputMode} value={value} onChange={(event) => onChange(event.target.value)} disabled={disabled} className="h-11 w-full rounded-lg border border-white/10 bg-black/35 px-3 text-sm font-bold text-white outline-none placeholder:text-zinc-600 focus:border-red-700 disabled:cursor-not-allowed disabled:opacity-60 lg:h-10" />
     </label>
   );
 }
@@ -3490,8 +3490,8 @@ function FormInput({ label, value, onChange, type = "text", min, max, step, inpu
 function FormSelect({ label, value, onChange, options, disabled = false }: { label: string; value: string; onChange: (value: string) => void; options: string[]; disabled?: boolean }) {
   return (
     <label>
-      <div className="mb-2 text-xs font-black uppercase tracking-[0.14em] text-zinc-500">{label}</div>
-      <select value={value} onChange={(event) => onChange(event.target.value)} disabled={disabled} className="h-12 w-full rounded-xl border border-white/10 bg-black/35 px-4 text-sm font-bold text-white outline-none focus:border-red-700 disabled:cursor-not-allowed disabled:opacity-60">
+      <div className="mb-1.5 text-[11px] font-black uppercase tracking-[0.12em] text-zinc-500">{label}</div>
+      <select value={value} onChange={(event) => onChange(event.target.value)} disabled={disabled} className="h-11 w-full rounded-lg border border-white/10 bg-black/35 px-3 text-sm font-bold text-white outline-none focus:border-red-700 disabled:cursor-not-allowed disabled:opacity-60 lg:h-10">
         {options.map((option) => <option key={option} value={option} className="bg-[#111]">{statusLabel(option)}</option>)}
       </select>
     </label>
@@ -3499,14 +3499,14 @@ function FormSelect({ label, value, onChange, options, disabled = false }: { lab
 }
 
 function PaymentPolicySelect({ label, value, onChange, disabled = false }: { label: string; value: PaymentOverride; onChange: (value: PaymentOverride) => void; disabled?: boolean }) {
-  return <label className="text-xs font-black uppercase tracking-[0.12em] text-zinc-500">{label}<select value={value} onChange={(event) => onChange(event.target.value as PaymentOverride)} disabled={disabled} className="mt-2 h-12 w-full rounded-xl border border-white/10 bg-black/35 px-4 text-sm font-black normal-case text-white outline-none focus:border-red-700 disabled:cursor-not-allowed disabled:opacity-60"><option value="inherit">Inherit global</option><option value="enabled">Enabled</option><option value="disabled">Disabled</option></select></label>;
+  return <label className="text-[11px] font-black uppercase tracking-[0.12em] text-zinc-500">{label}<select value={value} onChange={(event) => onChange(event.target.value as PaymentOverride)} disabled={disabled} className="mt-1.5 h-11 w-full rounded-lg border border-white/10 bg-black/35 px-3 text-sm font-black normal-case text-white outline-none focus:border-red-700 disabled:cursor-not-allowed disabled:opacity-60 lg:h-10"><option value="inherit">Inherit global</option><option value="enabled">Enabled</option><option value="disabled">Disabled</option></select></label>;
 }
 
 function Detail({ icon, label, value }: { icon: ReactNode; label: string; value: string | number | null | undefined }) {
   return (
-    <div className="flex gap-3 rounded-2xl bg-white/[0.04] p-4">
-      <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-red-950/40 text-red-400">{icon}</div>
-      <div className="min-w-0"><div className="text-xs uppercase tracking-[0.14em] text-zinc-500">{label}</div><div title={String(value || "-")} className="mt-1 line-clamp-2 break-all font-bold text-white">{value || "-"}</div></div>
+    <div className="flex gap-2.5 rounded-lg bg-white/[0.04] p-3">
+      <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-red-950/40 text-red-400">{icon}</div>
+      <div className="min-w-0"><div className="text-[11px] uppercase tracking-[0.12em] text-zinc-500">{label}</div><div title={String(value || "-")} className="mt-0.5 line-clamp-2 break-all text-sm font-bold text-white">{value || "-"}</div></div>
     </div>
   );
 }
@@ -3556,39 +3556,39 @@ function OrderDetailModal({ order, customer, onClose, onDownload, onCopy, onCopy
     hasExplicitDeliveryEstimate && canManageOrders && !updating;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center overflow-x-hidden bg-black/75 px-2 py-4 backdrop-blur-sm sm:px-4 sm:py-6">
-      <div className="max-h-[94vh] w-full max-w-7xl overflow-x-hidden overflow-y-auto rounded-[1.5rem] border border-white/10 bg-[#090909] shadow-2xl shadow-black sm:rounded-[2rem]">
-        <div className="sticky top-0 z-10 border-b border-white/10 bg-[#090909]/95 p-4 backdrop-blur-xl sm:p-5">
-          <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center overflow-x-hidden bg-black/75 p-2 backdrop-blur-sm sm:p-3">
+      <div role="dialog" aria-modal="true" aria-labelledby="order-detail-title" className="max-h-[calc(100dvh-1rem)] w-full max-w-[96rem] overflow-x-hidden overflow-y-auto rounded-xl border border-white/10 bg-[#090909] shadow-2xl shadow-black sm:max-h-[calc(100dvh-1.5rem)]">
+        <div className="sticky top-0 z-20 border-b border-white/10 bg-[#090909]/95 p-3 backdrop-blur-xl sm:p-4">
+          <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
             <div className="min-w-0">
-              <div className="mb-3 flex flex-wrap items-center gap-2"><span className="rounded-full border border-red-800/40 bg-red-950/25 px-3 py-1 text-xs font-black uppercase tracking-[0.16em] text-red-300">Work Order #{shortId(order.id)}</span><span className={`rounded-full border px-3 py-1 text-xs font-bold ${statusClass(order.status)}`}>{statusLabel(order.status)}</span><span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs font-bold text-zinc-400">{formatDate(order.created_at)}</span></div>
-              <h2 className="break-words text-2xl font-black md:text-4xl">{order.vehicle_brand || "-"} {order.vehicle_model || ""} <span className="text-red-500">{order.vehicle_engine || ""}</span></h2>
-              <p className="mt-2 break-words text-sm text-zinc-500">{customer?.customer_id || order.customer_id || "-"} · {customer?.full_name || customer?.company_name || order.customer_email || "-"}</p>
+              <div className="mb-2 flex flex-wrap items-center gap-1.5"><span className="rounded-full border border-red-800/40 bg-red-950/25 px-2.5 py-1 text-[11px] font-black uppercase tracking-[0.14em] text-red-300">Work Order #{shortId(order.id)}</span><span className={`rounded-full border px-2.5 py-1 text-[11px] font-bold ${statusClass(order.status)}`}>{statusLabel(order.status)}</span><span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[11px] font-bold text-zinc-400">{formatDate(order.created_at)}</span></div>
+              <h2 id="order-detail-title" className="line-clamp-2 break-words text-2xl font-black md:text-3xl">{order.vehicle_brand || "-"} {order.vehicle_model || ""} <span className="text-red-500">{order.vehicle_engine || ""}</span></h2>
+              <p className="mt-1 break-words text-xs text-zinc-500">{customer?.customer_id || order.customer_id || "-"} · {customer?.full_name || customer?.company_name || order.customer_email || "-"}</p>
             </div>
-            <div className="grid gap-2 sm:flex sm:flex-wrap">
-              <Link href={`/admin/requests/${order.id}`} className="rounded-xl border border-blue-700/35 bg-blue-950/20 px-4 py-3 text-sm font-black text-blue-200 transition hover:bg-blue-900/30"><FileDown className="mr-2 inline h-4 w-4" />Open file activity</Link>
-              <button onClick={onCopy} className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-black text-white transition hover:bg-white/10"><Copy className="mr-2 inline h-4 w-4" />Copy Order ID</button>
-              <button onClick={onDownload} disabled={!order.original_file_path || !canDownloadFiles} className="rounded-xl bg-[#b1121b] px-4 py-3 text-sm font-black text-white transition hover:bg-[#c91824] disabled:opacity-40"><Download className="mr-2 inline h-4 w-4" />Download Original</button>
-              {canUploadFiles && <label aria-disabled={uploadingModified || !modifiedFileLabel} className={`rounded-xl border border-emerald-700/40 bg-emerald-950/30 px-4 py-3 text-sm font-black text-emerald-300 transition ${uploadingModified || !modifiedFileLabel ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:bg-emerald-900/40"}`}>{uploadingModified ? <><Loader2 className="mr-2 inline h-4 w-4 animate-spin" />Uploading Modified</> : <><Upload className="mr-2 inline h-4 w-4" />Upload Modified</>}<input type="file" className="hidden" disabled={uploadingModified || !modifiedFileLabel} onChange={(event) => { const file = event.target.files?.[0] ?? null; if (modifiedFileLabel) onUploadModified(file, modifiedFileLabel); event.target.value = ""; }} /></label>}
-              <button onClick={onClose} className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-black text-white transition hover:bg-white/10"><X className="mr-2 inline h-4 w-4" />Close</button>
+            <div className="grid grid-cols-2 gap-1.5 sm:flex sm:flex-wrap">
+              <Link href={`/admin/requests/${order.id}`} className="inline-flex min-h-11 items-center justify-center rounded-lg border border-blue-700/35 bg-blue-950/20 px-3 text-xs font-black text-blue-200 transition hover:bg-blue-900/30 lg:h-9 lg:min-h-0"><FileDown className="mr-1.5 h-4 w-4" />Open file activity</Link>
+              <button onClick={onCopy} className="min-h-11 rounded-lg border border-white/10 bg-white/[0.04] px-3 text-xs font-black text-white transition hover:bg-white/10 lg:h-9 lg:min-h-0"><Copy className="mr-1.5 inline h-4 w-4" />Copy Order ID</button>
+              <button onClick={onDownload} disabled={!order.original_file_path || !canDownloadFiles} className="min-h-11 rounded-lg bg-[#b1121b] px-3 text-xs font-black text-white transition hover:bg-[#c91824] disabled:opacity-40 lg:h-9 lg:min-h-0"><Download className="mr-1.5 inline h-4 w-4" />Download Original</button>
+              {canUploadFiles && <label aria-disabled={uploadingModified || !modifiedFileLabel} className={`inline-flex min-h-11 items-center justify-center rounded-lg border border-emerald-700/40 bg-emerald-950/30 px-3 text-xs font-black text-emerald-300 transition lg:h-9 lg:min-h-0 ${uploadingModified || !modifiedFileLabel ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:bg-emerald-900/40"}`}>{uploadingModified ? <><Loader2 className="mr-1.5 h-4 w-4 animate-spin" />Uploading Modified</> : <><Upload className="mr-1.5 h-4 w-4" />Upload Modified</>}<input type="file" className="hidden" disabled={uploadingModified || !modifiedFileLabel} onChange={(event) => { const file = event.target.files?.[0] ?? null; if (modifiedFileLabel) onUploadModified(file, modifiedFileLabel); event.target.value = ""; }} /></label>}
+              <button onClick={onClose} className="min-h-11 rounded-lg border border-white/10 bg-white/[0.04] px-3 text-xs font-black text-white transition hover:bg-white/10 lg:h-9 lg:min-h-0"><X className="mr-1.5 inline h-4 w-4" />Close</button>
             </div>
           </div>
         </div>
-        <div className="grid min-w-0 gap-5 p-3 sm:p-5 xl:grid-cols-[minmax(0,1fr)_380px]">
-          <div className="min-w-0 space-y-5 sm:space-y-6">
-            <section className="rounded-[2rem] border border-red-900/40 bg-red-950/20 p-5"><div className="mb-5 flex items-center justify-between gap-4"><div><div className="text-sm font-black uppercase tracking-[0.22em] text-red-400">Work Order Overview</div><h3 className="mt-1 text-2xl font-black">Main job information</h3></div><div className="rounded-2xl bg-black/30 px-4 py-3 text-right"><div className="text-xs text-zinc-500">Credits</div><div className="text-2xl font-black text-red-400">{order.credits_required ?? 0}</div></div></div><div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4"><WorkInfo label="Customer ID" value={customer?.customer_id || order.customer_id} /><WorkInfo label="Vehicle" value={`${order.vehicle_brand || "-"} ${order.vehicle_model || ""}`} /><WorkInfo label="ECU / TCU" value={order.ecu || order.gearbox} /><WorkInfo label="Read Method" value={order.read_method} /></div></section>
-            <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5"><div className="mb-5 flex items-center gap-3"><Car className="h-7 w-7 text-red-500" /><div><h3 className="text-2xl font-black">Vehicle Information</h3><p className="mt-1 text-sm text-zinc-500">Vehicle and identification details for this work order.</p></div></div><div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3"><Detail icon={<Car />} label="Brand" value={order.vehicle_brand} /><Detail icon={<Car />} label="Model" value={order.vehicle_model} /><Detail icon={<FileCode2 />} label="Generation" value={order.vehicle_generation} /><Detail icon={<Gauge />} label="Engine" value={order.vehicle_engine} /><Detail icon={<CalendarDays />} label="Year" value={order.vehicle_year} /><Detail icon={<Clipboard />} label="License Plate" value={order.license_plate} /></div></section>
-            <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5"><div className="mb-5 flex items-center gap-3"><Database className="h-7 w-7 text-red-500" /><div><h3 className="text-2xl font-black">ECU / File Technical Data</h3><p className="mt-1 text-sm text-zinc-500">Technical identifiers needed for file service processing.</p></div></div><div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3"><Detail icon={<Wrench />} label="ECU / TCU" value={order.ecu} /><Detail icon={<Wrench />} label="Gearbox" value={order.gearbox} /><Detail icon={<FileCode2 />} label="Read Method" value={order.read_method} /><Detail icon={<Database />} label="HW / SW" value={order.hw_sw} /><Detail icon={<PackageCheck />} label="Master / Slave" value={order.master_slave} /><Detail icon={<FileDown />} label="Uploaded File" value={order.uploaded_file_name} /></div></section>
-            <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5"><div className="mb-5 flex items-center justify-between gap-4"><div><h3 className="text-2xl font-black">Service Breakdown</h3><p className="mt-1 text-sm text-zinc-500">Requested services for this file.</p></div><div className="rounded-2xl border border-red-900/40 bg-red-950/25 px-4 py-3 text-sm font-black text-red-300">{order.credits_required ?? 0} Credits</div></div>{serviceItems.length > 0 ? <div className="grid gap-3 md:grid-cols-2">{serviceItems.map((service) => <div key={service} className="flex items-center gap-3 rounded-2xl border border-emerald-700/30 bg-emerald-950/15 p-4"><CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-400" /><span className="font-black text-white">{service}</span></div>)}</div> : <div className="rounded-2xl bg-black/30 p-5 text-sm leading-7 text-zinc-300">{order.service_type || "-"}</div>}</section>
-            <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5"><h3 className="mb-4 text-2xl font-black">Customer Notes</h3><div className="min-h-32 whitespace-pre-wrap rounded-2xl bg-black/30 p-5 text-sm leading-7 text-zinc-300">{order.notes || "-"}</div></section>
-            {canManageMessages ? <RequestChat requestId={order.id} senderRole="admin" /> : <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5 text-sm text-zinc-500">Your staff role does not include customer messaging.</section>}
+        <div className="grid min-w-0 gap-4 p-3 sm:p-4 xl:grid-cols-[minmax(0,1fr)_310px]">
+          <div className="min-w-0 space-y-4">
+            <section className="rounded-xl border border-red-900/40 bg-red-950/20 p-4"><div className="mb-3 flex items-center justify-between gap-3"><div><div className="text-xs font-black uppercase tracking-[0.18em] text-red-400">Work Order Overview</div><h3 className="mt-0.5 text-lg font-black">Main job information</h3></div><div className="rounded-lg bg-black/30 px-3 py-2 text-right"><div className="text-[11px] text-zinc-500">Credits</div><div className="text-lg font-black text-red-400">{order.credits_required ?? 0}</div></div></div><div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4"><WorkInfo label="Customer ID" value={customer?.customer_id || order.customer_id} /><WorkInfo label="Vehicle" value={`${order.vehicle_brand || "-"} ${order.vehicle_model || ""}`} /><WorkInfo label="ECU / TCU" value={order.ecu || order.gearbox} /><WorkInfo label="Read Method" value={order.read_method} /></div></section>
+            <section className="rounded-xl border border-white/10 bg-white/[0.04] p-4"><div className="mb-3 flex items-center gap-2.5"><Car className="h-5 w-5 text-red-500" /><div><h3 className="text-lg font-black">Vehicle Information</h3><p className="mt-0.5 text-xs text-zinc-500">Vehicle and identification details for this work order.</p></div></div><div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3"><Detail icon={<Car />} label="Brand" value={order.vehicle_brand} /><Detail icon={<Car />} label="Model" value={order.vehicle_model} /><Detail icon={<FileCode2 />} label="Generation" value={order.vehicle_generation} /><Detail icon={<Gauge />} label="Engine" value={order.vehicle_engine} /><Detail icon={<CalendarDays />} label="Year" value={order.vehicle_year} /><Detail icon={<Clipboard />} label="License Plate" value={order.license_plate} /></div></section>
+            <section className="rounded-xl border border-white/10 bg-white/[0.04] p-4"><div className="mb-3 flex items-center gap-2.5"><Database className="h-5 w-5 text-red-500" /><div><h3 className="text-lg font-black">ECU / File Technical Data</h3><p className="mt-0.5 text-xs text-zinc-500">Technical identifiers needed for file service processing.</p></div></div><div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3"><Detail icon={<Wrench />} label="ECU / TCU" value={order.ecu} /><Detail icon={<Wrench />} label="Gearbox" value={order.gearbox} /><Detail icon={<FileCode2 />} label="Read Method" value={order.read_method} /><Detail icon={<Database />} label="HW / SW" value={order.hw_sw} /><Detail icon={<PackageCheck />} label="Master / Slave" value={order.master_slave} /><Detail icon={<FileDown />} label="Uploaded File" value={order.uploaded_file_name} /></div></section>
+            <section className="rounded-xl border border-white/10 bg-white/[0.04] p-4"><div className="mb-3 flex items-center justify-between gap-3"><div><h3 className="text-lg font-black">Service Breakdown</h3><p className="mt-0.5 text-xs text-zinc-500">Requested services for this file.</p></div><div className="rounded-lg border border-red-900/40 bg-red-950/25 px-3 py-2 text-xs font-black text-red-300">{order.credits_required ?? 0} Credits</div></div>{serviceItems.length > 0 ? <div className="grid gap-2 md:grid-cols-2">{serviceItems.map((service) => <div key={service} className="flex items-center gap-2.5 rounded-lg border border-emerald-700/30 bg-emerald-950/15 p-3"><CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" /><span className="text-sm font-black text-white">{service}</span></div>)}</div> : <div className="rounded-lg bg-black/30 p-3 text-sm leading-6 text-zinc-300">{order.service_type || "-"}</div>}</section>
+            <section className="rounded-xl border border-white/10 bg-white/[0.04] p-4"><h3 className="mb-3 text-lg font-black">Customer Notes</h3><div className="min-h-20 whitespace-pre-wrap rounded-lg bg-black/30 p-3 text-sm leading-6 text-zinc-300">{order.notes || "-"}</div></section>
+            {canManageMessages ? <RequestChat requestId={order.id} senderRole="admin" /> : <section className="rounded-xl border border-white/10 bg-white/[0.04] p-4 text-sm text-zinc-500">Your staff role does not include customer messaging.</section>}
           </div>
-          <aside className="min-w-0 space-y-5 sm:space-y-6">
-            <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5"><h3 className="mb-5 text-2xl font-black">Status Workflow</h3><div className="mb-5 h-2 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-gradient-to-r from-red-800 via-red-600 to-emerald-500 transition-all duration-700" style={{ width: `${((workflowStep + 1) / 5) * 100}%` }} /></div><div className="space-y-3">{[0, 1, 2, 3, 4].map((index) => <div key={index} className={`flex items-center gap-3 rounded-2xl border p-4 ${index <= workflowStep ? "border-emerald-700/30 bg-emerald-950/10" : "border-white/10 bg-black/30"}`}><div className={`flex h-9 w-9 items-center justify-center rounded-full ${index <= workflowStep ? "bg-emerald-500/15 text-emerald-400" : "bg-white/5 text-zinc-500"}`}>{index <= workflowStep ? <CheckCircle2 className="h-4 w-4" /> : <Clock3 className="h-4 w-4" />}</div><div className="font-black">{workflowLabel(index)}</div></div>)}</div><div className="mt-5"><select value={order.status ?? "new_request"} onChange={(event) => onStatusChange(event.target.value)} disabled={updating || !canManageOrders} className={`h-12 w-full rounded-xl border px-4 text-sm font-black outline-none disabled:opacity-60 ${statusClass(order.status)}`}>{editableStatusOptions.map((status) => <option key={status} value={status} className="bg-[#111]">{statusLabel(status)}</option>)}</select>{updating && <div className="mt-3 flex items-center gap-2 text-xs text-zinc-500"><Loader2 className="h-3 w-3 animate-spin" />Updating status...</div>}</div></section>
-            <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
-              <h3 className="mb-5 text-2xl font-black">Estimated Delivery</h3>
+          <aside className="min-w-0 self-start space-y-3 xl:sticky xl:top-[8.25rem] xl:h-fit">
+            <section className="rounded-xl border border-white/10 bg-white/[0.04] p-4"><h3 className="mb-3 text-lg font-black">Status Workflow</h3><div className="mb-3 h-1.5 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-gradient-to-r from-red-800 via-red-600 to-emerald-500 transition-all duration-700" style={{ width: `${((workflowStep + 1) / 5) * 100}%` }} /></div><div className="space-y-2">{[0, 1, 2, 3, 4].map((index) => <div key={index} className={`flex items-center gap-2.5 rounded-lg border p-2.5 ${index <= workflowStep ? "border-emerald-700/30 bg-emerald-950/10" : "border-white/10 bg-black/30"}`}><div className={`flex h-7 w-7 items-center justify-center rounded-full ${index <= workflowStep ? "bg-emerald-500/15 text-emerald-400" : "bg-white/5 text-zinc-500"}`}>{index <= workflowStep ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Clock3 className="h-3.5 w-3.5" />}</div><div className="text-sm font-black">{workflowLabel(index)}</div></div>)}</div><div className="mt-3"><select value={order.status ?? "new_request"} onChange={(event) => onStatusChange(event.target.value)} disabled={updating || !canManageOrders} className={`h-11 w-full rounded-lg border px-3 text-sm font-black outline-none disabled:opacity-60 lg:h-10 ${statusClass(order.status)}`}>{editableStatusOptions.map((status) => <option key={status} value={status} className="bg-[#111]">{statusLabel(status)}</option>)}</select>{updating && <div className="mt-2 flex items-center gap-2 text-xs text-zinc-500"><Loader2 className="h-3 w-3 animate-spin" />Updating status...</div>}</div></section>
+            <section className="rounded-xl border border-white/10 bg-white/[0.04] p-4">
+              <h3 className="mb-3 text-lg font-black">Estimated Delivery</h3>
               <div
-                className={`rounded-2xl border p-4 ${
+                className={`rounded-lg border p-3 ${
                   hasExplicitDeliveryEstimate
                     ? "border-red-900/40 bg-red-950/20"
                     : "border-white/10 bg-black/30"
@@ -3601,12 +3601,12 @@ function OrderDetailModal({ order, customer, onClose, onDownload, onCopy, onCopy
                 >
                   Customer visible SLA
                 </div>
-                <div className="mt-2 break-words text-xl font-black text-white">
+                <div className="mt-1 break-words text-base font-black text-white">
                   {formatDeliveryEstimate(deliveryEstimate)}
                 </div>
               </div>
               {!hasExplicitDeliveryEstimate && (
-                <p className="mt-3 text-sm font-bold leading-6 text-zinc-400">
+                <p className="mt-2 text-xs font-bold leading-5 text-zinc-400">
                   Select an explicit estimate before saving. No customer-visible time estimate is saved yet.
                 </p>
               )}
@@ -3619,7 +3619,7 @@ function OrderDetailModal({ order, customer, onClose, onDownload, onCopy, onCopy
                     setDeliveryNote("");
                   }
                 }}
-                className="mt-4 h-12 w-full rounded-xl border border-white/10 bg-black/35 px-4 text-sm font-black text-white outline-none focus:border-red-700"
+                className="mt-3 h-11 w-full rounded-lg border border-white/10 bg-black/35 px-3 text-sm font-black text-white outline-none focus:border-red-700 lg:h-10"
               >
                 <option value="" disabled className="bg-[#111]">
                   Estimate not set - choose one
@@ -3639,7 +3639,7 @@ function OrderDetailModal({ order, customer, onClose, onDownload, onCopy, onCopy
                     ? "Optional note: Depends on file complexity, logs or extra checks."
                     : "Select an estimate before adding a delivery note."
                 }
-                className="mt-3 min-h-24 w-full resize-none rounded-xl border border-white/10 bg-black/35 px-4 py-3 text-sm font-bold text-white outline-none placeholder:text-zinc-600 focus:border-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+                className="mt-2 min-h-20 w-full resize-y rounded-lg border border-white/10 bg-black/35 px-3 py-2.5 text-sm font-bold text-white outline-none placeholder:text-zinc-600 focus:border-red-700 disabled:cursor-not-allowed disabled:opacity-50"
               />
               <button
                 onClick={() => {
@@ -3649,7 +3649,7 @@ function OrderDetailModal({ order, customer, onClose, onDownload, onCopy, onCopy
                   onDeliveryUpdate(deliveryEstimate, deliveryNote);
                 }}
                 disabled={!canSaveDeliveryEstimate}
-                className="mt-3 flex h-12 w-full items-center justify-center rounded-xl bg-[#b1121b] px-4 text-sm font-black text-white transition hover:bg-[#c91824] disabled:opacity-50"
+                className="mt-2 flex h-11 w-full items-center justify-center rounded-lg bg-[#b1121b] px-3 text-sm font-black text-white transition hover:bg-[#c91824] disabled:opacity-50 lg:h-10"
               >
                 {updating ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -3659,17 +3659,17 @@ function OrderDetailModal({ order, customer, onClose, onDownload, onCopy, onCopy
                 Save Delivery Estimate
               </button>
             </section>
-            <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
-              <h3 className="mb-5 text-2xl font-black">File Workflow</h3>
-              <div className="grid gap-3">
+            <section className="rounded-xl border border-white/10 bg-white/[0.04] p-4">
+              <h3 className="mb-3 text-lg font-black">File Workflow</h3>
+              <div className="grid gap-2">
                 <FileStateCard title="Original File" ready={Boolean(order.original_file_path)} description={order.uploaded_file_name || order.original_file_path || "No original file uploaded."} />
                 <FileStateCard title="Modified Versions" ready={modifiedVersions.length > 0} description={modifiedVersions.length > 0 ? `${modifiedVersions.length} modified file version${modifiedVersions.length === 1 ? "" : "s"} uploaded.` : "No modified file uploaded yet."} />
               </div>
-              <button onClick={onDownload} disabled={!order.original_file_path || !canDownloadFiles} className="mt-4 flex w-full items-center justify-center rounded-xl bg-[#b1121b] px-4 py-3 text-sm font-black text-white transition hover:bg-[#c91824] disabled:opacity-40"><Download className="mr-2 h-4 w-4" />Download Original</button>
+              <button onClick={onDownload} disabled={!order.original_file_path || !canDownloadFiles} className="mt-3 flex h-11 w-full items-center justify-center rounded-lg bg-[#b1121b] px-3 text-sm font-black text-white transition hover:bg-[#c91824] disabled:opacity-40 lg:h-10"><Download className="mr-2 h-4 w-4" />Download Original</button>
 
-              <div className="mt-4 rounded-2xl border border-white/10 bg-black/30 p-4">
-                <div className="mb-3 text-xs font-black uppercase tracking-[0.14em] text-zinc-500">Upload Version</div>
-                <select aria-label="Modified file version label" value={modifiedFileLabelMode} onChange={(event) => setModifiedFileLabelMode(event.target.value as "v1" | "revision" | "final" | "custom")} className="h-11 w-full rounded-xl border border-white/10 bg-black/35 px-3 text-sm font-black text-white outline-none focus:border-red-700">
+              <div className="mt-3 rounded-lg border border-white/10 bg-black/30 p-3">
+                <div className="mb-2 text-xs font-black uppercase tracking-[0.14em] text-zinc-500">Upload Version</div>
+                <select aria-label="Modified file version label" value={modifiedFileLabelMode} onChange={(event) => setModifiedFileLabelMode(event.target.value as "v1" | "revision" | "final" | "custom")} className="h-11 w-full rounded-lg border border-white/10 bg-black/35 px-3 text-sm font-black text-white outline-none focus:border-red-700 lg:h-10">
                   <option value="v1" className="bg-[#111]">V1</option>
                   <option value="revision" className="bg-[#111]">Revision</option>
                   <option value="final" className="bg-[#111]">Final</option>
@@ -3681,31 +3681,31 @@ function OrderDetailModal({ order, customer, onClose, onDownload, onCopy, onCopy
                       <label htmlFor={`custom-version-${order.id}`} className="text-xs font-black text-zinc-300">Custom customer-visible label</label>
                       <span className="text-[11px] text-zinc-600">{customModifiedFileLabel.length}/{FILE_VERSION_LABEL_MAX_LENGTH}</span>
                     </div>
-                    <input id={`custom-version-${order.id}`} aria-label="Custom version label" value={customModifiedFileLabel} onChange={(event) => setCustomModifiedFileLabel(event.target.value)} maxLength={FILE_VERSION_LABEL_MAX_LENGTH} placeholder="e.g. V15 or Final 2" autoComplete="off" className={`mt-2 h-11 w-full rounded-xl border bg-black/35 px-3 text-sm font-black text-white outline-none placeholder:text-zinc-600 ${customLabelInvalid ? "border-red-600 focus:border-red-500" : "border-white/10 focus:border-red-700"}`} />
+                    <input id={`custom-version-${order.id}`} aria-label="Custom version label" value={customModifiedFileLabel} onChange={(event) => setCustomModifiedFileLabel(event.target.value)} maxLength={FILE_VERSION_LABEL_MAX_LENGTH} placeholder="e.g. V15 or Final 2" autoComplete="off" className={`mt-2 h-11 w-full rounded-lg border bg-black/35 px-3 text-sm font-black text-white outline-none placeholder:text-zinc-600 lg:h-10 ${customLabelInvalid ? "border-red-600 focus:border-red-500" : "border-white/10 focus:border-red-700"}`} />
                     <p className={`mt-2 text-xs leading-5 ${customLabelInvalid ? "text-red-300" : "text-zinc-500"}`}>{customLabelInvalid ? "Use letters, numbers, spaces, dots, underscores or hyphens only." : "This label appears in the delivery history. Examples: V15, Dyno Fix, Final 2."}</p>
                   </div>
                 )}
-                {canUploadFiles ? <label aria-disabled={uploadingModified || !modifiedFileLabel} className={`mt-3 flex w-full items-center justify-center rounded-xl border border-emerald-700/40 bg-emerald-950/30 px-4 py-3 text-sm font-black text-emerald-300 transition ${uploadingModified || !modifiedFileLabel ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:bg-emerald-900/40"}`}>{uploadingModified ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Uploading Modified</> : <><Upload className="mr-2 h-4 w-4" />{modifiedFileLabel ? `Upload ${formatFileVersionLabel(modifiedFileLabel)} File` : "Enter Version Label"}</>}<input type="file" className="hidden" disabled={uploadingModified || !modifiedFileLabel} onChange={(event) => { const file = event.target.files?.[0] ?? null; if (modifiedFileLabel) onUploadModified(file, modifiedFileLabel); event.target.value = ""; }} /></label> : <div className="mt-3 text-xs text-zinc-500">Your staff role cannot upload completed files.</div>}
+                {canUploadFiles ? <label aria-disabled={uploadingModified || !modifiedFileLabel} className={`mt-3 flex min-h-11 w-full items-center justify-center rounded-lg border border-emerald-700/40 bg-emerald-950/30 px-3 text-sm font-black text-emerald-300 transition lg:h-10 lg:min-h-0 ${uploadingModified || !modifiedFileLabel ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:bg-emerald-900/40"}`}>{uploadingModified ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Uploading Modified</> : <><Upload className="mr-2 h-4 w-4" />{modifiedFileLabel ? `Upload ${formatFileVersionLabel(modifiedFileLabel)} File` : "Enter Version Label"}</>}<input type="file" className="hidden" disabled={uploadingModified || !modifiedFileLabel} onChange={(event) => { const file = event.target.files?.[0] ?? null; if (modifiedFileLabel) onUploadModified(file, modifiedFileLabel); event.target.value = ""; }} /></label> : <div className="mt-3 text-xs text-zinc-500">Your staff role cannot upload completed files.</div>}
               </div>
 
               {modifiedVersions.length > 0 && (
-                <div className="mt-4 space-y-3">
+                <div className="mt-3 space-y-2">
                   {modifiedVersions.map((version) => (
-                    <div key={version.id} className="rounded-2xl border border-emerald-700/30 bg-emerald-950/15 p-4">
+                    <div key={version.id} className="rounded-lg border border-emerald-700/30 bg-emerald-950/15 p-3">
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
                           <div className="text-sm font-black text-emerald-300">{formatFileVersionLabel(version.label)}</div>
                           <div title={version.file_name} className="mt-1 break-all text-sm font-bold text-white">{version.file_name}</div>
                           <div className="mt-1 text-xs text-zinc-500">{formatDate(version.uploaded_at)}</div>
                         </div>
-                        <button onClick={() => onDownloadModified(version.file_path)} className="shrink-0 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-black text-white transition hover:bg-white/10"><Download className="mr-1 inline h-3 w-3" />Download</button>
+                        <button onClick={() => onDownloadModified(version.file_path)} className="min-h-11 shrink-0 rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-black text-white transition hover:bg-white/10 lg:min-h-0"><Download className="mr-1 inline h-3 w-3" />Download</button>
                       </div>
                     </div>
                   ))}
                 </div>
               )}
 
-              <div className="mt-4 rounded-2xl border border-blue-700/30 bg-blue-950/15 p-4">
+              <div className="mt-3 rounded-lg border border-blue-700/30 bg-blue-950/15 p-3">
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <div className="text-sm font-black text-blue-200">Customer additional upload</div>
@@ -3717,7 +3717,7 @@ function OrderDetailModal({ order, customer, onClose, onDownload, onCopy, onCopy
                     type="button"
                     onClick={() => onCustomerUploadPermission(!order.customer_upload_enabled)}
                     disabled={updating || !canManageOrders}
-                    className={`shrink-0 rounded-xl border px-3 py-2 text-xs font-black transition ${
+                    className={`min-h-11 shrink-0 rounded-lg border px-3 py-2 text-xs font-black transition lg:min-h-0 ${
                       order.customer_upload_enabled
                         ? "border-emerald-600/40 bg-emerald-950/30 text-emerald-300"
                         : "border-white/10 bg-white/[0.04] text-zinc-300"
@@ -3728,14 +3728,14 @@ function OrderDetailModal({ order, customer, onClose, onDownload, onCopy, onCopy
                 </div>
 
                 {Array.isArray(order.customer_uploads) && order.customer_uploads.length > 0 && (
-                  <div className="mt-4 space-y-2 border-t border-white/10 pt-4">
+                  <div className="mt-3 space-y-2 border-t border-white/10 pt-3">
                     {order.customer_uploads.map((file) => (
                       <div key={file.id} className="flex min-w-0 items-center justify-between gap-3 rounded-xl bg-black/25 p-3">
                         <div className="min-w-0">
                           <div className="truncate text-xs font-black text-white">{file.file_name}</div>
                           <div className="mt-1 text-[11px] text-zinc-500">{formatDate(file.uploaded_at)}</div>
                         </div>
-                        <button onClick={() => onDownloadModified(file.file_path)} className="shrink-0 rounded-lg border border-white/10 px-3 py-2 text-xs font-black">
+                        <button onClick={() => onDownloadModified(file.file_path)} className="min-h-11 shrink-0 rounded-lg border border-white/10 px-3 py-2 text-xs font-black lg:min-h-0">
                           <Download className="mr-1 inline h-3 w-3" />Download
                         </button>
                       </div>
@@ -3744,7 +3744,7 @@ function OrderDetailModal({ order, customer, onClose, onDownload, onCopy, onCopy
                 )}
               </div>
             </section>
-            <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5"><h3 className="mb-5 text-2xl font-black">Customer Contact</h3><div className="space-y-3"><Detail icon={<User />} label="Customer ID" value={customer?.customer_id || order.customer_id} /><Detail icon={<Mail />} label="Login Email" value={order.customer_email} /><Detail icon={<User />} label="Full Name" value={customer?.full_name} /><Detail icon={<Building2 />} label="Company" value={customer?.company_name} /><Detail icon={<Phone />} label="Phone" value={customer?.phone} /><Detail icon={<MapPin />} label="Address" value={[customer?.street, customer?.postal_code, customer?.city, customer?.country].filter(Boolean).join(", ") || null} /></div><div className="mt-4 grid gap-2"><button onClick={() => onCopyValue(customer?.customer_id || order.customer_id, "Customer ID")} className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-black text-white transition hover:bg-white/10"><Copy className="mr-2 inline h-4 w-4" />Copy Customer ID</button><button onClick={() => onCopyValue(order.customer_email, "Customer Email")} className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-black text-white transition hover:bg-white/10"><Mail className="mr-2 inline h-4 w-4" />Copy Email</button><button onClick={() => onCopyValue(customer?.phone, "Phone")} className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-black text-white transition hover:bg-white/10"><Phone className="mr-2 inline h-4 w-4" />Copy Phone</button>{order.customer_email && <a href={`mailto:${order.customer_email}`} className="flex w-full items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-black text-white transition hover:bg-white/10"><Mail className="mr-2 h-4 w-4" />Email Customer</a>}</div></section>
+            <section className="rounded-xl border border-white/10 bg-white/[0.04] p-4"><h3 className="mb-3 text-lg font-black">Customer Contact</h3><div className="space-y-2"><Detail icon={<User />} label="Customer ID" value={customer?.customer_id || order.customer_id} /><Detail icon={<Mail />} label="Login Email" value={order.customer_email} /><Detail icon={<User />} label="Full Name" value={customer?.full_name} /><Detail icon={<Building2 />} label="Company" value={customer?.company_name} /><Detail icon={<Phone />} label="Phone" value={customer?.phone} /><Detail icon={<MapPin />} label="Address" value={[customer?.street, customer?.postal_code, customer?.city, customer?.country].filter(Boolean).join(", ") || null} /></div><div className="mt-3 grid gap-2"><button onClick={() => onCopyValue(customer?.customer_id || order.customer_id, "Customer ID")} className="h-11 rounded-lg border border-white/10 bg-white/[0.04] px-3 text-xs font-black text-white transition hover:bg-white/10 lg:h-10"><Copy className="mr-2 inline h-4 w-4" />Copy Customer ID</button><button onClick={() => onCopyValue(order.customer_email, "Customer Email")} className="h-11 rounded-lg border border-white/10 bg-white/[0.04] px-3 text-xs font-black text-white transition hover:bg-white/10 lg:h-10"><Mail className="mr-2 inline h-4 w-4" />Copy Email</button><button onClick={() => onCopyValue(customer?.phone, "Phone")} className="h-11 rounded-lg border border-white/10 bg-white/[0.04] px-3 text-xs font-black text-white transition hover:bg-white/10 lg:h-10"><Phone className="mr-2 inline h-4 w-4" />Copy Phone</button>{order.customer_email && <a href={`mailto:${order.customer_email}`} className="flex h-11 w-full items-center justify-center rounded-lg border border-white/10 bg-white/[0.04] px-3 text-xs font-black text-white transition hover:bg-white/10 lg:h-10"><Mail className="mr-2 h-4 w-4" />Email Customer</a>}</div></section>
           </aside>
         </div>
       </div>
@@ -3753,9 +3753,9 @@ function OrderDetailModal({ order, customer, onClose, onDownload, onCopy, onCopy
 }
 
 function WorkInfo({ label, value }: { label: string; value: string | number | null | undefined }) {
-  return <div className="rounded-2xl border border-white/10 bg-black/30 p-4"><div className="text-xs font-black uppercase tracking-[0.16em] text-zinc-500">{label}</div><div title={String(value || "-")} className="mt-2 line-clamp-2 break-all text-lg font-black text-white">{value || "-"}</div></div>;
+  return <div className="rounded-lg border border-white/10 bg-black/30 p-3"><div className="text-[11px] font-black uppercase tracking-[0.12em] text-zinc-500">{label}</div><div title={String(value || "-")} className="mt-1 line-clamp-2 break-all text-sm font-black text-white">{value || "-"}</div></div>;
 }
 
 function FileStateCard({ title, ready, description }: { title: string; ready: boolean; description: string }) {
-  return <div className={`rounded-2xl border p-4 ${ready ? "border-emerald-700/30 bg-emerald-950/15" : "border-white/10 bg-black/30"}`}><div className="flex items-center gap-3"><div className={`flex h-9 w-9 items-center justify-center rounded-full ${ready ? "bg-emerald-500/15 text-emerald-400" : "bg-white/5 text-zinc-500"}`}>{ready ? <CheckCircle2 className="h-4 w-4" /> : <Clock3 className="h-4 w-4" />}</div><div><div className="font-black">{title}</div><div className="mt-1 text-xs leading-5 text-zinc-500">{ready ? "Ready" : "Waiting"}</div></div></div><div title={description} className="mt-3 line-clamp-2 break-all text-xs leading-5 text-zinc-400">{description}</div></div>;
+  return <div className={`rounded-lg border p-3 ${ready ? "border-emerald-700/30 bg-emerald-950/15" : "border-white/10 bg-black/30"}`}><div className="flex items-center gap-2.5"><div className={`flex h-7 w-7 items-center justify-center rounded-full ${ready ? "bg-emerald-500/15 text-emerald-400" : "bg-white/5 text-zinc-500"}`}>{ready ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Clock3 className="h-3.5 w-3.5" />}</div><div><div className="text-sm font-black">{title}</div><div className="text-[11px] leading-4 text-zinc-500">{ready ? "Ready" : "Waiting"}</div></div></div><div title={description} className="mt-2 line-clamp-2 break-all text-xs leading-5 text-zinc-400">{description}</div></div>;
 }

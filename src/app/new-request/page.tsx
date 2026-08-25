@@ -1677,11 +1677,12 @@ export default function NewRequestPage() {
         eyebrow="File Service"
         title="New File Request"
         icon={Upload}
+        heading
         actions={(
           <Link
             href="/"
             aria-label="Return to homepage"
-            className="inline-flex h-11 items-center rounded-lg border border-white/10 px-3 text-sm font-black text-zinc-300 transition hover:bg-white/10 hover:text-white"
+            className="inline-flex h-11 items-center rounded-lg border border-white/10 px-3 text-sm font-black text-zinc-300 transition hover:bg-white/10 hover:text-white lg:h-9"
           >
             <Home className="h-4 w-4 sm:mr-2" />
             <span className="hidden sm:inline">Home</span>
@@ -1689,7 +1690,7 @@ export default function NewRequestPage() {
         )}
       />
 
-      <section className="mx-auto max-w-7xl px-4 py-8">
+      <section className="mx-auto max-w-7xl px-4 py-5 lg:py-4">
         {(repeatPrefillLoading || repeatPrefillError || (repeatPrefill && !repeatPrefillDismissed)) && (
           <section
             aria-labelledby="repeat-request-title"
@@ -1786,37 +1787,40 @@ export default function NewRequestPage() {
           </section>
         )}
 
-        <div className="mb-8 grid gap-6 xl:grid-cols-[1fr_340px]">
-          <div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-7">
-            <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-red-800/50 bg-red-950/25 px-4 py-2 text-sm font-semibold text-red-100">
+        <div className="mb-4 grid gap-3 xl:grid-cols-[1fr_300px]">
+          <div className="rounded-xl border border-white/10 bg-white/[0.04] p-4">
+            <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-red-800/50 bg-red-950/25 px-3 py-1.5 text-xs font-semibold text-red-100">
               <BadgeCheck className="h-4 w-4 text-red-500" />
               Professional ECU / TCU request form
             </div>
 
-            <h1 className="text-4xl font-black md:text-5xl">
+            <h2 className="text-xl font-black sm:text-2xl">
               Create New
-              <span className="block text-red-600">File Service Request</span>
-            </h1>
+              <span className="ml-1 text-red-600">File Service Request</span>
+            </h2>
 
-            <p className="mt-5 max-w-3xl leading-8 text-zinc-400">
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-zinc-400">
               Select vehicle information, choose the required software solution,
               upload your original file and submit the request to MG AutoTech.
             </p>
           </div>
 
-          <div className="rounded-[2rem] border border-red-900/40 bg-red-950/20 p-7">
-            <CreditCard className="mb-5 h-9 w-9 text-red-500" />
-            <div className="text-sm text-zinc-400">Estimated Total</div>
-            <div className="mt-2 text-5xl font-black">{totalCredits}</div>
-            <div className="mt-1 text-sm font-bold text-red-300">Credits</div>
+          <div className="rounded-xl border border-red-900/40 bg-red-950/20 p-4">
+            <div className="flex items-center gap-3">
+              <CreditCard className="h-5 w-5 text-red-500" />
+              <div>
+                <div className="text-xs text-zinc-400">Estimated Total</div>
+                <div className="text-2xl font-black">{totalCredits} <span className="text-xs font-bold text-red-300">Credits</span></div>
+              </div>
+            </div>
 
-            <div className="mt-5 rounded-2xl bg-black/30 p-4 text-sm leading-6 text-zinc-300">
+            <div className="mt-3 rounded-xl bg-black/30 p-3 text-xs leading-5 text-zinc-300">
               {serviceSummary || "Select service"}
             </div>
           </div>
         </div>
 
-        <div className="mb-6 rounded-2xl border border-white/10 bg-white/[0.035] p-3">
+        <div className="mb-4 rounded-2xl border border-white/10 bg-white/[0.035] p-3">
           <div className="mg-step-rail">
             {requestStepStates.map((step, index) => (
               <div
@@ -1841,8 +1845,8 @@ export default function NewRequestPage() {
           </div>
         </div>
 
-        <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_340px]">
-          <div className="space-y-8">
+        <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
+          <div className="space-y-5">
             <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6">
               <div className="mb-6 flex items-center gap-3">
                 <Car className="h-6 w-6 text-red-600" />
@@ -2343,7 +2347,7 @@ export default function NewRequestPage() {
           </div>
 
           <aside className="space-y-4">
-            <div className="sticky top-28 rounded-[2rem] border border-white/10 bg-black/55 p-6 shadow-2xl shadow-black/30 backdrop-blur-xl">
+            <div className="sticky top-20 rounded-[2rem] border border-white/10 bg-black/55 p-6 shadow-2xl shadow-black/30 backdrop-blur-xl">
               <ShieldCheck className="mb-5 h-9 w-9 text-red-500" />
               <h3 className="text-2xl font-black">Request Summary</h3>
 

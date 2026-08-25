@@ -100,7 +100,12 @@ function SidebarNavLink({
     : "flex items-center gap-3 rounded-lg px-3 py-2.5 font-bold text-zinc-400 transition hover:bg-[#151515] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500";
 
   return (
-    <Link href={href} aria-current={active ? "page" : undefined} className={className}>
+    <Link
+      href={href}
+      aria-current={active ? "page" : undefined}
+      className={className}
+      data-customer-sidebar-link
+    >
       <Icon className={`h-4 w-4 ${active ? "text-red-400" : ""}`} />
       <span className="min-w-0 truncate">{label}</span>
     </Link>
@@ -114,16 +119,19 @@ export function CustomerPortalSidebar({
   const creditDisplay = formatSidebarCredits(credits);
 
   return (
-    <aside className="hidden w-60 shrink-0 border-r border-[var(--mg-portal-border)] bg-[var(--mg-portal-sidebar)] lg:block">
-      <div className="sticky top-0 flex h-screen flex-col px-3 py-4">
-        <Link href="/" className="mb-6 flex items-center gap-3 px-2">
-          <div className="relative flex h-10 w-10 items-center justify-center rounded-lg border border-red-800/60 bg-[var(--mg-portal-control)]">
+    <aside
+      data-customer-portal-sidebar
+      className="hidden w-60 shrink-0 border-r border-[var(--mg-portal-border)] bg-[var(--mg-portal-sidebar)] lg:block"
+    >
+      <div className="sticky top-0 flex h-screen flex-col px-3 py-3">
+        <Link href="/" className="mb-4 flex items-center gap-2.5 px-2">
+          <div className="relative flex h-9 w-9 items-center justify-center rounded-lg border border-red-800/60 bg-[var(--mg-portal-control)]">
             <div className="absolute -top-1.5 h-3 w-8 rounded-t-full border-t border-[#b1121b]" />
-            <Gauge className="h-5 w-5 text-red-400" />
+            <Gauge className="h-4 w-4 text-red-400" />
           </div>
 
           <div className="min-w-0">
-            <div className="truncate text-base font-black tracking-wide">
+            <div className="truncate text-sm font-black tracking-wide">
               MG <span className="text-red-500">AUTOTECH</span>
             </div>
             <div className="text-[11px] text-zinc-400">Customer Panel</div>
@@ -132,7 +140,7 @@ export function CustomerPortalSidebar({
 
         <nav
           aria-label="Primary navigation"
-          className="mg-dense-scroll min-h-0 flex-1 space-y-5 overflow-y-auto pr-1 text-sm"
+          className="mg-dense-scroll min-h-0 flex-1 space-y-3.5 overflow-y-auto pr-1 text-[13px]"
         >
           {customerPortalSidebarSections.map((section) => (
             <div key={section.label} className="space-y-1">
@@ -147,6 +155,7 @@ export function CustomerPortalSidebar({
 
           <a
             href="mailto:info@mgautotech.de"
+            data-customer-sidebar-link
             className="flex items-center gap-3 rounded-lg px-3 py-2.5 font-bold text-zinc-400 transition hover:bg-[#151515] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
           >
             <Wrench className="h-4 w-4" />
@@ -154,18 +163,18 @@ export function CustomerPortalSidebar({
           </a>
         </nav>
 
-        <div className="mt-4 shrink-0 rounded-lg border border-[var(--mg-portal-border)] bg-[var(--mg-portal-surface)] p-3">
+        <div className="mt-3 shrink-0 rounded-lg border border-[var(--mg-portal-border)] bg-[var(--mg-portal-surface)] p-2.5">
           <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-400">
             Current Balance
           </div>
-          <div className="mt-2 flex items-end justify-between gap-3">
-            <div className="min-w-0 truncate text-2xl font-black tabular-nums">{creditDisplay}</div>
+          <div className="mt-1.5 flex items-end justify-between gap-3">
+            <div className="min-w-0 truncate text-xl font-black tabular-nums">{creditDisplay}</div>
             <CreditCard className="mb-1 h-4 w-4 shrink-0 text-red-500" />
           </div>
           <div className="mt-1 text-[11px] text-zinc-400">Available Credits</div>
           <Link
             href="/dashboard/credits"
-            className="mt-3 inline-flex h-9 w-full items-center justify-center rounded-lg bg-[#b1121b] px-3 text-xs font-black text-white transition hover:bg-[#c91824] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
+            className="mt-2.5 inline-flex h-8 w-full items-center justify-center rounded-lg bg-[#b1121b] px-3 text-xs font-black text-white transition hover:bg-[#c91824] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
           >
             <Plus className="mr-2 h-4 w-4" />
             Buy Credits

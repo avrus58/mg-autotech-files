@@ -172,6 +172,21 @@ nesil ve 10.519 motor. E 63 S ve E 300 e exact API ve gercek musteri homepage
 secici smoke'unda kayitli Stage degerlerini gosterdi; `Performance data under
 review` metni cikmadi. Iki container healthy/restart 0, error-like log sayaci 0;
 rollback cifti `53994c4f09a6` olarak hazirdir.
+### MANUAL-20260825-PORTAL-DENSITY-REFINEMENT [P1] Admin ve musteri panellerini laptopta kompaktlastir
+
+Durum: Done
+
+Fingerprint: `portal-ui|admin-customer-modal-order-desk-and-customer-workspace|oversized-controls-excess-scroll-and-laptop-clipping|compact-readable-full-width-operational-density`
+
+Sonuc: Admin ana workspace, son siparis masasi, tum siparis listesi, musteri
+detay penceresi ve siparis detay penceresi laptopta daha fazla is verisini
+kesmeden gosteren kompakt responsive duzene tasindi. Dokuz kolonlu tam tablo
+yalniz genis ekranda, 1024-1535 araliginda tasmasiz tek satir operasyon gorunumu
+kullaniliyor. Musteri shell/sidebar/header/dashboard ile kredi satin alma,
+kredi gecmisi, ayarlar ve yeni talep sayfalarindaki tekrar eden buyuk hero,
+kart, form ve araliklar desktop-only yogunluk kurallariyla kucultuldu. Mobil
+ana etkilesim hedefleri en az 44px, mevcut auth/izin/loading/error/empty state,
+kredi/fiyat/odeme, siparis, teslimat, dosya ve mesaj islemleri korundu.
 
 ### MANUAL-20260825-VEHICLE-MANUAL-PERFORMANCE-ENTRY [P1] Yeni araci ECU ve manuel Stage kazanciyla tek adimda ekle
 

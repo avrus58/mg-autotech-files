@@ -155,6 +155,90 @@ body {
   color: #fff;
 }
 
+/*
+  Laptop density refinement
+  -------------------------
+  Authenticated customer screens use tighter desktop rhythm so the primary
+  work stays visible without browser zoom. Mobile sizing remains untouched.
+*/
+@media (min-width: 1024px) {
+  .mg-customer-density [data-customer-portal-sidebar] {
+    width: 13.5rem;
+  }
+
+  .mg-customer-density [data-customer-sidebar-link] {
+    gap: 0.625rem;
+    padding: 0.45rem 0.625rem;
+  }
+
+  .mg-customer-density .mg-compact-ui :where(.p-8, .p-7) {
+    padding: 1rem !important;
+  }
+
+  .mg-customer-density .mg-compact-ui :where(.p-6) {
+    padding: 0.875rem !important;
+  }
+
+  .mg-customer-density .mg-compact-ui :where(.p-5) {
+    padding: 0.8125rem !important;
+  }
+
+  .mg-customer-density .mg-compact-ui :where(.p-4) {
+    padding: 0.75rem !important;
+  }
+
+  .mg-customer-density .mg-compact-ui :where(.py-8) {
+    padding-top: 1rem !important;
+    padding-bottom: 1rem !important;
+  }
+
+  .mg-customer-density .mg-compact-ui :where(.py-7, .py-6) {
+    padding-top: 0.875rem !important;
+    padding-bottom: 0.875rem !important;
+  }
+
+  .mg-customer-density .mg-compact-ui :where(.py-5, .py-4) {
+    padding-top: 0.75rem !important;
+    padding-bottom: 0.75rem !important;
+  }
+
+  .mg-customer-density .mg-compact-ui :where(.gap-8) {
+    gap: 1rem !important;
+  }
+
+  .mg-customer-density .mg-compact-ui :where(.gap-6) {
+    gap: 0.875rem !important;
+  }
+
+  .mg-customer-density .mg-compact-ui :where(.gap-5, .gap-4) {
+    gap: 0.75rem !important;
+  }
+
+  .mg-customer-density .mg-compact-ui :where(.space-y-8 > :not([hidden]) ~ :not([hidden])) {
+    margin-top: 1rem !important;
+  }
+
+  .mg-customer-density .mg-compact-ui :where(.space-y-6 > :not([hidden]) ~ :not([hidden])) {
+    margin-top: 0.875rem !important;
+  }
+
+  .mg-customer-density .mg-compact-ui :where(.space-y-5 > :not([hidden]) ~ :not([hidden])) {
+    margin-top: 0.75rem !important;
+  }
+
+  .mg-customer-density .mg-compact-ui :where(.text-5xl) {
+    font-size: 2.125rem !important;
+  }
+
+  .mg-customer-density .mg-compact-ui :where(.text-4xl) {
+    font-size: 1.875rem !important;
+  }
+
+  .mg-customer-density .mg-compact-ui :where(.text-3xl) {
+    font-size: 1.5rem !important;
+  }
+}
+
 .mg-customer-workspace-content > .mg-compact-ui > header {
   border-color: var(--mg-portal-border);
   background-color: var(--mg-portal-header);

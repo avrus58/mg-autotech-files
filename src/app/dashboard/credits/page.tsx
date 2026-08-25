@@ -496,26 +496,27 @@ export default function BuyCreditsPage() {
         eyebrow="Account"
         title="Buy Credits"
         icon={CreditCard}
+        heading
       />
 
-      <section className="mx-auto max-w-7xl px-4 py-10">
-        <div className="mb-10 grid gap-6 xl:grid-cols-[1fr_420px] xl:items-end">
+      <section className="mx-auto max-w-7xl px-4 py-5 lg:py-4">
+        <div className="mb-5 grid gap-3 xl:grid-cols-[1fr_360px] xl:items-center">
           <div>
-            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-red-800/50 bg-red-950/25 px-4 py-2 text-sm font-semibold text-red-100">
+            <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-red-800/50 bg-red-950/25 px-3 py-1.5 text-xs font-semibold text-red-100">
               <CreditCard className="h-4 w-4 text-red-500" />
               Secure payment options
             </div>
 
-            <h1 className="text-4xl font-black md:text-6xl">
+            <h2 className="text-xl font-black sm:text-2xl">
               Credits <span className="text-red-600">Prices</span>
-            </h1>
+            </h2>
 
-            <p className="mt-4 max-w-3xl text-lg leading-8 text-zinc-400">
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-zinc-400">
               Choose a package or enter a custom credit amount. Package prices
               get cheaper as the volume increases.
             </p>
             {quote?.promotionLabel && (
-              <div className="mt-5 inline-flex rounded-full border border-red-700/60 bg-red-950/40 px-4 py-2 text-sm font-black text-red-100">
+              <div className="mt-3 inline-flex rounded-full border border-red-700/60 bg-red-950/40 px-3 py-1.5 text-xs font-black text-red-100">
                 {quote.promotionLabel}
               </div>
             )}
@@ -526,14 +527,14 @@ export default function BuyCreditsPage() {
             )}
           </div>
 
-          <div className="rounded-[2rem] border border-red-900/50 bg-red-950/20 p-6 shadow-2xl shadow-black/30">
-            <div className="flex items-center gap-3">
-              <ShieldCheck className="h-8 w-8 text-red-500" />
+          <div className="rounded-xl border border-red-900/50 bg-red-950/20 p-4">
+            <div className="flex items-center gap-2.5">
+              <ShieldCheck className="h-5 w-5 shrink-0 text-red-500" />
               <div>
-                <div className="text-sm font-black uppercase tracking-[0.2em] text-red-400">
+                <div className="text-xs font-black uppercase tracking-[0.16em] text-red-400">
                   Payment Workflow
                 </div>
-                <p className="mt-1 text-sm text-zinc-400">
+                <p className="mt-1 text-xs leading-5 text-zinc-400">
                   Stripe card payments add credits automatically after
                   confirmation. Bank transfer stays manual.
                 </p>
@@ -563,7 +564,7 @@ export default function BuyCreditsPage() {
             role="status"
             aria-live="polite"
             aria-busy="true"
-            className="mb-8 flex min-h-40 items-center justify-center rounded-[2rem] border border-white/10 bg-white/[0.04] p-8 text-center"
+            className="mb-5 flex min-h-40 items-center justify-center rounded-[2rem] border border-white/10 bg-white/[0.04] p-8 text-center lg:min-h-24"
           >
             <div>
               <Loader2 className="mx-auto h-8 w-8 animate-spin text-red-500" />
@@ -582,7 +583,7 @@ export default function BuyCreditsPage() {
           <div
             role="alert"
             aria-live="assertive"
-            className="mb-8 rounded-[2rem] border border-red-800/60 bg-red-950/30 p-6"
+            className="mb-5 rounded-[2rem] border border-red-800/60 bg-red-950/30 p-6"
           >
             <div className="text-lg font-black text-red-100">
               Credit prices are temporarily unavailable
@@ -603,7 +604,7 @@ export default function BuyCreditsPage() {
 
         {quoteState === "ready" && quote && (
           <>
-            <div className="mb-8 rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
+            <div className="mb-5 rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
           <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <div className="text-sm font-black uppercase tracking-[0.2em] text-red-400">
@@ -724,7 +725,7 @@ export default function BuyCreditsPage() {
           )}
         </div>
 
-        <div className="mb-8 rounded-[2rem] border border-white/10 bg-white/[0.04] p-4">
+        <div className="mb-5 rounded-[2rem] border border-white/10 bg-white/[0.04] p-4">
           <div className="grid gap-3 md:grid-cols-[220px_1fr_52px] md:items-center">
             <div className="px-2 text-sm font-black">Credit Utilization Scale</div>
 
@@ -755,11 +756,11 @@ export default function BuyCreditsPage() {
           </div>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5">
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5">
           {packages.map((item) => (
             <div
               key={item.id}
-              className={`relative flex min-h-[360px] flex-col rounded-[2rem] border p-6 shadow-2xl shadow-black/20 transition hover:-translate-y-1 ${
+              className={`relative flex min-h-[340px] flex-col rounded-[2rem] border p-6 shadow-2xl shadow-black/20 transition hover:-translate-y-1 lg:min-h-[290px] ${
                 item.highlight
                   ? "border-red-800/70 bg-red-950/30 2xl:-mt-6"
                   : "border-white/10 bg-white/[0.04]"
@@ -772,7 +773,7 @@ export default function BuyCreditsPage() {
                 </div>
               )}
 
-              <div className="mb-8 flex h-12 w-12 items-center justify-center rounded-2xl border border-red-900/40 bg-red-950/35">
+              <div className="mb-5 flex h-11 w-11 items-center justify-center rounded-2xl border border-red-900/40 bg-red-950/35 lg:h-9 lg:w-9">
                 <Sparkles className="h-6 w-6 text-red-500" />
               </div>
 
@@ -786,7 +787,7 @@ export default function BuyCreditsPage() {
                 </div>
               )}
 
-              <div className={`${item.basePriceEuro === item.priceEuro ? "mt-8" : "mt-1"} text-4xl font-black`}>
+              <div className={`${item.basePriceEuro === item.priceEuro ? "mt-5" : "mt-1"} text-3xl font-black`}>
                 {formatEuro(item.priceEuro)}
               </div>
 
@@ -826,7 +827,7 @@ export default function BuyCreditsPage() {
                   (paymentMethod === "stripe" &&
                     !isStripeEuroAmountSupported(item.priceEuro))
                 }
-                className="mt-7 flex w-full items-center justify-center rounded-xl border border-red-700 bg-transparent px-5 py-4 text-sm font-black text-white transition hover:bg-red-950/40 disabled:cursor-not-allowed disabled:opacity-60"
+                className="mt-5 flex min-h-11 w-full items-center justify-center rounded-xl border border-red-700 bg-transparent px-5 py-3 text-sm font-black text-white transition hover:bg-red-950/40 disabled:cursor-not-allowed disabled:opacity-60 lg:py-2"
               >
                 {loadingPackage === item.id ? (
                   <>
@@ -851,7 +852,7 @@ export default function BuyCreditsPage() {
           ))}
         </div>
 
-        <div className="mt-8 grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
+        <div className="mt-5 grid gap-4 lg:grid-cols-[0.95fr_1.05fr]">
           <div className="rounded-[2rem] border border-red-900/50 bg-gradient-to-br from-red-950/30 via-white/[0.04] to-black p-7 shadow-2xl shadow-black/30">
             <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-red-800/50 bg-red-950/30 px-4 py-2 text-sm font-bold text-red-100">
               <Sparkles className="h-4 w-4 text-red-500" />
@@ -879,7 +880,7 @@ export default function BuyCreditsPage() {
                   step="1"
                   value={customCredits}
                   onChange={(event) => setCustomCredits(event.target.value)}
-                  className="h-14 w-full rounded-2xl border border-white/10 bg-black/35 px-4 text-lg font-black text-white outline-none transition placeholder:text-zinc-600 focus:border-red-700"
+                  className="h-12 w-full rounded-2xl border border-white/10 bg-black/35 px-4 text-base font-black text-white outline-none transition placeholder:text-zinc-600 focus:border-red-700 lg:h-10"
                   placeholder="e.g. 17"
                 />
               </label>
@@ -918,7 +919,7 @@ export default function BuyCreditsPage() {
                 (paymentMethod === "stripe" &&
                   !isStripeEuroAmountSupported(customPrice))
               }
-              className="mt-6 flex w-full items-center justify-center rounded-xl bg-[#b1121b] px-5 py-4 text-sm font-black text-white shadow-xl shadow-red-950/40 transition hover:bg-[#c91824] disabled:cursor-not-allowed disabled:opacity-60"
+              className="mt-6 flex min-h-11 w-full items-center justify-center rounded-xl bg-[#b1121b] px-5 py-3 text-sm font-black text-white shadow-xl shadow-red-950/40 transition hover:bg-[#c91824] disabled:cursor-not-allowed disabled:opacity-60 lg:py-2"
             >
               {loadingPackage?.startsWith("custom_") ? (
                 <>

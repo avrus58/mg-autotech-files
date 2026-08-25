@@ -639,11 +639,11 @@ export function DashboardClient() {
   }
 
   return (
-    <main className="mg-compact-ui min-h-screen bg-[var(--mg-portal-canvas)] text-white lg:h-screen lg:overflow-hidden">
+    <main data-customer-dashboard className="mg-compact-ui min-h-screen bg-[var(--mg-portal-canvas)] text-white lg:h-screen lg:overflow-hidden">
       <div className="flex min-h-screen lg:h-screen lg:overflow-hidden">
         <section className="min-w-0 flex-1 lg:flex lg:h-screen lg:flex-col lg:overflow-hidden">
           <header className="sticky top-0 z-40 shrink-0 border-b border-[var(--mg-portal-border)] bg-[var(--mg-portal-header)] backdrop-blur-xl lg:static">
-            <div className="border-b border-red-950/40 bg-[#b1121b] px-4 py-2.5 text-white lg:px-5 xl:px-6">
+            <div className="border-b border-red-950/40 bg-[#b1121b] px-4 py-2.5 text-white lg:px-4 lg:py-1.5 xl:px-5">
               <div className="flex items-center justify-between gap-4">
                 <div className="flex min-w-0 items-center gap-3">
                   <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/45">
@@ -660,7 +660,7 @@ export function DashboardClient() {
                 </div>
                 <Link
                   href={dashboardNextAction.href}
-                  className="shrink-0 rounded-lg border border-white/40 bg-black/10 px-3 py-2 text-xs font-black transition hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                  className="shrink-0 rounded-lg border border-white/40 bg-black/10 px-3 py-2 text-xs font-black transition hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white lg:py-1.5"
                 >
                   {dashboardNextAction.cta}
                   <ArrowRight className="ml-2 inline h-4 w-4" />
@@ -668,22 +668,22 @@ export function DashboardClient() {
               </div>
             </div>
 
-            <div className="flex min-h-[72px] items-center gap-2 px-4 py-2.5 lg:px-5 xl:px-6">
+            <div className="flex min-h-[72px] items-center gap-2 px-4 py-2.5 lg:min-h-14 lg:px-4 lg:py-1.5 xl:px-5">
               <Link
                 href="/dashboard/credits"
                 aria-label="Buy Credits"
-                className="hidden min-w-[144px] items-center justify-between rounded-xl border border-[#b1121b] bg-[var(--mg-portal-control)] px-3 py-2.5 transition hover:bg-[var(--mg-portal-control-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 md:flex"
+                className="hidden min-w-[144px] items-center justify-between rounded-xl border border-[#b1121b] bg-[var(--mg-portal-control)] px-3 py-2.5 transition hover:bg-[var(--mg-portal-control-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 md:flex lg:min-w-[132px] lg:py-1.5"
               >
                 <span>
                   <span className="block text-[10px] font-bold text-zinc-400">Current Balance</span>
                   <span className="block text-sm font-black tabular-nums">{credits} Credits</span>
                 </span>
-                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#b1121b] text-white">
+                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#b1121b] text-white lg:h-7 lg:w-7">
                   <Plus className="h-4 w-4" />
                 </span>
               </Link>
 
-              <div className="hidden min-w-[126px] rounded-xl border border-[#b1121b] bg-[var(--mg-portal-control)] px-3 py-2.5 xl:block">
+              <div className="hidden min-w-[120px] rounded-xl border border-[#b1121b] bg-[var(--mg-portal-control)] px-3 py-1.5 xl:block">
                 <div className="text-[10px] font-bold text-zinc-400">Local Time</div>
                 <div className="mt-0.5 flex items-center gap-2 text-sm font-black tabular-nums">
                   <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.8)]" />
@@ -699,7 +699,7 @@ export function DashboardClient() {
                   value={requestSearch}
                   onChange={(event) => setRequestSearch(event.target.value)}
                   placeholder="Search recent requests..."
-                  className="h-11 w-full rounded-xl border border-[var(--mg-portal-border)] bg-[var(--mg-portal-input)] pl-10 pr-3 text-sm text-white outline-none transition placeholder:text-zinc-400 focus:border-[#b1121b] focus:ring-2 focus:ring-red-500/20"
+                  className="h-11 w-full rounded-xl border border-[var(--mg-portal-border)] bg-[var(--mg-portal-input)] pl-10 pr-3 text-sm text-white outline-none transition placeholder:text-zinc-400 focus:border-[#b1121b] focus:ring-2 focus:ring-red-500/20 lg:h-9"
                 />
               </label>
 
@@ -710,7 +710,7 @@ export function DashboardClient() {
                     ? `Notifications - ${needsResponseCount} requests. Waiting for your information`
                     : "Notifications"
                 }
-                className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-[var(--mg-portal-border)] bg-[var(--mg-portal-control)] text-zinc-300 transition hover:border-zinc-500 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
+                className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-[var(--mg-portal-border)] bg-[var(--mg-portal-control)] text-zinc-300 transition hover:border-zinc-500 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 lg:h-9 lg:w-9"
               >
                 <BellRing className="h-4 w-4" />
                 {needsResponseCount > 0 && (
@@ -722,7 +722,7 @@ export function DashboardClient() {
 
               <a
                 href="mailto:info@mgautotech.de"
-                className="hidden h-11 shrink-0 items-center justify-center rounded-xl border border-[var(--mg-portal-border)] bg-[var(--mg-portal-control)] px-4 text-xs font-black text-white transition hover:border-zinc-500 hover:bg-[var(--mg-portal-control-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 2xl:inline-flex"
+                className="hidden h-11 shrink-0 items-center justify-center rounded-xl border border-[var(--mg-portal-border)] bg-[var(--mg-portal-control)] px-4 text-xs font-black text-white transition hover:border-zinc-500 hover:bg-[var(--mg-portal-control-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 lg:h-9 2xl:inline-flex"
               >
                 <Wrench className="mr-2 h-4 w-4" />
                 Support
@@ -742,7 +742,7 @@ export function DashboardClient() {
                 type="button"
                 onClick={handleLogout}
                 aria-label="Log out"
-                className="flex h-11 shrink-0 items-center justify-center rounded-xl border border-[var(--mg-portal-border)] bg-[var(--mg-portal-control)] px-3 text-xs font-bold text-white transition hover:border-zinc-500 hover:bg-[var(--mg-portal-control-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
+                className="flex h-11 shrink-0 items-center justify-center rounded-xl border border-[var(--mg-portal-border)] bg-[var(--mg-portal-control)] px-3 text-xs font-bold text-white transition hover:border-zinc-500 hover:bg-[var(--mg-portal-control-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 lg:h-9"
               >
                 <LogOut className="h-4 w-4 sm:mr-2" />
                 <span className="hidden sm:inline">Logout</span>
@@ -754,7 +754,7 @@ export function DashboardClient() {
             role="region"
             aria-label="Dashboard content"
             tabIndex={0}
-            className="mg-dense-scroll overscroll-contain px-4 py-4 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-red-400 lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:px-5 xl:px-6"
+            className="mg-dense-scroll overscroll-contain px-4 py-4 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-red-400 lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:px-4 lg:py-3 xl:px-5"
           >
             {dashboardLoadError && dashboardReady && (
               <div
@@ -784,11 +784,11 @@ export function DashboardClient() {
             <section
               data-dashboard-welcome
               aria-labelledby="dashboard-welcome-title"
-              className="mb-3 rounded-xl border border-red-900/60 bg-[linear-gradient(100deg,rgba(177,18,27,0.22),var(--mg-portal-surface-solid)_55%)] px-4 py-4 lg:px-5"
+              className="mb-3 rounded-xl border border-red-900/60 bg-[linear-gradient(100deg,rgba(177,18,27,0.22),var(--mg-portal-surface-solid)_55%)] px-4 py-4 lg:px-4 lg:py-3"
             >
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="min-w-0">
-                  <h1 id="dashboard-welcome-title" className="break-words text-xl font-black sm:text-2xl">
+                  <h1 id="dashboard-welcome-title" className="break-words text-xl font-black sm:text-2xl lg:text-xl">
                     Welcome, {customerName}
                   </h1>
                   <p className="mt-1 text-sm text-zinc-400">
@@ -799,7 +799,7 @@ export function DashboardClient() {
                 </div>
                 <Link
                   href="/new-request"
-                  className="inline-flex shrink-0 items-center justify-center rounded-xl bg-[#b1121b] px-5 py-3 text-sm font-black text-white transition hover:bg-[#c91824] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300"
+                  className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-xl bg-[#b1121b] px-5 py-3 text-sm font-black text-white transition hover:bg-[#c91824] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300 lg:min-h-0 lg:px-4 lg:py-2"
                 >
                   <Plus className="mr-2 h-4 w-4" />
                   Create Request
@@ -827,60 +827,60 @@ export function DashboardClient() {
             >
               <Link
                 href="/dashboard/orders"
-                className="group min-w-0 rounded-xl border border-[var(--mg-portal-border)] bg-[var(--mg-portal-surface)] p-4 transition hover:border-blue-500/40 hover:bg-[var(--mg-portal-surface-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                className="group min-w-0 rounded-xl border border-[var(--mg-portal-border)] bg-[var(--mg-portal-surface)] p-4 transition hover:border-blue-500/40 hover:bg-[var(--mg-portal-surface-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 lg:p-3"
               >
                 <div className="flex items-center gap-3">
-                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-500/10 text-blue-400">
-                    <Clock3 className="h-6 w-6" />
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-500/10 text-blue-400 lg:h-9 lg:w-9">
+                    <Clock3 className="h-6 w-6 lg:h-5 lg:w-5" />
                   </span>
                   <span className="min-w-0">
                     <span className="block text-xs font-bold text-zinc-400">Pending Requests</span>
-                    <span className="mt-0.5 block text-3xl font-black tabular-nums text-blue-400">{pendingCount}</span>
+                    <span className="mt-0.5 block text-3xl font-black tabular-nums text-blue-400 lg:text-2xl">{pendingCount}</span>
                   </span>
                 </div>
               </Link>
 
               <Link
                 href="/dashboard/orders"
-                className="group min-w-0 rounded-xl border border-[var(--mg-portal-border)] bg-[var(--mg-portal-surface)] p-4 transition hover:border-amber-500/40 hover:bg-[var(--mg-portal-surface-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
+                className="group min-w-0 rounded-xl border border-[var(--mg-portal-border)] bg-[var(--mg-portal-surface)] p-4 transition hover:border-amber-500/40 hover:bg-[var(--mg-portal-surface-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 lg:p-3"
               >
                 <div className="flex items-center gap-3">
-                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-500/10 text-amber-400">
-                    <RefreshCw className="h-6 w-6" />
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-500/10 text-amber-400 lg:h-9 lg:w-9">
+                    <RefreshCw className="h-6 w-6 lg:h-5 lg:w-5" />
                   </span>
                   <span className="min-w-0">
                     <span className="block text-xs font-bold text-zinc-400">In Progress</span>
-                    <span className="mt-0.5 block text-3xl font-black tabular-nums text-amber-400">{inProgressCount}</span>
+                    <span className="mt-0.5 block text-3xl font-black tabular-nums text-amber-400 lg:text-2xl">{inProgressCount}</span>
                   </span>
                 </div>
               </Link>
 
               <Link
                 href="/dashboard/orders?view=completed"
-                className="group min-w-0 rounded-xl border border-[var(--mg-portal-border)] bg-[var(--mg-portal-surface)] p-4 transition hover:border-emerald-500/40 hover:bg-[var(--mg-portal-surface-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                className="group min-w-0 rounded-xl border border-[var(--mg-portal-border)] bg-[var(--mg-portal-surface)] p-4 transition hover:border-emerald-500/40 hover:bg-[var(--mg-portal-surface-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 lg:p-3"
               >
                 <div className="flex items-center gap-3">
-                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400">
-                    <CheckCircle2 className="h-6 w-6" />
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400 lg:h-9 lg:w-9">
+                    <CheckCircle2 className="h-6 w-6 lg:h-5 lg:w-5" />
                   </span>
                   <span className="min-w-0">
                     <span className="block text-xs font-bold text-zinc-400">Completed</span>
-                    <span className="mt-0.5 block text-3xl font-black tabular-nums text-emerald-400">{completedCount}</span>
+                    <span className="mt-0.5 block text-3xl font-black tabular-nums text-emerald-400 lg:text-2xl">{completedCount}</span>
                   </span>
                 </div>
               </Link>
 
               <Link
                 href="/dashboard/credits"
-                className="group min-w-0 rounded-xl border border-[var(--mg-portal-border)] bg-[var(--mg-portal-surface)] p-4 transition hover:border-red-500/40 hover:bg-[var(--mg-portal-surface-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+                className="group min-w-0 rounded-xl border border-[var(--mg-portal-border)] bg-[var(--mg-portal-surface)] p-4 transition hover:border-red-500/40 hover:bg-[var(--mg-portal-surface-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 lg:p-3"
               >
                 <div className="flex items-center gap-3">
-                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-red-500/10 text-red-400">
-                    <CreditCard className="h-6 w-6" />
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-red-500/10 text-red-400 lg:h-9 lg:w-9">
+                    <CreditCard className="h-6 w-6 lg:h-5 lg:w-5" />
                   </span>
                   <span className="min-w-0">
                     <span className="block text-xs font-bold text-zinc-400">Balance</span>
-                    <span className="mt-0.5 block break-words text-2xl font-black tabular-nums text-red-400">{credits} Credits</span>
+                    <span className="mt-0.5 block break-words text-2xl font-black tabular-nums text-red-400 lg:text-xl">{credits} Credits</span>
                   </span>
                 </div>
               </Link>

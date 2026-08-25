@@ -425,6 +425,32 @@ test("legacy admin dashboard shows a compact latest-order operations desk", () =
   );
 });
 
+test("admin laptop layouts keep dense orders and customer controls inside the viewport", () => {
+  const adminPage = readProjectFile("src", "app", "admin", "page.tsx");
+  const ordersPanel =
+    adminPage.match(/function OrdersPanel[\s\S]*?function CustomersPanel/)?.[0] ?? "";
+  const customerModal =
+    adminPage.match(/function CustomerDetailModal[\s\S]*?function CustomerPasswordSecurityPanel/)?.[0] ?? "";
+  const orderModal =
+    adminPage.match(/function OrderDetailModal[\s\S]*?function WorkInfo/)?.[0] ?? "";
+
+  assert.match(ordersPanel, /overflow-hidden rounded-lg border border-white\/10 2xl:block/);
+  assert.match(ordersPanel, /space-y-3 2xl:hidden/);
+  assert.match(ordersPanel, /hidden min-w-0 grid-cols-\[minmax\(160px,1\.1fr\)[\s\S]*?lg:grid/);
+  assert.match(ordersPanel, /aria-label=\{`Open order \$\{shortId\(order\.id\)\} details`\}/);
+  assert.match(customerModal, /max-w-\[96rem\]/);
+  assert.match(customerModal, /xl:grid-cols-\[minmax\(0,1fr\)_280px\]/);
+  assert.match(customerModal, /xl:sticky xl:top-\[7\.5rem\] xl:h-fit/);
+  assert.match(customerModal, /role="dialog" aria-modal="true" aria-labelledby="customer-detail-title"/);
+  assert.doesNotMatch(customerModal, /max-w-6xl|xl:grid-cols-\[1fr_360px\]/);
+  assert.match(orderModal, /max-w-\[96rem\]/);
+  assert.match(orderModal, /xl:grid-cols-\[minmax\(0,1fr\)_310px\]/);
+  assert.match(orderModal, /xl:sticky xl:top-\[8\.25rem\] xl:h-fit/);
+  assert.match(orderModal, /role="dialog" aria-modal="true" aria-labelledby="order-detail-title"/);
+  assert.match(orderModal, /min-h-11[\s\S]*?lg:h-9 lg:min-h-0/);
+  assert.doesNotMatch(orderModal, /max-w-7xl|xl:grid-cols-\[minmax\(0,1fr\)_380px\]|rounded-\[2rem\]|text-2xl font-black">(?:Status Workflow|Estimated Delivery|File Workflow|Customer Contact)/);
+});
+
 test("admin customer management shows the account creation date read-only", () => {
   const adminPage = readProjectFile("src", "app", "admin", "page.tsx");
   const dashboardRoute = readProjectFile("src", "app", "api", "admin", "dashboard", "route.ts");
@@ -831,6 +857,37 @@ test("customer destination routes share one compact page header without duplicat
   assert.match(sidebar, /aria-label="Mobile navigation"[\s\S]*href="mailto:info@mgautotech\.de"/);
   assert.match(globals, /min-height: calc\(100dvh - 3\.8125rem\) !important/);
   assert.match(notifications, /signOutIfEmailUnverified\(user\)[\s\S]*router\.push\("\/login\?verify_email=1"\)/);
+});
+
+test("authenticated customer routes use laptop density without shrinking mobile controls", () => {
+  const globals = readProjectFile("src", "app", "globals.css");
+  const shell = readProjectFile("src", "components", "app-shell.tsx");
+  const header = readProjectFile("src", "components", "dashboard", "CustomerPortalPageHeader.tsx");
+  const sidebar = readProjectFile("src", "components", "dashboard", "CustomerPortalSidebar.tsx");
+  const dashboard = readProjectFile("src", "components", "dashboard", "DashboardClient.tsx");
+  const credits = readProjectFile("src", "app", "dashboard", "credits", "page.tsx");
+  const creditHistory = readProjectFile("src", "app", "dashboard", "credits", "history", "page.tsx");
+  const settings = readProjectFile("src", "app", "dashboard", "settings", "page.tsx");
+  const newRequest = readProjectFile("src", "app", "new-request", "page.tsx");
+
+  assert.match(shell, /mg-efferd-dashboard mg-customer-density/);
+  assert.match(globals, /@media \(min-width: 1024px\) \{[\s\S]*\.mg-customer-density \[data-customer-portal-sidebar\]/);
+  assert.match(globals, /\.mg-customer-density \.mg-compact-ui :where\(\.p-8, \.p-7\)/);
+  assert.match(sidebar, /data-customer-portal-sidebar/);
+  assert.match(sidebar, /data-customer-sidebar-link/);
+  assert.match(header, /data-customer-page-header/);
+  assert.match(header, /lg:min-h-16/);
+  assert.match(dashboard, /data-customer-dashboard/);
+
+  assert.match(credits, /title="Buy Credits"[\s\S]*?heading/);
+  assert.match(credits, /lg:min-h-\[290px\]/);
+  assert.doesNotMatch(credits, /py-10|mb-10|min-h-\[360px\]/);
+  assert.match(creditHistory, /title="Credit History"[\s\S]*?heading/);
+  assert.doesNotMatch(creditHistory, /text-4xl font-black md:text-6xl/);
+  assert.match(settings, /title="Customer Settings"[\s\S]*?heading/);
+  assert.match(settings, /h-12[\s\S]*lg:h-10/);
+  assert.match(newRequest, /title="New File Request"[\s\S]*?heading/);
+  assert.match(newRequest, /h-11[\s\S]*lg:h-9/);
 });
 
 test("customer settings profile load errors block default editable profile state", () => {
