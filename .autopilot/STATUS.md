@@ -5131,3 +5131,36 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
   verisiyle interaktif lokal test yapilmadi. Responsive geometri 390, 768, 1024,
   1280, 1366, 1440, 1536 ve 1920px icin kaynak ve layout hesabiyla incelendi;
   canli veri, Production DB ve deploy degismedi.
+
+## 2026-08-25 15:31 +02:00 Admin siparis responsive duzeltmesi Production release tamamlandi
+
+- Owner `yayinla` diyerek action-time Production onayi verdi. Exact source
+  `c83ee00e20a920df2dfd123e434fd5380cdc7f13`, canli predecessor
+  `d05dc8c87ec87e768de92f72bc93a39239903b1c` uzerine dogrusal code-only
+  release'tir. Kapsam admin siparis listesinin bounded desktop grid'i, `2xl`
+  tablo esigi, laptop/tablet/mobil kartlari, File/Actions gorunurlugu,
+  erisilebilirlik isimleri ve hedefli responsive regresyon testidir.
+- Exact kaynak arsivinin SHA-256 degeri
+  `89ae95a8d6dce70db306061f41edc47d714da14bea01d59146e4af14cc0b9591`
+  olarak yerel ve VPS tarafinda eslesti; kaynak
+  `/opt/mgautotech/file-service/releases/c83ee00e20a9` altina acildi. Production
+  env contract deger yazdirilmadan PASS oldu.
+- Immutable `mgautotech-file-service:c83ee00e20a9` ve
+  `mgautotech-file-expert-analyzer:c83ee00e20a9` image'lari build edildi;
+  Production Next compile, TypeScript ve 278/278 static page PASS. Analyzer-first
+  ve app-second switch healthy tamamlandi. Release-state current
+  `c83ee00e20a9`, previous/rollback `d05dc8c87ec8`; iki container running/healthy,
+  restart 0 ve host port publish yok. Release lock tekrar musaittir.
+- Immediate smoke PASS: `/`, `/file-service`, `/login`, `/register`,
+  `/new-request`, `/admin`, `/dashboard`, `/dashboard/orders`,
+  `/dashboard/file-expert`, `/admin/vehicles`, `/widget` ve widget scripti 200;
+  `/api/health/ready` 200/`ok`, `no-store` ve `noindex`; anonim admin dashboard
+  401. Mevcut public platform ve anonim admin guvenlik smoke scriptleri exit 0;
+  public arac endpointi 102 marka dondurdu ve ic alan sizintisi gostermedi.
+- Son 15 dakikalik bounded app/analyzer error-like log sayaclari 0/0. Kaynak
+  kullanimi app 120.4 MiB/1 GiB, analyzer 45.09 MiB/768 MiB; kritik regresyon
+  gorulmedigi icin rollback uygulanmadi. SQL/migration, Production DB/katalog,
+  musteri/siparis/kredi/dosya verisi, env/secret, Caddy/DNS, odeme, e-posta ve
+  File Expert davranisi degistirilmedi. Oturumlu canli admin satirinda veri
+  degistiren interaktif test yapilmadi; ayni layout kaynak imzalari, hedefli
+  regresyon testi ve Production runtime/smoke kapilari dogrulandi.

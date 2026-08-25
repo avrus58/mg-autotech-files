@@ -130,7 +130,7 @@ Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ### MANUAL-20260825-ADMIN-ORDERS-RESPONSIVE-VIEW [P0] Admin siparis listesini tum ekranlarda gorunur tut
 
-Durum: Done
+Durum: Done (Production deployed and verified)
 
 Fingerprint: `admin-operations|orders-list-responsive-layout|rightmost-file-and-actions-columns-clipped-across-viewports|bounded-desktop-grid-and-dense-responsive-order-cards`
 
@@ -141,7 +141,10 @@ musteri kimligi, arac/engine, ECU/read/gearbox, servis, kredi, dosya hazirlik,
 dosya adi, durum guncelleme ve detay aksiyonu korunuyor. Grid min-content
 tasmasi kapatildi; tablo basliklari, status alanlari ve kartlar erisilebilir
 isimler kazandi. Hedefli responsive test 8/8, lint, typecheck, tam test
-1015/1015, Webpack Production build 278/278 ve diff review PASS.
+1015/1015, Webpack Production build 278/278 ve diff review PASS. Exact
+`c83ee00e20a9` app/analyzer cifti Production'a yayinlandi; health, public ve
+anonim admin guvenlik smoke testleri ile runtime/log kapilari PASS oldu. Exact
+`d05dc8c87ec8` cifti hazir rollback hedefidir.
 
 ### MANUAL-20260825-VEHICLE-PUBLICATION-SYNC-FIX [P0] Yayinlanan arac verisini musteri kataloguna guvenilir aktar
 
