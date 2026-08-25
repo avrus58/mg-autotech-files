@@ -5054,3 +5054,46 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 - Yeni dependency, schema veya migration yoktur. Production halen degismedi;
   release sonrasinda mevcut 10 Temmuz snapshot'ini temizlemek icin bir kez public
   katalog rebuild calistirilmali ve E 63 S ile E 300 e detaylari smoke edilmelidir.
+
+## 2026-08-25 12:13 +02:00 Arac yayinlama senkron hotfix Production release tamamlandi
+
+- Owner `canliya cikart` diyerek action-time Production onayi verdi. Exact source
+  `d05dc8c87ec87e768de92f72bc93a39239903b1c`, canli predecessor
+  `53994c4f09a65ef9d676e4e2e2a1be39ec2021d0` uzerine dogrusal code-only
+  hotfix'tir. Kapsam yalniz stable public arac cozumu, admin save sonrasi katalog
+  senkronu, exact no-store cevabi, 60 saniyelik selector cache'i ve gorunur retry
+  durumudur; migration, package/lockfile, env, Compose, Dockerfile, auth, kredi,
+  odeme, e-posta ve File Expert davranisi degismedi.
+- `codex/vehicle-publication-sync-fix` branch'i force kullanmadan GitHub'a
+  pushlandi. Git metadata icermeyen exact archive SHA-256
+  `a583928c3250bbe31cbbeeb0df40f4067554ea56646d44e1cc76ec7d4c236adc`
+  olarak yerel ve VPS tarafinda eslesti; kaynak
+  `/opt/mgautotech/file-service/releases/d05dc8c87ec8` altina acildi.
+- VPS preflight current `53994c4f09a6` app/analyzer ciftinin healthy/restart 0
+  oldugunu, ayni image'larin rollback icin tutuldugunu, 22 GiB disk headroom'unu,
+  bos release lock'ini, root-only 0600 env metadata'sini ve deger yazdirmayan
+  Production env contract'ini dogruladi.
+- Immutable `mgautotech-file-service:d05dc8c87ec8` ve
+  `mgautotech-file-expert-analyzer:d05dc8c87ec8` image'lari build edildi;
+  Production Next compile, TypeScript ve 278/278 static page PASS. Analyzer-first
+  ve app-second switch healthy tamamlandi. Release-state current
+  `d05dc8c87ec8`, previous/rollback `53994c4f09a6`; iki container healthy,
+  restart 0 ve host port publish yok.
+- Immediate public smoke PASS: `/`, `/new-request`, `/admin`, `/admin/vehicles`,
+  `/widget`, `/widget/vehicle-lookup.js`, `/api/health/ready` ve public brand API
+  200; anonim katalog rebuild POST 401 sinirini korudu. Son on dakikalik bounded
+  app/analyzer error-like log sayaclari 0.
+- Mevcut 10 Temmuz snapshot'i, oturum acik owner/admin UI'sindaki korumali
+  `Rebuild public cache` aksiyonuyla bir kez yenilendi. Islem yalniz
+  `public_vehicle_catalog_cache` tablosundaki `published` satirini upsert etti;
+  sonuc 102 marka, 1.631 model, 2.463 nesil, 10.519 motor ve guncel generated_at
+  olarak hem UI hem read-only Supabase query ile dogrulandi.
+- Exact no-store API smoke: E 63 S Stage 1 `705 HP / 980 Nm`, Stage 2
+  `845 HP / 1180 Nm`; E 300 e Stage 1 `245 HP / 380 Nm`, Stage 2
+  `280 HP / 490 Nm`, Stage 3 `345 HP / 610 Nm`. Gercek homepage musteri secici
+  iki aracta da kayitli Stage 1/2 sonucunu gosterdi ve `Performance data under
+  review` metni cikmadi.
+- Canli arac, performans, musteri, siparis, kredi veya dosya satiri degistirilmedi;
+  katalog cache rebuild disinda Production DB mutasyonu yapilmadi. Kritik
+  regresyon gorulmedigi icin rollback uygulanmadi; exact `53994c4f09a6`
+  app/analyzer cifti hazir rollback hedefidir.

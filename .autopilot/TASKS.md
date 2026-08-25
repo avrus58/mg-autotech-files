@@ -130,8 +130,7 @@ Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ### MANUAL-20260825-VEHICLE-PUBLICATION-SYNC-FIX [P0] Yayinlanan arac verisini musteri kataloguna guvenilir aktar
 
-Durum: Done (yerelde dogrulandi; Production release ve mevcut cache icin tek
-seferlik rebuild owner'in action-time yayin onayini bekliyor)
+Durum: Done (Production deployed and verified)
 
 Fingerprint: `vehicle-catalog|admin-publish-public-projection|published-verified-stage-values-fall-back-to-stale-cache-review-state|stable-engine-resolution-automatic-cache-sync-and-fresh-detail`
 
@@ -149,8 +148,15 @@ kilinmistir.
 Kontroller: Hedefli vehicle/public katalog testleri PASS (55/55); `npm run lint`
 PASS; `npm run typecheck` PASS; `npm test` PASS (1014/1014); `npm run build --
 --webpack` PASS (278/278); `git diff --check` PASS. Yeni dependency, schema veya
-migration yoktur. Production deploy, canli DB/katalog/musteri mutasyonu, env,
-secret, fiyat, odeme veya e-posta degisikligi yapilmadi.
+migration yoktur; auth, fiyat, odeme, e-posta, env veya secret degismedi.
+
+Production: Exact `d05dc8c87ec8` app/analyzer cifti Hostinger VPS'e code-only
+release olarak yayinlandi. Public katalogun tek `published` cache satiri mevcut
+active+published veriyle bir kez rebuild edildi: 102 marka, 1.631 model, 2.463
+nesil ve 10.519 motor. E 63 S ve E 300 e exact API ve gercek musteri homepage
+secici smoke'unda kayitli Stage degerlerini gosterdi; `Performance data under
+review` metni cikmadi. Iki container healthy/restart 0, error-like log sayaci 0;
+rollback cifti `53994c4f09a6` olarak hazirdir.
 
 ### MANUAL-20260825-VEHICLE-MANUAL-PERFORMANCE-ENTRY [P1] Yeni araci ECU ve manuel Stage kazanciyla tek adimda ekle
 
