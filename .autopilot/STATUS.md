@@ -5097,3 +5097,37 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
   katalog cache rebuild disinda Production DB mutasyonu yapilmadi. Kritik
   regresyon gorulmedigi icin rollback uygulanmadi; exact `53994c4f09a6`
   app/analyzer cifti hazir rollback hedefidir.
+
+## 2026-08-25 Admin siparis listesi responsive duzeltmesi basladi
+
+- Owner, admin ana ekranindaki siparis listesinin sagdaki dosya ve islem
+  sutunlarinin laptopta kesildigini ve sorunun masaustu olceklendirmesi ile
+  mobil/dar ekranlarda da kontrol edilmesini istedi.
+- Kod incelemesi, `xl` esiginde 260px sidebar ile dokuz sutunlu tablonun ayni
+  anda acildigini; yuzde 8 Actions hucresine sigmayan Details dugmesinin
+  `overflow-hidden` sinirinda kesildigini dogruladi.
+- Kapsam `MANUAL-20260825-ADMIN-ORDERS-RESPONSIVE-VIEW` olarak In Progress
+  kaydedildi. Bu turda Production deploy veya canli veri mutasyonu yapilmayacak.
+
+## 2026-08-25 14:42 +02:00 Admin siparis listesi responsive duzeltmesi tamamlandi
+
+- Ana admin gridinin esnek kolonu `minmax(0,1fr)` ile bounded yapildi. Dokuz
+  sutunlu tablo `xl` yerine `2xl` esiginde aciliyor; Actions payi yuzde 10'a
+  cikarildi, hucre/dugme ic boslugu sigacak sekilde sikilastirildi ve wrapper
+  icin erisilebilir yatay fallback eklendi.
+- Daha dar ekranlarda tek/iki sutunlu yogun kartlar kullaniliyor. Kartlar
+  musteri ID/e-posta/ad, nesil/engine, ECU/read/gearbox, servis, kredi, original
+  ve modified hazirlik, dosya adi, editable status ve Details aksiyonunu iki
+  satirla sinirli kompakt gorunumde koruyor.
+- Semantik tablo basliklarina scope, status selectlerine gorunur isim ve
+  kartlara heading baglantisi eklendi. Arama, filtre, order gruplari, load-more,
+  loading/error ve iki empty state davranisi degismedi.
+- Kontroller: `tsx --test tests/platform-responsive-security.test.ts` PASS
+  (8/8); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS
+  (1015/1015); `npm run build -- --webpack` PASS (278/278); `git diff --check`
+  PASS. Uc bagimsiz inceleme sonunda P0-P3 bulgu kalmadi.
+- Yerel `/admin` rotasi Webpack dev serverda derlenip 200 dondu; oturum olmayan
+  izole tarayici guvenli login sinirinda kaldigi icin gercek musteri/siparis
+  verisiyle interaktif lokal test yapilmadi. Responsive geometri 390, 768, 1024,
+  1280, 1366, 1440, 1536 ve 1920px icin kaynak ve layout hesabiyla incelendi;
+  canli veri, Production DB ve deploy degismedi.

@@ -128,6 +128,21 @@ Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
 
+### MANUAL-20260825-ADMIN-ORDERS-RESPONSIVE-VIEW [P0] Admin siparis listesini tum ekranlarda gorunur tut
+
+Durum: Done
+
+Fingerprint: `admin-operations|orders-list-responsive-layout|rightmost-file-and-actions-columns-clipped-across-viewports|bounded-desktop-grid-and-dense-responsive-order-cards`
+
+Sonuc: Dokuz sutunlu tablo yalniz guvenli `2xl` genislikte aciliyor; Actions
+sutunu ve Details dugmesi yeniden boyutlandirildi, yatay erisim fallback'i
+eklendi. Laptop, tablet ve mobil gorunum iki sutuna kadar yogun kartlara geciyor;
+musteri kimligi, arac/engine, ECU/read/gearbox, servis, kredi, dosya hazirlik,
+dosya adi, durum guncelleme ve detay aksiyonu korunuyor. Grid min-content
+tasmasi kapatildi; tablo basliklari, status alanlari ve kartlar erisilebilir
+isimler kazandi. Hedefli responsive test 8/8, lint, typecheck, tam test
+1015/1015, Webpack Production build 278/278 ve diff review PASS.
+
 ### MANUAL-20260825-VEHICLE-PUBLICATION-SYNC-FIX [P0] Yayinlanan arac verisini musteri kataloguna guvenilir aktar
 
 Durum: Done (Production deployed and verified)

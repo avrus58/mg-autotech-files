@@ -34,6 +34,52 @@ test("admin mobile content is prioritized and the notification dock avoids page 
   assert.match(notificationDock, /fixed bottom-4 left-4[^"]*sm:right-4 sm:top-20/);
 });
 
+test("admin orders keep file state and actions visible at every responsive width", () => {
+  const adminPage = readProjectFile("src", "app", "admin", "page.tsx");
+  const ordersPanel =
+    adminPage.match(/function OrdersPanel\([\s\S]*?\nfunction CustomersPanel\(/)?.[0] ?? "";
+  const responsiveCardsStart = ordersPanel.indexOf(
+    '<div className="grid gap-3 lg:grid-cols-2 2xl:hidden">',
+  );
+  const responsiveCardsEnd = ordersPanel.indexOf(
+    "{visibleOrders.length < statusFilteredGroupedOrders.length",
+    responsiveCardsStart,
+  );
+  const responsiveCards = ordersPanel.slice(responsiveCardsStart, responsiveCardsEnd);
+
+  assert.ok(ordersPanel, "OrdersPanel source must remain available for responsive checks");
+  assert.ok(responsiveCardsStart >= 0 && responsiveCardsEnd > responsiveCardsStart);
+  assert.match(adminPage, /xl:grid-cols-\[260px_minmax\(0,1fr\)\]/);
+
+  assert.match(
+    ordersPanel,
+    /hidden overflow-x-auto rounded-2xl border border-white\/10 2xl:block/,
+  );
+  assert.match(ordersPanel, /grid gap-3 lg:grid-cols-2 2xl:hidden/);
+  assert.doesNotMatch(
+    ordersPanel,
+    /hidden overflow-hidden rounded-2xl border border-white\/10 xl:block/,
+  );
+  assert.match(ordersPanel, /<col className="w-\[10%\]" \/>/);
+  assert.match(responsiveCards, /Original Ready/);
+  assert.match(responsiveCards, /Modified Ready/);
+  assert.match(responsiveCards, /No Original/);
+  assert.match(responsiveCards, /\{order\.credits_required \?\? 0\} cr/);
+  assert.match(responsiveCards, /customerIdentity/);
+  assert.match(responsiveCards, /vehicleDetail/);
+  assert.match(responsiveCards, /ecuDetail/);
+  assert.match(responsiveCards, /min-w-0 w-full/);
+  assert.match(responsiveCards, />\s*Details\s*</);
+  assert.match(
+    ordersPanel,
+    /aria-label=\{`Update status for order \$\{shortId\(order\.id\)\}`\}/,
+  );
+  assert.match(
+    ordersPanel,
+    /aria-labelledby=\{`admin-order-\$\{order\.id\}`\}/,
+  );
+});
+
 test("public online status is compact and never intercepts mobile controls", () => {
   const onlineStatus = readProjectFile("src", "components", "OnlineStatus.tsx");
 

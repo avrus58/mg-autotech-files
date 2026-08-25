@@ -1760,7 +1760,7 @@ export default function AdminPage() {
         </div>
       </header>
 
-      <section className="mx-auto grid max-w-[1600px] min-w-0 gap-5 px-3 py-6 sm:px-4 sm:py-8 xl:grid-cols-[260px_1fr]">
+      <section className="mx-auto grid max-w-[1600px] min-w-0 gap-5 px-3 py-6 sm:px-4 sm:py-8 xl:grid-cols-[260px_minmax(0,1fr)]">
         <aside className="order-2 h-fit min-w-0 rounded-[1.5rem] border border-white/10 bg-white/[0.04] p-4 shadow-2xl shadow-black/20 sm:rounded-[2rem] xl:order-1 xl:sticky xl:top-28">
           <div className="mb-4 px-3">
             <div className="text-xs font-black uppercase tracking-[0.22em] text-zinc-500">Admin Workspace</div>
@@ -2361,30 +2361,30 @@ function OrdersPanel({
         })}
       </div>
 
-      <div className="hidden overflow-hidden rounded-2xl border border-white/10 xl:block">
+      <div className="hidden overflow-x-auto rounded-2xl border border-white/10 2xl:block">
         <table className="w-full table-fixed border-collapse text-left text-sm">
           <colgroup>
             <col className="w-[8%]" />
-            <col className="w-[15%]" />
+            <col className="w-[14%]" />
             <col className="w-[12%]" />
             <col className="w-[13%]" />
             <col className="w-[11%]" />
             <col className="w-[7%]" />
-            <col className="w-[14%]" />
+            <col className="w-[13%]" />
             <col className="w-[12%]" />
-            <col className="w-[8%]" />
+            <col className="w-[10%]" />
           </colgroup>
           <thead className="bg-black/50 text-xs uppercase tracking-[0.14em] text-zinc-500">
             <tr>
-              <th className="px-3 py-4">Order</th>
-              <th className="px-3 py-4">Customer</th>
-              <th className="px-3 py-4">Vehicle</th>
-              <th className="px-3 py-4">ECU / Read</th>
-              <th className="px-3 py-4">Service</th>
-              <th className="px-3 py-4">Credits</th>
-              <th className="px-3 py-4">Status</th>
-              <th className="px-3 py-4">File</th>
-              <th className="px-3 py-4 text-center">Actions</th>
+              <th scope="col" className="px-3 py-4">Order</th>
+              <th scope="col" className="px-3 py-4">Customer</th>
+              <th scope="col" className="px-3 py-4">Vehicle</th>
+              <th scope="col" className="px-3 py-4">ECU / Read</th>
+              <th scope="col" className="px-3 py-4">Service</th>
+              <th scope="col" className="px-3 py-4">Credits</th>
+              <th scope="col" className="px-3 py-4">Status</th>
+              <th scope="col" className="px-3 py-4">File</th>
+              <th scope="col" className="px-2 py-4 text-center">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-white/10">
@@ -2426,6 +2426,7 @@ function OrdersPanel({
                       value={order.status ?? "new_request"}
                       onChange={(event) => updateStatus(order.id, event.target.value)}
                       disabled={updatingId === order.id}
+                      aria-label={`Update status for order ${shortId(order.id)}`}
                       className={`w-full rounded-xl border px-3 py-2 text-xs font-black outline-none ${statusClass(order.status)}`}
                     >
                       {editableStatusOptions.map((status) => <option key={status} value={status} className="bg-[#111]">{statusLabel(status)}</option>)}
@@ -2440,13 +2441,13 @@ function OrdersPanel({
                     {order.modified_file_path && <div className="mt-1 rounded-xl border border-blue-700/40 bg-blue-950/25 px-3 py-2 text-xs font-bold text-blue-300">Modified Ready</div>}
                     <div title={order.uploaded_file_name || "-"} className="mt-1 max-w-full truncate text-xs text-zinc-500">{order.uploaded_file_name || "-"}</div>
                   </td>
-                  <td className="px-3 py-4 text-center align-top">
+                  <td className="px-2 py-4 text-center align-top">
                     <button
                       type="button"
                       onClick={() => setSelectedOrder(order)}
-                      className="inline-flex h-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] px-4 text-xs font-black text-white transition hover:border-red-700/50 hover:bg-red-950/30"
+                      className="inline-flex h-10 w-full items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] px-2 text-xs font-black text-white transition hover:border-red-700/50 hover:bg-red-950/30"
                     >
-                      <Eye className="mr-2 h-4 w-4" />
+                      <Eye className="mr-1.5 h-4 w-4 shrink-0" />
                       Details
                     </button>
                   </td>
@@ -2457,41 +2458,63 @@ function OrdersPanel({
         </table>
       </div>
 
-      <div className="space-y-4 xl:hidden">
+      <div className="grid gap-3 lg:grid-cols-2 2xl:hidden">
         {statusFilteredGroupedOrders.length === 0 ? (
-          <div className="rounded-2xl border border-white/10 bg-black/30 p-8 text-center text-zinc-500">No orders found.</div>
+          <div className="rounded-2xl border border-white/10 bg-black/30 p-8 text-center text-zinc-500 lg:col-span-2">No orders found.</div>
         ) : (
-          visibleOrders.map((order) => (
-            <div key={order.id} className="min-w-0 rounded-2xl border border-white/10 bg-black/30 p-4 sm:p-5">
-              <div className="mb-4 flex items-start justify-between gap-4">
-                <div className="min-w-0">
-                  <div className="break-words text-lg font-black">{order.vehicle_brand || "-"} {order.vehicle_model || ""}</div>
-                  <div className="mt-1 break-words text-sm text-zinc-500">#{shortId(order.id)} · {formatDate(order.created_at)}</div>
+          visibleOrders.map((order) => {
+            const customer = customerById.get(order.customer_id ?? "");
+            const customerIdentity = [customer?.customer_id, order.customer_email, customer?.full_name || customer?.company_name].filter(Boolean).join(" · ");
+            const vehicleDetail = [order.vehicle_generation, order.vehicle_engine].filter(Boolean).join(" · ");
+            const ecuDetail = [order.ecu, order.read_method, order.gearbox].filter(Boolean).join(" · ");
+
+            return (
+              <article key={order.id} aria-labelledby={`admin-order-${order.id}`} className="min-w-0 rounded-2xl border border-white/10 bg-black/30 p-3 sm:p-4">
+                <div className="mb-3 flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <h3 id={`admin-order-${order.id}`} className="break-words text-base font-black sm:text-lg">{order.vehicle_brand || "-"} {order.vehicle_model || ""}</h3>
+                    <div className="mt-1 break-words text-sm text-zinc-500">#{shortId(order.id)} · {formatDate(order.created_at)}</div>
+                  </div>
+                  <div className="flex shrink-0 flex-col items-end gap-1.5">
+                    <span className={`rounded-full border px-2.5 py-1 text-xs font-bold ${statusClass(order.status)}`}>{statusLabel(order.status)}</span>
+                    <span className="rounded-full border border-red-900/40 bg-red-950/25 px-2.5 py-1 text-xs font-black text-red-300">{order.credits_required ?? 0} cr</span>
+                  </div>
                 </div>
-                <span className={`shrink-0 rounded-full border px-3 py-1 text-xs font-bold ${statusClass(order.status)}`}>{statusLabel(order.status)}</span>
-              </div>
-              <div className="grid gap-3 text-sm md:grid-cols-2">
-                <MiniInfo label="Customer" value={customerById.get(order.customer_id ?? "")?.customer_id || order.customer_email} />
-                <MiniInfo label="Engine" value={order.vehicle_engine} />
-                <MiniInfo label="ECU" value={order.ecu} />
-                <MiniInfo label="Service" value={order.service_type} />
-              </div>
-              <div className="mt-4 grid gap-2 md:grid-cols-[1fr_auto]">
-                <select
-                  value={order.status ?? "new_request"}
-                  onChange={(event) => updateStatus(order.id, event.target.value)}
-                  disabled={updatingId === order.id}
-                  className={`h-11 rounded-xl border px-3 text-xs font-black outline-none ${statusClass(order.status)}`}
-                >
-                  {editableStatusOptions.map((status) => <option key={status} value={status} className="bg-[#111]">{statusLabel(status)}</option>)}
-                </select>
-                <button onClick={() => setSelectedOrder(order)} className="h-11 rounded-xl border border-white/10 bg-white/[0.04] px-4 text-sm font-black text-white transition hover:border-red-700/50 hover:bg-red-950/30">
-                  <Eye className="mr-2 inline h-4 w-4" />
-                  Details
-                </button>
-              </div>
-            </div>
-          ))
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <MiniInfo label="Customer" value={customerIdentity} />
+                  <MiniInfo label="Vehicle / Engine" value={vehicleDetail} />
+                  <MiniInfo label="ECU / Read" value={ecuDetail} />
+                  <MiniInfo label="Service" value={order.service_type} />
+                </div>
+                <div className="mt-3 rounded-xl border border-white/10 bg-black/25 p-2.5">
+                  <div className="flex flex-wrap gap-1.5">
+                    <span className={`rounded-lg border px-2 py-1 text-[11px] font-bold ${order.original_file_path ? "border-emerald-700/40 bg-emerald-950/25 text-emerald-300" : "border-zinc-700/40 bg-zinc-900/40 text-zinc-500"}`}>
+                      {order.original_file_path ? "Original Ready" : "No Original"}
+                    </span>
+                    {order.modified_file_path && (
+                      <span className="rounded-lg border border-blue-700/40 bg-blue-950/25 px-2 py-1 text-[11px] font-bold text-blue-300">Modified Ready</span>
+                    )}
+                  </div>
+                  <div title={order.uploaded_file_name || "-"} className="mt-1.5 truncate text-xs text-zinc-500">{order.uploaded_file_name || "-"}</div>
+                </div>
+                <div className="mt-3 grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
+                  <select
+                    value={order.status ?? "new_request"}
+                    onChange={(event) => updateStatus(order.id, event.target.value)}
+                    disabled={updatingId === order.id}
+                    aria-label={`Update status for order ${shortId(order.id)}`}
+                    className={`h-11 min-w-0 w-full rounded-xl border px-3 text-xs font-black outline-none ${statusClass(order.status)}`}
+                  >
+                    {editableStatusOptions.map((status) => <option key={status} value={status} className="bg-[#111]">{statusLabel(status)}</option>)}
+                  </select>
+                  <button onClick={() => setSelectedOrder(order)} className="h-11 rounded-xl border border-white/10 bg-white/[0.04] px-4 text-sm font-black text-white transition hover:border-red-700/50 hover:bg-red-950/30">
+                    <Eye className="mr-2 inline h-4 w-4" />
+                    Details
+                  </button>
+                </div>
+              </article>
+            );
+          })
         )}
       </div>
 
@@ -3452,7 +3475,7 @@ function AdminOperationsOverview({
 }
 
 function MiniInfo({ label, value }: { label: string; value: string | number | null | undefined }) {
-  return <div className="min-w-0 rounded-xl bg-white/[0.04] p-3"><div className="text-xs uppercase tracking-[0.12em] text-zinc-500">{label}</div><div className="mt-1 break-words font-bold text-white">{value || "-"}</div></div>;
+  return <div className="min-w-0 rounded-xl bg-white/[0.04] p-3"><div className="text-xs uppercase tracking-[0.12em] text-zinc-500">{label}</div><div title={String(value || "-")} className="mt-1 line-clamp-2 break-words font-bold text-white">{value || "-"}</div></div>;
 }
 
 function FormInput({ label, value, onChange, type = "text", min, max, step, inputMode, disabled = false }: { label: string; value: string; onChange: (value: string) => void; type?: string; min?: string; max?: string; step?: string; inputMode?: "decimal" | "numeric"; disabled?: boolean }) {
