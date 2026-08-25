@@ -130,7 +130,7 @@ Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ### MANUAL-20260825-VEHICLE-MANUAL-PERFORMANCE-ENTRY [P1] Yeni araci ECU ve manuel Stage kazanciyla tek adimda ekle
 
-Durum: Done
+Durum: Done (Production deployed and verified)
 
 Fingerprint: `vehicle-catalog|admin-manual-create-and-stage-editor|new-draft-only-captures-one-inactive-stage-and-gains-read-only|complete-safe-ecu-and-three-stage-manual-entry`
 
@@ -148,11 +148,17 @@ Kontroller: Hedefli vehicle-control testleri PASS (47/47); `npm run lint` PASS;
 `npm run typecheck` PASS; `npm test` PASS (1012/1012); `npm run build --
 --webpack` PASS (278/278); `git diff --check` PASS. Bagimsiz incelemede P0/P1
 engel bulunmadi. Yeni dependency, canli DB/katalog/musteri mutasyonu, fiyat,
-odeme, e-posta, env/secret veya Production deploy yapilmadi.
+odeme, e-posta veya env/secret degisikligi yapilmadi.
+
+Production: Exact `53994c4f09a6` app/analyzer cifti Hostinger VPS'e code-only
+release olarak yayinlandi. Release-state previous/rollback cifti
+`5e6a96b8a4fa` olarak korundu; iki container healthy, restart 0 ve runtime
+error-like log sayaci 0. Public/admin boundary ve vehicle/widget smoke kapilari
+PASS; migration, canli katalog/musteri verisi veya env degisikligi yapilmadi.
 
 ### MANUAL-20260825-VEHICLE-CATALOG-ADMIN [P1] Arac widget katalogunu sade ve Stage 1/2/3 yonetilebilir yap
 
-Durum: Done
+Durum: Done (Production deployed and verified)
 
 Fingerprint: `vehicle-catalog|admin-editor-and-public-widget|stage3-already-stored-but-admin-and-widget-incomplete|simple-hierarchical-three-stage-management`
 
@@ -175,8 +181,13 @@ nesil -> motor secimi ile sonuc karti yerel tarayicida calisti; 1366x768 laptop
 ve 390x844 mobil viewport'larda yatay overflow yok. Authenticated admin ekranina
 yerel staff oturumu olmadigi icin browser dogrulamasi login guvenlik sinirinda
 kaldi; derleme, kaynak kontrolleri ve permission testleri bu yolu dogruladi.
-Production deploy, canli migration/veri, gercek musteri/katalog mutasyonu,
-fiyat, odeme, e-posta, env/secret veya dependency degisikligi yapilmadi.
+Canli migration/veri, gercek musteri/katalog mutasyonu, fiyat, odeme, e-posta,
+env/secret veya dependency degisikligi yapilmadi.
+
+Production: Exact `53994c4f09a6` source archive'i hash parity ile Hostinger
+VPS'e aktarildi ve immutable app/analyzer release'i healthy tamamlandi. Public
+vehicle smoke 102 brand/cache, widget Stage 3 contract smoke ve anonim admin API
+401 siniri PASS; rollback `5e6a96b8a4fa` olarak hazir tutuldu.
 
 ### MANUAL-20260824-CREDIT-PRICING-STABILITY [P0] Global ve musteri-ozel kredi fiyatini tek otoritede sabitle
 

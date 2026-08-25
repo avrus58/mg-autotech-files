@@ -4980,3 +4980,37 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
   --webpack` PASS (278/278); `git diff --check` PASS. Bagimsiz reviewer P0/P1
   engel bulmadi. Canli DB/katalog/musteri mutasyonu, fiyat, odeme, e-posta,
   env/secret veya Production deploy yapilmadi.
+
+## 2026-08-25 10:19 +02:00 Arac katalogu ve manuel performans Production release tamamlandi
+
+- Owner `Yayinla` diyerek Production action-time onayi verdi. Exact runtime
+  source `53994c4f09a65ef9d676e4e2e2a1be39ec2021d0`; kapsam birbirine bagli
+  `79d9838` arac katalogu/Stage 1-2-3 yonetimi ile `53994c4` manuel ECU ve
+  performans kazanc girisidir. Canli `5e6a96b8a4fa` runtime'inin dogrusal
+  devamidir. SQL/migration, package/lockfile, env, Compose, Dockerfile, auth,
+  kredi/odeme ve File Expert davranisi degismedi.
+- `codex/vehicle-catalog-admin` release branch'i force kullanmadan GitHub'a
+  pushlandi. Git metadata icermeyen exact archive SHA-256
+  `8d8ac07e08c44c3a3969671be12efa9c8b79e0adf4ae6c6892ef316107fc0272`
+  olarak yerel ve VPS tarafinda eslesti; kaynak
+  `/opt/mgautotech/file-service/releases/53994c4f09a6` altina acildi.
+- VPS preflight current `5e6a96b8a4fa` app/analyzer ciftinin healthy/restart 0
+  oldugunu, rollback `d39ab2c8140e` image'larini, root-only 0600 env
+  dosyalarini, 22 GiB disk headroom'unu, bos release lock'ini ve deger
+  yazdirmayan Production env contract'ini dogruladi.
+- Immutable `mgautotech-file-service:53994c4f09a6` ve
+  `mgautotech-file-expert-analyzer:53994c4f09a6` image'lari build edildi;
+  Production Next compile, TypeScript ve 278/278 static page PASS. Analyzer-first
+  ve app-second switch healthy tamamlandi. Release-state current
+  `53994c4f09a6`, previous/rollback `5e6a96b8a4fa`; iki container healthy,
+  restart 0 ve host port publish yok.
+- Immediate smoke PASS: `/`, `/new-request`, `/admin`, `/admin/vehicles`,
+  `/widget`, `/widget/vehicle-lookup.js` ve `/api/health/ready` 200; public
+  vehicle endpointi cache kaynagindan 102 brand dondu. Widget script Stage 3
+  capability'sini tasiyor; anonim admin vehicle ve search endpointleri 401
+  sinirini koruyor. Health cevabi `ok` ve `no-store`; son on dakikalik bounded
+  app/analyzer error-like log sayaclari 0.
+- Authenticated admin save veya canli katalog/musteri verisi mutasyonu, gercek
+  odeme/e-posta, env/secret, Caddy/DNS veya Production DB degisikligi yapilmadi.
+  Kritik regresyon gorulmedigi icin rollback uygulanmadi; exact
+  `5e6a96b8a4fa` app/analyzer cifti hazir rollback hedefidir.
