@@ -174,7 +174,7 @@ review` metni cikmadi. Iki container healthy/restart 0, error-like log sayaci 0;
 rollback cifti `53994c4f09a6` olarak hazirdir.
 ### MANUAL-20260826-EXPLICIT-CREDIT-PRICE-AUTHORITY [P0] Global ve musteri kredi fiyatlarini ayir
 
-Durum: Done (local implementation validated; staging/Production release pending explicit authorization)
+Durum: Done (Production deployed and verified)
 
 Fingerprint: `commerce-pricing|global-and-customer-package-custom-authority|single-adjustment-couples-all-credit-products|explicit-final-price-fields-with-atomic-audit`
 
@@ -195,13 +195,22 @@ ve musteri admin fiyat alanlari kompaktlastirildi; kredi satin alma ve ana sayfa
 paketleri yalniz nihai tutari gosterir, uydurma indirim/karsilastirma kullanmaz.
 
 Kontroller: hedefli pricing/homepage PASS (18/18); `npm run lint` PASS;
-`npm run typecheck` PASS; `npm test` PASS (1019/1019); `npm run check:i18n`
+`npm run typecheck` PASS; `npm test` PASS (1022/1022); `npm run check:i18n`
 PASS (12 locale, 608/608, 0 fallback); `npm run build -- --webpack` PASS
 (278/278); `npm run check:performance` PASS (70.1/80 KiB gzip);
 `git diff --check` PASS. PostgreSQL 16 sentetik semada migration smoke PASS ve
 120.006 legacy kombinasyonda JavaScript parity 0 mismatch; bagimsiz SQL, kod ve
-UI review P0/P1 bulmadi. Env/secret okunmadi; canli DB, musteri verisi, odeme
-ayari veya Production deploy degistirilmedi.
+UI review P0/P1 bulmadi.
+
+Production: Exact `bafc6a6aefad` app/analyzer cifti Hostinger VPS'e yayinlandi.
+Once isolated staging migration, continuity, aktivasyon, atomik save/stale
+conflict ve temizlik kontrolleri gecti. Production etkilenmis tablolar recovery
+snapshot'i root-only alindi; additive migration sonrasi 1 global ve 4 musteri
+politikasinda continuity mismatch 0 oldu. Canli uygulama smoke'undan sonra v2
+write gate exact commit'e tek yonlu baglandi; tum SQL guvenlik alanlari true ve
+canli public quote bes paket/custom fiyatla DB'ye birebir eslesti. Iki container
+healthy/restart 0, error-like log sayaci 0; gercek odeme, e-posta, musteri
+mutasyonu veya fiyat degisikligi yapilmadi.
 
 ### MANUAL-20260826-CREDIT-PURCHASE-DENSITY [P1] Kredi satin alma ekranini laptopta kompaktlastir
 

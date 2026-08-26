@@ -5238,3 +5238,41 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
   konfigurasyonu, e-posta ve deploy degistirilmedi. Release icin once staging,
   sonra Production continuity/verifier kapilari ve ayri acik yayin yetkisi
   gerekir.
+
+## 2026-08-26 12:45 +02:00 Acik kredi fiyat otoritesi Production yayini tamamlandi
+
+- Owner'in acik `yayinla` yetkisiyle exact urun commit'i
+  `bafc6a6aefadb255f07379cf8f9b42d807684915` release edildi. Branch full
+  kapilari lint, typecheck, 1022/1022 test, i18n, 278/278 Webpack build,
+  70.1/80 KiB performance ve clean diff olarak gecti; immutable final review GO
+  verdi.
+- Isolated staging ref `vxdxdvtsopsjatukdbuq` uzerinde additive migration,
+  SELECT-only guvenlik verifierleri, legacy-to-v2 continuity, gate activation,
+  global/musteri atomik save, stale conflict ve bagimsiz inheritance senaryolari
+  sentetik `.invalid` fixture'larla gecti. Fixture auth/profil/policy/event
+  satirlari tamamen temizlendi; gercek Production verisi staging'e kopyalanmadi.
+- Production ref `jujaeyvyaeesmipihrrw` icin migrationdan once etkilenen uc
+  tablonun recovery snapshot'i VPS'te
+  `/var/backups/mgautotech/explicit-pricing-pre-bafc6a6aefad-20260826.json`
+  olarak root:root 0600 kaydedildi. SHA-256
+  `f9d5132f905e6687a88f11937efb53deff8ae0f8bb57693473e85416c442bf15`;
+  snapshot 1 global ayar, 4 musteri politikasi ve 11 policy event kaydini
+  kapsar. Secret, fiyat degeri, UUID veya PII loglanmadi.
+- Additive Production migrationi basarili oldu. Aktivasyon oncesi exact
+  continuity verifieri 1 global, 4 musteri politikasi ve 2 ozel politikada
+  mismatch 0 bildirdi. Uygulama gate kapaliyken VPS'e alindi ve login, register,
+  dashboard, credits, admin, health, public quote, vehicle katalogu ile
+  anonymous admin yetki sinirlari smoke testlerinden gecti.
+- `activate_explicit_pricing_v2` exact full commit'i rollback bridge olarak
+  kaydetti (`ok=true`, audit kaydi true). Son explicit SQL verifierinde kolon,
+  data, gate, constraint, RPC yetkisi, RLS, browser write revoke/policy ve legacy
+  guard alanlarinin tamami true oldu. Canli public quote'taki bes paket toplami
+  ve custom birim fiyat DB ile degerleri aciga cikarmadan birebir eslesti;
+  response `no-store` kaldi.
+- Canli app/analyzer cifti `bafc6a6aefad`, ikisi de healthy, restart 0 ve son
+  10 dakikada error-like log 0. Chrome public QA'da login/register/dashboard/
+  credits/admin rotalarinda yatay tasma ve `Checking secure session` takilmasi
+  gorulmedi. Gercek odeme/checkout, e-posta, fiyat save'i veya musteri verisi
+  mutasyonu yapilmadi. Gate tek yonlu oldugu icin bundan sonraki uygulama
+  rollback'i pre-v2 `c83ee00e20a9` yerine kayitli v2 bridge `bafc6a6aefad`
+  uzerinde kalmalidir.
