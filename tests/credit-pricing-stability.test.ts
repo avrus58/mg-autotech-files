@@ -559,6 +559,8 @@ test("commercial tables allow authenticated staff reads but server-only writes",
   assert.match(explicitVerifier, /activation_rpc_service_only/);
   assert.match(explicitVerifier, /browser_direct_writes_revoked/);
   assert.match(explicitVerifier, /legacy_write_guards_present/);
+  assert.equal((explicitVerifier.match(/tgenabled\s+in\s*\('O',\s*'A'\)/gi) ?? []).length, 2);
+  assert.doesNotMatch(explicitVerifier, /tgenabled\s*<>\s*'D'/i);
   assert.doesNotMatch(
     explicitVerifier,
     /\b(?:alter|create|drop|grant|revoke|insert|update|delete|truncate)\s+(?:table|policy|on|into|from|public\.)/i,

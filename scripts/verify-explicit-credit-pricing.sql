@@ -170,7 +170,7 @@ with expected_global_columns(column_name) as (
         and trigger_record.tgrelid = 'public.commerce_settings'::regclass
         and trigger_record.tgfoid = 'public.mark_legacy_commerce_price_write()'::regprocedure
         and (trigger_record.tgtype & 19) = 19
-        and trigger_record.tgenabled <> 'D'
+        and trigger_record.tgenabled in ('O', 'A')
         and not trigger_record.tgisinternal
     )
     and exists (
@@ -179,7 +179,7 @@ with expected_global_columns(column_name) as (
         and trigger_record.tgrelid = 'public.customer_commercial_policies'::regclass
         and trigger_record.tgfoid = 'public.mark_legacy_customer_price_write()'::regprocedure
         and (trigger_record.tgtype & 23) = 23
-        and trigger_record.tgenabled <> 'D'
+        and trigger_record.tgenabled in ('O', 'A')
         and not trigger_record.tgisinternal
     ) as legacy_write_guards_present
 )

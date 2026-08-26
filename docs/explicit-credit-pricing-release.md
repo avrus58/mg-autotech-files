@@ -34,10 +34,14 @@ materialized prices.
    `node scripts/verify-explicit-pricing-continuity.mjs`; any mismatch blocks
    the release. The verifier is read-only and reports counts, never customer
    identifiers or policy contents.
-4. Deploy the v2-aware application to staging and test public quotes,
-   authenticated quotes, package checkout, custom checkout, global pricing,
-   customer inheritance, customer override, stale-quote rejection, and
-   concurrent-save conflict handling.
+4. Deploy the v2-aware application to staging and retain its immutable release
+   identifier as the staging rollback bridge. Activate v2 writes in staging by
+   calling the service-role-only `activate_explicit_pricing_v2` RPC with that
+   identifier and the current global `updated_at` revision, then re-run the
+   explicit verifier and require `writes_activated = true`. Only after that
+   staging-only activation, test public quotes, authenticated quotes, package
+   checkout, custom checkout, global pricing, customer inheritance, customer
+   override, stale-quote rejection, and concurrent-save conflict handling.
 5. Repeat the reviewed additive migration in Production. Before deploying or
    activating writes, run `scripts/verify-commercial-pricing-authority.sql`,
    `scripts/verify-explicit-credit-pricing.sql`, and
