@@ -172,6 +172,29 @@ nesil ve 10.519 motor. E 63 S ve E 300 e exact API ve gercek musteri homepage
 secici smoke'unda kayitli Stage degerlerini gosterdi; `Performance data under
 review` metni cikmadi. Iki container healthy/restart 0, error-like log sayaci 0;
 rollback cifti `53994c4f09a6` olarak hazirdir.
+### MANUAL-20260826-CREDIT-PURCHASE-DENSITY [P1] Kredi satin alma ekranini laptopta kompaktlastir
+
+Durum: Done
+
+Fingerprint: `customer-credits|purchase-page-package-grid-and-payment-selector|oversized-cards-and-delayed-package-choices|compact-wide-first-choice-workspace`
+
+Sonuc: Kredi satin alma alani 1500px genis calisma yuzeyine alindi. Odeme
+yontemleri yatay kompakt secime, paketler 1024px laptopta uc ve 1280px ustunde
+bes sutuna tasindi; sabit 290/340px kart yukseklikleri kaldirildi. Paket
+secimleri kullanim olceginin onune alindi. Loading/error/notice, banka bilgisi,
+custom miktar, Stripe ve banka CTA'lari daha kisa ritimde korunurken ana
+etkilesimler en az 44px kaldi. Fiyat hesaplamasi ve gostergeleri degismedi.
+
+Kontroller: `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS
+(1014/1014); `npm run check:i18n` PASS; `npm run build -- --webpack` PASS
+(278/278); hedefli UI + pricing testleri PASS (114/114); `git diff --check`
+PASS. Bagimsiz review ACCEPT, P0/P1 yok. Authenticated gercek viewport fixture'i
+kullanilmadi; responsive source-contract testleri ve breakpoint incelemesi
+390px mobil ile 1024/1280/1366px sinirlarini koruyor.
+
+Kapsam disi olarak fiyat, kredi adedi, indirim/KDV, veritabani, migration,
+odeme ayari, canli musteri verisi ve Production deploy degistirilmedi.
+
 ### MANUAL-20260825-PORTAL-DENSITY-REFINEMENT [P1] Admin ve musteri panellerini laptopta kompaktlastir
 
 Durum: Done

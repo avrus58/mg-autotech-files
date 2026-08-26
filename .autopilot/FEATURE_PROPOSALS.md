@@ -2,6 +2,33 @@
 
 ## Proposed
 
+### PROPOSAL-20260826-EXPLICIT-CREDIT-PRICE-AUTHORITY - Paket ve ozel miktar fiyatlarini ayir
+
+- Problem: 10/50/100/250/500 paket bazlari kodda sabittir. Tek global adjustment
+  ve tek musteri override'i hem paket hem ozel miktar alimini birlikte etkiler;
+  fixed musteri rate'i paketlerin hacim farkini da duzlestirebilir.
+- Target user: Genel tarifeyi ve belirli partner/musteri anlasmalarini birbirine
+  karistirmadan yonetmek isteyen owner/admin.
+- Proposed solution: Bes global paket toplam fiyatini ayri sakla; her musteri
+  icin bos degerin globali miras aldigi seyrek paket override'lari ekle. Genel
+  ozel-miktar EUR/kredi ve musteri ozel-miktar EUR/kredi alanlarini paketlerden
+  tamamen ayir. Paket kimligi ve kredi miktari kodda sabit kalsin.
+- Integrity: Admin kayitlarini yetki kontrollu tek transaction + audit ile yap;
+  eksik fiyat kaynaginda checkout fail-closed olsun. Stripe/banka fiyatini
+  browser payload'undan alma; sunucu quote'u ve olusturulan odeme snapshot'ini
+  canonical tut. Public fiyat endpointi yalniz global degerleri gostersin.
+- Migration: Mevcut efektif global ve musteri fiyatlarini kaybetmeden explicit
+  degerlere donustur; legacy adjustment alanlarini ilk surumde read-only tut.
+- Acceptance criteria:
+  - Bir paket override'i diger paketleri veya ozel miktari degistirmez.
+  - Ozel miktar override'i paketleri degistirmez; null her zaman globali miras alir.
+  - Bes global paket, global custom unit ve musteri override'lari admin preview'da gorulur.
+  - Eksik/unknown config, concurrent stale save ve audit hatasi fail-closed kalir.
+  - Fiyat degisimi acilmis Stripe session'ini geriye donuk yeniden fiyatlamaz.
+- Owner decision required: Girilen deger nihai satis fiyati mi yoksa liste +
+  kampanya fiyati mi; mevcut yuzde/sabit adjustment kontrolleri kalsin mi;
+  fiyatlar KDV dahil mi; public ana sayfa hangi global fiyatlari gostersin?
+
 ### PROPOSAL-20260823-AUTHENTICATED-DATALOG-ENTITLEMENT - Gercek customer-only detayli datalog analizi
 
 - Problem: Public iki-metrik snapshot ve customer Studio ayni browser-local

@@ -880,8 +880,18 @@ test("authenticated customer routes use laptop density without shrinking mobile 
   assert.match(dashboard, /data-customer-dashboard/);
 
   assert.match(credits, /title="Buy Credits"[\s\S]*?heading/);
-  assert.match(credits, /lg:min-h-\[290px\]/);
-  assert.doesNotMatch(credits, /py-10|mb-10|min-h-\[360px\]/);
+  assert.match(credits, /width="wide"/);
+  assert.match(credits, /data-credit-purchase-page/);
+  assert.match(credits, /data-credit-package-grid[\s\S]*xl:grid-cols-5/);
+  assert.match(credits, /min-h-11 w-full/);
+  assert.doesNotMatch(
+    credits,
+    /py-10|mb-10|min-h-\[(?:290|340|360)px\]/,
+  );
+  assert.ok(
+    credits.indexOf("data-credit-package-grid") <
+      credits.indexOf("Credit Utilization Scale"),
+  );
   assert.match(creditHistory, /title="Credit History"[\s\S]*?heading/);
   assert.doesNotMatch(creditHistory, /text-4xl font-black md:text-6xl/);
   assert.match(settings, /title="Customer Settings"[\s\S]*?heading/);

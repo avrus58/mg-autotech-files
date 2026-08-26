@@ -5174,3 +5174,32 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
   migration veya Production degistirilmedi. Chrome oturum koprusu bu turda yanit
   vermedigi icin gercek authenticated viewport kaydi alinmadi; source contract,
   breakpoint hesabi, responsive test ve Production build kapilari temizdir.
+
+## 2026-08-26 09:32 +02:00 Kredi satin alma yogunlugu ve fiyat otoritesi denetimi tamamlandi
+
+- Kredi satin alma ekrani genis ama daha yogun bir calisma yuzeyine tasindi.
+  Odeme yontemleri kompakt yatay secimdir; paket kartlari sabit yukseklik
+  kullanmaz ve paketler kullanim olceginden once gorunur. Grid mobilde tek,
+  640px ustunde iki, 1024px ustunde uc ve 1280px ustunde bes sutundur. Custom
+  miktar ve bilgi kartlari da daha kisa ritimdedir; ana input/CTA hedefleri en
+  az 44px kalir.
+- Quote yukleme/hata/disabled state'leri, hesap-ozel fiyat gostergesi, custom
+  miktar dogrulamasi, Stripe ve banka transferi handler/payload'lari degismedi.
+  Fiyat referans gostergesi de onceki `base != effective` davranisini korur.
+- Read-only fiyat denetimi mevcut dortlu ayrimin olmadigini dogruladi: global
+  custom taban fiyat ayarlanabilir; paket bazlari kodda sabittir ve tek global
+  adjustment ile tek musteri override'i paket/custom akisini birlikte etkiler.
+  Ayri global paket, global custom, musteri paket ve musteri custom otoritesi
+  owner kararli `PROPOSAL-20260826-EXPLICIT-CREDIT-PRICE-AUTHORITY` olarak
+  kaydedildi; fiyat veya schema uygulanmadi.
+- Degisen dosyalar: `src/app/dashboard/credits/page.tsx`,
+  `tests/ui-ux-safety.test.ts`, `.autopilot/TASKS.md`,
+  `.autopilot/FEATURE_PROPOSALS.md` ve bu durum kaydi.
+- Kontroller: hedefli UI suite PASS (101/101); hedefli UI + pricing PASS
+  (114/114); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS
+  (1014/1014); `npm run check:i18n` PASS; `npm run build -- --webpack` PASS
+  (278/278); `git diff --check` PASS. Bagimsiz immutable review ACCEPT ve P0/P1
+  bulmadi.
+- Gercek authenticated customer viewport fixture'i, Production/canli DB,
+  migration, musteri verisi, odeme ayari, env/secret, fiyat/KDV/indirim veya
+  deploy degisikligi yapilmadi.

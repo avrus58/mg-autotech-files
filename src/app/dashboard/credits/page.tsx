@@ -497,44 +497,50 @@ export default function BuyCreditsPage() {
         title="Buy Credits"
         icon={CreditCard}
         heading
+        width="wide"
       />
 
-      <section className="mx-auto max-w-7xl px-4 py-5 lg:py-4">
-        <div className="mb-5 grid gap-3 xl:grid-cols-[1fr_360px] xl:items-center">
+      <section
+        data-credit-purchase-page
+        className="mx-auto max-w-[1500px] px-3 py-3 sm:px-4 lg:px-5"
+      >
+        <div className="mb-3 grid gap-3 xl:grid-cols-[1fr_320px] xl:items-center">
           <div>
-            <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-red-800/50 bg-red-950/25 px-3 py-1.5 text-xs font-semibold text-red-100">
-              <CreditCard className="h-4 w-4 text-red-500" />
-              Secure payment options
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="inline-flex items-center gap-2 rounded-full border border-red-800/50 bg-red-950/25 px-2.5 py-1 text-[11px] font-semibold text-red-100">
+                <CreditCard className="h-3.5 w-3.5 text-red-500" />
+                Secure payment options
+              </div>
+              {quote?.promotionLabel && (
+                <div className="inline-flex rounded-full border border-red-700/60 bg-red-950/40 px-2.5 py-1 text-[11px] font-black text-red-100">
+                  {quote.promotionLabel}
+                </div>
+              )}
             </div>
 
-            <h2 className="text-xl font-black sm:text-2xl">
+            <h2 className="mt-2 text-lg font-black sm:text-xl">
               Credits <span className="text-red-600">Prices</span>
             </h2>
 
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-zinc-400">
+            <p className="mt-1 max-w-3xl text-xs leading-5 text-zinc-400 sm:text-sm">
               Choose a package or enter a custom credit amount. Package prices
               get cheaper as the volume increases.
             </p>
-            {quote?.promotionLabel && (
-              <div className="mt-3 inline-flex rounded-full border border-red-700/60 bg-red-950/40 px-3 py-1.5 text-xs font-black text-red-100">
-                {quote.promotionLabel}
-              </div>
-            )}
             {pricingLabel && (
-              <div className="mt-3 text-sm font-bold text-emerald-300">
+              <div className="mt-1.5 text-xs font-bold text-emerald-300">
                 {pricingLabel}
               </div>
             )}
           </div>
 
-          <div className="rounded-xl border border-red-900/50 bg-red-950/20 p-4">
+          <div className="rounded-xl border border-red-900/50 bg-red-950/20 p-3">
             <div className="flex items-center gap-2.5">
-              <ShieldCheck className="h-5 w-5 shrink-0 text-red-500" />
+              <ShieldCheck className="h-4 w-4 shrink-0 text-red-500" />
               <div>
-                <div className="text-xs font-black uppercase tracking-[0.16em] text-red-400">
+                <div className="text-[10px] font-black uppercase tracking-[0.16em] text-red-400">
                   Payment Workflow
                 </div>
-                <p className="mt-1 text-xs leading-5 text-zinc-400">
+                <p className="mt-0.5 text-[11px] leading-4 text-zinc-400">
                   Stripe card payments add credits automatically after
                   confirmation. Bank transfer stays manual.
                 </p>
@@ -547,7 +553,7 @@ export default function BuyCreditsPage() {
           <div
             role={notice.kind === "success" ? "status" : "alert"}
             aria-live={notice.kind === "success" ? "polite" : "assertive"}
-            className={`mb-6 rounded-2xl border p-4 text-sm ${
+            className={`mb-3 rounded-xl border p-3 text-sm ${
               notice.kind === "success"
                 ? "border-emerald-800/50 bg-emerald-950/25 text-emerald-200"
                 : notice.kind === "info"
@@ -564,11 +570,11 @@ export default function BuyCreditsPage() {
             role="status"
             aria-live="polite"
             aria-busy="true"
-            className="mb-5 flex min-h-40 items-center justify-center rounded-[2rem] border border-white/10 bg-white/[0.04] p-8 text-center lg:min-h-24"
+            className="mb-3 flex min-h-28 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] p-5 text-center lg:min-h-20"
           >
             <div>
-              <Loader2 className="mx-auto h-8 w-8 animate-spin text-red-500" />
-              <div className="mt-4 text-lg font-black">
+              <Loader2 className="mx-auto h-6 w-6 animate-spin text-red-500" />
+              <div className="mt-2 text-base font-black">
                 Loading verified credit prices
               </div>
               <p className="mt-2 text-sm text-zinc-400">
@@ -583,7 +589,7 @@ export default function BuyCreditsPage() {
           <div
             role="alert"
             aria-live="assertive"
-            className="mb-5 rounded-[2rem] border border-red-800/60 bg-red-950/30 p-6"
+            className="mb-3 rounded-xl border border-red-800/60 bg-red-950/30 p-4"
           >
             <div className="text-lg font-black text-red-100">
               Credit prices are temporarily unavailable
@@ -595,7 +601,7 @@ export default function BuyCreditsPage() {
             <button
               type="button"
               onClick={() => void loadQuote()}
-              className="mt-5 inline-flex items-center justify-center rounded-xl bg-[#b1121b] px-5 py-3 text-sm font-black text-white transition hover:bg-[#c91824]"
+              className="mt-3 inline-flex min-h-11 items-center justify-center rounded-lg bg-[#b1121b] px-4 py-2 text-sm font-black text-white transition hover:bg-[#c91824]"
             >
               Retry verified prices
             </button>
@@ -604,212 +610,192 @@ export default function BuyCreditsPage() {
 
         {quoteState === "ready" && quote && (
           <>
-            <div className="mb-5 rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
-          <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <div className="text-sm font-black uppercase tracking-[0.2em] text-red-400">
-                Payment Method
+            <div className="mb-3 rounded-xl border border-white/10 bg-white/[0.04] p-3">
+              <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                  <div className="text-[10px] font-black uppercase tracking-[0.18em] text-red-400">
+                    Payment Method
+                  </div>
+                  <h2 className="mt-0.5 text-lg font-black">
+                    Choose how you want to pay
+                  </h2>
+                </div>
+                <div className="text-xs font-bold text-zinc-500 sm:text-right">
+                  <div>
+                    Selected: {selectedPayment?.title ?? "No payment method available"}
+                  </div>
+                  {quote.customerPaymentPolicyActive && (
+                    <div className="mt-1 text-xs text-emerald-300">
+                      Account-specific payment policy active
+                    </div>
+                  )}
+                </div>
               </div>
-              <h2 className="mt-1 text-2xl font-black">
-                Choose how you want to pay
-              </h2>
-            </div>
-            <div className="text-right text-sm font-bold text-zinc-500">
-              <div>
-                Selected: {selectedPayment?.title ?? "No payment method available"}
+
+              <div className="grid gap-2 md:grid-cols-2">
+                {availablePaymentMethods.map((method) => {
+                  const Icon = method.icon;
+                  const active = paymentMethod === method.id;
+
+                  return (
+                    <button
+                      key={method.id}
+                      type="button"
+                      aria-pressed={active}
+                      disabled={loadingPackage !== null}
+                      onClick={() => {
+                        setPaymentMethod(method.id);
+                        setNotice(null);
+                      }}
+                      className={`min-h-14 rounded-lg border p-3 text-left transition disabled:cursor-not-allowed disabled:opacity-60 ${
+                        active
+                          ? "border-red-700 bg-red-950/30"
+                          : "border-white/10 bg-black/30 hover:border-white/20 hover:bg-white/[0.06]"
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div
+                          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
+                            active
+                              ? "bg-red-600 text-white"
+                              : "bg-white/10 text-zinc-300"
+                          }`}
+                        >
+                          <Icon className="h-4 w-4" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="text-sm font-black text-white">
+                              {method.title}
+                            </div>
+                            <span className="shrink-0 rounded-full border border-white/10 bg-black/35 px-2 py-0.5 text-[10px] font-black text-zinc-300">
+                              {method.badge}
+                            </span>
+                          </div>
+                          <div className="mt-0.5 text-[11px] font-bold text-zinc-500">
+                            {method.subtitle}
+                          </div>
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
-              {quote.customerPaymentPolicyActive && (
-                <div className="mt-1 text-xs text-emerald-300">
-                  Account-specific payment policy active
+
+              {!availablePaymentMethods.length && (
+                <div className="mt-4 rounded-xl border border-amber-700/40 bg-amber-950/20 p-4 text-sm text-amber-200">
+                  Online credit purchases are currently disabled for this account.
+                  Please contact support.
+                </div>
+              )}
+
+              {paymentMethod === "bank" && quote.paymentMethods.bank && (
+                <div className="mt-3 rounded-lg border border-white/10 bg-black/30 p-3">
+                  <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                    <div>
+                      <div className="text-xs font-black uppercase tracking-[0.14em] text-zinc-500">
+                        Account
+                      </div>
+                      <div className="mt-1 font-black">
+                        {bankDetails.accountName}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-xs font-black uppercase tracking-[0.14em] text-zinc-500">
+                        Bank
+                      </div>
+                      <div className="mt-1 font-black">{bankDetails.bankName}</div>
+                    </div>
+                    <div>
+                      <div className="text-xs font-black uppercase tracking-[0.14em] text-zinc-500">
+                        IBAN
+                      </div>
+                      <div className="mt-1 break-all font-black">
+                        {bankDetails.iban}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-xs font-black uppercase tracking-[0.14em] text-zinc-500">
+                        BIC
+                      </div>
+                      <div className="mt-1 font-black">{bankDetails.bic}</div>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={copyBankReference}
+                    disabled={loadingPackage !== null}
+                    className="mt-3 inline-flex min-h-11 items-center rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-sm font-black text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    <Copy className="mr-2 h-4 w-4" />
+                    {copiedBankReference
+                      ? "Reference copied"
+                      : "Copy payment reference"}
+                  </button>
                 </div>
               )}
             </div>
-          </div>
 
-          <div className="grid gap-3 md:grid-cols-2">
-            {availablePaymentMethods.map((method) => {
-              const Icon = method.icon;
-              const active = paymentMethod === method.id;
-
-              return (
-                <button
-                  key={method.id}
-                  type="button"
-                  aria-pressed={active}
-                  disabled={loadingPackage !== null}
-                  onClick={() => {
-                    setPaymentMethod(method.id);
-                    setNotice(null);
-                  }}
-                  className={`rounded-2xl border p-4 text-left transition disabled:cursor-not-allowed disabled:opacity-60 ${
-                    active
-                      ? "border-red-700 bg-red-950/30"
-                      : "border-white/10 bg-black/30 hover:border-white/20 hover:bg-white/[0.06]"
-                  }`}
-                >
-                  <div className="mb-4 flex items-center justify-between gap-3">
-                    <div
-                      className={`flex h-11 w-11 items-center justify-center rounded-2xl ${
-                        active
-                          ? "bg-red-600 text-white"
-                          : "bg-white/10 text-zinc-300"
-                      }`}
-                    >
-                      <Icon className="h-5 w-5" />
-                    </div>
-                    <span className="rounded-full border border-white/10 bg-black/35 px-2.5 py-1 text-[11px] font-black text-zinc-300">
-                      {method.badge}
-                    </span>
-                  </div>
-                  <div className="font-black text-white">{method.title}</div>
-                  <div className="mt-1 text-xs font-bold text-zinc-500">
-                    {method.subtitle}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-
-          {!availablePaymentMethods.length && (
-            <div className="mt-4 rounded-xl border border-amber-700/40 bg-amber-950/20 p-4 text-sm text-amber-200">
-              Online credit purchases are currently disabled for this account.
-              Please contact support.
-            </div>
-          )}
-
-          {paymentMethod === "bank" && quote.paymentMethods.bank && (
-            <div className="mt-5 rounded-2xl border border-white/10 bg-black/30 p-5">
-              <div className="grid gap-4 md:grid-cols-4">
-                <div>
-                  <div className="text-xs font-black uppercase tracking-[0.14em] text-zinc-500">
-                    Account
-                  </div>
-                  <div className="mt-1 font-black">
-                    {bankDetails.accountName}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-xs font-black uppercase tracking-[0.14em] text-zinc-500">
-                    Bank
-                  </div>
-                  <div className="mt-1 font-black">{bankDetails.bankName}</div>
-                </div>
-                <div>
-                  <div className="text-xs font-black uppercase tracking-[0.14em] text-zinc-500">
-                    IBAN
-                  </div>
-                  <div className="mt-1 break-all font-black">
-                    {bankDetails.iban}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-xs font-black uppercase tracking-[0.14em] text-zinc-500">
-                    BIC
-                  </div>
-                  <div className="mt-1 font-black">{bankDetails.bic}</div>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={copyBankReference}
-                disabled={loadingPackage !== null}
-                className="mt-5 inline-flex items-center rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-black text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                <Copy className="mr-2 h-4 w-4" />
-                {copiedBankReference
-                  ? "Reference copied"
-                  : "Copy payment reference"}
-              </button>
-            </div>
-          )}
-        </div>
-
-        <div className="mb-5 rounded-[2rem] border border-white/10 bg-white/[0.04] p-4">
-          <div className="grid gap-3 md:grid-cols-[220px_1fr_52px] md:items-center">
-            <div className="px-2 text-sm font-black">Credit Utilization Scale</div>
-
-            <div className="grid gap-3 md:grid-cols-5">
-              {utilization.map((item) => {
-                const Icon = item.icon;
-
-                return (
-                  <div
-                    key={item.title}
-                    className="flex items-center gap-3 rounded-xl bg-red-900/45 px-4 py-3"
-                  >
-                    <Icon className="h-5 w-5 shrink-0 text-white" />
-                    <div>
-                      <div className="text-sm font-black">{item.title}</div>
-                      <div className="text-xs font-bold text-red-100">
-                        {item.credits}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            <div className="hidden h-11 w-11 items-center justify-center rounded-xl border border-red-700/40 bg-red-950/35 text-red-300 md:flex">
-              <Zap className="h-5 w-5" />
-            </div>
-          </div>
-        </div>
-
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5">
+        <div
+          data-credit-package-grid
+          className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5"
+        >
           {packages.map((item) => (
             <div
               key={item.id}
-              className={`relative flex min-h-[340px] flex-col rounded-[2rem] border p-6 shadow-2xl shadow-black/20 transition hover:-translate-y-1 lg:min-h-[290px] ${
+              className={`relative flex flex-col rounded-xl border p-4 transition hover:-translate-y-0.5 ${
                 item.highlight
-                  ? "border-red-800/70 bg-red-950/30 2xl:-mt-6"
+                  ? "border-red-800/70 bg-red-950/30"
                   : "border-white/10 bg-white/[0.04]"
               }`}
             >
               {item.highlight && (
-                <div className="absolute right-5 top-5 flex items-center gap-2 rounded-full bg-red-600 px-3 py-1 text-xs font-black text-white">
-                  <Crown className="h-3.5 w-3.5" />
+                <div className="absolute right-3 top-3 flex items-center gap-1 rounded-full bg-red-600 px-2 py-0.5 text-[10px] font-black text-white">
+                  <Crown className="h-3 w-3" />
                   Popular
                 </div>
               )}
 
-              <div className="mb-5 flex h-11 w-11 items-center justify-center rounded-2xl border border-red-900/40 bg-red-950/35 lg:h-9 lg:w-9">
-                <Sparkles className="h-6 w-6 text-red-500" />
+              <div className="mb-3 flex h-8 w-8 items-center justify-center rounded-lg border border-red-900/40 bg-red-950/35">
+                <Sparkles className="h-4 w-4 text-red-500" />
               </div>
 
-              <div className="text-sm font-black text-zinc-300">
+              <div className="text-xs font-black uppercase tracking-[0.08em] text-zinc-300">
                 {item.credits} Credit
               </div>
 
               {item.basePriceEuro !== item.priceEuro && (
-                <div className="mt-3 text-sm font-bold text-zinc-500 line-through">
+                <div className="mt-2 text-xs font-bold text-zinc-500 line-through">
                   {formatEuro(item.basePriceEuro)}
                 </div>
               )}
 
-              <div className={`${item.basePriceEuro === item.priceEuro ? "mt-5" : "mt-1"} text-3xl font-black`}>
+              <div
+                className={`${item.basePriceEuro === item.priceEuro ? "mt-3" : "mt-0.5"} text-2xl font-black`}
+              >
                 {formatEuro(item.priceEuro)}
               </div>
 
-              <div className="mt-2 text-sm font-bold text-red-400">
+              <div className="mt-1 text-xs font-bold text-red-400">
                 Each Credit {formatCreditUnitEuro(item.unitPriceEuro)}
               </div>
 
-              <p className="mt-5 flex-1 text-sm leading-6 text-zinc-400">
+              <p className="mt-3 flex-1 text-xs leading-5 text-zinc-400">
                 {item.description}
               </p>
 
-              <div className="mt-5 space-y-2 text-xs text-zinc-300">
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+              <div className="mt-3 space-y-1 text-[11px] leading-4 text-zinc-300">
+                <div className="flex items-center gap-1.5">
+                  <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-emerald-400" />
                   {paymentMethod === "stripe"
                     ? "Automatic credit top-up"
                     : paymentMethod === "bank"
                     ? "Manual admin verification"
                     : "Automatic credit top-up"}
                 </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                <div className="flex items-center gap-1.5">
+                  <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-emerald-400" />
                   {paymentMethod === "stripe"
                     ? "Secure Stripe checkout"
                     : paymentMethod === "bank"
@@ -827,7 +813,7 @@ export default function BuyCreditsPage() {
                   (paymentMethod === "stripe" &&
                     !isStripeEuroAmountSupported(item.priceEuro))
                 }
-                className="mt-5 flex min-h-11 w-full items-center justify-center rounded-xl border border-red-700 bg-transparent px-5 py-3 text-sm font-black text-white transition hover:bg-red-950/40 disabled:cursor-not-allowed disabled:opacity-60 lg:py-2"
+                className="mt-3 flex min-h-11 w-full items-center justify-center rounded-lg border border-red-700 bg-transparent px-3 py-2 text-sm font-black text-white transition hover:bg-red-950/40 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {loadingPackage === item.id ? (
                   <>
@@ -852,23 +838,53 @@ export default function BuyCreditsPage() {
           ))}
         </div>
 
-        <div className="mt-5 grid gap-4 lg:grid-cols-[0.95fr_1.05fr]">
-          <div className="rounded-[2rem] border border-red-900/50 bg-gradient-to-br from-red-950/30 via-white/[0.04] to-black p-7 shadow-2xl shadow-black/30">
-            <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-red-800/50 bg-red-950/30 px-4 py-2 text-sm font-bold text-red-100">
+        <div className="mt-3 rounded-xl border border-white/10 bg-white/[0.04] p-3">
+          <div className="mb-2 flex items-center gap-2 text-xs font-black">
+            <span className="flex h-7 w-7 items-center justify-center rounded-lg border border-red-700/40 bg-red-950/35 text-red-300">
+              <Zap className="h-3.5 w-3.5" />
+            </span>
+            Credit Utilization Scale
+          </div>
+
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+            {utilization.map((item) => {
+              const Icon = item.icon;
+
+              return (
+                <div
+                  key={item.title}
+                  className="flex items-center gap-2 rounded-lg bg-red-900/40 px-3 py-2"
+                >
+                  <Icon className="h-4 w-4 shrink-0 text-white" />
+                  <div className="min-w-0">
+                    <div className="truncate text-xs font-black">{item.title}</div>
+                    <div className="text-[11px] font-bold text-red-100">
+                      {item.credits}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="mt-3 grid gap-3 lg:grid-cols-[0.95fr_1.05fr]">
+          <div className="rounded-xl border border-red-900/50 bg-gradient-to-br from-red-950/30 via-white/[0.04] to-black p-4">
+            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-red-800/50 bg-red-950/30 px-3 py-1.5 text-xs font-bold text-red-100">
               <Sparkles className="h-4 w-4 text-red-500" />
               Custom Amount
             </div>
 
-            <h2 className="text-3xl font-black">
+            <h2 className="text-xl font-black">
               Buy exactly how many credits you need.
             </h2>
 
-            <p className="mt-3 text-sm leading-6 text-zinc-400">
+            <p className="mt-2 text-xs leading-5 text-zinc-400 sm:text-sm">
               Enter any credit amount. Custom credit purchases are calculated at{" "}
               {formatCreditUnitEuro(quote.customUnitPriceEuro)} per credit for your account.
             </p>
 
-            <div className="mt-6 grid gap-4 sm:grid-cols-[1fr_180px]">
+            <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_160px]">
               <label className="block">
                 <div className="mb-2 text-xs font-black uppercase tracking-[0.16em] text-zinc-500">
                   Custom Credits
@@ -880,12 +896,12 @@ export default function BuyCreditsPage() {
                   step="1"
                   value={customCredits}
                   onChange={(event) => setCustomCredits(event.target.value)}
-                  className="h-12 w-full rounded-2xl border border-white/10 bg-black/35 px-4 text-base font-black text-white outline-none transition placeholder:text-zinc-600 focus:border-red-700 lg:h-10"
+                  className="min-h-11 w-full rounded-lg border border-white/10 bg-black/35 px-3 text-sm font-black text-white outline-none transition placeholder:text-zinc-600 focus:border-red-700"
                   placeholder="e.g. 17"
                 />
               </label>
 
-              <div className="rounded-2xl border border-white/10 bg-black/35 p-4">
+              <div className="rounded-lg border border-white/10 bg-black/35 p-3">
                 <div className="text-xs font-black uppercase tracking-[0.16em] text-zinc-500">
                   Total Price
                 </div>
@@ -902,7 +918,7 @@ export default function BuyCreditsPage() {
                       )}
                     </div>
                   )}
-                <div className="mt-2 text-3xl font-black text-red-400">
+                <div className="mt-1.5 text-2xl font-black text-red-400">
                   {customValid ? formatEuro(customPrice) : "-"}
                 </div>
               </div>
@@ -919,7 +935,7 @@ export default function BuyCreditsPage() {
                 (paymentMethod === "stripe" &&
                   !isStripeEuroAmountSupported(customPrice))
               }
-              className="mt-6 flex min-h-11 w-full items-center justify-center rounded-xl bg-[#b1121b] px-5 py-3 text-sm font-black text-white shadow-xl shadow-red-950/40 transition hover:bg-[#c91824] disabled:cursor-not-allowed disabled:opacity-60 lg:py-2"
+              className="mt-4 flex min-h-11 w-full items-center justify-center rounded-lg bg-[#b1121b] px-4 py-2 text-sm font-black text-white transition hover:bg-[#c91824] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {loadingPackage?.startsWith("custom_") ? (
                 <>
@@ -944,10 +960,10 @@ export default function BuyCreditsPage() {
               )}
           </div>
 
-          <div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-7">
-            <ShieldCheck className="mb-5 h-10 w-10 text-red-500" />
-            <h2 className="text-2xl font-black">Important</h2>
-            <p className="mt-3 text-sm leading-7 text-zinc-400">
+          <div className="rounded-xl border border-white/10 bg-white/[0.04] p-4">
+            <ShieldCheck className="mb-3 h-7 w-7 text-red-500" />
+            <h2 className="text-xl font-black">Important</h2>
+            <p className="mt-2 text-xs leading-5 text-zinc-400 sm:text-sm">
               Package purchases use the verified package rate shown above.
               Custom credit purchases are calculated at{" "}
               {formatCreditUnitEuro(quote.customUnitPriceEuro)} per credit for this
@@ -956,8 +972,8 @@ export default function BuyCreditsPage() {
               credits are added.
             </p>
 
-            <div className="mt-6 grid gap-3 sm:grid-cols-2">
-              <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
+            <div className="mt-4 grid gap-2 sm:grid-cols-2">
+              <div className="rounded-lg border border-white/10 bg-black/30 p-3">
                 <div className="text-sm font-black">Example</div>
                 <div className="mt-1 text-sm text-zinc-400">
                   17 Credits × {formatCreditUnitEuro(quote.customUnitPriceEuro)} ={" "}
@@ -966,7 +982,7 @@ export default function BuyCreditsPage() {
               </div>
 
               {bestValuePackage && (
-                <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
+                <div className="rounded-lg border border-white/10 bg-black/30 p-3">
                   <div className="text-sm font-black">Best Value</div>
                   <div className="mt-1 text-sm text-zinc-400">
                     {bestValuePackage.credits} Credits ={" "}
