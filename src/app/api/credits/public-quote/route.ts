@@ -29,7 +29,6 @@ export async function GET() {
             id: item.id,
             name: item.name,
             credits: item.credits,
-            basePriceEuro: item.basePriceEuro,
             priceEuro: item.priceEuro,
             unitPriceEuro: item.unitPriceEuro,
             description: item.description,

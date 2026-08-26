@@ -768,7 +768,6 @@ type PublicCreditPackage = {
   id: string;
   name: string;
   credits: number;
-  basePriceEuro: number;
   priceEuro: number;
   unitPriceEuro: number;
   description: string;
@@ -812,7 +811,6 @@ function parsePublicCreditQuote(value: unknown): PublicCreditQuote | null {
     typeof item.highlight === "boolean" &&
     Number.isInteger(item.credits) &&
     item.credits > 0 &&
-    isPositiveFiniteNumber(item.basePriceEuro) &&
     isPositiveFiniteNumber(item.priceEuro) &&
     isPositiveFiniteNumber(item.unitPriceEuro)
   ));
@@ -4883,7 +4881,7 @@ export function UnifiedHomePage({
               Flexible credit packages
             </h2>
             <p className="mt-3 text-zinc-400">
-              Volume based pricing for customers, workshops and partners.
+              Clear package totals for customers, workshops and partners.
             </p>
             {publicCreditQuote.status === "ready" && publicCreditQuote.quote.promotionLabel && (
               <div className="mt-4 inline-flex rounded-full border border-red-700/60 bg-red-950/40 px-4 py-2 text-sm font-black text-red-100">
@@ -4894,7 +4892,7 @@ export function UnifiedHomePage({
 
           {publicCreditQuote.status === "loading" && (
             <div
-              className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5"
+              className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5"
               role="status"
               aria-live="polite"
               aria-label="Loading current credit prices"
@@ -4902,7 +4900,7 @@ export function UnifiedHomePage({
               {Array.from({ length: 5 }, (_, index) => (
                 <div
                   key={index}
-                  className="min-h-[320px] animate-pulse rounded-3xl border border-white/10 bg-white/[0.04] p-6"
+                  className="min-h-[250px] animate-pulse rounded-2xl border border-white/10 bg-white/[0.04] p-4"
                 >
                   <div className="h-4 w-24 rounded bg-white/10" />
                   <div className="mt-5 h-7 w-32 rounded bg-white/10" />
@@ -4934,11 +4932,11 @@ export function UnifiedHomePage({
           )}
 
           {publicCreditQuote.status === "ready" && (
-          <div className="homepage-card-rail -mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden xl:mx-0 xl:grid xl:grid-cols-5 xl:overflow-visible xl:px-0">
+          <div className="homepage-card-rail -mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:mx-0 md:grid md:grid-cols-2 md:overflow-visible md:px-0 lg:grid-cols-5 xl:grid-cols-5">
             {publicCreditQuote.quote.packages.map((pack) => (
               <div
                 key={pack.id}
-                className={`relative flex min-h-[320px] min-w-[min(82vw,20rem)] snap-start flex-col rounded-3xl border p-6 transition duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-red-950/30 xl:min-w-0 ${
+                className={`relative flex min-h-[250px] min-w-[min(82vw,19rem)] snap-start flex-col rounded-2xl border p-4 transition duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-red-950/30 md:min-w-0 ${
                   pack.highlight
                     ? "border-red-700 bg-gradient-to-b from-red-950/35 to-white/[0.06]"
                     : "border-white/10 bg-white/[0.04]"
@@ -4958,25 +4956,20 @@ export function UnifiedHomePage({
                   {pack.credits} Credits
                 </div>
 
-                {pack.basePriceEuro !== pack.priceEuro && (
-                  <div className="mt-6 text-sm font-bold text-zinc-500 line-through">
-                    {formatEuro(pack.basePriceEuro)}
-                  </div>
-                )}
-                <div className={`${pack.basePriceEuro === pack.priceEuro ? "mt-12" : "mt-1"} text-4xl font-black`}>
+                <div className="mt-6 text-3xl font-black lg:text-2xl xl:text-3xl">
                   {formatEuro(pack.priceEuro)}
                 </div>
                 <div className="mt-2 text-sm font-bold text-red-300">
                   {formatCreditUnitEuro(pack.unitPriceEuro)} per credit
                 </div>
 
-                <p className="mt-5 flex-1 text-sm leading-6 text-zinc-400">
+                <p className="mt-3 flex-1 text-xs leading-5 text-zinc-400 xl:text-sm">
                   {pack.description}
                 </p>
 
                 <Link
                   href="/dashboard/credits"
-                  className="mt-6 flex min-h-12 items-center justify-center rounded-xl border border-red-800/70 px-5 py-3 text-center font-black text-white transition duration-300 hover:border-red-600 hover:bg-red-950/35 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-600"
+                  className="mt-4 flex min-h-11 items-center justify-center rounded-lg border border-red-800/70 px-3 py-2 text-center text-sm font-black text-white transition duration-300 hover:border-red-600 hover:bg-red-950/35 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-600"
                   aria-label={`Select the ${pack.name} ${pack.credits} credit package`}
                 >
                   Select package

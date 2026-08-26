@@ -78,36 +78,50 @@ function around(input: string, needle: string, radius = 1_800) {
 
 const revisionToken = /\b(?:quoteId|quoteRevision|pricingRevision|pricingVersion|quote_id|quote_revision|pricing_revision)\b/i;
 
-test("an explicit customer fixed credit price is final", () => {
+test("customer package and custom overrides are independent final prices", () => {
   const customerPolicy = {
     ...emptyCustomerCommercialPolicy("customer-fixed"),
-    credit_price_override_eur: 2.75,
-    adjustment_type: "percentage" as const,
-    adjustment_value: 65,
+    package_price_overrides_eur: {
+      ...emptyCustomerCommercialPolicy("customer-fixed").package_price_overrides_eur,
+      credits_50: 199.99,
+    },
+    custom_credit_unit_price_override_eur: 2.75,
   };
   const settingsVariants = [
     {
       ...defaultCommerceSettings,
-      default_custom_credit_price_eur: 12,
-      global_adjustment_type: "fixed" as const,
-      global_adjustment_value: 3,
+      custom_credit_unit_price_eur: 12,
+      package_prices_eur: {
+        ...defaultCommerceSettings.package_prices_eur,
+        credits_10: 41.25,
+        credits_50: 205,
+      },
     },
     {
       ...defaultCommerceSettings,
-      default_custom_credit_price_eur: 40,
-      global_adjustment_type: "percentage" as const,
-      global_adjustment_value: -80,
+      custom_credit_unit_price_eur: 40,
+      package_prices_eur: {
+        credits_10: 50,
+        credits_50: 250,
+        credits_100: 450,
+        credits_250: 900,
+        credits_500: 1600,
+      },
     },
   ];
 
   for (const settings of settingsVariants) {
     const quote = buildCreditQuote(settings, customerPolicy);
     assert.equal(quote.customUnitPriceEuro, 2.75);
-    assert.equal(quote.pricingSource, "customer_fixed");
-    for (const item of quote.packages) {
-      assert.equal(item.unitPriceEuro, 2.75, `${item.id} must retain the fixed customer rate`);
-      assert.equal(item.priceEuro, Number((item.credits * 2.75).toFixed(2)));
-    }
+    assert.equal(quote.customPricingSource, "customer_override");
+    assert.equal(quote.pricingSource, "customer_override");
+    assert.equal(quote.packages.find((item) => item.id === "credits_50")?.priceEuro, 199.99);
+    assert.equal(quote.packages.find((item) => item.id === "credits_50")?.pricingSource, "customer_override");
+    assert.equal(
+      quote.packages.find((item) => item.id === "credits_10")?.priceEuro,
+      settings.package_prices_eur.credits_10,
+    );
+    assert.equal(quote.packages.find((item) => item.id === "credits_10")?.pricingSource, "global");
   }
 });
 
@@ -115,21 +129,40 @@ test("customers without an override inherit the current global tariff", () => {
   const inheritedPolicy = emptyCustomerCommercialPolicy("new-customer");
   const first = buildCreditQuote({
     ...defaultCommerceSettings,
-    default_custom_credit_price_eur: 5,
-    global_adjustment_type: "none",
-    global_adjustment_value: 0,
+    custom_credit_unit_price_eur: 5,
+    package_prices_eur: {
+      ...defaultCommerceSettings.package_prices_eur,
+      credits_10: 49.99,
+    },
   }, inheritedPolicy);
   const changed = buildCreditQuote({
     ...defaultCommerceSettings,
-    default_custom_credit_price_eur: 6,
-    global_adjustment_type: "fixed",
-    global_adjustment_value: 1.5,
+    custom_credit_unit_price_eur: 4.5,
+    package_prices_eur: {
+      ...defaultCommerceSettings.package_prices_eur,
+      credits_10: 44.99,
+    },
   }, inheritedPolicy);
 
   assert.equal(first.customUnitPriceEuro, 5);
   assert.equal(changed.customUnitPriceEuro, 4.5);
+  assert.equal(first.packages[0]?.priceEuro, 49.99);
+  assert.equal(changed.packages[0]?.priceEuro, 44.99);
   assert.equal(first.pricingSource, "global");
   assert.equal(changed.pricingSource, "global");
+});
+
+test("an odd-cent package total remains authoritative when its display unit rounds", () => {
+  const quote = buildCreditQuote({
+    ...defaultCommerceSettings,
+    package_prices_eur: {
+      ...defaultCommerceSettings.package_prices_eur,
+      credits_250: 700.01,
+    },
+  }, emptyCustomerCommercialPolicy("odd-cent"));
+  const pack = quote.packages.find((item) => item.id === "credits_250");
+  assert.equal(pack?.priceEuro, 700.01);
+  assert.equal(pack?.unitPriceEuro, 2.8);
 });
 
 test("credit totals use the same integer-cent rounding at half-cent boundaries", () => {
@@ -182,40 +215,63 @@ test("commercial database reads fail closed without hard-coded pricing fallback"
   );
 });
 
-test("legacy inactive adjustments normalize safely while malformed policy text fails closed", () => {
+test("v2 explicit price rows normalize strictly and malformed values fail closed", () => {
   const validSettings = {
     id: "default",
     currency: "EUR",
-    default_custom_credit_price_eur: 6,
-    global_adjustment_type: "none",
-    global_adjustment_value: 0,
+    pricing_model_version: 2,
+    explicit_pricing_writes_enabled: true,
+    explicit_pricing_bridge_release: "vercel-dpl-verified-v2",
+    credit_package_10_total_eur: 36,
+    credit_package_50_total_eur: 180,
+    credit_package_100_total_eur: 320,
+    credit_package_250_total_eur: 700,
+    credit_package_500_total_eur: 1200,
+    custom_credit_unit_price_eur: 4,
     promotion_label: null,
     payment_bank_enabled: true,
     payment_stripe_enabled: true,
     updated_at: "2026-08-24T12:00:00.000Z",
   };
 
-  assert.equal(
-    normalizeCommerceSettings({ ...validSettings, global_adjustment_value: 1 })
-      .global_adjustment_value,
-    0,
-  );
+  assert.equal(normalizeCommerceSettings(validSettings).package_prices_eur.credits_250, 700);
+  assert.equal(normalizeCommerceSettings(validSettings).custom_credit_unit_price_eur, 4);
   assert.throws(
     () => normalizeCommerceSettings({ ...validSettings, promotion_label: "x".repeat(181) }),
     CommercialPricingUnavailableError,
   );
-  const legacyFixedPolicy = normalizeCustomerCommercialPolicy("customer", {
+  assert.throws(
+    () => normalizeCommerceSettings({ ...validSettings, credit_package_10_total_eur: 36.001 }),
+    CommercialPricingUnavailableError,
+  );
+  assert.throws(
+    () => normalizeCommerceSettings({ ...validSettings, pricing_model_version: 1 }),
+    CommercialPricingUnavailableError,
+  );
+  assert.throws(
+    () => normalizeCommerceSettings({
+      ...validSettings,
+      explicit_pricing_bridge_release: null,
+    }),
+    CommercialPricingUnavailableError,
+  );
+  const explicitPolicy = normalizeCustomerCommercialPolicy("customer", {
       user_id: "customer",
-      credit_price_override_eur: 2.75,
-      adjustment_type: "none",
-      adjustment_value: 1,
+      pricing_model_version: 2,
+      credit_package_10_total_override_eur: null,
+      credit_package_50_total_override_eur: 199.99,
+      credit_package_100_total_override_eur: null,
+      credit_package_250_total_override_eur: null,
+      credit_package_500_total_override_eur: null,
+      custom_credit_unit_price_override_eur: 2.75,
       payment_bank_enabled: null,
       payment_stripe_enabled: null,
       internal_note: null,
       updated_at: "2026-08-24T12:00:00.000Z",
     });
-  assert.equal(legacyFixedPolicy.credit_price_override_eur, 2.75);
-  assert.equal(legacyFixedPolicy.adjustment_value, 0);
+  assert.equal(explicitPolicy.package_price_overrides_eur.credits_50, 199.99);
+  assert.equal(explicitPolicy.package_price_overrides_eur.credits_10, null);
+  assert.equal(explicitPolicy.custom_credit_unit_price_override_eur, 2.75);
 });
 
 test("displayed credit quotes carry a revision and stale checkout is rejected with 409", () => {
@@ -238,6 +294,32 @@ test("displayed credit quotes carry a revision and stale checkout is rejected wi
   assert.ok(purchaseResolver, "The authoritative purchase quote resolver must remain auditable");
   assert.match(purchaseResolver, /typeof\s+body\.(?:quoteId|quoteRevision)\s*!==\s*["']string["']/);
   assert.doesNotMatch(purchaseResolver, /body\.(?:quoteId|quoteRevision)\s*!==\s*undefined/);
+  assert.match(pricingSources, /revisions:\s*\{\s*global:\s*string;\s*customer:\s*string\s*\|\s*null\s*\}/);
+  assert.match(pricingSources, /global:\s*globalRevision/);
+  assert.match(pricingSources, /customer:\s*context\.customerPolicy\.updated_at\s*\?\?\s*null/);
+});
+
+test("admin pricing saves use atomic service-role RPCs instead of split row and audit writes", () => {
+  const globalRoute = source("src", "app", "api", "admin", "commercial-settings", "route.ts");
+  const customerRoute = source(
+    "src",
+    "app",
+    "api",
+    "admin",
+    "customers",
+    "[id]",
+    "commercial-policy",
+    "route.ts",
+  );
+
+  assert.match(globalRoute, /\.rpc\(["']save_commerce_settings_v2["']/);
+  assert.match(customerRoute, /\.rpc\(["']save_customer_commercial_policy_v2["']/);
+  assert.doesNotMatch(globalRoute, /\.from\(["']commerce_settings["']\)[\s\S]{0,500}\.(?:update|insert|upsert)\(/);
+  assert.doesNotMatch(customerRoute, /\.from\(["']customer_commercial_policies["']\)[\s\S]{0,500}\.(?:update|insert|upsert)\(/);
+  assert.doesNotMatch(
+    `${globalRoute}\n${customerRoute}`,
+    /\b(?:vat|automatic_tax|tax_rate|tax_country)\b/i,
+  );
 });
 
 test("bank transfer uses the authoritative server quote and never trusts a browser amount", () => {
@@ -279,6 +361,43 @@ test("credit totals and four-decimal unit prices remain visibly consistent", () 
   assert.match(purchaseResolver, /calculateCreditTotalEuro\(customCredits, quote\.customUnitPriceEuro\)/);
 });
 
+test("customer and public price cards show final totals without invented comparison prices", () => {
+  const creditsPage = source("src", "app", "dashboard", "credits", "page.tsx");
+  const homepage = source("src", "app", "page.tsx");
+  const publicRoute = source("src", "app", "api", "credits", "public-quote", "route.ts");
+
+  assert.doesNotMatch(`${creditsPage}\n${homepage}\n${publicRoute}`, /basePriceEuro/);
+  assert.doesNotMatch(creditsPage, /Best Value|bestValuePackage|get cheaper as the volume/i);
+  assert.match(creditsPage, /lowestUnitPricePackage[\s\S]{0,500}unitPriceEuro/);
+  assert.match(homepage, /Clear package totals for customers, workshops and partners\./);
+  assert.doesNotMatch(around(creditsPage, "Total Price", 1_200), /line-through/);
+});
+
+test("package totals preserve the legacy minimum of EUR 0.01 per credit", () => {
+  assert.throws(
+    () => buildCreditQuote({
+      ...defaultCommerceSettings,
+      package_prices_eur: {
+        ...defaultCommerceSettings.package_prices_eur,
+        credits_500: 0.01,
+      },
+    }, emptyCustomerCommercialPolicy("minimum-package")),
+    RangeError,
+  );
+
+  const minimumQuote = buildCreditQuote({
+    ...defaultCommerceSettings,
+    package_prices_eur: {
+      credits_10: 0.1,
+      credits_50: 0.5,
+      credits_100: 1,
+      credits_250: 2.5,
+      credits_500: 5,
+    },
+  }, emptyCustomerCommercialPolicy("minimum-package"));
+  assert.equal(minimumQuote.packages.find((item) => item.id === "credits_500")?.unitPriceEuro, 0.01);
+});
+
 test("admin pricing load is race-safe, visible in the modal and saved separately", () => {
   const admin = source("src", "app", "admin", "page.tsx");
   const pricingLoading = /\b(?:(?:customer|policy)?(?:Pricing|Commercial|Policy)\w*(?:Loading|LoadState)|(?:isLoading|loading)\w*(?:Pricing|Commercial|Policy))\b/i;
@@ -315,14 +434,18 @@ test("admin pricing load is race-safe, visible in the modal and saved separately
     "Customer pricing must have a dedicated persistence handler",
   );
 
-  const savePricingLabel = /Save (?:customer )?(?:pricing|price policy|commercial policy)/i.exec(admin);
+  const savePricingLabel = /Save (?:customer )?(?:pricing|price policy|price overrides|commercial policy)/i.exec(admin);
   assert.ok(savePricingLabel, "The pricing section must have its own visible save action");
   const savePricingControl = admin.slice(
     Math.max(0, savePricingLabel.index - 1_000),
     Math.min(admin.length, savePricingLabel.index + 500),
   );
   assert.match(savePricingControl, /disabled=/);
-  assert.match(savePricingControl, pricingLoading);
+  assert.ok(
+    pricingLoading.test(savePricingControl) || /pricingControlsDisabled/.test(savePricingControl),
+    "The dedicated pricing save must remain disabled while pricing is loading",
+  );
+  assert.match(admin, /const\s+pricingControlsDisabled\s*=\s*customerPricingLoading/);
   assert.match(admin, /selectedCustomerIdRef\.current\s*!==\s*selectedCustomer\.id/);
   assert.match(admin, /function formatCreditUnitAmount[\s\S]{0,250}maximumFractionDigits:\s*4/);
   assert.match(admin, /formatCreditUnitAmount\(globalCustomerPrice\)/);
@@ -338,11 +461,14 @@ test("global commercial edits stay precise and cannot change underneath an in-fl
 
   assert.match(globalAdmin, /<fieldset\s+disabled=\{saving\}/);
   assert.match(globalAdmin, /step=\{0\.0001\}/);
+  assert.match(globalAdmin, /step=\{0\.01\}/);
   assert.match(
     globalAdmin,
-    /function formatUnitAmount[\s\S]{0,300}maximumFractionDigits:\s*4/,
+    /function formatEuro[\s\S]{0,300}maximumFractionDigits/,
   );
-  assert.match(globalAdmin, /formatUnitAmount\(preview\.customUnitPriceEuro\)/);
+  assert.match(globalAdmin, /formatEuro\(preview\.customUnitPriceEuro, 4\)/);
+  assert.match(globalAdmin, /packagePricesEuro/);
+  assert.doesNotMatch(globalAdmin, /adjustmentType|adjustmentValue/);
 });
 
 test("the homepage consumes a public sanitized global quote", () => {
@@ -371,32 +497,96 @@ test("the homepage consumes a public sanitized global quote", () => {
 });
 
 test("commercial tables allow authenticated staff reads but server-only writes", () => {
-  const migration = source(
+  const authorityMigration = source(
     "supabase",
     "migrations",
     "20260824000000_commercial_pricing_write_authority.sql",
   );
+  const explicitPricingMigration = source(
+    "supabase",
+    "migrations",
+    "20260826000000_explicit_credit_price_authority.sql",
+  );
   const verifier = source("scripts", "verify-commercial-pricing-authority.sql");
+  const explicitVerifier = source("scripts", "verify-explicit-credit-pricing.sql");
 
-  assert.match(migration, /begin;[\s\S]*commit;/i);
-  assert.match(migration, /drop policy if exists "Staff can manage global commerce settings"/i);
-  assert.match(migration, /drop policy if exists "Staff can manage customer commerce policies"/i);
-  assert.match(migration, /for select\s+to authenticated[\s\S]*has_staff_permission\('credits\.manage'\)/i);
-  assert.match(migration, /revoke all privileges[\s\S]*from authenticated/i);
-  assert.match(migration, /grant select[\s\S]*to authenticated/i);
-  assert.match(migration, /grant select, insert, update, delete[\s\S]*to service_role/i);
-  assert.match(migration, /commerce_settings_authoritative_values_chk/i);
-  assert.match(migration, /customer_commercial_policy_authoritative_values_chk/i);
-  assert.match(migration, /inactive_customer_adjustment_normalized/);
+  assert.match(authorityMigration, /begin;[\s\S]*commit;/i);
+  assert.match(authorityMigration, /drop policy if exists "Staff can manage global commerce settings"/i);
+  assert.match(authorityMigration, /drop policy if exists "Staff can manage customer commerce policies"/i);
+  assert.match(authorityMigration, /for select\s+to authenticated[\s\S]*has_staff_permission\('credits\.manage'\)/i);
+  assert.match(authorityMigration, /revoke all privileges[\s\S]*from authenticated/i);
+  assert.match(authorityMigration, /grant select[\s\S]*to authenticated/i);
+  assert.match(authorityMigration, /grant select, insert, update, delete[\s\S]*to service_role/i);
+  assert.match(authorityMigration, /commerce_settings_authoritative_values_chk/i);
+  assert.match(authorityMigration, /customer_commercial_policy_authoritative_values_chk/i);
+  assert.match(authorityMigration, /inactive_customer_adjustment_normalized/);
   assert.match(
-    migration,
+    authorityMigration,
     /update\s+public\.customer_commercial_policies\s+set\s+adjustment_value\s*=\s*0\s+where\s+adjustment_type\s*=\s*'none'\s+and\s+adjustment_value\s*<>\s*0/i,
   );
-  assert.doesNotMatch(migration, /\b(?:delete\s+from|truncate\s+table)\b/i);
+  assert.doesNotMatch(authorityMigration, /\b(?:delete\s+from|truncate\s+table)\b/i);
+
+  assert.match(explicitPricingMigration, /begin;[\s\S]*commit;/i);
+  assert.match(explicitPricingMigration, /credit_package_10_total_eur\s+numeric\(12,2\)/i);
+  assert.match(explicitPricingMigration, /custom_credit_unit_price_eur\s+numeric\(10,4\)/i);
+  assert.match(explicitPricingMigration, /custom_credit_unit_price_override_eur\s+numeric\(10,4\)/i);
+  assert.match(explicitPricingMigration, /explicit_customer_credit_prices_materialized/i);
+  assert.match(explicitPricingMigration, /explicit_global_credit_prices_materialized/i);
+  assert.doesNotMatch(explicitPricingMigration, /pg_catalog\.greatest/i);
+  assert.match(explicitPricingMigration, /mg_seed_js_unit_ticks\(input_unit double precision\)/i);
+  assert.match(explicitPricingMigration, /float8send\(greatest\(0\.01::double precision, input_unit\)\)/i);
+  assert.match(explicitPricingMigration, /exact_denominator := exact_denominator \* 2/i);
+  assert.match(explicitPricingMigration, /pg_catalog\.div\([\s\S]{0,140}2 \* exact_numerator \+ exact_denominator/i);
+  assert.doesNotMatch(explicitPricingMigration, /exact_(?:scaled|numerator)\s*:=\s*exact_(?:scaled|numerator)\s*\/\s*2/i);
+  assert.match(explicitPricingMigration, /credits::bigint \* public\.mg_seed_js_unit_ticks\(input_unit\) \+ 50/i);
+  assert.match(explicitPricingMigration, /create or replace function public\.save_commerce_settings_v2/i);
+  assert.match(explicitPricingMigration, /create or replace function public\.save_customer_commercial_policy_v2/i);
+  assert.match(explicitPricingMigration, /create or replace function public\.activate_explicit_pricing_v2/i);
+  assert.match(explicitPricingMigration, /explicit_pricing_writes_not_activated/i);
+  assert.match(explicitPricingMigration, /security invoker[\s\S]*set search_path = ''/i);
+  assert.match(explicitPricingMigration, /revoke all on function public\.save_commerce_settings_v2[\s\S]*from PUBLIC, anon, authenticated/i);
+  assert.match(explicitPricingMigration, /grant execute on function public\.save_customer_commercial_policy_v2[\s\S]*to service_role/i);
+  assert.doesNotMatch(explicitPricingMigration, /\b(?:delete\s+from|truncate\s+table)\b/i);
+  assert.doesNotMatch(
+    explicitPricingMigration,
+    /(?:add column|create table|p_)\s+\w*(?:vat|tax|automatic_tax)\w*/i,
+  );
+  assert.match(explicitVerifier, /SELECT-only verification/i);
+  assert.match(explicitVerifier, /global_rpc_service_only/);
+  assert.match(explicitVerifier, /customer_rpc_service_only/);
+  assert.match(explicitVerifier, /activation_rpc_service_only/);
+  assert.match(explicitVerifier, /browser_direct_writes_revoked/);
+  assert.match(explicitVerifier, /legacy_write_guards_present/);
+  assert.doesNotMatch(
+    explicitVerifier,
+    /\b(?:alter|create|drop|grant|revoke|insert|update|delete|truncate)\s+(?:table|policy|on|into|from|public\.)/i,
+  );
 
   assert.match(verifier, /SELECT-only verification/i);
   assert.match(verifier, /authenticated_write_revoked/);
   assert.match(verifier, /no_authenticated_write_policy/);
   assert.match(verifier, /inactive_adjustments_canonical/);
   assert.doesNotMatch(verifier, /\b(?:alter|create|drop|grant|revoke|insert|update|delete|truncate)\s+(?:table|policy|on|into|from|public\.)/i);
+});
+
+test("legacy materialization keeps the JavaScript half-step fixture exact", () => {
+  const afterGlobal = Math.max(0.01, 3.5 * (1 - (-99.99 / 100)));
+  const canonicalUnit = Number(afterGlobal.toFixed(4));
+  assert.equal(canonicalUnit, 6.9996);
+  assert.equal(calculateCreditTotalEuro(250, canonicalUnit), 1749.9);
+  const secondCanonicalUnit = Number(
+    Math.max(0.01, 3.5 * (1 - (-99.97 / 100))).toFixed(4),
+  );
+  assert.equal(secondCanonicalUnit, 6.9989);
+  assert.equal(calculateCreditTotalEuro(250, secondCanonicalUnit), 1749.73);
+
+  const releaseRunbook = source("docs", "explicit-credit-pricing-release.md");
+  const continuityVerifier = source("scripts", "verify-explicit-pricing-continuity.mjs");
+  assert.match(releaseRunbook, /writes\s+remain locked/i);
+  assert.match(releaseRunbook, /v2-aware[\s\S]{0,120}rollback\s+bridge/i);
+  assert.match(releaseRunbook, /Never point Production at a pre-v2 build/i);
+  assert.match(continuityVerifier, /mismatchCount/);
+  assert.doesNotMatch(continuityVerifier, /\.(?:insert|update|upsert|delete|rpc)\s*\(/);
+  assert.doesNotMatch(continuityVerifier, /console\.(?:log|error)\([^)]*(?:user_id|credit_price_override)/i);
+  assert.doesNotMatch(releaseRunbook, /\bVAT calculation\b/i);
 });

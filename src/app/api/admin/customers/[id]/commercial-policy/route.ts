@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireStaffPermission } from "@/lib/apiAuth";
+import {
+  MAX_CREDIT_PACKAGE_TOTAL_EURO,
+  MAX_CUSTOM_CREDIT_UNIT_PRICE_EURO,
+  minimumCreditPackageTotalEuro,
+} from "@/lib/creditPackages";
 import { buildCreditQuote } from "@/lib/commercialPricing";
 import {
   getCommerceSettings,
@@ -9,46 +14,37 @@ import {
 } from "@/lib/commercialPolicy";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 
+const nullablePackagePrice = (credits: number) => z.number()
+  .min(minimumCreditPackageTotalEuro(credits))
+  .max(MAX_CREDIT_PACKAGE_TOTAL_EURO)
+  .multipleOf(0.01)
+  .nullable();
+
 const schema = z.object({
-  creditPriceOverrideEuro: z.number().min(0.01).max(1000).nullable(),
-  adjustmentType: z.enum(["none", "percentage", "fixed"]),
-  adjustmentValue: z.number().min(-1000).max(1000),
+  packagePriceOverridesEuro: z.object({
+    credits_10: nullablePackagePrice(10),
+    credits_50: nullablePackagePrice(50),
+    credits_100: nullablePackagePrice(100),
+    credits_250: nullablePackagePrice(250),
+    credits_500: nullablePackagePrice(500),
+  }).strict(),
+  customUnitPriceOverrideEuro: z.number()
+    .min(0.01)
+    .max(MAX_CUSTOM_CREDIT_UNIT_PRICE_EURO)
+    .multipleOf(0.0001)
+    .nullable(),
   paymentMethods: z.object({
     stripe: z.boolean().nullable(),
     bank: z.boolean().nullable(),
-  }),
+  }).strict(),
   internalNote: z.string().trim().max(2000).nullable(),
   expectedUpdatedAt: z.string().datetime({ offset: true }).nullable(),
-}).strict().superRefine((value, context) => {
-  if (value.adjustmentType === "percentage" && Math.abs(value.adjustmentValue) > 100) {
-    context.addIssue({
-      code: "custom",
-      path: ["adjustmentValue"],
-      message: "Percentage adjustment must be between -100 and 100.",
-    });
-  }
-  if (value.adjustmentType === "none" && value.adjustmentValue !== 0) {
-    context.addIssue({
-      code: "custom",
-      path: ["adjustmentValue"],
-      message: "Adjustment value must be zero when no adjustment is selected.",
-    });
-  }
-  if (value.creditPriceOverrideEuro != null && value.adjustmentType !== "none") {
-    context.addIssue({
-      code: "custom",
-      path: ["creditPriceOverrideEuro"],
-      message: "Choose either a fixed customer price or an adjustment to the global price.",
-    });
-  }
-});
+}).strict();
 
 const privateNoStoreHeaders = {
   "Cache-Control": "private, no-store, max-age=0",
   Vary: "Authorization",
 };
-
-const selectedColumns = "user_id,credit_price_override_eur,adjustment_type,adjustment_value,payment_bank_enabled,payment_stripe_enabled,internal_note,updated_at";
 
 function json(body: unknown, status = 200) {
   return NextResponse.json(body, { status, headers: privateNoStoreHeaders });
@@ -88,6 +84,7 @@ export async function GET(
     return json({
       policy: customerPolicy,
       effectiveQuote: buildCreditQuote(settings, customerPolicy),
+      explicitPricingWritesEnabled: settings.explicit_pricing_writes_enabled,
       migrationReady: true,
     });
   } catch {
@@ -122,9 +119,8 @@ export async function PATCH(
   if (existence === "error") return json({ error: "Customer pricing could not be saved." }, 503);
   if (existence === "no") return json({ error: "Customer not found." }, 404);
 
-  let settings;
   try {
-    settings = await getCommerceSettings();
+    await getCommerceSettings();
   } catch {
     return json(
       { error: "Global pricing is temporarily unavailable. Nothing was changed." },
@@ -132,102 +128,68 @@ export async function PATCH(
     );
   }
 
+  const { packagePriceOverridesEuro, paymentMethods } = parsed.data;
   const admin = getSupabaseAdmin();
-  const current = await admin
-    .from("customer_commercial_policies")
-    .select(selectedColumns)
-    .eq("user_id", id)
-    .maybeSingle();
-  if (current.error) {
-    return json({ error: "Customer pricing could not be saved. Nothing was changed." }, 503);
-  }
+  const saved = await admin.rpc("save_customer_commercial_policy_v2", {
+    p_user_id: id,
+    p_expected_updated_at: parsed.data.expectedUpdatedAt,
+    p_credit_package_10_total_override_eur: packagePriceOverridesEuro.credits_10,
+    p_credit_package_50_total_override_eur: packagePriceOverridesEuro.credits_50,
+    p_credit_package_100_total_override_eur: packagePriceOverridesEuro.credits_100,
+    p_credit_package_250_total_override_eur: packagePriceOverridesEuro.credits_250,
+    p_credit_package_500_total_override_eur: packagePriceOverridesEuro.credits_500,
+    p_custom_credit_unit_price_override_eur: parsed.data.customUnitPriceOverrideEuro,
+    p_payment_stripe_enabled: paymentMethods.stripe,
+    p_payment_bank_enabled: paymentMethods.bank,
+    p_internal_note: parsed.data.internalNote || null,
+    p_actor_user_id: auth.user.id,
+  });
 
-  const currentUpdatedAt = typeof current.data?.updated_at === "string"
-    ? current.data.updated_at
-    : null;
-  if (parsed.data.expectedUpdatedAt !== currentUpdatedAt) {
-    return json(
-      {
-        error: "This customer pricing policy changed in another session. Reload it before saving.",
-        code: "customer_commercial_policy_conflict",
-      },
-      409,
-    );
-  }
-
-  const payload = {
-    user_id: id,
-    credit_price_override_eur: parsed.data.creditPriceOverrideEuro,
-    adjustment_type: parsed.data.creditPriceOverrideEuro != null
-      ? "none"
-      : parsed.data.adjustmentType,
-    adjustment_value: parsed.data.creditPriceOverrideEuro != null || parsed.data.adjustmentType === "none"
-      ? 0
-      : parsed.data.adjustmentValue,
-    payment_stripe_enabled: parsed.data.paymentMethods.stripe,
-    payment_paypal_enabled: false,
-    payment_bank_enabled: parsed.data.paymentMethods.bank,
-    internal_note: parsed.data.internalNote || null,
-    updated_by: auth.user.id,
-  };
-
-  let saved;
-  if (current.data) {
-    const updated = await admin
-      .from("customer_commercial_policies")
-      .update(payload)
-      .eq("user_id", id)
-      .eq("updated_at", currentUpdatedAt as string)
-      .select(selectedColumns)
-      .maybeSingle();
-    saved = updated;
-  } else {
-    const inserted = await admin
-      .from("customer_commercial_policies")
-      .insert(payload)
-      .select(selectedColumns)
-      .single();
-    saved = inserted;
-  }
-
-  if (saved.error) {
-    if (saved.error.code === "23505") {
-      return json(
-        {
-          error: "This customer pricing policy changed in another session. Reload it before saving.",
-          code: "customer_commercial_policy_conflict",
-        },
-        409,
-      );
-    }
+  if (saved.error || !saved.data || typeof saved.data !== "object") {
     return json({ error: "Customer pricing could not be saved. Nothing was confirmed." }, 503);
   }
-  if (!saved.data) {
+
+  const result = saved.data as {
+    ok?: boolean;
+    code?: string;
+    policy?: Record<string, unknown>;
+    auditRecorded?: boolean;
+  };
+  if (!result.ok && result.code === "customer_commercial_policy_conflict") {
     return json(
       {
         error: "This customer pricing policy changed in another session. Reload it before saving.",
-        code: "customer_commercial_policy_conflict",
+        code: result.code,
       },
       409,
     );
   }
+  if (!result.ok && result.code === "explicit_pricing_writes_not_activated") {
+    return json(
+      {
+        error: "Customer price writes are locked until the verified v2 rollback bridge is activated.",
+        code: result.code,
+      },
+      503,
+    );
+  }
+  if (!result.ok || !result.policy || result.auditRecorded !== true) {
+    return json({ error: "Customer pricing could not be saved. Nothing was confirmed." }, 503);
+  }
 
-  const audit = await admin.from("commerce_policy_events").insert({
-    scope: "customer",
-    customer_id: id,
-    actor_user_id: auth.user.id,
-    event_type: "customer_commercial_policy_updated",
-    before_json: current.data,
-    after_json: saved.data,
-  });
-  const policy = normalizeCustomerCommercialPolicy(
-    id,
-    saved.data as Record<string, unknown>,
-  );
-
-  return json({
-    policy,
-    effectiveQuote: buildCreditQuote(settings, policy),
-    auditRecorded: !audit.error,
-  });
+  try {
+    const policy = normalizeCustomerCommercialPolicy(id, result.policy);
+    const currentSettings = await getCommerceSettings();
+    return json({
+      policy,
+      effectiveQuote: buildCreditQuote(currentSettings, policy),
+      explicitPricingWritesEnabled: currentSettings.explicit_pricing_writes_enabled,
+      auditRecorded: true,
+    });
+  } catch {
+    return json(
+      { error: "Saved customer pricing could not be verified. Reload before another change." },
+      503,
+    );
+  }
 }

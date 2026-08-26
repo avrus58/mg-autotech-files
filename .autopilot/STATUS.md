@@ -5203,3 +5203,38 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 - Gercek authenticated customer viewport fixture'i, Production/canli DB,
   migration, musteri verisi, odeme ayari, env/secret, fiyat/KDV/indirim veya
   deploy degisikligi yapilmadi.
+
+## 2026-08-26 11:13 +02:00 Acik kredi fiyat otoritesi yerelde tamamlandi
+
+- Owner, bes paket fiyatinin ve custom EUR/kredi fiyatinin hem global hem
+  musteri bazinda birbirinden bagimsiz olmasini onayladi. Adminin girdigi EUR
+  degeri nihai odenecek tutardir; dunyanin farkli ulkelerinden odeme alindigi
+  icin KDV/vergi, ulke, brut/net ve vergi dahil-haric hesabi eklenmedi.
+- Global 10/50/100/250/500 nihai paket toplamlari ile global custom birim fiyat
+  v2 otoritesine tasindi. Musteri tarafinda bes seyrek paket override'i ve ayri
+  nullable custom override vardir; bos alan yalniz eslesen global degeri miras
+  alir. Public/authenticated quote ve Stripe/banka checkout tutarlari browser
+  payload'undan degil revision kontrollu server quote'undan uretilir.
+- Admin global fiyat editoru ve musteri ticari modal'i kompakt, alan bazli
+  validation/focus/error ve miras preview'i ile guncellendi. Kredi satin alma ve
+  ana sayfa paketleri yalniz nihai tutari gosterir; eski adjustment, cizili fiyat
+  veya kanitsiz `best value` karsilastirmasi kullanmaz.
+- Additive migration legacy efektif fiyatlari binary64 ile birebir v2 degerlere
+  materialize eder; atomik service-role RPC/audit, stale-save korumasi, tek yonlu
+  activation gate, legacy write guard ve v2-aware rollback bridge ekler. Yeni
+  SELECT-only katalog/guvenlik ve tum musteri politikalari continuity verifieri
+  ile staging/Production release sirasi dokumante edildi.
+- Degisen urun alanlari pricing helper/policy, quote ve admin API'leri, global ve
+  musteri admin UI'lari, kredi/ana sayfa sunumu, migration, verifier scriptleri,
+  testler ve release runbook'tur. Package/lockfile veya yeni dependency yoktur.
+- Kontroller: pricing/homepage PASS (18/18); lint PASS; full typecheck PASS; full
+  test PASS (1019/1019); i18n PASS (12 locale, 608/608, 0 fallback); Webpack
+  Production build PASS (278/278); performance PASS (70.1/80 KiB gzip);
+  `git diff --check` PASS. PostgreSQL 16 sentetik migration smoke PASS; 120.006
+  legacy kombinasyonda JavaScript parity 0 mismatch; uc bagimsiz review P0/P1
+  bulmadi.
+- Env/secret okunmadi ve continuity scripti gercek servise karsi calistirilmadi.
+  Isolated staging veya Production migrationi, canli DB/musteri verisi, odeme
+  konfigurasyonu, e-posta ve deploy degistirilmedi. Release icin once staging,
+  sonra Production continuity/verifier kapilari ve ayri acik yayin yetkisi
+  gerekir.

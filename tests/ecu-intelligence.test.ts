@@ -2032,30 +2032,37 @@ test("Level 1 migration prevents duplicate comparisons and grants no customer re
   assert.doesNotMatch(sql, /Customers can read AI similarity/i);
 });
 
-test("commercial pricing treats an explicit customer price as the final rate", () => {
+test("commercial pricing keeps package and custom customer overrides independent", () => {
   const globalQuote = buildCreditQuote(defaultCommerceSettings, emptyCustomerCommercialPolicy("customer-a"));
   assert.equal(globalQuote.customUnitPriceEuro, 4);
   assert.equal(globalQuote.pricingSource, "global");
 
   const customerFive = emptyCustomerCommercialPolicy("customer-b");
-  customerFive.credit_price_override_eur = 5;
-  customerFive.adjustment_type = "fixed";
-  customerFive.adjustment_value = 1;
+  customerFive.custom_credit_unit_price_override_eur = 5;
   assert.equal(buildCreditQuote(defaultCommerceSettings, customerFive).customUnitPriceEuro, 5);
 
-  const customerFour = { ...customerFive, user_id: "customer-c", credit_price_override_eur: 4 };
+  const customerFour = {
+    ...customerFive,
+    user_id: "customer-c",
+    custom_credit_unit_price_override_eur: 4,
+    package_price_overrides_eur: {
+      ...customerFive.package_price_overrides_eur,
+      credits_100: 299.99,
+    },
+  };
   assert.equal(buildCreditQuote(defaultCommerceSettings, customerFour).customUnitPriceEuro, 4);
-  customerFour.payment_paypal_enabled = true;
   const quote = buildCreditQuote(defaultCommerceSettings, customerFour);
-  assert.equal(quote.pricingSource, "customer_fixed");
-  assert.equal(quote.packages.every((item) => item.unitPriceEuro === 4), true);
+  assert.equal(quote.pricingSource, "customer_override");
+  assert.equal(quote.packages.find((item) => item.id === "credits_100")?.priceEuro, 299.99);
+  assert.equal(quote.packages.find((item) => item.id === "credits_50")?.priceEuro, 180);
   assert.deepEqual(Object.keys(quote.paymentMethods).sort(), ["bank", "stripe"]);
   assert.equal(quote.paymentMethods.stripe, true);
 
-  const adjustmentOnly = emptyCustomerCommercialPolicy("customer-d");
-  adjustmentOnly.adjustment_type = "fixed";
-  adjustmentOnly.adjustment_value = 1;
-  assert.equal(buildCreditQuote(defaultCommerceSettings, adjustmentOnly).customUnitPriceEuro, 3);
+  const packageOnly = emptyCustomerCommercialPolicy("customer-d");
+  packageOnly.package_price_overrides_eur.credits_10 = 31.5;
+  const packageOnlyQuote = buildCreditQuote(defaultCommerceSettings, packageOnly);
+  assert.equal(packageOnlyQuote.customUnitPriceEuro, 4);
+  assert.equal(packageOnlyQuote.packages[0]?.priceEuro, 31.5);
 });
 
 test("payment ledger sources map to supported and legacy finance providers", () => {

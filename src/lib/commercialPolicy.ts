@@ -1,5 +1,14 @@
 import { createHash } from "node:crypto";
-import { getCreditPackage } from "@/lib/creditPackages";
+import {
+  creditPackageIds,
+  getCreditPackage,
+  MAX_CREDIT_PACKAGE_TOTAL_EURO,
+  MAX_CUSTOM_CREDIT_UNIT_PRICE_EURO,
+  minimumCreditPackageTotalEuro,
+  type CreditPackageId,
+  type CreditPackagePriceMap,
+  type CreditPackagePriceOverrideMap,
+} from "@/lib/creditPackages";
 import {
   buildCreditQuote,
   calculateCreditTotalEuro,
@@ -7,14 +16,11 @@ import {
   type CommerceSettings,
   type CustomerCommercialPolicy,
   type PaymentMethodId,
-  type PriceAdjustmentType,
 } from "@/lib/commercialPricing";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 
 export {
-  applyUnitAdjustment,
   buildCreditQuote,
-  calculateEffectiveUnitPrice,
   defaultCommerceSettings,
   effectivePaymentMethods,
   emptyCustomerCommercialPolicy,
@@ -26,13 +32,51 @@ export type {
   CustomerCommercialPolicy,
   EffectivePaymentMethods,
   PaymentMethodId,
-  PriceAdjustmentType,
   PricingSource,
 } from "@/lib/commercialPricing";
 
-const MAX_UNIT_PRICE_EURO = 1000;
-const MAX_ADJUSTMENT = 1000;
 const QUOTE_ID_PATTERN = /^[a-f0-9]{40}$/;
+
+const globalPackageColumns: Record<CreditPackageId, string> = {
+  credits_10: "credit_package_10_total_eur",
+  credits_50: "credit_package_50_total_eur",
+  credits_100: "credit_package_100_total_eur",
+  credits_250: "credit_package_250_total_eur",
+  credits_500: "credit_package_500_total_eur",
+};
+
+const customerPackageColumns: Record<CreditPackageId, string> = {
+  credits_10: "credit_package_10_total_override_eur",
+  credits_50: "credit_package_50_total_override_eur",
+  credits_100: "credit_package_100_total_override_eur",
+  credits_250: "credit_package_250_total_override_eur",
+  credits_500: "credit_package_500_total_override_eur",
+};
+
+export const commerceSettingsSelectedColumns = [
+  "id",
+  "currency",
+  "pricing_model_version",
+  "explicit_pricing_writes_enabled",
+  "explicit_pricing_bridge_release",
+  ...Object.values(globalPackageColumns),
+  "custom_credit_unit_price_eur",
+  "promotion_label",
+  "payment_bank_enabled",
+  "payment_stripe_enabled",
+  "updated_at",
+].join(",");
+
+export const customerCommercialPolicySelectedColumns = [
+  "user_id",
+  "pricing_model_version",
+  ...Object.values(customerPackageColumns),
+  "custom_credit_unit_price_override_eur",
+  "payment_bank_enabled",
+  "payment_stripe_enabled",
+  "internal_note",
+  "updated_at",
+].join(",");
 
 export class CommercialPricingUnavailableError extends Error {
   readonly code = "commercial_pricing_unavailable";
@@ -65,23 +109,27 @@ function unavailable(): never {
   throw new CommercialPricingUnavailableError();
 }
 
-function finiteNumber(value: unknown, minimum: number, maximum: number) {
+function boundedMoney(
+  value: unknown,
+  maximum: number,
+  decimalPlaces: 2 | 4,
+  minimum = 0.01,
+) {
   const parsed = Number(value);
   if (!Number.isFinite(parsed) || parsed < minimum || parsed > maximum) unavailable();
-  return parsed;
+  const scale = decimalPlaces === 2 ? 100 : 10_000;
+  const canonical = Math.round(parsed * scale) / scale;
+  if (Math.abs(parsed - canonical) > 1 / (scale * 100)) unavailable();
+  return canonical;
 }
 
-function adjustment(
-  rawType: unknown,
-  rawValue: unknown,
-): { type: PriceAdjustmentType; value: number } {
-  const type = String(rawType);
-  if (!["none", "percentage", "fixed"].includes(type)) unavailable();
-  if (type === "none") return { type, value: 0 };
-
-  const value = finiteNumber(rawValue, -MAX_ADJUSTMENT, MAX_ADJUSTMENT);
-  if (type === "percentage" && Math.abs(value) > 100) unavailable();
-  return { type: type as PriceAdjustmentType, value };
+function nullableMoney(
+  value: unknown,
+  maximum: number,
+  decimalPlaces: 2 | 4,
+  minimum = 0.01,
+) {
+  return value == null ? null : boundedMoney(value, maximum, decimalPlaces, minimum);
 }
 
 function booleanValue(value: unknown) {
@@ -89,24 +137,70 @@ function booleanValue(value: unknown) {
   return value;
 }
 
+function packagePriceMap(
+  row: Record<string, unknown>,
+  columns: Record<CreditPackageId, string>,
+): CreditPackagePriceMap {
+  return Object.fromEntries(
+    creditPackageIds.map((packageId) => [
+      packageId,
+      boundedMoney(
+        row[columns[packageId]],
+        MAX_CREDIT_PACKAGE_TOTAL_EURO,
+        2,
+        minimumCreditPackageTotalEuro(getCreditPackage(packageId)?.credits ?? 1),
+      ),
+    ]),
+  ) as CreditPackagePriceMap;
+}
+
+function packagePriceOverrideMap(
+  row: Record<string, unknown>,
+): CreditPackagePriceOverrideMap {
+  return Object.fromEntries(
+    creditPackageIds.map((packageId) => [
+      packageId,
+      nullableMoney(
+        row[customerPackageColumns[packageId]],
+        MAX_CREDIT_PACKAGE_TOTAL_EURO,
+        2,
+        minimumCreditPackageTotalEuro(getCreditPackage(packageId)?.credits ?? 1),
+      ),
+    ]),
+  ) as CreditPackagePriceOverrideMap;
+}
+
 export function normalizeCommerceSettings(row: Record<string, unknown> | null): CommerceSettings {
-  if (!row || row.id !== "default" || row.currency !== "EUR") unavailable();
-  if (typeof row.updated_at !== "string") unavailable();
-  const globalAdjustment = adjustment(
-    row.global_adjustment_type,
-    row.global_adjustment_value,
-  );
+  const bridgeRelease = row?.explicit_pricing_bridge_release == null
+    ? null
+    : typeof row.explicit_pricing_bridge_release === "string" &&
+        /^[A-Za-z0-9._:-]{8,180}$/.test(row.explicit_pricing_bridge_release)
+      ? row.explicit_pricing_bridge_release
+      : unavailable();
+  if (
+    !row ||
+    row.id !== "default" ||
+    row.currency !== "EUR" ||
+    row.pricing_model_version !== 2 ||
+    typeof row.updated_at !== "string" ||
+    typeof row.explicit_pricing_writes_enabled !== "boolean" ||
+    (row.explicit_pricing_writes_enabled && bridgeRelease == null)
+  ) {
+    unavailable();
+  }
 
   return {
     id: "default",
     currency: "EUR",
-    default_custom_credit_price_eur: finiteNumber(
-      row.default_custom_credit_price_eur,
-      0.01,
-      MAX_UNIT_PRICE_EURO,
+    pricing_model_version: 2,
+    explicit_pricing_writes_enabled: row.explicit_pricing_writes_enabled,
+    explicit_pricing_bridge_release: bridgeRelease,
+    package_prices_eur: packagePriceMap(row, globalPackageColumns),
+    custom_credit_unit_price_eur: boundedMoney(
+      row.custom_credit_unit_price_eur,
+      MAX_CUSTOM_CREDIT_UNIT_PRICE_EURO,
+      4,
     ),
-    global_adjustment_type: globalAdjustment.type,
-    global_adjustment_value: globalAdjustment.value,
     promotion_label: row.promotion_label == null
       ? null
       : typeof row.promotion_label === "string" && row.promotion_label.length <= 180
@@ -124,13 +218,13 @@ export function normalizeCustomerCommercialPolicy(
   row: Record<string, unknown> | null,
 ): CustomerCommercialPolicy {
   if (!row) return emptyCustomerCommercialPolicy(userId);
-  if (row.user_id !== userId || typeof row.updated_at !== "string") unavailable();
-  const customerAdjustment = adjustment(row.adjustment_type, row.adjustment_value);
-  const override = row.credit_price_override_eur == null
-    ? null
-    : finiteNumber(row.credit_price_override_eur, 0.01, MAX_UNIT_PRICE_EURO);
-
-  if (override != null && customerAdjustment.type !== "none") unavailable();
+  if (
+    row.user_id !== userId ||
+    row.pricing_model_version !== 2 ||
+    typeof row.updated_at !== "string"
+  ) {
+    unavailable();
+  }
 
   const nullableBoolean = (value: unknown) => {
     if (value == null) return null;
@@ -139,9 +233,13 @@ export function normalizeCustomerCommercialPolicy(
 
   return {
     user_id: userId,
-    credit_price_override_eur: override,
-    adjustment_type: customerAdjustment.type,
-    adjustment_value: customerAdjustment.value,
+    pricing_model_version: 2,
+    package_price_overrides_eur: packagePriceOverrideMap(row),
+    custom_credit_unit_price_override_eur: nullableMoney(
+      row.custom_credit_unit_price_override_eur,
+      MAX_CUSTOM_CREDIT_UNIT_PRICE_EURO,
+      4,
+    ),
     payment_paypal_enabled: null,
     payment_bank_enabled: nullableBoolean(row.payment_bank_enabled),
     payment_stripe_enabled: nullableBoolean(row.payment_stripe_enabled),
@@ -158,26 +256,26 @@ export async function getCommerceSettings() {
   const admin = getSupabaseAdmin();
   const result = await admin
     .from("commerce_settings")
-    .select("id,currency,default_custom_credit_price_eur,global_adjustment_type,global_adjustment_value,promotion_label,payment_bank_enabled,payment_stripe_enabled,updated_at")
+    .select(commerceSettingsSelectedColumns)
     .eq("id", "default")
     .maybeSingle();
 
   if (result.error || !result.data) unavailable();
-  return normalizeCommerceSettings(result.data as Record<string, unknown>);
+  return normalizeCommerceSettings(result.data as unknown as Record<string, unknown>);
 }
 
 export async function getCustomerCommercialPolicy(userId: string) {
   const admin = getSupabaseAdmin();
   const result = await admin
     .from("customer_commercial_policies")
-    .select("user_id,credit_price_override_eur,adjustment_type,adjustment_value,payment_bank_enabled,payment_stripe_enabled,internal_note,updated_at")
+    .select(customerCommercialPolicySelectedColumns)
     .eq("user_id", userId)
     .maybeSingle();
 
   if (result.error) unavailable();
   return normalizeCustomerCommercialPolicy(
     userId,
-    (result.data as Record<string, unknown> | null) ?? null,
+    (result.data as unknown as Record<string, unknown> | null) ?? null,
   );
 }
 
@@ -193,9 +291,10 @@ export async function getCommercialContext(userId: string) {
 export function createCreditQuoteId(
   userId: string,
   quote: ReturnType<typeof buildCreditQuote>,
+  revisions: { global: string; customer: string | null },
 ) {
   return createHash("sha256")
-    .update(JSON.stringify({ userId, quote }))
+    .update(JSON.stringify({ userId, quote, revisions }))
     .digest("hex")
     .slice(0, 40);
 }
@@ -203,11 +302,17 @@ export function createCreditQuoteId(
 export async function getCreditQuoteForUser(userId: string) {
   const context = await getCommercialContext(userId);
   const quote = buildCreditQuote(context.settings, context.customerPolicy);
+  const globalRevision = context.settings.updated_at;
+  if (typeof globalRevision !== "string") unavailable();
+
   return {
     ...context,
     quote: {
       ...quote,
-      quoteId: createCreditQuoteId(userId, quote),
+      quoteId: createCreditQuoteId(userId, quote, {
+        global: globalRevision,
+        customer: context.customerPolicy.updated_at ?? null,
+      }),
     },
   };
 }
@@ -219,9 +324,9 @@ export async function getCreditPurchaseQuote(
 ) {
   const context = await getCreditQuoteForUser(userId);
   const quote = context.quote;
-  // A purchase must be bound to the exact quote the customer reviewed. Missing,
-  // malformed and superseded revisions all require a fresh quote before any
-  // payment provider is contacted.
+  // A purchase must be bound to the exact saved revisions the customer
+  // reviewed. A save-and-revert still creates a new revision and invalidates
+  // the older checkout attempt.
   if (
     typeof body.quoteId !== "string" ||
     !QUOTE_ID_PATTERN.test(body.quoteId) ||
@@ -245,6 +350,8 @@ export async function getCreditPurchaseQuote(
     return {
       id: packageData.id,
       credits: packageData.credits,
+      // The exact stored package total is the payment authority. The displayed
+      // unit rate is deliberately never multiplied back into this value.
       priceEuro: packageData.priceEuro,
       unitPriceEuro: packageData.unitPriceEuro,
       description: packageData.description,

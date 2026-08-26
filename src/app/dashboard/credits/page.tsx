@@ -48,7 +48,7 @@ const paymentMethods = [
 ] as const;
 
 type PaymentMethod = (typeof paymentMethods)[number]["id"];
-type PricingSource = "global" | "customer_adjustment" | "customer_fixed";
+type PricingSource = "global" | "customer_override";
 type CreditQuote = {
   quoteId: string;
   currency: string;
@@ -56,11 +56,17 @@ type CreditQuote = {
   customBaseUnitPriceEuro: number;
   globalCustomUnitPriceEuro: number;
   customUnitPriceEuro: number;
+  customPricingSource: PricingSource;
   pricingSource: PricingSource;
   customerPricingActive: boolean;
   customerPaymentPolicyActive: boolean;
   paymentMethods: Record<PaymentMethod, boolean>;
-  packages: Array<CreditPackage & { priceEuro: number; unitPriceEuro: number }>;
+  packages: Array<CreditPackage & {
+    globalPriceEuro: number;
+    priceEuro: number;
+    unitPriceEuro: number;
+    pricingSource: PricingSource;
+  }>;
 };
 
 type QuoteState = "loading" | "ready" | "error";
@@ -84,7 +90,8 @@ function isCreditQuote(value: unknown): value is CreditQuote {
     !isFinitePositive(quote.customBaseUnitPriceEuro) ||
     !isFinitePositive(quote.globalCustomUnitPriceEuro) ||
     !isFinitePositive(quote.customUnitPriceEuro) ||
-    !["global", "customer_adjustment", "customer_fixed"].includes(
+    !["global", "customer_override"].includes(quote.customPricingSource ?? "") ||
+    !["global", "customer_override"].includes(
       quote.pricingSource ?? "",
     ) ||
     typeof quote.customerPricingActive !== "boolean" ||
@@ -105,9 +112,10 @@ function isCreditQuote(value: unknown): value is CreditQuote {
       typeof item.name === "string" &&
       Number.isInteger(item.credits) &&
       item.credits > 0 &&
-      isFinitePositive(item.basePriceEuro) &&
+      isFinitePositive(item.globalPriceEuro) &&
       isFinitePositive(item.priceEuro) &&
       isFinitePositive(item.unitPriceEuro) &&
+      ["global", "customer_override"].includes(item.pricingSource) &&
       typeof item.description === "string" &&
       (item.highlight === undefined || typeof item.highlight === "boolean"),
   );
@@ -238,13 +246,13 @@ export default function BuyCreditsPage() {
   const selectedPayment = availablePaymentMethods.find(
     (method) => method.id === paymentMethod,
   );
-  const bestValuePackage = packages.find((pack) => pack.credits === 500);
-  const pricingLabel =
-    quote?.pricingSource === "customer_fixed"
-      ? "Your fixed partner rate is active on this account."
-      : quote?.pricingSource === "customer_adjustment"
-        ? "Your account-specific partner adjustment is active."
-        : null;
+  const lowestUnitPricePackage = packages.reduce<(typeof packages)[number] | null>(
+    (lowest, item) => !lowest || item.unitPriceEuro < lowest.unitPriceEuro ? item : lowest,
+    null,
+  );
+  const pricingLabel = quote?.pricingSource === "customer_override"
+    ? "Your account-specific package or custom-credit prices are active."
+    : null;
 
   const bankDetails = {
     accountName: process.env.NEXT_PUBLIC_BANK_ACCOUNT_NAME || "MG AutoTech",
@@ -523,8 +531,8 @@ export default function BuyCreditsPage() {
             </h2>
 
             <p className="mt-1 max-w-3xl text-xs leading-5 text-zinc-400 sm:text-sm">
-              Choose a package or enter a custom credit amount. Package prices
-              get cheaper as the volume increases.
+              Choose a package or enter a custom credit amount. Every package
+              shows its current final total and per-credit rate.
             </p>
             {pricingLabel && (
               <div className="mt-1.5 text-xs font-bold text-emerald-300">
@@ -765,15 +773,7 @@ export default function BuyCreditsPage() {
                 {item.credits} Credit
               </div>
 
-              {item.basePriceEuro !== item.priceEuro && (
-                <div className="mt-2 text-xs font-bold text-zinc-500 line-through">
-                  {formatEuro(item.basePriceEuro)}
-                </div>
-              )}
-
-              <div
-                className={`${item.basePriceEuro === item.priceEuro ? "mt-3" : "mt-0.5"} text-2xl font-black`}
-              >
+              <div className="mt-3 text-2xl font-black">
                 {formatEuro(item.priceEuro)}
               </div>
 
@@ -905,19 +905,6 @@ export default function BuyCreditsPage() {
                 <div className="text-xs font-black uppercase tracking-[0.16em] text-zinc-500">
                   Total Price
                 </div>
-                {customValid &&
-                  quote.customerPricingActive &&
-                  quote.globalCustomUnitPriceEuro !==
-                    quote.customUnitPriceEuro && (
-                    <div className="mt-2 text-sm font-bold text-zinc-500 line-through">
-                      {formatEuro(
-                        calculateCreditTotalEuro(
-                          customCreditAmount,
-                          quote.globalCustomUnitPriceEuro,
-                        ),
-                      )}
-                    </div>
-                  )}
                 <div className="mt-1.5 text-2xl font-black text-red-400">
                   {customValid ? formatEuro(customPrice) : "-"}
                 </div>
@@ -981,12 +968,12 @@ export default function BuyCreditsPage() {
                 </div>
               </div>
 
-              {bestValuePackage && (
+              {lowestUnitPricePackage && (
                 <div className="rounded-lg border border-white/10 bg-black/30 p-3">
-                  <div className="text-sm font-black">Best Value</div>
+                  <div className="text-sm font-black">Lowest package rate</div>
                   <div className="mt-1 text-sm text-zinc-400">
-                    {bestValuePackage.credits} Credits ={" "}
-                    {formatCreditUnitEuro(bestValuePackage.unitPriceEuro)} / Credit
+                    {lowestUnitPricePackage.credits} Credits ={" "}
+                    {formatCreditUnitEuro(lowestUnitPricePackage.unitPriceEuro)} / Credit
                   </div>
                 </div>
               )}
