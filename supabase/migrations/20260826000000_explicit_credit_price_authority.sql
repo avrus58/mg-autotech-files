@@ -8,6 +8,9 @@
 
 begin;
 
+set local lock_timeout = '5s';
+set local statement_timeout = '120s';
+
 do $$
 begin
   if pg_catalog.to_regclass('public.commerce_settings') is null

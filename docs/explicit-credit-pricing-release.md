@@ -45,6 +45,9 @@ materialized prices.
    Every check must pass and every migrated global/customer price must match.
    Then deploy and smoke-test the v2-aware application while pricing writes
    remain locked.
+   If the migration stops on its bounded lock/statement timeout, leave the
+   current application in place and retry only after the conflicting database
+   activity is understood; never remove the timeout to force the cutover.
 6. Retain a verified v2-aware Production deployment as the pricing rollback
    bridge. Record its immutable deployment/release identifier by calling the
    service-role-only `activate_explicit_pricing_v2` RPC with the current global

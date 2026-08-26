@@ -527,6 +527,8 @@ test("commercial tables allow authenticated staff reads but server-only writes",
   assert.doesNotMatch(authorityMigration, /\b(?:delete\s+from|truncate\s+table)\b/i);
 
   assert.match(explicitPricingMigration, /begin;[\s\S]*commit;/i);
+  assert.match(explicitPricingMigration, /set local lock_timeout\s*=\s*'5s'/i);
+  assert.match(explicitPricingMigration, /set local statement_timeout\s*=\s*'120s'/i);
   assert.match(explicitPricingMigration, /credit_package_10_total_eur\s+numeric\(12,2\)/i);
   assert.match(explicitPricingMigration, /custom_credit_unit_price_eur\s+numeric\(10,4\)/i);
   assert.match(explicitPricingMigration, /custom_credit_unit_price_override_eur\s+numeric\(10,4\)/i);

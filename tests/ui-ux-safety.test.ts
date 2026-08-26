@@ -434,9 +434,11 @@ test("admin laptop layouts keep dense orders and customer controls inside the vi
   const orderModal =
     adminPage.match(/function OrderDetailModal[\s\S]*?function WorkInfo/)?.[0] ?? "";
 
-  assert.match(ordersPanel, /overflow-hidden rounded-lg border border-white\/10 2xl:block/);
-  assert.match(ordersPanel, /space-y-3 2xl:hidden/);
-  assert.match(ordersPanel, /hidden min-w-0 grid-cols-\[minmax\(160px,1\.1fr\)[\s\S]*?lg:grid/);
+  assert.match(ordersPanel, /hidden overflow-x-auto rounded-2xl border border-white\/10 2xl:block/);
+  assert.doesNotMatch(ordersPanel, /overflow-hidden rounded-lg border border-white\/10 2xl:block/);
+  assert.match(ordersPanel, /grid gap-3 lg:grid-cols-2 2xl:hidden/);
+  assert.match(ordersPanel, /grid grid-cols-2 gap-2 text-sm/);
+  assert.match(ordersPanel, /sm:grid-cols-\[minmax\(0,1fr\)_auto\]/);
   assert.match(ordersPanel, /aria-label=\{`Open order \$\{shortId\(order\.id\)\} details`\}/);
   assert.match(customerModal, /max-w-\[96rem\]/);
   assert.match(customerModal, /xl:grid-cols-\[minmax\(0,1fr\)_280px\]/);

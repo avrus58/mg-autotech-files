@@ -1839,9 +1839,9 @@ export default function AdminPage() {
         </div>
       </header>
 
-      <section className="mx-auto grid max-w-[1600px] min-w-0 gap-5 px-3 py-6 sm:px-4 sm:py-8 xl:grid-cols-[260px_minmax(0,1fr)]">
-        <aside className="order-2 h-fit min-w-0 rounded-[1.5rem] border border-white/10 bg-white/[0.04] p-4 shadow-2xl shadow-black/20 sm:rounded-[2rem] xl:order-1 xl:sticky xl:top-28">
-          <div className="mb-4 px-3">
+      <section className="mx-auto grid max-w-[1760px] min-w-0 gap-4 px-2 py-4 sm:px-3 sm:py-5 xl:grid-cols-[220px_minmax(0,1fr)]">
+        <aside className="order-2 h-fit min-w-0 rounded-xl border border-white/10 bg-white/[0.04] p-3 shadow-2xl shadow-black/20 xl:order-1 xl:sticky xl:top-20">
+          <div className="mb-3 px-2">
             <div className="text-xs font-black uppercase tracking-[0.22em] text-zinc-500">Admin Workspace</div>
             <div className="mt-1 text-lg font-black text-white">Operations</div>
           </div>
@@ -2526,6 +2526,7 @@ function OrdersPanel({
                     <button
                       type="button"
                       onClick={() => setSelectedOrder(order)}
+                      aria-label={`Open order ${shortId(order.id)} details`}
                       className="inline-flex h-10 w-full items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] px-2 text-xs font-black text-white transition hover:border-red-700/50 hover:bg-red-950/30"
                     >
                       <Eye className="mr-1.5 h-4 w-4 shrink-0" />
@@ -2588,7 +2589,7 @@ function OrdersPanel({
                   >
                     {editableStatusOptions.map((status) => <option key={status} value={status} className="bg-[#111]">{statusLabel(status)}</option>)}
                   </select>
-                  <button onClick={() => setSelectedOrder(order)} className="h-11 rounded-xl border border-white/10 bg-white/[0.04] px-4 text-sm font-black text-white transition hover:border-red-700/50 hover:bg-red-950/30">
+                  <button onClick={() => setSelectedOrder(order)} aria-label={`Open order ${shortId(order.id)} details`} className="h-11 rounded-xl border border-white/10 bg-white/[0.04] px-4 text-sm font-black text-white transition hover:border-red-700/50 hover:bg-red-950/30">
                     <Eye className="mr-2 inline h-4 w-4" />
                     Details
                   </button>

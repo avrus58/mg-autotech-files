@@ -49,7 +49,7 @@ test("admin orders keep file state and actions visible at every responsive width
 
   assert.ok(ordersPanel, "OrdersPanel source must remain available for responsive checks");
   assert.ok(responsiveCardsStart >= 0 && responsiveCardsEnd > responsiveCardsStart);
-  assert.match(adminPage, /xl:grid-cols-\[260px_minmax\(0,1fr\)\]/);
+  assert.match(adminPage, /max-w-\[1760px\][^\n]*xl:grid-cols-\[220px_minmax\(0,1fr\)\]/);
 
   assert.match(
     ordersPanel,
