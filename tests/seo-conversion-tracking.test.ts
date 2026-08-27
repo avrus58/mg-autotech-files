@@ -163,9 +163,20 @@ test("verified conversion routes await local queue insertion before customer nav
     paymentPage.indexOf("await trackPurchaseCompleted({") <
       paymentPage.indexOf('setState("success")')
   );
-  assert.match(registerPage, /await trackRegistrationCompleted\(\)\.catch\(\(\) => false\);/);
-  assert.match(authCallback, /await trackRegistrationCompleted\(\)\.catch\(\(\) => false\);[\s\S]*?router\.replace\(next\);/);
-  assert.match(completeProfile, /await trackRegistrationCompleted\(\)\.catch\(\(\) => false\);[\s\S]*?router\.replace\(`/);
+  for (const source of [registerPage, authCallback, completeProfile]) {
+    assert.match(
+      source,
+      /await trackRegistrationCompleted\(conversionSeed\)\.catch\([\s\S]{0,80}?\);/
+    );
+  }
+  assert.ok(
+    authCallback.indexOf("await completePendingRegistrationHandoffs({") <
+      authCallback.indexOf("router.replace(next)")
+  );
+  assert.ok(
+    completeProfile.indexOf("await completePendingRegistrationHandoffs({") <
+      completeProfile.indexOf("router.replace(`/auth/callback")
+  );
 });
 
 test("root analytics loader is consent-aware, production-only and fail-closed without config", () => {

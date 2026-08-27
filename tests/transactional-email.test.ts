@@ -414,8 +414,9 @@ test("registration notifications happen only after verified auth callback", () =
   assert.match(register, /supabase\.auth\.resend/);
   assert.match(register, /verificationPending/);
   assert.doesNotMatch(register, /customerEmail:\s*cleanEmail[\s\S]{0,180}\/api\/email\/new-customer/);
-  assert.match(callback, /authenticatedFetch\("\/api\/email\/new-customer"/);
-  assert.match(callback, /isRecentEmailConfirmation/);
+  assert.match(callback, /authenticatedFetch\([\s\S]{0,80}?"\/api\/email\/new-customer"/);
+  assert.match(callback, /isVerifiedEmailRegistrationCallback/);
+  assert.match(callback, /registrationConversionEligible[\s\S]*?\/api\/email\/new-customer/);
   assert.match(route, /requireBaseApiUser/);
   assert.match(route, /auth\.user\.email/);
   assert.match(route, /resolveTransactionalEmailLanguageFromCookie/);

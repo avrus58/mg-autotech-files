@@ -10,6 +10,17 @@ import {
 import type { GrowthCustomerSuccessReport, GrowthPerformanceRow } from "../src/lib/growth/types";
 import { recordGrowthAttributionTouch } from "../src/lib/growth/publicClient";
 import {
+  completePendingRegistrationHandoffs,
+  createRegistrationAccountBinding,
+  isVerifiedEmailRegistrationCallback,
+  markRegistrationHandoffsPending,
+  readPendingRegistrationHandoffs,
+  readRegistrationSessionValue,
+  REGISTRATION_HANDOFF_TTL_MS,
+  removeRegistrationSessionValues,
+  writeRegistrationSessionValue,
+} from "../src/lib/registrationConversion";
+import {
   buildAdsMeasurementHealth,
   buildAdsPerformanceReport,
   getAdsConfigurationStatus,
@@ -20,7 +31,6 @@ import {
 } from "../src/lib/googleAds/campaignLinks";
 import {
   analyticsConsentStorageKey,
-  beginRegistrationConversion,
   clearGoogleAdsConversionOutbox,
   createPrivateConversionId,
   denyGoogleMeasurement,
@@ -292,8 +302,12 @@ test("verified conversion types use fixed non-sensitive canonical locations for 
     target.location.pathname = "/auth/callback";
     target.location.search = `?code=${callbackQuerySeed}&next=%2Fdashboard`;
     target.location.href = `https://file.mgautotech.de/auth/callback${target.location.search}`;
-    assert.match(beginRegistrationConversion() ?? "", /^[0-9a-f-]{36}$/i);
-    assert.equal(await trackRegistrationCompleted(), true);
+    assert.equal(
+      await trackRegistrationCompleted(
+        "2f37b710-4ced-4a04-8c83-3bcb0e5b1f55"
+      ),
+      true
+    );
     target.location.pathname = "/new-request";
     target.location.search = "";
     target.location.href = "https://file.mgautotech.de/new-request";
@@ -484,14 +498,15 @@ test("captured attribution never sends before analytics consent", async () => {
   }
 });
 
-test("registration conversion creates no optional browser storage before consent", async () => {
-  await withWindow((storage) => {
-    assert.equal(beginRegistrationConversion(), null);
+test("registration conversion requires a stable server seed and creates no pre-consent storage", async () => {
+  await withWindow(async (storage) => {
+    const seed = "2f37b710-4ced-4a04-8c83-3bcb0e5b1f55";
+    assert.equal(await trackRegistrationCompleted(seed), false);
     assert.equal(storage.getItem("mg_registration_conversion_seed_v1"), null);
 
     writeMeasurementConsent({ analytics: true, advertising: false });
-    assert.match(beginRegistrationConversion() ?? "", /^[0-9a-f-]{36}$/i);
-    assert.match(storage.getItem("mg_registration_conversion_seed_v1") ?? "", /^[0-9a-f-]{36}$/i);
+    assert.equal(await trackRegistrationCompleted(null), false);
+    assert.equal(storage.getItem("mg_registration_conversion_seed_v1"), null);
   });
 });
 
@@ -503,6 +518,320 @@ test("conversion transaction IDs are stable hashes and never expose their source
     assert.match(first ?? "", /^[a-f0-9]{64}$/);
     assert.doesNotMatch(first ?? "", /cs_live|private|payment/i);
   });
+});
+
+test("an opaque server registration seed stays stable across browsers without being stored or exposed", async () => {
+  const opaqueEventSeed = "2f37b710-4ced-4a04-8c83-3bcb0e5b1f55";
+  const transactionIds: string[] = [];
+
+  for (const device of ["desktop", "mobile"]) {
+    await withWindow(async (storage) => {
+      const target = globalThis.window as unknown as {
+        dataLayer?: Array<ArrayLike<unknown>>;
+        location: { pathname: string };
+      };
+      target.location.pathname = "/auth/callback";
+      writeMeasurementConsent({ analytics: true, advertising: true });
+      initializeGoogleMeasurement({
+        googleAnalyticsMeasurementId: "G-ABC1234567",
+        googleAdsId: "AW-123456789",
+        registrationLabel: "Register_123",
+        requestLabel: "Request_123",
+        purchaseLabel: "Purchase_123",
+      });
+      notifyGoogleMeasurementScriptFailed();
+
+      assert.equal(await trackRegistrationCompleted(opaqueEventSeed), true, device);
+      const conversion = (target.dataLayer ?? [])
+        .map((entry) => Array.from(entry))
+        .find((entry) => entry[0] === "event" && entry[1] === "conversion");
+      const transactionId = String(
+        (conversion?.[2] as { transaction_id?: unknown } | undefined)
+          ?.transaction_id ?? ""
+      );
+      assert.match(transactionId, /^[a-f0-9]{64}$/);
+      transactionIds.push(transactionId);
+
+      const persisted = storage.keys()
+        .map((key) => `${key}:${storage.getItem(key)}`)
+        .join("\n");
+      assert.doesNotMatch(persisted, new RegExp(opaqueEventSeed, "i"));
+      assert.doesNotMatch(persisted, /@|customer_email|user_id/i);
+      assert.equal(storage.getItem("mg_registration_conversion_seed_v1"), null);
+    });
+  }
+
+  assert.equal(transactionIds.length, 2);
+  assert.equal(transactionIds[0], transactionIds[1]);
+});
+
+test("a failed stable-seed lookup never falls back to a second registration identity", async () => {
+  await withWindow(async (storage) => {
+    const target = globalThis.window as unknown as {
+      dataLayer?: Array<ArrayLike<unknown>>;
+      location: { pathname: string };
+    };
+    target.location.pathname = "/auth/callback";
+    writeMeasurementConsent({ analytics: true, advertising: true });
+    initializeGoogleMeasurement({
+      googleAnalyticsMeasurementId: "G-ABC1234567",
+      googleAdsId: "AW-123456789",
+      registrationLabel: "Register_123",
+      requestLabel: "Request_123",
+      purchaseLabel: "Purchase_123",
+    });
+    notifyGoogleMeasurementScriptFailed();
+
+    assert.equal(await trackRegistrationCompleted(null), false);
+    assert.equal(storage.getItem("mg_registration_conversion_seed_v1"), null);
+    assert.equal(storage.getItem(googleAdsConversionOutboxStorageKey), null);
+
+    assert.equal(
+      await trackRegistrationCompleted(
+        "2f37b710-4ced-4a04-8c83-3bcb0e5b1f55"
+      ),
+      true
+    );
+    const conversions = (target.dataLayer ?? [])
+      .map((entry) => Array.from(entry))
+      .filter((entry) => entry[0] === "event" && entry[1] === "conversion");
+    assert.equal(conversions.length, 1);
+  });
+});
+
+test("verified e-mail registration recognition survives late confirmation and rejects returning logins", () => {
+  const firstConfirmation = {
+    created_at: "2026-08-20T08:00:00.000Z",
+    email_confirmed_at: "2026-08-27T18:00:00.000Z",
+    last_sign_in_at: "2026-08-27T18:00:15.000Z",
+    app_metadata: { provider: "email", providers: ["email"] },
+  };
+
+  assert.equal(isVerifiedEmailRegistrationCallback({
+    user: firstConfirmation,
+    hasAuthCode: true,
+    nextPath: "/dashboard",
+  }), true);
+  assert.equal(isVerifiedEmailRegistrationCallback({
+    user: {
+      ...firstConfirmation,
+      last_sign_in_at: "2026-08-27T20:00:00.000Z",
+    },
+    hasAuthCode: true,
+    nextPath: "/dashboard",
+  }), false);
+  assert.equal(isVerifiedEmailRegistrationCallback({
+    user: firstConfirmation,
+    hasAuthCode: false,
+    nextPath: "/dashboard",
+  }), false);
+  assert.equal(isVerifiedEmailRegistrationCallback({
+    user: firstConfirmation,
+    hasAuthCode: true,
+    nextPath: "/reset-password",
+  }), false);
+  assert.equal(isVerifiedEmailRegistrationCallback({
+    user: {
+      ...firstConfirmation,
+      app_metadata: { provider: "google", providers: ["google"] },
+    },
+    hasAuthCode: true,
+    nextPath: "/dashboard",
+  }), false);
+});
+
+test("registration callback storage helpers fail soft when browser storage is denied", () => {
+  const blockedStorage = {
+    getItem() { throw new Error("blocked"); },
+    setItem() { throw new Error("blocked"); },
+    removeItem() { throw new Error("blocked"); },
+  };
+
+  assert.equal(readRegistrationSessionValue(blockedStorage, "provider"), null);
+  assert.equal(
+    writeRegistrationSessionValue(blockedStorage, "provider", "google"),
+    false
+  );
+  assert.doesNotThrow(() =>
+    removeRegistrationSessionValues(blockedStorage, ["provider", "profile"])
+  );
+});
+
+test("registration handoffs survive a failed first attempt and resume each side effect exactly once", async () => {
+  const storage = new MemoryStorage();
+  const keys = {
+    conversion: "pending-conversion",
+    notification: "pending-notification",
+  } as const;
+  const now = Date.parse("2026-08-28T09:00:00.000Z");
+  const accountBinding = "a".repeat(64);
+  const stableSeed = "2f37b710-4ced-4a04-8c83-3bcb0e5b1f55";
+  let conversionLookups = 0;
+  let conversionDeliveries = 0;
+  let notificationDeliveries = 0;
+
+  assert.equal(
+    markRegistrationHandoffsPending(
+      storage,
+      keys,
+      "google",
+      accountBinding,
+      now
+    ),
+    true
+  );
+  const persisted = storage.keys()
+    .map((key) => `${key}:${storage.getItem(key)}`)
+    .join("\n");
+  assert.doesNotMatch(
+    persisted,
+    /@|gclid|gbraid|wbraid|2f37b710-4ced-4a04-8c83-3bcb0e5b1f55/i
+  );
+
+  const firstAttempt = await completePendingRegistrationHandoffs({
+    storage,
+    keys,
+    accountBinding,
+    now: now + 1_000,
+    onConversion: async () => {
+      conversionLookups += 1;
+      return false;
+    },
+    onNotification: async (source) => {
+      assert.equal(source, "google");
+      notificationDeliveries += 1;
+      return true;
+    },
+  });
+  assert.deepEqual(firstAttempt, {
+    conversionCompleted: false,
+    notificationCompleted: true,
+  });
+  assert.notEqual(storage.getItem(keys.conversion), null);
+  assert.equal(storage.getItem(keys.notification), null);
+
+  const resumedAttempt = await completePendingRegistrationHandoffs({
+    storage,
+    keys,
+    accountBinding,
+    now: now + 2_000,
+    onConversion: async () => {
+      conversionLookups += 1;
+      assert.equal(stableSeed, "2f37b710-4ced-4a04-8c83-3bcb0e5b1f55");
+      conversionDeliveries += 1;
+      return true;
+    },
+    onNotification: async () => {
+      notificationDeliveries += 1;
+      return true;
+    },
+  });
+  assert.deepEqual(resumedAttempt, {
+    conversionCompleted: true,
+    notificationCompleted: true,
+  });
+  assert.equal(storage.getItem(keys.conversion), null);
+  assert.equal(storage.getItem(keys.notification), null);
+
+  await completePendingRegistrationHandoffs({
+    storage,
+    keys,
+    accountBinding,
+    now: now + 3_000,
+    onConversion: async () => {
+      conversionDeliveries += 1;
+      return true;
+    },
+    onNotification: async () => {
+      notificationDeliveries += 1;
+      return true;
+    },
+  });
+  assert.equal(conversionLookups, 2);
+  assert.equal(conversionDeliveries, 1);
+  assert.equal(notificationDeliveries, 1);
+});
+
+test("expired or malformed registration handoffs are removed without delivery", async () => {
+  const storage = new MemoryStorage();
+  const keys = {
+    conversion: "pending-conversion",
+    notification: "pending-notification",
+  } as const;
+  const now = Date.parse("2026-08-28T10:00:00.000Z");
+  const accountBinding = "a".repeat(64);
+  storage.setItem(
+    keys.conversion,
+    JSON.stringify({
+      createdAt: now - REGISTRATION_HANDOFF_TTL_MS - 1,
+      accountBinding,
+    })
+  );
+  storage.setItem(keys.notification, "not-json");
+
+  assert.deepEqual(
+    readPendingRegistrationHandoffs(storage, keys, accountBinding, now),
+    {
+    conversion: false,
+    notificationSource: null,
+    }
+  );
+  assert.equal(storage.getItem(keys.conversion), null);
+  assert.equal(storage.getItem(keys.notification), null);
+});
+
+test("registration handoffs are opaque-account-bound and cannot cross an account switch", async () => {
+  const storage = new MemoryStorage();
+  const keys = {
+    conversion: "pending-conversion",
+    notification: "pending-notification",
+  } as const;
+  const rawFirstUserId = "11111111-1111-4111-8111-111111111111";
+  const rawSecondUserId = "22222222-2222-4222-8222-222222222222";
+  const firstBinding = await createRegistrationAccountBinding(rawFirstUserId);
+  const secondBinding = await createRegistrationAccountBinding(rawSecondUserId);
+  assert.match(firstBinding ?? "", /^[a-f0-9]{64}$/);
+  assert.match(secondBinding ?? "", /^[a-f0-9]{64}$/);
+  assert.notEqual(firstBinding, secondBinding);
+
+  assert.equal(
+    markRegistrationHandoffsPending(
+      storage,
+      keys,
+      "email",
+      firstBinding ?? ""
+    ),
+    true
+  );
+  const persisted = storage.keys()
+    .map((key) => `${key}:${storage.getItem(key)}`)
+    .join("\n");
+  assert.doesNotMatch(persisted, new RegExp(rawFirstUserId, "i"));
+  assert.doesNotMatch(persisted, new RegExp(rawSecondUserId, "i"));
+
+  let conversionCalls = 0;
+  let notificationCalls = 0;
+  const switchedAccountResult = await completePendingRegistrationHandoffs({
+    storage,
+    keys,
+    accountBinding: secondBinding,
+    onConversion: async () => {
+      conversionCalls += 1;
+      return true;
+    },
+    onNotification: async () => {
+      notificationCalls += 1;
+      return true;
+    },
+  });
+  assert.deepEqual(switchedAccountResult, {
+    conversionCompleted: true,
+    notificationCompleted: true,
+  });
+  assert.equal(conversionCalls, 0);
+  assert.equal(notificationCalls, 0);
+  assert.equal(storage.getItem(keys.conversion), null);
+  assert.equal(storage.getItem(keys.notification), null);
 });
 
 test("Google Ads click signals classify paid traffic without retaining raw click IDs", () => {
@@ -700,12 +1029,38 @@ test("verified conversion integration is ordered after business success and rema
   const confirmation = projectFile("src", "app", "api", "stripe", "confirm-session", "route.ts");
   const analytics = projectFile("src", "lib", "publicAnalytics.ts");
 
-  assert.match(register, /isAlreadyVerified[\s\S]*?trackRegistrationCompleted\(\)/);
-  assert.match(callback, /isRecentSignup \|\| isRecentEmailConfirmation[\s\S]*?trackRegistrationCompleted\(\)/);
-  assert.match(completeProfile, /await trackRegistrationCompleted\(\)\.catch\(\(\) => false\)/);
+  assert.match(register, /isAlreadyVerified[\s\S]*?markRegistrationHandoffsPending[\s\S]*?completePendingRegistrationHandoffs[\s\S]*?recordGrowthAccountCreated\(\)[\s\S]*?trackRegistrationCompleted\(conversionSeed\)/);
+  assert.match(callback, /isVerifiedEmailRegistrationCallback[\s\S]*?markRegistrationHandoffsPending[\s\S]*?completePendingRegistrationHandoffs[\s\S]*?recordGrowthAccountCreated\(\)[\s\S]*?trackRegistrationCompleted\(conversionSeed\)/);
+  assert.doesNotMatch(callback, /isRecentSignup|isRecentEmailConfirmation|15 \* 60 \* 1000/);
+  assert.doesNotMatch(callback, /window\.sessionStorage\.(?:getItem|setItem|removeItem)/);
+  assert.equal(callback.match(/exchangeCodeForSession\(/g)?.length, 1);
+  assert.ok(
+    callback.indexOf("await trackRegistrationCompleted(conversionSeed)") <
+      callback.indexOf("await startDeviceVerification()"),
+    "registration conversion must be queued before a device-verification redirect"
+  );
+  assert.match(completeProfile, /readPendingRegistrationHandoffs[\s\S]*?clearPendingDraft\(\)[\s\S]*?completePendingRegistrationHandoffs[\s\S]*?trackRegistrationCompleted\(conversionSeed\)/);
+  assert.doesNotMatch(completeProfile, /clearPendingDraft[\s\S]{0,250}removeItem\(OAUTH_REGISTRATION_(?:CONVERSION|NOTIFICATION)/);
   assert.match(request, /if \(error\) \{[\s\S]*?return;[\s\S]*?createdOrderId \|\| growthAttemptIdRef[\s\S]*?trackRequestSubmitted\(conversionSeed\)/);
   assert.match(confirmation, /session\.payment_status !== "paid"[\s\S]*?completeStripeCreditPurchase\(session\)[\s\S]*?conversion:/);
   assert.match(payment, /if \(!response\?\.ok\)[\s\S]*?return;[\s\S]*?trackPurchaseCompleted/);
   assert.match(analytics, /process\.env\.NEXT_PUBLIC_GOOGLE_ADS_ID/);
   assert.doesNotMatch(analytics, /customer_email|vehicle_brand|storage_path|file_name|order_id/i);
+});
+
+test("the account-created event exposes only its stable opaque row UUID", () => {
+  const route = projectFile("src", "app", "api", "growth", "journey", "route.ts");
+  const client = projectFile("src", "lib", "growth", "client.ts");
+  const server = projectFile("src", "lib", "growth", "server.ts");
+
+  assert.match(route, /action === "account_created"[\s\S]*conversionSeed: result\.id/);
+  assert.doesNotMatch(route, /conversionSeed:\s*auth\.user\.(?:id|email)/);
+  assert.match(client, /conversionSeed[\s\S]*\^\[0-9a-f\]/);
+  assert.match(client, /for \(let attempt = 0; attempt < 2; attempt \+= 1\)/);
+  assert.match(client, /Promise\.race\(\[attempts\(\), timeout\]\)/);
+  assert.match(client, /}, 3_500\)/);
+  assert.match(client, /controller\?\.abort\(\)/);
+  assert.match(client, /export async function recordGrowthAccountCreated\(\) \{[\s\S]*try \{[\s\S]*catch \{[\s\S]*return null/);
+  assert.doesNotMatch(client, /localStorage\.setItem\([^\n]*conversionSeed/);
+  assert.match(server, /ignoreDuplicates: true[\s\S]*\.eq\("event_key", key\)[\s\S]*\.eq\("user_id", input\.userId\)/);
 });

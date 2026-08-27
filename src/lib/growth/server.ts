@@ -122,7 +122,8 @@ export async function recordGrowthJourneyEvent(input: {
 
   try {
     if (hash) await linkGrowthVisitor(input.userId, input.visitorId);
-    const result = await getSupabaseAdmin().from("growth_journey_events").upsert({
+    const admin = getSupabaseAdmin();
+    const result = await admin.from("growth_journey_events").upsert({
       event_type: input.eventType,
       event_key: key,
       visitor_hash: hash,
@@ -135,7 +136,26 @@ export async function recordGrowthJourneyEvent(input: {
     if (result.error) {
       return { ok: false as const, unavailable: isGrowthMigrationMissing(result.error) };
     }
-    return { ok: true as const, unavailable: false, id: result.data?.id ?? null };
+    if (result.data?.id) {
+      return { ok: true as const, unavailable: false, id: result.data.id };
+    }
+
+    // ignoreDuplicates intentionally returns no row on a replay. Resolve the
+    // existing own-user event so every browser receives the same opaque seed.
+    const existing = await admin
+      .from("growth_journey_events")
+      .select("id")
+      .eq("event_key", key)
+      .eq("user_id", input.userId)
+      .eq("event_type", input.eventType)
+      .maybeSingle();
+    if (existing.error) {
+      return {
+        ok: false as const,
+        unavailable: isGrowthMigrationMissing(existing.error),
+      };
+    }
+    return { ok: true as const, unavailable: false, id: existing.data?.id ?? null };
   } catch (error) {
     return { ok: false as const, unavailable: isGrowthMigrationMissing(error) };
   }

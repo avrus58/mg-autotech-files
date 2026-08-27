@@ -498,9 +498,9 @@ export default function FileServicePage() {
             >
               <Link
                 href="/new-request"
-                className="inline-flex scroll-mb-[calc(5.5rem+env(safe-area-inset-bottom))] items-center justify-center rounded-xl bg-[#b1121b] px-6 py-3.5 text-sm font-black text-white shadow-lg shadow-red-950/30 transition hover:-translate-y-0.5 hover:bg-[#c91824] sm:py-4"
+                className="inline-flex scroll-mb-[calc(5.5rem+env(safe-area-inset-bottom))] items-center justify-center rounded-xl bg-[#b1121b] px-6 py-3.5 text-sm font-black text-white shadow-lg shadow-red-950/30 transition hover:-translate-y-0.5 hover:bg-[#c91824] focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 sm:py-4"
               >
-                Submit your original file
+                Start secure file request
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
               <Link

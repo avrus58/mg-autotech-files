@@ -17,10 +17,22 @@ import {
 } from "@/lib/deviceVerificationClient";
 import { recordGrowthAccountCreated } from "@/lib/growth/client";
 import { trackRegistrationCompleted } from "@/lib/publicAnalytics";
+import {
+  completePendingRegistrationHandoffs,
+  createRegistrationAccountBinding,
+  isVerifiedEmailRegistrationCallback,
+  markRegistrationHandoffsPending,
+  readPendingRegistrationHandoffs,
+  readRegistrationSessionValue,
+  removeRegistrationSessionValues,
+  writeRegistrationSessionValue,
+} from "@/lib/registrationConversion";
 import { getSafeLocalRedirectPath } from "@/lib/safeLocalRedirect";
 import {
   OAUTH_REGISTRATION_PROFILE_KEY,
   OAUTH_REGISTRATION_PROVIDER_KEY,
+  OAUTH_REGISTRATION_CONVERSION_ELIGIBLE_KEY,
+  OAUTH_REGISTRATION_NOTIFICATION_PENDING_KEY,
   parseRegistrationProfileDraft,
 } from "@/lib/registrationProfile";
 import {
@@ -33,6 +45,11 @@ import {
 function countryCompletionPath(next: string) {
   return `/auth/complete-profile?next=${encodeURIComponent(next)}`;
 }
+
+const registrationHandoffKeys = {
+  conversion: OAUTH_REGISTRATION_CONVERSION_ELIGIBLE_KEY,
+  notification: OAUTH_REGISTRATION_NOTIFICATION_PENDING_KEY,
+} as const;
 
 export default function AuthCallbackPage() {
   const router = useRouter();
@@ -67,22 +84,50 @@ export default function AuthCallbackPage() {
         primeStableSession(session);
       }
 
-      const oauthSignupProvider = window.sessionStorage.getItem(
+      const oauthSignupProvider = readRegistrationSessionValue(
+        window.sessionStorage,
         OAUTH_REGISTRATION_PROVIDER_KEY
       );
       const oauthProfile = parseRegistrationProfileDraft(
-        window.sessionStorage.getItem(OAUTH_REGISTRATION_PROFILE_KEY)
+        readRegistrationSessionValue(
+          window.sessionStorage,
+          OAUTH_REGISTRATION_PROFILE_KEY
+        )
       );
 
       if (session?.user) {
         let currentSession: Session = session;
+        const registrationAccountBinding =
+          await createRegistrationAccountBinding(currentSession.user.id);
         let completedGoogleRegistration = false;
         const openCountryCompletion = async () => {
           try {
-            window.sessionStorage.setItem(
+            writeRegistrationSessionValue(
+              window.sessionStorage,
               OAUTH_REGISTRATION_PROVIDER_KEY,
               "google"
             );
+            const freshGoogleRegistration =
+              oauthSignupProvider === "google" &&
+              isGoogleRegistrationProfileFinalizationWindowOpen(
+                currentSession.user
+              );
+            if (freshGoogleRegistration) {
+              markRegistrationHandoffsPending(
+                window.sessionStorage,
+                registrationHandoffKeys,
+                "google",
+                registrationAccountBinding ?? ""
+              );
+            } else {
+              removeRegistrationSessionValues(
+                window.sessionStorage,
+                [
+                  OAUTH_REGISTRATION_CONVERSION_ELIGIBLE_KEY,
+                  OAUTH_REGISTRATION_NOTIFICATION_PENDING_KEY,
+                ]
+              );
+            }
           } catch {
             // Persistent Auth metadata and the workspace guard remain active.
           }
@@ -139,8 +184,13 @@ export default function AuthCallbackPage() {
           currentSession = refreshedSession.data.session;
           primeStableSession(currentSession);
           completedGoogleRegistration = true;
-          window.sessionStorage.removeItem(OAUTH_REGISTRATION_PROVIDER_KEY);
-          window.sessionStorage.removeItem(OAUTH_REGISTRATION_PROFILE_KEY);
+          removeRegistrationSessionValues(
+            window.sessionStorage,
+            [
+              OAUTH_REGISTRATION_PROVIDER_KEY,
+              OAUTH_REGISTRATION_PROFILE_KEY,
+            ]
+          );
         }
 
         if (
@@ -152,26 +202,59 @@ export default function AuthCallbackPage() {
           return;
         }
 
-        const createdAt = new Date(currentSession.user.created_at).getTime();
-        const isRecentSignup = Date.now() - createdAt < 15 * 60 * 1000;
-        const confirmedAt = new Date(
-          currentSession.user.email_confirmed_at || currentSession.user.confirmed_at || 0
-        ).getTime();
-        const isRecentEmailConfirmation =
-          confirmedAt > 0 && Date.now() - confirmedAt < 15 * 60 * 1000;
+        const registrationConversionEligible =
+          completedGoogleRegistration ||
+          isVerifiedEmailRegistrationCallback({
+            user: currentSession.user,
+            hasAuthCode: Boolean(code),
+            nextPath: next,
+          });
 
-        if (isRecentSignup || isRecentEmailConfirmation) {
-          try {
-            await authenticatedFetch("/api/email/new-customer", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                source: oauthSignupProvider === "google" ? "google" : "email",
-              }),
-            });
-          } catch {
-            // Notification delivery is idempotent and can be retried on resume.
-          }
+        if (registrationConversionEligible) {
+          markRegistrationHandoffsPending(
+            window.sessionStorage,
+            registrationHandoffKeys,
+            completedGoogleRegistration ? "google" : "email",
+            registrationAccountBinding ?? ""
+          );
+        }
+
+        const pendingRegistrationHandoffs = readPendingRegistrationHandoffs(
+          window.sessionStorage,
+          registrationHandoffKeys,
+          registrationAccountBinding
+        );
+        if (
+          pendingRegistrationHandoffs.conversion ||
+          pendingRegistrationHandoffs.notificationSource
+        ) {
+          // Pending markers contain only a short-lived timestamp and provider
+          // class. They survive the no-code device-resume boundary, while the
+          // one-time PKCE exchange above is never repeated.
+          await completePendingRegistrationHandoffs({
+            storage: window.sessionStorage,
+            keys: registrationHandoffKeys,
+            accountBinding: registrationAccountBinding,
+            onConversion: async () => {
+              const conversionSeed = await recordGrowthAccountCreated();
+              if (!conversionSeed) return false;
+              await trackRegistrationCompleted(conversionSeed).catch(
+                () => false
+              );
+              return true;
+            },
+            onNotification: async (source) => {
+              const response = await authenticatedFetch(
+                "/api/email/new-customer",
+                {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ source }),
+                }
+              );
+              return response.ok;
+            },
+          });
         }
 
         try {
@@ -205,16 +288,16 @@ export default function AuthCallbackPage() {
         }
 
         if (oauthSignupProvider && oauthSignupProvider !== "google") {
-          window.sessionStorage.removeItem("mg_register_oauth_provider");
+          removeRegistrationSessionValues(window.sessionStorage, [
+            OAUTH_REGISTRATION_PROVIDER_KEY,
+          ]);
         }
         if (oauthSignupProvider !== "google") {
-          window.sessionStorage.removeItem(OAUTH_REGISTRATION_PROFILE_KEY);
+          removeRegistrationSessionValues(window.sessionStorage, [
+            OAUTH_REGISTRATION_PROFILE_KEY,
+          ]);
         }
 
-        if (isRecentSignup || isRecentEmailConfirmation) {
-          void recordGrowthAccountCreated();
-          await trackRegistrationCompleted().catch(() => false);
-        }
       }
 
       router.replace(next);

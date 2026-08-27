@@ -128,6 +128,36 @@ Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
 
+### MANUAL-20260828-ADS-MEASUREMENT-RESCUE [P0] Google Ads harcamasini durdur ve kayit olcumunu guvenilir hale getir
+
+Durum: Done (code validated; Production release and receipt proof pending)
+
+Fingerprint: `ads-measurement|server-stable-registration-dedupe|account-bound-auth-resume-retry|uk-ie-search-only`
+
+Sonuc: Google Ads hesabindaki uc kampanya da duraklatildi; toplam gunluk harcama
+sifira indirildi. UK & Ireland Search kampanyasi yalniz Birlesik Krallik ve
+Irlanda, presence-only konum, Google Search Network, English, phrase/exact
+keyword ve kapali broad/AI Max/Display/Search Partners sinirina getirildi. Diger
+Search ve Performance Max kampanyalari duraklatilmis kaldi.
+
+Uygulama tarafinda `/file-service` -> `/new-request` edinim yolu netlestirildi;
+korumali talep girisinde yeni musteri icin kayit ana, mevcut musteri icin login
+ikincil aksiyon oldu. Kayit donusumu artik istemci rastgele kimligi yerine
+authenticated `growth_journey_events` satirinin sabit opak UUID'sini kullanir ve
+Google'a yalniz SHA-256 transaction ID gider. E-posta/Google kaydi, gec onay,
+cihaz dogrulamasi resume'u, basarisiz ilk teslim ve hesap degistirme senaryolari
+30 dakikalik, hesaba bagli, PII/click-ID icermeyen iki bagimsiz pending handoff
+ile fail-soft ve idempotenttir. PKCE kodu tek kez exchange edilir; normal login,
+password reset ve donen Google kullanicisi kayit sayilmaz.
+
+Kontroller: hedefli Ads/auth/e-posta suite PASS (67/67); `npm run lint` PASS;
+`npm run typecheck` PASS; `npm test` PASS (1032/1032); `npm run check:i18n`
+PASS (12 locale, 609/609); `npm run build -- --webpack` PASS (278/278);
+performance PASS (70.1/80 KiB gzip); `git diff --check` PASS. Bagimsiz final
+review GO verdi ve P0/P1 bulmadi. Kod henuz Production'a deploy edilmedi; gercek
+Tag Assistant receipt kaniti alinmadan veya tek UK/IE kampanyasi kontrollu
+olarak yeniden acilmadan reklam harcamasi baslatilmayacak.
+
 ### MANUAL-20260825-ADMIN-ORDERS-RESPONSIVE-VIEW [P0] Admin siparis listesini tum ekranlarda gorunur tut
 
 Durum: Done

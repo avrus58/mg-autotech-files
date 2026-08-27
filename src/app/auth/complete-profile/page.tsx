@@ -14,17 +14,29 @@ import {
 import { recordGrowthAccountCreated } from "@/lib/growth/client";
 import { trackRegistrationCompleted } from "@/lib/publicAnalytics";
 import {
+  completePendingRegistrationHandoffs,
+  createRegistrationAccountBinding,
+  readPendingRegistrationHandoffs,
+} from "@/lib/registrationConversion";
+import {
   requiresRegistrationCountryCompletion,
 } from "@/lib/registrationCompletion";
 import {
   OAUTH_REGISTRATION_PROFILE_KEY,
   OAUTH_REGISTRATION_PROVIDER_KEY,
+  OAUTH_REGISTRATION_CONVERSION_ELIGIBLE_KEY,
+  OAUTH_REGISTRATION_NOTIFICATION_PENDING_KEY,
   parseRegistrationProfileCompletionDraft,
 } from "@/lib/registrationProfile";
 import { supabase } from "@/lib/supabaseClient";
 import { getSafeLocalRedirectPath } from "@/lib/safeLocalRedirect";
 
 type CountryDetectionState = "detecting" | "detected" | "manual";
+
+const registrationHandoffKeys = {
+  conversion: OAUTH_REGISTRATION_CONVERSION_ELIGIBLE_KEY,
+  notification: OAUTH_REGISTRATION_NOTIFICATION_PENDING_KEY,
+} as const;
 
 function safeNextPath() {
   const value = new URLSearchParams(window.location.search).get("next");
@@ -216,17 +228,41 @@ export default function CompleteProfilePage() {
       return;
     }
 
+    const registrationAccountBinding = await createRegistrationAccountBinding(
+      refreshedSession.data.session.user.id
+    );
+    const pendingRegistrationHandoffs = readPendingRegistrationHandoffs(
+      window.sessionStorage,
+      registrationHandoffKeys,
+      registrationAccountBinding
+    );
     clearPendingDraft();
-    void recordGrowthAccountCreated();
-    await trackRegistrationCompleted().catch(() => false);
-    try {
-      await authenticatedFetch("/api/email/new-customer", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ source: "google" }),
+    if (
+      pendingRegistrationHandoffs.conversion ||
+      pendingRegistrationHandoffs.notificationSource
+    ) {
+      await completePendingRegistrationHandoffs({
+        storage: window.sessionStorage,
+        keys: registrationHandoffKeys,
+        accountBinding: registrationAccountBinding,
+        onConversion: async () => {
+          const conversionSeed = await recordGrowthAccountCreated();
+          if (!conversionSeed) return false;
+          await trackRegistrationCompleted(conversionSeed).catch(() => false);
+          return true;
+        },
+        onNotification: async (source) => {
+          const response = await authenticatedFetch(
+            "/api/email/new-customer",
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ source }),
+            }
+          );
+          return response.ok;
+        },
       });
-    } catch {
-      // Notification delivery must not block the completed registration.
     }
 
     const next = safeNextPath();

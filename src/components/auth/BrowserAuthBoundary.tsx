@@ -32,11 +32,13 @@ export function BrowserAuthBoundary({
   title,
   description,
   nextPath,
+  unauthenticatedPrimaryAction = "login",
 }: {
   children: ReactNode;
   title: string;
   description: string;
   nextPath?: string;
+  unauthenticatedPrimaryAction?: "login" | "register";
 }) {
   const pathname = usePathname();
   const [authState, setAuthState] = useState<AuthState>("checking");
@@ -174,7 +176,14 @@ export function BrowserAuthBoundary({
   }
 
   if (authState === "unauthenticated") {
-    return <AuthRequired title={title} description={description} nextPath={nextPath ?? pathname ?? "/"} />;
+    return (
+      <AuthRequired
+        title={title}
+        description={description}
+        nextPath={nextPath ?? pathname ?? "/"}
+        primaryAction={unauthenticatedPrimaryAction}
+      />
+    );
   }
 
   if (authState === "verification_required") {

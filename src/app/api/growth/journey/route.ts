@@ -138,12 +138,22 @@ export async function POST(request: Request) {
     }
   }
 
-  await recordGrowthJourneyEvent({
+  const result = await recordGrowthJourneyEvent({
     eventType: parsed.data.action,
     userId: auth.user.id,
     visitorId: parsed.data.visitorId,
     attemptId: "attemptId" in parsed.data ? parsed.data.attemptId : null,
     orderId: "orderId" in parsed.data ? parsed.data.orderId : null,
   });
+  if (
+    parsed.data.action === "account_created" &&
+    result.ok &&
+    typeof result.id === "string" &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(result.id)
+  ) {
+    // This row UUID is an opaque event identifier scoped to the authenticated
+    // caller. User IDs, e-mail addresses and event keys never leave the server.
+    return response({ accepted: true, conversionSeed: result.id }, 202, limitHeaders);
+  }
   return response({ accepted: true }, 202, limitHeaders);
 }

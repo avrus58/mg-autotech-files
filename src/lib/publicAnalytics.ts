@@ -146,7 +146,6 @@ const publicRouteRoots = new Set([
   "/workshop-guides",
 ]);
 
-const registrationConversionSeedKey = "mg_registration_conversion_seed_v1";
 const conversionDedupePrefix = "mg_verified_conversion_v1";
 export const googleAdsConversionOutboxStorageKey =
   "mg_google_ads_conversion_outbox_v1";
@@ -923,34 +922,19 @@ async function dispatchVerifiedConversion(input: {
   return queued;
 }
 
-export function beginRegistrationConversion() {
-  if (typeof window === "undefined") return null;
-  const preferences = readMeasurementConsent();
-  if (!preferences.analytics && !preferences.advertising) return null;
-  try {
-    const seed = window.crypto.randomUUID();
-    window.localStorage.setItem(registrationConversionSeedKey, seed);
-    return seed;
-  } catch {
-    return null;
-  }
-}
-
-export function trackRegistrationCompleted() {
+export function trackRegistrationCompleted(verifiedRegistrationSeed: string | null) {
   if (typeof window === "undefined") return Promise.resolve(false);
   const preferences = readMeasurementConsent();
   if (!preferences.analytics && !preferences.advertising) return Promise.resolve(false);
-  let seed = "";
-  try {
-    seed = window.localStorage.getItem(registrationConversionSeedKey) ?? "";
-    if (!seed) {
-      seed = window.crypto.randomUUID();
-      window.localStorage.setItem(registrationConversionSeedKey, seed);
-    }
-  } catch {
-    return Promise.resolve(false);
-  }
-  return dispatchVerifiedConversion({ name: "registration", seed });
+  const opaqueServerSeed =
+    typeof verifiedRegistrationSeed === "string" &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      verifiedRegistrationSeed
+    )
+      ? verifiedRegistrationSeed
+      : "";
+  if (!opaqueServerSeed) return Promise.resolve(false);
+  return dispatchVerifiedConversion({ name: "registration", seed: opaqueServerSeed });
 }
 
 export function trackRequestStarted() {

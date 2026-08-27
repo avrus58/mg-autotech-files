@@ -5276,3 +5276,33 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
   mutasyonu yapilmadi. Gate tek yonlu oldugu icin bundan sonraki uygulama
   rollback'i pre-v2 `c83ee00e20a9` yerine kayitli v2 bridge `bafc6a6aefad`
   uzerinde kalmalidir.
+
+## 2026-08-28 00:43 +02:00 Ads harcama ve kayit olcumu kurtarma paketi tamamlandi
+
+- Google Ads'te uc kampanya duraklatilmis ve toplam gunluk harcama sifir
+  tutuldu. UK & Ireland Search yalniz UK/Irlanda presence-only, English,
+  Search-only ve phrase/exact kapsaminda duzeltildi; diger Search ile PMax kapali
+  kaldi. Campaign goal/bidding etkinlestirilmedi.
+- Public file-service CTA'si guvenli talep akisini aciklar; unauthenticated
+  `/new-request` kaydi ana, login'i ikincil aksiyon yapar ve yalniz canonical
+  `/new-request` redirect'ini tasir. Raw query, gclid, gbraid veya wbraid auth
+  URL'lerine aktarilmaz.
+- Kayit donusum kimligi server-side idempotent account-created event UUID'sidir.
+  E-posta/Google kaydi ve yeni-musteri bildirimi ayri basariyla temizlenen,
+  30-dakika TTL'li ve mevcut hesabin domain-separated SHA-256 baglayicisina
+  kilitli pending handoff kullanir. Ham user UUID, e-posta, visitor/click ID veya
+  conversion seed sessionStorage'a yazilmaz. Ilk seed istegi basarisizsa no-code
+  device resume yeniden dener; hesap degisirse iki marker hicbir yan etki
+  uretmeden silinir. PKCE exchange tek cagridir ve olcum arizasi auth'u bloklamaz.
+- Degisen alanlar: growth account-created route/client/server ve public
+  analytics; register/auth callback/complete-profile; public file-service ve
+  request auth gate; iki yeni test/yardimci dosya; i18n ve ilgili sozlesme
+  testleri. Yeni dependency, schema/migration, fiyat/odeme kurali veya musteri
+  verisi degisikligi yoktur.
+- Kontroller: hedefli suite 67/67 PASS; lint PASS; full web+desktop typecheck
+  PASS; full test 1032/1032 PASS; i18n 12 locale ve 609/609 PASS; Webpack
+  Production build 278/278 PASS; performance 70.1/80 KiB gzip PASS; diff check
+  PASS. Bagimsiz final P0/P1 review GO verdi.
+- Kod Production'a deploy edilmedi. Sonraki guvenli release kapisi: owner'in
+  acik yayin yetkisi, scoped deploy, Production smoke ve gercek Tag Assistant
+  receipt kaniti. Bu kanitlardan once hicbir kampanya yeniden etkinlestirilmez.

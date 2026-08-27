@@ -42,13 +42,19 @@ import {
 } from "@/lib/phoneCountries";
 import { recordGrowthAccountCreated } from "@/lib/growth/client";
 import {
-  beginRegistrationConversion,
   trackRegistrationCompleted,
 } from "@/lib/publicAnalytics";
+import {
+  completePendingRegistrationHandoffs,
+  createRegistrationAccountBinding,
+  markRegistrationHandoffsPending,
+} from "@/lib/registrationConversion";
 import {
   createRegistrationProfileDraft,
   OAUTH_REGISTRATION_PROFILE_KEY,
   OAUTH_REGISTRATION_PROVIDER_KEY,
+  OAUTH_REGISTRATION_CONVERSION_ELIGIBLE_KEY,
+  OAUTH_REGISTRATION_NOTIFICATION_PENDING_KEY,
 } from "@/lib/registrationProfile";
 import {
   CUSTOMER_REPLACEMENT_PASSWORD_MAX_LENGTH,
@@ -81,6 +87,11 @@ type StepId = 1 | 2 | 3;
 type CountryDetectionState = "detecting" | "detected" | "manual";
 const REGISTER_AUTH_BOOTSTRAP_TIMEOUT_MS = 8_000;
 
+const registrationHandoffKeys = {
+  conversion: OAUTH_REGISTRATION_CONVERSION_ELIGIBLE_KEY,
+  notification: OAUTH_REGISTRATION_NOTIFICATION_PENDING_KEY,
+} as const;
+
 function getRequestedRedirect() {
   if (typeof window === "undefined") return null;
 
@@ -104,6 +115,8 @@ function clearOAuthRegistrationDraft() {
   try {
     window.sessionStorage.removeItem(OAUTH_REGISTRATION_PROVIDER_KEY);
     window.sessionStorage.removeItem(OAUTH_REGISTRATION_PROFILE_KEY);
+    window.sessionStorage.removeItem(OAUTH_REGISTRATION_CONVERSION_ELIGIBLE_KEY);
+    window.sessionStorage.removeItem(OAUTH_REGISTRATION_NOTIFICATION_PENDING_KEY);
   } catch {
     // Browser privacy settings may deny storage; auth cleanup must still finish.
   }
@@ -427,7 +440,6 @@ export default function RegisterPage() {
 
     const response = await Promise.resolve()
       .then(() => {
-        beginRegistrationConversion();
         return supabase.auth.signUp({
           email: cleanEmail,
           password,
@@ -479,13 +491,36 @@ export default function RegisterPage() {
 
     const isAlreadyVerified = Boolean(data.session && data.user?.email_confirmed_at);
     if (isAlreadyVerified) {
-      void recordGrowthAccountCreated();
-      await trackRegistrationCompleted().catch(() => false);
-      void authenticatedFetch("/api/email/new-customer", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ source: "email" }),
-      }).catch(() => undefined);
+      const registrationAccountBinding =
+        await createRegistrationAccountBinding(data.session?.user.id ?? "");
+      markRegistrationHandoffsPending(
+        window.sessionStorage,
+        registrationHandoffKeys,
+        "email",
+        registrationAccountBinding ?? ""
+      );
+      await completePendingRegistrationHandoffs({
+        storage: window.sessionStorage,
+        keys: registrationHandoffKeys,
+        accountBinding: registrationAccountBinding,
+        onConversion: async () => {
+          const conversionSeed = await recordGrowthAccountCreated();
+          if (!conversionSeed) return false;
+          await trackRegistrationCompleted(conversionSeed).catch(() => false);
+          return true;
+        },
+        onNotification: async (source) => {
+          const response = await authenticatedFetch(
+            "/api/email/new-customer",
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ source }),
+            }
+          );
+          return response.ok;
+        },
+      });
     }
 
     setSuccess(true);
@@ -607,7 +642,6 @@ export default function RegisterPage() {
     setSuccess(false);
     const response = await Promise.resolve()
       .then(() => {
-        beginRegistrationConversion();
         window.sessionStorage.setItem(OAUTH_REGISTRATION_PROVIDER_KEY, "google");
         const profileDraft = createRegistrationProfileDraft({
           fullName: cleanFullName,

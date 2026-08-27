@@ -4,6 +4,10 @@ import { normalizeCountryName } from "@/lib/countries";
 
 export const OAUTH_REGISTRATION_PROFILE_KEY = "mg_register_oauth_profile";
 export const OAUTH_REGISTRATION_PROVIDER_KEY = "mg_register_oauth_provider";
+export const OAUTH_REGISTRATION_CONVERSION_ELIGIBLE_KEY =
+  "mg_register_conversion_eligible_v1";
+export const OAUTH_REGISTRATION_NOTIFICATION_PENDING_KEY =
+  "mg_register_notification_pending_v1";
 
 export type RegistrationAccountType = "private" | "company";
 

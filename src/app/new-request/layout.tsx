@@ -9,9 +9,10 @@ export default function NewRequestLayout({
 }>) {
   return (
     <BrowserAuthBoundary
-      title="Please log in to create a file request"
+      title="Create an account or log in to submit a file request"
       description="Vehicle details, selected services and private uploads must stay connected to your verified MG AutoTech account."
       nextPath="/new-request"
+      unauthenticatedPrimaryAction="register"
     >
       <RegistrationCountryBoundary nextPath="/new-request">
         <CustomerPortalFrame>{children}</CustomerPortalFrame>
