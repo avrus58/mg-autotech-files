@@ -15,10 +15,10 @@ import {
   startDeviceVerification,
   startPasswordChangeVerification,
 } from "@/lib/deviceVerificationClient";
-import { recordGrowthAccountCreated } from "@/lib/growth/client";
-import { trackRegistrationCompleted } from "@/lib/publicAnalytics";
 import {
-  completePendingRegistrationHandoffs,
+  completeRegistrationHandoffsBeforeNavigation,
+} from "@/lib/registrationHandoffClient";
+import {
   createRegistrationAccountBinding,
   isVerifiedEmailRegistrationCallback,
   markRegistrationHandoffsPending,
@@ -28,6 +28,11 @@ import {
   writeRegistrationSessionValue,
 } from "@/lib/registrationConversion";
 import { getSafeLocalRedirectPath } from "@/lib/safeLocalRedirect";
+import {
+  replacePrivateMeasurementDocument,
+  replaceWithPendingMeasurementCompletion,
+  sanitizeSensitiveMeasurementLocation,
+} from "@/lib/publicAnalytics";
 import {
   OAUTH_REGISTRATION_PROFILE_KEY,
   OAUTH_REGISTRATION_PROVIDER_KEY,
@@ -60,6 +65,16 @@ export default function AuthCallbackPage() {
       const params = new URLSearchParams(window.location.search);
       const code = params.get("code");
       const next = getSafeLocalRedirectPath(params.get("next")) ?? "/dashboard";
+      let callbackFlowReadyForMeasurement = false;
+      let measurementBridgeStarted = false;
+      const startMeasurementBridge = () => {
+        if (!callbackFlowReadyForMeasurement || measurementBridgeStarted) {
+          return measurementBridgeStarted;
+        }
+        measurementBridgeStarted =
+          replaceWithPendingMeasurementCompletion(next);
+        return measurementBridgeStarted;
+      };
       let session: Session | null = null;
 
       if (code) {
@@ -71,16 +86,20 @@ export default function AuthCallbackPage() {
         }
 
         session = data.session;
+        sanitizeSensitiveMeasurementLocation();
         primeStableSession(session);
       } else {
         const { data } = await supabase.auth.getSession();
 
         if (!data.session) {
-          router.replace("/login");
+          if (!replacePrivateMeasurementDocument("/login")) {
+            router.replace("/login");
+          }
           return;
         }
 
         session = data.session;
+        sanitizeSensitiveMeasurementLocation();
         primeStableSession(session);
       }
 
@@ -231,30 +250,18 @@ export default function AuthCallbackPage() {
           // Pending markers contain only a short-lived timestamp and provider
           // class. They survive the no-code device-resume boundary, while the
           // one-time PKCE exchange above is never repeated.
-          await completePendingRegistrationHandoffs({
-            storage: window.sessionStorage,
-            keys: registrationHandoffKeys,
-            accountBinding: registrationAccountBinding,
-            onConversion: async () => {
-              const conversionSeed = await recordGrowthAccountCreated();
-              if (!conversionSeed) return false;
-              await trackRegistrationCompleted(conversionSeed).catch(
-                () => false
-              );
-              return true;
+          await completeRegistrationHandoffsBeforeNavigation(
+            {
+              storage: window.sessionStorage,
+              keys: registrationHandoffKeys,
+              accountBinding: registrationAccountBinding,
             },
-            onNotification: async (source) => {
-              const response = await authenticatedFetch(
-                "/api/email/new-customer",
-                {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ source }),
-                }
-              );
-              return response.ok;
-            },
-          });
+            {
+              onConversionHandoffCompleted: () => {
+                startMeasurementBridge();
+              },
+            }
+          );
         }
 
         try {
@@ -263,7 +270,9 @@ export default function AuthCallbackPage() {
             : await startDeviceVerification();
           if (deviceState.status === "revoked") {
             await signOutLocalStable();
-            router.replace("/login");
+            if (!replacePrivateMeasurementDocument("/login")) {
+              router.replace("/login");
+            }
             return;
           }
           if (deviceState.status === "required") {
@@ -275,7 +284,10 @@ export default function AuthCallbackPage() {
             if (next === "/reset-password") {
               loginParams.set("purpose", "password_change");
             }
-            router.replace(`/login?${loginParams.toString()}`);
+            const loginDestination = `/login?${loginParams.toString()}`;
+            if (!replacePrivateMeasurementDocument(loginDestination)) {
+              router.replace(loginDestination);
+            }
             return;
           }
         } catch (error) {
@@ -300,7 +312,12 @@ export default function AuthCallbackPage() {
 
       }
 
-      router.replace(next);
+      callbackFlowReadyForMeasurement = true;
+      if (startMeasurementBridge()) return;
+      if (replaceWithPendingMeasurementCompletion(next)) return;
+      if (!replacePrivateMeasurementDocument(next)) {
+        router.replace(next);
+      }
     };
 
     handleCallback();

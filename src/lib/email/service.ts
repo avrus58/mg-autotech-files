@@ -110,11 +110,14 @@ export async function sendTransactionalEmail(
   });
 
   if (log.ok && log.duplicate) {
+    const alreadySent = log.existingStatus === "sent";
     return {
-      ok: true,
-      status: "skipped",
+      ok: alreadySent,
+      status: alreadySent ? "skipped" : "failed",
       provider: "disabled",
-      skippedReason: "duplicate_idempotency_key",
+      ...(alreadySent
+        ? { skippedReason: "duplicate_idempotency_key" as const }
+        : { error: "An earlier delivery is still pending or was not sent." }),
       idempotencyKey: input.idempotencyKey,
     };
   }
@@ -134,7 +137,7 @@ export async function sendTransactionalEmail(
     const skippedReason = suppression.suppressed
       ? "recipient_suppressed"
       : "suppression_check_unavailable";
-    await updateEmailEventLog(log.id, {
+    await updateEmailEventLog(log.id, log.leaseUpdatedAt, {
       status: "skipped",
       deliveryStatus: "suppressed",
       errorMessage: skippedReason,
@@ -155,7 +158,7 @@ export async function sendTransactionalEmail(
   );
 
   if (isTransactionalEmailDryRun()) {
-    await updateEmailEventLog(log.id, {
+    await updateEmailEventLog(log.id, log.leaseUpdatedAt, {
       status: "skipped",
       deliveryStatus: "skipped",
       errorMessage: "EMAIL_DRY_RUN enabled",
@@ -171,7 +174,7 @@ export async function sendTransactionalEmail(
   }
 
   if (!process.env.RESEND_API_KEY) {
-    await updateEmailEventLog(log.id, {
+    await updateEmailEventLog(log.id, log.leaseUpdatedAt, {
       status: "skipped",
       deliveryStatus: "skipped",
       errorMessage: "RESEND_API_KEY missing",
@@ -217,7 +220,7 @@ export async function sendTransactionalEmail(
     }
 
     if (providerError) throw new Error(providerErrorMessage(providerError));
-    await updateEmailEventLog(log.id, {
+    await updateEmailEventLog(log.id, log.leaseUpdatedAt, {
       status: "sent",
       deliveryStatus: "sent",
       providerMessageId,
@@ -232,7 +235,7 @@ export async function sendTransactionalEmail(
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : "Transactional email failed";
-    await updateEmailEventLog(log.id, {
+    await updateEmailEventLog(log.id, log.leaseUpdatedAt, {
       status: "failed",
       deliveryStatus: "failed",
       errorMessage: message,

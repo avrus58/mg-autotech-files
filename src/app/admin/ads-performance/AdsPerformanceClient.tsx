@@ -22,9 +22,14 @@ import {
   UserCheck,
 } from "lucide-react";
 import { authenticatedFetch } from "@/lib/authGuards";
-import type { AdsConfigurationStatus, AdsPerformanceReport } from "@/lib/googleAds/readiness";
+import type {
+  AdsConfigurationStatus,
+  AdsMeasurementSourceReadiness,
+  AdsPerformanceReport,
+} from "@/lib/googleAds/readiness";
 import {
   buildGoogleAdsCampaignUrl,
+  googleAdsDestinationSupportsLocale,
   googleAdsDestinationDefinitions,
   type GoogleAdsDestinationKey,
 } from "@/lib/googleAds/campaignLinks";
@@ -77,9 +82,15 @@ function readinessCount(configuration: AdsConfigurationStatus) {
     configuration.registrationConversion,
     configuration.requestConversion,
     configuration.purchaseConversion,
+    configuration.attributionSigning,
+    configuration.distinctConversionLabels,
     configuration.consentModeV2,
     !configuration.personalizedAdvertising,
   ].filter(Boolean).length;
+}
+
+function landingReviewStatusLabel(status: "ready_for_review") {
+  return status === "ready_for_review" ? "Ready for manual review" : status;
 }
 
 export default function AdsPerformanceClient() {
@@ -91,7 +102,6 @@ export default function AdsPerformanceClient() {
   const [campaignLocale, setCampaignLocale] = useState<LocaleCode>("en");
   const [campaignDestination, setCampaignDestination] = useState<GoogleAdsDestinationKey>("stage1");
   const [campaignCode, setCampaignCode] = useState("stage1_en");
-  const [creativeCode, setCreativeCode] = useState("rsa_01");
   const [copied, setCopied] = useState(false);
 
   const load = useCallback(async (nextRange: GrowthReportRange, silent = false) => {
@@ -126,8 +136,7 @@ export default function AdsPerformanceClient() {
     locale: campaignLocale,
     destination: campaignDestination,
     campaign: campaignCode,
-    creative: creativeCode,
-  }), [campaignCode, campaignDestination, campaignLocale, creativeCode]);
+  }), [campaignCode, campaignDestination, campaignLocale]);
 
   const copyCampaignUrl = async () => {
     if (!campaignUrl) return;
@@ -199,7 +208,9 @@ export default function AdsPerformanceClient() {
               <div className="p-5 sm:p-6">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className={`rounded-full border px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] ${report.configuration.configurationComplete ? "border-sky-700/40 bg-sky-950/25 text-sky-200" : "border-amber-700/40 bg-amber-950/25 text-amber-200"}`}>
-                    {report.configuration.configurationComplete ? "Configuration complete" : "Configuration required"}
+                    {report.configuration.configurationComplete
+                      ? "Technical configuration complete - not launch-ready"
+                      : "Technical configuration incomplete - not launch-ready"}
                   </span>
                   <span className="rounded-full border border-amber-700/40 bg-amber-950/25 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-amber-200">
                     {report.deliveryVerification.label}
@@ -208,34 +219,65 @@ export default function AdsPerformanceClient() {
                 </div>
                 <h2 className="mt-4 max-w-3xl text-2xl font-black leading-tight sm:text-3xl">Measure the business result, not just the click.</h2>
                 <p className="mt-3 max-w-3xl text-sm leading-6 text-zinc-400">
-                  Payment is the primary conversion, a successfully created file request is secondary, and verified registration is observation-only. Measurement failures never block registration, requests or payments.
+                  Verified file requests and verified payments are Primary / Every conversions. Registration is Secondary / One for observation. The initial Search campaign optimizes only for its campaign-specific verified-request goal until delivery is proven. Measurement failures never block registration, requests or payments.
                 </p>
                 <div className="mt-4 flex max-w-3xl items-start gap-2 rounded-lg border border-amber-800/35 bg-amber-950/10 p-3 text-xs leading-5 text-amber-100/75">
                   <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-300" aria-hidden="true" />
                   <p>{report.deliveryVerification.detail}</p>
                 </div>
                 <div className="mt-5 grid gap-2 sm:grid-cols-3">
-                  <HierarchyItem icon={<CircleDollarSign />} label="Primary" title="Verified payment" />
-                  <HierarchyItem icon={<Flag />} label="Secondary" title="Verified request" />
-                  <HierarchyItem icon={<UserCheck />} label="Observe" title="Verified registration" />
+                  <HierarchyItem icon={<Flag />} label="Primary / Every" title="Verified request" />
+                  <HierarchyItem icon={<CircleDollarSign />} label="Primary / Every" title="Verified payment" />
+                  <HierarchyItem icon={<UserCheck />} label="Secondary / One" title="Verified registration" />
                 </div>
               </div>
               <div className="border-t border-white/10 bg-black/25 p-5 xl:border-l xl:border-t-0">
                 <div className="flex items-end justify-between gap-4">
-                  <div><p className="text-[10px] font-black uppercase tracking-[0.16em] text-zinc-500">Configuration controls</p><p className="mt-1 text-lg font-black">{readiness} of 7 configured</p></div>
-                  <span className="text-3xl font-black text-red-400">{Math.round(readiness / 7 * 100)}%</span>
+                  <div><p className="text-[10px] font-black uppercase tracking-[0.16em] text-zinc-500">Technical configuration controls</p><p className="mt-1 text-lg font-black">{readiness} of 9 technical controls</p></div>
+                  <span className="text-3xl font-black text-red-400">{Math.round(readiness / 9 * 100)}%</span>
                 </div>
-                <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/10"><div className="h-full bg-red-600" style={{ width: `${readiness / 7 * 100}%` }} /></div>
+                <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/10"><div className="h-full bg-red-600" style={{ width: `${readiness / 9 * 100}%` }} /></div>
                 <div className="mt-4 grid gap-2">
                   <StatusLine label="GA4 measurement" ready={report.configuration.analyticsMeasurement} />
                   <StatusLine label="Google Ads tag" ready={report.configuration.googleAdsTag} />
                   <StatusLine label="Registration conversion" ready={report.configuration.registrationConversion} />
                   <StatusLine label="Request conversion" ready={report.configuration.requestConversion} />
                   <StatusLine label="Payment conversion" ready={report.configuration.purchaseConversion} />
+                  <StatusLine label="Attribution signing" ready={report.configuration.attributionSigning} />
+                  <StatusLine label="Distinct conversion labels" ready={report.configuration.distinctConversionLabels} />
                   <StatusLine label="Consent Mode v2" ready={report.configuration.consentModeV2} />
                   <StatusLine label="Personalized advertising off" ready={!report.configuration.personalizedAdvertising} />
                 </div>
               </div>
+            </section>
+
+            <section aria-labelledby="external-launch-gates-title" className="overflow-hidden rounded-lg border border-amber-700/45 bg-amber-950/10">
+              <div className="flex flex-wrap items-start justify-between gap-4 border-b border-amber-800/30 p-5">
+                <div className="max-w-4xl">
+                  <div className="flex items-center gap-2 text-amber-200">
+                    <AlertTriangle className="h-5 w-5 shrink-0" aria-hidden="true" />
+                    <p className="text-[10px] font-black uppercase tracking-[0.18em]">Campaign activation blocked</p>
+                  </div>
+                  <h2 id="external-launch-gates-title" className="mt-2 text-xl font-black">External launch gates remain manual and unverified.</h2>
+                  <p className="mt-2 text-xs leading-5 text-amber-100/70">
+                    Technical configuration never clears these items. Keep every campaign paused until the responsible owner, legal reviewer or external platform verifies each gate outside this report.
+                  </p>
+                </div>
+                <span className="rounded-full border border-amber-700/50 bg-black/25 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-amber-200">
+                  No approvals stored here
+                </span>
+              </div>
+              <ul className="grid gap-px bg-amber-900/20 md:grid-cols-2 xl:grid-cols-3">
+                {report.externalLaunchGates.map((gate) => (
+                  <li key={gate.key} data-status={gate.status} className="bg-[#0b0c0e] p-4">
+                    <span className="inline-flex rounded-full border border-amber-700/45 bg-amber-950/25 px-2 py-1 text-[9px] font-black uppercase tracking-[0.14em] text-amber-200">
+                      Manual / unverified
+                    </span>
+                    <h3 className="mt-3 text-sm font-black leading-5 text-white">{gate.title}</h3>
+                    <p className="mt-2 text-xs leading-5 text-zinc-500">{gate.detail}</p>
+                  </li>
+                ))}
+              </ul>
             </section>
 
             {report.accountActions.length ? (
@@ -257,6 +299,8 @@ export default function AdsPerformanceClient() {
                 <span className={`rounded-full border px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] ${
                   report.measurementHealth.status === "verified_revenue_observed"
                     ? "border-emerald-700/40 bg-emerald-950/25 text-emerald-200"
+                    : report.measurementHealth.status === "report_incomplete"
+                      ? "border-red-700/50 bg-red-950/30 text-red-100"
                     : report.measurementHealth.status === "configuration_required"
                       ? "border-amber-700/40 bg-amber-950/25 text-amber-200"
                       : "border-sky-700/40 bg-sky-950/25 text-sky-200"
@@ -264,17 +308,22 @@ export default function AdsPerformanceClient() {
                   {report.measurementHealth.status.replaceAll("_", " ")}
                 </span>
               </div>
+              <div className="grid gap-px border-b border-white/10 bg-white/10 sm:grid-cols-3">
+                <MeasurementSourceStatus label="Core business" status={report.measurementHealth.sourceReadiness.coreBusiness} />
+                <MeasurementSourceStatus label="Attribution" status={report.measurementHealth.sourceReadiness.attribution} />
+                <MeasurementSourceStatus label="Customer classification" status={report.measurementHealth.sourceReadiness.customerClassification} />
+              </div>
               <div className="grid gap-px bg-white/10 sm:grid-cols-2 xl:grid-cols-4">
-                <MeasurementMetric label="Consented visitors" value={report.measurementHealth.consentedVisitors} />
-                <MeasurementMetric label="Registrations" value={report.measurementHealth.registrations} />
-                <MeasurementMetric label="Verified requests" value={report.measurementHealth.requests} />
-                <MeasurementMetric label="Paying customers" value={report.measurementHealth.payingCustomers} />
+                <MeasurementMetric label="Consented visitors" value={report.measurementHealth.consentedVisitors} available={report.measurementHealth.metricsAvailable} />
+                <MeasurementMetric label="Registrations" value={report.measurementHealth.registrations} available={report.measurementHealth.metricsAvailable} />
+                <MeasurementMetric label="Verified requests" value={report.measurementHealth.requests} available={report.measurementHealth.metricsAvailable} />
+                <MeasurementMetric label="Paying customers" value={report.measurementHealth.payingCustomers} available={report.measurementHealth.metricsAvailable} />
               </div>
             </section>
 
             <section className="grid gap-5 xl:grid-cols-[1.15fr_.85fr]">
-              <PerformanceTable title="Campaign outcomes" eyebrow="First-party verified results" rows={report.campaigns} empty="No consented campaign journeys are available for this range yet." />
-              <PerformanceTable title="Paid source outcomes" eyebrow="Channel quality" rows={report.paidSources} empty="No consented paid-search source journeys are available for this range yet." />
+              <PerformanceTable title="Campaign outcomes" eyebrow="First-party verified results" rows={report.campaigns} empty={report.measurementHealth.metricsAvailable ? "No consented campaign journeys are available for this range yet." : "Required report sources are incomplete. Campaign outcomes are withheld; do not activate ads."} />
+              <PerformanceTable title="Paid source outcomes" eyebrow="Channel quality" rows={report.paidSources} empty={report.measurementHealth.metricsAvailable ? "No consented paid-search source journeys are available for this range yet." : "Required report sources are incomplete. Paid-source outcomes are withheld; do not activate ads."} />
             </section>
 
             <section className="overflow-hidden rounded-lg border border-white/10 bg-[#0b0c0e]">
@@ -286,7 +335,15 @@ export default function AdsPerformanceClient() {
               <div className="grid gap-px bg-white/10 md:grid-cols-2 xl:grid-cols-4">
                 {report.landingPages.map((page) => (
                   <Link key={page.path} href={page.path} target="_blank" className="group bg-[#0b0c0e] p-5 transition hover:bg-white/[0.035]">
-                    <div className="flex items-center justify-between gap-3"><Route className="h-5 w-5 text-red-400" /><span className="rounded-full border border-white/10 px-2 py-1 text-[9px] font-black uppercase tracking-[0.14em] text-zinc-500">{page.campaignRole}</span></div>
+                    <div className="flex items-start justify-between gap-3">
+                      <Route className="mt-1 h-5 w-5 shrink-0 text-red-400" aria-hidden="true" />
+                      <div className="flex flex-wrap justify-end gap-1.5">
+                        <span className="rounded-full border border-white/10 px-2 py-1 text-[9px] font-black uppercase tracking-[0.14em] text-zinc-500">{page.campaignRole}</span>
+                        <span className="rounded-full border border-amber-700/40 bg-amber-950/20 px-2 py-1 text-[9px] font-black uppercase tracking-[0.12em] text-amber-200">
+                          {landingReviewStatusLabel(page.status)}
+                        </span>
+                      </div>
+                    </div>
                     <h3 className="mt-4 text-base font-black leading-tight">{page.intent}</h3>
                     <p className="mt-2 break-all text-xs text-zinc-600">{page.path}</p>
                     <span className="mt-4 inline-flex items-center gap-1 text-xs font-black text-red-300">Review page <ArrowUpRight className="h-3.5 w-3.5" /></span>
@@ -307,31 +364,41 @@ export default function AdsPerformanceClient() {
                 </div>
               </div>
               <div className="p-5">
-                <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                <div className="grid gap-3 md:grid-cols-3">
                   <label className="grid gap-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-zinc-500">
                     Language
-                    <select value={campaignLocale} onChange={(event) => setCampaignLocale(event.target.value as LocaleCode)} className="h-11 rounded-lg border border-white/10 bg-black px-3 text-xs font-black normal-case tracking-normal text-white">
+                    <select value={campaignLocale} onChange={(event) => {
+                      const nextLocale = event.target.value as LocaleCode;
+                      setCampaignLocale(nextLocale);
+                      if (!googleAdsDestinationSupportsLocale(campaignDestination, nextLocale)) {
+                        setCampaignDestination("stage1");
+                      }
+                    }} className="h-11 rounded-lg border border-white/10 bg-black px-3 text-xs font-black normal-case tracking-normal text-white">
                       {report.languageDestinations.map((item) => <option key={item.locale} value={item.locale}>{item.language} ({item.locale.toUpperCase()})</option>)}
                     </select>
                   </label>
                   <label className="grid gap-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-zinc-500">
                     Destination
                     <select value={campaignDestination} onChange={(event) => setCampaignDestination(event.target.value as GoogleAdsDestinationKey)} className="h-11 rounded-lg border border-white/10 bg-black px-3 text-xs font-black normal-case tracking-normal text-white">
-                      {googleAdsDestinationDefinitions.map((item) => <option key={item.key} value={item.key}>{item.label}</option>)}
+                      {googleAdsDestinationDefinitions.map((item) => (
+                        <option
+                          key={item.key}
+                          value={item.key}
+                          disabled={!googleAdsDestinationSupportsLocale(item.key, campaignLocale)}
+                        >
+                          {item.label}
+                        </option>
+                      ))}
                     </select>
                   </label>
                   <label className="grid gap-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-zinc-500">
                     Campaign code
                     <input value={campaignCode} onChange={(event) => setCampaignCode(event.target.value)} maxLength={64} spellCheck={false} className="h-11 rounded-lg border border-white/10 bg-black px-3 text-xs font-black normal-case tracking-normal text-white" />
                   </label>
-                  <label className="grid gap-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-zinc-500">
-                    Creative code
-                    <input value={creativeCode} onChange={(event) => setCreativeCode(event.target.value)} maxLength={64} spellCheck={false} className="h-11 rounded-lg border border-white/10 bg-black px-3 text-xs font-black normal-case tracking-normal text-white" />
-                  </label>
                 </div>
                 <div className={`mt-4 flex min-w-0 items-center gap-3 rounded-lg border p-3 ${campaignUrl ? "border-white/10 bg-black/30" : "border-amber-700/40 bg-amber-950/15"}`}>
                   <code className="min-w-0 flex-1 break-all text-[11px] leading-5 text-zinc-300">
-                    {campaignUrl ?? "Use 3-64 lowercase letters, numbers, underscores or hyphens for campaign and creative codes."}
+                    {campaignUrl ?? "Use 3-64 lowercase letters, numbers, underscores or hyphens for the campaign code."}
                   </code>
                   <button type="button" onClick={() => void copyCampaignUrl()} disabled={!campaignUrl} className="inline-flex h-10 shrink-0 items-center gap-2 rounded-lg border border-red-800/50 bg-red-950/25 px-3 text-xs font-black text-red-100 transition hover:bg-red-900/35 disabled:cursor-not-allowed disabled:opacity-40">
                     {copied ? <CheckCircle2 className="h-4 w-4" /> : <Copy className="h-4 w-4" />}{copied ? "Copied" : "Copy"}
@@ -344,7 +411,7 @@ export default function AdsPerformanceClient() {
               <div className="rounded-lg border border-emerald-800/35 bg-emerald-950/10 p-5">
                 <div className="flex items-center gap-2"><ShieldCheck className="h-5 w-5 text-emerald-300" /><h2 className="font-black">Privacy boundary</h2></div>
                 <ul className="mt-4 grid gap-2 text-sm leading-6 text-zinc-400">
-                  <li>Raw ad click IDs are detected only to classify Google CPC traffic and are not stored.</li>
+                  <li>MG AutoTech application storage and database never retain raw ad click IDs. After explicit Ads consent, Google&apos;s own conversion-linker storage may retain them for attribution.</li>
                   <li>No customer email, customer ID, order ID, filename, vehicle details or notes are exported.</li>
                   <li>Advertising measurement requires explicit consent; personalized advertising remains disabled.</li>
                   <li>Anonymous transaction hashes provide duplicate protection without exposing business identifiers.</li>
@@ -379,11 +446,26 @@ function StatusLine({ label, ready }: { label: string; ready: boolean }) {
   return <div className="flex items-center justify-between gap-3 text-xs"><span className="text-zinc-400">{label}</span><span className={`inline-flex items-center gap-1 font-black ${ready ? "text-emerald-300" : "text-amber-300"}`}>{ready ? <CheckCircle2 className="h-3.5 w-3.5" /> : <AlertTriangle className="h-3.5 w-3.5" />}{ready ? "Configured" : "Missing"}</span></div>;
 }
 
-function MeasurementMetric({ label, value }: { label: string; value: number }) {
+function MeasurementSourceStatus({ label, status }: {
+  label: string;
+  status: AdsMeasurementSourceReadiness[keyof AdsMeasurementSourceReadiness];
+}) {
+  const ready = status === "ready";
+  return (
+    <div className="flex items-center justify-between gap-3 bg-[#0b0c0e] px-5 py-3 text-xs">
+      <span className="text-zinc-500">{label}</span>
+      <span className={`font-black ${ready ? "text-emerald-300" : "text-red-300"}`}>
+        {status.replaceAll("_", " ")}
+      </span>
+    </div>
+  );
+}
+
+function MeasurementMetric({ label, value, available }: { label: string; value: number; available: boolean }) {
   return (
     <div className="bg-[#0b0c0e] p-5">
       <p className="text-[9px] font-black uppercase tracking-[0.16em] text-zinc-600">{label}</p>
-      <p className="mt-2 text-2xl font-black">{integer(value)}</p>
+      <p className="mt-2 text-2xl font-black">{available ? integer(value) : "Unavailable"}</p>
     </div>
   );
 }
@@ -393,7 +475,7 @@ function PerformanceTable({ title, eyebrow, rows, empty }: { title: string; eyeb
     <section className="overflow-hidden rounded-lg border border-white/10 bg-[#0b0c0e]">
       <div className="border-b border-white/10 p-5"><p className="text-[10px] font-black uppercase tracking-[0.18em] text-red-400">{eyebrow}</p><h2 className="mt-1 text-xl font-black">{title}</h2></div>
       {rows.length ? (
-        <div className="overflow-x-auto"><table className="w-full min-w-[680px] text-left text-xs"><thead className="bg-black/25 uppercase tracking-[0.14em] text-zinc-600"><tr><th className="px-5 py-3">Source</th><th className="px-3 py-3">Visitors</th><th className="px-3 py-3">Registrations</th><th className="px-3 py-3">Requests</th><th className="px-3 py-3">Rate</th><th className="px-5 py-3">Verified revenue</th></tr></thead><tbody>{rows.slice(0, 12).map((row) => <tr key={row.key} className="border-t border-white/5"><td className="max-w-52 truncate px-5 py-3 font-black">{row.label}</td><td className="px-3 py-3 text-zinc-400">{integer(row.consentedVisitors)}</td><td className="px-3 py-3 text-zinc-400">{integer(row.registrations)}</td><td className="px-3 py-3 text-zinc-400">{integer(row.orders)}</td><td className="px-3 py-3 text-zinc-400">{percent(row.conversionRate)}</td><td className="px-5 py-3 font-black text-emerald-300">{revenueLabel(row)}</td></tr>)}</tbody></table></div>
+        <div className="overflow-x-auto"><table className="w-full min-w-[760px] text-left text-xs"><thead className="bg-black/25 uppercase tracking-[0.14em] text-zinc-600"><tr><th className="px-5 py-3">Source</th><th className="px-3 py-3">Visitors</th><th className="px-3 py-3">Registrations</th><th className="px-3 py-3">Returning</th><th className="px-3 py-3">Requests</th><th className="px-3 py-3">Rate</th><th className="px-5 py-3">Verified revenue</th></tr></thead><tbody>{rows.slice(0, 12).map((row) => <tr key={row.key} className="border-t border-white/5"><td className="max-w-52 truncate px-5 py-3 font-black">{row.label}</td><td className="px-3 py-3 text-zinc-400">{integer(row.consentedVisitors)}</td><td className="px-3 py-3 text-zinc-400">{integer(row.registrations)}</td><td className="px-3 py-3 text-zinc-400">{integer(row.returningCustomers)}</td><td className="px-3 py-3 text-zinc-400">{integer(row.orders)}</td><td className="px-3 py-3 text-zinc-400">{percent(row.conversionRate)}</td><td className="px-5 py-3 font-black text-emerald-300">{revenueLabel(row)}</td></tr>)}</tbody></table></div>
       ) : <div className="grid min-h-48 place-items-center p-6 text-center"><div><BarChart3 className="mx-auto h-7 w-7 text-zinc-700" /><p className="mt-3 text-sm font-black">No measured rows yet</p><p className="mt-1 max-w-sm text-xs leading-5 text-zinc-600">{empty}</p></div></div>}
     </section>
   );

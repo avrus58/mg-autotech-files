@@ -270,6 +270,8 @@ function buildAttributionPerformance(input: {
   attribution: GrowthAttributionRow[];
   ordersByCustomer: Map<string, GrowthOrderRow[]>;
   paymentsByUser: Map<string, GrowthPaymentRow[]>;
+  outcomeAttributionByUser: Map<string, GrowthAttributionRow>;
+  isRegistration: (userId: string, row: GrowthAttributionRow) => boolean;
   label: (row: GrowthAttributionRow) => string;
 }): GrowthPerformanceRow[] {
   const groups = new Map<string, GrowthAttributionRow[]>();
@@ -282,19 +284,56 @@ function buildAttributionPerformance(input: {
   }
 
   return [...groups.entries()].map(([key, rows]) => {
-    const users = new Set(rows.map((row) => row.user_id).filter((value): value is string => Boolean(value)));
-    const orderingUsers = new Set([...users].filter((userId) => (input.ordersByCustomer.get(userId)?.length ?? 0) > 0));
-    const repeatUsers = new Set([...orderingUsers].filter((userId) => (input.ordersByCustomer.get(userId)?.length ?? 0) > 1));
+    const users = new Set(
+      rows
+        .filter(
+          (row) =>
+            Boolean(row.user_id) &&
+            input.outcomeAttributionByUser.get(row.user_id as string) === row
+        )
+        .map((row) => row.user_id as string)
+    );
+    const registrationUsers = new Set(
+      [...users].filter((userId) => {
+        const attribution = input.outcomeAttributionByUser.get(userId);
+        return Boolean(attribution && input.isRegistration(userId, attribution));
+      })
+    );
+    const eligibleOrders = new Map<string, GrowthOrderRow[]>();
+    const eligiblePayments = new Map<string, GrowthPaymentRow[]>();
+    for (const userId of users) {
+      const firstSeenAt = timestamp(
+        input.outcomeAttributionByUser.get(userId)?.first_seen_at
+      );
+      if (firstSeenAt === null) continue;
+      eligibleOrders.set(
+        userId,
+        (input.ordersByCustomer.get(userId) ?? []).filter((order) => {
+          const createdAt = timestamp(order.created_at);
+          return createdAt !== null && createdAt >= firstSeenAt;
+        })
+      );
+      eligiblePayments.set(
+        userId,
+        (input.paymentsByUser.get(userId) ?? []).filter((payment) => {
+          const createdAt = timestamp(payment.created_at);
+          return createdAt !== null && createdAt >= firstSeenAt;
+        })
+      );
+    }
+    const orderingUsers = new Set([...users].filter((userId) => (eligibleOrders.get(userId)?.length ?? 0) > 0));
+    const repeatUsers = new Set([...orderingUsers].filter((userId) => (eligibleOrders.get(userId)?.length ?? 0) > 1));
     const payingUsers = new Set([...users].filter((userId) =>
-      (input.paymentsByUser.get(userId) ?? []).some(isPurchase)
+      (eligiblePayments.get(userId) ?? []).some(isPurchase)
     ));
-    const orders = [...orderingUsers].flatMap((userId) => input.ordersByCustomer.get(userId) ?? []);
-    const payments = [...payingUsers].flatMap((userId) => input.paymentsByUser.get(userId) ?? []);
+    const orders = [...orderingUsers].flatMap((userId) => eligibleOrders.get(userId) ?? []);
+    const payments = [...payingUsers].flatMap((userId) => eligiblePayments.get(userId) ?? []);
     return {
       key,
       label: input.label(rows[0]) || "Unknown",
       consentedVisitors: rows.length,
-      registrations: users.size,
+      registrations: registrationUsers.size,
+      returningCustomers: Math.max(0, users.size - registrationUsers.size),
       customersWithRequests: orderingUsers.size,
       orders: orders.length,
       repeatCustomers: repeatUsers.size,
@@ -317,12 +356,56 @@ export function buildGrowthMetrics(input: GrowthMetricInput) {
   const allOrdersByCustomer = groupOrdersByCustomer(input.orders);
   const periodOrdersByCustomer = groupOrdersByCustomer(periodOrders);
   const periodPaymentsByUser = revenueRowsByUser(periodPayments);
+  const profileById = new Map(profiles.map((profile) => [profile.id, profile]));
+  const accountCreatedUsers = new Set(
+    input.journeyEvents
+      .filter(
+        (event) =>
+          event.event_type === "account_created" &&
+          Boolean(event.user_id) &&
+          inRange(event.occurred_at, start, end)
+      )
+      .map((event) => event.user_id as string)
+  );
+  const outcomeAttributionByUser = new Map<string, GrowthAttributionRow>();
+  for (const row of input.attribution) {
+    if (!row.user_id) continue;
+    const current = outcomeAttributionByUser.get(row.user_id);
+    const rowAt = timestamp(row.first_seen_at);
+    const currentAt = timestamp(current?.first_seen_at);
+    if (
+      rowAt !== null &&
+      rowAt <= end &&
+      (currentAt === null || rowAt < currentAt)
+    ) {
+      outcomeAttributionByUser.set(row.user_id, row);
+    }
+  }
+  const isAttributedRegistration = (userId: string, row: GrowthAttributionRow) => {
+    const profileCreatedAt = timestamp(profileById.get(userId)?.created_at);
+    if (
+      profileCreatedAt === null ||
+      profileCreatedAt < start ||
+      profileCreatedAt > end
+    ) return false;
+
+    // The immutable profile creation time is authoritative. The accepted
+    // account-created event covers the narrow race where the public touch is
+    // acknowledged after the account itself; a mere login/request link never
+    // becomes a registration.
+    if (accountCreatedUsers.has(userId)) return true;
+    const firstTouchAt = timestamp(row.first_seen_at);
+    return firstTouchAt !== null && profileCreatedAt >= firstTouchAt;
+  };
+  const attributedRegistrationTouches = periodAttribution.filter((row) => {
+    if (!row.user_id || outcomeAttributionByUser.get(row.user_id) !== row) return false;
+    return isAttributedRegistration(row.user_id, row);
+  }).length;
   const customersWithRequests = new Set([...periodOrdersByCustomer.keys()]);
   const repeatCustomers = new Set([...allOrdersByCustomer.entries()].filter(([, rows]) => rows.length > 1).map(([id]) => id));
   const periodRepeatCustomers = new Set([...customersWithRequests].filter((id) => repeatCustomers.has(id)));
   const firstRequestCustomers = new Set<string>();
   const daysToFirstRequest: number[] = [];
-  const profileById = new Map(profiles.map((profile) => [profile.id, profile]));
   for (const [userId, rows] of allOrdersByCustomer.entries()) {
     const firstOrder = rows[0];
     if (inRange(firstOrder.created_at, start, end)) firstRequestCustomers.add(userId);
@@ -344,7 +427,7 @@ export function buildGrowthMetrics(input: GrowthMetricInput) {
     orders: periodOrders.length,
     completedOrders: periodOrders.filter((row) => row.status === "completed").length,
     payingCustomers: payingCustomers.size,
-    visitorToRegistrationRate: rate(periodAttribution.filter((row) => row.user_id).length, periodAttribution.length),
+    visitorToRegistrationRate: rate(attributedRegistrationTouches, periodAttribution.length),
     registrationToRequestRate: rate(
       periodProfiles.filter((profile) => (allOrdersByCustomer.get(profile.id)?.length ?? 0) > 0).length,
       periodProfiles.length
@@ -383,32 +466,42 @@ export function buildGrowthMetrics(input: GrowthMetricInput) {
     email: buildEmailSummary(periodEmails, input.orders),
     bySource: buildAttributionPerformance({
       attribution: periodAttribution,
-      ordersByCustomer: allOrdersByCustomer,
+      ordersByCustomer: periodOrdersByCustomer,
       paymentsByUser: periodPaymentsByUser,
+      outcomeAttributionByUser,
+      isRegistration: isAttributedRegistration,
       label: (row) => row.first_medium === "none" ? row.first_source || "Direct" : `${row.first_source || "Unknown"} / ${row.first_medium || "unknown"}`,
     }),
     byCampaign: buildAttributionPerformance({
       attribution: periodAttribution,
-      ordersByCustomer: allOrdersByCustomer,
+      ordersByCustomer: periodOrdersByCustomer,
       paymentsByUser: periodPaymentsByUser,
+      outcomeAttributionByUser,
+      isRegistration: isAttributedRegistration,
       label: (row) => row.first_campaign?.trim() || "Unlabelled",
     }),
     byCountry: buildAttributionPerformance({
       attribution: periodAttribution,
-      ordersByCustomer: allOrdersByCustomer,
+      ordersByCustomer: periodOrdersByCustomer,
       paymentsByUser: periodPaymentsByUser,
+      outcomeAttributionByUser,
+      isRegistration: isAttributedRegistration,
       label: (row) => row.first_country_code || "Unknown",
     }),
     byLocale: buildAttributionPerformance({
       attribution: periodAttribution,
-      ordersByCustomer: allOrdersByCustomer,
+      ordersByCustomer: periodOrdersByCustomer,
       paymentsByUser: periodPaymentsByUser,
+      outcomeAttributionByUser,
+      isRegistration: isAttributedRegistration,
       label: (row) => row.locale?.trim().toLowerCase() || "Unknown",
     }),
     byLandingPage: buildAttributionPerformance({
       attribution: periodAttribution,
-      ordersByCustomer: allOrdersByCustomer,
+      ordersByCustomer: periodOrdersByCustomer,
       paymentsByUser: periodPaymentsByUser,
+      outcomeAttributionByUser,
+      isRegistration: isAttributedRegistration,
       label: (row) => row.first_landing_path || "/",
     }),
     byService: buildDemandRows(periodOrders, (order) => splitDemandLabels(order.service_type)),

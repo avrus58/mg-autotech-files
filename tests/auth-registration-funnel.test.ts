@@ -22,7 +22,7 @@ test("registration keeps safe requested intent through every authentication rout
   );
   assert.match(
     registerPage,
-    /router\.replace\(getRegistrationCallbackPath\(\)\)/
+    /const callbackDestination = getRegistrationCallbackPath\(\);[\s\S]*if \(!replacePrivateMeasurementDocument\(callbackDestination\)\) \{[\s\S]*router\.replace\(callbackDestination\);/
   );
   assert.doesNotMatch(registerPage, /auth\/callback\?next=\/dashboard/);
   assert.match(
@@ -46,5 +46,21 @@ test("registration auth bootstrap is bounded and fails soft to the form", () => 
   assert.match(
     registerPage,
     /catch \{[\s\S]*?setCheckingAuth\(false\)[\s\S]*?\} finally \{[\s\S]*?clearTimeout\(failSoftTimeout\)/
+  );
+});
+
+test("authentication pages fail safely when JavaScript is unavailable", () => {
+  assert.match(
+    loginPage,
+    /<form[\s\S]*?action="\/login"[\s\S]*?method="post"[\s\S]*?onSubmit=\{handleLogin\}/
+  );
+  assert.doesNotMatch(loginPage, /<form[^>]*method="get"/i);
+  assert.match(
+    loginPage,
+    /<noscript>[\s\S]*JavaScript is required for secure customer login\.[\s\S]*<\/noscript>/
+  );
+  assert.match(
+    registerPage,
+    /if \(checkingAuth\)[\s\S]*<noscript>[\s\S]*JavaScript is required for secure account registration\.[\s\S]*<\/noscript>/
   );
 });

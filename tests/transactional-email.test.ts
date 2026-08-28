@@ -13,7 +13,13 @@ import {
   resolveStatusEmail,
   shouldSendStatusTransition,
 } from "../src/lib/email/lifecycle";
-import { sanitizeEmailEventMetadata } from "../src/lib/email/logging";
+import {
+  EMAIL_PENDING_LEASE_SAFE_RECLAIM_WINDOW_MS,
+  EMAIL_PENDING_LEASE_STALE_MS,
+  getEmailFailedRecoveryState,
+  getEmailPendingLeaseState,
+  sanitizeEmailEventMetadata,
+} from "../src/lib/email/logging";
 import {
   normalizeTransactionalEmailLanguage,
   resolveBrowserTransactionalEmailLanguage,
@@ -34,6 +40,103 @@ test("transactional email migration is additive, logged and RLS protected", () =
   assert.match(sql, /has_staff_permission\('orders\.view'\)/i);
   assert.match(sql, /has_staff_permission\('orders\.manage'\)/i);
   assert.doesNotMatch(sql, /\bdrop\s+table\b|\bdrop\s+column\b|\btruncate\b|\bdelete\s+from\b/i);
+});
+
+test("stale pending email leases use an updated_at CAS and never outlive provider deduplication", () => {
+  const now = Date.parse("2026-08-28T12:00:00.000Z");
+  const timestamp = (ageMs: number) => new Date(now - ageMs).toISOString();
+
+  assert.equal(
+    getEmailPendingLeaseState(
+      timestamp(EMAIL_PENDING_LEASE_STALE_MS - 1),
+      now
+    ),
+    "active"
+  );
+  assert.equal(
+    getEmailPendingLeaseState(timestamp(EMAIL_PENDING_LEASE_STALE_MS), now),
+    "reclaimable"
+  );
+  assert.equal(
+    getEmailPendingLeaseState(
+      timestamp(EMAIL_PENDING_LEASE_SAFE_RECLAIM_WINDOW_MS - 1),
+      now
+    ),
+    "reclaimable"
+  );
+  assert.equal(
+    getEmailPendingLeaseState(
+      timestamp(EMAIL_PENDING_LEASE_SAFE_RECLAIM_WINDOW_MS),
+      now
+    ),
+    "expired"
+  );
+  assert.equal(getEmailPendingLeaseState("invalid", now), "active");
+  assert.equal(
+    getEmailFailedRecoveryState(
+      timestamp(EMAIL_PENDING_LEASE_SAFE_RECLAIM_WINDOW_MS - 1),
+      now
+    ),
+    "reclaimable"
+  );
+  assert.equal(
+    getEmailFailedRecoveryState(
+      timestamp(EMAIL_PENDING_LEASE_SAFE_RECLAIM_WINDOW_MS),
+      now
+    ),
+    "expired"
+  );
+  assert.equal(getEmailFailedRecoveryState("invalid", now), "invalid");
+
+  const logging = readFileSync(
+    resolve(process.cwd(), "src", "lib", "email", "logging.ts"),
+    "utf8"
+  );
+  const service = readFileSync(
+    resolve(process.cwd(), "src", "lib", "email", "service.ts"),
+    "utf8"
+  );
+  const migration = readFileSync(
+    resolve(
+      process.cwd(),
+      "supabase",
+      "migrations",
+      "20260828000001_email_pending_lease_recovery.sql"
+    ),
+    "utf8"
+  );
+
+  assert.match(logging, /select\("id,status,updated_at"\)/);
+  assert.match(
+    logging,
+    /\.eq\("status", "pending"\)\s*\.eq\("updated_at", existingUpdatedAt\)\s*\.lt\("updated_at", staleBefore\)/
+  );
+  assert.match(
+    logging,
+    /recoveryState === "reclaimable"[\s\S]*\.eq\("status", "failed"\)\s*\.eq\("updated_at", existingUpdatedAt\)/
+  );
+  assert.match(
+    logging,
+    /recoveryState === "expired"[\s\S]*manual reconciliation is required\.[\s\S]*\.eq\("status", "failed"\)/
+  );
+  assert.match(
+    logging,
+    /\.eq\("status", "pending"\)\s*\.eq\("updated_at", leaseUpdatedAt\)/
+  );
+  assert.equal(
+    service.match(
+      /updateEmailEventLog\(log\.id, log\.leaseUpdatedAt,/g
+    )?.length,
+    5
+  );
+  assert.match(migration, /add column if not exists updated_at timestamptz/i);
+  assert.match(migration, /security invoker\s*set search_path = ''/i);
+  assert.match(migration, /email_events_pending_lease_idx/i);
+  assert.match(migration, /where status = 'pending'/i);
+  assert.doesNotMatch(
+    migration,
+    /\bdrop\s+table\b|\bdrop\s+column\b|\btruncate\b|\bdelete\s+from\b/i
+  );
 });
 
 test("request-created template renders German HTML and text without internal fields", () => {
@@ -407,6 +510,7 @@ test("admin email and bank transfer email APIs reject anonymous users", async ()
 test("registration notifications happen only after verified auth callback", () => {
   const register = readFileSync(resolve(process.cwd(), "src", "app", "register", "page.tsx"), "utf8");
   const callback = readFileSync(resolve(process.cwd(), "src", "app", "auth", "callback", "page.tsx"), "utf8");
+  const registrationClient = readFileSync(resolve(process.cwd(), "src", "lib", "registrationHandoffClient.ts"), "utf8");
   const route = readFileSync(resolve(process.cwd(), "src", "app", "api", "email", "new-customer", "route.ts"), "utf8");
   const settings = readFileSync(resolve(process.cwd(), "src", "app", "dashboard", "settings", "page.tsx"), "utf8");
   assert.match(register, /supabase\.auth\.signUp/);
@@ -414,9 +518,10 @@ test("registration notifications happen only after verified auth callback", () =
   assert.match(register, /supabase\.auth\.resend/);
   assert.match(register, /verificationPending/);
   assert.doesNotMatch(register, /customerEmail:\s*cleanEmail[\s\S]{0,180}\/api\/email\/new-customer/);
-  assert.match(callback, /authenticatedFetch\([\s\S]{0,80}?"\/api\/email\/new-customer"/);
+  assert.match(registrationClient, /authenticatedFetchForUser\([\s\S]*?"\/api\/email\/new-customer"/);
+  assert.match(registrationClient, /runRegistrationHandoffWithTimeout/);
   assert.match(callback, /isVerifiedEmailRegistrationCallback/);
-  assert.match(callback, /registrationConversionEligible[\s\S]*?\/api\/email\/new-customer/);
+  assert.match(callback, /registrationConversionEligible[\s\S]*?completeRegistrationHandoffsBeforeNavigation/);
   assert.match(route, /requireBaseApiUser/);
   assert.match(route, /auth\.user\.email/);
   assert.match(route, /resolveTransactionalEmailLanguageFromCookie/);

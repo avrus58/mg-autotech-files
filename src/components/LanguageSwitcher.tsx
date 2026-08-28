@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { usePathname } from "next/navigation";
 import {
   defaultLocale,
   normalizeLocale,
@@ -20,6 +20,19 @@ const cookieKey = "mg_locale";
 const googleCookieKey = "googtrans";
 const originalText = new WeakMap<Text, string>();
 const originalAttributes = new WeakMap<Element, Record<string, string>>();
+
+function subscribeToLocationSearch(onStoreChange: () => void) {
+  window.addEventListener("popstate", onStoreChange);
+  return () => window.removeEventListener("popstate", onStoreChange);
+}
+
+function readLocationSearch() {
+  return window.location.search;
+}
+
+function readServerLocationSearch() {
+  return "";
+}
 
 type TranslationCatalog = {
   exact: Record<LocaleCode, Record<string, string>>;
@@ -165,8 +178,12 @@ function translateNode(
 
 export function LanguageSwitcher() {
   const pathname = usePathname();
-  const router = useRouter();
   const [locale, setLocale] = useState<LocaleCode>(defaultLocale);
+  const currentSearch = useSyncExternalStore(
+    subscribeToLocationSearch,
+    readLocationSearch,
+    readServerLocationSearch
+  );
   const [isOpen, setIsOpen] = useState(false);
   const translatedLocaleRef = useRef<LocaleCode>(defaultLocale);
 
@@ -285,7 +302,10 @@ export function LanguageSwitcher() {
     [locale]
   );
 
-  if (pathname.startsWith("/embed/")) return null;
+  if (
+    pathname.startsWith("/embed/") ||
+    pathname === "/measurement/complete"
+  ) return null;
 
   return (
     <div
@@ -295,35 +315,46 @@ export function LanguageSwitcher() {
     >
       {isOpen && (
         <div className="grid max-h-[46vh] w-24 overflow-y-auto rounded-2xl border border-white/10 bg-[#111720]/95 p-1.5 shadow-2xl shadow-black/50 backdrop-blur-xl">
-          {supportedLocales.map((item) => (
-            <button
-              key={item.code}
-              type="button"
-              onClick={() => {
-                const target = appendSafeQuery(
-                  getLocalizedPublicPath(pathname, item.code),
-                  typeof window === "undefined" ? "" : window.location.search
-                );
-
-                setLocale(item.code);
-                persistLocale(item.code);
-                setIsOpen(false);
-
-                if (target !== `${pathname}${typeof window === "undefined" ? "" : window.location.search}`) {
-                  router.push(target);
-                }
-              }}
-              className={`flex h-9 items-center justify-center rounded-xl text-xs font-black transition ${
-                item.code === locale
-                  ? "bg-red-600 text-white"
-                  : "text-zinc-200 hover:bg-white/10"
-              }`}
-              title={item.name}
-              aria-label={`Switch language to ${item.name}`}
-            >
-              <span>{item.label}</span>
-            </button>
-          ))}
+          {supportedLocales.map((item) => {
+            const localizedTarget = getLocalizedPublicPath(pathname, item.code);
+            const canNavigate = localizedTarget !== pathname;
+            const target = canNavigate
+              ? appendSafeQuery(localizedTarget, currentSearch)
+              : localizedTarget;
+            const chooseLocale = () => {
+              setLocale(item.code);
+              persistLocale(item.code);
+              setIsOpen(false);
+            };
+            const optionClassName = `flex h-9 items-center justify-center rounded-xl text-xs font-black transition ${
+              item.code === locale
+                ? "bg-red-600 text-white"
+                : "text-zinc-200 hover:bg-white/10"
+            }`;
+            return canNavigate ? (
+              <a
+                key={item.code}
+                href={target}
+                onClick={chooseLocale}
+                className={optionClassName}
+                title={item.name}
+                aria-label={`Switch language to ${item.name}`}
+              >
+                <span>{item.label}</span>
+              </a>
+            ) : (
+              <button
+                key={item.code}
+                type="button"
+                onClick={chooseLocale}
+                className={optionClassName}
+                title={item.name}
+                aria-label={`Switch language to ${item.name}`}
+              >
+                <span>{item.label}</span>
+              </button>
+            );
+          })}
         </div>
       )}
       <button

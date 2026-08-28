@@ -67,8 +67,8 @@ const fileServiceCategories: HubCard[] = [
   {
     title: "Custom ECU Calibration",
     text: "Vehicle-specific ECU software requests built from the submitted controller identity, original file, vehicle setup and technical target.",
-    href: "/new-request",
-    action: "Start ECU request",
+    href: "/services",
+    action: "Choose ECU service",
     icon: Cpu,
     tag: "ECU",
   },
@@ -498,16 +498,17 @@ export default function FileServicePage() {
             >
               <Link
                 href="/new-request"
+                data-acquisition-primary-cta
                 className="inline-flex scroll-mb-[calc(5.5rem+env(safe-area-inset-bottom))] items-center justify-center rounded-xl bg-[#b1121b] px-6 py-3.5 text-sm font-black text-white shadow-lg shadow-red-950/30 transition hover:-translate-y-0.5 hover:bg-[#c91824] focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 sm:py-4"
               >
-                Start secure file request
+                Create account &amp; start request
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
               <Link
-                href="#stage-comparison"
+                href="#request-route"
                 className="inline-flex scroll-mb-[calc(5.5rem+env(safe-area-inset-bottom))] items-center justify-center rounded-xl border border-white/10 bg-white/[0.06] px-6 py-3.5 text-sm font-black text-white transition hover:-translate-y-0.5 hover:border-red-800/60 hover:bg-red-950/20 sm:py-4"
               >
-                Compare Stage 1, 2 and 3
+                Choose service first
               </Link>
             </div>
           </div>
@@ -533,7 +534,7 @@ export default function FileServicePage() {
 
       <StageComparison />
 
-      <section className="bg-[#080b10] py-20">
+      <section id="request-route" className="scroll-mt-24 bg-[#080b10] py-20">
         <div className="mx-auto max-w-7xl px-4">
           <div className="mb-10 max-w-3xl">
             <div className="text-sm font-black uppercase tracking-[0.25em] text-red-500">
@@ -766,9 +767,10 @@ export default function FileServicePage() {
           </div>
           <Link
             href="/new-request"
+            data-acquisition-primary-cta
             className="inline-flex items-center rounded-xl bg-white px-7 py-4 font-black text-[#b1121b] transition duration-300 hover:-translate-y-1 hover:bg-zinc-100"
           >
-            Start request
+            Create account &amp; start request
             <ArrowRight className="ml-2 h-4 w-4" />
           </Link>
         </div>

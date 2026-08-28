@@ -127,7 +127,7 @@ test("new request summary shows a live submit readiness checklist", () => {
   assert.match(page, /Submit Readiness/);
   assert.match(page, /completedSubmissionChecklistItems/);
   assert.match(page, /const isRequestReadyForSubmit = submissionChecklist\.every/);
-  assert.match(page, /disabled=\{submitting \|\| !isRequestReadyForSubmit\}/);
+  assert.match(page, /disabled=\{awaitingConsentAfterSuccess \|\| submitting \|\| !isRequestReadyForSubmit\}/);
   assert.match(page, /Complete Required Steps/);
   assert.match(page, /Please upload your original ECU \/ TCU file\./);
   assert.match(page, /Please accept payment and responsibility confirmation\./);
@@ -762,12 +762,18 @@ test("customer dashboard uses the Efferd shell without losing routes or adding u
   const dashboard = readProjectFile("src", "components", "dashboard", "DashboardClient.tsx");
   const dashboardLayout = readProjectFile("src", "app", "dashboard", "layout.tsx");
   const newRequestLayout = readProjectFile("src", "app", "new-request", "layout.tsx");
+  const newRequestAccessBoundary = readProjectFile(
+    "src",
+    "app",
+    "new-request",
+    "NewRequestAccessBoundary.tsx"
+  );
   const frame = readProjectFile("src", "components", "dashboard", "CustomerPortalFrame.tsx");
   const sidebar = readProjectFile("src", "components", "dashboard", "CustomerPortalSidebar.tsx");
   const globals = readProjectFile("src", "app", "globals.css");
   const i18nCheck = readProjectFile("scripts", "check-customer-i18n.ts");
   const packageJson = readProjectFile("package.json");
-  const presentation = `${page}\n${shell}\n${dashboardEntry}\n${efferd}\n${dashboardLayout}\n${newRequestLayout}\n${frame}\n${dashboard}\n${sidebar}`;
+  const presentation = `${page}\n${shell}\n${dashboardEntry}\n${efferd}\n${dashboardLayout}\n${newRequestLayout}\n${newRequestAccessBoundary}\n${frame}\n${dashboard}\n${sidebar}`;
 
   assert.match(page, /import \{ EfferdDashboard2 \} from "@\/components\/ui\/efferd-dashboard-2"/);
   assert.match(page, /return <EfferdDashboard2 \/>/);
@@ -780,7 +786,7 @@ test("customer dashboard uses the Efferd shell without losing routes or adding u
   assert.match(globals, /\.mg-efferd-dashboard \.mg-compact-ui/);
   assert.match(globals, /border-radius: 0\.75rem !important/);
   assert.match(dashboardLayout, /<CustomerPortalFrame>\{children\}<\/CustomerPortalFrame>/);
-  assert.match(newRequestLayout, /<CustomerPortalFrame>\{children\}<\/CustomerPortalFrame>/);
+  assert.match(newRequestAccessBoundary, /<CustomerPortalFrame>\{children\}<\/CustomerPortalFrame>/);
   assert.match(frame, /data-customer-portal-frame/);
   assert.match(frame, /<AppShell>/);
   assert.match(frame, /lg:h-screen lg:overflow-hidden/);
@@ -2821,7 +2827,6 @@ test("public file service hub is indexable, linked and customer-safe", () => {
   assert.match(page, /<Footer \/>/);
 
   for (const expectedLink of [
-    "/new-request",
     "/tools/request-brief-builder",
     "/tools/file-readiness-check",
     "/how-it-works",
@@ -2835,6 +2840,13 @@ test("public file service hub is indexable, linked and customer-safe", () => {
   ]) {
     assert.match(page, new RegExp(`href: "${expectedLink.replace(/\//g, "\\/")}"|href="${expectedLink.replace(/\//g, "\\/")}"`));
   }
+  assert.match(page, /href: "\/services"|href="\/services"/);
+  assert.match(
+    page,
+    /href="\/new-request"[\s\S]*data-acquisition-primary-cta/,
+    "the broad public hub must expose the registration-first secure request entry"
+  );
+  assert.match(page, /href="#request-route"[\s\S]*Choose service first/);
 
   assert.match(homepage, /href="\/file-service"/);
   assert.match(header, /href="\/file-service"/);

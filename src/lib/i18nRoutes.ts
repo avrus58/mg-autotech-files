@@ -76,5 +76,17 @@ export function isServerLocalizedPublicPath(pathname: string) {
 
 export function appendSafeQuery(pathname: string, search = "") {
   if (!search || search === "?") return pathname;
-  return search.startsWith("?") ? `${pathname}${search}` : `${pathname}?${search}`;
+  const protectedAdvertisingKeys = new Set([
+    "_gl",
+    "dclid",
+    "gbraid",
+    "gclid",
+    "wbraid",
+  ]);
+  const query = new URLSearchParams(search.startsWith("?") ? search.slice(1) : search);
+  for (const key of [...query.keys()]) {
+    if (protectedAdvertisingKeys.has(key.toLowerCase())) query.delete(key);
+  }
+  const sanitized = query.toString();
+  return sanitized ? `${pathname}?${sanitized}` : pathname;
 }

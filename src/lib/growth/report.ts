@@ -36,7 +36,133 @@ function safeDate(value: string | null | undefined) {
 }
 
 function warningMessage(label: string) {
-  return `${label} is temporarily unavailable; the remaining verified metrics are still shown.`;
+  return `${label} could not be loaded completely and is excluded from this report; the remaining verified metrics are still shown.`;
+}
+
+type GrowthReportPage<T> = {
+  data: T[] | null;
+  error: unknown | null;
+};
+
+type GrowthReportRows<T> = {
+  data: T[];
+  error: unknown | null;
+  truncated: boolean;
+};
+
+export type GrowthReportCursor = {
+  orderValue: string;
+  id: string;
+};
+
+const growthReportPageSize = 1_000;
+const growthReportCursorValuePattern = /^[A-Za-z0-9_:+.-]{1,128}$/;
+
+function growthReportCursor(
+  row: Record<string, unknown>,
+  orderColumn: string,
+  idColumn = "id"
+): GrowthReportCursor | null {
+  const orderValue = String(row[orderColumn] ?? "");
+  const id = String(row[idColumn] ?? "");
+  if (
+    !growthReportCursorValuePattern.test(orderValue) ||
+    !growthReportCursorValuePattern.test(id)
+  ) {
+    return null;
+  }
+  return { orderValue, id };
+}
+
+function growthReportKeysetFilter(
+  orderColumn: string,
+  cursor: GrowthReportCursor,
+  direction: "ascending" | "descending",
+  idColumn = "id"
+) {
+  const comparison = direction === "ascending" ? "gt" : "lt";
+  return `${orderColumn}.${comparison}.${cursor.orderValue},and(${orderColumn}.eq.${cursor.orderValue},${idColumn}.${comparison}.${cursor.id})`;
+}
+
+/**
+ * Loads a deterministically ordered report query without trusting the API's
+ * configured maximum row count. Every page resumes after the last composite
+ * ordering key actually returned, so concurrent inserts at the head cannot
+ * shift later pages and a server-side cap smaller than pageSize cannot skip
+ * data. One sentinel row is read beyond the safety limit to distinguish an
+ * exact-size result from a truncated result.
+ */
+export async function loadGrowthReportRows<T>(input: {
+  safetyLimit: number;
+  loadPage: (
+    cursor: GrowthReportCursor | null,
+    limit: number
+  ) => PromiseLike<GrowthReportPage<T>>;
+  getCursor: (row: T) => GrowthReportCursor | null;
+  pageSize?: number;
+}): Promise<GrowthReportRows<T>> {
+  const safetyLimit = Math.max(1, Math.floor(input.safetyLimit));
+  const pageSize = Math.max(
+    1,
+    Math.min(growthReportPageSize, Math.floor(input.pageSize ?? growthReportPageSize))
+  );
+  const rows: T[] = [];
+  let cursor: GrowthReportCursor | null = null;
+
+  while (rows.length <= safetyLimit) {
+    const sentinelRemaining = safetyLimit + 1 - rows.length;
+    const requestedRows = Math.min(pageSize, sentinelRemaining);
+    const page = await input.loadPage(cursor, requestedRows);
+    if (page.error) {
+      return {
+        // A partial page set is not a business metric. Discard every row from
+        // this source so a transient later-page failure cannot look like a real
+        // drop in registrations, requests, revenue or exclusions.
+        data: [],
+        error: page.error,
+        truncated: false,
+      };
+    }
+
+    const pageRows = page.data ?? [];
+    if (pageRows.length === 0) {
+      return { data: rows, error: null, truncated: false };
+    }
+    rows.push(...pageRows.slice(0, sentinelRemaining));
+    if (rows.length > safetyLimit || pageRows.length > sentinelRemaining) {
+      return {
+        data: rows.slice(0, safetyLimit),
+        error: null,
+        truncated: true,
+      };
+    }
+
+    const nextCursor = input.getCursor(pageRows[pageRows.length - 1]);
+    if (
+      !nextCursor ||
+      (cursor &&
+        nextCursor.orderValue === cursor.orderValue &&
+        nextCursor.id === cursor.id)
+    ) {
+      return {
+        data: [],
+        error: new Error("Growth report keyset cursor did not advance."),
+        truncated: false,
+      };
+    }
+    cursor = nextCursor;
+  }
+
+  return {
+    data: rows.slice(0, safetyLimit),
+    error: null,
+    truncated: rows.length > safetyLimit,
+  };
+}
+
+function growthReportErrorCode(error: unknown) {
+  if (!error || typeof error !== "object" || !("code" in error)) return "";
+  return String((error as { code?: unknown }).code ?? "");
 }
 
 export async function buildGrowthCustomerSuccessReport(input?: {
@@ -46,36 +172,99 @@ export async function buildGrowthCustomerSuccessReport(input?: {
   const range = input?.range ?? "30d";
   const endAt = input?.now ?? new Date();
   const startAt = new Date(endAt.getTime() - rangeDays[range] * 86_400_000);
+  const endAtIso = endAt.toISOString();
+  const startAtIso = startAt.toISOString();
   const admin = getSupabaseAdmin();
   const warnings: string[] = [];
 
   const [profilesResult, ordersResult, revenueLedgerResult, paymentReviewResult, classificationResult] = await Promise.all([
-    admin.from("profiles")
-      .select("id,customer_id,role,country,account_status,created_at")
-      .eq("role", "customer")
-      .order("created_at", { ascending: false })
-      .limit(25_000),
-    admin.from("orders")
-      .select("id,customer_id,status,service_type,vehicle_brand,credits_required,created_at")
-      .order("created_at", { ascending: false })
-      .limit(25_000),
-    admin.from("credit_transactions")
-      .select("id,user_id,type,amount_total,currency,created_at")
-      .in("type", ["purchase", "refund"])
-      .gte("created_at", startAt.toISOString())
-      .lte("created_at", endAt.toISOString())
-      .order("created_at", { ascending: false })
-      .limit(10_000),
-    admin.from("payment_records")
-      .select("id,user_id,status,created_at")
-      .eq("status", "requires_review")
-      .gte("created_at", startAt.toISOString())
-      .lte("created_at", endAt.toISOString())
-      .order("created_at", { ascending: false })
-      .limit(100),
-    admin.from("growth_customer_classifications")
-      .select("user_id,classification,analytics_excluded,reason,verified_at")
-      .limit(25_000),
+    loadGrowthReportRows<Record<string, unknown>>({
+      safetyLimit: 25_000,
+      loadPage: (cursor, limit) => {
+        let query = admin.from("profiles")
+          .select("id,customer_id,role,country,account_status,created_at")
+          .eq("role", "customer")
+          .lte("created_at", endAtIso);
+        if (cursor) {
+          query = query.or(
+            growthReportKeysetFilter("created_at", cursor, "descending")
+          );
+        }
+        return query
+          .order("created_at", { ascending: false })
+          .order("id", { ascending: false })
+          .limit(limit);
+      },
+      getCursor: (row) => growthReportCursor(row, "created_at"),
+    }),
+    loadGrowthReportRows<Record<string, unknown>>({
+      safetyLimit: 25_000,
+      loadPage: (cursor, limit) => {
+        let query = admin.from("orders")
+          .select("id,customer_id,status,service_type,vehicle_brand,credits_required,created_at")
+          .lte("created_at", endAtIso);
+        if (cursor) {
+          query = query.or(
+            growthReportKeysetFilter("created_at", cursor, "descending")
+          );
+        }
+        return query
+          .order("created_at", { ascending: false })
+          .order("id", { ascending: false })
+          .limit(limit);
+      },
+      getCursor: (row) => growthReportCursor(row, "created_at"),
+    }),
+    loadGrowthReportRows<Record<string, unknown>>({
+      safetyLimit: 10_000,
+      loadPage: (cursor, limit) => {
+        let query = admin.from("credit_transactions")
+          .select("id,user_id,type,amount_total,currency,created_at")
+          .in("type", ["purchase", "refund"])
+          .gte("created_at", startAtIso)
+          .lte("created_at", endAtIso);
+        if (cursor) {
+          query = query.or(
+            growthReportKeysetFilter("created_at", cursor, "descending")
+          );
+        }
+        return query
+          .order("created_at", { ascending: false })
+          .order("id", { ascending: false })
+          .limit(limit);
+      },
+      getCursor: (row) => growthReportCursor(row, "created_at"),
+    }),
+    loadGrowthReportRows<Record<string, unknown>>({
+      safetyLimit: 100,
+      loadPage: (cursor, limit) => {
+        let query = admin.from("payment_records")
+          .select("id,user_id,status,created_at")
+          .eq("status", "requires_review")
+          .gte("created_at", startAtIso)
+          .lte("created_at", endAtIso);
+        if (cursor) {
+          query = query.or(
+            growthReportKeysetFilter("created_at", cursor, "descending")
+          );
+        }
+        return query
+          .order("created_at", { ascending: false })
+          .order("id", { ascending: false })
+          .limit(limit);
+      },
+      getCursor: (row) => growthReportCursor(row, "created_at"),
+    }),
+    loadGrowthReportRows<Record<string, unknown>>({
+      safetyLimit: 25_000,
+      loadPage: (cursor, limit) => {
+        let query = admin.from("growth_customer_classifications")
+          .select("user_id,classification,analytics_excluded,reason,verified_at");
+        if (cursor) query = query.gt("user_id", cursor.orderValue);
+        return query.order("user_id", { ascending: true }).limit(limit);
+      },
+      getCursor: (row) => growthReportCursor(row, "user_id", "user_id"),
+    }),
   ]);
 
   if (profilesResult.error) warnings.push(warningMessage("Customer profiles"));
@@ -83,60 +272,120 @@ export async function buildGrowthCustomerSuccessReport(input?: {
   if (revenueLedgerResult.error) warnings.push(warningMessage("Revenue ledger"));
   if (paymentReviewResult.error) warnings.push(warningMessage("Payment review queue"));
   const classificationMissing = isGrowthCustomerClassificationMigrationMissing(classificationResult.error);
-  const classificationReady = !classificationResult.error;
+  const classificationReady = !classificationResult.error && !classificationResult.truncated;
   if (classificationMissing) {
     warnings.push("Customer classification migration is not applied. No account is auto-classified; current totals can still include unreviewed internal/test accounts.");
   } else if (classificationResult.error) {
     warnings.push(warningMessage("Customer classification"));
   }
-  if ((profilesResult.data?.length ?? 0) === 25_000) warnings.push("Customer profile reporting reached its 25,000-row safety limit.");
-  if ((ordersResult.data?.length ?? 0) === 25_000) warnings.push("Request reporting reached its 25,000-row safety limit.");
-  if ((revenueLedgerResult.data?.length ?? 0) === 10_000) warnings.push("Revenue reporting reached its 10,000-row safety limit.");
+  if (profilesResult.truncated) warnings.push("Customer profile reporting reached its 25,000-row safety limit.");
+  if (ordersResult.truncated) warnings.push("Request reporting reached its 25,000-row safety limit.");
+  if (revenueLedgerResult.truncated) warnings.push("Revenue reporting reached its 10,000-row safety limit.");
+  if (paymentReviewResult.truncated) warnings.push("Payment review reporting reached its 100-row safety limit.");
+  if (classificationResult.truncated) warnings.push("Customer classification reporting reached its 25,000-row safety limit.");
 
-  const emailResult = await admin.from("email_events")
-    .select("event_type,recipient_user_id,status,delivery_status,created_at")
-    .gte("created_at", startAt.toISOString())
-    .lte("created_at", endAt.toISOString())
-    .order("created_at", { ascending: false })
-    .limit(20_000);
-  let emailRows = (emailResult.data ?? []) as Array<Record<string, unknown>>;
+  const loadEmailRows = (select: string) =>
+    loadGrowthReportRows<Record<string, unknown>>({
+      safetyLimit: 20_000,
+      loadPage: (cursor, limit) => {
+        let query = admin.from("email_events")
+          .select(select)
+          .gte("created_at", startAtIso)
+          .lte("created_at", endAtIso);
+        if (cursor) {
+          query = query.or(
+            growthReportKeysetFilter("created_at", cursor, "descending")
+          );
+        }
+        return query
+          .order("created_at", { ascending: false })
+          .order("id", { ascending: false })
+          .limit(limit) as unknown as PromiseLike<GrowthReportPage<Record<string, unknown>>>;
+      },
+      getCursor: (row) => growthReportCursor(row, "created_at"),
+    });
+  let emailResult = await loadEmailRows(
+    "id,event_type,recipient_user_id,status,delivery_status,created_at"
+  );
+  let emailRows = emailResult.data;
   let emailError = emailResult.error;
-  if (emailError?.code === "42703") {
-    const legacyEmailResult = await admin.from("email_events")
-      .select("event_type,recipient_user_id,status,created_at")
-      .gte("created_at", startAt.toISOString())
-      .lte("created_at", endAt.toISOString())
-      .order("created_at", { ascending: false })
-      .limit(20_000);
-    emailRows = (legacyEmailResult.data ?? []) as Array<Record<string, unknown>>;
+  if (growthReportErrorCode(emailError) === "42703") {
+    const legacyEmailResult = await loadEmailRows(
+      "id,event_type,recipient_user_id,status,created_at"
+    );
+    emailResult = legacyEmailResult;
+    emailRows = legacyEmailResult.data;
     emailError = legacyEmailResult.error;
   }
   if (emailError) warnings.push(warningMessage("Email delivery metrics"));
+  if (!emailError && emailResult.truncated) {
+    warnings.push("Email delivery reporting reached its 20,000-row safety limit.");
+  }
 
   let attributionRows: Array<Record<string, unknown>> = [];
   let journeyRows: Array<Record<string, unknown>> = [];
   let migrationReady = true;
+  let attributionSource: GrowthCustomerSuccessReport["sources"]["attribution"] = "ready";
   const [attributionResult, journeyResult] = await Promise.all([
-    admin.from("growth_attribution_sessions")
-      .select("user_id,locale,first_source,first_medium,first_campaign,first_term,first_landing_path,first_country_code,first_seen_at")
-      .gte("first_seen_at", startAt.toISOString())
-      .lte("first_seen_at", endAt.toISOString())
-      .order("first_seen_at", { ascending: false })
-      .limit(20_000),
-    admin.from("growth_journey_events")
-      .select("event_type,user_id,order_id,occurred_at")
-      .gte("occurred_at", startAt.toISOString())
-      .lte("occurred_at", endAt.toISOString())
-      .order("occurred_at", { ascending: false })
-      .limit(20_000),
+    loadGrowthReportRows<Record<string, unknown>>({
+      safetyLimit: 25_000,
+      loadPage: (cursor, limit) => {
+        let query = admin.from("growth_attribution_sessions")
+          .select("id,user_id,locale,first_source,first_medium,first_campaign,first_term,first_landing_path,first_country_code,first_seen_at")
+          .gte("first_seen_at", startAtIso)
+          .lte("first_seen_at", endAtIso);
+        if (cursor) {
+          query = query.or(
+            growthReportKeysetFilter("first_seen_at", cursor, "ascending")
+          );
+        }
+        return query
+          .order("first_seen_at", { ascending: true })
+          .order("id", { ascending: true })
+          .limit(limit);
+      },
+      getCursor: (row) => growthReportCursor(row, "first_seen_at"),
+    }),
+    loadGrowthReportRows<Record<string, unknown>>({
+      safetyLimit: 20_000,
+      loadPage: (cursor, limit) => {
+        let query = admin.from("growth_journey_events")
+          .select("id,event_type,user_id,order_id,occurred_at")
+          .gte("occurred_at", startAtIso)
+          .lte("occurred_at", endAtIso);
+        if (cursor) {
+          query = query.or(
+            growthReportKeysetFilter("occurred_at", cursor, "descending")
+          );
+        }
+        return query
+          .order("occurred_at", { ascending: false })
+          .order("id", { ascending: false })
+          .limit(limit);
+      },
+      getCursor: (row) => growthReportCursor(row, "occurred_at"),
+    }),
   ]);
   if (attributionResult.error || journeyResult.error) {
     migrationReady = false;
     const error = attributionResult.error || journeyResult.error;
-    if (!isGrowthMigrationMissing(error)) warnings.push(warningMessage("Privacy-safe attribution"));
+    if (isGrowthMigrationMissing(error)) {
+      attributionSource = "migration_required";
+    } else {
+      attributionSource = "error";
+      warnings.push(warningMessage("Privacy-safe attribution"));
+    }
   } else {
     attributionRows = attributionResult.data ?? [];
     journeyRows = journeyResult.data ?? [];
+    if (attributionResult.truncated) {
+      warnings.push("Attribution reporting reached its 25,000-row safety limit.");
+      attributionSource = "error";
+    }
+    if (journeyResult.truncated) {
+      warnings.push("Journey reporting reached its 20,000-row safety limit.");
+      attributionSource = "error";
+    }
   }
 
   const rawProfiles = (profilesResult.data ?? []) as Array<Record<string, unknown>>;
@@ -231,7 +480,10 @@ export async function buildGrowthCustomerSuccessReport(input?: {
         });
       }
     } catch (error) {
-      migrationReady = !isGrowthMigrationMissing(error);
+      if (isGrowthMigrationMissing(error)) {
+        migrationReady = false;
+        attributionSource = "migration_required";
+      }
       warnings.push(warningMessage("Reminder eligibility"));
     }
   }
@@ -347,10 +599,11 @@ export async function buildGrowthCustomerSuccessReport(input?: {
     period: { startAt: startAt.toISOString(), endAt: endAt.toISOString() },
     migrationReady,
     sources: {
-      coreBusiness: profilesResult.error || ordersResult.error || revenueLedgerResult.error || paymentReviewResult.error
+      coreBusiness: profilesResult.error || ordersResult.error || revenueLedgerResult.error || paymentReviewResult.error ||
+        profilesResult.truncated || ordersResult.truncated || revenueLedgerResult.truncated || paymentReviewResult.truncated
         ? "partial"
         : "ready",
-      attribution: migrationReady ? "ready" : "migration_required",
+      attribution: attributionSource,
       customerClassification: classificationReady
         ? "ready"
         : classificationMissing

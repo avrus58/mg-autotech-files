@@ -49,7 +49,7 @@ function listClientFiles(directory: string): string[] {
   });
 }
 
-test("the browser Supabase client uses the supported default lock coordination", () => {
+test("the browser Supabase client uses one module singleton without a window export", async () => {
   const client = readProjectFile("src", "lib", "supabaseClient.ts");
 
   assert.doesNotMatch(client, /navigatorLock/);
@@ -57,13 +57,18 @@ test("the browser Supabase client uses the supported default lock coordination",
   assert.doesNotMatch(client, /\block:/);
   assert.match(client, /persistSession: true/);
   assert.match(client, /autoRefreshToken: true/);
+  assert.doesNotMatch(client, /__mgAutotechSupabase/);
+
+  const first = await import("../src/lib/supabaseClient");
+  const second = await import("../src/lib/supabaseClient");
+  assert.equal(first.supabase, second.supabase);
 });
 
 test("protected route layouts share one non-destructive browser auth boundary", () => {
   for (const layout of [
     ["src", "app", "admin", "layout.tsx"],
     ["src", "app", "dashboard", "layout.tsx"],
-    ["src", "app", "new-request", "layout.tsx"],
+    ["src", "app", "new-request", "NewRequestAccessBoundary.tsx"],
   ]) {
     const source = readProjectFile(...layout);
     assert.match(source, /<BrowserAuthBoundary/);
@@ -110,7 +115,10 @@ test("auth bootstrap operations are bounded and successful sign-ins prime browse
   assert.match(guard, /withAuthSdkOperationTimeout\(\s*supabase\.auth\.refreshSession\(\)\s*\)/);
   assert.match(guard, /export function primeStableSession\(session: Session \| null\)/);
   assert.match(login, /primeStableSession\(data\.session\)[\s\S]*getAuthenticatedHome\(data\.user!\.id\)/);
-  assert.match(callback, /session = data\.session;\s*primeStableSession\(session\)/);
+  assert.match(
+    callback,
+    /session = data\.session;\s*sanitizeSensitiveMeasurementLocation\(\);\s*primeStableSession\(session\)/
+  );
   assert.match(deviceVerification, /signal: deviceVerificationRequestSignal\(\)/);
   assert.match(guard, /signal: AbortSignal\.timeout\(authenticatedHomeTimeoutMs\)/);
   assert.match(boundary, /const assurance = await getDeviceVerificationStatus\(\)/);

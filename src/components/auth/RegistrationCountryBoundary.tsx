@@ -6,6 +6,7 @@ import { Loader2 } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { getStableSession } from "@/lib/authGuards";
 import { requiresRegistrationCountryCompletion } from "@/lib/registrationCompletion";
+import { replacePrivateMeasurementDocument } from "@/lib/publicAnalytics";
 
 export function RegistrationCountryBoundary({
   children,
@@ -26,9 +27,10 @@ export function RegistrationCountryBoundary({
 
       if (requiresRegistrationCountryCompletion(session.user)) {
         const next = nextPath ?? pathname ?? "/dashboard";
-        router.replace(
-          `/auth/complete-profile?next=${encodeURIComponent(next)}`
-        );
+        const destination = `/auth/complete-profile?next=${encodeURIComponent(next)}`;
+        if (!replacePrivateMeasurementDocument(destination)) {
+          router.replace(destination);
+        }
         return;
       }
 

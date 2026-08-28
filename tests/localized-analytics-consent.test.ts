@@ -9,6 +9,11 @@ import {
   getAnalyticsConsentLocale,
 } from "../src/lib/analyticsConsentI18n";
 import { supportedLocales } from "../src/lib/i18nConfig";
+import {
+  buildPublicPageView,
+  isMeasurementConsentPath,
+  isPublicAnalyticsPath,
+} from "../src/lib/publicAnalytics";
 
 const projectRoot = path.resolve(process.cwd());
 
@@ -52,4 +57,40 @@ test("the consent UI renders locale copy and granular measurement choices", () =
   assert.match(component, /aria-label=\{consentCopy\.openPreferences\}/);
   assert.doesNotMatch(component, />Privacy choices</);
   assert.doesNotMatch(component, />Accept all</);
+});
+
+test("conversion measurement routes expose consent choices without becoming public journeys", () => {
+  for (const pathname of [
+    "/register",
+    "/new-request",
+    "/auth/callback",
+    "/auth/complete-profile",
+    "/payment/success",
+  ]) {
+    assert.equal(isMeasurementConsentPath(pathname), true, pathname);
+    assert.equal(isPublicAnalyticsPath(pathname), false, pathname);
+    assert.equal(buildPublicPageView(pathname), null, pathname);
+  }
+  assert.equal(isMeasurementConsentPath("/dashboard/orders/private-id"), false);
+
+  const component = readFileSync(
+    path.join(projectRoot, "src", "components", "analytics", "PublicAnalytics.tsx"),
+    "utf8",
+  );
+  assert.match(component, /const analyticsRouteAllowed = isMeasurementConsentPath\(pathname\)/);
+  assert.match(
+    component,
+    /const attributionRouteAllowed =[\s\S]*?attributionPublicRoute \|\| isConversionMeasurementPath\(pathname\)/
+  );
+  assert.match(component, /const showConsentPanel = !showAdClickConsentGate && \([\s\S]*?preferencesOpen \|\|[\s\S]*?analyticsRouteAllowed && consent !== "loading" && consent\.needsDecision/);
+  assert.match(component, /\{consent !== "loading"[\s\S]*?!consent\.needsDecision[\s\S]*?!preferencesOpen[\s\S]*?!showAdClickConsentGate/);
+  assert.match(component, /\{measurementReady && scriptId && googleMeasurementRouteAllowed/);
+  assert.match(
+    component,
+    /const currentTouch = attributionPublicRoute[\s\S]*?\? captureGrowthAttributionTouch\(\)[\s\S]*?: null/
+  );
+  const publicJourneyGuards = component.match(
+    /!configured \|\| !hostApproved \|\| !preferences\?\.analytics \|\| !publicRoute/g,
+  );
+  assert.equal(publicJourneyGuards?.length, 1);
 });

@@ -43,6 +43,7 @@ export type GrowthPerformanceRow = {
   label: string;
   consentedVisitors: number;
   registrations: number;
+  returningCustomers: number;
   customersWithRequests: number;
   orders: number;
   repeatCustomers: number;

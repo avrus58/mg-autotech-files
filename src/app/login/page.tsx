@@ -31,6 +31,7 @@ import {
 } from "@/lib/authLoginProtection";
 import { supabase } from "@/lib/supabaseClient";
 import { getPublicGoogleIdentityConfig } from "@/lib/googleIdentity";
+import { replacePrivateMeasurementDocument } from "@/lib/publicAnalytics";
 import {
   buildAuthEntryPath,
   getSafeLocalRedirectPath,
@@ -312,9 +313,11 @@ export default function LoginPage() {
 
     clearAuthLoginFailures(getBrowserAuthLoginFailureStorage());
     setPasswordFailureState(EMPTY_AUTH_LOGIN_FAILURE_STATE);
-    router.replace(
-      `/auth/callback?next=${encodeURIComponent(getRequestedRedirect() ?? "/dashboard")}`
-    );
+    const callbackDestination =
+      `/auth/callback?next=${encodeURIComponent(getRequestedRedirect() ?? "/dashboard")}`;
+    if (!replacePrivateMeasurementDocument(callbackDestination)) {
+      router.replace(callbackDestination);
+    }
   };
 
   if (deviceVerificationNextPath) {
@@ -373,7 +376,21 @@ export default function LoginPage() {
               </p>
             </div>
 
-            <form onSubmit={handleLogin} className="space-y-4">
+            <form
+              action="/login"
+              method="post"
+              onSubmit={handleLogin}
+              className="space-y-4"
+            >
+              <noscript>
+                <p
+                  role="alert"
+                  className="rounded-2xl border border-amber-700/50 bg-amber-950/25 p-4 text-sm font-bold text-amber-100"
+                >
+                  JavaScript is required for secure customer login. Enable
+                  JavaScript and reload this page.
+                </p>
+              </noscript>
               <div>
                 <label
                   htmlFor="login-email"

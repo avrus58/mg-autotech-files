@@ -33,10 +33,21 @@ create table if not exists public.growth_attribution_sessions (
   updated_at timestamptz not null default now()
 );
 
+create table if not exists public.growth_attribution_touch_receipts (
+  receipt_hash text primary key check (receipt_hash ~ '^[a-f0-9]{64}$'),
+  visitor_hash text not null check (visitor_hash ~ '^[a-f0-9]{64}$'),
+  visitor_hash_version text,
+  attribution_session_id uuid references public.growth_attribution_sessions(id) on delete set null,
+  outcome text not null check (outcome in ('pending', 'applied', 'rejected_conflict', 'ignored_identified')),
+  created_at timestamptz not null default now(),
+  completed_at timestamptz
+);
+
 create table if not exists public.growth_journey_events (
   id uuid primary key default gen_random_uuid(),
   event_type text not null check (event_type in (
     'account_created',
+    'identity_linked',
     'request_started',
     'request_created',
     'abandoned_reminder_sent',
@@ -52,6 +63,18 @@ create table if not exists public.growth_journey_events (
   created_at timestamptz not null default now(),
   check (jsonb_typeof(safe_metadata) = 'object')
 );
+
+alter table public.growth_journey_events
+  drop constraint if exists growth_journey_events_event_type_check;
+alter table public.growth_journey_events
+  add constraint growth_journey_events_event_type_check check (event_type in (
+    'account_created',
+    'identity_linked',
+    'request_started',
+    'request_created',
+    'abandoned_reminder_sent',
+    'abandoned_reminder_skipped'
+  ));
 
 create table if not exists public.growth_customer_preferences (
   user_id uuid primary key references auth.users(id) on delete cascade,
@@ -75,6 +98,54 @@ create table if not exists public.growth_reminder_actions (
   completed_at timestamptz
 );
 
+-- The former app may have used either its dedicated key or the service-role
+-- fallback. SQL cannot distinguish those one-way hashes, so existing rows use
+-- an explicit pre-v2 unknown version and the server safely dual-reads them.
+alter table public.growth_attribution_sessions
+  add column if not exists visitor_hash_version text;
+update public.growth_attribution_sessions
+set visitor_hash_version = 'pre-v2-key-unknown'
+where visitor_hash_version is null;
+alter table public.growth_attribution_sessions
+  alter column visitor_hash_version set default 'dedicated-v2',
+  alter column visitor_hash_version set not null;
+alter table public.growth_attribution_sessions
+  drop constraint if exists growth_attribution_sessions_hash_version_check;
+alter table public.growth_attribution_sessions
+  add constraint growth_attribution_sessions_hash_version_check
+  check (visitor_hash_version in ('pre-v2-key-unknown', 'legacy-service-role-v1', 'dedicated-v2'));
+
+alter table public.growth_journey_events
+  add column if not exists visitor_hash_version text;
+update public.growth_journey_events
+set visitor_hash_version = 'pre-v2-key-unknown'
+where visitor_hash is not null
+  and visitor_hash_version is null;
+alter table public.growth_journey_events
+  drop constraint if exists growth_journey_events_hash_version_check;
+alter table public.growth_journey_events
+  add constraint growth_journey_events_hash_version_check check (
+    (visitor_hash is null and visitor_hash_version is null)
+    or (
+      visitor_hash is not null
+      and visitor_hash_version in ('pre-v2-key-unknown', 'legacy-service-role-v1', 'dedicated-v2')
+    )
+  );
+
+alter table public.growth_attribution_touch_receipts
+  add column if not exists visitor_hash_version text;
+update public.growth_attribution_touch_receipts
+set visitor_hash_version = 'pre-v2-key-unknown'
+where visitor_hash_version is null;
+alter table public.growth_attribution_touch_receipts
+  alter column visitor_hash_version set default 'dedicated-v2',
+  alter column visitor_hash_version set not null;
+alter table public.growth_attribution_touch_receipts
+  drop constraint if exists growth_attribution_touch_receipts_hash_version_check;
+alter table public.growth_attribution_touch_receipts
+  add constraint growth_attribution_touch_receipts_hash_version_check
+  check (visitor_hash_version in ('pre-v2-key-unknown', 'legacy-service-role-v1', 'dedicated-v2'));
+
 create index if not exists growth_attribution_user_idx
   on public.growth_attribution_sessions(user_id, first_seen_at desc);
 create index if not exists growth_attribution_first_seen_idx
@@ -83,6 +154,11 @@ create index if not exists growth_attribution_source_idx
   on public.growth_attribution_sessions(first_source, first_seen_at desc);
 create index if not exists growth_journey_user_event_idx
   on public.growth_journey_events(user_id, event_type, occurred_at desc);
+create index if not exists growth_journey_visitor_user_idx
+  on public.growth_journey_events(visitor_hash, user_id)
+  where visitor_hash is not null and user_id is not null;
+create index if not exists growth_attribution_receipt_visitor_idx
+  on public.growth_attribution_touch_receipts(visitor_hash, created_at desc);
 create index if not exists growth_journey_order_idx
   on public.growth_journey_events(order_id, occurred_at desc)
   where order_id is not null;
@@ -93,27 +169,30 @@ create index if not exists growth_reminder_status_idx
   on public.growth_reminder_actions(status, created_at desc);
 
 alter table public.growth_attribution_sessions enable row level security;
+alter table public.growth_attribution_touch_receipts enable row level security;
 alter table public.growth_journey_events enable row level security;
 alter table public.growth_customer_preferences enable row level security;
 alter table public.growth_reminder_actions enable row level security;
 
-revoke all on table public.growth_attribution_sessions from anon, authenticated;
-revoke all on table public.growth_journey_events from anon, authenticated;
-revoke all on table public.growth_reminder_actions from anon, authenticated;
-revoke all on table public.growth_customer_preferences from anon, authenticated;
+revoke all on table public.growth_attribution_sessions from public, anon, authenticated;
+revoke all on table public.growth_attribution_touch_receipts from public, anon, authenticated;
+revoke all on table public.growth_journey_events from public, anon, authenticated;
+revoke all on table public.growth_reminder_actions from public, anon, authenticated;
+revoke all on table public.growth_customer_preferences from public, anon, authenticated;
 
 grant select on table public.growth_attribution_sessions to authenticated;
 grant select on table public.growth_journey_events to authenticated;
 grant select on table public.growth_reminder_actions to authenticated;
 grant select on table public.growth_customer_preferences to authenticated;
 grant all on table public.growth_attribution_sessions to service_role;
+grant all on table public.growth_attribution_touch_receipts to service_role;
 grant all on table public.growth_journey_events to service_role;
 grant all on table public.growth_customer_preferences to service_role;
 grant all on table public.growth_reminder_actions to service_role;
 
 do $$
 begin
-  if exists (select 1 from pg_proc where proname = 'has_staff_permission') then
+  if to_regprocedure('public.has_staff_permission(text)') is not null then
     if not exists (
       select 1 from pg_policies where schemaname = 'public'
       and tablename = 'growth_attribution_sessions'
@@ -165,6 +244,11 @@ begin
     using ((select auth.uid()) is not null and (select auth.uid()) = user_id);
   end if;
 
+  if to_regprocedure('app_private.current_customer_session_assured()') is not null then
+    execute 'drop policy if exists "MG assured customer growth_customer_preferences select boundary" on public.growth_customer_preferences';
+    execute 'create policy "MG assured customer growth_customer_preferences select boundary" on public.growth_customer_preferences as restrictive for select to authenticated using ((select app_private.current_customer_session_assured()))';
+  end if;
+
 end $$;
 
 create or replace function public.touch_growth_customer_success_updated_at()
@@ -194,8 +278,78 @@ begin
   end if;
 end $$;
 
+create or replace function public.link_growth_visitor_identity(
+  p_visitor_hash text,
+  p_visitor_hash_version text,
+  p_user_id uuid,
+  p_identified_at timestamptz
+)
+returns text
+language plpgsql
+security invoker
+set search_path = public
+as $$
+declare
+  existing_user_id uuid;
+  existing_hash_version text;
+  candidate_user_count integer;
+begin
+  perform pg_advisory_xact_lock(hashtextextended(p_visitor_hash, 0));
+
+  select count(distinct user_id)::integer
+  into candidate_user_count
+  from (
+    select p_user_id as user_id
+    union
+    select user_id
+    from public.growth_journey_events
+    where visitor_hash = p_visitor_hash
+      and user_id is not null
+      and event_type in ('account_created', 'identity_linked', 'request_started', 'request_created')
+  ) candidates;
+
+  select user_id, visitor_hash_version
+  into existing_user_id, existing_hash_version
+  from public.growth_attribution_sessions
+  where visitor_hash = p_visitor_hash
+  for update;
+
+  if p_visitor_hash_version not in ('pre-v2-key-unknown', 'legacy-service-role-v1', 'dedicated-v2')
+    or (
+      existing_hash_version is not null
+      and existing_hash_version <> p_visitor_hash_version
+      and existing_hash_version <> 'pre-v2-key-unknown'
+    )
+    or candidate_user_count > 1 or (
+    existing_user_id is not null and existing_user_id <> p_user_id
+  ) then
+    return 'rejected_conflict';
+  end if;
+
+  if existing_user_id = p_user_id then
+    return 'already_linked';
+  end if;
+
+  update public.growth_attribution_sessions
+  set user_id = p_user_id, identified_at = p_identified_at
+  where visitor_hash = p_visitor_hash
+    and visitor_hash_version in (p_visitor_hash_version, 'pre-v2-key-unknown')
+    and user_id is null;
+
+  if found then return 'linked'; end if;
+  return 'pending_touch';
+end;
+$$;
+
+revoke all on function public.link_growth_visitor_identity(text, text, uuid, timestamptz)
+  from public, anon, authenticated;
+grant execute on function public.link_growth_visitor_identity(text, text, uuid, timestamptz)
+  to service_role;
+
 create or replace function public.record_growth_attribution_touch(
   p_visitor_hash text,
+  p_visitor_hash_version text,
+  p_receipt_hash text,
   p_user_id uuid,
   p_landing_path text,
   p_source text,
@@ -214,9 +368,99 @@ set search_path = public
 as $$
 declare
   result_id uuid;
+  existing_user_id uuid;
+  existing_hash_version text;
+  candidate_user_id uuid;
+  candidate_user_count integer;
 begin
+  perform pg_advisory_xact_lock(hashtextextended(p_visitor_hash, 0));
+
+  if p_visitor_hash_version not in ('pre-v2-key-unknown', 'legacy-service-role-v1', 'dedicated-v2') then
+    return null;
+  end if;
+
+  select attribution_session_id into result_id
+  from public.growth_attribution_touch_receipts
+  where receipt_hash = p_receipt_hash
+    and visitor_hash = p_visitor_hash;
+  if found then
+    return result_id;
+  end if;
+
+  insert into public.growth_attribution_touch_receipts (
+    receipt_hash,
+    visitor_hash,
+    visitor_hash_version,
+    outcome
+  ) values (
+    p_receipt_hash,
+    p_visitor_hash,
+    p_visitor_hash_version,
+    'pending'
+  );
+
+  select user_id, visitor_hash_version
+  into existing_user_id, existing_hash_version
+  from public.growth_attribution_sessions
+  where visitor_hash = p_visitor_hash
+  for update;
+
+  if p_visitor_hash_version = 'pre-v2-key-unknown'
+    and existing_hash_version is null then
+    update public.growth_attribution_touch_receipts
+    set outcome = 'rejected_conflict', completed_at = now()
+    where receipt_hash = p_receipt_hash;
+    return null;
+  end if;
+
+  if existing_hash_version is not null
+    and existing_hash_version <> p_visitor_hash_version then
+    update public.growth_attribution_touch_receipts
+    set outcome = 'rejected_conflict', completed_at = now()
+    where receipt_hash = p_receipt_hash;
+    return null;
+  end if;
+
+  select
+    count(distinct candidate.user_id)::integer,
+    min(candidate.user_id::text)::uuid
+  into candidate_user_count, candidate_user_id
+  from (
+    select p_user_id as user_id where p_user_id is not null
+    union
+    select user_id
+    from public.growth_journey_events
+    where visitor_hash = p_visitor_hash
+      and user_id is not null
+      and event_type in ('account_created', 'identity_linked', 'request_started', 'request_created')
+  ) as candidate;
+
+  if candidate_user_count > 1 or (
+    existing_user_id is not null and
+    candidate_user_id is not null and
+    existing_user_id <> candidate_user_id
+  ) then
+    update public.growth_attribution_touch_receipts
+    set outcome = 'rejected_conflict', completed_at = now()
+    where receipt_hash = p_receipt_hash;
+    return null;
+  end if;
+
+  if existing_user_id is not null and candidate_user_count = 0 then
+    update public.growth_attribution_touch_receipts
+    set
+      attribution_session_id = (
+        select id from public.growth_attribution_sessions
+        where visitor_hash = p_visitor_hash
+      ),
+      outcome = 'ignored_identified',
+      completed_at = now()
+    where receipt_hash = p_receipt_hash;
+    return null;
+  end if;
+
   insert into public.growth_attribution_sessions (
-    visitor_hash, user_id,
+    visitor_hash, visitor_hash_version, user_id,
     first_landing_path, last_landing_path,
     first_source, last_source,
     first_medium, last_medium,
@@ -226,16 +470,17 @@ begin
     first_country_code, last_country_code,
     locale, consent_version, identified_at
   ) values (
-    p_visitor_hash, p_user_id,
+    p_visitor_hash, p_visitor_hash_version,
+    coalesce(existing_user_id, candidate_user_id),
     p_landing_path, p_landing_path,
     p_source, p_source,
     p_medium, p_medium,
     p_campaign, p_campaign,
-    p_term, p_term,
+    null, null,
     p_referrer_host, p_referrer_host,
     p_country_code, p_country_code,
     p_locale, p_consent_version,
-    case when p_user_id is null then null else now() end
+    case when coalesce(existing_user_id, candidate_user_id) is null then null else now() end
   )
   on conflict (visitor_hash) do update set
     user_id = coalesce(growth_attribution_sessions.user_id, excluded.user_id),
@@ -243,7 +488,7 @@ begin
     last_source = excluded.last_source,
     last_medium = excluded.last_medium,
     last_campaign = excluded.last_campaign,
-    last_term = excluded.last_term,
+    last_term = null,
     last_referrer_host = excluded.last_referrer_host,
     last_country_code = excluded.last_country_code,
     locale = coalesce(excluded.locale, growth_attribution_sessions.locale),
@@ -256,12 +501,25 @@ begin
     end
   returning id into result_id;
 
+  update public.growth_attribution_touch_receipts
+  set
+    attribution_session_id = result_id,
+    outcome = 'applied',
+    completed_at = now()
+  where receipt_hash = p_receipt_hash;
+
   return result_id;
 end;
 $$;
 
-revoke all on function public.record_growth_attribution_touch(text, uuid, text, text, text, text, text, text, text, text, text) from public, anon, authenticated;
-grant execute on function public.record_growth_attribution_touch(text, uuid, text, text, text, text, text, text, text, text, text) to service_role;
+revoke all on function public.record_growth_attribution_touch(text, text, text, uuid, text, text, text, text, text, text, text, text, text) from public, anon, authenticated;
+grant execute on function public.record_growth_attribution_touch(text, text, text, uuid, text, text, text, text, text, text, text, text, text) to service_role;
+do $$ begin
+  if to_regprocedure('public.record_growth_attribution_touch(text,uuid,text,text,text,text,text,text,text,text,text)') is not null then
+    execute 'revoke all on function public.record_growth_attribution_touch(text, uuid, text, text, text, text, text, text, text, text, text) from public, anon, authenticated';
+    execute 'grant execute on function public.record_growth_attribution_touch(text, uuid, text, text, text, text, text, text, text, text, text) to service_role';
+  end if;
+end $$;
 
 create or replace function public.reserve_growth_reminder_action(
   p_source_event_id uuid,

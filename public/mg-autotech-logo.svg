@@ -5,6 +5,7 @@
   <rect x="48" y="48" width="416" height="416" rx="56" fill="none" stroke="#b1121b" stroke-width="12"/>
   <path d="M158 170h196a28 28 0 0 1 28 28v116a28 28 0 0 1-28 28H158a28 28 0 0 1-28-28V198a28 28 0 0 1 28-28Z" fill="#101010" stroke="#ef233c" stroke-width="14"/>
   <path d="M98 214h32m-32 42h32m-32 42h32m252-84h32m-32 42h32m-32 42h32M200 138v32m56-32v32m56-32v32m-112 172v32m56-32v32m56-32v32" stroke="#ef233c" stroke-width="14" stroke-linecap="round"/>
-  <path d="M177 292v-72h18l29 37 29-37h18v72h-20v-42l-27 34-27-34v42h-20Zm110 0v-72h54v18h-34v10h29v17h-29v10h35v17h-55Z" fill="#fff"/>
+  <path d="M177 292v-72h18l29 37 29-37h18v72h-20v-42l-27 34-27-34v42h-20Z" fill="#fff"/>
+  <path d="M348 236c-6-10-15-15-27-15-19 0-33 15-33 35s14 35 33 35c11 0 20-4 27-11v-21h-26" fill="none" stroke="#fff" stroke-width="18" stroke-linecap="square" stroke-linejoin="miter"/>
   <text x="256" y="426" fill="#fff" font-family="Arial,Helvetica,sans-serif" font-size="32" font-weight="700" text-anchor="middle">AUTOTECH</text>
 </svg>

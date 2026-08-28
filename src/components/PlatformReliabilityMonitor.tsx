@@ -57,6 +57,18 @@ export function reportPlatformFailure(kind: Exclude<PlatformReliabilityEventKind
   sendReliabilityPayload({ kind, route, category });
 }
 
+export function reportMeasurementHandoffFailure(
+  category: "attribution_handoff" | "ads_linker"
+) {
+  if (typeof window === "undefined") return;
+  const route = normalizeReliabilityRoute(window.location.pathname);
+  if (!route) return;
+  const dedupeKey = `measurement:${route}:${category}`;
+  if (reportedFailures.has(dedupeKey)) return;
+  reportedFailures.add(dedupeKey);
+  sendReliabilityPayload({ kind: "client_error", route, category });
+}
+
 function reportWebVital(metric: {
   name: string;
   value: number;

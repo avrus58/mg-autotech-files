@@ -15,15 +15,26 @@ Individual customer evidence is available through Customer Intelligence 360 at `
 The center deliberately separates two evidence classes:
 
 1. Search Console and GA4 remain aggregate reporting sources. Search queries are never joined to an individual visitor or customer.
-2. First-party attribution exists only after optional analytics consent. It stores a server-HMAC visitor fingerprint, first/last landing path, normalized source and medium, optional campaign labels, referrer hostname, coarse country code and locale.
+2. First-party attribution exists only after optional analytics consent. It stores a server-HMAC visitor fingerprint, first/last landing path, controlled source/medium/campaign tokens, referrer hostname, coarse country code and locale. Free-form `utm_term` is discarded and new rows always store it as `null`.
 
-The attribution store never contains raw IP addresses, the browser visitor UUID, full referrer URLs, query strings, email addresses, customer notes, vehicle details, order contents, filenames, storage paths, payment credentials or firmware data.
+After any successful verified authentication path, an already-existing consented
+visitor identity is linked to that account through a bounded first-party event.
+Private pages never manufacture a visitor identity, and this link emits no GA4
+or Google Ads event. It lets a returning customer who proceeds directly to a
+payment remain visible in aggregate campaign revenue without being mislabeled
+as a new registration.
+
+The attribution store never contains raw IP addresses, the browser visitor UUID, full referrer URLs, query strings, email addresses, customer notes, vehicle details, order contents, filenames, storage paths, payment credentials or firmware data. Query-origin source and medium are accepted only as the controlled `google` / `cpc` pair used by the Ads URL builder; arbitrary alphabetic labels are ignored and the visit falls back to referrer or direct classification. Organic and referral classifications are derived from the normalized referrer hostname rather than query text. Campaigns must additionally use the same business-owned namespace plus market/language suffix policy as the Ads URL builder, so arbitrary name-shaped labels are not persisted.
 
 ## Migration
 
-Additive SQL:
+Canonical additive migration:
 
-`scripts/add-growth-customer-success-center.sql`
+`supabase/migrations/20260828000000_growth_attribution_integrity.sql`
+
+The operator mirror `scripts/add-growth-customer-success-center.sql` is kept in
+security parity with the canonical migration; new environments should use the
+versioned migration path.
 
 Read-only verification:
 
@@ -36,14 +47,43 @@ Customer data-quality extension:
 - `scripts/add-growth-customer-classification-bulk-review.sql`
 - `scripts/verify-growth-customer-classification-bulk-review.sql`
 
-The migration creates:
+The migration creates or upgrades:
 
 - `growth_attribution_sessions`: consented pseudonymous first/last-touch attribution.
+- `growth_attribution_touch_receipts`: service-only idempotency receipts for public-touch delivery.
 - `growth_journey_events`: idempotent account/request/reminder milestones with strict safe metadata.
 - `growth_customer_preferences`: customer-controlled unfinished-request reminder preference, default `false`.
 - `growth_reminder_actions`: admin action and send outcome audit.
 
-All four tables have RLS enabled. Anonymous access is revoked. Staff reads use `orders.view`; customer access is limited to the customer's own reminder preference; server writes use the service role. The public browser never receives table access or the service-role key.
+All five tables have RLS enabled and `PUBLIC`/anonymous direct access is revoked. Staff reads use `orders.view`; customer access is limited to the customer's own reminder preference and an assured customer session; server writes use the service role. Touch receipts have no browser-readable policy. The public browser never receives table access or the service-role key.
+
+### HMAC continuity and release order
+
+The former application preferred a configured attribution key and otherwise
+used the service-role-key HMAC fallback. Because the stored hash cannot reveal
+which key produced it, the migration labels existing hashes
+`pre-v2-key-unknown`. All new visitors use `dedicated-v2` and require the
+distinct `GROWTH_ATTRIBUTION_HMAC_SECRET`. The server computes both current and
+legacy candidates only to find an already-existing pre-cutover row. It never
+stores the raw visitor UUID and never creates a new attribution row with the
+legacy or unknown version. An optional `GROWTH_ATTRIBUTION_LEGACY_HMAC_SECRET`
+preserves that read path if the service-role key is rotated later.
+The current and legacy HMAC values must remain distinct and stable throughout
+the compatibility window.
+
+Apply the migration before switching the application image, run the complete
+SELECT-only verifier, then switch the app. The previous 11-argument attribution
+RPC remains executable by `service_role` only for one rollback window; browser
+roles remain revoked. This preserves application availability during an
+immediate rollback, but the older application cannot dual-read an ambiguous
+pre-v2 fallback hash and may create a second dedicated row for that returning
+browser. Keep Ads paused and treat attribution as incomplete throughout any
+rollback; restore the v2-aware image instead of claiming continuous first-touch
+evidence. Do not remove or rotate either HMAC value during that window. Revoke
+the legacy overload only in a later reviewed cutover after the rollback target
+is retired. If the verifier reports a missing hash version, RPC, policy, role
+boundary or pending receipt, keep Ads paused and do not treat the report as
+conversion evidence.
 
 The classification extension adds two private tables:
 
@@ -64,7 +104,7 @@ The customer-type workspace stages selections in the browser and saves them thro
 - **Paying customers:** distinct customers with successful payment records in the range.
 - **Revenue per customer:** net ledger revenue after recorded refunds divided by distinct paying customers, calculated separately for every currency. Gross purchases, refunds and net revenue remain visible separately.
 - **Reminder follow-through:** a request submitted within seven days after a recorded reminder. This is correlation, not proof of causation.
-- **Locale funnel:** consented attribution rows grouped by the normalized existing locale field, with unique visits, linked registrations, request customers and successful paying customers. Unknown or missing locale remains explicit and is never guessed from country.
+- **Locale funnel:** consented attribution rows grouped by the normalized existing locale field, with unique visits, verified registrations, linked returning customers, request customers and successful paying customers. A registration always requires immutable in-range profile creation; an accepted `account_created` event covers delayed first-touch acknowledgement, while otherwise the first touch must precede profile creation. Login, request and payment linkage alone never increments it. Unknown or missing locale remains explicit and is never guessed from country.
 
 ## Reminder workflow
 
@@ -118,7 +158,7 @@ The application remains operational before the migration is applied:
 
 ## Production smoke checklist
 
-1. Apply the additive migration and run the SELECT-only verification script.
+1. Apply the additive migration and run the SELECT-only verification script. Every contract boolean must be true and pending touch receipts must be zero.
 2. Open `/admin/growth` as owner/admin and verify each source status.
 3. Confirm anonymous and normal customer requests to `/api/admin/growth` are denied.
 4. Grant optional analytics on a public page and confirm the website remains usable if capture is blocked.

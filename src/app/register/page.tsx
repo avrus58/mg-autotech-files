@@ -11,7 +11,6 @@ import {
 } from "react";
 import { useRouter } from "next/navigation";
 import {
-  authenticatedFetch,
   getAuthenticatedHome,
   getAuthRedirect,
   getStableSession,
@@ -40,12 +39,10 @@ import {
   getCountryCallingCode,
   resolveDetectedPhoneCountrySelection,
 } from "@/lib/phoneCountries";
-import { recordGrowthAccountCreated } from "@/lib/growth/client";
 import {
-  trackRegistrationCompleted,
-} from "@/lib/publicAnalytics";
+  completeRegistrationHandoffsBeforeNavigation,
+} from "@/lib/registrationHandoffClient";
 import {
-  completePendingRegistrationHandoffs,
   createRegistrationAccountBinding,
   markRegistrationHandoffsPending,
 } from "@/lib/registrationConversion";
@@ -66,6 +63,10 @@ import {
   buildAuthEntryPath,
   getSafeLocalRedirectPath,
 } from "@/lib/safeLocalRedirect";
+import {
+  replacePrivateMeasurementDocument,
+  replaceWithPendingMeasurementCompletion,
+} from "@/lib/publicAnalytics";
 import {
   ArrowLeft,
   ArrowRight,
@@ -188,6 +189,7 @@ export default function RegisterPage() {
   const phoneCountryManuallySelectedRef = useRef(false);
   const countrySelectRef = useRef<HTMLSelectElement>(null);
   const stepPanelRef = useRef<HTMLDivElement>(null);
+  const statusPanelRef = useRef<HTMLDivElement>(null);
   const previousStepRef = useRef<StepId>(step);
 
   useEffect(() => {
@@ -198,6 +200,20 @@ export default function RegisterPage() {
     });
     return () => window.cancelAnimationFrame(frameId);
   }, [step]);
+
+  useEffect(() => {
+    if (!message) return;
+
+    const frameId = window.requestAnimationFrame(() => {
+      statusPanelRef.current?.focus({ preventScroll: true });
+      statusPanelRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    });
+
+    return () => window.cancelAnimationFrame(frameId);
+  }, [message, success]);
 
   useEffect(() => {
     let active = true;
@@ -225,17 +241,21 @@ export default function RegisterPage() {
 
         if (await signOutIfEmailUnverified(user)) {
           if (!active || !bootstrapOpen) return;
-          router.replace(
-            buildAuthEntryPath("/login", requestedRedirect, {
-              verify_email: "1",
-            })
+          const loginDestination = buildAuthEntryPath(
+            "/login",
+            requestedRedirect,
+            { verify_email: "1" }
           );
+          if (!replacePrivateMeasurementDocument(loginDestination)) {
+            router.replace(loginDestination);
+          }
           return;
         }
 
         const destination =
           requestedRedirect ?? (await getAuthenticatedHome(user.id));
         if (!active || !bootstrapOpen) return;
+        if (replacePrivateMeasurementDocument(destination)) return;
         router.replace(destination);
         router.refresh();
       } catch {
@@ -491,6 +511,14 @@ export default function RegisterPage() {
 
     const isAlreadyVerified = Boolean(data.session && data.user?.email_confirmed_at);
     if (isAlreadyVerified) {
+      const measurementDestination = requestedRedirectPath ?? "/dashboard";
+      let measurementBridgeStarted = false;
+      const startMeasurementBridge = () => {
+        if (measurementBridgeStarted) return true;
+        measurementBridgeStarted =
+          replaceWithPendingMeasurementCompletion(measurementDestination);
+        return measurementBridgeStarted;
+      };
       const registrationAccountBinding =
         await createRegistrationAccountBinding(data.session?.user.id ?? "");
       markRegistrationHandoffsPending(
@@ -499,28 +527,15 @@ export default function RegisterPage() {
         "email",
         registrationAccountBinding ?? ""
       );
-      await completePendingRegistrationHandoffs({
-        storage: window.sessionStorage,
-        keys: registrationHandoffKeys,
-        accountBinding: registrationAccountBinding,
-        onConversion: async () => {
-          const conversionSeed = await recordGrowthAccountCreated();
-          if (!conversionSeed) return false;
-          await trackRegistrationCompleted(conversionSeed).catch(() => false);
-          return true;
+      await completeRegistrationHandoffsBeforeNavigation(
+        {
+          storage: window.sessionStorage,
+          keys: registrationHandoffKeys,
+          accountBinding: registrationAccountBinding,
         },
-        onNotification: async (source) => {
-          const response = await authenticatedFetch(
-            "/api/email/new-customer",
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ source }),
-            }
-          );
-          return response.ok;
-        },
-      });
+        { onConversionHandoffCompleted: startMeasurementBridge }
+      );
+      if (startMeasurementBridge()) return;
     }
 
     setSuccess(true);
@@ -691,13 +706,25 @@ export default function RegisterPage() {
       return;
     }
 
-    router.replace(getRegistrationCallbackPath());
+    const callbackDestination = getRegistrationCallbackPath();
+    if (!replacePrivateMeasurementDocument(callbackDestination)) {
+      router.replace(callbackDestination);
+    }
   };
 
   if (checkingAuth) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-[#050505] text-white">
-        <Loader2 className="h-8 w-8 animate-spin text-red-500" aria-label="Checking account" />
+      <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[#050505] px-4 text-center text-white">
+        <Loader2
+          className="h-8 w-8 animate-spin text-red-500"
+          aria-label="Checking account"
+        />
+        <noscript>
+          <p role="alert" className="max-w-md text-sm font-bold text-amber-100">
+            JavaScript is required for secure account registration. Enable
+            JavaScript and reload this page.
+          </p>
+        </noscript>
       </main>
     );
   }
@@ -739,13 +766,90 @@ export default function RegisterPage() {
               </p>
             </div>
 
-            <StepProgress step={step} onStepChange={changeStep} />
+            {message && (
+              <div
+                ref={statusPanelRef}
+                role={success ? "status" : "alert"}
+                aria-live={success ? "polite" : "assertive"}
+                tabIndex={-1}
+                className={`mb-5 scroll-mt-4 rounded-2xl border p-4 outline-none focus-visible:ring-2 ${
+                  success
+                    ? "border-green-700/60 bg-green-950/35 text-green-50 focus-visible:ring-green-500"
+                    : "border-red-700/60 bg-red-950/35 text-red-50 focus-visible:ring-red-500"
+                }`}
+              >
+                <div className="flex items-start gap-3">
+                  {success && (
+                    <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-green-400" />
+                  )}
+                  <div className="min-w-0 flex-1">
+                    {success && (
+                      <h2 className="text-base font-black text-white">
+                        {verificationPending
+                          ? "Verify your e-mail to continue"
+                          : "Your account is ready"}
+                      </h2>
+                    )}
+                    <p className={success ? "mt-1 text-sm leading-6" : "text-sm leading-6"}>
+                      {message}
+                    </p>
+                    {success && verificationPending && cleanEmail && (
+                      <div className="mt-2 break-words text-xs leading-5 text-green-200/80">
+                        <p>Verification link sent to {cleanEmail}</p>
+                        <p>
+                          Open the link in the e-mail, then return to continue
+                          your request.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {success && verificationPending && cleanEmail && (
+                  <button
+                    type="button"
+                    onClick={() => void handleResendVerification()}
+                    disabled={
+                      resendingVerification ||
+                      loading ||
+                      authCaptchaBlocksSubmission(
+                        authCaptchaConfig,
+                        captchaToken
+                      )
+                    }
+                    className="mt-4 inline-flex items-center rounded-xl border border-green-700/60 bg-green-950/40 px-4 py-2.5 text-sm font-black text-green-50 transition hover:border-green-500 hover:bg-green-900/40 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {resendingVerification ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <RefreshCw className="mr-2 h-4 w-4" />
+                    )}
+                    Resend verification e-mail
+                  </button>
+                )}
+
+                {success && !verificationPending && (
+                  <Link
+                    href={requestedRedirectPath ?? "/dashboard"}
+                    className="mt-4 inline-flex items-center rounded-xl bg-green-500 px-4 py-2.5 text-sm font-black text-black transition hover:bg-green-400"
+                  >
+                    Continue to customer workspace
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
+                )}
+              </div>
+            )}
+
+            <div hidden={success}>
+              <StepProgress step={step} onStepChange={changeStep} />
+            </div>
 
             <div
               ref={stepPanelRef}
               role="region"
               aria-labelledby="register-step-heading"
               tabIndex={-1}
+              hidden={success}
               className="scroll-mt-4 outline-none"
             >
               <h2 id="register-step-heading" className="sr-only">
@@ -1136,45 +1240,6 @@ export default function RegisterPage() {
               )}
               </form>
             </div>
-
-            {message && (
-              <div
-                role={success ? "status" : "alert"}
-                aria-live={success ? "polite" : "assertive"}
-                className={`mt-5 rounded-2xl border p-4 text-sm ${
-                  success
-                    ? "border-green-800/50 bg-green-950/25 text-green-100"
-                    : "border-red-800/50 bg-red-950/30 text-red-100"
-                }`}
-              >
-                <div className="flex gap-3">
-                  {success && (
-                    <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-green-400" />
-                  )}
-                  <span>{message}</span>
-                </div>
-              </div>
-            )}
-
-            {success && verificationPending && cleanEmail && (
-              <button
-                type="button"
-                onClick={() => void handleResendVerification()}
-                disabled={
-                  resendingVerification ||
-                  loading ||
-                  authCaptchaBlocksSubmission(authCaptchaConfig, captchaToken)
-                }
-                className="mt-3 inline-flex items-center text-sm font-black text-red-400 transition hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {resendingVerification ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <RefreshCw className="mr-2 h-4 w-4" />
-                )}
-                Resend verification e-mail
-              </button>
-            )}
 
             <div className="mt-5 text-center text-sm text-zinc-400">
               Already have an account?{" "}

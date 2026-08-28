@@ -32,6 +32,10 @@ import {
   type PublicServiceSlug,
 } from "@/lib/seo";
 import type { LocaleCode } from "@/lib/i18nConfig";
+import {
+  buildNewRequestPath,
+  getPublicServiceRequestIntent,
+} from "@/lib/requestIntent";
 
 export function generateStaticParams() {
   return localizedSeoLocales.flatMap((locale) =>
@@ -101,6 +105,7 @@ export default async function LocalizedServicePage({
   const slug = rawSlug as PublicServiceSlug;
   const labels = seoLabels[locale];
   const service = getServiceSeo(slug, locale);
+  const requestHref = buildNewRequestPath(getPublicServiceRequestIntent(slug));
   const jsonLd = {
     "@context": "https://schema.org",
     "@graph": [
@@ -174,13 +179,13 @@ export default async function LocalizedServicePage({
             <Link className="text-red-500" href={localizedPath(locale, "/#services")}>
               {labels.navServices}
             </Link>
-            <Link className="transition hover:text-white" href="/dashboard/credits">
+            <Link className="transition hover:text-white" href={localizedPath(locale, "/#prices")}>
               {labels.navPrices}
             </Link>
           </nav>
 
           <Link
-            href="/new-request"
+            href={requestHref}
             className="rounded-xl bg-[#b1121b] px-4 py-3 text-sm font-black text-white shadow-lg shadow-red-950/40 transition hover:bg-[#c91824]"
           >
             {labels.startRequest}
@@ -203,7 +208,7 @@ export default async function LocalizedServicePage({
 
           <div className="mt-9 flex flex-col gap-3 sm:flex-row">
             <Link
-              href="/new-request"
+              href={requestHref}
               className="inline-flex items-center justify-center rounded-xl bg-[#b1121b] px-6 py-4 text-sm font-black text-white shadow-xl shadow-red-950/40 transition hover:bg-[#c91824]"
             >
               {labels.startRequest}

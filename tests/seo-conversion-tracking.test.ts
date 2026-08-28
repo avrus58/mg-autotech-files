@@ -7,6 +7,7 @@ import {
   buildPublicPageView,
   isApprovedAnalyticsHost,
   isConversionMeasurementPath,
+  isGoogleMeasurementScriptPath,
   isPublicAnalyticsPath,
   isValidGoogleAdsConversionLabel,
   isValidGoogleAdsId,
@@ -40,12 +41,36 @@ test("verified conversion routes are measurement-only and never become public pa
     "/auth/complete-profile",
     "/new-request",
     "/payment/success",
+    "/measurement/complete",
   ]) {
     assert.equal(isConversionMeasurementPath(path), true, path);
     assert.equal(isPublicAnalyticsPath(path), false, path);
     assert.equal(buildPublicPageView(path), null, path);
   }
   assert.equal(isConversionMeasurementPath("/dashboard/orders/private-id"), false);
+  for (const privatePath of [
+    "/register",
+    "/auth/callback",
+    "/auth/complete-profile",
+    "/new-request",
+    "/payment/success",
+  ]) {
+    assert.equal(isGoogleMeasurementScriptPath(privatePath), false, privatePath);
+  }
+  assert.equal(isGoogleMeasurementScriptPath("/measurement/complete"), true);
+});
+
+test("measurement completion metadata relies on the root title template exactly once", () => {
+  const completionLayout = projectFile(
+    "src",
+    "app",
+    "measurement",
+    "complete",
+    "layout.tsx"
+  );
+
+  assert.match(completionLayout, /title: "Secure measurement handoff"/);
+  assert.doesNotMatch(completionLayout, /Secure measurement handoff \| MG AutoTech/);
 });
 
 test("analytics path normalization removes query and fragment data", () => {
@@ -141,8 +166,13 @@ test("request analytics contains no customer, order, vehicle, file or payment me
     assert.doesNotMatch(contract, new RegExp(forbidden, "i"), forbidden);
   }
 
-  assert.match(requestPage, /if \(error\) \{[\s\S]*?return;[\s\S]*?createdOrderId \|\| growthAttemptIdRef[\s\S]*?await trackRequestSubmitted\(conversionSeed\)\.catch\(\(\) => false\);/);
-  assert.match(requestPage, /if \(!customerProfile \|\| requestStartTrackedRef\.current\) return;[\s\S]*?trackRequestStarted\(\);/);
+  assert.match(requestPage, /if \(error\) \{[\s\S]*?return;[\s\S]*?createdOrderId \|\| growthAttemptIdRef[\s\S]*?await Promise\.all\(\[[\s\S]*?trackRequestSubmitted\(conversionSeed\)[\s\S]*?recordGrowthRequestCreated/);
+  assert.match(requestPage, /if \(requestStartTrackedRef\.current\) return;[\s\S]*?window\.crypto\.randomUUID\(\)[\s\S]*?growthStartDelivery\.begin\(/);
+  assert.match(requestPage, /onChangeCapture=\{markRequestStarted\}/);
+  assert.doesNotMatch(requestPage, /trackRequestStarted|requestStartAnalyticsRecordedRef/);
+  assert.doesNotMatch(analytics, /export function trackRequestStarted/);
+  assert.doesNotMatch(analytics, /name: "request_start"/);
+  assert.doesNotMatch(requestPage, /if \(!customerProfile \|\| requestStartTrackedRef\.current\) return;/);
   assert.match(analytics, /crypto\.subtle\.digest\("SHA-256", bytes\)/);
 });
 
@@ -152,31 +182,109 @@ test("verified conversion routes await local queue insertion before customer nav
   const registerPage = projectFile("src", "app", "register", "page.tsx");
   const authCallback = projectFile("src", "app", "auth", "callback", "page.tsx");
   const completeProfile = projectFile("src", "app", "auth", "complete-profile", "page.tsx");
+  const registrationClient = projectFile("src", "lib", "registrationHandoffClient.ts");
 
-  assert.match(requestPage, /await trackRequestSubmitted\(conversionSeed\)\.catch\(\(\) => false\);/);
-  assert.ok(
-    requestPage.indexOf("await trackRequestSubmitted(conversionSeed)") <
-      requestPage.indexOf('router.push("/dashboard")')
+  assert.match(requestPage, /await Promise\.all\(\[[\s\S]*?trackRequestSubmitted\(conversionSeed\)[\s\S]*?recordGrowthRequestCreated/);
+  const requestTrackingIndex = requestPage.indexOf("trackRequestSubmitted(conversionSeed)");
+  const requestConsentIndex = requestPage.indexOf(
+    "const completionConsent = readMeasurementConsentSnapshot()",
+    requestTrackingIndex
+  );
+  const requestConsentWaitIndex = requestPage.indexOf(
+    "setAwaitingConsentAfterSuccess(true)",
+    requestConsentIndex
+  );
+  const requestNavigationIndex = requestPage.indexOf(
+    'window.location.assign("/dashboard")',
+    requestConsentWaitIndex
+  );
+  assert.ok(requestTrackingIndex >= 0);
+  assert.ok(requestConsentIndex > requestTrackingIndex);
+  assert.ok(requestConsentWaitIndex > requestConsentIndex);
+  assert.ok(requestNavigationIndex > requestConsentWaitIndex);
+  assert.match(
+    requestPage,
+    /createRequestCompletionConsentHandoff\(\{[\s\S]*?flushVerifiedConversions: flushPendingVerifiedConversions[\s\S]*?navigate: \(\) => \{[\s\S]*?window\.location\.assign\("\/dashboard"\)/
   );
   assert.match(paymentPage, /await trackPurchaseCompleted\(\{[\s\S]*?\}\)\.catch\(\(\) => false\);/);
   assert.ok(
     paymentPage.indexOf("await trackPurchaseCompleted({") <
       paymentPage.indexOf('setState("success")')
   );
+  assert.ok(
+    registerPage.indexOf("await completeRegistrationHandoffsBeforeNavigation(") <
+      registerPage.indexOf("setSuccess(true)")
+  );
+  assert.match(
+    registerPage,
+    /await completeRegistrationHandoffsBeforeNavigation\(/
+  );
+  assert.doesNotMatch(
+    registerPage,
+    /recordGrowthAccountCreated|trackRegistrationCompleted/
+  );
+  const registrationDeliveryStart = registrationClient.indexOf(
+    "async function deliverRegistrationConversion"
+  );
+  const registrationDeliveryEnd = registrationClient.indexOf(
+    "function deliverRegistrationNotification",
+    registrationDeliveryStart
+  );
+  const registrationDelivery = registrationClient.slice(
+    registrationDeliveryStart,
+    registrationDeliveryEnd
+  );
+  const registrationSeedIndex = registrationDelivery.indexOf(
+    "recordGrowthAccountCreated(expectedAccount.userId)"
+  );
+  const registrationPreTrackBindingIndex = registrationDelivery.indexOf(
+    "registrationAccountStillMatches(expectedAccount)",
+    registrationSeedIndex
+  );
+  const registrationTrackIndex = registrationDelivery.indexOf(
+    "trackRegistrationCompleted(conversionSeed)",
+    registrationPreTrackBindingIndex
+  );
+  const registrationFinalBindingIndex = registrationDelivery.indexOf(
+    "registrationAccountStillMatches(expectedAccount)",
+    registrationTrackIndex
+  );
+  assert.ok(registrationSeedIndex >= 0);
+  assert.ok(registrationPreTrackBindingIndex > registrationSeedIndex);
+  assert.ok(registrationTrackIndex > registrationPreTrackBindingIndex);
+  assert.ok(registrationFinalBindingIndex > registrationTrackIndex);
+  assert.ok(
+    authCallback.indexOf("await completeRegistrationHandoffsBeforeNavigation(") <
+      authCallback.indexOf("router.replace(next)")
+  );
+  const completeProfileHandoffIndex = completeProfile.indexOf(
+    "await completeRegistrationHandoffsBeforeNavigation("
+  );
+  const completeProfileCallbackIndex = completeProfile.indexOf(
+    "const callbackDestination ="
+  );
+  const completeProfileNavigationIndex = completeProfile.indexOf(
+    "replacePrivateMeasurementDocument(callbackDestination)",
+    completeProfileHandoffIndex
+  );
+  assert.ok(completeProfileCallbackIndex >= 0);
+  assert.ok(completeProfileHandoffIndex > completeProfileCallbackIndex);
+  assert.ok(completeProfileNavigationIndex > completeProfileHandoffIndex);
+  assert.match(
+    completeProfile,
+    /replaceWithPendingMeasurementCompletion\([\s\S]*?callbackDestination[\s\S]*?\)/
+  );
+  assert.doesNotMatch(
+    completeProfile,
+    /replaceWithPendingMeasurementCompletion\(next\)/
+  );
   for (const source of [registerPage, authCallback, completeProfile]) {
     assert.match(
       source,
-      /await trackRegistrationCompleted\(conversionSeed\)\.catch\([\s\S]{0,80}?\);/
+      /onConversionHandoffCompleted:[\s\S]*?startMeasurementBridge/
     );
   }
-  assert.ok(
-    authCallback.indexOf("await completePendingRegistrationHandoffs({") <
-      authCallback.indexOf("router.replace(next)")
-  );
-  assert.ok(
-    completeProfile.indexOf("await completePendingRegistrationHandoffs({") <
-      completeProfile.indexOf("router.replace(`/auth/callback")
-  );
+  assert.match(registrationClient, /completeRegistrationHandoffsBeforeNavigation[\s\S]*?REGISTRATION_HANDOFF_NAVIGATION_BUDGET_MS/);
 });
 
 test("root analytics loader is consent-aware, production-only and fail-closed without config", () => {
@@ -189,11 +297,14 @@ test("root analytics loader is consent-aware, production-only and fail-closed wi
   assert.match(layout, /googleAnalyticsMeasurementId=\{googleAnalyticsMeasurementId\}/);
   assert.match(layout, /googleAdsId=\{googleAdsId\}/);
   assert.match(component, /isApprovedAnalyticsHost\(window\.location\.hostname\)/);
-  assert.match(component, /isConversionMeasurementPath\(pathname\)/);
+  assert.match(component, /isMeasurementConsentPath\(pathname\)/);
   assert.match(component, /analyticsRouteAllowed/);
-  assert.match(component, /updateMeasurementReady\(initializeGoogleMeasurement\(configuration\)\)/);
+  assert.match(
+    component,
+    /const initialized = initializeGoogleMeasurement\(configuration\);[\s\S]*?updateMeasurementReady\([\s\S]*?initialized &&[\s\S]*?sanitizeGoogleMeasurementBrowserLocation\(\{[\s\S]*?advertising: preferences\.advertising/
+  );
   assert.match(component, /queueMicrotask\(\(\) =>/);
-  assert.match(component, /measurementReady && scriptId && analyticsRouteAllowed/);
+  assert.match(component, /measurementReady && scriptId && googleMeasurementRouteAllowed/);
   assert.match(component, /googleMeasurementScriptRetryDelays/);
   assert.match(component, /mg_retry_attempt=\$\{measurementScriptAttempt\}/);
   assert.match(component, /onLoad=\{\(\) => \{[\s\S]*?notifyGoogleMeasurementScriptLoaded/);
@@ -207,7 +318,8 @@ test("root analytics loader is consent-aware, production-only and fail-closed wi
   assert.match(analytics, /ad_user_data: preferences\.advertising \? "granted" : "denied"/);
   assert.match(analytics, /ad_personalization: "denied"/);
   assert.match(analytics, /page_referrer: ""/);
-  assert.doesNotMatch(analytics, /window\.location\.href/);
+  assert.match(analytics, /page_location: isAdsTag[\s\S]*safeGoogleAdsLandingLocation\([\s\S]*window\.location\.pathname[\s\S]*window\.location\.search[\s\S]*safeAnalyticsLocation\(window\.location\.pathname\)/);
+  assert.doesNotMatch(analytics, /page_location:\s*window\.location\.href/);
 });
 
 test("admin Ads readiness center is protected and never returns public configuration values", () => {
@@ -220,10 +332,13 @@ test("admin Ads readiness center is protected and never returns public configura
   assert.match(route, /private, no-store/);
   assert.match(adminLayout, /BrowserAuthBoundary/);
   assert.match(client, /Google Ads Readiness & Conversion Center/);
-  assert.match(client, /Configuration complete/);
+  assert.match(client, /Technical configuration complete - not launch-ready/);
+  assert.match(client, /External launch gates remain manual and unverified/);
+  assert.match(client, /Manual \/ unverified/);
+  assert.match(client, /landingReviewStatusLabel\(page\.status\)/);
   assert.match(client, /deliveryVerification\.detail/);
   assert.doesNotMatch(client, /Measurement ready|of 7 verified/);
-  assert.match(readiness, /rawClickIdsStored: false/);
+  assert.match(readiness, /applicationRetainsRawClickIds: false/);
   assert.match(readiness, /customerIdentifiersExported: false/);
   assert.doesNotMatch(route, /NEXT_PUBLIC_GOOGLE_ADS_ID|REGISTRATION_LABEL|PURCHASE_LABEL/);
 });

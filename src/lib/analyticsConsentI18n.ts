@@ -18,6 +18,7 @@ export type AnalyticsConsentCopy = {
   advertisingDescription: string;
   personalizationDisabled: string;
   privacyInformation: string;
+  opensInNewTab: string;
   openPreferences: string;
   preferencesTitle: string;
   enabledAnnouncement: string;
@@ -40,6 +41,7 @@ export const analyticsConsentCopy: Record<LocaleCode, AnalyticsConsentCopy> = {
     advertisingDescription: "Measures whether an ad leads to a verified registration, request or payment.",
     personalizationDisabled: "Personalized advertising remains disabled.",
     privacyInformation: "Privacy information",
+    opensInNewTab: "opens in a new tab",
     openPreferences: "Open privacy preferences",
     preferencesTitle: "Privacy preferences",
     enabledAnnouncement: "Optional measurement preferences saved.",
@@ -60,6 +62,7 @@ export const analyticsConsentCopy: Record<LocaleCode, AnalyticsConsentCopy> = {
     advertisingDescription: "Misst, ob eine Anzeige zu Registrierung, Anfrage oder bestätigter Zahlung führt.",
     personalizationDisabled: "Personalisierte Werbung bleibt deaktiviert.",
     privacyInformation: "Datenschutzinformationen",
+    opensInNewTab: "öffnet in einem neuen Tab",
     openPreferences: "Datenschutzeinstellungen öffnen",
     preferencesTitle: "Datenschutzeinstellungen",
     enabledAnnouncement: "Optionale Messeinstellungen gespeichert.",
@@ -80,6 +83,7 @@ export const analyticsConsentCopy: Record<LocaleCode, AnalyticsConsentCopy> = {
     advertisingDescription: "Bir reklamın doğrulanmış kayıt, talep veya ödemeye dönüşüp dönüşmediğini ölçer.",
     personalizationDisabled: "Kişiselleştirilmiş reklamlar kapalı kalır.",
     privacyInformation: "Gizlilik bilgileri",
+    opensInNewTab: "yeni bir sekmede açılır",
     openPreferences: "Gizlilik tercihlerini aç",
     preferencesTitle: "Gizlilik tercihleri",
     enabledAnnouncement: "İsteğe bağlı ölçüm tercihleri kaydedildi.",
@@ -100,6 +104,7 @@ export const analyticsConsentCopy: Record<LocaleCode, AnalyticsConsentCopy> = {
     advertisingDescription: "Mesure si une annonce mène à une inscription, demande ou paiement vérifié.",
     personalizationDisabled: "La publicité personnalisée reste désactivée.",
     privacyInformation: "Informations de confidentialité",
+    opensInNewTab: "s’ouvre dans un nouvel onglet",
     openPreferences: "Ouvrir les choix de confidentialité",
     preferencesTitle: "Choix de confidentialité",
     enabledAnnouncement: "Préférences de mesure enregistrées.",
@@ -120,6 +125,7 @@ export const analyticsConsentCopy: Record<LocaleCode, AnalyticsConsentCopy> = {
     advertisingDescription: "Meet of een advertentie leidt tot een geverifieerde registratie, aanvraag of betaling.",
     personalizationDisabled: "Gepersonaliseerde advertenties blijven uitgeschakeld.",
     privacyInformation: "Privacy-informatie",
+    opensInNewTab: "opent in een nieuw tabblad",
     openPreferences: "Privacyvoorkeuren openen",
     preferencesTitle: "Privacyvoorkeuren",
     enabledAnnouncement: "Meetvoorkeuren opgeslagen.",
@@ -140,6 +146,7 @@ export const analyticsConsentCopy: Record<LocaleCode, AnalyticsConsentCopy> = {
     advertisingDescription: "Misura se un annuncio porta a registrazione, richiesta o pagamento verificato.",
     personalizationDisabled: "La pubblicità personalizzata resta disattivata.",
     privacyInformation: "Informazioni sulla privacy",
+    opensInNewTab: "si apre in una nuova scheda",
     openPreferences: "Apri preferenze privacy",
     preferencesTitle: "Preferenze privacy",
     enabledAnnouncement: "Preferenze di misurazione salvate.",
@@ -160,6 +167,7 @@ export const analyticsConsentCopy: Record<LocaleCode, AnalyticsConsentCopy> = {
     advertisingDescription: "Mide si un anuncio genera un registro, solicitud o pago verificado.",
     personalizationDisabled: "La publicidad personalizada permanece desactivada.",
     privacyInformation: "Información de privacidad",
+    opensInNewTab: "se abre en una pestaña nueva",
     openPreferences: "Abrir preferencias de privacidad",
     preferencesTitle: "Preferencias de privacidad",
     enabledAnnouncement: "Preferencias de medición guardadas.",
@@ -180,6 +188,7 @@ export const analyticsConsentCopy: Record<LocaleCode, AnalyticsConsentCopy> = {
     advertisingDescription: "Mede se um anúncio conduz a registo, pedido ou pagamento verificado.",
     personalizationDisabled: "A publicidade personalizada permanece desativada.",
     privacyInformation: "Informações de privacidade",
+    opensInNewTab: "abre num novo separador",
     openPreferences: "Abrir preferências de privacidade",
     preferencesTitle: "Preferências de privacidade",
     enabledAnnouncement: "Preferências de medição guardadas.",
@@ -200,6 +209,7 @@ export const analyticsConsentCopy: Record<LocaleCode, AnalyticsConsentCopy> = {
     advertisingDescription: "Mierzy, czy reklama prowadzi do zweryfikowanej rejestracji, zlecenia lub płatności.",
     personalizationDisabled: "Reklamy spersonalizowane pozostają wyłączone.",
     privacyInformation: "Informacje o prywatności",
+    opensInNewTab: "otwiera się w nowej karcie",
     openPreferences: "Otwórz ustawienia prywatności",
     preferencesTitle: "Ustawienia prywatności",
     enabledAnnouncement: "Ustawienia pomiaru zapisane.",
@@ -220,6 +230,7 @@ export const analyticsConsentCopy: Record<LocaleCode, AnalyticsConsentCopy> = {
     advertisingDescription: "Измеряет, приводит ли реклама к подтвержденной регистрации, заявке или оплате.",
     personalizationDisabled: "Персонализированная реклама остается отключенной.",
     privacyInformation: "Информация о конфиденциальности",
+    opensInNewTab: "откроется в новой вкладке",
     openPreferences: "Открыть настройки конфиденциальности",
     preferencesTitle: "Настройки конфиденциальности",
     enabledAnnouncement: "Настройки измерения сохранены.",
@@ -240,6 +251,7 @@ export const analyticsConsentCopy: Record<LocaleCode, AnalyticsConsentCopy> = {
     advertisingDescription: "衡量广告是否带来已验证的注册、请求或付款。",
     personalizationDisabled: "个性化广告保持关闭。",
     privacyInformation: "隐私信息",
+    opensInNewTab: "在新标签页中打开",
     openPreferences: "打开隐私偏好",
     preferencesTitle: "隐私偏好",
     enabledAnnouncement: "衡量偏好已保存。",
@@ -260,6 +272,7 @@ export const analyticsConsentCopy: Record<LocaleCode, AnalyticsConsentCopy> = {
     advertisingDescription: "Mat nëse një reklamë sjell regjistrim, kërkesë ose pagesë të verifikuar.",
     personalizationDisabled: "Reklamat e personalizuara mbeten të çaktivizuara.",
     privacyInformation: "Informacion mbi privatësinë",
+    opensInNewTab: "hapet në një skedë të re",
     openPreferences: "Hap preferencat e privatësisë",
     preferencesTitle: "Preferencat e privatësisë",
     enabledAnnouncement: "Preferencat e matjes u ruajtën.",

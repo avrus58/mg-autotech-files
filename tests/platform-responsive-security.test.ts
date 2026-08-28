@@ -135,7 +135,7 @@ test("baseline security headers protect private workspaces without blocking widg
 
   assert.match(nextConfig, /X-Content-Type-Options/);
   assert.match(nextConfig, /X-Permitted-Cross-Domain-Policies/);
-  assert.match(nextConfig, /strict-origin-when-cross-origin/);
+  assert.match(nextConfig, /Referrer-Policy", value: "strict-origin"/);
   assert.match(nextConfig, /camera=\(\), microphone=\(\), geolocation=\(\)/);
   assert.match(nextConfig, /X-Frame-Options[\s\S]*DENY/);
   assert.match(nextConfig, /frame-ancestors 'none'; base-uri 'self'; object-src 'none'/);

@@ -10,6 +10,8 @@ export const platformReliabilityCategories = [
   "network",
   "auth_recovery",
   "render",
+  "attribution_handoff",
+  "ads_linker",
   "unknown",
 ] as const;
 

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { ReactNode, useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { authenticatedFetch, getStableSession, notifySessionRequired, signOutIfEmailUnverified } from "@/lib/authGuards";
 import {
   getRequestFlowStepStates,
@@ -32,10 +32,21 @@ import {
 } from "lucide-react";
 import { CustomerPortalPageHeader } from "@/components/dashboard/CustomerPortalPageHeader";
 import { evaluateRequestIntelligence } from "@/lib/requestIntelligence";
-import { trackRequestStarted, trackRequestSubmitted } from "@/lib/publicAnalytics";
 import {
+  flushPendingVerifiedConversions,
+  isApprovedAnalyticsHost,
+  isValidGoogleAdsId,
+  isValidGoogleAnalyticsMeasurementId,
+  measurementConsentChangedEvent,
+  readMeasurementConsentSnapshot,
+  replacePrivateMeasurementDocument,
+  replaceWithPendingMeasurementCompletion,
+  trackRequestSubmitted,
+} from "@/lib/publicAnalytics";
+import { createRequestCompletionConsentHandoff } from "@/lib/requestCompletionConsent";
+import {
+  createGrowthRequestStartDeliveryController,
   recordGrowthRequestCreated,
-  recordGrowthRequestStarted,
   updateGrowthReminderPreference,
 } from "@/lib/growth/client";
 import {
@@ -44,6 +55,10 @@ import {
   type RepeatRequestOrder,
   type RepeatRequestPrefill,
 } from "@/lib/repeatRequest";
+import {
+  getRequestIntentSelection,
+  parseRequestIntent,
+} from "@/lib/requestIntent";
 
 type Option = {
   id: string;
@@ -116,6 +131,70 @@ type CustomerProfile = {
 
 const maxRequestFileSize = 32 * 1024 * 1024;
 const allowedRequestFileExtensions = [".bin", ".ori", ".mod", ".frf", ".hex", ".zip", ".sgo"];
+const requestCompletionConsentFailOpenMs = 15_000;
+
+function requestCompletionConsentIsAvailable(hostname: string) {
+  return isApprovedAnalyticsHost(hostname) && (
+    isValidGoogleAnalyticsMeasurementId(
+      process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID,
+    ) || isValidGoogleAdsId(process.env.NEXT_PUBLIC_GOOGLE_ADS_ID)
+  );
+}
+
+function CreditShortfallPanel({
+  className = "",
+  requiredCredits,
+  availableCredits,
+  refreshing,
+  feedback,
+  onRefresh,
+}: {
+  className?: string;
+  requiredCredits: number;
+  availableCredits: number;
+  refreshing: boolean;
+  feedback: string;
+  onRefresh: () => void;
+}) {
+  return (
+    <div
+      role="alert"
+      className={`rounded-xl border border-yellow-700/50 bg-yellow-950/25 p-3 text-xs text-yellow-100 ${className}`}
+    >
+      <p className="font-black">Not enough available credits for this request.</p>
+      <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 leading-5 text-yellow-100/75">
+        <span><span>Credits</span>: {requiredCredits}</span>
+        <span><span>Available Credits</span>: {availableCredits}</span>
+      </div>
+      <div className="mt-3 flex flex-wrap gap-2">
+        <Link
+          href="/dashboard/credits"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Buy Credits"
+          className="inline-flex min-h-10 items-center justify-center rounded-lg bg-[#b1121b] px-3 font-black text-white transition hover:bg-[#c91824]"
+        >
+          <CreditCard className="mr-2 h-4 w-4" />
+          Buy Credits
+        </Link>
+        <button
+          type="button"
+          onClick={onRefresh}
+          disabled={refreshing}
+          className="inline-flex min-h-10 items-center justify-center rounded-lg border border-yellow-600/35 bg-black/30 px-3 font-black text-yellow-100 transition hover:bg-black/50 disabled:cursor-wait disabled:opacity-60"
+        >
+          <RefreshCcw className={`mr-2 h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
+          {refreshing ? "Loading..." : "Refresh"}
+        </button>
+      </div>
+      {feedback ? (
+        <p role="status" aria-live="polite" className="mt-2 font-bold text-yellow-100/80">
+          {feedback}
+        </p>
+      ) : null}
+    </div>
+  );
+}
 
 const mainServices: MainService[] = [
   {
@@ -761,9 +840,24 @@ function clearPersistedWebRequest(userId: string) {
 
 export default function NewRequestPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const initialRequestIntent = parseRequestIntent(searchParams.get("intent"));
+  const initialRequestSelection = initialRequestIntent
+    ? getRequestIntentSelection(initialRequestIntent)
+    : null;
   const requestStartTrackedRef = useRef(false);
   const growthAttemptIdRef = useRef("");
+  const growthExpectedUserIdRef = useRef("");
+  const [growthStartDelivery] = useState(
+    () => createGrowthRequestStartDeliveryController()
+  );
   const requestSubmissionRef = useRef<WebRequestSubmission | null>(null);
+  const pendingGrowthRequestCreatedRef = useRef<{
+    orderId: string;
+    attemptId: string;
+    expectedUserId: string;
+  } | null>(null);
+  const requestCompletionContinueRef = useRef<(() => void) | null>(null);
   const repeatPrefillStartedRef = useRef(false);
 
   const [brands, setBrands] = useState<Option[]>([]);
@@ -794,10 +888,17 @@ export default function NewRequestPage() {
   const [readMethod, setReadMethod] = useState("");
   const [licensePlate, setLicensePlate] = useState("");
   const [hwSw, setHwSw] = useState("");
-  const [mainService, setMainService] = useState("stage_1");
-  const [selectedExtras, setSelectedExtras] = useState<string[]>([]);
-  const [openServiceCategories, setOpenServiceCategories] = useState<string[]>([
-    "emissions",
+  const [mainService, setMainService] = useState<string>(
+    initialRequestSelection?.mainServiceId ?? "stage_1"
+  );
+  const [selectedExtras, setSelectedExtras] = useState<string[]>(() =>
+    initialRequestSelection ? [...initialRequestSelection.extraServiceIds] : []
+  );
+  const [openServiceCategories, setOpenServiceCategories] = useState<string[]>(() => [
+    ...new Set([
+      "emissions",
+      ...(initialRequestSelection ? initialRequestSelection.openCategoryIds : []),
+    ]),
   ]);
   const [masterSlave, setMasterSlave] = useState<"master" | "slave">("master");
   const [notes, setNotes] = useState("");
@@ -810,8 +911,11 @@ export default function NewRequestPage() {
   const [reminderPreferenceError, setReminderPreferenceError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState("");
+  const [awaitingConsentAfterSuccess, setAwaitingConsentAfterSuccess] = useState(false);
   const [customerProfile, setCustomerProfile] = useState<CustomerProfile | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
+  const [balanceRefreshing, setBalanceRefreshing] = useState(false);
+  const [balanceRefreshMessage, setBalanceRefreshMessage] = useState("");
   const [repeatPrefill, setRepeatPrefill] = useState<RepeatRequestPrefill | null>(null);
   const [repeatPrefillLoading, setRepeatPrefillLoading] = useState(false);
   const [repeatPrefillError, setRepeatPrefillError] = useState("");
@@ -838,6 +942,29 @@ export default function NewRequestPage() {
     ? manualVehicleEngine.trim()
     : selectedEngineName;
 
+  const queueGrowthRequestStart = (reminderOptIn: boolean): void => {
+    const attemptId = growthAttemptIdRef.current;
+    if (!attemptId) return;
+    void growthStartDelivery.begin(
+      attemptId,
+      reminderOptIn,
+      growthExpectedUserIdRef.current
+    );
+  };
+
+  const markRequestStarted = () => {
+    if (requestStartTrackedRef.current) return;
+
+    requestStartTrackedRef.current = true;
+    const attemptId = window.crypto.randomUUID();
+    growthAttemptIdRef.current = attemptId;
+    void growthStartDelivery.begin(
+      attemptId,
+      abandonedReminderEnabled,
+      growthExpectedUserIdRef.current
+    );
+  };
+
   async function loadCustomerProfile() {
     setProfileLoading(true);
 
@@ -849,8 +976,27 @@ export default function NewRequestPage() {
       return;
     }
 
+    if (
+      growthExpectedUserIdRef.current &&
+      growthExpectedUserIdRef.current !== user.id
+    ) {
+      notifySessionRequired();
+      setProfileLoading(false);
+      return;
+    }
+    growthExpectedUserIdRef.current = user.id;
+    if (growthAttemptIdRef.current) {
+      void growthStartDelivery.begin(
+        growthAttemptIdRef.current,
+        abandonedReminderEnabled,
+        user.id
+      );
+    }
+
     if (await signOutIfEmailUnverified(user)) {
-      router.push("/login?verify_email=1");
+      if (!replacePrivateMeasurementDocument("/login?verify_email=1")) {
+        router.push("/login?verify_email=1");
+      }
       return;
     }
 
@@ -875,7 +1021,9 @@ export default function NewRequestPage() {
       .eq("user_id", user.id)
       .maybeSingle();
     if (!preference.error && preference.data) {
-      setAbandonedReminderEnabled(preference.data.abandoned_request_reminders === true);
+      const reminderEnabled = preference.data.abandoned_request_reminders === true;
+      setAbandonedReminderEnabled(reminderEnabled);
+      if (reminderEnabled) queueGrowthRequestStart(true);
     }
     setProfileLoading(false);
   }
@@ -887,48 +1035,93 @@ export default function NewRequestPage() {
   }, []);
 
   useEffect(() => {
-    if (!customerProfile || requestStartTrackedRef.current) return;
-    requestStartTrackedRef.current = true;
-    trackRequestStarted();
-  }, [customerProfile]);
+    const retryStartedJourneyAfterConsent = () => {
+      if (!requestStartTrackedRef.current) return;
+      const attemptId = growthAttemptIdRef.current;
+      if (!attemptId) return;
+      void growthStartDelivery.begin(
+        attemptId,
+        false,
+        growthExpectedUserIdRef.current
+      );
+    };
+    window.addEventListener(
+      measurementConsentChangedEvent,
+      retryStartedJourneyAfterConsent
+    );
+    return () => {
+      window.removeEventListener(
+        measurementConsentChangedEvent,
+        retryStartedJourneyAfterConsent
+      );
+    };
+  }, [growthStartDelivery]);
 
   useEffect(() => {
-    if (!customerProfile || growthAttemptIdRef.current) return;
-    const meaningfulStart = Boolean(
-      vehicleBrandId ||
-      manualVehicleBrand.trim() ||
-      selectedFile ||
-      notes.trim() ||
-      ecu.trim() ||
-      hwSw.trim() ||
-      selectedExtras.length ||
-      abandonedReminderEnabled
-    );
-    if (!meaningfulStart) return;
-    growthAttemptIdRef.current = window.crypto.randomUUID();
-    void recordGrowthRequestStarted(growthAttemptIdRef.current);
-  }, [
-    abandonedReminderEnabled,
-    customerProfile,
-    ecu,
-    hwSw,
-    manualVehicleBrand,
-    notes,
-    selectedExtras,
-    selectedFile,
-    vehicleBrandId,
-  ]);
+    if (!awaitingConsentAfterSuccess) return;
+
+    const continueAfterConsent = createRequestCompletionConsentHandoff({
+      readConsent: readMeasurementConsentSnapshot,
+      flushConsentedFirstParty: async () => {
+        const pending = pendingGrowthRequestCreatedRef.current;
+        if (!pending) return;
+        const recorded = await recordGrowthRequestCreated(
+          pending.orderId,
+          pending.attemptId,
+          pending.expectedUserId
+        ).catch(() => false);
+        if (recorded && pendingGrowthRequestCreatedRef.current === pending) {
+          pendingGrowthRequestCreatedRef.current = null;
+        }
+      },
+      flushVerifiedConversions: flushPendingVerifiedConversions,
+      navigate: () => {
+        pendingGrowthRequestCreatedRef.current = null;
+        if (!replaceWithPendingMeasurementCompletion("/dashboard")) {
+          window.location.assign("/dashboard");
+        }
+      },
+    });
+    const handleConsentChoice = () => {
+      void continueAfterConsent(true);
+    };
+    requestCompletionContinueRef.current = handleConsentChoice;
+    const failOpenTimer = window.setTimeout(() => {
+      void continueAfterConsent(true);
+    }, requestCompletionConsentFailOpenMs);
+
+    void continueAfterConsent(false);
+    window.addEventListener(measurementConsentChangedEvent, handleConsentChoice);
+    return () => {
+      window.clearTimeout(failOpenTimer);
+      if (requestCompletionContinueRef.current === handleConsentChoice) {
+        requestCompletionContinueRef.current = null;
+      }
+      window.removeEventListener(measurementConsentChangedEvent, handleConsentChoice);
+    };
+  }, [awaitingConsentAfterSuccess]);
+
+  useEffect(() => () => {
+    pendingGrowthRequestCreatedRef.current = null;
+  }, []);
 
   const handleReminderPreference = async (enabled: boolean) => {
     const previous = abandonedReminderEnabled;
     setAbandonedReminderEnabled(enabled);
     setReminderPreferenceSaving(true);
     setReminderPreferenceError("");
-    const saved = await updateGrowthReminderPreference(enabled);
+    const saved = await updateGrowthReminderPreference(
+      enabled,
+      customerProfile?.id
+    );
     setReminderPreferenceSaving(false);
     if (!saved) {
       setAbandonedReminderEnabled(previous);
       setReminderPreferenceError("Reminder preference could not be saved. Your request can still be submitted normally.");
+      return;
+    }
+    if (enabled && growthAttemptIdRef.current) {
+      queueGrowthRequestStart(true);
     }
   };
 
@@ -1203,6 +1396,9 @@ export default function NewRequestPage() {
     totalCredits >= 0 &&
     totalCredits <= availableCredits;
   const accountBlocked = accountStatus !== "active";
+  const showCreditShortfall = Boolean(
+    !profileLoading && selectedMainService && !accountBlocked && !canCreateByCredits
+  );
 
   const serviceSummary = useMemo(() => {
     const main = selectedMainService?.title ?? "Service";
@@ -1293,10 +1489,12 @@ export default function NewRequestPage() {
   });
 
   const switchToCatalogVehicleDetails = () => {
+    markRequestStarted();
     setUseManualVehicleDetails(false);
   };
 
   const switchToManualVehicleDetails = () => {
+    markRequestStarted();
     setUseManualVehicleDetails(true);
     setSelectedVehicle(null);
     if (selectedVehicle) {
@@ -1306,6 +1504,7 @@ export default function NewRequestPage() {
   };
 
   const clearRepeatPrefill = () => {
+    markRequestStarted();
     setUseManualVehicleDetails(false);
     setVehicleBrandId("");
     setVehicleModelId("");
@@ -1338,6 +1537,7 @@ export default function NewRequestPage() {
   };
 
   const toggleExtra = (id: string) => {
+    markRequestStarted();
     setSelectedExtras((current) =>
       current.includes(id)
         ? current.filter((item) => item !== id)
@@ -1367,6 +1567,30 @@ export default function NewRequestPage() {
     }
 
     return data as CustomerProfile;
+  }
+
+  async function refreshCreditBalance() {
+    if (balanceRefreshing) return;
+
+    setBalanceRefreshing(true);
+    setBalanceRefreshMessage("");
+
+    try {
+      const user = (await getStableSession()).session?.user;
+      if (!user) {
+        notifySessionRequired();
+        setBalanceRefreshMessage("Your secure session must be restored before refreshing the balance.");
+        return;
+      }
+
+      const latestProfile = await getLatestCustomerProfile(user.id);
+      setCustomerProfile(latestProfile);
+      setBalanceRefreshMessage("Credit balance refreshed.");
+    } catch {
+      setBalanceRefreshMessage("Credit balance could not be refreshed. Please try again.");
+    } finally {
+      setBalanceRefreshing(false);
+    }
   }
 
   function validateCreditAccess(profile: CustomerProfile, requiredCredits: number) {
@@ -1445,7 +1669,9 @@ export default function NewRequestPage() {
     }
 
     if (await signOutIfEmailUnverified(user)) {
-      router.push("/login?verify_email=1");
+      if (!replacePrivateMeasurementDocument("/login?verify_email=1")) {
+        router.push("/login?verify_email=1");
+      }
       return;
     }
 
@@ -1645,10 +1871,16 @@ export default function NewRequestPage() {
     );
 
     const conversionSeed = String(createdOrderId || growthAttemptIdRef.current || window.crypto.randomUUID());
-    await trackRequestSubmitted(conversionSeed).catch(() => false);
-    if (createdOrderId && growthAttemptIdRef.current) {
-      void recordGrowthRequestCreated(String(createdOrderId), growthAttemptIdRef.current);
-    }
+    const [, initialRequestJourneyRecorded] = await Promise.all([
+      trackRequestSubmitted(conversionSeed).catch(() => false),
+      createdOrderId && growthAttemptIdRef.current
+          ? recordGrowthRequestCreated(
+            String(createdOrderId),
+            growthAttemptIdRef.current,
+            user.id
+          ).catch(() => false)
+        : Promise.resolve(false),
+    ]);
 
     try {
       await authenticatedFetch("/api/email/new-order", {
@@ -1666,11 +1898,55 @@ export default function NewRequestPage() {
 
     requestSubmissionRef.current = null;
     clearPersistedWebRequest(user.id);
-    router.push("/dashboard");
+    const completionConsent = readMeasurementConsentSnapshot();
+    const consentChoiceAvailable = requestCompletionConsentIsAvailable(
+      window.location.hostname
+    );
+    let requestJourneyRecorded = initialRequestJourneyRecorded;
+    if (
+      !requestJourneyRecorded &&
+      !completionConsent.needsDecision &&
+      completionConsent.preferences.analytics &&
+      createdOrderId &&
+      growthAttemptIdRef.current
+    ) {
+      requestJourneyRecorded = await recordGrowthRequestCreated(
+        createdOrderId,
+        growthAttemptIdRef.current,
+        user.id
+      ).catch(() => false);
+    }
+    if (
+      !requestJourneyRecorded &&
+      completionConsent.needsDecision &&
+      consentChoiceAvailable &&
+      createdOrderId &&
+      growthAttemptIdRef.current
+    ) {
+      pendingGrowthRequestCreatedRef.current = {
+        orderId: createdOrderId,
+        attemptId: growthAttemptIdRef.current,
+        expectedUserId: user.id,
+      };
+    }
+    if (
+      completionConsent.needsDecision &&
+      consentChoiceAvailable
+    ) {
+      setAwaitingConsentAfterSuccess(true);
+      return;
+    }
+    pendingGrowthRequestCreatedRef.current = null;
+    if (!replaceWithPendingMeasurementCompletion("/dashboard")) {
+      window.location.assign("/dashboard");
+    }
   };
 
   return (
-    <main className="mg-compact-ui min-h-screen bg-[#050505] text-white">
+    <main
+      className="mg-compact-ui min-h-screen bg-[#050505] text-white"
+      onChangeCapture={markRequestStarted}
+    >
       <div className="fixed inset-0 -z-10 bg-[radial-gradient(circle_at_20%_0%,rgba(160,18,28,0.24),transparent_32%),linear-gradient(135deg,#050505,#0d0d0f_48%,#160608)]" />
 
       <CustomerPortalPageHeader
@@ -1786,6 +2062,17 @@ export default function NewRequestPage() {
             ) : null}
           </section>
         )}
+
+        {showCreditShortfall ? (
+          <CreditShortfallPanel
+            className="mb-4 lg:hidden"
+            requiredCredits={totalCredits}
+            availableCredits={availableCredits}
+            refreshing={balanceRefreshing}
+            feedback={balanceRefreshMessage}
+            onRefresh={() => void refreshCreditBalance()}
+          />
+        ) : null}
 
         <div className="mb-4 grid gap-3 xl:grid-cols-[1fr_300px]">
           <div className="rounded-xl border border-white/10 bg-white/[0.04] p-4">
@@ -2177,7 +2464,11 @@ export default function NewRequestPage() {
                 {mainServices.map((service) => (
                   <button
                     key={service.id}
-                    onClick={() => setMainService(service.id)}
+                    type="button"
+                    onClick={() => {
+                      markRequestStarted();
+                      setMainService(service.id);
+                    }}
                     className={`rounded-2xl border p-5 text-left transition hover:-translate-y-1 ${
                       mainService === service.id
                         ? "border-red-700 bg-red-950/35"
@@ -2270,8 +2561,7 @@ export default function NewRequestPage() {
                   {fileName || "Drag and drop a file here or click"}
                 </div>
                 <p className="mt-2 text-sm text-zinc-500">
-                  Supported later: .bin, .ori, .zip, .frf, .sgo, diagnostic
-                  reports and screenshots.
+                  {allowedRequestFileExtensions.join(", ")} · <span className="font-bold text-zinc-400">Max</span> 32 MB
                 </p>
 
                 <input
@@ -2322,7 +2612,11 @@ export default function NewRequestPage() {
 
               <div className="mt-5 flex gap-2">
                 <button
-                  onClick={() => setMasterSlave("master")}
+                  type="button"
+                  onClick={() => {
+                    markRequestStarted();
+                    setMasterSlave("master");
+                  }}
                   className={`rounded-xl px-5 py-3 text-sm font-black ${
                     masterSlave === "master"
                       ? "bg-[#b1121b] text-white"
@@ -2333,7 +2627,11 @@ export default function NewRequestPage() {
                 </button>
 
                 <button
-                  onClick={() => setMasterSlave("slave")}
+                  type="button"
+                  onClick={() => {
+                    markRequestStarted();
+                    setMasterSlave("slave");
+                  }}
                   className={`rounded-xl px-5 py-3 text-sm font-black ${
                     masterSlave === "slave"
                       ? "bg-[#b1121b] text-white"
@@ -2394,10 +2692,15 @@ export default function NewRequestPage() {
                   <div className="mt-4 rounded-xl border border-red-800/50 bg-red-950/30 p-3 text-xs font-bold text-red-200">
                     Account status: {accountStatus}. New requests are disabled.
                   </div>
-                ) : !canCreateByCredits ? (
-                  <div className="mt-4 rounded-xl border border-yellow-700/50 bg-yellow-950/25 p-3 text-xs font-bold text-yellow-200">
-                    Not enough available credits for this request.
-                  </div>
+                ) : showCreditShortfall ? (
+                  <CreditShortfallPanel
+                    className="mt-4 hidden lg:block"
+                    requiredCredits={totalCredits}
+                    availableCredits={availableCredits}
+                    refreshing={balanceRefreshing}
+                    feedback={balanceRefreshMessage}
+                    onRefresh={() => void refreshCreditBalance()}
+                  />
                 ) : null}
               </div>
 
@@ -2575,18 +2878,46 @@ export default function NewRequestPage() {
                 )}
               </div>
 
-              {message && (
+              {awaitingConsentAfterSuccess ? (
+                <div
+                  role="status"
+                  aria-live="polite"
+                  className="mt-5 rounded-2xl border border-emerald-700/45 bg-emerald-950/25 p-4 text-sm text-emerald-100"
+                >
+                  <strong className="block text-white">Request created</strong>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (requestCompletionContinueRef.current) {
+                        requestCompletionContinueRef.current();
+                        return;
+                      }
+                      if (!replaceWithPendingMeasurementCompletion("/dashboard")) {
+                        window.location.assign("/dashboard");
+                      }
+                    }}
+                    className="mt-3 inline-flex min-h-10 items-center justify-center rounded-lg border border-emerald-600/40 bg-black/25 px-3 font-black text-white transition hover:bg-black/45"
+                  >
+                    Back to dashboard
+                  </button>
+                </div>
+              ) : message ? (
                 <div className="mt-5 rounded-2xl border border-red-800/50 bg-red-950/30 p-4 text-sm text-red-200">
                   {message}
                 </div>
-              )}
+              ) : null}
 
               <button
                 onClick={handleSubmit}
-                disabled={submitting || !isRequestReadyForSubmit}
+                disabled={awaitingConsentAfterSuccess || submitting || !isRequestReadyForSubmit}
                 className="mt-6 flex w-full items-center justify-center rounded-xl bg-[#b1121b] px-6 py-4 font-black text-white shadow-xl shadow-red-950/40 transition hover:bg-[#c91824] disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {submitting ? (
+                {awaitingConsentAfterSuccess ? (
+                  <>
+                    <CheckCircle2 className="mr-2 h-5 w-5" />
+                    Request created
+                  </>
+                ) : submitting ? (
                   <>
                     <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                     Creating Request...

@@ -5306,3 +5306,79 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 - Kod Production'a deploy edilmedi. Sonraki guvenli release kapisi: owner'in
   acik yayin yetkisi, scoped deploy, Production smoke ve gercek Tag Assistant
   receipt kaniti. Bu kanitlardan once hicbir kampanya yeniden etkinlestirilmez.
+
+## 2026-08-29 00:46 +02:00 Ads final hardening yerelde tamamlandi ve dis kapilarda durduruldu
+
+- Google olcumu yalniz exact gercek public/measurement rotalarinda calisacak
+  sekilde sinirlandi; unknown, 404, PII-benzeri, private ve input-heavy rotalar
+  fail-closed kalir. First-party Growth attribution da ayri exact allowlist,
+  bounded token, query minimization ve partial-report fail-closed davranisi
+  kullanir. Register, request ve paid payment akislari hesap-bagli, exact-once,
+  bounded consent/handoff ve deduplication kontratlariyla guclendirildi.
+- Growth migration/verifier paketi current ve legacy HMAC surekliligini,
+  migration-first cutover'i, distinct secret kontrolunu, historical campaign
+  token versioning'i ve SELECT-only parity denetimini kapsar. API route helper'i
+  route dosyasindan ayrildi; Next route yalniz desteklenen `POST` export'unu
+  tasir. Production DB veya secret degistirilmedi.
+- Public analytics runtime ana sayfa ilk paketinden ayrildi. Webpack build 279/279
+  static sayfayi uretti; ana sayfa 8 ilk chunk, 57.0/80 KiB gzip, forbidden
+  runtime 0 ve public worker 6.5/12 KiB ile performans kapisini gecti.
+- Chrome QA 1366px laptop ve 390px mobil gorunumde file-service, Stage 2,
+  ECU File Check, TCU, localized Stage 1, measurement completion, 404 ve admin
+  auth gate rotalarini kontrol etti. Yatay tasma, temiz yukleme veya gercek
+  client navigation console hatasi bulunmadi; localhost'ta Google resource 0.
+  Measurement completion basligindaki cift `MG AutoTech` eki duzeltildi ve
+  regression testi eklendi.
+- Canli Google Ads salt-okunur son denetiminde hesap `None of your ads are
+  running` bildirdi; UK & Ireland Search kampanyasi Paused, Search ve EUR 5/gun
+  gorundu. RSA ve alti mevcut sitelink `file_service_uk_ie_en` kullaniyor;
+  rapordaki eski `file_service_eu_en` satirlari tarihsel veri ve guncel URL
+  uyusmazligi degil. Conversion action'larinin dordu de Inactive ve 0.00;
+  kampanya aktivasyonu, asset upload veya canli edit uygulanmadi.
+- Kontroller: `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS
+  (1173/1173); `npm run check:i18n` PASS (12 locale, 11 non-English locale icin
+  612/612 ve 0 fallback); `npm run build -- --webpack` PASS (279/279);
+  `npm run check:performance` PASS (57.0/80 KiB); `git diff --check` PASS;
+  repository secret-pattern scan match 0. Bagimsiz immutable review ve focused
+  review suite'leri code tarafinda P0/P1/P2 bulmadi.
+- Blokajlar: guncel VPS + Google Ads/Analytics privacy disclosure ve consent
+  version sahibi/hukuk karari; UK/Irlanda emissions-policy uygunlugu;
+  `15-30 dakika`, `30 dakika` ve same-day iddialari icin kanit veya notr metin;
+  Cloudflare/Caddy click-query log redaction/retention kaniti; distinct
+  Production HMAC secret'lari ve additive migration-first release; acik
+  Production yayin yetkisi; post-deploy Tag Assistant/network conversion
+  receipt; Google Ads logo/image/callout/snippet ticari hak/AI disclosure ve
+  action-time upload/edit onayi. Privacy sayfasi halen Vercel ve no-tracking
+  dedigi icin launch-ready iddiasi kodda `manual_unverified` ve fail-closed'dur.
+
+## 2026-08-29 02:20 +02:00 Reklam harcamasi uzlastirildi ve kayit gorunurlugu duzeltildi
+
+- Canli Google Ads salt-okunur account-level all-time denetiminde toplam EUR
+  111.31 / 478 click / 0 conversion dogrulandi. PMax EUR 54.25 / 398 click,
+  tarihsel English Search EUR 53.03 / 74 click ve kontrollu UK/Irlanda Search
+  EUR 4.03 / 6 click harcamistir. Uc kampanya da paused kalmistir.
+- PMax arama talebi toplamadi: EUR 31.75 YouTube, EUR 20.13 Display ve EUR 2.31
+  Discover harcandi; Search EUR 0 idi ve conversion tracking incomplete uyarisi
+  gorundu. Search harcamasinin EUR 46.06 / 65 click bolumu Google tarafindan
+  `Other search terms` altinda gizlendi. Bu nedenle eski PMax ve English Search
+  yeniden acilacak aday degildir.
+- English `/file-service` hero ve final birincil CTA'lari dogrudan guvenli,
+  registration-first `/new-request` akisina baglandi. `Choose service first`
+  ikincil yolu ve mevcut servis kartlari korundu; fiyat, hizmet kapsami veya
+  hukuki iddia degistirilmedi.
+- Register basari/hata sonucu uzun formun altindan sayfa basliginin hemen altina
+  tasindi. Panel programatik focus ve scroll alir; basarili hesap olusumunda uzun
+  form gizlenir, e-posta dogrulama hedefi ve resend aksiyonu ilk ekranda kalir.
+- Degisen bu ek kapsam: `src/app/file-service/page.tsx`,
+  `src/app/register/page.tsx`, musteri portal cevirileri, ilgili
+  funnel/SEO/responsive kontrat testleri, launch runbook, TASKS ve bu kayit.
+  Hedefli acquisition/responsive suite 116/116 PASS; `npm run lint` PASS;
+  `npm run typecheck` PASS; `npm test` 1174/1174 PASS; `npm run check:i18n`
+  12 locale ve 617/617 PASS; Webpack Production build 279/279 PASS;
+  performance 57.0/80 KiB gzip PASS; `git diff --check` PASS. Production
+  deploy, canli Ads edit/aktivasyon, DB, secret, e-posta veya musteri verisi
+  mutasyonu yapilmadi.
+- Kalan launch kapilari degismedi: owner/hukuk onayli guncel privacy/consent,
+  Production migration + distinct HMAC secret, acik Production yayin yetkisi,
+  disposable kayit/request ile gercek Tag Assistant/network receipt ve canli Ads
+  degisiklikleri icin action-time onay. Bu kapilar gecmeden harcama kapali kalir.

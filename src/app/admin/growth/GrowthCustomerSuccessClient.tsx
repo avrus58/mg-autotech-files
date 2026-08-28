@@ -93,12 +93,13 @@ function PerformanceTable({ rows, dimension }: { rows: GrowthPerformanceRow[]; d
   if (!rows.length) return <EmptyState text={`No consented ${dimension.toLowerCase()} attribution is available for this range.`} />;
   return (
     <div className="overflow-x-auto">
-      <table className="w-full min-w-[780px] text-left text-sm">
+      <table className="w-full min-w-[860px] text-left text-sm">
         <thead className="border-b border-white/10 text-[10px] font-black uppercase tracking-[0.16em] text-zinc-600">
           <tr>
             <th className="px-4 py-3">{dimension}</th>
             <th className="px-4 py-3">Consented visits</th>
             <th className="px-4 py-3">Registrations</th>
+            <th className="px-4 py-3">Returning</th>
             <th className="px-4 py-3">Customers</th>
             <th className="px-4 py-3">Orders</th>
             <th className="px-4 py-3">Repeat</th>
@@ -111,6 +112,7 @@ function PerformanceTable({ rows, dimension }: { rows: GrowthPerformanceRow[]; d
               <td className="max-w-[260px] break-words px-4 py-3 font-black text-white">{row.label}</td>
               <td className="px-4 py-3 text-zinc-300">{integer(row.consentedVisitors)}</td>
               <td className="px-4 py-3 text-zinc-300">{integer(row.registrations)}</td>
+              <td className="px-4 py-3 text-zinc-300">{integer(row.returningCustomers)}</td>
               <td className="px-4 py-3 text-zinc-300">{integer(row.customersWithRequests)}</td>
               <td className="px-4 py-3 text-zinc-300">{integer(row.orders)}</td>
               <td className="px-4 py-3 text-zinc-300">{integer(row.repeatCustomers)}</td>

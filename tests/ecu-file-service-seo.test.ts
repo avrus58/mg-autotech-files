@@ -28,7 +28,8 @@ test("the existing file-service URL remains the single canonical general ECU fil
   assert.match(source, /Professional ECU file service for custom tuning files/);
   assert.match(source, /For workshops &amp; professional tuners/);
   assert.match(source, /Built for workshops and professional tuners/);
-  assert.match(source, /Start secure file request/);
+  assert.match(source, /href="\/new-request"[\s\S]*Create account &amp; start request/);
+  assert.match(source, /href="#request-route"[\s\S]*Choose service first/);
   assert.match(source, /<StageComparison/);
   assert.match(source, /"@type": "FAQPage"/);
   assert.match(source, /"@type": "BreadcrumbList"/);

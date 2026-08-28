@@ -69,6 +69,10 @@ const newRequestLayout = readFileSync(
   resolve(process.cwd(), "src", "app", "new-request", "layout.tsx"),
   "utf8"
 );
+const newRequestAccessBoundary = readFileSync(
+  resolve(process.cwd(), "src", "app", "new-request", "NewRequestAccessBoundary.tsx"),
+  "utf8"
+);
 
 test("country catalog covers every ISO entry plus the documented Kosovo option", () => {
   assert.equal(countryCodes.length, 250);
@@ -366,14 +370,15 @@ test("registration requires the auto-detected but editable country on every sign
   assert.match(profileCompletionPage, /supabase\.auth\.refreshSession\(\)/);
   assert.match(
     profileCompletionPage,
-    /const next = safeNextPath\(\);[\s\S]*router\.replace\(`\/auth\/callback\?next=\$\{encodeURIComponent\(next\)\}`\)/
+    /const next = safeNextPath\(\);[\s\S]*const callbackDestination =[\s\S]*`\/auth\/callback\?next=\$\{encodeURIComponent\(next\)\}`;[\s\S]*if \(!replacePrivateMeasurementDocument\(callbackDestination\)\) \{[\s\S]*router\.replace\(callbackDestination\);/
   );
   assert.doesNotMatch(profileCompletionPage, /\.from\("profiles"\)/);
   assert.doesNotMatch(profileCompletionPage, /auth\.updateUser/);
   assert.match(registrationCountryBoundary, /requiresRegistrationCountryCompletion\(session\.user\)/);
   assert.match(registrationCountryBoundary, /\/auth\/complete-profile\?next=/);
   assert.match(dashboardLayout, /<RegistrationCountryBoundary>/);
-  assert.match(newRequestLayout, /<RegistrationCountryBoundary nextPath="\/new-request">/);
+  assert.match(newRequestLayout, /<NewRequestAccessBoundary>\{children\}<\/NewRequestAccessBoundary>/);
+  assert.match(newRequestAccessBoundary, /<RegistrationCountryBoundary nextPath=\{nextPath\}>/);
 });
 
 test("customer settings no longer invent Germany for an empty profile", () => {

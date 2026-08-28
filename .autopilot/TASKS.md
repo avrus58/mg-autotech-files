@@ -8,6 +8,37 @@
 
 ## Blocked
 
+### MANUAL-20260828-ADS-MEASUREMENT-FINAL-HARDENING [P0] Reklam edinimi, consent ve dogrulanmis donusum final kapilari
+
+Durum: Blocked (code fully validated; owner/legal, migration, Production release and live receipt gates remain)
+
+Fingerprint: `ads|uk-ie-search|consent-route-isolation|verified-registration-request-payment|growth-report-fail-closed|final-launch-gates`
+
+Sonuc: Public consent/paid-click, register/request/payment exact-once handoff,
+first-party attribution, HMAC rotation, partial-report fail-closed davranisi,
+exact Google route allowlist'i ve responsive landing-page paketi yerelde
+tamamlandi. Kampanyalar ve harcama kapali kaldi; canli Ads edit/upload veya
+aktivasyon yapilmadi. Full lint/typecheck/test/i18n/build/performance,
+responsive Chrome QA ve bagimsiz immutable review PASS oldu.
+
+2026-08-29 ek ilerleme: canli account-level audit toplam EUR 111.31 / 478 click
+/ 0 conversion harcamayi kampanya ve kanal bazinda uzlastirdi. PMax harcamasinin
+tamami YouTube, Display ve Discover'da; Search harcamasi sifir bulundu. English
+file-service landing'inin birincil ve final CTA'si tekrar dogrudan registration-
+first `/new-request` akisina baglandi; servis secimi ikincil yol olarak korundu.
+Kayit basari/hata sonucu uzun formun altindan baslik altindaki odaklanan panele
+tasindi; basarili kayitta form gizlenir ve e-posta dogrulama/resend aksiyonu ilk
+ekranda gorunur. Hedefli funnel suite 25/25 ve scoped lint PASS.
+
+Blokaj: Owner/hukuk onayli guncel VPS + Google Ads/Analytics privacy metni ve
+consent version karari; UK/Irlanda emissions-policy uygunluk karari; operasyonel
+sure iddialarinin kaniti veya notr metni; edge click-query log retention kaniti;
+ayri Production Growth HMAC secret'lari ve migration-first release; acik
+Production yayin yetkisi; post-deploy Tag Assistant/network receipt; asset
+ticari kullanim/AI disclosure ve canli Google Ads edit/upload icin action-time
+onay. Bu kapilar tamamlanmadan kampanya aktivasyonu ve "launch-ready" iddiasi
+fail-closed kalir.
+
 ### MANUAL-20260823-INTEGRATED-PRODUCTION-RELEASE [P0] Son degisikliklerin guvenli Production yayini
 
 Durum: Blocked (code and VPS runtime validated; secret/backup release gates remain)
@@ -140,6 +171,13 @@ Irlanda, presence-only konum, Google Search Network, English, phrase/exact
 keyword ve kapali broad/AI Max/Display/Search Partners sinirina getirildi. Diger
 Search ve Performance Max kampanyalari duraklatilmis kaldi.
 
+2026-08-29 canli account-level uzlastirmada toplam EUR 111.31 / 478 click / 0
+conversion dogrulandi. Bunun EUR 54.25 / 398 click'i agirlikla YouTube ve Display
+dagitimi yapan PMax'e, EUR 53.03 / 74 click'i tarihsel English Search'e, yalniz
+EUR 4.03 / 6 click'i kontrollu UK/Irlanda Search'e aittir. Ilk iki kampanya
+yeniden acilmayacak; kontrollu kampanya da Production receipt kanitindan once
+harcama baslatmayacak.
+
 Uygulama tarafinda `/file-service` -> `/new-request` edinim yolu netlestirildi;
 korumali talep girisinde yeni musteri icin kayit ana, mevcut musteri icin login
 ikincil aksiyon oldu. Kayit donusumu artik istemci rastgele kimligi yerine
@@ -150,10 +188,10 @@ cihaz dogrulamasi resume'u, basarisiz ilk teslim ve hesap degistirme senaryolari
 ile fail-soft ve idempotenttir. PKCE kodu tek kez exchange edilir; normal login,
 password reset ve donen Google kullanicisi kayit sayilmaz.
 
-Kontroller: hedefli Ads/auth/e-posta suite PASS (67/67); `npm run lint` PASS;
-`npm run typecheck` PASS; `npm test` PASS (1032/1032); `npm run check:i18n`
-PASS (12 locale, 609/609); `npm run build -- --webpack` PASS (278/278);
-performance PASS (70.1/80 KiB gzip); `git diff --check` PASS. Bagimsiz final
+Kontroller: hedefli acquisition/responsive suite PASS (116/116); `npm run lint`
+PASS; `npm run typecheck` PASS; `npm test` PASS (1174/1174); `npm run check:i18n`
+PASS (12 locale, 617/617); `npm run build -- --webpack` PASS (279/279);
+performance PASS (57.0/80 KiB gzip); `git diff --check` PASS. Bagimsiz final
 review GO verdi ve P0/P1 bulmadi. Kod henuz Production'a deploy edilmedi; gercek
 Tag Assistant receipt kaniti alinmadan veya tek UK/IE kampanyasi kontrollu
 olarak yeniden acilmadan reklam harcamasi baslatilmayacak.

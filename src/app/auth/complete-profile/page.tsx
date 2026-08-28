@@ -11,10 +11,10 @@ import {
   normalizeCountryName,
   resolveDetectedCountrySelection,
 } from "@/lib/countries";
-import { recordGrowthAccountCreated } from "@/lib/growth/client";
-import { trackRegistrationCompleted } from "@/lib/publicAnalytics";
 import {
-  completePendingRegistrationHandoffs,
+  completeRegistrationHandoffsBeforeNavigation,
+} from "@/lib/registrationHandoffClient";
+import {
   createRegistrationAccountBinding,
   readPendingRegistrationHandoffs,
 } from "@/lib/registrationConversion";
@@ -30,6 +30,10 @@ import {
 } from "@/lib/registrationProfile";
 import { supabase } from "@/lib/supabaseClient";
 import { getSafeLocalRedirectPath } from "@/lib/safeLocalRedirect";
+import {
+  replacePrivateMeasurementDocument,
+  replaceWithPendingMeasurementCompletion,
+} from "@/lib/publicAnalytics";
 
 type CountryDetectionState = "detecting" | "detected" | "manual";
 
@@ -96,14 +100,19 @@ export default function CompleteProfilePage() {
             setCheckingUser(false);
             return;
           }
-          router.replace("/login");
+          if (!replacePrivateMeasurementDocument("/login")) {
+            router.replace("/login");
+          }
           return;
         }
         if (
           !hasPendingGoogleRegistration() &&
           !requiresRegistrationCountryCompletion(session.user)
         ) {
-          router.replace(safeNextPath());
+          const next = safeNextPath();
+          if (!replacePrivateMeasurementDocument(next)) {
+            router.replace(next);
+          }
           return;
         }
         setCheckingUser(false);
@@ -236,37 +245,36 @@ export default function CompleteProfilePage() {
       registrationHandoffKeys,
       registrationAccountBinding
     );
+    const next = safeNextPath();
+    const callbackDestination =
+      `/auth/callback?next=${encodeURIComponent(next)}`;
+    let measurementBridgeStarted = false;
+    const startMeasurementBridge = () => {
+      if (measurementBridgeStarted) return true;
+      measurementBridgeStarted = replaceWithPendingMeasurementCompletion(
+        callbackDestination
+      );
+      return measurementBridgeStarted;
+    };
     clearPendingDraft();
     if (
       pendingRegistrationHandoffs.conversion ||
       pendingRegistrationHandoffs.notificationSource
     ) {
-      await completePendingRegistrationHandoffs({
-        storage: window.sessionStorage,
-        keys: registrationHandoffKeys,
-        accountBinding: registrationAccountBinding,
-        onConversion: async () => {
-          const conversionSeed = await recordGrowthAccountCreated();
-          if (!conversionSeed) return false;
-          await trackRegistrationCompleted(conversionSeed).catch(() => false);
-          return true;
+      await completeRegistrationHandoffsBeforeNavigation(
+        {
+          storage: window.sessionStorage,
+          keys: registrationHandoffKeys,
+          accountBinding: registrationAccountBinding,
         },
-        onNotification: async (source) => {
-          const response = await authenticatedFetch(
-            "/api/email/new-customer",
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ source }),
-            }
-          );
-          return response.ok;
-        },
-      });
+        { onConversionHandoffCompleted: startMeasurementBridge }
+      );
+      if (startMeasurementBridge()) return;
     }
 
-    const next = safeNextPath();
-    router.replace(`/auth/callback?next=${encodeURIComponent(next)}`);
+    if (!replacePrivateMeasurementDocument(callbackDestination)) {
+      router.replace(callbackDestination);
+    }
   };
 
   if (checkingUser) {

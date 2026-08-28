@@ -44,6 +44,13 @@ test("observability endpoint accepts safe telemetry and rejects extra private fi
   assert.equal(accepted.status, 202);
   assert.deepEqual(await accepted.json(), { accepted: true });
 
+  const measurement = await POST(new Request("http://localhost/api/observability/client-event", {
+    method: "POST",
+    headers: { "content-type": "application/json", "x-forwarded-for": "203.0.113.22" },
+    body: JSON.stringify({ kind: "client_error", route: "/services/stage-1", category: "ads_linker" }),
+  }));
+  assert.equal(measurement.status, 202);
+
   const rejected = await POST(new Request("http://localhost/api/observability/client-event", {
     method: "POST",
     headers: { "content-type": "application/json", "x-forwarded-for": "203.0.113.21" },
@@ -63,6 +70,7 @@ test("client diagnostics never transmit messages, stacks, users or request metad
   assert.match(route, /\.strict\(\)/);
   assert.match(route, /checkAdaptiveRateLimit/);
   assert.match(route, /"Cache-Control": "no-store"/);
+  assert.match(monitor, /reportMeasurementHandoffFailure[\s\S]*?attribution_handoff[\s\S]*?ads_linker/);
   assert.doesNotMatch(route, /getSupabaseAdmin|\.from\(/);
 });
 

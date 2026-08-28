@@ -11,6 +11,7 @@ import {
 } from "@/lib/deviceVerificationClient";
 import { signOutLocalStable } from "@/lib/authGuards";
 import { getSafeLocalRedirectPath } from "@/lib/safeLocalRedirect";
+import { replacePrivateMeasurementDocument } from "@/lib/publicAnalytics";
 
 function formatCountdown(totalSeconds: number) {
   const safeSeconds = Math.max(0, Math.ceil(totalSeconds));
@@ -43,7 +44,9 @@ export function DeviceVerificationPanel({
       onVerified();
       return;
     }
-    router.replace(getSafeLocalRedirectPath(nextPath) ?? "/dashboard");
+    const destination = getSafeLocalRedirectPath(nextPath) ?? "/dashboard";
+    if (replacePrivateMeasurementDocument(destination)) return;
+    router.replace(destination);
     router.refresh();
   }, [nextPath, onVerified, router]);
 
@@ -58,6 +61,7 @@ export function DeviceVerificationPanel({
 
   const leaveRevokedSession = useCallback(async () => {
     await signOutLocalStable();
+    if (replacePrivateMeasurementDocument("/login")) return;
     router.replace("/login");
     router.refresh();
   }, [router]);
@@ -157,6 +161,7 @@ export function DeviceVerificationPanel({
 
   const handleDifferentAccount = async () => {
     await signOutLocalStable();
+    if (replacePrivateMeasurementDocument("/login")) return;
     router.replace("/login");
     router.refresh();
   };

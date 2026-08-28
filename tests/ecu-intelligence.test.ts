@@ -2172,7 +2172,7 @@ test("browser Supabase client persists sessions and uses supported default refre
   assert.match(source, /autoRefreshToken:\s*true/);
   assert.doesNotMatch(source, /navigatorLock/);
   assert.doesNotMatch(source, /lockAcquireTimeout/);
-  assert.match(source, /__mgAutotechSupabase/);
+  assert.doesNotMatch(source, /__mgAutotechSupabase/);
 });
 
 test("admin training API rejects unauthenticated access", async () => {

@@ -35,6 +35,11 @@ import {
   getServiceIntentGuide,
   serviceIntentGuideSlugs,
 } from "@/lib/serviceIntentGuides";
+import {
+  buildNewRequestPath,
+  getPublicServiceRequestIntent,
+} from "@/lib/requestIntent";
+import { buildAuthEntryPath } from "@/lib/safeLocalRedirect";
 
 type ServicePage = {
   slug: string;
@@ -494,6 +499,10 @@ export default async function ServicePage({
 
   if (!service) notFound();
 
+  const requestHref = buildNewRequestPath(
+    getPublicServiceRequestIntent(service.slug)
+  );
+  const registrationHref = buildAuthEntryPath("/register", requestHref);
   const pageUrl = absoluteUrl(`/services/${service.slug}`);
   const jsonLd = {
     "@context": "https://schema.org",
@@ -589,14 +598,14 @@ export default async function ServicePage({
 
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Link
-                href="/new-request"
+                href={requestHref}
                 className="inline-flex items-center justify-center rounded-xl bg-[#b1121b] px-6 py-4 text-sm font-black text-white shadow-xl shadow-red-950/40 transition hover:bg-[#c91824]"
               >
                 {service.slug === "stage-1" ? "Start Stage 1 Request" : "Create File Request"}
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
               <Link
-                href="/register"
+                href={registrationHref}
                 className="inline-flex items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] px-6 py-4 text-sm font-black text-white transition hover:bg-white/10"
               >
                 Create Customer Account
@@ -679,7 +688,7 @@ export default async function ServicePage({
               Create an account, buy credits and submit the original file with vehicle details. The request can then be tracked from the customer dashboard.
             </p>
             <Link
-              href="/register"
+              href={requestHref}
               className="mt-6 inline-flex w-full items-center justify-center rounded-xl bg-[#b1121b] px-5 py-4 text-sm font-black text-white transition hover:bg-[#c91824]"
             >
               Start Secure Request

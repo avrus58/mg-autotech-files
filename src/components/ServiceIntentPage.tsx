@@ -18,9 +18,16 @@ import {
   websiteJsonLd,
 } from "@/lib/seo";
 import type { ServiceIntentGuide } from "@/lib/serviceIntentGuides";
+import {
+  buildNewRequestPath,
+  getPublicServiceRequestIntent,
+} from "@/lib/requestIntent";
 
 export function ServiceIntentPage({ guide }: { guide: ServiceIntentGuide }) {
   const pageUrl = absoluteUrl(`/services/${guide.slug}`);
+  const requestHref = buildNewRequestPath(
+    getPublicServiceRequestIntent(guide.slug)
+  );
   const jsonLd = {
     "@context": "https://schema.org",
     "@graph": [
@@ -111,7 +118,7 @@ export function ServiceIntentPage({ guide }: { guide: ServiceIntentGuide }) {
             </h1>
             <p className="mt-6 max-w-3xl text-base leading-8 text-zinc-300 sm:text-lg">{guide.lead}</p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <Link href="/new-request" className="inline-flex items-center justify-center rounded-lg bg-[#b1121b] px-6 py-4 text-sm font-black transition hover:bg-[#c91824] focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500">
+              <Link href={requestHref} className="inline-flex items-center justify-center rounded-lg bg-[#b1121b] px-6 py-4 text-sm font-black transition hover:bg-[#c91824] focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500">
                 Create file request<ArrowRight className="ml-2 h-4 w-4" aria-hidden="true" />
               </Link>
               <Link href="/services" className="inline-flex items-center justify-center rounded-lg border border-white/15 bg-white/[0.04] px-6 py-4 text-sm font-black transition hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500">

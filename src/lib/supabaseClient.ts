@@ -1,4 +1,4 @@
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { createClient } from "@supabase/supabase-js";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -13,13 +13,9 @@ function getValidSupabaseUrl(value: string | undefined) {
   }
 }
 
-type SupabaseWindow = Window & typeof globalThis & {
-  __mgAutotechSupabase?: SupabaseClient;
-};
-
-const browserWindow = typeof window === "undefined" ? null : window as SupabaseWindow;
-
-export const supabase = browserWindow?.__mgAutotechSupabase ?? createClient(
+// The ES module cache is the singleton boundary. Do not publish an authenticated
+// client on window, where unrelated browser scripts could discover it.
+export const supabase = createClient(
   getValidSupabaseUrl(supabaseUrl),
   supabaseAnonKey || "placeholder-anon-key",
   {
@@ -30,5 +26,3 @@ export const supabase = browserWindow?.__mgAutotechSupabase ?? createClient(
     },
   }
 );
-
-if (browserWindow) browserWindow.__mgAutotechSupabase = supabase;

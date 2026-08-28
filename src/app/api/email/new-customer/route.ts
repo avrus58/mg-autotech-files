@@ -12,6 +12,7 @@ import {
   checkAdaptiveRateLimit,
   rateLimitResponseHeaders,
 } from "@/lib/abuseProtection";
+import { isCompletedCustomerRegistrationEligible } from "@/lib/registrationEligibility";
 
 const registrationNotificationSchema = z.object({
   source: z.enum(["email", "google"]).optional().default("email"),
@@ -30,16 +31,9 @@ export async function POST(request: Request) {
     );
   }
 
-  const now = Date.now();
-  const createdAt = new Date(auth.user.created_at).getTime();
-  const confirmedAt = new Date(
-    auth.user.email_confirmed_at || auth.user.confirmed_at || 0
-  ).getTime();
-  const isRecent = (value: number) =>
-    Number.isFinite(value) && now - value >= 0 && now - value <= 30 * 60 * 1000;
-  if (!isRecent(createdAt) && !isRecent(confirmedAt)) {
+  if (!isCompletedCustomerRegistrationEligible(auth)) {
     return NextResponse.json(
-      { success: false, error: "Registration notification window has expired." },
+      { success: false, error: "Registration notification is not available." },
       { status: 403, headers: responseHeaders }
     );
   }
@@ -118,12 +112,25 @@ export async function POST(request: Request) {
     // Email delivery can still use the resolved language for this request.
   }
 
-  await sendRegistrationConfirmedNotifications({
+  const delivery = await sendRegistrationConfirmedNotifications({
     userId: auth.user.id,
     customerEmail,
     source: parsed.data.source,
     language,
   });
+
+  if (!delivery.ok) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Registration notification delivery is temporarily unavailable.",
+      },
+      {
+        status: 503,
+        headers: { ...responseHeaders, "Retry-After": "2" },
+      }
+    );
+  }
 
   return NextResponse.json({ success: true }, { headers: responseHeaders });
 }

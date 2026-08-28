@@ -1,5 +1,7 @@
 const EMAIL_CONFIRMATION_SESSION_SKEW_MS = 5 * 60 * 1000;
 export const REGISTRATION_HANDOFF_TTL_MS = 30 * 60 * 1000;
+export const REGISTRATION_HANDOFF_RETRY_DELAYS_MS = [1_500, 5_000] as const;
+export const REGISTRATION_NOTIFICATION_TIMEOUT_MS = 4_000;
 
 export type RegistrationNotificationSource = "email" | "google";
 
@@ -11,9 +13,12 @@ type RegistrationConversionUser = {
   app_metadata?: Record<string, unknown>;
 };
 
-type RegistrationSessionStorage = Pick<Storage, "getItem" | "setItem" | "removeItem">;
+export type RegistrationSessionStorage = Pick<
+  Storage,
+  "getItem" | "setItem" | "removeItem"
+>;
 
-type RegistrationHandoffKeys = {
+export type RegistrationHandoffKeys = {
   conversion: string;
   notification: string;
 };
@@ -24,16 +29,59 @@ type PendingRegistrationHandoffs = {
 };
 
 const REGISTRATION_ACCOUNT_BINDING_PATTERN = /^[a-f0-9]{64}$/;
+const activeRegistrationHandoffRecoveryTokens = new WeakMap<object, symbol>();
+const registrationHandoffMemoryFallback = new WeakMap<
+  object,
+  Map<string, string>
+>();
+
+function registrationMemoryValues(
+  storage: RegistrationSessionStorage,
+  create = false
+) {
+  let values = registrationHandoffMemoryFallback.get(storage);
+  if (!values && create) {
+    values = new Map<string, string>();
+    registrationHandoffMemoryFallback.set(storage, values);
+  }
+  return values;
+}
+
+export function claimRegistrationHandoffRecovery(
+  storage: RegistrationSessionStorage
+) {
+  const token = Symbol("registration-handoff-recovery");
+  activeRegistrationHandoffRecoveryTokens.set(storage, token);
+  return token;
+}
+
+export function ownsRegistrationHandoffRecovery(
+  storage: RegistrationSessionStorage,
+  token: symbol
+) {
+  return activeRegistrationHandoffRecoveryTokens.get(storage) === token;
+}
+
+export function releaseRegistrationHandoffRecovery(
+  storage: RegistrationSessionStorage,
+  token: symbol
+) {
+  if (ownsRegistrationHandoffRecovery(storage, token)) {
+    activeRegistrationHandoffRecoveryTokens.delete(storage);
+  }
+}
 
 export function readRegistrationSessionValue(
   storage: RegistrationSessionStorage,
   key: string
 ) {
   try {
-    return storage.getItem(key);
+    const stored = storage.getItem(key);
+    if (stored !== null) return stored;
   } catch {
-    return null;
+    // The current document can still complete its account-bound handoff.
   }
+  return registrationMemoryValues(storage)?.get(key) ?? null;
 }
 
 export function writeRegistrationSessionValue(
@@ -43,10 +91,15 @@ export function writeRegistrationSessionValue(
 ) {
   try {
     storage.setItem(key, value);
-    return true;
+    if (storage.getItem(key) === value) {
+      registrationMemoryValues(storage)?.delete(key);
+      return true;
+    }
   } catch {
-    return false;
+    // Fall through to the current-document recovery store.
   }
+  registrationMemoryValues(storage, true)?.set(key, value);
+  return true;
 }
 
 export function removeRegistrationSessionValues(
@@ -59,7 +112,47 @@ export function removeRegistrationSessionValues(
     } catch {
       // Registration verification must remain usable with blocked storage.
     }
+    registrationMemoryValues(storage)?.delete(key);
   }
+}
+
+export function registrationHandoffMarkersAreDurable(
+  storage: RegistrationSessionStorage,
+  keys: RegistrationHandoffKeys
+) {
+  const memoryValues = registrationMemoryValues(storage);
+  let hasPendingMarker = false;
+
+  for (const key of [keys.conversion, keys.notification]) {
+    let persistedValue: string | null;
+    try {
+      persistedValue = storage.getItem(key);
+    } catch {
+      return false;
+    }
+
+    const memoryValue = memoryValues?.get(key) ?? null;
+    if (persistedValue === null && memoryValue === null) continue;
+    hasPendingMarker = true;
+
+    // A full-document navigation can recover only values that are actually in
+    // sessionStorage. If even one pending marker fell back to this document's
+    // WeakMap, the foreground attempt must receive the memory-only budget.
+    if (persistedValue === null) return false;
+  }
+
+  return hasPendingMarker;
+}
+
+export function getRegistrationHandoffNavigationBudget(
+  storage: RegistrationSessionStorage,
+  keys: RegistrationHandoffKeys,
+  durableBudgetMs: number,
+  memoryOnlyBudgetMs: number
+) {
+  return registrationHandoffMarkersAreDurable(storage, keys)
+    ? durableBudgetMs
+    : memoryOnlyBudgetMs;
 }
 
 function isValidAccountBinding(value: unknown): value is string {
@@ -106,14 +199,14 @@ function pendingMarker(
       createdAt > 0 &&
       createdAt <= now + 60_000 &&
       now - createdAt <= REGISTRATION_HANDOFF_TTL_MS;
-    if (
-      !validTime ||
-      !isValidAccountBinding(parsed.accountBinding) ||
-      parsed.accountBinding !== accountBinding
-    ) {
+    if (!validTime || !isValidAccountBinding(parsed.accountBinding)) {
       removeRegistrationSessionValues(storage, [key]);
       return null;
     }
+    // A valid marker for another authenticated account must not be consumed by
+    // the current account. It can still resume if the originating account is
+    // restored in this tab before the short handoff TTL expires.
+    if (parsed.accountBinding !== accountBinding) return null;
     return parsed;
   } catch {
     removeRegistrationSessionValues(storage, [key]);
@@ -129,6 +222,9 @@ export function markRegistrationHandoffsPending(
   now = Date.now()
 ) {
   if (!isValidAccountBinding(accountBinding)) return false;
+  // A newly established account handoff supersedes any delayed retry that
+  // still owns this tab's storage from an earlier account continuation.
+  claimRegistrationHandoffRecovery(storage);
   const conversion = writeRegistrationSessionValue(
     storage,
     keys.conversion,
@@ -184,6 +280,7 @@ export async function completePendingRegistrationHandoffs(input: {
     source: RegistrationNotificationSource
   ) => Promise<boolean>;
   now?: number;
+  shouldContinue?: () => boolean;
 }) {
   const pending = readPendingRegistrationHandoffs(
     input.storage,
@@ -191,34 +288,177 @@ export async function completePendingRegistrationHandoffs(input: {
     input.accountBinding,
     input.now
   );
-  let conversionCompleted = !pending.conversion;
-  let notificationCompleted = pending.notificationSource === null;
-
-  if (pending.conversion) {
-    try {
-      conversionCompleted = await input.onConversion();
-    } catch {
-      conversionCompleted = false;
+  const conversionMarker = pending.conversion
+    ? readRegistrationSessionValue(input.storage, input.keys.conversion)
+    : null;
+  const notificationMarker = pending.notificationSource
+    ? readRegistrationSessionValue(input.storage, input.keys.notification)
+    : null;
+  const completeConversion = async () => {
+    if (!pending.conversion) return true;
+    if (input.shouldContinue && !input.shouldContinue()) {
+      return false;
     }
-    if (conversionCompleted) {
+    let completed = false;
+    try {
+      completed = await input.onConversion();
+    } catch {
+      completed = false;
+    }
+    if (!completed) return false;
+    const currentMarker = readRegistrationSessionValue(
+      input.storage,
+      input.keys.conversion
+    );
+    if (input.shouldContinue && !input.shouldContinue()) return false;
+    if (currentMarker === conversionMarker) {
       removeRegistrationSessionValues(input.storage, [input.keys.conversion]);
+      return true;
     }
-  }
+    return currentMarker === null;
+  };
 
-  if (pending.notificationSource) {
+  const completeNotification = async () => {
+    if (!pending.notificationSource) return true;
+    if (input.shouldContinue && !input.shouldContinue()) {
+      return false;
+    }
+    let completed = false;
     try {
-      notificationCompleted = await input.onNotification(
-        pending.notificationSource
-      );
+      completed = await input.onNotification(pending.notificationSource);
     } catch {
-      notificationCompleted = false;
+      completed = false;
     }
-    if (notificationCompleted) {
+    if (!completed) return false;
+    const currentMarker = readRegistrationSessionValue(
+      input.storage,
+      input.keys.notification
+    );
+    if (input.shouldContinue && !input.shouldContinue()) return false;
+    if (currentMarker === notificationMarker) {
       removeRegistrationSessionValues(input.storage, [input.keys.notification]);
+      return true;
     }
-  }
+    return currentMarker === null;
+  };
+
+  // Measurement and the transactional notification are independent. Running
+  // them together prevents their fail-soft network budgets from stacking.
+  const [conversionCompleted, notificationCompleted] = await Promise.all([
+    completeConversion(),
+    completeNotification(),
+  ]);
 
   return { conversionCompleted, notificationCompleted };
+}
+
+export async function runRegistrationHandoffWithTimeout(
+  operation: (signal?: AbortSignal) => Promise<boolean>,
+  timeoutMs = REGISTRATION_NOTIFICATION_TIMEOUT_MS
+) {
+  const boundedTimeout =
+    Number.isFinite(timeoutMs) && timeoutMs > 0
+      ? Math.min(timeoutMs, 10_000)
+      : REGISTRATION_NOTIFICATION_TIMEOUT_MS;
+  let controller: AbortController | null = null;
+  try {
+    controller = new AbortController();
+  } catch {
+    // Promise.race still bounds the caller in older browsers.
+  }
+
+  let timeoutId: ReturnType<typeof globalThis.setTimeout> | undefined;
+  const timeout = new Promise<boolean>((resolve) => {
+    timeoutId = globalThis.setTimeout(() => {
+      controller?.abort();
+      resolve(false);
+    }, boundedTimeout);
+  });
+  const attempt = Promise.resolve()
+    .then(() => operation(controller?.signal))
+    .then((completed) => completed === true)
+    .catch(() => false);
+
+  try {
+    return await Promise.race([attempt, timeout]);
+  } finally {
+    if (timeoutId !== undefined) globalThis.clearTimeout(timeoutId);
+  }
+}
+
+export async function retryPendingRegistrationHandoffs(input: {
+  storage: RegistrationSessionStorage;
+  keys: RegistrationHandoffKeys;
+  accountBinding: string | null;
+  onConversion: () => Promise<boolean>;
+  onNotification: (
+    source: RegistrationNotificationSource
+  ) => Promise<boolean>;
+  retryDelaysMs?: readonly number[];
+  wait?: (delayMs: number) => Promise<void>;
+  shouldContinue?: () => boolean;
+}) {
+  const retryDelays = (
+    input.retryDelaysMs ?? REGISTRATION_HANDOFF_RETRY_DELAYS_MS
+  ).slice(0, 3);
+  const wait =
+    input.wait ??
+    ((delayMs: number) =>
+      new Promise<void>((resolve) => {
+        globalThis.setTimeout(resolve, Math.max(0, Math.min(delayMs, 10_000)));
+      }));
+  let attempts = 0;
+  let conversionCompleted = false;
+  let notificationCompleted = false;
+
+  for (const delayMs of retryDelays) {
+    if (input.shouldContinue && !input.shouldContinue()) {
+      return {
+        conversionCompleted,
+        notificationCompleted,
+        attempts,
+        stopped: true,
+      };
+    }
+    try {
+      await wait(Math.max(0, Math.min(delayMs, 10_000)));
+    } catch {
+      return {
+        conversionCompleted,
+        notificationCompleted,
+        attempts,
+        stopped: true,
+      };
+    }
+    if (input.shouldContinue && !input.shouldContinue()) {
+      return {
+        conversionCompleted,
+        notificationCompleted,
+        attempts,
+        stopped: true,
+      };
+    }
+
+    const result = await completePendingRegistrationHandoffs(input);
+    attempts += 1;
+    conversionCompleted = result.conversionCompleted;
+    notificationCompleted = result.notificationCompleted;
+    if (conversionCompleted && notificationCompleted) {
+      return {
+        conversionCompleted,
+        notificationCompleted,
+        attempts,
+        stopped: false,
+      };
+    }
+  }
+
+  return {
+    conversionCompleted,
+    notificationCompleted,
+    attempts,
+    stopped: false,
+  };
 }
 
 function isGoogleUser(user: RegistrationConversionUser) {

@@ -99,7 +99,7 @@ async function verifySecurityHeaders() {
   for (const [name, value] of [
     ["x-content-type-options", "nosniff"],
     ["x-permitted-cross-domain-policies", "none"],
-    ["referrer-policy", "strict-origin-when-cross-origin"],
+    ["referrer-policy", "strict-origin"],
   ]) {
     if (baseline.headers.get(name) !== value) throw new Error(`GET / missing ${name}: ${value}`);
   }

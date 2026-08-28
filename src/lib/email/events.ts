@@ -114,7 +114,7 @@ export async function sendRegistrationConfirmedNotifications(input: {
     const source = clean(input.source) || "email";
     const language = input.language ?? await loadUserTransactionalEmailLanguage(input.userId);
 
-    await Promise.allSettled([
+    const [customerDelivery, adminDelivery] = await Promise.all([
       sendTransactionalEmail({
         eventType: "customer_welcome",
         to: customerEmail,
@@ -133,8 +133,22 @@ export async function sendRegistrationConfirmedNotifications(input: {
         metadata: { source: "verified_registration", signup_source: source },
       }),
     ]);
+    const accepted = (result: typeof customerDelivery) =>
+      result.ok &&
+      (result.status === "sent" ||
+        result.skippedReason === "duplicate_idempotency_key");
+    return {
+      ok: accepted(customerDelivery) && accepted(adminDelivery),
+      customerStatus: customerDelivery.status,
+      adminStatus: adminDelivery.status,
+    };
   } catch {
     // Registration must remain successful if an email provider is unavailable.
+    return {
+      ok: false,
+      customerStatus: "failed" as const,
+      adminStatus: "failed" as const,
+    };
   }
 }
 

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, type MouseEvent } from "react";
 import {
   CheckCircle2,
   CreditCard,
@@ -10,14 +10,38 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { authenticatedFetch } from "@/lib/authGuards";
-import { trackPurchaseCompleted } from "@/lib/publicAnalytics";
+import {
+  flushPendingVerifiedConversions,
+  isApprovedAnalyticsHost,
+  isValidGoogleAdsId,
+  isValidGoogleAnalyticsMeasurementId,
+  measurementConsentChangedEvent,
+  readMeasurementConsentSnapshot,
+  sanitizeSensitiveMeasurementLocation,
+  trackPurchaseCompleted,
+  replaceWithPendingMeasurementCompletion,
+} from "@/lib/publicAnalytics";
+import { createRequestCompletionConsentHandoff } from "@/lib/requestCompletionConsent";
 
 type ConfirmState = "checking" | "success" | "error" | "missing";
+const paymentCompletionConsentFailOpenMs = 15_000;
+
+function paymentCompletionConsentIsAvailable(hostname: string) {
+  return isApprovedAnalyticsHost(hostname) && (
+    isValidGoogleAnalyticsMeasurementId(
+      process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID
+    ) || isValidGoogleAdsId(process.env.NEXT_PUBLIC_GOOGLE_ADS_ID)
+  );
+}
 
 export default function PaymentSuccessPage() {
   const [state, setState] = useState<ConfirmState>("checking");
   const [message, setMessage] = useState("Confirming your payment...");
   const [credits, setCredits] = useState<number | null>(null);
+  const [awaitingConsentAfterSuccess, setAwaitingConsentAfterSuccess] =
+    useState(false);
+  const paymentCompletionContinueRef = useRef<(() => void) | null>(null);
+  const paymentCompletionDestinationRef = useRef("/dashboard/credits");
 
   useEffect(() => {
     let cancelled = false;
@@ -76,6 +100,8 @@ export default function PaymentSuccessPage() {
           return;
         }
 
+        sanitizeSensitiveMeasurementLocation();
+
         const conversion = data.conversion && typeof data.conversion === "object"
           ? data.conversion as { value?: unknown; currency?: unknown }
           : null;
@@ -89,9 +115,20 @@ export default function PaymentSuccessPage() {
           }).catch(() => false);
         }
         if (cancelled) return;
+        const completionConsent = readMeasurementConsentSnapshot();
+        const consentChoiceAvailable = paymentCompletionConsentIsAvailable(
+          window.location.hostname
+        );
         setCredits(Number(data.credits ?? 0));
         setState("success");
         setMessage("Payment confirmed. Credits were added to your account.");
+        if (completionConsent.needsDecision && consentChoiceAvailable) {
+          setAwaitingConsentAfterSuccess(true);
+          return;
+        }
+        if (replaceWithPendingMeasurementCompletion("/dashboard/credits")) {
+          return;
+        }
       } catch (error) {
         setState("error");
         setMessage(
@@ -105,6 +142,54 @@ export default function PaymentSuccessPage() {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (!awaitingConsentAfterSuccess) return;
+
+    const continueAfterConsent = createRequestCompletionConsentHandoff({
+      readConsent: readMeasurementConsentSnapshot,
+      flushVerifiedConversions: flushPendingVerifiedConversions,
+      navigate: () => {
+        const destination = paymentCompletionDestinationRef.current;
+        setAwaitingConsentAfterSuccess(false);
+        if (!replaceWithPendingMeasurementCompletion(destination)) {
+          window.location.assign(destination);
+        }
+      },
+    });
+    const handleConsentChoice = () => {
+      void continueAfterConsent(true);
+    };
+    paymentCompletionContinueRef.current = handleConsentChoice;
+    const failOpenTimer = window.setTimeout(() => {
+      void continueAfterConsent(true);
+    }, paymentCompletionConsentFailOpenMs);
+
+    void continueAfterConsent(false);
+    window.addEventListener(measurementConsentChangedEvent, handleConsentChoice);
+    return () => {
+      window.clearTimeout(failOpenTimer);
+      if (paymentCompletionContinueRef.current === handleConsentChoice) {
+        paymentCompletionContinueRef.current = null;
+      }
+      window.removeEventListener(
+        measurementConsentChangedEvent,
+        handleConsentChoice
+      );
+    };
+  }, [awaitingConsentAfterSuccess]);
+
+  const continueToPrivateDestination = (
+    event: MouseEvent<HTMLAnchorElement>,
+    destination: string
+  ) => {
+    if (!awaitingConsentAfterSuccess) return;
+    event.preventDefault();
+    paymentCompletionDestinationRef.current = destination;
+    const continueAfterConsent = paymentCompletionContinueRef.current;
+    if (continueAfterConsent) continueAfterConsent();
+    else window.setTimeout(() => paymentCompletionContinueRef.current?.(), 0);
+  };
 
   const isSuccess = state === "success";
   const isChecking = state === "checking";
@@ -152,6 +237,9 @@ export default function PaymentSuccessPage() {
         <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
           <Link
             href="/dashboard"
+            onClick={(event) =>
+              continueToPrivateDestination(event, "/dashboard")
+            }
             className="rounded-xl bg-[#b1121b] px-5 py-3 font-black text-white transition hover:bg-[#c91824]"
           >
             <LayoutDashboard className="mr-2 inline h-4 w-4" />
@@ -160,6 +248,9 @@ export default function PaymentSuccessPage() {
 
           <Link
             href="/dashboard/credits"
+            onClick={(event) =>
+              continueToPrivateDestination(event, "/dashboard/credits")
+            }
             className="rounded-xl border border-white/10 bg-white/[0.04] px-5 py-3 font-black text-white transition hover:bg-white/10"
           >
             <CreditCard className="mr-2 inline h-4 w-4" />

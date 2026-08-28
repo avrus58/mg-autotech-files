@@ -37,8 +37,14 @@ test("large translation catalogs are loaded only for runtime-translated routes",
   assert.match(config, /export const supportedLocales/);
 });
 
-test("notifications and heavy tools are deferred without destabilizing homepage layout", () => {
+test("private notifications stay out of public pages and heavy tools remain deferred", () => {
   const layout = source("src", "app", "layout.tsx");
+  const publicAnalyticsRuntime = source(
+    "src",
+    "components",
+    "analytics",
+    "PublicAnalyticsRuntime.tsx"
+  );
   const notifications = source(
     "src",
     "components",
@@ -53,8 +59,20 @@ test("notifications and heavy tools are deferred without destabilizing homepage 
   const styles = source("src", "app", "globals.css");
 
   assert.match(layout, /CustomerNotificationsRuntime/);
-  assert.match(notifications, /isCustomerWorkspace/);
-  assert.match(notifications, /requestIdleCallback/);
+  assert.match(layout, /PublicAnalyticsRuntime/);
+  assert.doesNotMatch(
+    layout,
+    /from "@\/components\/analytics\/PublicAnalytics"/
+  );
+  assert.match(
+    publicAnalyticsRuntime,
+    /dynamic\([\s\S]*?import\("@\/components\/analytics\/PublicAnalytics"\)[\s\S]*?ssr: false/
+  );
+  assert.match(notifications, /isCustomerNotificationRuntimePath/);
+  assert.doesNotMatch(
+    notifications,
+    /requestIdleCallback|setTimeout|useEffect|useState/
+  );
   assert.match(tools, /IntersectionObserver/);
   assert.match(tools, /PerformanceTools/);
   assert.match(styles, /\.homepage-deferred-section\s*{[\s\S]*?content-visibility: visible/);

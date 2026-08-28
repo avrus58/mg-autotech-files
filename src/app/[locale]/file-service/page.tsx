@@ -213,10 +213,10 @@ export default async function LocalizedFileServicePage({
             </Link>
           </nav>
           <Link
-            href="/new-request"
+            href="#request-route"
             className="inline-flex items-center justify-center rounded-xl bg-[#b1121b] px-4 py-3 text-sm font-black text-white shadow-lg shadow-red-950/25 transition hover:bg-[#c91824]"
           >
-            {copy.nav.startRequest}
+            {copy.nav.services}
           </Link>
         </div>
       </header>
@@ -236,10 +236,10 @@ export default async function LocalizedFileServicePage({
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
-                href="/new-request"
+                href="#request-route"
                 className="inline-flex items-center justify-center rounded-xl bg-[#b1121b] px-6 py-4 text-sm font-black text-white shadow-lg shadow-red-950/30 transition hover:-translate-y-0.5 hover:bg-[#c91824]"
               >
-                {copy.primaryCta}
+                {copy.categoriesTitle}
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
               <Link
@@ -270,7 +270,7 @@ export default async function LocalizedFileServicePage({
         </div>
       </section>
 
-      <section className="bg-[#080b10] py-20">
+      <section id="request-route" className="scroll-mt-6 bg-[#080b10] py-20">
         <div className="mx-auto max-w-7xl px-4">
           <div className="mb-10 max-w-3xl">
             <div className="text-sm font-black uppercase tracking-[0.25em] text-red-500">
@@ -395,10 +395,10 @@ export default async function LocalizedFileServicePage({
             <p className="mt-3 max-w-2xl text-red-100">{copy.finalText}</p>
           </div>
           <Link
-            href="/new-request"
+            href="#request-route"
             className="inline-flex items-center rounded-xl bg-white px-7 py-4 font-black text-[#b1121b] transition duration-300 hover:-translate-y-1 hover:bg-zinc-100"
           >
-            {copy.primaryCta}
+            {copy.categoriesTitle}
             <ArrowRight className="ml-2 h-4 w-4" />
           </Link>
         </div>

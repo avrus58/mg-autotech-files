@@ -344,7 +344,7 @@ test("login, OAuth bootstrap and protected layouts all stop at device verificati
   assert.match(callback, /startPasswordChangeVerification\(\)/);
   assert.match(
     completeProfile,
-    /router\.replace\(`\/auth\/callback\?next=\$\{encodeURIComponent\(next\)\}`\)/
+    /const callbackDestination =[\s\S]*?`\/auth\/callback\?next=\$\{encodeURIComponent\(next\)\}`[\s\S]*?replaceWithPendingMeasurementCompletion\([\s\S]*?callbackDestination[\s\S]*?\)[\s\S]*?replacePrivateMeasurementDocument\(callbackDestination\)[\s\S]*?router\.replace\(callbackDestination\)/
   );
   assert.ok(
     callback.indexOf('/api/auth/oauth-registration/finalize') <

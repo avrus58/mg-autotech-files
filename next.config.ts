@@ -3,7 +3,9 @@ import type { NextConfig } from "next";
 const baselineSecurityHeaders = [
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "X-Permitted-Cross-Domain-Policies", value: "none" },
-  { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+  // Never forward a paid landing page's path or click-ID query in Referer,
+  // including on same-origin navigation into authenticated customer routes.
+  { key: "Referrer-Policy", value: "strict-origin" },
   {
     key: "Permissions-Policy",
     value: "camera=(), microphone=(), geolocation=(), browsing-topics=()",
@@ -45,6 +47,7 @@ const protectedPageSources = [
   "/reset-password",
   "/desktop-auth/turnstile",
   "/auth/:path*",
+  "/measurement/:path*",
 ];
 
 const nextConfig: NextConfig = {

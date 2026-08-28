@@ -15,6 +15,7 @@ type StartedEventRow = {
   id: string;
   user_id: string | null;
   occurred_at: string | null;
+  safe_metadata: unknown;
 };
 
 type ReminderProfileRow = {
@@ -31,6 +32,13 @@ export type GrowthReminderCandidate = {
   customerReference: string;
   occurredAt: string;
 };
+
+export function isExplicitReminderJourneyMetadata(value: unknown) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const metadata = value as Record<string, unknown>;
+  return metadata.purpose === "reminder" &&
+    metadata.consent_version === "abandoned-request-v1";
+}
 
 export function isGrowthReminderEligible(input: {
   startedAt: string | null;
@@ -66,8 +74,12 @@ export async function getEligibleGrowthReminderCandidates(input?: {
   const to = new Date(now.getTime() - minimumAgeMs).toISOString();
   const eventsResult = await admin
     .from("growth_journey_events")
-    .select("id,user_id,occurred_at")
+    .select("id,user_id,occurred_at,safe_metadata")
     .eq("event_type", "request_started")
+    .contains("safe_metadata", {
+      purpose: "reminder",
+      consent_version: "abandoned-request-v1",
+    })
     .gte("occurred_at", from)
     .lte("occurred_at", to)
     .order("occurred_at", { ascending: false })
@@ -109,6 +121,7 @@ export async function getEligibleGrowthReminderCandidates(input?: {
   const includedUsers = new Set<string>();
 
   return events.flatMap((event) => {
+    if (!isExplicitReminderJourneyMetadata(event.safe_metadata)) return [];
     if (!event.user_id || !event.occurred_at) return [];
     if (includedUsers.has(event.user_id)) return [];
     const profile = profiles.get(event.user_id);

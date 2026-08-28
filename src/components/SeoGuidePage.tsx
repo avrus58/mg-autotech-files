@@ -15,6 +15,7 @@ export function SeoGuidePage({
   related,
   jsonLd,
   breadcrumbs,
+  requestHref = "/new-request",
 }: {
   eyebrow: string;
   title: string;
@@ -25,6 +26,7 @@ export function SeoGuidePage({
   related: { label: string; href: string }[];
   jsonLd: object;
   breadcrumbs?: { label: string; href?: string }[];
+  requestHref?: string;
 }) {
   return (
     <main data-no-translate className="min-h-screen bg-[#050505] text-white">
@@ -53,7 +55,7 @@ export function SeoGuidePage({
           <h1 className="mt-7 max-w-5xl text-[clamp(2.7rem,8vw,5.2rem)] font-black leading-[0.96] tracking-normal [overflow-wrap:anywhere]">{title}</h1>
           <p className="mt-7 max-w-3xl text-lg leading-8 text-zinc-300">{description}</p>
           <div className="mt-9 flex flex-col gap-3 sm:flex-row">
-            <Link href="/new-request" className="inline-flex items-center justify-center rounded-lg bg-[#b1121b] px-6 py-4 text-sm font-black hover:bg-[#c91824]">Create file request<ArrowRight className="ml-2 h-4 w-4" /></Link>
+            <Link href={requestHref} className="inline-flex items-center justify-center rounded-lg bg-[#b1121b] px-6 py-4 text-sm font-black hover:bg-[#c91824]">Create file request<ArrowRight className="ml-2 h-4 w-4" /></Link>
             <Link href="/contact" className="inline-flex items-center justify-center rounded-lg border border-white/15 bg-white/[0.04] px-6 py-4 text-sm font-black hover:bg-white/10">Ask about compatibility</Link>
           </div>
         </div>

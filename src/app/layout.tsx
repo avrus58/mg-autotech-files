@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { CustomerNotificationsRuntime } from "@/components/CustomerNotificationsRuntime";
-import { PublicAnalytics } from "@/components/analytics/PublicAnalytics";
+import { PublicAnalyticsRuntime } from "@/components/analytics/PublicAnalyticsRuntime";
+import { PaidClickPreHydrationGuard } from "@/components/analytics/PaidClickPreHydrationGuard";
+import { AccountRuntimeBoundary } from "@/components/analytics/AccountRuntimeBoundary";
 import { PlatformReliabilityMonitor } from "@/components/PlatformReliabilityMonitor";
 import {
   absoluteUrl,
@@ -156,6 +158,7 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
+        <PaidClickPreHydrationGuard />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -163,7 +166,8 @@ export default function RootLayout({
           }}
         />
         {children}
-        <PublicAnalytics
+        <AccountRuntimeBoundary />
+        <PublicAnalyticsRuntime
           googleAnalyticsMeasurementId={googleAnalyticsMeasurementId}
           googleAdsId={googleAdsId}
           registrationLabel={googleAdsRegistrationLabel}

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { SeoGuidePage } from "@/components/SeoGuidePage";
 import { brandGuides, getPlatformGuide, platformGuides } from "@/lib/industry-content";
+import { buildNewRequestPath } from "@/lib/requestIntent";
 import { absoluteUrl, organizationJsonLd, siteName, websiteJsonLd } from "@/lib/seo";
 
 export function generateStaticParams() { return platformGuides.map((guide) => ({ slug: guide.slug })); }
@@ -25,5 +26,5 @@ export default async function PlatformGuidePage({ params }: { params: Promise<{ 
       .slice(0, 3)
       .map((item) => ({ label: item.name, href: `/brands/${item.slug}` })),
   ];
-  return <SeoGuidePage eyebrow="ECU / TCU technical guide" title={guide.name} description={guide.description} intro={guide.intro} sections={[{ title: "Common applications", items: guide.commonApplications }, { title: "Identification data", items: guide.identification }, { title: "Workshop workflow notes", items: guide.workflowNotes }]} faq={guide.faq} related={related} jsonLd={jsonLd} />;
+  return <SeoGuidePage eyebrow="ECU / TCU technical guide" title={guide.name} description={guide.description} intro={guide.intro} sections={[{ title: "Common applications", items: guide.commonApplications }, { title: "Identification data", items: guide.identification }, { title: "Workshop workflow notes", items: guide.workflowNotes }]} faq={guide.faq} related={related} jsonLd={jsonLd} requestHref={guide.slug === "transmission-control-units" ? buildNewRequestPath("tcu_stage_1") : undefined} />;
 }

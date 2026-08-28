@@ -1,5 +1,6 @@
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabaseClient";
+import { clearGrowthVisitorId } from "@/lib/growth/publicClient";
 import { CUSTOMER_SESSION_REVOKED_MESSAGE } from "@/lib/customerDeviceContracts";
 
 export const AUTH_SESSION_REQUIRED_EVENT = "mg-autotech:auth-session-required";
@@ -78,9 +79,29 @@ function setCachedSession(session: Session | null) {
   if (authWindow) authWindow.__mgAutotechStableSession = session;
 }
 
+function adoptCachedSession(session: Session) {
+  resetGrowthAttributionForAuthIdentityTransition(
+    getCachedSession()?.user.id ?? null,
+    session.user.id
+  );
+  setCachedSession(session);
+}
+
 export function primeStableSession(session: Session | null) {
   initializeAuthMemoryListener();
-  setCachedSession(session);
+  if (session) adoptCachedSession(session);
+  else setCachedSession(null);
+}
+
+export function resetGrowthAttributionForAuthIdentityTransition(
+  previousUserId: string | null,
+  nextUserId: string | null
+) {
+  if (!previousUserId || !nextUserId || previousUserId === nextUserId) {
+    return false;
+  }
+  clearGrowthVisitorId();
+  return true;
 }
 
 function hasUsableCachedSession(expiryBufferSeconds = 15) {
@@ -100,8 +121,9 @@ function initializeAuthMemoryListener() {
 
   supabase.auth.onAuthStateChange((event, session) => {
     if (session) {
-      setCachedSession(session);
+      adoptCachedSession(session);
     } else if (event === "SIGNED_OUT") {
+      clearGrowthVisitorId();
       setCachedSession(null);
     }
   });
@@ -136,7 +158,7 @@ async function refreshStableSession(): Promise<StableSessionResult> {
         supabase.auth.refreshSession()
       );
       if (data.session) {
-        setCachedSession(data.session);
+        adoptCachedSession(data.session);
         return { session: data.session, error: null };
       }
       return { session: null, error };
@@ -175,7 +197,7 @@ async function resolveStableSession(): Promise<StableSessionResult> {
         supabase.auth.getSession()
       );
       if (data.session) {
-        setCachedSession(data.session);
+        adoptCachedSession(data.session);
         return { session: data.session, error: null };
       }
       lastError = error;
@@ -261,7 +283,11 @@ export function notifyDeviceVerificationRequired() {
   }
 }
 
-export async function authenticatedFetch(input: RequestInfo | URL, init?: RequestInit) {
+async function authenticatedFetchInternal(
+  expectedUserId: string | null,
+  input: RequestInfo | URL,
+  init?: RequestInit
+) {
   const send = (accessToken: string) => {
     const headers = new Headers(init?.headers);
     headers.set("Authorization", `Bearer ${accessToken}`);
@@ -277,6 +303,9 @@ export async function authenticatedFetch(input: RequestInfo | URL, init?: Reques
     const session = resolved.session ?? (await getStableSession()).session;
 
     if (!session?.access_token) continue;
+    if (expectedUserId && session.user.id !== expectedUserId) {
+      throw new AuthSessionRecoveryPendingError();
+    }
 
     const response = await send(session.access_token);
     if (response.status === 428) {
@@ -307,12 +336,29 @@ export async function authenticatedFetch(input: RequestInfo | URL, init?: Reques
   throw new Error(AUTH_SESSION_REQUIRED_MESSAGE);
 }
 
+export function authenticatedFetch(input: RequestInfo | URL, init?: RequestInit) {
+  return authenticatedFetchInternal(null, input, init);
+}
+
+export function authenticatedFetchForUser(
+  expectedUserId: string,
+  input: RequestInfo | URL,
+  init?: RequestInit
+) {
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(expectedUserId)) {
+    return Promise.reject(new AuthSessionRecoveryPendingError());
+  }
+  return authenticatedFetchInternal(expectedUserId, input, init);
+}
+
 export async function signOutStable() {
+  clearGrowthVisitorId();
   setCachedSession(null);
   await supabase.auth.signOut();
 }
 
 export async function signOutLocalStable() {
+  clearGrowthVisitorId();
   setCachedSession(null);
   await supabase.auth.signOut({ scope: "local" });
 }

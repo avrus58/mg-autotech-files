@@ -1,15 +1,29 @@
 import type { GrowthAttributionTouch } from "@/lib/growth/types";
+import { normalizeGoogleAdsCampaignToken } from "@/lib/googleAds/campaignTokens";
+import {
+  isFirstPartyAttributionPublicPath,
+  isSafeGoogleAdsClickSignalValue,
+} from "@/lib/publicAnalytics";
 
 export const growthVisitorStorageKey = "mg_growth_visitor_v1";
 export const growthConsentVersion = "analytics-v1";
 
-const allowedCampaignValue = /^[a-z0-9][a-z0-9._~+\-/ ]{0,79}$/i;
 const allowedLocale = /^[a-z]{2}(?:-[a-z]{2})?$/i;
 
-function cleanCampaignValue(value: string | null, maxLength = 80) {
-  if (!value) return null;
-  const clean = value.trim().replace(/\s+/g, " ").slice(0, maxLength);
-  return clean && allowedCampaignValue.test(clean) ? clean : null;
+function isKnownAttributionClassification(
+  source: string,
+  medium: string,
+  referrerHost: string | null
+) {
+  if (source === "direct" && medium === "none") return referrerHost === null;
+  if (source === "google" && medium === "cpc") return true;
+  if (medium === "organic" && referrerHost) {
+    if (source === "google") return /(^|\.)google\./.test(referrerHost);
+    if (source === "bing") return /(^|\.)bing\.com$/.test(referrerHost);
+    if (source === "yahoo") return /(^|\.)yahoo\./.test(referrerHost);
+    if (source === "duckduckgo") return /(^|\.)duckduckgo\.com$/.test(referrerHost);
+  }
+  return medium === "referral" && Boolean(referrerHost) && source === referrerHost;
 }
 
 export function normalizeGrowthPath(value: string) {
@@ -29,6 +43,7 @@ export function normalizeReferrerHost(value: string | null | undefined) {
   try {
     const hostname = new URL(value).hostname.toLowerCase().replace(/^www\./, "");
     if (!hostname || hostname.length > 120 || !/^[a-z0-9.-]+$/.test(hostname)) return null;
+    if (/^\d{1,3}(?:\.\d{1,3}){3}$/.test(hostname)) return null;
     return hostname === "file.mgautotech.de" ? null : hostname;
   } catch {
     return null;
@@ -41,12 +56,12 @@ export function classifyGrowthSource(input: {
   referrer?: string | null;
   hasGoogleAdsClickSignal?: boolean;
 }) {
-  const explicitSource = cleanCampaignValue(input.utmSource ?? null, 48)?.toLowerCase();
-  const explicitMedium = cleanCampaignValue(input.utmMedium ?? null, 48)?.toLowerCase();
-  if (explicitSource) {
+  const explicitSource = input.utmSource?.trim().toLowerCase() ?? "";
+  const explicitMedium = input.utmMedium?.trim().toLowerCase() ?? "";
+  if (explicitSource === "google" && explicitMedium === "cpc") {
     return {
-      source: explicitSource,
-      medium: explicitMedium || "campaign",
+      source: "google",
+      medium: "cpc",
       referrerHost: normalizeReferrerHost(input.referrer),
     };
   }
@@ -81,26 +96,81 @@ export function buildGrowthAttributionTouch(input: {
   }
 
   const landingPath = normalizeGrowthPath(parsed.pathname);
-  if (!landingPath) return null;
+  if (!landingPath || !isFirstPartyAttributionPublicPath(landingPath)) return null;
   const classified = classifyGrowthSource({
     utmSource: parsed.searchParams.get("utm_source"),
     utmMedium: parsed.searchParams.get("utm_medium"),
     referrer: input.referrer,
-    hasGoogleAdsClickSignal: ["gclid", "gbraid", "wbraid"].some((key) => {
-      const value = parsed.searchParams.get(key);
-      return Boolean(value && value.length <= 200);
-    }),
+    hasGoogleAdsClickSignal: ["gclid", "dclid", "gbraid", "wbraid"].some((key) =>
+      parsed.searchParams
+        .getAll(key)
+        .some(isSafeGoogleAdsClickSignalValue)
+    ),
   });
   const locale = input.locale?.trim().toLowerCase() ?? "";
+
+  const paidCampaign = classified.source === "google" && classified.medium === "cpc"
+    ? normalizeGoogleAdsCampaignToken(parsed.searchParams.get("utm_campaign"))
+    : null;
 
   return {
     landingPath,
     source: classified.source,
     medium: classified.medium,
-    campaign: cleanCampaignValue(parsed.searchParams.get("utm_campaign")),
-    term: cleanCampaignValue(parsed.searchParams.get("utm_term")),
+    campaign: paidCampaign,
+    // Search terms can contain free-form customer or vehicle information and
+    // are not used by the campaign-level Growth report.
+    term: null,
     referrerHost: classified.referrerHost,
     locale: allowedLocale.test(locale) ? locale : null,
+  };
+}
+
+export function normalizeGrowthAttributionTouch(
+  value: unknown
+): GrowthAttributionTouch | null {
+  if (!value || typeof value !== "object") return null;
+  const candidate = value as Partial<GrowthAttributionTouch>;
+  const landingPath = typeof candidate.landingPath === "string"
+    ? normalizeGrowthPath(candidate.landingPath)
+    : null;
+  if (!landingPath || !isFirstPartyAttributionPublicPath(landingPath)) return null;
+  const referrerHost = candidate.referrerHost === null
+    ? null
+    : typeof candidate.referrerHost === "string"
+      ? normalizeReferrerHost(`https://${candidate.referrerHost}`)
+      : undefined;
+  if (referrerHost === undefined) return null;
+  const source = typeof candidate.source === "string"
+    ? candidate.source.trim().toLowerCase()
+    : "";
+  const medium = typeof candidate.medium === "string"
+    ? candidate.medium.trim().toLowerCase()
+    : "";
+  if (!isKnownAttributionClassification(source, medium, referrerHost)) return null;
+  const nullableCampaignValue = (input: unknown) => {
+    if (input === null) return null;
+    if (typeof input !== "string") return undefined;
+    return normalizeGoogleAdsCampaignToken(input) ?? undefined;
+  };
+  const campaign = nullableCampaignValue(candidate.campaign);
+  if (campaign === undefined) return null;
+  if (campaign && (source !== "google" || medium !== "cpc")) return null;
+  const locale = candidate.locale === null
+    ? null
+    : typeof candidate.locale === "string" && allowedLocale.test(candidate.locale.trim())
+      ? candidate.locale.trim().toLowerCase()
+      : undefined;
+  if (locale === undefined) return null;
+
+  return {
+    landingPath,
+    source,
+    medium,
+    campaign,
+    term: null,
+    referrerHost,
+    locale,
   };
 }
 
@@ -129,6 +199,25 @@ export function uniqueGrowthAttributionTouches(
     unique.push(touch);
   }
   return unique;
+}
+
+export function selectGrowthAttributionTouchesForRoute(input: {
+  pathname: string;
+  initialTouch: GrowthAttributionTouch | null;
+  currentTouch: GrowthAttributionTouch | null;
+}) {
+  const initialTouch = input.initialTouch &&
+    isFirstPartyAttributionPublicPath(input.initialTouch.landingPath)
+    ? input.initialTouch
+    : null;
+  const currentTouch =
+    isFirstPartyAttributionPublicPath(input.pathname) &&
+    input.currentTouch?.landingPath === input.pathname &&
+    isFirstPartyAttributionPublicPath(input.currentTouch.landingPath)
+      ? input.currentTouch
+      : null;
+
+  return uniqueGrowthAttributionTouches(initialTouch, currentTouch);
 }
 
 export function isGrowthVisitorId(value: string) {

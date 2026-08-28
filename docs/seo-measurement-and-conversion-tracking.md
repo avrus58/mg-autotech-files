@@ -11,8 +11,10 @@ on-site request events answer different questions:
 
 - Google Search Console is the source of truth for search queries, countries,
   impressions, Google Search clicks, CTR and average position.
-- Google Analytics 4 receives consented public page, navigation and request
-  funnel events.
+- Google Analytics 4 receives consented public page/navigation events and
+  verified request conversions. Authenticated request starts remain in the
+  consented first-party Growth journey table; the private form does not call
+  Google.
 
 The website does not attempt to recover hidden Google search terms from a
 referrer. Search Console intentionally omits some anonymized queries for user
@@ -32,11 +34,13 @@ Allowed events:
 | `page_view` | A public page was viewed | Public path, query-free first-party URL, content group |
 | `public_navigation_click` | A public internal link was selected | Public source path, public destination path, query-free first-party URL, content group |
 | `request_cta_click` | A public CTA opened `/new-request` | Public source path, fixed destination, query-free first-party URL, content group |
-| `request_start` | An authenticated customer reached the request workspace | Static channel labels and fixed `/new-request` URL only |
 | `generate_lead` | The order-creation RPC completed successfully | Static channel labels and fixed `/new-request` URL only |
 
 `generate_lead` is emitted only after successful request creation. Validation
 errors, upload errors and failed order creation do not produce a conversion.
+The first meaningful interaction in `/new-request` may create a consented,
+account-bound first-party `growth_journey_events.request_started` record. It is
+not a GA4 event and contains no customer, vehicle, file, service or note data.
 
 ## Privacy Boundary
 
@@ -55,11 +59,12 @@ The Google tag is not loaded until the visitor grants an applicable optional
 measurement choice. Choosing **Necessary only** keeps the tag unloaded.
 Advertising personalization and Google Signals remain disabled. Analytics runs
 only on the exact production host `file.mgautotech.de`; localhost and Preview
-hosts do not contaminate production reports. Moving from an allowlisted public
-or conversion-measurement route into `/admin`, `/dashboard` or another private
-workspace sends an explicit consent-denied update, so the loaded tag cannot
-continue measuring private pages. Event `page_location` values are rebuilt from
-the allowlisted path and `page_referrer` is intentionally blank.
+hosts do not contaminate production reports. Google runs only on the public
+route allowlist and the noindex `/measurement/complete` bridge. Public/private
+transitions that would otherwise retain an executed tag cross a fresh-document
+boundary. `/register`, auth callbacks, `/new-request`, `/dashboard` and payment
+success remain Google-free documents. Event `page_location` values are rebuilt
+from the allowlisted path and `page_referrer` is intentionally blank.
 
 Before consent, the sanitized initial landing touch exists only in component
 memory. It is not persisted and no request is sent. When analytics consent is
@@ -132,9 +137,11 @@ Use GA4 for:
 
 - public landing-page engagement;
 - public navigation and request CTA clicks;
-- `request_start` volume;
 - `generate_lead` successful request conversions;
 - country and landing-page conversion comparison.
+
+Use the first-party Growth report for consented authenticated
+`request_started` volume. Do not compare it as though it were a GA4 event.
 
 The GA4 Search Console integration supports query reports with Search Console
 dimensions and an organic traffic report combining landing pages with country
@@ -171,8 +178,9 @@ access token or any customer/request metadata. See
 6. Click a public service link and confirm `public_navigation_click`.
 7. Click a public request CTA and confirm `request_cta_click`.
 8. Open `/admin` or `/dashboard` and confirm no private page-view event.
-9. With a dedicated safe test customer, open the request flow and confirm one
-   `request_start` event.
+9. With a dedicated safe test customer, interact with the request form and
+   confirm one first-party `growth_journey_events.request_started` record and no
+   Google request-start command on the private document.
 10. Complete only an approved harmless request smoke and confirm one
     `generate_lead` event without request/customer metadata.
 11. Open `/admin/seo-performance` and confirm the configuration status is

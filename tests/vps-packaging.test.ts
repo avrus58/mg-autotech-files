@@ -246,6 +246,18 @@ test("Release scripts validate contracts, switch services in order and rollback 
 
   assert.match(checker, /REQUEST_NETWORK_PROVIDER cloudflare-caddy/);
   assert.match(checker, /REQUEST_NETWORK_PROXY_SECRET 32 512/);
+  assert.match(checker, /GROWTH_ATTRIBUTION_HMAC_SECRET 32 512/);
+  assert.match(
+    checker,
+    /require_optional_value app_environment GROWTH_ATTRIBUTION_LEGACY_HMAC_SECRET 16 512/
+  );
+  assert.match(checker, /require_distinct_value[\s\S]*GROWTH_ATTRIBUTION_HMAC_SECRET[\s\S]*SUPABASE_SERVICE_ROLE_KEY/);
+  assert.match(
+    checker,
+    /GROWTH_ATTRIBUTION_HMAC_SECRET \\\r?\n\s+GROWTH_ATTRIBUTION_LEGACY_HMAC_SECRET/
+  );
+  assert.match(checker, /must be distinct from the registration conversion label/);
+  assert.match(checker, /must be distinct from the request conversion label/);
   assert.match(checker, /FILE_EXPERT_ANALYZER_TOKEN: app and analyzer values do not match/);
   assert.match(checker, /values were not printed/);
   assert.match(common, /docker network inspect "\$EDGE_NETWORK"/);
@@ -533,12 +545,35 @@ test("Env preflight accepts the split least-privilege contract without echoing v
   const stripeSecret = "sk_live_synthetic-stripe-secret-000000000001";
   const stripeWebhookSecret = "whsec_synthetic-credit-webhook-000000000001";
   const widgetWebhookSecret = "whsec_synthetic-widget-webhook-000000000001";
+  const growthSecret = "synthetic-growth-secret-0000000000000001";
+  const protectedGrowthSecretKeys = [
+    "SUPABASE_SERVICE_ROLE_KEY",
+    "UPLOAD_INTEGRITY_SECRET",
+    "CUSTOMER_DEVICE_HMAC_SECRET",
+    "FILE_EXPERT_ANALYZER_TOKEN",
+    "REQUEST_NETWORK_PROXY_SECRET",
+    "SECURITY_RATE_LIMIT_SALT",
+    "WIDGET_SESSION_SECRET",
+    "WIDGET_IP_HASH_SALT",
+    "STRIPE_SECRET_KEY",
+    "STRIPE_WEBHOOK_SECRET",
+    "STRIPE_WIDGET_WEBHOOK_SECRET",
+    "RESEND_API_KEY",
+    "RESEND_WEBHOOK_SECRET",
+    "OPENAI_API_KEY",
+    "LOCAL_AI_API_KEY",
+    "VLLM_API_KEY",
+    "GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY",
+    "UPSTASH_REDIS_REST_TOKEN",
+    "KV_REST_API_TOKEN",
+  ] as const;
   try {
     const validAppEnvironment = [
       "NEXT_PUBLIC_SITE_URL=https://file.mgautotech.de",
       "NEXT_PUBLIC_SUPABASE_URL=https://jujaeyvyaeesmipihrrw.supabase.co",
       "NEXT_PUBLIC_SUPABASE_ANON_KEY=synthetic-public-key-0000000000000001",
       `SUPABASE_SERVICE_ROLE_KEY=${serviceSecret}`,
+      `GROWTH_ATTRIBUTION_HMAC_SECRET=${growthSecret}`,
       "UPLOAD_INTEGRITY_SECRET=synthetic-upload-secret-000000000000001",
       "CUSTOMER_DEVICE_HMAC_SECRET=synthetic-device-secret-000000000000001",
       `FILE_EXPERT_ANALYZER_TOKEN=${sharedToken}`,
@@ -563,6 +598,11 @@ test("Env preflight accepts the split least-privilege contract without echoing v
       `STRIPE_SECRET_KEY=${stripeSecret}`,
       `STRIPE_WEBHOOK_SECRET=${stripeWebhookSecret}`,
       `STRIPE_WIDGET_WEBHOOK_SECRET=${widgetWebhookSecret}`,
+      "OPENAI_API_KEY=synthetic-openai-api-key-000000000000001",
+      "LOCAL_AI_API_KEY=synthetic-local-ai-api-key-0000000000001",
+      "VLLM_API_KEY=synthetic-vllm-api-key-000000000000001",
+      "GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY=synthetic-google-private-key-000000001",
+      "KV_REST_API_TOKEN=synthetic-kv-rest-token-000000000000001",
       "NEXT_PUBLIC_BANK_ACCOUNT_NAME=MG AutoTech",
       "NEXT_PUBLIC_BANK_NAME=Synthetic Production Bank",
       "NEXT_PUBLIC_BANK_IBAN=DE00000000000000000000",
@@ -617,6 +657,31 @@ test("Env preflight accepts the split least-privilege contract without echoing v
         ),
         expected: /NEXT_PUBLIC_SUPABASE_URL/,
       },
+      {
+        name: "dedicated growth attribution secret",
+        source: validAppEnvironment.replace(
+          "GROWTH_ATTRIBUTION_HMAC_SECRET=synthetic-growth-secret-0000000000000001",
+          "GROWTH_ATTRIBUTION_HMAC_SECRET=short"
+        ),
+        expected: /GROWTH_ATTRIBUTION_HMAC_SECRET/,
+      },
+      ...protectedGrowthSecretKeys.map((protectedKey) => {
+        const protectedLine = validAppEnvironment
+          .split("\n")
+          .find((line) => line.startsWith(`${protectedKey}=`));
+        assert.ok(protectedLine, protectedKey);
+        const protectedValue = protectedLine.slice(protectedKey.length + 1);
+        return {
+          name: `growth attribution secret isolated from ${protectedKey}`,
+          source: validAppEnvironment.replace(
+            `GROWTH_ATTRIBUTION_HMAC_SECRET=${growthSecret}`,
+            `GROWTH_ATTRIBUTION_HMAC_SECRET=${protectedValue}`
+          ),
+          expected: new RegExp(
+            `GROWTH_ATTRIBUTION_HMAC_SECRET: must be dedicated and distinct from ${protectedKey}`
+          ),
+        };
+      }),
       {
         name: "required CAPTCHA mode",
         source: validAppEnvironment.replace("NEXT_PUBLIC_AUTH_CAPTCHA_MODE=required", "NEXT_PUBLIC_AUTH_CAPTCHA_MODE=off"),
@@ -712,6 +777,14 @@ test("Env preflight accepts the split least-privilege contract without echoing v
           "NEXT_PUBLIC_GOOGLE_ADS_PURCHASE_LABEL=short"
         ),
         expected: /NEXT_PUBLIC_GOOGLE_ADS_PURCHASE_LABEL/,
+      },
+      {
+        name: "distinct Google Ads conversions",
+        source: validAppEnvironment.replace(
+          "NEXT_PUBLIC_GOOGLE_ADS_PURCHASE_LABEL=Purchase_123",
+          "NEXT_PUBLIC_GOOGLE_ADS_PURCHASE_LABEL=Request_123"
+        ),
+        expected: /must be distinct from the request conversion label/,
       },
     ];
     for (const contract of invalidAppContracts) {

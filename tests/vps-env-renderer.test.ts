@@ -30,6 +30,8 @@ function fullVariables() {
     WIDGET_SESSION_SECRET: "full-widget-secret-00000000000000000001",
     WIDGET_IP_HASH_SALT: "full-widget-ip-salt-000000000000000001",
     GROWTH_ATTRIBUTION_HMAC_SECRET: "full-growth-secret-00000000000000000001",
+    GROWTH_ATTRIBUTION_LEGACY_HMAC_SECRET:
+      "full-legacy-growth-secret-00000000000001",
     SECURITY_DISTRIBUTED_RATE_LIMIT_ENABLED: "false",
     SECURITY_DISTRIBUTED_RATE_LIMIT_REQUIRED: "false",
     UPSTASH_REDIS_REST_URL: "https://redis.example.test",
@@ -134,6 +136,10 @@ test("Production renderer preserves continuity values and overrides only VPS con
   assert.equal(
     merged.GROWTH_ATTRIBUTION_HMAC_SECRET,
     fullVariables().GROWTH_ATTRIBUTION_HMAC_SECRET
+  );
+  assert.equal(
+    merged.GROWTH_ATTRIBUTION_LEGACY_HMAC_SECRET,
+    fullVariables().GROWTH_ATTRIBUTION_LEGACY_HMAC_SECRET
   );
   assert.equal(
     merged.FILE_EXPERT_ANALYZER_TOKEN,
