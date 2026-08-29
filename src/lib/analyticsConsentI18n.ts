@@ -288,3 +288,9 @@ export function getAnalyticsConsentLocale(pathname: string): LocaleCode {
 export function getAnalyticsConsentCopy(pathname: string) {
   return analyticsConsentCopy[getAnalyticsConsentLocale(pathname)];
 }
+
+export function getAnalyticsPrivacyPath(pathname: string) {
+  return getAnalyticsConsentLocale(pathname) === "de"
+    ? "/datenschutz"
+    : "/privacy";
+}

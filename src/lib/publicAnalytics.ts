@@ -12,6 +12,10 @@ export const analyticsConsentStorageKey = "mg_analytics_consent_v1";
 export const measurementConsentStorageKey = "mg_measurement_consent_v2";
 export const measurementConsentSessionStorageKey =
   "mg_measurement_consent_session_v2";
+// Consent Mode remains v2, while this separate disclosure version forces a
+// fresh decision after a material change to the privacy information. Older
+// denials stay denied; an older optional grant is never carried forward.
+export const measurementConsentDisclosureVersion = "privacy-2026-08-29" as const;
 export const analyticsPreferencesEvent = "mg:open-analytics-preferences";
 export const measurementConsentChangedEvent = "mg:measurement-consent-changed";
 export const measurementLocationSanitizedEvent = "mg:measurement-location-sanitized";
@@ -28,9 +32,19 @@ export type MeasurementConsentPreferences = {
   updatedAt: string;
 };
 
+type StoredMeasurementConsentPreferences = MeasurementConsentPreferences & {
+  disclosureVersion: typeof measurementConsentDisclosureVersion;
+};
+
 export type MeasurementConsentSnapshot = {
   preferences: MeasurementConsentPreferences;
-  source: "v2" | "legacy_granted" | "legacy_denied" | "none";
+  source:
+    | "v2"
+    | "previous_granted"
+    | "previous_denied"
+    | "legacy_granted"
+    | "legacy_denied"
+    | "none";
   needsDecision: boolean;
 };
 
@@ -154,6 +168,7 @@ const publicRouteRoots = new Set([
   "/file-service",
   "/how-it-works",
   "/impressum",
+  "/privacy",
   "/services",
   "/tools",
   "/widerruf",
@@ -193,6 +208,7 @@ export const googleMeasurementPublicPaths = [
   "/file-service",
   "/how-it-works",
   "/impressum",
+  "/privacy",
   "/services",
   "/services/adblue-off",
   "/services/dpf-off",
@@ -972,9 +988,10 @@ function necessaryOnlyPreferences(): MeasurementConsentPreferences {
 function parseMeasurementConsent(value: string | null) {
   if (!value) return null;
   try {
-    const parsed = JSON.parse(value) as Partial<MeasurementConsentPreferences>;
+    const parsed = JSON.parse(value) as Partial<StoredMeasurementConsentPreferences>;
     if (
       parsed.version !== measurementConsentVersion ||
+      parsed.disclosureVersion !== measurementConsentDisclosureVersion ||
       typeof parsed.analytics !== "boolean" ||
       typeof parsed.advertising !== "boolean" ||
       typeof parsed.updatedAt !== "string" ||
@@ -982,7 +999,12 @@ function parseMeasurementConsent(value: string | null) {
     ) {
       return null;
     }
-    return parsed as MeasurementConsentPreferences;
+    return {
+      analytics: parsed.analytics,
+      advertising: parsed.advertising,
+      version: parsed.version,
+      updatedAt: parsed.updatedAt,
+    } as MeasurementConsentPreferences;
   } catch {
     return null;
   }
@@ -1006,9 +1028,44 @@ function readConsentFromStorage(
   }
 }
 
-function newestConsent(
-  first: MeasurementConsentPreferences | null,
-  second: MeasurementConsentPreferences | null
+function parsePreviousMeasurementConsent(value: string | null) {
+  if (!value) return null;
+  try {
+    const parsed = JSON.parse(value) as Partial<StoredMeasurementConsentPreferences>;
+    if (
+      parsed.version !== measurementConsentVersion ||
+      parsed.disclosureVersion === measurementConsentDisclosureVersion ||
+      typeof parsed.analytics !== "boolean" ||
+      typeof parsed.advertising !== "boolean" ||
+      typeof parsed.updatedAt !== "string" ||
+      !Number.isFinite(new Date(parsed.updatedAt).getTime())
+    ) {
+      return null;
+    }
+    return {
+      analytics: parsed.analytics,
+      advertising: parsed.advertising,
+      updatedAt: parsed.updatedAt,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function readPreviousConsentFromStorage(
+  storage: Pick<Storage, "getItem">,
+  key: string
+) {
+  try {
+    return parsePreviousMeasurementConsent(storage.getItem(key));
+  } catch {
+    return null;
+  }
+}
+
+function newestConsent<T extends { updatedAt: string }>(
+  first: T | null,
+  second: T | null
 ) {
   if (!first) return second;
   if (!second) return first;
@@ -1039,10 +1096,35 @@ export function readMeasurementConsentSnapshot(): MeasurementConsentSnapshot {
     );
     if (current) return { preferences: current, source: "v2", needsDecision: false };
 
+    const previous = newestConsent(
+      readPreviousConsentFromStorage(
+        window.localStorage,
+        measurementConsentStorageKey
+      ),
+      readPreviousConsentFromStorage(
+        window.sessionStorage,
+        measurementConsentSessionStorageKey
+      )
+    );
+    if (previous?.analytics || previous?.advertising) {
+      return {
+        preferences: fallback,
+        source: "previous_granted",
+        needsDecision: true,
+      };
+    }
+    if (previous) {
+      return {
+        preferences: fallback,
+        source: "previous_denied",
+        needsDecision: false,
+      };
+    }
+
     const legacy = window.localStorage.getItem(analyticsConsentStorageKey);
     if (legacy === "granted") {
       return {
-        preferences: { ...fallback, analytics: true },
+        preferences: fallback,
         source: "legacy_granted",
         needsDecision: true,
       };
@@ -1218,6 +1300,10 @@ export function writeMeasurementConsent(input: Pick<MeasurementConsentPreference
     version: measurementConsentVersion,
     updatedAt: new Date().toISOString(),
   };
+  const storedPreferences: StoredMeasurementConsentPreferences = {
+    ...preferences,
+    disclosureVersion: measurementConsentDisclosureVersion,
+  };
   // The user's newest choice is authoritative in this document even when a
   // quota/privacy extension makes a previously readable grant unwritable.
   processMeasurementConsentOverride = {
@@ -1229,7 +1315,7 @@ export function writeMeasurementConsent(input: Pick<MeasurementConsentPreference
   try {
     window.sessionStorage.setItem(
       measurementConsentSessionStorageKey,
-      JSON.stringify(preferences)
+      JSON.stringify(storedPreferences)
     );
     processMeasurementConsentOverride.sessionPersisted = true;
   } catch {
@@ -1243,7 +1329,7 @@ export function writeMeasurementConsent(input: Pick<MeasurementConsentPreference
   try {
     window.localStorage.setItem(
       measurementConsentStorageKey,
-      JSON.stringify(preferences)
+      JSON.stringify(storedPreferences)
     );
     persistedV2 = true;
     processMeasurementConsentOverride.localPersisted = true;

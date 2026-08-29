@@ -74,6 +74,7 @@ import {
   isGoogleMeasurementPublicPath,
   isFirstPartyAttributionPublicPath,
   isPublicAnalyticsPath,
+  measurementConsentDisclosureVersion,
   measurementConsentStorageKey,
   measurementConsentSessionStorageKey,
   notifyGoogleMeasurementScriptFailed,
@@ -491,6 +492,7 @@ test("Google measurement uses only real exact routes and validated dynamic slugs
     "/file-service",
     "/how-it-works",
     "/impressum",
+    "/privacy",
     "/services",
     "/widerruf",
     "/workshop-guides",
@@ -769,7 +771,41 @@ test("legacy analytics consent never silently grants advertising measurement", a
     const snapshot = readMeasurementConsentSnapshot();
     assert.equal(snapshot.source, "legacy_granted");
     assert.equal(snapshot.needsDecision, true);
-    assert.equal(snapshot.preferences.analytics, true);
+    assert.equal(snapshot.preferences.analytics, false);
+    assert.equal(snapshot.preferences.advertising, false);
+  });
+});
+
+test("a pre-disclosure optional grant is disabled until the user chooses again", async () => {
+  await withWindow((storage) => {
+    storage.setItem(measurementConsentStorageKey, JSON.stringify({
+      analytics: true,
+      advertising: true,
+      version: "consent-mode-v2",
+      updatedAt: "2026-08-28T10:00:00.000Z",
+    }));
+
+    const snapshot = readMeasurementConsentSnapshot();
+    assert.equal(snapshot.source, "previous_granted");
+    assert.equal(snapshot.needsDecision, true);
+    assert.equal(snapshot.preferences.analytics, false);
+    assert.equal(snapshot.preferences.advertising, false);
+  });
+});
+
+test("a pre-disclosure necessary-only choice stays denied without a new prompt", async () => {
+  await withWindow((storage) => {
+    storage.setItem(measurementConsentStorageKey, JSON.stringify({
+      analytics: false,
+      advertising: false,
+      version: "consent-mode-v2",
+      updatedAt: "2026-08-28T10:00:00.000Z",
+    }));
+
+    const snapshot = readMeasurementConsentSnapshot();
+    assert.equal(snapshot.source, "previous_denied");
+    assert.equal(snapshot.needsDecision, false);
+    assert.equal(snapshot.preferences.analytics, false);
     assert.equal(snapshot.preferences.advertising, false);
   });
 });
@@ -785,7 +821,9 @@ test("Consent Mode v2 preferences persist analytics and advertising independentl
       { analytics: true, advertising: false }
     );
     assert.equal(storage.getItem(analyticsConsentStorageKey), "granted");
-    assert.match(storage.getItem(measurementConsentStorageKey) ?? "", /consent-mode-v2/);
+    const stored = JSON.parse(storage.getItem(measurementConsentStorageKey) ?? "null");
+    assert.equal(stored.version, "consent-mode-v2");
+    assert.equal(stored.disclosureVersion, measurementConsentDisclosureVersion);
   });
 });
 
@@ -1673,6 +1711,7 @@ test("a bfcache-restored document reconciles a newer consent revocation before r
       ...granted,
       analytics: false,
       advertising: false,
+      disclosureVersion: measurementConsentDisclosureVersion,
       updatedAt: new Date(
         new Date(granted.updatedAt).getTime() + 1_000
       ).toISOString(),

@@ -604,7 +604,13 @@ test("growth database contract is additive, RLS-protected, and excludes direct i
   assert.match(verifier, /bounded_search_path/);
   assert.match(verifier, /transaction_serialization_present/);
   assert.match(verifier, /trigger_function_browser_execute_revoked/);
+  assert.match(verifier, /trigger_attachment_matches_contract/);
+  assert.match(
+    verifier,
+    /tgrelid = pg_catalog\.to_regclass[\s\S]*tgfoid = trigger_function\.signature[\s\S]*tgtype = 19/i
+  );
   assert.match(verifier, /legacy_rollback_bridge_safe/);
+  assert.doesNotMatch(verifier, /legacy_rollback_bridge_not_needed/);
   assert.match(
     verifier,
     /signature is null or[\s\S]*has_function_privilege\('service_role', signature, 'EXECUTE'\)/i

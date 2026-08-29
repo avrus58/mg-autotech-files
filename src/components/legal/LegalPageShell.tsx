@@ -2,24 +2,38 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { ArrowLeft, Cpu, Mail, ShieldCheck } from "lucide-react";
 
-const legalLinks = [
+const germanLegalLinks = [
   { href: "/impressum", label: "Impressum" },
   { href: "/datenschutz", label: "Datenschutz" },
   { href: "/agb", label: "AGB" },
   { href: "/widerruf", label: "Widerruf" },
 ];
 
+const englishLegalLinks = [
+  { href: "/impressum", label: "Legal notice (German)" },
+  { href: "/privacy", label: "Privacy" },
+  { href: "/agb", label: "Terms (German)" },
+  { href: "/widerruf", label: "Withdrawal information (German)" },
+];
+
 export function LegalPageShell({
   eyebrow,
   title,
+  language = "de",
+  updatedAt,
   children,
 }: {
   eyebrow: string;
   title: string;
+  language?: "de" | "en";
+  updatedAt?: string;
   children: ReactNode;
 }) {
+  const english = language === "en";
+  const legalLinks = english ? englishLegalLinks : germanLegalLinks;
+
   return (
-    <div data-no-translate className="min-h-screen bg-[#050505] text-white">
+    <div lang={language} data-no-translate className="min-h-screen bg-[#050505] text-white">
       <header className="border-b border-white/10 bg-black/90">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-4">
           <Link href="/" className="flex min-w-0 items-center gap-3">
@@ -30,12 +44,14 @@ export function LegalPageShell({
               <span className="block truncate text-lg font-black tracking-wide">
                 MG <span className="text-red-600">AUTOTECH</span>
               </span>
-              <span className="block text-[11px] text-zinc-500">Rechtliche Informationen</span>
+              <span className="block text-[11px] text-zinc-500">
+                {english ? "Legal information" : "Rechtliche Informationen"}
+              </span>
             </span>
           </Link>
           <Link href="/" className="inline-flex h-11 items-center rounded-lg border border-white/10 px-3 text-xs font-black sm:px-4 sm:text-sm">
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Startseite
+            {english ? "Home" : "Startseite"}
           </Link>
         </div>
       </header>
@@ -48,8 +64,12 @@ export function LegalPageShell({
           </div>
           <h1 className="mt-4 text-[1.7rem] font-black leading-tight sm:text-6xl">{title}</h1>
           <div className="mt-5 flex flex-wrap gap-x-6 gap-y-2 text-xs font-bold text-zinc-500">
-            <span>Stand: 30. Juni 2026</span>
-            <span>Rechtsverbindliche Fassung: Deutsch</span>
+            <span>
+              {english ? "Updated" : "Stand"}: {updatedAt ?? (english ? "30 June 2026" : "30. Juni 2026")}
+            </span>
+            <span>
+              {english ? "Legally binding version: German" : "Rechtsverbindliche Fassung: Deutsch"}
+            </span>
           </div>
         </div>
 

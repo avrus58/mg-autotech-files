@@ -32,6 +32,7 @@ export default function robots(): MetadataRoute.Robots {
           ),
           "/agb",
           "/datenschutz",
+          "/privacy",
           "/impressum",
           "/widerruf",
           "/widget",

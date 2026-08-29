@@ -5,12 +5,23 @@ import { absoluteUrl } from "@/lib/seo";
 export const metadata: Metadata = {
   title: "Datenschutzerklärung",
   description: "Datenschutzerklärung für die MG AutoTech File-Service-Plattform und das Vehicle Selector Widget.",
-  alternates: { canonical: absoluteUrl("/datenschutz") },
+  alternates: {
+    canonical: absoluteUrl("/datenschutz"),
+    languages: {
+      de: absoluteUrl("/datenschutz"),
+      en: absoluteUrl("/privacy"),
+      "x-default": absoluteUrl("/privacy"),
+    },
+  },
 };
 
 export default function DatenschutzPage() {
   return (
-    <LegalPageShell eyebrow="Datenschutz nach DSGVO" title="Datenschutzerklärung">
+    <LegalPageShell
+      eyebrow="Datenschutz nach DSGVO"
+      title="Datenschutzerklärung"
+      updatedAt="29. August 2026"
+    >
       <LegalSection title="1. Verantwortlicher">
         <p><strong className="text-white">MG AutoTech, Inhaber Melih Gökkaya</strong><br />Böckinger Str. 32, 70437 Stuttgart, Deutschland<br />E-Mail: <a className="font-bold text-white hover:text-red-400" href="mailto:info@mgautotech.de">info@mgautotech.de</a><br />Telefon: <a className="font-bold text-white hover:text-red-400" href="tel:+4915151561670">+49 151 51561670</a></p>
       </LegalSection>
@@ -25,8 +36,8 @@ export default function DatenschutzPage() {
       </LegalSection>
 
       <LegalSection title="4. Hosting, Datenbank und Dateispeicher">
-        <p>Die Website wird über <strong className="text-white">Vercel</strong> bereitgestellt. Kundenkonten, Authentifizierung, Datenbankfunktionen und Dateispeicher werden über <strong className="text-white">Supabase</strong> verarbeitet. Dabei können technische Verbindungsdaten, insbesondere IP-Adresse, Zeitpunkt, angefragte Ressource, Browserinformationen und Sicherheitsereignisse, verarbeitet werden.</p>
-        <p>Die Einbindung dieser Anbieter erfolgt auf Grundlage von Verträgen zur Auftragsverarbeitung und den jeweils anwendbaren Datenschutzgarantien. Soweit Daten außerhalb des Europäischen Wirtschaftsraums verarbeitet werden, erfolgt dies auf Grundlage eines Angemessenheitsbeschlusses oder geeigneter Garantien, insbesondere Standardvertragsklauseln.</p>
+        <p>Die öffentliche Website und die File-Service-Anwendung werden auf einem virtuellen Server (<strong className="text-white">VPS</strong>) von <strong className="text-white">Hostinger</strong> bereitgestellt. Kundenkonten und Authentifizierung, Datenbankfunktionen sowie der Dateispeicher werden über <strong className="text-white">Supabase</strong> verarbeitet.</p>
+        <p>Diese Dienste verarbeiten die für ihre jeweilige technische Funktion erforderlichen Daten. Dazu können die oben beschriebenen Konto-, Auftrags- und Dateidaten sowie technische Verbindungsdaten wie IP-Adresse, Zeitpunkt, angefragte Ressource, Browserinformationen und Sicherheitsereignisse gehören.</p>
       </LegalSection>
 
       <LegalSection title="5. E-Mail und Support">
@@ -41,8 +52,12 @@ export default function DatenschutzPage() {
         <p>Für die Anmeldung werden technisch erforderliche Authentifizierungsinformationen und Sitzungscookies verwendet. Wenn Sie freiwillig „Mit Google fortfahren“ auswählen, werden Sie zu Google weitergeleitet; dabei verarbeitet Google die für die Anmeldung erforderlichen Daten. MG AutoTech erhält die von Google freigegebenen Basisprofildaten wie E-Mail-Adresse und Name.</p>
       </LegalSection>
 
-      <LegalSection title="8. Cookies und lokaler Speicher">
-        <p>Wir verwenden technisch erforderliche Cookies und lokalen Browserspeicher für Anmeldung, Sitzungsverwaltung, Spracheinstellung und die vom Nutzer gewählte Benachrichtigungseinstellung. Diese Funktionen sind für Sicherheit oder ausdrücklich angeforderte Komfortfunktionen erforderlich. Auf der File-Service-Plattform wird derzeit kein eigenes Werbe- oder Reichweiten-Tracking eingesetzt.</p>
+      <LegalSection title="8. Cookies, lokaler Speicher und optionale Messung">
+        <p>Wir verwenden technisch erforderliche Cookies und lokalen Browserspeicher für Anmeldung, Sitzungsverwaltung, Spracheinstellung, Sicherheitsfunktionen und das Speichern Ihrer Datenschutzauswahl. Analyse und Werbemessung sind standardmäßig deaktiviert und werden erst nach Ihrer aktiven Auswahl eingeschaltet.</p>
+        <p>Wenn Sie der Analyse zustimmen, wird <strong className="text-white">Google Analytics</strong> auf freigegebenen öffentlichen Inhaltsseiten eingesetzt, um Seitennutzung und den sicheren Anfrageablauf zu messen. Mit einer zusätzlichen Einwilligung in die Werbemessung wird <strong className="text-white">Google Ads</strong> verwendet, um zu erkennen, ob eine Anzeige zu einer bestätigten Registrierung, Anfrage oder Zahlung führt. Personalisierte Werbung bleibt deaktiviert.</p>
+        <p>An Google werden dabei nur für die Messung vorgesehene Informationen übermittelt. Dazu können der bereinigte öffentliche Seitenpfad ohne Suchparameter oder Fragment, Browser- und Geräteinformationen, der Einwilligungsstatus sowie vorhandene Kampagnen- oder Anzeigenklick-Kennungen gehören. Bei bestätigten Ergebnissen können außerdem der Ereignistyp, eine pseudonyme Kennung zur Vermeidung doppelter Zählung und bei einer bestätigten Zahlung Betrag und Währung übermittelt werden. Dateinamen, Fahrzeugdaten, E-Mail-Adressen, Kontodaten und Auftragsnummern werden nicht als Messereignis an Google übermittelt.</p>
+        <p>Bei Analyse-Einwilligung verwendet MG AutoTech außerdem eine zufällige Besucherkennung und verarbeitet für die interne Kampagnenzuordnung den öffentlichen Einstiegspfad, Quelle und Medium, eine freigegebene Kampagnenbezeichnung, die reine Referrer-Domain, einen gegebenenfalls verfügbaren Ländercode und die Browsersprache. Nach erfolgreicher Anmeldung kann diese Kennung intern mit bestätigten Kontoereignissen verknüpft werden, damit Registrierungen, Anfragen und Zahlungen der jeweiligen Quelle zugeordnet werden können. Suchbegriffe und vollständige Referrer-URLs werden dafür nicht gespeichert; die Besucherkennung wird serverseitig als Einwegwert weiterverarbeitet.</p>
+        <p>Sie können Ihre Auswahl jederzeit über die auf der Website erreichbaren Datenschutzeinstellungen ändern oder widerrufen. Der Widerruf wirkt für die Zukunft.</p>
       </LegalSection>
 
       <LegalSection title="9. Vehicle Selector Widget">

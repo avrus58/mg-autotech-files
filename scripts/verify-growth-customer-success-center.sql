@@ -135,7 +135,6 @@ with legacy_bridge as (
   ) as signature
 )
 select
-  signature is null as legacy_rollback_bridge_not_needed,
   signature is null or (
     not exists (
       select 1
@@ -174,6 +173,34 @@ select
     and not coalesce(pg_catalog.has_function_privilege('authenticated', signature, 'EXECUTE'), false)
     as trigger_function_browser_execute_revoked
 from trigger_function;
+
+with trigger_contract(trigger_name, table_name) as (
+  values
+    ('growth_attribution_touch_updated_at', 'growth_attribution_sessions'),
+    ('growth_preferences_touch_updated_at', 'growth_customer_preferences')
+),
+trigger_function as (
+  select pg_catalog.to_regprocedure(
+    'public.touch_growth_customer_success_updated_at()'
+  ) as signature
+)
+select
+  trigger_name,
+  exists (
+    select 1
+    from pg_catalog.pg_trigger as trigger_info
+    where trigger_info.tgname = trigger_contract.trigger_name
+      and trigger_info.tgrelid = pg_catalog.to_regclass(
+        'public.' || trigger_contract.table_name
+      )
+      and trigger_info.tgfoid = trigger_function.signature
+      and trigger_info.tgtype = 19
+      and trigger_info.tgenabled <> 'D'
+      and not trigger_info.tgisinternal
+  ) as trigger_attachment_matches_contract
+from trigger_contract
+cross join trigger_function
+order by trigger_name;
 
 select
   exists (

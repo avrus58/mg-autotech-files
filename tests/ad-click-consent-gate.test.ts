@@ -31,6 +31,7 @@ import {
   googleAdsLinkerStorageKey,
   initializeGoogleMeasurement,
   isGoogleAdsLinkerConfigurationReady,
+  measurementConsentDisclosureVersion,
   measurementConsentStorageKey,
   measurementConsentSessionStorageKey,
   measurementLocationSanitizedEvent,
@@ -461,6 +462,11 @@ test("safe same-origin navigation is classified without carrying the paid-click 
   }
   assert.deepEqual(getAdClickConsentNavigation("/datenschutz", landing), {
     destination: "/datenschutz",
+    isConversionEntry: false,
+    opensPrivacyInNewTab: true,
+  });
+  assert.deepEqual(getAdClickConsentNavigation("/privacy", landing), {
+    destination: "/privacy",
     isConversionEntry: false,
     opensPrivacyInNewTab: true,
   });
@@ -1093,8 +1099,8 @@ test("CTA gate stores no click id, performs no network work and keeps private me
   );
   assert.match(component, /event\.key === "Escape"[\s\S]*?\.cancel\(\)/);
   assert.match(component, /backgroundElements[\s\S]*?element\.inert = true[\s\S]*?aria-hidden[\s\S]*?element\.inert = inert/);
-  assert.match(component, /href="\/datenschutz"[\s\S]*?target="_blank"[\s\S]*?rel="noopener noreferrer"/);
-  assert.match(component, /href="\/datenschutz"[\s\S]*?target="_blank"[\s\S]*?referrerPolicy="no-referrer"/);
+  assert.match(component, /href=\{privacyPath\}[\s\S]*?target="_blank"[\s\S]*?rel="noopener noreferrer"/);
+  assert.match(component, /href=\{privacyPath\}[\s\S]*?target="_blank"[\s\S]*?referrerPolicy="no-referrer"/);
   assert.match(component, /aria-label=\{`\$\{consentCopy\.privacyInformation\} \(\$\{consentCopy\.opensInNewTab\}\)`\}/);
   assert.match(component, /navigation\.opensPrivacyInNewTab[\s\S]*?anchor\.setAttribute\("target", "_blank"\)[\s\S]*?return/);
   assert.match(component, /target=\{paidClickLanding \? "_blank" : undefined\}[\s\S]*?rel=\{paidClickLanding \? "noopener noreferrer" : undefined\}/);
@@ -1425,6 +1431,7 @@ test("cross-tab revoke clears process-local pending work so a later regrant cann
       analytics,
       advertising,
       version: "consent-mode-v2",
+      disclosureVersion: measurementConsentDisclosureVersion,
       updatedAt: new Date().toISOString(),
     }));
   };

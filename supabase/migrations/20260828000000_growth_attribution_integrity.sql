@@ -274,12 +274,24 @@ revoke all on function public.touch_growth_customer_success_updated_at()
 
 do $$
 begin
-  if not exists (select 1 from pg_trigger where tgname = 'growth_attribution_touch_updated_at') then
+  if not exists (
+    select 1
+    from pg_catalog.pg_trigger
+    where tgname = 'growth_attribution_touch_updated_at'
+      and tgrelid = 'public.growth_attribution_sessions'::pg_catalog.regclass
+      and not tgisinternal
+  ) then
     create trigger growth_attribution_touch_updated_at
     before update on public.growth_attribution_sessions
     for each row execute function public.touch_growth_customer_success_updated_at();
   end if;
-  if not exists (select 1 from pg_trigger where tgname = 'growth_preferences_touch_updated_at') then
+  if not exists (
+    select 1
+    from pg_catalog.pg_trigger
+    where tgname = 'growth_preferences_touch_updated_at'
+      and tgrelid = 'public.growth_customer_preferences'::pg_catalog.regclass
+      and not tgisinternal
+  ) then
     create trigger growth_preferences_touch_updated_at
     before update on public.growth_customer_preferences
     for each row execute function public.touch_growth_customer_success_updated_at();

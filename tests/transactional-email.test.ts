@@ -105,6 +105,14 @@ test("stale pending email leases use an updated_at CAS and never outlive provide
     ),
     "utf8"
   );
+  const verifier = readFileSync(
+    resolve(
+      process.cwd(),
+      "scripts",
+      "verify-email-pending-lease-recovery.sql"
+    ),
+    "utf8"
+  );
 
   assert.match(logging, /select\("id,status,updated_at"\)/);
   assert.match(
@@ -136,6 +144,19 @@ test("stale pending email leases use an updated_at CAS and never outlive provide
   assert.doesNotMatch(
     migration,
     /\bdrop\s+table\b|\bdrop\s+column\b|\btruncate\b|\bdelete\s+from\b/i
+  );
+  assert.match(verifier, /Every boolean must be true/i);
+  assert.match(verifier, /email_events_touch_updated_at/i);
+  assert.match(verifier, /touch_email_events_updated_at\(\)/i);
+  assert.match(verifier, /email_events_pending_lease_idx/i);
+  assert.match(verifier, /has_function_privilege[\s\S]*service_role/i);
+  assert.match(verifier, /indisvalid[\s\S]*indisready/i);
+  const verifierStatements = verifier
+    .replace(/--.*$/gm, "")
+    .replace(/'(?:''|[^'])*'/g, "''");
+  assert.doesNotMatch(
+    verifierStatements,
+    /\b(insert|update|delete|truncate|alter|create|drop|grant|revoke)\b\s+(?:on|into|from|table|function|index)/i
   );
 });
 

@@ -14,6 +14,7 @@ import { serviceIntentGuides } from "@/lib/serviceIntentGuides";
 export default function sitemap(): MetadataRoute.Sitemap {
   const contentUpdated = new Date("2026-07-31T00:00:00.000Z");
   const legalUpdated = new Date("2026-06-30T00:00:00.000Z");
+  const privacyUpdated = new Date("2026-08-29T00:00:00.000Z");
   const toolPaths = [
     "/tools",
     "/tools/file-readiness-check",
@@ -154,7 +155,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
     {
       url: `${siteUrl}/datenschutz`,
-      lastModified: legalUpdated,
+      lastModified: privacyUpdated,
+      changeFrequency: "yearly",
+      priority: 0.3,
+    },
+    {
+      url: `${siteUrl}/privacy`,
+      lastModified: privacyUpdated,
       changeFrequency: "yearly",
       priority: 0.3,
     },

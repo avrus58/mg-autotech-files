@@ -65,7 +65,10 @@ import {
 } from "@/lib/growth/attribution";
 import type { GrowthAttributionTouch } from "@/lib/growth/types";
 import { subscribeGrowthConsentInvalidation } from "@/lib/growth/consentLifecycle";
-import { getAnalyticsConsentCopy } from "@/lib/analyticsConsentI18n";
+import {
+  getAnalyticsConsentCopy,
+  getAnalyticsPrivacyPath,
+} from "@/lib/analyticsConsentI18n";
 import { reportMeasurementHandoffFailure } from "@/components/PlatformReliabilityMonitor";
 
 type ConsentState = MeasurementConsentSnapshot | "loading";
@@ -106,6 +109,7 @@ export function PublicAnalytics({
   const attributionRouteAllowed =
     attributionPublicRoute || isConversionMeasurementPath(pathname);
   const consentCopy = getAnalyticsConsentCopy(pathname);
+  const privacyPath = getAnalyticsPrivacyPath(pathname);
   const [consent, setConsent] = useState<ConsentState>("loading");
   const [measurementReady, setMeasurementReady] = useState(false);
   const [preferencesOpen, setPreferencesOpen] = useState(false);
@@ -873,7 +877,7 @@ export function PublicAnalytics({
               ))}
             </div>
             <Link
-                  href="/datenschutz"
+                  href={privacyPath}
                   target="_blank"
                   rel="noopener noreferrer"
                   referrerPolicy="no-referrer"
@@ -975,7 +979,7 @@ export function PublicAnalytics({
                   </button>
                 ) : null}
                 <Link
-                href="/datenschutz"
+                href={privacyPath}
                 target={paidClickLanding ? "_blank" : undefined}
                 rel={paidClickLanding ? "noopener noreferrer" : undefined}
                 referrerPolicy={paidClickLanding ? "no-referrer" : undefined}

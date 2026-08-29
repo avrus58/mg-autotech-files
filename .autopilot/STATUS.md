@@ -5382,3 +5382,41 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
   Production migration + distinct HMAC secret, acik Production yayin yetkisi,
   disposable kayit/request ile gercek Tag Assistant/network receipt ve canli Ads
   degisiklikleri icin action-time onay. Bu kapilar gecmeden harcama kapali kalir.
+
+## 2026-08-29 09:50 +02:00 Privacy/consent release kapisi ve attribution semasi dogrulandi
+
+- Owner Production yayini ve gercek sisteme dayali privacy/consent guncellemesini
+  acikca onayladi. Almanca privacy metnindeki yanlis Vercel/no-tracking beyanlari
+  kaldirildi; gercek Cloudflare-Caddy-Hostinger VPS, Supabase, Resend, Stripe,
+  opsiyonel Google Analytics/Ads olcumu ve first-party attribution sinirlari
+  aciklandi. Ingilizce `/privacy` esdegeri, locale uyumlu consent/footer/widget
+  linkleri, sitemap/robots kaydi ve 29 Agustos 2026 guncelleme tarihi eklendi.
+- Consent Mode sunucu/API sozlesmesi v2 olarak korundu. Ayri
+  `privacy-2026-08-29` disclosure surumu eklendi: onceki opsiyonel grant yeni
+  aciklama icin fail-closed olur ve yeniden secim ister; onceki necessary-only
+  ret karari ret olarak kalir. Google olcumu private, query/fragment veya
+  PII-benzeri rotalara genisletilmedi.
+- Growth verifier'daki mutually-exclusive rollback boolean kaldirildi. Iki
+  updated-at trigger'i exact tablo/function/tgtype ile dogrulandi ve migration
+  isim-cakismasina karsi exact `tgrelid` kullanir. Email pending lease migration
+  icin column/backfill/trigger/body/search_path/ACL/partial-index kontrollerini
+  yapan yeni SELECT-only verifier eklendi.
+- Izole staging'de exact hashli Growth ve email migration'lari sirasiyla
+  uygulandi. Growth verifier'in 16 result setinde false boolean yok; email lease
+  6/6 ve email schema parity 7/7 PASS. Staging Security Advisor'da yeni scope
+  icin warning/error yoktur; service-only receipt tablosu icin beklenen INFO
+  kaydi vardir.
+- Production oncesi kurtarma isareti `2026-08-29 07:38:21.663968+00` ve WAL
+  `17/8B001778` olarak kaydedildi. Free Supabase planinda platform backup/PITR
+  yerine transaction rollback, additive schema, legacy service-only RPC ve app
+  image rollback recovery yolu kullanildi. Production migration'lari sirasiyla
+  `20260829074832` ve `20260829074908` olarak uygulandi. Tum contract boolean'lari
+  true; invalid/pending receipt 0; email lease 6/6; parity 7/7; Security Advisor
+  yeni scope warning/error 0. Growth 166/40/3/0 ve email 79/pending 0 satir
+  sayilari korundu; musteri, siparis, odeme veya firmware verisi silinmedi.
+- Exact release diff kontrolleri: hedefli privacy/consent 116/116 PASS;
+  `npm run lint` PASS; `npm run typecheck` PASS; `npm test` 1178/1178 PASS;
+  `npm run check:i18n` 12 locale ve 617/617 PASS; Webpack Production build
+  280/280 PASS; performance 57.0/80 KiB gzip PASS; `git diff --check` PASS.
+  Kampanyalar paused kalir. Sonraki kapilar exact commit/push, VPS env contract,
+  Hostinger deploy, Production smoke ve gercek conversion receipt kanitidir.

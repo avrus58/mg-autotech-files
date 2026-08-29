@@ -7,6 +7,7 @@ import {
   analyticsConsentCopy,
   getAnalyticsConsentCopy,
   getAnalyticsConsentLocale,
+  getAnalyticsPrivacyPath,
 } from "../src/lib/analyticsConsentI18n";
 import { supportedLocales } from "../src/lib/i18nConfig";
 import {
@@ -39,6 +40,10 @@ test("localized public routes resolve consent copy without changing private rout
   assert.equal(getAnalyticsConsentCopy("/fr/how-it-works").title, "Choix de confidentialité");
   assert.equal(getAnalyticsConsentLocale("/new-request"), "en");
   assert.equal(getAnalyticsConsentCopy("/").title, "Privacy choices");
+  assert.equal(getAnalyticsPrivacyPath("/de/services/stage-1"), "/datenschutz");
+  assert.equal(getAnalyticsPrivacyPath("/en/services/stage-1"), "/privacy");
+  assert.equal(getAnalyticsPrivacyPath("/tr"), "/privacy");
+  assert.equal(getAnalyticsPrivacyPath("/"), "/privacy");
 });
 
 test("the consent UI renders locale copy and granular measurement choices", () => {
@@ -48,6 +53,8 @@ test("the consent UI renders locale copy and granular measurement choices", () =
   );
 
   assert.match(component, /getAnalyticsConsentCopy\(pathname\)/);
+  assert.match(component, /getAnalyticsPrivacyPath\(pathname\)/);
+  assert.match(component, /href=\{privacyPath\}/);
   assert.match(component, /\{consentCopy\.title\}/);
   assert.match(component, /\{consentCopy\.description\}/);
   assert.match(component, /\{consentCopy\.acceptAll\}/);

@@ -14,6 +14,7 @@ const productionOrigin = "https://file.mgautotech.de";
 const adClickSignalKeys = ["gclid", "dclid", "wbraid", "gbraid"] as const;
 const protectedAdsQueryKeys = new Set(["_gl", ...adClickSignalKeys]);
 const gatedDestinationPaths = new Set(["/register", "/login", "/new-request"]);
+const privacyPaths = new Set(["/datenschutz", "/privacy"]);
 
 export type AdClickConsentChoice = "necessary" | "analytics" | "advertising";
 
@@ -127,7 +128,7 @@ export function getAdClickConsentNavigation(
     return {
       destination: localDestination,
       isConversionEntry,
-      opensPrivacyInNewTab: destination.pathname === "/datenschutz",
+      opensPrivacyInNewTab: privacyPaths.has(destination.pathname),
     };
   } catch {
     return null;

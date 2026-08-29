@@ -50,7 +50,7 @@ const company = [
 
 const legal = [
   { label: "Impressum", href: "/impressum" },
-  { label: "Datenschutz", href: "/datenschutz" },
+  { label: "Privacy", href: "/privacy" },
   { label: "AGB", href: "/agb" },
   { label: "Widerruf", href: "/widerruf" },
 ];
