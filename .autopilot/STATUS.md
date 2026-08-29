@@ -5420,3 +5420,10 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
   280/280 PASS; performance 57.0/80 KiB gzip PASS; `git diff --check` PASS.
   Kampanyalar paused kalir. Sonraki kapilar exact commit/push, VPS env contract,
   Hostinger deploy, Production smoke ve gercek conversion receipt kanitidir.
+## 2026-08-30 Ads final funnel hotfix Production release
+
+- Exact app/analyzer release `0a09c4801e72` was deployed to the Hostinger VPS; both containers are healthy with zero restarts. The recorded application rollback pair is `b4763a75d2b`.
+- The short-laptop registration layout now keeps the first-step Continue action visible for both workshop and private customer modes. Privacy and German-only terms links remain beside the final action, open in a new tab so the three-step draft is preserved, and have exact accessible translations in every supported locale.
+- Unsupported generic turnaround promises on public service pages were replaced by review-led wording; no price, payment, database, service scope or customer data changed.
+- Validation: targeted register/SEO 14/14, full lint, sequential typecheck, full test 1182/1182, i18n 12 locales with 622/622 customer strings, Webpack Production build 280/280, performance 62.3/80 KiB gzip and independent review GO. Production public/admin smoke, 1366x768-equivalent live browser geometry, zero horizontal overflow, console issues 0, and post-release app/analyzer error-like logs 0 all passed. `mgautotech.de` remained HTTP 200.
+- Google Ads setup parity is confirmed for the primary verified-request conversion and the controlled `UK & Ireland | File Service | Search` campaign remains paused at EUR 5/day. The exact Enable option is prepared; activation is intentionally awaiting the mandatory action-time spend confirmation. The legacy English Search and Performance Max campaigns remain paused.
