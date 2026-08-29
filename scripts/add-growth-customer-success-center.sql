@@ -115,6 +115,12 @@ alter table public.growth_attribution_sessions
   add constraint growth_attribution_sessions_hash_version_check
   check (visitor_hash_version in ('pre-v2-key-unknown', 'legacy-service-role-v1', 'dedicated-v2'));
 
+-- New writers provide their version explicitly. The previous Production image
+-- omits it, so the default must remain a conservative unknown-key label during
+-- overlap and rollback.
+alter table public.growth_attribution_sessions
+  alter column visitor_hash_version set default 'pre-v2-key-unknown';
+
 alter table public.growth_journey_events
   add column if not exists visitor_hash_version text;
 update public.growth_journey_events
@@ -131,6 +137,114 @@ alter table public.growth_journey_events
       and visitor_hash_version in ('pre-v2-key-unknown', 'legacy-service-role-v1', 'dedicated-v2')
     )
   );
+
+-- Preserve journey writes from the previous Production image during a rolling
+-- cutover or application rollback. Explicit versions from current writers are
+-- never overwritten.
+create or replace function public.normalize_growth_journey_hash_version_compat()
+returns trigger
+language plpgsql
+security invoker
+set search_path = ''
+as $$
+begin
+  if new.visitor_hash is not null and new.visitor_hash_version is null then
+    new.visitor_hash_version := 'pre-v2-key-unknown';
+  end if;
+
+  return new;
+end;
+$$;
+
+revoke all on function public.normalize_growth_journey_hash_version_compat()
+  from public, anon, authenticated;
+
+drop trigger if exists growth_journey_hash_version_compat on public.growth_journey_events;
+create trigger growth_journey_hash_version_compat
+before insert on public.growth_journey_events
+for each row
+when (new.visitor_hash is not null and new.visitor_hash_version is null)
+execute function public.normalize_growth_journey_hash_version_compat();
+
+-- Preserve the previous RPC signature for application rollback while ignoring
+-- p_term so rollback traffic follows the current privacy-minimized contract.
+create or replace function public.record_growth_attribution_touch(
+  p_visitor_hash text,
+  p_user_id uuid,
+  p_landing_path text,
+  p_source text,
+  p_medium text,
+  p_campaign text,
+  p_term text,
+  p_referrer_host text,
+  p_country_code text,
+  p_locale text,
+  p_consent_version text
+)
+returns uuid
+language plpgsql
+security invoker
+set search_path = ''
+as $$
+declare
+  result_id uuid;
+begin
+  perform pg_catalog.pg_advisory_xact_lock(
+    pg_catalog.hashtextextended(p_visitor_hash, 0)
+  );
+
+  insert into public.growth_attribution_sessions (
+    visitor_hash, visitor_hash_version, user_id,
+    first_landing_path, last_landing_path,
+    first_source, last_source,
+    first_medium, last_medium,
+    first_campaign, last_campaign,
+    first_term, last_term,
+    first_referrer_host, last_referrer_host,
+    first_country_code, last_country_code,
+    locale, consent_version, identified_at
+  ) values (
+    p_visitor_hash, 'pre-v2-key-unknown', p_user_id,
+    p_landing_path, p_landing_path,
+    p_source, p_source,
+    p_medium, p_medium,
+    p_campaign, p_campaign,
+    null, null,
+    p_referrer_host, p_referrer_host,
+    p_country_code, p_country_code,
+    p_locale, p_consent_version,
+    case when p_user_id is null then null else pg_catalog.now() end
+  )
+  on conflict (visitor_hash) do update set
+    user_id = coalesce(growth_attribution_sessions.user_id, excluded.user_id),
+    last_landing_path = excluded.last_landing_path,
+    last_source = excluded.last_source,
+    last_medium = excluded.last_medium,
+    last_campaign = excluded.last_campaign,
+    last_term = null,
+    last_referrer_host = excluded.last_referrer_host,
+    last_country_code = excluded.last_country_code,
+    locale = coalesce(excluded.locale, growth_attribution_sessions.locale),
+    consent_version = excluded.consent_version,
+    touch_count = growth_attribution_sessions.touch_count + 1,
+    last_seen_at = pg_catalog.now(),
+    identified_at = case
+      when growth_attribution_sessions.user_id is null and excluded.user_id is not null
+        then pg_catalog.now()
+      else growth_attribution_sessions.identified_at
+    end
+  returning id into result_id;
+
+  return result_id;
+end;
+$$;
+
+revoke all on function public.record_growth_attribution_touch(
+  text, uuid, text, text, text, text, text, text, text, text, text
+) from public, anon, authenticated;
+grant execute on function public.record_growth_attribution_touch(
+  text, uuid, text, text, text, text, text, text, text, text, text
+) to service_role;
 
 alter table public.growth_attribution_touch_receipts
   add column if not exists visitor_hash_version text;

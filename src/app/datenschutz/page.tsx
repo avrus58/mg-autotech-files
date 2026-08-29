@@ -37,6 +37,7 @@ export default function DatenschutzPage() {
 
       <LegalSection title="4. Hosting, Datenbank und Dateispeicher">
         <p>Die öffentliche Website und die File-Service-Anwendung werden auf einem virtuellen Server (<strong className="text-white">VPS</strong>) von <strong className="text-white">Hostinger</strong> bereitgestellt. Kundenkonten und Authentifizierung, Datenbankfunktionen sowie der Dateispeicher werden über <strong className="text-white">Supabase</strong> verarbeitet.</p>
+        <p>Der Zugriff auf die Website und die Anwendung läuft über <strong className="text-white">Cloudflare</strong> als CDN, Reverse-Proxy und Sicherheitsdienst; die Weiterleitung an die Anwendung auf dem VPS übernimmt <strong className="text-white">Caddy</strong>. Cloudflare kann dafür technische Verbindungs- und Sicherheitsdaten wie IP-Adresse, Zeitpunkt, angefragte Ressource, Browser- und Geräteinformationen sowie Sicherheitssignale verarbeiten.</p>
         <p>Diese Dienste verarbeiten die für ihre jeweilige technische Funktion erforderlichen Daten. Dazu können die oben beschriebenen Konto-, Auftrags- und Dateidaten sowie technische Verbindungsdaten wie IP-Adresse, Zeitpunkt, angefragte Ressource, Browserinformationen und Sicherheitsereignisse gehören.</p>
       </LegalSection>
 
@@ -50,6 +51,7 @@ export default function DatenschutzPage() {
 
       <LegalSection title="7. Anmeldung und Google Login">
         <p>Für die Anmeldung werden technisch erforderliche Authentifizierungsinformationen und Sitzungscookies verwendet. Wenn Sie freiwillig „Mit Google fortfahren“ auswählen, werden Sie zu Google weitergeleitet; dabei verarbeitet Google die für die Anmeldung erforderlichen Daten. MG AutoTech erhält die von Google freigegebenen Basisprofildaten wie E-Mail-Adresse und Name.</p>
+        <p>Für geschützte Authentifizierungsabläufe setzen wir <strong className="text-white">Cloudflare Turnstile</strong> ein. Dabei verarbeitet Cloudflare technische Verbindungs-, Browser-, Geräte- und Sicherheitssignale, um automatisierte oder missbräuchliche Zugriffe zu erkennen. Der dabei erzeugte Prüftoken wird zusammen mit dem jeweiligen Authentifizierungsvorgang an Supabase übermittelt und dort serverseitig geprüft.</p>
       </LegalSection>
 
       <LegalSection title="8. Cookies, lokaler Speicher und optionale Messung">

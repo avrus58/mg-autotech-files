@@ -47,6 +47,7 @@ export default function PrivacyPage() {
 
       <LegalSection title="4. Hosting, database and file storage">
         <p>The public website and File Service application run on a virtual private server (<strong className="text-white">VPS</strong>) provided by <strong className="text-white">Hostinger</strong>. <strong className="text-white">Supabase</strong> provides customer accounts and authentication, database functions, and file storage.</p>
+        <p>Access to the website and application passes through <strong className="text-white">Cloudflare</strong> as a CDN, reverse proxy and security service; <strong className="text-white">Caddy</strong> forwards requests to the application on the VPS. For these purposes, Cloudflare may process technical connection and security data such as IP address, time, requested resource, browser and device information, and security signals.</p>
         <p>These services process the data required for their respective technical functions. This may include the account, order and file data described above, as well as technical connection data such as IP address, time, requested resource, browser information and security events.</p>
       </LegalSection>
 
@@ -60,6 +61,7 @@ export default function PrivacyPage() {
 
       <LegalSection title="7. Sign-in and Google login">
         <p>Technically required authentication information and session cookies are used for sign-in. If you voluntarily choose “Continue with Google”, you are directed to Google, which processes the data needed for sign-in. MG AutoTech receives the basic profile data released by Google, such as e-mail address and name.</p>
+        <p>We use <strong className="text-white">Cloudflare Turnstile</strong> for protected authentication flows. Cloudflare processes technical connection, browser, device and security signals to detect automated or abusive access. The resulting verification token is sent to Supabase with the relevant authentication operation and is verified there on the server side.</p>
       </LegalSection>
 
       <LegalSection title="8. Cookies, browser storage and optional measurement">

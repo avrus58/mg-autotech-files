@@ -282,6 +282,10 @@ export const analyticsConsentCopy: Record<LocaleCode, AnalyticsConsentCopy> = {
 
 export function getAnalyticsConsentLocale(pathname: string): LocaleCode {
   const firstSegment = pathname.split("/").filter(Boolean)[0];
+
+  if (firstSegment === "datenschutz") return "de";
+  if (firstSegment === "privacy") return "en";
+
   return firstSegment ? normalizeLocale(firstSegment) : defaultLocale;
 }
 

@@ -629,6 +629,63 @@ test("growth database contract is additive, RLS-protected, and excludes direct i
   );
 });
 
+test("journey hash-version bridge preserves rollback writes without changing current versions", () => {
+  const migration = source(
+    "supabase",
+    "migrations",
+    "20260829000000_growth_journey_legacy_hash_compat.sql"
+  );
+  const installer = source("scripts", "add-growth-customer-success-center.sql");
+  const verifier = source("scripts", "verify-growth-journey-legacy-hash-compat.sql");
+
+  for (const contract of [migration, installer]) {
+    assert.match(
+      contract,
+      /alter table public\.growth_attribution_sessions[\s\S]*alter column visitor_hash_version set default 'pre-v2-key-unknown'/i
+    );
+    assert.match(
+      contract,
+      /create or replace function public\.record_growth_attribution_touch\([\s\S]*p_term text[\s\S]*p_campaign, p_campaign,[\s\S]*null, null,[\s\S]*last_term = null/i
+    );
+    assert.match(
+      contract,
+      /create or replace function public\.normalize_growth_journey_hash_version_compat\(\)[\s\S]*returns trigger[\s\S]*security invoker/i
+    );
+    assert.match(
+      contract,
+      /if new\.visitor_hash is not null and new\.visitor_hash_version is null then[\s\S]*new\.visitor_hash_version := 'pre-v2-key-unknown'/i
+    );
+    assert.doesNotMatch(contract, /new\.visitor_hash_version := null/i);
+    assert.match(
+      contract,
+      /create trigger growth_journey_hash_version_compat[\s\S]*before insert on public\.growth_journey_events[\s\S]*execute function public\.normalize_growth_journey_hash_version_compat\(\)/i
+    );
+    assert.match(
+      contract,
+      /for each row[\s\S]*when \(new\.visitor_hash is not null and new\.visitor_hash_version is null\)/i
+    );
+  }
+
+  assert.doesNotMatch(migration, /\b(drop table|delete from|truncate|drop column)\b/i);
+  assert.match(verifier, /t\.tgrelid = 'public\.growth_journey_events'::pg_catalog\.regclass/i);
+  assert.match(verifier, /t\.tgtype = 7/i);
+  assert.match(verifier, /legacy omitted-version insert was not classified safely/i);
+  assert.match(verifier, /hashless insert unexpectedly received a hash version/i);
+  assert.match(verifier, /explicit current hash version was changed/i);
+  assert.match(verifier, /when check_violation then/i);
+  assert.match(verifier, /invalid hash\/version pair bypassed the relational check/i);
+  assert.match(verifier, /invalid hash version bypassed the relational check/i);
+  assert.match(verifier, /legacy RPC stored a search term despite the privacy contract/i);
+  assert.match(verifier, /legacy_session_default_is_unknown/i);
+  assert.match(verifier, /legacy_rpc_is_privacy_minimized_and_service_only/i);
+  assert.match(
+    verifier,
+    /to_regprocedure\([\s\S]*record_growth_attribution_touch\(text,uuid,text,text,text,text,text,text,text,text,text\)[\s\S]*not p\.prosecdef[\s\S]*search_path[\s\S]*legacy_rpc_is_privacy_minimized_and_service_only/i
+  );
+  assert.match(verifier, /no_stored_search_terms/i);
+  assert.match(verifier, /rollback;/i);
+});
+
 test("growth invalidation notifies mounted consumers and removes the listener cleanly", () => {
   let invalidations = 0;
   const unsubscribe = subscribeGrowthConsentInvalidation(() => {

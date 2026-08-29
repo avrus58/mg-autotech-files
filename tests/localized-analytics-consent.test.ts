@@ -35,12 +35,17 @@ test("measurement consent copy covers every supported locale", () => {
 
 test("localized public routes resolve consent copy without changing private routes", () => {
   assert.equal(getAnalyticsConsentLocale("/de"), "de");
+  assert.equal(getAnalyticsConsentLocale("/datenschutz"), "de");
+  assert.equal(getAnalyticsConsentLocale("/privacy"), "en");
   assert.equal(getAnalyticsConsentCopy("/de/services/stage-1").title, "Datenschutzauswahl");
+  assert.equal(getAnalyticsConsentCopy("/datenschutz").title, "Datenschutzauswahl");
   assert.equal(getAnalyticsConsentCopy("/tr").title, "Gizlilik tercihleri");
   assert.equal(getAnalyticsConsentCopy("/fr/how-it-works").title, "Choix de confidentialité");
   assert.equal(getAnalyticsConsentLocale("/new-request"), "en");
   assert.equal(getAnalyticsConsentCopy("/").title, "Privacy choices");
   assert.equal(getAnalyticsPrivacyPath("/de/services/stage-1"), "/datenschutz");
+  assert.equal(getAnalyticsPrivacyPath("/datenschutz"), "/datenschutz");
+  assert.equal(getAnalyticsPrivacyPath("/privacy"), "/privacy");
   assert.equal(getAnalyticsPrivacyPath("/en/services/stage-1"), "/privacy");
   assert.equal(getAnalyticsPrivacyPath("/tr"), "/privacy");
   assert.equal(getAnalyticsPrivacyPath("/"), "/privacy");

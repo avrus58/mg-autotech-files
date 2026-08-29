@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   ArrowRight,
   Cpu,
@@ -12,6 +13,10 @@ import {
 } from "lucide-react";
 import { companyAddress, contactEmail, contactPhone } from "@/lib/seo";
 import { LocalizedHomepageTree } from "@/lib/homepageLocalization";
+import {
+  getAnalyticsConsentLocale,
+  getAnalyticsPrivacyPath,
+} from "@/lib/analyticsConsentI18n";
 
 const services = [
   { label: "Services Overview", href: "/services" },
@@ -48,13 +53,6 @@ const company = [
   { label: "Contact", href: "/contact" },
 ];
 
-const legal = [
-  { label: "Impressum", href: "/impressum" },
-  { label: "Privacy", href: "/privacy" },
-  { label: "AGB", href: "/agb" },
-  { label: "Widerruf", href: "/widerruf" },
-];
-
 const whatsappNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER?.replace(/\D/g, "");
 const whatsappMessage = encodeURIComponent(
   "Hello MG AutoTech, I need help with a file service request."
@@ -64,6 +62,18 @@ const whatsappHref = whatsappNumber
   : null;
 
 export function Footer() {
+  const pathname = usePathname();
+  const privacyLocale = getAnalyticsConsentLocale(pathname);
+  const legalLinks = [
+    { label: "Impressum", href: "/impressum" },
+    {
+      label: privacyLocale === "de" ? "Datenschutz" : "Privacy",
+      href: getAnalyticsPrivacyPath(pathname),
+    },
+    { label: "AGB", href: "/agb" },
+    { label: "Widerruf", href: "/widerruf" },
+  ];
+
   return (
     <LocalizedHomepageTree>
       <footer className="relative overflow-hidden border-t border-white/10 bg-[#07090d] text-white">
@@ -169,7 +179,7 @@ export function Footer() {
                   {item.label}
                 </Link>
               ))}
-              {legal.map((item) => (
+              {legalLinks.map((item) => (
                 <Link
                   key={item.label}
                   href={item.href}

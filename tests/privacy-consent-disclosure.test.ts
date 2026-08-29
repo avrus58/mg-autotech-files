@@ -16,6 +16,9 @@ test("German and English privacy pages disclose the current hosting and optional
   for (const policy of [german, english]) {
     assert.match(policy, /Hostinger/);
     assert.match(policy, /Supabase/);
+    assert.match(policy, /Cloudflare/);
+    assert.match(policy, /Turnstile/);
+    assert.match(policy, /Caddy/);
     assert.match(policy, /Google Analytics/);
     assert.match(policy, /Google Ads/);
     assert.match(policy, /VPS/);
@@ -35,14 +38,16 @@ test("German and English privacy pages disclose the current hosting and optional
   assert.match(english, /de: absoluteUrl\("\/datenschutz"\)/);
 });
 
-test("English public and consent surfaces route privacy links to the English policy", () => {
+test("public footer and consent surfaces route German and English privacy links consistently", () => {
   const footer = source("src", "components", "Footer.tsx");
   const widget = source("src", "components", "widget", "WidgetSalesPageClient.tsx");
   const analytics = source("src", "components", "analytics", "PublicAnalytics.tsx");
   const robots = source("src", "app", "robots.ts");
   const sitemap = source("src", "app", "sitemap.ts");
 
-  assert.match(footer, /label: "Privacy", href: "\/privacy"/);
+  assert.match(footer, /getAnalyticsConsentLocale\(pathname\)/);
+  assert.match(footer, /privacyLocale === "de" \? "Datenschutz" : "Privacy"/);
+  assert.match(footer, /href: getAnalyticsPrivacyPath\(pathname\)/);
   assert.match(widget, /href="\/privacy"[^>]*>Privacy</);
   assert.match(analytics, /getAnalyticsPrivacyPath\(pathname\)/);
   assert.match(analytics, /href=\{privacyPath\}/);
