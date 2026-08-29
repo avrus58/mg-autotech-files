@@ -5427,3 +5427,10 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 - Unsupported generic turnaround promises on public service pages were replaced by review-led wording; no price, payment, database, service scope or customer data changed.
 - Validation: targeted register/SEO 14/14, full lint, sequential typecheck, full test 1182/1182, i18n 12 locales with 622/622 customer strings, Webpack Production build 280/280, performance 62.3/80 KiB gzip and independent review GO. Production public/admin smoke, 1366x768-equivalent live browser geometry, zero horizontal overflow, console issues 0, and post-release app/analyzer error-like logs 0 all passed. `mgautotech.de` remained HTTP 200.
 - Google Ads setup parity is confirmed for the primary verified-request conversion and the controlled `UK & Ireland | File Service | Search` campaign remains paused at EUR 5/day. The exact Enable option is prepared; activation is intentionally awaiting the mandatory action-time spend confirmation. The legacy English Search and Performance Max campaigns remain paused.
+
+## 2026-08-30 Controlled Google Ads launch
+
+- The owner gave action-time spend confirmation and the controlled `UK & Ireland | File Service | Search` campaign was enabled at EUR 5/day. A fresh Google Ads reload confirmed the campaign persisted as `Enabled` and `Eligible`; the account-level no-running-ads warning cleared.
+- The legacy English Search campaign and the incomplete-tracking Performance Max campaign remain paused. No additional campaign, budget, payment or bidding change was made.
+- Live Production verification after optional analytics and advertising consent observed the Google tag resources load from Google Tag Manager with zero browser console issues. Production app/analyzer health and the previously validated release remain unchanged.
+- A genuine Google Ads conversion receipt is still pending the first real verified customer request. No fake customer, request or conversion was created, so reporting data remains clean.
