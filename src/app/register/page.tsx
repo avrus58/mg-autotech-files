@@ -730,11 +730,11 @@ export default function RegisterPage() {
   }
 
   return (
-    <main className="relative isolate flex min-h-screen items-start justify-center overflow-x-hidden bg-[#050505] px-3 py-3 text-white sm:px-4 sm:py-5 lg:items-center lg:py-6">
+    <main className="relative isolate flex min-h-screen items-start justify-center overflow-x-hidden bg-[#050505] px-3 py-3 text-white sm:px-4 sm:py-5 lg:items-center lg:py-6 [@media(min-width:640px)_and_(max-height:820px)]:py-2 [@media(min-width:1024px)_and_(max-height:820px)]:items-start">
       <AuthBackdrop />
 
       <div className="relative z-10 w-full max-w-[760px] overflow-hidden rounded-[1.4rem] border border-white/10 bg-white/[0.04] shadow-2xl shadow-black/50 backdrop-blur-xl lg:rounded-[1.6rem]">
-        <header className="flex items-center justify-between gap-4 border-b border-white/10 bg-black/25 px-4 py-3.5 sm:px-6">
+        <header className="flex items-center justify-between gap-4 border-b border-white/10 bg-black/25 px-4 py-3.5 sm:px-6 [@media(min-width:640px)_and_(max-height:820px)]:py-2">
           <Link href="/" className="flex min-w-0 items-center gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-red-800/50 bg-[#111] shadow-lg shadow-red-950/30">
               <Upload className="h-5 w-5 text-red-600" />
@@ -755,13 +755,13 @@ export default function RegisterPage() {
           </div>
         </header>
 
-        <section className="p-4 sm:p-6 lg:p-7">
+        <section className="p-4 sm:p-6 lg:p-7 [@media(min-width:640px)_and_(max-height:820px)]:p-4">
           <div className="mx-auto max-w-[650px]">
-            <div className="mb-4">
+            <div className="mb-4 [@media(min-width:640px)_and_(max-height:820px)]:mb-2">
               <h1 className="text-2xl font-black leading-tight">
                 Create Account
               </h1>
-              <p className="mt-1.5 text-sm leading-5 text-zinc-400">
+              <p className="mt-1.5 text-sm leading-5 text-zinc-400 [@media(min-width:640px)_and_(max-height:820px)]:mt-0.5">
                 A guided setup for private customers and professional workshops.
               </p>
             </div>
@@ -936,9 +936,12 @@ export default function RegisterPage() {
                 </div>
               )}
 
-              <form onSubmit={handleRegister} className="space-y-4">
+              <form
+                onSubmit={handleRegister}
+                className="space-y-4 [@media(min-width:640px)_and_(max-height:820px)]:space-y-2.5"
+              >
               {step === 1 && (
-                <div className="space-y-4">
+                <div className="space-y-4 [@media(min-width:640px)_and_(max-height:820px)]:space-y-2.5">
                   <div className="grid gap-3 sm:grid-cols-2" role="group" aria-label="Customer type">
                     {accountCards.map((item) => (
                       <button
@@ -946,7 +949,7 @@ export default function RegisterPage() {
                         type="button"
                         onClick={() => setAccountType(item.id)}
                         aria-pressed={accountType === item.id}
-                        className={`grid grid-cols-[2.5rem_minmax(0,1fr)_auto] items-start gap-3 rounded-xl border p-3 text-left transition hover:-translate-y-0.5 ${
+                        className={`grid grid-cols-[2.5rem_minmax(0,1fr)_auto] items-start gap-3 rounded-xl border p-3 text-left transition hover:-translate-y-0.5 [@media(min-width:640px)_and_(max-height:820px)]:p-2 ${
                           accountType === item.id
                             ? "border-red-500 bg-red-950/25 shadow-xl shadow-red-950/20"
                             : "border-white/10 bg-black/25 hover:border-white/20"
@@ -959,7 +962,7 @@ export default function RegisterPage() {
                           <span className="block text-sm font-black sm:text-base">
                             {item.title}
                           </span>
-                          <span className="mt-1 block text-xs leading-5 text-zinc-500">
+                          <span className="mt-1 block text-xs leading-5 text-zinc-500 [@media(min-width:640px)_and_(max-height:820px)]:mt-0.5 [@media(min-width:640px)_and_(max-height:820px)]:leading-4">
                             {item.text}
                           </span>
                         </span>
@@ -1236,6 +1239,31 @@ export default function RegisterPage() {
                       )}
                     </PrimaryButton>
                   </div>
+
+                  <nav
+                    aria-label="Legal information"
+                    className="flex flex-wrap items-center justify-center gap-2 text-center text-xs leading-5 text-zinc-500 [@media(min-width:640px)_and_(max-height:820px)]:leading-4"
+                  >
+                    <Link
+                      href="/privacy"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label="Privacy information (opens in a new tab)"
+                      className="font-bold text-zinc-300 underline decoration-white/20 underline-offset-4 transition hover:text-white"
+                    >
+                      Privacy information
+                    </Link>
+                    <span aria-hidden="true">·</span>
+                    <Link
+                      href="/agb"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label="Terms in German (opens in a new tab)"
+                      className="font-bold text-zinc-300 underline decoration-white/20 underline-offset-4 transition hover:text-white"
+                    >
+                      Terms (German)
+                    </Link>
+                  </nav>
                 </div>
               )}
               </form>
@@ -1270,7 +1298,7 @@ function StepProgress({
   onStepChange: (step: StepId) => void;
 }) {
   return (
-    <div className="mb-4">
+    <div className="mb-4 [@media(min-width:640px)_and_(max-height:820px)]:mb-2">
       <div className="grid grid-cols-[1fr_auto_1fr_auto_1fr] items-start gap-2 sm:gap-3">
         {steps.map((item, index) => (
           <div key={item.id} className="contents">
@@ -1278,7 +1306,7 @@ function StepProgress({
               type="button"
               onClick={() => onStepChange(item.id)}
               aria-current={step === item.id ? "step" : undefined}
-              className="group flex min-w-0 flex-col items-center gap-1.5 text-center"
+              className="group flex min-w-0 flex-col items-center gap-1.5 text-center [@media(min-width:640px)_and_(max-height:820px)]:gap-0.5"
             >
               <span
                 className={`flex h-9 w-9 items-center justify-center rounded-full border text-sm font-black transition ${

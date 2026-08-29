@@ -98,6 +98,15 @@ test("DPF, EGR and AdBlue pages show legal context while DTC requires diagnosis"
   assert.match(source, /service\.notice/);
 });
 
+test("public service delivery estimates stay review-led without an unsupported time promise", () => {
+  const source = projectFile("src", "app", "services", "[slug]", "page.tsx");
+
+  assert.doesNotMatch(source, /usually around 30 minutes|usually fast/i);
+  assert.match(source, /Confirmed after vehicle, ECU and original-file review/);
+  assert.match(source, /Confirmed after supported-file and request review/);
+  assert.match(source, /Confirmed after fault-code and file-context review/);
+});
+
 test("customer-facing SEO pages expose only public navigation and no private metadata", () => {
   const files = [
     projectFile("src", "app", "file-service", "page.tsx"),

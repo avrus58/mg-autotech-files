@@ -33,6 +33,42 @@ test("registration keeps one focused card without the redundant marketing column
   assert.match(registerPage, /h-11 w-full rounded-xl/);
 });
 
+test("registration keeps the next action inside short laptop viewports", () => {
+  const shortLaptopRules = registerPage.match(
+    /\[@media\(min-width:640px\)_and_\(max-height:820px\)\]:/g
+  );
+
+  assert.ok(
+    (shortLaptopRules?.length ?? 0) >= 10,
+    "short laptop density rules must cover the shell, progress and active step"
+  );
+  assert.match(
+    registerPage,
+    /lg:items-center[\s\S]*\[@media\(min-width:1024px\)_and_\(max-height:820px\)\]:items-start/
+  );
+  assert.match(
+    registerPage,
+    /space-y-4 \[@media\(min-width:640px\)_and_\(max-height:820px\)\]:space-y-2\.5/
+  );
+});
+
+test("final account action links to the existing privacy and terms pages", () => {
+  const finalStep = registerPage.slice(registerPage.indexOf("{step === 3"));
+
+  assert.match(finalStep, /aria-label="Legal information"/);
+  assert.match(
+    finalStep,
+    /href="\/privacy"[\s\S]*target="_blank"[\s\S]*rel="noopener noreferrer"[\s\S]*aria-label="Privacy information \(opens in a new tab\)"/
+  );
+  assert.match(
+    finalStep,
+    /href="\/agb"[\s\S]*target="_blank"[\s\S]*rel="noopener noreferrer"[\s\S]*aria-label="Terms in German \(opens in a new tab\)"/
+  );
+  assert.match(finalStep, /Terms \(German\)/);
+  assert.match(finalStep, /flex flex-wrap items-center/);
+  assert.doesNotMatch(finalStep, /href="\/(?:terms|legal)"/);
+});
+
 test("company registration requires and persists a bounded company identity", () => {
   assert.match(registerPage, /if \(accountType === "company" && !cleanCompanyName\)/);
   assert.match(registerPage, /setMessage\("Please enter your company name\."\)/);

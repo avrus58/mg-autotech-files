@@ -66,7 +66,7 @@ const services: ServicePage[] = [
     description:
       "Online Stage 1 ECU tuning file service for workshops. Submit the original read, vehicle and ECU details for reviewed calibration and secure portal delivery.",
     credits: "10 credits",
-    turnaround: "Usually around 30 minutes for standard requests",
+    turnaround: "Confirmed after vehicle, ECU and original-file review",
     hero:
       "A professional Stage 1 file service starts with the exact vehicle, controller software and original ECU read rather than a generic one-file-fits-all calibration.",
     intro: [
@@ -153,7 +153,7 @@ const services: ServicePage[] = [
     description:
       "DPF-related ECU file service for supported diesel vehicles, handled through a secure workshop-focused request workflow.",
     credits: "6 credits",
-    turnaround: "Usually around 30 minutes for standard supported files",
+    turnaround: "Confirmed after supported-file and request review",
     hero:
       "A focused DPF software request flow for workshops that need clear notes, correct vehicle data and controlled file delivery.",
     intro: [
@@ -215,7 +215,7 @@ const services: ServicePage[] = [
     description:
       "EGR and AGR file service requests for supported ECUs with diagnostic notes, DTC context and secure file delivery.",
     credits: "6 credits",
-    turnaround: "Usually around 30 minutes for standard supported files",
+    turnaround: "Confirmed after supported-file and request review",
     hero:
       "A structured EGR file request workflow that helps workshops submit the correct technical information the first time.",
     intro: [
@@ -277,7 +277,7 @@ const services: ServicePage[] = [
     description:
       "AdBlue and SCR-related file service workflow for supported vehicles with clear status tracking and secure delivery.",
     credits: "11 credits",
-    turnaround: "Usually around 30 minutes when file and vehicle data are clear",
+    turnaround: "Confirmed after vehicle, file and diagnostic-context review",
     hero:
       "A professional AdBlue request process for workshops that need controlled communication, technical notes and file delivery in one portal.",
     intro: [
@@ -339,7 +339,7 @@ const services: ServicePage[] = [
     description:
       "DTC-related ECU file requests with structured fault code notes, file check support and secure customer delivery.",
     credits: "4 credits",
-    turnaround: "Usually fast when codes and file details are clear",
+    turnaround: "Confirmed after fault-code and file-context review",
     hero:
       "A clean DTC request workflow for workshops that need specific diagnostic trouble code handling and clear file communication.",
     intro: [
