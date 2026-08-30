@@ -11,6 +11,8 @@ import LoginPage from "../src/app/login/page";
 import RegisterPage from "../src/app/register/page";
 import ForgotPasswordPage from "../src/app/forgot-password/page";
 import ResetPasswordPage from "../src/app/reset-password/page";
+import CompleteProfilePage from "../src/app/auth/complete-profile/page";
+import PaymentCancelPage from "../src/app/payment/cancel/page";
 import PaymentSuccessPage from "../src/app/payment/success/page";
 import { AuthRequired } from "../src/components/auth/AuthRequired";
 import { BrowserAuthBoundary } from "../src/components/auth/BrowserAuthBoundary";
@@ -50,6 +52,10 @@ function escapeRenderedText(value: string) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#x27;");
+}
+
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
 }
 
 test("login first server-rendered HTML is localized in German and Turkish", () => {
@@ -167,6 +173,111 @@ test("payment confirmation first paint is localized in every non-English locale"
         `${locale} SSR omitted: ${localized}`,
       );
       assert.ok(!html.includes(`>${source}<`), `${locale} SSR leaked: ${source}`);
+    }
+  }
+});
+
+test("payment cancellation first paint is localized in every non-English locale", () => {
+  const sources = [
+    "Payment cancelled",
+    "The payment was cancelled. No credits were added and you were not charged by MG AutoTech through this checkout flow.",
+    "Try Again",
+    "Dashboard",
+  ] as const;
+
+  for (const { code: locale } of supportedLocales) {
+    if (locale === "en") continue;
+    const html = renderWithLocale(locale, createElement(PaymentCancelPage));
+
+    for (const source of sources) {
+      const localized = paymentFirstPaintT(locale, source);
+      assert.notEqual(localized, source, `${locale}: ${source}`);
+      assert.ok(
+        html.includes(escapeRenderedText(localized)),
+        `${locale} SSR omitted: ${localized}`,
+      );
+      assert.ok(!html.includes(`>${source}<`), `${locale} SSR leaked: ${source}`);
+    }
+    assert.match(html, /role="status"/u);
+    assert.match(html, /aria-live="polite"/u);
+  }
+});
+
+test("profile completion first paint and source contract cover every non-English locale", () => {
+  const directFirstPaintSources = [
+    "Checking account",
+    "Customer Account",
+    "Confirm your country",
+    "Your country is required to finish creating your customer account.",
+    "Saving country...",
+    "Finish account setup",
+  ] as const;
+  const directRuntimeSources = [
+    "Detecting your country...",
+    "Country selected automatically. You can change it.",
+    "Select the country used for your customer profile.",
+  ] as const;
+  const feedbackSources = [
+    "Please select your country.",
+    "Your country could not be saved. Please try again.",
+    "Your session could not be verified. Please log in again.",
+    "Your updated account could not be verified. Please log in again.",
+  ] as const;
+  const completeProfileSource = readFileSync(
+    new URL("../src/app/auth/complete-profile/page.tsx", import.meta.url),
+    "utf8",
+  );
+
+  assert.match(completeProfileSource, /const locale = useActiveLocale\(\)/u);
+  assert.match(
+    completeProfileSource,
+    /const firstPaintT = \(source: string\) => authPageFirstPaintT\(locale, source\)/u,
+  );
+  assert.match(
+    completeProfileSource,
+    /\{customerWorkflowExactT\(locale, message\)\}/u,
+  );
+  for (const source of directFirstPaintSources) {
+    assert.match(
+      completeProfileSource,
+      new RegExp(`firstPaintT\\(\\s*"${escapeRegExp(source)}"\\s*\\)`, "u"),
+      `first-paint copy is not translated directly: ${source}`,
+    );
+  }
+  for (const source of directRuntimeSources) {
+    assert.match(
+      completeProfileSource,
+      new RegExp(
+        `customerWorkflowExactT\\(\\s*locale\\s*,\\s*"${escapeRegExp(source)}"\\s*\\)`,
+        "u",
+      ),
+      `runtime copy is not translated directly: ${source}`,
+    );
+  }
+  assert.match(completeProfileSource, /role="alert"/u);
+  assert.match(completeProfileSource, /aria-live="assertive"/u);
+
+  for (const { code: locale } of supportedLocales) {
+    if (locale === "en") continue;
+    const html = renderWithLocale(locale, createElement(CompleteProfilePage));
+    const checking = authPageFirstPaintT(locale, "Checking account");
+
+    assert.notEqual(checking, "Checking account", locale);
+    assert.match(html, new RegExp(`aria-label="${escapeRenderedText(checking)}"`, "u"));
+    assert.doesNotMatch(html, /aria-label="Checking account"/u);
+    assert.match(html, /role="status"/u);
+    assert.match(html, /aria-live="polite"/u);
+
+    for (const source of [
+      ...directFirstPaintSources,
+      ...directRuntimeSources,
+      ...feedbackSources,
+    ]) {
+      assert.notEqual(
+        authPageFirstPaintT(locale, source),
+        source,
+        `${locale}: ${source}`,
+      );
     }
   }
 });

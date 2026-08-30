@@ -1523,6 +1523,146 @@ test("public file workflow copy keeps delivery and read-method terminology exact
     uploadedBack.it,
     "Il file completato viene caricato nuovamente nell’ordine, con stato e versione visibili al cliente.",
   );
+  assert.equal(
+    uploadedBack.pl,
+    "Gotowy plik jest ponownie przesyłany do zlecenia, a klient widzi jego status i wersję.",
+  );
+  assert.equal(
+    uploadedBack.ru,
+    "Готовый файл загружается обратно в заказ, при этом клиент видит его статус и версию.",
+  );
+  assert.equal(
+    uploadedBack.zh,
+    "完成的文件会上传回订单，客户可以查看其状态和版本。",
+  );
+  assert.equal(
+    uploadedBack.sq,
+    "Skedari i përfunduar ngarkohet përsëri te porosia, ndërsa klienti mund të shohë statusin dhe versionin e tij.",
+  );
+
+  const completedModified = localizedRecord(
+    publicSurfaceLocaleOrder,
+    publicServicesTranslations[
+      "The completed modified file is delivered in the order detail view. If needed, the customer can request a revision."
+    ],
+  );
+  assert.equal(
+    completedModified.de,
+    "Die fertig bearbeitete Datei wird in der Bestelldetailansicht bereitgestellt. Bei Bedarf kann der Kunde eine Revision anfordern.",
+  );
+  assert.equal(
+    completedModified.nl,
+    "Het voltooide, aangepaste bestand wordt in de detailweergave van de bestelling geleverd. Indien nodig kan de klant een revisie aanvragen.",
+  );
+  assert.equal(
+    completedModified.it,
+    "Il file modificato, una volta completato, viene consegnato nella pagina dei dettagli dell'ordine. Se necessario, il cliente può richiedere una revisione.",
+  );
+  assert.equal(
+    completedModified.sq,
+    "Skedari i modifikuar i përfunduar dorëzohet në faqen e detajeve të porosisë. Nëse është e nevojshme, klienti mund të kërkojë një rishikim.",
+  );
+
+  const originalEcuUpload = localizedRecord(
+    publicSurfaceLocaleOrder,
+    publicServicesTranslations[
+      "The customer uploads the original ECU file through the secure portal so the request stays connected to the correct account."
+    ],
+  );
+  assert.equal(
+    originalEcuUpload.de,
+    "Der Kunde lädt die originale ECU-Datei über das sichere Portal hoch, damit die Anfrage mit dem richtigen Konto verknüpft bleibt.",
+  );
+  assert.equal(
+    originalEcuUpload.nl,
+    "De klant uploadt het originele ECU-bestand via het beveiligde portaal, zodat de aanvraag aan het juiste account gekoppeld blijft.",
+  );
+  assert.equal(
+    originalEcuUpload.fr,
+    "Le client téléverse le fichier ECU d'origine via le portail sécurisé afin que la demande reste associée au bon compte.",
+  );
+  assert.equal(
+    originalEcuUpload.it,
+    "Il cliente carica il file ECU originale tramite il portale sicuro, in modo che la richiesta rimanga associata all'account corretto.",
+  );
+  assert.equal(
+    originalEcuUpload.es,
+    "El cliente carga el archivo ECU original a través del portal seguro para que la solicitud permanezca vinculada a la cuenta correcta.",
+  );
+  assert.equal(
+    originalEcuUpload.pl,
+    "Klient przesyła oryginalny plik ECU przez bezpieczny portal, dzięki czemu zgłoszenie pozostaje powiązane z właściwym kontem.",
+  );
+  assert.equal(
+    originalEcuUpload.sq,
+    "Klienti ngarkon skedarin origjinal të ECU-së përmes portalit të sigurt, në mënyrë që kërkesa të mbetet e lidhur me llogarinë e duhur.",
+  );
+
+  const reviewConfirmation = localizedRecord(
+    publicSurfaceLocaleOrder,
+    publicServicesTranslations[
+      "The file and notes are reviewed to confirm the request can continue."
+    ],
+  );
+  assert.equal(
+    reviewConfirmation.nl,
+    "Het bestand en de notities worden beoordeeld om te bevestigen dat de aanvraag kan worden voortgezet.",
+  );
+  assert.equal(
+    reviewConfirmation.it,
+    "Il file e le note vengono esaminati per confermare che la richiesta possa proseguire.",
+  );
+  assert.equal(
+    reviewConfirmation.pl,
+    "Plik i notatki są sprawdzane, aby potwierdzić, że zgłoszenie może być dalej realizowane.",
+  );
+  assert.equal(
+    reviewConfirmation.ru,
+    "Файл и примечания проверяются, чтобы подтвердить, что работа по запросу может быть продолжена.",
+  );
+  assert.equal(
+    reviewConfirmation.zh,
+    "对文件和备注进行审核，以确认该请求可以继续处理。",
+  );
+  assert.equal(
+    reviewConfirmation.sq,
+    "Skedari dhe shënimet shqyrtohen për të konfirmuar se kërkesa mund të vazhdojë.",
+  );
+
+  const finalFile = localizedRecord(
+    publicSurfaceLocaleOrder,
+    publicServicesTranslations[
+      "The final file is delivered in the order detail page with version history when applicable."
+    ],
+  );
+  assert.equal(
+    finalFile.de,
+    "Die endgültige Datei wird auf der Bestelldetailseite bereitgestellt, gegebenenfalls mit Versionsverlauf.",
+  );
+  assert.equal(
+    finalFile.nl,
+    "Het definitieve bestand wordt op de detailpagina van de bestelling geleverd, indien van toepassing met versiegeschiedenis.",
+  );
+  assert.equal(
+    finalFile.it,
+    "Il file finale viene consegnato nella pagina dei dettagli dell'ordine, con la cronologia delle versioni quando applicabile.",
+  );
+  assert.equal(
+    finalFile.pl,
+    "Plik końcowy jest udostępniany na stronie szczegółów zamówienia, a w stosownych przypadkach także z historią wersji.",
+  );
+  assert.equal(
+    finalFile.ru,
+    "Итоговый файл предоставляется на странице сведений о заказе, а при наличии также отображается история версий.",
+  );
+  assert.equal(
+    finalFile.zh,
+    "最终文件会在订单详情页交付，并在适用时显示版本历史记录。",
+  );
+  assert.equal(
+    finalFile.sq,
+    "Skedari përfundimtar dorëzohet në faqen e detajeve të porosisë, së bashku me historikun e versioneve kur është i disponueshëm.",
+  );
 
   const sourceReview = localizedRecord(
     publicSurfaceLocaleOrder,
@@ -1560,8 +1700,12 @@ test("public file workflow copy keeps delivery and read-method terminology exact
     publicToolsTranslations["ECU Read Method Advisor"],
   );
   assert.equal(advisor.de, "Berater für ECU-Auslesemethoden");
+  assert.equal(advisor.fr, "Guide du choix de la méthode de lecture ECU");
   assert.equal(advisor.it, "Guida al metodo di lettura ECU");
+  assert.equal(advisor.es, "Asesor de métodos de lectura de la ECU");
+  assert.equal(advisor.pl, "Doradca wyboru metody odczytu ECU");
   assert.equal(advisor.ru, "Помощник по выбору метода чтения ECU");
+  assert.equal(advisor.sq, "Këshilltar për metodën e leximit të ECU-së");
 
   const benchBootRead = localizedRecord(
     publicSurfaceLocaleOrder,

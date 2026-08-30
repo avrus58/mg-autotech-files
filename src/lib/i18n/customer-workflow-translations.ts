@@ -5661,6 +5661,48 @@ const customerWorkflowRows = [
     "车辆、服务和文件准备好后，开始专属上传流程。",
     "Rozpocznij prywatne przesyłanie, gdy pojazd, usługa i plik będą gotowe.",
     "Nisni ngarkimin privat pasi automjeti, shërbimi dhe skedari të jenë gati."
+  ],
+  [
+    "Payment cancelled",
+    "Betaling geannuleerd",
+    "Zahlung abgebrochen",
+    "Paiement annulé",
+    "Pagamento annullato",
+    "Платёж отменён",
+    "Pago cancelado",
+    "Ödeme iptal edildi",
+    "Pagamento cancelado",
+    "付款已取消",
+    "Płatność anulowana",
+    "Pagesa u anulua"
+  ],
+  [
+    "The payment was cancelled. No credits were added and you were not charged by MG AutoTech through this checkout flow.",
+    "De betaling is geannuleerd. Er zijn geen credits toegevoegd en MG AutoTech heeft via deze betaalprocedure niets in rekening gebracht.",
+    "Die Zahlung wurde abgebrochen. Es wurden keine Credits hinzugefügt und MG AutoTech hat Ihnen über diesen Bezahlvorgang nichts berechnet.",
+    "Le paiement a été annulé. Aucun crédit n’a été ajouté et MG AutoTech ne vous a rien facturé via ce parcours de paiement.",
+    "Il pagamento è stato annullato. Non è stato aggiunto alcun credito e MG AutoTech non ha effettuato alcun addebito tramite questa procedura di pagamento.",
+    "Платёж был отменён. Кредиты не были начислены, и MG AutoTech не списывала средства в рамках этого процесса оплаты.",
+    "El pago se ha cancelado. No se añadieron créditos y MG AutoTech no realizó ningún cargo mediante este proceso de pago.",
+    "Ödeme iptal edildi. Hiçbir kredi eklenmedi ve bu ödeme akışı üzerinden MG AutoTech tarafından ücretlendirilmediniz.",
+    "O pagamento foi cancelado. Não foram adicionados créditos e a MG AutoTech não efetuou qualquer cobrança através deste processo de pagamento.",
+    "付款已取消。未添加任何积分，MG AutoTech 也未通过此结账流程向您收费。",
+    "Płatność została anulowana. Nie dodano żadnych kredytów, a firma MG AutoTech nie naliczyła żadnej opłaty w ramach tego procesu płatności.",
+    "Pagesa u anulua. Nuk u shtua asnjë kredit dhe MG AutoTech nuk ju tarifoi përmes këtij procesi pagese."
+  ],
+  [
+    "Try Again",
+    "Opnieuw proberen",
+    "Erneut versuchen",
+    "Réessayer",
+    "Riprova",
+    "Попробовать снова",
+    "Intentar de nuevo",
+    "Tekrar dene",
+    "Tentar novamente",
+    "重试",
+    "Spróbuj ponownie",
+    "Provo përsëri"
   ]
 ] as const satisfies readonly CustomerWorkflowRow[];
 

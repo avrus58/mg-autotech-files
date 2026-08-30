@@ -268,6 +268,19 @@ export const customerWorkflowExactTranslations = {
     "Kontrola ręczna",
     "Manual check"
   ],
+  "Payment cancelled": [
+    "Betaling geannuleerd",
+    "Zahlung abgebrochen",
+    "Paiement annulé",
+    "Pagamento annullato",
+    "Платёж отменён",
+    "Pago cancelado",
+    "Ödeme iptal edildi",
+    "Pagamento cancelado",
+    "付款已取消",
+    "Płatność anulowana",
+    "Pagesa u anulua"
+  ],
   "Payment confirmed. Credits were added to your account.": [
     "Betaling bevestigd. Credits zijn toegevoegd aan uw account.",
     "Zahlung bestätigt. Credits wurden Ihrem Konto hinzugefügt.",
@@ -424,6 +437,19 @@ export const customerWorkflowExactTranslations = {
     "sukces",
     "sukses"
   ],
+  "The payment was cancelled. No credits were added and you were not charged by MG AutoTech through this checkout flow.": [
+    "De betaling is geannuleerd. Er zijn geen credits toegevoegd en MG AutoTech heeft via deze betaalprocedure niets in rekening gebracht.",
+    "Die Zahlung wurde abgebrochen. Es wurden keine Credits hinzugefügt und MG AutoTech hat Ihnen über diesen Bezahlvorgang nichts berechnet.",
+    "Le paiement a été annulé. Aucun crédit n’a été ajouté et MG AutoTech ne vous a rien facturé via ce parcours de paiement.",
+    "Il pagamento è stato annullato. Non è stato aggiunto alcun credito e MG AutoTech non ha effettuato alcun addebito tramite questa procedura di pagamento.",
+    "Платёж был отменён. Кредиты не были начислены, и MG AutoTech не списывала средства в рамках этого процесса оплаты.",
+    "El pago se ha cancelado. No se añadieron créditos y MG AutoTech no realizó ningún cargo mediante este proceso de pago.",
+    "Ödeme iptal edildi. Hiçbir kredi eklenmedi ve bu ödeme akışı üzerinden MG AutoTech tarafından ücretlendirilmediniz.",
+    "O pagamento foi cancelado. Não foram adicionados créditos e a MG AutoTech não efetuou qualquer cobrança através deste processo de pagamento.",
+    "付款已取消。未添加任何积分，MG AutoTech 也未通过此结账流程向您收费。",
+    "Płatność została anulowana. Nie dodano żadnych kredytów, a firma MG AutoTech nie naliczyła żadnej opłaty w ramach tego procesu płatności.",
+    "Pagesa u anulua. Nuk u shtua asnjë kredit dhe MG AutoTech nuk ju tarifoi përmes këtij procesi pagese."
+  ],
   "The selected credit total could not be verified.": [
     "Het geselecteerde credittotaal kon niet worden geverifieerd.",
     "Die ausgewählte Credit-Gesamtsumme konnte nicht überprüft werden.",
@@ -462,6 +488,19 @@ export const customerWorkflowExactTranslations = {
     "该总数超出了 Stripe 支持的欧元范围。选择银行转账或更改金额。",
     "Suma ta wykracza poza obsługiwany przez Stripe zakres EUR. Wybierz Przelew bankowy lub zmień kwotę.",
     "Ky total është jashtë gamës së mbështetur në EUR nga Stripe. Zgjidhni Transfertë Bankare ose ndryshoni shumën."
+  ],
+  "Try Again": [
+    "Opnieuw proberen",
+    "Erneut versuchen",
+    "Réessayer",
+    "Riprova",
+    "Попробовать снова",
+    "Intentar de nuevo",
+    "Tekrar dene",
+    "Tentar novamente",
+    "重试",
+    "Spróbuj ponownie",
+    "Provo përsëri"
   ],
   "Verified credit prices are not available yet. Retry before starting a payment.": [
     "Geverifieerde creditprijzen zijn nog niet beschikbaar. Probeer het opnieuw voordat u een betaling start.",

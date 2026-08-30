@@ -109,7 +109,7 @@ test("public log snapshot keeps the homepage result concise and communicates its
   assert.match(publicSnapshot, /Engine Speed \(rpm\), Engine Torque Actual \(Nm\)/);
   assert.doesNotMatch(publicSnapshot, /Manual data input|PerformanceDataTable|Download detailed report/);
   assert.doesNotMatch(publicSnapshot, /AutoTuner/i);
-  assert.match(deferred, /aria-label="Free log snapshot loading"/);
+  assert.match(deferred, /aria-label=\{copy\["Free log snapshot loading"\]\}/);
   assert.match(deferred, /min-h-\[32rem\]/);
 });
 

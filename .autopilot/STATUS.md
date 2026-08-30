@@ -5516,3 +5516,26 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
   sayfalari 1366x768 ve 390x844 boyutlarinda dogru `html lang`, English sizinti
   0, yatay tasma 0 ve console hata 0 verdi. Push, Preview, Production deploy,
   veritabani, secret, odeme, e-posta veya canli servis mutasyonu yapilmadi.
+
+## 2026-08-30 22:07 +02:00 Localization review remediation and final validation
+
+- Ilk bagimsiz incelemede bulunan canonical `/` ilk boya, payment-cancel,
+  complete-profile, otomotiv terimi kalitesi ve homepage katalog payload
+  aciklari kapatildi. Canonical root artik locale cookie'sini SSR'da uygular;
+  auth ve odeme durumlari hydration beklemeden dogru dilde gorunur.
+- Homepage icin tum global exact/term kataloglarini istemciye tasimak yerine
+  yalniz gerekli metinlerden olusan scoped katalog eklendi. Locale payload'i
+  12 KiB gzip butcesine karsi 4.9-6.1 KiB gzip araliginda kaldi; public ilk
+  yukleme 14.6/80 KiB gzip ve uc chunk olarak dogrulandi.
+- Son gercek tarayici turunda Almanca ve Turkce homepage basliklari, dynamic
+  datalog loading aria etiketi ve telif satiri yerellestirilmis gorundu;
+  `/payment/cancel` tamamen Turkceydi. 1280 genislikte yatay tasma ve browser
+  console hatasi yoktu. Onceki 390x844 responsive QA ve kaynak-contract testleri
+  aynen korundu.
+- Final `npm run check:i18n` PASS: 12 locale, her non-English locale icin
+  1997/1997 reviewed visible source, 0 temiz English fallback ve dynamic guard
+  13 occurrence/12 signature. `npm test -- --test-reporter=dot` 1325/1325,
+  `npm run lint`, `npm run typecheck`, `npm run build -- --webpack` (280/280),
+  `npm run check:performance` ve `git diff --check` PASS.
+- Push, Preview, Production deploy, canli veritabani veya dis servis mutasyonu
+  yapilmadi.

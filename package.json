@@ -9,7 +9,7 @@
     "dev": "next dev",
     "build": "next build",
     "check:i18n": "node scripts/check-i18n-seo.mjs && tsx scripts/check-customer-i18n.ts",
-    "check:performance": "node scripts/check-web-performance.mjs",
+    "check:performance": "node scripts/check-web-performance.mjs && tsx scripts/check-homepage-localization-payload.ts",
     "check:auth-captcha": "node scripts/check-auth-captcha-readiness.mjs",
     "check:auth-captcha:release": "node scripts/check-auth-captcha-readiness.mjs --require-ready",
     "seo:indexnow:check": "tsx scripts/submit-indexnow.ts --dry-run",

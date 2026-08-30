@@ -1772,7 +1772,9 @@ test("localized file service hub is hreflang-ready and linked from localized sur
   assert.match(copy, /ECU ve TCU Dosya Servisi Merkezi/);
   assert.match(copy, /fileServiceJsonLd/);
   assert.match(localizedHomeRoute, /HomepageExperience/);
-  assert.match(localizedHomeRoute, /exactTranslations\[locale\]/);
+  assert.match(localizedHomeRoute, /buildHomepageTranslationCatalog\(locale\)/);
+  assert.doesNotMatch(localizedHomeRoute, /exactTranslations\[locale\]/);
+  assert.doesNotMatch(localizedHomeRoute, /termTranslations\[locale\]/);
   assert.match(homepageLocalization, /"\/file-service"/);
   assert.match(localizedFooter, /getFileServiceCopy/);
   assert.match(localizedFooter, /localizedPath\(locale, "\/file-service"\)/);

@@ -234,6 +234,8 @@ test("critical customer routes use compact catalogs and uncertain routes stay on
     ["/new-request", "request"],
     ["/dashboard", "overview"],
     ["/dashboard/credits", "credits"],
+    ["/payment/cancel", "credits"],
+    ["/payment/success", "credits"],
     ["/dashboard/file-expert", "file-expert"],
     ["/dashboard/file-expert/report-id", "file-expert"],
     ["/dashboard/orders", "orders"],

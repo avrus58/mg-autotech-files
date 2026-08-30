@@ -122,6 +122,7 @@ export const customerWorkflowClientGroups = {
   credits: {
     files: [
       "src/app/dashboard/credits/page.tsx",
+      "src/app/payment/cancel/page.tsx",
       "src/app/payment/success/page.tsx",
     ],
     includeMasterLiteralExact: true,

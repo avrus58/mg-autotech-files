@@ -85,13 +85,17 @@ test("private notifications stay out of public pages and heavy tools remain defe
 
 test("a build-time homepage JavaScript budget guards future regressions", () => {
   const script = source("scripts", "check-web-performance.mjs");
+  const localizedPayloadScript = source(
+    "scripts",
+    "check-homepage-localization-payload.ts",
+  );
   const packageJson = JSON.parse(source("package.json")) as {
     scripts?: Record<string, string>;
   };
 
   assert.equal(
     packageJson.scripts?.["check:performance"],
-    "node scripts/check-web-performance.mjs"
+    "node scripts/check-web-performance.mjs && tsx scripts/check-homepage-localization-payload.ts",
   );
   assert.match(script, /80 \* 1024/);
   assert.match(script, /supabase-js/);
@@ -108,4 +112,9 @@ test("a build-time homepage JavaScript budget guards future regressions", () => 
   assert.match(script, /globalThis\.__RSC_MANIFEST\["\/page"\]/);
   assert.match(script, /clientModules/);
   assert.match(script, /static\\\/chunks\\\/app\\\/layout-/);
+  assert.match(localizedPayloadScript, /buildHomepageTranslationCatalog/);
+  assert.match(localizedPayloadScript, /serialized HomepageExperience localization Flight prop/);
+  assert.match(localizedPayloadScript, /maximumRawBytes = 28 \* 1024/);
+  assert.match(localizedPayloadScript, /maximumGzipBytes = 12 \* 1024/);
+  assert.match(localizedPayloadScript, /gzipSync/);
 });

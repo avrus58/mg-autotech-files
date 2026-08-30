@@ -34,6 +34,9 @@ import {
   replacePrivateMeasurementDocument,
   replaceWithPendingMeasurementCompletion,
 } from "@/lib/publicAnalytics";
+import { authPageFirstPaintT } from "@/lib/i18n/auth-page-first-paint";
+import { customerWorkflowExactT } from "@/lib/i18n/customer-workflow-auth-translations";
+import { useActiveLocale } from "@/lib/useActiveLocale";
 
 type CountryDetectionState = "detecting" | "detected" | "manual";
 
@@ -79,6 +82,8 @@ function hasPendingGoogleRegistration() {
 
 export default function CompleteProfilePage() {
   const router = useRouter();
+  const locale = useActiveLocale();
+  const firstPaintT = (source: string) => authPageFirstPaintT(locale, source);
   const [country, setCountry] = useState("");
   const [countryDetection, setCountryDetection] =
     useState<CountryDetectionState>("detecting");
@@ -186,10 +191,16 @@ export default function CompleteProfilePage() {
 
   const countryHint =
     countryDetection === "detecting"
-      ? "Detecting your country..."
+      ? customerWorkflowExactT(locale, "Detecting your country...")
       : countryDetection === "detected"
-        ? "Country selected automatically. You can change it."
-        : "Select the country used for your customer profile.";
+        ? customerWorkflowExactT(
+            locale,
+            "Country selected automatically. You can change it."
+          )
+        : customerWorkflowExactT(
+            locale,
+            "Select the country used for your customer profile."
+          );
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -278,8 +289,10 @@ export default function CompleteProfilePage() {
     return (
       <main className="flex min-h-screen items-center justify-center bg-[#050505] text-white">
         <Loader2
+          role="status"
+          aria-live="polite"
           className="h-8 w-8 animate-spin text-red-500"
-          aria-label="Checking account"
+          aria-label={firstPaintT("Checking account")}
         />
       </main>
     );
@@ -295,24 +308,28 @@ export default function CompleteProfilePage() {
       >
         <Link href="/" className="mb-7 flex w-fit items-center gap-3">
           <span className="flex h-12 w-12 items-center justify-center rounded-2xl border border-red-800/50 bg-[#111]">
-            <Upload className="h-7 w-7 text-red-600" />
+            <Upload aria-hidden="true" className="h-7 w-7 text-red-600" />
           </span>
           <span>
             <span className="block text-xl font-black">
               MG <span className="text-red-600">AUTOTECH</span>
             </span>
             <span className="block text-xs text-zinc-400">
-              Customer Account
+              {firstPaintT("Customer Account")}
             </span>
           </span>
         </Link>
 
         <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl border border-red-800/50 bg-red-950/25 text-red-400">
-          <MapPin className="h-6 w-6" />
+          <MapPin aria-hidden="true" className="h-6 w-6" />
         </div>
-        <h1 className="text-3xl font-black">Confirm your country</h1>
+        <h1 className="text-3xl font-black">
+          {firstPaintT("Confirm your country")}
+        </h1>
         <p className="mt-3 text-sm leading-6 text-zinc-400">
-          Your country is required to finish creating your customer account.
+          {firstPaintT(
+            "Your country is required to finish creating your customer account."
+          )}
         </p>
 
         <div className="mt-7">
@@ -338,7 +355,7 @@ export default function CompleteProfilePage() {
             aria-live="assertive"
             className="mt-4 rounded-2xl border border-red-900/60 bg-red-950/25 px-4 py-3 text-sm text-red-200"
           >
-            {message}
+            {customerWorkflowExactT(locale, message)}
           </p>
         )}
 
@@ -348,11 +365,13 @@ export default function CompleteProfilePage() {
           className="mt-6 inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-[#b1121b] px-5 text-sm font-black text-white transition hover:bg-[#c91824] disabled:cursor-not-allowed disabled:opacity-60"
         >
           {saving ? (
-            <Loader2 className="h-5 w-5 animate-spin" />
+            <Loader2 aria-hidden="true" className="h-5 w-5 animate-spin" />
           ) : (
-            <CheckCircle2 className="h-5 w-5" />
+            <CheckCircle2 aria-hidden="true" className="h-5 w-5" />
           )}
-          {saving ? "Saving country..." : "Finish account setup"}
+          {saving
+            ? firstPaintT("Saving country...")
+            : firstPaintT("Finish account setup")}
         </button>
       </form>
     </main>

@@ -24,8 +24,8 @@ function placeholders(value: string) {
 
 test("customer workflow catalog covers all eleven non-English locales", () => {
   assert.deepEqual(customerWorkflowLocaleOrder, expectedLocales);
-  assert.equal(customerWorkflowSourceStrings.length, 404);
-  assert.equal(new Set(customerWorkflowSourceStrings).size, 404);
+  assert.equal(customerWorkflowSourceStrings.length, 407);
+  assert.equal(new Set(customerWorkflowSourceStrings).size, 407);
   assert.equal(customerWorkflowTemplateRows.length, 102);
 
   for (const [source, translations] of Object.entries(customerWorkflowExactTranslations)) {

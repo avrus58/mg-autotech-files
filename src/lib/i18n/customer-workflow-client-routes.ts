@@ -24,7 +24,13 @@ export function customerWorkflowClientGroupForPath(
   }
   if (pathname === "/new-request") return "request";
   if (pathname === "/dashboard") return "overview";
-  if (pathname === "/dashboard/credits") return "credits";
+  if (
+    pathname === "/dashboard/credits" ||
+    pathname === "/payment/cancel" ||
+    pathname === "/payment/success"
+  ) {
+    return "credits";
+  }
   if (
     pathname === "/dashboard/file-expert" ||
     pathname.startsWith("/dashboard/file-expert/")

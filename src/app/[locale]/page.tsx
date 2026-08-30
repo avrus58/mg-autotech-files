@@ -2,11 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { HomepageExperience } from "@/components/homepage/HomepageExperience";
 import { buildPublicLogSnapshotCopy } from "@/lib/i18n/tool-client-copy";
-import { exactTranslations, termTranslations } from "@/lib/i18n";
-import { getFileServiceCopy } from "@/lib/fileServiceI18n";
-import { homepageHeroCopy } from "@/lib/homepageHeroI18n";
-import { homepageExperienceExactTranslations } from "@/lib/homepageExperienceTranslations";
-import { seoUiCopy } from "@/lib/seo-ui";
+import { buildHomepageTranslationCatalog } from "@/lib/homepageTranslationCatalog";
 import {
   getServiceSeo,
   homeSeo,
@@ -23,9 +19,6 @@ import {
   websiteJsonLd,
 } from "@/lib/seo";
 import { openGraphLocaleByCode, type LocaleCode } from "@/lib/i18nConfig";
-
-const homepageHeroIntroSource =
-  "Upload original ECU/TCU files, select your service, track your order and download the completed file directly through the secure MG AutoTech customer portal.";
 
 export function generateStaticParams() {
   return localizedSeoLocales.map((locale) => ({ locale }));
@@ -136,9 +129,6 @@ export default async function LocalizedHomePage({
 
   const locale = rawLocale as LocaleCode;
   const jsonLd = buildLocalizedHomepageJsonLd(locale);
-  const fileServiceCopy = getFileServiceCopy(locale);
-  const heroCopy = homepageHeroCopy[locale];
-  const uiCopy = seoUiCopy[locale];
 
   return (
     <>
@@ -149,28 +139,7 @@ export default async function LocalizedHomePage({
       <HomepageExperience
         locale={locale}
         publicLogSnapshotCopy={buildPublicLogSnapshotCopy(locale)}
-        translationCatalog={{
-          exact: {
-            ...exactTranslations[locale],
-            ...homepageExperienceExactTranslations[locale],
-            [homepageHeroIntroSource]: homeSeo[locale].intro,
-            "Custom ECU & TCU": heroCopy.customTitle,
-            "Tuning Files": heroCopy.tuningFiles,
-            "Secure Portal": heroCopy.securePortal,
-            "Fast Handling": heroCopy.fastHandling,
-            "Workshop Ready": heroCopy.workshopReady,
-            "File Service": fileServiceCopy.nav.fileService,
-            Online: uiCopy.online,
-            Platform: uiCopy.platform,
-            Legal: uiCopy.legal,
-            Contact: uiCopy.contact,
-            "Secure customer dashboard and private file workflow.":
-              uiCopy.secureAccount,
-            "Ready to upload a file?": uiCopy.readyTitle,
-            "All rights reserved.": uiCopy.rights,
-          },
-          terms: termTranslations[locale],
-        }}
+        translationCatalog={buildHomepageTranslationCatalog(locale)}
         includeStructuredData={false}
       />
     </>

@@ -80,7 +80,10 @@ test("interactive tool clients receive compact copies without bundling the globa
     assert.match(pageSource, /copy=\{clientCopy\}/);
   }
 
-  const homepage = source("src", "app", "page.tsx");
+  const homepage = [
+    source("src", "app", "page.tsx"),
+    source("src", "lib", "renderRootHomepage.tsx"),
+  ].join("\n");
   assert.match(homepage, /buildPublicLogSnapshotCopy\(locale\)/);
   assert.match(homepage, /publicLogSnapshotCopy=/);
 });

@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import test from "node:test";
-import { exactTranslations, termTranslations } from "../src/lib/i18n";
 import { supportedLocales } from "../src/lib/i18nConfig";
 import { homepageHeroCopy } from "../src/lib/homepageHeroI18n";
 import { homepageExperienceExactTranslations } from "../src/lib/homepageExperienceTranslations";
+import { buildHomepageTranslationCatalog } from "../src/lib/homepageTranslationCatalog";
 import { publicVehicleCopy } from "../src/components/homepage/VehicleIntelligence";
 import {
   localizeHomepageHref,
@@ -36,9 +36,9 @@ test("localized homepage keeps locale metadata and one localized schema graph", 
   assert.match(localizedHomepageRoute, /languageAlternates\("\/"\)/u);
   assert.match(localizedHomepageRoute, /localizedUrl\(locale, "\/"\)/u);
   assert.match(localizedHomepageRoute, /JSON\.stringify\(jsonLd\)/u);
-  assert.match(localizedHomepageRoute, /exactTranslations\[locale\]/u);
-  assert.match(localizedHomepageRoute, /termTranslations\[locale\]/u);
-  assert.match(localizedHomepageRoute, /homepageExperienceExactTranslations\[locale\]/u);
+  assert.match(localizedHomepageRoute, /buildHomepageTranslationCatalog\(locale\)/u);
+  assert.doesNotMatch(localizedHomepageRoute, /exactTranslations\[locale\]/u);
+  assert.doesNotMatch(localizedHomepageRoute, /termTranslations\[locale\]/u);
 });
 
 test("localized routes set the browser document language before hydration", () => {
@@ -64,10 +64,7 @@ test("homepage links localize only when an equivalent locale page exists", () =>
 
 test("critical hero copy is translated from the shared catalog without touching technical values", () => {
   for (const locale of ["de", "tr", "fr"] as const) {
-    const catalog = {
-      exact: exactTranslations[locale],
-      terms: termTranslations[locale],
-    };
+    const catalog = buildHomepageTranslationCatalog(locale);
 
     assert.notEqual(
       translateHomepageText("Professional online file service platform", catalog),
@@ -98,7 +95,12 @@ test("all configured non-English locales receive the unified homepage route", ()
   assert.equal(nonEnglishLocales.length, 11);
   for (const { code } of nonEnglishLocales) {
     assert.equal(localizeHomepageHref("/", code), `/${code}`);
-    assert.ok(exactTranslations[code]["Professional online file service platform"], code);
+    assert.ok(
+      buildHomepageTranslationCatalog(code)?.exact[
+        "Professional online file service platform"
+      ],
+      code,
+    );
     assert.notEqual(homepageHeroCopy[code].customTitle, homepageHeroCopy.en.customTitle, code);
     assert.notEqual(homepageHeroCopy[code].tuningFiles, homepageHeroCopy.en.tuningFiles, code);
     assert.notEqual(homepageHeroCopy[code].securePortal, homepageHeroCopy.en.securePortal, code);
