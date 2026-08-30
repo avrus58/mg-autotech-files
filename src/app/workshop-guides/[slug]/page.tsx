@@ -2,6 +2,13 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { SeoGuidePage } from "@/components/SeoGuidePage";
 import {
+  localizeRuntimePublicJsonLd,
+  runtimePublicAlternates,
+  runtimePublicInLanguage,
+  runtimePublicMetadataCopy,
+  runtimePublicOpenGraphLocale,
+} from "@/lib/i18n/runtime-public";
+import {
   absoluteUrl,
   organizationJsonLd,
   siteName,
@@ -11,6 +18,7 @@ import {
   getWorkshopGuideArticle,
   workshopGuideArticles,
 } from "@/lib/workshopGuides";
+import { getServerLocale } from "@/lib/serverLocale";
 
 export function generateStaticParams() {
   return workshopGuideArticles.map((article) => ({ slug: article.slug }));
@@ -26,18 +34,21 @@ export async function generateMetadata({
 
   if (!article) return {};
 
+  const locale = await getServerLocale();
+  const copy = runtimePublicMetadataCopy(locale, article.title, article.description, ["core", "workshop-guides"]);
   const url = absoluteUrl(`/workshop-guides/${article.slug}`);
 
   return {
-    title: article.title,
-    description: article.description,
-    alternates: { canonical: url },
+    title: copy.title,
+    description: copy.description,
+    alternates: runtimePublicAlternates(`/workshop-guides/${article.slug}`),
     openGraph: {
-      title: `${article.title} | MG AutoTech`,
-      description: article.description,
+      title: `${copy.title} | MG AutoTech`,
+      description: copy.description,
       url,
       siteName,
       type: "article",
+      locale: runtimePublicOpenGraphLocale(locale),
       publishedTime: article.updatedAt,
       modifiedTime: article.updatedAt,
       images: [
@@ -45,14 +56,14 @@ export async function generateMetadata({
           url: absoluteUrl("/opengraph-image"),
           width: 1200,
           height: 630,
-          alt: article.title,
+          alt: copy.title,
         },
       ],
     },
     twitter: {
       card: "summary_large_image",
-      title: `${article.title} | MG AutoTech`,
-      description: article.description,
+      title: `${copy.title} | MG AutoTech`,
+      description: copy.description,
       images: [absoluteUrl("/opengraph-image")],
     },
   };
@@ -68,12 +79,13 @@ export default async function WorkshopGuideArticlePage({
 
   if (!article) notFound();
 
+  const locale = await getServerLocale();
   const url = absoluteUrl(`/workshop-guides/${article.slug}`);
-  const jsonLd = {
+  const jsonLd = localizeRuntimePublicJsonLd({
     "@context": "https://schema.org",
     "@graph": [
       organizationJsonLd(),
-      websiteJsonLd("en"),
+      websiteJsonLd(locale),
       {
         "@type": "TechArticle",
         "@id": `${url}#article`,
@@ -81,7 +93,7 @@ export default async function WorkshopGuideArticlePage({
         description: article.description,
         url,
         mainEntityOfPage: url,
-        inLanguage: "en",
+        inLanguage: runtimePublicInLanguage(locale),
         datePublished: article.updatedAt,
         dateModified: article.updatedAt,
         author: { "@id": `${absoluteUrl("/")}#organization` },
@@ -136,10 +148,12 @@ export default async function WorkshopGuideArticlePage({
         })),
       },
     ],
-  };
+  }, locale, ["core", "workshop-guides"]);
 
   return (
     <SeoGuidePage
+      locale={locale}
+      localizationScopes={["core", "workshop-guides"]}
       eyebrow={article.eyebrow}
       title={article.title}
       description={article.description}

@@ -7,6 +7,8 @@ import {
   CircleAlert,
   Gauge,
 } from "lucide-react";
+import { RuntimePublicLocalization } from "@/components/RuntimePublicLocalization";
+import { defaultLocale, type LocaleCode } from "@/lib/i18nConfig";
 
 export const stage1BrandRoutes = [
   { label: "BMW Stage 1 files", href: "/brands/bmw" },
@@ -56,8 +58,13 @@ const fitChecks = [
   },
 ] as const;
 
-export function Stage1Authority() {
+export function Stage1Authority({
+  locale = defaultLocale,
+}: {
+  locale?: LocaleCode;
+}) {
   return (
+    <RuntimePublicLocalization locale={locale} scopes={["core", "services"]}>
     <section
       aria-labelledby="stage-1-fit-heading"
       className="border-y border-white/10 bg-[#080b0f]"
@@ -118,12 +125,14 @@ export function Stage1Authority() {
 
         <div className="mt-8 grid gap-3 lg:grid-cols-2">
           <RouteDisclosure
+            locale={locale}
             icon={CarFront}
             title="Stage 1 vehicle brand guides"
             description="Open the brand route before submitting when model, engine or controller context is unclear."
             routes={stage1BrandRoutes}
           />
           <RouteDisclosure
+            locale={locale}
             icon={CircuitBoard}
             title="Stage 1 ECU platform guides"
             description="Use the controller guide to check the identity and read-method details needed with the original file."
@@ -132,6 +141,7 @@ export function Stage1Authority() {
         </div>
       </div>
     </section>
+    </RuntimePublicLocalization>
   );
 }
 
@@ -140,13 +150,16 @@ function RouteDisclosure({
   title,
   description,
   routes,
+  locale,
 }: {
   icon: typeof CarFront;
   title: string;
   description: string;
   routes: ReadonlyArray<{ label: string; href: string }>;
+  locale: LocaleCode;
 }) {
   return (
+    <RuntimePublicLocalization locale={locale} scopes={["core", "services"]}>
     <details className="group rounded-lg border border-white/10 bg-white/[0.035] p-5">
       <summary className="flex cursor-pointer list-none items-start justify-between gap-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-red-500">
         <span className="flex items-start gap-3">
@@ -172,5 +185,6 @@ function RouteDisclosure({
         ))}
       </div>
     </details>
+    </RuntimePublicLocalization>
   );
 }

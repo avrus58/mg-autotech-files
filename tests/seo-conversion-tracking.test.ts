@@ -311,7 +311,7 @@ test("root analytics loader is consent-aware, production-only and fail-closed wi
   assert.match(component, /onError=\{\(\) => \{[\s\S]*?notifyGoogleMeasurementScriptFailed/);
   assert.doesNotMatch(component, /onReady=\{/);
   assert.match(component, /denyGoogleMeasurement\(\);/);
-  assert.match(component, /getAnalyticsConsentCopy\(pathname\)/);
+  assert.match(component, /getAnalyticsConsentCopy\(pathname, activeLocale\)/);
   assert.match(consentCopy, /Necessary only/);
   assert.match(consentCopy, /File names, vehicle details, account data and order IDs are never included/);
   assert.match(analytics, /ad_storage: preferences\.advertising \? "granted" : "denied"/);

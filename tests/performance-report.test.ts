@@ -231,10 +231,16 @@ test("homepage performance tools ship only the public snapshot and manual calcul
     path.join(process.cwd(), "src", "components", "tools", "PerformanceTools.tsx"),
     "utf8"
   );
+  const deferredSource = readFileSync(
+    path.join(process.cwd(), "src", "components", "tools", "DeferredPerformanceTools.tsx"),
+    "utf8"
+  );
 
-  assert.match(source, /type PerformanceToolsMode = "combined" \| "calculator"/);
-  assert.match(source, /return <PublicLogSnapshot \/>/);
+  assert.match(deferredSource, /import\("@\/components\/tools\/PublicLogSnapshot"\)/);
+  assert.match(deferredSource, /<PublicLogSnapshot copy=\{copy\} locale=\{locale\} \/>/);
   assert.match(source, /Torque Power Calculator/);
+  assert.match(source, /copy: PerformanceCalculatorCopy/);
+  assert.doesNotMatch(source, /PublicLogSnapshot|public-tools-translations/);
   assert.doesNotMatch(source, /DetailedPerformanceTools|parsePerformanceLog|analyzePerformanceLog/);
   assert.doesNotMatch(source, /PerformanceCurveChart|PerformanceDataTable|buildPerformanceReportSvg/);
   assert.doesNotMatch(source, /Manual data input|Download detailed report/);

@@ -13,6 +13,13 @@ import {
   WifiOff,
 } from "lucide-react";
 import { authenticatedFetch } from "@/lib/authGuards";
+import { intlLocaleByCode, type LocaleCode } from "@/lib/i18nConfig";
+import { useActiveLocale } from "@/lib/useActiveLocale";
+import { customerWorkflowT } from "@/lib/i18n/customer-workflow-orders-translations";
+import {
+  formatCustomerMessageCount,
+  formatCustomerNewMessageCount,
+} from "@/lib/i18n/customer-runtime-translations";
 
 type RequestMessage = {
   id: string;
@@ -47,7 +54,7 @@ function isSameCalendarDay(first: string, second: string) {
   return firstDate.toDateString() === secondDate.toDateString();
 }
 
-function formatMessageDay(value: string) {
+function formatMessageDay(value: string, locale: LocaleCode) {
   const date = new Date(value);
   const today = new Date();
   const yesterday = new Date(today);
@@ -56,7 +63,7 @@ function formatMessageDay(value: string) {
   if (date.toDateString() === today.toDateString()) return "Today";
   if (date.toDateString() === yesterday.toDateString()) return "Yesterday";
 
-  return new Intl.DateTimeFormat(undefined, {
+  return new Intl.DateTimeFormat(intlLocaleByCode[locale], {
     weekday: "short",
     day: "2-digit",
     month: "short",
@@ -64,8 +71,8 @@ function formatMessageDay(value: string) {
   }).format(date);
 }
 
-function formatMessageTime(value: string) {
-  return new Intl.DateTimeFormat(undefined, {
+function formatMessageTime(value: string, locale: LocaleCode) {
+  return new Intl.DateTimeFormat(intlLocaleByCode[locale], {
     hour: "2-digit",
     minute: "2-digit",
   }).format(new Date(value));
@@ -105,6 +112,8 @@ export default function RequestChat({
   senderRole,
   variant = "default",
 }: RequestChatProps) {
+  const preferredLocale = useActiveLocale();
+  const locale: LocaleCode = senderRole === "admin" ? "en" : preferredLocale;
   const [messages, setMessages] = useState<RequestMessage[]>([]);
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
@@ -433,9 +442,14 @@ export default function RequestChat({
         </div>
 
         <div className="mt-3 flex min-w-0 items-center justify-between gap-3 text-[11px] text-zinc-500">
-          <span>{messages.length} {messages.length === 1 ? "message" : "messages"}</span>
+          <span>{formatCustomerMessageCount(locale, messages.length)}</span>
           {lastSyncedAt ? (
-            <span>Updated {lastSyncedAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+            <span>{customerWorkflowT(locale, "updatedAt", {
+              time: lastSyncedAt.toLocaleTimeString(intlLocaleByCode[locale], {
+                hour: "2-digit",
+                minute: "2-digit",
+              }),
+            })}</span>
           ) : null}
         </div>
       </div>
@@ -503,10 +517,10 @@ export default function RequestChat({
               return (
                 <Fragment key={item.id}>
                   {showDay ? (
-                    <div className="flex items-center gap-3 py-1" aria-label={formatMessageDay(item.created_at)}>
+                    <div className="flex items-center gap-3 py-1" aria-label={formatMessageDay(item.created_at, locale)}>
                       <span className="h-px flex-1 bg-white/[0.06]" />
                       <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-600">
-                        {formatMessageDay(item.created_at)}
+                        {formatMessageDay(item.created_at, locale)}
                       </span>
                       <span className="h-px flex-1 bg-white/[0.06]" />
                     </div>
@@ -535,10 +549,14 @@ export default function RequestChat({
                           {senderLabel}
                         </span>
                         <time dateTime={item.created_at} className="text-zinc-600">
-                          {formatMessageTime(item.created_at)}
+                          {formatMessageTime(item.created_at, locale)}
                         </time>
                       </div>
-                      <p className="whitespace-pre-wrap break-words text-sm leading-6">
+                      <p
+                        translate="no"
+                        data-no-translate
+                        className="whitespace-pre-wrap break-words text-sm leading-6"
+                      >
                         {item.message}
                       </p>
                       {isCurrentRole ? (
@@ -560,7 +578,7 @@ export default function RequestChat({
             onClick={() => scrollChatToBottom("smooth")}
             className="sticky bottom-2 left-1/2 mt-3 -translate-x-1/2 rounded-full border border-red-500/30 bg-[#201014] px-3 py-1.5 text-xs font-black text-red-200 shadow-lg transition hover:bg-red-500/20 focus:outline-none focus:ring-2 focus:ring-red-500/50"
           >
-            {newMessageCount} new {newMessageCount === 1 ? "message" : "messages"}
+            {formatCustomerNewMessageCount(locale, newMessageCount)}
           </button>
         ) : null}
       </div>

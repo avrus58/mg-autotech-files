@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
+import { RuntimePublicLocalization } from "@/components/RuntimePublicLocalization";
+import { defaultLocale, type LocaleCode } from "@/lib/i18nConfig";
 import { stageTuningComparisons } from "@/lib/stageTuning";
 
 const comparisonRows = [
@@ -12,8 +14,15 @@ const comparisonRows = [
   { label: "Ordering", key: "orderingMethod" },
 ] as const;
 
-export function StageComparison({ compact = false }: { compact?: boolean }) {
+export function StageComparison({
+  compact = false,
+  locale = defaultLocale,
+}: {
+  compact?: boolean;
+  locale?: LocaleCode;
+}) {
   return (
+    <RuntimePublicLocalization locale={locale} scopes={["core", "services"]}>
     <section id="stage-comparison" className="border-y border-white/10 bg-[#080a0d]">
       <div className={`mx-auto max-w-7xl px-4 ${compact ? "py-12" : "py-16 lg:py-20"}`}>
         <div className="max-w-3xl">
@@ -65,5 +74,6 @@ export function StageComparison({ compact = false }: { compact?: boolean }) {
         </div>
       </div>
     </section>
+    </RuntimePublicLocalization>
   );
 }

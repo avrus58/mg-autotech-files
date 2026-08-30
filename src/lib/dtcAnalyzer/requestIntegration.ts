@@ -6,6 +6,7 @@ import {
 import type {
   DtcAnalysisEvidenceItem,
   DtcAnalyzerConfidence,
+  DtcAnalyzerMessageDescriptor,
   DtcAnalyzerRequest,
   DtcAnalyzerProviderKind,
   DtcAnalyzerProviderStatus,
@@ -45,9 +46,12 @@ export type RequestDtcAnalysisState =
 export type CustomerRequestDtcCode = {
   code: string;
   title: string;
+  titleMessage: DtcAnalyzerMessageDescriptor;
   systemLabel: string;
+  systemLabelMessage: DtcAnalyzerMessageDescriptor;
   standardizationLabel: string;
   customerExplanation: string;
+  customerExplanationMessage: DtcAnalyzerMessageDescriptor;
   confidence: DtcAnalyzerConfidence;
   evidence: DtcAnalysisEvidenceItem[];
   riskFlags: DtcRiskFlag[];
@@ -60,21 +64,26 @@ export type CustomerRequestDtcAnalysis = {
   status: DtcAnalyzerResponse["status"];
   state: RequestDtcAnalysisState;
   stateLabel: string;
+  stateLabelMessage: DtcAnalyzerMessageDescriptor;
   summary: string;
+  summaryMessage: DtcAnalyzerMessageDescriptor;
   isAiGenerated: boolean;
   confidence: DtcAnalyzerConfidence;
   detectedCodes: string[];
   rejectedCodeLikeTokenCount: number;
   wasInputTruncated: boolean;
   providerNotice: string;
+  providerNoticeMessage: DtcAnalyzerMessageDescriptor;
   codes: CustomerRequestDtcCode[];
   evidence: DtcAnalysisEvidenceItem[];
   riskFlags: DtcRiskFlag[];
   recommendations: DtcAnalyzerRecommendation[];
   confidenceReasons: DtcConfidenceReason[];
   missingInformation: string[];
+  missingInformationMessages: DtcAnalyzerMessageDescriptor[];
   humanReview: DtcAnalyzerResponse["humanReview"];
   safetyBoundaries: string[];
+  safetyBoundaryMessages: DtcAnalyzerMessageDescriptor[];
 };
 
 export type ExpertRequestDtcAnalysis = CustomerRequestDtcAnalysis & {
@@ -141,48 +150,91 @@ function analysisState(response: DtcAnalyzerResponse): RequestDtcAnalysisState {
   return "provider_success";
 }
 
-function stateLabel(state: RequestDtcAnalysisState) {
-  if (state === "no_request_text") return "No request text is available for DTC analysis.";
-  if (state === "no_valid_dtc") return "No valid DTC code was found in the current request fields.";
-  if (state === "provider_error_fallback") return "DTC provider failed; deterministic non-AI guidance is shown.";
-  if (state === "provider_unavailable_fallback") {
-    return "DTC AI provider is unavailable; deterministic non-AI guidance is shown.";
-  }
-  if (state === "provider_unavailable") return "DTC analysis provider is unavailable.";
-  if (state === "provider_success") return "DTC provider returned guidance; human review remains required.";
-  return "Deterministic non-AI DTC guidance is shown.";
+function message(
+  key: DtcAnalyzerMessageDescriptor["key"],
+  fallback: string
+): DtcAnalyzerMessageDescriptor {
+  return { key, fallback };
 }
 
-function providerNotice(response: DtcAnalyzerResponse, state: RequestDtcAnalysisState) {
-  if (response.isAiGenerated) return "AI-assisted output. Human review remains required.";
-  if (state === "provider_error_fallback") return "Provider failure is explicit; this is deterministic non-AI fallback output.";
-  if (state === "provider_unavailable_fallback") {
-    return "Provider unavailable state is explicit; this is deterministic non-AI fallback output.";
+function stateMessage(state: RequestDtcAnalysisState) {
+  if (state === "no_request_text") {
+    return message("state.no_request_text", "No request text is available for DTC analysis.");
   }
-  if (state === "provider_unavailable") return "Provider unavailable. No AI analysis was generated.";
-  return "No AI output was generated. Human review remains required.";
+  if (state === "no_valid_dtc") {
+    return message("state.no_valid_dtc", "No valid DTC code was found in the current request fields.");
+  }
+  if (state === "provider_error_fallback") {
+    return message("state.provider_error_fallback", "DTC provider failed; deterministic non-AI guidance is shown.");
+  }
+  if (state === "provider_unavailable_fallback") {
+    return message(
+      "state.provider_unavailable_fallback",
+      "DTC AI provider is unavailable; deterministic non-AI guidance is shown."
+    );
+  }
+  if (state === "provider_unavailable") {
+    return message("state.provider_unavailable", "DTC analysis provider is unavailable.");
+  }
+  if (state === "provider_success") {
+    return message(
+      "state.provider_success",
+      "DTC provider returned guidance; human review remains required."
+    );
+  }
+  return message("state.deterministic_fallback", "Deterministic non-AI DTC guidance is shown.");
 }
 
-function projectCustomer(response: DtcAnalyzerResponse): CustomerRequestDtcAnalysis {
+function providerMessage(response: DtcAnalyzerResponse, state: RequestDtcAnalysisState) {
+  if (response.isAiGenerated) {
+    return message("provider.ai_generated", "AI-assisted output. Human review remains required.");
+  }
+  if (state === "provider_error_fallback") {
+    return message(
+      "provider.error_fallback",
+      "Provider failure is explicit; this is deterministic non-AI fallback output."
+    );
+  }
+  if (state === "provider_unavailable_fallback") {
+    return message(
+      "provider.unavailable_fallback",
+      "Provider unavailable state is explicit; this is deterministic non-AI fallback output."
+    );
+  }
+  if (state === "provider_unavailable") {
+    return message("provider.unavailable", "Provider unavailable. No AI analysis was generated.");
+  }
+  return message("provider.no_ai", "No AI output was generated. Human review remains required.");
+}
+
+export function projectCustomerDtcAnalysis(response: DtcAnalyzerResponse): CustomerRequestDtcAnalysis {
   const state = analysisState(response);
+  const projectedStateMessage = stateMessage(state);
+  const projectedProviderMessage = providerMessage(response, state);
   return {
     contractVersion: response.contractVersion,
     status: response.status,
     state,
-    stateLabel: stateLabel(state),
+    stateLabel: projectedStateMessage.fallback,
+    stateLabelMessage: projectedStateMessage,
     summary: response.summary,
+    summaryMessage: response.summaryMessage,
     isAiGenerated: response.isAiGenerated,
     confidence: response.confidence,
     detectedCodes: response.normalizedInput.normalizedCodes,
     rejectedCodeLikeTokenCount: response.normalizedInput.rejectedCodeLikeTokens.length,
     wasInputTruncated: response.normalizedInput.wasTruncated,
-    providerNotice: providerNotice(response, state),
+    providerNotice: projectedProviderMessage.fallback,
+    providerNoticeMessage: projectedProviderMessage,
     codes: response.codes.map((code) => ({
       code: code.code,
       title: code.title,
+      titleMessage: code.titleMessage,
       systemLabel: code.systemLabel,
+      systemLabelMessage: code.systemLabelMessage,
       standardizationLabel: code.standardizationLabel,
       customerExplanation: code.customerExplanation,
+      customerExplanationMessage: code.customerExplanationMessage,
       confidence: code.confidence,
       evidence: code.evidence,
       riskFlags: code.riskFlags,
@@ -194,8 +246,10 @@ function projectCustomer(response: DtcAnalyzerResponse): CustomerRequestDtcAnaly
     recommendations: response.recommendations,
     confidenceReasons: response.confidenceReasons,
     missingInformation: response.missingInformation,
+    missingInformationMessages: response.missingInformationMessages,
     humanReview: response.humanReview,
     safetyBoundaries: response.safetyBoundaries,
+    safetyBoundaryMessages: response.safetyBoundaryMessages,
   };
 }
 
@@ -204,7 +258,7 @@ function projectExpert(
   configuration: DtcAnalyzerAdminConfigStatus
 ): ExpertRequestDtcAnalysis {
   return {
-    ...projectCustomer(response),
+    ...projectCustomerDtcAnalysis(response),
     configuration,
     provider: {
       providerKind: response.provider.providerKind,
@@ -253,7 +307,7 @@ export async function analyzeRequestDtc(
   const configuration = options.configuration ?? getDtcAnalyzerAdminConfigStatus(source);
 
   return {
-    customer: projectCustomer(response),
+    customer: projectCustomerDtcAnalysis(response),
     expert: projectExpert(response, configuration),
     auditMetadata: auditMetadata(response, source),
   };

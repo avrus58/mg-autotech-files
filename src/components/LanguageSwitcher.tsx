@@ -1,6 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import type {
+  KeyboardEvent as ReactKeyboardEvent,
+  MouseEvent as ReactMouseEvent,
+} from "react";
 import { usePathname } from "next/navigation";
 import {
   defaultLocale,
@@ -10,20 +14,170 @@ import {
 } from "@/lib/i18nConfig";
 import {
   appendSafeQuery,
+  getInitialLocaleRedirect,
   getLocalizedPublicPath,
   isServerLocalizedPublicPath,
+  requiresServerLocaleRefresh,
+  resolvePreferredLocale,
 } from "@/lib/i18nRoutes";
+import {
+  dispatchLocaleChange,
+  readLocaleCookie,
+  readStoredLocale,
+  writeDocumentLocale,
+  writeLocaleCookies,
+  writeStoredLocale,
+} from "@/lib/localePreference";
 import { isSeoLocale } from "@/lib/seo";
+import { useActiveLocale } from "@/lib/useActiveLocale";
+import { customerWorkflowClientGroupForPath } from "@/lib/i18n/customer-workflow-client-routes";
+import { fixedPresentationLocaleBySegment } from "@/lib/fixedPresentationLocale";
 
-const storageKey = "mg_locale";
-const cookieKey = "mg_locale";
-const googleCookieKey = "googtrans";
 const originalText = new WeakMap<Text, string>();
 const originalAttributes = new WeakMap<Element, Record<string, string>>();
+const appliedText = new WeakMap<Text, string>();
+const appliedAttributes = new WeakMap<Element, Record<string, string>>();
+const translatedAttributeNames = [
+  "alt",
+  "aria-description",
+  "aria-label",
+  "aria-roledescription",
+  "content",
+  "placeholder",
+  "title",
+] as const;
+
+const selectorCopy: Record<
+  LocaleCode,
+  {
+    label: string;
+    change: string;
+    switchTo: string;
+    loading: string;
+    failed: string;
+    retry: string;
+  }
+> = {
+  nl: {
+    label: "Taal",
+    change: "Taal wijzigen",
+    switchTo: "Overschakelen naar",
+    loading: "Taal wordt geladen…",
+    failed: "Deze taal kon niet worden geladen. Uw huidige taal blijft actief.",
+    retry: "Opnieuw proberen",
+  },
+  en: {
+    label: "Language",
+    change: "Change language",
+    switchTo: "Switch language to",
+    loading: "Loading language…",
+    failed: "This language could not be loaded. Your current language remains active.",
+    retry: "Try again",
+  },
+  de: {
+    label: "Sprache",
+    change: "Sprache ändern",
+    switchTo: "Sprache wechseln zu",
+    loading: "Sprache wird geladen…",
+    failed: "Diese Sprache konnte nicht geladen werden. Ihre aktuelle Sprache bleibt aktiv.",
+    retry: "Erneut versuchen",
+  },
+  fr: {
+    label: "Langue",
+    change: "Changer de langue",
+    switchTo: "Passer en",
+    loading: "Chargement de la langue…",
+    failed: "Cette langue n’a pas pu être chargée. Votre langue actuelle reste active.",
+    retry: "Réessayer",
+  },
+  it: {
+    label: "Lingua",
+    change: "Cambia lingua",
+    switchTo: "Passa a",
+    loading: "Caricamento della lingua…",
+    failed: "Impossibile caricare questa lingua. La lingua attuale rimane attiva.",
+    retry: "Riprova",
+  },
+  ru: {
+    label: "Язык",
+    change: "Изменить язык",
+    switchTo: "Переключить на",
+    loading: "Загрузка языка…",
+    failed: "Не удалось загрузить этот язык. Текущий язык останется активным.",
+    retry: "Повторить",
+  },
+  es: {
+    label: "Idioma",
+    change: "Cambiar idioma",
+    switchTo: "Cambiar a",
+    loading: "Cargando idioma…",
+    failed: "No se pudo cargar este idioma. El idioma actual seguirá activo.",
+    retry: "Reintentar",
+  },
+  tr: {
+    label: "Dil",
+    change: "Dili değiştir",
+    switchTo: "Şu dile geç",
+    loading: "Dil yükleniyor…",
+    failed: "Bu dil yüklenemedi. Mevcut diliniz etkin kalacak.",
+    retry: "Tekrar dene",
+  },
+  pt: {
+    label: "Idioma",
+    change: "Alterar idioma",
+    switchTo: "Mudar para",
+    loading: "A carregar o idioma…",
+    failed: "Não foi possível carregar este idioma. O idioma atual continuará ativo.",
+    retry: "Tentar novamente",
+  },
+  zh: {
+    label: "语言",
+    change: "更改语言",
+    switchTo: "切换为",
+    loading: "正在加载语言…",
+    failed: "无法加载此语言。当前语言将保持不变。",
+    retry: "重试",
+  },
+  pl: {
+    label: "Język",
+    change: "Zmień język",
+    switchTo: "Przełącz na",
+    loading: "Ładowanie języka…",
+    failed: "Nie udało się wczytać tego języka. Obecny język pozostanie aktywny.",
+    retry: "Spróbuj ponownie",
+  },
+  sq: {
+    label: "Gjuha",
+    change: "Ndrysho gjuhën",
+    switchTo: "Kalo në",
+    loading: "Gjuha po ngarkohet…",
+    failed: "Kjo gjuhë nuk mund të ngarkohej. Gjuha aktuale do të mbetet aktive.",
+    retry: "Provo përsëri",
+  },
+};
+
+const authoredOrPrivateSegments = new Set([
+  "admin",
+  "agb",
+  "api",
+  "av-vertrag",
+  "datenschutz",
+  "embed",
+  "impressum",
+  "measurement",
+  "privacy",
+  "widerruf",
+]);
+
+const localeCatalogRetryDelayMs = 180;
 
 function subscribeToLocationSearch(onStoreChange: () => void) {
   window.addEventListener("popstate", onStoreChange);
-  return () => window.removeEventListener("popstate", onStoreChange);
+  window.addEventListener("hashchange", onStoreChange);
+  return () => {
+    window.removeEventListener("popstate", onStoreChange);
+    window.removeEventListener("hashchange", onStoreChange);
+  };
 }
 
 function readLocationSearch() {
@@ -34,36 +188,306 @@ function readServerLocationSearch() {
   return "";
 }
 
+function readLocationHash() {
+  return window.location.hash;
+}
+
 type TranslationCatalog = {
   exact: Record<LocaleCode, Record<string, string>>;
+  supplementalExact: Record<LocaleCode, Record<string, string>>;
   terms: Record<LocaleCode, Record<string, string>>;
 };
 
-function escapeRegExp(value: string) {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+type TupleTranslationCatalog = Record<string, readonly string[]>;
+
+type CompactCustomerWorkflowCatalog = {
+  customerWorkflowLocaleOrder: readonly Exclude<LocaleCode, "en">[];
+  customerWorkflowExactTranslations: TupleTranslationCatalog;
+};
+
+const publicSurfaceSegments = new Set([
+  "about",
+  "brands",
+  "contact",
+  "download",
+  "ecu-platforms",
+  "services",
+  "tools",
+  "widget",
+  "workshop-guides",
+]);
+
+const customerWorkflowSegments = new Set([
+  "auth",
+  "dashboard",
+  "desktop-auth",
+  "forgot-password",
+  "login",
+  "new-request",
+  "payment",
+  "register",
+  "reset-password",
+]);
+
+function emptyExactCatalog(): Record<LocaleCode, Record<string, string>> {
+  return Object.fromEntries(
+    supportedLocales.map(({ code }) => [code, {}])
+  ) as Record<LocaleCode, Record<string, string>>;
 }
 
-function readCookie(name: string) {
-  if (typeof document === "undefined") return "";
+function registerTupleCatalog(
+  target: Record<LocaleCode, Record<string, string>>,
+  localeOrder: readonly Exclude<LocaleCode, "en">[],
+  translations: TupleTranslationCatalog,
+  activeLocale: LocaleCode
+) {
+  if (activeLocale === "en") return;
+  const localeIndex = localeOrder.indexOf(activeLocale);
+  if (localeIndex < 0) return;
 
-  return (
-    document.cookie
-      .split("; ")
-      .find((row) => row.startsWith(`${name}=`))
-      ?.split("=")[1] ?? ""
-  );
+  Object.entries(translations).forEach(([source, values]) => {
+    const translated = values[localeIndex];
+    if (translated?.trim()) target[activeLocale][source] = translated;
+  });
 }
 
-function getInitialLocale() {
+async function loadCompactCustomerWorkflowCatalog(pathname: string) {
+  const group = customerWorkflowClientGroupForPath(pathname);
+  if (!group) return null;
+
+  let catalogs: CompactCustomerWorkflowCatalog[];
+  switch (group) {
+    case "auth":
+      catalogs = await Promise.all([
+        import("@/lib/i18n/customer-workflow-auth-translations"),
+        import("@/lib/i18n/customer-workflow-auth-dom-translations"),
+      ]);
+      break;
+    case "overview":
+      catalogs = await Promise.all([
+        import("@/lib/i18n/customer-workflow-overview-translations"),
+        import("@/lib/i18n/customer-workflow-overview-dom-translations"),
+        import("@/lib/i18n/customer-workflow-portal-common-translations"),
+      ]);
+      break;
+    case "request":
+      catalogs = await Promise.all([
+        import("@/lib/i18n/customer-workflow-request-translations"),
+        import("@/lib/i18n/customer-workflow-request-dom-translations"),
+        import("@/lib/i18n/customer-workflow-portal-common-translations"),
+      ]);
+      break;
+    case "credits":
+      catalogs = await Promise.all([
+        import("@/lib/i18n/customer-workflow-credits-translations"),
+        import("@/lib/i18n/customer-workflow-credits-dom-translations"),
+        import("@/lib/i18n/customer-workflow-portal-common-translations"),
+      ]);
+      break;
+    case "file-expert":
+      catalogs = await Promise.all([
+        import("@/lib/i18n/customer-workflow-file-expert-translations"),
+        import("@/lib/i18n/customer-workflow-file-expert-dom-translations"),
+        import("@/lib/i18n/customer-workflow-portal-common-translations"),
+      ]);
+      break;
+    case "orders":
+      catalogs = await Promise.all([
+        import("@/lib/i18n/customer-workflow-orders-translations"),
+        import("@/lib/i18n/customer-workflow-orders-dom-translations"),
+        import("@/lib/i18n/customer-workflow-portal-common-translations"),
+      ]);
+      break;
+    case "notifications":
+      catalogs = await Promise.all([
+        import("@/lib/i18n/customer-workflow-notifications-translations"),
+        import("@/lib/i18n/customer-workflow-notifications-dom-translations"),
+        import("@/lib/i18n/customer-workflow-portal-common-translations"),
+      ]);
+      break;
+  }
+
+  return catalogs;
+}
+
+async function loadScopedExactTranslations(pathname: string, locale: LocaleCode) {
+  const scoped = emptyExactCatalog();
+  const firstSegment = pathname.split("/").filter(Boolean)[0] ?? "";
+  const unprefixedSegment = isSeoLocale(firstSegment)
+    ? pathname.split("/").filter(Boolean)[1] ?? ""
+    : firstSegment;
+
+  if (publicSurfaceSegments.has(unprefixedSegment)) {
+    const [{ publicSurfaceLocaleOrder }, { publicCoreTranslations }] = await Promise.all([
+      import("@/lib/i18n/public-surface-types"),
+      import("@/lib/i18n/public-core-translations"),
+    ]);
+    registerTupleCatalog(
+      scoped,
+      publicSurfaceLocaleOrder,
+      publicCoreTranslations,
+      locale
+    );
+  }
+
+  if (unprefixedSegment === "brands" || unprefixedSegment === "ecu-platforms") {
+    const [{ publicSurfaceLocaleOrder }, { publicVehicleTranslations }] = await Promise.all([
+      import("@/lib/i18n/public-surface-types"),
+      import("@/lib/i18n/public-vehicle-translations"),
+    ]);
+    registerTupleCatalog(
+      scoped,
+      publicSurfaceLocaleOrder,
+      publicVehicleTranslations,
+      locale
+    );
+  }
+
+  if (unprefixedSegment === "services") {
+    const [{ publicSurfaceLocaleOrder }, { publicServicesTranslations }] = await Promise.all([
+      import("@/lib/i18n/public-surface-types"),
+      import("@/lib/i18n/public-services-translations"),
+    ]);
+    registerTupleCatalog(
+      scoped,
+      publicSurfaceLocaleOrder,
+      publicServicesTranslations,
+      locale
+    );
+  }
+
+  if (unprefixedSegment === "tools") {
+    const [{ publicSurfaceLocaleOrder }, { publicToolsTranslations }] = await Promise.all([
+      import("@/lib/i18n/public-surface-types"),
+      import("@/lib/i18n/public-tools-translations"),
+    ]);
+    registerTupleCatalog(
+      scoped,
+      publicSurfaceLocaleOrder,
+      publicToolsTranslations,
+      locale
+    );
+  }
+
+  if (unprefixedSegment === "services") {
+    const { serviceIntentLocaleOrder, serviceIntentExactTranslations } = await import(
+      "@/lib/i18n/service-intent-translations"
+    );
+    registerTupleCatalog(
+      scoped,
+      serviceIntentLocaleOrder,
+      serviceIntentExactTranslations,
+      locale
+    );
+  }
+
+  if (unprefixedSegment === "workshop-guides") {
+    const { workshopGuideLocaleOrder, workshopGuideExactTranslations } = await import(
+      "@/lib/i18n/workshop-guides-translations"
+    );
+    registerTupleCatalog(
+      scoped,
+      workshopGuideLocaleOrder,
+      workshopGuideExactTranslations,
+      locale
+    );
+  }
+
+  if (customerWorkflowSegments.has(unprefixedSegment)) {
+    const {
+      customerWorkflowLocaleOrder,
+      customerWorkflowExactTranslations,
+    } = await import("@/lib/i18n/customer-workflow-translations");
+    registerTupleCatalog(
+      scoped,
+      customerWorkflowLocaleOrder,
+      customerWorkflowExactTranslations,
+      locale
+    );
+  }
+
+  if (
+    unprefixedSegment === "widget" ||
+    pathname === "/dashboard/widget" ||
+    pathname.startsWith("/dashboard/widget/")
+  ) {
+    const {
+      widgetSiteLocaleOrder,
+      widgetSiteExactTranslations,
+    } = await import("@/lib/i18n/widget-site-translations");
+    registerTupleCatalog(
+      scoped,
+      widgetSiteLocaleOrder,
+      widgetSiteExactTranslations,
+      locale
+    );
+  }
+
+  return scoped;
+}
+
+async function loadRuntimeTranslationCatalog(
+  pathname: string,
+  locale: LocaleCode
+): Promise<TranslationCatalog> {
+  let latestError: unknown;
+
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      const compactCustomerWorkflow =
+        await loadCompactCustomerWorkflowCatalog(pathname);
+      if (compactCustomerWorkflow) {
+        const supplementalExact = emptyExactCatalog();
+        compactCustomerWorkflow.forEach((catalog) => {
+          registerTupleCatalog(
+            supplementalExact,
+            catalog.customerWorkflowLocaleOrder,
+            catalog.customerWorkflowExactTranslations,
+            locale
+          );
+        });
+        return {
+          exact: emptyExactCatalog(),
+          supplementalExact,
+          terms: emptyExactCatalog(),
+        };
+      }
+
+      const [{ exactTranslations, termTranslations }, supplementalExact] =
+        await Promise.all([
+          import("@/lib/i18n"),
+          loadScopedExactTranslations(pathname, locale),
+        ]);
+
+      return {
+        exact: exactTranslations,
+        supplementalExact,
+        terms: termTranslations,
+      };
+    } catch (error) {
+      latestError = error;
+      if (attempt === 0) {
+        await new Promise<void>((resolve) => {
+          window.setTimeout(resolve, localeCatalogRetryDelayMs);
+        });
+      }
+    }
+  }
+
+  throw latestError instanceof Error
+    ? latestError
+    : new Error("Locale catalog could not be loaded.");
+}
+
+function getInitialLocale(pathname: string) {
   if (typeof window === "undefined") return defaultLocale;
 
-  const stored = window.localStorage.getItem(storageKey);
-  if (stored) return normalizeLocale(stored);
-
-  const cookieLocale = readCookie(cookieKey);
-  if (cookieLocale) return normalizeLocale(cookieLocale);
-
-  return normalizeLocale(window.navigator.language);
+  return resolvePreferredLocale({
+    pathname,
+    storedLocale: readStoredLocale(),
+    cookieLocale: readLocaleCookie(),
+    browserLocale: window.navigator.language,
+  });
 }
 
 function getPathLocale(pathname: string) {
@@ -72,11 +496,51 @@ function getPathLocale(pathname: string) {
 }
 
 function persistLocale(locale: LocaleCode) {
-  window.localStorage.setItem(storageKey, locale);
-  document.cookie = `${cookieKey}=${locale}; path=/; max-age=31536000; samesite=lax`;
-  document.cookie = `${googleCookieKey}=; path=/; max-age=0; samesite=lax`;
-  document.documentElement.lang = locale;
-  window.dispatchEvent(new CustomEvent("mg-locale-change", { detail: { locale } }));
+  writeStoredLocale(locale);
+  writeLocaleCookies(locale);
+  writeDocumentLocale(locale);
+  dispatchLocaleChange(locale);
+}
+
+function observeLocaleMutations(
+  locale: LocaleCode,
+  catalog: TranslationCatalog
+) {
+  const observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      if (mutation.type === "characterData") {
+        translateTextNode(mutation.target as Text, locale, catalog);
+        return;
+      }
+
+      if (mutation.type === "attributes") {
+        translateElementAttributes(mutation.target as Element, locale, catalog);
+        return;
+      }
+
+      mutation.addedNodes.forEach((node) => {
+        if (node.nodeType === Node.TEXT_NODE && !shouldSkip(node)) {
+          translateTextNode(node as Text, locale, catalog);
+        }
+
+        if (node.nodeType === Node.ELEMENT_NODE) {
+          const element = node as Element;
+          translateElementAttributes(element, locale, catalog);
+          translateNode(element, locale, catalog);
+        }
+      });
+    });
+  });
+
+  observer.observe(document.documentElement, {
+    attributeFilter: [...translatedAttributeNames],
+    attributes: true,
+    characterData: true,
+    childList: true,
+    subtree: true,
+  });
+
+  return observer;
 }
 
 function translateText(
@@ -94,8 +558,23 @@ function translateText(
   if (!normalized) return value;
   if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/u.test(normalized)) return value;
 
-  const exact = catalog.exact[locale]?.[normalized];
+  const exact =
+    catalog.supplementalExact[locale]?.[normalized] ??
+    catalog.exact[locale]?.[normalized];
   if (exact) return `${leading}${exact}${trailing}`;
+
+  // Next.js appends the product suffix to route metadata at runtime. Translate
+  // only the complete title stem and keep the audited brand suffix literal.
+  const brandedTitleSuffix = " | MG AutoTech";
+  if (normalized.endsWith(brandedTitleSuffix)) {
+    const titleStem = normalized.slice(0, -brandedTitleSuffix.length);
+    const translatedStem =
+      catalog.supplementalExact[locale]?.[titleStem] ??
+      catalog.exact[locale]?.[titleStem];
+    if (translatedStem) {
+      return `${leading}${translatedStem}${brandedTitleSuffix}${trailing}`;
+    }
+  }
 
   const terms = catalog.terms[locale] ?? {};
   const term =
@@ -106,20 +585,6 @@ function translateText(
 
   if (term) return `${leading}${term}${trailing}`;
 
-  const wordCount = normalized.match(/\p{L}+/gu)?.length ?? 0;
-  if (wordCount > 6) return value;
-
-  const replaced = Object.entries(terms)
-    .sort((a, b) => b[0].length - a[0].length)
-    .reduce((text, [source, target]) => {
-      const escaped = escapeRegExp(source);
-      const prefix = /^\w/.test(source) ? "\\b" : "";
-      const suffix = /\w$/.test(source) ? "\\b" : "";
-      return text.replace(new RegExp(`${prefix}${escaped}${suffix}`, "gi"), target);
-    }, normalized);
-
-  if (replaced !== normalized) return `${leading}${replaced}${trailing}`;
-
   return value;
 }
 
@@ -129,9 +594,59 @@ function shouldSkip(node: Node) {
 
   return Boolean(
     parent.closest(
-      "script, style, code, pre, textarea, [data-no-translate], [data-language-switcher]"
+      'script, style, code, pre, textarea, [contenteditable="true"], [translate="no"], [data-no-translate], [data-language-switcher]'
     )
   );
+}
+
+function translateTextNode(
+  node: Text,
+  locale: LocaleCode,
+  catalog: TranslationCatalog
+) {
+  if (shouldSkip(node)) return;
+
+  const current = node.nodeValue ?? "";
+  const lastApplied = appliedText.get(node);
+  if (!originalText.has(node) || (lastApplied !== undefined && current !== lastApplied)) {
+    originalText.set(node, current);
+  }
+
+  const next = translateText(originalText.get(node) ?? current, locale, catalog);
+  appliedText.set(node, next);
+  if (next !== current) node.nodeValue = next;
+}
+
+function translateElementAttributes(
+  element: Element,
+  locale: LocaleCode,
+  catalog: TranslationCatalog
+) {
+  if (
+    element.closest(
+      '[translate="no"], [data-no-translate], [data-language-switcher]'
+    )
+  ) return;
+
+  const originals = originalAttributes.get(element) ?? {};
+  const lastApplied = appliedAttributes.get(element) ?? {};
+  const nextApplied = { ...lastApplied };
+
+  translatedAttributeNames.forEach((attr) => {
+    const current = element.getAttribute(attr);
+    if (!current) return;
+
+    if (!originals[attr] || (lastApplied[attr] !== undefined && current !== lastApplied[attr])) {
+      originals[attr] = current;
+    }
+
+    const next = translateText(originals[attr], locale, catalog);
+    nextApplied[attr] = next;
+    if (next !== current) element.setAttribute(attr, next);
+  });
+
+  originalAttributes.set(element, originals);
+  appliedAttributes.set(element, nextApplied);
 }
 
 function translateNode(
@@ -147,56 +662,127 @@ function translateNode(
     if (!shouldSkip(node)) textNodes.push(node);
   }
 
-  textNodes.forEach((node) => {
-    if (!originalText.has(node)) originalText.set(node, node.nodeValue ?? "");
-    node.nodeValue = translateText(
-      originalText.get(node) ?? "",
-      locale,
-      catalog
-    );
-  });
+  textNodes.forEach((node) => translateTextNode(node, locale, catalog));
 
-  root.querySelectorAll?.("[placeholder], [aria-label], [title]").forEach((element) => {
-    if (element.closest("[data-no-translate], [data-language-switcher]")) return;
-
-    const originals = originalAttributes.get(element) ?? {};
-
-    ["placeholder", "aria-label", "title"].forEach((attr) => {
-      const value = element.getAttribute(attr);
-      if (!value) return;
-
-      if (!originals[attr]) originals[attr] = value;
-      element.setAttribute(
-        attr,
-        translateText(originals[attr], locale, catalog)
-      );
-    });
-
-    originalAttributes.set(element, originals);
+  const selector = translatedAttributeNames.map((attr) => `[${attr}]`).join(", ");
+  root.querySelectorAll?.(selector).forEach((element) => {
+    translateElementAttributes(element, locale, catalog);
   });
 }
 
 export function LanguageSwitcher() {
   const pathname = usePathname();
-  const [locale, setLocale] = useState<LocaleCode>(defaultLocale);
+  const externallySelectedLocale = useActiveLocale();
+  const firstSegment = pathname.split("/").filter(Boolean)[0] ?? "";
+  const hideSwitcher =
+    authoredOrPrivateSegments.has(firstSegment) ||
+    pathname === "/auth/callback" ||
+    pathname.startsWith("/desktop-auth/");
+  const hiddenLocalizedFlow =
+    pathname === "/auth/callback" ||
+    pathname.startsWith("/desktop-auth/") ||
+    pathname.startsWith("/measurement/");
+  const [locale, setLocale] = useState<LocaleCode>(externallySelectedLocale);
+  const [requestedLocale, setRequestedLocale] = useState<LocaleCode | null>(null);
+  const [localeResolved, setLocaleResolved] = useState(false);
+  const [isLocaleLoading, setIsLocaleLoading] = useState(false);
+  const [failedLocale, setFailedLocale] = useState<LocaleCode | null>(null);
+  const [retryAttempt, setRetryAttempt] = useState(0);
   const currentSearch = useSyncExternalStore(
     subscribeToLocationSearch,
     readLocationSearch,
     readServerLocationSearch
   );
+  const currentHash = useSyncExternalStore(
+    subscribeToLocationSearch,
+    readLocationHash,
+    readServerLocationSearch
+  );
   const [isOpen, setIsOpen] = useState(false);
-  const translatedLocaleRef = useRef<LocaleCode>(defaultLocale);
+  const translatedLocaleRef = useRef<LocaleCode>(externallySelectedLocale);
+  const activeCatalogRef = useRef<TranslationCatalog | null>(null);
+  const observerRef = useRef<MutationObserver | null>(null);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
-    const initial =
-      getPathLocale(pathname) ??
-      (isServerLocalizedPublicPath(pathname) ? defaultLocale : getInitialLocale());
-    persistLocale(initial);
-    void Promise.resolve().then(() => setLocale(initial));
-  }, [pathname]);
+    if (hideSwitcher && !hiddenLocalizedFlow) {
+      observerRef.current?.disconnect();
+      observerRef.current = null;
+      activeCatalogRef.current = null;
+      writeDocumentLocale(
+        fixedPresentationLocaleBySegment[
+          firstSegment as keyof typeof fixedPresentationLocaleBySegment
+        ] ?? defaultLocale
+      );
+      return;
+    }
+
+    const pathLocale = getPathLocale(pathname);
+    const preferredLocale = pathLocale ?? getInitialLocale(pathname);
+    const currentLocale =
+      pathLocale ?? normalizeLocale(document.documentElement.lang || defaultLocale);
+
+    if (hideSwitcher) {
+      persistLocale(preferredLocale);
+      return;
+    }
+
+    const localizedTarget = getInitialLocaleRedirect(pathname, preferredLocale);
+    if (localizedTarget) {
+      window.location.replace(
+        `${localizedTarget}${window.location.search}${window.location.hash}`
+      );
+      return;
+    }
+
+    // A canonical single-path public page is already localized by the server.
+    // If localStorage and the server cookie got out of sync, reconcile the
+    // explicit browser preference first and request one fresh SSR document.
+    // Reloading preserves any paid-click query so the consent handoff remains
+    // intact; the updated cookie prevents a second reload.
+    if (requiresServerLocaleRefresh(pathname, currentLocale, preferredLocale)) {
+      persistLocale(preferredLocale);
+      window.location.reload();
+      return;
+    }
+
+    const resolveTimer = window.setTimeout(() => {
+      translatedLocaleRef.current = currentLocale;
+      setLocale(currentLocale);
+      setRequestedLocale(preferredLocale);
+      setFailedLocale(null);
+      setIsLocaleLoading(
+        preferredLocale !== defaultLocale || currentLocale !== defaultLocale
+      );
+      setLocaleResolved(true);
+    }, 0);
+
+    return () => window.clearTimeout(resolveTimer);
+  }, [firstSegment, hiddenLocalizedFlow, hideSwitcher, pathname]);
 
   useEffect(() => {
-    persistLocale(locale);
+    if (
+      hideSwitcher ||
+      !localeResolved ||
+      externallySelectedLocale === locale
+    ) return;
+
+    const syncTimer = window.setTimeout(() => {
+      setRequestedLocale((current) =>
+        current === externallySelectedLocale ? current : externallySelectedLocale
+      );
+      setFailedLocale(null);
+      setIsLocaleLoading(true);
+    }, 0);
+
+    return () => window.clearTimeout(syncTimer);
+  }, [externallySelectedLocale, hideSwitcher, locale, localeResolved]);
+
+  useEffect(() => {
+    if (!localeResolved || hideSwitcher || requestedLocale === null) return;
+
+    const targetLocale = requestedLocale;
 
     // Locale-prefixed SEO routes render translated content on the server. The
     // unified homepage also contains deferred interactive tools, so keep the
@@ -204,76 +790,102 @@ export function LanguageSwitcher() {
     const hasDeferredLocalizedHomepage = Boolean(
       document.querySelector("[data-unified-localized-homepage]")
     );
+    const serverLocalizedWithoutDeferredRuntime =
+      isServerLocalizedPublicPath(pathname) && !hasDeferredLocalizedHomepage;
+    const untouchedDefaultContent =
+      targetLocale === defaultLocale &&
+      translatedLocaleRef.current === defaultLocale;
 
-    if (getPathLocale(pathname) && !hasDeferredLocalizedHomepage) {
-      translatedLocaleRef.current = locale;
-      return;
+    if (serverLocalizedWithoutDeferredRuntime || untouchedDefaultContent) {
+      const commitTimer = window.setTimeout(() => {
+        observerRef.current?.disconnect();
+        observerRef.current = null;
+        activeCatalogRef.current = null;
+        translatedLocaleRef.current = targetLocale;
+        persistLocale(targetLocale);
+        setLocale(targetLocale);
+        setRequestedLocale((current) =>
+          current === targetLocale ? null : current
+        );
+        setFailedLocale(null);
+        setIsLocaleLoading(false);
+      }, 0);
+
+      return () => window.clearTimeout(commitTimer);
     }
 
-    if (
-      locale === defaultLocale &&
-      translatedLocaleRef.current === defaultLocale
-    ) {
-      return;
-    }
-
-    let observer: MutationObserver | null = null;
     let cancelled = false;
 
     const timer = window.setTimeout(() => {
-      void import("@/lib/i18n").then(
-        ({ exactTranslations, termTranslations }) => {
+      void loadRuntimeTranslationCatalog(pathname, targetLocale)
+        .then((catalog) => {
           if (cancelled) return;
 
-          const catalog: TranslationCatalog = {
-            exact: exactTranslations,
-            terms: termTranslations,
-          };
+          const previousObserver = observerRef.current;
+          previousObserver?.disconnect();
 
-          translateNode(document.body, locale, catalog);
-          translatedLocaleRef.current = locale;
+          try {
+            translateNode(document.head, targetLocale, catalog);
+            translateNode(document.body, targetLocale, catalog);
+            observerRef.current =
+              targetLocale === defaultLocale
+                ? null
+                : observeLocaleMutations(targetLocale, catalog);
+          } catch (error) {
+            const rollbackCatalog = activeCatalogRef.current ?? catalog;
+            try {
+              translateNode(document.head, locale, rollbackCatalog);
+              translateNode(document.body, locale, rollbackCatalog);
+              observerRef.current =
+                locale === defaultLocale
+                  ? null
+                  : observeLocaleMutations(locale, rollbackCatalog);
+            } catch {
+              observerRef.current = null;
+            }
+            throw error;
+          }
 
-          if (locale === defaultLocale) return;
-
-          observer = new MutationObserver((mutations) => {
-            mutations.forEach((mutation) => {
-              mutation.addedNodes.forEach((node) => {
-                if (node.nodeType === Node.TEXT_NODE && !shouldSkip(node)) {
-                  const text = node as Text;
-                  if (!originalText.has(text)) {
-                    originalText.set(text, text.nodeValue ?? "");
-                  }
-                  text.nodeValue = translateText(
-                    originalText.get(text) ?? "",
-                    locale,
-                    catalog
-                  );
-                }
-
-                if (node.nodeType === Node.ELEMENT_NODE) {
-                  translateNode(node as Element, locale, catalog);
-                }
-              });
-            });
-          });
-
-          observer.observe(document.body, {
-            childList: true,
-            subtree: true,
-          });
-        }
-      );
-    }, 80);
+          activeCatalogRef.current = catalog;
+          translatedLocaleRef.current = targetLocale;
+          persistLocale(targetLocale);
+          setLocale(targetLocale);
+          setRequestedLocale((current) =>
+            current === targetLocale ? null : current
+          );
+          setFailedLocale(null);
+          setIsLocaleLoading(false);
+        })
+        .catch(() => {
+          if (cancelled) return;
+          writeDocumentLocale(locale);
+          setRequestedLocale((current) =>
+            current === targetLocale ? null : current
+          );
+          setFailedLocale(targetLocale);
+          setIsLocaleLoading(false);
+        });
+    }, 0);
 
     return () => {
       cancelled = true;
       window.clearTimeout(timer);
-      observer?.disconnect();
     };
-  }, [locale, pathname]);
+  }, [hideSwitcher, locale, localeResolved, pathname, requestedLocale, retryAttempt]);
+
+  useEffect(() => {
+    return () => observerRef.current?.disconnect();
+  }, []);
 
   useEffect(() => {
     if (!isOpen) return;
+
+    const focusTimer = window.setTimeout(() => {
+      const active = menuRef.current?.querySelector<HTMLElement>(
+        '[role="menuitemradio"][aria-checked="true"]'
+      );
+      active?.focus();
+    }, 0);
 
     const handlePointerDown = (event: PointerEvent) => {
       const target = event.target as Element | null;
@@ -282,13 +894,17 @@ export function LanguageSwitcher() {
     };
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setIsOpen(false);
+      if (event.key === "Escape") {
+        setIsOpen(false);
+        triggerRef.current?.focus();
+      }
     };
 
     document.addEventListener("pointerdown", handlePointerDown);
     document.addEventListener("keydown", handleKeyDown);
 
     return () => {
+      window.clearTimeout(focusTimer);
       document.removeEventListener("pointerdown", handlePointerDown);
       document.removeEventListener("keydown", handleKeyDown);
     };
@@ -301,70 +917,201 @@ export function LanguageSwitcher() {
       supportedLocales[0],
     [locale]
   );
+  const currentSelectorCopy = selectorCopy[locale];
+  if (hideSwitcher) return null;
 
-  if (
-    pathname.startsWith("/embed/") ||
-    pathname === "/measurement/complete"
-  ) return null;
+  const closeMenuAndRestoreFocus = () => {
+    setIsOpen(false);
+    window.setTimeout(() => triggerRef.current?.focus(), 0);
+  };
+
+  const retryFailedLocale = () => {
+    if (!failedLocale) return;
+    setFailedLocale(null);
+    setRequestedLocale(failedLocale);
+    setIsLocaleLoading(true);
+    setRetryAttempt((attempt) => attempt + 1);
+    closeMenuAndRestoreFocus();
+  };
+
+  const handleMenuKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
+    if (!menuRef.current) return;
+    const items = [...menuRef.current.querySelectorAll<HTMLElement>('[role="menuitemradio"]')];
+    const currentIndex = items.indexOf(document.activeElement as HTMLElement);
+
+    if (event.key === "Escape") {
+      event.preventDefault();
+      setIsOpen(false);
+      triggerRef.current?.focus();
+      return;
+    }
+
+    if (event.key === " ") {
+      event.preventDefault();
+      items[currentIndex]?.click();
+      return;
+    }
+
+    if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return;
+    event.preventDefault();
+    const nextIndex =
+      event.key === "Home"
+        ? 0
+        : event.key === "End"
+          ? items.length - 1
+          : event.key === "ArrowDown"
+            ? (currentIndex + 1 + items.length) % items.length
+            : (currentIndex - 1 + items.length) % items.length;
+    items[nextIndex]?.focus();
+  };
 
   return (
     <div
       data-language-switcher
       className="fixed bottom-4 right-4 z-[80] flex flex-col items-end gap-2"
-      aria-label="Language selector"
+      aria-label={currentSelectorCopy.label}
+      aria-busy={isLocaleLoading}
     >
       {isOpen && (
-        <div className="grid max-h-[46vh] w-24 overflow-y-auto rounded-2xl border border-white/10 bg-[#111720]/95 p-1.5 shadow-2xl shadow-black/50 backdrop-blur-xl">
+        <div
+          ref={menuRef}
+          id="mg-language-menu"
+          role="menu"
+          aria-label={currentSelectorCopy.label}
+          onKeyDown={handleMenuKeyDown}
+          className="grid max-h-[min(31rem,68vh)] w-56 overflow-y-auto rounded-2xl border border-white/10 bg-[#111720]/98 p-2 shadow-2xl shadow-black/50 backdrop-blur-xl"
+        >
           {supportedLocales.map((item) => {
             const localizedTarget = getLocalizedPublicPath(pathname, item.code);
             const canNavigate = localizedTarget !== pathname;
-            const target = canNavigate
-              ? appendSafeQuery(localizedTarget, currentSearch)
+            const requiresServerRefresh = requiresServerLocaleRefresh(
+              pathname,
+              locale,
+              item.code
+            );
+            const usesDocumentNavigation = canNavigate || requiresServerRefresh;
+            const target = usesDocumentNavigation
+              ? `${appendSafeQuery(localizedTarget, currentSearch)}${currentHash}`
               : localizedTarget;
-            const chooseLocale = () => {
-              setLocale(item.code);
-              persistLocale(item.code);
-              setIsOpen(false);
+            const chooseLocale = (
+              event?: ReactMouseEvent<HTMLAnchorElement>
+            ) => {
+              setFailedLocale(null);
+              closeMenuAndRestoreFocus();
+
+              if (usesDocumentNavigation) {
+                // A server-rendered locale route does not need the runtime
+                // catalog transaction. Persist the explicit navigation intent
+                // before leaving so the prefixless English route cannot bounce
+                // back to a stale non-English cookie/localStorage preference.
+                persistLocale(item.code);
+                setRequestedLocale(null);
+                setIsLocaleLoading(false);
+
+                if (requiresServerRefresh) {
+                  event?.preventDefault();
+                  const currentTarget = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+                  if (currentTarget === target) {
+                    window.location.reload();
+                  } else {
+                    window.location.assign(target);
+                  }
+                }
+                return;
+              }
+
+              if (item.code === locale) {
+                setRequestedLocale(null);
+                setIsLocaleLoading(false);
+                persistLocale(locale);
+                return;
+              }
+
+              setRequestedLocale(item.code);
+              setIsLocaleLoading(true);
             };
-            const optionClassName = `flex h-9 items-center justify-center rounded-xl text-xs font-black transition ${
+            const optionClassName = `flex min-h-10 w-full items-center gap-3 rounded-xl px-3 text-left text-xs font-black outline-none transition focus-visible:ring-2 focus-visible:ring-red-400 ${
               item.code === locale
                 ? "bg-red-600 text-white"
                 : "text-zinc-200 hover:bg-white/10"
             }`;
-            return canNavigate ? (
+            return usesDocumentNavigation ? (
               <a
                 key={item.code}
                 href={target}
+                data-mg-locale-intent={item.code}
                 onClick={chooseLocale}
                 className={optionClassName}
                 title={item.name}
-                aria-label={`Switch language to ${item.name}`}
+                role="menuitemradio"
+                aria-checked={item.code === locale}
+                aria-label={`${currentSelectorCopy.switchTo} ${item.name}`}
               >
-                <span>{item.label}</span>
+                <span aria-hidden="true" className="text-base">{item.flag}</span>
+                <span className="min-w-0 flex-1 truncate">{item.name}</span>
+                <span className="text-[10px] uppercase text-white/55">{item.label}</span>
               </a>
             ) : (
               <button
                 key={item.code}
                 type="button"
-                onClick={chooseLocale}
+                onClick={() => chooseLocale()}
                 className={optionClassName}
                 title={item.name}
-                aria-label={`Switch language to ${item.name}`}
+                role="menuitemradio"
+                aria-checked={item.code === locale}
+                aria-label={`${currentSelectorCopy.switchTo} ${item.name}`}
               >
-                <span>{item.label}</span>
+                <span aria-hidden="true" className="text-base">{item.flag}</span>
+                <span className="min-w-0 flex-1 truncate">{item.name}</span>
+                <span className="text-[10px] uppercase text-white/55">{item.label}</span>
               </button>
             );
           })}
         </div>
       )}
+      {isLocaleLoading && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="max-w-72 rounded-xl border border-white/10 bg-[#111720]/98 px-4 py-3 text-xs font-bold text-zinc-200 shadow-xl shadow-black/40 backdrop-blur-xl"
+        >
+          {currentSelectorCopy.loading}
+        </div>
+      )}
+      {failedLocale && !isLocaleLoading && (
+        <div
+          role="alert"
+          className="max-w-72 rounded-xl border border-red-500/35 bg-[#1a1115]/98 px-4 py-3 text-xs font-bold text-zinc-100 shadow-xl shadow-black/40 backdrop-blur-xl"
+        >
+          <p>{currentSelectorCopy.failed}</p>
+          <button
+            type="button"
+            onClick={retryFailedLocale}
+            className="mt-2 rounded-lg border border-red-400/35 px-3 py-1.5 text-[11px] font-black text-red-200 outline-none transition hover:bg-red-500/10 focus-visible:ring-2 focus-visible:ring-red-400"
+          >
+            {currentSelectorCopy.retry}
+          </button>
+        </div>
+      )}
       <button
+        ref={triggerRef}
         type="button"
         onClick={() => setIsOpen((value) => !value)}
-        className="flex h-11 min-w-11 items-center justify-center rounded-full border border-white/10 bg-[#111720]/95 px-3 text-xs font-black text-white shadow-2xl shadow-black/40 backdrop-blur-xl transition hover:border-red-700/60 hover:bg-[#171f2b]"
+        onKeyDown={(event) => {
+          if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+            event.preventDefault();
+            setIsOpen(true);
+          }
+        }}
+        className="flex h-11 min-w-11 items-center justify-center gap-2 rounded-full border border-white/10 bg-[#111720]/95 px-3 text-xs font-black text-white shadow-2xl shadow-black/40 backdrop-blur-xl transition hover:border-red-700/60 hover:bg-[#171f2b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
         aria-expanded={isOpen}
-        aria-label="Change language"
-        title="Change language"
+        aria-haspopup="menu"
+        aria-controls="mg-language-menu"
+        aria-label={currentSelectorCopy.change}
+        title={currentSelectorCopy.change}
       >
+        <span aria-hidden="true" className="text-base">{activeLocale.flag}</span>
         {activeLocale.label}
       </button>
     </div>

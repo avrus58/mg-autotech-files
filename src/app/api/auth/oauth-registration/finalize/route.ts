@@ -8,41 +8,40 @@ import {
 import { parseRegistrationProfileDraft } from "@/lib/registrationProfile";
 import { isStaffMember } from "@/lib/staffPermissions";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
+import type { OAuthRegistrationFinalizeErrorCode } from "@/lib/oauthRegistrationFinalizeErrors";
 
 const responseHeaders = {
   "Cache-Control": "private, no-store, max-age=0",
   Vary: "Authorization",
 };
 
+function errorResponse(
+  errorCode: OAuthRegistrationFinalizeErrorCode,
+  status: number,
+) {
+  return NextResponse.json(
+    { errorCode },
+    { status, headers: responseHeaders },
+  );
+}
+
 export async function POST(request: Request) {
   const auth = await requireBaseApiUser(request);
   if (!auth.ok) {
-    return NextResponse.json(
-      { error: auth.error },
-      { status: auth.status, headers: responseHeaders }
-    );
+    return errorResponse("auth_required", auth.status);
   }
   if (isStaffMember(auth.access)) {
-    return NextResponse.json(
-      { error: "Staff profiles cannot use customer registration finalization." },
-      { status: 403, headers: responseHeaders }
-    );
+    return errorResponse("staff_profile_forbidden", 403);
   }
   const providers = Array.isArray(auth.user.app_metadata?.providers)
     ? auth.user.app_metadata.providers.map(String)
     : [String(auth.user.app_metadata?.provider ?? "")];
   if (!providers.includes("google")) {
-    return NextResponse.json(
-      { error: "Google registration finalization is not available for this session." },
-      { status: 403, headers: responseHeaders }
-    );
+    return errorResponse("google_session_required", 403);
   }
   const body = await request.json().catch(() => null);
   if (!body || typeof body !== "object" || Array.isArray(body)) {
-    return NextResponse.json(
-      { error: "Registration completion details are invalid." },
-      { status: 400, headers: responseHeaders }
-    );
+    return errorResponse("invalid_request", 400);
   }
 
   const input = body as Record<string, unknown>;
@@ -52,34 +51,22 @@ export async function POST(request: Request) {
   const isCountryOnlyCompletion =
     inputKeys.length === 1 && inputKeys[0] === "country";
   if (!isFullProfileCompletion && !isCountryOnlyCompletion) {
-    return NextResponse.json(
-      { error: "Registration completion details are invalid." },
-      { status: 400, headers: responseHeaders }
-    );
+    return errorResponse("invalid_request", 400);
   }
 
   const profile = isFullProfileCompletion
     ? parseRegistrationProfileDraft(JSON.stringify(input.profile ?? null))
     : null;
   if (isFullProfileCompletion && !profile) {
-    return NextResponse.json(
-      { error: "Registration profile details are invalid." },
-      { status: 400, headers: responseHeaders }
-    );
+    return errorResponse("invalid_profile", 400);
   }
 
   if (isFullProfileCompletion) {
     if (!isGoogleRegistrationProfileFinalizationWindowOpen(auth.user)) {
-      return NextResponse.json(
-        { error: "Google registration finalization has expired." },
-        { status: 403, headers: responseHeaders }
-      );
+      return errorResponse("finalization_expired", 403);
     }
   } else if (!isGoogleRegistrationAfterCountryEnforcement(auth.user)) {
-    return NextResponse.json(
-      { error: "Country completion is not available for this account." },
-      { status: 403, headers: responseHeaders }
-    );
+    return errorResponse("country_completion_unavailable", 403);
   }
 
   // Country is an ordinary customer-editable profile field. This exact,
@@ -92,10 +79,7 @@ export async function POST(request: Request) {
     existingMetadata: auth.user.user_metadata,
   });
   if (!updates) {
-    return NextResponse.json(
-      { error: "Registration country is invalid." },
-      { status: 400, headers: responseHeaders }
-    );
+    return errorResponse("invalid_country", 400);
   }
 
   const admin = getSupabaseAdmin();
@@ -106,10 +90,7 @@ export async function POST(request: Request) {
     .select("id")
     .maybeSingle();
   if (profileUpdate.error || !profileUpdate.data) {
-    return NextResponse.json(
-      { error: "Registration profile could not be finalized." },
-      { status: 503, headers: responseHeaders }
-    );
+    return errorResponse("profile_update_failed", 503);
   }
 
   const metadataUpdate = await admin.auth.admin.updateUserById(auth.user.id, {
@@ -119,10 +100,7 @@ export async function POST(request: Request) {
     },
   });
   if (metadataUpdate.error) {
-    return NextResponse.json(
-      { error: "Registration metadata could not be finalized. Please retry." },
-      { status: 503, headers: responseHeaders }
-    );
+    return errorResponse("metadata_update_failed", 503);
   }
 
   return NextResponse.json(

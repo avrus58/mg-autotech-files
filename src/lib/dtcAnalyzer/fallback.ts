@@ -1,5 +1,6 @@
 import type {
   DtcAnalysisEvidenceItem,
+  DtcAnalyzerMessageDescriptor,
   DtcAnalyzerRecommendation,
   DtcAnalyzerConfidence,
   DtcAnalyzerNormalizedInput,
@@ -23,19 +24,36 @@ const validDtcPattern = /^[PCBU][0-3][0-9A-F]{3}$/;
 const validDtcSearchPattern = /\b[PCBU][0-3][0-9A-F]{3}\b/gi;
 const codeLikeSearchPattern = /\b[PCBU][0-9A-Z]{3,6}\b/gi;
 
-const safetyBoundaries = [
-  "This is diagnostic guidance only and does not confirm a root cause, fix or legal suitability.",
-  "It does not approve DTC-off, emissions removal, byte patching, checksum work or MOD generation.",
-  "Human diagnostic and tuner review is required before any customer file action.",
-];
+function message(
+  key: DtcAnalyzerMessageDescriptor["key"],
+  fallback: string,
+  params?: DtcAnalyzerMessageDescriptor["params"]
+): DtcAnalyzerMessageDescriptor {
+  return params ? { key, params, fallback } : { key, fallback };
+}
 
-const commonMissingInformation = [
-  "Vehicle brand, model, engine and model year",
-  "ECU family, software number and read method",
-  "Freeze-frame data, current/stored status and fault frequency",
-  "Related DTCs and live data around airflow, boost, temperature and sensor plausibility",
-  "Hardware condition and whether emissions components are present and functional",
+const safetyBoundaryMessages = [
+  message("safety.guidance_only", "This is diagnostic guidance only and does not confirm a root cause, fix or legal suitability."),
+  message("safety.no_approval", "It does not approve DTC-off, emissions removal, byte patching, checksum work or MOD generation."),
+  message("safety.human_review", "Human diagnostic and tuner review is required before any customer file action."),
 ];
+const safetyBoundaries = safetyBoundaryMessages.map((item) => item.fallback);
+
+const commonMissingInformationMessages = [
+  message("missing.vehicle", "Vehicle brand, model, engine and model year"),
+  message("missing.ecu", "ECU family, software number and read method"),
+  message("missing.freeze_frame", "Freeze-frame data, current/stored status and fault frequency"),
+  message("missing.live_data", "Related DTCs and live data around airflow, boost, temperature and sensor plausibility"),
+  message("missing.hardware", "Hardware condition and whether emissions components are present and functional"),
+];
+const commonMissingInformation = commonMissingInformationMessages.map((item) => item.fallback);
+
+const requiredBeforeMessages = [
+  message("required_before.customer_file_advice", "customer file advice"),
+  message("required_before.dtc_off_decision", "DTC-off decision"),
+  message("required_before.checksum_mod_work", "checksum or MOD-file work"),
+];
+const requiredBefore = requiredBeforeMessages.map((item) => item.fallback);
 
 type KnownDtcProfile = {
   title: string;
@@ -45,7 +63,9 @@ type KnownDtcProfile = {
   missingInformation?: string[];
 };
 
-const knownDtcProfiles: Record<string, KnownDtcProfile> = {
+type KnownDtcCode = "P0101" | "P0299" | "P0401" | "P0402" | "P0420" | "P0087" | "P2002" | "P2453" | "U0100";
+
+const knownDtcProfiles: Record<KnownDtcCode, KnownDtcProfile> = {
   P0101: {
     title: "Mass air flow range or performance context",
     likelyDiagnosticContext: [
@@ -178,6 +198,29 @@ const knownDtcProfiles: Record<string, KnownDtcProfile> = {
   },
 };
 
+function isKnownDtcCode(code: string): code is KnownDtcCode {
+  return Object.prototype.hasOwnProperty.call(knownDtcProfiles, code);
+}
+
+function knownProfileMessages(code: KnownDtcCode, profile: KnownDtcProfile) {
+  return {
+    title: message(`code.${code}.title`, profile.title),
+    explanation: message(`code.${code}.explanation`, profile.customerExplanation),
+    checks: profile.recommendedChecks.map((check, index) =>
+      message(`code.${code}.check_${(index + 1) as 1 | 2 | 3}`, check)
+    ),
+  };
+}
+
+function codeMissingInformationMessages(code: string) {
+  if (code !== "P0401") return commonMissingInformationMessages;
+  return [
+    message("missing.p0401_egr_data", "EGR command and feedback/live-airflow data"),
+    message("missing.p0401_history", "Whether the vehicle has prior EGR hardware work or software changes"),
+    ...commonMissingInformationMessages,
+  ];
+}
+
 function uniqueInOrder(values: string[]) {
   const seen = new Set<string>();
   return values.filter((value) => {
@@ -213,23 +256,53 @@ export function normalizeDtcInput(text: string): DtcAnalyzerNormalizedInput {
   };
 }
 
-function systemFor(code: string): { system: DtcSystem; label: string } {
+function systemFor(code: string): {
+  system: DtcSystem;
+  label: string;
+  labelMessage: DtcAnalyzerMessageDescriptor;
+} {
   const prefix = code[0];
-  if (prefix === "P") return { system: "powertrain", label: "Powertrain" };
-  if (prefix === "C") return { system: "chassis", label: "Chassis" };
-  if (prefix === "B") return { system: "body", label: "Body" };
-  return { system: "network", label: "Network communication" };
+  if (prefix === "P") {
+    return { system: "powertrain", label: "Powertrain", labelMessage: message("system.powertrain", "Powertrain") };
+  }
+  if (prefix === "C") {
+    return { system: "chassis", label: "Chassis", labelMessage: message("system.chassis", "Chassis") };
+  }
+  if (prefix === "B") {
+    return { system: "body", label: "Body", labelMessage: message("system.body", "Body") };
+  }
+  return {
+    system: "network",
+    label: "Network communication",
+    labelMessage: message("system.network", "Network communication"),
+  };
 }
 
-function standardizationFor(code: string): { standardization: DtcStandardization; label: string } {
+function standardizationFor(code: string): {
+  standardization: DtcStandardization;
+  label: string;
+  evidenceKey: DtcAnalyzerMessageDescriptor["key"];
+} {
   const scope = code[1];
   if (scope === "0") {
-    return { standardization: "sae_or_iso_generic", label: "SAE/ISO generic range" };
+    return {
+      standardization: "sae_or_iso_generic",
+      label: "SAE/ISO generic range",
+      evidenceKey: "evidence.standard_generic",
+    };
   }
   if (scope === "1") {
-    return { standardization: "manufacturer_specific", label: "Manufacturer-specific range" };
+    return {
+      standardization: "manufacturer_specific",
+      label: "Manufacturer-specific range",
+      evidenceKey: "evidence.standard_manufacturer",
+    };
   }
-  return { standardization: "mixed_or_reserved", label: "Generic/manufacturer-specific range; verify with vehicle data" };
+  return {
+    standardization: "mixed_or_reserved",
+    label: "Generic/manufacturer-specific range; verify with vehicle data",
+    evidenceKey: "evidence.standard_mixed",
+  };
 }
 
 const emissionsReviewCodes = new Set(["P0401", "P0402", "P0420", "P2002", "P2453"]);
@@ -244,9 +317,21 @@ function uniqueAnalysisItems<T extends { id: string }>(items: T[]) {
   });
 }
 
+function uniqueMessages(items: DtcAnalyzerMessageDescriptor[]) {
+  const seen = new Set<string>();
+  return items.filter((item) => {
+    const identity = `${item.key}:${JSON.stringify(item.params ?? {})}`;
+    if (seen.has(identity)) return false;
+    seen.add(identity);
+    return true;
+  });
+}
+
 function codeEvidenceItems(input: {
   code: string;
+  system: DtcSystem;
   systemLabel: string;
+  standardizationEvidenceKey: DtcAnalyzerMessageDescriptor["key"];
   standardizationLabel: string;
   hasKnownProfile: boolean;
 }): DtcAnalysisEvidenceItem[] {
@@ -258,6 +343,7 @@ function codeEvidenceItems(input: {
       type: "dtc_code_detected",
       severity: "info",
       text: `${input.code} was detected as a valid DTC token.`,
+      message: message("evidence.valid_code", `${input.code} was detected as a valid DTC token.`, { code: input.code }),
       customerSafe: true,
     },
     {
@@ -267,6 +353,11 @@ function codeEvidenceItems(input: {
       type: "system_family",
       severity: "info",
       text: `${input.code} belongs to the ${input.systemLabel.toLowerCase()} diagnostic family.`,
+      message: message(
+        `evidence.system_${input.system}`,
+        `${input.code} belongs to the ${input.systemLabel.toLowerCase()} diagnostic family.`,
+        { code: input.code }
+      ),
       customerSafe: true,
     },
     {
@@ -276,6 +367,11 @@ function codeEvidenceItems(input: {
       type: "standardization_scope",
       severity: "info",
       text: `${input.code} is classified as ${input.standardizationLabel.toLowerCase()}.`,
+      message: message(
+        input.standardizationEvidenceKey,
+        `${input.code} is classified as ${input.standardizationLabel.toLowerCase()}.`,
+        { code: input.code }
+      ),
       customerSafe: true,
     },
     {
@@ -287,6 +383,17 @@ function codeEvidenceItems(input: {
       text: input.hasKnownProfile
         ? `A local deterministic diagnostic profile is available for ${input.code}.`
         : `No trusted local diagnostic profile is available for ${input.code}; only code-family guidance is available.`,
+      message: input.hasKnownProfile
+        ? message(
+            "evidence.profile_known",
+            `A local deterministic diagnostic profile is available for ${input.code}.`,
+            { code: input.code }
+          )
+        : message(
+            "evidence.profile_unknown",
+            `No trusted local diagnostic profile is available for ${input.code}; only code-family guidance is available.`,
+            { code: input.code }
+          ),
       customerSafe: true,
     },
   ];
@@ -383,15 +490,16 @@ function codeConfidenceReasons(input: {
 
 function codeRecommendations(input: {
   code: string;
-  recommendedChecks: string[];
-  missingInformation: string[];
+  recommendedChecks: DtcAnalyzerMessageDescriptor[];
+  missingInformation: DtcAnalyzerMessageDescriptor[];
 }): DtcAnalyzerRecommendation[] {
   const checks = input.recommendedChecks.map((check, index) => ({
     id: `${input.code}-diagnostic-check-${index + 1}`,
     code: input.code,
     category: "diagnostic_check" as const,
     priority: "normal" as const,
-    text: check,
+    text: check.fallback,
+    message: check,
     requiresHumanReview: false,
     customerSafe: true as const,
   }));
@@ -401,7 +509,8 @@ function codeRecommendations(input: {
     code: input.code,
     category: "missing_information" as const,
     priority: "normal" as const,
-    text: item,
+    text: item.fallback,
+    message: item,
     requiresHumanReview: false,
     customerSafe: true as const,
   }));
@@ -415,6 +524,10 @@ function codeRecommendations(input: {
       category: "human_review_gate",
       priority: "high",
       text: "Human review is required before customer file advice, DTC-off decisions, file edits, byte patches, checksum work or customer-ready MOD output.",
+      message: message(
+        "recommendation.human_review_gate",
+        "Human review is required before customer file advice, DTC-off decisions, file edits, byte patches, checksum work or customer-ready MOD output."
+      ),
       requiresHumanReview: true,
       customerSafe: true,
     },
@@ -554,38 +667,44 @@ function overallConfidenceReasons(codes: DtcCodeAnalysis[], confidence: DtcAnaly
 function analyzeCode(code: string): DtcCodeAnalysis {
   const system = systemFor(code);
   const standardization = standardizationFor(code);
-  const known = knownDtcProfiles[code];
-  const baseMissing = known?.missingInformation
-    ? uniqueInOrder([...known.missingInformation, ...commonMissingInformation])
-    : commonMissingInformation;
+  const known = isKnownDtcCode(code) ? knownDtcProfiles[code] : undefined;
+  const baseMissingMessages = codeMissingInformationMessages(code);
+  const baseMissing = baseMissingMessages.map((item) => item.fallback);
   const hasKnownProfile = Boolean(known);
 
   if (known) {
     const confidence: DtcAnalyzerConfidence = "medium";
+    const profileMessages = knownProfileMessages(code as KnownDtcCode, known);
     return {
       code,
       system: system.system,
       systemLabel: system.label,
+      systemLabelMessage: system.labelMessage,
       standardization: standardization.standardization,
       standardizationLabel: standardization.label,
       title: known.title,
+      titleMessage: profileMessages.title,
       likelyDiagnosticContext: known.likelyDiagnosticContext,
       customerExplanation: known.customerExplanation,
+      customerExplanationMessage: profileMessages.explanation,
       recommendedChecks: known.recommendedChecks,
       missingInformation: baseMissing,
+      missingInformationMessages: baseMissingMessages,
       confidence,
       confidenceReasons: codeConfidenceReasons({ code, confidence, hasKnownProfile }),
       evidence: codeEvidenceItems({
         code,
+        system: system.system,
         systemLabel: system.label,
+        standardizationEvidenceKey: standardization.evidenceKey,
         standardizationLabel: standardization.label,
         hasKnownProfile,
       }),
       riskFlags: codeRiskFlags({ code, system: system.system, hasKnownProfile }),
       recommendations: codeRecommendations({
         code,
-        recommendedChecks: known.recommendedChecks,
-        missingInformation: baseMissing,
+        recommendedChecks: profileMessages.checks,
+        missingInformation: baseMissingMessages,
       }),
       uncertainty: [
         "This is a deterministic text-only interpretation.",
@@ -600,32 +719,47 @@ function analyzeCode(code: string): DtcCodeAnalysis {
     "Collect freeze-frame data and all companion DTCs.",
     "Provide vehicle, ECU and software details before any file-service decision.",
   ];
+  const recommendedCheckMessages = recommendedChecks.map((check, index) =>
+    message(`code.generic.check_${(index + 1) as 1 | 2 | 3}`, check)
+  );
+  const genericTitle = `${system.label} DTC context`;
+  const genericExplanation =
+    "The code format is valid, but this fallback has no trusted definition for the exact code. Treat it as a prompt for expert review, not as a confirmed diagnosis.";
 
   return {
     code,
     system: system.system,
     systemLabel: system.label,
+    systemLabelMessage: system.labelMessage,
     standardization: standardization.standardization,
     standardizationLabel: standardization.label,
-    title: `${system.label} DTC context`,
+    title: genericTitle,
+    titleMessage: message(`code.generic.${system.system}.title`, genericTitle),
     likelyDiagnosticContext: [
       `The code belongs to the ${system.label.toLowerCase()} diagnostic family.`,
       "A vehicle-specific service manual, scan data and related DTCs are required for a useful interpretation.",
     ],
-    customerExplanation:
-      "The code format is valid, but this fallback has no trusted definition for the exact code. Treat it as a prompt for expert review, not as a confirmed diagnosis.",
+    customerExplanation: genericExplanation,
+    customerExplanationMessage: message(`code.generic.${system.system}.explanation`, genericExplanation),
     recommendedChecks,
     missingInformation: baseMissing,
+    missingInformationMessages: baseMissingMessages,
     confidence,
     confidenceReasons: codeConfidenceReasons({ code, confidence, hasKnownProfile }),
     evidence: codeEvidenceItems({
       code,
+      system: system.system,
       systemLabel: system.label,
+      standardizationEvidenceKey: standardization.evidenceKey,
       standardizationLabel: standardization.label,
       hasKnownProfile,
     }),
     riskFlags: codeRiskFlags({ code, system: system.system, hasKnownProfile }),
-    recommendations: codeRecommendations({ code, recommendedChecks, missingInformation: baseMissing }),
+    recommendations: codeRecommendations({
+      code,
+      recommendedChecks: recommendedCheckMessages,
+      missingInformation: baseMissingMessages,
+    }),
     uncertainty: [
       "No trusted local definition is available for this exact code.",
       "The same DTC can have different diagnostic meaning by manufacturer, engine and ECU software.",
@@ -698,17 +832,24 @@ export function buildProviderUnavailableDtcResponse(
     ),
     normalizedInput,
     summary: "DTC AI provider is unavailable. Use the deterministic fallback for local, non-AI guidance.",
+    summaryMessage: message(
+      "summary.provider_unavailable",
+      "DTC AI provider is unavailable. Use the deterministic fallback for local, non-AI guidance."
+    ),
     codes: [],
     evidence: providerStateEvidence(provider),
     riskFlags: providerStateRiskFlags(provider),
     recommendations: providerUnavailableRecommendations(),
     missingInformation: normalizedInput.invalidReason ? [] : commonMissingInformation,
+    missingInformationMessages: normalizedInput.invalidReason ? [] : commonMissingInformationMessages,
     humanReview: {
       required: true,
       reason: "DTC analysis is unavailable until a provider is configured or the deterministic fallback is used.",
-      requiredBefore: ["customer file advice", "DTC-off decision", "checksum or MOD-file work"],
+      requiredBefore,
+      requiredBeforeMessages,
     },
     safetyBoundaries,
+    safetyBoundaryMessages,
   };
 }
 
@@ -735,17 +876,30 @@ export function buildInvalidDtcInputResponse(
     ),
     normalizedInput,
     summary: normalizedInput.invalidReason ?? "No valid DTC code was detected.",
+    summaryMessage: !normalizedInput.hasText
+      ? message("summary.invalid_empty", "Enter at least one diagnostic trouble code such as P0401.")
+      : normalizedInput.invalidReason
+        ? message(
+            "summary.invalid_no_valid",
+            "No valid SAE-style DTC code was detected. Use codes such as P0401, P2002 or U0100."
+          )
+        : message("summary.invalid_generic", "No valid DTC code was detected."),
     codes: [],
     evidence: invalidInputEvidence(normalizedInput),
     riskFlags: invalidInputRiskFlags(),
     recommendations: invalidInputRecommendations(),
     missingInformation: ["At least one valid DTC code such as P0401"],
+    missingInformationMessages: [
+      message("missing.valid_code", "At least one valid DTC code such as P0401"),
+    ],
     humanReview: {
       required: true,
       reason: "A diagnostic code is required before useful DTC guidance can be prepared.",
-      requiredBefore: ["customer file advice", "DTC-off decision", "checksum or MOD-file work"],
+      requiredBefore,
+      requiredBeforeMessages,
     },
     safetyBoundaries,
+    safetyBoundaryMessages,
   };
 }
 
@@ -760,7 +914,10 @@ export function buildDeterministicDtcFallback(
   if (input.invalidReason) return buildInvalidDtcInputResponse(request, input);
 
   const codes = input.normalizedCodes.map(analyzeCode);
-  const missingInformation = uniqueInOrder(codes.flatMap((code) => code.missingInformation));
+  const missingInformationMessages = uniqueMessages(
+    codes.flatMap((code) => code.missingInformationMessages)
+  );
+  const missingInformation = missingInformationMessages.map((item) => item.fallback);
   const codeList = input.normalizedCodes.join(", ");
   const provider = options.provider ?? deterministicProviderIdentity();
   const fallbackReason = options.reason ?? "Deterministic non-AI fallback used for local DTC guidance.";
@@ -793,17 +950,25 @@ export function buildDeterministicDtcFallback(
     confidenceReasons,
     normalizedInput: input,
     summary: `Deterministic non-AI DTC fallback prepared guidance for ${codeList}. Human review remains required.`,
+    summaryMessage: message(
+      "summary.deterministic",
+      `Deterministic non-AI DTC fallback prepared guidance for ${codeList}. Human review remains required.`,
+      { codes: codeList }
+    ),
     codes,
     evidence,
     riskFlags,
     recommendations,
     missingInformation,
+    missingInformationMessages,
     humanReview: {
       required: true,
       reason:
         "A DTC code alone cannot confirm root cause, legal service suitability, file edits, checksums or customer-ready output.",
-      requiredBefore: ["customer file advice", "DTC-off decision", "checksum or MOD-file work"],
+      requiredBefore,
+      requiredBeforeMessages,
     },
     safetyBoundaries,
+    safetyBoundaryMessages,
   };
 }

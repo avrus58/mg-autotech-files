@@ -20,14 +20,15 @@ function source(...segments: string[]) {
   return readFileSync(path.join(process.cwd(), ...segments), "utf8");
 }
 
-test("homepage combined mode uses the compact snapshot while the old public analyzer redirects into the protected dashboard", () => {
+test("homepage loads the compact snapshot independently while the old public analyzer redirects into the protected dashboard", () => {
   const performanceTools = source("src", "components", "tools", "PerformanceTools.tsx");
   const publicSnapshot = source("src", "components", "tools", "PublicLogSnapshot.tsx");
+  const deferredSnapshot = source("src", "components", "tools", "DeferredPerformanceTools.tsx");
   const dedicatedAnalyzer = source("src", "app", "tools", "autotuner-log-analyzer", "page.tsx");
 
-  assert.match(performanceTools, /import \{ PublicLogSnapshot \}/);
-  assert.match(performanceTools, /if \(mode === "combined"\) \{\s*return <PublicLogSnapshot \/>;/);
-  assert.match(performanceTools, /PerformanceToolsMode = "combined" \| "calculator"/);
+  assert.match(deferredSnapshot, /import\("@\/components\/tools\/PublicLogSnapshot"\)/);
+  assert.match(deferredSnapshot, /<PublicLogSnapshot copy=\{copy\} locale=\{locale\} \/>/);
+  assert.doesNotMatch(performanceTools, /PublicLogSnapshot|PerformanceToolsMode/);
   assert.doesNotMatch(performanceTools, /DetailedPerformanceTools|PerformanceCurveChart|PerformanceDataTable/);
   assert.doesNotMatch(performanceTools, /parsePerformanceLog|analyzePerformanceLog|buildPerformanceReportSvg/);
   assert.match(dedicatedAnalyzer, /permanentRedirect\("\/dashboard\/log-analysis"\)/);
@@ -35,6 +36,7 @@ test("homepage combined mode uses the compact snapshot while the old public anal
   assert.doesNotMatch(dedicatedAnalyzer, /PerformanceTools/);
   assert.match(publicSnapshot, /useState<SnapshotResult \| null>\(null\)/);
   assert.match(publicSnapshot, /Nothing is calculated until you choose a file/);
+  assert.doesNotMatch(publicSnapshot, /public-tools-translations/);
 });
 
 test("public log snapshot validates bounded local files and does not introduce persistence or network processing", () => {

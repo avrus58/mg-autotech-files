@@ -1,7 +1,10 @@
 import Link from "next/link";
 import { ArrowRight, BadgeCheck, CheckCircle2, FileCheck2, ShieldCheck } from "lucide-react";
-import { Footer } from "@/components/Footer";
 import { PublicSeoHeader } from "@/components/PublicSeoHeader";
+import { RuntimePublicFooter } from "@/components/RuntimePublicFooter";
+import { RuntimePublicLocalization } from "@/components/RuntimePublicLocalization";
+import type { RuntimePublicScope } from "@/lib/i18n/runtime-public";
+import type { LocaleCode } from "@/lib/i18nConfig";
 
 type GuideSection = { title: string; items: string[] };
 
@@ -14,6 +17,8 @@ export function SeoGuidePage({
   faq,
   related,
   jsonLd,
+  locale = "en",
+  localizationScopes = ["core"],
   breadcrumbs,
   requestHref = "/new-request",
 }: {
@@ -25,13 +30,16 @@ export function SeoGuidePage({
   faq: { q: string; a: string }[];
   related: { label: string; href: string }[];
   jsonLd: object;
+  locale?: LocaleCode;
+  localizationScopes?: readonly RuntimePublicScope[];
   breadcrumbs?: { label: string; href?: string }[];
   requestHref?: string;
 }) {
   return (
-    <main data-no-translate className="min-h-screen bg-[#050505] text-white">
+    <RuntimePublicLocalization locale={locale} scopes={localizationScopes}>
+      <main className="min-h-screen bg-[#050505] text-white">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      <PublicSeoHeader />
+      <PublicSeoHeader locale={locale} />
 
       <section className="border-b border-white/10 bg-[radial-gradient(circle_at_80%_10%,rgba(177,18,27,0.24),transparent_30%),#050505]">
         <div className="mx-auto max-w-7xl px-4 py-16 lg:py-24">
@@ -103,7 +111,8 @@ export function SeoGuidePage({
         </div>
       </section>
 
-      <Footer />
-    </main>
+      <RuntimePublicFooter locale={locale} scopes={localizationScopes} />
+      </main>
+    </RuntimePublicLocalization>
   );
 }

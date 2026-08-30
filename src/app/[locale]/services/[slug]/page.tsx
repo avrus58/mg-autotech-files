@@ -31,7 +31,9 @@ import {
   websiteJsonLd,
   type PublicServiceSlug,
 } from "@/lib/seo";
-import type { LocaleCode } from "@/lib/i18nConfig";
+import { openGraphLocaleByCode, type LocaleCode } from "@/lib/i18nConfig";
+import { publicCoreTranslations } from "@/lib/i18n/public-core-translations";
+import { publicSurfaceExactT } from "@/lib/i18n/public-surface-types";
 import {
   buildNewRequestPath,
   getPublicServiceRequestIntent,
@@ -69,10 +71,10 @@ export async function generateMetadata({
       description: service.description,
       url: localizedUrl(locale, path),
       siteName,
-      locale: hreflangByLocale[locale],
+      locale: openGraphLocaleByCode[locale],
       alternateLocale: seoLocales
         .filter((item) => item !== locale)
-        .map((item) => hreflangByLocale[item]),
+        .map((item) => openGraphLocaleByCode[item]),
       type: "website",
       images: [
         {
@@ -105,6 +107,11 @@ export default async function LocalizedServicePage({
   const slug = rawSlug as PublicServiceSlug;
   const labels = seoLabels[locale];
   const service = getServiceSeo(slug, locale);
+  const fileServiceLabel = publicSurfaceExactT(
+    locale,
+    "ECU / TCU File Service",
+    publicCoreTranslations
+  );
   const requestHref = buildNewRequestPath(getPublicServiceRequestIntent(slug));
   const jsonLd = {
     "@context": "https://schema.org",
@@ -168,7 +175,7 @@ export default async function LocalizedServicePage({
               <div className="text-xl font-black tracking-wide">
                 MG <span className="text-red-600">AUTOTECH</span>
               </div>
-              <div className="text-xs text-zinc-400">ECU / TCU File Service</div>
+              <div className="text-xs text-zinc-400">{fileServiceLabel}</div>
             </div>
           </Link>
 
@@ -225,7 +232,7 @@ export default async function LocalizedServicePage({
 
         <div className="min-w-0 rounded-[2rem] border border-red-900/40 bg-[linear-gradient(135deg,rgba(177,18,27,0.16),rgba(255,255,255,0.04))] p-5 shadow-2xl shadow-black/30">
           <div className="grid gap-4 sm:grid-cols-2">
-            <InfoCard icon={Wrench} label={labels.credits} value={`${service.credits} credits`} />
+            <InfoCard icon={Wrench} label={labels.credits} value={`${service.credits} ${labels.credits}`} />
             <InfoCard icon={Clock3} label={labels.turnaround} value={service.turnaround} />
             <InfoCard icon={ShieldCheck} label={labels.delivery} value={labels.securePortal} />
             <InfoCard icon={FileCode2} label="ECU / TCU" value={service.eyebrow} />

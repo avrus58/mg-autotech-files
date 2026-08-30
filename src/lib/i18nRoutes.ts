@@ -1,11 +1,26 @@
-import type { LocaleCode } from "@/lib/i18nConfig";
+import {
+  defaultLocale,
+  parseSupportedLocale,
+  type LocaleCode,
+} from "@/lib/i18nConfig";
 import {
   isPublicServiceSlug,
   isSeoLocale,
   localizedPath,
 } from "@/lib/seo";
 
-const englishOnlySeoSegments = new Set(["about", "contact", "brands", "ecu-platforms", "tools"]);
+// These routes are localized at runtime on one canonical URL instead of
+// duplicating the route tree with a locale prefix.
+const runtimeLocalizedSinglePathSegments = new Set([
+  "about",
+  "contact",
+  "download",
+  "brands",
+  "ecu-platforms",
+  "tools",
+  "widget",
+  "workshop-guides",
+]);
 const privateOrSystemSegments = new Set([
   "admin",
   "api",
@@ -31,6 +46,26 @@ export function splitLocalizedPath(pathname: string) {
   };
 }
 
+export function resolvePreferredLocale({
+  pathname,
+  storedLocale,
+  cookieLocale,
+  browserLocale,
+}: {
+  pathname: string;
+  storedLocale?: string | null;
+  cookieLocale?: string | null;
+  browserLocale?: string | null;
+}) {
+  return (
+    splitLocalizedPath(pathname).locale ??
+    parseSupportedLocale(storedLocale) ??
+    parseSupportedLocale(cookieLocale) ??
+    parseSupportedLocale(browserLocale) ??
+    defaultLocale
+  );
+}
+
 export function getLocalizedPublicPath(pathname: string, locale: LocaleCode) {
   const { parts } = splitLocalizedPath(pathname);
 
@@ -54,11 +89,22 @@ export function getLocalizedPublicPath(pathname: string, locale: LocaleCode) {
     return pathname;
   }
 
-  if (parts[0] && englishOnlySeoSegments.has(parts[0])) {
+  if (parts[0] && runtimeLocalizedSinglePathSegments.has(parts[0])) {
     return pathname;
   }
 
   return pathname;
+}
+
+export function getLocalizedPublicHref(href: string, locale: LocaleCode) {
+  if (!href.startsWith("/") || href.startsWith("//")) return href;
+
+  const match = href.match(/^([^?#]*)(\?[^#]*)?(#.*)?$/u);
+  if (!match) return href;
+
+  const pathname = match[1] || "/";
+  const suffix = `${match[2] ?? ""}${match[3] ?? ""}`;
+  return `${getLocalizedPublicPath(pathname, locale)}${suffix}`;
 }
 
 export function isServerLocalizedPublicPath(pathname: string) {
@@ -67,11 +113,41 @@ export function isServerLocalizedPublicPath(pathname: string) {
   if (parts.length === 0) return true;
   if (parts[0] === "how-it-works" || parts[0] === "file-service") return true;
 
-  return Boolean(
-    parts[0] === "services" &&
-      parts[1] &&
-      isPublicServiceSlug(parts[1])
+  if (parts[0] && runtimeLocalizedSinglePathSegments.has(parts[0])) {
+    return true;
+  }
+
+  if (parts[0] === "services") return true;
+
+  return false;
+}
+
+export function requiresServerLocaleRefresh(
+  pathname: string,
+  currentLocale: LocaleCode,
+  targetLocale: LocaleCode
+) {
+  return (
+    currentLocale !== targetLocale &&
+    isServerLocalizedPublicPath(pathname) &&
+    getLocalizedPublicPath(pathname, targetLocale) === pathname
   );
+}
+
+export function getInitialLocaleRedirect(
+  pathname: string,
+  preferredLocale: LocaleCode
+) {
+  if (
+    splitLocalizedPath(pathname).locale ||
+    preferredLocale === defaultLocale ||
+    !isServerLocalizedPublicPath(pathname)
+  ) {
+    return null;
+  }
+
+  const target = getLocalizedPublicPath(pathname, preferredLocale);
+  return target === pathname ? null : target;
 }
 
 export function appendSafeQuery(pathname: string, search = "") {

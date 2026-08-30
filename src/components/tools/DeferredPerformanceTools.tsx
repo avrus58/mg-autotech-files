@@ -2,16 +2,24 @@
 
 import dynamic from "next/dynamic";
 import { useEffect, useRef, useState } from "react";
+import type { LocaleCode } from "@/lib/i18nConfig";
+import type { PublicLogSnapshotCopy } from "@/lib/i18n/tool-client-copy-keys";
 
-const PerformanceTools = dynamic(
+const PublicLogSnapshot = dynamic(
   () =>
-    import("@/components/tools/PerformanceTools").then(
-      (module) => module.PerformanceTools
+    import("@/components/tools/PublicLogSnapshot").then(
+      (module) => module.PublicLogSnapshot
     ),
   { ssr: false }
 );
 
-export function DeferredPerformanceTools() {
+export function DeferredPerformanceTools({
+  copy,
+  locale,
+}: {
+  copy: PublicLogSnapshotCopy;
+  locale: LocaleCode;
+}) {
   const boundaryRef = useRef<HTMLDivElement | null>(null);
   const [nearViewport, setNearViewport] = useState(false);
   const [ready, setReady] = useState(false);
@@ -58,7 +66,7 @@ export function DeferredPerformanceTools() {
   return (
     <div id="tools" ref={boundaryRef} className="scroll-mt-24">
       {ready ? (
-        <PerformanceTools />
+        <PublicLogSnapshot copy={copy} locale={locale} />
       ) : (
         <section
           aria-busy="true"

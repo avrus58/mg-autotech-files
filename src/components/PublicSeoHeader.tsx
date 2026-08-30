@@ -1,11 +1,17 @@
 import Link from "next/link";
 import { Cpu, LayoutGrid } from "lucide-react";
+import { RuntimePublicLocalization } from "@/components/RuntimePublicLocalization";
+import type { LocaleCode } from "@/lib/i18nConfig";
+import { getLocalizedPublicHref } from "@/lib/i18nRoutes";
 
-export function PublicSeoHeader() {
+export function PublicSeoHeader({ locale = "en" }: { locale?: LocaleCode }) {
+  const href = (pathname: string) => getLocalizedPublicHref(pathname, locale);
+
   return (
-    <header className="sticky top-0 z-40 border-b border-white/10 bg-black/90 text-white backdrop-blur-xl">
+    <RuntimePublicLocalization locale={locale} scopes={["core"]}>
+      <header className="sticky top-0 z-40 border-b border-white/10 bg-black/90 text-white backdrop-blur-xl">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4">
-        <Link href="/" className="flex min-w-0 items-center gap-3" aria-label="MG AutoTech home">
+        <Link href={href("/")} className="flex min-w-0 items-center gap-3" aria-label="MG AutoTech home">
           <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-red-800/50 bg-[#111]">
             <Cpu className="h-6 w-6 text-red-500" aria-hidden="true" />
           </span>
@@ -18,15 +24,15 @@ export function PublicSeoHeader() {
           aria-label="Primary navigation"
           className="hidden items-center gap-3 text-[13px] font-bold text-zinc-300 lg:flex xl:gap-4 [&_a]:whitespace-nowrap"
         >
-          <Link href="/file-service" className="hover:text-white">File service</Link>
-          <Link href="/services" className="hover:text-white">Services</Link>
-          <Link href="/how-it-works" className="hover:text-white">How it works</Link>
-          <Link href="/brands" className="hover:text-white">Vehicle brands</Link>
-          <Link href="/ecu-platforms" className="hover:text-white">ECU platforms</Link>
-          <Link href="/workshop-guides" className="hover:text-white">Workshop guides</Link>
-          <Link href="/tools" className="hover:text-white">Workshop tools</Link>
-          <Link href="/about" className="hover:text-white">About</Link>
-          <Link href="/contact" className="hover:text-white">Contact</Link>
+          <Link href={href("/file-service")} className="hover:text-white">File service</Link>
+          <Link href={href("/services")} className="hover:text-white">Services</Link>
+          <Link href={href("/how-it-works")} className="hover:text-white">How it works</Link>
+          <Link href={href("/brands")} className="hover:text-white">Vehicle brands</Link>
+          <Link href={href("/ecu-platforms")} className="hover:text-white">ECU platforms</Link>
+          <Link href={href("/workshop-guides")} className="hover:text-white">Workshop guides</Link>
+          <Link href={href("/tools")} className="hover:text-white">Workshop tools</Link>
+          <Link href={href("/about")} className="hover:text-white">About</Link>
+          <Link href={href("/contact")} className="hover:text-white">Contact</Link>
         </nav>
         <div className="flex items-center gap-2">
           <Link
@@ -41,6 +47,7 @@ export function PublicSeoHeader() {
           <Link href="/new-request" className="rounded-lg bg-[#b1121b] px-3 py-2.5 text-sm font-black hover:bg-[#c91824] sm:px-4"><span className="sm:hidden">Request</span><span className="hidden sm:inline">Start request</span></Link>
         </div>
       </div>
-    </header>
+      </header>
+    </RuntimePublicLocalization>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type DragEvent } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState, type DragEvent } from "react";
 import {
   Activity,
   AlertTriangle,
@@ -29,6 +29,7 @@ import {
   type LogStudioChannelKind,
   type LogStudioChannelSummary,
   type LogStudioRow,
+  type LogStudioResultMessage,
   type LogStudioUnit,
 } from "@/lib/logAnalysisStudio";
 import { analyzeLogStudioInBrowser } from "@/lib/analyzeLogStudioInBrowser";
@@ -42,6 +43,38 @@ import {
   buildDeterministicLogAnalyzerFallback,
   projectLogAnalyzerResponse,
 } from "@/lib/logAnalyzer";
+import {
+  logStudioAnalysisErrorT,
+  logStudioChannelKindT,
+  logStudioMessageT,
+  logStudioNumberLocale,
+  logStudioQualityT,
+  logStudioT,
+  type LogStudioTranslationKey,
+  type LogStudioTranslationParams,
+} from "@/lib/i18n/log-analysis-studio-translations";
+import type { LocaleCode } from "@/lib/i18nConfig";
+import { useActiveLocale } from "@/lib/useActiveLocale";
+
+/**
+ * English source-copy contract. These assertions remain here for the existing
+ * local-only safety tests; rendered copy comes from the typed locale catalog.
+ *
+ * No upload, cloud storage or request is created.
+ * Included with your customer account; no credits are used.
+ * onClick={onDemo} Try synthetic demo
+ * The studio is ready for a real log.
+ * Synthetic demonstration data—never a real vehicle result.
+ * role="tablist" aria-label="Log analysis view"
+ * label="Overview" label="Channels" label="Data rows" Row inspector
+ * label="Estimated peak power" label="Highest logged torque" label="Engine-speed window"
+ * Requires one unambiguous RPM channel and one actual engine-torque channel with a known unit
+ * Requested, non-engine, ambiguous or unitless torque is never used for power
+ * More details · Highest logged EGT · EGR signal observation · Every retained numeric channel
+ * axisTickLabel(analysis, ratio) · detected time, RPM or explicit sample axis
+ * {analysis.quality.label} structure · Capture structure
+ * Descriptive log review—not a dyno or diagnosis.
+ */
 
 const emptyAnalysis = analyzeLogStudio("");
 const maxSelectedChannels = 3;
@@ -52,6 +85,25 @@ const studioChartPlot = { x: 56, y: 32, width: 828, height: 274 };
 
 type StudioState = "idle" | "reading" | "ready" | "error";
 type StudioView = "overview" | "channels" | "data";
+type StudioError =
+  | { kind: "message"; message: LogStudioResultMessage }
+  | { kind: "analysis"; source?: string | null }
+  | {
+      kind: "translation";
+      key: LogStudioTranslationKey;
+      params?: LogStudioTranslationParams;
+    };
+
+const StudioLocaleContext = createContext<LocaleCode>("en");
+
+function useStudioI18n() {
+  const locale = useContext(StudioLocaleContext);
+  return {
+    locale,
+    t: (key: LogStudioTranslationKey, params?: LogStudioTranslationParams) =>
+      logStudioT(locale, key, params),
+  };
+}
 
 type VehicleContext = {
   brand: string;
@@ -65,35 +117,6 @@ const emptyVehicleContext: VehicleContext = {
   model: "",
   engine: "",
   ecuType: "",
-};
-
-const channelKindLabels: Record<LogStudioChannelKind, string> = {
-  sample: "Sample",
-  time: "Time",
-  rpm: "Engine speed",
-  torque: "Engine torque actual",
-  torque_target: "Engine torque requested",
-  boost_actual: "Boost actual",
-  boost_target: "Boost target",
-  lambda: "Lambda",
-  afr: "AFR",
-  throttle: "Throttle",
-  pedal: "Pedal",
-  iat: "Intake air temperature",
-  coolant: "Coolant temperature",
-  egt: "Exhaust gas temperature",
-  egr_actual: "EGR actual signal",
-  egr_target: "EGR requested signal",
-  dpf_pressure: "DPF pressure",
-  oil_temperature: "Oil temperature",
-  rail_actual: "Rail pressure actual",
-  rail_target: "Rail pressure target",
-  fuel_quantity: "Fuel quantity",
-  airflow: "Airflow",
-  speed: "Vehicle speed",
-  ignition: "Ignition timing",
-  voltage: "Voltage",
-  other: "Other numeric channel",
 };
 
 const preferredChannelKinds: LogStudioChannelKind[] = [
@@ -122,7 +145,7 @@ const preferredChannelKinds: LogStudioChannelKind[] = [
   "other",
 ];
 
-function buildDemoLog() {
+export function buildDemoLog() {
   const header = [
     "Time (s)",
     "Engine Speed (rpm)",
@@ -200,13 +223,24 @@ function supportsLogFile(file: File) {
   );
 }
 
-function fileError(file: File) {
-  if (!supportsLogFile(file)) return "Choose a CSV, TSV, TXT or LOG text export.";
-  if (!file.size) return "This file is empty. Choose a log with a header and numeric rows.";
+function fileError(file: File): StudioError | null {
+  if (!supportsLogFile(file)) return { kind: "translation", key: "fileTypeError" };
+  if (!file.size) return { kind: "translation", key: "fileEmptyError" };
   if (file.size > maxLogStudioCharacters) {
-    return `This local studio accepts files up to ${formatBytes(maxLogStudioCharacters)}.`;
+    return {
+      kind: "translation",
+      key: "fileSizeError",
+      params: { size: formatBytes(maxLogStudioCharacters) },
+    };
   }
-  return "";
+  return null;
+}
+
+function localizeStudioError(error: StudioError | null, locale: LocaleCode) {
+  if (!error) return "";
+  if (error.kind === "message") return logStudioMessageT(locale, error.message);
+  if (error.kind === "analysis") return logStudioAnalysisErrorT(locale, error.source);
+  return logStudioT(locale, error.key, error.params);
 }
 
 function formatBytes(bytes: number) {
@@ -215,20 +249,24 @@ function formatBytes(bytes: number) {
   return `${(bytes / 1_000).toFixed(0)} KB`;
 }
 
-function formatValue(value: number | null | undefined, decimals = 1) {
+function formatValue(value: number | null | undefined, decimals = 1, locale: LocaleCode = "en") {
   if (value === null || value === undefined || !Number.isFinite(value)) return "—";
-  return new Intl.NumberFormat("en-US", {
+  return new Intl.NumberFormat(logStudioNumberLocale(locale), {
     maximumFractionDigits: decimals,
   }).format(value);
+}
+
+function formatCount(value: number, locale: LocaleCode) {
+  return new Intl.NumberFormat(logStudioNumberLocale(locale)).format(value);
 }
 
 function displayUnit(unit: LogStudioUnit) {
   return unit.symbol ?? unit.raw ?? "";
 }
 
-function valueWithUnit(value: number | null | undefined, unit: LogStudioUnit, decimals = 1) {
+function valueWithUnit(value: number | null | undefined, unit: LogStudioUnit, decimals = 1, locale: LocaleCode = "en") {
   const suffix = displayUnit(unit);
-  return `${formatValue(value, decimals)}${suffix ? ` ${suffix}` : ""}`;
+  return `${formatValue(value, decimals, locale)}${suffix ? ` ${suffix}` : ""}`;
 }
 
 function selectInitialChannels(analysis: LogStudioAnalysis) {
@@ -250,6 +288,9 @@ function safeDownloadName(sourceName: string) {
 }
 
 export function LogAnalysisStudio() {
+  const activeLocale = useActiveLocale();
+  const t = (key: LogStudioTranslationKey, params?: LogStudioTranslationParams) =>
+    logStudioT(activeLocale, key, params);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const analysisRequestRef = useRef(0);
   const analysisAbortRef = useRef<AbortController | null>(null);
@@ -258,12 +299,13 @@ export function LogAnalysisStudio() {
   const [sourceName, setSourceName] = useState("");
   const [sourceSize, setSourceSize] = useState<number | null>(null);
   const [isDemo, setIsDemo] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState<StudioError | null>(null);
   const [view, setView] = useState<StudioView>("overview");
   const [selectedChannelIds, setSelectedChannelIds] = useState<string[]>([]);
   const [activeRowIndex, setActiveRowIndex] = useState(0);
   const [vehicle, setVehicle] = useState<VehicleContext>(emptyVehicleContext);
   const [copyStatus, setCopyStatus] = useState("");
+  const localizedError = localizeStudioError(error, activeLocale);
 
   useEffect(() => () => analysisAbortRef.current?.abort(), []);
 
@@ -316,19 +358,23 @@ export function LogAnalysisStudio() {
 
       if (next.status !== "ready") {
         setSelectedChannelIds([]);
-        setError(next.warnings[0] ?? "No usable numeric log channels were detected.");
+        setError(
+          next.warningMessages[0]
+            ? { kind: "message", message: next.warningMessages[0] }
+            : { kind: "analysis", source: next.warnings[0] }
+        );
         setState("error");
         return;
       }
 
       setSelectedChannelIds(selectInitialChannels(next));
-      setError("");
+      setError(null);
       setState("ready");
     } catch {
       if (requestId !== analysisRequestRef.current) return;
       setAnalysis(emptyAnalysis);
       setSelectedChannelIds([]);
-      setError("The local datalog analysis could not be completed in this browser.");
+      setError({ kind: "translation", key: "analysisFailedError" });
       setState("error");
     }
   };
@@ -350,7 +396,7 @@ export function LogAnalysisStudio() {
     }
 
     setState("reading");
-    setError("");
+    setError(null);
     setCopyStatus("");
     const controller = new AbortController();
     analysisAbortRef.current = controller;
@@ -361,7 +407,7 @@ export function LogAnalysisStudio() {
     } catch {
       if (requestId !== analysisRequestRef.current) return;
       setAnalysis(emptyAnalysis);
-      setError("The file could not be read in this browser. Export it again as CSV, TSV, TXT or LOG text.");
+      setError({ kind: "translation", key: "fileReadError" });
       setState("error");
     }
   };
@@ -378,7 +424,7 @@ export function LogAnalysisStudio() {
     analysisAbortRef.current = controller;
     if (inputRef.current) inputRef.current.value = "";
     setState("reading");
-    setError("");
+    setError(null);
     void analyzeText(
       buildDemoLog(),
       "Synthetic multi-channel demo.csv",
@@ -399,7 +445,7 @@ export function LogAnalysisStudio() {
     setSourceName("");
     setSourceSize(null);
     setIsDemo(false);
-    setError("");
+    setError(null);
     setView("overview");
     setSelectedChannelIds([]);
     setActiveRowIndex(0);
@@ -417,17 +463,32 @@ export function LogAnalysisStudio() {
 
   const workshopSummary = useMemo(() => {
     if (analysis.status !== "ready") return "";
+    const localizedInsights = analysis.insights.slice(0, 6).map((insight) =>
+      `${logStudioMessageT(activeLocale, insight.titleMessage)}: ${logStudioMessageT(activeLocale, insight.textMessage)}`
+    );
+    const localizedReviews = customerReview?.recommendations.slice(0, 3).map((item) =>
+      logStudioMessageT(activeLocale, item.message)
+    ) ?? [];
     const lines = [
-      "MG AutoTech · Browser-local log summary",
-      `Source: ${sourceName || "Local log"}${isDemo ? " (synthetic demonstration)" : ""}`,
-      `Structure: ${analysis.quality.label} · ${analysis.quality.score}/100 · ${analysis.source.acceptedRowCount}/${analysis.source.processedRowCount} rows retained`,
-      `Channels: ${analysis.channels.map((channel) => channel.label).join(", ")}`,
-      ...analysis.insights.slice(0, 6).map((insight) => `- ${insight.title}: ${insight.text}`),
-      ...(customerReview?.recommendations.slice(0, 3).map((item) => `- Review: ${item.text}`) ?? []),
-      "Boundary: Descriptive log review only; not a dyno result, diagnosis, calibration approval, component limit or flash-safety decision.",
+      logStudioT(activeLocale, "studio.summary.heading"),
+      isDemo
+        ? logStudioT(activeLocale, "studio.summary.sourceDemo")
+        : logStudioT(activeLocale, "studio.summary.source", { sourceName: sourceName || "Local log" }),
+      logStudioT(activeLocale, "studio.summary.structure", {
+        rows: analysis.source.acceptedRowCount,
+        channels: analysis.channels.length,
+        score: analysis.quality.score,
+        quality: logStudioQualityT(activeLocale, analysis.quality.label),
+      }),
+      logStudioT(activeLocale, "studio.summary.channels", {
+        channels: analysis.channels.map((channel) => channel.label).join(", "),
+      }),
+      ...localizedInsights.map((finding) => logStudioT(activeLocale, "studio.summary.insight", { finding })),
+      ...localizedReviews.map((review) => logStudioT(activeLocale, "studio.summary.review", { review })),
+      logStudioT(activeLocale, "studio.summary.boundary"),
     ];
     return lines.join("\n");
-  }, [analysis, customerReview, isDemo, sourceName]);
+  }, [activeLocale, analysis, customerReview, isDemo, sourceName]);
 
   const copyWorkshopSummary = async () => {
     if (!workshopSummary) return;
@@ -457,7 +518,8 @@ export function LogAnalysisStudio() {
   };
 
   return (
-    <main data-no-translate className="mg-compact-ui min-h-screen overflow-x-clip bg-[var(--mg-portal-canvas)] text-white">
+    <StudioLocaleContext.Provider value={activeLocale}>
+    <main className="mg-compact-ui min-h-screen overflow-x-clip bg-[var(--mg-portal-canvas)] text-white">
       <div className="flex min-h-screen">
         <section className="min-w-0 flex-1">
           <StudioHeader state={state} />
@@ -468,27 +530,27 @@ export function LogAnalysisStudio() {
               <div className="relative grid gap-6 xl:grid-cols-[1fr_auto] xl:items-end">
                 <div className="max-w-4xl">
                   <div className="flex flex-wrap items-center gap-2 text-xs font-black uppercase tracking-[0.2em] text-red-400">
-                    <Activity className="h-4 w-4" /> Customer Datalog Analysis Studio
+                    <Activity className="h-4 w-4" /> {t("heroEyebrow")}
                   </div>
                   <h2 className="mt-3 text-3xl font-black leading-tight sm:text-4xl xl:text-5xl">
-                    See the channels. Understand the pull.
+                    {t("heroTitle")}
                   </h2>
                   <p className="mt-4 max-w-3xl text-sm leading-7 text-zinc-400 sm:text-base">
-                    Review compatible text datalogs from any logging tool, compare actual and target traces, inspect every numeric channel and prepare a clearer workshop summary—all inside this browser tab.
+                    {t("heroDescription")}
                   </p>
                 </div>
                 <div className="grid gap-2 text-xs text-zinc-400 sm:grid-cols-2 xl:w-[26rem] xl:grid-cols-1">
                   <div className="flex items-center gap-3 rounded-2xl border border-emerald-800/35 bg-emerald-950/15 px-4 py-3">
                     <LockKeyhole className="h-4 w-4 shrink-0 text-emerald-400" />
-                    No upload, cloud storage or request is created.
+                    {t("privacyLocal")}
                   </div>
                   <div className="flex items-center gap-3 rounded-2xl border border-sky-800/35 bg-sky-950/15 px-4 py-3">
                     <ShieldCheck className="h-4 w-4 shrink-0 text-sky-400" />
-                    Included with your customer account; no credits are used.
+                    {t("includedNoCredits")}
                   </div>
                   <div className="flex items-center gap-3 rounded-2xl border border-amber-800/35 bg-amber-950/15 px-4 py-3">
                     <Gauge className="h-4 w-4 shrink-0 text-amber-400" />
-                    Descriptive log review—not a dyno or diagnosis.
+                    {t("descriptiveOnly")}
                   </div>
                 </div>
               </div>
@@ -502,7 +564,7 @@ export function LogAnalysisStudio() {
                   sourceSize={sourceSize}
                   isDemo={isDemo}
                   inputRef={inputRef}
-                  error={error}
+                  error={localizedError}
                   onFile={handleFile}
                   onDrop={handleDrop}
                   onDemo={loadDemo}
@@ -541,14 +603,16 @@ export function LogAnalysisStudio() {
         </section>
       </div>
     </main>
+    </StudioLocaleContext.Provider>
   );
 }
 
 function StudioHeader({ state }: { state: StudioState }) {
+  const { t } = useStudioI18n();
   return (
     <CustomerPortalPageHeader
-      eyebrow="Customer workspace"
-      title="Datalog Analysis Studio"
+      eyebrow={t("customerWorkspace")}
+      title={t("studioTitle")}
       icon={Activity}
       heading
       width="wide"
@@ -556,7 +620,7 @@ function StudioHeader({ state }: { state: StudioState }) {
         <div className="flex shrink-0 items-center gap-2">
           <span className="hidden items-center gap-2 rounded-xl border border-emerald-800/30 bg-emerald-950/20 px-3 py-2 text-xs font-black text-emerald-300 sm:inline-flex">
             <span className={`h-2 w-2 rounded-full ${state === "reading" ? "animate-pulse bg-amber-400" : "bg-emerald-400"}`} />
-            {state === "reading" ? "Reading locally" : "Local mode"}
+            {state === "reading" ? t("readingLocally") : t("localMode")}
           </span>
         </div>
       }
@@ -587,12 +651,13 @@ function SourcePanel({
   onDemo: () => void;
   onClear: () => void;
 }) {
+  const { locale, t } = useStudioI18n();
   return (
     <section className="overflow-hidden rounded-[1.5rem] border border-white/10 bg-[#0a0a0c] shadow-xl shadow-black/20">
       <div className="border-b border-white/10 p-5">
-        <div className="text-xs font-black uppercase tracking-[0.18em] text-red-400">01 · Source datalog</div>
-        <h3 className="mt-2 text-xl font-black">Start with a compatible text export</h3>
-        <p className="mt-2 text-xs leading-5 text-zinc-500">CSV, TSV, TXT or LOG · {formatBytes(maxLogStudioCharacters)} · up to {maxLogStudioFullRows.toLocaleString("en-US")} detailed rows within an adaptive local cell budget</p>
+        <div className="text-xs font-black uppercase tracking-[0.18em] text-red-400">{t("sourceEyebrow")}</div>
+        <h3 className="mt-2 text-xl font-black">{t("sourceTitle")}</h3>
+        <p className="mt-2 text-xs leading-5 text-zinc-500">{t("sourceLimits", { size: formatBytes(maxLogStudioCharacters), rows: formatCount(maxLogStudioFullRows, locale) })}</p>
       </div>
 
       <div className="p-4">
@@ -605,30 +670,30 @@ function SourcePanel({
             <FileSpreadsheet className="h-6 w-6" />
           </span>
           <span className="mt-4 max-w-full break-words text-sm font-black">
-            {sourceName || "Drop a log here or choose a file"}
+            {sourceName ? <span translate="no" data-no-translate>{sourceName}</span> : t("dropOrChoose")}
           </span>
           <span className="mt-1 text-xs leading-5 text-zinc-500">
-            {isDemo ? "Synthetic demonstration data—never a real vehicle result." : sourceSize !== null ? `${formatBytes(sourceSize)} · processed in this tab` : "Headers and units are detected automatically."}
+            {isDemo ? t("syntheticNotice") : sourceSize !== null ? t("processedHere", { size: formatBytes(sourceSize) }) : t("autoDetect")}
           </span>
           <span className="mt-4 inline-flex min-h-10 items-center rounded-xl bg-[#b1121b] px-4 text-xs font-black shadow-lg shadow-red-950/30">
-            <Upload className="mr-2 h-4 w-4" /> Choose log
+            <Upload className="mr-2 h-4 w-4" /> {t("chooseLog")}
           </span>
           <input
             ref={inputRef}
             type="file"
             accept=".csv,.tsv,.txt,.log,text/csv,text/plain,text/tab-separated-values"
             disabled={state === "reading"}
-            aria-label="Choose a local automotive datalog file"
+            aria-label={t("chooseLogAria")}
             onChange={(event) => void onFile(event.target.files?.[0] ?? null)}
             className="sr-only"
           />
         </label>
 
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-          <button type="button" onClick={onDemo} disabled={state === "reading"} className="text-xs font-black text-zinc-300 transition hover:text-white disabled:text-zinc-700">Try synthetic demo</button>
+          <button type="button" onClick={onDemo} disabled={state === "reading"} className="text-xs font-black text-zinc-300 transition hover:text-white disabled:text-zinc-700">{t("tryDemo")}</button>
           {state !== "idle" && (
             <button type="button" onClick={onClear} className="inline-flex items-center text-xs font-black text-zinc-500 transition hover:text-white">
-              <RotateCcw className="mr-2 h-3.5 w-3.5" /> Clear local data
+              <RotateCcw className="mr-2 h-3.5 w-3.5" /> {t("clearLocal")}
             </button>
           )}
         </div>
@@ -644,11 +709,12 @@ function SourcePanel({
 }
 
 function VehicleContextPanel({ vehicle, onChange }: { vehicle: VehicleContext; onChange: (value: VehicleContext) => void }) {
+  const { t } = useStudioI18n();
   const fields: Array<{ key: keyof VehicleContext; label: string; placeholder: string }> = [
-    { key: "brand", label: "Brand", placeholder: "e.g. BMW" },
-    { key: "model", label: "Model", placeholder: "e.g. 330d" },
-    { key: "engine", label: "Engine", placeholder: "e.g. B57" },
-    { key: "ecuType", label: "ECU", placeholder: "e.g. MD1CS001" },
+    { key: "brand", label: t("brand"), placeholder: t("exampleBrand") },
+    { key: "model", label: t("model"), placeholder: t("exampleModel") },
+    { key: "engine", label: t("engine"), placeholder: t("exampleEngine") },
+    { key: "ecuType", label: t("ecu"), placeholder: t("exampleEcu") },
   ];
 
   return (
@@ -656,8 +722,8 @@ function VehicleContextPanel({ vehicle, onChange }: { vehicle: VehicleContext; o
       <div className="flex items-start gap-3">
         <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-sky-300" />
         <div>
-          <h3 className="text-sm font-black">Optional vehicle context</h3>
-          <p className="mt-1 text-xs leading-5 text-zinc-500">Used only to make the local review checklist clearer. Nothing is submitted.</p>
+          <h3 className="text-sm font-black">{t("vehicleTitle")}</h3>
+          <p className="mt-1 text-xs leading-5 text-zinc-500">{t("vehicleHelp")}</p>
         </div>
       </div>
       <div className="mt-4 grid grid-cols-2 gap-2">
@@ -679,40 +745,42 @@ function VehicleContextPanel({ vehicle, onChange }: { vehicle: VehicleContext; o
 }
 
 function InputLimitsPanel() {
+  const { locale, t } = useStudioI18n();
   return (
     <section className="rounded-[1.5rem] border border-white/10 bg-white/[0.025] p-5">
-      <div className="text-xs font-black uppercase tracking-[0.16em] text-zinc-500">Supported structure</div>
+      <div className="text-xs font-black uppercase tracking-[0.16em] text-zinc-500">{t("supportedStructure")}</div>
       <div className="mt-3 grid grid-cols-3 gap-2 text-center">
-        <div className="rounded-xl bg-black/25 p-3"><div className="text-lg font-black">{maxLogStudioFullRows.toLocaleString("en-US")}</div><div className="mt-1 text-[0.62rem] font-bold text-zinc-600">detailed rows</div></div>
-        <div className="rounded-xl bg-black/25 p-3"><div className="text-lg font-black">{maxLogStudioChannels}</div><div className="mt-1 text-[0.62rem] font-bold text-zinc-600">channels</div></div>
-        <div className="rounded-xl bg-black/25 p-3"><div className="text-lg font-black">3</div><div className="mt-1 text-[0.62rem] font-bold text-zinc-600">overlays</div></div>
+        <div className="rounded-xl bg-black/25 p-3"><div className="text-lg font-black">{formatCount(maxLogStudioFullRows, locale)}</div><div className="mt-1 text-[0.62rem] font-bold text-zinc-600">{t("detailedRows")}</div></div>
+        <div className="rounded-xl bg-black/25 p-3"><div className="text-lg font-black">{maxLogStudioChannels}</div><div className="mt-1 text-[0.62rem] font-bold text-zinc-600">{t("channels")}</div></div>
+        <div className="rounded-xl bg-black/25 p-3"><div className="text-lg font-black">3</div><div className="mt-1 text-[0.62rem] font-bold text-zinc-600">{t("overlays")}</div></div>
       </div>
-      <p className="mt-3 text-[0.68rem] leading-5 text-zinc-600">Wide logs are row-bounded to a {maxLogStudioCells.toLocaleString("en-US")}-cell local processing budget so mobile browsers remain responsive.</p>
-      <p className="mt-3 text-[0.7rem] leading-5 text-zinc-600">Comma, semicolon and tab delimiters, quoted fields and decimal-comma values are supported.</p>
+      <p className="mt-3 text-[0.68rem] leading-5 text-zinc-600">{t("wideBudget", { cells: formatCount(maxLogStudioCells, locale) })}</p>
+      <p className="mt-3 text-[0.7rem] leading-5 text-zinc-600">{t("delimiterHelp")}</p>
     </section>
   );
 }
 
 function StudioEmpty({ hasError }: { hasError: boolean }) {
+  const { t } = useStudioI18n();
   return (
     <section className="flex min-h-[44rem] flex-col items-center justify-center rounded-[1.75rem] border border-white/10 bg-[#09090b] p-6 text-center shadow-xl shadow-black/20">
       <span className="relative flex h-20 w-20 items-center justify-center rounded-[1.6rem] border border-white/10 bg-white/[0.035] text-zinc-600">
         <BarChart3 className="h-9 w-9" />
         <span className="absolute -right-1 -top-1 h-3 w-3 rounded-full border-2 border-[#09090b] bg-red-500" />
       </span>
-      <div className="mt-6 text-xs font-black uppercase tracking-[0.2em] text-zinc-600">02 · Analysis workspace</div>
+      <div className="mt-6 text-xs font-black uppercase tracking-[0.2em] text-zinc-600">{t("workspaceEyebrow")}</div>
       <h3 className="mt-3 max-w-xl text-2xl font-black sm:text-3xl">
-        {hasError ? "This export needs another look." : "The studio is ready for a real log."}
+        {hasError ? t("errorTitle") : t("readyTitle")}
       </h3>
       <p className="mt-4 max-w-xl text-sm leading-7 text-zinc-500">
         {hasError
-          ? "Choose another delimited export or use the synthetic demo to confirm the supported layout. Nothing from the failed file was uploaded."
-          : "Select a file to unlock channel detection, normalized overlays, row inspection, structural quality notes and a workshop-ready summary."}
+          ? t("errorHelp")
+          : t("readyHelp")}
       </p>
       <div className="mt-7 grid w-full max-w-2xl gap-3 sm:grid-cols-3">
-        <EmptyFeature icon={<Activity />} title="Aligned channels" detail="Compare up to three logged traces." />
-        <EmptyFeature icon={<Table2 />} title="Row inspector" detail="Review the exact captured values." />
-        <EmptyFeature icon={<ShieldCheck />} title="Bounded guidance" detail="Descriptive notes with clear limits." />
+        <EmptyFeature icon={<Activity />} title={t("alignedChannels")} detail={t("compareTraces")} />
+        <EmptyFeature icon={<Table2 />} title={t("rowInspector")} detail={t("reviewExactValues")} />
+        <EmptyFeature icon={<ShieldCheck />} title={t("boundedGuidance")} detail={t("boundedDetail")} />
       </div>
     </section>
   );
@@ -729,9 +797,10 @@ function EmptyFeature({ icon, title, detail }: { icon: React.ReactNode; title: s
 }
 
 function StudioLoading() {
+  const { t } = useStudioI18n();
   return (
     <section role="status" className="min-h-[44rem] animate-pulse rounded-[1.75rem] border border-white/10 bg-[#09090b] p-5 shadow-xl shadow-black/20 sm:p-7">
-      <span className="sr-only">Reading and analyzing the selected log locally</span>
+      <span className="sr-only">{t("loadingAria")}</span>
       <div className="h-3 w-40 rounded bg-red-950/80" />
       <div className="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
         {[0, 1, 2, 3].map((item) => <div key={item} className="h-24 rounded-2xl bg-white/[0.045]" />)}
@@ -769,6 +838,7 @@ function StudioResults({
   onCopy: () => void;
   onDownload: () => void;
 }) {
+  const { locale, t } = useStudioI18n();
   const peakPower = performance?.analysis.peakPower ?? null;
   const performanceSource = useMemo(
     () => performance?.source ?? performanceSourceFromStudioAnalysis(analysis),
@@ -793,49 +863,49 @@ function StudioResults({
         <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2 text-xs font-black uppercase tracking-[0.18em] text-red-400">
-              <CheckCircle2 className="h-4 w-4" /> Analysis ready
+              <CheckCircle2 className="h-4 w-4" /> {t("analysisReady")}
             </div>
-            <h3 className="mt-2 text-2xl font-black">Complete datalog review</h3>
-            <p className="mt-2 text-xs leading-5 text-zinc-500">{analysis.channels.length} numeric channels aligned against {analysis.xAxis?.label ?? "source row"}.</p>
+            <h3 className="mt-2 text-2xl font-black">{t("completeReview")}</h3>
+            <p className="mt-2 text-xs leading-5 text-zinc-500">{t("channelsAligned", { count: formatCount(analysis.channels.length, locale), axis: analysis.xAxis?.label ?? t("sourceRow") })}</p>
           </div>
           <QualityBadge analysis={analysis} />
         </div>
 
         <div className="mt-5 grid gap-3 lg:grid-cols-3">
           <PrimaryMetric
-            label="Estimated peak power"
-            value={peakPower ? formatValue(peakPower.hp, 1) : "Not available"}
+            label={t("estimatedPeakPower")}
+            value={peakPower ? formatValue(peakPower.hp, 1, locale) : t("notAvailable")}
             unit={peakPower ? "HP" : ""}
-            detail={peakPower ? `${formatValue(peakPower.kw, 1)} kW · at ${formatValue(peakPower.rpm, 0)} rpm` : "Requires one unambiguous RPM channel and one actual engine-torque channel with a known unit"}
+            detail={peakPower ? `${formatValue(peakPower.kw, 1, locale)} kW · ${formatValue(peakPower.rpm, 0, locale)} rpm` : t("powerRequirement")}
             tone="red"
           />
           <PrimaryMetric
-            label="Highest logged torque"
-            value={loggedPeakTorqueNm !== null ? formatValue(loggedPeakTorqueNm, 0) : "Not available"}
+            label={t("highestTorque")}
+            value={loggedPeakTorqueNm !== null ? formatValue(loggedPeakTorqueNm, 0, locale) : t("notAvailable")}
             unit={loggedPeakTorqueNm !== null ? "Nm" : ""}
-            detail={loggedPeakTorqueNm !== null && torqueSummary?.max ? `${peakContext(analysis, torqueSummary, performanceSource?.rpmChannelId)} · source: ${performanceSource?.torqueLabel}` : "Requested, non-engine, ambiguous or unitless torque is never used for power"}
+            detail={loggedPeakTorqueNm !== null && torqueSummary?.max ? `${peakContext(analysis, torqueSummary, performanceSource?.rpmChannelId, locale)} · ${performanceSource?.torqueLabel}` : t("torqueExcluded")}
             tone="sky"
           />
           <PrimaryMetric
-            label="Engine-speed window"
-            value={rpmSummary?.min && rpmSummary.max ? `${formatValue(rpmSummary.min.value, 0)}–${formatValue(rpmSummary.max.value, 0)}` : "Not available"}
+            label={t("engineSpeedWindow")}
+            value={rpmSummary?.min && rpmSummary.max ? `${formatValue(rpmSummary.min.value, 0, locale)}–${formatValue(rpmSummary.max.value, 0, locale)}` : t("notAvailable")}
             unit={rpmSummary?.unit.symbol ?? ""}
-            detail={analysis.xAxis?.kind === "time" ? `Timeline uses ${analysis.xAxis.label}` : `Chart axis uses ${analysis.xAxis?.label ?? "source order"}`}
+            detail={analysis.xAxis?.kind === "time" ? t("timelineUses", { axis: analysis.xAxis.label }) : t("chartAxisUses", { axis: analysis.xAxis?.label ?? t("sourceOrder") })}
             tone="violet"
           />
         </div>
 
         <div className="mt-3 grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-white/10 bg-white/10 sm:grid-cols-3">
-          <Metric label="Rows retained" value={analysis.source.acceptedRowCount.toLocaleString("en-US")} detail={`${analysis.source.rejectedRowCount} rejected`} />
-          <Metric label="Detected channels" value={analysis.channels.length.toString()} detail={`up to ${maxLogStudioChannels} retained`} />
-          <div className="col-span-2 sm:col-span-1"><Metric label="Timeline axis" value={analysis.xAxis?.label ?? "Source order"} detail={analysis.xAxis?.synthetic ? "explicit fallback" : "uses logged values"} /></div>
+          <Metric label={t("rowsRetained")} value={formatCount(analysis.source.acceptedRowCount, locale)} detail={t("rejectedCount", { count: formatCount(analysis.source.rejectedRowCount, locale) })} />
+          <Metric label={t("detectedChannels")} value={formatCount(analysis.channels.length, locale)} detail={t("upToRetained", { count: maxLogStudioChannels })} />
+          <div className="col-span-2 sm:col-span-1"><Metric label={t("timelineAxis")} value={analysis.xAxis?.label ?? t("sourceOrder")} detail={analysis.xAxis?.synthetic ? t("explicitFallback") : t("usesLoggedValues")} /></div>
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-1 border-b border-white/10 bg-black/20 p-2" role="tablist" aria-label="Log analysis view">
-        <ViewTab value="overview" activeView={view} onView={onView} icon={<Activity />} label="Overview" />
-        <ViewTab value="channels" activeView={view} onView={onView} icon={<BarChart3 />} label="Channels" />
-        <ViewTab value="data" activeView={view} onView={onView} icon={<Table2 />} label="Data rows" />
+      <div className="grid grid-cols-3 gap-1 border-b border-white/10 bg-black/20 p-2" role="tablist" aria-label={t("viewAria")}>
+        <ViewTab value="overview" activeView={view} onView={onView} icon={<Activity />} label={t("overview")} />
+        <ViewTab value="channels" activeView={view} onView={onView} icon={<BarChart3 />} label={t("channels")} />
+        <ViewTab value="data" activeView={view} onView={onView} icon={<Table2 />} label={t("dataRows")} />
       </div>
 
       <div
@@ -869,6 +939,7 @@ function StudioResults({
 }
 
 function QualityBadge({ analysis }: { analysis: LogStudioAnalysis }) {
+  const { locale, t } = useStudioI18n();
   const tone = analysis.quality.label === "strong"
     ? "border-emerald-800/45 bg-emerald-950/20 text-emerald-300"
     : analysis.quality.label === "usable"
@@ -876,7 +947,7 @@ function QualityBadge({ analysis }: { analysis: LogStudioAnalysis }) {
       : "border-red-800/45 bg-red-950/20 text-red-300";
   return (
     <span className={`inline-flex shrink-0 items-center gap-2 self-start rounded-full border px-3 py-2 text-[0.68rem] font-black uppercase tracking-[0.12em] ${tone}`}>
-      <ShieldCheck className="h-4 w-4" /> {analysis.quality.label} structure · {analysis.quality.score}/100
+      <ShieldCheck className="h-4 w-4" /> {logStudioQualityT(locale, analysis.quality.label)} {t("structure")} · {analysis.quality.score}/100
     </span>
   );
 }
@@ -1001,6 +1072,7 @@ function OverviewView({
 }
 
 function ChannelToggleBar({ analysis, selectedChannelIds, onToggle, compact = false }: { analysis: LogStudioAnalysis; selectedChannelIds: string[]; onToggle: (channelId: string) => void; compact?: boolean }) {
+  const { locale, t } = useStudioI18n();
   const visibleChannels = compact
     ? analysis.channels.filter(
         (channel, index) => index < 10 || selectedChannelIds.includes(channel.id)
@@ -1010,10 +1082,10 @@ function ChannelToggleBar({ analysis, selectedChannelIds, onToggle, compact = fa
     <section className={compact ? "" : "rounded-2xl border border-white/10 bg-black/20 p-4"}>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <div className="text-xs font-black uppercase tracking-[0.15em] text-zinc-500">Chart overlays</div>
-          {!compact && <p className="mt-1 text-xs text-zinc-600">Choose up to three channels. Each trace uses its own observed range.</p>}
+          <div className="text-xs font-black uppercase tracking-[0.15em] text-zinc-500">{t("chartOverlays")}</div>
+          {!compact && <p className="mt-1 text-xs text-zinc-600">{t("chooseThree")}</p>}
         </div>
-        <span className="rounded-full border border-white/10 bg-white/[0.035] px-3 py-1 text-[0.68rem] font-black text-zinc-400">{selectedChannelIds.length}/{maxSelectedChannels} selected</span>
+        <span className="rounded-full border border-white/10 bg-white/[0.035] px-3 py-1 text-[0.68rem] font-black text-zinc-400">{t("selectedCount", { current: formatCount(selectedChannelIds.length, locale), maximum: maxSelectedChannels })}</span>
       </div>
       <div className="mt-3 flex flex-wrap gap-2">
         {visibleChannels.map((channel) => {
@@ -1030,14 +1102,14 @@ function ChannelToggleBar({ analysis, selectedChannelIds, onToggle, compact = fa
               className={`inline-flex min-h-9 shrink-0 items-center gap-2 rounded-full border px-3 text-[0.68rem] font-black transition disabled:cursor-not-allowed disabled:opacity-35 ${selected ? "border-white/20 bg-white/10 text-white" : "border-white/10 bg-black/20 text-zinc-500 hover:text-white"}`}
             >
               <span className="h-2 w-2 rounded-full" style={{ backgroundColor: selected ? chartColors[selectedIndex] : "#52525b" }} />
-              {channel.label}
+              <span translate="no" data-no-translate>{channel.label}</span>
             </button>
           );
         })}
       </div>
       {compact && visibleChannels.length < analysis.channels.length && (
         <p className="mt-2 text-[0.68rem] leading-5 text-zinc-600">
-          {analysis.channels.length - visibleChannels.length} more channels are available in the Channels tab and More details.
+          {t("moreChannels", { count: formatCount(analysis.channels.length - visibleChannels.length, locale) })}
         </p>
       )}
     </section>
@@ -1045,6 +1117,7 @@ function ChannelToggleBar({ analysis, selectedChannelIds, onToggle, compact = fa
 }
 
 function StudioChart({ analysis, selectedChannelIds, activeRowIndex, onActiveRow }: { analysis: LogStudioAnalysis; selectedChannelIds: string[]; activeRowIndex: number; onActiveRow: (index: number) => void }) {
+  const { locale, t } = useStudioI18n();
   const selected = useMemo(() => selectedChannelIds.flatMap((id) => {
     const channel = analysis.channels.find((item) => item.id === id);
     const summary = analysis.summaries.find((item) => item.channelId === id);
@@ -1070,10 +1143,10 @@ function StudioChart({ analysis, selectedChannelIds, activeRowIndex, onActiveRow
     <section className="min-w-0 overflow-hidden rounded-2xl border border-white/10 bg-black/30">
       <div className="flex flex-col gap-3 border-b border-white/10 p-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <div className="text-xs font-black uppercase tracking-[0.15em] text-zinc-500">Normalized trend view</div>
-          <h4 className="mt-1 text-sm font-black">Aligned time / RPM traces</h4>
+          <div className="text-xs font-black uppercase tracking-[0.15em] text-zinc-500">{t("normalizedTrend")}</div>
+          <h4 className="mt-1 text-sm font-black">{t("alignedTraces")}</h4>
         </div>
-        <div className="text-[0.68rem] leading-5 text-zinc-600 sm:max-w-xs sm:text-right">Visual comparison only. Every selected channel uses its own minimum and maximum scale.</div>
+        <div className="text-[0.68rem] leading-5 text-zinc-600 sm:max-w-xs sm:text-right">{t("visualOnly")}</div>
       </div>
 
       {selected.length ? (
@@ -1081,8 +1154,8 @@ function StudioChart({ analysis, selectedChannelIds, activeRowIndex, onActiveRow
           <div className="overflow-x-auto">
             <div className="min-w-[42rem] sm:min-w-0">
             <svg viewBox={`0 0 ${width} ${height}`} className="w-full" role="img" aria-labelledby="studio-chart-title studio-chart-description">
-              <title id="studio-chart-title">Normalized multi-channel log chart</title>
-              <desc id="studio-chart-description">Up to three selected log channels plotted against the detected time, RPM or explicit sample axis, each normalized to its own observed range.</desc>
+              <title id="studio-chart-title">{t("chartTitle")}</title>
+              <desc id="studio-chart-description">{t("chartDescription")}</desc>
               <rect x={plot.x} y={plot.y} width={plot.width} height={plot.height} rx="16" fill="#08080a" stroke="#27272a" />
               {[0, 0.25, 0.5, 0.75, 1].map((ratio) => {
                 const y = plot.y + plot.height * ratio;
@@ -1093,7 +1166,7 @@ function StudioChart({ analysis, selectedChannelIds, activeRowIndex, onActiveRow
                 return (
                   <g key={ratio}>
                     <line x1={x} x2={x} y1={plot.y} y2={plot.y + plot.height} stroke="#18181b" strokeWidth="1" />
-                    <text x={x} y={plot.y + plot.height + 28} textAnchor={ratio === 0 ? "start" : ratio === 1 ? "end" : "middle"} fill="#71717a" fontSize="13">{axisTickLabel(analysis, ratio)}</text>
+                    <text x={x} y={plot.y + plot.height + 28} textAnchor={ratio === 0 ? "start" : ratio === 1 ? "end" : "middle"} fill="#71717a" fontSize="13">{axisTickLabel(analysis, ratio, locale)}</text>
                   </g>
                 );
               })}
@@ -1115,18 +1188,18 @@ function StudioChart({ analysis, selectedChannelIds, activeRowIndex, onActiveRow
                   <circle cx={activeX} cy={plot.y + plot.height + 2} r="5" fill="#ffffff" />
                 </>
               )}
-              <text x={plot.x} y="19" fill="#52525b" fontSize="12" fontWeight="800">100% OF EACH OBSERVED RANGE</text>
-              <text x={plot.x + plot.width} y="19" textAnchor="end" fill="#52525b" fontSize="12" fontWeight="800">{analysis.xAxis?.synthetic ? "SOURCE ORDER" : "LOGGED AXIS"} · {analysis.xAxis?.label.toUpperCase()}</text>
+              <text x={plot.x} y="19" fill="#52525b" fontSize="12" fontWeight="800">{t("observedRangeUpper")}</text>
+              <text x={plot.x + plot.width} y="19" textAnchor="end" fill="#52525b" fontSize="12" fontWeight="800">{analysis.xAxis?.synthetic ? t("sourceOrderUpper") : t("loggedAxisUpper")} · {analysis.xAxis?.label.toUpperCase()}</text>
             </svg>
 
               <label className="mt-2 block">
-                <span className="sr-only">Inspect a retained log row</span>
+                <span className="sr-only">{t("inspectRowAria")}</span>
                 <input
                   type="range"
                   min={0}
                   max={1_000}
                   value={scrubberValue}
-                  aria-valuetext={activeRow ? `${axisRowLabel(activeRow, analysis, true)}, source row ${activeRow.rowNumber}` : "No retained row"}
+                  aria-valuetext={activeRow ? `${axisRowLabel(activeRow, analysis, true, locale)}, ${t("sourceRow")} ${activeRow.rowNumber}` : t("noRetainedRow")}
                   onChange={(event) => onActiveRow(nearestRowIndexForAxisRatio(Number(event.target.value) / 1_000, analysis))}
                   className="h-2 w-full cursor-ew-resize accent-red-600"
                 />
@@ -1136,18 +1209,18 @@ function StudioChart({ analysis, selectedChannelIds, activeRowIndex, onActiveRow
 
           <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
             <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
-              <div className="text-[0.62rem] font-black uppercase tracking-[0.12em] text-zinc-600">Inspector</div>
-              <div className="mt-1 text-sm font-black">{activeRow ? axisRowLabel(activeRow, analysis, true) : "—"}</div>
-              <div className="mt-1 text-[0.68rem] text-zinc-600">source row {activeRow?.rowNumber ?? "—"}</div>
+              <div className="text-[0.62rem] font-black uppercase tracking-[0.12em] text-zinc-600">{t("inspector")}</div>
+              <div className="mt-1 text-sm font-black">{activeRow ? axisRowLabel(activeRow, analysis, true, locale) : "—"}</div>
+              <div className="mt-1 text-[0.68rem] text-zinc-600">{t("sourceRow")} {activeRow?.rowNumber ?? "—"}</div>
             </div>
             {selected.map(({ channel }, index) => (
               <div key={channel.id} className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
                 <div className="flex min-w-0 items-center gap-2 text-[0.62rem] font-black uppercase tracking-[0.1em] text-zinc-600">
                   <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: chartColors[index] }} />
-                  <span className="truncate">{channel.label}</span>
+                  <span className="truncate" translate="no" data-no-translate>{channel.label}</span>
                 </div>
-                <div className="mt-1 truncate text-sm font-black" title={valueWithUnit(activeRow?.values[channel.id], channel.unit, 3)}>{valueWithUnit(activeRow?.values[channel.id], channel.unit, 3)}</div>
-                <div className="mt-1 text-[0.68rem] text-zinc-600">{channelKindLabels[channel.kind]}</div>
+                <div className="mt-1 truncate text-sm font-black" title={valueWithUnit(activeRow?.values[channel.id], channel.unit, 3, locale)}>{valueWithUnit(activeRow?.values[channel.id], channel.unit, 3, locale)}</div>
+                <div className="mt-1 text-[0.68rem] text-zinc-600">{logStudioChannelKindT(locale, channel.kind)}</div>
               </div>
             ))}
           </div>
@@ -1156,7 +1229,7 @@ function StudioChart({ analysis, selectedChannelIds, activeRowIndex, onActiveRow
             {selected.map(({ channel, summary }, index) => (
               <span key={channel.id} className="inline-flex items-center gap-2">
                 <span className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: chartColors[index] }} />
-                <strong className="text-zinc-300">{channel.label}</strong> {valueWithUnit(summary.min?.value, channel.unit, 2)}–{valueWithUnit(summary.max?.value, channel.unit, 2)}
+                <strong className="text-zinc-300" translate="no" data-no-translate>{channel.label}</strong> {valueWithUnit(summary.min?.value, channel.unit, 2, locale)}–{valueWithUnit(summary.max?.value, channel.unit, 2, locale)}
               </span>
             ))}
           </div>
@@ -1164,19 +1237,19 @@ function StudioChart({ analysis, selectedChannelIds, activeRowIndex, onActiveRow
       ) : (
         <div className="flex min-h-80 flex-col items-center justify-center p-6 text-center">
           <Activity className="h-8 w-8 text-zinc-700" />
-          <h4 className="mt-4 text-sm font-black">Choose at least one chart overlay</h4>
-          <p className="mt-2 text-xs text-zinc-600">Use the channel buttons above to add up to three traces.</p>
+          <h4 className="mt-4 text-sm font-black">{t("chooseOverlay")}</h4>
+          <p className="mt-2 text-xs text-zinc-600">{t("chooseOverlayHelp")}</p>
         </div>
       )}
     </section>
   );
 }
 
-function axisRowLabel(row: LogStudioRow | undefined, analysis: LogStudioAnalysis, detailed = false) {
+function axisRowLabel(row: LogStudioRow | undefined, analysis: LogStudioAnalysis, detailed = false, locale: LocaleCode = "en") {
   if (!row || !analysis.xAxis) return "—";
-  if (analysis.xAxis.synthetic || !analysis.xAxis.channelId) return detailed ? `Sample ${row.rowNumber}` : row.rowNumber.toString();
+  if (analysis.xAxis.synthetic || !analysis.xAxis.channelId) return detailed ? `${logStudioT(locale, "sample")} ${row.rowNumber}` : row.rowNumber.toString();
   const value = row.values[analysis.xAxis.channelId];
-  const label = valueWithUnit(value, analysis.xAxis.unit, detailed ? 3 : 0);
+  const label = valueWithUnit(value, analysis.xAxis.unit, detailed ? 3 : 0, locale);
   return detailed ? `${analysis.xAxis.label}: ${label}` : label;
 }
 
@@ -1251,14 +1324,14 @@ function nearestRowIndexForAxisRatio(targetRatio: number, analysis: LogStudioAna
   return nearestIndex;
 }
 
-function axisTickLabel(analysis: LogStudioAnalysis, ratio: number) {
+function axisTickLabel(analysis: LogStudioAnalysis, ratio: number, locale: LocaleCode = "en") {
   const range = axisRange(analysis);
   if (!range || !analysis.xAxis) {
     const rowIndex = Math.round((analysis.rows.length - 1) * ratio);
-    return analysis.xAxis?.synthetic ? `Sample ${rowIndex + 1}` : rowIndex + 1;
+    return analysis.xAxis?.synthetic ? `${logStudioT(locale, "sample")} ${rowIndex + 1}` : rowIndex + 1;
   }
   const value = range.min + (range.max - range.min) * ratio;
-  return valueWithUnit(value, analysis.xAxis.unit, analysis.xAxis.kind === "time" ? 2 : 0);
+  return valueWithUnit(value, analysis.xAxis.unit, analysis.xAxis.kind === "time" ? 2 : 0, locale);
 }
 
 function representativeRowIndexes(length: number, limit = 1_500) {
@@ -1312,14 +1385,15 @@ export function channelPath(analysis: LogStudioAnalysis, channel: LogStudioChann
 }
 
 function InsightPanel({ analysis }: { analysis: LogStudioAnalysis }) {
+  const { locale, t } = useStudioI18n();
   return (
     <section className="rounded-2xl border border-white/10 bg-white/[0.025] p-4">
-      <div className="text-xs font-black uppercase tracking-[0.15em] text-red-400">Detected observations</div>
+      <div className="text-xs font-black uppercase tracking-[0.15em] text-red-400">{t("detectedObservations")}</div>
       <div className="mt-3 space-y-3">
         {analysis.insights.slice(0, 5).map((insight) => (
           <article key={insight.id} className={`border-l-2 pl-3 ${insight.severity === "caution" ? "border-amber-500" : "border-sky-500"}`}>
-            <h5 className="text-xs font-black text-zinc-200">{insight.title}</h5>
-            <p className="mt-1 text-[0.7rem] leading-5 text-zinc-500">{insight.text}</p>
+            <h5 className="text-xs font-black text-zinc-200">{logStudioMessageT(locale, insight.titleMessage)}</h5>
+            <p className="mt-1 text-[0.7rem] leading-5 text-zinc-500">{logStudioMessageT(locale, insight.textMessage)}</p>
           </article>
         ))}
       </div>
@@ -1330,9 +1404,10 @@ function InsightPanel({ analysis }: { analysis: LogStudioAnalysis }) {
 export function peakContext(
   analysis: LogStudioAnalysis,
   summary: LogStudioChannelSummary | undefined,
-  preferredRpmChannelId?: string
+  preferredRpmChannelId?: string,
+  locale: LocaleCode = "en"
 ) {
-  if (!summary?.max) return "No peak context available";
+  if (!summary?.max) return logStudioT(locale, "noPeakContext");
   const row = analysis.rows.find((item) => item.rowNumber === summary.max?.rowNumber);
   if (!row) return summary.max.xLabel;
   const contexts = (["time", "rpm"] as const).flatMap((kind) => {
@@ -1360,7 +1435,7 @@ export function peakContext(
       value < channelRange.min ||
       value > channelRange.max
     ) return [];
-    return [`${channel.label}: ${valueWithUnit(value, channel.unit, kind === "time" ? 3 : 0)}`];
+    return [`${channel.label}: ${valueWithUnit(value, channel.unit, kind === "time" ? 3 : 0, locale)}`];
   });
   return contexts.length ? contexts.join(" · ") : summary.max.xLabel;
 }
@@ -1388,20 +1463,25 @@ function highestEgtSummary(analysis: LogStudioAnalysis) {
 }
 
 function MoreDetailsPanel({ analysis }: { analysis: LogStudioAnalysis }) {
+  const { locale, t } = useStudioI18n();
   const egt = highestEgtSummary(analysis);
   const egr = analysis.insights.find((insight) => insight.kind === "egr_activity");
   const egrComparison = analysis.insights.find(
-    (insight) => insight.kind === "actual_target_gap" && insight.title === "EGR signal actual vs target"
+    (insight) => insight.kind === "actual_target_gap" && insight.channelIds.some(
+      (channelId) => analysis.channels.some(
+        (channel) => channel.id === channelId && (channel.kind === "egr_actual" || channel.kind === "egr_target")
+      )
+    )
   );
 
   return (
     <details className="group overflow-hidden rounded-2xl border border-white/10 bg-white/[0.025]">
       <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-4 px-4 py-3 outline-none transition hover:bg-white/[0.035] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-red-800 sm:px-5">
         <span>
-          <span className="block text-sm font-black">More details</span>
-          <span className="mt-1 block text-[0.68rem] leading-5 text-zinc-600">Every retained numeric channel, including temperatures, EGR, boost, rail pressure and unknown sensor columns.</span>
+          <span className="block text-sm font-black">{t("moreDetails")}</span>
+          <span className="mt-1 block text-[0.68rem] leading-5 text-zinc-600">{t("moreDetailsHelp")}</span>
         </span>
-        <span className="shrink-0 rounded-full border border-white/10 px-3 py-1 text-[0.68rem] font-black text-zinc-400 group-open:border-red-800/50 group-open:text-red-300">{analysis.channels.length} channels</span>
+        <span className="shrink-0 rounded-full border border-white/10 px-3 py-1 text-[0.68rem] font-black text-zinc-400 group-open:border-red-800/50 group-open:text-red-300">{t("channelCount", { count: formatCount(analysis.channels.length, locale) })}</span>
       </summary>
 
       <div className="border-t border-white/10 p-4 sm:p-5">
@@ -1409,17 +1489,17 @@ function MoreDetailsPanel({ analysis }: { analysis: LogStudioAnalysis }) {
           <div className="mb-4 grid gap-3 lg:grid-cols-2">
             {egt && (
               <DetailHighlight
-                label="Highest logged EGT"
-                value={valueWithUnit(egt.max?.value, egt.unit, 1)}
-                detail={`${egt.label} · ${peakContext(analysis, egt)} · observed value only, not a component-limit verdict`}
+                label={t("highestEgt")}
+                value={valueWithUnit(egt.max?.value, egt.unit, 1, locale)}
+                detail={t("egtObservedOnly", { label: egt.label, context: peakContext(analysis, egt, undefined, locale) })}
                 tone="amber"
               />
             )}
             {egr && (
               <DetailHighlight
-                label="EGR signal observation"
-                value={egr.title}
-                detail={`${egr.text}${egrComparison ? ` ${egrComparison.text}` : ""}`}
+                label={t("egrObservation")}
+                value={logStudioMessageT(locale, egr.titleMessage)}
+                detail={`${logStudioMessageT(locale, egr.textMessage)}${egrComparison ? ` ${logStudioMessageT(locale, egrComparison.textMessage)}` : ""}`}
                 tone={egr.severity === "caution" ? "amber" : "sky"}
               />
             )}
@@ -1451,19 +1531,20 @@ function DetailHighlight({ label, value, detail, tone }: { label: string; value:
 }
 
 function QualityPanel({ analysis }: { analysis: LogStudioAnalysis }) {
+  const { locale, t } = useStudioI18n();
   return (
     <section className="rounded-2xl border border-white/10 bg-white/[0.025] p-4">
       <div className="flex items-center justify-between gap-3">
-        <div className="text-xs font-black uppercase tracking-[0.15em] text-zinc-500">Capture structure</div>
+        <div className="text-xs font-black uppercase tracking-[0.15em] text-zinc-500">{t("captureStructure")}</div>
         <span className="text-sm font-black">{analysis.quality.score}/100</span>
       </div>
       <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-gradient-to-r from-red-600 via-amber-400 to-emerald-400" style={{ width: `${analysis.quality.score}%` }} /></div>
       <ul className="mt-3 space-y-2 text-[0.7rem] leading-5 text-zinc-500">
-        {analysis.quality.reasons.slice(0, 4).map((reason) => <li key={reason} className="flex gap-2"><span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-zinc-600" />{reason}</li>)}
+        {analysis.quality.reasonMessages.slice(0, 4).map((reason) => <li key={`${reason.key}-${JSON.stringify(reason.params)}`} className="flex gap-2"><span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-zinc-600" />{logStudioMessageT(locale, reason)}</li>)}
       </ul>
       {analysis.warnings.length > 0 && (
         <div className="mt-3 rounded-xl border border-amber-800/30 bg-amber-950/10 p-3 text-[0.7rem] leading-5 text-amber-100/80">
-          <AlertTriangle className="mr-2 inline h-3.5 w-3.5 text-amber-400" /> {analysis.warnings[0]}
+          <AlertTriangle className="mr-2 inline h-3.5 w-3.5 text-amber-400" /> {logStudioMessageT(locale, analysis.warningMessages[0])}
         </div>
       )}
     </section>
@@ -1471,31 +1552,32 @@ function QualityPanel({ analysis }: { analysis: LogStudioAnalysis }) {
 }
 
 function ReviewChecklist({ customerReview, hasPerformance }: { customerReview: ReturnType<typeof projectLogAnalyzerResponse>["customer"] | null; hasPerformance: boolean }) {
+  const { locale, t } = useStudioI18n();
   return (
     <section className="rounded-2xl border border-white/10 bg-white/[0.025] p-4 sm:p-5">
       <div className="flex items-start gap-3">
         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-sky-800/40 bg-sky-950/20 text-sky-300"><ShieldCheck className="h-5 w-5" /></span>
         <div>
-          <div className="text-xs font-black uppercase tracking-[0.14em] text-sky-300">Rule-based review checklist</div>
-          <h4 className="mt-1 text-lg font-black">What to review next</h4>
+          <div className="text-xs font-black uppercase tracking-[0.14em] text-sky-300">{t("reviewChecklist")}</div>
+          <h4 className="mt-1 text-lg font-black">{t("whatNext")}</h4>
         </div>
       </div>
       {customerReview ? (
         <>
-          <p className="mt-4 text-xs leading-6 text-zinc-400">{customerReview.summary}</p>
+          <p className="mt-4 text-xs leading-6 text-zinc-400">{logStudioMessageT(locale, customerReview.summaryMessage)}</p>
           <div className="mt-4 space-y-2">
             {customerReview.recommendations.slice(0, 4).map((item) => (
               <div key={item.id} className="flex items-start gap-2 rounded-xl border border-white/5 bg-black/20 p-3 text-xs leading-5 text-zinc-400">
-                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-sky-400" /> {item.text}
+                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-sky-400" /> {logStudioMessageT(locale, item.message)}
               </div>
             ))}
           </div>
-          <p className="mt-3 text-[0.68rem] leading-5 text-zinc-600">{customerReview.providerNotice}</p>
+          <p className="mt-3 text-[0.68rem] leading-5 text-zinc-600">{logStudioMessageT(locale, customerReview.providerNoticeMessage)}</p>
         </>
       ) : (
         <div className="mt-4 rounded-xl border border-amber-800/30 bg-amber-950/10 p-4 text-xs leading-6 text-amber-100/85">
           <Info className="mr-2 inline h-4 w-4 text-amber-400" />
-          {hasPerformance ? "The local checklist is not available for this structure." : "RPM and torque channels with recognized units are needed for the performance-specific checklist. Multi-channel observations above remain available."}
+          {hasPerformance ? t("checklistUnavailable") : t("checklistNeedsChannels")}
         </div>
       )}
     </section>
@@ -1503,30 +1585,37 @@ function ReviewChecklist({ customerReview, hasPerformance }: { customerReview: R
 }
 
 function ExportPanel({ canDownload, copyStatus, onCopy, onDownload }: { canDownload: boolean; copyStatus: string; onCopy: () => void; onDownload: () => void }) {
+  const { t } = useStudioI18n();
+  const localizedCopyStatus = copyStatus === "Workshop summary copied"
+    ? t("copySuccess")
+    : copyStatus === "Copy was blocked by this browser"
+      ? t("copyBlocked")
+      : copyStatus;
   return (
     <section className="rounded-2xl border border-white/10 bg-white/[0.025] p-4 sm:p-5">
       <div className="flex items-start gap-3">
         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-red-800/40 bg-red-950/20 text-red-300"><Clipboard className="h-5 w-5" /></span>
         <div>
-          <div className="text-xs font-black uppercase tracking-[0.14em] text-red-300">Local output</div>
-          <h4 className="mt-1 text-lg font-black">Take the review to the workshop</h4>
+          <div className="text-xs font-black uppercase tracking-[0.14em] text-red-300">{t("localOutput")}</div>
+          <h4 className="mt-1 text-lg font-black">{t("takeToWorkshop")}</h4>
         </div>
       </div>
-      <p className="mt-4 text-xs leading-6 text-zinc-500">Copy the bounded findings, or download the RPM/torque SVG when the required channels and units are available.</p>
+      <p className="mt-4 text-xs leading-6 text-zinc-500">{t("outputHelp")}</p>
       <div className="mt-4 grid gap-2 sm:grid-cols-2">
         <button type="button" onClick={onCopy} className="inline-flex min-h-11 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] px-4 text-xs font-black transition hover:bg-white/10">
-          <Clipboard className="mr-2 h-4 w-4" /> Copy summary
+          <Clipboard className="mr-2 h-4 w-4" /> {t("copySummary")}
         </button>
         <button type="button" onClick={onDownload} disabled={!canDownload} className="inline-flex min-h-11 items-center justify-center rounded-xl bg-[#b1121b] px-4 text-xs font-black transition hover:bg-[#c91824] disabled:cursor-not-allowed disabled:bg-zinc-800 disabled:text-zinc-500">
-          <Download className="mr-2 h-4 w-4" /> Download SVG
+          <Download className="mr-2 h-4 w-4" /> {t("downloadSvg")}
         </button>
       </div>
-      <p aria-live="polite" className="mt-3 min-h-5 text-[0.68rem] font-bold text-zinc-500">{copyStatus || (canDownload ? "Report uses logged RPM and torque-derived power." : "SVG unlocks only with recognized RPM and Nm channels.")}</p>
+      <p aria-live="polite" className="mt-3 min-h-5 text-[0.68rem] font-bold text-zinc-500">{localizedCopyStatus || (canDownload ? t("reportUses") : t("svgUnlocks"))}</p>
     </section>
   );
 }
 
 function ChannelsView({ analysis, selectedChannelIds, onToggleChannel }: { analysis: LogStudioAnalysis; selectedChannelIds: string[]; onToggleChannel: (channelId: string) => void }) {
+  const { locale, t } = useStudioI18n();
   return (
     <div className="space-y-5">
       <ChannelToggleBar analysis={analysis} selectedChannelIds={selectedChannelIds} onToggle={onToggleChannel} />
@@ -1538,11 +1627,11 @@ function ChannelsView({ analysis, selectedChannelIds, onToggleChannel }: { analy
       </div>
       {analysis.missingChannels.length > 0 && (
         <section className="rounded-2xl border border-white/10 bg-black/20 p-4">
-          <div className="text-xs font-black uppercase tracking-[0.14em] text-zinc-500">Not present in this export</div>
+          <div className="text-xs font-black uppercase tracking-[0.14em] text-zinc-500">{t("notPresent")}</div>
           <div className="mt-3 flex flex-wrap gap-2">
-            {analysis.missingChannels.map((channel) => <span key={channel} className="rounded-full border border-white/10 px-3 py-1.5 text-[0.68rem] font-bold text-zinc-600">{channel}</span>)}
+            {analysis.missingChannelMessages.map((channel) => <span key={channel.key} className="rounded-full border border-white/10 px-3 py-1.5 text-[0.68rem] font-bold text-zinc-600">{logStudioMessageT(locale, channel)}</span>)}
           </div>
-          <p className="mt-3 text-[0.68rem] leading-5 text-zinc-600">Missing does not mean faulty; it only means the channel was not recognized in this source file.</p>
+          <p className="mt-3 text-[0.68rem] leading-5 text-zinc-600">{t("missingNotice")}</p>
         </section>
       )}
     </div>
@@ -1550,25 +1639,26 @@ function ChannelsView({ analysis, selectedChannelIds, onToggleChannel }: { analy
 }
 
 function ChannelCard({ analysis, channel, summary, selectedIndex }: { analysis: LogStudioAnalysis; channel: LogStudioChannel; summary: LogStudioChannelSummary | undefined; selectedIndex: number }) {
+  const { locale, t } = useStudioI18n();
   return (
     <article className="min-w-0 rounded-2xl border border-white/10 bg-white/[0.025] p-4">
       <div className="flex min-w-0 items-start justify-between gap-3">
         <div className="min-w-0">
-          <div className="truncate text-sm font-black" title={channel.header}>{channel.label}</div>
-          <div className="mt-1 text-[0.65rem] font-bold uppercase tracking-[0.1em] text-zinc-600">{channelKindLabels[channel.kind]}</div>
+          <div className="truncate text-sm font-black" title={channel.header} translate="no" data-no-translate>{channel.label}</div>
+          <div className="mt-1 text-[0.65rem] font-bold uppercase tracking-[0.1em] text-zinc-600">{logStudioChannelKindT(locale, channel.kind)}</div>
         </div>
         {selectedIndex >= 0 && <span className="h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: chartColors[selectedIndex] }} />}
       </div>
       <div className="mt-4 grid grid-cols-3 gap-2">
-        <ChannelValue label="Minimum" value={valueWithUnit(summary?.min?.value, channel.unit, 2)} />
-        <ChannelValue label="Average" value={valueWithUnit(summary?.average, channel.unit, 2)} />
-        <ChannelValue label="Maximum" value={valueWithUnit(summary?.max?.value, channel.unit, 2)} />
+        <ChannelValue label={t("minimum")} value={valueWithUnit(summary?.min?.value, channel.unit, 2, locale)} />
+        <ChannelValue label={t("average")} value={valueWithUnit(summary?.average, channel.unit, 2, locale)} />
+        <ChannelValue label={t("maximum")} value={valueWithUnit(summary?.max?.value, channel.unit, 2, locale)} />
       </div>
       <div className="mt-4 flex items-center justify-between gap-3 text-[0.68rem] text-zinc-600">
-        <span>{channel.numericValueCount} numeric values</span>
-        <span>{formatValue(channel.coveragePercent, 1)}% coverage</span>
+        <span>{t("numericValues", { count: formatCount(channel.numericValueCount, locale) })}</span>
+        <span>{t("coverage", { value: formatValue(channel.coveragePercent, 1, locale) })}</span>
       </div>
-      {summary?.max && <div className="mt-2 text-[0.65rem] leading-5 text-zinc-700">Maximum at {peakContext(analysis, summary)}</div>}
+      {summary?.max && <div className="mt-2 text-[0.65rem] leading-5 text-zinc-700">{t("maximumAt", { context: peakContext(analysis, summary, undefined, locale) })}</div>}
     </article>
   );
 }
@@ -1583,29 +1673,30 @@ function ChannelValue({ label, value }: { label: string; value: string }) {
 }
 
 function DataView({ analysis }: { analysis: LogStudioAnalysis }) {
+  const { locale, t } = useStudioI18n();
   const visibleRows = analysis.rows.slice(0, 120);
   return (
     <section className="min-w-0 overflow-hidden rounded-2xl border border-white/10 bg-black/25">
       <div className="flex flex-col gap-2 border-b border-white/10 p-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <div className="text-xs font-black uppercase tracking-[0.14em] text-zinc-500">Aligned numeric rows</div>
-          <div className="mt-1 text-sm font-black">Exact retained values</div>
+          <div className="text-xs font-black uppercase tracking-[0.14em] text-zinc-500">{t("alignedRows")}</div>
+          <div className="mt-1 text-sm font-black">{t("exactValues")}</div>
         </div>
-        <span className="text-[0.68rem] font-bold text-zinc-600">Showing {visibleRows.length} of {analysis.rows.length} rows · display capped for browser performance</span>
+        <span className="text-[0.68rem] font-bold text-zinc-600">{t("showingRows", { visible: formatCount(visibleRows.length, locale), total: formatCount(analysis.rows.length, locale) })}</span>
       </div>
       <div className="max-h-[42rem] overflow-auto">
         <table className="min-w-max text-left text-xs">
           <thead className="sticky top-0 z-10 bg-[#111113] text-[0.62rem] uppercase tracking-[0.1em] text-zinc-500">
             <tr>
-              <th scope="col" className="px-3 py-3">Row</th>
-              {analysis.channels.map((channel) => <th key={channel.id} scope="col" className="max-w-44 px-3 py-3"><span className="block truncate" title={channel.header}>{channel.label}</span><span className="mt-1 block normal-case tracking-normal text-zinc-700">{displayUnit(channel.unit) || "unit not stated"}</span></th>)}
+              <th scope="col" className="px-3 py-3">{t("row")}</th>
+              {analysis.channels.map((channel) => <th key={channel.id} scope="col" className="max-w-44 px-3 py-3"><span className="block truncate" title={channel.header} translate="no" data-no-translate>{channel.label}</span><span className="mt-1 block normal-case tracking-normal text-zinc-700">{displayUnit(channel.unit) || t("unitNotStated")}</span></th>)}
             </tr>
           </thead>
           <tbody className="divide-y divide-white/5">
             {visibleRows.map((row) => (
               <tr key={row.rowNumber} className="hover:bg-white/[0.025]">
                 <th scope="row" className="px-3 py-2.5 font-black text-zinc-500">{row.rowNumber}</th>
-                {analysis.channels.map((channel) => <td key={channel.id} className="px-3 py-2.5 font-mono text-zinc-300">{formatValue(row.values[channel.id], 4)}</td>)}
+                {analysis.channels.map((channel) => <td key={channel.id} className="px-3 py-2.5 font-mono text-zinc-300">{formatValue(row.values[channel.id], 4, locale)}</td>)}
               </tr>
             ))}
           </tbody>
@@ -1616,15 +1707,16 @@ function DataView({ analysis }: { analysis: LogStudioAnalysis }) {
 }
 
 function SafetyBoundary({ analysis }: { analysis: LogStudioAnalysis }) {
-  const boundaries = analysis.safetyBoundaries.length ? analysis.safetyBoundaries : emptyAnalysis.safetyBoundaries;
+  const { locale, t } = useStudioI18n();
+  const boundaries = analysis.safetyBoundaryMessages.length ? analysis.safetyBoundaryMessages : emptyAnalysis.safetyBoundaryMessages;
   return (
     <section className="mt-5 rounded-[1.5rem] border border-white/10 bg-black/30 p-5">
       <div className="flex items-start gap-3">
         <Info className="mt-0.5 h-5 w-5 shrink-0 text-amber-400" />
         <div>
-          <div className="text-xs font-black uppercase tracking-[0.16em] text-amber-300">Analysis boundary</div>
+          <div className="text-xs font-black uppercase tracking-[0.16em] text-amber-300">{t("analysisBoundary")}</div>
           <ul className="mt-2 grid gap-2 text-[0.7rem] leading-5 text-zinc-500 lg:grid-cols-3">
-            {boundaries.map((boundary) => <li key={boundary}>{boundary}</li>)}
+            {boundaries.map((boundary) => <li key={boundary.key}>{logStudioMessageT(locale, boundary)}</li>)}
           </ul>
         </div>
       </div>

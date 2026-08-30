@@ -53,6 +53,43 @@ test("proxy falls back to accept-language when no locale cookie exists", () => {
   assert.equal(response.cookies.get("mg_locale")?.value, "fr");
 });
 
+test("fixed-language authored documents do not overwrite the visitor preference", () => {
+  const germanDocument = runProxy("/agb", {
+    acceptLanguage: "de-DE,de;q=0.9",
+    cookieLocale: "tr",
+  });
+  const englishDocument = runProxy("/privacy", {
+    acceptLanguage: "en-GB,en;q=0.9",
+    cookieLocale: "tr",
+  });
+
+  assert.equal(germanDocument.headers.get(localeHeader), "de");
+  assert.equal(englishDocument.headers.get(localeHeader), "en");
+  assert.equal(germanDocument.headers.get("x-middleware-set-cookie"), null);
+  assert.equal(englishDocument.headers.get("x-middleware-set-cookie"), null);
+  assert.equal(germanDocument.cookies.get("mg_locale"), undefined);
+  assert.equal(englishDocument.cookies.get("mg_locale"), undefined);
+});
+
+test("proxy selects the highest-ranked supported Accept-Language candidate", () => {
+  const response = runProxy("/about", {
+    acceptLanguage: "ja-JP, de-DE;q=0.9, tr-TR;q=0.8, en;q=0.7",
+  });
+
+  assert.equal(response.headers.get(localeHeader), "de");
+  assert.equal(response.cookies.get("mg_locale")?.value, "de");
+});
+
+test("proxy ignores unsupported and q=0 candidates and rejects an invalid locale cookie", () => {
+  const response = runProxy("/about", {
+    acceptLanguage: "fr-FR;q=0, xx;q=1, tr-TR;q=0.7",
+    cookieLocale: "xx",
+  });
+
+  assert.equal(response.headers.get(localeHeader), "tr");
+  assert.equal(response.cookies.get("mg_locale")?.value, "tr");
+});
+
 test("proxy excludes APIs, static assets and deterministic search discovery resources", () => {
   assert.deepEqual(config.matcher, [
     "/((?!api|_next/static|_next/image|favicon.ico|og-image.svg|opengraph-image|robots.txt|sitemap.xml|feed.xml|llms.txt|53478ab4be7faddc91a14935b2b35013051e4dfc9bb31c4a.txt).*)",

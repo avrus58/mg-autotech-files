@@ -1,9 +1,16 @@
 import Link from "next/link";
 import { ArrowRight, ChevronDown, Search, Waypoints } from "lucide-react";
+import { RuntimePublicLocalization } from "@/components/RuntimePublicLocalization";
 import { fileServiceSearchIntentGroups } from "@/lib/fileServiceSearchIntents";
+import { defaultLocale, type LocaleCode } from "@/lib/i18nConfig";
 
-export function FileServiceSearchNavigator() {
+export function FileServiceSearchNavigator({
+  locale = defaultLocale,
+}: {
+  locale?: LocaleCode;
+}) {
   return (
+    <RuntimePublicLocalization locale={locale} scopes={["core", "services"]}>
     <section
       id="file-service-search-intent-map"
       className="border-y border-white/10 bg-[#07090d] py-14"
@@ -82,14 +89,16 @@ export function FileServiceSearchNavigator() {
                         </Link>
                       </div>
 
-                      <div className="mt-4 border-t border-white/10 pt-3">
-                        <div className="text-[0.68rem] font-black uppercase tracking-[0.16em] text-zinc-600">
-                          Also described as
+                      {locale === "en" && (
+                        <div className="mt-4 border-t border-white/10 pt-3">
+                          <div className="text-[0.68rem] font-black uppercase tracking-[0.16em] text-zinc-600">
+                            Also described as
+                          </div>
+                          <p className="mt-2 text-xs leading-6 text-zinc-500">
+                            {destination.searchTerms.slice(0, 3).join(" / ")}
+                          </p>
                         </div>
-                        <p className="mt-2 text-xs leading-6 text-zinc-500">
-                          {destination.searchTerms.slice(0, 3).join(" / ")}
-                        </p>
-                      </div>
+                      )}
                     </article>
                   ))}
                 </div>
@@ -112,5 +121,6 @@ export function FileServiceSearchNavigator() {
         </div>
       </div>
     </section>
+    </RuntimePublicLocalization>
   );
 }

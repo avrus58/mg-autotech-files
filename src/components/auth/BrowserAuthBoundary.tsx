@@ -14,6 +14,8 @@ import {
   getStableSession,
   signOutLocalStable,
 } from "@/lib/authGuards";
+import { customerPortalFirstPaintT } from "@/lib/i18n/customer-portal-first-paint";
+import { useActiveLocale } from "@/lib/useActiveLocale";
 
 type AuthState =
   | "checking"
@@ -41,6 +43,9 @@ export function BrowserAuthBoundary({
   unauthenticatedPrimaryAction?: "login" | "register";
 }) {
   const pathname = usePathname();
+  const locale = useActiveLocale();
+  const firstPaintT = (source: string) =>
+    customerPortalFirstPaintT(locale, source);
   const [authState, setAuthState] = useState<AuthState>("checking");
   const authStateRef = useRef<AuthState>("checking");
   const [retryKey, setRetryKey] = useState(0);
@@ -169,7 +174,11 @@ export function BrowserAuthBoundary({
       <main className="flex min-h-screen items-center justify-center bg-[#050505] px-4 text-white">
         <div role="status" aria-live="polite" className="flex items-center gap-3 text-sm font-bold text-zinc-400">
           <Loader2 className="h-5 w-5 animate-spin text-red-500" />
-          {authState === "recovering" ? "Restoring secure session..." : "Checking secure session..."}
+          {firstPaintT(
+            authState === "recovering"
+              ? "Restoring secure session..."
+              : "Checking secure session...",
+          )}
         </div>
       </main>
     );
@@ -182,6 +191,7 @@ export function BrowserAuthBoundary({
         description={description}
         nextPath={nextPath ?? pathname ?? "/"}
         primaryAction={unauthenticatedPrimaryAction}
+        locale={locale}
       />
     );
   }
@@ -204,9 +214,13 @@ export function BrowserAuthBoundary({
       <main className="flex min-h-screen items-center justify-center bg-[#050505] px-4 text-white">
         <section className="w-full max-w-lg border-y border-white/10 py-10 text-center">
           <RefreshCcw className="mx-auto h-8 w-8 text-red-500" />
-          <h1 className="mt-5 text-2xl font-black">MG AutoTech is taking longer to respond</h1>
+          <h1 className="mt-5 text-2xl font-black">
+            {firstPaintT("MG AutoTech is taking longer to respond")}
+          </h1>
           <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-zinc-400">
-            Your account remains protected. Check your connection and try the secure session check again.
+            {firstPaintT(
+              "Your account remains protected. Check your connection and try the secure session check again.",
+            )}
           </p>
           <button
             type="button"
@@ -217,7 +231,8 @@ export function BrowserAuthBoundary({
             }}
             className="mt-6 inline-flex h-12 items-center justify-center rounded-lg bg-[#b1121b] px-5 text-sm font-black"
           >
-            <RefreshCcw className="mr-2 h-4 w-4" /> Try again
+            <RefreshCcw className="mr-2 h-4 w-4" />
+            {firstPaintT("Try again")}
           </button>
         </section>
       </main>

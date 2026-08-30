@@ -159,6 +159,35 @@ Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
 
+### MANUAL-20260830-SITE-WIDE-LOCALIZATION-COMPLETENESS [P0] Dil secicinin vaat ettiği gerçek site kapsamını tamamla
+
+Durum: Done
+
+Fingerprint: `site-i18n|global-language-switcher|excluded-and-dynamic-visible-copy|complete-runtime-and-audited-localization`
+
+Kapsam: Global dil secicinin gorundugu public, auth, musteri, widget, arac,
+hazirlik araci, DTC, datalog ve File Expert yuzeyleri 11 non-English locale icin
+tamamlandi. Admin-only operasyonlar, yazari belli sabit hukuki belgeler, ham
+musteri verisi ve ECU/teknik identifierlar bilincli olarak ceviri disinda kaldi.
+
+Sonuc: 12 locale icin sunucu ilk HTML'i, runtime/dinamik metinler,
+placeholder/aria/title alanlari, hata/loading/empty/success durumlari, locale
+tercihi ve rota gecisi ortak bir sozlesmeyle yerellestirildi. Kucuk route-bazli
+istemci kataloglari uretilerek global kataloglarin ilk yuklemeye sizmasi
+engellendi. Auth, kayit, sifre kurtarma/sifirlama, odeme sonucu ve korumali
+musteri ekranlarinda ilk boya English sizintisi kapatildi. Teknik otomotiv
+terimleri native golden testlerle korundu; ekran okuyucu icin async recovery
+sonuclari live region oldu.
+
+Dogrulama: `npm run check:i18n` PASS (12 locale, 2006/2006, temiz English
+fallback 0); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS
+(1322/1322); `npm run build -- --webpack` PASS (280/280); `npm run
+check:performance` PASS (14.6/80 KiB gzip, 3 ilk chunk); `git diff --check`
+PASS. Gercek Production build tarayicisinda DE/TR auth, register ve payment
+yuzeyleri 1366x768 ile 390x844 boyutlarinda test edildi; yatay tasma ve console
+hata 0. Bagimsiz ilk review bulgulari giderildi. Push, Preview, Production
+deploy, veritabani veya canli servis mutasyonu yapilmadi.
+
 ### MANUAL-20260830-HOMEPAGE-EXPERIENCE-REFRESH [P1] Public ana sayfayi kompakt premium musteri yolculuguna donustur
 
 Durum: Done

@@ -11,8 +11,14 @@ import {
 } from "@/lib/authCaptcha";
 import { getAuthRedirect } from "@/lib/authGuards";
 import { supabase } from "@/lib/supabaseClient";
+import { customerRuntimeExactT } from "@/lib/i18n/customer-runtime-translations";
+import { authPageFirstPaintT } from "@/lib/i18n/auth-page-first-paint";
+import { customerWorkflowExactT } from "@/lib/i18n/customer-workflow-auth-translations";
+import { useActiveLocale } from "@/lib/useActiveLocale";
 
 export default function ForgotPasswordPage() {
+  const locale = useActiveLocale();
+  const firstPaintT = (source: string) => authPageFirstPaintT(locale, source);
   const authCaptchaConfig = getPublicAuthCaptchaConfig();
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
@@ -33,10 +39,8 @@ export default function ForgotPasswordPage() {
         authCaptchaConfig,
         captchaToken
       );
-    } catch (error) {
-      setMessage(
-        error instanceof Error ? error.message : "Security verification failed."
-      );
+    } catch {
+      setMessage("Security verification failed.");
       return;
     }
 
@@ -71,7 +75,7 @@ export default function ForgotPasswordPage() {
     setLoading(false);
 
     if (error) {
-      setMessage(error.message);
+      setMessage("Password reset request could not be completed. Please try again.");
       return;
     }
 
@@ -92,25 +96,31 @@ export default function ForgotPasswordPage() {
             <div className="text-xl font-black">
               MG <span className="text-red-600">AUTOTECH</span>
             </div>
-            <div className="text-xs text-zinc-400">Password Recovery</div>
+            <div className="text-xs text-zinc-400">
+              {firstPaintT("Password Recovery")}
+            </div>
           </div>
         </Link>
 
         <div className="mb-7">
           <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-red-800/50 bg-red-950/25 px-3 py-1.5 text-xs font-black text-red-100">
             <ShieldCheck className="h-4 w-4 text-red-500" />
-            Secure reset
+            {firstPaintT("Secure reset")}
           </div>
-          <h1 className="text-4xl font-black">Forgot password?</h1>
+          <h1 className="text-4xl font-black">
+            {firstPaintT("Forgot password?")}
+          </h1>
           <p className="mt-3 text-sm leading-7 text-zinc-400">
-            Enter your account e-mail and we will send a secure password reset link.
+            {firstPaintT(
+              "Enter your account e-mail and we will send a secure password reset link."
+            )}
           </p>
         </div>
 
         <form onSubmit={handleResetRequest} className="space-y-4">
           <label className="block">
             <div className="mb-2 text-xs font-black uppercase tracking-[0.16em] text-zinc-500">
-              E-mail
+              {firstPaintT("E-mail")}
             </div>
             <div className="relative">
               <Mail className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-zinc-500" />
@@ -139,7 +149,10 @@ export default function ForgotPasswordPage() {
               role="alert"
               className="rounded-2xl border border-red-800/50 bg-red-950/30 p-4 text-sm text-red-100"
             >
-              {authCaptchaConfig.message}
+              {customerRuntimeExactT(
+                locale,
+                authCaptchaConfig.message ?? ""
+              )}
             </div>
           )}
 
@@ -153,16 +166,18 @@ export default function ForgotPasswordPage() {
             {loading ? (
               <>
                 <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                Sending link...
+                {firstPaintT("Sending link...")}
               </>
             ) : (
-              "Send reset link"
+              firstPaintT("Send reset link")
             )}
           </button>
         </form>
 
         {message && (
           <div
+            role={success ? "status" : "alert"}
+            aria-live={success ? "polite" : "assertive"}
             className={`mt-5 rounded-2xl border p-4 text-sm ${
               success
                 ? "border-green-800/50 bg-green-950/25 text-green-100"
@@ -171,7 +186,7 @@ export default function ForgotPasswordPage() {
           >
             <div className="flex gap-3">
               {success && <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-green-400" />}
-              <span>{message}</span>
+              <span>{customerWorkflowExactT(locale, message)}</span>
             </div>
           </div>
         )}
@@ -181,7 +196,7 @@ export default function ForgotPasswordPage() {
           className="mt-7 inline-flex items-center text-sm font-black text-red-400"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to login
+          {firstPaintT("Back to login")}
         </Link>
       </section>
     </main>

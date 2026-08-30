@@ -17,6 +17,43 @@ export type LogAnalyzerResponseStatus =
 
 export type LogAnalyzerConfidence = "none" | "low" | "medium" | "high";
 
+export const logAnalyzerMessageKeys = [
+  "analyzer.invalid.provideRows", "analyzer.invalid.noValidRows",
+  "analyzer.safety.guidanceOnly", "analyzer.safety.estimatedPower", "analyzer.safety.humanReview",
+  "analyzer.missing.vehicleContext", "analyzer.missing.fileIdentity", "analyzer.missing.readMethod",
+  "analyzer.missing.widerLog", "analyzer.missing.operatingContext", "analyzer.missing.requestedActualChannels",
+  "analyzer.missing.diagnosticContext", "analyzer.missing.validRows",
+  "analyzer.evidence.providerError", "analyzer.evidence.providerUnavailable", "analyzer.evidence.invalidInput",
+  "analyzer.evidence.validRows", "analyzer.evidence.rpmRange", "analyzer.evidence.torqueRange",
+  "analyzer.evidence.peaks", "analyzer.evidence.vehicleContext", "analyzer.evidence.ecuContext",
+  "analyzer.risk.providerState", "analyzer.risk.invalidInput", "analyzer.risk.torqueEstimate",
+  "analyzer.risk.dyno", "analyzer.risk.insufficientRows", "analyzer.risk.narrowRpm",
+  "analyzer.risk.missingVehicle",
+  "analyzer.recommendation.providerUnavailable", "analyzer.recommendation.provideRows",
+  "analyzer.recommendation.noAdvice", "analyzer.recommendation.collect", "analyzer.recommendation.cleanerSweep",
+  "analyzer.recommendation.dynoReview", "analyzer.recommendation.humanGate",
+  "analyzer.confidence.noRows", "analyzer.confidence.noProvider", "analyzer.confidence.deterministicCap",
+  "analyzer.confidence.dynoCap", "analyzer.confidence.providerCap", "analyzer.confidence.logDataCap",
+  "analyzer.confidence.evidenceSupported",
+  "analyzer.humanReview.providerError", "analyzer.humanReview.providerUnavailable",
+  "analyzer.humanReview.default", "analyzer.humanReview.unavailable", "analyzer.humanReview.invalid",
+  "analyzer.requiredBefore.tuneAdvice", "analyzer.requiredBefore.calibrationChanges",
+  "analyzer.requiredBefore.modExport", "analyzer.requiredBefore.checksum", "analyzer.requiredBefore.delivery",
+  "analyzer.summary.noRows", "analyzer.summary.deterministic", "analyzer.summary.providerUnavailable",
+  "analyzer.state.noLogData", "analyzer.state.providerErrorFallback",
+  "analyzer.state.providerUnavailableFallback", "analyzer.state.providerUnavailable",
+  "analyzer.state.providerSuccess", "analyzer.state.deterministicFallback",
+  "analyzer.provider.ai", "analyzer.provider.errorFallback", "analyzer.provider.unavailableFallback",
+  "analyzer.provider.unavailable", "analyzer.provider.nonAi",
+] as const;
+
+export type LogAnalyzerMessageKey = (typeof logAnalyzerMessageKeys)[number];
+export type LogAnalyzerMessage = {
+  key: LogAnalyzerMessageKey;
+  params: Readonly<Record<string, string | number>>;
+  fallback: string;
+};
+
 export type LogAnalyzerReadiness =
   | "blocked"
   | "needs_log_data"
@@ -77,6 +114,7 @@ export type LogAnalyzerNormalizedInput = {
   validRowCount: number;
   rejectedRowCount: number;
   invalidReason: string | null;
+  invalidReasonMessage: LogAnalyzerMessage | null;
 };
 
 export type LogAnalyzerRange = {
@@ -126,6 +164,7 @@ export type LogAnalyzerEvidenceItem = {
   type: LogAnalyzerEvidenceType;
   severity: LogAnalyzerSeverity;
   text: string;
+  message: LogAnalyzerMessage;
   customerSafe: true;
 };
 
@@ -143,6 +182,7 @@ export type LogAnalyzerRiskFlag = {
   kind: LogAnalyzerRiskFlagKind;
   severity: LogAnalyzerSeverity;
   text: string;
+  message: LogAnalyzerMessage;
   requiresHumanReview: boolean;
   customerSafe: true;
 };
@@ -159,6 +199,7 @@ export type LogAnalyzerRecommendation = {
   category: LogAnalyzerRecommendationCategory;
   priority: "normal" | "high";
   text: string;
+  message: LogAnalyzerMessage;
   requiresHumanReview: boolean;
   customerSafe: true;
 };
@@ -167,13 +208,16 @@ export type LogAnalyzerConfidenceReason = {
   id: string;
   confidence: LogAnalyzerConfidence;
   text: string;
+  message: LogAnalyzerMessage;
   customerSafe: true;
 };
 
 export type LogAnalyzerHumanReview = {
   required: true;
   reason: string;
+  reasonMessage: LogAnalyzerMessage;
   requiredBefore: string[];
+  requiredBeforeMessages: LogAnalyzerMessage[];
 };
 
 export type LogAnalyzerResponse = {
@@ -187,13 +231,16 @@ export type LogAnalyzerResponse = {
   confidenceReasons: LogAnalyzerConfidenceReason[];
   normalizedInput: LogAnalyzerNormalizedInput;
   summary: string;
+  summaryMessage: LogAnalyzerMessage;
   logSummary: LogAnalyzerSafeSummary;
   evidence: LogAnalyzerEvidenceItem[];
   riskFlags: LogAnalyzerRiskFlag[];
   recommendations: LogAnalyzerRecommendation[];
   missingInformation: string[];
+  missingInformationMessages: LogAnalyzerMessage[];
   humanReview: LogAnalyzerHumanReview;
   safetyBoundaries: string[];
+  safetyBoundaryMessages: LogAnalyzerMessage[];
   blockedProductionActions: string[];
 };
 

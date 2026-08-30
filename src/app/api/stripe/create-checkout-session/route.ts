@@ -18,6 +18,7 @@ import {
   STRIPE_CREDIT_PURCHASE_PRODUCT,
   stripeCreditPurchaseAbuseSubject,
 } from "@/lib/stripePaymentSecurity";
+import { creditPurchaseErrorCodes } from "@/lib/creditPurchaseErrorCodes";
 
 function stripeObjectId(value: string | { id: string } | null | undefined) {
   return typeof value === "string" ? value : value?.id ?? null;
@@ -33,14 +34,14 @@ export async function POST(request: Request) {
     const auth = await requireApiUser(request);
     if (!auth.ok) {
       return NextResponse.json(
-        { error: auth.error },
+        { code: creditPurchaseErrorCodes.authRequired },
         { status: auth.status, headers: privateNoStoreHeaders },
       );
     }
     const body = await request.json().catch(() => null);
     if (!body || typeof body !== "object" || Array.isArray(body)) {
       return NextResponse.json(
-        { error: "Invalid checkout request." },
+        { code: creditPurchaseErrorCodes.invalidSelection },
         { status: 400, headers: privateNoStoreHeaders },
       );
     }
@@ -65,7 +66,7 @@ export async function POST(request: Request) {
     };
     if (!rateLimit.allowed) {
       return NextResponse.json(
-        { error: "Too many checkout attempts. Please try again later." },
+        { code: creditPurchaseErrorCodes.rateLimited },
         { status: 429, headers: limitHeaders },
       );
     }
@@ -77,43 +78,40 @@ export async function POST(request: Request) {
       if (error instanceof StaleCreditQuoteError) {
         return NextResponse.json(
           {
-            error: "Credit prices changed. Review the refreshed quote before continuing.",
-            code: error.code,
+            code: creditPurchaseErrorCodes.quoteStale,
           },
           { status: 409, headers: limitHeaders },
         );
       }
       if (error instanceof PaymentMethodUnavailableError) {
         return NextResponse.json(
-          { error: "Stripe checkout is not available for this account.", code: error.code },
+          { code: creditPurchaseErrorCodes.methodUnavailable },
           { status: 403, headers: limitHeaders },
         );
       }
       if (error instanceof CommercialPricingUnavailableError) {
         return NextResponse.json(
           {
-            error: "Credit pricing is temporarily unavailable. No payment was started.",
-            code: error.code,
+            code: creditPurchaseErrorCodes.pricingUnavailable,
           },
           { status: 503, headers: limitHeaders },
         );
       }
       return NextResponse.json(
-        { error: "Credit checkout could not be prepared safely." },
+        { code: creditPurchaseErrorCodes.checkoutUnavailable },
         { status: 503, headers: limitHeaders },
       );
     }
     if (!selectedPackage) {
       return NextResponse.json(
-        { error: "Credit package or valid custom credit amount is missing." },
+        { code: creditPurchaseErrorCodes.invalidSelection },
         { status: 400, headers: limitHeaders },
       );
     }
     if (!isStripeEuroAmountSupported(selectedPackage.priceEuro)) {
       return NextResponse.json(
         {
-          error: "This total is outside Stripe's supported EUR range. Choose Bank Transfer or change the amount.",
-          code: "stripe_amount_unsupported",
+          code: creditPurchaseErrorCodes.stripeAmountUnsupported,
         },
         { status: 422, headers: limitHeaders },
       );
@@ -190,7 +188,7 @@ export async function POST(request: Request) {
     });
     if (!recordId) {
       return NextResponse.json(
-        { error: "Checkout could not be prepared safely. Please try again later." },
+        { code: creditPurchaseErrorCodes.checkoutUnavailable },
         { status: 503, headers: limitHeaders },
       );
     }
@@ -213,7 +211,7 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json(
-      { error: "Could not create checkout session. Please try again later." },
+      { code: creditPurchaseErrorCodes.checkoutUnavailable },
       { status: 500, headers: privateNoStoreHeaders },
     );
   }

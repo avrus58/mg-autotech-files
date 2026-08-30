@@ -68,6 +68,15 @@ import {
   replaceWithPendingMeasurementCompletion,
 } from "@/lib/publicAnalytics";
 import {
+  customerPasswordErrorT,
+  customerWorkflowExactT,
+  customerWorkflowT,
+} from "@/lib/i18n/customer-workflow-auth-translations";
+import { customerRuntimeExactT } from "@/lib/i18n/customer-runtime-translations";
+import { authPageFirstPaintT } from "@/lib/i18n/auth-page-first-paint";
+import type { LocaleCode } from "@/lib/i18nConfig";
+import { useActiveLocale } from "@/lib/useActiveLocale";
+import {
   ArrowLeft,
   ArrowRight,
   Building2,
@@ -151,6 +160,8 @@ const accountCards: {
 
 export default function RegisterPage() {
   const router = useRouter();
+  const locale = useActiveLocale();
+  const firstPaintT = (source: string) => authPageFirstPaintT(locale, source);
   const authCaptchaConfig = getPublicAuthCaptchaConfig();
   const googleIdentityConfig = getPublicGoogleIdentityConfig();
   const [email, setEmail] = useState("");
@@ -387,8 +398,11 @@ export default function RegisterPage() {
     const passwordValidation = validateCustomerReplacementPassword(password);
     if (!passwordValidation.valid) {
       setMessage(
-        passwordValidation.errors[0] ||
-          "Password does not meet the security requirements."
+        customerPasswordErrorT(
+          locale,
+          passwordValidation.errors[0] ||
+            "Password does not meet the security requirements."
+        )
       );
       return false;
     }
@@ -447,10 +461,8 @@ export default function RegisterPage() {
         authCaptchaConfig,
         captchaToken
       );
-    } catch (error) {
-      setMessage(
-        error instanceof Error ? error.message : "Security verification failed."
-      );
+    } catch {
+      setMessage("Security verification failed.");
       setLoading(false);
       return;
     }
@@ -504,7 +516,7 @@ export default function RegisterPage() {
     const { data, error } = response;
 
     if (error) {
-      setMessage(error.message);
+      setMessage("Account creation could not be completed. Please try again.");
       setLoading(false);
       return;
     }
@@ -564,10 +576,8 @@ export default function RegisterPage() {
         authCaptchaConfig,
         captchaToken
       );
-    } catch (error) {
-      setMessage(
-        error instanceof Error ? error.message : "Security verification failed."
-      );
+    } catch {
+      setMessage("Security verification failed.");
       return;
     }
 
@@ -603,7 +613,7 @@ export default function RegisterPage() {
     setSuccess(!error);
     setMessage(
       error
-        ? error.message
+        ? "Verification e-mail could not be sent. Please try again."
         : "A new verification e-mail has been sent. Please also check your spam folder."
     );
   };
@@ -623,9 +633,7 @@ export default function RegisterPage() {
 
     if (googleIdentityConfig.status !== "ready") {
       setGoogleMessage(
-        googleIdentityConfig.status === "misconfigured"
-          ? googleIdentityConfig.message
-          : "Google account creation is temporarily unavailable. You can continue with e-mail."
+        "Google account creation is temporarily unavailable. You can continue with e-mail."
       );
       return;
     }
@@ -642,10 +650,8 @@ export default function RegisterPage() {
         authCaptchaConfig,
         captchaToken
       );
-    } catch (error) {
-      setGoogleMessage(
-        error instanceof Error ? error.message : "Security verification failed."
-      );
+    } catch {
+      setGoogleMessage("Security verification failed.");
       setCaptchaResetKey((value) => value + 1);
       return;
     }
@@ -717,12 +723,13 @@ export default function RegisterPage() {
       <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[#050505] px-4 text-center text-white">
         <Loader2
           className="h-8 w-8 animate-spin text-red-500"
-          aria-label="Checking account"
+          aria-label={firstPaintT("Checking account")}
         />
         <noscript>
           <p role="alert" className="max-w-md text-sm font-bold text-amber-100">
-            JavaScript is required for secure account registration. Enable
-            JavaScript and reload this page.
+            {firstPaintT(
+              "JavaScript is required for secure account registration. Enable JavaScript and reload this page.",
+            )}
           </p>
         </noscript>
       </main>
@@ -744,14 +751,14 @@ export default function RegisterPage() {
                 MG <span className="text-red-600">AUTOTECH</span>
               </div>
               <div className="truncate text-[11px] text-zinc-500">
-                ECU File Service Platform
+                {firstPaintT("ECU File Service Platform")}
               </div>
             </div>
           </Link>
 
           <div className="hidden shrink-0 items-center gap-2 rounded-full border border-red-900/40 bg-red-950/20 px-3 py-1.5 text-[11px] font-bold text-red-100 sm:inline-flex">
             <ShieldCheck className="h-3.5 w-3.5 text-red-500" />
-            Verified customer workspace
+            {firstPaintT("Verified customer workspace")}
           </div>
         </header>
 
@@ -759,10 +766,12 @@ export default function RegisterPage() {
           <div className="mx-auto max-w-[650px]">
             <div className="mb-4 [@media(min-width:640px)_and_(max-height:820px)]:mb-2">
               <h1 className="text-2xl font-black leading-tight">
-                Create Account
+                {firstPaintT("Create Account")}
               </h1>
               <p className="mt-1.5 text-sm leading-5 text-zinc-400 [@media(min-width:640px)_and_(max-height:820px)]:mt-0.5">
-                A guided setup for private customers and professional workshops.
+                {firstPaintT(
+                  "A guided setup for private customers and professional workshops.",
+                )}
               </p>
             </div>
 
@@ -785,20 +794,25 @@ export default function RegisterPage() {
                   <div className="min-w-0 flex-1">
                     {success && (
                       <h2 className="text-base font-black text-white">
-                        {verificationPending
-                          ? "Verify your e-mail to continue"
-                          : "Your account is ready"}
+                        {firstPaintT(
+                          verificationPending
+                            ? "Verify your e-mail to continue"
+                            : "Your account is ready"
+                        )}
                       </h2>
                     )}
                     <p className={success ? "mt-1 text-sm leading-6" : "text-sm leading-6"}>
-                      {message}
+                      {customerWorkflowExactT(locale, message)}
                     </p>
                     {success && verificationPending && cleanEmail && (
                       <div className="mt-2 break-words text-xs leading-5 text-green-200/80">
-                        <p>Verification link sent to {cleanEmail}</p>
                         <p>
-                          Open the link in the e-mail, then return to continue
-                          your request.
+                          {firstPaintT("Verification link sent to")} {cleanEmail}
+                        </p>
+                        <p>
+                          {firstPaintT(
+                            "Open the link in the e-mail, then return to continue your request."
+                          )}
                         </p>
                       </div>
                     )}
@@ -824,7 +838,7 @@ export default function RegisterPage() {
                     ) : (
                       <RefreshCw className="mr-2 h-4 w-4" />
                     )}
-                    Resend verification e-mail
+                    {firstPaintT("Resend verification e-mail")}
                   </button>
                 )}
 
@@ -833,7 +847,7 @@ export default function RegisterPage() {
                     href={requestedRedirectPath ?? "/dashboard"}
                     className="mt-4 inline-flex items-center rounded-xl bg-green-500 px-4 py-2.5 text-sm font-black text-black transition hover:bg-green-400"
                   >
-                    Continue to customer workspace
+                    {firstPaintT("Continue to customer workspace")}
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
                 )}
@@ -841,7 +855,11 @@ export default function RegisterPage() {
             )}
 
             <div hidden={success}>
-              <StepProgress step={step} onStepChange={changeStep} />
+              <StepProgress
+                step={step}
+                onStepChange={changeStep}
+                locale={locale}
+              />
             </div>
 
             <div
@@ -853,7 +871,10 @@ export default function RegisterPage() {
               className="scroll-mt-4 outline-none"
             >
               <h2 id="register-step-heading" className="sr-only">
-                Step {step}: {steps.find((item) => item.id === step)?.label}
+                {firstPaintT("Step")} {step}:{" "}
+                {firstPaintT(
+                  steps.find((item) => item.id === step)?.label ?? "",
+                )}
               </h2>
 
               {step === 2 && (
@@ -876,9 +897,15 @@ export default function RegisterPage() {
                       className="rounded-xl border border-red-800/50 bg-red-950/30 p-4 text-sm text-red-100"
                     >
                       {authCaptchaConfig.status === "misconfigured"
-                        ? authCaptchaConfig.message
+                        ? customerRuntimeExactT(
+                            locale,
+                            authCaptchaConfig.message ?? ""
+                          )
                         : googleIdentityConfig.status === "misconfigured"
-                          ? googleIdentityConfig.message
+                          ? customerWorkflowExactT(
+                              locale,
+                              googleIdentityConfig.message
+                            )
                           : null}
                     </div>
                   )}
@@ -930,7 +957,7 @@ export default function RegisterPage() {
                       aria-live="assertive"
                       className="rounded-xl border border-red-800/50 bg-red-950/30 p-4 text-sm text-red-100"
                     >
-                      {googleMessage}
+                      {customerWorkflowExactT(locale, googleMessage)}
                     </div>
                   )}
                 </div>
@@ -942,7 +969,11 @@ export default function RegisterPage() {
               >
               {step === 1 && (
                 <div className="space-y-4 [@media(min-width:640px)_and_(max-height:820px)]:space-y-2.5">
-                  <div className="grid gap-3 sm:grid-cols-2" role="group" aria-label="Customer type">
+                  <div
+                    className="grid gap-3 sm:grid-cols-2"
+                    role="group"
+                    aria-label={firstPaintT("Customer type")}
+                  >
                     {accountCards.map((item) => (
                       <button
                         key={item.id}
@@ -960,10 +991,10 @@ export default function RegisterPage() {
                         </span>
                         <span className="min-w-0">
                           <span className="block text-sm font-black sm:text-base">
-                            {item.title}
+                            {firstPaintT(item.title)}
                           </span>
                           <span className="mt-1 block text-xs leading-5 text-zinc-500 [@media(min-width:640px)_and_(max-height:820px)]:mt-0.5 [@media(min-width:640px)_and_(max-height:820px)]:leading-4">
-                            {item.text}
+                            {firstPaintT(item.text)}
                           </span>
                         </span>
                         {accountType === item.id ? (
@@ -977,10 +1008,10 @@ export default function RegisterPage() {
 
                   <div className="grid gap-3 sm:grid-cols-2">
                     <TextField
-                      label="Full Name"
+                      label={firstPaintT("Full Name")}
                       value={fullName}
                       onChange={setFullName}
-                      placeholder="Name and surname"
+                      placeholder={firstPaintT("Name and surname")}
                       icon={<User className="h-5 w-5" />}
                       autoComplete="name"
                       maxLength={120}
@@ -1012,27 +1043,27 @@ export default function RegisterPage() {
                     }}
                     required
                     detecting={countryDetection === "detecting"}
-                    hint={countryHint}
+                    hint={firstPaintT(countryHint)}
                     selectRef={countrySelectRef}
                   />
 
                   {accountType === "company" && (
                     <div className="grid gap-3 sm:grid-cols-2">
                       <TextField
-                        label="Company Name"
+                        label={firstPaintT("Company Name")}
                         value={companyName}
                         onChange={setCompanyName}
-                        placeholder="Workshop / company"
+                        placeholder={firstPaintT("Workshop / company")}
                         icon={<Building2 className="h-5 w-5" />}
                         autoComplete="organization"
                         maxLength={120}
                         required
                       />
                       <TextField
-                        label="VAT ID / Tax Number"
+                        label={firstPaintT("VAT ID / Tax Number")}
                         value={taxNumber}
                         onChange={setTaxNumber}
-                        placeholder="Optional"
+                        placeholder={firstPaintT("Optional")}
                         icon={<FileCheck2 className="h-5 w-5" />}
                         maxLength={80}
                       />
@@ -1041,13 +1072,14 @@ export default function RegisterPage() {
 
                   {accountType === "company" && (
                     <InfoBox>
-                      Company details stay attached to requests for cleaner
-                      workshop administration.
+                      {firstPaintT(
+                        "Company details stay attached to requests for cleaner workshop administration.",
+                      )}
                     </InfoBox>
                   )}
 
                   <PrimaryButton type="button" onClick={goNext}>
-                    Continue
+                    {firstPaintT("Continue")}
                     <ArrowRight className="ml-2 h-5 w-5 transition group-hover:translate-x-1" />
                   </PrimaryButton>
                 </div>
@@ -1056,7 +1088,7 @@ export default function RegisterPage() {
               {step === 2 && (
                 <div className="space-y-4">
                   <TextField
-                    label="E-mail"
+                    label={firstPaintT("E-mail")}
                     value={email}
                     onChange={setEmail}
                     placeholder="you@example.com"
@@ -1068,10 +1100,10 @@ export default function RegisterPage() {
 
                   <div className="grid gap-3 sm:grid-cols-2">
                     <TextField
-                      label="Password"
+                      label={firstPaintT("Password")}
                       value={password}
                       onChange={setPassword}
-                      placeholder={`Minimum ${CUSTOMER_REPLACEMENT_PASSWORD_MIN_LENGTH} characters`}
+                      placeholder={customerWorkflowT(locale, "minimumCharacters", { count: CUSTOMER_REPLACEMENT_PASSWORD_MIN_LENGTH })}
                       icon={<Lock className="h-5 w-5" />}
                       type="password"
                       autoComplete="new-password"
@@ -1080,10 +1112,10 @@ export default function RegisterPage() {
                       required
                     />
                     <TextField
-                      label="Confirm Password"
+                      label={firstPaintT("Confirm Password")}
                       value={confirmPassword}
                       onChange={setConfirmPassword}
-                      placeholder="Repeat password"
+                      placeholder={firstPaintT("Repeat password")}
                       icon={<ShieldCheck className="h-5 w-5" />}
                       type="password"
                       autoComplete="new-password"
@@ -1097,8 +1129,9 @@ export default function RegisterPage() {
                     <div className="flex items-start gap-3">
                       <ShieldCheck className="mt-1 h-5 w-5 shrink-0 text-emerald-400" />
                       <p className="text-sm leading-6 text-zinc-400">
-                        E-mail verification is required before the customer
-                        dashboard can be used.
+                        {firstPaintT(
+                          "E-mail verification is required before the customer dashboard can be used."
+                        )}
                       </p>
                     </div>
                   </div>
@@ -1106,10 +1139,10 @@ export default function RegisterPage() {
                   <div className="grid gap-3 sm:grid-cols-[auto_1fr]">
                     <SecondaryButton type="button" onClick={() => changeStep(1)}>
                       <ArrowLeft className="mr-2 h-4 w-4" />
-                      Back
+                      {firstPaintT("Back")}
                     </SecondaryButton>
                     <PrimaryButton type="button" onClick={goNext}>
-                      Continue
+                      {firstPaintT("Continue")}
                       <ArrowRight className="ml-2 h-5 w-5 transition group-hover:translate-x-1" />
                     </PrimaryButton>
                   </div>
@@ -1123,17 +1156,20 @@ export default function RegisterPage() {
                     <div className="mb-4 flex items-start gap-3">
                       <MapPin className="mt-1 h-6 w-6 shrink-0 text-red-400" />
                       <div>
-                        <h3 className="text-xl font-black">Billing Profile</h3>
+                        <h3 className="text-xl font-black">
+                          {firstPaintT("Billing Profile")}
+                        </h3>
                         <p className="mt-1 text-sm leading-6 text-zinc-500">
-                          Invoice details can be completed now or later in
-                          account settings.
+                          {firstPaintT(
+                            "Invoice details can be completed now or later in account settings."
+                          )}
                         </p>
                       </div>
                     </div>
 
                     <div className="grid gap-4">
                       <TextField
-                        label="Invoice E-mail"
+                        label={firstPaintT("Invoice E-mail")}
                         value={invoiceEmail}
                         onChange={setInvoiceEmail}
                         placeholder={cleanEmail || "invoice@example.com"}
@@ -1142,23 +1178,23 @@ export default function RegisterPage() {
                         autoComplete="email"
                       />
                       <TextField
-                        label="Street / House Number"
+                        label={firstPaintT("Street / House Number")}
                         value={street}
                         onChange={setStreet}
-                        placeholder="Street and number"
+                        placeholder={firstPaintT("Street and number")}
                         icon={<MapPin className="h-5 w-5" />}
                         autoComplete="street-address"
                       />
                       <div className="grid gap-4 sm:grid-cols-[0.7fr_1fr]">
                         <TextField
-                          label="Postcode"
+                          label={firstPaintT("Postcode")}
                           value={postalCode}
                           onChange={setPostalCode}
                           placeholder="70437"
                           autoComplete="postal-code"
                         />
                         <TextField
-                          label="City"
+                          label={firstPaintT("City")}
                           value={city}
                           onChange={setCity}
                           placeholder="Stuttgart"
@@ -1166,13 +1202,13 @@ export default function RegisterPage() {
                         />
                       </div>
                       <SelectField
-                        label="Preferred Contact"
+                        label={firstPaintT("Preferred Contact")}
                         value={preferredContact}
                         onChange={setPreferredContact}
                         options={[
-                          ["email", "E-mail"],
+                          ["email", firstPaintT("E-mail")],
                           ["whatsapp", "WhatsApp"],
-                          ["phone", "Phone"],
+                          ["phone", firstPaintT("Phone")],
                         ]}
                       />
                     </div>
@@ -1180,15 +1216,17 @@ export default function RegisterPage() {
 
                   <div className="rounded-xl border border-red-900/40 bg-red-950/20 p-4">
                     <div className="text-xs font-black uppercase tracking-[0.16em] text-red-200">
-                      Account summary
+                      {firstPaintT("Account summary")}
                     </div>
                     <div className="mt-2 break-words text-lg font-black">
-                      {displayName || "Your MG AutoTech account"}
+                      {displayName || firstPaintT("Your MG AutoTech account")}
                     </div>
                     <div className="mt-1 text-sm text-zinc-500">
-                      {accountType === "company"
-                        ? "Workshop / company customer"
-                        : "Private customer"}
+                      {firstPaintT(
+                        accountType === "company"
+                          ? "Workshop / company customer"
+                          : "Private customer"
+                      )}
                     </div>
                   </div>
 
@@ -1207,14 +1245,17 @@ export default function RegisterPage() {
                       role="alert"
                       className="rounded-xl border border-red-800/50 bg-red-950/30 p-4 text-sm text-red-100"
                     >
-                      {authCaptchaConfig.message}
+                      {customerRuntimeExactT(
+                        locale,
+                        authCaptchaConfig.message ?? ""
+                      )}
                     </div>
                   )}
 
                   <div className="grid gap-3 sm:grid-cols-[auto_1fr]">
                     <SecondaryButton type="button" onClick={() => changeStep(2)}>
                       <ArrowLeft className="mr-2 h-4 w-4" />
-                      Back
+                      {firstPaintT("Back")}
                     </SecondaryButton>
                     <PrimaryButton
                       disabled={
@@ -1229,11 +1270,11 @@ export default function RegisterPage() {
                       {loading ? (
                         <>
                           <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                          Creating account...
+                          {firstPaintT("Creating account...")}
                         </>
                       ) : (
                         <>
-                          Create Account
+                          {firstPaintT("Create Account")}
                           <ArrowRight className="ml-2 h-5 w-5 transition group-hover:translate-x-1" />
                         </>
                       )}
@@ -1241,27 +1282,31 @@ export default function RegisterPage() {
                   </div>
 
                   <nav
-                    aria-label="Legal information"
+                    aria-label={firstPaintT("Legal information")}
                     className="flex flex-wrap items-center justify-center gap-2 text-center text-xs leading-5 text-zinc-500 [@media(min-width:640px)_and_(max-height:820px)]:leading-4"
                   >
                     <Link
                       href="/privacy"
                       target="_blank"
                       rel="noopener noreferrer"
-                      aria-label="Privacy information (opens in a new tab)"
+                      aria-label={firstPaintT(
+                        "Privacy information (opens in a new tab)"
+                      )}
                       className="font-bold text-zinc-300 underline decoration-white/20 underline-offset-4 transition hover:text-white"
                     >
-                      Privacy information
+                      {firstPaintT("Privacy information")}
                     </Link>
                     <span aria-hidden="true">·</span>
                     <Link
                       href="/agb"
                       target="_blank"
                       rel="noopener noreferrer"
-                      aria-label="Terms in German (opens in a new tab)"
+                      aria-label={firstPaintT(
+                        "Terms in German (opens in a new tab)"
+                      )}
                       className="font-bold text-zinc-300 underline decoration-white/20 underline-offset-4 transition hover:text-white"
                     >
-                      Terms (German)
+                      {firstPaintT("Terms (German)")}
                     </Link>
                   </nav>
                 </div>
@@ -1270,18 +1315,19 @@ export default function RegisterPage() {
             </div>
 
             <div className="mt-5 text-center text-sm text-zinc-400">
-              Already have an account?{" "}
+              {firstPaintT("Already have an account?")}{" "}
               <Link
                 href={buildAuthEntryPath("/login", requestedRedirectPath)}
                 className="font-black text-red-400"
               >
-                Login
+                {firstPaintT("Login")}
               </Link>
             </div>
 
             <p className="mt-3 text-center text-xs leading-5 text-zinc-500">
-              By creating an account, you can submit ECU / TCU file requests and
-              manage your MG AutoTech credit balance securely.
+              {firstPaintT(
+                "By creating an account, you can submit ECU / TCU file requests and manage your MG AutoTech credit balance securely.",
+              )}
             </p>
           </div>
         </section>
@@ -1293,9 +1339,11 @@ export default function RegisterPage() {
 function StepProgress({
   step,
   onStepChange,
+  locale,
 }: {
   step: StepId;
   onStepChange: (step: StepId) => void;
+  locale: LocaleCode;
 }) {
   return (
     <div className="mb-4 [@media(min-width:640px)_and_(max-height:820px)]:mb-2">
@@ -1322,10 +1370,10 @@ function StepProgress({
                   step >= item.id ? "text-red-200" : "text-zinc-600"
                 }`}
               >
-                {item.label}
+                {authPageFirstPaintT(locale, item.label)}
               </span>
               <span className="hidden text-[10px] text-zinc-600 2xl:block">
-                {item.subLabel}
+                {authPageFirstPaintT(locale, item.subLabel)}
               </span>
             </button>
             {index < steps.length - 1 && (

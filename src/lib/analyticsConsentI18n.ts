@@ -1,8 +1,14 @@
 import {
   defaultLocale,
   normalizeLocale,
+  supportedLocales,
   type LocaleCode,
 } from "@/lib/i18nConfig";
+import { getFixedPresentationLocale } from "@/lib/fixedPresentationLocale";
+
+const explicitLocaleCodes = new Set<string>(
+  supportedLocales.map(({ code }) => code)
+);
 
 export type AnalyticsConsentCopy = {
   title: string;
@@ -280,21 +286,34 @@ export const analyticsConsentCopy: Record<LocaleCode, AnalyticsConsentCopy> = {
   },
 };
 
-export function getAnalyticsConsentLocale(pathname: string): LocaleCode {
+export function getAnalyticsConsentLocale(
+  pathname: string,
+  preferredLocale: LocaleCode = defaultLocale
+): LocaleCode {
   const firstSegment = pathname.split("/").filter(Boolean)[0];
+  const fixedLocale = getFixedPresentationLocale(pathname);
 
-  if (firstSegment === "datenschutz") return "de";
-  if (firstSegment === "privacy") return "en";
+  if (fixedLocale) return fixedLocale;
 
-  return firstSegment ? normalizeLocale(firstSegment) : defaultLocale;
+  return firstSegment && explicitLocaleCodes.has(firstSegment)
+    ? normalizeLocale(firstSegment)
+    : preferredLocale;
 }
 
-export function getAnalyticsConsentCopy(pathname: string) {
-  return analyticsConsentCopy[getAnalyticsConsentLocale(pathname)];
+export function getAnalyticsConsentCopy(
+  pathname: string,
+  preferredLocale: LocaleCode = defaultLocale
+) {
+  return analyticsConsentCopy[
+    getAnalyticsConsentLocale(pathname, preferredLocale)
+  ];
 }
 
-export function getAnalyticsPrivacyPath(pathname: string) {
-  return getAnalyticsConsentLocale(pathname) === "de"
+export function getAnalyticsPrivacyPath(
+  pathname: string,
+  preferredLocale: LocaleCode = defaultLocale
+) {
+  return getAnalyticsConsentLocale(pathname, preferredLocale) === "de"
     ? "/datenschutz"
     : "/privacy";
 }

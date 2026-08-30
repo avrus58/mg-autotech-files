@@ -13,9 +13,19 @@ import {
   Gauge,
   LockKeyhole,
 } from "lucide-react";
-import { Footer } from "@/components/Footer";
+import { RuntimePublicLocalization } from "@/components/RuntimePublicLocalization";
+import { RuntimePublicFooter } from "@/components/RuntimePublicFooter";
 import { ToolsHeader } from "@/components/tools/ToolsHeader";
-import { absoluteUrl, siteName } from "@/lib/seo";
+import {
+  localizeRuntimePublicJsonLd,
+  runtimePublicAlternates,
+  runtimePublicInLanguage,
+  runtimePublicMetadataCopy,
+  runtimePublicOpenGraphLocale,
+  runtimePublicT,
+} from "@/lib/i18n/runtime-public";
+import { absoluteUrl, siteName, websiteJsonLd } from "@/lib/seo";
+import { getServerLocale } from "@/lib/serverLocale";
 
 const tools = [
   {
@@ -105,38 +115,50 @@ const workflowSteps = [
   },
 ];
 
-export const metadata: Metadata = {
-  title: "Free ECU Workshop Tools",
-  description:
-    "Free automotive workshop tools from MG AutoTech: check file readiness, build request briefs, plan ECU read methods and run safe browser-based calculations.",
-  alternates: { canonical: absoluteUrl("/tools") },
-  openGraph: {
-    title: "Free ECU Workshop Tools | MG AutoTech",
-    description:
-      "File-service readiness checks, request brief preparation, ECU read planning and browser-based workshop calculations.",
-    url: absoluteUrl("/tools"),
-    type: "website",
-    siteName,
-    images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: "MG AutoTech workshop tools" }],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Free ECU Workshop Tools | MG AutoTech",
-    description: "Readiness checks, request brief preparation and workshop calculators for ECU file-service requests.",
-    images: ["/opengraph-image"],
-  },
-};
+const metadataTitle = "Free ECU Workshop Tools";
+const metadataDescription =
+  "Free automotive workshop tools from MG AutoTech: check file readiness, build request briefs, plan ECU read methods and run safe browser-based calculations.";
 
-export default function ToolsHubPage() {
-  const jsonLd = {
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getServerLocale();
+  const scopes = ["core", "tools"] as const;
+  const copy = runtimePublicMetadataCopy(locale, metadataTitle, metadataDescription, scopes);
+  return {
+    title: copy.title,
+    description: copy.description,
+    alternates: runtimePublicAlternates("/tools"),
+    openGraph: {
+      title: runtimePublicT(locale, "Free ECU Workshop Tools | MG AutoTech", scopes),
+      description: runtimePublicT(locale, "File-service readiness checks, request brief preparation, ECU read planning and browser-based workshop calculations.", scopes),
+      url: absoluteUrl("/tools"),
+      type: "website",
+      siteName,
+      locale: runtimePublicOpenGraphLocale(locale),
+      images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: runtimePublicT(locale, "MG AutoTech workshop tools", scopes) }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: runtimePublicT(locale, "Free ECU Workshop Tools | MG AutoTech", scopes),
+      description: runtimePublicT(locale, "Readiness checks, request brief preparation and workshop calculators for ECU file-service requests.", scopes),
+      images: ["/opengraph-image"],
+    },
+  };
+}
+
+export default async function ToolsHubPage() {
+  const locale = await getServerLocale();
+  const scopes = ["core", "tools"] as const;
+  const jsonLd = localizeRuntimePublicJsonLd({
     "@context": "https://schema.org",
     "@graph": [
+      websiteJsonLd(locale),
       {
         "@type": "CollectionPage",
         name: "MG AutoTech Workshop Tools",
         description:
           "Free browser-based preparation, calculation and log-analysis tools for automotive workshops.",
         url: absoluteUrl("/tools"),
+        inLanguage: runtimePublicInLanguage(locale),
         isPartOf: { "@id": `${absoluteUrl("/")}#website` },
       },
       {
@@ -157,12 +179,13 @@ export default function ToolsHubPage() {
         ],
       },
     ],
-  };
+  }, locale, scopes);
 
   return (
-    <div data-no-translate className="min-h-screen overflow-x-hidden bg-[#050505] text-white">
+    <RuntimePublicLocalization locale={locale} scopes={scopes}>
+      <div className="min-h-screen overflow-x-hidden bg-[#050505] text-white">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      <ToolsHeader />
+      <ToolsHeader locale={locale} />
 
       <main>
         <section className="border-b border-white/10 bg-[#090909]">
@@ -271,8 +294,9 @@ export default function ToolsHubPage() {
         </section>
       </main>
 
-      <Footer />
-    </div>
+      <RuntimePublicFooter locale={locale} scopes={scopes} />
+      </div>
+    </RuntimePublicLocalization>
   );
 }
 

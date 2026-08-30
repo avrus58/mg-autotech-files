@@ -14,9 +14,11 @@ import {
   Upload,
   Wrench,
 } from "lucide-react";
-import { Footer } from "@/components/Footer";
 import { OnlineStatus } from "@/components/OnlineStatus";
+import { DetailPanel } from "@/components/LocalizedServiceCards";
 import { PublicSeoHeader } from "@/components/PublicSeoHeader";
+import { RuntimePublicFooter } from "@/components/RuntimePublicFooter";
+import { RuntimePublicLocalization } from "@/components/RuntimePublicLocalization";
 import { ServiceIntentPage } from "@/components/ServiceIntentPage";
 import {
   Stage1Authority,
@@ -27,10 +29,18 @@ import { StageComparison } from "@/components/StageComparison";
 import {
   absoluteUrl,
   languageAlternates,
+  localizedUrl,
   organizationJsonLd,
   siteName,
   websiteJsonLd,
 } from "@/lib/seo";
+import {
+  localizeRuntimePublicJsonLd,
+  runtimePublicAlternates,
+  runtimePublicInLanguage,
+  runtimePublicMetadataCopy,
+  runtimePublicOpenGraphLocale,
+} from "@/lib/i18n/runtime-public";
 import {
   getServiceIntentGuide,
   serviceIntentGuideSlugs,
@@ -40,6 +50,7 @@ import {
   getPublicServiceRequestIntent,
 } from "@/lib/requestIntent";
 import { buildAuthEntryPath } from "@/lib/safeLocalRedirect";
+import { getServerLocale } from "@/lib/serverLocale";
 
 type ServicePage = {
   slug: string;
@@ -399,7 +410,6 @@ const services: ServicePage[] = [
 function getService(slug: string) {
   return services.find((service) => service.slug === slug);
 }
-
 export function generateStaticParams() {
   return [
     ...services.map((service) => ({ slug: service.slug })),
@@ -413,35 +423,44 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
+  const locale = await getServerLocale();
+  const scopes = ["core", "services", "service-intent"] as const;
   const intentGuide = getServiceIntentGuide(slug);
 
   if (intentGuide) {
     const canonical = absoluteUrl(`/services/${intentGuide.slug}`);
-    const socialTitle = `${intentGuide.metaTitle} | MG AutoTech`;
+    const copy = runtimePublicMetadataCopy(
+      locale,
+      intentGuide.metaTitle,
+      intentGuide.description,
+      scopes
+    );
+    const socialTitle = `${copy.title} | MG AutoTech`;
 
     return {
-      title: intentGuide.metaTitle,
-      description: intentGuide.description,
-      alternates: { canonical },
+      title: copy.title,
+      description: copy.description,
+      alternates: runtimePublicAlternates(`/services/${intentGuide.slug}`),
       openGraph: {
         title: socialTitle,
-        description: intentGuide.description,
+        description: copy.description,
         url: canonical,
         siteName,
+        locale: runtimePublicOpenGraphLocale(locale),
         type: "website",
         images: [
           {
             url: absoluteUrl("/opengraph-image"),
             width: 1200,
             height: 630,
-            alt: intentGuide.name,
+            alt: copy.title,
           },
         ],
       },
       twitter: {
         card: "summary_large_image",
         title: socialTitle,
-        description: intentGuide.description,
+        description: copy.description,
         images: [absoluteUrl("/opengraph-image")],
       },
     };
@@ -451,35 +470,42 @@ export async function generateMetadata({
 
   if (!service) return {};
 
-  const canonical = absoluteUrl(`/services/${service.slug}`);
-  const socialTitle = `${service.title} | MG AutoTech`;
+  const canonical = localizedUrl(locale, `/services/${service.slug}`);
+  const copy = runtimePublicMetadataCopy(
+    locale,
+    service.title,
+    service.description,
+    ["core", "services"]
+  );
+  const socialTitle = `${copy.title} | MG AutoTech`;
 
   return {
-    title: service.title,
-    description: service.description,
+    title: copy.title,
+    description: copy.description,
     alternates: {
       canonical,
       languages: languageAlternates(`/services/${service.slug}`),
     },
     openGraph: {
       title: socialTitle,
-      description: service.description,
+      description: copy.description,
       url: canonical,
       siteName,
+      locale: runtimePublicOpenGraphLocale(locale),
       type: "website",
       images: [
         {
           url: absoluteUrl("/opengraph-image"),
           width: 1200,
           height: 630,
-          alt: service.title,
+          alt: copy.title,
         },
       ],
     },
     twitter: {
       card: "summary_large_image",
       title: socialTitle,
-      description: service.description,
+      description: copy.description,
       images: [absoluteUrl("/opengraph-image")],
     },
   };
@@ -491,9 +517,10 @@ export default async function ServicePage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
+  const locale = await getServerLocale();
   const intentGuide = getServiceIntentGuide(slug);
 
-  if (intentGuide) return <ServiceIntentPage guide={intentGuide} />;
+  if (intentGuide) return <ServiceIntentPage guide={intentGuide} locale={locale} />;
 
   const service = getService(slug);
 
@@ -503,19 +530,19 @@ export default async function ServicePage({
     getPublicServiceRequestIntent(service.slug)
   );
   const registrationHref = buildAuthEntryPath("/register", requestHref);
-  const pageUrl = absoluteUrl(`/services/${service.slug}`);
-  const jsonLd = {
+  const pageUrl = localizedUrl(locale, `/services/${service.slug}`);
+  const jsonLd = localizeRuntimePublicJsonLd({
     "@context": "https://schema.org",
     "@graph": [
       organizationJsonLd(),
-      websiteJsonLd("en"),
+      websiteJsonLd(locale),
       {
         "@type": "WebPage",
         "@id": `${pageUrl}#page`,
         name: service.title,
         description: service.description,
         url: pageUrl,
-        inLanguage: "en",
+        inLanguage: runtimePublicInLanguage(locale),
         isPartOf: { "@id": `${absoluteUrl("/")}#website` },
         mainEntity: { "@id": `${pageUrl}#service` },
         breadcrumb: { "@id": `${pageUrl}#breadcrumb` },
@@ -537,8 +564,8 @@ export default async function ServicePage({
         "@type": "BreadcrumbList",
         "@id": `${pageUrl}#breadcrumb`,
         itemListElement: [
-          { "@type": "ListItem", position: 1, name: "Home", item: absoluteUrl("/") },
-          { "@type": "ListItem", position: 2, name: "ECU File Service", item: absoluteUrl("/file-service") },
+          { "@type": "ListItem", position: 1, name: "Home", item: localizedUrl(locale, "/") },
+          { "@type": "ListItem", position: 2, name: "ECU File Service", item: localizedUrl(locale, "/file-service") },
           { "@type": "ListItem", position: 3, name: service.title, item: pageUrl },
         ],
       },
@@ -567,13 +594,14 @@ export default async function ServicePage({
           ]
         : []),
     ],
-  };
+  }, locale, ["core", "services"]);
 
   return (
+    <RuntimePublicLocalization locale={locale} scopes={["core", "services"]}>
     <main className="min-h-screen bg-[#050505] text-white">
       <div className="fixed inset-0 -z-10 bg-[radial-gradient(circle_at_20%_0%,rgba(160,18,28,0.26),transparent_32%),linear-gradient(135deg,#050505,#0d0d0f_48%,#160608)]" />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      <PublicSeoHeader />
+      <PublicSeoHeader locale={locale} />
 
       <section className="mx-auto max-w-7xl px-4 py-16">
         <div className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
@@ -636,9 +664,9 @@ export default async function ServicePage({
         </section>
       )}
 
-      {service.slug === "stage-1" && <Stage1Authority />}
+      {service.slug === "stage-1" && <Stage1Authority locale={locale} />}
 
-      {service.slug === "stage-1" && <StageComparison compact />}
+      {service.slug === "stage-1" && <StageComparison compact locale={locale} />}
 
       <section className="mx-auto grid max-w-7xl gap-6 px-4 pb-20 lg:grid-cols-[0.9fr_1.1fr]">
         <div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6">
@@ -679,8 +707,18 @@ export default async function ServicePage({
 
       <section className="bg-[#0b1226] py-18">
         <div className="mx-auto grid max-w-7xl gap-6 px-4 lg:grid-cols-3">
-          <DetailPanel title="Supported vehicle focus" items={service.supported} icon={Car} />
-          <DetailPanel title="Information needed" items={service.requiredInfo} icon={FileCode2} />
+          <DetailPanel
+            title="Supported vehicle focus"
+            items={service.supported}
+            icon={Car}
+            locale={locale}
+          />
+          <DetailPanel
+            title="Information needed"
+            items={service.requiredInfo}
+            icon={FileCode2}
+            locale={locale}
+          />
           <div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6">
             <Upload className="mb-5 h-8 w-8 text-red-500" />
             <h2 className="text-2xl font-black">Ready to submit?</h2>
@@ -715,9 +753,10 @@ export default async function ServicePage({
         </div>
       </section>
 
-      <Footer />
+      <RuntimePublicFooter locale={locale} scopes={["core", "services"]} />
       <OnlineStatus />
     </main>
+    </RuntimePublicLocalization>
   );
 }
 
@@ -737,30 +776,6 @@ function InfoCard({
         {label}
       </div>
       <div className="mt-2 text-lg font-black text-white">{value}</div>
-    </div>
-  );
-}
-
-function DetailPanel({
-  title,
-  items,
-  icon: Icon,
-}: {
-  title: string;
-  items: string[];
-  icon: typeof Wrench;
-}) {
-  return (
-    <div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6">
-      <Icon className="mb-5 h-8 w-8 text-red-500" />
-      <h2 className="text-2xl font-black">{title}</h2>
-      <div className="mt-5 grid gap-3">
-        {items.map((item) => (
-          <div key={item} className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm font-bold text-zinc-300">
-            {item}
-          </div>
-        ))}
-      </div>
     </div>
   );
 }

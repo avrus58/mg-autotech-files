@@ -6,6 +6,9 @@ import { useRouter } from "next/navigation";
 import { getStableSession, notifySessionRequired, signOutIfEmailUnverified, signOutStable } from "@/lib/authGuards";
 import { supabase } from "@/lib/supabaseClient";
 import { CustomerPortalPageHeader } from "@/components/dashboard/CustomerPortalPageHeader";
+import { intlLocaleByCode, type LocaleCode } from "@/lib/i18nConfig";
+import { useActiveLocale } from "@/lib/useActiveLocale";
+import { localizeCreditTransactionType } from "@/lib/i18n/customer-runtime-translations";
 import {
   ArrowLeft,
   CreditCard,
@@ -36,8 +39,8 @@ type CreditTransaction = {
 const CREDIT_LEDGER_LOAD_ERROR_MESSAGE =
   "We couldn't load your current balance or ledger movements. Try again before treating this history as empty.";
 
-function formatDate(date: string) {
-  return new Intl.DateTimeFormat("de-DE", {
+function formatDate(date: string, locale: LocaleCode) {
+  return new Intl.DateTimeFormat(intlLocaleByCode[locale], {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
@@ -46,30 +49,25 @@ function formatDate(date: string) {
   }).format(new Date(date));
 }
 
-function formatAmount(amountTotal: number | string | null, currency: string | null) {
+function formatAmount(
+  amountTotal: number | string | null,
+  currency: string | null,
+  locale: LocaleCode,
+) {
   if (amountTotal === null || amountTotal === undefined) return "";
 
   const value = Number(amountTotal) / 100;
   const curr = (currency || "eur").toUpperCase();
 
-  return new Intl.NumberFormat("de-DE", {
+  return new Intl.NumberFormat(intlLocaleByCode[locale], {
     style: "currency",
     currency: curr,
   }).format(value);
 }
 
-function formatType(type: string | null) {
-  if (!type) return "Transaction";
-
-  return type
-    .replaceAll("_", " ")
-    .split(" ")
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ");
-}
-
 export default function CreditHistoryPage() {
   const router = useRouter();
+  const locale = useActiveLocale();
 
   const [email, setEmail] = useState<string | null>(null);
   const [customerId, setCustomerId] = useState<string | null>(null);
@@ -242,11 +240,11 @@ export default function CreditHistoryPage() {
             <div className="hidden rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 md:block">
               <div className="text-xs text-zinc-500">Logged in as</div>
               <div className="max-w-[220px] truncate text-sm font-bold">
-                {email}
+                <span translate="no" data-no-translate>{email}</span>
               </div>
               {customerId && (
                 <div className="mt-1 text-xs font-black text-red-400">
-                  {customerId}
+                  <span translate="no" data-no-translate>{customerId}</span>
                 </div>
               )}
             </div>
@@ -444,15 +442,21 @@ export default function CreditHistoryPage() {
 
                         <div>
                           <div className="font-black">
-                            {item.description || formatType(item.type)}
+                            {item.description ? (
+                              <span translate="no" data-no-translate>{item.description}</span>
+                            ) : (
+                              localizeCreditTransactionType(locale, item.type)
+                            )}
                           </div>
                           <div className="mt-1 text-sm text-zinc-400">
-                            {formatType(item.type)}
-                            {item.source_type ? ` · ${item.source_type}` : ""}
+                            {localizeCreditTransactionType(locale, item.type)}
+                            {item.source_type ? (
+                              <> · <span translate="no" data-no-translate>{item.source_type}</span></>
+                            ) : null}
                           </div>
-                          {formatAmount(item.amount_total, item.currency) && (
+                          {formatAmount(item.amount_total, item.currency, locale) && (
                             <div className="mt-1 text-xs font-bold text-emerald-300">
-                              {formatAmount(item.amount_total, item.currency)}
+                              {formatAmount(item.amount_total, item.currency, locale)}
                             </div>
                           )}
                         </div>
@@ -465,7 +469,7 @@ export default function CreditHistoryPage() {
                       </div>
 
                       <div className="text-sm text-zinc-400">
-                        {formatDate(item.created_at)}
+                        {formatDate(item.created_at, locale)}
                       </div>
 
                       <div

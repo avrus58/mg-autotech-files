@@ -3,25 +3,23 @@
 import { useState } from "react";
 import Link from "next/link";
 import { ArrowRight, Calculator, Gauge } from "lucide-react";
-import { PublicLogSnapshot } from "@/components/tools/PublicLogSnapshot";
-import { LocalizedHomepageTree } from "@/lib/homepageLocalization";
 import { calculatePowerFromTorque } from "@/lib/performanceReport";
+import type { PerformanceCalculatorCopy } from "@/lib/i18n/tool-client-copy-keys";
 
-export type PerformanceToolsMode = "combined" | "calculator";
-
-export function PerformanceTools({
-  mode = "combined",
-}: {
-  mode?: PerformanceToolsMode;
-}) {
-  if (mode === "combined") {
-    return <PublicLogSnapshot />;
-  }
-
-  return <TorquePowerCalculator />;
+function toolT(copy: PerformanceCalculatorCopy, source: string) {
+  return (copy as Readonly<Record<string, string>>)[source] ?? source;
 }
 
-function TorquePowerCalculator() {
+export function PerformanceTools({
+  copy,
+}: {
+  copy: PerformanceCalculatorCopy;
+}) {
+  return <TorquePowerCalculator copy={copy} />;
+}
+
+function TorquePowerCalculator({ copy }: { copy: PerformanceCalculatorCopy }) {
+  const t = (source: string) => toolT(copy, source);
   const [torqueNm, setTorqueNm] = useState(430);
   const [rpm, setRpm] = useState(3200);
   const [kwInput, setKwInput] = useState(140);
@@ -30,20 +28,18 @@ function TorquePowerCalculator() {
   const psFromKw = kwInput * 1.35962;
 
   return (
-    <LocalizedHomepageTree>
-      <section id="tools" className="overflow-x-clip bg-[#050505] py-16 md:py-20">
+    <section id="tools" className="overflow-x-clip bg-[#050505] py-16 md:py-20">
         <div className="mx-auto max-w-7xl px-4">
           <div className="mb-10 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <div className="text-sm font-black uppercase tracking-[0.25em] text-red-600">
-                Performance Tools
+                {t("Performance Tools")}
               </div>
               <h2 className="mt-3 max-w-4xl text-4xl font-black md:text-5xl">
-                Convert torque and engine speed into estimated power.
+                {t("Convert torque and engine speed into estimated power.")}
               </h2>
               <p className="mt-4 max-w-3xl text-sm leading-7 text-zinc-400">
-                Enter torque and RPM for an instant kW and HP estimate, then
-                convert kW into mechanical HP and metric PS.
+                {t("Enter torque and RPM for an instant kW and HP estimate, then convert kW into mechanical HP and metric PS.")}
               </p>
             </div>
 
@@ -52,13 +48,13 @@ function TorquePowerCalculator() {
                 href="/tools"
                 className="inline-flex items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] px-5 py-3 text-sm font-black text-white transition hover:-translate-y-0.5 hover:border-red-800/60"
               >
-                Explore all tools
+                {t("Explore all tools")}
               </Link>
               <Link
                 href="/new-request"
                 className="inline-flex items-center justify-center rounded-xl border border-red-800/60 bg-red-950/30 px-5 py-3 text-sm font-black text-white transition hover:-translate-y-0.5 hover:bg-red-900/30"
               >
-                Create File Request
+                {t("Create File Request")}
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </div>
@@ -71,19 +67,20 @@ function TorquePowerCalculator() {
               </div>
               <div className="min-w-0">
                 <div className="text-xs font-black uppercase tracking-[0.22em] text-red-400">
-                  Manual input
+                  {t("Manual input")}
                 </div>
                 <h3 className="mt-1 text-2xl font-black leading-tight">
-                  Torque Power Calculator
+                  {t("Torque Power Calculator")}
                 </h3>
                 <p className="mt-2 text-xs font-bold leading-5 text-zinc-500">
-                  Enter measured torque and RPM. Results update instantly.
+                  {t("Enter measured torque and RPM. Results update instantly.")}
                 </p>
               </div>
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
               <NumberField
+                copy={copy}
                 label="Enter torque"
                 value={torqueNm}
                 suffix="Nm"
@@ -93,6 +90,7 @@ function TorquePowerCalculator() {
                 onChange={setTorqueNm}
               />
               <NumberField
+                copy={copy}
                 label="Enter engine speed"
                 value={rpm}
                 suffix="RPM"
@@ -104,17 +102,18 @@ function TorquePowerCalculator() {
             </div>
 
             <div className="mt-5 grid gap-3 sm:grid-cols-2">
-              <MetricPanel label="Estimated power" value={power.hp.toFixed(1)} unit="HP" />
-              <MetricPanel label="Estimated power" value={power.kw.toFixed(1)} unit="kW" />
+              <MetricPanel copy={copy} label="Estimated power" value={power.hp.toFixed(1)} unit="HP" />
+              <MetricPanel copy={copy} label="Estimated power" value={power.kw.toFixed(1)} unit="kW" />
             </div>
 
             <div className="mt-6 min-w-0 rounded-2xl border border-white/10 bg-black/30 p-4 sm:p-5">
               <div className="mb-4 flex min-w-0 items-center gap-3">
                 <Calculator className="h-5 w-5 shrink-0 text-red-500" />
-                <h4 className="min-w-0 font-black">kW to HP quick convert</h4>
+                <h4 className="min-w-0 font-black">{t("kW to HP quick convert")}</h4>
               </div>
 
               <NumberField
+                copy={copy}
                 label="Enter power"
                 value={kwInput}
                 suffix="kW"
@@ -125,18 +124,18 @@ function TorquePowerCalculator() {
               />
 
               <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                <MetricPanel label="Mechanical HP" value={hpFromKw.toFixed(1)} unit="HP" />
-                <MetricPanel label="Metric power" value={psFromKw.toFixed(1)} unit="PS" />
+                <MetricPanel copy={copy} label="Mechanical HP" value={hpFromKw.toFixed(1)} unit="HP" />
+                <MetricPanel copy={copy} label="Metric power" value={psFromKw.toFixed(1)} unit="PS" />
               </div>
             </div>
           </div>
         </div>
-      </section>
-    </LocalizedHomepageTree>
+    </section>
   );
 }
 
 function NumberField({
+  copy,
   label,
   value,
   suffix,
@@ -145,6 +144,7 @@ function NumberField({
   step,
   onChange,
 }: {
+  copy: PerformanceCalculatorCopy;
   label: string;
   value: number;
   suffix: string;
@@ -156,9 +156,9 @@ function NumberField({
   return (
     <label className="block min-w-0">
       <div className="mb-2 flex min-w-0 items-center justify-between gap-3">
-        <span className="min-w-0 text-sm font-black text-white">{label}</span>
+        <span className="min-w-0 text-sm font-black text-white">{toolT(copy, label)}</span>
         <span className="shrink-0 rounded-full border border-red-800/45 bg-red-950/20 px-3 py-1 text-[0.65rem] font-black uppercase tracking-[0.12em] text-red-200">
-          Input
+          {toolT(copy, "Input")}
         </span>
       </div>
       <div className="relative min-w-0 rounded-2xl border border-red-900/55 bg-black/45 p-2 shadow-inner shadow-black/40 transition focus-within:border-red-600/70">
@@ -169,7 +169,7 @@ function NumberField({
           step={step}
           value={value}
           inputMode="decimal"
-          aria-label={label}
+          aria-label={toolT(copy, label)}
           onChange={(event) => onChange(Number(event.currentTarget.value))}
           className="h-14 w-full rounded-xl border border-white/10 bg-[#050505] px-4 pr-20 text-lg font-black text-white outline-none transition placeholder:text-zinc-700 focus:border-red-600 focus:ring-2 focus:ring-red-900/50"
         />
@@ -187,10 +187,12 @@ function NumberField({
 }
 
 function MetricPanel({
+  copy,
   label,
   value,
   unit,
 }: {
+  copy: PerformanceCalculatorCopy;
   label: string;
   value: string;
   unit: string;
@@ -198,7 +200,7 @@ function MetricPanel({
   return (
     <div className="min-w-0 rounded-2xl border border-white/10 bg-black/30 p-4">
       <div className="text-xs font-black uppercase tracking-[0.14em] text-zinc-500">
-        {label}
+        {toolT(copy, label)}
       </div>
       <div className="mt-2 flex min-w-0 flex-wrap items-end gap-x-2 gap-y-1">
         <span className="text-3xl font-black leading-none text-white">{value}</span>

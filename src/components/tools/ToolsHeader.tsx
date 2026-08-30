@@ -1,9 +1,12 @@
 import Link from "next/link";
 import { Cpu, LayoutDashboard } from "lucide-react";
+import { RuntimePublicLocalization } from "@/components/RuntimePublicLocalization";
+import type { LocaleCode } from "@/lib/i18nConfig";
 
-export function ToolsHeader() {
+export function ToolsHeader({ locale = "en" }: { locale?: LocaleCode }) {
   return (
-    <header className="sticky top-0 z-50 border-b border-white/10 bg-black/85 backdrop-blur-xl">
+    <RuntimePublicLocalization locale={locale} scopes={["core", "tools"]}>
+      <header className="sticky top-0 z-50 border-b border-white/10 bg-black/85 backdrop-blur-xl">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-4">
         <Link href="/" className="flex min-w-0 items-center gap-3">
           <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-red-800/50 bg-[#111] shadow-lg shadow-red-950/40">
@@ -40,6 +43,7 @@ export function ToolsHeader() {
           <span className="sm:hidden">Portal</span>
         </Link>
       </div>
-    </header>
+      </header>
+    </RuntimePublicLocalization>
   );
 }

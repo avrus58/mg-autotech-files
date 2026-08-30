@@ -55,14 +55,17 @@ test("registration keeps the next action inside short laptop viewports", () => {
 test("final account action links to the existing privacy and terms pages", () => {
   const finalStep = registerPage.slice(registerPage.indexOf("{step === 3"));
 
-  assert.match(finalStep, /aria-label="Legal information"/);
   assert.match(
     finalStep,
-    /href="\/privacy"[\s\S]*target="_blank"[\s\S]*rel="noopener noreferrer"[\s\S]*aria-label="Privacy information \(opens in a new tab\)"/
+    /aria-label=\{firstPaintT\("Legal information"\)\}/
   );
   assert.match(
     finalStep,
-    /href="\/agb"[\s\S]*target="_blank"[\s\S]*rel="noopener noreferrer"[\s\S]*aria-label="Terms in German \(opens in a new tab\)"/
+    /href="\/privacy"[\s\S]*target="_blank"[\s\S]*rel="noopener noreferrer"[\s\S]*aria-label=\{firstPaintT\([\s\S]*?"Privacy information \(opens in a new tab\)"[\s\S]*?\)\}/
+  );
+  assert.match(
+    finalStep,
+    /href="\/agb"[\s\S]*target="_blank"[\s\S]*rel="noopener noreferrer"[\s\S]*aria-label=\{firstPaintT\([\s\S]*?"Terms in German \(opens in a new tab\)"[\s\S]*?\)\}/
   );
   assert.match(finalStep, /Terms \(German\)/);
   assert.match(finalStep, /flex flex-wrap items-center/);
@@ -74,8 +77,14 @@ test("company registration requires and persists a bounded company identity", ()
   assert.match(registerPage, /setMessage\("Please enter your company name\."\)/);
   assert.match(registerPage, /company_name: accountType === "company" \? cleanCompanyName : null/);
   assert.match(registerPage, /vat_id: accountType === "company" \? taxNumber\.trim\(\) \|\| null : null/);
-  assert.match(registerPage, /label="Company Name"[\s\S]*?autoComplete="organization"/);
-  assert.match(registerPage, /label="Company Name"[\s\S]*?maxLength=\{120\}/);
+  assert.match(
+    registerPage,
+    /label=\{firstPaintT\("Company Name"\)\}[\s\S]*?autoComplete="organization"/
+  );
+  assert.match(
+    registerPage,
+    /label=\{firstPaintT\("Company Name"\)\}[\s\S]*?maxLength=\{120\}/
+  );
   assert.match(registerPage, /aria-pressed=\{accountType === item\.id\}/);
 });
 
@@ -106,6 +115,9 @@ test("Google registration carries the validated customer and company profile", (
 });
 
 test("private registration keeps company-only controls and metadata out of the account", () => {
-  assert.match(registerPage, /\{accountType === "company" && \([\s\S]*?label="Company Name"/);
+  assert.match(
+    registerPage,
+    /\{accountType === "company" && \([\s\S]*?label=\{firstPaintT\("Company Name"\)\}/
+  );
   assert.match(registerPage, /tax_number: accountType === "company" \? taxNumber\.trim\(\) \|\| null : null/);
 });

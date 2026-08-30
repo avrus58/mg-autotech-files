@@ -12,6 +12,9 @@ import {
 import { signOutLocalStable } from "@/lib/authGuards";
 import { getSafeLocalRedirectPath } from "@/lib/safeLocalRedirect";
 import { replacePrivateMeasurementDocument } from "@/lib/publicAnalytics";
+import { customerWorkflowT } from "@/lib/i18n/customer-workflow-auth-translations";
+import { intlLocaleByCode } from "@/lib/i18nConfig";
+import { useActiveLocale } from "@/lib/useActiveLocale";
 
 function formatCountdown(totalSeconds: number) {
   const safeSeconds = Math.max(0, Math.ceil(totalSeconds));
@@ -30,6 +33,7 @@ export function DeviceVerificationPanel({
   allowRememberDevice?: boolean;
 }) {
   const router = useRouter();
+  const locale = useActiveLocale();
   const codeInputRef = useRef<HTMLInputElement | null>(null);
   const [state, setState] = useState<DeviceVerificationState | null>(null);
   const [code, setCode] = useState("");
@@ -56,7 +60,7 @@ export function DeviceVerificationPanel({
     const nextRetryAt = delay > 0 ? Date.now() + delay * 1000 : 0;
     setRetryAt(nextRetryAt);
     setSecondsRemaining(delay);
-    if (next.error) setMessage(next.error);
+    if (next.error) setMessage("The security request could not be completed. Please try again.");
   }, []);
 
   const leaveRevokedSession = useCallback(async () => {
@@ -81,8 +85,8 @@ export function DeviceVerificationPanel({
       }
       applyState(next);
       window.setTimeout(() => codeInputRef.current?.focus(), 0);
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : "The verification e-mail could not be sent.");
+    } catch {
+      setMessage("The verification e-mail could not be sent.");
     } finally {
       setWorking(null);
     }
@@ -123,8 +127,8 @@ export function DeviceVerificationPanel({
       applyState({ ...state, ...next });
       setCode("");
       window.setTimeout(() => codeInputRef.current?.focus(), 0);
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : "The code could not be verified.");
+    } catch {
+      setMessage("The code could not be verified.");
     } finally {
       setWorking(null);
     }
@@ -152,8 +156,8 @@ export function DeviceVerificationPanel({
         setMessage("Please wait before requesting another security code.");
       }
       window.setTimeout(() => codeInputRef.current?.focus(), 0);
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : "A new code could not be sent.");
+    } catch {
+      setMessage("A new code could not be sent.");
     } finally {
       setWorking(null);
     }
@@ -186,8 +190,8 @@ export function DeviceVerificationPanel({
         {state?.maskedEmail && canVerify ? (
           <>
             {state.sentNewCode
-              ? "A 6-digit security code was accepted for sending to"
-              : "A 6-digit security code was already sent to"}{" "}
+              ? customerWorkflowT(locale, "codeAcceptedForEmail", {})
+              : customerWorkflowT(locale, "codeSentToEmail", {})}{" "}
             <span data-no-translate>{state.maskedEmail}</span>.
           </>
         ) : statusDescription}
@@ -242,7 +246,7 @@ export function DeviceVerificationPanel({
         <div aria-live="polite" className="mt-5 rounded-2xl border border-amber-700/40 bg-amber-950/20 p-4 text-sm text-amber-100">
           {message}
           {typeof state?.attemptsRemaining === "number" && state.attemptsRemaining > 0
-            ? <>{" "}<span data-no-translate>{state.attemptsRemaining}</span>{" "}attempts left.</>
+            ? <> {customerWorkflowT(locale, "attemptsLeft", { count: state.attemptsRemaining.toLocaleString(intlLocaleByCode[locale]) })}</>
             : null}
         </div>
       )}
@@ -256,7 +260,7 @@ export function DeviceVerificationPanel({
             className="inline-flex items-center text-red-400 disabled:text-zinc-600"
           >
             {working === "resend" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCcw className="mr-2 h-4 w-4" />}
-            {secondsRemaining > 0 ? <><span>Resend code in</span>{" "}<span data-no-translate>{formatCountdown(secondsRemaining)}</span></> : "Resend code"}
+            {secondsRemaining > 0 ? customerWorkflowT(locale, "resendCodeIn", { time: formatCountdown(secondsRemaining) }) : "Resend code"}
           </button>
         ) : (
           <button
@@ -267,7 +271,7 @@ export function DeviceVerificationPanel({
           >
             <RefreshCcw className="mr-2 h-4 w-4" />
             {secondsRemaining > 0
-              ? <><span>Try again in</span>{" "}<span data-no-translate>{formatCountdown(secondsRemaining)}</span></>
+              ? customerWorkflowT(locale, "tryAgainIn", { time: formatCountdown(secondsRemaining) })
               : "Try again"}
           </button>
         )}

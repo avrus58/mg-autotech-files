@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -10,6 +10,8 @@ import {
   FileText,
   ShieldCheck,
 } from "lucide-react";
+import { intlLocaleByCode, type LocaleCode } from "@/lib/i18nConfig";
+import type { RequestBriefCopy } from "@/lib/i18n/tool-client-copy-keys";
 
 const serviceGoals = [
   "Stage 1 performance",
@@ -30,8 +32,12 @@ const readMethods = [
   "Unknown",
 ];
 
-function line(label: string, value: string) {
-  return `${label}: ${value.trim() || "not provided"}`;
+function toolT(copy: RequestBriefCopy, source: string) {
+  return (copy as Readonly<Record<string, string>>)[source] ?? source;
+}
+
+function line(copy: RequestBriefCopy, label: string, value: string) {
+  return `${toolT(copy, label)}: ${value.trim() || toolT(copy, "not provided")}`;
 }
 
 function completeness(values: string[]) {
@@ -39,13 +45,20 @@ function completeness(values: string[]) {
   return Math.round((filled / values.length) * 100);
 }
 
-function copyStatusLabel(status: "idle" | "copied" | "failed") {
-  if (status === "copied") return "Copied";
-  if (status === "failed") return "Copy failed";
-  return "Copy brief";
+function copyStatusLabel(copy: RequestBriefCopy, status: "idle" | "copied" | "failed") {
+  if (status === "copied") return toolT(copy, "Copied");
+  if (status === "failed") return toolT(copy, "Copy failed");
+  return toolT(copy, "Copy brief");
 }
 
-export function RequestBriefBuilder() {
+export function RequestBriefBuilder({
+  copy,
+  locale,
+}: {
+  copy: RequestBriefCopy;
+  locale: LocaleCode;
+}) {
+  const t = useCallback((source: string) => toolT(copy, source), [copy]);
   const [vehicle, setVehicle] = useState("");
   const [engine, setEngine] = useState("");
   const [year, setYear] = useState("");
@@ -70,24 +83,32 @@ export function RequestBriefBuilder() {
     if (/hardware/i.test(serviceGoal) && !hardware.trim()) missing.push("hardware changes");
 
     const brief = [
-      "MG AutoTech request brief",
+      t("MG AutoTech request brief"),
       "-------------------------",
-      line("Vehicle", vehicle),
-      line("Engine / engine code", engine),
-      line("Model year", year),
-      line("ECU / TCU info", ecu),
-      line("Read tool / method", readTool),
-      line("Requested service", serviceGoal),
-      line("Hardware changes", hardware),
-      line("Fault codes / diagnostics", faultCodes),
-      line("Symptoms / customer goal", symptoms),
-      line("Additional notes", notes),
+      line(copy, "Vehicle", vehicle),
+      line(copy, "Engine / engine code", engine),
+      line(copy, "Model year", year),
+      line(copy, "ECU / TCU info", ecu),
+      line(copy, "Read tool / method", readTool),
+      line(copy, "Requested service", t(serviceGoal)),
+      line(copy, "Hardware changes", hardware),
+      line(copy, "Fault codes / diagnostics", faultCodes),
+      line(copy, "Symptoms / customer goal", symptoms),
+      line(copy, "Additional notes", notes),
       "",
-      "Safety note: original file will be uploaded only through the secure MG AutoTech request form.",
+      t("Safety note: original file will be uploaded only through the secure MG AutoTech request form."),
     ].join("\n");
 
     return { score, missing, brief };
-  }, [ecu, engine, faultCodes, hardware, notes, readTool, serviceGoal, symptoms, vehicle, year]);
+  }, [copy, ecu, engine, faultCodes, hardware, notes, readTool, serviceGoal, symptoms, t, vehicle, year]);
+
+  const localizedMissing = useMemo(
+    () => new Intl.ListFormat(intlLocaleByCode[locale], {
+      style: "long",
+      type: "conjunction",
+    }).format(result.missing.map((item) => t(item))),
+    [locale, result.missing, t]
+  );
 
   async function copyBrief() {
     try {
@@ -109,24 +130,24 @@ export function RequestBriefBuilder() {
               <Clipboard className="h-5 w-5" />
             </span>
             <div>
-              <div className="text-xs font-black uppercase tracking-[0.16em] text-red-400">Brief input</div>
-              <h2 className="text-2xl font-black">Build a clean request note</h2>
+              <div className="text-xs font-black uppercase tracking-[0.16em] text-red-400">{t("Brief input")}</div>
+              <h2 className="text-2xl font-black">{t("Build a clean request note")}</h2>
             </div>
           </div>
 
           <div className="mt-6 grid gap-4 sm:grid-cols-2">
-            <Field label="Vehicle" value={vehicle} onChange={setVehicle} placeholder="BMW 530d G30" />
-            <Field label="Engine / engine code" value={engine} onChange={setEngine} placeholder="B57, OM654, EA888..." />
-            <Field label="Model year" value={year} onChange={setYear} placeholder="2021" />
-            <Field label="ECU / TCU info" value={ecu} onChange={setEcu} placeholder="EDC17, MD1, MG1..." />
-            <SelectField label="Read tool / method" value={readTool} onChange={setReadTool} options={readMethods} />
-            <SelectField label="Requested service" value={serviceGoal} onChange={setServiceGoal} options={serviceGoals} />
-            <Field label="Hardware changes" value={hardware} onChange={setHardware} placeholder="stock, downpipe, intake..." />
-            <Field label="Fault codes" value={faultCodes} onChange={setFaultCodes} placeholder="P0401, P2002..." />
+            <Field label={t("Vehicle")} value={vehicle} onChange={setVehicle} placeholder="BMW 530d G30" />
+            <Field label={t("Engine / engine code")} value={engine} onChange={setEngine} placeholder="B57, OM654, EA888..." />
+            <Field label={t("Model year")} value={year} onChange={setYear} placeholder="2021" />
+            <Field label={t("ECU / TCU info")} value={ecu} onChange={setEcu} placeholder="EDC17, MD1, MG1..." />
+            <SelectField label={t("Read tool / method")} value={readTool} onChange={setReadTool} options={readMethods} getOptionLabel={t} />
+            <SelectField label={t("Requested service")} value={serviceGoal} onChange={setServiceGoal} options={serviceGoals} getOptionLabel={t} />
+            <Field label={t("Hardware changes")} value={hardware} onChange={setHardware} placeholder={t("stock, downpipe, intake...")} />
+            <Field label={t("Fault codes")} value={faultCodes} onChange={setFaultCodes} placeholder="P0401, P2002..." />
           </div>
           <div className="mt-4 grid gap-4">
-            <TextArea label="Symptoms / customer goal" value={symptoms} onChange={setSymptoms} placeholder="What should be improved or checked?" />
-            <TextArea label="Additional notes" value={notes} onChange={setNotes} placeholder="Read method, previous tuning, file context, support notes..." />
+            <TextArea label={t("Symptoms / customer goal")} value={symptoms} onChange={setSymptoms} placeholder={t("What should be improved or checked?")} />
+            <TextArea label={t("Additional notes")} value={notes} onChange={setNotes} placeholder={t("Read method, previous tuning, file context, support notes...")} />
           </div>
         </div>
 
@@ -134,7 +155,7 @@ export function RequestBriefBuilder() {
           <div className="border border-white/10 bg-[#0b0c0e] p-6">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
               <div>
-                <div className="text-xs font-black uppercase tracking-[0.16em] text-zinc-500">Brief completeness</div>
+                <div className="text-xs font-black uppercase tracking-[0.16em] text-zinc-500">{t("Brief completeness")}</div>
                 <div className="mt-2 text-5xl font-black text-white">{result.score}%</div>
               </div>
               <div className="h-4 w-full overflow-hidden rounded-full bg-black/50 sm:w-52">
@@ -143,12 +164,12 @@ export function RequestBriefBuilder() {
             </div>
             {result.missing.length > 0 ? (
               <p className="mt-4 text-sm leading-6 text-amber-100">
-                Add: {result.missing.join(", ")}.
+                {t("Add:")} {localizedMissing}.
               </p>
             ) : (
               <p className="mt-4 flex items-center gap-2 text-sm font-bold text-emerald-300">
                 <ClipboardCheck className="h-4 w-4" />
-                This brief has the key details MG AutoTech usually needs.
+                {t("This brief has the key details MG AutoTech usually needs.")}
               </p>
             )}
           </div>
@@ -157,14 +178,14 @@ export function RequestBriefBuilder() {
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <h2 className="flex items-center gap-3 text-xl font-black">
                 <FileText className="h-5 w-5 text-red-400" />
-                Generated request brief
+                {t("Generated request brief")}
               </h2>
               <button type="button" onClick={() => void copyBrief()} className="inline-flex items-center justify-center rounded-lg border border-white/15 bg-white/[0.04] px-4 py-3 text-sm font-black hover:bg-white/10">
                 <Copy className="mr-2 h-4 w-4" />
-                {copyStatusLabel(copyStatus)}
+                {copyStatusLabel(copy, copyStatus)}
               </button>
             </div>
-            <pre className="mt-5 max-h-[460px] overflow-auto whitespace-pre-wrap rounded-lg border border-white/10 bg-black/45 p-4 text-xs leading-6 text-zinc-300">
+            <pre translate="no" data-no-translate className="mt-5 max-h-[460px] overflow-auto whitespace-pre-wrap rounded-lg border border-white/10 bg-black/45 p-4 text-xs leading-6 text-zinc-300">
               {result.brief}
             </pre>
           </div>
@@ -172,15 +193,15 @@ export function RequestBriefBuilder() {
           <div className="border border-white/10 bg-[#070707] p-6">
             <div className="flex items-start gap-3 text-sm leading-6 text-zinc-400">
               <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-emerald-400" />
-              This tool does not upload files, inspect binary data, create a request or contact MG AutoTech automatically.
+              {t("This tool does not upload files, inspect binary data, create a request or contact MG AutoTech automatically.")}
             </div>
             <div className="mt-6 flex flex-col gap-3 sm:flex-row">
               <Link href="/new-request" className="inline-flex items-center justify-center rounded-lg bg-[#b1121b] px-5 py-3 text-sm font-black hover:bg-[#c91824]">
-                Open Secure Request Form
+                {t("Open Secure Request Form")}
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
               <Link href="/dashboard/orders" className="inline-flex items-center justify-center rounded-lg border border-white/15 bg-white/[0.04] px-5 py-3 text-sm font-black hover:bg-white/10">
-                View Orders
+                {t("View Orders")}
               </Link>
             </div>
           </div>
@@ -199,12 +220,12 @@ function Field({ label, value, onChange, placeholder }: { label: string; value: 
   );
 }
 
-function SelectField({ label, value, onChange, options }: { label: string; value: string; onChange: (value: string) => void; options: string[] }) {
+function SelectField({ label, value, onChange, options, getOptionLabel = (option) => option }: { label: string; value: string; onChange: (value: string) => void; options: string[]; getOptionLabel?: (option: string) => string }) {
   return (
     <label className="block text-xs font-black uppercase tracking-[0.14em] text-zinc-500">
       {label}
       <select value={value} onChange={(event) => onChange(event.target.value)} className="mt-2 h-12 w-full rounded-lg border border-white/10 bg-black/40 px-4 text-sm font-bold normal-case text-white outline-none focus:border-red-700">
-        {options.map((option) => <option key={option} value={option}>{option}</option>)}
+        {options.map((option) => <option key={option} value={option}>{getOptionLabel(option)}</option>)}
       </select>
     </label>
   );

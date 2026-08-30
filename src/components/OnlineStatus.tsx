@@ -1,36 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { usePathname } from "next/navigation";
-
-type LocaleCode =
-  | "nl"
-  | "en"
-  | "de"
-  | "fr"
-  | "it"
-  | "ru"
-  | "es"
-  | "tr"
-  | "pt"
-  | "zh"
-  | "pl"
-  | "sq";
-
-const localeCodes = new Set<LocaleCode>([
-  "nl",
-  "en",
-  "de",
-  "fr",
-  "it",
-  "ru",
-  "es",
-  "tr",
-  "pt",
-  "zh",
-  "pl",
-  "sq",
-]);
+import type { LocaleCode } from "@/lib/i18nConfig";
+import { useActiveLocale } from "@/lib/useActiveLocale";
 
 const statusCopy: Record<
   LocaleCode,
@@ -119,7 +91,7 @@ const statusCopy: Record<
     timePrefix: "Saat",
     offlinePrefix: "Şu an",
     onlinePrefix: "Şu an",
-    sundayPrefix: "Pazar desteği",
+      sundayPrefix: "Pazar günü",
     offlineWord: "çevrim dışıyız",
     onlineWord: "çevrim içiyiz!",
     loadingTitle: "Canlı durum",
@@ -166,43 +138,6 @@ const statusCopy: Record<
     loadingLabel: "Po kontrollohet disponueshmëria",
   },
 };
-
-function normalizeLocale(input?: string | null): LocaleCode {
-  const language = input?.toLowerCase().split(",")[0]?.split("-")[0];
-
-  if (language === "cn" || language === "zh") return "zh";
-  if (language === "al" || language === "sq") return "sq";
-
-  return language && localeCodes.has(language as LocaleCode)
-    ? (language as LocaleCode)
-    : "en";
-}
-
-function getRouteLocale(pathname: string | null): LocaleCode | null {
-  const segment = pathname?.split("/").filter(Boolean)[0];
-
-  if (!segment) return null;
-
-  const normalized = normalizeLocale(segment);
-
-  return localeCodes.has(normalized) && segment.toLowerCase() !== normalized
-    ? null
-    : normalized;
-}
-
-function getClientLocale(pathname: string | null): LocaleCode {
-  const routeLocale = getRouteLocale(pathname);
-
-  if (routeLocale) return routeLocale;
-
-  if (typeof window === "undefined") return "en";
-
-  return normalizeLocale(
-    window.localStorage.getItem("mg_locale") ??
-      document.documentElement.lang ??
-      "en"
-  );
-}
 
 function getGermanyTime() {
   return new Date(
@@ -260,11 +195,8 @@ function getStatusLabel(date: Date, online: boolean, locale: LocaleCode) {
 }
 
 export function OnlineStatus() {
-  const pathname = usePathname();
+  const locale = useActiveLocale();
   const [now, setNow] = useState<Date | null>(null);
-  const [locale, setLocale] = useState<LocaleCode>(
-    () => getRouteLocale(pathname) ?? "en"
-  );
 
   useEffect(() => {
     const initialUpdate = window.setTimeout(() => setNow(getGermanyTime()), 0);
@@ -278,22 +210,6 @@ export function OnlineStatus() {
       window.clearInterval(interval);
     };
   }, []);
-
-  useEffect(() => {
-    const initialUpdate = window.setTimeout(() => setLocale(getClientLocale(pathname)), 0);
-
-    function handleLocaleChange(event: Event) {
-      const detail = (event as CustomEvent<{ locale?: string }>).detail;
-      setLocale(normalizeLocale(detail?.locale));
-    }
-
-    window.addEventListener("mg-locale-change", handleLocaleChange);
-
-    return () => {
-      window.clearTimeout(initialUpdate);
-      window.removeEventListener("mg-locale-change", handleLocaleChange);
-    };
-  }, [pathname]);
 
   const status = useMemo(() => {
     const copy = statusCopy[locale] ?? statusCopy.en;

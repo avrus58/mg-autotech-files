@@ -261,15 +261,27 @@ test("registration uses one editable auto-detected phone country on both auth pa
   assert.match(registerPage, /phone\.trim\(\) && !formattedPhone/);
   assert.doesNotMatch(registerPage, /placeholder="\+49/);
 
-  assert.match(phoneField, /aria-label="Country calling code"/);
+  assert.match(
+    phoneField,
+    /aria-label=\{customerRuntimeExactT\(locale, "Country calling code"\)\}/
+  );
   assert.match(phoneField, /autoComplete="tel-country-code"/);
   assert.match(phoneField, /data-phone-country-flag/);
-  assert.match(phoneField, /selectedOption\?\.callingCode \?\? "Code"/);
+  assert.match(
+    phoneField,
+    /selectedOption\?\.callingCode \?\? customerRuntimeExactT\(locale, "Code"\)/
+  );
   assert.match(phoneField, /type="tel"/);
   assert.match(phoneField, /inputMode="tel"/);
   assert.match(phoneField, /autoComplete="tel-national"/);
-  assert.match(phoneField, /aria-label="Phone number"/);
-  assert.match(phoneField, /special[\s\S]*carrier plans may require the full \+ number/);
+  assert.match(
+    phoneField,
+    /aria-label=\{customerRuntimeExactT\(locale, "Phone number"\)\}/
+  );
+  assert.match(
+    phoneField,
+    /customerRuntimeExactT\([\s\S]*"Calling code starts from your country\.[\s\S]*special carrier plans may require the full \+ number\."/
+  );
   assert.match(phoneField, /grid-cols-\[7\.75rem_minmax\(0,1fr\)\]/);
   assert.match(phoneField, /h-11/);
   assert.match(countrySelect, /data-country-code=\{option\.code\}/);

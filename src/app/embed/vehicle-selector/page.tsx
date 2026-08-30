@@ -17,7 +17,7 @@ export default async function VehicleSelectorEmbedPage({ searchParams }: { searc
     !result.requestDomain || !result.settings.allow_iframe_embed || !result.client.allow_iframe_embed
   ) {
     const language = result.language ?? "en";
-    return <main data-widget-embed className="flex min-h-screen items-center justify-center bg-[#f5f6f8] p-4 text-center text-sm font-semibold text-zinc-700" dir={language === "ar" ? "rtl" : "ltr"}>{widgetT(language, "unavailable")}</main>;
+    return <main data-widget-embed lang={language} className="flex min-h-screen items-center justify-center bg-[#f5f6f8] p-4 text-center text-sm font-semibold text-zinc-700" dir={language === "ar" ? "rtl" : "ltr"}>{widgetT(language, "unavailable")}</main>;
   }
 
   const origin = result.requestOrigin || `https://${result.requestDomain}`;
@@ -31,7 +31,7 @@ export default async function VehicleSelectorEmbedPage({ searchParams }: { searc
   const apiBaseUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://file.mgautotech.de").replace(/\/$/, "");
 
   return (
-    <main data-widget-embed className="min-h-screen bg-transparent p-2 sm:p-4">
+    <main data-widget-embed lang={result.language} className="min-h-screen bg-transparent p-2 sm:p-4">
       <PublicVehicleSelector
         publicKey={key}
         sessionToken={sessionToken}

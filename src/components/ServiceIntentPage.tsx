@@ -9,8 +9,9 @@ import {
   Layers3,
   ShieldCheck,
 } from "lucide-react";
-import { Footer } from "@/components/Footer";
 import { PublicSeoHeader } from "@/components/PublicSeoHeader";
+import { RuntimePublicFooter } from "@/components/RuntimePublicFooter";
+import { RuntimePublicLocalization } from "@/components/RuntimePublicLocalization";
 import { StageComparison } from "@/components/StageComparison";
 import {
   absoluteUrl,
@@ -19,27 +20,39 @@ import {
 } from "@/lib/seo";
 import type { ServiceIntentGuide } from "@/lib/serviceIntentGuides";
 import {
+  localizeRuntimePublicJsonLd,
+  runtimePublicInLanguage,
+} from "@/lib/i18n/runtime-public";
+import type { LocaleCode } from "@/lib/i18nConfig";
+import {
   buildNewRequestPath,
   getPublicServiceRequestIntent,
 } from "@/lib/requestIntent";
 
-export function ServiceIntentPage({ guide }: { guide: ServiceIntentGuide }) {
+export function ServiceIntentPage({
+  guide,
+  locale = "en",
+}: {
+  guide: ServiceIntentGuide;
+  locale?: LocaleCode;
+}) {
   const pageUrl = absoluteUrl(`/services/${guide.slug}`);
   const requestHref = buildNewRequestPath(
     getPublicServiceRequestIntent(guide.slug)
   );
-  const jsonLd = {
+  const scopes = ["core", "services", "service-intent"] as const;
+  const jsonLd = localizeRuntimePublicJsonLd({
     "@context": "https://schema.org",
     "@graph": [
       organizationJsonLd(),
-      websiteJsonLd("en"),
+      websiteJsonLd(locale),
       {
         "@type": "WebPage",
         "@id": `${pageUrl}#page`,
         name: guide.metaTitle,
         description: guide.description,
         url: pageUrl,
-        inLanguage: "en",
+        inLanguage: runtimePublicInLanguage(locale),
         datePublished: guide.publishedAt,
         dateModified: guide.updatedAt,
         isPartOf: { "@id": `${absoluteUrl("/services")}#page` },
@@ -92,12 +105,13 @@ export function ServiceIntentPage({ guide }: { guide: ServiceIntentGuide }) {
         })),
       },
     ],
-  };
+  }, locale, scopes);
 
   return (
-    <main data-no-translate className="min-h-screen overflow-x-hidden bg-[#050505] text-white">
+    <RuntimePublicLocalization locale={locale} scopes={scopes}>
+      <main className="min-h-screen overflow-x-hidden bg-[#050505] text-white">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      <PublicSeoHeader />
+      <PublicSeoHeader locale={locale} />
 
       <section className="border-b border-white/10 bg-[radial-gradient(circle_at_78%_18%,rgba(177,18,27,0.22),transparent_28%),#050505]">
         <div className="mx-auto grid max-w-7xl gap-10 px-4 py-14 lg:grid-cols-[minmax(0,1.15fr)_minmax(300px,.65fr)] lg:items-end lg:py-20">
@@ -138,7 +152,9 @@ export function ServiceIntentPage({ guide }: { guide: ServiceIntentGuide }) {
         </div>
       </section>
 
-      {(guide.slug === "stage-2" || guide.slug === "stage-3") && <StageComparison compact />}
+      {(guide.slug === "stage-2" || guide.slug === "stage-3") && (
+        <StageComparison compact locale={locale} />
+      )}
 
       <section className="border-b border-white/10 bg-[#090a0c]">
         <div className="mx-auto grid max-w-7xl gap-10 px-4 py-14 lg:grid-cols-2 lg:py-18">
@@ -240,7 +256,14 @@ export function ServiceIntentPage({ guide }: { guide: ServiceIntentGuide }) {
               <FileCheck2 className="h-6 w-6 text-red-500" aria-hidden="true" />
               <p className="mt-4 text-xs font-black uppercase tracking-normal text-zinc-500">Published by MG AutoTech</p>
               <h2 className="mt-2 text-2xl font-black">Related workshop routes</h2>
-              <p className="mt-2 text-sm text-zinc-500">Updated {guide.updatedAt}. Public guidance only; secure handling remains account-based.</p>
+              <p className="mt-2 text-sm text-zinc-500">
+                <span>Updated</span>{" "}
+                <time dateTime={guide.updatedAt} translate="no" data-no-translate>
+                  {guide.updatedAt}
+                </time>
+                .{" "}
+                <span>Public guidance only; secure handling remains account-based.</span>
+              </p>
             </div>
             <Link href="/about" className="inline-flex items-center text-sm font-black text-red-300 hover:text-red-200">
               About MG AutoTech<ArrowRight className="ml-2 h-4 w-4" aria-hidden="true" />
@@ -256,7 +279,8 @@ export function ServiceIntentPage({ guide }: { guide: ServiceIntentGuide }) {
         </div>
       </section>
 
-      <Footer />
-    </main>
+      <RuntimePublicFooter locale={locale} scopes={scopes} />
+      </main>
+    </RuntimePublicLocalization>
   );
 }

@@ -5,6 +5,16 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getStableSession, notifySessionRequired, signOutIfEmailUnverified, signOutStable } from "@/lib/authGuards";
 import { supabase } from "@/lib/supabaseClient";
+import { intlLocaleByCode, type LocaleCode } from "@/lib/i18nConfig";
+import { useActiveLocale } from "@/lib/useActiveLocale";
+import {
+  customerWorkflowExactT,
+  customerWorkflowT,
+} from "@/lib/i18n/customer-workflow-overview-translations";
+import {
+  localizeCreditTransactionType,
+  localizeCustomerOrderStatus,
+} from "@/lib/i18n/customer-runtime-translations";
 import {
   Activity,
   ArrowRight,
@@ -99,30 +109,15 @@ function getProfileCompletionMissingItems(profile: DashboardProfile) {
   return missing;
 }
 
-function formatMissingProfileItems(items: string[]) {
-  if (items.length <= 2) return items.join(" and ");
-
-  return `${items.slice(0, -1).join(", ")} and ${items[items.length - 1]}`;
+function formatMissingProfileItems(items: string[], locale: LocaleCode) {
+  return new Intl.ListFormat(intlLocaleByCode[locale], {
+    style: "long",
+    type: "conjunction",
+  }).format(items.map((item) => customerWorkflowExactT(locale, item)));
 }
 
-function formatStatus(status: string | null) {
-  if (!status) return "New Request";
-
-  return status
-    .replaceAll("_", " ")
-    .split(" ")
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ");
-}
-
-function formatCreditTransactionType(type: string | null) {
-  if (!type) return "Credit movement";
-
-  return type
-    .replaceAll("_", " ")
-    .split(" ")
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ");
+function formatDashboardCount(value: number, locale: LocaleCode) {
+  return value.toLocaleString(intlLocaleByCode[locale]);
 }
 
 function getStatusStyle(status: string | null) {
@@ -147,8 +142,8 @@ function getStatusStyle(status: string | null) {
   return "border-red-700/40 bg-red-950/30 text-red-300";
 }
 
-function formatDate(date: string) {
-  return new Intl.DateTimeFormat("de-DE", {
+function formatDate(date: string, locale: LocaleCode) {
+  return new Intl.DateTimeFormat(intlLocaleByCode[locale], {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
@@ -190,6 +185,7 @@ function LocalTime() {
 
 export function DashboardClient() {
   const router = useRouter();
+  const locale = useActiveLocale();
 
   const [email, setEmail] = useState<string | null>(null);
   const [customerName, setCustomerName] = useState("Customer");
@@ -455,13 +451,13 @@ export function DashboardClient() {
         order.vehicle_generation,
         order.vehicle_engine,
         order.service_type,
-        formatStatus(order.status),
+        localizeCustomerOrderStatus(locale, order.status),
       ].some((value) => value?.toLowerCase().includes(query))
     );
-  }, [orders, requestSearch]);
+  }, [locale, orders, requestSearch]);
 
   const customerReference = formatCustomerReference(customerId);
-  const profileCompletionSummary = formatMissingProfileItems(profileMissingItems);
+  const profileCompletionSummary = formatMissingProfileItems(profileMissingItems, locale);
 
   const dashboardNextAction = useMemo(() => {
     if (needsResponseCount > 0) {
@@ -469,7 +465,9 @@ export function DashboardClient() {
         key: "response",
         eyebrow: "Action required",
         title: "Respond to requested order information",
-        description: `${needsResponseCount} request${needsResponseCount === 1 ? "" : "s"} need your input before the file service can continue.`,
+        description: customerWorkflowT(locale, "dashboardNeedsResponse", {
+          count: formatDashboardCount(needsResponseCount, locale),
+        }),
         href: "/dashboard/orders?view=needs_response",
         cta: "Review Requests",
         tone: "border-red-800/50 bg-red-950/30 text-red-100",
@@ -481,7 +479,9 @@ export function DashboardClient() {
         key: "profile",
         eyebrow: "Account setup",
         title: "Complete your customer profile",
-        description: `Add ${profileCompletionSummary} so support, billing and bank-transfer handling have the correct account details.`,
+        description: customerWorkflowT(locale, "dashboardProfileDetails", {
+          items: profileCompletionSummary,
+        }),
         href: "/dashboard/settings",
         cta: "Update Settings",
         tone: "border-amber-700/40 bg-amber-950/20 text-amber-100",
@@ -505,7 +505,9 @@ export function DashboardClient() {
         key: "orders",
         eyebrow: "Live work",
         title: "Track your active file requests",
-        description: `${activeCount} active request${activeCount === 1 ? "" : "s"} are still moving through the MG AutoTech workflow.`,
+        description: customerWorkflowT(locale, "dashboardActiveRequests", {
+          count: formatDashboardCount(activeCount, locale),
+        }),
         href: "/dashboard/orders",
         cta: "Open Orders",
         tone: "border-blue-700/35 bg-blue-950/20 text-blue-100",
@@ -521,7 +523,7 @@ export function DashboardClient() {
       cta: "New Request",
       tone: "border-emerald-700/35 bg-emerald-950/20 text-emerald-100",
     };
-  }, [activeCount, credits, needsResponseCount, profileCompletionSummary, profileMissingItems.length]);
+  }, [activeCount, credits, locale, needsResponseCount, profileCompletionSummary, profileMissingItems.length]);
 
   const customerWorkflowSteps = useMemo(
     () => [
@@ -543,7 +545,9 @@ export function DashboardClient() {
         title: "Submit secure request",
         detail: "Start the private upload flow after your vehicle, service and file are ready.",
         href: "/new-request",
-        metric: `${credits} credits available`,
+        metric: customerWorkflowT(locale, "dashboardCreditsAvailable", {
+          count: formatDashboardCount(credits, locale),
+        }),
         icon: Upload,
       },
       {
@@ -552,19 +556,25 @@ export function DashboardClient() {
         href: needsResponseCount > 0 ? "/dashboard/orders?view=needs_response" : "/dashboard/orders",
         metric:
           needsResponseCount > 0
-            ? `${needsResponseCount} response needed`
-            : `${activeCount} active request${activeCount === 1 ? "" : "s"}`,
+            ? customerWorkflowT(locale, "dashboardResponsesNeeded", {
+                count: formatDashboardCount(needsResponseCount, locale),
+              })
+            : customerWorkflowT(locale, "dashboardActiveRequestsMetric", {
+                count: formatDashboardCount(activeCount, locale),
+              }),
         icon: FileText,
       },
       {
         title: "Review delivery",
         detail: "Open completed requests and download delivered files from your private dashboard.",
         href: "/dashboard/orders?view=completed",
-        metric: `${completedCount} completed`,
+        metric: customerWorkflowT(locale, "dashboardCompletedMetric", {
+          count: formatDashboardCount(completedCount, locale),
+        }),
         icon: Download,
       },
     ],
-    [activeCount, completedCount, credits, needsResponseCount]
+    [activeCount, completedCount, credits, locale, needsResponseCount]
   );
 
   const NextActionIcon =
@@ -707,7 +717,9 @@ export function DashboardClient() {
                 href="/dashboard/notifications"
                 aria-label={
                   needsResponseCount > 0
-                    ? `Notifications - ${needsResponseCount} requests. Waiting for your information`
+                    ? customerWorkflowT(locale, "notificationsWaiting", {
+                        count: needsResponseCount.toLocaleString(intlLocaleByCode[locale]),
+                      })
                     : "Notifications"
                 }
                 className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-[var(--mg-portal-border)] bg-[var(--mg-portal-control)] text-zinc-300 transition hover:border-zinc-500 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 lg:h-9 lg:w-9"
@@ -733,8 +745,12 @@ export function DashboardClient() {
                   <User className="h-4 w-4" />
                 </div>
                 <div className="min-w-0">
-                  <div className="max-w-[155px] truncate text-xs font-black">{customerName}</div>
-                  <div className="max-w-[155px] truncate text-[10px] text-zinc-400">{email}</div>
+                  <div className="max-w-[155px] truncate text-xs font-black" translate="no" data-no-translate>
+                    {customerName}
+                  </div>
+                  <div className="max-w-[155px] truncate text-[10px] text-zinc-400" translate="no" data-no-translate>
+                    {email}
+                  </div>
                 </div>
               </div>
 
@@ -789,7 +805,7 @@ export function DashboardClient() {
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="min-w-0">
                   <h1 id="dashboard-welcome-title" className="break-words text-xl font-black sm:text-2xl lg:text-xl">
-                    Welcome, {customerName}
+                    Welcome, <span translate="no" data-no-translate>{customerName}</span>
                   </h1>
                   <p className="mt-1 text-sm text-zinc-400">
                     {liveRefreshing
@@ -813,7 +829,7 @@ export function DashboardClient() {
                       key={item}
                       className="max-w-full break-words rounded-full border border-amber-500/30 bg-black/25 px-2.5 py-1 text-[11px] font-bold text-amber-100"
                     >
-                      {item}
+                      {customerWorkflowExactT(locale, item)}
                     </span>
                   ))}
                 </div>
@@ -972,8 +988,8 @@ export function DashboardClient() {
                             <div className="min-w-0">
                               <div className="flex flex-wrap items-center gap-2">
                                 <h3 className="break-words font-black">
-                                  {order.vehicle_brand || "Vehicle"}{" "}
-                                  {order.vehicle_model || "request"}
+                                  {order.vehicle_brand ? <span translate="no" data-no-translate>{order.vehicle_brand}</span> : "Vehicle"}{" "}
+                                  {order.vehicle_model ? <span translate="no" data-no-translate>{order.vehicle_model}</span> : "request"}
                                 </h3>
                                 <span
                                   className={`rounded-full border px-2.5 py-1 text-[11px] font-black ${needsCustomerResponse
@@ -986,33 +1002,43 @@ export function DashboardClient() {
                                     ? "Needs your response"
                                     : isRevision
                                       ? "Revision review in progress"
-                                      : formatStatus(order.status)}
+                                      : localizeCustomerOrderStatus(locale, order.status)}
                                 </span>
                               </div>
 
                               <p className="mt-1 break-words text-sm text-zinc-400">
-                                {order.vehicle_generation || "Generation not set"} ·{" "}
-                                {order.vehicle_engine || "Engine not set"}
+                                {order.vehicle_generation ? <span translate="no" data-no-translate>{order.vehicle_generation}</span> : "Generation not set"} ·{" "}
+                                {order.vehicle_engine ? <span translate="no" data-no-translate>{order.vehicle_engine}</span> : "Engine not set"}
                               </p>
                               <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs">
                                 <span className="font-bold text-red-300">
-                                  {order.service_type || "Service not set"}
+                                  {order.service_type ? <span translate="no" data-no-translate>{order.service_type}</span> : "Service not set"}
                                 </span>
                                 <time
                                   dateTime={order.created_at}
                                   className="text-zinc-400"
                                 >
-                                  {formatDate(order.created_at)}
+                                  {formatDate(order.created_at, locale)}
                                 </time>
                                 <span className="text-zinc-400">
-                                  {Number(order.credits_required ?? 0)} credits
+                                  {customerWorkflowT(locale, "creditsCountLower", { count: Number(order.credits_required ?? 0).toLocaleString(intlLocaleByCode[locale]) })}
                                 </span>
                               </div>
                             </div>
 
                             <Link
                               href={`/dashboard/orders/${order.id}`}
-                              aria-label={`${isCompleted ? "Open delivery" : needsCustomerResponse ? "Respond to" : "View"} ${order.vehicle_brand || "vehicle"} ${order.vehicle_model || "request"}`}
+                              aria-label={customerWorkflowT(
+                                locale,
+                                isCompleted
+                                  ? "openDeliveryAria"
+                                  : needsCustomerResponse
+                                    ? "respondToAria"
+                                    : "viewRequestAria",
+                                {
+                                  vehicle: `${order.vehicle_brand || customerWorkflowT(locale, "fallbackVehicle")} ${order.vehicle_model || customerWorkflowT(locale, "fallbackRequest")}`,
+                                },
+                              )}
                               className="inline-flex w-full items-center justify-center rounded-lg border border-[var(--mg-portal-border-strong)] bg-[var(--mg-portal-control)] px-3 py-2 text-xs font-black text-white transition hover:border-red-500/60 hover:bg-[var(--mg-portal-control-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 sm:w-auto"
                             >
                               <OrderActionIcon className="mr-2 h-4 w-4" />
@@ -1067,7 +1093,7 @@ export function DashboardClient() {
                       {creditHistory.map((item) => {
                         const delta = Number(item.credits_delta ?? 0);
                         const isPositive = delta >= 0;
-                        const typeLabel = formatCreditTransactionType(item.type);
+                        const typeLabel = localizeCreditTransactionType(locale, item.type);
 
                         return (
                           <div key={item.id} className="flex min-w-0 items-center gap-3 px-4 py-3">
@@ -1075,9 +1101,13 @@ export function DashboardClient() {
                               <CreditCard className="h-4 w-4" />
                             </div>
                             <div className="min-w-0 flex-1">
-                              <div className="truncate text-sm font-bold">{item.description || typeLabel}</div>
+                              <div className="truncate text-sm font-bold">
+                                {item.description ? (
+                                  <span translate="no" data-no-translate>{item.description}</span>
+                                ) : typeLabel}
+                              </div>
                               <div className="mt-1 truncate text-[11px] text-zinc-400">
-                                {typeLabel} · {formatDate(item.created_at)}
+                                {typeLabel} · {formatDate(item.created_at, locale)}
                               </div>
                             </div>
                             <div className="shrink-0 text-right">
@@ -1106,7 +1136,9 @@ export function DashboardClient() {
                         Customer ID
                       </div>
                       <div className="mt-1 break-words font-black">
-                        {customerReference ?? "Not available"}
+                        {customerReference ? (
+                          <span translate="no" data-no-translate>{customerReference}</span>
+                        ) : "Not available"}
                       </div>
                     </div>
                     <User className="h-5 w-5 shrink-0 text-red-400" />

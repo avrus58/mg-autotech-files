@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 
 export default function ProcessingAgreementPage() {
   return (
-    <div data-no-translate className="min-h-screen bg-[#050505] text-white">
+    <div lang="de" data-no-translate className="min-h-screen bg-[#050505] text-white">
       <header className="border-b border-white/10 bg-black/90">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-4">
           <div className="flex items-center gap-3 font-black">

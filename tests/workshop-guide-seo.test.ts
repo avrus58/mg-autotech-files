@@ -61,7 +61,7 @@ test("workshop guide route publishes canonical article metadata and visible matc
   const route = projectFile("src", "app", "workshop-guides", "[slug]", "page.tsx");
   assert.match(route, /generateStaticParams/);
   assert.match(route, /getWorkshopGuideArticle/);
-  assert.match(route, /alternates: \{ canonical: url \}/);
+  assert.match(route, /runtimePublicAlternates\(`\/workshop-guides\/\$\{article\.slug\}`\)/);
   assert.match(route, /"@type": "TechArticle"/);
   assert.match(route, /"@type": "BreadcrumbList"/);
   assert.match(route, /"@type": "FAQPage"/);
@@ -79,7 +79,7 @@ test("workshop guide index and public header provide descriptive crawlable disco
   assert.match(index, /href=\{`\/workshop-guides\/\$\{article\.slug\}`\}/);
   assert.match(index, /hasPart: workshopGuideArticles\.map/);
   assert.match(index, /Read workshop guide/);
-  assert.match(header, /href="\/workshop-guides"[^>]*>Workshop guides/);
+  assert.match(header, /href=\{href\("\/workshop-guides"\)\}[^>]*>Workshop guides/);
 });
 
 test("sitemap and robots publish every guide without claiming untranslated alternates", () => {

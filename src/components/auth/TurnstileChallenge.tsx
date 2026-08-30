@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { customerWorkflowExactT } from "@/lib/i18n/customer-workflow-auth-translations";
+import { useActiveLocale } from "@/lib/useActiveLocale";
 
 type TurnstileWidgetId = string;
 type TurnstileAppearance = "always" | "interaction-only";
@@ -15,6 +17,7 @@ type TurnstileApi = {
       theme: "dark";
       appearance: TurnstileAppearance;
       size: TurnstileSize;
+      language: string;
       "response-field": false;
       callback(token: string): void;
       "error-callback"(code?: string): void;
@@ -39,6 +42,13 @@ const TURNSTILE_SCRIPT_URL =
   "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
 
 let turnstileScriptPromise: Promise<TurnstileApi> | null = null;
+
+function turnstileLanguage(locale: ReturnType<typeof useActiveLocale>) {
+  if (locale === "zh") return "zh-cn";
+  // Cloudflare does not currently offer Albanian widget copy.
+  if (locale === "sq") return "en";
+  return locale;
+}
 
 function loadTurnstile() {
   if (window.turnstile) return Promise.resolve(window.turnstile);
@@ -110,6 +120,7 @@ export function TurnstileChallenge({
   onToken(token: string | null): void;
   appearance?: TurnstileAppearance;
 }) {
+  const locale = useActiveLocale();
   const outerRef = useRef<HTMLDivElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const widgetIdRef = useRef<TurnstileWidgetId | null>(null);
@@ -158,6 +169,7 @@ export function TurnstileChallenge({
           theme: "dark",
           appearance,
           size: widgetSize,
+          language: turnstileLanguage(locale),
           "response-field": false,
           callback(token) {
             if (!active) return;
@@ -212,7 +224,7 @@ export function TurnstileChallenge({
       widgetIdRef.current = null;
       if (widgetId && window.turnstile) window.turnstile.remove(widgetId);
     };
-  }, [action, appearance, loadAttempt, siteKey, widgetSize]);
+  }, [action, appearance, loadAttempt, locale, siteKey, widgetSize]);
 
   useEffect(() => {
     const widgetId = widgetIdRef.current;
@@ -259,7 +271,7 @@ export function TurnstileChallenge({
           : "sr-only"}
         aria-live="polite"
       >
-        {status}
+        {customerWorkflowExactT(locale, status)}
       </p>
       {canRetry && (
         <button
@@ -267,7 +279,7 @@ export function TurnstileChallenge({
           onClick={retry}
           className="mt-2 text-xs font-black text-red-400 transition hover:text-red-300"
         >
-          Retry security verification
+          {customerWorkflowExactT(locale, "Retry security verification")}
         </button>
       )}
     </div>

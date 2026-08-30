@@ -17,6 +17,10 @@ import {
 import { getStableSession, notifySessionRequired, signOutIfEmailUnverified } from "@/lib/authGuards";
 import { supabase } from "@/lib/supabaseClient";
 import { CustomerPortalPageHeader } from "@/components/dashboard/CustomerPortalPageHeader";
+import { customerWorkflowT } from "@/lib/i18n/customer-workflow-orders-translations";
+import { localizeCustomerOrderStatus } from "@/lib/i18n/customer-runtime-translations";
+import { intlLocaleByCode, type LocaleCode } from "@/lib/i18nConfig";
+import { useActiveLocale } from "@/lib/useActiveLocale";
 
 type Order = {
   id: string;
@@ -43,9 +47,6 @@ const views: Array<{ value: View; label: string; description: string }> = [
 
 const CUSTOMER_ORDERS_LOAD_ERROR_MESSAGE = "Order archive could not be synced. Please try again.";
 
-function statusLabel(status: string | null) {
-  return (status || "new_request").replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
-}
 function statusClass(status: string | null) {
   if (status === "completed") return "border-emerald-700/40 bg-emerald-950/30 text-emerald-300";
   if (status === "in_progress") return "border-blue-700/40 bg-blue-950/30 text-blue-300";
@@ -55,14 +56,15 @@ function statusClass(status: string | null) {
   if (status === "cancelled") return "border-zinc-700/40 bg-zinc-900/50 text-zinc-400";
   return "border-red-800/40 bg-red-950/25 text-red-300";
 }
-function formatDate(value: string) {
-  return new Date(value).toLocaleString("de-DE", {
+function formatDate(value: string, locale: LocaleCode) {
+  return new Date(value).toLocaleString(intlLocaleByCode[locale], {
     day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit",
   });
 }
 
 export default function CustomerOrdersPage() {
   const router = useRouter();
+  const locale = useActiveLocale();
   const [userId, setUserId] = useState("");
   const [orders, setOrders] = useState<Order[]>([]);
   const [view, setView] = useState<View>("active");
@@ -226,7 +228,7 @@ export default function CustomerOrdersPage() {
 
             <section className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 sm:p-6">
               <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-                <div><h2 className="text-2xl font-black">{currentView.label}</h2><p className="mt-1 text-sm text-zinc-500">{ordersReady ? `${total} requests in this view. Only ${pageSize} are loaded at a time.` : "Order archive sync is pending."}</p></div>
+                <div><h2 className="text-2xl font-black">{currentView.label}</h2><p className="mt-1 text-sm text-zinc-500">{ordersReady ? customerWorkflowT(locale, "requestCount", { total: total.toLocaleString(intlLocaleByCode[locale]), pageSize: pageSize.toLocaleString(intlLocaleByCode[locale]) }) : "Order archive sync is pending."}</p></div>
                 <label className="relative w-full sm:w-96"><span className="sr-only">Search</span><Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" /><input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search vehicle, engine or service..." className="h-12 w-full rounded-xl border border-white/10 bg-black/35 pl-11 pr-4 text-sm font-bold outline-none focus:border-red-700" /></label>
               </div>
 
@@ -297,13 +299,15 @@ export default function CustomerOrdersPage() {
                 <div className="space-y-3">
                   {orders.map((order) => (
                     <article key={order.id} className="grid min-w-0 gap-4 rounded-xl border border-white/10 bg-black/25 p-4 transition hover:border-red-800/50 md:grid-cols-[1.4fr_.7fr_.5fr_auto] md:items-center">
-                      <div className="min-w-0"><div className="break-words text-lg font-black">{order.vehicle_brand || "Vehicle"} {order.vehicle_model || ""}</div><div className="mt-1 break-words text-sm text-zinc-500">{order.vehicle_generation || "Generation not set"} · {order.vehicle_engine || "Engine not set"}</div><div className="mt-2 line-clamp-2 text-sm font-bold text-red-300">{order.service_type || "Service not set"}</div></div>
-                      <div><span className={`inline-flex rounded-full border px-3 py-1 text-xs font-black ${statusClass(order.status)}`}>{statusLabel(order.status)}</span>{order.status === "customer_info_needed" && <div className="mt-2 break-words text-xs font-black text-orange-300">Needs your response</div>}{order.status === "revision" && <div className="mt-2 break-words text-xs font-black text-purple-300">Revision review in progress</div>}{order.status === "completed" && <div className="mt-2 text-xs font-black text-emerald-400"><CheckCircle2 className="mr-1 inline h-3 w-3" />File delivered</div>}</div>
-                      <div><div className="font-black">{Number(order.credits_required ?? 0)} credits</div><div className="mt-1 text-xs text-zinc-500">{formatDate(order.created_at)}</div></div>
+                      <div className="min-w-0"><div className="break-words text-lg font-black">{order.vehicle_brand ? <span translate="no" data-no-translate>{order.vehicle_brand}</span> : customerWorkflowT(locale, "fallbackVehicle")}{order.vehicle_model ? <> {" "}<span translate="no" data-no-translate>{order.vehicle_model}</span></> : null}</div><div className="mt-1 break-words text-sm text-zinc-500"><span translate="no" data-no-translate>{order.vehicle_generation}</span>{order.vehicle_generation ? null : "Generation not set"} · <span translate="no" data-no-translate>{order.vehicle_engine}</span>{order.vehicle_engine ? null : "Engine not set"}</div><div className="mt-2 line-clamp-2 text-sm font-bold text-red-300"><span translate="no" data-no-translate>{order.service_type}</span>{order.service_type ? null : "Service not set"}</div></div>
+                      <div><span className={`inline-flex rounded-full border px-3 py-1 text-xs font-black ${statusClass(order.status)}`}>{localizeCustomerOrderStatus(locale, order.status)}</span>{order.status === "customer_info_needed" && <div className="mt-2 break-words text-xs font-black text-orange-300">Needs your response</div>}{order.status === "revision" && <div className="mt-2 break-words text-xs font-black text-purple-300">Revision review in progress</div>}{order.status === "completed" && <div className="mt-2 text-xs font-black text-emerald-400"><CheckCircle2 className="mr-1 inline h-3 w-3" />File delivered</div>}</div>
+                      <div><div className="font-black">{customerWorkflowT(locale, "creditsCountLower", { count: Number(order.credits_required ?? 0).toLocaleString(intlLocaleByCode[locale]) })}</div><div className="mt-1 text-xs text-zinc-500">{formatDate(order.created_at, locale)}</div></div>
                       <div className="grid grid-cols-2 gap-2 md:grid-cols-1">
                         <Link
                           href={`/new-request?repeat=${order.id}`}
-                          aria-label={`Create a similar request for ${order.vehicle_brand || "this vehicle"} ${order.vehicle_model || ""}`.trim()}
+                          aria-label={customerWorkflowT(locale, "createSimilarRequest", {
+                            vehicle: `${order.vehicle_brand || customerWorkflowT(locale, "thisVehicle", {})} ${order.vehicle_model || ""}`.trim(),
+                          })}
                           className="min-h-11 rounded-xl border border-red-800/45 bg-red-950/25 px-3 py-3 text-center text-xs font-black text-red-100 transition hover:bg-red-950/45 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-400"
                         >
                           <CopyPlus className="mr-1.5 inline h-4 w-4" />Repeat
@@ -317,7 +321,7 @@ export default function CustomerOrdersPage() {
 
               {orders.length < total && (
                 <button onClick={() => loadOrders({ targetPage: page + 1 })} disabled={loadingMore} className="mt-5 w-full rounded-xl border border-white/10 bg-white/[0.04] px-5 py-4 text-sm font-black hover:bg-white/10 disabled:opacity-50">
-                  {loadingMore && <Loader2 className="mr-2 inline h-4 w-4 animate-spin" />}Load next {Math.min(pageSize, total - orders.length)} orders
+                  {loadingMore && <Loader2 className="mr-2 inline h-4 w-4 animate-spin" />}{customerWorkflowT(locale, "loadNextOrders", { count: Math.min(pageSize, total - orders.length).toLocaleString(intlLocaleByCode[locale]) })}
                 </button>
               )}
             </section>

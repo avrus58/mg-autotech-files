@@ -1,27 +1,40 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight, Download, LockKeyhole, ShieldCheck, Wifi } from "lucide-react";
-import { Footer } from "@/components/Footer";
 import { PublicSeoHeader } from "@/components/PublicSeoHeader";
+import { RuntimePublicFooter } from "@/components/RuntimePublicFooter";
+import { RuntimePublicLocalization } from "@/components/RuntimePublicLocalization";
+import {
+  runtimePublicAlternates,
+  runtimePublicMetadataCopy,
+  runtimePublicOpenGraphLocale,
+  runtimePublicT,
+} from "@/lib/i18n/runtime-public";
 import { absoluteUrl, contactEmail, siteName } from "@/lib/seo";
+import { getServerLocale } from "@/lib/serverLocale";
 
 const title = "MG AutoTech Windows Upload Assistant Beta";
 const description = "The MG AutoTech File Upload Assistant for Windows is currently available only for selected beta customers. Public downloads are not enabled yet.";
 
-export const metadata: Metadata = {
-  title,
-  description,
-  alternates: { canonical: absoluteUrl("/download/windows") },
-  robots: { index: false, follow: true },
-  openGraph: {
-    title: `${title} | MG AutoTech`,
-    description,
-    url: absoluteUrl("/download/windows"),
-    siteName,
-    type: "website",
-    images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: title }],
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getServerLocale();
+  const copy = runtimePublicMetadataCopy(locale, title, description, ["core"]);
+  return {
+    title: copy.title,
+    description: copy.description,
+    alternates: runtimePublicAlternates("/download/windows"),
+    robots: { index: false, follow: true },
+    openGraph: {
+      title: `${copy.title} | MG AutoTech`,
+      description: copy.description,
+      url: absoluteUrl("/download/windows"),
+      siteName,
+      type: "website",
+      locale: runtimePublicOpenGraphLocale(locale),
+      images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: copy.title }],
+    },
+  };
+}
 
 const safetyPoints = [
   {
@@ -41,10 +54,13 @@ const safetyPoints = [
   },
 ];
 
-export default function WindowsDownloadPage() {
+export default async function WindowsDownloadPage() {
+  const locale = await getServerLocale();
+  const betaSubject = runtimePublicT(locale, "Windows Upload Assistant beta access", ["core"]);
   return (
-    <main data-no-translate className="min-h-screen bg-[#050505] text-white">
-      <PublicSeoHeader />
+    <RuntimePublicLocalization locale={locale} scopes={["core"]}>
+      <main className="min-h-screen bg-[#050505] text-white">
+      <PublicSeoHeader locale={locale} />
 
       <section className="border-b border-white/10 bg-[radial-gradient(circle_at_78%_12%,rgba(177,18,27,0.28),transparent_34%),#050505]">
         <div className="mx-auto grid max-w-7xl gap-10 px-4 py-16 lg:grid-cols-[1.05fr_.95fr] lg:py-24">
@@ -61,7 +77,7 @@ export default function WindowsDownloadPage() {
                 Use Web Upload
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
-              <a href={`mailto:${contactEmail}?subject=${encodeURIComponent("Windows Upload Assistant beta access")}`} className="inline-flex items-center justify-center rounded-lg border border-white/15 bg-white/[0.04] px-6 py-4 text-sm font-black hover:bg-white/10">
+              <a href={`mailto:${contactEmail}?subject=${encodeURIComponent(betaSubject)}`} className="inline-flex items-center justify-center rounded-lg border border-white/15 bg-white/[0.04] px-6 py-4 text-sm font-black hover:bg-white/10">
                 Request Beta Access
               </a>
             </div>
@@ -117,7 +133,8 @@ export default function WindowsDownloadPage() {
         </div>
       </section>
 
-      <Footer />
-    </main>
+      <RuntimePublicFooter locale={locale} />
+      </main>
+    </RuntimePublicLocalization>
   );
 }

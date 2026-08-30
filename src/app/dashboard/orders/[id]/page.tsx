@@ -10,6 +10,14 @@ import workspaceStyles from "./order-workspace.module.css";
 import { formatFileVersionLabel } from "@/lib/fileVersionLabels";
 import type { CustomerRequestDtcAnalysis } from "@/lib/dtcAnalyzer/requestIntegration";
 import type { CustomerDeliveryHistory } from "@/lib/customerOrderDelivery";
+import { customerWorkflowT } from "@/lib/i18n/customer-workflow-orders-translations";
+import { localizeCustomerOrderStatus } from "@/lib/i18n/customer-runtime-translations";
+import {
+  localizeDtcAnalyzerMessage,
+  localizeDtcConfidence,
+} from "@/lib/i18n/dtc-analyzer-translations";
+import { intlLocaleByCode, type LocaleCode } from "@/lib/i18nConfig";
+import { useActiveLocale } from "@/lib/useActiveLocale";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -92,16 +100,6 @@ const additionalUploadSteps: Array<{
     description: "Saving it to this request.",
   },
 ];
-
-function formatStatus(status: string | null) {
-  if (!status) return "New Request";
-
-  return status
-    .replaceAll("_", " ")
-    .split(" ")
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ");
-}
 
 function getStatusStyle(status: string | null) {
   const value = status?.toLowerCase() ?? "new_request";
@@ -200,10 +198,10 @@ function getCustomerStatusCopy(
   };
 }
 
-function formatDate(date: string | null) {
+function formatDate(date: string | null, locale: LocaleCode) {
   if (!date) return "-";
 
-  return new Intl.DateTimeFormat("de-DE", {
+  return new Intl.DateTimeFormat(intlLocaleByCode[locale], {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
@@ -217,7 +215,7 @@ function shortId(id: string) {
   return id.slice(0, 8).toUpperCase();
 }
 
-function buildCustomerSupportSummary(order: Order | null, fallbackId: string) {
+function buildCustomerSupportSummary(order: Order | null, fallbackId: string, locale: LocaleCode) {
   if (!order) return "";
 
   const vehicleSummary = [
@@ -229,13 +227,13 @@ function buildCustomerSupportSummary(order: Order | null, fallbackId: string) {
     .filter(Boolean)
     .join(" ");
 
-  return [
-    `MG AutoTech request: #${shortId(order.id || fallbackId)}`,
-    `Status: ${formatStatus(order.status)}`,
-    `Vehicle: ${vehicleSummary || "Vehicle not set"}`,
-    `Service: ${order.service_type || "Service not set"}`,
-    `Created: ${formatDate(order.created_at)}`,
-  ].join("\n");
+  return customerWorkflowT(locale, "supportSummary", {
+    requestId: shortId(order.id || fallbackId),
+    status: localizeCustomerOrderStatus(locale, order.status),
+    vehicle: vehicleSummary || customerWorkflowT(locale, "vehicleNotSet", {}),
+    service: order.service_type || customerWorkflowT(locale, "serviceNotSet", {}),
+    created: formatDate(order.created_at, locale),
+  });
 }
 
 const deliveryEstimateLabels: Record<DeliveryEstimate, string> = {
@@ -342,6 +340,7 @@ function getTimelineIndex(
 export default function OrderDetailPage() {
   const router = useRouter();
   const params = useParams<{ id: string }>();
+  const locale = useActiveLocale();
 
   const [order, setOrder] = useState<Order | null>(null);
   const [delivery, setDelivery] = useState<CustomerDeliveryHistory | null>(null);
@@ -369,8 +368,8 @@ export default function OrderDetailPage() {
       ? additionalUploadSteps[activeAdditionalUploadStepIndex]
       : null;
   const supportSummaryText = useMemo(
-    () => buildCustomerSupportSummary(order, params?.id ?? ""),
-    [order, params?.id]
+    () => buildCustomerSupportSummary(order, params?.id ?? "", locale),
+    [locale, order, params?.id]
   );
 
   useEffect(() => {
@@ -413,7 +412,7 @@ export default function OrderDetailPage() {
 
         if (!response.ok) {
           if (!options?.silent || !hasLoadedOrderRef.current) {
-            setMessage(payload.error || "Order details could not be loaded.");
+            setMessage("Order details could not be loaded.");
           }
           setLoading(false);
           setLiveRefreshing(false);
@@ -495,7 +494,7 @@ export default function OrderDetailPage() {
       const payload = await response.json();
 
       if (!response.ok) {
-        setMessage(payload.error || "Secure download could not be prepared.");
+        setMessage("Secure download could not be prepared.");
         return;
       }
 
@@ -522,7 +521,7 @@ export default function OrderDetailPage() {
       });
       const payload = await response.json();
       if (!response.ok) {
-        setMessage(payload.error || "Secure source download could not be prepared.");
+        setMessage("Secure source download could not be prepared.");
         return;
       }
 
@@ -569,10 +568,8 @@ export default function OrderDetailPage() {
         body: JSON.stringify({ revisionNote: cleanNote }),
       });
 
-      const data = await response.json();
-
       if (!response.ok) {
-        setMessage(data.error || "Revision request could not be sent.");
+        setMessage("Revision request could not be sent.");
         return;
       }
 
@@ -605,7 +602,7 @@ export default function OrderDetailPage() {
       });
       const prepared = await prepareResponse.json();
       if (!prepareResponse.ok) {
-        setMessage(prepared.error || "Additional file upload could not be prepared.");
+        setMessage("Additional file upload could not be prepared.");
         return;
       }
 
@@ -618,7 +615,7 @@ export default function OrderDetailPage() {
           upsert: false,
         });
       if (uploadError) {
-        setMessage(uploadError.message);
+        setMessage("Additional file upload could not be completed.");
         return;
       }
 
@@ -635,7 +632,7 @@ export default function OrderDetailPage() {
       });
       const finalized = await finalizeResponse.json();
       if (!finalizeResponse.ok) {
-        setMessage(finalized.error || "Additional file upload could not be completed.");
+        setMessage("Additional file upload could not be completed.");
         return;
       }
 
@@ -673,7 +670,7 @@ export default function OrderDetailPage() {
       });
       const payload = await response.json();
       if (!response.ok) {
-        setDtcError(payload.error || "DTC guidance could not be prepared.");
+        setDtcError("DTC guidance could not be prepared.");
         return;
       }
       setDtcAnalysis(payload.analysis);
@@ -796,7 +793,7 @@ export default function OrderDetailPage() {
                 </div>
 
                 <div className="hidden max-w-56 truncate rounded-lg border border-[var(--mg-portal-border)] bg-[var(--mg-portal-control)] px-3 py-2 text-xs font-bold text-zinc-300 xl:block">
-                  {email}
+                  <span translate="no" data-no-translate>{email}</span>
                 </div>
 
                 <Link
@@ -832,17 +829,17 @@ export default function OrderDetailPage() {
                 </span>
 
                 <span className="rounded-full border border-white/10 bg-black/30 px-3 py-1 text-xs font-bold text-zinc-400">
-                  #{shortId(order.id)}
+                  <span translate="no" data-no-translate>#{shortId(order.id)}</span>
                 </span>
               </div>
 
               <h1 className="break-words text-xl font-black sm:text-2xl">
-                {order.vehicle_brand || "Vehicle"}{" "}
-                <span className="text-red-600">{order.vehicle_model || ""}</span>
+                {order.vehicle_brand ? <span translate="no" data-no-translate>{order.vehicle_brand}</span> : "Vehicle"}{" "}
+                <span className="text-red-600" translate="no" data-no-translate>{order.vehicle_model || ""}</span>
               </h1>
 
               <p className="mt-1 max-w-3xl break-words text-sm text-zinc-400">
-                {order.vehicle_generation || "Generation not set"} / {order.vehicle_engine || "Engine not set"}
+                {order.vehicle_generation ? <span translate="no" data-no-translate>{order.vehicle_generation}</span> : "Generation not set"} / {order.vehicle_engine ? <span translate="no" data-no-translate>{order.vehicle_engine}</span> : "Engine not set"}
               </p>
             </div>
 
@@ -876,9 +873,9 @@ export default function OrderDetailPage() {
           </div>
 
           <div className="grid border-t border-white/10 sm:grid-cols-2 lg:grid-cols-4">
-            <WorkspaceMetric label="Current status" value={formatStatus(order.status)} accentClass={getStatusStyle(order.status)} />
-            <WorkspaceMetric label="Requested service" value={order.service_type || "Not set"} />
-            <WorkspaceMetric label="Created" value={formatDate(order.created_at)} />
+            <WorkspaceMetric label="Current status" value={localizeCustomerOrderStatus(locale, order.status)} accentClass={getStatusStyle(order.status)} />
+            <WorkspaceMetric label="Requested service" value={order.service_type || "Not set"} rawValue={Boolean(order.service_type)} />
+            <WorkspaceMetric label="Created" value={formatDate(order.created_at, locale)} />
             <WorkspaceMetric label="Credits used" value={String(Number(order.credits_required ?? 0))} />
           </div>
 
@@ -932,6 +929,7 @@ export default function OrderDetailPage() {
                   uploadedAt={delivery?.original.receivedAt ?? order.created_at}
                   downloadCount={delivery?.original.downloadCount ?? 0}
                   lastDownloadedAt={delivery?.original.lastDownloadedAt ?? null}
+                  locale={locale}
                   downloading={downloadingSourceFileId === "original:original"}
                   onDownload={() => downloadSourceFile("original", "original")}
                 />
@@ -939,7 +937,7 @@ export default function OrderDetailPage() {
 
               <div className="rounded-xl border border-red-900/30 bg-red-950/15 p-3">
                 <div className="text-[11px] font-black uppercase tracking-[0.14em] text-red-400">Requested service</div>
-                <div className="mt-1 break-words text-sm font-black text-white">{order.service_type || "-"}</div>
+                <div className="mt-1 break-words text-sm font-black text-white" translate="no" data-no-translate>{order.service_type || "-"}</div>
               </div>
 
               <details className="group rounded-xl border border-white/10 bg-black/25">
@@ -949,7 +947,7 @@ export default function OrderDetailPage() {
                   <span className="hidden text-xs text-zinc-500 group-open:inline">Close</span>
                 </summary>
                 <div className="border-t border-white/10 px-3 py-3 whitespace-pre-wrap break-words text-sm leading-6 text-zinc-300">
-                  {order.notes || "No additional customer notes were provided."}
+                  {order.notes ? <span translate="no" data-no-translate>{order.notes}</span> : "No additional customer notes were provided."}
                 </div>
               </details>
 
@@ -957,7 +955,7 @@ export default function OrderDetailPage() {
                 <details open={order.customer_upload_enabled || undefined} className="group rounded-xl border border-blue-700/30 bg-blue-950/15">
                   <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-2.5 marker:hidden">
                     <span className="flex items-center gap-2 text-sm font-black text-blue-100"><Upload className="h-4 w-4 text-blue-300" />Additional files</span>
-                    <span className="text-xs text-blue-300/70">{order.customer_upload_enabled ? "Upload enabled" : `${order.customer_uploads?.length ?? 0} received`}</span>
+                    <span className="text-xs text-blue-300/70">{order.customer_upload_enabled ? "Upload enabled" : customerWorkflowT(locale, "receivedCount", { count: (order.customer_uploads?.length ?? 0).toLocaleString(intlLocaleByCode[locale]) })}</span>
                   </summary>
                   <div className="border-t border-blue-700/20 p-3">
 
@@ -983,13 +981,13 @@ export default function OrderDetailPage() {
                         {order.customer_uploads.map((file) => (
                           <div key={file.id} className="flex min-w-0 items-center justify-between gap-3 rounded-xl border border-white/10 bg-black/25 p-3">
                             <div className="min-w-0">
-                              <div className="truncate text-sm font-black text-white">{file.file_name}</div>
-                              <div className="mt-1 text-xs text-zinc-500">Uploaded {formatDate(file.uploaded_at)}</div>
+                              <div className="truncate text-sm font-black text-white" translate="no" data-no-translate>{file.file_name}</div>
+                              <div className="mt-1 text-xs text-zinc-500">Uploaded {formatDate(file.uploaded_at, locale)}</div>
                               <div className="mt-1 grid gap-0.5 text-[11px] text-zinc-500">
                                 <span>Portal download requests: {customerSourceActivity.get(file.id)?.downloadCount ?? 0}</span>
                                 <span>
                                   {customerSourceActivity.get(file.id)?.lastDownloadedAt
-                                    ? `Last request ${formatDate(customerSourceActivity.get(file.id)?.lastDownloadedAt ?? null)}`
+                                    ? customerWorkflowT(locale, "lastRequest", { date: formatDate(customerSourceActivity.get(file.id)?.lastDownloadedAt ?? null, locale) })
                                     : "No download request yet"}
                                 </span>
                               </div>
@@ -998,7 +996,7 @@ export default function OrderDetailPage() {
                               type="button"
                               onClick={() => downloadSourceFile("additional", file.id)}
                               disabled={downloadingSourceFileId !== null}
-                              aria-label={`Download uploaded file ${file.file_name}`}
+                              aria-label={customerWorkflowT(locale, "downloadUploadedFile", { fileName: file.file_name })}
                               className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-blue-600/35 bg-blue-950/30 text-blue-200 transition hover:bg-blue-900/40 disabled:cursor-wait disabled:opacity-50"
                             >
                               {downloadingSourceFileId === `additional:${file.id}` ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
@@ -1038,7 +1036,7 @@ export default function OrderDetailPage() {
               {deliveryEstimate.isExplicit && (
                 <div className="rounded-xl border border-blue-700/25 bg-blue-950/15 px-3 py-2 text-xs text-blue-100/80">
                   <span className="font-black text-blue-200">ETA: {deliveryEstimate.label}</span>
-                  {order.estimated_delivery_note ? ` - ${order.estimated_delivery_note}` : ""}
+                  {order.estimated_delivery_note ? <> - <span translate="no" data-no-translate>{order.estimated_delivery_note}</span></> : null}
                 </div>
               )}
 
@@ -1046,8 +1044,15 @@ export default function OrderDetailPage() {
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/[0.05] text-zinc-300"><FileDown className="h-4 w-4" /></div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.12em] text-zinc-500"><span>Original received</span><CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /></div>
-                  <div title={delivery?.original.fileName || undefined} className="mt-1 truncate text-sm font-black text-white">{delivery?.original.fileName || "Filename not available"}</div>
-                  <div className="mt-1 text-xs text-zinc-500">Received {formatDate(delivery?.original.receivedAt ?? order.created_at)} (Berlin time)</div>
+                  <div
+                    title={delivery?.original.fileName || undefined}
+                    className="mt-1 truncate text-sm font-black text-white"
+                    translate={delivery?.original.fileName ? "no" : undefined}
+                    data-no-translate={delivery?.original.fileName ? true : undefined}
+                  >
+                    {delivery?.original.fileName || "Filename not available"}
+                  </div>
+                  <div className="mt-1 text-xs text-zinc-500">Received {formatDate(delivery?.original.receivedAt ?? order.created_at, locale)} (Berlin time)</div>
                 </div>
               </div>
 
@@ -1060,17 +1065,17 @@ export default function OrderDetailPage() {
                         <span className="text-xs font-black uppercase tracking-[0.12em] text-emerald-300">{formatFileVersionLabel(version.label)}</span>
                         {index === modifiedVersions.length - 1 && <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-black text-emerald-300">Latest</span>}
                       </div>
-                      <div title={version.fileName} className="mt-1 truncate text-sm font-black text-white">{version.fileName}</div>
+                      <div title={version.fileName} className="mt-1 truncate text-sm font-black text-white" translate="no" data-no-translate>{version.fileName}</div>
                       <div className="mt-2 grid gap-1 text-xs text-zinc-500">
-                        <span>Delivered {formatDate(version.deliveredAt)} (Berlin time)</span>
+                        <span>Delivered {formatDate(version.deliveredAt, locale)} (Berlin time)</span>
                         <span className="font-bold text-zinc-300">Portal download requests: {version.downloadCount}</span>
-                        {version.lastDownloadedAt && <span>Last request {formatDate(version.lastDownloadedAt)}</span>}
+                        {version.lastDownloadedAt && <span>{customerWorkflowT(locale, "lastRequest", { date: formatDate(version.lastDownloadedAt, locale) })}</span>}
                       </div>
                     </div>
                     <button
                       type="button"
-                      aria-label={`Download ${formatFileVersionLabel(version.label)} file`}
-                      title={`Download ${formatFileVersionLabel(version.label)}`}
+                      aria-label={customerWorkflowT(locale, "downloadFile", { label: formatFileVersionLabel(version.label) })}
+                      title={customerWorkflowT(locale, "downloadLabel", { label: formatFileVersionLabel(version.label) })}
                       onClick={() => downloadModifiedVersion(version.id)}
                       disabled={downloadingVersionId !== null}
                       className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-600 text-white transition hover:bg-emerald-500 disabled:cursor-wait disabled:bg-zinc-800 disabled:text-zinc-500"
@@ -1106,7 +1111,7 @@ export default function OrderDetailPage() {
                 <button type="button" onClick={copySupportSummary} className="flex h-10 items-center justify-center rounded-lg border border-white/10 bg-white/[0.04] px-3 text-xs font-black text-white transition hover:bg-white/10"><Copy className="mr-2 h-4 w-4" />{copiedSupportSummary ? "Copied" : "Copy summary"}</button>
                 <a href={`mailto:info@mgautotech.de?subject=Order ${shortId(order.id)} Support`} className="flex h-10 items-center justify-center rounded-lg border border-white/10 bg-white/[0.04] px-3 text-xs font-black text-white transition hover:bg-white/10"><Mail className="mr-2 h-4 w-4" />Support</a>
               </div>
-              <div className="flex min-w-0 items-center gap-2 px-1 text-xs text-zinc-600"><User className="h-3.5 w-3.5 shrink-0" /><span className="truncate">{order.customer_email || "Account email unavailable"}</span></div>
+              <div className="flex min-w-0 items-center gap-2 px-1 text-xs text-zinc-600"><User className="h-3.5 w-3.5 shrink-0" /><span className="truncate">{order.customer_email ? <span translate="no" data-no-translate>{order.customer_email}</span> : "Account email unavailable"}</span></div>
             </div>
           </section>
           </div>
@@ -1127,20 +1132,22 @@ function WorkspaceMetric({
   label,
   value,
   accentClass,
+  rawValue = false,
 }: {
   label: string;
   value: string;
   accentClass?: string;
+  rawValue?: boolean;
 }) {
   return (
     <div className="min-w-0 border-b border-white/10 px-4 py-3 sm:border-r lg:border-b-0 last:border-r-0">
       <div className="text-xs font-black uppercase tracking-[0.14em] text-zinc-600">{label}</div>
       {accentClass ? (
         <div className={`mt-1.5 inline-flex max-w-full rounded-full border px-2.5 py-0.5 text-[11px] font-black ${accentClass}`}>
-          <span className="truncate">{value}</span>
+          <span className="truncate" translate={rawValue ? "no" : undefined} data-no-translate={rawValue ? true : undefined}>{value}</span>
         </div>
       ) : (
-        <div className="mt-1.5 truncate text-sm font-black text-zinc-200" title={value}>{value}</div>
+        <div className="mt-1.5 truncate text-sm font-black text-zinc-200" title={value} translate={rawValue ? "no" : undefined} data-no-translate={rawValue ? true : undefined}>{value}</div>
       )}
     </div>
   );
@@ -1167,6 +1174,7 @@ function CustomerDtcAnalysisPanel({
   onRun: () => void;
   embedded?: boolean;
 }) {
+  const locale = useActiveLocale();
   return (
     <section
       className={
@@ -1225,27 +1233,33 @@ function CustomerDtcAnalysisPanel({
           <div className="grid gap-3 md:grid-cols-3">
             <div className="rounded-2xl border border-white/10 bg-black/25 p-4">
               <div className="text-xs font-black uppercase tracking-[0.14em] text-zinc-500">State</div>
-              <div className="mt-2 text-sm font-black text-white">{analysis.stateLabel}</div>
+              <div className="mt-2 text-sm font-black text-white">
+                {localizeDtcAnalyzerMessage(locale, analysis.stateLabelMessage)}
+              </div>
             </div>
             <div className="rounded-2xl border border-white/10 bg-black/25 p-4">
               <div className="text-xs font-black uppercase tracking-[0.14em] text-zinc-500">Detected DTCs</div>
               <div className="mt-2 break-words text-sm font-black text-white">
-                {analysis.detectedCodes.length > 0 ? analysis.detectedCodes.join(", ") : "None"}
+                {analysis.detectedCodes.length > 0 ? (
+                  <span translate="no" data-no-translate>{analysis.detectedCodes.join(", ")}</span>
+                ) : localizeDtcConfidence(locale, "none")}
               </div>
             </div>
             <div className={`rounded-2xl border p-4 ${confidenceClass(analysis.confidence)}`}>
               <div className="text-xs font-black uppercase tracking-[0.14em]">Confidence</div>
-              <div className="mt-2 text-sm font-black">{analysis.confidence}</div>
+              <div className="mt-2 text-sm font-black">
+                {localizeDtcConfidence(locale, analysis.confidence)}
+              </div>
             </div>
           </div>
 
           <div className="rounded-2xl border border-amber-700/30 bg-amber-950/15 p-4 text-sm leading-6 text-amber-100">
             <ShieldCheck className="mr-2 inline h-4 w-4" />
-            {analysis.providerNotice}
+            {localizeDtcAnalyzerMessage(locale, analysis.providerNoticeMessage)}
           </div>
 
           <p className="rounded-2xl border border-white/10 bg-black/25 p-4 text-sm leading-6 text-zinc-300">
-            {analysis.summary}
+            {localizeDtcAnalyzerMessage(locale, analysis.summaryMessage)}
           </p>
 
           {analysis.codes.length > 0 ? (
@@ -1253,23 +1267,41 @@ function CustomerDtcAnalysisPanel({
               {analysis.codes.map((code) => (
                 <div key={code.code} className="rounded-2xl border border-white/10 bg-black/25 p-5">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="rounded-xl border border-red-800/40 bg-red-950/30 px-3 py-1 text-sm font-black text-red-100">{code.code}</span>
-                    <span className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-1 text-xs font-black text-zinc-300">{code.systemLabel}</span>
-                    <span className={`rounded-xl border px-3 py-1 text-xs font-black ${confidenceClass(code.confidence)}`}>{code.confidence}</span>
+                    <span className="rounded-xl border border-red-800/40 bg-red-950/30 px-3 py-1 text-sm font-black text-red-100" translate="no" data-no-translate>{code.code}</span>
+                    <span className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-1 text-xs font-black text-zinc-300">
+                      {localizeDtcAnalyzerMessage(locale, code.systemLabelMessage)}
+                    </span>
+                    <span className={`rounded-xl border px-3 py-1 text-xs font-black ${confidenceClass(code.confidence)}`}>
+                      {localizeDtcConfidence(locale, code.confidence)}
+                    </span>
                   </div>
-                  <h3 className="mt-4 break-words text-lg font-black text-white">{code.title}</h3>
-                  <p className="mt-2 text-sm leading-6 text-zinc-300">{code.customerExplanation}</p>
+                  <h3 className="mt-4 break-words text-lg font-black text-white">
+                    {localizeDtcAnalyzerMessage(locale, code.titleMessage)}
+                  </h3>
+                  <p className="mt-2 text-sm leading-6 text-zinc-300">
+                    {localizeDtcAnalyzerMessage(locale, code.customerExplanationMessage)}
+                  </p>
                   <div className="mt-4 grid gap-3 md:grid-cols-2">
                     <div>
                       <div className="mb-2 text-xs font-black uppercase tracking-[0.14em] text-zinc-500">Evidence</div>
                       <ul className="space-y-2 text-sm leading-6 text-zinc-300">
-                        {code.evidence.slice(0, 3).map((item) => <li key={item.id}>- {item.text}</li>)}
+                        {code.evidence.slice(0, 3).map((item) => (
+                          <li key={item.id}>- {localizeDtcAnalyzerMessage(locale, item.message ?? {
+                            key: "evidence.generic",
+                            fallback: "Diagnostic evidence requires expert review.",
+                          })}</li>
+                        ))}
                       </ul>
                     </div>
                     <div>
                       <div className="mb-2 text-xs font-black uppercase tracking-[0.14em] text-zinc-500">Next Checks</div>
                       <ul className="space-y-2 text-sm leading-6 text-zinc-300">
-                        {code.recommendations.slice(0, 3).map((item) => <li key={item.id}>- {item.text}</li>)}
+                        {code.recommendations.slice(0, 3).map((item) => (
+                          <li key={item.id}>- {localizeDtcAnalyzerMessage(locale, item.message ?? {
+                            key: "recommendation.generic",
+                            fallback: "Continue with expert diagnostic review.",
+                          })}</li>
+                        ))}
                       </ul>
                     </div>
                   </div>
@@ -1286,20 +1318,32 @@ function CustomerDtcAnalysisPanel({
             <div className="rounded-2xl border border-white/10 bg-black/25 p-4">
               <div className="mb-2 text-sm font-black text-white">Missing Information</div>
               <ul className="space-y-2 text-sm leading-6 text-zinc-400">
-                {analysis.missingInformation.slice(0, 6).map((item) => <li key={item}>- {item}</li>)}
+                {analysis.missingInformationMessages.slice(0, 6).map((item) => (
+                  <li key={item.key}>- {localizeDtcAnalyzerMessage(locale, item)}</li>
+                ))}
               </ul>
             </div>
             <div className="rounded-2xl border border-white/10 bg-black/25 p-4">
               <div className="mb-2 text-sm font-black text-white">Safety Boundaries</div>
               <ul className="space-y-2 text-sm leading-6 text-zinc-400">
-                {analysis.safetyBoundaries.map((item) => <li key={item}>- {item}</li>)}
+                {analysis.safetyBoundaryMessages.map((item) => (
+                  <li key={item.key}>- {localizeDtcAnalyzerMessage(locale, item)}</li>
+                ))}
               </ul>
             </div>
           </div>
 
           <div className="rounded-2xl border border-amber-700/30 bg-amber-950/15 p-4 text-sm leading-6 text-amber-100">
             <AlertTriangle className="mr-2 inline h-4 w-4" />
-            Human review required before {analysis.humanReview.requiredBefore.join(", ")}.
+            {localizeDtcAnalyzerMessage(locale, {
+              key: "human.required_before",
+              fallback: "Human review is required before {items}.",
+              params: {
+                items: analysis.humanReview.requiredBeforeMessages
+                  .map((item) => localizeDtcAnalyzerMessage(locale, item))
+                  .join(", "),
+              },
+            })}
           </div>
         </div>
       )}
@@ -1313,6 +1357,7 @@ function CustomerSourceFileRow({
   uploadedAt,
   downloadCount,
   lastDownloadedAt,
+  locale,
   downloading,
   onDownload,
 }: {
@@ -1321,6 +1366,7 @@ function CustomerSourceFileRow({
   uploadedAt: string;
   downloadCount: number;
   lastDownloadedAt: string | null;
+  locale: LocaleCode;
   downloading: boolean;
   onDownload: () => void;
 }) {
@@ -1331,18 +1377,18 @@ function CustomerSourceFileRow({
       </div>
       <div className="min-w-0 flex-1">
         <div className="text-[10px] font-black uppercase tracking-[0.14em] text-blue-300">{title}</div>
-        <div title={fileName} className="mt-1 truncate text-sm font-black text-white">{fileName}</div>
+        <div title={fileName} className="mt-1 truncate text-sm font-black text-white" translate="no" data-no-translate>{fileName}</div>
         <div className="mt-1 grid gap-0.5 text-[11px] leading-5 text-zinc-500">
-          <span>Uploaded {formatDate(uploadedAt)}</span>
+          <span>Uploaded {formatDate(uploadedAt, locale)}</span>
           <span>Portal download requests: {downloadCount}</span>
-          <span>{lastDownloadedAt ? `Last request ${formatDate(lastDownloadedAt)}` : "No download request yet"}</span>
+          <span>{lastDownloadedAt ? customerWorkflowT(locale, "lastRequest", { date: formatDate(lastDownloadedAt, locale) }) : "No download request yet"}</span>
         </div>
       </div>
       <button
         type="button"
         onClick={onDownload}
         disabled={downloading}
-        aria-label={`Download ${fileName}`}
+        aria-label={customerWorkflowT(locale, "downloadLabel", { label: fileName })}
         className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-700 text-white transition hover:bg-blue-600 disabled:cursor-wait disabled:bg-zinc-800 disabled:text-zinc-500"
       >
         {downloading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
@@ -1369,7 +1415,7 @@ function Detail({
         <div className="text-[10px] uppercase tracking-[0.14em] text-zinc-500">
           {label}
         </div>
-        <div className="mt-1 break-words text-sm font-bold text-white">{value || "-"}</div>
+        <div className="mt-1 break-words text-sm font-bold text-white">{value ? <span translate="no" data-no-translate>{value}</span> : "-"}</div>
       </div>
     </div>
   );

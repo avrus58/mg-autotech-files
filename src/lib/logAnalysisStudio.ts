@@ -125,12 +125,107 @@ export type LogStudioInsightKind =
   | "egr_activity"
   | "limitation";
 
+export const logStudioResultMessageKeys = [
+  "studio.error.selectDelimited",
+  "studio.error.tableDetection",
+  "studio.error.headerNumeric",
+  "studio.error.noNumericChannels",
+  "studio.quality.empty",
+  "studio.quality.rowsUnderFive",
+  "studio.quality.rowsUnderTwenty",
+  "studio.quality.rowsUnderFifty",
+  "studio.quality.acceptedUnder75",
+  "studio.quality.acceptedUnder90",
+  "studio.quality.noMeasurement",
+  "studio.quality.oneMeasurement",
+  "studio.quality.coverageUnder60",
+  "studio.quality.coverageUnder80",
+  "studio.quality.missingValues",
+  "studio.quality.syntheticAxis",
+  "studio.quality.axisCoverage",
+  "studio.quality.nonMonotonic",
+  "studio.quality.duplicateAxis",
+  "studio.quality.truncatedCharacters",
+  "studio.quality.truncatedRows",
+  "studio.quality.truncatedChannels",
+  "studio.quality.consistent",
+  "studio.warning.headerless",
+  "studio.warning.preamble",
+  "studio.warning.unitsRow",
+  "studio.warning.characterLimit",
+  "studio.warning.outOfBounds",
+  "studio.warning.cellLimit",
+  "studio.warning.performanceRowLimit",
+  "studio.warning.detailedRowLimit",
+  "studio.warning.channelLimit",
+  "studio.warning.rejectedRows",
+  "studio.warning.syntheticAxis",
+  "studio.warning.nonMonotonic",
+  "studio.warning.duplicateAxis",
+  "studio.warning.unitMismatch",
+  "studio.warning.sensorMismatch",
+  "studio.safety.numericOnly",
+  "studio.safety.scaling",
+  "studio.safety.noApproval",
+  "studio.insight.coverageTitle",
+  "studio.insight.coverageText",
+  "studio.insight.rpmWindowTitle",
+  "studio.insight.rpmWindowText",
+  "studio.insight.torquePeakTitle",
+  "studio.insight.torquePeakText",
+  "studio.insight.pressurePeakTitle",
+  "studio.insight.pressurePeakText",
+  "studio.insight.egrMovementTitle",
+  "studio.insight.egrStaticTitle",
+  "studio.insight.egrMovementText",
+  "studio.insight.egrStaticText",
+  "studio.insight.actualTargetTitle",
+  "studio.insight.actualTargetText",
+  "studio.insight.rangeTitle",
+  "studio.insight.rangeText",
+  "studio.insight.boundaryTitle",
+  "studio.insight.boundaryText",
+  "studio.missing.rpm",
+  "studio.missing.torque",
+  "studio.missing.boostActual",
+  "studio.missing.boostTarget",
+  "studio.missing.lambdaAfr",
+  "studio.missing.throttlePedal",
+  "studio.missing.iat",
+  "studio.missing.coolant",
+  "studio.missing.egt",
+  "studio.missing.egr",
+  "studio.missing.railActual",
+  "studio.missing.railTarget",
+  "studio.missing.airflow",
+  "studio.missing.speed",
+  "studio.missing.ignition",
+  "studio.summary.heading",
+  "studio.summary.source",
+  "studio.summary.sourceDemo",
+  "studio.summary.structure",
+  "studio.summary.channels",
+  "studio.summary.insight",
+  "studio.summary.review",
+  "studio.summary.boundary",
+] as const;
+
+export type LogStudioResultMessageKey = (typeof logStudioResultMessageKeys)[number];
+export type LogStudioResultMessageParams = Readonly<Record<string, string | number>>;
+export type LogStudioResultMessage = {
+  key: LogStudioResultMessageKey;
+  params: LogStudioResultMessageParams;
+  fallback: string;
+};
+
 export type LogStudioInsight = {
   id: string;
   kind: LogStudioInsightKind;
   severity: LogStudioInsightSeverity;
   title: string;
   text: string;
+  titleMessage: LogStudioResultMessage;
+  textMessage: LogStudioResultMessage;
   channelIds: string[];
 };
 
@@ -138,6 +233,7 @@ export type LogStudioQuality = {
   score: number;
   label: LogStudioQualityLabel;
   reasons: string[];
+  reasonMessages: LogStudioResultMessage[];
   averageCoveragePercent: number;
   xAxisMonotonic: boolean;
   duplicateXAxisCount: number;
@@ -165,8 +261,11 @@ export type LogStudioAnalysis = {
   quality: LogStudioQuality;
   insights: LogStudioInsight[];
   warnings: string[];
+  warningMessages: LogStudioResultMessage[];
   missingChannels: string[];
+  missingChannelMessages: LogStudioResultMessage[];
   safetyBoundaries: string[];
+  safetyBoundaryMessages: LogStudioResultMessage[];
 };
 
 type CandidateChannel = {
@@ -179,16 +278,44 @@ type CandidateChannel = {
   numericValueCount: number;
 };
 
-const safetyBoundaries = [
-  "This browser-local result describes numeric log channels only and does not diagnose a fault or select a repair path.",
-  "Logged values depend on sensor scaling, ECU reporting, units and capture conditions; they are not a calibrated dyno measurement.",
-  "No result approves a tune, calibration, checksum, flash operation, component limit, vehicle safety or delivery decision.",
+function resultMessage(
+  key: LogStudioResultMessageKey,
+  fallback: string,
+  params: LogStudioResultMessageParams = {}
+): LogStudioResultMessage {
+  return { key, params, fallback };
+}
+
+function fallbackMessages(messages: readonly LogStudioResultMessage[]) {
+  return messages.map((message) => message.fallback);
+}
+
+const safetyBoundaryMessages = [
+  resultMessage(
+    "studio.safety.numericOnly",
+    "This browser-local result describes numeric log channels only and does not diagnose a fault or select a repair path."
+  ),
+  resultMessage(
+    "studio.safety.scaling",
+    "Logged values depend on sensor scaling, ECU reporting, units and capture conditions; they are not a calibrated dyno measurement."
+  ),
+  resultMessage(
+    "studio.safety.noApproval",
+    "No result approves a tune, calibration, checksum, flash operation, component limit, vehicle safety or delivery decision."
+  ),
 ];
+const safetyBoundaries = fallbackMessages(safetyBoundaryMessages);
+
+const emptyQualityReason = resultMessage(
+  "studio.quality.empty",
+  "No numeric log rows are available for quality review."
+);
 
 const emptyQuality: LogStudioQuality = {
   score: 0,
   label: "limited",
-  reasons: ["No numeric log rows are available for quality review."],
+  reasons: [emptyQualityReason.fallback],
+  reasonMessages: [emptyQualityReason],
   averageCoveragePercent: 0,
   xAxisMonotonic: true,
   duplicateXAxisCount: 0,
@@ -196,9 +323,10 @@ const emptyQuality: LogStudioQuality = {
 
 function emptyAnalysis(
   status: LogStudioStatus,
-  warnings: string[],
+  warningMessages: LogStudioResultMessage[],
   delimiter: LogStudioDelimiter | null = null
 ): LogStudioAnalysis {
+  const missingChannelMessages = buildMissingChannelMessages([]);
   return {
     contractVersion: "log-analysis-studio-v1",
     status,
@@ -216,9 +344,12 @@ function emptyAnalysis(
     summaries: [],
     quality: emptyQuality,
     insights: [],
-    warnings,
-    missingChannels: buildMissingChannels([]),
+    warnings: fallbackMessages(warningMessages),
+    warningMessages,
+    missingChannels: fallbackMessages(missingChannelMessages),
+    missingChannelMessages,
     safetyBoundaries: [...safetyBoundaries],
+    safetyBoundaryMessages: [...safetyBoundaryMessages],
   };
 }
 
@@ -236,8 +367,14 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
 }
 
-function unique(values: string[]) {
-  return [...new Set(values)];
+function uniqueMessages(messages: LogStudioResultMessage[]) {
+  const seen = new Set<string>();
+  return messages.filter((message) => {
+    const identity = `${message.key}:${JSON.stringify(message.params)}`;
+    if (seen.has(identity)) return false;
+    seen.add(identity);
+    return true;
+  });
 }
 
 function normalizeText(value: string) {
@@ -934,6 +1071,35 @@ function axisContextLabel(row: LogStudioRow, axis: LogStudioAxis) {
   return `${formatNumber(value)}${symbol ? ` ${symbol}` : ""}`;
 }
 
+function axisContextParams(
+  row: LogStudioRow,
+  axis: LogStudioAxis
+): LogStudioResultMessageParams {
+  const value = axisValue(row, axis);
+  return value === null
+    ? { contextKind: "row", rowNumber: row.rowNumber }
+    : {
+        contextKind: "axis",
+        contextValue: round(value),
+        contextUnit: axis.unit.symbol ?? "",
+      };
+}
+
+function makeInsight(input: {
+  id: string;
+  kind: LogStudioInsightKind;
+  severity: LogStudioInsightSeverity;
+  titleMessage: LogStudioResultMessage;
+  textMessage: LogStudioResultMessage;
+  channelIds: string[];
+}): LogStudioInsight {
+  return {
+    ...input,
+    title: input.titleMessage.fallback,
+    text: input.textMessage.fallback,
+  };
+}
+
 function valueContext(
   row: LogStudioRow,
   value: number,
@@ -1078,14 +1244,22 @@ function comparisonInsight(
   );
   const unit = actual.unit.symbol ? ` ${actual.unit.symbol}` : "";
 
-  return {
+  const title = `${family} actual vs target`;
+  const text = `The largest aligned actual-to-target difference was ${formatNumber(Math.abs(largest.gap))}${unit} at ${axisContextLabel(largest.row, axis)}. This is a numeric log comparison, not a control-limit or component judgment.`;
+  return makeInsight({
     id: `${actual.id}-${target.id}-gap`,
     kind: "actual_target_gap",
     severity: "info",
-    title: `${family} actual vs target`,
-    text: `The largest aligned actual-to-target difference was ${formatNumber(Math.abs(largest.gap))}${unit} at ${axisContextLabel(largest.row, axis)}. This is a numeric log comparison, not a control-limit or component judgment.`,
+    titleMessage: resultMessage("studio.insight.actualTargetTitle", title, {
+      channelKind: actual.kind,
+    }),
+    textMessage: resultMessage("studio.insight.actualTargetText", text, {
+      difference: round(Math.abs(largest.gap)),
+      unit: actual.unit.symbol ?? "",
+      ...axisContextParams(largest.row, axis),
+    }),
     channelIds: [actual.id, target.id],
-  };
+  });
 }
 
 function channelSummaryByKind(
@@ -1188,14 +1362,23 @@ function rangeInsight(
 ): LogStudioInsight | null {
   if (!summary.min || !summary.max || summary.average === null) return null;
   const unit = summaryUnit(summary);
-  return {
+  const text = `${summary.label} ranged from ${formatNumber(summary.min.value)} to ${formatNumber(summary.max.value)}${unit}, with an average of ${formatNumber(summary.average)}${unit}.`;
+  return makeInsight({
     id: `${summary.channelId}-range`,
     kind: "channel_range",
     severity: "info",
-    title,
-    text: `${summary.label} ranged from ${formatNumber(summary.min.value)} to ${formatNumber(summary.max.value)}${unit}, with an average of ${formatNumber(summary.average)}${unit}.`,
+    titleMessage: resultMessage("studio.insight.rangeTitle", title, {
+      channelKind: summary.kind,
+    }),
+    textMessage: resultMessage("studio.insight.rangeText", text, {
+      channelLabel: summary.label,
+      minimum: summary.min.value,
+      maximum: summary.max.value,
+      average: summary.average,
+      unit: summary.unit.symbol ?? "",
+    }),
     channelIds: [summary.channelId],
-  };
+  });
 }
 
 function buildInsights(
@@ -1204,53 +1387,80 @@ function buildInsights(
   axis: LogStudioAxis,
   summaries: LogStudioChannelSummary[]
 ) {
-  const insights: LogStudioInsight[] = [{
+  const coverageText = `${rows.length} aligned numeric row${rows.length === 1 ? "" : "s"} were retained across ${channels.length} channel${channels.length === 1 ? "" : "s"}.`;
+  const insights: LogStudioInsight[] = [makeInsight({
     id: "aligned-log-coverage",
     kind: "coverage",
     severity: "info",
-    title: "Aligned log coverage",
-    text: `${rows.length} aligned numeric row${rows.length === 1 ? "" : "s"} were retained across ${channels.length} channel${channels.length === 1 ? "" : "s"}.`,
+    titleMessage: resultMessage("studio.insight.coverageTitle", "Aligned log coverage"),
+    textMessage: resultMessage("studio.insight.coverageText", coverageText, {
+      rows: rows.length,
+      channels: channels.length,
+    }),
     channelIds: channels.map((channel) => channel.id),
-  }];
+  })];
 
   const rpm = channelSummaryByKind(summaries, "rpm").find(
     (summary) => summary.unit.dimension === "engine_speed"
   );
   if (rpm?.min && rpm.max) {
-    insights.push({
+    const text = `Engine speed covered ${formatNumber(rpm.min.value)} to ${formatNumber(rpm.max.value)}${summaryUnit(rpm)} across the retained rows.`;
+    insights.push(makeInsight({
       id: `${rpm.channelId}-window`,
       kind: "rpm_window",
       severity: "info",
-      title: "Logged engine-speed window",
-      text: `Engine speed covered ${formatNumber(rpm.min.value)} to ${formatNumber(rpm.max.value)}${summaryUnit(rpm)} across the retained rows.`,
+      titleMessage: resultMessage("studio.insight.rpmWindowTitle", "Logged engine-speed window"),
+      textMessage: resultMessage("studio.insight.rpmWindowText", text, {
+        minimum: rpm.min.value,
+        maximum: rpm.max.value,
+        unit: rpm.unit.symbol ?? "",
+      }),
       channelIds: [rpm.channelId],
-    });
+    }));
   }
 
   const torque = channelSummaryByKind(summaries, "torque").find(
     (summary) => summary.unit.dimension === "torque"
   );
   if (torque?.peak) {
-    insights.push({
+    const text = `${torque.label} reached ${formatNumber(torque.peak.value)}${summaryUnit(torque)} at ${torque.peak.xLabel}. This reports the logged channel and does not validate delivered engine torque.`;
+    const torqueRow = rows.find((row) => row.rowNumber === torque.peak?.rowNumber);
+    insights.push(makeInsight({
       id: `${torque.channelId}-peak`,
       kind: "channel_peak",
       severity: "info",
-      title: "Highest logged torque value",
-      text: `${torque.label} reached ${formatNumber(torque.peak.value)}${summaryUnit(torque)} at ${torque.peak.xLabel}. This reports the logged channel and does not validate delivered engine torque.`,
+      titleMessage: resultMessage("studio.insight.torquePeakTitle", "Highest logged torque value"),
+      textMessage: resultMessage("studio.insight.torquePeakText", text, {
+        channelLabel: torque.label,
+        value: torque.peak.value,
+        unit: torque.unit.symbol ?? "",
+        ...(torqueRow
+          ? axisContextParams(torqueRow, axis)
+          : { contextKind: "row", rowNumber: torque.peak.rowNumber }),
+      }),
       channelIds: [torque.channelId],
-    });
+    }));
   }
 
   for (const boost of channelSummaryByKind(summaries, "boost_actual")) {
     if (!boost.peak || boost.unit.dimension !== "pressure") continue;
-    insights.push({
+    const text = `${boost.label} reached ${formatNumber(boost.peak.value)}${summaryUnit(boost)} at ${boost.peak.xLabel}. This is reported only because a recognized boost or manifold-pressure channel exists in the source log and is not a boost target, gauge-pressure conversion or component-limit judgment.`;
+    const boostRow = rows.find((row) => row.rowNumber === boost.peak?.rowNumber);
+    insights.push(makeInsight({
       id: `${boost.channelId}-peak`,
       kind: "boost_peak",
       severity: "info",
-      title: "Highest logged pressure value",
-      text: `${boost.label} reached ${formatNumber(boost.peak.value)}${summaryUnit(boost)} at ${boost.peak.xLabel}. This is reported only because a recognized boost or manifold-pressure channel exists in the source log and is not a boost target, gauge-pressure conversion or component-limit judgment.`,
+      titleMessage: resultMessage("studio.insight.pressurePeakTitle", "Highest logged pressure value"),
+      textMessage: resultMessage("studio.insight.pressurePeakText", text, {
+        channelLabel: boost.label,
+        value: boost.peak.value,
+        unit: boost.unit.symbol ?? "",
+        ...(boostRow
+          ? axisContextParams(boostRow, axis)
+          : { contextKind: "row", rowNumber: boost.peak.rowNumber }),
+      }),
       channelIds: [boost.channelId],
-    });
+    }));
   }
 
   for (const egr of channelSummaryByKind(summaries, "egr_actual")) {
@@ -1260,16 +1470,30 @@ function buildInsights(
       ? 0.5
       : Math.max(0.01, Math.max(Math.abs(egr.min.value), Math.abs(egr.max.value)) * 0.005);
     const movementObserved = span > movementThreshold;
-    insights.push({
+    const title = movementObserved
+      ? "EGR signal movement observed"
+      : "No EGR signal movement observed in this window";
+    const text = `${egr.label} ranged from ${formatNumber(egr.min.value)} to ${formatNumber(egr.max.value)}${summaryUnit(egr)}. ${movementObserved ? "Numeric movement is present in the captured signal." : "The retained values stayed effectively constant."} This observation does not confirm EGR function, health, disable state or commanded response.`;
+    insights.push(makeInsight({
       id: `${egr.channelId}-activity`,
       kind: "egr_activity",
       severity: movementObserved ? "info" : "caution",
-      title: movementObserved
-        ? "EGR signal movement observed"
-        : "No EGR signal movement observed in this window",
-      text: `${egr.label} ranged from ${formatNumber(egr.min.value)} to ${formatNumber(egr.max.value)}${summaryUnit(egr)}. ${movementObserved ? "Numeric movement is present in the captured signal." : "The retained values stayed effectively constant."} This observation does not confirm EGR function, health, disable state or commanded response.`,
+      titleMessage: resultMessage(
+        movementObserved ? "studio.insight.egrMovementTitle" : "studio.insight.egrStaticTitle",
+        title
+      ),
+      textMessage: resultMessage(
+        movementObserved ? "studio.insight.egrMovementText" : "studio.insight.egrStaticText",
+        text,
+        {
+          channelLabel: egr.label,
+          minimum: egr.min.value,
+          maximum: egr.max.value,
+          unit: egr.unit.symbol ?? "",
+        }
+      ),
       channelIds: [egr.channelId],
-    });
+    }));
   }
 
   const actualTargetFamilies: Array<{
@@ -1332,19 +1556,22 @@ function buildInsights(
     if (insight) insights.push(insight);
   }
 
-  insights.push({
+  insights.push(makeInsight({
     id: "descriptive-review-boundary",
     kind: "limitation",
     severity: "caution",
-    title: "Descriptive review boundary",
-    text: "These summaries describe captured values and alignment only. Vehicle context and qualified human review are required before any calibration, repair, component-limit or operational decision.",
+    titleMessage: resultMessage("studio.insight.boundaryTitle", "Descriptive review boundary"),
+    textMessage: resultMessage(
+      "studio.insight.boundaryText",
+      "These summaries describe captured values and alignment only. Vehicle context and qualified human review are required before any calibration, repair, component-limit or operational decision."
+    ),
     channelIds: [],
-  });
+  }));
 
   return insights;
 }
 
-function buildMissingChannels(channels: LogStudioChannel[]) {
+function buildMissingChannelMessages(channels: LogStudioChannel[]) {
   const has = (...kinds: LogStudioChannelKind[]) =>
     channels.some((channel) => kinds.includes(channel.kind));
   const hasDimension = (
@@ -1353,23 +1580,23 @@ function buildMissingChannels(channels: LogStudioChannel[]) {
   ) => channels.some(
     (channel) => kinds.includes(channel.kind) && channel.unit.dimension === dimension
   );
-  const missing: string[] = [];
+  const missing: LogStudioResultMessage[] = [];
 
-  if (!hasDimension(["rpm"], "engine_speed")) missing.push("Engine speed (RPM)");
-  if (!hasDimension(["torque"], "torque")) missing.push("Engine torque with a known unit");
-  if (!hasDimension(["boost_actual"], "pressure")) missing.push("Boost pressure actual");
-  if (!hasDimension(["boost_target"], "pressure")) missing.push("Boost pressure target");
-  if (!has("lambda", "afr")) missing.push("Lambda or AFR");
-  if (!has("throttle", "pedal")) missing.push("Throttle or pedal position");
-  if (!hasDimension(["iat"], "temperature")) missing.push("Intake-air temperature");
-  if (!hasDimension(["coolant"], "temperature")) missing.push("Coolant temperature");
-  if (!hasDimension(["egt"], "temperature")) missing.push("Exhaust-gas temperature");
-  if (!has("egr_actual", "egr_target")) missing.push("EGR actual or requested signal");
-  if (!hasDimension(["rail_actual"], "pressure")) missing.push("Rail pressure actual");
-  if (!hasDimension(["rail_target"], "pressure")) missing.push("Rail pressure target");
-  if (!has("airflow")) missing.push("Airflow");
-  if (!has("speed")) missing.push("Vehicle speed");
-  if (!has("ignition")) missing.push("Ignition timing");
+  if (!hasDimension(["rpm"], "engine_speed")) missing.push(resultMessage("studio.missing.rpm", "Engine speed (RPM)"));
+  if (!hasDimension(["torque"], "torque")) missing.push(resultMessage("studio.missing.torque", "Engine torque with a known unit"));
+  if (!hasDimension(["boost_actual"], "pressure")) missing.push(resultMessage("studio.missing.boostActual", "Boost pressure actual"));
+  if (!hasDimension(["boost_target"], "pressure")) missing.push(resultMessage("studio.missing.boostTarget", "Boost pressure target"));
+  if (!has("lambda", "afr")) missing.push(resultMessage("studio.missing.lambdaAfr", "Lambda or AFR"));
+  if (!has("throttle", "pedal")) missing.push(resultMessage("studio.missing.throttlePedal", "Throttle or pedal position"));
+  if (!hasDimension(["iat"], "temperature")) missing.push(resultMessage("studio.missing.iat", "Intake-air temperature"));
+  if (!hasDimension(["coolant"], "temperature")) missing.push(resultMessage("studio.missing.coolant", "Coolant temperature"));
+  if (!hasDimension(["egt"], "temperature")) missing.push(resultMessage("studio.missing.egt", "Exhaust-gas temperature"));
+  if (!has("egr_actual", "egr_target")) missing.push(resultMessage("studio.missing.egr", "EGR actual or requested signal"));
+  if (!hasDimension(["rail_actual"], "pressure")) missing.push(resultMessage("studio.missing.railActual", "Rail pressure actual"));
+  if (!hasDimension(["rail_target"], "pressure")) missing.push(resultMessage("studio.missing.railTarget", "Rail pressure target"));
+  if (!has("airflow")) missing.push(resultMessage("studio.missing.airflow", "Airflow"));
+  if (!has("speed")) missing.push(resultMessage("studio.missing.speed", "Vehicle speed"));
+  if (!has("ignition")) missing.push(resultMessage("studio.missing.ignition", "Ignition timing"));
 
   return missing;
 }
@@ -1401,7 +1628,12 @@ function buildQuality(input: {
   axis: LogStudioAxis;
   truncated: LogStudioAnalysis["truncated"];
 }) {
-  const reasons: string[] = [];
+  const reasonMessages: LogStudioResultMessage[] = [];
+  const addReason = (
+    key: LogStudioResultMessageKey,
+    fallback: string,
+    params: LogStudioResultMessageParams = {}
+  ) => reasonMessages.push(resultMessage(key, fallback, params));
   let score = 100;
   const accepted = input.rows.length;
   const acceptedRatio = accepted / Math.max(1, input.processedRowCount);
@@ -1416,71 +1648,75 @@ function buildQuality(input: {
 
   if (accepted < 5) {
     score -= 30;
-    reasons.push("Fewer than five aligned rows limit trend context.");
+    addReason("studio.quality.rowsUnderFive", "Fewer than five aligned rows limit trend context.");
   } else if (accepted < 20) {
     score -= 15;
-    reasons.push("Fewer than twenty aligned rows provide only a short trend window.");
+    addReason("studio.quality.rowsUnderTwenty", "Fewer than twenty aligned rows provide only a short trend window.");
   } else if (accepted < 50) {
     score -= 5;
-    reasons.push("The retained log contains fewer than fifty aligned rows.");
+    addReason("studio.quality.rowsUnderFifty", "The retained log contains fewer than fifty aligned rows.");
   }
 
   if (acceptedRatio < 0.75) {
     score -= 20;
-    reasons.push("More than one quarter of processed rows contained no retained numeric values.");
+    addReason("studio.quality.acceptedUnder75", "More than one quarter of processed rows contained no retained numeric values.");
   } else if (acceptedRatio < 0.9) {
     score -= 10;
-    reasons.push("Some processed rows contained no retained numeric values.");
+    addReason("studio.quality.acceptedUnder90", "Some processed rows contained no retained numeric values.");
   }
 
   if (!measurementChannels.length) {
     score -= 25;
-    reasons.push("No measurement channel beyond the x-axis was retained.");
+    addReason("studio.quality.noMeasurement", "No measurement channel beyond the x-axis was retained.");
   } else if (measurementChannels.length === 1) {
     score -= 10;
-    reasons.push("Only one non-axis measurement channel was retained.");
+    addReason("studio.quality.oneMeasurement", "Only one non-axis measurement channel was retained.");
   }
 
   if (measurementChannels.length && averageCoveragePercent < 60) {
     score -= 20;
-    reasons.push("Average measurement-channel coverage is below 60 percent.");
+    addReason("studio.quality.coverageUnder60", "Average measurement-channel coverage is below 60 percent.");
   } else if (measurementChannels.length && averageCoveragePercent < 80) {
     score -= 10;
-    reasons.push("Average measurement-channel coverage is below 80 percent.");
+    addReason("studio.quality.coverageUnder80", "Average measurement-channel coverage is below 80 percent.");
   } else if (measurementChannels.length && averageCoveragePercent < 95) {
     score -= 5;
-    reasons.push("Some retained channels contain missing values.");
+    addReason("studio.quality.missingValues", "Some retained channels contain missing values.");
   }
 
   if (input.axis.synthetic) {
     score -= 10;
-    reasons.push("No RPM, time or source sample channel was available; row number is used as the x-axis.");
+    addReason("studio.quality.syntheticAxis", "No RPM, time or source sample channel was available; row number is used as the x-axis.");
   } else if (axis.coveragePercent < 80) {
     score -= 10;
-    reasons.push("The selected x-axis is missing in more than 20 percent of retained rows.");
+    addReason("studio.quality.axisCoverage", "The selected x-axis is missing in more than 20 percent of retained rows.");
   }
 
   if (!axis.monotonic) {
     score -= 10;
-    reasons.push("The selected x-axis is not monotonic in source order.");
+    addReason("studio.quality.nonMonotonic", "The selected x-axis is not monotonic in source order.");
   }
 
   if (axis.duplicateCount > 0) {
     score -= Math.min(10, axis.duplicateCount);
-    reasons.push(`${axis.duplicateCount} duplicate x-axis value${axis.duplicateCount === 1 ? " was" : "s were"} detected.`);
+    addReason(
+      "studio.quality.duplicateAxis",
+      `${axis.duplicateCount} duplicate x-axis value${axis.duplicateCount === 1 ? " was" : "s were"} detected.`,
+      { count: axis.duplicateCount }
+    );
   }
 
   if (input.truncated.characters) {
     score -= 5;
-    reasons.push("Input was truncated at the character boundary.");
+    addReason("studio.quality.truncatedCharacters", "Input was truncated at the character boundary.");
   }
   if (input.truncated.rows) {
     score -= 5;
-    reasons.push("Input was truncated at the row boundary.");
+    addReason("studio.quality.truncatedRows", "Input was truncated at the row boundary.");
   }
   if (input.truncated.channels) {
     score -= 5;
-    reasons.push("Input was truncated at the channel boundary.");
+    addReason("studio.quality.truncatedChannels", "Input was truncated at the channel boundary.");
   }
 
   const finalScore = clamp(Math.round(score), 0, 100);
@@ -1490,14 +1726,18 @@ function buildQuality(input: {
       ? "usable"
       : "limited";
 
-  if (!reasons.length) {
-    reasons.push("Row alignment, x-axis order and retained-channel coverage are structurally consistent.");
+  if (!reasonMessages.length) {
+    addReason(
+      "studio.quality.consistent",
+      "Row alignment, x-axis order and retained-channel coverage are structurally consistent."
+    );
   }
 
   return {
     score: finalScore,
     label,
-    reasons,
+    reasons: fallbackMessages(reasonMessages),
+    reasonMessages,
     averageCoveragePercent: round(averageCoveragePercent, 1),
     xAxisMonotonic: axis.monotonic,
     duplicateXAxisCount: axis.duplicateCount,
@@ -1505,7 +1745,7 @@ function buildQuality(input: {
 }
 
 function unitComparisonWarnings(channels: LogStudioChannel[]) {
-  const warnings: string[] = [];
+  const warnings: LogStudioResultMessage[] = [];
   const pairs: Array<{
     actual: "boost_actual" | "rail_actual" | "torque" | "egr_actual";
     target: "boost_target" | "rail_target" | "torque_target" | "egr_target";
@@ -1522,9 +1762,17 @@ function unitComparisonWarnings(channels: LogStudioChannel[]) {
     const targets = channels.filter((channel) => channel.kind === pair.target);
     if (!actuals.length || !targets.length) continue;
     if (!actuals.some((actual) => targets.some((target) => unitsComparable(actual.unit, target.unit)))) {
-      warnings.push(`${pair.label} actual and target channels use missing, incompatible or differently referenced units, so no gap was calculated.`);
+      warnings.push(resultMessage(
+        "studio.warning.unitMismatch",
+        `${pair.label} actual and target channels use missing, incompatible or differently referenced units, so no gap was calculated.`,
+        { channelKind: pair.actual }
+      ));
     } else if (!pairActualTargetChannels(actuals, targets).length) {
-      warnings.push(`${pair.label} actual and target channels have ambiguous or mismatched sensor identities, so no gap was calculated.`);
+      warnings.push(resultMessage(
+        "studio.warning.sensorMismatch",
+        `${pair.label} actual and target channels have ambiguous or mismatched sensor identities, so no gap was calculated.`,
+        { channelKind: pair.actual }
+      ));
     }
   }
 
@@ -1536,7 +1784,10 @@ export function analyzeLogStudio(
   options: { profile?: LogStudioAnalysisProfile } = {}
 ): LogStudioAnalysis {
   if (!/\S/.test(input)) {
-    return emptyAnalysis("empty", ["Select a delimited log or paste numeric log rows to begin."]);
+    return emptyAnalysis("empty", [resultMessage(
+      "studio.error.selectDelimited",
+      "Select a delimited log or paste numeric log rows to begin."
+    )]);
   }
 
   const charactersTruncated = input.length > maxLogStudioCharacters;
@@ -1562,7 +1813,10 @@ export function analyzeLogStudio(
   const delimiter = tableStart?.delimiter ?? null;
 
   if (!delimiter || !tableStart) {
-    const result = emptyAnalysis("invalid", ["A comma, semicolon or tab-delimited numeric table could not be detected."]);
+    const result = emptyAnalysis("invalid", [resultMessage(
+      "studio.error.tableDetection",
+      "A comma, semicolon or tab-delimited numeric table could not be detected."
+    )]);
     result.truncated.characters = charactersTruncated;
     return result;
   }
@@ -1627,7 +1881,10 @@ export function analyzeLogStudio(
   );
 
   if (!headers.length || !processedLines.length) {
-    const result = emptyAnalysis("invalid", ["The log needs a header and at least one numeric data row."], delimiter);
+    const result = emptyAnalysis("invalid", [resultMessage(
+      "studio.error.headerNumeric",
+      "The log needs a header and at least one numeric data row."
+    )], delimiter);
     result.truncated = {
       characters: charactersTruncated,
       rows: rowsTruncated,
@@ -1682,7 +1939,10 @@ export function analyzeLogStudio(
     headers.length > maxCandidateColumns || eligible.length > maxLogStudioChannels;
 
   if (!selectedCandidates.length) {
-    const result = emptyAnalysis("invalid", ["No numeric channels were detected in the retained rows."], delimiter);
+    const result = emptyAnalysis("invalid", [resultMessage(
+      "studio.error.noNumericChannels",
+      "No numeric channels were detected in the retained rows."
+    )], delimiter);
     result.truncated = {
       characters: charactersTruncated,
       rows: rowsTruncated,
@@ -1739,7 +1999,7 @@ export function analyzeLogStudio(
     axis: xAxis,
     truncated,
   });
-  const warnings: string[] = [];
+  const warningMessages: LogStudioResultMessage[] = [];
   const excludedSummaryValueCount = rows.reduce(
     (total, row) => total + channels.filter((channel) => {
       const value = row.values[channel.id];
@@ -1749,46 +2009,95 @@ export function analyzeLogStudio(
   );
 
   if (headerlessRpmTorque) {
-    warnings.push("No header was present; the two numeric columns were treated as RPM and torque rows, but the torque unit remains unknown and no power is calculated.");
+    warningMessages.push(resultMessage(
+      "studio.warning.headerless",
+      "No header was present; the two numeric columns were treated as RPM and torque rows, but the torque unit remains unknown and no power is calculated."
+    ));
   }
   if (tableStart.lineIndex > 0) {
-    warnings.push(`${tableStart.lineIndex} preamble line${tableStart.lineIndex === 1 ? " was" : "s were"} skipped before the detected data table.`);
+    warningMessages.push(resultMessage(
+      "studio.warning.preamble",
+      `${tableStart.lineIndex} preamble line${tableStart.lineIndex === 1 ? " was" : "s were"} skipped before the detected data table.`,
+      { count: tableStart.lineIndex }
+    ));
   }
   if (unitsRow.detected) {
-    warnings.push("A separate units row was detected and merged with the channel headers.");
+    warningMessages.push(resultMessage(
+      "studio.warning.unitsRow",
+      "A separate units row was detected and merged with the channel headers."
+    ));
   }
   if (charactersTruncated) {
-    warnings.push(`Only the first ${maxLogStudioCharacters.toLocaleString("en-US")} characters were inspected.`);
+    warningMessages.push(resultMessage(
+      "studio.warning.characterLimit",
+      `Only the first ${maxLogStudioCharacters.toLocaleString("en-US")} characters were inspected.`,
+      { count: maxLogStudioCharacters }
+    ));
   }
   if (excludedSummaryValueCount > 0) {
-    warnings.push(`${excludedSummaryValueCount} numeric cell${excludedSummaryValueCount === 1 ? "" : "s"} fell outside conservative local analysis bounds. The raw values remain visible in the row inspector but were excluded from summaries, comparisons and calculated highlights.`);
+    warningMessages.push(resultMessage(
+      "studio.warning.outOfBounds",
+      `${excludedSummaryValueCount} numeric cell${excludedSummaryValueCount === 1 ? "" : "s"} fell outside conservative local analysis bounds. The raw values remain visible in the row inspector but were excluded from summaries, comparisons and calculated highlights.`,
+      { count: excludedSummaryValueCount }
+    ));
   }
   if (rowsTruncated) {
-    warnings.push(
-      cellBudgetTruncated
-        ? `Only the first ${processedRowLimit.toLocaleString("en-US")} data rows were inspected to stay within the ${maxLogStudioCells.toLocaleString("en-US")}-cell local processing budget.`
-        : options.profile === "performance"
-          ? `Only the first ${maxLogStudioRows.toLocaleString("en-US")} data rows were inspected.`
-          : `Only the first ${maxLogStudioFullRows.toLocaleString("en-US")} data rows were retained for the detailed mobile-safe analysis workspace.`
-    );
+    const rowWarning = cellBudgetTruncated
+      ? resultMessage(
+          "studio.warning.cellLimit",
+          `Only the first ${processedRowLimit.toLocaleString("en-US")} data rows were inspected to stay within the ${maxLogStudioCells.toLocaleString("en-US")}-cell local processing budget.`,
+          { rows: processedRowLimit, cells: maxLogStudioCells }
+        )
+      : options.profile === "performance"
+        ? resultMessage(
+            "studio.warning.performanceRowLimit",
+            `Only the first ${maxLogStudioRows.toLocaleString("en-US")} data rows were inspected.`,
+            { rows: maxLogStudioRows }
+          )
+        : resultMessage(
+            "studio.warning.detailedRowLimit",
+            `Only the first ${maxLogStudioFullRows.toLocaleString("en-US")} data rows were retained for the detailed mobile-safe analysis workspace.`,
+            { rows: maxLogStudioFullRows }
+          );
+    warningMessages.push(rowWarning);
   }
   if (channelsTruncated) {
-    warnings.push(`Only ${maxLogStudioChannels} numeric channels were retained; recognized automotive channels were prioritized.`);
+    warningMessages.push(resultMessage(
+      "studio.warning.channelLimit",
+      `Only ${maxLogStudioChannels} numeric channels were retained; recognized automotive channels were prioritized.`,
+      { count: maxLogStudioChannels }
+    ));
   }
   const rejectedRowCount = processedLines.length - rows.length;
   if (rejectedRowCount > 0) {
-    warnings.push(`${rejectedRowCount} processed row${rejectedRowCount === 1 ? " contained" : "s contained"} no retained numeric values.`);
+    warningMessages.push(resultMessage(
+      "studio.warning.rejectedRows",
+      `${rejectedRowCount} processed row${rejectedRowCount === 1 ? " contained" : "s contained"} no retained numeric values.`,
+      { count: rejectedRowCount }
+    ));
   }
   if (xAxis.synthetic) {
-    warnings.push("No RPM, time or source sample channel was detected; row number is used as the x-axis.");
+    warningMessages.push(resultMessage(
+      "studio.warning.syntheticAxis",
+      "No RPM, time or source sample channel was detected; row number is used as the x-axis."
+    ));
   }
   if (!quality.xAxisMonotonic) {
-    warnings.push("The selected x-axis is not monotonic in source order; rows were not reordered.");
+    warningMessages.push(resultMessage(
+      "studio.warning.nonMonotonic",
+      "The selected x-axis is not monotonic in source order; rows were not reordered."
+    ));
   }
   if (quality.duplicateXAxisCount > 0) {
-    warnings.push(`${quality.duplicateXAxisCount} duplicate x-axis value${quality.duplicateXAxisCount === 1 ? " was" : "s were"} retained.`);
+    warningMessages.push(resultMessage(
+      "studio.warning.duplicateAxis",
+      `${quality.duplicateXAxisCount} duplicate x-axis value${quality.duplicateXAxisCount === 1 ? " was" : "s were"} retained.`,
+      { count: quality.duplicateXAxisCount }
+    ));
   }
-  warnings.push(...unitComparisonWarnings(channels));
+  warningMessages.push(...unitComparisonWarnings(channels));
+  const uniqueWarningMessages = uniqueMessages(warningMessages);
+  const missingChannelMessages = buildMissingChannelMessages(channels);
 
   return {
     contractVersion: "log-analysis-studio-v1",
@@ -1807,9 +2116,12 @@ export function analyzeLogStudio(
     summaries,
     quality,
     insights: buildInsights(channels, rows, xAxis, summaries),
-    warnings: unique(warnings),
-    missingChannels: buildMissingChannels(channels),
+    warnings: fallbackMessages(uniqueWarningMessages),
+    warningMessages: uniqueWarningMessages,
+    missingChannels: fallbackMessages(missingChannelMessages),
+    missingChannelMessages,
     safetyBoundaries: [...safetyBoundaries],
+    safetyBoundaryMessages: [...safetyBoundaryMessages],
   };
 }
 

@@ -14,6 +14,7 @@ import {
   rateLimitResponseHeaders,
 } from "@/lib/abuseProtection";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
+import { creditPurchaseErrorCodes } from "@/lib/creditPurchaseErrorCodes";
 
 const bankTransferSelectionSchema = z.object({
   packageId: z.string().trim().min(1).max(80).optional(),
@@ -37,7 +38,7 @@ export async function POST(request: Request) {
   const auth = await requireApiUser(request);
   if (!auth.ok) {
     return NextResponse.json(
-      { success: false, error: auth.error },
+      { success: false, code: creditPurchaseErrorCodes.authRequired },
       { status: auth.status, headers: privateNoStoreHeaders },
     );
   }
@@ -60,7 +61,7 @@ export async function POST(request: Request) {
   };
   if (!limit.allowed) {
     return NextResponse.json(
-      { success: false, error: "Too many bank transfer email requests. Please try again later." },
+      { success: false, code: creditPurchaseErrorCodes.rateLimited },
       { status: 429, headers: responseHeaders },
     );
   }
@@ -70,7 +71,7 @@ export async function POST(request: Request) {
   );
   if (!parsed.success) {
     return NextResponse.json(
-      { success: false, error: "Choose a valid credit package or custom credit amount." },
+      { success: false, code: creditPurchaseErrorCodes.invalidSelection },
       { status: 400, headers: responseHeaders },
     );
   }
@@ -87,8 +88,7 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           success: false,
-          error: "Credit prices changed. Review the refreshed quote before continuing.",
-          code: error.code,
+          code: creditPurchaseErrorCodes.quoteStale,
         },
         { status: 409, headers: responseHeaders },
       );
@@ -97,8 +97,7 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           success: false,
-          error: "Bank transfer is not available for this account.",
-          code: error.code,
+          code: creditPurchaseErrorCodes.methodUnavailable,
         },
         { status: 403, headers: responseHeaders },
       );
@@ -107,21 +106,20 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           success: false,
-          error: "Credit pricing is temporarily unavailable. No payment instruction was created.",
-          code: error.code,
+          code: creditPurchaseErrorCodes.pricingUnavailable,
         },
         { status: 503, headers: responseHeaders },
       );
     }
     return NextResponse.json(
-      { success: false, error: "Bank transfer could not be prepared safely." },
+      { success: false, code: creditPurchaseErrorCodes.checkoutUnavailable },
       { status: 503, headers: responseHeaders },
     );
   }
 
   if (!selectedPurchase) {
     return NextResponse.json(
-      { success: false, error: "Choose a valid credit package or custom credit amount." },
+      { success: false, code: creditPurchaseErrorCodes.invalidSelection },
       { status: 400, headers: responseHeaders },
     );
   }
@@ -134,7 +132,7 @@ export async function POST(request: Request) {
     .maybeSingle();
   if (profile.error || !profile.data?.customer_id) {
     return NextResponse.json(
-      { success: false, error: "Customer ID could not be loaded." },
+      { success: false, code: creditPurchaseErrorCodes.customerReferenceUnavailable },
       { status: 503, headers: responseHeaders },
     );
   }
@@ -150,13 +148,13 @@ export async function POST(request: Request) {
     });
     if (!delivery.ok || delivery.status !== "sent") {
       return NextResponse.json(
-        { success: false, error: "Bank transfer instructions could not be confirmed as sent. Please try again." },
+        { success: false, code: creditPurchaseErrorCodes.bankDeliveryFailed },
         { status: 503, headers: responseHeaders },
       );
     }
   } catch {
     return NextResponse.json(
-      { success: false, error: "Bank transfer instructions could not be sent. Please try again." },
+      { success: false, code: creditPurchaseErrorCodes.bankDeliveryFailed },
       { status: 503, headers: responseHeaders },
     );
   }

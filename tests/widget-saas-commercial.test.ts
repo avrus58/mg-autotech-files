@@ -198,8 +198,8 @@ test("customer widget workspace excludes private identifiers and exposes only ag
   assert.match(route, /failed_enquiries_this_month/);
   assert.match(route, /select\("id, requested_domain, status, created_at, resolved_at"\)/);
   assert.match(customerTypes, /CustomerWidgetWorkspaceMetrics/);
-  assert.match(dashboard, /Installation readiness/);
-  assert.match(dashboard, /Leads this month/);
+  assert.match(dashboard, /widgetSiteT\(activeSiteLocale, "installationReadiness"\)/);
+  assert.match(dashboard, /widgetSiteT\(activeSiteLocale, "leadsThisMonth"\)/);
   assert.doesNotMatch(dashboard, /stripe_customer_id|stripe_subscription_id|ip_hash|user_agent|admin_note|widget_audit_logs/);
 });
 

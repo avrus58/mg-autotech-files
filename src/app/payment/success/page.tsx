@@ -22,6 +22,8 @@ import {
   replaceWithPendingMeasurementCompletion,
 } from "@/lib/publicAnalytics";
 import { createRequestCompletionConsentHandoff } from "@/lib/requestCompletionConsent";
+import { customerWorkflowExactT } from "@/lib/i18n/customer-workflow-credits-translations";
+import { useActiveLocale } from "@/lib/useActiveLocale";
 
 type ConfirmState = "checking" | "success" | "error" | "missing";
 const paymentCompletionConsentFailOpenMs = 15_000;
@@ -35,6 +37,8 @@ function paymentCompletionConsentIsAvailable(hostname: string) {
 }
 
 export default function PaymentSuccessPage() {
+  const locale = useActiveLocale();
+  const firstPaintT = (source: string) => customerWorkflowExactT(locale, source);
   const [state, setState] = useState<ConfirmState>("checking");
   const [message, setMessage] = useState("Confirming your payment...");
   const [credits, setCredits] = useState<number | null>(null);
@@ -95,7 +99,7 @@ export default function PaymentSuccessPage() {
         if (!response?.ok) {
           if (!cancelled) {
             setState("error");
-            setMessage(typeof data.error === "string" ? data.error : "Payment could not be confirmed.");
+            setMessage("Payment could not be confirmed.");
           }
           return;
         }
@@ -129,11 +133,9 @@ export default function PaymentSuccessPage() {
         if (replaceWithPendingMeasurementCompletion("/dashboard/credits")) {
           return;
         }
-      } catch (error) {
+      } catch {
         setState("error");
-        setMessage(
-          error instanceof Error ? error.message : "Payment could not be confirmed."
-        );
+        setMessage("Payment could not be confirmed.");
       }
     };
 
@@ -217,17 +219,25 @@ export default function PaymentSuccessPage() {
 
         <h1 className="text-4xl font-black">
           {isChecking
-            ? "Confirming payment"
+            ? firstPaintT("Confirming payment")
             : isSuccess
-              ? "Payment successful"
-              : "Payment needs review"}
+              ? firstPaintT("Payment successful")
+              : firstPaintT("Payment needs review")}
         </h1>
 
-        <p className="mt-4 text-sm leading-6 text-zinc-300">{message}</p>
+        <p
+          role={isChecking ? "status" : isSuccess ? "status" : "alert"}
+          aria-live={isChecking || isSuccess ? "polite" : "assertive"}
+          className="mt-4 text-sm leading-6 text-zinc-300"
+        >
+          {firstPaintT(message)}
+        </p>
 
         {isSuccess && credits !== null && (
           <div className="mt-6 rounded-2xl border border-emerald-700/30 bg-emerald-950/30 p-4">
-            <div className="text-sm text-emerald-200">Added credits</div>
+            <div className="text-sm text-emerald-200">
+              {firstPaintT("Added credits")}
+            </div>
             <div className="mt-1 text-4xl font-black text-emerald-300">
               +{credits}
             </div>
@@ -243,7 +253,7 @@ export default function PaymentSuccessPage() {
             className="rounded-xl bg-[#b1121b] px-5 py-3 font-black text-white transition hover:bg-[#c91824]"
           >
             <LayoutDashboard className="mr-2 inline h-4 w-4" />
-            Dashboard
+            {firstPaintT("Dashboard")}
           </Link>
 
           <Link
@@ -254,7 +264,7 @@ export default function PaymentSuccessPage() {
             className="rounded-xl border border-white/10 bg-white/[0.04] px-5 py-3 font-black text-white transition hover:bg-white/10"
           >
             <CreditCard className="mr-2 inline h-4 w-4" />
-            Buy More Credits
+            {firstPaintT("Buy More Credits")}
           </Link>
         </div>
       </div>

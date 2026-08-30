@@ -3,13 +3,25 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { authenticatedFetch, getStableSession, notifySessionRequired, signOutIfEmailUnverified } from "@/lib/authGuards";
-import type { CreditPackage } from "@/lib/creditPackages";
+import type { CreditPackage, CreditPackageId } from "@/lib/creditPackages";
 import {
   calculateCreditTotalEuro,
   isStripeEuroAmountSupported,
 } from "@/lib/commercialPricing";
 import { supabase } from "@/lib/supabaseClient";
 import { CustomerPortalPageHeader } from "@/components/dashboard/CustomerPortalPageHeader";
+import {
+  customerWorkflowExactT,
+  customerWorkflowT,
+  type CustomerWorkflowTranslationKey,
+} from "@/lib/i18n/customer-workflow-credits-translations";
+import { intlLocaleByCode } from "@/lib/i18nConfig";
+import { useActiveLocale } from "@/lib/useActiveLocale";
+import { localizeCreditPromotionLabel } from "@/lib/i18n/commercial-translations";
+import {
+  creditPurchaseErrorCodes,
+  creditPurchaseErrorMessage,
+} from "@/lib/creditPurchaseErrorCodes";
 import {
   CheckCircle2,
   Copy,
@@ -46,6 +58,14 @@ const paymentMethods = [
     icon: Landmark,
   },
 ] as const;
+
+const creditPackageDescriptionKeys = {
+  credits_10: "creditPackageDescription10",
+  credits_50: "creditPackageDescription50",
+  credits_100: "creditPackageDescription100",
+  credits_250: "creditPackageDescription250",
+  credits_500: "creditPackageDescription500",
+} as const satisfies Record<CreditPackageId, CustomerWorkflowTranslationKey>;
 
 type PaymentMethod = (typeof paymentMethods)[number]["id"];
 type PricingSource = "global" | "customer_override";
@@ -125,14 +145,8 @@ async function readResponseBody(response: Response) {
   return (await response.json().catch(() => ({}))) as Record<string, unknown>;
 }
 
-function responseError(payload: Record<string, unknown>, fallback: string) {
-  return typeof payload.error === "string" && payload.error.trim()
-    ? payload.error
-    : fallback;
-}
-
-function formatEuro(value: number) {
-  return new Intl.NumberFormat("de-DE", {
+function formatEuro(value: number, locale: keyof typeof intlLocaleByCode) {
+  return new Intl.NumberFormat(intlLocaleByCode[locale], {
     style: "currency",
     currency: "EUR",
     minimumFractionDigits: 0,
@@ -140,8 +154,8 @@ function formatEuro(value: number) {
   }).format(value);
 }
 
-function formatCreditUnitEuro(value: number) {
-  return new Intl.NumberFormat("de-DE", {
+function formatCreditUnitEuro(value: number, locale: keyof typeof intlLocaleByCode) {
+  return new Intl.NumberFormat(intlLocaleByCode[locale], {
     style: "currency",
     currency: "EUR",
     minimumFractionDigits: 2,
@@ -159,6 +173,7 @@ function formatCustomerReference(customerId: string) {
 
 export default function BuyCreditsPage() {
   const router = useRouter();
+  const locale = useActiveLocale();
 
   const [loadingPackage, setLoadingPackage] = useState<string | null>(null);
   const [customCredits, setCustomCredits] = useState("17");
@@ -184,12 +199,10 @@ export default function BuyCreditsPage() {
       });
       const payload = await readResponseBody(response);
       if (!response.ok) {
-        throw new Error(
-          responseError(payload, "Credit prices could not be loaded."),
-        );
+        throw new Error(creditPurchaseErrorMessage("quote", payload.code));
       }
       if (!isCreditQuote(payload.quote)) {
-        throw new Error("Credit prices could not be verified. Please retry.");
+        throw new Error(creditPurchaseErrorMessage("quote", payload.code));
       }
       if (requestId !== quoteRequestId.current) return null;
 
@@ -204,15 +217,11 @@ export default function BuyCreditsPage() {
       );
       setQuoteState("ready");
       return nextQuote;
-    } catch (error) {
+    } catch {
       if (requestId !== quoteRequestId.current) return null;
       setQuote(null);
       setQuoteState("error");
-      setQuoteError(
-        error instanceof Error
-          ? error.message
-          : "Credit prices could not be loaded.",
-      );
+      setQuoteError(creditPurchaseErrorMessage("quote", undefined));
       return null;
     }
   }, []);
@@ -246,6 +255,9 @@ export default function BuyCreditsPage() {
   const selectedPayment = availablePaymentMethods.find(
     (method) => method.id === paymentMethod,
   );
+  const selectedPaymentTitle = selectedPayment
+    ? customerWorkflowExactT(locale, selectedPayment.title)
+    : customerWorkflowExactT(locale, "No payment method available");
   const lowestUnitPricePackage = packages.reduce<(typeof packages)[number] | null>(
     (lowest, item) => !lowest || item.unitPriceEuro < lowest.unitPriceEuro ? item : lowest,
     null,
@@ -273,7 +285,7 @@ export default function BuyCreditsPage() {
       .single();
 
     if (error) {
-      throw new Error(error.message);
+      throw new Error("Customer ID could not be loaded.");
     }
 
     if (!data?.customer_id) {
@@ -370,12 +382,7 @@ export default function BuyCreditsPage() {
           return;
         }
         if (!response.ok) {
-          throw new Error(
-            responseError(
-              data,
-              "Bank transfer instructions could not be prepared.",
-            ),
-          );
+          throw new Error(creditPurchaseErrorMessage("purchase", data.code));
         }
         if (
           data.success !== true ||
@@ -384,14 +391,18 @@ export default function BuyCreditsPage() {
           !isFinitePositive(data.amountEuro)
         ) {
           throw new Error(
-            "Bank transfer instructions could not be verified. Please retry.",
+            creditPurchaseErrorMessage("purchase", data.code),
           );
         }
 
         const reference = formatCustomerReference(data.customerId);
         setNotice({
           kind: "success",
-          text: `Bank transfer instructions were sent for ${data.credits} credits (${formatEuro(data.amountEuro)}). Use your Customer ID as payment reference: ${reference}. Credits are added manually after payment is received.`,
+          text: customerWorkflowT(locale, "bankInstructionsSent", {
+            credits: Number(data.credits),
+            amount: formatEuro(data.amountEuro, locale),
+            reference,
+          }),
         });
         return;
       }
@@ -416,22 +427,22 @@ export default function BuyCreditsPage() {
         return;
       }
       if (!response.ok) {
-        throw new Error(
-          responseError(data, "Could not start Stripe checkout."),
-        );
+        throw new Error(creditPurchaseErrorMessage("purchase", data.code));
       }
       if (typeof data.url !== "string" || !data.url) {
-        throw new Error("Stripe checkout URL was not returned.");
+        throw new Error(
+          creditPurchaseErrorMessage(
+            "purchase",
+            creditPurchaseErrorCodes.checkoutUnavailable,
+          ),
+        );
       }
 
       window.location.assign(data.url);
-    } catch (error) {
+    } catch {
       setNotice({
         kind: "error",
-        text:
-          error instanceof Error
-            ? error.message
-            : "Credit purchase could not be started.",
+        text: creditPurchaseErrorMessage("purchase", undefined),
       });
     } finally {
       checkoutInFlight.current = false;
@@ -468,13 +479,10 @@ export default function BuyCreditsPage() {
 
     try {
       reference = await getCustomerReference(user.id);
-    } catch (error) {
+    } catch {
       setNotice({
         kind: "error",
-        text:
-          error instanceof Error
-            ? error.message
-            : "Customer ID could not be loaded.",
+        text: "Customer ID could not be loaded.",
       });
       return;
     }
@@ -519,9 +527,9 @@ export default function BuyCreditsPage() {
                 <CreditCard className="h-3.5 w-3.5 text-red-500" />
                 Secure payment options
               </div>
-              {quote?.promotionLabel && (
+              {localizeCreditPromotionLabel(locale, quote?.promotionLabel) && (
                 <div className="inline-flex rounded-full border border-red-700/60 bg-red-950/40 px-2.5 py-1 text-[11px] font-black text-red-100">
-                  {quote.promotionLabel}
+                  {localizeCreditPromotionLabel(locale, quote?.promotionLabel)}
                 </div>
               )}
             </div>
@@ -569,7 +577,7 @@ export default function BuyCreditsPage() {
                   : "border-red-800/50 bg-red-950/30 text-red-200"
             }`}
           >
-            {notice.text}
+            {customerWorkflowExactT(locale, notice.text)}
           </div>
         )}
 
@@ -603,8 +611,11 @@ export default function BuyCreditsPage() {
               Credit prices are temporarily unavailable
             </div>
             <p className="mt-2 text-sm leading-6 text-red-200/80">
-              {quoteError ||
-                "No payment can be started until verified prices are loaded."}
+              {customerWorkflowExactT(
+                locale,
+                quoteError ||
+                  "No payment can be started until verified prices are loaded.",
+              )}
             </p>
             <button
               type="button"
@@ -630,7 +641,7 @@ export default function BuyCreditsPage() {
                 </div>
                 <div className="text-xs font-bold text-zinc-500 sm:text-right">
                   <div>
-                    Selected: {selectedPayment?.title ?? "No payment method available"}
+                    Selected: {selectedPaymentTitle}
                   </div>
                   {quote.customerPaymentPolicyActive && (
                     <div className="mt-1 text-xs text-emerald-300">
@@ -674,14 +685,14 @@ export default function BuyCreditsPage() {
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center justify-between gap-2">
                             <div className="text-sm font-black text-white">
-                              {method.title}
+                              {customerWorkflowExactT(locale, method.title)}
                             </div>
                             <span className="shrink-0 rounded-full border border-white/10 bg-black/35 px-2 py-0.5 text-[10px] font-black text-zinc-300">
-                              {method.badge}
+                              {customerWorkflowExactT(locale, method.badge)}
                             </span>
                           </div>
                           <div className="mt-0.5 text-[11px] font-bold text-zinc-500">
-                            {method.subtitle}
+                            {customerWorkflowExactT(locale, method.subtitle)}
                           </div>
                         </div>
                       </div>
@@ -774,15 +785,15 @@ export default function BuyCreditsPage() {
               </div>
 
               <div className="mt-3 text-2xl font-black">
-                {formatEuro(item.priceEuro)}
+                {formatEuro(item.priceEuro, locale)}
               </div>
 
               <div className="mt-1 text-xs font-bold text-red-400">
-                Each Credit {formatCreditUnitEuro(item.unitPriceEuro)}
+                Each Credit {formatCreditUnitEuro(item.unitPriceEuro, locale)}
               </div>
 
               <p className="mt-3 flex-1 text-xs leading-5 text-zinc-400">
-                {item.description}
+                {customerWorkflowT(locale, creditPackageDescriptionKeys[item.id])}
               </p>
 
               <div className="mt-3 space-y-1 text-[11px] leading-4 text-zinc-300">
@@ -824,7 +835,9 @@ export default function BuyCreditsPage() {
                   <>
                   {paymentMethod === "stripe"
                     ? "Buy"
-                    : `Pay with ${selectedPayment?.title}`}
+                    : customerWorkflowT(locale, "payWith", {
+                        method: selectedPaymentTitle,
+                      })}
                   </>
                 )}
               </button>
@@ -881,7 +894,7 @@ export default function BuyCreditsPage() {
 
             <p className="mt-2 text-xs leading-5 text-zinc-400 sm:text-sm">
               Enter any credit amount. Custom credit purchases are calculated at{" "}
-              {formatCreditUnitEuro(quote.customUnitPriceEuro)} per credit for your account.
+              {formatCreditUnitEuro(quote.customUnitPriceEuro, locale)} per credit for your account.
             </p>
 
             <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_160px]">
@@ -906,7 +919,7 @@ export default function BuyCreditsPage() {
                   Total Price
                 </div>
                 <div className="mt-1.5 text-2xl font-black text-red-400">
-                  {customValid ? formatEuro(customPrice) : "-"}
+                  {customValid ? formatEuro(customPrice, locale) : "-"}
                 </div>
               </div>
             </div>
@@ -934,7 +947,9 @@ export default function BuyCreditsPage() {
                   <CreditCard className="mr-2 h-4 w-4" />
                   {paymentMethod === "stripe"
                     ? "Buy Custom Credits"
-                    : `Pay Custom via ${selectedPayment?.title}`}
+                    : customerWorkflowT(locale, "payCustomVia", {
+                        method: selectedPaymentTitle,
+                      })}
                 </>
               )}
             </button>
@@ -953,7 +968,7 @@ export default function BuyCreditsPage() {
             <p className="mt-2 text-xs leading-5 text-zinc-400 sm:text-sm">
               Package purchases use the verified package rate shown above.
               Custom credit purchases are calculated at{" "}
-              {formatCreditUnitEuro(quote.customUnitPriceEuro)} per credit for this
+              {formatCreditUnitEuro(quote.customUnitPriceEuro, locale)} per credit for this
               account. Stripe payments add credits automatically after payment
               confirmation. Bank transfer requires admin verification before
               credits are added.
@@ -963,8 +978,8 @@ export default function BuyCreditsPage() {
               <div className="rounded-lg border border-white/10 bg-black/30 p-3">
                 <div className="text-sm font-black">Example</div>
                 <div className="mt-1 text-sm text-zinc-400">
-                  17 Credits × {formatCreditUnitEuro(quote.customUnitPriceEuro)} ={" "}
-                  {formatEuro(calculateCreditTotalEuro(17, quote.customUnitPriceEuro))}
+                  17 Credits × {formatCreditUnitEuro(quote.customUnitPriceEuro, locale)} ={" "}
+                  {formatEuro(calculateCreditTotalEuro(17, quote.customUnitPriceEuro), locale)}
                 </div>
               </div>
 
@@ -973,7 +988,7 @@ export default function BuyCreditsPage() {
                   <div className="text-sm font-black">Lowest package rate</div>
                   <div className="mt-1 text-sm text-zinc-400">
                     {lowestUnitPricePackage.credits} Credits ={" "}
-                    {formatCreditUnitEuro(lowestUnitPricePackage.unitPriceEuro)} / Credit
+                    {formatCreditUnitEuro(lowestUnitPricePackage.unitPriceEuro, locale)} / Credit
                   </div>
                 </div>
               )}

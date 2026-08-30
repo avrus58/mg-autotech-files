@@ -4,6 +4,8 @@ import { useCallback, useMemo, useState, useSyncExternalStore } from "react";
 import { ShieldCheck } from "lucide-react";
 import { TurnstileChallenge } from "@/components/auth/TurnstileChallenge";
 import { getHostedTurnstileConfig } from "@/lib/authCaptcha";
+import { customerWorkflowExactT } from "@/lib/i18n/customer-workflow-auth-translations";
+import { useActiveLocale } from "@/lib/useActiveLocale";
 
 type DesktopCaptchaBridge = {
   complete(input: { state: string; token: string }): Promise<{
@@ -31,6 +33,8 @@ function getDesktopCaptchaBridge() {
 }
 
 export default function DesktopTurnstilePage() {
+  const locale = useActiveLocale();
+  const t = (source: string) => customerWorkflowExactT(locale, source);
   const config = getHostedTurnstileConfig();
   const hash = useSyncExternalStore(
     subscribeToStaticDesktopContext,
@@ -59,7 +63,7 @@ export default function DesktopTurnstilePage() {
         const result = await bridge.complete({ state: challenge.state, token });
         if (result.ok) return;
         setSubmitting(false);
-        setMessage(result.error ?? "Security verification could not be returned.");
+        setMessage("Security verification could not be returned.");
         setResetKey((value) => value + 1);
       } catch {
         setSubmitting(false);
@@ -86,7 +90,7 @@ export default function DesktopTurnstilePage() {
     !challenge || !bridgeAvailable
       ? "Open this security check from the MG AutoTech desktop app."
       : config.status !== "ready"
-        ? config.message ?? "Security verification is unavailable."
+        ? "Security verification is unavailable."
         : "Complete the security check to continue your desktop login."
   );
 
@@ -99,9 +103,9 @@ export default function DesktopTurnstilePage() {
         <div className="text-xs font-black uppercase tracking-[0.16em] text-red-400">
           MG AutoTech
         </div>
-        <h1 className="mt-2 text-2xl font-black">Secure desktop login</h1>
+        <h1 className="mt-2 text-2xl font-black">{t("Secure desktop login")}</h1>
         <p className="mt-3 text-sm leading-6 text-zinc-400" aria-live="polite">
-          {visibleMessage}
+          {t(visibleMessage)}
         </p>
 
         {canRenderChallenge && challenge && (
@@ -121,7 +125,7 @@ export default function DesktopTurnstilePage() {
           disabled={!challenge || submitting}
           className="mt-5 h-11 w-full rounded-xl border border-white/10 bg-white/[0.04] text-sm font-black transition hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-50"
         >
-          Cancel
+          {t("Cancel")}
         </button>
       </section>
     </main>

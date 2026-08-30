@@ -353,7 +353,7 @@ test("credit totals and four-decimal unit prices remain visibly consistent", () 
   const purchaseResolver = source("src", "lib", "commercialPolicy.ts");
 
   assert.match(creditsPage, /function formatCreditUnitEuro[\s\S]{0,300}minimumFractionDigits:\s*2[\s\S]{0,100}maximumFractionDigits:\s*4/);
-  assert.match(creditsPage, /formatCreditUnitEuro\(quote\.customUnitPriceEuro\)/);
+  assert.match(creditsPage, /formatCreditUnitEuro\(quote\.customUnitPriceEuro, locale\)/);
   assert.match(homepage, /function formatEuro[\s\S]{0,300}maximumFractionDigits:\s*2/);
   assert.match(homepage, /function formatCreditUnitEuro[\s\S]{0,300}maximumFractionDigits:\s*4/);
   assert.match(purchaseResolver, /customUnitPriceEuro\.toFixed\(4\)/);

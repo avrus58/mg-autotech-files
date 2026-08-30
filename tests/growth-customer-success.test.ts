@@ -1057,7 +1057,7 @@ test("a stored reminder opt-in resumes an interaction that happened before profi
   const requestPage = source("src", "app", "new-request", "page.tsx");
   const client = source("src", "lib", "growth", "client.ts");
   const controllerBlock = client.match(
-    /export function createGrowthRequestStartDeliveryController[\s\S]*?\n}\n\nexport function recordGrowthRequestCreated/,
+    /export function createGrowthRequestStartDeliveryController[\s\S]*?\r?\n}\r?\n\r?\nexport function recordGrowthRequestCreated/,
   )?.[0] ?? "";
   const profilePreferenceBlock = requestPage.match(
     /const preference = await supabase[\s\S]*?setProfileLoading\(false\);/,

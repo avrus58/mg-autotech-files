@@ -105,21 +105,21 @@ test("the analysis workspace caps overlays and provides tabs plus a row inspecto
 
 test("the customer Studio prioritizes power, torque and RPM while retaining every detected channel", () => {
   assert.match(studio, /performanceFromStudioAnalysis\(analysis\)/);
-  assert.match(studio, /label="Estimated peak power"/);
-  assert.match(studio, /label="Highest logged torque"/);
-  assert.match(studio, /label="Engine-speed window"/);
+  assert.match(studio, /label=\{t\("estimatedPeakPower"\)\}/);
+  assert.match(studio, /label=\{t\("highestTorque"\)\}/);
+  assert.match(studio, /label=\{t\("engineSpeedWindow"\)\}/);
   assert.match(studio, /Requires one unambiguous RPM channel and one actual engine-torque channel with a known unit/);
-  assert.match(studio, /Requested, non-engine, ambiguous or unitless torque is never used for power/);
+  assert.match(studio, /t\("torqueExcluded"\)/);
   assert.match(studio, /summary\.channelId === performanceSource\.rpmChannelId/);
   assert.match(studio, /performanceSource\?\.loggedPeakTorqueNm/);
-  assert.match(studio, /More details/);
-  assert.match(studio, /Highest logged EGT/);
+  assert.match(studio, /t\("moreDetails"\)/);
+  assert.match(studio, /t\("highestEgt"\)/);
   assert.match(studio, /function highestEgtSummary/);
   assert.match(studio, /rightCanonical - leftCanonical/);
-  assert.match(studio, /EGR signal observation/);
-  assert.match(studio, /EGR signal actual vs target/);
+  assert.match(studio, /t\("egrObservation"\)/);
+  assert.match(studio, /egrComparison/);
   assert.match(studio, /analysis\.channels\.map\(\(channel\) =>/);
-  assert.match(studio, /Every retained numeric channel/);
+  assert.match(studio, /t\("moreDetailsHelp"\)/);
 });
 
 test("the Studio chart uses detected time, RPM or sample values rather than row spacing", () => {
@@ -143,11 +143,13 @@ test("the Studio chart uses detected time, RPM or sample values rather than row 
 });
 
 test("quality is described as capture structure with explicit technical boundaries", () => {
-  assert.match(studio, /Structure: \$\{analysis\.quality\.label\}/);
-  assert.match(studio, /\{analysis\.quality\.label\} structure/);
-  assert.match(studio, /Capture structure/);
+  assert.match(studio, /logStudioQualityT\(locale, analysis\.quality\.label\)/);
+  assert.match(studio, /t\("structure"\)/);
+  assert.match(studio, /t\("captureStructure"\)/);
   assert.match(studio, /Descriptive log review—not a dyno or diagnosis\./);
-  assert.match(studio, /not a dyno result, diagnosis, calibration approval, component limit or flash-safety decision/);
+  assert.match(studio, /t\("analysisBoundary"\)/);
+  assert.match(studio, /logStudioMessageT\(locale, boundary\)/);
+  assert.match(studio, /logStudioT\(activeLocale, "studio\.summary\.boundary"\)/);
 
   assert.match(engine, /does not diagnose a fault or select a repair path/);
   assert.match(engine, /not a calibrated dyno measurement/);

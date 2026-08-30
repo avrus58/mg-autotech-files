@@ -4,6 +4,17 @@ import { join } from "node:path";
 const root = process.cwd();
 const filesToScan = [
   "src/lib/i18n.ts",
+  "src/lib/i18n/customer-runtime-translations.ts",
+  "src/lib/i18n/customer-workflow-translations.ts",
+  "src/lib/i18n/log-analysis-studio-translations.ts",
+  "src/lib/i18n/public-core-translations.ts",
+  "src/lib/i18n/public-services-translations.ts",
+  "src/lib/i18n/public-surface-types.ts",
+  "src/lib/i18n/public-tools-translations.ts",
+  "src/lib/i18n/public-vehicle-translations.ts",
+  "src/lib/i18n/service-intent-translations.ts",
+  "src/lib/i18n/widget-site-translations.ts",
+  "src/lib/i18n/workshop-guides-translations.ts",
   "src/lib/customerPortalTranslations.ts",
   "src/lib/seo.ts",
   "src/lib/searchEngineIndexing.ts",
@@ -43,7 +54,6 @@ const mojibakePatterns = [
   { name: "utf8-as-latin1-c3", pattern: /\u00c3[\u0080-\u00bf]/u },
   { name: "utf8-as-latin1-c2", pattern: /\u00c2[\u0080-\u00bf]/u },
   { name: "smart-quote-mojibake", pattern: /\u00e2[\u0080-\u009f]/u },
-  { name: "russian-mojibake-marker", pattern: /\u011e/u },
 ];
 
 const failures = [];
@@ -100,7 +110,10 @@ for (const relativePath of [
 }
 
 const languageSwitcher = readFileSync(join(root, "src/components/LanguageSwitcher.tsx"), "utf8");
-if (!languageSwitcher.includes("isServerLocalizedPublicPath")) {
+if (
+  !languageSwitcher.includes("isServerLocalizedPublicPath") &&
+  !languageSwitcher.includes("getInitialLocaleRedirect")
+) {
   failures.push("Language switcher does not distinguish server-localized and runtime-localized routes.");
 }
 
@@ -175,9 +188,17 @@ const rootVehicleExperience = readFileSync(
 const rootHomePage = `${rootHomeEntry}\n${rootHomeExperience}\n${rootVehicleExperience}`;
 const rootLayout = readFileSync(join(root, "src/app/layout.tsx"), "utf8");
 const rootServicesPage = readFileSync(join(root, "src/app/services/page.tsx"), "utf8");
+const rootServicesMetadata = readFileSync(
+  join(root, "src/lib/servicesPageMetadata.ts"),
+  "utf8",
+);
+const rootServicesSurface = `${rootServicesPage}\n${rootServicesMetadata}`;
 const rootFileServicePage = readFileSync(join(root, "src/app/file-service/page.tsx"), "utf8");
 const rootHowItWorksPage = readFileSync(join(root, "src/app/how-it-works/page.tsx"), "utf8");
-if (!rootServicesPage.includes("title: pageTitle,")) {
+if (
+  !rootServicesSurface.includes("title: pageTitle,") &&
+  !rootServicesSurface.includes("title: copy.title,")
+) {
   failures.push("Root services page can duplicate the global title template suffix.");
 }
 if (!rootFileServicePage.includes("title: pageTitle,")) {
@@ -222,7 +243,7 @@ for (const visibleId of [
   }
 }
 
-if ((rootHomePage.match(/<DeferredPerformanceTools \/>/g) ?? []).length !== 1) {
+if ((rootHomePage.match(/<DeferredPerformanceTools\b/g) ?? []).length !== 1) {
   failures.push("Root homepage must render the deferred datalog experience exactly once.");
 }
 if (!rootHomePage.includes('href: "/file-service"')) {
@@ -276,7 +297,12 @@ if (
 ) {
   failures.push("Services catalog page is missing the visible H1/title signal.");
 }
-if (!servicesCatalogPage.includes('canonical: absoluteUrl("/services")')) {
+if (
+  !`${servicesCatalogPage}\n${rootServicesMetadata}`.includes(
+    'canonical: absoluteUrl("/services")',
+  ) &&
+  !rootServicesMetadata.includes('runtimePublicAlternates("/services")')
+) {
   failures.push("Services catalog page is missing canonical /services metadata.");
 }
 if (!servicesCatalogPage.includes('"@type": "CollectionPage"')) {

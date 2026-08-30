@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireApiUser } from "@/lib/apiAuth";
 import { getCreditQuoteForUser } from "@/lib/commercialPolicy";
+import { creditPurchaseErrorCodes } from "@/lib/creditPurchaseErrorCodes";
 
 const privateNoStoreHeaders = {
   "Cache-Control": "private, no-store, max-age=0",
@@ -11,7 +12,7 @@ export async function GET(request: Request) {
   const auth = await requireApiUser(request);
   if (!auth.ok) {
     return NextResponse.json(
-      { error: auth.error },
+      { code: creditPurchaseErrorCodes.authRequired },
       { status: auth.status, headers: privateNoStoreHeaders },
     );
   }
@@ -25,8 +26,7 @@ export async function GET(request: Request) {
   } catch {
     return NextResponse.json(
       {
-        error: "Credit pricing is temporarily unavailable. Please retry before starting a payment.",
-        code: "commercial_pricing_unavailable",
+        code: creditPurchaseErrorCodes.pricingUnavailable,
       },
       { status: 503, headers: privateNoStoreHeaders },
     );

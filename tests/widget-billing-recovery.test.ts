@@ -46,8 +46,8 @@ test("widget dashboard and billing UI do not show a dead manage button when bill
   const billing = readProjectFile("src", "app", "dashboard", "widget", "billing", "page.tsx");
 
   assert.match(dashboard, /const canManageBilling = Boolean\(client\?\.billing_profile_linked\)/);
-  assert.match(dashboard, /No Stripe billing profile is linked to this widget yet/);
-  assert.match(panel, /View widget plans/);
+  assert.match(dashboard, /widgetSiteT\(activeSiteLocale, "billingProfileMissing"\)/);
+  assert.match(panel, /widgetSiteT\(locale, "viewWidgetPlans"\)/);
   assert.match(notice, /canManageBilling/);
   assert.match(notice, /href="\/widget"/);
   assert.match(notice, /mailto:info@mgautotech\.de\?subject=Widget%20billing%20support/);
@@ -92,10 +92,10 @@ test("widget subscription summary panel shows last payment next renewal and rema
   assert.match(dashboard, /loadBillingSummary/);
   assert.match(dashboard, /\/api\/stripe\/widget-subscription-summary/);
   assert.match(billing, /SubscriptionSummaryPanel/);
-  assert.match(panel, /Last payment/);
-  assert.match(panel, /Next payment/);
-  assert.match(panel, /Days remaining/);
-  assert.match(panel, /Manage subscription/);
-  assert.match(panel, /Customer-safe billing view only/);
+  assert.match(panel, /widgetSiteT\(locale, "lastPayment"\)/);
+  assert.match(panel, /widgetSiteT\(locale, "nextPayment"\)/);
+  assert.match(panel, /widgetSiteT\(locale, "daysRemaining"\)/);
+  assert.match(panel, /widgetSiteT\(locale, "manageSubscription"\)/);
+  assert.match(panel, /widgetSiteT\(locale, "customerSafeBilling"\)/);
   assert.doesNotMatch(panel, /stripe_customer_id|stripe_subscription_id|invoice_pdf|hosted_invoice_url|payment_method|card/);
 });

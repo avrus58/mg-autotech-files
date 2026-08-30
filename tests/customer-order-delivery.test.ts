@@ -439,7 +439,7 @@ test("customer delivery API is ownership-bound, audited and version-id based", (
   assert.match(page, /\/api\/requests\/\$\{order\.id\}\/source-files/);
   assert.match(page, /Portal download requests:/);
   assert.match(page, /does not confirm byte-complete transfer/);
-  assert.match(page, /Delivered \{formatDate\(version\.deliveredAt\)\}/);
+  assert.match(page, /Delivered \{formatDate\(version\.deliveredAt, locale\)\}/);
   assert.match(page, /Berlin time/);
   assert.doesNotMatch(page, /createSignedUrl|version\.file_path|modified_file_path|modified_files/);
 

@@ -11,9 +11,18 @@ import {
   CUSTOMER_REPLACEMENT_PASSWORD_MIN_LENGTH,
   validateCustomerReplacementPassword,
 } from "@/lib/customerPasswordSecurity";
+import {
+  customerPasswordErrorT,
+  customerWorkflowExactT,
+  customerWorkflowT,
+} from "@/lib/i18n/customer-workflow-auth-translations";
+import { authPageFirstPaintT } from "@/lib/i18n/auth-page-first-paint";
+import { useActiveLocale } from "@/lib/useActiveLocale";
 
 export default function ResetPasswordPage() {
   const router = useRouter();
+  const locale = useActiveLocale();
+  const firstPaintT = (source: string) => authPageFirstPaintT(locale, source);
 
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -45,7 +54,12 @@ export default function ResetPasswordPage() {
 
     const validation = validateCustomerReplacementPassword(password);
     if (!validation.valid) {
-      setMessage(validation.errors[0] || "Password does not meet the security requirements.");
+      setMessage(
+        customerPasswordErrorT(
+          locale,
+          validation.errors[0] || "Password does not meet the security requirements."
+        )
+      );
       return;
     }
 
@@ -73,7 +87,7 @@ export default function ResetPasswordPage() {
         router.replace("/forgot-password?retry=security");
         return;
       }
-      setMessage(payload?.error || "Password could not be updated safely. Please try again.");
+      setMessage("Password could not be updated safely. Please try again.");
       setLoading(false);
       return;
     }
@@ -87,7 +101,9 @@ export default function ResetPasswordPage() {
       <main className="flex min-h-screen items-center justify-center bg-[#050505] text-white">
         <div className="text-center">
           <Loader2 className="mx-auto mb-5 h-10 w-10 animate-spin text-red-500" />
-          <p className="text-sm text-zinc-400">Checking reset session...</p>
+          <p className="text-sm text-zinc-400">
+            {firstPaintT("Checking reset session...")}
+          </p>
         </div>
       </main>
     );
@@ -106,32 +122,38 @@ export default function ResetPasswordPage() {
             <div className="text-xl font-black">
               MG <span className="text-red-600">AUTOTECH</span>
             </div>
-            <div className="text-xs text-zinc-400">New Password</div>
+            <div className="text-xs text-zinc-400">
+              {firstPaintT("New Password")}
+            </div>
           </div>
         </Link>
 
         <div className="mb-7">
           <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-red-800/50 bg-red-950/25 px-3 py-1.5 text-xs font-black text-red-100">
             <ShieldCheck className="h-4 w-4 text-red-500" />
-            Secure account update
+            {firstPaintT("Secure account update")}
           </div>
-          <h1 className="text-4xl font-black">Set new password</h1>
+          <h1 className="text-4xl font-black">
+            {firstPaintT("Set new password")}
+          </h1>
           <p className="mt-3 text-sm leading-7 text-zinc-400">
-            Choose a new password for your MG AutoTech customer account.
+            {firstPaintT(
+              "Choose a new password for your MG AutoTech customer account."
+            )}
           </p>
         </div>
 
         <form onSubmit={handlePasswordUpdate} className="space-y-4">
           <label className="block">
             <div className="mb-2 text-xs font-black uppercase tracking-[0.16em] text-zinc-500">
-              New password
+              {firstPaintT("New password")}
             </div>
             <div className="relative">
               <Lock className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-zinc-500" />
               <input
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
-                placeholder={`Minimum ${CUSTOMER_REPLACEMENT_PASSWORD_MIN_LENGTH} characters`}
+                placeholder={customerWorkflowT(locale, "minimumCharacters", { count: CUSTOMER_REPLACEMENT_PASSWORD_MIN_LENGTH })}
                 type="password"
                 minLength={CUSTOMER_REPLACEMENT_PASSWORD_MIN_LENGTH}
                 maxLength={CUSTOMER_REPLACEMENT_PASSWORD_MAX_LENGTH}
@@ -144,14 +166,14 @@ export default function ResetPasswordPage() {
 
           <label className="block">
             <div className="mb-2 text-xs font-black uppercase tracking-[0.16em] text-zinc-500">
-              Confirm password
+              {firstPaintT("Confirm password")}
             </div>
             <div className="relative">
               <Lock className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-zinc-500" />
               <input
                 value={confirmPassword}
                 onChange={(event) => setConfirmPassword(event.target.value)}
-                placeholder="Repeat new password"
+                placeholder={firstPaintT("Repeat new password")}
                 type="password"
                 minLength={CUSTOMER_REPLACEMENT_PASSWORD_MIN_LENGTH}
                 maxLength={CUSTOMER_REPLACEMENT_PASSWORD_MAX_LENGTH}
@@ -169,17 +191,21 @@ export default function ResetPasswordPage() {
             {loading ? (
               <>
                 <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                Updating password...
+                {firstPaintT("Updating password...")}
               </>
             ) : (
-              "Update password"
+              firstPaintT("Update password")
             )}
           </button>
         </form>
 
         {message && (
-          <div className="mt-5 rounded-2xl border border-red-800/50 bg-red-950/30 p-4 text-sm text-red-100">
-            {message}
+          <div
+            role="alert"
+            aria-live="assertive"
+            className="mt-5 rounded-2xl border border-red-800/50 bg-red-950/30 p-4 text-sm text-red-100"
+          >
+            {customerWorkflowExactT(locale, message)}
           </div>
         )}
 
@@ -188,7 +214,7 @@ export default function ResetPasswordPage() {
           className="mt-7 inline-flex items-center text-sm font-black text-red-400"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to login
+          {firstPaintT("Back to login")}
         </Link>
       </section>
     </main>

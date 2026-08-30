@@ -14,11 +14,16 @@ import {
   clearMeasurementCompletionDestination,
   readMeasurementCompletionDestination,
 } from "@/lib/measurementCompletion";
+import { customerWorkflowExactT } from "@/lib/i18n/customer-workflow-auth-translations";
+import { useActiveLocale } from "@/lib/useActiveLocale";
 
 const completionFailOpenMs = 8_000;
 const completionRetryMs = 100;
 
 export default function MeasurementCompletePage() {
+  const locale = useActiveLocale();
+  const t = (source: string) => customerWorkflowExactT(locale, source);
+
   useEffect(() => {
     sanitizeSensitiveMeasurementLocation();
     const destination = readMeasurementCompletionDestination();
@@ -83,27 +88,27 @@ export default function MeasurementCompletePage() {
           <ShieldCheck className="h-6 w-6" aria-hidden="true" />
         </span>
         <h1 id="measurement-complete-title" className="mt-4 text-xl font-black">
-          Finishing securely
+          {t("Finishing securely")}
         </h1>
         <p className="mt-2 text-sm leading-6 text-zinc-400">
-          Your verified action is complete. Returning you to the customer portal.
+          {t("Your verified action is complete. Returning you to the customer portal.")}
         </p>
         <Loader2
           className="mx-auto mt-5 h-5 w-5 animate-spin text-red-400"
-          aria-label="Finishing"
+          aria-label={t("Finishing")}
         />
         <button
           type="button"
           onClick={returnToDashboard}
           className="mt-5 inline-flex min-h-10 items-center justify-center rounded-lg border border-white/15 px-4 py-2 text-sm font-semibold text-zinc-200 transition hover:border-red-500/50 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
         >
-          Return to dashboard
+          {t("Return to dashboard")}
         </button>
         <noscript>
           <p className="mt-4 text-sm leading-6 text-zinc-300">
-            Automatic return requires JavaScript. You can safely continue to the{" "}
+            {t("Automatic return requires JavaScript. You can safely continue to the")}{" "}
             <Link className="font-semibold text-white underline" href="/dashboard">
-              customer dashboard
+              {t("customer dashboard")}
             </Link>
             .
           </p>

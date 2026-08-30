@@ -927,6 +927,8 @@ test("pre-hydration timeout revalidates and completes the first click exactly on
   let clickHandler: ((event: Record<string, unknown>) => void) | null = null;
   let timeoutHandler: (() => void) | null = null;
   const navigations: string[] = [];
+  const localeWrites: Array<[string, string]> = [];
+  let localeCookie = "";
   const fakeWindow = {
     location: {
       href: "https://file.mgautotech.de/services/stage-1?gclid=private-click-id",
@@ -937,10 +939,19 @@ test("pre-hydration timeout revalidates and completes the first click exactly on
       return 1;
     },
     clearTimeout: () => undefined,
+    localStorage: {
+      setItem: (key: string, value: string) => localeWrites.push([key, value]),
+    },
   } as Record<string, unknown> & {
     __mgPendingPaidClickDestination?: string;
   };
   const fakeDocument = {
+    get cookie() {
+      return localeCookie;
+    },
+    set cookie(value: string) {
+      localeCookie = value;
+    },
     addEventListener: (
       type: string,
       handler: (event: Record<string, unknown>) => void
@@ -960,8 +971,9 @@ test("pre-hydration timeout revalidates and completes the first click exactly on
   let prevented = 0;
   let stopped = 0;
   const anchor = {
-    href: "https://file.mgautotech.de/register?source=stage-1",
-    getAttribute: () => null,
+    href: "https://file.mgautotech.de/about",
+    getAttribute: (name: string) =>
+      name === "data-mg-locale-intent" ? "tr" : null,
     hasAttribute: () => false,
     setAttribute: () => undefined,
   };
@@ -976,14 +988,16 @@ test("pre-hydration timeout revalidates and completes the first click exactly on
     preventDefault: () => { prevented += 1; },
     stopImmediatePropagation: () => { stopped += 1; },
   });
-  assert.equal(fakeWindow.__mgPendingPaidClickDestination, "/register?source=stage-1");
+  assert.equal(fakeWindow.__mgPendingPaidClickDestination, "/about");
+  assert.deepEqual(localeWrites, [["mg_locale", "tr"]]);
+  assert.match(localeCookie, /^mg_locale=tr;/u);
   assert.doesNotMatch(
     fakeWindow.__mgPendingPaidClickDestination ?? "",
     /private-click-id|gclid/i
   );
   runTimeoutHandler();
   runTimeoutHandler();
-  assert.deepEqual(navigations, ["/register?source=stage-1"]);
+  assert.deepEqual(navigations, ["/about"]);
   assert.equal(fakeWindow.__mgPendingPaidClickDestination, undefined);
   assert.equal(prevented, 1);
   assert.equal(stopped, 1);
@@ -1088,7 +1102,19 @@ test("CTA gate stores no click id, performs no network work and keeps private me
     component,
     /setPaidClickLanding\([\s\S]*?isGoogleMeasurementScriptPath\(window\.location\.pathname\)[\s\S]*?isAdClickConsentLanding/
   );
-  assert.doesNotMatch(preHydrationGuard, /localStorage|sessionStorage|document\.cookie|fetch\(/);
+  assert.match(
+    preHydrationGuard,
+    /data-mg-locale-intent[\s\S]*?locales\.indexOf\(lang\)===-1[\s\S]*?localStorage\.setItem\("mg_locale",lang\)[\s\S]*?document\.cookie="mg_locale="\+lang/u
+  );
+  assert.doesNotMatch(preHydrationGuard, /sessionStorage|fetch\(/);
+  assert.doesNotMatch(
+    preHydrationGuard,
+    /(?:localStorage\.setItem|document\.cookie)[^\n]*(?:gclid|dclid|wbraid|gbraid)/iu
+  );
+  assert.match(
+    component,
+    /persistCapturedLocaleIntent\(anchor\)[\s\S]*?controller\.begin\(navigation\.destination\)/u
+  );
   assert.match(component, /isUnmodifiedSelfNavigation\([\s\S]*?getAdClickConsentNavigation\(/);
   assert.match(component, /event\.preventDefault\(\)/);
   assert.match(component, /event\.preventDefault\(\)[\s\S]*?event\.stopPropagation\(\)/);

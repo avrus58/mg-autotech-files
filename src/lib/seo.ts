@@ -1006,7 +1006,7 @@ const localizedServiceOperations: Record<
   zh: {
     standardTurnaround: "通常约 30 分钟",
     fastReview: "快速技术审核",
-    required: ["原始 ECU/TCU 文件", "车型与发动机信息", "ECU 与 HW/SW 信息", "读取方式", "故障码与车间备注"],
+    required: ["原始 ECU/TCU 文件", "车型与发动机信息", "ECU 与 HW/SW 信息", "读取方式", "故障码与维修厂备注"],
   },
   pl: {
     standardTurnaround: "Zwykle około 30 minut",

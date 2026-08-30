@@ -22,6 +22,8 @@ import {
   publicLogSnapshotMaximumRows,
 } from "@/lib/publicLogSnapshot";
 import { LocalizedHomepageTree } from "@/lib/homepageLocalization";
+import type { PublicLogSnapshotCopy } from "@/lib/i18n/tool-client-copy-keys";
+import { intlLocaleByCode, type LocaleCode } from "@/lib/i18nConfig";
 
 export const publicLogSnapshotMaxFileBytes = publicLogSnapshotMaximumCharacters;
 
@@ -39,6 +41,10 @@ const exampleLog = [
 type SnapshotState = "idle" | "reading" | "ready" | "error";
 
 type SnapshotResult = Extract<PublicLogSnapshotAnalysis, { status: "ready" }>;
+
+function publicLogT(copy: PublicLogSnapshotCopy, source: string) {
+  return (copy as Readonly<Record<string, string>>)[source] ?? source;
+}
 
 function unavailableSnapshotMessage(status: Exclude<PublicLogSnapshotAnalysis["status"], "ready">) {
   if (status === "insufficient_data") {
@@ -77,7 +83,14 @@ function fileValidationMessage(file: File) {
   return null;
 }
 
-export function PublicLogSnapshot() {
+export function PublicLogSnapshot({
+  copy,
+  locale,
+}: {
+  copy: PublicLogSnapshotCopy;
+  locale: LocaleCode;
+}) {
+  const t = (source: string) => publicLogT(copy, source);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const analysisRequestRef = useRef(0);
   const analysisAbortRef = useRef<AbortController | null>(null);
@@ -171,13 +184,13 @@ export function PublicLogSnapshot() {
           <div className="grid gap-6 lg:grid-cols-[1fr_auto] lg:items-end">
             <div className="max-w-4xl">
               <div className="text-xs font-black uppercase tracking-[0.24em] text-red-500">
-                Quick power check
+                {t("Quick power check")}
               </div>
               <h2 className="mt-3 text-3xl font-black leading-[1.05] tracking-tight sm:text-4xl lg:text-5xl">
-                Turn a datalog into a quick power snapshot.
+                {t("Turn a datalog into a quick power snapshot.")}
               </h2>
               <p className="mt-4 max-w-3xl text-sm leading-7 text-zinc-400 sm:text-base">
-                Try a compatible text export from any logging tool. The public result shows only peak torque and estimated peak power; detailed channels stay in the customer Studio.
+                {t("Try a compatible text export from any logging tool. The public result shows only peak torque and estimated peak power; detailed channels stay in the customer Studio.")}
               </p>
             </div>
             <Link
@@ -185,7 +198,7 @@ export function PublicLogSnapshot() {
               className="inline-flex items-center text-sm font-black text-zinc-400 transition hover:text-white"
             >
               <Calculator className="mr-2 h-4 w-4 text-red-500" />
-              Need the torque calculator?
+              {t("Need the torque calculator?")}
               <ArrowRight className="ml-2 h-4 w-4" />
             </Link>
           </div>
@@ -198,11 +211,15 @@ export function PublicLogSnapshot() {
                 </span>
                 <div className="min-w-0">
                   <div className="text-xs font-black uppercase tracking-[0.18em] text-red-400">
-                    01 · Select a datalog
+                    {t("01 · Select a datalog")}
                   </div>
-                  <h3 className="mt-1 text-xl font-black">Local power snapshot</h3>
+                  <h3 className="mt-1 text-xl font-black">{t("Local power snapshot")}</h3>
                   <p id="public-log-file-requirements" className="mt-2 text-xs leading-5 text-zinc-400">
-                    CSV, TSV, TXT or LOG · maximum 5 MB · up to {publicLogSnapshotMaximumRows.toLocaleString("en-US")} rows
+                    <span>{t("CSV, TSV, TXT or LOG · maximum 5 MB · up to")}</span>{" "}
+                    <span translate="no" data-no-translate>
+                      {publicLogSnapshotMaximumRows.toLocaleString(intlLocaleByCode[locale])}
+                    </span>{" "}
+                    <span>{t("rows")}</span>
                   </p>
                 </div>
               </div>
@@ -214,20 +231,20 @@ export function PublicLogSnapshot() {
               >
                 <FileSpreadsheet className="h-7 w-7 text-red-400" />
                 <span className="mt-3 text-sm font-black text-white">
-                  Drop a file here or choose from your device
+                  {t("Drop a file here or choose from your device")}
                 </span>
                 <span id="public-log-unit-requirement" className="mt-1 text-xs leading-5 text-zinc-400">
-                  RPM and actual engine torque in Nm or lb-ft are detected automatically.
+                  {t("RPM and actual engine torque in Nm or lb-ft are detected automatically.")}
                 </span>
                 <span className="mt-4 rounded-xl bg-[#b1121b] px-4 py-2.5 text-xs font-black text-white shadow-lg shadow-red-950/30">
-                  Choose a text datalog
+                  {t("Choose a text datalog")}
                 </span>
                 <input
                   ref={fileInputRef}
                   type="file"
                   accept=".csv,.tsv,.txt,.log,text/csv,text/plain,text/tab-separated-values"
                   disabled={state === "reading"}
-                  aria-label="Choose a local datalog for the quick power check"
+                  aria-label={t("Choose a local datalog for the quick power check")}
                   aria-describedby="public-log-file-requirements public-log-unit-requirement"
                   onChange={(event) => void handleFile(event.target.files?.[0] ?? null)}
                   className="sr-only"
@@ -241,7 +258,7 @@ export function PublicLogSnapshot() {
                   disabled={state === "reading"}
                   className="text-xs font-black text-zinc-300 transition hover:text-white disabled:cursor-not-allowed disabled:text-zinc-700"
                 >
-                  Try example data
+                  {t("Try example data")}
                 </button>
                 {state !== "idle" && (
                   <button
@@ -249,25 +266,25 @@ export function PublicLogSnapshot() {
                     onClick={reset}
                     className="inline-flex items-center text-xs font-black text-zinc-400 transition hover:text-white"
                   >
-                    <RotateCcw className="mr-2 h-3.5 w-3.5" /> Reset
+                    <RotateCcw className="mr-2 h-3.5 w-3.5" /> {t("Reset")}
                   </button>
                 )}
               </div>
 
               {error && (
                 <p role="alert" className="mt-4 border-l-2 border-amber-500 bg-amber-950/15 px-3 py-2 text-xs leading-5 text-amber-100">
-                  {error}
+                  {t(error)}
                 </p>
               )}
             </div>
 
             <div className="min-w-0 p-4 sm:p-5" aria-live="polite">
               {state === "ready" && result ? (
-                <SnapshotResults result={result} />
+                <SnapshotResults result={result} copy={copy} locale={locale} />
               ) : state === "reading" ? (
-                <SnapshotLoading />
+                <SnapshotLoading copy={copy} />
               ) : (
-                <SnapshotEmpty hasError={state === "error"} />
+                <SnapshotEmpty hasError={state === "error"} copy={copy} />
               )}
             </div>
           </div>
@@ -276,11 +293,11 @@ export function PublicLogSnapshot() {
             <div className="grid gap-3 text-xs leading-5 text-zinc-400 sm:grid-cols-2">
               <p className="flex items-start gap-2">
                 <LockKeyhole className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
-                Your source file stays in this browser tab. This snapshot does not upload, store or create a request.
+                {t("Your source file stays in this browser tab. This snapshot does not upload, store or create a request.")}
               </p>
               <p className="flex items-start gap-2">
                 <Gauge className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
-                Power is estimated from logged torque and RPM. It is not a dyno measurement, diagnosis or tuning approval.
+                {t("Power is estimated from logged torque and RPM. It is not a dyno measurement, diagnosis or tuning approval.")}
               </p>
             </div>
             <div className="flex flex-col gap-2 sm:flex-row">
@@ -288,7 +305,7 @@ export function PublicLogSnapshot() {
                 href="/login?redirect=%2Fdashboard%2Flog-analysis"
                 className="inline-flex min-h-11 items-center justify-center rounded-xl bg-[#b1121b] px-4 text-xs font-black text-white transition hover:bg-[#c91824]"
               >
-                Log in for full datalog analysis
+                {t("Log in for full datalog analysis")}
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </div>
@@ -299,31 +316,34 @@ export function PublicLogSnapshot() {
   );
 }
 
-function SnapshotEmpty({ hasError }: { hasError: boolean }) {
+function SnapshotEmpty({ hasError, copy }: { hasError: boolean; copy: PublicLogSnapshotCopy }) {
+  const t = (source: string) => publicLogT(copy, source);
   return (
     <div className="flex min-h-[15rem] flex-col items-center justify-center rounded-2xl border border-white/5 bg-black/25 p-5 text-center">
       <span className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] text-zinc-400">
         <BarChart3 className="h-7 w-7" />
       </span>
       <div className="mt-5 text-xs font-black uppercase tracking-[0.18em] text-zinc-400">
-        02 · Review the snapshot
+        {t("02 · Review the snapshot")}
       </div>
       <h3 className="mt-2 text-xl font-black text-white">
-        {hasError ? "The snapshot is waiting for a supported log." : "Your two results will appear here."}
+        {hasError
+          ? t("The snapshot is waiting for a supported log.")
+          : t("Your two results will appear here.")}
       </h3>
       <p className="mt-3 max-w-md text-sm leading-6 text-zinc-400">
         {hasError
-          ? "Choose another CSV, TSV, TXT or LOG export, or try the example to confirm the required RPM and torque structure."
-          : "Nothing is calculated until you choose a file or explicitly load the example dataset."}
+          ? t("Choose another CSV, TSV, TXT or LOG export, or try the example to confirm the required RPM and torque structure.")
+          : t("Nothing is calculated until you choose a file or explicitly load the example dataset.")}
       </p>
     </div>
   );
 }
 
-function SnapshotLoading() {
+function SnapshotLoading({ copy }: { copy: PublicLogSnapshotCopy }) {
   return (
     <div role="status" className="min-h-[15rem] animate-pulse rounded-2xl border border-white/5 bg-black/25 p-5">
-      <span className="sr-only">Reading and analyzing the selected log</span>
+      <span className="sr-only">{publicLogT(copy, "Reading and analyzing the selected log")}</span>
       <div className="h-3 w-32 rounded bg-red-950/70" />
       <div className="mt-4 grid grid-cols-2 gap-2">
         {[0, 1].map((item) => (
@@ -335,7 +355,20 @@ function SnapshotLoading() {
   );
 }
 
-function SnapshotResults({ result }: { result: SnapshotResult }) {
+function SnapshotResults({
+  result,
+  copy,
+  locale,
+}: {
+  result: SnapshotResult;
+  copy: PublicLogSnapshotCopy;
+  locale: LocaleCode;
+}) {
+  const t = (source: string) => publicLogT(copy, source);
+  const numberFormat = new Intl.NumberFormat(intlLocaleByCode[locale], {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  });
   return (
     <div className="min-w-0">
       <div className="flex items-start gap-3">
@@ -343,28 +376,28 @@ function SnapshotResults({ result }: { result: SnapshotResult }) {
           <CheckCircle2 className="h-5 w-5" />
         </span>
         <div>
-          <div className="text-xs font-black uppercase tracking-[0.18em] text-red-400">02 · Snapshot ready</div>
-          <h3 className="mt-1 text-xl font-black">Your public power result</h3>
-          <p className="mt-1 text-xs leading-5 text-zinc-400">Detailed curves, channels and row data are reserved for signed-in customers.</p>
+          <div className="text-xs font-black uppercase tracking-[0.18em] text-red-400">{t("02 · Snapshot ready")}</div>
+          <h3 className="mt-1 text-xl font-black">{t("Your public power result")}</h3>
+          <p className="mt-1 text-xs leading-5 text-zinc-400">{t("Detailed curves, channels and row data are reserved for signed-in customers.")}</p>
         </div>
       </div>
 
       <div className="mt-5 grid gap-3 sm:grid-cols-2">
         <SnapshotMetric
-          label="Peak torque"
-          value={result.peakTorqueNm.toFixed(0)}
+          label={t("Peak torque")}
+          value={result.peakTorqueNm.toLocaleString(intlLocaleByCode[locale], { maximumFractionDigits: 0 })}
           unit="Nm"
         />
         <SnapshotMetric
-          label="Est. peak power"
-          value={result.peakPowerHp.toFixed(1)}
+          label={t("Est. peak power")}
+          value={numberFormat.format(result.peakPowerHp)}
           unit="HP"
         />
       </div>
 
       {result.truncated && (
         <p className="mt-3 border-l-2 border-amber-500 bg-amber-950/15 px-3 py-2 text-xs leading-5 text-amber-100">
-          The local safety limit was reached. These two peaks use the retained capture window; sign in to review the processing scope.
+          {t("The local safety limit was reached. These two peaks use the retained capture window; sign in to review the processing scope.")}
         </p>
       )}
 
@@ -372,8 +405,8 @@ function SnapshotResults({ result }: { result: SnapshotResult }) {
         <div className="flex items-start gap-3">
           <LockKeyhole className="mt-0.5 h-4 w-4 shrink-0 text-red-400" />
           <div>
-            <div className="text-xs font-black uppercase tracking-[0.14em] text-zinc-400">Customer details</div>
-            <p className="mt-1 text-xs leading-5 text-zinc-400">Timeline, RPM curve, EGT and EGR observations, every detected numeric channel and downloadable workshop output unlock after login.</p>
+            <div className="text-xs font-black uppercase tracking-[0.14em] text-zinc-400">{t("Customer details")}</div>
+            <p className="mt-1 text-xs leading-5 text-zinc-400">{t("Timeline, RPM curve, EGT and EGR observations, every detected numeric channel and downloadable workshop output unlock after login.")}</p>
           </div>
         </div>
       </div>

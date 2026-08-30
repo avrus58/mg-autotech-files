@@ -42,13 +42,26 @@ test("localized public routes resolve consent copy without changing private rout
   assert.equal(getAnalyticsConsentCopy("/tr").title, "Gizlilik tercihleri");
   assert.equal(getAnalyticsConsentCopy("/fr/how-it-works").title, "Choix de confidentialité");
   assert.equal(getAnalyticsConsentLocale("/new-request"), "en");
+  assert.equal(getAnalyticsConsentLocale("/new-request", "tr"), "tr");
+  assert.equal(getAnalyticsConsentLocale("/about", "de"), "de");
+  assert.equal(getAnalyticsConsentCopy("/about", "tr").title, "Gizlilik tercihleri");
   assert.equal(getAnalyticsConsentCopy("/").title, "Privacy choices");
   assert.equal(getAnalyticsPrivacyPath("/de/services/stage-1"), "/datenschutz");
   assert.equal(getAnalyticsPrivacyPath("/datenschutz"), "/datenschutz");
   assert.equal(getAnalyticsPrivacyPath("/privacy"), "/privacy");
   assert.equal(getAnalyticsPrivacyPath("/en/services/stage-1"), "/privacy");
   assert.equal(getAnalyticsPrivacyPath("/tr"), "/privacy");
+  assert.equal(getAnalyticsPrivacyPath("/about", "de"), "/datenschutz");
   assert.equal(getAnalyticsPrivacyPath("/"), "/privacy");
+
+  for (const route of ["/agb", "/av-vertrag", "/impressum", "/widerruf"]) {
+    assert.equal(getAnalyticsConsentLocale(route, "tr"), "de", route);
+    assert.equal(getAnalyticsPrivacyPath(route, "tr"), "/datenschutz", route);
+  }
+  for (const route of ["/admin", "/embed/vehicle-selector", "/privacy"]) {
+    assert.equal(getAnalyticsConsentLocale(route, "tr"), "en", route);
+    assert.equal(getAnalyticsPrivacyPath(route, "tr"), "/privacy", route);
+  }
 });
 
 test("the consent UI renders locale copy and granular measurement choices", () => {
@@ -57,8 +70,9 @@ test("the consent UI renders locale copy and granular measurement choices", () =
     "utf8",
   );
 
-  assert.match(component, /getAnalyticsConsentCopy\(pathname\)/);
-  assert.match(component, /getAnalyticsPrivacyPath\(pathname\)/);
+  assert.match(component, /useActiveLocale\(\)/);
+  assert.match(component, /getAnalyticsConsentCopy\(pathname, activeLocale\)/);
+  assert.match(component, /getAnalyticsPrivacyPath\(pathname, activeLocale\)/);
   assert.match(component, /href=\{privacyPath\}/);
   assert.match(component, /\{consentCopy\.title\}/);
   assert.match(component, /\{consentCopy\.description\}/);

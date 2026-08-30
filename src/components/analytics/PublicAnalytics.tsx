@@ -70,6 +70,14 @@ import {
   getAnalyticsPrivacyPath,
 } from "@/lib/analyticsConsentI18n";
 import { reportMeasurementHandoffFailure } from "@/components/PlatformReliabilityMonitor";
+import { useActiveLocale } from "@/lib/useActiveLocale";
+import { parseSupportedLocale } from "@/lib/i18nConfig";
+import {
+  dispatchLocaleChange,
+  writeDocumentLocale,
+  writeLocaleCookies,
+  writeStoredLocale,
+} from "@/lib/localePreference";
 
 type ConsentState = MeasurementConsentSnapshot | "loading";
 
@@ -82,6 +90,19 @@ function savedSnapshot(preferences: MeasurementConsentPreferences): MeasurementC
   return { preferences, source: "v2", needsDecision: false };
 }
 
+function persistCapturedLocaleIntent(anchor: HTMLAnchorElement) {
+  const locale = parseSupportedLocale(anchor.dataset.mgLocaleIntent);
+  if (!locale) return;
+
+  // The paid-click consent gate runs in capture phase, before React's click
+  // handler. Preserve only the validated language preference so resuming the
+  // sanitized navigation cannot discard an explicit locale choice.
+  writeStoredLocale(locale);
+  writeLocaleCookies(locale);
+  writeDocumentLocale(locale);
+  dispatchLocaleChange(locale);
+}
+
 export function PublicAnalytics({
   googleAnalyticsMeasurementId,
   googleAdsId,
@@ -90,6 +111,7 @@ export function PublicAnalytics({
   purchaseLabel,
 }: PublicAnalyticsProps) {
   const pathname = usePathname();
+  const activeLocale = useActiveLocale();
   const configuration = useMemo<GoogleAdsPublicConfiguration>(() => ({
     googleAnalyticsMeasurementId,
     googleAdsId,
@@ -108,8 +130,8 @@ export function PublicAnalytics({
   const googleMeasurementRouteAllowed = isGoogleMeasurementScriptPath(pathname);
   const attributionRouteAllowed =
     attributionPublicRoute || isConversionMeasurementPath(pathname);
-  const consentCopy = getAnalyticsConsentCopy(pathname);
-  const privacyPath = getAnalyticsPrivacyPath(pathname);
+  const consentCopy = getAnalyticsConsentCopy(pathname, activeLocale);
+  const privacyPath = getAnalyticsPrivacyPath(pathname, activeLocale);
   const [consent, setConsent] = useState<ConsentState>("loading");
   const [measurementReady, setMeasurementReady] = useState(false);
   const [preferencesOpen, setPreferencesOpen] = useState(false);
@@ -417,6 +439,7 @@ export function PublicAnalytics({
         anchor.setAttribute("rel", "noopener noreferrer");
         return;
       }
+      persistCapturedLocaleIntent(anchor);
       // The first same-origin navigation from a paid landing stays behind the
       // same bounded choice gate. This lets Ads initialize from the current
       // click signal without persisting or copying that signal to another URL.

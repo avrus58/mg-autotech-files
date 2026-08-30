@@ -2,29 +2,36 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { ArrowLeft, Cable, ClipboardList, ShieldCheck } from "lucide-react";
-import { Footer } from "@/components/Footer";
+import { RuntimePublicFooter } from "@/components/RuntimePublicFooter";
+import { RuntimePublicLocalization } from "@/components/RuntimePublicLocalization";
 import { EcuReadMethodAdvisor } from "@/components/tools/EcuReadMethodAdvisor";
 import { ToolsHeader } from "@/components/tools/ToolsHeader";
 import { absoluteUrl, siteName } from "@/lib/seo";
+import {
+  localizeRuntimePublicJsonLd,
+  runtimePublicAlternates,
+  runtimePublicInLanguage,
+  runtimePublicMetadataCopy,
+  runtimePublicOpenGraphLocale,
+} from "@/lib/i18n/runtime-public";
+import { getServerLocale } from "@/lib/serverLocale";
+import { buildEcuReadAdvisorCopy } from "@/lib/i18n/tool-client-copy";
 
 const title = "ECU Read Method Advisor";
 const description =
   "Plan safer ECU or TCU read preparation before upload. Get a customer-safe OBD, bench, boot or unknown-read checklist without opening or uploading a file.";
 
-export const metadata: Metadata = {
-  title,
-  description,
-  alternates: { canonical: absoluteUrl("/tools/ecu-read-method-advisor") },
-  openGraph: {
-    title: `${title} | MG AutoTech`,
-    description,
-    url: absoluteUrl("/tools/ecu-read-method-advisor"),
-    type: "website",
-    siteName,
-    images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: title }],
-  },
-  twitter: { card: "summary_large_image", title: `${title} | MG AutoTech`, description, images: ["/opengraph-image"] },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getServerLocale();
+  const copy = runtimePublicMetadataCopy(locale, title, description, ["core", "tools"]);
+  return {
+    title: copy.title,
+    description: copy.description,
+    alternates: runtimePublicAlternates("/tools/ecu-read-method-advisor"),
+    openGraph: { title: `${copy.title} | MG AutoTech`, description: copy.description, url: absoluteUrl("/tools/ecu-read-method-advisor"), type: "website", siteName, locale: runtimePublicOpenGraphLocale(locale), images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: copy.title }] },
+    twitter: { card: "summary_large_image", title: `${copy.title} | MG AutoTech`, description: copy.description, images: ["/opengraph-image"] },
+  };
+}
 
 const faqs = [
   {
@@ -41,9 +48,11 @@ const faqs = [
   },
 ];
 
-export default function EcuReadMethodAdvisorPage() {
+export default async function EcuReadMethodAdvisorPage() {
+  const locale = await getServerLocale();
+  const clientCopy = buildEcuReadAdvisorCopy(locale);
   const pageUrl = absoluteUrl("/tools/ecu-read-method-advisor");
-  const jsonLd = {
+  const jsonLd = localizeRuntimePublicJsonLd({
     "@context": "https://schema.org",
     "@graph": [
       {
@@ -54,6 +63,7 @@ export default function EcuReadMethodAdvisorPage() {
         applicationCategory: "UtilitiesApplication",
         operatingSystem: "Any",
         browserRequirements: "Requires JavaScript",
+        inLanguage: runtimePublicInLanguage(locale),
         offers: { "@type": "Offer", price: "0", priceCurrency: "EUR" },
         provider: { "@id": `${absoluteUrl("/")}#organization` },
       },
@@ -74,12 +84,13 @@ export default function EcuReadMethodAdvisorPage() {
         ],
       },
     ],
-  };
+  }, locale, ["core", "tools"]);
 
   return (
-    <div data-no-translate className="min-h-screen overflow-x-hidden bg-[#050505] text-white">
+    <RuntimePublicLocalization locale={locale} scopes={["core", "tools"]}>
+    <div className="min-h-screen overflow-x-hidden bg-[#050505] text-white">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      <ToolsHeader />
+      <ToolsHeader locale={locale} />
       <main>
         <section className="border-b border-white/10 bg-[radial-gradient(circle_at_78%_12%,rgba(177,18,27,0.24),transparent_34%),#090909]">
           <div className="mx-auto max-w-7xl px-4 py-12 sm:py-16">
@@ -101,7 +112,7 @@ export default function EcuReadMethodAdvisorPage() {
           </div>
         </section>
 
-        <EcuReadMethodAdvisor />
+        <EcuReadMethodAdvisor copy={clientCopy} />
 
         <section className="border-y border-white/10 bg-[#0a0a0a]">
           <div className="mx-auto max-w-7xl px-4 py-14 sm:py-20">
@@ -126,8 +137,9 @@ export default function EcuReadMethodAdvisorPage() {
           </div>
         </section>
       </main>
-      <Footer />
+      <RuntimePublicFooter locale={locale} scopes={["core", "tools"]} />
     </div>
+    </RuntimePublicLocalization>
   );
 }
 

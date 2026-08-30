@@ -6,9 +6,15 @@ import { ArrowLeft, CreditCard, Loader2, ShieldCheck } from "lucide-react";
 import { CustomerPortalPageHeader } from "@/components/dashboard/CustomerPortalPageHeader";
 import { SubscriptionSummaryPanel } from "@/components/widget/SubscriptionSummaryPanel";
 import { authenticatedFetch } from "@/lib/authGuards";
+import {
+  translateWidgetSiteExact,
+  widgetSiteT,
+} from "@/lib/i18n/widget-site-translations";
+import { useActiveLocale } from "@/lib/useActiveLocale";
 import type { WidgetBillingSummary } from "@/lib/widget/customerTypes";
 
 export default function WidgetBillingPage() {
+  const activeSiteLocale = useActiveLocale();
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [showPlanAction, setShowPlanAction] = useState(false);
@@ -25,7 +31,9 @@ export default function WidgetBillingPage() {
     const data = await response.json().catch(() => ({}));
     setSummaryLoading(false);
     if (!response.ok) {
-      setSummaryError(data.error || "Billing summary could not be loaded.");
+      setSummaryError(
+        data.error || widgetSiteT("en", "billingSummaryApiFailed")
+      );
       return;
     }
     setSummary(data.summary ?? null);
@@ -45,7 +53,7 @@ export default function WidgetBillingPage() {
     const data = await response.json();
     setLoading(false);
     if (!response.ok || !data.url) {
-      setMessage(data.error || "Billing portal could not be opened. If this widget was created manually, contact MG AutoTech support.");
+      setMessage(data.error || widgetSiteT("en", "billingPortalFailed"));
       setShowPlanAction(data.action === "view_plans");
       return;
     }
@@ -85,7 +93,11 @@ export default function WidgetBillingPage() {
 
         {message ? (
           <div className="mt-6 border border-red-800/40 bg-red-950/20 p-4 text-sm text-red-200">
-            {message}
+            {translateWidgetSiteExact(
+              activeSiteLocale,
+              message,
+              "billingPortalFailed"
+            )}
           </div>
         ) : null}
 
@@ -107,7 +119,15 @@ export default function WidgetBillingPage() {
           <SubscriptionSummaryPanel
             summary={summary}
             loading={summaryLoading}
-            error={summaryError}
+            error={
+              summaryError
+                ? translateWidgetSiteExact(
+                    activeSiteLocale,
+                    summaryError,
+                    "billingSummaryApiFailed"
+                  )
+                : ""
+            }
             canManageBilling={Boolean(summary?.billing_profile_linked)}
             onManage={openPortal}
             onRefresh={() => void loadSummary()}

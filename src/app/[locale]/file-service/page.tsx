@@ -18,7 +18,7 @@ import { LocalizedSeoFooter } from "@/components/LocalizedSeoFooter";
 import { OnlineStatus } from "@/components/OnlineStatus";
 import { getFileServiceCopy, fileServiceJsonLd } from "@/lib/fileServiceI18n";
 import type { FileServiceHubCard } from "@/lib/fileServiceI18n";
-import type { LocaleCode } from "@/lib/i18nConfig";
+import { openGraphLocaleByCode, type LocaleCode } from "@/lib/i18nConfig";
 import {
   absoluteUrl,
   hreflangByLocale,
@@ -67,10 +67,10 @@ export async function generateMetadata({
       description: copy.description,
       url: pageUrl,
       siteName,
-      locale: hreflangByLocale[locale],
+      locale: openGraphLocaleByCode[locale],
       alternateLocale: seoLocales
         .filter((item) => item !== locale)
-        .map((item) => hreflangByLocale[item]),
+        .map((item) => openGraphLocaleByCode[item]),
       type: "website",
       images: [
         {

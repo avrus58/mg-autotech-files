@@ -29,7 +29,6 @@ import type {
   FileExpertFinding,
   FileExpertJob,
 } from "@/lib/fileExpert/types";
-import { fileExpertFeatureLabels } from "@/lib/fileExpert/types";
 import type {
   PublicSimilarityEvidence,
   SimilaritySearchResult,
@@ -38,6 +37,31 @@ import type {
   AdminClusterEvidence,
   PublicClusterEvidence,
 } from "@/lib/ecuIntelligence/clustering";
+import {
+  localizeFileExpertDetection,
+  localizeFileExpertReadiness,
+  localizeFileExpertReview,
+  localizeFileExpertStatus,
+} from "@/lib/i18n/customer-runtime-translations";
+import {
+  fileExpertReportT,
+  localizeFileExpertAnalyzerEvidence,
+  localizeFileExpertChangeProfile,
+  localizeFileExpertClusterMessage,
+  localizeFileExpertConclusion,
+  localizeFileExpertFeatureLabel,
+  localizeFileExpertFeatureReason,
+  localizeFileExpertFileProfile,
+  localizeFileExpertFinding,
+  localizeFileExpertIntegrityIssue,
+  localizeFileExpertReadScope,
+  localizeFileExpertSimilarityMessage,
+  localizeFileExpertVehicleCandidateEvidence,
+  localizeFileExpertVehicleSummary,
+  type FileExpertReportTranslationKey,
+} from "@/lib/i18n/file-expert-report-translations";
+import { intlLocaleByCode, type LocaleCode } from "@/lib/i18nConfig";
+import { useActiveLocale } from "@/lib/useActiveLocale";
 
 function statusClass(status: string) {
   if (status === "completed") return "border-emerald-700/40 bg-emerald-950/30 text-emerald-300";
@@ -60,8 +84,8 @@ function findingClass(severity: FileExpertFinding["severity"]) {
   return "border-white/10 bg-black/25";
 }
 
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat("de-DE", {
+function formatDate(value: string, locale: LocaleCode) {
+  return new Intl.DateTimeFormat(intlLocaleByCode[locale], {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
@@ -70,46 +94,33 @@ function formatDate(value: string) {
   }).format(new Date(value));
 }
 
-function formatBytes(value: number | string | null | undefined) {
+function formatBytes(value: number | string | null | undefined, locale: LocaleCode) {
   if (!value) return "-";
   const bytes = Number(value);
-  if (bytes >= 1024 * 1024) return `${(bytes / 1024 / 1024).toFixed(2)} MB`;
-  return `${(bytes / 1024).toFixed(1)} KB`;
+  if (bytes >= 1024 * 1024) return `${new Intl.NumberFormat(intlLocaleByCode[locale], { maximumFractionDigits: 2 }).format(bytes / 1024 / 1024)} MB`;
+  return `${new Intl.NumberFormat(intlLocaleByCode[locale], { maximumFractionDigits: 1 }).format(bytes / 1024)} KB`;
 }
 
-function formatLabel(value: string | null | undefined) {
-  if (!value) return "Not detected";
-  return value.replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
+function idValue(values: string[] | undefined, locale: LocaleCode) {
+  return values?.length ? values.join(", ") : fileExpertReportT(locale, "notDetected");
 }
 
-function formatSafeFileProfile(format: string | null | undefined, readScope: string | null | undefined) {
-  const safeFormat = format === "raw_binary" ? "Binary file" : formatLabel(format).replace(/\bRaw\b/gi, "Binary");
-  return `${safeFormat} / ${formatLabel(readScope)}`;
-}
-
-function safeReportText(value: string | null | undefined) {
-  return (value || "")
-    .replace(/\braw binary\b/gi, "binary file")
-    .replace(/\braw previews?\b/gi, "technical previews")
-    .replace(/\bSHA-?256\b/gi, "file fingerprint")
-    .replace(/\bhash(?:es)?\b/gi, "file fingerprint")
-    .replace(/\bVIN \/ engine markers\b/gi, "Vehicle markers");
-}
-
-function idValue(values: string[] | undefined) {
-  return values?.length ? values.join(", ") : "Not detected";
-}
+const reportMessageKeys = {
+  loadError: "reportLoadError",
+  analysisError: "analysisTriggerError",
+} as const satisfies Record<string, FileExpertReportTranslationKey>;
 
 export default function FileExpertReportPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
+  const locale = useActiveLocale();
   const jobId = params.id;
   const [job, setJob] = useState<FileExpertJob | null>(null);
   const [similarityEvidence, setSimilarityEvidence] = useState<PublicSimilarityEvidence | SimilaritySearchResult | null>(null);
   const [clusterEvidence, setClusterEvidence] = useState<PublicClusterEvidence | AdminClusterEvidence | null>(null);
   const [loading, setLoading] = useState(true);
   const [reanalyzing, setReanalyzing] = useState(false);
-  const [message, setMessage] = useState("");
+  const [message, setMessage] = useState<FileExpertReportTranslationKey | "">("");
   const hasLoadedJobRef = useRef(false);
 
   async function loadJob(options?: { silent?: boolean }) {
@@ -134,7 +145,7 @@ export default function FileExpertReportPage() {
 
     if (!response.ok) {
       if (!options?.silent || !hasLoadedJobRef.current) {
-        setMessage(payload.error || "File Expert report could not be loaded.");
+        setMessage(reportMessageKeys.loadError);
       }
       setLoading(false);
       return;
@@ -166,18 +177,18 @@ export default function FileExpertReportPage() {
   const primaryFile = result?.files.mod ?? result?.files.ori ?? result?.files.single;
   const findings = result?.findings ?? [];
   const submittedVehicle = [job?.brand, job?.model, job?.engine].filter(Boolean).join(" ");
-  const reportTitle = submittedVehicle || identity?.display_name || "File Expert Report";
-  const visibleMarkerIds = [idValue(identity?.engine_codes)].filter((value) => value !== "Not detected");
+  const reportTitle = submittedVehicle || identity?.display_name || fileExpertReportT(locale, "notIdentified");
+  const visibleMarkerIds = identity?.engine_codes ?? [];
+  const vehicleTarget = identity?.variant || identity?.family;
+  const localizedChangeProfile = localizeFileExpertChangeProfile(locale, changeProfile);
   const similaritySummary = similarityEvidence && "summary" in similarityEvidence
     ? {
         matchesFound: similarityEvidence.summary.matches_found,
         bestScore: similarityEvidence.summary.best_score,
         confidence: similarityEvidence.summary.confidence,
-        message: similarityEvidence.summary.matches_found
-          ? `Found ${similarityEvidence.summary.matches_found} similar approved ECU patterns.`
-          : "No approved similar learning evidence was found.",
       }
     : similarityEvidence;
+  const similarityMessage = localizeFileExpertSimilarityMessage(locale, similaritySummary);
 
   const fileCards = useMemo(
     () => [
@@ -193,10 +204,9 @@ export default function FileExpertReportPage() {
     const response = await authenticatedFetch(`/api/file-expert/jobs/${jobId}/analyze`, {
       method: "POST",
     });
-    const payload = await response.json();
     setReanalyzing(false);
     if (!response.ok) {
-      setMessage(payload.error || "Analysis could not be triggered.");
+      setMessage(reportMessageKeys.analysisError);
       await loadJob({ silent: true });
       return;
     }
@@ -208,7 +218,7 @@ export default function FileExpertReportPage() {
       <main className="flex min-h-screen items-center justify-center bg-[#050505] text-white">
         <div className="text-center">
           <div className="mx-auto mb-5 h-12 w-12 animate-spin rounded-full border-4 border-white/10 border-t-red-600" />
-          <p className="text-sm text-zinc-400">Loading File Expert report...</p>
+          <p className="text-sm text-zinc-400" translate="no" data-no-translate>{fileExpertReportT(locale, "loadingReport")}</p>
         </div>
       </main>
     );
@@ -219,8 +229,10 @@ export default function FileExpertReportPage() {
       <main className="flex min-h-screen items-center justify-center bg-[#050505] px-4 text-white">
         <div className="max-w-md rounded-3xl border border-red-800/40 bg-red-950/20 p-6 text-center">
           <AlertTriangle className="mx-auto mb-4 h-10 w-10 text-red-400" />
-          <h1 className="text-2xl font-black">Report not found</h1>
-          <p className="mt-3 text-sm text-zinc-400">{message || "This report is not available."}</p>
+          <h1 className="text-2xl font-black" translate="no" data-no-translate>{fileExpertReportT(locale, "reportNotFound")}</h1>
+          <p className="mt-3 text-sm text-zinc-400" translate="no" data-no-translate>
+            {message ? fileExpertReportT(locale, message) : fileExpertReportT(locale, "reportUnavailable")}
+          </p>
           <Link href="/dashboard/file-expert" className="mt-6 inline-flex rounded-xl bg-[#b1121b] px-5 py-3 font-black text-white">
             Back to File Expert
           </Link>
@@ -252,17 +264,19 @@ export default function FileExpertReportPage() {
         <section className="mb-6 flex flex-col gap-5 border-b border-white/10 pb-6 xl:flex-row xl:items-end xl:justify-between">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <span className={`rounded-full border px-3 py-1 text-xs font-black ${statusClass(job.status)}`}>{job.status.toUpperCase()}</span>
-              <span className={`rounded-full border px-3 py-1 text-xs font-black ${riskClass(job.risk_level)}`}>REVIEW: {(job.risk_level || "standard").toUpperCase()}</span>
+              <span className={`rounded-full border px-3 py-1 text-xs font-black ${statusClass(job.status)}`}>{localizeFileExpertStatus(locale, job.status)}</span>
+              <span className={`rounded-full border px-3 py-1 text-xs font-black ${riskClass(job.risk_level)}`}>{localizeFileExpertReview(locale, job.risk_level)}</span>
               {identity && (
               <span className="rounded-full border border-red-800/40 bg-red-950/25 px-3 py-1 text-xs font-black text-red-200">
-                  ECU {identity.status.toUpperCase()}
+                  ECU: {localizeFileExpertDetection(locale, identity.status)}
               </span>
               )}
             </div>
-            <h1 className="mt-3 break-words text-4xl font-black md:text-5xl">{reportTitle}</h1>
-            <p className="mt-3 max-w-4xl text-sm leading-7 text-zinc-400">{safeReportText(job.executive_summary) || "The analysis report is being prepared."}</p>
-            <p className="mt-2 text-xs font-bold text-zinc-600">Analysis {result?.analysis_version || "legacy"} / {formatDate(job.created_at)}</p>
+            <h1 className="mt-3 break-words text-4xl font-black md:text-5xl"><span translate="no" data-no-translate>{reportTitle}</span></h1>
+            <p className="mt-3 max-w-4xl text-sm leading-7 text-zinc-400" translate="no" data-no-translate>
+              {localizeFileExpertConclusion(locale, result)}
+            </p>
+            <p className="mt-2 text-xs font-bold text-zinc-600">Analysis <span translate="no" data-no-translate>{result?.analysis_version || "legacy"}</span> / {formatDate(job.created_at, locale)}</p>
           </div>
           <div className="grid gap-2 sm:flex sm:flex-wrap">
             <button onClick={reanalyze} disabled={reanalyzing} className="inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] px-5 py-3 text-sm font-black transition hover:bg-white/10 disabled:opacity-50">
@@ -271,12 +285,12 @@ export default function FileExpertReportPage() {
           </div>
         </section>
 
-        {message && <div className="mb-6 rounded-2xl border border-red-800/40 bg-red-950/30 p-4 text-sm font-bold text-red-200">{message}</div>}
+        {message && <div className="mb-6 rounded-2xl border border-red-800/40 bg-red-950/30 p-4 text-sm font-bold text-red-200" translate="no" data-no-translate>{fileExpertReportT(locale, message)}</div>}
 
         {job.status === "failed" && (
           <div className="mb-6 rounded-2xl border border-red-700/40 bg-red-950/20 p-5">
             <div className="flex items-center gap-3 font-black text-red-200"><AlertTriangle className="h-5 w-5" />Analysis failed</div>
-            <p className="mt-2 text-sm leading-6 text-zinc-400">{job.error_message || "The analyzer could not complete this job. Your uploaded files remain private and unchanged."}</p>
+            <p className="mt-2 text-sm leading-6 text-zinc-400" translate="no" data-no-translate>{fileExpertReportT(locale, "reportUnavailable")}</p>
             <button onClick={reanalyze} disabled={reanalyzing} className="mt-4 inline-flex h-10 items-center rounded-xl border border-red-700/40 px-4 text-sm font-black text-red-100 disabled:opacity-50">Try analysis again</button>
           </div>
         )}
@@ -296,10 +310,10 @@ export default function FileExpertReportPage() {
         )}
 
         <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <InfoCard title="Control unit" value={identity?.display_name || job.ecu_type || "Not identified"} icon={<Cpu />} />
-          <InfoCard title="Module / supplier" value={[identity?.module_type, identity?.supplier].filter(Boolean).join(" / ") || "Unknown"} icon={<Database />} />
-          <InfoCard title="File profile" value={formatSafeFileProfile(primaryFile?.file_format, primaryFile?.read_scope)} icon={<FileCode2 />} />
-          <InfoCard title="Report state" value={formatLabel(job.status)} icon={<Gauge />} />
+          <InfoCard title="Control unit" value={identity?.display_name || job.ecu_type || fileExpertReportT(locale, "notIdentified")} icon={<Cpu />} rawValue={Boolean(identity?.display_name || job.ecu_type)} />
+          <InfoCard title="Module / supplier" value={[identity?.module_type, identity?.supplier].filter(Boolean).join(" / ") || fileExpertReportT(locale, "unknown")} icon={<Database />} rawValue={Boolean(identity?.module_type || identity?.supplier)} />
+          <InfoCard title="File profile" value={localizeFileExpertFileProfile(locale, primaryFile?.file_format, primaryFile?.read_scope)} icon={<FileCode2 />} protectedValue />
+          <InfoCard title="Report state" value={localizeFileExpertStatus(locale, job.status)} icon={<Gauge />} />
         </div>
 
         <section className="mb-6 grid gap-6 rounded-[2rem] border border-red-900/45 bg-white/[0.04] p-4 sm:p-6 xl:grid-cols-[1.1fr_0.9fr]">
@@ -307,31 +321,37 @@ export default function FileExpertReportPage() {
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <div className="text-xs font-black uppercase tracking-[0.22em] text-red-400">Automatic identification</div>
-                <h2 className="mt-2 break-words text-3xl font-black">{identity?.display_name || "Control unit not identified"}</h2>
+                <h2 className="mt-2 break-words text-3xl font-black">
+                  {identity?.display_name
+                    ? <span translate="no" data-no-translate>{identity.display_name}</span>
+                    : fileExpertReportT(locale, "notIdentified")}
+                </h2>
               </div>
               <span className={`rounded-full border px-3 py-1.5 text-xs font-black ${identity?.status === "detected" ? statusClass("completed") : statusClass("pending")}`}>
-                {formatLabel(identity?.status)}
+                {localizeFileExpertDetection(locale, identity?.status)}
               </span>
             </div>
             <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              <IdentityField label="Supplier" value={identity?.supplier} />
-              <IdentityField label="Family" value={identity?.family} />
-              <IdentityField label="Variant" value={identity?.variant} />
-              <IdentityField label="Module" value={identity?.module_type} />
-              <IdentityField label="Processor" value={identity?.processor} />
-              <IdentityField label="Read scope" value={formatLabel(primaryFile?.read_scope)} />
+              <IdentityField label="Supplier" value={identity?.supplier} locale={locale} />
+              <IdentityField label="Family" value={identity?.family} locale={locale} />
+              <IdentityField label="Variant" value={identity?.variant} locale={locale} />
+              <IdentityField label="Module" value={identity?.module_type} locale={locale} />
+              <IdentityField label="Processor" value={identity?.processor} locale={locale} />
+              <IdentityField label="Read scope" value={localizeFileExpertReadScope(locale, primaryFile?.read_scope)} locale={locale} />
             </div>
             <div className="mt-4 rounded-2xl border border-white/10 bg-black/25 p-4">
               <div className="text-xs font-black uppercase tracking-[0.16em] text-zinc-500">Detection evidence</div>
               <div className="mt-3 space-y-2 text-sm leading-6 text-zinc-300">
-                {identity?.evidence.length ? identity.evidence.map((item) => <div key={item}>- {item}</div>) : <div>No reliable identity marker was found.</div>}
+                {identity?.evidence.length ? identity.evidence.map((item) => (
+                  <div key={item} translate="no" data-no-translate>- {localizeFileExpertAnalyzerEvidence(locale, item)}</div>
+                )) : <div translate="no" data-no-translate>{fileExpertReportT(locale, "findingIdentityMissing")}</div>}
               </div>
             </div>
           </div>
           <div className="grid min-w-0 gap-3 sm:grid-cols-2 xl:grid-cols-1">
-            <IdentifierBox label="Hardware numbers" value={idValue(identity?.hardware_numbers)} />
-            <IdentifierBox label="Software numbers" value={idValue(identity?.software_numbers)} />
-            <IdentifierBox label="Calibration IDs" value={idValue(identity?.calibration_ids)} />
+            <IdentifierBox label="Hardware numbers" value={idValue(identity?.hardware_numbers, locale)} />
+            <IdentifierBox label="Software numbers" value={idValue(identity?.software_numbers, locale)} />
+            <IdentifierBox label="Calibration IDs" value={idValue(identity?.calibration_ids, locale)} />
             {visibleMarkerIds.length ? <IdentifierBox label="Vehicle markers" value={visibleMarkerIds.join(" / ")} /> : null}
           </div>
         </section>
@@ -340,15 +360,28 @@ export default function FileExpertReportPage() {
           <section className="min-w-0 space-y-6">
             <Panel eyebrow="Workshop findings" title="What the analysis found" icon={<ScanSearch />}>
               <div className="space-y-3">
-                {findings.length ? findings.map((finding) => (
-                  <div key={finding.id} className={`rounded-2xl border p-4 ${findingClass(finding.severity)}`}>
-                    <div className="flex flex-wrap items-start justify-between gap-3">
-                      <div className="font-black">{finding.title}</div>
-                      <span className="rounded-full bg-black/35 px-3 py-1 text-xs font-black text-zinc-300">Review</span>
+                {findings.length ? findings.map((finding) => {
+                  const localizedFinding = localizeFileExpertFinding(locale, finding, {
+                    fileFormat: primaryFile?.file_format,
+                    readScope: primaryFile?.read_scope,
+                    changeProfile,
+                    identificationStatus: identity?.status,
+                    identificationModule: identity?.module_type,
+                    mapCandidateCount: result?.map_candidates.length,
+                    integrity,
+                    vehicleMatch,
+                    vehicleTarget,
+                  });
+                  return (
+                    <div key={finding.id} className={`rounded-2xl border p-4 ${findingClass(finding.severity)}`}>
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div className="font-black" translate="no" data-no-translate>{localizedFinding.title}</div>
+                        <span className="rounded-full bg-black/35 px-3 py-1 text-xs font-black text-zinc-300">Review</span>
+                      </div>
+                      <p className="mt-2 text-sm leading-6 text-zinc-300" translate="no" data-no-translate>{localizedFinding.summary}</p>
                     </div>
-                    <p className="mt-2 text-sm leading-6 text-zinc-300">{safeReportText(finding.summary)}</p>
-                  </div>
-                )) : (
+                  );
+                }) : (
                   <p className="rounded-2xl border border-dashed border-white/15 bg-black/25 p-5 text-sm leading-6 text-zinc-400">
                     Re-analyze this report to generate workshop-friendly V2 findings.
                   </p>
@@ -357,16 +390,21 @@ export default function FileExpertReportPage() {
             </Panel>
 
             <Panel eyebrow="Vehicle application" title="Possible vehicle matches" icon={<CarFront />}>
-              <p className="mb-4 text-sm leading-6 text-zinc-400">{vehicleMatch?.summary || "No automatic vehicle application match is available."}</p>
+              <p className="mb-4 text-sm leading-6 text-zinc-400" translate="no" data-no-translate>
+                {localizeFileExpertVehicleSummary(locale, vehicleMatch, vehicleTarget)}
+              </p>
               {vehicleMatch?.candidates.length ? (
                 <div className="space-y-3">
                   {vehicleMatch.candidates.map((candidate) => (
                     <div key={`${candidate.brand}-${candidate.model}-${candidate.generation}-${candidate.engine}`} className="rounded-2xl border border-white/10 bg-black/25 p-4">
                       <div className="flex flex-wrap items-start justify-between gap-3">
-                        <div>
+                        <div translate="no" data-no-translate>
                           <div className="font-black">{candidate.brand} {candidate.model}</div>
                           <div className="mt-1 text-sm text-zinc-400">{candidate.generation} / {candidate.engine}</div>
                           <div className="mt-2 text-xs font-bold text-red-200">{candidate.ecu}</div>
+                          <div className="mt-2 text-xs leading-5 text-zinc-500">
+                            {localizeFileExpertVehicleCandidateEvidence(locale, candidate)}
+                          </div>
                         </div>
                         <span className="rounded-full bg-white/[0.06] px-3 py-1 text-xs font-black">Possible</span>
                       </div>
@@ -382,10 +420,10 @@ export default function FileExpertReportPage() {
                   <div key={file.label} className="min-w-0 rounded-2xl border border-white/10 bg-black/25 p-4">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <span className="font-black text-red-300">{file.label}</span>
-                      <span className="rounded-full bg-white/[0.06] px-3 py-1 text-xs font-black text-zinc-400">{formatBytes(file.size)}</span>
+                      <span className="rounded-full bg-white/[0.06] px-3 py-1 text-xs font-black text-zinc-400">{formatBytes(file.size, locale)}</span>
                     </div>
-                    <div className="mt-3 break-all text-sm font-bold">{file.name || "Not uploaded"}</div>
-                    <div className="mt-2 text-xs text-zinc-500">{formatSafeFileProfile(file.profile?.file_format, file.profile?.read_scope)}</div>
+                    <div className="mt-3 break-all text-sm font-bold">{file.name ? <span translate="no" data-no-translate>{file.name}</span> : <span translate="no" data-no-translate>{fileExpertReportT(locale, "notUploaded")}</span>}</div>
+                    <div className="mt-2 text-xs text-zinc-500" translate="no" data-no-translate>{localizeFileExpertFileProfile(locale, file.profile?.file_format, file.profile?.read_scope)}</div>
                   </div>
                 ))}
               </div>
@@ -393,12 +431,12 @@ export default function FileExpertReportPage() {
           </section>
 
           <section className="min-w-0 space-y-6">
-            <Panel eyebrow="ORI / MOD assessment" title={changeProfile?.label || "Modification assessment"} icon={<BrainCircuit />} accent>
-              <p className="text-sm leading-7 text-zinc-300">{safeReportText(changeProfile?.summary || result?.summary.main_conclusion) || "Analysis is not ready."}</p>
+            <Panel eyebrow="ORI / MOD assessment" title={localizedChangeProfile.label} icon={<BrainCircuit />} accent>
+              <p className="text-sm leading-7 text-zinc-300" translate="no" data-no-translate>{localizedChangeProfile.summary}</p>
               <div className="mt-5 grid gap-3 sm:grid-cols-3">
-                <MetricValue label="Changed bytes" value={result?.comparison?.changed_bytes.toLocaleString() || "-"} />
+                <MetricValue label="Changed bytes" value={result?.comparison?.changed_bytes.toLocaleString(intlLocaleByCode[locale]) || "-"} />
                 <MetricValue label="Affected area" value={result?.comparison ? `${result.comparison.changed_percent}%` : "-"} />
-                <MetricValue label="Change groups" value={result?.comparison?.merged_changed_blocks.toLocaleString() || "-"} />
+                <MetricValue label="Change groups" value={result?.comparison?.merged_changed_blocks.toLocaleString(intlLocaleByCode[locale]) || "-"} />
               </div>
             </Panel>
 
@@ -408,10 +446,10 @@ export default function FileExpertReportPage() {
                   {result.possible_features.map((feature) => (
                     <div key={feature.feature} className="rounded-2xl border border-red-900/35 bg-red-950/15 p-4">
                       <div className="flex items-center justify-between gap-3">
-                        <div className="font-black">{fileExpertFeatureLabels[feature.feature] ?? feature.feature}</div>
+                        <div className="font-black" translate="no" data-no-translate>{localizeFileExpertFeatureLabel(locale, feature.feature)}</div>
                         <span className="rounded-full bg-black/35 px-3 py-1 text-xs font-black text-red-200">Possible</span>
                       </div>
-                      <p className="mt-3 text-xs leading-5 text-zinc-400">{feature.reasons.join(" ")}</p>
+                      <p className="mt-3 text-xs leading-5 text-zinc-400" translate="no" data-no-translate>{localizeFileExpertFeatureReason(locale, feature)}</p>
                     </div>
                   ))}
                 </div>
@@ -430,10 +468,10 @@ export default function FileExpertReportPage() {
                     <MetricValue label="Evidence status" value={similaritySummary.matchesFound ? "Available" : "Limited"} />
                     <MetricValue label="Review state" value="Human required" />
                   </div>
-                  <p className="mt-4 text-sm leading-7 text-zinc-400">{similaritySummary.message} Similarity is supporting evidence only and does not approve this file for writing.</p>
+                  <p className="mt-4 text-sm leading-7 text-zinc-400" translate="no" data-no-translate>{similarityMessage}</p>
                 </div>
               ) : (
-                <p className="rounded-2xl border border-dashed border-white/15 bg-black/25 p-5 text-sm leading-6 text-zinc-400">Similarity evidence has not been calculated for this report yet. Human tuner verification remains required.</p>
+                <p className="rounded-2xl border border-dashed border-white/15 bg-black/25 p-5 text-sm leading-6 text-zinc-400" translate="no" data-no-translate>{localizeFileExpertSimilarityMessage(locale, null)}</p>
               )}
             </Panel>
 
@@ -442,14 +480,14 @@ export default function FileExpertReportPage() {
                 <div>
                   <div className="grid gap-3 sm:grid-cols-3">
                     <MetricValue label="Matching clusters" value={String(clusterEvidence.matchingClusters)} />
-                    <MetricValue label="Best readiness" value={formatLabel(clusterEvidence.bestStatus)} />
+                    <MetricValue label="Best readiness" value={localizeFileExpertReadiness(locale, clusterEvidence.bestStatus)} />
                     <MetricValue label="Verification" value="Required" />
                   </div>
-                  <p className="mt-4 text-sm leading-7 text-zinc-400">{clusterEvidence.message}</p>
+                  <p className="mt-4 text-sm leading-7 text-zinc-400" translate="no" data-no-translate>{localizeFileExpertClusterMessage(locale, clusterEvidence)}</p>
                   <div className="mt-3 rounded-2xl border border-amber-700/30 bg-amber-950/10 p-4 text-xs leading-6 text-amber-100/75">This is evidence only. Human tuner verification and checksum verification are required before any real write.</div>
                 </div>
               ) : (
-                <p className="rounded-2xl border border-dashed border-white/15 bg-black/25 p-5 text-sm leading-6 text-zinc-400">No trusted cluster evidence is available for this report yet. Human tuner verification remains required.</p>
+                <p className="rounded-2xl border border-dashed border-white/15 bg-black/25 p-5 text-sm leading-6 text-zinc-400" translate="no" data-no-translate>{localizeFileExpertClusterMessage(locale, null)}</p>
               )}
             </Panel>
 
@@ -461,7 +499,7 @@ export default function FileExpertReportPage() {
                 <CheckRow label="Checksum" value={null} unknownLabel="Not checked" />
               </div>
               {integrity?.issues.length ? (
-                <div className="mt-4 rounded-2xl border border-red-800/40 bg-red-950/20 p-4 text-sm leading-6 text-red-100">{integrity.issues.join(" ")}</div>
+                <div className="mt-4 rounded-2xl border border-red-800/40 bg-red-950/20 p-4 text-sm leading-6 text-red-100" translate="no" data-no-translate>{integrity.issues.map((issue) => localizeFileExpertIntegrityIssue(locale, issue)).join(" ")}</div>
               ) : null}
             </Panel>
 
@@ -487,16 +525,17 @@ export default function FileExpertReportPage() {
   );
 }
 
-function InfoCard({ title, value, icon }: { title: string; value: string; icon: React.ReactNode }) {
-  return <div className="min-w-0 rounded-3xl border border-white/10 bg-white/[0.04] p-5"><div className="mb-4 flex h-11 w-11 items-center justify-center rounded-2xl bg-red-950/35 text-red-400">{icon}</div><div className="text-sm text-zinc-400">{title}</div><div className="mt-1 break-words text-xl font-black">{value}</div></div>;
+function InfoCard({ title, value, icon, rawValue = false, protectedValue = false }: { title: string; value: string; icon: React.ReactNode; rawValue?: boolean; protectedValue?: boolean }) {
+  const protect = rawValue || protectedValue;
+  return <div className="min-w-0 rounded-3xl border border-white/10 bg-white/[0.04] p-5"><div className="mb-4 flex h-11 w-11 items-center justify-center rounded-2xl bg-red-950/35 text-red-400">{icon}</div><div className="text-sm text-zinc-400">{title}</div><div className="mt-1 break-words text-xl font-black" translate={protect ? "no" : undefined} data-no-translate={protect ? true : undefined}>{value}</div></div>;
 }
 
-function IdentityField({ label, value }: { label: string; value: string | null | undefined }) {
-  return <div className="rounded-2xl border border-white/10 bg-black/25 p-4"><div className="text-xs font-black uppercase tracking-[0.14em] text-zinc-500">{label}</div><div className="mt-2 break-words font-black">{value || "Not detected"}</div></div>;
+function IdentityField({ label, value, locale }: { label: string; value: string | null | undefined; locale: LocaleCode }) {
+  return <div className="rounded-2xl border border-white/10 bg-black/25 p-4"><div className="text-xs font-black uppercase tracking-[0.14em] text-zinc-500">{label}</div><div className="mt-2 break-words font-black"><span translate="no" data-no-translate>{value || fileExpertReportT(locale, "notDetected")}</span></div></div>;
 }
 
 function IdentifierBox({ label, value }: { label: string; value: string }) {
-  return <div className="min-w-0 rounded-2xl border border-white/10 bg-black/30 p-4"><div className="text-xs font-black uppercase tracking-[0.14em] text-zinc-500">{label}</div><div className="mt-2 break-all text-sm font-bold leading-6 text-zinc-200">{value}</div></div>;
+  return <div className="min-w-0 rounded-2xl border border-white/10 bg-black/30 p-4"><div className="text-xs font-black uppercase tracking-[0.14em] text-zinc-500">{label}</div><div className="mt-2 break-all text-sm font-bold leading-6 text-zinc-200" translate="no" data-no-translate>{value}</div></div>;
 }
 
 function Panel({ eyebrow, title, icon, accent, children }: { eyebrow: string; title: string; icon: React.ReactNode; accent?: boolean; children: React.ReactNode }) {

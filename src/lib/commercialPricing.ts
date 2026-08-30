@@ -5,6 +5,7 @@ import {
   type CreditPackagePriceMap,
   type CreditPackagePriceOverrideMap,
 } from "@/lib/creditPackages";
+import { defaultCreditPromotionLabel } from "@/lib/i18n/commercial-translations";
 
 export const paymentMethodIds = ["stripe", "bank"] as const;
 export const STRIPE_EUR_MIN_AMOUNT_CENTS = 50;
@@ -55,7 +56,7 @@ export const defaultCommerceSettings: CommerceSettings = {
     credits_500: 1200,
   },
   custom_credit_unit_price_eur: 4,
-  promotion_label: "Limited time -20% on all credit purchases",
+  promotion_label: defaultCreditPromotionLabel,
   payment_paypal_enabled: false,
   payment_bank_enabled: true,
   payment_stripe_enabled: true,

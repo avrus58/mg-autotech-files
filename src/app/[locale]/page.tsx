@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { HomepageExperience } from "@/components/homepage/HomepageExperience";
+import { buildPublicLogSnapshotCopy } from "@/lib/i18n/tool-client-copy";
 import { exactTranslations, termTranslations } from "@/lib/i18n";
 import { getFileServiceCopy } from "@/lib/fileServiceI18n";
 import { homepageHeroCopy } from "@/lib/homepageHeroI18n";
@@ -21,7 +22,7 @@ import {
   siteUrl,
   websiteJsonLd,
 } from "@/lib/seo";
-import type { LocaleCode } from "@/lib/i18nConfig";
+import { openGraphLocaleByCode, type LocaleCode } from "@/lib/i18nConfig";
 
 const homepageHeroIntroSource =
   "Upload original ECU/TCU files, select your service, track your order and download the completed file directly through the secure MG AutoTech customer portal.";
@@ -101,17 +102,17 @@ export async function generateMetadata({
       description: copy.description,
       url: localizedUrl(locale, "/"),
       siteName,
-      locale: hreflangByLocale[locale],
+      locale: openGraphLocaleByCode[locale],
       alternateLocale: seoLocales
         .filter((item) => item !== locale)
-        .map((item) => hreflangByLocale[item]),
+        .map((item) => openGraphLocaleByCode[item]),
       type: "website",
       images: [
         {
           url: "/opengraph-image",
           width: 1200,
           height: 630,
-          alt: "MG AutoTech ECU and TCU File Service",
+          alt: copy.title,
         },
       ],
     },
@@ -147,6 +148,7 @@ export default async function LocalizedHomePage({
       />
       <HomepageExperience
         locale={locale}
+        publicLogSnapshotCopy={buildPublicLogSnapshotCopy(locale)}
         translationCatalog={{
           exact: {
             ...exactTranslations[locale],

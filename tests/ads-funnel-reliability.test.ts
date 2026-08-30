@@ -407,7 +407,7 @@ test("confirmed payment survives a late consent choice and crosses the completio
 test("insufficient-credit recovery preserves the form and upload copy matches validation", () => {
   const page = projectFile("src", "app", "new-request", "page.tsx");
   const refreshSource =
-    page.match(/async function refreshCreditBalance\(\) \{[\s\S]*?\n  \}\n\n  function validateCreditAccess/)?.[0] ?? "";
+    page.match(/async function refreshCreditBalance\(\) \{[\s\S]*?\r?\n  \}\r?\n\r?\n  function validateCreditAccess/)?.[0] ?? "";
 
   assert.match(page, /href="\/dashboard\/credits"[\s\S]*target="_blank"[\s\S]*rel="noopener noreferrer"/);
   assert.match(page, /refreshing \? "Loading\.\.\." : "Refresh"/);

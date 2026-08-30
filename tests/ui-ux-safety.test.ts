@@ -91,7 +91,7 @@ test("new request summary names selected extra services before submit", () => {
   assert.match(page, /const extrasCredits = selectedExtraServices\.reduce/);
   assert.match(page, /const extras = selectedExtraServices\.map\(\(service\) => service\.title\)/);
   assert.match(page, /selectedExtraServices\.map\(\(service\) =>/);
-  assert.match(page, /\{service\.title\}/);
+  assert.match(page, /localizeServiceLabel\(locale, service\.title\)/);
   assert.match(page, /\{service\.credits\} cr/);
   assert.match(page, /None selected/);
   assert.match(page, /\{selectedExtras\.length\}/);
@@ -155,7 +155,7 @@ test("customer order detail shows delivery estimates only when explicitly set", 
   assert.match(page, /label: label \?\? "Estimate not set yet"/);
   assert.match(page, /deliveryEstimate\.isExplicit && \(/);
   assert.match(page, /ETA: \{deliveryEstimate\.label\}/);
-  assert.match(page, /order\.estimated_delivery_note \? ` - \$\{order\.estimated_delivery_note\}` : ""/);
+  assert.match(page, /order\.estimated_delivery_note \? <> - <span translate="no" data-no-translate>\{order\.estimated_delivery_note\}<\/span><\/> : null/);
   assert.doesNotMatch(page, /A delivery estimate will appear here after MG AutoTech reviews your request details\./);
   assert.doesNotMatch(page, /labels\[value as DeliveryEstimate\] \?\? labels\.usually_30_min/);
   assert.doesNotMatch(page, /formatDeliveryEstimate\(order\.estimated_delivery_label\)/);
@@ -181,12 +181,13 @@ test("customer order detail provides a safe support summary copy action", () => 
   const page = readProjectFile("src", "app", "dashboard", "orders", "[id]", "page.tsx");
   const helper = page.match(/function buildCustomerSupportSummary[\s\S]*?\r?\n}\r?\n/)?.[0] ?? "";
 
-  assert.match(page, /function buildCustomerSupportSummary\(order: Order \| null, fallbackId: string\)/);
-  assert.match(helper, /MG AutoTech request/);
-  assert.match(helper, /Status:/);
-  assert.match(helper, /Vehicle:/);
-  assert.match(helper, /Service:/);
-  assert.match(helper, /Created:/);
+  assert.match(page, /function buildCustomerSupportSummary\(order: Order \| null, fallbackId: string, locale: LocaleCode\)/);
+  assert.match(helper, /customerWorkflowT\(locale, "supportSummary"/);
+  assert.match(helper, /requestId: shortId\(order\.id \|\| fallbackId\)/);
+  assert.match(helper, /status: localizeCustomerOrderStatus\(locale, order\.status\)/);
+  assert.match(helper, /vehicle: vehicleSummary/);
+  assert.match(helper, /service: order\.service_type/);
+  assert.match(helper, /created: formatDate\(order\.created_at, locale\)/);
   assert.match(page, /const \[copiedSupportSummary, setCopiedSupportSummary\] = useState\(false\)/);
   assert.match(page, /const supportSummaryText = useMemo/);
   assert.match(page, /navigator\.clipboard\.writeText\(supportSummaryText\)/);
@@ -517,7 +518,7 @@ test("customer dashboard and order archive surface action-needed orders separate
   assert.match(dashboard, /setNeedsResponseCount\(needsResponseOrders \?\? 0\)/);
   assert.match(sidebar, /href: "\/dashboard\/orders\?view=needs_response"/);
   assert.match(dashboard, /Needs Response/);
-  assert.match(dashboard, /Waiting for your information/);
+  assert.match(dashboard, /customerWorkflowT\(locale, "notificationsWaiting"/);
 
   assert.match(orders, /type View = "active" \| "needs_response" \| "completed" \| "cancelled" \| "all"/);
   assert.match(orders, /value: "needs_response"/);
@@ -551,7 +552,7 @@ test("customer order archive keeps verified data during silent realtime refresh 
   assert.match(orders, /Order archive sync needs retry/);
   assert.match(orders, /Your last loaded order list is still shown/);
   assert.match(orders, /Retry sync/);
-  assert.match(orders, /ordersReady \? `\$\{total\} requests in this view/);
+  assert.match(orders, /ordersReady \? customerWorkflowT\(locale, "requestCount"/);
   assert.match(orders, /No orders found in this view/);
   assert.doesNotMatch(orders, /setMessage\(error\.message\)|error\.message/);
   assert.doesNotMatch(orders, /storage_path|signed_url|service_role|admin_note|metadata/i);
@@ -707,7 +708,10 @@ test("customer dashboard follows the owner reference hierarchy without hiding op
   assert.ok(recentRequests < creditHistory);
   assert.ok(creditHistory < quickActions);
   assert.ok(quickActions < workflow);
-  assert.match(dashboard, /data-dashboard-welcome[\s\S]*Welcome, \{customerName\}/);
+  assert.match(
+    dashboard,
+    /data-dashboard-welcome[\s\S]*Welcome, <span translate="no" data-no-translate>\{customerName\}<\/span>/
+  );
   assert.match(dashboard, /data-dashboard-priority-summary[\s\S]*Pending Requests[\s\S]*In Progress[\s\S]*Completed[\s\S]*Balance/);
   assert.match(dashboard, /<section[\s\S]*aria-labelledby="recent-requests-title"[\s\S]*filteredOrders\.map/);
   assert.match(dashboard, /min-\[1180px\]:grid-cols-\[minmax\(0,1\.55fr\)_minmax\(20rem,0\.85fr\)\]/);
@@ -956,10 +960,10 @@ test("customer widget dashboard blocks duplicate pending domain-change requests"
 
   assert.match(widgetDashboard, /const pendingDomainRequest = payload\?\.domainRequests\?\.find\(\(item\) => item\.status === "pending"\) \?\? null/);
   assert.match(widgetDashboard, /const hasPendingDomainRequest = Boolean\(pendingDomainRequest\)/);
-  assert.match(widgetDashboard, /if \(hasPendingDomainRequest\) \{ setMessage\("Your domain change request is already waiting for admin review\."\); return; \}/);
-  assert.match(widgetDashboard, /Pending admin review/);
+  assert.match(widgetDashboard, /if \(hasPendingDomainRequest\) \{ setMessage\(widgetSiteT\(activeSiteLocale, "domainRequestAlreadyPending"\)\); return; \}/);
+  assert.match(widgetDashboard, /widgetSiteT\(activeSiteLocale, "pendingAdminReview"\)/);
   assert.match(widgetDashboard, /pendingDomainRequest\.requested_domain/);
-  assert.match(widgetDashboard, /A new request can be sent after this one is approved or rejected\./);
+  assert.match(widgetDashboard, /widgetSiteT\(activeSiteLocale, "newRequestAfterResolution"\)/);
   assert.match(widgetDashboard, /disabled=\{hasPendingDomainRequest\}/);
   assert.match(widgetDashboard, /aria-describedby=\{hasPendingDomainRequest \? "pending-domain-request" : undefined\}/);
   assert.match(widgetDashboard, /disabled=\{hasPendingDomainRequest \|\| !domainRequest\.trim\(\)\}/);
@@ -970,21 +974,20 @@ test("customer widget dashboard blocks duplicate pending domain-change requests"
 test("customer widget dashboard shows retryable load errors without plan fallback", () => {
   const widgetDashboard = readProjectFile("src", "components", "dashboard", "WidgetDashboardClient.tsx");
 
-  assert.match(widgetDashboard, /const WIDGET_LOAD_ERROR_MESSAGE = "Widget workspace could not be synced\. Please try again\."/);
   assert.match(widgetDashboard, /const \[widgetLoadError, setWidgetLoadError\]/);
   assert.match(widgetDashboard, /setWidgetLoadError\(""\);[\s\S]*\/api\/widget\/client/);
-  assert.match(widgetDashboard, /if \(!response\.ok\) throw new Error\(WIDGET_LOAD_ERROR_MESSAGE\)/);
-  assert.match(widgetDashboard, /catch \{ setWidgetLoadError\(WIDGET_LOAD_ERROR_MESSAGE\); \}/);
+  assert.match(widgetDashboard, /if \(!response\.ok\) throw new Error\("widget_workspace_sync_failed"\)/);
+  assert.match(widgetDashboard, /catch \{ setWidgetLoadError\(widgetSiteT\(activeSiteLocale, "workspaceSyncFailed"\)\); \}/);
   assert.match(widgetDashboard, /const showInitialWidgetLoadError = Boolean\(widgetLoadError && !client && !payload\)/);
   assert.match(widgetDashboard, /if \(showInitialWidgetLoadError\) return/);
-  assert.match(widgetDashboard, /role="alert"[\s\S]*Widget workspace sync failed/);
-  assert.match(widgetDashboard, /Your widget subscription status has not changed/);
+  assert.match(widgetDashboard, /role="alert"[\s\S]*widgetSiteT\(activeSiteLocale, "workspaceSyncFailedTitle"\)/);
+  assert.match(widgetDashboard, /widgetSiteT\(activeSiteLocale, "subscriptionStatusUnchanged"\)/);
   assert.match(widgetDashboard, /onClick=\{\(\) => void load\(\)\}/);
-  assert.match(widgetDashboard, /Try again/);
-  assert.match(widgetDashboard, /No widget subscription is linked to this account/);
-  assert.match(widgetDashboard, /View plans/);
-  assert.match(widgetDashboard, /widgetLoadError && <div role="alert"[\s\S]*Your last loaded widget settings are still shown/);
-  assert.match(widgetDashboard, /Retry sync/);
+  assert.match(widgetDashboard, /widgetSiteT\(activeSiteLocale, "tryAgain"\)/);
+  assert.match(widgetDashboard, /widgetSiteT\(activeSiteLocale, "noWidgetSubscription"\)/);
+  assert.match(widgetDashboard, /widgetSiteT\(activeSiteLocale, "viewPlans"\)/);
+  assert.match(widgetDashboard, /widgetLoadError && <div role="alert"[\s\S]*widgetSiteT\(activeSiteLocale, "lastSettingsShown"\)/);
+  assert.match(widgetDashboard, /widgetSiteT\(activeSiteLocale, "retrySync"\)/);
   assert.doesNotMatch(widgetDashboard, /throw new Error\(data\.error/);
   assert.doesNotMatch(widgetDashboard, /setMessage\(error instanceof Error \? error\.message/);
   assert.doesNotMatch(widgetDashboard, /stripe_customer_id|widget_audit_logs|service_role|admin_note/);
@@ -1080,7 +1083,9 @@ test("customer dashboard credit history preview uses the customer credit ledger"
   assert.match(dashboard, /\.order\("created_at", \{ ascending: false \}\)/);
   assert.match(dashboard, /\.limit\(6\)/);
   assert.match(dashboard, /return creditTransactions\.slice\(0, 6\)/);
-  assert.match(dashboard, /item\.description \|\| typeLabel/);
+  assert.match(dashboard, /item\.description \? \(/);
+  assert.match(dashboard, /<span translate="no" data-no-translate>\{item\.description\}<\/span>/);
+  assert.match(dashboard, /\) : typeLabel/);
   assert.match(dashboard, /item\.balance_after !== null/);
   assert.match(dashboard, /isPositive \? "text-emerald-400" : "text-red-500"/);
   assert.match(dashboard, /No credit ledger movements yet/);
@@ -1180,14 +1185,14 @@ test("customer File Expert intake shows upload limits before prepare", () => {
   assert.match(prepareRoute, /\.max\(fileExpertTextLimits\.brand\)/);
   assert.match(prepareRoute, /\.max\(fileExpertTextLimits\.customerNotes\)/);
 
-  assert.match(page, /fileExpertFileRequirements/);
-  assert.match(page, /Allowed files:/);
-  assert.match(page, /Maximum \$\{fileExpertMaxFileSizeLabel\} per file/);
+  assert.match(page, /customerWorkflowT\(locale, "fileExpertRequirements"/);
+  assert.match(page, /extensions: fileExpertAllowedExtensionsLabel/);
+  assert.match(page, /size: fileExpertMaxFileSizeLabel/);
   assert.match(page, /validateFileExpertSelection/);
   assert.match(page, /file\.size === 0/);
   assert.match(page, /file\.size > fileExpertMaxFileSize/);
   assert.match(page, /fileExpertAllowedExtensions\.some/);
-  assert.match(page, /Unsupported file type/);
+  assert.match(page, /customerWorkflowT\(locale, "fileExpertUnsupportedFile"/);
   assert.match(page, /handleFileSelection\("ori", file\)/);
   assert.match(page, /handleFileSelection\("mod", file\)/);
   assert.match(page, /accept=\{fileExpertAccept\}/);
@@ -1199,8 +1204,8 @@ test("customer File Expert intake shows upload limits before prepare", () => {
   assert.match(page, /maxLength=\{fileExpertTextLimits\.ecuType\}/);
   assert.match(page, /maxLength=\{fileExpertTextLimits\.customerNotes\}/);
   assert.match(page, /CharacterLimitHint/);
-  assert.match(page, /Select at least one valid ORI or MOD file before starting analysis/);
-  assert.match(page, /setMessage\("Please upload at least one valid ORI or MOD file\."\)/);
+  assert.match(page, /customerWorkflowT\(locale, "fileExpertSelectFile"\)/);
+  assert.match(page, /setMessage\(customerWorkflowT\(locale, "fileExpertUploadFile"\)\)/);
   assert.match(page, /disabled=\{!canSubmitAnalysis\}/);
   assert.match(page, /if \(textLimitError\) \{[\s\S]*setMessage\(textLimitError\)/);
   assert.match(page, /if \(!oriFile && !modFile\) \{[\s\S]*authenticatedFetch\("\/api\/file-expert\/jobs\/prepare"/);
@@ -1308,7 +1313,8 @@ test("request DTC integration keeps customer and admin projections bounded", () 
   assert.match(customerPage, /\/api\/requests\/\$\{order\.id\}\/dtc-analysis/);
   assert.match(customerPanel, /role="status"[\s\S]*aria-live="polite"/);
   assert.match(customerPanel, /role="alert"/);
-  assert.match(customerPanel, /Human review required/);
+  assert.match(customerPanel, /key: "human\.required_before"/);
+  assert.match(customerPanel, /localizeDtcAnalyzerMessage\(locale/);
   assert.match(adminPanel, /DTC Expert Review/);
   assert.match(adminClient, /\/api\/admin\/requests\/\$\{requestId\}\/dtc-analysis/);
   assert.match(adminPanel, /DTC analyzer configuration/);
@@ -1354,11 +1360,14 @@ test("DTC rollout readiness runbook stays local-only and names validation gates"
 
 test("customer File Expert UI renders only customer-safe report details", () => {
   const page = readProjectFile("src", "app", "dashboard", "file-expert", "[id]", "page.tsx");
+  const reportTranslations = readProjectFile("src", "lib", "i18n", "file-expert-report-translations.ts");
   assert.match(page, /Technical coordinate data, private file fingerprints and binary internals are hidden on customer reports/);
-  assert.match(page, /Human tuner verification remains required/);
-  assert.match(page, /does not approve this file for writing/);
-  assert.match(page, /formatSafeFileProfile/);
-  assert.match(page, /safeReportText/);
+  assert.match(reportTranslations, /Human tuner verification remains required/);
+  assert.match(page, /localizeFileExpertFileProfile/);
+  assert.match(page, /localizeFileExpertFinding/);
+  assert.match(page, /localizeFileExpertAnalyzerEvidence/);
+  assert.match(page, /localizeFileExpertVehicleCandidateEvidence/);
+  assert.doesNotMatch(page, /job\.executive_summary|job\.error_message|finding\.summary|candidate\.reason/);
   assert.doesNotMatch(page, /isAdmin/);
   assert.doesNotMatch(page, /SHA256|Copy JSON|Download report data|Analyzer JSON|changed_blocks\.slice|offset_start|offset_end|provider\/source/i);
 });
@@ -1507,7 +1516,7 @@ test("refreshed homepage uses one compact visible information architecture", () 
 
   for (const target of [
     'id="vehicle-data"',
-    "<DeferredPerformanceTools />",
+    "<DeferredPerformanceTools",
     'id="services"',
     'id="workflow"',
     'id="security"',
@@ -1518,7 +1527,7 @@ test("refreshed homepage uses one compact visible information architecture", () 
     assert.match(homepage, new RegExp(target.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   }
 
-  assert.equal((homepage.match(/<DeferredPerformanceTools \/>/g) ?? []).length, 1);
+  assert.equal((homepage.match(/<DeferredPerformanceTools\b/g) ?? []).length, 1);
   assert.equal((homepage.match(/id="services"/g) ?? []).length, 1);
   assert.doesNotMatch(
     homepage,
@@ -1652,7 +1661,7 @@ test("public file service hub is indexable, linked and customer-safe", () => {
   assert.match(page, /href="#request-route"[\s\S]*Choose service first/);
 
   assert.match(homepage, /href: "\/file-service"|href="\/file-service"/);
-  assert.match(header, /href="\/file-service"/);
+  assert.match(header, /href=\{href\("\/file-service"\)\}/);
   assert.match(footer, /File Service Hub/);
   assert.match(sitemap, /absoluteUrl\("\/file-service"\)/);
   assert.match(robots, /"\/file-service"/);
@@ -1668,17 +1677,18 @@ test("public services catalog is broad, indexable and customer-safe", () => {
   const header = readProjectFile("src", "components", "PublicSeoHeader.tsx");
   const toolsHeader = readProjectFile("src", "components", "tools", "ToolsHeader.tsx");
   const footer = readProjectFile("src", "components", "Footer.tsx");
+  const metadata = readProjectFile("src", "lib", "servicesPageMetadata.ts");
   const sitemap = readProjectFile("src", "app", "sitemap.ts");
   const robots = readProjectFile("src", "app", "robots.ts");
 
-  assert.match(page, /export const metadata: Metadata/);
+  assert.match(page, /generateMetadata\(\)[\s\S]*buildServicesMetadata/);
   assert.match(
     page,
     /ECU & TCU file services, organized for serious workshops\./,
   );
   assert.match(page, /Professional file-service catalog/);
   assert.match(page, /More than a basic ECU solutions grid/);
-  assert.match(page, /canonical: absoluteUrl\("\/services"\)/);
+  assert.match(metadata, /runtimePublicAlternates\("\/services"\)/);
   assert.match(page, /const solutionCategories: SolutionCategory\[\]/);
 
   for (const section of [
@@ -1719,11 +1729,11 @@ test("public services catalog is broad, indexable and customer-safe", () => {
   assert.match(page, /"@type": "FAQPage"/);
   assert.match(page, /"@type": "BreadcrumbList"/);
   assert.match(page, /JSON\.stringify\(catalogJsonLd\)/);
-  assert.match(page, /<PublicSeoHeader \/>/);
-  assert.match(page, /<Footer \/>/);
+  assert.match(page, /<PublicSeoHeader locale=\{locale\} \/>/);
+  assert.match(page, /<RuntimePublicFooter locale=\{locale\}/);
 
   assert.match(homepage, /href: "\/services"|href="\/services"/);
-  assert.match(header, /href="\/services"[\s\S]*Services/);
+  assert.match(header, /href=\{href\("\/services"\)\}[\s\S]*Services/);
   assert.match(toolsHeader, /href="\/services"[\s\S]*Services/);
   assert.match(footer, /Services Overview/);
   assert.match(sitemap, /absoluteUrl\("\/services"\)/);

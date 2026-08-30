@@ -15,6 +15,10 @@ import {
 import { CustomerPortalPageHeader } from "@/components/dashboard/CustomerPortalPageHeader";
 import { getStableSession, notifySessionRequired, signOutIfEmailUnverified } from "@/lib/authGuards";
 import { supabase } from "@/lib/supabaseClient";
+import { localizeCustomerNotification } from "@/lib/i18n/customer-workflow-notifications-translations";
+import { intlLocaleByCode, type LocaleCode } from "@/lib/i18nConfig";
+import { useActiveLocale } from "@/lib/useActiveLocale";
+import { customerNotificationProjection } from "@/lib/customerNotificationProjection";
 
 type NotificationType = "admin_message" | "order_status" | "file_ready" | "additional_upload_enabled" | "system";
 type NotificationRow = {
@@ -24,6 +28,7 @@ type NotificationRow = {
   type: NotificationType;
   title: string;
   body: string | null;
+  status: string | null;
   read_at: string | null;
   created_at: string;
 };
@@ -37,12 +42,14 @@ const filters: Array<{ value: NotificationFilter; label: string }> = [
   { value: "files", label: "Files & uploads" },
 ];
 
-function formatBerlin(value: string) {
-  return new Intl.DateTimeFormat("en-GB", {
+function formatBerlin(value: string, locale: LocaleCode) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return new Intl.DateTimeFormat(intlLocaleByCode[locale], {
     dateStyle: "medium",
     timeStyle: "short",
     timeZone: "Europe/Berlin",
-  }).format(new Date(value));
+  }).format(date);
 }
 
 function matchesFilter(item: NotificationRow, filter: NotificationFilter) {
@@ -61,6 +68,7 @@ function notificationIcon(type: NotificationType) {
 
 export default function CustomerNotificationCenterPage() {
   const router = useRouter();
+  const locale = useActiveLocale();
   const [userId, setUserId] = useState("");
   const [items, setItems] = useState<NotificationRow[]>([]);
   const [filter, setFilter] = useState<NotificationFilter>("all");
@@ -74,7 +82,7 @@ export default function CustomerNotificationCenterPage() {
     setError("");
     const result = await supabase
       .from("notifications")
-      .select("id,user_id,order_id,type,title,body,read_at,created_at")
+      .select(customerNotificationProjection)
       .eq("user_id", customerId)
       .order("created_at", { ascending: false })
       .limit(100);
@@ -159,11 +167,12 @@ export default function CustomerNotificationCenterPage() {
             {visible.length === 0 && <div className="py-16 text-center"><BellRing className="mx-auto h-6 w-6 text-zinc-700" /><div className="mt-3 font-black">No notifications in this view</div><p className="mt-1 text-sm text-zinc-500">New customer-safe order and message events will appear here.</p></div>}
             {visible.map((item) => {
               const href = item.order_id ? `/dashboard/orders/${item.order_id}` : "/dashboard";
+              const copy = localizeCustomerNotification(locale, item);
               return (
                 <div key={item.id} className={`grid gap-3 py-4 sm:grid-cols-[44px_minmax(0,1fr)_180px] sm:items-center ${item.read_at ? "opacity-60" : ""}`}>
                   <div className={`flex h-10 w-10 items-center justify-center rounded-lg border ${item.read_at ? "border-white/10 text-zinc-500" : "border-red-800/40 bg-red-950/20 text-red-300"}`}>{notificationIcon(item.type)}</div>
-                  <div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><Link href={href} onClick={() => void markRead([item.id])} className="font-black hover:text-red-300">{item.title}</Link>{!item.read_at && <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase text-red-400"><Circle className="h-2 w-2 fill-current" />New</span>}</div>{item.body && <p className="mt-1 break-words text-sm leading-5 text-zinc-500">{item.body}</p>}<div className="mt-2 text-[10px] font-black uppercase tracking-[0.12em] text-zinc-700">{item.type.replaceAll("_", " ")}</div></div>
-                  <div className="text-xs text-zinc-600 sm:text-right"><div>{formatBerlin(item.created_at)}</div>{item.order_id && <Link href={href} onClick={() => void markRead([item.id])} className="mt-2 inline-flex font-black text-red-300">Open request</Link>}</div>
+                  <div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><Link href={href} onClick={() => void markRead([item.id])} className="font-black hover:text-red-300" translate={copy.rawTitle ? "no" : undefined} data-no-translate={copy.rawTitle ? true : undefined}>{copy.title}</Link>{!item.read_at && <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase text-red-400"><Circle className="h-2 w-2 fill-current" />New</span>}</div>{copy.body && <p className="mt-1 break-words text-sm leading-5 text-zinc-500" translate={copy.rawBody ? "no" : undefined} data-no-translate={copy.rawBody ? true : undefined}>{copy.body}</p>}<div className="mt-2 text-[10px] font-black uppercase tracking-[0.12em] text-zinc-700">{copy.typeLabel}</div></div>
+                  <div className="text-xs text-zinc-600 sm:text-right"><div>{formatBerlin(item.created_at, locale)}</div>{item.order_id && <Link href={href} onClick={() => void markRead([item.id])} className="mt-2 inline-flex font-black text-red-300">Open request</Link>}</div>
                 </div>
               );
             })}

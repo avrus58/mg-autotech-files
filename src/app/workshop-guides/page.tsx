@@ -13,33 +13,48 @@ import {
   Wrench,
   type LucideIcon,
 } from "lucide-react";
-import { Footer } from "@/components/Footer";
 import { PublicSeoHeader } from "@/components/PublicSeoHeader";
-import { absoluteUrl, siteName } from "@/lib/seo";
+import { RuntimePublicLocalization } from "@/components/RuntimePublicLocalization";
+import { RuntimePublicFooter } from "@/components/RuntimePublicFooter";
+import {
+  localizeRuntimePublicJsonLd,
+  runtimePublicAlternates,
+  runtimePublicInLanguage,
+  runtimePublicMetadataCopy,
+  runtimePublicOpenGraphLocale,
+} from "@/lib/i18n/runtime-public";
+import { absoluteUrl, siteName, websiteJsonLd } from "@/lib/seo";
+import { getServerLocale } from "@/lib/serverLocale";
 import { workshopGuideArticles } from "@/lib/workshopGuides";
 
 const title = "ECU & TCU Workshop Knowledge Center";
 const description = "A practical MG AutoTech knowledge center for ECU and TCU file-service preparation, vehicle and controller identification, read methods, service selection and workshop tools.";
 
-export const metadata: Metadata = {
-  title,
-  description,
-  alternates: { canonical: absoluteUrl("/workshop-guides") },
-  openGraph: {
-    title: `${title} | MG AutoTech`,
-    description,
-    url: absoluteUrl("/workshop-guides"),
-    siteName,
-    type: "website",
-    images: [{ url: absoluteUrl("/opengraph-image"), width: 1200, height: 630, alt: title }],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: `${title} | MG AutoTech`,
-    description,
-    images: [absoluteUrl("/opengraph-image")],
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getServerLocale();
+  const scopes = ["core", "workshop-guides"] as const;
+  const copy = runtimePublicMetadataCopy(locale, title, description, scopes);
+  return {
+    title: copy.title,
+    description: copy.description,
+    alternates: runtimePublicAlternates("/workshop-guides"),
+    openGraph: {
+      title: `${copy.title} | MG AutoTech`,
+      description: copy.description,
+      url: absoluteUrl("/workshop-guides"),
+      siteName,
+      type: "website",
+      locale: runtimePublicOpenGraphLocale(locale),
+      images: [{ url: absoluteUrl("/opengraph-image"), width: 1200, height: 630, alt: copy.title }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${copy.title} | MG AutoTech`,
+      description: copy.description,
+      images: [absoluteUrl("/opengraph-image")],
+    },
+  };
+}
 
 type GuideGroup = {
   eyebrow: string;
@@ -111,7 +126,9 @@ const quickAnswers = [
   { question: "Where are status and completed files shown?", answer: "Customers track request status, messages and available downloads inside their protected dashboard." },
 ];
 
-export default function WorkshopGuidesPage() {
+export default async function WorkshopGuidesPage() {
+  const locale = await getServerLocale();
+  const scopes = ["core", "workshop-guides"] as const;
   const articleLinks = workshopGuideArticles.map((article) => ({
     href: `/workshop-guides/${article.slug}`,
     label: article.shortTitle,
@@ -120,15 +137,17 @@ export default function WorkshopGuidesPage() {
     ...articleLinks,
     ...guideGroups.flatMap((group) => group.links),
   ];
-  const jsonLd = {
+  const jsonLd = localizeRuntimePublicJsonLd({
     "@context": "https://schema.org",
     "@graph": [
+      websiteJsonLd(locale),
       {
         "@type": "CollectionPage",
         "@id": `${absoluteUrl("/workshop-guides")}#collection`,
         name: title,
         description,
         url: absoluteUrl("/workshop-guides"),
+        inLanguage: runtimePublicInLanguage(locale),
         isPartOf: { "@id": `${absoluteUrl("/")}#website` },
         hasPart: workshopGuideArticles.map((article) => ({
           "@id": `${absoluteUrl(`/workshop-guides/${article.slug}`)}#article`,
@@ -151,12 +170,13 @@ export default function WorkshopGuidesPage() {
         ],
       },
     ],
-  };
+  }, locale, scopes);
 
   return (
-    <div data-no-translate className="min-h-screen overflow-x-hidden bg-[#050505] text-white">
+    <RuntimePublicLocalization locale={locale} scopes={scopes}>
+      <div className="min-h-screen overflow-x-hidden bg-[#050505] text-white">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      <PublicSeoHeader />
+      <PublicSeoHeader locale={locale} />
       <main>
         <section className="border-b border-white/10 bg-[#080808]">
           <div className="mx-auto grid max-w-7xl gap-8 px-4 py-14 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-end sm:py-20">
@@ -221,8 +241,9 @@ export default function WorkshopGuidesPage() {
           <Callout icon={SearchCheck} title="Check the request" text="Run a customer-safe readiness check before uploading the original file." href="/tools/file-readiness-check" action="Check readiness" />
         </section>
       </main>
-      <Footer />
-    </div>
+      <RuntimePublicFooter locale={locale} scopes={scopes} />
+      </div>
+    </RuntimePublicLocalization>
   );
 }
 

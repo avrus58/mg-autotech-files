@@ -349,7 +349,7 @@ export default function CustomerSettingsPage() {
                   Customer ID
                 </div>
                 <div className="mt-1 text-lg font-black">
-                  {customerReference}
+                  <span translate="no" data-no-translate>{customerReference}</span>
                 </div>
               </div>
             </div>
@@ -357,7 +357,7 @@ export default function CustomerSettingsPage() {
             <div className="space-y-3 text-sm">
               <div className="flex items-center justify-between rounded-xl bg-black/30 p-2.5">
                 <span className="text-zinc-500">Login E-mail</span>
-                <span className="max-w-[180px] truncate font-bold">{email}</span>
+                <span className="max-w-[180px] truncate font-bold" translate="no" data-no-translate>{email}</span>
               </div>
 
               <div className="flex items-center justify-between rounded-xl bg-black/30 p-2.5">
@@ -543,7 +543,7 @@ export default function CustomerSettingsPage() {
                   Reference
                 </div>
                 <div className="mt-2 text-2xl font-black text-red-400">
-                  {customerReference}
+                  <span translate="no" data-no-translate>{customerReference}</span>
                 </div>
                 <button
                   type="button"

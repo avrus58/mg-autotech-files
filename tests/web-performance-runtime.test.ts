@@ -74,7 +74,11 @@ test("private notifications stay out of public pages and heavy tools remain defe
     /requestIdleCallback|setTimeout|useEffect|useState/
   );
   assert.match(tools, /IntersectionObserver/);
-  assert.match(tools, /PerformanceTools/);
+  assert.match(tools, /PublicLogSnapshot/);
+  assert.doesNotMatch(
+    tools,
+    /import\("@\/components\/tools\/PerformanceTools"\)/
+  );
   assert.match(styles, /\.homepage-deferred-section\s*{[\s\S]*?content-visibility: visible/);
   assert.doesNotMatch(styles, /contain-intrinsic-size:\s*auto\s+(?:760|980)px/);
 });

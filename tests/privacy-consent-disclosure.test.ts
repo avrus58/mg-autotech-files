@@ -45,11 +45,14 @@ test("public footer and consent surfaces route German and English privacy links 
   const robots = source("src", "app", "robots.ts");
   const sitemap = source("src", "app", "sitemap.ts");
 
-  assert.match(footer, /getAnalyticsConsentLocale\(pathname\)/);
+  assert.match(footer, /getAnalyticsConsentLocale\(pathname, activeLocale\)/);
   assert.match(footer, /privacyLocale === "de" \? "Datenschutz" : "Privacy"/);
-  assert.match(footer, /href: getAnalyticsPrivacyPath\(pathname\)/);
-  assert.match(widget, /href="\/privacy"[^>]*>Privacy</);
-  assert.match(analytics, /getAnalyticsPrivacyPath\(pathname\)/);
+  assert.match(footer, /href: getAnalyticsPrivacyPath\(pathname, activeLocale\)/);
+  assert.match(
+    widget,
+    /href=\{siteLocale === "de" \? "\/datenschutz" : "\/privacy"\}[^>]*>\{widgetSiteT\(siteLocale, "privacy"\)\}</
+  );
+  assert.match(analytics, /getAnalyticsPrivacyPath\(pathname, activeLocale\)/);
   assert.match(analytics, /href=\{privacyPath\}/);
   assert.match(robots, /"\/privacy"/);
   assert.match(sitemap, /siteUrl\}\/privacy/);

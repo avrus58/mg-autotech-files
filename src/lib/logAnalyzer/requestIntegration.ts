@@ -4,6 +4,8 @@ import type {
   LogAnalyzerConfidenceReason,
   LogAnalyzerEvidenceItem,
   LogAnalyzerInputRow,
+  LogAnalyzerMessage,
+  LogAnalyzerMessageKey,
   LogAnalyzerProviderKind,
   LogAnalyzerProviderStatus,
   LogAnalyzerRecommendation,
@@ -41,19 +43,24 @@ export type CustomerRequestLogAnalyzerAnalysis = {
   status: LogAnalyzerResponse["status"];
   state: RequestLogAnalyzerState;
   stateLabel: string;
+  stateLabelMessage: LogAnalyzerMessage;
   summary: string;
+  summaryMessage: LogAnalyzerMessage;
   isAiGenerated: boolean;
   readiness: LogAnalyzerResponse["readiness"];
   confidence: LogAnalyzerConfidence;
   confidenceReasons: LogAnalyzerConfidenceReason[];
   providerNotice: string;
+  providerNoticeMessage: LogAnalyzerMessage;
   logSummary: LogAnalyzerSafeSummary;
   evidence: LogAnalyzerEvidenceItem[];
   riskFlags: LogAnalyzerRiskFlag[];
   recommendations: LogAnalyzerRecommendation[];
   missingInformation: string[];
+  missingInformationMessages: LogAnalyzerMessage[];
   humanReview: LogAnalyzerResponse["humanReview"];
   safetyBoundaries: string[];
+  safetyBoundaryMessages: LogAnalyzerMessage[];
   blockedCustomerActions: string[];
 };
 
@@ -80,6 +87,13 @@ export type RequestLogAnalyzerProjection = {
 
 function textValue(value: unknown) {
   return typeof value === "string" && value.trim() ? value.trim() : "";
+}
+
+function analyzerMessage(
+  key: LogAnalyzerMessageKey,
+  fallback: string
+): LogAnalyzerMessage {
+  return { key, params: {}, fallback };
 }
 
 export function buildRequestLogAnalyzerRequest(
@@ -115,46 +129,53 @@ function analysisState(response: LogAnalyzerResponse): RequestLogAnalyzerState {
 }
 
 function stateLabel(state: RequestLogAnalyzerState) {
-  if (state === "no_log_data") return "No valid log data is available for Log Analyzer.";
-  if (state === "provider_error_fallback") return "Log Analyzer provider failed; deterministic non-AI summary is shown.";
+  if (state === "no_log_data") return analyzerMessage("analyzer.state.noLogData", "No valid log data is available for Log Analyzer.");
+  if (state === "provider_error_fallback") return analyzerMessage("analyzer.state.providerErrorFallback", "Log Analyzer provider failed; deterministic non-AI summary is shown.");
   if (state === "provider_unavailable_fallback") {
-    return "Log Analyzer provider is unavailable; deterministic non-AI summary is shown.";
+    return analyzerMessage("analyzer.state.providerUnavailableFallback", "Log Analyzer provider is unavailable; deterministic non-AI summary is shown.");
   }
-  if (state === "provider_unavailable") return "Log Analyzer provider is unavailable.";
-  if (state === "provider_success") return "Log Analyzer provider returned analysis; human review remains required.";
-  return "Deterministic non-AI Log Analyzer summary is shown.";
+  if (state === "provider_unavailable") return analyzerMessage("analyzer.state.providerUnavailable", "Log Analyzer provider is unavailable.");
+  if (state === "provider_success") return analyzerMessage("analyzer.state.providerSuccess", "Log Analyzer provider returned analysis; human review remains required.");
+  return analyzerMessage("analyzer.state.deterministicFallback", "Deterministic non-AI Log Analyzer summary is shown.");
 }
 
 function providerNotice(response: LogAnalyzerResponse, state: RequestLogAnalyzerState) {
-  if (response.isAiGenerated) return "AI-assisted output. Human review remains required.";
-  if (state === "provider_error_fallback") return "Provider failure is explicit; this is deterministic non-AI fallback output.";
+  if (response.isAiGenerated) return analyzerMessage("analyzer.provider.ai", "AI-assisted output. Human review remains required.");
+  if (state === "provider_error_fallback") return analyzerMessage("analyzer.provider.errorFallback", "Provider failure is explicit; this is deterministic non-AI fallback output.");
   if (state === "provider_unavailable_fallback") {
-    return "Provider unavailable state is explicit; this is deterministic non-AI fallback output.";
+    return analyzerMessage("analyzer.provider.unavailableFallback", "Provider unavailable state is explicit; this is deterministic non-AI fallback output.");
   }
-  if (state === "provider_unavailable") return "Provider unavailable. No AI log analysis was generated.";
-  return "No AI output was generated. Human review remains required.";
+  if (state === "provider_unavailable") return analyzerMessage("analyzer.provider.unavailable", "Provider unavailable. No AI log analysis was generated.");
+  return analyzerMessage("analyzer.provider.nonAi", "No AI output was generated. Human review remains required.");
 }
 
 function projectCustomer(response: LogAnalyzerResponse): CustomerRequestLogAnalyzerAnalysis {
   const state = analysisState(response);
+  const stateLabelMessage = stateLabel(state);
+  const providerNoticeMessage = providerNotice(response, state);
   return {
     contractVersion: response.contractVersion,
     status: response.status,
     state,
-    stateLabel: stateLabel(state),
+    stateLabel: stateLabelMessage.fallback,
+    stateLabelMessage,
     summary: response.summary,
+    summaryMessage: response.summaryMessage,
     isAiGenerated: response.isAiGenerated,
     readiness: response.readiness,
     confidence: response.confidence,
     confidenceReasons: response.confidenceReasons,
-    providerNotice: providerNotice(response, state),
+    providerNotice: providerNoticeMessage.fallback,
+    providerNoticeMessage,
     logSummary: response.logSummary,
     evidence: response.evidence,
     riskFlags: response.riskFlags,
     recommendations: response.recommendations,
     missingInformation: response.missingInformation,
+    missingInformationMessages: response.missingInformationMessages,
     humanReview: response.humanReview,
     safetyBoundaries: response.safetyBoundaries,
+    safetyBoundaryMessages: response.safetyBoundaryMessages,
     blockedCustomerActions: [
       "write_ready_file_export",
       "checksum_approval",

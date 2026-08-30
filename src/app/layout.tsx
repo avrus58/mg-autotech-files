@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { Geist, Geist_Mono } from "next/font/google";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { CustomerNotificationsRuntime } from "@/components/CustomerNotificationsRuntime";
@@ -8,6 +9,7 @@ import { AccountRuntimeBoundary } from "@/components/analytics/AccountRuntimeBou
 import { PlatformReliabilityMonitor } from "@/components/PlatformReliabilityMonitor";
 import {
   absoluteUrl,
+  homeSeo,
   hreflangByLocale,
   languageAlternates,
   organizationJsonLd,
@@ -15,8 +17,12 @@ import {
   siteUrl,
   websiteJsonLd,
 } from "@/lib/seo";
-import { defaultLocale } from "@/lib/i18nConfig";
+import {
+  normalizeLocale,
+  openGraphLocaleByCode,
+} from "@/lib/i18nConfig";
 import { buildSearchEngineVerification } from "@/lib/searchEngineIndexing";
+import { ActiveLocaleProvider } from "@/lib/useActiveLocale";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -29,7 +35,7 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export const metadata: Metadata = {
+const baseMetadata: Metadata = {
   metadataBase: new URL(siteUrl),
 
   title: {
@@ -86,8 +92,10 @@ export const metadata: Metadata = {
       "Professional online ECU and TCU file service for workshops with secure uploads, order tracking and controlled portal delivery.",
     url: siteUrl,
     siteName,
-    locale: "en_US",
-    alternateLocale: Object.values(hreflangByLocale).filter((locale) => locale !== "en"),
+    locale: openGraphLocaleByCode.en,
+    alternateLocale: Object.values(openGraphLocaleByCode).filter(
+      (locale) => locale !== openGraphLocaleByCode.en
+    ),
     type: "website",
     images: [
       {
@@ -132,11 +140,40 @@ export const metadata: Metadata = {
   category: "automotive",
 };
 
-export default function RootLayout({
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = normalizeLocale((await headers()).get("x-mg-locale"));
+  const copy = homeSeo[locale];
+
+  return {
+    ...baseMetadata,
+    title: {
+      default: `${copy.title} | MG AutoTech`,
+      template: "%s | MG AutoTech",
+    },
+    description: copy.description,
+    openGraph: {
+      ...baseMetadata.openGraph,
+      title: `${copy.title} | MG AutoTech`,
+      description: copy.description,
+      locale: openGraphLocaleByCode[locale],
+      alternateLocale: Object.values(openGraphLocaleByCode).filter(
+        (candidate) => candidate !== openGraphLocaleByCode[locale]
+      ),
+    },
+    twitter: {
+      ...baseMetadata.twitter,
+      title: `${copy.title} | MG AutoTech`,
+      description: copy.description,
+    },
+  };
+}
+
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const locale = normalizeLocale((await headers()).get("x-mg-locale"));
   const googleAnalyticsMeasurementId =
     process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID?.trim() ?? "";
   const googleAdsId = process.env.NEXT_PUBLIC_GOOGLE_ADS_ID?.trim() ?? "";
@@ -148,35 +185,37 @@ export default function RootLayout({
     process.env.NEXT_PUBLIC_GOOGLE_ADS_PURCHASE_LABEL?.trim() ?? "";
   const jsonLd = {
     "@context": "https://schema.org",
-    "@graph": [organizationJsonLd(), websiteJsonLd(defaultLocale)],
+    "@graph": [organizationJsonLd(), websiteJsonLd(locale)],
   };
 
   return (
     <html
-      lang={hreflangByLocale[defaultLocale]}
+      lang={hreflangByLocale[locale]}
       suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <PaidClickPreHydrationGuard />
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify(jsonLd),
-          }}
-        />
-        {children}
-        <AccountRuntimeBoundary />
-        <PublicAnalyticsRuntime
-          googleAnalyticsMeasurementId={googleAnalyticsMeasurementId}
-          googleAdsId={googleAdsId}
-          registrationLabel={googleAdsRegistrationLabel}
-          requestLabel={googleAdsRequestLabel}
-          purchaseLabel={googleAdsPurchaseLabel}
-        />
-        <PlatformReliabilityMonitor />
-        <CustomerNotificationsRuntime />
-        <LanguageSwitcher />
+        <ActiveLocaleProvider initialLocale={locale}>
+          <PaidClickPreHydrationGuard />
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{
+              __html: JSON.stringify(jsonLd),
+            }}
+          />
+          {children}
+          <AccountRuntimeBoundary />
+          <PublicAnalyticsRuntime
+            googleAnalyticsMeasurementId={googleAnalyticsMeasurementId}
+            googleAdsId={googleAdsId}
+            registrationLabel={googleAdsRegistrationLabel}
+            requestLabel={googleAdsRequestLabel}
+            purchaseLabel={googleAdsPurchaseLabel}
+          />
+          <PlatformReliabilityMonitor />
+          <CustomerNotificationsRuntime />
+          <LanguageSwitcher />
+        </ActiveLocaleProvider>
       </body>
     </html>
   );

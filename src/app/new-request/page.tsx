@@ -59,12 +59,42 @@ import {
   getRequestIntentSelection,
   parseRequestIntent,
 } from "@/lib/requestIntent";
+import {
+  customerWorkflowExactT,
+  customerWorkflowT,
+  type CustomerWorkflowTranslationKey,
+} from "@/lib/i18n/customer-workflow-request-translations";
+import { intlLocaleByCode, type LocaleCode } from "@/lib/i18nConfig";
+import { useActiveLocale } from "@/lib/useActiveLocale";
 
 type Option = {
   id: string;
   name: string;
   fuelType?: string | null;
 };
+
+const accountStateKeys: Record<string, CustomerWorkflowTranslationKey> = {
+  active: "accountStateActive",
+  suspended: "accountStateSuspended",
+  blocked: "accountStateBlocked",
+  disabled: "accountStateDisabled",
+};
+
+function localizeAccountState(locale: LocaleCode, value: string | null | undefined) {
+  const normalized = value?.trim().toLowerCase() ?? "";
+  return customerWorkflowT(
+    locale,
+    accountStateKeys[normalized] ?? "accountStateRestricted"
+  );
+}
+
+function localizeServiceLabel(locale: LocaleCode, value: string) {
+  if (locale === "en" && value === "Map Sensor Calibration") {
+    return "MAP Sensor Calibration";
+  }
+
+  return customerWorkflowExactT(locale, value);
+}
 
 type VehicleData = {
   brand: string;
@@ -156,6 +186,7 @@ function CreditShortfallPanel({
   feedback: string;
   onRefresh: () => void;
 }) {
+  const locale = useActiveLocale();
   return (
     <div
       role="alert"
@@ -163,8 +194,8 @@ function CreditShortfallPanel({
     >
       <p className="font-black">Not enough available credits for this request.</p>
       <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 leading-5 text-yellow-100/75">
-        <span><span>Credits</span>: {requiredCredits}</span>
-        <span><span>Available Credits</span>: {availableCredits}</span>
+        <span><span>Credits</span>: {requiredCredits.toLocaleString(intlLocaleByCode[locale])}</span>
+        <span><span>Available Credits</span>: {availableCredits.toLocaleString(intlLocaleByCode[locale])}</span>
       </div>
       <div className="mt-3 flex flex-wrap gap-2">
         <Link
@@ -362,6 +393,7 @@ function SelectBox({
   required = false,
   disabled = false,
   loading = false,
+  protectOptions = false,
 }: {
   label: string;
   value: string;
@@ -370,6 +402,7 @@ function SelectBox({
   required?: boolean;
   disabled?: boolean;
   loading?: boolean;
+  protectOptions?: boolean;
 }) {
   return (
     <label className="block">
@@ -386,7 +419,13 @@ function SelectBox({
         >
           <option value="">{loading ? "Loading vehicles..." : "Select"}</option>
           {options.map((option) => (
-            <option key={option.id} value={option.id} className="bg-[#111]">
+            <option
+              key={option.id}
+              value={option.id}
+              className="bg-[#111]"
+              translate={protectOptions ? "no" : undefined}
+              data-no-translate={protectOptions ? true : undefined}
+            >
               {option.name}
             </option>
           ))}
@@ -540,7 +579,7 @@ function InfoChip({ icon, label }: { icon: ReactNode; label: string }) {
   return (
     <div className="flex items-center gap-2 rounded-full border border-white/10 bg-black/35 px-3 py-1.5 text-xs font-bold text-zinc-200 shadow-lg shadow-black/20">
       <span className="text-red-500">{icon}</span>
-      {label}
+      <span translate="no" data-no-translate>{label}</span>
     </div>
   );
 }
@@ -549,10 +588,12 @@ function StatCard({
   label,
   value,
   icon,
+  rawValue = false,
 }: {
   label: string;
   value: string;
   icon: ReactNode;
+  rawValue?: boolean;
 }) {
   return (
     <div className="group rounded-2xl border border-white/10 bg-black/40 p-4 transition hover:-translate-y-0.5 hover:border-red-800/60">
@@ -562,19 +603,27 @@ function StatCard({
       <div className="text-xs font-black uppercase tracking-[0.18em] text-zinc-500">
         {label}
       </div>
-      <div className="mt-3 break-words text-lg font-black">{value}</div>
+      <div
+        className="mt-3 break-words text-lg font-black"
+        translate={rawValue ? "no" : undefined}
+        data-no-translate={rawValue ? true : undefined}
+      >
+        {value}
+      </div>
     </div>
   );
 }
 
 function ServiceCategoryPanel({
   category,
+  locale,
   selectedExtras,
   openServiceCategories,
   toggleServiceCategory,
   toggleExtra,
 }: {
   category: ExtraServiceCategory;
+  locale: LocaleCode;
   selectedExtras: string[];
   openServiceCategories: string[];
   toggleServiceCategory: (id: string) => void;
@@ -607,7 +656,9 @@ function ServiceCategoryPanel({
         </span>
         <span className="flex shrink-0 items-center gap-3">
           <span className="rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-xs font-black text-zinc-300">
-            {selectedCount} selected
+            {customerWorkflowT(locale, "selectedCount", {
+              count: selectedCount.toLocaleString(intlLocaleByCode[locale]),
+            })}
           </span>
           <ChevronDown
             className={`h-5 w-5 text-zinc-400 transition ${
@@ -643,14 +694,18 @@ function ServiceCategoryPanel({
                 </span>
 
                 <span className="min-w-0">
-                  <span className="block">{service.title}</span>
+                  <span className="block">
+                    {localizeServiceLabel(locale, service.title)}
+                  </span>
                   {service.description && (
                     <span className="mt-1 block text-xs font-medium leading-5 text-zinc-500">
                       {service.description}
                     </span>
                   )}
                   <span className="mt-2 inline-flex rounded-full bg-cyan-500/90 px-2 py-0.5 text-xs font-black text-white">
-                    {service.credits} Credit{service.credits === 1 ? "" : "s"}
+                    {customerWorkflowT(locale, "creditsCount", {
+                      count: service.credits.toLocaleString(intlLocaleByCode[locale]),
+                    })}
                   </span>
                 </span>
               </button>
@@ -708,16 +763,17 @@ function VehicleHeroCard({
           </div>
 
           <h2 className="text-4xl font-black leading-tight md:text-5xl">
-            {brand} <span className="text-red-500">{model}</span>
+            <span translate="no" data-no-translate>{brand}</span>{" "}
+            <span className="text-red-500" translate="no" data-no-translate>{model}</span>
           </h2>
 
           <div className="mt-5 flex flex-wrap gap-2">
             <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-bold text-zinc-200">
-              {generation || "Generation not specified"}
+              {generation ? <span translate="no" data-no-translate>{generation}</span> : "Generation not specified"}
             </span>
 
             <span className="rounded-full border border-red-800/40 bg-red-950/30 px-3 py-1.5 text-xs font-bold text-red-100">
-              {engine}
+              <span translate="no" data-no-translate>{engine}</span>
             </span>
           </div>
 
@@ -840,6 +896,7 @@ function clearPersistedWebRequest(userId: string) {
 
 export default function NewRequestPage() {
   const router = useRouter();
+  const locale = useActiveLocale();
   const searchParams = useSearchParams();
   const initialRequestIntent = parseRequestIntent(searchParams.get("intent"));
   const initialRequestSelection = initialRequestIntent
@@ -1009,7 +1066,7 @@ export default function NewRequestPage() {
       .single();
 
     if (error) {
-      setMessage(error.message);
+      setMessage("Customer profile could not be loaded.");
       setProfileLoading(false);
       return;
     }
@@ -1601,7 +1658,9 @@ export default function NewRequestPage() {
     }
 
     if (status !== "active") {
-      return `Your account is currently ${status}. Please contact MG AutoTech support.`;
+      return customerWorkflowT(locale, "accountStatusBlocked", {
+        status: localizeAccountState(locale, status),
+      });
     }
 
     const balance = Number(profile.credit_balance ?? 0);
@@ -1611,10 +1670,18 @@ export default function NewRequestPage() {
 
     if (requiredCredits > available) {
       if (negativeEnabled) {
-        return `Not enough credits. Balance: ${balance}, negative limit: ${negativeLimit}, available total: ${available}, required: ${requiredCredits}.`;
+        return customerWorkflowT(locale, "insufficientCreditsWithLimit", {
+          balance: balance.toLocaleString(intlLocaleByCode[locale]),
+          negativeLimit: negativeLimit.toLocaleString(intlLocaleByCode[locale]),
+          available: available.toLocaleString(intlLocaleByCode[locale]),
+          required: requiredCredits.toLocaleString(intlLocaleByCode[locale]),
+        });
       }
 
-      return `Not enough credits. Balance: ${balance}, required: ${requiredCredits}.`;
+      return customerWorkflowT(locale, "insufficientCredits", {
+        balance: balance.toLocaleString(intlLocaleByCode[locale]),
+        required: requiredCredits.toLocaleString(intlLocaleByCode[locale]),
+      });
     }
 
     return null;
@@ -1734,13 +1801,9 @@ export default function NewRequestPage() {
 
     try {
       latestProfile = await getLatestCustomerProfile(user.id);
-    } catch (error) {
+    } catch {
       setSubmitting(false);
-      setMessage(
-        error instanceof Error
-          ? error.message
-          : "Customer profile could not be loaded."
-      );
+      setMessage("Customer profile could not be loaded.");
       return;
     }
 
@@ -1777,7 +1840,7 @@ export default function NewRequestPage() {
       typeof prepared.upload.contentType !== "string"
     ) {
       setSubmitting(false);
-      setMessage(prepared?.error || "Secure upload could not be prepared.");
+      setMessage("Secure upload could not be prepared.");
       return;
     }
     if (submission.filePath && submission.filePath !== prepared.upload.path) {
@@ -1812,7 +1875,7 @@ export default function NewRequestPage() {
     );
     if (uploadError && !duplicateUpload) {
       setSubmitting(false);
-      setMessage(uploadError.message);
+      setMessage("The original file could not be uploaded securely. Please try again.");
       return;
     }
 
@@ -1843,7 +1906,7 @@ export default function NewRequestPage() {
     setSubmitting(false);
 
     if (error) {
-      setMessage(error.message);
+      setMessage("The request could not be created securely. Please try again.");
       return;
     }
 
@@ -2002,7 +2065,7 @@ export default function NewRequestPage() {
                       Repeat request
                     </span>
                     <span className="text-xs font-bold text-zinc-500">
-                      Source #{repeatPrefill.sourceOrderId.slice(0, 8).toUpperCase()}
+                      Source <span translate="no" data-no-translate>#{repeatPrefill.sourceOrderId.slice(0, 8).toUpperCase()}</span>
                     </span>
                   </div>
 
@@ -2017,7 +2080,9 @@ export default function NewRequestPage() {
                     <span className="rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-zinc-200">
                       {[repeatPrefill.vehicle.brand, repeatPrefill.vehicle.model, repeatPrefill.vehicle.engine]
                         .filter(Boolean)
-                        .join(" ") || "Vehicle details incomplete"}
+                        .join(" ") ? (
+                          <span translate="no" data-no-translate>{[repeatPrefill.vehicle.brand, repeatPrefill.vehicle.model, repeatPrefill.vehicle.engine].filter(Boolean).join(" ")}</span>
+                        ) : "Vehicle details incomplete"}
                     </span>
                     <span className={`rounded-lg border px-3 py-2 ${
                       repeatPrefill.services.fullyResolved
@@ -2025,7 +2090,13 @@ export default function NewRequestPage() {
                         : "border-amber-700/35 bg-amber-950/20 text-amber-200"
                     }`}>
                       {repeatPrefill.services.fullyResolved
-                        ? `${1 + repeatPrefill.services.extraServiceIds.length} service selection${repeatPrefill.services.extraServiceIds.length ? "s" : ""} matched`
+                        ? customerWorkflowT(
+                            locale,
+                            repeatPrefill.services.extraServiceIds.length
+                              ? "serviceSelectionsMatched"
+                              : "serviceSelectionMatched",
+                            { count: (1 + repeatPrefill.services.extraServiceIds.length).toLocaleString(intlLocaleByCode[locale]) },
+                          )
                         : "Select the current service again"}
                     </span>
                   </div>
@@ -2240,6 +2311,7 @@ export default function NewRequestPage() {
                     options={brands}
                     loading={loadingBrands}
                     disabled={loadingBrands && brands.length === 0}
+                    protectOptions
                   />
 
                   <SelectBox
@@ -2250,6 +2322,7 @@ export default function NewRequestPage() {
                     options={models}
                     loading={loadingModels}
                     disabled={!vehicleBrandId || loadingModels}
+                    protectOptions
                   />
 
                   <SelectBox
@@ -2259,6 +2332,7 @@ export default function NewRequestPage() {
                     options={generations}
                     loading={loadingGenerations}
                     disabled={!vehicleModelId || loadingGenerations}
+                    protectOptions
                   />
 
                   <SelectBox
@@ -2269,6 +2343,7 @@ export default function NewRequestPage() {
                     options={engines}
                     loading={loadingEngines}
                     disabled={!vehicleGenerationId || loadingEngines}
+                    protectOptions
                   />
 
                   <InputBox
@@ -2310,13 +2385,15 @@ export default function NewRequestPage() {
                       Live Vehicle Intelligence
                     </div>
 
-                    <h2 className="text-3xl font-black md:text-4xl">
+                    <h2 className="text-3xl font-black md:text-4xl" translate="no" data-no-translate>
                       {selectedBrandName} {selectedModelName}
                     </h2>
 
                     <p className="mt-2 text-sm font-bold text-zinc-400">
-                      {selectedGenerationName || "Generation not specified"} ·{" "}
-                      {selectedEngineName}
+                      {selectedGenerationName ? (
+                        <span translate="no" data-no-translate>{selectedGenerationName}</span>
+                      ) : "Generation not specified"}{" "}·{" "}
+                      <span translate="no" data-no-translate>{selectedEngineName}</span>
                     </p>
                   </div>
 
@@ -2348,12 +2425,14 @@ export default function NewRequestPage() {
                         ? selectedVehicle.ecu.join(", ")
                         : "Not available"
                     }
+                    rawValue={Boolean(selectedVehicle.ecu?.length)}
                   />
 
                   <StatCard
                     label="Fuel Type"
                     icon={<Gauge className="h-5 w-5" />}
                     value={selectedVehicle.fuelType || "Not available"}
+                    rawValue={Boolean(selectedVehicle.fuelType)}
                   />
 
                   <StatCard
@@ -2364,6 +2443,7 @@ export default function NewRequestPage() {
                         ? selectedVehicle.readMethods.join(", ")
                         : "Not available"
                     }
+                    rawValue={Boolean(selectedVehicle.readMethods?.length)}
                   />
 
                   <StatCard
@@ -2371,7 +2451,9 @@ export default function NewRequestPage() {
                     icon={<Wrench className="h-5 w-5" />}
                     value={
                       selectedVehicle.services?.length
-                        ? `${selectedVehicle.services.length} supported`
+                        ? customerWorkflowT(locale, "supportedCount", {
+                            count: selectedVehicle.services.length.toLocaleString(intlLocaleByCode[locale]),
+                          })
                         : "Not available"
                     }
                   />
@@ -2393,6 +2475,8 @@ export default function NewRequestPage() {
                         <span
                           key={service}
                           className="rounded-full border border-red-800/50 bg-red-950/30 px-3 py-1.5 text-xs font-bold text-red-100"
+                          translate="no"
+                          data-no-translate
                         >
                           {service}
                         </span>
@@ -2476,13 +2560,15 @@ export default function NewRequestPage() {
                     }`}
                   >
                     <div className="mb-3 flex items-center justify-between">
-                      <span className="font-black">{service.title}</span>
+                      <span className="font-black">
+                        {localizeServiceLabel(locale, service.title)}
+                      </span>
                       {mainService === service.id && (
                         <CheckCircle2 className="h-5 w-5 text-red-500" />
                       )}
                     </div>
                     <div className="text-sm font-black text-red-400">
-                      {service.credits} Credits
+                      {customerWorkflowT(locale, "creditsCount", { count: service.credits.toLocaleString(intlLocaleByCode[locale]) })}
                     </div>
                     <p className="mt-3 text-xs leading-5 text-zinc-500">
                       {service.description}
@@ -2505,7 +2591,7 @@ export default function NewRequestPage() {
                 </div>
 
                 <div className="rounded-2xl border border-red-900/40 bg-red-950/25 px-4 py-3 text-sm font-black text-red-300">
-                  {selectedExtras.length} selected
+                  {customerWorkflowT(locale, "selectedCount", { count: selectedExtras.length.toLocaleString(intlLocaleByCode[locale]) })}
                 </div>
               </div>
 
@@ -2514,6 +2600,7 @@ export default function NewRequestPage() {
                   <ServiceCategoryPanel
                     key={category.id}
                     category={category}
+                    locale={locale}
                     selectedExtras={selectedExtras}
                     openServiceCategories={openServiceCategories}
                     toggleServiceCategory={toggleServiceCategory}
@@ -2538,6 +2625,7 @@ export default function NewRequestPage() {
                       <ServiceCategoryPanel
                         key={category.id}
                         category={category}
+                        locale={locale}
                         selectedExtras={selectedExtras}
                         openServiceCategories={openServiceCategories}
                         toggleServiceCategory={toggleServiceCategory}
@@ -2558,10 +2646,12 @@ export default function NewRequestPage() {
               <label className="flex min-h-44 cursor-pointer flex-col items-center justify-center rounded-3xl border border-dashed border-white/20 bg-black/30 p-8 text-center transition hover:border-red-700 hover:bg-red-950/20">
                 <Upload className="mb-4 h-10 w-10 text-red-600" />
                 <div className="font-black">
-                  {fileName || "Drag and drop a file here or click"}
+                  {fileName ? (
+                    <span translate="no" data-no-translate>{fileName}</span>
+                  ) : "Drag and drop a file here or click"}
                 </div>
                 <p className="mt-2 text-sm text-zinc-500">
-                  {allowedRequestFileExtensions.join(", ")} · <span className="font-bold text-zinc-400">Max</span> 32 MB
+                  <span translate="no" data-no-translate>{allowedRequestFileExtensions.join(", ")}</span>{" "}· <span className="font-bold text-zinc-400">Max</span> 32 MB
                 </p>
 
                 <input
@@ -2653,7 +2743,7 @@ export default function NewRequestPage() {
                 <div className="mb-3 flex items-center justify-between gap-4">
                   <span className="text-zinc-400">Credit Balance</span>
                   <span className="font-black text-white">
-                    {profileLoading ? "Loading..." : `${creditBalance} Credits`}
+                    {profileLoading ? "Loading..." : customerWorkflowT(locale, "creditsCount", { count: creditBalance.toLocaleString(intlLocaleByCode[locale]) })}
                   </span>
                 </div>
 
@@ -2665,7 +2755,7 @@ export default function NewRequestPage() {
                     }`}
                   >
                     {allowNegativeCredits
-                      ? `Allowed up to -${negativeCreditLimit}`
+                      ? customerWorkflowT(locale, "allowedNegativeCredits", { limit: negativeCreditLimit.toLocaleString(intlLocaleByCode[locale]) })
                       : "Disabled"}
                   </span>
                 </div>
@@ -2673,7 +2763,7 @@ export default function NewRequestPage() {
                 <div className="mb-3 flex items-center justify-between gap-4">
                   <span className="text-zinc-400">Available</span>
                   <span className="font-black text-red-300">
-                    {availableCredits} Credits
+                    {customerWorkflowT(locale, "creditsCount", { count: availableCredits.toLocaleString(intlLocaleByCode[locale]) })}
                   </span>
                 </div>
 
@@ -2684,13 +2774,15 @@ export default function NewRequestPage() {
                       balanceAfterRequest < 0 ? "text-yellow-300" : "text-emerald-300"
                     }`}
                   >
-                    {balanceAfterRequest} Credits
+                    {customerWorkflowT(locale, "creditsCount", { count: balanceAfterRequest.toLocaleString(intlLocaleByCode[locale]) })}
                   </span>
                 </div>
 
                 {accountBlocked ? (
                   <div className="mt-4 rounded-xl border border-red-800/50 bg-red-950/30 p-3 text-xs font-bold text-red-200">
-                    Account status: {accountStatus}. New requests are disabled.
+                    {customerWorkflowT(locale, "accountStatusDisabled", {
+                      status: localizeAccountState(locale, accountStatus),
+                    })}
                   </div>
                 ) : showCreditShortfall ? (
                   <CreditShortfallPanel
@@ -2708,7 +2800,7 @@ export default function NewRequestPage() {
                 <div className="flex justify-between gap-4 rounded-2xl bg-white/[0.04] p-4">
                   <span className="text-zinc-400">Vehicle</span>
                   <span className="text-right font-bold">
-                    {requestVehicleBrand || "-"} {requestVehicleModel || ""}
+                    <span translate="no" data-no-translate>{requestVehicleBrand || "-"} {requestVehicleModel || ""}</span>
                     {useManualVehicleDetails ? (
                       <span className="mt-1 block text-[11px] font-black uppercase tracking-[0.12em] text-yellow-300">
                         Customer-provided
@@ -2719,7 +2811,7 @@ export default function NewRequestPage() {
 
                 <div className="flex justify-between gap-4 rounded-2xl bg-white/[0.04] p-4">
                   <span className="text-zinc-400">Engine</span>
-                  <span className="text-right font-bold">
+                  <span className="text-right font-bold" translate="no" data-no-translate>
                     {requestVehicleEngine || "-"}
                   </span>
                 </div>
@@ -2747,7 +2839,7 @@ export default function NewRequestPage() {
                           className="flex items-start justify-between gap-3 rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-xs"
                         >
                           <span className="min-w-0 break-words font-bold text-zinc-200">
-                            {service.title}
+                            {localizeServiceLabel(locale, service.title)}
                           </span>
                           <span className="shrink-0 font-black text-red-300">
                             {service.credits} cr
@@ -2765,7 +2857,7 @@ export default function NewRequestPage() {
                 <div className="flex justify-between gap-4 rounded-2xl border border-red-900/40 bg-red-950/25 p-4">
                   <span className="text-zinc-400">Total</span>
                   <span className="text-right text-xl font-black text-red-400">
-                    {totalCredits} Credits
+                    {customerWorkflowT(locale, "creditsCount", { count: totalCredits.toLocaleString(intlLocaleByCode[locale]) })}
                   </span>
                 </div>
 

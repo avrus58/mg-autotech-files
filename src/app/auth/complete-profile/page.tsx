@@ -222,10 +222,7 @@ export default function CompleteProfilePage() {
       return;
     }
     if (!completionResponse.ok) {
-      const payload = (await completionResponse.json().catch(() => ({}))) as {
-        error?: string;
-      };
-      setMessage(payload.error || "Your country could not be saved. Please try again.");
+      setMessage("Your country could not be saved. Please try again.");
       setSaving(false);
       return;
     }

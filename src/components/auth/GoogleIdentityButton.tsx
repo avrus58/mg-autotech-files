@@ -2,9 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
+import { intlLocaleByCode } from "@/lib/i18nConfig";
+import { customerRuntimeExactT } from "@/lib/i18n/customer-runtime-translations";
+import { useActiveLocale } from "@/lib/useActiveLocale";
 
 const GOOGLE_IDENTITY_SCRIPT_ID = "mg-google-identity-services";
-const GOOGLE_IDENTITY_SCRIPT_URL = "https://accounts.google.com/gsi/client?hl=en";
+const GOOGLE_IDENTITY_SCRIPT_URL = "https://accounts.google.com/gsi/client";
 let googleIdentityScriptPromise: Promise<void> | null = null;
 
 type GoogleCredentialResponse = {
@@ -141,6 +144,7 @@ export function GoogleIdentityButton({
   onError,
   onReady,
 }: GoogleIdentityButtonProps) {
+  const locale = useActiveLocale();
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const onCredentialRef = useRef(onCredential);
@@ -203,7 +207,7 @@ export function GoogleIdentityButton({
             shape: "rectangular",
             logo_alignment: "left",
             width,
-            locale: document.documentElement.lang || "en",
+            locale: intlLocaleByCode[locale].replace("-", "_"),
           });
           setReady(true);
           onReadyRef.current?.();
@@ -257,29 +261,30 @@ export function GoogleIdentityButton({
       window.google?.accounts.id.cancel();
       container.replaceChildren();
     };
-  }, [clientId, loadAttempt, resetKey]);
+  }, [clientId, loadAttempt, locale, resetKey]);
 
   const showPlaceholder = disabled || loading || !ready;
-  const placeholderMessage = loading
+  const placeholderMessage = customerRuntimeExactT(locale, loading
     ? "Opening Google sign-in..."
     : failed
       ? "Google sign-in is unavailable. Use e-mail or try again."
       : !ready
         ? "Loading secure Google sign-in..."
-        : "Complete the security verification to continue with Google.";
+        : "Complete the security verification to continue with Google.");
 
   return (
     <div
       ref={wrapperRef}
-      data-no-translate
       role="group"
-      aria-label="Google sign-in"
+      aria-label={customerRuntimeExactT(locale, "Google sign-in")}
       aria-busy={!failed && (loading || !ready)}
       tabIndex={-1}
       className="relative flex h-12 w-full items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-white/[0.04]"
     >
       <div
         ref={containerRef}
+        translate="no"
+        data-no-translate
         aria-hidden={showPlaceholder}
         className={`flex h-10 w-full justify-center ${
           showPlaceholder ? "invisible" : ""
@@ -294,7 +299,7 @@ export function GoogleIdentityButton({
           }}
           className="absolute inset-0 flex items-center justify-center gap-2 px-4 text-sm font-black text-red-300 outline-none transition hover:text-red-200 focus-visible:ring-2 focus-visible:ring-red-500/60"
         >
-          Retry Google sign-in
+          {customerRuntimeExactT(locale, "Retry Google sign-in")}
         </button>
       ) : showPlaceholder ? (
         <div

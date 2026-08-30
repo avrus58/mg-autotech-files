@@ -15,64 +15,40 @@ import {
   SlidersHorizontal,
   Sparkles,
   Wrench,
-  type LucideIcon,
 } from "lucide-react";
-import { Footer } from "@/components/Footer";
 import { FileServiceSearchNavigator } from "@/components/FileServiceSearchNavigator";
+import {
+  SolutionCategoryCard,
+  type SolutionCategory,
+} from "@/components/LocalizedServiceCards";
 import { OnlineStatus } from "@/components/OnlineStatus";
 import { PublicSeoHeader } from "@/components/PublicSeoHeader";
+import { RuntimePublicLocalization } from "@/components/RuntimePublicLocalization";
+import { RuntimePublicFooter } from "@/components/RuntimePublicFooter";
 import { fileServiceSearchDestinations } from "@/lib/fileServiceSearchIntents";
+import {
+  localizeRuntimePublicJsonLd,
+  runtimePublicInLanguage,
+} from "@/lib/i18n/runtime-public";
+import type { LocaleCode } from "@/lib/i18nConfig";
 import {
   absoluteUrl,
   getServiceSeo,
   organizationJsonLd,
   publicServiceSlugs,
-  siteName,
   websiteJsonLd,
 } from "@/lib/seo";
 import { serviceIntentGuides } from "@/lib/serviceIntentGuides";
+import { getServerLocale } from "@/lib/serverLocale";
+import {
+  buildServicesMetadata,
+  servicesPageDescription as pageDescription,
+  servicesPageTitle as pageTitle,
+} from "@/lib/servicesPageMetadata";
 
-const pageTitle = "ECU & TCU File Service Catalog for Workshops";
-const pageDescription =
-  "Find the right ECU or TCU file service for Stage 1-3, gearbox tuning, DPF, EGR, AdBlue, DTC, file checks and workshop read-method guidance.";
-
-export const metadata: Metadata = {
-  title: pageTitle,
-  description: pageDescription,
-  alternates: {
-    canonical: absoluteUrl("/services"),
-  },
-  openGraph: {
-    title: `${pageTitle} | MG AutoTech`,
-    description: pageDescription,
-    url: absoluteUrl("/services"),
-    siteName,
-    type: "website",
-    images: [
-      {
-        url: absoluteUrl("/opengraph-image"),
-        width: 1200,
-        height: 630,
-        alt: "MG AutoTech ECU and TCU solution catalog",
-      },
-    ],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: `${pageTitle} | MG AutoTech`,
-    description: pageDescription,
-    images: [absoluteUrl("/opengraph-image")],
-  },
-};
-
-type SolutionCategory = {
-  title: string;
-  eyebrow: string;
-  text: string;
-  icon: LucideIcon;
-  tone: "red" | "emerald" | "blue" | "amber";
-  services: string[];
-};
+export async function generateMetadata(): Promise<Metadata> {
+  return buildServicesMetadata(await getServerLocale());
+}
 
 const coreServices = publicServiceSlugs.map((slug) => getServiceSeo(slug, "en"));
 const coreServicePages = [
@@ -80,7 +56,8 @@ const coreServicePages = [
     slug: service.slug,
     name: service.name,
     description: service.description,
-    badge: `${service.credits} credits`,
+    badge: null,
+    creditCount: service.credits,
     detail: service.turnaround,
   })),
   ...serviceIntentGuides.map((service) => ({
@@ -88,6 +65,7 @@ const coreServicePages = [
     name: service.name,
     description: service.description,
     badge: service.cardLabel,
+    creditCount: null,
     detail: "Exact vehicle and controller review",
   })),
 ];
@@ -282,17 +260,19 @@ const faq = [
   },
 ];
 
-const catalogJsonLd = {
+function buildCatalogJsonLd(locale: LocaleCode) {
+  return localizeRuntimePublicJsonLd({
   "@context": "https://schema.org",
   "@graph": [
     organizationJsonLd(),
-    websiteJsonLd("en"),
+    websiteJsonLd(locale),
     {
       "@type": "CollectionPage",
       "@id": absoluteUrl("/services#page"),
       name: `${pageTitle} | MG AutoTech`,
       description: pageDescription,
       url: absoluteUrl("/services"),
+      inLanguage: runtimePublicInLanguage(locale),
       isPartOf: {
         "@id": `${absoluteUrl("/")}#website`,
       },
@@ -398,12 +378,16 @@ const catalogJsonLd = {
       })),
     },
   ],
-};
-
-export default function ServicesPage() {
+  }, locale, ["core", "services", "service-intent"]);
+}
+export default async function ServicesPage() {
+  const locale = await getServerLocale();
+  const scopes = ["core", "services", "service-intent"] as const;
+  const catalogJsonLd = buildCatalogJsonLd(locale);
   return (
-    <main className="min-h-screen bg-[#050607] text-white">
-      <PublicSeoHeader />
+    <RuntimePublicLocalization locale={locale} scopes={scopes}>
+      <main className="min-h-screen bg-[#050607] text-white">
+      <PublicSeoHeader locale={locale} />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(catalogJsonLd) }}
@@ -490,7 +474,11 @@ export default function ServicesPage() {
             >
               <div className="flex items-center justify-between gap-3">
                 <span className="rounded-full border border-red-500/25 bg-red-950/25 px-3 py-1 text-[0.68rem] font-black uppercase tracking-[0.16em] text-red-100">
-                  {service.badge}
+                  {service.creditCount === null ? (
+                    service.badge
+                  ) : (
+                    <>{service.creditCount} <span>Credits</span></>
+                  )}
                 </span>
                 <ArrowRight className="h-4 w-4 text-red-300 transition group-hover:translate-x-1" />
               </div>
@@ -506,7 +494,7 @@ export default function ServicesPage() {
         </div>
       </section>
 
-      <FileServiceSearchNavigator />
+      <FileServiceSearchNavigator locale={locale} />
 
       <section className="border-y border-white/10 bg-[#090b10] py-16">
         <div className="mx-auto max-w-7xl px-4">
@@ -532,7 +520,11 @@ export default function ServicesPage() {
 
             <div className="grid gap-4 md:grid-cols-2">
               {solutionCategories.map((category) => (
-                <SolutionCategoryCard key={category.title} category={category} />
+                <SolutionCategoryCard
+                  key={category.title}
+                  category={category}
+                  locale={locale}
+                />
               ))}
             </div>
           </div>
@@ -638,49 +630,9 @@ export default function ServicesPage() {
         </div>
       </section>
 
-      <Footer />
+      <RuntimePublicFooter locale={locale} scopes={scopes} />
       <OnlineStatus />
-    </main>
-  );
-}
-
-function SolutionCategoryCard({ category }: { category: SolutionCategory }) {
-  const Icon = category.icon;
-  const toneClass =
-    category.tone === "emerald"
-      ? "border-emerald-500/25 bg-emerald-950/10 text-emerald-100"
-      : category.tone === "blue"
-        ? "border-blue-500/25 bg-blue-950/10 text-blue-100"
-        : category.tone === "amber"
-          ? "border-amber-500/25 bg-amber-950/10 text-amber-100"
-          : "border-red-500/25 bg-red-950/10 text-red-100";
-
-  return (
-    <article className="rounded-[1.5rem] border border-white/10 bg-white/[0.045] p-5 shadow-xl shadow-black/15">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <div className="text-xs font-black uppercase tracking-[0.18em] text-red-300">
-            {category.eyebrow}
-          </div>
-          <h3 className="mt-2 text-2xl font-black">{category.title}</h3>
-        </div>
-        <div className={`grid h-12 w-12 shrink-0 place-items-center rounded-2xl border ${toneClass}`}>
-          <Icon className="h-6 w-6" />
-        </div>
-      </div>
-      <p className="mt-4 min-h-20 text-sm leading-7 text-zinc-400">
-        {category.text}
-      </p>
-      <div className="mt-5 flex flex-wrap gap-2">
-        {category.services.map((service) => (
-          <span
-            key={service}
-            className="rounded-full border border-white/10 bg-black/30 px-3 py-1.5 text-xs font-bold text-zinc-300"
-          >
-            {service}
-          </span>
-        ))}
-      </div>
-    </article>
+      </main>
+    </RuntimePublicLocalization>
   );
 }

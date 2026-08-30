@@ -2,29 +2,38 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { ArrowLeft, Calculator, Gauge, Info, Sigma } from "lucide-react";
-import { Footer } from "@/components/Footer";
+import { RuntimePublicFooter } from "@/components/RuntimePublicFooter";
+import { RuntimePublicLocalization } from "@/components/RuntimePublicLocalization";
 import { PerformanceTools } from "@/components/tools/PerformanceTools";
 import { ToolsHeader } from "@/components/tools/ToolsHeader";
 import { absoluteUrl, siteName } from "@/lib/seo";
+import {
+  localizeRuntimePublicJsonLd,
+  runtimePublicAlternates,
+  runtimePublicInLanguage,
+  runtimePublicMetadataCopy,
+  runtimePublicOpenGraphLocale,
+  runtimePublicT,
+} from "@/lib/i18n/runtime-public";
+import { getServerLocale } from "@/lib/serverLocale";
+import { buildPerformanceCalculatorCopy } from "@/lib/i18n/tool-client-copy";
 
 const title = "Torque to HP & kW Calculator";
 const description =
   "Calculate estimated engine power from torque and RPM. Convert Nm and engine speed into kW, mechanical HP and metric PS with transparent formulas.";
 
-export const metadata: Metadata = {
-  title,
-  description,
-  alternates: { canonical: absoluteUrl("/tools/torque-power-calculator") },
-  openGraph: {
-    title: `${title} | MG AutoTech`,
-    description,
-    url: absoluteUrl("/tools/torque-power-calculator"),
-    type: "website",
-    siteName,
-    images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: "Torque to horsepower calculator" }],
-  },
-  twitter: { card: "summary_large_image", title: `${title} | MG AutoTech`, description, images: ["/opengraph-image"] },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getServerLocale();
+  const scopes = ["core", "tools"] as const;
+  const copy = runtimePublicMetadataCopy(locale, title, description, scopes);
+  return {
+    title: copy.title,
+    description: copy.description,
+    alternates: runtimePublicAlternates("/tools/torque-power-calculator"),
+    openGraph: { title: `${copy.title} | MG AutoTech`, description: copy.description, url: absoluteUrl("/tools/torque-power-calculator"), type: "website", siteName, locale: runtimePublicOpenGraphLocale(locale), images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: runtimePublicT(locale, "Torque to horsepower calculator", scopes) }] },
+    twitter: { card: "summary_large_image", title: `${copy.title} | MG AutoTech`, description: copy.description, images: ["/opengraph-image"] },
+  };
+}
 
 const faqs = [
   {
@@ -41,9 +50,11 @@ const faqs = [
   },
 ];
 
-export default function TorquePowerCalculatorPage() {
+export default async function TorquePowerCalculatorPage() {
+  const locale = await getServerLocale();
+  const clientCopy = buildPerformanceCalculatorCopy(locale);
   const pageUrl = absoluteUrl("/tools/torque-power-calculator");
-  const jsonLd = {
+  const jsonLd = localizeRuntimePublicJsonLd({
     "@context": "https://schema.org",
     "@graph": [
       {
@@ -54,6 +65,7 @@ export default function TorquePowerCalculatorPage() {
         applicationCategory: "UtilitiesApplication",
         operatingSystem: "Any",
         browserRequirements: "Requires JavaScript",
+        inLanguage: runtimePublicInLanguage(locale),
         offers: { "@type": "Offer", price: "0", priceCurrency: "EUR" },
         provider: { "@id": `${absoluteUrl("/")}#organization` },
       },
@@ -74,12 +86,13 @@ export default function TorquePowerCalculatorPage() {
         ],
       },
     ],
-  };
+  }, locale, ["core", "tools"]);
 
   return (
-    <div data-no-translate className="min-h-screen overflow-x-hidden bg-[#050505] text-white">
+    <RuntimePublicLocalization locale={locale} scopes={["core", "tools"]}>
+    <div className="min-h-screen overflow-x-hidden bg-[#050505] text-white">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      <ToolsHeader />
+      <ToolsHeader locale={locale} />
       <main>
         <section className="border-b border-white/10 bg-[#090909]">
           <div className="mx-auto max-w-7xl px-4 py-12 sm:py-16">
@@ -99,7 +112,7 @@ export default function TorquePowerCalculatorPage() {
           </div>
         </section>
 
-        <PerformanceTools mode="calculator" />
+        <PerformanceTools copy={clientCopy} />
 
         <section className="border-y border-white/10 bg-[#0a0a0a]">
           <div className="mx-auto max-w-7xl px-4 py-14 sm:py-20">
@@ -113,7 +126,16 @@ export default function TorquePowerCalculatorPage() {
                 <Formula icon={<Sigma />} label="Power in kilowatts" formula="kW = Nm × RPM ÷ 9549" />
                 <Formula icon={<Calculator />} label="Mechanical horsepower" formula="HP = kW × 1.34102" />
                 <Formula icon={<Gauge />} label="Metric horsepower" formula="PS = kW × 1.35962" />
-                <Formula icon={<Info />} label="Important limitation" formula="An estimate, not a dyno certificate" />
+                <Formula
+                  icon={<Info />}
+                  label="Important limitation"
+                  formula={runtimePublicT(
+                    locale,
+                    "An estimate, not a dyno certificate",
+                    ["tools"],
+                  )}
+                  prose
+                />
               </div>
             </div>
           </div>
@@ -132,17 +154,22 @@ export default function TorquePowerCalculatorPage() {
           </div>
         </section>
       </main>
-      <Footer />
+      <RuntimePublicFooter locale={locale} scopes={["core", "tools"]} />
     </div>
+    </RuntimePublicLocalization>
   );
 }
 
-function Formula({ icon, label, formula }: { icon: ReactNode; label: string; formula: string }) {
+function Formula({ icon, label, formula, prose = false }: { icon: ReactNode; label: string; formula: string; prose?: boolean }) {
   return (
     <div className="border border-white/10 bg-[#070707] p-5">
       <div className="text-red-500">{icon}</div>
       <div className="mt-4 text-xs font-black uppercase tracking-[0.14em] text-zinc-500">{label}</div>
-      <code className="mt-2 block break-words text-lg font-black text-white">{formula}</code>
+      {prose ? (
+        <p className="mt-2 break-words text-lg font-black text-white">{formula}</p>
+      ) : (
+        <code className="mt-2 block break-words text-lg font-black text-white">{formula}</code>
+      )}
     </div>
   );
 }

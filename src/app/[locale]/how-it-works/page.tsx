@@ -2,9 +2,8 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { HowItWorksPageContent } from "@/components/HowItWorksPageContent";
 import { getHowItWorksCopy, howItWorksJsonLd } from "@/lib/howItWorksI18n";
-import type { LocaleCode } from "@/lib/i18nConfig";
+import { openGraphLocaleByCode, type LocaleCode } from "@/lib/i18nConfig";
 import {
-  hreflangByLocale,
   isSeoLocale,
   languageAlternates,
   localizedSeoLocales,
@@ -44,10 +43,10 @@ export async function generateMetadata({
       description: copy.description,
       url: pageUrl,
       siteName,
-      locale: hreflangByLocale[locale],
+      locale: openGraphLocaleByCode[locale],
       alternateLocale: seoLocales
         .filter((item) => item !== locale)
-        .map((item) => hreflangByLocale[item]),
+        .map((item) => openGraphLocaleByCode[item]),
       type: "website",
     },
     twitter: {

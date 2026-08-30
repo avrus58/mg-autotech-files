@@ -8,6 +8,10 @@ import {
   getServiceIntentGuide,
   serviceIntentGuides,
 } from "../src/lib/serviceIntentGuides";
+import {
+  buildServicesMetadata,
+  servicesPageTitle,
+} from "../src/lib/servicesPageMetadata";
 
 function projectFile(...segments: string[]) {
   return readFileSync(resolve(process.cwd(), ...segments), "utf8");
@@ -102,12 +106,12 @@ test("sitemap, robots and root metadata expose safe discovery endpoints", () => 
 });
 
 test("primary service titles apply the MG AutoTech suffix exactly once", () => {
-  const services = projectFile("src", "app", "services", "page.tsx");
   const fileService = projectFile("src", "app", "file-service", "page.tsx");
   const howItWorks = projectFile("src", "app", "how-it-works", "page.tsx");
   const localizedHowItWorks = projectFile("src", "app", "[locale]", "how-it-works", "page.tsx");
 
-  assert.match(services, /export const metadata: Metadata = \{\s*title: pageTitle,/);
+  assert.equal(buildServicesMetadata("en").title, servicesPageTitle);
+  assert.doesNotMatch(String(buildServicesMetadata("en").title), /\| MG AutoTech/);
   assert.match(fileService, /export const metadata: Metadata = \{\s*title: pageTitle,/);
   assert.match(howItWorks, /title: \{ absolute: copy\.pageTitle \}/);
   assert.match(localizedHowItWorks, /title: \{ absolute: copy\.pageTitle \}/);

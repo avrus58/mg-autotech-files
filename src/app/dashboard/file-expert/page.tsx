@@ -26,9 +26,18 @@ import {
 } from "@/lib/fileExpert/limits";
 import { supabase } from "@/lib/supabaseClient";
 import type { FileExpertJob, FileExpertReadMethod } from "@/lib/fileExpert/types";
+import {
+  customerWorkflowT,
+  type CustomerWorkflowTranslationKey,
+} from "@/lib/i18n/customer-workflow-file-expert-translations";
+import {
+  formatFileExpertJobCount,
+  localizeFileExpertStatus,
+} from "@/lib/i18n/customer-runtime-translations";
+import { intlLocaleByCode, type LocaleCode } from "@/lib/i18nConfig";
+import { useActiveLocale } from "@/lib/useActiveLocale";
 
 const readMethods: FileExpertReadMethod[] = ["OBD", "Bench", "Boot", "VR", "Unknown"];
-const fileExpertFileRequirements = `Allowed files: ${fileExpertAllowedExtensionsLabel}. Maximum ${fileExpertMaxFileSizeLabel} per file.`;
 const fileExpertAccept = fileExpertAllowedExtensions.join(",");
 const FILE_EXPERT_JOBS_LOAD_ERROR_MESSAGE = "File Expert analysis history could not be loaded. Please try again.";
 
@@ -53,12 +62,12 @@ const initialFileExpertForm: FileExpertFormState = {
   customerNotes: "",
 };
 
-const fileExpertTextFieldLabels: Record<FileExpertTextField, string> = {
-  brand: "Vehicle brand",
-  model: "Model",
-  engine: "Engine",
-  ecuType: "ECU / TCU hint",
-  customerNotes: "Customer notes",
+const fileExpertTextFieldLabelKeys: Record<FileExpertTextField, CustomerWorkflowTranslationKey> = {
+  brand: "fileExpertFieldBrand",
+  model: "fileExpertFieldModel",
+  engine: "fileExpertFieldEngine",
+  ecuType: "fileExpertFieldEcu",
+  customerNotes: "fileExpertFieldNotes",
 };
 
 const emptyFileSelectionErrors: Record<FileSlot, string> = {
@@ -73,12 +82,8 @@ function statusClass(status: string) {
   return "border-amber-700/40 bg-amber-950/30 text-amber-300";
 }
 
-function statusLabel(status: string) {
-  return status.replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
-}
-
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat("de-DE", {
+function formatDate(value: string, locale: LocaleCode) {
+  return new Intl.DateTimeFormat(intlLocaleByCode[locale], {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
@@ -92,25 +97,34 @@ function shortHash(value: string | null) {
   return `${value.slice(0, 10)}...`;
 }
 
-function validateFileExpertSelection(file: File | null) {
+function validateFileExpertSelection(file: File | null, locale: LocaleCode) {
   if (!file) return "";
-  if (file.size === 0) return "File is empty.";
-  if (file.size > fileExpertMaxFileSize) return `File is too large. Maximum size is ${fileExpertMaxFileSizeLabel}.`;
+  if (file.size === 0) return customerWorkflowT(locale, "fileExpertEmptyFile");
+  if (file.size > fileExpertMaxFileSize) {
+    return customerWorkflowT(locale, "fileExpertFileTooLarge", {
+      size: fileExpertMaxFileSizeLabel,
+    });
+  }
 
   const lowerName = file.name.toLowerCase();
   const hasAllowedExtension = fileExpertAllowedExtensions.some((extension) => lowerName.endsWith(extension));
   if (!hasAllowedExtension) {
-    return `Unsupported file type. Please upload ${fileExpertAllowedExtensionsLabel}.`;
+    return customerWorkflowT(locale, "fileExpertUnsupportedFile", {
+      extensions: fileExpertAllowedExtensionsLabel,
+    });
   }
 
   return "";
 }
 
-function getFileExpertTextLimitError(form: FileExpertFormState) {
+function getFileExpertTextLimitError(form: FileExpertFormState, locale: LocaleCode) {
   for (const field of Object.keys(fileExpertTextLimits) as FileExpertTextField[]) {
     const limit = fileExpertTextLimits[field];
     if (form[field].length > limit) {
-      return `${fileExpertTextFieldLabels[field]} must be ${limit} characters or fewer.`;
+      return customerWorkflowT(locale, "fileExpertTextLimit", {
+        field: customerWorkflowT(locale, fileExpertTextFieldLabelKeys[field]),
+        count: limit.toLocaleString(intlLocaleByCode[locale]),
+      });
     }
   }
 
@@ -128,6 +142,7 @@ function formatFileExpertSize(size: number) {
 
 export default function FileExpertDashboardPage() {
   const router = useRouter();
+  const locale = useActiveLocale();
   const [jobs, setJobs] = useState<FileExpertJob[]>([]);
   const [loading, setLoading] = useState(true);
   const [jobsLoadError, setJobsLoadError] = useState("");
@@ -201,17 +216,17 @@ export default function FileExpertDashboardPage() {
       failed: jobs.filter((job) => job.status === "failed").length,
     };
   }, [jobs]);
-  const textLimitError = getFileExpertTextLimitError(form);
-  const selectedFileError = validateFileExpertSelection(oriFile) || validateFileExpertSelection(modFile);
+  const textLimitError = getFileExpertTextLimitError(form, locale);
+  const selectedFileError = validateFileExpertSelection(oriFile, locale) || validateFileExpertSelection(modFile, locale);
   const hasSelectedFile = Boolean(oriFile || modFile);
   const canSubmitAnalysis = !submitting && hasSelectedFile && !selectedFileError && !textLimitError;
   const submitGuidance = !hasSelectedFile
-    ? "Select at least one valid ORI or MOD file before starting analysis."
+    ? customerWorkflowT(locale, "fileExpertSelectFile")
     : selectedFileError || textLimitError;
   const showInitialJobsLoadError = Boolean(jobsLoadError && !jobsReady);
 
   function handleFileSelection(slot: FileSlot, file: File | null) {
-    const validationError = validateFileExpertSelection(file);
+    const validationError = validateFileExpertSelection(file, locale);
     setFileSelectionErrors((current) => ({ ...current, [slot]: validationError }));
 
     if (slot === "ori") setOriFile(validationError ? null : file);
@@ -230,7 +245,7 @@ export default function FileExpertDashboardPage() {
     setMessage("");
 
     if (!oriFile && !modFile) {
-      setMessage("Please upload at least one valid ORI or MOD file.");
+      setMessage(customerWorkflowT(locale, "fileExpertUploadFile"));
       return;
     }
 
@@ -258,7 +273,7 @@ export default function FileExpertDashboardPage() {
     const prepared = await prepareResponse.json();
 
     if (!prepareResponse.ok) {
-      setMessage(prepared.error || "Analysis could not be prepared.");
+      setMessage("Analysis could not be prepared.");
       setSubmissionStage("");
       setSubmitting(false);
       return;
@@ -295,7 +310,7 @@ export default function FileExpertDashboardPage() {
       await authenticatedFetch(`/api/file-expert/jobs/${prepared.jobId}/finalize`, {
         method: "POST",
       });
-      setMessage(uploadError.message || "File upload failed.");
+      setMessage("File upload failed.");
       setSubmissionStage("");
       setSubmitting(false);
       await loadJobs({ silent: true });
@@ -306,12 +321,11 @@ export default function FileExpertDashboardPage() {
     const finalizeResponse = await authenticatedFetch(`/api/file-expert/jobs/${prepared.jobId}/finalize`, {
       method: "POST",
     });
-    const finalized = await finalizeResponse.json();
     setSubmissionStage("");
     setSubmitting(false);
 
     if (!finalizeResponse.ok) {
-      setMessage(finalized.error || "Analysis could not be completed.");
+      setMessage("Analysis could not be completed.");
       await loadJobs({ silent: true });
       return;
     }
@@ -552,7 +566,7 @@ export default function FileExpertDashboardPage() {
                 <h2 className="mt-1 text-2xl font-black">File Expert jobs</h2>
               </div>
               <div className="rounded-full border border-white/10 bg-black/30 px-4 py-2 text-xs font-black text-zinc-400">
-                {jobs.length} job{jobs.length === 1 ? "" : "s"}
+                {formatFileExpertJobCount(locale, jobs.length)}
               </div>
             </div>
 
@@ -578,20 +592,22 @@ export default function FileExpertDashboardPage() {
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
                           <span className={`rounded-full border px-3 py-1 text-xs font-black ${statusClass(job.status)}`}>
-                            {statusLabel(job.status)}
+                            {localizeFileExpertStatus(locale, job.status)}
                           </span>
                           <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs font-bold text-zinc-500">
-                            {formatDate(job.created_at)}
+                            {formatDate(job.created_at, locale)}
                           </span>
                         </div>
                         <h3 className="mt-3 break-words text-xl font-black">
-                          {[job.brand, job.model, job.engine].filter(Boolean).join(" ") || job.ecu_type || "Automatic ECU analysis"}
+                          {[job.brand, job.model, job.engine].filter(Boolean).join(" ") || job.ecu_type ? (
+                            <span translate="no" data-no-translate>{[job.brand, job.model, job.engine].filter(Boolean).join(" ") || job.ecu_type}</span>
+                          ) : "Automatic ECU analysis"}
                         </h3>
                         <div className="mt-2 grid gap-2 text-sm text-zinc-400 sm:grid-cols-2">
-                          <span className="min-w-0 break-words">ECU: {job.ecu_type || "-"}</span>
-                          <span className="min-w-0 break-words">Read: {job.read_method || "-"}</span>
-                          <span className="min-w-0 break-all">ORI: {job.ori_file_name || shortHash(job.ori_sha256)}</span>
-                          <span className="min-w-0 break-all">MOD: {job.mod_file_name || shortHash(job.mod_sha256)}</span>
+                          <span className="min-w-0 break-words">ECU: <span translate="no" data-no-translate>{job.ecu_type || "-"}</span></span>
+                          <span className="min-w-0 break-words">Read: <span translate="no" data-no-translate>{job.read_method || "-"}</span></span>
+                          <span className="min-w-0 break-all">ORI: <span translate="no" data-no-translate>{job.ori_file_name || shortHash(job.ori_sha256)}</span></span>
+                          <span className="min-w-0 break-all">MOD: <span translate="no" data-no-translate>{job.mod_file_name || shortHash(job.mod_sha256)}</span></span>
                         </div>
                       </div>
                       <div className="inline-flex shrink-0 items-center justify-center rounded-2xl border border-red-800/40 bg-red-950/25 px-4 py-3 text-sm font-black text-red-100">
@@ -686,6 +702,7 @@ function CharacterLimitHint({
   value: string;
   maxLength: number;
 }) {
+  const locale = useActiveLocale();
   const remaining = maxLength - value.length;
 
   return (
@@ -696,7 +713,9 @@ function CharacterLimitHint({
       }`}
     >
       Max {maxLength} characters.{" "}
-      {remaining >= 0 ? `${remaining} remaining.` : `${Math.abs(remaining)} over limit.`}
+      {remaining >= 0
+        ? customerWorkflowT(locale, "remaining", { count: remaining.toLocaleString(intlLocaleByCode[locale]) })
+        : customerWorkflowT(locale, "overLimit", { count: Math.abs(remaining).toLocaleString(intlLocaleByCode[locale]) })}
     </div>
   );
 }
@@ -716,6 +735,7 @@ function FileDrop({
   error: string;
   onChange: (file: File | null) => void;
 }) {
+  const locale = useActiveLocale();
   const requirementsId = `${inputId}-requirements`;
   const errorId = `${inputId}-error`;
 
@@ -745,10 +765,13 @@ function FileDrop({
           <div className="font-black">{title}</div>
           <div className="mt-1 text-xs leading-5 text-zinc-500">{description}</div>
           <div id={requirementsId} className="mt-2 text-xs font-bold leading-5 text-zinc-500">
-            {fileExpertFileRequirements}
+            {customerWorkflowT(locale, "fileExpertRequirements", {
+              extensions: fileExpertAllowedExtensionsLabel,
+              size: fileExpertMaxFileSizeLabel,
+            })}
           </div>
           <div className="mt-3 break-all rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-bold text-zinc-300">
-            {file ? `${file.name} (${formatFileExpertSize(file.size)})` : "Choose file"}
+            {file ? <span translate="no" data-no-translate>{file.name} ({formatFileExpertSize(file.size)})</span> : "Choose file"}
           </div>
           {error ? (
             <div id={errorId} role="alert" className="mt-2 text-xs font-bold leading-5 text-red-300">

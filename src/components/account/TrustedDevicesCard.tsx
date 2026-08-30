@@ -7,6 +7,9 @@ import {
   authenticatedFetch,
   signOutLocalStable,
 } from "@/lib/authGuards";
+import { customerWorkflowT } from "@/lib/i18n/customer-workflow-security-translations";
+import { intlLocaleByCode, type LocaleCode } from "@/lib/i18nConfig";
+import { useActiveLocale } from "@/lib/useActiveLocale";
 
 type TrustedDevice = {
   id: string;
@@ -17,11 +20,11 @@ type TrustedDevice = {
   current: boolean;
 };
 
-function formatSecurityDate(value: string) {
+function formatSecurityDate(value: string, locale: LocaleCode) {
   const date = new Date(value);
   return Number.isNaN(date.getTime())
-    ? "Unknown"
-    : new Intl.DateTimeFormat(undefined, {
+    ? customerWorkflowT(locale, "unknownValue")
+    : new Intl.DateTimeFormat(intlLocaleByCode[locale], {
         dateStyle: "medium",
         timeStyle: "short",
       }).format(date);
@@ -29,6 +32,7 @@ function formatSecurityDate(value: string) {
 
 export function TrustedDevicesCard() {
   const router = useRouter();
+  const locale = useActiveLocale();
   const [devices, setDevices] = useState<TrustedDevice[]>([]);
   const [loading, setLoading] = useState(true);
   const [workingId, setWorkingId] = useState<string | null>(null);
@@ -45,10 +49,10 @@ export function TrustedDevicesCard() {
         devices?: TrustedDevice[];
         error?: string;
       };
-      if (!response.ok) throw new Error(payload.error || "Trusted devices could not be loaded.");
+      if (!response.ok) throw new Error("Trusted devices could not be loaded.");
       setDevices(Array.isArray(payload.devices) ? payload.devices : []);
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Trusted devices could not be loaded.");
+    } catch {
+      setMessage("Trusted devices could not be loaded.");
     } finally {
       setLoading(false);
     }
@@ -60,7 +64,7 @@ export function TrustedDevicesCard() {
   }, [loadDevices]);
 
   const revokeDevice = async (device: TrustedDevice) => {
-    if (!window.confirm(`Stop trusting ${device.label}?`)) return;
+    if (!window.confirm(customerWorkflowT(locale, "stopTrustingDevice", { device: device.label }))) return;
     setWorkingId(device.id);
     setMessage("");
     try {
@@ -72,7 +76,7 @@ export function TrustedDevicesCard() {
         error?: string;
         current?: boolean;
       };
-      if (!response.ok) throw new Error(payload.error || "Trusted device could not be revoked.");
+      if (!response.ok) throw new Error("Trusted device could not be revoked.");
       if (payload.current) {
         await signOutLocalStable();
         router.replace("/login");
@@ -81,15 +85,15 @@ export function TrustedDevicesCard() {
       }
       setDevices((current) => current.filter((item) => item.id !== device.id));
       setMessage("Trusted device removed.");
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Trusted device could not be revoked.");
+    } catch {
+      setMessage("Trusted device could not be revoked.");
     } finally {
       setWorkingId(null);
     }
   };
 
   const revokeOthers = async () => {
-    if (!window.confirm("Stop trusting every other saved device?")) return;
+    if (!window.confirm(customerWorkflowT(locale, "stopTrustingOtherDevices"))) return;
     setWorkingId("others");
     setMessage("");
     try {
@@ -101,12 +105,11 @@ export function TrustedDevicesCard() {
           body: JSON.stringify({ confirm: true }),
         }
       );
-      const payload = await response.json().catch(() => ({})) as { error?: string };
-      if (!response.ok) throw new Error(payload.error || "Other devices could not be revoked.");
+      if (!response.ok) throw new Error("Other devices could not be revoked.");
       setDevices((current) => current.filter((device) => device.current));
       setMessage("All other trusted devices were removed.");
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Other devices could not be revoked.");
+    } catch {
+      setMessage("Other devices could not be revoked.");
     } finally {
       setWorkingId(null);
     }
@@ -155,13 +158,16 @@ export function TrustedDevicesCard() {
                 <Laptop className="mt-0.5 h-5 w-5 shrink-0 text-red-400" />
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="truncate font-black text-white">{device.label}</span>
+                    <span className="truncate font-black text-white" translate="no" data-no-translate>{device.label}</span>
                     {device.current && (
                       <span className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-[11px] font-black uppercase tracking-wide text-emerald-200">Current</span>
                     )}
                   </div>
                   <div className="mt-2 text-xs leading-5 text-zinc-500">
-                    Last used {formatSecurityDate(device.lastUsedAt)} · Trusted until {formatSecurityDate(device.trustedUntil)}
+                    {customerWorkflowT(locale, "trustedDeviceDates", {
+                      lastUsed: formatSecurityDate(device.lastUsedAt, locale),
+                      trustedUntil: formatSecurityDate(device.trustedUntil, locale),
+                    })}
                   </div>
                 </div>
               </div>

@@ -12,6 +12,60 @@ export type DtcAnalyzerResponseStatus =
 
 export type DtcAnalyzerConfidence = "none" | "low" | "medium" | "high";
 
+export type DtcAnalyzerMessageKey =
+  | `state.${
+      | "no_request_text"
+      | "no_valid_dtc"
+      | "deterministic_fallback"
+      | "provider_unavailable_fallback"
+      | "provider_error_fallback"
+      | "provider_unavailable"
+      | "provider_success"}`
+  | `provider.${"ai_generated" | "error_fallback" | "unavailable_fallback" | "unavailable" | "no_ai"}`
+  | `summary.${"provider_unavailable" | "invalid_empty" | "invalid_no_valid" | "invalid_generic" | "deterministic"}`
+  | `confidence.${DtcAnalyzerConfidence}`
+  | `system.${DtcSystem}`
+  | `code.${
+      | "P0101"
+      | "P0299"
+      | "P0401"
+      | "P0402"
+      | "P0420"
+      | "P0087"
+      | "P2002"
+      | "P2453"
+      | "U0100"}.${"title" | "explanation" | `check_${1 | 2 | 3}`}`
+  | `code.generic.${DtcSystem}.${"title" | "explanation"}`
+  | `code.generic.check_${1 | 2 | 3}`
+  | `evidence.${
+      | "valid_code"
+      | `system_${DtcSystem}`
+      | "standard_generic"
+      | "standard_manufacturer"
+      | "standard_mixed"
+      | "profile_known"
+      | "profile_unknown"
+      | "generic"}`
+  | `missing.${
+      | "vehicle"
+      | "ecu"
+      | "freeze_frame"
+      | "live_data"
+      | "hardware"
+      | "p0401_egr_data"
+      | "p0401_history"
+      | "valid_code"}`
+  | `recommendation.${"human_review_gate" | "generic"}`
+  | "human.required_before"
+  | `safety.${"guidance_only" | "no_approval" | "human_review"}`
+  | `required_before.${"customer_file_advice" | "dtc_off_decision" | "checksum_mod_work"}`;
+
+export type DtcAnalyzerMessageDescriptor = {
+  key: DtcAnalyzerMessageKey;
+  params?: Readonly<Record<string, string | number>>;
+  fallback: string;
+};
+
 export type DtcSystem = "powertrain" | "chassis" | "body" | "network";
 
 export type DtcStandardization =
@@ -80,6 +134,7 @@ export type DtcAnalysisEvidenceItem = {
   type: DtcAnalysisEvidenceType;
   severity: DtcAnalysisSeverity;
   text: string;
+  message?: DtcAnalyzerMessageDescriptor;
   customerSafe: true;
 };
 
@@ -112,6 +167,7 @@ export type DtcAnalyzerRecommendation = {
   category: DtcRecommendationCategory;
   priority: "normal" | "high";
   text: string;
+  message?: DtcAnalyzerMessageDescriptor;
   requiresHumanReview: boolean;
   customerSafe: true;
 };
@@ -128,13 +184,17 @@ export type DtcCodeAnalysis = {
   code: string;
   system: DtcSystem;
   systemLabel: string;
+  systemLabelMessage: DtcAnalyzerMessageDescriptor;
   standardization: DtcStandardization;
   standardizationLabel: string;
   title: string;
+  titleMessage: DtcAnalyzerMessageDescriptor;
   likelyDiagnosticContext: string[];
   customerExplanation: string;
+  customerExplanationMessage: DtcAnalyzerMessageDescriptor;
   recommendedChecks: string[];
   missingInformation: string[];
+  missingInformationMessages: DtcAnalyzerMessageDescriptor[];
   confidence: DtcAnalyzerConfidence;
   confidenceReasons: DtcConfidenceReason[];
   evidence: DtcAnalysisEvidenceItem[];
@@ -147,6 +207,7 @@ export type DtcAnalyzerHumanReview = {
   required: true;
   reason: string;
   requiredBefore: string[];
+  requiredBeforeMessages: DtcAnalyzerMessageDescriptor[];
 };
 
 export type DtcAnalyzerResponse = {
@@ -159,13 +220,16 @@ export type DtcAnalyzerResponse = {
   confidenceReasons: DtcConfidenceReason[];
   normalizedInput: DtcAnalyzerNormalizedInput;
   summary: string;
+  summaryMessage: DtcAnalyzerMessageDescriptor;
   codes: DtcCodeAnalysis[];
   evidence: DtcAnalysisEvidenceItem[];
   riskFlags: DtcRiskFlag[];
   recommendations: DtcAnalyzerRecommendation[];
   missingInformation: string[];
+  missingInformationMessages: DtcAnalyzerMessageDescriptor[];
   humanReview: DtcAnalyzerHumanReview;
   safetyBoundaries: string[];
+  safetyBoundaryMessages: DtcAnalyzerMessageDescriptor[];
 };
 
 export interface DtcAnalyzerProvider {

@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import test from "node:test";
-import { metadata as servicesMetadata } from "../src/app/services/page";
+import { buildServicesMetadata } from "../src/lib/servicesPageMetadata";
 import {
   buildFileServiceSearchOwnership,
   fileServiceSearchDestinations,
@@ -103,6 +103,7 @@ test("search architecture stays factual, public-safe and free of doorway tactics
 });
 
 test("services page renders crawlable intent navigation and matching public schema", () => {
+  const servicesMetadata = buildServicesMetadata("en");
   const page = projectFile("src", "app", "services", "page.tsx");
   const navigator = projectFile(
     "src",
@@ -119,7 +120,7 @@ test("services page renders crawlable intent navigation and matching public sche
   assert.ok(String(servicesMetadata.description).length >= 120);
   assert.ok(String(servicesMetadata.description).length <= 170);
 
-  assert.match(page, /<FileServiceSearchNavigator \/>/);
+  assert.match(page, /<FileServiceSearchNavigator locale=\{locale\} \/>/);
   assert.match(page, /fileServiceSearchDestinations\.map/);
   assert.match(page, /#file-service-search-intent-map/);
   assert.match(page, /ECU & TCU file services, organized for serious workshops/);

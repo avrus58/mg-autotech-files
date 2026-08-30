@@ -46,6 +46,12 @@ import {
   isGoogleRegistrationProfileFinalizationWindowOpen,
   requiresRegistrationCountryCompletion,
 } from "@/lib/registrationCompletion";
+import { customerWorkflowExactT } from "@/lib/i18n/customer-workflow-auth-translations";
+import { useActiveLocale } from "@/lib/useActiveLocale";
+import {
+  registrationFinalizeErrorMessage,
+  type OAuthRegistrationFinalizeErrorPayload,
+} from "@/lib/oauthRegistrationFinalizeErrors";
 
 function countryCompletionPath(next: string) {
   return `/auth/complete-profile?next=${encodeURIComponent(next)}`;
@@ -58,6 +64,7 @@ const registrationHandoffKeys = {
 
 export default function AuthCallbackPage() {
   const router = useRouter();
+  const locale = useActiveLocale();
   const [message, setMessage] = useState("Verifying your access...");
 
   useEffect(() => {
@@ -81,7 +88,9 @@ export default function AuthCallbackPage() {
         const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
         if (error) {
-          setMessage(error.message);
+          setMessage(
+            "We could not verify your access. Please return to login and try again."
+          );
           return;
         }
 
@@ -189,10 +198,10 @@ export default function AuthCallbackPage() {
             return;
           }
           if (!profileResponse.ok) {
-            const payload = await profileResponse.json().catch(() => ({})) as {
-              error?: string;
-            };
-            setMessage(payload.error || "Registration profile could not be finalized.");
+            const payload = await profileResponse.json().catch(
+              () => ({}),
+            ) as OAuthRegistrationFinalizeErrorPayload;
+            setMessage(registrationFinalizeErrorMessage(payload.errorCode));
             return;
           }
           const refreshedSession = await supabase.auth.refreshSession();
@@ -290,12 +299,8 @@ export default function AuthCallbackPage() {
             }
             return;
           }
-        } catch (error) {
-          setMessage(
-            error instanceof Error
-              ? error.message
-              : "Account security verification is temporarily unavailable."
-          );
+        } catch {
+          setMessage("Account security verification is temporarily unavailable.");
           return;
         }
 
@@ -336,7 +341,9 @@ export default function AuthCallbackPage() {
             <div className="text-xl font-black">
               MG <span className="text-red-600">AUTOTECH</span>
             </div>
-            <div className="text-xs text-zinc-400">Secure Auth</div>
+            <div className="text-xs text-zinc-400">
+              {customerWorkflowExactT(locale, "Secure Auth")}
+            </div>
           </div>
         </Link>
 
@@ -348,15 +355,21 @@ export default function AuthCallbackPage() {
           )}
         </div>
 
-        <h1 className="text-3xl font-black">Account verification</h1>
-        <p className="mt-4 text-sm leading-7 text-zinc-400">{message}</p>
+        <h1 className="text-3xl font-black">
+          {customerWorkflowExactT(locale, "Account verification")}
+        </h1>
+        <p
+          className="mt-4 text-sm leading-7 text-zinc-400"
+        >
+          {customerWorkflowExactT(locale, message)}
+        </p>
 
         {message !== "Verifying your access..." && (
           <Link
             href="/login"
             className="mt-6 inline-flex h-12 items-center justify-center rounded-2xl bg-[#b1121b] px-5 text-sm font-black text-white transition hover:bg-[#c91824]"
           >
-            Back to login
+            {customerWorkflowExactT(locale, "Back to login")}
           </Link>
         )}
       </div>

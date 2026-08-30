@@ -47,7 +47,10 @@ test("login uses one focused premium card instead of a marketing split screen", 
   assert.match(loginPage, /max-w-\[560px\]/);
   assert.match(loginPage, /max-w-\[440px\]/);
   assert.equal(loginPage.match(/<h1\b/g)?.length, 1);
-  assert.match(loginPage, /<h1[^>]*>Login<\/h1>/);
+  assert.match(
+    loginPage,
+    /<h1[^>]*>[\s\S]*?firstPaintT\("Login"\)[\s\S]*?<\/h1>/
+  );
   assert.match(loginPage, /<header[^>]*>[\s\S]*?Secure customer access[\s\S]*?<\/header>/);
 
   assert.doesNotMatch(loginPage, /lg:grid-cols-\[1\.1fr_0\.9fr\]/);

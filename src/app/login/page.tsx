@@ -31,6 +31,10 @@ import {
 } from "@/lib/authLoginProtection";
 import { supabase } from "@/lib/supabaseClient";
 import { getPublicGoogleIdentityConfig } from "@/lib/googleIdentity";
+import { customerRuntimeExactT } from "@/lib/i18n/customer-runtime-translations";
+import { customerWorkflowExactT } from "@/lib/i18n/customer-workflow-auth-translations";
+import { authPageFirstPaintT } from "@/lib/i18n/auth-page-first-paint";
+import { useActiveLocale } from "@/lib/useActiveLocale";
 import { replacePrivateMeasurementDocument } from "@/lib/publicAnalytics";
 import {
   buildAuthEntryPath,
@@ -54,6 +58,8 @@ function getRequestedRedirect() {
 
 export default function LoginPage() {
   const router = useRouter();
+  const locale = useActiveLocale();
+  const firstPaintT = (source: string) => authPageFirstPaintT(locale, source);
   const authCaptchaConfig = getPublicAuthCaptchaConfig();
   const googleIdentityConfig = getPublicGoogleIdentityConfig();
 
@@ -175,10 +181,8 @@ export default function LoginPage() {
         authCaptchaConfig,
         captchaToken
       );
-    } catch (error) {
-      setMessage(
-        error instanceof Error ? error.message : "Security verification failed."
-      );
+    } catch {
+      setMessage("Security verification failed.");
       return;
     }
 
@@ -222,7 +226,7 @@ export default function LoginPage() {
       setMessage(
         error.message.toLowerCase().includes("email not confirmed")
           ? "Please verify your e-mail address before logging in."
-          : error.message
+          : "Login could not be completed. Please try again."
       );
       setLoading(false);
       return;
@@ -250,9 +254,7 @@ export default function LoginPage() {
 
     if (googleIdentityConfig.status !== "ready") {
       setGoogleMessage(
-        googleIdentityConfig.status === "misconfigured"
-          ? googleIdentityConfig.message
-          : "Google sign-in is temporarily unavailable. You can continue with e-mail."
+        "Google sign-in is temporarily unavailable. You can continue with e-mail."
       );
       return;
     }
@@ -263,10 +265,8 @@ export default function LoginPage() {
         authCaptchaConfig,
         captchaToken
       );
-    } catch (error) {
-      setGoogleMessage(
-        error instanceof Error ? error.message : "Security verification failed."
-      );
+    } catch {
+      setGoogleMessage("Security verification failed.");
       setCaptchaResetKey((value) => value + 1);
       return;
     }
@@ -352,14 +352,14 @@ export default function LoginPage() {
                 MG <span className="text-red-600">AUTOTECH</span>
               </div>
               <div className="truncate text-[11px] text-zinc-500">
-                Customer Login
+                {firstPaintT("Customer Login")}
               </div>
             </div>
           </Link>
 
           <div className="hidden shrink-0 items-center gap-2 rounded-full border border-red-900/40 bg-red-950/20 px-3 py-1.5 text-[11px] font-bold text-red-100 sm:inline-flex">
             <ShieldCheck className="h-3.5 w-3.5 text-red-500" />
-            Secure customer access
+            {firstPaintT("Secure customer access")}
           </div>
         </header>
 
@@ -367,12 +367,15 @@ export default function LoginPage() {
           <div className="mx-auto max-w-[440px]">
             <div className="mb-6">
               <div className="mb-2 text-xs font-black uppercase tracking-[0.16em] text-red-400">
-                Welcome back
+                {firstPaintT("Welcome back")}
               </div>
-              <h1 className="text-3xl font-black leading-tight">Login</h1>
+              <h1 className="text-3xl font-black leading-tight">
+                {firstPaintT("Login")}
+              </h1>
               <p className="mt-2 text-sm leading-6 text-zinc-400">
-                Access your file service dashboard and continue your ECU tuning
-                requests.
+                {firstPaintT(
+                  "Access your file service dashboard and continue your ECU tuning requests.",
+                )}
               </p>
             </div>
 
@@ -387,8 +390,9 @@ export default function LoginPage() {
                   role="alert"
                   className="rounded-2xl border border-amber-700/50 bg-amber-950/25 p-4 text-sm font-bold text-amber-100"
                 >
-                  JavaScript is required for secure customer login. Enable
-                  JavaScript and reload this page.
+                  {firstPaintT(
+                    "JavaScript is required for secure customer login. Enable JavaScript and reload this page.",
+                  )}
                 </p>
               </noscript>
               <div>
@@ -396,7 +400,7 @@ export default function LoginPage() {
                   htmlFor="login-email"
                   className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-zinc-500"
                 >
-                  E-mail
+                  {firstPaintT("E-mail")}
                 </label>
                 <div className="relative">
                   <Mail className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-zinc-500" />
@@ -405,7 +409,7 @@ export default function LoginPage() {
                     name="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="you@example.com"
+                    placeholder={firstPaintT("you@example.com")}
                     type="email"
                     autoComplete="email"
                     className="h-12 w-full rounded-xl border border-white/10 bg-black/35 pl-12 pr-4 text-sm font-bold text-white outline-none transition placeholder:text-zinc-600 hover:border-white/20 focus:border-red-700 focus-visible:ring-2 focus-visible:ring-red-500/25"
@@ -419,7 +423,7 @@ export default function LoginPage() {
                   htmlFor="login-password"
                   className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-zinc-500"
                 >
-                  Password
+                  {firstPaintT("Password")}
                 </label>
                 <div className="relative">
                   <Lock className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-zinc-500" />
@@ -428,7 +432,7 @@ export default function LoginPage() {
                     name="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Your password"
+                    placeholder={firstPaintT("Your password")}
                     type="password"
                     autoComplete="current-password"
                     className="h-12 w-full rounded-xl border border-white/10 bg-black/35 pl-12 pr-4 text-sm font-bold text-white outline-none transition placeholder:text-zinc-600 hover:border-white/20 focus:border-red-700 focus-visible:ring-2 focus-visible:ring-red-500/25"
@@ -444,7 +448,7 @@ export default function LoginPage() {
                   tabIndex={-1}
                   className="rounded-2xl border border-amber-700/50 bg-amber-950/25 p-4 text-sm font-bold text-amber-100 outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
                 >
-                  {AUTH_CAPTCHA_REQUIRED_MESSAGE}
+                  {customerRuntimeExactT(locale, AUTH_CAPTCHA_REQUIRED_MESSAGE)}
                 </div>
               )}
 
@@ -463,7 +467,10 @@ export default function LoginPage() {
                   role="alert"
                   className="rounded-2xl border border-red-800/50 bg-red-950/30 p-4 text-sm text-red-100"
                 >
-                  {authCaptchaConfig.message}
+                  {customerRuntimeExactT(
+                    locale,
+                    authCaptchaConfig.message ?? ""
+                  )}
                 </div>
               )}
 
@@ -478,11 +485,11 @@ export default function LoginPage() {
                 {loading ? (
                   <>
                     <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                    Logging in...
+                    {firstPaintT("Logging in...")}
                   </>
                 ) : (
                   <>
-                    Login
+                    {firstPaintT("Login")}
                     <ArrowRight className="ml-2 h-5 w-5 transition group-hover:translate-x-1" />
                   </>
                 )}
@@ -491,7 +498,7 @@ export default function LoginPage() {
 
             <div className="mt-4 flex items-center gap-3 text-xs font-black uppercase tracking-[0.16em] text-zinc-600">
               <span className="h-px flex-1 bg-white/10" />
-              or
+              {firstPaintT("or")}
               <span className="h-px flex-1 bg-white/10" />
             </div>
 
@@ -539,7 +546,10 @@ export default function LoginPage() {
                   role="alert"
                   className="rounded-xl border border-red-800/50 bg-red-950/30 p-4 text-sm text-red-100"
                 >
-                  {googleIdentityConfig.message}
+                  {customerWorkflowExactT(
+                    locale,
+                    googleIdentityConfig.message
+                  )}
                 </div>
               )}
 
@@ -549,7 +559,7 @@ export default function LoginPage() {
                   aria-live="assertive"
                   className="rounded-xl border border-red-800/50 bg-red-950/30 p-4 text-sm text-red-100"
                 >
-                  {googleMessage}
+                  {customerWorkflowExactT(locale, googleMessage)}
                 </div>
               )}
             </div>
@@ -559,7 +569,7 @@ export default function LoginPage() {
                 href="/forgot-password"
                 className="rounded-md text-sm font-black text-red-400 outline-none transition hover:text-red-300 focus-visible:ring-2 focus-visible:ring-red-500/50"
               >
-                Forgot password?
+                {firstPaintT("Forgot password?")}
               </Link>
             </div>
 
@@ -573,17 +583,17 @@ export default function LoginPage() {
                     : "border-red-800/50 bg-red-950/30 text-red-100"
                 }`}
               >
-                {message}
+                {customerWorkflowExactT(locale, message)}
               </div>
             )}
 
             <div className="mt-6 text-center text-sm text-zinc-400">
-              No account yet?{" "}
+              {firstPaintT("No account yet?")}{" "}
               <Link
                 href={buildAuthEntryPath("/register", requestedRedirectPath)}
                 className="rounded-md font-black text-red-400 outline-none transition hover:text-red-300 focus-visible:ring-2 focus-visible:ring-red-500/50"
               >
-                Create customer account
+                {firstPaintT("Create customer account")}
               </Link>
             </div>
           </div>

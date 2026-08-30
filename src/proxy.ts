@@ -1,5 +1,10 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { defaultLocale, normalizeLocale } from "@/lib/i18nConfig";
+import {
+  defaultLocale,
+  parseSupportedLocale,
+  resolveAcceptLanguage,
+} from "@/lib/i18nConfig";
+import { getFixedPresentationLocale } from "@/lib/fixedPresentationLocale";
 import { isSeoLocale } from "@/lib/seo";
 
 const localeCookie = "mg_locale";
@@ -10,12 +15,13 @@ export function proxy(request: NextRequest) {
   const pathLocale = firstPathSegment && isSeoLocale(firstPathSegment)
     ? firstPathSegment
     : null;
+  const authoredLocale = getFixedPresentationLocale(request.nextUrl.pathname);
   const resolvedLocale =
     pathLocale ??
-    normalizeLocale(
-      existingLocale ??
-        request.headers.get("accept-language") ??
-        defaultLocale
+    authoredLocale ??
+    parseSupportedLocale(existingLocale) ??
+    resolveAcceptLanguage(
+      request.headers.get("accept-language") ?? defaultLocale
     );
   const requestHeaders = new Headers(request.headers);
 
@@ -27,7 +33,9 @@ export function proxy(request: NextRequest) {
     },
   });
 
-  if (existingLocale !== resolvedLocale) {
+  // Authored legal/system documents have a fixed presentation language, but
+  // visiting one must never replace the visitor's site-wide preference.
+  if (!authoredLocale && existingLocale !== resolvedLocale) {
     response.cookies.set(localeCookie, resolvedLocale, {
       path: "/",
       maxAge: 60 * 60 * 24 * 365,

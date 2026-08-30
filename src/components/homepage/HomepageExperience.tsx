@@ -48,6 +48,8 @@ import {
   translateHomepageText,
   type HomepageTranslationCatalog,
 } from "@/lib/homepageLocalization";
+import { localizeCreditPromotionLabel } from "@/lib/i18n/commercial-translations";
+import type { PublicLogSnapshotCopy } from "@/lib/i18n/tool-client-copy-keys";
 
 const HomepageSessionBridge = dynamic(
   () =>
@@ -411,13 +413,15 @@ export type HomepageExperienceProps = {
   locale?: LocaleCode;
   translationCatalog?: HomepageTranslationCatalog;
   includeStructuredData?: boolean;
+  publicLogSnapshotCopy: PublicLogSnapshotCopy;
 };
 
 export function HomepageExperience({
   locale = "en",
   translationCatalog,
   includeStructuredData = true,
-}: HomepageExperienceProps = {}) {
+  publicLogSnapshotCopy,
+}: HomepageExperienceProps) {
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [sessionRuntimeReady, setSessionRuntimeReady] = useState(false);
   const [publicCreditQuote, setPublicCreditQuote] = useState<PublicCreditQuoteState>({
@@ -540,6 +544,7 @@ export function HomepageExperience({
                 </div>
                 <h1 className="mt-6 text-[clamp(2.8rem,7vw,6.5rem)] font-black leading-[0.87] tracking-[-0.065em]">
                   <span className="block">Custom ECU &amp; TCU</span>
+                  {" "}
                   <span className="block bg-gradient-to-r from-white via-zinc-200 to-red-500 bg-clip-text text-transparent">Tuning Files</span>
                 </h1>
                 <p className="mt-6 max-w-2xl text-base leading-7 text-zinc-400 sm:text-lg">
@@ -580,7 +585,10 @@ export function HomepageExperience({
           </section>
 
           <VehicleIntelligence locale={locale} />
-          <DeferredPerformanceTools />
+          <DeferredPerformanceTools
+            copy={publicLogSnapshotCopy}
+            locale={locale}
+          />
 
           <section id="services" className="scroll-mt-24 bg-[#070709] py-16 sm:py-20">
             <div className="mx-auto max-w-[86rem] px-4 sm:px-6">
@@ -747,9 +755,9 @@ export function HomepageExperience({
 
               {publicCreditQuote.status === "ready" && (
                 <>
-                  {publicCreditQuote.quote.promotionLabel && (
+                  {localizeCreditPromotionLabel(locale, publicCreditQuote.quote.promotionLabel) && (
                     <div className="mt-7 inline-flex rounded-full border border-emerald-500/25 bg-emerald-500/[0.08] px-3 py-1.5 text-xs font-black text-emerald-300">
-                      {publicCreditQuote.quote.promotionLabel}
+                      {localizeCreditPromotionLabel(locale, publicCreditQuote.quote.promotionLabel)}
                     </div>
                   )}
                   <div className="mt-7 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">

@@ -5485,3 +5485,34 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
   reproduced exactly in a clean worktree at the unchanged base commit.
 - Independent read-only review found no P0/P1/P2 issue and returned GO. No push,
   Preview, Production deploy, live service mutation or database change occurred.
+
+## 2026-08-30 21:19 +02:00 Site-wide localization completeness
+
+- Dil secicinin gorundugu public, authentication, musteri, widget, arac,
+  hazirlik araci, DTC, datalog ve File Expert yuzeyleri 12 locale icin tek
+  denetlenebilir kapsam altina alindi. Admin-only ekranlar, yazari belli sabit
+  hukuki belgeler, ham musteri degerleri ve teknik ECU/controller kimlikleri
+  bilincli olarak ceviri disinda tutuldu.
+- SSR ilk boya, hydration sonrasi metin/attribute degisimleri, hata/loading/
+  empty/success durumlari, locale cookie/rota gecisi, metadata/JSON-LD,
+  ulke-telefon etiketleri ve Cloudflare/Google locale sinirlari tamamlandi.
+  Route-bazli kucuk istemci kataloglari kullanildi; global ceviri kataloglari
+  public ilk yukleme paketine eklenmedi.
+- Login/register, sifre kurtarma, sifre yenileme ve odeme sonucu ekranlarinda
+  English ilk boya sizintisi kapatildi. Kayit progress alt etiketleri dogrudan
+  yerellestirildi. Recovery success/error geri bildirimi ekran okuyucular icin
+  `status`/`alert` live region oldu.
+- Native kalite incelemesinde yakalanan completed/modified file, upload safety,
+  ECU read method ve Bench/Boot otomotiv terimleri duzeltildi; locale-bazli
+  strict golden testler eklendi.
+- `npm run check:i18n` PASS: 12 locale, her non-English locale icin 2006/2006
+  reviewed source ve 0 temiz English fallback; dynamic visible-expression guard
+  13 occurrence/12 signature PASS. `npm run lint` ve `npm run typecheck` PASS.
+- Ilk tam test turu 1321/1322 idi; agir paralel yukte File Expert 250 ms timing
+  assertion'i 588 ms oldu. Ayni test izole 12/12 ve 149 ms PASS; temiz ikinci
+  tam tur `npm test` 1322/1322 PASS oldu. Webpack Production build 280/280,
+  performance 14.6/80 KiB gzip/3 ilk chunk ve `git diff --check` PASS.
+- Gercek Production build yerel tarayici QA'sinda DE ve TR auth/register/payment
+  sayfalari 1366x768 ve 390x844 boyutlarinda dogru `html lang`, English sizinti
+  0, yatay tasma 0 ve console hata 0 verdi. Push, Preview, Production deploy,
+  veritabani, secret, odeme, e-posta veya canli servis mutasyonu yapilmadi.

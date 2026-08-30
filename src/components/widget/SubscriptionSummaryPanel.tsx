@@ -3,37 +3,38 @@
 import Link from "next/link";
 import type React from "react";
 import { CalendarClock, CreditCard, RefreshCw, ShieldCheck, WalletCards } from "lucide-react";
+import {
+  translateWidgetSiteExact,
+  widgetSitePlanLabel,
+  widgetSiteStatusLabel,
+  widgetSiteT,
+} from "@/lib/i18n/widget-site-translations";
+import { intlLocaleByCode, type LocaleCode } from "@/lib/i18nConfig";
+import { useActiveLocale } from "@/lib/useActiveLocale";
 import type { WidgetBillingSummary } from "@/lib/widget/customerTypes";
 
-function formatCurrency(cents: number | null, currency: string | null) {
-  if (cents === null || cents === undefined) return "Not available";
+function formatCurrency(cents: number | null, currency: string | null, locale: LocaleCode) {
+  if (cents === null || cents === undefined) return widgetSiteT(locale, "notAvailable");
   try {
-    return new Intl.NumberFormat("en", {
+    return new Intl.NumberFormat(intlLocaleByCode[locale], {
       style: "currency",
       currency: (currency || "EUR").toUpperCase(),
     }).format(cents / 100);
   } catch {
-    return `${(cents / 100).toFixed(2)} ${(currency || "EUR").toUpperCase()}`;
+    return `${new Intl.NumberFormat(intlLocaleByCode[locale], { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(cents / 100)} ${(currency || "EUR").toUpperCase()}`;
   }
 }
 
-function formatDate(value: string | null) {
-  if (!value) return "Not available";
+function formatDate(value: string | null, locale: LocaleCode) {
+  if (!value) return widgetSiteT(locale, "notAvailable");
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "Not available";
-  return date.toLocaleDateString("en", { day: "2-digit", month: "short", year: "numeric" });
+  if (Number.isNaN(date.getTime())) return widgetSiteT(locale, "notAvailable");
+  return date.toLocaleDateString(intlLocaleByCode[locale], { day: "2-digit", month: "short", year: "numeric" });
 }
 
-function dayLabel(days: number | null) {
-  if (days === null || days === undefined) return "Date not available";
-  if (days === 0) return "Today";
-  if (days === 1) return "Tomorrow";
-  return `In ${days} days`;
-}
-
-function titleCase(value: string | null) {
-  if (!value) return "Not available";
-  return value.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
+function dayLabel(days: number | null, locale: LocaleCode) {
+  if (days === null || days === undefined) return widgetSiteT(locale, "dateNotAvailable");
+  return new Intl.RelativeTimeFormat(intlLocaleByCode[locale], { numeric: "auto" }).format(days, "day");
 }
 
 export function SubscriptionSummaryPanel({
@@ -51,8 +52,9 @@ export function SubscriptionSummaryPanel({
   onManage: () => void;
   onRefresh?: () => void;
 }) {
+  const locale = useActiveLocale();
   const action = summary?.action ?? (canManageBilling ? "manage_billing" : "view_plans");
-  const status = summary?.status ?? "Not linked";
+  const status = summary?.status ?? null;
   const isEnding = Boolean(summary?.cancel_at_period_end || summary?.ends_at);
 
   return (
@@ -61,24 +63,24 @@ export function SubscriptionSummaryPanel({
         <div>
           <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.18em] text-red-300">
             <WalletCards className="h-4 w-4" />
-            Widget Subscription
+            {widgetSiteT(locale, "widgetSubscription")}
           </div>
-          <h3 className="mt-3 text-2xl font-black text-white">Billing overview</h3>
+          <h3 className="mt-3 text-2xl font-black text-white">{widgetSiteT(locale, "billingOverview")}</h3>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-400">
-            Track the linked Stripe subscription, latest paid invoice and upcoming renewal from one safe customer view.
+            {widgetSiteT(locale, "billingOverviewDescription")}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <span className={`rounded-full border px-3 py-1.5 text-xs font-black uppercase tracking-[0.12em] ${
-            ["active", "trialing"].includes(status.toLowerCase())
+            ["active", "trialing"].includes(status?.toLowerCase() ?? "")
               ? "border-emerald-700/40 bg-emerald-950/30 text-emerald-200"
               : "border-amber-700/40 bg-amber-950/25 text-amber-200"
           }`}>
-            {titleCase(status)}
+            {status ? widgetSiteStatusLabel(locale, status) : widgetSiteT(locale, "notLinked")}
           </span>
           {summary?.source && (
             <span className="rounded-full border border-white/10 bg-black/30 px-3 py-1.5 text-xs font-black uppercase tracking-[0.12em] text-zinc-300">
-              {summary.source === "stripe" ? "Live Stripe" : summary.source === "local" ? "Local fallback" : "Unlinked"}
+              {widgetSiteT(locale, summary.source === "stripe" ? "liveStripe" : summary.source === "local" ? "localFallback" : "unlinked")}
             </span>
           )}
         </div>
@@ -86,7 +88,7 @@ export function SubscriptionSummaryPanel({
 
       {loading ? (
         <div className="grid gap-3 p-6 sm:grid-cols-2 xl:grid-cols-4">
-          {["Plan", "Last payment", "Next payment", "Days remaining"].map((label) => (
+          {[widgetSiteT(locale, "plan"), widgetSiteT(locale, "lastPayment"), widgetSiteT(locale, "nextPayment"), widgetSiteT(locale, "daysRemaining")].map((label) => (
             <div key={label} className="min-h-32 rounded-xl border border-white/10 bg-black/30 p-4">
               <div className="text-xs font-black uppercase tracking-[0.14em] text-zinc-600">{label}</div>
               <div className="mt-5 h-5 w-24 animate-pulse rounded bg-white/10" />
@@ -98,59 +100,59 @@ export function SubscriptionSummaryPanel({
         <div className="grid gap-3 p-6 sm:grid-cols-2 xl:grid-cols-4">
           <MetricCard
             icon={<ShieldCheck />}
-            label="Current plan"
-            value={titleCase(summary?.plan ?? null)}
-            detail={`${formatCurrency(summary?.amount_due_cents ?? null, summary?.currency ?? null)} per billing period`}
+            label={widgetSiteT(locale, "currentPlan")}
+            value={widgetSitePlanLabel(locale, summary?.plan ?? null)}
+            detail={widgetSiteT(locale, "perBillingPeriod", { amount: formatCurrency(summary?.amount_due_cents ?? null, summary?.currency ?? null, locale) })}
           />
           <MetricCard
             icon={<CreditCard />}
-            label="Last payment"
-            value={formatDate(summary?.last_payment_at ?? null)}
-            detail={formatCurrency(summary?.last_payment_amount_cents ?? null, summary?.currency ?? null)}
+            label={widgetSiteT(locale, "lastPayment")}
+            value={formatDate(summary?.last_payment_at ?? null, locale)}
+            detail={formatCurrency(summary?.last_payment_amount_cents ?? null, summary?.currency ?? null, locale)}
           />
           <MetricCard
             icon={<CalendarClock />}
-            label={isEnding ? "Subscription ends" : "Next payment"}
-            value={formatDate(isEnding ? summary?.ends_at ?? summary?.current_period_end ?? null : summary?.next_payment_at ?? null)}
-            detail={isEnding ? dayLabel(summary?.days_until_period_end ?? null) : `${dayLabel(summary?.days_until_next_payment ?? null)} · ${formatCurrency(summary?.next_payment_amount_cents ?? null, summary?.currency ?? null)}`}
+            label={isEnding ? widgetSiteT(locale, "subscriptionEnds") : widgetSiteT(locale, "nextPayment")}
+            value={formatDate(isEnding ? summary?.ends_at ?? summary?.current_period_end ?? null : summary?.next_payment_at ?? null, locale)}
+            detail={isEnding ? dayLabel(summary?.days_until_period_end ?? null, locale) : `${dayLabel(summary?.days_until_next_payment ?? null, locale)} · ${formatCurrency(summary?.next_payment_amount_cents ?? null, summary?.currency ?? null, locale)}`}
           />
           <MetricCard
             icon={<RefreshCw />}
-            label="Days remaining"
-            value={dayLabel(summary?.days_until_period_end ?? null)}
-            detail={`Current period ends ${formatDate(summary?.current_period_end ?? null)}`}
+            label={widgetSiteT(locale, "daysRemaining")}
+            value={dayLabel(summary?.days_until_period_end ?? null, locale)}
+            detail={widgetSiteT(locale, "currentPeriodEnds", { date: formatDate(summary?.current_period_end ?? null, locale) })}
           />
         </div>
       )}
 
       {(error || summary?.message) && (
         <div className="mx-6 mb-6 rounded-xl border border-amber-700/30 bg-amber-950/20 p-4 text-sm leading-6 text-amber-100">
-          {error || summary?.message}
+          {translateWidgetSiteExact(locale, error || summary?.message, "billingDetailsUnavailable")}
         </div>
       )}
 
       <div className="flex flex-col gap-3 border-t border-white/10 bg-black/25 p-6 sm:flex-row sm:items-center sm:justify-between">
         <div className="text-sm leading-6 text-zinc-400">
-          Customer-safe billing view only. Exact payment method and invoice internals stay inside Stripe.
+          {widgetSiteT(locale, "customerSafeBilling")}
         </div>
         <div className="flex flex-wrap gap-2">
           {onRefresh && (
             <button type="button" onClick={onRefresh} className="rounded-lg border border-white/10 px-4 py-3 text-sm font-black text-white">
               <RefreshCw className="mr-2 inline h-4 w-4" />
-              Refresh
+              {widgetSiteT(locale, "refresh")}
             </button>
           )}
           {action === "manage_billing" && canManageBilling ? (
             <button type="button" onClick={onManage} className="rounded-lg bg-white px-4 py-3 text-sm font-black text-black">
-              Manage subscription
+              {widgetSiteT(locale, "manageSubscription")}
             </button>
           ) : (
             <>
               <Link href="/widget" className="rounded-lg bg-white px-4 py-3 text-sm font-black text-black">
-                View widget plans
+                {widgetSiteT(locale, "viewWidgetPlans")}
               </Link>
               <a href="mailto:info@mgautotech.de?subject=Widget%20billing%20support" className="rounded-lg border border-white/10 px-4 py-3 text-sm font-black text-white">
-                Contact support
+                {widgetSiteT(locale, "contactSupport")}
               </a>
             </>
           )}

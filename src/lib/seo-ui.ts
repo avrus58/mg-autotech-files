@@ -162,7 +162,7 @@ export const seoUiCopy: Record<LocaleCode, SeoUiCopy> = {
     legal: "法律信息",
     contact: "联系我们",
     about: "关于 MG AutoTech",
-    tools: "车间工具",
+    tools: "维修厂工具",
     secureAccount: "安全的客户账户与私密文件交付。",
     readyTitle: "准备提交文件了吗？",
     rights: "保留所有权利。",
