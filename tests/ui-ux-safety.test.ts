@@ -11,29 +11,18 @@ import {
 import { countCompletedToday } from "../src/lib/adminDashboardMetrics";
 
 function readProjectFile(...segments: string[]) {
-  return readFileSync(resolve(process.cwd(), ...segments), "utf8");
-}
-
-function readHomepageCompactResourceSection(homepage: string, id: string) {
-  const groupSource =
-    homepage.match(new RegExp(`\\r?\\n  \\{\\r?\\n    id: "${id}"[\\s\\S]*?\\r?\\n  \\},`))?.[0] ?? "";
-  const sourceOnlyContract = `
-Boundary:
-aria-label={\`\${item.action}: \${item.title}\`}
-focus-visible:ring-2 focus-visible:ring-red-700
-Search phrase
-Best route
-What to prepare
-Without structure
-MG AutoTech workflow
-Search intent
-Prepare before upload
-href="/file-service"
-href="/new-request"
-`;
+  const source = readFileSync(resolve(process.cwd(), ...segments), "utf8");
+  if (segments.join("/") !== "src/app/page.tsx") return source;
   return [
-    groupSource,
-    sourceOnlyContract,
+    source,
+    readFileSync(
+      resolve(process.cwd(), "src", "components", "homepage", "HomepageExperience.tsx"),
+      "utf8"
+    ),
+    readFileSync(
+      resolve(process.cwd(), "src", "components", "homepage", "VehicleIntelligence.tsx"),
+      "utf8"
+    ),
   ].join("\n");
 }
 
@@ -1388,8 +1377,8 @@ test("How It Works page is English, SEO-ready and linked from public surfaces", 
   assert.match(page, /languageAlternates\("\/how-it-works"\)/);
   assert.doesNotMatch(page, /Anfrage|Kunden|Datei|hochladen|öffnen|bearbeitet/i);
 
-  assert.match(homepage, /A Clear File-Service Workflow/);
-  assert.match(homepage, /See How It Works/);
+  assert.match(homepage, /From original file to secure delivery in four clear steps\./);
+  assert.match(homepage, /See the complete workflow/);
   assert.match(homepage, /href="\/how-it-works"/);
   assert.match(footer, /How It Works/);
   assert.match(header, /How it works/);
@@ -1415,7 +1404,7 @@ test("How It Works localization is wired for locale routes, homepage and footer"
   assert.match(copy, /Does the system automatically modify files\?/);
   assert.match(copy, /Ändert das System Dateien automatisch\?/);
   assert.match(copy, /Sistem dosyaları otomatik değiştirir mi\?/);
-  assert.match(localizedHomeRoute, /UnifiedHomePage/);
+  assert.match(localizedHomeRoute, /HomepageExperience/);
   assert.match(localizedHomeRoute, /includeStructuredData=\{false\}/);
   assert.doesNotMatch(localizedHomeRoute, /LocalizedSeoHome/);
   assert.match(homepage, /href="\/how-it-works"/);
@@ -1513,1286 +1502,100 @@ test("public preparation tools are discoverable in sitemap and robots", () => {
   );
 });
 
-test("homepage surfaces a safe request readiness cockpit before upload", () => {
+test("refreshed homepage uses one compact visible information architecture", () => {
   const homepage = readProjectFile("src", "app", "page.tsx");
-  const readinessSource =
-    homepage.match(/const requestReadinessSteps = \[[\s\S]*?const homepageSearchIntentFaq = \[/)?.[0] ?? "";
 
-  assert.match(homepage, /Request Readiness Cockpit/);
-  assert.match(homepage, /Request preparation/);
-  assert.match(homepage, /Open all tools/);
-  assert.match(homepage, /href="\/tools"/);
-  assert.match(homepage, /\/tools\/file-readiness-check/);
-  assert.match(homepage, /Open readiness check/);
-  assert.match(homepage, /\/tools\/request-brief-builder/);
-  assert.match(homepage, /Build request brief/);
-  assert.match(homepage, /\/tools\/ecu-read-method-advisor/);
-  assert.match(homepage, /Plan read method/);
-  assert.match(homepage, /\/new-request/);
-  assert.match(homepage, /Start secure request/);
-  assert.match(homepage, /Tools do not upload or modify ECU files/);
-  assert.match(homepage, /Credits are verified during secure request creation/);
-  assert.match(homepage, /Complex requests stay human-reviewed before delivery/);
-  assert.doesNotMatch(
-    readinessSource,
-    /type="file"|upload-session|api\/admin|fetch\(|createObjectURL|FileReader|generateMod|bytePatch|writeFile|checksum/i
-  );
-});
+  for (const target of [
+    'id="vehicle-data"',
+    "<DeferredPerformanceTools />",
+    'id="services"',
+    'id="workflow"',
+    'id="security"',
+    'id="prices"',
+    'id="homepage-search-faq"',
+    '<Footer variant="homepage" />',
+  ]) {
+    assert.match(homepage, new RegExp(target.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  }
 
-test("root metadata targets online ECU and TCU file service search variants", () => {
-  const layout = readProjectFile("src", "app", "layout.tsx");
-
-  assert.match(layout, /Professional online ECU and TCU file service/);
-  assert.match(layout, /"Online ECU File Service"/);
-  assert.match(layout, /"ECU File Service Germany"/);
-  assert.match(layout, /"TCU File Service"/);
-  assert.match(layout, /"ECU File Upload Service"/);
-  assert.match(layout, /"ECU Tuning File Service"/);
-  assert.match(layout, /"TCU Tuning File Service"/);
-  assert.match(layout, /title: "MG AutoTech ECU & TCU File Service"/);
-  assert.match(layout, /Professional online ECU & TCU File Service Platform for workshops/);
-  assert.doesNotMatch(
-    layout,
-    /service_role|SUPABASE_SERVICE_ROLE_KEY|STRIPE_SECRET_KEY|RESEND_API_KEY|storage_path|signed_url|admin_note|internal_note|source_reference|confidence_score|raw|hex|bytePatch|generateMod|checksum/i
-  );
-});
-
-test("homepage has a focused ECU and TCU file service search-intent section", () => {
-  const homepage = readProjectFile("src", "app", "page.tsx");
-  const pillarSource =
-    homepage.match(/const fileServiceSearchPillars = \[[\s\S]*?const fileServiceKnowledgeMap = \[/)?.[0] ?? "";
-  const fileServiceSection =
-    homepage.match(/function HomepageFileServiceCorePanel\(\)[\s\S]*?export default function HomePage/)?.[0] ?? "";
-
-  assert.match(homepage, /const fileServiceSearchPillars = \[/);
-  assert.doesNotMatch(homepage, /const fileServiceRequestChecklist = \[/);
-  assert.match(fileServiceSection, /File-service routes/);
-  assert.match(fileServiceSection, /Choose the right request path\./);
-  assert.match(fileServiceSection, /Start with the closest route/);
-  assert.match(pillarSource, /title: "ECU"/);
-  assert.match(pillarSource, /title: "TCU"/);
-  assert.match(pillarSource, /title: "Stage 1"/);
-  assert.match(pillarSource, /title: "DTC \/ Diesel"/);
-  assert.match(pillarSource, /Engine-control files with vehicle context and workshop notes/);
-  assert.match(pillarSource, /Gearbox controller context, read method and request notes/);
-  assert.match(pillarSource, /Performance request preparation before secure submission/);
-  assert.match(pillarSource, /Diagnostic and aftertreatment context for human review/);
-  assert.match(pillarSource, /href: "\/file-service"/);
-  assert.match(pillarSource, /href: "\/ecu-platforms\/transmission-control-units"/);
-  assert.match(pillarSource, /href: "\/services\/stage-1"/);
-  assert.match(pillarSource, /href: "\/services\/dpf-off"/);
-  assert.match(fileServiceSection, /New request/);
-  assert.match(fileServiceSection, /Open file service hub/);
-  assert.match(fileServiceSection, /href="\/file-service"/);
-  assert.match(fileServiceSection, /Secure request boundary/);
-  assert.match(fileServiceSection, /uploads, credits and delivery stay inside the customer portal/);
-  assert.match(fileServiceSection, /Prepare a request brief/);
-  assert.doesNotMatch(fileServiceSection, /Professional ECU & TCU file service for workshops/);
-  assert.doesNotMatch(fileServiceSection, /What makes a clean file-service request\?/);
-  assert.doesNotMatch(fileServiceSection, /Compact checklist, same customer-safe preparation logic/);
-  assert.doesNotMatch(
-    pillarSource + fileServiceSection,
-    /type="file"|upload-session|api\/admin|fetch\(|createObjectURL|FileReader|generateMod|bytePatch|writeFile|checksum|storage_path|signed_url|service_role|SUPABASE_SERVICE_ROLE_KEY|admin_note|internal_note|customer_email|source_reference|confidence_score|sample_id|raw|hex/i
-  );
-});
-
-test("homepage keeps the hero compact and places performance tools before the navigator", () => {
-  const homepage = readProjectFile("src", "app", "page.tsx");
-  const deferredPerformanceTools = readProjectFile("src", "components", "tools", "DeferredPerformanceTools.tsx");
-  const heroSection =
-    homepage.match(/<section id="home"[\s\S]*?<PublicVehicleChecker \/>/)?.[0] ?? "";
-  const heroPreview =
-    homepage.match(/function TechnicalHeroPreview\(\)[\s\S]*?function PublicVehicleSelect/)?.[0] ?? "";
-  const performanceToolsIndex = homepage.indexOf("<DeferredPerformanceTools />");
-  const navigatorIndex = homepage.indexOf('<AnimatedSection id="file-service-navigator"');
-  const servicesIndex = homepage.indexOf("<HomepageServicesSection />");
-  const workflowIndex = homepage.indexOf("<HomepageWorkflowSection />");
-  const liveWorkloadIndex = homepage.indexOf(
-    '<AnimatedSection className="border-y border-white/5 bg-[#0b0e14]'
-  );
-
-  assert.doesNotMatch(heroSection, /Popular file-service paths/);
-  assert.doesNotMatch(homepage, /file-service-quick-paths|homepageQuickPathJsonLd|homepageQuickServicePaths/);
-  assert.equal(homepage.match(/<DeferredPerformanceTools \/>/g)?.length, 1);
-  assert.ok(performanceToolsIndex > 0);
-  assert.ok(navigatorIndex > performanceToolsIndex);
-  assert.ok(servicesIndex > navigatorIndex);
-  assert.ok(workflowIndex > servicesIndex);
-  assert.ok(liveWorkloadIndex > workflowIndex);
-  assert.equal((homepage.match(/A Clear File-Service Workflow/g) ?? []).length, 1);
-  assert.match(homepage, /snap-x snap-mandatory/);
-  assert.match(deferredPerformanceTools, /import\("@\/components\/tools\/PerformanceTools"\)/);
-  assert.match(deferredPerformanceTools, /IntersectionObserver/);
-  assert.match(homepage, /publicResourceUrl\("\/#tools"\)/);
-  assert.match(heroSection, /lg:min-h-\[clamp\(640px,82vh,760px\)\]/);
-  assert.match(heroPreview, /h-\[clamp\(540px,68vh,620px\)\]/);
-  assert.match(heroPreview, /role="group"\s+aria-label="How It Works"/);
-  assert.match(heroPreview, /steps\.map\(\(step, index\)/);
-  assert.match(heroPreview, /grid w-full grid-cols-2 gap-3/);
-  assert.match(heroPreview, /min-w-0 break-words text-\[11px\] font-black/);
-  assert.doesNotMatch(heroPreview, /className="hidden h-\[685px\] lg:block"/);
-
-  const i18n = readProjectFile("src", "lib", "i18n.ts");
-  assert.equal((i18n.match(/"Load Credits":/g) ?? []).length, 11);
-});
-
-test("homepage hero typography and major SEO sections avoid overflow and white expanses", () => {
-  const homepage = readProjectFile("src", "app", "page.tsx");
-  const heroSection =
-    homepage.match(/<section id="home"[\s\S]*?<PublicVehicleChecker \/>/)?.[0] ?? "";
-
-  assert.match(heroSection, /text-\[clamp\(2\.85rem,5\.7vw,5\.35rem\)\]/);
-  assert.match(heroSection, /max-w-\[42rem\] text-balance break-words/);
-  assert.match(heroSection, /text-\[clamp\(2\.15rem,5\.2vw,5\.35rem\)\]/);
-  assert.match(heroSection, /grid w-full max-w-\[42rem\] grid-cols-1 gap-3 sm:grid-cols-2/);
-  assert.doesNotMatch(heroSection, /xl:grid-cols-3/);
-  assert.doesNotMatch(heroSection, /md:text-7xl|lg:h-\[825px\]/);
-  assert.doesNotMatch(homepage, /<HomepageCompactResourceCenter\s*\/>/);
+  assert.equal((homepage.match(/<DeferredPerformanceTools \/>/g) ?? []).length, 1);
+  assert.equal((homepage.match(/id="services"/g) ?? []).length, 1);
   assert.doesNotMatch(
     homepage,
-    /<AnimatedSection[^>]*className="[^"]*(?:bg-white py-20|bg-\[#eef1f4\]|bg-\[#f8fafc\]|bg-slate-50 py-20)[^"]*"/
+    /homepageFileServiceNavigator|fileServiceAnswerLibrary|homepageCompactResourceGroups|BusinessMarginCalculator|Live Workload|Workshop Command Desk/
   );
 });
 
-test("homepage file service navigator indexes major sections safely", () => {
+test("refreshed homepage keeps real tools, safe preparation routes and service discovery", () => {
   const homepage = readProjectFile("src", "app", "page.tsx");
-  const navigatorSource =
-    homepage.match(/const homepageFileServiceNavigator = \[[\s\S]*?const fileServiceReadMethodRoutes = \[/)?.[0] ?? "";
-  const navigatorSection =
-    homepage.match(/<AnimatedSection id="file-service-navigator"[\s\S]*?<HomepageServicesSection \/>/)?.[0] ?? "";
 
-  assert.match(homepage, /const homepageFileServiceNavigator = \[/);
-  assert.match(navigatorSource, /title: "Torque and power tools"/);
-  assert.match(navigatorSource, /title: "Route decision matrix"/);
-  assert.match(navigatorSource, /title: "Workshop use cases"/);
-  assert.match(navigatorSource, /title: "Workshop profiles"/);
-  assert.match(navigatorSource, /title: "Read method routes"/);
-  assert.match(navigatorSource, /title: "Brief requirements"/);
-  assert.match(navigatorSource, /title: "Privacy controls"/);
-  assert.match(navigatorSource, /title: "Terminology glossary"/);
-  assert.match(navigatorSource, /href: "\/#tools"/);
-  assert.match(navigatorSource, /href: "\/#file-service-decision-matrix"/);
-  assert.match(navigatorSource, /href: "\/#file-service-use-cases"/);
-  assert.match(navigatorSource, /href: "\/#file-service-workshop-profiles"/);
-  assert.match(navigatorSource, /href: "\/#file-service-read-methods"/);
-  assert.match(navigatorSource, /href: "\/#file-service-brief-requirements"/);
-  assert.match(navigatorSource, /href: "\/#file-service-privacy-controls"/);
-  assert.match(navigatorSource, /href: "\/#file-service-glossary"/);
-  assert.match(navigatorSection, /File Service Navigator/);
-  assert.match(navigatorSection, /Jump straight to the file-service answer you need/);
-  assert.match(navigatorSection, /guided file-service index/);
-  assert.match(navigatorSection, /Navigator boundary/);
-  assert.match(
-    navigatorSection,
-    /does not create\s+requests, inspect customer files, open account data, change\s+payments or deliver files/
-  );
-  assert.match(navigatorSection, /focus-visible:ring-2 focus-visible:ring-red-700/);
-  assert.doesNotMatch(navigatorSource, /\/new-request|\/dashboard/);
-  assert.doesNotMatch(
-    navigatorSource + navigatorSection,
-    /type="file"|upload-session|api\/admin|fetch\(|createObjectURL|FileReader|generateMod|bytePatch|writeFile|checksum|storage_path|signed_url|service_role|SUPABASE_SERVICE_ROLE_KEY|admin_note|internal_note|customer_email|source_reference|confidence_score|sample_id|raw|hex/i
-  );
+  for (const route of [
+    "/api/vehicles?type=brands",
+    "/tools/file-readiness-check",
+    "/tools/request-brief-builder",
+    "/tools/ecu-read-method-advisor",
+    "/services/stage-1",
+    "/services/stage-2",
+    "/services/stage-3",
+    "/services/tcu-tuning",
+    "/services/ecu-file-check",
+    "/file-service#stage-comparison",
+  ]) {
+    assert.match(
+      homepage,
+      new RegExp(route.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+    );
+  }
+  assert.match(homepage, /data-no-translate/);
+  assert.match(homepage, /role="alert"/);
+  assert.match(homepage, /aria-live="polite"/);
 });
 
-test("homepage file service answer library targets workshop search intent safely", () => {
+test("refreshed homepage schema describes only visible content", () => {
   const homepage = readProjectFile("src", "app", "page.tsx");
-  const answerLibrarySource =
-    homepage.match(/const fileServiceAnswerLibrary = \[[\s\S]*?const homepageSearchIntentJsonLd = \{/)?.[0] ?? "";
-  const answerLibrarySection = readHomepageCompactResourceSection(homepage, "file-service-answer-library");
 
-  assert.match(homepage, /const fileServiceAnswerLibrary = \[/);
-  assert.match(answerLibrarySource, /question: "What is an online ECU file service\?"/);
-  assert.match(answerLibrarySource, /question: "What is the difference between ECU and TCU file service\?"/);
-  assert.match(answerLibrarySource, /question: "Should I prepare vehicle details before opening a request\?"/);
-  assert.match(answerLibrarySource, /question: "Can I start if my read method is unclear\?"/);
-  assert.match(answerLibrarySource, /question: "How do I choose between Stage 1, TCU and diesel technical requests\?"/);
-  assert.match(answerLibrarySource, /question: "Where should diagnostic code information go\?"/);
-  assert.match(answerLibrarySource, /question: "Does the homepage analyze my file\?"/);
-  assert.match(answerLibrarySource, /question: "What happens after I submit a request\?"/);
-  assert.match(answerLibrarySource, /href: "\/file-service"/);
-  assert.match(answerLibrarySource, /href: "\/ecu-platforms\/transmission-control-units"/);
-  assert.match(answerLibrarySource, /href: "\/tools\/request-brief-builder"/);
-  assert.match(answerLibrarySource, /href: "\/tools\/ecu-read-method-advisor"/);
-  assert.match(answerLibrarySource, /href: "\/#file-service-decision-matrix"/);
-  assert.match(answerLibrarySource, /href: "\/services\/dtc-off"/);
-  assert.match(answerLibrarySource, /href: "\/tools\/file-readiness-check"/);
-  assert.match(answerLibrarySource, /href: "\/how-it-works"/);
-  assert.match(answerLibrarySection, /File Service Answer Library/);
-  assert.match(answerLibrarySection, /Answers that match real workshop search intent/);
-  assert.match(answerLibrarySection, /customer-safe answers/);
-  assert.match(answerLibrarySection, /Boundary:/);
-  assert.match(
-    answerLibrarySection,
-    /does not inspect files, open private account records,\s+change account balances or create delivery assets/
-  );
-  assert.match(answerLibrarySection, /focus-visible:ring-2 focus-visible:ring-red-700/);
-  assert.match(homepage, /const fileServiceAnswerLibraryJsonLd = \{/);
-  assert.match(homepage, /"@id": "https:\/\/file\.mgautotech\.de\/#file-service-answer-library"/);
-  assert.match(homepage, /mainEntity: fileServiceAnswerLibrary\.map/);
-  assert.match(homepage, /JSON\.stringify\(fileServiceAnswerLibraryJsonLd\)/);
-  assert.doesNotMatch(answerLibrarySource, /\/new-request|\/dashboard/);
-  assert.doesNotMatch(
-    answerLibrarySource + answerLibrarySection,
-    /type="file"|upload-session|api\/admin|fetch\(|createObjectURL|FileReader|generateMod|bytePatch|writeFile|checksum|storage_path|signed_url|service_role|SUPABASE_SERVICE_ROLE_KEY|admin_note|internal_note|customer_email|source_reference|confidence_score|sample_id|provider|raw|hex/i
-  );
-});
-
-test("homepage file service search route index maps long-tail intent to public routes", () => {
-  const homepage = readProjectFile("src", "app", "page.tsx");
-  const routeIndexSource =
-    homepage.match(/const fileServiceSearchRouteIndex = \[[\s\S]*?const fileServiceSnippetSummary = \[/)?.[0] ?? "";
-  const routeIndexSection = readHomepageCompactResourceSection(homepage, "file-service-search-index");
-
-  assert.match(homepage, /const fileServiceSearchRouteIndex = \[/);
-  assert.match(routeIndexSource, /query: "ECU file service online"/);
-  assert.match(routeIndexSource, /query: "TCU file service or gearbox file service"/);
-  assert.match(routeIndexSource, /query: "Stage 1 ECU file service"/);
-  assert.match(routeIndexSource, /query: "DTC file service request"/);
-  assert.match(routeIndexSource, /query: "DPF EGR AdBlue file request"/);
-  assert.match(routeIndexSource, /query: "ECU read method help"/);
-  assert.match(routeIndexSource, /query: "ECU file readiness check"/);
-  assert.match(routeIndexSource, /query: "What information should I send for file service"/);
-  assert.match(routeIndexSource, /href: "\/file-service"/);
-  assert.match(routeIndexSource, /href: "\/services\/tcu-tuning"/);
-  assert.match(routeIndexSource, /href: "\/services\/stage-1"/);
-  assert.match(routeIndexSource, /href: "\/services\/dtc-off"/);
-  assert.match(routeIndexSource, /href: "\/services\/dpf-off"/);
-  assert.match(routeIndexSource, /href: "\/tools\/ecu-read-method-advisor"/);
-  assert.match(routeIndexSource, /href: "\/tools\/file-readiness-check"/);
-  assert.match(routeIndexSource, /href: "\/tools\/request-brief-builder"/);
-  assert.match(routeIndexSection, /File Service Search Index/);
-  assert.match(routeIndexSection, /Match common file-service searches to the right public route/);
-  assert.match(routeIndexSection, /Instead of creating duplicate landing pages/);
-  assert.match(routeIndexSection, /Search phrase/);
-  assert.match(routeIndexSection, /Best route/);
-  assert.match(routeIndexSection, /What to prepare/);
-  assert.match(routeIndexSection, /aria-label=\{\`\$\{item\.action\}: \$\{item\.title\}\`\}/);
-  assert.match(routeIndexSection, /Index boundary/);
-  assert.match(
-    routeIndexSection,
-    /does not\s+create requests, inspect files, open customer accounts or generate\s+deliverable files/
-  );
-  assert.match(routeIndexSection, /focus-visible:ring-2 focus-visible:ring-red-700/);
-  assert.doesNotMatch(routeIndexSource, /\/new-request|\/dashboard/);
-  assert.doesNotMatch(
-    routeIndexSource + routeIndexSection,
-    /type="file"|upload-session|api\/admin|fetch\(|createObjectURL|FileReader|generateMod|bytePatch|writeFile|checksum|storage_path|signed_url|service_role|SUPABASE_SERVICE_ROLE_KEY|admin_note|internal_note|customer_email|source_reference|confidence_score|sample_id|provider|raw|hex/i
-  );
-});
-
-test("homepage file service snippet summary is direct and customer-safe", () => {
-  const homepage = readProjectFile("src", "app", "page.tsx");
-  const snippetSummarySource =
-    homepage.match(/const fileServiceSnippetSummary = \[[\s\S]*?const fileServiceTrustComparison = \[/)?.[0] ?? "";
-  const snippetSummarySection = readHomepageCompactResourceSection(homepage, "file-service-snippet-summary");
-
-  assert.match(homepage, /const fileServiceSnippetSummary = \[/);
-  assert.match(snippetSummarySource, /title: "What it is"/);
-  assert.match(snippetSummarySource, /title: "Who it helps"/);
-  assert.match(snippetSummarySource, /title: "What to prepare"/);
-  assert.match(snippetSummarySource, /title: "Where secure handling starts"/);
-  assert.match(snippetSummarySource, /title: "What public tools do"/);
-  assert.match(snippetSummarySource, /title: "What happens after submission"/);
-  assert.match(snippetSummarySource, /href: "\/file-service"/);
-  assert.match(snippetSummarySource, /href: "\/how-it-works"/);
-  assert.match(snippetSummarySource, /href: "\/tools\/request-brief-builder"/);
-  assert.match(snippetSummarySource, /href: "\/tools\/file-readiness-check"/);
-  assert.match(snippetSummarySource, /href: "\/tools\/ecu-read-method-advisor"/);
-  assert.match(snippetSummarySection, /File Service At A Glance/);
-  assert.match(snippetSummarySection, /A snippet-ready summary for ECU and TCU file service/);
-  assert.match(snippetSummarySection, /short,\s+direct answer first/);
-  assert.match(snippetSummarySection, /Public summary boundary/);
-  assert.match(
-    snippetSummarySection,
-    /does not inspect files,\s+change customer accounts, create requests or generate\s+deliverable files/
-  );
-  assert.match(snippetSummarySection, /aria-label=\{\`\$\{item\.action\}: \$\{item\.title\}\`\}/);
-  assert.match(snippetSummarySection, /focus-visible:ring-2 focus-visible:ring-red-700/);
-  assert.doesNotMatch(snippetSummarySource, /\/new-request|\/dashboard/);
-  assert.doesNotMatch(
-    snippetSummarySource + snippetSummarySection,
-    /type="file"|upload-session|api\/admin|fetch\(|createObjectURL|FileReader|generateMod|bytePatch|writeFile|checksum|storage_path|signed_url|service_role|SUPABASE_SERVICE_ROLE_KEY|admin_note|internal_note|customer_email|source_reference|confidence_score|sample_id|provider|raw|hex/i
-  );
-});
-
-test("homepage professional file service comparison explains trust signals safely", () => {
-  const homepage = readProjectFile("src", "app", "page.tsx");
-  const comparisonSource =
-    homepage.match(/const fileServiceTrustComparison = \[[\s\S]*?const fileServiceVerificationCheckpoints = \[/)?.[0] ?? "";
-  const comparisonSection = readHomepageCompactResourceSection(homepage, "professional-file-service-comparison");
-
-  assert.match(homepage, /const fileServiceTrustComparison = \[/);
-  assert.match(comparisonSource, /title: "Structured vehicle context"/);
-  assert.match(comparisonSource, /title: "Controller-specific route"/);
-  assert.match(comparisonSource, /title: "Preparation before submission"/);
-  assert.match(comparisonSource, /title: "Account-tracked workflow"/);
-  assert.match(comparisonSource, /title: "Human review boundary"/);
-  assert.match(comparisonSource, /title: "Customer-safe public website"/);
-  assert.match(comparisonSource, /typical:/);
-  assert.match(comparisonSource, /href: "\/tools\/request-brief-builder"/);
-  assert.match(comparisonSource, /href: "\/ecu-platforms\/transmission-control-units"/);
-  assert.match(comparisonSource, /href: "\/tools\/file-readiness-check"/);
-  assert.match(comparisonSource, /href: "\/how-it-works"/);
-  assert.match(comparisonSource, /href: "\/file-service"/);
-  assert.match(comparisonSection, /Professional File Service Standard/);
-  assert.match(comparisonSection, /More than a basic file handoff/);
-  assert.match(comparisonSection, /Without structure/);
-  assert.match(comparisonSection, /MG AutoTech workflow/);
-  assert.match(comparisonSection, /Comparison boundary/);
-  assert.match(
-    comparisonSection,
-    /does not\s+open account data, inspect customer files, make technical changes\s+or create deliverable files/
-  );
-  assert.match(comparisonSection, /SEO purpose/);
-  assert.match(comparisonSection, /instead of duplicate doorway pages/);
-  assert.match(comparisonSection, /aria-label=\{\`\$\{item\.action\}: \$\{item\.title\}\`\}/);
-  assert.match(comparisonSection, /focus-visible:ring-2 focus-visible:ring-red-700/);
-  assert.doesNotMatch(comparisonSource, /\/new-request|\/dashboard/);
-  assert.doesNotMatch(
-    comparisonSource + comparisonSection,
-    /type="file"|upload-session|api\/admin|fetch\(|createObjectURL|FileReader|generateMod|bytePatch|writeFile|checksum|storage_path|signed_url|service_role|SUPABASE_SERVICE_ROLE_KEY|admin_note|internal_note|customer_email|source_reference|confidence_score|sample_id|provider|raw|hex/i
-  );
-});
-
-test("homepage file service verification checkpoints build trust safely", () => {
-  const homepage = readProjectFile("src", "app", "page.tsx");
-  const verificationSource =
-    homepage.match(/const fileServiceVerificationCheckpoints = \[[\s\S]*?const fileServiceMythChecks = \[/)?.[0] ?? "";
-  const verificationSection = readHomepageCompactResourceSection(homepage, "file-service-verification-checkpoints");
-
-  assert.match(homepage, /const fileServiceVerificationCheckpoints = \[/);
-  assert.match(verificationSource, /title: "Public route is clear"/);
-  assert.match(verificationSource, /title: "Vehicle context is prepared"/);
-  assert.match(verificationSource, /title: "Read method is understood"/);
-  assert.match(verificationSource, /title: "Preparation happens before submission"/);
-  assert.match(verificationSource, /title: "Status remains trackable"/);
-  assert.match(verificationSource, /title: "Human review boundary is visible"/);
-  assert.match(verificationSource, /href: "\/file-service"/);
-  assert.match(verificationSource, /href: "\/tools\/request-brief-builder"/);
-  assert.match(verificationSource, /href: "\/tools\/ecu-read-method-advisor"/);
-  assert.match(verificationSource, /href: "\/tools\/file-readiness-check"/);
-  assert.match(verificationSource, /href: "\/how-it-works"/);
-  assert.match(verificationSource, /href: "\/#professional-file-service-comparison"/);
-  assert.match(verificationSection, /File Service Verification Checkpoints/);
-  assert.match(verificationSection, /How to verify the workflow before you submit anything/);
-  assert.match(verificationSection, /route, request\s+context, read method, status flow and review boundary/);
-  assert.match(verificationSection, /Verification boundary/);
-  assert.match(
-    verificationSection,
-    /does not inspect files, open\s+account data, start request handling or create deliverable files/
-  );
-  assert.match(verificationSection, /aria-label=\{\`\$\{item\.action\}: \$\{item\.title\}\`\}/);
-  assert.match(verificationSection, /focus-visible:ring-2 focus-visible:ring-red-700/);
-  assert.doesNotMatch(verificationSource, /\/new-request|\/dashboard/);
-  assert.doesNotMatch(
-    verificationSource + verificationSection,
-    /type="file"|upload-session|api\/admin|fetch\(|createObjectURL|FileReader|generateMod|bytePatch|writeFile|checksum|storage_path|signed_url|service_role|SUPABASE_SERVICE_ROLE_KEY|admin_note|internal_note|customer_email|source_reference|confidence_score|sample_id|provider|raw|hex/i
-  );
-});
-
-test("homepage file service myth checks correct wrong expectations safely", () => {
-  const homepage = readProjectFile("src", "app", "page.tsx");
-  const mythSource =
-    homepage.match(/const fileServiceMythChecks = \[[\s\S]*?const fileServicePlatformStack = \[/)?.[0] ?? "";
-  const mythSection = readHomepageCompactResourceSection(homepage, "file-service-myth-checks");
-
-  assert.match(homepage, /const fileServiceMythChecks = \[/);
-  assert.match(mythSource, /myth: "It is just a file drop"/);
-  assert.match(mythSource, /myth: "The homepage edits files"/);
-  assert.match(mythSource, /myth: "Every request uses one generic route"/);
-  assert.match(mythSource, /myth: "Read method does not matter"/);
-  assert.match(mythSource, /myth: "Status is just a support question"/);
-  assert.match(mythSource, /myth: "Public pages should expose every detail"/);
-  assert.match(mythSource, /href: "\/tools\/request-brief-builder"/);
-  assert.match(mythSource, /href: "\/tools\/file-readiness-check"/);
-  assert.match(mythSource, /href: "\/file-service"/);
-  assert.match(mythSource, /href: "\/tools\/ecu-read-method-advisor"/);
-  assert.match(mythSource, /href: "\/how-it-works"/);
-  assert.match(mythSource, /href: "\/#file-service-privacy-controls"/);
-  assert.match(mythSection, /File Service Reality Check/);
-  assert.match(mythSection, /Clear answers before the wrong expectation starts/);
-  assert.match(mythSection, /common misunderstandings into practical next steps/);
-  assert.match(mythSection, /Reality-check boundary/);
-  assert.match(
-    mythSection,
-    /does not inspect\s+files, start account handling, change orders or create deliverable\s+files/
-  );
-  assert.match(mythSection, /aria-label=\{\`\$\{item\.action\}: \$\{item\.title\}\`\}/);
-  assert.match(mythSection, /focus-visible:ring-2 focus-visible:ring-red-700/);
-  assert.doesNotMatch(mythSource, /\/new-request|\/dashboard/);
-  assert.doesNotMatch(
-    mythSource + mythSection,
-    /type="file"|upload-session|api\/admin|fetch\(|createObjectURL|FileReader|generateMod|bytePatch|writeFile|checksum|storage_path|signed_url|service_role|SUPABASE_SERVICE_ROLE_KEY|admin_note|internal_note|customer_email|source_reference|confidence_score|sample_id|provider|raw|hex/i
-  );
-});
-
-test("homepage file service platform stack shows public workflow capabilities safely", () => {
-  const homepage = readProjectFile("src", "app", "page.tsx");
-  const platformStackSource =
-    homepage.match(/const fileServicePlatformStack = \[[\s\S]*?const homepageSearchIntentJsonLd = \{/)?.[0] ?? "";
-  const platformStackSection = readHomepageCompactResourceSection(homepage, "file-service-platform-stack");
-
-  assert.match(homepage, /const fileServicePlatformStack = \[/);
-  assert.match(platformStackSource, /title: "Public service hub"/);
-  assert.match(platformStackSource, /title: "Preparation tools"/);
-  assert.match(platformStackSource, /title: "Vehicle context path"/);
-  assert.match(platformStackSource, /title: "Private account workflow"/);
-  assert.match(platformStackSource, /title: "Human review boundary"/);
-  assert.match(platformStackSource, /title: "Customer-safe information design"/);
-  assert.match(platformStackSource, /href: "\/file-service"/);
-  assert.match(platformStackSource, /href: "\/tools"/);
-  assert.match(platformStackSource, /href: "\/tools\/request-brief-builder"/);
-  assert.match(platformStackSource, /href: "\/how-it-works"/);
-  assert.match(platformStackSource, /href: "\/#professional-file-service-comparison"/);
-  assert.match(platformStackSource, /href: "\/#file-service-privacy-controls"/);
-  assert.match(platformStackSection, /File Service Platform Stack/);
-  assert.match(platformStackSection, /The public website is connected to a real request workflow/);
-  assert.match(platformStackSection, /public guidance, preparation tools, vehicle\s+context and account-based follow-up/);
-  assert.match(platformStackSection, /Platform-stack boundary/);
-  assert.match(
-    platformStackSection,
-    /does\s+not inspect files, open account data, change requests or create\s+deliverable files/
-  );
-  assert.match(platformStackSection, /aria-label=\{\`\$\{item\.action\}: \$\{item\.title\}\`\}/);
-  assert.match(platformStackSection, /focus-visible:ring-2 focus-visible:ring-red-700/);
-  assert.doesNotMatch(platformStackSource, /\/new-request|\/dashboard/);
-  assert.doesNotMatch(
-    platformStackSource + platformStackSection,
-    /type="file"|upload-session|api\/admin|fetch\(|createObjectURL|FileReader|generateMod|bytePatch|writeFile|checksum|storage_path|signed_url|service_role|SUPABASE_SERVICE_ROLE_KEY|admin_note|internal_note|customer_email|source_reference|confidence_score|sample_id|provider|raw|hex/i
-  );
-});
-
-test("homepage read method route finder guides file-service preparation safely", () => {
-  const homepage = readProjectFile("src", "app", "page.tsx");
-  const readMethodSource =
-    homepage.match(/const fileServiceReadMethodRoutes = \[[\s\S]*?const fileServiceBriefRequirements = \[/)?.[0] ?? "";
-  const readMethodSection = readHomepageCompactResourceSection(homepage, "file-service-read-methods");
-
-  assert.match(homepage, /const fileServiceReadMethodRoutes = \[/);
-  assert.match(readMethodSource, /title: "OBD read available"/);
-  assert.match(readMethodSource, /title: "Bench read available"/);
-  assert.match(readMethodSource, /title: "Boot mode context"/);
-  assert.match(readMethodSource, /title: "Virtual read or stock file"/);
-  assert.match(readMethodSource, /title: "TCU or gearbox read"/);
-  assert.match(readMethodSource, /title: "Read method unknown"/);
-  assert.match(readMethodSource, /href: "\/tools\/ecu-read-method-advisor"/);
-  assert.match(readMethodSource, /href: "\/tools\/request-brief-builder"/);
-  assert.match(readMethodSource, /href: "\/file-service"/);
-  assert.match(readMethodSource, /href: "\/ecu-platforms\/transmission-control-units"/);
-  assert.match(readMethodSource, /href: "\/tools\/file-readiness-check"/);
-  assert.match(readMethodSection, /Read Method Route Finder/);
-  assert.match(readMethodSection, /Route OBD, bench, boot, virtual and TCU file-service requests correctly/);
-  assert.match(readMethodSection, /Safety boundary/);
-  assert.match(readMethodSection, /informational only/);
-  assert.match(readMethodSection, /does not inspect,\s+upload,\s+edit or create ECU\/TCU files/);
-  assert.match(readMethodSection, /focus-visible:ring-2 focus-visible:ring-red-700/);
-  assert.doesNotMatch(
-    readMethodSource + readMethodSection,
-    /type="file"|upload-session|api\/admin|fetch\(|createObjectURL|FileReader|generateMod|bytePatch|writeFile|checksum|storage_path|signed_url|service_role|SUPABASE_SERVICE_ROLE_KEY|admin_note|internal_note|customer_email|source_reference|confidence_score|sample_id|raw|hex/i
-  );
-});
-
-test("homepage file service brief requirements reduce support questions safely", () => {
-  const homepage = readProjectFile("src", "app", "page.tsx");
-  const briefSource =
-    homepage.match(/const fileServiceBriefRequirements = \[[\s\S]*?const fileServiceFitChecks = \[/)?.[0] ?? "";
-  const briefSection = readHomepageCompactResourceSection(homepage, "file-service-brief-requirements");
-
-  assert.match(homepage, /const fileServiceBriefRequirements = \[/);
-  assert.match(briefSource, /title: "Vehicle identity"/);
-  assert.match(briefSource, /title: "Controller identity"/);
-  assert.match(briefSource, /title: "Service intent"/);
-  assert.match(briefSource, /title: "File context"/);
-  assert.match(briefSource, /title: "Customer notes"/);
-  assert.match(briefSource, /title: "Delivery path"/);
-  assert.match(briefSource, /href: "\/tools\/request-brief-builder"/);
-  assert.match(briefSource, /href: "\/tools\/ecu-read-method-advisor"/);
-  assert.match(briefSource, /href: "\/file-service"/);
-  assert.match(briefSource, /href: "\/tools\/file-readiness-check"/);
-  assert.match(briefSource, /href: "\/how-it-works"/);
-  assert.match(briefSection, /File Service Brief Requirements/);
-  assert.match(briefSection, /A stronger ECU or TCU file-service result starts with a stronger request brief/);
-  assert.match(briefSection, /not a blind file drop/);
-  assert.match(briefSection, /Customer-safe boundary/);
-  assert.match(briefSection, /does not request a file\s+on the homepage, inspect file contents, expose private storage data\s+or create ECU\/TCU outputs/);
-  assert.match(briefSection, /focus-visible:ring-2 focus-visible:ring-red-700/);
-  assert.doesNotMatch(
-    briefSource + briefSection,
-    /type="file"|upload-session|api\/admin|fetch\(|createObjectURL|FileReader|generateMod|bytePatch|writeFile|checksum|storage_path|signed_url|service_role|SUPABASE_SERVICE_ROLE_KEY|admin_note|internal_note|customer_email|source_reference|confidence_score|sample_id|raw|hex/i
-  );
-});
-
-test("homepage file service fit checker routes current customer situations safely", () => {
-  const homepage = readProjectFile("src", "app", "page.tsx");
-  const fitSource =
-    homepage.match(/const fileServiceFitChecks = \[[\s\S]*?const fileServiceOutcomePreview = \[/)?.[0] ?? "";
-  const fitSection = readHomepageCompactResourceSection(homepage, "file-service-fit-checker");
-
-  assert.match(homepage, /const fileServiceFitChecks = \[/);
-  assert.match(fitSource, /title: "I know the vehicle and service"/);
-  assert.match(fitSource, /title: "I am missing ECU or TCU details"/);
-  assert.match(fitSource, /title: "The read method is unclear"/);
-  assert.match(fitSource, /title: "This is a gearbox request"/);
-  assert.match(fitSource, /title: "The service category is unclear"/);
-  assert.match(fitSource, /title: "I want the full workflow first"/);
-  assert.match(fitSource, /href: "\/file-service"/);
-  assert.match(fitSource, /href: "\/tools\/request-brief-builder"/);
-  assert.match(fitSource, /href: "\/tools\/ecu-read-method-advisor"/);
-  assert.match(fitSource, /href: "\/ecu-platforms\/transmission-control-units"/);
-  assert.match(fitSource, /href: "\/tools\/file-readiness-check"/);
-  assert.match(fitSource, /href: "\/how-it-works"/);
-  assert.match(fitSection, /File Service Fit Checker/);
-  assert.match(fitSection, /Pick your current file-service situation and move to the right next step/);
-  assert.match(fitSection, /Next step:/);
-  assert.match(fitSection, /Safe public guidance/);
-  assert.match(fitSection, /only routes users to public preparation pages/);
-  assert.match(fitSection, /does\s+not access files, create requests, open storage, run analysis or make\s+delivery decisions/);
-  assert.match(fitSection, /focus-visible:ring-2 focus-visible:ring-red-700/);
-  assert.doesNotMatch(fitSource, /\/new-request|\/dashboard/);
-  assert.doesNotMatch(
-    fitSource + fitSection,
-    /type="file"|upload-session|api\/admin|fetch\(|createObjectURL|FileReader|generateMod|bytePatch|writeFile|checksum|storage_path|signed_url|service_role|SUPABASE_SERVICE_ROLE_KEY|admin_note|internal_note|customer_email|source_reference|confidence_score|sample_id|raw|hex/i
-  );
-});
-
-test("homepage file service outcome preview explains the post-submission customer flow safely", () => {
-  const homepage = readProjectFile("src", "app", "page.tsx");
-  const outcomeSource =
-    homepage.match(/const fileServiceOutcomePreview = \[[\s\S]*?const fileServiceStatusGuide = \[/)?.[0] ?? "";
-  const outcomeSection = readHomepageCompactResourceSection(homepage, "file-service-outcome-preview");
-
-  assert.match(homepage, /const fileServiceOutcomePreview = \[/);
-  assert.match(outcomeSource, /title: "Request received"/);
-  assert.match(outcomeSource, /title: "Human review"/);
-  assert.match(outcomeSource, /title: "Status tracking"/);
-  assert.match(outcomeSource, /title: "Customer messages"/);
-  assert.match(outcomeSource, /title: "Private delivery"/);
-  assert.match(outcomeSource, /title: "Support context"/);
-  assert.match(outcomeSource, /href: "\/how-it-works"/);
-  assert.match(outcomeSource, /href: "\/file-service"/);
-  assert.match(outcomeSource, /href: "\/tools\/request-brief-builder"/);
-  assert.match(outcomeSection, /File Service Outcome Preview/);
-  assert.match(outcomeSection, /Customers should always know what happens after a secure ECU or TCU file-service request/);
-  assert.match(outcomeSection, /not a public upload area/);
-  assert.match(outcomeSection, /Customer-visible boundary/);
-  assert.match(
-    outcomeSection,
-    /does not expose order records, internal notes, file\s+paths, binary data, private review metadata or generated ECU\/TCU\s+outputs/
-  );
-  assert.match(outcomeSection, /focus-visible:ring-2 focus-visible:ring-red-700/);
-  assert.doesNotMatch(outcomeSource, /\/new-request|\/dashboard/);
-  assert.doesNotMatch(
-    outcomeSource + outcomeSection,
-    /type="file"|upload-session|api\/admin|fetch\(|createObjectURL|FileReader|generateMod|bytePatch|writeFile|checksum|storage_path|signed_url|service_role|SUPABASE_SERVICE_ROLE_KEY|admin_note|internal_note|customer_email|source_reference|confidence_score|sample_id|raw|hex/i
-  );
-});
-
-test("homepage file service status guide explains tracking states without private order data", () => {
-  const homepage = readProjectFile("src", "app", "page.tsx");
-  const statusSource =
-    homepage.match(/const fileServiceStatusGuide = \[[\s\S]*?const fileServicePrivacyControls = \[/)?.[0] ?? "";
-  const statusSection = readHomepageCompactResourceSection(homepage, "file-service-status-guide");
-
-  assert.match(homepage, /const fileServiceStatusGuide = \[/);
-  assert.match(statusSource, /title: "Received"/);
-  assert.match(statusSource, /title: "Access verified"/);
-  assert.match(statusSource, /title: "In review"/);
-  assert.match(statusSource, /title: "Waiting for customer"/);
-  assert.match(statusSource, /title: "In progress"/);
-  assert.match(statusSource, /title: "Completed \/ delivered"/);
-  assert.match(statusSource, /href: "\/how-it-works"/);
-  assert.match(statusSource, /href: "\/file-service"/);
-  assert.match(statusSource, /href: "\/tools\/request-brief-builder"/);
-  assert.match(statusSection, /File Service Status Guide/);
-  assert.match(statusSection, /Clear status language keeps ECU and TCU file-service tracking understandable/);
-  assert.match(statusSection, /public meaning of common request\s+states while private order data stays inside the authenticated\s+portal/);
-  assert.match(statusSection, /Status privacy boundary/);
-  assert.match(
-    statusSection,
-    /does not expose live order\s+state, customer messages, internal workflow notes, file paths,\s+binary data or delivery assets/
-  );
-  assert.match(statusSection, /focus-visible:ring-2 focus-visible:ring-red-700/);
-  assert.doesNotMatch(statusSource, /\/new-request|\/dashboard/);
-  assert.doesNotMatch(
-    statusSource + statusSection,
-    /type="file"|upload-session|api\/admin|fetch\(|createObjectURL|FileReader|generateMod|bytePatch|writeFile|checksum|storage_path|signed_url|service_role|SUPABASE_SERVICE_ROLE_KEY|admin_note|internal_note|customer_email|source_reference|confidence_score|sample_id|raw|hex/i
-  );
-});
-
-test("homepage secure file service privacy controls explain public and private boundaries", () => {
-  const homepage = readProjectFile("src", "app", "page.tsx");
-  const privacySource =
-    homepage.match(/const fileServicePrivacyControls = \[[\s\S]*?const fileServiceUseCases = \[/)?.[0] ?? "";
-  const privacySection = readHomepageCompactResourceSection(homepage, "file-service-privacy-controls");
-
-  assert.match(homepage, /const fileServicePrivacyControls = \[/);
-  assert.match(privacySource, /title: "Authenticated portal first"/);
-  assert.match(privacySource, /title: "Public pages stay educational"/);
-  assert.match(privacySource, /title: "Customer-visible notes are separated"/);
-  assert.match(privacySource, /title: "Technical context is prepared first"/);
-  assert.match(privacySource, /title: "Private delivery path"/);
-  assert.match(privacySource, /title: "Support-safe explanation"/);
-  assert.match(privacySource, /href: "\/how-it-works"/);
-  assert.match(privacySource, /href: "\/file-service"/);
-  assert.match(privacySource, /href: "\/tools\/request-brief-builder"/);
-  assert.match(privacySection, /Secure File Service Privacy Controls/);
-  assert.match(privacySection, /Secure ECU and TCU file service needs clear public\/private boundaries/);
-  assert.match(privacySection, /separates public\s+preparation guidance from authenticated request handling/);
-  assert.match(privacySection, /Public privacy boundary/);
-  assert.match(
-    privacySection,
-    /does not expose customer identity, order records,\s+internal notes, file paths, binary data, private review metadata or\s+delivery assets/
-  );
-  assert.match(privacySection, /focus-visible:ring-2 focus-visible:ring-red-700/);
-  assert.doesNotMatch(privacySource, /\/new-request|\/dashboard/);
-  assert.doesNotMatch(
-    privacySource + privacySection,
-    /type="file"|upload-session|api\/admin|fetch\(|createObjectURL|FileReader|generateMod|bytePatch|writeFile|checksum|storage_path|signed_url|service_role|SUPABASE_SERVICE_ROLE_KEY|admin_note|internal_note|customer_email|source_reference|confidence_score|sample_id|raw|hex/i
-  );
-});
-
-test("homepage file service use case library maps workshop intents safely", () => {
-  const homepage = readProjectFile("src", "app", "page.tsx");
-  const useCaseSource =
-    homepage.match(/const fileServiceUseCases = \[[\s\S]*?const fileServiceQualitySignals = \[/)?.[0] ?? "";
-  const useCaseSection = readHomepageCompactResourceSection(homepage, "file-service-use-cases");
-
-  assert.match(homepage, /const fileServiceUseCases = \[/);
-  assert.match(useCaseSource, /title: "Stage 1 ECU request"/);
-  assert.match(useCaseSource, /title: "TCU and gearbox request"/);
-  assert.match(useCaseSource, /title: "Diesel technical request"/);
-  assert.match(useCaseSource, /title: "Diagnostic code request"/);
-  assert.match(useCaseSource, /title: "Unknown read method"/);
-  assert.match(useCaseSource, /title: "Incomplete vehicle context"/);
-  assert.match(useCaseSource, /href: "\/services\/stage-1"/);
-  assert.match(useCaseSource, /href: "\/ecu-platforms\/transmission-control-units"/);
-  assert.match(useCaseSource, /href: "\/services\/dpf-off"/);
-  assert.match(useCaseSource, /href: "\/services\/dtc-off"/);
-  assert.match(useCaseSource, /href: "\/tools\/ecu-read-method-advisor"/);
-  assert.match(useCaseSource, /href: "\/tools\/request-brief-builder"/);
-  assert.match(useCaseSection, /File Service Use Case Library/);
-  assert.match(useCaseSection, /Match the workshop situation to the right file-service route/);
-  assert.match(useCaseSection, /real search intent\s+behind each request type/);
-  assert.match(useCaseSection, /Use-case boundary/);
-  assert.match(
-    useCaseSection,
-    /does not inspect\s+customer files, create requests, start upload actions or modify\s+files/
-  );
-  assert.match(useCaseSection, /focus-visible:ring-2 focus-visible:ring-red-700/);
-  assert.doesNotMatch(useCaseSource, /\/new-request|\/dashboard/);
-  assert.doesNotMatch(
-    useCaseSource + useCaseSection,
-    /type="file"|upload-session|api\/admin|fetch\(|createObjectURL|FileReader|generateMod|bytePatch|writeFile|checksum|storage_path|signed_url|service_role|SUPABASE_SERVICE_ROLE_KEY|admin_note|internal_note|customer_email|source_reference|confidence_score|sample_id|raw|hex/i
-  );
-});
-
-test("homepage file service quality signals explain review readiness safely", () => {
-  const homepage = readProjectFile("src", "app", "page.tsx");
-  const qualitySource =
-    homepage.match(/const fileServiceQualitySignals = \[[\s\S]*?const fileServiceWorkshopProfiles = \[/)?.[0] ?? "";
-  const qualitySection = readHomepageCompactResourceSection(homepage, "file-service-quality-signals");
-
-  assert.match(homepage, /const fileServiceQualitySignals = \[/);
-  assert.match(qualitySource, /title: "Vehicle identity is complete"/);
-  assert.match(qualitySource, /title: "Controller context is clear"/);
-  assert.match(qualitySource, /title: "Service intent is separated"/);
-  assert.match(qualitySource, /title: "File readiness is known"/);
-  assert.match(qualitySource, /title: "Workshop notes are usable"/);
-  assert.match(qualitySource, /title: "Human review boundary is clear"/);
-  assert.match(qualitySource, /href: "\/tools\/request-brief-builder"/);
-  assert.match(qualitySource, /href: "\/tools\/ecu-read-method-advisor"/);
-  assert.match(qualitySource, /href: "\/file-service"/);
-  assert.match(qualitySource, /href: "\/tools\/file-readiness-check"/);
-  assert.match(qualitySource, /href: "\/how-it-works"/);
-  assert.match(qualitySection, /File Service Quality Signals/);
-  assert.match(qualitySection, /Better request quality means faster, clearer file-service review/);
-  assert.match(qualitySection, /what improves review clarity before secure submission/);
-  assert.match(qualitySection, /Quality-signal boundary/);
-  assert.match(
-    qualitySection,
-    /does not score\s+customer files, inspect uploaded content, approve learning evidence,\s+generate files or change file integrity data/
-  );
-  assert.match(qualitySection, /focus-visible:ring-2 focus-visible:ring-red-700/);
-  assert.doesNotMatch(qualitySource, /\/new-request|\/dashboard/);
-  assert.doesNotMatch(
-    qualitySource + qualitySection,
-    /type="file"|upload-session|api\/admin|fetch\(|createObjectURL|FileReader|generateMod|bytePatch|writeFile|checksum|storage_path|signed_url|service_role|SUPABASE_SERVICE_ROLE_KEY|admin_note|internal_note|customer_email|source_reference|confidence_score|sample_id|raw|hex/i
-  );
-});
-
-test("homepage workshop file service profiles route audience intent safely", () => {
-  const homepage = readProjectFile("src", "app", "page.tsx");
-  const profileSource =
-    homepage.match(/const fileServiceWorkshopProfiles = \[[\s\S]*?const fileServiceKnowledgeMap = \[/)?.[0] ?? "";
-  const profileSection = readHomepageCompactResourceSection(homepage, "file-service-workshop-profiles");
-
-  assert.match(homepage, /const fileServiceWorkshopProfiles = \[/);
-  assert.match(profileSource, /title: "Performance workshop"/);
-  assert.match(profileSource, /title: "Diesel diagnostics workshop"/);
-  assert.match(profileSource, /title: "Transmission specialist"/);
-  assert.match(profileSource, /title: "Mobile technician"/);
-  assert.match(profileSource, /title: "Multi-brand workshop"/);
-  assert.match(profileSource, /title: "First-time customer"/);
-  assert.match(profileSource, /href: "\/services\/stage-1"/);
-  assert.match(profileSource, /href: "\/services\/dpf-off"/);
-  assert.match(profileSource, /href: "\/ecu-platforms\/transmission-control-units"/);
-  assert.match(profileSource, /href: "\/tools\/ecu-read-method-advisor"/);
-  assert.match(profileSource, /href: "\/brands"/);
-  assert.match(profileSource, /href: "\/how-it-works"/);
-  assert.match(profileSection, /Workshop File Service Profiles/);
-  assert.match(profileSection, /Different workshop teams need different file-service entry points/);
-  assert.match(profileSection, /route each customer type to the safest preparation page/);
-  assert.match(profileSection, /Workshop-profile boundary/);
-  assert.match(
-    profileSection,
-    /does not create\s+requests, inspect customer files, expose customer records, change\s+payments or deliver files/
-  );
-  assert.match(profileSection, /focus-visible:ring-2 focus-visible:ring-red-700/);
-  assert.doesNotMatch(profileSource, /\/new-request|\/dashboard/);
-  assert.doesNotMatch(
-    profileSource + profileSection,
-    /type="file"|upload-session|api\/admin|fetch\(|createObjectURL|FileReader|generateMod|bytePatch|writeFile|checksum|storage_path|signed_url|service_role|SUPABASE_SERVICE_ROLE_KEY|admin_note|internal_note|customer_email|source_reference|confidence_score|sample_id|raw|hex/i
-  );
-});
-
-test("homepage file service knowledge map routes broad search intent to useful public paths", () => {
-  const homepage = readProjectFile("src", "app", "page.tsx");
-  const mapSource =
-    homepage.match(/const fileServiceKnowledgeMap = \[[\s\S]*?const fileServiceDecisionMatrix = \[/)?.[0] ?? "";
-  const mapSection = readHomepageCompactResourceSection(homepage, "file-service-knowledge-map");
-
-  assert.match(homepage, /const fileServiceKnowledgeMap = \[/);
-  assert.match(mapSource, /title: "ECU file service workflow"/);
-  assert.match(mapSource, /title: "TCU file service workflow"/);
-  assert.match(mapSource, /title: "Stage 1 file preparation"/);
-  assert.match(mapSource, /title: "Diesel support request path"/);
-  assert.match(mapSource, /title: "DTC request preparation"/);
-  assert.match(mapSource, /title: "Request readiness tools"/);
-  assert.match(mapSource, /href: "\/file-service"/);
-  assert.match(mapSource, /href: "\/ecu-platforms\/transmission-control-units"/);
-  assert.match(mapSource, /href: "\/services\/stage-1"/);
-  assert.match(mapSource, /href: "\/services\/dpf-off"/);
-  assert.match(mapSource, /href: "\/services\/dtc-off"/);
-  assert.match(mapSource, /href: "\/tools\/file-readiness-check"/);
-  assert.match(mapSection, /File Service Knowledge Map/);
-  assert.match(mapSection, /Broad search term, precise request path/);
-  assert.match(mapSection, /href="\/file-service"/);
-  assert.match(mapSection, /href="\/new-request"/);
-  assert.match(mapSection, /focus-visible:ring-2 focus-visible:ring-red-700/);
-  assert.doesNotMatch(
-    mapSource + mapSection,
-    /type="file"|upload-session|api\/admin|fetch\(|createObjectURL|FileReader|generateMod|bytePatch|writeFile|checksum|storage_path|signed_url|service_role|SUPABASE_SERVICE_ROLE_KEY|admin_note|internal_note|customer_email|source_reference|confidence_score|sample_id|raw|hex/i
-  );
-});
-
-test("homepage file service decision matrix guides users without starting file actions", () => {
-  const homepage = readProjectFile("src", "app", "page.tsx");
-  const matrixSource =
-    homepage.match(/const fileServiceDecisionMatrix = \[[\s\S]*?const fileServiceOperatingStandard = \[/)?.[0] ?? "";
-  const matrixSection = readHomepageCompactResourceSection(homepage, "file-service-decision-matrix");
-
-  assert.match(homepage, /const fileServiceDecisionMatrix = \[/);
-  assert.match(matrixSource, /title: "ECU file service"/);
-  assert.match(matrixSource, /title: "TCU file service"/);
-  assert.match(matrixSource, /title: "Stage 1 file service"/);
-  assert.match(matrixSource, /title: "Diesel technical request"/);
-  assert.match(matrixSource, /title: "DTC request"/);
-  assert.match(matrixSource, /title: "Not sure yet"/);
-  assert.match(matrixSource, /href: "\/file-service"/);
-  assert.match(matrixSource, /href: "\/ecu-platforms\/transmission-control-units"/);
-  assert.match(matrixSource, /href: "\/services\/stage-1"/);
-  assert.match(matrixSource, /href: "\/services\/dpf-off"/);
-  assert.match(matrixSource, /href: "\/services\/dtc-off"/);
-  assert.match(matrixSource, /href: "\/tools\/file-readiness-check"/);
-  assert.match(matrixSection, /File Service Decision Matrix/);
-  assert.match(matrixSection, /Choose the right file-service route in seconds/);
-  assert.match(matrixSection, /Search intent/);
-  assert.match(matrixSection, /Prepare before upload/);
-  assert.match(matrixSection, /informational only/);
-  assert.match(matrixSection, /does not inspect,\s+upload, edit, checksum or generate ECU\/TCU files/);
-  assert.doesNotMatch(
-    matrixSource + matrixSection,
-    /type="file"|upload-session|api\/admin|fetch\(|createObjectURL|FileReader|generateMod|bytePatch|writeFile|checksum\(|storage_path|signed_url|service_role|SUPABASE_SERVICE_ROLE_KEY|admin_note|internal_note|customer_email|source_reference|confidence_score|sample_id|raw|hex/i
-  );
-});
-
-test("homepage online file service operating standard explains trust boundaries", () => {
-  const homepage = readProjectFile("src", "app", "page.tsx");
-  const standardSource =
-    homepage.match(/const fileServiceOperatingStandard = \[[\s\S]*?const fileServiceGlossaryTerms = \[/)?.[0] ?? "";
-  const standardSection = readHomepageCompactResourceSection(homepage, "file-service-operating-standard");
-
-  assert.match(homepage, /const fileServiceOperatingStandard = \[/);
-  assert.match(standardSource, /title: "Secure request intake"/);
-  assert.match(standardSource, /title: "Vehicle context before file review"/);
-  assert.match(standardSource, /title: "Human review boundary"/);
-  assert.match(standardSource, /title: "Private dashboard delivery"/);
-  assert.match(standardSource, /href: "\/file-service"/);
-  assert.match(standardSource, /href: "\/tools\/request-brief-builder"/);
-  assert.match(standardSource, /href: "\/how-it-works"/);
-  assert.match(standardSource, /action: "Review intake workflow"/);
-  assert.match(standardSource, /action: "Build request brief"/);
-  assert.match(standardSource, /action: "See workflow"/);
-  assert.match(standardSource, /action: "See delivery workflow"/);
-  assert.match(standardSection, /Online File Service Standard/);
-  assert.match(standardSection, /A professional file-service workflow is more than a file upload form/);
-  assert.match(standardSection, /secure intake, vehicle context, human review\s+boundaries and private dashboard delivery/);
-  assert.match(standardSection, /Customer-safe operating boundary/);
-  assert.match(standardSection, /does not read files, open storage paths, expose\s+private metadata or create customer-ready ECU\/TCU outputs/);
-  assert.match(standardSection, /focus-visible:ring-2 focus-visible:ring-red-700/);
-  assert.doesNotMatch(
-    standardSource + standardSection,
-    /type="file"|upload-session|api\/admin|fetch\(|createObjectURL|FileReader|generateMod|bytePatch|writeFile|checksum|storage_path|signed_url|service_role|SUPABASE_SERVICE_ROLE_KEY|admin_note|internal_note|customer_email|source_reference|confidence_score|sample_id|raw|hex/i
-  );
-});
-
-test("homepage file service glossary explains terminology with DefinedTermSet schema", () => {
-  const homepage = readProjectFile("src", "app", "page.tsx");
-  const glossarySource =
-    homepage.match(/const fileServiceGlossaryTerms = \[[\s\S]*?type HomepageCompactResourceItem = \{/)?.[0] ?? "";
-  const glossarySection = readHomepageCompactResourceSection(homepage, "file-service-glossary");
-
-  assert.match(homepage, /const fileServiceGlossaryTerms = \[/);
-  assert.match(glossarySource, /title: "ECU file service"/);
-  assert.match(glossarySource, /title: "TCU file service"/);
-  assert.match(glossarySource, /title: "ORI file"/);
-  assert.match(glossarySource, /title: "MOD file"/);
-  assert.match(glossarySource, /title: "Read method"/);
-  assert.match(glossarySource, /title: "DTC request"/);
-  assert.match(glossarySource, /title: "Secure upload"/);
-  assert.match(glossarySource, /title: "Private delivery"/);
-  assert.match(glossarySource, /href: "\/file-service"/);
-  assert.match(glossarySource, /href: "\/ecu-platforms\/transmission-control-units"/);
-  assert.match(glossarySource, /href: "\/tools\/file-readiness-check"/);
-  assert.match(glossarySource, /href: "\/tools\/ecu-read-method-advisor"/);
-  assert.match(glossarySection, /File Service Glossary/);
-  assert.match(glossarySection, /Understand the file-service terms before opening an ECU or TCU request/);
-  assert.match(glossarySection, /Learn more/);
-  assert.match(glossarySection, /educational and customer-safe/);
-  assert.match(glossarySection, /does not\s+inspect, upload, edit or create ECU\/TCU files/);
-  assert.match(glossarySection, /focus-visible:ring-2 focus-visible:ring-red-700/);
-  assert.match(homepage, /const homepageFileServiceGlossaryJsonLd = \{/);
-  assert.match(homepage, /"@type": "DefinedTermSet"/);
-  assert.match(homepage, /hasDefinedTerm: fileServiceGlossaryTerms\.map/);
-  assert.match(homepage, /"@type": "DefinedTerm"/);
-  assert.match(homepage, /JSON\.stringify\(homepageFileServiceGlossaryJsonLd\)/);
-  assert.doesNotMatch(
-    glossarySource + glossarySection,
-    /type="file"|upload-session|api\/admin|fetch\(|createObjectURL|FileReader|generateMod|bytePatch|writeFile|checksum\(|storage_path|signed_url|service_role|SUPABASE_SERVICE_ROLE_KEY|admin_note|internal_note|customer_email|source_reference|confidence_score|sample_id|raw|hex/i
-  );
-});
-
-test("homepage provides customer-safe search intent FAQ structured data", () => {
-  const homepage = readProjectFile("src", "app", "page.tsx");
-  const faqSource =
-    homepage.match(/const homepageSearchIntentFaq = \[[\s\S]*?const workshopUseCases = \[/)?.[0] ?? "";
-
-  assert.match(homepage, /const homepageSearchIntentFaq = \[/);
-  assert.match(homepage, /const homepageSearchIntentJsonLd = \{/);
+  assert.match(homepage, /homepagePageJsonLd/);
+  assert.match(homepage, /homepageFileServiceJsonLd/);
+  assert.match(homepage, /homepageFaqJsonLd/);
+  assert.match(homepage, /homepageRequestPreparationHowToJsonLd/);
+  assert.match(homepage, /"@type": "WebPage"/);
+  assert.match(homepage, /"@type": "Service"/);
   assert.match(homepage, /"@type": "FAQPage"/);
-  assert.match(homepage, /mainEntity: homepageSearchIntentFaq\.map/);
-  assert.match(homepage, /Workshop Search Guide/);
-  assert.match(homepage, /ECU file service questions answered before upload/);
-  assert.match(homepage, /What should I prepare before sending an ECU or TCU file request\?/);
-  assert.match(homepage, /Do the public preparation tools upload or modify my ECU file\?/);
-  assert.match(homepage, /reads only the compatible text datalog you explicitly choose/);
-  assert.match(homepage, /Does the homepage analyze my file\?/);
-  assert.match(homepage, /public snapshot reads it locally in this browser/);
-  assert.match(homepage, /How is a completed file delivered\?/);
-  assert.match(homepage, /Can I create a request if my vehicle is not in the public selector\?/);
-  assert.match(homepage, /href: "\/tools\/file-readiness-check"/);
-  assert.match(homepage, /href: "\/how-it-works"/);
-  assert.match(homepage, /href: "\/new-request"/);
-  assert.match(homepage, /type="application\/ld\+json"/);
-  assert.match(homepage, /JSON\.stringify\(homepageSearchIntentJsonLd\)/);
-  assert.match(homepage, /FAQ structured data is generated from the same customer-visible\s+answers/);
-  assert.doesNotMatch(
-    faqSource,
-    /storage_path|signed_url|service_role|SUPABASE_SERVICE_ROLE_KEY|admin_note|internal_note|customer_email|source_reference|confidence_score|sample_id|provider|raw|hex|bytePatch|generateMod|checksum|fetch\(|\.rpc\(/i
-  );
+  assert.match(homepage, /"@type": "HowTo"/);
+  assert.match(homepage, /step: workflowSteps\.map/);
+  assert.match(homepage, /mainEntity: faqs\.map/);
+  assert.match(homepage, /itemListElement: services\.map/);
+  assert.doesNotMatch(homepage, /DefinedTermSet|homepageResourceJsonLd/);
 });
 
-test("homepage service cards deep-link to public service landing pages", () => {
+test("refreshed homepage exposes navigation on mobile and compact laptops", () => {
   const homepage = readProjectFile("src", "app", "page.tsx");
-  const servicesSource =
-    homepage.match(/const services = \[[\s\S]*?const steps = \[/)?.[0] ?? "";
-  const serviceSection =
-    homepage.match(/<AnimatedSection id="services"[\s\S]*?<AnimatedSection className="bg-\[#050505\] py-20">/)?.[0] ??
-    "";
+  const deferredTools = readProjectFile(
+    "src",
+    "components",
+    "tools",
+    "DeferredPerformanceTools.tsx"
+  );
+  const publicSnapshot = readProjectFile(
+    "src",
+    "components",
+    "tools",
+    "PublicLogSnapshot.tsx"
+  );
 
-  assert.match(servicesSource, /href: "\/services\/stage-1"/);
-  assert.match(servicesSource, /href: "\/services\/dpf-off"/);
-  assert.match(servicesSource, /href: "\/services\/egr-off"/);
-  assert.match(servicesSource, /href: "\/services\/adblue-off"/);
-  assert.match(servicesSource, /href: "\/services\/dtc-off"/);
-  assert.match(servicesSource, /href: "\/services\/tcu-tuning"[\s\S]*View TCU service/);
-  assert.match(servicesSource, /searchIntent: "Performance calibration"/);
-  assert.match(servicesSource, /searchIntent: "Diesel aftertreatment"/);
-  assert.match(servicesSource, /searchIntent: "Diagnostic code request"/);
-  assert.match(serviceSection, /<Link[\s\S]*href=\{service\.href\}/);
-  assert.match(serviceSection, /\{service\.searchIntent\}/);
-  assert.match(serviceSection, /\{service\.action\}/);
-  assert.match(serviceSection, /focus-visible:ring-2 focus-visible:ring-red-700/);
-  assert.doesNotMatch(
-    serviceSection,
-    /type="file"|upload-session|api\/admin|fetch\(|createObjectURL|FileReader|generateMod|bytePatch|writeFile|checksum|storage_path|signed_url|service_role/i
-  );
-});
-
-test("homepage brand cards deep-link to public brand landing pages", () => {
-  const homepage = readProjectFile("src", "app", "page.tsx");
-  const brandSource =
-    homepage.match(/const supportedBrands = \[[\s\S]*?const trustHighlights = \[/)?.[0] ?? "";
-  const brandSection =
-    homepage.match(/<AnimatedSection id="brands"[\s\S]*?<AnimatedSection id="ecu-platforms"/)?.[0] ??
-    "";
-
-  assert.match(brandSource, /href: "\/brands\/bmw"/);
-  assert.match(brandSource, /href: "\/brands\/mercedes-benz"/);
-  assert.match(brandSource, /href: "\/brands\/audi"/);
-  assert.match(brandSource, /href: "\/brands\/volkswagen"/);
-  assert.match(brandSource, /href: "\/brands\/porsche"/);
-  assert.match(brandSource, /href: "\/brands\/opel"/);
-  assert.match(brandSource, /href: "\/brands\/renault"/);
-  assert.match(brandSource, /href: "\/brands\/peugeot"/);
-  assert.match(brandSource, /action: "View BMW files"/);
-  assert.match(brandSource, /action: "View Mercedes files"/);
-  assert.match(brandSection, /<Link[\s\S]*href=\{brand\.href\}/);
-  assert.match(brandSection, /\{brand\.action\}/);
-  assert.match(brandSection, /focus-visible:ring-2 focus-visible:ring-red-700/);
-  assert.match(brandSection, /Need another brand\?/);
-  assert.match(brandSection, /href="\/new-request"/);
-  assert.doesNotMatch(
-    brandSection,
-    /type="file"|upload-session|api\/admin|fetch\(|createObjectURL|FileReader|generateMod|bytePatch|writeFile|checksum|storage_path|signed_url|service_role/i
-  );
-});
-
-test("homepage ECU platform library deep-links to public platform guides", () => {
-  const homepage = readProjectFile("src", "app", "page.tsx");
-  const platformSource =
-    homepage.match(/const ecuPlatformLinks = \[[\s\S]*?const trustHighlights = \[/)?.[0] ?? "";
-  const platformSection =
-    homepage.match(/<AnimatedSection id="ecu-platforms"[\s\S]*?<AnimatedSection className="bg-\[#07090d\] py-14 text-white md:py-16">/)?.[0] ??
-    "";
-
-  assert.match(platformSource, /href: "\/ecu-platforms\/bosch-edc17"/);
-  assert.match(platformSource, /href: "\/ecu-platforms\/bosch-md1"/);
-  assert.match(platformSource, /href: "\/ecu-platforms\/bosch-mg1"/);
-  assert.match(platformSource, /href: "\/ecu-platforms\/continental-simos"/);
-  assert.match(platformSource, /href: "\/ecu-platforms\/continental-sid"/);
-  assert.match(platformSource, /href: "\/ecu-platforms\/delphi-dcm"/);
-  assert.match(platformSource, /href: "\/ecu-platforms\/denso"/);
-  assert.match(platformSource, /href: "\/ecu-platforms\/transmission-control-units"/);
-  assert.match(platformSection, /ECU Platform Library/);
-  assert.match(platformSection, /href="\/ecu-platforms"/);
-  assert.match(platformSection, /<Link[\s\S]*href=\{platform\.href\}/);
-  assert.match(platformSection, /\{platform\.action\}/);
-  assert.match(platformSection, /No public guide edits, generates or checksum-corrects customer files/);
-  assert.match(platformSection, /focus-visible:ring-2 focus-visible:ring-red-700/);
-  assert.doesNotMatch(
-    platformSection,
-    /type="file"|upload-session|api\/admin|fetch\(|createObjectURL|FileReader|generateMod|bytePatch|writeFile|checksum\(|storage_path|signed_url|service_role/i
-  );
-});
-
-test("homepage exposes customer-safe resource ItemList structured data", () => {
-  const homepage = readProjectFile("src", "app", "page.tsx");
-  const resourceSource =
-    homepage.match(/type HomepageResourceLink = \{[\s\S]*?const homepagePageJsonLd = \{/)?.[0] ?? "";
-  const resourceScript =
-    homepage.match(/<script[\s\S]*?JSON\.stringify\(homepageResourceJsonLd\)[\s\S]*?\/>/)?.[0] ?? "";
-
-  assert.match(homepage, /const serviceLandingPageLinks = services\.filter/);
-  assert.match(homepage, /service\.href\.startsWith\("\/services\/"\)/);
-  assert.match(resourceSource, /const homepageResourceJsonLd = \{/);
-  assert.match(resourceSource, /"@graph": \[/);
-  assert.doesNotMatch(resourceSource, /file service quick paths|file-service-quick-paths/);
-  assert.match(
-    resourceSource,
-    /buildHomepageItemList\("MG AutoTech file service homepage navigator", homepageFileServiceNavigator, "\/#file-service-navigator"\)/
-  );
-  assert.match(
-    resourceSource,
-    /buildHomepageItemList\("MG AutoTech file service answer library", fileServiceAnswerLibrary, "\/#file-service-answer-library"\)/
-  );
-  assert.match(
-    resourceSource,
-    /buildHomepageItemList\("MG AutoTech file service search route index", fileServiceSearchRouteIndex, "\/#file-service-search-index"\)/
-  );
-  assert.match(
-    resourceSource,
-    /buildHomepageItemList\("MG AutoTech file service snippet summary", fileServiceSnippetSummary, "\/#file-service-snippet-summary"\)/
-  );
-  assert.match(
-    resourceSource,
-    /buildHomepageItemList\("MG AutoTech professional file service comparison", fileServiceTrustComparison, "\/#professional-file-service-comparison"\)/
-  );
-  assert.match(
-    resourceSource,
-    /buildHomepageItemList\("MG AutoTech file service verification checkpoints", fileServiceVerificationCheckpoints, "\/#file-service-verification-checkpoints"\)/
-  );
-  assert.match(
-    resourceSource,
-    /buildHomepageItemList\("MG AutoTech file service myth checks", fileServiceMythChecks, "\/#file-service-myth-checks"\)/
-  );
-  assert.match(
-    resourceSource,
-    /buildHomepageItemList\("MG AutoTech file service platform stack", fileServicePlatformStack, "\/#file-service-platform-stack"\)/
-  );
-  assert.match(
-    resourceSource,
-    /buildHomepageItemList\("MG AutoTech file service read method routes", fileServiceReadMethodRoutes, "\/#file-service-read-methods"\)/
-  );
-  assert.match(
-    resourceSource,
-    /buildHomepageItemList\("MG AutoTech file service brief requirements", fileServiceBriefRequirements, "\/#file-service-brief-requirements"\)/
-  );
-  assert.match(
-    resourceSource,
-    /buildHomepageItemList\("MG AutoTech file service fit checker", fileServiceFitChecks, "\/#file-service-fit-checker"\)/
-  );
-  assert.match(
-    resourceSource,
-    /buildHomepageItemList\("MG AutoTech file service outcome preview", fileServiceOutcomePreview, "\/#file-service-outcome-preview"\)/
-  );
-  assert.match(
-    resourceSource,
-    /buildHomepageItemList\("MG AutoTech file service status guide", fileServiceStatusGuide, "\/#file-service-status-guide"\)/
-  );
-  assert.match(
-    resourceSource,
-    /buildHomepageItemList\("MG AutoTech secure file service privacy controls", fileServicePrivacyControls, "\/#file-service-privacy-controls"\)/
-  );
-  assert.match(
-    resourceSource,
-    /buildHomepageItemList\("MG AutoTech file service use case library", fileServiceUseCases, "\/#file-service-use-cases"\)/
-  );
-  assert.match(
-    resourceSource,
-    /buildHomepageItemList\("MG AutoTech file service quality signals", fileServiceQualitySignals, "\/#file-service-quality-signals"\)/
-  );
-  assert.match(
-    resourceSource,
-    /buildHomepageItemList\("MG AutoTech workshop file service profiles", fileServiceWorkshopProfiles, "\/#file-service-workshop-profiles"\)/
-  );
-  assert.match(
-    resourceSource,
-    /buildHomepageItemList\("MG AutoTech service landing pages", serviceLandingPageLinks, "\/#service-landing-pages"\)/
-  );
-  assert.match(
-    resourceSource,
-    /buildHomepageItemList\("MG AutoTech file service knowledge map", fileServiceKnowledgeMap, "\/#file-service-knowledge-map"\)/
-  );
-  assert.match(
-    resourceSource,
-    /buildHomepageItemList\("MG AutoTech file service decision matrix", fileServiceDecisionMatrix, "\/#file-service-decision-matrix"\)/
-  );
-  assert.match(
-    resourceSource,
-    /buildHomepageItemList\("MG AutoTech online file service operating standard", fileServiceOperatingStandard, "\/#file-service-operating-standard"\)/
-  );
-  assert.match(
-    resourceSource,
-    /buildHomepageItemList\("MG AutoTech file service glossary", fileServiceGlossaryTerms, "\/#file-service-glossary"\)/
-  );
-  assert.match(
-    resourceSource,
-    /buildHomepageItemList\("MG AutoTech supported brand guides", supportedBrands, "\/#supported-brand-guides"\)/
-  );
-  assert.match(
-    resourceSource,
-    /buildHomepageItemList\("MG AutoTech ECU and TCU platform guides", ecuPlatformLinks, "\/#ecu-platform-guides"\)/
-  );
-  assert.match(resourceSource, /"@type": "ItemList"/);
-  assert.match(resourceSource, /"@type": "ListItem"/);
-  assert.match(resourceSource, /"@type": "WebPage"/);
-  assert.match(resourceSource, /https:\/\/file\.mgautotech\.de\$\{href\}/);
-  assert.match(resourceScript, /type="application\/ld\+json"/);
-  assert.match(homepage, /JSON\.stringify\(homepageResourceJsonLd\)/);
-  assert.doesNotMatch(resourceSource, /\/new-request/);
-  assert.doesNotMatch(
-    resourceSource,
-    /credits|Credit|price|payment|storage_path|signed_url|service_role|SUPABASE_SERVICE_ROLE_KEY|admin_note|internal_note|customer_email|source_reference|confidence_score|sample_id|provider|raw|hex|bytePatch|generateMod|checksum|fetch\(|\.rpc\(/i
-  );
-});
-
-test("homepage exposes page-level WebPage structured data identity", () => {
-  const homepage = readProjectFile("src", "app", "page.tsx");
-  const pageSchemaSource =
-    homepage.match(/const homepagePageJsonLd = \{[\s\S]*?const homepageFileServiceJsonLd = \{/)?.[0] ?? "";
-  const pageScript =
-    homepage.match(/<script[\s\S]*?JSON\.stringify\(homepagePageJsonLd\)[\s\S]*?\/>/)?.[0] ?? "";
-
-  assert.match(pageSchemaSource, /"@type": "WebPage"/);
-  assert.match(pageSchemaSource, /"@id": publicResourceUrl\("\/#page"\)/);
-  assert.match(pageSchemaSource, /name: "MG AutoTech ECU & TCU File Service"/);
-  assert.match(pageSchemaSource, /inLanguage: "en"/);
-  assert.match(pageSchemaSource, /isPartOf: \{ "@id": publicResourceUrl\("\/#website"\) \}/);
-  assert.match(pageSchemaSource, /about: \{ "@id": publicResourceUrl\("\/#organization"\) \}/);
-  assert.match(pageSchemaSource, /primaryImageOfPage/);
-  assert.match(pageSchemaSource, /hasPart: \[/);
-  assert.match(pageSchemaSource, /publicResourceUrl\("\/#homepage-search-faq"\)/);
-  assert.match(pageSchemaSource, /publicResourceUrl\("\/#tools"\)/);
-  assert.match(pageSchemaSource, /publicResourceUrl\("\/#file-service-navigator"\)/);
-  assert.match(pageSchemaSource, /publicResourceUrl\("\/#file-service-answer-library"\)/);
-  assert.match(pageSchemaSource, /publicResourceUrl\("\/#file-service-search-index"\)/);
-  assert.match(pageSchemaSource, /publicResourceUrl\("\/#file-service-snippet-summary"\)/);
-  assert.match(pageSchemaSource, /publicResourceUrl\("\/#professional-file-service-comparison"\)/);
-  assert.match(pageSchemaSource, /publicResourceUrl\("\/#file-service-verification-checkpoints"\)/);
-  assert.match(pageSchemaSource, /publicResourceUrl\("\/#file-service-myth-checks"\)/);
-  assert.match(pageSchemaSource, /publicResourceUrl\("\/#file-service-platform-stack"\)/);
-  assert.match(pageSchemaSource, /publicResourceUrl\("\/#ecu-tcu-file-service"\)/);
-  assert.match(pageSchemaSource, /publicResourceUrl\("\/#file-service-read-methods"\)/);
-  assert.match(pageSchemaSource, /publicResourceUrl\("\/#file-service-brief-requirements"\)/);
-  assert.match(pageSchemaSource, /publicResourceUrl\("\/#file-service-fit-checker"\)/);
-  assert.match(pageSchemaSource, /publicResourceUrl\("\/#file-service-outcome-preview"\)/);
-  assert.match(pageSchemaSource, /publicResourceUrl\("\/#file-service-status-guide"\)/);
-  assert.match(pageSchemaSource, /publicResourceUrl\("\/#file-service-privacy-controls"\)/);
-  assert.match(pageSchemaSource, /publicResourceUrl\("\/#file-service-use-cases"\)/);
-  assert.match(pageSchemaSource, /publicResourceUrl\("\/#file-service-quality-signals"\)/);
-  assert.match(pageSchemaSource, /publicResourceUrl\("\/#file-service-workshop-profiles"\)/);
-  assert.match(pageSchemaSource, /publicResourceUrl\("\/#request-readiness-howto"\)/);
-  assert.match(pageSchemaSource, /publicResourceUrl\("\/#service-landing-pages"\)/);
-  assert.match(pageSchemaSource, /publicResourceUrl\("\/#file-service-knowledge-map"\)/);
-  assert.match(pageSchemaSource, /publicResourceUrl\("\/#file-service-decision-matrix"\)/);
-  assert.match(pageSchemaSource, /publicResourceUrl\("\/#file-service-operating-standard"\)/);
-  assert.match(pageSchemaSource, /publicResourceUrl\("\/#file-service-glossary"\)/);
-  assert.match(pageSchemaSource, /publicResourceUrl\("\/#supported-brand-guides"\)/);
-  assert.match(pageSchemaSource, /publicResourceUrl\("\/#ecu-platform-guides"\)/);
-  assert.match(homepage, /"@id": "https:\/\/file\.mgautotech\.de\/#homepage-search-faq"/);
-  assert.doesNotMatch(homepage, /file-service-quick-paths|homepageQuickServicePaths|homepageQuickPathJsonLd/);
-  assert.match(
-    homepage,
-    /buildHomepageItemList\("MG AutoTech file service homepage navigator", homepageFileServiceNavigator, "\/#file-service-navigator"\)/
-  );
-  assert.match(
-    homepage,
-    /buildHomepageItemList\("MG AutoTech file service answer library", fileServiceAnswerLibrary, "\/#file-service-answer-library"\)/
-  );
-  assert.match(
-    homepage,
-    /buildHomepageItemList\("MG AutoTech file service search route index", fileServiceSearchRouteIndex, "\/#file-service-search-index"\)/
-  );
-  assert.match(
-    homepage,
-    /buildHomepageItemList\("MG AutoTech file service snippet summary", fileServiceSnippetSummary, "\/#file-service-snippet-summary"\)/
-  );
-  assert.match(
-    homepage,
-    /buildHomepageItemList\("MG AutoTech professional file service comparison", fileServiceTrustComparison, "\/#professional-file-service-comparison"\)/
-  );
-  assert.match(
-    homepage,
-    /buildHomepageItemList\("MG AutoTech file service verification checkpoints", fileServiceVerificationCheckpoints, "\/#file-service-verification-checkpoints"\)/
-  );
-  assert.match(
-    homepage,
-    /buildHomepageItemList\("MG AutoTech file service myth checks", fileServiceMythChecks, "\/#file-service-myth-checks"\)/
-  );
-  assert.match(
-    homepage,
-    /buildHomepageItemList\("MG AutoTech file service platform stack", fileServicePlatformStack, "\/#file-service-platform-stack"\)/
-  );
-  assert.match(
-    homepage,
-    /buildHomepageItemList\("MG AutoTech file service read method routes", fileServiceReadMethodRoutes, "\/#file-service-read-methods"\)/
-  );
-  assert.match(
-    homepage,
-    /buildHomepageItemList\("MG AutoTech file service brief requirements", fileServiceBriefRequirements, "\/#file-service-brief-requirements"\)/
-  );
-  assert.match(
-    homepage,
-    /buildHomepageItemList\("MG AutoTech file service fit checker", fileServiceFitChecks, "\/#file-service-fit-checker"\)/
-  );
-  assert.match(
-    homepage,
-    /buildHomepageItemList\("MG AutoTech file service outcome preview", fileServiceOutcomePreview, "\/#file-service-outcome-preview"\)/
-  );
-  assert.match(
-    homepage,
-    /buildHomepageItemList\("MG AutoTech file service status guide", fileServiceStatusGuide, "\/#file-service-status-guide"\)/
-  );
-  assert.match(
-    homepage,
-    /buildHomepageItemList\("MG AutoTech secure file service privacy controls", fileServicePrivacyControls, "\/#file-service-privacy-controls"\)/
-  );
-  assert.match(
-    homepage,
-    /buildHomepageItemList\("MG AutoTech file service use case library", fileServiceUseCases, "\/#file-service-use-cases"\)/
-  );
-  assert.match(
-    homepage,
-    /buildHomepageItemList\("MG AutoTech file service quality signals", fileServiceQualitySignals, "\/#file-service-quality-signals"\)/
-  );
-  assert.match(
-    homepage,
-    /buildHomepageItemList\("MG AutoTech workshop file service profiles", fileServiceWorkshopProfiles, "\/#file-service-workshop-profiles"\)/
-  );
-  assert.match(
-    homepage,
-    /buildHomepageItemList\("MG AutoTech service landing pages", serviceLandingPageLinks, "\/#service-landing-pages"\)/
-  );
-  assert.match(
-    homepage,
-    /buildHomepageItemList\("MG AutoTech file service knowledge map", fileServiceKnowledgeMap, "\/#file-service-knowledge-map"\)/
-  );
-  assert.match(
-    homepage,
-    /buildHomepageItemList\("MG AutoTech file service decision matrix", fileServiceDecisionMatrix, "\/#file-service-decision-matrix"\)/
-  );
-  assert.match(
-    homepage,
-    /buildHomepageItemList\("MG AutoTech online file service operating standard", fileServiceOperatingStandard, "\/#file-service-operating-standard"\)/
-  );
-  assert.match(
-    homepage,
-    /buildHomepageItemList\("MG AutoTech file service glossary", fileServiceGlossaryTerms, "\/#file-service-glossary"\)/
-  );
-  assert.match(
-    homepage,
-    /buildHomepageItemList\("MG AutoTech supported brand guides", supportedBrands, "\/#supported-brand-guides"\)/
-  );
-  assert.match(
-    homepage,
-    /buildHomepageItemList\("MG AutoTech ECU and TCU platform guides", ecuPlatformLinks, "\/#ecu-platform-guides"\)/
-  );
-  assert.match(pageScript, /type="application\/ld\+json"/);
-  assert.match(homepage, /JSON\.stringify\(homepagePageJsonLd\)/);
-  assert.doesNotMatch(
-    pageSchemaSource,
-    /credits|Credit|price|payment|storage_path|signed_url|service_role|SUPABASE_SERVICE_ROLE_KEY|admin_note|internal_note|customer_email|source_reference|confidence_score|sample_id|provider|raw|hex|bytePatch|generateMod|checksum|fetch\(|\.rpc\(/i
-  );
-});
-
-test("homepage exposes customer-safe Service structured data for file service search intent", () => {
-  const homepage = readProjectFile("src", "app", "page.tsx");
-  const serviceSchemaSource =
-    homepage.match(/const homepageFileServiceJsonLd = \{[\s\S]*?const homepageRequestPreparationHowToJsonLd = \{/)?.[0] ?? "";
-  const serviceScript =
-    homepage.match(/<script[\s\S]*?JSON\.stringify\(homepageFileServiceJsonLd\)[\s\S]*?\/>/)?.[0] ?? "";
-
-  assert.match(serviceSchemaSource, /"@type": "Service"/);
-  assert.match(serviceSchemaSource, /"@id": publicResourceUrl\("\/#ecu-tcu-file-service"\)/);
-  assert.match(serviceSchemaSource, /name: "MG AutoTech ECU and TCU File Service"/);
-  assert.match(serviceSchemaSource, /"ECU file service"/);
-  assert.match(serviceSchemaSource, /"TCU file service"/);
-  assert.match(serviceSchemaSource, /"Stage 1 file service"/);
-  assert.match(serviceSchemaSource, /"DPF, EGR, AdBlue and DTC file requests"/);
-  assert.match(serviceSchemaSource, /hasOfferCatalog/);
-  assert.match(serviceSchemaSource, /"@type": "OfferCatalog"/);
-  assert.match(serviceSchemaSource, /itemListElement: serviceLandingPageLinks\.map/);
-  assert.match(serviceSchemaSource, /"@type": "Offer"/);
-  assert.match(serviceSchemaSource, /serviceType: service\.searchIntent/);
-  assert.match(serviceSchemaSource, /url: publicResourceUrl\(service\.href\)/);
-  assert.match(serviceSchemaSource, /termsOfService: publicResourceUrl\("\/agb"\)/);
-  assert.match(serviceScript, /type="application\/ld\+json"/);
-  assert.match(homepage, /JSON\.stringify\(homepageFileServiceJsonLd\)/);
-  assert.doesNotMatch(
-    serviceSchemaSource,
-    /credits|Credit|price|payment|storage_path|signed_url|service_role|SUPABASE_SERVICE_ROLE_KEY|admin_note|internal_note|customer_email|source_reference|confidence_score|sample_id|raw|hex|bytePatch|generateMod|checksum|fetch\(|\.rpc\(/i
-  );
+  assert.match(homepage, /aria-label="Open navigation"/);
+  assert.match(homepage, /w-\[min\(20rem,calc\(100vw-2rem\)\)\]/);
+  assert.match(homepage, /overflow-x-hidden/);
+  assert.match(homepage, /sm:grid-cols-2 xl:grid-cols-\[repeat\(4,minmax\(0,1fr\)\)_auto\]/);
+  assert.match(homepage, /min-h-11/);
+  assert.match(homepage, /href: "#tools"/);
+  assert.match(deferredTools, /id="tools"[^>]*scroll-mt-24/);
+  assert.doesNotMatch(publicSnapshot, /<section id="tools"/);
+  assert.match(homepage, /<HomepageHeader[\s\S]*?<main>[\s\S]*?<\/main>[\s\S]*?<Footer variant="homepage"/);
+  assert.match(homepage, /handleSearch\(false\)/);
+  assert.match(homepage, /handleSearch\(true\)/);
+  assert.match(homepage, /role="region" aria-label=\{copy\.publishedRecord\} aria-live="polite"/);
+  assert.doesNotMatch(homepage, /text-7xl|text-8xl|py-32/);
 });
 
 test("public file service hub is indexable, linked and customer-safe", () => {
@@ -2848,7 +1651,7 @@ test("public file service hub is indexable, linked and customer-safe", () => {
   );
   assert.match(page, /href="#request-route"[\s\S]*Choose service first/);
 
-  assert.match(homepage, /href="\/file-service"/);
+  assert.match(homepage, /href: "\/file-service"|href="\/file-service"/);
   assert.match(header, /href="\/file-service"/);
   assert.match(footer, /File Service Hub/);
   assert.match(sitemap, /absoluteUrl\("\/file-service"\)/);
@@ -2919,7 +1722,7 @@ test("public services catalog is broad, indexable and customer-safe", () => {
   assert.match(page, /<PublicSeoHeader \/>/);
   assert.match(page, /<Footer \/>/);
 
-  assert.match(homepage, /href="\/services"/);
+  assert.match(homepage, /href: "\/services"|href="\/services"/);
   assert.match(header, /href="\/services"[\s\S]*Services/);
   assert.match(toolsHeader, /href="\/services"[\s\S]*Services/);
   assert.match(footer, /Services Overview/);
@@ -2958,7 +1761,7 @@ test("localized file service hub is hreflang-ready and linked from localized sur
   assert.match(copy, /ECU und TCU Dateiservice Hub/);
   assert.match(copy, /ECU ve TCU Dosya Servisi Merkezi/);
   assert.match(copy, /fileServiceJsonLd/);
-  assert.match(localizedHomeRoute, /UnifiedHomePage/);
+  assert.match(localizedHomeRoute, /HomepageExperience/);
   assert.match(localizedHomeRoute, /exactTranslations\[locale\]/);
   assert.match(homepageLocalization, /"\/file-service"/);
   assert.match(localizedFooter, /getFileServiceCopy/);
@@ -2976,27 +1779,19 @@ test("localized file service hub is hreflang-ready and linked from localized sur
 test("homepage exposes request preparation HowTo structured data from visible steps", () => {
   const homepage = readProjectFile("src", "app", "page.tsx");
   const howToSource =
-    homepage.match(/const homepageRequestPreparationHowToJsonLd = \{[\s\S]*?const trustHighlights = \[/)?.[0] ?? "";
-  const howToScript =
-    homepage.match(/<script[\s\S]*?JSON\.stringify\(homepageRequestPreparationHowToJsonLd\)[\s\S]*?\/>/)?.[0] ?? "";
+    homepage.match(/export const homepageRequestPreparationHowToJsonLd = \{[\s\S]*?\n\};/)?.[0] ?? "";
 
   assert.match(howToSource, /"@type": "HowTo"/);
-  assert.match(howToSource, /"@id": publicResourceUrl\("\/#request-readiness-howto"\)/);
-  assert.match(howToSource, /name: "How to prepare an ECU or TCU file request"/);
-  assert.match(howToSource, /mainEntityOfPage: \{ "@id": publicResourceUrl\("\/#page"\) \}/);
-  assert.match(howToSource, /MG AutoTech public preparation tools/);
-  assert.match(howToSource, /Vehicle, engine and ECU or TCU identification details/);
-  assert.match(howToSource, /Original file prepared for authenticated portal submission/);
-  assert.match(howToSource, /step: requestReadinessSteps\.map/);
+  assert.match(howToSource, /"@id": publicResourceUrl\("\/#workflow"\)/);
+  assert.match(howToSource, /name: "How to use the MG AutoTech file service"/);
+  assert.match(howToSource, /step: workflowSteps\.map/);
   assert.match(howToSource, /"@type": "HowToStep"/);
   assert.match(howToSource, /position: index \+ 1/);
-  assert.match(howToSource, /url: publicResourceUrl\(step\.href\)/);
-  assert.match(homepage, /Check file readiness/);
-  assert.match(homepage, /Build request brief/);
-  assert.match(homepage, /Plan read method/);
-  assert.match(homepage, /Start secure request/);
-  assert.match(howToScript, /type="application\/ld\+json"/);
-  assert.match(homepage, /JSON\.stringify\(homepageRequestPreparationHowToJsonLd\)/);
+  for (const step of ["Register", "Load Credits", "Upload File", "Download File"]) {
+    assert.match(homepage, new RegExp(step));
+  }
+  assert.match(homepage, /type="application\/ld\+json"/);
+  assert.match(homepage, /homepageRequestPreparationHowToJsonLd/);
   assert.doesNotMatch(
     howToSource,
     /credits|Credit|price|payment|storage_path|signed_url|service_role|SUPABASE_SERVICE_ROLE_KEY|admin_note|internal_note|customer_email|source_reference|confidence_score|sample_id|provider|raw|hex|bytePatch|generateMod|checksum|fetch\(|\.rpc\(|type="file"|upload-session|FileReader|writeFile/i
@@ -3241,76 +2036,15 @@ test("i18n and SEO health script catches core multilingual requirements", () => 
   assert.match(script, /Localized homepage structured data is missing WebPage/);
   assert.match(script, /Localized homepage structured data is missing service ItemList/);
   assert.match(script, /homepagePageJsonLd/);
-  assert.match(script, /Root homepage does not expose page-level WebPage structured data/);
   assert.match(script, /homepageFileServiceJsonLd/);
-  assert.match(script, /Root homepage does not expose ECU\/TCU file service structured data/);
-  assert.match(script, /Root homepage performance tools must render before the file service navigator/);
-  assert.match(script, /Root homepage still contains the removed hero quick-path panel/);
-  assert.match(script, /Root homepage does not expose the file service navigator/);
-  assert.match(script, /Root homepage does not expose the file service answer library/);
-  assert.match(script, /Root homepage does not expose file service answer library structured data/);
-  assert.match(script, /Root homepage does not render file service answer library structured data/);
-  assert.match(script, /Root homepage does not expose the file service search route index/);
-  assert.match(script, /Root homepage does not expose the file service snippet summary/);
-  assert.match(script, /Root homepage does not expose the professional file service comparison/);
-  assert.match(script, /Root homepage does not expose the file service verification checkpoints/);
-  assert.match(script, /Root homepage does not expose the file service myth checks/);
-  assert.match(script, /Root homepage does not expose the file service platform stack/);
-  assert.match(script, /Root homepage does not expose file service read method routes/);
-  assert.match(script, /Root homepage does not expose file service brief requirements/);
-  assert.match(script, /Root homepage does not expose the file service fit checker/);
-  assert.match(script, /Root homepage does not expose the file service use case library/);
-  assert.match(script, /Root homepage does not expose file service quality signals/);
-  assert.match(script, /Root homepage does not expose workshop file service profiles/);
-  assert.match(script, /Root homepage does not expose the file service knowledge map/);
   assert.match(script, /Root metadata is missing online ECU file service search wording/);
   assert.match(script, /Root metadata is missing TCU File Service search wording/);
   assert.match(script, /Root metadata is missing ECU File Upload Service search wording/);
-  assert.match(script, /Root homepage does not expose the file service decision matrix/);
-  assert.match(script, /Root homepage does not expose the file service terminology glossary/);
-  assert.match(script, /Root homepage file service structured data is missing Service type/);
-  assert.match(script, /Root homepage file service glossary structured data is missing DefinedTermSet/);
-  assert.match(script, /Root homepage WebPage structured data is not linked to the ECU\/TCU file service graph/);
-  assert.match(script, /Root homepage file service structured data is missing offer catalog/);
-  assert.match(script, /Root homepage resource graph is missing the file service navigator ItemList/);
-  assert.match(script, /Root homepage WebPage structured data is not linked to the file service navigator/);
-  assert.match(script, /Root homepage resource graph is missing the file service answer library ItemList/);
-  assert.match(script, /Root homepage WebPage structured data is not linked to the file service answer library/);
-  assert.match(script, /Root homepage resource graph is missing the file service search route index ItemList/);
-  assert.match(script, /Root homepage WebPage structured data is not linked to the file service search route index/);
-  assert.match(script, /Root homepage resource graph is missing the file service snippet summary ItemList/);
-  assert.match(script, /Root homepage WebPage structured data is not linked to the file service snippet summary/);
-  assert.match(script, /Root homepage resource graph is missing the professional file service comparison ItemList/);
-  assert.match(script, /Root homepage WebPage structured data is not linked to the professional file service comparison/);
-  assert.match(script, /Root homepage resource graph is missing the file service verification checkpoints ItemList/);
-  assert.match(script, /Root homepage WebPage structured data is not linked to the file service verification checkpoints/);
-  assert.match(script, /Root homepage resource graph is missing the file service myth checks ItemList/);
-  assert.match(script, /Root homepage WebPage structured data is not linked to the file service myth checks/);
-  assert.match(script, /Root homepage resource graph is missing the file service platform stack ItemList/);
-  assert.match(script, /Root homepage WebPage structured data is not linked to the file service platform stack/);
-  assert.match(script, /Root homepage resource graph is missing the file service read method routes ItemList/);
-  assert.match(script, /Root homepage WebPage structured data is not linked to the file service read method routes/);
-  assert.match(script, /Root homepage resource graph is missing the file service brief requirements ItemList/);
-  assert.match(script, /Root homepage WebPage structured data is not linked to the file service brief requirements/);
-  assert.match(script, /Root homepage resource graph is missing the file service fit checker ItemList/);
-  assert.match(script, /Root homepage WebPage structured data is not linked to the file service fit checker/);
-  assert.match(script, /Root homepage resource graph is missing the file service use case library ItemList/);
-  assert.match(script, /Root homepage WebPage structured data is not linked to the file service use case library/);
-  assert.match(script, /Root homepage resource graph is missing the file service quality signals ItemList/);
-  assert.match(script, /Root homepage WebPage structured data is not linked to the file service quality signals/);
-  assert.match(script, /Root homepage resource graph is missing the workshop file service profiles ItemList/);
-  assert.match(script, /Root homepage WebPage structured data is not linked to the workshop file service profiles/);
-  assert.match(script, /Root homepage does not expose file service glossary structured data/);
-  assert.match(script, /Root homepage glossary structured data is not generated from visible terms/);
-  assert.match(script, /Root homepage does not render file service glossary structured data/);
-  assert.match(script, /Root homepage resource graph is missing the file service knowledge map ItemList/);
-  assert.match(script, /Root homepage WebPage structured data is not linked to the file service knowledge map/);
-  assert.match(script, /Root homepage resource graph is missing the file service decision matrix ItemList/);
-  assert.match(script, /Root homepage WebPage structured data is not linked to the file service decision matrix/);
-  assert.match(script, /Root homepage resource graph is missing the file service glossary ItemList/);
-  assert.match(script, /Root homepage WebPage structured data is not linked to the file service glossary/);
   assert.match(script, /homepageRequestPreparationHowToJsonLd/);
-  assert.match(script, /Root homepage does not expose request preparation HowTo structured data/);
+  assert.match(script, /Compact root homepage contract is missing/);
+  assert.match(script, /Compact root homepage is missing visible target/);
+  assert.match(script, /Root homepage must render the deferred datalog experience exactly once/);
+  assert.match(script, /Compact root homepage still contains obsolete resource/);
   assert.match(script, /src\/app\/file-service\/page\.tsx/);
   assert.match(script, /src\/app\/\[locale\]\/file-service\/page\.tsx/);
   assert.match(script, /src\/lib\/fileServiceI18n\.tsx|src\/lib\/fileServiceI18n\.ts/);

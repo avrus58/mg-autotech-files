@@ -130,7 +130,7 @@ test("customer-facing SEO pages expose only public navigation and no private met
 });
 
 test("homepage adds compact Stage discovery without duplicating the service hub", () => {
-  const homepage = projectFile("src", "app", "page.tsx");
+  const homepage = projectFile("src", "components", "homepage", "HomepageExperience.tsx");
   for (const route of ["/services/stage-1", "/services/stage-2", "/services/stage-3"]) {
     assert.match(homepage, new RegExp(route));
   }

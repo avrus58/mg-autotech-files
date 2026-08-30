@@ -61,7 +61,7 @@ test("Stage 1 exposes crawlable brand and ECU guide routes with no duplicate lin
 
 test("ECU platform guides link back to Stage 1 and the homepage stays compact", () => {
   const platformGuide = projectFile("src", "app", "ecu-platforms", "[slug]", "page.tsx");
-  const homepage = projectFile("src", "app", "page.tsx");
+  const homepage = projectFile("src", "components", "homepage", "HomepageExperience.tsx");
 
   assert.match(platformGuide, /Stage 1 ECU tuning file service/);
   assert.match(platformGuide, /href: "\/services\/stage-1"/);

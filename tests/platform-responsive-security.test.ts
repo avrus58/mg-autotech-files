@@ -124,10 +124,14 @@ test("file-service hero actions preserve mobile clearance from the fixed control
 });
 
 test("homepage vehicle controls and icon-only account link have accessible names", () => {
-  const homepage = readProjectFile("src", "app", "page.tsx");
+  const homepage = [
+    readProjectFile("src", "components", "homepage", "HomepageExperience.tsx"),
+    readProjectFile("src", "components", "homepage", "VehicleIntelligence.tsx"),
+  ].join("\n");
 
   assert.match(homepage, /<select\s+aria-label=\{placeholder\}/);
-  assert.match(homepage, /href="\/register"\s+aria-label="Create account"/);
+  assert.match(homepage, /aria-label="Open navigation"/);
+  assert.match(homepage, /aria-label="MG AutoTech home"/);
 });
 
 test("baseline security headers protect private workspaces without blocking widget embedding", () => {

@@ -166,15 +166,15 @@ export function PublicLogSnapshot() {
 
   return (
     <LocalizedHomepageTree>
-      <section id="tools" className="overflow-x-clip border-y border-white/5 bg-[#050505] py-12 text-white sm:py-14">
-        <div className="mx-auto max-w-7xl px-4">
+      <section className="overflow-x-clip border-y border-white/[0.07] bg-[#050506] py-14 text-white sm:py-16">
+        <div className="mx-auto max-w-[86rem] px-4 sm:px-6">
           <div className="grid gap-6 lg:grid-cols-[1fr_auto] lg:items-end">
             <div className="max-w-4xl">
               <div className="text-xs font-black uppercase tracking-[0.24em] text-red-500">
                 Quick power check
               </div>
-              <h2 className="mt-3 text-3xl font-black leading-tight sm:text-4xl lg:text-5xl">
-                Check peak horsepower and torque from a datalog.
+              <h2 className="mt-3 text-3xl font-black leading-[1.05] tracking-tight sm:text-4xl lg:text-5xl">
+                Turn a datalog into a quick power snapshot.
               </h2>
               <p className="mt-4 max-w-3xl text-sm leading-7 text-zinc-400 sm:text-base">
                 Try a compatible text export from any logging tool. The public result shows only peak torque and estimated peak power; detailed channels stay in the customer Studio.
@@ -190,8 +190,8 @@ export function PublicLogSnapshot() {
             </Link>
           </div>
 
-          <div className="mt-8 grid min-w-0 overflow-hidden rounded-[1.75rem] border border-white/10 bg-[#09090b] shadow-2xl shadow-black/30 lg:grid-cols-[0.78fr_1.22fr]">
-            <div className="min-w-0 border-b border-white/10 p-5 sm:p-6 lg:border-b-0 lg:border-r">
+          <div className="mt-8 grid min-w-0 overflow-hidden rounded-[1.5rem] border border-white/10 bg-[#09090b] shadow-2xl shadow-black/30 lg:grid-cols-[0.9fr_1.1fr]">
+            <div className="min-w-0 border-b border-white/10 p-4 sm:p-5 lg:border-b-0 lg:border-r">
               <div className="flex items-start gap-3">
                 <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-red-800/50 bg-red-950/30 text-red-300">
                   <Upload className="h-5 w-5" />
@@ -201,7 +201,7 @@ export function PublicLogSnapshot() {
                     01 · Select a datalog
                   </div>
                   <h3 className="mt-1 text-xl font-black">Local power snapshot</h3>
-                  <p id="public-log-file-requirements" className="mt-2 text-xs leading-5 text-zinc-500">
+                  <p id="public-log-file-requirements" className="mt-2 text-xs leading-5 text-zinc-400">
                     CSV, TSV, TXT or LOG · maximum 5 MB · up to {publicLogSnapshotMaximumRows.toLocaleString("en-US")} rows
                   </p>
                 </div>
@@ -210,13 +210,13 @@ export function PublicLogSnapshot() {
               <label
                 onDragOver={(event) => event.preventDefault()}
                 onDrop={handleDrop}
-                className="mt-5 flex min-h-40 cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-red-800/70 bg-red-950/10 p-5 text-center transition hover:border-red-500 hover:bg-red-950/20 focus-within:border-red-500 focus-within:ring-2 focus-within:ring-red-900/60"
+                className="mt-5 flex min-h-32 cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-red-800/70 bg-red-950/10 p-4 text-center transition hover:border-red-500 hover:bg-red-950/20 focus-within:border-red-500 focus-within:ring-2 focus-within:ring-red-900/60"
               >
                 <FileSpreadsheet className="h-7 w-7 text-red-400" />
                 <span className="mt-3 text-sm font-black text-white">
                   Drop a file here or choose from your device
                 </span>
-                <span id="public-log-unit-requirement" className="mt-1 text-xs leading-5 text-zinc-500">
+                <span id="public-log-unit-requirement" className="mt-1 text-xs leading-5 text-zinc-400">
                   RPM and actual engine torque in Nm or lb-ft are detected automatically.
                 </span>
                 <span className="mt-4 rounded-xl bg-[#b1121b] px-4 py-2.5 text-xs font-black text-white shadow-lg shadow-red-950/30">
@@ -247,7 +247,7 @@ export function PublicLogSnapshot() {
                   <button
                     type="button"
                     onClick={reset}
-                    className="inline-flex items-center text-xs font-black text-zinc-500 transition hover:text-white"
+                    className="inline-flex items-center text-xs font-black text-zinc-400 transition hover:text-white"
                   >
                     <RotateCcw className="mr-2 h-3.5 w-3.5" /> Reset
                   </button>
@@ -261,7 +261,7 @@ export function PublicLogSnapshot() {
               )}
             </div>
 
-            <div className="min-w-0 p-5 sm:p-6" aria-live="polite">
+            <div className="min-w-0 p-4 sm:p-5" aria-live="polite">
               {state === "ready" && result ? (
                 <SnapshotResults result={result} />
               ) : state === "reading" ? (
@@ -273,7 +273,7 @@ export function PublicLogSnapshot() {
           </div>
 
           <div className="mt-5 grid gap-3 lg:grid-cols-[1fr_auto] lg:items-center">
-            <div className="grid gap-3 text-xs leading-5 text-zinc-500 sm:grid-cols-2">
+            <div className="grid gap-3 text-xs leading-5 text-zinc-400 sm:grid-cols-2">
               <p className="flex items-start gap-2">
                 <LockKeyhole className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
                 Your source file stays in this browser tab. This snapshot does not upload, store or create a request.
@@ -301,17 +301,17 @@ export function PublicLogSnapshot() {
 
 function SnapshotEmpty({ hasError }: { hasError: boolean }) {
   return (
-    <div className="flex min-h-[22rem] flex-col items-center justify-center rounded-2xl border border-white/5 bg-black/25 p-6 text-center">
-      <span className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] text-zinc-500">
+    <div className="flex min-h-[15rem] flex-col items-center justify-center rounded-2xl border border-white/5 bg-black/25 p-5 text-center">
+      <span className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] text-zinc-400">
         <BarChart3 className="h-7 w-7" />
       </span>
-      <div className="mt-5 text-xs font-black uppercase tracking-[0.18em] text-zinc-600">
+      <div className="mt-5 text-xs font-black uppercase tracking-[0.18em] text-zinc-400">
         02 · Review the snapshot
       </div>
       <h3 className="mt-2 text-xl font-black text-white">
         {hasError ? "The snapshot is waiting for a supported log." : "Your two results will appear here."}
       </h3>
-      <p className="mt-3 max-w-md text-sm leading-6 text-zinc-500">
+      <p className="mt-3 max-w-md text-sm leading-6 text-zinc-400">
         {hasError
           ? "Choose another CSV, TSV, TXT or LOG export, or try the example to confirm the required RPM and torque structure."
           : "Nothing is calculated until you choose a file or explicitly load the example dataset."}
@@ -322,7 +322,7 @@ function SnapshotEmpty({ hasError }: { hasError: boolean }) {
 
 function SnapshotLoading() {
   return (
-    <div role="status" className="min-h-[22rem] animate-pulse rounded-2xl border border-white/5 bg-black/25 p-5">
+    <div role="status" className="min-h-[15rem] animate-pulse rounded-2xl border border-white/5 bg-black/25 p-5">
       <span className="sr-only">Reading and analyzing the selected log</span>
       <div className="h-3 w-32 rounded bg-red-950/70" />
       <div className="mt-4 grid grid-cols-2 gap-2">
@@ -330,7 +330,7 @@ function SnapshotLoading() {
           <div key={item} className="h-20 rounded-xl bg-white/[0.05]" />
         ))}
       </div>
-      <div className="mt-4 h-48 rounded-xl bg-white/[0.035]" />
+      <div className="mt-4 h-32 rounded-xl bg-white/[0.035]" />
     </div>
   );
 }
@@ -345,7 +345,7 @@ function SnapshotResults({ result }: { result: SnapshotResult }) {
         <div>
           <div className="text-xs font-black uppercase tracking-[0.18em] text-red-400">02 · Snapshot ready</div>
           <h3 className="mt-1 text-xl font-black">Your public power result</h3>
-          <p className="mt-1 text-xs leading-5 text-zinc-500">Detailed curves, channels and row data are reserved for signed-in customers.</p>
+          <p className="mt-1 text-xs leading-5 text-zinc-400">Detailed curves, channels and row data are reserved for signed-in customers.</p>
         </div>
       </div>
 
@@ -373,7 +373,7 @@ function SnapshotResults({ result }: { result: SnapshotResult }) {
           <LockKeyhole className="mt-0.5 h-4 w-4 shrink-0 text-red-400" />
           <div>
             <div className="text-xs font-black uppercase tracking-[0.14em] text-zinc-400">Customer details</div>
-            <p className="mt-1 text-xs leading-5 text-zinc-600">Timeline, RPM curve, EGT and EGR observations, every detected numeric channel and downloadable workshop output unlock after login.</p>
+            <p className="mt-1 text-xs leading-5 text-zinc-400">Timeline, RPM curve, EGT and EGR observations, every detected numeric channel and downloadable workshop output unlock after login.</p>
           </div>
         </div>
       </div>
@@ -383,11 +383,11 @@ function SnapshotResults({ result }: { result: SnapshotResult }) {
 
 function SnapshotMetric({ label, value, unit }: { label: string; value: string; unit: string }) {
   return (
-    <div className="min-w-0 rounded-2xl border border-white/10 bg-gradient-to-br from-white/[0.055] to-white/[0.02] p-5 sm:p-6">
-      <div className="text-[0.62rem] font-black uppercase tracking-[0.12em] text-zinc-600">
+    <div className="min-w-0 rounded-2xl border border-white/10 bg-gradient-to-br from-white/[0.055] to-white/[0.02] p-4 sm:p-5">
+      <div className="text-[0.62rem] font-black uppercase tracking-[0.12em] text-zinc-400">
         {label}
       </div>
-      <div className="mt-3 min-w-0 break-words text-4xl font-black tracking-tight text-white sm:text-5xl" title={`${value} ${unit}`}>
+      <div className="mt-3 min-w-0 break-words text-3xl font-black tracking-tight text-white sm:text-4xl" title={`${value} ${unit}`}>
         {value}
       </div>
       <div className="mt-2 text-sm font-black text-red-300">{unit}</div>

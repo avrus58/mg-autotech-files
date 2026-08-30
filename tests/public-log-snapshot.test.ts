@@ -108,7 +108,7 @@ test("public log snapshot keeps the homepage result concise and communicates its
   assert.doesNotMatch(publicSnapshot, /Manual data input|PerformanceDataTable|Download detailed report/);
   assert.doesNotMatch(publicSnapshot, /AutoTuner/i);
   assert.match(deferred, /aria-label="Free log snapshot loading"/);
-  assert.match(deferred, /min-h-\[38rem\]/);
+  assert.match(deferred, /min-h-\[32rem\]/);
 });
 
 test("public snapshot publishes only an eligible multi-row, wide-RPM result", () => {

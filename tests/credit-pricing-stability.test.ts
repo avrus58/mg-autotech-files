@@ -349,7 +349,7 @@ test("bank transfer uses the authoritative server quote and never trusts a brows
 
 test("credit totals and four-decimal unit prices remain visibly consistent", () => {
   const creditsPage = source("src", "app", "dashboard", "credits", "page.tsx");
-  const homepage = source("src", "app", "page.tsx");
+  const homepage = source("src", "components", "homepage", "HomepageExperience.tsx");
   const purchaseResolver = source("src", "lib", "commercialPolicy.ts");
 
   assert.match(creditsPage, /function formatCreditUnitEuro[\s\S]{0,300}minimumFractionDigits:\s*2[\s\S]{0,100}maximumFractionDigits:\s*4/);
@@ -363,13 +363,13 @@ test("credit totals and four-decimal unit prices remain visibly consistent", () 
 
 test("customer and public price cards show final totals without invented comparison prices", () => {
   const creditsPage = source("src", "app", "dashboard", "credits", "page.tsx");
-  const homepage = source("src", "app", "page.tsx");
+  const homepage = source("src", "components", "homepage", "HomepageExperience.tsx");
   const publicRoute = source("src", "app", "api", "credits", "public-quote", "route.ts");
 
   assert.doesNotMatch(`${creditsPage}\n${homepage}\n${publicRoute}`, /basePriceEuro/);
   assert.doesNotMatch(creditsPage, /Best Value|bestValuePackage|get cheaper as the volume/i);
   assert.match(creditsPage, /lowestUnitPricePackage[\s\S]{0,500}unitPriceEuro/);
-  assert.match(homepage, /Clear package totals for customers, workshops and partners\./);
+  assert.match(homepage, /Prices below are loaded from the live public tariff\./);
   assert.doesNotMatch(around(creditsPage, "Total Price", 1_200), /line-through/);
 });
 
@@ -492,7 +492,7 @@ test("the homepage consumes a public sanitized global quote", () => {
     /internal_note|updated_by|before_json|after_json|payment_(?:paypal|bank|stripe)_enabled|paymentMethods/i,
   );
 
-  const homepage = source("src", "app", "page.tsx");
+  const homepage = source("src", "components", "homepage", "HomepageExperience.tsx");
   assert.match(homepage, /\/api\/[\w()\-/]*(?:credit|pricing)[\w()\-/]*(?:public|global)|\/api\/[\w()\-/]*(?:public|global)[\w()\-/]*(?:credit|pricing)/i);
 });
 

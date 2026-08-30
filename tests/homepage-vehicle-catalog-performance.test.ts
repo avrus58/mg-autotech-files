@@ -145,7 +145,7 @@ test("rapid enumeration of many distinct brands is stopped without blocking repe
 });
 
 test("homepage renders brands immediately but loads deeper levels only after user selection", () => {
-  const homepage = source("src", "app", "page.tsx");
+  const homepage = source("src", "components", "homepage", "VehicleIntelligence.tsx");
   const clientCatalog = source("src", "lib", "vehicleControl", "clientCatalog.ts");
   const route = source("src", "app", "api", "vehicles", "route.ts");
 

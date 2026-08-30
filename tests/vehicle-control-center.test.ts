@@ -855,7 +855,7 @@ test("admin vehicle saves synchronize the customer catalog without hiding a comp
 test("public selector uses memory and session storage cache for vehicle options", () => {
   const helper = readFileSync(resolve(process.cwd(), "src", "lib", "vehicleControl", "clientCatalog.ts"), "utf8");
   const newRequest = readFileSync(resolve(process.cwd(), "src", "app", "new-request", "page.tsx"), "utf8");
-  const homepage = readFileSync(resolve(process.cwd(), "src", "app", "page.tsx"), "utf8");
+  const homepage = readFileSync(resolve(process.cwd(), "src", "components", "homepage", "VehicleIntelligence.tsx"), "utf8");
   assert.match(helper, /sessionStorage/);
   assert.match(helper, /memoryCache/);
   assert.match(helper, /clientCacheTtlMs = 60_000/);

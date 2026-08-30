@@ -61,7 +61,7 @@ const whatsappHref = whatsappNumber
   ? `https://wa.me/${whatsappNumber}?text=${whatsappMessage}`
   : null;
 
-export function Footer() {
+export function Footer({ variant = "default" }: { variant?: "default" | "homepage" }) {
   const pathname = usePathname();
   const privacyLocale = getAnalyticsConsentLocale(pathname);
   const legalLinks = [
@@ -73,6 +73,92 @@ export function Footer() {
     { label: "AGB", href: "/agb" },
     { label: "Widerruf", href: "/widerruf" },
   ];
+
+  if (variant === "homepage") {
+    const compactGroups = [
+      {
+        title: "File Service",
+        links: [
+          { label: "Services Overview", href: "/services" },
+          { label: "How It Works", href: "/how-it-works" },
+          { label: "Vehicle Brands", href: "/brands" },
+          { label: "ECU Platforms", href: "/ecu-platforms" },
+        ],
+      },
+      {
+        title: "Workshop",
+        links: [
+          { label: "Workshop Tools", href: "/tools" },
+          { label: "Workshop Guides", href: "/workshop-guides" },
+          { label: "Credit Prices", href: "/#prices" },
+          { label: "Customer Dashboard", href: "/dashboard" },
+        ],
+      },
+    ];
+
+    return (
+      <LocalizedHomepageTree>
+        <footer id="contact" className="border-t border-white/10 bg-[#060607] text-white">
+          <div className="mx-auto max-w-[86rem] px-4 py-10 sm:px-6">
+            <div className="grid gap-8 lg:grid-cols-[1.25fr_.75fr_.75fr_1fr]">
+              <div className="max-w-sm">
+                <Link href="/" className="inline-flex items-center gap-3">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-red-500/30 bg-red-500/10">
+                    <Cpu className="h-5 w-5 text-red-500" />
+                  </span>
+                  <span>
+                    <span className="block text-base font-black tracking-wide">MG <span className="text-red-500">AUTOTECH</span></span>
+                    <span className="block text-[0.65rem] text-zinc-400">ECU / TCU File Service</span>
+                  </span>
+                </Link>
+                <p className="mt-4 text-sm leading-6 text-zinc-400">
+                  Professional ECU and TCU file service platform for customers, workshops and partners. Upload files, buy credits, track orders and download completed files online.
+                </p>
+              </div>
+
+              {compactGroups.map((group) => (
+                <div key={group.title}>
+                  <h3 className="text-xs font-black uppercase tracking-[0.18em] text-zinc-300">{group.title}</h3>
+                  <div className="mt-4 grid gap-2.5">
+                    {group.links.map((item) => (
+                      <Link key={item.label} href={item.href} className="w-fit text-sm text-zinc-400 transition hover:text-white">
+                        {item.label}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              ))}
+
+              <div>
+                <h3 className="text-xs font-black uppercase tracking-[0.18em] text-zinc-300">Contact</h3>
+                <div className="mt-4 grid gap-3 text-sm text-zinc-400">
+                  <a href={`mailto:${contactEmail}`} className="flex items-center gap-2 transition hover:text-white">
+                    <Mail className="h-4 w-4 text-red-500" /> {contactEmail}
+                  </a>
+                  <a href={`tel:${contactPhone.replace(/\s/g, "")}`} className="flex items-center gap-2 transition hover:text-white">
+                    <Phone className="h-4 w-4 text-red-500" /> {contactPhone}
+                  </a>
+                  <span className="flex items-start gap-2">
+                    <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-red-500" />
+                    <span>{companyAddress.streetAddress}, {companyAddress.postalCode} {companyAddress.addressLocality}</span>
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-8 flex flex-col gap-4 border-t border-white/10 pt-5 text-xs text-zinc-400 md:flex-row md:items-center md:justify-between">
+              <span>© 2026 MG AutoTech. All rights reserved.</span>
+              <nav aria-label="Legal" className="flex flex-wrap gap-x-4 gap-y-2">
+                {legalLinks.map((item) => (
+                  <Link key={item.label} href={item.href} className="transition hover:text-zinc-300">{item.label}</Link>
+                ))}
+              </nav>
+            </div>
+          </div>
+        </footer>
+      </LocalizedHomepageTree>
+    );
+  }
 
   return (
     <LocalizedHomepageTree>

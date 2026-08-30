@@ -159,6 +159,35 @@ Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
 
+### MANUAL-20260830-HOMEPAGE-EXPERIENCE-REFRESH [P1] Public ana sayfayi kompakt premium musteri yolculuguna donustur
+
+Durum: Done
+
+Fingerprint: `public-homepage|information-architecture-and-visual-system|long-repetitive-section-stack|compact-premium-conversion-journey`
+
+Sonuc: Yalnizca public root ve 11 localized ana sayfa; kompakt sticky header,
+premium hero, gercek arac-performans secici, browser-local public datalog,
+servis ve hazirlik rotalari, dort adimli is akisi, guven sinyalleri, marka/ECU
+kutuphanesi, fail-closed canli kredi fiyatlari, kaynaklar/SSS, final CTA ve
+kompakt footer olarak yeniden kuruldu. Tekrarlanan uzun SEO/rehber bloklari
+kanonik detay sayfalarina yonlendirildi; admin, customer dashboard, auth,
+request, payment ve database davranisi degistirilmedi.
+
+Olcum: Canli eski sayfaya gore masaustu yuksekligi 14.593 px'den 6.033 px'e
+(yaklasik %59), mobil yuksekligi 26.945 px'den 12.383 px'e (yaklasik %54)
+indi. 360/390/768/1024/1366/1440 responsive kontrollerinde yatay tasma yok;
+menu anchor akisi, BMW progresif arac secimi ve ornek datalog sonucu calisti.
+Tum anlamli dusuk-kontrast metinler, otomatik focus davranisi, landmark sirasi
+ve tekil `#tools` hedefi duzeltildi. 178 gorunur metin 11 non-English locale
+icin reviewed exact ceviri aldi; `/de` ve `/tr` prerender taramasi temizdir.
+
+Kontroller: Homepage/hedefli suite 220/220 PASS; `npm run lint` PASS;
+`npm run typecheck` PASS; `npm run check:i18n` 12 locale ve 622/622 PASS;
+Webpack Production build 280/280 PASS; performance 10.0/80 KiB gzip ve 6.5/12
+KiB public worker PASS; `git diff --check` PASS. Full suite 1154/1156 olup iki
+failure ayni base commit'teki clean worktree'de birebir tekrarlandi ve homepage
+kapsami disindadir. Bagimsiz review P0/P1/P2 bulmadan GO verdi. Deploy yapilmadi.
+
 ### MANUAL-20260828-ADS-MEASUREMENT-RESCUE [P0] Google Ads harcamasini durdur ve kayit olcumunu guvenilir hale getir
 
 Durum: Done (code validated; Production release and receipt proof pending)

@@ -3,7 +3,10 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import test from "node:test";
 
-const homepage = readFileSync(resolve(process.cwd(), "src", "app", "page.tsx"), "utf8");
+const homepage = readFileSync(
+  resolve(process.cwd(), "src", "components", "homepage", "HomepageExperience.tsx"),
+  "utf8"
+);
 const publicQuoteRoute = readFileSync(
   resolve(process.cwd(), "src", "app", "api", "credits", "public-quote", "route.ts"),
   "utf8",
@@ -47,7 +50,8 @@ test("homepage pricing has explicit loading, error and ready presentations", () 
   assert.match(homepage, /function formatCreditUnitEuro/);
   assert.match(homepage, /minimumFractionDigits: 2/);
   assert.match(homepage, /maximumFractionDigits: 4/);
-  assert.match(homepage, /formatCreditUnitEuro\(pack\.unitPriceEuro\)/);
+  assert.match(homepage, /formatCreditUnitEuro\(pack\.unitPriceEuro, locale\)/);
+  assert.match(homepage, /new Intl\.NumberFormat\(locale/);
   assert.match(
     homepage,
     /function formatEuro[\s\S]{0,300}maximumFractionDigits: 2/,
@@ -55,12 +59,11 @@ test("homepage pricing has explicit loading, error and ready presentations", () 
   );
 });
 
-test("homepage package rail stays compact on mobile and keeps checkout routing accessible", () => {
-  assert.match(homepage, /snap-x snap-mandatory/);
-  assert.match(homepage, /overflow-x-auto/);
-  assert.match(homepage, /xl:grid-cols-5/);
-  assert.match(homepage, /href="\/dashboard\/credits"/);
-  assert.match(homepage, /aria-label=\{`Select the \$\{pack\.name\} \$\{pack\.credits\} credit package`\}/);
+test("homepage package grid stays compact and keeps checkout routing accessible", () => {
+  assert.match(homepage, /sm:grid-cols-2 lg:grid-cols-5/);
+  assert.match(homepage, /min-h-56/);
+  assert.match(homepage, /"\/dashboard\/credits"/);
+  assert.match(homepage, /aria-label=\{`\$\{localizedText\("Select package"\)\}: \$\{pack\.name\}, \$\{pack\.credits\} \$\{localizedText\("credits"\)\}`\}/);
   assert.doesNotMatch(
     homepage,
     /storage_path|signed_url|service_role|SUPABASE_SERVICE_ROLE_KEY|admin_notes|internal_notes/i

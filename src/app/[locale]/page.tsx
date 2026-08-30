@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { UnifiedHomePage } from "@/app/page";
+import { HomepageExperience } from "@/components/homepage/HomepageExperience";
 import { exactTranslations, termTranslations } from "@/lib/i18n";
 import { getFileServiceCopy } from "@/lib/fileServiceI18n";
 import { homepageHeroCopy } from "@/lib/homepageHeroI18n";
+import { homepageExperienceExactTranslations } from "@/lib/homepageExperienceTranslations";
 import { seoUiCopy } from "@/lib/seo-ui";
 import {
   getServiceSeo,
@@ -144,11 +145,12 @@ export default async function LocalizedHomePage({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <UnifiedHomePage
+      <HomepageExperience
         locale={locale}
         translationCatalog={{
           exact: {
             ...exactTranslations[locale],
+            ...homepageExperienceExactTranslations[locale],
             [homepageHeroIntroSource]: homeSeo[locale].intro,
             "Custom ECU & TCU": heroCopy.customTitle,
             "Tuning Files": heroCopy.tuningFiles,

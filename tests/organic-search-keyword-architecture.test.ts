@@ -109,7 +109,7 @@ test("services page renders crawlable intent navigation and matching public sche
     "components",
     "FileServiceSearchNavigator.tsx"
   );
-  const homepage = projectFile("src", "app", "page.tsx");
+  const homepage = projectFile("src", "components", "homepage", "HomepageExperience.tsx");
 
   assert.equal(
     servicesMetadata.alternates?.canonical,

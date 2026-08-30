@@ -281,7 +281,7 @@ test("workshop knowledge center strengthens internal SEO without lengthening the
   const page = projectFile("src", "app", "workshop-guides", "page.tsx");
   const sitemap = projectFile("src", "app", "sitemap.ts");
   const robots = projectFile("src", "app", "robots.ts");
-  const homepage = projectFile("src", "app", "page.tsx");
+  const homepage = projectFile("src", "components", "homepage", "HomepageExperience.tsx");
   assert.match(page, /CollectionPage/);
   assert.match(page, /ItemList/);
   assert.match(page, /FAQPage/);

@@ -8,7 +8,7 @@ function source(...segments: string[]) {
 }
 
 test("homepage keeps heavy public runtimes outside the initial client entry", () => {
-  const homepage = source("src", "app", "page.tsx");
+  const homepage = source("src", "components", "homepage", "HomepageExperience.tsx");
 
   assert.doesNotMatch(homepage, /from "framer-motion"/);
   assert.doesNotMatch(homepage, /from "@\/lib\/supabaseClient"/);
@@ -20,7 +20,7 @@ test("homepage keeps heavy public runtimes outside the initial client entry", ()
     homepage,
     /useState\(\(\) =>\s*getWorkloadSnapshot\(getGermanyNow\(\)\)\)/
   );
-  assert.match(homepage, /useState<WorkloadSnapshot>\(\s*initialWorkloadSnapshot/);
+  assert.doesNotMatch(homepage, /WorkloadSnapshot|getWorkloadSnapshot|Average response/);
 });
 
 test("large translation catalogs are loaded only for runtime-translated routes", () => {

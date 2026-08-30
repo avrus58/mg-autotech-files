@@ -77,7 +77,7 @@ test("service catalog and public discovery surfaces link to every new guide", ()
   const fileService = projectFile("src", "app", "file-service", "page.tsx");
   const guides = projectFile("src", "app", "workshop-guides", "page.tsx");
   const footer = projectFile("src", "components", "Footer.tsx");
-  const homepage = projectFile("src", "app", "page.tsx");
+  const homepage = projectFile("src", "components", "homepage", "HomepageExperience.tsx");
 
   assert.match(catalog, /serviceIntentGuides\.map/);
   for (const slug of ["stage-2", "stage-3", "tcu-tuning", "ecu-file-check"]) {

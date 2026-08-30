@@ -5434,3 +5434,54 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 - The legacy English Search campaign and the incomplete-tracking Performance Max campaign remain paused. No additional campaign, budget, payment or bidding change was made.
 - Live Production verification after optional analytics and advertising consent observed the Google tag resources load from Google Tag Manager with zero browser console issues. Production app/analyzer health and the previously validated release remain unchanged.
 - A genuine Google Ads conversion receipt is still pending the first real verified customer request. No fake customer, request or conversion was created, so reporting data remains clean.
+
+## 2026-08-30 Public homepage experience refresh
+
+- Scope was limited to the public root homepage and its 11 localized variants.
+  The admin panel, customer panel, authentication, request, payment and database
+  behavior were intentionally left unchanged.
+- Replaced the 5,193-line root page stack with one focused homepage experience:
+  compact sticky navigation, premium hero/workspace preview, progressive public
+  vehicle intelligence, deferred browser-local datalog snapshot, core services,
+  request-preparation tools, four-step workflow, trust signals, brand/ECU
+  coverage, fail-closed live credit pricing, resources/FAQ, final CTA and a
+  compact homepage footer. Repeated long-form material now links to the existing
+  canonical service and guide routes.
+- Preserved real product behavior: stale-safe progressive vehicle API requests,
+  published performance/ECU/read-method output, local-only bounded datalog
+  parsing, authenticated request and credit routes, session-aware header actions,
+  sanitized public pricing, loading/error/empty states and structured data that
+  matches visible content.
+- Responsive comparison against the prior live homepage reduced measured page
+  height from about 14,593 px to 6,033 px on desktop and 26,945 px to 12,383 px
+  on mobile. Checks at 360, 390, 768, 1024, 1366 and 1440 widths found no
+  horizontal overflow. Mobile menu hash navigation, BMW progressive vehicle
+  selection and an example datalog result were exercised successfully.
+- Accessibility fixes include sibling header/main/footer landmarks, one stable
+  `#tools` target before deferred loading, no automatic focus jump after an
+  automatic vehicle lookup, a named polite result region and AA-readable
+  meaningful secondary text. Browser console inspection found no application
+  errors; local live pricing correctly failed closed without local Production
+  configuration rather than showing stale amounts.
+- Added 178 reviewed homepage source strings for every non-English locale and a
+  complete locale-specific Vehicle Intelligence copy contract. Final generated
+  `/de` and `/tr` HTML scans found no missing critical headings or visible
+  English leaks; localized home links, currency formatting and aria labels were
+  verified.
+- Changed files: `.autopilot/TASKS.md`, `.autopilot/STATUS.md`,
+  `scripts/check-i18n-seo.mjs`, `src/app/page.tsx`,
+  `src/app/[locale]/page.tsx`, `src/components/Footer.tsx`,
+  `src/components/homepage/HomepageExperience.tsx`,
+  `src/components/homepage/VehicleIntelligence.tsx`,
+  `src/components/tools/DeferredPerformanceTools.tsx`,
+  `src/components/tools/PublicLogSnapshot.tsx`,
+  `src/lib/homepageExperienceTranslations.ts` and scoped source-contract tests.
+- Validation: focused homepage/affected suite 220/220 PASS; `npm run lint` PASS;
+  `npm run typecheck` PASS; `npm run check:i18n` PASS for 12 locales and 622/622
+  reviewed strings; `npm run build -- --webpack` PASS with 280/280 static pages;
+  `npm run check:performance` PASS at 10.0 KiB gzip across three initial chunks
+  and a 6.5 KiB public datalog worker; `git diff --check` PASS. The complete test
+  run was 1154/1156; its two unrelated ads/growth source-fixture failures were
+  reproduced exactly in a clean worktree at the unchanged base commit.
+- Independent read-only review found no P0/P1/P2 issue and returned GO. No push,
+  Preview, Production deploy, live service mutation or database change occurred.
