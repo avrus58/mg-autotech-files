@@ -70,7 +70,7 @@ export function DeferredPerformanceTools({
       ) : (
         <section
           aria-busy="true"
-          aria-label={copy["Free log snapshot loading"]}
+          aria-label={copy["Loading the free log snapshot"]}
           className="min-h-[32rem] border-y border-white/[0.07] bg-[#050506] px-4 py-14 sm:py-16"
         >
           <div className="mx-auto max-w-7xl animate-pulse">

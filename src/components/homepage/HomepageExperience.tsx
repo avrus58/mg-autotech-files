@@ -41,7 +41,7 @@ import {
   homepageSessionEvent,
   type HomepageSessionDetail,
 } from "@/lib/homepageSessionEvents";
-import type { LocaleCode } from "@/lib/i18nConfig";
+import { intlLocaleByCode, type LocaleCode } from "@/lib/i18nConfig";
 import {
   HomepageLocalizationProvider,
   LocalizedHomepageTree,
@@ -333,7 +333,6 @@ export const homepagePageJsonLd = {
   description:
     "Secure online ECU and TCU file service with vehicle data, workshop tools, credit pricing and private order delivery.",
   url: publicResourceUrl("/"),
-  inLanguage: "en",
   isPartOf: { "@id": publicResourceUrl("/#website") },
   about: { "@id": publicResourceUrl("/#organization") },
   hasPart: [
@@ -390,6 +389,79 @@ export const homepageRequestPreparationHowToJsonLd = {
     text: step.text,
   })),
 };
+
+/**
+ * Localize homepage structured data from the same deliberately scoped catalog
+ * that renders the visible homepage. This keeps JSON-LD and first-paint copy in
+ * sync without shipping another translation dictionary to the client.
+ */
+export function buildHomepageStructuredData(
+  locale: LocaleCode,
+  translationCatalog?: HomepageTranslationCatalog,
+) {
+  const localize = (value: string) =>
+    locale === "en"
+      ? value
+      : translateHomepageText(value, translationCatalog);
+  const inLanguage = intlLocaleByCode[locale];
+
+  return [
+    {
+      ...homepagePageJsonLd,
+      name: `MG AutoTech — ${localize(
+        "Professional online file service platform",
+      )}`,
+      description: localize(
+        "Upload original ECU/TCU files, select your service, track your order and download the completed file directly through the secure MG AutoTech customer portal.",
+      ),
+      inLanguage,
+    },
+    {
+      ...homepageFileServiceJsonLd,
+      name: `MG AutoTech ${localize("File Service")}`,
+      inLanguage,
+      hasOfferCatalog: {
+        ...homepageFileServiceJsonLd.hasOfferCatalog,
+        name: localize("The core workshop services, without the clutter."),
+        itemListElement: services.map((service, index) => ({
+          "@type": "Offer",
+          position: index + 1,
+          itemOffered: {
+            "@type": "Service",
+            name: localize(service.title),
+            description: localize(service.text),
+            url: publicResourceUrl(service.href),
+          },
+        })),
+      },
+    },
+    {
+      ...homepageFaqJsonLd,
+      inLanguage,
+      mainEntity: faqs.map((item) => ({
+        "@type": "Question",
+        name: localize(item.question),
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: localize(item.answer),
+        },
+      })),
+    },
+    {
+      ...homepageRequestPreparationHowToJsonLd,
+      name: localize(
+        "From original file to secure delivery in four clear steps.",
+      ),
+      inLanguage,
+      step: workflowSteps.map((step, index) => ({
+        "@type": "HowToStep",
+        position: index + 1,
+        name: localize(step.title),
+        text: localize(step.text),
+      })),
+    },
+  ];
+}
 
 function formatEuro(value: number, locale: LocaleCode) {
   return new Intl.NumberFormat(locale, {
@@ -844,7 +916,7 @@ export function HomepageExperience({
 
           {includeStructuredData && (
             <>
-              {[homepagePageJsonLd, homepageFileServiceJsonLd, homepageFaqJsonLd, homepageRequestPreparationHowToJsonLd].map((schema, index) => (
+              {buildHomepageStructuredData(locale, translationCatalog).map((schema, index) => (
                 <script
                   key={index}
                   type="application/ld+json"

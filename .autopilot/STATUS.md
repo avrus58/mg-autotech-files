@@ -5539,3 +5539,24 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
   `npm run check:performance` ve `git diff --check` PASS.
 - Push, Preview, Production deploy, canli veritabani veya dis servis mutasyonu
   yapilmadi.
+
+## 2026-08-30 22:26 +02:00 Final localization quality-gate closure
+
+- Ikinci bagimsiz incelemenin dort P2 bulgusu da kapatildi. Canonical homepage
+  WebPage, Service, FAQPage ve HowTo JSON-LD bloklari artik gorunen sayfayla
+  ayni scoped katalogdan uretiliyor ve her blok dogru BCP-47 `inLanguage`
+  degerini tasiyor. On bir non-English locale icin schema parse/golden testleri
+  eklendi.
+- Gorunen `TCU & Gearbox` etiketi 11 hedef dilde yerlestirildi; Arnavutca
+  original/modified-file cumlesinin dilbilgisi duzeltildi. Datalog busy etiketi
+  `Loading the free log snapshot` semantigine gecirildi ve her locale icin
+  dogal ilerleyen durum metni strict golden testle sabitlendi.
+- Son dogrulama: 136/136 odakli test, `npm run check:i18n` 12 locale ve
+  1997/1997 source/0 fallback, `npm run lint`, tam `npm run typecheck`,
+  `npm test -- --test-reporter=dot` 1326/1326, Webpack Production build
+  280/280, `npm run check:performance` ve `git diff --check` PASS.
+- Yerel Production tarayici QA'sinda DE/TR baslik, TCU etiketi, loading aria ve
+  telif metni dogru dildeydi; yatay tasma ve console hatasi yoktu. Homepage ilk
+  yukleme 14.6/80 KiB gzip, locale kataloglari 4.9-6.2/12 KiB gzip kaldi.
+- Push, Preview, Production deploy, canli veritabani veya dis servis mutasyonu
+  yapilmadi.

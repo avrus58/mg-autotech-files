@@ -1694,6 +1694,10 @@ test("public file workflow copy keeps delivery and read-method terminology exact
     sourceReview.zh,
     "准备修改后的文件之前，会审核原始文件和请求详情。",
   );
+  assert.equal(
+    sourceReview.sq,
+    "Skedari origjinal dhe detajet e kërkesës shqyrtohen përpara se të përgatitet skedari i modifikuar.",
+  );
 
   const advisor = localizedRecord(
     publicSurfaceLocaleOrder,

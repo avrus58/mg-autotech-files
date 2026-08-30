@@ -54,6 +54,31 @@ test("every compact interactive-tool key has reviewed non-English copy", () => {
   }
 });
 
+test("public log snapshot exposes a native progressive loading status in every locale", () => {
+  const expected = {
+    de: "Kostenloser Log-Snapshot wird geladen",
+    tr: "Ücretsiz log anlık görüntüsü yükleniyor",
+    nl: "Gratis logsnapshot wordt geladen",
+    fr: "Chargement de l’aperçu gratuit du log en cours",
+    it: "Caricamento dell’istantanea gratuita del log in corso",
+    es: "Cargando la instantánea gratuita del registro",
+    pt: "A carregar a captura gratuita do registo",
+    pl: "Trwa ładowanie bezpłatnego podglądu logu",
+    ru: "Загружается бесплатный снимок лога",
+    zh: "正在加载免费日志快照",
+    sq: "Po ngarkohet pamja e çastit falas e regjistrit",
+  } as const;
+
+  for (const [locale, loadingStatus] of Object.entries(expected)) {
+    assert.equal(
+      buildPublicLogSnapshotCopy(locale as keyof typeof expected)[
+        "Loading the free log snapshot"
+      ],
+      loadingStatus,
+    );
+  }
+});
+
 test("interactive tool clients receive compact copies without bundling the global catalog", () => {
   for (const component of [
     "FileReadinessAssistant.tsx",

@@ -200,7 +200,7 @@ export type RequestBriefCopyKey = (typeof requestBriefCopyKeys)[number];
 export type RequestBriefCopy = Readonly<Record<RequestBriefCopyKey, string>>;
 
 export const publicLogSnapshotCopyKeys = [
-  "Free log snapshot loading",
+  "Loading the free log snapshot",
   "The public estimate needs at least 5 aligned RPM and torque rows across a 1,000 rpm window with usable capture quality.",
   "The detected RPM, torque or estimated power is outside the supported public-check range. Review the selected channels, units and export before relying on it.",
   "No compatible engine-speed and actual torque channels were detected. Use a delimited text export with RPM and torque stated in Nm or lb-ft.",

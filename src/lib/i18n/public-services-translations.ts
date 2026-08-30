@@ -2612,7 +2612,7 @@ export const publicServicesTranslations: Record<string, PublicSurfaceTranslation
     "Oryginalny plik i szczegóły zgłoszenia są sprawdzane przed przygotowaniem zmodyfikowanego pliku.",
     "Исходный файл и детали запроса проверяются перед подготовкой модифицированного файла.",
     "准备修改后的文件之前，会审核原始文件和请求详情。",
-    "skedar origjinale dhe detajet e kërkesës rishikohen përpara se të përgatitet skedar i modifikuar.",
+    "Skedari origjinal dhe detajet e kërkesës shqyrtohen përpara se të përgatitet skedari i modifikuar.",
   ],
   "The request is prepared according to the submitted DTC scope.": [
     "Die Anfrage wird entsprechend dem eingereichten DTC-Umfang erstellt.",
