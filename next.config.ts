@@ -80,6 +80,12 @@ const protectedPageSources = [
 
 const nextConfig: NextConfig = {
   output: "standalone",
+  experimental: {
+    // Production runs with a read-only root filesystem. Keep runtime ISR
+    // entries in Next's bounded memory cache instead of attempting to write
+    // generated 404/fallback segments beside the immutable server bundle.
+    isrFlushToDisk: false,
+  },
   async redirects() {
     return [
       {

@@ -5593,3 +5593,25 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
   Iki bagimsiz mimari/root-cause review turu GO verdi. Push, Preview, Production
   deploy, canli veritabani, secret, odeme, e-posta veya dis servis mutasyonu
   yapilmadi.
+
+## 2026-08-31 08:34 +02:00 Production read-only ISR cache hardening
+
+- Site-wide localization release `967aa61d2727` Hostinger VPS'ye immutable
+  app/analyzer cifti olarak cikarildi. Iki container healthy, restart 0 ve
+  domain-level public/auth/API smoke 23/23 PASS oldu; onceki rollback cifti
+  `0a09c4801e72` olarak korundu.
+- Yapay bilinmeyen URL smoke'u dogru 404/noindex dondurmesine ragmen Next.js
+  runtime'in read-only `/app/.next/server/app` altina fallback segmenti yazmaya
+  calistigini ve ENOENT warning urettigini ortaya cikardi. Gecerli rota,
+  musteri verisi, auth veya servis sagligi etkilenmedi.
+- `experimental.isrFlushToDisk: false` ile runtime fallback/404 kayitlari
+  Next'in varsayilan bounded memory cache'inde tutuldu; immutable server bundle
+  ve `read_only` container guvenligi korunur. Yerel standalone kontrolde ilk
+  bilinmeyen rota MISS, tekrar HIT, dogru localized 404/noindex ve sifir runtime
+  cache dosyasi verdi; mevcut `/de` SSG rotasi HIT kaldi.
+- Kontroller: tam test paketi PASS; `npm run lint`, `npm run typecheck`, Webpack
+  Production build 280/280, `npm run check:i18n` (12 locale, 1975/1975, sifir
+  fallback), `npm run check:performance`, `git diff --check` PASS. Degisiklik
+  yalniz Next runtime cache davranisi, kaynak sozlesme testi ve bu audit
+  kaydidir; migration, Production DB, env/secret, Caddy/DNS, odeme, e-posta
+  veya musteri verisi degisikligi yoktur.

@@ -126,6 +126,7 @@ test("not-found UI uses the active locale and localized recovery catalog", () =>
     /if \(!isSeoLocale\(rawLocale\)\) return notFoundMetadata;/u,
   );
   assert.doesNotMatch(nextConfig, /globalNotFound/u);
+  assert.match(nextConfig, /isrFlushToDisk: false/u);
   assert.doesNotMatch(notFound, /ECU & TCU File Service for Workshops/u);
   assert.match(notFoundClient, /useRecoveryLocale\(\)/u);
   assert.match(notFoundClient, /if \(!locale\)/u);
