@@ -51,7 +51,8 @@ test("widget dashboard and billing UI do not show a dead manage button when bill
   assert.match(notice, /canManageBilling/);
   assert.match(notice, /href="\/widget"/);
   assert.match(notice, /mailto:info@mgautotech\.de\?subject=Widget%20billing%20support/);
-  assert.match(billing, /setShowPlanAction\(data\.action === "view_plans"\)/);
+  assert.match(billing, /showPlanAction: data\.action === "view_plans"/);
+  assert.match(billing, /portalNotice\?\.locale === activeSiteLocale/u);
   assert.match(billing, /View widget plans/);
   assert.doesNotMatch(dashboard, /stripe_customer_id|stripe_subscription_id|widget_audit_logs|service_role|admin_note/);
 });

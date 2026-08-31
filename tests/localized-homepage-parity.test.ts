@@ -19,6 +19,11 @@ const rootHomepage = [
 const rootLayout = readFileSync("src/app/layout.tsx", "utf8");
 const localizedHomepageRoute = readFileSync("src/app/[locale]/page.tsx", "utf8");
 const localizedLayout = readFileSync("src/app/[locale]/layout.tsx", "utf8");
+const homepageMetadata = readFileSync("src/lib/homepageMetadata.ts", "utf8");
+const serverLocaleBoundary = readFileSync(
+  "src/components/ServerLocaleBoundary.tsx",
+  "utf8",
+);
 const languageSwitcher = readFileSync("src/components/LanguageSwitcher.tsx", "utf8");
 
 test("localized homepages use the exact English homepage component tree", () => {
@@ -33,7 +38,8 @@ test("localized homepages use the exact English homepage component tree", () => 
 
 test("localized homepage keeps locale metadata and one localized schema graph", () => {
   assert.match(localizedHomepageRoute, /buildLocalizedHomepageJsonLd/u);
-  assert.match(localizedHomepageRoute, /languageAlternates\("\/"\)/u);
+  assert.match(localizedHomepageRoute, /buildHomepageMetadata\(rawLocale as LocaleCode\)/u);
+  assert.match(homepageMetadata, /languageAlternates\("\/"\)/u);
   assert.match(localizedHomepageRoute, /localizedUrl\(locale, "\/"\)/u);
   assert.match(localizedHomepageRoute, /JSON\.stringify\(jsonLd\)/u);
   assert.match(localizedHomepageRoute, /buildHomepageTranslationCatalog\(locale\)/u);
@@ -43,10 +49,10 @@ test("localized homepage keeps locale metadata and one localized schema graph", 
 
 test("localized routes set the browser document language before hydration", () => {
   assert.match(rootLayout, /<html[\s\S]*suppressHydrationWarning/u);
-  assert.match(localizedLayout, /data-locale-document-language/u);
-  assert.match(localizedLayout, /document\.documentElement\.lang/u);
-  assert.match(localizedLayout, /JSON\.stringify\(documentLanguage\)/u);
-  assert.match(localizedLayout, /<div lang=\{documentLanguage\}>/u);
+  assert.match(localizedLayout, /<ServerLocaleBoundary locale=\{locale\}>/u);
+  assert.match(serverLocaleBoundary, /data-server-document-language/u);
+  assert.match(serverLocaleBoundary, /document\.documentElement\.lang/u);
+  assert.match(serverLocaleBoundary, /JSON\.stringify\(documentLanguage\)/u);
 });
 
 test("homepage links localize only when an equivalent locale page exists", () => {

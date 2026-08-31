@@ -6,6 +6,7 @@ import {
   type ReactNode,
 } from "react";
 import type { LocaleCode } from "@/lib/i18nConfig";
+import { ServerLocaleBoundary } from "@/components/ServerLocaleBoundary";
 import { getLocalizedPublicHref } from "@/lib/i18nRoutes";
 import {
   runtimePublicText,
@@ -91,5 +92,9 @@ export function RuntimePublicLocalization({
   locale: LocaleCode;
   scopes: readonly RuntimePublicScope[];
 }) {
-  return <>{localizeNode(children, locale, scopes)}</>;
+  return (
+    <ServerLocaleBoundary locale={locale}>
+      {localizeNode(children, locale, scopes)}
+    </ServerLocaleBoundary>
+  );
 }

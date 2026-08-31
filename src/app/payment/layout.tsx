@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { RequestLocaleBoundary } from "@/components/RequestLocaleBoundary";
 
 export const metadata: Metadata = {
   robots: {
@@ -12,5 +13,5 @@ export default function PaymentLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  return children;
+  return <RequestLocaleBoundary>{children}</RequestLocaleBoundary>;
 }

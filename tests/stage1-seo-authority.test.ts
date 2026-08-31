@@ -69,13 +69,16 @@ test("ECU platform guides link back to Stage 1 and the homepage stays compact", 
 });
 
 test("Stage 1 public content and schema do not expose private platform metadata", () => {
+  const servicePage = projectFile("src", "app", "services", "[slug]", "page.tsx");
+  const structuredDataI18n = projectFile("src", "lib", "structuredDataI18n.ts");
   const files = [
-    projectFile("src", "app", "services", "[slug]", "page.tsx"),
+    servicePage,
     projectFile("src", "components", "Stage1Authority.tsx"),
   ].join("\n").toLowerCase();
 
   assert.match(files, /"@type": "itemlist"/);
-  assert.match(files, /automotive workshops and tuning professionals/);
+  assert.match(servicePage, /audienceType: businessAudienceTypeByLocale\[locale\]/);
+  assert.match(structuredDataI18n, /Automotive workshops and tuning professionals/);
 
   for (const marker of [
     "admin_notes",

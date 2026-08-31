@@ -7,7 +7,6 @@ import {
   type LocaleCode,
 } from "@/lib/i18nConfig";
 import { readLocaleCookie, readStoredLocale } from "@/lib/localePreference";
-import { useInitialLocale } from "@/lib/useActiveLocale";
 
 type RecoveryCopy = {
   eyebrow: string;
@@ -47,8 +46,8 @@ export const recoveryTranslations: Record<LocaleCode, RecoveryCopy> = {
   tr: {
     eyebrow: "MG AutoTech kurtarma",
     title: "Bu görünümün yeniden yüklenmesi gerekiyor",
-    description: "Hiçbir müşteri dosyası veya talep değiştirilmedi. Lütfen görünümü yeniden deneyin.",
-    retry: "Görünümü yeniden dene",
+    description: "Hiçbir müşteri dosyası veya talep değiştirilmedi. Lütfen görünümü yeniden yüklemeyi deneyin.",
+    retry: "Görünümü yeniden yükle",
     notFoundEyebrow: "Sayfa bulunamadı",
     notFoundTitle: "Bu sayfa kullanılamıyor",
     notFoundDescription: "Adres hatalı olabilir veya sayfa taşınmış olabilir. Hiçbir müşteri dosyası ya da talep değiştirilmedi.",
@@ -69,22 +68,22 @@ export const recoveryTranslations: Record<LocaleCode, RecoveryCopy> = {
   fr: {
     eyebrow: "Récupération MG AutoTech",
     title: "Cette vue doit être rechargée",
-    description: "Aucun fichier client ni aucune demande n’a été modifié. Réessayez d’afficher cette vue.",
+    description: "Aucun fichier client ni aucune demande n’ont été modifiés. Réessayez d’afficher cette vue.",
     retry: "Réessayer la vue",
     notFoundEyebrow: "Page introuvable",
     notFoundTitle: "Cette page n’est pas disponible",
-    notFoundDescription: "L’adresse est peut-être incorrecte ou la page a été déplacée. Aucun fichier client ni aucune demande n’a été modifié.",
+    notFoundDescription: "L’adresse est peut-être incorrecte ou la page a été déplacée. Aucun fichier client ni aucune demande n’ont été modifiés.",
     home: "Aller à l’accueil",
     services: "Voir les services",
   },
   it: {
     eyebrow: "Ripristino MG AutoTech",
     title: "Questa vista deve essere ricaricata",
-    description: "Nessun file cliente o richiesta è stato modificato. Riprova a caricare la vista.",
+    description: "Nessun file cliente né alcuna richiesta sono stati modificati. Riprova a caricare la vista.",
     retry: "Riprova la vista",
     notFoundEyebrow: "Pagina non trovata",
     notFoundTitle: "Questa pagina non è disponibile",
-    notFoundDescription: "L’indirizzo potrebbe essere errato o la pagina potrebbe essere stata spostata. Nessun file cliente o richiesta è stato modificato.",
+    notFoundDescription: "L’indirizzo potrebbe essere errato o la pagina potrebbe essere stata spostata. Nessun file cliente né alcuna richiesta sono stati modificati.",
     home: "Vai alla pagina iniziale",
     services: "Sfoglia i servizi",
   },
@@ -219,10 +218,12 @@ function subscribeRecoveryLocale(onStoreChange: () => void) {
 }
 
 export function useRecoveryLocale() {
-  const initialLocale = useInitialLocale();
   return useSyncExternalStore<LocaleCode | null>(
     subscribeRecoveryLocale,
     readRecoveryLocale,
-    () => initialLocale,
+    // Root error/not-found boundaries sit outside request-localized providers.
+    // A neutral server snapshot prevents an incorrect English recovery flash;
+    // hydration then resolves path, stored, cookie, document and browser locale.
+    () => null,
   );
 }

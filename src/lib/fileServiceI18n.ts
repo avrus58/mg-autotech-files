@@ -1,5 +1,6 @@
 import { absoluteUrl, hreflangByLocale, isPublicServiceSlug, localizedUrl } from "@/lib/seo";
 import type { LocaleCode } from "@/lib/i18nConfig";
+import { businessAudienceTypeByLocale } from "@/lib/structuredDataI18n";
 
 export type FileServiceHubCard = {
   title: string;
@@ -862,21 +863,6 @@ const localizedCopy: Record<LocaleCode, FileServiceHubCopy> = {
   },
 };
 
-const audienceTypeByLocale: Record<LocaleCode, string> = {
-  en: "Automotive workshops and tuning professionals",
-  nl: "Automotive werkplaatsen en professionele tuners",
-  de: "Automobilwerkstätten und professionelle Tuner",
-  fr: "Ateliers automobiles et préparateurs professionnels",
-  it: "Officine automobilistiche e preparatori professionisti",
-  ru: "Автомобильные мастерские и профессиональные тюнеры",
-  es: "Talleres de automoción y preparadores profesionales",
-  tr: "Otomotiv atölyeleri ve profesyonel tunerlar",
-  pt: "Oficinas automóveis e preparadores profissionais",
-  zh: "汽车维修厂和专业调校技师",
-  pl: "Warsztaty samochodowe i profesjonalni tunerzy",
-  sq: "Servise automobilistike dhe specialistë profesionistë tuningu",
-};
-
 export function getFileServiceCopy(locale: LocaleCode): FileServiceHubCopy {
   return localizedCopy[locale] ?? localizedCopy.en;
 }
@@ -924,7 +910,7 @@ export function fileServiceJsonLd(locale: LocaleCode, url = localizedUrl(locale,
       areaServed: ["DE", "AT", "CH", "NL", "BE", "FR", "ES", "IT", "TR"],
       audience: {
         "@type": "Audience",
-        audienceType: audienceTypeByLocale[locale],
+        audienceType: businessAudienceTypeByLocale[locale],
       },
       url,
       description: copy.description,

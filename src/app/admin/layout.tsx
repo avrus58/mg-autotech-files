@@ -4,6 +4,11 @@ import { AdminNotificationDock } from "@/components/admin/AdminNotificationDock"
 import { AdminWorkspaceRestoreGuard } from "@/components/admin/AdminWorkspaceRestoreGuard";
 
 export const metadata: Metadata = {
+  title: { absolute: "MG AutoTech · Admin" },
+  description: null,
+  alternates: null,
+  openGraph: null,
+  twitter: null,
   robots: {
     index: false,
     follow: false,

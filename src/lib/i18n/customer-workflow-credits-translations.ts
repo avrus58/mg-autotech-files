@@ -73,6 +73,19 @@ export const customerWorkflowExactTranslations = {
     "Przelew bankowy",
     "Transfertë bankare"
   ],
+  "Bank transfer instructions could not be prepared. Please try again or choose card payment.": [
+    "De instructies voor de bankoverschrijving konden niet worden voorbereid. Probeer het opnieuw of kies kaartbetaling.",
+    "Die Anweisungen für die Banküberweisung konnten nicht erstellt werden. Versuchen Sie es erneut oder wählen Sie Kartenzahlung.",
+    "Les instructions de virement bancaire n’ont pas pu être préparées. Réessayez ou choisissez le paiement par carte.",
+    "Non è stato possibile preparare le istruzioni per il bonifico bancario. Riprova o scegli il pagamento con carta.",
+    "Не удалось подготовить инструкции для банковского перевода. Повторите попытку или выберите оплату картой.",
+    "No se han podido preparar las instrucciones para la transferencia bancaria. Inténtelo de nuevo o elija el pago con tarjeta.",
+    "Banka havalesi talimatları hazırlanamadı. Tekrar deneyin veya kartla ödemeyi seçin.",
+    "Não foi possível preparar as instruções da transferência bancária. Tente novamente ou escolha o pagamento por cartão.",
+    "无法准备银行转账说明。请重试或选择银行卡付款。",
+    "Nie udało się przygotować instrukcji przelewu bankowego. Spróbuj ponownie lub wybierz płatność kartą.",
+    "Udhëzimet për transfertën bankare nuk mund të përgatiteshin. Provoni përsëri ose zgjidhni pagesën me kartë."
+  ],
   "Buy More Credits": [
     "Meer credits kopen",
     "Mehr Credits kaufen",
@@ -85,6 +98,19 @@ export const customerWorkflowExactTranslations = {
     "购买更多积分",
     "Kup więcej kredytów",
     "Bli më shumë kredite"
+  ],
+  "Choose a valid credit package or enter a valid credit amount.": [
+    "Kies een geldig creditpakket of voer een geldig aantal credits in.",
+    "Wählen Sie ein gültiges Credit-Paket oder geben Sie eine gültige Credit-Anzahl ein.",
+    "Choisissez un forfait de crédits valide ou saisissez un nombre de crédits valide.",
+    "Scegli un pacchetto crediti valido o inserisci una quantità di crediti valida.",
+    "Выберите действительный пакет кредитов или укажите допустимое количество кредитов.",
+    "Elija un paquete de créditos válido o introduzca una cantidad válida de créditos.",
+    "Geçerli bir kredi paketi seçin veya geçerli bir kredi miktarı girin.",
+    "Escolha um pacote de créditos válido ou introduza uma quantidade válida de créditos.",
+    "请选择有效的积分套餐或输入有效的积分数量。",
+    "Wybierz prawidłowy pakiet kredytów lub wprowadź prawidłową liczbę kredytów.",
+    "Zgjidhni një paketë të vlefshme kreditesh ose vendosni një sasi të vlefshme kreditesh."
   ],
   "Confirming payment": [
     "Betaling bevestigen",
@@ -151,6 +177,32 @@ export const customerWorkflowExactTranslations = {
     "Ceny kredytów uległy zmianie, ale nie udało się załadować najnowszych cen. Spróbuj ponownie przed kontynuowaniem.",
     "Çmimet e kredive ndryshuan, por çmimet më të fundit nuk mund të ngarkoheshin. Provo sërish përpara se të vazhdosh."
   ],
+  "Credit prices changed. Review the refreshed total before continuing.": [
+    "De creditprijzen zijn gewijzigd. Controleer het bijgewerkte totaalbedrag voordat u doorgaat.",
+    "Die Credit-Preise haben sich geändert. Prüfen Sie vor dem Fortfahren den aktualisierten Gesamtbetrag.",
+    "Les tarifs des crédits ont changé. Vérifiez le total actualisé avant de continuer.",
+    "I prezzi dei crediti sono cambiati. Controlla il totale aggiornato prima di continuare.",
+    "Цены на кредиты изменились. Проверьте обновлённую сумму, прежде чем продолжить.",
+    "Los precios de los créditos han cambiado. Revise el total actualizado antes de continuar.",
+    "Kredi fiyatları değişti. Devam etmeden önce güncellenen toplamı kontrol edin.",
+    "Os preços dos créditos foram alterados. Reveja o total atualizado antes de continuar.",
+    "积分价格已更改。继续前请核对更新后的总额。",
+    "Ceny kredytów uległy zmianie. Przed kontynuowaniem sprawdź zaktualizowaną kwotę.",
+    "Çmimet e krediteve kanë ndryshuar. Kontrolloni totalin e përditësuar përpara se të vazhdoni."
+  ],
+  "Credit prices could not be loaded.": [
+    "Kredietprijzen konden niet worden geladen.",
+    "Credit-Preise konnten nicht geladen werden.",
+    "Les prix du crédit n'ont pas pu être chargés.",
+    "Impossibile caricare i prezzi del credito.",
+    "Не удалось загрузить кредитные цены.",
+    "No se pudieron cargar los precios del crédito.",
+    "Kredi fiyatları yüklenemedi.",
+    "Não foi possível carregar os preços de crédito.",
+    "无法加载积分价格。",
+    "Nie można wczytać cen kredytów.",
+    "Çmimet e kredisë nuk mund të ngarkoheshin."
+  ],
   "Credit prices were refreshed. Please review the latest total before continuing.": [
     "Kredietprijzen zijn vernieuwd. Controleer het laatste totaal voordat u verdergaat.",
     "Die Kreditpreise wurden aktualisiert. Bitte überprüfen Sie die aktuelle Gesamtsumme, bevor Sie fortfahren.",
@@ -163,6 +215,32 @@ export const customerWorkflowExactTranslations = {
     "积分价格已刷新。请在继续前核对最新总额。",
     "Odświeżono ceny kredytów. Zanim przejdziesz dalej, przejrzyj najnowszą sumę.",
     "Çmimet e kredisë u rifreskuan. Ju lutemi rishikoni totalin më të fundit përpara se të vazhdoni."
+  ],
+  "Credit pricing is temporarily unavailable. Please try again later.": [
+    "Creditprijzen zijn tijdelijk niet beschikbaar. Probeer het later opnieuw.",
+    "Die Credit-Preise sind vorübergehend nicht verfügbar. Versuchen Sie es später erneut.",
+    "Les tarifs des crédits sont temporairement indisponibles. Réessayez plus tard.",
+    "I prezzi dei crediti sono temporaneamente non disponibili. Riprova più tardi.",
+    "Цены на кредиты временно недоступны. Повторите попытку позже.",
+    "Los precios de los créditos no están disponibles temporalmente. Inténtelo de nuevo más tarde.",
+    "Kredi fiyatları geçici olarak kullanılamıyor. Lütfen daha sonra tekrar deneyin.",
+    "Os preços dos créditos estão temporariamente indisponíveis. Tente novamente mais tarde.",
+    "积分价格暂时不可用。请稍后重试。",
+    "Ceny kredytów są tymczasowo niedostępne. Spróbuj ponownie później.",
+    "Çmimet e krediteve nuk janë përkohësisht të disponueshme. Provoni përsëri më vonë."
+  ],
+  "Credit purchase could not be started.": [
+    "De creditaankoop kon niet worden gestart.",
+    "Der Credit-Kauf konnte nicht gestartet werden.",
+    "L’achat de crédits n’a pas pu être lancé.",
+    "Non è stato possibile avviare l’acquisto di crediti.",
+    "Не удалось начать покупку кредитов.",
+    "No se pudo iniciar la compra de créditos.",
+    "Kredi alımı başlatılamadı.",
+    "Não foi possível iniciar a compra de créditos.",
+    "无法开始购买积分。",
+    "Nie można rozpocząć zakupu kredytów.",
+    "Blerja e kredive nuk mund të fillonte."
   ],
   "Customer ID could not be loaded.": [
     "Klant-ID kan niet worden geladen.",
@@ -260,13 +338,13 @@ export const customerWorkflowExactTranslations = {
     "Manuelle Prüfung",
     "Contrôle manuel",
     "Controllo manuale",
-    "Manual check",
+    "Ручная проверка",
     "Revisión manual",
     "Manuel kontrol",
     "Verificação manual",
-    "Manual check",
+    "人工审核",
     "Kontrola ręczna",
-    "Manual check"
+    "Kontroll manual"
   ],
   "Payment cancelled": [
     "Betaling geannuleerd",
@@ -298,7 +376,7 @@ export const customerWorkflowExactTranslations = {
     "Betaling kon niet worden bevestigd.",
     "Zahlung konnte nicht bestätigt werden.",
     "Le paiement n'a pas pu être confirmé.",
-    "Il pagamento non può essere confermato.",
+    "Non è stato possibile confermare il pagamento.",
     "Не удалось подтвердить платеж.",
     "No se pudo confirmar el pago.",
     "Ödeme doğrulanamadı.",
@@ -308,17 +386,17 @@ export const customerWorkflowExactTranslations = {
     "Pagesa nuk mund të konfirmohej."
   ],
   "Payment is still being reconciled securely. Checking again...": [
-    "De betaling wordt nog steeds veilig afgestemd. Opnieuw controleren...",
-    "Die Zahlung wird immer noch sicher abgeglichen. Erneute Überprüfung...",
-    "Le paiement est toujours en cours de rapprochement sécurisé. Vérification à nouveau...",
-    "Il pagamento è ancora in fase di riconciliazione in modo sicuro. Controllo di nuovo...",
+    "De betaling wordt nog veilig verwerkt. We controleren opnieuw...",
+    "Die Zahlung wird weiterhin sicher abgeglichen. Erneute Prüfung...",
+    "Le rapprochement du paiement est toujours en cours. Nouvelle vérification...",
+    "La riconciliazione sicura del pagamento è ancora in corso. Nuovo controllo...",
     "Выверка платежа еще не завершена. Повторная проверка...",
-    "El pago todavía se está conciliando de forma segura. Comprobando de nuevo...",
-    "Ödeme hala güvenli bir şekilde uzlaştırılıyor. Tekrar kontrol ediliyor...",
+    "El pago sigue conciliándose de forma segura. Comprobando de nuevo...",
+    "Ödeme güvenli şekilde uzlaştırılmaya devam ediyor. Tekrar kontrol ediliyor...",
     "O pagamento ainda está a ser reconciliado de forma segura. A verificar novamente...",
-    "付款仍在安全对账中，请重新检查……",
-    "Płatność jest nadal bezpiecznie uzgadniana. Sprawdzam ponownie...",
-    "Pagesa është ende duke u ripajtuar në mënyrë të sigurt. Po kontrollojmë përsëri..."
+    "付款仍在安全对账中，正在重新检查……",
+    "Płatność jest nadal bezpiecznie uzgadniana. Sprawdzamy ponownie...",
+    "Pagesa është ende duke u rakorduar në mënyrë të sigurt. Po e kontrollojmë përsëri..."
   ],
   "Payment needs review": [
     "Betaling moet worden beoordeeld",
@@ -338,7 +416,7 @@ export const customerWorkflowExactTranslations = {
     "Zahlungsreferenz kopiert.",
     "Référence de paiement copiée.",
     "Riferimento del pagamento copiato.",
-    "Ссылка на платеж скопирована.",
+    "Платёжный идентификатор скопирован.",
     "Referencia de pago copiada.",
     "Ödeme referansı kopyalandı.",
     "Referência de pagamento copiada.",
@@ -348,11 +426,11 @@ export const customerWorkflowExactTranslations = {
   ],
   "Payment reference could not be copied. Please copy it manually.": [
     "Het betalingskenmerk kon niet worden gekopieerd. Kopieer het handmatig.",
-    "Zahlungsreferenz konnte nicht kopiert werden. Bitte kopieren Sie es manuell.",
-    "La référence de paiement n'a pas pu être copiée. Veuillez le copier manuellement.",
+    "Zahlungsreferenz konnte nicht kopiert werden. Bitte kopieren Sie sie manuell.",
+    "La référence de paiement n'a pas pu être copiée. Veuillez la copier manuellement.",
     "Impossibile copiare il riferimento del pagamento. Si prega di copiarlo manualmente.",
     "Не удалось скопировать платёжный идентификатор. Скопируйте его вручную.",
-    "No se pudo copiar la referencia de pago. Cópielo manualmente.",
+    "No se pudo copiar la referencia de pago. Cópiela manualmente.",
     "Ödeme referansı kopyalanamadı. Lütfen manuel olarak kopyalayın.",
     "Não foi possível copiar a referência de pagamento. Copie-a manualmente.",
     "无法复制付款参考。请手动复制。",
@@ -378,7 +456,7 @@ export const customerWorkflowExactTranslations = {
     "Paiement réussi",
     "Pagamento riuscito",
     "Оплата успешна",
-    "Pago correcto",
+    "Pago completado",
     "Ödeme başarılı",
     "Pagamento concluído",
     "付款成功",
@@ -398,6 +476,32 @@ export const customerWorkflowExactTranslations = {
     "Wprowadź liczbę całkowitą z zakresu od 1 do 1000 kredytów.",
     "Ju lutemi vendosni një numër të plotë midis 1 dhe 1000 kredite."
   ],
+  "Please log in again before purchasing credits.": [
+    "Meld u opnieuw aan voordat u credits koopt.",
+    "Melden Sie sich erneut an, bevor Sie Credits kaufen.",
+    "Reconnectez-vous avant d’acheter des crédits.",
+    "Accedi di nuovo prima di acquistare crediti.",
+    "Пожалуйста, войдите снова, прежде чем покупать кредиты.",
+    "Vuelva a iniciar sesión antes de comprar créditos.",
+    "Kredi satın almadan önce lütfen yeniden giriş yapın.",
+    "Inicie sessão novamente antes de comprar créditos.",
+    "购买积分前，请重新登录。",
+    "Zaloguj się ponownie przed zakupem kredytów.",
+    "Ju lutemi hyni përsëri përpara se të blini kredite."
+  ],
+  "Secure card checkout is temporarily unavailable. Choose Bank Transfer or try again later.": [
+    "Beveiligde kaartbetaling is tijdelijk niet beschikbaar. Kies Bankoverschrijving of probeer het later opnieuw.",
+    "Die sichere Kartenzahlung ist vorübergehend nicht verfügbar. Wählen Sie Banküberweisung oder versuchen Sie es später erneut.",
+    "Le paiement sécurisé par carte est temporairement indisponible. Choisissez le virement bancaire ou réessayez plus tard.",
+    "Il pagamento sicuro con carta è temporaneamente non disponibile. Scegli il bonifico bancario o riprova più tardi.",
+    "Безопасная оплата картой временно недоступна. Выберите банковский перевод или повторите попытку позже.",
+    "El pago seguro con tarjeta no está disponible temporalmente. Elija Transferencia bancaria o inténtelo de nuevo más tarde.",
+    "Güvenli kartla ödeme geçici olarak kullanılamıyor. Banka Havalesi'ni seçin veya daha sonra tekrar deneyin.",
+    "O pagamento seguro por cartão está temporariamente indisponível. Escolha Transferência bancária ou tente novamente mais tarde.",
+    "安全银行卡结账暂时不可用。请选择银行转账或稍后重试。",
+    "Bezpieczna płatność kartą jest tymczasowo niedostępna. Wybierz przelew bankowy lub spróbuj ponownie później.",
+    "Pagesa e sigurt me kartë nuk është përkohësisht e disponueshme. Zgjidhni transfertën bankare ose provoni përsëri më vonë."
+  ],
   "Secure Stripe checkout": [
     "Veilige Stripe-betaling",
     "Sichere Stripe-Zahlung",
@@ -412,17 +516,17 @@ export const customerWorkflowExactTranslations = {
     "Pagesë e sigurt Stripe"
   ],
   "SEPA transfer": [
-    "SEPA transfer",
+    "SEPA-overschrijving",
     "SEPA-Überweisung",
-    "SEPA transfer",
-    "SEPA transfer",
-    "SEPA transfer",
-    "SEPA transfer",
-    "SEPA havale",
-    "SEPA transfer",
-    "SEPA transfer",
-    "SEPA transfer",
-    "SEPA transfer"
+    "Virement SEPA",
+    "Bonifico SEPA",
+    "Перевод SEPA",
+    "Transferencia SEPA",
+    "SEPA havalesi",
+    "Transferência SEPA",
+    "SEPA 转账",
+    "Przelew SEPA",
+    "Transfertë SEPA"
   ],
   "success": [
     "succes",
@@ -476,6 +580,19 @@ export const customerWorkflowExactTranslations = {
     "Ta starsza forma płatności nie jest już obsługiwana. Użyj płatności kartą lub przelewu bankowego.",
     "Kjo mënyrë pagimi e trashëguar nuk mbështetet më. Përdor pagesën me kartë ose transfertën bankare."
   ],
+  "This payment method is currently unavailable. Choose another payment method.": [
+    "Deze betaalmethode is momenteel niet beschikbaar. Kies een andere betaalmethode.",
+    "Diese Zahlungsmethode ist derzeit nicht verfügbar. Wählen Sie eine andere Zahlungsmethode.",
+    "Ce mode de paiement est actuellement indisponible. Choisissez-en un autre.",
+    "Questo metodo di pagamento non è attualmente disponibile. Scegli un altro metodo di pagamento.",
+    "Этот способ оплаты сейчас недоступен. Выберите другой способ оплаты.",
+    "Este método de pago no está disponible actualmente. Elija otro método de pago.",
+    "Bu ödeme yöntemi şu anda kullanılamıyor. Başka bir ödeme yöntemi seçin.",
+    "Este método de pagamento está atualmente indisponível. Escolha outro método de pagamento.",
+    "此付款方式目前不可用。请选择其他付款方式。",
+    "Ta metoda płatności jest obecnie niedostępna. Wybierz inną metodę płatności.",
+    "Kjo mënyrë pagese nuk është aktualisht e disponueshme. Zgjidhni një mënyrë tjetër pagese."
+  ],
   "This total is outside Stripe's supported EUR range. Choose Bank Transfer or change the amount.": [
     "Dit totaal ligt buiten het ondersteunde EUR-bereik van Stripe. Kies Bankoverschrijving of wijzig het bedrag.",
     "Diese Summe liegt außerhalb des von Stripe unterstützten EUR-Bereichs. Wählen Sie Banküberweisung oder ändern Sie den Betrag.",
@@ -488,6 +605,32 @@ export const customerWorkflowExactTranslations = {
     "该总数超出了 Stripe 支持的欧元范围。选择银行转账或更改金额。",
     "Suma ta wykracza poza obsługiwany przez Stripe zakres EUR. Wybierz Przelew bankowy lub zmień kwotę.",
     "Ky total është jashtë gamës së mbështetur në EUR nga Stripe. Zgjidhni Transfertë Bankare ose ndryshoni shumën."
+  ],
+  "Too many purchase attempts. Please wait a moment and try again.": [
+    "Te veel aankooppogingen. Wacht even en probeer het opnieuw.",
+    "Zu viele Kaufversuche. Warten Sie einen Moment und versuchen Sie es erneut.",
+    "Trop de tentatives d’achat. Patientez un instant, puis réessayez.",
+    "Troppi tentativi di acquisto. Attendi un momento e riprova.",
+    "Слишком много попыток покупки. Подождите немного и повторите попытку.",
+    "Demasiados intentos de compra. Espere un momento y vuelva a intentarlo.",
+    "Çok fazla satın alma denemesi yapıldı. Biraz bekleyip tekrar deneyin.",
+    "Demasiadas tentativas de compra. Aguarde um momento e tente novamente.",
+    "购买尝试次数过多。请稍候片刻，然后重试。",
+    "Zbyt wiele prób zakupu. Poczekaj chwilę i spróbuj ponownie.",
+    "Shumë përpjekje blerjeje. Prisni pak dhe provoni përsëri."
+  ],
+  "Try again": [
+    "Opnieuw proberen",
+    "Erneut versuchen",
+    "Réessayer",
+    "Riprova",
+    "Повторить",
+    "Intentar de nuevo",
+    "Tekrar deneyin",
+    "Tentar novamente",
+    "重试",
+    "Spróbuj ponownie",
+    "Provo përsëri"
   ],
   "Try Again": [
     "Opnieuw proberen",
@@ -514,6 +657,32 @@ export const customerWorkflowExactTranslations = {
     "尚无已验证的积分价格。请重试后再开始付款。",
     "Zweryfikowane ceny kredytów nie są jeszcze dostępne. Spróbuj ponownie przed rozpoczęciem płatności.",
     "Çmimet e verifikuara të kredive nuk janë ende të disponueshme. Provo sërish përpara se të fillosh një pagesë."
+  ],
+  "We couldn't load your current balance or ledger movements. Try again before treating this history as empty.": [
+    "We kunnen uw huidige saldo- of grootboekmutaties niet laden. Probeer het opnieuw voordat u deze geschiedenis als leeg beschouwt.",
+    "Wir konnten Ihren aktuellen Kontostand oder Ihre Kontobewegungen nicht laden. Versuchen Sie es erneut, bevor Sie diesen Verlauf als leer behandeln.",
+    "Nous n'avons pas pu charger votre solde actuel ou vos mouvements de grand livre. Réessayez avant de traiter cet historique comme vide.",
+    "Non è stato possibile caricare il saldo corrente o i movimenti contabili. Riprova prima di considerare questa cronologia come vuota.",
+    "Нам не удалось загрузить ваш текущий баланс или движения бухгалтерской книги. Попробуйте еще раз, прежде чем считать эту историю пустой.",
+    "No pudimos cargar su saldo actual ni los movimientos del libro mayor. Inténtelo de nuevo antes de tratar este historial como vacío.",
+    "Mevcut bakiyenizi veya defter hareketlerinizi yükleyemedik. Bu geçmişi boş olarak değerlendirmeden önce tekrar deneyin.",
+    "Não foi possível carregar o seu saldo atual ou movimentos contabilísticos. Tente novamente antes de tratar este histórico como vazio.",
+    "我们无法加载您当前的余额或分类账变动。在将此历史视为空之前再试一次。",
+    "Nie mogliśmy wczytać Twojego aktualnego salda ani ruchów w księdze. Spróbuj ponownie, zanim potraktujesz tę historię jako pustą.",
+    "Nuk mundëm të ngarkonim bilancin tuaj aktual ose lëvizjet e librit. Provo sërish përpara se ta trajtosh këtë histori si bosh."
+  ],
+  "Your customer reference could not be prepared. Please refresh and try again.": [
+    "Uw klantreferentie kon niet worden aangemaakt. Vernieuw de pagina en probeer het opnieuw.",
+    "Ihre Kundenreferenz konnte nicht erstellt werden. Aktualisieren Sie die Seite und versuchen Sie es erneut.",
+    "Votre référence client n’a pas pu être préparée. Actualisez la page, puis réessayez.",
+    "Non è stato possibile preparare il riferimento cliente. Aggiorna la pagina e riprova.",
+    "Не удалось подготовить номер клиента. Обновите страницу и повторите попытку.",
+    "No se ha podido preparar su referencia de cliente. Actualice la página y vuelva a intentarlo.",
+    "Müşteri referansınız hazırlanamadı. Sayfayı yenileyip tekrar deneyin.",
+    "Não foi possível preparar a sua referência de cliente. Atualize a página e tente novamente.",
+    "无法准备您的客户参考号。请刷新页面后重试。",
+    "Nie udało się przygotować numeru klienta. Odśwież stronę i spróbuj ponownie.",
+    "Referenca juaj e klientit nuk mund të përgatitej. Rifreskoni faqen dhe provoni përsëri."
   ]
 } as const satisfies Readonly<Record<string, readonly string[]>>;
 
@@ -541,7 +710,7 @@ export const customerWorkflowTemplateRows = [
     "10 credits voor incidenteel bestandsservicewerk.",
     "10 Credits für gelegentliche Dateiservice-Aufträge.",
     "10 crédits pour des demandes ponctuelles de service de fichiers.",
-    "10 crediti per lavori occasionali di file service.",
+    "10 crediti per lavori occasionali del servizio file.",
     "10 кредитов для редких работ с файлами.",
     "10 créditos para trabajos ocasionales de servicio de archivos.",
     "Ara sıra dosya hizmeti işleri için 10 kredi.",
@@ -556,7 +725,7 @@ export const customerWorkflowTemplateRows = [
     "100 credits voor terugkerende bestandsserviceaanvragen.",
     "100 Credits für wiederkehrende Dateiservice-Anfragen.",
     "100 crédits pour des demandes récurrentes de service de fichiers.",
-    "100 crediti per richieste ricorrenti di file service.",
+    "100 crediti per richieste ricorrenti del servizio file.",
     "100 кредитов для регулярных запросов на обработку файлов.",
     "100 créditos para solicitudes recurrentes de servicio de archivos.",
     "Tekrarlanan dosya hizmeti talepleri için 100 kredi.",
@@ -586,7 +755,7 @@ export const customerWorkflowTemplateRows = [
     "50 credits voor regelmatig bestandsservicewerk.",
     "50 Credits für regelmäßige Dateiservice-Aufträge.",
     "50 crédits pour des demandes régulières de service de fichiers.",
-    "50 crediti per lavori regolari di file service.",
+    "50 crediti per lavori regolari del servizio file.",
     "50 кредитов для регулярной работы с файлами.",
     "50 créditos para trabajos regulares de servicio de archivos.",
     "Düzenli dosya hizmeti işleri için 50 kredi.",

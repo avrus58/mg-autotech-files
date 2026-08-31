@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
-import { siteName } from "@/lib/seo";
+import { publicBrandImageAlt } from "@/lib/structuredDataI18n";
 
-export const alt = "MG AutoTech ECU and TCU File Service";
+export const alt = publicBrandImageAlt;
 export const size = {
   width: 1200,
   height: 630,
@@ -67,7 +67,7 @@ export default function Image() {
                 MG AutoTech
               </div>
               <div style={{ color: "#a1a1aa", fontSize: 22, marginTop: 8 }}>
-                ECU / TCU File Service
+                ECU · TCU
               </div>
             </div>
           </div>
@@ -82,7 +82,7 @@ export default function Image() {
                 letterSpacing: -1,
               }}
             >
-              Professional ECU & TCU tuning files.
+              ECU · TCU
             </div>
             <div
               style={{
@@ -93,13 +93,12 @@ export default function Image() {
                 maxWidth: 880,
               }}
             >
-              Stage 1, DPF OFF, EGR OFF, AdBlue OFF and DTC file workflow for
-              workshops.
+              STAGE 1 · DPF · EGR · ADBLUE · DTC
             </div>
           </div>
 
           <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
-            {["Secure upload", "Credit workflow", "Portal delivery"].map((item) => (
+            {["OBD", "BENCH", "BOOT"].map((item) => (
               <div
                 key={item}
                 style={{
@@ -122,7 +121,7 @@ export default function Image() {
                 fontWeight: 800,
               }}
             >
-              {siteName}
+              file.mgautotech.de
             </div>
           </div>
         </div>

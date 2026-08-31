@@ -11,6 +11,7 @@ const route = readProjectFile("src", "app", "dashboard", "log-analysis", "page.t
 const dashboardLayout = readProjectFile("src", "app", "dashboard", "layout.tsx");
 const studio = readProjectFile("src", "components", "dashboard", "LogAnalysisStudio.tsx");
 const studioLoader = readProjectFile("src", "components", "dashboard", "LogAnalysisStudioLoader.tsx");
+const privatePageMetadata = readProjectFile("src", "lib", "privatePageMetadata.ts");
 const engine = readProjectFile("src", "lib", "logAnalysisStudio.ts");
 const workerBridge = readProjectFile("src", "lib", "analyzeLogStudioInBrowser.ts");
 const workerModule = readProjectFile("src", "workers", "logAnalysis.worker.ts");
@@ -18,13 +19,16 @@ const workerModule = readProjectFile("src", "workers", "logAnalysis.worker.ts");
 test("the customer Log Analysis Studio route stays protected and loads its private bundle lazily", () => {
   assert.match(route, /import \{ LogAnalysisStudioLoader \} from "@\/components\/dashboard\/LogAnalysisStudioLoader"/);
   assert.match(route, /return <LogAnalysisStudioLoader \/>/);
-  assert.match(route, /robots: \{ index: false, follow: false \}/);
+  assert.match(route, /buildLogAnalysisStudioMetadata\(await getServerLocale\(\)\)/);
+  assert.match(privatePageMetadata, /const privateRobots = \{[\s\S]*index: false,[\s\S]*follow: false/);
 
   assert.match(studioLoader, /^"use client"/);
   assert.match(studioLoader, /dynamic\(/);
   assert.match(studioLoader, /import\("@\/components\/dashboard\/LogAnalysisStudio"\)/);
   assert.match(studioLoader, /ssr: false/);
   assert.match(studioLoader, /Opening your private datalog workspace/);
+  assert.match(studioLoader, /customerPortalFirstPaintT/);
+  assert.match(studioLoader, /locale=\{locale\}/);
   assert.match(studioLoader, /await supabase\.auth\.getUser\(\)/);
   assert.match(studioLoader, /accessState !== "verified"/);
   assert.match(studioLoader, /return <LogAnalysisStudio \/>/);

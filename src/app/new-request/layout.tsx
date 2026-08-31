@@ -1,22 +1,29 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import { NewRequestAccessBoundary } from "@/app/new-request/NewRequestAccessBoundary";
+import { ServerLocaleBoundary } from "@/components/ServerLocaleBoundary";
+import { NewRequestAccessFallback } from "@/components/auth/NewRequestAccessFallback";
+import { buildNewRequestMetadata } from "@/lib/privatePageMetadata";
+import { getServerLocale } from "@/lib/serverLocale";
 
-export default function NewRequestLayout({
+export async function generateMetadata(): Promise<Metadata> {
+  return buildNewRequestMetadata(await getServerLocale());
+}
+
+export default async function NewRequestLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const locale = await getServerLocale();
+
   return (
-    <Suspense
-      fallback={(
-        <main className="flex min-h-screen items-center justify-center bg-[#050505] px-4 text-white">
-          <p role="status" className="text-sm font-bold text-zinc-400">
-            Secure customer access
-          </p>
-        </main>
-      )}
-    >
-      <NewRequestAccessBoundary>{children}</NewRequestAccessBoundary>
-    </Suspense>
+    <ServerLocaleBoundary locale={locale}>
+      <Suspense
+        fallback={<NewRequestAccessFallback locale={locale} />}
+      >
+        <NewRequestAccessBoundary>{children}</NewRequestAccessBoundary>
+      </Suspense>
+    </ServerLocaleBoundary>
   );
 }

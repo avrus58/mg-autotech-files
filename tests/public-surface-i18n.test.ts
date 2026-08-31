@@ -826,7 +826,7 @@ test("localized service metrics and metadata never compose English-only fragment
     "utf8"
   );
   const servicesIndex = readFileSync("src/app/services/page.tsx", "utf8");
-  const localizedHome = readFileSync("src/app/[locale]/page.tsx", "utf8");
+  const homepageMetadata = readFileSync("src/lib/homepageMetadata.ts", "utf8");
 
   assert.match(localizedService, /publicSurfaceExactT/u);
   assert.match(localizedService, /"ECU \/ TCU File Service"/u);
@@ -835,7 +835,7 @@ test("localized service metrics and metadata never compose English-only fragment
   assert.match(servicesIndex, /creditCount: service\.credits/u);
   assert.match(servicesIndex, /\{service\.creditCount\} <span>Credits<\/span>/u);
   assert.doesNotMatch(servicesIndex, /badge: `\$\{service\.credits\} credits`/u);
-  assert.match(localizedHome, /alt: copy\.title/u);
+  assert.match(homepageMetadata, /alt: copy\.title/u);
 });
 
 test("request brief output and clipboard are generated in the active locale while raw inputs stay intact", () => {

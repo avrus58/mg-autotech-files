@@ -7,6 +7,7 @@ import {
   runtimePublicInLanguage,
   runtimePublicMetadataCopy,
   runtimePublicOpenGraphLocale,
+  runtimePublicT,
 } from "@/lib/i18n/runtime-public";
 import {
   absoluteUrl,
@@ -19,6 +20,7 @@ import {
   workshopGuideArticles,
 } from "@/lib/workshopGuides";
 import { getServerLocale } from "@/lib/serverLocale";
+import { relatedWorkshopResourcesName } from "@/lib/structuredDataI18n";
 
 export function generateStaticParams() {
   return workshopGuideArticles.map((article) => ({ slug: article.slug }));
@@ -81,10 +83,15 @@ export default async function WorkshopGuideArticlePage({
 
   const locale = await getServerLocale();
   const url = absoluteUrl(`/workshop-guides/${article.slug}`);
+  const localizedShortTitle = runtimePublicT(
+    locale,
+    article.shortTitle,
+    ["core", "workshop-guides"]
+  );
   const jsonLd = localizeRuntimePublicJsonLd({
     "@context": "https://schema.org",
     "@graph": [
-      organizationJsonLd(),
+      organizationJsonLd(locale),
       websiteJsonLd(locale),
       {
         "@type": "TechArticle",
@@ -139,7 +146,7 @@ export default async function WorkshopGuideArticlePage({
       },
       {
         "@type": "ItemList",
-        name: `${article.shortTitle} related workshop resources`,
+        name: relatedWorkshopResourcesName(locale, localizedShortTitle),
         itemListElement: article.related.map((item, index) => ({
           "@type": "ListItem",
           position: index + 1,

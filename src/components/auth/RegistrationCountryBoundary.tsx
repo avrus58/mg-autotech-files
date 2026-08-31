@@ -7,6 +7,8 @@ import { usePathname, useRouter } from "next/navigation";
 import { getStableSession } from "@/lib/authGuards";
 import { requiresRegistrationCountryCompletion } from "@/lib/registrationCompletion";
 import { replacePrivateMeasurementDocument } from "@/lib/publicAnalytics";
+import { customerPortalFirstPaintT } from "@/lib/i18n/customer-portal-first-paint";
+import { useActiveLocale } from "@/lib/useActiveLocale";
 
 export function RegistrationCountryBoundary({
   children,
@@ -17,6 +19,7 @@ export function RegistrationCountryBoundary({
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const locale = useActiveLocale();
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -51,7 +54,7 @@ export function RegistrationCountryBoundary({
           className="flex items-center gap-3 text-sm font-bold text-zinc-400"
         >
           <Loader2 className="h-5 w-5 animate-spin text-red-500" />
-          Checking customer profile...
+          {customerPortalFirstPaintT(locale, "Checking customer profile...")}
         </div>
       </main>
     );

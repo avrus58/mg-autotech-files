@@ -31,9 +31,17 @@ export function LegalPageShell({
 }) {
   const english = language === "en";
   const legalLinks = english ? englishLegalLinks : germanLegalLinks;
+  const documentLanguage = english ? "en-GB" : "de-DE";
 
   return (
-    <div lang={language} data-no-translate className="min-h-screen bg-[#050505] text-white">
+    <>
+      <script
+        data-fixed-document-language={documentLanguage}
+        dangerouslySetInnerHTML={{
+          __html: `document.documentElement.lang=${JSON.stringify(documentLanguage)};`,
+        }}
+      />
+      <div lang={language} data-no-translate className="min-h-screen bg-[#050505] text-white">
       <header className="border-b border-white/10 bg-black/90">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-4">
           <Link href="/" className="flex min-w-0 items-center gap-3">
@@ -95,7 +103,8 @@ export function LegalPageShell({
           </nav>
         </div>
       </footer>
-    </div>
+      </div>
+    </>
   );
 }
 

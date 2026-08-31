@@ -27,12 +27,21 @@ import * as ordersDom from "../src/lib/i18n/customer-workflow-orders-dom-transla
 import * as overview from "../src/lib/i18n/customer-workflow-overview-translations";
 import * as overviewDom from "../src/lib/i18n/customer-workflow-overview-dom-translations";
 import * as portalCommon from "../src/lib/i18n/customer-workflow-portal-common-translations";
+import * as privateMetadata from "../src/lib/i18n/customer-workflow-private-metadata-translations";
 import * as request from "../src/lib/i18n/customer-workflow-request-translations";
 import * as requestDom from "../src/lib/i18n/customer-workflow-request-dom-translations";
 import * as security from "../src/lib/i18n/customer-workflow-security-translations";
 import * as securityDom from "../src/lib/i18n/customer-workflow-security-dom-translations";
+import * as widgetDom from "../src/lib/i18n/customer-workflow-widget-dom-translations";
 import { customerWorkflowClientGroupForPath } from "../src/lib/i18n/customer-workflow-client-routes";
-import { generatedCustomerWorkflowClientFiles } from "../scripts/generate-customer-workflow-client-translations";
+import {
+  customerWorkflowClientGroups,
+  generatedCustomerWorkflowClientFiles,
+} from "../scripts/generate-customer-workflow-client-translations";
+import {
+  widgetSiteExactTranslations,
+  widgetSiteLocaleOrder,
+} from "../src/lib/i18n/widget-site-translations";
 import type { LocaleCode } from "../src/lib/i18nConfig";
 
 type CompactCatalog = {
@@ -58,7 +67,9 @@ const compactCatalogs: Array<[string, CompactCatalog]> = [
   ["notifications-dom", notificationsDom],
   ["security", security],
   ["security-dom", securityDom],
+  ["widget-dom", widgetDom],
   ["portal-common", portalCommon],
+  ["private-metadata", privateMetadata],
 ];
 
 const masterTemplateRowsByKey = new Map<string, (typeof masterTemplateRows)[number]>(
@@ -221,7 +232,7 @@ test("no use-client source statically imports the full workflow catalog", () => 
   assert.deepEqual(offenders, []);
 });
 
-test("critical customer routes use compact catalogs and uncertain routes stay on full fallback", () => {
+test("every supported customer route uses a bounded compact catalog", () => {
   const expected = new Map<string, string>([
     ["/login", "auth"],
     ["/register", "auth"],
@@ -234,6 +245,7 @@ test("critical customer routes use compact catalogs and uncertain routes stay on
     ["/new-request", "request"],
     ["/dashboard", "overview"],
     ["/dashboard/credits", "credits"],
+    ["/dashboard/credits/history", "credits"],
     ["/payment/cancel", "credits"],
     ["/payment/success", "credits"],
     ["/dashboard/file-expert", "file-expert"],
@@ -241,17 +253,28 @@ test("critical customer routes use compact catalogs and uncertain routes stay on
     ["/dashboard/orders", "orders"],
     ["/dashboard/orders/order-id", "orders"],
     ["/dashboard/notifications", "notifications"],
+    ["/dashboard/settings", "security"],
+    ["/dashboard/log-analysis", "portal"],
+    ["/dashboard/widget", "widget"],
+    ["/dashboard/widget/billing", "widget"],
   ]);
   expected.forEach((group, pathname) => {
     assert.equal(customerWorkflowClientGroupForPath(pathname), group, pathname);
   });
-  for (const pathname of [
-    "/auth/provider-internal",
-    "/dashboard/credits/history",
-    "/dashboard/settings",
-  ]) {
+  for (const pathname of ["/auth/provider-internal"]) {
     assert.equal(customerWorkflowClientGroupForPath(pathname), null, pathname);
   }
+
+  assert.ok(
+    customerWorkflowClientGroups.credits.files.some(
+      (file) => file === "src/app/dashboard/credits/history/page.tsx",
+    ),
+  );
+  assert.ok(
+    customerWorkflowClientGroups.security.files.some(
+      (file) => file === "src/app/dashboard/settings/page.tsx",
+    ),
+  );
 
   const switcher = readFileSync("src/components/LanguageSwitcher.tsx", "utf8");
   const compactBranch = switcher.indexOf("if (compactCustomerWorkflow)");
@@ -265,6 +288,142 @@ test("critical customer routes use compact catalogs and uncertain routes stay on
     switcher,
     /customer-workflow-portal-common-translations/u,
   );
+  assert.match(switcher, /case "portal"/u);
+  assert.match(switcher, /case "security"/u);
+  assert.match(switcher, /case "widget"/u);
+  assert.match(switcher, /customer-workflow-widget-dom-translations/u);
+  assert.match(
+    switcher,
+    /customer-workflow-private-metadata-translations/u,
+  );
+  assert.match(switcher, /widgetSite\.widgetSiteLocaleOrder/u);
+  assert.match(switcher, /widgetSite\.widgetSiteExactTranslations/u);
+});
+
+test("new compact route groups contain native representative copy", () => {
+  const assertNative = (
+    name: string,
+    localeOrder: readonly string[],
+    catalog: Readonly<Record<string, readonly string[]>>,
+    sources: readonly string[],
+  ) => {
+    for (const source of sources) {
+      const values = catalog[source];
+      assert.ok(values, `${name}: missing ${source}`);
+      localeOrder.forEach((locale, index) => {
+        assert.ok(values[index]?.trim(), `${name}/${locale}: empty ${source}`);
+        assert.notEqual(values[index], source, `${name}/${locale}: fallback ${source}`);
+      });
+    }
+  };
+
+  assertNative(
+    "portal",
+    masterLocaleOrder,
+    portalCommon.customerWorkflowExactTranslations,
+    ["Customer Panel", "Settings"],
+  );
+  assertNative(
+    "private-metadata",
+    masterLocaleOrder,
+    privateMetadata.customerWorkflowExactTranslations,
+    [
+      "Customer Dashboard",
+      "Secure MG AutoTech customer dashboard for file requests, credits and deliveries.",
+      "Datalog Analysis Studio",
+      "Private browser-local multi-channel datalog review for MG AutoTech customers.",
+    ],
+  );
+  assertNative(
+    "credits-history",
+    masterLocaleOrder,
+    {
+      ...credits.customerWorkflowExactTranslations,
+      ...creditsDom.customerWorkflowExactTranslations,
+    },
+    [
+      "Credit History",
+      "We couldn't load your current balance or ledger movements. Try again before treating this history as empty.",
+    ],
+  );
+  assertNative(
+    "settings",
+    masterLocaleOrder,
+    {
+      ...security.customerWorkflowExactTranslations,
+      ...securityDom.customerWorkflowExactTranslations,
+    },
+    [
+      "Customer Settings",
+      "Customer profile could not be synced. Please try again.",
+    ],
+  );
+  assertNative(
+    "widget",
+    masterLocaleOrder,
+    widgetDom.customerWorkflowExactTranslations,
+    [
+      "Widget billing",
+      "Subscription and payments",
+      "Review the linked subscription, latest payment, next renewal and remaining period before opening the Stripe Customer Portal.",
+      "Secure billing managed by Stripe",
+      "Open billing portal",
+    ],
+  );
+  assertNative(
+    "widget-state",
+    widgetSiteLocaleOrder,
+    widgetSiteExactTranslations,
+    ["Widget subscription summary could not be loaded."],
+  );
+});
+
+test("new compact route groups stay below their combined source gzip budgets", () => {
+  const groups = {
+    portal: {
+      files: [
+        "src/lib/i18n/customer-workflow-portal-common-translations.ts",
+        "src/lib/i18n/customer-workflow-private-metadata-translations.ts",
+      ],
+      budgetKiB: 18,
+    },
+    credits: {
+      files: [
+        "src/lib/i18n/customer-workflow-credits-translations.ts",
+        "src/lib/i18n/customer-workflow-credits-dom-translations.ts",
+        "src/lib/i18n/customer-workflow-portal-common-translations.ts",
+        "src/lib/i18n/customer-workflow-private-metadata-translations.ts",
+      ],
+      budgetKiB: 42,
+    },
+    security: {
+      files: [
+        "src/lib/i18n/customer-workflow-security-translations.ts",
+        "src/lib/i18n/customer-workflow-security-dom-translations.ts",
+        "src/lib/i18n/customer-workflow-portal-common-translations.ts",
+        "src/lib/i18n/customer-workflow-private-metadata-translations.ts",
+      ],
+      budgetKiB: 35,
+    },
+    widget: {
+      files: [
+        "src/lib/i18n/customer-workflow-portal-common-translations.ts",
+        "src/lib/i18n/customer-workflow-widget-dom-translations.ts",
+        "src/lib/i18n/customer-workflow-private-metadata-translations.ts",
+        "src/lib/i18n/widget-site-translations.ts",
+      ],
+      budgetKiB: 55,
+    },
+  } as const;
+
+  for (const [name, group] of Object.entries(groups)) {
+    const source = group.files.map((file) => readFileSync(file, "utf8")).join("\n");
+    const gzipKiB = gzipSync(Buffer.from(source)).byteLength / 1024;
+    assert.ok(
+      gzipKiB <= group.budgetKiB,
+      `${name}: ${gzipKiB.toFixed(1)} KiB > ${group.budgetKiB} KiB`,
+    );
+  }
 });
 
 test("forgot-password and profile-completion copy is complete in the compact auth bundle", () => {

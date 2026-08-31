@@ -2,6 +2,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import process from "node:process";
 import ts from "typescript";
+import { creditPurchaseSafeMessages } from "../src/lib/creditPurchaseErrorCodes";
 import {
   exactTranslations as baseExactTranslations,
   termTranslations as baseTermTranslations,
@@ -20,7 +21,10 @@ type GroupName =
   | "file-expert"
   | "orders"
   | "notifications"
-  | "security";
+  | "security"
+  | "widget";
+
+type GeneratedGroupName = GroupName | "private-metadata";
 
 type GroupConfig = {
   files: readonly string[];
@@ -39,6 +43,7 @@ const portalCommonFiles = [
   "src/components/dashboard/CustomerPortalFrame.tsx",
   "src/components/dashboard/CustomerPortalPageHeader.tsx",
   "src/components/dashboard/CustomerPortalSidebar.tsx",
+  "src/components/dashboard/LogAnalysisStudioLoader.tsx",
   "src/components/CustomerNotifications.tsx",
 ] as const;
 
@@ -114,6 +119,10 @@ export const customerWorkflowClientGroups = {
       "src/components/ui/efferd-dashboard-2.tsx",
     ],
     includeMasterLiteralExact: true,
+    extraExactSources: [
+      "Customer Dashboard",
+      "Secure MG AutoTech customer dashboard for file requests, credits and deliveries.",
+    ],
   },
   request: {
     files: ["src/app/new-request/page.tsx"],
@@ -122,11 +131,13 @@ export const customerWorkflowClientGroups = {
   credits: {
     files: [
       "src/app/dashboard/credits/page.tsx",
+      "src/app/dashboard/credits/history/page.tsx",
       "src/app/payment/cancel/page.tsx",
       "src/app/payment/success/page.tsx",
     ],
     includeMasterLiteralExact: true,
     extraExactSources: [
+      ...Object.values(creditPurchaseSafeMessages),
       "Credit Card",
       "Secure Stripe checkout",
       "Automatic",
@@ -170,12 +181,32 @@ export const customerWorkflowClientGroups = {
     helper: "notifications",
   },
   security: {
-    files: ["src/components/account/TrustedDevicesCard.tsx"],
+    files: [
+      "src/app/dashboard/settings/page.tsx",
+      "src/components/account/TrustedDevicesCard.tsx",
+    ],
+    includeMasterLiteralExact: true,
+  },
+  widget: {
+    files: [
+      "src/app/dashboard/widget/page.tsx",
+      "src/app/dashboard/widget/billing/page.tsx",
+    ],
   },
 } as const satisfies Record<GroupName, GroupConfig>;
 
 const portalCommonConfig = {
   files: portalCommonFiles,
+} as const satisfies GroupConfig;
+
+const privateMetadataConfig = {
+  files: [],
+  extraExactSources: [
+    "Customer Dashboard",
+    "Secure MG AutoTech customer dashboard for file requests, credits and deliveries.",
+    "Datalog Analysis Studio",
+    "Private browser-local multi-channel datalog review for MG AutoTech customers.",
+  ],
 } as const satisfies GroupConfig;
 
 const localeOrder = ["en", ...customerWorkflowLocaleOrder] as const;
@@ -361,7 +392,7 @@ function runtimeImports(helper: GroupConfig["helper"]) {
 }
 
 export function generateCustomerWorkflowClientModule(
-  groupName: GroupName,
+  groupName: GeneratedGroupName,
   config: GroupConfig,
 ) {
   const literals = collectSourceLiterals(config.files);
@@ -473,6 +504,17 @@ export function generatedCustomerWorkflowClientFiles() {
     content: generateCustomerWorkflowDomModule(
       "shared customer portal",
       portalCommonConfig,
+    ),
+  });
+  generated.push({
+    groupName: "private-metadata",
+    path: resolve(
+      process.cwd(),
+      "src/lib/i18n/customer-workflow-private-metadata-translations.ts",
+    ),
+    content: generateCustomerWorkflowClientModule(
+      "private-metadata",
+      privateMetadataConfig,
     ),
   });
   return generated;

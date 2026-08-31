@@ -646,17 +646,17 @@ export const customerWorkflowExactTranslations = {
     "VMAX i kufizuar në shpejtësi specifike"
   ],
   "Log File Review": [
-    "Logbestand beoordelen",
-    "Überprüfung der Protokolldatei",
-    "Examen du fichier journal",
-    "Revisione del file di registro",
-    "Обзор файла журнала",
-    "Revisión del archivo de registro",
-    "Günlük Dosyası İncelemesi",
-    "Revisão do ficheiro de registo",
+    "Datalogbeoordeling",
+    "Logdatei-Prüfung",
+    "Analyse de datalog",
+    "Revisione datalog",
+    "Анализ лог-файла",
+    "Revisión de datalog",
+    "Datalog İncelemesi",
+    "Análise de datalog",
     "日志文件审查",
-    "Przegląd pliku dziennika",
-    "Rishikimi i skedarit të regjistrit"
+    "Analiza logu",
+    "Shqyrtim i datalogut"
   ],
   "MAF Removal": [
     "MAF-verwijdering",
@@ -908,7 +908,7 @@ export const customerWorkflowExactTranslations = {
   "Please upload your original ECU / TCU file.": [
     "Upload uw originele ECU / TCU-bestand.",
     "Bitte laden Sie Ihre Original-ECU-/TCU-Datei hoch.",
-    "Veuillez télécharger votre fichier ECU/TCU original.",
+    "Veuillez téléverser votre fichier ECU/TCU original.",
     "Carica il file ECU/TCU originale.",
     "Пожалуйста, загрузите исходный файл ECU/TCU.",
     "Cargue su archivo ECU/TCU original.",
@@ -958,17 +958,17 @@ export const customerWorkflowExactTranslations = {
     "Pop & Bangs përmes butonit Sport"
   ],
   "Priority handling, log review and technical support add-ons for complex jobs.": [
-    "Prioriteitsafhandeling, logboekbeoordeling en add-ons voor technische ondersteuning voor complexe taken.",
-    "Prioritätsbearbeitung, Protokollüberprüfung und technische Support-Add-ons für komplexe Aufgaben.",
-    "Gestion des priorités, examen des journaux et modules complémentaires de support technique pour les tâches complexes.",
-    "Gestione delle priorità, revisione dei registri e componenti aggiuntivi del supporto tecnico per lavori complessi.",
-    "Приоритетная обработка, просмотр журналов и дополнительные возможности технической поддержки для сложных заданий.",
-    "Manejo de prioridades, revisión de registros y complementos de soporte técnico para trabajos complejos.",
-    "Karmaşık işler için öncelikli işleme, günlük incelemesi ve teknik destek eklentileri.",
-    "Tratamento prioritário, revisão de registos e complementos de suporte técnico para trabalhos complexos.",
-    "针对复杂作业的优先级处理、日志审查和技术支持附加组件。",
-    "Obsługa priorytetów, przeglądanie dzienników i dodatki do pomocy technicznej dla złożonych zadań.",
-    "Trajtimi me përparësi, rishikimi i regjistrave dhe shtesat e mbështetjes teknike për punë komplekse."
+    "Prioriteitsbehandeling, datalogbeoordeling en aanvullende technische ondersteuning voor complexe opdrachten.",
+    "Priorisierte Bearbeitung, Datalog-Prüfung und zusätzliche technische Unterstützung für komplexe Aufträge.",
+    "Traitement prioritaire, analyse de datalogs et assistance technique complémentaire pour les interventions complexes.",
+    "Gestione prioritaria, revisione dei datalog e supporto tecnico aggiuntivo per lavori complessi.",
+    "Приоритетная обработка, анализ логов и дополнительная техническая поддержка для сложных работ.",
+    "Gestión prioritaria, revisión de datalogs y asistencia técnica adicional para trabajos complejos.",
+    "Karmaşık işler için öncelikli işlem, datalog incelemesi ve ek teknik destek.",
+    "Tratamento prioritário, análise de datalogs e apoio técnico adicional para trabalhos complexos.",
+    "针对复杂作业提供优先处理、数据日志分析和附加技术支持。",
+    "Priorytetowa realizacja, analiza logów i dodatkowe wsparcie techniczne w przypadku złożonych zleceń.",
+    "Trajtim me përparësi, shqyrtim i datalogëve dhe mbështetje teknike shtesë për punë komplekse."
   ],
   "Priority Processing": [
     "Prioritaire verwerking",
@@ -1077,7 +1077,7 @@ export const customerWorkflowExactTranslations = {
   "Secure upload could not be prepared.": [
     "Beveiligde upload kon niet worden voorbereid.",
     "Der sichere Upload konnte nicht vorbereitet werden.",
-    "Le téléchargement sécurisé n'a pas pu être préparé.",
+    "Le téléversement sécurisé n’a pas pu être préparé.",
     "Impossibile preparare il caricamento sicuro.",
     "Не удалось подготовить безопасную загрузку.",
     "No se pudo preparar la carga segura.",
@@ -1246,7 +1246,7 @@ export const customerWorkflowExactTranslations = {
   "The original file could not be uploaded securely. Please try again.": [
     "Het originele bestand kon niet veilig worden geüpload. Probeer het opnieuw.",
     "Die Originaldatei konnte nicht sicher hochgeladen werden. Bitte versuchen Sie es erneut.",
-    "Le fichier original n'a pas pu être téléchargé en toute sécurité. Veuillez réessayer.",
+    "Le fichier original n’a pas pu être téléversé de manière sécurisée. Veuillez réessayer.",
     "Impossibile caricare il file originale in modo sicuro. Riprova.",
     "Не удалось безопасно загрузить исходный файл. Повторите попытку.",
     "El archivo original no se ha podido cargar de forma segura. Inténtalo de nuevo.",
@@ -1324,7 +1324,7 @@ export const customerWorkflowExactTranslations = {
   "The saved request upload does not match this submission. Change the form and try again.": [
     "De opgeslagen aanvraagupload komt niet overeen met deze inzending. Wijzig het formulier en probeer het opnieuw.",
     "Der gespeicherte Anfrage-Upload stimmt nicht mit dieser Übermittlung überein. Ändern Sie das Formular und versuchen Sie es erneut.",
-    "Le téléchargement de la demande enregistrée ne correspond pas à cette soumission. Changez le formulaire et réessayez.",
+    "Le téléversement enregistré pour cette demande ne correspond pas à cet envoi. Modifiez le formulaire et réessayez.",
     "Il caricamento della richiesta salvata non corrisponde a questo invio. Modificare il modulo e riprovare.",
     "Сохраненная загрузка запроса не соответствует этой отправке. Измените форму и попробуйте еще раз.",
     "La carga de la solicitud guardada no coincide con este envío. Cambie el formulario y vuelva a intentarlo.",
@@ -1376,7 +1376,7 @@ export const customerWorkflowExactTranslations = {
   "Unsupported file type. Please upload .bin, .ori, .mod, .frf, .hex, .zip or .sgo.": [
     "Niet-ondersteund bestandstype. Upload .bin, .ori, .mod, .frf, .hex, .zip of .sgo.",
     "Nicht unterstützter Dateityp. Bitte laden Sie .bin, .ori, .mod, .frf, .hex, .zip oder .sgo hoch.",
-    "Type de fichier non pris en charge. Veuillez télécharger .bin, .ori, .mod, .frf, .hex, .zip ou .sgo.",
+    "Type de fichier non pris en charge. Veuillez téléverser un fichier .bin, .ori, .mod, .frf, .hex, .zip ou .sgo.",
     "Tipo di file non supportato. Carica i file .bin, .ori, .mod, .frf, .hex, .zip o .sgo.",
     "Неподдерживаемый тип файла. Загрузите файлы .bin, .ori, .mod, .frf, .hex, .zip или .sgo.",
     "Tipo de archivo no compatible. Cargue .bin, .ori, .mod, .frf, .hex, .zip o .sgo.",

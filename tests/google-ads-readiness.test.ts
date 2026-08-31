@@ -415,6 +415,7 @@ test("Google measurement is isolated from every private form and callback docume
     "complete",
     "layout.tsx"
   );
+  const privatePageMetadata = projectFile("src", "lib", "privatePageMetadata.ts");
   const nextConfiguration = projectFile("next.config.ts");
   const newRequestPage = projectFile("src", "app", "new-request", "page.tsx");
   const preHydrationGuard = projectFile(
@@ -453,7 +454,18 @@ test("Google measurement is isolated from every private form and callback docume
   );
   assert.equal((completionPage.match(/<Link/g) ?? []).length, 1);
   assert.doesNotMatch(completionPage, /href=\{[^}]+\}/);
-  assert.match(completionLayout, /index:\s*false[\s\S]*follow:\s*false/);
+  assert.match(
+    completionLayout,
+    /buildMeasurementCompletionMetadata\(await getServerLocale\(\)\)/,
+  );
+  assert.match(
+    privatePageMetadata,
+    /robots:\s*\{[\s\S]*\.\.\.privateRobots[\s\S]*\.\.\.extraRobots/,
+  );
+  assert.match(
+    privatePageMetadata,
+    /buildMeasurementCompletionMetadata[\s\S]*\{ noarchive: true \}/,
+  );
   assert.match(nextConfiguration, /"\/measurement\/:path\*"/);
   assert.doesNotMatch(newRequestPage, /trackRequestStarted/);
   const inlinePathsSource = preHydrationGuard.match(

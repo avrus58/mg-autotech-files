@@ -175,7 +175,7 @@ export default async function ToolsHubPage() {
         "@type": "BreadcrumbList",
         itemListElement: [
           { "@type": "ListItem", position: 1, name: "Home", item: absoluteUrl("/") },
-          { "@type": "ListItem", position: 2, name: "Tools", item: absoluteUrl("/tools") },
+          { "@type": "ListItem", position: 2, name: "Workshop tools", item: absoluteUrl("/tools") },
         ],
       },
     ],

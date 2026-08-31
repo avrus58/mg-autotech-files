@@ -3,6 +3,11 @@ import {
   supportedLocales,
   type LocaleCode,
 } from "@/lib/i18nConfig";
+import {
+  businessAudienceTypeByLocale,
+  customerSupportContactTypeByLocale,
+  organizationAreaServedJsonLd,
+} from "@/lib/structuredDataI18n";
 
 export const siteUrl = "https://file.mgautotech.de";
 export const siteName = "MG AutoTech File Service";
@@ -1043,15 +1048,29 @@ export function getServiceSeo(slug: PublicServiceSlug, locale: LocaleCode) {
   };
 }
 
-export function organizationJsonLd() {
+const organizationKnowledgeTerms = [
+  "ECU_FILE_SERVICE",
+  "TCU_TUNING",
+  "STAGE_1_TUNING",
+  "STAGE_2_ECU_FILE_SERVICE",
+  "TCU_FILE_SERVICE",
+  "ECU_FILE_VERIFICATION",
+  "DPF_OFF",
+  "EGR_OFF",
+  "ADBLUE_OFF",
+  "DTC_OFF",
+  "AUTOTUNER",
+  "WINOLS",
+] as const;
+
+export function organizationJsonLd(locale: LocaleCode = defaultLocale) {
   return {
     "@context": "https://schema.org",
     "@type": ["Organization", "AutomotiveBusiness"],
     "@id": `${siteUrl}/#organization`,
     name: "MG AutoTech",
     legalName: "MG AutoTech - Melih Gokkaya",
-    description:
-      "Professional ECU and TCU file service platform for workshops and automotive tuning partners.",
+    description: homeSeo[locale].description,
     url: siteUrl,
     email: contactEmail,
     telephone: contactPhone,
@@ -1079,28 +1098,18 @@ export function organizationJsonLd() {
         "@type": "ContactPoint",
         email: contactEmail,
         telephone: contactPhone,
-        contactType: "customer support",
+        contactType: customerSupportContactTypeByLocale[locale],
         availableLanguage: seoLocales.map((locale) => hreflangByLocale[locale]),
         areaServed: ["DE", "EU"],
       },
     ],
-    areaServed: ["Germany", "European Union", "Europe"],
+    areaServed: organizationAreaServedJsonLd,
     currenciesAccepted: "EUR",
     priceRange: "EUR",
-    knowsAbout: [
-      "ECU file service",
-      "TCU tuning",
-      "Stage 1 tuning",
-      "Stage 2 ECU file service",
-      "TCU file service",
-      "ECU file verification",
-      "DPF OFF",
-      "EGR OFF",
-      "AdBlue OFF",
-      "DTC OFF",
-      "AutoTuner",
-      "WinOLS",
-    ],
+    knowsAbout: organizationKnowledgeTerms.map((termCode) => ({
+      "@type": "DefinedTerm",
+      termCode,
+    })),
   };
 }
 
@@ -1118,6 +1127,43 @@ export function websiteJsonLd(locale: LocaleCode) {
   };
 }
 
+export function buildSiteIdentityJsonLd(locale: LocaleCode) {
+  return {
+    "@context": "https://schema.org",
+    "@graph": [organizationJsonLd(locale), websiteJsonLd(locale)],
+  };
+}
+
+/**
+ * Shared root identity intentionally omits presentation-language fields. Each
+ * localized public page emits its richer locale-specific Organization/WebSite
+ * graph without forcing the entire App Router tree into request-time rendering.
+ */
+export function buildNeutralSiteIdentityJsonLd() {
+  const organization = {
+    ...organizationJsonLd(defaultLocale),
+  } as Record<string, unknown>;
+  const website = {
+    ...websiteJsonLd(defaultLocale),
+  } as Record<string, unknown>;
+  const localizedContactPoints = organization.contactPoint as Array<
+    Record<string, unknown>
+  >;
+
+  delete organization.description;
+  delete website.inLanguage;
+  organization.contactPoint = localizedContactPoints.map((localizedPoint) => {
+    const point = { ...localizedPoint };
+    delete point.contactType;
+    return point;
+  });
+
+  return {
+    "@context": "https://schema.org",
+    "@graph": [organization, website],
+  };
+}
+
 export function serviceJsonLd(slug: PublicServiceSlug, locale: LocaleCode) {
   const service = getServiceSeo(slug, locale);
 
@@ -1128,15 +1174,15 @@ export function serviceJsonLd(slug: PublicServiceSlug, locale: LocaleCode) {
     description: service.description,
     serviceType: service.name,
     inLanguage: hreflangByLocale[locale],
-    category: "Automotive ECU and TCU file service",
+    category: service.name,
     audience: {
       "@type": "BusinessAudience",
-      audienceType: "Automotive workshops and tuning professionals",
+      audienceType: businessAudienceTypeByLocale[locale],
     },
     provider: {
       "@id": `${siteUrl}/#organization`,
     },
-    areaServed: ["Germany", "Europe"],
+    areaServed: organizationAreaServedJsonLd,
     url: localizedUrl(locale, `/services/${slug}`),
     mainEntityOfPage: localizedUrl(locale, `/services/${slug}`),
   };

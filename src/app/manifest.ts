@@ -2,9 +2,9 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "MG AutoTech File Service",
+    name: "MG AutoTech",
     short_name: "MG AutoTech",
-    description: "Secure ECU and TCU file-service platform for workshops.",
+    description: "ECU · TCU · Stage 1 · DPF · EGR · AdBlue · DTC",
     start_url: "/",
     display: "standalone",
     background_color: "#050505",

@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { headers } from "next/headers";
 import { Geist, Geist_Mono } from "next/font/google";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { CustomerNotificationsRuntime } from "@/components/CustomerNotificationsRuntime";
@@ -9,19 +8,22 @@ import { AccountRuntimeBoundary } from "@/components/analytics/AccountRuntimeBou
 import { PlatformReliabilityMonitor } from "@/components/PlatformReliabilityMonitor";
 import {
   absoluteUrl,
-  homeSeo,
+  buildNeutralSiteIdentityJsonLd,
   hreflangByLocale,
   languageAlternates,
-  organizationJsonLd,
   siteName,
   siteUrl,
-  websiteJsonLd,
 } from "@/lib/seo";
 import {
-  normalizeLocale,
+  defaultLocale,
   openGraphLocaleByCode,
 } from "@/lib/i18nConfig";
 import { buildSearchEngineVerification } from "@/lib/searchEngineIndexing";
+import {
+  publicBrandImageAlt,
+  publicTechnicalCategory,
+  publicTechnicalKeywords,
+} from "@/lib/structuredDataI18n";
 import { ActiveLocaleProvider } from "@/lib/useActiveLocale";
 import "./globals.css";
 
@@ -35,7 +37,7 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const baseMetadata: Metadata = {
+export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
 
   title: {
@@ -46,27 +48,7 @@ const baseMetadata: Metadata = {
   description:
     "Professional online ECU and TCU file service for workshops with secure upload, tracked orders and portal delivery. Stage 1, DPF, EGR, AdBlue and DTC services.",
 
-  keywords: [
-    "ECU Tuning",
-    "TCU Tuning",
-    "Stage 1",
-    "Stage 2",
-    "DPF OFF",
-    "EGR OFF",
-    "AdBlue OFF",
-    "File Service",
-    "ECU File Service",
-    "Online ECU File Service",
-    "ECU File Service Germany",
-    "TCU File Service",
-    "ECU File Upload Service",
-    "ECU Tuning File Service",
-    "TCU Tuning File Service",
-    "BMW Tuning",
-    "Mercedes Tuning",
-    "VAG Tuning",
-    "MG AutoTech",
-  ],
+  keywords: [...publicTechnicalKeywords],
 
   authors: [
     {
@@ -102,7 +84,7 @@ const baseMetadata: Metadata = {
         url: "/opengraph-image",
         width: 1200,
         height: 630,
-        alt: "MG AutoTech ECU and TCU File Service",
+        alt: publicBrandImageAlt,
       },
     ],
   },
@@ -137,43 +119,14 @@ const baseMetadata: Metadata = {
     },
   },
 
-  category: "automotive",
+  category: publicTechnicalCategory,
 };
 
-export async function generateMetadata(): Promise<Metadata> {
-  const locale = normalizeLocale((await headers()).get("x-mg-locale"));
-  const copy = homeSeo[locale];
-
-  return {
-    ...baseMetadata,
-    title: {
-      default: `${copy.title} | MG AutoTech`,
-      template: "%s | MG AutoTech",
-    },
-    description: copy.description,
-    openGraph: {
-      ...baseMetadata.openGraph,
-      title: `${copy.title} | MG AutoTech`,
-      description: copy.description,
-      locale: openGraphLocaleByCode[locale],
-      alternateLocale: Object.values(openGraphLocaleByCode).filter(
-        (candidate) => candidate !== openGraphLocaleByCode[locale]
-      ),
-    },
-    twitter: {
-      ...baseMetadata.twitter,
-      title: `${copy.title} | MG AutoTech`,
-      description: copy.description,
-    },
-  };
-}
-
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const locale = normalizeLocale((await headers()).get("x-mg-locale"));
   const googleAnalyticsMeasurementId =
     process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID?.trim() ?? "";
   const googleAdsId = process.env.NEXT_PUBLIC_GOOGLE_ADS_ID?.trim() ?? "";
@@ -183,19 +136,16 @@ export default async function RootLayout({
     process.env.NEXT_PUBLIC_GOOGLE_ADS_REQUEST_LABEL?.trim() ?? "";
   const googleAdsPurchaseLabel =
     process.env.NEXT_PUBLIC_GOOGLE_ADS_PURCHASE_LABEL?.trim() ?? "";
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@graph": [organizationJsonLd(), websiteJsonLd(locale)],
-  };
+  const jsonLd = buildNeutralSiteIdentityJsonLd();
 
   return (
     <html
-      lang={hreflangByLocale[locale]}
+      lang={hreflangByLocale[defaultLocale]}
       suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <ActiveLocaleProvider initialLocale={locale}>
+        <ActiveLocaleProvider initialLocale={defaultLocale}>
           <PaidClickPreHydrationGuard />
           <script
             type="application/ld+json"

@@ -11,13 +11,17 @@ import {
   widgetSiteT,
 } from "@/lib/i18n/widget-site-translations";
 import { useActiveLocale } from "@/lib/useActiveLocale";
+import type { LocaleCode } from "@/lib/i18nConfig";
 import type { WidgetBillingSummary } from "@/lib/widget/customerTypes";
 
 export default function WidgetBillingPage() {
   const activeSiteLocale = useActiveLocale();
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
-  const [showPlanAction, setShowPlanAction] = useState(false);
+  const [portalNotice, setPortalNotice] = useState<{
+    locale: LocaleCode;
+    message: string;
+    showPlanAction: boolean;
+  } | null>(null);
   const [summary, setSummary] = useState<WidgetBillingSummary | null>(null);
   const [summaryLoading, setSummaryLoading] = useState(true);
   const [summaryError, setSummaryError] = useState("");
@@ -25,19 +29,30 @@ export default function WidgetBillingPage() {
   const loadSummary = useCallback(async () => {
     setSummaryLoading(true);
     setSummaryError("");
-    const response = await authenticatedFetch("/api/stripe/widget-subscription-summary", {
-      cache: "no-store",
-    });
-    const data = await response.json().catch(() => ({}));
-    setSummaryLoading(false);
-    if (!response.ok) {
-      setSummaryError(
-        data.error || widgetSiteT("en", "billingSummaryApiFailed")
-      );
-      return;
+    try {
+      const response = await authenticatedFetch("/api/stripe/widget-subscription-summary", {
+        cache: "no-store",
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        setSummary(null);
+        setSummaryError(
+          translateWidgetSiteExact(
+            activeSiteLocale,
+            data.error,
+            "billingSummaryApiFailed"
+          )
+        );
+        return;
+      }
+      setSummary(data.summary ?? null);
+    } catch {
+      setSummary(null);
+      setSummaryError(widgetSiteT(activeSiteLocale, "billingSummaryApiFailed"));
+    } finally {
+      setSummaryLoading(false);
     }
-    setSummary(data.summary ?? null);
-  }, []);
+  }, [activeSiteLocale]);
 
   useEffect(() => {
     void Promise.resolve().then(loadSummary);
@@ -45,19 +60,34 @@ export default function WidgetBillingPage() {
 
   async function openPortal() {
     setLoading(true);
-    setMessage("");
-    setShowPlanAction(false);
-    const response = await authenticatedFetch("/api/stripe/widget-customer-portal", {
-      method: "POST",
-    });
-    const data = await response.json();
-    setLoading(false);
-    if (!response.ok || !data.url) {
-      setMessage(data.error || widgetSiteT("en", "billingPortalFailed"));
-      setShowPlanAction(data.action === "view_plans");
-      return;
+    setPortalNotice(null);
+    try {
+      const response = await authenticatedFetch("/api/stripe/widget-customer-portal", {
+        method: "POST",
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data.url) {
+        setPortalNotice({
+          locale: activeSiteLocale,
+          message: translateWidgetSiteExact(
+            activeSiteLocale,
+            data.error,
+            "billingPortalFailed"
+          ),
+          showPlanAction: data.action === "view_plans",
+        });
+        return;
+      }
+      window.location.href = data.url;
+    } catch {
+      setPortalNotice({
+        locale: activeSiteLocale,
+        message: widgetSiteT(activeSiteLocale, "billingPortalFailed"),
+        showPlanAction: false,
+      });
+    } finally {
+      setLoading(false);
     }
-    window.location.href = data.url;
   }
 
   return (
@@ -91,17 +121,13 @@ export default function WidgetBillingPage() {
           </div>
         </div>
 
-        {message ? (
+        {portalNotice?.locale === activeSiteLocale ? (
           <div className="mt-6 border border-red-800/40 bg-red-950/20 p-4 text-sm text-red-200">
-            {translateWidgetSiteExact(
-              activeSiteLocale,
-              message,
-              "billingPortalFailed"
-            )}
+            {portalNotice.message}
           </div>
         ) : null}
 
-        {showPlanAction ? (
+        {portalNotice?.locale === activeSiteLocale && portalNotice.showPlanAction ? (
           <div className="mt-5 flex flex-wrap gap-2">
             <Link href="/widget" className="rounded-lg bg-white px-4 py-3 text-sm font-black text-black">
               View widget plans
@@ -121,12 +147,6 @@ export default function WidgetBillingPage() {
             loading={summaryLoading}
             error={
               summaryError
-                ? translateWidgetSiteExact(
-                    activeSiteLocale,
-                    summaryError,
-                    "billingSummaryApiFailed"
-                  )
-                : ""
             }
             canManageBilling={Boolean(summary?.billing_profile_linked)}
             onManage={openPortal}

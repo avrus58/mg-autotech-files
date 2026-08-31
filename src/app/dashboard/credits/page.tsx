@@ -19,6 +19,7 @@ import { intlLocaleByCode } from "@/lib/i18nConfig";
 import { useActiveLocale } from "@/lib/useActiveLocale";
 import { localizeCreditPromotionLabel } from "@/lib/i18n/commercial-translations";
 import {
+  creditPurchaseCaughtErrorMessage,
   creditPurchaseErrorCodes,
   creditPurchaseErrorMessage,
 } from "@/lib/creditPurchaseErrorCodes";
@@ -90,7 +91,18 @@ type CreditQuote = {
 };
 
 type QuoteState = "loading" | "ready" | "error";
-type PageNotice = { kind: "success" | "error" | "info"; text: string };
+type PageNotice =
+  | {
+      kind: "success" | "error" | "info";
+      text: string;
+    }
+  | {
+      amountEuro: number;
+      credits: number;
+      kind: "success";
+      reference: string;
+      template: "bankInstructionsSent";
+    };
 
 function isFinitePositive(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value) && value > 0;
@@ -217,11 +229,11 @@ export default function BuyCreditsPage() {
       );
       setQuoteState("ready");
       return nextQuote;
-    } catch {
+    } catch (error) {
       if (requestId !== quoteRequestId.current) return null;
       setQuote(null);
       setQuoteState("error");
-      setQuoteError(creditPurchaseErrorMessage("quote", undefined));
+      setQuoteError(creditPurchaseCaughtErrorMessage("quote", error));
       return null;
     }
   }, []);
@@ -382,7 +394,9 @@ export default function BuyCreditsPage() {
           return;
         }
         if (!response.ok) {
-          throw new Error(creditPurchaseErrorMessage("purchase", data.code));
+          throw new Error(
+            creditPurchaseErrorMessage("purchase", data.code, "bank"),
+          );
         }
         if (
           data.success !== true ||
@@ -391,18 +405,17 @@ export default function BuyCreditsPage() {
           !isFinitePositive(data.amountEuro)
         ) {
           throw new Error(
-            creditPurchaseErrorMessage("purchase", data.code),
+            creditPurchaseErrorMessage("purchase", data.code, "bank"),
           );
         }
 
         const reference = formatCustomerReference(data.customerId);
         setNotice({
+          amountEuro: data.amountEuro,
+          credits: Number(data.credits),
           kind: "success",
-          text: customerWorkflowT(locale, "bankInstructionsSent", {
-            credits: Number(data.credits),
-            amount: formatEuro(data.amountEuro, locale),
-            reference,
-          }),
+          reference,
+          template: "bankInstructionsSent",
         });
         return;
       }
@@ -427,7 +440,9 @@ export default function BuyCreditsPage() {
         return;
       }
       if (!response.ok) {
-        throw new Error(creditPurchaseErrorMessage("purchase", data.code));
+        throw new Error(
+          creditPurchaseErrorMessage("purchase", data.code, "stripe"),
+        );
       }
       if (typeof data.url !== "string" || !data.url) {
         throw new Error(
@@ -439,10 +454,10 @@ export default function BuyCreditsPage() {
       }
 
       window.location.assign(data.url);
-    } catch {
+    } catch (error) {
       setNotice({
         kind: "error",
-        text: creditPurchaseErrorMessage("purchase", undefined),
+        text: creditPurchaseCaughtErrorMessage("purchase", error),
       });
     } finally {
       checkoutInFlight.current = false;
@@ -503,6 +518,16 @@ export default function BuyCreditsPage() {
       setCopiedBankReference(false);
     }, 1600);
   };
+
+  const localizedNoticeText = !notice
+    ? ""
+    : "template" in notice
+      ? customerWorkflowT(locale, notice.template, {
+          amount: formatEuro(notice.amountEuro, locale),
+          credits: notice.credits.toLocaleString(intlLocaleByCode[locale]),
+          reference: notice.reference,
+        })
+      : customerWorkflowExactT(locale, notice.text);
 
   return (
     <main className="mg-compact-ui min-h-screen bg-[#050505] text-white">
@@ -577,7 +602,7 @@ export default function BuyCreditsPage() {
                   : "border-red-800/50 bg-red-950/30 text-red-200"
             }`}
           >
-            {customerWorkflowExactT(locale, notice.text)}
+            {localizedNoticeText}
           </div>
         )}
 

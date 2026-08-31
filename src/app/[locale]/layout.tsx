@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { notFound } from "next/navigation";
+import { ServerLocaleBoundary } from "@/components/ServerLocaleBoundary";
 import {
-  hreflangByLocale,
   isSeoLocale,
   localizedSeoLocales,
 } from "@/lib/seo";
@@ -21,17 +21,7 @@ export default async function LocaleLayout({
 
   if (!isSeoLocale(locale)) notFound();
 
-  const documentLanguage = hreflangByLocale[locale];
-
   return (
-    <>
-      <script
-        data-locale-document-language
-        dangerouslySetInnerHTML={{
-          __html: `document.documentElement.lang=${JSON.stringify(documentLanguage)};`,
-        }}
-      />
-      <div lang={documentLanguage}>{children}</div>
-    </>
+    <ServerLocaleBoundary locale={locale}>{children}</ServerLocaleBoundary>
   );
 }

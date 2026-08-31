@@ -64,6 +64,7 @@ const customerSurfaceRoots = [
   "src/components/dashboard",
   "src/components/tools",
   "src/components/widget",
+  "src/lib/notFoundMetadata.ts",
   "src/components/analytics/PublicAnalytics.tsx",
   "src/components/CustomerNotificationsRuntime.tsx",
   "src/components/CustomerNotifications.tsx",
@@ -113,6 +114,7 @@ const intentionallyAuthoredAppSegments = new Set([
 const invariantValues = new Set([
   "MG",
   "MG AutoTech",
+  "MG AutoTech • 404",
   "MG AutoTech - Melih Gokkaya",
   "MG AutoTech SaaS",
   "MG AUTOTECH",

@@ -127,6 +127,64 @@ test("DTC result catalog has complete unique 12-locale rows with placeholder par
   }
 });
 
+test("reviewed DTC pressure and human-review copy keeps native technical grammar", () => {
+  const exactGoldens = {
+    "code.P0087.title": {
+      fr: "Contexte de pression trop basse dans la rampe ou le système",
+      it: "Contesto di pressione troppo bassa nel rail o nel sistema",
+      es: "Contexto de presión demasiado baja en el raíl o en el sistema",
+      tr: "Yakıt rampasında veya sistemde çok düşük basınç bağlamı",
+      sq: "Kontekst i presionit tepër të ulët në shinë ose në sistemin e karburantit",
+    },
+    "code.P2002.title": {
+      sq: "Kontekst i efikasitetit të filtrit të grimcave dizel",
+    },
+    "human.required_before": {
+      fr: "Une vérification humaine est requise avant les activités suivantes : {items}.",
+      it: "È necessaria una verifica umana prima delle seguenti attività: {items}.",
+      es: "Se requiere revisión humana antes de las siguientes acciones: {items}.",
+      pt: "É necessária revisão humana antes das seguintes ações: {items}.",
+      pl: "Przed następującymi działaniami wymagana jest weryfikacja przez człowieka: {items}.",
+    },
+    "safety.human_review": {
+      de: "Vor jeder Aktion an einer Kundendatei ist eine Prüfung durch einen Diagnosespezialisten und einen Tuner erforderlich.",
+      it: "Prima di qualsiasi azione sul file del cliente è necessaria una verifica da parte di un diagnostico e di un preparatore.",
+      tr: "Herhangi bir müşteri dosyası işleminden önce bir teşhis uzmanı ve tuner tarafından inceleme yapılması gerekir.",
+      pl: "Przed każdą operacją na pliku klienta wymagana jest weryfikacja przez diagnostę i tunera.",
+    },
+  } as const;
+
+  for (const [key, localizedGoldens] of Object.entries(exactGoldens)) {
+    for (const [locale, expected] of Object.entries(localizedGoldens)) {
+      assert.equal(
+        dtcAnalyzerMessageCatalog[
+          key as keyof typeof dtcAnalyzerMessageCatalog
+        ][locale as keyof (typeof dtcAnalyzerMessageCatalog)[keyof typeof dtcAnalyzerMessageCatalog]],
+        expected,
+        `${locale}.${key}`,
+      );
+    }
+  }
+
+  const requiredItems = "DTC-off, checksum";
+  for (const [locale, expected] of Object.entries(
+    exactGoldens["human.required_before"],
+  )) {
+    assert.equal(
+      localizeDtcAnalyzerMessage(
+        locale as keyof typeof dtcAnalyzerMessageCatalog["human.required_before"],
+        {
+          key: "human.required_before",
+          fallback: "Human review is required before {items}.",
+          params: { items: requiredItems },
+        },
+      ),
+      expected.replace("{items}", requiredItems),
+      `${locale}.human.required_before interpolation`,
+    );
+  }
+});
+
 test("every stable descriptor emitted by DTC producers is covered by the typed catalog", () => {
   const responses = scenarioResponses();
   const descriptors = responses.flatMap((response) => [

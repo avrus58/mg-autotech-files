@@ -50,7 +50,7 @@ export const customerWorkflowTemplateRows = [
     "Additional file upload enabled",
     "Aanvullende bestandsupload ingeschakeld",
     "Zusätzlicher Datei-Upload freigeschaltet",
-    "Upload de fichier supplémentaire activé",
+    "Téléversement de fichier supplémentaire activé",
     "Upload file aggiuntivo abilitato",
     "Дополнительная загрузка файла разрешена",
     "Carga adicional habilitada",

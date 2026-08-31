@@ -136,6 +136,10 @@ test("homepage vehicle controls and icon-only account link have accessible names
 
 test("baseline security headers protect private workspaces without blocking widget embedding", () => {
   const nextConfig = readProjectFile("next.config.ts");
+  const protectedPageSources = nextConfig.slice(
+    nextConfig.indexOf("const protectedPageSources"),
+    nextConfig.indexOf("const nextConfig"),
+  );
 
   assert.match(nextConfig, /X-Content-Type-Options/);
   assert.match(nextConfig, /X-Permitted-Cross-Domain-Policies/);
@@ -155,8 +159,8 @@ test("baseline security headers protect private workspaces without blocking widg
     "/reset-password",
     "/auth/:path*",
   ]) {
-    assert.match(nextConfig, new RegExp(source.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+    assert.match(protectedPageSources, new RegExp(source.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   }
-  assert.doesNotMatch(nextConfig, /"\/widget\/:path\*"/);
-  assert.doesNotMatch(nextConfig, /"\/embed\/:path\*"/);
+  assert.doesNotMatch(protectedPageSources, /"\/widget\/:path\*"/);
+  assert.doesNotMatch(protectedPageSources, /"\/embed\/:path\*"/);
 });

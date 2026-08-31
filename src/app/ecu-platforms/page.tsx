@@ -32,7 +32,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function EcuPlatformsPage() {
   const locale = await getServerLocale();
-  const jsonLd = localizeRuntimePublicJsonLd({ "@context": "https://schema.org", "@graph": [organizationJsonLd(), websiteJsonLd(locale), { "@type": "CollectionPage", "@id": `${absoluteUrl("/ecu-platforms")}#page`, name: title, description, url: absoluteUrl("/ecu-platforms"), inLanguage: runtimePublicInLanguage(locale) }, { "@type": "ItemList", itemListElement: platformGuides.map((guide, index) => ({ "@type": "ListItem", position: index + 1, name: guide.name, url: absoluteUrl(`/ecu-platforms/${guide.slug}`) })) }] }, locale, ["core", "vehicle"]);
+  const jsonLd = localizeRuntimePublicJsonLd({ "@context": "https://schema.org", "@graph": [organizationJsonLd(locale), websiteJsonLd(locale), { "@type": "CollectionPage", "@id": `${absoluteUrl("/ecu-platforms")}#page`, name: title, description, url: absoluteUrl("/ecu-platforms"), inLanguage: runtimePublicInLanguage(locale) }, { "@type": "ItemList", itemListElement: platformGuides.map((guide, index) => ({ "@type": "ListItem", position: index + 1, name: guide.name, url: absoluteUrl(`/ecu-platforms/${guide.slug}`) })) }] }, locale, ["core", "vehicle"]);
   return (
     <RuntimePublicLocalization locale={locale} scopes={["core", "vehicle"]}>
       <main className="min-h-screen bg-[#050505] text-white">

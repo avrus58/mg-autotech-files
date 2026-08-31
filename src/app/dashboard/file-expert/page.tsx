@@ -20,16 +20,20 @@ import { authenticatedFetch, getStableSession, notifySessionRequired, signOutIfE
 import {
   fileExpertAllowedExtensions,
   fileExpertAllowedExtensionsLabel,
-  fileExpertMaxFileSize,
   fileExpertMaxFileSizeLabel,
   fileExpertTextLimits,
 } from "@/lib/fileExpert/limits";
 import { supabase } from "@/lib/supabaseClient";
 import type { FileExpertJob, FileExpertReadMethod } from "@/lib/fileExpert/types";
+import { customerWorkflowT } from "@/lib/i18n/customer-workflow-file-expert-translations";
 import {
-  customerWorkflowT,
-  type CustomerWorkflowTranslationKey,
-} from "@/lib/i18n/customer-workflow-file-expert-translations";
+  getFileExpertTextLimitValidation,
+  localizeFileExpertPageMessage,
+  localizeFileExpertValidation,
+  validateFileExpertSelection,
+  type FileExpertPageMessage,
+  type FileExpertValidationDescriptor,
+} from "@/lib/fileExpert/validation";
 import {
   formatFileExpertJobCount,
   localizeFileExpertStatus,
@@ -40,6 +44,20 @@ import { useActiveLocale } from "@/lib/useActiveLocale";
 const readMethods: FileExpertReadMethod[] = ["OBD", "Bench", "Boot", "VR", "Unknown"];
 const fileExpertAccept = fileExpertAllowedExtensions.join(",");
 const FILE_EXPERT_JOBS_LOAD_ERROR_MESSAGE = "File Expert analysis history could not be loaded. Please try again.";
+// Keep semantic validation templates in this route inventory so the generated
+// client catalog contains every key used by the validation helper.
+const fileExpertValidationTranslationKeys = {
+  empty: "fileExpertEmptyFile",
+  tooLarge: "fileExpertFileTooLarge",
+  unsupported: "fileExpertUnsupportedFile",
+  textLimit: "fileExpertTextLimit",
+  uploadFile: "fileExpertUploadFile",
+  fieldBrand: "fileExpertFieldBrand",
+  fieldModel: "fileExpertFieldModel",
+  fieldEngine: "fileExpertFieldEngine",
+  fieldEcu: "fileExpertFieldEcu",
+  fieldNotes: "fileExpertFieldNotes",
+} as const;
 
 type FileExpertFormState = {
   brand: string;
@@ -50,7 +68,6 @@ type FileExpertFormState = {
   customerNotes: string;
 };
 
-type FileExpertTextField = keyof typeof fileExpertTextLimits;
 type FileSlot = "ori" | "mod";
 
 const initialFileExpertForm: FileExpertFormState = {
@@ -62,17 +79,12 @@ const initialFileExpertForm: FileExpertFormState = {
   customerNotes: "",
 };
 
-const fileExpertTextFieldLabelKeys: Record<FileExpertTextField, CustomerWorkflowTranslationKey> = {
-  brand: "fileExpertFieldBrand",
-  model: "fileExpertFieldModel",
-  engine: "fileExpertFieldEngine",
-  ecuType: "fileExpertFieldEcu",
-  customerNotes: "fileExpertFieldNotes",
-};
-
-const emptyFileSelectionErrors: Record<FileSlot, string> = {
-  ori: "",
-  mod: "",
+const emptyFileSelectionErrors: Record<
+  FileSlot,
+  FileExpertValidationDescriptor | null
+> = {
+  ori: null,
+  mod: null,
 };
 
 function statusClass(status: string) {
@@ -97,40 +109,6 @@ function shortHash(value: string | null) {
   return `${value.slice(0, 10)}...`;
 }
 
-function validateFileExpertSelection(file: File | null, locale: LocaleCode) {
-  if (!file) return "";
-  if (file.size === 0) return customerWorkflowT(locale, "fileExpertEmptyFile");
-  if (file.size > fileExpertMaxFileSize) {
-    return customerWorkflowT(locale, "fileExpertFileTooLarge", {
-      size: fileExpertMaxFileSizeLabel,
-    });
-  }
-
-  const lowerName = file.name.toLowerCase();
-  const hasAllowedExtension = fileExpertAllowedExtensions.some((extension) => lowerName.endsWith(extension));
-  if (!hasAllowedExtension) {
-    return customerWorkflowT(locale, "fileExpertUnsupportedFile", {
-      extensions: fileExpertAllowedExtensionsLabel,
-    });
-  }
-
-  return "";
-}
-
-function getFileExpertTextLimitError(form: FileExpertFormState, locale: LocaleCode) {
-  for (const field of Object.keys(fileExpertTextLimits) as FileExpertTextField[]) {
-    const limit = fileExpertTextLimits[field];
-    if (form[field].length > limit) {
-      return customerWorkflowT(locale, "fileExpertTextLimit", {
-        field: customerWorkflowT(locale, fileExpertTextFieldLabelKeys[field]),
-        count: limit.toLocaleString(intlLocaleByCode[locale]),
-      });
-    }
-  }
-
-  return "";
-}
-
 function formatFileExpertSize(size: number) {
   if (size >= 1024 * 1024) {
     const megabytes = size / (1024 * 1024);
@@ -149,7 +127,7 @@ export default function FileExpertDashboardPage() {
   const [jobsReady, setJobsReady] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submissionStage, setSubmissionStage] = useState("");
-  const [message, setMessage] = useState("");
+  const [message, setMessage] = useState<FileExpertPageMessage | null>(null);
   const [oriFile, setOriFile] = useState<File | null>(null);
   const [modFile, setModFile] = useState<File | null>(null);
   const [fileSelectionErrors, setFileSelectionErrors] = useState(emptyFileSelectionErrors);
@@ -158,7 +136,7 @@ export default function FileExpertDashboardPage() {
 
   async function loadJobs(options?: { silent?: boolean }) {
     if (!options?.silent) setLoading(true);
-    setMessage("");
+    setMessage(null);
 
     const user = (await getStableSession()).session?.user;
 
@@ -216,46 +194,80 @@ export default function FileExpertDashboardPage() {
       failed: jobs.filter((job) => job.status === "failed").length,
     };
   }, [jobs]);
-  const textLimitError = getFileExpertTextLimitError(form, locale);
-  const selectedFileError = validateFileExpertSelection(oriFile, locale) || validateFileExpertSelection(modFile, locale);
+  const textLimitValidation = getFileExpertTextLimitValidation(form);
+  const selectedFileValidation =
+    fileSelectionErrors.ori ??
+    fileSelectionErrors.mod ??
+    validateFileExpertSelection(oriFile) ??
+    validateFileExpertSelection(modFile);
   const hasSelectedFile = Boolean(oriFile || modFile);
-  const canSubmitAnalysis = !submitting && hasSelectedFile && !selectedFileError && !textLimitError;
+  const canSubmitAnalysis =
+    !submitting &&
+    hasSelectedFile &&
+    !selectedFileValidation &&
+    !textLimitValidation;
   const submitGuidance = !hasSelectedFile
     ? customerWorkflowT(locale, "fileExpertSelectFile")
-    : selectedFileError || textLimitError;
+    : selectedFileValidation
+      ? localizeFileExpertValidation(locale, selectedFileValidation)
+      : textLimitValidation
+        ? localizeFileExpertValidation(locale, textLimitValidation)
+        : "";
+  const messageText = message
+    ? localizeFileExpertPageMessage(locale, message)
+    : "";
+  const fileSelectionErrorText = {
+    ori: fileSelectionErrors.ori
+      ? localizeFileExpertValidation(locale, fileSelectionErrors.ori)
+      : "",
+    mod: fileSelectionErrors.mod
+      ? localizeFileExpertValidation(locale, fileSelectionErrors.mod)
+      : "",
+  };
   const showInitialJobsLoadError = Boolean(jobsLoadError && !jobsReady);
 
   function handleFileSelection(slot: FileSlot, file: File | null) {
-    const validationError = validateFileExpertSelection(file, locale);
-    setFileSelectionErrors((current) => ({ ...current, [slot]: validationError }));
+    const validation = validateFileExpertSelection(file);
+    setFileSelectionErrors((current) => ({ ...current, [slot]: validation }));
 
-    if (slot === "ori") setOriFile(validationError ? null : file);
-    if (slot === "mod") setModFile(validationError ? null : file);
+    if (slot === "ori") setOriFile(validation ? null : file);
+    if (slot === "mod") setModFile(validation ? null : file);
 
-    if (validationError) {
-      setMessage(validationError);
+    if (validation) {
+      setMessage({ type: "validation", descriptor: validation });
       return;
     }
 
-    if (file) setMessage("");
+    if (file) setMessage(null);
   }
 
   async function submitAnalysis(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setMessage("");
+    setMessage(null);
 
     if (!oriFile && !modFile) {
-      setMessage(customerWorkflowT(locale, "fileExpertUploadFile"));
+      setMessage({
+        type: "validation",
+        descriptor: {
+          key: fileExpertValidationTranslationKeys.uploadFile,
+        },
+      });
       return;
     }
 
-    if (selectedFileError) {
-      setMessage(selectedFileError);
+    if (selectedFileValidation) {
+      setMessage({
+        type: "validation",
+        descriptor: selectedFileValidation,
+      });
       return;
     }
 
-    if (textLimitError) {
-      setMessage(textLimitError);
+    if (textLimitValidation) {
+      setMessage({
+        type: "validation",
+        descriptor: textLimitValidation,
+      });
       return;
     }
 
@@ -273,7 +285,7 @@ export default function FileExpertDashboardPage() {
     const prepared = await prepareResponse.json();
 
     if (!prepareResponse.ok) {
-      setMessage("Analysis could not be prepared.");
+      setMessage({ type: "raw", text: "Analysis could not be prepared." });
       setSubmissionStage("");
       setSubmitting(false);
       return;
@@ -310,7 +322,7 @@ export default function FileExpertDashboardPage() {
       await authenticatedFetch(`/api/file-expert/jobs/${prepared.jobId}/finalize`, {
         method: "POST",
       });
-      setMessage("File upload failed.");
+      setMessage({ type: "raw", text: "File upload failed." });
       setSubmissionStage("");
       setSubmitting(false);
       await loadJobs({ silent: true });
@@ -325,7 +337,7 @@ export default function FileExpertDashboardPage() {
     setSubmitting(false);
 
     if (!finalizeResponse.ok) {
-      setMessage("Analysis could not be completed.");
+      setMessage({ type: "raw", text: "Analysis could not be completed." });
       await loadJobs({ silent: true });
       return;
     }
@@ -380,9 +392,9 @@ export default function FileExpertDashboardPage() {
           </p>
         </section>
 
-        {message && (
+        {messageText && (
           <div className="mb-6 rounded-2xl border border-red-800/40 bg-red-950/30 p-4 text-sm font-bold text-red-200">
-            {message}
+            {messageText}
           </div>
         )}
 
@@ -440,7 +452,7 @@ export default function FileExpertDashboardPage() {
                 title="ORI file"
                 description="Original read or single file for identification"
                 file={oriFile}
-                error={fileSelectionErrors.ori}
+                error={fileSelectionErrorText.ori}
                 onChange={(file) => handleFileSelection("ori", file)}
               />
               <FileDrop
@@ -448,7 +460,7 @@ export default function FileExpertDashboardPage() {
                 title="MOD file"
                 description="Optional modified file for ORI/MOD comparison"
                 file={modFile}
-                error={fileSelectionErrors.mod}
+                error={fileSelectionErrorText.mod}
                 onChange={(file) => handleFileSelection("mod", file)}
               />
             </div>
@@ -530,7 +542,7 @@ export default function FileExpertDashboardPage() {
 
             {submitGuidance ? (
               <p
-                role={selectedFileError || textLimitError ? "alert" : undefined}
+                role={selectedFileValidation || textLimitValidation ? "alert" : undefined}
                 className="mt-4 rounded-2xl border border-amber-700/30 bg-amber-950/15 px-4 py-3 text-xs font-bold leading-5 text-amber-100"
               >
                 {submitGuidance}

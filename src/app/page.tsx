@@ -1,6 +1,10 @@
+import type { Metadata } from "next";
 import { renderRootHomepage } from "@/lib/renderRootHomepage";
-import { getServerLocale } from "@/lib/serverLocale";
+import { buildHomepageMetadata } from "@/lib/homepageMetadata";
+import { defaultLocale } from "@/lib/i18nConfig";
 
-export default async function HomePage() {
-  return renderRootHomepage(await getServerLocale());
+export const metadata: Metadata = buildHomepageMetadata(defaultLocale);
+
+export default function HomePage() {
+  return renderRootHomepage(defaultLocale);
 }

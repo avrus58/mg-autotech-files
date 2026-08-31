@@ -5560,3 +5560,36 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
   yukleme 14.6/80 KiB gzip, locale kataloglari 4.9-6.2/12 KiB gzip kaldi.
 - Push, Preview, Production deploy, canli veritabani veya dis servis mutasyonu
   yapilmadi.
+
+## 2026-08-31 02:00 +02:00 Site-wide localization final closure
+
+- Global dil secicinin kapsadigi public, auth, musteri, widget, arac, request,
+  credits, DTC, datalog ve File Expert yuzeyleri 12 locale icin tek denetlenebilir
+  sozlesmede kapatildi. Her non-English locale 1975/1975 reviewed source degerine
+  ve sifir temiz English fallback sonucuna ulasti; native otomotiv terimleri,
+  placeholder/attribute parity ve dinamik gorunur ifade guard'i korundu.
+- SSR ilk boya, metadata/JSON-LD, locale cookie ve rota gecisi, response cache
+  sinirlari, embedded widget'in bagimsiz dili, sabit dilli hukuki/admin yuzeyler,
+  auth sifre durumlari, credit hatalari, new-request durumlari ve File Expert
+  rapor semantigi dogrudan locale-aware hale getirildi. Buyuk global kataloglar
+  yerine route-bazli istemci paketleri kullanildi.
+- Request-bound locale okuma saf `ServerLocaleBoundary` modulunden ayrildi;
+  public static uretim geri kazanildi. Prerender denetimi 139 toplam rota ve
+  48/48 zorunlu public rota bildirdi. Bilinmeyen tek-segment URL'lerde 404
+  metadata'si dogrudan garanti altina alindi; deneysel `globalNotFound`/
+  `dynamicParams=false` yolu Next.js'in urettigi sahte `NoFallbackError` loglari
+  nedeniyle bilincli olarak urun koduna alinmadi.
+- Final kontroller: `npm run check:i18n` PASS (12 locale, 1975/1975, 0 fallback),
+  `npm run lint` PASS, `npm run typecheck` PASS, generator freshness PASS,
+  `npm test -- --test-reporter=dot` 1396/1396 PASS, Turbopack ve Webpack
+  Production build 280/280 PASS, `npm run check:performance` PASS. Homepage ilk
+  yukleme 15.2/80 KiB gzip ve 3 chunk; public datalog worker 6.5/12 KiB; locale
+  payload'lari 4.9-6.2/12 KiB gzip. `git diff --check` ve zero-width taramasi
+  PASS.
+- Yerel Production tarayici QA'sinda Turkce ana sayfa ve login 390x844'te
+  tasmasiz ve English sizintisizdi; dil menusu 12/12 secenek gosterdi. Turkce
+  404 dogru baslik, `noindex`, canonical yoklugu, dogru locale ve temiz console/
+  server loglariyla dogrulandi; DE/TR ve masaustu/laptop turlari da temizdi.
+  Iki bagimsiz mimari/root-cause review turu GO verdi. Push, Preview, Production
+  deploy, canli veritabani, secret, odeme, e-posta veya dis servis mutasyonu
+  yapilmadi.

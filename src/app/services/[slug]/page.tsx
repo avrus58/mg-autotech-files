@@ -51,6 +51,8 @@ import {
 } from "@/lib/requestIntent";
 import { buildAuthEntryPath } from "@/lib/safeLocalRedirect";
 import { getServerLocale } from "@/lib/serverLocale";
+import { defaultLocale } from "@/lib/i18nConfig";
+import { businessAudienceTypeByLocale } from "@/lib/structuredDataI18n";
 
 type ServicePage = {
   slug: string;
@@ -423,9 +425,9 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const locale = await getServerLocale();
   const scopes = ["core", "services", "service-intent"] as const;
   const intentGuide = getServiceIntentGuide(slug);
+  const locale = intentGuide ? await getServerLocale() : defaultLocale;
 
   if (intentGuide) {
     const canonical = absoluteUrl(`/services/${intentGuide.slug}`);
@@ -517,8 +519,8 @@ export default async function ServicePage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const locale = await getServerLocale();
   const intentGuide = getServiceIntentGuide(slug);
+  const locale = intentGuide ? await getServerLocale() : defaultLocale;
 
   if (intentGuide) return <ServiceIntentPage guide={intentGuide} locale={locale} />;
 
@@ -534,7 +536,7 @@ export default async function ServicePage({
   const jsonLd = localizeRuntimePublicJsonLd({
     "@context": "https://schema.org",
     "@graph": [
-      organizationJsonLd(),
+      organizationJsonLd(locale),
       websiteJsonLd(locale),
       {
         "@type": "WebPage",
@@ -553,9 +555,12 @@ export default async function ServicePage({
         name: service.title,
         description: service.description,
         serviceType: service.title,
-        category: service.slug === "stage-1" ? "Stage 1 ECU tuning file service" : service.title,
+        category: service.title,
         audience: service.slug === "stage-1"
-          ? { "@type": "Audience", audienceType: "Automotive workshops and tuning professionals" }
+          ? {
+              "@type": "Audience",
+              audienceType: businessAudienceTypeByLocale[locale],
+            }
           : undefined,
         provider: { "@id": `${absoluteUrl("/")}#organization` },
         url: pageUrl,

@@ -23,6 +23,7 @@ const filesToScan = [
   "src/lib/i18nRoutes.ts",
   "src/lib/homepageLocalization.tsx",
   "src/lib/homepageHeroI18n.ts",
+  "src/lib/homepageMetadata.ts",
   "src/components/LanguageSwitcher.tsx",
   "next.config.ts",
   "src/app/layout.tsx",
@@ -187,6 +188,11 @@ const rootVehicleExperience = readFileSync(
 );
 const rootHomePage = `${rootHomeEntry}\n${rootHomeExperience}\n${rootVehicleExperience}`;
 const rootLayout = readFileSync(join(root, "src/app/layout.tsx"), "utf8");
+const homepageMetadata = readFileSync(
+  join(root, "src/lib/homepageMetadata.ts"),
+  "utf8",
+);
+const rootMetadataSurface = `${rootLayout}\n${homepageMetadata}`;
 const rootServicesPage = readFileSync(join(root, "src/app/services/page.tsx"), "utf8");
 const rootServicesMetadata = readFileSync(
   join(root, "src/lib/servicesPageMetadata.ts"),
@@ -207,14 +213,23 @@ if (!rootFileServicePage.includes("title: pageTitle,")) {
 if (!rootHowItWorksPage.includes("title: { absolute: copy.pageTitle }")) {
   failures.push("How It Works title does not opt out of duplicate global title suffixing.");
 }
-if (!rootLayout.includes("Online ECU File Service")) {
-  failures.push("Root metadata is missing online ECU file service search wording.");
+if (!homepageMetadata.includes("buildPublicMetadataKeywords")) {
+  failures.push("Root metadata does not build locale-native keyword phrases.");
 }
-if (!rootLayout.includes("TCU File Service")) {
-  failures.push("Root metadata is missing TCU File Service search wording.");
+if (!homepageMetadata.includes("publicServiceSlugs.map")) {
+  failures.push("Root metadata does not include locale-native service names.");
 }
-if (!rootLayout.includes("ECU File Upload Service")) {
-  failures.push("Root metadata is missing ECU File Upload Service search wording.");
+if (!rootLayout.includes("publicTechnicalKeywords")) {
+  failures.push("Root metadata is missing language-neutral technical keywords.");
+}
+for (const retiredKeyword of [
+  '"Online ECU File Service"',
+  '"TCU File Service"',
+  '"ECU File Upload Service"',
+]) {
+  if (rootMetadataSurface.includes(retiredKeyword)) {
+    failures.push(`Root metadata still hard-codes an English keyword: ${retiredKeyword}.`);
+  }
 }
 for (const marker of [
   "homepagePageJsonLd",

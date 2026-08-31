@@ -95,7 +95,7 @@ test("a build-time homepage JavaScript budget guards future regressions", () => 
 
   assert.equal(
     packageJson.scripts?.["check:performance"],
-    "node scripts/check-web-performance.mjs && tsx scripts/check-homepage-localization-payload.ts",
+    "node scripts/check-web-performance.mjs && tsx scripts/check-homepage-localization-payload.ts && node scripts/check-prerender-coverage.mjs",
   );
   assert.match(script, /80 \* 1024/);
   assert.match(script, /supabase-js/);

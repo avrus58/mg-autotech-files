@@ -73,7 +73,7 @@ export default async function LocalizedHowItWorksPage({
   const jsonLd = {
     "@context": "https://schema.org",
     "@graph": [
-      organizationJsonLd(),
+      organizationJsonLd(locale),
       websiteJsonLd(locale),
       {
         ...pageJsonLd.page,

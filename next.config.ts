@@ -36,6 +36,34 @@ const publicDiscoverySources = [
   "/53478ab4be7faddc91a14935b2b35013051e4dfc9bb31c4a.txt",
 ];
 
+// These public URLs negotiate presentation language from a cookie or the
+// Accept-Language header before a localized response/redirect is selected.
+// Next can replace middleware's Vary header while rendering, so the route
+// contract is also declared here at the final response layer.
+const requestLocalizedPublicSources = [
+  "/",
+  "/about",
+  "/contact",
+  "/download/:path*",
+  "/file-service",
+  "/how-it-works",
+  "/services",
+  "/services/:path*",
+  "/brands/:path*",
+  "/ecu-platforms/:path*",
+  "/tools/:path*",
+  "/widget/:path*",
+  "/workshop-guides/:path*",
+];
+
+const requestLocalizedPublicHeaders = [
+  {
+    key: "Vary",
+    value:
+      "RSC, Next-Router-State-Tree, Next-Router-Prefetch, Next-Router-Segment-Prefetch, Cookie, Accept-Language, Accept-Encoding",
+  },
+];
+
 const protectedPageSources = [
   "/admin/:path*",
   "/dashboard/:path*",
@@ -75,6 +103,10 @@ const nextConfig: NextConfig = {
       ...publicDiscoverySources.map((source) => ({
         source,
         headers: publicDiscoveryHeaders,
+      })),
+      ...requestLocalizedPublicSources.map((source) => ({
+        source,
+        headers: requestLocalizedPublicHeaders,
       })),
       ...protectedPageSources.map((source) => ({
         source,

@@ -6,6 +6,8 @@ export const metadata: Metadata = {
   title: "Allgemeine Geschäftsbedingungen",
   description: "Allgemeine Geschäftsbedingungen der MG AutoTech File-Service-Plattform.",
   alternates: { canonical: absoluteUrl("/agb") },
+  openGraph: null,
+  twitter: null,
 };
 
 export default function AgbPage() {

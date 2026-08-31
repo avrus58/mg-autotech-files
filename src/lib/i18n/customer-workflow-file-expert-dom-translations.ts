@@ -435,17 +435,17 @@ export const customerWorkflowExactTranslations = {
     "Shënim ECU/TCU (opsional)"
   ],
   "ECU identity match": [
-    "ECU-identiteitsmatch",
-    "ECU-Identitätsübereinstimmung",
-    "Correspondance d’identité ECU",
-    "Corrispondenza identità ECU",
+    "Overeenkomst van de ECU-identificatie",
+    "Abgleich der ECU-Identifikation",
+    "Correspondance de l’identification de l’ECU",
+    "Corrispondenza dell’identificazione ECU",
     "Совпадение идентификаторов ECU",
-    "Coincidencia de identidad ECU",
-    "ECU kimlik eşleşmesi",
-    "Correspondência de identidade ECU",
-    "ECU 身份匹配",
+    "Coincidencia de la identificación de la ECU",
+    "ECU tanımlama eşleşmesi",
+    "Correspondência da identificação da ECU",
+    "ECU 识别信息匹配",
     "Zgodność identyfikacji ECU",
-    "Përputhja e identitetit ECU"
+    "Përputhja e identifikimit të ECU-së"
   ],
   "Engine (optional)": [
     "Motor (optioneel)",
@@ -543,7 +543,7 @@ export const customerWorkflowExactTranslations = {
     "File Expert-Aufträge",
     "Tâches File Expert",
     "Attività File Expert",
-    "Задания File Expert",
+    "Задачи File Expert",
     "Tareas de File Expert",
     "File Expert işleri",
     "Tarefas File Expert",
@@ -573,9 +573,9 @@ export const customerWorkflowExactTranslations = {
     "Perfil del archivo",
     "Dosya profili",
     "Perfil do ficheiro",
-    "文件配置",
+    "文件概况",
     "Profil pliku",
-    "Profili i skedarit"
+    "Profili i file-it"
   ],
   "File size match": [
     "Bestandsgrootte komt overeen",
@@ -593,7 +593,7 @@ export const customerWorkflowExactTranslations = {
   "File upload failed.": [
     "Bestandsupload mislukt.",
     "Das Hochladen der Datei ist fehlgeschlagen.",
-    "Le téléchargement du fichier a échoué.",
+    "Le téléversement du fichier a échoué.",
     "Caricamento file non riuscito.",
     "Загрузка файла не удалась.",
     "Error al cargar el archivo.",
@@ -705,7 +705,7 @@ export const customerWorkflowExactTranslations = {
     "A carregar File Expert...",
     "正在加载 File Expert...",
     "Ładowanie File Expert...",
-    "Po ngarkohet File Expert..."
+    "Duke ngarkuar File Expert..."
   ],
   "Matching clusters": [
     "Overeenkomende clusters",
@@ -725,13 +725,13 @@ export const customerWorkflowExactTranslations = {
     "MOD-Datei",
     "Fichier MOD",
     "File MOD",
-    "MOD-файл",
+    "Файл MOD",
     "Archivo MOD",
     "MOD dosyası",
     "Ficheiro MOD",
     "MOD 文件",
     "Plik MOD",
-    "Skedar MOD"
+    "File MOD"
   ],
   "Model (optional)": [
     "Model (optioneel)",
@@ -799,17 +799,17 @@ export const customerWorkflowExactTranslations = {
     "Ende nuk ka analizë"
   ],
   "No specific operation can be named safely from this file. This does not mean the file is stock.": [
-    "Uit dit bestand kan geen specifieke bewerking veilig worden vastgesteld. Dat betekent niet dat het bestand stock is.",
+    "Uit dit bestand kan geen specifieke bewerking veilig worden vastgesteld. Dat betekent niet dat het bestand origineel is.",
     "Aus dieser Datei kann kein Vorgang sicher benannt werden. Das bedeutet nicht, dass sie original ist.",
     "Aucune opération précise ne peut être confirmée à partir de ce fichier. Cela ne signifie pas qu'il est d'origine.",
-    "Non è possibile indicare con certezza un'operazione. Ciò non significa che il file sia stock.",
-    "По этому файлу нельзя безопасно назвать операцию. Это не означает, что файл заводской.",
-    "No se puede identificar con seguridad una operación. Esto no significa que el archivo sea stock.",
-    "Bu dosyadan güvenle belirli bir işlem çıkarılamaz. Bu, dosyanın stock olduğu anlamına gelmez.",
-    "Não é possível identificar com segurança uma operação. Isto não significa que o ficheiro seja stock.",
-    "无法从此文件安全确认具体操作，但这不代表文件为原厂状态。",
+    "Non è possibile identificare con certezza un'operazione specifica in questo file. Ciò non significa che il file sia originale.",
+    "По этому файлу нельзя надёжно определить конкретную операцию. Это не означает, что файл заводской.",
+    "No se puede identificar con seguridad una operación concreta en este archivo. Esto no significa que el archivo sea original.",
+    "Bu dosyadan belirli bir işlem güvenle tespit edilemez. Bu, dosyanın orijinal olduğu anlamına gelmez.",
+    "Não é possível identificar com segurança uma operação específica neste ficheiro. Isto não significa que o ficheiro seja original.",
+    "无法仅根据此文件可靠确定具体操作。这并不表示该文件一定为原厂状态。",
     "Nie można bezpiecznie wskazać konkretnej operacji. Nie oznacza to, że plik jest seryjny.",
-    "Nuk mund të përcaktohet me siguri një veprim. Kjo nuk do të thotë se skedari është stock."
+    "Nga ky skedar nuk mund të përcaktohet me siguri një veprim i caktuar. Kjo nuk do të thotë se skedari është origjinal."
   ],
   "Not checked": [
     "Niet gecontroleerd",
@@ -907,13 +907,13 @@ export const customerWorkflowExactTranslations = {
     "ORI-Datei",
     "Fichier ORI",
     "File ORI",
-    "ORI-файл",
+    "Файл ORI",
     "Archivo ORI",
     "ORI dosyası",
     "Ficheiro ORI",
     "ORI 文件",
     "Plik ORI",
-    "Skedar ORI"
+    "File ORI"
   ],
   "Original read or single file for identification": [
     "Originele uitlezing of enkel bestand voor identificatie",
@@ -1319,17 +1319,17 @@ export const customerWorkflowExactTranslations = {
     "Gjithsej analiza"
   ],
   "Try again": [
-    "Probeer het opnieuw",
+    "Opnieuw proberen",
     "Erneut versuchen",
-    "Réessayez",
+    "Réessayer",
     "Riprova",
-    "Попробовать ещё раз",
-    "Inténtalo de nuevo",
+    "Повторить",
+    "Intentar de nuevo",
     "Tekrar deneyin",
-    "Tente novamente",
-    "请重试",
+    "Tentar novamente",
+    "重试",
     "Spróbuj ponownie",
-    "Provoni përsëri"
+    "Provo përsëri"
   ],
   "Try analysis again": [
     "Analyse opnieuw proberen",
@@ -1349,11 +1349,11 @@ export const customerWorkflowExactTranslations = {
     "Laden Sie ein ORI/MOD-Paar hoch; fertige Berichte erscheinen hier.",
     "Téléversez une paire ORI/MOD ; les rapports terminés apparaîtront ici.",
     "Carica una coppia ORI/MOD; i rapporti completati appariranno qui.",
-    "Загрузите пару ORI/MOD, готовые отчёты появятся здесь.",
+    "Загрузите пару ORI/MOD, и готовые отчёты появятся здесь.",
     "Carga un par ORI/MOD; los informes completados aparecerán aquí.",
     "Bir ORI/MOD çifti yükleyin; tamamlanan raporlar burada görünür.",
     "Carregue um par ORI/MOD; os relatórios concluídos aparecerão aqui.",
-    "上传 ORI/MOD 文件对，完成的报告会显示在此处。",
+    "上传 ORI/MOD 文件对后，完成的报告将显示在这里。",
     "Prześlij parę ORI/MOD, a gotowe raporty pojawią się tutaj.",
     "Ngarkoni një çift ORI/MOD dhe raportet e përfunduara do të shfaqen këtu."
   ],

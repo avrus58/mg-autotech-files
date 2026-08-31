@@ -556,13 +556,13 @@ export const customerWorkflowExactTranslations = {
     "Ich bestätige, dass ich für die rechtmäßige Nutzung der Datei verantwortlich bin.",
     "Je confirme être responsable de l'utilisation légale du fichier.",
     "Confermo di essere responsabile dell'uso legale del file.",
-    "Я подтверждаю ответственность за законное использование файла.",
+    "Я подтверждаю свою ответственность за законное использование файла.",
     "Confirmo que soy responsable del uso legal del archivo.",
     "Dosyanın yasal kullanımından sorumlu olduğumu onaylıyorum.",
     "Confirmo que sou responsável pelo uso legal do ficheiro.",
     "我确认对文件的合法使用负责。",
     "Potwierdzam odpowiedzialność za zgodne z prawem użycie pliku.",
-    "Konfirmoj se jam përgjegjës për përdorimin ligjor të skedarit."
+    "Konfirmoj se jam përgjegjës për përdorimin ligjor të file-it."
   ],
   "I confirm this zero-credit request.": [
     "Ik bevestig deze aanvraag zonder credits.",
@@ -751,13 +751,13 @@ export const customerWorkflowExactTranslations = {
     "Master-Datei",
     "Fichier Master",
     "File Master",
-    "Master-файл",
+    "Файл Master",
     "Archivo Master",
     "Master Dosya",
     "Ficheiro Master",
     "Master 文件",
     "Plik Master",
-    "Skedar Master"
+    "File Master"
   ],
   "Methods": [
     "Methoden",
@@ -972,13 +972,13 @@ export const customerWorkflowExactTranslations = {
     "Vorherige Anfrage nicht übernommen",
     "Demande précédente non appliquée",
     "Richiesta precedente non applicata",
-    "Предыдущая заявка не применена",
+    "Данные предыдущего запроса не применены",
     "Solicitud anterior no aplicada",
     "Önceki talep uygulanmadı",
     "Pedido anterior não aplicado",
-    "未应用之前的请求",
+    "未应用上一次请求",
     "Poprzednie zlecenie nie zostało użyte",
-    "Kërkesa e mëparshme nuk u zbatua"
+    "Kërkesa e mëparshme nuk u aplikua"
   ],
   "Previous workshop context is ready for review": [
     "De vorige werkplaatscontext is klaar voor controle",
@@ -1115,11 +1115,11 @@ export const customerWorkflowExactTranslations = {
     "Anfrage-Vorprüfung",
     "Contrôle préalable de la demande",
     "Controllo preliminare richiesta",
-    "Предварительная проверка заявки",
+    "Проверка готовности запроса",
     "Revisión previa de la solicitud",
     "Talep Ön Kontrolü",
     "Verificação prévia do pedido",
-    "请求预检助手",
+    "请求提交前检查",
     "Wstępna kontrola zlecenia",
     "Kontrolli paraprak i kërkesës"
   ],
@@ -1154,13 +1154,13 @@ export const customerWorkflowExactTranslations = {
     "Details der vorherigen Anfrage werden sicher vorbereitet...",
     "Préparation sécurisée des détails de votre demande précédente...",
     "Preparazione sicura dei dati della richiesta precedente...",
-    "Безопасная подготовка данных предыдущей заявки...",
+    "Безопасная подготовка данных из предыдущего запроса...",
     "Preparando de forma segura los datos de tu solicitud anterior...",
     "Önceki talebinizin ayrıntıları güvenle hazırlanıyor...",
     "A preparar em segurança os dados do pedido anterior...",
-    "正在安全准备之前请求的详情...",
+    "正在安全准备上一次请求的详细信息...",
     "Bezpieczne przygotowywanie danych poprzedniego zlecenia...",
-    "Po përgatiten në mënyrë të sigurt hollësitë e kërkesës së mëparshme..."
+    "Duke përgatitur në mënyrë të sigurt detajet e kërkesës së mëparshme..."
   ],
   "Select": [
     "Selecteren",
@@ -1271,26 +1271,26 @@ export const customerWorkflowExactTranslations = {
     "Slave-Datei",
     "Fichier Slave",
     "File Slave",
-    "Slave-файл",
+    "Файл Slave",
     "Archivo Slave",
     "Slave Dosya",
     "Ficheiro Slave",
     "Slave 文件",
     "Plik Slave",
-    "Skedar Slave"
+    "File Slave"
   ],
   "Some previous values could not be matched exactly. Review the highlighted vehicle and service fields before continuing.": [
     "Sommige eerdere waarden konden niet exact worden gekoppeld. Controleer de gemarkeerde velden.",
     "Einige frühere Werte konnten nicht genau zugeordnet werden. Prüfen Sie die markierten Fahrzeug- und Servicefelder.",
     "Certaines anciennes valeurs ne correspondent pas exactement. Vérifiez les champs surlignés.",
     "Alcuni valori precedenti non corrispondono esattamente. Controlla i campi evidenziati.",
-    "Некоторые прежние значения не совпали. Проверьте выделенные поля автомобиля и услуг.",
+    "Некоторые предыдущие значения не удалось сопоставить точно. Проверьте выделенные поля автомобиля и услуги.",
     "Algunos valores anteriores no coincidieron. Revisa los campos resaltados.",
     "Önceki bazı değerler tam eşleşmedi. Devam etmeden önce vurgulanan araç ve hizmet alanlarını kontrol edin.",
     "Alguns valores anteriores não coincidiram. Reveja os campos destacados.",
-    "部分之前的值无法精确匹配，请先检查高亮的车辆和服务字段。",
+    "部分先前值无法精确匹配。继续前请检查突出显示的车辆和服务字段。",
     "Niektórych poprzednich wartości nie dopasowano. Sprawdź wyróżnione pola.",
-    "Disa vlera të mëparshme nuk u përputhën saktë. Kontrolloni fushat e theksuara."
+    "Disa vlera të mëparshme nuk u përputhën saktësisht. Kontrolloni fushat e theksuara të automjetit dhe shërbimit."
   ],
   "Start blank": [
     "Leeg beginnen",
@@ -1401,7 +1401,7 @@ export const customerWorkflowExactTranslations = {
     "Fahrzeuginformationen",
     "Informations véhicule",
     "Informazioni veicolo",
-    "Данные автомобиля",
+    "Информация об автомобиле",
     "Información del vehículo",
     "Araç Bilgileri",
     "Informações do veículo",

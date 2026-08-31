@@ -67,7 +67,8 @@ export function resolvePreferredLocale({
 }
 
 export function getLocalizedPublicPath(pathname: string, locale: LocaleCode) {
-  const { parts } = splitLocalizedPath(pathname);
+  const { locale: pathLocale, parts } = splitLocalizedPath(pathname);
+  const unprefixedPath = parts.length > 0 ? `/${parts.join("/")}` : "/";
 
   if (parts.length === 0) return localizedPath(locale);
 
@@ -75,7 +76,9 @@ export function getLocalizedPublicPath(pathname: string, locale: LocaleCode) {
     return localizedPath(locale, `/services/${parts[1]}`);
   }
 
-  if (parts[0] === "services") return pathname;
+  if (parts[0] === "services") {
+    return pathLocale ? unprefixedPath : pathname;
+  }
 
   if (parts[0] === "how-it-works") {
     return localizedPath(locale, "/how-it-works");
@@ -86,14 +89,14 @@ export function getLocalizedPublicPath(pathname: string, locale: LocaleCode) {
   }
 
   if (parts[0] && privateOrSystemSegments.has(parts[0])) {
-    return pathname;
+    return pathLocale ? unprefixedPath : pathname;
   }
 
   if (parts[0] && runtimeLocalizedSinglePathSegments.has(parts[0])) {
-    return pathname;
+    return pathLocale ? unprefixedPath : pathname;
   }
 
-  return pathname;
+  return pathLocale ? localizedPath(locale, unprefixedPath) : pathname;
 }
 
 export function getLocalizedPublicHref(href: string, locale: LocaleCode) {

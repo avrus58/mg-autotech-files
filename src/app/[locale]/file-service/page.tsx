@@ -178,7 +178,7 @@ export default async function LocalizedFileServicePage({
   const pageUrl = localizedUrl(locale, "/file-service");
   const jsonLd = {
     "@context": "https://schema.org",
-    "@graph": [organizationJsonLd(), websiteJsonLd(locale), ...fileServiceJsonLd(locale, pageUrl)],
+    "@graph": [organizationJsonLd(locale), websiteJsonLd(locale), ...fileServiceJsonLd(locale, pageUrl)],
   };
 
   return (

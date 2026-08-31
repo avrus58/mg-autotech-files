@@ -5,6 +5,7 @@ import { createElement, type ComponentProps } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import ErrorBoundary from "../src/app/error";
 import GlobalError from "../src/app/global-error";
+import { NotFoundClient } from "../src/components/recovery/NotFoundClient";
 import { supportedLocales } from "../src/lib/i18nConfig";
 import {
   recoveryTranslations,
@@ -64,7 +65,7 @@ test("fatal boundaries resolve locale without relying on the main language switc
   assert.match(inventory, /"loading\.tsx"/u);
 });
 
-test("segment recovery SSR uses the server locale and global recovery stays language-neutral until hydration", () => {
+test("root recovery surfaces stay language-neutral until hydration resolves the real locale", () => {
   const segmentMarkup = renderToStaticMarkup(
     createElement(
       ActiveLocaleProvider,
@@ -75,8 +76,19 @@ test("segment recovery SSR uses the server locale and global recovery stays lang
       }),
     ),
   );
-  assert.match(segmentMarkup, /Diese Ansicht muss neu geladen werden/u);
+  assert.match(segmentMarkup, /MG AUTOTECH/u);
   assert.doesNotMatch(segmentMarkup, /This view needs a clean reload/u);
+  assert.doesNotMatch(segmentMarkup, /Diese Ansicht muss neu geladen werden/u);
+
+  const notFoundMarkup = renderToStaticMarkup(
+    createElement(
+      ActiveLocaleProvider,
+      { initialLocale: "en" } as ComponentProps<typeof ActiveLocaleProvider>,
+      createElement(NotFoundClient),
+    ),
+  );
+  assert.match(notFoundMarkup, /MG AUTOTECH/u);
+  assert.doesNotMatch(notFoundMarkup, /This page is not available/u);
 
   const globalMarkup = renderToStaticMarkup(
     createElement(GlobalError, {
@@ -91,16 +103,43 @@ test("segment recovery SSR uses the server locale and global recovery stays lang
 
 test("not-found UI uses the active locale and localized recovery catalog", () => {
   const notFound = readFileSync("src/app/not-found.tsx", "utf8");
-  assert.match(notFound, /useActiveLocale\(\)/u);
-  assert.match(notFound, /recoveryTranslations\[locale\]/u);
-  assert.match(notFound, /copy\.notFoundTitle/u);
-  assert.match(notFound, /getLocalizedPublicHref\("\/", locale\)/u);
-  assert.match(notFound, /getLocalizedPublicHref\("\/services", locale\)/u);
-  assert.doesNotMatch(notFound, /This page could not be found/u);
+  const notFoundMetadata = readFileSync("src/lib/notFoundMetadata.ts", "utf8");
+  const localizedHomepage = readFileSync("src/app/[locale]/page.tsx", "utf8");
+  const nextConfig = readFileSync("next.config.ts", "utf8");
+  const notFoundClient = readFileSync(
+    "src/components/recovery/NotFoundClient.tsx",
+    "utf8",
+  );
+
+  assert.match(notFoundMetadata, /absolute: "404 — MG AutoTech"/u);
+  assert.match(notFoundMetadata, /description: "MG AutoTech • 404"/u);
+  assert.match(notFoundMetadata, /alternates: null/u);
+  assert.match(notFoundMetadata, /openGraph: null/u);
+  assert.match(notFoundMetadata, /twitter: null/u);
+  assert.match(notFoundMetadata, /index: false/u);
+  assert.match(notFoundMetadata, /follow: false/u);
+  assert.doesNotMatch(notFound, /getServerLocale|ServerLocaleBoundary/u);
+  assert.match(notFound, /return <NotFoundClient \/>/u);
+  assert.match(notFound, /metadata: Metadata = notFoundMetadata/u);
+  assert.match(
+    localizedHomepage,
+    /if \(!isSeoLocale\(rawLocale\)\) return notFoundMetadata;/u,
+  );
+  assert.doesNotMatch(nextConfig, /globalNotFound/u);
+  assert.doesNotMatch(notFound, /ECU & TCU File Service for Workshops/u);
+  assert.match(notFoundClient, /useRecoveryLocale\(\)/u);
+  assert.match(notFoundClient, /if \(!locale\)/u);
+  assert.match(notFoundClient, /recoveryTranslations\[locale\]/u);
+  assert.match(notFoundClient, /copy\.notFoundTitle/u);
+  assert.match(notFoundClient, /getLocalizedPublicHref\("\/", locale\)/u);
+  assert.match(notFoundClient, /getLocalizedPublicHref\("\/services", locale\)/u);
+  assert.doesNotMatch(notFoundClient, /This page could not be found/u);
 });
 
 test("embedded widget declares the product-owned language on both outcomes", () => {
   const embed = readFileSync("src/app/embed/vehicle-selector/page.tsx", "utf8");
-  assert.match(embed, /data-widget-embed lang=\{language\}/u);
-  assert.match(embed, /data-widget-embed lang=\{result\.language\}/u);
+  assert.match(embed, /data-widget-document-language=\{language\}/u);
+  assert.match(embed, /document\.documentElement\.lang=/u);
+  assert.match(embed, /data-widget-embed[\s\S]*?lang=\{language\}/u);
+  assert.match(embed, /data-widget-embed[\s\S]*?lang=\{result\.language\}/u);
 });

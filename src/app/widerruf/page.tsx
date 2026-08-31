@@ -6,6 +6,8 @@ export const metadata: Metadata = {
   title: "Widerrufsbelehrung",
   description: "Informationen zum Widerrufsrecht bei Verträgen mit MG AutoTech.",
   alternates: { canonical: absoluteUrl("/widerruf") },
+  openGraph: null,
+  twitter: null,
 };
 
 export default function WiderrufPage() {

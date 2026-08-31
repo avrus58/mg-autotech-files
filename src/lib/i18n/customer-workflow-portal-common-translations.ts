@@ -226,6 +226,19 @@ export const customerWorkflowExactTranslations = {
     "Panel klienta",
     "Paneli i klientit"
   ],
+  "Customer verification is taking longer": [
+    "De klantverificatie duurt langer dan verwacht",
+    "Die Kundenverifizierung dauert länger als erwartet",
+    "La vérification du client prend plus de temps que prévu",
+    "La verifica del cliente richiede più tempo del previsto",
+    "Проверка клиента занимает больше времени, чем ожидалось",
+    "La verificación del cliente está tardando más de lo previsto",
+    "Müşteri doğrulaması beklenenden uzun sürüyor",
+    "A verificação do cliente está a demorar mais do que o esperado",
+    "客户验证所需时间比预期更长",
+    "Weryfikacja klienta trwa dłużej niż oczekiwano",
+    "Verifikimi i klientit po zgjat më shumë se sa pritej"
+  ],
   "Dashboard": [
     "Portaal",
     "Portal",
@@ -244,10 +257,10 @@ export const customerWorkflowExactTranslations = {
     "Datalog-Analyse-Studio",
     "Studio d’analyse de datalogs",
     "Studio di analisi datalog",
-    "Студия анализа даталогов",
+    "Студия анализа логов",
     "Estudio de análisis de datalogs",
     "Datalog Analiz Stüdyosu",
-    "Estúdio de análise de registos de dados",
+    "Estúdio de análise de datalogs",
     "数据日志分析工作室",
     "Studio analizy datalogów",
     "Studio e analizës së datalogëve"
@@ -486,6 +499,19 @@ export const customerWorkflowExactTranslations = {
     "Otwórz zlecenie",
     "Hap kërkesën"
   ],
+  "Opening your private datalog workspace...": [
+    "Uw privéwerkruimte voor datalogs wordt geopend...",
+    "Ihr privater Datalog-Arbeitsbereich wird geöffnet...",
+    "Ouverture de votre espace privé d’analyse de datalogs...",
+    "Apertura dell’area di lavoro privata per i datalog...",
+    "Открывается ваша личная рабочая область для анализа логов...",
+    "Abriendo su espacio de trabajo privado de datalogs...",
+    "Özel datalog çalışma alanınız açılıyor...",
+    "A abrir o seu espaço de trabalho privado de datalogs...",
+    "正在打开您的私密数据日志工作区...",
+    "Otwieranie prywatnego obszaru roboczego datalogów...",
+    "Po hapet hapësira juaj private e punës për datalogët..."
+  ],
   "Order History": [
     "Bestelgeschiedenis",
     "Auftragshistorie",
@@ -511,6 +537,19 @@ export const customerWorkflowExactTranslations = {
     "请登录以访问客户面板",
     "Zaloguj się, aby otworzyć panel klienta",
     "Hyni për të hapur panelin e klientit"
+  ],
+  "Please log in to open Datalog Analysis Studio": [
+    "Meld u aan om de Datalog-analysestudio te openen",
+    "Melden Sie sich an, um das Datalog-Analyse-Studio zu öffnen",
+    "Connectez-vous pour ouvrir le Studio d’analyse de datalogs",
+    "Accedi per aprire lo Studio di analisi datalog",
+    "Войдите, чтобы открыть Студию анализа логов",
+    "Inicie sesión para abrir el Estudio de análisis de datalogs",
+    "Datalog Analiz Stüdyosu'nu açmak için giriş yapın",
+    "Inicie sessão para abrir o Estúdio de análise de datalogs",
+    "请登录以打开数据日志分析工作室",
+    "Zaloguj się, aby otworzyć Studio analizy datalogów",
+    "Hyni për të hapur Studion e analizës së datalogëve"
   ],
   "Please wait before requesting another security code.": [
     "Wacht alstublieft voordat u een nieuwe beveiligingscode aanvraagt.",
@@ -586,7 +625,7 @@ export const customerWorkflowExactTranslations = {
     "Acceso seguro del cliente",
     "Güvenli müşteri erişimi",
     "Acesso seguro do cliente",
-    "安全客户访问",
+    "安全访问客户账户",
     "Bezpieczny dostęp klienta",
     "Akses i sigurt për klientin"
   ],
@@ -655,11 +694,37 @@ export const customerWorkflowExactTranslations = {
     "Nie udało się zweryfikować kodu.",
     "Kodi nuk mund të verifikohej."
   ],
+  "The detailed local analysis workspace is included for verified MG AutoTech customers.": [
+    "De gedetailleerde lokale analysewerkruimte is inbegrepen voor geverifieerde MG AutoTech-klanten.",
+    "Der detaillierte Arbeitsbereich für die lokale Analyse ist für verifizierte MG AutoTech-Kunden enthalten.",
+    "L'espace de travail d'analyse locale détaillé est inclus pour les clients MG AutoTech vérifiés.",
+    "L'area di lavoro di analisi locale dettagliata è inclusa per i clienti MG AutoTech verificati.",
+    "Для проверенных клиентов MG AutoTech включена рабочая область подробного локального анализа.",
+    "El espacio de trabajo de análisis local detallado está incluido para clientes verificados de MG AutoTech.",
+    "Doğrulanmış MG AutoTech müşterileri için ayrıntılı yerel analiz çalışma alanı dahildir.",
+    "O espaço de trabalho de análise local detalhada está incluído para os clientes verificados da MG AutoTech.",
+    "为经过验证的 MG AutoTech 客户提供了详细的本地分析工作区。",
+    "Obszar roboczy szczegółowej analizy lokalnej jest dostępny dla zweryfikowanych klientów MG AutoTech.",
+    "Hapësira e detajuar e punës e analizës lokale është përfshirë për klientët e verifikuar të MG AutoTech."
+  ],
+  "The private Studio stays closed until your account can be verified securely.": [
+    "De privéstudio blijft gesloten totdat uw account veilig kan worden geverifieerd.",
+    "Das private Studio bleibt geschlossen, bis Ihr Konto sicher verifiziert werden kann.",
+    "Le studio privé reste fermé jusqu'à ce que votre compte puisse être vérifié en toute sécurité.",
+    "Lo Studio privato rimane chiuso finché il tuo account non può essere verificato in modo sicuro.",
+    "Частная студия остается закрытой до тех пор, пока ваша учетная запись не будет надежно подтверждена.",
+    "El estudio privado permanece cerrado hasta que su cuenta pueda verificarse de forma segura.",
+    "Hesabınız güvenli bir şekilde doğrulanıncaya kadar özel Stüdyo kapalı kalır.",
+    "O estúdio privado permanece fechado até que a sua conta possa ser verificada em segurança.",
+    "在您的帐户得到安全验证之前，私人工作室将保持关闭状态。",
+    "Prywatne Studio pozostaje zamknięte do czasu bezpiecznej weryfikacji Twojego konta.",
+    "Studio private qëndron e mbyllur derisa llogaria juaj të verifikohet në mënyrë të sigurt."
+  ],
   "The security e-mail is still being prepared. Please wait.": [
     "De beveiligings-e-mail wordt nog voorbereid. Wacht alstublieft.",
     "Die Sicherheits-E-Mail wird noch vorbereitet. Bitte warten.",
     "L'e-mail de sécurité est toujours en préparation. S'il vous plaît, attendez.",
-    "L'e-mail di sicurezza è ancora in fase di preparazione. Attendere prego.",
+    "L’e-mail di sicurezza è ancora in preparazione. Attendi, per favore.",
     "Электронное письмо безопасности все еще готовится. Пожалуйста, подождите.",
     "El correo electrónico de seguridad aún se está preparando. Espere por favor.",
     "Güvenlik e-postası hâlâ hazırlanıyor. Lütfen bekleyin.",
@@ -721,17 +786,17 @@ export const customerWorkflowExactTranslations = {
     "Besoji kësaj pajisjeje për 30 ditë"
   ],
   "Try again": [
-    "Probeer het opnieuw",
+    "Opnieuw proberen",
     "Erneut versuchen",
-    "Réessayez",
+    "Réessayer",
     "Riprova",
-    "Попробовать ещё раз",
-    "Inténtalo de nuevo",
+    "Повторить",
+    "Intentar de nuevo",
     "Tekrar deneyin",
-    "Tente novamente",
-    "请重试",
+    "Tentar novamente",
+    "重试",
     "Spróbuj ponownie",
-    "Provoni përsëri"
+    "Provo përsëri"
   ],
   "unread": [
     "ongelezen",
@@ -797,6 +862,19 @@ export const customerWorkflowExactTranslations = {
     "验证并继续",
     "Zweryfikuj i kontynuuj",
     "Verifiko dhe vazhdo"
+  ],
+  "Verifying customer access...": [
+    "Klanttoegang wordt gecontroleerd...",
+    "Kundenzugriff wird geprüft...",
+    "Vérification de l’accès client...",
+    "Verifica dell’accesso cliente...",
+    "Проверяется доступ клиента...",
+    "Verificando el acceso del cliente...",
+    "Müşteri erişimi doğrulanıyor...",
+    "A verificar o acesso do cliente...",
+    "正在验证客户访问权限...",
+    "Weryfikowanie dostępu klienta...",
+    "Po verifikohet qasja e klientit..."
   ],
   "Verifying...": [
     "Verifiëren...",

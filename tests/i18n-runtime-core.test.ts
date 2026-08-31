@@ -124,14 +124,21 @@ test("dynamic auth copy is translatable while provider and customer data stay pr
 
 test("the locale observer handles dynamic text, accessibility attributes and exact-only translation", () => {
   const switcher = readFileSync("src/components/LanguageSwitcher.tsx", "utf8");
+  const runtimeExact = readFileSync(
+    "src/lib/i18n/runtime-exact-translation.ts",
+    "utf8",
+  );
 
   assert.match(switcher, /characterData: true/u);
   assert.match(switcher, /attributes: true/u);
   assert.match(switcher, /aria-description/u);
   assert.match(switcher, /aria-roledescription/u);
   assert.match(switcher, /translateNode\(document\.head/u);
-  assert.match(switcher, /brandedTitleSuffix = " \| MG AutoTech"/u);
-  assert.match(switcher, /loadScopedExactTranslations\(pathname, locale\)/u);
+  assert.match(runtimeExact, /brandedTitleSuffix = " \| MG AutoTech"/u);
+  assert.match(
+    switcher,
+    /loadScopedExactTranslations\([\s\S]*?pathname,[\s\S]*?locale,[\s\S]*?canonicalSources/u,
+  );
   assert.match(switcher, /public-core-translations/u);
   assert.match(switcher, /public-vehicle-translations/u);
   assert.match(switcher, /public-services-translations/u);
@@ -142,7 +149,7 @@ test("the locale observer handles dynamic text, accessibility attributes and exa
   assert.match(switcher, /const externallySelectedLocale = useActiveLocale\(\)/u);
   assert.match(switcher, /current === externallySelectedLocale/u);
   assert.match(switcher, /hideSwitcher && !hiddenLocalizedFlow/u);
-  assert.match(switcher, /supplementalExact\[locale\]/u);
+  assert.match(runtimeExact, /supplementalExact\[locale\]/u);
   assert.doesNotMatch(switcher, /\.reduce\(\(text, \[source, target\]\)/u);
 
   const inventory = readFileSync("scripts/check-customer-i18n.ts", "utf8");
@@ -177,6 +184,11 @@ test("customer timestamps use the active site locale while admin chat stays Engl
 test("authored German legal content declares its language explicitly", () => {
   const processingAgreement = readFileSync("src/app/av-vertrag/page.tsx", "utf8");
   assert.match(processingAgreement, /<div lang="de" data-no-translate/u);
+  assert.match(processingAgreement, /data-fixed-document-language="de-DE"/u);
+  assert.ok(
+    processingAgreement.indexOf("data-fixed-document-language") <
+      processingAgreement.indexOf('<div lang="de"'),
+  );
 });
 
 test("catalogs loaded together only use reviewed contextual overrides", () => {

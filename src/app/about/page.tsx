@@ -37,7 +37,7 @@ const principles = [
 
 export default async function AboutPage() {
   const locale = await getServerLocale();
-  const jsonLd = localizeRuntimePublicJsonLd({ "@context": "https://schema.org", "@graph": [organizationJsonLd(), websiteJsonLd(locale), { "@type": "AboutPage", "@id": `${absoluteUrl("/about")}#page`, name: title, description, url: absoluteUrl("/about"), inLanguage: runtimePublicInLanguage(locale), mainEntity: { "@id": `${absoluteUrl("/")}#organization` } }, { "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Home", item: absoluteUrl("/") }, { "@type": "ListItem", position: 2, name: "About", item: absoluteUrl("/about") }] }] }, locale, ["core"]);
+  const jsonLd = localizeRuntimePublicJsonLd({ "@context": "https://schema.org", "@graph": [organizationJsonLd(locale), websiteJsonLd(locale), { "@type": "AboutPage", "@id": `${absoluteUrl("/about")}#page`, name: title, description, url: absoluteUrl("/about"), inLanguage: runtimePublicInLanguage(locale), mainEntity: { "@id": `${absoluteUrl("/")}#organization` } }, { "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Home", item: absoluteUrl("/") }, { "@type": "ListItem", position: 2, name: "About", item: absoluteUrl("/about") }] }] }, locale, ["core"]);
   return (
     <RuntimePublicLocalization locale={locale} scopes={["core"]}>
       <main className="min-h-screen bg-[#050505] text-white">

@@ -42,20 +42,20 @@ export const customerWorkflowExactTranslations = {
     "Configuração guiada para clientes privados e oficinas profissionais.",
     "适用于个人客户和专业维修厂的引导式设置。",
     "Prowadzona konfiguracja dla klientów prywatnych i warsztatów.",
-    "Konfigurim i udhehequr per kliente private dhe servise profesionale."
+    "Konfigurim i udhëzuar për klientë privatë dhe servise profesionale."
   ],
   "Access your file service dashboard and continue your ECU tuning requests.": [
-    "Open uw file-service portaal en ga verder met ECU tuning aanvragen.",
+    "Open uw file-serviceportaal en ga verder met uw ECU-tuningaanvragen.",
     "Greifen Sie auf Ihr File-Service-Portal zu und bearbeiten Sie Ihre ECU-Tuning-Anfragen weiter.",
-    "Accédez à votre portail file service et continuez vos demandes ECU tuning.",
-    "Accedi al portale file service e continua le richieste ECU tuning.",
-    "Откройте портал file service и продолжайте заявки ECU tuning.",
-    "Accede a tu portal file service y continúa tus solicitudes ECU tuning.",
-    "Dosya servis paneline giriş yap ve ECU tuning taleplerine devam et.",
+    "Accédez à votre tableau de bord du service de fichiers et poursuivez vos demandes de calibration ECU.",
+    "Accedi alla dashboard del servizio file e continua le tue richieste di calibrazione ECU.",
+    "Откройте панель файлового сервиса и продолжите работу с заявками на калибровку ECU.",
+    "Acceda al panel del servicio de archivos y continúe con sus solicitudes de calibración de la ECU.",
+    "Dosya hizmeti panelinize erişin ve ECU kalibrasyon taleplerinize devam edin.",
     "Aceda ao portal do serviço de ficheiros e continue os pedidos de calibração da ECU.",
     "进入文件服务面板并继续您的 ECU 调校请求。",
-    "Wejdź do portalu file service i kontynuuj zlecenia ECU tuning.",
-    "Hyr në portalin file service dhe vazhdo kërkesat ECU tuning."
+    "Otwórz panel usługi plikowej i kontynuuj zlecenia tuningu ECU.",
+    "Hapni panelin e shërbimit të skedarëve dhe vazhdoni kërkesat për kalibrim ECU."
   ],
   "Account Setup": [
     "Account instellen",
@@ -437,7 +437,7 @@ export const customerWorkflowExactTranslations = {
   "For garages, dealers and recurring file service work.": [
     "Voor garages, dealers en terugkerend file-service werk.",
     "Für Werkstätten, Händler und regelmäßige File-Service-Arbeit.",
-    "Pour garages, revendeurs et travaux file service réguliers.",
+    "Pour les garages, les revendeurs et les demandes régulières de service de fichiers.",
     "Per officine, rivenditori e lavori ricorrenti.",
     "Для сервисов, дилеров и регулярной работы с файлами.",
     "Para talleres, distribuidores y trabajos recurrentes.",
@@ -445,7 +445,7 @@ export const customerWorkflowExactTranslations = {
     "Para oficinas, revendedores e trabalhos recorrentes.",
     "适合维修厂、经销商和重复文件服务工作。",
     "Dla warsztatów, dealerów i stałych zleceń.",
-    "Per servise, dilerë dhe pune te perseritur file service."
+    "Për servise, tregtarë dhe punë të përsëritura të shërbimit të skedarëve."
   ],
   "For private drivers and single file requests.": [
     "Voor particuliere bestuurders en losse file-aanvragen.",
@@ -458,7 +458,7 @@ export const customerWorkflowExactTranslations = {
     "Para condutores privados e pedidos pontuais.",
     "适合个人车主和单次文件请求。",
     "Dla kierowców prywatnych i pojedynczych zleceń.",
-    "Per shofere private dhe kerkesa te vecanta."
+    "Për drejtues privatë dhe kërkesa të herëpashershme për skedarë."
   ],
   "Forgot password?": [
     "Wachtwoord vergeten?",
@@ -885,7 +885,7 @@ export const customerWorkflowExactTranslations = {
     "Acceso seguro del cliente",
     "Güvenli müşteri erişimi",
     "Acesso seguro do cliente",
-    "安全客户访问",
+    "安全访问客户账户",
     "Bezpieczny dostęp klienta",
     "Akses i sigurt për klientin"
   ],
@@ -1032,19 +1032,6 @@ export const customerWorkflowExactTranslations = {
     "Ufaj temu urządzeniu przez 30 dni",
     "Besoji kësaj pajisjeje për 30 ditë"
   ],
-  "Try again": [
-    "Probeer het opnieuw",
-    "Erneut versuchen",
-    "Réessayez",
-    "Riprova",
-    "Попробовать ещё раз",
-    "Inténtalo de nuevo",
-    "Tekrar deneyin",
-    "Tente novamente",
-    "请重试",
-    "Spróbuj ponownie",
-    "Provoni përsëri"
-  ],
   "Update password": [
     "Wachtwoord bijwerken",
     "Passwort aktualisieren",
@@ -1069,7 +1056,7 @@ export const customerWorkflowExactTranslations = {
     "A atualizar palavra-passe...",
     "正在更新密码...",
     "Aktualizowanie hasła...",
-    "Po përditësohet fjalëkalimi..."
+    "Duke përditësuar fjalëkalimin..."
   ],
   "Use a different account": [
     "Een ander account gebruiken",

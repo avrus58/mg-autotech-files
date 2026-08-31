@@ -3,22 +3,21 @@ import { notFound } from "next/navigation";
 import { HomepageExperience } from "@/components/homepage/HomepageExperience";
 import { buildPublicLogSnapshotCopy } from "@/lib/i18n/tool-client-copy";
 import { buildHomepageTranslationCatalog } from "@/lib/homepageTranslationCatalog";
+import { buildHomepageMetadata } from "@/lib/homepageMetadata";
+import { notFoundMetadata } from "@/lib/notFoundMetadata";
 import {
   getServiceSeo,
   homeSeo,
   hreflangByLocale,
   isSeoLocale,
-  languageAlternates,
   localizedSeoLocales,
   localizedUrl,
   organizationJsonLd,
   publicServiceSlugs,
-  seoLocales,
-  siteName,
   siteUrl,
   websiteJsonLd,
 } from "@/lib/seo";
-import { openGraphLocaleByCode, type LocaleCode } from "@/lib/i18nConfig";
+import type { LocaleCode } from "@/lib/i18nConfig";
 
 export function generateStaticParams() {
   return localizedSeoLocales.map((locale) => ({ locale }));
@@ -31,7 +30,7 @@ function buildLocalizedHomepageJsonLd(locale: LocaleCode) {
   return {
     "@context": "https://schema.org",
     "@graph": [
-      organizationJsonLd(),
+      organizationJsonLd(locale),
       websiteJsonLd(locale),
       {
         "@type": "WebPage",
@@ -78,44 +77,9 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale: rawLocale } = await params;
 
-  if (!isSeoLocale(rawLocale)) return {};
+  if (!isSeoLocale(rawLocale)) return notFoundMetadata;
 
-  const locale = rawLocale as LocaleCode;
-  const copy = homeSeo[locale];
-
-  return {
-    title: copy.title,
-    description: copy.description,
-    alternates: {
-      canonical: localizedUrl(locale, "/"),
-      languages: languageAlternates("/"),
-    },
-    openGraph: {
-      title: `${copy.title} | MG AutoTech`,
-      description: copy.description,
-      url: localizedUrl(locale, "/"),
-      siteName,
-      locale: openGraphLocaleByCode[locale],
-      alternateLocale: seoLocales
-        .filter((item) => item !== locale)
-        .map((item) => openGraphLocaleByCode[item]),
-      type: "website",
-      images: [
-        {
-          url: "/opengraph-image",
-          width: 1200,
-          height: 630,
-          alt: copy.title,
-        },
-      ],
-    },
-    twitter: {
-      card: "summary_large_image",
-      title: copy.title,
-      description: copy.description,
-      images: ["/opengraph-image"],
-    },
-  };
+  return buildHomepageMetadata(rawLocale as LocaleCode);
 }
 
 export default async function LocalizedHomePage({

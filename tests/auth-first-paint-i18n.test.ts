@@ -16,6 +16,9 @@ import PaymentCancelPage from "../src/app/payment/cancel/page";
 import PaymentSuccessPage from "../src/app/payment/success/page";
 import { AuthRequired } from "../src/components/auth/AuthRequired";
 import { BrowserAuthBoundary } from "../src/components/auth/BrowserAuthBoundary";
+import { RegistrationCountryBoundary } from "../src/components/auth/RegistrationCountryBoundary";
+import { NewRequestAccessFallback } from "../src/components/auth/NewRequestAccessFallback";
+import { LogAnalysisStudioLoader } from "../src/components/dashboard/LogAnalysisStudioLoader";
 import { authPageFirstPaintT } from "../src/lib/i18n/auth-page-first-paint";
 import { customerWorkflowExactT as paymentFirstPaintT } from "../src/lib/i18n/customer-workflow-credits-translations";
 import { customerPortalFirstPaintT } from "../src/lib/i18n/customer-portal-first-paint";
@@ -326,6 +329,22 @@ test("protected customer routes localize checking and signed-out SSR states", ()
     assert.ok(checkingHtml.includes(checking));
     assert.ok(!checkingHtml.includes(">Checking secure session...<"));
 
+    const profileCheckingHtml = renderWithLocale(
+      locale,
+      createElement(
+        RegistrationCountryBoundary,
+        null,
+        createElement("p", null, "Completed customer profile"),
+      ),
+    );
+    const profileChecking = customerPortalFirstPaintT(
+      locale,
+      "Checking customer profile...",
+    );
+    assert.notEqual(profileChecking, "Checking customer profile...");
+    assert.ok(profileCheckingHtml.includes(profileChecking));
+    assert.ok(!profileCheckingHtml.includes(">Checking customer profile...<"));
+
     const signedOutHtml = renderWithLocale(
       locale,
       createElement(AuthRequired, {
@@ -348,5 +367,56 @@ test("protected customer routes localize checking and signed-out SSR states", ()
       assert.ok(signedOutHtml.includes(localized));
       assert.ok(!signedOutHtml.includes(`>${source}<`));
     }
+  }
+});
+
+test("registration country gate translates its first server-rendered status directly", () => {
+  const boundarySource = readFileSync(
+    new URL("../src/components/auth/RegistrationCountryBoundary.tsx", import.meta.url),
+    "utf8",
+  );
+
+  assert.match(boundarySource, /const locale = useActiveLocale\(\)/u);
+  assert.match(
+    boundarySource,
+    /customerPortalFirstPaintT\(locale, "Checking customer profile\.\.\."\)/u,
+  );
+});
+
+test("Datalog Studio access check is localized in every non-English first paint", () => {
+  const source = "Verifying customer access...";
+
+  for (const { code: locale } of supportedLocales) {
+    if (locale === "en") continue;
+    const localized = customerPortalFirstPaintT(locale, source);
+    const html = renderWithLocale(
+      locale,
+      createElement(LogAnalysisStudioLoader),
+    );
+
+    assert.notEqual(localized, source, `${locale}: missing Studio access copy`);
+    assert.ok(
+      html.includes(escapeRenderedText(localized)),
+      `${locale}: Studio access SSR omitted localized copy`,
+    );
+    assert.ok(!html.includes(`>${source}<`), `${locale}: Studio access leaked English`);
+  }
+});
+
+test("new-request Suspense fallback is localized before access checks resolve", () => {
+  const source = "Secure customer access";
+
+  for (const { code: locale } of supportedLocales) {
+    if (locale === "en") continue;
+    const localized = customerPortalFirstPaintT(locale, source);
+    const html = renderToStaticMarkup(
+      createElement(NewRequestAccessFallback, { locale }),
+    );
+
+    assert.notEqual(localized, source, `${locale}: missing request fallback copy`);
+    assert.ok(html.includes(escapeRenderedText(localized)), locale);
+    assert.ok(!html.includes(`>${source}<`), `${locale}: request fallback leaked English`);
+    assert.match(html, /role="status"/u);
+    assert.match(html, /aria-live="polite"/u);
   }
 });

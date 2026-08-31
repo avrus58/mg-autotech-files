@@ -31,6 +31,14 @@ import {
 import { isSeoLocale } from "@/lib/seo";
 import { useActiveLocale } from "@/lib/useActiveLocale";
 import { customerWorkflowClientGroupForPath } from "@/lib/i18n/customer-workflow-client-routes";
+import {
+  createCanonicalSourceAccumulator,
+  registerCanonicalSource,
+  registerCanonicalVariant,
+  translateRuntimeExactText,
+  type CanonicalSourceAccumulator,
+  type RuntimeTranslationCatalog,
+} from "@/lib/i18n/runtime-exact-translation";
 import { fixedPresentationLocaleBySegment } from "@/lib/fixedPresentationLocale";
 
 const originalText = new WeakMap<Text, string>();
@@ -192,11 +200,7 @@ function readLocationHash() {
   return window.location.hash;
 }
 
-type TranslationCatalog = {
-  exact: Record<LocaleCode, Record<string, string>>;
-  supplementalExact: Record<LocaleCode, Record<string, string>>;
-  terms: Record<LocaleCode, Record<string, string>>;
-};
+type TranslationCatalog = RuntimeTranslationCatalog;
 
 type TupleTranslationCatalog = Record<string, readonly string[]>;
 
@@ -239,13 +243,21 @@ function registerTupleCatalog(
   target: Record<LocaleCode, Record<string, string>>,
   localeOrder: readonly Exclude<LocaleCode, "en">[],
   translations: TupleTranslationCatalog,
-  activeLocale: LocaleCode
+  activeLocale: LocaleCode,
+  canonicalSources: CanonicalSourceAccumulator,
 ) {
-  if (activeLocale === "en") return;
-  const localeIndex = localeOrder.indexOf(activeLocale);
-  if (localeIndex < 0) return;
+  const localeIndex =
+    activeLocale === "en" ? -1 : localeOrder.indexOf(activeLocale);
 
   Object.entries(translations).forEach(([source, values]) => {
+    registerCanonicalSource(canonicalSources, source);
+    values.forEach((variant) => {
+      if (variant?.trim()) {
+        registerCanonicalVariant(canonicalSources, source, variant);
+      }
+    });
+
+    if (localeIndex < 0) return;
     const translated = values[localeIndex];
     if (translated?.trim()) target[activeLocale][source] = translated;
   });
@@ -305,12 +317,58 @@ async function loadCompactCustomerWorkflowCatalog(pathname: string) {
         import("@/lib/i18n/customer-workflow-portal-common-translations"),
       ]);
       break;
+    case "portal":
+      catalogs = [
+        await import("@/lib/i18n/customer-workflow-portal-common-translations"),
+      ];
+      break;
+    case "security":
+      catalogs = await Promise.all([
+        import("@/lib/i18n/customer-workflow-security-translations"),
+        import("@/lib/i18n/customer-workflow-security-dom-translations"),
+        import("@/lib/i18n/customer-workflow-portal-common-translations"),
+      ]);
+      break;
+    case "widget": {
+      const [widgetDom, portalCommon, widgetSite] = await Promise.all([
+        import("@/lib/i18n/customer-workflow-widget-dom-translations"),
+        import("@/lib/i18n/customer-workflow-portal-common-translations"),
+        import("@/lib/i18n/widget-site-translations"),
+      ]);
+      catalogs = [
+        widgetDom,
+        portalCommon,
+        {
+          customerWorkflowLocaleOrder: widgetSite.widgetSiteLocaleOrder,
+          customerWorkflowExactTranslations:
+            widgetSite.widgetSiteExactTranslations,
+        },
+      ];
+      break;
+    }
   }
 
-  return catalogs;
+  // Dashboard subroutes inherit their title and description from the dashboard
+  // layout even when their visible copy uses a different compact route group.
+  // Keep the tiny shared metadata rows in every dashboard transaction so the
+  // head can move between any two locales without reloading or discarding form
+  // state.
+  let metadataCatalog: CompactCustomerWorkflowCatalog | null = null;
+  if (pathname.startsWith("/dashboard")) {
+    metadataCatalog = await import(
+      "@/lib/i18n/customer-workflow-private-metadata-translations"
+    );
+    catalogs.push(metadataCatalog);
+  }
+
+  return { catalogs, metadataCatalog };
 }
 
-async function loadScopedExactTranslations(pathname: string, locale: LocaleCode) {
+async function loadScopedExactTranslations(
+  pathname: string,
+  locale: LocaleCode,
+  canonicalSources: CanonicalSourceAccumulator,
+) {
   const scoped = emptyExactCatalog();
   const firstSegment = pathname.split("/").filter(Boolean)[0] ?? "";
   const unprefixedSegment = isSeoLocale(firstSegment)
@@ -326,7 +384,8 @@ async function loadScopedExactTranslations(pathname: string, locale: LocaleCode)
       scoped,
       publicSurfaceLocaleOrder,
       publicCoreTranslations,
-      locale
+      locale,
+      canonicalSources,
     );
   }
 
@@ -339,7 +398,8 @@ async function loadScopedExactTranslations(pathname: string, locale: LocaleCode)
       scoped,
       publicSurfaceLocaleOrder,
       publicVehicleTranslations,
-      locale
+      locale,
+      canonicalSources,
     );
   }
 
@@ -352,7 +412,8 @@ async function loadScopedExactTranslations(pathname: string, locale: LocaleCode)
       scoped,
       publicSurfaceLocaleOrder,
       publicServicesTranslations,
-      locale
+      locale,
+      canonicalSources,
     );
   }
 
@@ -365,7 +426,8 @@ async function loadScopedExactTranslations(pathname: string, locale: LocaleCode)
       scoped,
       publicSurfaceLocaleOrder,
       publicToolsTranslations,
-      locale
+      locale,
+      canonicalSources,
     );
   }
 
@@ -377,7 +439,8 @@ async function loadScopedExactTranslations(pathname: string, locale: LocaleCode)
       scoped,
       serviceIntentLocaleOrder,
       serviceIntentExactTranslations,
-      locale
+      locale,
+      canonicalSources,
     );
   }
 
@@ -389,7 +452,8 @@ async function loadScopedExactTranslations(pathname: string, locale: LocaleCode)
       scoped,
       workshopGuideLocaleOrder,
       workshopGuideExactTranslations,
-      locale
+      locale,
+      canonicalSources,
     );
   }
 
@@ -402,7 +466,8 @@ async function loadScopedExactTranslations(pathname: string, locale: LocaleCode)
       scoped,
       customerWorkflowLocaleOrder,
       customerWorkflowExactTranslations,
-      locale
+      locale,
+      canonicalSources,
     );
   }
 
@@ -419,7 +484,8 @@ async function loadScopedExactTranslations(pathname: string, locale: LocaleCode)
       scoped,
       widgetSiteLocaleOrder,
       widgetSiteExactTranslations,
-      locale
+      locale,
+      canonicalSources,
     );
   }
 
@@ -438,31 +504,50 @@ async function loadRuntimeTranslationCatalog(
         await loadCompactCustomerWorkflowCatalog(pathname);
       if (compactCustomerWorkflow) {
         const supplementalExact = emptyExactCatalog();
-        compactCustomerWorkflow.forEach((catalog) => {
+        const canonicalSources = createCanonicalSourceAccumulator();
+        compactCustomerWorkflow.catalogs.forEach((catalog) => {
           registerTupleCatalog(
             supplementalExact,
             catalog.customerWorkflowLocaleOrder,
             catalog.customerWorkflowExactTranslations,
-            locale
+            locale,
+            canonicalSources,
           );
         });
+        const metadataCanonicalSources = createCanonicalSourceAccumulator();
+        if (compactCustomerWorkflow.metadataCatalog) {
+          registerTupleCatalog(
+            emptyExactCatalog(),
+            compactCustomerWorkflow.metadataCatalog.customerWorkflowLocaleOrder,
+            compactCustomerWorkflow.metadataCatalog
+              .customerWorkflowExactTranslations,
+            locale,
+            metadataCanonicalSources,
+          );
+        }
         return {
           exact: emptyExactCatalog(),
           supplementalExact,
           terms: emptyExactCatalog(),
+          canonicalSources: canonicalSources.lookup,
+          metadataCanonicalSources: metadataCanonicalSources.lookup,
         };
       }
 
-      const [{ exactTranslations, termTranslations }, supplementalExact] =
-        await Promise.all([
-          import("@/lib/i18n"),
-          loadScopedExactTranslations(pathname, locale),
-        ]);
+      const { exactTranslations, termTranslations } = await import("@/lib/i18n");
+      const canonicalSources = createCanonicalSourceAccumulator();
+      const supplementalExact = await loadScopedExactTranslations(
+        pathname,
+        locale,
+        canonicalSources,
+      );
 
       return {
         exact: exactTranslations,
         supplementalExact,
         terms: termTranslations,
+        canonicalSources: canonicalSources.lookup,
+        metadataCanonicalSources: {},
       };
     } catch (error) {
       latestError = error;
@@ -546,46 +631,10 @@ function observeLocaleMutations(
 function translateText(
   value: string,
   locale: LocaleCode,
-  catalog: TranslationCatalog
+  catalog: TranslationCatalog,
+  scope: "content" | "metadata" = "content",
 ) {
-  if (locale === defaultLocale) return value;
-
-  const leading = value.match(/^\s*/)?.[0] ?? "";
-  const trailing = value.match(/\s*$/)?.[0] ?? "";
-  const trimmed = value.trim();
-  const normalized = trimmed.replace(/\s+/g, " ");
-
-  if (!normalized) return value;
-  if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/u.test(normalized)) return value;
-
-  const exact =
-    catalog.supplementalExact[locale]?.[normalized] ??
-    catalog.exact[locale]?.[normalized];
-  if (exact) return `${leading}${exact}${trailing}`;
-
-  // Next.js appends the product suffix to route metadata at runtime. Translate
-  // only the complete title stem and keep the audited brand suffix literal.
-  const brandedTitleSuffix = " | MG AutoTech";
-  if (normalized.endsWith(brandedTitleSuffix)) {
-    const titleStem = normalized.slice(0, -brandedTitleSuffix.length);
-    const translatedStem =
-      catalog.supplementalExact[locale]?.[titleStem] ??
-      catalog.exact[locale]?.[titleStem];
-    if (translatedStem) {
-      return `${leading}${translatedStem}${brandedTitleSuffix}${trailing}`;
-    }
-  }
-
-  const terms = catalog.terms[locale] ?? {};
-  const term =
-    terms[normalized] ??
-    Object.entries(terms).find(
-      ([source]) => source.toLowerCase() === normalized.toLowerCase()
-    )?.[1];
-
-  if (term) return `${leading}${term}${trailing}`;
-
-  return value;
+  return translateRuntimeExactText(value, locale, catalog, scope);
 }
 
 function shouldSkip(node: Node) {
@@ -612,7 +661,13 @@ function translateTextNode(
     originalText.set(node, current);
   }
 
-  const next = translateText(originalText.get(node) ?? current, locale, catalog);
+  const scope = node.parentElement?.closest("head") ? "metadata" : "content";
+  const next = translateText(
+    originalText.get(node) ?? current,
+    locale,
+    catalog,
+    scope,
+  );
   appliedText.set(node, next);
   if (next !== current) node.nodeValue = next;
 }
@@ -640,7 +695,8 @@ function translateElementAttributes(
       originals[attr] = current;
     }
 
-    const next = translateText(originals[attr], locale, catalog);
+    const scope = element.closest("head") ? "metadata" : "content";
+    const next = translateText(originals[attr], locale, catalog, scope);
     nextApplied[attr] = next;
     if (next !== current) element.setAttribute(attr, next);
   });
@@ -674,13 +730,18 @@ export function LanguageSwitcher() {
   const pathname = usePathname();
   const externallySelectedLocale = useActiveLocale();
   const firstSegment = pathname.split("/").filter(Boolean)[0] ?? "";
+  const pageOwnsDocumentLocale =
+    pathname.startsWith("/embed/") ||
+    pathname === "/auth/complete-profile";
   const hideSwitcher =
+    pageOwnsDocumentLocale ||
     authoredOrPrivateSegments.has(firstSegment) ||
     pathname === "/auth/callback" ||
     pathname.startsWith("/desktop-auth/");
   const hiddenLocalizedFlow =
     pathname === "/auth/callback" ||
     pathname.startsWith("/desktop-auth/") ||
+    pathname.startsWith("/embed/") ||
     pathname.startsWith("/measurement/");
   const [locale, setLocale] = useState<LocaleCode>(externallySelectedLocale);
   const [requestedLocale, setRequestedLocale] = useState<LocaleCode | null>(null);
@@ -706,6 +767,16 @@ export function LanguageSwitcher() {
   const triggerRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
+    // The embedded selector owns a product language chosen through `lang`,
+    // while profile completion is already request-localized by its boundary.
+    // Do not overwrite either document or mutate the saved site preference.
+    if (pageOwnsDocumentLocale) {
+      observerRef.current?.disconnect();
+      observerRef.current = null;
+      activeCatalogRef.current = null;
+      return;
+    }
+
     if (hideSwitcher && !hiddenLocalizedFlow) {
       observerRef.current?.disconnect();
       observerRef.current = null;
@@ -759,7 +830,7 @@ export function LanguageSwitcher() {
     }, 0);
 
     return () => window.clearTimeout(resolveTimer);
-  }, [firstSegment, hiddenLocalizedFlow, hideSwitcher, pathname]);
+  }, [firstSegment, hiddenLocalizedFlow, hideSwitcher, pageOwnsDocumentLocale, pathname]);
 
   useEffect(() => {
     if (
@@ -919,6 +990,22 @@ export function LanguageSwitcher() {
   );
   const currentSelectorCopy = selectorCopy[locale];
   if (hideSwitcher) return null;
+
+  // The root layout stays static so localized public pages can be prerendered.
+  // Until hydration reads the route-level document language, render a neutral
+  // control instead of briefly claiming that English is active.
+  if (!localeResolved) {
+    return (
+      <div
+        data-language-switcher
+        data-language-switcher-pending
+        aria-hidden="true"
+        className="fixed bottom-4 right-4 z-[80] flex h-11 min-w-11 items-center justify-center rounded-full border border-white/10 bg-[#111720]/95 px-3 text-base text-white shadow-2xl shadow-black/40 backdrop-blur-xl"
+      >
+        <span aria-hidden="true">🌐</span>
+      </div>
+    );
+  }
 
   const closeMenuAndRestoreFocus = () => {
     setIsOpen(false);
@@ -1111,7 +1198,7 @@ export function LanguageSwitcher() {
         aria-label={currentSelectorCopy.change}
         title={currentSelectorCopy.change}
       >
-        <span aria-hidden="true" className="text-base">{activeLocale.flag}</span>
+        <span aria-hidden="true" className="text-base">🌐</span>
         {activeLocale.label}
       </button>
     </div>

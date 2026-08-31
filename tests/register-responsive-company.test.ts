@@ -74,7 +74,10 @@ test("final account action links to the existing privacy and terms pages", () =>
 
 test("company registration requires and persists a bounded company identity", () => {
   assert.match(registerPage, /if \(accountType === "company" && !cleanCompanyName\)/);
-  assert.match(registerPage, /setMessage\("Please enter your company name\."\)/);
+  assert.match(
+    registerPage,
+    /setMessage\(\{ kind: "exact", source: "Please enter your company name\." \}\)/,
+  );
   assert.match(registerPage, /company_name: accountType === "company" \? cleanCompanyName : null/);
   assert.match(registerPage, /vat_id: accountType === "company" \? taxNumber\.trim\(\) \|\| null : null/);
   assert.match(

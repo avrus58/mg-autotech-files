@@ -70,6 +70,19 @@ export const customerWorkflowExactTranslations = {
     "Aktywna indywidualna polityka płatności konta",
     "Politika e pagesës specifike për llogarinë është aktive"
   ],
+  "All credit movements": [
+    "Alle creditbewegingen",
+    "Alle Credit-Bewegungen",
+    "Tous les mouvements crédits",
+    "Tutti i movimenti crediti",
+    "Все движения кредитов",
+    "Todos los movimientos",
+    "Tüm kredi hareketleri",
+    "Todos os movimentos",
+    "所有积分流水",
+    "Wszystkie ruchy kredytów",
+    "Të gjitha lëvizjet e krediteve"
+  ],
   "Automatic credit top-up": [
     "Automatisch credits aanvullen",
     "Automatische Credit-Aufladung",
@@ -82,6 +95,32 @@ export const customerWorkflowExactTranslations = {
     "自动充值积分",
     "Automatyczne doładowanie kredytów",
     "Mbushje automatike e krediteve"
+  ],
+  "Back to Dashboard": [
+    "Terug naar portaal",
+    "Zurück zum Portal",
+    "Retour au portail",
+    "Torna al portale",
+    "Назад в портал",
+    "Volver al portal",
+    "Panele dön",
+    "Voltar ao portal",
+    "返回面板",
+    "Wróć do portalu",
+    "Kthehu te paneli"
+  ],
+  "Balance After": [
+    "Saldo daarna",
+    "Guthaben danach",
+    "Solde après",
+    "Saldo dopo",
+    "Баланс после",
+    "Saldo después",
+    "Sonraki bakiye",
+    "Saldo depois",
+    "之后余额",
+    "Saldo po",
+    "Bilanci pas"
   ],
   "Bank": [
     "Bank",
@@ -200,6 +239,45 @@ export const customerWorkflowExactTranslations = {
     "Kredyt",
     "Kredi"
   ],
+  "Credit History": [
+    "Creditgeschiedenis",
+    "Credit-Verlauf",
+    "Historique crédits",
+    "Storico crediti",
+    "История кредитов",
+    "Historial de créditos",
+    "Kredi geçmişi",
+    "Histórico de créditos",
+    "积分历史",
+    "Historia kredytów",
+    "Historia e krediteve"
+  ],
+  "Credit ledger sync failed": [
+    "Synchronisatie van het creditoverzicht mislukt",
+    "Synchronisierung des Credit-Kontos fehlgeschlagen",
+    "Échec de synchronisation du registre de crédits",
+    "Sincronizzazione registro crediti non riuscita",
+    "Не удалось синхронизировать журнал кредитов",
+    "Falló la sincronización del registro de créditos",
+    "Kredi hareketleri eşitlenemedi",
+    "Falha ao sincronizar o registo de créditos",
+    "积分账本同步失败",
+    "Nie udało się zsynchronizować rejestru kredytów",
+    "Sinkronizimi i regjistrit të krediteve dështoi"
+  ],
+  "Credit ledger sync needs retry": [
+    "Synchronisatie van het creditoverzicht opnieuw proberen",
+    "Credit-Konto erneut synchronisieren",
+    "Réessayer la synchronisation des crédits",
+    "Riprova sincronizzazione registro crediti",
+    "Повторите синхронизацию журнала кредитов",
+    "Reintentar sincronización del registro de créditos",
+    "Kredi hareketleri yeniden eşitlenmeli",
+    "Repetir sincronização do registo de créditos",
+    "请重试积分账本同步",
+    "Ponów synchronizację rejestru kredytów",
+    "Riprovo sinkronizimin e regjistrit të krediteve"
+  ],
   "Credit prices are temporarily unavailable": [
     "Creditprijzen zijn tijdelijk niet beschikbaar",
     "Credit-Preise sind vorübergehend nicht verfügbar",
@@ -252,6 +330,19 @@ export const customerWorkflowExactTranslations = {
     "Kredyty =",
     "Kredite ="
   ],
+  "Current Balance": [
+    "Huidig saldo",
+    "Aktuelles Guthaben",
+    "Solde actuel",
+    "Saldo attuale",
+    "Текущий баланс",
+    "Saldo actual",
+    "Güncel bakiye",
+    "Saldo atual",
+    "当前余额",
+    "Aktualne saldo",
+    "Bilanci aktual"
+  ],
   "Custom Amount": [
     "Aangepast bedrag",
     "Eigener Betrag",
@@ -277,6 +368,32 @@ export const customerWorkflowExactTranslations = {
     "自定义积分",
     "Własne kredyty",
     "Kredite të personalizuara"
+  ],
+  "Customer Credits": [
+    "Klantcredits",
+    "Kunden-Credits",
+    "Crédits client",
+    "Crediti cliente",
+    "Кредиты клиента",
+    "Créditos cliente",
+    "Müşteri kredileri",
+    "Créditos cliente",
+    "客户积分",
+    "Kredyty klienta",
+    "Kredite klienti"
+  ],
+  "Date": [
+    "Datum",
+    "Datum",
+    "Date",
+    "Data",
+    "Дата",
+    "Fecha",
+    "Tarih",
+    "Data",
+    "日期",
+    "Data",
+    "Data"
   ],
   "Each Credit": [
     "Per credit",
@@ -304,6 +421,19 @@ export const customerWorkflowExactTranslations = {
     "Wpisz dowolną liczbę kredytów. Zakup indywidualny jest liczony po",
     "Vendosni çfarëdo sasie kreditesh. Blerjet e personalizuara llogariten me"
   ],
+  "Every credit top-up, Stripe purchase, manual adjustment and file request usage is recorded here.": [
+    "Elke top-up, Stripe-aankoop, handmatige correctie en file-aanvraag wordt hier vastgelegd.",
+    "Jede Credit-Aufladung, jeder Stripe-Kauf, jede manuelle Anpassung und jede Dateianfrage wird hier erfasst.",
+    "Chaque recharge, achat Stripe, ajustement manuel et utilisation de demande fichier est enregistré ici.",
+    "Ogni ricarica, acquisto Stripe, modifica manuale e uso file request è registrato qui.",
+    "Каждое пополнение, покупка Stripe, ручная правка и использование заявки записываются здесь.",
+    "Cada recarga, compra Stripe, ajuste manual y uso de solicitud se registra aquí.",
+    "Her kredi yüklemesi, Stripe ödemesi, manuel düzenleme ve dosya talebi kullanımı burada kaydedilir.",
+    "Cada carregamento, compra Stripe, ajuste manual e uso de pedido fica registado aqui.",
+    "每次充值、Stripe 购买、手动调整和文件请求扣费都会记录在这里。",
+    "Każde doładowanie, zakup Stripe, korekta i użycie zlecenia jest tutaj zapisane.",
+    "Çdo mbushje, blerje Stripe, rregullim manual dhe përdorim kërkese regjistrohet këtu."
+  ],
   "Example": [
     "Voorbeeld",
     "Beispiel",
@@ -330,6 +460,45 @@ export const customerWorkflowExactTranslations = {
     "Ważne",
     "E rëndësishme"
   ],
+  "Ledger": [
+    "Mutatieoverzicht",
+    "Kontobewegungen",
+    "Historique",
+    "Registro movimenti",
+    "Журнал операций",
+    "Registro",
+    "Hesap hareketleri",
+    "Registo",
+    "交易记录",
+    "Rejestr",
+    "Regjistri"
+  ],
+  "Ledger based credit tracking": [
+    "Credittracking op ledgerbasis",
+    "Ledger-basierte Credit-Verfolgung",
+    "Suivi crédits basé sur ledger",
+    "Tracking crediti basato su registro",
+    "Отслеживание кредитов по реестру",
+    "Seguimiento de créditos por libro",
+    "Ledger bazlı kredi takibi",
+    "Acompanhamento de créditos pelo registo de movimentos",
+    "基于账本的积分追踪",
+    "Śledzenie kredytów w ledgerze",
+    "Gjurmim kreditesh me ledger"
+  ],
+  "Loading credit ledger...": [
+    "Creditoverzicht laden...",
+    "Credit-Verlauf wird geladen...",
+    "Chargement de l'historique crédits...",
+    "Caricamento registro crediti...",
+    "Загрузка истории кредитов...",
+    "Cargando historial de créditos...",
+    "Kredi hareketleri yükleniyor...",
+    "A carregar histórico de créditos...",
+    "正在加载积分记录...",
+    "Ładowanie historii kredytów...",
+    "Duke ngarkuar historikun e krediteve..."
+  ],
   "Loading verified credit prices": [
     "Geverifieerde creditprijzen laden",
     "Verifizierte Credit-Preise werden geladen",
@@ -342,6 +511,32 @@ export const customerWorkflowExactTranslations = {
     "正在加载已验证的积分价格",
     "Ładowanie zweryfikowanych cen kredytów",
     "Po ngarkohen çmimet e verifikuara të krediteve"
+  ],
+  "Logged in as": [
+    "Ingelogd als",
+    "Angemeldet als",
+    "Connecté en tant que",
+    "Accesso come",
+    "Вход выполнен как",
+    "Conectado como",
+    "Giriş yapan",
+    "Sessão iniciada como",
+    "当前账号",
+    "Zalogowano jako",
+    "Hyrë si"
+  ],
+  "Logout": [
+    "Uitloggen",
+    "Abmelden",
+    "Déconnexion",
+    "Esci",
+    "Выйти",
+    "Salir",
+    "Çıkış",
+    "Sair",
+    "退出",
+    "Wyloguj",
+    "Dil"
   ],
   "Lowest package rate": [
     "Laagste pakkettarief",
@@ -368,6 +563,19 @@ export const customerWorkflowExactTranslations = {
     "管理员人工验证",
     "Ręczna weryfikacja administratora",
     "Verifikim manual nga administratori"
+  ],
+  "No credit ledger yet": [
+    "Nog geen creditoverzicht",
+    "Noch kein Credit-Verlauf",
+    "Aucun historique crédits",
+    "Nessun registro crediti",
+    "Истории кредитов пока нет",
+    "Sin historial de créditos",
+    "Henüz kredi hareketi yok",
+    "Ainda sem histórico de créditos",
+    "暂无积分记录",
+    "Brak historii kredytów",
+    "Ende nuk ka historik kreditesh"
   ],
   "Online credit purchases are currently disabled for this account. Please contact support.": [
     "Online creditaankopen zijn voor dit account uitgeschakeld. Neem contact op met support.",
@@ -486,6 +694,19 @@ export const customerWorkflowExactTranslations = {
     "Popularne",
     "Popullore"
   ],
+  "Positive Credits": [
+    "Positieve credits",
+    "Positive Credits",
+    "Crédits positifs",
+    "Crediti positivi",
+    "Положительные кредиты",
+    "Créditos positivos",
+    "Pozitif krediler",
+    "Créditos positivos",
+    "正积分",
+    "Dodatnie kredyty",
+    "Kredi pozitive"
+  ],
   "Prices": [
     "Prijzen",
     "Preise",
@@ -537,6 +758,32 @@ export const customerWorkflowExactTranslations = {
     "参考信息已复制",
     "Numer referencyjny skopiowany",
     "Referenca u kopjua"
+  ],
+  "Refresh": [
+    "Vernieuwen",
+    "Aktualisieren",
+    "Actualiser",
+    "Aggiorna",
+    "Обновить",
+    "Actualizar",
+    "Yenile",
+    "Atualizar",
+    "刷新",
+    "Odśwież",
+    "Rifresko"
+  ],
+  "Retry sync": [
+    "Synchronisatie opnieuw proberen",
+    "Synchronisierung wiederholen",
+    "Relancer la synchronisation",
+    "Riprova la sincronizzazione",
+    "Повторить синхронизацию",
+    "Reintentar sincronización",
+    "Senkronizasyonu yenile",
+    "Repetir sincronização",
+    "重试同步",
+    "Ponów synchronizację",
+    "Riprovo sinkronizimin"
   ],
   "Retry verified prices": [
     "Geverifieerde prijzen opnieuw laden",
@@ -590,6 +837,32 @@ export const customerWorkflowExactTranslations = {
     "Stripe dodaje kredyty automatycznie. Przelew pozostaje ręczny.",
     "Stripe shton kreditë automatikisht. Transferta mbetet manuale."
   ],
+  "Stripe purchases, manual top-ups and credit usage will appear here.": [
+    "Stripe-aankopen, handmatige top-ups en creditgebruik verschijnen hier.",
+    "Stripe-Käufe, manuelle Aufladungen und Credit-Nutzung erscheinen hier.",
+    "Achats Stripe, top-ups manuels et utilisation des crédits apparaîtront ici.",
+    "Acquisti Stripe, ricariche manuali e uso crediti appariranno qui.",
+    "Покупки Stripe, ручные пополнения и использование кредитов появятся здесь.",
+    "Compras Stripe, recargas manuales y uso de créditos aparecerán aquí.",
+    "Stripe alışları, manuel yüklemeler ve kredi kullanımı burada görünecek.",
+    "Compras Stripe, carregamentos manuais e uso de créditos aparecerão aqui.",
+    "Stripe 购买、手动充值和积分使用会显示在这里。",
+    "Zakupy Stripe, ręczne doładowania i użycie kredytów pojawią się tutaj.",
+    "Blerjet Stripe, mbushjet manuale dhe përdorimi i krediteve do shfaqen këtu."
+  ],
+  "This page is based on your credit ledger records. Manual admin credits, Stripe purchases and order usage can all be tracked from one transaction source.": [
+    "Deze pagina gebruikt uw creditoverzicht. Admincredits, Stripe-aankopen en ordergebruik worden vanuit één bron gevolgd.",
+    "Diese Seite basiert auf Ihrem Credit-Konto. Admin-Gutschriften, Stripe-Käufe und Auftragsnutzung werden aus einer Transaktionsquelle verfolgt.",
+    "Cette page repose sur votre registre de crédits. Ajouts admin, achats Stripe et utilisation sont suivis depuis une source unique.",
+    "Questa pagina usa il registro crediti. Crediti admin, acquisti Stripe e utilizzo ordini sono tracciati da un'unica fonte.",
+    "Страница основана на журнале кредитов. Пополнения, Stripe и расходы отслеживаются из одного источника.",
+    "Esta página se basa en el registro de créditos. Créditos admin, compras Stripe y uso se siguen desde una fuente.",
+    "Bu sayfa kredi hareketlerinize dayanır. Admin kredileri, Stripe alımları ve sipariş kullanımı tek işlem kaynağından izlenir.",
+    "Esta página baseia-se no registo de créditos. Créditos admin, compras Stripe e uso são seguidos numa fonte.",
+    "此页面基于积分账本，管理员充值、Stripe 购买和订单使用均从同一交易来源追踪。",
+    "Strona opiera się na rejestrze kredytów. Doładowania, Stripe i użycie zleceń są śledzone z jednego źródła.",
+    "Kjo faqe bazohet në regjistrin e krediteve. Shtesat admin, Stripe dhe përdorimi ndiqen nga një burim."
+  ],
   "Total Price": [
     "Totaalprijs",
     "Gesamtpreis",
@@ -602,5 +875,57 @@ export const customerWorkflowExactTranslations = {
     "总价",
     "Cena łączna",
     "Çmimi total"
+  ],
+  "Transaction": [
+    "Transactie",
+    "Transaktion",
+    "Transaction",
+    "Transazione",
+    "Операция",
+    "Transacción",
+    "İşlem",
+    "Transação",
+    "交易",
+    "Transakcja",
+    "Transaksion"
+  ],
+  "Transactions": [
+    "Transacties",
+    "Transaktionen",
+    "Transactions",
+    "Transazioni",
+    "Транзакции",
+    "Transacciones",
+    "İşlemler",
+    "Transações",
+    "交易",
+    "Transakcje",
+    "Transaksione"
+  ],
+  "Try loading again": [
+    "Probeer opnieuw te laden",
+    "Erneut laden",
+    "Réessayer le chargement",
+    "Riprova a caricare",
+    "Повторить загрузку",
+    "Reintentar la carga",
+    "Yeniden yüklemeyi dene",
+    "Tentar carregar novamente",
+    "重新加载",
+    "Spróbuj wczytać ponownie",
+    "Provo ta ngarkosh përsëri"
+  ],
+  "Used Credits": [
+    "Gebruikte credits",
+    "Verbrauchte Credits",
+    "Crédits utilisés",
+    "Crediti usati",
+    "Использованные кредиты",
+    "Créditos usados",
+    "Kullanılan krediler",
+    "Créditos usados",
+    "已用积分",
+    "Użyte kredyty",
+    "Kredite të përdorura"
   ]
 } as const satisfies Readonly<Record<string, readonly string[]>>;

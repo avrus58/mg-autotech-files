@@ -44,7 +44,7 @@ export function ServiceIntentPage({
   const jsonLd = localizeRuntimePublicJsonLd({
     "@context": "https://schema.org",
     "@graph": [
-      organizationJsonLd(),
+      organizationJsonLd(locale),
       websiteJsonLd(locale),
       {
         "@type": "WebPage",

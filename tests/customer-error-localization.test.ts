@@ -3,8 +3,10 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 import ts from "typescript";
 import {
+  creditPurchaseCaughtErrorMessage,
   creditPurchaseErrorCodes,
   creditPurchaseErrorMessage,
+  creditPurchaseSafeMessages,
 } from "../src/lib/creditPurchaseErrorCodes";
 import {
   oauthRegistrationFinalizeErrorCodes,
@@ -15,6 +17,8 @@ import {
   customerWorkflowExactTranslations,
   customerWorkflowLocaleOrder,
 } from "../src/lib/i18n/customer-workflow-translations";
+import { customerWorkflowExactT as authWorkflowExactT } from "../src/lib/i18n/customer-workflow-auth-translations";
+import { customerWorkflowExactT as creditsWorkflowExactT } from "../src/lib/i18n/customer-workflow-credits-translations";
 
 const oauthFinalizeRoutePath =
   "src/app/api/auth/oauth-registration/finalize/route.ts";
@@ -31,9 +35,7 @@ const knownCustomerErrorSources = [
   "Account security verification is temporarily unavailable.",
   "Registration profile could not be finalized. Please try again.",
   "Your updated account could not be verified. Please log in again.",
-  "Credit prices could not be loaded.",
-  "Credit purchase could not be started.",
-  "This total is outside Stripe's supported EUR range. Choose Bank Transfer or change the amount.",
+  ...Object.values(creditPurchaseSafeMessages),
 ] as const;
 
 function source(path: string) {
@@ -121,7 +123,7 @@ test("every OAuth finalization code resolves only to a localized safe source", (
     assert.ok(allowedSources.has(english), `${errorCode}: unexpected source message`);
     for (const locale of customerWorkflowLocaleOrder) {
       assert.notEqual(
-        customerWorkflowExactT(locale, english),
+        authWorkflowExactT(locale, english),
         english,
         `${locale}.${errorCode}: unsafe English fallback`,
       );
@@ -135,11 +137,7 @@ test("every OAuth finalization code resolves only to a localized safe source", (
 });
 
 test("every credit-purchase code resolves only to localized safe sources", () => {
-  const allowedSources = new Set([
-    "Credit prices could not be loaded.",
-    "Credit purchase could not be started.",
-    "This total is outside Stripe's supported EUR range. Choose Bank Transfer or change the amount.",
-  ]);
+  const allowedSources = new Set(Object.values(creditPurchaseSafeMessages));
 
   for (const errorCode of Object.values(creditPurchaseErrorCodes)) {
     for (const operation of ["quote", "purchase"] as const) {
@@ -150,7 +148,7 @@ test("every credit-purchase code resolves only to localized safe sources", () =>
       );
       for (const locale of customerWorkflowLocaleOrder) {
         assert.notEqual(
-          customerWorkflowExactT(locale, english),
+          creditsWorkflowExactT(locale, english),
           english,
           `${locale}.${operation}.${errorCode}: unsafe English fallback`,
         );
@@ -161,6 +159,36 @@ test("every credit-purchase code resolves only to localized safe sources", () =>
   assert.equal(
     creditPurchaseErrorMessage("purchase", "provider supplied secret detail"),
     "Credit purchase could not be started.",
+  );
+  assert.equal(
+    creditPurchaseErrorMessage(
+      "purchase",
+      creditPurchaseErrorCodes.checkoutUnavailable,
+      "bank",
+    ),
+    creditPurchaseSafeMessages.bankDeliveryFailed,
+  );
+  assert.equal(
+    creditPurchaseErrorMessage(
+      "purchase",
+      creditPurchaseErrorCodes.checkoutUnavailable,
+      "stripe",
+    ),
+    creditPurchaseSafeMessages.checkoutUnavailable,
+  );
+  assert.equal(
+    creditPurchaseCaughtErrorMessage(
+      "purchase",
+      new Error(creditPurchaseSafeMessages.stripeAmountUnsupported),
+    ),
+    creditPurchaseSafeMessages.stripeAmountUnsupported,
+  );
+  assert.equal(
+    creditPurchaseCaughtErrorMessage(
+      "purchase",
+      new Error("provider supplied secret detail"),
+    ),
+    creditPurchaseSafeMessages.purchaseFallback,
   );
 });
 
@@ -215,8 +243,10 @@ test("auth callback and credit purchase UI never render raw provider error text"
   );
   assert.match(
     credits,
-    /creditPurchaseErrorMessage\("purchase", data\.code\)/u,
+    /creditPurchaseErrorMessage\("purchase", data\.code, "(?:bank|stripe)"\)/u,
   );
+  assert.match(credits, /creditPurchaseCaughtErrorMessage\("quote", error\)/u);
+  assert.match(credits, /creditPurchaseCaughtErrorMessage\("purchase", error\)/u);
   assert.match(credits, /customerWorkflowExactT\(\s*locale,\s*quoteError/u);
   assert.match(credits, /customerWorkflowExactT\(locale, notice\.text\)/u);
   assert.doesNotMatch(credits, /\b(?:payload|data|response)\.error\b/u);

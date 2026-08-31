@@ -56,17 +56,17 @@ test("every compact interactive-tool key has reviewed non-English copy", () => {
 
 test("public log snapshot exposes a native progressive loading status in every locale", () => {
   const expected = {
-    de: "Kostenloser Log-Snapshot wird geladen",
-    tr: "Ücretsiz log anlık görüntüsü yükleniyor",
+    de: "Kostenlose Datalog-Momentaufnahme wird geladen",
+    tr: "Ücretsiz datalog özeti yükleniyor",
     nl: "Gratis logsnapshot wordt geladen",
-    fr: "Chargement de l’aperçu gratuit du log en cours",
-    it: "Caricamento dell’istantanea gratuita del log in corso",
-    es: "Cargando la instantánea gratuita del registro",
-    pt: "A carregar a captura gratuita do registo",
+    fr: "Chargement de l’aperçu gratuit du datalog",
+    it: "Caricamento dell’anteprima gratuita del datalog",
+    es: "Cargando la vista previa gratuita del datalog",
+    pt: "A carregar a pré-visualização gratuita do datalog",
     pl: "Trwa ładowanie bezpłatnego podglądu logu",
     ru: "Загружается бесплатный снимок лога",
-    zh: "正在加载免费日志快照",
-    sq: "Po ngarkohet pamja e çastit falas e regjistrit",
+    zh: "正在加载免费数据日志快照",
+    sq: "Po ngarkohet pamja paraprake falas e datalogut",
   } as const;
 
   for (const [locale, loadingStatus] of Object.entries(expected)) {

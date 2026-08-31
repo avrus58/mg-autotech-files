@@ -32,7 +32,10 @@ test("homepage loads the compact snapshot independently while the old public ana
   assert.doesNotMatch(performanceTools, /DetailedPerformanceTools|PerformanceCurveChart|PerformanceDataTable/);
   assert.doesNotMatch(performanceTools, /parsePerformanceLog|analyzePerformanceLog|buildPerformanceReportSvg/);
   assert.match(dedicatedAnalyzer, /permanentRedirect\("\/dashboard\/log-analysis"\)/);
-  assert.match(dedicatedAnalyzer, /robots: \{ index: false, follow: false \}/);
+  assert.match(
+    dedicatedAnalyzer,
+    /buildLogAnalysisStudioMetadata\(await getServerLocale\(\)\)/,
+  );
   assert.doesNotMatch(dedicatedAnalyzer, /PerformanceTools/);
   assert.match(publicSnapshot, /useState<SnapshotResult \| null>\(null\)/);
   assert.match(publicSnapshot, /Nothing is calculated until you choose a file/);

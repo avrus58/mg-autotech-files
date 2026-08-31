@@ -1,16 +1,16 @@
 import type { Metadata } from "next";
+import { RequestLocaleBoundary } from "@/components/RequestLocaleBoundary";
+import { buildResetPasswordMetadata } from "@/lib/privatePageMetadata";
+import { getServerLocale } from "@/lib/serverLocale";
 
-export const metadata: Metadata = {
-  robots: {
-    index: false,
-    follow: false,
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  return buildResetPasswordMetadata(await getServerLocale());
+}
 
 export default function ResetPasswordLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  return children;
+  return <RequestLocaleBoundary>{children}</RequestLocaleBoundary>;
 }

@@ -363,4 +363,12 @@ test("runtime canonical contract keeps one stable URL and every audited route op
       assert.match(source, /RuntimePublic(?:Localization|Footer)/);
     }
   }
+
+  const windowsDownload = readFileSync(
+    "src/app/download/windows/page.tsx",
+    "utf8",
+  );
+  assert.match(windowsDownload, /twitter: \{/u);
+  assert.match(windowsDownload, /title: copy\.title/u);
+  assert.match(windowsDownload, /description: copy\.description/u);
 });

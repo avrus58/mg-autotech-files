@@ -12,10 +12,12 @@ import {
   validateCustomerReplacementPassword,
 } from "@/lib/customerPasswordSecurity";
 import {
-  customerPasswordErrorT,
-  customerWorkflowExactT,
   customerWorkflowT,
 } from "@/lib/i18n/customer-workflow-auth-translations";
+import {
+  customerAuthFeedbackT,
+  type CustomerAuthFeedback,
+} from "@/lib/i18n/customer-auth-feedback";
 import { authPageFirstPaintT } from "@/lib/i18n/auth-page-first-paint";
 import { useActiveLocale } from "@/lib/useActiveLocale";
 
@@ -26,7 +28,7 @@ export default function ResetPasswordPage() {
 
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [message, setMessage] = useState("");
+  const [message, setMessage] = useState<CustomerAuthFeedback | null>(null);
   const [checkingSession, setCheckingSession] = useState(true);
   const [loading, setLoading] = useState(false);
 
@@ -50,21 +52,21 @@ export default function ResetPasswordPage() {
 
     if (loading) return;
 
-    setMessage("");
+    setMessage(null);
 
     const validation = validateCustomerReplacementPassword(password);
     if (!validation.valid) {
-      setMessage(
-        customerPasswordErrorT(
-          locale,
-          validation.errors[0] || "Password does not meet the security requirements."
-        )
-      );
+      setMessage({
+        kind: "password-validation",
+        source:
+          validation.errors[0] ||
+          "Password does not meet the security requirements.",
+      });
       return;
     }
 
     if (password !== confirmPassword) {
-      setMessage("Passwords do not match.");
+      setMessage({ kind: "exact", source: "Passwords do not match." });
       return;
     }
 
@@ -87,7 +89,10 @@ export default function ResetPasswordPage() {
         router.replace("/forgot-password?retry=security");
         return;
       }
-      setMessage("Password could not be updated safely. Please try again.");
+      setMessage({
+        kind: "exact",
+        source: "Password could not be updated safely. Please try again.",
+      });
       setLoading(false);
       return;
     }
@@ -205,7 +210,7 @@ export default function ResetPasswordPage() {
             aria-live="assertive"
             className="mt-5 rounded-2xl border border-red-800/50 bg-red-950/30 p-4 text-sm text-red-100"
           >
-            {customerWorkflowExactT(locale, message)}
+            {customerAuthFeedbackT(locale, message)}
           </div>
         )}
 

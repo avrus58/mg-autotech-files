@@ -5,7 +5,10 @@ export type CustomerWorkflowClientGroup =
   | "credits"
   | "file-expert"
   | "orders"
-  | "notifications";
+  | "notifications"
+  | "portal"
+  | "security"
+  | "widget";
 
 export function customerWorkflowClientGroupForPath(
   pathname: string,
@@ -26,6 +29,7 @@ export function customerWorkflowClientGroupForPath(
   if (pathname === "/dashboard") return "overview";
   if (
     pathname === "/dashboard/credits" ||
+    pathname === "/dashboard/credits/history" ||
     pathname === "/payment/cancel" ||
     pathname === "/payment/success"
   ) {
@@ -44,5 +48,13 @@ export function customerWorkflowClientGroupForPath(
     return "orders";
   }
   if (pathname === "/dashboard/notifications") return "notifications";
+  if (pathname === "/dashboard/settings") return "security";
+  if (pathname === "/dashboard/log-analysis") return "portal";
+  if (
+    pathname === "/dashboard/widget" ||
+    pathname.startsWith("/dashboard/widget/")
+  ) {
+    return "widget";
+  }
   return null;
 }

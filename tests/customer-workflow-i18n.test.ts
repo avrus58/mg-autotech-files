@@ -24,8 +24,11 @@ function placeholders(value: string) {
 
 test("customer workflow catalog covers all eleven non-English locales", () => {
   assert.deepEqual(customerWorkflowLocaleOrder, expectedLocales);
-  assert.equal(customerWorkflowSourceStrings.length, 407);
-  assert.equal(new Set(customerWorkflowSourceStrings).size, 407);
+  assert.ok(customerWorkflowSourceStrings.length >= 417);
+  assert.equal(
+    new Set(customerWorkflowSourceStrings).size,
+    customerWorkflowSourceStrings.length,
+  );
   assert.equal(customerWorkflowTemplateRows.length, 102);
 
   for (const [source, translations] of Object.entries(customerWorkflowExactTranslations)) {
@@ -153,7 +156,15 @@ test("all customer-facing setter literals are inventoried in the exact or typed 
   const files = roots.flatMap((root) => collectTsFiles(root));
   const exact = new Set<string>(customerWorkflowSourceStrings);
   const templateKeys = new Set<string>(customerWorkflowTemplateRows.map(([key]) => key));
-  const reviewedInternalSetterLiterals = new Set(["purchase", "quote"]);
+  const reviewedInternalSetterLiterals = new Set([
+    "purchase",
+    "quote",
+    "validation",
+    "password-validation",
+    "exact",
+    "safe-raw",
+    "raw",
+  ]);
   const setterName = /^set(?:Message|GoogleMessage|NotificationLoadError|QuoteError|Notice|LoadError|SendError|Error|DtcError|JobsLoadError|SubmissionStage|SummaryError|ReminderPreferenceError|RepeatPrefillError|BalanceRefreshMessage|Status)$/;
   const missing: string[] = [];
 
@@ -232,21 +243,36 @@ test("hidden auth flows localize directly without exposing provider or API error
 
 test("runtime-only customer workflow copy uses typed locale keys and raw leaves stay isolated", () => {
   const fileExpert = readFileSync("src/app/dashboard/file-expert/page.tsx", "utf8");
+  const fileExpertValidation = readFileSync(
+    "src/lib/fileExpert/validation.ts",
+    "utf8",
+  );
   const credits = readFileSync("src/app/dashboard/credits/page.tsx", "utf8");
   const newRequest = readFileSync("src/app/new-request/page.tsx", "utf8");
   const trustedDevices = readFileSync("src/components/account/TrustedDevicesCard.tsx", "utf8");
   const settings = readFileSync("src/app/dashboard/settings/page.tsx", "utf8");
   const creditHistory = readFileSync("src/app/dashboard/credits/history/page.tsx", "utf8");
 
+  assert.match(
+    fileExpert,
+    /customerWorkflowT\(locale, "fileExpertRequirements"/u,
+  );
   for (const key of [
-    "fileExpertRequirements",
     "fileExpertEmptyFile",
     "fileExpertFileTooLarge",
     "fileExpertUnsupportedFile",
     "fileExpertTextLimit",
+    "fileExpertUploadFile",
   ]) {
-    assert.match(fileExpert, new RegExp(`customerWorkflowT\\(locale, "${key}"`, "u"));
+    assert.match(
+      fileExpertValidation,
+      new RegExp(`(?:key:|case) "${key}"`, "u"),
+    );
   }
+  assert.match(
+    fileExpert,
+    /localizeFileExpertPageMessage\(locale, message\)/u,
+  );
   assert.match(credits, /creditPackageDescriptionKeys\[item\.id\]/u);
   assert.match(newRequest, /customerWorkflowT\(locale, "supportedCount"/u);
   assert.match(newRequest, /translate=\{protectOptions \? "no" : undefined\}/u);
@@ -309,9 +335,44 @@ test("account restriction messages never interpolate raw status enums", () => {
 
   assert.match(newRequest, /const accountStateKeys: Record<string, CustomerWorkflowTranslationKey>/u);
   assert.match(newRequest, /accountStateKeys\[normalized\] \?\? "accountStateRestricted"/u);
-  assert.match(newRequest, /status: localizeAccountState\(locale, status\)/u);
+  assert.match(
+    newRequest,
+    /status: localizeAccountState\(locale, creditAccessFailure\.status\)/u,
+  );
   assert.match(newRequest, /status: localizeAccountState\(locale, accountStatus\)/u);
   assert.doesNotMatch(newRequest, /accountStatus(?:Blocked|Disabled)", \{ status(?:: accountStatus)? \}/u);
+});
+
+test("new-request credit failures retain semantic values across locale switches", () => {
+  const newRequest = readFileSync("src/app/new-request/page.tsx", "utf8");
+  const validateStart = newRequest.indexOf("function validateCreditAccess");
+  const validateEnd = newRequest.indexOf("const handleSubmit", validateStart);
+  const validate = newRequest.slice(validateStart, validateEnd);
+
+  assert.match(newRequest, /type CreditAccessFailure =/u);
+  assert.match(validate, /key: "accountStatusBlocked",[\s\S]*?status,/u);
+  assert.match(
+    validate,
+    /key: "insufficientCreditsWithLimit",[\s\S]*?balance,[\s\S]*?negativeLimit,[\s\S]*?available,[\s\S]*?required: requiredCredits/u,
+  );
+  assert.match(
+    validate,
+    /key: "insufficientCredits",[\s\S]*?balance,[\s\S]*?required: requiredCredits/u,
+  );
+  assert.doesNotMatch(validate, /customerWorkflowT\(locale/u);
+  assert.match(
+    newRequest,
+    /const localizedCreditAccessFailure = \(\(\) => \{[\s\S]*?customerWorkflowT\(locale, creditAccessFailure\.key/u,
+  );
+  assert.match(
+    newRequest,
+    /value\.toLocaleString\(intlLocaleByCode\[locale\]\)/u,
+  );
+  assert.match(newRequest, /\{localizedMessage\}/u);
+  assert.match(
+    newRequest,
+    /if \(typeof creditValidationError === "string"\) \{[\s\S]*?setMessage\(creditValidationError\)[\s\S]*?\} else \{[\s\S]*?setCreditAccessFailure\(creditValidationError\)/u,
+  );
 });
 
 test("credit checkout interpolates localized payment method labels", () => {
@@ -322,4 +383,21 @@ test("credit checkout interpolates localized payment method labels", () => {
   assert.match(credits, /customerWorkflowExactT\(locale, method\.title\)/u);
   assert.match(credits, /method: selectedPaymentTitle/u);
   assert.doesNotMatch(credits, /method: selectedPayment\?\.title \?\? ""/u);
+  assert.match(
+    credits,
+    /template: "bankInstructionsSent"/u,
+  );
+  assert.match(
+    credits,
+    /amountEuro: data\.amountEuro,[\s\S]*?credits: Number\(data\.credits\),[\s\S]*?reference,[\s\S]*?template: "bankInstructionsSent"/u,
+  );
+  assert.match(
+    credits,
+    /customerWorkflowT\(locale, notice\.template,[\s\S]*?formatEuro\(notice\.amountEuro, locale\)[\s\S]*?notice\.credits\.toLocaleString\(intlLocaleByCode\[locale\]\)/u,
+  );
+  assert.match(credits, /\{localizedNoticeText\}/u);
+  assert.doesNotMatch(
+    credits,
+    /text: customerWorkflowT\(locale, "bankInstructionsSent"/u,
+  );
 });

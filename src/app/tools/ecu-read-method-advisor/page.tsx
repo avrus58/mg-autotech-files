@@ -16,6 +16,7 @@ import {
 } from "@/lib/i18n/runtime-public";
 import { getServerLocale } from "@/lib/serverLocale";
 import { buildEcuReadAdvisorCopy } from "@/lib/i18n/tool-client-copy";
+import { javascriptBrowserRequirementJsonLd } from "@/lib/structuredDataI18n";
 
 const title = "ECU Read Method Advisor";
 const description =
@@ -62,7 +63,7 @@ export default async function EcuReadMethodAdvisorPage() {
         url: pageUrl,
         applicationCategory: "UtilitiesApplication",
         operatingSystem: "Any",
-        browserRequirements: "Requires JavaScript",
+        browserRequirements: javascriptBrowserRequirementJsonLd,
         inLanguage: runtimePublicInLanguage(locale),
         offers: { "@type": "Offer", price: "0", priceCurrency: "EUR" },
         provider: { "@id": `${absoluteUrl("/")}#organization` },
@@ -79,7 +80,7 @@ export default async function EcuReadMethodAdvisorPage() {
         "@type": "BreadcrumbList",
         itemListElement: [
           { "@type": "ListItem", position: 1, name: "Home", item: absoluteUrl("/") },
-          { "@type": "ListItem", position: 2, name: "Tools", item: absoluteUrl("/tools") },
+          { "@type": "ListItem", position: 2, name: "Workshop tools", item: absoluteUrl("/tools") },
           { "@type": "ListItem", position: 3, name: title, item: pageUrl },
         ],
       },

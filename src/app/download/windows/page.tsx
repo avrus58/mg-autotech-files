@@ -33,6 +33,12 @@ export async function generateMetadata(): Promise<Metadata> {
       locale: runtimePublicOpenGraphLocale(locale),
       images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: copy.title }],
     },
+    twitter: {
+      card: "summary_large_image",
+      title: copy.title,
+      description: copy.description,
+      images: ["/opengraph-image"],
+    },
   };
 }
 

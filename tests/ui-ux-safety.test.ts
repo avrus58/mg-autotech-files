@@ -1170,6 +1170,12 @@ test("admin completed-today metric uses delivered file timestamps before request
 test("customer File Expert intake shows upload limits before prepare", () => {
   const page = readProjectFile("src", "app", "dashboard", "file-expert", "page.tsx");
   const limits = readProjectFile("src", "lib", "fileExpert", "limits.ts");
+  const validation = readProjectFile(
+    "src",
+    "lib",
+    "fileExpert",
+    "validation.ts",
+  );
   const prepareRoute = readProjectFile("src", "app", "api", "file-expert", "jobs", "prepare", "route.ts");
 
   assert.match(limits, /brand:\s*100/);
@@ -1189,10 +1195,13 @@ test("customer File Expert intake shows upload limits before prepare", () => {
   assert.match(page, /extensions: fileExpertAllowedExtensionsLabel/);
   assert.match(page, /size: fileExpertMaxFileSizeLabel/);
   assert.match(page, /validateFileExpertSelection/);
-  assert.match(page, /file\.size === 0/);
-  assert.match(page, /file\.size > fileExpertMaxFileSize/);
-  assert.match(page, /fileExpertAllowedExtensions\.some/);
-  assert.match(page, /customerWorkflowT\(locale, "fileExpertUnsupportedFile"/);
+  assert.match(validation, /file\.size === 0/);
+  assert.match(validation, /file\.size > fileExpertMaxFileSize/);
+  assert.match(validation, /fileExpertAllowedExtensions\.some/);
+  assert.match(
+    validation,
+    /customerWorkflowT\(locale, descriptor\.key, \{[\s\S]*extensions: descriptor\.params\.extensions/,
+  );
   assert.match(page, /handleFileSelection\("ori", file\)/);
   assert.match(page, /handleFileSelection\("mod", file\)/);
   assert.match(page, /accept=\{fileExpertAccept\}/);
@@ -1205,9 +1214,16 @@ test("customer File Expert intake shows upload limits before prepare", () => {
   assert.match(page, /maxLength=\{fileExpertTextLimits\.customerNotes\}/);
   assert.match(page, /CharacterLimitHint/);
   assert.match(page, /customerWorkflowT\(locale, "fileExpertSelectFile"\)/);
-  assert.match(page, /setMessage\(customerWorkflowT\(locale, "fileExpertUploadFile"\)\)/);
+  assert.match(
+    page,
+    /descriptor: \{[\s\S]*key: fileExpertValidationTranslationKeys\.uploadFile/,
+  );
+  assert.match(page, /localizeFileExpertPageMessage\(locale, message\)/);
   assert.match(page, /disabled=\{!canSubmitAnalysis\}/);
-  assert.match(page, /if \(textLimitError\) \{[\s\S]*setMessage\(textLimitError\)/);
+  assert.match(
+    page,
+    /if \(textLimitValidation\) \{[\s\S]*descriptor: textLimitValidation/,
+  );
   assert.match(page, /if \(!oriFile && !modFile\) \{[\s\S]*authenticatedFetch\("\/api\/file-expert\/jobs\/prepare"/);
 });
 
@@ -2049,9 +2065,10 @@ test("i18n and SEO health script catches core multilingual requirements", () => 
   assert.match(script, /Localized homepage structured data is missing service ItemList/);
   assert.match(script, /homepagePageJsonLd/);
   assert.match(script, /homepageFileServiceJsonLd/);
-  assert.match(script, /Root metadata is missing online ECU file service search wording/);
-  assert.match(script, /Root metadata is missing TCU File Service search wording/);
-  assert.match(script, /Root metadata is missing ECU File Upload Service search wording/);
+  assert.match(script, /Root metadata does not build locale-native keyword phrases/);
+  assert.match(script, /Root metadata does not include locale-native service names/);
+  assert.match(script, /Root metadata is missing language-neutral technical keywords/);
+  assert.match(script, /Root metadata still hard-codes an English keyword/);
   assert.match(script, /homepageRequestPreparationHowToJsonLd/);
   assert.match(script, /Compact root homepage contract is missing/);
   assert.match(script, /Compact root homepage is missing visible target/);

@@ -68,10 +68,13 @@ import {
   replaceWithPendingMeasurementCompletion,
 } from "@/lib/publicAnalytics";
 import {
-  customerPasswordErrorT,
   customerWorkflowExactT,
   customerWorkflowT,
 } from "@/lib/i18n/customer-workflow-auth-translations";
+import {
+  customerAuthFeedbackT,
+  type CustomerAuthFeedback,
+} from "@/lib/i18n/customer-auth-feedback";
 import { customerRuntimeExactT } from "@/lib/i18n/customer-runtime-translations";
 import { authPageFirstPaintT } from "@/lib/i18n/auth-page-first-paint";
 import type { LocaleCode } from "@/lib/i18nConfig";
@@ -182,7 +185,7 @@ export default function RegisterPage() {
   const [preferredContact, setPreferredContact] = useState("email");
   const [accountType, setAccountType] = useState<AccountType>("company");
   const [step, setStep] = useState<StepId>(1);
-  const [message, setMessage] = useState("");
+  const [message, setMessage] = useState<CustomerAuthFeedback | null>(null);
   const [googleMessage, setGoogleMessage] = useState("");
   const [success, setSuccess] = useState(false);
   const [verificationPending, setVerificationPending] = useState(false);
@@ -363,24 +366,26 @@ export default function RegisterPage() {
 
   const validateAccountStep = () => {
     if (!cleanFullName) {
-      setMessage("Please enter your full name.");
+      setMessage({ kind: "exact", source: "Please enter your full name." });
       return false;
     }
 
     if (accountType === "company" && !cleanCompanyName) {
-      setMessage("Please enter your company name.");
+      setMessage({ kind: "exact", source: "Please enter your company name." });
       return false;
     }
 
     if (phone.trim() && !formattedPhone) {
-      setMessage(
-        "Please check the calling code and phone number. For special carrier plans, enter the complete international number beginning with +."
-      );
+      setMessage({
+        kind: "exact",
+        source:
+          "Please check the calling code and phone number. For special carrier plans, enter the complete international number beginning with +.",
+      });
       return false;
     }
 
     if (!normalizeCountryName(country)) {
-      setMessage("Please select your country.");
+      setMessage({ kind: "exact", source: "Please select your country." });
       setCountryDetection("manual");
       window.setTimeout(() => countrySelectRef.current?.focus(), 0);
       return false;
@@ -391,24 +396,26 @@ export default function RegisterPage() {
 
   const validateLoginStep = () => {
     if (!cleanEmail) {
-      setMessage("Please enter your e-mail address.");
+      setMessage({
+        kind: "exact",
+        source: "Please enter your e-mail address.",
+      });
       return false;
     }
 
     const passwordValidation = validateCustomerReplacementPassword(password);
     if (!passwordValidation.valid) {
-      setMessage(
-        customerPasswordErrorT(
-          locale,
+      setMessage({
+        kind: "password-validation",
+        source:
           passwordValidation.errors[0] ||
-            "Password does not meet the security requirements."
-        )
-      );
+          "Password does not meet the security requirements.",
+      });
       return false;
     }
 
     if (password !== confirmPassword) {
-      setMessage("Passwords do not match.");
+      setMessage({ kind: "exact", source: "Passwords do not match." });
       return false;
     }
 
@@ -416,7 +423,7 @@ export default function RegisterPage() {
   };
 
   const goNext = () => {
-    setMessage("");
+    setMessage(null);
     setSuccess(false);
 
     if (step === 1 && validateAccountStep()) changeStep(2);
@@ -433,7 +440,7 @@ export default function RegisterPage() {
 
     if (loading || resendingVerification || authRequestInFlightRef.current) return;
 
-    setMessage("");
+    setMessage(null);
     setSuccess(false);
     setVerificationPending(false);
 
@@ -462,7 +469,7 @@ export default function RegisterPage() {
         captchaToken
       );
     } catch {
-      setMessage("Security verification failed.");
+      setMessage({ kind: "exact", source: "Security verification failed." });
       setLoading(false);
       return;
     }
@@ -509,14 +516,20 @@ export default function RegisterPage() {
       });
 
     if (!response) {
-      setMessage("Account creation could not be completed. Please try again.");
+      setMessage({
+        kind: "exact",
+        source: "Account creation could not be completed. Please try again.",
+      });
       setLoading(false);
       return;
     }
     const { data, error } = response;
 
     if (error) {
-      setMessage("Account creation could not be completed. Please try again.");
+      setMessage({
+        kind: "exact",
+        source: "Account creation could not be completed. Please try again.",
+      });
       setLoading(false);
       return;
     }
@@ -552,11 +565,12 @@ export default function RegisterPage() {
 
     setSuccess(true);
     setVerificationPending(!isAlreadyVerified);
-    setMessage(
-      isAlreadyVerified
+    setMessage({
+      kind: "exact",
+      source: isAlreadyVerified
         ? "Account created and verified. You can now open your customer dashboard."
-        : "Account created. Please verify your e-mail address before logging in."
-    );
+        : "Account created. Please verify your e-mail address before logging in.",
+    });
     setPassword("");
     setConfirmPassword("");
     setLoading(false);
@@ -577,7 +591,7 @@ export default function RegisterPage() {
         captchaToken
       );
     } catch {
-      setMessage("Security verification failed.");
+      setMessage({ kind: "exact", source: "Security verification failed." });
       return;
     }
 
@@ -585,7 +599,7 @@ export default function RegisterPage() {
     if (requestCaptchaToken) setCaptchaToken(null);
 
     setResendingVerification(true);
-    setMessage("");
+    setMessage(null);
     const response = await supabase.auth.resend({
         type: "signup",
         email: cleanEmail,
@@ -605,17 +619,21 @@ export default function RegisterPage() {
     if (!response) {
       setResendingVerification(false);
       setSuccess(false);
-      setMessage("Verification e-mail could not be sent. Please try again.");
+      setMessage({
+        kind: "exact",
+        source: "Verification e-mail could not be sent. Please try again.",
+      });
       return;
     }
     const { error } = response;
     setResendingVerification(false);
     setSuccess(!error);
-    setMessage(
-      error
+    setMessage({
+      kind: "exact",
+      source: error
         ? "Verification e-mail could not be sent. Please try again."
-        : "A new verification e-mail has been sent. Please also check your spam folder."
-    );
+        : "A new verification e-mail has been sent. Please also check your spam folder.",
+    });
   };
 
   const handleGoogleRegister = async (credential: string, nonce: string) => {
@@ -802,7 +820,7 @@ export default function RegisterPage() {
                       </h2>
                     )}
                     <p className={success ? "mt-1 text-sm leading-6" : "text-sm leading-6"}>
-                      {customerWorkflowExactT(locale, message)}
+                      {customerAuthFeedbackT(locale, message)}
                     </p>
                     {success && verificationPending && cleanEmail && (
                       <div className="mt-2 break-words text-xs leading-5 text-green-200/80">

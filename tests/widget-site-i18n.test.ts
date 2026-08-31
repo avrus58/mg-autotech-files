@@ -8,6 +8,7 @@ import {
   widgetSiteSourceCount,
   widgetSiteT,
   widgetSiteTranslations,
+  translateWidgetSiteExact,
 } from "../src/lib/i18n/widget-site-translations";
 
 const componentSources = {
@@ -78,6 +79,25 @@ test("widget interpolation is typed, locale-aware and does not leak template tok
   assert.match(widgetSiteT("pl", "widgetMetaOffer"), /4,99 € miesięcznie/);
 });
 
+test("widget API prose is allowlisted even for the English locale", () => {
+  assert.equal(
+    translateWidgetSiteExact("en", "Settings could not be saved.", "checkoutFailed"),
+    "Settings could not be saved.",
+  );
+  assert.equal(
+    translateWidgetSiteExact("de", "Settings could not be saved.", "checkoutFailed"),
+    "Die Einstellungen konnten nicht gespeichert werden.",
+  );
+  assert.equal(
+    translateWidgetSiteExact(
+      "en",
+      "raw provider/database details that must stay private",
+      "checkoutFailed",
+    ),
+    "Checkout could not be started.",
+  );
+});
+
 test("site locale and embedded widget language remain independent", () => {
   assert.match(componentSources.sales, /const siteLocale = useActiveLocale\(\)/);
   assert.match(componentSources.sales, /useState<WidgetLanguage>\(initialLanguage\)/);
@@ -122,7 +142,10 @@ test("all widget success and failure states use the typed site catalog", () => {
   assert.match(componentSources.sales, /translateWidgetSiteExact\(siteLocale, payload\.error, "checkoutFailed"/);
   assert.match(componentSources.billing, /translateWidgetSiteExact\([\s\S]*?activeSiteLocale[\s\S]*?"billingPortalFailed"/u);
   assert.match(componentSources.billing, /translateWidgetSiteExact\([\s\S]*?activeSiteLocale[\s\S]*?"billingSummaryApiFailed"/u);
-  assert.doesNotMatch(componentSources.billing, /\{message\}\s*<\/div>/u);
+  assert.match(componentSources.billing, /const loadSummary = useCallback\([\s\S]*?\}, \[activeSiteLocale\]\);/u);
+  assert.doesNotMatch(componentSources.billing, /widgetSiteT\("en",/u);
+  assert.doesNotMatch(componentSources.billing, /message:\s*data\.error/u);
+  assert.doesNotMatch(componentSources.billing, /setSummaryError\(\s*data\.error/u);
 });
 
 test("raw embed, domains and product-owned language remain protected without broad page exclusions", () => {

@@ -50,6 +50,7 @@ import {
 } from "@/lib/homepageLocalization";
 import { localizeCreditPromotionLabel } from "@/lib/i18n/commercial-translations";
 import type { PublicLogSnapshotCopy } from "@/lib/i18n/tool-client-copy-keys";
+import { europeRegionJsonLd } from "@/lib/structuredDataI18n";
 
 const HomepageSessionBridge = dynamic(
   () =>
@@ -348,7 +349,7 @@ export const homepageFileServiceJsonLd = {
   "@id": publicResourceUrl("/#services"),
   name: "MG AutoTech ECU and TCU file service",
   provider: { "@id": publicResourceUrl("/#organization") },
-  areaServed: { "@type": "Place", name: "Europe" },
+  areaServed: europeRegionJsonLd,
   url: publicResourceUrl("/"),
   hasOfferCatalog: {
     "@type": "OfferCatalog",

@@ -35,7 +35,7 @@ export default async function BrandsPage() {
   const jsonLd = localizeRuntimePublicJsonLd({
     "@context": "https://schema.org",
     "@graph": [
-      organizationJsonLd(),
+      organizationJsonLd(locale),
       websiteJsonLd(locale),
       { "@type": "CollectionPage", "@id": `${absoluteUrl("/brands")}#page`, name: title, description, url: absoluteUrl("/brands"), inLanguage: runtimePublicInLanguage(locale), isPartOf: { "@id": `${absoluteUrl("/")}#website` } },
       { "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Home", item: absoluteUrl("/") }, { "@type": "ListItem", position: 2, name: "Vehicle brands", item: absoluteUrl("/brands") }] },

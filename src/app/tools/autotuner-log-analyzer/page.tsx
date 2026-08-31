@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import { permanentRedirect } from "next/navigation";
+import { buildLogAnalysisStudioMetadata } from "@/lib/privatePageMetadata";
+import { getServerLocale } from "@/lib/serverLocale";
 
-export const metadata: Metadata = {
-  title: "Datalog Analysis Studio",
-  description: "The detailed MG AutoTech datalog workspace is available inside the protected customer dashboard.",
-  robots: { index: false, follow: false },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  return buildLogAnalysisStudioMetadata(await getServerLocale());
+}
 
 export default function LegacyAutotunerLogAnalyzerPage() {
   permanentRedirect("/dashboard/log-analysis");

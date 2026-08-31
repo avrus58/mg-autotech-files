@@ -85,12 +85,56 @@ test("selection restores trigger focus and hidden authored routes reset document
     );
   }
   assert.doesNotMatch(fixedPresentationLocale, /(?:admin|privacy|embed): "de"/u);
+  assert.match(switcher, /pathname\.startsWith\("\/embed\/"\)/u);
+});
+
+test("page-owned localized flows never mutate the saved site locale", () => {
+  const componentStart = switcher.indexOf("export function LanguageSwitcher");
+  const effectStart = switcher.indexOf("useEffect(() => {", componentStart);
+  const localeResolutionStart = switcher.indexOf(
+    "const pathLocale = getPathLocale(pathname)",
+    effectStart,
+  );
+  const embedGuard = switcher.slice(effectStart, localeResolutionStart);
+  const pageOwnedGuard = embedGuard.slice(
+    0,
+    embedGuard.indexOf("if (hideSwitcher && !hiddenLocalizedFlow)"),
+  );
+
+  assert.ok(effectStart >= 0 && localeResolutionStart > effectStart);
+  assert.match(
+    switcher,
+    /const pageOwnsDocumentLocale =[\s\S]*?pathname\.startsWith\("\/embed\/"\)[\s\S]*?pathname === "\/auth\/complete-profile"/u,
+  );
+  assert.match(
+    switcher,
+    /const hideSwitcher =[\s\S]*?pageOwnsDocumentLocale/u,
+  );
+  assert.match(
+    pageOwnedGuard,
+    /if \(pageOwnsDocumentLocale\) \{[\s\S]*?observerRef\.current\?\.disconnect\(\)[\s\S]*?return;/u,
+  );
+  assert.doesNotMatch(
+    pageOwnedGuard,
+    /persistLocale|writeDocumentLocale|writeStoredLocale|writeLocaleCookies|dispatchLocaleChange/u,
+  );
 });
 
 test("menu radio options support Space activation as well as arrow navigation", () => {
   assert.match(
     switcher,
     /if \(event\.key === " "\) \{[\s\S]*?event\.preventDefault\(\)[\s\S]*?items\[currentIndex\]\?\.click\(\)/u,
+  );
+});
+
+test("the compact trigger avoids duplicate regional-letter flags on Windows", () => {
+  assert.match(
+    switcher,
+    /<span aria-hidden="true" className="text-base">🌐<\/span>\s*\{activeLocale\.label\}/u,
+  );
+  assert.doesNotMatch(
+    switcher,
+    /\{activeLocale\.flag\}[\s\S]{0,80}\{activeLocale\.label\}/u,
   );
 });
 

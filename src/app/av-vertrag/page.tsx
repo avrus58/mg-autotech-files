@@ -5,11 +5,21 @@ import { ArrowLeft, FileCheck2, Mail, ShieldCheck } from "lucide-react";
 export const metadata: Metadata = {
   title: "Auftragsverarbeitung",
   description: "Informationen zur Auftragsverarbeitung für gewerbliche MG AutoTech Widget-Kunden.",
+  alternates: null,
+  openGraph: null,
+  twitter: null,
   robots: { index: false, follow: false },
 };
 
 export default function ProcessingAgreementPage() {
   return (
+    <>
+    <script
+      data-fixed-document-language="de-DE"
+      dangerouslySetInnerHTML={{
+        __html: 'document.documentElement.lang="de-DE";',
+      }}
+    />
     <div lang="de" data-no-translate className="min-h-screen bg-[#050505] text-white">
       <header className="border-b border-white/10 bg-black/90">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-4">
@@ -43,6 +53,7 @@ export default function ProcessingAgreementPage() {
         </section>
       </main>
     </div>
+    </>
   );
 }
 

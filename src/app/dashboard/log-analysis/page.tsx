@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import { LogAnalysisStudioLoader } from "@/components/dashboard/LogAnalysisStudioLoader";
+import { buildLogAnalysisStudioMetadata } from "@/lib/privatePageMetadata";
+import { getServerLocale } from "@/lib/serverLocale";
 
-export const metadata: Metadata = {
-  title: "Datalog Analysis Studio",
-  description: "Private browser-local multi-channel datalog review for MG AutoTech customers.",
-  robots: { index: false, follow: false },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  return buildLogAnalysisStudioMetadata(await getServerLocale());
+}
 
 export default function LogAnalysisStudioPage() {
   return <LogAnalysisStudioLoader />;

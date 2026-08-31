@@ -62,7 +62,7 @@ export const customerWorkflowExactTranslations = {
     "Um novo e-mail de verificação foi enviado. Verifique também a sua pasta de spam.",
     "新的验证电子邮件已发送。另请检查您的垃圾邮件文件夹。",
     "Nowy e-mail weryfikacyjny został wysłany. Sprawdź także folder ze spamem.",
-    "Është dërguar një e-mail i ri verifikimi. Ju lutemi kontrolloni gjithashtu dosjen tuaj të postës elektronike."
+    "Është dërguar një e-mail i ri verifikimi. Ju lutemi kontrolloni edhe dosjen e mesazheve të padëshiruara."
   ],
   "Account created and verified. You can now open your customer dashboard.": [
     "Account aangemaakt en geverifieerd. U kunt nu uw klantendashboard openen.",
@@ -145,7 +145,7 @@ export const customerWorkflowExactTranslations = {
   "Back to login": [
     "Terug naar login",
     "Zurück zum Login",
-    "Retour connexion",
+    "Retour à la connexion",
     "Torna al login",
     "Назад ко входу",
     "Volver al login",
@@ -185,7 +185,7 @@ export const customerWorkflowExactTranslations = {
     "bedrijf",
     "Unternehmen",
     "entreprise",
-    "compagnia",
+    "azienda",
     "компания",
     "empresa",
     "şirket",
@@ -373,7 +373,7 @@ export const customerWorkflowExactTranslations = {
     "Google oturum açma işlemi yüklenemedi. Tekrar deneyebilir veya e-postayla devam edebilirsiniz.",
     "Não foi possível carregar o início de sessão com o Google. Pode tentar novamente ou continuar com o e-mail.",
     "无法加载 Google 登录。您可以重试或继续使用电子邮件。",
-    "Nie można wczytać danych logowania Google. Możesz spróbować ponownie lub kontynuować wysyłanie wiadomości e-mail.",
+    "Nie można wczytać logowania Google. Możesz spróbować ponownie lub kontynuować za pomocą adresu e-mail.",
     "Identifikimi në Google nuk mund të ngarkohej. Mund të provoni sërish ose të vazhdoni me e-mail."
   ],
   "Google sign-in is temporarily unavailable. You can continue with e-mail.": [
@@ -874,7 +874,7 @@ export const customerWorkflowExactTranslations = {
     "De beveiligings-e-mail wordt nog voorbereid. Wacht alstublieft.",
     "Die Sicherheits-E-Mail wird noch vorbereitet. Bitte warten.",
     "L'e-mail de sécurité est toujours en préparation. S'il vous plaît, attendez.",
-    "L'e-mail di sicurezza è ancora in fase di preparazione. Attendere prego.",
+    "L’e-mail di sicurezza è ancora in preparazione. Attendi, per favore.",
     "Электронное письмо безопасности все еще готовится. Пожалуйста, подождите.",
     "El correo electrónico de seguridad aún se está preparando. Espere por favor.",
     "Güvenlik e-postası hâlâ hazırlanıyor. Lütfen bekleyin.",
@@ -922,6 +922,19 @@ export const customerWorkflowExactTranslations = {
     "Okno weryfikacji nie mogło zostać automatycznie zamknięte.",
     "Dritarja e verifikimit nuk mund të mbyllej automatikisht."
   ],
+  "Try again": [
+    "Opnieuw proberen",
+    "Erneut versuchen",
+    "Réessayer",
+    "Riprova",
+    "Повторить",
+    "Intentar de nuevo",
+    "Tekrar deneyin",
+    "Tentar novamente",
+    "重试",
+    "Spróbuj ponownie",
+    "Provo përsëri"
+  ],
   "Verification e-mail could not be sent. Please try again.": [
     "Verificatie-e-mail kon niet worden verzonden. Probeer het opnieuw.",
     "Die Bestätigungs-E-Mail konnte nicht gesendet werden. Bitte versuchen Sie es erneut.",
@@ -937,7 +950,7 @@ export const customerWorkflowExactTranslations = {
   ],
   "Verifying your access...": [
     "Uw toegang verifiëren...",
-    "Verifiziere deinen Zugriff...",
+    "Ihr Zugriff wird überprüft...",
     "Vérification de votre accès...",
     "Verifica dell'accesso in corso...",
     "Подтверждение доступа...",

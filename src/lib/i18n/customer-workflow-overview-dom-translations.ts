@@ -200,19 +200,6 @@ export const customerWorkflowExactTranslations = {
     "Aktualne saldo",
     "Bilanci aktual"
   ],
-  "Customer Dashboard": [
-    "Klantdashboard",
-    "Kunden-Dashboard",
-    "Tableau de bord client",
-    "Dashboard cliente",
-    "Панель клиента",
-    "Panel de cliente",
-    "Müşteri paneli",
-    "Painel do cliente",
-    "客户面板",
-    "Panel klienta",
-    "Paneli i klientit"
-  ],
   "Customer ID": [
     "Klant-ID",
     "Kunden-ID",
@@ -595,13 +582,13 @@ export const customerWorkflowExactTranslations = {
     "Revision wird geprüft",
     "Révision en cours",
     "Revisione in corso",
-    "Проверка доработки",
+    "Проверка ревизии выполняется",
     "Revisión en curso",
     "Revizyon inceleniyor",
     "Revisão em curso",
-    "修订审核中",
+    "正在审核修订版本",
     "Korekta jest sprawdzana",
-    "Rishikimi po kontrollohet"
+    "Shqyrtimi i revizionit është në proces"
   ],
   "Search recent requests": [
     "Recente aanvragen zoeken",
@@ -680,19 +667,6 @@ export const customerWorkflowExactTranslations = {
     "尝试输入车辆、发动机、服务或状态名称。完整订单历史仍可访问。",
     "Spróbuj wpisać pojazd, silnik, usługę lub status. Pełna historia zleceń pozostaje dostępna.",
     "Provoni emrin e automjetit, motorit, shërbimit ose statusit. Historia e plotë mbetet e disponueshme."
-  ],
-  "Try again": [
-    "Probeer het opnieuw",
-    "Erneut versuchen",
-    "Réessayez",
-    "Riprova",
-    "Попробовать ещё раз",
-    "Inténtalo de nuevo",
-    "Tekrar deneyin",
-    "Tente novamente",
-    "请重试",
-    "Spróbuj ponownie",
-    "Provoni përsëri"
   ],
   "Use the safe preparation tools first, submit through the secure upload flow, then track every request from your private dashboard.": [
     "Gebruik eerst de voorbereidingstools, verstuur via de beveiligde upload en volg de aanvraag in uw dashboard.",

@@ -179,14 +179,16 @@ musteri ekranlarinda ilk boya English sizintisi kapatildi. Teknik otomotiv
 terimleri native golden testlerle korundu; ekran okuyucu icin async recovery
 sonuclari live region oldu.
 
-Dogrulama: `npm run check:i18n` PASS (12 locale, 2006/2006, temiz English
-fallback 0); `npm run lint` PASS; `npm run typecheck` PASS; `npm test` PASS
-(1322/1322); `npm run build -- --webpack` PASS (280/280); `npm run
-check:performance` PASS (14.6/80 KiB gzip, 3 ilk chunk); `git diff --check`
-PASS. Gercek Production build tarayicisinda DE/TR auth, register ve payment
-yuzeyleri 1366x768 ile 390x844 boyutlarinda test edildi; yatay tasma ve console
-hata 0. Bagimsiz ilk review bulgulari giderildi. Push, Preview, Production
-deploy, veritabani veya canli servis mutasyonu yapilmadi.
+Dogrulama: `npm run check:i18n` PASS (12 locale, her hedef dilde 1975/1975,
+temiz English fallback 0); `npm run lint` PASS; `npm run typecheck` PASS;
+`npm test -- --test-reporter=dot` PASS (1396/1396); Turbopack ve Webpack
+Production build PASS (280/280); `npm run check:performance` PASS (15.2/80
+KiB gzip, 3 ilk chunk, 48/48 gerekli public prerender rota); generator freshness,
+zero-width karakter taramasi ve `git diff --check` PASS. Gercek Production
+build tarayicisinda ana sayfa, auth ve 404 yuzeyleri 1366x768 ile 390x844
+boyutlarinda; 12 secenekli dil menusu, canonical/noindex, yatay tasma ve console
+loglari kontrol edildi. Iki bagimsiz mimari/review turu GO verdi. Push, Preview,
+Production deploy, veritabani veya canli servis mutasyonu yapilmadi.
 
 ### MANUAL-20260830-HOMEPAGE-EXPERIENCE-REFRESH [P1] Public ana sayfayi kompakt premium musteri yolculuguna donustur
 

@@ -4,7 +4,22 @@ import dynamic from "next/dynamic";
 import { useCallback, useEffect, useState } from "react";
 import { Loader2, RefreshCcw } from "lucide-react";
 import { AuthRequired } from "@/components/auth/AuthRequired";
+import { customerPortalFirstPaintT } from "@/lib/i18n/customer-portal-first-paint";
 import { supabase } from "@/lib/supabaseClient";
+import { useActiveLocale } from "@/lib/useActiveLocale";
+
+function StudioLoading() {
+  const locale = useActiveLocale();
+
+  return (
+    <main className="flex min-h-screen items-center justify-center bg-[#050505] px-4 text-white">
+      <div role="status" aria-live="polite" className="flex items-center gap-3 text-sm font-bold text-zinc-400">
+        <Loader2 className="h-5 w-5 animate-spin text-red-500" />
+        {customerPortalFirstPaintT(locale, "Opening your private datalog workspace...")}
+      </div>
+    </main>
+  );
+}
 
 const LogAnalysisStudio = dynamic(
   () => import("@/components/dashboard/LogAnalysisStudio").then(
@@ -12,14 +27,7 @@ const LogAnalysisStudio = dynamic(
   ),
   {
     ssr: false,
-    loading: () => (
-      <main className="flex min-h-screen items-center justify-center bg-[#050505] px-4 text-white">
-        <div role="status" aria-live="polite" className="flex items-center gap-3 text-sm font-bold text-zinc-400">
-          <Loader2 className="h-5 w-5 animate-spin text-red-500" />
-          Opening your private datalog workspace...
-        </div>
-      </main>
-    ),
+    loading: () => <StudioLoading />,
   }
 );
 
@@ -44,6 +52,9 @@ async function resolveCustomerAccess(): Promise<StudioAccessState> {
 }
 
 export function LogAnalysisStudioLoader() {
+  const locale = useActiveLocale();
+  const firstPaintT = (source: string) =>
+    customerPortalFirstPaintT(locale, source);
   const [accessState, setAccessState] = useState<StudioAccessState>("checking");
 
   const verifyCustomer = useCallback(async () => {
@@ -68,6 +79,7 @@ export function LogAnalysisStudioLoader() {
         title="Please log in to open Datalog Analysis Studio"
         description="The detailed local analysis workspace is included for verified MG AutoTech customers."
         nextPath="/dashboard/log-analysis"
+        locale={locale}
       />
     );
   }
@@ -77,9 +89,13 @@ export function LogAnalysisStudioLoader() {
       <main className="flex min-h-screen items-center justify-center bg-[#050505] px-4 text-white">
         <section className="w-full max-w-lg border-y border-white/10 py-10 text-center">
           <RefreshCcw className="mx-auto h-8 w-8 text-red-500" />
-          <h1 className="mt-5 text-2xl font-black">Customer verification is taking longer</h1>
+          <h1 className="mt-5 text-2xl font-black">
+            {firstPaintT("Customer verification is taking longer")}
+          </h1>
           <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-zinc-400">
-            The private Studio stays closed until your account can be verified securely.
+            {firstPaintT(
+              "The private Studio stays closed until your account can be verified securely.",
+            )}
           </p>
           <button
             type="button"
@@ -89,7 +105,8 @@ export function LogAnalysisStudioLoader() {
             }}
             className="mt-6 inline-flex h-12 items-center justify-center rounded-lg bg-[#b1121b] px-5 text-sm font-black"
           >
-            <RefreshCcw className="mr-2 h-4 w-4" /> Try again
+            <RefreshCcw className="mr-2 h-4 w-4" />
+            {firstPaintT("Try again")}
           </button>
         </section>
       </main>
@@ -101,7 +118,7 @@ export function LogAnalysisStudioLoader() {
       <main className="flex min-h-screen items-center justify-center bg-[#050505] px-4 text-white">
         <div role="status" aria-live="polite" className="flex items-center gap-3 text-sm font-bold text-zinc-400">
           <Loader2 className="h-5 w-5 animate-spin text-red-500" />
-          Verifying customer access...
+          {firstPaintT("Verifying customer access...")}
         </div>
       </main>
     );

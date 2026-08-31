@@ -6,6 +6,8 @@ export const metadata: Metadata = {
   title: "Impressum",
   description: "Anbieterkennzeichnung und Kontaktangaben von MG AutoTech.",
   alternates: { canonical: absoluteUrl("/impressum") },
+  openGraph: null,
+  twitter: null,
 };
 
 export default function ImpressumPage() {

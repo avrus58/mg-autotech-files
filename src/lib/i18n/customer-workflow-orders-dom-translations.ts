@@ -99,7 +99,7 @@ export const customerWorkflowExactTranslations = {
   "Additional file upload could not be completed.": [
     "Het uploaden van extra bestanden kon niet worden voltooid.",
     "Das Hochladen weiterer Dateien konnte nicht abgeschlossen werden.",
-    "Le téléchargement de fichiers supplémentaires n'a pas pu être effectué.",
+    "Le téléversement du fichier supplémentaire n’a pas pu être effectué.",
     "Impossibile completare il caricamento di file aggiuntivi.",
     "Не удалось завершить загрузку дополнительного файла.",
     "No se pudo completar la carga de archivos adicionales.",
@@ -112,7 +112,7 @@ export const customerWorkflowExactTranslations = {
   "Additional file upload could not be prepared.": [
     "Er kon geen aanvullende bestandsupload worden voorbereid.",
     "Der zusätzliche Datei-Upload konnte nicht vorbereitet werden.",
-    "Le téléchargement de fichiers supplémentaires n'a pas pu être préparé.",
+    "Le téléversement du fichier supplémentaire n’a pas pu être préparé.",
     "Impossibile preparare il caricamento di file aggiuntivi.",
     "Не удалось подготовить дополнительную загрузку файлов.",
     "No se pudo preparar la carga de archivos adicionales.",
@@ -125,7 +125,7 @@ export const customerWorkflowExactTranslations = {
   "Additional file uploaded. MG AutoTech can now review it inside this request.": [
     "Extra bestand geüpload. MG AutoTech kan het nu binnen dit verzoek beoordelen.",
     "Zusätzliche Datei hochgeladen. MG AutoTech kann es nun in dieser Anfrage prüfen.",
-    "Fichier supplémentaire téléchargé. MG AutoTech peut désormais l'examiner dans cette demande.",
+    "Fichier supplémentaire téléversé. MG AutoTech peut désormais l’examiner dans cette demande.",
     "File aggiuntivo caricato. MG AutoTech ora può esaminarlo all'interno di questa richiesta.",
     "Загружен дополнительный файл. Теперь MG AutoTech может просмотреть его в этом запросе.",
     "Archivo adicional subido. MG AutoTech ahora puede revisarlo dentro de esta solicitud.",
@@ -144,9 +144,9 @@ export const customerWorkflowExactTranslations = {
     "Archivos adicionales",
     "Ek dosyalar",
     "Ficheiros adicionais",
-    "补充文件",
+    "附加文件",
     "Dodatkowe pliki",
-    "Skedarë shtesë"
+    "File shtesë"
   ],
   "After delivery": [
     "Na levering",
@@ -398,7 +398,7 @@ export const customerWorkflowExactTranslations = {
   "Creating the secure upload slot.": [
     "Het veilige uploadslot creëren.",
     "Erstellen des sicheren Upload-Slots.",
-    "Création de l'emplacement de téléchargement sécurisé.",
+    "Création de l’emplacement de téléversement sécurisé.",
     "Creazione dello slot di caricamento sicuro.",
     "Создание безопасного слота для загрузки.",
     "Creando la ranura de carga segura.",
@@ -478,13 +478,13 @@ export const customerWorkflowExactTranslations = {
     "Kundensichere DTC-Zusammenfassung dieser Anfrage. Eine menschliche Prüfung bleibt erforderlich.",
     "Résumé DTC destiné au client. Une vérification humaine reste obligatoire.",
     "Riepilogo DTC sicuro per il cliente. La verifica umana resta obbligatoria.",
-    "Безопасная для клиента сводка DTC. Проверка специалистом обязательна.",
+    "Доступная клиенту сводка DTC по этому запросу. Проверка специалистом остаётся обязательной.",
     "Resumen DTC seguro para el cliente. La revisión humana sigue siendo obligatoria.",
     "Bu talebe ait müşteriye güvenli DTC özeti. İnsan incelemesi yine gereklidir.",
     "Resumo DTC seguro para o cliente. A revisão humana continua obrigatória.",
-    "此请求的客户安全 DTC 摘要，仍需人工审核。",
+    "此请求的客户安全 DTC 摘要。仍需人工审核。",
     "Bezpieczne dla klienta podsumowanie DTC. Nadal wymagana jest kontrola człowieka.",
-    "Përmbledhje DTC e sigurt për klientin. Kontrolli njerëzor mbetet i detyrueshëm."
+    "Përmbledhje DTC e sigurt për klientin nga kjo kërkesë. Shqyrtimi njerëzor mbetet i detyrueshëm."
   ],
   "Dashboard": [
     "Portaal",
@@ -556,13 +556,13 @@ export const customerWorkflowExactTranslations = {
     "Auslieferungsverlauf",
     "Historique des livraisons",
     "Cronologia consegne",
-    "История доставки",
+    "История выдачи",
     "Historial de entregas",
     "Teslimat geçmişi",
     "Histórico de entregas",
-    "交付历史",
+    "交付记录",
     "Historia dostaw",
-    "Historiku i dorëzimeve"
+    "Historiku i dorëzimit"
   ],
   "Describe the required adjustment.": [
     "Beschrijf de gewenste aanpassing.",
@@ -1009,7 +1009,7 @@ export const customerWorkflowExactTranslations = {
   "MG AutoTech needs more information or another file. Use the conversation and upload areas below to respond.": [
     "MG AutoTech heeft meer informatie of een ander bestand nodig. Gebruik de onderstaande gespreks- en uploadsecties om te reageren.",
     "MG AutoTech benötigt weitere Informationen oder eine andere Datei. Nutzen Sie die unten stehenden Konversations- und Upload-Bereiche, um zu antworten.",
-    "MG AutoTech a besoin de plus d'informations ou d'un autre fichier. Utilisez les zones de conversation et de téléchargement ci-dessous pour répondre.",
+    "MG AutoTech a besoin de renseignements supplémentaires ou d’un autre fichier. Utilisez les zones de conversation et de téléversement ci-dessous pour répondre.",
     "MG AutoTech necessita di maggiori informazioni o di un altro file. Utilizza le aree di conversazione e caricamento qui sotto per rispondere.",
     "MG AutoTech нужны дополнительные сведения или другой файл. Чтобы ответить, используйте расположенные ниже разделы переписки и загрузки файлов.",
     "MG AutoTech necesita más información u otro archivo. Utilice las áreas de conversación y carga a continuación para responder.",
@@ -1154,26 +1154,26 @@ export const customerWorkflowExactTranslations = {
     "Für diese Anfrage wurden noch keine DTC-Hinweise erstellt.",
     "Aucun guide DTC n'a encore été préparé pour cette demande.",
     "Non è stata ancora preparata una guida DTC per questa richiesta.",
-    "Рекомендации DTC для этой заявки ещё не подготовлены.",
+    "Рекомендации DTC для этого запроса ещё не подготовлены.",
     "Aún no se ha preparado una guía DTC para esta solicitud.",
     "Bu talep için henüz DTC rehberi hazırlanmadı.",
     "Ainda não foram preparadas orientações DTC para este pedido.",
-    "尚未为此请求准备 DTC 指南。",
+    "尚未为此请求准备 DTC 指导。",
     "Nie przygotowano jeszcze wskazówek DTC dla tego zlecenia.",
-    "Nuk është përgatitur ende udhëzimi DTC për këtë kërkesë."
+    "Ende nuk është përgatitur udhëzim DTC për këtë kërkesë."
   ],
   "No valid DTC code was detected in the current request fields.": [
     "Er is geen geldige DTC-code gevonden in de huidige aanvraag.",
     "In den aktuellen Anfragefeldern wurde kein gültiger DTC-Code erkannt.",
     "Aucun code DTC valide n'a été détecté dans la demande.",
     "Nessun codice DTC valido rilevato nella richiesta.",
-    "В полях заявки не найден действительный код DTC.",
+    "В текущих полях запроса не найден действительный код DTC.",
     "No se detectó un código DTC válido en la solicitud.",
     "Mevcut talep alanlarında geçerli DTC kodu algılanmadı.",
     "Não foi detetado um código DTC válido nos campos do pedido atual.",
     "当前请求字段中未检测到有效 DTC 代码。",
     "Nie wykryto prawidłowego kodu DTC w zleceniu.",
-    "Nuk u zbulua kod DTC i vlefshëm në kërkesë."
+    "Nuk u gjet kod DTC i vlefshëm në fushat e kërkesës."
   ],
   "One file, maximum 32 MB": [
     "Eén bestand, maximaal 32 MB",
@@ -1412,7 +1412,7 @@ export const customerWorkflowExactTranslations = {
   "Preparing upload": [
     "Uploaden voorbereiden",
     "Upload wird vorbereitet",
-    "Préparation du téléchargement",
+    "Préparation du téléversement",
     "Preparazione caricamento",
     "Подготовка загрузки",
     "Preparando la carga",
@@ -1596,11 +1596,11 @@ export const customerWorkflowExactTranslations = {
     "Anfragespezifikation",
     "Spécification de la demande",
     "Specifiche richiesta",
-    "Параметры заявки",
+    "Спецификация запроса",
     "Especificación de la solicitud",
     "Talep özellikleri",
     "Especificação do pedido",
-    "请求规格",
+    "请求说明",
     "Specyfikacja zlecenia",
     "Specifikimi i kërkesës"
   ],
@@ -1739,13 +1739,13 @@ export const customerWorkflowExactTranslations = {
     "Revision wird geprüft",
     "Révision en cours",
     "Revisione in corso",
-    "Проверка доработки",
+    "Проверка ревизии выполняется",
     "Revisión en curso",
     "Revizyon inceleniyor",
     "Revisão em curso",
-    "修订审核中",
+    "正在审核修订版本",
     "Korekta jest sprawdzana",
-    "Rishikimi po kontrollohet"
+    "Shqyrtimi i revizionit është në proces"
   ],
   "Revision waiting for review": [
     "Revisie wacht op beoordeling",
@@ -2073,17 +2073,17 @@ export const customerWorkflowExactTranslations = {
     "Transferimi i skedarit të zgjedhur."
   ],
   "Try again": [
-    "Probeer het opnieuw",
+    "Opnieuw proberen",
     "Erneut versuchen",
-    "Réessayez",
+    "Réessayer",
     "Riprova",
-    "Попробовать ещё раз",
-    "Inténtalo de nuevo",
+    "Повторить",
+    "Intentar de nuevo",
     "Tekrar deneyin",
-    "Tente novamente",
-    "请重试",
+    "Tentar novamente",
+    "重试",
     "Spróbuj ponownie",
-    "Provoni përsëri"
+    "Provo përsëri"
   ],
   "Upload enabled": [
     "Upload ingeschakeld",
@@ -2127,7 +2127,7 @@ export const customerWorkflowExactTranslations = {
   "Uploading file": [
     "Bestand uploaden",
     "Datei hochladen",
-    "Téléchargement du fichier",
+    "Téléversement du fichier",
     "Caricamento file",
     "Загрузка файла",
     "Subiendo archivo",
@@ -2168,18 +2168,18 @@ export const customerWorkflowExactTranslations = {
     "Fahrzeug-Dateianfrage",
     "Demande de fichier véhicule",
     "Richiesta file veicolo",
-    "Заявка на файл автомобиля",
+    "Запрос файла автомобиля",
     "Solicitud de archivo del vehículo",
     "Araç dosya talebi",
     "Pedido de ficheiro do veículo",
     "车辆文件请求",
     "Zlecenie pliku pojazdu",
-    "Kërkesë për skedar automjeti"
+    "Kërkesë file-i automjeti"
   ],
   "Verifying upload": [
     "Uploaden verifiëren",
     "Upload wird überprüft",
-    "Vérification du téléchargement",
+    "Vérification du téléversement",
     "Verifica del caricamento",
     "Проверка загрузки",
     "Verificando carga",
@@ -2194,13 +2194,13 @@ export const customerWorkflowExactTranslations = {
     "Sichtbare Aufträge warten auf Ihre Angaben",
     "Commandes en attente de vos informations",
     "Ordini in attesa delle tue informazioni",
-    "Заказы ожидают ваших данных",
+    "Заказы, ожидающие вашей информации",
     "Pedidos que esperan tu información",
     "Bilginizi bekleyen görünür siparişler",
     "Encomendas à espera das suas informações",
     "等待您提供信息的订单",
     "Zlecenia oczekujące na Twoje informacje",
-    "Porositë që presin informacionin tuaj"
+    "Porosi që presin informacionin tuaj"
   ],
   "Waiting for secure connection...": [
     "Wachten op beveiligde verbinding...",

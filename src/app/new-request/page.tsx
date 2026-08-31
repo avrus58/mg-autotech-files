@@ -159,6 +159,24 @@ type CustomerProfile = {
   account_status: string | null;
 };
 
+type CreditAccessFailure =
+  | {
+      key: "accountStatusBlocked";
+      status: string;
+    }
+  | {
+      key: "insufficientCredits";
+      balance: number;
+      required: number;
+    }
+  | {
+      key: "insufficientCreditsWithLimit";
+      available: number;
+      balance: number;
+      negativeLimit: number;
+      required: number;
+    };
+
 const maxRequestFileSize = 32 * 1024 * 1024;
 const allowedRequestFileExtensions = [".bin", ".ori", ".mod", ".frf", ".hex", ".zip", ".sgo"];
 const requestCompletionConsentFailOpenMs = 15_000;
@@ -968,6 +986,8 @@ export default function NewRequestPage() {
   const [reminderPreferenceError, setReminderPreferenceError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState("");
+  const [creditAccessFailure, setCreditAccessFailure] =
+    useState<CreditAccessFailure | null>(null);
   const [awaitingConsentAfterSuccess, setAwaitingConsentAfterSuccess] = useState(false);
   const [customerProfile, setCustomerProfile] = useState<CustomerProfile | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
@@ -1658,9 +1678,10 @@ export default function NewRequestPage() {
     }
 
     if (status !== "active") {
-      return customerWorkflowT(locale, "accountStatusBlocked", {
-        status: localizeAccountState(locale, status),
-      });
+      return {
+        key: "accountStatusBlocked",
+        status,
+      } satisfies CreditAccessFailure;
     }
 
     const balance = Number(profile.credit_balance ?? 0);
@@ -1670,18 +1691,20 @@ export default function NewRequestPage() {
 
     if (requiredCredits > available) {
       if (negativeEnabled) {
-        return customerWorkflowT(locale, "insufficientCreditsWithLimit", {
-          balance: balance.toLocaleString(intlLocaleByCode[locale]),
-          negativeLimit: negativeLimit.toLocaleString(intlLocaleByCode[locale]),
-          available: available.toLocaleString(intlLocaleByCode[locale]),
-          required: requiredCredits.toLocaleString(intlLocaleByCode[locale]),
-        });
+        return {
+          key: "insufficientCreditsWithLimit",
+          balance,
+          negativeLimit,
+          available,
+          required: requiredCredits,
+        } satisfies CreditAccessFailure;
       }
 
-      return customerWorkflowT(locale, "insufficientCredits", {
-        balance: balance.toLocaleString(intlLocaleByCode[locale]),
-        required: requiredCredits.toLocaleString(intlLocaleByCode[locale]),
-      });
+      return {
+        key: "insufficientCredits",
+        balance,
+        required: requiredCredits,
+      } satisfies CreditAccessFailure;
     }
 
     return null;
@@ -1689,6 +1712,7 @@ export default function NewRequestPage() {
 
   const handleSubmit = async () => {
     setMessage("");
+    setCreditAccessFailure(null);
 
     if (!requestVehicleBrand || !requestVehicleModel || !requestVehicleEngine) {
       setMessage(
@@ -1814,7 +1838,11 @@ export default function NewRequestPage() {
     if (creditValidationError) {
       setSubmitting(false);
       setCustomerProfile(latestProfile);
-      setMessage(creditValidationError);
+      if (typeof creditValidationError === "string") {
+        setMessage(creditValidationError);
+      } else {
+        setCreditAccessFailure(creditValidationError);
+      }
       return;
     }
 
@@ -2004,6 +2032,35 @@ export default function NewRequestPage() {
       window.location.assign("/dashboard");
     }
   };
+
+  const localizedCreditAccessFailure = (() => {
+    if (!creditAccessFailure) return "";
+    const formatNumber = (value: number) =>
+      value.toLocaleString(intlLocaleByCode[locale]);
+
+    if (creditAccessFailure.key === "accountStatusBlocked") {
+      return customerWorkflowT(locale, creditAccessFailure.key, {
+        status: localizeAccountState(locale, creditAccessFailure.status),
+      });
+    }
+
+    if (creditAccessFailure.key === "insufficientCreditsWithLimit") {
+      return customerWorkflowT(locale, creditAccessFailure.key, {
+        balance: formatNumber(creditAccessFailure.balance),
+        negativeLimit: formatNumber(creditAccessFailure.negativeLimit),
+        available: formatNumber(creditAccessFailure.available),
+        required: formatNumber(creditAccessFailure.required),
+      });
+    }
+
+    return customerWorkflowT(locale, creditAccessFailure.key, {
+      balance: formatNumber(creditAccessFailure.balance),
+      required: formatNumber(creditAccessFailure.required),
+    });
+  })();
+  const localizedMessage = message
+    ? customerWorkflowExactT(locale, message)
+    : localizedCreditAccessFailure;
 
   return (
     <main
@@ -2680,6 +2737,7 @@ export default function NewRequestPage() {
                       return;
                     }
                     setMessage("");
+                    setCreditAccessFailure(null);
                     setSelectedFile(file);
                     setFileName(file?.name ?? "");
                   }}
@@ -2993,9 +3051,9 @@ export default function NewRequestPage() {
                     Back to dashboard
                   </button>
                 </div>
-              ) : message ? (
+              ) : localizedMessage ? (
                 <div className="mt-5 rounded-2xl border border-red-800/50 bg-red-950/30 p-4 text-sm text-red-200">
-                  {message}
+                  {localizedMessage}
                 </div>
               ) : null}
 

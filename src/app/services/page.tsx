@@ -40,6 +40,7 @@ import {
 } from "@/lib/seo";
 import { serviceIntentGuides } from "@/lib/serviceIntentGuides";
 import { getServerLocale } from "@/lib/serverLocale";
+import { organizationAreaServedJsonLd } from "@/lib/structuredDataI18n";
 import {
   buildServicesMetadata,
   servicesPageDescription as pageDescription,
@@ -264,7 +265,7 @@ function buildCatalogJsonLd(locale: LocaleCode) {
   return localizeRuntimePublicJsonLd({
   "@context": "https://schema.org",
   "@graph": [
-    organizationJsonLd(),
+    organizationJsonLd(locale),
     websiteJsonLd(locale),
     {
       "@type": "CollectionPage",
@@ -309,11 +310,11 @@ function buildCatalogJsonLd(locale: LocaleCode) {
       "@id": absoluteUrl("/services#service"),
       name: "MG AutoTech ECU and TCU solution catalog",
       description: pageDescription,
-      serviceType: "ECU and TCU file service catalog",
+      serviceType: pageTitle,
       provider: {
         "@id": `${absoluteUrl("/")}#organization`,
       },
-      areaServed: ["Germany", "Europe"],
+      areaServed: organizationAreaServedJsonLd,
       url: absoluteUrl("/services"),
       hasOfferCatalog: {
         "@type": "OfferCatalog",

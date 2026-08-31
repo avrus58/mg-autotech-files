@@ -13,6 +13,8 @@ export const metadata: Metadata = {
       "x-default": absoluteUrl("/privacy"),
     },
   },
+  openGraph: null,
+  twitter: null,
 };
 
 export default function DatenschutzPage() {

@@ -714,7 +714,7 @@ Object.assign(exactTranslations.tr, {
   "Choose payment method": "Ödeme yöntemi seç",
   "Payment Method": "Ödeme yöntemi",
   "Card / mobile payment": "Kart / mobil ödeme",
-  "SEPA transfer": "SEPA havale",
+  "SEPA transfer": "SEPA havalesi",
   "Stripe checkout": "Stripe ödeme",
   "Automatic": "Otomatik",
   "Manual check": "Manuel kontrol",
@@ -826,6 +826,7 @@ const sharedPanelTerms: Partial<Record<LocaleCode, Dictionary>> = {
     "Payment Method": "Betaalmethode",
     "Automatic": "Automatisch",
     "Manual check": "Handmatige controle",
+    "SEPA transfer": "SEPA-overschrijving",
     "Vehicle": "Voertuig",
     "Brand": "Merk",
     "Model": "Model",
@@ -865,6 +866,7 @@ const sharedPanelTerms: Partial<Record<LocaleCode, Dictionary>> = {
     "Payment Method": "Mode de paiement",
     "Automatic": "Automatique",
     "Manual check": "Contrôle manuel",
+    "SEPA transfer": "Virement SEPA",
     "Vehicle": "Véhicule",
     "Brand": "Marque",
     "Model": "Modèle",
@@ -904,6 +906,7 @@ const sharedPanelTerms: Partial<Record<LocaleCode, Dictionary>> = {
     "Payment Method": "Metodo di pagamento",
     "Automatic": "Automatico",
     "Manual check": "Controllo manuale",
+    "SEPA transfer": "Bonifico SEPA",
     "Vehicle": "Veicolo",
     "Brand": "Marca",
     "Model": "Modello",
@@ -943,6 +946,7 @@ const sharedPanelTerms: Partial<Record<LocaleCode, Dictionary>> = {
     "Payment Method": "Método de pago",
     "Automatic": "Automático",
     "Manual check": "Revisión manual",
+    "SEPA transfer": "Transferencia SEPA",
     "Vehicle": "Vehículo",
     "Brand": "Marca",
     "Model": "Modelo",
@@ -982,6 +986,7 @@ const sharedPanelTerms: Partial<Record<LocaleCode, Dictionary>> = {
     "Payment Method": "Método de pagamento",
     "Automatic": "Automático",
     "Manual check": "Verificação manual",
+    "SEPA transfer": "Transferência SEPA",
     "Vehicle": "Veículo",
     "Brand": "Marca",
     "Model": "Modelo",
@@ -1021,6 +1026,7 @@ const sharedPanelTerms: Partial<Record<LocaleCode, Dictionary>> = {
     "Payment Method": "Metoda płatności",
     "Automatic": "Automatycznie",
     "Manual check": "Kontrola ręczna",
+    "SEPA transfer": "Przelew SEPA",
     "Vehicle": "Pojazd",
     "Brand": "Marka",
     "Model": "Model",
@@ -2615,16 +2621,16 @@ const operationalPhraseBank: SourcePhrase[] = [
   {
     source: "Access your file service dashboard and continue your ECU tuning requests.",
     de: "Greifen Sie auf Ihr File-Service-Portal zu und bearbeiten Sie Ihre ECU-Tuning-Anfragen weiter.",
-    tr: "Dosya servis paneline giriş yap ve ECU tuning taleplerine devam et.",
-    nl: "Open uw file-service portaal en ga verder met ECU tuning aanvragen.",
-    fr: "Accédez à votre portail file service et continuez vos demandes ECU tuning.",
-    it: "Accedi al portale file service e continua le richieste ECU tuning.",
-    es: "Accede a tu portal file service y continúa tus solicitudes ECU tuning.",
+    tr: "Dosya hizmeti panelinize erişin ve ECU kalibrasyon taleplerinize devam edin.",
+    nl: "Open uw file-serviceportaal en ga verder met uw ECU-tuningaanvragen.",
+    fr: "Accédez à votre tableau de bord du service de fichiers et poursuivez vos demandes de calibration ECU.",
+    it: "Accedi alla dashboard del servizio file e continua le tue richieste di calibrazione ECU.",
+    es: "Acceda al panel del servicio de archivos y continúe con sus solicitudes de calibración de la ECU.",
     pt: "Aceda ao portal do serviço de ficheiros e continue os pedidos de calibração da ECU.",
-    pl: "Wejdź do portalu file service i kontynuuj zlecenia ECU tuning.",
-    ru: "Откройте портал file service и продолжайте заявки ECU tuning.",
+    pl: "Otwórz panel usługi plikowej i kontynuuj zlecenia tuningu ECU.",
+    ru: "Откройте панель файлового сервиса и продолжите работу с заявками на калибровку ECU.",
     zh: "进入文件服务面板并继续您的 ECU 调校请求。",
-    sq: "Hyr në portalin file service dhe vazhdo kërkesat ECU tuning.",
+    sq: "Hapni panelin e shërbimit të skedarëve dhe vazhdoni kërkesat për kalibrim ECU.",
   },
   {
     source: "Create customer account",
@@ -3024,9 +3030,9 @@ const secondaryUiPhraseBank: SourcePhrase[] = [
     fr: "Studio d’analyse de datalogs",
     it: "Studio di analisi datalog",
     es: "Estudio de análisis de datalogs",
-    pt: "Estúdio de análise de registos de dados",
+    pt: "Estúdio de análise de datalogs",
     pl: "Studio analizy datalogów",
-    ru: "Студия анализа даталогов",
+    ru: "Студия анализа логов",
     zh: "数据日志分析工作室",
     sq: "Studio e analizës së datalogëve",
   },
@@ -4531,7 +4537,7 @@ const workflowPhraseBank: SourcePhrase[] = [
     de: "Auslieferung fertiger Dateien",
     tr: "Tamamlanan dosya teslimi",
     nl: "Levering voltooide files",
-    fr: "Livraison fichier terminé",
+    fr: "Livraison du fichier finalisé",
     it: "Consegna file completato",
     es: "Entrega de archivo completado",
     pt: "Entrega de ficheiro concluído",
@@ -5134,7 +5140,7 @@ const professionalPhraseBank: FullPhrase[] = [
     tr: "Ödeme doğrulanamadı.",
     nl: "Betaling kon niet worden bevestigd.",
     fr: "Le paiement n'a pas pu être confirmé.",
-    it: "Il pagamento non può essere confermato.",
+    it: "Non è stato possibile confermare il pagamento.",
     es: "No se pudo confirmar el pago.",
     pt: "Não foi possível confirmar o pagamento.",
     pl: "Nie można potwierdzić płatności.",
@@ -6206,9 +6212,9 @@ const registerFlowLanguagePatch = [
     de: "File-Service-Konto starten",
     tr: "Dosya servis hesabini baslat",
     nl: "Start je file-service account",
-    fr: "Créez votre compte file service",
-    it: "Avvia il tuo account file service",
-    es: "Crea tu cuenta file service",
+    fr: "Créez votre compte de service de fichiers",
+    it: "Crea il tuo account per il servizio file",
+    es: "Cree su cuenta del servicio de archivos",
     pt: "Crie a sua conta de serviço de ficheiros",
     pl: "Utworz konto file service",
     ru: "Создайте аккаунт file service",
@@ -6227,7 +6233,7 @@ const registerFlowLanguagePatch = [
     pl: "Prowadzona konfiguracja dla klientów prywatnych i warsztatów.",
     ru: "Пошаговая настройка для частных клиентов и профессиональных мастерских.",
     zh: "适用于个人客户和专业维修厂的引导式设置。",
-    sq: "Konfigurim i udhehequr per kliente private dhe servise profesionale.",
+    sq: "Konfigurim i udhëzuar për klientë privatë dhe servise profesionale.",
   },
   {
     source: "Private Customer",
@@ -6255,7 +6261,7 @@ const registerFlowLanguagePatch = [
     pl: "Dla kierowców prywatnych i pojedynczych zleceń.",
     ru: "Для частных водителей и разовых заявок.",
     zh: "适合个人车主和单次文件请求。",
-    sq: "Per shofere private dhe kerkesa te vecanta.",
+    sq: "Për drejtues privatë dhe kërkesa të herëpashershme për skedarë.",
   },
   {
     source: "Workshop / Company",
@@ -6276,14 +6282,14 @@ const registerFlowLanguagePatch = [
     de: "Für Werkstätten, Händler und regelmäßige File-Service-Arbeit.",
     tr: "Servisler, bayiler ve düzenli dosya hizmetleri için.",
     nl: "Voor garages, dealers en terugkerend file-service werk.",
-    fr: "Pour garages, revendeurs et travaux file service réguliers.",
+    fr: "Pour les garages, les revendeurs et les demandes régulières de service de fichiers.",
     it: "Per officine, rivenditori e lavori ricorrenti.",
     es: "Para talleres, distribuidores y trabajos recurrentes.",
     pt: "Para oficinas, revendedores e trabalhos recorrentes.",
     pl: "Dla warsztatów, dealerów i stałych zleceń.",
     ru: "Для сервисов, дилеров и регулярной работы с файлами.",
     zh: "适合维修厂、经销商和重复文件服务工作。",
-    sq: "Per servise, dilerë dhe pune te perseritur file service.",
+    sq: "Për servise, tregtarë dhe punë të përsëritura të shërbimit të skedarëve.",
   },
   {
     source: "Company details stay attached to requests for cleaner workshop administration.",
@@ -6424,14 +6430,6 @@ Object.entries(customerPortalTranslations).forEach(([source, values]) => {
   });
 });
 
-Object.entries(customerPortalLocaleOverrides).forEach(([locale, entries]) => {
-  if (!entries) return;
-  Object.entries(entries).forEach(([source, value]) => {
-    exactTranslations[locale as LocaleCode][source] = value;
-    termTranslations[locale as LocaleCode][source] = value;
-  });
-});
-
 Object.entries(customerJourneyTranslations).forEach(([source, values]) => {
   customerJourneyLocaleOrder.forEach((locale, index) => {
     const value = values[index];
@@ -6456,10 +6454,34 @@ Object.entries(customerDeviceTranslations).forEach(([source, values]) => {
   });
 });
 
+Object.assign(exactTranslations.ru, {
+  "Manual check": "Ручная проверка",
+  "SEPA transfer": "Перевод SEPA",
+});
+Object.assign(exactTranslations.zh, {
+  "Manual check": "人工审核",
+  "SEPA transfer": "SEPA 转账",
+});
+Object.assign(exactTranslations.sq, {
+  "Manual check": "Kontroll manual",
+  "SEPA transfer": "Transfertë SEPA",
+});
+
 Object.entries(customerRuntimeTranslations).forEach(([source, values]) => {
   customerRuntimeLocaleOrder.forEach((locale, index) => {
     const value = values[index];
     exactTranslations[locale][source] = value;
     termTranslations[locale][source] = value;
+  });
+});
+
+// These rows are intentionally reviewed corrections for the high-traffic
+// customer portal. Apply them after every shared customer catalog so a broader
+// journey/runtime row cannot silently replace the locale-specific correction.
+Object.entries(customerPortalLocaleOverrides).forEach(([locale, entries]) => {
+  if (!entries) return;
+  Object.entries(entries).forEach(([source, value]) => {
+    exactTranslations[locale as LocaleCode][source] = value;
+    termTranslations[locale as LocaleCode][source] = value;
   });
 });

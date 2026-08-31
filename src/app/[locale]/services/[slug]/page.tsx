@@ -116,7 +116,7 @@ export default async function LocalizedServicePage({
   const jsonLd = {
     "@context": "https://schema.org",
     "@graph": [
-      organizationJsonLd(),
+      organizationJsonLd(locale),
       websiteJsonLd(locale),
       serviceJsonLd(slug, locale),
       {

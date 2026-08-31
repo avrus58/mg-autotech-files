@@ -31,6 +31,26 @@ test("i18n route helper maps equivalent public routes across locales", () => {
   assert.equal(getLocalizedPublicHref("/about?ref=nav", "tr"), "/about?ref=nav");
 });
 
+test("prefixed recovery and single-path URLs stay aligned with the selected locale", () => {
+  assert.equal(getLocalizedPublicPath("/de/missing-page", "fr"), "/fr/missing-page");
+  assert.equal(getLocalizedPublicPath("/de/missing-page", "en"), "/missing-page");
+  assert.equal(getLocalizedPublicPath("/de/brands", "fr"), "/brands");
+  assert.equal(
+    getLocalizedPublicPath("/de/services/stage-2", "tr"),
+    "/services/stage-2",
+  );
+  assert.equal(getLocalizedPublicPath("/de/login", "tr"), "/login");
+  assert.equal(
+    resolvePreferredLocale({
+      pathname: "/fr/missing-page",
+      storedLocale: "de",
+      cookieLocale: "de",
+      browserLocale: "de-DE",
+    }),
+    "fr",
+  );
+});
+
 test("language changes use a sanitized anchor so paid-click consent interception cannot be bypassed", () => {
   const switcher = readFileSync("src/components/LanguageSwitcher.tsx", "utf8");
   assert.match(switcher, /const canNavigate = localizedTarget !== pathname/);

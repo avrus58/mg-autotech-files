@@ -35,7 +35,7 @@ export default async function BrandGuidePage({ params }: { params: Promise<{ slu
   const jsonLd = localizeRuntimePublicJsonLd({
     "@context": "https://schema.org",
     "@graph": [
-      organizationJsonLd(), websiteJsonLd(locale),
+      organizationJsonLd(locale), websiteJsonLd(locale),
       { "@type": "WebPage", "@id": `${url}#page`, name: guide.name, description: guide.description, url, inLanguage: runtimePublicInLanguage(locale), isPartOf: { "@id": `${absoluteUrl("/")}#website` }, about: { "@type": "Thing", name: guide.name } },
       { "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Home", item: absoluteUrl("/") }, { "@type": "ListItem", position: 2, name: "Vehicle brands", item: absoluteUrl("/brands") }, { "@type": "ListItem", position: 3, name: guide.name, item: url }] },
       { "@type": "FAQPage", mainEntity: guide.faq.map((item) => ({ "@type": "Question", name: item.q, acceptedAnswer: { "@type": "Answer", text: item.a } })) },

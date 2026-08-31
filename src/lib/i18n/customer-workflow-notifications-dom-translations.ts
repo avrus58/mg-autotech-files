@@ -112,7 +112,7 @@ export const customerWorkflowExactTranslations = {
   "Files & uploads": [
     "Bestanden en uploads",
     "Dateien und Uploads",
-    "Fichiers et téléchargements",
+    "Fichiers et téléversements",
     "File e caricamenti",
     "Файлы и загрузки",
     "Archivos y cargas",
@@ -218,13 +218,13 @@ export const customerWorkflowExactTranslations = {
     "Neue kundensichtbare Auftrags- und Nachrichtenereignisse erscheinen hier.",
     "Les nouveaux événements de commande et messages destinés au client apparaissent ici.",
     "I nuovi eventi ordine e messaggi visibili al cliente appaiono qui.",
-    "Здесь появятся новые события заказа и сообщения для клиента.",
+    "Здесь будут отображаться новые доступные клиенту события заказов и сообщений.",
     "Aquí aparecerán nuevos eventos y mensajes visibles para el cliente.",
     "Müşteriye açık yeni sipariş ve mesaj olayları burada görünür.",
     "Novos eventos e mensagens visíveis ao cliente aparecem aqui.",
-    "新的客户可见订单和消息事件会显示在此处。",
+    "新的客户可见订单和消息事件将显示在这里。",
     "Nowe zdarzenia i wiadomości widoczne dla klienta pojawią się tutaj.",
-    "Ngjarjet dhe mesazhet e reja të dukshme për klientin shfaqen këtu."
+    "Ngjarjet e reja të porosive dhe mesazheve të dukshme për klientin do të shfaqen këtu."
   ],
   "New notification": [
     "Nieuwe melding",
@@ -422,17 +422,17 @@ export const customerWorkflowExactTranslations = {
     "Kjo qendër tregon vetëm njoftimet e klientit. Shënimet, auditimet, rrugët dhe metadata private përjashtohen."
   ],
   "Try again": [
-    "Probeer het opnieuw",
+    "Opnieuw proberen",
     "Erneut versuchen",
-    "Réessayez",
+    "Réessayer",
     "Riprova",
-    "Попробовать ещё раз",
-    "Inténtalo de nuevo",
+    "Повторить",
+    "Intentar de nuevo",
     "Tekrar deneyin",
-    "Tente novamente",
-    "请重试",
+    "Tentar novamente",
+    "重试",
     "Spróbuj ponownie",
-    "Provoni përsëri"
+    "Provo përsëri"
   ],
   "unread": [
     "ongelezen",

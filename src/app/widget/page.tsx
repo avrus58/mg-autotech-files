@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { ServerLocaleBoundary } from "@/components/ServerLocaleBoundary";
 import { WidgetSalesPageClient } from "@/components/widget/WidgetSalesPageClient";
 import { getWidgetSettings } from "@/lib/widget/settings";
 import { normalizeWidgetLanguage } from "@/lib/i18n/widget-translations";
@@ -11,6 +12,7 @@ import {
 } from "@/lib/i18n/runtime-public";
 import { absoluteUrl, organizationJsonLd, siteName, websiteJsonLd } from "@/lib/seo";
 import { getServerLocale } from "@/lib/serverLocale";
+import { embeddedWidgetBrowserRequirementJsonLd } from "@/lib/structuredDataI18n";
 
 export const dynamic = "force-dynamic";
 
@@ -45,7 +47,7 @@ export default async function WidgetSalesPage({ searchParams }: { searchParams: 
   const jsonLd = localizeRuntimePublicJsonLd({
     "@context": "https://schema.org",
     "@graph": [
-      organizationJsonLd(),
+      organizationJsonLd(locale),
       websiteJsonLd(locale),
       {
         "@type": "WebApplication",
@@ -56,7 +58,7 @@ export default async function WidgetSalesPage({ searchParams }: { searchParams: 
         inLanguage: runtimePublicInLanguage(locale),
         applicationCategory: "BusinessApplication",
         operatingSystem: "Any",
-        browserRequirements: "Modern browser with JavaScript and iframe support",
+        browserRequirements: embeddedWidgetBrowserRequirementJsonLd,
         provider: { "@id": `${absoluteUrl("/")}#organization` },
         offers: {
           "@type": "Offer",
@@ -82,7 +84,7 @@ export default async function WidgetSalesPage({ searchParams }: { searchParams: 
   }, locale, ["core", "widget"]);
 
   return (
-    <>
+    <ServerLocaleBoundary locale={locale}>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <WidgetSalesPageClient
         initialSettings={result.settings}
@@ -92,6 +94,6 @@ export default async function WidgetSalesPage({ searchParams }: { searchParams: 
           normalizeWidgetLanguage(locale, "en")
         )}
       />
-    </>
+    </ServerLocaleBoundary>
   );
 }

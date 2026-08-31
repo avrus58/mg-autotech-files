@@ -60,7 +60,7 @@ test("verified conversion routes are measurement-only and never become public pa
   assert.equal(isGoogleMeasurementScriptPath("/measurement/complete"), true);
 });
 
-test("measurement completion metadata relies on the root title template exactly once", () => {
+test("measurement completion metadata is locale-aware and relies on the root title template", () => {
   const completionLayout = projectFile(
     "src",
     "app",
@@ -69,7 +69,8 @@ test("measurement completion metadata relies on the root title template exactly 
     "layout.tsx"
   );
 
-  assert.match(completionLayout, /title: "Secure measurement handoff"/);
+  assert.match(completionLayout, /buildMeasurementCompletionMetadata\(await getServerLocale\(\)\)/);
+  assert.doesNotMatch(completionLayout, /export const metadata/);
   assert.doesNotMatch(completionLayout, /Secure measurement handoff \| MG AutoTech/);
 });
 

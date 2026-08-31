@@ -116,7 +116,7 @@ export const customerWorkflowExactTranslations = {
     "bedrijf",
     "Unternehmen",
     "entreprise",
-    "compagnia",
+    "azienda",
     "компания",
     "empresa",
     "şirket",
@@ -163,6 +163,19 @@ export const customerWorkflowExactTranslations = {
     "创建新的文件请求",
     "Utwórz nowe żądanie pliku",
     "Krijoni një kërkesë për skedar të ri"
+  ],
+  "Customer Dashboard": [
+    "Klantdashboard",
+    "Kunden-Dashboard",
+    "Tableau de bord client",
+    "Dashboard cliente",
+    "Панель клиента",
+    "Panel de cliente",
+    "Müşteri paneli",
+    "Painel do cliente",
+    "客户面板",
+    "Panel klienta",
+    "Paneli i klientit"
   ],
   "Engine not set": [
     "Motor niet opgegeven",
@@ -347,17 +360,17 @@ export const customerWorkflowExactTranslations = {
     "Shqyrtoni dorëzimin"
   ],
   "Secure MG AutoTech customer dashboard for file requests, credits and deliveries.": [
-    "Beveiligd MG AutoTech-klantendashboard voor bestandsaanvragen, credits en leveringen.",
-    "Sicheres MG AutoTech-Kunden-Dashboard für Dateianfragen, Credits und Bereitstellungen.",
-    "Tableau de bord client sécurisé MG AutoTech pour les demandes de fichiers, les crédits et les livraisons.",
+    "Beveiligd MG AutoTech-klantdashboard voor bestandsaanvragen, credits en leveringen.",
+    "Sicheres MG AutoTech Kunden-Dashboard für Dateianfragen, Credits und Lieferungen.",
+    "Tableau de bord client MG AutoTech sécurisé pour les demandes de fichiers, les crédits et les livraisons.",
     "Dashboard cliente MG AutoTech sicura per richieste di file, crediti e consegne.",
-    "Защищенная клиентская панель MG AutoTech для запросов файлов, кредитов и поставок.",
-    "Panel de control seguro del cliente de MG AutoTech para solicitudes de archivos, créditos y entregas.",
-    "Dosya talepleri, krediler ve teslimatlar için güvenli MG AutoTech müşteri kontrol paneli.",
-    "Painel seguro do cliente MG AutoTech para pedidos de ficheiros, créditos e entregas.",
-    "用于文件请求、积分和交付的安全 MG AutoTech 客户面板。",
-    "Bezpieczny pulpit klienta MG AutoTech dla żądań plików, kredytów i dostaw.",
-    "Siguroni pultin e klientëve të MG AutoTech për kërkesat, kreditet dhe dërgesat e skedarëve."
+    "Безопасная панель клиента MG AutoTech для запросов файлов, кредитов и выдачи готовых файлов.",
+    "Panel seguro para clientes de MG AutoTech, destinado a solicitudes de archivos, créditos y entregas.",
+    "Dosya talepleri, krediler ve teslimatlar için güvenli MG AutoTech müşteri paneli.",
+    "Painel de cliente seguro da MG AutoTech para pedidos de ficheiros, créditos e entregas.",
+    "用于管理文件请求、积分和交付的安全 MG AutoTech 客户面板。",
+    "Bezpieczny panel klienta MG AutoTech do obsługi zleceń plików, kredytów i dostaw.",
+    "Panel i sigurt i klientit MG AutoTech për kërkesat e skedarëve, kreditë dhe dorëzimet."
   ],
   "Service not set": [
     "Geen service geselecteerd",
@@ -423,6 +436,19 @@ export const customerWorkflowExactTranslations = {
     "跟踪您的活动文件请求",
     "Śledź swoje aktywne żądania plików",
     "Ndiqni kërkesat e skedarëve tuaj aktivë"
+  ],
+  "Try again": [
+    "Opnieuw proberen",
+    "Erneut versuchen",
+    "Réessayer",
+    "Riprova",
+    "Повторить",
+    "Intentar de nuevo",
+    "Tekrar deneyin",
+    "Tentar novamente",
+    "重试",
+    "Spróbuj ponownie",
+    "Provo përsëri"
   ],
   "We could not load your dashboard data. Please try again.": [
     "We konden uw dashboardgegevens niet laden. Probeer het opnieuw.",
