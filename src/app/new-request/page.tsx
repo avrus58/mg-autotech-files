@@ -2139,7 +2139,7 @@ export default function NewRequestPage() {
                         .filter(Boolean)
                         .join(" ") ? (
                           <span translate="no" data-no-translate>{[repeatPrefill.vehicle.brand, repeatPrefill.vehicle.model, repeatPrefill.vehicle.engine].filter(Boolean).join(" ")}</span>
-                        ) : "Vehicle details incomplete"}
+                        ) : customerWorkflowT(locale, "vehicleNotSet", {})}
                     </span>
                     <span className={`rounded-lg border px-3 py-2 ${
                       repeatPrefill.services.fullyResolved

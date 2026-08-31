@@ -33,6 +33,44 @@
 - Değişiklikten sonra diff'i kendin incele; kapsam dışı değişiklikleri geri al.
 - Kullanıcı arayüzü değiştiyse responsive davranış, loading/error/empty state ve erişilebilirliği kontrol et.
 
+<!-- PERMANENT_LOCALIZATION_GATE -->
+## Kalıcı localization sözleşmesi
+
+- Global dil seçicinin kapsadığı public, auth, müşteri, dashboard, ödeme, talep,
+  widget ve müşteriye giden e-posta yüzeyleri tek ürün sözleşmesidir. Bu
+  yüzeylerdeki her görünür metin değişikliği aynı değişiklik paketi içinde
+  `src/lib/i18nConfig.ts` dosyasındaki bütün `supportedLocales` için tamamlanır;
+  desteklenen hiçbir dilde temiz İngilizce fallback kabul edilmez.
+- Kapsam yalnız gövde metni değildir: SSR ilk boya, hydration/client durumları,
+  başlıklar, butonlar, form alanları, placeholder, doğrulama, toast, loading,
+  error, empty, success, `aria-*`, `alt`, `title`, metadata, JSON-LD, locale-aware
+  tarih/sayı/para ve ilgili HTML/plain-text e-posta metinleri de aynı anda
+  yerelleştirilir.
+- Eski UI kaldırılırsa artık kullanılmayan çeviri anahtarları, katalog satırları
+  ve dinamik ifade imzaları da kaldırılır. Yeni UI typed/scoped katalogla
+  eklenir; broad `data-no-translate`, parça parça DOM metin değiştirme veya
+  sessiz fallback ile bu kapı atlanamaz.
+- Yeni public/müşteri route veya component mevcut i18n envanterine açıkça girer.
+  Envanter dışı sayfa/component ve sınıflandırılmamış görünür dinamik ifade
+  release blocker'dır. Generic component/route istisnası açılamaz. Lokalizasyon
+  mimarisine henüz taşınmamış exact legacy yüzey yalnız normalize edilmiş kaynak
+  fingerprint'iyle dondurulabilir; fingerprint yenilenmez, yüzey shared typed
+  katalog/renderer'a taşınarak bu geçici kapı kaldırılır.
+- Kontrollü istisnalar yalnız internal `/admin`, owner/hukuk tarafından sabit
+  dilde tutulan exact legal route'lar ve ham müşteri/araç/ECU/filename/VIN/HW/SW/
+  DTC/ORI/MOD değerleridir. Bu değerlerin çevresindeki label, fallback, status ve
+  açıklamalar yine yerelleştirilir. Adminin müşteriye gönderdiği içerik internal
+  admin istisnası değildir. Yeni istisna exact allowlist, gerekçe ve test ister.
+- Her kullanıcıya görünür UI işi için `npm run check:i18n`, ilgili hedefli i18n
+  testleri, lint, typecheck, full test ve Production build geçmeden görev Done,
+  Preview veya Production sayılamaz. Production build `prebuild` üzerinden
+  `npm run check:i18n` kapısını otomatik çalıştırır.
+- Değişen yüzey en az EN ile birlikte DE, TR ve ZH dillerinde; mobil ve compact
+  laptop görünümünde ilk boya, dil geçişi, taşma, console hatası ve İngilizce
+  sızıntısı açısından kontrol edilir. Metin kalitesi doluluktan ibaret değildir;
+  doğal dil, otomotiv anlamı, placeholder parity, teknik tokenlar ve doğru
+  yazı/aksanlar korunur.
+
 ## Kesin yasaklar
 
 - Production deploy yapma.

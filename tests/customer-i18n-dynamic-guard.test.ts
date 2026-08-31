@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -9,6 +9,71 @@ import {
   reviewedDynamicVisibleExpressions,
   type DynamicVisibleExpression,
 } from "../scripts/lib/i18n-dynamic-guard";
+import { findUnclassifiedComponentFiles } from "../scripts/lib/i18n-component-inventory";
+import {
+  auditFrozenSource,
+  normalizedSourceFingerprint,
+} from "../scripts/lib/i18n-frozen-source";
+
+const frozenFileServiceFingerprint =
+  "0d6d6dc6aa22ed637aa92ce58911c4e3ce5a76740b76d8b207ca2f43b67c603f";
+
+test("the component inventory rejects every new unclassified shared component", () => {
+  assert.deepEqual(
+    findUnclassifiedComponentFiles({
+      files: [
+        "src/components/dashboard/KnownCustomerCard.tsx",
+        "src/components/admin/InternalCard.tsx",
+        "src/components/LanguageSwitcher.tsx",
+        "src/components/FutureCustomerCard.tsx",
+      ],
+      auditedRoots: [
+        "src/components/dashboard",
+        "src/components/LanguageSwitcher.tsx",
+      ],
+      intentionallyAuthoredRoots: ["src/components/admin"],
+    }),
+    ["src/components/FutureCustomerCard.tsx"]
+  );
+});
+
+test("the legacy file-service surface is frozen until it joins the shared locale architecture", () => {
+  const source = readFileSync("src/app/file-service/page.tsx", "utf8");
+  const checker = readFileSync("scripts/check-customer-i18n.ts", "utf8");
+
+  assert.equal(normalizedSourceFingerprint(source), frozenFileServiceFingerprint);
+  assert.equal(
+    auditFrozenSource(source, frozenFileServiceFingerprint).matches,
+    true,
+  );
+  assert.equal(
+    auditFrozenSource(`${source}\n{/* unlocalized change */}`, frozenFileServiceFingerprint)
+      .matches,
+    false,
+  );
+  assert.equal(
+    normalizedSourceFingerprint(
+      source.replace(/\r\n?/gu, "\n").replace(/\n/gu, "\r\n"),
+    ),
+    frozenFileServiceFingerprint,
+  );
+  assert.match(checker, /const frozenLegacyCustomerFiles = new Map/u);
+  assert.match(checker, /src\/app\/file-service\/page\.tsx/u);
+  assert.match(checker, new RegExp(frozenFileServiceFingerprint, "u"));
+});
+
+test("the checker has no generic component or app-segment localization bypass", () => {
+  const checker = readFileSync("scripts/check-customer-i18n.ts", "utf8");
+  const componentInventory = readFileSync(
+    "scripts/lib/i18n-component-inventory.ts",
+    "utf8",
+  );
+  const source = `${checker}\n${componentInventory}`;
+
+  assert.doesNotMatch(source, /separatelyAuditedComponentFiles/u);
+  assert.doesNotMatch(source, /separatelyAuditedAppSegments/u);
+  assert.doesNotMatch(source, /separatelyAuditedFiles/u);
+});
 
 test("the dynamic i18n inventory rejects every unreviewed visible composition", () => {
   const reviewed = reviewedDynamicVisibleExpressions.map(
@@ -57,8 +122,8 @@ test("the repository checker fails on a new composed visible string without a re
   writeFileSync(
     fixture,
     [
-      "export function UnreviewedCopy({ count }: { count: number }) {",
-      "  return <p>{`${count} HP`}</p>;",
+      "export function UnreviewedCopy({ count, isOpen }: { count: number; isOpen: boolean }) {",
+      "  return isOpen && <p aria-label={`${count} HP`}>{count}</p>;",
       "}",
     ].join("\n"),
     "utf8"

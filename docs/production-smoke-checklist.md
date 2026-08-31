@@ -10,7 +10,8 @@ Use this checklist after every production deploy. It is intentionally non-destru
 - Run `npm run build`
 - Run `npm run check:payments`
 - Run `npm audit --omit=dev --audit-level=high`
-- Run `node scripts/check-i18n-seo.mjs` after public SEO or translation changes.
+- Run `npm run check:i18n` after every user-visible UI change. `npm run build`
+  also runs this fail-closed gate automatically through `prebuild`.
 - Confirm no SQL migration is required, or run only reviewed non-destructive SQL first.
 - If vehicle selector cache changed, run `scripts/add-public-vehicle-catalog-cache.sql`, verify with `scripts/verify-public-vehicle-catalog-cache.sql`, then rebuild the cache from `/admin/vehicles`.
 - Confirm no real vehicle import is triggered during deploy.
@@ -66,7 +67,7 @@ They default to `http://localhost:3000`; non-local targets require `ALLOW_NON_LO
 ```bash
 ALLOW_NON_LOCAL_SMOKE=1 BASE_URL=https://file.mgautotech.de node scripts/smoke-public-platform.mjs
 ALLOW_NON_LOCAL_SMOKE=1 BASE_URL=https://file.mgautotech.de node scripts/smoke-admin-unauthenticated.mjs
-node scripts/check-i18n-seo.mjs
+npm run check:i18n
 ```
 
 ## Rollback

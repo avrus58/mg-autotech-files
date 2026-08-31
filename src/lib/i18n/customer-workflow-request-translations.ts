@@ -1745,6 +1745,21 @@ export const customerWorkflowTemplateRows = [
     "支持的选项：{count}",
     "Obsługiwane opcje: {count}",
     "Opsione të mbështetura: {count}"
+  ],
+  [
+    "vehicleNotSet",
+    "Vehicle not set",
+    "Voertuig niet ingesteld",
+    "Fahrzeug nicht angegeben",
+    "Véhicule non renseigné",
+    "Veicolo non impostato",
+    "Автомобиль не указан",
+    "Vehículo no indicado",
+    "Araç belirtilmedi",
+    "Veículo não definido",
+    "未设置车辆",
+    "Nie podano pojazdu",
+    "Automjeti nuk është përcaktuar"
   ]
 ] as const;
 

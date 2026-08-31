@@ -13,7 +13,10 @@ import {
   Wrench,
 } from "lucide-react";
 import { Footer } from "@/components/Footer";
-import { LocalizedSeoFooter } from "@/components/LocalizedSeoFooter";
+import {
+  LocalizedSeoFooter,
+  localizedSeoFooterCopy,
+} from "@/components/LocalizedSeoFooter";
 import type { LocaleCode } from "@/lib/i18nConfig";
 import type { HowItWorksCopy } from "@/lib/howItWorksI18n";
 import { localizedPath } from "@/lib/seo";
@@ -62,7 +65,9 @@ export function HowItWorksPageContent({
               <span className="block whitespace-nowrap text-base font-black sm:text-lg">
                 MG <span className="text-red-500">AUTOTECH</span>
               </span>
-              <span className="hidden text-[11px] text-zinc-400 sm:block">ECU / TCU File Service</span>
+              <span className="hidden text-[11px] text-zinc-400 sm:block">
+                {localizedSeoFooterCopy[locale].brandLine}
+              </span>
             </span>
           </Link>
           <nav aria-label="Primary navigation" className="hidden items-center gap-6 text-sm font-bold text-zinc-300 md:flex">

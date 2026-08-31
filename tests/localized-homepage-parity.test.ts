@@ -140,28 +140,38 @@ test("the refreshed homepage has reviewed exact copy for every visible journey s
 test("vehicle intelligence receives the route locale before hydration and has complete reviewed copy", () => {
   assert.match(rootHomepage, /<VehicleIntelligence locale=\{locale\} \/>/u);
 
+  const identicalNaturalTerms: string[] = [];
+
   for (const { code } of supportedLocales) {
     if (code === "en") continue;
     const copy = publicVehicleCopy[code];
-    for (const field of [
-      "title",
-      "eyebrow",
-      "intro",
-      "power",
-      "torque",
-      "gain",
-      "publishedRecord",
-      "notPublished",
-      "readMethod",
-      "finalConfirmation",
-      "startRequest",
-    ] as const) {
+    for (const field of Object.keys(publicVehicleCopy.en) as Array<
+      keyof typeof publicVehicleCopy.en
+    >) {
       assert.ok(copy[field].trim(), `${code}: ${field}`);
-      if (field !== "gain") {
-        assert.notEqual(copy[field], publicVehicleCopy.en[field], `${code}: ${field}`);
+      if (copy[field] === publicVehicleCopy.en[field]) {
+        identicalNaturalTerms.push(`${code}:${field}`);
       }
     }
   }
+
+  assert.deepEqual(identicalNaturalTerms.sort(), [
+    "de:generationPlaceholder",
+    "fr:gain",
+    "nl:modelPlaceholder",
+    "pl:modelPlaceholder",
+    "tr:modelPlaceholder",
+  ]);
+});
+
+test("vehicle intelligence protects raw values without hiding its localized surface", () => {
+  const vehicleSource = readFileSync(
+    "src/components/homepage/VehicleIntelligence.tsx",
+    "utf8"
+  );
+  assert.doesNotMatch(vehicleSource, /<section[^>]+data-no-translate/u);
+  assert.match(vehicleSource, /option\.name/u);
+  assert.match(vehicleSource, /translate="no" data-no-translate/u);
 });
 
 test("localized helper components translate their rendered output and the header logo keeps locale", () => {

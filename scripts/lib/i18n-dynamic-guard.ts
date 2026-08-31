@@ -11,6 +11,7 @@ export type ReviewedDynamicVisibleExpression = Omit<
 > & {
   classification:
     | "localized-copy"
+    | "localized-copy-with-raw-data"
     | "numeric-unit"
     | "raw-technical-data"
     | "raw-vehicle-data-with-translated-fallback";
@@ -21,6 +22,12 @@ export type ReviewedDynamicVisibleExpression = Omit<
 // literal. A new composition has to be classified here before the i18n gate can
 // pass; line numbers are deliberately excluded so formatting alone is harmless.
 export const reviewedDynamicVisibleExpressions = [
+  {
+    file: "src/app/[locale]/services/[slug]/page.tsx",
+    kind: "template",
+    source: "`${service.credits} ${labels.credits}`",
+    classification: "numeric-unit",
+  },
   {
     file: "src/app/dashboard/orders/page.tsx",
     kind: "template",
@@ -46,6 +53,18 @@ export const reviewedDynamicVisibleExpressions = [
     kind: "template",
     source: "`+${gain}`",
     classification: "numeric-unit",
+  },
+  {
+    file: "src/components/homepage/VehicleIntelligence.tsx",
+    kind: "template",
+    source: "`+${value}`",
+    classification: "numeric-unit",
+  },
+  {
+    file: "src/components/LanguageSwitcher.tsx",
+    kind: "template",
+    source: "`${currentSelectorCopy.switchTo} ${item.name}`",
+    classification: "localized-copy",
   },
   {
     file: "src/components/widget/PublicVehicleSelector.tsx",
@@ -76,6 +95,20 @@ export const reviewedDynamicVisibleExpressions = [
     file: "src/components/dashboard/LogAnalysisStudio.tsx",
     kind: "template",
     source:
+      '`${logStudioMessageT(locale, egr.textMessage)}${egrComparison ? ` ${logStudioMessageT(locale, egrComparison.textMessage)}` : ""}`',
+    classification: "localized-copy",
+  },
+  {
+    file: "src/components/dashboard/LogAnalysisStudio.tsx",
+    kind: "template",
+    source:
+      '` ${logStudioMessageT(locale, egrComparison.textMessage)}`',
+    classification: "localized-copy",
+  },
+  {
+    file: "src/components/dashboard/LogAnalysisStudio.tsx",
+    kind: "template",
+    source:
       "`${formatValue(peakPower.kw, 1, locale)} kW · ${formatValue(peakPower.rpm, 0, locale)} rpm`",
     classification: "numeric-unit",
   },
@@ -92,6 +125,13 @@ export const reviewedDynamicVisibleExpressions = [
     source:
       "`${formatValue(rpmSummary.min.value, 0, locale)}–${formatValue(rpmSummary.max.value, 0, locale)}`",
     classification: "numeric-unit",
+  },
+  {
+    file: "src/components/homepage/HomepageExperience.tsx",
+    kind: "template",
+    source:
+      '`${localizedText("Select package")}: ${pack.name}, ${pack.credits} ${localizedText("credits")}`',
+    classification: "localized-copy-with-raw-data",
   },
   {
     file: "src/components/widget/SubscriptionSummaryPanel.tsx",

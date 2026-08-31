@@ -192,15 +192,15 @@ test("canonical homepage first paint follows the server-resolved locale", async 
     const pageSchema = homepageSchemas[0];
     assert.equal(
       pageSchema.name,
-      `MG AutoTech — ${catalog.exact["Professional online file service platform"]}`,
-      `${locale}: WebPage name did not use visible localized copy`,
+      catalog.exact["MG AutoTech ECU & TCU File Service"],
+      `${locale}: WebPage name was not localized from its canonical source`,
     );
     assert.equal(
       pageSchema.description,
       catalog.exact[
-        "Upload original ECU/TCU files, select your service, track your order and download the completed file directly through the secure MG AutoTech customer portal."
+        "Secure online ECU and TCU file service with vehicle data, workshop tools, credit pricing and private order delivery."
       ],
-      `${locale}: WebPage description did not use localized hero copy`,
+      `${locale}: WebPage description was not localized from its canonical source`,
     );
 
     const serviceSchema = homepageSchemas[1] as {
@@ -215,7 +215,7 @@ test("canonical homepage first paint follows the server-resolved locale", async 
     };
     assert.equal(
       serviceSchema.name,
-      `MG AutoTech ${catalog.exact["File Service"]}`,
+      catalog.exact["MG AutoTech ECU and TCU file service"],
       `${locale}: Service name was not localized`,
     );
     assert.deepEqual(serviceSchema.areaServed, {
@@ -228,7 +228,7 @@ test("canonical homepage first paint follows the server-resolved locale", async 
     });
     assert.equal(
       serviceSchema.hasOfferCatalog?.name,
-      catalog.exact["The core workshop services, without the clutter."],
+      catalog.exact["Visible file service categories"],
       `${locale}: offer catalog name was not localized`,
     );
     assert.equal(
@@ -265,9 +265,7 @@ test("canonical homepage first paint follows the server-resolved locale", async 
     };
     assert.equal(
       howToSchema.name,
-      catalog.exact[
-        "From original file to secure delivery in four clear steps."
-      ],
+      catalog.exact["How to use the MG AutoTech file service"],
       `${locale}: HowTo name was not localized`,
     );
     assert.equal(
@@ -285,6 +283,11 @@ test("canonical homepage first paint follows the server-resolved locale", async 
 
     const localizedSchemaJson = JSON.stringify(homepageSchemas);
     for (const source of [
+      "MG AutoTech ECU & TCU File Service",
+      "Secure online ECU and TCU file service with vehicle data, workshop tools, credit pricing and private order delivery.",
+      "MG AutoTech ECU and TCU file service",
+      "Visible file service categories",
+      "How to use the MG AutoTech file service",
       "Professional online file service platform",
       "Upload original ECU/TCU files, select your service, track your order and download the completed file directly through the secure MG AutoTech customer portal.",
       "The core workshop services, without the clutter.",

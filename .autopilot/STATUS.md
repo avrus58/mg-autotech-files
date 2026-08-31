@@ -5615,3 +5615,39 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
   yalniz Next runtime cache davranisi, kaynak sozlesme testi ve bu audit
   kaydidir; migration, Production DB, env/secret, Caddy/DNS, odeme, e-posta
   veya musteri verisi degisikligi yoktur.
+
+## 2026-08-31 09:10 +02:00 Kalici localization release kapisi
+
+- Owner'in gelecekteki butun kullaniciya gorunur UI degisikliklerinde mevcut
+  12-locale kalitesinin ayni degisiklik icinde korunmasi talebi kalici repository
+  sozlesmesine eklendi. Body copy yaninda SSR/client durumlari, accessibility
+  attribute'lari, metadata/JSON-LD, e-posta ve locale-aware formatlama da release
+  blocker olarak tanimlandi; English fallback sifir kalmak zorundadir.
+- Production `npm run build` artik `prebuild` ile `npm run check:i18n` calistirir.
+  Bu nedenle localization kapisi gecmeden yerel veya VPS image build'i
+  baslayamaz. Yeni public/musteri route ve componentlerinin envanter disina
+  kacmasini onleyen fail-closed siniflandirma ve sentetik regresyon testi
+  eklendi. Generic component/app-segment istisna mekanizmalari kaldirildi;
+  mantiksal JSX dallari, dinamik accessibility metinleri ve custom component
+  prop'lari da AST denetimine girdi. Internal admin, exact authored legal route
+  ve ham teknik/musteri degerleri dar ve testli istisnalar olarak korundu.
+- Shared localization mimarisinden once yazilan canonical `/file-service`
+  kaynagi normalize SHA-256 ile donduruldu. Bu fingerprint yenilenebilir bir
+  bypass degildir: route'ta gelecekteki UI/copy degisikligi shared typed locale
+  renderer/catalog migrasyonunu ve freeze'in kaldirilmasini zorunlu kilar.
+  Homepage, Vehicle Intelligence, How It Works ve LanguageSwitcher normal AST
+  kapsaminda denetlenir; homepage JSON-LD ayni localized katalogdan uretilir.
+- Degisen dosyalar: `AGENTS.md`, `.autopilot/constitution/04-review-and-quality-gates.md`,
+  `package.json`, `scripts/check-customer-i18n.ts`,
+  `scripts/lib/i18n-component-inventory.ts`, `scripts/lib/i18n-dynamic-guard.ts`,
+  `scripts/lib/i18n-frozen-source.ts`, dar copy/catalog duzeltmeleri, ilgili
+  i18n/VPS kontrat testleri ve guncellenen i18n/release dokumanlari.
+- Kontroller: hedefli i18n paketi 41/41 PASS; `npm run check:i18n` 12 locale,
+  her non-English locale icin 2101/2101 reviewed source, sifir temiz English
+  fallback ve dynamic guard 20 occurrence/18 signature PASS; `npm run lint`
+  PASS; `npm run typecheck` PASS; tam `npm test -- --test-reporter=dot` 1401/1401
+  PASS; `npm run build -- --webpack` prebuild kapisini gercekten calistirarak
+  280/280 Production route PASS; `npm run check:performance` PASS (homepage
+  15.2/80 KiB gzip, locale payloadlari en fazla 6.4/12 KiB, 48/48 gerekli public
+  route). Production deploy, push, veritabani, secret, odeme, e-posta veya
+  musteri verisi mutasyonu yapilmadi.

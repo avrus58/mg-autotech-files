@@ -1,12 +1,19 @@
 # MG AutoTech i18n Site Audit
 
-Audit date: 2026-08-05
+Audit date: 2026-08-31
 
 ## Current result
 
 The public homepage and all 11 locale-prefixed home routes use the same `UnifiedHomePage` component tree. Locale changes alter reviewed copy, public links, metadata, JSON-LD and document language without creating a second or reduced page design.
 
-The customer journey uses runtime localization on canonical private URLs. The reviewed source audit covers 611 customer-visible strings across registration, login, password recovery, new request, dashboard, customer orders, delivery, File Expert, payments, widget billing, technical guidance and settings. Every non-English locale resolves all 611 strings through reviewed translation or an intentional technical invariant; clean English fallback is no longer accepted.
+The customer journey uses runtime localization on canonical private URLs. The
+reviewed source audit reads the current source inventory instead of relying on a
+fixed historical count. The 2026-08-31 baseline covered 2,101 customer-visible
+strings across registration, login, password recovery, new request, dashboard,
+customer orders, delivery, File Expert, payments, widget billing, technical
+guidance and settings. Every non-English locale resolves the complete current
+inventory through reviewed translation or an intentional technical invariant;
+clean English fallback is not accepted.
 
 ## Route matrix
 
@@ -45,7 +52,10 @@ The admin-only Growth Center groups consented attribution by locale and reports 
 ## Permanent checks
 
 - `npm run check:i18n` validates public SEO structure and audited customer source coverage.
-- The AST audit includes nested JSX conditionals and visible custom component props, preventing hidden copy regressions that simpler text-node scans miss.
+- Production `npm run build` runs `npm run check:i18n` first and cannot start when localization coverage fails.
+- The AST audit includes nested JSX conditionals, logical rendered branches, dynamic accessibility attributes and visible custom component props, preventing hidden copy regressions that simpler text-node scans miss.
+- Every new public/customer route and shared component is fail-closed inventory work; there is no generic component or app-segment bypass.
+- The independently authored legacy `/file-service` source is fingerprint-frozen. Its fingerprint must not be refreshed: a future edit first moves it to a shared typed locale renderer/catalog and removes the freeze.
 - Transactional email tests render every customer event in every supported language.
 - Supabase Auth tests render every template preview and verify every hosted language branch.
 - Registration tests cover company validation, private-profile cleanup, OAuth handoff and compact responsive layout.

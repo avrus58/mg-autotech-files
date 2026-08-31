@@ -409,21 +409,17 @@ export function buildHomepageStructuredData(
   return [
     {
       ...homepagePageJsonLd,
-      name: `MG AutoTech — ${localize(
-        "Professional online file service platform",
-      )}`,
-      description: localize(
-        "Upload original ECU/TCU files, select your service, track your order and download the completed file directly through the secure MG AutoTech customer portal.",
-      ),
+      name: localize(homepagePageJsonLd.name),
+      description: localize(homepagePageJsonLd.description),
       inLanguage,
     },
     {
       ...homepageFileServiceJsonLd,
-      name: `MG AutoTech ${localize("File Service")}`,
+      name: localize(homepageFileServiceJsonLd.name),
       inLanguage,
       hasOfferCatalog: {
         ...homepageFileServiceJsonLd.hasOfferCatalog,
-        name: localize("The core workshop services, without the clutter."),
+        name: localize(homepageFileServiceJsonLd.hasOfferCatalog.name),
         itemListElement: services.map((service, index) => ({
           "@type": "Offer",
           position: index + 1,
@@ -450,9 +446,7 @@ export function buildHomepageStructuredData(
     },
     {
       ...homepageRequestPreparationHowToJsonLd,
-      name: localize(
-        "From original file to secure delivery in four clear steps.",
-      ),
+      name: localize(homepageRequestPreparationHowToJsonLd.name),
       inLanguage,
       step: workflowSteps.map((step, index) => ({
         "@type": "HowToStep",
@@ -616,7 +610,7 @@ export function HomepageExperience({
                   <CircleDot className="h-3.5 w-3.5 text-red-500" /> Professional online file service platform
                 </div>
                 <h1 className="mt-6 text-[clamp(2.8rem,7vw,6.5rem)] font-black leading-[0.87] tracking-[-0.065em]">
-                  <span className="block">Custom ECU &amp; TCU</span>
+                  <span className="block">{"Custom ECU & TCU"}</span>
                   {" "}
                   <span className="block bg-gradient-to-r from-white via-zinc-200 to-red-500 bg-clip-text text-transparent">Tuning Files</span>
                 </h1>

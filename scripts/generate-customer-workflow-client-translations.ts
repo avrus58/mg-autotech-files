@@ -127,6 +127,7 @@ export const customerWorkflowClientGroups = {
   request: {
     files: ["src/app/new-request/page.tsx"],
     includeMasterLiteralExact: true,
+    extraTemplateKeys: ["vehicleNotSet"],
   },
   credits: {
     files: [

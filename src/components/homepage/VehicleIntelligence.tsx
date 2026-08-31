@@ -388,7 +388,7 @@ function VehicleSelect({
       >
         <option value="">{placeholder}</option>
         {options.map((option) => (
-          <option key={option.id} value={option.id}>
+          <option key={option.id} value={option.id} translate="no" data-no-translate>
             {option.name}
           </option>
         ))}
@@ -412,7 +412,7 @@ function StageCard({
   return (
     <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
       <div className="flex items-center justify-between gap-3">
-        <div className="text-sm font-black text-white">{title}</div>
+        <div translate="no" data-no-translate className="text-sm font-black text-white">{title}</div>
         <Gauge className="h-4 w-4 text-red-400" />
       </div>
       {!data || !hasData ? (
@@ -448,7 +448,7 @@ function MetricLine({
   return (
     <div className="flex items-center justify-between gap-3 rounded-xl bg-black/30 px-3 py-2.5 text-xs">
       <span className="text-zinc-400">{label}</span>
-      <span className="font-black text-white">
+      <span translate="no" data-no-translate className="font-black text-white">
         {stock ?? "–"} <span className="px-1 text-red-400">→</span> {tuned ?? "–"} {unit}
       </span>
     </div>
@@ -459,7 +459,7 @@ function Gain({ label, value, unit }: { label: string; value: number | null; uni
   return (
     <div className="rounded-xl border border-emerald-500/15 bg-emerald-500/[0.06] px-3 py-2">
       <div className="text-[0.6rem] font-black uppercase tracking-[0.14em] text-zinc-400">{label}</div>
-      <div className="mt-1 text-sm font-black text-emerald-300">
+      <div translate="no" data-no-translate className="mt-1 text-sm font-black text-emerald-300">
         {value !== null ? `+${value}` : "–"} {unit}
       </div>
     </div>
@@ -635,7 +635,7 @@ export function VehicleIntelligence({ locale = "en" }: { locale?: LocaleCode }) 
       : "/login?redirect=%2Fnew-request";
 
   return (
-    <section id="vehicle-data" data-no-translate className="relative scroll-mt-24 border-y border-white/[0.07] bg-[#08080a] py-14 text-white sm:py-16">
+    <section id="vehicle-data" className="relative scroll-mt-24 border-y border-white/[0.07] bg-[#08080a] py-14 text-white sm:py-16">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_0%,rgba(177,18,27,0.14),transparent_34rem)]" />
       <div className="relative mx-auto max-w-[86rem] px-4 sm:px-6">
         <div className="grid gap-6 lg:grid-cols-[0.72fr_1.28fr] lg:items-end">
@@ -688,10 +688,10 @@ export function VehicleIntelligence({ locale = "en" }: { locale?: LocaleCode }) 
                 <div className="flex items-center gap-2 text-[0.65rem] font-black uppercase tracking-[0.18em] text-red-300">
                   <Cpu className="h-4 w-4" /> {copy.publishedRecord}
                 </div>
-                <h3 className="mt-3 text-2xl font-black tracking-tight">
+                <h3 translate="no" data-no-translate className="mt-3 text-2xl font-black tracking-tight">
                   {selectedBrand} <span className="text-zinc-400">{selectedModel}</span>
                 </h3>
-                <p className="mt-1 text-sm font-bold text-zinc-400">{selectedGeneration} · {selectedEngine}</p>
+                <p translate="no" data-no-translate className="mt-1 text-sm font-bold text-zinc-400">{selectedGeneration} · {selectedEngine}</p>
                 <div className="mt-4 grid gap-2 sm:grid-cols-2">
                   <VehicleFact label="ECU / TCU" value={vehicle.ecu?.length ? vehicle.ecu.join(", ") : copy.notPublished} />
                   <VehicleFact label={copy.readMethod} value={vehicle.readMethods?.length ? vehicle.readMethods.slice(0, 4).join(", ") : copy.notPublished} />
@@ -699,7 +699,7 @@ export function VehicleIntelligence({ locale = "en" }: { locale?: LocaleCode }) 
                 {Boolean(vehicle.services?.length) && (
                   <div className="mt-3 flex flex-wrap gap-1.5">
                     {vehicle.services?.slice(0, 8).map((service) => (
-                      <span key={service} className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[0.65rem] font-black text-zinc-300">{service}</span>
+                      <span key={service} translate="no" data-no-translate className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[0.65rem] font-black text-zinc-300">{service}</span>
                     ))}
                   </div>
                 )}
@@ -728,7 +728,7 @@ function VehicleFact({ label, value }: { label: string; value: string }) {
   return (
     <div className="min-w-0 rounded-xl border border-white/10 bg-white/[0.035] p-3">
       <div className="text-[0.6rem] font-black uppercase tracking-[0.16em] text-zinc-400">{label}</div>
-      <div className="mt-1 break-words text-xs font-black text-zinc-200">{value}</div>
+      <div translate="no" data-no-translate className="mt-1 break-words text-xs font-black text-zinc-200">{value}</div>
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
+import { selectorCopy } from "../src/components/LanguageSwitcher";
 import { exactTranslations } from "../src/lib/i18n";
 import {
   customerRuntimeLocaleOrder,
@@ -40,6 +41,47 @@ test("the language menu exposes native names, flags and valid Intl locales", () 
     assert.ok(locale.flag.trim(), locale.code);
     assert.doesNotThrow(() => new Intl.DisplayNames([intlLocaleByCode[locale.code]], { type: "region" }));
   }
+});
+
+test("language-switcher operational copy is complete and native in every locale", () => {
+  const localeCodes = supportedLocales.map(({ code }) => code);
+  const fields = Object.keys(selectorCopy.en) as Array<keyof typeof selectorCopy.en>;
+  const switcherSource = readFileSync(
+    "src/components/LanguageSwitcher.tsx",
+    "utf8",
+  );
+
+  assert.deepEqual(Object.keys(selectorCopy).sort(), [...localeCodes].sort());
+  assert.deepEqual([...fields].sort(), [
+    "change",
+    "failed",
+    "label",
+    "loading",
+    "retry",
+    "switchTo",
+  ]);
+
+  for (const locale of localeCodes) {
+    assert.deepEqual(
+      Object.keys(selectorCopy[locale]).sort(),
+      [...fields].sort(),
+      locale,
+    );
+    for (const field of fields) {
+      const value = selectorCopy[locale][field];
+      assert.ok(value.trim(), `${locale}: ${field}`);
+      if (locale !== "en") {
+        assert.notEqual(value, selectorCopy.en[field], `${locale}: ${field}`);
+      }
+    }
+  }
+
+  assert.match(switcherSource, /aria-label=\{currentSelectorCopy\.label\}/u);
+  assert.match(switcherSource, /aria-label=\{currentSelectorCopy\.change\}/u);
+  assert.match(
+    switcherSource,
+    /aria-label=\{`\$\{currentSelectorCopy\.switchTo\} \$\{item\.name\}`\}/u,
+  );
 });
 
 test("shared runtime copy covers every non-English site locale without fallback", () => {

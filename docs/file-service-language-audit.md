@@ -22,7 +22,16 @@ This audit applies only to `file.mgautotech.de`. It does not change or make clai
 - Critical customer surfaces share one typed translation registration layer for all non-English locales.
 - Russian, Chinese and Albanian retain focused overrides for previously weak flows.
 - `scripts/check-customer-i18n.ts` enforces exact translations for critical authentication/request entry text, complete compact-label mappings, stable technical identifiers and a non-regressing exact-translation baseline.
-- Long text without a reviewed exact translation remains clean English; partial word replacement is deliberately blocked there so the portal never produces mixed-language sentences.
+- Long text must have a reviewed exact translation in every supported locale;
+  partial word replacement and clean English fallback are both rejected so the
+  portal never produces mixed-language or untranslated sentences.
+- New public/customer routes and shared components fail closed unless they join
+  the audited localization inventory; generic file or route exemptions are not
+  allowed.
+- The independently authored canonical `/file-service` source predates the
+  shared localized renderer and is source-fingerprint frozen. The fingerprint
+  is not a renewable exception: any future UI/copy edit must first migrate that
+  route to the shared typed locale catalog and then remove the freeze.
 
 ## Operational Check
 
@@ -32,7 +41,10 @@ Run:
 npm run check:i18n
 ```
 
-The check validates SEO localization structure, encoding markers, canonical route ownership and customer-facing source-string coverage.
+The check validates SEO localization structure, encoding markers, canonical
+route ownership, customer-facing source-string coverage, dynamic visible copy,
+route/component inventory and frozen legacy source integrity. Production
+`npm run build` invokes this check automatically before compiling.
 
 ## Intentional Limits
 

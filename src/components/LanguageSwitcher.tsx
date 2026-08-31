@@ -55,7 +55,7 @@ const translatedAttributeNames = [
   "title",
 ] as const;
 
-const selectorCopy: Record<
+export const selectorCopy: Record<
   LocaleCode,
   {
     label: string;

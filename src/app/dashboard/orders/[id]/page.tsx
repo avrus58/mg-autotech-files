@@ -874,7 +874,7 @@ export default function OrderDetailPage() {
 
           <div className="grid border-t border-white/10 sm:grid-cols-2 lg:grid-cols-4">
             <WorkspaceMetric label="Current status" value={localizeCustomerOrderStatus(locale, order.status)} accentClass={getStatusStyle(order.status)} />
-            <WorkspaceMetric label="Requested service" value={order.service_type || "Not set"} rawValue={Boolean(order.service_type)} />
+            <WorkspaceMetric label="Requested service" value={order.service_type || customerWorkflowT(locale, "serviceNotSet", {})} rawValue={Boolean(order.service_type)} />
             <WorkspaceMetric label="Created" value={formatDate(order.created_at, locale)} />
             <WorkspaceMetric label="Credits used" value={String(Number(order.credits_required ?? 0))} />
           </div>

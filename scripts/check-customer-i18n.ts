@@ -3,6 +3,8 @@ import path from "node:path";
 import ts from "typescript";
 import { exactTranslations, termTranslations } from "../src/lib/i18n";
 import { supportedLocales, type LocaleCode } from "../src/lib/i18nConfig";
+import { buildHomepageTranslationCatalog } from "../src/lib/homepageTranslationCatalog";
+import { publicVehicleCopy } from "../src/components/homepage/VehicleIntelligence";
 import {
   customerWorkflowExactTranslations,
   customerWorkflowLocaleOrder,
@@ -35,11 +37,14 @@ import {
   reviewedDynamicVisibleExpressions,
   type DynamicVisibleExpression,
 } from "./lib/i18n-dynamic-guard";
+import { findUnclassifiedComponentFiles } from "./lib/i18n-component-inventory";
+import { auditFrozenSource } from "./lib/i18n-frozen-source";
 
 const customerSurfaceRoots = [
   "src/app/error.tsx",
   "src/app/global-error.tsx",
   "src/app/not-found.tsx",
+  "src/app/[locale]",
   "src/app/about",
   "src/app/auth",
   "src/app/brands",
@@ -53,6 +58,7 @@ const customerSurfaceRoots = [
   "src/app/measurement",
   "src/app/register",
   "src/app/forgot-password",
+  "src/app/how-it-works",
   "src/app/reset-password",
   "src/app/payment",
   "src/app/services",
@@ -60,8 +66,25 @@ const customerSurfaceRoots = [
   "src/app/widget",
   "src/app/workshop-guides",
   "src/components/account",
+  "src/components/analytics/AccountRuntimeBoundary.tsx",
+  "src/components/analytics/GrowthIdentityLinkRuntime.tsx",
+  "src/components/analytics/PaidClickPreHydrationGuard.tsx",
+  "src/components/analytics/PublicAnalyticsRuntime.tsx",
+  "src/components/analytics/RegistrationHandoffRecoveryRuntime.tsx",
   "src/components/auth",
   "src/components/dashboard",
+  "src/components/homepage/HomepageExperience.tsx",
+  "src/components/homepage/VehicleIntelligence.tsx",
+  "src/components/HomepageSessionBridge.tsx",
+  "src/components/HowItWorksPageContent.tsx",
+  "src/components/LanguageSwitcher.tsx",
+  "src/components/LocalizedSeoFooter.tsx",
+  "src/components/LocalizedServiceCards.tsx",
+  "src/components/recovery/NotFoundClient.tsx",
+  "src/components/RequestLocaleBoundary.tsx",
+  "src/components/RuntimePublicFooter.tsx",
+  "src/components/RuntimePublicLocalization.tsx",
+  "src/components/ServerLocaleBoundary.tsx",
   "src/components/tools",
   "src/components/widget",
   "src/lib/notFoundMetadata.ts",
@@ -95,11 +118,6 @@ const customerSurfaceRoots = [
   "src/lib/workshopGuides.ts",
 ] as const;
 
-const separatelyAuditedAppSegments = new Set([
-  "[locale]",
-  "file-service",
-  "how-it-works",
-]);
 const intentionallyAuthoredAppSegments = new Set([
   "admin",
   "agb",
@@ -111,9 +129,26 @@ const intentionallyAuthoredAppSegments = new Set([
   "widerruf",
 ]);
 
+// The canonical English File Service hub predates its typed localized route.
+// Freeze it byte-for-byte (after line-ending normalization) so no future copy
+// or UI change can bypass localization. Do not refresh this fingerprint: first
+// migrate the route to a shared typed renderer/catalog, then delete this gate.
+const frozenLegacyCustomerFiles = new Map([
+  [
+    "src/app/file-service/page.tsx",
+    "0d6d6dc6aa22ed637aa92ce58911c4e3ce5a76740b76d8b207ca2f43b67c603f",
+  ],
+]);
+
+const intentionallyAuthoredComponentRoots = [
+  "src/components/admin",
+  "src/components/legal",
+] as const;
+
 const invariantValues = new Set([
   "MG",
   "MG AutoTech",
+  "© 2026 MG AutoTech.",
   "MG AutoTech • 404",
   "MG AutoTech - Melih Gokkaya",
   "MG AutoTech SaaS",
@@ -257,8 +292,20 @@ const invariantPatterns = [
   /^[A-Za-z0-9.+-]+\s+\d+\s+(?:hp|HP|PS|Nm|kW)$/u,
   /^\p{Extended_Pictographic}+$/u,
   /^https?:\/\//u,
+  /^\/[A-Za-z0-9][A-Za-z0-9._~!$&'()*+,;=:@%\-/]*(?:\?[A-Za-z0-9._~!$&'()*+,;=:@%\-/?]*)?(?:#[A-Za-z0-9._~!$&'()*+,;=:@%\-/?]*)?$/u,
   /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/iu,
 ];
+
+// These declarations are complete typed locale catalogs, not independent UI
+// sources. Direct parity/no-fallback tests cover every field; all other code in
+// the same components remains inside this AST audit.
+const catalogDeclarationsWithParityTests = new Map<string, ReadonlySet<string>>([
+  [
+    "src/components/homepage/VehicleIntelligence.tsx",
+    new Set(["publicVehicleCopy"]),
+  ],
+  ["src/components/LanguageSwitcher.tsx", new Set(["selectorCopy"])],
+]);
 
 const legacyTransliterationPatterns: Partial<
   Record<Exclude<LocaleCode, "en">, RegExp>
@@ -523,11 +570,25 @@ function collectVisibleStrings() {
     const isControlFlowLiteral = (node: ts.Node) => {
       let current = node.parent;
       while (current && !ts.isSourceFile(current)) {
-        if (
-          ts.isBinaryExpression(current) &&
-          current.operatorToken.kind !== ts.SyntaxKind.PlusToken
-        ) {
-          return true;
+        if (ts.isBinaryExpression(current)) {
+          switch (current.operatorToken.kind) {
+            case ts.SyntaxKind.EqualsEqualsToken:
+            case ts.SyntaxKind.ExclamationEqualsToken:
+            case ts.SyntaxKind.EqualsEqualsEqualsToken:
+            case ts.SyntaxKind.ExclamationEqualsEqualsToken:
+            case ts.SyntaxKind.LessThanToken:
+            case ts.SyntaxKind.LessThanEqualsToken:
+            case ts.SyntaxKind.GreaterThanToken:
+            case ts.SyntaxKind.GreaterThanEqualsToken:
+            case ts.SyntaxKind.InKeyword:
+            case ts.SyntaxKind.InstanceOfKeyword:
+              return true;
+            default:
+              // Logical operators render one of their operands. A string or
+              // template inside `condition && <UI>` / `value || fallback`
+              // remains customer-visible and must continue through the audit.
+              break;
+          }
         }
         if (ts.isCaseClause(current) && current.expression === node) return true;
         current = current.parent;
@@ -660,6 +721,13 @@ function collectVisibleStrings() {
     };
 
     const visit = (node: ts.Node) => {
+      if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name)) {
+        const declarations = catalogDeclarationsWithParityTests.get(
+          file.replaceAll("\\", "/")
+        );
+        if (declarations?.has(node.name.text)) return;
+      }
+
       if (ts.isJsxText(node)) {
         remember(node.text);
       }
@@ -757,6 +825,38 @@ function summarizeValues(values: readonly string[], limit = 12) {
   return remaining > 0 ? `${sample} | … ${remaining} more` : sample;
 }
 
+const homepageLocaleOrder = supportedLocales
+  .map(({ code }) => code)
+  .filter((code): code is Exclude<LocaleCode, "en"> => code !== "en");
+
+const homepageCatalogs = Object.fromEntries(
+  homepageLocaleOrder.map((locale) => [
+    locale,
+    buildHomepageTranslationCatalog(locale)?.exact ?? {},
+  ])
+) as Record<Exclude<LocaleCode, "en">, Record<string, string>>;
+
+const homepageCatalogSources = new Set(
+  homepageLocaleOrder.flatMap((locale) => Object.keys(homepageCatalogs[locale]))
+);
+const homepageScopedTranslations: Record<string, readonly string[]> =
+  Object.fromEntries(
+    [...homepageCatalogSources].map((source) => [
+      source,
+      homepageLocaleOrder.map((locale) => homepageCatalogs[locale][source] ?? ""),
+    ])
+  );
+
+const homepageVehicleTranslations: Record<string, readonly string[]> =
+  Object.fromEntries(
+    (Object.keys(publicVehicleCopy.en) as Array<keyof typeof publicVehicleCopy.en>).map(
+      (field) => [
+        publicVehicleCopy.en[field],
+        homepageLocaleOrder.map((locale) => publicVehicleCopy[locale][field]),
+      ]
+    )
+  );
+
 const supplementalCatalogs: ReadonlyArray<
   readonly [
     label: string,
@@ -765,6 +865,8 @@ const supplementalCatalogs: ReadonlyArray<
   ]
 > = [
   ["customer-workflow", customerWorkflowLocaleOrder, customerWorkflowExactTranslations],
+  ["homepage", homepageLocaleOrder, homepageScopedTranslations],
+  ["homepage-vehicle", homepageLocaleOrder, homepageVehicleTranslations],
   ["log-studio", logStudioExactLocaleOrder, logStudioExactTranslations],
   ["public-core", publicSurfaceLocaleOrder, publicCoreTranslations],
   ["public-vehicle", publicSurfaceLocaleOrder, publicVehicleTranslations],
@@ -802,6 +904,8 @@ function allowedSupplementalLabelsForFile(file: string) {
   if (/^src\/app\/dashboard\/log-analysis(?:\/|$)/u.test(normalized)) add("log-studio");
 
   if (/^src\/components\/widget\//u.test(normalized)) add("widget-site");
+  if (normalized === "src/components/homepage/HomepageExperience.tsx") add("homepage");
+  if (normalized === "src/components/homepage/VehicleIntelligence.tsx") add("homepage-vehicle");
   if (/^src\/components\/tools\//u.test(normalized)) add("public-core", "public-tools");
   if (/^src\/components\/(?:account|auth|dashboard)\//u.test(normalized)) add("customer-workflow");
   if (normalized === "src/components/dashboard/LogAnalysisStudio.tsx") add("public-tools", "log-studio");
@@ -902,6 +1006,19 @@ const locales = supportedLocales
 const failures: string[] = [];
 const missingSourceValues = new Set<string>();
 
+for (const [file, expectedFingerprint] of frozenLegacyCustomerFiles) {
+  if (!fs.existsSync(file)) {
+    failures.push(`frozen legacy customer surface is missing: ${file}`);
+    continue;
+  }
+  const audit = auditFrozenSource(fs.readFileSync(file, "utf8"), expectedFingerprint);
+  if (!audit.matches) {
+    failures.push(
+      `frozen legacy customer surface changed without shared localization migration: ${file}`
+    );
+  }
+}
+
 const appRouteEntryFiles = new Set<string>();
 walk("src/app", appRouteEntryFiles);
 const routeEntryFileNames = new Set([
@@ -917,11 +1034,10 @@ const unclassifiedAppPages = [...appRouteEntryFiles]
   .filter((file) => {
     const relative = path.relative("src/app", file).replaceAll("\\", "/");
     if (relative === "page.tsx" || relative === "not-found.tsx") return false;
+    const normalizedFile = file.replaceAll("\\", "/");
+    if (frozenLegacyCustomerFiles.has(normalizedFile)) return false;
     const firstSegment = relative.split("/")[0] ?? "";
-    if (
-      separatelyAuditedAppSegments.has(firstSegment) ||
-      intentionallyAuthoredAppSegments.has(firstSegment)
-    ) {
+    if (intentionallyAuthoredAppSegments.has(firstSegment)) {
       return false;
     }
     return !customerSurfaceRoots.some((root) => {
@@ -931,9 +1047,26 @@ const unclassifiedAppPages = [...appRouteEntryFiles]
   })
   .map((file) => file.replaceAll("\\", "/"));
 
+const componentFiles = new Set<string>();
+walk("src/components", componentFiles);
+const auditedComponentRoots = customerSurfaceRoots.filter((root) =>
+  root.startsWith("src/components/")
+);
+const unclassifiedComponentFiles = findUnclassifiedComponentFiles({
+  files: componentFiles,
+  auditedRoots: auditedComponentRoots,
+  intentionallyAuthoredRoots: intentionallyAuthoredComponentRoots,
+});
+
 if (unclassifiedAppPages.length > 0) {
   failures.push(
     `application pages escaped the localization inventory: ${unclassifiedAppPages.join(" | ")}`
+  );
+}
+
+if (unclassifiedComponentFiles.length > 0) {
+  failures.push(
+    `component files escaped the localization inventory: ${unclassifiedComponentFiles.join(" | ")}`
   );
 }
 

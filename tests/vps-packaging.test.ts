@@ -59,6 +59,9 @@ test("Next standalone image admits only allowlisted browser-public build values"
   const config = readProjectFile("next.config.ts");
   const dockerfile = readProjectFile("Dockerfile");
   const ignore = readProjectFile(".dockerignore");
+  const packageJson = JSON.parse(readProjectFile("package.json")) as {
+    scripts: Record<string, string>;
+  };
 
   assert.match(config, /output: "standalone"/);
   assert.match(dockerfile, /FROM \$\{NODE_IMAGE\} AS base/);
@@ -68,6 +71,10 @@ test("Next standalone image admits only allowlisted browser-public build values"
   assert.match(dockerfile, /\/app\/\.next\/standalone/);
   assert.match(dockerfile, /USER nextjs/);
   assert.match(dockerfile, /Production image build refuses the CAPTCHA test-key bypass/);
+  assert.equal(packageJson.scripts.prebuild, "npm run check:i18n");
+  assert.match(packageJson.scripts["check:i18n"] ?? "", /check-i18n-seo\.mjs/);
+  assert.match(packageJson.scripts["check:i18n"] ?? "", /check-customer-i18n\.ts/);
+  assert.match(dockerfile, /&& npm run build/);
   for (const variable of publicBuildVariables) {
     assert.match(dockerfile, new RegExp(`ARG ${variable}=`), variable);
   }
