@@ -4701,7 +4701,10 @@ export function generateCustomerWorkflowClientModule(
   config: GroupConfig,
 ) {
   const compactExactTranslations =
-    groupName === "request" || groupName === "auth";
+    groupName === "request" ||
+    groupName === "auth" ||
+    groupName === "overview" ||
+    groupName === "credits";
   const literals = collectSourceLiterals(config.files);
   const manualExactSources = validatedManualExactSources(groupName, config);
   const directExactSources = new Set(manualExactSources.keys());
@@ -4749,6 +4752,7 @@ export function generateCustomerWorkflowClientModule(
     });
   const exactObject = Object.fromEntries(exactEntries);
   const imports = runtimeImports(config.helper, compactExactTranslations);
+  if (groupName === "auth") imports.push("customerWorkflowClientLocaleOrder");
   const typeImports = [
     ...(config.helper === "notifications"
       ? ["CustomerNotificationI18nInput"]
@@ -4783,7 +4787,7 @@ export const customerWorkflowExactTranslations = inflateCustomerWorkflowExactTra
     typeImports.length
       ? `\nimport type {\n  ${typeImports.join(",\n  ")},\n} from "@/lib/i18n/customer-workflow-client-runtime";`
       : ""
-  }\n\nexport const customerWorkflowLocaleOrder = ${groupSerialize(customerWorkflowLocaleOrder)} as const satisfies readonly Exclude<LocaleCode, "en">[];\n\n${exactDeclaration}${
+  }\n\nexport const customerWorkflowLocaleOrder = ${groupName === "auth" ? "customerWorkflowClientLocaleOrder" : `${groupSerialize(customerWorkflowLocaleOrder)} as const`} satisfies readonly Exclude<LocaleCode, "en">[];\n\n${exactDeclaration}${
     exportsSourceStrings
       ? "\n\nexport const customerWorkflowSourceStrings = Object.keys(customerWorkflowExactTranslations);"
       : ""
