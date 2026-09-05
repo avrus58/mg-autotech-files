@@ -6,6 +6,18 @@
 
 ## In Progress
 
+### MANUAL-20260905-ALL-VALIDATED-CHANGES-RELEASE [P1] Publish the validated panel and localization package
+
+Fingerprint: `production-release|8b06841df042-to-panel-localization-closeout|docker-prebuild-fixture-closure`
+
+Owner explicitly authorized publishing all current completed changes. The live
+VPS image pair is `8b06841df042`; the clean homepage-refresh branch is its linear
+successor. Preserve unrelated dirty worktrees, existing data/configuration and
+the separate mgautotech.de stack. No migration, dependency or API-route changes.
+The newly mandatory prebuild test needs its fixture closure admitted to the
+Docker builder context. Validate that packaging correction, publish the exact
+source archive, retain the previous image pair and run immediate public smoke.
+
 ## Blocked
 
 ### MANUAL-20260828-ADS-MEASUREMENT-FINAL-HARDENING [P0] Reklam edinimi, consent ve dogrulanmis donusum final kapilari

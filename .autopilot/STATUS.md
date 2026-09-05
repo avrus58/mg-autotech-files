@@ -5831,3 +5831,24 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
   new explicit owner release instruction and its scoped release/smoke checks.
 - Changes are in the homepage-refresh feature worktree. No push, Preview,
   Production deployment, secret access or live customer/service mutation.
+
+## 2026-09-05 Owner-authorized cumulative Production release in progress
+
+- Owner explicitly requested all completed changes be published. Read-only VPS
+  inspection confirms current app/analyzer `8b06841df042`, both healthy with zero
+  restarts; the clean homepage-refresh branch is a linear successor. The scope
+  includes localization enforcement/finalization, panel readability, and the
+  six verified follow-up fixes. Existing main-worktree edits are not silently
+  mixed into this tested release. No API, migration, dependency, payment config,
+  legal, Compose or analyzer changes relative to the live baseline.
+- Frozen application code `ea449c6` has full local lint/typecheck/i18n/build,
+  performance and 1499/1499 test evidence in the panel follow-up report. Release
+  inspection found the mandatory prebuild test missing from Docker's context;
+  a narrow test/fixture allowlist and regression assertion correct packaging
+  without skipping the localization gate or adding tests to the runtime image.
+- Initial local public readiness request returned 522; subsequent local and VPS
+  public checks returned 200, while the app's internal readiness was also 200.
+  No configuration cause is inferred from this isolated transport failure.
+- Preserve rollback pair `8b06841df042`, root-only env files, Caddy/DNS and the
+  separate mgautotech.de stack. Live customer/payment/e-mail mutations are not
+  part of smoke testing. Final build/deployment/smoke receipts are still pending.

@@ -23,7 +23,13 @@ file-expert-analyzer
 
 # Development-only material is not required by the standalone web image.
 docs
-tests
+# The fail-closed prebuild localization gate needs its test and source fixtures
+# in the builder context. They are not copied into the standalone runner.
+tests/*
+!tests/customer-workflow-client-bundles.test.ts
+!tests/fixtures
+tests/fixtures/*
+!tests/fixtures/customer-workflow-route-closure
 *.log
 npm-debug.log*
 

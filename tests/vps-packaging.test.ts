@@ -96,6 +96,23 @@ test("Next standalone image admits only allowlisted browser-public build values"
   assert.match(ignore, /^node_modules$/m);
 });
 
+test("Docker builder retains the mandatory localization gate and its fixture closure", () => {
+  const ignore = readProjectFile(".dockerignore");
+  const dockerfile = readProjectFile("Dockerfile");
+  const packageJson = JSON.parse(readProjectFile("package.json")) as {
+    scripts: Record<string, string>;
+  };
+  assert.match(packageJson.scripts["check:i18n"], /tsx --test tests\/customer-workflow-client-bundles\.test\.ts/);
+  assert.doesNotMatch(ignore, /^tests$/m);
+  assert.match(ignore, /^tests\/\*$/m);
+  assert.match(ignore, /^!tests\/customer-workflow-client-bundles\.test\.ts$/m);
+  assert.match(ignore, /^!tests\/fixtures$/m);
+  assert.match(ignore, /^tests\/fixtures\/\*$/m);
+  assert.match(ignore, /^!tests\/fixtures\/customer-workflow-route-closure$/m);
+  const runner = dockerfile.slice(dockerfile.indexOf("FROM base AS runner"));
+  assert.doesNotMatch(runner, /COPY[^\n]*(?:\/app\/tests|\/app\/scripts \.|\/app \.|\. \.)/);
+});
+
 test("Production compose keeps ports private and enforces the edge/backend contract", () => {
   const compose = readProjectFile("compose.vps.yml");
   const preview = readProjectFile("compose.vps.preview.yml");
