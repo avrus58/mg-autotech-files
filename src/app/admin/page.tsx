@@ -2728,8 +2728,14 @@ function CustomersPanel({
             <div className="mb-4 flex items-start justify-between gap-4">
               <div className="min-w-0">
                 <div className="break-words font-black">{customer.email || "-"}</div>
-                <div className="mt-1 break-words text-sm text-zinc-500">{customer.customer_id || customer.id}</div>
+                <button type="button" onClick={() => customer.customer_id && navigator.clipboard.writeText(customer.customer_id)} disabled={!customer.customer_id} aria-label="Copy customer ID" className="mt-1 max-w-full break-all text-left text-xs font-black text-red-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 disabled:text-zinc-500">{customer.customer_id || customer.id}</button>
                 <div className="mt-1 break-words text-xs text-zinc-500">{customer.full_name || customer.company_name || "-"}</div>
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <span className="text-xs font-bold text-zinc-300">{customer.account_type === "company" ? "Company" : "Private"}</span>
+                  <span className={`rounded-lg border px-2 py-1 text-[11px] font-black ${accountStatusClass(customer.account_status)}`}>{statusLabel(customer.account_status ?? "active")}</span>
+                </div>
+                {customer.allow_negative_credits && <div className="mt-2 break-words text-xs font-bold text-orange-300">Negative limit: -{Math.abs(Number(customer.negative_credit_limit ?? 0))}</div>}
+                {customer.internal_admin_note && <div className="mt-2 break-words rounded-lg border border-yellow-700/30 bg-yellow-950/15 px-2 py-1 text-xs text-yellow-300">Note: {customer.internal_admin_note}</div>}
                 {customer.customer_tags?.length ? (
                   <div className="mt-2 flex flex-wrap gap-1">
                     {customer.customer_tags.map((tag) => (

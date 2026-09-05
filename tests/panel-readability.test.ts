@@ -53,6 +53,12 @@ test("admin customer controls use cards on laptops and fluid balances on wide sc
   assert.match(customers, /max-w-full[^\n]*md:w-\[520px\]/);
   assert.match(customers, /quickAdjustCredits\(customer, amount\)/);
   assert.match(customers, /openCustomer\(customer\)/);
+  const cards = customers.slice(customers.indexOf("grid gap-3 lg:grid-cols-2 2xl:hidden"));
+  for (const preservedField of ["account_type", "account_status", "allow_negative_credits", "negative_credit_limit", "internal_admin_note"]) {
+    assert.ok(cards.includes(`customer.${preservedField}`), preservedField);
+  }
+  assert.match(cards, /aria-label="Copy customer ID"/);
+  assert.match(cards, /navigator.clipboard.writeText\(customer.customer_id\)/);
   assert.match(admin, /data-admin-navigation/);
   assert.match(admin, /id="customer-detail-title" className="break-words/);
   assert.match(admin, /onClick=\{onSave\}/);
