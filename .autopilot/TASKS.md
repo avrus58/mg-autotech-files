@@ -159,6 +159,21 @@ Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
 
+### MANUAL-20260905-PANEL-READABILITY [P1] Customer clarity and panel overflow
+
+Fingerprint: `panel-readability|20260905-owner-screenshot|clipped-next-action-nav-ledger-admin-customer-grid|wrap-containment-without-feature-removal`
+
+Done locally: all existing features/routes, black/red design and12 locales
+preserved. Simplified dashboard guidance and fixed reproduced shared/customer/admin
+clipping. Laptop customer cards retain table context. Existing localization
+emitted-budget bug fixed without raising budgets or removing translation keys.
+
+Validation: final candidate `a15e0e6`,1493/1493 tests, lint, typecheck,
+Production-mode build/prebuild-i18n, fresh emitted budgets and performance PASS;
+124 responsive plus18 interaction Chrome checks, independent immutable review GO.
+No real customer data or live service mutations; no push/deploy. Coverage and
+unexecuted backend boundaries: `docs/panel-readability-2026-09-05.md`.
+
 ### MANUAL-20260830-SITE-WIDE-LOCALIZATION-COMPLETENESS [P0] Dil secicinin vaat ettiği gerçek site kapsamını tamamla
 
 Durum: Done

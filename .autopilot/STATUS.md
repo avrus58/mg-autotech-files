@@ -4,6 +4,46 @@
 
 Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 
+## 2026-09-05 MANUAL-20260905-PANEL-READABILITY
+
+- Scope: Owner-directed customer clarity and desktop/mobile admin containment;
+  preserve all features, black/red design and the preceding 12-locale package.
+  Worktree `mg-autotech-files-homepage-refresh`; no changes to the dirty primary
+  security worktree. No push or Production deployment authorized/executed.
+- Candidate: `a15e0e64325118ffab3f420a0d6be5e7d92f5d08` (test-only follow-up to
+  application build `5b0eda279673e1d080cc63ca32b003461de82d75`), including `2521ad4`,
+  `82fd1d7`, `580b362` and `e5b8235`. Dashboard action disclosure, shared navigation/header
+  wrapping, readable credit history, admin navigation/customer modal/card
+  containment, compact vehicle editor and widget headings. All routes/actions
+  retained; customer cards retain status/type/negative allowance/note/ID copy.
+- Changed files and findings: `docs/panel-readability-2026-09-05.md`; source UI
+  changes in admin/dashboard pages and shared dashboard components, globals.css,
+  narrow overview DOM tombstone/catalog cleanup, panel/UI regression tests.
+- Additional release-gate finding: existing emitted-bundle Unicode regexp failed
+  on a fresh build. Fixed and regression-tested; named chunks are identified by
+  their actual registrations. Paired catalogs share async chunks; overview and
+  credits use the established compact column encoding, auth reuses locale order.
+  No gzip budget, localization baseline or exception broadened; no text removed.
+- Browser evidence: 124 responsive checks at 390/1024/1366/1920px, EN/DE/TR/ZH;
+  18 interaction cases. Zero unintended measured overflow or browser errors.
+  Credits and language interactions rerun after catalog serialization changes.
+  Synthetic local-only fixture adapters reject mutations and external requests;
+  no real customers, files, environment secrets or live services used.
+- Independent immutable review: customer-card parity finding fixed in `82fd1d7`;
+  final `5b0eda2` GO. Reviewer confirmed overview 38 exact rows x11 locales plus
+  14 templates, credits 40 rows x11 plus9 templates, auth locale order and all93
+  auth observer keys x11 locales unchanged (89 stored,4 identical shared rows).
+- Validation: final candidate1493/1493 tests and lint PASS; typecheck,
+  Production-mode build/prebuild-i18n, fresh emitted-budget tests4/4 and performance
+  PASS. Exact runtime filename mapping avoids counting duplicate catalog IDs in
+  unrelated route entries. Final test-only review `a15e0e6` GO. Task Done locally;
+  no push/deploy. Receipts: `.autopilot/runtime/panel-release-tests.log`,
+  `panel-release-lint.log`, `panel-final-types.log`, `panel-final-build.log`,
+  `panel-emitted-budget.log`, `panel-final-performance.log`; details in the audit.
+- Boundaries: 49 page sources inspected; not every backend operation/populated
+  state exercised. Widget-client headings/order-detail header source-reviewed.
+  No database/auth/payment/business-rule change; deployment remains separate.
+
 ## 2026-08-22 Genel datalog denemesi ve customer Studio derinligi
 
 - Sonuc: Uygulama tamamlandi. Ana sayfadaki public browser-local deneme artik
