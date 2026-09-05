@@ -83,19 +83,6 @@ export const customerWorkflowExactTranslations = {
     "Wymagane działanie",
     "Kërkohet veprim"
   ],
-  "Active Orders": [
-    "Actieve orders",
-    "Aktive Aufträge",
-    "Commandes actives",
-    "Ordini attivi",
-    "Активные заказы",
-    "Pedidos activos",
-    "Aktif Siparişler",
-    "Pedidos ativos",
-    "进行中的订单",
-    "Aktywne zlecenia",
-    "Porosi aktive"
-  ],
   "Additional files": [
     "Extra bestanden",
     "Zusätzliche Dateien",
@@ -746,19 +733,6 @@ export const customerWorkflowExactTranslations = {
     "Generacja nie ustawiona",
     "Gjenerata nuk është vendosur"
   ],
-  "In Progress": [
-    "In behandeling",
-    "In Bearbeitung",
-    "En cours",
-    "In lavorazione",
-    "В работе",
-    "En curso",
-    "İşlemde",
-    "Em curso",
-    "处理中",
-    "W toku",
-    "Në proces"
-  ],
   "Latest": [
     "Nieuwste",
     "Neueste",
@@ -797,19 +771,6 @@ export const customerWorkflowExactTranslations = {
     "已加载页面",
     "Wczytana strona",
     "Faqja e ngarkuar"
-  ],
-  "Loading orders...": [
-    "Orders laden...",
-    "Aufträge werden geladen...",
-    "Chargement des commandes...",
-    "Caricamento ordini...",
-    "Загрузка заказов...",
-    "Cargando pedidos...",
-    "Siparişler yükleniyor...",
-    "A carregar pedidos...",
-    "正在加载订单...",
-    "Ładowanie zleceń...",
-    "Po ngarkohen porositë..."
   ],
   "Master / Slave": [
     "Master / Slave",

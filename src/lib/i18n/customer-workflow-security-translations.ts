@@ -20,7 +20,138 @@ export const customerWorkflowLocaleOrder = [
   "sq"
 ] as const satisfies readonly Exclude<LocaleCode, "en">[];
 
-export const customerWorkflowExactTranslations = {} as const satisfies Readonly<Record<string, readonly string[]>>;
+export const customerWorkflowExactTranslations = {
+  "Account Readiness": [
+    "Accountgereedheid",
+    "Kontobereitschaft",
+    "Préparation du compte",
+    "Preparazione account",
+    "Готовность аккаунта",
+    "Preparación de la cuenta",
+    "Hesap Hazırlığı",
+    "Preparação da conta",
+    "账户准备情况",
+    "Gotowość konta",
+    "Gatishmëria e llogarisë"
+  ],
+  "Account type": [
+    "Accounttype",
+    "Kontotyp",
+    "Type de compte",
+    "Tipo di conto",
+    "Тип аккаунта",
+    "Tipo de cuenta",
+    "Hesap türü",
+    "Tipo de conta",
+    "账户类型",
+    "Typ konta",
+    "Lloji i llogarisë"
+  ],
+  "Add missing details below to help us handle your requests.": [
+    "Vul hieronder de ontbrekende gegevens in, zodat we uw aanvragen kunnen afhandelen.",
+    "Ergänzen Sie unten die fehlenden Angaben, damit wir Ihre Anfragen bearbeiten können.",
+    "Complétez les informations manquantes ci-dessous pour nous aider à traiter vos demandes.",
+    "Aggiungi qui sotto i dati mancanti per aiutarci a gestire le tue richieste.",
+    "Добавьте недостающие данные ниже, чтобы мы могли обработать ваши запросы.",
+    "Añade los datos que faltan a continuación para ayudarnos a gestionar tus solicitudes.",
+    "Taleplerinizi işleyebilmemiz için aşağıdaki eksik bilgileri tamamlayın.",
+    "Preencha os dados em falta abaixo para nos ajudar a tratar dos seus pedidos.",
+    "请补充下方缺失的信息，以便我们处理您的请求。",
+    "Uzupełnij poniżej brakujące dane, abyśmy mogli obsłużyć Twoje zgłoszenia.",
+    "Plotësoni të dhënat që mungojnë më poshtë për të na ndihmuar të trajtojmë kërkesat tuaja."
+  ],
+  "Company Name": [
+    "Bedrijfsnaam",
+    "Firmenname",
+    "Nom de l'entreprise",
+    "Nome azienda",
+    "Название компании",
+    "Nombre de empresa",
+    "Firma adı",
+    "Nome da empresa",
+    "公司名称",
+    "Nazwa firmy",
+    "Emri i kompanisë"
+  ],
+  "Complete": [
+    "Volledig",
+    "Vollständig",
+    "Complet",
+    "Completo",
+    "Заполнено",
+    "Completo",
+    "Tamamlandı",
+    "Completo",
+    "已完成",
+    "Kompletne",
+    "Plotësuar"
+  ],
+  "Complete your customer profile": [
+    "Vul uw klantprofiel aan",
+    "Kundenprofil vervollständigen",
+    "Complétez votre profil client",
+    "Completa il profilo cliente",
+    "Заполните профиль клиента",
+    "Completa tu perfil de cliente",
+    "Müşteri profilinizi tamamlayın",
+    "Complete o seu perfil de cliente",
+    "完善客户资料",
+    "Uzupełnij profil klienta",
+    "Plotësoni profilin e klientit"
+  ],
+  "Invoice e-mail": [
+    "Factuur-e-mailadres",
+    "Rechnungs-E-Mail",
+    "E-mail de facturation",
+    "E-mail di fatturazione",
+    "E-mail для счетов",
+    "Correo electrónico de facturación",
+    "Fatura e-postası",
+    "E-mail de faturação",
+    "账单电子邮箱",
+    "E-mail do faktur",
+    "E-maili i faturimit"
+  ],
+  "Missing information": [
+    "Ontbrekende gegevens",
+    "Fehlende Angaben",
+    "Informations manquantes",
+    "Informazioni mancanti",
+    "Не хватает данных",
+    "Faltan datos",
+    "Eksik bilgi",
+    "Dados em falta",
+    "信息缺失",
+    "Brakujące dane",
+    "Të dhëna që mungojnë"
+  ],
+  "Name, phone and preferred contact method.": [
+    "Naam, telefoonnummer en gewenste contactmethode.",
+    "Name, Telefonnummer und bevorzugter Kontaktweg.",
+    "Nom, téléphone et moyen de contact préféré.",
+    "Nome, telefono e metodo di contatto preferito.",
+    "Имя, телефон и предпочтительный способ связи.",
+    "Nombre, teléfono y método de contacto preferido.",
+    "Ad, telefon ve tercih edilen iletişim yöntemi.",
+    "Nome, telefone e método de contacto preferido.",
+    "姓名、电话和首选联系方式。",
+    "Imię i nazwisko, telefon i preferowana forma kontaktu.",
+    "Emri, telefoni dhe mënyra e preferuar e kontaktit."
+  ],
+  "Street, postal code, city and country.": [
+    "Straat, postcode, plaats en land.",
+    "Straße, Postleitzahl, Ort und Land.",
+    "Rue, code postal, ville et pays.",
+    "Via, CAP, città e paese.",
+    "Улица, почтовый индекс, город и страна.",
+    "Calle, código postal, ciudad y país.",
+    "Sokak, posta kodu, şehir ve ülke.",
+    "Rua, código postal, cidade e país.",
+    "街道、邮政编码、城市和国家。",
+    "Ulica, kod pocztowy, miasto i kraj.",
+    "Rruga, kodi postar, qyteti dhe shteti."
+  ]
+} as const satisfies Readonly<Record<string, readonly string[]>>;
 
 export const customerWorkflowTemplateRows = [
   [

@@ -57,19 +57,6 @@ export const customerWorkflowExactTranslations = {
     "Centrum powiadomień klienta",
     "Qendra e njoftimeve të klientit"
   ],
-  "Customer-owned realtime channel": [
-    "Realtimekanaal van de klant",
-    "Kundeneigener Echtzeitkanal",
-    "Canal en temps réel propre au client",
-    "Canale in tempo reale dedicato al cliente",
-    "Собственный канал клиента в реальном времени",
-    "Canal en tiempo real propio del cliente",
-    "Müşteriye ait gerçek zamanlı kanal",
-    "Canal em tempo real exclusivo do cliente",
-    "客户专属实时通道",
-    "Kanał czasu rzeczywistego należący do klienta",
-    "Kanali në kohë reale i klientit"
-  ],
   "Files & uploads": [
     "Bestanden en uploads",
     "Dateien und Uploads",
@@ -82,19 +69,6 @@ export const customerWorkflowExactTranslations = {
     "文件和上传",
     "Pliki i przesłane pliki",
     "Skedarët dhe ngarkimet"
-  ],
-  "Latest 100 customer-safe events": [
-    "Laatste 100 gebeurtenissen die voor klanten zichtbaar zijn",
-    "Letzte 100 für Kunden sichtbare Ereignisse",
-    "100 derniers événements visibles par le client",
-    "Ultimi 100 eventi visibili al cliente",
-    "Последние 100 событий, доступных клиенту",
-    "Últimos 100 eventos visibles para el cliente",
-    "Müşteriye açık son 100 olay",
-    "Últimos 100 eventos visíveis para o cliente",
-    "最近 100 条客户可见事件",
-    "Ostatnie 100 zdarzeń widocznych dla klienta",
-    "100 ngjarjet më të fundit të dukshme për klientin"
   ],
   "Live updates": [
     "Realtime-updates",
@@ -174,19 +148,6 @@ export const customerWorkflowExactTranslations = {
     "Nowy",
     "E re"
   ],
-  "New customer-safe order and message events will appear here.": [
-    "Nieuwe klantveilige order- en berichtmeldingen verschijnen hier.",
-    "Neue kundensichtbare Auftrags- und Nachrichtenereignisse erscheinen hier.",
-    "Les nouveaux événements de commande et messages destinés au client apparaissent ici.",
-    "I nuovi eventi ordine e messaggi visibili al cliente appaiono qui.",
-    "Здесь будут отображаться новые доступные клиенту события заказов и сообщений.",
-    "Aquí aparecerán nuevos eventos y mensajes visibles para el cliente.",
-    "Müşteriye açık yeni sipariş ve mesaj olayları burada görünür.",
-    "Novos eventos e mensagens visíveis ao cliente aparecem aqui.",
-    "新的客户可见订单和消息事件将显示在这里。",
-    "Nowe zdarzenia i wiadomości widoczne dla klienta pojawią się tutaj.",
-    "Ngjarjet e reja të porosive dhe mesazheve të dukshme për klientin do të shfaqen këtu."
-  ],
   "No notifications in this view": [
     "Geen meldingen in deze weergave",
     "Keine Benachrichtigungen in dieser Ansicht",
@@ -225,19 +186,6 @@ export const customerWorkflowExactTranslations = {
     "无法加载通知。请再试一次。",
     "Nie udało się wczytać powiadomień. Spróbuj ponownie.",
     "Njoftimet nuk mund të ngarkoheshin. Ju lutemi provoni përsëri."
-  ],
-  "On": [
-    "Aan",
-    "Ein",
-    "Activé",
-    "Attivo",
-    "Включено",
-    "Activado",
-    "Açık",
-    "Ativo",
-    "已开启",
-    "Włączone",
-    "Aktiv"
   ],
   "Open request": [
     "Aanvraag openen",
@@ -303,19 +251,6 @@ export const customerWorkflowExactTranslations = {
     "无法保存读取状态。刷新重试。",
     "Nie można zapisać stanu odczytu. Odśwież, aby spróbować ponownie.",
     "Gjendja e lexuar nuk mund të ruhej. Rifresko për të riprovuar."
-  ],
-  "This center shows customer-visible notifications only. Internal notes, staff audit events, storage paths and private file metadata are never included.": [
-    "Dit centrum toont alleen klantmeldingen. Interne notities, auditgebeurtenissen, opslagpaden en privémetadata zijn uitgesloten.",
-    "Dieses Center zeigt nur kundensichtbare Benachrichtigungen. Interne Notizen, Audits, Speicherpfade und private Metadaten sind ausgeschlossen.",
-    "Ce centre affiche uniquement les notifications client. Notes internes, audits, chemins et métadonnées privées sont exclus.",
-    "Questo centro mostra solo notifiche per il cliente. Note interne, audit, percorsi e metadati privati sono esclusi.",
-    "Здесь показаны только уведомления клиента. Внутренние заметки, аудит, пути и закрытые метаданные исключены.",
-    "Este centro solo muestra notificaciones del cliente. Notas internas, auditoría, rutas y metadatos privados quedan excluidos.",
-    "Bu merkez yalnızca müşteriye açık bildirimleri gösterir. Dahili notlar, denetim olayları, depolama yolları ve özel metadata dahil edilmez.",
-    "Este centro mostra apenas notificações do cliente. Notas internas, auditoria, caminhos e metadados privados são excluídos.",
-    "此中心仅显示客户可见通知，不包含内部备注、员工审计、存储路径或私有文件元数据。",
-    "Centrum pokazuje tylko powiadomienia klienta. Notatki, audyt, ścieżki i prywatne metadane są wykluczone.",
-    "Kjo qendër tregon vetëm njoftimet e klientit. Shënimet, auditimet, rrugët dhe metadata private përjashtohen."
   ],
   "unread": [
     "ongelezen",

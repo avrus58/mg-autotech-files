@@ -46,14 +46,16 @@ body {
 }
 
 [data-admin-navigation] > a {
-  gap: 0.5rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.25rem;
   padding-inline: 0.625rem;
 }
 
 [data-admin-navigation] > a > span:first-child {
   min-width: 0;
   gap: 0.5rem;
-  overflow-wrap: anywhere;
+  overflow-wrap: normal;
 }
 
 [data-admin-navigation] > a > span:first-child > svg {
@@ -64,6 +66,8 @@ body {
 
 [data-admin-navigation] > a > span:last-child {
   flex-shrink: 0;
+  justify-self: start;
+  margin-inline-start: 1.5rem;
 }
 
 /*

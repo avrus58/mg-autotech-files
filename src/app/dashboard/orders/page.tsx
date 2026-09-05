@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   CheckCircle2,
   Clock3,
@@ -17,7 +17,8 @@ import {
 import { getStableSession, notifySessionRequired, signOutIfEmailUnverified } from "@/lib/authGuards";
 import { supabase } from "@/lib/supabaseClient";
 import { CustomerPortalPageHeader } from "@/components/dashboard/CustomerPortalPageHeader";
-import { customerWorkflowT } from "@/lib/i18n/customer-workflow-orders-translations";
+import { customerWorkflowExactT, customerWorkflowT } from "@/lib/i18n/customer-workflow-orders-translations";
+import { customerOrderViewStatuses, isCustomerOrderView, type CustomerOrderView } from "@/lib/customerOrderViews";
 import { localizeCustomerOrderStatus } from "@/lib/i18n/customer-runtime-translations";
 import { intlLocaleByCode, type LocaleCode } from "@/lib/i18nConfig";
 import { useActiveLocale } from "@/lib/useActiveLocale";
@@ -34,16 +35,16 @@ type Order = {
   created_at: string;
 };
 
-type View = "active" | "needs_response" | "completed" | "cancelled" | "all";
+type View = CustomerOrderView;
 const pageSize = 15;
 
-const views: Array<{ value: View; label: string; description: string }> = [
-  { value: "active", label: "Active Orders", description: "Requests still being worked on" },
+function createViews(locale: LocaleCode): Array<{ value: View; label: string; description: string }> { return [
+  { value: "active", label: customerWorkflowExactT(locale, "Active Orders"), description: "Requests still being worked on" },
   { value: "needs_response", label: "Needs Response", description: "Requests waiting for your information" },
   { value: "completed", label: "Completed", description: "Delivered file services" },
   { value: "cancelled", label: "Cancelled", description: "Cancelled requests" },
   { value: "all", label: "All Orders", description: "Complete order archive" },
-];
+]; }
 
 const CUSTOMER_ORDERS_LOAD_ERROR_MESSAGE = "Order archive could not be synced. Please try again.";
 
@@ -63,29 +64,33 @@ function formatDate(value: string, locale: LocaleCode) {
 }
 
 export default function CustomerOrdersPage() {
-  const router = useRouter();
   const locale = useActiveLocale();
+  return <Suspense fallback={<div role="status" className="p-6">{customerWorkflowExactT(locale, "Loading orders...")}</div>}><CustomerOrdersContent /></Suspense>;
+}
+
+function CustomerOrdersContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const locale = useActiveLocale();
+  const views = useMemo(() => createViews(locale), [locale]);
   const [userId, setUserId] = useState("");
   const [orders, setOrders] = useState<Order[]>([]);
-  const [view, setView] = useState<View>("active");
+  const requestedView = searchParams.get("view");
+  const view: View = isCustomerOrderView(requestedView) ? requestedView : "active";
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [loadError, setLoadError] = useState("");
-  const [ordersReady, setOrdersReady] = useState(false);
-  const hasLoadedOrdersRef = useRef(false);
-
-  useEffect(() => {
-    const initial = new URLSearchParams(window.location.search).get("view");
-    if (initial && views.some((item) => item.value === initial)) {
-      void Promise.resolve().then(() => setView(initial as View));
-    }
-  }, []);
+  const scope = `${view}\u0000${search}`;
+  const [loadedScope, setLoadedScope] = useState("");
+  const [errorScope, setErrorScope] = useState("");
+  const ordersReady = loadedScope === scope;
+  const loadedScopeRef = useRef("");
+  const requestSequence = useRef(0);
+  const invalidateRequests = useCallback(() => { requestSequence.current++; }, []);
 
   const selectView = useCallback((selectedView: View) => {
-    setView(selectedView);
     setPage(1);
 
     const params = new URLSearchParams(window.location.search);
@@ -108,18 +113,8 @@ export default function CustomerOrdersPage() {
       .order("created_at", { ascending: false })
       .range(0, rangeEnd);
 
-    if (selectedView === "active") {
-      query = query.in("status", [
-        "new_request",
-        "file_check",
-        "in_progress",
-        "customer_info_needed",
-        "revision",
-      ]);
-    }
-    if (selectedView === "needs_response") query = query.eq("status", "customer_info_needed");
-    if (selectedView === "completed") query = query.eq("status", "completed");
-    if (selectedView === "cancelled") query = query.eq("status", "cancelled");
+    const statuses = customerOrderViewStatuses[selectedView];
+    if (statuses.length > 0) query = query.in("status", [...statuses]);
 
     const cleanTerm = term.trim().replace(/[,%()]/g, " ");
     if (cleanTerm) {
@@ -133,25 +128,27 @@ export default function CustomerOrdersPage() {
   const loadOrders = useCallback(async (options?: { targetPage?: number; uid?: string; silent?: boolean }) => {
     const uid = options?.uid || userId;
     if (!uid) return;
+    const requestId = ++requestSequence.current;
     const nextPage = options?.targetPage ?? 1;
     if (nextPage > 1) setLoadingMore(true);
-    else if (!options?.silent) setLoading(true);
     if (!options?.silent) setLoadError("");
     const { data, error, count } = await buildQuery(uid, view, search, nextPage * pageSize - 1);
+    if (requestId !== requestSequence.current) return;
     if (error) {
-      if (!options?.silent || !hasLoadedOrdersRef.current) {
+      if (!options?.silent || loadedScopeRef.current !== scope) {
         setLoadError(CUSTOMER_ORDERS_LOAD_ERROR_MESSAGE);
+        setErrorScope(scope);
       }
     } else {
+      setLoadError("");
       setOrders((data ?? []) as Order[]);
       setTotal(count ?? 0);
       setPage(nextPage);
-      setOrdersReady(true);
-      hasLoadedOrdersRef.current = true;
+      setLoadedScope(scope);
+      loadedScopeRef.current = scope;
     }
-    if (!options?.silent) setLoading(false);
     setLoadingMore(false);
-  }, [buildQuery, search, userId, view]);
+  }, [buildQuery, scope, search, userId, view]);
 
   useEffect(() => {
     async function initialize() {
@@ -172,8 +169,8 @@ export default function CustomerOrdersPage() {
   useEffect(() => {
     if (!userId) return;
     const timeout = window.setTimeout(() => loadOrders({ uid: userId }), 250);
-    return () => window.clearTimeout(timeout);
-  }, [loadOrders, userId]);
+    return () => { window.clearTimeout(timeout); invalidateRequests(); };
+  }, [invalidateRequests, loadOrders, userId]);
 
   useEffect(() => {
     if (!userId) return;
@@ -185,7 +182,10 @@ export default function CustomerOrdersPage() {
     return () => { supabase.removeChannel(channel); };
   }, [loadOrders, userId]);
 
-  const currentView = useMemo(() => views.find((item) => item.value === view) ?? views[0], [view]);
+  const currentView = useMemo(() => views.find((item) => item.value === view) ?? views[0], [view, views]);
+  const activeView = view === "active" || view === "pending" || view === "in_progress";
+  const viewTitle = view === "pending" ? customerWorkflowExactT(locale, "Pending Requests")
+    : view === "in_progress" ? customerWorkflowExactT(locale, "In Progress") : currentView.label;
   const loadedOrdersSummary = useMemo(() => {
     return {
       loaded: orders.length,
@@ -197,7 +197,7 @@ export default function CustomerOrdersPage() {
       ),
     };
   }, [orders]);
-  const showInitialLoadError = Boolean(loadError && !ordersReady);
+  const showInitialLoadError = Boolean(loadError && errorScope === scope && !ordersReady);
 
   return (
     <main className="mg-compact-ui min-h-screen bg-[var(--mg-portal-canvas)] text-white">
@@ -205,7 +205,7 @@ export default function CustomerOrdersPage() {
         <section className="min-w-0 flex-1">
           <CustomerPortalPageHeader
             eyebrow="File Service Archive"
-            title={currentView.label}
+            title={viewTitle}
             icon={FileText}
             heading
             actions={(
@@ -215,20 +215,28 @@ export default function CustomerOrdersPage() {
 
           <div className="mx-auto max-w-7xl px-4 py-7 lg:px-8">
             <div className="mb-5 grid grid-cols-2 gap-2 md:hidden">
-              {views.map((item) => <button key={item.value} type="button" aria-pressed={view === item.value} onClick={() => selectView(item.value)} className={`min-w-0 rounded-xl border px-3 py-3 text-sm font-black last:col-span-2 ${view === item.value ? "border-red-700 bg-red-950/35" : "border-white/10 bg-white/[0.04] text-zinc-400"}`}>{item.label}</button>)}
+              {views.map((item) => <button key={item.value} type="button" aria-pressed={currentView.value === item.value} onClick={() => selectView(item.value)} className={`min-w-0 rounded-xl border px-3 py-3 text-sm font-black last:col-span-2 ${currentView.value === item.value ? "border-red-700 bg-red-950/35" : "border-white/10 bg-white/[0.04] text-zinc-400"}`}>{item.label}</button>)}
             </div>
 
             <div className="mb-6 grid gap-3 md:grid-cols-5">
               {views.map((item) => (
-                <button key={item.value} type="button" aria-pressed={view === item.value} onClick={() => selectView(item.value)} className={`hidden min-w-0 rounded-xl border p-4 text-left [overflow-wrap:anywhere] transition md:block ${view === item.value ? "border-red-700 bg-red-950/30" : "border-white/10 bg-white/[0.03] hover:bg-white/[0.06]"}`}>
+                <button key={item.value} type="button" aria-pressed={currentView.value === item.value} onClick={() => selectView(item.value)} className={`hidden min-w-0 rounded-xl border p-4 text-left [overflow-wrap:anywhere] transition md:block ${currentView.value === item.value ? "border-red-700 bg-red-950/30" : "border-white/10 bg-white/[0.03] hover:bg-white/[0.06]"}`}>
                   <div className="font-black">{item.label}</div><div className="mt-1 text-xs text-zinc-500">{item.description}</div>
                 </button>
               ))}
             </div>
 
             <section className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 sm:p-6">
+              {activeView && <label className="mb-4 flex flex-wrap items-center gap-2 text-sm font-bold">
+                {customerWorkflowT(locale, "notificationTypeOrderStatus")}
+                <select aria-label={customerWorkflowT(locale, "notificationTypeOrderStatus")} value={view} onChange={(event) => { if (isCustomerOrderView(event.target.value)) selectView(event.target.value); }} className="min-h-11 max-w-full rounded-lg border border-white/10 bg-[#0b0b0b] px-3 py-2">
+                  <option value="active">{customerWorkflowExactT(locale, "Active Orders")}</option>
+                  <option value="pending">{customerWorkflowExactT(locale, "Pending Requests")}</option>
+                  <option value="in_progress">{customerWorkflowExactT(locale, "In Progress")}</option>
+                </select>
+              </label>}
               <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-                <div><h2 className="text-2xl font-black">{currentView.label}</h2><p className="mt-1 text-sm text-zinc-500">{ordersReady ? customerWorkflowT(locale, "requestCount", { total: total.toLocaleString(intlLocaleByCode[locale]), pageSize: pageSize.toLocaleString(intlLocaleByCode[locale]) }) : "Order archive sync is pending."}</p></div>
+                <div><h2 className="text-2xl font-black">{viewTitle}</h2><p className="mt-1 text-sm text-zinc-500">{ordersReady ? customerWorkflowT(locale, "requestCount", { total: total.toLocaleString(intlLocaleByCode[locale]), pageSize: pageSize.toLocaleString(intlLocaleByCode[locale]) }) : "Order archive sync is pending."}</p></div>
                 <label className="relative w-full sm:w-96"><span className="sr-only">Search</span><Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" /><input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search vehicle, engine or service..." className="h-12 w-full rounded-xl border border-white/10 bg-black/35 pl-11 pr-4 text-sm font-bold outline-none focus:border-red-700" /></label>
               </div>
 
@@ -291,8 +299,8 @@ export default function CustomerOrdersPage() {
               ) : null}
               {showInitialLoadError ? (
                 <OrdersLoadErrorState onRetry={() => void loadOrders()} />
-              ) : loading && !ordersReady ? (
-                <div role="status" aria-live="polite" className="flex min-h-64 items-center justify-center text-zinc-500"><Loader2 className="mr-3 h-5 w-5 animate-spin" />Loading orders...</div>
+              ) : !ordersReady ? (
+                <div role="status" aria-live="polite" className="flex min-h-64 items-center justify-center text-zinc-500"><Loader2 className="mr-3 h-5 w-5 animate-spin" />{customerWorkflowExactT(locale, "Loading orders...")}</div>
               ) : orders.length === 0 ? (
                 <div className="min-h-64 rounded-xl border border-dashed border-white/15 p-10 text-center text-zinc-500"><Clock3 className="mx-auto mb-4 h-9 w-9" />No orders found in this view.</div>
               ) : (
@@ -319,7 +327,7 @@ export default function CustomerOrdersPage() {
                 </div>
               )}
 
-              {orders.length < total && (
+              {ordersReady && orders.length < total && (
                 <button onClick={() => loadOrders({ targetPage: page + 1 })} disabled={loadingMore} className="mt-5 w-full rounded-xl border border-white/10 bg-white/[0.04] px-5 py-4 text-sm font-black hover:bg-white/10 disabled:opacity-50">
                   {loadingMore && <Loader2 className="mr-2 inline h-4 w-4 animate-spin" />}{customerWorkflowT(locale, "loadNextOrders", { count: Math.min(pageSize, total - orders.length).toLocaleString(intlLocaleByCode[locale]) })}
                 </button>

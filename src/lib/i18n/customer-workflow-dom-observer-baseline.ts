@@ -1052,12 +1052,23 @@ export const customerWorkflowLegacyDomObserverTombstones = {
   "file-expert": [
     ...customerWorkflowLegacyDomObserverReviewedTombstoneFloor["file-expert"],
   ],
-  orders: [...customerWorkflowLegacyDomObserverReviewedTombstoneFloor.orders],
+  orders: [...customerWorkflowLegacyDomObserverReviewedTombstoneFloor.orders, "Active Orders", "Loading orders...", "In Progress"],
   notifications: [
     ...customerWorkflowLegacyDomObserverReviewedTombstoneFloor.notifications,
+    "Customer-owned realtime channel",
+    "Latest 100 customer-safe events",
+    "New customer-safe order and message events will appear here.",
+    "On",
+    "This center shows customer-visible notifications only. Internal notes, staff audit events, storage paths and private file metadata are never included.",
   ],
   security: [
     ...customerWorkflowLegacyDomObserverReviewedTombstoneFloor.security,
+    "Address fields are ready for future invoice workflows.",
+    "Complete customer details before high-touch file service workflows so support, billing and request review can move without extra back-and-forth.",
+    "Invoice e-mail is available for payment and accounting follow-up.",
+    "Name, phone and preferred contact method are ready for support handover.",
+    "Profile completion for faster handling",
+    "Ready",
   ],
   widget: [...customerWorkflowLegacyDomObserverReviewedTombstoneFloor.widget],
   "portal-common": [

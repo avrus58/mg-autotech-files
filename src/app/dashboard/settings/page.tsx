@@ -10,6 +10,8 @@ import { supabase } from "@/lib/supabaseClient";
 import { resolveTransactionalEmailLanguageFromMetadata } from "@/lib/email/language";
 import type { TransactionalEmailLanguage } from "@/lib/email/types";
 import { supportedLocales } from "@/lib/i18nConfig";
+import { useActiveLocale } from "@/lib/useActiveLocale";
+import { customerWorkflowExactT } from "@/lib/i18n/customer-workflow-security-translations";
 import { TrustedDevicesCard } from "@/components/account/TrustedDevicesCard";
 import { CustomerPortalPageHeader } from "@/components/dashboard/CustomerPortalPageHeader";
 import {
@@ -90,31 +92,29 @@ function getSettingsReadinessItems({
   return [
     {
       label: "Contact details",
-      detail: "Name, phone and preferred contact method are ready for support handover.",
+      kind: "contact",
       complete: hasSettingsValue(fullName) && hasSettingsValue(phone) && hasSettingsValue(preferredContact),
     },
     {
       label: "Invoice contact",
-      detail: "Invoice e-mail is available for payment and accounting follow-up.",
+      kind: "invoice",
       complete: hasSettingsValue(invoiceEmail),
     },
     {
       label: "Billing address",
-      detail: "Address fields are ready for future invoice workflows.",
+      kind: "address",
       complete: addressComplete,
     },
     {
       label: accountType === "company" ? "Company profile" : "Account type",
-      detail:
-        accountType === "company"
-          ? "Company / workshop name is available for B2B support context."
-          : "Private customer profile is selected.",
+      kind: "account",
       complete: accountType === "company" ? hasSettingsValue(companyName) : hasSettingsValue(accountType),
     },
   ];
 }
 
 export default function CustomerSettingsPage() {
+  const locale = useActiveLocale();
   const router = useRouter();
 
   const [email, setEmail] = useState<string | null>(null);
@@ -392,16 +392,15 @@ export default function CustomerSettingsPage() {
                     <ShieldCheck className="h-4 w-4" />
                     Account Readiness
                   </div>
-                  <h2 className="text-2xl font-black">Profile completion for faster handling</h2>
+                  <h2 className="text-2xl font-black">{customerWorkflowExactT(locale, "Complete your customer profile")}</h2>
                   <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-400">
-                    Complete customer details before high-touch file service workflows so support,
-                    billing and request review can move without extra back-and-forth.
+                    {customerWorkflowExactT(locale, "Add missing details below to help us handle your requests.")}
                   </p>
                 </div>
 
                 <div className="rounded-2xl border border-white/10 bg-black/30 px-5 py-4 text-right">
                   <div className="text-xs font-black uppercase tracking-[0.16em] text-zinc-500">
-                    Ready
+                    {customerWorkflowExactT(locale, "Account Readiness")}
                   </div>
                   <div className="mt-1 text-3xl font-black text-emerald-300">
                     {readinessPercent}%
@@ -430,7 +429,15 @@ export default function CustomerSettingsPage() {
                       )}
                       <div>
                         <div className="font-black text-white">{item.label}</div>
-                        <p className="mt-1 text-sm leading-6 text-zinc-400">{item.detail}</p>
+                        <div className={`mt-1 text-xs font-bold ${item.complete ? "text-emerald-300" : "text-amber-300"}`}>
+                          {item.complete ? customerWorkflowExactT(locale, "Complete") : customerWorkflowExactT(locale, "Missing information")}
+                        </div>
+                        <p className="mt-1 text-sm leading-6 text-zinc-400">
+                          {item.kind === "contact" ? customerWorkflowExactT(locale, "Name, phone and preferred contact method.")
+                            : item.kind === "invoice" ? customerWorkflowExactT(locale, "Invoice e-mail")
+                            : item.kind === "address" ? customerWorkflowExactT(locale, "Street, postal code, city and country.")
+                            : accountType === "company" ? customerWorkflowExactT(locale, "Company Name") : customerWorkflowExactT(locale, "Account type")}
+                        </p>
                       </div>
                     </div>
                   </div>

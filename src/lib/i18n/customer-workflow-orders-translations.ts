@@ -21,6 +21,19 @@ export const customerWorkflowLocaleOrder = [
 ] as const satisfies readonly Exclude<LocaleCode, "en">[];
 
 export const customerWorkflowExactTranslations = {
+  "Active Orders": [
+    "Actieve orders",
+    "Aktive Aufträge",
+    "Commandes actives",
+    "Ordini attivi",
+    "Активные заказы",
+    "Pedidos activos",
+    "Aktif Siparişler",
+    "Pedidos ativos",
+    "进行中的订单",
+    "Aktywne zlecenia",
+    "Porosi aktive"
+  ],
   "Additional file upload could not be completed.": [
     "Het uploaden van extra bestanden kon niet worden voltooid.",
     "Das Hochladen weiterer Dateien konnte nicht abgeschlossen werden.",
@@ -125,6 +138,19 @@ export const customerWorkflowExactTranslations = {
     "Szacowany czas dostawy nie został jeszcze określony",
     "Koha e parashikuar e dorëzimit nuk është përcaktuar ende"
   ],
+  "In Progress": [
+    "In behandeling",
+    "In Bearbeitung",
+    "En cours",
+    "In lavorazione",
+    "В работе",
+    "En curso",
+    "İşlemde",
+    "Em curso",
+    "处理中",
+    "W toku",
+    "Në proces"
+  ],
   "Loading order details...": [
     "Orderdetails laden...",
     "Auftragsdetails werden geladen...",
@@ -137,6 +163,19 @@ export const customerWorkflowExactTranslations = {
     "正在加载订单详情...",
     "Ładowanie szczegółów zlecenia...",
     "Po ngarkohen hollësitë e porosisë..."
+  ],
+  "Loading orders...": [
+    "Orders laden...",
+    "Aufträge werden geladen...",
+    "Chargement des commandes...",
+    "Caricamento ordini...",
+    "Загрузка заказов...",
+    "Cargando pedidos...",
+    "Siparişler yükleniyor...",
+    "A carregar pedidos...",
+    "正在加载订单...",
+    "Ładowanie zleceń...",
+    "Po ngarkohen porositë..."
   ],
   "Manual review": [
     "Handmatige beoordeling",
@@ -202,6 +241,19 @@ export const customerWorkflowExactTranslations = {
     "未找到订单",
     "Nie znaleziono zlecenia",
     "Porosia nuk u gjet"
+  ],
+  "Pending Requests": [
+    "Open aanvragen",
+    "Offene Anfragen",
+    "Demandes en attente",
+    "Richieste in attesa",
+    "Ожидающие заявки",
+    "Solicitudes pendientes",
+    "Bekleyen talepler",
+    "Pedidos pendentes",
+    "待处理请求",
+    "Oczekujące zlecenia",
+    "Kërkesa në pritje"
   ],
   "Please describe what needs to be revised.": [
     "Beschrijf wat er moet worden herzien.",
@@ -565,6 +617,21 @@ export const customerWorkflowTemplateRows = [
     "加载接下来的 {count} 个订单",
     "Wczytaj kolejnych {count} zleceń",
     "Ngarko {count} porositë e ardhshme"
+  ],
+  [
+    "notificationTypeOrderStatus",
+    "Order status",
+    "Orderstatus",
+    "Auftragsstatus",
+    "Statut de la commande",
+    "Stato dell’ordine",
+    "Статус заказа",
+    "Estado del pedido",
+    "Sipariş durumu",
+    "Estado do pedido",
+    "订单状态",
+    "Status zlecenia",
+    "Statusi i porosisë"
   ],
   [
     "receivedCount",

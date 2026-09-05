@@ -262,7 +262,9 @@ test("notification center is customer-scoped and contains no internal metadata f
   const page = projectFile("src", "app", "dashboard", "notifications", "page.tsx");
   assert.match(page, /\.eq\("user_id", customerId\)/);
   assert.match(page, /\.eq\("user_id", userId\)/);
-  assert.match(page, /Internal notes, staff audit events, storage paths and private file metadata are never included/);
+  assert.match(page, /\.select\(customerNotificationProjection\)/);
+  const projection = projectFile("src", "lib", "customerNotificationProjection.ts");
+  assert.match(projection, /"id,user_id,order_id,type,title,body,status:metadata->>status,read_at,created_at" as const/);
   assert.doesNotMatch(page, /internal_notes|risk_flags|source_reference|confidence_score|hex_preview|signed_url/);
 });
 

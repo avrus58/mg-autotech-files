@@ -270,7 +270,7 @@ type TimelineStep = {
   description: string;
 };
 
-const timelineStepDefinitions = {
+function createTimelineStepDefinitions(locale: LocaleCode) { return {
   newRequest: {
     key: "new_request",
     label: "Request Created",
@@ -288,7 +288,7 @@ const timelineStepDefinitions = {
   },
   inProgress: {
     key: "in_progress",
-    label: "In Progress",
+    label: customerWorkflowExactT(locale, "In Progress"),
     description: "Your file is being prepared by MG AutoTech.",
   },
   completed: {
@@ -301,9 +301,10 @@ const timelineStepDefinitions = {
     label: "Revision Review",
     description: "Your revision request is being reviewed after delivery.",
   },
-} satisfies Record<string, TimelineStep>;
+} satisfies Record<string, TimelineStep>; }
 
-function getTimelineSteps(order: Order) {
+function getTimelineSteps(order: Order, locale: LocaleCode) {
+  const timelineStepDefinitions = createTimelineStepDefinitions(locale);
   const status = order.status ?? "new_request";
 
   return [
@@ -1441,7 +1442,8 @@ function ProgressTimeline({
   order: Order;
   completedFileReady: boolean;
 }) {
-  const timelineSteps = getTimelineSteps(order);
+  const locale = useActiveLocale();
+  const timelineSteps = getTimelineSteps(order, locale);
   const activeIndex = getTimelineIndex(order, timelineSteps, completedFileReady);
 
   return (

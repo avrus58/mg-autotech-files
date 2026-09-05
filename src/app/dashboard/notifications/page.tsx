@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   BellRing,
@@ -15,7 +15,8 @@ import {
 import { CustomerPortalPageHeader } from "@/components/dashboard/CustomerPortalPageHeader";
 import { getStableSession, notifySessionRequired, signOutIfEmailUnverified } from "@/lib/authGuards";
 import { supabase } from "@/lib/supabaseClient";
-import { localizeCustomerNotification } from "@/lib/i18n/customer-workflow-notifications-translations";
+import { customerWorkflowExactT, localizeCustomerNotification } from "@/lib/i18n/customer-workflow-notifications-translations";
+import { notificationConnectionState, type NotificationConnectionState } from "@/lib/notificationConnection";
 import { intlLocaleByCode, type LocaleCode } from "@/lib/i18nConfig";
 import { useActiveLocale } from "@/lib/useActiveLocale";
 import { customerNotificationProjection } from "@/lib/customerNotificationProjection";
@@ -75,8 +76,11 @@ export default function CustomerNotificationCenterPage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
+  const [connectionState, setConnectionState] = useState<NotificationConnectionState>("connecting");
+  const loadSequence = useRef(0);
 
   const load = useCallback(async (customerId: string, silent = false) => {
+    const requestId = ++loadSequence.current;
     if (silent) setRefreshing(true);
     else setLoading(true);
     setError("");
@@ -86,6 +90,7 @@ export default function CustomerNotificationCenterPage() {
       .eq("user_id", customerId)
       .order("created_at", { ascending: false })
       .limit(100);
+    if (requestId !== loadSequence.current) return;
     if (result.error) setError("Notifications could not be loaded. Please try again.");
     else setItems((result.data ?? []) as NotificationRow[]);
     setLoading(false);
@@ -94,6 +99,11 @@ export default function CustomerNotificationCenterPage() {
 
   useEffect(() => {
     let active = true;
+    let lastSubscriptionStatus = "JOINING";
+    const onOffline = () => setConnectionState(notificationConnectionState(lastSubscriptionStatus, false));
+    const onOnline = () => setConnectionState(notificationConnectionState(lastSubscriptionStatus, true));
+    window.addEventListener("offline", onOffline);
+    window.addEventListener("online", onOnline);
     let channel: ReturnType<typeof supabase.channel> | null = null;
     void getStableSession().then(async ({ session }) => {
       if (!active) return;
@@ -110,14 +120,23 @@ export default function CustomerNotificationCenterPage() {
       if (!active) return;
       const id = user.id;
       setUserId(id);
+      if (!navigator.onLine) setConnectionState("disconnected");
       void load(id);
       channel = supabase
         .channel(`notification-center-${id}`)
         .on("postgres_changes", { event: "*", schema: "public", table: "notifications", filter: `user_id=eq.${id}` }, () => void load(id, true))
-        .subscribe();
+        .subscribe((status) => {
+          if (!active) return;
+          lastSubscriptionStatus = status;
+          setConnectionState(notificationConnectionState(status, navigator.onLine));
+          // Catch changes missed while the channel was disconnected.
+          if (status === "SUBSCRIBED") void load(id, true);
+        });
     });
     return () => {
       active = false;
+      window.removeEventListener("offline", onOffline);
+      window.removeEventListener("online", onOnline);
       if (channel) void supabase.removeChannel(channel);
     };
   }, [load, router]);
@@ -151,9 +170,9 @@ export default function CustomerNotificationCenterPage() {
 
       <section className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
         <div className="grid gap-px overflow-hidden rounded-lg border border-white/10 bg-white/10 sm:grid-cols-3">
-          <Summary label="All notifications" value={items.length} detail="Latest 100 customer-safe events" />
+          <Summary label="All notifications" value={items.length} detail={customerWorkflowExactT(locale, "Latest 100 notifications")} />
           <Summary label="Unread" value={unread} detail="Not yet opened" />
-          <Summary label="Live updates" value="On" detail="Customer-owned realtime channel" />
+          <div role="status" aria-live="polite"><Summary label="Live updates" value={connectionState === "connected" ? customerWorkflowExactT(locale, "Connected") : connectionState === "disconnected" ? customerWorkflowExactT(locale, "Disconnected") : customerWorkflowExactT(locale, "Connecting")} detail={customerWorkflowExactT(locale, "Use Refresh if updates are delayed.")} /></div>
         </div>
 
         <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-y border-white/10 py-3">
@@ -164,7 +183,7 @@ export default function CustomerNotificationCenterPage() {
         {error && <div role="alert" className="mt-5 rounded-lg border border-red-700/40 bg-red-950/20 p-4 text-sm text-red-200">{error}</div>}
         {loading ? <div role="status" aria-live="polite" className="py-16 text-center text-sm text-zinc-500">Loading notifications...</div> : (!error || visible.length > 0) && (
           <div className="divide-y divide-white/10 border-b border-white/10">
-            {visible.length === 0 && <div className="py-16 text-center"><BellRing className="mx-auto h-6 w-6 text-zinc-700" /><div className="mt-3 font-black">No notifications in this view</div><p className="mt-1 text-sm text-zinc-500">New customer-safe order and message events will appear here.</p></div>}
+            {visible.length === 0 && <div className="py-16 text-center"><BellRing className="mx-auto h-6 w-6 text-zinc-700" /><div className="mt-3 font-black">No notifications in this view</div><p className="mt-1 text-sm text-zinc-500">{customerWorkflowExactT(locale, "New order updates and messages will appear here.")}</p></div>}
             {visible.map((item) => {
               const href = item.order_id ? `/dashboard/orders/${item.order_id}` : "/dashboard";
               const copy = localizeCustomerNotification(locale, item);
@@ -178,7 +197,6 @@ export default function CustomerNotificationCenterPage() {
             })}
           </div>
         )}
-        <p className="mt-5 text-xs leading-5 text-zinc-600">This center shows customer-visible notifications only. Internal notes, staff audit events, storage paths and private file metadata are never included.</p>
       </section>
     </main>
   );

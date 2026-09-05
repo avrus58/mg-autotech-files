@@ -520,9 +520,11 @@ test("customer dashboard and order archive surface action-needed orders separate
   assert.match(dashboard, /Needs Response/);
   assert.match(dashboard, /customerWorkflowT\(locale, "notificationsWaiting"/);
 
-  assert.match(orders, /type View = "active" \| "needs_response" \| "completed" \| "cancelled" \| "all"/);
+  assert.match(orders, /type View = CustomerOrderView/);
   assert.match(orders, /value: "needs_response"/);
-  assert.match(orders, /selectedView === "needs_response"[\s\S]*\.eq\("status", "customer_info_needed"\)/);
+  assert.match(orders, /customerOrderViewStatuses\[selectedView\]/);
+  assert.match(orders, /query\.in\("status", \[\.\.\.statuses\]\)/);
+  assert.match(readProjectFile("src", "lib", "customerOrderViews.ts"), /needs_response: \["customer_info_needed"\]/);
   assert.match(orders, /window\.history\.replaceState/);
   assert.match(orders, /Needs your response/);
   assert.match(orders, /Revision review in progress/);
@@ -536,14 +538,14 @@ test("customer order archive keeps verified data during silent realtime refresh 
   assert.match(orders, /const CUSTOMER_ORDERS_LOAD_ERROR_MESSAGE =/);
   assert.doesNotMatch(orders, /CUSTOMER_ORDERS_SYNC_ERROR_MESSAGE/);
   assert.match(orders, /const \[loadError, setLoadError\] = useState\(""\)/);
-  assert.match(orders, /const \[ordersReady, setOrdersReady\] = useState\(false\)/);
-  assert.match(orders, /const hasLoadedOrdersRef = useRef\(false\)/);
-  assert.match(orders, /if \(!options\?\.silent \|\| !hasLoadedOrdersRef\.current\) \{[\s\S]*setLoadError\(CUSTOMER_ORDERS_LOAD_ERROR_MESSAGE\)/);
+  assert.match(orders, /const ordersReady = loadedScope === scope/);
+  assert.match(orders, /const loadedScopeRef = useRef\(""\)/);
+  assert.match(orders, /if \(!options\?\.silent \|\| loadedScopeRef\.current !== scope\) \{[\s\S]*setLoadError\(CUSTOMER_ORDERS_LOAD_ERROR_MESSAGE\)/);
   assert.match(orders, /loadOrders\(\{ uid: userId, silent: true \}\)/);
   assert.match(orders, /setOrders\(\(data \?\? \[\]\) as Order\[\]\)/);
-  assert.match(orders, /setOrdersReady\(true\)/);
-  assert.match(orders, /hasLoadedOrdersRef\.current = true/);
-  assert.match(orders, /const showInitialLoadError = Boolean\(loadError && !ordersReady\)/);
+  assert.match(orders, /setLoadedScope\(scope\)/);
+  assert.match(orders, /loadedScopeRef\.current = scope/);
+  assert.match(orders, /const showInitialLoadError = Boolean\(loadError && errorScope === scope && !ordersReady\)/);
   assert.match(orders, /showInitialLoadError \? \(/);
   assert.match(orders, /<OrdersLoadErrorState onRetry=\{\(\) => void loadOrders\(\)\}/);
   assert.match(orders, /role="alert"[\s\S]*Order archive sync failed/);
@@ -939,8 +941,8 @@ test("customer settings shows live account readiness and copyable bank reference
   assert.match(settings, /const completedReadinessItems = readinessItems\.filter/);
   assert.match(settings, /const readinessPercent = Math\.round/);
   assert.match(settings, /Account Readiness/);
-  assert.match(settings, /Profile completion for faster handling/);
-  assert.match(settings, /Complete customer details before high-touch file service workflows/);
+  assert.match(settings, /Complete your customer profile/);
+  assert.match(settings, /Add missing details below to help us handle your requests/);
   assert.match(settings, /Contact details/);
   assert.match(settings, /Invoice contact/);
   assert.match(settings, /Billing address/);

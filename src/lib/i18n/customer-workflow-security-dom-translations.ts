@@ -96,19 +96,6 @@ export const customerWorkflowExactTranslations = {
     "Adres",
     "Adresa"
   ],
-  "Address fields are ready for future invoice workflows.": [
-    "Adresvelden zijn klaar voor toekomstige factuurprocessen.",
-    "Die Adressfelder sind für künftige Rechnungsabläufe vorbereitet.",
-    "Les champs d’adresse sont prêts pour les futurs processus de facturation.",
-    "I campi dell’indirizzo sono pronti per i futuri flussi di fatturazione.",
-    "Поля адреса готовы для будущих процессов выставления счетов.",
-    "Los campos de dirección están preparados para futuros procesos de facturación.",
-    "Adres alanları gelecekteki faturalandırma işlemleri için hazırdır.",
-    "Os campos de morada estão preparados para futuros processos de faturação.",
-    "地址字段已为后续发票流程做好准备。",
-    "Pola adresowe są gotowe do przyszłych procesów fakturowania.",
-    "Fushat e adresës janë gati për proceset e ardhshme të faturimit."
-  ],
   "All other trusted devices were removed.": [
     "Alle andere vertrouwde apparaten zijn verwijderd.",
     "Alle anderen vertrauenswürdigen Geräte wurden entfernt.",
@@ -251,19 +238,6 @@ export const customerWorkflowExactTranslations = {
     "公司简介",
     "Profil firmy",
     "Profili i kompanisë"
-  ],
-  "Complete customer details before high-touch file service workflows so support, billing and request review can move without extra back-and-forth.": [
-    "Vul de klantgegevens aan zodat support, facturatie en aanvraagcontrole zonder extra vragen kunnen doorgaan.",
-    "Vervollständigen Sie die Kundendaten, damit Support, Abrechnung und Anfrageprüfung ohne unnötige Rückfragen fortfahren können.",
-    "Complétez les informations client pour accélérer l'assistance, la facturation et l'examen des demandes.",
-    "Completa i dati cliente affinché assistenza, fatturazione e revisione procedano senza ulteriori richieste.",
-    "Заполните данные клиента, чтобы поддержка, оплата и проверка заявки проходили без лишних уточнений.",
-    "Completa los datos del cliente para agilizar soporte, facturación y revisión sin preguntas adicionales.",
-    "Destek, faturalama ve talep incelemesi ek yazışma olmadan ilerlesin diye müşteri bilgilerini tamamlayın.",
-    "Complete os dados do cliente para agilizar suporte, faturação e revisão sem pedidos adicionais.",
-    "请完善客户信息，以便支持、账单和请求审核无需反复确认即可推进。",
-    "Uzupełnij dane klienta, aby wsparcie, rozliczenia i weryfikacja przebiegały bez zbędnych pytań.",
-    "Plotësoni të dhënat e klientit që mbështetja, faturimi dhe shqyrtimi të vazhdojnë pa pyetje shtesë."
   ],
   "Contact details": [
     "Contactgegevens",
@@ -434,19 +408,6 @@ export const customerWorkflowExactTranslations = {
     "E-mail do faktur",
     "E-mail faturimi"
   ],
-  "Invoice e-mail is available for payment and accounting follow-up.": [
-    "Factuur-e-mail is beschikbaar voor opvolging van betalingen en boekhouding.",
-    "Die Rechnungs-E-Mail steht für Zahlungs- und Buchhaltungsnachverfolgung bereit.",
-    "L’adresse e-mail de facturation est disponible pour le suivi des paiements et de la comptabilité.",
-    "L’e-mail di fatturazione è disponibile per il monitoraggio dei pagamenti e la contabilità.",
-    "Адрес электронной почты для счетов доступен для сопровождения платежей и бухгалтерского учёта.",
-    "El correo electrónico de facturación está disponible para el seguimiento de pagos y contabilidad.",
-    "Fatura e-postası ödeme ve muhasebe takibi için hazırdır.",
-    "O e-mail de faturação está disponível para o acompanhamento de pagamentos e contabilidade.",
-    "发票电子邮箱可用于付款和会计跟进。",
-    "Adres e-mail do faktur jest dostępny do obsługi płatności i księgowości.",
-    "E-maili i faturimit është gati për ndjekjen e pagesave dhe kontabilitetit."
-  ],
   "Loading customer settings...": [
     "Klantinstellingen laden...",
     "Kundeneinstellungen werden geladen...",
@@ -498,19 +459,6 @@ export const customerWorkflowExactTranslations = {
     "管理文件服务请求、支持和发票流程所需的账单、公司和联系信息。",
     "Zarządzaj danymi rozliczeniowymi, firmowymi i kontaktowymi dla zleceń i faktur.",
     "Menaxhoni faturimin, kompaninë dhe kontaktet për kërkesa, mbështetje dhe fatura."
-  ],
-  "Name, phone and preferred contact method are ready for support handover.": [
-    "Naam, telefoonnummer en voorkeurscontactmethode zijn klaar voor overdracht aan support.",
-    "Name, Telefonnummer und bevorzugter Kontaktweg sind für die Übergabe an den Support vorbereitet.",
-    "Le nom, le téléphone et le moyen de contact privilégié sont prêts pour la prise en charge par l’assistance.",
-    "Nome, telefono e metodo di contatto preferito sono pronti per il passaggio all’assistenza.",
-    "Имя, телефон и предпочтительный способ связи готовы для передачи в службу поддержки.",
-    "El nombre, el teléfono y el método de contacto preferido están listos para la atención del soporte.",
-    "Ad, telefon ve tercih edilen iletişim yöntemi destek ekibine aktarılmaya hazırdır.",
-    "O nome, o telefone e o método de contacto preferido estão prontos para o acompanhamento pelo suporte.",
-    "姓名、电话和首选联系方式已准备好交由支持团队处理。",
-    "Imię i nazwisko, telefon oraz preferowana metoda kontaktu są gotowe do przekazania obsłudze.",
-    "Emri, telefoni dhe mënyra e preferuar e kontaktit janë gati për t’iu kaluar mbështetjes."
   ],
   "New devices require an e-mail security code. Devices you explicitly trust can sign in for 30 days without another code.": [
     "Nieuwe apparaten vereisen een beveiligingscode per e-mail. Apparaten die je expliciet vertrouwt, kunnen 30 dagen zonder extra code inloggen.",
@@ -641,32 +589,6 @@ export const customerWorkflowExactTranslations = {
     "个人客户资料",
     "Profil klienta prywatnego",
     "Profil klienti privat"
-  ],
-  "Profile completion for faster handling": [
-    "Profiel aanvullen voor snellere verwerking",
-    "Profil für schnellere Bearbeitung vervollständigen",
-    "Compléter le profil pour un traitement plus rapide",
-    "Completa il profilo per una gestione più rapida",
-    "Заполните профиль для более быстрой обработки",
-    "Completa el perfil para una gestión más rápida",
-    "Daha hızlı işlem için profili tamamlayın",
-    "Complete o perfil para um tratamento mais rápido",
-    "完善资料以加快处理",
-    "Uzupełnij profil, aby przyspieszyć obsługę",
-    "Plotësoni profilin për trajtim më të shpejtë"
-  ],
-  "Ready": [
-    "Klaar",
-    "Bereit",
-    "Prêt",
-    "Pronto",
-    "Готово",
-    "Listo",
-    "Hazır",
-    "Pronto",
-    "就绪",
-    "Gotowe",
-    "Gati"
   ],
   "Reference": [
     "Referentie",

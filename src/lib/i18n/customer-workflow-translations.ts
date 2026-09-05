@@ -6,6 +6,16 @@ type CustomerWorkflowRow = readonly [string, ...string[]];
 
 // Route-scoped exact UI copy. Customer data, identifiers, filenames and vehicle/ECU values are intentionally absent.
 const customerWorkflowRows = [
+  ["Connected", "Verbonden", "Verbunden", "Connecté", "Connesso", "Подключено", "Conectado", "Bağlı", "Ligado", "已连接", "Połączono", "Lidhur"],
+  ["Disconnected", "Verbinding verbroken", "Verbindung getrennt", "Déconnecté", "Disconnesso", "Соединение разорвано", "Desconectado", "Bağlantı kesildi", "Desligado", "连接已断开", "Rozłączono", "Lidhja u shkëput"],
+  ["Latest 100 notifications", "Laatste 100 meldingen", "Letzte 100 Benachrichtigungen", "100 dernières notifications", "Ultime 100 notifiche", "Последние 100 уведомлений", "Últimas 100 notificaciones", "Son 100 bildirim", "Últimas 100 notificações", "最近 100 条通知", "Ostatnie 100 powiadomień", "100 njoftimet e fundit"],
+  ["Use Refresh if updates are delayed.", "Gebruik Vernieuwen als updates vertraagd zijn.", "Nutzen Sie Aktualisieren, wenn Meldungen verzögert erscheinen.", "Utilisez Actualiser si les mises à jour tardent à apparaître.", "Usa Aggiorna se gli aggiornamenti arrivano in ritardo.", "Нажмите «Обновить», если уведомления задерживаются.", "Pulsa Actualizar si las novedades tardan en aparecer.", "Güncellemeler gecikirse Yenile düğmesini kullanın.", "Use Atualizar se as atualizações demorarem a aparecer.", "如果更新延迟，请点击刷新。", "Użyj przycisku Odśwież, jeśli aktualizacje są opóźnione.", "Përdorni Rifresko nëse përditësimet vonohen."],
+  ["New order updates and messages will appear here.", "Nieuwe orderupdates en berichten verschijnen hier.", "Neue Auftragsmeldungen und Nachrichten erscheinen hier.", "Les nouvelles informations sur vos commandes et vos messages apparaîtront ici.", "I nuovi aggiornamenti sugli ordini e i messaggi appariranno qui.", "Здесь появятся новые сообщения и обновления заказов.", "Aquí aparecerán los nuevos mensajes y las novedades de tus pedidos.", "Yeni sipariş güncellemeleri ve mesajlar burada görünecek.", "As novidades dos pedidos e as novas mensagens aparecerão aqui.", "新的订单更新和消息将显示在此处。", "Tutaj pojawią się nowe wiadomości i aktualizacje zleceń.", "Përditësimet e reja të porosive dhe mesazhet do të shfaqen këtu."],
+  ["Name, phone and preferred contact method.", "Naam, telefoonnummer en gewenste contactmethode.", "Name, Telefonnummer und bevorzugter Kontaktweg.", "Nom, téléphone et moyen de contact préféré.", "Nome, telefono e metodo di contatto preferito.", "Имя, телефон и предпочтительный способ связи.", "Nombre, teléfono y método de contacto preferido.", "Ad, telefon ve tercih edilen iletişim yöntemi.", "Nome, telefone e método de contacto preferido.", "姓名、电话和首选联系方式。", "Imię i nazwisko, telefon i preferowana forma kontaktu.", "Emri, telefoni dhe mënyra e preferuar e kontaktit."],
+  ["Street, postal code, city and country.", "Straat, postcode, plaats en land.", "Straße, Postleitzahl, Ort und Land.", "Rue, code postal, ville et pays.", "Via, CAP, città e paese.", "Улица, почтовый индекс, город и страна.", "Calle, código postal, ciudad y país.", "Sokak, posta kodu, şehir ve ülke.", "Rua, código postal, cidade e país.", "街道、邮政编码、城市和国家。", "Ulica, kod pocztowy, miasto i kraj.", "Rruga, kodi postar, qyteti dhe shteti."],
+  ["Add missing details below to help us handle your requests.", "Vul hieronder de ontbrekende gegevens in, zodat we uw aanvragen kunnen afhandelen.", "Ergänzen Sie unten die fehlenden Angaben, damit wir Ihre Anfragen bearbeiten können.", "Complétez les informations manquantes ci-dessous pour nous aider à traiter vos demandes.", "Aggiungi qui sotto i dati mancanti per aiutarci a gestire le tue richieste.", "Добавьте недостающие данные ниже, чтобы мы могли обработать ваши запросы.", "Añade los datos que faltan a continuación para ayudarnos a gestionar tus solicitudes.", "Taleplerinizi işleyebilmemiz için aşağıdaki eksik bilgileri tamamlayın.", "Preencha os dados em falta abaixo para nos ajudar a tratar dos seus pedidos.", "请补充下方缺失的信息，以便我们处理您的请求。", "Uzupełnij poniżej brakujące dane, abyśmy mogli obsłużyć Twoje zgłoszenia.", "Plotësoni të dhënat që mungojnë më poshtë për të na ndihmuar të trajtojmë kërkesat tuaja."],
+  ["Complete", "Volledig", "Vollständig", "Complet", "Completo", "Заполнено", "Completo", "Tamamlandı", "Completo", "已完成", "Kompletne", "Plotësuar"],
+  ["Missing information", "Ontbrekende gegevens", "Fehlende Angaben", "Informations manquantes", "Informazioni mancanti", "Не хватает данных", "Faltan datos", "Eksik bilgi", "Dados em falta", "信息缺失", "Brakujące dane", "Të dhëna që mungojnë"],
   ["Your MG AutoTech account", "Uw MG AutoTech-account", "Ihr MG AutoTech-Konto", "Votre compte MG AutoTech", "Il tuo account MG AutoTech", "Ваша учётная запись MG AutoTech", "Su cuenta de MG AutoTech", "MG AutoTech hesabınız", "A sua conta MG AutoTech", "您的 MG AutoTech 账户", "Twoje konto MG AutoTech", "Llogaria juaj MG AutoTech"],
   ["No payment method available", "Geen betaalmethode beschikbaar", "Keine Zahlungsmethode verfügbar", "Aucun moyen de paiement disponible", "Nessun metodo di pagamento disponibile", "Нет доступного способа оплаты", "No hay ningún método de pago disponible", "Kullanılabilir ödeme yöntemi yok", "Nenhum método de pagamento disponível", "暂无可用的付款方式", "Brak dostępnej metody płatności", "Nuk ka mënyrë pagese të disponueshme"],
   ["No payment can be started until verified prices are loaded.", "Er kan geen betaling worden gestart totdat de geverifieerde prijzen zijn geladen.", "Es kann keine Zahlung gestartet werden, bevor die geprüften Preise geladen wurden.", "Aucun paiement ne peut être lancé tant que les tarifs vérifiés ne sont pas chargés.", "Non è possibile avviare alcun pagamento finché non vengono caricati i prezzi verificati.", "Платёж нельзя начать, пока не загружены проверенные цены.", "No se puede iniciar ningún pago hasta que se carguen los precios verificados.", "Doğrulanmış fiyatlar yüklenmeden ödeme başlatılamaz.", "Não é possível iniciar qualquer pagamento até que os preços verificados sejam carregados.", "在加载经核实的价格之前，无法发起付款。", "Nie można rozpocząć płatności, dopóki nie zostaną wczytane zweryfikowane ceny.", "Pagesa nuk mund të nisë derisa të ngarkohen çmimet e verifikuara."],
@@ -61,20 +71,6 @@ const customerWorkflowRows = [
   ["Manual review", "Handmatige beoordeling", "Manuelle Prüfung", "Vérification manuelle", "Verifica manuale", "Ручная проверка", "Revisión manual", "Manuel inceleme", "Análise manual", "人工审核", "Weryfikacja ręczna", "Rishikim manual"],
   ["This order could not be found or you do not have access.", "Deze bestelling is niet gevonden of u hebt er geen toegang toe.", "Dieser Auftrag wurde nicht gefunden oder Sie haben keinen Zugriff darauf.", "Cette commande est introuvable ou vous n’y avez pas accès.", "Questo ordine non è stato trovato oppure non hai accesso.", "Этот заказ не найден или у вас нет к нему доступа.", "No se ha encontrado este pedido o no tienes acceso a él.", "Bu sipariş bulunamadı veya bu siparişe erişiminiz yok.", "Este pedido não foi encontrado ou não tem acesso ao mesmo.", "找不到此订单，或您无权访问。", "Nie znaleziono tego zlecenia lub nie masz do niego dostępu.", "Kjo porosi nuk u gjet ose nuk keni qasje në të."],
   [
-    "Latest 100 customer-safe events",
-    "Laatste 100 gebeurtenissen die voor klanten zichtbaar zijn",
-    "Letzte 100 für Kunden sichtbare Ereignisse",
-    "100 derniers événements visibles par le client",
-    "Ultimi 100 eventi visibili al cliente",
-    "Последние 100 событий, доступных клиенту",
-    "Últimos 100 eventos visibles para el cliente",
-    "Müşteriye açık son 100 olay",
-    "Últimos 100 eventos visíveis para o cliente",
-    "最近 100 条客户可见事件",
-    "Ostatnie 100 zdarzeń widocznych dla klienta",
-    "100 ngjarjet më të fundit të dukshme për klientin"
-  ],
-  [
     "Not yet opened",
     "Nog niet geopend",
     "Noch nicht geöffnet",
@@ -101,20 +97,6 @@ const customerWorkflowRows = [
     "已开启",
     "Włączone",
     "Aktiv"
-  ],
-  [
-    "Customer-owned realtime channel",
-    "Realtimekanaal van de klant",
-    "Kundeneigener Echtzeitkanal",
-    "Canal en temps réel propre au client",
-    "Canale in tempo reale dedicato al cliente",
-    "Собственный канал клиента в реальном времени",
-    "Canal en tiempo real propio del cliente",
-    "Müşteriye ait gerçek zamanlı kanal",
-    "Canal em tempo real exclusivo do cliente",
-    "客户专属实时通道",
-    "Kanał czasu rzeczywistego należący do klienta",
-    "Kanali në kohë reale i klientit"
   ],
   [
     "Limited",
@@ -5603,48 +5585,6 @@ const customerWorkflowRows = [
     "账户电子邮箱不可用",
     "Adres e-mail konta jest niedostępny",
     "E-maili i llogarisë nuk disponohet"
-  ],
-  [
-    "Address fields are ready for future invoice workflows.",
-    "Adresvelden zijn klaar voor toekomstige factuurprocessen.",
-    "Die Adressfelder sind für künftige Rechnungsabläufe vorbereitet.",
-    "Les champs d’adresse sont prêts pour les futurs processus de facturation.",
-    "I campi dell’indirizzo sono pronti per i futuri flussi di fatturazione.",
-    "Поля адреса готовы для будущих процессов выставления счетов.",
-    "Los campos de dirección están preparados para futuros procesos de facturación.",
-    "Adres alanları gelecekteki faturalandırma işlemleri için hazırdır.",
-    "Os campos de morada estão preparados para futuros processos de faturação.",
-    "地址字段已为后续发票流程做好准备。",
-    "Pola adresowe są gotowe do przyszłych procesów fakturowania.",
-    "Fushat e adresës janë gati për proceset e ardhshme të faturimit."
-  ],
-  [
-    "Invoice e-mail is available for payment and accounting follow-up.",
-    "Factuur-e-mail is beschikbaar voor opvolging van betalingen en boekhouding.",
-    "Die Rechnungs-E-Mail steht für Zahlungs- und Buchhaltungsnachverfolgung bereit.",
-    "L’adresse e-mail de facturation est disponible pour le suivi des paiements et de la comptabilité.",
-    "L’e-mail di fatturazione è disponibile per il monitoraggio dei pagamenti e la contabilità.",
-    "Адрес электронной почты для счетов доступен для сопровождения платежей и бухгалтерского учёта.",
-    "El correo electrónico de facturación está disponible para el seguimiento de pagos y contabilidad.",
-    "Fatura e-postası ödeme ve muhasebe takibi için hazırdır.",
-    "O e-mail de faturação está disponível para o acompanhamento de pagamentos e contabilidade.",
-    "发票电子邮箱可用于付款和会计跟进。",
-    "Adres e-mail do faktur jest dostępny do obsługi płatności i księgowości.",
-    "E-maili i faturimit është gati për ndjekjen e pagesave dhe kontabilitetit."
-  ],
-  [
-    "Name, phone and preferred contact method are ready for support handover.",
-    "Naam, telefoonnummer en voorkeurscontactmethode zijn klaar voor overdracht aan support.",
-    "Name, Telefonnummer und bevorzugter Kontaktweg sind für die Übergabe an den Support vorbereitet.",
-    "Le nom, le téléphone et le moyen de contact privilégié sont prêts pour la prise en charge par l’assistance.",
-    "Nome, telefono e metodo di contatto preferito sono pronti per il passaggio all’assistenza.",
-    "Имя, телефон и предпочтительный способ связи готовы для передачи в службу поддержки.",
-    "El nombre, el teléfono y el método de contacto preferido están listos para la atención del soporte.",
-    "Ad, telefon ve tercih edilen iletişim yöntemi destek ekibine aktarılmaya hazırdır.",
-    "O nome, o telefone e o método de contacto preferido estão prontos para o acompanhamento pelo suporte.",
-    "姓名、电话和首选联系方式已准备好交由支持团队处理。",
-    "Imię i nazwisko, telefon oraz preferowana metoda kontaktu są gotowe do przekazania obsłudze.",
-    "Emri, telefoni dhe mënyra e preferuar e kontaktit janë gati për t’iu kaluar mbështetjes."
   ],
   [
     "Check file type, size and request notes before starting a paid workflow.",

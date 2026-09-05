@@ -25,7 +25,86 @@ export const customerWorkflowLocaleOrder = [
   "sq"
 ] as const satisfies readonly Exclude<LocaleCode, "en">[];
 
-export const customerWorkflowExactTranslations = {} as const satisfies Readonly<Record<string, readonly string[]>>;
+export const customerWorkflowExactTranslations = {
+  "Connected": [
+    "Verbonden",
+    "Verbunden",
+    "Connecté",
+    "Connesso",
+    "Подключено",
+    "Conectado",
+    "Bağlı",
+    "Ligado",
+    "已连接",
+    "Połączono",
+    "Lidhur"
+  ],
+  "Connecting": [
+    "Verbinden",
+    "Verbindung wird hergestellt",
+    "Connexion en cours",
+    "Connessione in corso",
+    "Подключение",
+    "Conectando",
+    "Bağlanıyor",
+    "A estabelecer ligação",
+    "正在连接",
+    "Łączenie",
+    "Duke u lidhur"
+  ],
+  "Disconnected": [
+    "Verbinding verbroken",
+    "Verbindung getrennt",
+    "Déconnecté",
+    "Disconnesso",
+    "Соединение разорвано",
+    "Desconectado",
+    "Bağlantı kesildi",
+    "Desligado",
+    "连接已断开",
+    "Rozłączono",
+    "Lidhja u shkëput"
+  ],
+  "Latest 100 notifications": [
+    "Laatste 100 meldingen",
+    "Letzte 100 Benachrichtigungen",
+    "100 dernières notifications",
+    "Ultime 100 notifiche",
+    "Последние 100 уведомлений",
+    "Últimas 100 notificaciones",
+    "Son 100 bildirim",
+    "Últimas 100 notificações",
+    "最近 100 条通知",
+    "Ostatnie 100 powiadomień",
+    "100 njoftimet e fundit"
+  ],
+  "New order updates and messages will appear here.": [
+    "Nieuwe orderupdates en berichten verschijnen hier.",
+    "Neue Auftragsmeldungen und Nachrichten erscheinen hier.",
+    "Les nouvelles informations sur vos commandes et vos messages apparaîtront ici.",
+    "I nuovi aggiornamenti sugli ordini e i messaggi appariranno qui.",
+    "Здесь появятся новые сообщения и обновления заказов.",
+    "Aquí aparecerán los nuevos mensajes y las novedades de tus pedidos.",
+    "Yeni sipariş güncellemeleri ve mesajlar burada görünecek.",
+    "As novidades dos pedidos e as novas mensagens aparecerão aqui.",
+    "新的订单更新和消息将显示在此处。",
+    "Tutaj pojawią się nowe wiadomości i aktualizacje zleceń.",
+    "Përditësimet e reja të porosive dhe mesazhet do të shfaqen këtu."
+  ],
+  "Use Refresh if updates are delayed.": [
+    "Gebruik Vernieuwen als updates vertraagd zijn.",
+    "Nutzen Sie Aktualisieren, wenn Meldungen verzögert erscheinen.",
+    "Utilisez Actualiser si les mises à jour tardent à apparaître.",
+    "Usa Aggiorna se gli aggiornamenti arrivano in ritardo.",
+    "Нажмите «Обновить», если уведомления задерживаются.",
+    "Pulsa Actualizar si las novedades tardan en aparecer.",
+    "Güncellemeler gecikirse Yenile düğmesini kullanın.",
+    "Use Atualizar se as atualizações demorarem a aparecer.",
+    "如果更新延迟，请点击刷新。",
+    "Użyj przycisku Odśwież, jeśli aktualizacje są opóźnione.",
+    "Përdorni Rifresko nëse përditësimet vonohen."
+  ]
+} as const satisfies Readonly<Record<string, readonly string[]>>;
 
 export const customerWorkflowTemplateRows = [
   [

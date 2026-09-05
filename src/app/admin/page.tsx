@@ -2794,10 +2794,11 @@ function CustomerDetailModal({ customer, form, setForm, creditInput, setCreditIn
   const customerPricingLoading = pricingLoadState === "loading";
   const customerPricingReady = pricingLoadState === "ready";
   const pricingControlsDisabled = customerPricingLoading || pricingSaving || !customerPricingReady || !pricingWritesEnabled;
-  const globalCustomerPrice = Number(form.global_custom_unit_price_eur);
+  const globalCustomerPrice = customerPricingReady && form.global_custom_unit_price_eur.trim()
+    ? Number(form.global_custom_unit_price_eur) : NaN;
   const customOverrideText = form.commercial_custom_unit_price_override_eur.trim();
   const parsedCustomOverride = parseOptionalCustomUnitPrice(customOverrideText);
-  const customerCustomPricePreview = !parsedCustomOverride.valid
+  const customerCustomPricePreview = !customerPricingReady || !parsedCustomOverride.valid
     ? null
     : parsedCustomOverride.value == null
     ? Number.isFinite(globalCustomerPrice) && globalCustomerPrice >= 0.01
@@ -3003,14 +3004,15 @@ function CustomerDetailModal({ customer, form, setForm, creditInput, setCreditIn
                 <legend className="text-xs font-black uppercase tracking-[0.14em] text-zinc-500">Exact price overrides</legend>
                 <div className="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                   {creditPackages.map((item) => {
-                    const globalPrice = Number(form.global_package_prices_eur[item.id]);
+                    const globalPriceText = form.global_package_prices_eur[item.id].trim();
+                    const globalPrice = customerPricingReady && globalPriceText ? Number(globalPriceText) : NaN;
                     const rawOverride = form.commercial_package_price_overrides_eur[item.id].trim();
                     const parsedOverride = parseOptionalPackageTotal(rawOverride, item.credits);
                     const overrideValid = parsedOverride.valid;
-                    const effectivePrice = !overrideValid
+                    const effectivePrice = !customerPricingReady || !overrideValid
                       ? null
                       : parsedOverride.value == null
-                        ? globalPrice
+                        ? Number.isFinite(globalPrice) ? globalPrice : null
                         : parsedOverride.value;
                     const helpId = `customer-price-${item.id}-help`;
 
@@ -3040,7 +3042,7 @@ function CustomerDetailModal({ customer, form, setForm, creditInput, setCreditIn
                           <span className="flex min-w-12 items-center justify-center border-l border-white/10 px-2 text-[10px] font-black text-zinc-500">EUR</span>
                         </div>
                         <span id={helpId} className={`mt-1.5 block text-xs font-bold ${effectivePrice == null ? "text-red-300" : rawOverride === "" ? "text-zinc-400" : "text-emerald-300"}`}>
-                          {effectivePrice == null
+                          {!customerPricingReady ? "Price unavailable until loaded" : effectivePrice == null
                             ? "Enter a valid final total"
                             : rawOverride === ""
                               ? `Inherits EUR ${effectivePrice.toFixed(2)}`
@@ -3075,7 +3077,7 @@ function CustomerDetailModal({ customer, form, setForm, creditInput, setCreditIn
                       <span className="flex min-w-20 items-center justify-center border-l border-white/10 px-2 text-[10px] font-black text-zinc-500">EUR / credit</span>
                     </div>
                     <span id="customer-custom-credit-price-help" className={`mt-1.5 block text-xs font-bold ${customerCustomPricePreview == null ? "text-red-300" : customOverrideText === "" ? "text-zinc-400" : "text-emerald-300"}`}>
-                      {customerCustomPricePreview == null
+                      {!customerPricingReady ? "Price unavailable until loaded" : customerCustomPricePreview == null
                         ? "Enter a valid unit price"
                         : customOverrideText === ""
                           ? `Inherits EUR ${formatCreditUnitAmount(customerCustomPricePreview)}`
@@ -3094,7 +3096,7 @@ function CustomerDetailModal({ customer, form, setForm, creditInput, setCreditIn
 
               <div className="mt-4 flex flex-col gap-2 border-t border-white/10 pt-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="text-xs leading-5 text-zinc-500">
-                  {pricingUpdatedAt ? `Last saved ${formatDate(pricingUpdatedAt)}` : "No customer-specific pricing row is saved yet."}
+                  {!customerPricingReady ? "Saved pricing has not been confirmed." : pricingUpdatedAt ? `Last saved ${formatDate(pricingUpdatedAt)}` : "No customer-specific pricing row is saved yet."}
                 </div>
                 <button type="button" onClick={onSavePricing} disabled={pricingControlsDisabled} className="inline-flex h-11 items-center justify-center rounded-lg bg-[#b1121b] px-4 text-sm font-black text-white transition hover:bg-[#c91824] disabled:cursor-not-allowed disabled:opacity-50 lg:h-10">
                   {pricingSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
@@ -3471,7 +3473,7 @@ function AdminOperationsOverview({
 
       <div className="grid xl:grid-cols-[minmax(0,1fr)_260px]">
         <div className="min-w-0 xl:border-r xl:border-white/10">
-          <div className="hidden grid-cols-[92px_minmax(0,1fr)_minmax(0,1.15fr)_minmax(90px,0.7fr)_96px] gap-2 border-b border-white/10 bg-black/30 px-3 py-2 text-[10px] font-black uppercase tracking-[0.12em] text-zinc-600 md:grid">
+          <div className="hidden grid-cols-[92px_minmax(0,1fr)_minmax(0,1.15fr)_minmax(90px,0.7fr)_128px] gap-2 border-b border-white/10 bg-black/30 px-3 py-2 text-[10px] font-black uppercase tracking-[0.12em] text-zinc-600 md:grid">
             <span>Order</span><span>Customer</span><span>Vehicle</span><span>Service</span><span>Status</span>
           </div>
           {latestOrders.length === 0 ? (
@@ -3493,7 +3495,7 @@ function AdminOperationsOverview({
                     type="button"
                     onClick={() => onOpenOrder(order)}
                     aria-label={`Open order ${shortId(order.id)}`}
-                    className="group grid w-full min-w-0 gap-2 px-3 py-2.5 text-left transition hover:bg-white/[0.045] md:grid-cols-[92px_minmax(0,1fr)_minmax(0,1.15fr)_minmax(90px,0.7fr)_96px] md:items-center"
+                    className="group grid w-full min-w-0 gap-2 px-3 py-2.5 text-left transition hover:bg-white/[0.045] md:grid-cols-[92px_minmax(0,1fr)_minmax(0,1.15fr)_minmax(90px,0.7fr)_128px] md:items-center"
                   >
                     <div className="min-w-0">
                       <div className="truncate font-black text-white">#{shortId(order.id)}</div>
@@ -3512,7 +3514,7 @@ function AdminOperationsOverview({
                       <div className="mt-0.5 truncate text-[11px] text-zinc-600">{order.original_file_path ? "Original ready" : "No file yet"}</div>
                     </div>
                     <div className="flex min-w-0 items-center justify-between gap-2 md:justify-end">
-                      <span className={`truncate rounded-full border px-2.5 py-1 text-[10px] font-black ${statusClass(order.status)}`}>{statusLabel(order.status)}</span>
+                      <span className={`min-w-0 whitespace-normal rounded-full border px-2.5 py-1 text-[10px] font-black ${statusClass(order.status)}`}>{statusLabel(order.status)}</span>
                       <Eye className="h-4 w-4 shrink-0 text-zinc-600 transition group-hover:text-red-300" />
                     </div>
                   </button>

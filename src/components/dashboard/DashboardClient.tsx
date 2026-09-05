@@ -859,7 +859,7 @@ export function DashboardClient() {
               className="mb-3 grid grid-cols-2 gap-3 min-[1180px]:grid-cols-4"
             >
               <Link
-                href="/dashboard/orders"
+                href="/dashboard/orders?view=pending"
                 className="group min-w-0 rounded-xl border border-[var(--mg-portal-border)] bg-[var(--mg-portal-surface)] p-4 transition hover:border-blue-500/40 hover:bg-[var(--mg-portal-surface-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 lg:p-3"
               >
                 <div className="flex items-center gap-3">
@@ -874,7 +874,7 @@ export function DashboardClient() {
               </Link>
 
               <Link
-                href="/dashboard/orders"
+                href="/dashboard/orders?view=in_progress"
                 className="group min-w-0 rounded-xl border border-[var(--mg-portal-border)] bg-[var(--mg-portal-surface)] p-4 transition hover:border-amber-500/40 hover:bg-[var(--mg-portal-surface-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 lg:p-3"
               >
                 <div className="flex items-center gap-3">
@@ -907,17 +907,14 @@ export function DashboardClient() {
                 href="/dashboard/credits"
                 className="group min-w-0 rounded-xl border border-[var(--mg-portal-border)] bg-[var(--mg-portal-surface)] p-4 transition hover:border-red-500/40 hover:bg-[var(--mg-portal-surface-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 lg:p-3"
               >
-                <div className="flex items-center gap-3">
-                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-red-500/10 text-red-400 lg:h-9 lg:w-9">
+                <div className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] items-center gap-x-2 gap-y-1" data-dashboard-balance>
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-red-500/10 text-red-400">
                     <CreditCard className="h-6 w-6 lg:h-5 lg:w-5" />
                   </span>
-                  <span className="min-w-0">
-                    <span className="block text-xs font-bold text-zinc-400">Balance</span>
-                    <span className="mt-0.5 block break-words text-2xl font-black tabular-nums text-red-400 lg:text-xl">
-                      {customerWorkflowT(locale, "creditsCountLower", {
-                        count: formatDashboardCount(credits, locale),
-                      })}
-                    </span>
+                  <span className="text-xs font-bold text-zinc-400">Balance</span>
+                  <span className="col-span-2 flex min-w-0 flex-wrap items-baseline gap-x-1.5 font-black text-red-400">
+                    <span className="whitespace-nowrap text-xl tabular-nums sm:text-2xl lg:text-xl">{formatDashboardCount(credits, locale)}</span>
+                    <span className="text-xs">{customerWorkflowExactT(locale, "Credits")}</span>
                   </span>
                 </div>
               </Link>
