@@ -382,19 +382,6 @@ export const customerWorkflowExactTranslations = {
     "Nowe zlecenie",
     "Kërkesë e re"
   ],
-  "Next best action -": [
-    "Volgende beste actie -",
-    "Nächster sinnvoller Schritt -",
-    "Prochaine meilleure action -",
-    "Prossima azione consigliata -",
-    "Следующее лучшее действие -",
-    "Siguiente mejor acción -",
-    "Sonraki en iyi adım -",
-    "Próxima melhor ação -",
-    "下一最佳操作 -",
-    "Następne najlepsze działanie -",
-    "Veprimi më i mirë i radhës -"
-  ],
   "No credit ledger movements yet": [
     "Nog geen creditmutaties",
     "Noch keine Credit-Bewegungen",

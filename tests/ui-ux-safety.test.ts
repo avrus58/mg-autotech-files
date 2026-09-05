@@ -627,7 +627,8 @@ test("customer dashboard surfaces missing profile details without changing setti
   assert.match(dashboard, /Company \/ workshop name/);
   assert.match(dashboard, /Billing address/);
   assert.match(dashboard, /href="\/dashboard\/settings"/);
-  assert.match(dashboard, /max-w-full break-words rounded-full/);
+  assert.match(dashboard, /"dashboardProfileDetails", \{\s*items: profileCompletionSummary/);
+  assert.match(dashboard, /data-dashboard-next-action[\s\S]*<p className="break-words">\{dashboardNextAction.description\}<\/p>/);
 
   assert.match(settings, /\.update\(\{\s*[\s\S]*full_name: fullName\.trim\(\) \|\| null/);
   assert.match(settings, /invoice_email: invoiceEmail\.trim\(\) \|\| email/);
@@ -647,7 +648,8 @@ test("customer dashboard shows one prioritized next best action", () => {
   assert.match(dashboard, /credits <= 0[\s\S]*Add credits before your next file request/);
   assert.match(dashboard, /activeCount > 0[\s\S]*Track your active file requests/);
   assert.match(dashboard, /title: customerWorkflowExactT\(locale, "Create a new file request"\)/);
-  assert.match(dashboard, /Next best action - \{dashboardNextAction\.eyebrow\}/);
+  assert.match(dashboard, /<details[\s\S]*data-dashboard-next-action[\s\S]*<summary[\s\S]*\{dashboardNextAction\.title\}/);
+  assert.match(dashboard, /open=\{dashboardNextAction\.key === "response"\}/);
   assert.match(dashboard, /href=\{dashboardNextAction\.href\}/);
   assert.match(dashboard, /\{dashboardNextAction\.cta\}/);
   assert.match(dashboard, /const NextActionIcon =/);
@@ -735,7 +737,9 @@ test("customer dashboard follows the owner reference hierarchy without hiding op
   assert.match(dashboard, /\? "Needs Response"[\s\S]*: "Details"/);
   assert.match(dashboard, /<details[\s\S]*Quick Actions/);
   assert.match(dashboard, /aria-labelledby="credit-history-title"[\s\S]*creditHistory\.map/);
-  assert.doesNotMatch(dashboard, /<details[\s\S]*Credit History/);
+  for (const disclosure of dashboard.matchAll(/<details\b[\s\S]*?<\/details>/g)) {
+    assert.doesNotMatch(disclosure[0], /Credit History|id="recent-requests-title"/);
+  }
   assert.match(dashboard, /aria-live="polite"/);
   assert.match(dashboard, /if \(!customerId\) return null/);
   assert.match(dashboard, /disabled=\{!customerReference\}/);

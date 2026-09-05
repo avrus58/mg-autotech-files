@@ -106,8 +106,8 @@ function SidebarNavLink({
       className={className}
       data-customer-sidebar-link
     >
-      <Icon className={`h-4 w-4 ${active ? "text-red-400" : ""}`} />
-      <span className="min-w-0 truncate">{label}</span>
+      <Icon className={`h-4 w-4 shrink-0 ${active ? "text-red-400" : ""}`} />
+      <span className="min-w-0 break-words leading-snug">{label}</span>
     </Link>
   );
 }

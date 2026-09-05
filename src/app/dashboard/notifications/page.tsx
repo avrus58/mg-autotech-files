@@ -157,7 +157,7 @@ export default function CustomerNotificationCenterPage() {
         </div>
 
         <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-y border-white/10 py-3">
-          <div className="flex items-center gap-2 overflow-x-auto"><Filter className="h-4 w-4 shrink-0 text-zinc-600" />{filters.map((item) => <button key={item.value} type="button" aria-pressed={filter === item.value} onClick={() => setFilter(item.value)} className={`shrink-0 rounded-lg px-3 py-2 text-xs font-black ${filter === item.value ? "bg-[#b1121b] text-white" : "bg-white/[0.04] text-zinc-400 hover:bg-white/10"}`}>{item.label}</button>)}</div>
+          <div className="flex min-w-0 flex-wrap items-center gap-2"><Filter className="h-4 w-4 shrink-0 text-zinc-600" />{filters.map((item) => <button key={item.value} type="button" aria-pressed={filter === item.value} onClick={() => setFilter(item.value)} className={`max-w-full break-words rounded-lg px-3 py-2 text-xs font-black ${filter === item.value ? "bg-[#b1121b] text-white" : "bg-white/[0.04] text-zinc-400 hover:bg-white/10"}`}>{item.label}</button>)}</div>
           <button type="button" onClick={() => void markRead(items.filter((item) => !item.read_at).map((item) => item.id))} disabled={unread === 0} className="inline-flex items-center text-xs font-black text-red-300 disabled:text-zinc-700"><CheckCheck className="mr-2 h-4 w-4" />Mark all as read</button>
         </div>
 

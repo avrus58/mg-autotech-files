@@ -329,15 +329,15 @@ export default function VehicleDetailClient({ id }: { id: string }) {
     </div>
   </main>;
 
-  return <main className="min-h-screen bg-[#050505] pb-40 text-white sm:pb-24">
+  return <main className="mg-compact-ui min-h-screen bg-[#050505] pb-40 text-white sm:pb-24">
     <header className="border-b border-white/10 bg-black/90">
       <div className="mx-auto flex max-w-[1440px] flex-col gap-4 px-4 py-5 lg:flex-row lg:items-center lg:justify-between">
         <div className="min-w-0">
           <Link href="/admin/vehicles" className="text-sm font-bold text-zinc-500 hover:text-white"><ArrowLeft className="mr-2 inline h-4 w-4" />Vehicle catalog</Link>
-          <div className="mt-3 flex flex-wrap items-center gap-2"><h1 className="truncate text-2xl font-black md:text-3xl">{payload.record.displayName}</h1><StatusBadge status={form.published ? "Published" : form.active ? "Draft" : "Archived"} positive={form.published} /></div>
-          <p className="mt-1 truncate text-xs text-zinc-600">{payload.record.vehicleKey}</p>
+          <div className="mt-3 flex flex-wrap items-center gap-2"><h1 className="min-w-0 break-words text-xl font-black md:text-2xl">{payload.record.displayName}</h1><StatusBadge status={form.published ? "Published" : form.active ? "Draft" : "Archived"} positive={form.published} /></div>
+          <p className="mt-1 break-all text-xs text-zinc-600">{payload.record.vehicleKey}</p>
         </div>
-        <div className="flex items-center gap-2">{dirty && <span className="text-xs font-black text-amber-300">Unsaved changes</span>}<button onClick={reset} disabled={!dirty || saving || syncingCatalog} className="h-11 rounded-xl border border-white/10 px-4 text-sm font-black text-zinc-300 disabled:opacity-40"><RotateCcw className="mr-2 inline h-4 w-4" />Reset</button><button onClick={() => void save()} disabled={!dirty || saving || syncingCatalog} className="h-11 rounded-xl bg-[#b1121b] px-5 text-sm font-black hover:bg-[#c91824] disabled:opacity-40">{saving ? <Loader2 className="mr-2 inline h-4 w-4 animate-spin" /> : <Save className="mr-2 inline h-4 w-4" />}Save</button></div>
+        <div className="flex max-w-full shrink-0 flex-wrap items-center gap-2">{dirty && <span className="text-xs font-black text-amber-300">Unsaved changes</span>}<button onClick={reset} disabled={!dirty || saving || syncingCatalog} className="h-11 rounded-xl border border-white/10 px-4 text-sm font-black text-zinc-300 disabled:opacity-40"><RotateCcw className="mr-2 inline h-4 w-4" />Reset</button><button onClick={() => void save()} disabled={!dirty || saving || syncingCatalog} className="h-11 rounded-xl bg-[#b1121b] px-5 text-sm font-black hover:bg-[#c91824] disabled:opacity-40">{saving ? <Loader2 className="mr-2 inline h-4 w-4 animate-spin" /> : <Save className="mr-2 inline h-4 w-4" />}Save</button></div>
       </div>
     </header>
 

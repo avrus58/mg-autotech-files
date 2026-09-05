@@ -1045,6 +1045,7 @@ export const customerWorkflowLegacyDomObserverTombstones = {
   auth: [...customerWorkflowLegacyDomObserverReviewedTombstoneFloor.auth],
   overview: [
     ...customerWorkflowLegacyDomObserverReviewedTombstoneFloor.overview,
+    "Next best action -",
   ],
   request: [...customerWorkflowLegacyDomObserverReviewedTombstoneFloor.request],
   credits: [...customerWorkflowLegacyDomObserverReviewedTombstoneFloor.credits],

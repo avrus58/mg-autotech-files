@@ -132,7 +132,7 @@ export default function AdminWidgetClientsPage() {
             </span>
             <div className="min-w-0">
               <div className="text-xs font-black uppercase tracking-[0.18em] text-red-500">Commercial operations</div>
-              <h1 className="truncate text-2xl font-black">Widget SaaS Control Center</h1>
+              <h1 className="break-words text-2xl font-black">Widget SaaS Control Center</h1>
               <p className="mt-1 text-sm text-zinc-500">Subscriptions, installations, usage and lead delivery in one workspace.</p>
             </div>
           </div>

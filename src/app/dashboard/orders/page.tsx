@@ -220,7 +220,7 @@ export default function CustomerOrdersPage() {
 
             <div className="mb-6 grid gap-3 md:grid-cols-5">
               {views.map((item) => (
-                <button key={item.value} type="button" aria-pressed={view === item.value} onClick={() => selectView(item.value)} className={`hidden rounded-xl border p-4 text-left transition md:block ${view === item.value ? "border-red-700 bg-red-950/30" : "border-white/10 bg-white/[0.03] hover:bg-white/[0.06]"}`}>
+                <button key={item.value} type="button" aria-pressed={view === item.value} onClick={() => selectView(item.value)} className={`hidden min-w-0 rounded-xl border p-4 text-left [overflow-wrap:anywhere] transition md:block ${view === item.value ? "border-red-700 bg-red-950/30" : "border-white/10 bg-white/[0.03] hover:bg-white/[0.06]"}`}>
                   <div className="font-black">{item.label}</div><div className="mt-1 text-xs text-zinc-500">{item.description}</div>
                 </button>
               ))}

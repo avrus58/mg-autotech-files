@@ -22,6 +22,7 @@ import {
   BellRing,
   BrainCircuit,
   CheckCircle2,
+  ChevronDown,
   Clipboard,
   Clock3,
   CreditCard,
@@ -675,23 +676,26 @@ export function DashboardClient() {
         <section className="min-w-0 flex-1 lg:flex lg:h-screen lg:flex-col lg:overflow-hidden">
           <header className="sticky top-0 z-40 shrink-0 border-b border-[var(--mg-portal-border)] bg-[var(--mg-portal-header)] backdrop-blur-xl lg:static">
             <div className="border-b border-red-950/40 bg-[#b1121b] px-4 py-2.5 text-white lg:px-4 lg:py-1.5 xl:px-5">
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex min-w-0 items-center gap-3">
-                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/45">
-                    <NextActionIcon className="h-4 w-4" />
+              <div className="flex flex-wrap items-start justify-between gap-2">
+                <details
+                  key={dashboardNextAction.key}
+                  data-dashboard-next-action
+                  open={dashboardNextAction.key === "response"}
+                  className="group min-w-0 flex-1 basis-60"
+                >
+                  <summary className="flex cursor-pointer list-none items-center gap-2 rounded-lg py-1.5 text-sm font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white [&::-webkit-details-marker]:hidden">
+                    <NextActionIcon className="h-4 w-4 shrink-0" />
+                    <span className="min-w-0 break-words">{dashboardNextAction.title}</span>
+                    <ChevronDown className="h-4 w-4 shrink-0 transition-transform group-open:rotate-180" />
+                  </summary>
+                  <div className="pb-1 pl-6 text-xs leading-relaxed text-white/90">
+                    <p className="font-bold">{dashboardNextAction.eyebrow}</p>
+                    <p className="break-words">{dashboardNextAction.description}</p>
                   </div>
-                  <div className="min-w-0">
-                    <div className="truncate text-xs font-black uppercase tracking-[0.12em] sm:text-sm">
-                      Next best action - {dashboardNextAction.eyebrow}: {dashboardNextAction.title}
-                    </div>
-                    <p className="hidden truncate text-xs text-white/80 xl:block">
-                      {dashboardNextAction.description}
-                    </p>
-                  </div>
-                </div>
+                </details>
                 <Link
                   href={dashboardNextAction.href}
-                  className="shrink-0 rounded-lg border border-white/40 bg-black/10 px-3 py-2 text-xs font-black transition hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white lg:py-1.5"
+                  className="max-w-full shrink-0 rounded-lg border border-white/40 bg-black/10 px-3 py-2 text-xs font-black transition hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white lg:py-1.5"
                 >
                   {dashboardNextAction.cta}
                   <ArrowRight className="ml-2 inline h-4 w-4" />
@@ -847,18 +851,6 @@ export function DashboardClient() {
                 </Link>
               </div>
 
-              {dashboardNextAction.key === "profile" && profileMissingItems.length > 0 && (
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {profileMissingItems.map((item) => (
-                    <span
-                      key={item}
-                      className="max-w-full break-words rounded-full border border-amber-500/30 bg-black/25 px-2.5 py-1 text-[11px] font-bold text-amber-100"
-                    >
-                      {customerWorkflowExactT(locale, item)}
-                    </span>
-                  ))}
-                </div>
-              )}
             </section>
 
             <section
@@ -939,16 +931,16 @@ export function DashboardClient() {
                 aria-labelledby="recent-requests-title"
                 className="min-w-0 overflow-hidden rounded-xl border border-[var(--mg-portal-border)] bg-[var(--mg-portal-surface)]"
               >
-                <div className="flex flex-col gap-3 border-b border-[var(--mg-portal-border)] px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--mg-portal-border)] px-4 py-3.5">
+                  <div className="min-w-0 flex-1 basis-48">
                     <h2 id="recent-requests-title" className="flex items-center gap-2 text-base font-black">
-                      <FileText className="h-5 w-5 text-red-400" />
+                      <FileText className="h-5 w-5 shrink-0 text-red-400" />
                       My Recent Requests
                     </h2>
                     <p className="mt-1 text-xs text-zinc-400">Your latest file orders and their current status</p>
                   </div>
 
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex max-w-full flex-wrap gap-2">
                     <Link
                       href="/dashboard/orders"
                       className="inline-flex items-center justify-center rounded-lg border border-[#303030] bg-[#111] px-3 py-2 text-xs font-black text-white transition hover:border-zinc-500 hover:bg-[#181818] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
@@ -1145,21 +1137,21 @@ export function DashboardClient() {
                         const typeLabel = localizeCreditTransactionType(locale, item.type);
 
                         return (
-                          <div key={item.id} className="flex min-w-0 items-center gap-3 px-4 py-3">
+                          <div key={item.id} className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] items-start gap-x-3 gap-y-1 px-4 py-3">
                             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-950/40 text-red-400">
                               <CreditCard className="h-4 w-4" />
                             </div>
                             <div className="min-w-0 flex-1">
-                              <div className="truncate text-sm font-bold">
+                              <div className="break-words text-sm font-bold leading-snug">
                                 {item.description ? (
                                   <span translate="no" data-no-translate>{item.description}</span>
                                 ) : typeLabel}
                               </div>
-                              <div className="mt-1 truncate text-[11px] text-zinc-400">
+                              <div className="mt-1 break-words text-[11px] text-zinc-400">
                                 {typeLabel} · {formatDate(item.created_at, locale)}
                               </div>
                             </div>
-                            <div className="shrink-0 text-right">
+                            <div className="col-start-2 flex min-w-0 flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
                               <div
                                 className={`text-sm font-black ${
                                   isPositive ? "text-emerald-400" : "text-red-500"

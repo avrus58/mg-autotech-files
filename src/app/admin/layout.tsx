@@ -27,8 +27,10 @@ export default function AdminLayout({
         title="Please log in to access the admin workspace"
         description="MG AutoTech operations, customer records and internal controls require a verified staff session."
       >
-        {children}
-        <AdminNotificationDock />
+        <div data-admin-workspace>
+          {children}
+          <AdminNotificationDock />
+        </div>
       </BrowserAuthBoundary>
     </>
   );

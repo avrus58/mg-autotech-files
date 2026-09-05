@@ -206,8 +206,8 @@ export default function AdminWidgetClientDetailPage() {
         <div className="mx-auto flex max-w-[1600px] flex-col gap-5 px-4 py-5 sm:flex-row sm:items-end sm:justify-between lg:px-6">
           <div className="min-w-0">
             <Link href="/admin/widget-clients" className="inline-flex items-center text-xs font-black uppercase tracking-[0.12em] text-zinc-500"><ArrowLeft className="mr-2 h-4 w-4" />Widget portfolio</Link>
-            <div className="mt-3 flex flex-wrap items-center gap-3"><h1 className="truncate text-2xl font-black sm:text-3xl">{client.company_name}</h1><HealthBadge health={data.commercial} /></div>
-            <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-zinc-500"><span>{client.email}</span><span>{client.allowed_domain}</span><span>{client.plan.toUpperCase()}</span></div>
+            <div className="mt-3 flex flex-wrap items-center gap-3"><h1 className="min-w-0 break-words text-2xl font-black sm:text-3xl">{client.company_name}</h1><HealthBadge health={data.commercial} /></div>
+            <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 break-all text-sm text-zinc-500"><span>{client.email}</span><span>{client.allowed_domain}</span><span>{client.plan.toUpperCase()}</span></div>
           </div>
           <div className="flex flex-wrap gap-2">
             <button type="button" onClick={() => void load(true)} disabled={refreshing} className="h-11 rounded-lg border border-white/10 px-4 text-sm font-black"><RefreshCw className={`mr-2 inline h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />Refresh</button>

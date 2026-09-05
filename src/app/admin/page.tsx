@@ -1845,7 +1845,7 @@ export default function AdminPage() {
             <div className="text-xs font-black uppercase tracking-[0.22em] text-zinc-500">Admin Workspace</div>
             <div className="mt-1 text-lg font-black text-white">Operations</div>
           </div>
-          <nav className="space-y-2">
+          <nav data-admin-navigation className="space-y-2">
             <SidebarButton active={activeTab === "orders"} icon={<FileCode2 />} label="Orders" count={adminDataReady ? stats.total : "—"} onClick={() => setActiveTab("orders")} />
             {hasStaffPermission(adminAccess, "orders.view") && (
               <Link
@@ -2643,12 +2643,12 @@ function CustomersPanel({
             value={customerSearch}
             onChange={(event) => setCustomerSearch(event.target.value)}
             placeholder="Search customer ID, email, name, company..."
-            className="h-12 w-full rounded-xl border border-white/10 bg-black/35 pl-11 pr-4 text-sm font-bold text-white outline-none transition placeholder:text-zinc-600 focus:border-red-700 md:w-[520px]"
+            className="h-12 w-full max-w-full rounded-xl border border-white/10 bg-black/35 pl-11 pr-4 text-sm font-bold text-white outline-none transition placeholder:text-zinc-600 focus:border-red-700 md:w-[520px]"
           />
         </div>
       </div>
 
-      <div className="hidden overflow-hidden rounded-2xl border border-white/10 xl:block">
+      <div data-admin-customers-table className="hidden overflow-x-auto rounded-2xl border border-white/10 2xl:block">
         <table className="w-full table-fixed border-collapse text-left text-sm">
           <colgroup>
             <col className="w-[27%]" />
@@ -2700,7 +2700,7 @@ function CustomersPanel({
                       </div>
                     ) : null}
                   </td>
-                  <td className="px-4 py-4 align-top"><div className="w-24 rounded-xl bg-red-950/30 px-3 py-2 text-center font-black text-red-300">{Number(customer.credit_balance ?? 0)}</div></td>
+                  <td className="px-4 py-4 align-top"><div className="max-w-full break-words rounded-xl bg-red-950/30 px-2 py-2 text-center font-black text-red-300">{Number(customer.credit_balance ?? 0)}</div></td>
                   <td className="px-4 py-4 align-top">
                     <div className="flex flex-wrap gap-2">
                       {[10, 25, 50, 100].map((amount) => (
@@ -2722,7 +2722,7 @@ function CustomersPanel({
         </table>
       </div>
 
-      <div className="space-y-4 xl:hidden">
+      <div className="grid gap-3 lg:grid-cols-2 2xl:hidden">
         {filteredCustomers.length === 0 ? <div className="rounded-2xl border border-white/10 bg-black/30 p-8 text-center text-zinc-500">No customers found.</div> : filteredCustomers.map((customer) => (
           <div key={customer.id} className="min-w-0 rounded-2xl border border-white/10 bg-black/30 p-4 sm:p-5">
             <div className="mb-4 flex items-start justify-between gap-4">
@@ -2843,10 +2843,10 @@ function CustomerDetailModal({ customer, form, setForm, creditInput, setCreditIn
                   </span>
                 ))}
               </div>
-              <h2 id="customer-detail-title" className="truncate text-2xl font-black md:text-3xl">{customer.full_name || customer.company_name || customer.email || "Customer"}</h2>
-              <p className="mt-1 truncate text-sm text-zinc-500">{customer.email}</p>
+              <h2 id="customer-detail-title" className="break-words text-xl font-black md:text-2xl">{customer.full_name || customer.company_name || customer.email || "Customer"}</h2>
+              <p className="mt-1 break-all text-xs text-zinc-500">{customer.email}</p>
             </div>
-            <div className="flex flex-wrap gap-1.5">
+            <div className="flex max-w-full shrink-0 flex-wrap gap-1.5 xl:max-w-[45%]">
               {canViewCustomerIntelligence && <Link href={`/admin/growth/customers/${customer.id}`} className="inline-flex min-h-11 items-center rounded-lg border border-cyan-800/40 bg-cyan-950/20 px-3 text-xs font-black text-cyan-200 transition hover:bg-cyan-950/40 lg:h-9 lg:min-h-0"><HeartHandshake className="mr-1.5 h-4 w-4" />Customer 360</Link>}
               <button onClick={() => onCopyValue(customer.customer_id || customer.id, "Customer ID")} className="min-h-11 rounded-lg border border-white/10 bg-white/[0.04] px-3 text-xs font-black text-white transition hover:bg-white/10 lg:h-9 lg:min-h-0"><Copy className="mr-1.5 inline h-4 w-4" />Copy ID</button>
               <button onClick={onSave} disabled={saving} className="min-h-11 rounded-lg bg-[#b1121b] px-3 text-xs font-black text-white transition hover:bg-[#c91824] disabled:opacity-50 lg:h-9 lg:min-h-0">{saving ? <Loader2 className="mr-1.5 inline h-4 w-4 animate-spin" /> : <Save className="mr-1.5 inline h-4 w-4" />}Save profile</button>
@@ -2855,7 +2855,7 @@ function CustomerDetailModal({ customer, form, setForm, creditInput, setCreditIn
           </div>
         </div>
         <div className="grid gap-4 p-3 sm:p-4 xl:grid-cols-[minmax(0,1fr)_280px]">
-          <div className="space-y-4">
+          <div className="min-w-0 space-y-4">
             <section className="rounded-xl border border-white/10 bg-white/[0.04] p-4">
               <h3 className="mb-3 text-lg font-black">Customer Profile</h3>
               <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">

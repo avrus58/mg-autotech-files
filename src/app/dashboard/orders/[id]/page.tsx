@@ -902,8 +902,8 @@ export default function OrderDetailPage() {
                 <Clock3 className={`h-5 w-5 shrink-0 ${statusCopy.iconClass}`} />
               )}
               <div className="min-w-0">
-                <h2 id="order-progress-title" className="truncate text-sm font-black text-white">{statusCopy.title}</h2>
-                <p className="mt-0.5 truncate text-xs text-zinc-500" title={statusCopy.description}>{statusCopy.description}</p>
+                <h2 id="order-progress-title" className="break-words text-sm font-black text-white">{statusCopy.title}</h2>
+                <p className="mt-0.5 break-words text-xs text-zinc-500">{statusCopy.description}</p>
               </div>
             </div>
             <ProgressTimeline order={order} completedFileReady={completedFileReady} />
