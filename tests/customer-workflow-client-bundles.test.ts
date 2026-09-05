@@ -175,6 +175,21 @@ test("compact customer workflow catalogs preserve combined legacy runtime semant
   }
 });
 
+test("identical auth observer rows reuse primary values without dropping observer keys", () => {
+  const sharedKeys = Object.keys(authDom.customerWorkflowExactTranslations).filter(
+    (key) => JSON.stringify(authDom.customerWorkflowExactTranslations[key]) ===
+      JSON.stringify(auth.customerWorkflowExactTranslations[key]),
+  );
+  assert.ok(sharedKeys.length > 0, "expected shared auth translations");
+  for (const key of sharedKeys) {
+    assert.equal(
+      authDom.customerWorkflowExactTranslations[key],
+      auth.customerWorkflowExactTranslations[key],
+      `${key}: identical observer values should reuse the primary row`,
+    );
+  }
+});
+
 test("password and notification helpers are behaviorally identical to the master", () => {
   const passwordSources = [
     "Use at least 12 characters.",
