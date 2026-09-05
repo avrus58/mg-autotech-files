@@ -159,6 +159,17 @@ Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
 
+### MANUAL-20260905-PANEL-FOLLOW-UP [P2] Six verified panel clarity fixes
+
+Fingerprint: `panel-follow-up|71ade32-review|word-digit-wrap-unknown-price-connection-state-view-filter-readiness|truthful-readable-panels`
+
+Owner-approved six findings implemented; code `ea449c6`. Existing admin/customer
+features and pricing rules preserved. All 12 locales retained. Independent review
+GO; 1499/1499 full tests, lint, web/desktop typecheck, i18n, build, performance and
+emitted catalog budgets PASS. Synthetic browser matrix 32/32 plus order views 8/8;
+independent timeline 72/72. See `docs/panel-follow-up-review-2026-09-05.md`.
+Local only; no push, deployment, database or live customer-service changes.
+
 ### MANUAL-20260905-PANEL-READABILITY [P1] Customer clarity and panel overflow
 
 Fingerprint: `panel-readability|20260905-owner-screenshot|clipped-next-action-nav-ledger-admin-customer-grid|wrap-containment-without-feature-removal`

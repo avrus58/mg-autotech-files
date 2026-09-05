@@ -1,5 +1,49 @@
 # Otonom calisma gunlugu
 
+## 2026-09-05 Owner-approved panel follow-up implementation
+
+- Task: MANUAL-20260905-PANEL-FOLLOW-UP. Implemented the six verified findings
+  from the preceding audit in the homepage-refresh feature worktree only.
+- Code candidate: `ea449c6e6062e5500f6af012c5ee069db1d70a5d`, based on `71ade32`.
+  Admin navigation/status wrapping and unknown pricing; dashboard balance and
+  category links; order list URL/filter/request state; notification connection
+  state; profile readiness copy; order-detail typed timeline label; matching
+  catalogs/tombstones and regression tests. Details and scope boundaries are in
+  `docs/panel-follow-up-review-2026-09-05.md`.
+- Independent source review GO, including synthetic race/reconnection callbacks
+  and 72 timeline cases. Browser matrix 32/32 plus final order matrix 8/8 passed
+  at 390x844 and 1366x768 in EN/DE/TR/ZH. Synthetic data only; no live backend
+  outage or payment/authentication E2E claim. Temporary QA tab closed, viewport
+  reset and owner preview refreshed.
+- Final full test suite: 1499/1499 PASS, zero failures/skips, on frozen source. Lint, web/desktop
+  typecheck, i18n (2448 sources x 11 non-English locales, zero fallback), all 36
+  prebuild catalog tests, build (280/280), performance and emitted locale budgets
+  (1/1 post-build) PASS. Earlier failed or mixed-snapshot runs are not passing
+  receipts. Duplicate DOM translations were removed; budgets were not increased.
+- Result: local implementation Done. Full serial receipt is in
+  `.autopilot/runtime/panel-follow-up-test-frozen.log`; build/performance/emitted,
+  lint/typecheck logs use the matching `panel-follow-up-*-frozen.log` names.
+  No remaining failed local gate; live integration and deployment are not claimed.
+- No push, Preview, Production deployment, dependency installation, schema or
+  business-price change, secret access, real customer data/payment/e-mail action.
+
+## 2026-09-05 Owner follow-up inspection (read-only product audit)
+
+- Reviewed local synthetic panel preview and application source at `71ade32`.
+  No application code changes, live-service calls, push or deployment.
+- Six confirmed open findings and verification boundaries:
+  `docs/panel-follow-up-review-2026-09-05.md`. Admin word/status truncation,
+  mobile balance digit wrapping, unavailable-price zero display, unconditional
+  notification connection label, broad category links and misleading profile
+  readiness descriptions remain open; the prior broad no-overflow result does
+  not establish that every label is readable.
+- Fresh targeted regression run: 76/76 passed. Browser review at 1366/390px,
+  dashboard EN/DE/TR/ZH including actual DE-to-TR switch and empty/error states.
+  Synthetic pricing failure must not be reported as a real production outage.
+- Changed files: this audit log and the new review document only. No fixes
+  marked Done; real authenticated request/payment/delivery flows remain outside
+  this design preview's coverage.
+
 
 
 Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
