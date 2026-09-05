@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import path from "node:path";
 import { gzipSync } from "node:zlib";
+import { runInNewContext } from "node:vm";
 import test from "node:test";
 import { buildSync } from "esbuild";
 import ts from "typescript";
@@ -2330,36 +2331,51 @@ function emittedCompactCatalogFiles(
   }
   assert.ok(chunkIds.size > 0, `${group}: no emitted compact chunks found`);
 
-  const emittedFiles: string[] = [];
-  const resolvedChunkIds = new Set<string>();
-  const pending = [".next/static/chunks"];
-  while (pending.length) {
-    const directory = pending.pop()!;
-    for (const entry of readdirSync(directory, { withFileTypes: true })) {
-      const child = path.join(directory, entry.name);
-      if (entry.isDirectory()) {
-        pending.push(child);
-      } else if (entry.name.endsWith(".js")) {
-        // Named async chunks need not include their numeric runtime ID in the
-        // filename. Read the actual registration, never infer payload identity
-        // from a human-readable chunk name.
-        const registeredIds = registeredWebpackChunkIds(readFileSync(child, "utf8"));
-        const matchedIds = registeredIds.filter((id) => chunkIds.has(id));
-        if (matchedIds.length) {
-          matchedIds.forEach((id) => resolvedChunkIds.add(id));
-          emittedFiles.push(child);
-        }
-      }
-    }
-  }
-  for (const chunkId of chunkIds) {
-    assert.ok(
-      resolvedChunkIds.has(chunkId),
-      `${group}: emitted chunk ${chunkId} is missing`,
-    );
-  }
+  // Route entry chunks may register the same catalog IDs as an async chunk.
+  // Measure the exact file Webpack fetches, not every possible registration.
+  const runtimes = readdirSync(".next/static/chunks")
+    .filter((file) => /^webpack-[a-f0-9]+\.js$/u.test(file));
+  assert.equal(runtimes.length, 1, "expected one emitted Webpack runtime");
+  const runtimeSource = readFileSync(path.join(".next/static/chunks", runtimes[0]), "utf8");
+  const emittedFiles = [...chunkIds].map((chunkId) => {
+    const filename = webpackChunkFilename(runtimeSource, Number(chunkId));
+    assert.match(filename, /^static\/chunks\/[a-zA-Z0-9_.-]+\.js$/u);
+    const file = path.join(".next", filename);
+    assert.ok(existsSync(file), `${group}: emitted chunk ${chunkId} is missing`);
+    assert.ok(registeredWebpackChunkIds(readFileSync(file, "utf8")).includes(chunkId),
+      `${group}: runtime file does not register chunk ${chunkId}`);
+    return file;
+  });
   return [...new Set(emittedFiles)].sort();
 }
+
+function webpackChunkFilename(runtimeSource: string, chunkId: number): string {
+  const source = ts.createSourceFile("webpack.js", runtimeSource, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
+  const mappers: string[] = [];
+  const visit = (node: ts.Node) => {
+    if (ts.isBinaryExpression(node) && node.operatorToken.kind === ts.SyntaxKind.EqualsToken &&
+        ts.isPropertyAccessExpression(node.left) && node.left.name.text === "u" &&
+        ts.isArrowFunction(node.right)) mappers.push(node.right.getText(source));
+    ts.forEachChild(node, visit);
+  };
+  visit(source);
+  assert.equal(mappers.length, 1, "expected one emitted chunk filename mapper");
+  // Execute only the local build's pure filename mapper in a bounded context:
+  // no full bundle execution, process, require, filesystem or network access.
+  const filename: unknown = runInNewContext(`(${mappers[0]})(${JSON.stringify(chunkId)})`, Object.create(null), {
+    timeout: 1000,
+    contextCodeGeneration: { strings: false, wasm: false },
+  });
+  assert.equal(typeof filename, "string", "chunk mapper must return a filename");
+  return filename as string;
+}
+
+test("chunk filenames follow the runtime mapping rather than duplicate route registrations", () => {
+  const runtime = '(()=>{const w={};w.u=e=>"static/chunks/"+({123:"workflow-auth"}[e]||e)+"."+{123:"abc",456:"def"}[e]+".js"})();';
+  assert.equal(webpackChunkFilename(runtime, 123), "static/chunks/workflow-auth.abc.js");
+  assert.equal(webpackChunkFilename(runtime, 456), "static/chunks/456.def.js");
+  assert.throws(() => webpackChunkFilename("const noMapper={}", 123), /expected one/);
+});
 
 function registeredWebpackChunkIds(source: string): string[] {
   const registration = source.match(
