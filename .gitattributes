@@ -1,1 +1,3 @@
 *.sh text eol=lf
+# Generated catalogs are byte-checked during prebuild on Windows and Linux.
+src/lib/i18n/customer-workflow-*-translations.ts text eol=lf

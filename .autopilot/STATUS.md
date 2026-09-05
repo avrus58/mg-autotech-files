@@ -5852,3 +5852,9 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 - Preserve rollback pair `8b06841df042`, root-only env files, Caddy/DNS and the
   separate mgautotech.de stack. Live customer/payment/e-mail mutations are not
   part of smoke testing. Final build/deployment/smoke receipts are still pending.
+- The first Linux build correctly stopped at catalog freshness. Exact evidence:
+  the empty widget catalog is 1239 LF-only bytes in Git but the Windows-created
+  source archive produced 1283 bytes with 44 CRLF endings (`file`/`wc` on VPS).
+  `core.autocrlf=true` was affecting archive export. Pinning generated catalogs
+  to LF in `.gitattributes` fixes the transport, not catalog content; strict
+  freshness remains unchanged. No running service was replaced by that build.

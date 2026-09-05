@@ -99,6 +99,7 @@ test("Next standalone image admits only allowlisted browser-public build values"
 test("Docker builder retains the mandatory localization gate and its fixture closure", () => {
   const ignore = readProjectFile(".dockerignore");
   const dockerfile = readProjectFile("Dockerfile");
+  const attributes = readProjectFile(".gitattributes");
   const packageJson = JSON.parse(readProjectFile("package.json")) as {
     scripts: Record<string, string>;
   };
@@ -109,6 +110,7 @@ test("Docker builder retains the mandatory localization gate and its fixture clo
   assert.match(ignore, /^!tests\/fixtures$/m);
   assert.match(ignore, /^tests\/fixtures\/\*$/m);
   assert.match(ignore, /^!tests\/fixtures\/customer-workflow-route-closure$/m);
+  assert.match(attributes, /^src\/lib\/i18n\/customer-workflow-\*-translations\.ts text eol=lf$/m);
   const runner = dockerfile.slice(dockerfile.indexOf("FROM base AS runner"));
   assert.doesNotMatch(runner, /COPY[^\n]*(?:\/app\/tests|\/app\/scripts \.|\/app \.|\. \.)/);
 });
