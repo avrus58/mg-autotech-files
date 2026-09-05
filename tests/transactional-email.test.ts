@@ -28,7 +28,8 @@ import {
   supportedTransactionalEmailLanguages,
 } from "../src/lib/email/language";
 import { emailLocaleCopy } from "../src/lib/email/localeCopy";
-import { safeEmailUrl } from "../src/lib/email/render";
+import { escapeHtml, safeEmailUrl } from "../src/lib/email/render";
+import type { TransactionalEmailLanguage } from "../src/lib/email/types";
 import { filterCustomerVisibleRequestMessages } from "../src/lib/workOrders/messageVisibility";
 
 test("transactional email migration is additive, logged and RLS protected", () => {
@@ -356,6 +357,144 @@ test("every customer lifecycle template renders complete output in all supported
         JSON.stringify(rendered),
         /admin_notes|storage_path|service_role|raw_binary|hex_preview|confidence_score/i
       );
+    }
+  }
+});
+
+test("the typed email locale catalog has complete non-empty path parity", () => {
+  const stringLeaves = (
+    value: unknown,
+    prefix: readonly string[] = [],
+  ): Array<readonly [string, string]> => {
+    if (typeof value === "string") return [[prefix.join("."), value]];
+    if (!value || typeof value !== "object" || Array.isArray(value)) return [];
+    return Object.entries(value).flatMap(([key, nested]) =>
+      stringLeaves(nested, [...prefix, key]),
+    );
+  };
+  const expectedPaths = stringLeaves(emailLocaleCopy.en).map(([path]) => path);
+
+  for (const language of supportedTransactionalEmailLanguages) {
+    const leaves = stringLeaves(emailLocaleCopy[language]);
+    assert.deepEqual(
+      leaves.map(([path]) => path),
+      expectedPaths,
+      `${language}:catalog paths`,
+    );
+    for (const [path, value] of leaves) {
+      assert.ok(value.trim(), `${language}:${path}:non-empty`);
+    }
+  }
+});
+
+test("device verification email is fully localized with HTML and plain-text parity", () => {
+  const expectedTitles = {
+    en: "Confirm this security check",
+    nl: "Bevestig deze beveiligingscontrole",
+    de: "Sicherheitsprüfung bestätigen",
+    fr: "Confirmez ce contrôle de sécurité",
+    it: "Conferma questo controllo di sicurezza",
+    ru: "Подтвердите проверку безопасности",
+    es: "Confirma esta verificación de seguridad",
+    tr: "Bu güvenlik kontrolünü doğrulayın",
+    pt: "Confirme esta verificação de segurança",
+    zh: "确认此次安全验证",
+    pl: "Potwierdź weryfikację bezpieczeństwa",
+    sq: "Konfirmoni këtë kontroll sigurie",
+  } satisfies Record<TransactionalEmailLanguage, string>;
+  const englishLeakage = /Account security code|Confirm this security check|Use this security code|Security code|\bDevice\b|Valid for|If you did not start this action|Never share this code/i;
+
+  for (const language of supportedTransactionalEmailLanguages) {
+    const copy = emailLocaleCopy[language].deviceVerification;
+    assert.equal(copy.title, expectedTitles[language], `${language}:reviewed title`);
+
+    for (const verificationMinutes of [1, 10]) {
+      const verificationCode = "654321";
+      const rendered = renderTransactionalEmailTemplate(
+        "customer_device_verification",
+        {
+          verificationCode,
+          verificationMinutes,
+          deviceLabel: "Test browser",
+          supportEmail: "support@example.com",
+        },
+        language
+      );
+      const duration = new Intl.NumberFormat(language, {
+        style: "unit",
+        unit: "minute",
+        unitDisplay: "long",
+      }).format(verificationMinutes);
+
+      assert.equal(rendered.subject, copy.subject, `${language}:${verificationMinutes}:subject`);
+      assert.doesNotMatch(
+        rendered.subject,
+        new RegExp(verificationCode),
+        `${language}:${verificationMinutes}:subject must not expose the code`
+      );
+      assert.match(rendered.html, new RegExp(`<html lang="${language}">`));
+      assert.ok(rendered.html.includes(escapeHtml(copy.preheader)), `${language}:preheader`);
+      assert.ok(rendered.html.includes(escapeHtml(copy.title)), `${language}:html title`);
+      assert.ok(rendered.html.includes(escapeHtml(copy.intro)), `${language}:html intro`);
+      assert.ok(
+        rendered.html.includes(escapeHtml(copy.securityCodeLabel)),
+        `${language}:html security-code label`
+      );
+      assert.ok(
+        rendered.html.includes(escapeHtml(copy.deviceLabel)),
+        `${language}:html device label`
+      );
+      assert.ok(
+        rendered.html.includes(escapeHtml(copy.validForLabel)),
+        `${language}:html validity label`
+      );
+      assert.ok(rendered.html.includes(escapeHtml(duration)), `${language}:html duration`);
+      assert.ok(
+        rendered.html.includes(escapeHtml(copy.unexpectedAction)),
+        `${language}:html unexpected-action warning`
+      );
+      assert.ok(
+        rendered.html.includes(escapeHtml(copy.neverShare)),
+        `${language}:html never-share warning`
+      );
+      assert.ok(
+        rendered.html.includes(escapeHtml(copy.supportNeverAsks)),
+        `${language}:html support warning`
+      );
+      assert.match(rendered.html, new RegExp(verificationCode));
+
+      assert.ok(rendered.text.includes(copy.title), `${language}:text title`);
+      assert.ok(rendered.text.includes(copy.intro), `${language}:text intro`);
+      assert.ok(
+        rendered.text.includes(`${copy.securityCodeLabel}: ${verificationCode}`),
+        `${language}:text security code`
+      );
+      assert.ok(
+        rendered.text.includes(`${copy.deviceLabel}: Test browser`),
+        `${language}:text device`
+      );
+      assert.ok(
+        rendered.text.includes(`${copy.validForLabel}: ${duration}`),
+        `${language}:text duration`
+      );
+      assert.ok(rendered.text.includes(copy.unexpectedAction), `${language}:text warning`);
+      assert.ok(rendered.text.includes(copy.neverShare), `${language}:text never-share`);
+      assert.ok(
+        rendered.text.includes(copy.supportNeverAsks),
+        `${language}:text support warning`
+      );
+      assert.ok(
+        rendered.text.includes(`${emailLocaleCopy[language].details.support}: support@example.com`),
+        `${language}:text support contact`
+      );
+
+      if (language !== "en") {
+        assert.doesNotMatch(
+          `${rendered.subject}\n${rendered.html}\n${rendered.text}`,
+          englishLeakage,
+          `${language}:${verificationMinutes}:fixed English leakage`
+        );
+      }
     }
   }
 });

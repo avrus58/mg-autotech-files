@@ -5,6 +5,13 @@ import {
   selectLogStudioPerformanceChannels,
   type LogStudioAnalysis,
 } from "@/lib/logAnalysisStudio";
+import {
+  logStudioNumberLocale,
+  performanceReportT,
+  type PerformanceReportTranslationKey,
+  type PerformanceReportTranslationParams,
+} from "@/lib/i18n/log-analysis-studio-translations";
+import type { LocaleCode } from "@/lib/i18nConfig";
 
 export type PerformanceLogPoint = {
   rpm: number;
@@ -281,8 +288,8 @@ function escapeSvgText(value: string) {
     .replaceAll("'", "&apos;");
 }
 
-function safeSourceName(fileName: string) {
-  return (fileName.split(/[\\/]/).at(-1) || "Pasted RPM / torque rows")
+function safeSourceName(fileName: string, fallback = "Pasted RPM / torque rows") {
+  return (fileName.split(/[\\/]/).at(-1) || fallback)
     .replace(/[\u0000-\u001f]/g, "")
     .slice(0, 90);
 }
@@ -331,19 +338,113 @@ function representativeCurvePoints(
     .map((index) => points[index]);
 }
 
+function formatReportNumber(
+  locale: LocaleCode,
+  value: number,
+  fractionDigits = 0
+) {
+  return new Intl.NumberFormat(logStudioNumberLocale(locale), {
+    minimumFractionDigits: fractionDigits,
+    maximumFractionDigits: fractionDigits,
+  }).format(value);
+}
+
+function formatReportDate(locale: LocaleCode, value: Date) {
+  return new Intl.DateTimeFormat(logStudioNumberLocale(locale), {
+    year: "numeric",
+    month: "short",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+    timeZone: "UTC",
+    timeZoneName: "short",
+  }).format(value);
+}
+
+function parseEnglishInteger(value: string) {
+  const parsed = Number(value.replace(/[^0-9]/g, ""));
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function localizePerformanceWarning(warning: string, locale: LocaleCode) {
+  const translate = (
+    key: PerformanceReportTranslationKey,
+    params: PerformanceReportTranslationParams = {}
+  ) => performanceReportT(locale, key, params);
+
+  if (warning === "Fewer than five valid rows limit curve confidence.") {
+    return translate("report.warningFewRows");
+  }
+  if (warning === "RPM coverage is too narrow for a representative curve.") {
+    return translate("report.warningNarrowRpm");
+  }
+  if (warning === "RPM values were not ordered and were sorted for the chart.") {
+    return translate("report.warningSorted");
+  }
+
+  const rejectedMatch = warning.match(/^(\d+) source row(?: was|s were) rejected\.$/);
+  if (rejectedMatch) {
+    const count = Number(rejectedMatch[1]);
+    return translate(
+      count === 1 ? "report.warningRejectedOne" : "report.warningRejectedMany",
+      { count: formatReportNumber(locale, count) }
+    );
+  }
+
+  const duplicateMatch = warning.match(
+    /^(\d+) duplicate RPM row(?: was|s were) detected\.$/
+  );
+  if (duplicateMatch) {
+    const count = Number(duplicateMatch[1]);
+    return translate(
+      count === 1 ? "report.warningDuplicateOne" : "report.warningDuplicateMany",
+      { count: formatReportNumber(locale, count) }
+    );
+  }
+
+  const truncatedMatch = warning.match(
+    /^Only the first ([\d,]+) of ([\d,]+) source rows were analyzed within the local processing bounds\. Unprocessed rows are not counted as rejected\.$/
+  );
+  if (truncatedMatch) {
+    const processed = parseEnglishInteger(truncatedMatch[1]);
+    const source = parseEnglishInteger(truncatedMatch[2]);
+    if (processed !== null && source !== null) {
+      return translate("report.warningTruncated", {
+        processed: formatReportNumber(locale, processed),
+        source: formatReportNumber(locale, source),
+      });
+    }
+  }
+
+  return locale === "en" ? warning : translate("report.warningAdditional");
+}
+
 export function buildPerformanceReportSvg({
   fileName,
   parsed,
   analysis,
   generatedAt = new Date(),
+  locale = "en",
 }: {
   fileName: string;
   parsed: ParsedPerformanceLog;
   analysis: PerformanceLogAnalysis;
   generatedAt?: Date;
+  locale?: LocaleCode;
 }) {
+  const translate = (
+    key: PerformanceReportTranslationKey,
+    params: PerformanceReportTranslationParams = {}
+  ) => performanceReportT(locale, key, params);
+  const translatedSvgText = (
+    key: PerformanceReportTranslationKey,
+    params: PerformanceReportTranslationParams = {}
+  ) => escapeSvgText(translate(key, params));
+
   if (!analysis.sortedPoints.length) {
-    throw new Error("A performance report requires at least one valid log row.");
+    throw new Error(translate("report.noValidRowsError"));
   }
 
   const width = 1200;
@@ -375,101 +476,103 @@ export function buildPerformanceReportSvg({
     .map((ratio) => {
       const y = chart.y + chart.height * ratio;
       const label = Math.round(maxScale * (1 - ratio));
-      return `<line x1="${chart.x}" y1="${y}" x2="${chart.x + chart.width}" y2="${y}" stroke="#27272a" stroke-width="1"/><text x="${chart.x - 16}" y="${y + 5}" text-anchor="end" fill="#71717a" font-size="15">${label}</text>`;
+      return `<line x1="${chart.x}" y1="${y}" x2="${chart.x + chart.width}" y2="${y}" stroke="#27272a" stroke-width="1"/><text x="${chart.x - 16}" y="${y + 5}" text-anchor="end" fill="#71717a" font-size="15">${formatReportNumber(locale, label)}</text>`;
     })
     .join("");
   const rpmLabels = [0, 0.25, 0.5, 0.75, 1]
     .map((ratio) => {
       const rpmValue = analysis.minRpm + analysis.rpmSpan * ratio;
       const x = chart.x + chart.width * ratio;
-      return `<text x="${x}" y="${chart.y + chart.height + 34}" text-anchor="middle" fill="#a1a1aa" font-size="15">${Math.round(rpmValue)}</text>`;
+      return `<text x="${x}" y="${chart.y + chart.height + 34}" text-anchor="middle" fill="#a1a1aa" font-size="15">${formatReportNumber(locale, Math.round(rpmValue))}</text>`;
     })
     .join("");
   const peakPs = peakPower ? peakPower.kw * 1.35962 : 0;
-  const sourceName = safeSourceName(fileName);
+  const sourceName = safeSourceName(fileName, translate("report.pastedRows"));
   const sourceLabel =
     sourceName.length > 52 ? `${sourceName.slice(0, 49)}...` : sourceName;
   const reportId = buildReportId(fileName, analysis.sortedPoints);
-  const generatedLabel = generatedAt.toISOString().replace("T", " ").slice(0, 19) + " UTC";
+  const generatedLabel = formatReportDate(locale, generatedAt);
   const sampleRows = representativePoints(analysis.sortedPoints)
     .map((point, index) => {
       const y = 961 + index * 30;
-      return `<rect x="82" y="${y - 20}" width="1036" height="30" fill="${index % 2 === 0 ? "#111113" : "#0b0b0d"}"/><text x="110" y="${y}" fill="#e4e4e7" font-size="15">${point.rpm.toFixed(0)}</text><text x="360" y="${y}" fill="#7dd3fc" font-size="15">${point.torque.toFixed(1)}</text><text x="610" y="${y}" fill="#fda4af" font-size="15">${point.kw.toFixed(1)}</text><text x="860" y="${y}" fill="#ffffff" font-size="15">${point.hp.toFixed(1)}</text>`;
+      return `<rect x="82" y="${y - 20}" width="1036" height="30" fill="${index % 2 === 0 ? "#111113" : "#0b0b0d"}"/><text x="110" y="${y}" fill="#e4e4e7" font-size="15">${formatReportNumber(locale, point.rpm)}</text><text x="360" y="${y}" fill="#7dd3fc" font-size="15">${formatReportNumber(locale, point.torque, 1)}</text><text x="610" y="${y}" fill="#fda4af" font-size="15">${formatReportNumber(locale, point.kw, 1)}</text><text x="860" y="${y}" fill="#ffffff" font-size="15">${formatReportNumber(locale, point.hp, 1)}</text>`;
     })
     .join("");
   const qualityLabel =
     analysis.quality === "strong"
-      ? "STRONG LOG"
+      ? translate("report.qualityStrong")
       : analysis.quality === "usable"
-        ? "USABLE / REVIEW"
-        : "LIMITED DATA";
-  const warningSummary = analysis.warnings[0] || "No structural log warnings detected.";
+        ? translate("report.qualityUsable")
+        : translate("report.qualityLimited");
+  const warningSummary = analysis.warnings[0]
+    ? localizePerformanceWarning(analysis.warnings[0], locale)
+    : translate("report.noWarnings");
 
   return `<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
+<svg xmlns="http://www.w3.org/2000/svg" xml:lang="${locale}" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
   <rect width="${width}" height="${height}" fill="#050505"/>
   <rect x="32" y="32" width="1136" height="1116" rx="28" fill="#09090b" stroke="#27272a" stroke-width="2"/>
   <rect x="32" y="32" width="10" height="1116" rx="5" fill="#dc2626"/>
 
   <text x="82" y="84" fill="#ef4444" font-size="18" font-weight="900" letter-spacing="5">MG AUTOTECH</text>
-  <text x="82" y="128" fill="#ffffff" font-size="38" font-weight="900">Performance Log Analysis</text>
-  <text x="82" y="158" fill="#a1a1aa" font-size="16">Workshop report · torque-derived power estimate · local browser analysis</text>
+  <text x="82" y="128" fill="#ffffff" font-size="38" font-weight="900">${translatedSvgText("report.title")}</text>
+  <text x="82" y="158" fill="#a1a1aa" font-size="16">${translatedSvgText("report.subtitle")}</text>
   <rect x="890" y="65" width="228" height="82" rx="14" fill="#111113" stroke="#3f3f46"/>
-  <text x="914" y="94" fill="#71717a" font-size="13" font-weight="700">REPORT ID</text>
+  <text x="914" y="94" fill="#71717a" font-size="13" font-weight="700">${translatedSvgText("report.idLabel")}</text>
   <text x="914" y="120" fill="#ffffff" font-size="17" font-weight="900">${reportId}</text>
   <text x="914" y="139" fill="#a1a1aa" font-size="11">${generatedLabel}</text>
 
   <rect x="82" y="188" width="1036" height="72" rx="14" fill="#0f0f12" stroke="#27272a"/>
-  <text x="108" y="215" fill="#71717a" font-size="12" font-weight="700">SOURCE</text>
+  <text x="108" y="215" fill="#71717a" font-size="12" font-weight="700">${translatedSvgText("report.sourceLabel")}</text>
   <text x="108" y="240" fill="#ffffff" font-size="16" font-weight="800">${escapeSvgText(sourceLabel)}</text>
-  <text x="470" y="215" fill="#71717a" font-size="12" font-weight="700">FORMAT</text>
-  <text x="470" y="240" fill="#ffffff" font-size="16" font-weight="800">${parsed.format === "rpm_torque_rows" ? "RPM / torque rows" : "Delimited automotive log"}</text>
-  <text x="720" y="215" fill="#71717a" font-size="12" font-weight="700">DATA INTEGRITY</text>
-  <text x="720" y="240" fill="#ffffff" font-size="16" font-weight="800">${parsed.points.length}/${parsed.sourceRowCount} valid rows</text>
+  <text x="470" y="215" fill="#71717a" font-size="12" font-weight="700">${translatedSvgText("report.formatLabel")}</text>
+  <text x="470" y="240" fill="#ffffff" font-size="16" font-weight="800">${translatedSvgText(parsed.format === "rpm_torque_rows" ? "report.formatRpmTorque" : "report.formatDelimited")}</text>
+  <text x="720" y="215" fill="#71717a" font-size="12" font-weight="700">${translatedSvgText("report.dataIntegrityLabel")}</text>
+  <text x="720" y="240" fill="#ffffff" font-size="16" font-weight="800">${translatedSvgText("report.validRows", { valid: formatReportNumber(locale, parsed.points.length), total: formatReportNumber(locale, parsed.sourceRowCount) })}</text>
   <rect x="945" y="207" width="145" height="32" rx="16" fill="${analysis.quality === "strong" ? "#052e2b" : analysis.quality === "usable" ? "#422006" : "#450a0a"}" stroke="${analysis.quality === "strong" ? "#047857" : analysis.quality === "usable" ? "#b45309" : "#b91c1c"}"/>
-  <text x="1017" y="228" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="900">${qualityLabel} ${analysis.qualityScore}</text>
+  <text x="1017" y="228" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="900">${escapeSvgText(qualityLabel)} ${formatReportNumber(locale, analysis.qualityScore)}</text>
 
   ${[
-    ["PEAK TORQUE", peakTorque ? peakTorque.torque.toFixed(0) : "-", peakTorque ? `Nm @ ${peakTorque.rpm.toFixed(0)} rpm` : "Nm"],
-    ["EST. PEAK POWER", peakPower ? peakPower.hp.toFixed(1) : "-", peakPower ? `HP @ ${peakPower.rpm.toFixed(0)} rpm` : "HP"],
-    ["METRIC POWER", peakPower ? peakPs.toFixed(1) : "-", "PS"],
-    ["RPM WINDOW", `${analysis.minRpm.toFixed(0)}–${analysis.maxRpm.toFixed(0)}`, `${analysis.rpmSpan.toFixed(0)} rpm span`],
+    [translate("report.peakTorqueLabel"), peakTorque ? formatReportNumber(locale, peakTorque.torque) : "-", peakTorque ? `Nm @ ${formatReportNumber(locale, peakTorque.rpm)} RPM` : "Nm"],
+    [translate("report.estimatedPeakPowerLabel"), peakPower ? formatReportNumber(locale, peakPower.hp, 1) : "-", peakPower ? `HP @ ${formatReportNumber(locale, peakPower.rpm)} RPM` : "HP"],
+    [translate("report.metricPowerLabel"), peakPower ? formatReportNumber(locale, peakPs, 1) : "-", "PS"],
+    [translate("report.rpmWindowLabel"), `${formatReportNumber(locale, analysis.minRpm)}–${formatReportNumber(locale, analysis.maxRpm)}`, translate("report.rpmSpan", { span: formatReportNumber(locale, analysis.rpmSpan) })],
   ].map(([label, value, unit], index) => {
     const x = 82 + index * 260;
-    return `<rect x="${x}" y="282" width="244" height="50" rx="10" fill="#0f0f12" stroke="#27272a"/><text x="${x + 14}" y="301" fill="#71717a" font-size="10" font-weight="800">${label}</text><text x="${x + 14}" y="321" fill="#ffffff" font-size="19" font-weight="900">${value}</text><text x="${x + 230}" y="321" text-anchor="end" fill="#fca5a5" font-size="10" font-weight="700">${unit}</text>`;
+    return `<rect x="${x}" y="282" width="244" height="50" rx="10" fill="#0f0f12" stroke="#27272a"/><text x="${x + 14}" y="301" fill="#71717a" font-size="10" font-weight="800">${escapeSvgText(label)}</text><text x="${x + 14}" y="321" fill="#ffffff" font-size="19" font-weight="900">${escapeSvgText(value)}</text><text x="${x + 230}" y="321" text-anchor="end" fill="#fca5a5" font-size="10" font-weight="700">${escapeSvgText(unit)}</text>`;
   }).join("")}
 
   <rect x="${chart.x}" y="${chart.y}" width="${chart.width}" height="${chart.height}" rx="16" fill="#0b0b0d" stroke="#27272a" stroke-width="2"/>
   ${gridLines}
   ${rpmLabels}
-  <text x="${chart.x}" y="${chart.y - 20}" fill="#71717a" font-size="12" font-weight="800">POWER / TORQUE</text>
-  <text x="${chart.x + chart.width - 16}" y="${chart.y + chart.height - 16}" text-anchor="end" fill="#71717a" font-size="11" font-weight="800">ENGINE SPEED (RPM)</text>
-  <rect x="885" y="${chart.y - 30}" width="12" height="12" rx="3" fill="#ef4444"/><text x="905" y="${chart.y - 19}" fill="#d4d4d8" font-size="13">Estimated HP</text>
-  <rect x="1004" y="${chart.y - 30}" width="12" height="12" rx="3" fill="#38bdf8"/><text x="1024" y="${chart.y - 19}" fill="#d4d4d8" font-size="13">Torque Nm</text>
+  <text x="${chart.x}" y="${chart.y - 20}" fill="#71717a" font-size="12" font-weight="800">${translatedSvgText("report.powerTorqueLabel")}</text>
+  <text x="${chart.x + chart.width - 16}" y="${chart.y + chart.height - 16}" text-anchor="end" fill="#71717a" font-size="11" font-weight="800">${translatedSvgText("report.engineSpeedLabel")}</text>
+  <rect x="885" y="${chart.y - 30}" width="12" height="12" rx="3" fill="#ef4444"/><text x="905" y="${chart.y - 19}" fill="#d4d4d8" font-size="13">${translatedSvgText("report.estimatedHpLabel")}</text>
+  <rect x="1004" y="${chart.y - 30}" width="12" height="12" rx="3" fill="#38bdf8"/><text x="1024" y="${chart.y - 19}" fill="#d4d4d8" font-size="13">${translatedSvgText("report.torqueNmLabel")}</text>
   <polyline points="${torquePolyline}" fill="none" stroke="#38bdf8" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
   <polyline points="${hpPolyline}" fill="none" stroke="#ef4444" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
   ${peakTorque ? `<circle cx="${xFor(peakTorque.rpm)}" cy="${yFor(peakTorque.torque)}" r="7" fill="#38bdf8" stroke="#e0f2fe" stroke-width="3"/>` : ""}
   ${peakPower ? `<circle cx="${xFor(peakPower.rpm)}" cy="${yFor(peakPower.hp)}" r="7" fill="#ef4444" stroke="#fee2e2" stroke-width="3"/>` : ""}
 
   <rect x="82" y="748" width="500" height="112" rx="14" fill="#0f0f12" stroke="#27272a"/>
-  <text x="106" y="777" fill="#ef4444" font-size="12" font-weight="900" letter-spacing="2">CURVE SUMMARY</text>
-  <text x="106" y="807" fill="#ffffff" font-size="15" font-weight="800">Peak torque ${peakTorque ? `${peakTorque.torque.toFixed(0)} Nm at ${peakTorque.rpm.toFixed(0)} rpm` : "not available"}</text>
-  <text x="106" y="833" fill="#ffffff" font-size="15" font-weight="800">Peak power ${peakPower ? `${peakPower.hp.toFixed(1)} HP / ${peakPower.kw.toFixed(1)} kW` : "not available"}</text>
-  <text x="106" y="851" fill="#a1a1aa" font-size="12">End-of-window torque retention: ${analysis.torqueRetentionPercent.toFixed(0)}%</text>
+  <text x="106" y="777" fill="#ef4444" font-size="12" font-weight="900" letter-spacing="2">${translatedSvgText("report.curveSummaryLabel")}</text>
+  <text x="106" y="807" fill="#ffffff" font-size="15" font-weight="800">${peakTorque ? translatedSvgText("report.peakTorqueValue", { torque: formatReportNumber(locale, peakTorque.torque), rpm: formatReportNumber(locale, peakTorque.rpm) }) : translatedSvgText("report.peakTorqueUnavailable")}</text>
+  <text x="106" y="833" fill="#ffffff" font-size="15" font-weight="800">${peakPower ? translatedSvgText("report.peakPowerValue", { hp: formatReportNumber(locale, peakPower.hp, 1), kw: formatReportNumber(locale, peakPower.kw, 1) }) : translatedSvgText("report.peakPowerUnavailable")}</text>
+  <text x="106" y="851" fill="#a1a1aa" font-size="12">${translatedSvgText("report.torqueRetention", { percent: formatReportNumber(locale, analysis.torqueRetentionPercent) })}</text>
 
   <rect x="598" y="748" width="520" height="112" rx="14" fill="#0f0f12" stroke="#27272a"/>
-  <text x="622" y="777" fill="#38bdf8" font-size="12" font-weight="900" letter-spacing="2">QUALITY &amp; METHOD</text>
-  <text x="622" y="807" fill="#ffffff" font-size="15" font-weight="800">Score ${analysis.qualityScore}/100 · ${parsed.points.length} valid · ${parsed.rejectedRowCount} rejected</text>
+  <text x="622" y="777" fill="#38bdf8" font-size="12" font-weight="900" letter-spacing="2">${translatedSvgText("report.qualityMethodLabel")}</text>
+  <text x="622" y="807" fill="#ffffff" font-size="15" font-weight="800">${translatedSvgText("report.qualityScore", { score: formatReportNumber(locale, analysis.qualityScore), valid: formatReportNumber(locale, parsed.points.length), rejected: formatReportNumber(locale, parsed.rejectedRowCount) })}</text>
   <text x="622" y="833" fill="#a1a1aa" font-size="12">${escapeSvgText(warningSummary)}</text>
-  <text x="622" y="851" fill="#a1a1aa" font-size="12">Power formula: kW = Nm × RPM ÷ 9549</text>
+  <text x="622" y="851" fill="#a1a1aa" font-size="12">${translatedSvgText("report.powerFormula")}</text>
 
-  <text x="82" y="898" fill="#ffffff" font-size="19" font-weight="900">Representative log rows</text>
+  <text x="82" y="898" fill="#ffffff" font-size="19" font-weight="900">${translatedSvgText("report.representativeRows")}</text>
   <rect x="82" y="908" width="1036" height="30" fill="#18181b"/>
-  <text x="110" y="928" fill="#a1a1aa" font-size="12" font-weight="800">RPM</text><text x="360" y="928" fill="#a1a1aa" font-size="12" font-weight="800">TORQUE (NM)</text><text x="610" y="928" fill="#a1a1aa" font-size="12" font-weight="800">POWER (KW)</text><text x="860" y="928" fill="#a1a1aa" font-size="12" font-weight="800">POWER (HP)</text>
+  <text x="110" y="928" fill="#a1a1aa" font-size="12" font-weight="800">RPM</text><text x="360" y="928" fill="#a1a1aa" font-size="12" font-weight="800">${translatedSvgText("report.torqueColumn")}</text><text x="610" y="928" fill="#a1a1aa" font-size="12" font-weight="800">${translatedSvgText("report.powerKwColumn")}</text><text x="860" y="928" fill="#a1a1aa" font-size="12" font-weight="800">${translatedSvgText("report.powerHpColumn")}</text>
   ${sampleRows}
 
   <line x1="82" y1="1122" x2="1118" y2="1122" stroke="#27272a"/>
-  <text x="82" y="1145" fill="#71717a" font-size="11">LOG-BASED ESTIMATE · NOT A CHASSIS-DYNO CERTIFICATE · ECU-reported torque and logging quality affect the result.</text>
-  <text x="1118" y="1145" text-anchor="end" fill="#ef4444" font-size="11" font-weight="900">MG AUTOTECH FILE SERVICE</text>
+  <text x="82" y="1145" fill="#71717a" font-size="11">${translatedSvgText("report.disclaimer")}</text>
+  <text x="1118" y="1145" text-anchor="end" fill="#ef4444" font-size="11" font-weight="900">${translatedSvgText("report.brandService")}</text>
 </svg>`;
 }

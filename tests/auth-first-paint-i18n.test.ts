@@ -106,7 +106,11 @@ test("register bootstrap SSR localizes its accessible status and noscript fallba
 test("registration progress supporting labels are translated in every non-English locale", () => {
   for (const { code: locale } of supportedLocales) {
     if (locale === "en") continue;
-    for (const source of ["E-mail & password", "Invoice & address"]) {
+    for (const source of [
+      "E-mail & password",
+      "Invoice & address",
+      "Password updated successfully. You can login now.",
+    ]) {
       assert.notEqual(
         authPageFirstPaintT(locale, source),
         source,
@@ -162,7 +166,13 @@ test("password reset session first paint is localized in every non-English local
 });
 
 test("payment confirmation first paint is localized in every non-English locale", () => {
-  const sources = ["Confirming your payment...", "Confirming payment"] as const;
+  const sources = [
+    "Confirming your payment...",
+    "Confirming payment",
+    "Payment needs review",
+    "Added credits",
+    "Buy More Credits",
+  ] as const;
 
   for (const { code: locale } of supportedLocales) {
     if (locale === "en") continue;
@@ -171,10 +181,12 @@ test("payment confirmation first paint is localized in every non-English locale"
     for (const source of sources) {
       const localized = paymentFirstPaintT(locale, source);
       assert.notEqual(localized, source, `${locale}: ${source}`);
-      assert.ok(
-        html.includes(escapeRenderedText(localized)),
-        `${locale} SSR omitted: ${localized}`,
-      );
+      if (source === "Confirming your payment..." || source === "Confirming payment") {
+        assert.ok(
+          html.includes(escapeRenderedText(localized)),
+          `${locale} SSR omitted: ${localized}`,
+        );
+      }
       assert.ok(!html.includes(`>${source}<`), `${locale} SSR leaked: ${source}`);
     }
   }

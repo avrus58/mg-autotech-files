@@ -96,45 +96,6 @@ export const customerWorkflowExactTranslations = {
     "Aktywne zlecenia",
     "Porosi aktive"
   ],
-  "Additional file upload could not be completed.": [
-    "Het uploaden van extra bestanden kon niet worden voltooid.",
-    "Das Hochladen weiterer Dateien konnte nicht abgeschlossen werden.",
-    "Le téléversement du fichier supplémentaire n’a pas pu être effectué.",
-    "Impossibile completare il caricamento di file aggiuntivi.",
-    "Не удалось завершить загрузку дополнительного файла.",
-    "No se pudo completar la carga de archivos adicionales.",
-    "Ek dosya yükleme işlemi tamamlanamadı.",
-    "Não foi possível concluir o carregamento do ficheiro adicional.",
-    "无法完成附加文件上传。",
-    "Nie można ukończyć przesyłania dodatkowego pliku.",
-    "Ngarkimi i skedarit shtesë nuk mund të përfundonte."
-  ],
-  "Additional file upload could not be prepared.": [
-    "Er kon geen aanvullende bestandsupload worden voorbereid.",
-    "Der zusätzliche Datei-Upload konnte nicht vorbereitet werden.",
-    "Le téléversement du fichier supplémentaire n’a pas pu être préparé.",
-    "Impossibile preparare il caricamento di file aggiuntivi.",
-    "Не удалось подготовить дополнительную загрузку файлов.",
-    "No se pudo preparar la carga de archivos adicionales.",
-    "Ek dosya yüklemesi hazırlanamadı.",
-    "Não foi possível preparar o carregamento de ficheiro adicional.",
-    "无法准备其他文件上传。",
-    "Nie można przygotować dodatkowego pliku do przesłania.",
-    "Ngarkimi shtesë i skedarit nuk mund të përgatitej."
-  ],
-  "Additional file uploaded. MG AutoTech can now review it inside this request.": [
-    "Extra bestand geüpload. MG AutoTech kan het nu binnen dit verzoek beoordelen.",
-    "Zusätzliche Datei hochgeladen. MG AutoTech kann es nun in dieser Anfrage prüfen.",
-    "Fichier supplémentaire téléversé. MG AutoTech peut désormais l’examiner dans cette demande.",
-    "File aggiuntivo caricato. MG AutoTech ora può esaminarlo all'interno di questa richiesta.",
-    "Загружен дополнительный файл. Теперь MG AutoTech может просмотреть его в этом запросе.",
-    "Archivo adicional subido. MG AutoTech ahora puede revisarlo dentro de esta solicitud.",
-    "Ek dosya yüklendi. MG AutoTech artık bu isteğin içinde bunu inceleyebilir.",
-    "Ficheiro adicional carregado. A MG AutoTech pode agora analisá-lo neste pedido.",
-    "已上传附加文件。 MG AutoTech 现在可以在此请求中对其进行审核。",
-    "Przesłano dodatkowy plik. MG AutoTech może teraz sprawdzić to w tej prośbie.",
-    "Skedar shtesë u ngarkua. MG AutoTech tani mund ta shqyrtojë atë brenda kësaj kërkese."
-  ],
   "Additional files": [
     "Extra bestanden",
     "Zusätzliche Dateien",
@@ -186,19 +147,6 @@ export const customerWorkflowExactTranslations = {
     "可用",
     "Dostępne",
     "E disponueshme"
-  ],
-  "Back to Dashboard": [
-    "Terug naar portaal",
-    "Zurück zum Portal",
-    "Retour au portail",
-    "Torna al portale",
-    "Назад в портал",
-    "Volver al portal",
-    "Panele dön",
-    "Voltar ao portal",
-    "返回面板",
-    "Wróć do portalu",
-    "Kthehu te paneli"
   ],
   "Cancelled": [
     "Geannuleerd",
@@ -277,19 +225,6 @@ export const customerWorkflowExactTranslations = {
     "已完成",
     "Zakończono",
     "Përfunduar"
-  ],
-  "Completed file is not available yet.": [
-    "Het voltooide bestand is nog niet beschikbaar.",
-    "Die fertige Datei ist noch nicht verfügbar.",
-    "Le fichier final n’est pas encore disponible.",
-    "Il file finale non è ancora disponibile.",
-    "Готовый файл пока недоступен.",
-    "El archivo final aún no está disponible.",
-    "Tamamlanan dosya henüz mevcut değil.",
-    "O ficheiro final ainda não está disponível.",
-    "最终文件尚不可用。",
-    "Plik końcowy nie jest jeszcze dostępny.",
-    "Skedari përfundimtar nuk është ende i disponueshëm."
   ],
   "Completed file ready": [
     "Definitief bestand gereed",
@@ -694,19 +629,6 @@ export const customerWorkflowExactTranslations = {
     "Nie podano silnika",
     "Motori nuk është specifikuar"
   ],
-  "Estimate not set yet": [
-    "Schatting nog niet vastgesteld",
-    "Kostenvoranschlag steht noch nicht fest",
-    "L'estimation n'est pas encore fixée",
-    "Stima non ancora fissata",
-    "Оценка еще не установлена",
-    "Estimación aún no establecida",
-    "Tahmin henüz belirlenmedi",
-    "Estimativa ainda não definida",
-    "预估尚未确定",
-    "Szacunek nie został jeszcze ustalony",
-    "Vlerësimi nuk është vendosur ende"
-  ],
   "Evidence": [
     "Bewijs",
     "Nachweise",
@@ -875,19 +797,6 @@ export const customerWorkflowExactTranslations = {
     "已加载页面",
     "Wczytana strona",
     "Faqja e ngarkuar"
-  ],
-  "Loading order details...": [
-    "Orderdetails laden...",
-    "Auftragsdetails werden geladen...",
-    "Chargement des détails de la commande...",
-    "Caricamento dettagli ordine...",
-    "Загрузка данных заказа...",
-    "Cargando detalles del pedido...",
-    "Sipariş ayrıntıları yükleniyor...",
-    "A carregar detalhes da encomenda...",
-    "正在加载订单详情...",
-    "Ładowanie szczegółów zlecenia...",
-    "Po ngarkohen hollësitë e porosisë..."
   ],
   "Loading orders...": [
     "Orders laden...",
@@ -1292,45 +1201,6 @@ export const customerWorkflowExactTranslations = {
     "Zawartość szczegółów zamówienia",
     "Përmbajtja e detajeve të porosisë"
   ],
-  "Order details could not be loaded.": [
-    "Ordergegevens konden niet worden geladen.",
-    "Auftragsdetails konnten nicht geladen werden.",
-    "Les détails de la commande n'ont pas pu être chargés.",
-    "Impossibile caricare i dettagli dell'ordine.",
-    "Не удалось загрузить данные заказа.",
-    "No se pudieron cargar los detalles del pedido.",
-    "Sipariş ayrıntıları yüklenemedi.",
-    "Não foi possível carregar os detalhes do pedido.",
-    "无法加载订单详细信息。",
-    "Nie udało się wczytać szczegółów zlecenia.",
-    "Detajet e porosisë nuk mund të ngarkoheshin."
-  ],
-  "Order ID is missing.": [
-    "Order-ID ontbreekt.",
-    "Auftrags-ID fehlt.",
-    "Le numéro de commande est manquant.",
-    "Manca l'ID dell'ordine.",
-    "Идентификатор заказа отсутствует.",
-    "Falta el ID del pedido.",
-    "Sipariş kimliği eksik.",
-    "O ID do pedido está em falta.",
-    "订单 ID 缺失。",
-    "Brak identyfikatora zlecenia.",
-    "ID-ja e porosisë mungon."
-  ],
-  "Order not found": [
-    "Order niet gevonden",
-    "Auftrag nicht gefunden",
-    "Commande introuvable",
-    "Ordine non trovato",
-    "Заказ не найден",
-    "Pedido no encontrado",
-    "Sipariş bulunamadı",
-    "Pedido não encontrado",
-    "未找到订单",
-    "Nie znaleziono zlecenia",
-    "Porosia nuk u gjet"
-  ],
   "Order progress": [
     "Ordervoortgang",
     "Auftragsfortschritt",
@@ -1369,19 +1239,6 @@ export const customerWorkflowExactTranslations = {
     "已上传的原始文件",
     "Przesłany plik oryginalny",
     "Skedari origjinal i ngarkuar"
-  ],
-  "Please describe what needs to be revised.": [
-    "Beschrijf wat er moet worden herzien.",
-    "Bitte beschreiben Sie, was überarbeitet werden muss.",
-    "Veuillez décrire ce qui doit être révisé.",
-    "Si prega di descrivere cosa deve essere rivisto.",
-    "Опишите, пожалуйста, что необходимо изменить.",
-    "Por favor describa lo que necesita ser revisado.",
-    "Lütfen neyin revize edilmesi gerektiğini açıklayın.",
-    "Descreva o que precisa de ser revisto.",
-    "请描述需要修改的内容。",
-    "Proszę opisać, co należy zmienić.",
-    "Ju lutemi përshkruani se çfarë duhet të rishikohet."
   ],
   "Portal download requests:": [
     "Portaaldownloadverzoeken:",
@@ -1695,32 +1552,6 @@ export const customerWorkflowExactTranslations = {
     "Poprawka będzie dostępna po dostarczeniu.",
     "Rishikimi bëhet i disponueshëm pas dorëzimit."
   ],
-  "Revision request could not be sent.": [
-    "Revisieverzoek kon niet worden verzonden.",
-    "Die Revisionsanfrage konnte nicht gesendet werden.",
-    "La demande de révision n'a pas pu être envoyée.",
-    "Impossibile inviare la richiesta di revisione.",
-    "Не удалось отправить запрос на доработку.",
-    "No se pudo enviar la solicitud de revisión.",
-    "Düzeltme isteği gönderilemedi.",
-    "O pedido de revisão não pôde ser enviado.",
-    "无法发送修改请求。",
-    "Nie można wysłać prośby o zmianę.",
-    "Kërkesa për rishikim nuk mund të dërgohej."
-  ],
-  "Revision request sent. MG AutoTech will review your note.": [
-    "Revisieverzoek verzonden. MG AutoTech zal uw notitie beoordelen.",
-    "Revisionsanfrage gesendet. MG AutoTech wird Ihre Notiz prüfen.",
-    "Demande de révision envoyée. MG AutoTech examinera votre note.",
-    "Richiesta di revisione inviata. MG AutoTech esaminerà la tua nota.",
-    "Запрос на доработку отправлен. MG AutoTech рассмотрит вашу записку.",
-    "Solicitud de revisión enviada. MG AutoTech revisará su nota.",
-    "Düzeltme isteği gönderildi. MG AutoTech notunuzu inceleyecektir.",
-    "Pedido de revisão enviado. A MG AutoTech analisará a sua nota.",
-    "已发送修改请求。 MG AutoTech 将审核您的备注。",
-    "Wysłano prośbę o zmianę. MG AutoTech sprawdzi Twoją notatkę.",
-    "Kërkesa për rishikim u dërgua. MG AutoTech do të shqyrtojë shënimin tuaj."
-  ],
   "Revision Review": [
     "Revisie Beoordeling",
     "Revisionsüberprüfung",
@@ -1838,19 +1669,6 @@ export const customerWorkflowExactTranslations = {
     "Bezpieczne dostarczenie",
     "Dorëzim i sigurt"
   ],
-  "Secure download could not be prepared.": [
-    "Beveiligde download kon niet worden voorbereid.",
-    "Der sichere Download konnte nicht vorbereitet werden.",
-    "Le téléchargement sécurisé n'a pas pu être préparé.",
-    "Impossibile preparare il download protetto.",
-    "Не удалось подготовить безопасную загрузку.",
-    "No se pudo preparar la descarga segura.",
-    "Güvenli indirme hazırlanamadı.",
-    "Não foi possível preparar a transferência segura.",
-    "无法准备安全下载。",
-    "Nie można przygotować bezpiecznego pobierania.",
-    "Shkarkimi i sigurt nuk mund të përgatitej."
-  ],
   "Secure order workspace": [
     "Beveiligde orderomgeving",
     "Sicherer Auftragsbereich",
@@ -1876,19 +1694,6 @@ export const customerWorkflowExactTranslations = {
     "安全请求对话",
     "Bezpieczna rozmowa na żądanie",
     "Bisedë me kërkesë të sigurt"
-  ],
-  "Secure source download could not be prepared.": [
-    "De beveiligde download van het bronbestand kon niet worden voorbereid.",
-    "Der sichere Download der Quelldatei konnte nicht vorbereitet werden.",
-    "Le téléchargement sécurisé du fichier source n’a pas pu être préparé.",
-    "Non è stato possibile preparare il download sicuro del file sorgente.",
-    "Не удалось подготовить безопасное скачивание исходного файла.",
-    "No se pudo preparar la descarga segura del archivo de origen.",
-    "Güvenli kaynak dosya indirme işlemi hazırlanamadı.",
-    "Não foi possível preparar a transferência segura do ficheiro de origem.",
-    "无法准备源文件的安全下载。",
-    "Nie udało się przygotować bezpiecznego pobierania pliku źródłowego.",
-    "Nuk mund të përgatitej shkarkimi i sigurt i skedarit burimor."
   ],
   "Send message": [
     "Bericht verzenden",
@@ -1994,19 +1799,6 @@ export const customerWorkflowExactTranslations = {
     "Wsparcie",
     "Mbështetje"
   ],
-  "Support summary could not be copied. Please try again.": [
-    "Ondersteuningsoverzicht kan niet worden gekopieerd. Probeer het opnieuw.",
-    "Die Supportzusammenfassung konnte nicht kopiert werden. Bitte versuchen Sie es erneut.",
-    "Le résumé du support n'a pas pu être copié. Veuillez réessayer.",
-    "Impossibile copiare il riepilogo del supporto. Per favore riprova.",
-    "Не удалось скопировать сводную информацию о поддержке. Пожалуйста, попробуйте еще раз.",
-    "No se pudo copiar el resumen de soporte. Por favor inténtalo de nuevo.",
-    "Destek özeti kopyalanamadı. Lütfen tekrar deneyin.",
-    "Não foi possível copiar o resumo para o suporte. Tente novamente.",
-    "无法复制支持摘要。请再试一次。",
-    "Nie można skopiować podsumowania pomocy technicznej. Spróbuj ponownie.",
-    "Përmbledhja e mbështetjes nuk mund të kopjohej. Ju lutemi provoni përsëri."
-  ],
   "Syncing": [
     "Synchroniseren",
     "Synchronisiert",
@@ -2019,19 +1811,6 @@ export const customerWorkflowExactTranslations = {
     "同步中",
     "Synchronizacja",
     "Sinkronizim"
-  ],
-  "The additional file must be 32 MB or smaller.": [
-    "Het extra bestand moet 32 MB of kleiner zijn.",
-    "Die zusätzliche Datei darf maximal 32 MB groß sein.",
-    "Le fichier supplémentaire doit faire 32 Mo ou moins.",
-    "Il file aggiuntivo deve essere di 32 MB o inferiore.",
-    "Размер дополнительного файла должен составлять 32 МБ или меньше.",
-    "El archivo adicional debe tener 32 MB o menos.",
-    "Ek dosya 32 MB veya daha küçük olmalıdır.",
-    "O ficheiro adicional deve ter 32 MB ou menos.",
-    "附加文件必须为 32 MB 或更小。",
-    "Dodatkowy plik musi mieć rozmiar 32 MB lub mniejszy.",
-    "Skedari shtesë duhet të jetë 32 MB ose më i vogël."
   ],
   "The secure conversation could not be opened. Check your connection and try again.": [
     "Het beveiligde gesprek kon niet worden geopend. Controleer uw verbinding en probeer het opnieuw.",

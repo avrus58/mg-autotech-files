@@ -119,27 +119,46 @@ export function fileExpertUploadRequiredValidation(): FileExpertValidationDescri
   return { key: "fileExpertUploadFile" };
 }
 
+function localizeFileExpertFieldLabel(
+  locale: LocaleCode,
+  fieldKey: FileExpertFieldLabelKey,
+) {
+  switch (fieldKey) {
+    case "fileExpertFieldBrand":
+      return customerWorkflowT(locale, "fileExpertFieldBrand");
+    case "fileExpertFieldModel":
+      return customerWorkflowT(locale, "fileExpertFieldModel");
+    case "fileExpertFieldEngine":
+      return customerWorkflowT(locale, "fileExpertFieldEngine");
+    case "fileExpertFieldEcu":
+      return customerWorkflowT(locale, "fileExpertFieldEcu");
+    case "fileExpertFieldNotes":
+      return customerWorkflowT(locale, "fileExpertFieldNotes");
+  }
+}
+
 export function localizeFileExpertValidation(
   locale: LocaleCode,
   descriptor: FileExpertValidationDescriptor,
 ) {
   switch (descriptor.key) {
     case "fileExpertFileTooLarge":
-      return customerWorkflowT(locale, descriptor.key, {
+      return customerWorkflowT(locale, "fileExpertFileTooLarge", {
         size: descriptor.params.size,
       });
     case "fileExpertUnsupportedFile":
-      return customerWorkflowT(locale, descriptor.key, {
+      return customerWorkflowT(locale, "fileExpertUnsupportedFile", {
         extensions: descriptor.params.extensions,
       });
     case "fileExpertTextLimit":
-      return customerWorkflowT(locale, descriptor.key, {
-        field: customerWorkflowT(locale, descriptor.params.fieldKey),
+      return customerWorkflowT(locale, "fileExpertTextLimit", {
+        field: localizeFileExpertFieldLabel(locale, descriptor.params.fieldKey),
         count: descriptor.params.count.toLocaleString(intlLocaleByCode[locale]),
       });
     case "fileExpertEmptyFile":
+      return customerWorkflowT(locale, "fileExpertEmptyFile");
     case "fileExpertUploadFile":
-      return customerWorkflowT(locale, descriptor.key);
+      return customerWorkflowT(locale, "fileExpertUploadFile");
   }
 }
 

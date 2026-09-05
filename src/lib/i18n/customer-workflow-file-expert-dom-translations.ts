@@ -642,6 +642,19 @@ export const customerWorkflowExactTranslations = {
     "Zidentyfikuj i przeanalizuj pliki",
     "Identifiko dhe analizo file-t"
   ],
+  "Identifying control unit...": [
+    "Besturingseenheid identificeren...",
+    "Steuergerät identifizieren...",
+    "Identification de l'unité de contrôle...",
+    "Identificazione centralina...",
+    "Идентификация блока управления...",
+    "Identificando la unidad de control...",
+    "Kontrol ünitesi tanımlanıyor...",
+    "A identificar a unidade de controlo...",
+    "正在识别控制单元...",
+    "Identyfikacja jednostki sterującej...",
+    "Identifikimi i njësisë së kontrollit..."
+  ],
   "In review": [
     "In beoordeling",
     "In Prüfung",
@@ -719,6 +732,19 @@ export const customerWorkflowExactTranslations = {
     "匹配集群",
     "Pasujące klastry",
     "Grupime që përputhen"
+  ],
+  "Max": [
+    "Max.",
+    "Max.",
+    "Max.",
+    "Max",
+    "Макс.",
+    "Máx.",
+    "En fazla",
+    "Máx.",
+    "最大",
+    "Maks.",
+    "Maks."
   ],
   "MOD file": [
     "MOD-bestand",
@@ -993,6 +1019,19 @@ export const customerWorkflowExactTranslations = {
     "Możliwe dopasowania pojazdu",
     "Përputhje të mundshme të automjetit"
   ],
+  "Preparing secure upload...": [
+    "Veilig uploaden voorbereiden...",
+    "Sicherer Upload wird vorbereitet...",
+    "Préparation du téléversement sécurisé...",
+    "Preparazione caricamento sicuro...",
+    "Подготовка безопасной загрузки...",
+    "Preparando carga segura...",
+    "Güvenli yükleme hazırlanıyor...",
+    "A preparar o carregamento seguro...",
+    "正在准备安全上传...",
+    "Przygotowuję bezpieczne przesyłanie...",
+    "Po përgatit ngarkimin e sigurt..."
+  ],
   "Processor": [
     "Processor",
     "Prozessor",
@@ -1058,6 +1097,19 @@ export const customerWorkflowExactTranslations = {
     "Zakres odczytu",
     "Fusha e leximit"
   ],
+  "Read:": [
+    "Uitlezing:",
+    "Auslesung:",
+    "Lecture :",
+    "Lettura:",
+    "Считывание:",
+    "Lectura:",
+    "Okuma:",
+    "Leitura:",
+    "读取方式：",
+    "Odczyt:",
+    "Leximi:"
+  ],
   "Recent analyses": [
     "Recente analyses",
     "Letzte Analysen",
@@ -1122,19 +1174,6 @@ export const customerWorkflowExactTranslations = {
     "重试同步",
     "Ponów synchronizację",
     "Riprovo sinkronizimin"
-  ],
-  "Review": [
-    "Beoordeling",
-    "Prüfung",
-    "Examen",
-    "Revisione",
-    "Проверка",
-    "Revisión",
-    "İnceleme",
-    "Revisão",
-    "审核",
-    "Weryfikacja",
-    "Shqyrtim"
   ],
   "Review state": [
     "Beoordelingsstatus",
@@ -1395,6 +1434,19 @@ export const customerWorkflowExactTranslations = {
     "已上传文件",
     "Przesłane pliki",
     "Skedarët e ngarkuar"
+  ],
+  "Uploading files securely...": [
+    "Bestanden veilig uploaden...",
+    "Dateien sicher hochladen...",
+    "Téléversement sécurisé des fichiers en cours...",
+    "Caricamento file sicuro...",
+    "Безопасная загрузка файлов...",
+    "Subiendo archivos de forma segura...",
+    "Dosyalar güvenli bir şekilde yükleniyor...",
+    "A carregar os ficheiros em segurança...",
+    "安全上传文件...",
+    "Bezpieczne przesyłanie plików...",
+    "Skedarët po ngarkohen në mënyrë të sigurt..."
   ],
   "Variant": [
     "Variant",

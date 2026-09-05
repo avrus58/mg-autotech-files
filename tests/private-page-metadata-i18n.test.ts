@@ -4,6 +4,11 @@ import path from "node:path";
 import test from "node:test";
 import { supportedLocales } from "../src/lib/i18nConfig";
 import {
+  customerWorkflowExactT as privateMetadataExactT,
+  customerWorkflowLocaleOrder as privateMetadataLocaleOrder,
+  customerWorkflowSourceStrings as privateMetadataSourceStrings,
+} from "../src/lib/i18n/customer-workflow-private-metadata-translations";
+import {
   buildAuthMetadata,
   buildCustomerDashboardMetadata,
   buildDesktopTurnstileMetadata,
@@ -69,6 +74,48 @@ test("non-English protected metadata never falls back to the English source", ()
         `${code} description fallback`,
       );
     });
+  }
+});
+
+test("dashboard runtime metadata catalog stays identical to the server builders", () => {
+  const runtimeMetadataBuilders = [
+    buildCustomerDashboardMetadata,
+    buildLogAnalysisStudioMetadata,
+    buildWidgetDashboardMetadata,
+  ] as const;
+  assert.deepEqual(
+    privateMetadataLocaleOrder,
+    supportedLocales
+      .map(({ code }) => code)
+      .filter((code) => code !== "en"),
+  );
+
+  for (const build of runtimeMetadataBuilders) {
+    const english = build("en");
+    if (
+      typeof english.title !== "string" ||
+      typeof english.description !== "string"
+    ) {
+      assert.fail("runtime metadata builders must return literal title and description strings");
+    }
+    const englishTitle = english.title;
+    const englishDescription = english.description;
+    assert.ok(privateMetadataSourceStrings.includes(englishTitle));
+    assert.ok(privateMetadataSourceStrings.includes(englishDescription));
+
+    for (const { code } of supportedLocales) {
+      const localized = build(code);
+      assert.equal(
+        privateMetadataExactT(code, englishTitle),
+        localized.title,
+        `${code}: ${englishTitle}`,
+      );
+      assert.equal(
+        privateMetadataExactT(code, englishDescription),
+        localized.description,
+        `${code}: ${englishDescription}`,
+      );
+    }
   }
 });
 

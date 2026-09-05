@@ -151,10 +151,13 @@ test("all widget success and failure states use the typed site catalog", () => {
 test("raw embed, domains and product-owned language remain protected without broad page exclusions", () => {
   assert.doesNotMatch(componentSources.sales, /<main[^>]*data-no-translate/);
   assert.doesNotMatch(componentSources.dashboard, /<main[^>]*data-no-translate/);
-  assert.match(componentSources.embed, /<pre translate="no" data-no-translate/);
+  assert.match(
+    componentSources.embed,
+    /<pre[^>]*><code translate="no" data-no-translate>/,
+  );
   assert.match(componentSources.dashboard, /translate="no" data-no-translate[^>]*>\{client\.allowed_domain\}/);
   assert.equal(
-    componentSources.selector.match(/<div translate="no" data-no-translate dir=/gu)?.length,
+    componentSources.selector.match(/<div translate="no" data-no-translate\b/gu)?.length,
     2,
     "the separately localized widget product must be isolated from the site-wide DOM translator"
   );

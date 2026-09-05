@@ -1905,7 +1905,9 @@ export function analyzeLogStudio(
   const candidates = candidateHeaders
     .map<CandidateChannel>((rawHeader, index) => {
       const sourceIndex = includedColumnIndexes[index];
-      const header = rawHeader.trim() || `Channel ${sourceIndex + 1}`;
+      // An unnamed source column keeps a language-neutral, one-based identifier.
+      // Real logger headers are never translated or replaced.
+      const header = rawHeader.trim() || `#${sourceIndex + 1}`;
       const kind = candidateKinds[index] ?? "other";
       const values = parsedRows.map((row) => row[index] ?? null);
       return {

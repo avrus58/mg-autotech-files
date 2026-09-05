@@ -11,6 +11,7 @@ import {
   performanceSourceFromStudioAnalysis,
 } from "../src/lib/performanceReport";
 import { analyzeLogStudio } from "../src/lib/logAnalysisStudio";
+import { logStudioNumberLocale } from "../src/lib/i18n/log-analysis-studio-translations";
 
 const sampleRows = [
   "1800, 320",
@@ -214,6 +215,102 @@ test("downloaded report is deterministic, detailed and strips private source pat
     report,
     /<script|javascript:|<image|<foreignObject|xlink:href|\shref=/i
   );
+});
+
+test("downloaded reports localize visible copy, dates and numbers without changing raw technical leaves", () => {
+  const parsed = parsePerformanceLog(sampleRows);
+  const analysis = analyzePerformanceLog(parsed);
+  const generatedAt = new Date("2026-07-28T10:00:00.000Z");
+  const locales = [
+    { locale: "de" as const, title: "Leistungslog-Analyse", decimal: "430,0" },
+    { locale: "tr" as const, title: "Performans Log Analizi", decimal: "430,0" },
+    { locale: "zh" as const, title: "性能日志分析", decimal: "430.0" },
+  ];
+  const fixedEnglishCopy =
+    /Performance Log Analysis|Workshop report|REPORT ID|DATA INTEGRITY|valid rows|STRONG LOG|PEAK TORQUE|EST\. PEAK POWER|METRIC POWER|RPM WINDOW|POWER \/ TORQUE|ENGINE SPEED|Estimated HP|Torque Nm|CURVE SUMMARY|Peak torque|Peak power|End-of-window|QUALITY &amp; METHOD|No structural log warnings|Power formula|Representative log rows|LOG-BASED ESTIMATE|FILE SERVICE/;
+
+  for (const { locale, title, decimal } of locales) {
+    const report = buildPerformanceReportSvg({
+      fileName: "RAW_vehicle-log.csv",
+      parsed,
+      analysis,
+      generatedAt,
+      locale,
+    });
+    const expectedDate = new Intl.DateTimeFormat(logStudioNumberLocale(locale), {
+      year: "numeric",
+      month: "short",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: false,
+      timeZone: "UTC",
+      timeZoneName: "short",
+    }).format(generatedAt);
+
+    assert.match(report, new RegExp(`xml:lang="${locale}"`));
+    assert.ok(report.includes(title));
+    assert.ok(report.includes(expectedDate));
+    assert.ok(report.includes(decimal));
+    assert.ok(report.includes("RAW_vehicle-log.csv"));
+    assert.match(report, /RPM/);
+    assert.match(report, /Nm/);
+    assert.match(report, /HP/);
+    assert.match(report, /kW/);
+    assert.doesNotMatch(report, fixedEnglishCopy);
+  }
+});
+
+test("unnamed reports keep one technical report ID across locale changes", () => {
+  const parsed = parsePerformanceLog(sampleRows);
+  const analysis = analyzePerformanceLog(parsed);
+  const generatedAt = new Date("2026-07-28T10:00:00.000Z");
+  const ids = (["en", "de", "tr", "zh"] as const).map((locale) => {
+    const report = buildPerformanceReportSvg({
+      fileName: "",
+      parsed,
+      analysis,
+      generatedAt,
+      locale,
+    });
+    const id = report.match(/MGA-LOG-[A-F0-9]{8}/)?.[0];
+    assert.ok(id, `${locale}: report ID`);
+    return id;
+  });
+
+  assert.equal(new Set(ids).size, 1);
+});
+
+test("every structural performance warning is localized in downloaded DE, TR and ZH reports", () => {
+  const parsed = parsePerformanceLog(sampleRows);
+  const baseAnalysis = analyzePerformanceLog(parsed);
+  const warnings = [
+    "Fewer than five valid rows limit curve confidence.",
+    "RPM coverage is too narrow for a representative curve.",
+    "1 source row was rejected.",
+    "12 source rows were rejected.",
+    "RPM values were not ordered and were sorted for the chart.",
+    "1 duplicate RPM row was detected.",
+    "12 duplicate RPM rows were detected.",
+    "Only the first 3,000 of 50,001 source rows were analyzed within the local processing bounds. Unprocessed rows are not counted as rejected.",
+  ];
+  const englishLeak =
+    /Fewer than five valid rows|RPM coverage is too narrow|source rows? (?:was|were) rejected|RPM values were not ordered|duplicate RPM rows? (?:was|were) detected|Only the first .* source rows were analyzed|Unprocessed rows are not counted as rejected/;
+
+  for (const locale of ["de", "tr", "zh"] as const) {
+    for (const warning of warnings) {
+      const report = buildPerformanceReportSvg({
+        fileName: "RAW_warning-log.csv",
+        parsed,
+        analysis: { ...baseAnalysis, warnings: [warning] },
+        generatedAt: new Date("2026-07-28T10:00:00.000Z"),
+        locale,
+      });
+
+      assert.doesNotMatch(report, englishLeak, `${locale} leaked: ${warning}`);
+    }
+  }
 });
 
 test("report generation fails closed without valid log rows", () => {

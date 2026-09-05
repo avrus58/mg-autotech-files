@@ -20,6 +20,8 @@ import {
   logStudioT,
   logStudioTranslationKeys,
   logStudioTranslations,
+  performanceReportTranslationKeys,
+  performanceReportTranslations,
 } from "../src/lib/i18n/log-analysis-studio-translations";
 
 const nonEnglishLocales = logStudioLocaleOrder.filter((locale) => locale !== "en");
@@ -50,6 +52,37 @@ test("non-English prose never silently falls back to the English source", () => 
         logStudioTranslations.en[key],
         `${locale}.${key} must be reviewed localized prose`
       );
+    }
+  }
+});
+
+test("performance report copy is complete, typed and preserves placeholder parity in all 12 locales", () => {
+  const tokens = (value: string) =>
+    [...value.matchAll(/\{([A-Za-z][A-Za-z0-9]*)\}/g)]
+      .map((match) => match[1])
+      .sort();
+
+  assert.ok(performanceReportTranslationKeys.length >= 45);
+  for (const locale of logStudioLocaleOrder) {
+    assert.equal(
+      Object.keys(performanceReportTranslations[locale]).length,
+      performanceReportTranslationKeys.length
+    );
+    for (const key of performanceReportTranslationKeys) {
+      const localized = performanceReportTranslations[locale][key];
+      assert.ok(localized.trim(), `${locale}.${key} must not be empty`);
+      assert.deepEqual(
+        tokens(localized),
+        tokens(performanceReportTranslations.en[key]),
+        `${locale}.${key} placeholder mismatch`
+      );
+      if (locale !== "en" && /\s/.test(performanceReportTranslations.en[key])) {
+        assert.notEqual(
+          localized,
+          performanceReportTranslations.en[key],
+          `${locale}.${key} leaked English report prose`
+        );
+      }
     }
   }
 });
@@ -117,6 +150,7 @@ test("the Studio consumes the active locale and protects only raw technical leav
   assert.match(component, /sourceName \? <span translate="no" data-no-translate>\{sourceName\}<\/span> : t\("dropOrChoose"\)/);
   assert.match(component, /useState<StudioError \| null>\(null\)/);
   assert.match(component, /localizeStudioError\(error, activeLocale\)/);
+  assert.match(component, /locale: activeLocale/);
   assert.match(component, /setError\(\{ kind: "translation", key: "analysisFailedError" \}\)/);
   assert.doesNotMatch(component, /setError\(t\("(?:analysisFailedError|fileReadError)"\)\)/);
   assert.doesNotMatch(component, /<(?:main|section|article)\b[^>]*data-no-translate/u);

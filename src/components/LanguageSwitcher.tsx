@@ -30,7 +30,10 @@ import {
 } from "@/lib/localePreference";
 import { isSeoLocale } from "@/lib/seo";
 import { useActiveLocale } from "@/lib/useActiveLocale";
-import { customerWorkflowClientGroupForPath } from "@/lib/i18n/customer-workflow-client-routes";
+import {
+  customerWorkflowClientGroupForPath,
+  customerWorkflowManagedRouteSegments,
+} from "@/lib/i18n/customer-workflow-client-routes";
 import {
   createCanonicalSourceAccumulator,
   registerCanonicalSource,
@@ -221,17 +224,7 @@ const publicSurfaceSegments = new Set([
   "workshop-guides",
 ]);
 
-const customerWorkflowSegments = new Set([
-  "auth",
-  "dashboard",
-  "desktop-auth",
-  "forgot-password",
-  "login",
-  "new-request",
-  "payment",
-  "register",
-  "reset-password",
-]);
+const customerWorkflowSegments = new Set(customerWorkflowManagedRouteSegments);
 
 function emptyExactCatalog(): Record<LocaleCode, Record<string, string>> {
   return Object.fromEntries(

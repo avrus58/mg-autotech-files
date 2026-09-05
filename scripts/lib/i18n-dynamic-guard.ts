@@ -23,6 +23,24 @@ export type ReviewedDynamicVisibleExpression = Omit<
 // pass; line numbers are deliberately excluded so formatting alone is harmless.
 export const reviewedDynamicVisibleExpressions = [
   {
+    file: "src/lib/logAnalysisStudio.ts",
+    kind: "template",
+    source: "`#${sourceIndex + 1}`",
+    classification: "raw-technical-data",
+  },
+  {
+    file: "src/app/embed/vehicle-selector/page.tsx",
+    kind: "template",
+    source: "`https://${result.requestDomain}`",
+    classification: "raw-technical-data",
+  },
+  {
+    file: "src/app/services/[slug]/page.tsx",
+    kind: "template",
+    source: "`${copy.title} | MG AutoTech`",
+    classification: "localized-copy",
+  },
+  {
     file: "src/app/[locale]/services/[slug]/page.tsx",
     kind: "template",
     source: "`${service.credits} ${labels.credits}`",
@@ -101,8 +119,7 @@ export const reviewedDynamicVisibleExpressions = [
   {
     file: "src/components/dashboard/LogAnalysisStudio.tsx",
     kind: "template",
-    source:
-      '` ${logStudioMessageT(locale, egrComparison.textMessage)}`',
+    source: "` ${logStudioMessageT(locale, egrComparison.textMessage)}`",
     classification: "localized-copy",
   },
   {
@@ -152,8 +169,7 @@ function fingerprint(
   return [
     expression.file.replaceAll("\\", "/"),
     expression.kind,
-    normalizeSource(expression.source),
-  ].join("\u0000");
+    normalizeSource(expression.source)].join("\u0000");
 }
 
 export function auditDynamicVisibleExpressions(
@@ -162,8 +178,7 @@ export function auditDynamicVisibleExpressions(
   const reviewedByFingerprint = new Map(
     reviewedDynamicVisibleExpressions.map((expression) => [
       fingerprint(expression),
-      expression,
-    ])
+      expression]),
   );
   const detectedFingerprints = new Set(
     expressions.map((expression) => fingerprint(expression))
@@ -174,7 +189,7 @@ export function auditDynamicVisibleExpressions(
       (expression) => !reviewedByFingerprint.has(fingerprint(expression))
     ),
     staleReviewed: reviewedDynamicVisibleExpressions.filter(
-      (expression) => !detectedFingerprints.has(fingerprint(expression))
+      (expression) => !detectedFingerprints.has(fingerprint(expression)),
     ),
     classificationFor(expression: DynamicVisibleExpression) {
       return reviewedByFingerprint.get(fingerprint(expression))?.classification;

@@ -12,7 +12,10 @@ import {
 import { signOutLocalStable } from "@/lib/authGuards";
 import { getSafeLocalRedirectPath } from "@/lib/safeLocalRedirect";
 import { replacePrivateMeasurementDocument } from "@/lib/publicAnalytics";
-import { customerWorkflowT } from "@/lib/i18n/customer-workflow-auth-translations";
+import {
+  customerWorkflowExactT,
+  customerWorkflowT,
+} from "@/lib/i18n/customer-workflow-auth-translations";
 import { intlLocaleByCode } from "@/lib/i18nConfig";
 import { useActiveLocale } from "@/lib/useActiveLocale";
 
@@ -60,8 +63,15 @@ export function DeviceVerificationPanel({
     const nextRetryAt = delay > 0 ? Date.now() + delay * 1000 : 0;
     setRetryAt(nextRetryAt);
     setSecondsRemaining(delay);
-    if (next.error) setMessage("The security request could not be completed. Please try again.");
-  }, []);
+    if (next.error) {
+      setMessage(
+        customerWorkflowExactT(
+          locale,
+          "The security request could not be completed. Please try again.",
+        ),
+      );
+    }
+  }, [locale]);
 
   const leaveRevokedSession = useCallback(async () => {
     await signOutLocalStable();
@@ -86,11 +96,16 @@ export function DeviceVerificationPanel({
       applyState(next);
       window.setTimeout(() => codeInputRef.current?.focus(), 0);
     } catch {
-      setMessage("The verification e-mail could not be sent.");
+      setMessage(
+        customerWorkflowExactT(
+          locale,
+          "The verification e-mail could not be sent.",
+        ),
+      );
     } finally {
       setWorking(null);
     }
-  }, [applyState, finish, leaveRevokedSession]);
+  }, [applyState, finish, leaveRevokedSession, locale]);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => void begin(), 0);
@@ -128,7 +143,9 @@ export function DeviceVerificationPanel({
       setCode("");
       window.setTimeout(() => codeInputRef.current?.focus(), 0);
     } catch {
-      setMessage("The code could not be verified.");
+      setMessage(
+        customerWorkflowExactT(locale, "The code could not be verified."),
+      );
     } finally {
       setWorking(null);
     }
@@ -147,17 +164,39 @@ export function DeviceVerificationPanel({
       applyState({ ...state, ...next });
       setCode("");
       if (next.sentNewCode) {
-        setMessage("A new code was accepted for sending to your e-mail.");
+        setMessage(
+          customerWorkflowExactT(
+            locale,
+            "A new code was accepted for sending to your e-mail.",
+          ),
+        );
       } else if (next.outcome === "delivery_pending") {
-        setMessage("The security e-mail is still being prepared. Please wait.");
+        setMessage(
+          customerWorkflowExactT(
+            locale,
+            "The security e-mail is still being prepared. Please wait.",
+          ),
+        );
       } else if (next.outcome === "stale_challenge") {
-        setMessage("That resend request was out of date. Use the current code or try again.");
+        setMessage(
+          customerWorkflowExactT(
+            locale,
+            "That resend request was out of date. Use the current code or try again.",
+          ),
+        );
       } else if (next.rateLimited) {
-        setMessage("Please wait before requesting another security code.");
+        setMessage(
+          customerWorkflowExactT(
+            locale,
+            "Please wait before requesting another security code.",
+          ),
+        );
       }
       window.setTimeout(() => codeInputRef.current?.focus(), 0);
     } catch {
-      setMessage("A new code could not be sent.");
+      setMessage(
+        customerWorkflowExactT(locale, "A new code could not be sent."),
+      );
     } finally {
       setWorking(null);
     }
@@ -183,9 +222,12 @@ export function DeviceVerificationPanel({
         {working === "start" ? <Loader2 className="h-7 w-7 animate-spin" /> : <MailCheck className="h-7 w-7" />}
       </div>
       <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-red-800/50 bg-red-950/25 px-3 py-1.5 text-xs font-black text-red-100">
-        <ShieldCheck className="h-4 w-4 text-red-500" /> New device protection
+        <ShieldCheck className="h-4 w-4 text-red-500" />
+        {customerWorkflowExactT(locale, "New device protection")}
       </div>
-      <h2 id="device-verification-title" className="text-4xl font-black">Check your e-mail</h2>
+      <h2 id="device-verification-title" className="text-4xl font-black">
+        {customerWorkflowExactT(locale, "Check your e-mail")}
+      </h2>
       <p className="mt-3 text-sm leading-7 text-zinc-400">
         {state?.maskedEmail && canVerify ? (
           <>
@@ -194,13 +236,15 @@ export function DeviceVerificationPanel({
               : customerWorkflowT(locale, "codeSentToEmail", {})}{" "}
             <span data-no-translate>{state.maskedEmail}</span>.
           </>
-        ) : statusDescription}
+        ) : customerWorkflowExactT(locale, statusDescription)}
       </p>
 
       {canVerify && (
         <form onSubmit={submit} className="mt-7 space-y-4">
           <label className="block">
-            <span className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-zinc-500">Security code</span>
+            <span className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-zinc-500">
+              {customerWorkflowExactT(locale, "Security code")}
+            </span>
             <div className="relative">
               <KeyRound className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-zinc-500" />
               <input
@@ -211,7 +255,7 @@ export function DeviceVerificationPanel({
                 autoComplete="one-time-code"
                 pattern="[0-9]{6}"
                 maxLength={6}
-                aria-label="6-digit security code"
+                aria-label={customerWorkflowExactT(locale, "6-digit security code")}
                 className="h-14 w-full rounded-2xl border border-white/10 bg-black/35 pl-12 pr-4 text-center text-xl font-black tracking-[0.45em] text-white outline-none transition focus:border-red-700"
                 required
               />
@@ -227,8 +271,12 @@ export function DeviceVerificationPanel({
                 className="mt-1 h-4 w-4 accent-red-600"
               />
               <span>
-                <span className="block text-sm font-black text-white">Trust this device for 30 days</span>
-                <span className="mt-1 block text-xs leading-5 text-zinc-500">Use this only on a private device you control.</span>
+                <span className="block text-sm font-black text-white">
+                  {customerWorkflowExactT(locale, "Trust this device for 30 days")}
+                </span>
+                <span className="mt-1 block text-xs leading-5 text-zinc-500">
+                  {customerWorkflowExactT(locale, "Use this only on a private device you control.")}
+                </span>
               </span>
             </label>
           )}
@@ -237,7 +285,14 @@ export function DeviceVerificationPanel({
             disabled={working !== null || code.length !== 6}
             className="flex h-14 w-full items-center justify-center rounded-2xl bg-[#b1121b] px-5 font-black text-white transition hover:bg-[#c91824] disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {working === "verify" ? <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Verifying...</> : "Verify and continue"}
+            {working === "verify" ? (
+              <>
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                {customerWorkflowExactT(locale, "Verifying...")}
+              </>
+            ) : (
+              customerWorkflowExactT(locale, "Verify and continue")
+            )}
           </button>
         </form>
       )}
@@ -260,7 +315,9 @@ export function DeviceVerificationPanel({
             className="inline-flex items-center text-red-400 disabled:text-zinc-600"
           >
             {working === "resend" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCcw className="mr-2 h-4 w-4" />}
-            {secondsRemaining > 0 ? customerWorkflowT(locale, "resendCodeIn", { time: formatCountdown(secondsRemaining) }) : "Resend code"}
+            {secondsRemaining > 0
+              ? customerWorkflowT(locale, "resendCodeIn", { time: formatCountdown(secondsRemaining) })
+              : customerWorkflowExactT(locale, "Resend code")}
           </button>
         ) : (
           <button
@@ -276,7 +333,7 @@ export function DeviceVerificationPanel({
           </button>
         )}
         <button type="button" onClick={() => void handleDifferentAccount()} className="text-zinc-400 hover:text-white">
-          Use a different account
+          {customerWorkflowExactT(locale, "Use a different account")}
         </button>
       </div>
     </section>

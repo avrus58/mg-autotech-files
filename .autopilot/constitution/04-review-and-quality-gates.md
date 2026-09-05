@@ -28,6 +28,21 @@ Reviewer yalnız kod stilini incelemez.
 - Yeni public/müşteri route veya component fail-closed i18n envanterinde açıkça
   sınıflandırılmalı; broad `data-no-translate` veya sınıflandırılmamış dinamik
   copy kabul edilmez.
+- Envanter `page`, `layout`, `template`, `default`, `loading`, `error`,
+  `global-error`, `not-found`, `global-not-found`, `forbidden`,
+  `unauthorized`, `manifest`, `icon`, `apple-icon`, `opengraph-image`,
+  `twitter-image` ve numaralı metadata varyantları dahil bütün JS/JSX/TS/TSX
+  App Router UI convention dosyalarını kapsar. Convention adı taşımayan
+  `src/app` içi co-located JS/JSX/TSX UI ve `src/lib` içi shared
+  JS/JSX/TSX UI da fail-closed envantere girer.
+- AST kapısı `&&`, `||`, `??` içindeki doğrudan görünür string/template
+  operandlarını kapsar. Translator yalnız exact typed i18n module ve reviewed
+  export provenance'iyle güvenilir sayılır; alias izlenir, shadow edilmiş
+  binding reddedilir, local wrapper/provider yalnız provenance'i doğrudan
+  koruyorsa kabul edilir. Exact-source argümanları ve interpolation
+  parametreleri blanket muaf değildir.
+- Exact-file istisnası aynı klasördeki yeni kardeş dosyaya veya layout'a
+  devrolmaz.
 - Generic route/component exemption kabul edilmez. Exact legacy yüzey için
   kullanılan frozen-source fingerprint'i yenilenemez; değişiklikten önce yüzey
   shared typed locale katalog/renderer mimarisine taşınır ve freeze kaldırılır.

@@ -18,45 +18,6 @@ export const customerWorkflowLocaleOrder = [
 ] as const satisfies readonly Exclude<LocaleCode, "en">[];
 
 export const customerWorkflowExactTranslations = {
-  "6-digit security code": [
-    "Beveiligingscode van 6 cijfers",
-    "6-stelliger Sicherheitscode",
-    "Code de sécurité à 6 chiffres",
-    "Codice di sicurezza a 6 cifre",
-    "6-значный код безопасности",
-    "Código de seguridad de 6 dígitos",
-    "6 haneli güvenlik kodu",
-    "Código de segurança de 6 dígitos",
-    "6 位安全码",
-    "6-cyfrowy kod bezpieczeństwa",
-    "Kod sigurie me 6 shifra"
-  ],
-  "A new code could not be sent.": [
-    "Er kon geen nieuwe code worden verzonden.",
-    "Es konnte kein neuer Code gesendet werden.",
-    "Un nouveau code n'a pas pu être envoyé.",
-    "Non è stato possibile inviare un nuovo codice.",
-    "Не удалось отправить новый код.",
-    "No se pudo enviar un nuevo código.",
-    "Yeni kod gönderilemedi.",
-    "Não foi possível enviar um novo código.",
-    "无法发送新代码。",
-    "Nie udało się wysłać nowego kodu.",
-    "Një kod i ri nuk mund të dërgohej."
-  ],
-  "A new code was accepted for sending to your e-mail.": [
-    "Er is een nieuwe code geaccepteerd voor verzending naar uw e-mail.",
-    "Ein neuer Code wurde zum Senden an Ihre E-Mail akzeptiert.",
-    "Un nouveau code a été accepté pour être envoyé à votre adresse e-mail.",
-    "Un nuovo codice è stato accettato per l'invio alla tua email.",
-    "Новый код принят к отправке на вашу электронную почту.",
-    "Se aceptó un nuevo código para enviarlo a su correo electrónico.",
-    "E-postanıza gönderilmek üzere yeni bir kod kabul edildi.",
-    "Foi aceite um novo código para envio para o seu e-mail.",
-    "新代码已被接受并发送到您的电子邮件。",
-    "Nowy kod został zaakceptowany do wysłania na Twój e-mail.",
-    "Një kod i ri u pranua për t'u dërguar në emailin tuaj."
-  ],
   "Account": [
     "Account",
     "Konto",
@@ -108,19 +69,6 @@ export const customerWorkflowExactTranslations = {
     "购买积分",
     "Kup kredyty",
     "Bli kredi"
-  ],
-  "Check your e-mail": [
-    "Controleer je e-mail",
-    "Prüfen Sie Ihre E-Mail",
-    "Vérifiez votre e-mail",
-    "Controlla la tua e-mail",
-    "Проверьте электронную почту",
-    "Revisa tu correo electrónico",
-    "E-postanızı kontrol edin",
-    "Verifique o seu e-mail",
-    "请查看您的电子邮件",
-    "Sprawdź swoją pocztę e-mail",
-    "Kontrolloni e-mailin tuaj"
   ],
   "Checking customer profile...": [
     "Klantprofiel controleren...",
@@ -382,19 +330,6 @@ export const customerWorkflowExactTranslations = {
     "Wymaga odpowiedzi",
     "Kërkon përgjigje"
   ],
-  "New device protection": [
-    "Beveiliging voor nieuwe apparaten",
-    "Schutz für neue Geräte",
-    "Protection des nouveaux appareils",
-    "Protezione dei nuovi dispositivi",
-    "Защита новых устройств",
-    "Protección para nuevos dispositivos",
-    "Yeni cihaz koruması",
-    "Proteção de novos dispositivos",
-    "新设备保护",
-    "Ochrona nowych urządzeń",
-    "Mbrojtja e pajisjeve të reja"
-  ],
   "New File Request": [
     "Nieuwe file-aanvraag",
     "Neue Dateianfrage",
@@ -551,19 +486,6 @@ export const customerWorkflowExactTranslations = {
     "Zaloguj się, aby otworzyć Studio analizy datalogów",
     "Hyni për të hapur Studion e analizës së datalogëve"
   ],
-  "Please wait before requesting another security code.": [
-    "Wacht alstublieft voordat u een nieuwe beveiligingscode aanvraagt.",
-    "Bitte warten Sie, bevor Sie einen weiteren Sicherheitscode anfordern.",
-    "Veuillez patienter avant de demander un autre code de sécurité.",
-    "Attendi prima di richiedere un altro codice di sicurezza.",
-    "Пожалуйста, подождите, прежде чем запрашивать другой код безопасности.",
-    "Espere antes de solicitar otro código de seguridad.",
-    "Başka bir güvenlik kodu istemeden önce lütfen bekleyin.",
-    "Aguarde antes de solicitar outro código de segurança.",
-    "请稍候，然后再请求另一个安全代码。",
-    "Poczekaj, zanim zażądasz kolejnego kodu zabezpieczającego.",
-    "Ju lutemi prisni përpara se të kërkoni një kod tjetër sigurie."
-  ],
   "Primary navigation": [
     "Hoofdnavigatie",
     "Hauptnavigation",
@@ -576,19 +498,6 @@ export const customerWorkflowExactTranslations = {
     "主导航",
     "Główna nawigacja",
     "Navigimi kryesor"
-  ],
-  "Resend code": [
-    "Code opnieuw verzenden",
-    "Code erneut senden",
-    "Renvoyer le code",
-    "Reinvia il codice",
-    "Отправить код повторно",
-    "Reenviar código",
-    "Kodu yeniden gönder",
-    "Reenviar código",
-    "重新发送代码",
-    "Wyślij kod ponownie",
-    "Ridërgo kodin"
   ],
   "Restoring secure session...": [
     "Beveiligde sessie wordt hersteld...",
@@ -629,19 +538,6 @@ export const customerWorkflowExactTranslations = {
     "Bezpieczny dostęp klienta",
     "Akses i sigurt për klientin"
   ],
-  "Security code": [
-    "Beveiligingscode",
-    "Sicherheitscode",
-    "Code de sécurité",
-    "Codice di sicurezza",
-    "Код безопасности",
-    "Código de seguridad",
-    "Güvenlik kodu",
-    "Código de segurança",
-    "安全码",
-    "Kod bezpieczeństwa",
-    "Kodi i sigurisë"
-  ],
   "Settings": [
     "Instellingen",
     "Einstellungen",
@@ -667,32 +563,6 @@ export const customerWorkflowExactTranslations = {
     "支持",
     "Wsparcie",
     "Mbështetje"
-  ],
-  "That resend request was out of date. Use the current code or try again.": [
-    "Dat verzoek om opnieuw te verzenden was verouderd. Gebruik de huidige code of probeer het opnieuw.",
-    "Diese erneute Sendeanfrage war veraltet. Verwenden Sie den aktuellen Code oder versuchen Sie es erneut.",
-    "Cette demande de renvoi était obsolète. Utilisez le code actuel ou réessayez.",
-    "La richiesta di reinvio non era aggiornata. Utilizza il codice corrente o riprova.",
-    "Этот запрос на повторную отправку устарел. Используйте текущий код или повторите попытку.",
-    "Esa solicitud de reenvío estaba desactualizada. Utilice el código actual o inténtelo de nuevo.",
-    "Bu yeniden gönderme isteği güncel değildi. Geçerli kodu kullanın veya tekrar deneyin.",
-    "Este pedido de reenvio estava desatualizado. Utilize o código atual ou tente novamente.",
-    "该重新发送请求已过时。使用当前代码或重试。",
-    "Ta prośba o ponowne wysłanie była nieaktualna. Użyj aktualnego kodu lub spróbuj ponownie.",
-    "Kjo kërkesë për ridërgim ishte e vjetëruar. Përdor kodin aktual ose provo sërish."
-  ],
-  "The code could not be verified.": [
-    "De code kon niet worden geverifieerd.",
-    "Der Code konnte nicht verifiziert werden.",
-    "Le code n'a pas pu être vérifié.",
-    "Impossibile verificare il codice.",
-    "Код не удалось проверить.",
-    "No se pudo verificar el código.",
-    "Kod doğrulanamadı.",
-    "O código não pôde ser verificado.",
-    "无法验证该代码。",
-    "Nie udało się zweryfikować kodu.",
-    "Kodi nuk mund të verifikohej."
   ],
   "The detailed local analysis workspace is included for verified MG AutoTech customers.": [
     "De gedetailleerde lokale analysewerkruimte is inbegrepen voor geverifieerde MG AutoTech-klanten.",
@@ -720,45 +590,6 @@ export const customerWorkflowExactTranslations = {
     "Prywatne Studio pozostaje zamknięte do czasu bezpiecznej weryfikacji Twojego konta.",
     "Studio private qëndron e mbyllur derisa llogaria juaj të verifikohet në mënyrë të sigurt."
   ],
-  "The security e-mail is still being prepared. Please wait.": [
-    "De beveiligings-e-mail wordt nog voorbereid. Wacht alstublieft.",
-    "Die Sicherheits-E-Mail wird noch vorbereitet. Bitte warten.",
-    "L'e-mail de sécurité est toujours en préparation. S'il vous plaît, attendez.",
-    "L’e-mail di sicurezza è ancora in preparazione. Attendi, per favore.",
-    "Электронное письмо безопасности все еще готовится. Пожалуйста, подождите.",
-    "El correo electrónico de seguridad aún se está preparando. Espere por favor.",
-    "Güvenlik e-postası hâlâ hazırlanıyor. Lütfen bekleyin.",
-    "O e-mail de segurança ainda está a ser preparado. Por favor, aguarde.",
-    "安全电子邮件仍在准备中。请稍等。",
-    "E-mail zabezpieczający jest nadal w przygotowaniu. Proszę czekać.",
-    "E-maili i sigurisë është ende duke u përgatitur. Ju lutem prisni."
-  ],
-  "The security request could not be completed. Please try again.": [
-    "Het beveiligingsverzoek kon niet worden voltooid. Probeer het opnieuw.",
-    "Die Sicherheitsanfrage konnte nicht abgeschlossen werden. Bitte versuchen Sie es erneut.",
-    "La demande de sécurité n'a pas pu être complétée. Veuillez réessayer.",
-    "Impossibile completare la richiesta di protezione. Riprova.",
-    "Запрос безопасности не может быть завершен. Повторите попытку.",
-    "No se ha podido completar la solicitud de seguridad. Inténtalo de nuevo.",
-    "Güvenlik isteği tamamlanamadı. Lütfen tekrar deneyin.",
-    "Não foi possível concluir o pedido de segurança. Tente novamente.",
-    "安全请求无法完成。请重试。",
-    "Żądanie zabezpieczenia nie mogło zostać zrealizowane. Spróbuj ponownie.",
-    "Kërkesa për siguri nuk mund të plotësohej. Provo përsëri."
-  ],
-  "The verification e-mail could not be sent.": [
-    "De verificatie-e-mail kon niet worden verzonden.",
-    "Die Bestätigungs-E-Mail konnte nicht gesendet werden.",
-    "L'e-mail de vérification n'a pas pu être envoyé.",
-    "Non è stato possibile inviare l'e-mail di verifica.",
-    "Не удалось отправить письмо с подтверждением.",
-    "No se pudo enviar el correo electrónico de verificación.",
-    "Doğrulama e-postası gönderilemedi.",
-    "O e-mail de verificação não pôde ser enviado.",
-    "无法发送验证电子邮件。",
-    "Nie udało się wysłać e-maila weryfikacyjnego.",
-    "E-mail-i i verifikimit nuk mund të dërgohej."
-  ],
   "Tools": [
     "Hulpmiddelen",
     "Werkzeuge",
@@ -771,19 +602,6 @@ export const customerWorkflowExactTranslations = {
     "工具",
     "Narzędzia",
     "Mjetet"
-  ],
-  "Trust this device for 30 days": [
-    "Dit apparaat 30 dagen vertrouwen",
-    "Diesem Gerät 30 Tage vertrauen",
-    "Faire confiance à cet appareil pendant 30 jours",
-    "Considera attendibile questo dispositivo per 30 giorni",
-    "Доверять этому устройству 30 дней",
-    "Confiar en este dispositivo durante 30 días",
-    "Bu cihaza 30 gün güven",
-    "Confiar neste dispositivo durante 30 dias",
-    "信任此设备 30 天",
-    "Ufaj temu urządzeniu przez 30 dni",
-    "Besoji kësaj pajisjeje për 30 ditë"
   ],
   "Try again": [
     "Opnieuw proberen",
@@ -811,32 +629,6 @@ export const customerWorkflowExactTranslations = {
     "nieprzeczytane",
     "i palexuar"
   ],
-  "Use a different account": [
-    "Een ander account gebruiken",
-    "Anderes Konto verwenden",
-    "Utiliser un autre compte",
-    "Usa un altro account",
-    "Использовать другой аккаунт",
-    "Usar otra cuenta",
-    "Farklı bir hesap kullan",
-    "Utilizar outra conta",
-    "使用其他账户",
-    "Użyj innego konta",
-    "Përdor një llogari tjetër"
-  ],
-  "Use this only on a private device you control.": [
-    "Gebruik dit alleen op een privéapparaat dat je zelf beheert.",
-    "Verwenden Sie diese Option nur auf einem privaten Gerät, das Sie selbst kontrollieren.",
-    "N’utilisez cette option que sur un appareil privé que vous contrôlez.",
-    "Usa questa opzione solo su un dispositivo privato sotto il tuo controllo.",
-    "Используйте эту функцию только на личном устройстве, которое вы контролируете.",
-    "Usa esta opción solo en un dispositivo privado que controles.",
-    "Bunu yalnızca kontrolünüzdeki kişisel bir cihazda kullanın.",
-    "Utilize esta opção apenas num dispositivo privado que controle.",
-    "仅在您掌控的私人设备上使用此选项。",
-    "Używaj tej opcji tylko na prywatnym urządzeniu, które kontrolujesz.",
-    "Përdoreni këtë vetëm në një pajisje private që e kontrolloni."
-  ],
   "Vehicle Widget": [
     "Voertuigwidget",
     "Fahrzeug-Widget",
@@ -850,19 +642,6 @@ export const customerWorkflowExactTranslations = {
     "Widżet pojazdu",
     "Widget-i i automjetit"
   ],
-  "Verify and continue": [
-    "Verifiëren en doorgaan",
-    "Bestätigen und fortfahren",
-    "Vérifier et continuer",
-    "Verifica e continua",
-    "Подтвердить и продолжить",
-    "Verificar y continuar",
-    "Doğrula ve devam et",
-    "Verificar e continuar",
-    "验证并继续",
-    "Zweryfikuj i kontynuuj",
-    "Verifiko dhe vazhdo"
-  ],
   "Verifying customer access...": [
     "Klanttoegang wordt gecontroleerd...",
     "Kundenzugriff wird geprüft...",
@@ -875,19 +654,6 @@ export const customerWorkflowExactTranslations = {
     "正在验证客户访问权限...",
     "Weryfikowanie dostępu klienta...",
     "Po verifikohet qasja e klientit..."
-  ],
-  "Verifying...": [
-    "Verifiëren...",
-    "Wird überprüft...",
-    "Vérification...",
-    "Verifica in corso...",
-    "Проверка...",
-    "Verificando...",
-    "Doğrulanıyor...",
-    "A verificar...",
-    "正在验证...",
-    "Weryfikowanie...",
-    "Po verifikohet..."
   ],
   "Your account remains protected. Check your connection and try the secure session check again.": [
     "Uw account blijft beveiligd. Controleer uw verbinding en probeer de beveiligde sessiecontrole opnieuw.",

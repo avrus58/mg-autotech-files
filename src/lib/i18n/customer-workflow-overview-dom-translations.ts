@@ -57,19 +57,6 @@ export const customerWorkflowExactTranslations = {
     "Wyczyść wyszukiwanie",
     "Pastro kërkimin"
   ],
-  "Complete your customer profile": [
-    "Vul uw klantprofiel aan",
-    "Kundenprofil vervollständigen",
-    "Complétez votre profil client",
-    "Completa il profilo cliente",
-    "Заполните профиль клиента",
-    "Completa tu perfil de cliente",
-    "Müşteri profilinizi tamamlayın",
-    "Complete o seu perfil de cliente",
-    "完善客户资料",
-    "Uzupełnij profil klienta",
-    "Plotësoni profilin e klientit"
-  ],
   "Completed": [
     "Voltooid",
     "Abgeschlossen",
@@ -173,19 +160,6 @@ export const customerWorkflowExactTranslations = {
     "积分历史",
     "Historia kredytów",
     "Historia e krediteve"
-  ],
-  "Credits": [
-    "Credits",
-    "Credits",
-    "Crédits",
-    "Crediti",
-    "Кредиты",
-    "Créditos",
-    "Krediler",
-    "Créditos",
-    "积分",
-    "Kredyty",
-    "Kredi"
   ],
   "Current Balance": [
     "Huidig saldo",
@@ -538,19 +512,6 @@ export const customerWorkflowExactTranslations = {
     "Szybkie akcje",
     "Veprime të shpejta"
   ],
-  "Ready": [
-    "Klaar",
-    "Bereit",
-    "Prêt",
-    "Pronto",
-    "Готово",
-    "Listo",
-    "Hazır",
-    "Pronto",
-    "就绪",
-    "Gotowe",
-    "Gati"
-  ],
   "Refreshing your latest file-service activity...": [
     "Uw nieuwste bestandsservice-activiteit wordt vernieuwd...",
     "Ihre neuesten File-Service-Aktivitäten werden aktualisiert...",
@@ -694,19 +655,6 @@ export const customerWorkflowExactTranslations = {
     "Użyj tego ID klienta jako referencji dla przelewów i wiadomości do supportu.",
     "Përdore këtë ID klienti si referencë për transfertat bankare dhe mesazhet e mbështetjes."
   ],
-  "Vehicle": [
-    "Voertuig",
-    "Fahrzeug",
-    "Véhicule",
-    "Veicolo",
-    "Автомобиль",
-    "Vehículo",
-    "Araç",
-    "Veículo",
-    "车辆",
-    "Pojazd",
-    "Automjeti"
-  ],
   "View All": [
     "Alles bekijken",
     "Alle anzeigen",
@@ -732,6 +680,19 @@ export const customerWorkflowExactTranslations = {
     "查看全部订单",
     "Zobacz wszystkie zlecenia",
     "Shiko të gjitha porositë"
+  ],
+  "We could not load your dashboard data. Please try again.": [
+    "We konden uw dashboardgegevens niet laden. Probeer het opnieuw.",
+    "Wir konnten Ihre Dashboard-Daten nicht laden. Bitte versuchen Sie es erneut.",
+    "Nous n'avons pas pu charger les données de votre tableau de bord. Veuillez réessayer.",
+    "Non è stato possibile caricare i dati della dashboard. Per favore riprova.",
+    "Нам не удалось загрузить данные вашей информационной панели. Пожалуйста, попробуйте еще раз.",
+    "No hemos podido cargar los datos de su panel. Inténtelo de nuevo.",
+    "Kontrol paneli verilerinizi yükleyemedik. Lütfen tekrar deneyin.",
+    "Não foi possível carregar os dados do seu painel. Por favor, tente novamente.",
+    "我们无法加载您的仪表板数据。请再试一次。",
+    "Nie mogliśmy załadować danych Twojego panelu. Spróbuj ponownie.",
+    "Nuk mund t'i ngarkonim të dhënat e panelit tuaj. Ju lutemi provoni përsëri."
   ],
   "Welcome,": [
     "Welkom,",

@@ -70,7 +70,7 @@ They should not be loosely translated without a legal review. Navigation can lin
 
 ## Customer Dashboard Routes
 
-Customer/dashboard, authentication, payment and request-flow routes are not locale-prefixed SEO routes. They preserve their private URL and use the global language switcher with the customer portal dictionary. The source audit currently covers 611 customer-visible strings across authentication, registration, password recovery, new request, dashboard, order, delivery, File Expert, payment, widget and technical-guidance surfaces. Every non-English locale requires an exact reviewed or intentional invariant value; `npm run check:i18n` fails on any clean English fallback.
+Customer/dashboard, authentication, payment and request-flow routes are not locale-prefixed SEO routes. They preserve their private URL and use the global language switcher with the customer portal dictionary. The fail-closed source audit derives its inventory from the current public/customer routes, co-located application UI, shared components and shared JSX modules instead of relying on a fixed historical string count. Every non-English locale requires an exact reviewed translation or intentional technical invariant for the complete current inventory; `npm run check:i18n` fails on any clean English fallback, unclassified visible copy or escaped UI source.
 
 The registration form uses the same locale for its visible copy, stored account preference and transactional email language. Company registration requires a company name. The validated profile draft is preserved through email/password registration and Google OAuth without using user metadata for authorization.
 
@@ -82,9 +82,9 @@ Technical identifiers and user-entered examples remain unchanged where translati
 
 - Fully server-localized: home, How It Works, File Service and the core Stage 1/DPF/EGR/AdBlue/DTC service routes.
 - Runtime-localized private flows: dashboard, order detail, new request, authentication and payment.
-- English-only public resources: additional service-intent, brand, ECU platform, workshop guide and preparation-tool pages until complete reviewed translations exist.
+- Runtime-localized single-URL public surfaces: additional service-intent, brand, ECU platform, workshop guide and preparation-tool pages keep one canonical, non-prefixed URL while rendering the selected locale from reviewed catalogs.
 
-The language switcher only changes the URL when a true equivalent localized route exists. It does not send users to a localized homepage or a 404 when the current English-only resource has no translated route.
+The language switcher changes the URL only when a true locale-prefixed equivalent exists. On canonical single-URL public surfaces it preserves the path and applies the selected locale on that same route; it does not substitute a localized homepage or send users to a 404.
 
 ## Guardrails
 
@@ -94,5 +94,5 @@ The language switcher only changes the URL when a true equivalent localized rout
 - Do not create `/en` duplicates; English stays on root canonical URLs.
 - Do not expose admin/internal metadata in localized public content.
 - Do not invent legal translations.
-- Do not claim an English-only public resource is translated; keep its URL stable until reviewed copy exists.
+- Do not equate a canonical or non-prefixed URL with English-only presentation. Global-language-switcher-managed public surfaces must render reviewed selected-locale copy at that stable URL; only exact, explicitly reviewed fixed-language exceptions, including owner/legal-approved routes, may remain outside this contract.
 - Do not add a new page without metadata, sitemap and route-switch coverage.

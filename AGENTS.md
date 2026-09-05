@@ -52,8 +52,22 @@
   sessiz fallback ile bu kapı atlanamaz.
 - Yeni public/müşteri route veya component mevcut i18n envanterine açıkça girer.
   Envanter dışı sayfa/component ve sınıflandırılmamış görünür dinamik ifade
-  release blocker'dır. Generic component/route istisnası açılamaz. Lokalizasyon
-  mimarisine henüz taşınmamış exact legacy yüzey yalnız normalize edilmiş kaynak
+  release blocker'dır. Generic component/route istisnası açılamaz. Envanter
+  `page`, `layout`, `template`, `default`, `loading`, `error`,
+  `global-error`, `not-found`, `global-not-found`, `forbidden`,
+  `unauthorized`, `manifest`, `icon`, `apple-icon`, `opengraph-image`,
+  `twitter-image` ve numaralı metadata varyantları dahil bütün JS/JSX/TS/TSX
+  App Router UI convention dosyalarını kapsar. Convention adı taşımayan
+  `src/app` içi co-located JS/JSX/TSX UI ile `src/lib` içi shared
+  JS/JSX/TSX UI da fail-closed envantere girer. AST kapısı ayrıca
+  `&&`, `||`, `??` içindeki doğrudan görünür string/template operandlarını kapsar.
+  Bir translator çağrısı yalnız exact typed i18n module + reviewed export
+  provenance'i kanıtlanırsa güvenilir; import alias'i izlenir, shadow edilen
+  binding güvenilmez olur, local wrapper/provider yalnız bu provenance'i
+  doğrudan koruyorsa kabul edilir. Translator içindeki exact-source argümanları
+  ve interpolation parametreleri blanket muaf tutulamaz.
+  İstisna exact-file'dır; aynı klasördeki yeni kardeş dosyaya devrolmaz.
+  Lokalizasyon mimarisine henüz taşınmamış exact legacy yüzey yalnız normalize edilmiş kaynak
   fingerprint'iyle dondurulabilir; fingerprint yenilenmez, yüzey shared typed
   katalog/renderer'a taşınarak bu geçici kapı kaldırılır.
 - Kontrollü istisnalar yalnız internal `/admin`, owner/hukuk tarafından sabit

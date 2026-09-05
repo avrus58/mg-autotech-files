@@ -13,6 +13,20 @@ import {
   customerWorkflowTemplateRows,
   localizeCustomerNotification,
 } from "../src/lib/i18n/customer-workflow-translations";
+import {
+  customerWorkflowExactT as requestWorkflowExactT,
+  customerWorkflowSourceStrings as requestWorkflowSourceStrings,
+} from "../src/lib/i18n/customer-workflow-request-translations";
+import {
+  customerWorkflowExactT as orderWorkflowExactT,
+  customerWorkflowSourceStrings as orderWorkflowSourceStrings,
+} from "../src/lib/i18n/customer-workflow-orders-translations";
+import {
+  customerPortalLocaleOrder,
+  customerPortalTranslations,
+} from "../src/lib/customerPortalTranslations";
+import { getRequestFlowStepStates } from "../src/lib/requestFlow";
+import { evaluateRequestIntelligence } from "../src/lib/requestIntelligence";
 
 const expectedLocales = ["nl", "de", "fr", "it", "ru", "es", "tr", "pt", "zh", "pl", "sq"] as const;
 
@@ -29,7 +43,11 @@ test("customer workflow catalog covers all eleven non-English locales", () => {
     new Set(customerWorkflowSourceStrings).size,
     customerWorkflowSourceStrings.length,
   );
-  assert.equal(customerWorkflowTemplateRows.length, 102);
+  assert.ok(customerWorkflowTemplateRows.length >= 106);
+  assert.equal(
+    new Set(customerWorkflowTemplateRows.map(([key]) => key)).size,
+    customerWorkflowTemplateRows.length,
+  );
 
   for (const [source, translations] of Object.entries(customerWorkflowExactTranslations)) {
     assert.equal(translations.length, expectedLocales.length, source);
@@ -86,6 +104,138 @@ test("native scripts and diacritics are present instead of shallow transliterati
   assert.match(localeText(10), /[ëç]/i);
   assert.doesNotMatch(localeText(6), /\b(?:musteri|guvenli|sifre|ulke|odeme|yukle|dogrula)\b/i);
   assert.doesNotMatch(localeText(10), /\b(?:eshte|zgjedhni|permbledhje|perpunuar)\b/i);
+});
+
+test("File Expert finding badges state that review is required in every locale", () => {
+  const reportPage = readFileSync("src/app/dashboard/file-expert/[id]/page.tsx", "utf8");
+  const translations = customerPortalTranslations["Review required"];
+
+  assert.match(
+    reportPage,
+    /customerWorkflowExactT\(locale, "Review required"\)/u,
+  );
+  assert.doesNotMatch(
+    reportPage,
+    /<span className="rounded-full bg-black\/35 px-3 py-1 text-xs font-black text-zinc-300">Review<\/span>/u,
+  );
+  assert.ok(translations);
+  assert.equal(translations.length, customerPortalLocaleOrder.length);
+
+  const byLocale = Object.fromEntries(
+    customerPortalLocaleOrder.map((locale, index) => [locale, translations[index]]),
+  );
+  assert.equal(byLocale.de, "Prüfung erforderlich");
+  assert.equal(byLocale.tr, "İnceleme gerekli");
+  assert.equal(byLocale.zh, "需要复核");
+
+  for (const [index, locale] of customerPortalLocaleOrder.entries()) {
+    assert.ok(translations[index].trim(), `${locale}: Review required`);
+    assert.notEqual(translations[index], "Review required", `${locale}: Review required`);
+  }
+});
+
+test("request preflight helper output is localized by the scoped request catalog", () => {
+  const steps = getRequestFlowStepStates({
+    hasVehicle: false,
+    hasService: false,
+    hasUpload: false,
+    hasNotes: false,
+    hasPaymentAcceptance: false,
+    hasFinalAcceptance: false,
+  });
+  const intelligence = evaluateRequestIntelligence({
+    hasVehicle: false,
+    manualVehicle: true,
+    hasService: false,
+    selectedServiceIds: ["dtc_off"],
+    selectedServiceTitles: ["DTC OFF"],
+    hasValidFile: false,
+    fileName: "request.zip",
+    ecu: null,
+    readMethod: null,
+    notes: null,
+    accountVerified: false,
+    creditsVerified: false,
+  });
+  const readyIntelligence = evaluateRequestIntelligence({
+    hasVehicle: true,
+    manualVehicle: false,
+    hasService: true,
+    selectedServiceIds: ["stage1"],
+    selectedServiceTitles: ["Stage 1"],
+    hasValidFile: true,
+    fileName: "request.bin",
+    ecu: "EDC17",
+    readMethod: "bench",
+    notes: null,
+    accountVerified: true,
+    creditsVerified: true,
+  });
+  const attentionIntelligence = evaluateRequestIntelligence({
+    hasVehicle: true,
+    manualVehicle: false,
+    hasService: true,
+    selectedServiceIds: ["dtc_off"],
+    selectedServiceTitles: ["DTC OFF"],
+    hasValidFile: true,
+    fileName: "request.bin",
+    ecu: "EDC17",
+    readMethod: "bench",
+    notes: "Please inspect this vehicle",
+    accountVerified: true,
+    creditsVerified: true,
+  });
+  const visibleSources = [
+    ...steps.map((step) => step.label),
+    intelligence.label,
+    intelligence.summary,
+    readyIntelligence.label,
+    readyIntelligence.summary,
+    attentionIntelligence.label,
+    attentionIntelligence.summary,
+    ...intelligence.findings.flatMap((finding) => [finding.label, finding.detail]),
+  ];
+  const scopedSources = new Set(requestWorkflowSourceStrings);
+
+  for (const source of visibleSources) {
+    assert.ok(scopedSources.has(source), `request runtime source missing: ${source}`);
+    for (const locale of expectedLocales) {
+      const translated = requestWorkflowExactT(locale, source);
+      assert.ok(translated.trim(), `${locale}: ${source}`);
+      if (source.trim().split(/\s+/u).length >= 2) {
+        assert.notEqual(translated, source, `${locale}: ${source}`);
+      }
+    }
+  }
+
+  const newRequest = readFileSync("src/app/new-request/page.tsx", "utf8");
+  assert.match(newRequest, /const localizedServiceSummary = useMemo/u);
+  assert.match(newRequest, /localizeServiceLabel\(locale, service\.title\)/u);
+  assert.match(newRequest, /serviceType: serviceSummary/u);
+  assert.match(newRequest, /\{localizedServiceSummary\}/u);
+  assert.doesNotMatch(newRequest, /\{requestIntelligence\.(?:label|summary)\}/u);
+  assert.doesNotMatch(newRequest, /\{finding\.(?:label|detail)\}/u);
+});
+
+test("order delivery estimates are localized by the scoped orders catalog", () => {
+  const sources = [
+    "Usually around 30 min",
+    "Same day",
+    "Manual review",
+    "Estimate not set yet",
+  ];
+  const scopedSources = new Set(orderWorkflowSourceStrings);
+
+  for (const source of sources) {
+    assert.ok(scopedSources.has(source), `orders runtime source missing: ${source}`);
+    for (const locale of expectedLocales) {
+      assert.notEqual(orderWorkflowExactT(locale, source), source, `${locale}: ${source}`);
+    }
+  }
+
+  const orderDetail = readFileSync("src/app/dashboard/orders/[id]/page.tsx", "utf8");
+  assert.match(orderDetail, /getDeliveryEstimateDisplay\(locale, order\.estimated_delivery_label\)/u);
+  assert.match(orderDetail, /customerWorkflowExactT\(locale, label\)/u);
 });
 
 test("typed password and notification runtime copy localizes while raw messages remain raw", () => {
@@ -334,12 +484,16 @@ test("account restriction messages never interpolate raw status enums", () => {
   const newRequest = readFileSync("src/app/new-request/page.tsx", "utf8");
 
   assert.match(newRequest, /const accountStateKeys: Record<string, CustomerWorkflowTranslationKey>/u);
-  assert.match(newRequest, /accountStateKeys\[normalized\] \?\? "accountStateRestricted"/u);
+  assert.match(newRequest, /function accountStateTranslationKey/u);
+  assert.match(newRequest, /accountStateKeys\[value\?\.trim\(\)\.toLowerCase\(\) \?\? ""\] \?\? "accountStateRestricted"/u);
   assert.match(
     newRequest,
-    /status: localizeAccountState\(locale, creditAccessFailure\.status\)/u,
+    /status: customerWorkflowT\(locale, accountStateTranslationKey\(creditAccessFailure\.status\)\)/u,
   );
-  assert.match(newRequest, /status: localizeAccountState\(locale, accountStatus\)/u);
+  assert.match(
+    newRequest,
+    /status: customerWorkflowT\(locale, accountStateTranslationKey\(accountStatus\)\)/u,
+  );
   assert.doesNotMatch(newRequest, /accountStatus(?:Blocked|Disabled)", \{ status(?:: accountStatus)? \}/u);
 });
 
@@ -350,6 +504,11 @@ test("new-request credit failures retain semantic values across locale switches"
   const validate = newRequest.slice(validateStart, validateEnd);
 
   assert.match(newRequest, /type CreditAccessFailure =/u);
+  assert.match(newRequest, /key: "invalidServiceCombination"/u);
+  assert.match(
+    validate,
+    /!Number\.isInteger\(requiredCredits\) \|\| requiredCredits < 0[\s\S]*?key: "invalidServiceCombination"/u,
+  );
   assert.match(validate, /key: "accountStatusBlocked",[\s\S]*?status,/u);
   assert.match(
     validate,
@@ -371,8 +530,13 @@ test("new-request credit failures retain semantic values across locale switches"
   assert.match(newRequest, /\{localizedMessage\}/u);
   assert.match(
     newRequest,
-    /if \(typeof creditValidationError === "string"\) \{[\s\S]*?setMessage\(creditValidationError\)[\s\S]*?\} else \{[\s\S]*?setCreditAccessFailure\(creditValidationError\)/u,
+    /if \(creditValidationError\) \{[\s\S]*?setCreditAccessFailure\(creditValidationError\)/u,
   );
+  assert.match(
+    newRequest,
+    /creditAccessFailure\.key === "invalidServiceCombination"[\s\S]*?customerWorkflowT\(locale, creditAccessFailure\.key\)/u,
+  );
+  assert.doesNotMatch(newRequest, /typeof creditValidationError === "string"/u);
 });
 
 test("credit checkout interpolates localized payment method labels", () => {

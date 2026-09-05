@@ -44,19 +44,6 @@ export const customerWorkflowExactTranslations = {
     "Wszystkie powiadomienia",
     "Të gjitha njoftimet"
   ],
-  "Close notification": [
-    "Melding sluiten",
-    "Benachrichtigung schließen",
-    "Fermer la notification",
-    "Chiudi notifica",
-    "Закрыть уведомление",
-    "Cerrar notificación",
-    "Bildirimi kapat",
-    "Fechar notificação",
-    "关闭通知",
-    "Zamknij powiadomienie",
-    "Mbyll njoftimin"
-  ],
   "Customer Notification Center": [
     "Klantmeldingscentrum",
     "Kunden-Benachrichtigungscenter",
@@ -82,32 +69,6 @@ export const customerWorkflowExactTranslations = {
     "客户专属实时通道",
     "Kanał czasu rzeczywistego należący do klienta",
     "Kanali në kohë reale i klientit"
-  ],
-  "Disable notification sound": [
-    "Schakel meldingsgeluid uit",
-    "Benachrichtigungston deaktivieren",
-    "Désactiver le son des notifications",
-    "Disattiva il suono delle notifiche",
-    "Отключить звук уведомлений",
-    "Desactivar el sonido de notificación",
-    "Bildirim sesini devre dışı bırak",
-    "Desativar som de notificação",
-    "禁用通知声音",
-    "Wyłącz dźwięk powiadomienia",
-    "Çaktivizo tingullin e njoftimit"
-  ],
-  "Enable notification sound": [
-    "Schakel meldingsgeluid in",
-    "Benachrichtigungston aktivieren",
-    "Activer le son des notifications",
-    "Abilita il suono delle notifiche",
-    "Включить звук уведомлений",
-    "Habilitar sonido de notificación",
-    "Bildirim sesini etkinleştir",
-    "Ativar som de notificação",
-    "启用通知声音",
-    "Włącz dźwięk powiadomienia",
-    "Aktivizo tingullin e njoftimit"
   ],
   "Files & uploads": [
     "Bestanden en uploads",
@@ -136,7 +97,7 @@ export const customerWorkflowExactTranslations = {
     "100 ngjarjet më të fundit të dukshme për klientin"
   ],
   "Live updates": [
-    "Live updates",
+    "Realtime-updates",
     "Live-Aktualisierungen",
     "Mises à jour en direct",
     "Aggiornamenti live",
@@ -226,19 +187,6 @@ export const customerWorkflowExactTranslations = {
     "Nowe zdarzenia i wiadomości widoczne dla klienta pojawią się tutaj.",
     "Ngjarjet e reja të porosive dhe mesazheve të dukshme për klientin do të shfaqen këtu."
   ],
-  "New notification": [
-    "Nieuwe melding",
-    "Neue Benachrichtigung",
-    "Nouvelle notification",
-    "Nuova notifica",
-    "Новое уведомление",
-    "Nueva notificación",
-    "Yeni bildirim",
-    "Nova notificação",
-    "新通知",
-    "Nowe powiadomienie",
-    "Njoftim i ri"
-  ],
   "No notifications in this view": [
     "Geen meldingen in deze weergave",
     "Keine Benachrichtigungen in dieser Ansicht",
@@ -252,19 +200,6 @@ export const customerWorkflowExactTranslations = {
     "Brak powiadomień w tym widoku",
     "Nuk ka njoftime në këtë pamje"
   ],
-  "No notifications yet.": [
-    "Nog geen meldingen.",
-    "Noch keine Benachrichtigungen.",
-    "Aucune notification pour le moment.",
-    "Ancora nessuna notifica.",
-    "Уведомлений пока нет.",
-    "Todavía no hay notificaciones.",
-    "Henüz bildirim yok.",
-    "Ainda não há notificações.",
-    "暂无通知。",
-    "Brak powiadomień.",
-    "Nuk ka ende njoftime."
-  ],
   "Not yet opened": [
     "Nog niet geopend",
     "Noch nicht geöffnet",
@@ -277,32 +212,6 @@ export const customerWorkflowExactTranslations = {
     "尚未打开",
     "Jeszcze nieotwarte",
     "Ende të pahapura"
-  ],
-  "Notification sync failed": [
-    "Synchronisatie van meldingen mislukt",
-    "Die Synchronisierung der Benachrichtigung ist fehlgeschlagen",
-    "La synchronisation des notifications a échoué",
-    "Sincronizzazione delle notifiche non riuscita",
-    "Синхронизация уведомлений не удалась",
-    "Falló la sincronización de notificaciones",
-    "Bildirim senkronizasyonu başarısız oldu",
-    "Falha na sincronização da notificação",
-    "通知同步失败",
-    "Synchronizacja powiadomień nie powiodła się",
-    "Sinkronizimi i njoftimeve dështoi"
-  ],
-  "Notifications": [
-    "Meldingen",
-    "Benachrichtigungen",
-    "Notifications",
-    "Notifiche",
-    "Уведомления",
-    "Notificaciones",
-    "Bildirimler",
-    "Notificações",
-    "通知",
-    "Powiadomienia",
-    "Njoftimet"
   ],
   "Notifications could not be loaded. Please try again.": [
     "Meldingen konden niet worden geladen. Probeer het opnieuw.",
@@ -329,19 +238,6 @@ export const customerWorkflowExactTranslations = {
     "已开启",
     "Włączone",
     "Aktiv"
-  ],
-  "Open Notification Center": [
-    "Open Berichtencentrum",
-    "Öffnen Sie das Benachrichtigungscenter",
-    "Ouvrir le centre de notifications",
-    "Apri Centro notifiche",
-    "Открыть Центр уведомлений",
-    "Centro de notificaciones abierto",
-    "Bildirim Merkezini Aç",
-    "Abrir Centro de Notificação",
-    "打开通知中心",
-    "Otwórz Centrum powiadomień",
-    "Hapni Qendrën e Njoftimeve"
   ],
   "Open request": [
     "Aanvraag openen",
@@ -420,19 +316,6 @@ export const customerWorkflowExactTranslations = {
     "此中心仅显示客户可见通知，不包含内部备注、员工审计、存储路径或私有文件元数据。",
     "Centrum pokazuje tylko powiadomienia klienta. Notatki, audyt, ścieżki i prywatne metadane są wykluczone.",
     "Kjo qendër tregon vetëm njoftimet e klientit. Shënimet, auditimet, rrugët dhe metadata private përjashtohen."
-  ],
-  "Try again": [
-    "Opnieuw proberen",
-    "Erneut versuchen",
-    "Réessayer",
-    "Riprova",
-    "Повторить",
-    "Intentar de nuevo",
-    "Tekrar deneyin",
-    "Tentar novamente",
-    "重试",
-    "Spróbuj ponownie",
-    "Provo përsëri"
   ],
   "unread": [
     "ongelezen",

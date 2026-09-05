@@ -60,6 +60,7 @@ import {
   localizeFileExpertVehicleSummary,
   type FileExpertReportTranslationKey,
 } from "@/lib/i18n/file-expert-report-translations";
+import { customerWorkflowExactT } from "@/lib/i18n/customer-workflow-file-expert-translations";
 import { intlLocaleByCode, type LocaleCode } from "@/lib/i18nConfig";
 import { useActiveLocale } from "@/lib/useActiveLocale";
 
@@ -120,12 +121,12 @@ export default function FileExpertReportPage() {
   const [clusterEvidence, setClusterEvidence] = useState<PublicClusterEvidence | AdminClusterEvidence | null>(null);
   const [loading, setLoading] = useState(true);
   const [reanalyzing, setReanalyzing] = useState(false);
-  const [message, setMessage] = useState<FileExpertReportTranslationKey | "">("");
+  const [messageKey, setMessageKey] = useState<FileExpertReportTranslationKey | "">("");
   const hasLoadedJobRef = useRef(false);
 
   async function loadJob(options?: { silent?: boolean }) {
     if (!options?.silent) setLoading(true);
-    if (!options?.silent) setMessage("");
+    if (!options?.silent) setMessageKey("");
 
     const user = (await getStableSession()).session?.user;
     if (!user) {
@@ -145,7 +146,7 @@ export default function FileExpertReportPage() {
 
     if (!response.ok) {
       if (!options?.silent || !hasLoadedJobRef.current) {
-        setMessage(reportMessageKeys.loadError);
+        setMessageKey(reportMessageKeys.loadError);
       }
       setLoading(false);
       return;
@@ -155,7 +156,7 @@ export default function FileExpertReportPage() {
     setSimilarityEvidence(payload.similarityEvidence ?? null);
     setClusterEvidence(payload.clusterEvidence ?? null);
     hasLoadedJobRef.current = true;
-    setMessage("");
+    setMessageKey("");
     setLoading(false);
   }
 
@@ -200,13 +201,13 @@ export default function FileExpertReportPage() {
 
   async function reanalyze() {
     setReanalyzing(true);
-    setMessage("");
+    setMessageKey("");
     const response = await authenticatedFetch(`/api/file-expert/jobs/${jobId}/analyze`, {
       method: "POST",
     });
     setReanalyzing(false);
     if (!response.ok) {
-      setMessage(reportMessageKeys.analysisError);
+      setMessageKey(reportMessageKeys.analysisError);
       await loadJob({ silent: true });
       return;
     }
@@ -231,7 +232,7 @@ export default function FileExpertReportPage() {
           <AlertTriangle className="mx-auto mb-4 h-10 w-10 text-red-400" />
           <h1 className="text-2xl font-black" translate="no" data-no-translate>{fileExpertReportT(locale, "reportNotFound")}</h1>
           <p className="mt-3 text-sm text-zinc-400" translate="no" data-no-translate>
-            {message ? fileExpertReportT(locale, message) : fileExpertReportT(locale, "reportUnavailable")}
+            {messageKey ? fileExpertReportT(locale, messageKey) : fileExpertReportT(locale, "reportUnavailable")}
           </p>
           <Link href="/dashboard/file-expert" className="mt-6 inline-flex rounded-xl bg-[#b1121b] px-5 py-3 font-black text-white">
             Back to File Expert
@@ -276,7 +277,7 @@ export default function FileExpertReportPage() {
             <p className="mt-3 max-w-4xl text-sm leading-7 text-zinc-400" translate="no" data-no-translate>
               {localizeFileExpertConclusion(locale, result)}
             </p>
-            <p className="mt-2 text-xs font-bold text-zinc-600">Analysis <span translate="no" data-no-translate>{result?.analysis_version || "legacy"}</span> / {formatDate(job.created_at, locale)}</p>
+            <p className="mt-2 text-xs font-bold text-zinc-600">Analysis <span translate="no" data-no-translate>{result?.analysis_version || fileExpertReportT(locale, "versionLegacy")}</span> / {formatDate(job.created_at, locale)}</p>
           </div>
           <div className="grid gap-2 sm:flex sm:flex-wrap">
             <button onClick={reanalyze} disabled={reanalyzing} className="inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] px-5 py-3 text-sm font-black transition hover:bg-white/10 disabled:opacity-50">
@@ -285,7 +286,7 @@ export default function FileExpertReportPage() {
           </div>
         </section>
 
-        {message && <div className="mb-6 rounded-2xl border border-red-800/40 bg-red-950/30 p-4 text-sm font-bold text-red-200" translate="no" data-no-translate>{fileExpertReportT(locale, message)}</div>}
+        {messageKey && <div className="mb-6 rounded-2xl border border-red-800/40 bg-red-950/30 p-4 text-sm font-bold text-red-200" translate="no" data-no-translate>{fileExpertReportT(locale, messageKey)}</div>}
 
         {job.status === "failed" && (
           <div className="mb-6 rounded-2xl border border-red-700/40 bg-red-950/20 p-5">
@@ -376,7 +377,9 @@ export default function FileExpertReportPage() {
                     <div key={finding.id} className={`rounded-2xl border p-4 ${findingClass(finding.severity)}`}>
                       <div className="flex flex-wrap items-start justify-between gap-3">
                         <div className="font-black" translate="no" data-no-translate>{localizedFinding.title}</div>
-                        <span className="rounded-full bg-black/35 px-3 py-1 text-xs font-black text-zinc-300">Review</span>
+                        <span className="rounded-full bg-black/35 px-3 py-1 text-xs font-black text-zinc-300">
+                          {customerWorkflowExactT(locale, "Review required")}
+                        </span>
                       </div>
                       <p className="mt-2 text-sm leading-6 text-zinc-300" translate="no" data-no-translate>{localizedFinding.summary}</p>
                     </div>
@@ -398,10 +401,10 @@ export default function FileExpertReportPage() {
                   {vehicleMatch.candidates.map((candidate) => (
                     <div key={`${candidate.brand}-${candidate.model}-${candidate.generation}-${candidate.engine}`} className="rounded-2xl border border-white/10 bg-black/25 p-4">
                       <div className="flex flex-wrap items-start justify-between gap-3">
-                        <div translate="no" data-no-translate>
-                          <div className="font-black">{candidate.brand} {candidate.model}</div>
-                          <div className="mt-1 text-sm text-zinc-400">{candidate.generation} / {candidate.engine}</div>
-                          <div className="mt-2 text-xs font-bold text-red-200">{candidate.ecu}</div>
+                        <div>
+                          <div className="font-black"><span translate="no" data-no-translate>{candidate.brand}</span>{" "}<span translate="no" data-no-translate>{candidate.model}</span></div>
+                          <div className="mt-1 text-sm text-zinc-400"><span translate="no" data-no-translate>{candidate.generation}</span> / <span translate="no" data-no-translate>{candidate.engine}</span></div>
+                          <div className="mt-2 text-xs font-bold text-red-200" translate="no" data-no-translate>{candidate.ecu}</div>
                           <div className="mt-2 text-xs leading-5 text-zinc-500">
                             {localizeFileExpertVehicleCandidateEvidence(locale, candidate)}
                           </div>

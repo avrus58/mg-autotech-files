@@ -22,8 +22,6 @@ export const customerWorkflowLocaleOrder = [
 
 export const customerWorkflowExactTranslations = {} as const satisfies Readonly<Record<string, readonly string[]>>;
 
-export const customerWorkflowSourceStrings = Object.keys(customerWorkflowExactTranslations);
-
 export const customerWorkflowTemplateRows = [] as const;
 
 export type CustomerWorkflowTranslationKey = (typeof customerWorkflowTemplateRows)[number][0];

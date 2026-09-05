@@ -70,6 +70,19 @@ export const customerWorkflowExactTranslations = {
     "Aktywna indywidualna polityka płatności konta",
     "Politika e pagesës specifike për llogarinë është aktive"
   ],
+  "AdBlue OFF": [
+    "AdBlue UIT",
+    "AdBlue AUS",
+    "AdBlue désactivé",
+    "AdBlue disattivato",
+    "AdBlue ВЫКЛ.",
+    "AdBlue apagado",
+    "AdBlue KAPALI",
+    "AdBlue DESLIGADO",
+    "尿素关闭",
+    "WYŁ. AdBlue",
+    "AdBlue i çaktivizuar"
+  ],
   "All credit movements": [
     "Alle creditbewegingen",
     "Alle Credit-Bewegungen",
@@ -82,6 +95,19 @@ export const customerWorkflowExactTranslations = {
     "所有积分流水",
     "Wszystkie ruchy kredytów",
     "Të gjitha lëvizjet e krediteve"
+  ],
+  "Automatic": [
+    "Automatisch",
+    "Automatisch",
+    "Automatique",
+    "Automatico",
+    "Автоматический",
+    "Automático",
+    "Otomatik",
+    "Automático",
+    "自动",
+    "Automatyczny",
+    "Automatik"
   ],
   "Automatic credit top-up": [
     "Automatisch credits aanvullen",
@@ -134,6 +160,19 @@ export const customerWorkflowExactTranslations = {
     "银行",
     "Bank",
     "Banka"
+  ],
+  "Bank Transfer": [
+    "Bankoverschrijving",
+    "Banküberweisung",
+    "Virement bancaire",
+    "Bonifico bancario",
+    "Банковский перевод",
+    "Transferencia bancaria",
+    "Banka Havalesi",
+    "Transferência Bancária",
+    "银行转账",
+    "Przelew bankowy",
+    "Transfertë bankare"
   ],
   "Buy": [
     "Kopen",
@@ -239,6 +278,19 @@ export const customerWorkflowExactTranslations = {
     "Kredyt",
     "Kredi"
   ],
+  "Credit Card": [
+    "Creditcard",
+    "Kreditkarte",
+    "Carte bancaire",
+    "Carta di credito",
+    "Карта",
+    "Tarjeta",
+    "Kredi kartı",
+    "Cartão",
+    "信用卡",
+    "Karta kredytowa",
+    "Kartë krediti"
+  ],
   "Credit History": [
     "Creditgeschiedenis",
     "Credit-Verlauf",
@@ -315,7 +367,7 @@ export const customerWorkflowExactTranslations = {
     "Créditos",
     "积分",
     "Kredyty",
-    "Kredi"
+    "Kredite"
   ],
   "Credits =": [
     "Credits =",
@@ -395,6 +447,45 @@ export const customerWorkflowExactTranslations = {
     "Data",
     "Data"
   ],
+  "DPF OFF": [
+    "DPF UIT",
+    "DPF AUS",
+    "FAP désactivé",
+    "DPF disattivato",
+    "DPF ВЫКЛ.",
+    "FAP APAGADO",
+    "DPF KAPALI",
+    "DPF DESLIGADO",
+    "DPF OFF（柴油颗粒捕集器关闭）",
+    "WYŁĄCZONY DPF",
+    "DPF OFF"
+  ],
+  "DTC OFF": [
+    "DTC UIT",
+    "DTC AUS",
+    "DTC désactivé",
+    "DTC disattivato",
+    "Код неисправности ВЫКЛ.",
+    "DTC APAGADO",
+    "DTC KAPALI",
+    "DTC DESLIGADO",
+    "故障码关闭",
+    "Kod DTC WYŁĄCZONY",
+    "DTC OFF"
+  ],
+  "e.g. 17": [
+    "bijv. 17",
+    "z. B. 17",
+    "ex. 17",
+    "es. 17",
+    "напр. 17",
+    "p. ej., 17",
+    "örn. 17",
+    "ex.: 17",
+    "例如 17",
+    "np. 17",
+    "p.sh. 17"
+  ],
   "Each Credit": [
     "Per credit",
     "Pro Credit",
@@ -407,6 +498,19 @@ export const customerWorkflowExactTranslations = {
     "每积分",
     "Za kredyt",
     "Për kredit"
+  ],
+  "EGR OFF": [
+    "EGR UIT",
+    "AGR AUS",
+    "EGR éteint",
+    "EGR DISATTIVATO",
+    "РОГ ВЫКЛ.",
+    "EGR APAGADO",
+    "EGR KAPALI",
+    "EGR DESLIGADO",
+    "废气再循环关闭",
+    "EGR WYŁĄCZONY",
+    "EGR i çaktivizuar"
   ],
   "Enter any credit amount. Custom credit purchases are calculated at": [
     "Voer een aantal credits in. Aangepaste aankopen worden berekend tegen",
@@ -564,6 +668,19 @@ export const customerWorkflowExactTranslations = {
     "Ręczna weryfikacja administratora",
     "Verifikim manual nga administratori"
   ],
+  "Manual check": [
+    "Handmatige controle",
+    "Manuelle Prüfung",
+    "Contrôle manuel",
+    "Controllo manuale",
+    "Ручная проверка",
+    "Revisión manual",
+    "Manuel kontrol",
+    "Verificação manual",
+    "人工审核",
+    "Kontrola ręczna",
+    "Kontroll manual"
+  ],
   "No credit ledger yet": [
     "Nog geen creditoverzicht",
     "Noch kein Credit-Verlauf",
@@ -696,7 +813,7 @@ export const customerWorkflowExactTranslations = {
   ],
   "Positive Credits": [
     "Positieve credits",
-    "Positive Credits",
+    "Gutgeschriebene Credits",
     "Crédits positifs",
     "Crediti positivi",
     "Положительные кредиты",
@@ -811,6 +928,19 @@ export const customerWorkflowExactTranslations = {
     "Bezpieczne opcje płatności",
     "Opsione të sigurta pagese"
   ],
+  "Secure Stripe checkout": [
+    "Veilige Stripe-betaling",
+    "Sichere Stripe-Zahlung",
+    "Paiement Stripe sécurisé",
+    "Pagamento sicuro Stripe",
+    "Безопасная оплата Stripe",
+    "Pago seguro con Stripe",
+    "Güvenli Stripe ödemesi",
+    "Pagamento seguro Stripe",
+    "安全 Stripe 结账",
+    "Bezpieczna płatność Stripe",
+    "Pagesë e sigurt Stripe"
+  ],
   "Selected:": [
     "Geselecteerd:",
     "Ausgewählt:",
@@ -823,6 +953,19 @@ export const customerWorkflowExactTranslations = {
     "已选择：",
     "Wybrano:",
     "Zgjedhur:"
+  ],
+  "SEPA transfer": [
+    "SEPA-overschrijving",
+    "SEPA-Überweisung",
+    "Virement SEPA",
+    "Bonifico SEPA",
+    "Перевод SEPA",
+    "Transferencia SEPA",
+    "SEPA havalesi",
+    "Transferência SEPA",
+    "SEPA 转账",
+    "Przelew SEPA",
+    "Transfertë SEPA"
   ],
   "Stripe card payments add credits automatically after confirmation. Bank transfer stays manual.": [
     "Stripe-kaartbetalingen voegen credits automatisch toe. Overschrijving blijft handmatig.",
@@ -863,6 +1006,19 @@ export const customerWorkflowExactTranslations = {
     "Strona opiera się na rejestrze kredytów. Doładowania, Stripe i użycie zleceń są śledzone z jednego źródła.",
     "Kjo faqe bazohet në regjistrin e krediteve. Shtesat admin, Stripe dhe përdorimi ndiqen nga një burim."
   ],
+  "This total is outside Stripe's supported EUR range. Choose Bank Transfer or change the amount.": [
+    "Dit totaal ligt buiten het ondersteunde EUR-bereik van Stripe. Kies Bankoverschrijving of wijzig het bedrag.",
+    "Diese Summe liegt außerhalb des von Stripe unterstützten EUR-Bereichs. Wählen Sie Banküberweisung oder ändern Sie den Betrag.",
+    "Ce total est en dehors de la fourchette EUR prise en charge par Stripe. Choisissez Virement bancaire ou modifiez le montant.",
+    "Questo totale non rientra nell'intervallo EUR supportato da Stripe. Scegli Bonifico Bancario o modifica l'importo.",
+    "Эта сумма выходит за пределы поддерживаемого Stripe диапазона евро. Выберите «Банковский перевод» или измените сумму.",
+    "Este total está fuera del rango de EUR admitido por Stripe. Elige Transferencia Bancaria o cambia el importe.",
+    "Bu toplam Stripe'ın desteklediği EUR aralığının dışındadır. Banka Havalesi'ni seçin veya tutarı değiştirin.",
+    "Este total está fora do intervalo de EUR suportado pelo Stripe. Escolha Transferência Bancária ou altere o valor.",
+    "该总数超出了 Stripe 支持的欧元范围。选择银行转账或更改金额。",
+    "Suma ta wykracza poza obsługiwany przez Stripe zakres EUR. Wybierz Przelew bankowy lub zmień kwotę.",
+    "Ky total është jashtë gamës së mbështetur në EUR nga Stripe. Zgjidhni Transfertë Bankare ose ndryshoni shumën."
+  ],
   "Total Price": [
     "Totaalprijs",
     "Gesamtpreis",
@@ -902,6 +1058,19 @@ export const customerWorkflowExactTranslations = {
     "Transakcje",
     "Transaksione"
   ],
+  "Try again": [
+    "Opnieuw proberen",
+    "Erneut versuchen",
+    "Réessayer",
+    "Riprova",
+    "Повторить",
+    "Intentar de nuevo",
+    "Tekrar deneyin",
+    "Tentar novamente",
+    "重试",
+    "Spróbuj ponownie",
+    "Provo përsëri"
+  ],
   "Try loading again": [
     "Probeer opnieuw te laden",
     "Erneut laden",
@@ -927,5 +1096,18 @@ export const customerWorkflowExactTranslations = {
     "已用积分",
     "Użyte kredyty",
     "Kredite të përdorura"
+  ],
+  "We couldn't load your current balance or ledger movements. Try again before treating this history as empty.": [
+    "We kunnen uw huidige saldo- of grootboekmutaties niet laden. Probeer het opnieuw voordat u deze geschiedenis als leeg beschouwt.",
+    "Wir konnten Ihren aktuellen Kontostand oder Ihre Kontobewegungen nicht laden. Versuchen Sie es erneut, bevor Sie diesen Verlauf als leer behandeln.",
+    "Nous n'avons pas pu charger votre solde actuel ou vos mouvements de grand livre. Réessayez avant de traiter cet historique comme vide.",
+    "Non è stato possibile caricare il saldo corrente o i movimenti contabili. Riprova prima di considerare questa cronologia come vuota.",
+    "Нам не удалось загрузить ваш текущий баланс или движения бухгалтерской книги. Попробуйте еще раз, прежде чем считать эту историю пустой.",
+    "No pudimos cargar su saldo actual ni los movimientos del libro mayor. Inténtelo de nuevo antes de tratar este historial como vacío.",
+    "Mevcut bakiyenizi veya defter hareketlerinizi yükleyemedik. Bu geçmişi boş olarak değerlendirmeden önce tekrar deneyin.",
+    "Não foi possível carregar o seu saldo atual ou movimentos contabilísticos. Tente novamente antes de tratar este histórico como vazio.",
+    "我们无法加载您当前的余额或分类账变动。在将此历史视为空之前再试一次。",
+    "Nie mogliśmy wczytać Twojego aktualnego salda ani ruchów w księdze. Spróbuj ponownie, zanim potraktujesz tę historię jako pustą.",
+    "Nuk mundëm të ngarkonim bilancin tuaj aktual ose lëvizjet e librit. Provo sërish përpara se ta trajtosh këtë histori si bosh."
   ]
 } as const satisfies Readonly<Record<string, readonly string[]>>;

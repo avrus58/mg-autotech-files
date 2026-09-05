@@ -2,6 +2,12 @@
 
 Audit date: 2026-07-11
 
+> Historical snapshot: this audit records the repository state on 2026-07-11
+> and is superseded by `docs/i18n-site-audit.md`, `docs/i18n-architecture.md`
+> and the permanent localization release gate in `AGENTS.md`. Its old
+> findings and future recommendations must not be treated as current product
+> status or as permission to bypass the fail-closed localization inventory.
+
 ## Scope
 
 Reviewed public and customer-facing areas under:

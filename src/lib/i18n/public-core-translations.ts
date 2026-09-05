@@ -1,6 +1,19 @@
 import type { PublicSurfaceTranslationTuple } from "./public-surface-types";
 
 export const publicCoreTranslations: Record<string, PublicSurfaceTranslationTuple> = {
+  "Windows Upload Assistant beta access": [
+    "Beta-Zugang zum Windows Upload Assistant",
+    "Windows Yükleme Asistanı beta erişimi",
+    "Bètatoegang tot de Windows Upload Assistant",
+    "Accès bêta à l’assistant de téléversement Windows",
+    "Accesso beta all’assistente di caricamento Windows",
+    "Acceso beta al asistente de carga para Windows",
+    "Acesso beta ao Assistente de Carregamento para Windows",
+    "Dostęp beta do Asystenta przesyłania dla Windows",
+    "Бета-доступ к помощнику загрузки для Windows",
+    "Windows 上传助手测试版访问",
+    "Qasje beta te asistenti i ngarkimit për Windows",
+  ],
   "Browse brands": [
     "Marken durchsuchen",
     "Markalara göz at",

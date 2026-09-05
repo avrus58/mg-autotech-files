@@ -198,7 +198,7 @@ export function PublicVehicleSelector({
   const surface = dark ? "bg-[#111317] text-white border-white/10" : "bg-white text-[#15171b] border-zinc-200";
   const input = dark ? "border-white/10 bg-black/35 text-white" : "border-zinc-200 bg-[#f7f8fa] text-zinc-900";
   return (
-    <div translate="no" data-no-translate dir={language === "ar" ? "rtl" : "ltr"} className={`w-full overflow-hidden rounded-xl border shadow-2xl ${surface}`} style={{ fontFamily: "Arial, Helvetica, sans-serif" }}>
+    <div translate="no" data-no-translate data-i18n-owned-surface="widget-site" dir={language === "ar" ? "rtl" : "ltr"} className={`w-full overflow-hidden rounded-xl border shadow-2xl ${surface}`} style={{ fontFamily: "Arial, Helvetica, sans-serif" }}>
       <div className="h-1.5 w-full" style={{ background: config.main_color }} />
       <div className="p-5 sm:p-7">
         <div className="mb-6 flex items-start justify-between gap-4">

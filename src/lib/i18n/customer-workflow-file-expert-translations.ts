@@ -20,9 +20,21 @@ export const customerWorkflowLocaleOrder = [
   "sq"
 ] as const satisfies readonly Exclude<LocaleCode, "en">[];
 
-export const customerWorkflowExactTranslations = {} as const satisfies Readonly<Record<string, readonly string[]>>;
-
-export const customerWorkflowSourceStrings = Object.keys(customerWorkflowExactTranslations);
+export const customerWorkflowExactTranslations = {
+  "Review required": [
+    "Beoordeling vereist",
+    "Prüfung erforderlich",
+    "Vérification requise",
+    "Verifica necessaria",
+    "Требуется проверка",
+    "Revisión necesaria",
+    "İnceleme gerekli",
+    "Revisão necessária",
+    "需要复核",
+    "Wymagana weryfikacja",
+    "Kërkohet shqyrtim"
+  ]
+} as const satisfies Readonly<Record<string, readonly string[]>>;
 
 export const customerWorkflowTemplateRows = [
   [

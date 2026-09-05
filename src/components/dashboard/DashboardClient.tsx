@@ -463,13 +463,13 @@ export function DashboardClient() {
     if (needsResponseCount > 0) {
       return {
         key: "response",
-        eyebrow: "Action required",
-        title: "Respond to requested order information",
+        eyebrow: customerWorkflowExactT(locale, "Action required"),
+        title: customerWorkflowExactT(locale, "Respond to requested order information"),
         description: customerWorkflowT(locale, "dashboardNeedsResponse", {
           count: formatDashboardCount(needsResponseCount, locale),
         }),
         href: "/dashboard/orders?view=needs_response",
-        cta: "Review Requests",
+        cta: customerWorkflowExactT(locale, "Review Requests"),
         tone: "border-red-800/50 bg-red-950/30 text-red-100",
       };
     }
@@ -477,13 +477,13 @@ export function DashboardClient() {
     if (profileMissingItems.length > 0) {
       return {
         key: "profile",
-        eyebrow: "Account setup",
-        title: "Complete your customer profile",
+        eyebrow: customerWorkflowExactT(locale, "Account setup"),
+        title: customerWorkflowExactT(locale, "Complete your customer profile"),
         description: customerWorkflowT(locale, "dashboardProfileDetails", {
           items: profileCompletionSummary,
         }),
         href: "/dashboard/settings",
-        cta: "Update Settings",
+        cta: customerWorkflowExactT(locale, "Update Settings"),
         tone: "border-amber-700/40 bg-amber-950/20 text-amber-100",
       };
     }
@@ -491,11 +491,14 @@ export function DashboardClient() {
     if (credits <= 0) {
       return {
         key: "credits",
-        eyebrow: "Credits",
-        title: "Add credits before your next file request",
-        description: "Your current balance is 0 credits. Top up first so your next request can move without payment delay.",
+        eyebrow: customerWorkflowExactT(locale, "Credits"),
+        title: customerWorkflowExactT(locale, "Add credits before your next file request"),
+        description: customerWorkflowExactT(
+          locale,
+          "Your current balance is 0 credits. Top up first so your next request can move without payment delay.",
+        ),
         href: "/dashboard/credits",
-        cta: "Buy Credits",
+        cta: customerWorkflowExactT(locale, "Buy Credits"),
         tone: "border-red-800/45 bg-red-950/25 text-red-100",
       };
     }
@@ -503,24 +506,27 @@ export function DashboardClient() {
     if (activeCount > 0) {
       return {
         key: "orders",
-        eyebrow: "Live work",
-        title: "Track your active file requests",
+        eyebrow: customerWorkflowExactT(locale, "Live work"),
+        title: customerWorkflowExactT(locale, "Track your active file requests"),
         description: customerWorkflowT(locale, "dashboardActiveRequests", {
           count: formatDashboardCount(activeCount, locale),
         }),
         href: "/dashboard/orders",
-        cta: "Open Orders",
+        cta: customerWorkflowExactT(locale, "Open Orders"),
         tone: "border-blue-700/35 bg-blue-950/20 text-blue-100",
       };
     }
 
     return {
       key: "new-request",
-      eyebrow: "Ready",
-      title: "Create a new file request",
-      description: "Your dashboard is ready. Start a new ECU/TCU file request when you have an original file prepared.",
+      eyebrow: customerWorkflowExactT(locale, "Ready"),
+      title: customerWorkflowExactT(locale, "Create a new file request"),
+      description: customerWorkflowExactT(
+        locale,
+        "Your dashboard is ready. Start a new ECU/TCU file request when you have an original file prepared.",
+      ),
       href: "/new-request",
-      cta: "New Request",
+      cta: customerWorkflowExactT(locale, "New Request"),
       tone: "border-emerald-700/35 bg-emerald-950/20 text-emerald-100",
     };
   }, [activeCount, credits, locale, needsResponseCount, profileCompletionSummary, profileMissingItems.length]);
@@ -528,22 +534,31 @@ export function DashboardClient() {
   const customerWorkflowSteps = useMemo(
     () => [
       {
-        title: "Prepare file",
-        detail: "Check file type, size and request notes before starting a paid workflow.",
+        title: customerWorkflowExactT(locale, "Prepare file"),
+        detail: customerWorkflowExactT(
+          locale,
+          "Check file type, size and request notes before starting a paid workflow.",
+        ),
         href: "/tools/file-readiness-check",
-        metric: "Browser-only check",
+        metric: customerWorkflowExactT(locale, "Browser-only check"),
         icon: ShieldCheck,
       },
       {
-        title: "Build request brief",
-        detail: "Create a clean copy-ready service brief for your ECU/TCU request.",
+        title: customerWorkflowExactT(locale, "Build request brief"),
+        detail: customerWorkflowExactT(
+          locale,
+          "Create a clean copy-ready service brief for your ECU/TCU request.",
+        ),
         href: "/tools/request-brief-builder",
-        metric: "No upload required",
+        metric: customerWorkflowExactT(locale, "No upload required"),
         icon: Clipboard,
       },
       {
-        title: "Submit secure request",
-        detail: "Start the private upload flow after your vehicle, service and file are ready.",
+        title: customerWorkflowExactT(locale, "Submit secure request"),
+        detail: customerWorkflowExactT(
+          locale,
+          "Start the private upload flow after your vehicle, service and file are ready.",
+        ),
         href: "/new-request",
         metric: customerWorkflowT(locale, "dashboardCreditsAvailable", {
           count: formatDashboardCount(credits, locale),
@@ -551,8 +566,11 @@ export function DashboardClient() {
         icon: Upload,
       },
       {
-        title: "Track live work",
-        detail: "Follow active requests and respond quickly if MG AutoTech needs more details.",
+        title: customerWorkflowExactT(locale, "Track live work"),
+        detail: customerWorkflowExactT(
+          locale,
+          "Follow active requests and respond quickly if MG AutoTech needs more details.",
+        ),
         href: needsResponseCount > 0 ? "/dashboard/orders?view=needs_response" : "/dashboard/orders",
         metric:
           needsResponseCount > 0
@@ -565,8 +583,11 @@ export function DashboardClient() {
         icon: FileText,
       },
       {
-        title: "Review delivery",
-        detail: "Open completed requests and download delivered files from your private dashboard.",
+        title: customerWorkflowExactT(locale, "Review delivery"),
+        detail: customerWorkflowExactT(
+          locale,
+          "Open completed requests and download delivered files from your private dashboard.",
+        ),
         href: "/dashboard/orders?view=completed",
         metric: customerWorkflowT(locale, "dashboardCompletedMetric", {
           count: formatDashboardCount(completedCount, locale),
@@ -641,7 +662,7 @@ export function DashboardClient() {
             className="mt-6 inline-flex items-center justify-center rounded-xl bg-[#b1121b] px-5 py-3 text-sm font-black text-white transition hover:bg-[#c91824]"
           >
             <RefreshCw className="mr-2 h-4 w-4" />
-            Try again
+            {customerWorkflowExactT(locale, "Try again")}
           </button>
         </div>
       </main>
@@ -686,7 +707,11 @@ export function DashboardClient() {
               >
                 <span>
                   <span className="block text-[10px] font-bold text-zinc-400">Current Balance</span>
-                  <span className="block text-sm font-black tabular-nums">{credits} Credits</span>
+                  <span className="block text-sm font-black tabular-nums">
+                    {customerWorkflowT(locale, "creditsCountLower", {
+                      count: formatDashboardCount(credits, locale),
+                    })}
+                  </span>
                 </span>
                 <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#b1121b] text-white lg:h-7 lg:w-7">
                   <Plus className="h-4 w-4" />
@@ -792,7 +817,7 @@ export function DashboardClient() {
                   className="inline-flex shrink-0 items-center justify-center rounded-xl border border-amber-500/40 bg-black/25 px-5 py-3 text-sm font-black text-amber-100 transition hover:bg-amber-900/30"
                 >
                   <RefreshCw className="mr-2 h-4 w-4" />
-                  Try again
+                  {customerWorkflowExactT(locale, "Try again")}
                 </button>
               </div>
             )}
@@ -896,7 +921,11 @@ export function DashboardClient() {
                   </span>
                   <span className="min-w-0">
                     <span className="block text-xs font-bold text-zinc-400">Balance</span>
-                    <span className="mt-0.5 block break-words text-2xl font-black tabular-nums text-red-400 lg:text-xl">{credits} Credits</span>
+                    <span className="mt-0.5 block break-words text-2xl font-black tabular-nums text-red-400 lg:text-xl">
+                      {customerWorkflowT(locale, "creditsCountLower", {
+                        count: formatDashboardCount(credits, locale),
+                      })}
+                    </span>
                   </span>
                 </div>
               </Link>
@@ -988,8 +1017,16 @@ export function DashboardClient() {
                             <div className="min-w-0">
                               <div className="flex flex-wrap items-center gap-2">
                                 <h3 className="break-words font-black">
-                                  {order.vehicle_brand ? <span translate="no" data-no-translate>{order.vehicle_brand}</span> : "Vehicle"}{" "}
-                                  {order.vehicle_model ? <span translate="no" data-no-translate>{order.vehicle_model}</span> : "request"}
+                                  {order.vehicle_brand ? (
+                                    <span translate="no" data-no-translate>{order.vehicle_brand}</span>
+                                  ) : (
+                                    customerWorkflowExactT(locale, "Vehicle")
+                                  )}{" "}
+                                  {order.vehicle_model ? (
+                                    <span translate="no" data-no-translate>{order.vehicle_model}</span>
+                                  ) : (
+                                    customerWorkflowExactT(locale, "request")
+                                  )}
                                 </h3>
                                 <span
                                   className={`rounded-full border px-2.5 py-1 text-[11px] font-black ${needsCustomerResponse
@@ -1007,12 +1044,24 @@ export function DashboardClient() {
                               </div>
 
                               <p className="mt-1 break-words text-sm text-zinc-400">
-                                {order.vehicle_generation ? <span translate="no" data-no-translate>{order.vehicle_generation}</span> : "Generation not set"} ·{" "}
-                                {order.vehicle_engine ? <span translate="no" data-no-translate>{order.vehicle_engine}</span> : "Engine not set"}
+                                {order.vehicle_generation ? (
+                                  <span translate="no" data-no-translate>{order.vehicle_generation}</span>
+                                ) : (
+                                  customerWorkflowExactT(locale, "Generation not set")
+                                )} ·{" "}
+                                {order.vehicle_engine ? (
+                                  <span translate="no" data-no-translate>{order.vehicle_engine}</span>
+                                ) : (
+                                  customerWorkflowExactT(locale, "Engine not set")
+                                )}
                               </p>
                               <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs">
                                 <span className="font-bold text-red-300">
-                                  {order.service_type ? <span translate="no" data-no-translate>{order.service_type}</span> : "Service not set"}
+                                  {order.service_type ? (
+                                    <span translate="no" data-no-translate>{order.service_type}</span>
+                                  ) : (
+                                    customerWorkflowExactT(locale, "Service not set")
+                                  )}
                                 </span>
                                 <time
                                   dateTime={order.created_at}
@@ -1116,7 +1165,11 @@ export function DashboardClient() {
                                   isPositive ? "text-emerald-400" : "text-red-500"
                                 }`}
                               >
-                                {isPositive ? "+" : ""}{delta} Credits
+                                {customerWorkflowT(locale, "creditsCountLower", {
+                                  count: delta.toLocaleString(intlLocaleByCode[locale], {
+                                    signDisplay: "exceptZero",
+                                  }),
+                                })}
                               </div>
                               {item.balance_after !== null && item.balance_after !== undefined && (
                                 <div className="mt-1 text-[10px] text-zinc-400">Balance {item.balance_after}</div>
@@ -1138,7 +1191,7 @@ export function DashboardClient() {
                       <div className="mt-1 break-words font-black">
                         {customerReference ? (
                           <span translate="no" data-no-translate>{customerReference}</span>
-                        ) : "Not available"}
+                        ) : customerWorkflowExactT(locale, "Not available")}
                       </div>
                     </div>
                     <User className="h-5 w-5 shrink-0 text-red-400" />

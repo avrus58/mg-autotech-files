@@ -42,10 +42,23 @@ export const customerWorkflowExactTranslations = {
     "Студия анализа логов",
     "Estudio de análisis de datalogs",
     "Datalog Analiz Stüdyosu",
-    "Estúdio de análise de datalogs",
+    "Estúdio de análise de registos de dados",
     "数据日志分析工作室",
     "Studio analizy datalogów",
     "Studio e analizës së datalogëve"
+  ],
+  "Manage your MG AutoTech Vehicle Selector Widget subscription and installation.": [
+    "Beheer uw abonnement en installatie van de MG AutoTech voertuigselector-widget.",
+    "Verwalten Sie Ihr Abonnement und die Installation des MG AutoTech Fahrzeugauswahl-Widgets.",
+    "Gérez l’abonnement et l’installation de votre widget de sélection de véhicules MG AutoTech.",
+    "Gestisci l’abbonamento e l’installazione del widget di selezione veicoli MG AutoTech.",
+    "Управляйте подпиской и установкой виджета подбора автомобилей MG AutoTech.",
+    "Gestione la suscripción e instalación de su widget de selección de vehículos MG AutoTech.",
+    "MG AutoTech araç seçici widget aboneliğinizi ve kurulumunuzu yönetin.",
+    "Faça a gestão da subscrição e instalação do seu widget de seleção de veículos MG AutoTech.",
+    "管理您的 MG AutoTech 车辆选择器小组件订阅和安装。",
+    "Zarządzaj subskrypcją i instalacją widżetu wyboru pojazdu MG AutoTech.",
+    "Menaxhoni abonimin dhe instalimin e widget-it për përzgjedhjen e automjeteve MG AutoTech."
   ],
   "Private browser-local multi-channel datalog review for MG AutoTech customers.": [
     "Private analyse van meerkanaalsdatalogs, lokaal in de browser, voor MG AutoTech-klanten.",
@@ -72,6 +85,19 @@ export const customerWorkflowExactTranslations = {
     "用于管理文件请求、积分和交付的安全 MG AutoTech 客户面板。",
     "Bezpieczny panel klienta MG AutoTech do obsługi zleceń plików, kredytów i dostaw.",
     "Panel i sigurt i klientit MG AutoTech për kërkesat e skedarëve, kreditë dhe dorëzimet."
+  ],
+  "Vehicle Widget Dashboard": [
+    "Dashboard voor de voertuigwidget",
+    "Dashboard für das Fahrzeug-Widget",
+    "Tableau de bord du widget véhicule",
+    "Dashboard del widget veicoli",
+    "Панель управления виджетом автомобилей",
+    "Panel del widget de vehículos",
+    "Araç widget paneli",
+    "Painel do widget de veículos",
+    "车辆小组件面板",
+    "Panel widżetu pojazdów",
+    "Paneli i widget-it të automjeteve"
   ]
 } as const satisfies Readonly<Record<string, readonly string[]>>;
 

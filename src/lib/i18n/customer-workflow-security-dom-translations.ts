@@ -44,6 +44,19 @@ export const customerWorkflowExactTranslations = {
     "Gotowość konta",
     "Gatishmëria e llogarisë"
   ],
+  "Account type": [
+    "Accounttype",
+    "Kontotyp",
+    "Type de compte",
+    "Tipo di conto",
+    "Тип аккаунта",
+    "Tipo de cuenta",
+    "Hesap türü",
+    "Tipo de conta",
+    "账户类型",
+    "Typ konta",
+    "Lloji i llogarisë"
+  ],
   "Account Type": [
     "Accounttype",
     "Kontotyp",
@@ -83,6 +96,32 @@ export const customerWorkflowExactTranslations = {
     "Adres",
     "Adresa"
   ],
+  "Address fields are ready for future invoice workflows.": [
+    "Adresvelden zijn klaar voor toekomstige factuurprocessen.",
+    "Die Adressfelder sind für künftige Rechnungsabläufe vorbereitet.",
+    "Les champs d’adresse sont prêts pour les futurs processus de facturation.",
+    "I campi dell’indirizzo sono pronti per i futuri flussi di fatturazione.",
+    "Поля адреса готовы для будущих процессов выставления счетов.",
+    "Los campos de dirección están preparados para futuros procesos de facturación.",
+    "Adres alanları gelecekteki faturalandırma işlemleri için hazırdır.",
+    "Os campos de morada estão preparados para futuros processos de faturação.",
+    "地址字段已为后续发票流程做好准备。",
+    "Pola adresowe są gotowe do przyszłych procesów fakturowania.",
+    "Fushat e adresës janë gati për proceset e ardhshme të faturimit."
+  ],
+  "All other trusted devices were removed.": [
+    "Alle andere vertrouwde apparaten zijn verwijderd.",
+    "Alle anderen vertrauenswürdigen Geräte wurden entfernt.",
+    "Tous les autres appareils de confiance ont été supprimés.",
+    "Tutti gli altri dispositivi attendibili sono stati rimossi.",
+    "Все остальные доверенные устройства были удалены.",
+    "Se eliminaron todos los demás dispositivos confiables.",
+    "Diğer tüm güvenilir cihazlar kaldırıldı.",
+    "Todos os outros dispositivos fidedignos foram removidos.",
+    "所有其他受信任的设备均已删除。",
+    "Wszystkie inne zaufane urządzenia zostały usunięte.",
+    "Të gjitha pajisjet e tjera të besuara u hoqën."
+  ],
   "Back to dashboard": [
     "Terug naar dashboard",
     "Zurück zum Dashboard",
@@ -121,6 +160,19 @@ export const customerWorkflowExactTranslations = {
     "账户的基础联系信息。",
     "Podstawowe dane kontaktowe konta.",
     "Informacion bazë kontakti për llogarinë."
+  ],
+  "Billing address": [
+    "Factuuradres",
+    "Rechnungsadresse",
+    "Adresse de facturation",
+    "Indirizzo di fatturazione",
+    "Платежный адрес",
+    "dirección de facturación",
+    "Fatura adresi",
+    "Morada de faturação",
+    "帐单地址",
+    "Adres rozliczeniowy",
+    "Adresa e faturimit"
   ],
   "checks complete": [
     "controles voltooid",
@@ -187,6 +239,19 @@ export const customerWorkflowExactTranslations = {
     "Nazwa firmy",
     "Emri i kompanisë"
   ],
+  "Company profile": [
+    "Bedrijfsprofiel",
+    "Firmenprofil",
+    "Profil de l'entreprise",
+    "Profilo aziendale",
+    "Профиль компании",
+    "Perfil de la empresa",
+    "Şirket profili",
+    "Perfil da empresa",
+    "公司简介",
+    "Profil firmy",
+    "Profili i kompanisë"
+  ],
   "Complete customer details before high-touch file service workflows so support, billing and request review can move without extra back-and-forth.": [
     "Vul de klantgegevens aan zodat support, facturatie en aanvraagcontrole zonder extra vragen kunnen doorgaan.",
     "Vervollständigen Sie die Kundendaten, damit Support, Abrechnung und Anfrageprüfung ohne unnötige Rückfragen fortfahren können.",
@@ -199,6 +264,19 @@ export const customerWorkflowExactTranslations = {
     "请完善客户信息，以便支持、账单和请求审核无需反复确认即可推进。",
     "Uzupełnij dane klienta, aby wsparcie, rozliczenia i weryfikacja przebiegały bez zbędnych pytań.",
     "Plotësoni të dhënat e klientit që mbështetja, faturimi dhe shqyrtimi të vazhdojnë pa pyetje shtesë."
+  ],
+  "Contact details": [
+    "Contactgegevens",
+    "Kontaktdaten",
+    "Coordonnées",
+    "Dettagli di contatto",
+    "Контактные данные",
+    "Detalles de contacto",
+    "İletişim bilgileri",
+    "Detalhes de contacto",
+    "联系方式",
+    "Dane kontaktowe",
+    "Detajet e kontaktit"
   ],
   "Copy reference": [
     "Referentie kopiëren",
@@ -224,7 +302,7 @@ export const customerWorkflowExactTranslations = {
     "Créditos",
     "积分",
     "Kredyty",
-    "Kredi"
+    "Kredite"
   ],
   "Current": [
     "Huidig",
@@ -252,6 +330,19 @@ export const customerWorkflowExactTranslations = {
     "ID klienta",
     "ID e klientit"
   ],
+  "Customer reference could not be copied. Please copy it manually.": [
+    "Klantreferentie kon niet worden gekopieerd. Kopieer het handmatig.",
+    "Kundenreferenz konnte nicht kopiert werden. Bitte kopieren Sie es manuell.",
+    "La référence client n'a pas pu être copiée. Veuillez le copier manuellement.",
+    "Impossibile copiare il riferimento del cliente. Per favore copialo manualmente.",
+    "Не удалось скопировать идентификатор клиента. Скопируйте его вручную.",
+    "No se pudo copiar la referencia del cliente. Cópielo manualmente.",
+    "Müşteri referansı kopyalanamadı. Lütfen manuel olarak kopyalayın.",
+    "Não foi possível copiar a referência do cliente. Copie-a manualmente.",
+    "无法复制客户参考。请手动复制。",
+    "Nie można skopiować referencji klienta. Skopiuj go ręcznie.",
+    "Referenca e klientit nuk mund të kopjohej. Ju lutemi kopjoni atë me dorë."
+  ],
   "Customer Settings": [
     "Klantinstellingen",
     "Kundeneinstellungen",
@@ -277,19 +368,6 @@ export const customerWorkflowExactTranslations = {
     "客户设置同步失败",
     "Nie udało się zsynchronizować ustawień klienta",
     "Sinkronizimi i cilësimeve të klientit dështoi"
-  ],
-  "E-mail": [
-    "E-mail",
-    "E-Mail",
-    "E-mail",
-    "E-mail",
-    "E-mail",
-    "Correo electrónico",
-    "E-posta",
-    "E-mail",
-    "电子邮箱",
-    "E-mail",
-    "E-mail"
   ],
   "E-mail Language": [
     "E-mailtaal",
@@ -330,6 +408,19 @@ export const customerWorkflowExactTranslations = {
     "Imię i nazwisko",
     "Emri i plotë"
   ],
+  "Invoice contact": [
+    "Factuurcontact",
+    "Rechnungskontakt",
+    "Contact facture",
+    "Contatto per la fatturazione",
+    "Контакт для выставления счета",
+    "contacto de factura",
+    "Fatura iletişim kişisi",
+    "Contacto de faturação",
+    "发票联系方式",
+    "Kontakt do faktury",
+    "Kontakti i faturës"
+  ],
   "Invoice E-mail": [
     "Factuur e-mail",
     "Rechnungs-E-Mail",
@@ -342,6 +433,19 @@ export const customerWorkflowExactTranslations = {
     "发票邮箱",
     "E-mail do faktur",
     "E-mail faturimi"
+  ],
+  "Invoice e-mail is available for payment and accounting follow-up.": [
+    "Factuur-e-mail is beschikbaar voor opvolging van betalingen en boekhouding.",
+    "Die Rechnungs-E-Mail steht für Zahlungs- und Buchhaltungsnachverfolgung bereit.",
+    "L’adresse e-mail de facturation est disponible pour le suivi des paiements et de la comptabilité.",
+    "L’e-mail di fatturazione è disponibile per il monitoraggio dei pagamenti e la contabilità.",
+    "Адрес электронной почты для счетов доступен для сопровождения платежей и бухгалтерского учёта.",
+    "El correo electrónico de facturación está disponible para el seguimiento de pagos y contabilidad.",
+    "Fatura e-postası ödeme ve muhasebe takibi için hazırdır.",
+    "O e-mail de faturação está disponível para o acompanhamento de pagamentos e contabilidade.",
+    "发票电子邮箱可用于付款和会计跟进。",
+    "Adres e-mail do faktur jest dostępny do obsługi płatności i księgowości.",
+    "E-maili i faturimit është gati për ndjekjen e pagesave dhe kontabilitetit."
   ],
   "Loading customer settings...": [
     "Klantinstellingen laden...",
@@ -395,6 +499,19 @@ export const customerWorkflowExactTranslations = {
     "Zarządzaj danymi rozliczeniowymi, firmowymi i kontaktowymi dla zleceń i faktur.",
     "Menaxhoni faturimin, kompaninë dhe kontaktet për kërkesa, mbështetje dhe fatura."
   ],
+  "Name, phone and preferred contact method are ready for support handover.": [
+    "Naam, telefoonnummer en voorkeurscontactmethode zijn klaar voor overdracht aan support.",
+    "Name, Telefonnummer und bevorzugter Kontaktweg sind für die Übergabe an den Support vorbereitet.",
+    "Le nom, le téléphone et le moyen de contact privilégié sont prêts pour la prise en charge par l’assistance.",
+    "Nome, telefono e metodo di contatto preferito sono pronti per il passaggio all’assistenza.",
+    "Имя, телефон и предпочтительный способ связи готовы для передачи в службу поддержки.",
+    "El nombre, el teléfono y el método de contacto preferido están listos para la atención del soporte.",
+    "Ad, telefon ve tercih edilen iletişim yöntemi destek ekibine aktarılmaya hazırdır.",
+    "O nome, o telefone e o método de contacto preferido estão prontos para o acompanhamento pelo suporte.",
+    "姓名、电话和首选联系方式已准备好交由支持团队处理。",
+    "Imię i nazwisko, telefon oraz preferowana metoda kontaktu są gotowe do przekazania obsłudze.",
+    "Emri, telefoni dhe mënyra e preferuar e kontaktit janë gati për t’iu kaluar mbështetjes."
+  ],
   "New devices require an e-mail security code. Devices you explicitly trust can sign in for 30 days without another code.": [
     "Nieuwe apparaten vereisen een beveiligingscode per e-mail. Apparaten die je expliciet vertrouwt, kunnen 30 dagen zonder extra code inloggen.",
     "Neue Geräte benötigen einen Sicherheitscode per E-Mail. Geräte, denen Sie ausdrücklich vertrauen, können sich 30 Tage lang ohne weiteren Code anmelden.",
@@ -434,6 +551,19 @@ export const customerWorkflowExactTranslations = {
     "Opcjonalne dane rozliczeniowe i firmowe.",
     "Informacion opsional faturimi dhe kompanie."
   ],
+  "Other devices could not be revoked.": [
+    "Andere apparaten konden niet worden ingetrokken.",
+    "Andere Geräte konnten nicht widerrufen werden.",
+    "Les autres appareils ne pouvaient pas être révoqués.",
+    "Non è stato possibile revocare altri dispositivi.",
+    "Другие устройства не могут быть отозваны.",
+    "Otros dispositivos no se pudieron revocar.",
+    "Diğer cihazlar iptal edilemedi.",
+    "Outros dispositivos não puderam ser revogados.",
+    "其他设备无法撤销。",
+    "Nie można odwołać innych urządzeń.",
+    "Pajisjet e tjera nuk mund të anuloheshin."
+  ],
   "Personal Details": [
     "Persoonlijke gegevens",
     "Persönliche Daten",
@@ -460,6 +590,19 @@ export const customerWorkflowExactTranslations = {
     "Numer telefonu",
     "Numri i telefonit"
   ],
+  "Please select your country.": [
+    "Selecteer uw land.",
+    "Bitte wählen Sie Ihr Land aus.",
+    "Veuillez sélectionner votre pays.",
+    "Seleziona il tuo paese.",
+    "Пожалуйста, выберите вашу страну.",
+    "Por favor seleccione su país.",
+    "Lütfen ülkenizi seçin.",
+    "Selecione o seu país.",
+    "请选择您所在的国家/地区。",
+    "Wybierz swój kraj.",
+    "Ju lutemi zgjidhni vendin tuaj."
+  ],
   "Postcode": [
     "Postcode",
     "PLZ",
@@ -485,19 +628,6 @@ export const customerWorkflowExactTranslations = {
     "首选联系方式",
     "Preferowany kontakt",
     "Kontakti i preferuar"
-  ],
-  "Private Customer": [
-    "Particuliere klant",
-    "Privatkunde",
-    "Client particulier",
-    "Cliente privato",
-    "Частный клиент",
-    "Cliente particular",
-    "Bireysel müşteri",
-    "Cliente particular",
-    "个人客户",
-    "Klient indywidualny",
-    "Klient privat"
   ],
   "Private customer profile": [
     "Particulier klantprofiel",
@@ -668,6 +798,32 @@ export const customerWorkflowExactTranslations = {
     "Ustawienia",
     "Cilësimet"
   ],
+  "Settings could not be saved. Please try again. Your entered details are still shown.": [
+    "Instellingen konden niet worden opgeslagen. Probeer het opnieuw. Uw ingevulde gegevens worden nog steeds getoond.",
+    "Einstellungen konnten nicht gespeichert werden. Bitte versuchen Sie es erneut. Ihre eingegebenen Daten werden weiterhin angezeigt.",
+    "Les paramètres n'ont pas pu être enregistrés. Veuillez réessayer. Vos informations saisies sont toujours affichées.",
+    "Impossibile salvare le impostazioni. Per favore riprova. I dettagli inseriti vengono ancora visualizzati.",
+    "Настройки не удалось сохранить. Пожалуйста, попробуйте еще раз. Введенные вами данные по-прежнему отображаются.",
+    "No se pudieron guardar los ajustes. Por favor inténtalo de nuevo. Los datos ingresados aún se muestran.",
+    "Ayarlar kaydedilemedi. Lütfen tekrar deneyin. Girdiğiniz ayrıntılar hâlâ gösteriliyor.",
+    "Não foi possível guardar as definições. Tente novamente. Os dados introduzidos continuam visíveis.",
+    "无法保存设置。请再试一次。您输入的详细信息仍会显示。",
+    "Nie można zapisać ustawień. Spróbuj ponownie. Wprowadzone dane są nadal widoczne.",
+    "Cilësimet nuk mund të ruheshin. Ju lutemi provoni përsëri. Të dhënat tuaja të futura shfaqen ende."
+  ],
+  "Settings saved successfully.": [
+    "Instellingen succesvol opgeslagen.",
+    "Einstellungen erfolgreich gespeichert.",
+    "Paramètres enregistrés avec succès.",
+    "Impostazioni salvate con successo.",
+    "Настройки успешно сохранены.",
+    "La configuración se guardó correctamente.",
+    "Ayarlar başarıyla kaydedildi.",
+    "Definições guardadas com sucesso.",
+    "设置保存成功。",
+    "Ustawienia zostały zapisane pomyślnie.",
+    "Cilësimet u ruajtën me sukses."
+  ],
   "Street / House Number": [
     "Straat / huisnummer",
     "Straße / Hausnummer",
@@ -680,6 +836,58 @@ export const customerWorkflowExactTranslations = {
     "街道 / 门牌号",
     "Ulica / numer",
     "Rruga / numri"
+  ],
+  "Trusted device could not be revoked.": [
+    "Vertrouwd apparaat kan niet worden ingetrokken.",
+    "Das vertrauenswürdige Gerät konnte nicht widerrufen werden.",
+    "L'appareil de confiance n'a pas pu être révoqué.",
+    "Impossibile revocare il dispositivo attendibile.",
+    "Доверенное устройство не удалось отозвать.",
+    "No se pudo revocar el dispositivo de confianza.",
+    "Güvenilen cihaz iptal edilemedi.",
+    "Não foi possível revogar o dispositivo fidedigno.",
+    "无法撤销可信设备。",
+    "Nie można unieważnić zaufanego urządzenia.",
+    "Pajisja e besuar nuk mund të revokohej."
+  ],
+  "Trusted device removed.": [
+    "Vertrouwd apparaat verwijderd.",
+    "Vertrauenswürdiges Gerät entfernt.",
+    "Appareil de confiance supprimé.",
+    "Dispositivo attendibile rimosso.",
+    "Доверенное устройство удалено.",
+    "Dispositivo de confianza eliminado.",
+    "Güvenilir cihaz kaldırıldı.",
+    "Dispositivo fiável removido.",
+    "可信设备已删除。",
+    "Zaufane urządzenie zostało usunięte.",
+    "Pajisja e besuar u hoq."
+  ],
+  "Trusted devices could not be loaded.": [
+    "Vertrouwde apparaten konden niet worden geladen.",
+    "Vertrauenswürdige Geräte konnten nicht geladen werden.",
+    "Les appareils de confiance n'ont pas pu être chargés.",
+    "Impossibile caricare i dispositivi attendibili.",
+    "Не удалось загрузить доверенные устройства.",
+    "No se pudieron cargar los dispositivos confiables.",
+    "Güvenilen cihazlar yüklenemedi.",
+    "Não foi possível carregar dispositivos fidedignos.",
+    "无法加载受信任的设备。",
+    "Nie można załadować zaufanych urządzeń.",
+    "Pajisjet e besuara nuk mund të ngarkoheshin."
+  ],
+  "Try again": [
+    "Opnieuw proberen",
+    "Erneut versuchen",
+    "Réessayer",
+    "Riprova",
+    "Повторить",
+    "Intentar de nuevo",
+    "Tekrar deneyin",
+    "Tentar novamente",
+    "重试",
+    "Spróbuj ponownie",
+    "Provo përsëri"
   ],
   "Used for billing and future service workflows.": [
     "Gebruikt voor facturatie en toekomstige diensten.",

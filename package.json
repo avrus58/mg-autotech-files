@@ -9,7 +9,7 @@
     "dev": "next dev",
     "prebuild": "npm run check:i18n",
     "build": "next build",
-    "check:i18n": "node scripts/check-i18n-seo.mjs && tsx scripts/check-customer-i18n.ts",
+    "check:i18n": "node scripts/check-i18n-seo.mjs && tsx scripts/check-customer-i18n.ts && tsx scripts/generate-customer-workflow-client-translations.ts --check && tsx --test tests/customer-workflow-client-bundles.test.ts",
     "check:performance": "node scripts/check-web-performance.mjs && tsx scripts/check-homepage-localization-payload.ts && node scripts/check-prerender-coverage.mjs",
     "check:auth-captcha": "node scripts/check-auth-captcha-readiness.mjs",
     "check:auth-captcha:release": "node scripts/check-auth-captcha-readiness.mjs --require-ready",

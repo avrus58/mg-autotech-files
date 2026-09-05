@@ -448,8 +448,8 @@ function MetricLine({
   return (
     <div className="flex items-center justify-between gap-3 rounded-xl bg-black/30 px-3 py-2.5 text-xs">
       <span className="text-zinc-400">{label}</span>
-      <span translate="no" data-no-translate className="font-black text-white">
-        {stock ?? "–"} <span className="px-1 text-red-400">→</span> {tuned ?? "–"} {unit}
+      <span className="font-black text-white">
+        <span translate="no" data-no-translate>{stock ?? "–"}</span>{" "}<span className="px-1 text-red-400">→</span>{" "}<span translate="no" data-no-translate>{tuned ?? "–"} {unit}</span>
       </span>
     </div>
   );
@@ -688,8 +688,8 @@ export function VehicleIntelligence({ locale = "en" }: { locale?: LocaleCode }) 
                 <div className="flex items-center gap-2 text-[0.65rem] font-black uppercase tracking-[0.18em] text-red-300">
                   <Cpu className="h-4 w-4" /> {copy.publishedRecord}
                 </div>
-                <h3 translate="no" data-no-translate className="mt-3 text-2xl font-black tracking-tight">
-                  {selectedBrand} <span className="text-zinc-400">{selectedModel}</span>
+                <h3 className="mt-3 text-2xl font-black tracking-tight">
+                  <span translate="no" data-no-translate>{selectedBrand}</span>{" "}<span className="text-zinc-400" translate="no" data-no-translate>{selectedModel}</span>
                 </h3>
                 <p translate="no" data-no-translate className="mt-1 text-sm font-bold text-zinc-400">{selectedGeneration} · {selectedEngine}</p>
                 <div className="mt-4 grid gap-2 sm:grid-cols-2">

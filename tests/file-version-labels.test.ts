@@ -104,5 +104,10 @@ test("admin custom version UI and delivery API enforce the same safe label contr
   assert.match(deliveryRoute, /expectedVersionPrefix/);
   assert.match(deliveryRoute, /filePath\.includes\("\\\\"\)/);
   assert.doesNotMatch(deliveryRoute, /z\.enum\(\["v1", "revision", "final"\]\)/);
-  assert.match(customerPage, /import \{ formatFileVersionLabel \} from "@\/lib\/fileVersionLabels"/);
+  assert.match(customerPage, /import \{ normalizeFileVersionLabel \} from "@\/lib\/fileVersionLabels"/);
+  assert.match(customerPage, /function localizedFileVersionLabel\(locale: LocaleCode, value: string\)/);
+  assert.match(customerPage, /normalized === "revision"[\s\S]*customerWorkflowT\(locale, "statusRevision"\)/);
+  assert.match(customerPage, /normalized === "final"[\s\S]*customerWorkflowT\(locale, "fileVersionFinal"\)/);
+  assert.match(customerPage, /if \(normalized === "v1"\) return "V1"/);
+  assert.match(customerPage, /return normalized/);
 });

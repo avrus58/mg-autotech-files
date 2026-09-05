@@ -15,7 +15,7 @@ import {
 import { authenticatedFetch } from "@/lib/authGuards";
 import { intlLocaleByCode, type LocaleCode } from "@/lib/i18nConfig";
 import { useActiveLocale } from "@/lib/useActiveLocale";
-import { customerWorkflowT } from "@/lib/i18n/customer-workflow-orders-translations";
+import { customerWorkflowExactT, customerWorkflowT } from "@/lib/i18n/customer-workflow-orders-translations";
 import {
   formatCustomerMessageCount,
   formatCustomerNewMessageCount,
@@ -60,8 +60,12 @@ function formatMessageDay(value: string, locale: LocaleCode) {
   const yesterday = new Date(today);
   yesterday.setDate(today.getDate() - 1);
 
-  if (date.toDateString() === today.toDateString()) return "Today";
-  if (date.toDateString() === yesterday.toDateString()) return "Yesterday";
+  if (date.toDateString() === today.toDateString()) {
+    return customerWorkflowExactT(locale, "Today");
+  }
+  if (date.toDateString() === yesterday.toDateString()) {
+    return customerWorkflowExactT(locale, "Yesterday");
+  }
 
   return new Intl.DateTimeFormat(intlLocaleByCode[locale], {
     weekday: "short",
@@ -371,12 +375,12 @@ export default function RequestChat({
   }
 
   const syncLabel = syncState === "live"
-    ? "Secure and live"
+    ? customerWorkflowExactT(locale, "Secure and live")
     : syncState === "reconnecting"
-      ? "Reconnecting"
+      ? customerWorkflowExactT(locale, "Reconnecting")
       : syncState === "unavailable"
-        ? "Unavailable"
-        : "Connecting";
+        ? customerWorkflowExactT(locale, "Unavailable")
+        : customerWorkflowExactT(locale, "Connecting");
   const SyncIcon = syncState === "live"
     ? Wifi
     : syncState === "unavailable"
@@ -509,10 +513,10 @@ export default function RequestChat({
               const showDay = index === 0
                 || !isSameCalendarDay(messages[index - 1].created_at, item.created_at);
               const senderLabel = isCurrentRole
-                ? "You"
+                ? customerWorkflowExactT(locale, "You")
                 : item.sender_role === "admin"
                   ? "MG AutoTech"
-                  : "Customer";
+                  : customerWorkflowExactT(locale, "Customer");
 
               return (
                 <Fragment key={item.id}>

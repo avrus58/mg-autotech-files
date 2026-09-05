@@ -43,6 +43,18 @@ export type CustomerWorkflowExactTranslator = (
   source: string,
 ) => string;
 
+export function inflateCustomerWorkflowExactTranslations(
+  sources: readonly string[],
+  translationColumns: readonly (readonly string[])[],
+) {
+  return Object.fromEntries(
+    sources.map((source, sourceIndex) => [
+      source,
+      translationColumns.map((column) => column[sourceIndex] ?? source),
+    ]),
+  ) as Readonly<Record<string, readonly string[]>>;
+}
+
 export function createCustomerWorkflowClientTranslators<
   Key extends string,
 >(

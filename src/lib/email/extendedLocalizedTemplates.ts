@@ -1,4 +1,5 @@
 import { emailLocaleCopy } from "@/lib/email/localeCopy";
+import { renderDeviceVerificationEmailTemplate } from "@/lib/email/deviceVerificationTemplate";
 import {
   detailTable,
   escapeHtml,
@@ -84,35 +85,7 @@ export function renderExtendedLocalizedTransactionalEmailTemplate(
 ): RenderedTransactionalEmail {
   const copy = emailLocaleCopy[language];
   if (eventType === "customer_device_verification") {
-    const code = safeText(context.verificationCode, "------");
-    const minutes = Number(context.verificationMinutes ?? 10);
-    const title = "Confirm this security check";
-    const intro = "Use this security code to continue securely with your MG AutoTech customer account.";
-    return {
-      subject: "MG AutoTech - Account security code",
-      html: htmlLayout({
-        language,
-        preheader: "Confirm the security check for your customer account.",
-        title,
-        intro,
-        content: `${detailTable([
-          ["Security code", code],
-          ["Device", context.deviceLabel],
-          ["Valid for", `${minutes} minutes`],
-        ])}<p style="margin:18px 0 0;color:#3f3f46;line-height:1.65;">If you did not start this action, change your password and contact support. Never share this code.</p>`,
-      }),
-      text: textBlock([
-        "MG AutoTech",
-        title,
-        "",
-        `Security code: ${code}`,
-        context.deviceLabel ? `Device: ${safeText(context.deviceLabel)}` : null,
-        `Valid for: ${minutes} minutes`,
-        "",
-        "If you did not start this action, change your password and contact support.",
-        "Never share this code with anyone.",
-      ]),
-    };
+    return renderDeviceVerificationEmailTemplate(context, language);
   }
   const eventKey = eventKeys[eventType] ?? "requestProgress";
   const title = copy.events[eventKey];

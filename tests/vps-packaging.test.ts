@@ -74,6 +74,10 @@ test("Next standalone image admits only allowlisted browser-public build values"
   assert.equal(packageJson.scripts.prebuild, "npm run check:i18n");
   assert.match(packageJson.scripts["check:i18n"] ?? "", /check-i18n-seo\.mjs/);
   assert.match(packageJson.scripts["check:i18n"] ?? "", /check-customer-i18n\.ts/);
+  assert.match(
+    packageJson.scripts["check:i18n"] ?? "",
+    /generate-customer-workflow-client-translations\.ts --check/,
+  );
   assert.match(dockerfile, /&& npm run build/);
   for (const variable of publicBuildVariables) {
     assert.match(dockerfile, new RegExp(`ARG ${variable}=`), variable);

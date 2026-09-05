@@ -473,7 +473,7 @@ export function LogAnalysisStudio() {
       logStudioT(activeLocale, "studio.summary.heading"),
       isDemo
         ? logStudioT(activeLocale, "studio.summary.sourceDemo")
-        : logStudioT(activeLocale, "studio.summary.source", { sourceName: sourceName || "Local log" }),
+        : logStudioT(activeLocale, "studio.summary.source", { sourceName: sourceName || logStudioT(activeLocale, "localLog") }),
       logStudioT(activeLocale, "studio.summary.structure", {
         rows: analysis.source.acceptedRowCount,
         channels: analysis.channels.length,
@@ -503,9 +503,10 @@ export function LogAnalysisStudio() {
   const downloadPerformanceReport = () => {
     if (!performance) return;
     const svg = buildPerformanceReportSvg({
-      fileName: sourceName || "Local log",
+      fileName: sourceName || "",
       parsed: performance.parsed,
       analysis: performance.analysis,
+      locale: activeLocale,
     });
     const url = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml;charset=utf-8" }));
     const link = document.createElement("a");
@@ -866,7 +867,7 @@ function StudioResults({
               <CheckCircle2 className="h-4 w-4" /> {t("analysisReady")}
             </div>
             <h3 className="mt-2 text-2xl font-black">{t("completeReview")}</h3>
-            <p className="mt-2 text-xs leading-5 text-zinc-500">{t("channelsAligned", { count: formatCount(analysis.channels.length, locale), axis: analysis.xAxis?.label ?? t("sourceRow") })}</p>
+            <p className="mt-2 text-xs leading-5 text-zinc-500">{t("channelsAligned", { count: formatCount(analysis.channels.length, locale), axis: analysis.xAxis?.synthetic ? t("sample") : analysis.xAxis?.label ?? t("sourceRow") })}</p>
           </div>
           <QualityBadge analysis={analysis} />
         </div>
@@ -890,7 +891,7 @@ function StudioResults({
             label={t("engineSpeedWindow")}
             value={rpmSummary?.min && rpmSummary.max ? `${formatValue(rpmSummary.min.value, 0, locale)}–${formatValue(rpmSummary.max.value, 0, locale)}` : t("notAvailable")}
             unit={rpmSummary?.unit.symbol ?? ""}
-            detail={analysis.xAxis?.kind === "time" ? t("timelineUses", { axis: analysis.xAxis.label }) : t("chartAxisUses", { axis: analysis.xAxis?.label ?? t("sourceOrder") })}
+            detail={analysis.xAxis?.kind === "time" ? t("timelineUses", { axis: analysis.xAxis.label }) : t("chartAxisUses", { axis: analysis.xAxis?.synthetic ? t("sample") : analysis.xAxis?.label ?? t("sourceOrder") })}
             tone="violet"
           />
         </div>
@@ -898,7 +899,7 @@ function StudioResults({
         <div className="mt-3 grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-white/10 bg-white/10 sm:grid-cols-3">
           <Metric label={t("rowsRetained")} value={formatCount(analysis.source.acceptedRowCount, locale)} detail={t("rejectedCount", { count: formatCount(analysis.source.rejectedRowCount, locale) })} />
           <Metric label={t("detectedChannels")} value={formatCount(analysis.channels.length, locale)} detail={t("upToRetained", { count: maxLogStudioChannels })} />
-          <div className="col-span-2 sm:col-span-1"><Metric label={t("timelineAxis")} value={analysis.xAxis?.label ?? t("sourceOrder")} detail={analysis.xAxis?.synthetic ? t("explicitFallback") : t("usesLoggedValues")} /></div>
+          <div className="col-span-2 sm:col-span-1"><Metric label={t("timelineAxis")} value={analysis.xAxis?.synthetic ? t("sample") : analysis.xAxis?.label ?? t("sourceOrder")} detail={analysis.xAxis?.synthetic ? t("explicitFallback") : t("usesLoggedValues")} /></div>
         </div>
       </div>
 
@@ -1189,7 +1190,7 @@ function StudioChart({ analysis, selectedChannelIds, activeRowIndex, onActiveRow
                 </>
               )}
               <text x={plot.x} y="19" fill="#52525b" fontSize="12" fontWeight="800">{t("observedRangeUpper")}</text>
-              <text x={plot.x + plot.width} y="19" textAnchor="end" fill="#52525b" fontSize="12" fontWeight="800">{analysis.xAxis?.synthetic ? t("sourceOrderUpper") : t("loggedAxisUpper")} · {analysis.xAxis?.label.toUpperCase()}</text>
+              <text x={plot.x + plot.width} y="19" textAnchor="end" fill="#52525b" fontSize="12" fontWeight="800">{analysis.xAxis?.synthetic ? t("sourceOrderUpper") : t("loggedAxisUpper")} · {analysis.xAxis?.synthetic ? t("sample") : analysis.xAxis?.label.toUpperCase()}</text>
             </svg>
 
               <label className="mt-2 block">

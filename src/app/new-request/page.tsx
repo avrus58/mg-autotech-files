@@ -80,12 +80,8 @@ const accountStateKeys: Record<string, CustomerWorkflowTranslationKey> = {
   disabled: "accountStateDisabled",
 };
 
-function localizeAccountState(locale: LocaleCode, value: string | null | undefined) {
-  const normalized = value?.trim().toLowerCase() ?? "";
-  return customerWorkflowT(
-    locale,
-    accountStateKeys[normalized] ?? "accountStateRestricted"
-  );
+function accountStateTranslationKey(value: string | null | undefined): CustomerWorkflowTranslationKey {
+  return accountStateKeys[value?.trim().toLowerCase() ?? ""] ?? "accountStateRestricted";
 }
 
 function localizeServiceLabel(locale: LocaleCode, value: string) {
@@ -160,6 +156,9 @@ type CustomerProfile = {
 };
 
 type CreditAccessFailure =
+  | {
+      key: "invalidServiceCombination";
+    }
   | {
       key: "accountStatusBlocked";
       status: string;
@@ -1478,11 +1477,21 @@ export default function NewRequestPage() {
   );
 
   const serviceSummary = useMemo(() => {
-    const main = selectedMainService?.title ?? "Service";
+    if (!selectedMainService) return "";
+
+    const main = selectedMainService.title;
     const extras = selectedExtraServices.map((service) => service.title);
 
     return [main, ...extras].join(" + ");
   }, [selectedExtraServices, selectedMainService]);
+
+  const localizedServiceSummary = useMemo(() => {
+    if (!selectedMainService) return customerWorkflowT(locale, "serviceNotSet");
+
+    return [selectedMainService, ...selectedExtraServices]
+      .map((service) => localizeServiceLabel(locale, service.title))
+      .join(" + ");
+  }, [locale, selectedExtraServices, selectedMainService]);
 
   const selectedAdvancedExtraCount = advancedExtraServiceCategories.reduce(
     (sum, category) =>
@@ -1510,6 +1519,14 @@ export default function NewRequestPage() {
     hasPaymentAcceptance: paymentAccepted,
     hasFinalAcceptance: responsibilityAccepted,
   });
+  const requestStepLabels: Record<(typeof requestStepStates)[number]["id"], string> = {
+    vehicle: customerWorkflowExactT(locale, "Vehicle"),
+    service: customerWorkflowExactT(locale, "Service"),
+    upload: customerWorkflowExactT(locale, "Upload"),
+    notes: customerWorkflowExactT(locale, "Notes"),
+    payment: customerWorkflowExactT(locale, "Credits"),
+    review: customerWorkflowExactT(locale, "Review"),
+  };
 
   const submissionChecklist = [
     {
@@ -1674,7 +1691,9 @@ export default function NewRequestPage() {
     const status = profile.account_status ?? "active";
 
     if (!Number.isInteger(requiredCredits) || requiredCredits < 0) {
-      return "Please select a valid service combination.";
+      return {
+        key: "invalidServiceCombination",
+      } satisfies CreditAccessFailure;
     }
 
     if (status !== "active") {
@@ -1838,11 +1857,7 @@ export default function NewRequestPage() {
     if (creditValidationError) {
       setSubmitting(false);
       setCustomerProfile(latestProfile);
-      if (typeof creditValidationError === "string") {
-        setMessage(creditValidationError);
-      } else {
-        setCreditAccessFailure(creditValidationError);
-      }
+      setCreditAccessFailure(creditValidationError);
       return;
     }
 
@@ -2038,9 +2053,13 @@ export default function NewRequestPage() {
     const formatNumber = (value: number) =>
       value.toLocaleString(intlLocaleByCode[locale]);
 
+    if (creditAccessFailure.key === "invalidServiceCombination") {
+      return customerWorkflowT(locale, creditAccessFailure.key);
+    }
+
     if (creditAccessFailure.key === "accountStatusBlocked") {
       return customerWorkflowT(locale, creditAccessFailure.key, {
-        status: localizeAccountState(locale, creditAccessFailure.status),
+        status: customerWorkflowT(locale, accountStateTranslationKey(creditAccessFailure.status)),
       });
     }
 
@@ -2230,7 +2249,7 @@ export default function NewRequestPage() {
             </div>
 
             <div className="mt-3 rounded-xl bg-black/30 p-3 text-xs leading-5 text-zinc-300">
-              {serviceSummary || "Select service"}
+              {localizedServiceSummary}
             </div>
           </div>
         </div>
@@ -2253,7 +2272,7 @@ export default function NewRequestPage() {
                 </div>
                 <div className="mt-1 flex items-center gap-2 text-sm font-black">
                   {step.completed ? <CheckCircle2 className="h-4 w-4" /> : null}
-                  {step.label}
+                  {requestStepLabels[step.id]}
                 </div>
               </div>
             ))}
@@ -2839,7 +2858,7 @@ export default function NewRequestPage() {
                 {accountBlocked ? (
                   <div className="mt-4 rounded-xl border border-red-800/50 bg-red-950/30 p-3 text-xs font-bold text-red-200">
                     {customerWorkflowT(locale, "accountStatusDisabled", {
-                      status: localizeAccountState(locale, accountStatus),
+                      status: customerWorkflowT(locale, accountStateTranslationKey(accountStatus)),
                     })}
                   </div>
                 ) : showCreditShortfall ? (
@@ -2929,20 +2948,20 @@ export default function NewRequestPage() {
                   <div className="flex items-start justify-between gap-4">
                     <div>
                       <div className="text-xs font-black uppercase tracking-[0.15em] text-zinc-500">Request Preflight Advisor</div>
-                      <div className="mt-1 font-black text-white">{requestIntelligence.label}</div>
+                      <div className="mt-1 font-black text-white">{customerWorkflowExactT(locale, requestIntelligence.label)}</div>
                     </div>
                     <div className="shrink-0 text-right">
                       <div className="text-2xl font-black text-white">{requestIntelligence.score}</div>
                       <div className="text-[10px] font-black uppercase text-zinc-600">quality score</div>
                     </div>
                   </div>
-                  <p className="mt-2 text-xs leading-5 text-zinc-400">{requestIntelligence.summary}</p>
+                  <p className="mt-2 text-xs leading-5 text-zinc-400">{customerWorkflowExactT(locale, requestIntelligence.summary)}</p>
                   {requestIntelligence.findings.length > 0 && (
                     <div className="mt-3 space-y-2">
                       {requestIntelligence.findings.slice(0, 4).map((finding) => (
                         <div key={finding.key} className="flex items-start gap-2 text-xs">
                           <span className={`mt-1 h-2 w-2 shrink-0 rounded-full ${finding.severity === "required" ? "bg-red-400" : finding.severity === "review" ? "bg-amber-300" : "bg-sky-300"}`} />
-                          <div className="min-w-0"><span className="font-black text-zinc-200">{finding.label}.</span> <span className="text-zinc-500">{finding.detail}</span></div>
+                          <div className="min-w-0"><span className="font-black text-zinc-200">{customerWorkflowExactT(locale, finding.label)}.</span> <span className="text-zinc-500">{customerWorkflowExactT(locale, finding.detail)}</span></div>
                         </div>
                       ))}
                     </div>

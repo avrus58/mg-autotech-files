@@ -54,7 +54,13 @@ export function buildHomepageTranslationCatalog(
       "Secure customer dashboard and private file workflow.":
         uiCopy.secureAccount,
       "Ready to upload a file?": uiCopy.readyTitle,
+      "ECU & TCU File Service for Workshops | MG AutoTech": `${homeSeo[locale].title} | MG AutoTech`,
       "MG AutoTech ECU & TCU File Service": `MG AutoTech — ${homeSeo[locale].title}`,
+      "Professional online ECU & TCU File Service Platform for workshops.": homeSeo[locale].description,
+      "Professional online ECU and TCU file service for workshops with secure upload, tracked orders and portal delivery. Stage 1, DPF, EGR, AdBlue and DTC services.":
+        homeSeo[locale].description,
+      "Professional online ECU and TCU file service for workshops with secure uploads, order tracking and controlled portal delivery.":
+        homeSeo[locale].description,
       "Secure online ECU and TCU file service with vehicle data, workshop tools, credit pricing and private order delivery.":
         homeSeo[locale].description,
       "MG AutoTech ECU and TCU file service":

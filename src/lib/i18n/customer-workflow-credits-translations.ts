@@ -21,19 +21,6 @@ export const customerWorkflowLocaleOrder = [
 ] as const satisfies readonly Exclude<LocaleCode, "en">[];
 
 export const customerWorkflowExactTranslations = {
-  "AdBlue OFF": [
-    "AdBlue UIT",
-    "AdBlue AUS",
-    "AdBlue désactivé",
-    "AdBlue disattivato",
-    "AdBlue ВЫКЛ.",
-    "AdBlue apagado",
-    "AdBlue KAPALI",
-    "AdBlue DESLIGADO",
-    "尿素关闭",
-    "WYŁ. AdBlue",
-    "AdBlue i çaktivizuar"
-  ],
   "Added credits": [
     "Toegevoegde credits",
     "Hinzugefügte Credits",
@@ -47,31 +34,18 @@ export const customerWorkflowExactTranslations = {
     "Dodane kredyty",
     "Kredite të shtuara"
   ],
-  "Automatic": [
-    "Automatisch",
-    "Automatisch",
-    "Automatique",
-    "Automatico",
-    "Автоматический",
-    "Automático",
-    "Otomatik",
-    "Automático",
-    "自动",
-    "Automatyczny",
-    "Automatik"
-  ],
-  "Bank Transfer": [
-    "Bankoverschrijving",
-    "Banküberweisung",
-    "Virement bancaire",
-    "Bonifico bancario",
-    "Банковский перевод",
-    "Transferencia bancaria",
-    "Banka Havalesi",
-    "Transferência Bancária",
-    "银行转账",
-    "Przelew bankowy",
-    "Transfertë bankare"
+  "Bank details will be confirmed by admin": [
+    "De bankgegevens worden door een beheerder bevestigd.",
+    "Die Bankverbindung wird vom Administrator bestätigt.",
+    "Les coordonnées bancaires seront confirmées par un administrateur.",
+    "I dati bancari saranno confermati da un amministratore.",
+    "Банковские реквизиты будут подтверждены администратором.",
+    "Un administrador confirmará los datos bancarios.",
+    "Banka bilgileri yönetici tarafından onaylanacaktır.",
+    "Os dados bancários serão confirmados por um administrador.",
+    "银行信息将由管理员确认。",
+    "Dane bankowe zostaną potwierdzone przez administratora.",
+    "Të dhënat bankare do të konfirmohen nga administratori."
   ],
   "Bank transfer instructions could not be prepared. Please try again or choose card payment.": [
     "De instructies voor de bankoverschrijving konden niet worden voorbereid. Probeer het opnieuw of kies kaartbetaling.",
@@ -137,19 +111,6 @@ export const customerWorkflowExactTranslations = {
     "正在确认付款...",
     "Potwierdzanie płatności...",
     "Duke konfirmuar pagesën..."
-  ],
-  "Credit Card": [
-    "Creditcard",
-    "Kreditkarte",
-    "Carte bancaire",
-    "Carta di credito",
-    "Карта",
-    "Tarjeta",
-    "Kredi kartı",
-    "Cartão",
-    "信用卡",
-    "Karta kredytowa",
-    "Kartë krediti"
   ],
   "Credit prices changed while you were reviewing them. Loading the latest verified prices now.": [
     "De kredietprijzen zijn gewijzigd terwijl u ze controleerde. Laad nu de nieuwste geverifieerde prijzen.",
@@ -268,83 +229,44 @@ export const customerWorkflowExactTranslations = {
     "Portal",
     "Portal"
   ],
-  "DPF OFF": [
-    "DPF UIT",
-    "DPF AUS",
-    "FAP désactivé",
-    "DPF disattivato",
-    "DPF ВЫКЛ.",
-    "FAP APAGADO",
-    "DPF KAPALI",
-    "DPF DESLIGADO",
-    "DPF OFF（柴油颗粒捕集器关闭）",
-    "WYŁĄCZONY DPF",
-    "DPF OFF"
+  "IBAN will be provided after contact": [
+    "De IBAN wordt na contact verstrekt.",
+    "Die IBAN wird nach der Kontaktaufnahme mitgeteilt.",
+    "L'IBAN sera communiqué après la prise de contact.",
+    "L'IBAN verrà fornito dopo il contatto.",
+    "IBAN будет предоставлен после обращения.",
+    "El IBAN se facilitará después de ponerse en contacto.",
+    "IBAN, iletişime geçildikten sonra paylaşılacaktır.",
+    "O IBAN será fornecido após o contacto.",
+    "联系后将提供 IBAN。",
+    "Numer IBAN zostanie podany po kontakcie.",
+    "IBAN-i do të jepet pas kontaktit."
   ],
-  "DTC OFF": [
-    "DTC UIT",
-    "DTC AUS",
-    "DTC désactivé",
-    "DTC disattivato",
-    "Код неисправности ВЫКЛ.",
-    "DTC APAGADO",
-    "DTC KAPALI",
-    "DTC DESLIGADO",
-    "故障码关闭",
-    "Kod DTC WYŁĄCZONY",
-    "DTC OFF"
+  "No payment can be started until verified prices are loaded.": [
+    "Er kan geen betaling worden gestart totdat de geverifieerde prijzen zijn geladen.",
+    "Es kann keine Zahlung gestartet werden, bevor die geprüften Preise geladen wurden.",
+    "Aucun paiement ne peut être lancé tant que les tarifs vérifiés ne sont pas chargés.",
+    "Non è possibile avviare alcun pagamento finché non vengono caricati i prezzi verificati.",
+    "Платёж нельзя начать, пока не загружены проверенные цены.",
+    "No se puede iniciar ningún pago hasta que se carguen los precios verificados.",
+    "Doğrulanmış fiyatlar yüklenmeden ödeme başlatılamaz.",
+    "Não é possível iniciar qualquer pagamento até que os preços verificados sejam carregados.",
+    "在加载经核实的价格之前，无法发起付款。",
+    "Nie można rozpocząć płatności, dopóki nie zostaną wczytane zweryfikowane ceny.",
+    "Pagesa nuk mund të nisë derisa të ngarkohen çmimet e verifikuara."
   ],
-  "EGR OFF": [
-    "EGR UIT",
-    "AGR AUS",
-    "EGR éteint",
-    "EGR DISATTIVATO",
-    "РОГ ВЫКЛ.",
-    "EGR APAGADO",
-    "EGR KAPALI",
-    "EGR DESLIGADO",
-    "废气再循环关闭",
-    "EGR WYŁĄCZONY",
-    "EGR i çaktivizuar"
-  ],
-  "error": [
-    "fout",
-    "Fehler",
-    "erreur",
-    "errore",
-    "ошибка",
-    "error",
-    "hata",
-    "erro",
-    "错误",
-    "błąd",
-    "gabim"
-  ],
-  "info": [
-    "informatie",
-    "Infos",
-    "infos",
-    "informazioni",
-    "информация",
-    "información",
-    "bilgi",
-    "informações",
-    "信息",
-    "informacje",
-    "informacion"
-  ],
-  "Manual check": [
-    "Handmatige controle",
-    "Manuelle Prüfung",
-    "Contrôle manuel",
-    "Controllo manuale",
-    "Ручная проверка",
-    "Revisión manual",
-    "Manuel kontrol",
-    "Verificação manual",
-    "人工审核",
-    "Kontrola ręczna",
-    "Kontroll manual"
+  "No payment method available": [
+    "Geen betaalmethode beschikbaar",
+    "Keine Zahlungsmethode verfügbar",
+    "Aucun moyen de paiement disponible",
+    "Nessun metodo di pagamento disponibile",
+    "Нет доступного способа оплаты",
+    "No hay ningún método de pago disponible",
+    "Kullanılabilir ödeme yöntemi yok",
+    "Nenhum método de pagamento disponível",
+    "暂无可用的付款方式",
+    "Brak dostępnej metody płatności",
+    "Nuk ka mënyrë pagese të disponueshme"
   ],
   "Payment cancelled": [
     "Betaling geannuleerd",
@@ -502,45 +424,6 @@ export const customerWorkflowExactTranslations = {
     "Bezpieczna płatność kartą jest tymczasowo niedostępna. Wybierz przelew bankowy lub spróbuj ponownie później.",
     "Pagesa e sigurt me kartë nuk është përkohësisht e disponueshme. Zgjidhni transfertën bankare ose provoni përsëri më vonë."
   ],
-  "Secure Stripe checkout": [
-    "Veilige Stripe-betaling",
-    "Sichere Stripe-Zahlung",
-    "Paiement Stripe sécurisé",
-    "Pagamento sicuro Stripe",
-    "Безопасная оплата Stripe",
-    "Pago seguro con Stripe",
-    "Güvenli Stripe ödemesi",
-    "Pagamento seguro Stripe",
-    "安全 Stripe 结账",
-    "Bezpieczna płatność Stripe",
-    "Pagesë e sigurt Stripe"
-  ],
-  "SEPA transfer": [
-    "SEPA-overschrijving",
-    "SEPA-Überweisung",
-    "Virement SEPA",
-    "Bonifico SEPA",
-    "Перевод SEPA",
-    "Transferencia SEPA",
-    "SEPA havalesi",
-    "Transferência SEPA",
-    "SEPA 转账",
-    "Przelew SEPA",
-    "Transfertë SEPA"
-  ],
-  "success": [
-    "succes",
-    "Erfolg",
-    "succès",
-    "successo",
-    "успех",
-    "éxito",
-    "başarı",
-    "sucesso",
-    "成功",
-    "sukces",
-    "sukses"
-  ],
   "The payment was cancelled. No credits were added and you were not charged by MG AutoTech through this checkout flow.": [
     "De betaling is geannuleerd. Er zijn geen credits toegevoegd en MG AutoTech heeft via deze betaalprocedure niets in rekening gebracht.",
     "Die Zahlung wurde abgebrochen. Es wurden keine Credits hinzugefügt und MG AutoTech hat Ihnen über diesen Bezahlvorgang nichts berechnet.",
@@ -619,19 +502,6 @@ export const customerWorkflowExactTranslations = {
     "Zbyt wiele prób zakupu. Poczekaj chwilę i spróbuj ponownie.",
     "Shumë përpjekje blerjeje. Prisni pak dhe provoni përsëri."
   ],
-  "Try again": [
-    "Opnieuw proberen",
-    "Erneut versuchen",
-    "Réessayer",
-    "Riprova",
-    "Повторить",
-    "Intentar de nuevo",
-    "Tekrar deneyin",
-    "Tentar novamente",
-    "重试",
-    "Spróbuj ponownie",
-    "Provo përsëri"
-  ],
   "Try Again": [
     "Opnieuw proberen",
     "Erneut versuchen",
@@ -658,19 +528,6 @@ export const customerWorkflowExactTranslations = {
     "Zweryfikowane ceny kredytów nie są jeszcze dostępne. Spróbuj ponownie przed rozpoczęciem płatności.",
     "Çmimet e verifikuara të kredive nuk janë ende të disponueshme. Provo sërish përpara se të fillosh një pagesë."
   ],
-  "We couldn't load your current balance or ledger movements. Try again before treating this history as empty.": [
-    "We kunnen uw huidige saldo- of grootboekmutaties niet laden. Probeer het opnieuw voordat u deze geschiedenis als leeg beschouwt.",
-    "Wir konnten Ihren aktuellen Kontostand oder Ihre Kontobewegungen nicht laden. Versuchen Sie es erneut, bevor Sie diesen Verlauf als leer behandeln.",
-    "Nous n'avons pas pu charger votre solde actuel ou vos mouvements de grand livre. Réessayez avant de traiter cet historique comme vide.",
-    "Non è stato possibile caricare il saldo corrente o i movimenti contabili. Riprova prima di considerare questa cronologia come vuota.",
-    "Нам не удалось загрузить ваш текущий баланс или движения бухгалтерской книги. Попробуйте еще раз, прежде чем считать эту историю пустой.",
-    "No pudimos cargar su saldo actual ni los movimientos del libro mayor. Inténtelo de nuevo antes de tratar este historial como vacío.",
-    "Mevcut bakiyenizi veya defter hareketlerinizi yükleyemedik. Bu geçmişi boş olarak değerlendirmeden önce tekrar deneyin.",
-    "Não foi possível carregar o seu saldo atual ou movimentos contabilísticos. Tente novamente antes de tratar este histórico como vazio.",
-    "我们无法加载您当前的余额或分类账变动。在将此历史视为空之前再试一次。",
-    "Nie mogliśmy wczytać Twojego aktualnego salda ani ruchów w księdze. Spróbuj ponownie, zanim potraktujesz tę historię jako pustą.",
-    "Nuk mundëm të ngarkonim bilancin tuaj aktual ose lëvizjet e librit. Provo sërish përpara se ta trajtosh këtë histori si bosh."
-  ],
   "Your customer reference could not be prepared. Please refresh and try again.": [
     "Uw klantreferentie kon niet worden aangemaakt. Vernieuw de pagina en probeer het opnieuw.",
     "Ihre Kundenreferenz konnte nicht erstellt werden. Aktualisieren Sie die Seite und versuchen Sie es erneut.",
@@ -686,9 +543,22 @@ export const customerWorkflowExactTranslations = {
   ]
 } as const satisfies Readonly<Record<string, readonly string[]>>;
 
-export const customerWorkflowSourceStrings = Object.keys(customerWorkflowExactTranslations);
-
 export const customerWorkflowTemplateRows = [
+  [
+    "accountSpecificPricingActive",
+    "Your account-specific package or custom-credit prices are active.",
+    "Uw accountspecifieke pakket- of maatwerkprijzen voor credits zijn actief.",
+    "Ihre kontospezifischen Paket- oder individuellen Credit-Preise sind aktiv.",
+    "Les tarifs de packs ou de crédits personnalisés propres à votre compte sont actifs.",
+    "I prezzi dei pacchetti o dei crediti personalizzati specifici per il tuo account sono attivi.",
+    "Для вашей учётной записи действуют индивидуальные цены на пакеты и произвольное количество кредитов.",
+    "Los precios específicos de su cuenta para paquetes o créditos personalizados están activos.",
+    "Hesabınıza özel paket veya özel kredi fiyatları etkin.",
+    "Os preços específicos da sua conta para pacotes ou créditos personalizados estão ativos.",
+    "您的账户专属积分套餐或自定义积分价格已启用。",
+    "Aktywne są ceny pakietów lub niestandardowej liczby kredytów przypisane do Twojego konta.",
+    "Çmimet specifike të llogarisë suaj për paketat ose kreditë e personalizuara janë aktive."
+  ],
   [
     "bankInstructionsSent",
     "Bank transfer instructions were sent for {credits} credits ({amount}). Use your Customer ID as payment reference: {reference}. Credits are added manually after payment is received.",

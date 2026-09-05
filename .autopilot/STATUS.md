@@ -5628,9 +5628,13 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
   baslayamaz. Yeni public/musteri route ve componentlerinin envanter disina
   kacmasini onleyen fail-closed siniflandirma ve sentetik regresyon testi
   eklendi. Generic component/app-segment istisna mekanizmalari kaldirildi;
-  mantiksal JSX dallari, dinamik accessibility metinleri ve custom component
-  prop'lari da AST denetimine girdi. Internal admin, exact authored legal route
-  ve ham teknik/musteri degerleri dar ve testli istisnalar olarak korundu.
+  mantiksal JSX dallari ile `&&`, `||`, `??` dogrudan string/template
+  operandlari, dinamik accessibility metinleri ve custom component prop'lari da
+  AST denetimine girdi. Tum Next App Router UI convention dosyalari (layout,
+  loading/error/not-found/default/template ve social image dahil) envantere
+  girdi. Internal admin, exact authored legal route/component ve ham
+  teknik/musteri degerleri dar ve testli exact-file istisnalari olarak korundu;
+  yeni kardes dosya/layout otomatik muaf degildir.
 - Shared localization mimarisinden once yazilan canonical `/file-service`
   kaynagi normalize SHA-256 ile donduruldu. Bu fingerprint yenilenebilir bir
   bypass degildir: route'ta gelecekteki UI/copy degisikligi shared typed locale
@@ -5642,12 +5646,104 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
   `scripts/lib/i18n-component-inventory.ts`, `scripts/lib/i18n-dynamic-guard.ts`,
   `scripts/lib/i18n-frozen-source.ts`, dar copy/catalog duzeltmeleri, ilgili
   i18n/VPS kontrat testleri ve guncellenen i18n/release dokumanlari.
-- Kontroller: hedefli i18n paketi 41/41 PASS; `npm run check:i18n` 12 locale,
-  her non-English locale icin 2101/2101 reviewed source, sifir temiz English
+- Kontroller: hedefli i18n paketi 40/40 ve son File Expert/recovery/guard regresyonu 22/22
+  PASS; `npm run check:i18n` 12 locale, her non-English locale icin 2114/2114 reviewed source, sifir temiz English
   fallback ve dynamic guard 20 occurrence/18 signature PASS; `npm run lint`
-  PASS; `npm run typecheck` PASS; tam `npm test -- --test-reporter=dot` 1401/1401
+  PASS; `npm run typecheck` PASS; tam `npm test -- --test-reporter=dot` 1403/1403
   PASS; `npm run build -- --webpack` prebuild kapisini gercekten calistirarak
   280/280 Production route PASS; `npm run check:performance` PASS (homepage
   15.2/80 KiB gzip, locale payloadlari en fazla 6.4/12 KiB, 48/48 gerekli public
   route). Production deploy, push, veritabani, secret, odeme, e-posta veya
   musteri verisi mutasyonu yapilmadi.
+
+## 2026-09-01 03:59 +02:00 Kalici localization kapisi final kapanis
+
+- Gelecekteki tum public, auth, musteri, dashboard, odeme, talep, widget ve
+  musteri e-postasi degisiklikleri icin 12-locale sozlesmesi repository,
+  Autopilot constitution, dokumantasyon, kaynak envanteri ve Production
+  `prebuild` kapisinda kalici hale getirildi. Kaldirilan UI'nin eski katalog
+  satirlari stale-source kontroluyle reddedilir; yeni UI'nin SSR/client,
+  loading/error/empty/success, accessibility, metadata/JSON-LD, e-posta ve
+  locale-aware formatlama kapsami ayni paket icinde tamamlanmadan release
+  kapisi gecmez.
+- Fail-closed kaynak tarayicisi tum App Router convention dosyalarini,
+  co-located/shared UI import kapanisini, translator provenance/alias/wrapper
+  akisini, mantiksal gorunur ifadeleri ve exact-file istisna sinirlarini
+  denetler. Generated route kataloglari kaynak manifestinden uretilir,
+  freshness ve gzip butcesi build sirasinda zorunludur; audit metadatasi
+  LanguageSwitcher istemci paketine girmez.
+- Tam test ilk turda primary/DOM katalog ayriminda dokuz dolayli ilk-boya
+  kaynaginin SSR translator'una ulasmadigini ortaya cikardi. Register adim
+  altbasliklari, login basari mesaji ve payment checking/review/credit/CTA
+  metinleri source-provenance kontrollu dar primary satirlara tasindi. Teknik
+  `you@example.com` gibi invariant degerleri veya tum DOM kataloglarini primary
+  pakete tasiyan genis cozum kullanilmadi. Dokuz kaynak 11/11 non-English
+  locale icin dogrudan ve render tabanli regresyon testleriyle dogrulandi.
+- Final kontroller: `npm run check:i18n` PASS (12 locale, 43 source dosyasi,
+  her non-English locale 2423/2423, sifir temiz English fallback, dynamic guard
+  23 occurrence/20 signature, generated freshness PASS); `npm run lint` PASS;
+  `npm run typecheck` PASS; `npm test -- --test-reporter=dot` 1455/1455 PASS;
+  Webpack Production build 280/280 PASS; `npm run check:performance` PASS
+  (homepage 15.4/80 KiB gzip, worker 6.5/12 KiB, locale payload en fazla
+  6.4/12 KiB, gerekli public route 48/48); `git diff --check` ve zero-width
+  taramasi PASS. Push, Preview, Production deploy, canli veritabani, secret,
+  odeme, e-posta veya musteri verisi mutasyonu yapilmadi.
+
+## 2026-09-05 Localization closeout - local validation complete, not deployed
+
+- Owner requested a concise status after excessive elapsed time. Scope is now
+  frozen: close the existing localization work, do not start another audit wave.
+- Fixed default-parameter source propagation (including wrapped undefined),
+  missing primary-catalog credit error messages and request step labels.
+  Deliberately invalid negative fixtures have fixture-only lint exclusions.
+- Source audit was unnecessarily expanding unsupported fluent API calls as
+  possible array-returning methods; an equivalent early rejection now avoids
+  that work. Intl signDisplay's exact technical token is documented as invariant.
+- Updated stale File Expert/dashboard source-contract assertions to the typed
+  localized implementations; no business, payment or database behavior changed.
+- Root-only callable/global-descriptor caches now avoid repeated static
+  resolution, keep recursive cycle contexts uncached, and clear after scope
+  discovery. The full source audit now finishes in about 8 seconds instead of
+  remaining CPU-bound for many minutes. Callable cache/method rejection received
+  a bounded independent GO; the final global-descriptor cache needs final review.
+- Current source differs from the historical validated snapshots above. Targeted
+  auth/customer/error tests: 34/34 PASS. Local browser login/register: 16/16 PASS
+  across EN/DE/TR/ZH at 1366x768 and 390x844, with real EN->TR switching at both
+  widths, no page errors or horizontal overflow. The temporary browser runner
+  and local dev server were removed/stopped after validation. Lint and web plus
+  desktop typechecks passed before the final global-descriptor cache addition.
+- Earlier interrupted runs were not clean results. The former 234 false source
+  classifications and generated-channel label issue are now resolved and the
+  final full suite below replaces those preliminary validation results.
+- Follow-up: exact SEO matrices now reuse the generator's structural/parity
+  validator. Narrow model-property and notification translator contracts remove
+  false positives without exempting a file or generic label. Five contract tests
+  cover sibling files, changed values, fake/shadowed translators and consumers.
+  Unnamed log columns use neutral one-based source IDs; synthetic sample-axis
+  headings now use the existing typed locale copy. Raw logger headers stay raw.
+- Source audit now PASS: 2448/2448 for all 11 non-English locales, zero clean
+  English fallbacks, 24 dynamic occurrences across 21 reviewed signatures.
+  Targeted model/log i18n: 15/15 PASS. Final lint and web/desktop typecheck PASS.
+- Final validation on the committed code snapshot: `npm run check:i18n` PASS
+  (including generated freshness and 32/32 client-catalog tests); `npm run lint`
+  PASS; `npm run typecheck` PASS (web and all desktop projects); `npm test`
+  1485/1485 PASS, no failures/skips; `npm run build -- --webpack` PASS including
+  prebuild localization, TypeScript and 280/280 generated pages.
+  `npm run check:performance` PASS: homepage initial gzip 15.4 KB / 80 KB budget,
+  all 11 localized payloads inside budget, all 48 required public routes present.
+- Additional real-component Chrome checks with freshly compiled CSS: 8/8 PASS
+  for EN/DE/TR/ZH at 1366x768 and 390x844. Synthetic CSV upload, sample-axis labels,
+  EN-to-TR live switching, no page/console errors or horizontal overflow. This
+  isolated harness exercised the supported no-Worker parser fallback, not live
+  authentication or the deployed worker. It blocked all external requests and
+  used no customer data. Harness-only initialization/CSS timing failures were
+  corrected before the successful run; temporary runner/server/browser removed.
+- Independent read-only review: GO for immutable code candidate
+  `a950fdce947509775be73316e8da35983506bb8c`, including the final descriptor cache,
+  exact classification contracts and synthetic-axis changes. Only this status
+  receipt changed after review. No concrete blocker in that bounded scope.
+- No remaining failed local gate. This is release preparation, not a claim of
+  zero future bugs or live end-to-end validation. Production still requires a
+  new explicit owner release instruction and its scoped release/smoke checks.
+- Changes are in the homepage-refresh feature worktree. No push, Preview,
+  Production deployment, secret access or live customer/service mutation.

@@ -120,7 +120,12 @@ test("order creation is caller-bound, locked, bounded and server-priced", () => 
   assert.match(zeroCreditCompatibility, /p_credits_required\s+is null[\s\S]*p_credits_required < 0[\s\S]*p_credits_required > 100000/i);
   assert.match(zeroCreditCompatibility, /if v_expected_credits > 0 then[\s\S]*set credit_balance = v_new_balance/i);
   assert.match(browser, /Boolean\(selectedMainService\)[\s\S]*Number\.isInteger\(totalCredits\)[\s\S]*totalCredits >= 0/);
-  assert.match(browser, /Please select a valid service combination/i);
+  assert.match(browser, /key:\s*"invalidServiceCombination"/);
+  assert.match(
+    browser,
+    /creditAccessFailure\.key === "invalidServiceCombination"[\s\S]*customerWorkflowT\(locale, creditAccessFailure\.key\)/,
+  );
+  assert.doesNotMatch(browser, /Please select a valid service combination/i);
 
   const createOrderGrant = migration.match(
     /grant execute on function public\.create_order_with_credit_deduction\([\s\S]*?;/i

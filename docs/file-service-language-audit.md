@@ -28,6 +28,25 @@ This audit applies only to `file.mgautotech.de`. It does not change or make clai
 - New public/customer routes and shared components fail closed unless they join
   the audited localization inventory; generic file or route exemptions are not
   allowed.
+- The inventory covers every Next.js App Router UI convention filename, so a
+  new `page`, `layout`, `template`, `default`, `loading`, `error`,
+  `global-error`, `not-found`, `global-not-found`, `forbidden`,
+  `unauthorized`, `manifest`, `icon`, `apple-icon`, `opengraph-image`,
+  `twitter-image` or numbered metadata variant beside an existing route
+  cannot bypass the audit. JS, JSX, TS and TSX sources use the matching AST
+  parser.
+- Convention-independent co-located JS/JSX/TSX UI under `src/app` and shared
+  JS/JSX/TSX UI under `src/lib` are separately fail-closed, so moving visible
+  copy outside `src/components` cannot evade classification.
+- Direct visible string and template operands of `&&`, `||` and `??` are audited.
+  Internal admin and approved legal exceptions are exact-file allowlists; a new
+  sibling component or route file must be classified independently.
+- Translator trust requires an exact typed i18n module and reviewed export.
+  Import aliases retain provenance; shadowed bindings are rejected; local
+  wrappers or providers are trusted only when they directly preserve the
+  authentic imported translator. Exact-source arguments and interpolation
+  parameters are never blanket-exempt just because they occur inside a
+  translator call.
 - The independently authored canonical `/file-service` source predates the
   shared localized renderer and is source-fingerprint frozen. The fingerprint
   is not a renewable exception: any future UI/copy edit must first migrate that

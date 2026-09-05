@@ -15,13 +15,15 @@ import {
   customerWorkflowT,
   type CustomerWorkflowTranslationKey,
 } from "@/lib/i18n/customer-workflow-credits-translations";
-import { intlLocaleByCode } from "@/lib/i18nConfig";
+import { intlLocaleByCode, type LocaleCode } from "@/lib/i18nConfig";
 import { useActiveLocale } from "@/lib/useActiveLocale";
 import { localizeCreditPromotionLabel } from "@/lib/i18n/commercial-translations";
 import {
   creditPurchaseCaughtErrorMessage,
   creditPurchaseErrorCodes,
   creditPurchaseErrorMessage,
+  creditPurchaseSafeMessages,
+  type CreditPurchaseSafeMessage,
 } from "@/lib/creditPurchaseErrorCodes";
 import {
   CheckCircle2,
@@ -103,6 +105,24 @@ type PageNotice =
       reference: string;
       template: "bankInstructionsSent";
     };
+
+function creditPurchaseTranslations(locale: LocaleCode) {
+  const translated: Record<CreditPurchaseSafeMessage, string> = {
+    [creditPurchaseSafeMessages.quoteFallback]: customerWorkflowExactT(locale, "Credit prices could not be loaded."),
+    [creditPurchaseSafeMessages.purchaseFallback]: customerWorkflowExactT(locale, "Credit purchase could not be started."),
+    [creditPurchaseSafeMessages.authRequired]: customerWorkflowExactT(locale, "Please log in again before purchasing credits."),
+    [creditPurchaseSafeMessages.rateLimited]: customerWorkflowExactT(locale, "Too many purchase attempts. Please wait a moment and try again."),
+    [creditPurchaseSafeMessages.invalidSelection]: customerWorkflowExactT(locale, "Choose a valid credit package or enter a valid credit amount."),
+    [creditPurchaseSafeMessages.pricingUnavailable]: customerWorkflowExactT(locale, "Credit pricing is temporarily unavailable. Please try again later."),
+    [creditPurchaseSafeMessages.quoteStale]: customerWorkflowExactT(locale, "Credit prices changed. Review the refreshed total before continuing."),
+    [creditPurchaseSafeMessages.methodUnavailable]: customerWorkflowExactT(locale, "This payment method is currently unavailable. Choose another payment method."),
+    [creditPurchaseSafeMessages.customerReferenceUnavailable]: customerWorkflowExactT(locale, "Your customer reference could not be prepared. Please refresh and try again."),
+    [creditPurchaseSafeMessages.bankDeliveryFailed]: customerWorkflowExactT(locale, "Bank transfer instructions could not be prepared. Please try again or choose card payment."),
+    [creditPurchaseSafeMessages.checkoutUnavailable]: customerWorkflowExactT(locale, "Secure card checkout is temporarily unavailable. Choose Bank Transfer or try again later."),
+    [creditPurchaseSafeMessages.stripeAmountUnsupported]: customerWorkflowExactT(locale, "This total is outside Stripe's supported EUR range. Choose Bank Transfer or change the amount."),
+  };
+  return translated;
+}
 
 function isFinitePositive(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value) && value > 0;
@@ -186,6 +206,7 @@ function formatCustomerReference(customerId: string) {
 export default function BuyCreditsPage() {
   const router = useRouter();
   const locale = useActiveLocale();
+  const purchaseMessages = creditPurchaseTranslations(locale);
 
   const [loadingPackage, setLoadingPackage] = useState<string | null>(null);
   const [customCredits, setCustomCredits] = useState("17");
@@ -275,17 +296,17 @@ export default function BuyCreditsPage() {
     null,
   );
   const pricingLabel = quote?.pricingSource === "customer_override"
-    ? "Your account-specific package or custom-credit prices are active."
+    ? customerWorkflowT(locale, "accountSpecificPricingActive")
     : null;
 
   const bankDetails = {
     accountName: process.env.NEXT_PUBLIC_BANK_ACCOUNT_NAME || "MG AutoTech",
     bankName:
       process.env.NEXT_PUBLIC_BANK_NAME ||
-      "Bank details will be confirmed by admin",
+      customerWorkflowExactT(locale, "Bank details will be confirmed by admin"),
     iban:
       process.env.NEXT_PUBLIC_BANK_IBAN ||
-      "IBAN will be provided after contact",
+      customerWorkflowExactT(locale, "IBAN will be provided after contact"),
     bic: process.env.NEXT_PUBLIC_BANK_BIC || "BIC",
   };
 
@@ -527,7 +548,9 @@ export default function BuyCreditsPage() {
           credits: notice.credits.toLocaleString(intlLocaleByCode[locale]),
           reference: notice.reference,
         })
-      : customerWorkflowExactT(locale, notice.text);
+      : Object.prototype.hasOwnProperty.call(purchaseMessages, notice.text)
+        ? purchaseMessages[notice.text as CreditPurchaseSafeMessage]
+        : customerWorkflowExactT(locale, notice.text);
 
   return (
     <main className="mg-compact-ui min-h-screen bg-[#050505] text-white">
@@ -636,7 +659,9 @@ export default function BuyCreditsPage() {
               Credit prices are temporarily unavailable
             </div>
             <p className="mt-2 text-sm leading-6 text-red-200/80">
-              {customerWorkflowExactT(
+              {Object.prototype.hasOwnProperty.call(purchaseMessages, quoteError)
+                ? purchaseMessages[quoteError as CreditPurchaseSafeMessage]
+                : customerWorkflowExactT(
                 locale,
                 quoteError ||
                   "No payment can be started until verified prices are loaded.",

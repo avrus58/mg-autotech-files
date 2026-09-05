@@ -34,19 +34,6 @@ export const customerWorkflowExactTranslations = {
     "Konfiguracja konta",
     "Konfigurimi i llogarisë"
   ],
-  "Account type": [
-    "Accounttype",
-    "Kontotyp",
-    "Type de compte",
-    "Tipo di conto",
-    "Тип аккаунта",
-    "Tipo de cuenta",
-    "Hesap türü",
-    "Tipo de conta",
-    "账户类型",
-    "Typ konta",
-    "Lloji i llogarisë"
-  ],
   "Action required": [
     "Actie vereist",
     "Aktion erforderlich",
@@ -73,18 +60,18 @@ export const customerWorkflowExactTranslations = {
     "Dodaj kredyty przed kolejną prośbą o plik",
     "Shtoni kredite përpara kërkesës suaj të ardhshme të skedarit"
   ],
-  "Billing address": [
-    "Factuuradres",
-    "Rechnungsadresse",
-    "Adresse de facturation",
-    "Indirizzo di fatturazione",
-    "Платежный адрес",
-    "dirección de facturación",
-    "Fatura adresi",
-    "Morada de faturação",
-    "帐单地址",
-    "Adres rozliczeniowy",
-    "Adresa e faturimit"
+  "Browser-only check": [
+    "Controle alleen in de browser",
+    "Prüfung nur im Browser",
+    "Vérification dans le navigateur uniquement",
+    "Controllo solo nel browser",
+    "Проверка только в браузере",
+    "Comprobación solo en el navegador",
+    "Yalnızca tarayıcıda kontrol",
+    "Verificação apenas no navegador",
+    "仅在浏览器中检查",
+    "Sprawdzanie tylko w przeglądarce",
+    "Kontroll vetëm në shfletues"
   ],
   "Build request brief": [
     "Aanvraagoverzicht opstellen",
@@ -99,6 +86,19 @@ export const customerWorkflowExactTranslations = {
     "Przygotuj opis zlecenia",
     "Përgatit përmbledhjen e kërkesës"
   ],
+  "Buy Credits": [
+    "Credits kopen",
+    "Credits kaufen",
+    "Acheter des crédits",
+    "Acquista crediti",
+    "Купить кредиты",
+    "Comprar créditos",
+    "Kredi satın al",
+    "Comprar créditos",
+    "购买积分",
+    "Kup kredyty",
+    "Bli kredi"
+  ],
   "Check file type, size and request notes before starting a paid workflow.": [
     "Controleer het bestandstype, de grootte en de aanvraagnotities voordat u een betaalde procedure start.",
     "Prüfen Sie Dateityp, Größe und Anfragehinweise, bevor Sie einen kostenpflichtigen Ablauf starten.",
@@ -112,31 +112,18 @@ export const customerWorkflowExactTranslations = {
     "Przed rozpoczęciem płatnego procesu sprawdź typ i rozmiar pliku oraz uwagi do zlecenia.",
     "Kontrolloni llojin, madhësinë dhe shënimet e kërkesës para se të nisni një proces me pagesë."
   ],
-  "company": [
-    "bedrijf",
-    "Unternehmen",
-    "entreprise",
-    "azienda",
-    "компания",
-    "empresa",
-    "şirket",
-    "empresa",
-    "公司",
-    "firma",
-    "kompania"
-  ],
-  "Company / workshop name": [
-    "Bedrijfs-/werkplaatsnaam",
-    "Firmen-/Werkstattname",
-    "Nom de l’entreprise / de l’atelier",
-    "Nome azienda / officina",
-    "Название компании / мастерской",
-    "Nombre de la empresa / taller",
-    "Şirket / atölye adı",
-    "Nome da empresa / oficina",
-    "公司/维修厂名称",
-    "Nazwa firmy / warsztatu",
-    "Emri i kompanisë / servisit"
+  "Complete your customer profile": [
+    "Vul uw klantprofiel aan",
+    "Kundenprofil vervollständigen",
+    "Complétez votre profil client",
+    "Completa il profilo cliente",
+    "Заполните профиль клиента",
+    "Completa tu perfil de cliente",
+    "Müşteri profilinizi tamamlayın",
+    "Complete o seu perfil de cliente",
+    "完善客户资料",
+    "Uzupełnij profil klienta",
+    "Plotësoni profilin e klientit"
   ],
   "Create a clean copy-ready service brief for your ECU/TCU request.": [
     "Maak een helder, direct kopieerbaar serviceoverzicht voor uw ECU/TCU-aanvraag.",
@@ -163,6 +150,19 @@ export const customerWorkflowExactTranslations = {
     "创建新的文件请求",
     "Utwórz nowe żądanie pliku",
     "Krijoni një kërkesë për skedar të ri"
+  ],
+  "Credits": [
+    "Credits",
+    "Credits",
+    "Crédits",
+    "Crediti",
+    "Кредиты",
+    "Créditos",
+    "Krediler",
+    "Créditos",
+    "积分",
+    "Kredyty",
+    "Kredite"
   ],
   "Customer Dashboard": [
     "Klantdashboard",
@@ -203,19 +203,6 @@ export const customerWorkflowExactTranslations = {
     "Śledź aktywne zlecenia i szybko odpowiadaj, gdy MG AutoTech potrzebuje dodatkowych informacji.",
     "Ndiqni kërkesat aktive dhe përgjigjuni shpejt nëse MG AutoTech kërkon më shumë hollësi."
   ],
-  "Full name": [
-    "Volledige naam",
-    "Vollständiger Name",
-    "Nom complet",
-    "Nome completo",
-    "Полное имя",
-    "Nombre completo",
-    "Ad soyad",
-    "Nome completo",
-    "姓名",
-    "Imię i nazwisko",
-    "Emri i plotë"
-  ],
   "Generation not set": [
     "Generatie niet ingesteld",
     "Generation nicht angegeben",
@@ -229,19 +216,6 @@ export const customerWorkflowExactTranslations = {
     "Generacja nie ustawiona",
     "Gjenerata nuk është vendosur"
   ],
-  "Invoice e-mail": [
-    "Factuur-e-mailadres",
-    "Rechnungs-E-Mail",
-    "E-mail de facturation",
-    "E-mail di fatturazione",
-    "E-mail для счетов",
-    "Correo electrónico de facturación",
-    "Fatura e-postası",
-    "E-mail de faturação",
-    "账单电子邮箱",
-    "E-mail do faktur",
-    "E-maili i faturimit"
-  ],
   "Live work": [
     "Leef werk",
     "Live-Arbeit",
@@ -254,6 +228,32 @@ export const customerWorkflowExactTranslations = {
     "现场工作",
     "Praca na żywo",
     "Puna e drejtpërdrejtë"
+  ],
+  "New Request": [
+    "Nieuwe aanvraag",
+    "Neue Anfrage",
+    "Nouvelle demande",
+    "Nuova richiesta",
+    "Новая заявка",
+    "Nueva solicitud",
+    "Yeni talep",
+    "Novo pedido",
+    "新请求",
+    "Nowe zlecenie",
+    "Kërkesë e re"
+  ],
+  "No upload required": [
+    "Geen upload vereist",
+    "Kein Upload erforderlich",
+    "Aucun envoi requis",
+    "Nessun caricamento richiesto",
+    "Загрузка не требуется",
+    "No se requiere carga",
+    "Yükleme gerekmiyor",
+    "Não é necessário carregar ficheiros",
+    "无需上传",
+    "Przesyłanie nie jest wymagane",
+    "Nuk kërkohet ngarkim"
   ],
   "Not available": [
     "Niet beschikbaar",
@@ -281,31 +281,18 @@ export const customerWorkflowExactTranslations = {
     "Otwórz zakończone zlecenia i pobierz dostarczone pliki z prywatnego panelu.",
     "Hapni kërkesat e përfunduara dhe shkarkoni skedarët e dorëzuar nga paneli juaj privat."
   ],
-  "Phone / WhatsApp contact": [
-    "Telefoon-/WhatsApp-contact",
-    "Telefon-/WhatsApp-Kontakt",
-    "Contact téléphone / WhatsApp",
-    "Contatto telefonico / WhatsApp",
-    "Телефон / WhatsApp",
-    "Contacto por teléfono / WhatsApp",
-    "Telefon / WhatsApp iletişimi",
-    "Contacto por telefone / WhatsApp",
-    "电话 / WhatsApp 联系方式",
-    "Kontakt telefoniczny / WhatsApp",
-    "Kontakti me telefon / WhatsApp"
-  ],
-  "Preferred contact method": [
-    "Voorkeurscontactmethode",
-    "Bevorzugte Kontaktmethode",
-    "Mode de contact préféré",
-    "Metodo di contatto preferito",
-    "Предпочтительный способ связи",
-    "Método de contacto preferido",
-    "Tercih edilen iletişim yöntemi",
-    "Método de contacto preferido",
-    "首选联系方式",
-    "Preferowana metoda kontaktu",
-    "Mënyra e preferuar e kontaktit"
+  "Open Orders": [
+    "Aanvragen openen",
+    "Aufträge öffnen",
+    "Ouvrir les commandes",
+    "Apri gli ordini",
+    "Открыть заказы",
+    "Abrir pedidos",
+    "Siparişleri aç",
+    "Abrir pedidos",
+    "打开订单",
+    "Otwórz zlecenia",
+    "Hap porositë"
   ],
   "Prepare file": [
     "Bestand voorbereiden",
@@ -319,6 +306,19 @@ export const customerWorkflowExactTranslations = {
     "准备文件",
     "Przygotuj plik",
     "Përgatitni skedarin"
+  ],
+  "Ready": [
+    "Klaar",
+    "Bereit",
+    "Prêt",
+    "Pronto",
+    "Готово",
+    "Listo",
+    "Hazır",
+    "Pronto",
+    "就绪",
+    "Gotowe",
+    "Gati"
   ],
   "request": [
     "verzoek",
@@ -358,6 +358,19 @@ export const customerWorkflowExactTranslations = {
     "审核交付",
     "Przejrzyj dostawę",
     "Shqyrtoni dorëzimin"
+  ],
+  "Review Requests": [
+    "Aanvragen bekijken",
+    "Anfragen prüfen",
+    "Examiner les demandes",
+    "Esamina le richieste",
+    "Просмотреть запросы",
+    "Revisar solicitudes",
+    "Talepleri incele",
+    "Rever pedidos",
+    "查看请求",
+    "Przejrzyj zlecenia",
+    "Shqyrto kërkesat"
   ],
   "Secure MG AutoTech customer dashboard for file requests, credits and deliveries.": [
     "Beveiligd MG AutoTech-klantdashboard voor bestandsaanvragen, credits en leveringen.",
@@ -450,18 +463,31 @@ export const customerWorkflowExactTranslations = {
     "Spróbuj ponownie",
     "Provo përsëri"
   ],
-  "We could not load your dashboard data. Please try again.": [
-    "We konden uw dashboardgegevens niet laden. Probeer het opnieuw.",
-    "Wir konnten Ihre Dashboard-Daten nicht laden. Bitte versuchen Sie es erneut.",
-    "Nous n'avons pas pu charger les données de votre tableau de bord. Veuillez réessayer.",
-    "Non è stato possibile caricare i dati della dashboard. Per favore riprova.",
-    "Нам не удалось загрузить данные вашей информационной панели. Пожалуйста, попробуйте еще раз.",
-    "No hemos podido cargar los datos de su panel. Inténtelo de nuevo.",
-    "Kontrol paneli verilerinizi yükleyemedik. Lütfen tekrar deneyin.",
-    "Não foi possível carregar os dados do seu painel. Por favor, tente novamente.",
-    "我们无法加载您的仪表板数据。请再试一次。",
-    "Nie mogliśmy załadować danych Twojego panelu. Spróbuj ponownie.",
-    "Nuk mund t'i ngarkonim të dhënat e panelit tuaj. Ju lutemi provoni përsëri."
+  "Update Settings": [
+    "Instellingen bijwerken",
+    "Einstellungen aktualisieren",
+    "Mettre à jour les paramètres",
+    "Aggiorna impostazioni",
+    "Обновить настройки",
+    "Actualizar ajustes",
+    "Ayarları Güncelle",
+    "Atualizar definições",
+    "更新设置",
+    "Aktualizuj ustawienia",
+    "Përditëso cilësimet"
+  ],
+  "Vehicle": [
+    "Voertuig",
+    "Fahrzeug",
+    "Véhicule",
+    "Veicolo",
+    "Автомобиль",
+    "Vehículo",
+    "Araç",
+    "Veículo",
+    "车辆",
+    "Pojazd",
+    "Automjeti"
   ],
   "Your current balance is 0 credits. Top up first so your next request can move without payment delay.": [
     "Uw huidige saldo is 0 credits. Laad eerst op, zodat uw volgende aanvraag zonder betalingsvertraging kan plaatsvinden.",
@@ -490,8 +516,6 @@ export const customerWorkflowExactTranslations = {
     "Paneli juaj është gati. Filloni një kërkesë të re skedari ECU/TCU kur të keni përgatitur një skedar origjinal."
   ]
 } as const satisfies Readonly<Record<string, readonly string[]>>;
-
-export const customerWorkflowSourceStrings = Object.keys(customerWorkflowExactTranslations);
 
 export const customerWorkflowTemplateRows = [
   [

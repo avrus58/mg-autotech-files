@@ -151,8 +151,8 @@ test("customer order detail shows delivery estimates only when explicitly set", 
   assert.match(page, /"24h": "24h"/);
   assert.match(page, /"48h": "48h"/);
   assert.match(page, /manual_review: "Manual review"/);
-  assert.match(page, /getDeliveryEstimateDisplay\(order\.estimated_delivery_label\)/);
-  assert.match(page, /label: label \?\? "Estimate not set yet"/);
+  assert.match(page, /getDeliveryEstimateDisplay\(locale, order\.estimated_delivery_label\)/);
+  assert.match(page, /label\s*\?\s*customerWorkflowExactT\(locale, label\)\s*:\s*customerWorkflowExactT\(locale, "Estimate not set yet"\)/);
   assert.match(page, /deliveryEstimate\.isExplicit && \(/);
   assert.match(page, /ETA: \{deliveryEstimate\.label\}/);
   assert.match(page, /order\.estimated_delivery_note \? <> - <span translate="no" data-no-translate>\{order\.estimated_delivery_note\}<\/span><\/> : null/);
@@ -646,7 +646,7 @@ test("customer dashboard shows one prioritized next best action", () => {
   assert.match(dashboard, /needsResponseCount > 0[\s\S]*Respond to requested order information/);
   assert.match(dashboard, /credits <= 0[\s\S]*Add credits before your next file request/);
   assert.match(dashboard, /activeCount > 0[\s\S]*Track your active file requests/);
-  assert.match(dashboard, /title: "Create a new file request"/);
+  assert.match(dashboard, /title: customerWorkflowExactT\(locale, "Create a new file request"\)/);
   assert.match(dashboard, /Next best action - \{dashboardNextAction\.eyebrow\}/);
   assert.match(dashboard, /href=\{dashboardNextAction\.href\}/);
   assert.match(dashboard, /\{dashboardNextAction\.cta\}/);
@@ -1200,7 +1200,7 @@ test("customer File Expert intake shows upload limits before prepare", () => {
   assert.match(validation, /fileExpertAllowedExtensions\.some/);
   assert.match(
     validation,
-    /customerWorkflowT\(locale, descriptor\.key, \{[\s\S]*extensions: descriptor\.params\.extensions/,
+    /customerWorkflowT\(locale, "fileExpertUnsupportedFile", \{[\s\S]*extensions: descriptor\.params\.extensions/,
   );
   assert.match(page, /handleFileSelection\("ori", file\)/);
   assert.match(page, /handleFileSelection\("mod", file\)/);
@@ -1216,7 +1216,7 @@ test("customer File Expert intake shows upload limits before prepare", () => {
   assert.match(page, /customerWorkflowT\(locale, "fileExpertSelectFile"\)/);
   assert.match(
     page,
-    /descriptor: \{[\s\S]*key: fileExpertValidationTranslationKeys\.uploadFile/,
+    /descriptor: fileExpertUploadRequiredValidation\(\)/,
   );
   assert.match(page, /localizeFileExpertPageMessage\(locale, message\)/);
   assert.match(page, /disabled=\{!canSubmitAnalysis\}/);
@@ -1224,7 +1224,7 @@ test("customer File Expert intake shows upload limits before prepare", () => {
     page,
     /if \(textLimitValidation\) \{[\s\S]*descriptor: textLimitValidation/,
   );
-  assert.match(page, /if \(!oriFile && !modFile\) \{[\s\S]*authenticatedFetch\("\/api\/file-expert\/jobs\/prepare"/);
+  assert.match(page, /if \(!oriFile && !modFile\) \{[\s\S]*authenticatedFetch\(\s*"\/api\/file-expert\/jobs\/prepare"/);
 });
 
 test("customer File Expert history shows initial retry and suppresses silent refresh noise", () => {

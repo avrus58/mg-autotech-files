@@ -54,15 +54,19 @@ test("fatal boundaries resolve locale without relying on the main language switc
   const globalError = readFileSync("src/app/global-error.tsx", "utf8");
   const recovery = readFileSync("src/lib/i18n/recovery-translations.ts", "utf8");
   const inventory = readFileSync("scripts/check-customer-i18n.ts", "utf8");
+  const inventoryHelper = readFileSync("scripts/lib/i18n-component-inventory.ts", "utf8");
 
   assert.match(localError, /useRecoveryLocale/u);
   assert.match(globalError, /<html lang=\{locale\}>/u);
   assert.doesNotMatch(globalError, /<html lang="en">/u);
   assert.match(recovery, /readStoredLocale\(\)/u);
   assert.match(recovery, /readLocaleCookie\(\)/u);
-  assert.match(inventory, /"global-error\.tsx"/u);
-  assert.match(inventory, /"not-found\.tsx"/u);
-  assert.match(inventory, /"loading\.tsx"/u);
+  assert.match(inventory, /findUnclassifiedAppRouteFiles/u);
+  assert.match(inventoryHelper, /"global-error"/u);
+  assert.match(inventoryHelper, /"not-found"/u);
+  assert.match(inventoryHelper, /"loading"/u);
+  assert.match(inventoryHelper, /"manifest"/u);
+  assert.match(inventoryHelper, /"tsx"/u);
 });
 
 test("root recovery surfaces stay language-neutral until hydration resolves the real locale", () => {

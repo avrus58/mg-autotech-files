@@ -7,10 +7,10 @@ import { authenticatedFetch, getStableSession, notifySessionRequired, signOutIfE
 import { supabase } from "@/lib/supabaseClient";
 import RequestChat from "@/components/RequestChat";
 import workspaceStyles from "./order-workspace.module.css";
-import { formatFileVersionLabel } from "@/lib/fileVersionLabels";
+import { normalizeFileVersionLabel } from "@/lib/fileVersionLabels";
 import type { CustomerRequestDtcAnalysis } from "@/lib/dtcAnalyzer/requestIntegration";
 import type { CustomerDeliveryHistory } from "@/lib/customerOrderDelivery";
-import { customerWorkflowT } from "@/lib/i18n/customer-workflow-orders-translations";
+import { customerWorkflowExactT, customerWorkflowT } from "@/lib/i18n/customer-workflow-orders-translations";
 import { localizeCustomerOrderStatus } from "@/lib/i18n/customer-runtime-translations";
 import {
   localizeDtcAnalyzerMessage,
@@ -78,6 +78,15 @@ type CustomerUpload = {
 type DeliveryEstimate = "usually_30_min" | "same_day" | "24h" | "48h" | "manual_review";
 
 type AdditionalUploadPhase = "idle" | "preparing" | "uploading" | "verifying";
+
+function localizedFileVersionLabel(locale: LocaleCode, value: string) {
+  const normalized = normalizeFileVersionLabel(value);
+  if (!normalized) return customerWorkflowT(locale, "fileVersionDefault");
+  if (normalized === "revision") return customerWorkflowT(locale, "statusRevision");
+  if (normalized === "final") return customerWorkflowT(locale, "fileVersionFinal");
+  if (normalized === "v1") return "V1";
+  return normalized;
+}
 
 const additionalUploadSteps: Array<{
   phase: Exclude<AdditionalUploadPhase, "idle">;
@@ -244,12 +253,14 @@ const deliveryEstimateLabels: Record<DeliveryEstimate, string> = {
   manual_review: "Manual review",
 };
 
-function getDeliveryEstimateDisplay(value: DeliveryEstimate | string | null) {
+function getDeliveryEstimateDisplay(locale: LocaleCode, value: DeliveryEstimate | string | null) {
   const label = value ? deliveryEstimateLabels[value as DeliveryEstimate] : null;
 
   return {
     isExplicit: Boolean(label),
-    label: label ?? "Estimate not set yet",
+    label: label
+      ? customerWorkflowExactT(locale, label)
+      : customerWorkflowExactT(locale, "Estimate not set yet"),
   };
 }
 
@@ -698,7 +709,7 @@ export default function OrderDetailPage() {
       <main className="flex min-h-screen items-center justify-center bg-[#050505] text-white">
         <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] px-6 py-5">
           <Loader2 className="h-5 w-5 animate-spin text-red-500" />
-          Loading order details...
+          {customerWorkflowExactT(locale, "Loading order details...")}
         </div>
       </main>
     );
@@ -709,15 +720,17 @@ export default function OrderDetailPage() {
       <main className="flex min-h-screen items-center justify-center bg-[#050505] px-4 text-white">
         <div className="max-w-md rounded-[2rem] border border-red-900/40 bg-red-950/20 p-8 text-center">
           <ShieldCheck className="mx-auto mb-5 h-12 w-12 text-red-500" />
-          <h1 className="text-3xl font-black">Order not found</h1>
+          <h1 className="text-3xl font-black">{customerWorkflowExactT(locale, "Order not found")}</h1>
           <p className="mt-3 text-zinc-400">
-            {message || "This order could not be found or you do not have access."}
+            {message
+              ? customerWorkflowExactT(locale, message)
+              : customerWorkflowExactT(locale, "This order could not be found or you do not have access.")}
           </p>
           <Link
             href="/dashboard"
             className="mt-6 inline-flex rounded-xl bg-[#b1121b] px-5 py-3 font-black text-white"
           >
-            Back to Dashboard
+            {customerWorkflowExactT(locale, "Back to Dashboard")}
           </Link>
         </div>
       </main>
@@ -731,7 +744,7 @@ export default function OrderDetailPage() {
   const completedFileReady = modifiedVersions.length > 0;
   const revisionRequested = order.status === "revision";
   const canRequestRevision = completedFileReady && !revisionRequested;
-  const deliveryEstimate = getDeliveryEstimateDisplay(order.estimated_delivery_label);
+  const deliveryEstimate = getDeliveryEstimateDisplay(locale, order.estimated_delivery_label);
   const statusCopy = getCustomerStatusCopy(order, completedFileReady, revisionRequested);
 
   return (
@@ -816,7 +829,7 @@ export default function OrderDetailPage() {
             <div className="mx-auto flex w-full max-w-[1480px] flex-col gap-3">
               {message && (
                 <div role="status" className="shrink-0 rounded-lg border border-red-800/50 bg-red-950/30 px-4 py-3 text-sm text-red-200">
-                  {message}
+                  {customerWorkflowExactT(locale, message)}
                 </div>
               )}
 
@@ -1050,7 +1063,7 @@ export default function OrderDetailPage() {
                     translate={delivery?.original.fileName ? "no" : undefined}
                     data-no-translate={delivery?.original.fileName ? true : undefined}
                   >
-                    {delivery?.original.fileName || "Filename not available"}
+                    {delivery?.original.fileName || customerWorkflowExactT(locale, "Not available")}
                   </div>
                   <div className="mt-1 text-xs text-zinc-500">Received {formatDate(delivery?.original.receivedAt ?? order.created_at, locale)} (Berlin time)</div>
                 </div>
@@ -1062,7 +1075,7 @@ export default function OrderDetailPage() {
                     <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-emerald-700/30 bg-emerald-950/40 text-xs font-black text-emerald-300">{index + 1}</div>
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-xs font-black uppercase tracking-[0.12em] text-emerald-300">{formatFileVersionLabel(version.label)}</span>
+                        <span className="text-xs font-black uppercase tracking-[0.12em] text-emerald-300">{localizedFileVersionLabel(locale, version.label)}</span>
                         {index === modifiedVersions.length - 1 && <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-black text-emerald-300">Latest</span>}
                       </div>
                       <div title={version.fileName} className="mt-1 truncate text-sm font-black text-white" translate="no" data-no-translate>{version.fileName}</div>
@@ -1074,8 +1087,8 @@ export default function OrderDetailPage() {
                     </div>
                     <button
                       type="button"
-                      aria-label={customerWorkflowT(locale, "downloadFile", { label: formatFileVersionLabel(version.label) })}
-                      title={customerWorkflowT(locale, "downloadLabel", { label: formatFileVersionLabel(version.label) })}
+                      aria-label={customerWorkflowT(locale, "downloadFile", { label: localizedFileVersionLabel(locale, version.label) })}
+                      title={customerWorkflowT(locale, "downloadLabel", { label: localizedFileVersionLabel(locale, version.label) })}
                       onClick={() => downloadModifiedVersion(version.id)}
                       disabled={downloadingVersionId !== null}
                       className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-600 text-white transition hover:bg-emerald-500 disabled:cursor-wait disabled:bg-zinc-800 disabled:text-zinc-500"
