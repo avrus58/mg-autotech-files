@@ -264,14 +264,16 @@ async function loadCompactCustomerWorkflowCatalog(pathname: string) {
   switch (group) {
     case "auth":
       catalogs = await Promise.all([
-        import("@/lib/i18n/customer-workflow-auth-translations"),
-        import("@/lib/i18n/customer-workflow-auth-dom-translations"),
+        // These catalogs always travel together. One async chunk avoids
+        // separate compression overhead without loading another route group.
+        import(/* webpackChunkName: "workflow-auth" */ "@/lib/i18n/customer-workflow-auth-translations"),
+        import(/* webpackChunkName: "workflow-auth" */ "@/lib/i18n/customer-workflow-auth-dom-translations"),
       ]);
       break;
     case "overview":
       catalogs = await Promise.all([
-        import("@/lib/i18n/customer-workflow-overview-translations"),
-        import("@/lib/i18n/customer-workflow-overview-dom-translations"),
+        import(/* webpackChunkName: "workflow-overview" */ "@/lib/i18n/customer-workflow-overview-translations"),
+        import(/* webpackChunkName: "workflow-overview" */ "@/lib/i18n/customer-workflow-overview-dom-translations"),
         import("@/lib/i18n/customer-workflow-portal-common-translations"),
       ]);
       break;
@@ -284,8 +286,8 @@ async function loadCompactCustomerWorkflowCatalog(pathname: string) {
       break;
     case "credits":
       catalogs = await Promise.all([
-        import("@/lib/i18n/customer-workflow-credits-translations"),
-        import("@/lib/i18n/customer-workflow-credits-dom-translations"),
+        import(/* webpackChunkName: "workflow-credits" */ "@/lib/i18n/customer-workflow-credits-translations"),
+        import(/* webpackChunkName: "workflow-credits" */ "@/lib/i18n/customer-workflow-credits-dom-translations"),
         import("@/lib/i18n/customer-workflow-portal-common-translations"),
       ]);
       break;

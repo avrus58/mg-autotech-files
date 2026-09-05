@@ -2267,19 +2267,38 @@ function exactBudgetCatalogSourceFile(catalog: string) {
   return candidates[0];
 }
 
+function compactCatalogSwitchBranch(
+  group: CustomerWorkflowClientGroup,
+  source: string,
+) {
+  const escapedGroup = group.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
+  return source.match(
+    new RegExp(
+      `case["']${escapedGroup}["']:(.*?)(?=break;case["']|case["']|\\}\\}let\\s|\\}let\\s)`,
+      "u",
+    ),
+  )?.[1];
+}
+
+test("compact switch parsing handles Unicode-safe closing braces and adjacent groups", () => {
+  for (const closing of ["}let next", "}}let next"]) {
+    assert.equal(
+      compactCatalogSwitchBranch("auth", `switch(group){case"auth":load.e(123);${closing}`),
+      "load.e(123);",
+    );
+  }
+  const adjacent = 'case"auth":load.e(123);break;case"credits":load.e(456);}let next';
+  assert.equal(compactCatalogSwitchBranch("auth", adjacent), "load.e(123);");
+  assert.equal(compactCatalogSwitchBranch("credits", adjacent), "load.e(456);");
+});
+
 function emittedCompactCatalogFiles(
   group: CustomerWorkflowClientGroup,
   layoutChunk: string,
   dashboardRoute: boolean,
 ) {
   const source = readFileSync(layoutChunk, "utf8");
-  const escapedGroup = group.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
-  const branch = source.match(
-    new RegExp(
-      `case["']${escapedGroup}["']:(.*?)(?=break;case["']|case["']|}}let\\s|}let\\s)`,
-      "u",
-    ),
-  )?.[1];
+  const branch = compactCatalogSwitchBranch(group, source);
   assert.ok(branch, `${group}: emitted compact switch branch is missing`);
   const chunkIds = new Set(
     [...branch.matchAll(/\.e\((\d+)\)/gu)].map((match) => match[1]),
@@ -2297,6 +2316,7 @@ function emittedCompactCatalogFiles(
   assert.ok(chunkIds.size > 0, `${group}: no emitted compact chunks found`);
 
   const emittedFiles: string[] = [];
+  const resolvedChunkIds = new Set<string>();
   const pending = [".next/static/chunks"];
   while (pending.length) {
     const directory = pending.pop()!;
@@ -2304,25 +2324,42 @@ function emittedCompactCatalogFiles(
       const child = path.join(directory, entry.name);
       if (entry.isDirectory()) {
         pending.push(child);
-      } else if (
-        [...chunkIds].some((id) =>
-          new RegExp(`^${id}(?:-|\\.).*\\.js$`, "u").test(entry.name),
-        )
-      ) {
-        emittedFiles.push(child);
+      } else if (entry.name.endsWith(".js")) {
+        // Named async chunks need not include their numeric runtime ID in the
+        // filename. Read the actual registration, never infer payload identity
+        // from a human-readable chunk name.
+        const registeredIds = registeredWebpackChunkIds(readFileSync(child, "utf8"));
+        const matchedIds = registeredIds.filter((id) => chunkIds.has(id));
+        if (matchedIds.length) {
+          matchedIds.forEach((id) => resolvedChunkIds.add(id));
+          emittedFiles.push(child);
+        }
       }
     }
   }
   for (const chunkId of chunkIds) {
     assert.ok(
-      emittedFiles.some((file) =>
-        new RegExp(`^${chunkId}(?:-|\\.)`, "u").test(path.basename(file)),
-      ),
+      resolvedChunkIds.has(chunkId),
       `${group}: emitted chunk ${chunkId} is missing`,
     );
   }
   return [...new Set(emittedFiles)].sort();
 }
+
+function registeredWebpackChunkIds(source: string): string[] {
+  const registration = source.match(
+    /^\s*(?:["']use strict["'];)?\(self\.webpackChunk_N_E=self\.webpackChunk_N_E\|\|\[\]\)\.push\(\[\[([\d,\s]+)\]/u,
+  );
+  return registration ? registration[1].split(",").map((id) => id.trim()) : [];
+}
+
+test("emitted chunk identity comes from registration, including shared named chunks", () => {
+  assert.deepEqual(
+    registeredWebpackChunkIds('"use strict";(self.webpackChunk_N_E=self.webpackChunk_N_E||[]).push([[123,456],{modules:{}}]);'),
+    ["123", "456"],
+  );
+  assert.deepEqual(registeredWebpackChunkIds("const unrelated = '.push([[123]';"), []);
+});
 
 function bundledCompactCatalogFallback(entryFiles: readonly string[]) {
   const imports: string[] = [];
