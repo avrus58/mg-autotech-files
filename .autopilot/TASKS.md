@@ -6,18 +6,6 @@
 
 ## In Progress
 
-### MANUAL-20260905-ALL-VALIDATED-CHANGES-RELEASE [P1] Publish the validated panel and localization package
-
-Fingerprint: `production-release|8b06841df042-to-panel-localization-closeout|docker-prebuild-fixture-closure`
-
-Owner explicitly authorized publishing all current completed changes. The live
-VPS image pair is `8b06841df042`; the clean homepage-refresh branch is its linear
-successor. Preserve unrelated dirty worktrees, existing data/configuration and
-the separate mgautotech.de stack. No migration, dependency or API-route changes.
-The newly mandatory prebuild test needs its fixture closure admitted to the
-Docker builder context. Validate that packaging correction, publish the exact
-source archive, retain the previous image pair and run immediate public smoke.
-
 ## Blocked
 
 ### MANUAL-20260828-ADS-MEASUREMENT-FINAL-HARDENING [P0] Reklam edinimi, consent ve dogrulanmis donusum final kapilari
@@ -170,6 +158,23 @@ Remediation: Batch with a future documentation/source-comment maintenance pass a
 Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
+
+### MANUAL-20260905-ALL-VALIDATED-CHANGES-RELEASE [P1] Publish the validated panel and localization package
+
+Fingerprint: `production-release|8b06841df042-to-panel-localization-closeout|docker-prebuild-fixture-closure`
+
+Owner-authorized cumulative release `47ec45224470` is live on the existing VPS;
+app and analyzer healthy, zero restarts. Previous pair `8b06841df042` retained.
+Scope: completed localization, panel readability and six follow-up fixes, plus
+three validated Docker/archive/test portability corrections. No migration,
+dependency, API route, payment configuration or legal content changes.
+Full tests 1501/1501; lint/typecheck/i18n/performance and actual Linux Production
+build PASS. Public HTTP smoke 29/29; live EN/DE/TR/ZH browser matrix 24/24 across
+mobile/laptop PASS. An intermittent Cloudflare 522 seen both before and after
+release remains an explicitly unresolved availability observation; latest
+default-network readiness/homepage checks are 200. This receipt does not claim
+authenticated Production payment/order E2E or universal reliability.
+See `docs/production-release-2026-09-05.md`. Unrelated dirty worktrees excluded.
 
 ### MANUAL-20260905-PANEL-FOLLOW-UP [P2] Six verified panel clarity fixes
 

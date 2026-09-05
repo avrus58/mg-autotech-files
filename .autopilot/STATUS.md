@@ -5863,3 +5863,44 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
   CRLF before applying the same exact case boundaries. Regression coverage
   compares every actual route group under both line endings and rejects absent
   or unterminated cases. This is test-only; no runtime or catalog change.
+
+## 2026-09-05 Cumulative Production release completed
+
+- Exact deployed source: `47ec45224470510b8ab15a4e9766727847842dea`;
+  app/analyzer pair `47ec45224470`, healthy with zero restarts. The release-state
+  file records the prior complete pair `8b06841df042` for rollback. The focused
+  homepage-refresh branch was pushed; unrelated main-worktree edits preserved.
+- Release corrections: `.dockerignore` narrowly admits the mandatory prebuild
+  test/fixture closure; `.gitattributes` preserves generated catalogs as LF;
+  `tests/customer-workflow-client-bundles.test.ts` normalizes equivalent source
+  newlines and tests both forms. No runtime behavior or quality gate weakened.
+- Final full tests 1501/1501 PASS, no failures/skips; full lint and final scoped
+  test lint PASS; final web/all-desktop typecheck PASS. Localization audit:
+  2448 sources across 11 non-English locales, zero clean English fallbacks.
+  Actual Linux prebuild 37/37 PASS and Next 16.2.11 Turbopack Production build
+  PASS with 280/280 generated pages. Local performance/emitted bundle gates PASS.
+  Production dependency audit: zero findings; development tree still reports
+  two moderate/six high findings, not described as zero total vulnerabilities.
+- Post-release public HTTP smoke 29/29 PASS (IPv4-first runner): localized
+  documents, anonymous route shells, readiness, vehicle brands, expected admin
+  API 401 responses and four retained old assets. Browser EN/DE/TR/ZH matrix
+  24/24 PASS for homepage/login/register at 1366x768 and 390x844, using the
+  visible language menu and waiting for translated headings. No horizontal
+  overflow, nonempty alert or console warning/error in the final matrix.
+- Initial browser reads used a persisted English choice and insufficient
+  readiness waits; one language-load alert was also observed. Explicit UI
+  locale selection and the complete repeat matrix passed without the alert.
+  That does not prove an intermittent transport fault cannot recur.
+- Availability observation remains open: Cloudflare 522 occurred before and
+  after deployment from the local HTTP client; concurrent VPS/browser requests
+  returned 200. Latest ordinary default-network readiness/homepage checks both
+  returned 200 in about 0.2 seconds. No network/configuration cause established;
+  no DNS, firewall, Caddy or timeout workaround applied. No critical new runtime
+  regression established that would justify rolling back the validated UI.
+- This release did not recreate Caddy or the separate mgautotech.de app. Their
+  start times changed independently during this turn; both remained healthy
+  and the main site returned 200. Do not assert their runtime was unchanged.
+- No database, real customer, payment or email mutations performed. Production
+  authenticated workflows were not exercised; synthetic component/route tests
+  are not presented as live business transaction proof. Release receipt:
+  `docs/production-release-2026-09-05.md`.
