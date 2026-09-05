@@ -5858,3 +5858,8 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
   `core.autocrlf=true` was affecting archive export. Pinning generated catalogs
   to LF in `.gitattributes` fixes the transport, not catalog content; strict
   freshness remains unchanged. No running service was replaced by that build.
+- Second Linux build passed source/freshness checks but exposed one LF-specific
+  source-case boundary assertion (35/36 tests). The test helper now normalizes
+  CRLF before applying the same exact case boundaries. Regression coverage
+  compares every actual route group under both line endings and rejects absent
+  or unterminated cases. This is test-only; no runtime or catalog change.

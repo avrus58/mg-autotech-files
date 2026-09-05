@@ -1917,6 +1917,29 @@ test("reachable customer UI imports have an exact manifest classification", () =
   assert.deepEqual([...new Set(missing)].sort(), []);
 });
 
+function compactSourceCase(group: CustomerWorkflowClientGroup, source: string) {
+  const normalized = source.replaceAll("\r\n", "\n");
+  const start = normalized.indexOf(`case "${group}":`);
+  if (start < 0) return null;
+  const next = normalized.indexOf("\n    case ", start + 1);
+  const end = next >= 0
+    ? next
+    : normalized.indexOf("\n  }\n\n  // Dashboard", start);
+  return end > start ? normalized.slice(start, end) : null;
+}
+
+test("source compact cases preserve exact route boundaries with LF and CRLF", () => {
+  const source = readFileSync("src/components/LanguageSwitcher.tsx", "utf8")
+    .replaceAll("\r\n", "\n");
+  for (const group of Object.keys(customerWorkflowClientSurfaceManifest) as CustomerWorkflowClientGroup[]) {
+    const expected = compactSourceCase(group, source);
+    assert.ok(expected, `${group}: missing case`);
+    assert.deepEqual(compactSourceCase(group, source.replaceAll("\n", "\r\n")), expected);
+  }
+  assert.equal(compactSourceCase("widget", 'case "widget": missingEnd'), null);
+  assert.equal(compactSourceCase("widget", 'case "auth": missingWidget'), null);
+});
+
 test("every supported customer route uses a bounded compact catalog", () => {
   const manifestEntries = Object.entries(
     customerWorkflowClientSurfaceManifest,
@@ -2048,16 +2071,11 @@ test("every supported customer route uses a bounded compact catalog", () => {
       );
     }
 
-    const caseStart = switcher.indexOf(`case "${group}":`);
-    assert.ok(caseStart >= 0, `missing compact runtime case: ${group}`);
-    const nextCase = switcher.indexOf("\n    case ", caseStart + 1);
-    const switchEnd = switcher.indexOf("\n  }\n\n  // Dashboard", caseStart);
-    const caseEnd = nextCase >= 0 ? nextCase : switchEnd;
+    const caseSource = compactSourceCase(group, switcher);
     assert.ok(
-      caseEnd > caseStart,
+      caseSource,
       `could not isolate compact runtime case: ${group}`,
     );
-    const caseSource = switcher.slice(caseStart, caseEnd);
     for (const catalog of surface.languageSwitcherCatalogs) {
       assert.ok(
         caseSource.includes(catalog),
