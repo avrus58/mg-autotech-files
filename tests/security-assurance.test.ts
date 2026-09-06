@@ -23,6 +23,19 @@ test("every admin API route declares a recognized server authorization guard", (
   assert.ok(routes.length >= 40);
   for (const route of routes) {
     const source = readFileSync(route, "utf8");
+    // Exact self-navigation contract: staff membership is sufficient only for
+    // this read-only list of permitted hrefs. Operational routes below still
+    // require their existing per-action permissions. Real route/client tests
+    // additionally exercise customer denial and delegated staff permutations.
+    if (route === resolve(process.cwd(), "src", "app", "api", "admin", "navigation", "route.ts")) {
+      assert.match(source, /const auth = await requireApiUser\(request\)/);
+      assert.match(source, /if \(!auth\.ok\) return NextResponse\.json/);
+      assert.match(source, /if \(!isStaffMember\(auth\.access\)\)/);
+      assert.match(source, /status: 403/);
+      assert.match(source, /destinations: availableAdminDestinations\(auth\.access\)\.map\(\(item\) => item\.href\)/);
+      assert.doesNotMatch(source, /export (?:async )?function (?:POST|PUT|PATCH|DELETE)|supabaseAdmin|\.from\(/);
+      continue;
+    }
     assert.match(
       source,
       /requireStaffPermission|requirePrimaryOwner|requireFileExpertAdmin/,
