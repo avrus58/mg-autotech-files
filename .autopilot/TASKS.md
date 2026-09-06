@@ -179,6 +179,12 @@ Customer dashboard unchanged. Details and limitations in
 docs/admin-mobile-review-2026-09-06.md. Local implementation complete; no push,
 Preview or Production release, live backend E2E or physical-device claim.
 
+Production follow-up: owner explicitly authorized "Canliya al". Source 9b78cf4
+deployed on the existing VPS, paired services healthy; actual Linux build and
+35/35 post-release public smoke PASS. Desktop/customer scope preserved. No DB,
+payment or environment changes. Receipt:
+docs/production-release-2026-09-06-admin-mobile.md.
+
 ### MANUAL-20260906-SEO-REPORT-SITE-ISOLATION [P1] File Service Google raporlarini exact site kapsaminda tut
 
 Fingerprint: `seo-growth|google-report-query-boundary|file-host-only|country-session-event-isolation`

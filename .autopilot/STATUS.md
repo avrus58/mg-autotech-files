@@ -1,5 +1,33 @@
 # Otonom calisma gunlugu
 
+## 2026-09-06 Mobile admin - Production release verified
+
+- Current owner instruction: "Canliya al". Released only the previously reviewed
+  mobile admin/homepage account-entry package, source
+  9b78cf41d31d59d6933da05cd40c2076e46d03b9. Clean feature branch pushed; unrelated
+  owner work excluded. Runtime source equals the validated def5538 candidate.
+- Existing VPS deploy contract unchanged. App/analyzer pair 9b78cf41d31d healthy,
+  zero restarts; previous healthy 412180164e96 pair retained for rollback.
+  Caddy and separate mgautotech.de app retain their prior start timestamps.
+- Reused unchanged-source 1517/1517 tests, lint, typecheck, local UI/desktop
+  comparison and independent review receipts. Actual Linux Production build
+  PASS: 37/37 prebuild tests, 12-locale i18n, TypeScript, 281/281 generated pages.
+- Public smoke before 34/34, after 35/35 PASS, including four prior-release
+  assets, locales, protected API rejection and separate main website. New
+  /api/admin/navigation returns anonymous 401; compiled endpoint is present.
+- Browser: mobile Login link visible and works; security verification completes,
+  login remains enabled and anonymous /admin resolves to its protected sign-in
+  screen. No horizontal overflow. No credentials or transactions submitted.
+  Two console messages originate from challenges.cloudflare.com; no first-party
+  application error observed. Authenticated staff E2E was not exercised.
+- Production-only dependency audit: zero findings. Builder full development
+  tree still reports 2 moderate / 6 high findings, unchanged from prior receipt;
+  no claim of zero vulnerabilities across all development dependencies.
+- Archive SHA-256 matched before extraction. No migrations, runtime secret,
+  payment/Ads, DNS/Caddy or customer-data changes. Rollback not needed.
+- Receipt: docs/production-release-2026-09-06-admin-mobile.md; runtime logs
+  .autopilot/runtime/mobile-release-*. Viewport override reset after browser QA.
+
 ## 2026-09-06 Mobile admin usability - Done (local implementation)
 
 - Task: MANUAL-20260906-ADMIN-MOBILE. Owner explicitly limits changes to mobile
