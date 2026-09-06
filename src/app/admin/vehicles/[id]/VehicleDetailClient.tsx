@@ -1,5 +1,7 @@
 "use client";
 
+import { AdminMobileSectionJump } from "@/components/admin/AdminMobileSectionJump";
+
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -341,6 +343,7 @@ export default function VehicleDetailClient({ id }: { id: string }) {
       </div>
     </header>
 
+    <AdminMobileSectionJump sections={[{ id: "vehicle", label: "Vehicle" }, { id: "stages", label: "Stage 1–2–3" }, { id: "ecu", label: "ECU & gearbox" }, { id: "services", label: "Services" }, { id: "notes", label: "Notes" }, { id: "publish", label: "Publish & quality" }]} />
     <nav aria-label="Vehicle editor sections" className="sticky top-0 z-20 border-b border-white/10 bg-[#080808]/95 backdrop-blur"><div className="mx-auto flex max-w-[1440px] gap-2 overflow-x-auto px-4 py-2 text-sm font-black"><a href="#vehicle" className="shrink-0 rounded-lg px-3 py-2 text-zinc-300 hover:bg-white/10">Vehicle</a><a href="#stages" className="shrink-0 rounded-lg px-3 py-2 text-zinc-300 hover:bg-white/10">Stage 1–2–3</a><a href="#ecu" className="shrink-0 rounded-lg px-3 py-2 text-zinc-300 hover:bg-white/10">ECU & gearbox</a><a href="#services" className="shrink-0 rounded-lg px-3 py-2 text-zinc-300 hover:bg-white/10">Services</a><a href="#publish" className="shrink-0 rounded-lg px-3 py-2 text-zinc-300 hover:bg-white/10">Publish</a></div></nav>
 
     <div className="mx-auto grid max-w-[1440px] gap-5 px-4 py-5 xl:grid-cols-[minmax(0,1fr)_330px]">

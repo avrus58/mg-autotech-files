@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { BrowserAuthBoundary } from "@/components/auth/BrowserAuthBoundary";
 import { AdminNotificationDock } from "@/components/admin/AdminNotificationDock";
 import { AdminWorkspaceRestoreGuard } from "@/components/admin/AdminWorkspaceRestoreGuard";
+import { AdminMobileNavigation } from "@/components/admin/AdminMobileNavigation";
+import "./mobile.css";
 
 export const metadata: Metadata = {
   title: { absolute: "MG AutoTech · Admin" },
@@ -28,6 +30,7 @@ export default function AdminLayout({
         description="MG AutoTech operations, customer records and internal controls require a verified staff session."
       >
         <div data-admin-workspace>
+          <AdminMobileNavigation />
           {children}
           <AdminNotificationDock />
         </div>

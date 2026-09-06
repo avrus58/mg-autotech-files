@@ -305,7 +305,7 @@ export default function CommercialSettingsPage() {
   }
 
   return (
-    <main className="mg-compact-ui min-h-screen bg-[#050505] text-white">
+    <main data-admin-mobile-save-space className="mg-compact-ui min-h-screen bg-[#050505] text-white">
       <header className="border-b border-white/10 bg-black/80">
         <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -479,6 +479,13 @@ export default function CommercialSettingsPage() {
             {hasChanges ? "Preview has unsaved changes." : "Preview matches saved prices."}
           </div>
         </aside>
+      </div>
+      <div className="admin-mobile-savebar">
+        <span role="status">{hasChanges ? "Unsaved prices" : "Prices up to date"}</span>
+        <button type="button" onClick={() => void save()} disabled={saving || Boolean(validationError) || !hasChanges || !writesEnabled}>
+          {saving ? <Loader2 size={18} className="animate-spin" aria-hidden="true" /> : <Save size={18} aria-hidden="true" />}
+          {saving ? "Saving…" : "Save final prices"}
+        </button>
       </div>
     </main>
   );

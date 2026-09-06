@@ -30,6 +30,7 @@ import {
 } from "@/lib/creditPackages";
 import RequestChat from "@/components/RequestChat";
 import { AdminNotificationCenter } from "@/components/admin/AdminNotificationCenter";
+import { AdminMobileOverview } from "@/components/admin/AdminMobileOverview";
 import type { AdminEmailDeliveryIssue } from "@/lib/adminNotificationCenter";
 import {
   adsPerformancePermissions,
@@ -685,6 +686,27 @@ export default function AdminPage() {
   const customerPricingSaveRequestRef = useRef(0);
   const selectedCustomerIdRef = useRef<string | null>(null);
 
+  useEffect(() => {
+    const selectPanel = () => {
+      if (!adminAccess) return;
+      if (window.location.hash === "#customers") {
+        if (!hasStaffPermission(adminAccess, "customers.view")) return;
+        setActiveTab("customers");
+      } else if (!window.location.hash || window.location.hash === "#orders") {
+        setActiveTab("orders");
+      } else return;
+      if (window.matchMedia("(max-width: 1023px)").matches) {
+        window.requestAnimationFrame(() => {
+          const panel = document.getElementById("admin-primary-panel");
+          panel?.focus({ preventScroll: true });
+          panel?.scrollIntoView({ block: "start" });
+        });
+      }
+    };
+    window.addEventListener("hashchange", selectPanel);
+    return () => window.removeEventListener("hashchange", selectPanel);
+  }, [adminAccess]);
+
   const clearAdminRetryTimer = useCallback(() => {
     if (adminRetryTimerRef.current !== null) {
       window.clearTimeout(adminRetryTimerRef.current);
@@ -861,6 +883,13 @@ export default function AdminPage() {
       setAdminAccessDenied(false);
       if (!silent && window.location.hash === "#customers" && hasStaffPermission(access, "customers.view")) {
         setActiveTab("customers");
+        if (window.matchMedia("(max-width: 1023px)").matches) {
+          window.requestAnimationFrame(() => {
+            const panel = document.getElementById("admin-primary-panel");
+            panel?.focus({ preventScroll: true });
+            panel?.scrollIntoView({ block: "start" });
+          });
+        }
       }
       const orderSnapshotRegressed = hasAdminSnapshotRegression(
         knownOrderIdsRef.current,
@@ -1792,9 +1821,9 @@ export default function AdminPage() {
     <main className="mg-compact-ui min-h-screen overflow-x-hidden bg-[#050505] text-white">
       <div className="fixed inset-0 -z-10 bg-[radial-gradient(circle_at_18%_0%,rgba(160,18,28,0.25),transparent_34%),linear-gradient(135deg,#050505,#0c0c0e_48%,#170507)]" />
 
-      <header className="sticky top-0 z-50 border-b border-white/10 bg-black/80 backdrop-blur-xl">
+      <header data-admin-root-toolbar className="sticky top-0 z-50 border-b border-white/10 bg-black/80 backdrop-blur-xl">
         <div className="mx-auto flex max-w-[1760px] items-center justify-between gap-3 px-3 py-2.5 sm:px-4 sm:py-3">
-          <div className="flex min-w-0 items-center gap-3">
+          <div data-admin-desktop-brand className="flex min-w-0 items-center gap-3">
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-red-800/50 bg-[#111] shadow-lg shadow-red-950/40 sm:h-10 sm:w-10">
               <ShieldCheck className="h-5 w-5 text-red-600 sm:h-6 sm:w-6" />
             </div>
@@ -1827,11 +1856,11 @@ export default function AdminPage() {
               }}
               onFilterQueue={focusOrderQueue}
             />
-            <button onClick={() => loadAdminData({ silent: adminDataReady, manual: true })} disabled={loading || autoRefreshing} className="h-11 rounded-lg border border-white/10 bg-white/[0.04] px-3 text-sm font-bold text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60 lg:h-10">
+            <button aria-label="Refresh admin data" onClick={() => loadAdminData({ silent: adminDataReady, manual: true })} disabled={loading || autoRefreshing} className="h-11 rounded-lg border border-white/10 bg-white/[0.04] px-3 text-sm font-bold text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60 lg:h-10">
               <RefreshCcw className={`mr-2 inline h-4 w-4 ${loading || autoRefreshing ? "animate-spin" : ""}`} />
               <span className="hidden sm:inline">Refresh</span>
             </button>
-            <Link href="/dashboard" className="inline-flex h-11 items-center rounded-lg border border-white/10 bg-white/[0.04] px-3 text-sm font-bold text-white transition hover:bg-white/10 lg:h-10">
+            <Link href="/dashboard" aria-label="Customer dashboard" className="inline-flex h-11 items-center rounded-lg border border-white/10 bg-white/[0.04] px-3 text-sm font-bold text-white transition hover:bg-white/10 lg:h-10">
               <ArrowLeft className="mr-2 inline h-4 w-4" />
               <span className="hidden sm:inline">Dashboard</span>
             </Link>
@@ -1840,7 +1869,7 @@ export default function AdminPage() {
       </header>
 
       <section className="mx-auto grid max-w-[1760px] min-w-0 gap-4 px-2 py-4 sm:px-3 sm:py-5 xl:grid-cols-[220px_minmax(0,1fr)]">
-        <aside className="order-2 h-fit min-w-0 rounded-xl border border-white/10 bg-white/[0.04] p-3 shadow-2xl shadow-black/20 xl:order-1 xl:sticky xl:top-20">
+        <aside data-admin-desktop-sidebar className="order-2 h-fit min-w-0 rounded-xl border border-white/10 bg-white/[0.04] p-3 shadow-2xl shadow-black/20 xl:order-1 xl:sticky xl:top-20">
           <div className="mb-3 px-2">
             <div className="text-xs font-black uppercase tracking-[0.22em] text-zinc-500">Admin Workspace</div>
             <div className="mt-1 text-lg font-black text-white">Operations</div>
@@ -2005,7 +2034,7 @@ export default function AdminPage() {
         </aside>
 
         <div className="order-1 min-w-0 xl:order-2">
-          <div className="mb-4">
+          <div data-admin-introduction className="mb-4">
             <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-red-800/50 bg-red-950/25 px-3 py-1.5 text-xs font-semibold text-red-100">
               <Database className="h-4 w-4 text-red-500" />
               Admin operations
@@ -2024,6 +2053,7 @@ export default function AdminPage() {
           )}
 
           {adminDataReady && (
+            <AdminMobileOverview>
             <AdminOperationsOverview
               stats={stats}
               latestOrders={latestOrders}
@@ -2033,6 +2063,7 @@ export default function AdminPage() {
               onFilter={focusOrderQueue}
               onOpenOrder={setSelectedOrder}
             />
+            </AdminMobileOverview>
           )}
 
           {newOrderNotice && (
@@ -2046,6 +2077,7 @@ export default function AdminPage() {
             <div className="mb-4 rounded-xl border border-red-800/50 bg-red-950/30 p-3 text-sm text-red-200">{message}</div>
           )}
 
+          <div id="admin-primary-panel" tabIndex={-1}>
           {showInitialAdminLoadError ? (
             <AdminLoadErrorState
               message={adminLoadError}
@@ -2079,6 +2111,7 @@ export default function AdminPage() {
               quickAdjustCredits={quickAdjustCredits}
             />
           )}
+          </div>
         </div>
       </section>
 
@@ -2369,12 +2402,14 @@ function OrdersPanel({
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               placeholder="Search customer, vehicle, ECU, file..."
+              aria-label="Search orders"
               className="h-11 w-full rounded-lg border border-white/10 bg-black/35 pl-11 pr-3 text-sm font-bold text-white outline-none transition placeholder:text-zinc-600 focus:border-red-700 md:w-80 lg:h-10 2xl:w-96"
             />
           </div>
 
           <button
             onClick={() => setOnlyWithFile((current) => !current)}
+            aria-pressed={onlyWithFile}
             className={`h-11 rounded-lg border px-3 text-xs font-black transition lg:h-10 ${
               onlyWithFile
                 ? "border-red-700 bg-red-950/40 text-red-200"
@@ -2387,7 +2422,7 @@ function OrdersPanel({
         </div>
       </div>
 
-      <div className="mb-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+      <div data-admin-order-groups className="mb-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
         {adminOrderGroups.map((group) => {
           const active = orderGroup === group.value;
           const count = groupCounts[group.value];
@@ -2396,6 +2431,7 @@ function OrdersPanel({
             <button
               key={group.value}
               type="button"
+              aria-pressed={active}
               onClick={() => {
                 setOrderGroup(group.value);
                 setSelectedStatus("all");
@@ -2420,7 +2456,13 @@ function OrdersPanel({
         })}
       </div>
 
-      <div className="mb-4 flex min-w-0 flex-wrap gap-2 pb-1">
+      <label className="admin-mobile-status-filter">
+        <span>Order status</span>
+        <select value={selectedStatus} onChange={(event) => setSelectedStatus(event.target.value)}>
+          {visibleStatusOptions.map((status) => <option key={status} value={status}>{status === "all" ? "All" : statusLabel(status)} ({status === "all" ? groupedOrders.length : groupedOrders.filter((order) => order.status === status).length})</option>)}
+        </select>
+      </label>
+      <div data-admin-desktop-status-filters className="mb-4 flex min-w-0 flex-wrap gap-2 pb-1">
         {visibleStatusOptions.map((status) => {
           const active = selectedStatus === status;
           const count =

@@ -240,6 +240,7 @@ export default function AdminOperationsPage() {
       </header>
 
       <div className="mx-auto max-w-[1600px] px-4 py-5 sm:px-6">
+        <label className="admin-mobile-status-filter"><span>Operations section</span><select value={activeTab} onChange={(event) => setActiveTab(event.target.value as OperationsTab)}>{tabs.map((tab) => <option key={tab.id} value={tab.id}>{tab.label}</option>)}</select></label>
         <nav aria-label="Operations sections" className="mb-5 flex gap-2 overflow-x-auto border-b border-white/10 pb-3">
           {tabs.map((tab) => (
             <button

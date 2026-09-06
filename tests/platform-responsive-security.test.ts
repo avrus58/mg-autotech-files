@@ -29,7 +29,11 @@ test("admin mobile content is prioritized and the notification dock avoids page 
   const adminPage = readProjectFile("src", "app", "admin", "page.tsx");
   const notificationDock = readProjectFile("src", "components", "admin", "AdminNotificationDock.tsx");
 
-  assert.match(adminPage, /aside className="order-2[^"]*xl:order-1/);
+  assert.match(adminPage, /aside data-admin-desktop-sidebar className="order-2[^"]*xl:order-1/);
+  const mobileCss = readProjectFile("src", "app", "admin", "mobile.css");
+  assert.match(mobileCss, /@media \(max-width: 1023px\)/);
+  assert.match(mobileCss, /data-admin-desktop-sidebar/);
+  assert.match(mobileCss, /data-admin-notification-dock.*bottom: calc\(88px/);
   assert.match(adminPage, /div className="order-1 min-w-0 xl:order-2"/);
   assert.match(notificationDock, /fixed bottom-4 left-4[^"]*sm:right-4 sm:top-20/);
 });

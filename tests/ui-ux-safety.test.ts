@@ -371,7 +371,7 @@ test("legacy admin dashboard protects initial loading and exposes truthful recov
   assert.match(adminPage, /The queue is not shown until orders and customers load successfully/);
   assert.match(adminPage, /onRetry=\{\(\) => loadAdminData\(\{ manual: true \}\)\}/);
   assert.match(adminPage, /adminDataReady \? stats\.total : "—"/);
-  assert.match(adminPage, /adminDataReady && \(\s*<AdminOperationsOverview/);
+  assert.match(adminPage, /adminDataReady && \(\s*<AdminMobileOverview>\s*<AdminOperationsOverview/);
   assert.doesNotMatch(adminPage, /: "Live Sync"/);
   assert.doesNotMatch(adminPage, /ADMIN_SYNC_ERROR_MESSAGE/);
   assert.doesNotMatch(adminPage, /Admin sync needs retry/);

@@ -1,5 +1,7 @@
 "use client";
 
+import { AdminMobileOverview } from "@/components/admin/AdminMobileOverview";
+
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { useCallback, useEffect, useState } from "react";
@@ -424,12 +426,12 @@ export default function VehicleControlCenter({ section = "overview" }: { section
         </details>
       </nav>
 
-      {stats && catalogSection && <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      {stats && catalogSection && <AdminMobileOverview label="Catalog totals, warnings & data health"><section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <Metric icon={<Database />} label="Brands / Models" value={`${stats.brandCount} / ${stats.modelCount}`} helper={`${stats.generationCount} generations`} />
         <Metric icon={<Gauge />} label="Engines" value={stats.engineCount} helper={`${stats.publishedCount} published / ${stats.draftCount} draft`} />
         <Metric icon={<AlertTriangle />} label="Warnings" value={stats.validationWarningCount + stats.duplicateWarningCount} helper={`${stats.duplicateWarningCount} duplicate keys`} />
         <Metric icon={<CheckCircle2 />} label="Data Health" value={`${stats.dataHealthScore}%`} helper="Validation, publish and duplicate score" />
-      </section>}
+      </section></AdminMobileOverview>}
 
       {lastImport && section === "import" && <section className="mt-6 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">

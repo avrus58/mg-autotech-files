@@ -951,8 +951,8 @@ function HomepageHeader({
   return (
     <LocalizedHomepageTree>
       <header className="sticky top-0 z-40 border-b border-white/10 bg-[#050506]/90 backdrop-blur-xl">
-      <div className="mx-auto flex h-[4.25rem] max-w-[86rem] items-center justify-between gap-4 px-4 sm:px-6">
-        <Link href="/" className="flex min-w-0 items-center gap-3" aria-label="MG AutoTech home">
+      <div className="mx-auto flex h-[4.25rem] max-w-[86rem] items-center justify-between gap-2 px-3 sm:gap-4 sm:px-6">
+        <Link href="/" className="flex min-w-0 items-center gap-2 sm:gap-3" aria-label="MG AutoTech home">
           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-red-500/30 bg-red-500/10"><Cpu className="h-5 w-5 text-red-500" /></span>
           <span className="min-w-0 leading-none">
             <span className="block truncate text-sm font-black tracking-[0.06em]">MG <span className="text-red-500">AUTOTECH</span></span>
@@ -984,7 +984,11 @@ function HomepageHeader({
           <Link href="/new-request" className="inline-flex min-h-10 items-center rounded-xl bg-[#b1121b] px-4 text-xs font-black transition hover:bg-[#ce1722]">{isLoggedIn ? "New Request" : "Start Request"}<ArrowRight className="ml-2 h-3.5 w-3.5" /></Link>
         </div>
 
-        <details className="group relative lg:hidden">
+        <Link data-homepage-mobile-account href={isLoggedIn ? "/dashboard" : "/login"} aria-label={isLoggedIn ? "Customer Dashboard" : "Login"} className="ml-auto inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-xl border border-red-500/30 bg-red-500/10 px-2 text-[11px] font-bold text-red-100 focus-visible:outline-2 focus-visible:outline-red-400 sm:hidden">
+          {isLoggedIn ? <LayoutDashboard className="h-4 w-4 shrink-0" aria-hidden="true" /> : <LogIn className="h-4 w-4 shrink-0" aria-hidden="true" />}
+          {isLoggedIn ? "My Account" : "Login"}
+        </Link>
+        <details className="group relative shrink-0 lg:hidden">
           <summary aria-label="Open navigation" className="flex h-10 w-10 cursor-pointer list-none items-center justify-center rounded-xl border border-white/10 bg-white/[0.035] marker:hidden"><Menu className="h-5 w-5" /></summary>
           <div className="absolute right-0 top-[calc(100%+.55rem)] w-[min(20rem,calc(100vw-2rem))] rounded-2xl border border-white/10 bg-[#0b0b0d] p-2 shadow-2xl">
             {nav.map((item) => (
