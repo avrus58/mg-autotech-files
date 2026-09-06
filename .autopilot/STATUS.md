@@ -5913,9 +5913,25 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 - Evidence and limitations: `docs/seo-acquisition-audit-2026-09-06.md`.
 - Files: Search Console and GA4 adapters, report limitations, synthetic SEO
   regression tests, task/status and audit documentation.
-- Current validation: targeted SEO suite 16/16 PASS; full lint PASS; web and
-  desktop typecheck PASS; diff whitespace check PASS. Full tests, i18n gate,
-  Production build and independent immutable review are still running/pending.
-- Not Done yet. No push/deploy or live mutation. Search Console account access,
-  an attributable 522 failure and actual registration/email delivery remain
-  unverified; passing synthetic tests do not resolve those external questions.
+- Final local validation at candidate `a7d5b0a`: targeted SEO suite 16/16 PASS;
+  full tests 1504/1504 PASS, no failures/skips; full lint PASS; web and desktop
+  typecheck PASS; i18n PASS (12 locales, 2448 source strings, 37 bundle tests);
+  `npm run build -- --webpack` PASS with mandatory prebuild and 280/280 routes;
+  diff whitespace check PASS. Independent immutable source review by
+  `/root/seo_scope_review` found no actionable issues and cleared the bounded
+  manual candidate after receiving all gate results.
+- Bounded implementation Done locally, not an autonomous OS acceptance. No push,
+  deploy, schema, tracking, campaign, payment, email or customer mutation.
+- Google access resolved by selecting the owner's second existing session.
+  SC Aug 8–Sep 4: 23 organic clicks/464 impressions/5% CTR/15.5 average position.
+  Old Aug 28 index summary is not current: BMW now indexed (Sep 1 crawl);
+  `/de/file-service` not indexed but Google's Sep 6 live fetch is indexable.
+  Sitemap Success/138 URLs, last read Sep 2. Crawl stats through Sep 4: 4941
+  requests, 202ms average, no host issue; this predates the observed Sep 5 522.
+- GA4 Aug 9–Sep 5: 61 users, 13 request CTA events/10 users, 5 request starts/1
+  user, 1 generate_lead/1 user, no sign_up row. Not proof of real registrations
+  or paying customers. GA4's Direct classification is constrained by the existing
+  intentional query/referrer sanitization; Ads and first-party attribution are
+  separate. Do not calculate a visitor-level conversion rate from these counts.
+- Remaining: the intermittent 522 cause and real registration/email completion
+  are unverified; live report API results await explicit scoped publication.

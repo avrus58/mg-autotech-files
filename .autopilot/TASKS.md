@@ -6,20 +6,6 @@
 
 ## In Progress
 
-### MANUAL-20260906-SEO-REPORT-SITE-ISOLATION [P1] File Service Google raporlarini exact site kapsaminda tut
-
-Fingerprint: `seo-growth|google-report-query-boundary|file-host-only|country-session-event-isolation`
-
-Kanıt: Search Console country query has no page dimension or site filter when a
-domain property is configured. GA4 queries use paths/countries/events without
-hostName filtering. Shared-property rows can therefore include unrelated hosts,
-and filtering page rows after the API row limit cannot recover omitted rows.
-
-Kapsam: Filter all Search Console and GA4 aggregate requests to the canonical
-File Service host before aggregation, retain event/path safety filters, verify
-with synthetic cross-host fixtures and disclose bounded-report limitations.
-No tracking, consent, pricing, credentials, database or Production changes.
-
 ## Blocked
 
 ### MANUAL-20260828-ADS-MEASUREMENT-FINAL-HARDENING [P0] Reklam edinimi, consent ve dogrulanmis donusum final kapilari
@@ -172,6 +158,26 @@ Remediation: Batch with a future documentation/source-comment maintenance pass a
 Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
+
+### MANUAL-20260906-SEO-REPORT-SITE-ISOLATION [P1] File Service Google raporlarini exact site kapsaminda tut
+
+Fingerprint: `seo-growth|google-report-query-boundary|file-host-only|country-session-event-isolation`
+
+Kanıt: Search Console country query lacked a page/host filter; GA4 aggregate
+queries lacked hostName filtering. Shared-property data could include other
+hosts, with post-limit page filtering unable to recover displaced rows.
+
+Sonuc: All three Search Console and five GA4 requests now filter the exact
+File Service host before aggregation. Event/path safety filters retained;
+bounded-data limitations disclosed. Local candidate `a7d5b0a`: targeted 16/16,
+full tests 1504/1504, lint, web/desktop typecheck, 12-locale i18n and Production
+Webpack build 280/280 PASS; independent immutable review no actionable findings.
+No push/deploy or tracking, consent, pricing, credential or database changes.
+
+Google account access resolved. Actual search, indexing, crawl and GA4 evidence
+and remaining 522/business-conversion limits are documented in
+`docs/seo-acquisition-audit-2026-09-06.md`. Local Done is only this bounded fix,
+not a claim that all SEO or acquisition risks have disappeared.
 
 ### MANUAL-20260905-ALL-VALIDATED-CHANGES-RELEASE [P1] Publish the validated panel and localization package
 
