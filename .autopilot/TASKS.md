@@ -159,6 +159,26 @@ Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
 
+### MANUAL-20260906-ADMIN-MOBILE [P1] Mobile admin navigation and homepage account access
+
+Fingerprint: `admin|mobile-only|bottom-sidebar-navigation|persistent-drawer|homepage-account-entry`
+
+Owner scope: preserve desktop admin and customer-panel features/design; replace
+mobile bottom navigation with a persistent top menu and expose the homepage
+account link. Baseline 500bdde; unrelated dirty owner work excluded.
+
+Result: mobile drawer, synchronized Orders/Customers/history, compact filters,
+collapsible activity/catalog overviews, vehicle section jump, mobile save bar
+and notification viewport/modal safety. Read-only caller-navigation endpoint
+uses existing guards; no operational API, schema or live service changes.
+Application candidate 5dea0bc; final test-only follow-up def5538. Independent
+immutable reviews GO. i18n, lint, typecheck, 1517/1517 tests, webpack build
+281/281 and performance gates PASS. Synthetic browser: 38 + 5 scenarios,
+45 route/width checks PASS; 16 desktop comparisons had zero changed pixels.
+Customer dashboard unchanged. Details and limitations in
+docs/admin-mobile-review-2026-09-06.md. Local implementation complete; no push,
+Preview or Production release, live backend E2E or physical-device claim.
+
 ### MANUAL-20260906-SEO-REPORT-SITE-ISOLATION [P1] File Service Google raporlarini exact site kapsaminda tut
 
 Fingerprint: `seo-growth|google-report-query-boundary|file-host-only|country-session-event-isolation`

@@ -1,5 +1,41 @@
 # Otonom calisma gunlugu
 
+## 2026-09-06 Mobile admin usability - Done (local implementation)
+
+- Task: MANUAL-20260906-ADMIN-MOBILE. Owner explicitly limits changes to mobile
+  admin and the homepage mobile account entry; customer panel/desktop preserved.
+- Clean worktree: mg-autotech-files-admin-mobile, branch
+  codex/admin-mobile-navigation-20260906, baseline 500bdde.
+- Application candidate: 5dea0bcb549600783bbd72baac6f1b4308c9a6ff; final tested
+  candidate: def5538ff58c83d84d28d5d98f3713866fd86c06 (test-only follow-up).
+- Shared mobile dialog navigation, compact filters, collapsible overviews,
+  vehicle section jump and commercial save bar are scoped below 1024px.
+  Homepage reuses existing session display and translated catalog strings.
+  New read-only /api/admin/navigation returns only the caller's permitted hrefs,
+  using existing identity/staff guards; operational authorization is unchanged.
+- Independent immutable source review GO on 5dea0bc; exact-file security-test
+  follow-up GO on def5538. Original permission, hash and modal findings closed.
+- Final npm test: 1517/1517 PASS, zero failures/skips (194446 ms), receipt
+  .autopilot/runtime/mobile-tests-def5538.log. Lint and web/desktop typecheck
+  PASS, matching mobile-lint-def5538.log and mobile-typecheck-def5538.log.
+  Lint excludes only generated .autopilot/runtime/** browser fixture bundles.
+- Production webpack build PASS (281/281), mobile-build-5dea0bc.log. App source
+  stayed frozen throughout that build; def5538 changes only one test file.
+  Prebuild i18n: all 12 locales, 2448 sources, zero clean English fallback,
+  37/37 bundle tests PASS. Post-build performance/localization/prerender gates
+  PASS, mobile-performance-def5538.log; all 48 required public routes present.
+- Synthetic browser QA: 38 interaction/localization + 5 regression scenarios
+  PASS, 45 route/width checks without overflow/outside controls/console errors.
+  Six external report/tool surfaces cover unavailable states, not live reports.
+  Desktop: 16 baseline comparisons, zero changed pixels. Customer dashboard,
+  existing access guards, dependencies and scripts have no diff from baseline.
+- Details: docs/admin-mobile-review-2026-09-06.md. Failed/interrupted earlier
+  runs are retained only as diagnostic history, not accepted receipts.
+- No push, Preview/Production, database migration, payment/auth-rule change,
+  secret access or real customer-data actions. Local browser fixtures are
+  synthetic; no authenticated backend E2E or physical mobile-device claim.
+  Local preview remains on 127.0.0.1:3199; comparison server 3200 stopped.
+
 ## 2026-09-05 Owner-approved panel follow-up implementation
 
 - Task: MANUAL-20260905-PANEL-FOLLOW-UP. Implemented the six verified findings
