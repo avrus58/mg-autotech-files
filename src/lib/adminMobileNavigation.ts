@@ -13,7 +13,7 @@ type AdminDestination = {
 // destination and API continues to enforce its own staff authorization.
 export const adminMobileDestinations: readonly AdminDestination[] = [
   { href: "/admin#orders", label: "Orders", group: "Workspace", permissions: ["orders.view"] },
-  { href: "/admin#customers", label: "Customers", group: "Workspace", permissions: ["customers.view"] },
+  { href: "/admin#customers", label: "Customers", group: "Workspace", permissions: ["orders.view", "customers.view"] },
   { href: "/admin/requests", label: "Request Control", group: "Workspace", permissions: ["orders.view"] },
   { href: "/admin/operations", label: "Operations Intelligence", group: "Workspace", permissions: ["orders.view"] },
   { href: "/admin/payments", label: "Revenue Control", group: "Business", permissions: ["credits.manage"] },

@@ -70,6 +70,18 @@ test("navigation denies customers and propagates expired/recovery sessions witho
   }
 });
 
+test("Customers navigation also honors the existing root dashboard orders.view gate", async () => {
+  for (const [grants, visible] of [
+    [["customers.view"], false],
+    [["orders.view", "customers.view"], true],
+  ] as const) {
+    const { resolve } = loadNavigation({ ok: true, access: { role: "staff", staffRole: "support", permissions: [...grants] } });
+    const result = await resolve();
+    assert.equal(result.state, "authorized");
+    assert.equal(result.destinations?.some((item) => item.href === "/admin#customers"), visible);
+  }
+});
+
 test("navigation resolver rejects untrusted targets, duplicates and malformed payloads", async () => {
   for (const payload of [{ destinations: ["https://example.invalid"] }, { destinations: ["/admin/vehicles", "/admin/vehicles"] }, { destinations: [12] }, {}, null]) {
     const client = moduleWithMocks("src/lib/adminMobileNavigationClient.ts", {
