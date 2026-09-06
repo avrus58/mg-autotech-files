@@ -53,7 +53,7 @@ test("mobile menu lives inside the existing authenticated layout with no access 
   const layout = source("src/app/admin/layout.tsx");
   assert.match(layout, /<BrowserAuthBoundary[\s\S]*<AdminMobileNavigation \/>[\s\S]*\{children\}/);
   const menu = source("src/components/admin/AdminMobileNavigation.tsx");
-  assert.match(menu, /resolveAdminAccess\(\)/);
+  assert.match(menu, /resolveAdminNavigation\(\)/);
   assert.match(menu, /request === requestRef.current/);
   assert.match(menu, /\.showModal\(\)/);
   assert.match(menu, /onClose=/);

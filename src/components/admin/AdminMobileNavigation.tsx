@@ -4,15 +4,14 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent, type MouseEvent } from "react";
 import { ArrowUpRight, ChevronRight, Menu, ShieldCheck, X } from "lucide-react";
-import { resolveAdminAccess } from "@/lib/adminAccessClient";
-import { activeAdminDestination, adminMobileDestinations, availableAdminDestinations } from "@/lib/adminMobileNavigation";
-import type { AdminAccessResolution } from "@/lib/adminAccess";
+import { resolveAdminNavigation, type AdminNavigationResolution } from "@/lib/adminMobileNavigationClient";
+import { activeAdminDestination, adminMobileDestinations } from "@/lib/adminMobileNavigation";
 
 export function AdminMobileNavigation() {
   const pathname = usePathname();
   const [hash, setHash] = useState("");
   const [open, setOpen] = useState(false);
-  const [resolution, setResolution] = useState<AdminAccessResolution | null>(null);
+  const [resolution, setResolution] = useState<AdminNavigationResolution | null>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const requestRef = useRef(0);
@@ -20,7 +19,7 @@ export function AdminMobileNavigation() {
   const unlockRef = useRef<(() => void) | null>(null);
   const activeHref = activeAdminDestination(pathname, hash);
   const label = adminMobileDestinations.find((item) => item.href === activeHref)?.label ?? "Admin workspace";
-  const destinations = availableAdminDestinations(resolution?.state === "authorized" ? resolution.access : null);
+  const destinations = resolution?.state === "authorized" ? resolution.destinations : [];
 
   const closeMenu = useCallback(() => {
     requestRef.current += 1;
@@ -56,7 +55,7 @@ export function AdminMobileNavigation() {
   async function loadAccess() {
     const request = ++requestRef.current;
     setResolution(null);
-    const result = await resolveAdminAccess();
+    const result = await resolveAdminNavigation();
     if (request === requestRef.current && dialogRef.current?.open) setResolution(result);
   }
 

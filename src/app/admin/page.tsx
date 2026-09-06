@@ -1160,8 +1160,17 @@ export default function AdminPage() {
     );
   }, [customers, customerSearch]);
 
+  function selectWorkspacePanel(tab: AdminTab) {
+    setActiveTab(tab);
+    const hash = `#${tab}`;
+    if (window.location.hash !== hash) {
+      window.history.pushState(null, "", hash);
+      window.dispatchEvent(new Event("hashchange"));
+    }
+  }
+
   function focusOrderQueue(status: string) {
-    setActiveTab("orders");
+    selectWorkspacePanel("orders");
     setSelectedStatus(status);
     setSearch("");
     setOnlyWithFile(false);
@@ -1875,7 +1884,7 @@ export default function AdminPage() {
             <div className="mt-1 text-lg font-black text-white">Operations</div>
           </div>
           <nav data-admin-navigation className="space-y-2">
-            <SidebarButton active={activeTab === "orders"} icon={<FileCode2 />} label="Orders" count={adminDataReady ? stats.total : "—"} onClick={() => setActiveTab("orders")} />
+            <SidebarButton active={activeTab === "orders"} icon={<FileCode2 />} label="Orders" count={adminDataReady ? stats.total : "—"} onClick={() => selectWorkspacePanel("orders")} />
             {hasStaffPermission(adminAccess, "orders.view") && (
               <Link
                 href="/admin/operations"
@@ -1937,7 +1946,7 @@ export default function AdminPage() {
               </Link>
             )}
             {hasStaffPermission(adminAccess, "customers.view") && (
-              <SidebarButton active={activeTab === "customers"} icon={<Users />} label="Customers" count={adminDataReady ? stats.customers : "—"} onClick={() => setActiveTab("customers")} />
+              <SidebarButton active={activeTab === "customers"} icon={<Users />} label="Customers" count={adminDataReady ? stats.customers : "—"} onClick={() => selectWorkspacePanel("customers")} />
             )}
             {hasStaffPermission(adminAccess, "file_expert.manage") && (
               <Link
