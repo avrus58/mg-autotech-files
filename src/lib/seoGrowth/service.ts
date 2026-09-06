@@ -197,6 +197,8 @@ export async function buildSeoGrowthReport(input: {
     contentCoverage,
     warnings,
     limitations: [
+      "Google reports are scoped to file.mgautotech.de, not the main site or other hosts. GA4 events without that hostname are excluded.",
+      "Summary values are based on bounded reported rows, not a complete visitor funnel or property-wide totals.",
       "Search Console can omit anonymized and low-volume queries; reported rows are not a complete search log.",
       "Search queries are not joined to completed requests. Page opportunities use aggregate sessions and request CTA clicks only.",
       "GA4 rows include only consented public-site measurement and must not be interpreted as all visitors.",

@@ -19,6 +19,7 @@ import {
   buildAnalyticsCountries,
   buildAnalyticsEventTotals,
   buildAnalyticsLandingPages,
+  loadGoogleAnalyticsDataset,
   parseGoogleAnalyticsRows,
 } from "../src/lib/seoGrowth/googleAnalytics";
 import {
@@ -31,6 +32,7 @@ import {
   parseSearchCountryRows,
   parseSearchPageRows,
   parseSearchQueryRows,
+  loadSearchConsoleDataset,
 } from "../src/lib/seoGrowth/searchConsole";
 import { buildSeoGrowthReport } from "../src/lib/seoGrowth/service";
 import type { GoogleAnalyticsReportResponse, SearchConsoleResponse } from "../src/lib/seoGrowth/types";
@@ -159,6 +161,111 @@ test("GA4 parser builds aggregate landing, country and event rows", () => {
     [{ country: "Germany", eventName: "generate_lead", eventCount: "2" }]
   );
   assert.equal(countries[0].leads, 2);
+});
+
+test("all Search Console reports filter the exact HTTPS file host before row limits and country aggregation", async () => {
+  for (const siteUrl of ["sc-domain:mgautotech.de", "https://file.mgautotech.de/"]) {
+    const requests: string[] = [];
+    const dataset = await loadSearchConsoleDataset({
+      siteUrl,
+      accessToken: "synthetic-token",
+      startDate: "2026-08-01",
+      endDate: "2026-08-28",
+      fetchFn: async (url, init) => {
+        assert.ok(String(url).includes(encodeURIComponent(siteUrl)));
+        const body = JSON.parse(String(init?.body));
+        requests.push(body.dimensions.join(","));
+        assert.deepEqual(body.dimensionFilterGroups, [{
+          groupType: "and",
+          filters: [{ dimension: "page", operator: "includingRegex", expression: "^https://file\\.mgautotech\\.de/" }],
+        }]);
+        assert.equal(body.aggregationType, "auto");
+        assert.equal(body.startRow, 0);
+        assert.ok(body.rowLimit <= 1_000);
+        const filter = new RegExp(body.dimensionFilterGroups[0].filters[0].expression);
+        for (const page of ["https://file.mgautotech.de/", "https://file.mgautotech.de/file-service", "https://file.mgautotech.de/?lang=de"]) {
+          assert.equal(filter.test(page), true, page);
+        }
+        for (const page of ["https://mgautotech.de/", "https://www.mgautotech.de/", "https://preview.file.mgautotech.de/", "https://file.mgautotech.de.example.com/", "https://fileXmgautotechYde/", "https://example.com/?next=https://file.mgautotech.de/", "http://file.mgautotech.de/", "http://localhost:3000/"]) {
+          assert.equal(filter.test(page), false, page);
+        }
+        // Simulate aggregation after the API filter, including the country-only
+        // report where response rows contain no page to filter locally.
+        const fixtures = [
+          { page: "https://file.mgautotech.de/file-service", clicks: 6 },
+          { page: "https://mgautotech.de/", clicks: 900 },
+        ];
+        const rows = fixtures.filter((row) => filter.test(row.page)).map((row) => ({
+          keys: body.dimensions.map((dimension: string) => dimension === "page" ? row.page : dimension === "country" ? "deu" : "ecu file service"),
+          clicks: row.clicks, impressions: 180, ctr: 0.033, position: 7,
+        }));
+        return Response.json({ rows });
+      },
+    });
+    assert.deepEqual(requests.sort(), ["country", "page", "query,page"]);
+    assert.equal(dataset.queries[0].clicks, 6);
+    assert.equal(dataset.pages[0].clicks, 6);
+    assert.equal(dataset.countries[0].clicks, 6);
+  }
+});
+
+test("all five GA4 reports require the exact file hostname AND retain the event allowlist", async () => {
+  const requests: string[] = [];
+  const dataset = await loadGoogleAnalyticsDataset({
+    propertyId: "123456789",
+    accessToken: "synthetic-token",
+    startDate: "2026-08-01",
+    endDate: "2026-08-28",
+    fetchFn: async (_url, init) => {
+      const body = JSON.parse(String(init?.body));
+      const dimensions: string[] = body.dimensions.map((item: { name: string }) => item.name);
+      const metrics: string[] = body.metrics.map((item: { name: string }) => item.name);
+      requests.push(dimensions.join(","));
+      const expressions = body.dimensionFilter.andGroup.expressions;
+      assert.deepEqual(expressions[0], { filter: {
+        fieldName: "hostName",
+        stringFilter: { matchType: "EXACT", value: "file.mgautotech.de", caseSensitive: false },
+      } });
+      const isEventReport = dimensions.includes("eventName");
+      assert.equal(expressions.length, isEventReport ? 2 : 1);
+      if (isEventReport) {
+        assert.deepEqual(expressions[1], { filter: {
+          fieldName: "eventName",
+          inListFilter: { values: ["page_view", "public_navigation_click", "request_cta_click", "request_start", "generate_lead"], caseSensitive: true },
+        } });
+      }
+      const fixtures = [
+        { host: "file.mgautotech.de", count: 6 },
+        { host: "FILE.MGAUTOTECH.DE", count: 2 },
+        { host: "mgautotech.de", count: 900 },
+        { host: "preview.file.mgautotech.de", count: 900 },
+        { host: "file.mgautotech.de.example.com", count: 900 },
+        { host: "localhost", count: 900 },
+        { host: "(not set)", count: 900 },
+      ];
+      const count = fixtures.filter((row) => row.host.toLowerCase() === expressions[0].filter.stringFilter.value).reduce((sum, row) => sum + row.count, 0);
+      const cells = dimensions.map((dimension) => dimension === "country" ? "Germany" : dimension === "eventName" ? "generate_lead" : "/file-service");
+      return Response.json(gaResponse(dimensions, metrics, [[...cells, ...metrics.map(() => String(count))]]));
+    },
+  });
+  assert.deepEqual(requests.sort(), ["country", "country,eventName", "eventName", "landingPage", "unifiedPagePathScreen,eventName"]);
+  assert.equal(dataset.landingPages[0].sessions, 8);
+  assert.equal(dataset.landingPages[0].leads, 8);
+  assert.equal(dataset.countries[0].sessions, 8);
+  assert.equal(dataset.countries[0].leads, 8);
+  assert.equal(dataset.eventTotals.leads, 8);
+});
+
+test("site-scoped reports never retry unfiltered when a Google filter request fails", async () => {
+  let requests = 0;
+  const input = {
+    accessToken: "synthetic-token", startDate: "2026-08-01", endDate: "2026-08-28",
+    fetchFn: (async () => { requests++; return new Response(null, { status: 400 }); }) as typeof fetch,
+  };
+  await assert.rejects(loadSearchConsoleDataset({ ...input, siteUrl: "sc-domain:mgautotech.de" }));
+  assert.equal(requests, 3);
+  await assert.rejects(loadGoogleAnalyticsDataset({ ...input, propertyId: "123456789" }));
+  assert.equal(requests, 8);
 });
 
 test("opportunity engine finds positions 4-20 and uses page CTA intent without claiming lead attribution", () => {

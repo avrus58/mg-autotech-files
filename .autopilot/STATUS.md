@@ -5904,3 +5904,18 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
   authenticated workflows were not exercised; synthetic component/route tests
   are not presented as live business transaction proof. Release receipt:
   `docs/production-release-2026-09-05.md`.
+
+## 2026-09-06 — MANUAL SEO report site isolation and acquisition diagnosis
+
+- Scope: exact-host Google aggregate query isolation, no new tracking or public
+  UI redesign. Manual owner task in a clean feature worktree from `5ce42fb`;
+  unrelated main worktree and previous homepage STATUS edits preserved.
+- Evidence and limitations: `docs/seo-acquisition-audit-2026-09-06.md`.
+- Files: Search Console and GA4 adapters, report limitations, synthetic SEO
+  regression tests, task/status and audit documentation.
+- Current validation: targeted SEO suite 16/16 PASS; full lint PASS; web and
+  desktop typecheck PASS; diff whitespace check PASS. Full tests, i18n gate,
+  Production build and independent immutable review are still running/pending.
+- Not Done yet. No push/deploy or live mutation. Search Console account access,
+  an attributable 522 failure and actual registration/email delivery remain
+  unverified; passing synthetic tests do not resolve those external questions.

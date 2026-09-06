@@ -46,6 +46,16 @@ async function querySearchConsole(input: SearchConsoleQueryInput) {
       type: "web",
       dataState: "final",
       aggregationType: "auto",
+      // Domain properties can include the main site and other subdomains.
+      // Filter before aggregation/row limits, including country-only reports.
+      dimensionFilterGroups: [{
+        groupType: "and",
+        filters: [{
+          dimension: "page",
+          operator: "includingRegex",
+          expression: "^https://file\\.mgautotech\\.de/",
+        }],
+      }],
       rowLimit: Math.min(1_000, Math.max(1, input.rowLimit)),
       startRow: 0,
     },

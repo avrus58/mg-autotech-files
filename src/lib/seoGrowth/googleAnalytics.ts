@@ -168,14 +168,30 @@ async function runAnalyticsReport(input: {
       metrics: input.metrics.map((name) => ({ name })),
       limit: String(Math.min(1_000, Math.max(1, input.limit))),
       keepEmptyRows: false,
-      ...(input.eventFilter ? {
-        dimensionFilter: {
-          filter: {
-            fieldName: "eventName",
-            inListFilter: { values: [...allowedEventNames], caseSensitive: true },
-          },
+      // A shared GA4 property must not mix the main site, previews or local QA
+      // with the File Service's aggregate sessions, countries and events.
+      dimensionFilter: {
+        andGroup: {
+          expressions: [
+            {
+              filter: {
+                fieldName: "hostName",
+                stringFilter: {
+                  matchType: "EXACT",
+                  value: "file.mgautotech.de",
+                  caseSensitive: false,
+                },
+              },
+            },
+            ...(input.eventFilter ? [{
+              filter: {
+                fieldName: "eventName",
+                inListFilter: { values: [...allowedEventNames], caseSensitive: true },
+              },
+            }] : []),
+          ],
         },
-      } : {}),
+      },
     },
   });
 }

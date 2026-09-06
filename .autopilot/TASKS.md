@@ -6,6 +6,20 @@
 
 ## In Progress
 
+### MANUAL-20260906-SEO-REPORT-SITE-ISOLATION [P1] File Service Google raporlarini exact site kapsaminda tut
+
+Fingerprint: `seo-growth|google-report-query-boundary|file-host-only|country-session-event-isolation`
+
+Kanıt: Search Console country query has no page dimension or site filter when a
+domain property is configured. GA4 queries use paths/countries/events without
+hostName filtering. Shared-property rows can therefore include unrelated hosts,
+and filtering page rows after the API row limit cannot recover omitted rows.
+
+Kapsam: Filter all Search Console and GA4 aggregate requests to the canonical
+File Service host before aggregation, retain event/path safety filters, verify
+with synthetic cross-host fixtures and disclose bounded-report limitations.
+No tracking, consent, pricing, credentials, database or Production changes.
+
 ## Blocked
 
 ### MANUAL-20260828-ADS-MEASUREMENT-FINAL-HARDENING [P0] Reklam edinimi, consent ve dogrulanmis donusum final kapilari
