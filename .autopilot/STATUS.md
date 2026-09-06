@@ -5935,3 +5935,29 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
   separate. Do not calculate a visitor-level conversion rate from these counts.
 - Remaining: the intermittent 522 cause and real registration/email completion
   are unverified; live report API results await explicit scoped publication.
+
+## 2026-09-06 — Owner-authorized SEO report Production release completed
+
+- Current `yayinla` instruction authorized only the already reviewed Google
+  report site-isolation package. Deployed source `412180164e96`, same runtime
+  code as reviewed `a7d5b0a`; source branch pushed and remote SHA verified.
+- App activated 18:10:42 UTC, analyzer 18:10:35 UTC; both healthy, zero restarts.
+  Previous complete image pair `47ec45224470` retained for rollback. Archive
+  SHA-256 verified locally and on VPS before extraction/build.
+- Fresh lint, web/desktop typecheck and full tests 1504/1504 PASS. Linux
+  prebuild i18n 37/37 PASS, 12 locales and zero clean English fallback; actual
+  Production Turbopack build 280/280 PASS. Fresh production-only npm audit zero
+  findings; builder development tree still reports 2 moderate/6 high findings.
+- HTTP smoke 35/35 before and 35/35 after, including protected SEO API 401 and
+  four old static assets. Browser login security completed, Google button
+  loaded, registration navigation worked without console errors or horizontal
+  overflow. No real login/account, request, payment or email submitted.
+- New compiled report-scope text verified in the running app. Authenticated
+  live Google API results are not claimed: no admin session was available.
+  The separate `mgautotech.de` app and Caddy retained their start timestamps
+  and remained healthy. Unrelated dirty owner changes were not included.
+- No migration, secret/setting modification, customer data mutation, Ads,
+  tracking or consent change. No 522 reproduced, but its historical cause is
+  still unverified. No critical regression or rollback invocation.
+- Exact evidence and recovery command:
+  `docs/production-release-2026-09-06-seo-reports.md`.

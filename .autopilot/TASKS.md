@@ -172,7 +172,12 @@ File Service host before aggregation. Event/path safety filters retained;
 bounded-data limitations disclosed. Local candidate `a7d5b0a`: targeted 16/16,
 full tests 1504/1504, lint, web/desktop typecheck, 12-locale i18n and Production
 Webpack build 280/280 PASS; independent immutable review no actionable findings.
-No push/deploy or tracking, consent, pricing, credential or database changes.
+Local candidate initially had no push/deploy or tracking, consent, pricing,
+credential or database changes. Owner-authorized Production release completed
+2026-09-06 at source `412180164e96`: app/analyzer healthy, fresh full tests
+1504/1504, actual Linux i18n/build and post-release HTTP smoke 35/35 PASS.
+Rollback pair `47ec45224470` retained. Receipt:
+`docs/production-release-2026-09-06-seo-reports.md`.
 
 Google account access resolved. Actual search, indexing, crawl and GA4 evidence
 and remaining 522/business-conversion limits are documented in
