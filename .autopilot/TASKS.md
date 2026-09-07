@@ -163,7 +163,7 @@ Expected validation command: `npm run lint` and `npm run typecheck`.
 
 Fingerprint: `orders|completed-service-report|missing-shareable-pdf-and-optional-branding|localized-owner-authorized-download`
 
-Status: Done (implementation and local validation only; not released).
+Status: Done (Production released and verified on 2026-09-07).
 Owner-approved PDF/image/font dependencies, optional customer logo, automatic
 completed-order PDF, compact admin sourced metrics/performed-services editor,
 append-only snapshots and all 12 locales implemented in isolated branch
@@ -176,10 +176,12 @@ customer Chrome 11 and admin Chrome 6 scenarios PASS. Independent bounded
 immutable review found no remaining P1/P2 in reviewed scope. See STATUS and
 `docs/post-service-report-plan.md` for evidence and exact limitations.
 
-No push, Preview/Production deployment, live migration or customer transaction.
-Docker engine unavailable; SQL used disposable PGlite, not live schema or real
-multi-session contention. An authorized release must apply reviewed additive
-migration and verify its environment, storage boundaries and live flows.
+Release update: final source `65a53b606b5fd64f84ebff15725a92f619c26024` pushed and
+deployed to VPS after reviewed additive migration and live schema/storage checks.
+Full tests 1591/1591, lint/typecheck, Linux build/69 runtime assets, isolated final
+runner 14/14 and real PostgreSQL17 multi-session 7/7 groups PASS. Live HTTP 34/34
+and read-only provider checks PASS. No real customer transaction. Previous image
+pair retained. See `docs/production-release-2026-09-07-service-reports.md`.
 
 ### MANUAL-20260907-SERVER-HTML-LANGUAGE [P1] Initial public HTML locale
 

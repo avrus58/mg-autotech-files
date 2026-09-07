@@ -1,5 +1,30 @@
 # Otonom calisma gunlugu
 
+## 2026-09-07 Post-service reports - Production released and verified
+
+- Owner authorized scoped release. Source `65a53b606b5fd64f84ebff15725a92f619c26024`
+  from isolated `codex/post-service-reports-20260907` is live; app started
+  14:08:38 UTC. Unrelated dirty checkout and unpublished guide work excluded.
+- Applied only the reviewed additive report migration; source timestamp
+  `20260907111225` maps to Supabase-recorded `20260907130634`. Real schema,
+  3 RLS tables, 14 constraints, service-role-only/append-only grants and private
+  immutable storage verified. No existing customer rows read/changed.
+- Linux postbuild caught a missing native libvips file before cutover. Fixed
+  exact report/branding tracing plus permanent native asset regressions. Final
+  lint, web/desktop typecheck, tests 1591/1591 and real VPS Production build PASS;
+  all 12 locale gates, 37 bundle tests, 281 pages, 69 runtime assets PASS.
+- Actual final Linux image: 14/14 compiled-route scenarios with synthetic backend
+  and real PNG/PDF rendering, read-only/network-none/non-root PASS. Disposable
+  PostgreSQL 17.11: 7/7 groups including actual concurrent lock/CAS/issuance PASS;
+  temporary containers removed and absence verified. Existing PDF/UI layout
+  remains the fully checked prior 12-locale implementation.
+- Cutover succeeded; app/analyzer healthy, zero restarts. 34/34 live HTTP checks,
+  three zero-row service-role table checks, missing-report SR404, Redis PONG,
+  and unchanged storage controls PASS. Caddy/main-site containers unchanged.
+- Recovery: retained `e1b3266f3bf8` image pair, additive tables/history retained.
+  No rollback needed, no customer transaction/payment/email or real upload used.
+  Full scoped receipt: `docs/production-release-2026-09-07-service-reports.md`.
+
 ## 2026-09-07 Post-service report - implementation validated, not released
 
 - Completed manual owner scope on isolated `codex/post-service-reports-20260907`;
