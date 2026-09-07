@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useRef } from "react";
-import { ArrowLeft, ArrowRight, Check, CreditCard, FileUp, Map, MessagesSquare } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, CreditCard, ExternalLink, FileUp, Map, MessagesSquare } from "lucide-react";
 import { useCustomerOnboarding } from "@/hooks/useCustomerOnboarding";
 import { customerOnboardingT, type CustomerOnboardingSource } from "@/lib/i18n/customer-onboarding-translations";
 import { useActiveLocale } from "@/lib/useActiveLocale";
@@ -10,6 +11,7 @@ import { useActiveLocale } from "@/lib/useActiveLocale";
 /** Optional, non-modal introduction; never intercepts a form or an account action. */
 export function CustomerOnboardingGuide() {
   const locale = useActiveLocale();
+  const pathname = usePathname();
   const { visible, saving, saveFailed, step, moveToStep, dismiss, retryDismiss, hideForSession } = useCustomerOnboarding();
   const heading = useRef<HTMLHeadingElement>(null);
   const t = (source: CustomerOnboardingSource) => customerOnboardingT(locale, source);
@@ -43,6 +45,8 @@ export function CustomerOnboardingGuide() {
     },
   ];
   const current = steps[step];
+  // An auxiliary tour link must not unmount an unfinished request or its file.
+  const preserveRequest = pathname === "/new-request" && current?.href !== "/new-request";
   const Icon = current?.icon ?? Map;
   const number = new Intl.NumberFormat(locale);
 
@@ -94,8 +98,14 @@ export function CustomerOnboardingGuide() {
           {current?.description ?? t("A quick tour of credits, file requests and support. You can skip it at any time.")}
         </p>
         {current?.href && (
-          <Link href={current.href} className="mt-3 inline-flex min-h-10 items-center gap-2 rounded-md border border-red-800/60 bg-red-950/30 px-3 py-2 text-sm font-semibold text-red-200 hover:bg-red-950/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400">
-            {current.action}<ArrowRight aria-hidden="true" className="h-4 w-4 shrink-0" />
+          <Link
+            href={current.href}
+            target={preserveRequest ? "_blank" : undefined}
+            rel={preserveRequest ? "noopener noreferrer" : undefined}
+            className="mt-3 inline-flex min-h-10 items-center gap-2 rounded-md border border-red-800/60 bg-red-950/30 px-3 py-2 text-sm font-semibold text-red-200 hover:bg-red-950/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
+          >
+            {current.action}
+            {preserveRequest ? <><span className="sr-only"> ({t("Opens in a new tab")})</span><ExternalLink aria-hidden="true" className="h-4 w-4 shrink-0" /></> : <ArrowRight aria-hidden="true" className="h-4 w-4 shrink-0" />}
           </Link>
         )}
         {saveFailed && (

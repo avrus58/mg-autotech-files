@@ -35,6 +35,7 @@ const guideCopy = [
   "Open Buy Credits",
   "Open New File Request",
   "Open My Orders",
+  "Opens in a new tab",
 ] as const;
 
 test("customer introduction remains in the shared portal translation inventory", () => {
