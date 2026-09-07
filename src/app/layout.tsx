@@ -9,22 +9,18 @@ import { PlatformReliabilityMonitor } from "@/components/PlatformReliabilityMoni
 import {
   absoluteUrl,
   buildNeutralSiteIdentityJsonLd,
-  hreflangByLocale,
   languageAlternates,
   siteName,
   siteUrl,
 } from "@/lib/seo";
-import {
-  defaultLocale,
-  openGraphLocaleByCode,
-} from "@/lib/i18nConfig";
+import { openGraphLocaleByCode } from "@/lib/i18nConfig";
 import { buildSearchEngineVerification } from "@/lib/searchEngineIndexing";
 import {
   publicBrandImageAlt,
   publicTechnicalCategory,
   publicTechnicalKeywords,
 } from "@/lib/structuredDataI18n";
-import { ActiveLocaleProvider } from "@/lib/useActiveLocale";
+import { RootDocument } from "@/components/RootDocument";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -76,7 +72,7 @@ export const metadata: Metadata = {
     siteName,
     locale: openGraphLocaleByCode.en,
     alternateLocale: Object.values(openGraphLocaleByCode).filter(
-      (locale) => locale !== openGraphLocaleByCode.en
+      (locale) => locale !== openGraphLocaleByCode.en,
     ),
     type: "website",
     images: [
@@ -139,34 +135,28 @@ export default function RootLayout({
   const jsonLd = buildNeutralSiteIdentityJsonLd();
 
   return (
-    <html
-      lang={hreflangByLocale[defaultLocale]}
-      suppressHydrationWarning
+    <RootDocument
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">
-        <ActiveLocaleProvider initialLocale={defaultLocale}>
-          <PaidClickPreHydrationGuard />
-          <script
-            type="application/ld+json"
-            dangerouslySetInnerHTML={{
-              __html: JSON.stringify(jsonLd),
-            }}
-          />
-          {children}
-          <AccountRuntimeBoundary />
-          <PublicAnalyticsRuntime
-            googleAnalyticsMeasurementId={googleAnalyticsMeasurementId}
-            googleAdsId={googleAdsId}
-            registrationLabel={googleAdsRegistrationLabel}
-            requestLabel={googleAdsRequestLabel}
-            purchaseLabel={googleAdsPurchaseLabel}
-          />
-          <PlatformReliabilityMonitor />
-          <CustomerNotificationsRuntime />
-          <LanguageSwitcher />
-        </ActiveLocaleProvider>
-      </body>
-    </html>
+      <PaidClickPreHydrationGuard />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(jsonLd),
+        }}
+      />
+      {children}
+      <AccountRuntimeBoundary />
+      <PublicAnalyticsRuntime
+        googleAnalyticsMeasurementId={googleAnalyticsMeasurementId}
+        googleAdsId={googleAdsId}
+        registrationLabel={googleAdsRegistrationLabel}
+        requestLabel={googleAdsRequestLabel}
+        purchaseLabel={googleAdsPurchaseLabel}
+      />
+      <PlatformReliabilityMonitor />
+      <CustomerNotificationsRuntime />
+      <LanguageSwitcher />
+    </RootDocument>
   );
 }

@@ -307,6 +307,7 @@ export const customerWorkflowSharedSourceManifest = {
       "src/components/dashboard/CustomerPortalPageHeader.tsx",
       "src/components/dashboard/CustomerPortalSidebar.tsx",
       "src/components/RequestLocaleBoundary.tsx",
+      "src/components/RootDocument.tsx",
       "src/components/ServerLocaleBoundary.tsx",
       "src/components/app-shell.tsx",
       "src/lib/i18n/customer-workflow-client-runtime.ts",

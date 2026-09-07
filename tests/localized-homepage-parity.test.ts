@@ -17,17 +17,27 @@ const rootHomepage = [
   readFileSync("src/components/homepage/VehicleIntelligence.tsx", "utf8"),
 ].join("\n");
 const rootLayout = readFileSync("src/app/layout.tsx", "utf8");
-const localizedHomepageRoute = readFileSync("src/app/[locale]/page.tsx", "utf8");
+const rootDocument = readFileSync("src/components/RootDocument.tsx", "utf8");
+const localizedHomepageRoute = readFileSync(
+  "src/app/[locale]/page.tsx",
+  "utf8",
+);
 const localizedLayout = readFileSync("src/app/[locale]/layout.tsx", "utf8");
 const homepageMetadata = readFileSync("src/lib/homepageMetadata.ts", "utf8");
 const serverLocaleBoundary = readFileSync(
   "src/components/ServerLocaleBoundary.tsx",
   "utf8",
 );
-const languageSwitcher = readFileSync("src/components/LanguageSwitcher.tsx", "utf8");
+const languageSwitcher = readFileSync(
+  "src/components/LanguageSwitcher.tsx",
+  "utf8",
+);
 
 test("localized homepages use the exact English homepage component tree", () => {
-  assert.match(localizedHomepageRoute, /import \{ HomepageExperience \} from "@\/components\/homepage\/HomepageExperience"/u);
+  assert.match(
+    localizedHomepageRoute,
+    /import \{ HomepageExperience \} from "@\/components\/homepage\/HomepageExperience"/u,
+  );
   assert.match(localizedHomepageRoute, /<HomepageExperience/u);
   assert.match(localizedHomepageRoute, /includeStructuredData=\{false\}/u);
   assert.match(rootHomepage, /export function HomepageExperience/u);
@@ -38,17 +48,31 @@ test("localized homepages use the exact English homepage component tree", () => 
 
 test("localized homepage keeps locale metadata and one localized schema graph", () => {
   assert.match(localizedHomepageRoute, /buildLocalizedHomepageJsonLd/u);
-  assert.match(localizedHomepageRoute, /buildHomepageMetadata\(rawLocale as LocaleCode\)/u);
+  assert.match(
+    localizedHomepageRoute,
+    /buildHomepageMetadata\(rawLocale as LocaleCode\)/u,
+  );
   assert.match(homepageMetadata, /languageAlternates\("\/"\)/u);
   assert.match(localizedHomepageRoute, /localizedUrl\(locale, "\/"\)/u);
   assert.match(localizedHomepageRoute, /JSON\.stringify\(jsonLd\)/u);
-  assert.match(localizedHomepageRoute, /buildHomepageTranslationCatalog\(locale\)/u);
+  assert.match(
+    localizedHomepageRoute,
+    /buildHomepageTranslationCatalog\(locale\)/u,
+  );
   assert.doesNotMatch(localizedHomepageRoute, /exactTranslations\[locale\]/u);
   assert.doesNotMatch(localizedHomepageRoute, /termTranslations\[locale\]/u);
 });
 
-test("localized routes set the browser document language before hydration", () => {
-  assert.match(rootLayout, /<html[\s\S]*suppressHydrationWarning/u);
+test("localized routes emit document language in the root and retain route boundary handoff", () => {
+  assert.match(rootLayout, /<RootDocument\s/u);
+  assert.match(
+    rootDocument,
+    /<html[\s\S]*lang=\{hreflangByLocale\[locale\]\}[\s\S]*suppressHydrationWarning/u,
+  );
+  assert.match(
+    rootDocument,
+    /<ActiveLocaleProvider initialLocale=\{locale\}>/u,
+  );
   assert.match(localizedLayout, /<ServerLocaleBoundary locale=\{locale\}>/u);
   assert.match(serverLocaleBoundary, /data-server-document-language/u);
   assert.match(serverLocaleBoundary, /document\.documentElement\.lang/u);
@@ -58,14 +82,32 @@ test("localized routes set the browser document language before hydration", () =
 test("homepage links localize only when an equivalent locale page exists", () => {
   assert.equal(localizeHomepageHref("/", "de"), "/de");
   assert.equal(localizeHomepageHref("/#services", "tr"), "/tr#services");
-  assert.equal(localizeHomepageHref("/file-service#stage-comparison", "fr"), "/fr/file-service#stage-comparison");
-  assert.equal(localizeHomepageHref("/how-it-works?from=home", "de"), "/de/how-it-works?from=home");
-  assert.equal(localizeHomepageHref("/services/stage-1", "tr"), "/tr/services/stage-1");
-  assert.equal(localizeHomepageHref("/services/dtc-off", "de"), "/de/services/dtc-off");
-  assert.equal(localizeHomepageHref("/services/stage-2", "de"), "/services/stage-2");
+  assert.equal(
+    localizeHomepageHref("/file-service#stage-comparison", "fr"),
+    "/fr/file-service#stage-comparison",
+  );
+  assert.equal(
+    localizeHomepageHref("/how-it-works?from=home", "de"),
+    "/de/how-it-works?from=home",
+  );
+  assert.equal(
+    localizeHomepageHref("/services/stage-1", "tr"),
+    "/tr/services/stage-1",
+  );
+  assert.equal(
+    localizeHomepageHref("/services/dtc-off", "de"),
+    "/de/services/dtc-off",
+  );
+  assert.equal(
+    localizeHomepageHref("/services/stage-2", "de"),
+    "/services/stage-2",
+  );
   assert.equal(localizeHomepageHref("/new-request", "de"), "/new-request");
   assert.equal(localizeHomepageHref("/dashboard", "tr"), "/dashboard");
-  assert.equal(localizeHomepageHref("mailto:info@mgautotech.de", "de"), "mailto:info@mgautotech.de");
+  assert.equal(
+    localizeHomepageHref("mailto:info@mgautotech.de", "de"),
+    "mailto:info@mgautotech.de",
+  );
 });
 
 test("critical hero copy is translated from the shared catalog without touching technical values", () => {
@@ -73,30 +115,35 @@ test("critical hero copy is translated from the shared catalog without touching 
     const catalog = buildHomepageTranslationCatalog(locale);
 
     assert.notEqual(
-      translateHomepageText("Professional online file service platform", catalog),
+      translateHomepageText(
+        "Professional online file service platform",
+        catalog,
+      ),
       "Professional online file service platform",
-      locale
+      locale,
     );
     assert.notEqual(
       translateHomepageText("Custom ECU & TCU", catalog),
       "Custom ECU & TCU",
-      locale
+      locale,
     );
     assert.notEqual(
       translateHomepageText("Tuning Files", catalog),
       "Tuning Files",
-      locale
+      locale,
     );
     assert.equal(
       translateHomepageText("info@mgautotech.de", catalog),
       "info@mgautotech.de",
-      locale
+      locale,
     );
   }
 });
 
 test("all configured non-English locales receive the unified homepage route", () => {
-  const nonEnglishLocales = supportedLocales.filter(({ code }) => code !== "en");
+  const nonEnglishLocales = supportedLocales.filter(
+    ({ code }) => code !== "en",
+  );
 
   assert.equal(nonEnglishLocales.length, 11);
   for (const { code } of nonEnglishLocales) {
@@ -107,9 +154,21 @@ test("all configured non-English locales receive the unified homepage route", ()
       ],
       code,
     );
-    assert.notEqual(homepageHeroCopy[code].customTitle, homepageHeroCopy.en.customTitle, code);
-    assert.notEqual(homepageHeroCopy[code].tuningFiles, homepageHeroCopy.en.tuningFiles, code);
-    assert.notEqual(homepageHeroCopy[code].securePortal, homepageHeroCopy.en.securePortal, code);
+    assert.notEqual(
+      homepageHeroCopy[code].customTitle,
+      homepageHeroCopy.en.customTitle,
+      code,
+    );
+    assert.notEqual(
+      homepageHeroCopy[code].tuningFiles,
+      homepageHeroCopy.en.tuningFiles,
+      code,
+    );
+    assert.notEqual(
+      homepageHeroCopy[code].securePortal,
+      homepageHeroCopy.en.securePortal,
+      code,
+    );
   }
 });
 
@@ -167,7 +226,7 @@ test("vehicle intelligence receives the route locale before hydration and has co
 test("vehicle intelligence protects raw values without hiding its localized surface", () => {
   const vehicleSource = readFileSync(
     "src/components/homepage/VehicleIntelligence.tsx",
-    "utf8"
+    "utf8",
   );
   assert.doesNotMatch(vehicleSource, /<section[^>]+data-no-translate/u);
   assert.match(vehicleSource, /option\.name/u);
@@ -175,16 +234,24 @@ test("vehicle intelligence protects raw values without hiding its localized surf
 });
 
 test("localized helper components translate their rendered output and the header logo keeps locale", () => {
-  assert.ok((rootHomepage.match(/<LocalizedHomepageTree>/gu) ?? []).length >= 7);
+  assert.ok(
+    (rootHomepage.match(/<LocalizedHomepageTree>/gu) ?? []).length >= 7,
+  );
   assert.equal(localizeHomepageHref("/", "de"), "/de");
-  assert.match(rootHomepage, /<Link href="\/"[^>]+aria-label="MG AutoTech home"/u);
+  assert.match(
+    rootHomepage,
+    /<Link href="\/"[^>]+aria-label="MG AutoTech home"/u,
+  );
 });
 
 test("deferred homepage modules stay inside the locale translation observer", () => {
   assert.match(languageSwitcher, /data-unified-localized-homepage/u);
   assert.match(languageSwitcher, /hasDeferredLocalizedHomepage/u);
   assert.match(languageSwitcher, /MutationObserver/u);
-  assert.doesNotMatch(languageSwitcher, /getPathLocale\(pathname\)\) \{\s*translatedLocaleRef/u);
+  assert.doesNotMatch(
+    languageSwitcher,
+    /getPathLocale\(pathname\)\) \{\s*translatedLocaleRef/u,
+  );
 });
 
 test("localized hero and navigation stay readable on phones and compact laptops", () => {

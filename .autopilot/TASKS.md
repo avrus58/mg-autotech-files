@@ -159,6 +159,18 @@ Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
 
+### MANUAL-20260907-SERVER-HTML-LANGUAGE [P1] Initial public HTML locale
+
+Fingerprint: `seo|localized-public-pages|initial-html-lang|static-prerender`
+
+Local-only implementation verified. Public locale-prefix pages now emit the
+correct opening HTML language during SSR/prerender; client BCP-47 writes match.
+96 SEO variants and 122 HTTP checks, 104 browser cases, full i18n/lint/typecheck/
+tests/build and 48 required static artifact language checks passed. Routes,
+canonical/hreflang, copy and design retained. No dependency or database change.
+Prefixless cookie-localized raw HTML and pre-existing Next early 404 language
+are explicitly not claimed fixed. Evidence: `docs/server-html-language-validation.md`.
+No push, Preview or Production deployment.
 ### MANUAL-20260906-ADMIN-MOBILE [P1] Mobile admin navigation and homepage account access
 
 Fingerprint: `admin|mobile-only|bottom-sidebar-navigation|persistent-drawer|homepage-account-entry`

@@ -9,6 +9,32 @@ import {
   writeStoredLocale,
 } from "../src/lib/localePreference";
 import { resolveClientLocale } from "../src/lib/useActiveLocale";
+import { supportedLocales } from "../src/lib/i18nConfig";
+import { hreflangByLocale } from "../src/lib/seo";
+
+test("client document language preserves the server BCP-47 tag for every locale", () => {
+  const previousDocument = Object.getOwnPropertyDescriptor(
+    globalThis,
+    "document",
+  );
+  const documentElement = { lang: "" };
+  Object.defineProperty(globalThis, "document", {
+    configurable: true,
+    value: { documentElement },
+  });
+  try {
+    for (const { code } of supportedLocales) {
+      writeDocumentLocale(code);
+      assert.equal(documentElement.lang, hreflangByLocale[code], code);
+    }
+    writeDocumentLocale("zh");
+    assert.equal(documentElement.lang, "zh-CN");
+  } finally {
+    if (previousDocument)
+      Object.defineProperty(globalThis, "document", previousDocument);
+    else delete (globalThis as { document?: unknown }).document;
+  }
+});
 
 test("invalid higher-priority client preferences fall through without overwriting a valid locale", () => {
   assert.equal(
@@ -45,7 +71,10 @@ test("invalid higher-priority client preferences fall through without overwritin
 
 test("locale preference access fails soft when browser storage and cookies are blocked", () => {
   const previousWindow = Object.getOwnPropertyDescriptor(globalThis, "window");
-  const previousDocument = Object.getOwnPropertyDescriptor(globalThis, "document");
+  const previousDocument = Object.getOwnPropertyDescriptor(
+    globalThis,
+    "document",
+  );
 
   const blockedStorage = {
     getItem() {
@@ -91,9 +120,11 @@ test("locale preference access fails soft when browser storage and cookies are b
     assert.doesNotThrow(() => writeDocumentLocale("de"));
     assert.doesNotThrow(() => dispatchLocaleChange("de"));
   } finally {
-    if (previousWindow) Object.defineProperty(globalThis, "window", previousWindow);
+    if (previousWindow)
+      Object.defineProperty(globalThis, "window", previousWindow);
     else delete (globalThis as { window?: unknown }).window;
-    if (previousDocument) Object.defineProperty(globalThis, "document", previousDocument);
+    if (previousDocument)
+      Object.defineProperty(globalThis, "document", previousDocument);
     else delete (globalThis as { document?: unknown }).document;
   }
 });

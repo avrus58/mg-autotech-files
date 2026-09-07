@@ -1,4 +1,5 @@
 import type { LocaleCode } from "@/lib/i18nConfig";
+import { hreflangByLocale } from "@/lib/seo";
 
 export const siteLocaleStorageKey = "mg_locale";
 export const siteLocaleCookieKey = "mg_locale";
@@ -47,7 +48,7 @@ export function writeLocaleCookies(locale: LocaleCode) {
 
 export function writeDocumentLocale(locale: LocaleCode) {
   try {
-    document.documentElement.lang = locale;
+    document.documentElement.lang = hreflangByLocale[locale];
   } catch {
     // Keep locale selection functional even if the document is not writable.
   }
@@ -55,7 +56,9 @@ export function writeDocumentLocale(locale: LocaleCode) {
 
 export function dispatchLocaleChange(locale: LocaleCode) {
   try {
-    window.dispatchEvent(new CustomEvent("mg-locale-change", { detail: { locale } }));
+    window.dispatchEvent(
+      new CustomEvent("mg-locale-change", { detail: { locale } }),
+    );
   } catch {
     // Consumers also read from path, cookie and document state on the next render.
   }

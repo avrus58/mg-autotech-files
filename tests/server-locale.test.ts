@@ -16,21 +16,34 @@ test("requestless metadata evaluation falls back to canonical English", async ()
   assert.equal(await getServerLocale(), "en");
 });
 
-test("proxy resolves locale before rendering and the root document consumes it", () => {
+test("proxy resolves request locale while the static root document uses route context", () => {
   const proxy = fs.readFileSync(path.join(root, "src", "proxy.ts"), "utf8");
   const fixedPresentationLocale = fs.readFileSync(
     path.join(root, "src", "lib", "fixedPresentationLocale.ts"),
     "utf8",
   );
-  const layout = fs.readFileSync(path.join(root, "src", "app", "layout.tsx"), "utf8");
-  const rootPage = fs.readFileSync(path.join(root, "src", "app", "page.tsx"), "utf8");
+  const layout = fs.readFileSync(
+    path.join(root, "src", "app", "layout.tsx"),
+    "utf8",
+  );
+  const rootDocument = fs.readFileSync(
+    path.join(root, "src", "components", "RootDocument.tsx"),
+    "utf8",
+  );
+  const rootPage = fs.readFileSync(
+    path.join(root, "src", "app", "page.tsx"),
+    "utf8",
+  );
   const localeLayout = fs.readFileSync(
     path.join(root, "src", "app", "[locale]", "layout.tsx"),
     "utf8",
   );
 
   assert.match(proxy, /const pathLocale =/);
-  assert.match(proxy, /getFixedPresentationLocale\(request\.nextUrl\.pathname\)/);
+  assert.match(
+    proxy,
+    /getFixedPresentationLocale\(request\.nextUrl\.pathname\)/,
+  );
   assert.match(fixedPresentationLocale, /datenschutz: "de"/);
   assert.match(fixedPresentationLocale, /privacy: "en"/);
   assert.match(proxy, /pathLocale \?\?[\s\S]*authoredLocale \?\?/);
@@ -43,10 +56,23 @@ test("proxy resolves locale before rendering and the root document consumes it",
   );
   assert.doesNotMatch(layout, /from "next\/headers"/u);
   assert.doesNotMatch(layout, /await headers\(\)/u);
-  assert.match(layout, /lang=\{hreflangByLocale\[defaultLocale\]\}/);
+  assert.match(layout, /<RootDocument\s/u);
+  assert.doesNotMatch(layout, /<html\b|<ActiveLocaleProvider\b/u);
+  assert.match(rootDocument, /lang=\{hreflangByLocale\[locale\]\}/u);
+  assert.match(rootDocument, /useParams\(\)/u);
+  assert.match(
+    rootDocument,
+    /getFixedPresentationLocale\(pathname \?\? "\/"\)/u,
+  );
   assert.match(layout, /buildNeutralSiteIdentityJsonLd\(\)/);
-  assert.match(layout, /<ActiveLocaleProvider initialLocale=\{defaultLocale\}>/);
-  assert.match(rootPage, /metadata: Metadata = buildHomepageMetadata\(defaultLocale\)/u);
+  assert.match(
+    rootDocument,
+    /<ActiveLocaleProvider initialLocale=\{locale\}>/u,
+  );
+  assert.match(
+    rootPage,
+    /metadata: Metadata = buildHomepageMetadata\(defaultLocale\)/u,
+  );
   assert.match(rootPage, /renderRootHomepage\(defaultLocale\)/u);
   assert.doesNotMatch(rootPage, /getServerLocale|headers\(/u);
   assert.match(localeLayout, /<ServerLocaleBoundary locale=\{locale\}>/u);
@@ -62,7 +88,10 @@ test("fixed and embedded presentation languages are assigned before their conten
     "utf8",
   );
 
-  assert.match(legalShell, /data-fixed-document-language=\{documentLanguage\}/u);
+  assert.match(
+    legalShell,
+    /data-fixed-document-language=\{documentLanguage\}/u,
+  );
   assert.match(legalShell, /document\.documentElement\.lang=/u);
   assert.ok(
     legalShell.indexOf("data-fixed-document-language") <
@@ -73,7 +102,10 @@ test("fixed and embedded presentation languages are assigned before their conten
   assert.match(embedPage, /document\.documentElement\.dir=/u);
   assert.ok(
     embedPage.indexOf("widgetDocumentLanguage(result.language)") <
-      embedPage.indexOf("data-widget-embed", embedPage.indexOf("widgetDocumentLanguage(result.language)")),
+      embedPage.indexOf(
+        "data-widget-embed",
+        embedPage.indexOf("widgetDocumentLanguage(result.language)"),
+      ),
   );
 });
 
@@ -84,11 +116,7 @@ test("route locale boundary assigns document language before localized content",
       {
         locale: "de",
       } as Parameters<typeof ServerLocaleBoundary>[0],
-      createElement(
-        "main",
-        { "data-localized-content": "de" },
-        "Inhalt",
-      ),
+      createElement("main", { "data-localized-content": "de" }, "Inhalt"),
     ),
   );
 
@@ -97,7 +125,10 @@ test("route locale boundary assigns document language before localized content",
   );
   const content = html.indexOf('data-localized-content="de"');
   assert.ok(assignment >= 0, "document language assignment is missing");
-  assert.ok(content > assignment, "localized content rendered before language assignment");
+  assert.ok(
+    content > assignment,
+    "localized content rendered before language assignment",
+  );
 });
 
 test("widget sales route seeds its client copy from the resolved request locale", () => {
@@ -131,11 +162,14 @@ test("global language selector has no English fallback before locale hydration",
 test("client locale consumers hydrate from the same server-resolved locale", () => {
   const activeLocale = fs.readFileSync(
     path.join(root, "src", "lib", "useActiveLocale.ts"),
-    "utf8"
+    "utf8",
   );
 
   assert.match(activeLocale, /createContext<LocaleCode \| null>\(null\)/);
-  assert.match(activeLocale, /createElement\([\s\S]*InitialLocaleContext\.Provider[\s\S]*value: initialLocale/);
+  assert.match(
+    activeLocale,
+    /createElement\([\s\S]*InitialLocaleContext\.Provider[\s\S]*value: initialLocale/,
+  );
   assert.match(
     activeLocale,
     /useSyncExternalStore\([\s\S]*subscribe,[\s\S]*readLocale,[\s\S]*\(\) => initialLocale \?\? defaultLocale/,
@@ -144,8 +178,18 @@ test("client locale consumers hydrate from the same server-resolved locale", () 
 });
 
 test("canonical homepage and root layout remain request-independent", () => {
-  const layout = fs.readFileSync(path.join(root, "src", "app", "layout.tsx"), "utf8");
-  const page = fs.readFileSync(path.join(root, "src", "app", "page.tsx"), "utf8");
+  const layout = fs.readFileSync(
+    path.join(root, "src", "app", "layout.tsx"),
+    "utf8",
+  );
+  const page = fs.readFileSync(
+    path.join(root, "src", "app", "page.tsx"),
+    "utf8",
+  );
+  const rootDocument = fs.readFileSync(
+    path.join(root, "src", "components", "RootDocument.tsx"),
+    "utf8",
+  );
   const serverBoundary = fs.readFileSync(
     path.join(root, "src", "components", "ServerLocaleBoundary.tsx"),
     "utf8",
@@ -155,10 +199,17 @@ test("canonical homepage and root layout remain request-independent", () => {
     "utf8",
   );
 
-  assert.match(page, /export const metadata: Metadata = buildHomepageMetadata\(defaultLocale\)/u);
+  assert.match(
+    page,
+    /export const metadata: Metadata = buildHomepageMetadata\(defaultLocale\)/u,
+  );
   assert.doesNotMatch(page, /generateMetadata|getServerLocale|headers\(/u);
   assert.doesNotMatch(layout, /export async function generateMetadata/u);
   assert.doesNotMatch(layout, /headers\(\)/u);
+  assert.doesNotMatch(
+    rootDocument,
+    /getServerLocale|next\/headers|headers\(|cookies\(/u,
+  );
   assert.doesNotMatch(serverBoundary, /getServerLocale|next\/headers/u);
   assert.match(requestBoundary, /getServerLocale\(\)/u);
 });
@@ -178,13 +229,13 @@ test("canonical English pages stay static while proxy owns non-English redirects
     );
 
     assert.match(canonical, /export default function/u);
-    assert.doesNotMatch(
-      canonical,
-      /getServerLocale|searchParams|redirect\(/u,
-    );
+    assert.doesNotMatch(canonical, /getServerLocale|searchParams|redirect\(/u);
 
     assert.match(localized, /generateMetadata\(/u);
-    assert.match(localized, /const copy = get(?:FileService|HowItWorks)Copy\(locale\)/u);
+    assert.match(
+      localized,
+      /const copy = get(?:FileService|HowItWorks)Copy\(locale\)/u,
+    );
     assert.match(localized, /JsonLd\(locale, pageUrl\)/u);
     assert.match(localized, /organizationJsonLd\(locale\)/u);
     assert.match(localized, /websiteJsonLd\(locale\)/u);

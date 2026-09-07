@@ -107,6 +107,7 @@ const customerSurfaceRoots = [
   "src/components/LocalizedServiceCards.tsx",
   "src/components/recovery/NotFoundClient.tsx",
   "src/components/RequestLocaleBoundary.tsx",
+  "src/components/RootDocument.tsx",
   "src/components/RuntimePublicFooter.tsx",
   "src/components/RuntimePublicLocalization.tsx",
   "src/components/ServerLocaleBoundary.tsx",

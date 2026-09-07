@@ -1,5 +1,30 @@
 # Otonom calisma gunlugu
 
+## 2026-09-07 Initial public HTML language - Local validation complete
+
+- Owner request: fix German initial HTML language and verify other languages,
+  JavaScript-disabled content/links and canonical/hreflang regression protection.
+- Clean branch `codex/server-html-language-20260907`, base `1916dcd`, separate
+  `mg-autotech-files-server-html-language` worktree; unrelated work preserved.
+- Changed root document wrapper/provider, shared BCP-47 client writes, normal
+  i18n inventory, focused SSR tests, artifact/HTTP language regression checks,
+  npm checker entry and validation documentation. No page tree/copy redesign.
+- Full i18n PASS including 37 bundle tests; full suite 1565/1565 PASS; subsequent
+  checker-only expectation refinements 10/10 targeted PASS; full web/uploader
+  typecheck and lint PASS. Initial missing inventory and test-only typing issues
+  were corrected before final checks; no weakened production-source guard.
+- Production-mode build PASS (282 pages); performance PASS (139 prerenders,
+  all 48 required artifacts with correct language, 15.7 KiB initial homepage
+  gzip within 80 KiB budget). Old build fails all 44 non-English artifact checks.
+- Actual local HTTP 122/122 PASS, including all 96 SEO variants; isolated Chrome
+  104/104 PASS across 12 locales without JS and EN/DE/TR/ZH hydrated mobile/laptop
+  cases plus real language switches. Independent review/SPA/login/404 checks PASS.
+  Backend requests isolated; no real account, payment or conversion claim.
+- Remaining boundaries: prefixless cookie/header-localized raw document shell
+  still English; early Next error shell has no lang (baseline HTTP comparison
+  confirms pre-existing 404/noindex behavior). No claim of universal HTML repair.
+- Details and repeatable commands: `docs/server-html-language-validation.md`.
+  No push, Preview, Production deploy, secrets, customer data or database change.
 ## 2026-09-06 Mobile admin usability - Done (local implementation)
 
 - Task: MANUAL-20260906-ADMIN-MOBILE. Owner explicitly limits changes to mobile
