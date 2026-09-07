@@ -1,8 +1,10 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import test from "node:test";
-import { auditReportAssetList, reportFontFiles } from "../scripts/check-service-report-build.mjs";
+import nextConfig from "../next.config";
+import { auditReportAssetList, listSharpRuntimeFiles, reportFontFiles } from "../scripts/check-service-report-build.mjs";
 
 const projectRoot = path.resolve("synthetic-build-fixture");
 const traceDirectory = path.join(projectRoot, ".next/server/app/api/requests/[id]/service-report");
@@ -31,6 +33,51 @@ test("a correct NFT trace does not hide missing standalone copies or source asse
 test("the report route traces PDFKit recursive runtime fonts and project font assets", () => {
   const config = readFileSync("next.config.ts", "utf8");
   assert.match(config, /"\/api\/requests\/\*\/service-report"\s*:\s*\[[^\]]*"\.\/assets\/report-fonts\/\*\*\/\*"[^\]]*"\.\/node_modules\/pdfkit\/js\/standard-fonts\/\*\*\/\*"/);
+});
+
+test("both report image routes trace installed Sharp binaries and libvips packages", () => {
+  const nativeArtifacts = "./node_modules/@img/sharp-*/**/*";
+  const routes = nextConfig.outputFileTracingIncludes ?? {};
+  const expectedRoutes = ["/api/account/report-branding", "/api/requests/*/service-report"];
+  for (const route of expectedRoutes) {
+    assert.ok(routes[route]?.includes(nativeArtifacts), `${route} must include Sharp and its separate libvips runtime packages`);
+  }
+  assert.deepEqual(Object.entries(routes).filter(([, files]) => files.includes(nativeArtifacts)).map(([route]) => route).sort(), expectedRoutes);
+});
+
+test("report asset checks reject a missing native libvips standalone library", () => {
+  const library = "node_modules/@img/sharp-libvips-linuxmusl-x64/lib/libvips-cpp.so.8.18.3";
+  const source = path.join(projectRoot, library);
+  const standalone = path.join(projectRoot, ".next/standalone", library);
+  assert.deepEqual(auditReportAssetList({ projectRoot, traceDirectory, tracedFiles: [path.relative(traceDirectory, source)], requiredFiles: [library], exists: (file: string) => file !== standalone }), [{ file: library, reason: "missing_in_standalone" }]);
+});
+
+test("Sharp runtime discovery includes the separate native binary and libvips package", () => {
+  const root = mkdtempSync(path.join(tmpdir(), "mg-sharp-runtime-"));
+  const files = [
+    "node_modules/@img/sharp-linuxmusl-x64/lib/sharp-linuxmusl-x64-0.35.0.node",
+    "node_modules/@img/sharp-libvips-linuxmusl-x64/lib/libvips-cpp.so.8.18.3",
+    "node_modules/@img/sharp-libvips-linuxmusl-x64/package.json",
+  ];
+  try {
+    for (const file of [...files, "node_modules/@img/unrelated/readme.txt"]) {
+      const target = path.join(root, file);
+      mkdirSync(path.dirname(target), { recursive: true });
+      writeFileSync(target, "synthetic fixture only");
+    }
+    assert.deepEqual(listSharpRuntimeFiles(root).sort(), files.map((file) => path.normalize(file)).sort());
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("postbuild checks Sharp assets in both compiled report and branding traces", () => {
+  const script = readFileSync("scripts/check-service-report-build.mjs", "utf8");
+  assert.match(script, /const sharpFiles = listSharpRuntimeFiles\(projectRoot\)/);
+  assert.match(script, /const requiredFiles = \[[^\]]*\.\.\.sharpFiles\]/);
+  assert.match(script, /auditReportAssetList\(\{ projectRoot, traceDirectory, tracedFiles: trace\.files, requiredFiles \}\)/);
+  assert.match(script, /"\.next\/server\/app\/api\/account\/report-branding"/);
+  assert.match(script, /auditReportAssetList\(\{ projectRoot, traceDirectory: brandingDirectory, tracedFiles: brandingTrace\.files, requiredFiles: sharpFiles \}\)/);
 });
 
 test("Docker admits only the synthetic PDF helper needed by builder typechecking", () => {

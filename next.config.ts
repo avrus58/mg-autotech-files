@@ -86,6 +86,11 @@ const nextConfig: NextConfig = {
       "./assets/report-fonts/**/*",
       // PDFKit resolves built-in font metrics dynamically, outside NFT's graph.
       "./node_modules/pdfkit/js/standard-fonts/**/*",
+      // Sharp's platform binary also needs the separately packaged libvips libraries.
+      "./node_modules/@img/sharp-*/**/*",
+    ],
+    "/api/account/report-branding": [
+      "./node_modules/@img/sharp-*/**/*",
     ],
   },
   experimental: {

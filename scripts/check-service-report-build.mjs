@@ -31,8 +31,19 @@ export function auditReportAssetList({ projectRoot, traceDirectory, tracedFiles,
 function listFiles(directory) {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
     const file = path.join(directory, entry.name);
-    return entry.isDirectory() ? listFiles(file) : entry.isFile() ? [file] : [];
+    return entry.isDirectory() ? listFiles(file) : entry.isFile() || entry.isSymbolicLink() ? [file] : [];
   });
+}
+
+/** Sharp loads native binaries and libvips shared libraries outside the JS graph. */
+export function listSharpRuntimeFiles(projectRoot) {
+  const imageDirectory = path.join(projectRoot, "node_modules/@img");
+  const files = readdirSync(imageDirectory, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory() && entry.name.startsWith("sharp-"))
+    .flatMap((entry) => listFiles(path.join(imageDirectory, entry.name)))
+    .map((file) => path.relative(projectRoot, file));
+  assert.ok(files.some((file) => file.endsWith(".node")), "Sharp native runtime package missing.");
+  return files;
 }
 
 /** No URL target, credentials, server startup, or real customer fixtures are used. */
@@ -45,8 +56,14 @@ export async function checkServiceReportBuild(projectRoot = process.cwd()) {
   const standardFiles = listFiles(path.join(projectRoot, standardFontsDirectory)).map((file) => path.relative(projectRoot, file));
   assert.ok(standardFiles.some((file) => file.endsWith("Helvetica.cjs")), "PDFKit standard font entry missing.");
   assert.ok(standardFiles.some((file) => file.split(path.sep).includes("chunks")), "PDFKit standard font chunks missing.");
-  const requiredFiles = [...reportFontFiles.map((file) => path.join("assets/report-fonts", file)), ...standardFiles];
+  const sharpFiles = listSharpRuntimeFiles(projectRoot);
+  const requiredFiles = [...reportFontFiles.map((file) => path.join("assets/report-fonts", file)), ...standardFiles, ...sharpFiles];
   const missing = auditReportAssetList({ projectRoot, traceDirectory, tracedFiles: trace.files, requiredFiles });
+  const brandingDirectory = path.join(projectRoot, ".next/server/app/api/account/report-branding");
+  const brandingTrace = JSON.parse(readFileSync(path.join(brandingDirectory, "route.js.nft.json"), "utf8"));
+  assert.ok(Array.isArray(brandingTrace.files) && brandingTrace.files.every((file) => typeof file === "string"), "Invalid branding route trace.");
+  missing.push(...auditReportAssetList({ projectRoot, traceDirectory: brandingDirectory, tracedFiles: brandingTrace.files, requiredFiles: sharpFiles })
+    .map((entry) => ({ ...entry, route: "report-branding" })));
   if (missing.length) throw new Error(`Report build assets have ${missing.length} missing checks: ${JSON.stringify(missing.slice(0, 12))}`);
 
   const requireStandalone = createRequire(path.join(standalone, "package.json"));
@@ -87,7 +104,7 @@ export async function checkServiceReportBuild(projectRoot = process.cwd()) {
     assert.equal(bytes.subarray(0, 5).toString("ascii"), "%PDF-");
     assert.ok(bytes.length > 100 && bytes.length < 1024 * 1024);
     assert.equal(forbiddenFetches, 0, "Report build validation attempted external fetch.");
-    return { requiredAssetCount: requiredFiles.length, reportFontCount: reportFontFiles.length, pdfkitFileCount: standardFiles.length, compiledAuthStatus: response.status, sharp: "png", pdf: "valid", externalFetches: forbiddenFetches };
+    return { requiredAssetCount: requiredFiles.length, reportFontCount: reportFontFiles.length, pdfkitFileCount: standardFiles.length, sharpFileCount: sharpFiles.length, compiledAuthStatus: response.status, sharp: "png", pdf: "valid", externalFetches: forbiddenFetches };
   } finally {
     globalThis.fetch = originalFetch;
   }
