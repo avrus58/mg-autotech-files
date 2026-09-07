@@ -1,5 +1,26 @@
 # Otonom calisma gunlugu
 
+## 2026-09-07 Initial public HTML language - Production verified
+
+- Owner explicitly requested the latest update live. Only the language delta
+  was transplanted onto verified live `9b78cf4`; unpublished customer guide and
+  unrelated dirty owner work excluded. Source `e1b3266f3bf862934fe48faaeb9061a00bfcea16`,
+  clean release branch pushed and verified.
+- Fresh full tests 1533/1533, lint, web/uploader typecheck, full i18n including
+  37/37 bundle tests, local Production build/performance and 122 HTTP checks PASS.
+  Independent exact-commit review and 104 local Chrome cases PASS.
+- VPS Linux Production build PASS, 281 pages; actual image artifact gate PASS
+  for 48 required pages. Archive checksum matched. Standard app/analyzer release
+  pair `e1b3266f3bf8` healthy with zero restarts; previous `9b78cf41d31d` pair kept.
+- Live 115/115 public checks PASS (96 SEO variants, 15 auxiliaries, 4 prior assets).
+  Actual Production Chrome EN/DE/TR/ZH mobile/laptop 8/8 PASS. Initial public
+  HTML languages, canonical/alternates and layout verified; no real transactions.
+- No DB/schema/env/payment/DNS/Caddy changes. Main-site and Caddy start times
+  unchanged. No critical regression or rollback needed. Local QA server stopped.
+- Prefixless cookie-localized raw shell and early Next 404 language limits
+  remain documented; no Google indexing/ranking guarantee.
+- Receipt: `docs/production-release-2026-09-07-html-language.md`.
+
 ## 2026-09-07 Initial public HTML language - Local validation complete
 
 - Owner request: fix German initial HTML language and verify other languages,

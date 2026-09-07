@@ -170,7 +170,10 @@ tests/build and 48 required static artifact language checks passed. Routes,
 canonical/hreflang, copy and design retained. No dependency or database change.
 Prefixless cookie-localized raw HTML and pre-existing Next early 404 language
 are explicitly not claimed fixed. Evidence: `docs/server-html-language-validation.md`.
-No push, Preview or Production deployment.
+Production update 2026-09-07: language-only source `e1b3266f3bf8` deployed from
+live base `9b78cf4`, excluding the unpublished customer guide. Fresh 1533 tests,
+full gates, 104 local Chrome, 115 live HTTP and 8 live Chrome checks PASS.
+Receipt: `docs/production-release-2026-09-07-html-language.md`.
 ### MANUAL-20260906-ADMIN-MOBILE [P1] Mobile admin navigation and homepage account access
 
 Fingerprint: `admin|mobile-only|bottom-sidebar-navigation|persistent-drawer|homepage-account-entry`
