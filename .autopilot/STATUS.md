@@ -1,14 +1,46 @@
 # Otonom calisma gunlugu
 
-## 2026-09-07 Customer activation integration - In Progress
+## 2026-09-07 Customer activation integration - Locally verified
 
-- Owner-authorized scoped implementation in clean customer-activation-release
-  worktree from verified live source 65a53b6. Integrate reviewed guide candidate
-  8a44b05, preserving current HTML language and service-report changes.
-- Auxiliary guide navigation from an in-progress request must retain the
-  original tab, fields and selected file. Existing accounts are not enrolled.
-- No price/payment/consent/schema changes, customer mutation, push or deploy.
-- Fresh combined-source validation and independent review pending.
+- Started 2026-09-07 16:34, final tests completed 17:01:37 Europe/Berlin.
+- Owner-authorized clean customer-activation-release worktree from verified
+  live 65a53b606b5f. Source candidate fff11e4e613d3ee9eb171396d3bcf9e2249b4b32
+  integrates previously reviewed 8a44b05 and the draft-preserving navigation fix.
+  Current HTML-language and service-report releases remain unchanged.
+- Optional new-customer guide covers original files, credits, requests and
+  messages/delivery. Zero-credit first-request customers see existing credit
+  guidance before optional profile completion. Existing accounts are not enrolled.
+- Guide credit/order links from /new-request open separate tabs with a localized
+  accessible indication; typed details and selected file remain in the original.
+- Fresh full tests 1627/1627 PASS, no failures/skips; targeted 87/87 plus actual
+  navigation component 2/2 PASS; full lint and web/uploader typecheck PASS.
+  Mandatory prebuild i18n PASS: 12 locales, 2472 reviewed sources per non-English
+  locale, zero clean English fallbacks, 37/37 client bundle tests.
+- Production webpack build PASS: 282 generated pages. Strict postbuild PASS:
+  43 required assets, compiled protected report response 401, Sharp PNG and valid
+  PDF generation, zero external fetches. Additional actual compiled guide POST
+  returns private/no-store 401 without authentication or external fetches.
+- Performance PASS: initial homepage 15.7 KiB gzip / 80 KiB; all 48 required
+  public routes and document languages present, locale payloads within budget.
+- Synthetic local Chrome component QA 64/64 PASS: all 12 guide languages/four
+  viewports and eight EN/DE/TR/ZH mobile/laptop popup preservation cases. Both
+  auxiliary links retain controlled text and a selected synthetic File object,
+  with no form unmount, horizontal overflow or browser console exception.
+  Guide/hook/controller are real; auth/persistence and the underlying request
+  form are synthetic. No authenticated customer business transaction is claimed.
+- First local postbuild correctly rejected dependencies escaping the standalone
+  artifact through a shared node_modules junction. Replaced only verified local
+  junction entries with a physical copy of identical installed dependencies;
+  no npm install, dependency/config change or gate weakening. Full pipeline then
+  passed. A redundant standalone i18n run was cancelled; mandatory build i18n
+  completed. Failed/cancelled logs are retained as diagnostic history only.
+- Supabase skill/changelog/current metadata-update docs checked; exact-user and
+  device-assurance guards preserved. No price/payment/consent/schema changes,
+  secrets, customer mutation, push or deploy. Local fixture server stopped.
+- Full receipt: docs/customer-activation-integration-2026-09-07.md. Current Ads
+  report copied without changing the original owner's checkout. Independent
+  immutable review of fff11e4 by /root/measurement_review found no actionable
+  P0-P2 issues; its 35 independently rerun tests use the identical reviewed source.
 
 ## 2026-09-07 Post-service report - implementation validated, not released
 

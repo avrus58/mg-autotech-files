@@ -6,18 +6,6 @@
 
 ## In Progress
 
-### MANUAL-20260907-CUSTOMER-FIRST-REQUEST [P1] Optional account-bound customer guide
-
-Fingerprint: `customer-activation|new-registration|optional-four-step-guide|account-bound-terminal-choice|first-request-priority`
-
-Owner skips the mobile-admin audit and requests the funnel audit, evidence-led
-activation improvements and an optional once-only guide for new customers.
-Scope: aggregate-only funnel evidence, new-account guide enrollment/dismissal,
-all 12 locales and first-request priority ahead of optional profile completion.
-No prices, payment rules, campaign settings or Production deployment authorized.
-Preserve existing accounts, auth gates, desktop/customer design and all features.
-
-
 ## Blocked
 
 ### MANUAL-20260828-ADS-MEASUREMENT-FINAL-HARDENING [P0] Reklam edinimi, consent ve dogrulanmis donusum final kapilari
@@ -170,6 +158,19 @@ Remediation: Batch with a future documentation/source-comment maintenance pass a
 Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
+
+### MANUAL-20260907-CUSTOMER-FIRST-REQUEST [P1] Customer guide and first-request activation
+
+Fingerprint: `customer-activation|new-registration|optional-four-step-guide|account-bound-terminal-choice|first-request-priority`
+
+Locally complete at `fff11e4e613d3ee9eb171396d3bcf9e2249b4b32`, based on verified
+live `65a53b6`. Existing guide integrated with draft-preserving auxiliary links,
+all 12 locales and bounded zero-credit first-request dashboard priority.
+Latest HTML-language/report changes and price/payment/auth/consent rules preserved.
+Full tests 1627/1627, lint/typecheck/i18n/build/performance and 64 browser cases
+PASS. Independent immutable review found no actionable P0-P2 findings.
+No push, deployment, customer or service mutation. Evidence and current limits:
+`docs/customer-activation-integration-2026-09-07.md`.
 
 ### MANUAL-20260907-POST-SERVICE-PDF [P1] Shareable completed-order service report
 
