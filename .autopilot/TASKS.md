@@ -6,6 +6,18 @@
 
 ## In Progress
 
+### MANUAL-20260907-CUSTOMER-FIRST-REQUEST [P1] Optional account-bound customer guide
+
+Fingerprint: `customer-activation|new-registration|optional-four-step-guide|account-bound-terminal-choice|first-request-priority`
+
+Owner skips the mobile-admin audit and requests the funnel audit, evidence-led
+activation improvements and an optional once-only guide for new customers.
+Scope: aggregate-only funnel evidence, new-account guide enrollment/dismissal,
+all 12 locales and first-request priority ahead of optional profile completion.
+No prices, payment rules, campaign settings or Production deployment authorized.
+Preserve existing accounts, auth gates, desktop/customer design and all features.
+
+
 ## Blocked
 
 ### MANUAL-20260828-ADS-MEASUREMENT-FINAL-HARDENING [P0] Reklam edinimi, consent ve dogrulanmis donusum final kapilari

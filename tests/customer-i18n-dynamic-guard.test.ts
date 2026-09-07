@@ -34,6 +34,55 @@ import {
 const frozenFileServiceFingerprint =
   "0d6d6dc6aa22ed637aa92ce58911c4e3ce5a76740b76d8b207ca2f43b67c603f";
 
+test("onboarding catalog provenance is exact and still audits source arguments", () => {
+  const fixtureRoot = mkdtempSync(join(tmpdir(), "mg-i18n-onboarding-"));
+  const guideDirectory = join(fixtureRoot, "src/components/dashboard");
+  mkdirSync(guideDirectory, { recursive: true });
+  const guideFile = join(guideDirectory, "CustomerOnboardingGuide.tsx");
+  const runAudit = () => spawnSync(
+    process.execPath,
+    ["node_modules/tsx/dist/cli.mjs", "scripts/check-customer-i18n.ts"],
+    {
+      encoding: "utf8",
+      env: {
+        ...process.env,
+        I18N_AUDIT_EXTRA_ROOT: fixtureRoot,
+        I18N_AUDIT_FIXTURE_ONLY: "1",
+        I18N_REPORT_SOURCE_GAPS: "1",
+      },
+    },
+  );
+  try {
+    writeFileSync(guideFile, [
+      'import { customerOnboardingT as guideT } from "@/lib/i18n/customer-onboarding-translations";',
+      'import type { CustomerOnboardingSource } from "@/lib/i18n/customer-onboarding-translations";',
+      'export function CustomerOnboardingGuide() {',
+      '  const t = (source: CustomerOnboardingSource) => guideT("de", source);',
+      '  return <h2>{t("Welcome to your workspace")}</h2>;',
+      '}',
+    ].join("\n"));
+    const valid = runAudit();
+    assert.equal(valid.status, 0, `${valid.stdout}\n${valid.stderr}`);
+
+    writeFileSync(guideFile, [
+      'import { customerOnboardingT as guideT } from "@/lib/i18n/customer-onboarding-translations";',
+      'import { customerOnboardingT as fakeT } from "@/lib/i18n/fake-onboarding-translations";',
+      'export function CustomerOnboardingGuide() {',
+      '  return <>',
+      '    <p>{guideT("en", "Untranslated onboarding exact source warning" as never)}</p>',
+      '    <p>{fakeT("en", "Untranslated onboarding fake provider warning")}</p>',
+      '  </>;',
+      '}',
+    ].join("\n"));
+    const invalid = runAudit();
+    assert.equal(invalid.status, 1, `${invalid.stdout}\n${invalid.stderr}`);
+    assert.match(invalid.stdout, /Untranslated onboarding exact source warning/u);
+    assert.match(invalid.stdout, /Untranslated onboarding fake provider warning/u);
+  } finally {
+    rmSync(fixtureRoot, { recursive: true, force: true });
+  }
+});
+
 // This test module is the only caller allowed to request the checker’s
 // fixture-only execution path. Every child still supplies an explicit
 // I18N_AUDIT_EXTRA_ROOT; the checker refuses the fixture flag without one.

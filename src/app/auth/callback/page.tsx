@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Loader2, ShieldCheck, Upload } from "lucide-react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabaseClient";
+import { enrollFreshGoogleCustomerGuide } from "@/lib/customerOnboarding";
 import {
   authenticatedFetch,
   primeStableSession,
@@ -161,7 +162,7 @@ export default function AuthCallbackPage() {
           }
           await supabase.auth.updateUser({
             data: buildPendingRegistrationCountryMetadata(
-              currentSession.user.user_metadata
+              enrollFreshGoogleCustomerGuide(currentSession.user)
             ),
           });
           setMessage("Opening country confirmation...");

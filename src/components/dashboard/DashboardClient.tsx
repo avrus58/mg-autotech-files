@@ -475,7 +475,13 @@ export function DashboardClient() {
       };
     }
 
-    if (profileMissingItems.length > 0) {
+    // Recent orders are loaded without a status/search filter. Only a ready,
+    // empty history identifies a first request; optional profile details must
+    // not hide the existing credit action for that zero-balance customer.
+    const prioritizeFirstRequestCredits =
+      dashboardReady && orders.length === 0 && credits === 0;
+
+    if (profileMissingItems.length > 0 && !prioritizeFirstRequestCredits) {
       return {
         key: "profile",
         eyebrow: customerWorkflowExactT(locale, "Account setup"),
@@ -530,7 +536,7 @@ export function DashboardClient() {
       cta: customerWorkflowExactT(locale, "New Request"),
       tone: "border-emerald-700/35 bg-emerald-950/20 text-emerald-100",
     };
-  }, [activeCount, credits, locale, needsResponseCount, profileCompletionSummary, profileMissingItems.length]);
+  }, [activeCount, credits, dashboardReady, locale, needsResponseCount, orders.length, profileCompletionSummary, profileMissingItems.length]);
 
   const customerWorkflowSteps = useMemo(
     () => [

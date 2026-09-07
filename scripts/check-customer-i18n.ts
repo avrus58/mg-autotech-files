@@ -12,6 +12,10 @@ import {
 } from "../src/lib/i18n/customer-workflow-translations";
 import { customerWorkflowClientGroupForPath } from "../src/lib/i18n/customer-workflow-client-routes";
 import {
+  customerOnboardingExactTranslations,
+  customerOnboardingLocaleOrder,
+} from "../src/lib/i18n/customer-onboarding-translations";
+import {
   customerWorkflowAuditRoots,
   customerWorkflowExternallyLocalizedSharedSources,
   customerWorkflowClientSurfaceManifest,
@@ -600,6 +604,10 @@ const reviewedTranslatorExportsByModule = new Map<
   [
     "@/lib/i18n/customer-portal-first-paint",
     new Map([["customerPortalFirstPaintT", exactSourceTranslatorContract]]),
+  ],
+  [
+    "@/lib/i18n/customer-onboarding-translations",
+    new Map([["customerOnboardingT", exactSourceTranslatorContract]]),
   ],
   [
     "@/lib/i18n/customer-runtime-translations",
@@ -8118,6 +8126,11 @@ const supplementalCatalogs: ReadonlyArray<
   ]
 > = [
   [
+    "customer-onboarding",
+    customerOnboardingLocaleOrder,
+    customerOnboardingExactTranslations,
+  ],
+  [
     "customer-workflow",
     customerWorkflowLocaleOrder,
     customerWorkflowExactTranslations,
@@ -8206,6 +8219,8 @@ function allowedSupplementalLabelsForFile(file: string) {
     add("customer-workflow");
   if (normalized === "src/components/dashboard/LogAnalysisStudio.tsx")
     add("public-tools", "log-studio");
+  if (normalized === "src/components/dashboard/CustomerOnboardingGuide.tsx")
+    add("customer-onboarding");
   if (normalized === "src/components/dashboard/WidgetDashboardClient.tsx")
     add("widget-site");
   if (

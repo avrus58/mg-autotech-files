@@ -640,12 +640,13 @@ test("customer dashboard surfaces missing profile details without changing setti
 test("customer dashboard shows one prioritized next best action", () => {
   const dashboard = readProjectFile("src", "components", "dashboard", "DashboardClient.tsx");
   const needsResponsePriority = dashboard.indexOf("if (needsResponseCount > 0)");
-  const profilePriority = dashboard.indexOf("if (profileMissingItems.length > 0)");
+  const profilePriority = dashboard.indexOf("if (profileMissingItems.length > 0 && !prioritizeFirstRequestCredits)");
   const creditsPriority = dashboard.indexOf("if (credits <= 0)");
   const activeOrdersPriority = dashboard.indexOf("if (activeCount > 0)");
 
   assert.match(dashboard, /const dashboardNextAction = useMemo\(\(\) => \{/);
   assert.match(dashboard, /profileMissingItems\.length > 0[\s\S]*Complete your customer profile/);
+  assert.match(dashboard, /const prioritizeFirstRequestCredits =\s*dashboardReady && orders\.length === 0 && credits === 0;/);
   assert.match(dashboard, /needsResponseCount > 0[\s\S]*Respond to requested order information/);
   assert.match(dashboard, /credits <= 0[\s\S]*Add credits before your next file request/);
   assert.match(dashboard, /activeCount > 0[\s\S]*Track your active file requests/);

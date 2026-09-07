@@ -27,6 +27,7 @@ import {
   getPublicAuthCaptchaConfig,
 } from "@/lib/authCaptcha";
 import { supabase } from "@/lib/supabaseClient";
+import { enrollCustomerGuide } from "@/lib/customerOnboarding";
 import { getPublicGoogleIdentityConfig } from "@/lib/googleIdentity";
 import { resolveBrowserTransactionalEmailLanguage } from "@/lib/email/language";
 import {
@@ -488,6 +489,7 @@ export default function RegisterPage() {
               ? { captchaToken: requestCaptchaToken }
               : {}),
             data: {
+              ...enrollCustomerGuide(),
               full_name: cleanFullName,
               account_type: accountType,
               company_name: accountType === "company" ? cleanCompanyName : null,

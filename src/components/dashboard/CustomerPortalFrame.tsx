@@ -10,6 +10,7 @@ import {
 } from "@/components/dashboard/CustomerPortalSidebar";
 import { getStableSession, isEmailVerified } from "@/lib/authGuards";
 import { supabase } from "@/lib/supabaseClient";
+import { CustomerOnboardingGuide } from "@/components/dashboard/CustomerOnboardingGuide";
 
 function resolveActiveItem(pathname: string, view: string | null): CustomerPortalActiveItem {
   if (pathname === "/new-request") return "new-request";
@@ -134,6 +135,7 @@ export function CustomerPortalFrame({ children }: { children: ReactNode }) {
           </Suspense>
           {children}
         </div>
+        <CustomerOnboardingGuide />
       </div>
     </AppShell>
   );

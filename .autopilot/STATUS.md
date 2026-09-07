@@ -1,5 +1,15 @@
 # Otonom calisma gunlugu
 
+## 2026-09-07 Customer activation integration - In Progress
+
+- Owner-authorized scoped implementation in clean customer-activation-release
+  worktree from verified live source 65a53b6. Integrate reviewed guide candidate
+  8a44b05, preserving current HTML language and service-report changes.
+- Auxiliary guide navigation from an in-progress request must retain the
+  original tab, fields and selected file. Existing accounts are not enrolled.
+- No price/payment/consent/schema changes, customer mutation, push or deploy.
+- Fresh combined-source validation and independent review pending.
+
 ## 2026-09-07 Post-service report - implementation validated, not released
 
 - Completed manual owner scope on isolated `codex/post-service-reports-20260907`;

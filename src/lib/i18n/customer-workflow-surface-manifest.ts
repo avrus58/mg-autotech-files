@@ -334,6 +334,10 @@ export const customerWorkflowSharedSourceManifest = {
         localizationImport: "@/lib/i18n/customer-runtime-translations",
       },
       {
+        file: "src/components/dashboard/CustomerOnboardingGuide.tsx",
+        localizationImport: "@/lib/i18n/customer-onboarding-translations",
+      },
+      {
         file: "src/components/auth/DeviceVerificationPanel.tsx",
         localizationImport: "@/lib/i18n/customer-workflow-auth-translations",
       },
@@ -349,6 +353,7 @@ export const customerWorkflowSharedSourceManifest = {
       },
     ],
     runtimeCatalogs: [
+      "customer-onboarding-translations",
       "customer-workflow-portal-common-translations",
       "customer-runtime-translations",
       "service-report-translations",

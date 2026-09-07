@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireBaseApiUser } from "@/lib/apiAuth";
+import { enrollFreshGoogleCustomerGuide } from "@/lib/customerOnboarding";
 import {
   buildRegistrationCompletionUpdates,
   isGoogleRegistrationAfterCountryEnforcement,
@@ -76,7 +77,7 @@ export async function POST(request: Request) {
   const updates = buildRegistrationCompletionUpdates({
     country: profile?.country ?? input.country,
     draft: profile,
-    existingMetadata: auth.user.user_metadata,
+    existingMetadata: enrollFreshGoogleCustomerGuide(auth.user),
   });
   if (!updates) {
     return errorResponse("invalid_country", 400);
