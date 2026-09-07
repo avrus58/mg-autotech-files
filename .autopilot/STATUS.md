@@ -1,5 +1,23 @@
 # Otonom calisma gunlugu
 
+## 2026-09-07 Post-service report - discovery blocked before implementation
+
+- Manual owner request: detailed shareable completed-order PDF, optional customer
+  logo, sourced before/after metrics and disabled-until-completed control.
+- Isolated branch `codex/post-service-reports-20260907` from `454ddac`; original
+  dirty worktree and unpublished customer guide preserved/excluded.
+- Source-only discovery and three parallel read-only reviews: no shipped PDF
+  renderer, report logo persistence or order-specific measured metrics. Existing
+  SVG export is not a PDF. Completion has multiple paths; authorization must be
+  checked on every download. No customer or secret data inspected.
+- Blocked by no-new-dependency rule pending owner approval for the free PDF
+  renderer, licensed Unicode fonts and explicit image-decoder dependency. No
+  handwritten raster PDF/print-dialog workaround, package install or application
+  edits. Detailed implementation and test contract: `docs/post-service-report-plan.md`.
+- Changes are TASKS, STATUS and planning document only. Documentation diff check
+  performed; lint/typecheck/tests/build not run because no executable/UI change
+  was made. No PDF generated, database access/migration, push or deployment.
+
 ## 2026-09-07 Initial public HTML language - Production verified
 
 - Owner explicitly requested the latest update live. Only the language delta

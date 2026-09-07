@@ -8,6 +8,19 @@
 
 ## Blocked
 
+### MANUAL-20260907-POST-SERVICE-PDF [P1] Shareable completed-order service report
+
+Fingerprint: `orders|completed-service-report|missing-shareable-pdf-and-optional-branding|localized-owner-authorized-download`
+
+Status: Blocked before implementation. Owner requested optional customer profile
+image/logo, detailed service and before/after report, and completed-only PDF
+download. Source discovery found no shipped PDF renderer or order-level measured
+performance/report snapshot. A new PDF runtime dependency requires an explicit
+exception to the no-new-dependency rule. No package installed, application code
+changed, migration applied or live release performed. Plan and evidence:
+`docs/post-service-report-plan.md`. Resume after dependency approval; preserve
+all supported locales and enforce completion/ownership server-side.
+
 ### MANUAL-20260828-ADS-MEASUREMENT-FINAL-HARDENING [P0] Reklam edinimi, consent ve dogrulanmis donusum final kapilari
 
 Durum: Blocked (code fully validated; owner/legal, migration, Production release and live receipt gates remain)
