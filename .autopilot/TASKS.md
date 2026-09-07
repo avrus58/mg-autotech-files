@@ -6,24 +6,6 @@
 
 ## In Progress
 
-### MANUAL-20260907-POST-SERVICE-PDF [P1] Shareable completed-order service report
-
-Fingerprint: `orders|completed-service-report|missing-shareable-pdf-and-optional-branding|localized-owner-authorized-download`
-
-Status: In Progress. Owner explicitly approved required PDF/image/font dependencies
-after the initial blocked discovery. Implemented automatic completed-order PDF
-access, optional normalized logo, sourced performance/confirmed-service details,
-append-only snapshots and compact admin/customer controls. No separate manual
-report publication gate. All 12 locales remain in scope.
-
-Confirmed partial checks: focused model/server tests 13/13, actual disposable
-PostgreSQL WASM migration/SQL scenarios 22/22, scoped lint PASS. Tracked runner:
-`scripts/check-service-report-database.mjs`; plan, font provenance and remaining
-gates: `docs/post-service-report-plan.md`. Full suite/i18n/typecheck/build,
-responsive/PDF edge-case QA and independent final review remain pending. Docker
-was unavailable, so real multi-session lock contention is not proven. No live
-DB/migration, customer mutation, push or release performed.
-
 ## Blocked
 
 ### MANUAL-20260828-ADS-MEASUREMENT-FINAL-HARDENING [P0] Reklam edinimi, consent ve dogrulanmis donusum final kapilari
@@ -176,6 +158,28 @@ Remediation: Batch with a future documentation/source-comment maintenance pass a
 Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
+
+### MANUAL-20260907-POST-SERVICE-PDF [P1] Shareable completed-order service report
+
+Fingerprint: `orders|completed-service-report|missing-shareable-pdf-and-optional-branding|localized-owner-authorized-download`
+
+Status: Done (implementation and local validation only; not released).
+Owner-approved PDF/image/font dependencies, optional customer logo, automatic
+completed-order PDF, compact admin sourced metrics/performed-services editor,
+append-only snapshots and all 12 locales implemented in isolated branch
+`codex/post-service-reports-20260907`. Source candidate: `083d8f0`.
+
+Checks: full tests 1587/1587, final build-guard tests 6/6, lint, web+desktop
+typecheck, i18n (2448/2448; 37 bundle tests), default Turbopack Production build
+(281 pages), standalone runtime/35 assets, SQL 22/22, PDF 14 fixtures/18 pages,
+customer Chrome 11 and admin Chrome 6 scenarios PASS. Independent bounded
+immutable review found no remaining P1/P2 in reviewed scope. See STATUS and
+`docs/post-service-report-plan.md` for evidence and exact limitations.
+
+No push, Preview/Production deployment, live migration or customer transaction.
+Docker engine unavailable; SQL used disposable PGlite, not live schema or real
+multi-session contention. An authorized release must apply reviewed additive
+migration and verify its environment, storage boundaries and live flows.
 
 ### MANUAL-20260907-SERVER-HTML-LANGUAGE [P1] Initial public HTML locale
 

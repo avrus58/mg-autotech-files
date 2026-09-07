@@ -1,3 +1,6 @@
 *.sh text eol=lf
 # Generated catalogs are byte-checked during prebuild on Windows and Linux.
 src/lib/i18n/customer-workflow-*-translations.ts text eol=lf
+# Preserve upstream font licenses byte-for-byte, including their own whitespace.
+assets/report-fonts/OFL-NotoSans.txt -text
+assets/report-fonts/OFL-NotoSansSC.txt -text -whitespace

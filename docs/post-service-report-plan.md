@@ -1,7 +1,8 @@
 # Post-service customer PDF report
 
-Status: **In Progress** — owner explicitly approved the required PDF/image/font dependencies;
-implementation and local validation are under way. Not released.
+Status: **Done — implementation and local validation; not released.** Owner
+approved the required PDF/image/font dependencies. Candidate: `083d8f0` on
+`codex/post-service-reports-20260907`; final validation recorded in STATUS.
 Discovery date: 2026-09-07. Clean live-derived baseline: `454ddac`.
 Fingerprint: `orders|completed-service-report|missing-shareable-pdf-and-optional-branding|localized-owner-authorized-download`.
 
@@ -125,7 +126,7 @@ engine was unavailable; this single-connection test does **not** prove real
 multi-session lock contention or validate the live schema.
 
 Focused model/server/SQL-contract tests passed **13/13**; scoped lint passed.
-These receipts are partial validation, not full-release completion.
+These receipts cover the database portion only; complete local checks are below.
 
 ## Migration and recovery boundary
 
@@ -137,21 +138,65 @@ Code rollback uses the previous application version while retaining additive
 tables and immutable report history; rollback must not delete issued reports or
 their logo objects.
 
-## Remaining verification before completion/release
+## Completed local validation
 
-- Cross-account, unauthenticated, incomplete/reopened/cancelled status denial.
-- Every existing completion path and repeated downloads/revisions.
-- Missing metrics, estimated versus measured values, and no internal-data leakage.
-- Invalid/oversized/malicious images, remove/replace and account switching.
-- All-locale PDF extraction and rendered-page checks, especially TR/RU/ZH;
-  long vehicle names, page breaks and readable printable output.
-- EN/DE/TR/ZH mobile and compact-laptop UI states and accessibility.
-- Targeted tests, i18n gate, lint, typecheck, full suite, Production build,
-  independent review and disposable database verification if migrations are added.
+- Full tests **1587/1587**, final build guard tests **6/6**, lint and web/desktop
+  typecheck PASS. The final test-only regex target compatibility adjustment was
+  checked with typecheck and those six focused tests.
+- Full i18n: all 12 locales, 2448/2448 reviewed source strings in every non-English
+  locale, zero clean English fallbacks, 37/37 client-bundle tests PASS.
+- Default Production build (Turbopack) PASS with 281 static pages. Explicit
+  postbuild verification PASS: all 35 font/runtime assets present and traced,
+  actual compiled unauthenticated route returns private 401, standalone Sharp
+  and PDFKit generate valid image/PDF with external fetches forbidden. The new
+  `postbuild` hook makes this automatic for subsequent npm builds.
+- Actual PDF generation/parser tests: **14 fixtures / 18 pages**, all locale
+  headings, Turkish/Cyrillic/Chinese text, privacy markers, long source/service/
+  customer-note tails and page bounds PASS. All 18 pages were individually
+  rendered and visually checked: every standard locale, empty fields and all
+  five stress-fixture pages.
+- Actual Chrome components with synthetic auth/API: **11 customer scenarios**
+  (EN/DE/TR/ZH, 390/1280) and **6 admin scenarios** PASS. Covers pending/complete,
+  keyboard download, upload/remove, locale and account switches, retry, cleanup,
+  decimals/provenance, conflicts and read-only permissions. All eight customer
+  screenshots and admin layouts were visually inspected.
+- Model/RPC tests and actual disposable SQL **22/22** PASS. Independent bounded
+  immutable review of candidate found no remaining P1/P2 in reviewed scope.
+- Production dependencies: zero npm advisories; existing development tooling
+  still has 8 advisories (2 moderate, 6 high), outside this feature update.
 
-Implementation and synthetic local PDF/SQL work have now run; the initial
-discovery-only receipt is historical. Final UI/PDF edge-case review, the full
-quality suite/build, standalone artifact checks and independent review are still
-pending at this checkpoint. No push, deployment, live database/customer mutation
-or real authenticated business transaction is claimed. Production requires a new
-explicit owner release instruction and its scoped verification.
+The PDFKit standalone-font omission and Turkish composite-glyph Unicode loss
+were caught by execution and fixed. Long technical tokens are wrapped without
+adding false hyphens; long notes can paginate. New labels use exact accessible
+names; session-revocation and transient-error recovery preserve existing auth
+contracts. Local fonts/licenses are bundled; no remote asset fetch is required.
+
+### Repeatable commands
+
+```text
+npm run lint
+npm run typecheck
+npm test
+npm run check:i18n
+npm run build
+node scripts/check-service-report-database.mjs
+npx tsx scripts/render-service-report-fixtures.ts
+python scripts/check-service-report-pdf-fixtures.py
+```
+
+The PDF layout command uses a QA Python runtime with pdfplumber; it is not a
+Production dependency. The SQL QA-only installation is described above. Neither
+script needs real customer fixtures, credentials or live service access. Runtime
+receipts are ignored; source tests and rerun scripts are tracked.
+
+### Release limitations
+
+No push, deployment, staging/live migration or real customer transaction was
+performed. Docker's Linux engine was unavailable: the local PostgreSQL WASM
+rehearsal does not prove simultaneous multi-connection lock contention, and the
+Windows standalone check does not replace a Linux container/isolated-staging
+smoke. Validate these together with actual schema and private immutable storage
+policies before an authorized release. Only the reviewed additive migration
+`20260907111225_service_report_snapshots.sql` belongs to this feature; do not
+bundle unrelated pending migrations. Existing app rollback retains these tables
+and issued history. A new explicit owner release instruction is still required.

@@ -1,5 +1,65 @@
 # Otonom calisma gunlugu
 
+## 2026-09-07 Post-service report - implementation validated, not released
+
+- Completed manual owner scope on isolated `codex/post-service-reports-20260907`;
+  implementation candidate `083d8f0` from live-derived baseline `454ddac`.
+  Unrelated dirty source checkout and unpublished guide work were not included.
+- Customer settings now support optional normalized private logo/photo; order
+  details always show the PDF control, enabled only for completed work. Admin
+  optional details supply performed services, independently nullable before/after
+  hp/Nm, provenance and customer-facing notes. Requested scope remains separate;
+  absent measurements are not invented. Shared PDF excludes prices, credits,
+  customer email, internal notes and storage/firmware identifiers.
+- Main files: `src/lib/serviceReports/*`, three report API routes, customer
+  branding/download components, compact admin editor and three existing page
+  insertions; typed 12-locale catalog/inventory; pinned renderer/sharp; licensed
+  local fonts, exact standalone tracing and postbuild runtime guard; additive
+  migration, synthetic fixtures and tests. No existing feature was removed.
+- Final checks PASS: full `npm test` 1587/1587; build-guard tests 6/6 after removing
+  an unnecessary ES2018 regex flag for the ES2017 test target; `npm run lint`;
+  `npm run typecheck` (web and desktop); full i18n gate 2448/2448 with zero clean
+  English fallbacks and 37/37 client-bundle tests; default `npm run build`
+  (Turbopack, 281 static pages, synthetic public build values only). The newly
+  added postbuild hook was explicitly run after this build and passed: 35 assets,
+  actual compiled unauthenticated 401, standalone Sharp PNG and PDF generation,
+  zero external fetches. Future npm builds run this gate automatically.
+- Actual PDF parser/render QA: 14 synthetic fixtures / 18 pages, 12 locales,
+  optional/long fields, Unicode, note tails, footer/page numbers, privacy markers
+  and glyph bounds PASS. All 14 fixtures / 18 pages were individually rendered
+  and visually inspected, including all 12 standard locales, empty and long
+  layouts. Chrome actual-component tests with synthetic auth/API:
+  customer 11 scenarios plus admin 6 scenarios, 390/1280 widths, locale switching,
+  keyboard controls, decimals, provenance validation, conflict/retry, account
+  changes and unmount PASS. All customer matrix screenshots and admin layouts
+  were reviewed. These are not real authenticated customer transactions.
+- SQL: tracked disposable runner repeated 22/22 on PGlite 0.5.8 / PostgreSQL 18.3;
+  permissions, ownership/status, CAS, source bounds, append-only history and late
+  branding/profile changes PASS. Docker Linux engine remained unavailable; no
+  claim of live-schema or multi-session row-lock contention validation.
+- Independent reviews found and fixed source-note pagination, revoked-session
+  error contract and transient-session branding recovery. Artifact execution
+  caught missing dynamic PDFKit font modules; recursive tracing plus permanent
+  postbuild guard fixed it. Turkish glyph-cache loss was reproduced and fixed
+  with supported font preloading; all-locale extraction/regression tests pass.
+  Immutable `083d8f0` bounded final review: no remaining P1/P2 in reviewed scope.
+- Production dependency audit: zero advisories. Whole development tree still
+  reports 8 existing advisories (2 moderate, 6 high); no claim of zero overall
+  vulnerabilities and no unrelated audit-fix/package upgrade was performed.
+- Final diff reviewed; upstream license bytes preserved through exact Git
+  attributes (one upstream trailing space is intentionally retained). Temporary
+  CLI version-cache file removed; one disposable CJS reproducer archived as text
+  after the tracked compiler-independent build check superseded it.
+- Evidence under ignored `.autopilot/runtime/service-reports/`: full-test-commit,
+  build-final, build-artifact-final logs; sql-rehearsal.json;
+  pdf-layout-validation.json; component-qa/results.json and
+  admin-component-qa/results.json. Durable rerun commands are in the feature plan.
+- Not deployed or pushed. No staging/Production DB connection/migration, real
+  customer data, payment or email mutation. Release requires explicit owner
+  instruction, scoped prerequisite/storage verification, additive migration and
+  live smoke. Recovery: prior app with new tables/history retained; never delete
+  issued reports or immutable logo objects as a rollback shortcut.
+
 ## 2026-09-07 Post-service report - owner-approved implementation in progress
 
 - Owner explicitly approved the required PDF renderer, image decoder and licensed

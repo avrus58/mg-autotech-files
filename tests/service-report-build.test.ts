@@ -30,7 +30,7 @@ test("a correct NFT trace does not hide missing standalone copies or source asse
 
 test("the report route traces PDFKit recursive runtime fonts and project font assets", () => {
   const config = readFileSync("next.config.ts", "utf8");
-  assert.match(config, /"\/api\/requests\/\*\/service-report"\s*:\s*\[[^\]]*"\.\/assets\/report-fonts\/\*\*\/\*"[^\]]*"\.\/node_modules\/pdfkit\/js\/standard-fonts\/\*\*\/\*"/s);
+  assert.match(config, /"\/api\/requests\/\*\/service-report"\s*:\s*\[[^\]]*"\.\/assets\/report-fonts\/\*\*\/\*"[^\]]*"\.\/node_modules\/pdfkit\/js\/standard-fonts\/\*\*\/\*"/);
 });
 
 test("Docker admits only the synthetic PDF helper needed by builder typechecking", () => {
