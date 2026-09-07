@@ -6,20 +6,25 @@
 
 ## In Progress
 
-## Blocked
-
 ### MANUAL-20260907-POST-SERVICE-PDF [P1] Shareable completed-order service report
 
 Fingerprint: `orders|completed-service-report|missing-shareable-pdf-and-optional-branding|localized-owner-authorized-download`
 
-Status: Blocked before implementation. Owner requested optional customer profile
-image/logo, detailed service and before/after report, and completed-only PDF
-download. Source discovery found no shipped PDF renderer or order-level measured
-performance/report snapshot. A new PDF runtime dependency requires an explicit
-exception to the no-new-dependency rule. No package installed, application code
-changed, migration applied or live release performed. Plan and evidence:
-`docs/post-service-report-plan.md`. Resume after dependency approval; preserve
-all supported locales and enforce completion/ownership server-side.
+Status: In Progress. Owner explicitly approved required PDF/image/font dependencies
+after the initial blocked discovery. Implemented automatic completed-order PDF
+access, optional normalized logo, sourced performance/confirmed-service details,
+append-only snapshots and compact admin/customer controls. No separate manual
+report publication gate. All 12 locales remain in scope.
+
+Confirmed partial checks: focused model/server tests 13/13, actual disposable
+PostgreSQL WASM migration/SQL scenarios 22/22, scoped lint PASS. Tracked runner:
+`scripts/check-service-report-database.mjs`; plan, font provenance and remaining
+gates: `docs/post-service-report-plan.md`. Full suite/i18n/typecheck/build,
+responsive/PDF edge-case QA and independent final review remain pending. Docker
+was unavailable, so real multi-session lock contention is not proven. No live
+DB/migration, customer mutation, push or release performed.
+
+## Blocked
 
 ### MANUAL-20260828-ADS-MEASUREMENT-FINAL-HARDENING [P0] Reklam edinimi, consent ve dogrulanmis donusum final kapilari
 

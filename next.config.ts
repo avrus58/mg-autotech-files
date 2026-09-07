@@ -80,6 +80,14 @@ const protectedPageSources = [
 
 const nextConfig: NextConfig = {
   output: "standalone",
+  serverExternalPackages: ["@react-pdf/renderer", "sharp"],
+  outputFileTracingIncludes: {
+    "/api/requests/*/service-report": [
+      "./assets/report-fonts/**/*",
+      // PDFKit resolves built-in font metrics dynamically, outside NFT's graph.
+      "./node_modules/pdfkit/js/standard-fonts/**/*",
+    ],
+  },
   experimental: {
     // Production runs with a read-only root filesystem. Keep runtime ISR
     // entries in Next's bounded memory cache instead of attempting to write

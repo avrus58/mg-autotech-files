@@ -691,6 +691,40 @@ test("the repository checker audits visible copy in JS and JSX directory roots",
   }
 });
 
+test("service-report typed translator provenance accepts its alias and rejects fake copy and untranslated parameters", () => {
+  const fixtureRoot = mkdtempSync(join(tmpdir(), "mg-i18n-service-report-"));
+  const fixture = join(fixtureRoot, "ServiceReportFixture.tsx");
+  const run = () => spawnSync(process.execPath, ["node_modules/tsx/dist/cli.mjs", "scripts/check-customer-i18n.ts"], {
+    encoding: "utf8",
+    env: { ...process.env, I18N_AUDIT_EXTRA_ROOT: fixture, I18N_REPORT_SOURCE_GAPS: "1" },
+  });
+  try {
+    writeFileSync(fixture, [
+      'import { serviceReportT as translate } from "@/lib/i18n/service-report-translations";',
+      'export function Report() { const t = (key: Parameters<typeof translate>[1]) => translate("de", key); return <p>{t("downloadPdf")}</p>; }',
+    ].join("\n"), "utf8");
+    const valid = run();
+    assert.equal(valid.status, 0, `${valid.stdout}\n${valid.stderr}`);
+    writeFileSync(fixture, [
+      'import { serviceReportT as translate } from "@/lib/i18n/service-report-translations";',
+      'export function Report() { return <p>{translate("de", "pageNumber", { page: "Untranslated report parameter sentinel", total: 2 })}</p>; }',
+    ].join("\n"), "utf8");
+    const parameter = run();
+    assert.equal(parameter.status, 1, parameter.stdout);
+    assert.match(parameter.stdout, /Untranslated report parameter sentinel/);
+    writeFileSync(join(fixtureRoot, "fake.ts"), 'export const serviceReportT = (_locale: string, text: string) => text;\n', "utf8");
+    writeFileSync(fixture, [
+      'import { serviceReportT } from "./fake";',
+      'export function Report() { return <p>{serviceReportT("de", "Untranslated fake report sentinel")}</p>; }',
+    ].join("\n"), "utf8");
+    const fake = run();
+    assert.equal(fake.status, 1, fake.stdout);
+    assert.match(fake.stdout, /Untranslated fake report sentinel/);
+  } finally {
+    rmSync(fixtureRoot, { recursive: true, force: true });
+  }
+});
+
 test("the repository checker follows visible copy and exact translator provenance", () => {
   const fixtureRoot = mkdtempSync(join(tmpdir(), "mg-i18n-static-flow-"));
   const fixture = join(fixtureRoot, "StaticFlow.tsx");

@@ -1,6 +1,7 @@
 # Post-service customer PDF report
 
-Status: implementation blocked pending explicit approval for a PDF runtime dependency.
+Status: **In Progress** — owner explicitly approved the required PDF/image/font dependencies;
+implementation and local validation are under way. Not released.
 Discovery date: 2026-09-07. Clean live-derived baseline: `454ddac`.
 Fingerprint: `orders|completed-service-report|missing-shareable-pdf-and-optional-branding|localized-owner-authorized-download`.
 
@@ -31,15 +32,20 @@ Fingerprint: `orders|completed-service-report|missing-shareable-pdf-and-optional
   Historical commit `003bf78` downloaded an SVG dyno report, not a PDF. A local QA
   browser/runtime dependency is not a shipped Production renderer.
 
-## Proposed implementation contract (not implemented)
+## Implementation contract
 
-1. Add explicit report data for completed services and optional before/after
-   metrics, with provenance and units. Staff review confirms the report content;
+1. Explicit report data records completed services and optional before/after
+   metrics, with provenance and units. Staff entries confirm optional report content;
    requested services alone must not become unsupported measured-work claims.
    Missing values remain missing. Catalogue estimates are identified as estimates,
-   never displayed as dyno measurements or invented gains.
-2. Use a versioned report snapshot so later catalogue/profile edits do not silently
-   rewrite historical issued reports. Corrections create a new report revision.
+   never displayed as dyno measurements or invented gains. Any order with current
+   `orders.status = completed` can obtain a report without a separate publish
+   gate or admin data entry. Unconfirmed performed services remain empty.
+2. A versioned report snapshot prevents later profile/logo/detail edits from
+   silently rewriting historical issued reports. Changed canonical input creates
+   a new revision on the next download; unchanged downloads reuse the same
+   report ID, revision and issue timestamp. The issue date is not presented as
+   an independently known completion date.
 3. Add optional image upload with bounded bytes/pixels, JPEG/PNG decoding,
    re-encoding and metadata stripping, private owner-scoped storage and removal.
    Do not fetch arbitrary URLs, reuse firmware upload paths, or put image bytes
@@ -56,24 +62,82 @@ Fingerprint: `orders|completed-service-report|missing-shareable-pdf-and-optional
    customer order details. Translate report labels and all new UI across all
    supported locales, including Unicode font embedding and locale-aware numbers.
 
-## Dependency decision
+## Approved dependency decision
 
-Recommend evaluating `@react-pdf/renderer` with locally bundled licensed Unicode
-fonts, and explicitly declaring the already Next-transitive `sharp` image decoder
-as an application dependency rather than relying on accidental hoisting. The PDF
-renderer supports real server-generated PDFs and uses the MIT license:
+The owner explicitly approved the necessary dependencies after the initial
+blocked discovery. The application now pins `@react-pdf/renderer` **4.9.0** and
+`sharp` **0.35.0**. Licensed Unicode fonts are bundled locally, with sources,
+SHA-256 hashes and static CJK generation documented in
+`assets/report-fonts/README.md`. The renderer supports real server-generated PDFs:
 
 - https://react-pdf.org/docs/v4/node
 - https://react-pdf.org/docs/v4/fonts
 - https://github.com/diegomura/react-pdf/blob/master/LICENSE
 
-No library, font, package or external service has been installed or configured.
-The repository and MG AutoTech engineering skill prohibit adding a new dependency
-without an exception. Ask the owner to approve this specific free PDF library
-and image-processing dependency before installation; assess pinned versions, transitive dependencies, font license,
-all-locale output and Next standalone bundling after approval.
+This is the specific owner-authorized exception, not a general permission to add
+unrelated packages. No external PDF service is used. Next standalone font/runtime
+bundling, the final dependency audit and rendered output remain release checks.
 
-## Required verification after implementation
+## Implemented persistence and authorization
+
+- Migration `supabase/migrations/20260907111225_service_report_snapshots.sql` adds
+  only `service_report_details`, `service_report_snapshots` and
+  `customer_report_branding`, plus narrowly granted helper/RPC functions.
+- All three tables have RLS enabled and no anonymous/authenticated direct grants.
+  Server-role report details and snapshots are append-only. Branding updates
+  change the current pointer; old normalized image objects remain available to
+  issued snapshots. Existing table grants and business rules are unchanged.
+- Admin optional details use `/api/admin/requests/[id]/service-report`, existing
+  `orders.view`/`orders.manage` permissions, bounded input and expected-revision
+  compare-and-swap. Saving details does not alter the order's completion status.
+- Issuance locks the order row, checks fresh ownership and completed status, and
+  serializes against detail saves. Customer downloads are owner-only; delegated
+  staff require `files.download`. Access is rechecked after PDF rendering.
+- Performance numbers are optional. Any recorded value, including zero, requires
+  its source and an explanation. Source/customer notes are limited to 2000
+  characters and 30 logical lines. Oversized legacy requested scopes are rejected
+  before a snapshot is created, not silently truncated.
+- Frozen report fields exclude credits/prices, internal notes, customer email,
+  file paths, HW/SW strings and training/analysis metadata. The internal customer
+  ID is used for safe logo loading, not printed as report content.
+
+## Reproducible disposable SQL verification
+
+The tracked runner is `scripts/check-service-report-database.mjs`; its synthetic
+bootstrap is `tests/fixtures/service-reports/database.sql`. It accepts **no target
+URL or credential**, imports the pinned QA-only PGlite installation, and always
+creates a new in-memory database. Never run the fixture SQL against an existing,
+linked, staging or Production database.
+
+```powershell
+# QA-only prerequisite in an ignored directory, not in the app dependencies.
+npm install --prefix .autopilot/runtime/service-reports/sql-tools --no-save --ignore-scripts --no-audit --no-fund @electric-sql/pglite@0.5.8
+node scripts/check-service-report-database.mjs
+```
+
+The runner writes only its result receipt to
+`.autopilot/runtime/service-reports/sql-rehearsal.json`. The current run passed
+**22/22** scenarios on PGlite 0.5.8 / PostgreSQL 18.3 WASM: actual migration
+execution, table/RPC grants, forged staff flag denial, old completed orders,
+ownership/status rejection, provenance, CAS, append-only history, late branding,
+profile revisions, reopening, reassignment and input bounds. Docker's Linux
+engine was unavailable; this single-connection test does **not** prove real
+multi-session lock contention or validate the live schema.
+
+Focused model/server/SQL-contract tests passed **13/13**; scoped lint passed.
+These receipts are partial validation, not full-release completion.
+
+## Migration and recovery boundary
+
+No staging or Production migration has been applied. Before an authorized release,
+verify the real prerequisite order/profile columns and canonical storage
+immutability controls, review the additive migration, and apply only the approved
+scope. This is not an authorization to run the disposable bootstrap there.
+Code rollback uses the previous application version while retaining additive
+tables and immutable report history; rollback must not delete issued reports or
+their logo objects.
+
+## Remaining verification before completion/release
 
 - Cross-account, unauthenticated, incomplete/reopened/cancelled status denial.
 - Every existing completion path and repeated downloads/revisions.
@@ -85,5 +149,9 @@ all-locale output and Next standalone bundling after approval.
 - Targeted tests, i18n gate, lint, typecheck, full suite, Production build,
   independent review and disposable database verification if migrations are added.
 
-Only source/documentation discovery has run. No feature, PDF preview, deployment,
-live database operation or authenticated business-transaction test is claimed.
+Implementation and synthetic local PDF/SQL work have now run; the initial
+discovery-only receipt is historical. Final UI/PDF edge-case review, the full
+quality suite/build, standalone artifact checks and independent review are still
+pending at this checkpoint. No push, deployment, live database/customer mutation
+or real authenticated business transaction is claimed. Production requires a new
+explicit owner release instruction and its scoped verification.

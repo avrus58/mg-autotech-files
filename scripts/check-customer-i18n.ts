@@ -108,6 +108,7 @@ const customerSurfaceRoots = [
   "src/components/recovery/NotFoundClient.tsx",
   "src/components/RequestLocaleBoundary.tsx",
   "src/components/RootDocument.tsx",
+  "src/lib/serviceReports/pdf.tsx",
   "src/components/RuntimePublicFooter.tsx",
   "src/components/RuntimePublicLocalization.tsx",
   "src/components/ServerLocaleBoundary.tsx",
@@ -642,6 +643,10 @@ const reviewedTranslatorExportsByModule = new Map<
   [
     "@/lib/i18n/file-expert-report-translations",
     new Map([["fileExpertReportT", typedKeyTranslatorContract]]),
+  ],
+  [
+    "@/lib/i18n/service-report-translations",
+    new Map([["serviceReportT", typedKeyTranslatorContract]]),
   ],
   [
     "@/lib/i18n/log-analysis-studio-translations",

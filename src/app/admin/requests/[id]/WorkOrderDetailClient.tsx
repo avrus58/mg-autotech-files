@@ -49,6 +49,7 @@ import type {
   CustomerDeliverySummary,
 } from "@/lib/customerOrderDelivery";
 import { formatFileVersionLabel } from "@/lib/fileVersionLabels";
+import { ServiceReportEditor } from "./ServiceReportEditor";
 
 type DetailPayload = {
   access: {
@@ -770,6 +771,7 @@ export default function WorkOrderDetailClient() {
           </div>
 
           <aside className="space-y-6">
+            <ServiceReportEditor key={order.id} orderId={order.id} canEdit={payload.access.ordersManage} />
             <Panel title="Actions" icon={<Sparkles />}>
               {readOnlyFallback && (
                 <p className="mb-4 rounded-xl border border-amber-700/40 bg-amber-950/20 p-3 text-xs leading-5 text-amber-100">

@@ -6,6 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import { authenticatedFetch, getStableSession, notifySessionRequired, signOutIfEmailUnverified } from "@/lib/authGuards";
 import { supabase } from "@/lib/supabaseClient";
 import RequestChat from "@/components/RequestChat";
+import ServiceReportDownload from "@/components/dashboard/ServiceReportDownload";
 import workspaceStyles from "./order-workspace.module.css";
 import { normalizeFileVersionLabel } from "@/lib/fileVersionLabels";
 import type { CustomerRequestDtcAnalysis } from "@/lib/dtcAnalyzer/requestIntegration";
@@ -910,6 +911,8 @@ export default function OrderDetailPage() {
             <ProgressTimeline order={order} completedFileReady={completedFileReady} />
           </div>
         </section>
+
+        <ServiceReportDownload orderId={order.id} status={order.status ?? ""} />
 
         <div className={`${workspaceStyles.workspaceColumns} grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(20rem,0.42fr)] 2xl:grid-cols-[minmax(0,1fr)_minmax(23rem,0.36fr)]`}>
           <div className="min-w-0 space-y-3">

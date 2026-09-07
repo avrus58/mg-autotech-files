@@ -13,6 +13,7 @@ import { supportedLocales } from "@/lib/i18nConfig";
 import { useActiveLocale } from "@/lib/useActiveLocale";
 import { customerWorkflowExactT } from "@/lib/i18n/customer-workflow-security-translations";
 import { TrustedDevicesCard } from "@/components/account/TrustedDevicesCard";
+import { ReportBrandingCard } from "@/components/account/ReportBrandingCard";
 import { CustomerPortalPageHeader } from "@/components/dashboard/CustomerPortalPageHeader";
 import {
   AlertTriangle,
@@ -511,6 +512,7 @@ export default function CustomerSettingsPage() {
           </section>
 
           <aside className="space-y-4">
+            <ReportBrandingCard />
             <div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6">
               <div className="mb-6 flex items-center gap-3">
                 <MapPin className="h-7 w-7 text-red-500" />

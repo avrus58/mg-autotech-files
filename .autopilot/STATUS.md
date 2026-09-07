@@ -1,5 +1,43 @@
 # Otonom calisma gunlugu
 
+## 2026-09-07 Post-service report - owner-approved implementation in progress
+
+- Owner explicitly approved the required PDF renderer, image decoder and licensed
+  fonts, resolving the initial dependency-only blocker recorded below. Current
+  implementation stays on `codex/post-service-reports-20260907`, live-derived
+  baseline `454ddac`; unpublished guide and unrelated owner work remain excluded.
+- Added automatic completed-order report access, optional settings logo/photo,
+  compact admin details, sourced nullable before/after hp/Nm, requested versus
+  confirmed performed services, private server PDF generation and 12-locale copy.
+  No separate report publish step is required. Issued date is not labelled as
+  an independently established service completion date.
+- Additive RLS/server-only tables, append-only report/detail revisions, per-order
+  issuance lock and admin CAS preserve old reports. Fresh ownership/completion
+  checks plus the post-render access check deny other customers or reopened work.
+  Logo pointers are owner-scoped; decoded PNG/JPEG pixels are normalized and old
+  immutable image objects retained for already-issued snapshots.
+- Confirmed checks at this checkpoint: model/server/SQL-contract 13/13 PASS;
+  actual migration/SQL PGlite 0.5.8 / PostgreSQL 18.3 WASM scenarios 22/22 PASS;
+  scoped lint and diff whitespace checks PASS. SQL bounds cover provenance,
+  30-line notes and oversized legacy service scopes. An initial SQL CASE syntax
+  issue was caught by execution and fixed before the passing rehearsal.
+- Docker's Linux engine did not become available. The SQL test is a real
+  disposable in-memory PostgreSQL engine, but single-connection: no claimed
+  concurrent row-lock contention or live-schema verification. Its 22-case runner
+  is now tracked as `scripts/check-service-report-database.mjs`; QA-only PGlite
+  stays in ignored runtime storage and is not an application dependency.
+- Font source URLs, actual SHA-256 hashes, OFL notices and fonttools 4.61.1 static
+  CJK generation are documented in `assets/report-fonts/README.md`. Application
+  dependencies are pinned to react-pdf 4.9.0 and sharp 0.35.0 under the explicit
+  owner exception. No font changes were made while documenting provenance.
+- Remaining gates: final responsive/state/PDF pagination QA, complete localization
+  and regression suite, lint/typecheck, Production build/standalone resources,
+  final dependency audit and independent review. This checkpoint is In Progress,
+  not Done, Preview or Production. Plan: `docs/post-service-report-plan.md`.
+- No staging/Production migration, live customer/payment/email mutation, secret
+  inspection, Git push or deployment performed. A later release needs explicit
+  action-time authorization, migration preflight and scoped recovery/smoke checks.
+
 ## 2026-09-07 Post-service report - discovery blocked before implementation
 
 - Manual owner request: detailed shareable completed-order PDF, optional customer

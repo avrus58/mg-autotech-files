@@ -27,6 +27,11 @@ docs
 # in the builder context. They are not copied into the standalone runner.
 tests/*
 !tests/customer-workflow-client-bundles.test.ts
+# The typed PDF fixture script is included by the builder's TypeScript check.
+# Admit only its synthetic helper, not the whole test tree or real data.
+!tests/helpers
+tests/helpers/*
+!tests/helpers/service-report-fixture.ts
 !tests/fixtures
 tests/fixtures/*
 !tests/fixtures/customer-workflow-route-closure

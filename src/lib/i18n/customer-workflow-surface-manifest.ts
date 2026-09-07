@@ -176,7 +176,16 @@ export const customerWorkflowClientSurfaceManifest = {
       "src/app/dashboard/orders/[id]/page.tsx",
       "src/components/RequestChat.tsx",
     ],
-    typedUiBoundaries: [],
+    typedUiBoundaries: [
+      {
+        file: "src/components/dashboard/ServiceReportDownload.tsx",
+        localizationImport: "@/lib/i18n/service-report-translations",
+      },
+      {
+        file: "src/lib/serviceReports/pdf.tsx",
+        localizationImport: "@/lib/i18n/service-report-translations",
+      },
+    ],
     runtimeCatalogs: [
       "customer-workflow-orders-translations",
       "customer-workflow-orders-dom-translations",
@@ -185,6 +194,7 @@ export const customerWorkflowClientSurfaceManifest = {
     sharedCatalogs: [
       "customer-workflow-portal-common-translations",
       "customer-runtime-translations",
+      "service-report-translations",
     ],
     languageSwitcherCatalogs: [
       "customer-workflow-orders-translations",
@@ -234,12 +244,17 @@ export const customerWorkflowClientSurfaceManifest = {
       "src/app/dashboard/settings/page.tsx",
       "src/components/account/TrustedDevicesCard.tsx",
     ],
-    typedUiBoundaries: [],
+    typedUiBoundaries: [
+      {
+        file: "src/components/account/ReportBrandingCard.tsx",
+        localizationImport: "@/lib/i18n/service-report-translations",
+      },
+    ],
     runtimeCatalogs: [
       "customer-workflow-security-translations",
       "customer-workflow-security-dom-translations",
     ],
-    sharedCatalogs: ["customer-workflow-portal-common-translations"],
+    sharedCatalogs: ["customer-workflow-portal-common-translations", "service-report-translations"],
     languageSwitcherCatalogs: [
       "customer-workflow-security-translations",
       "customer-workflow-security-dom-translations",
@@ -336,6 +351,7 @@ export const customerWorkflowSharedSourceManifest = {
     runtimeCatalogs: [
       "customer-workflow-portal-common-translations",
       "customer-runtime-translations",
+      "service-report-translations",
     ],
     catalogDependencies: [
       "customer-workflow-auth-translations",

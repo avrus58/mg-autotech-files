@@ -9,6 +9,7 @@
     "dev": "next dev",
     "prebuild": "npm run check:i18n",
     "build": "next build",
+    "postbuild": "node scripts/check-service-report-build.mjs",
     "check:i18n": "node scripts/check-i18n-seo.mjs && tsx scripts/check-customer-i18n.ts && tsx scripts/generate-customer-workflow-client-translations.ts --check && tsx --test tests/customer-workflow-client-bundles.test.ts",
     "check:performance": "node scripts/check-web-performance.mjs && tsx scripts/check-homepage-localization-payload.ts && node scripts/check-prerender-coverage.mjs",
     "check:html-language": "node scripts/check-server-html-language.mjs",
@@ -28,6 +29,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@react-pdf/renderer": "4.9.0",
     "@supabase/auth-js": "^2.110.0",
     "@supabase/ssr": "^0.12.0",
     "@supabase/supabase-js": "^2.110.0",
@@ -37,6 +39,7 @@
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "resend": "^6.14.0",
+    "sharp": "0.35.0",
     "stripe": "^22.1.1",
     "zod": "^4.4.3"
   },
