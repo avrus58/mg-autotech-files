@@ -163,14 +163,18 @@ Expected validation command: `npm run lint` and `npm run typecheck`.
 
 Fingerprint: `customer-activation|new-registration|optional-four-step-guide|account-bound-terminal-choice|first-request-priority`
 
-Locally complete at `fff11e4e613d3ee9eb171396d3bcf9e2249b4b32`, based on verified
-live `65a53b6`. Existing guide integrated with draft-preserving auxiliary links,
+Released to Production with owner approval on 2026-09-07 at 17:20 Europe/Berlin,
+source `742553f7d6182c7de204edbf55d779de765e7ff5`. Validated application commit
+`fff11e4e613d3ee9eb171396d3bcf9e2249b4b32` is based on verified live `65a53b6`.
+Existing guide integrated with draft-preserving auxiliary links,
 all 12 locales and bounded zero-credit first-request dashboard priority.
 Latest HTML-language/report changes and price/payment/auth/consent rules preserved.
 Full tests 1627/1627, lint/typecheck/i18n/build/performance and 64 browser cases
 PASS. Independent immutable review found no actionable P0-P2 findings.
-No push, deployment, customer or service mutation. Evidence and current limits:
-`docs/customer-activation-integration-2026-09-07.md`.
+Linux image build, app/analyzer health and post-release anonymous checks 43/43
+PASS. Prior images retained for rollback; no customer transaction or migration.
+Evidence and current limits: `docs/customer-activation-integration-2026-09-07.md`
+and `docs/production-release-2026-09-07-customer-activation.md`.
 
 ### MANUAL-20260907-POST-SERVICE-PDF [P1] Shareable completed-order service report
 

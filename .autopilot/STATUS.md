@@ -1,5 +1,29 @@
 # Otonom calisma gunlugu
 
+## 2026-09-07 Customer activation - Production released
+
+- Owner explicitly approved publication with `evet`. Released immutable source
+  `742553f7d6182c7de204edbf55d779de765e7ff5` from the isolated customer-activation
+  branch; exact archive SHA-256 matched on the VPS. Unrelated owner work excluded.
+- Linux image build and reviewed deploy.sh both exited 0. Mandatory i18n and
+  strict artifact gates passed: 282 pages, 69 required Turbopack assets.
+  Existing complete local validation remains applicable: 1627 tests and 64
+  synthetic browser scenarios, lint/typecheck/build/performance PASS.
+- At 17:20 Europe/Berlin app/analyzer runtime and atomic release state matched
+  `742553f7d618`, healthy with zero restarts. Previous `65a53b606b5f` image pair
+  retained for rollback. Caddy and separate main-site container were unchanged.
+- Anonymous pre/post HTTP checks PASS 39/39 and 43/43. All 12 locales and the
+  protected guide/report endpoints passed; current and prior hashed assets 200.
+  Hydrated login/security/Google entry and registration shell checked in an
+  anonymous browser, no overflow or captured console warnings/errors.
+- Optional guide, zero-credit first-request priority and draft-preserving guide
+  links are now live. Existing accounts are not automatically enrolled.
+- No migration/env/dependency/payment/consent/Ads configuration change. No live
+  customer registration, payment, email, firmware or authenticated guide-save
+  transaction performed; process readiness is not provider health evidence.
+- Documentation-only release receipt/status/task updates follow the deployed
+  source archive. Details: docs/production-release-2026-09-07-customer-activation.md.
+
 ## 2026-09-07 Customer activation integration - Locally verified
 
 - Started 2026-09-07 16:34, final tests completed 17:01:37 Europe/Berlin.
