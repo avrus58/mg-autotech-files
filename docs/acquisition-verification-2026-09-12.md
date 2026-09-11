@@ -111,3 +111,17 @@ unsubmitted request to this defect.
 3. Only then decide an explicitly bounded EN Search restart with a verified
    stop rule and spend limit. Other campaigns stay paused unless specifically
    approved. No guaranteed cost-per-customer or acquisition claim is made.
+
+## Subsequent owner-authorized publication
+
+The subsequent `canliya al` instruction authorized this bounded fix. Source
+`511a22b48c7e30eae5e026bf6f8512c7c84389e4` was published to the existing VPS on
+12 September at 01:05 Europe/Berlin. The initial no-release statements above
+describe the investigation before that instruction. Fresh release checks and
+the actual Linux build passed; immediate anonymous post-smoke passed 42/42.
+Both release services are healthy, and the prior pair is retained for rollback.
+Details: `docs/production-release-2026-09-12-request-recovery.md`.
+
+The publication gate in item 1 is now complete. Authenticated backend delivery
+and genuine Google receipt remain separate unverified gates. No campaign was
+reactivated or campaign setting changed during publication.

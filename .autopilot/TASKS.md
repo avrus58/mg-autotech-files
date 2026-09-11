@@ -163,14 +163,19 @@ Expected validation command: `npm run lint` and `npm run typecheck`.
 
 Fingerprint: `new-request|prepare-network-rejection|retain-file-and-idempotency|recover-submit`
 
-Done locally: preparation network rejection no longer locks the submit button.
+Done and published: preparation network rejection no longer locks the submit button.
 File/form/idempotency metadata are retained, and the existing 12-locale error
 is an atomic alert. No pricing, auth, database, tracking or campaign changes.
 Independent baseline/candidate comparison: 5/8 versus 8/8. Final 1635/1635 full
 tests, lint, web/desktop typecheck, i18n and Production-mode build/postbuild
 PASS. Bounded actual-error visual checks pass in four locales at mobile/laptop
-sizes. Evidence and remaining live receipt/release gates:
-`docs/acquisition-verification-2026-09-12.md`. Not deployed; not Ads launch-ready.
+sizes. Owner-authorized Production release completed on 2026-09-12 at 01:05
+Europe/Berlin, source `511a22b48c7e30eae5e026bf6f8512c7c84389e4`. Fresh 38/38
+release tests and 42/42 post-release anonymous checks PASS; rollback pair
+`742553f7d618` retained. Release receipt:
+`docs/production-release-2026-09-12-request-recovery.md`. Remaining genuine
+conversion-receipt gates: `docs/acquisition-verification-2026-09-12.md`.
+Publication does not establish Ads launch readiness.
 
 ### MANUAL-20260907-CUSTOMER-FIRST-REQUEST [P1] Customer guide and first-request activation
 

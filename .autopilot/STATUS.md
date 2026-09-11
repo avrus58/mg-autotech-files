@@ -6253,3 +6253,30 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
   Browser connection subsequently dropped. This is not full conversion proof.
 - No push/deploy, campaign change, real customer/DB/payment/email operation or
   artificial conversion. Remaining gates and attribution limits in the report.
+
+## 2026-09-12 — Owner-authorized request recovery Production release
+
+- Current `canliya al` authorized only the reviewed request preparation recovery
+  package. Source `511a22b48c7e30eae5e026bf6f8512c7c84389e4` pushed with exact
+  remote SHA verified, archived and SHA-256 checked on the existing VPS. Owner's
+  unrelated dirty checkout excluded; no hosting migration or Ads change.
+- Fresh request/VPS/upload-security tests 38/38 PASS; fresh full lint and
+  web/desktop typecheck PASS. The unchanged source retains the prior full
+  1635/1635 test result, independent review and bounded localized visual checks.
+- Actual Linux Production build PASS: 12 locales, 2472 strings, 37/37 bundle
+  tests, 282/282 generated pages. Mandatory strict postbuild PASS: 69 assets,
+  compiled protected route 401, synthetic PNG/PDF and zero external fetches.
+- Established deploy script exited 0. App activated 23:05:27 UTC and analyzer
+  23:05:20 UTC on September 11 (01:05 Europe/Berlin September 12); both healthy,
+  zero restarts. Atomic release state matches `511a22b48c7e` and retains
+  complete prior pair `742553f7d618`. No critical regression or rollback.
+- Pre-smoke 38/38 and immediate post-smoke 42/42 PASS: all 12 locale home/service
+  pages, initial HTML language, auth/request shells, redirect, protected routes,
+  readiness and current/retained assets. Caddy and separate main-site app kept
+  their original start times; `mgautotech.de` remained available.
+- No schema/environment/payment/pricing/auth/consent changes or real customer
+  operations. No artificial conversion. Authenticated upload delivery and
+  Google conversion receipt are not inferred from anonymous/synthetic tests.
+- Changed files in this release-record follow-up: this status, task entry,
+  acquisition report and `docs/production-release-2026-09-12-request-recovery.md`.
+  Documentation-only follow-up does not change the deployed source SHA.
