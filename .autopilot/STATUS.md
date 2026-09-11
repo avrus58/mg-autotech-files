@@ -6225,3 +6225,31 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
   still unverified. No critical regression or rollback invocation.
 - Exact evidence and recovery command:
   `docs/production-release-2026-09-06-seo-reports.md`.
+
+## 2026-09-12 — MANUAL acquisition inspection and request preparation recovery
+
+- Owner asked to begin acquisition/conversion diagnosis and connected Chrome.
+  Clean feature worktree based on documented release `e31235db`; unrelated
+  dirty main checkout preserved. Legacy schema-v2 runtime absent; manual owner
+  task, not autonomous acceptance.
+- Confirmed transport rejection in the actual new-request handler left submit
+  locked. Catch now releases it with the existing 12-locale error, preserving
+  file/form/idempotency key. Existing error is an atomic alert; no CSS, pricing,
+  auth, database, tracking or consent change.
+- Changed source: `src/app/new-request/page.tsx`. Added actual handler/markup
+  regression tests, task/status and `docs/acquisition-verification-2026-09-12.md`.
+- Independent baseline/candidate comparison: 5/8 versus 8/8. Final full
+  test suite 1635/1635 PASS with zero failures/skips. Full lint, web/desktop
+  typecheck and i18n (12 locales, 2472 strings, 37 bundle tests) PASS.
+  Production-mode build PASS (282/282), including mandatory prebuild i18n and
+  postbuild asset/native PDF/PNG/auth checks (43 assets, 401, zero external
+  fetches in postbuild). Bounded implementation Done locally, not deployed.
+- Actual error JSX plus candidate CSS passed bounded browser visual/overflow
+  checks in EN/DE/TR/ZH at 390x844 and 1366x768. No captured console warnings or
+  errors. Temporary local fixture/tab/server removed; viewport reset. This
+  is not authenticated whole-page or live backend E2E evidence.
+- Live Ads remains paused. Tag Assistant observed GA4 and Ads base tags and
+  Ads Page View hits, but no genuine request/registration/purchase receipt.
+  Browser connection subsequently dropped. This is not full conversion proof.
+- No push/deploy, campaign change, real customer/DB/payment/email operation or
+  artificial conversion. Remaining gates and attribution limits in the report.

@@ -159,6 +159,19 @@ Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
 
+### MANUAL-20260912-REQUEST-PREPARE-RECOVERY [P1] First-request transport recovery
+
+Fingerprint: `new-request|prepare-network-rejection|retain-file-and-idempotency|recover-submit`
+
+Done locally: preparation network rejection no longer locks the submit button.
+File/form/idempotency metadata are retained, and the existing 12-locale error
+is an atomic alert. No pricing, auth, database, tracking or campaign changes.
+Independent baseline/candidate comparison: 5/8 versus 8/8. Final 1635/1635 full
+tests, lint, web/desktop typecheck, i18n and Production-mode build/postbuild
+PASS. Bounded actual-error visual checks pass in four locales at mobile/laptop
+sizes. Evidence and remaining live receipt/release gates:
+`docs/acquisition-verification-2026-09-12.md`. Not deployed; not Ads launch-ready.
+
 ### MANUAL-20260907-CUSTOMER-FIRST-REQUEST [P1] Customer guide and first-request activation
 
 Fingerprint: `customer-activation|new-registration|optional-four-step-guide|account-bound-terminal-choice|first-request-priority`

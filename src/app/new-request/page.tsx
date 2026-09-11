@@ -1861,17 +1861,25 @@ export default function NewRequestPage() {
       return;
     }
 
-    const prepareResponse = await authenticatedFetch("/api/account/request-upload/prepare", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        idempotencyKey: submission.idempotencyKey,
-        fileName: selectedFile.name,
-        fileSize: selectedFile.size,
-        contentType: selectedFile.type || "application/octet-stream",
-        sha256: selectedFileSha256,
-      }),
-    });
+    let prepareResponse: Response;
+    try {
+      prepareResponse = await authenticatedFetch("/api/account/request-upload/prepare", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          idempotencyKey: submission.idempotencyKey,
+          fileName: selectedFile.name,
+          fileSize: selectedFile.size,
+          contentType: selectedFile.type || "application/octet-stream",
+          sha256: selectedFileSha256,
+        }),
+      });
+    } catch {
+      // Retain the file, form and idempotency key for a safe customer retry.
+      setSubmitting(false);
+      setMessage("Secure upload could not be prepared.");
+      return;
+    }
     const prepared = await prepareResponse.json().catch(() => null) as {
       error?: string;
       upload?: { path?: string; token?: string; contentType?: string };
@@ -3071,7 +3079,7 @@ export default function NewRequestPage() {
                   </button>
                 </div>
               ) : localizedMessage ? (
-                <div className="mt-5 rounded-2xl border border-red-800/50 bg-red-950/30 p-4 text-sm text-red-200">
+                <div role="alert" aria-atomic="true" className="mt-5 rounded-2xl border border-red-800/50 bg-red-950/30 p-4 text-sm text-red-200">
                   {localizedMessage}
                 </div>
               ) : null}
