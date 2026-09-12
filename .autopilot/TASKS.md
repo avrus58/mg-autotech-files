@@ -159,6 +159,26 @@ Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
 
+### MANUAL-20260912-REQUEST-NOTIFICATION-DEADLINE [P1] Complete created requests when email transport stalls
+
+Fingerprint: `customer-acquisition|created-request-completion|unbounded-email-notification-await|bounded-fail-soft-notification`
+
+Done locally, not deployed. Actual-handler reproduction proved an accepted
+request could wait forever for its optional notification response. That wait is
+now bounded to four seconds, with fail-soft abort/timer cleanup. Accepted
+completion is single-use; persisted history restores resume the existing
+measurement bridge/dashboard, while incomplete forms and RPC errors remain
+retryable. Email payload, order/credit idempotency, consent and copy are preserved.
+
+Final verification: 24/24 focused, 53/53 combined, 1651/1651 full tests; full
+lint, web/desktop typecheck, 12-locale i18n and 282-page Production-mode build
+PASS. Strict postbuild: 43 assets, compiled auth 401, synthetic PNG/PDF, zero
+external fetches. Independent frozen-source review found no P0/P1/P2 issue.
+Only two exact EN Search negatives were saved separately; all campaigns remain
+paused. No live customer operation or artificial conversion. Real Google
+receipt and authenticated mobile end-to-end completion remain unverified.
+Evidence: `docs/ads-follow-up-2026-09-12.md` and latest STATUS entry.
+
 ### MANUAL-20260912-REQUEST-PREPARE-RECOVERY [P1] First-request transport recovery
 
 Fingerprint: `new-request|prepare-network-rejection|retain-file-and-idempotency|recover-submit`

@@ -6280,3 +6280,48 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
 - Changed files in this release-record follow-up: this status, task entry,
   acquisition report and `docs/production-release-2026-09-12-request-recovery.md`.
   Documentation-only follow-up does not change the deployed source SHA.
+
+## 2026-09-12 — MANUAL acquisition follow-up and notification completion deadline
+
+- Owner asked to begin the funnel/search-term/conditional-restart plan. Clean
+  acquisition worktree `codex/acquisition-verification-20260912`, base `c4cced0`;
+  unrelated dirty owner checkout preserved. Legacy OS runtime is absent: this
+  is a manual bounded task, not an autonomous acceptance receipt.
+- Live MG AutoTech File Service Ads inspection confirmed all three campaigns
+  paused; September 5–11 EN Search: 27 clicks, EUR 20.07, zero Ads conversions.
+  Only 4 clicks / EUR 2.99 have disclosed search terms; 23 / EUR 17.08 remain
+  aggregated. Added only campaign-level exact negatives `[ecu remapping]` and
+  `[remap stage 1]`; both rows visibly became Excluded. No restart/budget edit.
+- Existing authenticated site aggregate report (30d) separately showed
+  google/cpc: 5 registrations, 2 requests and EUR 135 verified revenue. This is
+  first-party attribution, not Google receipt, incremental revenue or ROAS.
+  Google file-request tag remains inactive since August 31. No artificial
+  conversion or real customer/order/email/payment mutation was performed.
+- Actual-handler synthetic test reproduced a successful request hanging on
+  its optional email response. The four-second deadline bounds this wait;
+  abort and timer cleanup are fail-soft. Accepted completion remains latched
+  through navigation, and persisted history restores resume existing completion
+  instead of reopening the submission. RPC errors remain safely retryable.
+- Changed files: `src/app/new-request/page.tsx`,
+  `tests/request-upload-prepare-recovery.test.ts`, `.autopilot/TASKS.md`, this
+  status and `docs/ads-follow-up-2026-09-12.md`. No new copy/layout, dependency,
+  schema, price, credit policy, authentication or consent change.
+- Final focused handler/effect suite 24/24, combined suite 53/53 PASS; final
+  independent review 36/36 PASS and no P0/P1/P2 findings. Additional actual
+  consent-effect review exercised necessary-only, analytics grant and the
+  15-second escape. Final full lint, web/desktop typecheck and full tests
+  1651/1651 PASS (zero failures/skips). Prebuild i18n: 12 locales, 2472 strings,
+  37/37 bundle tests, no clean English fallback. Production-mode webpack build
+  generated 282/282 pages; strict postbuild passed 43 assets, compiled auth 401,
+  synthetic PNG/PDF and zero external fetches. Synthetic `.invalid` Supabase
+  configuration only, no environment file or service key. Emitted request page
+  includes the final persisted-restore guard, notification signal and race.
+  Earlier 1646-test run preceded the last five restoration tests and is not
+  substituted for this final 1651-test result. Bounded task Done locally only.
+- Final reviewed SHA-256 page:
+  `C02D8112F92EEF2715C7F5F33F007BD017DF5BEF54D4A8ECDAC84D36F002A58F`;
+  test: `AFF1B565739247D328757824466EA3D8162EBF060A16F94A36FB9C62DEC94D4D`.
+- Registration navigation encountered the already authenticated admin session;
+  no logout or fabricated signup was used. Native mobile authenticated E2E and
+  real Google conversion receipt remain unverified. Viewport reset. No push,
+  application deploy, schema/environment change or customer data export.

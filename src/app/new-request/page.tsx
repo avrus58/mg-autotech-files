@@ -926,6 +926,7 @@ export default function NewRequestPage() {
     () => createGrowthRequestStartDeliveryController()
   );
   const requestSubmissionRef = useRef<WebRequestSubmission | null>(null);
+  const requestCompletionStartedRef = useRef(false);
   const pendingGrowthRequestCreatedRef = useRef<{
     orderId: string;
     attemptId: string;
@@ -996,6 +997,18 @@ export default function NewRequestPage() {
   const [repeatPrefillLoading, setRepeatPrefillLoading] = useState(false);
   const [repeatPrefillError, setRepeatPrefillError] = useState("");
   const [repeatPrefillDismissed, setRepeatPrefillDismissed] = useState(false);
+
+  useEffect(() => {
+    const resumeAcceptedRequest = (event: PageTransitionEvent) => {
+      if (!event.persisted || !requestCompletionStartedRef.current) return;
+      // A restored accepted form must not stay busy or create a second order.
+      if (!replaceWithPendingMeasurementCompletion("/dashboard")) {
+        window.location.replace("/dashboard");
+      }
+    };
+    window.addEventListener("pageshow", resumeAcceptedRequest);
+    return () => window.removeEventListener("pageshow", resumeAcceptedRequest);
+  }, []);
 
   const selectedBrandName =
     brands.find((item) => item.id === vehicleBrandId)?.name ?? "";
@@ -1730,6 +1743,7 @@ export default function NewRequestPage() {
   }
 
   const handleSubmit = async () => {
+    if (requestCompletionStartedRef.current) return;
     setMessage("");
     setCreditAccessFailure(null);
 
@@ -1954,9 +1968,8 @@ export default function NewRequestPage() {
       }
     );
 
-    setSubmitting(false);
-
     if (error) {
+      setSubmitting(false);
       setMessage("The request could not be created securely. Please try again.");
       return;
     }
@@ -1971,10 +1984,14 @@ export default function NewRequestPage() {
     const duplicate = creation?.duplicate === true;
 
     if (!createdOrderId) {
+      setSubmitting(false);
       setMessage("The request was accepted but its confirmation could not be verified. Please retry safely.");
       return;
     }
 
+    // The order is accepted. Keep its completion single-use until navigation,
+    // including while optional notifications or the consent choice settle.
+    requestCompletionStartedRef.current = true;
     setCustomerProfile(
       duplicate
         ? latestProfile
@@ -1996,18 +2013,40 @@ export default function NewRequestPage() {
         : Promise.resolve(false),
     ]);
 
+    let notificationController: AbortController | null = null;
+    let notificationTimeout: ReturnType<typeof globalThis.setTimeout> | null = null;
     try {
-      await authenticatedFetch("/api/email/new-order", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          orderId: String(createdOrderId || ""),
+      notificationController = new AbortController();
+    } catch {
+      // The deadline still releases completion when abort is unavailable.
+    }
+    try {
+      await Promise.race([
+        Promise.resolve().then(() => authenticatedFetch("/api/email/new-order", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            orderId: String(createdOrderId || ""),
+          }),
+          ...(notificationController ? { signal: notificationController.signal } : {}),
+        })),
+        new Promise<void>((resolve) => {
+          notificationTimeout = globalThis.setTimeout(() => {
+            resolve();
+            try {
+              notificationController?.abort();
+            } catch {
+              // A non-standard abort implementation cannot hold navigation.
+            }
+          }, 4_000);
         }),
-      });
+      ]);
     } catch {
       // Email notification failure must not block the customer request.
+    } finally {
+      if (notificationTimeout !== null) globalThis.clearTimeout(notificationTimeout);
     }
 
     requestSubmissionRef.current = null;
