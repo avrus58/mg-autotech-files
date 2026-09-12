@@ -109,3 +109,88 @@ checks.
   credit-warning visibility changes at `lg` while the two-column layout starts
   at `xl`, leaving the warning lower in 1024–1279px layouts. Not part of this
   notification-completion hotfix and not browser-reproduced in this turn.
+
+## Owner-authorized bounded restart — 12 September 2026
+
+The owner explicitly requested reopening Ads after the unverified Google
+conversion receipt had been disclosed. This supersedes the earlier paused-only
+operational outcome above, but does not certify the measurement gates as passed.
+
+Completed and verified in the authenticated MG AutoTech File Service Ads UI:
+
+- Existing EN Search campaign `24152497129`: **Enabled / Eligible**. Its one
+  standard ad group and responsive search ad also show **Enabled / Eligible**.
+- Its dedicated average daily budget remains **EUR 5.00** and Maximize Clicks
+  maximum CPC bid limit remains **EUR 0.75**. No budget/bid increase, targeting
+  expansion, ad-copy, conversion-action or billing change was made.
+- Saved campaign end date **13 September 2026**; reopened the editor and verified
+  the persisted date. Google ends it at 23:59 in account time, currently
+  GMT+02:00 Central European Time. Inspected controls contain no automatic
+  extension/re-enable.
+- Replaced the existing EN rule version `61693959` (hourly, all-time cost
+  >= EUR 73.03) with saved version **`61689299`**, named
+  `Safety: EN Search pause at EUR8 today (Sep12-13 test)`. It pauses only the
+  selected EN campaign when **today's cost >= EUR 8**, checks hourly, and keeps
+  the existing changes/errors-only email preference. Preview showed zero
+  immediate changes. Save confirmation and enabled rule row verified.
+- UK/Ireland rule `61492052` is unchanged. Rules list contained only these two
+  pause rules; no scripts were configured. Auto-apply recommendations showed
+  **0/7** and **0/14** selected. No automatic budget increase was enabled.
+- Today's change history showed the earlier exact negatives and no budget
+  change. Today's account report showed EUR 0.00 before activation. Reporting
+  is delayed, so this is bounded UI evidence rather than a real-time ledger.
+- Final all-campaign table: EN enabled; **Campaign #1 (PMax)** and
+  **UK & Ireland Search** both still paused.
+
+Spending interpretation: unchanged EUR 5/day across at most the two account
+calendar days September 12–13 implies at most **EUR 20 additional billable
+advertising media cost** under Google's ordinary Search 2x daily spending limit.
+This is not a tax/fee-inclusive invoice guarantee or an exact served-cost UI
+limit. The EUR 8 rule is an earlier best-effort stop, **not** a hard EUR 8 cap:
+hourly execution and reporting can lag. Do not extend the end date or increase
+the budget automatically. A new spending decision is required for continuation.
+
+Sources: [Google spending limits](https://support.google.com/google-ads/answer/10486637?hl=en),
+[highest budget on a changed-budget day](https://support.google.com/google-ads/answer/10487143),
+[campaign end-date timezone](https://support.google.com/google-ads/answer/6328?hl=en).
+
+Recovery: pause EN immediately for an incident; retain its finite end date.
+The older rule is recorded above for audit, not a recommendation to reinstate
+an already-consumed lifetime threshold during this test. No other campaign or
+negative list needs resetting.
+
+This short reopening is not statistical proof of acquisition quality,
+profitability, customer acquisition or Google conversion receipt. The reviewed
+local completion hotfix remains at `c08b842`, unpublished; deployed application
+source remains `511a22b`. No new application release, customer mutation, fake
+conversion, live payment/email test or credential change occurred. This turn
+changed only the Ads controls described here and these operational receipts;
+it did not rerun or re-label the earlier engineering suite as live evidence.
+
+## Scoped completion release and fresh Ads check — 12 September, 23:06 CEST
+
+This later owner-approved release supersedes the unpublished runtime status
+above: **c08b842683bd is now live**, with 1651/1651 fresh tests, successful Linux
+build and 42/42 post-release checks. Main-site and Caddy runtimes were untouched.
+See `production-release-2026-09-12-completion-deadline.md` for immutable source,
+rollback and exact validation evidence.
+
+Refreshing Google Ads at approximately 22:59 CEST showed September 12 totals of
+**22 impressions, 4 clicks, EUR 2.89 cost, 0 conversions**. EN remains enabled at
+EUR 5/day; PMax and UK/Ireland remain paused. No campaign, bid, budget, rule,
+conversion-action or end-date change was made during this release.
+
+Tag Assistant connected and showed GA4/Ads tags and page-view hits. Necessary-only
+consent changed measurement permissions to denied in Google's own diagnostic;
+the previous analytics+advertising choice was then restored through the UI and
+verified. Ad personalization stayed denied; debugging was stopped. These checks
+preceded cutover and the analytics code/configuration did not change.
+
+The verified-file-request action still showed Tag inactive, last activity
+August 31. Registration showed No recent conversions; purchase was Inactive.
+The website's always-emitted `external_verification_required` warning is not a
+live Google status detector. Neither source tests, page-view hits nor a gtag
+callback proves real request-conversion receipt or advertising profitability.
+No fake order, signup, payment, email or conversion was generated to change those
+statuses. Authenticated request-form entry passed post-release EN/DE/TR/ZH mobile
+and laptop checks; actual submission was intentionally not performed.

@@ -12,6 +12,13 @@
 
 Durum: Blocked (code fully validated; owner/legal, migration, Production release and live receipt gates remain)
 
+2026-09-12 operational addendum: the owner explicitly authorized a bounded EN
+Search reopening after disclosure that Google receipt is unverified. EN is now
+Enabled/Eligible at unchanged EUR 5/day, ending September 13; other campaigns
+remain paused. This is an owner-authorized spending test, not completion of the
+historical measurement task or proof that every old gate is still applicable.
+Current evidence and limits: `docs/ads-follow-up-2026-09-12.md`, restart section.
+
 Fingerprint: `ads|uk-ie-search|consent-route-isolation|verified-registration-request-payment|growth-report-fail-closed|final-launch-gates`
 
 Sonuc: Public consent/paid-click, register/request/payment exact-once handoff,
@@ -163,7 +170,7 @@ Expected validation command: `npm run lint` and `npm run typecheck`.
 
 Fingerprint: `customer-acquisition|created-request-completion|unbounded-email-notification-await|bounded-fail-soft-notification`
 
-Done locally, not deployed. Actual-handler reproduction proved an accepted
+Done and deployed as `c08b842683bd` on 2026-09-12. Actual-handler reproduction proved an accepted
 request could wait forever for its optional notification response. That wait is
 now bounded to four seconds, with fail-soft abort/timer cleanup. Accepted
 completion is single-use; persisted history restores resume the existing
@@ -174,10 +181,15 @@ Final verification: 24/24 focused, 53/53 combined, 1651/1651 full tests; full
 lint, web/desktop typecheck, 12-locale i18n and 282-page Production-mode build
 PASS. Strict postbuild: 43 assets, compiled auth 401, synthetic PNG/PDF, zero
 external fetches. Independent frozen-source review found no P0/P1/P2 issue.
-Only two exact EN Search negatives were saved separately; all campaigns remain
-paused. No live customer operation or artificial conversion. Real Google
-receipt and authenticated mobile end-to-end completion remain unverified.
-Evidence: `docs/ads-follow-up-2026-09-12.md` and latest STATUS entry.
+Fresh release checks: 1651/1651 full tests, lint/typecheck, Linux prebuild and
+282-page build PASS; postbuild 69 assets; live post-smoke 42/42 PASS. EN/DE/TR/ZH
+authenticated form entry, language switching and page overflow checked on mobile
+and laptop without submission. The separate owner-authorized EN Search test is
+enabled at unchanged EUR 5/day; other campaigns remain paused. No live customer
+operation or artificial conversion. Real Google receipt and authenticated
+mobile end-to-end completion remain unverified.
+Evidence: `docs/production-release-2026-09-12-completion-deadline.md`,
+`docs/ads-follow-up-2026-09-12.md` and latest STATUS entry.
 
 ### MANUAL-20260912-REQUEST-PREPARE-RECOVERY [P1] First-request transport recovery
 

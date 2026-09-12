@@ -6325,3 +6325,78 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
   no logout or fabricated signup was used. Native mobile authenticated E2E and
   real Google conversion receipt remain unverified. Viewport reset. No push,
   application deploy, schema/environment change or customer data export.
+
+## 2026-09-12 — Owner-authorized bounded EN Search restart
+
+- Owner explicitly requested Ads reopening despite the disclosed unverified
+  Google receipt. EN campaign `24152497129`, its ad group and RSA now verified
+  Enabled/Eligible. PMax and UK/Ireland remain paused.
+- EUR 5/day dedicated budget and EUR 0.75 max CPC preserved. Saved/reopened
+  end date September 13, 2026 (23:59 account time, currently CEST). Rules/scripts
+  and auto-apply review found no configured automatic increase/re-enable.
+- Existing EN rule version `61693959` updated to `61689299`: selected EN only,
+  hourly, today's cost >= EUR 8 -> pause, existing notification preference kept.
+  Preview and saved enabled row verified. UK rule unchanged. Hourly rule is
+  best-effort, not a hard spending cap; finite date plus unchanged daily budget
+  bounds this two-account-day test to EUR 20 billable media under Google's
+  standard 2x limit, excluding taxes/fees. No automatic continuation authorized.
+- Details/recovery: `docs/ads-follow-up-2026-09-12.md`. Changed local files:
+  that receipt, `.autopilot/TASKS.md`, and this status. Documentation-only diff
+  reviewed; `git diff --check` PASS. Previous 1,651-test/build result belongs to c08b842 source,
+  not proof of Google receipt. No additional application code/push/deploy.
+- Google receipt, actual new customers and profitability remain unverified.
+  Local optional-notification completion hotfix c08b842 remains unpublished.
+
+## 2026-09-12 20:52 UTC — Bounded completeness follow-up (read-only code review)
+
+- Owner asked whether the remaining gaps can be completed. The c08b842 page
+  and regression-test SHA-256 values still exactly match the recorded final
+  validated candidate; no source, test or dependency diff since that candidate.
+  Existing three operational receipt edits were preserved. No redundant full
+  test/build run or new feature was introduced.
+- Independent read-only review confirmed that `src/lib/googleAds/readiness.ts`
+  always emits `external_verification_required`. The admin warning is an
+  external-evidence boundary, not a live Google status detector or proof that
+  tracking is broken. `src/lib/publicAnalytics.ts` marks a gtag callback as
+  queued, not remotely received or attributed. Neither can honestly be turned
+  green as a substitute for Google/Tag Assistant evidence.
+- Remaining coherent step: explicit owner authorization to deploy only the
+  reviewed request-completion hotfix, followed by scoped live checks. A real,
+  consented verified completion is still needed for commercial conversion
+  receipt/attribution evidence; no fake conversion or customer mutation was
+  made. No fresh live campaign/runtime state is claimed by this code-only check.
+- Only this status receipt changed in this turn. Diff review and
+  `git diff --check` passed; no push, deploy, spending edit or live service write.
+  The skill's absent legacy OS commands were not invented or executed.
+
+## 2026-09-12 21:06 UTC — Owner-authorized completion hotfix Production release
+
+- Owner approved the explicit prepared-hotfix release question. Exact source
+  `c08b842683bd86d977177455f3564495e66b19bd` pushed on its scoped branch and
+  deployed from a SHA-256-verified Git archive to the existing VPS. Runtime
+  delta versus previous live `511a22b` is only `src/app/new-request/page.tsx`.
+  No DB, environment, dependency, price, payment, auth, consent or copy change.
+- Fresh full lint and web/desktop typecheck PASS; full suite **1651/1651 PASS**,
+  no skips/failures. Independent exact-source review found no P0/P1/P2 blocker;
+  focused actual-handler tests **24/24 PASS**. Linux prebuild: 12 locales, 2472
+  strings, 37/37 bundle tests, zero clean-English fallback. Turbopack/TypeScript
+  and 282/282 generated pages PASS. Strict postbuild: 69 assets, compiled auth
+  401, synthetic PNG/PDF, zero external fetches.
+- Existing deploy script exited 0; app/analyzer `c08b842683bd` healthy with zero
+  restarts; release state agrees. Previous `511a22b48c7e` image pair retained.
+  Pre-smoke 38/38; immediate post-smoke **42/42 PASS**. Caddy and separate main
+  site retained exact preflight start timestamps and health; main site HTTP 200.
+- Authenticated new-request entry checked in EN/DE/TR/ZH on mobile and compact
+  laptop; no page-level horizontal overflow or captured console errors. Form
+  was not submitted; no files or customer data were created/exported. Existing
+  owner session preserved, original DE locale and viewport restored.
+- Fresh Google report: Sep 12, 22 impressions, 4 clicks, EUR 2.89, 0 conversions.
+  EN still enabled at unchanged EUR 5/day; PMax/UK-Ireland paused. No Ads settings
+  changed. Real Tag Assistant page-view and consent grant/withdrawal/restoration
+  verified; ad personalization denied. Debugging stopped. Request conversion
+  still Tag inactive (last Aug 31); real receipt/attribution remains unverified.
+- Changed receipts: TASKS, this STATUS, ads-follow-up report, and new
+  `docs/production-release-2026-09-12-completion-deadline.md`. Earlier operational
+  receipt edits preserved. This release is complete, not a claim of flawless
+  acquisition or completion of the historical measurement task. No fake event,
+  production transaction, migration, new budget or automatic continuation.
