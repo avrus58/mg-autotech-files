@@ -10,6 +10,15 @@
 
 Fingerprint: `auth|browser-session|stale-response-and-global-logout|session-bound-recovery`
 
+Latest owner result: still failing in BOTH panels after e90e4362c7ba, not merely
+waiting for confirmation. Read-only live logs now prove a post-login refresh
+storm (31 successful refreshes then429 in about4 seconds). A clock-skew SDK
+reproduction matches this chain; a browser-only local-expiry scheduling fix is
+locally validated (1790 tests, lint/typecheck/i18n, fresh standard build and
+independent review pass). Remote clock/recovery not observed; awaiting a new
+explicit release approval and affected-device confirmation after publication.
+See docs/auth-refresh-storm-2026-09-19.md; incident remains In Progress.
+
 Scope: owner-reported admin logout seconds after login on another computer.
 Reproduce delayed-response and auth-check races locally, bind their effects to
 the originating session, keep confirmed revocation fail-closed, and restrict

@@ -1,5 +1,24 @@
 # Otonom calisma gunlugu
 
+## 2026-09-19 17:46 UTC - unresolved login incident, live refresh-storm evidence
+
+- Owner confirms e90e4362c7ba has NOT resolved admin/customer fresh-login loss.
+  Stop treating prior existing-session browser observations as recovery proof.
+- Read-only Production Dashboard gateway logs show password200,31 refresh200
+  responses within about4 seconds, then429. Recent session aggregates survive
+  and return assurance not_required; session settings3600/0/0/reuse10 unchanged.
+- Installed-SDK offline test reproduces this pattern with a fast browser clock,
+  then429 -> SIGNED_OUT -> null session/null error. Remote clock unobserved.
+- Added src/lib/browserAuthFetch.ts and browser-only supabaseClient wiring;
+  expires_in rebases local scheduling only, never JWT/server authorization.
+  Added response-isolation/clock tests and adapted two existing VM harnesses.
+- Full1790/1790 tests, lint/full typecheck pass. Fresh physical-source standard
+  build, i18n prebuild and strict postbuild pass at18:36:26 UTC, exit0;
+  build CmInUVcEomHxO6b4BYy2m, all frozen runtime/test hashes still match.
+  Independent source-bound review has no blocking finding. No new deployment or
+  live configuration/data changes. Incident In Progress, NOT Done.
+- Evidence/limitations: docs/auth-refresh-storm-2026-09-19.md.
+
 ## 2026-09-19 Approved read-only auth hotfix published
 
 - Owner explicitly answered `evet` to publication of the new correction.

@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { AuthClient, AuthSessionMissingError, type UserResponse } from "@supabase/auth-js";
+import { createBrowserAuthFetch } from "@/lib/browserAuthFetch";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -20,6 +21,9 @@ export const supabase = createClient(
   getValidSupabaseUrl(supabaseUrl),
   supabaseAnonKey || "placeholder-anon-key",
   {
+    ...(typeof window !== "undefined" ? {
+      global: { fetch: createBrowserAuthFetch(getValidSupabaseUrl(supabaseUrl)) },
+    } : {}),
     auth: {
       persistSession: true,
       autoRefreshToken: true,

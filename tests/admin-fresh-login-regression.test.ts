@@ -5,6 +5,7 @@ import test from "node:test";
 import { runInNewContext } from "node:vm";
 import { AuthSessionMissingError, GoTrueClient, type Session } from "@supabase/auth-js";
 import ts from "typescript";
+import { createBrowserAuthFetch } from "../src/lib/browserAuthFetch";
 
 type Element = { type: unknown; props: Record<string, unknown> };
 type Assurance = "not_required" | "verified" | "required" | "revoked";
@@ -104,6 +105,7 @@ async function harness(initialSession: Session | null, assurance: Assurance = "v
     dispatchEvent(event: Event) { listeners.get(event.type)?.forEach((callback) => callback()); },
   };
   const imports: Record<string, unknown> = {
+    "@/lib/browserAuthFetch": { createBrowserAuthFetch },
     "@supabase/supabase-js": { createClient: () => ({ auth: shared }) },
     "@supabase/auth-js": {
       AuthSessionMissingError,

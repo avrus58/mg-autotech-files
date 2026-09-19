@@ -5,6 +5,7 @@ import test from "node:test";
 import { runInNewContext } from "node:vm";
 import { AuthSessionMissingError, GoTrueClient, type Session, type UserResponse } from "@supabase/auth-js";
 import ts from "typescript";
+import { createBrowserAuthFetch } from "../src/lib/browserAuthFetch";
 
 type ReadMode = "shared-session" | "shared-explicit-token" | "isolated-explicit-token";
 type UserOutcome = "session-not-found" | "ordinary-unauthorized" | "success";
@@ -53,6 +54,7 @@ function productionVerifier(harness: ReturnType<typeof sdkHarness>) {
       NEXT_PUBLIC_SUPABASE_ANON_KEY: "synthetic-public-key",
     } },
     require(name: string) {
+      if (name === "@/lib/browserAuthFetch") return { createBrowserAuthFetch };
       if (name === "@supabase/supabase-js") {
         return { createClient: () => ({ auth: harness.shared }) };
       }
