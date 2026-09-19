@@ -1,5 +1,16 @@
 # Device verification retry incident - 19 September 2026
 
+## Publication update
+
+The owner's subsequent `evet` explicitly approved publishing this follow-up.
+Source `031923f40a985b692765fa38e328fb77edf83427` is now live after the standard
+Linux build, strict packaging checks and healthy release switch; post-smoke
+passed 43/43. Existing connected Chrome session persists across reload and
+panel navigation. See `docs/production-release-2026-09-19-device-retry.md`.
+The investigation notes below predate this approval/publication. Their former
+release boundary is retained as history, not the current deployment status.
+Actual fresh-login recovery on the affected remote computer is still unobserved.
+
 ## Current continuation: independently reproduced login and transport faults
 
 The owner asked us to investigate without further Network-tab/screenshots or

@@ -51,6 +51,15 @@ postbuild passes exit0; independent frozen-source review has no blockers. Code
 is ready for scoped release; live attribution/recovery and new release approval
 remain outstanding. No push/deploy performed.
 
+Subsequent explicit owner `evet` approved the follow-up release. Source 031923f
+is now live after a fresh standard Linux build and unchanged strict postbuild;
+deployment exit 0, pre 39/39 and post 43/43 smoke, healthy app/analyzer pair with
+previous d41f336 rollback images retained. Existing connected Chrome session
+survives new-client reload, German customer dashboard and Back. Publication is
+complete; this incident remains In Progress solely for the unobserved affected
+computer's fresh-login recovery. No routine Network screenshots requested.
+Receipt: docs/production-release-2026-09-19-device-retry.md.
+
 ## Blocked
 
 ### MANUAL-20260828-ADS-MEASUREMENT-FINAL-HARDENING [P0] Reklam edinimi, consent ve dogrulanmis donusum final kapilari

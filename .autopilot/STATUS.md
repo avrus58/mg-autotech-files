@@ -1,5 +1,25 @@
 # Otonom calisma gunlugu
 
+## 2026-09-19 Approved device-retry hotfix published
+
+- Owner's new `evet` explicitly approved this scoped follow-up release. Clean
+  source 031923f40a985b692765fa38e328fb77edf83427 was archived/hash-verified and
+  deployed using the unchanged VPS release script; exit 0. No unrelated work.
+- Fresh Linux standard build, TypeScript, 282 pages, 12-locale i18n/37 bundle cases
+  and strict postbuild all passed (69 assets, protected 401, valid PNG/PDF, no
+  external fetches). Prior local 1742/1742 tests, lint and full typecheck passed.
+- Pre 39/39 and post 43/43 read-only smoke passed. New app/analyzer healthy with
+  zero restarts, matching release state; d41f336 rollback images retained.
+  Separate main-site/Caddy/Postgres start times and restart counts unchanged.
+- Connected Chrome existing session survives new-client reload, German customer
+  dashboard and Back to admin. Bounded console capture: zero errors/warnings.
+  No real email/test user, credential entry, logout, cookie clearing, database,
+  environment, payment or security-setting mutation. No rollback required.
+- Release complete; incident stays In Progress because the affected other
+  computer is not connected and its fresh login has not been observed. Receipt:
+  docs/production-release-2026-09-19-device-retry.md. Current source corrections
+  are reproduced defects, not conclusive attribution of the remote trigger.
+
 ## 2026-09-19 Device retry continuation - reproduced login race and transport fixes
 
 - Owner requested independent diagnosis, without more screenshots/Network steps.
