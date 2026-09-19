@@ -1,5 +1,26 @@
 # Otonom calisma gunlugu
 
+## 2026-09-19 Persistent admin logout - isolated user-verification correction
+
+- Owner confirms the incident persists after 031923f. Previous existing-session
+  Chrome observations did not establish fresh-login recovery.
+- Actual installed SDK plus application source reproduces late old getUser
+  session_not_found deleting the fresh session and displaying the exact admin
+  warning. Shared explicit-token verification is also unsafe in that case.
+- Five runtime paths changed: supabaseClient/authGuards and login, onboarding,
+  datalog consumers. Private nonpersistent verification cannot mutate shared
+  storage; current-session/token fences discard stale success and failure.
+  No server auth/security, dependency, schema, copy or configuration change.
+- New SDK 15/15 and actual-boundary 8/8 cases pass, existing targeted 51/51 pass.
+  Genuine absent/revoked sessions remain denied. Standard lint/typecheck/i18n
+  and full suite 1765/1765 pass. Independent frozen-source review has no blocker;
+  fresh physical-source standard build passes exit 0 with unchanged strict
+  postbuild (43 assets, protected 401, valid PNG/PDF, zero external fetches).
+  Build OxoJE3X7HZ4tn5MP0ZqVt, 280/280 pages, frozen source hashes still match.
+- Separate fresh Production approval requested. No new deploy/push or live data
+  mutation. Incident remains In Progress; affected-PC attribution/recovery not
+  proven. Evidence: docs/auth-readonly-verification-2026-09-19.md.
+
 ## 2026-09-19 Approved device-retry hotfix published
 
 - Owner's new `evet` explicitly approved this scoped follow-up release. Clean

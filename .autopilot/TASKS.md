@@ -60,6 +60,19 @@ complete; this incident remains In Progress solely for the unobserved affected
 computer's fresh-login recovery. No routine Network screenshots requested.
 Receipt: docs/production-release-2026-09-19-device-retry.md.
 
+Subsequent owner report confirms the login incident persists after 031923f.
+New actual-SDK/application tests reproduce a more fundamental race: a late old
+getUser session_not_found response deletes the newer persisted session inside
+the SDK and renders the exact admin warning. Isolated read-only verification
+and session/token-bound results now protect all three browser consumers.
+SDK 15/15 and actual-boundary 8/8 regressions pass; genuine absent/revoked
+sessions remain denied. Full suite 1765/1765, lint/typecheck/i18n and independent
+review pass; fresh standard build and unchanged strict postbuild pass exit 0.
+Only fresh release approval and subsequent live verification remain pending.
+Production is unchanged. See docs/auth-readonly-verification-2026-09-19.md.
+Remote attribution is not proven; this is an actively unresolved incident,
+not merely a successful release awaiting acknowledgment.
+
 ## Blocked
 
 ### MANUAL-20260828-ADS-MEASUREMENT-FINAL-HARDENING [P0] Reklam edinimi, consent ve dogrulanmis donusum final kapilari

@@ -93,7 +93,7 @@ function loginHarness(oldSession: Session | null, freshSession: Session, { googl
   const mutationContext = createContext({ exports: {}, window: browser });
   runInContext(compiledMutations, mutationContext);
   const guardImports: Record<string, unknown> = {
-    "@/lib/supabaseClient": { supabase: { auth } },
+    "@/lib/supabaseClient": { supabase: { auth }, verifyBrowserAccessToken: () => bootstrap },
     "@/lib/browserAuthMutations": mutationContext.exports,
     "@/lib/growth/publicClient": { clearGrowthVisitorId() {} },
     "@/lib/customerDeviceContracts": { CUSTOMER_SESSION_REVOKED_MESSAGE: "synthetic revoked" },

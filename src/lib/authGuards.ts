@@ -1,5 +1,5 @@
 import type { Session, User } from "@supabase/supabase-js";
-import { supabase } from "@/lib/supabaseClient";
+import { supabase, verifyBrowserAccessToken } from "@/lib/supabaseClient";
 import { clearGrowthVisitorId } from "@/lib/growth/publicClient";
 import { CUSTOMER_SESSION_REVOKED_MESSAGE } from "@/lib/customerDeviceContracts";
 import { withBrowserAuthMutation } from "@/lib/browserAuthMutations";
@@ -417,6 +417,35 @@ export function authenticatedFetchForUser(
 export async function signOutStable() {
   // The ordinary logout button belongs to this browser, not every computer.
   await signOutLocalStable();
+}
+
+export async function getStableUser(): Promise<{
+  data: { user: User | null };
+  error: (Error & { status?: number }) | null;
+}> {
+  const { session, error } = await getStableSession();
+  const recovering = () => ({
+    data: { user: null },
+    error: new AuthSessionRecoveryPendingError(),
+  });
+  if (!session?.access_token) {
+    return error ? recovering() : { data: { user: null }, error: null };
+  }
+
+  const stillCurrent = () => isCurrentBrowserSession(session) &&
+    getStableSessionSnapshot()?.access_token === session.access_token;
+  if (!stillCurrent()) return recovering();
+
+  try {
+    const result = await verifyBrowserAccessToken(session.access_token);
+    if (!stillCurrent()) return recovering();
+    if (result.data.user && result.data.user.id !== session.user.id) return recovering();
+    return result;
+  } catch {
+    // A failed read is not a logout and must never restore a cached user as
+    // verified. Server-side API authorization remains authoritative.
+    return recovering();
+  }
 }
 
 export async function signOutAllSessionsStable() {

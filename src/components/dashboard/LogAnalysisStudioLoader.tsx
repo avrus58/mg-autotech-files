@@ -5,7 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Loader2, RefreshCcw } from "lucide-react";
 import { AuthRequired } from "@/components/auth/AuthRequired";
 import { customerPortalFirstPaintT } from "@/lib/i18n/customer-portal-first-paint";
-import { supabase } from "@/lib/supabaseClient";
+import { getStableUser } from "@/lib/authGuards";
 import { useActiveLocale } from "@/lib/useActiveLocale";
 
 function StudioLoading() {
@@ -35,7 +35,7 @@ type StudioAccessState = "checking" | "verified" | "unauthenticated" | "unavaila
 
 async function resolveCustomerAccess(): Promise<StudioAccessState> {
   try {
-    const { data, error } = await supabase.auth.getUser();
+    const { data, error } = await getStableUser();
     if (data.user && !error) {
       return "verified";
     }

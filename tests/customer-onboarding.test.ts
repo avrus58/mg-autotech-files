@@ -370,7 +370,8 @@ test("production wiring keeps device assurance, exact-user bearer binding and al
   assert.match(route, /updateUserById\(id,\s*\{\s*app_metadata: metadata/);
   assert.match(route, /private, no-store/);
   assert.match(hook, /authenticatedFetchForUser\(expectedUserId,/);
-  assert.match(hook, /supabase\.auth\.getUser\(\)/);
+  assert.match(hook, /getStableUser\(\)/);
+  assert.doesNotMatch(hook, /supabase\.auth\.getUser\(/);
   assert.doesNotMatch(hook, /supabase\.auth\.updateUser/);
   assert.match(register, /data: \{\s*\.\.\.enrollCustomerGuide\(\)/);
   assert.match(callback, /buildPendingRegistrationCountryMetadata\(\s*enrollFreshGoogleCustomerGuide\(currentSession\.user\)/);

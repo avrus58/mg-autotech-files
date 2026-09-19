@@ -5,7 +5,7 @@ import {
   createCustomerOnboardingController,
   HIDDEN_CUSTOMER_GUIDE,
 } from "@/lib/customerOnboarding";
-import { authenticatedFetchForUser, getStableSession, isEmailVerified } from "@/lib/authGuards";
+import { authenticatedFetchForUser, getStableSession, getStableUser, isEmailVerified } from "@/lib/authGuards";
 import { supabase } from "@/lib/supabaseClient";
 
 const tabGuideDismissals = new Map<string, string>();
@@ -25,7 +25,7 @@ export function useCustomerOnboarding() {
       },
     },
     readUser: async () => {
-      const { data, error } = await supabase.auth.getUser();
+      const { data, error } = await getStableUser();
       if (error) throw error;
       return data.user && isEmailVerified(data.user) ? data.user : null;
     },

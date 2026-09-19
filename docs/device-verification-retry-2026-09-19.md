@@ -1,5 +1,13 @@
 # Device verification retry incident - 19 September 2026
 
+## Superseding owner report
+
+The owner now confirms that fresh admin login still fails after `031923f40a98`.
+The earlier publication and existing-session checks below remain valid but are
+not recovery evidence. A newly reproduced SDK-level deletion race and its
+bounded correction are documented in
+`docs/auth-readonly-verification-2026-09-19.md`. The incident remains open.
+
 ## Publication update
 
 The owner's subsequent `evet` explicitly approved publishing this follow-up.

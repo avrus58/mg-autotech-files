@@ -29,7 +29,8 @@ test("the customer Log Analysis Studio route stays protected and loads its priva
   assert.match(studioLoader, /Opening your private datalog workspace/);
   assert.match(studioLoader, /customerPortalFirstPaintT/);
   assert.match(studioLoader, /locale=\{locale\}/);
-  assert.match(studioLoader, /await supabase\.auth\.getUser\(\)/);
+  assert.match(studioLoader, /await getStableUser\(\)/);
+  assert.doesNotMatch(studioLoader, /supabase\.auth\.getUser\(/);
   assert.match(studioLoader, /accessState !== "verified"/);
   assert.match(studioLoader, /return <LogAnalysisStudio \/>/);
   assert.match(studioLoader, /error\.status === 401/);

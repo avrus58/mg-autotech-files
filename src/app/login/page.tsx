@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import {
   getAuthenticatedHome,
   getStableSession,
+  getStableUser,
   isCurrentBrowserSession,
   isEmailVerified,
   primeStableSession,
@@ -151,7 +152,7 @@ export default function LoginPage() {
         setMessage(queryMessage);
         return;
       }
-      const { data } = await supabase.auth.getUser();
+      const { data } = await getStableUser();
       const user = data.user;
 
       if (!isCurrentBootstrap() || !isCurrentBrowserSession(session)) return;
