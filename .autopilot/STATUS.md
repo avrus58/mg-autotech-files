@@ -1,5 +1,25 @@
 # Otonom calisma gunlugu
 
+## 2026-09-20 - Owner-approved clock-skew correction published
+
+- Owner's new `evet` authorizes only the prepared two-runtime-file correction.
+  Clean source01ba96a9fe008ea164415ee1cee58408597ad1a6 archived, hash-verified
+  and published with unchanged VPS deploy script; exit0. No unrelated work.
+- Existing exact-source1790/1790 tests, lint/full typecheck/i18n and physical
+  local build pass. Independent review verifies23 frozen hashes and raw logs.
+  Fresh Linux prebuild37, compilation, TypeScript,282 pages and strict postbuild
+  pass (69 assets,401,PNG/PDF,zero external fetches).
+- Pre39/post43 smoke pass; new app/analyzer01ba96a9fe00 healthy,zero restarts,
+  atomic release state matches. Previous e90e4362c7ba rollback images retained.
+  Separate main-site app/Caddy/Postgres identities/start/restarts unchanged.
+- Public login serves the new adapter bundle. Anonymous in-app login form loads
+  and automatic security verification completes. No actual login or credentials
+  used;4 opaque Turnstile console entries, no app-source errors in the capture.
+  No connected affected Chrome tab. Remote clock/recovery remains unobserved.
+- Publication complete; incident In Progress, NOT resolved by smoke alone.
+  No schema,config,dependency,server authorization,payment or customer-data change.
+  Receipt: docs/production-release-2026-09-20-auth-clock.md.
+
 ## 2026-09-19 17:46 UTC - unresolved login incident, live refresh-storm evidence
 
 - Owner confirms e90e4362c7ba has NOT resolved admin/customer fresh-login loss.

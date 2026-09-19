@@ -15,8 +15,11 @@ waiting for confirmation. Read-only live logs now prove a post-login refresh
 storm (31 successful refreshes then429 in about4 seconds). A clock-skew SDK
 reproduction matches this chain; a browser-only local-expiry scheduling fix is
 locally validated (1790 tests, lint/typecheck/i18n, fresh standard build and
-independent review pass). Remote clock/recovery not observed; awaiting a new
-explicit release approval and affected-device confirmation after publication.
+independent review pass). Owner subsequently approved publication:01ba96a9fe00
+is live after fresh Linux build/strict postbuild, pre39/post43 smoke and healthy
+paired runtime. e90 rollback retained. Remote clock/recovery still unobserved;
+publication is complete, incident awaits affected-device fresh-login evidence.
+Release receipt:docs/production-release-2026-09-20-auth-clock.md.
 See docs/auth-refresh-storm-2026-09-19.md; incident remains In Progress.
 
 Scope: owner-reported admin logout seconds after login on another computer.
