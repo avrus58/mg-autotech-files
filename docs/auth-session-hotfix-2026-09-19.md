@@ -86,3 +86,15 @@ not push or deploy. Production needs an explicit owner release instruction;
 then deploy only this scoped candidate, retain the current image for rollback,
 and verify authenticated login persistence on the affected computer. Local
 tests and the healthy existing browser session do not substitute for that check.
+
+## Subsequent owner-approved publication
+
+The owner subsequently approved the release with `evet`. Exact source
+`d41f336819b2b1c9494e605f75ba299c0dda0921` passed the standard clean Linux
+build and strict postbuild, was deployed successfully, and passed 43/43 live
+post-smoke checks. Existing connected Chrome authentication persisted through
+reload, customer dashboard navigation and Back. The original failing computer
+still requires owner confirmation. The previous non-deployment boundary above
+records the implementation turn, not the current runtime. Full release evidence
+and separate baseline dependency-security risks are in
+`docs/production-release-2026-09-19-auth-session.md`.

@@ -1,5 +1,31 @@
 # Otonom calisma gunlugu
 
+## 2026-09-19 Browser session recovery - Production published
+
+- Owner explicitly approved the scoped release with `evet`. Deployed exact
+  source d41f336819b2b1c9494e605f75ba299c0dda0921 from its clean isolated
+  checkout/archive; local and VPS SHA-256 matched. Owner worktrees untouched.
+- Linux standard prebuild/build/postbuild and deploy script exited 0: 12 locales,
+  37/37 bundle tests, 282 pages, strict 69-asset packaging, compiled protected
+  401 and synthetic PNG/PDF checks. Earlier Windows junction failure is retained
+  as history, not relabeled. Existing full suite 1703/1703, lint/typecheck pass;
+  fresh independent exact-source targeted tests 69/69 pass, no P0-P2 finding.
+- At 12:23 UTC the new app/analyzer pair was healthy with zero restarts and
+  matching atomic release state. Previous c08b842683bd image pair retained.
+  Pre/post read-only live smoke: 39/39 and 43/43. No rollback required.
+- Separate main-site app, Caddy and Postgres start times/restart counts unchanged.
+  No DB/schema/env/payment/Ads/dependency-manifest/copy/design change.
+- Existing connected Chrome session survived reload, customer dashboard and
+  Back; admin remained visible 47 seconds after return without login/sync error.
+  No logout/credential entry or real customer-data mutation.
+  Exact failing-computer cause and post-release login there remain unverified.
+- Dependency audit surfaced four baseline production-package warnings including
+  critical Next and high sharp; no new auth-specific blocker established.
+  Separate urgent upgrade review remains; security audit is not claimed green.
+- Receipt: docs/production-release-2026-09-19-auth-session.md. Ignored evidence:
+  .autopilot/runtime/auth-session-hotfix-20260919/. Release is complete;
+  owner incident confirmation is pending.
+
 ## 2026-09-19 Browser session recovery - Implementation verified, not deployed
 
 - Owner reports Chrome admin login followed by the login-required screen after

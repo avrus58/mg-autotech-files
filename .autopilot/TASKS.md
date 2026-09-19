@@ -23,8 +23,13 @@ Work is isolated from owner edits. Full tests 1703/1703, lint, full typecheck,
 i18n and independent review pass. Webpack compilation/prerender succeeds;
 in-place npm postbuild rejects the shared dependency junction. An independent
 physical standalone copy passes the unchanged strict artifact check. Release
-must rebuild source, then verify the affected browser; the live incident is not
-closed. Production publication needs a fresh explicit owner release instruction.
+required a source rebuild. On September 19 the owner explicitly approved
+publication: d41f336819b2 passed the clean Linux build and strict packaging gate
+and is live, with 39/39 pre and 43/43 post smoke checks. Existing connected Chrome
+session survives reload, customer dashboard navigation and Back. The release is complete;
+the task stays In Progress only for the failing-computer login confirmation.
+The original remote trigger has not been conclusively captured. Receipt:
+docs/production-release-2026-09-19-auth-session.md.
 
 ## Blocked
 
