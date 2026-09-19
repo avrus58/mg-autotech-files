@@ -1,5 +1,26 @@
 # Otonom calisma gunlugu
 
+## 2026-09-19 Approved read-only auth hotfix published
+
+- Owner explicitly answered `evet` to publication of the new correction.
+  Clean source e90e4362c7bad699cb765402a6fa558cbb872e1e was archived, hash-verified
+  on the VPS and deployed with the unchanged release script; exit 0.
+- Prior exact-source 1765/1765 tests, lint/full typecheck/i18n and standard local
+  build pass; independent immutable review checked 20 frozen hashes and 1047
+  source files with no mismatch/blocker. Fresh Linux prebuild37, compilation,
+  TypeScript, 282 pages and unchanged strict postbuild69 assets/401/PNG/PDF pass.
+- Pre39/post43 read-only smoke pass. App/analyzer e90e4362c7ba healthy with zero
+  restarts; atomic release state matches, previous031923f rollback pair retained.
+  Separate main-site app, Caddy and Postgres image/start/restart values unchanged.
+- Existing connected Chrome session survives a new-client admin reload, German
+  customer dashboard and Back, with no login-required/restoration/sync-error UI
+  and zero bounded warnings/errors (final check 20 seconds after Back).
+  No passwords/tokens/customer details, logout, cookie clearing, real email,
+  database/security configuration, payment or advertising changes.
+- Publication complete, no rollback required. Incident remains In Progress:
+  affected remote computer fresh-login recovery is not yet confirmed. Receipt:
+  docs/production-release-2026-09-19-readonly-auth.md.
+
 ## 2026-09-19 Persistent admin logout - isolated user-verification correction
 
 - Owner confirms the incident persists after 031923f. Previous existing-session

@@ -73,6 +73,15 @@ Production is unchanged. See docs/auth-readonly-verification-2026-09-19.md.
 Remote attribution is not proven; this is an actively unresolved incident,
 not merely a successful release awaiting acknowledgment.
 
+Fresh explicit owner `evet` approved this new correction. Source e90e4362c7ba
+is now live: unchanged Linux build and strict postbuild exit0, healthy paired
+runtime, pre39/post43 smoke, previous031923f rollback images retained. Existing
+connected Chrome session survives reload, customer dashboard and Back with
+zero bounded console errors.
+Release is complete; the incident remains In Progress until the affected remote
+computer's fresh-login recovery is confirmed. Receipt:
+docs/production-release-2026-09-19-readonly-auth.md.
+
 ## Blocked
 
 ### MANUAL-20260828-ADS-MEASUREMENT-FINAL-HARDENING [P0] Reklam edinimi, consent ve dogrulanmis donusum final kapilari

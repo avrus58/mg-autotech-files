@@ -1,5 +1,15 @@
 # Fresh-login session deletion: read-only verification hotfix
 
+## Publication update
+
+The owner's subsequent `evet` explicitly approved this new correction.
+`e90e4362c7bad699cb765402a6fa558cbb872e1e` is now live after a successful standard
+Linux build, unchanged strict postbuild and healthy release switch. Pre 39/39
+and post 43/43 read-only smoke checks passed. The following implementation notes
+retain their pre-publication approval boundary as history. Current receipt:
+`docs/production-release-2026-09-19-readonly-auth.md`. The affected remote
+computer's fresh login has not been observed, so the incident is not marked Done.
+
 ## Current incident and scope
 
 After release `031923f40a98`, the owner explicitly reports that a fresh admin
