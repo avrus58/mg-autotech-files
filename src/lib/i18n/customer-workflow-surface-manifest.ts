@@ -321,6 +321,8 @@ export const customerWorkflowSharedSourceManifest = {
       "src/components/dashboard/CustomerPortalFrame.tsx",
       "src/components/dashboard/CustomerPortalPageHeader.tsx",
       "src/components/dashboard/CustomerPortalSidebar.tsx",
+      // Headless reporter reused by auth; its reachable source remains audited.
+      "src/components/PlatformReliabilityMonitor.tsx",
       "src/components/RequestLocaleBoundary.tsx",
       "src/components/RootDocument.tsx",
       "src/components/ServerLocaleBoundary.tsx",

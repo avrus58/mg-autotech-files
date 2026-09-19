@@ -1,5 +1,60 @@
 # Otonom calisma gunlugu
 
+## 2026-09-19 Device retry continuation - reproduced login race and transport fixes
+
+- Owner requested independent diagnosis, without more screenshots/Network steps.
+- Changed LoginPage, DeviceVerificationPanel, deviceVerificationClient; reused
+  existing typed translations and privacy-safe reliability monitor. Updated
+  exact source manifest, removed dead email-error catalog row, regenerated auth
+  bundle; added executable login/transport tests and expanded panel regressions.
+- Red/green evidence: LoginPage HEAD fails four of ten cases, current 10/10;
+  panel initial-null check red then current 31/31; transport five initial failures
+  corrected and expanded to 15/15. No auth weakening, schema/dependency changes.
+- Standard lint, full web/desktop typecheck and check:i18n passed (12 locales,
+  2471 source rows, zero clean-English fallbacks, 37 bundle cases). Final full
+  test suite passed 1742/1742. Fresh physical-source standard build and unchanged
+  strict postbuild passed exit0 (43 assets, compiled401, validPNG/PDF, zero
+  externalfetches); independent frozen-source review found no blockers. Receipt:
+  C:/Users/gokka/Documents/Codex/auth-incident-artifacts-20260919/new-retry-build-20260919/fresh-build-receipt.json.
+  Code validation complete; incident remains open pending approved publication
+  and actual remote recovery, not falsely marked Done.
+- Chrome actual-component synthetic fixture: 24 EN/DE/TR/ZH mobile320/laptop1366
+  loading/error/challenge cases without horizontal overflow or console errors.
+- No real emails or test users created, no Production deployment. Chrome153
+  aggregate cannot substantiate optional-timeout incompatibility as live cause.
+  Cloudflare session unavailable; no settings changed. Remote root cause remains
+  unproven; no further diagnostic action requested of owner. See incident doc.
+
+## 2026-09-19 Device verification retry - local correction, incident unresolved
+
+- Owner reports clickable Retry -> generic email-send error on another computer.
+  That catch spans session/network/HTTP/navigation, not only email delivery.
+- Confirmed separate effect-recreation deadlock; cleanup now retires its session
+  marker with the operation. Actual-TSX panel 28/28, related suites 82/82, full
+  suite 1711/1711 before three final test-only controls. Typecheck and standard
+  lint pass; i18n 12 locales/2472 strings/0 fallback and 37/37 bundles pass.
+- Initial lint failure was previous agent-created generated artifact pollution;
+  artifact moved intact outside checkout, unchanged lint rerun passed.
+- Production read-only function/schema evidence and existing-session Chrome
+  navigation do not reproduce the affected computer. Existing shadow mode and
+  not_required responses explain no email rows; they are not provider failure.
+- Build passed compilation/typecheck/282 pages but exited 1 at strict postbuild
+  (`sharp escaped standalone dependencies`), the existing local dependency
+  junction boundary. Clean packaging verification remains required; not Done.
+- No deploy, database mutation, security weakening or real email sent. Exact
+  affected-browser URL/request outcome is still needed.
+- Follow-up: owner confirms file.mgautotech.de. Handled start failures are not
+  reported by the existing reliability monitor or route logs; another bounded
+  live log check had no relevant entries and cannot diagnose this caught error.
+  Requested only affected-browser /start HTTP status after one Retry, no HAR,
+  headers, tokens or raw response. Do not repeat non-discriminating aggregates.
+- Independent current physical-copy artifact verification passed unchanged
+  strict checker: 43 Windows assets, compiled 401, valid synthetic PNG/PDF,
+  zero external fetches, six source-identical snapshot trees. Prior artifact
+  preserved. In-place build exit 1 is not relabeled; fresh release build remains
+  required before any publication. No new runtime code changes in follow-up.
+- Details and evidence boundaries: docs/device-verification-retry-2026-09-19.md.
+
 ## 2026-09-19 Browser session recovery - Production published
 
 - Owner explicitly approved the scoped release with `evet`. Deployed exact

@@ -26,6 +26,7 @@ import {
 import { intlLocaleByCode } from "@/lib/i18nConfig";
 import { useActiveLocale } from "@/lib/useActiveLocale";
 import { supabase } from "@/lib/supabaseClient";
+import { reportPlatformFailure } from "@/components/PlatformReliabilityMonitor";
 
 function formatCountdown(totalSeconds: number) {
   const safeSeconds = Math.max(0, Math.ceil(totalSeconds));
@@ -132,12 +133,15 @@ export function DeviceVerificationPanel({
       window.setTimeout(() => {
         if (isActiveOperation(operation, session)) codeInputRef.current?.focus();
       }, 0);
-    } catch {
+    } catch (error) {
       if (!isActiveOperation(operation, session)) return;
+      // The existing reporter emits only an allowlisted category and route,
+      // never the exception text, token, e-mail address or verification code.
+      reportPlatformFailure("client_error", error ?? new Error("Auth session unavailable"));
       setMessage(
         customerWorkflowExactT(
           locale,
-          "The verification e-mail could not be sent.",
+          "The security request could not be completed. Please try again.",
         ),
       );
     } finally {
@@ -162,14 +166,20 @@ export function DeviceVerificationPanel({
         setMessage("");
         setRetryAt(0);
         setSecondsRemaining(0);
-        setWorking(session ? "start" : null);
-        if (session) void begin();
+        // An empty initial SDK snapshot does not revoke a freshly primed login.
+        // Match authGuards: only a real sign-out discards that stable session.
+        const currentSession = session ?? (_event === "INITIAL_SESSION" ? getStableSessionSnapshot() : null);
+        setWorking(currentSession ? "start" : null);
+        if (currentSession) void begin();
       }, 0);
     });
     return () => {
       window.clearTimeout(timeout);
       subscription.unsubscribe();
       operationRef.current += 1;
+      // Retire the session marker with its operation. A replacement effect's
+      // INITIAL_SESSION must not mistake the cancelled attempt for active work.
+      verificationSessionRef.current = null;
     };
   }, [begin]);
 
@@ -299,7 +309,9 @@ export function DeviceVerificationPanel({
     ? "Your security e-mail is being prepared. The code field will be available after it is accepted for sending."
     : state?.rateLimited && !canVerify
       ? "Too many security-code requests were made. Wait for the timer before trying again."
-      : "We are checking whether this device is already trusted.";
+      : message
+        ? "Complete the security verification to continue."
+        : "We are checking whether this device is already trusted.";
 
   return (
     <section className="w-full" aria-labelledby="device-verification-title">
@@ -310,8 +322,10 @@ export function DeviceVerificationPanel({
         <ShieldCheck className="h-4 w-4 text-red-500" />
         {customerWorkflowExactT(locale, "New device protection")}
       </div>
-      <h2 id="device-verification-title" className="text-4xl font-black">
-        {customerWorkflowExactT(locale, "Check your e-mail")}
+      <h2 id="device-verification-title" className="break-words text-3xl font-black sm:text-4xl">
+        {canVerify
+          ? customerWorkflowExactT(locale, "Check your e-mail")
+          : customerWorkflowExactT(locale, "Account verification")}
       </h2>
       <p className="mt-3 text-sm leading-7 text-zinc-400">
         {state?.maskedEmail && canVerify ? (
@@ -414,7 +428,7 @@ export function DeviceVerificationPanel({
             <RefreshCcw className="mr-2 h-4 w-4" />
             {secondsRemaining > 0
               ? customerWorkflowT(locale, "tryAgainIn", { time: formatCountdown(secondsRemaining) })
-              : "Try again"}
+              : customerWorkflowExactT(locale, "Try again")}
           </button>
         )}
         <button type="button" onClick={() => void handleDifferentAccount()} className="text-zinc-400 hover:text-white">

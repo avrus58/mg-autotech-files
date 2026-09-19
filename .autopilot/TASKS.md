@@ -31,6 +31,26 @@ the task stays In Progress only for the failing-computer login confirmation.
 The original remote trigger has not been conclusively captured. Receipt:
 docs/production-release-2026-09-19-auth-session.md.
 
+Follow-up: owner now reaches device verification, but clickable Retry produces a
+generic email-send error. A separately reproduced effect-recreation deadlock is
+corrected locally with 28 passing panel cases; this does not prove the Retry
+error's cause. Production remains d41f336819b2, with no new release authorized.
+Owner confirmed file.mgautotech.de; affected-browser request-level evidence is
+still necessary because handled errors are absent from current logs. See
+docs/device-verification-retry-2026-09-19.md; do not mark this incident Done.
+
+September 19 continuation: owner requested independent investigation, no further
+manual Network screenshots. Actual login bootstrap reproduces logout of a newer
+verified login (four red baseline regressions, now 10/10). Panel null-initial and
+effect-recreation races corrected (31/31). Device transport deadline/response
+validation corrected (15/15). Typed truthful error copy and existing safe
+reliability reporting retained across 12 locales. Chrome synthetic 24-case
+responsive/state/locale matrix passes. Full suite1742/1742, lint, web/desktop
+typecheck and i18n pass. Fresh physical-source standard build including strict
+postbuild passes exit0; independent frozen-source review has no blockers. Code
+is ready for scoped release; live attribution/recovery and new release approval
+remain outstanding. No push/deploy performed.
+
 ## Blocked
 
 ### MANUAL-20260828-ADS-MEASUREMENT-FINAL-HARDENING [P0] Reklam edinimi, consent ve dogrulanmis donusum final kapilari

@@ -5,8 +5,11 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   getAuthenticatedHome,
+  getStableSession,
+  isCurrentBrowserSession,
+  isEmailVerified,
   primeStableSession,
-  signOutIfEmailUnverified,
+  signOutLocalIfSessionMatches,
 } from "@/lib/authGuards";
 import { TurnstileChallenge } from "@/components/auth/TurnstileChallenge";
 import { DeviceVerificationPanel } from "@/components/auth/DeviceVerificationPanel";
@@ -83,6 +86,7 @@ export default function LoginPage() {
     EMPTY_AUTH_LOGIN_FAILURE_STATE
   );
   const authRequestInFlightRef = useRef(false);
+  const bootstrapGenerationRef = useRef(0);
   const captchaEscalationNoticeRef = useRef<HTMLDivElement | null>(null);
   const visibleCaptchaRequired =
     authCaptchaConfig.status === "ready" &&
@@ -127,8 +131,10 @@ export default function LoginPage() {
     const params = new URLSearchParams(window.location.search);
     const requestedRedirect = getRequestedRedirect();
     let active = true;
+    const generation = ++bootstrapGenerationRef.current;
+    const isCurrentBootstrap = () => active && generation === bootstrapGenerationRef.current;
     const redirectStateTimeout = window.setTimeout(() => {
-      if (active) setRequestedRedirectPath(requestedRedirect);
+      if (isCurrentBootstrap()) setRequestedRedirectPath(requestedRedirect);
     }, 0);
     const querySuccess = params.get("reset") === "success";
     const queryMessage = params.get("verify_email") === "1"
@@ -138,10 +144,17 @@ export default function LoginPage() {
         : "";
 
     const redirectAuthenticatedUser = async () => {
+      const { session } = await getStableSession();
+      if (!isCurrentBootstrap()) return;
+      if (!session?.user) {
+        setMessageIsSuccess(querySuccess);
+        setMessage(queryMessage);
+        return;
+      }
       const { data } = await supabase.auth.getUser();
       const user = data.user;
 
-      if (!active) return;
+      if (!isCurrentBootstrap() || !isCurrentBrowserSession(session)) return;
 
       if (!user) {
         setMessageIsSuccess(querySuccess);
@@ -149,7 +162,12 @@ export default function LoginPage() {
         return;
       }
 
-      if (await signOutIfEmailUnverified(user)) {
+      if (user.id !== session.user.id) return;
+      if (!isEmailVerified(user)) {
+        // This helper rechecks the originating session inside the mutation
+        // queue, including when a newer login is already ahead of this check.
+        const signedOut = await signOutLocalIfSessionMatches(session);
+        if (!signedOut || !isCurrentBootstrap()) return;
         setMessageIsSuccess(false);
         setMessage("Please verify your e-mail address before accessing your account.");
         return;
@@ -157,15 +175,16 @@ export default function LoginPage() {
 
       clearAuthLoginFailures(getBrowserAuthLoginFailureStorage());
       setPasswordFailureState(EMPTY_AUTH_LOGIN_FAILURE_STATE);
-      setDeviceVerificationNextPath(
-        requestedRedirect ?? (await getAuthenticatedHome(user.id))
-      );
+      const destination = requestedRedirect ?? (await getAuthenticatedHome(user.id));
+      if (!isCurrentBootstrap() || !isCurrentBrowserSession(session)) return;
+      setDeviceVerificationNextPath(destination);
     };
 
     void redirectAuthenticatedUser();
 
     return () => {
       active = false;
+      bootstrapGenerationRef.current += 1;
       window.clearTimeout(redirectStateTimeout);
     };
   }, [router]);
@@ -187,6 +206,7 @@ export default function LoginPage() {
       return;
     }
 
+    const generation = ++bootstrapGenerationRef.current;
     authRequestInFlightRef.current = true;
     if (requestCaptchaToken) setCaptchaToken(null);
 
@@ -207,10 +227,11 @@ export default function LoginPage() {
       .catch(() => null)
       .finally(() => {
         authRequestInFlightRef.current = false;
-        if (!requestCaptchaToken) return;
+        if (!requestCaptchaToken || generation !== bootstrapGenerationRef.current) return;
         setCaptchaResetKey((value) => value + 1);
       });
 
+    if (generation !== bootstrapGenerationRef.current) return;
     if (!response) {
       setMessage("Login could not be completed. Please try again.");
       setLoading(false);
@@ -239,16 +260,19 @@ export default function LoginPage() {
     clearAuthLoginFailures(getBrowserAuthLoginFailureStorage());
     setPasswordFailureState(EMPTY_AUTH_LOGIN_FAILURE_STATE);
 
-    if (data.user && (await signOutIfEmailUnverified(data.user))) {
+    if (data.user && !isEmailVerified(data.user)) {
+      if (data.session) await signOutLocalIfSessionMatches(data.session);
+      if (generation !== bootstrapGenerationRef.current) return;
       setMessage("Please verify your e-mail address before accessing your account.");
       setLoading(false);
       return;
     }
 
-    setDeviceVerificationNextPath(
-      getRequestedRedirect() ?? (await getAuthenticatedHome(data.user!.id))
-    );
+    const destination = getRequestedRedirect() ?? (await getAuthenticatedHome(data.user!.id));
+    if (generation !== bootstrapGenerationRef.current) return;
     setLoading(false);
+    if (!data.session || !isCurrentBrowserSession(data.session)) return;
+    setDeviceVerificationNextPath(destination);
   };
 
   const handleGoogleLogin = async (credential: string, nonce: string) => {
@@ -273,6 +297,7 @@ export default function LoginPage() {
       return;
     }
 
+    const generation = ++bootstrapGenerationRef.current;
     authRequestInFlightRef.current = true;
     if (requestCaptchaToken) setCaptchaToken(null);
     setGoogleLoading(true);
@@ -292,10 +317,11 @@ export default function LoginPage() {
     })
       .catch(() => null)
       .finally(() => {
-        if (!requestCaptchaToken) return;
+        if (!requestCaptchaToken || generation !== bootstrapGenerationRef.current) return;
         setCaptchaResetKey((value) => value + 1);
       });
 
+    if (generation !== bootstrapGenerationRef.current) return;
     if (!response) {
       authRequestInFlightRef.current = false;
       setGoogleMessage("Google sign-in could not be completed. Please try again.");

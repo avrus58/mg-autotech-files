@@ -120,7 +120,11 @@ test("auth bootstrap operations are bounded and successful sign-ins prime browse
     callback,
     /session = data\.session;\s*sanitizeSensitiveMeasurementLocation\(\);\s*primeStableSession\(session\)/
   );
-  assert.match(deviceVerification, /signal: deviceVerificationRequestSignal\(\)/);
+  assert.match(deviceVerification, /new AbortController\(\)/);
+  assert.match(deviceVerification, /signal: controller\.signal/);
+  assert.match(deviceVerification, /Promise\.race\(/);
+  assert.match(deviceVerification, /globalThis\.clearTimeout\(timeoutId\)/);
+  assert.doesNotMatch(deviceVerification, /AbortSignal\.timeout/);
   assert.match(guard, /signal: AbortSignal\.timeout\(authenticatedHomeTimeoutMs\)/);
   assert.match(boundary, /const assurance = await getDeviceVerificationStatus\(\)/);
   assert.doesNotMatch(boundary, /catch[\s\S]{0,120}resolveAuthState\("authenticated"\)/);

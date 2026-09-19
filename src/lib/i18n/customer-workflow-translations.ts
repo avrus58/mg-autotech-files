@@ -2073,20 +2073,6 @@ const customerWorkflowRows = [
     "Pajisjet e tjera nuk mund të anuloheshin."
   ],
   [
-    "The verification e-mail could not be sent.",
-    "De verificatie-e-mail kon niet worden verzonden.",
-    "Die Bestätigungs-E-Mail konnte nicht gesendet werden.",
-    "L'e-mail de vérification n'a pas pu être envoyé.",
-    "Non è stato possibile inviare l'e-mail di verifica.",
-    "Не удалось отправить письмо с подтверждением.",
-    "No se pudo enviar el correo electrónico de verificación.",
-    "Doğrulama e-postası gönderilemedi.",
-    "O e-mail de verificação não pôde ser enviado.",
-    "无法发送验证电子邮件。",
-    "Nie udało się wysłać e-maila weryfikacyjnego.",
-    "E-mail-i i verifikimit nuk mund të dërgohej."
-  ],
-  [
     "The code could not be verified.",
     "De code kon niet worden geverifieerd.",
     "Der Code konnte nicht verifiziert werden.",
