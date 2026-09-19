@@ -114,7 +114,8 @@ test("auth bootstrap operations are bounded and successful sign-ins prime browse
   assert.match(guard, /withAuthSdkOperationTimeout\(\s*supabase\.auth\.getSession\(\)\s*\)/);
   assert.match(guard, /withAuthSdkOperationTimeout\(\s*supabase\.auth\.refreshSession\(\)\s*\)/);
   assert.match(guard, /export function primeStableSession\(session: Session \| null\)/);
-  assert.match(login, /primeStableSession\(data\.session\)[\s\S]*getAuthenticatedHome\(data\.user!\.id\)/);
+  assert.match(login, /withBrowserAuthMutation\(async \(\) => \{[\s\S]*signInWithPassword[\s\S]*if \(!result\.error\) primeStableSession\(result\.data\.session\);\s*return result;[\s\S]*getAuthenticatedHome\(data\.user!\.id\)/);
+  assert.match(callback, /withBrowserAuthMutation\(async \(\) => \{\s*const result = await supabase\.auth\.exchangeCodeForSession\(code\);\s*if \(!result\.error\) primeStableSession\(result\.data\.session\);\s*return result;/);
   assert.match(
     callback,
     /session = data\.session;\s*sanitizeSensitiveMeasurementLocation\(\);\s*primeStableSession\(session\)/

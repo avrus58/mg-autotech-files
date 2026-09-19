@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Loader2, RefreshCcw } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
@@ -12,7 +12,8 @@ import {
   AUTH_DEVICE_VERIFICATION_REQUIRED_EVENT,
   AUTH_SESSION_REQUIRED_EVENT,
   getStableSession,
-  signOutLocalStable,
+  isCurrentBrowserSession,
+  signOutLocalIfSessionMatches,
 } from "@/lib/authGuards";
 import { customerPortalFirstPaintT } from "@/lib/i18n/customer-portal-first-paint";
 import { useActiveLocale } from "@/lib/useActiveLocale";
@@ -49,6 +50,9 @@ export function BrowserAuthBoundary({
   const [authState, setAuthState] = useState<AuthState>("checking");
   const authStateRef = useRef<AuthState>("checking");
   const [retryKey, setRetryKey] = useState(0);
+  const handleDeviceVerified = useCallback(() => {
+    setRetryKey((current) => current + 1);
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -56,6 +60,8 @@ export function BrowserAuthBoundary({
     let retryTimer: number | null = null;
     let slowCheckTimer: number | null = null;
     let unavailableTimer: number | null = null;
+    let authChangeTimer: number | null = null;
+    let verificationSequence = 0;
 
     const clearTimer = (timer: number | null) => {
       if (timer !== null) window.clearTimeout(timer);
@@ -79,13 +85,20 @@ export function BrowserAuthBoundary({
     const startWaitTimers = () => {
       if (slowCheckTimer === null) {
         slowCheckTimer = window.setTimeout(() => {
-          commitAuthState("recovering");
+          if (authStateRef.current === "checking") {
+            commitAuthState("recovering");
+          }
         }, slowSessionCheckDelay);
       }
 
       if (unavailableTimer === null) {
         unavailableTimer = window.setTimeout(() => {
-          commitAuthState("unavailable");
+          if (
+            authStateRef.current === "checking" ||
+            authStateRef.current === "recovering"
+          ) {
+            commitAuthState("unavailable");
+          }
         }, unavailableSessionDelay);
       }
     };
@@ -113,44 +126,73 @@ export function BrowserAuthBoundary({
       }, delay);
     };
 
-    const verifySession = () => void (async () => {
-      const { session, error } = await getStableSession();
-      if (!session?.user) {
-        if (!error) resolveAuthState("unauthenticated");
-        else scheduleRecovery();
-        return;
-      }
+    const verifySession = () => {
+      if (!active) return;
+      clearTimer(retryTimer);
+      retryTimer = null;
+      const verificationId = ++verificationSequence;
+      const isLatestVerification = () => active && verificationId === verificationSequence;
 
-      const assurance = await getDeviceVerificationStatus();
-      recoveryAttempt = 0;
-      if (assurance.status === "revoked") {
-        await signOutLocalStable();
-        resolveAuthState("unauthenticated");
-        return;
-      }
-      resolveAuthState(
-        assurance.status === "required"
-          ? "verification_required"
-          : "authenticated"
-      );
-    })().catch(() => {
-      scheduleRecovery();
-    });
+      void (async () => {
+        const { session, error } = await getStableSession();
+        if (!isLatestVerification()) return;
+        if (!session?.user) {
+          if (!error) resolveAuthState("unauthenticated");
+          else scheduleRecovery();
+          return;
+        }
+        if (!isCurrentBrowserSession(session)) {
+          scheduleRecovery();
+          return;
+        }
+
+        const assurance = await getDeviceVerificationStatus();
+        if (!isLatestVerification()) return;
+        if (!isCurrentBrowserSession(session)) {
+          scheduleRecovery();
+          return;
+        }
+        recoveryAttempt = 0;
+        if (assurance.status === "revoked") {
+          const signedOut = await signOutLocalIfSessionMatches(session);
+          if (!isLatestVerification()) return;
+          if (signedOut) resolveAuthState("unauthenticated");
+          else scheduleRecovery();
+          return;
+        }
+        resolveAuthState(
+          assurance.status === "required"
+            ? "verification_required"
+            : "authenticated"
+        );
+      })().catch(() => {
+        if (isLatestVerification()) scheduleRecovery();
+      });
+    };
+
+    const queueSessionVerification = () => {
+      if (!active) return;
+      // Invalidate the old request now, not only when the deferred check runs.
+      // A late revoked/empty result must not replace a just-signed-in session.
+      verificationSequence += 1;
+      clearTimer(authChangeTimer);
+      authChangeTimer = window.setTimeout(verifySession, 0);
+    };
 
     startWaitTimers();
     verifySession();
 
     const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
       if (session?.user) {
-        window.setTimeout(verifySession, 0);
+        queueSessionVerification();
       } else if (event === "INITIAL_SESSION" || event === "SIGNED_OUT") {
         // Let the auth callback settle before making another Supabase call.
-        window.setTimeout(verifySession, 0);
+        queueSessionVerification();
       }
     });
 
-    const handleSessionRequired = () => resolveAuthState("unauthenticated");
-    const handleDeviceVerificationRequired = () => resolveAuthState("verification_required");
+    const handleSessionRequired = queueSessionVerification;
+    const handleDeviceVerificationRequired = queueSessionVerification;
     window.addEventListener(AUTH_SESSION_REQUIRED_EVENT, handleSessionRequired);
     window.addEventListener(
       AUTH_DEVICE_VERIFICATION_REQUIRED_EVENT,
@@ -159,7 +201,9 @@ export function BrowserAuthBoundary({
 
     return () => {
       active = false;
+      verificationSequence += 1;
       clearWaitTimers();
+      clearTimer(authChangeTimer);
       listener.subscription.unsubscribe();
       window.removeEventListener(AUTH_SESSION_REQUIRED_EVENT, handleSessionRequired);
       window.removeEventListener(
@@ -202,7 +246,7 @@ export function BrowserAuthBoundary({
         <div className="w-full max-w-md rounded-[2rem] border border-white/10 bg-white/[0.04] p-7 shadow-2xl shadow-black/50 backdrop-blur-xl sm:p-9">
           <DeviceVerificationPanel
             nextPath={nextPath ?? pathname ?? "/dashboard"}
-            onVerified={() => setAuthState("authenticated")}
+            onVerified={handleDeviceVerified}
           />
         </div>
       </main>

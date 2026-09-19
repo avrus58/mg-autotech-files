@@ -110,7 +110,7 @@ test("Google login and registration use locked CAPTCHA-backed ID-token flows", (
   assert.match(registerGoogleHandler, /\.catch\(\(\) => null\)/);
   assert.match(
     registerGoogleHandler,
-    /Promise\.resolve\(\)[\s\S]*?\.then\(\(\) => \{[\s\S]*?sessionStorage\.setItem[\s\S]*?signInWithIdToken/
+    /withBrowserAuthMutation\(\(\) => \{[\s\S]*?sessionStorage\.setItem[\s\S]*?signInWithIdToken/
   );
   assert.match(loginGoogleHandler, /signInWithIdToken/);
   assert.match(loginGoogleHandler, /token: credential/);

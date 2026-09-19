@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Loader2, Lock, ShieldCheck, Upload } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
-import { authenticatedFetch, signOutLocalStable, signOutStable } from "@/lib/authGuards";
+import { authenticatedFetch, signOutAllSessionsStable, signOutLocalStable } from "@/lib/authGuards";
 import {
   CUSTOMER_REPLACEMENT_PASSWORD_MAX_LENGTH,
   CUSTOMER_REPLACEMENT_PASSWORD_MIN_LENGTH,
@@ -97,7 +97,7 @@ export default function ResetPasswordPage() {
       return;
     }
 
-    await signOutStable();
+    await signOutAllSessionsStable();
     router.replace("/login?reset=success");
   };
 

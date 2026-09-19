@@ -2,6 +2,7 @@ import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabaseClient";
 import { clearGrowthVisitorId } from "@/lib/growth/publicClient";
 import { CUSTOMER_SESSION_REVOKED_MESSAGE } from "@/lib/customerDeviceContracts";
+import { withBrowserAuthMutation } from "@/lib/browserAuthMutations";
 
 export const AUTH_SESSION_REQUIRED_EVENT = "mg-autotech:auth-session-required";
 export const AUTH_DEVICE_VERIFICATION_REQUIRED_EVENT =
@@ -29,6 +30,7 @@ type StableSessionResult = {
 type AuthMemoryWindow = Window & typeof globalThis & {
   __mgAutotechStableSession?: Session | null;
   __mgAutotechAuthMemoryListenerReady?: boolean;
+  __mgAutotechSessionRevision?: number;
 };
 
 const authWindow = typeof window === "undefined" ? null : window as AuthMemoryWindow;
@@ -76,7 +78,46 @@ function getCachedSession() {
 }
 
 function setCachedSession(session: Session | null) {
-  if (authWindow) authWindow.__mgAutotechStableSession = session;
+  if (!authWindow) return;
+  if (!session || sessionIdentity(getCachedSession()) !== sessionIdentity(session)) {
+    authWindow.__mgAutotechSessionRevision = sessionRevision() + 1;
+  }
+  authWindow.__mgAutotechStableSession = session;
+}
+
+function sessionIdentity(session: Session | null) {
+  if (!session) return null;
+  // Correlation only, never authorization. Refreshing a token must not turn
+  // the same revoked server session into an apparently new browser session.
+  try {
+    const payload = session.access_token.split(".")[1];
+    const claims = JSON.parse(atob(payload.replace(/-/g, "+").replace(/_/g, "/"))) as {
+      session_id?: unknown;
+    };
+    if (typeof claims.session_id === "string" && claims.session_id) {
+      return `${session.user.id}:${claims.session_id}`;
+    }
+  } catch {
+    // Opaque/malformed tokens are still compared exactly; APIs validate them.
+  }
+  return `${session.user.id}:${session.access_token}`;
+}
+
+function sessionRevision() {
+  return authWindow?.__mgAutotechSessionRevision ?? 0;
+}
+
+export function isCurrentBrowserSession(session: Session) {
+  return sessionIdentity(getCachedSession()) === sessionIdentity(session);
+}
+
+function currentSessionResult(): StableSessionResult {
+  return {
+    session: getStableSessionSnapshot(),
+    error: getCachedSession() && !hasUsableCachedSession()
+      ? new AuthSessionRecoveryPendingError()
+      : null,
+  };
 }
 
 function adoptCachedSession(session: Session) {
@@ -151,18 +192,21 @@ async function refreshStableSession(): Promise<StableSessionResult> {
   if (sessionRefreshInFlight) return sessionRefreshInFlight;
 
   const operation = (async () => {
+    const revision = sessionRevision();
     try {
       // Read the newest persisted refresh token. Passing a captured token here
       // can replay an already-rotated token when another tab refreshes first.
       const { data, error } = await withAuthSdkOperationTimeout(
         supabase.auth.refreshSession()
       );
+      if (authWindow && revision !== sessionRevision()) return currentSessionResult();
       if (data.session) {
         adoptCachedSession(data.session);
         return { session: data.session, error: null };
       }
       return { session: null, error };
     } catch (error) {
+      if (authWindow && revision !== sessionRevision()) return currentSessionResult();
       return { session: null, error };
     }
   })();
@@ -192,10 +236,12 @@ async function resolveStableSession(): Promise<StableSessionResult> {
   for (let attempt = 0; attempt < sessionReadDelays.length; attempt += 1) {
     if (sessionReadDelays[attempt] > 0) await sleep(sessionReadDelays[attempt]);
 
+    const revision = sessionRevision();
     try {
       const { data, error } = await withAuthSdkOperationTimeout(
         supabase.auth.getSession()
       );
+      if (authWindow && revision !== sessionRevision()) return currentSessionResult();
       if (data.session) {
         adoptCachedSession(data.session);
         return { session: data.session, error: null };
@@ -210,6 +256,7 @@ async function resolveStableSession(): Promise<StableSessionResult> {
       // refreshed session. Complete the bounded read sequence before treating
       // this as a signed-out state.
     } catch (error) {
+      if (authWindow && revision !== sessionRevision()) return currentSessionResult();
       lastError = error;
       if (hasUsableCachedSession()) {
         return { session: getCachedSession(), error: null };
@@ -265,7 +312,9 @@ export function notifySessionRequired() {
   if (typeof window === "undefined" || sessionRequiredCheckInFlight) return;
 
   const operation = (async () => {
+    const revision = sessionRevision();
     const { session, error } = await getStableSession();
+    if (revision !== sessionRevision()) return;
     if (!session?.user && !error) {
       window.dispatchEvent(new Event(AUTH_SESSION_REQUIRED_EVENT));
     }
@@ -288,6 +337,7 @@ async function authenticatedFetchInternal(
   input: RequestInfo | URL,
   init?: RequestInit
 ) {
+  let requestSession: Session | null = null;
   const send = (accessToken: string) => {
     const headers = new Headers(init?.headers);
     headers.set("Authorization", `Bearer ${accessToken}`);
@@ -296,6 +346,9 @@ async function authenticatedFetchInternal(
 
   for (let attempt = 0; attempt < requestRetryDelays.length; attempt += 1) {
     if (requestRetryDelays[attempt] > 0) await sleep(requestRetryDelays[attempt]);
+    if (authWindow && requestSession && !isCurrentBrowserSession(requestSession)) {
+      throw new AuthSessionRecoveryPendingError();
+    }
 
     const resolved = attempt === 0
       ? await getStableSession()
@@ -306,8 +359,17 @@ async function authenticatedFetchInternal(
     if (expectedUserId && session.user.id !== expectedUserId) {
       throw new AuthSessionRecoveryPendingError();
     }
+    requestSession ??= session;
+    if (authWindow && !isCurrentBrowserSession(requestSession)) {
+      throw new AuthSessionRecoveryPendingError();
+    }
 
     const response = await send(session.access_token);
+    if (authWindow && !isCurrentBrowserSession(session)) {
+      // Do not replay an old request under a new login, or let its late result
+      // change that login's UI/session. This includes successful old-user data.
+      throw new AuthSessionRecoveryPendingError();
+    }
     if (response.status === 428) {
       notifyDeviceVerificationRequired();
       return response;
@@ -317,10 +379,11 @@ async function authenticatedFetchInternal(
         | { error?: unknown }
         | null;
       if (payload?.error === CUSTOMER_SESSION_REVOKED_MESSAGE) {
-        await signOutLocalStable();
-        if (typeof window !== "undefined") {
+        const signedOut = await signOutLocalIfSessionMatches(session);
+        if (signedOut && typeof window !== "undefined" && !getCachedSession()) {
           window.dispatchEvent(new Event(AUTH_SESSION_REQUIRED_EVENT));
         }
+        if (!signedOut) throw new AuthSessionRecoveryPendingError();
         return response;
       }
     }
@@ -352,15 +415,46 @@ export function authenticatedFetchForUser(
 }
 
 export async function signOutStable() {
-  clearGrowthVisitorId();
-  setCachedSession(null);
-  await supabase.auth.signOut();
+  // The ordinary logout button belongs to this browser, not every computer.
+  await signOutLocalStable();
 }
 
-export async function signOutLocalStable() {
+export async function signOutAllSessionsStable() {
+  // Security operations such as a successful password reset still revoke
+  // every provider session; ordinary navigation/logout must not do so.
+  await withBrowserAuthMutation(async () => {
+    clearGrowthVisitorId();
+    setCachedSession(null);
+    await supabase.auth.signOut({ scope: "global" });
+  });
+}
+
+export async function signOutLocalIfSessionMatches(session: Session) {
+  return withBrowserAuthMutation(async () => {
+    if (!isCurrentBrowserSession(session)) return false;
+    // Another tab may have persisted its login before its auth broadcast
+    // reaches this tab. Check the SDK inside the same cross-tab mutation lock.
+    // getSession can implicitly refresh; keep the mutation lock until the
+    // SDK settles rather than releasing it while that refresh still runs.
+    const { data, error } = await supabase.auth.getSession();
+    if (error || !data.session || !isCurrentBrowserSession(session)) return false;
+    if (sessionIdentity(data.session) !== sessionIdentity(session)) {
+      adoptCachedSession(data.session);
+      return false;
+    }
+    await performLocalSignOut();
+    return true;
+  });
+}
+
+async function performLocalSignOut() {
   clearGrowthVisitorId();
   setCachedSession(null);
   await supabase.auth.signOut({ scope: "local" });
+}
+
+export async function signOutLocalStable() {
+  await withBrowserAuthMutation(performLocalSignOut);
 }
 
 export function isEmailVerified(user: User) {

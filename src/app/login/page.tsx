@@ -30,6 +30,7 @@ import {
   recordAuthLoginFailure,
 } from "@/lib/authLoginProtection";
 import { supabase } from "@/lib/supabaseClient";
+import { withBrowserAuthMutation } from "@/lib/browserAuthMutations";
 import { getPublicGoogleIdentityConfig } from "@/lib/googleIdentity";
 import { customerRuntimeExactT } from "@/lib/i18n/customer-runtime-translations";
 import { customerWorkflowExactT } from "@/lib/i18n/customer-workflow-auth-translations";
@@ -192,14 +193,17 @@ export default function LoginPage() {
     setLoading(true);
     setMessage("");
 
-    const response = await supabase.auth
-      .signInWithPassword({
+    const response = await withBrowserAuthMutation(async () => {
+      const result = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password,
         options: requestCaptchaToken
           ? { captchaToken: requestCaptchaToken }
           : undefined,
-      })
+      });
+      if (!result.error) primeStableSession(result.data.session);
+      return result;
+    })
       .catch(() => null)
       .finally(() => {
         authRequestInFlightRef.current = false;
@@ -231,8 +235,6 @@ export default function LoginPage() {
       setLoading(false);
       return;
     }
-
-    primeStableSession(data.session);
 
     clearAuthLoginFailures(getBrowserAuthLoginFailureStorage());
     setPasswordFailureState(EMPTY_AUTH_LOGIN_FAILURE_STATE);
@@ -276,17 +278,18 @@ export default function LoginPage() {
     setGoogleLoading(true);
     setGoogleMessage("");
 
-    const response = await Promise.resolve()
-      .then(() =>
-        supabase.auth.signInWithIdToken({
+    const response = await withBrowserAuthMutation(async () => {
+      const result = await supabase.auth.signInWithIdToken({
           provider: "google",
           token: credential,
           nonce,
           ...(requestCaptchaToken
             ? { options: { captchaToken: requestCaptchaToken } }
             : {}),
-        })
-      )
+      });
+      if (!result.error) primeStableSession(result.data.session);
+      return result;
+    })
       .catch(() => null)
       .finally(() => {
         if (!requestCaptchaToken) return;
@@ -308,8 +311,6 @@ export default function LoginPage() {
       setGoogleLoading(false);
       return;
     }
-
-    primeStableSession(data.session);
 
     clearAuthLoginFailures(getBrowserAuthLoginFailureStorage());
     setPasswordFailureState(EMPTY_AUTH_LOGIN_FAILURE_STATE);

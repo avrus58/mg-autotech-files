@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Loader2, ShieldCheck, Upload } from "lucide-react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabaseClient";
+import { withBrowserAuthMutation } from "@/lib/browserAuthMutations";
 import { enrollFreshGoogleCustomerGuide } from "@/lib/customerOnboarding";
 import {
   authenticatedFetch,
@@ -86,7 +87,11 @@ export default function AuthCallbackPage() {
       let session: Session | null = null;
 
       if (code) {
-        const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+        const { data, error } = await withBrowserAuthMutation(async () => {
+          const result = await supabase.auth.exchangeCodeForSession(code);
+          if (!result.error) primeStableSession(result.data.session);
+          return result;
+        });
 
         if (error) {
           setMessage(
@@ -97,7 +102,6 @@ export default function AuthCallbackPage() {
 
         session = data.session;
         sanitizeSensitiveMeasurementLocation();
-        primeStableSession(session);
       } else {
         const { data } = await supabase.auth.getSession();
 

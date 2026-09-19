@@ -27,6 +27,7 @@ import {
   getPublicAuthCaptchaConfig,
 } from "@/lib/authCaptcha";
 import { supabase } from "@/lib/supabaseClient";
+import { withBrowserAuthMutation } from "@/lib/browserAuthMutations";
 import { enrollCustomerGuide } from "@/lib/customerOnboarding";
 import { getPublicGoogleIdentityConfig } from "@/lib/googleIdentity";
 import { resolveBrowserTransactionalEmailLanguage } from "@/lib/email/language";
@@ -478,8 +479,7 @@ export default function RegisterPage() {
     authRequestInFlightRef.current = true;
     if (requestCaptchaToken) setCaptchaToken(null);
 
-    const response = await Promise.resolve()
-      .then(() => {
+    const response = await withBrowserAuthMutation(() => {
         return supabase.auth.signUp({
           email: cleanEmail,
           password,
@@ -681,8 +681,7 @@ export default function RegisterPage() {
     setGoogleLoading(true);
     setGoogleMessage("");
     setSuccess(false);
-    const response = await Promise.resolve()
-      .then(() => {
+    const response = await withBrowserAuthMutation(() => {
         window.sessionStorage.setItem(OAUTH_REGISTRATION_PROVIDER_KEY, "google");
         const profileDraft = createRegistrationProfileDraft({
           fullName: cleanFullName,

@@ -3,13 +3,20 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { KeyRound, Loader2, MailCheck, RefreshCcw, ShieldCheck } from "lucide-react";
+import type { Session } from "@supabase/supabase-js";
 import {
   resendDeviceCode,
   startDeviceVerification,
   verifyDeviceCode,
   type DeviceVerificationState,
 } from "@/lib/deviceVerificationClient";
-import { signOutLocalStable } from "@/lib/authGuards";
+import {
+  getStableSession,
+  getStableSessionSnapshot,
+  isCurrentBrowserSession,
+  signOutLocalIfSessionMatches,
+  signOutLocalStable,
+} from "@/lib/authGuards";
 import { getSafeLocalRedirectPath } from "@/lib/safeLocalRedirect";
 import { replacePrivateMeasurementDocument } from "@/lib/publicAnalytics";
 import {
@@ -18,6 +25,7 @@ import {
 } from "@/lib/i18n/customer-workflow-auth-translations";
 import { intlLocaleByCode } from "@/lib/i18nConfig";
 import { useActiveLocale } from "@/lib/useActiveLocale";
+import { supabase } from "@/lib/supabaseClient";
 
 function formatCountdown(totalSeconds: number) {
   const safeSeconds = Math.max(0, Math.ceil(totalSeconds));
@@ -38,6 +46,9 @@ export function DeviceVerificationPanel({
   const router = useRouter();
   const locale = useActiveLocale();
   const codeInputRef = useRef<HTMLInputElement | null>(null);
+  const activeRef = useRef(false);
+  const operationRef = useRef(0);
+  const verificationSessionRef = useRef<Session | null>(null);
   const [state, setState] = useState<DeviceVerificationState | null>(null);
   const [code, setCode] = useState("");
   const [rememberDevice, setRememberDevice] = useState(false);
@@ -45,6 +56,19 @@ export function DeviceVerificationPanel({
   const [working, setWorking] = useState<"start" | "verify" | "resend" | null>("start");
   const [retryAt, setRetryAt] = useState(0);
   const [secondsRemaining, setSecondsRemaining] = useState(0);
+
+  const isActiveOperation = useCallback((operation: number, session?: Session | null) => (
+    activeRef.current && operationRef.current === operation &&
+    (!session || isCurrentBrowserSession(session))
+  ), []);
+
+  useEffect(() => {
+    activeRef.current = true;
+    return () => {
+      activeRef.current = false;
+      operationRef.current += 1;
+    };
+  }, []);
 
   const finish = useCallback(() => {
     if (onVerified) {
@@ -73,20 +97,31 @@ export function DeviceVerificationPanel({
     }
   }, [locale]);
 
-  const leaveRevokedSession = useCallback(async () => {
-    await signOutLocalStable();
+  const leaveRevokedSession = useCallback(async (session: Session, operation: number) => {
+    if (!isActiveOperation(operation, session)) return;
+    const signedOut = await signOutLocalIfSessionMatches(session);
+    if (!signedOut || !isActiveOperation(operation) || getStableSessionSnapshot()) return;
     if (replacePrivateMeasurementDocument("/login")) return;
     router.replace("/login");
     router.refresh();
-  }, [router]);
+  }, [isActiveOperation, router]);
 
   const begin = useCallback(async () => {
+    const operation = ++operationRef.current;
+    let session: Session | null = null;
     setWorking("start");
     setMessage("");
     try {
+      const resolved = await getStableSession();
+      if (!isActiveOperation(operation)) return;
+      session = resolved.session;
+      if (!session) throw resolved.error;
+      if (!isActiveOperation(operation, session)) return;
+      verificationSessionRef.current = session;
       const next = await startDeviceVerification();
+      if (!isActiveOperation(operation, session)) return;
       if (next.status === "revoked") {
-        await leaveRevokedSession();
+        await leaveRevokedSession(session, operation);
         return;
       }
       if (next.status !== "required") {
@@ -94,8 +129,11 @@ export function DeviceVerificationPanel({
         return;
       }
       applyState(next);
-      window.setTimeout(() => codeInputRef.current?.focus(), 0);
+      window.setTimeout(() => {
+        if (isActiveOperation(operation, session)) codeInputRef.current?.focus();
+      }, 0);
     } catch {
+      if (!isActiveOperation(operation, session)) return;
       setMessage(
         customerWorkflowExactT(
           locale,
@@ -103,13 +141,36 @@ export function DeviceVerificationPanel({
         ),
       );
     } finally {
-      setWorking(null);
+      if (isActiveOperation(operation, session)) setWorking(null);
     }
-  }, [applyState, finish, leaveRevokedSession, locale]);
+  }, [applyState, finish, isActiveOperation, leaveRevokedSession, locale]);
 
   useEffect(() => {
-    const timeout = window.setTimeout(() => void begin(), 0);
-    return () => window.clearTimeout(timeout);
+    let timeout = window.setTimeout(() => void begin(), 0);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      // Supabase work must run outside its auth callback/lock. Recheck the
+      // logical session after the shared auth listener has adopted the event.
+      window.clearTimeout(timeout);
+      timeout = window.setTimeout(() => {
+        if (!activeRef.current) return;
+        if (verificationSessionRef.current && isCurrentBrowserSession(verificationSessionRef.current)) return;
+        operationRef.current += 1;
+        verificationSessionRef.current = null;
+        setState(null);
+        setCode("");
+        setRememberDevice(false);
+        setMessage("");
+        setRetryAt(0);
+        setSecondsRemaining(0);
+        setWorking(session ? "start" : null);
+        if (session) void begin();
+      }, 0);
+    });
+    return () => {
+      window.clearTimeout(timeout);
+      subscription.unsubscribe();
+      operationRef.current += 1;
+    };
   }, [begin]);
 
   useEffect(() => {
@@ -123,16 +184,24 @@ export function DeviceVerificationPanel({
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!state?.challengeId || !/^\d{6}$/.test(code) || working) return;
+    const operation = ++operationRef.current;
+    let session: Session | null = null;
     setWorking("verify");
     setMessage("");
     try {
+      const resolved = await getStableSession();
+      if (!isActiveOperation(operation)) return;
+      session = resolved.session;
+      if (!session) throw resolved.error;
+      if (!isActiveOperation(operation, session)) return;
       const next = await verifyDeviceCode({
         challengeId: state.challengeId,
         code,
         rememberDevice: allowRememberDevice && rememberDevice,
       });
+      if (!isActiveOperation(operation, session)) return;
       if (next.status === "revoked") {
-        await leaveRevokedSession();
+        await leaveRevokedSession(session, operation);
         return;
       }
       if (next.status === "verified" || next.status === "not_required") {
@@ -141,24 +210,35 @@ export function DeviceVerificationPanel({
       }
       applyState({ ...state, ...next });
       setCode("");
-      window.setTimeout(() => codeInputRef.current?.focus(), 0);
+      window.setTimeout(() => {
+        if (isActiveOperation(operation, session)) codeInputRef.current?.focus();
+      }, 0);
     } catch {
+      if (!isActiveOperation(operation, session)) return;
       setMessage(
         customerWorkflowExactT(locale, "The code could not be verified."),
       );
     } finally {
-      setWorking(null);
+      if (isActiveOperation(operation, session)) setWorking(null);
     }
   };
 
   const resend = async () => {
     if (!state?.challengeId || secondsRemaining > 0 || working) return;
+    const operation = ++operationRef.current;
+    let session: Session | null = null;
     setWorking("resend");
     setMessage("");
     try {
+      const resolved = await getStableSession();
+      if (!isActiveOperation(operation)) return;
+      session = resolved.session;
+      if (!session) throw resolved.error;
+      if (!isActiveOperation(operation, session)) return;
       const next = await resendDeviceCode(state.challengeId);
+      if (!isActiveOperation(operation, session)) return;
       if (next.status === "revoked") {
-        await leaveRevokedSession();
+        await leaveRevokedSession(session, operation);
         return;
       }
       applyState({ ...state, ...next });
@@ -192,18 +272,23 @@ export function DeviceVerificationPanel({
           ),
         );
       }
-      window.setTimeout(() => codeInputRef.current?.focus(), 0);
+      window.setTimeout(() => {
+        if (isActiveOperation(operation, session)) codeInputRef.current?.focus();
+      }, 0);
     } catch {
+      if (!isActiveOperation(operation, session)) return;
       setMessage(
         customerWorkflowExactT(locale, "A new code could not be sent."),
       );
     } finally {
-      setWorking(null);
+      if (isActiveOperation(operation, session)) setWorking(null);
     }
   };
 
   const handleDifferentAccount = async () => {
+    const operation = ++operationRef.current;
     await signOutLocalStable();
+    if (!isActiveOperation(operation) || getStableSessionSnapshot()) return;
     if (replacePrivateMeasurementDocument("/login")) return;
     router.replace("/login");
     router.refresh();

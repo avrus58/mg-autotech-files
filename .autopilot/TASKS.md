@@ -6,6 +6,26 @@
 
 ## In Progress
 
+### MANUAL-20260919-AUTH-SESSION-RECOVERY [P1] Prevent stale checks from ending a newer browser session
+
+Fingerprint: `auth|browser-session|stale-response-and-global-logout|session-bound-recovery`
+
+Scope: owner-reported admin logout seconds after login on another computer.
+Reproduce delayed-response and auth-check races locally, bind their effects to
+the originating session, keep confirmed revocation fail-closed, and restrict
+ordinary logout to the current browser session. Preserve UI, translations,
+authorization and device verification. No new dependency or schema change.
+
+Evidence: executable regressions reproduce stale-response logout and late SDK
+read resurrection. Live application source matches c08b842683bd; the failing
+remote browser has not been captured, so incident root cause is not proven.
+Work is isolated from owner edits. Full tests 1703/1703, lint, full typecheck,
+i18n and independent review pass. Webpack compilation/prerender succeeds;
+in-place npm postbuild rejects the shared dependency junction. An independent
+physical standalone copy passes the unchanged strict artifact check. Release
+must rebuild source, then verify the affected browser; the live incident is not
+closed. Production publication needs a fresh explicit owner release instruction.
+
 ## Blocked
 
 ### MANUAL-20260828-ADS-MEASUREMENT-FINAL-HARDENING [P0] Reklam edinimi, consent ve dogrulanmis donusum final kapilari

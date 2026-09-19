@@ -1,5 +1,45 @@
 # Otonom calisma gunlugu
 
+## 2026-09-19 Browser session recovery - Implementation verified, not deployed
+
+- Owner reports Chrome admin login followed by the login-required screen after
+  2-3 seconds on other computers. Remote browser runtime evidence is unavailable;
+  a specific provider or device cause has not been established.
+- Created isolated codex/auth-session-recovery-20260919 checkout at 1a9f0d13,
+  whose application parent is c08b842683bd. Read-only VPS container metadata
+  confirms the live application still uses c08b842683bd. Owner changes excluded.
+- Implemented session-correlated response/check fences in authGuards,
+  BrowserAuthBoundary and DeviceVerificationPanel. Browser auth mutation queue
+  coordinates all five explicit login/signup/code-exchange paths with logout,
+  including delayed cross-tab broadcasts and implicit-refresh-aware preflight.
+  Ordinary logout is local-only; password-reset global logout and confirmed
+  current-session revocation stay enforced. No verification bypass.
+- Final full tests PASS 1703/1703 (52 new regression cases), lint PASS, full web
+  and uploader typecheck PASS. Independent targeted review/test PASS with no
+  remaining actionable P0-P2 finding. Actual installed Auth SDK negative and
+  positive controls reproduce and then prevent the delayed-logout race.
+- Mandatory i18n PASS: 12 locales, 2472 reviewed sources per non-English locale,
+  zero clean English fallbacks; client bundle suite 37/37. No visible copy or
+  layout changes. Webpack compile/typecheck/prerender PASS, 282 pages generated.
+- Original npm build exits 1 at postbuild because the reused node_modules
+  junction escapes the standalone artifact. No check was disabled. A new,
+  non-destructive standalone copy with physical identical dependencies passes
+  the unchanged strict artifact validator, including anonymous compiled route
+  401, PNG/PDF generation and zero external fetches. Do not describe the original
+  in-place npm build command as exit 0; rebuild from source for any release.
+  An earlier mid-edit build and obsolete exact-code test assertions were also
+  corrected; failed logs remain as diagnostic history, not passing evidence.
+- Connected Chrome admin session remained authenticated through navigation and
+  back. Read-only Production Supabase UI: single-session off; time-box/inactivity
+  0; access token 3600s; replay protection enabled/reuse 10s. No settings changed.
+  The failing remote computer was not captured; its exact trigger remains
+  unproven. Authenticated persistence there must be verified after any release.
+- No customer data, credentials, env changes, schema/migration, pricing, UI copy,
+  dependency installation, push or Production mutation. Existing dependencies
+  reused through a local node_modules junction; build uses Webpack explicitly.
+- Work remains awaiting an explicit owner Production release instruction, not
+  marked as a completed live incident. Receipt: docs/auth-session-hotfix-2026-09-19.md.
+
 ## 2026-09-07 Customer activation - Production released
 
 - Owner explicitly approved publication with `evet`. Released immutable source
