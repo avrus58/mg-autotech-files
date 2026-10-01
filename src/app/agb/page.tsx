@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { LegalPageShell, LegalSection } from "@/components/legal/LegalPageShell";
-import { absoluteUrl } from "@/lib/seo";
+import { absoluteUrl, companyAddress } from "@/lib/seo";
 
 export const metadata: Metadata = {
   title: "Allgemeine Geschäftsbedingungen",
@@ -12,9 +12,9 @@ export const metadata: Metadata = {
 
 export default function AgbPage() {
   return (
-    <LegalPageShell eyebrow="Vertragsbedingungen" title="Allgemeine Geschäftsbedingungen">
+    <LegalPageShell eyebrow="Vertragsbedingungen" title="Allgemeine Geschäftsbedingungen" updatedAt="1. Oktober 2026">
       <LegalSection title="1. Anbieter und Geltungsbereich">
-        <p>Diese Allgemeinen Geschäftsbedingungen gelten für Verträge über die MG AutoTech File-Service-Plattform zwischen MG AutoTech, Inhaber Melih Gökkaya, Böckinger Str. 32, 70437 Stuttgart, und dem jeweiligen Kunden.</p>
+        <p>Diese Allgemeinen Geschäftsbedingungen gelten für Verträge über die MG AutoTech File-Service-Plattform zwischen MG AutoTech, Inhaber Melih Gökkaya, {companyAddress.streetAddress}, {companyAddress.postalCode} {companyAddress.addressLocality}, und dem jeweiligen Kunden.</p>
         <p>Das Vehicle Selector Widget wird ausschließlich Unternehmern, Werkstätten und sonstigen gewerblichen Kunden angeboten. Für Verbraucher gelten ergänzend die zwingenden gesetzlichen Verbraucherschutzvorschriften.</p>
       </LegalSection>
 

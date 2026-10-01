@@ -1,5 +1,21 @@
 # Otonom calisma gunlugu
 
+## 2026-10-01 — Owner-requested current address correction implemented locally
+
+- Owner-confirmed address: Saarstraße 4, 71679 Asperg. Root verified the actual
+  healthy live01ba96a9fe00 image pair and clean abae4b3 documentation descendant;
+  address-only branch codex/file-address-asperg-current-20261001 excludes all
+  unrelated work and preserves current authentication fixes.
+- Shared postal/schema/footer address, five legal recipients, Contact metadata
+  and About location with all12 locale copies updated. Focused actual SSR and
+  localization suites15/15 PASS; diff whitespace check PASS.
+- Mandatory check:i18n PASS:2473 reviewed sources per non-English locale,
+  zero fallback,24 dynamic occurrences/21 signatures, fresh generated catalogs
+  and37/37 client-bundle tests. No generated catalog write was required.
+- No customer data/form, auth/payment, schema, dependency, environment or policy
+  change. Full gates, independent review and live release remain root steps.
+- Receipt/acceptance plan: docs/address-asperg-2026-10-01.md.
+
 ## 2026-09-20 - Owner-approved clock-skew correction published
 
 - Owner's new `evet` authorizes only the prepared two-runtime-file correction.

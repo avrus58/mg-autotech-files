@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { LegalPageShell, LegalSection } from "@/components/legal/LegalPageShell";
-import { absoluteUrl } from "@/lib/seo";
+import { absoluteUrl, companyAddress } from "@/lib/seo";
 
 export const metadata: Metadata = {
   title: "Impressum",
@@ -12,9 +12,9 @@ export const metadata: Metadata = {
 
 export default function ImpressumPage() {
   return (
-    <LegalPageShell eyebrow="Anbieterkennzeichnung" title="Impressum">
+    <LegalPageShell eyebrow="Anbieterkennzeichnung" title="Impressum" updatedAt="1. Oktober 2026">
       <LegalSection title="Angaben gemäß § 5 DDG">
-        <p><strong className="text-white">MG AutoTech</strong><br />Inhaber: Melih Gökkaya<br />Böckinger Str. 32<br />70437 Stuttgart<br />Deutschland</p>
+        <p><strong className="text-white">MG AutoTech</strong><br />Inhaber: Melih Gökkaya<br />{companyAddress.streetAddress}<br />{companyAddress.postalCode} {companyAddress.addressLocality}<br />Deutschland</p>
         <p>Gewerbeanmeldung nach § 14 GewO beim zuständigen Amt der Landeshauptstadt Stuttgart.</p>
       </LegalSection>
 
@@ -27,7 +27,7 @@ export default function ImpressumPage() {
       </LegalSection>
 
       <LegalSection title="Verantwortlich für den Inhalt">
-        <p>Verantwortlich für journalistisch-redaktionelle Inhalte nach § 18 Abs. 2 MStV: Melih Gökkaya, Böckinger Str. 32, 70437 Stuttgart.</p>
+        <p>Verantwortlich für journalistisch-redaktionelle Inhalte nach § 18 Abs. 2 MStV: Melih Gökkaya, {companyAddress.streetAddress}, {companyAddress.postalCode} {companyAddress.addressLocality}.</p>
       </LegalSection>
 
       <LegalSection title="Verbraucherstreitbeilegung">

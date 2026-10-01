@@ -6,6 +6,17 @@
 
 ## In Progress
 
+### MANUAL-20261001-CURRENT-BUSINESS-ADDRESS [P1] Synchronize the owner-confirmed Asperg address
+
+Fingerprint: `business-location|public-footer-contact-legal-schema|outdated-stuttgart-address|owner-confirmed-asperg-address`
+
+Address-only implementation complete on the clean current Production source
+descendant. All12 locale copies, shared Organization/footer/contact address and
+exact legal recipients agree. Focused SSR/localization15/15 PASS; full gates,
+independent review and live verification remain the root release steps.
+No policy, payment, auth, customer-data, migration or environment change.
+Receipt: `docs/address-asperg-2026-10-01.md`.
+
 ### MANUAL-20260919-AUTH-SESSION-RECOVERY [P1] Prevent stale checks from ending a newer browser session
 
 Fingerprint: `auth|browser-session|stale-response-and-global-logout|session-bound-recovery`

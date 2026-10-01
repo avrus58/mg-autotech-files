@@ -14,9 +14,9 @@ export const siteName = "MG AutoTech File Service";
 export const contactEmail = "info@mgautotech.de";
 export const contactPhone = "+49 151 51561670";
 export const companyAddress = {
-  streetAddress: "Böckinger Str. 32",
-  postalCode: "70437",
-  addressLocality: "Stuttgart",
+  streetAddress: "Saarstraße 4",
+  postalCode: "71679",
+  addressLocality: "Asperg",
   addressCountry: "DE",
 } as const;
 

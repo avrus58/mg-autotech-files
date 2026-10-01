@@ -16,7 +16,7 @@ import { absoluteUrl, companyAddress, contactEmail, contactPhone, organizationJs
 import { getServerLocale } from "@/lib/serverLocale";
 
 const title = "Contact MG AutoTech";
-const description = "Contact MG AutoTech in Stuttgart for ECU and TCU file-service questions, order support, compatibility checks and customer-account assistance.";
+const description = "Contact MG AutoTech in Asperg for ECU and TCU file-service questions, order support, compatibility checks and customer-account assistance.";
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getServerLocale();

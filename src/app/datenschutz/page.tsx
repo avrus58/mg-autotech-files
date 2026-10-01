@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { LegalPageShell, LegalSection } from "@/components/legal/LegalPageShell";
-import { absoluteUrl } from "@/lib/seo";
+import { absoluteUrl, companyAddress } from "@/lib/seo";
 
 export const metadata: Metadata = {
   title: "Datenschutzerklärung",
@@ -22,10 +22,10 @@ export default function DatenschutzPage() {
     <LegalPageShell
       eyebrow="Datenschutz nach DSGVO"
       title="Datenschutzerklärung"
-      updatedAt="29. August 2026"
+      updatedAt="1. Oktober 2026"
     >
       <LegalSection title="1. Verantwortlicher">
-        <p><strong className="text-white">MG AutoTech, Inhaber Melih Gökkaya</strong><br />Böckinger Str. 32, 70437 Stuttgart, Deutschland<br />E-Mail: <a className="font-bold text-white hover:text-red-400" href="mailto:info@mgautotech.de">info@mgautotech.de</a><br />Telefon: <a className="font-bold text-white hover:text-red-400" href="tel:+4915151561670">+49 151 51561670</a></p>
+        <p><strong className="text-white">MG AutoTech, Inhaber Melih Gökkaya</strong><br />{companyAddress.streetAddress}, {companyAddress.postalCode} {companyAddress.addressLocality}, Deutschland<br />E-Mail: <a className="font-bold text-white hover:text-red-400" href="mailto:info@mgautotech.de">info@mgautotech.de</a><br />Telefon: <a className="font-bold text-white hover:text-red-400" href="tel:+4915151561670">+49 151 51561670</a></p>
       </LegalSection>
 
       <LegalSection title="2. Verarbeitete Daten und Zwecke">

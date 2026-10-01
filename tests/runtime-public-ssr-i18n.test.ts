@@ -58,7 +58,7 @@ const auditedMetadataCases: Array<{
   scopes: readonly RuntimePublicScope[];
 }> = [
   { title: aboutTitle, description: aboutDescription, scopes: ["core"] },
-  { title: "Contact MG AutoTech", description: "Contact MG AutoTech in Stuttgart for ECU and TCU file-service questions, order support, compatibility checks and customer-account assistance.", scopes: ["core"] },
+  { title: "Contact MG AutoTech", description: "Contact MG AutoTech in Asperg for ECU and TCU file-service questions, order support, compatibility checks and customer-account assistance.", scopes: ["core"] },
   { title: "Vehicle ECU & TCU File Service by Brand", description: "Technical ECU and TCU file-service guides for BMW, Mercedes-Benz, Audi, Volkswagen, Porsche, Opel, Renault and Peugeot workshop requests.", scopes: ["core", "vehicle"] },
   { title: "ECU & TCU Platform File-Service Guides", description: "Technical workshop guides for Bosch EDC17, MD1, MG1, Continental SIMOS and SID, Delphi DCM, Denso and transmission controllers.", scopes: ["core", "vehicle"] },
   { title: "Free ECU Workshop Tools", description: "Free automotive workshop tools from MG AutoTech: check file readiness, build request briefs, plan ECU read methods and run safe browser-based calculations.", scopes: ["core", "tools"] },

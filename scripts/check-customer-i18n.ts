@@ -276,6 +276,8 @@ const invariantValues = new Set([
   "John Doe",
   "Stuttgart",
   "Böckinger Str. 32",
+  "Asperg",
+  "Saarstraße 4",
   "DE...",
   "MG AutoTech AI File Expert",
   "AI File Expert",

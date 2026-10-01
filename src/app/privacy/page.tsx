@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { LegalPageShell, LegalSection } from "@/components/legal/LegalPageShell";
-import { absoluteUrl } from "@/lib/seo";
+import { absoluteUrl, companyAddress } from "@/lib/seo";
 
 export const metadata: Metadata = {
   title: "Privacy information",
@@ -24,7 +24,7 @@ export default function PrivacyPage() {
       language="en"
       eyebrow="Privacy information"
       title="Privacy policy"
-      updatedAt="29 August 2026"
+      updatedAt="1 October 2026"
     >
       <p className="mb-7 rounded-lg border border-amber-700/30 bg-amber-950/20 p-4 text-sm text-amber-100">
         This English version is provided for information. The German{" "}
@@ -35,7 +35,7 @@ export default function PrivacyPage() {
       </p>
 
       <LegalSection title="1. Controller">
-        <p><strong className="text-white">MG AutoTech, owner Melih Gökkaya</strong><br />Böckinger Str. 32, 70437 Stuttgart, Germany<br />E-mail: <a className="font-bold text-white hover:text-red-400" href="mailto:info@mgautotech.de">info@mgautotech.de</a><br />Telephone: <a className="font-bold text-white hover:text-red-400" href="tel:+4915151561670">+49 151 51561670</a></p>
+        <p><strong className="text-white">MG AutoTech, owner Melih Gökkaya</strong><br />{companyAddress.streetAddress}, {companyAddress.postalCode} {companyAddress.addressLocality}, Germany<br />E-mail: <a className="font-bold text-white hover:text-red-400" href="mailto:info@mgautotech.de">info@mgautotech.de</a><br />Telephone: <a className="font-bold text-white hover:text-red-400" href="tel:+4915151561670">+49 151 51561670</a></p>
       </LegalSection>
 
       <LegalSection title="2. Data processed and purposes">
