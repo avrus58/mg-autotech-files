@@ -27,10 +27,10 @@ Owner-confirmed operating address from 1 October 2026:
   references agree with the owner-confirmed address.
 - [x] Regression checks verify Organization JSON-LD for every supported locale,
   actual server-rendered legal recipients, localized footers and metadata.
-- [ ] Mandatory i18n, lint, typecheck, full tests and production build pass.
-- [ ] Anonymous mobile/laptop checks verify initial HTML, address visibility,
+- [x] Mandatory i18n, lint, typecheck, full tests and production build pass.
+- [x] Anonymous mobile/laptop checks verify initial HTML, address visibility,
   language, overflow and unchanged contact links.
-- [ ] Root records the immutable review, actual release and retained rollback
+- [x] Root records the immutable review, actual release and retained rollback
   pair; immediate live address/readiness checks pass after publication.
 
 ## Local implementation evidence
@@ -59,5 +59,10 @@ Owner-confirmed operating address from 1 October 2026:
   occurrences/21 signatures. The generated catalog freshness check and
   **37/37** client-bundle tests passed. No generated files need regeneration.
 
-Full validation, independent review and actual publication remain root-agent
-release steps. This document is not yet a completed deployment receipt.
+Full validation and actual publication are complete for the bounded address
+scope. See `docs/production-release-2026-10-01-address.md` for commands, genuine
+initial failures and corrective validation, immutable runtime identity, the
+33/33 release smoke, 65/65 independent address checks, 39/39 browser journeys,
+20/20 retained assets, rollback pair and explicit pre-existing issue boundaries.
+This does not claim that unrelated platform-wide language/contrast defects were
+repaired as part of the address correction.

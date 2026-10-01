@@ -4,18 +4,25 @@
 
 ## Ready
 
-## In Progress
+## Completed manual releases
 
 ### MANUAL-20261001-CURRENT-BUSINESS-ADDRESS [P1] Synchronize the owner-confirmed Asperg address
 
 Fingerprint: `business-location|public-footer-contact-legal-schema|outdated-stuttgart-address|owner-confirmed-asperg-address`
 
-Address-only implementation complete on the clean current Production source
-descendant. All12 locale copies, shared Organization/footer/contact address and
-exact legal recipients agree. Focused SSR/localization15/15 PASS; full gates,
-independent review and live verification remain the root release steps.
+Status: **Done — published and verified on 1 October 2026.**
+Address-only source `dec7f5be3197` is live as the healthy app/analyzer pair.
+All 12 locale copies, shared Organization/footer/contact address and exact legal
+recipients agree. Full tests 1,794/1,794; i18n, lint, types, both production
+builders and the unchanged Webpack performance gate pass. Immediate GET-only
+release smoke 33/33, independent address checks 65/65, browser journeys 39/39
+and retained assets 20/20 pass. Prior pair `01ba96a9fe00` remains available.
+Known unchanged prefixless initial-language and copyright contrast issues are
+explicitly deferred, not relabelled as fixed or green.
 No policy, payment, auth, customer-data, migration or environment change.
-Receipt: `docs/address-asperg-2026-10-01.md`.
+Receipt: `docs/production-release-2026-10-01-address.md`.
+
+## In Progress
 
 ### MANUAL-20260919-AUTH-SESSION-RECOVERY [P1] Prevent stale checks from ending a newer browser session
 

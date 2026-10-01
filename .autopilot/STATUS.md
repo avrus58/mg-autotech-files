@@ -1,6 +1,6 @@
 # Otonom calisma gunlugu
 
-## 2026-10-01 — Owner-requested current address correction implemented locally
+## 2026-10-01 — Owner-requested current address correction published
 
 - Owner-confirmed address: Saarstraße 4, 71679 Asperg. Root verified the actual
   healthy live01ba96a9fe00 image pair and clean abae4b3 documentation descendant;
@@ -12,9 +12,20 @@
 - Mandatory check:i18n PASS:2473 reviewed sources per non-English locale,
   zero fallback,24 dynamic occurrences/21 signatures, fresh generated catalogs
   and37/37 client-bundle tests. No generated catalog write was required.
+- Full suite 1,794/1,794, lint, web/uploader typecheck, both production builders
+  and unchanged Webpack performance gate pass. Genuine initial concurrency and
+  builder-specific gate failures are documented, not hidden.
+- Immutable source `dec7f5be3197` is live: app/analyzer healthy, zero restarts;
+  Linux build 282/282 pages, strict 69 assets/compiled 401/valid PNG+PDF.
+- Immediate GET-only smoke 33/33; independent address/schema/native-copy 65/65,
+  mobile/laptop/no-JS/switch journeys 39/39 and retained assets 20/20 pass.
+  Previous pair `01ba96a9fe00` remains recorded and available for rollback.
+- Existing 22 prefixless core opening-lang variants and six copyright contrast
+  findings reproduce unchanged; this address release does not claim their fix.
 - No customer data/form, auth/payment, schema, dependency, environment or policy
-  change. Full gates, independent review and live release remain root steps.
-- Receipt/acceptance plan: docs/address-asperg-2026-10-01.md.
+  meaning change. This was a bounded owner-requested release, not an unattended
+  autopilot deployment or external-profile edit.
+- Completed receipt: docs/production-release-2026-10-01-address.md.
 
 ## 2026-09-20 - Owner-approved clock-skew correction published
 
