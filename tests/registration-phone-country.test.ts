@@ -3,6 +3,12 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import test from "node:test";
 import { countryCodes } from "../src/lib/countries";
+import { supportedLocales } from "../src/lib/i18nConfig";
+import {
+  customerRuntimeExactT,
+  customerRuntimeTranslations,
+} from "../src/lib/i18n/customer-runtime-translations";
+import { customerWorkflowExactT } from "../src/lib/i18n/customer-workflow-translations";
 import {
   countryCallingCodes,
   countryCodeToFlag,
@@ -74,6 +80,22 @@ test("phone options are localized, operational and show flag before code", () =>
   assert.equal(germany?.label, "🇩🇪 +49 · Germany");
   assert.equal(unitedStates?.label, "🇺🇸 +1 · United States");
   assert.equal(options.some((option) => option.code === "AQ"), false);
+});
+
+test("empty calling-code controls use the reviewed catalog in every locale", () => {
+  assert.equal(Object.hasOwn(customerRuntimeTranslations, "Code"), true);
+  for (const { code } of supportedLocales) {
+    assert.equal(
+      customerRuntimeExactT(code, "Code"),
+      customerWorkflowExactT(code, "Code"),
+      `${code} calling-code placeholder must use its reviewed translation`
+    );
+  }
+  assert.equal(
+    phoneField.match(/customerRuntimeExactT\(locale, "Code"\)/g)?.length,
+    2,
+    "both visible placeholder and accessible native option use the same catalog"
+  );
 });
 
 test("late detection cannot replace a selected phone country", () => {
