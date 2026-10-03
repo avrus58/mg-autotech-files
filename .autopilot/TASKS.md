@@ -276,26 +276,39 @@ Expected validation command: `npm run lint` and `npm run typecheck`.
 
 Fingerprint: `acquisition|register-verification|resend-error-reopens-form-and-hidden-captcha|persistent-visible-fail-closed-recovery`
 
-Done as a locally validated candidate in the clean `1075a75` worktree; not pushed
-or deployed. Account creation remains complete after verification resend
-network/API failures, recovery retains one active CAPTCHA and the obsolete form
-unmounts. Fresh-token, misconfiguration, duplicate-operation, redirect and
-verification boundaries remain unchanged. Existing 12-locale copy is reused.
+Done and owner-authorized Production release on exact source
+`61d82840aac725595bdaffb23a8e877133b720b5`, runtime
+byte-identical to `5eb950936abf00f53b9fbbc08a6dc94d0370e289`. Resend network/API
+failure preserves the created account and one visible fresh-token challenge;
+inactive signup challenges unmount. No auth policy or schema change.
 
-Final checks: focused 52/52, full 1812/1812, lint, web/desktop typecheck, i18n
-(12 locales, 2473 strings, 37/37 bundle tests), diff review and fresh standard
-`npm run build -- --webpack` including unchanged strict postbuild all PASS.
-Initial junction packaging exit 1 remains recorded; matching existing physical
-dependencies resolved the topology without installation or validator changes.
-Final build `aHsri9ykUbjB3pgGt5HPf`: 282/282 pages, 43 required assets, compiled
-unauthenticated 401, valid synthetic PNG/PDF, zero external fetches.
-Independent frozen-source review found no scoped blocker. EN/DE/TR/ZH laptop
-and mobile loopback fixture QA passed with actual JSX/CSS/catalogs and synthetic
-SDK/widget; real CAPTCHA/email delivery/hydrated locale switching are not claimed.
-No schema, auth policy, consent, price, new dependency or live customer change.
-Receipt: `.autopilot/runtime/register-recovery-validation-receipt.json`;
-acquisition scope/evidence: `docs/acquisition-money-audit-2026-10-03.md`.
-Production publication remains separately owner-authorized.
+Actual hydrated QA found an existing phone `Code` fallback outside the earlier
+synthetic fixture. The same-surface fix reuses the reviewed master row for all
+11 non-English locales. The first final full test run was 1812/1813 because its
+generic assertion rejected native-identical DE/NL/FR spelling. Root's QA-only
+commit verifies exactly those three master pairs; no broader gate exemption.
+Historical failed/helper/junction receipts remain preserved, not relabelled.
+
+Final checks: focused 68/68, full 1813/1813, i18n 37/37, lint, web/desktop types,
+fresh standard Production-mode build exit 0 (`-0Dp2KWW-biIU51yrk_gz`, 282 pages,
+unchanged strict 43-asset/401/PNG/PDF/zero-fetch checks). Independent review:
+34/34 and five rejected malformed assertion variants, zero scoped blockers.
+Fresh actual hydrated EN/DE/TR/ZH laptop/mobile 8 views, real menu transitions,
+reload persistence, visible/native phone labels, no overflow or console defects
+PASS. Next CLI local-preview path is not deployed standalone/runtime proof.
+Raw prefixless initial HTML language remains a separate unchanged boundary;
+no JavaScript-disabled, real signup/email/payment or conversion claim.
+
+Final receipt: `.autopilot/runtime/register-recovery-final-validation-receipt.json`;
+browser: `.autopilot/runtime/register-hydrated-browser-final-qa/receipt.json`.
+Release/root-only smoke: `docs/production-release-2026-10-03-register-recovery.md`.
+Worker performed no commit, installation, schema, secret, real data or publication.
+Root published `61d82840aac7` on 3 October; deploy exit 0, app/analyzer healthy
+with zero restarts, readiness 200/no-store, pre-smoke 57/57 and immediate
+post-smoke 58/58. Twenty sampled previous assets remain byte-identical; current
+register chunks contain the new recovery marker. Rollback pair `dec7f5be3197`
+is retained. Root stopped its owned local preview and recorded exact bounded
+live evidence in the release receipt; no actual signup/email/payment was made.
 
 ### MANUAL-20260912-REQUEST-NOTIFICATION-DEADLINE [P1] Complete created requests when email transport stalls
 

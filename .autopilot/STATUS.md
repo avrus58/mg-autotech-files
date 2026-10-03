@@ -6717,3 +6717,123 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
   `C:/Users/gokka/Documents/Codex/acquisition-recovery-artifacts-20261003/physical-artifact`
   (approximately 0.77 GB). Candidate `.next`, physical dependencies, original
   shared dependencies and owner files remain intact.
+
+## 2026-10-03 — Registration release follow-up: existing phone-code translation (validated locally)
+
+- Fresh gate run started 15:29 UTC against exact final source commit
+  `5eb950936abf00f53b9fbbc08a6dc94d0370e289` (parent `12784331`). The original
+  receipts and source checks remain historical and are not relabelled final.
+- Actual built/hydrated release QA discovered the existing empty calling-code
+  label still fell back to English outside the earlier recovery fixture. Root
+  added only the existing reviewed master `Code` row to the runtime catalog
+  (all 11 non-English locales) and one 12-locale parity/two-use regression. No
+  component, recovery handler, auth policy, schema, consent, price or dependency
+  change; raw initial HTML language distinctions are not silently marked fixed.
+- Frozen catalog SHA256:
+  `D888995F8CB03BA66C0C3E9D947F3F9E5651D3048BC7EE47BBBB82FF94723DD1`;
+  phone test `C6B99D3FEF92DD575297FD2EDF036337A991138AFB11ED6EDF21A95000C65ED6`.
+  RegisterPage/recovery test/locks/checker remain identical to the original review.
+- New test imports are pure country/phone/i18n catalogs and configuration; master
+  catalog import is test-only and adds nothing to the client dependency graph.
+  Worker targeted register/acquisition/CAPTCHA/phone suite 59/59 PASS. Independent
+  frozen cumulative review by `verification_recovery_review` found no scoped
+  blocker and reran recovery/phone 25/25 with cumulative diff check PASS.
+- Full i18n, lint, web/desktop typecheck, full test and fresh standard build are
+  being repeated with OS-only child environment and synthetic `.invalid` config,
+  using the already verified physical installed dependencies. Owned built-browser
+  port 3185 stopped before rebuild. Final refreshed built-browser QA remains
+  required; task is In Progress, not accepted/published. New ignored receipt:
+  `.autopilot/runtime/register-recovery-final-validation-receipt.json`.
+- Final-source i18n 37/37 and web/desktop typecheck passed. First lint enumerated
+  the subsequently removed ignored browser-launch helper and failed on two
+  CommonJS require imports in that helper only; unchanged lint rerun passed.
+  Full test finished 1812/1813: the existing generic runtime no-fallback assertion
+  rejects native-identical German `Code` (also reviewed Dutch/French), despite
+  exact parity with the existing master row. The unchanged mandatory i18n gate
+  passed. Candidate `5eb9509` is not accepted; build is paused while root reviews
+  a strictly source-and-locale-bound test-only correction. No validator bypass,
+  new translation or runtime source change was made by this worker.
+- Root approved the exact test-only correction and froze it as full source
+  `61d82840aac725595bdaffb23a8e877133b720b5`; runtime remains byte-identical to
+  `5eb9509`. Corrected test SHA256:
+  `99281F346B86BC6D2BA52BE44973E79E3EBC1282090D01A11A8F8C5AAF3C274C`.
+  `Code` in DE/NL/FR must equal the existing reviewed master and the actual
+  source-identical set must contain exactly those three pairs; every other pair
+  still asserts inequality. No global allowlist or mandatory gate change.
+  Independent reviewer reran 34/34 and executed the actual assertion against
+  five malformed in-memory cases, all rejected. Worker expanded focused suite
+  68/68 PASS. Full gates are being repeated against this reproducible final
+  source; previous full failure remains recorded rather than overwritten.
+- Reproducible full source `61d8284` now passed focused 68/68, full 1813/1813,
+  check:i18n 37/37, lint and web/desktop typecheck. The fresh standard OS-only,
+  synthetic-config `npm run build -- --webpack` exited 0 at 15:45:34 UTC with
+  build ID `-0Dp2KWW-biIU51yrk_gz`: unchanged prebuild 37/37, Webpack/TypeScript,
+  282/282 generated pages and strict postbuild 43 assets, unauthenticated 401,
+  valid PNG/PDF and zero external fetches. All source/test/lock/checker frozen
+  hashes still match; only QA documentation is dirty. Sibling browser worker
+  was notified of this exact fresh artifact for real hydrated acceptance.
+  Final release receipt belongs to root at
+  `docs/production-release-2026-10-03-register-recovery.md`; live promotion and
+  smoke are root responsibilities, not performed by this worker.
+- Fresh real hydrated IAB acceptance passed on that exact build/source: EN,
+  DE, TR and ZH at 1366x768 and 390x844 (8 views), actual language-menu
+  transitions and TR/ZH reload persistence, one form, zero horizontal overflow,
+  zero warning/error console logs. Both visible and native calling-code labels
+  now read `Kod`/`代码` for TR/ZH. No form, CAPTCHA, account, email or payment
+  submission; recovery outcomes remain bounded to the actual-handler/JSX tests.
+  Distinct fresh receipt:
+  `.autopilot/runtime/register-hydrated-browser-final-qa/receipt.json`, SHA256
+  `E4AD98DFB25C781AEF7F004DE2E53DCF9278A9377D99D124A748AF3B18CA401D`.
+  The initial 127 receipt and its known Code/raw-HTML findings remain preserved.
+- The sibling's compound background .NET/artifact-copy command was denied
+  before execution and not repeated. Root reviewed the existing foreground
+  Next CLI local-preview path; it serves the fresh `.next` without artifact
+  copies. Its expected server-only standalone-configuration warning is a
+  preview-path boundary, not an observed browser-console defect. Strict
+  standalone packaging validation is separate. Temporary viewport/preference
+  restored and owned tab closed; root owns server session 90684 and stops it.
+- Local candidate is Done; final ignored validation receipt binds full source
+  `61d8284`, runtime `5eb9509`, corrected QA test hash and all fresh gate/build/
+  browser evidence. `git diff --check` passes; no runtime source changed after
+  freezing. Worker documentation handoff at 15:52 UTC: no further STATUS/TASKS
+  writes, commits, push or live operations. Root may append publication/smoke
+  proof without overlapping edits. Raw initial HTML language, live delivery,
+  authenticated persistence and paying-customer outcomes are not claimed fixed.
+
+## 2026-10-03 15:53 UTC — Owner-approved registration recovery Production release
+
+- Owner's `evet` approved the named release. Root pushed/verified full source
+  `61d82840aac725595bdaffb23a8e877133b720b5`; only RegisterPage and its existing
+  runtime phone-code catalog differ from previous live runtime `dec7f5be3197`.
+  QA-only test correction is included in the reproducible source archive.
+  No schema, environment, dependency, price, auth policy, payment, consent or
+  Ads setting changed. Unrelated owner checkout preserved.
+- Archive SHA256 `bf0f8bdd22f6ef42731413b6e0b92771b6129405b5b0be269f7531948ecbe7ee`
+  was verified after completed upload and before fresh immutable extraction.
+  Final Linux build exited 0; the existing deploy script exited 0. Its unchanged
+  runtime layers reuse the successful 282-page/69-asset strict Linux build.
+  Final full tests 1813/1813, focused 68/68, i18n 37/37, lint, web/desktop types,
+  fresh local standard build and actual hydrated 8-view QA are recorded above.
+- Current app/analyzer `61d82840aac7` healthy, zero restarts; actual image IDs
+  match current tags and release state. Linux Build ID `PC2QiKnTAn4etegisf6iU`.
+  Previous `dec7f5be3197` pair retained and available. No rollback needed;
+  recovery remains `bash scripts/vps/rollback.sh dec7f5be3197` from that source.
+- Final pre-smoke 57/57 at 15:46:09 UTC; immediate post-smoke **58/58** at
+  15:53:20 UTC. Readiness 200/no-store; 12-locale public routes, four-language
+  auth shells, anonymous private API/method denial, new public recovery marker
+  and 20 selected previous assets (200/exact hashes) passed. Separate workshop
+  homepage returned 200; no Caddy/DNS/other-site configuration change.
+- Root visually inspected final TR laptop and ZH mobile screenshots; viewport,
+  EN preference and owned tab restored/closed. Exact owned foreground preview
+  process stopped and port 3185 has no listener. The rejected composite launcher
+  was not rerun; supported foreground preview and server-only warning remain
+  distinguished from real deployed standalone behavior. Earlier attempt/receipt
+  failures remain honest historical records.
+- Changed QA receipts: TASKS, STATUS, acquisition audit and new
+  `docs/production-release-2026-10-03-register-recovery.md`. Runtime source is
+  immutable; later documentation is not redeployed. Final local JSON receipt
+  SHA256 `9AE59D0CF4E4A1D11C376026514EAB6695FF97DB1F7FE8EE02E809F09617D62C`;
+  hydrated QA receipt `E4AD98DFB25C781AEF7F004DE2E53DCF9278A9377D99D124A748AF3B18CA401D`.
+  Production smoke is anonymous GET-only: no customer/account/email/CAPTCHA/
+  payment mutation. Raw auth HTML language, real delivery, authenticated
+  persistence, Google conversion receipt and paid acquisition are not claimed.

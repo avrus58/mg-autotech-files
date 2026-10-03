@@ -6,9 +6,10 @@ Owner requested acquisition work that produces paid business, without routine
 technical handoffs. Work was limited to the existing File Service account and
 the existing EN and UK/Ireland Search campaigns. Their average daily budgets
 remain EUR 5 each; no new paid service, campaign or budget increase was made.
-The unrelated dirty owner checkout was preserved. The registration fix is a
-local candidate based on clean source `1075a75dc5138cdae299099f77b86dd9c8cb7386`;
-it is not a Production release.
+The unrelated dirty owner checkout was preserved. The registration fix was
+developed from clean source `1075a75dc5138cdae299099f77b86dd9c8cb7386` and,
+after the owner's explicit release approval, published as immutable source
+`61d82840aac725595bdaffb23a8e877133b720b5`. This release did not change Ads.
 
 The first implementation addresses a reproducible registration-recovery defect,
 not an unproven marketing redesign. More clicks are not equivalent to revenue.
@@ -117,7 +118,7 @@ empty. Screenshots are ignored runtime outputs under
 
 ## Release and next acceptance criteria
 
-The local registration candidate passed focused checks (52/52), full tests
+The first local registration candidate passed focused checks (52/52), full tests
 (1812/1812), lint, web/desktop typecheck, the 12-locale i18n gate (37/37 bundle
 cases), independent frozen-source review and the fresh standard
 `npm run build -- --webpack`. The unchanged strict postbuild passed: 282 generated
@@ -130,8 +131,22 @@ already-installed physical dependencies resolved the topology without installing
 a package or changing a lockfile, source validator or production setting.
 Consolidated receipt: `.autopilot/runtime/register-recovery-validation-receipt.json`.
 
-Production publication still requires the owner's explicit release instruction
-under the repository policy. No current publication is implied.
+Final hydrated QA also found the existing phone `Code` fallback. The bounded
+same-surface correction uses the reviewed master row in all 11 non-English
+locales. A precise test-only assertion distinguishes native-identical DE/NL/FR
+spelling from fallback, without allowing other source/locale exceptions.
+
+Final source `61d8284` passed focused 68/68, full 1813/1813, i18n 37/37, lint,
+web/desktop typecheck, independent frozen review and a fresh standard build
+(`-0Dp2KWW-biIU51yrk_gz`). Actual hydrated EN/DE/TR/ZH laptop/mobile QA passed
+8 views and language/reload checks with no overflow or console defects.
+Earlier failed/helper/junction attempts remain preserved in the final receipt.
+
+The owner explicitly approved publication. VPS deploy exited 0, app/analyzer
+`61d82840aac7` are healthy with zero restarts, and immediate anonymous live
+smoke passed 58/58 at 15:53:20 UTC. Previous `dec7f5be3197` is retained for
+rollback. Exact scope, hashes, evidence and limits:
+[`production-release-2026-10-03-register-recovery.md`](production-release-2026-10-03-register-recovery.md).
 
 Commercial acceptance remains a real paid acquisition outcome: a verified signup,
 first request and successful payment linked within a consistent date/cohort
