@@ -191,6 +191,7 @@ export default function RegisterPage() {
   const [googleMessage, setGoogleMessage] = useState("");
   const [success, setSuccess] = useState(false);
   const [verificationPending, setVerificationPending] = useState(false);
+  const [verificationResendFailed, setVerificationResendFailed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [resendingVerification, setResendingVerification] = useState(false);
@@ -445,6 +446,7 @@ export default function RegisterPage() {
     setMessage(null);
     setSuccess(false);
     setVerificationPending(false);
+    setVerificationResendFailed(false);
 
     if (!validateAccountStep()) {
       changeStep(1);
@@ -580,6 +582,8 @@ export default function RegisterPage() {
 
   const handleResendVerification = async () => {
     if (
+      !success ||
+      !verificationPending ||
       resendingVerification ||
       loading ||
       authRequestInFlightRef.current ||
@@ -593,6 +597,7 @@ export default function RegisterPage() {
         captchaToken
       );
     } catch {
+      setVerificationResendFailed(true);
       setMessage({ kind: "exact", source: "Security verification failed." });
       return;
     }
@@ -601,7 +606,6 @@ export default function RegisterPage() {
     if (requestCaptchaToken) setCaptchaToken(null);
 
     setResendingVerification(true);
-    setMessage(null);
     const response = await supabase.auth.resend({
         type: "signup",
         email: cleanEmail,
@@ -620,7 +624,7 @@ export default function RegisterPage() {
       });
     if (!response) {
       setResendingVerification(false);
-      setSuccess(false);
+      setVerificationResendFailed(true);
       setMessage({
         kind: "exact",
         source: "Verification e-mail could not be sent. Please try again.",
@@ -629,7 +633,7 @@ export default function RegisterPage() {
     }
     const { error } = response;
     setResendingVerification(false);
-    setSuccess(!error);
+    setVerificationResendFailed(Boolean(error));
     setMessage({
       kind: "exact",
       source: error
@@ -797,17 +801,17 @@ export default function RegisterPage() {
             {message && (
               <div
                 ref={statusPanelRef}
-                role={success ? "status" : "alert"}
-                aria-live={success ? "polite" : "assertive"}
+                role={success && !verificationResendFailed ? "status" : "alert"}
+                aria-live={success && !verificationResendFailed ? "polite" : "assertive"}
                 tabIndex={-1}
                 className={`mb-5 scroll-mt-4 rounded-2xl border p-4 outline-none focus-visible:ring-2 ${
-                  success
+                  success && !verificationResendFailed
                     ? "border-green-700/60 bg-green-950/35 text-green-50 focus-visible:ring-green-500"
                     : "border-red-700/60 bg-red-950/35 text-red-50 focus-visible:ring-red-500"
                 }`}
               >
                 <div className="flex items-start gap-3">
-                  {success && (
+                  {success && !verificationResendFailed && (
                     <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-green-400" />
                   )}
                   <div className="min-w-0 flex-1">
@@ -839,26 +843,43 @@ export default function RegisterPage() {
                 </div>
 
                 {success && verificationPending && cleanEmail && (
-                  <button
-                    type="button"
-                    onClick={() => void handleResendVerification()}
-                    disabled={
-                      resendingVerification ||
-                      loading ||
-                      authCaptchaBlocksSubmission(
-                        authCaptchaConfig,
-                        captchaToken
-                      )
-                    }
-                    className="mt-4 inline-flex items-center rounded-xl border border-green-700/60 bg-green-950/40 px-4 py-2.5 text-sm font-black text-green-50 transition hover:border-green-500 hover:bg-green-900/40 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {resendingVerification ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                      <RefreshCw className="mr-2 h-4 w-4" />
+                  <div className="mt-4 space-y-3">
+                    {authCaptchaConfig.status === "ready" && (
+                      <TurnstileChallenge
+                        key="registration-verification"
+                        siteKey={authCaptchaConfig.siteKey}
+                        action="auth_register"
+                        resetKey={captchaResetKey}
+                        onToken={setCaptchaToken}
+                        appearance="interaction-only"
+                      />
                     )}
-                    {firstPaintT("Resend verification e-mail")}
-                  </button>
+                    {authCaptchaConfig.status === "misconfigured" && (
+                      <p role="alert" className="text-sm text-red-100">
+                        {customerRuntimeExactT(locale, authCaptchaConfig.message ?? "")}
+                      </p>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => void handleResendVerification()}
+                      disabled={
+                        resendingVerification ||
+                        loading ||
+                        authCaptchaBlocksSubmission(
+                          authCaptchaConfig,
+                          captchaToken
+                        )
+                      }
+                      className="inline-flex items-center rounded-xl border border-white/20 bg-black/25 px-4 py-2.5 text-sm font-black text-white transition hover:border-white/40 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {resendingVerification ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <RefreshCw className="mr-2 h-4 w-4" />
+                      )}
+                      {firstPaintT("Resend verification e-mail")}
+                    </button>
+                  </div>
                 )}
 
                 {success && !verificationPending && (
@@ -881,6 +902,7 @@ export default function RegisterPage() {
               />
             </div>
 
+            {!success && (
             <div
               ref={stepPanelRef}
               role="region"
@@ -1332,6 +1354,7 @@ export default function RegisterPage() {
               )}
               </form>
             </div>
+            )}
 
             <div className="mt-5 text-center text-sm text-zinc-400">
               {firstPaintT("Already have an account?")}{" "}

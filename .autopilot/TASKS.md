@@ -272,6 +272,31 @@ Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
 
+### MANUAL-20261003-REGISTRATION-VERIFICATION-RECOVERY [P1] Keep created accounts in visible verification recovery
+
+Fingerprint: `acquisition|register-verification|resend-error-reopens-form-and-hidden-captcha|persistent-visible-fail-closed-recovery`
+
+Done as a locally validated candidate in the clean `1075a75` worktree; not pushed
+or deployed. Account creation remains complete after verification resend
+network/API failures, recovery retains one active CAPTCHA and the obsolete form
+unmounts. Fresh-token, misconfiguration, duplicate-operation, redirect and
+verification boundaries remain unchanged. Existing 12-locale copy is reused.
+
+Final checks: focused 52/52, full 1812/1812, lint, web/desktop typecheck, i18n
+(12 locales, 2473 strings, 37/37 bundle tests), diff review and fresh standard
+`npm run build -- --webpack` including unchanged strict postbuild all PASS.
+Initial junction packaging exit 1 remains recorded; matching existing physical
+dependencies resolved the topology without installation or validator changes.
+Final build `aHsri9ykUbjB3pgGt5HPf`: 282/282 pages, 43 required assets, compiled
+unauthenticated 401, valid synthetic PNG/PDF, zero external fetches.
+Independent frozen-source review found no scoped blocker. EN/DE/TR/ZH laptop
+and mobile loopback fixture QA passed with actual JSX/CSS/catalogs and synthetic
+SDK/widget; real CAPTCHA/email delivery/hydrated locale switching are not claimed.
+No schema, auth policy, consent, price, new dependency or live customer change.
+Receipt: `.autopilot/runtime/register-recovery-validation-receipt.json`;
+acquisition scope/evidence: `docs/acquisition-money-audit-2026-10-03.md`.
+Production publication remains separately owner-authorized.
+
 ### MANUAL-20260912-REQUEST-NOTIFICATION-DEADLINE [P1] Complete created requests when email transport stalls
 
 Fingerprint: `customer-acquisition|created-request-completion|unbounded-email-notification-await|bounded-fail-soft-notification`

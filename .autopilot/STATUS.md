@@ -6649,3 +6649,71 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
   receipt edits preserved. This release is complete, not a claim of flawless
   acquisition or completion of the historical measurement task. No fake event,
   production transaction, migration, new budget or automatic continuation.
+
+## 2026-10-03 — MANUAL registration verification recovery (local candidate Done, not deployed)
+
+- First timestamped implementation receipt: 14:24 UTC. Work is in a clean
+  worktree from `1075a75`; the owner's dirty checkout and other tasks are untouched.
+- Actual RegisterPage handler reproduction proved both network/API resend
+  errors clear account-created state. JSX inspection proved both challenges
+  were inside a success-hidden form. This is a source-proven recovery defect,
+  not evidence attributing any current missing registration to this defect.
+- Created-account state now survives resend failures. Recovery/error controls
+  remain visible during pending requests; the active challenge moves to that
+  panel while the obsolete form and its challenge unmount. Fresh-token and
+  misconfiguration checks remain fail-closed; duplicate resends remain locked.
+- Changed files: `src/app/register/page.tsx`,
+  `tests/register-verification-recovery.test.ts`, TASKS and this status.
+  Root's scoped acquisition audit is `docs/acquisition-money-audit-2026-10-03.md`.
+  Existing localized copy is reused. No schema, pricing, auth policy, dependency,
+  consent, payment, live account/email, push or deployment change.
+- Focused acquisition/register/CAPTCHA suite 52/52 PASS; `git diff --check`
+  PASS. Full suite 1812/1812 PASS; lint and web/desktop typecheck PASS. Existing
+  i18n gates PASS (12 locales, 2473 reviewed strings, no clean English fallback,
+  37/37 bundle cases). After removing the owned preview helper, lint/typecheck
+  and the focused 52-case suite passed again; source/test hashes did not change.
+- Root's loopback-only actual-JSX recovery fixture QA passed EN/DE/TR/ZH at
+  1366x768 and 390x844: correct initial language, one alert/one synthetic challenge,
+  no obsolete form or horizontal overflow, accessible visible resend action.
+  EN created/missing-token/network/pending/resent states also passed. Browser
+  warnings/errors were empty; eight screenshots remain as ignored runtime
+  outputs in `.autopilot/runtime/recovery-browser-qa/`. Preview server stopped
+  and its helper removed. Real vendor CAPTCHA, hydration/locale switching and
+  actual email delivery were not tested or claimed.
+- Independent immutable review by
+  `/root/acquisition_landing_review/verification_recovery_review` found no
+  scoped blockers and reran the 18 actual-handler/render cases. Frozen SHA256:
+  page `C7015A72B628D4915EA9FF31F826C0BA6191B52AE59991C16E5BAC9A2F44448B`;
+  test `E0AFA428491F9AAA534127658C8AF8704F508F92A8D87AA8E18B822FE02619D7`.
+- Initial standard synthetic `npm run build -- --webpack` compiled, typechecked
+  and generated 282/282 pages, but exited 1 at unchanged strict postbuild:
+  `sharp escaped standalone dependencies.` The supplied shared dependency
+  junction is the confirmed packaging boundary; this is not a passing build.
+  An independent physical-copy artifact passed the unchanged checker (43 assets,
+  compiled unauthenticated 401, valid synthetic PNG/PDF, zero external fetches),
+  with all six snapshot trees source-hash-identical. Receipt:
+  `.autopilot/runtime/register-recovery-physical-artifact-receipt.json` (preserved
+  SHA256 `06D214625F85BCE42245F8CAB41700C9DE002442E9D2419091BAF759BAC0679A`).
+- To obtain a genuine standard build pass, the exact owned dependency junction
+  was nonrecursively moved aside and preserved outside the checkout. The same
+  36695 validated installed files were physically copied into this worktree;
+  no installation, lockfile, source, application config or validator change. A fresh
+  unchanged standard `npm run build -- --webpack` finished exit 0 at 14:45 UTC
+  with an OS-only child environment and synthetic `.invalid` Supabase config.
+  Prebuild i18n 37/37, Webpack compilation, TypeScript, 282/282 generated pages
+  and unchanged strict postbuild PASS (43 assets, compiled unauthenticated 401,
+  valid synthetic PNG/PDF, zero external fetches). Final build ID:
+  `aHsri9ykUbjB3pgGt5HPf`; standalone dependencies are physical, not a junction.
+- Final candidate SHA256 matches independent review and browser QA. `git diff
+  --check` PASS. The bounded implementation is Done locally, not Preview or
+  Production; root may prepare a focused commit, but push and publication are
+  not performed or authorized by this receipt. No claim of fixed live email
+  delivery or verified paid acquisition is made. Consolidated local receipt:
+  `.autopilot/runtime/register-recovery-validation-receipt.json`.
+- Receipt/hash evidence was preserved before own-temp cleanup. The platform
+  rejected the validated exact-path recursive cleanup before execution; no
+  guard workaround or material deletion occurred. The redundant task-generated
+  physical artifact remains under
+  `C:/Users/gokka/Documents/Codex/acquisition-recovery-artifacts-20261003/physical-artifact`
+  (approximately 0.77 GB). Candidate `.next`, physical dependencies, original
+  shared dependencies and owner files remain intact.
