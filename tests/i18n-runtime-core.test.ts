@@ -91,14 +91,33 @@ test("shared runtime copy covers every non-English site locale without fallback"
 
   assert.deepEqual([...customerRuntimeLocaleOrder].sort(), configured.sort());
 
+  // These reviewed native words share English spelling; they are not fallbacks.
+  const reviewedSourceIdenticalPairs = new Set(["Code:de", "Code:nl", "Code:fr"]);
+  const actualSourceIdenticalPairs = new Set<string>();
+
   for (const [source, values] of Object.entries(customerRuntimeTranslations)) {
     assert.equal(values.length, customerRuntimeLocaleOrder.length, source);
     values.forEach((value, index) => {
       const locale = customerRuntimeLocaleOrder[index];
       assert.ok(value.trim(), `${locale}: ${source}`);
-      assert.notEqual(value, source, `${locale}: ${source}`);
+      if (source === "Code" && ["de", "nl", "fr"].includes(locale)) {
+        assert.equal(value, "Code", `${locale}: ${source}`);
+        assert.equal(
+          value,
+          customerWorkflowExactTranslations.Code[customerWorkflowLocaleOrder.indexOf(locale)],
+          `${locale}: ${source} must match the existing reviewed master row`,
+        );
+      } else {
+        assert.notEqual(value, source, `${locale}: ${source}`);
+      }
+      if (value === source) actualSourceIdenticalPairs.add(`${source}:${locale}`);
     });
   }
+  assert.deepEqual(
+    [...actualSourceIdenticalPairs].sort(),
+    [...reviewedSourceIdenticalPairs].sort(),
+    "only the exact reviewed source/locale pairs may share English spelling",
+  );
 });
 
 test("shared runtime copy does not reintroduce legacy ASCII transliteration", () => {
