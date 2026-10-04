@@ -1,5 +1,25 @@
 # Otonom calisma gunlugu
 
+## 2026-10-05 — Owner-directed acquisition actions; registration fix local only
+
+- Live Ads: saved three UK/IE campaign-level exact consumer-query negatives and
+  four observed professional exact keywords in each existing Search campaign
+  (eight positives). Correct campaign/group/match type verified after Save;
+  both keyword lists26. Existing EUR5/day budgets, EUR0.75 CPC caps, campaign
+  state, geography, conversion goals and payment settings were not edited.
+- Saved browser proof under local visualizations/2026/10/05. No measured spend
+  saving, new customer or revenue is claimed; hidden search terms remain hidden.
+- Optional registration locale-read obstruction reproduced and corrected in a
+  clean feature branch. Targeted100/100, i18n-targeted109/109, lint, full types,
+  check:i18n37/37, full1866/1866 and fresh Webpack build282/282/strict postbuild
+  pass. Independent frozen source review GO; no UI/copy/auth-policy/schema change.
+- Website code is LOCAL VALIDATED ONLY, not pushed, Previewed or deployed.
+  Google conversion actions still show attention/inactive warnings; neither
+  the tag receipt nor the separate remote-device login incident is declared
+  resolved. Aggregate measurements are not customer-level/attributed sales.
+- Complete scope, dates, evidence, remaining gates and Ads rollback:
+  docs/acquisition-commercial-actions-2026-10-05.md.
+
 ## 2026-10-01 — Owner-requested current address correction published
 
 - Owner-confirmed address: Saarstraße 4, 71679 Asperg. Root verified the actual
@@ -6837,3 +6857,83 @@ Bu dosya her planner, worker ve reviewer calistirmasindan sonra guncellenir.
   Production smoke is anonymous GET-only: no customer/account/email/CAPTCHA/
   payment mutation. Raw auth HTML language, real delivery, authenticated
   persistence, Google conversion receipt and paid acquisition are not claimed.
+
+## 2026-10-05 01:04 CEST — Optional registration language storage recovery, local only
+
+- Task: MANUAL-20261005-REGISTRATION-LOCALE-STORAGE. Read-only acquisition audit
+  identified an actual submission blocker before the Auth SDK call; root chose
+  this single bounded implementation. Clean managed checkout HEAD `9caefda5a1f9`
+  matches published runtime `61d8284`; new branch is
+  `codex/acquisition-register-locale-20261005`. Unrelated owner checkout untouched.
+- Changed source: `src/app/register/page.tsx` reuses `readStoredLocale()` and
+  catches optional raw cookie-header access denial. The existing resolver and
+  stored/cookie/browser language precedence, including encoded/no-space cookies
+  and malformed-cookie legacy default, stay unchanged. No visible copy, JSX/CSS,
+  catalog, dependency, auth/session policy, schema, price, consent or payment
+  change. No commit, push, Preview or Production release by this worker.
+- Changed test: `tests/register-verification-recovery.test.ts` now executes the
+  actual preference helper and pure email-language resolver alongside the actual
+  JSX/submit/recovery handlers. On original source, 48 new privacy-denial cases
+  failed across all 12 supported locales (71 tests: 23 pass, 48 fail, exit 1).
+  After the fix, targeted register/country/phone/CAPTCHA/login tests pass 100/100;
+  targeted auth/workflow/runtime i18n tests pass 109/109, both exit 0.
+  Fresh-token enforcement, exact first-request callback and single signup during
+  resend recovery are asserted in every new locale case.
+- Supabase skill, public changelog and current official JavaScript signUp docs
+  were read. No applicable API breaking change for this optional preference-read
+  repair; no SDK/server configuration changed. All executable checks use an
+  OS-only child environment with synthetic `.invalid` configuration and existing
+  physical dependencies. Only `.env*` filenames were inventoried; no application dotenv,
+  secret, actual customer/account/CAPTCHA/email/payment/DB operation used.
+- Full mandatory gates and independent immutable review are in progress; this
+  entry is not a Done/Preview/Production acceptance claim. Original source and
+  test are frozen at SHA256 `6111D14AAA258E7AD5E04EDB3D95317A7107CE70D116EC3FD88C6570ADD9A151`
+  and `B6E99C98AF877C87AE22271CD3772B97FEEFB1B3B51B655C943D4029BF02B6E7`.
+- Separate deferred finding, NOT implemented: first-request vehicle model /
+  generation / engine effects accept obsolete responses after a changed parent
+  selection (`new-request/page.tsx:1347/1372/1394`). Independent actual-effect and
+  client-cache transport doubles reproduce stale options, stale error/loading,
+  and empty generations for a mismatched current-brand/old-model pair. Manual
+  entry remains available. This is not measured abandonment or lost revenue;
+  it needs its own bounded cancellation/generation-fence change and validation.
+- These tests do not prove a real successful signup/email delivery, persistence,
+  Google conversion receipt or a paying customer. Existing prefixless initial
+  HTML language and affected-remote-computer auth incident are unchanged.
+
+## 2026-10-05 01:15 CEST — Optional registration preference fix accepted locally, not released
+
+- Final frozen source/test hashes are unchanged from the preceding entry.
+  Worker reviewed the exact diff; no outside source change. Root's separate
+  commercial-action audit is `docs/acquisition-commercial-actions-2026-10-05.md`;
+  worker did not write that file or perform any Ads operation.
+- All mandatory checks passed using the same OS-only synthetic child env:
+  focused register/CAPTCHA/country/phone/login 100/100; targeted auth/workflow/
+  runtime i18n 109/109; `npm run check:i18n` 37/37 (12 locales, 2473 reviewed rows
+  per non-English locale, zero clean English fallbacks); lint; web and desktop
+  typecheck; full `npm test` **1866/1866**, zero failures, exit 0 at 23:10:28 UTC.
+  The 48 red baseline failures remain accurately recorded, not relabelled green.
+- Fresh `npm run build -- --webpack` completed exit 0 at 23:15:25 UTC. Build ID
+  `nAJGvAzp76TQIlzv9otkX`, 282/282 static pages; prebuild i18n 37/37 again.
+  The unmodified strict postbuild passed; independent same-artifact checker
+  rerun also exit 0: 43 required assets, 5 report fonts, 30 PDFKit files,
+  8 sharp files, compiled anonymous Auth 401, valid PNG/PDF, zero external fetches
+  in the strict checker. This is not a claim that Google font build downloads or
+  real account/email flows were tested. No Docker/artifact guard was bypassed.
+- Build emitted native SWC App Control load warnings on this Windows machine;
+  Next's supported fallback completed successfully. No package installation,
+  platform policy, font, compiler guard or validation rule was changed.
+- Immutable independent reviewer `/root/acquisition_review`: GO, no P1/P2,
+  actual RegisterPage 71/71 and diff check PASS; frozen hashes match. Root also
+  reviewed the exact 12-line source / 99-line test diff and gave GO. The review's
+  fresh-build condition is now satisfied. Resend tests assert fresh-token and
+  callback/single-account recovery, not resend language recomputation/delivery.
+- Actual RegisterPage component including handlers/JSX/visible copy is identical
+  to base after line-ending normalization. No CSS/text/layout change or fresh
+  browser/responsive/hydration proof claimed. Existing real-delivery, signup,
+  payment, conversion, prefixless initial-language and remote-auth boundaries
+  remain separate; no paying-customer result is invented.
+- Moved this one task to Done **local only, not published**. Actual manual QA
+  receipt is ignored runtime JSON:
+  `.autopilot/runtime/register-locale-storage-validation-2026-10-05.json`.
+  This is not an OS-controller/doctor receipt. Worker performed no commit,
+  push, Preview, Production, live service, secret or customer-data operation.

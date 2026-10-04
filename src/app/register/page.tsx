@@ -31,6 +31,7 @@ import { withBrowserAuthMutation } from "@/lib/browserAuthMutations";
 import { enrollCustomerGuide } from "@/lib/customerOnboarding";
 import { getPublicGoogleIdentityConfig } from "@/lib/googleIdentity";
 import { resolveBrowserTransactionalEmailLanguage } from "@/lib/email/language";
+import { readStoredLocale } from "@/lib/localePreference";
 import {
   normalizeCountryCode,
   normalizeCountryName,
@@ -119,9 +120,16 @@ function getRegistrationCallbackPath() {
 }
 
 function getSelectedEmailLanguage() {
+  let cookieHeader: string | null = null;
+  try {
+    cookieHeader = document.cookie;
+  } catch {
+    // Optional language preferences must not prevent account creation.
+  }
+
   return resolveBrowserTransactionalEmailLanguage({
-    storedLocale: window.localStorage.getItem("mg_locale"),
-    cookieHeader: document.cookie,
+    storedLocale: readStoredLocale(),
+    cookieHeader,
     browserLocale: window.navigator.language,
   });
 }

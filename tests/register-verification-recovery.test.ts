@@ -16,6 +16,7 @@ import {
   customerWorkflowT,
 } from "../src/lib/i18n/customer-workflow-auth-translations";
 import { supportedLocales, type LocaleCode } from "../src/lib/i18nConfig";
+import { resolveBrowserTransactionalEmailLanguage } from "../src/lib/email/language";
 
 type Element = { type: unknown; props: Record<string, unknown> };
 type ResendReply = { error: { message: string } | null };
@@ -37,6 +38,18 @@ const stateNames = page.body.statements.flatMap(node =>
 const compiledPage = ts.transpileModule(source, {
   compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX },
 }).outputText;
+const compiledLocalePreference = ts.transpileModule(
+  readFileSync("src/lib/localePreference.ts", "utf8"),
+  { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } },
+).outputText;
+
+type BrowserPreferences = {
+  storedLocale?: string | null;
+  cookieHeader?: string;
+  browserLocale?: string;
+  storageDenied?: "getter" | "getItem";
+  cookieDenied?: boolean;
+};
 
 function elements(tree: unknown, includeHidden = false): Element[] {
   if (Array.isArray(tree)) return tree.flatMap(child => elements(child, includeHidden));
@@ -60,7 +73,11 @@ async function settle() {
 
 // Execute the actual RegisterPage handlers and JSX. Every SDK, storage and
 // browser dependency is isolated; no environment, network, account or email.
-function harness(locale: LocaleCode = "en", captchaStatus: AuthCaptchaConfig["status"] = "ready") {
+function harness(
+  locale: LocaleCode = "en",
+  captchaStatus: AuthCaptchaConfig["status"] = "ready",
+  preferences: BrowserPreferences = {},
+) {
   let index = 0;
   const state: unknown[] = [];
   const seeded: Record<string, unknown> = {
@@ -92,6 +109,29 @@ function harness(locale: LocaleCode = "en", captchaStatus: AuthCaptchaConfig["st
   };
   const jsx = (type: unknown, props: Record<string, unknown>) => ({ type, props });
   const empty = () => undefined;
+  const browser = {
+    location: { search: "?redirect=%2Fnew-request" },
+    localStorage: { getItem: () => {
+      if (preferences.storageDenied === "getItem") throw new Error("Synthetic storage denial");
+      return preferences.storedLocale === undefined ? locale : preferences.storedLocale;
+    } },
+    navigator: { language: preferences.browserLocale ?? locale },
+  };
+  if (preferences.storageDenied === "getter") {
+    Object.defineProperty(browser, "localStorage", { get() { throw new Error("Synthetic storage denial"); } });
+  }
+  const browserDocument = { cookie: preferences.cookieHeader ?? "" };
+  if (preferences.cookieDenied) {
+    Object.defineProperty(browserDocument, "cookie", { get() { throw new Error("Synthetic cookie denial"); } });
+  }
+  const preferenceContext = {
+    exports: {}, window: browser, document: browserDocument,
+    require(name: string) {
+      assert.equal(name, "@/lib/seo");
+      return { hreflangByLocale: {} };
+    },
+  };
+  runInNewContext(compiledLocalePreference, preferenceContext, { timeout: 1000 });
   const imports: Record<string, unknown> = {
     react, "react/jsx-runtime": { jsx, jsxs: jsx }, "next/link": { default: "Link" },
     "next/navigation": { useRouter: () => ({ replace: empty, refresh: empty }) },
@@ -111,7 +151,8 @@ function harness(locale: LocaleCode = "en", captchaStatus: AuthCaptchaConfig["st
     "@/lib/browserAuthMutations": { withBrowserAuthMutation: (run: () => unknown) => Promise.resolve().then(run) },
     "@/lib/customerOnboarding": { enrollCustomerGuide: () => ({}) },
     "@/lib/googleIdentity": { getPublicGoogleIdentityConfig: () => ({ status: "off" }) },
-    "@/lib/email/language": { resolveBrowserTransactionalEmailLanguage: () => locale },
+    "@/lib/email/language": { resolveBrowserTransactionalEmailLanguage },
+    "@/lib/localePreference": preferenceContext.exports,
     "@/lib/countries": { normalizeCountryName: (value: string) => value || null },
     "@/lib/phoneCountries": { formatInternationalPhone: () => null },
     "@/lib/registrationHandoffClient": {}, "@/lib/registrationConversion": {},
@@ -135,8 +176,8 @@ function harness(locale: LocaleCode = "en", captchaStatus: AuthCaptchaConfig["st
   imports["@/components/InternationalPhoneField"] = { InternationalPhoneField: "InternationalPhoneField" };
   const context = {
     exports: {}, URLSearchParams,
-    window: { location: { search: "?redirect=%2Fnew-request" }, localStorage: { getItem: () => locale }, navigator: { language: locale } },
-    document: { cookie: "" },
+    window: browser,
+    document: browserDocument,
     require(name: string) { assert.ok(name in imports, `Unexpected real dependency: ${name}`); return imports[name]; },
   };
   runInNewContext(compiledPage, context, { timeout: 1000 });
@@ -169,6 +210,56 @@ function harness(locale: LocaleCode = "en", captchaStatus: AuthCaptchaConfig["st
       await settle();
     },
   };
+}
+
+for (const { code } of supportedLocales) {
+  for (const denial of ["getter", "getItem", "cookie", "both"] as const) {
+    test(`optional ${denial} preference denial preserves actual ${code} signup and verification recovery`, async () => {
+      const browserOnly = denial === "both";
+      const h = harness(code, "ready", {
+        storedLocale: code,
+        cookieHeader: `other=synthetic;mg_locale=${encodeURIComponent(code)}`,
+        browserLocale: `${code}-synthetic`,
+        storageDenied: denial === "getter" || browserOnly ? "getter" : denial === "getItem" ? "getItem" : undefined,
+        cookieDenied: denial === "cookie" || browserOnly,
+      });
+      await h.signup();
+      assert.equal(h.signups.length, 1, "optional language storage must not stop a valid signup");
+      const options = h.signups[0].options as { captchaToken: string; emailRedirectTo: string; data: { email_language: string } };
+      assert.equal(options.data.email_language, code);
+      assert.equal(options.emailRedirectTo, "/auth/callback?next=%2Fnew-request");
+      assert.equal(options.captchaToken, "synthetic-initial-challenge");
+      assert.equal(h.get("success"), true);
+      assert.equal(h.get("loading"), false);
+      assert.equal(elements(h.render(), true).some(element => element.type === "form"), false);
+      await h.retry();
+      assert.equal(h.resends.length, 0, "preference recovery must not bypass a fresh CAPTCHA");
+      (h.challenge().props.onToken as (token: string) => void)("synthetic-fresh-recovery-token");
+      await h.retry();
+      assert.equal(h.signups.length, 1, "verification retry must not create a second account");
+      assert.equal(h.resends.length, 1);
+      const resendOptions = h.resends[0].options as { captchaToken: string; emailRedirectTo: string };
+      assert.equal(resendOptions.captchaToken, "synthetic-fresh-recovery-token");
+      assert.equal(resendOptions.emailRedirectTo, options.emailRedirectTo);
+      assert.equal(h.get("success"), true);
+    });
+  }
+}
+
+for (const preferences of [
+  { storedLocale: "tr", cookieHeader: "mg_locale=de", browserLocale: "fr-FR", expected: "tr" },
+  { storedLocale: null, cookieHeader: "other=synthetic;mg_locale=de", browserLocale: "fr-FR", expected: "de" },
+  { storedLocale: "unsupported", cookieHeader: "mg_locale=%7A%68", browserLocale: "tr-TR", expected: "zh" },
+  { storedLocale: null, cookieHeader: "other=synthetic", browserLocale: "de-DE", expected: "de" },
+  { storedLocale: null, cookieHeader: "mg_locale=%broken", browserLocale: "de-DE", expected: "en" },
+]) {
+  test(`actual signup retains existing email-locale precedence: ${JSON.stringify(preferences)}`, async () => {
+    const h = harness("en", "ready", preferences);
+    await h.signup();
+    assert.equal(h.signups.length, 1);
+    assert.equal((h.signups[0].options as { data: { email_language: string } }).data.email_language, preferences.expected);
+    assert.equal(h.get("success"), true);
+  });
 }
 
 for (const failure of ["network", "api"] as const) {

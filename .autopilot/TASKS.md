@@ -272,6 +272,36 @@ Expected validation command: `npm run lint` and `npm run typecheck`.
 
 ## Done
 
+### MANUAL-20261005-REGISTRATION-LOCALE-STORAGE [P1] Keep optional language preferences from blocking signup
+
+Fingerprint: `customer-acquisition|register-email-language|optional-storage-denial-before-signup|safe-existing-locale-fallback`
+
+Done locally and independently reviewed; **not pushed, Previewed or published**.
+Owner-authorized implementation only. Clean base `9caefda5a1f9`, previous
+published runtime `61d8284`; branch `codex/acquisition-register-locale-20261005`.
+Optional localStorage getter/getItem and raw cookie-header denial no longer
+prevents valid signup before the SDK call. Existing stored/cookie/browser
+precedence and malformed-cookie default, callback target and fresh-token
+CAPTCHA remain unchanged. Real helper/resolver plus actual JSX/handlers are
+isolated from real Auth/email/CAPTCHA operations.
+
+Red baseline: 71 tests, 23 pass / 48 fail across twelve locales and four denial
+cases. Green targeted 100/100; auth/workflow/runtime i18n 109/109; mandatory i18n
+37/37, zero clean English fallbacks; lint and web/desktop types; full 1866/1866;
+fresh standard build exit 0 (`nAJGvAzp76TQIlzv9otkX`, 282 pages). Unchanged strict
+postbuild: 43 assets, compiled auth 401, PNG/PDF valid, zero checker fetches.
+Windows native-SWC App Control warnings followed by successful supported
+fallback are environment diagnostics, not hidden failed gates. Independent
+`/root/acquisition_review` GO71/71, exact frozen source/test hashes and diff
+check PASS; root separately reviewed the source/test diff.
+
+RegisterPage component/JSX/handlers/visible text remain byte-identical after
+line-ending normalization; no fresh browser/responsive/hydration claim.
+No copy, dependency, schema, price, session policy, payment, customer-data or
+catalog change. Real registration, email delivery and revenue are unproved.
+Separate first-request vehicle-cascade race is deferred, not included.
+Receipt: `.autopilot/runtime/register-locale-storage-validation-2026-10-05.json`.
+
 ### MANUAL-20261003-REGISTRATION-VERIFICATION-RECOVERY [P1] Keep created accounts in visible verification recovery
 
 Fingerprint: `acquisition|register-verification|resend-error-reopens-form-and-hidden-captcha|persistent-visible-fail-closed-recovery`
