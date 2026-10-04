@@ -1,5 +1,16 @@
 # Customer acquisition: bounded actions, 5 October 2026
 
+## Subsequent owner-approved Production release
+
+After the local implementation handoff recorded below, the owner explicitly
+approved publication of only the prepared registration correction. Source
+`b4c22314d60f` is now live as a healthy, zero-restart app/analyzer pair; fresh
+Linux production build and anonymous pre57/post58 release checks passed.
+IAB render/localization QA16/16 passed, with third-party console warnings
+recorded rather than suppressed. This subsequent release did not edit
+Ads, budgets, payment, schema or authentication policy. Complete receipt:
+`docs/production-release-2026-10-05-register-locale.md`.
+
 ## Scope and authority
 
 Owner requested a concrete customer-acquisition improvement, not another
@@ -13,8 +24,9 @@ counts were used only as bounded business evidence.
 The clean engineering candidate starts at `9caefda5a1f9`, a documentation-only
 descendant of published runtime `61d8284`, on
 `codex/acquisition-register-locale-20261005`. Unrelated owner work in the primary
-checkout is preserved. This turn does not authorize website push/Preview or
-Production deployment; the website correction is local only.
+checkout is preserved. At the implementation handoff this correction was
+local only; later scoped owner publication approval and its result are
+recorded in the subsequent-release section above.
 
 ## Observed baseline (not new revenue)
 
@@ -124,8 +136,10 @@ i18n37/37 and unchanged strict postbuild passed (43 assets, five report fonts,
 external fetches). Windows native SWC warnings were handled by Next's supported
 fallback; no dependency or platform protection was weakened. Final validation
 is also recorded in `.autopilot/STATUS.md` and ignored runtime receipt
-`register-locale-storage-validation-2026-10-05.json`. No new-source deployment,
-browser signup/session-storage end-to-end test or Production smoke occurred.
+`register-locale-storage-validation-2026-10-05.json`. At the implementation
+handoff no new-source deployment or Production smoke had occurred; the
+subsequent scoped release is recorded above. No real browser signup/session-
+storage end-to-end test was performed in either turn.
 
 ## Remaining evidence boundaries
 

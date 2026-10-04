@@ -276,9 +276,15 @@ Expected validation command: `npm run lint` and `npm run typecheck`.
 
 Fingerprint: `customer-acquisition|register-email-language|optional-storage-denial-before-signup|safe-existing-locale-fallback`
 
-Done locally and independently reviewed; **not pushed, Previewed or published**.
-Owner-authorized implementation only. Clean base `9caefda5a1f9`, previous
-published runtime `61d8284`; branch `codex/acquisition-register-locale-20261005`.
+**Done — owner-approved Production release published and verified on 5 October.**
+Immutable source `b4c22314d60f` is the healthy, zero-restart app/analyzer pair;
+remote feature branch verified, rollback `61d82840aac7` retained. Fresh Linux
+standard build/i18n/strict packaging passed; GET-only pre57/post58, old static
+assets20/20 and SEO-preservation6/6 passed. IAB register/login render16/16 in
+EN/DE/TR/ZH at mobile/laptop passed without overflow. Third-party Cloudflare
+iframe NaN and Google GSI warnings remain recorded; no captured app-origin
+error. This is not real signup/email or other-device Chrome evidence.
+Clean base `9caefda5a1f9`; branch `codex/acquisition-register-locale-20261005`.
 Optional localStorage getter/getItem and raw cookie-header denial no longer
 prevents valid signup before the SDK call. Existing stored/cookie/browser
 precedence and malformed-cookie default, callback target and fresh-token
@@ -296,11 +302,12 @@ fallback are environment diagnostics, not hidden failed gates. Independent
 check PASS; root separately reviewed the source/test diff.
 
 RegisterPage component/JSX/handlers/visible text remain byte-identical after
-line-ending normalization; no fresh browser/responsive/hydration claim.
+line-ending normalization; subsequent render/localization QA is scoped above.
 No copy, dependency, schema, price, session policy, payment, customer-data or
 catalog change. Real registration, email delivery and revenue are unproved.
 Separate first-request vehicle-cascade race is deferred, not included.
-Receipt: `.autopilot/runtime/register-locale-storage-validation-2026-10-05.json`.
+Local receipt: `.autopilot/runtime/register-locale-storage-validation-2026-10-05.json`.
+Production receipt: `docs/production-release-2026-10-05-register-locale.md`.
 
 ### MANUAL-20261003-REGISTRATION-VERIFICATION-RECOVERY [P1] Keep created accounts in visible verification recovery
 

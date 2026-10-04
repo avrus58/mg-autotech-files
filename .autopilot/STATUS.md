@@ -1,5 +1,38 @@
 # Otonom calisma gunlugu
 
+## 2026-10-05 — Owner-approved registration locale correction published
+
+- Owner answered `evet` to the named prepared registration-only Production
+  release. Approved immutable source/remote feature branch `b4c22314d60f`;
+  unrelated primary-checkout work is excluded and untouched.
+- Full prior exact-source gates remain passing: focused100/100, targeted
+  i18n109/109, i18n37/37/all12/zero clean-English fallback, lint, full types,
+  tests1866/1866 and fresh Webpack build/strict artifacts. Independent source
+  and archive normalization reviews GO; no unreviewed runtime change.
+- Original uploaded archive SHA-2569a4c31c0...c58f6bf verified. Initial physical
+  Windows mixed-CRLF source hash check stopped before deployment; uniform-CRLF
+  archive bytes then verified equivalent to the exact committed Git blob and
+  reviewed source. LF-only release scripts unchanged; no gate was bypassed.
+- Fresh Linux standard Turbopack production build passed: i18n37/37, types,
+  pages282/282, unchanged strict69assets/5fonts/30PDFKit/34sharp/auth401/fetch0.
+  Existing reviewed VPS runner exited0. App/analyzer `b4c22314d60f` healthy,
+  restart0; retained rollbackpair `61d82840aac7`. Other workshop app, Caddy and
+  PostgreSQL images/start timestamps remain unchanged and healthy.
+- Production pre57/57/post58/58 GET-only checks passed; new compiled cookie
+  guard served, old static asset hashes20/20 preserved. Additional SEO
+  preservation6/6 passed (robots/sitemap/canonical/alternate presence only).
+- Register/login EN/DE/TR/ZH mobile/laptop render16/16 passed in existing Codex
+  IAB context; overflow0, eight public register screenshots. Chrome disconnected,
+  not relabelled as Chrome device/session verification. Browser console is not
+  zero: Cloudflare iframeNaN6error/6warn and Google GSI2warnings; no captured
+  app-origin console error or visible crash. Original language/viewport restored;
+  only own QA tab closed. No login iframe personal details were saved.
+- No database/migration, dependency, copy/UI, policy, payment, real signup,
+  email, CAPTCHA, customer-data, Ads/budget or catalogue change in this release.
+  Other-device login, Google receipt and new attributed revenue remain unproved.
+- Complete release and boundary receipt:
+  `docs/production-release-2026-10-05-register-locale.md`.
+
 ## 2026-10-05 — Owner-directed acquisition actions; registration fix local only
 
 - Live Ads: saved three UK/IE campaign-level exact consumer-query negatives and
