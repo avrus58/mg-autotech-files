@@ -24,6 +24,20 @@ Receipt: `docs/production-release-2026-10-01-address.md`.
 
 ## In Progress
 
+### MANUAL-20261005-HOMEPAGE-MOTION [P1] More engaging homepage with a user-controlled request illustration
+
+Fingerprint: `public-homepage|static-presentation|owner-requested-modern-interaction|progressive-motion-and-manual-request-demo`
+
+Owner requests a more modern, lively homepage after accepting compact hero
+layout. This is a distinct interaction layer, not another density redesign.
+Preserve all features, black/red identity, first HTML, all12 locales, SEO and
+auth/session behavior. Add bounded CSS entrance/hover/focus motion and manual
+three-step illustrative request exploration; no autoplay, real file action or
+fabricated customer activity. Content stays visible without JS/observer and
+motion-disabled users retain all functionality. Verify keyboard/responsive
+behavior, i18n, lint, full types/tests, production build and independent review.
+No dependency, price/legal/schema/service/Ads change, push or deployment.
+
 ### MANUAL-20260919-AUTH-SESSION-RECOVERY [P1] Prevent stale checks from ending a newer browser session
 
 Fingerprint: `auth|browser-session|stale-response-and-global-logout|session-bound-recovery`

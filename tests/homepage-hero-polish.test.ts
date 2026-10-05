@@ -96,25 +96,32 @@ test("the actual hero preview and its accessible example label render translated
     }
     const exampleLabel = code === "en" ? "Example preview" : catalog!.exact["Example preview"];
     assert.ok(preview.includes(`aria-label="${escapeRenderedText(exampleLabel)}"`), `${code}: accessible label must match the translated example badge`);
-    assert.equal((preview.match(/<ol\b/gu) ?? []).length, 1, `${code}: one illustrative lifecycle`);
-    assert.equal((preview.match(/<li\b/gu) ?? []).length, 3, `${code}: upload, review and delivery remain explicit`);
+    assert.equal((preview.match(/role="tablist"/gu) ?? []).length, 1, `${code}: one manual illustrative lifecycle`);
+    assert.equal((preview.match(/role="tab"/gu) ?? []).length, 3, `${code}: upload, review and delivery remain explicit`);
   }
 });
 
-test("the illustrative preview has no pretend file actions, live status or private/unsupported result data", () => {
+test("the illustrative preview has only manual example stages, no pretend file actions or private result data", () => {
   for (const { code } of supportedLocales) {
     const preview = extractPreview(renderedHomepages.get(code)!);
     const anchors = [...preview.matchAll(/<a\b[^>]*href="([^"]+)"[^>]*>/gu)];
     assert.equal(anchors.length, 1, `${code}: only the legitimate workflow link is interactive`);
     assert.equal(anchors[0][1], localizeHomepageHref("/how-it-works", code));
-    assert.doesNotMatch(preview, /<(?:button|form|input|iframe|script|object|embed)\b|\bdownload=|href="(?:blob:|data:)|aria-live=|role="(?:status|alert)"/u);
+    const stageButtons = [...preview.matchAll(/<button\b[^>]*>/gu)];
+    assert.equal(stageButtons.length, 3, `${code}: only the three illustrative stage controls are interactive`);
+    for (const button of stageButtons) {
+      assert.match(button[0], /type="button"/u);
+      assert.match(button[0], /role="tab"/u);
+      assert.match(button[0], /aria-controls="homepage-preview-panel"/u);
+    }
+    assert.doesNotMatch(preview, /<(?:form|input|iframe|script|object|embed)\b|\bdownload=|href="(?:blob:|data:)|aria-live=|role="(?:status|alert)"/u);
     assert.doesNotMatch(preview, /Portal online|[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}|\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/iu);
     const visibleText = preview.replace(/<[^>]+>/gu, " ");
     assert.doesNotMatch(visibleText, /\b\d+(?:[.,]\d+)?\s*(?:HP|bhp|Nm|PS|kW|€|EUR|credits?)\b|\.(?:bin|ori|mod|pdf)\b/iu);
   }
   const source = readFileSync("src/components/homepage/HomepageExperience.tsx", "utf8");
   const previewSource = source.slice(source.indexOf("function HeroProductPreview()"), source.indexOf("function HeroProof("));
-  assert.doesNotMatch(previewSource, /data-no-translate|dangerouslySetInnerHTML|\bfetch\(|authenticatedFetch|useEffect|useState|window\.|document\.|supabase|serviceReportT|ServiceReportDownload/u);
+  assert.doesNotMatch(previewSource, /data-no-translate|dangerouslySetInnerHTML|\bfetch\(|authenticatedFetch|useEffect|setInterval|setTimeout|window\.|document\.|supabase|serviceReportT|ServiceReportDownload/u);
 });
 
 test("hero polish preserves request entry, tools, service routes, section order and structured data", () => {
@@ -148,7 +155,7 @@ test("hero polish preserves request entry, tools, service routes, section order 
   }
 });
 
-test("compact hero keeps wrapping, usable focusable CTAs and static mobile-safe preview structure", () => {
+test("compact hero keeps wrapping, usable focusable CTAs and mobile-safe illustrative preview structure", () => {
   const html = renderedHomepages.get("en")!;
   const hero = html.match(/<section\b[^>]*data-homepage-hero[^>]*>[\s\S]*?<\/section>/u)?.[0];
   assert.ok(hero);

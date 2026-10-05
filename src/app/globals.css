@@ -316,3 +316,82 @@ body {
 .homepage-card-rail::-webkit-scrollbar {
   display: none;
 }
+
+/* Homepage-only progressive motion. No hidden baseline, autoplay or scroll hijack. */
+.mg-homepage .mg-homepage-hero-copy {
+  animation: mg-homepage-arrive 650ms cubic-bezier(0.16, 1, 0.3, 1) 1;
+}
+.mg-homepage .mg-homepage-preview {
+  animation: mg-homepage-arrive 850ms cubic-bezier(0.16, 1, 0.3, 1) 1;
+}
+.mg-homepage .mg-homepage-signal path {
+  stroke: rgb(177 18 27 / 0.14);
+  stroke-width: 1;
+  stroke-dasharray: 1500;
+  animation: mg-homepage-signal 1600ms ease-out 1;
+}
+.mg-homepage [data-homepage-revealed="true"] {
+  animation: mg-homepage-reveal 600ms cubic-bezier(0.16, 1, 0.3, 1) 1;
+}
+.mg-homepage .mg-homepage-preview-tab {
+  transition: color 180ms ease, background-color 180ms ease, border-color 180ms ease;
+}
+.mg-homepage .mg-homepage-preview-tab:hover {
+  color: #fff;
+  background: rgb(255 255 255 / 0.035);
+}
+.mg-homepage .mg-homepage-preview-tab[aria-selected="true"] {
+  color: #fff;
+  border-color: rgb(177 18 27 / 0.45);
+  background: rgb(177 18 27 / 0.12);
+}
+.mg-homepage .mg-homepage-preview-tab[aria-selected="true"] .mg-homepage-preview-marker {
+  color: #fff;
+  background: #b1121b;
+  border-color: #b1121b;
+}
+.mg-homepage .mg-homepage-preview-panel {
+  min-height: 16rem;
+}
+.mg-homepage .mg-homepage-preview-scene {
+  animation: mg-homepage-reveal 220ms ease-out 1;
+}
+.mg-homepage .mg-homepage-card {
+  transition: transform 200ms ease, background-color 200ms ease, border-color 200ms ease;
+}
+.mg-homepage .mg-homepage-action svg {
+  transition: transform 180ms ease;
+}
+.mg-homepage .mg-homepage-action:focus-visible svg {
+  transform: translateX(3px);
+}
+@media (min-width: 640px) {
+  .mg-homepage .mg-homepage-preview-panel { min-height: 10rem; }
+}
+@media (hover: hover) and (pointer: fine) {
+  .mg-homepage .mg-homepage-card:hover { transform: translateY(-2px); }
+  .mg-homepage .mg-homepage-action:hover svg { transform: translateX(3px); }
+}
+@keyframes mg-homepage-arrive {
+  from { transform: translateY(10px); }
+  to { transform: translateY(0); }
+}
+@keyframes mg-homepage-reveal {
+  from { opacity: 0.65; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes mg-homepage-signal {
+  from { stroke-dashoffset: 1500; }
+  to { stroke-dashoffset: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mg-homepage *, .mg-homepage *::before, .mg-homepage *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+  .mg-homepage .mg-homepage-card:hover,
+  .mg-homepage .mg-homepage-action:hover svg,
+  .mg-homepage .mg-homepage-action:focus-visible svg {
+    transform: none;
+  }
+}

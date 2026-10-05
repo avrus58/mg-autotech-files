@@ -1,5 +1,19 @@
 # Otonom calisma gunlugu
 
+## 2026-10-05 — Owner-requested homepage interaction layer started, local only
+
+- One bounded task MANUAL-20261005-HOMEPAGE-MOTION, clean branch
+  `codex/homepage-motion-20261005` at7f6ea77; primary dirty checkout untouched.
+- Existing owner-approved compact layout is retained. Progressive finite CSS
+  motion and a manual three-step example improve understanding/engagement, not
+  actual service/customer activity. No autoplay or new dependency required.
+- Read rules/constitution, project/current task/status, deduplicated roadmap,
+  inbox/history and inspected existing source/performance boundary. Autopilot
+  OS files/CLI remain absent; no unattended lifecycle receipt is invented.
+- All12 copy, no-JS static first paint, reduced-motion, keyboard and mobile/
+  laptop browser checks required alongside full gates and independent review.
+  No push/Preview/Production or real service/data operation authorized.
+
 ## 2026-10-05 — Homepage hero polish accepted locally, not published
 
 - Task: MANUAL-20261005-HOMEPAGE-HERO-POLISH. Clean branch

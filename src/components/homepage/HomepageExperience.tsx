@@ -7,6 +7,7 @@ import {
   useEffect,
   useRef,
   useState,
+  type KeyboardEvent as ReactKeyboardEvent,
   type MouseEvent as ReactMouseEvent,
 } from "react";
 import {
@@ -51,6 +52,7 @@ import {
 import { localizeCreditPromotionLabel } from "@/lib/i18n/commercial-translations";
 import type { PublicLogSnapshotCopy } from "@/lib/i18n/tool-client-copy-keys";
 import { europeRegionJsonLd } from "@/lib/structuredDataI18n";
+import { observeHomepageReveals } from "@/lib/homepageMotion";
 
 const HomepageSessionBridge = dynamic(
   () =>
@@ -497,6 +499,11 @@ export function HomepageExperience({
     message: "",
   });
   const publicCreditQuoteRequest = useRef(0);
+  const homepageRoot = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (homepageRoot.current) return observeHomepageReveals(homepageRoot.current);
+  }, []);
 
   const loadPublicCreditQuote = useCallback(async () => {
     const requestId = publicCreditQuoteRequest.current + 1;
@@ -589,8 +596,9 @@ export function HomepageExperience({
     <HomepageLocalizationProvider locale={locale} catalog={translationCatalog}>
       <LocalizedHomepageTree>
         <div
+          ref={homepageRoot}
           data-unified-localized-homepage={locale === "en" ? undefined : locale}
-          className="min-h-screen overflow-x-hidden bg-[#050506] text-white [color-scheme:dark]"
+          className="mg-homepage min-h-screen overflow-x-hidden bg-[#050506] text-white [color-scheme:dark]"
         >
           {sessionRuntimeReady && <HomepageSessionBridge />}
           <HomepageHeader
@@ -603,9 +611,16 @@ export function HomepageExperience({
           <section data-homepage-hero className="relative isolate overflow-hidden border-b border-white/[0.07]">
             <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(circle_at_72%_14%,rgba(177,18,27,0.24),transparent_26rem),radial-gradient(circle_at_8%_28%,rgba(59,130,246,0.07),transparent_23rem),linear-gradient(180deg,#08080a,#050506)]" />
             <div className="pointer-events-none absolute inset-0 -z-10 opacity-[0.18] [background-image:linear-gradient(rgba(255,255,255,.06)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.06)_1px,transparent_1px)] [background-size:64px_64px] [mask-image:linear-gradient(to_bottom,black,transparent_92%)]" />
+            <div aria-hidden="true" className="mg-homepage-signal pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+              <svg viewBox="0 0 1200 600" fill="none" className="h-full w-full" preserveAspectRatio="xMidYMid slice">
+                <path d="M-80 510H340L430 420H670L790 300H1260" />
+                <path d="M-80 550H360L450 460H690L810 340H1260" />
+                <path d="M600 -80V160L710 270H980L1060 350H1260" />
+              </svg>
+            </div>
 
             <div className="mx-auto grid max-w-[86rem] gap-8 px-4 py-10 sm:px-6 sm:py-12 lg:grid-cols-[1.06fr_.94fr] lg:items-center lg:gap-8 xl:gap-12">
-              <div className="min-w-0 max-w-3xl">
+              <div className="mg-homepage-hero-copy min-w-0 max-w-3xl">
                 <div className="inline-flex max-w-full items-center gap-2 rounded-full border border-red-500/25 bg-red-500/[0.08] px-3 py-1.5 text-[0.65rem] font-bold uppercase tracking-[0.1em] text-red-200">
                   <CircleDot className="h-3.5 w-3.5 shrink-0 text-red-500" aria-hidden="true" /> Professional online file service platform
                 </div>
@@ -618,7 +633,7 @@ export function HomepageExperience({
                   Upload original ECU/TCU files, select your service, track your order and download the completed file directly through the secure MG AutoTech customer portal.
                 </p>
                 <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-                  <Link href="/new-request" className="inline-flex min-h-11 items-center justify-center rounded-xl bg-[#b1121b] px-5 py-3 text-sm font-bold text-white shadow-[0_12px_35px_rgba(177,18,27,.18)] transition hover:bg-[#ce1722] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#08080a]">
+                  <Link href="/new-request" className="mg-homepage-action inline-flex min-h-11 items-center justify-center rounded-xl bg-[#b1121b] px-5 py-3 text-sm font-bold text-white shadow-[0_12px_35px_rgba(177,18,27,.18)] transition hover:bg-[#ce1722] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#08080a]">
                     {isLoggedIn ? "Create File Request" : "Start File Request"}
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
@@ -657,7 +672,7 @@ export function HomepageExperience({
             locale={locale}
           />
 
-          <section id="services" className="scroll-mt-24 bg-[#070709] py-16 sm:py-20">
+          <section id="services" data-homepage-reveal className="scroll-mt-24 bg-[#070709] py-16 sm:py-20">
             <div className="mx-auto max-w-[86rem] px-4 sm:px-6">
               <SectionHeading
                 eyebrow="ECU / TCU file service"
@@ -670,7 +685,7 @@ export function HomepageExperience({
                 {services.map((service) => {
                   const Icon = service.icon;
                   return (
-                    <Link key={service.title} href={service.href} className="group relative min-h-48 bg-[#0a0a0c] p-5 transition hover:bg-[#101013] sm:p-6">
+                    <Link key={service.title} href={service.href} className="mg-homepage-card group relative min-h-48 bg-[#0a0a0c] p-5 transition hover:bg-[#101013] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-red-400 sm:p-6">
                       <div className="flex items-start justify-between gap-4">
                         <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-red-500/20 bg-red-500/[0.08] text-red-400">
                           <Icon className="h-5 w-5" />
@@ -701,7 +716,7 @@ export function HomepageExperience({
                 {preparationTools.map((tool) => {
                   const Icon = tool.icon;
                   return (
-                    <Link key={tool.href} href={tool.href} className="group flex min-w-0 items-start gap-4 rounded-2xl border border-white/10 bg-white/[0.025] p-4 transition hover:border-red-500/25 hover:bg-white/[0.04]">
+                    <Link key={tool.href} href={tool.href} className="mg-homepage-card group flex min-w-0 items-start gap-4 rounded-2xl border border-white/10 bg-white/[0.025] p-4 transition hover:border-red-500/25 hover:bg-white/[0.04] focus-visible:outline-2 focus-visible:outline-red-400">
                       <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/[0.05] text-red-400"><Icon className="h-5 w-5" /></span>
                       <span className="min-w-0">
                         <span className="block text-sm font-black text-white">{tool.title}</span>
@@ -715,7 +730,7 @@ export function HomepageExperience({
             </div>
           </section>
 
-          <section id="workflow" className="scroll-mt-24 border-y border-white/[0.07] bg-[#050506] py-16 sm:py-20">
+          <section id="workflow" data-homepage-reveal className="scroll-mt-24 border-y border-white/[0.07] bg-[#050506] py-16 sm:py-20">
             <div className="mx-auto grid max-w-[86rem] gap-10 px-4 sm:px-6 xl:grid-cols-[1.06fr_.94fr]">
               <div>
                 <SectionHeading
@@ -764,7 +779,7 @@ export function HomepageExperience({
             </div>
           </section>
 
-          <section className="bg-[#08080a] py-16 sm:py-20">
+          <section data-homepage-reveal className="bg-[#08080a] py-16 sm:py-20">
             <div className="mx-auto max-w-[86rem] px-4 sm:px-6">
               <SectionHeading
                 eyebrow="Vehicle coverage"
@@ -777,7 +792,7 @@ export function HomepageExperience({
                   action={{ label: "View all brands", href: "/brands" }}
                 >
                   {supportedBrands.map((brand) => (
-                    <Link key={brand.name} href={brand.href} className="group flex items-center gap-3 rounded-xl border border-white/8 bg-black/20 p-3 transition hover:border-red-500/25 hover:bg-white/[0.035]">
+                    <Link key={brand.name} href={brand.href} className="mg-homepage-card group flex items-center gap-3 rounded-xl border border-white/8 bg-black/20 p-3 transition hover:border-red-500/25 hover:bg-white/[0.035] focus-visible:outline-2 focus-visible:outline-red-400">
                       <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/[0.04] text-[0.65rem] font-black text-red-300">{brand.code}</span>
                       <span className="min-w-0">
                         <span className="block truncate text-xs font-black text-zinc-200 group-hover:text-white">{brand.name}</span>
@@ -792,7 +807,7 @@ export function HomepageExperience({
                   action={{ label: "View all platforms", href: "/ecu-platforms" }}
                 >
                   {ecuPlatforms.map((platform) => (
-                    <Link key={platform.name} href={platform.href} className="group flex items-center justify-between gap-3 rounded-xl border border-white/8 bg-black/20 p-3 transition hover:border-red-500/25 hover:bg-white/[0.035]">
+                    <Link key={platform.name} href={platform.href} className="mg-homepage-card group flex items-center justify-between gap-3 rounded-xl border border-white/8 bg-black/20 p-3 transition hover:border-red-500/25 hover:bg-white/[0.035] focus-visible:outline-2 focus-visible:outline-red-400">
                       <span className="min-w-0 truncate text-xs font-black text-zinc-200 group-hover:text-white">{platform.name}</span>
                       <span className="shrink-0 rounded-full bg-white/[0.04] px-2 py-1 text-[0.58rem] font-black uppercase tracking-[0.1em] text-zinc-400">{platform.tag}</span>
                     </Link>
@@ -802,7 +817,7 @@ export function HomepageExperience({
             </div>
           </section>
 
-          <section id="prices" className="scroll-mt-24 border-y border-white/[0.07] bg-[#050506] py-16 sm:py-20">
+          <section id="prices" data-homepage-reveal className="scroll-mt-24 border-y border-white/[0.07] bg-[#050506] py-16 sm:py-20">
             <div className="mx-auto max-w-[86rem] px-4 sm:px-6">
               <SectionHeading
                 eyebrow="Credit Prices"
@@ -847,7 +862,7 @@ export function HomepageExperience({
             </div>
           </section>
 
-          <section className="bg-[#08080a] py-16 sm:py-20">
+          <section data-homepage-reveal className="bg-[#08080a] py-16 sm:py-20">
             <div className="mx-auto grid max-w-[86rem] gap-10 px-4 sm:px-6 xl:grid-cols-[.72fr_1.28fr]">
               <div>
                 <SectionHeading
@@ -890,7 +905,7 @@ export function HomepageExperience({
             </div>
           </section>
 
-          <section className="relative overflow-hidden border-t border-red-500/20 bg-[#090506]">
+          <section data-homepage-reveal className="relative overflow-hidden border-t border-red-500/20 bg-[#090506]">
             <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_72%_10%,rgba(239,68,68,.22),transparent_24rem)]" />
             <div className="relative mx-auto flex max-w-[86rem] flex-col gap-7 px-4 py-14 sm:px-6 sm:py-16 lg:flex-row lg:items-center lg:justify-between">
               <div className="max-w-3xl">
@@ -1006,15 +1021,31 @@ function HomepageHeader({
 }
 
 function HeroProductPreview() {
+  // A manual illustration only; never progresses or submits a real request.
+  const [activeStep, setActiveStep] = useState(2);
+  const stepButtons = useRef<Array<HTMLButtonElement | null>>([]);
   const previewSteps = [
     "File uploaded",
     "File reviewed",
     "Ready for download",
   ];
+  const handleStepKey = (event: ReactKeyboardEvent<HTMLButtonElement>, index: number) => {
+    let next: number;
+    switch (event.key) {
+      case "ArrowRight": next = (index + 1) % previewSteps.length; break;
+      case "ArrowLeft": next = (index + previewSteps.length - 1) % previewSteps.length; break;
+      case "Home": next = 0; break;
+      case "End": next = previewSteps.length - 1; break;
+      default: return;
+    }
+    event.preventDefault();
+    setActiveStep(next);
+    stepButtons.current[next]?.focus();
+  };
 
   return (
     <LocalizedHomepageTree>
-      <aside data-homepage-product-preview aria-label="Example preview" className="relative mx-auto w-full min-w-0 max-w-[36rem] [overflow-wrap:anywhere] lg:mx-0 lg:ml-auto">
+      <aside data-homepage-product-preview data-preview-step={activeStep} aria-label="Example preview" className="mg-homepage-preview relative mx-auto w-full min-w-0 max-w-[36rem] [overflow-wrap:anywhere] lg:mx-0 lg:ml-auto">
         <div aria-hidden="true" className="pointer-events-none absolute -inset-6 -z-10 rounded-full bg-red-600/[0.08] blur-3xl" />
         <div className="overflow-hidden rounded-2xl border border-white/12 bg-[#0b0b0e] shadow-[0_24px_80px_rgba(0,0,0,.4)]">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/[0.08] px-4 py-3.5 sm:px-5">
@@ -1034,40 +1065,62 @@ function HeroProductPreview() {
                   <div className="text-xs text-zinc-400">Example request</div>
                   <div className="mt-1 text-base font-bold tracking-tight">Stage 1 Tuning</div>
                 </div>
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/[0.08] px-2.5 py-1 text-xs font-semibold text-emerald-300"><Check className="h-3.5 w-3.5" aria-hidden="true" />Completed</span>
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/[0.08] px-2.5 py-1 text-xs font-semibold text-emerald-300"><Check className="h-3.5 w-3.5" aria-hidden="true" />{activeStep === 2 ? "Completed" : previewSteps[activeStep]}</span>
               </div>
-              <ol className="mt-4 grid grid-cols-3 gap-3 border-t border-white/[0.07] pt-3">
-                {previewSteps.map((label) => (
-                  <li key={label} className="min-w-0 text-xs leading-5 text-zinc-300">
-                    <span className="mb-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-400"><Check className="h-3 w-3" aria-hidden="true" /></span>
+              <div role="tablist" aria-label="Example request stages" className="mt-3 grid grid-cols-3 gap-1.5 border-t border-white/[0.07] pt-3">
+                {previewSteps.map((label, index) => (
+                  <button
+                    key={label}
+                    ref={(element) => { stepButtons.current[index] = element; }}
+                    type="button"
+                    role="tab"
+                    id={`homepage-preview-step-${index}`}
+                    data-preview-stage={index}
+                    aria-controls="homepage-preview-panel"
+                    aria-selected={activeStep === index}
+                    tabIndex={activeStep === index ? 0 : -1}
+                    onClick={() => setActiveStep(index)}
+                    onKeyDown={(event) => handleStepKey(event, index)}
+                    className="mg-homepage-preview-tab flex min-h-11 min-w-0 flex-col items-start gap-1.5 rounded-lg border border-transparent p-2 text-left text-xs leading-5 text-zinc-400 focus-visible:outline-2 focus-visible:outline-red-400"
+                  >
+                    <span aria-hidden="true" className="mg-homepage-preview-marker flex h-5 w-5 items-center justify-center rounded-full border border-white/10 text-[10px] font-bold">{index + 1}</span>
                     {label}
-                  </li>
+                  </button>
                 ))}
-              </ol>
+              </div>
+              <p className="mt-2 text-[11px] leading-4 text-zinc-400">Choose a step to explore the example.</p>
             </div>
+            <div id="homepage-preview-panel" role="tabpanel" aria-labelledby={`homepage-preview-step-${activeStep}`} tabIndex={0} className="mg-homepage-preview-panel rounded-lg focus-visible:outline-2 focus-visible:outline-red-400">
+            <div key={activeStep} className="mg-homepage-preview-scene space-y-4">
             <div className="flex items-start gap-3 px-1">
               <MessageCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-400" aria-hidden="true" />
               <div className="min-w-0 text-xs leading-5">
                 <div className="font-semibold text-zinc-200">Status & messages</div>
-                <p className="mt-0.5 text-zinc-400">Your completed file is ready in your account.</p>
+                <p className="mt-0.5 text-zinc-400">{activeStep === 0
+                  ? "This example starts with an original file and request details."
+                  : activeStep === 1
+                    ? "Vehicle, ECU and selected service are reviewed together."
+                    : "Your completed file is ready in your account."}</p>
               </div>
             </div>
             <div className="grid gap-2 sm:grid-cols-2">
               <div className="flex min-w-0 items-start gap-2.5 rounded-xl border border-white/10 bg-white/[0.025] p-3">
                 <FileCode2 className="mt-0.5 h-4 w-4 shrink-0 text-red-400" aria-hidden="true" />
                 <div className="min-w-0 text-xs leading-5">
-                  <div className="font-semibold text-zinc-200">Completed file</div>
-                  <div className="text-zinc-400">Account delivery</div>
+                  <div className="font-semibold text-zinc-200">{activeStep === 2 ? "Completed file" : previewSteps[activeStep]}</div>
+                  <div className="text-zinc-400">{activeStep === 2 ? "Account delivery" : "Secure request workspace"}</div>
                 </div>
-                <Download className="ml-auto mt-0.5 h-3.5 w-3.5 shrink-0 text-zinc-500" aria-hidden="true" />
+                {activeStep === 2 && <Download className="ml-auto mt-0.5 h-3.5 w-3.5 shrink-0 text-zinc-500" aria-hidden="true" />}
               </div>
               <div className="flex min-w-0 items-start gap-2.5 rounded-xl border border-white/10 bg-white/[0.025] p-3">
                 <BookOpen className="mt-0.5 h-4 w-4 shrink-0 text-red-400" aria-hidden="true" />
                 <div className="min-w-0 text-xs leading-5">
-                  <div className="font-semibold text-zinc-200">Service report</div>
-                  <div className="text-zinc-400">PDF after completion</div>
+                  <div className="font-semibold text-zinc-200">{activeStep === 2 ? "Service report" : "Example request"}</div>
+                  <div className="text-zinc-400">{activeStep === 2 ? "PDF after completion" : "Stage 1 Tuning"}</div>
                 </div>
               </div>
+            </div>
+            </div>
             </div>
           </div>
           <div className="flex flex-wrap items-center justify-between gap-2 border-t border-white/[0.08] bg-white/[0.015] px-4 py-2.5 sm:px-5">
